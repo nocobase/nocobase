@@ -23,6 +23,7 @@ export type FormalFlowSurfaceBlockKey =
   | 'map'
   | 'chart'
   | 'comments'
+  | 'record-history'
   | 'action-panel';
 
 export type FlowSurfaceBlockSupportEntry = {
@@ -232,7 +233,19 @@ export const FLOW_SURFACE_BLOCK_SUPPORT_MATRIX: FlowSurfaceBlockSupportEntry[] =
     formalBuiltin: true,
     fixtureCaptured: true,
     readbackSupported: true,
-    createSupported: false,
+    createSupported: true,
+  },
+  {
+    key: 'recordHistory',
+    formalKey: 'record-history',
+    label: 'Record history',
+    modelUse: 'RecordHistoryBlockModel',
+    ownerPlugin: '@nocobase/plugin-record-history',
+    topLevelAddable: true,
+    formalBuiltin: true,
+    fixtureCaptured: false,
+    readbackSupported: true,
+    createSupported: true,
   },
   {
     key: 'actionPanel',

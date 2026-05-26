@@ -772,6 +772,9 @@ export function getCatalogRecordActionContainerUse(use?: string) {
     case 'GridCardBlockModel':
     case 'GridCardItemModel':
       return 'GridCardItemModel';
+    case 'CommentsBlockModel':
+    case 'CommentItemModel':
+      return 'CommentItemModel';
     default:
       return null;
   }

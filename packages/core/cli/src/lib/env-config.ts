@@ -22,6 +22,7 @@ const STRING_ENV_CONFIG_KEYS = [
   'appPort',
   'appKey',
   'timezone',
+  'authUsername',
   'dbDialect',
   'builtinDbImage',
   'dbHost',
@@ -113,8 +114,11 @@ export function buildStoredEnvConfig(input: StoredEnvConfigInput): StoredEnvConf
   }
 
   const authType = trimConfigValue(input.authType);
+  if (authType === 'basic' || authType === 'token' || authType === 'oauth') {
+    envConfig.authType = authType;
+  }
   const accessToken = trimConfigValue(input.accessToken);
-  if (authType === 'token' && accessToken) {
+  if ((authType === 'basic' || authType === 'token') && accessToken) {
     envConfig.accessToken = accessToken;
   }
 

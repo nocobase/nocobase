@@ -55,7 +55,7 @@ nb init --ui
 
 `nb init` 可以连接已有的 NocoBase 应用，也可以安装一个新的 NocoBase 应用。创建新应用时，还可以全局安装 NocoBase AI coding skills (`nocobase/skills`)。
 
-如果已经自行管理 skills，或在 CI、离线环境中运行，不希望 `nb init` 安装或更新 skills，可以传入 `--skip-skills`。
+如果已经自行管理 skills，或在 CI、离线环境中运行，不希望 `nb init` 安装 skills，可以传入 `--skip-skills`。
 
 ### 非交互式初始化
 

@@ -54,7 +54,7 @@ const LARGE_GENERATED_POPUP_UNSUPPORTED_FIELDS = Array.from(
 );
 const LARGE_GENERATED_POPUP_CODE_FIELDS = Array.from({ length: 11 }, (_item, index) => `code${index + 1}`);
 
-describe.skip('flowSurfaces backend authoring aggregate errors', () => {
+describe('flowSurfaces backend authoring aggregate errors', () => {
   let context: FlowSurfacesContractContext;
   let rootAgent: FlowSurfacesContractContext['rootAgent'];
 
@@ -882,10 +882,15 @@ describe.skip('flowSurfaces backend authoring aggregate errors', () => {
       ]),
     );
     errors.forEach((error: any) => {
+      expect(error.message).toContain('Do not skip this JS/RunJS step.');
+      expect(error.message).toContain('Suggested fix:');
       expect(error.details).toEqual(
         expect.objectContaining({
           repairClass: expect.any(String),
           suggestedAction: expect.any(String),
+          skipForbidden: true,
+          mustRetry: true,
+          agentInstruction: expect.any(String),
           line: expect.any(Number),
           column: expect.any(Number),
         }),
@@ -897,6 +902,12 @@ describe.skip('flowSurfaces backend authoring aggregate errors', () => {
       expect(error.details.surface).toBeUndefined();
       expect(error.details.surfaceStyle).toBeUndefined();
     });
+    expect(errors.find((error: any) => error.details?.repairClass === 'switch-to-resource-api')?.message).toContain(
+      'Fix the error and retry the same write.',
+    );
+    expect(errors.find((error: any) => error.details?.repairClass === 'ctx-root-mismatch-stop')?.message).toContain(
+      'Resolve the blocking context/problem first, then retry the same write.',
+    );
   });
 
   it('should allow legal RunJS render and action code on supported JS model surfaces', () => {
@@ -1021,6 +1032,104 @@ describe.skip('flowSurfaces backend authoring aggregate errors', () => {
         modelUse: 'ChartEventsModel',
       }),
     ).toEqual([]);
+  });
+
+  it('should validate FlowResource instance method calls on RunJS resource aliases', () => {
+    const invalidCases = [
+      {
+        code: "const r = ctx.makeResource('MultiRecordResource');\nr.setFilters({ status: 'open' });",
+        path: '$.runjs.multiResourceAlias.code',
+      },
+      {
+        code: [
+          'collections.map(() => {',
+          "  const r = ctx.makeResource('MultiRecordResource');",
+          '  r.setFilters({ status: "open" });',
+          '  return r;',
+          '});',
+        ].join('\n'),
+        path: '$.runjs.callbackResourceAlias.code',
+      },
+      {
+        code: 'ctx.resource.setFilters({ status: "open" });',
+        path: '$.runjs.ctxResource.code',
+      },
+      {
+        code: 'const r = ctx.resource;\nr.setFilters({ status: "open" });',
+        path: '$.runjs.ctxResourceAlias.code',
+      },
+      {
+        code: "ctx.makeResource('MultiRecordResource').setFilters({ status: 'open' });",
+        path: '$.runjs.directFactoryResource.code',
+      },
+      {
+        code: "const r = ctx.makeResource('MultiRecordResource');\nr?.setFilters?.({ status: 'open' });",
+        path: '$.runjs.optionalResourceAlias.code',
+      },
+      {
+        code: "const r = ctx.makeResource('MultiRecordResource');\nr['setFilters']({ status: 'open' });",
+        path: '$.runjs.bracketResourceAlias.code',
+      },
+    ];
+
+    invalidCases.forEach(({ code, path }) => {
+      const errors = inspectRunJsAuthoringCode({
+        code,
+        path,
+        modelUse: 'JSActionModel',
+      });
+
+      expect(errors).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            path,
+            ruleId: 'runjs-flow-resource-method-invalid',
+            details: expect.objectContaining({
+              method: 'setFilters',
+              repairClass: 'resource-runtime-contract-stop',
+              suggestedMethod: 'setFilter',
+            }),
+          }),
+        ]),
+      );
+    });
+  });
+
+  it('should allow valid FlowResource methods and ignore non-resource or shadowed bindings', () => {
+    const errors = inspectRunJsAuthoringCode({
+      code: [
+        "const multi = ctx.makeResource('MultiRecordResource');",
+        "multi.setResourceName('tasks');",
+        'multi.setFilter({ status: "open" });',
+        'multi.setPageSize(20);',
+        'multi.refresh();',
+        'multi.getData();',
+        'multi.getMeta();',
+        "const single = ctx.makeResource('SingleRecordResource');",
+        'single.save({ title: "Done" });',
+        'single.destroy();',
+        "const sql = ctx.initResource('SQLResource');",
+        "sql.setSQL('select 1');",
+        'sql.setBind({ id: 1 });',
+        "sql.setSQLType('selectRows');",
+        'await sql.run();',
+        'await sql.runById();',
+        'ctx.resource.getData();',
+        'ctx.resource.setFilter({ status: "open" });',
+        'ctx.resource.setPageSize(10);',
+        'const plain = { setFilters() {} };',
+        'plain.setFilters({ status: "open" });',
+        "const outer = ctx.makeResource('MultiRecordResource');",
+        'function local(outer) { outer.setFilters({ status: "open" }); }',
+        "const method = 'setFilters';",
+        "const dynamic = ctx.makeResource('MultiRecordResource');",
+        'dynamic[method]({ status: "open" });',
+      ].join('\n'),
+      path: '$.runjs.validResourceMethods.code',
+      modelUse: 'JSActionModel',
+    });
+
+    expect(errors).toEqual([]);
   });
 
   it('should not treat method-local code or out-of-scope shadow bindings as top-level RunJS', () => {
@@ -1162,6 +1271,177 @@ describe.skip('flowSurfaces backend authoring aggregate errors', () => {
         expect.objectContaining({
           ruleId: 'runjs-navigator-property-blocked',
           details: expect.objectContaining({ global: 'navigator', member: 'clipboard' }),
+        }),
+      ]),
+    );
+  });
+
+  it('should reject unsupported Intl global usage in JS blocks before persisting', async () => {
+    const directErrors = inspectRunJsAuthoringCode({
+      code: [
+        'function fmt(n) {',
+        '  return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(n);',
+        '}',
+        'ctx.render(fmt(123));',
+      ].join('\n'),
+      path: '$.jsBlock.intlNumberFormat.code',
+      modelUse: 'JSBlockModel',
+    });
+    expect(directErrors).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          ruleId: 'runjs-global-blocked',
+          details: expect.objectContaining({
+            repairClass: 'blocked-global-stop',
+            global: 'Intl',
+          }),
+        }),
+      ]),
+    );
+
+    const applyBlueprintErrors = await collectFlowSurfaceAuthoringErrors('applyBlueprint', {
+      mode: 'create',
+      navigation: {
+        item: {
+          title: 'Invalid Intl dashboard',
+        },
+      },
+      assets: {
+        scripts: {
+          kpis: {
+            code: [
+              'var { Statistic } = ctx.libs.antd;',
+              'function fmt(n) {',
+              '  return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(n);',
+              '}',
+              'ctx.render(ctx.React.createElement(Statistic, { title: "Claims Paid Total", value: 123, formatter: fmt }));',
+            ].join('\n'),
+          },
+        },
+      },
+      tabs: [
+        {
+          title: 'Overview',
+          blocks: [
+            {
+              key: 'kpis',
+              type: 'jsBlock',
+              script: 'kpis',
+            },
+          ],
+        },
+      ],
+    });
+    expect(applyBlueprintErrors).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          path: '$.tabs[0].blocks[0].script',
+          ruleId: 'runjs-global-blocked',
+          details: expect.objectContaining({
+            repairClass: 'blocked-global-stop',
+            global: 'Intl',
+          }),
+        }),
+      ]),
+    );
+  });
+
+  it('should reject async functions rendered as React components before persisting', async () => {
+    const code = [
+      'async function DashboardMetrics() {',
+      '  const cards = [',
+      "    { title: 'Active Employer Groups', value: 4 },",
+      "    { title: 'Active Policies', value: 5 },",
+      "    { title: 'Claims Paid Total', value: '$0.00' },",
+      '  ];',
+      '  return ctx.React.createElement(',
+      "    'div',",
+      '    null,',
+      '    cards.map(function(card) {',
+      "      return ctx.React.createElement('div', { key: card.title }, card.title, String(card.value));",
+      '    })',
+      '  );',
+      '}',
+      '',
+      'ctx.render(ctx.React.createElement(DashboardMetrics));',
+    ].join('\n');
+
+    const directErrors = inspectRunJsAuthoringCode({
+      code,
+      path: '$.jsBlock.asyncComponent.code',
+      modelUse: 'JSBlockModel',
+    });
+    expect(directErrors).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          ruleId: 'runjs-react-async-component-forbidden',
+          details: expect.objectContaining({
+            repairClass: 'react-runtime-contract-stop',
+            component: 'DashboardMetrics',
+          }),
+        }),
+      ]),
+    );
+
+    const applyBlueprintErrors = await collectFlowSurfaceAuthoringErrors('applyBlueprint', {
+      mode: 'create',
+      navigation: {
+        item: {
+          title: 'Invalid async component dashboard',
+        },
+      },
+      assets: {
+        scripts: {
+          kpis: {
+            code,
+          },
+        },
+      },
+      tabs: [
+        {
+          title: 'Overview',
+          blocks: [
+            {
+              key: 'kpis',
+              type: 'jsBlock',
+              script: 'kpis',
+            },
+          ],
+        },
+      ],
+    });
+    expect(applyBlueprintErrors).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          path: '$.tabs[0].blocks[0].script',
+          ruleId: 'runjs-react-async-component-forbidden',
+          details: expect.objectContaining({
+            repairClass: 'react-runtime-contract-stop',
+            component: 'DashboardMetrics',
+          }),
+        }),
+      ]),
+    );
+
+    const reactAliasErrors = inspectRunJsAuthoringCode({
+      code: [
+        'const React = ctx.React;',
+        'const h = React.createElement;',
+        'const DashboardMetrics = async () => React.createElement("div", null, "Metrics");',
+        'ctx.render(h(DashboardMetrics));',
+      ].join('\n'),
+      path: '$.jsBlock.asyncComponentAlias.code',
+      modelUse: 'JSBlockModel',
+    });
+    expect(reactAliasErrors).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          ruleId: 'runjs-react-async-component-forbidden',
+          details: expect.objectContaining({
+            repairClass: 'react-runtime-contract-stop',
+            capability: 'ctx.React.createElement',
+            component: 'DashboardMetrics',
+          }),
         }),
       ]),
     );
@@ -2089,6 +2369,122 @@ describe.skip('flowSurfaces backend authoring aggregate errors', () => {
     );
   });
 
+  it('should reject builder chart assets that use association fields directly', async () => {
+    const employerGroupsCollection = {
+      dataSourceKey: 'main',
+      name: 'employer_groups',
+      getFields: () => [
+        {
+          name: 'title',
+          type: 'string',
+          interface: 'input',
+        },
+      ],
+      getField: (name: string) =>
+        name === 'title'
+          ? {
+              name: 'title',
+              type: 'string',
+              interface: 'input',
+            }
+          : null,
+    };
+    const claimsCollection = {
+      dataSourceKey: 'main',
+      name: 'claims',
+      getField: (name: string) => {
+        if (name === 'id') {
+          return {
+            name: 'id',
+            type: 'bigInt',
+            interface: 'id',
+          };
+        }
+        if (name === 'employer_group') {
+          return {
+            name: 'employer_group',
+            type: 'belongsTo',
+            interface: 'm2o',
+            target: 'employer_groups',
+            targetCollection: employerGroupsCollection,
+            isAssociationField: () => true,
+          };
+        }
+        return null;
+      },
+    };
+
+    const errors = await collectFlowSurfaceAuthoringErrors(
+      'applyBlueprint',
+      {
+        mode: 'create',
+        navigation: {
+          item: {
+            title: 'Invalid association chart',
+          },
+        },
+        assets: {
+          charts: {
+            employerGroupChart: {
+              query: {
+                mode: 'builder',
+                resource: {
+                  dataSourceKey: 'main',
+                  collectionName: 'claims',
+                },
+                measures: [{ field: 'id', aggregation: 'count', alias: 'claimCount' }],
+                dimensions: [{ field: 'employer_group' }],
+              },
+              visual: {
+                mode: 'basic',
+                type: 'bar',
+                mappings: {
+                  x: 'employer_group',
+                  y: 'claimCount',
+                },
+              },
+            },
+          },
+        },
+        tabs: [
+          {
+            title: 'Overview',
+            blocks: [
+              {
+                key: 'employerGroupChart',
+                type: 'chart',
+                chart: 'employerGroupChart',
+              },
+            ],
+          },
+        ],
+      },
+      {
+        getCollection: (_dataSourceKey, collectionName) =>
+          collectionName === 'claims'
+            ? claimsCollection
+            : collectionName === 'employer_groups'
+              ? employerGroupsCollection
+              : null,
+      },
+    );
+
+    expect(errors).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          path: '$.assets.charts.employerGroupChart.query.dimensions[0].field',
+          ruleId: 'chart-builder-query-association-field-requires-subfield',
+          message: expect.stringContaining("'employer_group.title'"),
+          details: expect.objectContaining({
+            suggestedFieldPath: 'employer_group.title',
+            suggestedTitleField: 'title',
+            targetCollectionName: 'employer_groups',
+          }),
+        }),
+      ]),
+    );
+  });
+
   it('should validate configure popup and hidden popup RunJS recursively', async () => {
     const errors = await collectFlowSurfaceAuthoringErrors(
       'configure',
@@ -2183,6 +2579,38 @@ describe.skip('flowSurfaces backend authoring aggregate errors', () => {
     expect(apiCollectionRequestErrors.map((error: any) => error.details?.repairClass)).toContain(
       'switch-to-resource-api',
     );
+    const positionalCollectionRequestErrors = inspectRunJsAuthoringCode({
+      code: "ctx.render(null);\nawait ctx.request('/api/tasks:list', { params: { pageSize: 1 } });",
+      path: '$.positionalCollectionRequest.code',
+      modelUse: 'JSBlockModel',
+    });
+    expect(positionalCollectionRequestErrors.map((error: any) => error.details?.repairClass)).toContain(
+      'switch-to-resource-api',
+    );
+    const absoluteApiCollectionRequestErrors = inspectRunJsAuthoringCode({
+      code: "ctx.render(null);\nawait ctx.request({ url: '/api/tasks:list?pageSize=1', skipNotify: true });",
+      path: '$.absoluteApiCollectionRequest.code',
+      modelUse: 'JSBlockModel',
+    });
+    expect(absoluteApiCollectionRequestErrors.map((error: any) => error.details?.repairClass)).toContain(
+      'switch-to-resource-api',
+    );
+    const dynamicCollectionRequestErrors = inspectRunJsAuthoringCode({
+      code: "const collectionName = 'tasks';\nctx.render(null);\nawait ctx.request({ url: `${collectionName}:list`, method: 'get' });",
+      path: '$.dynamicCollectionRequest.code',
+      modelUse: 'JSBlockModel',
+    });
+    expect(dynamicCollectionRequestErrors.map((error: any) => error.details?.repairClass)).toContain(
+      'switch-to-resource-api',
+    );
+    const dynamicAbsoluteApiCollectionRequestErrors = inspectRunJsAuthoringCode({
+      code: "const collectionName = 'tasks';\nctx.render(null);\nawait ctx.request({ url: `/api/${collectionName}:list?pageSize=1`, skipNotify: true });",
+      path: '$.dynamicAbsoluteApiCollectionRequest.code',
+      modelUse: 'JSBlockModel',
+    });
+    expect(dynamicAbsoluteApiCollectionRequestErrors.map((error: any) => error.details?.repairClass)).toContain(
+      'switch-to-resource-api',
+    );
 
     const runjsResourceEndpointErrors = inspectRunJsAuthoringCode({
       code: "ctx.render(null);\nawait ctx.runjs('resource:list', { resource: 'tasks' });",
@@ -2192,11 +2620,10 @@ describe.skip('flowSurfaces backend authoring aggregate errors', () => {
     expect(runjsResourceEndpointErrors).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
-          ruleId: 'runjs-resource-api-required',
+          ruleId: 'runjs-nested-runjs-forbidden',
           details: expect.objectContaining({
-            repairClass: 'switch-to-resource-api',
+            repairClass: 'nested-runjs-stop',
             capability: 'ctx.runjs',
-            endpoint: 'resource:list',
           }),
         }),
       ]),
@@ -2207,8 +2634,16 @@ describe.skip('flowSurfaces backend authoring aggregate errors', () => {
       path: '$.optionalRunjsCollectionEndpoint.code',
       modelUse: 'JSBlockModel',
     });
-    expect(optionalRunjsCollectionEndpointErrors.map((error: any) => error.details?.repairClass)).toContain(
-      'switch-to-resource-api',
+    expect(optionalRunjsCollectionEndpointErrors).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          ruleId: 'runjs-nested-runjs-forbidden',
+          details: expect.objectContaining({
+            repairClass: 'nested-runjs-stop',
+            capability: 'ctx.runjs',
+          }),
+        }),
+      ]),
     );
 
     const commentedRunjsResourceEndpointErrors = inspectRunJsAuthoringCode({
@@ -2219,9 +2654,10 @@ describe.skip('flowSurfaces backend authoring aggregate errors', () => {
     expect(commentedRunjsResourceEndpointErrors).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
-          ruleId: 'runjs-resource-api-required',
+          ruleId: 'runjs-nested-runjs-forbidden',
           details: expect.objectContaining({
-            endpoint: 'resource:list',
+            repairClass: 'nested-runjs-stop',
+            capability: 'ctx.runjs',
           }),
         }),
       ]),
@@ -2232,17 +2668,14 @@ describe.skip('flowSurfaces backend authoring aggregate errors', () => {
       path: '$.concatenatedRunjsEndpoint.code',
       modelUse: 'JSBlockModel',
     });
-    expect(concatenatedRunjsEndpointErrors.map((error: any) => error.details?.repairClass)).toContain(
-      'switch-to-resource-api',
-    );
+    expect(concatenatedRunjsEndpointErrors.map((error: any) => error.ruleId)).toContain('runjs-nested-runjs-forbidden');
 
-    expect(
-      inspectRunJsAuthoringCode({
-        code: "ctx.render(null);\nawait ctx.runjs('cache:get()', {});",
-        path: '$.ordinaryRunjsLabelCall.code',
-        modelUse: 'JSBlockModel',
-      }),
-    ).toEqual([]);
+    const ordinaryRunjsLabelCallErrors = inspectRunJsAuthoringCode({
+      code: "ctx.render(null);\nawait ctx.runjs('cache:get()', {});",
+      path: '$.ordinaryRunjsLabelCall.code',
+      modelUse: 'JSBlockModel',
+    });
+    expect(ordinaryRunjsLabelCallErrors.map((error: any) => error.ruleId)).toContain('runjs-nested-runjs-forbidden');
 
     const invalidApiResourceErrors = inspectRunJsAuthoringCode({
       code: "ctx.render(null);\nawait ctx.api.resource.list({ resource: 'tasks', pageSize: 1 });",
@@ -2262,13 +2695,167 @@ describe.skip('flowSurfaces backend authoring aggregate errors', () => {
       ]),
     );
 
-    expect(
-      inspectRunJsAuthoringCode({
-        code: "ctx.render(null);\nawait ctx.api.resource('tasks').list({ pageSize: 1 });",
-        path: '$.apiResourceFactory.code',
-        modelUse: 'JSBlockModel',
-      }),
-    ).toEqual([]);
+    const opencodeActionResourceErrors = inspectRunJsAuthoringCode({
+      code: `
+const { Card, Row, Col, Statistic } = ctx.libs.antd;
+
+async function fetchCount(collection, filter) {
+  const res = await ctx.api.resource('list', {
+    resource: collection,
+    params: { filter: filter || {}, pageSize: 1 }
+  });
+  return res.data?.total || 0;
+}
+
+const activeGroups = await fetchCount('employer_groups', { group_status: 'Active' });
+
+ctx.render(
+  <Row gutter={[16, 16]}>
+    <Col span={4}>
+      <Card>
+        <Statistic title="Active Employer Groups" value={activeGroups} />
+      </Card>
+    </Col>
+  </Row>
+);
+`,
+      path: '$.opencodeActionResource.code',
+      modelUse: 'JSBlockModel',
+    });
+    expect(opencodeActionResourceErrors).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          ruleId: 'runjs-api-resource-call-invalid',
+          details: expect.objectContaining({
+            repairClass: 'switch-to-resource-api',
+            capability: "ctx.api.resource('list')",
+            method: 'list',
+          }),
+        }),
+      ]),
+    );
+
+    const apiResourceFactoryErrors = inspectRunJsAuthoringCode({
+      code: "ctx.render(null);\nawait ctx.api.resource('tasks').list({ pageSize: 1 });",
+      path: '$.apiResourceFactory.code',
+      modelUse: 'JSBlockModel',
+    });
+    expect(apiResourceFactoryErrors).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          ruleId: 'runjs-api-resource-call-invalid',
+          details: expect.objectContaining({
+            repairClass: 'switch-to-resource-api',
+            capability: "ctx.api.resource('tasks').list",
+            method: 'list',
+          }),
+        }),
+      ]),
+    );
+
+    const opencodeActionArgumentResourceErrors = inspectRunJsAuthoringCode({
+      code: `
+var antd = ctx.libs.antd;
+var h = ctx.React.createElement;
+
+var Card = antd.Card;
+var Row = antd.Row;
+var Col = antd.Col;
+var Statistic = antd.Statistic;
+
+function card(title, value) {
+  return h(Card, null, h(Statistic, { title: title, value: value }));
+}
+
+(async function() {
+  var results = await Promise.all([
+    ctx.api.resource('employer_groups', 'list', { filter: { group_status: 'Active' } }),
+    ctx.api.resource('policies', 'list', { filter: { policy_status: 'Active' } }),
+    ctx.api.resource('claims', 'list', {}),
+    ctx.api.resource('reimbursement_requests', 'list', {
+      filter: { request_status: { $in: ['Draft', 'Submitted', 'Under Review'] } }
+    })
+  ]);
+  ctx.render(h(Row, { gutter: [16, 16] },
+    h(Col, { span: 4 }, card('Active Employer Groups', results[0].data.length)),
+    h(Col, { span: 4 }, card('Active Policies', results[1].data.length))
+  ));
+})();
+ctx.render('Loading');
+`,
+      path: '$.opencodeActionArgumentResource.code',
+      modelUse: 'JSBlockModel',
+    });
+    expect(opencodeActionArgumentResourceErrors).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          ruleId: 'runjs-api-resource-call-invalid',
+          details: expect.objectContaining({
+            repairClass: 'switch-to-resource-api',
+            capability: "ctx.api.resource('employer_groups', 'list')",
+            method: 'list',
+          }),
+        }),
+        expect.objectContaining({
+          ruleId: 'runjs-api-resource-call-invalid',
+          details: expect.objectContaining({
+            repairClass: 'switch-to-resource-api',
+            capability: "ctx.api.resource('claims', 'list')",
+            method: 'list',
+          }),
+        }),
+      ]),
+    );
+
+    const opencodeCollectionResourceErrors = inspectRunJsAuthoringCode({
+      code: `
+const React = ctx.React;
+
+function DashboardKPIs() {
+  React.useEffect(function() {
+    async function fetchData() {
+      try {
+        var results = await Promise.all([
+          ctx.api.resource('employer_groups').list({ pageSize: 1, filters: JSON.stringify({ $and: [{ group_status: 'Active' }] }) }),
+          ctx.api.resource('policies').list({ pageSize: 1, filters: JSON.stringify({ $and: [{ policy_status: 'Active' }] }) }),
+          ctx.api.resource('claims').list({ pageSize: 1000 }),
+          ctx.api.resource('reimbursement_requests').list({ pageSize: 1000 }),
+        ]);
+        return results;
+      } catch (e) {
+        console.error(e);
+      }
+    }
+    fetchData();
+  }, []);
+  return null;
+}
+
+ctx.render(React.createElement(DashboardKPIs));
+`,
+      path: '$.opencodeCollectionResource.code',
+      modelUse: 'JSBlockModel',
+    });
+    expect(opencodeCollectionResourceErrors).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          ruleId: 'runjs-api-resource-call-invalid',
+          details: expect.objectContaining({
+            repairClass: 'switch-to-resource-api',
+            capability: "ctx.api.resource('employer_groups').list",
+            method: 'list',
+          }),
+        }),
+        expect.objectContaining({
+          ruleId: 'runjs-api-resource-call-invalid',
+          details: expect.objectContaining({
+            repairClass: 'switch-to-resource-api',
+            capability: "ctx.api.resource('claims').list",
+            method: 'list',
+          }),
+        }),
+      ]),
+    );
 
     expect(
       inspectRunJsAuthoringCode({
@@ -2276,7 +2863,13 @@ describe.skip('flowSurfaces backend authoring aggregate errors', () => {
         path: '$.ordinaryNestedRunjs.code',
         modelUse: 'JSBlockModel',
       }),
-    ).toEqual([]);
+    ).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          ruleId: 'runjs-nested-runjs-forbidden',
+        }),
+      ]),
+    );
 
     const templateLiteralErrors = inspectRunJsAuthoringCode({
       code: 'ctx.render(`${ctx.openView({})}`);',
@@ -2291,6 +2884,861 @@ describe.skip('flowSurfaces backend authoring aggregate errors', () => {
       inspectRunJsAuthoringCode({
         code: 'ctx.render(`literal fetch("/not-executed") text`);',
         path: '$.templateLiteralText.code',
+        modelUse: 'JSBlockModel',
+      }),
+    ).toEqual([]);
+  });
+
+  it('should validate RunJS ctx.api members through direct access, aliases, destructuring, and dynamic access', () => {
+    expect(
+      inspectRunJsAuthoringCode({
+        code: [
+          "var requestPromise = ctx.api.request({ url: 'https://example.com/status' });",
+          'var role = ctx.api.auth.role;',
+          'var token = ctx.api.auth.token;',
+          'var authenticator = ctx.api.auth.authenticator;',
+          'var locale = ctx.api.auth.locale;',
+          'var auth = ctx.api.auth;',
+          'var api = ctx.api;',
+          'var apiAuth = api.auth;',
+          'var request = ctx.api.request;',
+          'var { request: destructuredRequest, resource } = ctx.api;',
+          'var assignedRequest;',
+          '({ request: assignedRequest } = ctx.api);',
+          'var authRole = apiAuth.role;',
+          'var localeLowercase = ctx.api.auth.locale.toLowerCase();',
+          'var roleLength = auth.role.length;',
+          'var tokenPreview = apiAuth.token && apiAuth.token.slice(0, 8);',
+          "var requestPromiseByAlias = request({ url: 'https://example.com/status' });",
+          "var requestPromiseByDestructuredAlias = destructuredRequest({ url: 'https://example.com/status' });",
+          "var requestPromiseByAssignedAlias = assignedRequest({ url: 'https://example.com/status' });",
+          'var fields = { requestPromise: requestPromise, role: role, token: token, authenticator: authenticator, locale: locale, authRole: authRole, localeLowercase: localeLowercase, roleLength: roleLength, tokenPreview: tokenPreview };',
+          'ctx.render(auth.locale || fields.role);',
+        ].join('\n'),
+        path: '$.validCtxApiMembers.code',
+        modelUse: 'JSBlockModel',
+      }),
+    ).toEqual([]);
+
+    [
+      {
+        code: 'ctx.render(null);\nvar useRequest = ctx.api.useRequest;',
+        path: '$.directUnknownCtxApiMember.code',
+        ruleId: 'runjs-ctx-api-member-unknown',
+        capability: 'ctx.api.useRequest',
+      },
+      {
+        code: 'ctx.render(null);\nvar requestDefaults = ctx.api.request.defaults;',
+        path: '$.nestedCtxApiRequestMember.code',
+        ruleId: 'runjs-ctx-api-member-unknown',
+        capability: 'ctx.api.request.defaults',
+      },
+      {
+        code: 'ctx.render(null);\nvar { defaults } = ctx.api.request;',
+        path: '$.destructuredNestedCtxApiRequestMember.code',
+        ruleId: 'runjs-ctx-api-member-unknown',
+        capability: 'ctx.api.request.defaults',
+      },
+      {
+        code: 'ctx.render(null);\nvar request = ctx.api.request;\nrequest.use(function() {});',
+        path: '$.aliasedNestedCtxApiRequestMember.code',
+        ruleId: 'runjs-ctx-api-member-unknown',
+        capability: 'ctx.api.request.use',
+      },
+      {
+        code: 'ctx.render(null);\nvar request;\n({ request } = ctx.api);\nrequest.use(function() {});',
+        path: '$.assignedDestructuredNestedCtxApiRequestMember.code',
+        ruleId: 'runjs-ctx-api-member-unknown',
+        capability: 'ctx.api.request.use',
+      },
+      {
+        code: 'ctx.render(null);\nvar list = ctx.api.resource.list;',
+        path: '$.nestedCtxApiResourceMember.code',
+        ruleId: 'runjs-ctx-api-member-unknown',
+        capability: 'ctx.api.resource.list',
+      },
+      {
+        code: 'ctx.render(ctx.api.resource?.list);',
+        path: '$.optionalNestedCtxApiResourceMember.code',
+        ruleId: 'runjs-ctx-api-member-unknown',
+        capability: 'ctx.api.resource.list',
+      },
+      {
+        code: 'ctx.render(null);\nvar resource = ctx.api.resource;\nvar bind = resource.bind;',
+        path: '$.aliasedNestedCtxApiResourceMember.code',
+        ruleId: 'runjs-ctx-api-member-unknown',
+        capability: 'ctx.api.resource.bind',
+      },
+      {
+        code: "ctx.render(null);\nvar api = ctx.api;\nvar list = api.resource.list;\napi.resource.list({ resource: 'tasks' });",
+        path: '$.bareAndCalledAliasedNestedCtxApiResourceMember.code',
+        ruleId: 'runjs-ctx-api-member-unknown',
+        capability: 'ctx.api.resource.list',
+      },
+      {
+        code: 'ctx.render(null);\nvar { list } = ctx.api.resource;',
+        path: '$.destructuredNestedCtxApiResourceMember.code',
+        ruleId: 'runjs-ctx-api-member-unknown',
+        capability: 'ctx.api.resource.list',
+      },
+      {
+        code: 'ctx.render(null);\nvar list;\n({ list } = ctx.api.resource);',
+        path: '$.assignedDestructuredNestedCtxApiResourceMember.code',
+        ruleId: 'runjs-ctx-api-member-unknown',
+        capability: 'ctx.api.resource.list',
+      },
+      {
+        code: [
+          'ctx.render(null);',
+          'var request = ctx.api.request;',
+          'function rebindRequest() { request = { use: function() {} }; }',
+          'request.use(function() {});',
+        ].join('\n'),
+        path: '$.nestedFunctionReassignedCtxApiRequestAlias.code',
+        ruleId: 'runjs-ctx-api-member-unknown',
+        capability: 'ctx.api.request.use',
+      },
+      {
+        code: [
+          'ctx.render(null);',
+          'let api = ctx.api;',
+          'if (Math.random()) api = { useRequest: function() {} };',
+          'api.useRequest({});',
+        ].join('\n'),
+        path: '$.conditionalReassignedCtxApiAlias.code',
+        ruleId: 'runjs-ctx-api-member-unknown',
+        capability: 'ctx.api.useRequest',
+      },
+      {
+        code: [
+          'ctx.render(null);',
+          'var enabled = Math.random() > 0.5;',
+          'var api = enabled ? ctx.api : {};',
+          'api.useRequest({});',
+        ].join('\n'),
+        path: '$.conditionalInitializedCtxApiAlias.code',
+        ruleId: 'runjs-ctx-api-member-unknown',
+        capability: 'ctx.api.useRequest',
+      },
+      {
+        code: [
+          'ctx.render(null);',
+          'var enabled = Math.random() > 0.5;',
+          'var useRequest = (enabled ? ctx.api : {}).useRequest;',
+        ].join('\n'),
+        path: '$.conditionalCtxApiObjectMemberAccess.code',
+        ruleId: 'runjs-ctx-api-member-unknown',
+        capability: 'ctx.api.useRequest',
+      },
+      {
+        code: [
+          'ctx.render(null);',
+          'var enabled = Math.random() > 0.5;',
+          'var request = enabled && ctx.api.request;',
+          'request.use(function() {});',
+        ].join('\n'),
+        path: '$.logicalInitializedCtxApiRequestAlias.code',
+        ruleId: 'runjs-ctx-api-member-unknown',
+        capability: 'ctx.api.request.use',
+      },
+      {
+        code: [
+          'ctx.render(null);',
+          'var enabled = Math.random() > 0.5;',
+          'var use = (enabled && ctx.api.request).use;',
+        ].join('\n'),
+        path: '$.logicalCtxApiRequestObjectMemberAccess.code',
+        ruleId: 'runjs-ctx-api-member-unknown',
+        capability: 'ctx.api.request.use',
+      },
+      {
+        code: [
+          'ctx.render(null);',
+          'var enabled = Math.random() > 0.5;',
+          'var { useRequest } = enabled ? ctx.api : {};',
+        ].join('\n'),
+        path: '$.conditionalDestructuredUnknownCtxApiMember.code',
+        ruleId: 'runjs-ctx-api-member-unknown',
+        capability: 'ctx.api.useRequest',
+      },
+      {
+        code: ['ctx.render(null);', 'let api = null;', 'api ||= ctx.api;', 'api.useRequest({});'].join('\n'),
+        path: '$.logicalOrAssignedCtxApiAlias.code',
+        ruleId: 'runjs-ctx-api-member-unknown',
+        capability: 'ctx.api.useRequest',
+      },
+      {
+        code: ['ctx.render(null);', 'let api = {};', 'api &&= ctx.api;', 'api.useRequest({});'].join('\n'),
+        path: '$.logicalAndAssignedCtxApiAlias.code',
+        ruleId: 'runjs-ctx-api-member-unknown',
+        capability: 'ctx.api.useRequest',
+      },
+      {
+        code: ['ctx.render(null);', 'let api = null;', 'api ??= ctx.api;', 'api.useRequest({});'].join('\n'),
+        path: '$.nullishAssignedCtxApiAlias.code',
+        ruleId: 'runjs-ctx-api-member-unknown',
+        capability: 'ctx.api.useRequest',
+      },
+      {
+        code: [
+          'ctx.render(null);',
+          'let api = ctx.api;',
+          'api ||= { useRequest: function() {} };',
+          'api.useRequest({});',
+        ].join('\n'),
+        path: '$.logicalOrMaybeReassignedCtxApiAlias.code',
+        ruleId: 'runjs-ctx-api-member-unknown',
+        capability: 'ctx.api.useRequest',
+      },
+      {
+        code: [
+          'ctx.render(null);',
+          'let api = ctx.api;',
+          'api ??= { useRequest: function() {} };',
+          'api.useRequest({});',
+        ].join('\n'),
+        path: '$.nullishMaybeReassignedCtxApiAlias.code',
+        ruleId: 'runjs-ctx-api-member-unknown',
+        capability: 'ctx.api.useRequest',
+      },
+      {
+        code: 'ctx.render(null);\nvar api = ctx.api;\napi.useRequest({});',
+        path: '$.aliasedUnknownCtxApiMember.code',
+        ruleId: 'runjs-ctx-api-member-unknown',
+        capability: 'ctx.api.useRequest',
+      },
+      {
+        code: 'ctx.render(null);\nvar useRequest;\n({ useRequest } = ctx.api);',
+        path: '$.assignedUnknownCtxApiMember.code',
+        ruleId: 'runjs-ctx-api-member-unknown',
+        capability: 'ctx.api.useRequest',
+      },
+      {
+        code: 'ctx.render(null);\nvar { useRequest } = ctx.api;',
+        path: '$.destructuredUnknownCtxApiMember.code',
+        ruleId: 'runjs-ctx-api-member-unknown',
+        capability: 'ctx.api.useRequest',
+      },
+      {
+        code: 'ctx.render(null);\nctx?.api?.useRequest?.({});',
+        path: '$.optionalUnknownCtxApiMember.code',
+        ruleId: 'runjs-ctx-api-member-unknown',
+        capability: 'ctx.api.useRequest',
+      },
+      {
+        code: 'ctx.render(null);\nvar methodName = "useRequest";\nctx.api[methodName]({});',
+        path: '$.dynamicCtxApiMember.code',
+        ruleId: 'runjs-ctx-api-member-dynamic-unresolved',
+        capability: 'ctx.api.[...]',
+      },
+      {
+        code: 'ctx.render(null);\nvar memberName = "useRequest";\nvar { [memberName]: value } = ctx.api;',
+        path: '$.dynamicDestructuredCtxApiMember.code',
+        ruleId: 'runjs-ctx-api-member-dynamic-unresolved',
+        capability: 'ctx.api.[...]',
+      },
+      {
+        code: 'ctx.render(null);\nctx.api.auth.setToken("x");',
+        path: '$.unsupportedCtxApiAuthMember.code',
+        ruleId: 'runjs-ctx-api-auth-member-unsupported',
+        capability: 'ctx.api.auth.setToken',
+      },
+      {
+        code: 'ctx.render(null);\nvar auth;\n({ auth } = ctx.api);\nauth.setToken("x");',
+        path: '$.assignedDestructuredUnsupportedCtxApiAuthMember.code',
+        ruleId: 'runjs-ctx-api-auth-member-unsupported',
+        capability: 'ctx.api.auth.setToken',
+      },
+      {
+        code: [
+          'ctx.render(null);',
+          'let auth = ctx.api.auth;',
+          'auth && (auth = { setToken: function() {} });',
+          'auth.setToken("x");',
+        ].join('\n'),
+        path: '$.logicalReassignedCtxApiAuthAlias.code',
+        ruleId: 'runjs-ctx-api-auth-member-unsupported',
+        capability: 'ctx.api.auth.setToken',
+      },
+      {
+        code: 'ctx.render(null);\nctx.api.auth.token = "x";',
+        path: '$.readonlyCtxApiAuthTokenWrite.code',
+        ruleId: 'runjs-ctx-api-auth-member-readonly',
+        capability: 'ctx.api.auth.token',
+      },
+      {
+        code: 'ctx.render(null);\nvar auth = ctx.api.auth;\nauth.role = "admin";',
+        path: '$.aliasedReadonlyCtxApiAuthRoleWrite.code',
+        ruleId: 'runjs-ctx-api-auth-member-readonly',
+        capability: 'ctx.api.auth.role',
+      },
+      {
+        code: 'ctx.render(null);\nvar api = ctx.api;\napi.auth.locale++;',
+        path: '$.aliasedReadonlyCtxApiAuthLocaleUpdate.code',
+        ruleId: 'runjs-ctx-api-auth-member-readonly',
+        capability: 'ctx.api.auth.locale',
+      },
+      {
+        code: 'ctx.render(null);\nvar auth;\n({ auth } = ctx.api);\ndelete auth.authenticator;',
+        path: '$.assignedReadonlyCtxApiAuthAuthenticatorDelete.code',
+        ruleId: 'runjs-ctx-api-auth-member-readonly',
+        capability: 'ctx.api.auth.authenticator',
+      },
+      {
+        code: 'ctx.render(null);\nvar source = { token: "x" };\n({ token: ctx.api.auth.token } = source);',
+        path: '$.destructuringTargetReadonlyCtxApiAuthTokenWrite.code',
+        ruleId: 'runjs-ctx-api-auth-member-readonly',
+        capability: 'ctx.api.auth.token',
+      },
+      {
+        code: 'ctx.render(null);\nvar authenticator = ctx.api.auth.authenticator;\nauthenticator.options = {};',
+        path: '$.readonlyCtxApiAuthenticatorAliasPropertyWrite.code',
+        ruleId: 'runjs-ctx-api-auth-member-readonly',
+        capability: 'ctx.api.auth.authenticator.options',
+      },
+      {
+        code: 'ctx.render(null);\nvar { authenticator } = ctx.api.auth;\nauthenticator.options = {};',
+        path: '$.readonlyCtxApiAuthenticatorDestructuredPropertyWrite.code',
+        ruleId: 'runjs-ctx-api-auth-member-readonly',
+        capability: 'ctx.api.auth.authenticator.options',
+      },
+      {
+        code: 'ctx.render(null);\nvar authenticator;\n({ authenticator } = ctx.api.auth);\nauthenticator.options = {};',
+        path: '$.readonlyCtxApiAuthenticatorAssignedDestructuredPropertyWrite.code',
+        ruleId: 'runjs-ctx-api-auth-member-readonly',
+        capability: 'ctx.api.auth.authenticator.options',
+      },
+      {
+        code: 'ctx.render(null);\nvar { auth: { authenticator } } = ctx.api;\nauthenticator.options = {};',
+        path: '$.readonlyCtxApiNestedAuthenticatorDestructuredPropertyWrite.code',
+        ruleId: 'runjs-ctx-api-auth-member-readonly',
+        capability: 'ctx.api.auth.authenticator.options',
+      },
+      {
+        code: 'ctx.render(null);\nvar authenticator;\n({ auth: { authenticator } } = ctx.api);\nauthenticator.options = {};',
+        path: '$.readonlyCtxApiNestedAuthenticatorAssignedDestructuredPropertyWrite.code',
+        ruleId: 'runjs-ctx-api-auth-member-readonly',
+        capability: 'ctx.api.auth.authenticator.options',
+      },
+      {
+        code: 'ctx.render(null);\nfor (ctx.api.auth.role in { admin: true }) {}',
+        path: '$.forInReadonlyCtxApiAuthRoleWrite.code',
+        ruleId: 'runjs-ctx-api-auth-member-readonly',
+        capability: 'ctx.api.auth.role',
+      },
+      {
+        code: 'ctx.render(null);\nvar auth = ctx.api.auth;\nfor (auth.token of ["x"]) {}',
+        path: '$.forOfAliasedReadonlyCtxApiAuthTokenWrite.code',
+        ruleId: 'runjs-ctx-api-auth-member-readonly',
+        capability: 'ctx.api.auth.token',
+      },
+      {
+        code: 'ctx.render(null);\nasync function load(items) { var auth = ctx.api.auth; for await (auth.locale of items) {} }',
+        path: '$.forAwaitOfAliasedReadonlyCtxApiAuthLocaleWrite.code',
+        ruleId: 'runjs-ctx-api-auth-member-readonly',
+        capability: 'ctx.api.auth.locale',
+      },
+      {
+        code: 'ctx.render(null);\nvar { setToken } = ctx.api.auth;',
+        path: '$.destructuredUnsupportedCtxApiAuthMember.code',
+        ruleId: 'runjs-ctx-api-auth-member-unsupported',
+        capability: 'ctx.api.auth.setToken',
+      },
+    ].forEach(({ capability, code, path, ruleId }) => {
+      expect(
+        inspectRunJsAuthoringCode({
+          code,
+          path,
+          modelUse: 'JSBlockModel',
+        }),
+      ).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            ruleId,
+            details: expect.objectContaining({
+              repairClass: 'ctx-root-mismatch-stop',
+              capability,
+            }),
+          }),
+        ]),
+      );
+    });
+
+    [
+      {
+        code: "ctx.render(null);\nctx.api.resource.list({ resource: 'tasks', pageSize: 1 });",
+        path: '$.directInvalidApiResourceCall.code',
+        capability: 'ctx.api.resource.list',
+        method: 'list',
+      },
+      {
+        code: "ctx.render(null);\nvar api = ctx.api;\napi.resource.list({ resource: 'tasks', pageSize: 1 });",
+        path: '$.aliasedInvalidApiResourceCall.code',
+        capability: 'api.resource.list',
+        method: 'list',
+      },
+      {
+        code: "ctx.render(null);\nvar { resource } = ctx.api;\nresource('tasks').list({ pageSize: 1 });",
+        path: '$.destructuredInvalidApiResourceFactoryCall.code',
+        capability: "resource('tasks').list",
+        method: 'list',
+      },
+      {
+        code: "ctx.render(null);\nvar resource;\n({ resource } = ctx.api);\nresource('tasks').list({ pageSize: 1 });",
+        path: '$.assignedDestructuredInvalidApiResourceFactoryCall.code',
+        capability: "resource('tasks').list",
+        method: 'list',
+      },
+      {
+        code: "ctx.render(null);\nvar resource = ctx.api.resource;\nresource('tasks', 'get', { filterByTk: 1 });",
+        path: '$.aliasedInvalidApiResourceActionCall.code',
+        capability: "resource('tasks', 'get')",
+        method: 'get',
+      },
+      {
+        code: "ctx.render(null);\nvar tasks = ctx.api.resource('tasks');\ntasks.list({ pageSize: 1 });",
+        path: '$.resourceHandleAliasInvalidApiResourceCall.code',
+        capability: 'tasks.list',
+        method: 'list',
+      },
+      {
+        code: "ctx.render(null);\nvar { list } = ctx.api.resource('tasks');\nlist({ pageSize: 1 });",
+        path: '$.resourceHandleMethodDestructuredInvalidApiResourceCall.code',
+        capability: 'list',
+        method: 'list',
+      },
+      {
+        code: "ctx.render(null);\nvar list = ctx.api.resource('tasks').list;\nlist({ pageSize: 1 });",
+        path: '$.resourceHandleMethodAliasFromFactoryInvalidApiResourceCall.code',
+        capability: 'list',
+        method: 'list',
+      },
+      {
+        code: "ctx.render(null);\nvar list;\nlist = ctx.api.resource('tasks').list;\nlist({ pageSize: 1 });",
+        path: '$.resourceHandleMethodAssignedAliasFromFactoryInvalidApiResourceCall.code',
+        capability: 'list',
+        method: 'list',
+      },
+      {
+        code: "ctx.render(null);\nvar list;\n({ list } = ctx.api.resource('tasks'));\nlist({ pageSize: 1 });",
+        path: '$.resourceHandleMethodAssignedDestructuredInvalidApiResourceCall.code',
+        capability: 'list',
+        method: 'list',
+      },
+      {
+        code: "ctx.render(null);\nvar tasks = ctx.api.resource('tasks');\nvar localTasks = tasks;\nlocalTasks.get({ filterByTk: 1 });",
+        path: '$.resourceHandleSecondLevelAliasInvalidApiResourceCall.code',
+        capability: 'localTasks.get',
+        method: 'get',
+      },
+      {
+        code: "ctx.render(null);\nvar tasks = ctx.api.resource('tasks');\nvar list = tasks.list;\nlist({ pageSize: 1 });",
+        path: '$.resourceHandleMethodAliasFromHandleInvalidApiResourceCall.code',
+        capability: 'list',
+        method: 'list',
+      },
+      {
+        code: "ctx.render(null);\nvar list = ctx.api.resource('tasks').list;\nvar localList = list;\nlocalList({ pageSize: 1 });",
+        path: '$.resourceHandleMethodSecondLevelAliasInvalidApiResourceCall.code',
+        capability: 'localList',
+        method: 'list',
+      },
+      {
+        code: "ctx.render(null);\nvar list = ctx.api.resource('tasks').list;\nvar localList;\nlocalList = list;\nlocalList({ pageSize: 1 });",
+        path: '$.resourceHandleMethodAssignedSecondLevelAliasInvalidApiResourceCall.code',
+        capability: 'localList',
+        method: 'list',
+      },
+      {
+        code: "ctx.render(null);\nvar list = ctx.api.resource('tasks').list;\nvar localList = (0, list);\nlocalList({ pageSize: 1 });",
+        path: '$.resourceHandleMethodSequenceAliasInvalidApiResourceCall.code',
+        capability: 'localList',
+        method: 'list',
+      },
+      {
+        code: [
+          'ctx.render(null);',
+          'var enabled = Math.random() > 0.5;',
+          "var list = ctx.api.resource('tasks').list;",
+          'var localList = enabled ? list : function() {};',
+          'localList({ pageSize: 1 });',
+        ].join('\n'),
+        path: '$.resourceHandleMethodConditionalAliasInvalidApiResourceCall.code',
+        capability: 'localList',
+        method: 'list',
+      },
+      {
+        code: [
+          'ctx.render(null);',
+          'var enabled = Math.random() > 0.5;',
+          "var list = ctx.api.resource('tasks').list;",
+          'var localList = enabled && list;',
+          'localList({ pageSize: 1 });',
+        ].join('\n'),
+        path: '$.resourceHandleMethodLogicalAliasInvalidApiResourceCall.code',
+        capability: 'localList',
+        method: 'list',
+      },
+      {
+        code: "ctx.render(null);\nctx.api.resource('tasks').list.call(null, { pageSize: 1 });",
+        path: '$.resourceMethodCallInvokeInvalidApiResourceCall.code',
+        capability: "ctx.api.resource('tasks').list.call",
+        method: 'list',
+      },
+      {
+        code: "ctx.render(null);\nctx.api.resource('tasks').get.apply(null, [{ filterByTk: 1 }]);",
+        path: '$.resourceMethodApplyInvokeInvalidApiResourceCall.code',
+        capability: "ctx.api.resource('tasks').get.apply",
+        method: 'get',
+      },
+      {
+        code: "ctx.render(null);\nctx.api.resource('tasks').create.bind(null, { values: {} });",
+        path: '$.resourceMethodBindInvokeInvalidApiResourceCall.code',
+        capability: "ctx.api.resource('tasks').create.bind",
+        method: 'create',
+      },
+      {
+        code: "ctx.render(null);\nvar list = ctx.api.resource('tasks').list;\nlist.call(null, { pageSize: 1 });",
+        path: '$.resourceMethodAliasCallInvokeInvalidApiResourceCall.code',
+        capability: 'list.call',
+        method: 'list',
+      },
+      {
+        code: [
+          'ctx.render(null);',
+          'var enabled = Math.random() > 0.5;',
+          "var tasks = enabled ? ctx.api.resource('tasks') : {};",
+          'tasks.list({ pageSize: 1 });',
+        ].join('\n'),
+        path: '$.conditionalResourceHandleAliasInvalidApiResourceCall.code',
+        capability: 'tasks.list',
+        method: 'list',
+      },
+      {
+        code: [
+          'ctx.render(null);',
+          'var enabled = Math.random() > 0.5;',
+          "(enabled ? ctx.api.resource('tasks') : {}).list({ pageSize: 1 });",
+        ].join('\n'),
+        path: '$.conditionalDirectResourceHandleInvalidApiResourceCall.code',
+        capability: "ctx.api.resource('tasks').list",
+        method: 'list',
+      },
+      {
+        code: [
+          'ctx.render(null);',
+          'var enabled = Math.random() > 0.5;',
+          "var tasks = ctx.api.resource('tasks');",
+          '(enabled ? tasks : {}).get({ filterByTk: 1 });',
+        ].join('\n'),
+        path: '$.conditionalDirectResourceHandleAliasInvalidApiResourceCall.code',
+        capability: '(enabled ? tasks : {}).get',
+        method: 'get',
+      },
+      {
+        code: [
+          'ctx.render(null);',
+          'var enabled = Math.random() > 0.5;',
+          "var list = enabled ? ctx.api.resource('tasks').list : function() {};",
+          'list({ pageSize: 1 });',
+        ].join('\n'),
+        path: '$.conditionalResourceMethodAliasInvalidApiResourceCall.code',
+        capability: 'list',
+        method: 'list',
+      },
+      {
+        code: [
+          'ctx.render(null);',
+          'var enabled = Math.random() > 0.5;',
+          "var list = ctx.api.resource('tasks').list;",
+          '(enabled ? list : function() {})({ pageSize: 1 });',
+        ].join('\n'),
+        path: '$.conditionalDirectResourceMethodAliasInvalidApiResourceCall.code',
+        capability: 'enabled ? list : function() {}',
+        method: 'list',
+      },
+      {
+        code: [
+          'ctx.render(null);',
+          'var enabled = Math.random() > 0.5;',
+          "var list = enabled && ctx.api.resource('tasks').list;",
+          'list({ pageSize: 1 });',
+        ].join('\n'),
+        path: '$.logicalResourceMethodAliasInvalidApiResourceCall.code',
+        capability: 'list',
+        method: 'list',
+      },
+      {
+        code: "ctx.render(null);\n(0, ctx.api.resource('tasks').list)({ pageSize: 1 });",
+        path: '$.sequenceWrappedDirectResourceMethodInvalidApiResourceCall.code',
+        capability: "0, ctx.api.resource('tasks').list",
+        method: 'list',
+      },
+      {
+        code: [
+          'ctx.render(null);',
+          'var enabled = Math.random() > 0.5;',
+          "(enabled ? ctx.api.resource('tasks').list : function(){})({ pageSize: 1 });",
+        ].join('\n'),
+        path: '$.conditionalWrappedDirectResourceMethodInvalidApiResourceCall.code',
+        capability: "enabled ? ctx.api.resource('tasks').list : function(){}",
+        method: 'list',
+      },
+      {
+        code: "ctx.render(null);\n(0, ctx.api.resource)('tasks', 'list', { pageSize: 1 });",
+        path: '$.sequenceWrappedDirectResourceFactoryInvalidApiResourceCall.code',
+        capability: "0, ctx.api.resource('tasks', 'list')",
+        method: 'list',
+      },
+      {
+        code: "ctx.render(null);\nvar tasks = ctx.api.resource('tasks');\n(0, tasks.list)({ pageSize: 1 });",
+        path: '$.sequenceWrappedResourceHandleMethodAliasInvalidApiResourceCall.code',
+        capability: '0, tasks.list',
+        method: 'list',
+      },
+    ].forEach(({ capability, code, method, path }) => {
+      const errors = inspectRunJsAuthoringCode({
+        code,
+        path,
+        modelUse: 'JSBlockModel',
+      });
+      expect(errors).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            ruleId: 'runjs-api-resource-call-invalid',
+            details: expect.objectContaining({
+              repairClass: 'switch-to-resource-api',
+              capability,
+              method,
+            }),
+          }),
+        ]),
+      );
+      expect(errors.map((error: any) => error.ruleId)).not.toContain('runjs-ctx-api-member-unknown');
+    });
+
+    [
+      'ctx.render(null);\nlet api = ctx.api;\napi = { useRequest: function() {} };\napi.useRequest();',
+      'ctx.render(null);\nlet api = ctx.api;\napi &&= { useRequest: function() {} };\napi.useRequest();',
+      'ctx.render(null);\nlet auth = ctx.api.auth;\nauth = { setToken: function() {} };\nauth.setToken();',
+      'ctx.render(null);\nlet request = ctx.api.request;\nrequest &&= { use: function() {} };\nrequest.use();',
+      'ctx.render(null);\nvar api = ctx.api;\nvar api = { useRequest: function() {} };\napi.useRequest();',
+      'ctx.render(null);\nvar auth = ctx.api.auth;\nvar auth = { setToken: function() {} };\nauth.setToken();',
+      'ctx.render(null);\nvar request = ctx.api.request;\nvar request = { use: function() {} };\nrequest.use();',
+      'ctx.render(null);\nlet api = ctx.api;\napi = { useRequest: function() {} };\nlet localApi = api;\nlocalApi.useRequest();',
+      'ctx.render(null);\nlet request = ctx.api.request;\nrequest = { use: function() {} };\nlet localRequest = request;\nlocalRequest.use();',
+      'ctx.render(null);\nlet authenticator = ctx.api.auth.authenticator;\nauthenticator = {};\nauthenticator.options = {};',
+      'ctx.render(null);\nlet tasks = ctx.api.resource("tasks");\ntasks = { list: function() {} };\nlet localTasks = tasks;\nlocalTasks.list();',
+      'ctx.render(null);\nlet tasks = ctx.api.resource("tasks");\ntasks &&= { list: function() {} };\ntasks.list();',
+      'ctx.render(null);\nlet list = ctx.api.resource("tasks").list;\nlist &&= function() {};\nlist();',
+      'ctx.render(null);\nlet api = ctx.api;\nfor (api of [{}]) {}\napi.useRequest();',
+      'ctx.render(null);\nlet tasks = ctx.api.resource("tasks");\nfor (tasks of [{}]) {}\ntasks.list();',
+      'ctx.render(null);\nlet api = ctx.api;\nfor (api in { active: true }) {}\napi.useRequest();',
+      [
+        'ctx.render(null);',
+        'let outer = 0;',
+        'let api = ctx.api;',
+        'for (outer of [1]) { for (api of [{}]) {} }',
+        'api.useRequest();',
+      ].join('\n'),
+      [
+        'ctx.render(null);',
+        'let key = "";',
+        'let api = ctx.api;',
+        'for (key in { active: true }) { for (api of [{}]) {} }',
+        'api.useRequest();',
+      ].join('\n'),
+      [
+        'ctx.render(null);',
+        'let key = "";',
+        'let api = ctx.api;',
+        'for (key in { ["active"]: true }) { for (api of [{}]) {} }',
+        'api.useRequest();',
+      ].join('\n'),
+      [
+        'ctx.render(null);',
+        'let key = "";',
+        'let api = ctx.api;',
+        'for (key in { __proto__() {} }) { for (api of [{}]) {} }',
+        'api.useRequest();',
+      ].join('\n'),
+      [
+        'ctx.render(null);',
+        'let outer = 0;',
+        'let api = ctx.api;',
+        'for (outer of [,]) { for (api of [{}]) {} }',
+        'api.useRequest();',
+      ].join('\n'),
+      [
+        'ctx.render(null);',
+        'var resource = ctx.api.resource;',
+        'var resource = function() { return { list: function() {} }; };',
+        "resource('tasks').list();",
+      ].join('\n'),
+    ].forEach((code, index) => {
+      expect(
+        inspectRunJsAuthoringCode({
+          code,
+          path: `$.reassignedCtxApiAlias[${index}].code`,
+          modelUse: 'JSBlockModel',
+        }),
+      ).toEqual([]);
+    });
+
+    expect(
+      inspectRunJsAuthoringCode({
+        code: [
+          'ctx.render(null);',
+          'let items = [];',
+          'let outer = 0;',
+          'let api = ctx.api;',
+          'for (outer of items) { for (api of [{}]) {} }',
+          'api.useRequest();',
+        ].join('\n'),
+        path: '$.dynamicNestedLoopKeepsCtxApiAlias.code',
+        modelUse: 'JSBlockModel',
+      }),
+    ).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          ruleId: 'runjs-ctx-api-member-unknown',
+          details: expect.objectContaining({
+            capability: 'ctx.api.useRequest',
+          }),
+        }),
+      ]),
+    );
+
+    const sharedResourceHelperErrors = inspectRunJsAuthoringCode({
+      code: [
+        'async function fetchAll(resourceName, filter) {',
+        "  ctx.initResource('MultiRecordResource');",
+        '  ctx.resource.setResourceName(resourceName);',
+        '  ctx.resource.setPageSize(200);',
+        '  if (filter) ctx.resource.setFilter(filter);',
+        '  await ctx.resource.refresh();',
+        '  return ctx.resource.getData() || [];',
+        '}',
+        "const activeGroups = await fetchAll('employer_groups', { group_status: { $eq: 'Active' } });",
+        "const claimsRows = await fetchAll('claims');",
+        "ctx.render(ctx.React.createElement('div', null, String(activeGroups.length + claimsRows.length)));",
+      ].join('\n'),
+      path: '$.sharedResourceHelper.code',
+      modelUse: 'JSBlockModel',
+    });
+    expect(sharedResourceHelperErrors).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          ruleId: 'runjs-jsblock-shared-resource-helper-forbidden',
+          details: expect.objectContaining({
+            repairClass: 'resource-runtime-contract-stop',
+            capability: 'ctx.initResource',
+            functionName: 'fetchAll',
+          }),
+        }),
+        expect.objectContaining({
+          ruleId: 'runjs-jsblock-shared-resource-helper-forbidden',
+          details: expect.objectContaining({
+            repairClass: 'resource-runtime-contract-stop',
+            capability: 'ctx.resource',
+            functionName: 'fetchAll',
+          }),
+        }),
+      ]),
+    );
+
+    expect(
+      inspectRunJsAuthoringCode({
+        code: [
+          'async function fetchAll(resourceName, filter) {',
+          "  const resource = ctx.makeResource('MultiRecordResource');",
+          '  resource.setResourceName(resourceName);',
+          '  resource.setPageSize(200);',
+          '  if (filter) resource.setFilter(filter);',
+          '  await resource.refresh();',
+          '  return resource.getData() || [];',
+          '}',
+          "const rows = await fetchAll('claims', { review_status: { $eq: 'Needs Review' } });",
+          "ctx.render(ctx.React.createElement('div', null, String(rows.length)));",
+        ].join('\n'),
+        path: '$.localResourceHelper.code',
+        modelUse: 'JSBlockModel',
+      }),
+    ).toEqual([]);
+
+    expect(
+      inspectRunJsAuthoringCode({
+        code: [
+          'ctx.render(null);',
+          'let outer = 0;',
+          'let api = ctx.api;',
+          'for (outer of [...[]]) { for (api of [{}]) {} }',
+          'api.useRequest();',
+        ].join('\n'),
+        path: '$.emptySpreadNestedForOfKeepsCtxApiAlias.code',
+        modelUse: 'JSBlockModel',
+      }),
+    ).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          ruleId: 'runjs-ctx-api-member-unknown',
+          details: expect.objectContaining({
+            capability: 'ctx.api.useRequest',
+          }),
+        }),
+      ]),
+    );
+
+    expect(
+      inspectRunJsAuthoringCode({
+        code: [
+          'ctx.render(null);',
+          'let key = "";',
+          'let api = ctx.api;',
+          'for (key in { [Symbol.iterator]: 1 }) { for (api of [{}]) {} }',
+          'api.useRequest();',
+        ].join('\n'),
+        path: '$.symbolComputedNestedForInKeepsCtxApiAlias.code',
+        modelUse: 'JSBlockModel',
+      }),
+    ).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          ruleId: 'runjs-ctx-api-member-unknown',
+          details: expect.objectContaining({
+            capability: 'ctx.api.useRequest',
+          }),
+        }),
+      ]),
+    );
+
+    expect(
+      inspectRunJsAuthoringCode({
+        code: [
+          'ctx.render(null);',
+          'let key = "";',
+          'let api = ctx.api;',
+          'for (key in { __proto__: null }) { for (api of [{}]) {} }',
+          'api.useRequest();',
+        ].join('\n'),
+        path: '$.protoOnlyNestedForInKeepsCtxApiAlias.code',
+        modelUse: 'JSBlockModel',
+      }),
+    ).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          ruleId: 'runjs-ctx-api-member-unknown',
+          details: expect.objectContaining({
+            capability: 'ctx.api.useRequest',
+          }),
+        }),
+      ]),
+    );
+
+    expect(
+      inspectRunJsAuthoringCode({
+        code: 'function invoke(ctx) { return ctx.api.useRequest; }\nctx.render(null);',
+        path: '$.shadowedCtxApiMember.code',
         modelUse: 'JSBlockModel',
       }),
     ).toEqual([]);
@@ -2592,6 +4040,158 @@ describe.skip('flowSurfaces backend authoring aggregate errors', () => {
     );
   });
 
+  it('should reject unsupported ctx.libs.antd members in RunJS authoring code', async () => {
+    const invalidCases = [
+      {
+        accessKind: 'member',
+        capability: 'ctx.libs.antd.colors',
+        code: 'const c = ctx.libs.antd.colors;\nctx.render(null);',
+      },
+      {
+        accessKind: 'member',
+        capability: "ctx.libs['antd'].colors",
+        code: "const c = ctx.libs['antd'].colors;\nctx.render(null);",
+      },
+      {
+        accessKind: 'bracket',
+        capability: 'ctx.libs.antd["colors"]',
+        code: "const c = ctx.libs.antd['colors'];\nctx.render(null);",
+      },
+      {
+        accessKind: 'member',
+        capability: 'ctx.libs.antd.colors',
+        code: 'const antd = ctx.libs.antd;\nconst c = antd.colors;\nctx.render(null);',
+      },
+      {
+        accessKind: 'member',
+        capability: 'ctx.libs.antd.colors',
+        code: 'const { antd } = ctx.libs;\nconst c = antd.colors;\nctx.render(null);',
+      },
+      {
+        accessKind: 'member',
+        capability: 'ctx.antd.colors',
+        code: 'const antd = ctx.antd;\nconst c = antd.colors;\nctx.render(null);',
+      },
+      {
+        accessKind: 'destructure',
+        capability: 'ctx.libs.antd.colors',
+        code: 'const { colors } = ctx.libs.antd;\nctx.render(null);',
+      },
+      {
+        accessKind: 'member',
+        capability: 'ctx.libs.antd.colors',
+        code: 'const { green, blue } = ctx.libs.antd.colors;\nctx.render(null);',
+      },
+    ];
+
+    for (const entry of invalidCases) {
+      expect(
+        inspectRunJsAuthoringCode({
+          code: entry.code,
+          path: '$.unsupportedCtxLibsAntdMember.code',
+          modelUse: 'JSBlockModel',
+        }),
+      ).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            ruleId: 'runjs-ctx-libs-member-unknown',
+            details: expect.objectContaining({
+              accessKind: entry.accessKind,
+              capability: entry.capability,
+              library: 'antd',
+              member: 'colors',
+              suggestedImport: '@ant-design/colors',
+            }),
+          }),
+        ]),
+      );
+    }
+
+    expect(
+      inspectRunJsAuthoringCode({
+        code: ['const { Card, Row, Col, Statistic } = ctx.libs.antd;', 'ctx.render(null);'].join('\n'),
+        path: '$.validCtxLibsAntdMembers.code',
+        modelUse: 'JSBlockModel',
+      }),
+    ).toEqual([]);
+
+    expect(
+      inspectRunJsAuthoringCode({
+        code: ["const { green } = await ctx.importAsync('@ant-design/colors');", 'ctx.render(String(green[6]));'].join(
+          '\n',
+        ),
+        path: '$.validAntDesignColorsImport.code',
+        modelUse: 'JSBlockModel',
+      }),
+    ).toEqual([]);
+
+    expect(
+      inspectRunJsAuthoringCode({
+        code: "const member = 'colors';\nconst c = ctx.libs.antd[member];\nctx.render(c);",
+        path: '$.dynamicCtxLibsAntdMember.code',
+        modelUse: 'JSBlockModel',
+      }),
+    ).toEqual([]);
+
+    const applyBlueprintErrors = await collectFlowSurfaceAuthoringErrors('applyBlueprint', {
+      mode: 'create',
+      navigation: {
+        item: {
+          title: 'Invalid antd colors JSBlock page',
+        },
+      },
+      assets: {
+        scripts: {
+          kpis: {
+            code: 'const { green } = ctx.libs.antd.colors;\nctx.render(null);',
+          },
+        },
+      },
+      tabs: [
+        {
+          title: 'Overview',
+          blocks: [
+            {
+              key: 'kpis',
+              type: 'jsBlock',
+              script: 'kpis',
+            },
+          ],
+        },
+      ],
+    });
+    expect(applyBlueprintErrors).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          path: '$.tabs[0].blocks[0].script',
+          ruleId: 'runjs-ctx-libs-member-unknown',
+        }),
+      ]),
+    );
+
+    const configureErrors = await collectFlowSurfaceAuthoringErrors(
+      'configure',
+      {
+        target: { uid: 'js-block-target' },
+        changes: {
+          code: 'const c = ctx.libs.antd.colors;\nctx.render(null);',
+          version: 'v2',
+        },
+      },
+      {
+        currentNode: { use: 'JSBlockModel' },
+      },
+    );
+    expect(configureErrors).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          path: '$.changes.code',
+          ruleId: 'runjs-ctx-libs-member-unknown',
+        }),
+      ]),
+    );
+  });
+
   it('should reject invalid FlowResource runtime patterns in JSBlock authoring code', () => {
     const errors = inspectRunJsAuthoringCode({
       code: [
@@ -2681,6 +4281,43 @@ describe.skip('flowSurfaces backend authoring aggregate errors', () => {
       ]),
     );
 
+    const hookResourceErrors = inspectRunJsAuthoringCode({
+      code: [
+        'const React = ctx.React;',
+        'function MetricsPanel() {',
+        '  React.useEffect(function() {',
+        "    ctx.initResource('MultiRecordResource');",
+        "    ctx.resource.setResourceName('claims');",
+        '    ctx.resource.refresh();',
+        '  }, []);',
+        "  return React.createElement('div', null, 'Loading metrics');",
+        '}',
+        'ctx.render(React.createElement(MetricsPanel));',
+      ].join('\n'),
+      path: '$.hookResource.code',
+      modelUse: 'JSBlockModel',
+    });
+    expect(hookResourceErrors).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          ruleId: 'runjs-jsblock-resource-hook-forbidden',
+          details: expect.objectContaining({
+            repairClass: 'resource-runtime-contract-stop',
+            capability: 'ctx.initResource',
+            hook: 'useEffect',
+          }),
+        }),
+        expect.objectContaining({
+          ruleId: 'runjs-jsblock-resource-hook-forbidden',
+          details: expect.objectContaining({
+            repairClass: 'resource-runtime-contract-stop',
+            capability: 'ctx.resource',
+            hook: 'useEffect',
+          }),
+        }),
+      ]),
+    );
+
     expect(
       inspectRunJsAuthoringCode({
         code: [
@@ -2702,6 +4339,1155 @@ describe.skip('flowSurfaces backend authoring aggregate errors', () => {
         modelUse: 'JSBlockModel',
       }),
     ).toEqual([]);
+  });
+
+  it('should reject statically invalid RunJS resource filters before write', async () => {
+    const makeCollection = (name: string, fields: any[]) => {
+      const fieldsByName = new Map(fields.map((field) => [field.name, field]));
+      return {
+        dataSourceKey: 'main',
+        name,
+        fields: fieldsByName,
+        getField: (fieldName: string) => fieldsByName.get(fieldName),
+        getFields: () => fields,
+      };
+    };
+    const collections: Record<string, any> = {
+      reimbursement_requests: makeCollection('reimbursement_requests', [
+        { name: 'request_status', type: 'string', interface: 'select' },
+      ]),
+      claims: makeCollection('claims', [
+        { name: 'review_status', type: 'string', interface: 'select' },
+        { name: 'claim_category', type: 'string', interface: 'select' },
+        { name: 'chain_status', type: 'string', interface: 'select' },
+        { name: 'chained_setup_status', type: 'string', interface: 'select' },
+        { name: 'destructured_status', type: 'string', interface: 'select' },
+        { name: 'destructured_copy_status', type: 'string', interface: 'select' },
+        { name: 'destructured_assignment_status', type: 'string', interface: 'select' },
+        { name: 'alias_before_configuration_status', type: 'string', interface: 'select' },
+        { name: 'ctx_alias_before_configuration_status', type: 'string', interface: 'select' },
+        { name: 'destructured_before_configuration_status', type: 'string', interface: 'select' },
+        { name: 'nested_ctx_status', type: 'string', interface: 'select' },
+        { name: 'nested_late_config_status', type: 'string', interface: 'select' },
+        { name: 'nested_alias_status', type: 'string', interface: 'select' },
+        { name: 'nested_destructured_status', type: 'string', interface: 'select' },
+        { name: 'not_status', type: 'string', interface: 'select' },
+        { name: 'not_inner_status', type: 'string', interface: 'select' },
+      ]),
+    };
+
+    const errors = await collectFlowSurfaceAuthoringErrors(
+      'compose',
+      {
+        blocks: [
+          {
+            key: 'missingDollarOperator',
+            type: 'jsBlock',
+            settings: {
+              code: [
+                "ctx.initResource('MultiRecordResource');",
+                "ctx.resource.setResourceName('reimbursement_requests');",
+                "ctx.resource.setFilter({ request_status: { in: ['Draft', 'Submitted'] } });",
+                'ctx.render(null);',
+              ].join('\n'),
+            },
+          },
+          {
+            key: 'unknownField',
+            type: 'jsBlock',
+            settings: {
+              code: [
+                "const resource = ctx.makeResource('MultiRecordResource');",
+                "resource.setResourceName('claims');",
+                "resource.setFilter({ missing_status: 'Active' });",
+                'ctx.render(null);',
+              ].join('\n'),
+            },
+          },
+          {
+            key: 'unknownCollection',
+            type: 'jsBlock',
+            settings: {
+              code: [
+                "ctx.initResource('MultiRecordResource');",
+                "ctx.resource.setResourceName('missing_collection');",
+                "ctx.resource.setFilter({ status: 'Active' });",
+                'ctx.render(null);',
+              ].join('\n'),
+            },
+          },
+          {
+            key: 'ctxResourceAliasAfterConfiguration',
+            type: 'jsBlock',
+            settings: {
+              code: [
+                "ctx.initResource('MultiRecordResource');",
+                "ctx.resource.setResourceName('claims');",
+                'const aliased = ctx.resource;',
+                "aliased.setFilter({ review_status: { in: ['Needs Review'] } });",
+                'ctx.render(null);',
+              ].join('\n'),
+            },
+          },
+          {
+            key: 'resourceAliasCopyAfterConfiguration',
+            type: 'jsBlock',
+            settings: {
+              code: [
+                "const base = ctx.makeResource('MultiRecordResource');",
+                "base.setResourceName('claims');",
+                'const copied = base;',
+                "copied.setFilter({ claim_category: { in: ['Excess'] } });",
+                'ctx.render(null);',
+              ].join('\n'),
+            },
+          },
+          {
+            key: 'chainedSetResourceNameFilter',
+            type: 'jsBlock',
+            settings: {
+              code: [
+                "const resource = ctx.makeResource('MultiRecordResource');",
+                "resource.setResourceName('claims').setFilter({ chain_status: { in: ['Open'] } });",
+                'ctx.render(null);',
+              ].join('\n'),
+            },
+          },
+          {
+            key: 'chainedStateSetupSeparateFilter',
+            type: 'jsBlock',
+            settings: {
+              code: [
+                "const resource = ctx.makeResource('MultiRecordResource');",
+                "resource.setDataSourceKey('main').setResourceName('claims');",
+                "resource.setFilter({ chained_setup_status: { in: ['Open'] } });",
+                'ctx.render(null);',
+              ].join('\n'),
+            },
+          },
+          {
+            key: 'destructuredCtxResourceAliasAfterConfiguration',
+            type: 'jsBlock',
+            settings: {
+              code: [
+                "ctx.initResource('MultiRecordResource');",
+                "ctx.resource.setResourceName('claims');",
+                'const { resource } = ctx;',
+                "resource.setFilter({ destructured_status: { in: ['Open'] } });",
+                'ctx.render(null);',
+              ].join('\n'),
+            },
+          },
+          {
+            key: 'destructuredCtxResourceAliasCopyAfterConfiguration',
+            type: 'jsBlock',
+            settings: {
+              code: [
+                "ctx.initResource('MultiRecordResource');",
+                "ctx.resource.setResourceName('claims');",
+                'const { resource: base } = ctx;',
+                'const copied = base;',
+                "copied.setFilter({ destructured_copy_status: { in: ['Open'] } });",
+                'ctx.render(null);',
+              ].join('\n'),
+            },
+          },
+          {
+            key: 'destructuredCtxResourceAssignmentAfterConfiguration',
+            type: 'jsBlock',
+            settings: {
+              code: [
+                'let assigned;',
+                "ctx.initResource('MultiRecordResource');",
+                "ctx.resource.setResourceName('claims');",
+                '({ resource: assigned } = ctx);',
+                "assigned.setFilter({ destructured_assignment_status: { in: ['Open'] } });",
+                'ctx.render(null);',
+              ].join('\n'),
+            },
+          },
+          {
+            key: 'resourceAliasBeforeConfiguration',
+            type: 'jsBlock',
+            settings: {
+              code: [
+                "const resource = ctx.makeResource('MultiRecordResource');",
+                'const copied = resource;',
+                "resource.setResourceName('claims');",
+                "copied.setFilter({ alias_before_configuration_status: { in: ['Open'] } });",
+                'ctx.render(null);',
+              ].join('\n'),
+            },
+          },
+          {
+            key: 'ctxResourceAliasBeforeConfiguration',
+            type: 'jsBlock',
+            settings: {
+              code: [
+                "ctx.initResource('MultiRecordResource');",
+                'const aliased = ctx.resource;',
+                "ctx.resource.setResourceName('claims');",
+                "aliased.setFilter({ ctx_alias_before_configuration_status: { in: ['Open'] } });",
+                'ctx.render(null);',
+              ].join('\n'),
+            },
+          },
+          {
+            key: 'destructuredCtxResourceBeforeConfiguration',
+            type: 'jsBlock',
+            settings: {
+              code: [
+                "ctx.initResource('MultiRecordResource');",
+                'const { resource } = ctx;',
+                "ctx.resource.setResourceName('claims');",
+                "resource.setFilter({ destructured_before_configuration_status: { in: ['Open'] } });",
+                'ctx.render(null);',
+              ].join('\n'),
+            },
+          },
+          {
+            key: 'nestedFunctionCtxResourceAfterOuterConfiguration',
+            type: 'jsBlock',
+            settings: {
+              code: [
+                "ctx.initResource('MultiRecordResource');",
+                "ctx.resource.setResourceName('claims');",
+                'function applyFilter() {',
+                "  ctx.resource.setFilter({ nested_ctx_status: { in: ['Open'] } });",
+                '}',
+                'applyFilter();',
+                'ctx.render(null);',
+              ].join('\n'),
+            },
+          },
+          {
+            key: 'nestedFunctionCtxResourceDeclaredBeforeOuterConfiguration',
+            type: 'jsBlock',
+            settings: {
+              code: [
+                "ctx.initResource('MultiRecordResource');",
+                'function applyFilter() {',
+                "  ctx.resource.setFilter({ nested_late_config_status: { in: ['Open'] } });",
+                '}',
+                "ctx.resource.setResourceName('claims');",
+                'applyFilter();',
+                'ctx.render(null);',
+              ].join('\n'),
+            },
+          },
+          {
+            key: 'nestedFunctionCtxResourceAliasAfterOuterConfiguration',
+            type: 'jsBlock',
+            settings: {
+              code: [
+                "ctx.initResource('MultiRecordResource');",
+                "ctx.resource.setResourceName('claims');",
+                'function applyFilter() {',
+                '  const resource = ctx.resource;',
+                "  resource.setFilter({ nested_alias_status: { in: ['Open'] } });",
+                '}',
+                'applyFilter();',
+                'ctx.render(null);',
+              ].join('\n'),
+            },
+          },
+          {
+            key: 'nestedFunctionDestructuredCtxResourceAfterOuterConfiguration',
+            type: 'jsBlock',
+            settings: {
+              code: [
+                "ctx.initResource('MultiRecordResource');",
+                "ctx.resource.setResourceName('claims');",
+                'function applyFilter() {',
+                '  const { resource } = ctx;',
+                "  resource.setFilter({ nested_destructured_status: { in: ['Open'] } });",
+                '}',
+                'applyFilter();',
+                'ctx.render(null);',
+              ].join('\n'),
+            },
+          },
+          {
+            key: 'topLevelNotWrapper',
+            type: 'jsBlock',
+            settings: {
+              code: [
+                "const resource = ctx.makeResource('MultiRecordResource');",
+                "resource.setResourceName('claims');",
+                "resource.setFilter({ $not: { not_status: { in: ['Closed'] } } });",
+                'ctx.render(null);',
+              ].join('\n'),
+            },
+          },
+          {
+            key: 'fieldLevelNotWrapper',
+            type: 'jsBlock',
+            settings: {
+              code: [
+                "const resource = ctx.makeResource('MultiRecordResource');",
+                "resource.setResourceName('claims');",
+                "resource.setFilter({ not_inner_status: { $not: { in: ['Closed'] } } });",
+                'ctx.render(null);',
+              ].join('\n'),
+            },
+          },
+          {
+            key: 'topLevelNotUnknownField',
+            type: 'jsBlock',
+            settings: {
+              code: [
+                "const resource = ctx.makeResource('MultiRecordResource');",
+                "resource.setResourceName('claims');",
+                "resource.setFilter({ $not: { missing_not_status: 'Closed' } });",
+                'ctx.render(null);',
+              ].join('\n'),
+            },
+          },
+        ],
+      },
+      {
+        getCollection: (_dataSourceKey, collectionName) => collections[collectionName],
+      },
+    );
+
+    const missingDollarFieldPaths = errors
+      .filter((error: any) => error.ruleId === 'runjs-resource-filter-operator-missing-dollar')
+      .map((error: any) => error.details?.fieldPath);
+    expect(missingDollarFieldPaths).toEqual(
+      expect.arrayContaining([
+        'request_status',
+        'review_status',
+        'claim_category',
+        'chain_status',
+        'chained_setup_status',
+        'destructured_status',
+        'destructured_copy_status',
+        'destructured_assignment_status',
+        'alias_before_configuration_status',
+        'ctx_alias_before_configuration_status',
+        'destructured_before_configuration_status',
+        'nested_ctx_status',
+        'nested_late_config_status',
+        'nested_alias_status',
+        'nested_destructured_status',
+        'not_status',
+        'not_inner_status',
+      ]),
+    );
+    expect(errors).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          ruleId: 'runjs-resource-filter-operator-missing-dollar',
+          details: expect.objectContaining({
+            fieldPath: 'request_status',
+            operator: 'in',
+            suggestedOperator: '$in',
+          }),
+        }),
+        expect.objectContaining({
+          ruleId: 'runjs-resource-filter-field-unknown',
+          details: expect.objectContaining({
+            collectionName: 'claims',
+            fieldPath: 'missing_status',
+          }),
+        }),
+        expect.objectContaining({
+          ruleId: 'runjs-resource-filter-field-unknown',
+          details: expect.objectContaining({
+            collectionName: 'claims',
+            fieldPath: 'missing_not_status',
+          }),
+        }),
+        expect.objectContaining({
+          ruleId: 'runjs-resource-collection-unknown',
+          details: expect.objectContaining({
+            collectionName: 'missing_collection',
+          }),
+        }),
+      ]),
+    );
+  });
+
+  it('should pass collection context into top-level RunJS reactions', async () => {
+    const fields = [{ name: 'review_status', type: 'string', interface: 'select' }];
+    const fieldsByName = new Map(fields.map((field) => [field.name, field]));
+    const collections: Record<string, any> = {
+      claims: {
+        dataSourceKey: 'main',
+        name: 'claims',
+        fields: fieldsByName,
+        getField: (fieldName: string) => fieldsByName.get(fieldName),
+        getFields: () => fields,
+      },
+    };
+    const code = [
+      "const resource = ctx.makeResource('MultiRecordResource');",
+      "resource.setResourceName('claims');",
+      "resource.setFilter({ review_status: { in: ['Needs Review'] } });",
+    ].join('\n');
+
+    const errors = await collectFlowSurfaceAuthoringErrors(
+      'configure',
+      {
+        target: { uid: 'claims-widget' },
+        reaction: {
+          items: [{ type: 'runjs', code }],
+        },
+        changes: {
+          reaction: {
+            items: [{ type: 'runjs', code }],
+          },
+        },
+      },
+      {
+        getCollection: (_dataSourceKey, collectionName) => collections[collectionName],
+      },
+    );
+
+    const filterErrors = errors.filter(
+      (error: any) => error.ruleId === 'runjs-resource-filter-operator-missing-dollar',
+    );
+    expect(filterErrors.map((error: any) => error.path)).toEqual(
+      expect.arrayContaining(['$.reaction.items[0].code', '$.changes.reaction.items[0].code']),
+    );
+    expect(filterErrors).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          path: '$.reaction.items[0].code',
+          details: expect.objectContaining({
+            fieldPath: 'review_status',
+            operator: 'in',
+            suggestedOperator: '$in',
+          }),
+        }),
+        expect.objectContaining({
+          path: '$.changes.reaction.items[0].code',
+          details: expect.objectContaining({
+            fieldPath: 'review_status',
+            operator: 'in',
+            suggestedOperator: '$in',
+          }),
+        }),
+      ]),
+    );
+  });
+
+  it('should validate pre-bound ctx.resource filters with known authoring resource context', async () => {
+    const claimsFields = [{ name: 'review_status', type: 'string', interface: 'select' }];
+    const employeeFields = [
+      { name: 'id', type: 'bigInt', interface: 'id' },
+      { name: 'status', type: 'string', interface: 'select' },
+    ];
+    const claimsFieldsByName = new Map(claimsFields.map((field) => [field.name, field]));
+    const employeeFieldsByName = new Map(employeeFields.map((field) => [field.name, field]));
+    const collections: Record<string, any> = {
+      claims: {
+        dataSourceKey: 'main',
+        name: 'claims',
+        fields: claimsFieldsByName,
+        getField: (fieldName: string) => claimsFieldsByName.get(fieldName),
+        getFields: () => claimsFields,
+      },
+      employees: {
+        dataSourceKey: 'main',
+        name: 'employees',
+        fields: employeeFieldsByName,
+        getField: (fieldName: string) => employeeFieldsByName.get(fieldName),
+        getFields: () => employeeFields,
+      },
+    };
+
+    const reactionCode = "ctx.resource.setFilter({ review_status: { in: ['Needs Review'] } });";
+    const configureErrors = await collectFlowSurfaceAuthoringErrors(
+      'configure',
+      {
+        target: { uid: 'claims-widget' },
+        reaction: {
+          items: [{ type: 'runjs', code: reactionCode }],
+        },
+        changes: {
+          reaction: {
+            items: [{ type: 'runjs', code: reactionCode }],
+          },
+        },
+      },
+      {
+        currentDataSourceKey: 'main',
+        currentCollectionName: 'claims',
+        getCollection: (_dataSourceKey, collectionName) => collections[collectionName],
+        hostDataSourceKey: 'main',
+        hostCollectionName: 'claims',
+      },
+    );
+
+    expect(configureErrors).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          path: '$.reaction.items[0].code',
+          ruleId: 'runjs-resource-filter-operator-missing-dollar',
+          details: expect.objectContaining({
+            collectionName: 'claims',
+            fieldPath: 'review_status',
+            operator: 'in',
+          }),
+        }),
+        expect.objectContaining({
+          path: '$.changes.reaction.items[0].code',
+          ruleId: 'runjs-resource-filter-operator-missing-dollar',
+          details: expect.objectContaining({
+            collectionName: 'claims',
+            fieldPath: 'review_status',
+            operator: 'in',
+          }),
+        }),
+      ]),
+    );
+
+    const chartConfigureErrors = await collectFlowSurfaceAuthoringErrors(
+      'configure',
+      {
+        target: { uid: 'employee-chart' },
+        changes: {
+          visual: {
+            raw: "ctx.resource.setFilter({ status: { in: ['Active'] } });\nreturn {};",
+          },
+          events: {
+            raw: "ctx.resource.setFilter({ status: { in: ['Active'] } });",
+          },
+        },
+      },
+      {
+        currentDataSourceKey: 'main',
+        currentCollectionName: 'employees',
+        getCollection: (_dataSourceKey, collectionName) => collections[collectionName],
+        hostBlockType: 'ChartBlockModel',
+        hostDataSourceKey: 'main',
+        hostCollectionName: 'employees',
+      },
+    );
+    expect(chartConfigureErrors).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          path: '$.changes.visual.raw',
+          ruleId: 'runjs-resource-filter-operator-missing-dollar',
+          details: expect.objectContaining({
+            collectionName: 'employees',
+            fieldPath: 'status',
+            operator: 'in',
+          }),
+        }),
+        expect.objectContaining({
+          path: '$.changes.events.raw',
+          ruleId: 'runjs-resource-filter-operator-missing-dollar',
+          details: expect.objectContaining({
+            collectionName: 'employees',
+            fieldPath: 'status',
+            operator: 'in',
+          }),
+        }),
+      ]),
+    );
+
+    const chartAssetErrors = await collectFlowSurfaceAuthoringErrors(
+      'applyBlueprint',
+      {
+        mode: 'create',
+        navigation: {
+          item: {
+            title: 'Pre-bound chart resource context page',
+          },
+        },
+        assets: {
+          charts: {
+            statusChart: {
+              query: {
+                mode: 'builder',
+                resource: {
+                  dataSourceKey: 'main',
+                  collectionName: 'employees',
+                },
+                measures: [
+                  {
+                    field: 'id',
+                    aggregation: 'count',
+                    alias: 'employeeCount',
+                  },
+                ],
+              },
+              visual: {
+                mode: 'custom',
+                raw: "ctx.resource.setFilter({ status: { in: ['Active'] } });\nreturn {};",
+              },
+              events: {
+                raw: "ctx.resource.setFilter({ status: { in: ['Active'] } });",
+              },
+            },
+          },
+        },
+        tabs: [
+          {
+            title: 'Overview',
+            blocks: [
+              {
+                key: 'statusChart',
+                type: 'chart',
+                chart: 'statusChart',
+              },
+            ],
+          },
+        ],
+      },
+      {
+        getCollection: (_dataSourceKey, collectionName) => collections[collectionName],
+      },
+    );
+    expect(chartAssetErrors).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          path: '$.assets.charts.statusChart.visual.raw',
+          ruleId: 'runjs-resource-filter-operator-missing-dollar',
+          details: expect.objectContaining({
+            collectionName: 'employees',
+            fieldPath: 'status',
+            operator: 'in',
+          }),
+        }),
+        expect.objectContaining({
+          path: '$.assets.charts.statusChart.events.raw',
+          ruleId: 'runjs-resource-filter-operator-missing-dollar',
+          details: expect.objectContaining({
+            collectionName: 'employees',
+            fieldPath: 'status',
+            operator: 'in',
+          }),
+        }),
+      ]),
+    );
+  });
+
+  it('should allow statically valid RunJS resource filters', async () => {
+    const reimbursementRequestFields = [{ name: 'request_status', type: 'string', interface: 'select' }];
+    const departmentFields = [{ name: 'name', type: 'string', interface: 'input' }];
+    const departmentFieldsByName = new Map(departmentFields.map((field) => [field.name, field]));
+    const departmentCollection = {
+      dataSourceKey: 'main',
+      name: 'departments',
+      fields: departmentFieldsByName,
+      getField: (fieldName: string) => departmentFieldsByName.get(fieldName),
+      getFields: () => departmentFields,
+    };
+    const employeeFields = [
+      {
+        name: 'department',
+        type: 'belongsTo',
+        interface: 'm2o',
+        targetCollection: departmentCollection,
+      },
+    ];
+    const employeeFieldsByName = new Map(employeeFields.map((field) => [field.name, field]));
+    const reimbursementRequestFieldsByName = new Map(reimbursementRequestFields.map((field) => [field.name, field]));
+    const collections: Record<string, any> = {
+      reimbursement_requests: {
+        dataSourceKey: 'main',
+        name: 'reimbursement_requests',
+        fields: reimbursementRequestFieldsByName,
+        getField: (fieldName: string) => reimbursementRequestFieldsByName.get(fieldName),
+        getFields: () => reimbursementRequestFields,
+      },
+      employees: {
+        dataSourceKey: 'main',
+        name: 'employees',
+        fields: employeeFieldsByName,
+        getField: (fieldName: string) => employeeFieldsByName.get(fieldName),
+        getFields: () => employeeFields,
+      },
+      departments: departmentCollection,
+    };
+    const errors = await collectFlowSurfaceAuthoringErrors(
+      'addBlock',
+      {
+        type: 'jsBlock',
+        settings: {
+          code: [
+            "const resource = ctx.makeResource('MultiRecordResource');",
+            "resource.setResourceName('reimbursement_requests');",
+            "resource.setFilter({ request_status: { $in: ['Draft', 'Submitted'] } });",
+            'await resource.refresh();',
+            "const employees = ctx.makeResource('MultiRecordResource');",
+            "employees.setResourceName('employees');",
+            "employees.setFilter({ department: { name: { $eq: 'Sales' } } });",
+            'ctx.render(null);',
+          ].join('\n'),
+        },
+      },
+      {
+        getCollection: (_dataSourceKey, collectionName) => collections[collectionName],
+      },
+    );
+
+    expect(errors).toEqual([]);
+  });
+
+  it('should reject AST-detected RunJS syntax, nested runjs, resource arguments, and source limits', async () => {
+    expect(
+      inspectRunJsAuthoringCode({
+        code: 'ctx.render(<div>Broken</div>;',
+        path: '$.syntax.code',
+        modelUse: 'JSBlockModel',
+      }),
+    ).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          ruleId: 'runjs-syntax-invalid',
+          details: expect.objectContaining({
+            repairClass: 'syntax-stop',
+          }),
+        }),
+      ]),
+    );
+
+    [
+      "ctx.render(null);\nconst run = ctx.runjs;\nawait run('return 1;');",
+      "ctx.render(null);\nconst { runjs } = ctx;\nawait runjs('return 1;');",
+      "ctx.render(null);\nconst { runjs: run } = ctx;\nawait run('return 1;');",
+      "ctx.render(null);\nawait ctx['runjs']('return 1;');",
+    ].forEach((code, index) => {
+      expect(
+        inspectRunJsAuthoringCode({
+          code,
+          path: `$.nestedRunjs[${index}].code`,
+          modelUse: 'JSBlockModel',
+        }),
+      ).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            ruleId: 'runjs-nested-runjs-forbidden',
+            details: expect.objectContaining({
+              repairClass: 'nested-runjs-stop',
+            }),
+          }),
+        ]),
+      );
+    });
+
+    expect(
+      inspectRunJsAuthoringCode({
+        code: [
+          'ctx.render(null);',
+          'const run = ctx.runjs;',
+          "function invoke(run) { return run('ordinary callback value'); }",
+        ].join('\n'),
+        path: '$.shadowedRunjsAlias.code',
+        modelUse: 'JSBlockModel',
+      }),
+    ).toEqual([]);
+
+    expect(
+      inspectRunJsAuthoringCode({
+        code: [
+          "function invoke(ctx) { return ctx.runjs('ordinary callback value'); }",
+          "ctx.message.success('Done');",
+        ].join('\n'),
+        path: '$.shadowedCtxRunjs.code',
+        modelUse: 'JSActionModel',
+      }),
+    ).toEqual([]);
+
+    expect(
+      inspectRunJsAuthoringCode({
+        code: "ctx.render(null);\nctx.initResource('FlowResource');",
+        path: '$.initResourceFlowResource.code',
+        modelUse: 'JSBlockModel',
+      }),
+    ).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          ruleId: 'runjs-make-resource-type-invalid',
+          details: expect.objectContaining({
+            capability: 'ctx.initResource',
+            resourceType: 'FlowResource',
+          }),
+        }),
+      ]),
+    );
+
+    expect(
+      inspectRunJsAuthoringCode({
+        code: [
+          'ctx.render(null);',
+          "const resourceType = 'MultiRecordResource';",
+          'function build(resourceType) { return ctx.makeResource(resourceType); }',
+        ].join('\n'),
+        path: '$.shadowedResourceType.code',
+        modelUse: 'JSBlockModel',
+      }),
+    ).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          ruleId: 'runjs-make-resource-type-unresolved',
+          details: expect.objectContaining({
+            expression: 'resourceType',
+          }),
+        }),
+      ]),
+    );
+
+    expect(
+      inspectRunJsAuthoringCode({
+        code: [
+          'function build(ctx, resourceType) { return ctx.makeResource(resourceType); }',
+          "ctx.message.success('Done');",
+        ].join('\n'),
+        path: '$.shadowedCtxResource.code',
+        modelUse: 'JSActionModel',
+      }),
+    ).toEqual([]);
+
+    [
+      "function invoke(ctx) { return ctx.runjs('resource:list', {}); }\nctx.message.success('Done');",
+      "function invoke(ctx) { return ctx.request('users:list'); }\nctx.message.success('Done');",
+      "function invoke(ctx) { return ctx.api.resource.list('users'); }\nctx.message.success('Done');",
+      "function invoke(ctx) { return ctx.openView(); }\nctx.message.success('Done');",
+      "function invoke(ctx) { return ctx.notARealRoot.doThing(); }\nctx.message.success('Done');",
+      "function invoke(ctx) { return ctx.libs.react; }\nctx.message.success('Done');",
+      "function invoke(ctx) { return ctx.element.innerHTML = '<span />'; }\nctx.message.success('Done');",
+    ].forEach((code, index) => {
+      expect(
+        inspectRunJsAuthoringCode({
+          code,
+          path: `$.shadowedCtxLegacyValidators[${index}].code`,
+          modelUse: 'JSActionModel',
+        }),
+      ).toEqual([]);
+    });
+
+    [
+      "ctx.runjs('resource:list', {});\nfunction ctx() {}",
+      "function invoke() { return ctx.runjs('resource:list', {}); function ctx() {} }\nctx.message.success('Done');",
+    ].forEach((code, index) => {
+      expect(
+        inspectRunJsAuthoringCode({
+          code,
+          path: `$.laterDeclaredCtxShadow[${index}].code`,
+          modelUse: 'JSActionModel',
+        }),
+      ).toEqual([]);
+    });
+
+    [
+      "ctx.runjs('resource:list', {});\nfor (let ctx of items) { ctx.message.success('local'); }\nctx.message.success('Done');",
+      "ctx.runjs('resource:list', {});\nfor (let ctx in items) { ctx.message.success('local'); }\nctx.message.success('Done');",
+      "ctx.runjs('resource:list', {});\nswitch (kind) { case 1: let ctx = local; ctx.message.success('local'); break; }\nctx.message.success('Done');",
+    ].forEach((code, index) => {
+      expect(
+        inspectRunJsAuthoringCode({
+          code,
+          path: `$.blockScopedCtxDoesNotShadowPreviousRuntimeCtx[${index}].code`,
+          modelUse: 'JSActionModel',
+        }),
+      ).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            ruleId: 'runjs-nested-runjs-forbidden',
+          }),
+        ]),
+      );
+    });
+
+    expect(
+      inspectRunJsAuthoringCode({
+        code: "class Local { static { var ctx = local; } }\nctx.runjs('resource:list', {});",
+        path: '$.staticBlockVarCtxDoesNotShadowOuterRuntimeCtx.code',
+        modelUse: 'JSActionModel',
+      }),
+    ).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          ruleId: 'runjs-nested-runjs-forbidden',
+        }),
+      ]),
+    );
+
+    expect(
+      inspectRunJsAuthoringCode({
+        code: "class Local { static { var run = ctx.runjs; } }\nawait run('return 1;');",
+        path: '$.staticBlockVarRunjsAliasDoesNotLeak.code',
+        modelUse: 'JSActionModel',
+      }),
+    ).toEqual([]);
+
+    expect(
+      inspectRunJsAuthoringCode({
+        code: [
+          'class Local { static {',
+          '  function wrap() { var ctx = local; }',
+          "  ctx.element.innerHTML = '<span />';",
+          '} }',
+          "ctx.message.success('Done');",
+        ].join('\n'),
+        path: '$.staticBlockNestedFunctionVarCtxDoesNotLeak.code',
+        modelUse: 'JSActionModel',
+      }),
+    ).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          ruleId: 'runjs-direct-dom-render-forbidden',
+        }),
+      ]),
+    );
+
+    expect(
+      inspectRunJsAuthoringCode({
+        code: [
+          'ctx.render(null);',
+          "const resourceType = 'MultiRecordResource';",
+          'function build() { return ctx.makeResource(resourceType); const resourceType = dynamicType; }',
+        ].join('\n'),
+        path: '$.laterDeclaredResourceTypeShadow.code',
+        modelUse: 'JSBlockModel',
+      }),
+    ).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          ruleId: 'runjs-make-resource-type-unresolved',
+          details: expect.objectContaining({
+            expression: 'resourceType',
+          }),
+        }),
+      ]),
+    );
+
+    expect(
+      inspectRunJsAuthoringCode({
+        code: [
+          "class Local { static { var resourceType = 'MultiRecordResource'; } }",
+          'ctx.makeResource(resourceType);',
+        ].join('\n'),
+        path: '$.staticBlockVarResourceTypeDoesNotLeak.code',
+        modelUse: 'JSActionModel',
+      }),
+    ).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          ruleId: 'runjs-make-resource-type-unresolved',
+          details: expect.objectContaining({
+            expression: 'resourceType',
+          }),
+        }),
+      ]),
+    );
+
+    expect(
+      inspectRunJsAuthoringCode({
+        code: [
+          'class Local { static {',
+          "  function wrap() { var resource = ctx.makeResource('MultiRecordResource'); }",
+          '  resource.list();',
+          '} }',
+          "ctx.message.success('Done');",
+        ].join('\n'),
+        path: '$.staticBlockNestedFunctionVarResourceAliasDoesNotLeak.code',
+        modelUse: 'JSActionModel',
+      }),
+    ).toEqual([]);
+
+    expect(
+      inspectRunJsAuthoringCode({
+        code: [
+          "const resource = ctx.makeResource('MultiRecordResource');",
+          'function use(resource) { return resource.list(); }',
+          "ctx.message.success('Done');",
+        ].join('\n'),
+        path: '$.shadowedFlowResourceAlias.code',
+        modelUse: 'JSActionModel',
+      }),
+    ).toEqual([]);
+
+    expect(
+      inspectRunJsAuthoringCode({
+        code: [
+          'class Local { static {',
+          '  function wrap() { var Card = ctx.libs.antd.Card; }',
+          '  Card({ bordered: false });',
+          '} }',
+          'ctx.render(null);',
+        ].join('\n'),
+        path: '$.staticBlockNestedFunctionVarReactAliasDoesNotLeak.code',
+        modelUse: 'JSBlockModel',
+      }),
+    ).toEqual([]);
+
+    expect(
+      inspectRunJsAuthoringCode({
+        code: [
+          'class Local { static { var Card = ctx.libs.antd.Card; } }',
+          'Card({ bordered: false });',
+          'ctx.render(null);',
+        ].join('\n'),
+        path: '$.staticBlockVarReactAliasDoesNotLeak.code',
+        modelUse: 'JSBlockModel',
+      }),
+    ).toEqual([]);
+
+    expect(
+      inspectRunJsAuthoringCode({
+        code: [
+          'const Card = ctx.libs.antd.Card;',
+          'function use(Card) { return Card({ bordered: false }); }',
+          'ctx.render(null);',
+        ].join('\n'),
+        path: '$.shadowedReactComponentAlias.code',
+        modelUse: 'JSBlockModel',
+      }),
+    ).toEqual([]);
+
+    expect(
+      inspectRunJsAuthoringCode({
+        code: 'ctx.render(null);\nctx.makeResource(`MultiRecordResource`);',
+        path: '$.staticTemplateResource.code',
+        modelUse: 'JSBlockModel',
+      }),
+    ).toEqual([]);
+
+    expect(
+      inspectRunJsAuthoringCode({
+        code: 'ctx.render(null);\nctx.makeResource(`Multi${kind}Resource`);',
+        path: '$.dynamicTemplateResource.code',
+        modelUse: 'JSBlockModel',
+      }),
+    ).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          ruleId: 'runjs-make-resource-type-unresolved',
+          details: expect.objectContaining({
+            expression: '`Multi${kind}Resource`',
+          }),
+        }),
+      ]),
+    );
+
+    expect(
+      inspectRunJsAuthoringCode({
+        code: ['ctx.render(null);', 'const value = 1;'.repeat(5000)].join('\n'),
+        path: '$.largeSource.code',
+        modelUse: 'JSBlockModel',
+      }),
+    ).toEqual([
+      expect.objectContaining({
+        ruleId: 'runjs-source-too-large',
+        details: expect.objectContaining({
+          repairClass: 'source-limit-stop',
+        }),
+      }),
+    ]);
+
+    const oversizedSource = 'x'.repeat(64 * 1024 + 1);
+    const multiLargeErrors = await collectFlowSurfaceAuthoringErrors('compose', {
+      target: { uid: 'grid' },
+      blocks: [
+        {
+          type: 'jsBlock',
+          settings: {
+            code: oversizedSource,
+            version: 'v2',
+          },
+        },
+        {
+          type: 'jsBlock',
+          settings: {
+            code: oversizedSource,
+            version: 'v2',
+          },
+        },
+      ],
+    });
+    expect(multiLargeErrors).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          path: '$.blocks[0].settings.code',
+          ruleId: 'runjs-source-too-large',
+        }),
+        expect.objectContaining({
+          path: '$.blocks[1].settings.code',
+          ruleId: 'runjs-source-too-large',
+        }),
+      ]),
+    );
+
+    const tooManyBlocks = Array.from({ length: 101 }, (_item, index) => ({
+      type: 'jsBlock',
+      settings: {
+        code: `ctx.render('block ${index}');`,
+        version: 'v2',
+      },
+    }));
+    const tooManyErrors = await collectFlowSurfaceAuthoringErrors('compose', {
+      target: { uid: 'grid' },
+      blocks: tooManyBlocks,
+    });
+    expect(tooManyErrors).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          ruleId: 'runjs-too-many-sources',
+        }),
+      ]),
+    );
+
+    const oversizedFlowRegistry = Object.fromEntries(
+      Array.from({ length: 101 }, (_item, index) => [
+        `flow${index}`,
+        {
+          on: 'submit',
+          steps: {
+            run: {
+              use: 'runjs',
+              params: {
+                code: oversizedSource,
+              },
+            },
+          },
+        },
+      ]),
+    );
+    const oversizedFlowRegistryErrors = collectFlowRegistryRunJsAuthoringErrors(oversizedFlowRegistry);
+    expect(oversizedFlowRegistryErrors).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          path: '$.flowRegistry.flow0.steps.run.params.code',
+          ruleId: 'runjs-source-too-large',
+        }),
+        expect.objectContaining({
+          ruleId: 'runjs-total-source-too-large',
+        }),
+        expect.objectContaining({
+          ruleId: 'runjs-too-many-sources',
+        }),
+      ]),
+    );
+
+    const tooManyFlowRegistry = Object.fromEntries(
+      Array.from({ length: 101 }, (_item, index) => [
+        `flow${index}`,
+        {
+          on: 'submit',
+          steps: {
+            run: {
+              use: 'runjs',
+              params: {
+                code: `ctx.console.log('flow ${index}');`,
+              },
+            },
+          },
+        },
+      ]),
+    );
+    expect(collectFlowRegistryRunJsAuthoringErrors(tooManyFlowRegistry)).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          ruleId: 'runjs-too-many-sources',
+        }),
+      ]),
+    );
   });
 
   it('should reject ctx.runjs resource endpoints on applyBlueprint and configure writes', async () => {
@@ -2736,11 +5522,10 @@ describe.skip('flowSurfaces backend authoring aggregate errors', () => {
       expect.arrayContaining([
         expect.objectContaining({
           path: '$.tabs[0].blocks[0].script',
-          ruleId: 'runjs-resource-api-required',
+          ruleId: 'runjs-nested-runjs-forbidden',
           details: expect.objectContaining({
-            repairClass: 'switch-to-resource-api',
+            repairClass: 'nested-runjs-stop',
             capability: 'ctx.runjs',
-            endpoint: 'resource:list',
           }),
         }),
       ]),
@@ -2763,11 +5548,10 @@ describe.skip('flowSurfaces backend authoring aggregate errors', () => {
       expect.arrayContaining([
         expect.objectContaining({
           path: '$.changes.code',
-          ruleId: 'runjs-resource-api-required',
+          ruleId: 'runjs-nested-runjs-forbidden',
           details: expect.objectContaining({
-            repairClass: 'switch-to-resource-api',
+            repairClass: 'nested-runjs-stop',
             capability: 'ctx.runjs',
-            endpoint: 'collection:list',
           }),
         }),
       ]),
@@ -2841,6 +5625,44 @@ describe.skip('flowSurfaces backend authoring aggregate errors', () => {
       code: configureCode,
       version: 'v2',
     });
+  });
+
+  it('should return no-skip RunJS repair guidance from flowSurfaces write errors', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Authoring RunJS repair guidance page',
+      tabTitle: 'Authoring RunJS repair guidance tab',
+    });
+
+    const response = await rootAgent.resource('flowSurfaces').addBlock({
+      values: {
+        target: { uid: page.gridUid },
+        type: 'jsBlock',
+        settings: {
+          title: 'Broken JSBlock',
+          code: "const label = 'Missing render';",
+          version: 'v2',
+        },
+      },
+    });
+
+    expect(response.status).toBe(400);
+    const issue = response.body?.errors?.find((error: any) => error.ruleId === 'runjs-render-required');
+    expect(issue).toEqual(
+      expect.objectContaining({
+        type: 'bad_request',
+        code: 'FLOW_SURFACE_AUTHORING_VALIDATION_ERROR',
+        status: 400,
+        message: expect.stringContaining('Do not skip this JS/RunJS step.'),
+        details: expect.objectContaining({
+          repairClass: 'replace-innerhtml-with-render',
+          skipForbidden: true,
+          mustRetry: true,
+          agentInstruction: expect.stringContaining('Fix the error and retry the same write.'),
+          suggestedAction: expect.any(String),
+        }),
+      }),
+    );
+    expect(issue.message).toContain('Suggested fix:');
   });
 
   it('should reject ignored localized jsBlock code shapes without creating default JS blocks', async () => {
@@ -6580,7 +9402,10 @@ describe.skip('flowSurfaces backend authoring aggregate errors', () => {
             key: 'badCalendarActions',
             type: 'calendar',
             template: { uid: 'calendar-template-uid' },
-            actions: [{ key: 'badCalendarAction', type: 'updateRecord' }],
+            actions: [
+              { key: 'badCalendarAction', type: 'updateRecord' },
+              { key: 'badCalendarAIEmployee', type: 'aiEmployee' },
+            ],
           },
           {
             key: 'badKanbanActions',
@@ -6609,6 +9434,7 @@ describe.skip('flowSurfaces backend authoring aggregate errors', () => {
         '$.blocks[0].actions[1]',
         '$.blocks[0].recordActions[0]',
         '$.blocks[1].actions[0]',
+        '$.blocks[1].actions[1]',
         '$.blocks[2].actions[0]',
       ]),
     );

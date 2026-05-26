@@ -14,7 +14,7 @@ import { FlowSurfacesService } from '../flow-surfaces/service';
 import { waitForFixtureCollectionsReady } from './flow-surfaces.fixture-ready';
 import { createFlowSurfacesMockServer, loginFlowSurfacesRootAgent } from './flow-surfaces.mock-server';
 
-describe.skip('flowSurfaces event flow', () => {
+describe('flowSurfaces event flow', () => {
   let app: MockServer;
   let db: Database;
   let rootAgent: any;
@@ -438,6 +438,42 @@ describe.skip('flowSurfaces event flow', () => {
       ]),
     );
 
+    const updateSettingsResponse = await rootAgent.resource('flowSurfaces').updateSettings({
+      values: {
+        target: {
+          uid: formUid,
+        },
+        flowRegistry: {
+          unsafeUpdateSettings: {
+            key: 'unsafeUpdateSettings',
+            on: 'beforeRender',
+            steps: {
+              runUnsafe: {
+                use: 'runjs',
+                defaultParams: {
+                  code: "ctx.resource.setFilter({ status: { in: ['Active'] } });",
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+    expect(updateSettingsResponse.status).toBe(400);
+    expect(updateSettingsResponse.body?.errors).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          path: '$.flowRegistry.unsafeUpdateSettings.steps.runUnsafe.defaultParams.code',
+          ruleId: 'runjs-resource-filter-operator-missing-dollar',
+          details: expect.objectContaining({
+            fieldPath: 'status',
+            operator: 'in',
+            suggestedOperator: '$in',
+          }),
+        }),
+      ]),
+    );
+
     const readback = await getSurface(rootAgent, {
       uid: formUid,
     });
@@ -579,7 +615,10 @@ describe.skip('flowSurfaces event flow', () => {
 
 function getData(response: any) {
   expect(response.status).toBe(200);
-  return response.body.data;
+  if (response.body && Object.prototype.hasOwnProperty.call(response.body, 'data')) {
+    return response.body.data;
+  }
+  return response.body;
 }
 
 async function createEmployeeForm(rootAgent: any) {

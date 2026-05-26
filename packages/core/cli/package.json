@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/cli",
-  "version": "2.1.0-beta.35",
+  "version": "2.1.0-beta.37",
   "description": "NocoBase Command Line Tool",
   "type": "module",
   "main": "dist/generated/command-registry.js",
@@ -96,7 +96,7 @@
     "ora": "^8.2.0",
     "pg": "^8.14.1",
     "picocolors": "^1.1.1",
-    "tar": "^7.4.3"
+    "tar": "^7.5.15"
   },
   "devDependencies": {
     "@types/node": "^18.19.130",

@@ -339,7 +339,7 @@ export function formatSwaggerSchemaError(
       `Authentication failed while loading the command runtime from \`swagger:get\`${envLabel}.`,
       `Base URL: ${context.baseUrl}`,
       details,
-      'Update the API key with `nb env add <name> --api-base-url <url> --auth-type token --token <api-key>`, log in with `nb env auth <name>`, or rerun the command with `--token <api-key>`.',
+      'Update the API key with `nb env add <name> --api-base-url <url> --auth-type token --access-token <api-key>`, log in with `nb env auth <name>`, or rerun the command with `--access-token <api-key>`.',
       commandHint,
     ].join('\n');
   }

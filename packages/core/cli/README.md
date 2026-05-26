@@ -61,7 +61,7 @@ When creating a new app, it can also install NocoBase AI coding skills
 (`nocobase/skills`) globally.
 
 Use `--skip-skills` if the skills are managed separately, or when running in CI
-or offline environments where `nb init` should not install or update them.
+or offline environments where `nb init` should not install them.
 
 ### Non-Interactive Setup
 

@@ -35,7 +35,7 @@ const LARGE_DEFAULTS_ASSOCIATION_TARGET_FIELDS = Array.from(
   (_item, index) => `targetField${index + 1}`,
 );
 
-describe.skip('flowSurfaces backend authoring applyBlueprint compiler', () => {
+describe('flowSurfaces backend authoring applyBlueprint compiler', () => {
   let context: FlowSurfacesContractContext;
   let rootAgent: FlowSurfacesContractContext['rootAgent'];
   let flowRepo: FlowSurfacesContractContext['flowRepo'];

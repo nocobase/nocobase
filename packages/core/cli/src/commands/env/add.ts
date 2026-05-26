@@ -19,7 +19,9 @@ import {
   runPromptCatalog,
   type PromptCatalogValues,
   type PromptInitialValues,
+  type PasswordPromptBlock,
   type PromptsCatalog,
+  type TextPromptBlock,
 } from '../../lib/prompt-catalog.js';
 import {
   applyCliLocale,
@@ -28,7 +30,7 @@ import {
   localeText,
 } from '../../lib/cli-locale.js';
 import { validateApiBaseUrl } from '../../lib/prompt-validators.js';
-import { printStage, printSuccess, printVerbose, setVerboseMode } from '../../lib/ui.js';
+import { printInfo, printStage, printSuccess, printVerbose, setVerboseMode } from '../../lib/ui.js';
 
 type EnvAddParsedFlags = {
   env?: string;
@@ -40,6 +42,9 @@ type EnvAddParsedFlags = {
   'auth-type'?: string;
   'access-token'?: string;
   token?: string;
+  username?: string;
+  password?: string;
+  'skip-auth': boolean;
   source?: string;
   'download-version'?: string;
   'docker-registry'?: string;
@@ -109,9 +114,50 @@ const ENV_BOOLEAN_RUNTIME_FLAG_MAP = {
 const envAddText = (key: string, values?: Record<string, unknown>) =>
   localeText(`commands.envAdd.${key}`, values);
 
+const envAddAccessTokenPrompt: TextPromptBlock = {
+  type: 'text',
+  message: envAddText('prompts.accessToken.message'),
+  required: true,
+  hidden: (values) => values.authType !== 'token' || values.skipAuth === true,
+};
+
+const envAddUsernamePrompt: TextPromptBlock = {
+  type: 'text',
+  message: envAddText('prompts.username.message'),
+  placeholder: envAddText('prompts.username.placeholder'),
+  required: true,
+  hidden: (values) => values.authType !== 'basic' || values.skipAuth === true,
+};
+
+const envAddPasswordPrompt: PasswordPromptBlock = {
+  type: 'password',
+  message: envAddText('prompts.password.message'),
+  required: true,
+  hidden: (values) => values.authType !== 'basic' || values.skipAuth === true,
+};
+
+function formatDeferredAuthMessage(envName: string, authType: unknown): string {
+  const normalizedAuthType = String(authType ?? '').trim();
+  const nextStep = `Authentication was skipped for env "${envName}". Run \`nb env auth ${envName}\` to finish setup.`;
+
+  if (normalizedAuthType === 'basic') {
+    return `${nextStep} You will be prompted for a username and password.`;
+  }
+
+  if (normalizedAuthType === 'token') {
+    return `${nextStep} You will be prompted for an access token.`;
+  }
+
+  if (normalizedAuthType === 'oauth') {
+    return `${nextStep} A browser sign-in flow will be started.`;
+  }
+
+  return nextStep;
+}
+
 export default class EnvAdd extends Command {
   static override summary =
-    'Save a named NocoBase API endpoint (token or OAuth), then switch the CLI to use it';
+    'Save a named NocoBase API endpoint (basic, token, or OAuth), then switch the CLI to use it';
 
   static override examples = [
     '<%= config.bin %> <%= command.id %>',
@@ -162,14 +208,26 @@ export default class EnvAdd extends Command {
     'auth-type': Flags.string({
       char: 'a',
       description:
-        'Authentication: token (API key) or oauth (browser login via `nb env auth`); prompted in a TTY when omitted',
-      options: ['token', 'oauth'],
+        'Authentication: basic (username/password login), token (API key), or oauth (browser login via `nb env auth`); prompted in a TTY when omitted',
+      options: ['basic', 'token', 'oauth'],
     }),
     'access-token': Flags.string({
       char: 't',
       aliases: ['token'],
       description:
         'API key or access token when using --auth-type token (prompted in a TTY when omitted)',
+    }),
+    username: Flags.string({
+      description:
+        'Username when using --auth-type basic (prompted in a TTY when omitted)',
+    }),
+    password: Flags.string({
+      description:
+        'Password when using --auth-type basic (prompted in a TTY when omitted)',
+    }),
+    'skip-auth': Flags.boolean({
+      description: 'Save the env now and finish authentication later with `nb env auth`',
+      default: false,
     }),
     source: Flags.string({
       hidden: true,
@@ -313,6 +371,11 @@ export default class EnvAdd extends Command {
       message: envAddText('prompts.authType.message'),
       options: [
         {
+          value: 'basic',
+          label: envAddText('prompts.authType.basicLabel'),
+          hint: envAddText('prompts.authType.basicHint'),
+        },
+        {
           value: 'oauth',
           label: envAddText('prompts.authType.oauthLabel'),
           hint: envAddText('prompts.authType.oauthHint'),
@@ -322,13 +385,9 @@ export default class EnvAdd extends Command {
       initialValue: 'oauth',
       required: true,
     },
-    accessToken: {
-      type: 'text',
-      message: envAddText('prompts.accessToken.message'),
-      placeholder: envAddText('prompts.accessToken.placeholder'),
-      required: true,
-      hidden: (values) => values.authType !== 'token',
-    },
+    username: envAddUsernamePrompt,
+    password: envAddPasswordPrompt,
+    accessToken: envAddAccessTokenPrompt,
   };
 
   private buildPromptValues(
@@ -347,9 +406,18 @@ export default class EnvAdd extends Command {
     if (flags['auth-type']) {
       values.authType = flags['auth-type'];
     }
+    if (flags['skip-auth']) {
+      values.skipAuth = true;
+    }
     const token = flags['access-token'] ?? flags.token;
     if (typeof token === 'string' && token !== '') {
       values.accessToken = token;
+    }
+    if (flags.username !== undefined) {
+      values.username = String(flags.username ?? '').trim();
+    }
+    if (flags.password !== undefined) {
+      values.password = String(flags.password ?? '');
     }
     return values;
   }
@@ -363,13 +431,41 @@ export default class EnvAdd extends Command {
     return initialValues;
   }
 
+  private buildPromptCatalog(flags: EnvAddParsedFlags): PromptsCatalog {
+    if (!flags['skip-auth']) {
+      return EnvAdd.prompts;
+    }
+
+    return {
+      ...EnvAdd.prompts,
+      username: {
+        ...envAddUsernamePrompt,
+        hidden: () => true,
+      },
+      password: {
+        ...envAddPasswordPrompt,
+        hidden: () => true,
+      },
+      accessToken: {
+        ...envAddAccessTokenPrompt,
+        hidden: () => true,
+      },
+    };
+  }
+
   private buildEnvConfig(
     results: PromptCatalogValues,
     flags: EnvAddParsedFlags,
   ): StoredEnvConfig {
+    const authType = String(results.authType ?? '').trim();
+    const authUsername =
+      authType === 'basic'
+        ? String(results.username ?? flags.username ?? '').trim()
+        : '';
     const envConfigInput: StoredEnvConfigInput & Record<string, unknown> = {
       apiBaseUrl: results.apiBaseUrl,
-      authType: results.authType,
+      authType,
+      authUsername: authUsername || undefined,
       accessToken: results.accessToken,
     };
 
@@ -389,13 +485,16 @@ export default class EnvAdd extends Command {
   async run(): Promise<void> {
     const { args, flags } = await this.parse(EnvAdd);
     const parsedFlags = flags as EnvAddParsedFlags;
+    if (parsedFlags['skip-auth'] && (parsedFlags['access-token'] !== undefined || parsedFlags.token !== undefined)) {
+      this.error('--skip-auth cannot be used with --access-token or --token.');
+    }
     applyCliLocale(parsedFlags.locale);
     setVerboseMode(parsedFlags.verbose);
     if (!parsedFlags['no-intro']) {
       printStage('Connect to NocoBase');
     }
 
-    const results = await runPromptCatalog(EnvAdd.prompts, {
+    const results = await runPromptCatalog(this.buildPromptCatalog(parsedFlags), {
       values: this.buildPromptValues(args.name, parsedFlags),
       initialValues: this.buildPromptInitialValues(parsedFlags),
       command: this,
@@ -412,9 +511,28 @@ export default class EnvAdd extends Command {
     );
     await setCurrentEnv(envName, { scope: resolveDefaultConfigScope() });
 
-    if (results.authType === 'oauth') {
-      await this.config.runCommand('env:auth', [envName]);
+    if (parsedFlags['skip-auth']) {
+      printSuccess(`✔ Env "${envName}" was saved.`);
+      printInfo(formatDeferredAuthMessage(envName, results.authType));
+      return;
     }
+
+    if (results.authType === 'oauth' || results.authType === 'basic') {
+      const authArgv = [envName];
+      if (results.authType === 'basic') {
+        authArgv.push('--auth-type', 'basic');
+        const username = String(results.username ?? '').trim();
+        const password = String(results.password ?? '');
+        if (username) {
+          authArgv.push('--username', username);
+        }
+        if (password) {
+          authArgv.push('--password', password);
+        }
+      }
+      await this.config.runCommand('env:auth', authArgv);
+    }
+
     await this.config.runCommand('env:update', [envName]);
 
     printSuccess(`✔ Env "${envName}" is ready.`);

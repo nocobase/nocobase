@@ -216,7 +216,7 @@ export function resolveComposeFieldContainerSource(
 export function resolveComposeTargetKey(
   targetKey: string,
   keyMap: Record<string, FlowSurfaceComposeTargetKey | undefined>,
-  kind: 'field' | 'layout' | 'tree connectFields',
+  kind: string,
 ) {
   const key = String(targetKey || '').trim();
   if (!key) {

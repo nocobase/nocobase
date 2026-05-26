@@ -7,10 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Schema } from '@formily/react';
 import React from 'react';
 
-import { tExpr, useT } from '../locale';
+import { tExpr, translateExpr, useT } from '../locale';
 
 export function convertDatasetFormats(data: Record<string, any>[]) {
   if (!Array.isArray(data) || data.length === 0) {
@@ -227,7 +226,7 @@ export const debugLog = (...args: any[]) => {
 
 export const useCompile = () => {
   const t = useT();
-  return React.useCallback((source: any, scope = {}) => Schema.compile(source, { t, ...scope }), [t]);
+  return React.useCallback((source: any) => translateExpr(source, t), [t]);
 };
 
 export const parseField = (field: string | string[]) => {

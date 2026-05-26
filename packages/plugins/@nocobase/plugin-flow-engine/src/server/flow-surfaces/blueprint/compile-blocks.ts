@@ -126,6 +126,8 @@ const APPLY_BLUEPRINT_BLOCK_TYPE_ENUM = [
   'markdown',
   'iframe',
   'chart',
+  'comments',
+  'recordHistory',
   'actionPanel',
   'jsBlock',
   'tree',
@@ -231,7 +233,7 @@ const APPLY_BLUEPRINT_BLOCK_RESOURCE_SHORTHAND_KEYS = [
   'binding',
   'associationField',
 ];
-const APPLY_BLUEPRINT_RECORD_CAPABLE_BLOCK_TYPES = new Set(['table', 'details', 'list', 'gridCard']);
+const APPLY_BLUEPRINT_RECORD_CAPABLE_BLOCK_TYPES = new Set(['table', 'details', 'list', 'gridCard', 'comments']);
 const APPLY_BLUEPRINT_FIELD_GRID_BLOCK_TYPES = new Set(['createForm', 'editForm', 'details', 'filterForm']);
 const APPLY_BLUEPRINT_FIELD_GROUP_BLOCK_TYPES = new Set(['createForm', 'editForm', 'details']);
 const APPLY_BLUEPRINT_AUTO_PROMOTED_RECORD_ACTION_TYPES = new Set([
@@ -245,6 +247,7 @@ const APPLY_BLUEPRINT_DEFAULT_POPUP_ACTION_TYPES = new Set(['addNew', 'addChild'
 const APPLY_BLUEPRINT_BLOCK_TYPES = new Set<string>(APPLY_BLUEPRINT_BLOCK_TYPE_ENUM);
 const APPLY_BLUEPRINT_ADD_CHILD_RECORD_ACTION_ERROR =
   "type 'addChild' must be authored under recordActions and is only valid when the live target catalog.recordActions exposes it for a tree collection table with treeTable enabled";
+const AI_EMPLOYEE_ACTION_TYPE = 'aiEmployee';
 
 function assertNoBlockLevelLayout(input: Record<string, any>, context: string) {
   if (Object.prototype.hasOwnProperty.call(input, 'layout')) {
@@ -1949,6 +1952,62 @@ function collectTreeConnectTargetKeys(settings: any, context: string) {
     .filter(Boolean);
 }
 
+function collectAIEmployeeWorkContextTargetKeys(value: any, context: string) {
+  if (_.isUndefined(value) || value === null) {
+    return [];
+  }
+  if (!Array.isArray(value)) {
+    throwBadRequest(`${context} must be an array`);
+  }
+  return value
+    .map((item, index) => {
+      if (!_.isPlainObject(item)) {
+        throwBadRequest(`${context}[${index}] must be an object`);
+      }
+      if (!Object.prototype.hasOwnProperty.call(item, 'target')) {
+        return '';
+      }
+      if (typeof item.target !== 'string') {
+        throwBadRequest(`${context}[${index}].target must be 'self' or a string block key`);
+      }
+      const normalizedTarget = item.target.trim();
+      if (!normalizedTarget || normalizedTarget === 'self') {
+        return '';
+      }
+      return normalizeFlowSurfaceComposeKey(normalizedTarget, `${context}[${index}].target`);
+    })
+    .filter(Boolean);
+}
+
+function collectAIEmployeeActionSettingsTargetKeys(settings: any, context: string) {
+  if (!_.isPlainObject(settings)) {
+    return [];
+  }
+  const targets: string[] = [];
+  if (Object.prototype.hasOwnProperty.call(settings, 'workContext')) {
+    targets.push(...collectAIEmployeeWorkContextTargetKeys(settings.workContext, `${context}.workContext`));
+  }
+  if (Object.prototype.hasOwnProperty.call(settings, 'tasks')) {
+    if (!Array.isArray(settings.tasks)) {
+      throwBadRequest(`${context}.tasks must be an array`);
+    }
+    settings.tasks.forEach((task: any, taskIndex: number) => {
+      if (!_.isPlainObject(task)) {
+        throwBadRequest(`${context}.tasks[${taskIndex}] must be an object`);
+      }
+      if (_.isPlainObject(task.message) && Object.prototype.hasOwnProperty.call(task.message, 'workContext')) {
+        targets.push(
+          ...collectAIEmployeeWorkContextTargetKeys(
+            task.message.workContext,
+            `${context}.tasks[${taskIndex}].message.workContext`,
+          ),
+        );
+      }
+    });
+  }
+  return targets;
+}
+
 function compileTreeConnectSettingsTargets(
   settings: Record<string, any>,
   localBlockKeys: Map<string, string>,
@@ -1971,6 +2030,79 @@ function compileTreeConnectSettingsTargets(
       ),
     };
   });
+  return nextSettings;
+}
+
+function compileAIEmployeeWorkContextTargets(value: any, localBlockKeys: Map<string, string>, context: string) {
+  if (_.isUndefined(value) || value === null) {
+    return [];
+  }
+  if (!Array.isArray(value)) {
+    throwBadRequest(`${context} must be an array`);
+  }
+  return value.map((item, index) => {
+    if (!_.isPlainObject(item)) {
+      throwBadRequest(`${context}[${index}] must be an object`);
+    }
+    if (!Object.prototype.hasOwnProperty.call(item, 'target')) {
+      return item;
+    }
+    if (typeof item.target !== 'string') {
+      throwBadRequest(`${context}[${index}].target must be 'self' or a string block key`);
+    }
+    const normalizedTarget = item.target.trim();
+    if (!normalizedTarget || normalizedTarget === 'self') {
+      return item;
+    }
+    return {
+      ...item,
+      target: resolveTargetBlockKey(item.target, localBlockKeys, `${context}[${index}].target`),
+    };
+  });
+}
+
+function compileAIEmployeeActionSettingsTargets(
+  settings: Record<string, any>,
+  localBlockKeys: Map<string, string>,
+  context: string,
+) {
+  if (!_.isPlainObject(settings)) {
+    return settings;
+  }
+  let nextSettings = settings;
+  if (Object.prototype.hasOwnProperty.call(settings, 'workContext')) {
+    nextSettings = nextSettings === settings ? _.cloneDeep(settings) : nextSettings;
+    nextSettings.workContext = compileAIEmployeeWorkContextTargets(
+      settings.workContext,
+      localBlockKeys,
+      `${context}.settings.workContext`,
+    );
+  }
+  if (Object.prototype.hasOwnProperty.call(settings, 'tasks')) {
+    if (!Array.isArray(settings.tasks)) {
+      throwBadRequest(`${context}.settings.tasks must be an array`);
+    }
+    nextSettings = nextSettings === settings ? _.cloneDeep(settings) : nextSettings;
+    nextSettings.tasks = settings.tasks.map((task: any, taskIndex: number) => {
+      if (!_.isPlainObject(task)) {
+        throwBadRequest(`${context}.settings.tasks[${taskIndex}] must be an object`);
+      }
+      if (!_.isPlainObject(task.message) || !Object.prototype.hasOwnProperty.call(task.message, 'workContext')) {
+        return task;
+      }
+      return {
+        ...task,
+        message: {
+          ...task.message,
+          workContext: compileAIEmployeeWorkContextTargets(
+            task.message.workContext,
+            localBlockKeys,
+            `${context}.settings.tasks[${taskIndex}].message.workContext`,
+          ),
+        },
+      };
+    });
+  }
   return nextSettings;
 }
 
@@ -2072,6 +2204,7 @@ function compileAction(
   index: number,
   scopePrefix: string,
   assets: FlowSurfaceApplyBlueprintAssets,
+  localBlockKeys: Map<string, string>,
   context: string,
   popupDefaultsMetadata?: FlowSurfaceApplyBlueprintPopupDefaultsMetadata,
   defaults?: FlowSurfaceApplyBlueprintDefaults,
@@ -2126,8 +2259,11 @@ function compileAction(
   const localKey = normalizeBlueprintLocalKey(input.key, `${type}_${index + 1}`, `${context}[${index}].key`);
   const key = buildActionKey(localKey, !!hasExplicitKey, `${context}[${index}].key`);
   let settings = resolveAssetSettings(input.settings, input, assets, `${context}[${index}]`);
-  if (readOptionalString(input.title) && _.isUndefined(settings.title)) {
+  if (type !== AI_EMPLOYEE_ACTION_TYPE && readOptionalString(input.title) && _.isUndefined(settings.title)) {
     settings.title = readOptionalString(input.title);
+  }
+  if (type === AI_EMPLOYEE_ACTION_TYPE) {
+    settings = compileAIEmployeeActionSettingsTargets(settings, localBlockKeys, `${context}[${index}]`);
   }
   const popupResult = compilePopup(input.popup, `${key}.popup`, assets, `${context}[${index}].popup`, defaults, {
     ownerActionType: type,
@@ -2320,6 +2456,19 @@ function compileBlocks(
         normalizeFlowSurfaceComposeKey(field.target, `${context}[${index}].fields[${fieldIndex}].target`),
       );
     });
+    const collectActionTargets = (items: any[], slot: 'actions' | 'recordActions') => {
+      items.forEach((action: any, actionIndex: number) => {
+        if (readApplyBlueprintActionType(action) !== AI_EMPLOYEE_ACTION_TYPE || !_.isPlainObject(action)) {
+          return;
+        }
+        collectAIEmployeeActionSettingsTargetKeys(
+          action.settings,
+          `${context}[${index}].${slot}[${actionIndex}]`,
+        ).forEach((targetKey) => referencedBlockKeys.add(targetKey));
+      });
+    };
+    collectActionTargets(readOptionalItems(block.actions, `${context}[${index}].actions`), 'actions');
+    collectActionTargets(readOptionalItems(block.recordActions, `${context}[${index}].recordActions`), 'recordActions');
   });
 
   rawBlocks.forEach((block, index) => {
@@ -2477,6 +2626,7 @@ function compileBlocks(
         actionIndex,
         key,
         assets,
+        blockKeysByLocalKey,
         `${blockContext}.actions`,
         popupDefaultsMetadata,
         defaults,
@@ -2501,6 +2651,7 @@ function compileBlocks(
         actionIndex,
         key,
         assets,
+        blockKeysByLocalKey,
         `${blockContext}.recordActions`,
         popupDefaultsMetadata,
         defaults,

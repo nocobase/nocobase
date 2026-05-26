@@ -7,22 +7,15 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { CloseOutlined } from '@ant-design/icons';
-import { css } from '@emotion/css';
 import { useFlowView } from '@nocobase/flow-engine';
 import { Button, Space } from 'antd';
 import React, { useCallback } from 'react';
 
 export interface DrawerFormLayoutProps {
-  /** Header title rendered next to the close (X) button. */
+  /** Header title rendered next to antd Drawer's native close (X) icon. */
   title: React.ReactNode;
   /** Form body — typically a `<Form>` wrapping `<Form.Item>` fields. */
   children: React.ReactNode;
-  /**
-   * Called before the drawer is closed by either the Cancel button or the
-   * header's X icon. Use for "discard changes" confirmations.
-   */
-  onCancel?: () => void | Promise<void>;
   /**
    * Called when the Submit button is clicked. Caller owns validation + the
    * actual API call; the drawer is closed automatically when `onSubmit`
@@ -44,29 +37,26 @@ export interface DrawerFormLayoutProps {
   footer?: React.ReactNode;
 }
 
-const titleClassName = css`
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  margin-left: -8px;
-`;
-
 /**
- * Standard layout for drawer-hosted forms: a close-icon + title header on
- * top, the caller-provided form body in the middle, and a Cancel + Submit
- * footer at the bottom. Wraps `useFlowView()`'s `Header` / `Footer` slots
- * so the drawer chrome stays consistent across plugins.
+ * Standard layout for drawer-hosted forms: a title-only header on top
+ * (caller must open the drawer with `viewer.drawer({ closable: true })`
+ * so antd Drawer renders its native left-side X next to the title),
+ * the caller-provided form body in the middle, and a Cancel + Submit
+ * footer at the bottom. Wraps `useFlowView()`'s `Header` / `Footer`
+ * slots so the drawer chrome stays consistent across plugins.
+ *
+ * To intercept close (e.g. dirty-form confirmation), use the lower-level
+ * `viewer.drawer({ preventClose, beforeClose, ... })` hooks — this
+ * layout no longer wraps a custom close handler.
  *
  * Callers own the `<Form>` instance, validation, and the actual API call.
- * This component only handles the chrome and the close behaviour.
  */
 export function DrawerFormLayout(props: DrawerFormLayoutProps) {
   const view = useFlowView();
 
   const handleCancel = useCallback(async () => {
-    await props.onCancel?.();
     await view.close();
-  }, [props, view]);
+  }, [view]);
 
   const handleSubmit = useCallback(async () => {
     await props.onSubmit?.();
@@ -75,16 +65,7 @@ export function DrawerFormLayout(props: DrawerFormLayoutProps) {
 
   return (
     <div>
-      {view.Header ? (
-        <view.Header
-          title={
-            <span className={titleClassName}>
-              <Button type="text" size="small" icon={<CloseOutlined />} onClick={handleCancel} />
-              <span>{props.title}</span>
-            </span>
-          }
-        />
-      ) : null}
+      {view.Header ? <view.Header title={props.title} /> : null}
       {props.children}
       {view.Footer ? (
         <view.Footer>

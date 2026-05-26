@@ -58,7 +58,7 @@ function expectRelationTitleFieldError(
   expect(error.details?.suggestion).toEqual(expect.any(String));
 }
 
-describe.skip('flowSurfaces association contract', () => {
+describe('flowSurfaces association contract', () => {
   let context: FlowSurfacesContractContext;
   let flowRepo: FlowSurfacesContractContext['flowRepo'];
   let rootAgent: FlowSurfacesContractContext['rootAgent'];
