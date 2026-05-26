@@ -26,6 +26,7 @@ import { translateCli } from './cli-locale.js';
 import { resolveConfiguredCommandName } from './cli-config.js';
 
 const FORWARDED_SIGNALS: NodeJS.Signals[] = ['SIGINT', 'SIGTERM'];
+const PROCESS_TIMEOUT_FORCE_KILL_DELAY_MS = 1000;
 const MISSING_COMMAND_SPECS = {
   docker: {
     displayName: 'Docker',
@@ -44,6 +45,19 @@ const MISSING_COMMAND_SPECS = {
 async function resolveCommandName(name: string): Promise<string> {
   return await resolveConfiguredCommandName(name);
 }
+
+type CommandProcessOptions = {
+  cwd?: string;
+  env?: Record<string, string>;
+  errorName?: string;
+  timeoutMs?: number;
+};
+
+type RunProcessOptions = CommandProcessOptions & {
+  stdio?: 'inherit' | 'pipe' | 'ignore';
+  onStdout?: (chunk: string) => void;
+  onStderr?: (chunk: string) => void;
+};
 
 function createMissingCommandError(name: string, label: string, error: unknown): Error | undefined {
   const code =
@@ -125,18 +139,7 @@ export function resolveProjectCwd(cwd?: string): string {
   return current;
 }
 
-export async function run(
-  name: string,
-  args: string[],
-  options?: {
-    stdio?: 'inherit' | 'pipe' | 'ignore';
-    cwd?: string;
-    env?: Record<string, string>;
-    errorName?: string;
-    onStdout?: (chunk: string) => void;
-    onStderr?: (chunk: string) => void;
-  },
-): Promise<void> {
+export async function run(name: string, args: string[], options?: RunProcessOptions): Promise<void> {
   const cwd = resolveCwd(options?.cwd);
   const label = options?.errorName ?? name;
   const command = await resolveCommandName(name);
@@ -165,12 +168,19 @@ export async function run(
       }
     }
     const cleanupSignalForwarding = forwardSignalsToChild(child);
+    const timeoutController = attachProcessTimeout(child, options?.timeoutMs);
     child.once('error', (error) => {
+      timeoutController.cleanup();
       cleanupSignalForwarding();
       reject(createMissingCommandError(name, label, error) ?? error);
     });
     child.once('close', (code, signal) => {
+      timeoutController.cleanup();
       cleanupSignalForwarding();
+      if (timeoutController.didTimeout()) {
+        reject(new Error(`${label} timed out after ${options?.timeoutMs}ms`));
+        return;
+      }
       if (code === 0) {
         resolve();
         return;
@@ -182,6 +192,51 @@ export async function run(
       reject(new Error(`${label} exited with code ${code}`));
     });
   });
+}
+
+function attachProcessTimeout(
+  child: ChildProcess,
+  timeoutMs?: number,
+): { cleanup: () => void; didTimeout: () => boolean } {
+  if (!timeoutMs || timeoutMs <= 0) {
+    return {
+      cleanup: () => undefined,
+      didTimeout: () => false,
+    };
+  }
+
+  let didTimeout = false;
+  let forceKillTimer: NodeJS.Timeout | undefined;
+  const isChildRunning = () => child.exitCode === null && child.signalCode === null;
+  const terminateChild = (signal: NodeJS.Signals) => {
+    if (!isChildRunning()) {
+      return;
+    }
+    try {
+      child.kill(signal);
+    } catch {
+      // Ignore kill errors here and let the child close/error handlers surface the failure.
+    }
+  };
+  const timeoutTimer = setTimeout(() => {
+    didTimeout = true;
+    terminateChild('SIGTERM');
+    forceKillTimer = setTimeout(() => {
+      terminateChild('SIGKILL');
+    }, PROCESS_TIMEOUT_FORCE_KILL_DELAY_MS);
+    forceKillTimer.unref?.();
+  }, timeoutMs);
+  timeoutTimer.unref?.();
+
+  return {
+    cleanup: () => {
+      clearTimeout(timeoutTimer);
+      if (forceKillTimer) {
+        clearTimeout(forceKillTimer);
+      }
+    },
+    didTimeout: () => didTimeout,
+  };
 }
 
 function forwardSignalsToChild(child: ChildProcess): () => void {
@@ -216,11 +271,7 @@ function forwardSignalsToChild(child: ChildProcess): () => void {
   };
 }
 
-export async function commandSucceeds(
-  name: string,
-  args: string[],
-  options?: { cwd?: string; env?: Record<string, string>; errorName?: string },
-): Promise<boolean> {
+export async function commandSucceeds(name: string, args: string[], options?: CommandProcessOptions): Promise<boolean> {
   const cwd = resolveCwd(options?.cwd);
   const label = options?.errorName ?? name;
   const command = await resolveCommandName(name);
@@ -234,8 +285,10 @@ export async function commandSucceeds(
       stdio: 'ignore',
       windowsHide: process.platform === 'win32',
     });
+    const timeoutController = attachProcessTimeout(child, options?.timeoutMs);
 
     child.once('error', (error) => {
+      timeoutController.cleanup();
       const missingCommandError = createMissingCommandError(name, label, error);
       if (missingCommandError) {
         reject(missingCommandError);
@@ -243,15 +296,18 @@ export async function commandSucceeds(
       }
       resolve(false);
     });
-    child.once('close', (code) => resolve(code === 0));
+    child.once('close', (code) => {
+      timeoutController.cleanup();
+      if (timeoutController.didTimeout()) {
+        resolve(false);
+        return;
+      }
+      resolve(code === 0);
+    });
   });
 }
 
-export async function commandOutput(
-  name: string,
-  args: string[],
-  options?: { cwd?: string; env?: Record<string, string>; errorName?: string },
-): Promise<string> {
+export async function commandOutput(name: string, args: string[], options?: CommandProcessOptions): Promise<string> {
   const cwd = resolveCwd(options?.cwd);
   const label = options?.errorName ?? name;
   const command = await resolveCommandName(name);
@@ -275,10 +331,17 @@ export async function commandOutput(
     child.stderr.on('data', (chunk) => {
       stderr += chunk;
     });
+    const timeoutController = attachProcessTimeout(child, options?.timeoutMs);
     child.once('error', (error) => {
+      timeoutController.cleanup();
       reject(createMissingCommandError(name, label, error) ?? error);
     });
     child.once('close', (code, signal) => {
+      timeoutController.cleanup();
+      if (timeoutController.didTimeout()) {
+        reject(new Error(`${label} timed out after ${options?.timeoutMs}ms`));
+        return;
+      }
       if (code === 0) {
         resolve(stdout.trim());
         return;
@@ -306,7 +369,7 @@ async function readCommandOutputFile(filePath: string): Promise<string> {
 export async function commandOutputViaFile(
   name: string,
   args: string[],
-  options?: { cwd?: string; env?: Record<string, string>; errorName?: string },
+  options?: CommandProcessOptions,
 ): Promise<string> {
   const cwd = resolveCwd(options?.cwd);
   const label = options?.errorName ?? name;
@@ -328,11 +391,18 @@ export async function commandOutputViaFile(
         stdio: ['ignore', stdoutHandle.fd, stderrHandle.fd],
         windowsHide: process.platform === 'win32',
       });
+      const timeoutController = attachProcessTimeout(child, options?.timeoutMs);
 
       child.once('error', (error) => {
+        timeoutController.cleanup();
         reject(createMissingCommandError(name, label, error) ?? error);
       });
       child.once('close', (code, signal) => {
+        timeoutController.cleanup();
+        if (timeoutController.didTimeout()) {
+          reject(new Error(`${label} timed out after ${options?.timeoutMs}ms`));
+          return;
+        }
         resolve({ code, signal });
       });
     });
@@ -361,29 +431,11 @@ export async function commandOutputViaFile(
 }
 
 /** Run `yarn` with the given argument list, inheriting stdio (errors label as `npm` for compatibility). */
-export function runNpm(
-  args: string[],
-  options?: {
-    stdio?: 'inherit' | 'pipe' | 'ignore';
-    cwd?: string;
-    env?: Record<string, string>;
-    onStdout?: (chunk: string) => void;
-    onStderr?: (chunk: string) => void;
-  },
-): Promise<void> {
+export function runNpm(args: string[], options?: Omit<RunProcessOptions, 'errorName'>): Promise<void> {
   return run('yarn', [...args], { ...options, errorName: 'npm' });
 }
 
-export function runNocoBaseCommand(
-  args: string[],
-  options?: {
-    stdio?: 'inherit' | 'pipe' | 'ignore';
-    cwd?: string;
-    env?: Record<string, string>;
-    onStdout?: (chunk: string) => void;
-    onStderr?: (chunk: string) => void;
-  },
-): Promise<void> {
+export function runNocoBaseCommand(args: string[], options?: Omit<RunProcessOptions, 'errorName'>): Promise<void> {
   const cwd = resolveProjectCwd(options?.cwd);
   const localBin = path.join(cwd, 'node_modules', '.bin');
   return run('nocobase-v1', [...args], {

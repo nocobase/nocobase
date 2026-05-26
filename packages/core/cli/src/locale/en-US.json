@@ -221,6 +221,10 @@
       }
     },
     "install": {
+      "messages": {
+        "skipDownloadDockerImageMissing": "Cannot continue with `--skip-download` because Docker image \"{{imageRef}}\" is not available locally. Load or pull the image first, or run the command again without `--skip-download`.",
+        "skipDownloadLocalAppMissing": "Cannot continue with `--skip-download` because \"{{projectRoot}}\" is missing or does not contain a package.json file. Point `--app-root-path` to an existing NocoBase app, or run the command again without `--skip-download`."
+      },
       "validation": {
         "builtinDbUnsupported": "Built-in database does not support \"{{dialect}}\" yet. Choose PostgreSQL, MySQL, or MariaDB, or turn off built-in database."
       },
@@ -243,9 +247,6 @@
         "storagePath": {
           "message": "Where should uploads and local files be stored?",
           "placeholder": "./<env>/storage/"
-        },
-        "fetchSource": {
-          "message": "Download NocoBase automatically if the app directory is empty?"
         },
         "dbDialect": {
           "message": "Which database would you like to use?"
@@ -316,7 +317,8 @@
         "uiOpening": "A local setup form will open in your browser. That form needs a person to fill it in. If you are using an AI agent, do not stop this process while the CLI waits for the submission.",
         "uiReady": "Local setup form is ready.",
         "uiReadyHelp": "If your browser does not open automatically, copy the URL below into your browser to continue. Keep this terminal session running while the CLI waits for the submission.",
-        "uiOpenBrowserFallback": "We could not open your browser automatically. Copy the URL above into your browser to continue setup, and keep this terminal session running. If you are using an AI agent, do not stop the current process."
+        "uiOpenBrowserFallback": "We could not open your browser automatically. Copy the URL above into your browser to continue setup, and keep this terminal session running. If you are using an AI agent, do not stop the current process.",
+        "skillsSyncRegistryUnavailable": "Couldn't reach the npm registry to sync NocoBase AI coding skills. Skipping skills install and continuing init. Run `nb skills install` later when registry access is available."
       },
       "prompts": {
         "appName": {
@@ -334,6 +336,9 @@
         "apiBaseUrl": {
           "message": "API base URL",
           "placeholder": "https://demo.example.com/api or https://demo.example.com/api/__app/<subapp>"
+        },
+        "skipDownload": {
+          "message": "Skip downloading NocoBase and reuse existing local app files or Docker images?"
         }
       },
       "webUi": {

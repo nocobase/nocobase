@@ -101,7 +101,6 @@ test('install saves env config immediately after collecting prompt results for f
     appResults: {
       appPort: '13080',
       storagePath: './app1/storage/',
-      fetchSource: false,
     },
     downloadResults: {},
     dbResults: {},
@@ -150,7 +149,6 @@ test('install --resume does not save env config immediately after collecting pro
     appResults: {
       appPort: '13080',
       storagePath: './app1/storage/',
-      fetchSource: false,
     },
     downloadResults: {},
     dbResults: {},
@@ -204,7 +202,6 @@ test('install syncs oauth env connection after the app becomes ready', async () 
     appResults: {
       appPort: '13080',
       storagePath: './app1/storage/',
-      fetchSource: true,
     },
     downloadResults: {
       source: 'docker',
@@ -263,7 +260,6 @@ test('install syncs token env connection after the app becomes ready without oau
     appResults: {
       appPort: '13080',
       storagePath: './app1/storage/',
-      fetchSource: true,
     },
     downloadResults: {
       source: 'git',
@@ -312,7 +308,6 @@ test('install run validates external db config before saving env config', async 
     appResults: {
       appPort: '13080',
       storagePath: './app1/storage/',
-      fetchSource: false,
     },
     downloadResults: {},
     dbResults: {
@@ -365,8 +360,8 @@ test('install seeds basic auth credentials as prompt defaults instead of fixed v
     .mockResolvedValueOnce({
       appPort: '13080',
       storagePath: './app1/storage/',
-      fetchSource: false,
     })
+    .mockResolvedValueOnce({})
     .mockResolvedValueOnce({})
     .mockResolvedValueOnce({
       rootUsername: 'nocobase',
@@ -412,7 +407,7 @@ test('install seeds basic auth credentials as prompt defaults instead of fixed v
       resume: false,
       yes: false,
       force: false,
-      'fetch-source': false,
+      'skip-download': false,
       'builtin-db': false,
       'auth-type': 'basic',
     },
@@ -488,7 +483,7 @@ test('install --resume reuses the saved workspace env config for prompt values',
       env: 'app1',
       yes: false,
       force: false,
-      'fetch-source': false,
+      'skip-download': false,
       'builtin-db': false,
     },
     false,
@@ -500,7 +495,6 @@ test('install --resume reuses the saved workspace env config for prompt values',
   expect(result.appResults.appRootPath).toBe('./app1/source/');
   expect(result.appResults.appPort).toBe('13080');
   expect(result.appResults.storagePath).toBe('./app1/storage/');
-  expect(result.appResults.fetchSource).toBe(true);
   expect(result.downloadResults.source).toBe('docker');
   expect(result.downloadResults.version).toBe('alpha');
   expect(result.downloadResults.dockerRegistry).toBe('nocobase/nocobase');
@@ -606,7 +600,7 @@ test('install --resume keeps saved basic auth credentials editable in prompts', 
       env: 'app1',
       yes: false,
       force: false,
-      'fetch-source': false,
+      'skip-download': false,
       'builtin-db': false,
     },
     false,
@@ -655,7 +649,7 @@ test('install --resume maps arbitrary saved download versions to otherVersion pr
       env: 'app8',
       yes: false,
       force: false,
-      'fetch-source': false,
+      'skip-download': false,
       'builtin-db': false,
     },
     false,
@@ -685,7 +679,7 @@ test('install --resume fails with a clear message when the env is missing', asyn
           env: 'missing',
           yes: false,
           force: false,
-          'fetch-source': false,
+          'skip-download': false,
           'builtin-db': false,
         },
         false,
@@ -726,7 +720,7 @@ test('install --resume --yes requires only setup-only flags that are not saved i
           env: 'app1',
           yes: true,
           force: false,
-          'fetch-source': false,
+          'skip-download': false,
           'builtin-db': false,
         },
         true,

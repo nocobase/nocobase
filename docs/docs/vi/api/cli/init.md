@@ -63,7 +63,7 @@ nb init --env app1 --resume
 | `--db-database` | string | Tên database |
 | `--db-user` | string | Tên người dùng database |
 | `--db-password` | string | Mật khẩu database |
-| `--fetch-source` | boolean | Tải file ứng dụng hoặc Docker image trước khi cài đặt |
+| `--skip-download` | boolean | Bỏ qua bước tải file ứng dụng hoặc pull Docker image trước khi cài đặt, và tái sử dụng tài nguyên cục bộ sẵn có |
 | `--source`, `-s` | string | Cách lấy NocoBase: `docker`, `npm` hoặc `git` |
 | `--version`, `-v` | string | Tham số phiên bản: phiên bản npm, tag Docker image hoặc Git ref |
 | `--replace`, `-r` | boolean | Thay thế khi thư mục đích đã tồn tại |
