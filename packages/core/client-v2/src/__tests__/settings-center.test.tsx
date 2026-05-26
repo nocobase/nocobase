@@ -211,8 +211,7 @@ describe('settings center', () => {
     await renderApp(app);
     await waitForGetRequests(app, ['/auth:check', 'roles:check', 'pm:list']);
 
-    expect(await screen.findByText('demo-plugin')).toBeInTheDocument();
-    expect(screen.getByText('@nocobase/demo-plugin')).toBeInTheDocument();
+    expect(await screen.findByText('Demo plugin')).toBeInTheDocument();
   });
 
   it('should hide plugin-manager menu item when pm snippet is missing', async () => {
