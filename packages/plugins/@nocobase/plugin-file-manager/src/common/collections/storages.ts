@@ -11,7 +11,7 @@ export default {
   dumpRules: 'required',
   migrationRules: ['overwrite', 'schema-only'],
   name: 'storages',
-  tags: 'basic',
+  tags: 'system',
   shared: true,
   fields: [
     {

@@ -14,7 +14,7 @@ export default {
   migrationRules: ['overwrite', 'schema-only'],
   shared: true,
   name: 'fields',
-  tags: 'basic',
+  tags: 'system',
   autoGenId: false,
   model: 'FieldModel',
   timestamps: false,

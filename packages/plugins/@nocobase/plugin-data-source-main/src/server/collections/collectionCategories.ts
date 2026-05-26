@@ -16,7 +16,7 @@ export default {
   migrationRules: ['overwrite', 'schema-only'],
   shared: true,
   name: 'collectionCategories',
-  tags: 'basic',
+  tags: 'system',
   sortable: true,
   fields: [
     {

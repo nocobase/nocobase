@@ -16,7 +16,7 @@ export default defineCollection({
   shared: true,
   migrationRules: ['overwrite', 'schema-only'],
   name: 'userDataSyncSources',
-  tags: 'basic',
+  tags: 'system',
   title: '{{t("Sync Sources")}}',
   sortable: true,
   model: 'SyncSourceModel',

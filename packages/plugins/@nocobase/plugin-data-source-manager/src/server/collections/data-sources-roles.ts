@@ -11,7 +11,7 @@ import { defineCollection } from '@nocobase/database';
 
 export default defineCollection({
   name: 'dataSourcesRoles',
-  tags: 'basic',
+  tags: 'system',
   dumpRules: 'required',
   migrationRules: ['overwrite', 'schema-only'],
   autoGenId: false,

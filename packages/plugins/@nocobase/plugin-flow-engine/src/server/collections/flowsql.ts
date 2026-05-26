@@ -11,7 +11,7 @@ import { defineCollection } from '@nocobase/database';
 
 export default defineCollection({
   name: 'flowSql',
-  tags: 'basic',
+  tags: 'system',
   filterTargetKey: 'uid',
   migrationRules: ['overwrite', 'schema-only'],
   fields: [

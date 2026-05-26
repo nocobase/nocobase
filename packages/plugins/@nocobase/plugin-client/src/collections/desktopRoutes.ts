@@ -9,7 +9,7 @@
 
 export default {
   name: 'desktopRoutes',
-  tags: 'basic',
+  tags: 'system',
   dumpRules: 'required',
   migrationRules: ['overwrite', 'schema-only'],
   inherit: false,

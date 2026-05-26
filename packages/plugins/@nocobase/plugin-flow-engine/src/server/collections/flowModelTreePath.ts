@@ -13,7 +13,7 @@ export default {
   dumpRules: 'required',
   migrationRules: ['overwrite', 'schema-only'],
   name: 'flowModelTreePath',
-  tags: 'basic',
+  tags: 'system',
   autoGenId: false,
   timestamps: false,
   indexes: [

@@ -9,7 +9,7 @@
 
 export default {
   name: 'llmServices',
-  tags: 'basic',
+  tags: 'system',
   fields: [
     {
       name: 'name',

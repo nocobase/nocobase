@@ -9,7 +9,7 @@
 
 export default {
   name: 'verifiers',
-  tags: 'basic',
+  tags: 'system',
   autoGenId: false,
   fields: [
     {

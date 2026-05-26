@@ -15,7 +15,7 @@ export default defineCollection({
   description: 'Role data',
   migrationRules: ['overwrite', 'schema-only'],
   name: 'roles',
-  tags: 'basic',
+  tags: 'system',
   title: '{{t("Roles")}}',
   autoGenId: false,
   model: 'RoleModel',
