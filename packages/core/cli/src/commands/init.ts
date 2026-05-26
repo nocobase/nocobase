@@ -26,7 +26,6 @@ import { applyCliLocale, localeText, translateCli } from '../lib/cli-locale.ts';
 import { resolveDefaultConfigScope } from '../lib/cli-home.js';
 import { type RunPromptCatalogWebUIStage, runPromptCatalogWebUI } from '../lib/prompt-web-ui.ts';
 import { validateApiBaseUrl, validateEnvKey } from '../lib/prompt-validators.ts';
-import { run } from '../lib/run-npm.ts';
 import { installNocoBaseSkills, isNpmRegistryUnavailable } from '../lib/skills-manager.js';
 import { omitKeys, pickKeys } from '../lib/object-utils.ts';
 import { printInfo, printStage, printVerbose, printWarning } from '../lib/ui.js';
@@ -336,7 +335,7 @@ Prompt modes:
     rootNickname: newInstallOnly(Install.rootUserPrompts.rootNickname),
   };
 
-  private buildPromptCatalog(flags: { 'skip-auth'?: boolean; 'skip-download'?: boolean }): PromptsCatalog {
+  private buildPromptCatalog(flags: { 'skip-auth'?: boolean }): PromptsCatalog {
     const prompts: PromptsCatalog = {
       ...Init.prompts,
     };
