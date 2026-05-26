@@ -91,6 +91,20 @@ type ReactNamespaceAlias = SourceRange & {
   name: string;
 };
 
+type ReactDefaultAlias = SourceRange & {
+  capability: string;
+  declarationStart?: number;
+  name: string;
+};
+
+type InvalidReactRuntimeBinding = SourceRange & {
+  binding: string;
+  capability: string;
+  declarationStart?: number;
+  index: number;
+  ruleId: 'runjs-react-default-alias-forbidden';
+};
+
 type FlowResourceAlias = SourceRange & {
   capability: string;
   declarationStart?: number;
@@ -224,6 +238,7 @@ type RunJsAstInspection = {
     capability: string;
     index: number;
   }>;
+  invalidReactRuntimeBindings: InvalidReactRuntimeBinding[];
   reactAsyncComponentReferences: Array<{
     capability: string;
     component: string;
@@ -2114,6 +2129,25 @@ function collectReactRuntimeErrors(
       }),
     );
   });
+  scan.invalidReactRuntimeBindings.forEach((entry) => {
+    errors.push(
+      buildRunJsAuthoringError({
+        path,
+        repairClass: 'react-runtime-contract-stop',
+        ruleId: entry.ruleId,
+        message: `flowSurfaces authoring ${path} cannot bind ${entry.binding} from ${entry.capability}; bind React with "const React = ctx.React" before using JSX or React.createElement`,
+        modelUse,
+        surface,
+        index: entry.declarationStart ?? entry.start,
+        source,
+        details: {
+          binding: entry.binding,
+          capability: entry.capability,
+          repairClass: 'react-runtime-contract-stop',
+        },
+      }),
+    );
+  });
   scan.reactComponentFunctionCalls.forEach((entry) => {
     errors.push(
       buildRunJsAuthoringError({
@@ -2493,6 +2527,7 @@ function scanJavaScriptSource(source: string, ast?: any, context: RunJsAuthoring
     topLevelReturns,
     ctxRunjsCalls,
     nestedRunjsCalls: astInspection?.nestedRunjsCalls || ctxRunjsCalls,
+    invalidReactRuntimeBindings: astInspection?.invalidReactRuntimeBindings || [],
     ctxRequestCalls,
     invalidApiResourceCalls: dedupeIndexedEntries([
       ...collectInvalidApiResourceCalls(source, masked, sourceBindings),
@@ -2555,6 +2590,14 @@ function inspectRunJsAst(
   const ctxLibAliases = collectCtxLibAliasesFromAst(ast, source, ctxLibsRootAliases, identifierBindings);
   const ctxApiResourceAliases = collectCtxApiResourceAliasesFromAst(ast, source, ctxApiAliases, identifierBindings);
   const reactNamespaceAliases = collectReactNamespaceAliasesFromAst(ast, source, identifierBindings);
+  const reactDefaultAliases = collectReactDefaultAliasesFromAst(ast, source, identifierBindings, reactNamespaceAliases);
+  const invalidReactRuntimeBindings = collectAstInvalidReactRuntimeBindingsFromAst(
+    ast,
+    source,
+    identifierBindings,
+    reactNamespaceAliases,
+    reactDefaultAliases,
+  );
   const reactCreateElementAliases = collectReactCreateElementAliasesFromAst(
     ast,
     source,
@@ -2723,6 +2766,9 @@ function inspectRunJsAst(
     ),
     invalidResourceFilterCalls: dedupeIndexedEntries(invalidResourceFilterCalls).sort(
       (left, right) => left.index - right.index,
+    ),
+    invalidReactRuntimeBindings: dedupeIndexedEntries(invalidReactRuntimeBindings).sort(
+      (left, right) => left.start - right.start,
     ),
     nestedRunjsCalls: dedupeIndexedEntries(nestedRunjsCalls).sort((left, right) => left.index - right.index),
     reactAsyncComponentReferences: dedupeIndexedEntries(reactAsyncComponentReferences).sort(
@@ -3313,6 +3359,166 @@ function collectReactNamespaceAliasesFromAst(
   return aliases;
 }
 
+function collectReactDefaultAliasesFromAst(
+  ast: any,
+  source: string,
+  identifierBindings: AstIdentifierBinding[],
+  namespaceAliases: ReactNamespaceAlias[],
+): ReactDefaultAlias[] {
+  const aliases: ReactDefaultAlias[] = [];
+  const addAlias = (name: string, capability: string, node: any, ancestors: any[], isVar = false) => {
+    const scope = getAstBindingScopeRange(ancestors, source.length, isVar);
+    aliases.push({
+      capability,
+      name,
+      declarationStart: typeof node.start === 'number' ? node.start : scope.start,
+      start: typeof node.start === 'number' ? node.start : scope.start,
+      end: scope.end,
+    });
+  };
+
+  walkAstAncestor(ast, {
+    AssignmentExpression(node: any, ancestors: any[]) {
+      if (node.operator !== '=') {
+        return;
+      }
+      if (node.left?.type === 'Identifier') {
+        const capability = getReactDefaultNamespaceCapabilityFromAst(
+          node.right,
+          identifierBindings,
+          namespaceAliases,
+          aliases,
+        );
+        if (capability) {
+          addAlias(node.left.name, capability, node, ancestors);
+        }
+        return;
+      }
+      if (
+        node.left?.type === 'ObjectPattern' &&
+        getReactNamespaceCapabilityFromAst(node.right, identifierBindings, namespaceAliases)
+      ) {
+        const namespace = getReactNamespaceCapabilityFromAst(node.right, identifierBindings, namespaceAliases);
+        collectAstObjectPatternAliases(node.left, (alias, member, aliasNode) => {
+          if (member === 'default') {
+            addAlias(alias, `${namespace}.default`, aliasNode || node, ancestors);
+          }
+        });
+      }
+    },
+    VariableDeclarator(node: any, ancestors: any[]) {
+      const declaration = findAstAncestor(ancestors, 'VariableDeclaration');
+      const isVar = declaration?.kind === 'var';
+      if (node.id?.type === 'Identifier') {
+        const capability = getReactDefaultNamespaceCapabilityFromAst(
+          node.init,
+          identifierBindings,
+          namespaceAliases,
+          aliases,
+        );
+        if (capability) {
+          addAlias(node.id.name, capability, node, ancestors, isVar);
+        }
+        return;
+      }
+      if (
+        node.id?.type === 'ObjectPattern' &&
+        getReactNamespaceCapabilityFromAst(node.init, identifierBindings, namespaceAliases)
+      ) {
+        const namespace = getReactNamespaceCapabilityFromAst(node.init, identifierBindings, namespaceAliases);
+        collectAstObjectPatternAliases(node.id, (alias, member, aliasNode) => {
+          if (member === 'default') {
+            addAlias(alias, `${namespace}.default`, aliasNode || node, ancestors, isVar);
+          }
+        });
+      }
+    },
+  });
+
+  return trimAstAliasesAfterWrites(aliases, collectAstIdentifierWritesFromAst(ast, source), identifierBindings);
+}
+
+function collectAstInvalidReactRuntimeBindingsFromAst(
+  ast: any,
+  source: string,
+  identifierBindings: AstIdentifierBinding[],
+  namespaceAliases: ReactNamespaceAlias[],
+  defaultAliases: ReactDefaultAlias[] = [],
+): InvalidReactRuntimeBinding[] {
+  const entries: InvalidReactRuntimeBinding[] = [];
+  const addEntry = (binding: string, capability: string, node: any, ancestors: any[]) => {
+    const declaration = findAstAncestor(ancestors, 'VariableDeclaration');
+    const scope = getAstBindingScopeRange(ancestors, source.length, declaration?.kind === 'var');
+    entries.push({
+      binding,
+      capability,
+      declarationStart: typeof node?.start === 'number' ? node.start : scope.start,
+      index: typeof node?.start === 'number' ? node.start : scope.start,
+      ruleId: 'runjs-react-default-alias-forbidden',
+      start: typeof node?.start === 'number' ? node.start : scope.start,
+      end: typeof node?.end === 'number' ? node.end : scope.end,
+    });
+  };
+
+  walkAstAncestor(ast, {
+    AssignmentExpression(node: any, ancestors: any[]) {
+      if (node.operator !== '=') {
+        return;
+      }
+      if (node.left?.type === 'Identifier' && node.left.name === 'React') {
+        const capability = getReactDefaultNamespaceCapabilityFromAst(
+          node.right,
+          identifierBindings,
+          namespaceAliases,
+          defaultAliases,
+        );
+        if (capability) {
+          addEntry(node.left.name, capability, node.left, ancestors);
+        }
+        return;
+      }
+      if (
+        node.left?.type === 'ObjectPattern' &&
+        getReactNamespaceCapabilityFromAst(node.right, identifierBindings, namespaceAliases)
+      ) {
+        const namespace = getReactNamespaceCapabilityFromAst(node.right, identifierBindings, namespaceAliases);
+        collectAstObjectPatternAliases(node.left, (alias, member, aliasNode) => {
+          if (member === 'default' && alias === 'React') {
+            addEntry(alias, `${namespace}.default`, aliasNode || node, ancestors);
+          }
+        });
+      }
+    },
+    VariableDeclarator(node: any, ancestors: any[]) {
+      if (node.id?.type === 'Identifier' && node.id.name === 'React') {
+        const capability = getReactDefaultNamespaceCapabilityFromAst(
+          node.init,
+          identifierBindings,
+          namespaceAliases,
+          defaultAliases,
+        );
+        if (capability) {
+          addEntry(node.id.name, capability, node.id, ancestors);
+        }
+        return;
+      }
+      if (
+        node.id?.type === 'ObjectPattern' &&
+        getReactNamespaceCapabilityFromAst(node.init, identifierBindings, namespaceAliases)
+      ) {
+        const namespace = getReactNamespaceCapabilityFromAst(node.init, identifierBindings, namespaceAliases);
+        collectAstObjectPatternAliases(node.id, (alias, member, aliasNode) => {
+          if (member === 'default' && alias === 'React') {
+            addEntry(alias, `${namespace}.default`, aliasNode || node, ancestors);
+          }
+        });
+      }
+    },
+  });
+
+  return entries;
+}
+
 function collectReactAsyncComponentBindingsFromAst(
   ast: any,
   source: string,
@@ -3856,6 +4062,28 @@ function getReactNamespaceCapabilityFromAst(
     }
   }
   return getDirectReactNamespaceCapabilityFromAst(unwrapped, identifierBindings);
+}
+
+function getReactDefaultNamespaceCapabilityFromAst(
+  node: any,
+  identifierBindings: AstIdentifierBinding[],
+  aliases: ReactNamespaceAlias[],
+  defaultAliases: ReactDefaultAlias[] = [],
+) {
+  const unwrapped = unwrapAstChainExpression(node);
+  if (!unwrapped) {
+    return '';
+  }
+  if (unwrapped.type === 'Identifier') {
+    const index = typeof unwrapped.start === 'number' ? unwrapped.start : 0;
+    const alias = resolveAstAliasBinding(unwrapped.name, index, defaultAliases, identifierBindings);
+    return alias?.capability || '';
+  }
+  if (unwrapped.type !== 'MemberExpression' || getAstStaticPropertyName(unwrapped) !== 'default') {
+    return '';
+  }
+  const namespace = getReactNamespaceCapabilityFromAst(unwrapped.object, identifierBindings, aliases);
+  return namespace ? `${namespace}.default` : '';
 }
 
 function getDirectReactNamespaceCapabilityFromAst(node: any, identifierBindings: AstIdentifierBinding[]) {

@@ -3865,6 +3865,116 @@ ctx.render(React.createElement(DashboardKPIs));
       ]),
     );
 
+    const defaultAliasErrors = inspectRunJsAuthoringCode({
+      code: ['const React = ctx.React.default;', "ctx.render(React.createElement('div', null, 'broken'));"].join('\n'),
+      path: '$.defaultReactAlias.code',
+      modelUse: 'JSBlockModel',
+    });
+    expect(defaultAliasErrors).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          ruleId: 'runjs-react-default-alias-forbidden',
+          details: expect.objectContaining({
+            capability: 'ctx.React.default',
+            binding: 'React',
+          }),
+        }),
+      ]),
+    );
+
+    const defaultRenameErrors = inspectRunJsAuthoringCode({
+      code: ['const { default: React } = ctx.React;', 'ctx.render(<div>broken</div>);'].join('\n'),
+      path: '$.defaultReactRename.code',
+      modelUse: 'JSBlockModel',
+    });
+    expect(defaultRenameErrors).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          ruleId: 'runjs-react-default-alias-forbidden',
+          details: expect.objectContaining({
+            capability: 'ctx.React.default',
+            binding: 'React',
+          }),
+        }),
+      ]),
+    );
+
+    const defaultIntermediateAliasErrors = inspectRunJsAuthoringCode({
+      code: [
+        'const { default: ReactDefault } = ctx.React;',
+        "ctx.render(ctx.React.createElement('div', null, 'ok'));",
+      ].join('\n'),
+      path: '$.defaultReactIntermediateAlias.code',
+      modelUse: 'JSBlockModel',
+    });
+    expect(defaultIntermediateAliasErrors).not.toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          ruleId: 'runjs-react-default-alias-forbidden',
+        }),
+      ]),
+    );
+
+    const defaultTwoStepAliasErrors = inspectRunJsAuthoringCode({
+      code: [
+        'const ReactDefault = ctx.React.default;',
+        'const React = ReactDefault;',
+        "ctx.render(React.createElement('div', null, 'broken'));",
+      ].join('\n'),
+      path: '$.defaultReactTwoStepAlias.code',
+      modelUse: 'JSBlockModel',
+    });
+    expect(defaultTwoStepAliasErrors).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          ruleId: 'runjs-react-default-alias-forbidden',
+          details: expect.objectContaining({
+            capability: 'ctx.React.default',
+            binding: 'React',
+          }),
+        }),
+      ]),
+    );
+
+    const defaultAssignmentRenameErrors = inspectRunJsAuthoringCode({
+      code: ['let React;', '({ default: React } = ctx.React);', 'ctx.render(<div>broken</div>);'].join('\n'),
+      path: '$.defaultReactAssignmentRename.code',
+      modelUse: 'JSBlockModel',
+    });
+    expect(defaultAssignmentRenameErrors).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          ruleId: 'runjs-react-default-alias-forbidden',
+          details: expect.objectContaining({
+            capability: 'ctx.React.default',
+            binding: 'React',
+          }),
+        }),
+      ]),
+    );
+
+    const defaultAssignmentTwoStepAliasErrors = inspectRunJsAuthoringCode({
+      code: [
+        'let ReactDefault;',
+        '({ default: ReactDefault } = ctx.React);',
+        'const React = ReactDefault;',
+        "ctx.render(React.createElement('div', null, 'broken'));",
+      ].join('\n'),
+      path: '$.defaultReactAssignmentTwoStepAlias.code',
+      modelUse: 'JSBlockModel',
+    });
+    expect(defaultAssignmentTwoStepAliasErrors).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          ruleId: 'runjs-react-default-alias-forbidden',
+          details: expect.objectContaining({
+            capability: 'ctx.React.default',
+            binding: 'React',
+          }),
+        }),
+      ]),
+    );
+
     const componentCallErrors = inspectRunJsAuthoringCode({
       code: [
         'function MetricCard(props) {',

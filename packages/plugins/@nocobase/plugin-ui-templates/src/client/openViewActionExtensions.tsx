@@ -91,6 +91,35 @@ const inferPopupTemplateMeta = (ctx: any, tpl: TemplateRow): PopupTemplateContex
   return inferPopupTemplateContextFlags(scene, tpl?.filterByTk, tpl?.sourceId);
 };
 
+const normalizeTemplateExpr = (value: any): string => {
+  const raw = normalizeStr(value);
+  const match = raw.match(/^\{\{\s*(.+?)\s*\}\}$/);
+  return match ? `{{${match[1].replace(/\s+/g, '')}}}` : raw;
+};
+
+const resolveCurrentActionUseKey = (ctx: any): string =>
+  normalizeStr((ctx as any)?.model?.use) || normalizeStr((ctx as any)?.model?.constructor?.name);
+
+const resolveCurrentActionScene = (ctx: any) => {
+  const engine = (ctx as any)?.engine;
+  const getModelClass = engine?.getModelClass?.bind(engine);
+  return resolveActionScene(getModelClass, resolveCurrentActionUseKey(ctx));
+};
+
+const shouldUseRuntimeRecordFilterByTk = (ctx: any): boolean => {
+  const scene = resolveCurrentActionScene(ctx);
+  if (scene === 'record') return true;
+  return resolveCurrentActionUseKey(ctx) === 'AddChildActionModel';
+};
+
+const isRuntimeRecordFilterByTkValue = (ctx: any, value: any): boolean => {
+  const normalized = normalizeTemplateExpr(value);
+  if (!normalized) return false;
+  if (normalized === '{{ctx.view.inputArgs.filterByTk}}') return true;
+  const recordKeyPath = normalizeStr((ctx as any)?.collection?.filterTargetKey) || 'id';
+  return normalized === `{{ctx.record.${recordKeyPath}}}`;
+};
+
 const resolveAssociationFieldFromCtx = (ctx: any): any | undefined => {
   const field = (ctx as any)?.collectionField;
   const associationPathName = (ctx as any)?.model?.parent?.['associationPathName'];
@@ -592,7 +621,8 @@ const getPopupTemplateMeta = async (ctx: any, templateUid: string): Promise<Popu
   const uid = typeof templateUid === 'string' ? templateUid.trim() : '';
   if (!uid) return null;
   const cache = getPopupTemplateMetaCache(ctx);
-  if (cache.has(uid)) return cache.get(uid)!;
+  const cached = cache.get(uid);
+  if (cached) return cached;
   const p = (async () => {
     try {
       const tpl = await fetchTemplateByUid(ctx, uid);
@@ -755,7 +785,12 @@ function PopupTemplateSelect(props: any) {
   const setOpenViewValue = useCallback(
     (k: string, v: any) => {
       try {
-        form.setValuesIn(k, v);
+        if (typeof v === 'undefined') {
+          _.unset(form.values, k);
+          form.setValuesIn(k, undefined);
+        } else {
+          form.setValuesIn(k, v);
+        }
       } catch (e) {
         console.error(e);
         // ignore
@@ -785,8 +820,17 @@ function PopupTemplateSelect(props: any) {
           if (typeof v === 'string') return v.trim() !== '';
           return true;
         };
+        const tplMeta = inferPopupTemplateMeta(ctx as any, tpl as any);
         (['dataSourceKey', 'collectionName', 'filterByTk', 'sourceId'] as const).forEach((k) => {
           const tv = (tpl as any)?.[k];
+          if (
+            k === 'filterByTk' &&
+            shouldUseRuntimeRecordFilterByTk(ctx as any) &&
+            (!tplMeta.hasFilterByTk || !shouldApplyTemplateField(tv) || isRuntimeRecordFilterByTkValue(ctx as any, tv))
+          ) {
+            setOpenViewValue(k, undefined);
+            return;
+          }
           if (shouldApplyTemplateField(tv)) {
             setOpenViewValue(k, tv);
           }
@@ -800,7 +844,11 @@ function PopupTemplateSelect(props: any) {
         }
 
         // Backfill defaults for important runtime params when template record doesn't carry them.
-        if (!shouldApplyTemplateField((tpl as any)?.filterByTk) && !shouldApplyTemplateField(form.values?.filterByTk)) {
+        if (
+          !shouldUseRuntimeRecordFilterByTk(ctx as any) &&
+          !shouldApplyTemplateField((tpl as any)?.filterByTk) &&
+          !shouldApplyTemplateField(form.values?.filterByTk)
+        ) {
           const recordKeyPath = (ctx as any)?.collection?.filterTargetKey || 'id';
           setOpenViewValue('filterByTk', `{{ ctx.record.${recordKeyPath} }}`);
         }
@@ -940,6 +988,15 @@ const resolveTemplateToUid = async (ctx: FlowSettingsContext, params: any): Prom
   (params as any).popupTemplateHasFilterByTk = inferred.hasFilterByTk;
   (params as any).popupTemplateHasSourceId = inferred.hasSourceId;
   const applyTemplateParam = (key: 'filterByTk' | 'sourceId', hasInTemplate: boolean) => {
+    if (key === 'filterByTk' && shouldUseRuntimeRecordFilterByTk(ctx as any)) {
+      const tvStr = normalizeStr((tpl as any)?.filterByTk);
+      if (!hasInTemplate || !tvStr || isRuntimeRecordFilterByTkValue(ctx as any, tvStr)) {
+        delete (params as any).filterByTk;
+        return;
+      }
+      (params as any).filterByTk = tvStr;
+      return;
+    }
     if (!hasInTemplate) {
       if (params && typeof params === 'object' && key in params) {
         delete (params as any)[key];
@@ -1029,6 +1086,12 @@ export function registerOpenViewPopupTemplateAction(flowEngine: FlowEngine) {
         !!(runtimeParams as any)?.popupTemplateHasSourceId;
       if (!templateNeedsSourceId && nextParams && typeof nextParams === 'object') {
         delete (nextParams as any).sourceId;
+      }
+      if (
+        shouldUseRuntimeRecordFilterByTk(ctx as any) &&
+        isRuntimeRecordFilterByTkValue(ctx as any, (nextParams as any)?.filterByTk)
+      ) {
+        delete (nextParams as any).filterByTk;
       }
 
       const runtimeCtx = shouldUseTemplateCtx ? await buildPopupTemplateShadowCtx(ctx, runtimeParams) : ctx;

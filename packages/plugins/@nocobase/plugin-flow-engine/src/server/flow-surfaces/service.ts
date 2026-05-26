@@ -5739,8 +5739,12 @@ export class FlowSurfacesService {
     };
   }
 
-  private buildPopupTemplateReferenceOpenView(template: FlowSurfaceTemplateRow, templateTargetUid: string) {
-    return this.buildPopupTemplateOpenView(template, 'reference', templateTargetUid);
+  private buildPopupTemplateReferenceOpenView(
+    template: FlowSurfaceTemplateRow,
+    templateTargetUid: string,
+    options: { filterTargetKey?: string; useRuntimeRecordFilterByTk?: boolean } = {},
+  ) {
+    return this.buildPopupTemplateOpenView(template, 'reference', templateTargetUid, options);
   }
 
   private shouldHydrateDetachedPopupTemplateBlockResourceContext(
@@ -6198,15 +6202,40 @@ export class FlowSurfacesService {
     const currentGroup = _.isPlainObject(nextStepParams[openViewStep.flowKey])
       ? _.cloneDeep(nextStepParams[openViewStep.flowKey])
       : {};
+    const popupProfile = await this.resolvePopupBlockProfile(sourceNode.uid, null, sourceNode, transaction).catch(
+      () => null,
+    );
+    const useRuntimeRecordFilterByTk = popupProfile?.hasCurrentRecord === true;
+    const filterTargetKey = useRuntimeRecordFilterByTk
+      ? await this.resolveOpenViewRuntimeRecordFilterTargetKey(openViewStep.openView, template, {
+          transaction,
+          popupTemplateHostUid: sourceNode.uid,
+          popupActionContext: {
+            hasCurrentRecord: true,
+          },
+        })
+      : undefined;
+    const currentOpenView = _.omit(openViewStep.openView || {}, [
+      'popupTemplateUid',
+      'popupTemplateMode',
+      'popupTemplateContext',
+      'popupTemplateHasFilterByTk',
+      'popupTemplateHasSourceId',
+    ]);
+    if (
+      useRuntimeRecordFilterByTk &&
+      this.shouldOmitRuntimeRecordFilterByTk(currentOpenView.filterByTk, {
+        filterTargetKey,
+      })
+    ) {
+      delete currentOpenView.filterByTk;
+    }
     let nextOpenView = {
-      ..._.omit(openViewStep.openView || {}, [
-        'popupTemplateUid',
-        'popupTemplateMode',
-        'popupTemplateContext',
-        'popupTemplateHasFilterByTk',
-        'popupTemplateHasSourceId',
-      ]),
-      ...this.buildPopupTemplateReferenceOpenView(template, templateTargetUid),
+      ...currentOpenView,
+      ...this.buildPopupTemplateReferenceOpenView(template, templateTargetUid, {
+        filterTargetKey,
+        useRuntimeRecordFilterByTk,
+      }),
     };
     if (String(sourceNode.use || '').trim() === 'AddChildActionModel') {
       nextOpenView = await this.normalizeAddChildOpenViewForAction(sourceNode, nextOpenView, transaction);
@@ -6227,7 +6256,6 @@ export class FlowSurfacesService {
       type: 'popup' as const,
     };
   }
-
   private async loadPopupSourceTemplateTreeInfo(sourceNode: any, inferred: { sourceUid?: string }, transaction?: any) {
     const sourceUid = String(inferred?.sourceUid || '').trim();
     const tree =
@@ -11474,16 +11502,96 @@ export class FlowSurfacesService {
     };
   }
 
-  private buildPopupTemplateOpenView(template: any, mode: 'reference' | 'copy', uidValue: string) {
+  private shouldUseRuntimeRecordFilterByTkForOpenView(
+    openView: any,
+    options: { popupActionContext?: FlowSurfaceTemplateListPopupActionContext } = {},
+  ) {
+    return !!String(openView?.popupTemplateUid || '').trim() && options.popupActionContext?.hasCurrentRecord === true;
+  }
+
+  private resolveOpenViewFilterTargetKey(openView: any, template?: any) {
+    const dataSourceKey = String(openView?.dataSourceKey || template?.dataSourceKey || 'main').trim() || 'main';
+    const collectionName = String(openView?.collectionName || template?.collectionName || '').trim();
+    const collection = collectionName ? this.getCollection(dataSourceKey, collectionName) : null;
+    return this.getCollectionFilterTargetKey(collection);
+  }
+
+  private async resolvePopupHostCurrentRecordFilterTargetKey(hostUid: string | undefined, transaction?: any) {
+    const normalizedHostUid = String(hostUid || '').trim();
+    if (!normalizedHostUid) {
+      return undefined;
+    }
+    const hostNode = await this.repository
+      .findModelById(normalizedHostUid, {
+        transaction,
+        includeAsyncNode: true,
+      })
+      .catch(() => null);
+    if (!hostNode?.uid) {
+      return undefined;
+    }
+    const hostContext = await this.resolvePopupHostProfileContext(hostNode, transaction).catch(() => null);
+    const ownerResourceInit = hostContext?.resourceContext?.resourceInit || {};
+    const dataSourceKey =
+      String(hostContext?.associationContext?.dataSourceKey || ownerResourceInit.dataSourceKey || 'main').trim() ||
+      'main';
+    const collectionName = String(
+      hostContext?.associationContext?.collectionName || ownerResourceInit.collectionName || '',
+    ).trim();
+    const collection = collectionName ? this.getCollection(dataSourceKey, collectionName) : null;
+    return collection ? this.getCollectionFilterTargetKey(collection) : undefined;
+  }
+
+  private async resolveOpenViewRuntimeRecordFilterTargetKey(
+    openView: any,
+    template: any,
+    options: {
+      transaction?: any;
+      popupTemplateHostUid?: string;
+      popupActionContext?: FlowSurfaceTemplateListPopupActionContext;
+    } = {},
+  ) {
+    const contextKey = String(options.popupActionContext?.currentRecordFilterTargetKey || '').trim();
+    if (contextKey) {
+      return contextKey;
+    }
+    const hostKey = await this.resolvePopupHostCurrentRecordFilterTargetKey(
+      options.popupTemplateHostUid,
+      options.transaction,
+    );
+    return hostKey || this.resolveOpenViewFilterTargetKey(openView, template);
+  }
+
+  private shouldOmitRuntimeRecordFilterByTk(value: any, options: { filterTargetKey?: string } = {}) {
+    const normalized = this.normalizeFlowContextTemplateValue(value);
+    if (!normalized) {
+      return false;
+    }
+    if (normalized === '{{ctx.view.inputArgs.filterByTk}}') {
+      return true;
+    }
+    const filterTargetKey = String(options.filterTargetKey || '').trim();
+    return !!filterTargetKey && normalized === `{{ctx.record.${filterTargetKey}}}`;
+  }
+
+  private buildPopupTemplateOpenView(
+    template: any,
+    mode: 'reference' | 'copy',
+    uidValue: string,
+    options: { filterTargetKey?: string; useRuntimeRecordFilterByTk?: boolean } = {},
+  ) {
     const popupTemplateHasFilterByTk = !!String(template.filterByTk || '').trim();
     const popupTemplateHasSourceId =
       !!String(template.sourceId || '').trim() || !!String(template.associationName || '').trim();
+    const omitRuntimeRecordFilterByTk =
+      options.useRuntimeRecordFilterByTk === true &&
+      this.shouldOmitRuntimeRecordFilterByTk(template.filterByTk, { filterTargetKey: options.filterTargetKey });
     const base = buildDefinedPayload({
       uid: uidValue,
       dataSourceKey: template.dataSourceKey,
       collectionName: template.collectionName,
       associationName: template.associationName,
-      ...(popupTemplateHasFilterByTk ? { filterByTk: template.filterByTk } : {}),
+      ...(popupTemplateHasFilterByTk && !omitRuntimeRecordFilterByTk ? { filterByTk: template.filterByTk } : {}),
       ...(popupTemplateHasSourceId && template.sourceId ? { sourceId: template.sourceId } : {}),
       popupTemplateHasFilterByTk,
       popupTemplateHasSourceId,
@@ -11654,7 +11762,20 @@ export class FlowSurfacesService {
       if (templateRef.mode === 'copy') {
         await this.ensurePopupSurface(resolvedUid, options.transaction);
       }
-      let nextTemplateOpenView = this.buildPopupTemplateOpenView(template, templateRef.mode, resolvedUid);
+      let runtimeRecordFilterTargetKey: string | undefined;
+      if (options.popupActionContext?.hasCurrentRecord === true) {
+        runtimeRecordFilterTargetKey = await this.resolveOpenViewRuntimeRecordFilterTargetKey(
+          normalizedOpenView,
+          template,
+          options,
+        );
+      }
+      const filterTargetKey =
+        runtimeRecordFilterTargetKey || this.resolveOpenViewFilterTargetKey(normalizedOpenView, template);
+      let nextTemplateOpenView = this.buildPopupTemplateOpenView(template, templateRef.mode, resolvedUid, {
+        filterTargetKey,
+        useRuntimeRecordFilterByTk: options.popupActionContext?.hasCurrentRecord === true,
+      });
       Object.keys(normalizedOpenView).forEach((key) => {
         if (
           key === 'template' ||
@@ -11667,10 +11788,26 @@ export class FlowSurfacesService {
           delete normalizedOpenView[key];
         }
       });
+      if (
+        options.popupActionContext?.hasCurrentRecord === true &&
+        this.shouldOmitRuntimeRecordFilterByTk(normalizedOpenView.filterByTk, {
+          filterTargetKey,
+        })
+      ) {
+        delete normalizedOpenView.filterByTk;
+      }
       if (String(options.popupTemplateHostUse || '').trim() === 'AddChildActionModel') {
         nextTemplateOpenView = _.omit(nextTemplateOpenView, ['sourceId']);
       }
       Object.assign(normalizedOpenView, nextTemplateOpenView);
+    }
+    if (
+      this.shouldUseRuntimeRecordFilterByTkForOpenView(normalizedOpenView, options) &&
+      this.shouldOmitRuntimeRecordFilterByTk(normalizedOpenView.filterByTk, {
+        filterTargetKey: await this.resolveOpenViewRuntimeRecordFilterTargetKey(normalizedOpenView, undefined, options),
+      })
+    ) {
+      delete normalizedOpenView.filterByTk;
     }
     if (!_.isUndefined(normalizedOpenView.uid)) {
       const normalizedUid = String(normalizedOpenView.uid || '').trim();
@@ -11722,6 +11859,7 @@ export class FlowSurfacesService {
     }
     return {
       hasCurrentRecord: true,
+      currentRecordFilterTargetKey: await this.resolvePopupHostCurrentRecordFilterTargetKey(current.uid, transaction),
     };
   }
 
@@ -13675,21 +13813,35 @@ export class FlowSurfacesService {
       actionNode,
       options.transaction,
     ).catch(() => null);
-    const filterTargetKey = popupProfile?.currentCollection
-      ? this.getCollectionFilterTargetKey(popupProfile.currentCollection)
-      : null;
+    const useRuntimeRecordFilterByTk = this.isReferencedPopupTemplateOpenView(currentOpenView, actionNode.uid);
+    const filterTargetKey = useRuntimeRecordFilterByTk
+      ? await this.resolveOpenViewRuntimeRecordFilterTargetKey(currentOpenView, undefined, {
+          transaction: options.transaction,
+          popupTemplateHostUid: actionNode.uid,
+          popupActionContext: {
+            hasCurrentRecord: true,
+          },
+        })
+      : popupProfile?.currentCollection
+        ? this.getCollectionFilterTargetKey(popupProfile.currentCollection)
+        : null;
     const defaultFilterByTk = this.resolvePopupCurrentRecordResourceFilterByTk(popupProfile);
     const currentFilterByTk = _.isString(currentOpenView.filterByTk) ? currentOpenView.filterByTk.trim() : '';
     const preserveCustomFilterByTk =
       currentFilterByTk &&
-      currentFilterByTk !== '{{ctx.view.inputArgs.filterByTk}}' &&
-      currentFilterByTk !== (filterTargetKey ? `{{ctx.record.${filterTargetKey}}}` : '');
+      !this.shouldOmitRuntimeRecordFilterByTk(currentOpenView.filterByTk, { filterTargetKey: filterTargetKey || '' });
     const nextOpenView = buildDefinedPayload({
-      ...currentOpenView,
+      ...(useRuntimeRecordFilterByTk && !preserveCustomFilterByTk
+        ? _.omit(currentOpenView, ['filterByTk'])
+        : currentOpenView),
       title: openViewTitle,
-      filterByTk: preserveCustomFilterByTk
-        ? currentOpenView.filterByTk
-        : defaultFilterByTk || currentOpenView.filterByTk,
+      filterByTk: useRuntimeRecordFilterByTk
+        ? preserveCustomFilterByTk
+          ? currentOpenView.filterByTk
+          : undefined
+        : preserveCustomFilterByTk
+          ? currentOpenView.filterByTk
+          : defaultFilterByTk || currentOpenView.filterByTk,
     });
     if (_.isEqual(nextOpenView, currentOpenView)) {
       return;
