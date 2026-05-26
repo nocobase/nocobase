@@ -797,6 +797,113 @@ describe('FormValueRuntime (form assign rules)', () => {
     expect(formStub.getFieldValue(['a'])).toBe('user');
   });
 
+  it('mode=override overwrites existing update values until the user changes the target', async () => {
+    const engineEmitter = new EventEmitter();
+    const blockEmitter = new EventEmitter();
+    const formStub = createFormStub({ a: 'Existing', b: 'X' });
+
+    const blockModel: any = {
+      uid: 'form-assign-override-update',
+      flowEngine: { emitter: engineEmitter },
+      emitter: blockEmitter,
+      dispatchEvent: vi.fn(),
+      getAclActionName: () => 'update',
+    };
+
+    const runtime = new FormValueRuntime({ model: blockModel, getForm: () => formStub as any });
+    runtime.mount({ sync: true });
+
+    const blockCtx = createFieldContext(runtime);
+    const fieldModel: any = {
+      uid: 'field-a-override-update',
+      context: { fieldPathArray: ['a'] },
+    };
+    blockCtx.defineProperty('engine', {
+      value: {
+        getModel: (id: string) => (id === 'field-a-override-update' ? fieldModel : null),
+      },
+    });
+    blockModel.context = blockCtx;
+
+    runtime.syncAssignRules([
+      {
+        key: 'r1',
+        enable: true,
+        targetPath: 'a',
+        mode: 'override',
+        condition: { logic: '$and', items: [] },
+        value: '__B__',
+      },
+    ]);
+
+    await waitFor(() => expect(formStub.getFieldValue(['a'])).toBe('X'));
+    expect(runtime.canApplyOverrideValuePatch(['a'])).toBe(true);
+
+    await runtime.setFormValues(blockCtx, [{ path: ['b'], value: 'Y' }], { source: 'user' });
+    await waitFor(() => expect(formStub.getFieldValue(['a'])).toBe('Y'));
+
+    await runtime.setFormValues(blockCtx, [{ path: ['a'], value: 'Manual' }], { source: 'user' });
+    expect(formStub.getFieldValue(['a'])).toBe('Manual');
+    expect(runtime.canApplyOverrideValuePatch(['a'])).toBe(false);
+
+    await runtime.setFormValues(blockCtx, [{ path: ['b'], value: 'Z' }], { source: 'user' });
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    expect(formStub.getFieldValue(['a'])).toBe('Manual');
+  });
+
+  it('reapplies mode=override after user edited state is reset', async () => {
+    const engineEmitter = new EventEmitter();
+    const blockEmitter = new EventEmitter();
+    const formStub = createFormStub({ a: 'Existing', b: 'X' });
+
+    const blockModel: any = {
+      uid: 'form-assign-override-reset-user-edited',
+      flowEngine: { emitter: engineEmitter },
+      emitter: blockEmitter,
+      dispatchEvent: vi.fn(),
+      getAclActionName: () => 'update',
+    };
+
+    const runtime = new FormValueRuntime({ model: blockModel, getForm: () => formStub as any });
+    runtime.mount({ sync: true });
+
+    const blockCtx = createFieldContext(runtime);
+    const fieldModel: any = {
+      uid: 'field-a-override-reset-user-edited',
+      context: { fieldPathArray: ['a'] },
+    };
+    blockCtx.defineProperty('engine', {
+      value: {
+        getModel: (id: string) => (id === 'field-a-override-reset-user-edited' ? fieldModel : null),
+      },
+    });
+    blockModel.context = blockCtx;
+
+    runtime.syncAssignRules([
+      {
+        key: 'r1',
+        enable: true,
+        targetPath: 'a',
+        mode: 'override',
+        condition: { logic: '$and', items: [] },
+        value: '__B__',
+      },
+    ]);
+
+    await waitFor(() => expect(formStub.getFieldValue(['a'])).toBe('X'));
+
+    await runtime.setFormValues(blockCtx, [{ path: ['a'], value: 'Manual' }], { source: 'user' });
+    expect(formStub.getFieldValue(['a'])).toBe('Manual');
+
+    formStub.__store.a = 'Next record';
+    formStub.__store.b = 'Y';
+    runtime.handleFormValuesChange({ a: 'Next record', b: 'Y' }, formStub.getFieldsValue());
+    runtime.resetUserEditedState();
+    expect(runtime.canApplyOverrideValuePatch(['a'])).toBe(true);
+
+    await waitFor(() => expect(formStub.getFieldValue(['a'])).toBe('Y'));
+  });
+
   it('reapplies mode=default value after form reset starts a new create session', async () => {
     const engineEmitter = new EventEmitter();
     const blockEmitter = new EventEmitter();

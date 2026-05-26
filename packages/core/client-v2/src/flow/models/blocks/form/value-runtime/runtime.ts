@@ -44,6 +44,7 @@ export class FormValueRuntime {
 
   private readonly valuesMirror = observable({});
   private readonly explicitSet = new Set<string>();
+  private readonly userEditedSet = new Set<string>();
   private readonly lastDefaultValueByPathKey = new Map<string, any>();
   private readonly lastWriteMetaByPathKey = new Map<string, FormValueWriteMeta>();
   private readonly observableBindings = new Map<string, ObservableBinding>();
@@ -99,6 +100,7 @@ export class FormValueRuntime {
       getFormValueAtPath: (namePath) => this.getFormValueAtPath(namePath),
       setFormValues: (callerCtx, patch, ruleOptions) => this.setFormValues(callerCtx, patch, ruleOptions),
       findExplicitHit: (pathKey) => this.findExplicitHit(pathKey),
+      findUserEditedHit: (pathKey) => this.findUserEditedHit(pathKey),
       lastDefaultValueByPathKey: this.lastDefaultValueByPathKey,
       lastWriteMetaByPathKey: this.lastWriteMetaByPathKey,
       observableBindings: this.observableBindings,
@@ -117,6 +119,7 @@ export class FormValueRuntime {
    *
    * - mode=default → source=default（遵循 explicit/空值覆盖语义）
    * - mode=assign  → source=system（不受 explicit 影响，依赖变化时持续生效）
+   * - mode=override → source=override（首次覆盖已有值，用户修改后停止）
    */
   syncAssignRules(items: FormAssignRuleItem[]) {
     this.ruleEngine.syncAssignRules(items);
@@ -158,6 +161,11 @@ export class FormValueRuntime {
     }
 
     return canOverwrite;
+  }
+
+  canApplyOverrideValuePatch(namePath: NamePath) {
+    if (!namePath?.length) return false;
+    return !this.findUserEditedHit(namePathToPathKey(namePath));
   }
 
   recordDefaultValuePatch(namePath: NamePath, value?: any) {
@@ -241,6 +249,7 @@ export class FormValueRuntime {
     if (this.disposed) return;
 
     this.explicitSet.clear();
+    this.userEditedSet.clear();
     this.lastDefaultValueByPathKey.clear();
     this.lastWriteMetaByPathKey.clear();
     this.txWriteCounts.clear();
@@ -263,6 +272,13 @@ export class FormValueRuntime {
 
     this.writeSeq += 1;
     this.bumpChangeTick();
+    this.ruleEngine.rescheduleAllRules();
+  }
+
+  resetUserEditedState() {
+    if (this.disposed) return;
+
+    this.userEditedSet.clear();
     this.ruleEngine.rescheduleAllRules();
   }
 
@@ -311,6 +327,7 @@ export class FormValueRuntime {
     if (!suppressed && touchedChangedPathKeys.size) {
       for (const key of touchedChangedPathKeys) {
         this.markExplicit(key);
+        this.markUserEdited(key);
       }
     }
 
@@ -372,6 +389,11 @@ export class FormValueRuntime {
     for (const key of Array.from(this.explicitSet)) {
       if (!this.isDeletedArrayItemPath(key, snapshot)) continue;
       this.explicitSet.delete(key);
+    }
+
+    for (const key of Array.from(this.userEditedSet)) {
+      if (!this.isDeletedArrayItemPath(key, snapshot)) continue;
+      this.userEditedSet.delete(key);
     }
 
     for (const key of Array.from(this.lastDefaultValueByPathKey.keys())) {
@@ -444,6 +466,7 @@ export class FormValueRuntime {
       if (!nextIndexByIdentity.size) continue;
 
       this.reconcileArrayItemSet(this.explicitSet, path, prevValue, nextIndexByIdentity);
+      this.reconcileArrayItemSet(this.userEditedSet, path, prevValue, nextIndexByIdentity);
       this.reconcileArrayItemMap(this.lastDefaultValueByPathKey, path, prevValue, nextIndexByIdentity);
       this.reconcileArrayItemMap(this.lastWriteMetaByPathKey, path, prevValue, nextIndexByIdentity);
       this.reconcileObservableBindings(path, prevValue, nextIndexByIdentity);
@@ -665,7 +688,11 @@ export class FormValueRuntime {
 
     // 非 default 来源写入：需要使默认值永久失效（explicit）
     for (const p of explicitPathsToMark) {
-      this.markExplicit(namePathToPathKey(p));
+      const pathKey = namePathToPathKey(p);
+      this.markExplicit(pathKey);
+      if (source === 'user') {
+        this.markUserEdited(pathKey);
+      }
     }
 
     if (hasMirrorChange) {
@@ -885,6 +912,9 @@ export class FormValueRuntime {
         if (markExplicit) {
           for (const k of patchKeys) {
             this.markExplicit(k);
+            if (source === 'user') {
+              this.markUserEdited(k);
+            }
           }
         }
 
@@ -984,6 +1014,9 @@ export class FormValueRuntime {
       if (markExplicit) {
         for (const { pathKey } of filteredToWrite) {
           this.markExplicit(pathKey);
+          if (source === 'user') {
+            this.markUserEdited(pathKey);
+          }
         }
       }
 
@@ -1052,6 +1085,7 @@ export class FormValueRuntime {
     if (this.disposed) return;
     const form = this.getForm?.();
     if (!form) return;
+    if (source === 'override' && this.findUserEditedHit(pathKey)) return;
 
     const prevValue = _.get(this.valuesMirror, namePath);
     if (_.isEqual(prevValue, nextValue)) return;
@@ -1098,7 +1132,10 @@ export class FormValueRuntime {
     }
     this.emitFormValuesChange(payload);
 
-    if (source === 'default' && this.isExplicit(pathKey)) {
+    if (
+      (source === 'default' && this.isExplicit(pathKey)) ||
+      (source === 'override' && this.findUserEditedHit(pathKey))
+    ) {
       const existing = this.observableBindings.get(pathKey);
       if (existing) {
         existing.dispose();
@@ -1149,6 +1186,18 @@ export class FormValueRuntime {
     for (const [k, binding] of Array.from(this.observableBindings.entries())) {
       if (binding.source !== 'default') continue;
       if (!this.isExplicit(k)) continue;
+      binding.dispose();
+      this.observableBindings.delete(k);
+    }
+  }
+
+  private markUserEdited(pathKey: string) {
+    if (this.userEditedSet.has(pathKey)) return;
+    this.userEditedSet.add(pathKey);
+
+    for (const [k, binding] of Array.from(this.observableBindings.entries())) {
+      if (binding.source !== 'override') continue;
+      if (!this.findUserEditedHit(k)) continue;
       binding.dispose();
       this.observableBindings.delete(k);
     }
@@ -1210,6 +1259,25 @@ export class FormValueRuntime {
       const nextSeg = namePath[i + 1];
       if (typeof nextSeg === 'number') {
         // ignore array container explicit hit (e.g. explicit `users` shouldn't block `users[0].name` defaults)
+        continue;
+      }
+      return key;
+    }
+    return null;
+  }
+
+  private findUserEditedHit(pathKey: string): string | null {
+    if (this.userEditedSet.has(pathKey)) return pathKey;
+    const namePath = pathKeyToNamePath(pathKey);
+    const prefix: NamePath = [];
+
+    for (let i = 0; i < namePath.length; i++) {
+      prefix.push(namePath[i]);
+      const key = namePathToPathKey(prefix as any);
+      if (!this.userEditedSet.has(key)) continue;
+
+      const nextSeg = namePath[i + 1];
+      if (typeof nextSeg === 'number') {
         continue;
       }
       return key;
