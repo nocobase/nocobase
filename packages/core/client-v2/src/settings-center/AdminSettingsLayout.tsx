@@ -57,21 +57,6 @@ function SettingsEmpty(props: { type: 'home' | 'route' }) {
   );
 }
 
-const settingsContentClassName = css`
-  display: flex;
-  flex: 1;
-  flex-direction: column;
-  min-height: 0;
-
-  > div,
-  > div > div {
-    display: flex;
-    flex: 1;
-    flex-direction: column;
-    min-height: 0;
-  }
-`;
-
 /**
  * `client-v2` 的 settings 页面壳实现。
  *
@@ -287,7 +272,6 @@ export const InternalAdminSettingsLayout = () => {
           }
         />
         <div
-          className={settingsContentClassName}
           style={{
             padding: token.paddingLG,
           }}

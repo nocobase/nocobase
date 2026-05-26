@@ -8,7 +8,8 @@
  */
 
 export const PUBLIC_FORMS_NAMESPACE = 'public-forms';
-export const PUBLIC_FORMS_SETTINGS_ROUTE_NAME = 'admin.settings.public-forms.layout';
+export const PUBLIC_FORMS_SETTINGS_ROUTE_NAME = 'admin.settings.public-forms.index.layout';
+export const PUBLIC_FORMS_SETTINGS_CONFIGURE_ROUTE_PATH = 'configure';
 export const PUBLIC_FORMS_SETTINGS_LAYOUT_UID = 'public-forms-settings-layout-model';
 export const PUBLIC_FORMS_SETTINGS_LAYOUT_MODEL = 'PublicFormsSettingsLayoutModel';
 export const PUBLIC_FORM_ROUTE_NAME = 'public-forms';

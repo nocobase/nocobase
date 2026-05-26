@@ -14,7 +14,8 @@ import { useMemoizedFn, useRequest } from 'ahooks';
 import { App, Button, Card, Cascader, Form, Input, Radio, Space, Switch, theme } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useOutlet } from 'react-router-dom';
+import { PUBLIC_FORMS_NAMESPACE, PUBLIC_FORMS_SETTINGS_CONFIGURE_ROUTE_PATH } from '../constants';
 import { useT } from '../locale';
 import { ensurePublicFormFlowModel, type PublicFormRecord } from '../modelTree';
 
@@ -175,6 +176,7 @@ export default function PublicFormsSettingsPage() {
   const ctx = useFlowContext();
   const flowEngine = useFlowEngine();
   const navigate = useNavigate();
+  const outlet = useOutlet();
   const { modal } = App.useApp();
   const { token } = theme.useToken();
   const resource = ctx.api.resource('publicForms');
@@ -234,9 +236,10 @@ export default function PublicFormsSettingsPage() {
   const handleConfigure = useCallback(
     async (record: PublicFormRecord) => {
       await ensurePublicFormFlowModel(flowEngine, record, t);
-      navigate(`/admin/settings/public-forms/${record.key}`);
+      const basePath = ctx.app.pluginSettingsManager.getRoutePath(`${PUBLIC_FORMS_NAMESPACE}.index`);
+      navigate(`${basePath}/${PUBLIC_FORMS_SETTINGS_CONFIGURE_ROUTE_PATH}/${record.key}`);
     },
-    [flowEngine, navigate, t],
+    [ctx.app.pluginSettingsManager, flowEngine, navigate, t],
   );
 
   const columns = useMemo<ColumnsType<PublicFormRecord>>(
@@ -278,35 +281,37 @@ export default function PublicFormsSettingsPage() {
   );
 
   return (
-    <Card variant="borderless">
-      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: token.marginXS, marginBottom: token.margin }}>
-        <Button
-          icon={<DeleteOutlined />}
-          disabled={!selectedRowKeys.length}
-          onClick={() => handleDelete(selectedRowKeys)}
-        >
-          {t('Delete')}
-        </Button>
-        <Button type="primary" icon={<PlusOutlined />} onClick={() => openForm('create')}>
-          {t('Add New')}
-        </Button>
-      </div>
-      <Table<PublicFormRecord>
-        rowKey="key"
-        loading={loading}
-        columns={columns}
-        dataSource={data?.records || []}
-        rowSelection={{
-          selectedRowKeys,
-          onChange: setSelectedRowKeys,
-        }}
-        pagination={{
-          current: page,
-          pageSize,
-          total: data?.total || 0,
-          onChange: handlePaginationChange,
-        }}
-      />
-    </Card>
+    outlet || (
+      <Card variant="borderless">
+        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: token.marginXS, marginBottom: token.margin }}>
+          <Button
+            icon={<DeleteOutlined />}
+            disabled={!selectedRowKeys.length}
+            onClick={() => handleDelete(selectedRowKeys)}
+          >
+            {t('Delete')}
+          </Button>
+          <Button type="primary" icon={<PlusOutlined />} onClick={() => openForm('create')}>
+            {t('Add New')}
+          </Button>
+        </div>
+        <Table<PublicFormRecord>
+          rowKey="key"
+          loading={loading}
+          columns={columns}
+          dataSource={data?.records || []}
+          rowSelection={{
+            selectedRowKeys,
+            onChange: setSelectedRowKeys,
+          }}
+          pagination={{
+            current: page,
+            pageSize,
+            total: data?.total || 0,
+            onChange: handlePaginationChange,
+          }}
+        />
+      </Card>
+    )
   );
 }

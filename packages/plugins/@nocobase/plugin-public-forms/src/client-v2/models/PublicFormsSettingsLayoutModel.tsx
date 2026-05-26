@@ -115,12 +115,6 @@ const PublicFormsSettingsLayoutComponent = observer((props: { model: PublicForms
     },
   );
   const record = data as PublicFormRecord | null;
-  const bindLayoutContentElement = useCallback(
-    (node: HTMLDivElement | null) => {
-      model.setLayoutContentElement(node);
-    },
-    [model],
-  );
 
   const handleUpdate = useCallback(
     async (values: Partial<PublicFormRecord>) => {
@@ -164,23 +158,13 @@ const PublicFormsSettingsLayoutComponent = observer((props: { model: PublicForms
   }
 
   return (
-    <div
-      style={{
-        width: '100%',
-        height: '100%',
-        minHeight: 0,
-        display: 'flex',
-        flexDirection: 'column',
-        gap: token.marginLG,
-      }}
-    >
+    <Space direction="vertical" size={token.marginLG} style={{ width: '100%' }}>
       <div
         style={{
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
           gap: token.margin,
-          flexShrink: 0,
         }}
       >
         <Breadcrumb
@@ -238,18 +222,8 @@ const PublicFormsSettingsLayoutComponent = observer((props: { model: PublicForms
           </Dropdown>
         </Space>
       </div>
-      <div
-        ref={bindLayoutContentElement}
-        style={{
-          position: 'relative',
-          flex: 1,
-          minHeight: 0,
-          overflow: 'hidden',
-        }}
-      >
-        {outlet}
-      </div>
-    </div>
+      {outlet}
+    </Space>
   );
 });
 
