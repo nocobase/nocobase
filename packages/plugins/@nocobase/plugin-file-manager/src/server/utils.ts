@@ -24,14 +24,14 @@ function sanitizeFilename(value: string) {
 }
 
 function normalizeOriginalname(file) {
-  const originalname = file?.originalname;
+  const originalname: string | Buffer | undefined = file?.originalname;
   if (!originalname) {
     return '';
   }
   if (Buffer.isBuffer(originalname)) {
     return originalname.toString('utf8');
   }
-  if (Array.from(originalname).some((char) => char.charCodeAt(0) > 0xff)) {
+  if (Array.from(originalname).some((char: string) => char.charCodeAt(0) > 0xff)) {
     return originalname;
   }
   const decoded = Buffer.from(originalname, 'binary').toString('utf8');
