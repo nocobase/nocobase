@@ -3936,6 +3936,402 @@ ctx.render(React.createElement(DashboardKPIs));
       ]),
     );
 
+    [
+      {
+        code: ['let React;', 'React ||= ctx.React.default;', "ctx.render(React.createElement('div', null, 'broken'));"],
+        path: '$.defaultReactLogicalOrAssignment.code',
+      },
+      {
+        code: ['let React;', 'React ??= ctx.React.default;', "ctx.render(React.createElement('div', null, 'broken'));"],
+        path: '$.defaultReactNullishAssignment.code',
+      },
+      {
+        code: ['let React;', 'React &&= ctx.React.default;', "ctx.render(React.createElement('div', null, 'broken'));"],
+        path: '$.defaultReactLogicalAndAssignment.code',
+      },
+      {
+        code: [
+          'let ReactDefault;',
+          'ReactDefault ||= ctx.React.default;',
+          'const React = ReactDefault;',
+          "ctx.render(React.createElement('div', null, 'broken'));",
+        ],
+        path: '$.defaultReactLogicalTwoStepAlias.code',
+      },
+      {
+        code: [
+          'let ReactDefault;',
+          'ReactDefault ??= ctx.React.default;',
+          'const React = ReactDefault;',
+          "ctx.render(React.createElement('div', null, 'broken'));",
+        ],
+        path: '$.defaultReactNullishTwoStepAlias.code',
+      },
+      {
+        code: [
+          'let ReactDefault = {};',
+          'ReactDefault &&= ctx.React.default;',
+          'const React = ReactDefault;',
+          "ctx.render(React.createElement('div', null, 'broken'));",
+        ],
+        path: '$.defaultReactLogicalAndTwoStepAlias.code',
+      },
+      {
+        code: [
+          'let ReactNs;',
+          'ReactNs ||= ctx.React;',
+          'const React = ReactNs.default;',
+          "ctx.render(React.createElement('div', null, 'broken'));",
+        ],
+        path: '$.defaultReactNamespaceLogicalOrAlias.code',
+      },
+      {
+        code: [
+          'let ReactNs;',
+          'ReactNs ??= ctx.React;',
+          'const React = ReactNs.default;',
+          "ctx.render(React.createElement('div', null, 'broken'));",
+        ],
+        path: '$.defaultReactNamespaceNullishAlias.code',
+      },
+      {
+        code: [
+          'let ReactNs = {};',
+          'ReactNs &&= ctx.React;',
+          'const React = ReactNs.default;',
+          "ctx.render(React.createElement('div', null, 'broken'));",
+        ],
+        path: '$.defaultReactNamespaceLogicalAndAlias.code',
+      },
+      {
+        code: [
+          'let ReactNs;',
+          'ReactNs ||= ctx.React;',
+          'const { default: React } = ReactNs;',
+          'ctx.render(<div>broken</div>);',
+        ],
+        path: '$.defaultReactNamespaceLogicalDestructure.code',
+      },
+      {
+        code: [
+          'let ReactDefault;',
+          'const React = (ReactDefault = ctx.React.default);',
+          "ctx.render(React.createElement('div', null, 'broken'));",
+        ],
+        path: '$.defaultReactInlineAssignmentAlias.code',
+      },
+      {
+        code: [
+          'let ReactDefault;',
+          'const React = (ReactDefault ||= ctx.React.default);',
+          "ctx.render(React.createElement('div', null, 'broken'));",
+        ],
+        path: '$.defaultReactInlineLogicalOrAlias.code',
+      },
+      {
+        code: [
+          'let ReactDefault;',
+          'const React = (ReactDefault ??= ctx.React.default);',
+          "ctx.render(React.createElement('div', null, 'broken'));",
+        ],
+        path: '$.defaultReactInlineNullishAlias.code',
+      },
+      {
+        code: [
+          'let ReactDefault = {};',
+          'const React = (ReactDefault &&= ctx.React.default);',
+          "ctx.render(React.createElement('div', null, 'broken'));",
+        ],
+        path: '$.defaultReactInlineLogicalAndAlias.code',
+      },
+      {
+        code: ['let ReactNs;', 'const { default: React } = (ReactNs = ctx.React);', 'ctx.render(<div>broken</div>);'],
+        path: '$.defaultReactInlineNamespaceAssignmentDestructure.code',
+      },
+      {
+        code: ['let ReactNs;', 'const { default: React } = (ReactNs ||= ctx.React);', 'ctx.render(<div>broken</div>);'],
+        path: '$.defaultReactInlineNamespaceLogicalDestructure.code',
+      },
+      {
+        code: ['let ReactNs;', 'const { default: React } = (ReactNs ??= ctx.React);', 'ctx.render(<div>broken</div>);'],
+        path: '$.defaultReactInlineNamespaceNullishDestructure.code',
+      },
+      {
+        code: [
+          'let ReactNs = {};',
+          'const { default: React } = (ReactNs &&= ctx.React);',
+          'ctx.render(<div>broken</div>);',
+        ],
+        path: '$.defaultReactInlineNamespaceLogicalAndDestructure.code',
+      },
+      {
+        code: [
+          'let ReactDefault;',
+          'const React = (0, ReactDefault ||= ctx.React.default);',
+          "ctx.render(React.createElement('div', null, 'broken'));",
+        ],
+        path: '$.defaultReactSequenceInlineLogicalAlias.code',
+      },
+      {
+        code: [
+          'let ReactNs;',
+          'const { default: React } = (0, ReactNs ||= ctx.React);',
+          'ctx.render(<div>broken</div>);',
+        ],
+        path: '$.defaultReactSequenceInlineNamespaceDestructure.code',
+      },
+      {
+        code: [
+          'const ReactNs1 = ctx.React;',
+          'const ReactNs2 = ReactNs1;',
+          'const React = ReactNs2.default;',
+          "ctx.render(React.createElement('div', null, 'broken'));",
+        ],
+        path: '$.defaultReactMultiHopNamespaceAlias.code',
+      },
+      {
+        code: [
+          'const c = ctx;',
+          'const React = c.React.default;',
+          "ctx.render(React.createElement('div', null, 'broken'));",
+        ],
+        path: '$.defaultReactCtxRootAlias.code',
+      },
+      {
+        code: [
+          'const { React: ReactNs } = ctx;',
+          'const React = ReactNs.default;',
+          "ctx.render(React.createElement('div', null, 'broken'));",
+        ],
+        path: '$.defaultReactDestructuredNamespaceAlias.code',
+      },
+      {
+        code: [
+          'const c = ctx;',
+          'const { React: ReactNs } = c;',
+          'const React = ReactNs.default;',
+          "ctx.render(React.createElement('div', null, 'broken'));",
+        ],
+        path: '$.defaultReactCtxAliasDestructuredNamespace.code',
+      },
+      {
+        code: [
+          'let c;',
+          'const React = (c = ctx).React.default;',
+          "ctx.render(React.createElement('div', null, 'broken'));",
+        ],
+        path: '$.defaultReactInlineCtxRootAlias.code',
+      },
+      {
+        code: ['const { React: { default: React } } = ctx;', "ctx.render(React.createElement('div', null, 'broken'));"],
+        path: '$.defaultReactNestedCtxDestructure.code',
+      },
+      {
+        code: [
+          'let React;',
+          '({ React: { default: React } } = ctx);',
+          "ctx.render(React.createElement('div', null, 'broken'));",
+        ],
+        path: '$.defaultReactNestedCtxAssignmentDestructure.code',
+      },
+      {
+        code: [
+          'const c = ctx;',
+          'const { React: { default: React } } = c;',
+          "ctx.render(React.createElement('div', null, 'broken'));",
+        ],
+        path: '$.defaultReactNestedCtxAliasDestructure.code',
+      },
+      {
+        code: [
+          'let c;',
+          'const { React: { default: React } } = (c = ctx);',
+          "ctx.render(React.createElement('div', null, 'broken'));",
+        ],
+        path: '$.defaultReactNestedInlineCtxAliasDestructure.code',
+      },
+      {
+        code: [
+          'const { React: { default: ReactDefault } } = ctx;',
+          'const React = ReactDefault;',
+          "ctx.render(React.createElement('div', null, 'broken'));",
+        ],
+        path: '$.defaultReactNestedCtxDestructureTwoStepAlias.code',
+      },
+      {
+        code: [
+          'let ReactDefault;',
+          '({ React: { default: ReactDefault } } = ctx);',
+          'const React = ReactDefault;',
+          "ctx.render(React.createElement('div', null, 'broken'));",
+        ],
+        path: '$.defaultReactNestedCtxAssignmentDestructureTwoStepAlias.code',
+      },
+      {
+        code: [
+          'let ReactDefault;',
+          '{ ReactDefault = ctx.React.default; }',
+          'const React = ReactDefault;',
+          "ctx.render(React.createElement('div', null, 'broken'));",
+        ],
+        path: '$.defaultReactNestedBlockAssignmentAlias.code',
+      },
+      {
+        code: [
+          'let ReactDefault;',
+          '{ ReactDefault ||= ctx.React.default; }',
+          'const React = ReactDefault;',
+          "ctx.render(React.createElement('div', null, 'broken'));",
+        ],
+        path: '$.defaultReactNestedBlockLogicalOrAlias.code',
+      },
+      {
+        code: [
+          'let ReactDefault;',
+          '{ ReactDefault ??= ctx.React.default; }',
+          'const React = ReactDefault;',
+          "ctx.render(React.createElement('div', null, 'broken'));",
+        ],
+        path: '$.defaultReactNestedBlockNullishAlias.code',
+      },
+      {
+        code: [
+          'let ReactDefault = {};',
+          '{ ReactDefault &&= ctx.React.default; }',
+          'const React = ReactDefault;',
+          "ctx.render(React.createElement('div', null, 'broken'));",
+        ],
+        path: '$.defaultReactNestedBlockLogicalAndAlias.code',
+      },
+      {
+        code: [
+          'let ReactDefault;',
+          '{ ({ default: ReactDefault } = ctx.React); }',
+          'const React = ReactDefault;',
+          "ctx.render(React.createElement('div', null, 'broken'));",
+        ],
+        path: '$.defaultReactNestedBlockDestructuredDefaultAlias.code',
+      },
+      {
+        code: [
+          'let ReactNs;',
+          '{ ReactNs = ctx.React; }',
+          'const React = ReactNs.default;',
+          "ctx.render(React.createElement('div', null, 'broken'));",
+        ],
+        path: '$.defaultReactNestedBlockNamespaceAssignmentAlias.code',
+      },
+      {
+        code: [
+          'let ReactNs;',
+          '{ ReactNs ||= ctx.React; }',
+          'const React = ReactNs.default;',
+          "ctx.render(React.createElement('div', null, 'broken'));",
+        ],
+        path: '$.defaultReactNestedBlockNamespaceLogicalOrAlias.code',
+      },
+      {
+        code: [
+          'let ReactNs;',
+          '{ ReactNs ??= ctx.React; }',
+          'const React = ReactNs.default;',
+          "ctx.render(React.createElement('div', null, 'broken'));",
+        ],
+        path: '$.defaultReactNestedBlockNamespaceNullishAlias.code',
+      },
+      {
+        code: [
+          'let ReactNs = {};',
+          '{ ReactNs &&= ctx.React; }',
+          'const React = ReactNs.default;',
+          "ctx.render(React.createElement('div', null, 'broken'));",
+        ],
+        path: '$.defaultReactNestedBlockNamespaceLogicalAndAlias.code',
+      },
+      {
+        code: [
+          'let ReactNs;',
+          '{ ({ React: ReactNs } = ctx); }',
+          'const React = ReactNs.default;',
+          "ctx.render(React.createElement('div', null, 'broken'));",
+        ],
+        path: '$.defaultReactNestedBlockDestructuredNamespaceAlias.code',
+      },
+      {
+        code: [
+          'const React = Math.random() > 0.5 ? ctx.React.default : ctx.React;',
+          "ctx.render(React.createElement('div', null, 'broken'));",
+        ],
+        path: '$.defaultReactConditionalAlias.code',
+      },
+      {
+        code: [
+          'const React = window.__React || ctx.React.default;',
+          "ctx.render(React.createElement('div', null, 'broken'));",
+        ],
+        path: '$.defaultReactLogicalFallbackAlias.code',
+      },
+      {
+        code: [
+          'const ReactNs = Math.random() > 0.5 ? ctx.React : window.__React;',
+          'const { default: React } = ReactNs;',
+          'ctx.render(<div>broken</div>);',
+        ],
+        path: '$.defaultReactConditionalNamespaceDestructure.code',
+      },
+    ].forEach(({ code, path }) => {
+      const errors = inspectRunJsAuthoringCode({
+        code: code.join('\n'),
+        path,
+        modelUse: 'JSBlockModel',
+      });
+      expect(errors).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            ruleId: 'runjs-react-default-alias-forbidden',
+            details: expect.objectContaining({
+              capability: 'ctx.React.default',
+              binding: 'React',
+            }),
+          }),
+        ]),
+      );
+    });
+
+    [
+      {
+        code: [
+          'let ReactNs;',
+          'function initReactNs() { ReactNs = ctx.React; }',
+          'const React = ReactNs.default;',
+          "ctx.render(React.createElement('div', null, 'not-an-authoring-default-alias'));",
+        ],
+        path: '$.defaultReactNestedFunctionNamespaceAssignmentNotPropagated.code',
+      },
+      {
+        code: [
+          'let ReactDefault;',
+          '[1].forEach(() => { ReactDefault = ctx.React.default; });',
+          'const React = ReactDefault;',
+          "ctx.render(React.createElement('div', null, 'not-an-authoring-default-alias'));",
+        ],
+        path: '$.defaultReactCallbackDefaultAssignmentNotPropagated.code',
+      },
+    ].forEach(({ code, path }) => {
+      const errors = inspectRunJsAuthoringCode({
+        code: code.join('\n'),
+        path,
+        modelUse: 'JSBlockModel',
+      });
+      expect(errors).not.toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            ruleId: 'runjs-react-default-alias-forbidden',
+          }),
+        ]),
+      );
+    });
+
     const defaultAssignmentRenameErrors = inspectRunJsAuthoringCode({
       code: ['let React;', '({ default: React } = ctx.React);', 'ctx.render(<div>broken</div>);'].join('\n'),
       path: '$.defaultReactAssignmentRename.code',

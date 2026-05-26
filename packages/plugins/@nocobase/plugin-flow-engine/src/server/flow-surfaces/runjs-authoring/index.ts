@@ -88,12 +88,14 @@ type ReactCreateElementAlias = SourceRange & {
 type ReactNamespaceAlias = SourceRange & {
   capability: string;
   declarationStart?: number;
+  executionScope: SourceRange;
   name: string;
 };
 
 type ReactDefaultAlias = SourceRange & {
   capability: string;
   declarationStart?: number;
+  executionScope: SourceRange;
   name: string;
 };
 
@@ -259,6 +261,13 @@ type RunJsAstInspection = {
 type CtxMethodAlias = SourceRange & {
   capability: string;
   method: string;
+  name: string;
+};
+
+type CtxRootAlias = SourceRange & {
+  capability: 'ctx';
+  declarationStart?: number;
+  executionScope: SourceRange;
   name: string;
 };
 
@@ -2585,17 +2594,25 @@ function inspectRunJsAst(
   const identifierBindings = collectAstIdentifierBindingsFromAst(ast, source);
   const functionBindings = collectAstFunctionBindingsFromAst(ast, source);
   const aliases = collectCtxMethodAliasesFromAst(ast, source, identifierBindings);
+  const ctxRootAliases = collectCtxRootAliasesFromAst(ast, source, identifierBindings);
   const ctxApiAliases = collectCtxApiAliasesFromAst(ast, source, identifierBindings);
   const ctxLibsRootAliases = collectCtxLibsRootAliasesFromAst(ast, source, identifierBindings);
   const ctxLibAliases = collectCtxLibAliasesFromAst(ast, source, ctxLibsRootAliases, identifierBindings);
   const ctxApiResourceAliases = collectCtxApiResourceAliasesFromAst(ast, source, ctxApiAliases, identifierBindings);
-  const reactNamespaceAliases = collectReactNamespaceAliasesFromAst(ast, source, identifierBindings);
-  const reactDefaultAliases = collectReactDefaultAliasesFromAst(ast, source, identifierBindings, reactNamespaceAliases);
+  const reactNamespaceAliases = collectReactNamespaceAliasesFromAst(ast, source, identifierBindings, ctxRootAliases);
+  const reactDefaultAliases = collectReactDefaultAliasesFromAst(
+    ast,
+    source,
+    identifierBindings,
+    reactNamespaceAliases,
+    ctxRootAliases,
+  );
   const invalidReactRuntimeBindings = collectAstInvalidReactRuntimeBindingsFromAst(
     ast,
     source,
     identifierBindings,
     reactNamespaceAliases,
+    ctxRootAliases,
     reactDefaultAliases,
   );
   const reactCreateElementAliases = collectReactCreateElementAliasesFromAst(
@@ -2603,6 +2620,7 @@ function inspectRunJsAst(
     source,
     identifierBindings,
     reactNamespaceAliases,
+    ctxRootAliases,
   );
   const asyncComponentBindings = collectReactAsyncComponentBindingsFromAst(ast, source, identifierBindings);
   const staticStringBindings = [...stringBindings, ...collectStaticStringBindingsFromAst(ast, source)];
@@ -2778,6 +2796,53 @@ function inspectRunJsAst(
     sharedCtxResourceCallsInFunctions,
     topLevelReachableCtxRenderCalls,
   };
+}
+
+function collectCtxRootAliasesFromAst(
+  ast: any,
+  source: string,
+  identifierBindings: AstIdentifierBinding[],
+): CtxRootAlias[] {
+  const aliases: CtxRootAlias[] = [];
+  const writes = collectAstIdentifierWritesFromAst(ast, source);
+  const addAlias = (name: string, node: any, ancestors: any[], isVar = false, scopeOverride?: SourceRange) => {
+    const scope = scopeOverride || getAstBindingScopeRange(ancestors, source.length, isVar);
+    aliases.push({
+      capability: 'ctx',
+      declarationStart: typeof node?.start === 'number' ? node.start : scope.start,
+      executionScope: getAstExecutionScopeRange(ancestors, source.length),
+      name,
+      start: typeof node?.start === 'number' ? node.start : scope.start,
+      end: scope.end,
+    });
+  };
+  const getActiveAliases = () => trimAstAliasesAfterWrites(aliases, writes, identifierBindings);
+
+  walkAstAncestor(ast, {
+    AssignmentExpression(node: any, ancestors: any[]) {
+      if (!isAstCtxApiAliasAssignmentOperator(node.operator) || node.left?.type !== 'Identifier') {
+        return;
+      }
+      if (isCtxRootFromAst(node.right, getActiveAliases(), identifierBindings)) {
+        addAlias(
+          node.left.name,
+          node,
+          ancestors,
+          false,
+          getAstAssignmentTargetScope(node.left, ancestors, source.length, identifierBindings),
+        );
+      }
+    },
+    VariableDeclarator(node: any, ancestors: any[]) {
+      if (node.id?.type !== 'Identifier' || !isCtxRootFromAst(node.init, getActiveAliases(), identifierBindings)) {
+        return;
+      }
+      const declaration = findAstAncestor(ancestors, 'VariableDeclaration');
+      addAlias(node.id.name, node, ancestors, declaration?.kind === 'var');
+    },
+  });
+
+  return trimAstAliasesAfterWrites(aliases, writes, identifierBindings);
 }
 
 function collectCtxMethodAliasesFromAst(
@@ -3266,6 +3331,7 @@ function collectReactCreateElementAliasesFromAst(
   source: string,
   identifierBindings: AstIdentifierBinding[],
   namespaceAliases: ReactNamespaceAlias[],
+  ctxRootAliases: CtxRootAlias[],
 ): ReactCreateElementAlias[] {
   const aliases: ReactCreateElementAlias[] = [];
   const addAlias = (name: string, capability: string, node: any, ancestors: any[], isVar = false) => {
@@ -3284,7 +3350,12 @@ function collectReactCreateElementAliasesFromAst(
       if (node.operator !== '=' || node.left?.type !== 'Identifier') {
         return;
       }
-      const capability = getReactCreateElementCapabilityFromAst(node.right, identifierBindings, namespaceAliases);
+      const capability = getReactCreateElementCapabilityFromAst(
+        node.right,
+        identifierBindings,
+        namespaceAliases,
+        ctxRootAliases,
+      );
       if (capability) {
         addAlias(node.left.name, capability, node, ancestors);
       }
@@ -3293,7 +3364,12 @@ function collectReactCreateElementAliasesFromAst(
       const declaration = findAstAncestor(ancestors, 'VariableDeclaration');
       const isVar = declaration?.kind === 'var';
       if (node.id?.type === 'Identifier') {
-        const capability = getReactCreateElementCapabilityFromAst(node.init, identifierBindings, namespaceAliases);
+        const capability = getReactCreateElementCapabilityFromAst(
+          node.init,
+          identifierBindings,
+          namespaceAliases,
+          ctxRootAliases,
+        );
         if (capability) {
           addAlias(node.id.name, capability, node, ancestors, isVar);
         }
@@ -3301,9 +3377,14 @@ function collectReactCreateElementAliasesFromAst(
       }
       if (
         node.id?.type === 'ObjectPattern' &&
-        getReactNamespaceCapabilityFromAst(node.init, identifierBindings, namespaceAliases)
+        getReactNamespaceCapabilityFromAst(node.init, identifierBindings, namespaceAliases, ctxRootAliases)
       ) {
-        const namespace = getReactNamespaceCapabilityFromAst(node.init, identifierBindings, namespaceAliases);
+        const namespace = getReactNamespaceCapabilityFromAst(
+          node.init,
+          identifierBindings,
+          namespaceAliases,
+          ctxRootAliases,
+        );
         collectAstObjectPatternAliases(node.id, (name, member, aliasNode) => {
           if (member === 'createElement') {
             addAlias(name, `${namespace}.createElement`, aliasNode || node, ancestors, isVar);
@@ -3320,43 +3401,99 @@ function collectReactNamespaceAliasesFromAst(
   ast: any,
   source: string,
   identifierBindings: AstIdentifierBinding[],
+  ctxRootAliases: CtxRootAlias[],
 ): ReactNamespaceAlias[] {
   const aliases: ReactNamespaceAlias[] = [];
-  const addAlias = (name: string, capability: string, node: any, ancestors: any[], isVar = false) => {
-    const scope = getAstBindingScopeRange(ancestors, source.length, isVar);
+  const writes = collectAstIdentifierWritesFromAst(ast, source);
+  const addAlias = (
+    name: string,
+    capability: string,
+    node: any,
+    ancestors: any[],
+    isVar = false,
+    scopeOverride?: SourceRange,
+  ) => {
+    const scope = scopeOverride || getAstBindingScopeRange(ancestors, source.length, isVar);
     aliases.push({
       capability,
       name,
       declarationStart: typeof node.start === 'number' ? node.start : scope.start,
+      executionScope: getAstExecutionScopeRange(ancestors, source.length),
       start: typeof node.start === 'number' ? node.start : scope.start,
       end: scope.end,
     });
   };
+  const getActiveAliases = () => trimAstAliasesAfterWrites(aliases, writes, identifierBindings);
 
   walkAstAncestor(ast, {
     AssignmentExpression(node: any, ancestors: any[]) {
-      if (node.operator !== '=' || node.left?.type !== 'Identifier') {
+      if (!isAstCtxApiAliasAssignmentOperator(node.operator)) {
         return;
       }
-      const capability = getDirectReactNamespaceCapabilityFromAst(node.right, identifierBindings);
-      if (capability) {
-        addAlias(node.left.name, capability, node, ancestors);
+      const activeAliases = getActiveAliases();
+      const capability = getReactNamespaceCapabilityFromAst(
+        node.right,
+        identifierBindings,
+        activeAliases,
+        ctxRootAliases,
+      );
+      if (node.left?.type === 'Identifier' && capability) {
+        addAlias(
+          node.left.name,
+          capability,
+          node,
+          ancestors,
+          false,
+          getAstAssignmentTargetScope(node.left, ancestors, source.length, identifierBindings),
+        );
+        return;
+      }
+      if (
+        node.operator === '=' &&
+        node.left?.type === 'ObjectPattern' &&
+        isCtxRootFromAst(node.right, ctxRootAliases, identifierBindings)
+      ) {
+        collectAstObjectPatternPathAliases(node.left, (alias, members, aliasNode) => {
+          if (members.length === 1 && members[0] === 'React') {
+            addAlias(
+              alias,
+              'ctx.React',
+              aliasNode || node,
+              ancestors,
+              false,
+              getAstAssignmentTargetScope(aliasNode, ancestors, source.length, identifierBindings),
+            );
+          }
+        });
       }
     },
     VariableDeclarator(node: any, ancestors: any[]) {
-      if (node.id?.type !== 'Identifier') {
-        return;
-      }
-      const capability = getDirectReactNamespaceCapabilityFromAst(node.init, identifierBindings);
-      if (!capability) {
-        return;
-      }
       const declaration = findAstAncestor(ancestors, 'VariableDeclaration');
-      addAlias(node.id.name, capability, node, ancestors, declaration?.kind === 'var');
+      const isVar = declaration?.kind === 'var';
+      const activeAliases = getActiveAliases();
+      if (node.id?.type === 'Identifier') {
+        const capability = getReactNamespaceCapabilityFromAst(
+          node.init,
+          identifierBindings,
+          activeAliases,
+          ctxRootAliases,
+        );
+        if (capability) {
+          addAlias(node.id.name, capability, node, ancestors, isVar);
+        }
+        return;
+      }
+      if (node.id?.type === 'ObjectPattern' && isCtxRootFromAst(node.init, ctxRootAliases, identifierBindings)) {
+        collectAstObjectPatternPathAliases(node.id, (alias, members, aliasNode) => {
+          if (members.length === 1 && members[0] === 'React') {
+            addAlias(alias, 'ctx.React', aliasNode || node, ancestors, isVar);
+          }
+        });
+      }
     },
   });
 
-  return aliases;
+  return trimAstAliasesAfterWrites(aliases, writes, identifierBindings);
 }
 
 function collectReactDefaultAliasesFromAst(
@@ -3364,44 +3501,90 @@ function collectReactDefaultAliasesFromAst(
   source: string,
   identifierBindings: AstIdentifierBinding[],
   namespaceAliases: ReactNamespaceAlias[],
+  ctxRootAliases: CtxRootAlias[],
 ): ReactDefaultAlias[] {
   const aliases: ReactDefaultAlias[] = [];
-  const addAlias = (name: string, capability: string, node: any, ancestors: any[], isVar = false) => {
-    const scope = getAstBindingScopeRange(ancestors, source.length, isVar);
+  const writes = collectAstIdentifierWritesFromAst(ast, source);
+  const addAlias = (
+    name: string,
+    capability: string,
+    node: any,
+    ancestors: any[],
+    isVar = false,
+    scopeOverride?: SourceRange,
+  ) => {
+    const scope = scopeOverride || getAstBindingScopeRange(ancestors, source.length, isVar);
     aliases.push({
       capability,
       name,
       declarationStart: typeof node.start === 'number' ? node.start : scope.start,
+      executionScope: getAstExecutionScopeRange(ancestors, source.length),
       start: typeof node.start === 'number' ? node.start : scope.start,
       end: scope.end,
     });
   };
+  const getActiveAliases = () => trimAstAliasesAfterWrites(aliases, writes, identifierBindings);
 
   walkAstAncestor(ast, {
     AssignmentExpression(node: any, ancestors: any[]) {
-      if (node.operator !== '=') {
+      if (!isAstCtxApiAliasAssignmentOperator(node.operator)) {
         return;
       }
+      const activeAliases = getActiveAliases();
       if (node.left?.type === 'Identifier') {
         const capability = getReactDefaultNamespaceCapabilityFromAst(
           node.right,
           identifierBindings,
           namespaceAliases,
-          aliases,
+          ctxRootAliases,
+          activeAliases,
         );
         if (capability) {
-          addAlias(node.left.name, capability, node, ancestors);
+          addAlias(
+            node.left.name,
+            capability,
+            node,
+            ancestors,
+            false,
+            getAstAssignmentTargetScope(node.left, ancestors, source.length, identifierBindings),
+          );
         }
         return;
       }
       if (
         node.left?.type === 'ObjectPattern' &&
-        getReactNamespaceCapabilityFromAst(node.right, identifierBindings, namespaceAliases)
+        getReactNamespaceCapabilityFromAst(node.right, identifierBindings, namespaceAliases, ctxRootAliases)
       ) {
-        const namespace = getReactNamespaceCapabilityFromAst(node.right, identifierBindings, namespaceAliases);
-        collectAstObjectPatternAliases(node.left, (alias, member, aliasNode) => {
-          if (member === 'default') {
-            addAlias(alias, `${namespace}.default`, aliasNode || node, ancestors);
+        const namespace = getReactNamespaceCapabilityFromAst(
+          node.right,
+          identifierBindings,
+          namespaceAliases,
+          ctxRootAliases,
+        );
+        collectAstObjectPatternPathAliases(node.left, (alias, members, aliasNode) => {
+          if (members.length === 1 && members[0] === 'default') {
+            addAlias(
+              alias,
+              `${namespace}.default`,
+              aliasNode || node,
+              ancestors,
+              false,
+              getAstAssignmentTargetScope(aliasNode, ancestors, source.length, identifierBindings),
+            );
+          }
+        });
+      }
+      if (node.left?.type === 'ObjectPattern' && isCtxRootFromAst(node.right, ctxRootAliases, identifierBindings)) {
+        collectAstObjectPatternPathAliases(node.left, (alias, members, aliasNode) => {
+          if (members.length === 2 && members[0] === 'React' && members[1] === 'default') {
+            addAlias(
+              alias,
+              'ctx.React.default',
+              aliasNode || node,
+              ancestors,
+              false,
+              getAstAssignmentTargetScope(aliasNode, ancestors, source.length, identifierBindings),
+            );
           }
         });
       }
@@ -3414,7 +3597,8 @@ function collectReactDefaultAliasesFromAst(
           node.init,
           identifierBindings,
           namespaceAliases,
-          aliases,
+          ctxRootAliases,
+          getActiveAliases(),
         );
         if (capability) {
           addAlias(node.id.name, capability, node, ancestors, isVar);
@@ -3423,19 +3607,32 @@ function collectReactDefaultAliasesFromAst(
       }
       if (
         node.id?.type === 'ObjectPattern' &&
-        getReactNamespaceCapabilityFromAst(node.init, identifierBindings, namespaceAliases)
+        getReactNamespaceCapabilityFromAst(node.init, identifierBindings, namespaceAliases, ctxRootAliases)
       ) {
-        const namespace = getReactNamespaceCapabilityFromAst(node.init, identifierBindings, namespaceAliases);
-        collectAstObjectPatternAliases(node.id, (alias, member, aliasNode) => {
-          if (member === 'default') {
+        const namespace = getReactNamespaceCapabilityFromAst(
+          node.init,
+          identifierBindings,
+          namespaceAliases,
+          ctxRootAliases,
+        );
+        collectAstObjectPatternPathAliases(node.id, (alias, members, aliasNode) => {
+          if (members.length === 1 && members[0] === 'default') {
             addAlias(alias, `${namespace}.default`, aliasNode || node, ancestors, isVar);
+          }
+        });
+        return;
+      }
+      if (node.id?.type === 'ObjectPattern' && isCtxRootFromAst(node.init, ctxRootAliases, identifierBindings)) {
+        collectAstObjectPatternPathAliases(node.id, (alias, members, aliasNode) => {
+          if (members.length === 2 && members[0] === 'React' && members[1] === 'default') {
+            addAlias(alias, 'ctx.React.default', aliasNode || node, ancestors, isVar);
           }
         });
       }
     },
   });
 
-  return trimAstAliasesAfterWrites(aliases, collectAstIdentifierWritesFromAst(ast, source), identifierBindings);
+  return trimAstAliasesAfterWrites(aliases, writes, identifierBindings);
 }
 
 function collectAstInvalidReactRuntimeBindingsFromAst(
@@ -3443,6 +3640,7 @@ function collectAstInvalidReactRuntimeBindingsFromAst(
   source: string,
   identifierBindings: AstIdentifierBinding[],
   namespaceAliases: ReactNamespaceAlias[],
+  ctxRootAliases: CtxRootAlias[],
   defaultAliases: ReactDefaultAlias[] = [],
 ): InvalidReactRuntimeBinding[] {
   const entries: InvalidReactRuntimeBinding[] = [];
@@ -3462,7 +3660,7 @@ function collectAstInvalidReactRuntimeBindingsFromAst(
 
   walkAstAncestor(ast, {
     AssignmentExpression(node: any, ancestors: any[]) {
-      if (node.operator !== '=') {
+      if (!isAstCtxApiAliasAssignmentOperator(node.operator)) {
         return;
       }
       if (node.left?.type === 'Identifier' && node.left.name === 'React') {
@@ -3470,6 +3668,7 @@ function collectAstInvalidReactRuntimeBindingsFromAst(
           node.right,
           identifierBindings,
           namespaceAliases,
+          ctxRootAliases,
           defaultAliases,
         );
         if (capability) {
@@ -3479,12 +3678,24 @@ function collectAstInvalidReactRuntimeBindingsFromAst(
       }
       if (
         node.left?.type === 'ObjectPattern' &&
-        getReactNamespaceCapabilityFromAst(node.right, identifierBindings, namespaceAliases)
+        getReactNamespaceCapabilityFromAst(node.right, identifierBindings, namespaceAliases, ctxRootAliases)
       ) {
-        const namespace = getReactNamespaceCapabilityFromAst(node.right, identifierBindings, namespaceAliases);
-        collectAstObjectPatternAliases(node.left, (alias, member, aliasNode) => {
-          if (member === 'default' && alias === 'React') {
+        const namespace = getReactNamespaceCapabilityFromAst(
+          node.right,
+          identifierBindings,
+          namespaceAliases,
+          ctxRootAliases,
+        );
+        collectAstObjectPatternPathAliases(node.left, (alias, members, aliasNode) => {
+          if (members.length === 1 && members[0] === 'default' && alias === 'React') {
             addEntry(alias, `${namespace}.default`, aliasNode || node, ancestors);
+          }
+        });
+      }
+      if (node.left?.type === 'ObjectPattern' && isCtxRootFromAst(node.right, ctxRootAliases, identifierBindings)) {
+        collectAstObjectPatternPathAliases(node.left, (alias, members, aliasNode) => {
+          if (members.length === 2 && members[0] === 'React' && members[1] === 'default' && alias === 'React') {
+            addEntry(alias, 'ctx.React.default', aliasNode || node, ancestors);
           }
         });
       }
@@ -3495,6 +3706,7 @@ function collectAstInvalidReactRuntimeBindingsFromAst(
           node.init,
           identifierBindings,
           namespaceAliases,
+          ctxRootAliases,
           defaultAliases,
         );
         if (capability) {
@@ -3504,12 +3716,25 @@ function collectAstInvalidReactRuntimeBindingsFromAst(
       }
       if (
         node.id?.type === 'ObjectPattern' &&
-        getReactNamespaceCapabilityFromAst(node.init, identifierBindings, namespaceAliases)
+        getReactNamespaceCapabilityFromAst(node.init, identifierBindings, namespaceAliases, ctxRootAliases)
       ) {
-        const namespace = getReactNamespaceCapabilityFromAst(node.init, identifierBindings, namespaceAliases);
-        collectAstObjectPatternAliases(node.id, (alias, member, aliasNode) => {
-          if (member === 'default' && alias === 'React') {
+        const namespace = getReactNamespaceCapabilityFromAst(
+          node.init,
+          identifierBindings,
+          namespaceAliases,
+          ctxRootAliases,
+        );
+        collectAstObjectPatternPathAliases(node.id, (alias, members, aliasNode) => {
+          if (members.length === 1 && members[0] === 'default' && alias === 'React') {
             addEntry(alias, `${namespace}.default`, aliasNode || node, ancestors);
+          }
+        });
+        return;
+      }
+      if (node.id?.type === 'ObjectPattern' && isCtxRootFromAst(node.init, ctxRootAliases, identifierBindings)) {
+        collectAstObjectPatternPathAliases(node.id, (alias, members, aliasNode) => {
+          if (members.length === 2 && members[0] === 'React' && members[1] === 'default' && alias === 'React') {
+            addEntry(alias, 'ctx.React.default', aliasNode || node, ancestors);
           }
         });
       }
@@ -4032,6 +4257,7 @@ function getReactCreateElementCapabilityFromAst(
   node: any,
   identifierBindings: AstIdentifierBinding[],
   namespaceAliases: ReactNamespaceAlias[],
+  ctxRootAliases: CtxRootAlias[] = [],
 ) {
   const member = unwrapAstChainExpression(node);
   if (!member || member.type !== 'MemberExpression') {
@@ -4041,7 +4267,12 @@ function getReactCreateElementCapabilityFromAst(
   if (propertyName !== 'createElement') {
     return '';
   }
-  const namespace = getReactNamespaceCapabilityFromAst(member.object, identifierBindings, namespaceAliases);
+  const namespace = getReactNamespaceCapabilityFromAst(
+    member.object,
+    identifierBindings,
+    namespaceAliases,
+    ctxRootAliases,
+  );
   return namespace ? `${namespace}.createElement` : '';
 }
 
@@ -4049,10 +4280,35 @@ function getReactNamespaceCapabilityFromAst(
   node: any,
   identifierBindings: AstIdentifierBinding[],
   aliases: ReactNamespaceAlias[],
+  ctxRootAliases: CtxRootAlias[] = [],
 ) {
   const unwrapped = unwrapAstChainExpression(node);
   if (!unwrapped) {
     return '';
+  }
+  if (unwrapped.type === 'ConditionalExpression') {
+    return (
+      getReactNamespaceCapabilityFromAst(unwrapped.consequent, identifierBindings, aliases, ctxRootAliases) ||
+      getReactNamespaceCapabilityFromAst(unwrapped.alternate, identifierBindings, aliases, ctxRootAliases)
+    );
+  }
+  if (unwrapped.type === 'LogicalExpression') {
+    return (
+      getReactNamespaceCapabilityFromAst(unwrapped.left, identifierBindings, aliases, ctxRootAliases) ||
+      getReactNamespaceCapabilityFromAst(unwrapped.right, identifierBindings, aliases, ctxRootAliases)
+    );
+  }
+  if (unwrapped.type === 'SequenceExpression') {
+    const expressions = unwrapped.expressions || [];
+    return getReactNamespaceCapabilityFromAst(
+      expressions[expressions.length - 1],
+      identifierBindings,
+      aliases,
+      ctxRootAliases,
+    );
+  }
+  if (unwrapped.type === 'AssignmentExpression' && isAstCtxApiAliasAssignmentOperator(unwrapped.operator)) {
+    return getReactNamespaceCapabilityFromAst(unwrapped.right, identifierBindings, aliases, ctxRootAliases);
   }
   if (unwrapped.type === 'Identifier') {
     const index = typeof unwrapped.start === 'number' ? unwrapped.start : 0;
@@ -4061,18 +4317,74 @@ function getReactNamespaceCapabilityFromAst(
       return alias.capability;
     }
   }
-  return getDirectReactNamespaceCapabilityFromAst(unwrapped, identifierBindings);
+  return getDirectReactNamespaceCapabilityFromAst(unwrapped, identifierBindings, ctxRootAliases);
 }
 
 function getReactDefaultNamespaceCapabilityFromAst(
   node: any,
   identifierBindings: AstIdentifierBinding[],
   aliases: ReactNamespaceAlias[],
+  ctxRootAliases: CtxRootAlias[] = [],
   defaultAliases: ReactDefaultAlias[] = [],
 ) {
   const unwrapped = unwrapAstChainExpression(node);
   if (!unwrapped) {
     return '';
+  }
+  if (unwrapped.type === 'ConditionalExpression') {
+    return (
+      getReactDefaultNamespaceCapabilityFromAst(
+        unwrapped.consequent,
+        identifierBindings,
+        aliases,
+        ctxRootAliases,
+        defaultAliases,
+      ) ||
+      getReactDefaultNamespaceCapabilityFromAst(
+        unwrapped.alternate,
+        identifierBindings,
+        aliases,
+        ctxRootAliases,
+        defaultAliases,
+      )
+    );
+  }
+  if (unwrapped.type === 'LogicalExpression') {
+    return (
+      getReactDefaultNamespaceCapabilityFromAst(
+        unwrapped.left,
+        identifierBindings,
+        aliases,
+        ctxRootAliases,
+        defaultAliases,
+      ) ||
+      getReactDefaultNamespaceCapabilityFromAst(
+        unwrapped.right,
+        identifierBindings,
+        aliases,
+        ctxRootAliases,
+        defaultAliases,
+      )
+    );
+  }
+  if (unwrapped.type === 'SequenceExpression') {
+    const expressions = unwrapped.expressions || [];
+    return getReactDefaultNamespaceCapabilityFromAst(
+      expressions[expressions.length - 1],
+      identifierBindings,
+      aliases,
+      ctxRootAliases,
+      defaultAliases,
+    );
+  }
+  if (unwrapped.type === 'AssignmentExpression' && isAstCtxApiAliasAssignmentOperator(unwrapped.operator)) {
+    return getReactDefaultNamespaceCapabilityFromAst(
+      unwrapped.right,
+      identifierBindings,
+      aliases,
+      ctxRootAliases,
+      defaultAliases,
+    );
   }
   if (unwrapped.type === 'Identifier') {
     const index = typeof unwrapped.start === 'number' ? unwrapped.start : 0;
@@ -4082,11 +4394,15 @@ function getReactDefaultNamespaceCapabilityFromAst(
   if (unwrapped.type !== 'MemberExpression' || getAstStaticPropertyName(unwrapped) !== 'default') {
     return '';
   }
-  const namespace = getReactNamespaceCapabilityFromAst(unwrapped.object, identifierBindings, aliases);
+  const namespace = getReactNamespaceCapabilityFromAst(unwrapped.object, identifierBindings, aliases, ctxRootAliases);
   return namespace ? `${namespace}.default` : '';
 }
 
-function getDirectReactNamespaceCapabilityFromAst(node: any, identifierBindings: AstIdentifierBinding[]) {
+function getDirectReactNamespaceCapabilityFromAst(
+  node: any,
+  identifierBindings: AstIdentifierBinding[],
+  ctxRootAliases: CtxRootAlias[] = [],
+) {
   const unwrapped = unwrapAstChainExpression(node);
   if (!unwrapped) {
     return '';
@@ -4102,14 +4418,14 @@ function getDirectReactNamespaceCapabilityFromAst(node: any, identifierBindings:
   if (propertyName !== 'React') {
     return '';
   }
-  if (isUnshadowedCtxIdentifier(unwrapped.object, identifierBindings)) {
+  if (isCtxRootFromAst(unwrapped.object, ctxRootAliases, identifierBindings)) {
     return 'ctx.React';
   }
   const object = unwrapAstChainExpression(unwrapped.object);
   if (
     object?.type === 'MemberExpression' &&
     getAstStaticPropertyName(object) === 'libs' &&
-    isUnshadowedCtxIdentifier(object.object, identifierBindings)
+    isCtxRootFromAst(object.object, ctxRootAliases, identifierBindings)
   ) {
     return 'ctx.libs.React';
   }
@@ -7509,6 +7825,19 @@ function resolveAstAliasBinding<T extends SourceRange & { name: string }>(
   return candidates.find((entry) => !hasAstShadowBinding(name, index, entry, identifierBindings));
 }
 
+function resolveAstActiveIdentifierBinding(
+  name: string,
+  index: number,
+  identifierBindings: AstIdentifierBinding[],
+): AstIdentifierBinding | undefined {
+  return identifierBindings
+    .filter((binding) => binding.name === name && index >= binding.start && index < binding.end)
+    .sort(
+      (left, right) =>
+        left.end - left.start - (right.end - right.start) || right.start - left.start || right.end - left.end,
+    )[0];
+}
+
 function hasAstShadowBinding(
   name: string,
   index: number,
@@ -7588,6 +7917,32 @@ function collectAstObjectPatternAliases(pattern: any, addAlias: (alias: string, 
   }
 }
 
+function collectAstObjectPatternPathAliases(
+  pattern: any,
+  addAlias: (alias: string, members: string[], node?: any) => void,
+  parentMembers: string[] = [],
+) {
+  for (const property of pattern.properties || []) {
+    if (!property || property.type !== 'Property') {
+      continue;
+    }
+    const member = getAstStaticPropertyName(property);
+    if (!member) {
+      continue;
+    }
+    const members = [...parentMembers, member];
+    const alias = getAstBindingIdentifierName(property.value);
+    const aliasNode = getAstBindingIdentifierNode(property.value);
+    if (alias) {
+      addAlias(alias, members, aliasNode);
+    }
+    const nestedPattern = getAstObjectPatternFromValue(property.value);
+    if (nestedPattern) {
+      collectAstObjectPatternPathAliases(nestedPattern, addAlias, members);
+    }
+  }
+}
+
 function getAstBindingIdentifierNode(node: any): any {
   if (node?.type === 'Identifier') {
     return node;
@@ -7636,6 +7991,40 @@ function isUnshadowedCtxIdentifier(node: any, identifierBindings: AstIdentifierB
   }
   const index = typeof unwrapped.start === 'number' ? unwrapped.start : 0;
   return !hasAstActiveBinding('ctx', index, identifierBindings);
+}
+
+function isCtxRootFromAst(node: any, aliases: CtxRootAlias[], identifierBindings: AstIdentifierBinding[]) {
+  const unwrapped = unwrapAstChainExpression(node);
+  if (!unwrapped) {
+    return false;
+  }
+  if (unwrapped.type === 'ConditionalExpression') {
+    return (
+      isCtxRootFromAst(unwrapped.consequent, aliases, identifierBindings) ||
+      isCtxRootFromAst(unwrapped.alternate, aliases, identifierBindings)
+    );
+  }
+  if (unwrapped.type === 'LogicalExpression') {
+    return (
+      isCtxRootFromAst(unwrapped.left, aliases, identifierBindings) ||
+      isCtxRootFromAst(unwrapped.right, aliases, identifierBindings)
+    );
+  }
+  if (unwrapped.type === 'SequenceExpression') {
+    const expressions = unwrapped.expressions || [];
+    return isCtxRootFromAst(expressions[expressions.length - 1], aliases, identifierBindings);
+  }
+  if (unwrapped.type === 'AssignmentExpression' && isAstCtxApiAliasAssignmentOperator(unwrapped.operator)) {
+    return isCtxRootFromAst(unwrapped.right, aliases, identifierBindings);
+  }
+  if (isUnshadowedCtxIdentifier(unwrapped, identifierBindings)) {
+    return true;
+  }
+  if (unwrapped.type !== 'Identifier') {
+    return false;
+  }
+  const index = typeof unwrapped.start === 'number' ? unwrapped.start : 0;
+  return !!resolveAstAliasBinding(unwrapped.name, index, aliases, identifierBindings);
 }
 
 function hasAstActiveBinding(name: string, index: number, identifierBindings: AstIdentifierBinding[]) {
@@ -7725,6 +8114,30 @@ function isAstCtxApiAliasAssignmentOperator(operator: string) {
 
 function isAstDefiniteAssignmentOperator(operator: string) {
   return operator === '=' || operator === '&&=';
+}
+
+function getAstAssignmentTargetScope(
+  target: any,
+  ancestors: any[],
+  sourceLength: number,
+  identifierBindings: AstIdentifierBinding[],
+): SourceRange {
+  const fallbackScope = getAstBindingScopeRange(ancestors, sourceLength);
+  if (target?.type === 'Identifier') {
+    const index = typeof target.start === 'number' ? target.start : 0;
+    const binding = resolveAstActiveIdentifierBinding(target.name, index, identifierBindings);
+    if (binding) {
+      const executionScope = getAstExecutionScopeRange(ancestors, sourceLength);
+      if (binding.start < executionScope.start && binding.end >= executionScope.end) {
+        return fallbackScope;
+      }
+      return {
+        start: binding.start,
+        end: binding.end,
+      };
+    }
+  }
+  return fallbackScope;
 }
 
 function getAstBindingScopeRange(ancestors: any[], sourceLength: number, functionScoped = false): SourceRange {
