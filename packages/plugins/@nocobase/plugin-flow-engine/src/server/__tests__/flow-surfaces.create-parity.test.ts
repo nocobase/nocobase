@@ -173,7 +173,7 @@ async function buildNestedPopupCreateParityReadback(rootAgent: any, key: 'table'
       dataSourceKey: 'main',
       collectionName: 'pets',
     },
-    fields: [PET_TABLE_FIELD_PATHS[0]],
+    fields: PET_TABLE_FIELD_PATHS.slice(0, 3),
     defaults: petsDefaultFieldGroups(),
   });
   const hostPopup = await ensureBlockAction(rootAgent, hostTable.uid, 'addNew', {
@@ -197,7 +197,7 @@ async function buildNestedPopupCreateParityReadback(rootAgent: any, key: 'table'
         resource: {
           binding: 'currentCollection',
         },
-        fields: [PET_TABLE_FIELD_PATHS[0]],
+        fields: PET_TABLE_FIELD_PATHS.slice(0, 3),
         defaults: petsDefaultFieldGroups(),
       });
       await configureTableBlock(rootAgent, nestedTable.uid);
@@ -293,7 +293,7 @@ async function buildNestedPopupCreateParityReadback(rootAgent: any, key: 'table'
           binding: 'otherRecords',
           collectionName: 'departments',
         },
-        fields: ['title'],
+        fields: ['title', 'code', 'status'],
       });
       return getSurface(rootAgent, {
         uid: nestedList.uid,
@@ -332,7 +332,7 @@ async function createTableParityReadback(rootAgent: any) {
       dataSourceKey: 'main',
       collectionName: 'pets',
     },
-    fields: [PET_TABLE_FIELD_PATHS[0]],
+    fields: PET_TABLE_FIELD_PATHS.slice(0, 3),
     defaults: petsDefaultFieldGroups(),
   });
 
@@ -502,7 +502,7 @@ async function createDetailsParityReadback(rootAgent: any) {
       dataSourceKey: 'main',
       collectionName: 'pets',
     },
-    fields: [PET_DETAILS_FIELD_PATHS[0]],
+    fields: PET_DETAILS_FIELD_PATHS.slice(0, 3),
   });
   await configurePetsDetailsBlock(rootAgent, details.uid);
   return getSurface(rootAgent, {
@@ -524,7 +524,7 @@ async function createFilterFormParityReadback(rootAgent: any) {
       dataSourceKey: 'main',
       collectionName: 'pets',
     },
-    fields: [PET_TABLE_FIELD_PATHS[0]],
+    fields: PET_TABLE_FIELD_PATHS.slice(0, 3),
     defaults: petsDefaultFieldGroups(),
   });
   await addField(rootAgent, table.uid, 'name');
@@ -612,7 +612,7 @@ async function createCollectionBlockParityReadback(
       dataSourceKey: 'main',
       collectionName,
     },
-    fields: ['title'],
+    fields: type === 'kanban' ? ['title'] : ['title', 'code', 'status'],
   });
   return getSurface(rootAgent, {
     uid: block.uid,

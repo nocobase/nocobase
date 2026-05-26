@@ -2913,7 +2913,7 @@ describe('flowSurfaces templates', () => {
                         resource: {
                           binding: 'currentRecord',
                         },
-                        fields: ['field1'],
+                        fields: ['field1', 'field2', 'field3'],
                       },
                     ],
                     saveAsTemplate: {
@@ -2923,6 +2923,8 @@ describe('flowSurfaces templates', () => {
                     },
                   },
                 },
+                'field2',
+                'field3',
               ],
             },
             {
@@ -2933,7 +2935,7 @@ describe('flowSurfaces templates', () => {
                 collectionName,
               },
               defaultFilter: defaultFilterFor(['field1', 'field2', 'field3', 'field4']),
-              fields: ['field1'],
+              fields: ['field1', 'field2', 'field3'],
               recordActions: [
                 {
                   key: 'consumerView',

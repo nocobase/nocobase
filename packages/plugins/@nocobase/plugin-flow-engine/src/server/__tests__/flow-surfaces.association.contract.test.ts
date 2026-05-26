@@ -21,6 +21,49 @@ import {
   type FlowSurfacesContractContext,
 } from './flow-surfaces.contract.helpers';
 
+type FlowSurfacesComposeBlockSummary = {
+  key?: string;
+  uid?: string;
+};
+
+function buildRoleTableRecordActions() {
+  return [
+    {
+      key: 'viewRole',
+      type: 'view',
+      popup: {
+        blocks: [
+          {
+            key: 'roleDetails',
+            type: 'details',
+            resource: {
+              binding: 'currentRecord',
+            },
+            fields: ['name', 'title', 'description'],
+          },
+        ],
+      },
+    },
+    {
+      key: 'editRole',
+      type: 'edit',
+      popup: {
+        blocks: [
+          {
+            key: 'roleEditForm',
+            type: 'editForm',
+            resource: {
+              binding: 'currentRecord',
+            },
+            fields: ['title'],
+          },
+        ],
+      },
+    },
+    'delete',
+  ];
+}
+
 function expectRelationTitleFieldError(
   response: any,
   expected: {
@@ -111,7 +154,28 @@ describe('flowSurfaces association contract', () => {
                 dataSourceKey: 'main',
                 collectionName: 'users',
               },
-              fields: ['username', 'nickname', 'roles', 'roles.title'],
+              fields: [
+                'username',
+                'nickname',
+                {
+                  key: 'roles',
+                  fieldPath: 'roles',
+                  popup: {
+                    mode: 'replace',
+                    blocks: [
+                      {
+                        key: 'roleDetails',
+                        type: 'details',
+                        resource: {
+                          binding: 'currentRecord',
+                        },
+                        fields: ['name', 'title', 'description'],
+                      },
+                    ],
+                  },
+                },
+                'roles.title',
+              ],
               actions: ['filter', 'addNew'],
               recordActions: ['view', 'edit', 'delete'],
             },
@@ -233,7 +297,7 @@ describe('flowSurfaces association contract', () => {
           resource: {
             binding: 'currentRecord',
           },
-          fields: ['title'],
+          fields: ['name', 'title', 'description'],
         },
       }),
     );
@@ -350,7 +414,7 @@ describe('flowSurfaces association contract', () => {
           resource: {
             binding: 'currentRecord',
           },
-          fields: ['title'],
+          fields: ['name', 'title', 'description'],
         },
       }),
     );
@@ -571,7 +635,7 @@ describe('flowSurfaces association contract', () => {
                 dataSourceKey: 'main',
                 collectionName: 'users',
               },
-              fields: ['username', 'nickname'],
+              fields: ['username', 'nickname', 'email'],
               actions: ['refresh'],
             },
           ],
@@ -626,21 +690,31 @@ describe('flowSurfaces association contract', () => {
       ]),
     );
 
-    const rolesTable = getData(
-      await rootAgent.resource('flowSurfaces').addBlock({
+    const rolesTableCompose = getData(
+      await rootAgent.resource('flowSurfaces').compose({
         values: {
           target: {
             uid: usernameField.fieldUid,
           },
-          type: 'table',
-          resource: {
-            binding: 'associatedRecords',
-            associationField: 'roles',
-          },
-          fields: ['title'],
+          blocks: [
+            {
+              key: 'rolesTable',
+              type: 'table',
+              resource: {
+                binding: 'associatedRecords',
+                associationField: 'roles',
+              },
+              fields: ['name', 'title', 'description'],
+              recordActions: buildRoleTableRecordActions(),
+            },
+          ],
         },
       }),
     );
+    const rolesTable = rolesTableCompose.blocks.find(
+      (item: FlowSurfacesComposeBlockSummary) => item.key === 'rolesTable',
+    );
+    expect(rolesTable?.uid).toBeTruthy();
 
     const rolesTableReadback = await getSurface(rootAgent, { uid: rolesTable.uid });
     expect(rolesTableReadback.tree.use).toBe('TableBlockModel');
@@ -672,7 +746,26 @@ describe('flowSurfaces association contract', () => {
                 dataSourceKey: 'main',
                 collectionName: 'users',
               },
-              fields: ['username', 'roles'],
+              fields: [
+                'username',
+                'nickname',
+                {
+                  key: 'roles',
+                  fieldPath: 'roles',
+                  popup: {
+                    blocks: [
+                      {
+                        key: 'roleDetails',
+                        type: 'details',
+                        resource: {
+                          binding: 'currentRecord',
+                        },
+                        fields: ['name', 'title', 'description'],
+                      },
+                    ],
+                  },
+                },
+              ],
             },
           ],
         },
@@ -707,7 +800,7 @@ describe('flowSurfaces association contract', () => {
             dataSourceKey: 'main',
             collectionName: 'roles',
           },
-          fields: ['title'],
+          fields: ['name', 'title', 'description'],
         },
       }),
     );
@@ -767,7 +860,7 @@ describe('flowSurfaces association contract', () => {
           dataSourceKey: 'main',
           collectionName: 'roles',
         },
-        fields: ['title'],
+        fields: ['name', 'title', 'description'],
       },
     });
     expect(legacyTableRes.status).toBe(400);
@@ -794,7 +887,26 @@ describe('flowSurfaces association contract', () => {
                 dataSourceKey: 'main',
                 collectionName: 'users',
               },
-              fields: ['username', 'roles'],
+              fields: [
+                'username',
+                'nickname',
+                {
+                  key: 'roles',
+                  fieldPath: 'roles',
+                  popup: {
+                    blocks: [
+                      {
+                        key: 'roleDetails',
+                        type: 'details',
+                        resource: {
+                          binding: 'currentRecord',
+                        },
+                        fields: ['name', 'title', 'description'],
+                      },
+                    ],
+                  },
+                },
+              ],
               recordActions: ['view'],
             },
           ],
@@ -806,21 +918,31 @@ describe('flowSurfaces association contract', () => {
     const tableViewAction = table?.recordActions?.[0];
     expect(tableViewAction?.uid).toBeTruthy();
 
-    const userPopupRolesTable = getData(
-      await rootAgent.resource('flowSurfaces').addBlock({
+    const userPopupRolesTableCompose = getData(
+      await rootAgent.resource('flowSurfaces').compose({
         values: {
           target: {
             uid: tableViewAction.uid,
           },
-          type: 'table',
-          resource: {
-            binding: 'associatedRecords',
-            associationField: 'roles',
-          },
-          fields: ['title'],
+          blocks: [
+            {
+              key: 'rolesTable',
+              type: 'table',
+              resource: {
+                binding: 'associatedRecords',
+                associationField: 'roles',
+              },
+              fields: ['name', 'title', 'description'],
+              recordActions: buildRoleTableRecordActions(),
+            },
+          ],
         },
       }),
     );
+    const userPopupRolesTable = userPopupRolesTableCompose.blocks.find(
+      (item: FlowSurfacesComposeBlockSummary) => item.key === 'rolesTable',
+    );
+    expect(userPopupRolesTable?.uid).toBeTruthy();
 
     const userPopupRolesTableReadback = await getSurface(rootAgent, { uid: userPopupRolesTable.uid });
     expect(userPopupRolesTableReadback.tree.stepParams?.resourceSettings?.init).toMatchObject({
@@ -837,6 +959,18 @@ describe('flowSurfaces association contract', () => {
             uid: userPopupRolesTable.uid,
           },
           type: 'view',
+          popup: {
+            blocks: [
+              {
+                key: 'roleDetails',
+                type: 'details',
+                resource: {
+                  binding: 'currentRecord',
+                },
+                fields: ['name', 'title', 'description'],
+              },
+            ],
+          },
         },
       }),
     );
@@ -860,7 +994,7 @@ describe('flowSurfaces association contract', () => {
           resource: {
             binding: 'currentRecord',
           },
-          fields: ['title'],
+          fields: ['name', 'title', 'description'],
         },
       }),
     );
@@ -890,7 +1024,7 @@ describe('flowSurfaces association contract', () => {
           resource: {
             binding: 'currentRecord',
           },
-          fields: ['title'],
+          fields: ['name', 'title', 'description'],
         },
       }),
     );
@@ -925,7 +1059,26 @@ describe('flowSurfaces association contract', () => {
                 dataSourceKey: 'main',
                 collectionName: 'users',
               },
-              fields: ['username', 'roles'],
+              fields: [
+                'username',
+                'nickname',
+                {
+                  key: 'roles',
+                  fieldPath: 'roles',
+                  popup: {
+                    blocks: [
+                      {
+                        key: 'roleDetails',
+                        type: 'details',
+                        resource: {
+                          binding: 'currentRecord',
+                        },
+                        fields: ['name', 'title', 'description'],
+                      },
+                    ],
+                  },
+                },
+              ],
               actions: ['refresh'],
             },
           ],
@@ -1372,7 +1525,11 @@ describe('flowSurfaces association contract', () => {
       values: {
         name: invalidLabelSourceCollection,
         title: invalidLabelSourceCollection,
-        fields: [{ name: 'name', type: 'string', interface: 'input' }],
+        fields: [
+          { name: 'name', type: 'string', interface: 'input' },
+          { name: 'code', type: 'string', interface: 'input' },
+          { name: 'status', type: 'string', interface: 'input' },
+        ],
       },
     });
     await rootAgent.resource('collections.fields', invalidLabelSourceCollection).create({
@@ -1885,16 +2042,31 @@ describe('flowSurfaces association contract', () => {
       tabTitle: 'No interface contract tab',
     });
 
-    const rolesTable = await addBlockData(rootAgent, {
-      target: {
-        uid: page.tabSchemaUid,
-      },
-      type: 'table',
-      resourceInit: {
-        dataSourceKey: 'main',
-        collectionName: 'roles',
-      },
-    });
+    const rolesTableCompose = getData(
+      await rootAgent.resource('flowSurfaces').compose({
+        values: {
+          target: {
+            uid: page.tabSchemaUid,
+          },
+          blocks: [
+            {
+              key: 'rolesTable',
+              type: 'table',
+              resource: {
+                dataSourceKey: 'main',
+                collectionName: 'roles',
+              },
+              fields: ['name', 'title', 'description'],
+              recordActions: buildRoleTableRecordActions(),
+            },
+          ],
+        },
+      }),
+    );
+    const rolesTable = rolesTableCompose.blocks.find(
+      (item: FlowSurfacesComposeBlockSummary) => item.key === 'rolesTable',
+    );
+    expect(rolesTable?.uid).toBeTruthy();
 
     const singleRes = await rootAgent.resource('flowSurfaces').addField({
       values: {
@@ -1945,7 +2117,7 @@ describe('flowSurfaces association contract', () => {
               dataSourceKey: 'main',
               collectionName: 'roles',
             },
-            fields: ['title', 'hidden'],
+            fields: ['name', 'title', 'description', 'hidden'],
           },
         ],
       },

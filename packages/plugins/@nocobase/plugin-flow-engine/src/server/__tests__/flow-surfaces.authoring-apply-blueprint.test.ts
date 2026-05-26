@@ -35,6 +35,8 @@ const LARGE_DEFAULTS_ASSOCIATION_TARGET_FIELDS = Array.from(
   (_item, index) => `targetField${index + 1}`,
 );
 const EMPLOYEE_VISIBLE_FIELDS = ['nickname', 'status', 'email'];
+const USER_VISIBLE_FIELDS = ['username', 'nickname', 'email'];
+const ROLE_VISIBLE_FIELDS = ['name', 'title', 'description'];
 const DEFAULT_FILTER_CAP_VISIBLE_FIELDS = DEFAULT_FILTER_CAP_FIELDS.slice(0, 3);
 const LARGE_DEFAULTS_ACTION_VISIBLE_FIELDS = LARGE_DEFAULTS_ACTION_FIELDS.slice(0, 3);
 
@@ -43,6 +45,80 @@ describe('flowSurfaces backend authoring applyBlueprint compiler', () => {
   let rootAgent: FlowSurfacesContractContext['rootAgent'];
   let flowRepo: FlowSurfacesContractContext['flowRepo'];
   let routesRepo: FlowSurfacesContractContext['routesRepo'];
+
+  async function createAuthoringRelationFixture() {
+    const suffix = _.uniqueId();
+    const sourceCollection = `fab_s_${suffix}`;
+    const targetCollection = `fab_t_${suffix}`;
+    const throughCollection = `fab_m_${suffix}`;
+    await rootAgent.resource('collections').create({
+      values: {
+        name: targetCollection,
+        title: targetCollection,
+        titleField: 'title',
+        fields: [
+          { name: 'name', type: 'string', interface: 'input' },
+          { name: 'title', type: 'string', interface: 'input' },
+          { name: 'description', type: 'string', interface: 'input' },
+        ],
+      },
+    });
+    await rootAgent.resource('collections').create({
+      values: {
+        name: sourceCollection,
+        title: sourceCollection,
+        titleField: 'username',
+        fields: [
+          { name: 'username', type: 'string', interface: 'input' },
+          { name: 'nickname', type: 'string', interface: 'input' },
+          { name: 'email', type: 'string', interface: 'email' },
+        ],
+      },
+    });
+    await rootAgent.resource('collections').create({
+      values: {
+        name: throughCollection,
+        title: throughCollection,
+        fields: [
+          {
+            name: 'id',
+            type: 'integer',
+            autoIncrement: true,
+            primaryKey: true,
+            allowNull: false,
+            interface: 'id',
+          },
+        ],
+      },
+    });
+    await rootAgent.resource('collections.fields', sourceCollection).create({
+      values: {
+        name: 'roles',
+        type: 'belongsToMany',
+        target: targetCollection,
+        through: throughCollection,
+        foreignKey: 'sourceId',
+        otherKey: 'targetId',
+        interface: 'm2m',
+        reverseField: {
+          type: 'belongsToMany',
+          name: 'users',
+          interface: 'm2m',
+        },
+      },
+    });
+    await waitForFixtureCollectionsReady(context.db, {
+      [sourceCollection]: USER_VISIBLE_FIELDS,
+      [targetCollection]: ROLE_VISIBLE_FIELDS,
+      [throughCollection]: ['id', 'sourceId', 'targetId'],
+    });
+    return {
+      sourceCollection,
+      targetCollection,
+      sourceAssociationName: `${sourceCollection}.roles`,
+      targetAssociationName: `${targetCollection}.users`,
+    };
+  }
 
   beforeAll(async () => {
     context = await createFlowSurfacesContractContext({
@@ -3502,6 +3578,7 @@ describe('flowSurfaces backend authoring applyBlueprint compiler', () => {
   });
 
   it('should resolve associatedRecords inside relation field popup from the popup target collection', async () => {
+    const { sourceCollection, targetCollection, targetAssociationName } = await createAuthoringRelationFixture();
     const executeRes = await rootAgent.resource('flowSurfaces').applyBlueprint({
       values: {
         mode: 'create',
@@ -3520,9 +3597,9 @@ describe('flowSurfaces backend authoring applyBlueprint compiler', () => {
               {
                 key: 'usersTable',
                 type: 'table',
-                collection: 'users',
+                collection: sourceCollection,
                 fields: [
-                  'username',
+                  ...USER_VISIBLE_FIELDS,
                   {
                     field: 'roles',
                     popup: {
@@ -3535,7 +3612,7 @@ describe('flowSurfaces backend authoring applyBlueprint compiler', () => {
                             binding: 'associatedRecords',
                             associationField: 'users',
                           },
-                          fields: EMPLOYEE_VISIBLE_FIELDS,
+                          fields: USER_VISIBLE_FIELDS,
                         },
                       ],
                     },
@@ -3561,17 +3638,20 @@ describe('flowSurfaces backend authoring applyBlueprint compiler', () => {
     const templateSurface = await readPopupTemplateSurface(rootAgent, flowRepo, popupTemplateUid);
     const roleUsersTable = collectDescendantNodes(
       templateSurface,
-      (item) => item?.use === 'TableBlockModel' && item?.stepParams?.resourceSettings?.init?.collectionName === 'users',
+      (item) =>
+        item?.use === 'TableBlockModel' &&
+        item?.stepParams?.resourceSettings?.init?.collectionName === sourceCollection,
     )[0];
     expect(roleUsersTable?.stepParams?.resourceSettings?.init).toMatchObject({
       dataSourceKey: 'main',
-      collectionName: 'users',
-      associationName: 'roles.users',
+      collectionName: sourceCollection,
+      associationName: targetAssociationName,
       sourceId: '{{ctx.view.inputArgs.filterByTk}}',
     });
   });
 
   it('should validate nested associatedRecords blocks against the current popup collection', async () => {
+    const { sourceCollection, targetCollection, sourceAssociationName } = await createAuthoringRelationFixture();
     const executeRes = await rootAgent.resource('flowSurfaces').applyBlueprint({
       values: {
         mode: 'create',
@@ -3590,8 +3670,8 @@ describe('flowSurfaces backend authoring applyBlueprint compiler', () => {
               {
                 key: 'usersTable',
                 type: 'table',
-                collection: 'users',
-                fields: ['username', 'roles'],
+                collection: sourceCollection,
+                fields: [...USER_VISIBLE_FIELDS, 'roles'],
                 recordActions: [
                   {
                     key: 'maintainUser',
@@ -3610,7 +3690,7 @@ describe('flowSurfaces backend authoring applyBlueprint compiler', () => {
                           resource: {
                             binding: 'currentRecord',
                           },
-                          fields: ['username', 'roles'],
+                          fields: [...USER_VISIBLE_FIELDS, 'roles'],
                         },
                         {
                           key: 'userEditForm',
@@ -3627,7 +3707,7 @@ describe('flowSurfaces backend authoring applyBlueprint compiler', () => {
                             binding: 'associatedRecords',
                             associationField: 'roles',
                           },
-                          fields: ['title', 'name'],
+                          fields: ROLE_VISIBLE_FIELDS,
                         },
                       ],
                     },
@@ -3657,12 +3737,14 @@ describe('flowSurfaces backend authoring applyBlueprint compiler', () => {
     );
     const roleTable = collectDescendantNodes(
       templateSurface,
-      (item) => item?.use === 'TableBlockModel' && item?.stepParams?.resourceSettings?.init?.collectionName === 'roles',
+      (item) =>
+        item?.use === 'TableBlockModel' &&
+        item?.stepParams?.resourceSettings?.init?.collectionName === targetCollection,
     )[0];
     expect(roleTable?.stepParams?.resourceSettings?.init).toMatchObject({
       dataSourceKey: 'main',
-      collectionName: 'roles',
-      associationName: 'users.roles',
+      collectionName: targetCollection,
+      associationName: sourceAssociationName,
       sourceId: '{{ctx.view.inputArgs.filterByTk}}',
     });
   });

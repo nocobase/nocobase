@@ -562,6 +562,7 @@ describe('flowSurfaces API contract core', () => {
             opId: 'page',
             type: 'createPage',
             values: {
+              icon: 'FileOutlined',
               pageSchemaUid: rollbackPageSchemaUid,
               tabSchemaUid: rollbackTabSchemaUid,
               title: 'Default atomic page',
@@ -583,7 +584,7 @@ describe('flowSurfaces API contract core', () => {
                 dataSourceKey: 'main',
                 collectionName: 'employees',
               },
-              fields: ['nickname'],
+              fields: ['nickname', 'status', 'email'],
             },
           },
           {
@@ -619,6 +620,7 @@ describe('flowSurfaces API contract core', () => {
             opId: 'page',
             type: 'createPage',
             values: {
+              icon: 'FileOutlined',
               pageSchemaUid: successPageSchemaUid,
               tabSchemaUid: successTabSchemaUid,
               title: 'Mutate shape page',
@@ -641,7 +643,7 @@ describe('flowSurfaces API contract core', () => {
                 dataSourceKey: 'main',
                 collectionName: 'employees',
               },
-              fields: ['nickname'],
+              fields: ['nickname', 'status', 'email'],
             },
           },
         ],
@@ -705,6 +707,7 @@ describe('flowSurfaces API contract core', () => {
             opId: 'page',
             type: 'createPage',
             values: {
+              icon: 'FileOutlined',
               pageSchemaUid: 'legacy_ref_contract_page_schema_uid',
               tabSchemaUid: 'legacy_ref_contract_tab_schema_uid',
               title: 'Legacy $ref contract page',
@@ -724,6 +727,7 @@ describe('flowSurfaces API contract core', () => {
                 dataSourceKey: 'main',
                 collectionName: 'employees',
               },
+              fields: ['nickname', 'status', 'email'],
             },
           },
         ],

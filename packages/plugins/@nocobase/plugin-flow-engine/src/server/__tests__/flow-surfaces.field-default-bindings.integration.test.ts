@@ -180,7 +180,7 @@ describe('flowSurfaces field default bindings', () => {
                 dataSourceKey: 'main',
                 collectionName,
               },
-              fields: ['status'],
+              fields: ['title', 'status', 'stage'],
             },
             {
               key: 'composeForm',
@@ -298,7 +298,7 @@ async function addBlock(rootAgent: any, targetUid: string, type: string, resourc
         },
         type,
         resourceInit,
-        fields: ['title'],
+        fields: type === 'table' ? ['title', 'status', 'stage'] : ['title'],
       },
     }),
   ).uid;

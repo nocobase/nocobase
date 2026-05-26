@@ -490,10 +490,11 @@ describe('flowSurfaces AI employee action contract', () => {
             },
             fields: ['nickname', 'status', 'email'],
             recordActions: [
-              { type: 'aiEmployee', settings: aiEmployeeSettings() },
-              { type: 'aiEmployee', settings: aiEmployeeSettings({ auto: true }) },
-              { type: 'aiEmployee', settings: aiEmployeeSettings({ style: { mask: true } }) },
+              { key: 'aiEmployeeDefault', type: 'aiEmployee', settings: aiEmployeeSettings() },
+              { key: 'aiEmployeeAuto', type: 'aiEmployee', settings: aiEmployeeSettings({ auto: true }) },
+              { key: 'aiEmployeeMask', type: 'aiEmployee', settings: aiEmployeeSettings({ style: { mask: true } }) },
               {
+                key: 'aiEmployeeModel',
                 type: 'aiEmployee',
                 settings: aiEmployeeSettings({
                   tasks: [
@@ -513,6 +514,7 @@ describe('flowSurfaces AI employee action contract', () => {
                 }),
               },
               {
+                key: 'aiEmployeeSearch',
                 type: 'aiEmployee',
                 settings: aiEmployeeSettings({
                   tasks: [

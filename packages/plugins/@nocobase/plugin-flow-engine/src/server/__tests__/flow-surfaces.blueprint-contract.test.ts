@@ -37,6 +37,9 @@ describe('flowSurfaces applyBlueprint contract', () => {
   let rootAgent: FlowSurfacesContractContext['rootAgent'];
   let flowRepo: FlowSurfacesContractContext['flowRepo'];
   let routesRepo: FlowSurfacesContractContext['routesRepo'];
+  const POPUP_RELATION_SOURCE_FIELDS = ['username', 'nickname', 'email'];
+  const POPUP_RELATION_TARGET_FIELDS = ['name', 'title', 'description'];
+  const POPUP_RELATION_TARGET_TITLE_FIELDS = ['title', 'name', 'description'];
 
   function collectDescendantNodes(node: any, predicate: (input: any) => boolean, bucket: any[] = []) {
     if (!node || typeof node !== 'object') {
@@ -296,6 +299,7 @@ describe('flowSurfaces applyBlueprint contract', () => {
         fields: [
           { name: 'title', type: 'string', interface: 'input' },
           { name: 'name', type: 'string', interface: 'input' },
+          { name: 'description', type: 'string', interface: 'input' },
         ],
       },
     });
@@ -307,6 +311,7 @@ describe('flowSurfaces applyBlueprint contract', () => {
         filterTargetKey: 'id',
         fields: [
           { name: 'username', type: 'string', interface: 'input' },
+          { name: 'nickname', type: 'string', interface: 'input' },
           { name: 'email', type: 'string', interface: 'email' },
         ],
       },
@@ -339,10 +344,23 @@ describe('flowSurfaces applyBlueprint contract', () => {
       },
     });
     await waitForFixtureCollectionsReady(context.app.db, {
-      [sourceCollection]: ['username', 'email'],
-      [targetCollection]: ['title', 'name'],
+      [sourceCollection]: POPUP_RELATION_SOURCE_FIELDS,
+      [targetCollection]: POPUP_RELATION_TARGET_TITLE_FIELDS,
       [throughCollection]: ['id', 'sourceId', 'targetId'],
     });
+  }
+
+  async function createPopupRelationTestFixture(prefix: string) {
+    const suffix = _.uniqueId();
+    const namePrefix = prefix.replace(/[^a-z0-9]/gi, '').slice(0, 10) || 'bpr';
+    const sourceCollection = `${namePrefix}_s_${suffix}`;
+    const targetCollection = `${namePrefix}_t_${suffix}`;
+    await createPopupRelationTestCollections(sourceCollection, targetCollection);
+    return {
+      sourceCollection,
+      targetCollection,
+      associationName: `${sourceCollection}.roles`,
+    };
   }
 
   async function findPopupTemplateByName(name: string) {
@@ -3680,6 +3698,7 @@ describe('flowSurfaces applyBlueprint contract', () => {
 
   it('should use source association popup names for generated associated-record action popups', async () => {
     const unique = Date.now();
+    const { sourceCollection, targetCollection } = await createPopupRelationTestFixture('bp_assoc_defaults');
     const roleAddName = `User role add ${unique}`;
     const roleEditName = `User role edit ${unique}`;
     const roleAddDescription = 'Create one related role record.';
@@ -3696,7 +3715,7 @@ describe('flowSurfaces applyBlueprint contract', () => {
         },
         defaults: {
           collections: {
-            users: {
+            [sourceCollection]: {
               popups: {
                 associations: {
                   roles: {
@@ -3712,12 +3731,12 @@ describe('flowSurfaces applyBlueprint contract', () => {
                 },
               },
             },
-            roles: {
+            [targetCollection]: {
               fieldGroups: [
                 {
                   key: 'roleMain',
                   title: 'Role main',
-                  fields: ['name', 'title'],
+                  fields: POPUP_RELATION_TARGET_FIELDS,
                 },
               ],
             },
@@ -3730,8 +3749,8 @@ describe('flowSurfaces applyBlueprint contract', () => {
               {
                 key: 'usersTable',
                 type: 'table',
-                collection: 'users',
-                fields: ['username'],
+                collection: sourceCollection,
+                fields: POPUP_RELATION_SOURCE_FIELDS,
                 recordActions: [
                   {
                     key: 'viewUser',
@@ -3744,9 +3763,9 @@ describe('flowSurfaces applyBlueprint contract', () => {
                           resource: {
                             binding: 'associatedRecords',
                             associationField: 'roles',
-                            collectionName: 'roles',
+                            collectionName: targetCollection,
                           },
-                          fields: ['name', 'title'],
+                          fields: POPUP_RELATION_TARGET_FIELDS,
                           actions: ['addNew'],
                           recordActions: ['edit'],
                         },
@@ -3802,6 +3821,7 @@ describe('flowSurfaces applyBlueprint contract', () => {
 
   it('should use target collection popup names for relation action template hits without association overrides', async () => {
     const unique = Date.now();
+    const { sourceCollection, targetCollection } = await createPopupRelationTestFixture('bp_target_defaults');
     const competingTemplateName = `Competing role edit template ${unique}`;
     const targetRoleEditName = `Target role edit default ${unique}`;
     const targetRoleEditDescription = 'Edit one role record through the target collection popup default.';
@@ -3815,9 +3835,9 @@ describe('flowSurfaces applyBlueprint contract', () => {
       type: 'table',
       resourceInit: {
         dataSourceKey: 'main',
-        collectionName: 'roles',
+        collectionName: targetCollection,
       },
-      fields: ['name'],
+      fields: POPUP_RELATION_TARGET_FIELDS,
     });
     const competingEditAction = getData(
       await rootAgent.resource('flowSurfaces').addRecordAction({
@@ -3861,12 +3881,12 @@ describe('flowSurfaces applyBlueprint contract', () => {
         },
         defaults: {
           collections: {
-            roles: {
+            [targetCollection]: {
               fieldGroups: [
                 {
                   key: 'roleMain',
                   title: 'Role main',
-                  fields: ['name', 'title'],
+                  fields: POPUP_RELATION_TARGET_FIELDS,
                 },
               ],
               popups: {
@@ -3885,8 +3905,8 @@ describe('flowSurfaces applyBlueprint contract', () => {
               {
                 key: 'usersTable',
                 type: 'table',
-                collection: 'users',
-                fields: ['username'],
+                collection: sourceCollection,
+                fields: POPUP_RELATION_SOURCE_FIELDS,
                 recordActions: [
                   {
                     key: 'viewUser',
@@ -3899,9 +3919,9 @@ describe('flowSurfaces applyBlueprint contract', () => {
                           resource: {
                             binding: 'associatedRecords',
                             associationField: 'roles',
-                            collectionName: 'roles',
+                            collectionName: targetCollection,
                           },
-                          fields: ['name', 'title'],
+                          fields: POPUP_RELATION_TARGET_FIELDS,
                           recordActions: ['edit'],
                         },
                       ],
@@ -5617,7 +5637,7 @@ describe('flowSurfaces applyBlueprint contract', () => {
 
     expect(executeRes.status).toBe(400);
     expect(readErrorMessage(executeRes)).toContain(
-      `navigation.group.title '${groupTitle}' matches 2 existing menu groups`,
+      `navigation.group.title '${groupTitle}' matches 2 existing root menu groups`,
     );
     expect(readErrorMessage(executeRes)).toContain('navigation.group.routeId explicitly');
   });
@@ -5709,6 +5729,8 @@ describe('flowSurfaces applyBlueprint contract', () => {
   });
 
   it('should normalize currentRecord associationPathName resource shorthand into an associated-records popup table', async () => {
+    const { sourceCollection, targetCollection, associationName } =
+      await createPopupRelationTestFixture('bp_shorthand');
     const executeRes = await rootAgent.resource('flowSurfaces').applyBlueprint({
       values: {
         version: '1',
@@ -5727,8 +5749,8 @@ describe('flowSurfaces applyBlueprint contract', () => {
             blocks: [
               {
                 type: 'table',
-                collection: 'users',
-                fields: ['username'],
+                collection: sourceCollection,
+                fields: POPUP_RELATION_SOURCE_FIELDS,
                 recordActions: [
                   {
                     type: 'view',
@@ -5739,9 +5761,9 @@ describe('flowSurfaces applyBlueprint contract', () => {
                           resource: {
                             binding: 'currentRecord',
                             associationPathName: 'roles',
-                            collectionName: 'roles',
+                            collectionName: targetCollection,
                           },
-                          fields: ['title', 'name'],
+                          fields: POPUP_RELATION_TARGET_TITLE_FIELDS,
                         },
                       ],
                     },
@@ -5763,8 +5785,8 @@ describe('flowSurfaces applyBlueprint contract', () => {
 
     expect(popupBlock?.use).toBe('TableBlockModel');
     expect(popupBlock?.stepParams?.resourceSettings?.init).toMatchObject({
-      collectionName: 'roles',
-      associationName: 'users.roles',
+      collectionName: targetCollection,
+      associationName,
     });
     expect(collectFieldPaths(popupBlock)).toEqual(expect.arrayContaining(['title', 'name']));
   });
@@ -5786,7 +5808,7 @@ describe('flowSurfaces applyBlueprint contract', () => {
               {
                 type: 'table',
                 collection: 'users',
-                fields: ['username'],
+                fields: ['username', 'nickname', 'email'],
                 recordActions: [
                   {
                     type: 'view',
@@ -5799,7 +5821,7 @@ describe('flowSurfaces applyBlueprint contract', () => {
                             associationPathName: 'manager.roles',
                             collectionName: 'roles',
                           },
-                          fields: ['title', 'name'],
+                          fields: ['title', 'name', 'description'],
                         },
                       ],
                     },
@@ -5820,6 +5842,8 @@ describe('flowSurfaces applyBlueprint contract', () => {
   });
 
   it('should create the nested users-roles popup page structure and auto-promote record actions from details.actions', async () => {
+    const { sourceCollection, targetCollection, associationName } =
+      await createPopupRelationTestFixture('bp_nested_popups');
     const executeRes = await rootAgent.resource('flowSurfaces').applyBlueprint({
       values: {
         version: '1',
@@ -5839,7 +5863,7 @@ describe('flowSurfaces applyBlueprint contract', () => {
               {
                 key: 'usersTable',
                 type: 'table',
-                collection: 'users',
+                collection: sourceCollection,
                 fields: ['username', 'nickname', 'roles'],
                 recordActions: [
                   {
@@ -5860,7 +5884,7 @@ describe('flowSurfaces applyBlueprint contract', () => {
                           type: 'details',
                           resource: {
                             binding: 'currentRecord',
-                            collectionName: 'users',
+                            collectionName: sourceCollection,
                           },
                           fields: ['username', 'nickname', 'email', 'roles'],
                           actions: [
@@ -5874,7 +5898,7 @@ describe('flowSurfaces applyBlueprint contract', () => {
                                     type: 'editForm',
                                     resource: {
                                       binding: 'currentRecord',
-                                      collectionName: 'users',
+                                      collectionName: sourceCollection,
                                     },
                                     fields: ['username', 'nickname', 'email', 'roles'],
                                     actions: ['submit'],
@@ -5890,9 +5914,9 @@ describe('flowSurfaces applyBlueprint contract', () => {
                           resource: {
                             binding: 'associatedRecords',
                             associationField: 'roles',
-                            collectionName: 'roles',
+                            collectionName: targetCollection,
                           },
-                          fields: ['title', 'name'],
+                          fields: POPUP_RELATION_TARGET_TITLE_FIELDS,
                           recordActions: [
                             {
                               type: 'view',
@@ -5904,9 +5928,9 @@ describe('flowSurfaces applyBlueprint contract', () => {
                                     type: 'details',
                                     resource: {
                                       binding: 'currentRecord',
-                                      collectionName: 'roles',
+                                      collectionName: targetCollection,
                                     },
-                                    fields: ['title', 'name'],
+                                    fields: POPUP_RELATION_TARGET_TITLE_FIELDS,
                                     actions: [
                                       {
                                         type: 'edit',
@@ -5918,7 +5942,7 @@ describe('flowSurfaces applyBlueprint contract', () => {
                                               type: 'editForm',
                                               resource: {
                                                 binding: 'currentRecord',
-                                                collectionName: 'roles',
+                                                collectionName: targetCollection,
                                               },
                                               fields: ['title', 'name'],
                                               actions: ['submit'],
@@ -5988,8 +6012,8 @@ describe('flowSurfaces applyBlueprint contract', () => {
       uid: userRolesTable.uid,
     });
     expect(userRolesReadback.tree.stepParams?.resourceSettings?.init).toMatchObject({
-      collectionName: 'roles',
-      associationName: 'users.roles',
+      collectionName: targetCollection,
+      associationName,
     });
     expect(collectFieldPaths(userRolesReadback.tree)).toEqual(expect.arrayContaining(['title', 'name']));
     const roleViewAction = collectDescendantNodes(userRolesReadback.tree, (item) => item?.use === 'ViewActionModel')[0];
@@ -6017,6 +6041,8 @@ describe('flowSurfaces applyBlueprint contract', () => {
   });
 
   it('should create a details-root page with a popup recordAction, associated-records table, and nested edit popups', async () => {
+    const { sourceCollection, targetCollection, associationName } =
+      await createPopupRelationTestFixture('bp_details_popups');
     const executeRes = await rootAgent.resource('flowSurfaces').applyBlueprint({
       values: {
         version: '1',
@@ -6036,7 +6062,7 @@ describe('flowSurfaces applyBlueprint contract', () => {
               {
                 key: 'rootDetails',
                 type: 'details',
-                collection: 'users',
+                collection: sourceCollection,
                 fields: ['username', 'nickname', 'roles'],
                 recordActions: [
                   {
@@ -6057,7 +6083,7 @@ describe('flowSurfaces applyBlueprint contract', () => {
                           type: 'details',
                           resource: {
                             binding: 'currentRecord',
-                            collectionName: 'users',
+                            collectionName: sourceCollection,
                           },
                           fields: ['username', 'nickname', 'email', 'roles'],
                         },
@@ -6067,7 +6093,7 @@ describe('flowSurfaces applyBlueprint contract', () => {
                           resource: {
                             binding: 'associatedRecords',
                             associationField: 'roles',
-                            collectionName: 'roles',
+                            collectionName: targetCollection,
                           },
                           fields: [
                             {
@@ -6080,14 +6106,15 @@ describe('flowSurfaces applyBlueprint contract', () => {
                                     type: 'details',
                                     resource: {
                                       binding: 'currentRecord',
-                                      collectionName: 'roles',
+                                      collectionName: targetCollection,
                                     },
-                                    fields: ['title', 'name'],
+                                    fields: POPUP_RELATION_TARGET_TITLE_FIELDS,
                                   },
                                 ],
                               },
                             },
                             'name',
+                            'description',
                           ],
                         },
                       ],
@@ -6143,8 +6170,8 @@ describe('flowSurfaces applyBlueprint contract', () => {
       uid: userRolesTable.uid,
     });
     expect(userRolesReadback.tree.stepParams?.resourceSettings?.init).toMatchObject({
-      collectionName: 'roles',
-      associationName: 'users.roles',
+      collectionName: targetCollection,
+      associationName,
     });
     expect(collectFieldPaths(userRolesReadback.tree)).toEqual(expect.arrayContaining(['title', 'name']));
     const roleTitleFieldNodes = collectDescendantNodes(
@@ -6199,6 +6226,8 @@ describe('flowSurfaces applyBlueprint contract', () => {
   });
 
   it('should allow custom edit popups with one inherited editForm plus sibling blocks', async () => {
+    const { sourceCollection, targetCollection, associationName } =
+      await createPopupRelationTestFixture('bp_inherited_edit');
     const executeRes = await rootAgent.resource('flowSurfaces').applyBlueprint({
       values: {
         version: '1',
@@ -6214,8 +6243,8 @@ describe('flowSurfaces applyBlueprint contract', () => {
             blocks: [
               {
                 type: 'table',
-                collection: 'users',
-                fields: ['username', 'roles'],
+                collection: sourceCollection,
+                fields: ['username', 'nickname', 'email', 'roles'],
                 recordActions: [
                   {
                     type: 'view',
@@ -6227,9 +6256,9 @@ describe('flowSurfaces applyBlueprint contract', () => {
                           type: 'details',
                           resource: {
                             binding: 'currentRecord',
-                            collectionName: 'users',
+                            collectionName: sourceCollection,
                           },
-                          fields: ['username', 'roles'],
+                          fields: ['username', 'nickname', 'email', 'roles'],
                           actions: [
                             {
                               type: 'edit',
@@ -6247,7 +6276,7 @@ describe('flowSurfaces applyBlueprint contract', () => {
                                   {
                                     key: 'userEditForm',
                                     type: 'editForm',
-                                    fields: ['username', 'roles'],
+                                    fields: ['username', 'nickname', 'email', 'roles'],
                                     actions: ['submit'],
                                   },
                                   {
@@ -6256,9 +6285,9 @@ describe('flowSurfaces applyBlueprint contract', () => {
                                     resource: {
                                       binding: 'associatedRecords',
                                       associationField: 'roles',
-                                      collectionName: 'roles',
+                                      collectionName: targetCollection,
                                     },
-                                    fields: ['title', 'name'],
+                                    fields: POPUP_RELATION_TARGET_TITLE_FIELDS,
                                   },
                                 ],
                               },
@@ -6293,7 +6322,7 @@ describe('flowSurfaces applyBlueprint contract', () => {
 
     expect(userEditForm?.use).toBe('EditFormModel');
     expect(userEditForm?.stepParams?.resourceSettings?.init).toMatchObject({
-      collectionName: 'users',
+      collectionName: sourceCollection,
       filterByTk: '{{ctx.view.inputArgs.filterByTk}}',
     });
     expect(collectFieldPaths(userEditForm)).toEqual(expect.arrayContaining(['username', 'roles']));
@@ -6303,8 +6332,8 @@ describe('flowSurfaces applyBlueprint contract', () => {
 
     expect(userRolesTable?.use).toBe('TableBlockModel');
     expect(userRolesTable?.stepParams?.resourceSettings?.init).toMatchObject({
-      collectionName: 'roles',
-      associationName: 'users.roles',
+      collectionName: targetCollection,
+      associationName,
     });
   });
 
@@ -6325,7 +6354,7 @@ describe('flowSurfaces applyBlueprint contract', () => {
               {
                 type: 'table',
                 collection: 'users',
-                fields: ['username'],
+                fields: ['username', 'nickname', 'email'],
                 actions: ['refresh', { type: 'view', title: 'View row' }, { type: 'edit', title: 'Edit row' }],
                 recordActions: [{ type: 'delete', title: 'Delete row' }],
               },
@@ -6337,7 +6366,7 @@ describe('flowSurfaces applyBlueprint contract', () => {
               {
                 type: 'list',
                 collection: 'users',
-                fields: ['username'],
+                fields: ['username', 'nickname', 'email'],
                 actions: ['refresh', { type: 'view', title: 'View row' }, { type: 'edit', title: 'Edit row' }],
                 recordActions: [{ type: 'delete', title: 'Delete row' }],
               },
@@ -6349,7 +6378,7 @@ describe('flowSurfaces applyBlueprint contract', () => {
               {
                 type: 'gridCard',
                 collection: 'users',
-                fields: ['username'],
+                fields: ['username', 'nickname', 'email'],
                 actions: ['refresh', { type: 'view', title: 'View row' }, { type: 'edit', title: 'Edit row' }],
                 recordActions: [{ type: 'delete', title: 'Delete row' }],
               },
@@ -6663,7 +6692,7 @@ describe('flowSurfaces applyBlueprint contract', () => {
                 key: 'usersTable',
                 type: 'table',
                 collection: 'users',
-                fields: ['username'],
+                fields: ['username', 'nickname', 'email'],
                 recordActions: [
                   {
                     type: 'view',
@@ -6677,7 +6706,7 @@ describe('flowSurfaces applyBlueprint contract', () => {
                             binding: 'currentRecord',
                             collectionName: 'users',
                           },
-                          fields: ['username'],
+                          fields: ['username', 'nickname', 'email'],
                           actions: [
                             {
                               type: 'edit',
@@ -7328,7 +7357,7 @@ describe('flowSurfaces applyBlueprint contract', () => {
               {
                 type: 'table',
                 collection: 'users',
-                fields: ['username'],
+                fields: ['username', 'nickname', 'email'],
               },
             ],
           },
@@ -7570,7 +7599,7 @@ describe('flowSurfaces applyBlueprint contract', () => {
               {
                 type: 'table',
                 collection: 'users',
-                fields: ['username'],
+                fields: ['username', 'nickname', 'email'],
               },
             ],
           },
@@ -7625,7 +7654,7 @@ describe('flowSurfaces applyBlueprint contract', () => {
               {
                 type: 'table',
                 collection: 'users',
-                fields: ['username'],
+                fields: ['username', 'nickname', 'email'],
               },
             ],
           },
@@ -8047,7 +8076,7 @@ describe('flowSurfaces applyBlueprint contract', () => {
               {
                 type: 'table',
                 collection: 'users',
-                fields: ['username'],
+                fields: ['username', 'nickname', 'email'],
                 recordActions: [
                   {
                     type: 'view',
@@ -8059,7 +8088,7 @@ describe('flowSurfaces applyBlueprint contract', () => {
                             binding: 'currentRecord',
                             collectionName: 'users',
                           },
-                          fields: ['username'],
+                          fields: ['username', 'nickname', 'email'],
                           actions: [
                             {
                               type: 'edit',
@@ -8071,7 +8100,7 @@ describe('flowSurfaces applyBlueprint contract', () => {
                                       binding: 'currentRecord',
                                       collectionName: 'users',
                                     },
-                                    fields: ['username'],
+                                    fields: ['username', 'nickname', 'email'],
                                   },
                                 ],
                               },
@@ -8112,7 +8141,7 @@ describe('flowSurfaces applyBlueprint contract', () => {
               {
                 type: 'table',
                 collection: 'users',
-                fields: ['username'],
+                fields: ['username', 'nickname', 'email'],
                 recordActions: [
                   {
                     type: 'view',
@@ -8124,7 +8153,7 @@ describe('flowSurfaces applyBlueprint contract', () => {
                             binding: 'currentRecord',
                             collectionName: 'users',
                           },
-                          fields: ['username'],
+                          fields: ['username', 'nickname', 'email'],
                           actions: [
                             {
                               type: 'edit',

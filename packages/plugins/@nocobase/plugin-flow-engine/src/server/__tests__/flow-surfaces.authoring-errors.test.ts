@@ -6756,7 +6756,7 @@ ctx.render(React.createElement(DashboardKPIs));
                 key: 'largeRecordsTable',
                 type: 'table',
                 collection: LARGE_GENERATED_POPUP_COLLECTION,
-                fields: ['field1'],
+                fields: LARGE_GENERATED_POPUP_FIELDS.slice(0, 3),
                 defaultFilter: {
                   logic: '$and',
                   items: [
@@ -6819,7 +6819,7 @@ ctx.render(React.createElement(DashboardKPIs));
                 key: 'tenEffectiveRecordsTable',
                 type: 'table',
                 collection: GENERATED_POPUP_TEN_EFFECTIVE_COLLECTION,
-                fields: [GENERATED_POPUP_TEN_EFFECTIVE_FIELDS[0]],
+                fields: GENERATED_POPUP_TEN_EFFECTIVE_FIELDS.slice(0, 3),
                 defaultFilter: {
                   logic: '$and',
                   items: [
@@ -7688,7 +7688,7 @@ ctx.render(React.createElement(DashboardKPIs));
                 key: 'descriptionBehaviorFieldGroupTable',
                 type: 'table',
                 collection: DESCRIPTION_FORM_BEHAVIOR_FIELD_GROUP_COLLECTION,
-                fields: ['field1'],
+                fields: ['field1', 'field2', 'field3'],
                 defaultFilter: {
                   logic: '$and',
                   items: [
@@ -8164,7 +8164,7 @@ ctx.render(React.createElement(DashboardKPIs));
                 key: 'largeRecordsTable',
                 type: 'table',
                 collection: LARGE_GENERATED_POPUP_COLLECTION,
-                fields: ['field1'],
+                fields: LARGE_GENERATED_POPUP_FIELDS.slice(0, 3),
                 defaultFilter: {
                   logic: '$and',
                   items: [
@@ -9384,6 +9384,7 @@ ctx.render(React.createElement(DashboardKPIs));
         dataSourceKey: 'main',
         collectionName: LARGE_GENERATED_POPUP_SOURCE_COLLECTION,
       },
+      fields: ['title'],
     });
     const field = getData(
       await rootAgent.resource('flowSurfaces').addField({
@@ -9707,7 +9708,7 @@ ctx.render(React.createElement(DashboardKPIs));
                 key: 'employeesTable',
                 type: 'table',
                 collection: 'employees',
-                fields: ['nickname'],
+                fields: ['nickname', 'status', 'email'],
               },
             ],
           },
@@ -9717,7 +9718,7 @@ ctx.render(React.createElement(DashboardKPIs));
 
     expect(response.status).toBe(400);
     expect(response.body?.errors?.map((error: any) => error.ruleId)).toEqual(
-      expect.arrayContaining(['missing-menu-group-icon', 'invalid-menu-item-icon']),
+      expect.arrayContaining(['navigation-icon-required', 'navigation-icon-unknown']),
     );
     expect(response.body.errors.map((error: any) => error.ruleId)).not.toContain(
       'public-data-surface-default-filter-required',

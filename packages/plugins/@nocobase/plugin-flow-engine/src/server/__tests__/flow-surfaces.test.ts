@@ -34,6 +34,7 @@ const FLOW_SURFACE_TEST_VISIBLE_FIELD_BLOCK_TYPES = new Set([
   'filterForm',
   'kanban',
 ]);
+const FLOW_SURFACE_TEST_VISIBLE_FIELD_MINIMUM_BLOCK_TYPES = new Set(['table', 'list', 'gridCard', 'details']);
 const FLOW_SURFACE_TEST_DEFAULT_FILTER_FIELDS_BY_COLLECTION: Record<string, string[]> = {
   users: ['nickname', 'username', 'email', 'phone'],
   employees: ['nickname', 'status', 'email', 'phone'],
@@ -235,7 +236,7 @@ describe('flowSurfaces resource', () => {
             resource: {
               binding: 'currentRecord',
             },
-            fields: ['nickname'],
+            fields: ['nickname', 'status', 'email'],
           },
         ],
       },
@@ -570,7 +571,7 @@ describe('flowSurfaces resource', () => {
             resource: {
               binding: 'currentRecord',
             },
-            fields: ['nickname', 'department.title'],
+            fields: ['nickname', 'department.title', 'status'],
           },
         ],
       },
@@ -604,7 +605,7 @@ describe('flowSurfaces resource', () => {
             resource: {
               binding: 'currentRecord',
             },
-            fields: ['nickname'],
+            fields: ['nickname', 'status', 'email'],
           },
         ],
       },
@@ -638,7 +639,7 @@ describe('flowSurfaces resource', () => {
             resource: {
               binding: 'currentRecord',
             },
-            fields: ['nickname'],
+            fields: ['nickname', 'status', 'email'],
           },
         ],
       },
@@ -688,7 +689,7 @@ describe('flowSurfaces resource', () => {
           associationField: 'employee',
         },
         defaultFilter: buildFlowSurfaceTestDefaultFilter({ collectionName: 'employees' }),
-        fields: ['nickname'],
+        fields: ['nickname', 'status', 'email'],
       },
     });
     expect(semanticAdd.status).toBe(200);
@@ -704,7 +705,7 @@ describe('flowSurfaces resource', () => {
           associationField: 'employee',
         },
         defaultFilter: buildFlowSurfaceTestDefaultFilter({ collectionName: 'employees' }),
-        fields: ['nickname'],
+        fields: ['nickname', 'status', 'email'],
       },
     });
     expect(semanticListAdd.status).toBe(200);
@@ -760,7 +761,7 @@ describe('flowSurfaces resource', () => {
           binding: 'associatedRecords',
           associationField: 'employee',
         },
-        fields: ['nickname'],
+        fields: ['nickname', 'status', 'email'],
       },
     });
     expect(invalidAssociationSemanticBinding.status).toBe(400);
@@ -819,7 +820,7 @@ describe('flowSurfaces resource', () => {
           dataSourceKey: 'main',
           collectionName: 'employees',
         },
-        fields: ['nickname'],
+        fields: ['nickname', 'status', 'email'],
       },
     });
     expect(invalidRaw.status).toBe(400);
@@ -887,7 +888,7 @@ describe('flowSurfaces resource', () => {
         collectionName: 'employees',
       },
       {
-        fields: ['nickname'],
+        fields: ['nickname', 'status', 'email'],
       },
     );
     const editFormUid = await addBlock(rootAgent, page.tabSchemaUid, 'editForm', {
@@ -1241,7 +1242,9 @@ describe('flowSurfaces resource', () => {
             ...(FLOW_SURFACE_TEST_PUBLIC_DATA_BLOCK_TYPES.has(blockCase.type)
               ? { defaultFilter: buildFlowSurfaceTestDefaultFilter(blockCase.resourceInit) }
               : {}),
-            ...(FLOW_SURFACE_TEST_VISIBLE_FIELD_BLOCK_TYPES.has(blockCase.type) ? { fields: ['nickname'] } : {}),
+            ...(FLOW_SURFACE_TEST_VISIBLE_FIELD_BLOCK_TYPES.has(blockCase.type)
+              ? { fields: buildFlowSurfaceTestVisibleFields(blockCase.resourceInit, blockCase.type) }
+              : {}),
           },
         }),
       );
@@ -1578,7 +1581,7 @@ describe('flowSurfaces resource', () => {
             dataSourceKey: 'main',
             collectionName: 'employees',
           },
-          fields: ['nickname'],
+          fields: ['nickname', 'status', 'email'],
         },
       }),
     );
@@ -1659,7 +1662,7 @@ describe('flowSurfaces resource', () => {
             collectionName: 'employees',
           },
           defaultFilter: buildFlowSurfaceTestDefaultFilter({ collectionName: 'employees' }),
-          fields: ['nickname'],
+          fields: ['nickname', 'status', 'email'],
         },
       }),
     );
@@ -2332,7 +2335,7 @@ describe('flowSurfaces resource', () => {
             resource: {
               binding: 'currentCollection',
             },
-            fields: ['nickname'],
+            fields: ['nickname', 'status', 'email'],
           },
         ],
       },
@@ -2348,7 +2351,7 @@ describe('flowSurfaces resource', () => {
           resource: {
             binding: 'currentCollection',
           },
-          fields: ['nickname'],
+          fields: ['nickname', 'status', 'email'],
         },
       }),
     );
@@ -2385,7 +2388,7 @@ describe('flowSurfaces resource', () => {
             resource: {
               binding: 'currentCollection',
             },
-            fields: ['nickname'],
+            fields: ['nickname', 'status', 'email'],
           },
         ],
       },
@@ -2404,7 +2407,7 @@ describe('flowSurfaces resource', () => {
               resource: {
                 binding: 'currentCollection',
               },
-              fields: ['nickname'],
+              fields: ['nickname', 'status', 'email'],
             },
           ],
         },
@@ -2446,7 +2449,11 @@ describe('flowSurfaces resource', () => {
             dataSourceKey: 'main',
             collectionName: blockCase.collectionName,
           },
-          ...(blockCase.type === 'table' ? { fields: ['nickname'] } : {}),
+          ...(blockCase.type === 'table'
+            ? {
+                fields: buildFlowSurfaceTestVisibleFields({ collectionName: blockCase.collectionName }, blockCase.type),
+              }
+            : {}),
           defaultFilter: blockCase.defaultFilter,
         },
       });
@@ -2655,7 +2662,7 @@ describe('flowSurfaces resource', () => {
               dataSourceKey: 'main',
               collectionName: 'users',
             },
-            fields: ['nickname'],
+            fields: ['nickname', 'username', 'email'],
             defaultActionSettings: {
               filter: {
                 filterableFieldNames: ['nickname', 'username', 'email', 'phone'],
@@ -2789,7 +2796,7 @@ describe('flowSurfaces resource', () => {
               dataSourceKey: 'main',
               collectionName: 'users',
             },
-            fields: ['nickname'],
+            fields: ['nickname', 'username', 'email'],
             defaultFilter: blockDefaultFilter,
           },
           {
@@ -2799,7 +2806,7 @@ describe('flowSurfaces resource', () => {
               dataSourceKey: 'main',
               collectionName: 'users',
             },
-            fields: ['nickname'],
+            fields: ['nickname', 'username', 'email'],
             defaultFilter: blockDefaultFilter,
             defaultActionSettings: {
               filter: {
@@ -2881,7 +2888,7 @@ describe('flowSurfaces resource', () => {
               dataSourceKey: 'main',
               collectionName: 'users',
             },
-            fields: ['nickname'],
+            fields: ['nickname', 'username', 'email'],
             defaultFilter: {},
           },
           {
@@ -2996,7 +3003,7 @@ describe('flowSurfaces resource', () => {
               collectionName: 'users',
             },
             defaultFilter: blockDefaultFilter,
-            fields: ['username'],
+            fields: ['nickname', 'username', 'email'],
           },
           {
             key: 'usersList',
@@ -3006,7 +3013,7 @@ describe('flowSurfaces resource', () => {
               collectionName: 'users',
             },
             defaultFilter: blockDefaultFilter,
-            fields: ['username'],
+            fields: ['nickname', 'username', 'email'],
           },
           {
             key: 'usersCards',
@@ -3016,7 +3023,7 @@ describe('flowSurfaces resource', () => {
               collectionName: 'users',
             },
             defaultFilter: blockDefaultFilter,
-            fields: ['username'],
+            fields: ['nickname', 'username', 'email'],
             actions: [
               {
                 type: 'filter',
@@ -3093,6 +3100,7 @@ describe('flowSurfaces resource', () => {
               collectionName: 'users',
             },
             defaultFilter: {},
+            fields: ['nickname', 'username', 'email'],
           },
           {
             key: 'taskBoard',
@@ -3131,7 +3139,7 @@ describe('flowSurfaces resource', () => {
               dataSourceKey: 'main',
               collectionName: 'users',
             },
-            fields: ['nickname'],
+            fields: ['nickname', 'username', 'email'],
           },
           {
             key: 'editForm',
@@ -3140,7 +3148,7 @@ describe('flowSurfaces resource', () => {
               dataSourceKey: 'main',
               collectionName: 'users',
             },
-            fields: ['nickname'],
+            fields: ['nickname', 'username', 'email'],
           },
         ],
       },
@@ -3511,7 +3519,7 @@ describe('flowSurfaces resource', () => {
           dataSourceKey: 'main',
           collectionName: 'users',
         },
-        fields: ['nickname'],
+        fields: ['nickname', 'username', 'email'],
       },
     });
     expect(generatedDefaultFilterRes.status).toBe(200);
@@ -3566,7 +3574,7 @@ describe('flowSurfaces resource', () => {
             },
           },
         },
-        fields: ['nickname'],
+        fields: ['nickname', 'username', 'email'],
       },
     });
     expect(incompleteFilterRes.status).toBe(400);
@@ -3582,7 +3590,7 @@ describe('flowSurfaces resource', () => {
           dataSourceKey: 'main',
           collectionName: 'users',
         },
-        fields: ['nickname'],
+        fields: ['nickname', 'username', 'email'],
         defaultActionSettings: {
           filter: {
             filterableFieldNames: ['username'],
@@ -3610,7 +3618,7 @@ describe('flowSurfaces resource', () => {
           dataSourceKey: 'main',
           collectionName: 'users',
         },
-        fields: ['nickname'],
+        fields: ['nickname', 'username', 'email'],
         defaultActionSettings: {
           filter: {
             filterableFieldNames: ['username', 'nickname', 'email', 'phone'],
@@ -3644,7 +3652,7 @@ describe('flowSurfaces resource', () => {
           dataSourceKey: 'main',
           collectionName: 'users',
         },
-        fields: ['nickname'],
+        fields: ['nickname', 'username', 'email'],
         defaultActionSettings: {
           filter: {
             filterableFieldNames: ['username'],
@@ -4103,7 +4111,7 @@ describe('flowSurfaces resource', () => {
           collectionName: 'employees',
         },
         defaultFilter: buildFlowSurfaceTestDefaultFilter({ collectionName: 'employees' }),
-        fields: ['nickname'],
+        fields: ['nickname', 'status', 'email'],
         settings: {
           title: 'Employees table',
           pageSize: 50,
@@ -4157,7 +4165,7 @@ describe('flowSurfaces resource', () => {
               resource: {
                 binding: 'currentCollection',
               },
-              fields: ['nickname'],
+              fields: ['nickname', 'status', 'email'],
               actions: ['submit'],
             },
           ],
@@ -4201,7 +4209,7 @@ describe('flowSurfaces resource', () => {
               resource: {
                 binding: 'currentRecord',
               },
-              fields: ['nickname'],
+              fields: ['nickname', 'status', 'email'],
             },
           ],
         },
@@ -4285,7 +4293,7 @@ describe('flowSurfaces resource', () => {
               resource: {
                 binding: 'currentRecord',
               },
-              fields: ['nickname'],
+              fields: ['nickname', 'status', 'email'],
             },
           ],
         },
@@ -4642,7 +4650,7 @@ describe('flowSurfaces resource', () => {
                   resource: {
                     binding: 'currentRecord',
                   },
-                  fields: ['nickname'],
+                  fields: ['nickname', 'status', 'email'],
                 },
               ],
             },
@@ -4686,11 +4694,13 @@ describe('flowSurfaces resource', () => {
                       resource: {
                         binding: 'currentRecord',
                       },
-                      fields: ['title'],
+                      fields: ['title', 'code', 'scope'],
                     },
                   ],
                 },
               },
+              'nickname',
+              'status',
             ],
           },
         ],
@@ -4732,7 +4742,7 @@ describe('flowSurfaces resource', () => {
               dataSourceKey: 'main',
               collectionName: 'employees',
             },
-            fields: ['department'],
+            fields: ['department', 'nickname', 'status'],
           },
         ],
       },
@@ -5141,7 +5151,7 @@ describe('flowSurfaces resource', () => {
                 resource: {
                   binding: 'currentCollection',
                 },
-                fields: ['nickname'],
+                fields: ['nickname', 'status', 'email'],
               },
             ],
           },
@@ -5209,7 +5219,7 @@ describe('flowSurfaces resource', () => {
     expect(externalPopupTab?.props?.title).toBe('Shared employee popup');
     expect(externalPopupBlock?.use).toBe('DetailsBlockModel');
     expect(externalPopupBlock?.stepParams?.resourceSettings?.init?.collectionName).toBe('employees');
-    expect(externalPopupFieldPaths).toEqual(['nickname']);
+    expect(externalPopupFieldPaths).toEqual(['nickname', 'status', 'email']);
   });
 
   it('should reject openView uid when it points to a popup page node', async () => {
@@ -5238,7 +5248,7 @@ describe('flowSurfaces resource', () => {
           resource: {
             binding: 'currentRecord',
           },
-          fields: ['nickname'],
+          fields: ['nickname', 'status', 'email'],
         },
       }),
     );
@@ -5978,7 +5988,7 @@ describe('flowSurfaces resource', () => {
           resource: {
             binding: 'currentRecord',
           },
-          fields: ['nickname'],
+          fields: ['nickname', 'status', 'email'],
         },
       }),
     );
@@ -6850,7 +6860,7 @@ describe('flowSurfaces resource', () => {
         collectionName: 'employees',
       },
       {
-        fields: ['nickname'],
+        fields: ['nickname', 'status', 'email'],
       },
     );
     const detailsUid = await addBlock(
@@ -6862,7 +6872,7 @@ describe('flowSurfaces resource', () => {
         collectionName: 'employees',
       },
       {
-        fields: ['department.title'],
+        fields: ['department.title', 'nickname', 'status'],
       },
     );
 
@@ -8777,6 +8787,7 @@ describe('flowSurfaces resource', () => {
           subModels: {
             items: [
               {
+                clientKey: 'invalid-field-use',
                 use: 'FormItemModel',
                 stepParams: {
                   fieldSettings: {
@@ -8826,6 +8837,7 @@ describe('flowSurfaces resource', () => {
             values: {
               pageSchemaUid,
               tabSchemaUid,
+              icon: 'FileOutlined',
               title: 'Rollback page',
               tabTitle: 'Rollback tab',
             },
@@ -8844,6 +8856,7 @@ describe('flowSurfaces resource', () => {
                 dataSourceKey: 'main',
                 collectionName: 'employees',
               },
+              fields: ['nickname', 'status', 'email'],
             },
           },
           {
@@ -9526,6 +9539,7 @@ describe('flowSurfaces resource', () => {
     const page = await service.transaction((transaction) =>
       service.createPage(
         {
+          icon: 'FileOutlined',
           title: 'Duplicate markdown page',
           tabTitle: 'Duplicate markdown tab',
         },
@@ -10623,6 +10637,7 @@ describe('flowSurfaces resource', () => {
 
     const groupRes = await rootAgent.resource('flowSurfaces').createMenu({
       values: {
+        icon: 'FolderOpenOutlined',
         title: `GET group route ${uid()}`,
         type: 'group',
       },
@@ -10779,7 +10794,7 @@ describe('flowSurfaces resource', () => {
             collectionName: 'employees',
           },
           defaultFilter: buildFlowSurfaceTestDefaultFilter({ collectionName: 'employees' }),
-          fields: ['nickname'],
+          fields: ['nickname', 'status', 'email'],
           settings: {
             dataScope: {},
           },
@@ -11239,10 +11254,11 @@ function buildFlowSurfaceTestDefaultFilter(resourceInit?: Record<string, any>) {
   };
 }
 
-function buildFlowSurfaceTestVisibleFields(resourceInit?: Record<string, any>) {
+function buildFlowSurfaceTestVisibleFields(resourceInit?: Record<string, any>, type?: string) {
   const collectionName = String(resourceInit?.collectionName || '').trim();
   const paths = FLOW_SURFACE_TEST_DEFAULT_FILTER_FIELDS_BY_COLLECTION[collectionName] || ['title'];
-  return paths.slice(0, 1);
+  const fieldCount = FLOW_SURFACE_TEST_VISIBLE_FIELD_MINIMUM_BLOCK_TYPES.has(String(type || '').trim()) ? 3 : 1;
+  return paths.slice(0, fieldCount);
 }
 
 function hasFlowSurfaceTestVisibleFieldConfig(values: Record<string, any>) {
@@ -11267,7 +11283,7 @@ async function addBlock(
     FLOW_SURFACE_TEST_VISIBLE_FIELD_BLOCK_TYPES.has(type) &&
     _.isUndefined(extraValues.template) &&
     !hasFlowSurfaceTestVisibleFieldConfig(extraValues)
-      ? buildFlowSurfaceTestVisibleFields(normalizedResourceInit)
+      ? buildFlowSurfaceTestVisibleFields(normalizedResourceInit, type)
       : undefined;
   let normalizedTargetUid = targetUid;
   const targetReadback = await getSurface(rootAgent, {

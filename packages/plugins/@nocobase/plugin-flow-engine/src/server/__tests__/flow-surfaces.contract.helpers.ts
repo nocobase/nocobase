@@ -24,6 +24,38 @@ export type FlowSurfacesContractContext = {
   rootAgent: any;
 };
 
+type FlowSurfacesCollectionMetaField = {
+  name?: unknown;
+  interface?: unknown;
+  options?: {
+    name?: unknown;
+    interface?: unknown;
+  };
+};
+
+type FlowSurfacesCollectionMeta = {
+  name?: unknown;
+  fields?:
+    | FlowSurfacesCollectionMetaField[]
+    | {
+        values?: () => Iterable<FlowSurfacesCollectionMetaField>;
+      };
+};
+
+type PatchableCollectionField = {
+  options?: Record<string, unknown>;
+  interface?: unknown;
+};
+
+type PatchableCollection = {
+  getField?: (fieldName: string) => PatchableCollectionField | undefined;
+  setField?: (fieldName: string, options: Record<string, unknown>) => void;
+};
+
+type CollectionFieldsRepository = Repository & {
+  update(options: Record<string, unknown>): Promise<unknown>;
+};
+
 const FLOW_SURFACES_TEMPLATE_REPO_MOCKED = Symbol('flow-surfaces-template-repo-mocked');
 const FLOW_SURFACES_TEST_VISIBLE_FIELD_REQUIRED_BLOCK_TYPES = new Set([
   'table',
@@ -35,6 +67,7 @@ const FLOW_SURFACES_TEST_VISIBLE_FIELD_REQUIRED_BLOCK_TYPES = new Set([
   'filterForm',
   'kanban',
 ]);
+const FLOW_SURFACES_TEST_VISIBLE_FIELD_MINIMUM_BLOCK_TYPES = new Set(['table', 'list', 'gridCard', 'details']);
 
 function installFlowSurfacesTemplateRepositoryMock(
   db: Database,
@@ -274,7 +307,7 @@ export async function createFlowSurfacesContractContext(
   const flowRepo = db.getCollection('flowModels').repository as FlowModelRepository;
   const routesRepo = db.getRepository('desktopRoutes');
   const rootAgent = await loginFlowSurfacesRootAgent(app);
-  await setupFixtureCollections(rootAgent, db);
+  await setupFixtureCollections(rootAgent, db, app);
   return {
     app,
     db,
@@ -437,7 +470,7 @@ async function withDefaultVisibleFieldsForDataBlock(rootAgent: any, values: Reco
   if (!collectionName) {
     return values;
   }
-  const fieldNames = pickDefaultVisibleFieldNames(collectionName, collectionMeta);
+  const fieldNames = pickDefaultVisibleFieldNames(collectionName, collectionMeta, String(values.type || '').trim());
   return fieldNames.length
     ? {
         ...values,
@@ -449,32 +482,99 @@ async function withDefaultVisibleFieldsForDataBlock(rootAgent: any, values: Reco
 async function loadCollectionMeta(rootAgent: any) {
   const response = await rootAgent.resource('collections').listMeta();
   expect(response.status).toBe(200);
-  return Array.isArray(response.body?.data) ? response.body.data : [];
+  return Array.isArray(response.body?.data) ? (response.body.data as FlowSurfacesCollectionMeta[]) : [];
 }
 
-function pickDefaultVisibleFieldNames(collectionName: string, collectionMeta: any[]) {
+function pickDefaultVisibleFieldNames(
+  collectionName: string,
+  collectionMeta: FlowSurfacesCollectionMeta[],
+  blockType: string,
+) {
   const collection = collectionMeta.find((item) => String(item?.name || '').trim() === collectionName);
-  const fields = Array.isArray(collection?.fields)
+  const fields: FlowSurfacesCollectionMetaField[] = Array.isArray(collection?.fields)
     ? collection.fields
     : collection?.fields && typeof collection.fields.values === 'function'
       ? Array.from(collection.fields.values())
       : [];
-  const fieldNames = fields.map((field: any) => String(field?.name || field?.options?.name || '').trim());
-  const preferredFields = ['nickname', 'email', 'phone', 'title', 'name', 'code', 'status', 'optionalText'];
-  const preferred = preferredFields.filter((fieldName) => fieldNames.includes(fieldName)).slice(0, 3);
-  if (preferred.length) {
-    return preferred;
-  }
-  const candidates = collection ? resolveFlowSurfaceDefaultFilterMinimumCandidateFieldNames(collection) : [];
-  if (candidates.length) {
-    return candidates.slice(0, 3);
-  }
-  return fieldNames
+  const visibleFieldNames = fields
+    .filter((field) => String(field?.interface || field?.options?.interface || '').trim())
+    .map((field) => String(field?.name || field?.options?.name || '').trim());
+  const fieldLimit = FLOW_SURFACES_TEST_VISIBLE_FIELD_MINIMUM_BLOCK_TYPES.has(blockType) ? 3 : 1;
+  const preferredFields = [
+    'nickname',
+    'email',
+    'phone',
+    'title',
+    'name',
+    'description',
+    'code',
+    'status',
+    'optionalText',
+  ];
+  const preferred = preferredFields.filter((fieldName) => visibleFieldNames.includes(fieldName)).slice(0, fieldLimit);
+  const fallback = collection ? resolveFlowSurfaceDefaultFilterMinimumCandidateFieldNames(collection) : [];
+  const remaining = [...fallback, ...visibleFieldNames]
     .filter((fieldName) => fieldName && fieldName !== 'id' && !fieldName.endsWith('Id') && fieldName !== 'createdAt')
-    .slice(0, 3);
+    .filter((fieldName, index, list) => list.indexOf(fieldName) === index && !preferred.includes(fieldName));
+  return [...preferred, ...remaining].slice(0, fieldLimit);
 }
 
-export async function setupFixtureCollections(rootAgent: any, db: Database) {
+export async function setupFixtureCollections(rootAgent: any, db: Database, app?: MockServer) {
+  const patchRolesCollectionField = (
+    collection: PatchableCollection | undefined,
+    fieldName: string,
+    options: Record<string, unknown>,
+  ) => {
+    if (!collection || typeof collection.setField !== 'function') {
+      return;
+    }
+    const existingField = typeof collection.getField === 'function' ? collection.getField(fieldName) : undefined;
+    if (existingField?.options) {
+      existingField.options = {
+        ...existingField.options,
+        ...options,
+      };
+    }
+    if (existingField && typeof existingField === 'object' && !existingField.options) {
+      existingField.interface = options.interface;
+    }
+    collection.setField(fieldName, {
+      ...(existingField?.options || {}),
+      name: fieldName,
+      ...options,
+    });
+    const patchedField = typeof collection.getField === 'function' ? collection.getField(fieldName) : undefined;
+    if (patchedField?.options) {
+      patchedField.options = {
+        ...patchedField.options,
+        ...options,
+      };
+    }
+    if (patchedField && typeof patchedField === 'object' && !patchedField.options) {
+      patchedField.interface = options.interface;
+    }
+  };
+  const rolesCollection = db.getCollection('roles') as PatchableCollection | undefined;
+  const rolesDataSourceCollection = app?.dataSourceManager
+    ?.get?.('main')
+    ?.collectionManager?.getCollection?.('roles') as PatchableCollection | undefined;
+  await (db.getRepository('collections.fields', 'roles') as CollectionFieldsRepository).update({
+    filter: {
+      name: 'description',
+    },
+    values: {
+      interface: 'input',
+    },
+    context: {},
+  });
+  patchRolesCollectionField(rolesCollection, 'description', {
+    type: 'string',
+    interface: 'input',
+  });
+  patchRolesCollectionField(rolesDataSourceCollection, 'description', {
+    type: 'string',
+    interface: 'input',
+  });
   await createFixtureCollection(rootAgent, {
     name: 'employees',
     title: 'Employees',
@@ -690,6 +790,7 @@ export async function setupFixtureCollections(rootAgent: any, db: Database) {
     opaque_targets: ['meta'],
     flow_surface_attachments: ['meta'],
     employee_attachments: ['id', 'employeeId', 'attachmentId'],
+    roles: ['name', 'title', 'description'],
   });
 
   const attachmentsCollection = db.getCollection('flow_surface_attachments');

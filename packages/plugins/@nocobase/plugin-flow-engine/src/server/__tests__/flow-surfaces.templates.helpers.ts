@@ -226,16 +226,16 @@ async function withDefaultFieldsForVisibleDataBlock(rootAgent: any, values: Reco
     return values;
   }
   const collectionMeta = await loadCollectionMeta(rootAgent);
-  const fieldName = pickDefaultVisibleFieldName(collectionName, collectionMeta);
-  return fieldName
+  const fieldNames = pickDefaultVisibleFieldNames(collectionName, collectionMeta);
+  return fieldNames.length
     ? {
         ...values,
-        fields: [fieldName],
+        fields: fieldNames,
       }
     : values;
 }
 
-function pickDefaultVisibleFieldName(collectionName: string, collectionMeta: any[]) {
+function pickDefaultVisibleFieldNames(collectionName: string, collectionMeta: any[]) {
   const collection = Array.isArray(collectionMeta)
     ? collectionMeta.find((item) => normalizeText(item?.name) === collectionName)
     : undefined;
@@ -246,11 +246,9 @@ function pickDefaultVisibleFieldName(collectionName: string, collectionMeta: any
       : [];
   const fieldNames = fields.map((field: any) => normalizeText(field?.name || field?.options?.name)).filter(Boolean);
   const preferredFields = FLOW_SURFACES_TEST_DEFAULT_VISIBLE_FIELD_PREFERENCES[collectionName] || [];
-  return (
-    preferredFields.find((fieldName) => fieldNames.includes(fieldName)) ||
-    fieldNames.find((fieldName) => fieldName !== 'id') ||
-    ''
-  );
+  const preferred = preferredFields.filter((fieldName) => fieldNames.includes(fieldName));
+  const remaining = fieldNames.filter((fieldName) => fieldName !== 'id' && !preferred.includes(fieldName));
+  return [...preferred, ...remaining].slice(0, 3);
 }
 
 export async function setupFixtureCollections(rootAgent: any, db: Database) {

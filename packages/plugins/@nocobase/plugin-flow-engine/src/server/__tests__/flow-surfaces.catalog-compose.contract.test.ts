@@ -1563,7 +1563,7 @@ describe('flowSurfaces catalog + compose contract', () => {
               dataSourceKey: 'main',
               collectionName: 'users',
             },
-            fields: ['nickname'],
+            fields: ['username', 'nickname', 'email'],
             actions: [
               {
                 type: 'jsItem',
@@ -4058,7 +4058,7 @@ describe('flowSurfaces catalog + compose contract', () => {
       resource: {
         binding: 'currentCollection',
       },
-      fields: ['title'],
+      fields: ['title', 'status', 'category'],
     });
     await addBlockData(rootAgent, {
       target: {
@@ -4068,7 +4068,7 @@ describe('flowSurfaces catalog + compose contract', () => {
       resource: {
         binding: 'currentRecord',
       },
-      fields: ['title'],
+      fields: ['title', 'status', 'category'],
     });
     const quickTitleField = getData(
       await rootAgent.resource('flowSurfaces').addField({
@@ -4494,7 +4494,7 @@ describe('flowSurfaces catalog + compose contract', () => {
         resource: {
           binding: 'currentCollection',
         },
-        fields: ['nickname'],
+        fields: ['username', 'nickname', 'email'],
       },
     });
     expect(invalidRaw.status).toBe(400);
@@ -4751,7 +4751,7 @@ describe('flowSurfaces catalog + compose contract', () => {
               dataSourceKey: 'main',
               collectionName: 'users',
             },
-            fields: ['username', 'nickname'],
+            fields: ['username', 'nickname', 'email'],
             actions: [
               'filter',
               {
@@ -5460,7 +5460,7 @@ describe('flowSurfaces catalog + compose contract', () => {
       {
         title: 'Invalid compose fieldsLayout span page',
         fieldsLayout: {
-          rows: [[{ key: 'username', span: '12' }, 'nickname']],
+          rows: [[{ key: 'username', span: '12' }, 'nickname', 'email']],
         },
         expectedMessage: 'fieldsLayout row #1 cell #1.span must be a number',
       },
@@ -5485,7 +5485,7 @@ describe('flowSurfaces catalog + compose contract', () => {
                 dataSourceKey: 'main',
                 collectionName: 'users',
               },
-              fields: ['username', 'nickname'],
+              fields: ['username', 'nickname', 'email'],
               fieldsLayout: item.fieldsLayout,
             },
           ],
@@ -5530,7 +5530,7 @@ describe('flowSurfaces catalog + compose contract', () => {
               dataSourceKey: 'main',
               collectionName: 'users',
             },
-            fields: ['username'],
+            fields: ['username', 'nickname', 'email'],
           },
         ],
       },
@@ -5791,7 +5791,7 @@ describe('flowSurfaces catalog + compose contract', () => {
               dataSourceKey: 'main',
               collectionName: 'users',
             },
-            fields: ['nickname'],
+            fields: ['username', 'nickname', 'email'],
             actions: ['js'],
           },
           {
@@ -5867,7 +5867,7 @@ describe('flowSurfaces catalog + compose contract', () => {
               dataSourceKey: 'main',
               collectionName: 'users',
             },
-            fields: ['username', 'nickname'],
+            fields: ['username', 'nickname', 'email'],
             actions: ['addNew', 'refresh'],
             recordActions: [
               'view',
@@ -5883,7 +5883,7 @@ describe('flowSurfaces catalog + compose contract', () => {
                       resource: {
                         binding: 'currentRecord',
                       },
-                      fields: ['username'],
+                      fields: ['username', 'nickname', 'email'],
                     },
                   ],
                 },
@@ -5905,7 +5905,7 @@ describe('flowSurfaces catalog + compose contract', () => {
     expect(listBlock.uid).toBeTruthy();
     expect(listBlock.itemUid).toBeTruthy();
     expect(listBlock.itemGridUid).toBeTruthy();
-    expect(listBlock.fields.map((item: any) => item.fieldPath)).toEqual(['username', 'nickname']);
+    expect(listBlock.fields.map((item: any) => item.fieldPath)).toEqual(['username', 'nickname', 'email']);
     expect(listBlock.actions.map((item: any) => item.type)).toEqual(['filter', 'refresh', 'addNew']);
     expect(listBlock.recordActions.map((item: any) => item.type)).toEqual(['view', 'edit', 'popup', 'delete']);
     const popupActionResult = listBlock.recordActions.find((item: any) => item.type === 'popup');
@@ -6146,7 +6146,7 @@ describe('flowSurfaces catalog + compose contract', () => {
               dataSourceKey: 'main',
               collectionName: 'users',
             },
-            fields: ['username', 'nickname'],
+            fields: ['username', 'nickname', 'email'],
             actions: ['addNew', 'refresh'],
             recordActions: ['view', 'edit', 'updateRecord', 'delete'],
             settings: {
@@ -6165,7 +6165,7 @@ describe('flowSurfaces catalog + compose contract', () => {
     expect(gridCardBlock.uid).toBeTruthy();
     expect(gridCardBlock.itemUid).toBeTruthy();
     expect(gridCardBlock.itemGridUid).toBeTruthy();
-    expect(gridCardBlock.fields.map((item: any) => item.fieldPath)).toEqual(['username', 'nickname']);
+    expect(gridCardBlock.fields.map((item: any) => item.fieldPath)).toEqual(['username', 'nickname', 'email']);
     expect(gridCardBlock.actions.map((item: any) => item.type)).toEqual(['filter', 'refresh', 'addNew']);
     expect(gridCardBlock.recordActions.map((item: any) => item.type)).toEqual([
       'view',
@@ -6219,7 +6219,7 @@ describe('flowSurfaces catalog + compose contract', () => {
               dataSourceKey: 'main',
               collectionName: 'users',
             },
-            fields: ['nickname'],
+            fields: ['username', 'nickname', 'email'],
             actions: ['addNew', 'refresh'],
             recordActions: ['view', 'delete'],
           },
@@ -6279,7 +6279,7 @@ describe('flowSurfaces catalog + compose contract', () => {
               dataSourceKey: 'main',
               collectionName: 'users',
             },
-            fields: ['nickname'],
+            fields: ['username', 'nickname', 'email'],
             recordActions: ['view'],
           },
         ],
@@ -6324,7 +6324,7 @@ describe('flowSurfaces catalog + compose contract', () => {
               dataSourceKey: 'main',
               collectionName: 'users',
             },
-            fields: ['nickname'],
+            fields: ['username', 'nickname', 'email'],
             actions: ['view'],
           },
         ],
@@ -6346,7 +6346,7 @@ describe('flowSurfaces catalog + compose contract', () => {
               dataSourceKey: 'main',
               collectionName: 'users',
             },
-            fields: ['nickname'],
+            fields: ['username', 'nickname', 'email'],
             recordActions: ['addNew'],
           },
         ],
@@ -6826,7 +6826,7 @@ describe('flowSurfaces catalog + compose contract', () => {
               dataSourceKey: 'main',
               collectionName: 'employees',
             },
-            fields: ['nickname'],
+            fields: ['nickname', 'status', 'email'],
             actions: [
               {
                 type: 'addNew',
@@ -6855,7 +6855,7 @@ describe('flowSurfaces catalog + compose contract', () => {
               dataSourceKey: 'main',
               collectionName: 'employees',
             },
-            fields: ['nickname'],
+            fields: ['nickname', 'status', 'email'],
             recordActions: [
               {
                 type: 'view',
@@ -6892,7 +6892,7 @@ describe('flowSurfaces catalog + compose contract', () => {
                 dataSourceKey: 'main',
                 collectionName: 'users',
               },
-              fields: ['username', 'nickname'],
+              fields: ['username', 'nickname', 'email'],
               actions: ['filter', 'addNew'],
               recordActions: ['view', 'delete'],
             },
@@ -6915,7 +6915,7 @@ describe('flowSurfaces catalog + compose contract', () => {
               dataSourceKey: 'main',
               collectionName: 'users',
             },
-            fields: ['username', 'nickname'],
+            fields: ['username', 'nickname', 'email'],
             actions: ['submit'],
           },
         ],
@@ -7106,7 +7106,7 @@ describe('flowSurfaces catalog + compose contract', () => {
               dataSourceKey: 'main',
               collectionName: 'employees',
             },
-            fields: ['nickname'],
+            fields: ['nickname', 'status', 'email'],
             use: 'TableBlockModel',
           },
         ],
@@ -7148,7 +7148,7 @@ describe('flowSurfaces catalog + compose contract', () => {
               dataSourceKey: 'main',
               collectionName: 'users',
             },
-            fields: ['nickname'],
+            fields: ['username', 'nickname', 'email'],
             settings: {
               title: 'Employees table',
               pageSize: 50,
@@ -7330,7 +7330,7 @@ describe('flowSurfaces catalog + compose contract', () => {
                   resource: {
                     binding: 'currentRecord',
                   },
-                  fields: ['username'],
+                  fields: ['username', 'nickname', 'email'],
                 },
               ],
             },
@@ -7405,7 +7405,7 @@ describe('flowSurfaces catalog + compose contract', () => {
                   resource: {
                     binding: 'currentRecord',
                   },
-                  fields: ['username'],
+                  fields: ['username', 'nickname', 'email'],
                 },
               ],
             },
@@ -7646,7 +7646,7 @@ describe('flowSurfaces catalog + compose contract', () => {
               dataSourceKey: 'main',
               collectionName: 'employees',
             },
-            fields: ['nickname'],
+            fields: ['nickname', 'status', 'email'],
             settings: {
               title: 'Valid employees table',
             },
@@ -7658,7 +7658,7 @@ describe('flowSurfaces catalog + compose contract', () => {
               dataSourceKey: 'main',
               collectionName: 'employees',
             },
-            fields: ['nickname'],
+            fields: ['nickname', 'status', 'email'],
             settings: {
               dataScope: {
                 foo: 'bar',
@@ -8080,7 +8080,7 @@ describe('flowSurfaces catalog + compose contract', () => {
               dataSourceKey: 'main',
               collectionName: 'users',
             },
-            fields: ['nickname'],
+            fields: ['username', 'nickname', 'email'],
             settings: {
               pageSize: 20,
               dataScope: {
@@ -8109,7 +8109,7 @@ describe('flowSurfaces catalog + compose contract', () => {
               dataSourceKey: 'main',
               collectionName: 'users',
             },
-            fields: ['nickname'],
+            fields: ['username', 'nickname', 'email'],
             settings: {
               columns: 3,
               rowCount: 2,
@@ -8557,7 +8557,7 @@ describe('flowSurfaces catalog + compose contract', () => {
             settings: {
               sort: ['-createdAt', 'username'],
             },
-            fields: ['username'],
+            fields: ['username', 'nickname', 'email'],
           },
           {
             key: 'list',
@@ -8566,7 +8566,7 @@ describe('flowSurfaces catalog + compose contract', () => {
               dataSourceKey: 'main',
               collectionName: 'users',
             },
-            fields: ['nickname'],
+            fields: ['username', 'nickname', 'email'],
             settings: {
               sort: [
                 {
@@ -8678,7 +8678,7 @@ describe('flowSurfaces catalog + compose contract', () => {
                 },
               ],
             },
-            fields: ['username'],
+            fields: ['username', 'nickname', 'email'],
           },
         ],
       },
@@ -8824,7 +8824,7 @@ describe('flowSurfaces catalog + compose contract', () => {
               dataSourceKey: 'main',
               collectionName: 'calendar_events',
             },
-            fields: ['title'],
+            fields: ['title', 'status', 'category'],
           },
         ],
       },
@@ -8856,7 +8856,7 @@ describe('flowSurfaces catalog + compose contract', () => {
               dataSourceKey: 'main',
               collectionName: 'employees',
             },
-            fields: ['nickname', 'status'],
+            fields: ['nickname', 'status', 'email'],
             actions: [
               {
                 key: 'bulkArchive',
@@ -9214,7 +9214,7 @@ describe('flowSurfaces catalog + compose contract', () => {
               dataSourceKey: 'main',
               collectionName: 'users',
             },
-            fields: ['nickname'],
+            fields: ['username', 'nickname', 'email'],
             settings: {
               columns: 3,
             },
