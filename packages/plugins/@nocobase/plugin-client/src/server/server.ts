@@ -149,12 +149,16 @@ export class PluginClientServer extends Plugin {
           const user = id ? { id, username } : undefined;
 
           const eventName = `${command}@${plugin}`;
-          await ctx.app.eventQueue.publish(eventName, {
-            plugin,
-            command,
-            user,
-            payload: payload ?? {},
-          });
+          try {
+            await ctx.app.eventQueue.publish(eventName, {
+              plugin,
+              command,
+              user,
+              payload: payload ?? {},
+            });
+          } catch (err) {
+            ctx.app.logger.warn(`fail to publish event to [${eventName}]: ${(err as Error).message}`, payload);
+          }
           await next();
         },
       },
