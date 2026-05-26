@@ -8,6 +8,7 @@
  */
 
 import { Plugin } from '@nocobase/client';
+import type { FlowModel } from '@nocobase/flow-engine';
 import { ReferenceBlockModel } from './models/ReferenceBlockModel';
 import { ReferenceFormGridModel } from './models/ReferenceFormGridModel';
 import { SubModelTemplateImporterModel } from './models/SubModelTemplateImporterModel';
@@ -16,6 +17,7 @@ import { BlockTemplatesPage, PopupTemplatesPage } from './components/FlowModelTe
 import pkg from '../../package.json';
 import { registerMenuExtensions } from './menuExtensions';
 import { registerOpenViewPopupTemplateAction } from './openViewActionExtensions';
+import { getPluginT } from './locale';
 
 const NAMESPACE = 'ui-templates';
 
@@ -27,6 +29,35 @@ export class PluginBlockReferenceClient extends Plugin {
       SubModelTemplateImporterModel,
     });
     registerOpenViewPopupTemplateAction(this.flowEngine);
+    this.flowEngine.flowSettings.registerDynamicFlowSourceProvider({
+      key: 'ui-templates-reference-block',
+      visible(model) {
+        if (!(model instanceof ReferenceBlockModel)) {
+          return false;
+        }
+        const target = model.context?.refModel as FlowModel | undefined;
+        return !!target && target.getEvents().size > 0;
+      },
+      getSources(model) {
+        if (!(model instanceof ReferenceBlockModel)) {
+          return [];
+        }
+
+        const target = model.context?.refModel as FlowModel | undefined;
+        if (!target || target.uid === model.uid || target.getEvents().size === 0) {
+          return [];
+        }
+
+        return [
+          {
+            key: 'referenced-template',
+            label: getPluginT(model)('Referenced template'),
+            model: target,
+            sort: 10,
+          },
+        ];
+      },
+    });
 
     // 父级菜单（只有标题，无组件）
     this.app.pluginSettingsManager.add(NAMESPACE, {

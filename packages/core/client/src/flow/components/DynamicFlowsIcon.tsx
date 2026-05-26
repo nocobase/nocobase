@@ -12,6 +12,8 @@ import { ThunderboltOutlined, DeleteOutlined, PlusOutlined } from '@ant-design/i
 import {
   ActionDefinition,
   ActionScene,
+  FlowContext,
+  FlowContextProvider,
   FlowEngineContext,
   FlowEventPhase,
   FlowModel,
@@ -29,8 +31,9 @@ import {
   DetachedFlowRegistry,
   replaceFlowRegistry,
   serializeFlowRegistry,
+  type DynamicFlowSource,
 } from '@nocobase/flow-engine';
-import { Collapse, Input, Button, Space, Tooltip, Empty, Dropdown, Select } from 'antd';
+import { Collapse, Input, Button, Space, Tooltip, Empty, Dropdown, Select, Tabs } from 'antd';
 import { uid } from '@formily/shared';
 import { useUpdate } from 'ahooks';
 import _ from 'lodash';
@@ -99,12 +102,20 @@ export const DynamicFlowsIcon: React.FC<{ model: FlowModel }> = (props) => {
   const { model } = props;
   const t = React.useMemo(() => model.translate.bind(model), [model]);
 
-  const handleClick = () => {
+  const handleClick = async () => {
     const target = document.querySelector<HTMLDivElement>(`#${GLOBAL_EMBED_CONTAINER_ID}`);
 
     if (!target) {
       return;
     }
+
+    const sources = await model.flowEngine.flowSettings.getDynamicFlowSources(model);
+    const content =
+      sources.length > 1 ? (
+        <DynamicFlowsSourceTabs sources={sources} />
+      ) : (
+        <DynamicFlowsEditor model={sources[0].model} />
+      );
 
     model.context.viewer.embed({
       type: 'embed',
@@ -122,12 +133,55 @@ export const DynamicFlowsIcon: React.FC<{ model: FlowModel }> = (props) => {
           target.style.minWidth = 'auto';
         }
       },
-      content: <DynamicFlowsEditor model={model} />,
+      content,
     });
   };
 
   return <ThunderboltOutlined style={{ cursor: 'pointer' }} onClick={handleClick} />;
 };
+
+const DynamicFlowsSourceTabs = observer(({ sources }: { sources: DynamicFlowSource[] }) => {
+  const [activeKey, setActiveKey] = React.useState(sources[0]?.key);
+
+  return (
+    <Tabs
+      activeKey={activeKey}
+      onChange={setActiveKey}
+      style={{ height: '100%' }}
+      items={sources.map((source) => ({
+        key: source.key,
+        label: source.label,
+        children: <DynamicFlowsSourceEditor key={source.key} source={source} />,
+      }))}
+    />
+  );
+});
+
+const DynamicFlowsSourceEditor = observer(({ source }: { source: DynamicFlowSource }) => {
+  const hostCtx = useFlowContext<FlowEngineContext>();
+  const sourceContext = React.useMemo(() => {
+    const context = new FlowContext();
+    if (hostCtx instanceof FlowContext) {
+      context.addDelegate(hostCtx);
+    }
+    if (source.model.context instanceof FlowContext) {
+      context.addDelegate(source.model.context);
+    }
+    if (hostCtx?.view) {
+      context.defineProperty('view', { value: hostCtx.view });
+    }
+    if (hostCtx?.modal) {
+      context.defineProperty('modal', { value: hostCtx.modal });
+    }
+    return context;
+  }, [hostCtx, source.model]);
+
+  return (
+    <FlowContextProvider context={sourceContext}>
+      <DynamicFlowsEditor key={source.model.uid} model={source.model} closeOnSave={false} />
+    </FlowContextProvider>
+  );
+});
 
 const styles: Record<string, React.CSSProperties> = {
   sectionHeader: {
@@ -456,8 +510,9 @@ const EventConfigSection = observer(
   },
 );
 
-const DynamicFlowsEditor = observer((props: { model: FlowModel }) => {
+const DynamicFlowsEditor = observer((props: { model: FlowModel; closeOnSave?: boolean }) => {
   const { model } = props;
+  const closeOnSave = props.closeOnSave ?? true;
   const ctx = useFlowContext<FlowEngineContext>();
   const flowEngine = model.flowEngine;
   const initialFlows = React.useMemo(() => serializeFlowRegistry(model.flowRegistry), [model]);
@@ -767,8 +822,11 @@ const DynamicFlowsEditor = observer((props: { model: FlowModel }) => {
               model.rerender(); // 不阻塞，后续保存
             }
             setSubmitLoading(false);
+            initialFlowsRef.current = serializeFlowRegistry(draftFlowRegistry);
             model.context?.message?.success?.(t('Configuration saved'));
-            ctx.view.destroy();
+            if (closeOnSave) {
+              ctx.view.destroy();
+            }
           }}
         >
           {t('Save')}

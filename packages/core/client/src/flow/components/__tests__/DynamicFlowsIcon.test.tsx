@@ -10,7 +10,7 @@
 import React from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { render, screen, userEvent, waitFor } from '@nocobase/test/client';
-import { ActionScene, FlowEngine, FlowModel, GLOBAL_EMBED_CONTAINER_ID } from '@nocobase/flow-engine';
+import { ActionScene, FlowEngine, FlowModel, GLOBAL_EMBED_CONTAINER_ID, useFlowContext } from '@nocobase/flow-engine';
 import { DynamicFlowsIcon } from '../DynamicFlowsIcon';
 
 const mockState = vi.hoisted(() => ({
@@ -20,9 +20,10 @@ const mockState = vi.hoisted(() => ({
 
 vi.mock('@nocobase/flow-engine', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@nocobase/flow-engine')>();
+  const React = await import('react');
   return {
     ...actual,
-    useFlowContext: () => mockState.flowContextValue,
+    useFlowContext: () => React.useContext(actual.FlowReactContext) || mockState.flowContextValue,
   };
 });
 
@@ -62,6 +63,28 @@ vi.mock('antd', async (importOriginal) => {
       return <div data-testid={String(props.placeholder || 'select')} />;
     },
     Space: ({ children }: any) => <div>{children}</div>,
+    Tabs: ({ items, activeKey, onChange }: any) => {
+      const currentKey = activeKey || items?.[0]?.key;
+      const activeItem = items?.find((item: any) => item.key === currentKey) || items?.[0];
+      return (
+        <div data-testid="dynamic-flow-source-tabs">
+          <div role="tablist">
+            {items?.map((item: any) => (
+              <button
+                key={item.key}
+                role="tab"
+                aria-selected={item.key === currentKey}
+                type="button"
+                onClick={() => onChange?.(item.key)}
+              >
+                {item.label}
+              </button>
+            ))}
+          </div>
+          <div>{activeItem?.children}</div>
+        </div>
+      );
+    },
     Tooltip: ({ children }: any) => <>{children}</>,
   };
 });
@@ -82,6 +105,8 @@ const openDynamicFlowsEditor = async (model: FlowModel) => {
 
   expect(trigger).not.toBeNull();
   await userEvent.click(trigger as Element);
+
+  await waitFor(() => expect(model.context.viewer.embed).toHaveBeenCalled());
 
   const embedCall = (model.context.viewer.embed as any).mock.calls.at(-1)?.[0];
   expect(embedCall?.content).toBeTruthy();
@@ -163,6 +188,38 @@ const createModel = (options: { preventClose?: boolean; hiddenClose?: boolean; s
   return model;
 };
 
+const createPeerModel = (model: FlowModel, uid: string, saveStepParams = vi.fn(async () => undefined)) => {
+  const PeerModel = model.constructor as typeof FlowModel;
+  const peer = new PeerModel({
+    uid,
+    use: PeerModel,
+    flowEngine: model.flowEngine,
+    stepParams: {},
+    subModels: {},
+    flowRegistry: {
+      flow1: {
+        title: 'Template event flow',
+        on: 'click',
+        steps: {
+          notifyStep: {
+            use: 'notify',
+          },
+        },
+      },
+    },
+  } as any);
+
+  peer.context.defineProperty('message', {
+    value: {
+      error: vi.fn(),
+      success: vi.fn(),
+    },
+  });
+  vi.spyOn(peer, 'saveStepParams').mockImplementation(saveStepParams);
+
+  return peer;
+};
+
 const createView = () => {
   let destroyed = false;
   let closingPromise: Promise<boolean | void> | undefined;
@@ -189,6 +246,9 @@ const createView = () => {
       destroyed = true;
     }),
     beforeClose: undefined as any,
+    inputArgs: {
+      pageActive: true,
+    },
   };
   return view;
 };
@@ -357,5 +417,51 @@ describe('DynamicFlowsIcon', () => {
     expect(model.flowRegistry.getFlows().size).toBe(2);
     expect(view.destroy).toHaveBeenCalledTimes(1);
     expect(model.context.message.success).toHaveBeenCalledWith('Configuration saved');
+  });
+
+  it('renders source tabs and keeps the editor open when saving one source', async () => {
+    const model = createModel();
+    const targetSaveStepParams = vi.fn(async () => undefined);
+    const target = createPeerModel(model, 'target-model', targetSaveStepParams);
+
+    model.flowEngine.flowSettings.registerDynamicFlowSourceProvider({
+      key: 'test-source-provider',
+      getSources: () => [{ key: 'referenced-template', label: 'Referenced template', model: target }],
+    });
+
+    const { view } = await openDynamicFlowsEditor(model);
+
+    expect(screen.getByRole('tab', { name: 'Current block' })).toHaveAttribute('aria-selected', 'true');
+    await userEvent.click(screen.getByRole('tab', { name: 'Referenced template' }));
+
+    await userEvent.click(screen.getByRole('button', { name: 'Add event flow' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Save' }));
+
+    expect(targetSaveStepParams).toHaveBeenCalledTimes(1);
+    expect(target.flowRegistry.getFlows().size).toBe(2);
+    expect(view.destroy).not.toHaveBeenCalled();
+    expect(target.context.message.success).toHaveBeenCalledWith('Configuration saved');
+  });
+
+  it('provides the active source model context inside source tabs', async () => {
+    const model = createModel();
+    const target = createPeerModel(model, 'target-model');
+    const seenModelUids: string[] = [];
+    const ContextProbe = () => {
+      const ctx = useFlowContext<any>();
+      seenModelUids.push(ctx?.model?.uid);
+      return null;
+    };
+    model.flowEngine.flowSettings.renderStepForm = vi.fn(() => <ContextProbe />) as any;
+
+    model.flowEngine.flowSettings.registerDynamicFlowSourceProvider({
+      key: 'test-source-context-provider',
+      getSources: () => [{ key: 'referenced-template', label: 'Referenced template', model: target }],
+    });
+
+    await openDynamicFlowsEditor(model);
+    await userEvent.click(screen.getByRole('tab', { name: 'Referenced template' }));
+
+    await waitFor(() => expect(seenModelUids).toContain('target-model'));
   });
 });

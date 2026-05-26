@@ -184,7 +184,6 @@ describe('ReferenceBlockModel', () => {
         return { uid: copy.uid };
       }),
     };
-
     engine.setModelRepository(mockRepository);
     scopedEngine.setModelRepository(mockRepository);
 
@@ -274,7 +273,7 @@ describe('ReferenceBlockModel', () => {
         gridModel.addSubModel('items', referenceBlockModel);
 
         // 触发 beforeRender 事件，加载目标区块
-        await referenceBlockModel.dispatchEvent('beforeRender');
+        await referenceBlockModel.onDispatchEventStart('beforeRender');
 
         // 验证目标区块的 parentId 没有被修改
         const currentParentId = (targetBlockModel as any)._options.parentId;
@@ -289,7 +288,7 @@ describe('ReferenceBlockModel', () => {
     );
 
     it(
-      'should not persist target block when saving the reference block',
+      'should not persist runtime target block with the reference block',
       async () => {
         referenceBlockModel = engine.createModel({
           uid: 'reference-block-uid',
@@ -1021,11 +1020,13 @@ describe('ReferenceBlockModel', () => {
         await referenceBlockModel.dispatchEvent('beforeRender');
 
         const target = (referenceBlockModel as any)._targetModel as FlowModel | undefined;
-        expect(target).toBeTruthy();
-        expect(referenceBlockModel.props).toBe(target!.props);
+        if (!target) {
+          throw new Error('Expected target model to be resolved');
+        }
+        expect(referenceBlockModel.props).toBe(target.props);
 
         (referenceBlockModel.props as any).summary = 'x';
-        expect((target!.props as any).summary).toBe('x');
+        expect((target.props as any).summary).toBe('x');
       },
       TEST_TIMEOUT,
     );
@@ -1054,10 +1055,12 @@ describe('ReferenceBlockModel', () => {
         await referenceBlockModel.dispatchEvent('beforeRender');
 
         const target = (referenceBlockModel as any)._targetModel as FlowModel | undefined;
-        expect(target).toBeTruthy();
+        if (!target) {
+          throw new Error('Expected target model to be resolved');
+        }
 
         referenceBlockModel.setProps({ summary: 'y' as any });
-        expect((target!.props as any).summary).toBe('y');
+        expect((target.props as any).summary).toBe('y');
         expect((referenceBlockModel.getProps() as any).summary).toBe('y');
       },
       TEST_TIMEOUT,
@@ -1152,11 +1155,13 @@ describe('ReferenceBlockModel', () => {
         });
 
         const target = (referenceBlockModel as any)._targetModel as FlowModel | undefined;
-        expect(target).toBeTruthy();
+        if (!target) {
+          throw new Error('Expected target model to be resolved');
+        }
 
-        await target!.dispatchEvent('rowClick', { record: { id: 1 } });
+        await target.dispatchEvent('rowClick', { record: { id: 1 } });
 
-        expect((target!.props as any).highlightedRowKey).toBe(1);
+        expect((target.props as any).highlightedRowKey).toBe(1);
         expect(flowSpy).toHaveBeenCalledTimes(1);
       },
       TEST_TIMEOUT,
