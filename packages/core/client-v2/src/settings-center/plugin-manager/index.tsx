@@ -157,11 +157,7 @@ export const PluginManagerPage: React.FC = () => {
   });
 
   if (loading) {
-    return (
-      <div style={{ padding: token.paddingLG }}>
-        <Spin />
-      </div>
-    );
+    return <Spin />;
   }
 
   const filterTabs = (
@@ -173,7 +169,7 @@ export const PluginManagerPage: React.FC = () => {
           open={categoryOpen}
           onOpenChange={setCategoryOpen}
           content={
-            <div style={{ minWidth: 180 }}>
+            <div style={{ minWidth: 180, maxHeight: '60vh', overflowY: 'auto' }}>
               <CategoryList items={keywordBuckets} activeKeyword={keyword} onSelect={handleKeywordSelect} />
             </div>
           }
@@ -220,7 +216,7 @@ export const PluginManagerPage: React.FC = () => {
   );
 
   return (
-    <div style={{ padding: token.paddingLG }}>
+    <>
       {error ? (
         <Alert
           showIcon
@@ -243,7 +239,7 @@ export const PluginManagerPage: React.FC = () => {
             minWidth: 0,
             display: 'grid',
             gap: token.margin,
-            gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
+            gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))',
           }}
         >
           {pluginList.map((item) => (
@@ -251,7 +247,7 @@ export const PluginManagerPage: React.FC = () => {
           ))}
         </div>
       </Flex>
-    </div>
+    </>
   );
 };
 

@@ -324,7 +324,7 @@ const LocalPlugins = () => {
                   placement="bottomLeft"
                   open={categoryOpen}
                   onOpenChange={setCategoryOpen}
-                  content={<div style={{ minWidth: 180 }}>{categoryList}</div>}
+                  content={<div style={{ minWidth: 180, maxHeight: '60vh', overflowY: 'auto' }}>{categoryList}</div>}
                 >
                   <Button type="text" size="small" icon={<MenuOutlined />} aria-label={t('Category')} />
                 </Popover>
@@ -379,7 +379,7 @@ const LocalPlugins = () => {
               className={css`
                 display: grid;
                 gap: ${theme.margin}px;
-                grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+                grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
               `}
             >
               {pluginList.map((item) => (
