@@ -605,12 +605,35 @@ test('init reflow reveals otherVersion when version is set to other', async () =
 
   const state = reflowWebFormState(Init.prompts, {
     hasNocobase: 'no',
-    fetchSource: true,
     source: 'docker',
     version: 'other',
   });
 
   expect(state.show.otherVersion).toBe(true);
+});
+
+test('init reflow keeps source prompts visible and hides download execution prompts when skipDownload is enabled', async () => {
+  const { reflowWebFormState } = await import('../lib/prompt-web-ui.js');
+  const { default: Init } = await import('../commands/init.js');
+
+  const state = reflowWebFormState(Init.prompts, {
+    hasNocobase: 'no',
+    skipDownload: true,
+    source: 'git',
+    version: 'beta',
+  });
+
+  expect(state.show.skipDownload).toBe(true);
+  expect(state.values.skipDownload).toBe(true);
+  expect(state.show.source).toBe(true);
+  expect(state.show.version).toBe(true);
+  expect(state.show.gitUrl).toBe(true);
+  expect(state.show.npmRegistry).toBe(true);
+  expect(state.show.outputDir).toBe(false);
+  expect(state.show.replace).toBe(false);
+  expect(state.show.devDependencies).toBe(false);
+  expect(state.show.build).toBe(false);
+  expect(state.show.buildDts).toBe(false);
 });
 
 test('reflow recomputes init app paths from the current app name', async () => {
@@ -633,7 +656,6 @@ test('reflow recomputes the built-in database image from the current database di
 
   const initial = reflowWebFormState(Init.prompts, {
     hasNocobase: 'no',
-    fetchSource: true,
     dbDialect: 'mysql',
     builtinDb: true,
   });
@@ -643,7 +665,6 @@ test('reflow recomputes the built-in database image from the current database di
 
   const updated = reflowWebFormState(Init.prompts, {
     hasNocobase: 'no',
-    fetchSource: true,
     dbDialect: 'mariadb',
     builtinDb: true,
   });
@@ -652,7 +673,6 @@ test('reflow recomputes the built-in database image from the current database di
 
   const customized = reflowWebFormState(Init.prompts, {
     hasNocobase: 'no',
-    fetchSource: true,
     dbDialect: 'mariadb',
     builtinDb: true,
     builtinDbImage: 'registry.example.com/custom-mariadb:11',
@@ -662,7 +682,6 @@ test('reflow recomputes the built-in database image from the current database di
 
   const kingbase = reflowWebFormState(Init.prompts, {
     hasNocobase: 'no',
-    fetchSource: true,
     dbDialect: 'kingbase',
     builtinDb: true,
   });
@@ -679,7 +698,6 @@ test('reflow uses locale-aware built-in database images when NB_LOCALE is zh-CN'
 
   const state = reflowWebFormState(Init.prompts, {
     hasNocobase: 'no',
-    fetchSource: true,
     dbDialect: 'postgres',
     builtinDb: true,
   });
@@ -695,7 +713,6 @@ test('reflow uses CLI locale-aware docker registry defaults even when app langua
   const state = reflowWebFormState(Init.prompts, {
     hasNocobase: 'no',
     lang: 'en-US',
-    fetchSource: true,
     source: 'docker',
     version: 'alpha',
   });
