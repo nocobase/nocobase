@@ -4091,6 +4091,163 @@ ctx.render(React.createElement(DashboardKPIs));
       },
       {
         code: [
+          '((React = ctx.React.default) => {',
+          "  ctx.render(React.createElement('div', null, 'broken'));",
+          '})();',
+        ],
+        path: '$.defaultReactFunctionParamAlias.code',
+      },
+      {
+        code: [
+          '((ReactDefault = ctx.React.default) => {',
+          '  const React = ReactDefault;',
+          "  ctx.render(React.createElement('div', null, 'broken'));",
+          '})();',
+        ],
+        path: '$.defaultReactFunctionParamTwoStepAlias.code',
+      },
+      {
+        code: [
+          '(({ React: ReactNs } = ctx) => {',
+          '  const React = ReactNs.default;',
+          "  ctx.render(React.createElement('div', null, 'broken'));",
+          '})();',
+        ],
+        path: '$.defaultReactFunctionParamNamespaceDestructure.code',
+      },
+      {
+        code: [
+          '(({ React: { default: React } } = ctx) => {',
+          "  ctx.render(React.createElement('div', null, 'broken'));",
+          '})();',
+        ],
+        path: '$.defaultReactFunctionParamNestedDestructure.code',
+      },
+      {
+        code: [
+          '((box = { ns: ctx.React }) => {',
+          '  const React = box.ns.default;',
+          "  ctx.render(React.createElement('div', null, 'broken'));",
+          '})();',
+        ],
+        path: '$.defaultReactFunctionParamObjectNamespaceCarrierAlias.code',
+      },
+      {
+        code: [
+          '((arr = [ctx.React.default]) => {',
+          '  const React = arr[0];',
+          "  ctx.render(React.createElement('div', null, 'broken'));",
+          '})();',
+        ],
+        path: '$.defaultReactFunctionParamArrayDefaultCarrierAlias.code',
+      },
+      {
+        code: [
+          'const box = { ns: ctx.React };',
+          'const React = box.ns.default;',
+          "ctx.render(React.createElement('div', null, 'broken'));",
+        ],
+        path: '$.defaultReactObjectNamespaceCarrierAlias.code',
+      },
+      {
+        code: [
+          'const box = { ReactDefault: ctx.React.default };',
+          'const React = box.ReactDefault;',
+          "ctx.render(React.createElement('div', null, 'broken'));",
+        ],
+        path: '$.defaultReactObjectDefaultCarrierAlias.code',
+      },
+      {
+        code: [
+          'const arr = [ctx.React.default];',
+          'const React = arr[0];',
+          "ctx.render(React.createElement('div', null, 'broken'));",
+        ],
+        path: '$.defaultReactArrayDefaultCarrierAlias.code',
+      },
+      {
+        code: [
+          'const arr = [ctx.React];',
+          'const React = arr[0].default;',
+          "ctx.render(React.createElement('div', null, 'broken'));",
+        ],
+        path: '$.defaultReactArrayNamespaceCarrierAlias.code',
+      },
+      {
+        code: [
+          'const box = { ns: ctx.React };',
+          'box.ns = ctx.React.default;',
+          'const React = box.ns;',
+          "ctx.render(React.createElement('div', null, 'broken'));",
+        ],
+        path: '$.defaultReactObjectCarrierMemberReassignedToDefault.code',
+      },
+      {
+        code: [
+          'const arr = [ctx.React];',
+          'arr[0] = ctx.React.default;',
+          'const React = arr[0];',
+          "ctx.render(React.createElement('div', null, 'broken'));",
+        ],
+        path: '$.defaultReactArrayCarrierMemberReassignedToDefault.code',
+      },
+      {
+        code: ['const { React = ctx.React.default } = {};', "ctx.render(React.createElement('div', null, 'broken'));"],
+        path: '$.defaultReactObjectPatternDefaultAlias.code',
+      },
+      {
+        code: [
+          'const { ReactDefault = ctx.React.default } = {};',
+          'const React = ReactDefault;',
+          "ctx.render(React.createElement('div', null, 'broken'));",
+        ],
+        path: '$.defaultReactObjectPatternDefaultTwoStepAlias.code',
+      },
+      {
+        code: ['const [React = ctx.React.default] = [];', "ctx.render(React.createElement('div', null, 'broken'));"],
+        path: '$.defaultReactArrayPatternDefaultAlias.code',
+      },
+      {
+        code: [
+          'const { ns: ReactNs = ctx.React } = {};',
+          'const React = ReactNs.default;',
+          "ctx.render(React.createElement('div', null, 'broken'));",
+        ],
+        path: '$.defaultReactObjectPatternNamespaceDefaultAlias.code',
+      },
+      {
+        code: [
+          '(({ React = ctx.React.default } = {}) => {',
+          "  ctx.render(React.createElement('div', null, 'broken'));",
+          '})({});',
+        ],
+        path: '$.defaultReactFunctionObjectPatternDefaultAlias.code',
+      },
+      {
+        code: [
+          'const { box = { ns: ctx.React } } = {};',
+          'const React = box.ns.default;',
+          "ctx.render(React.createElement('div', null, 'broken'));",
+        ],
+        path: '$.defaultReactObjectPatternDefaultObjectCarrierAlias.code',
+      },
+      {
+        code: [
+          'const [arr = [ctx.React.default]] = [];',
+          'const React = arr[0];',
+          "ctx.render(React.createElement('div', null, 'broken'));",
+        ],
+        path: '$.defaultReactArrayPatternDefaultArrayCarrierAlias.code',
+      },
+      {
+        code: [
+          'const { view: { default: React } = ctx.React } = {};',
+          "ctx.render(React.createElement('div', null, 'broken'));",
+        ],
+        path: '$.defaultReactNestedObjectPatternNamespaceDefaultAlias.code',
+      },
+      {
+        code: [
           'const c = ctx;',
           'const React = c.React.default;',
           "ctx.render(React.createElement('div', null, 'broken'));",
@@ -4316,6 +4473,31 @@ ctx.render(React.createElement(DashboardKPIs));
           "ctx.render(React.createElement('div', null, 'not-an-authoring-default-alias'));",
         ],
         path: '$.defaultReactCallbackDefaultAssignmentNotPropagated.code',
+      },
+      {
+        code: [
+          'const React = ctx.React;',
+          "ctx.render(React.createElement('div', null, 'allowed-runtime-namespace'));",
+        ],
+        path: '$.defaultReactRuntimeNamespaceAllowed.code',
+      },
+      {
+        code: [
+          'const box = { ns: ctx.React.default };',
+          'box.ns = ctx.React;',
+          'const React = box.ns;',
+          "ctx.render(React.createElement('div', null, 'allowed-reassigned-runtime-namespace'));",
+        ],
+        path: '$.defaultReactObjectCarrierMemberReassignedToNamespaceAllowed.code',
+      },
+      {
+        code: [
+          'const arr = [ctx.React.default];',
+          'arr[0] = ctx.React;',
+          'const React = arr[0];',
+          "ctx.render(React.createElement('div', null, 'allowed-reassigned-runtime-namespace'));",
+        ],
+        path: '$.defaultReactArrayCarrierMemberReassignedToNamespaceAllowed.code',
       },
     ].forEach(({ code, path }) => {
       const errors = inspectRunJsAuthoringCode({
