@@ -17,7 +17,7 @@ export const dateTimeFormat = defineAction({
   name: 'dateDisplayFormat',
   uiSchema: (ctx) => {
     const { collectionField } = ctx.model.context as any;
-    const type = collectionField.type;
+    const isTimeField = collectionField.type === 'time' || collectionField.interface === 'time';
     const timeFormatField = {
       type: 'string',
       title: '{{t("Time format")}}',
@@ -41,7 +41,7 @@ export const dateTimeFormat = defineAction({
       ],
       'x-reactions': [
         (field) => {
-          if (type !== 'time') {
+          if (!isTimeField) {
             const { showTime, picker } = field.form.values || {};
             field.hidden = !showTime || picker !== 'date';
           }
@@ -49,7 +49,7 @@ export const dateTimeFormat = defineAction({
       ],
     };
 
-    if (type === 'time') {
+    if (isTimeField) {
       return {
         timeFormat: timeFormatField,
       };
@@ -159,24 +159,28 @@ export const dateTimeFormat = defineAction({
     };
   },
   defaultParams: (ctx: any) => {
-    const { showTime, dateFormat, timeFormat, picker }: any = {
+    const { showTime, dateFormat, format, timeFormat, picker }: any = {
       ...ctx.model.context.collectionField.getComponentProps(),
       ...ctx.model.props,
     };
+    const collectionField = ctx.model.context.collectionField;
+    const isTimeField = collectionField.type === 'time' || collectionField.interface === 'time';
     return {
       picker: picker || 'date',
       dateFormat: dateFormat || 'YYYY-MM-DD',
-      timeFormat: timeFormat || 'HH:mm:ss',
+      timeFormat: timeFormat || (isTimeField ? format : undefined) || 'HH:mm:ss',
       showTime,
     };
   },
   handler(ctx: any, params) {
     const { collectionField } = ctx.model.context as any;
-    const type = collectionField.type;
-    if (type === 'time') {
+    const isTimeField = collectionField.type === 'time' || collectionField.interface === 'time';
+    if (isTimeField) {
+      const timeFormat = params?.timeFormat || params?.format || 'HH:mm:ss';
       ctx.model.setProps({
         ...params,
-        format: params?.timeFormat,
+        timeFormat,
+        format: timeFormat,
       });
     } else {
       ctx.model.setProps({
