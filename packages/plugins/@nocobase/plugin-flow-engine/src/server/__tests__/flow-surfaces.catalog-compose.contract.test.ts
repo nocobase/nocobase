@@ -7241,7 +7241,7 @@ describe('flowSurfaces catalog + compose contract', () => {
       status: 400,
       type: 'bad_request',
     });
-    expect(addFieldsData.fields[1].error.message).toContain('settings invalid');
+    expect(addFieldsData.fields[1].error.message).toContain('does not support: badSetting');
     expect(addFieldsData.fields[1].error.message).toContain('supported configureOptions');
 
     const fieldReadback = await getSurface(rootAgent, {
@@ -7497,7 +7497,7 @@ describe('flowSurfaces catalog + compose contract', () => {
       },
     });
     expect(addFieldRawUnknownRes.status).toBe(400);
-    expect(readErrorMessage(addFieldRawUnknownRes)).toContain('settings invalid');
+    expect(readErrorMessage(addFieldRawUnknownRes)).toContain('does not support: badSetting');
     expect(readErrorMessage(addFieldRawUnknownRes)).toContain('supported configureOptions');
   });
 

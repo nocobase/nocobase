@@ -6225,6 +6225,125 @@ describe('flowSurfaces applyBlueprint contract', () => {
     expect(readNodeActionUses(roleEditForm)).toContain('FormSubmitActionModel');
   });
 
+  it('should auto-complete clickable field and relation field popups in applyBlueprint', async () => {
+    const { sourceCollection, targetCollection } = await createPopupRelationTestFixture('bp_click_popups');
+    const executeRes = await rootAgent.resource('flowSurfaces').applyBlueprint({
+      values: {
+        version: '1',
+        mode: 'create',
+        navigation: {
+          item: {
+            title: `Clickable field popup page ${Date.now()}`,
+          },
+        },
+        tabs: [
+          {
+            title: 'Users',
+            blocks: [
+              {
+                type: 'table',
+                collection: sourceCollection,
+                fields: [
+                  {
+                    field: 'username',
+                    settings: {
+                      clickToOpen: true,
+                    },
+                  },
+                  {
+                    field: 'nickname',
+                    popup: {},
+                  },
+                  {
+                    field: 'roles',
+                    label: 'Roles',
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+        defaults: {
+          collections: {
+            [sourceCollection]: {
+              popups: {
+                view: {
+                  name: 'Generated user details',
+                  description: 'View one generated user record.',
+                },
+                associations: {
+                  roles: {
+                    view: {
+                      name: 'Generated role details',
+                      description: 'View one generated role record.',
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+
+    expect(executeRes.status, readErrorMessage(executeRes)).toBe(200);
+    const data = getData(executeRes);
+    const table = collectDescendantNodes(data.surface.tree, (item) => item?.use === 'TableBlockModel')[0];
+    const tableReadback = await getSurface(rootAgent, {
+      uid: table.uid,
+    });
+    const findClickableField = (fieldPath: string) => {
+      const fieldNodes = collectDescendantNodes(
+        tableReadback.tree,
+        (item) => item?.stepParams?.fieldSettings?.init?.fieldPath === fieldPath,
+      );
+      return (
+        fieldNodes.find(
+          (item) =>
+            item?.props?.clickToOpen === true ||
+            !!item?.popup?.template?.uid ||
+            !!item?.subModels?.page?.uid ||
+            !!item?.stepParams?.popupSettings?.openView,
+        ) || fieldNodes[fieldNodes.length - 1]
+      );
+    };
+
+    const usernameField = findClickableField('username');
+    const nicknameField = findClickableField('nickname');
+    const rolesField = findClickableField('roles');
+    expect(usernameField?.props?.clickToOpen).toBe(true);
+    expect(nicknameField?.props?.clickToOpen).toBe(true);
+    expect(rolesField?.props?.clickToOpen).toBe(true);
+
+    const usernamePopup = await readPrimaryPopupBlockFromField(usernameField.uid);
+    expect(usernamePopup.popupBlock?.use).toBe('DetailsBlockModel');
+    expect(collectFieldPaths(usernamePopup.popupBlock).length).toBeGreaterThan(0);
+
+    const nicknamePopup = await readPrimaryPopupBlockFromField(nicknameField.uid);
+    expect(nicknamePopup.popupBlock?.use).toBe('DetailsBlockModel');
+    expect(collectFieldPaths(nicknamePopup.popupBlock).length).toBeGreaterThan(0);
+
+    const rolesPopup = await readPrimaryPopupBlockFromField(rolesField.uid);
+    expect(rolesPopup.popupBlock?.use).toBe('DetailsBlockModel');
+    expect(collectFieldPaths(rolesPopup.popupBlock)).toEqual(
+      expect.arrayContaining(POPUP_RELATION_TARGET_TITLE_FIELDS),
+    );
+    const roleFieldReadback = await getSurface(rootAgent, {
+      uid: rolesField.uid,
+    });
+    if (roleFieldReadback.tree?.popup?.template?.uid) {
+      const roleTemplate = getData(
+        await rootAgent.resource('flowSurfaces').getTemplate({
+          values: {
+            uid: roleFieldReadback.tree.popup.template.uid,
+          },
+        }),
+      );
+      expect(roleTemplate.collectionName).toBe(targetCollection);
+      expect(roleTemplate.name).toBe('Generated role details');
+    }
+  });
+
   it('should allow custom edit popups with one inherited editForm plus sibling blocks', async () => {
     const { sourceCollection, targetCollection, associationName } =
       await createPopupRelationTestFixture('bp_inherited_edit');

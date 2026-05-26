@@ -9202,12 +9202,16 @@ export class FlowSurfacesService {
     if (inlinePopup && !this.isPopupFieldHostUse(boundFieldCapability.fieldUse)) {
       throwBadRequest(`flowSurfaces addField field '${boundFieldCapability.fieldUse}' does not support popup`);
     }
+    const inlineSettingsOpenView = this.peekInlineFieldSettingsOpenView(
+      inlineSettings,
+      boundFieldCapability.wrapperUse,
+    );
     if (
       values.__autoPopupForRelationField === true &&
       !inlinePopup &&
       this.isPopupFieldHostUse(boundFieldCapability.fieldUse) &&
       (isAssociationField(resolvedField.field) || !!normalizedFieldBinding.associationPathName) &&
-      !this.peekInlineFieldSettingsOpenView(inlineSettings, boundFieldCapability.wrapperUse)
+      !inlineSettingsOpenView
     ) {
       const popupDefaultsMetadata = values[FLOW_SURFACE_APPLY_BLUEPRINT_POPUP_DEFAULTS_KEY];
       inlinePopup = this.normalizeInlinePopup('addField', {
@@ -9220,12 +9224,27 @@ export class FlowSurfacesService {
           : {}),
       });
     }
+    const hasExternalInlineSettingsOpenView = this.isExternalPopupOpenView(inlineSettingsOpenView);
     if (
-      inlinePopup &&
-      this.isExternalPopupOpenView(
-        this.peekInlineFieldSettingsOpenView(inlineSettings, boundFieldCapability.wrapperUse),
-      )
+      !inlinePopup &&
+      this.isPopupFieldHostUse(boundFieldCapability.fieldUse) &&
+      !hasExternalInlineSettingsOpenView &&
+      (this.isInlineFieldClickToOpenEnabled(inlineSettings, boundFieldCapability.wrapperUse) ||
+        _.isPlainObject(inlineSettingsOpenView))
     ) {
+      const popupDefaultsMetadata = values[FLOW_SURFACE_APPLY_BLUEPRINT_POPUP_DEFAULTS_KEY];
+      inlinePopup = this.normalizeInlinePopup('addField', {
+        tryTemplate: true,
+        defaultType: 'view',
+        ...(_.isPlainObject(inlineSettingsOpenView) ? { openView: _.cloneDeep(inlineSettingsOpenView) } : {}),
+        ...(popupDefaultsMetadata
+          ? {
+              [FLOW_SURFACE_APPLY_BLUEPRINT_POPUP_DEFAULTS_KEY]: popupDefaultsMetadata,
+            }
+          : {}),
+      });
+    }
+    if (inlinePopup && hasExternalInlineSettingsOpenView) {
       throwBadRequest(`flowSurfaces addField popup cannot be combined with external openView.uid`);
     }
     const defaultFieldState = buildDefaultFieldState(
@@ -10759,6 +10778,18 @@ export class FlowSurfacesService {
     return fieldChanges.openView;
   }
 
+  private isInlineFieldClickToOpenEnabled(settings: Record<string, any> | undefined, wrapperUse?: string) {
+    if (!settings || !Object.keys(settings).length) {
+      return false;
+    }
+    const { fieldChanges } = splitComposeFieldChanges(settings, wrapperUse);
+    if (!Object.prototype.hasOwnProperty.call(fieldChanges, 'clickToOpen')) {
+      return false;
+    }
+    const value = fieldChanges.clickToOpen;
+    return value === true || (_.isPlainObject(value) && value.clickToOpen === true);
+  }
+
   private async assertOpenViewUidTarget(actionName: string, uid: string, options: { transaction?: any } = {}) {
     const targetNode = await this.repository.findModelById(uid, {
       transaction: options.transaction,
@@ -12284,6 +12315,21 @@ export class FlowSurfacesService {
     return _.isPlainObject(popup) && Object.keys(popup).length === 0;
   }
 
+  private isInlineFieldPopupDefaultShell(popup: Record<string, any> | undefined) {
+    if (!_.isPlainObject(popup)) {
+      return false;
+    }
+    const shellOnlyKeys = new Set([
+      'title',
+      'mode',
+      'openView',
+      'tryTemplate',
+      'defaultType',
+      FLOW_SURFACE_APPLY_BLUEPRINT_POPUP_DEFAULTS_KEY,
+    ]);
+    return Object.keys(popup).every((key) => shellOnlyKeys.has(key));
+  }
+
   private shouldAutoCompleteDefaultFieldPopup(
     fieldNode: any,
     popup: Record<string, any> | undefined,
@@ -12306,7 +12352,9 @@ export class FlowSurfacesService {
     if (!String(fieldContext.collectionName || '').trim()) {
       return false;
     }
-    return popup.tryTemplate === true || !_.isUndefined(popup.defaultType) || Object.keys(popup).length === 0;
+    return (
+      popup.tryTemplate === true || !_.isUndefined(popup.defaultType) || this.isInlineFieldPopupDefaultShell(popup)
+    );
   }
 
   private isInlineFieldPopupBlockMissingResource(block: any) {

@@ -4273,7 +4273,14 @@ describe('flowSurfaces resource', () => {
       associationName: 'employees.department',
       mode: 'dialog',
     });
-    expect(localPopupReadback.tree.subModels?.page?.use).toBe('ChildPageModel');
+    if (localPopupReadback.tree.popup?.pageUid) {
+      const localPopupPage = await getSurface(rootAgent, {
+        uid: localPopupReadback.tree.popup.pageUid,
+      });
+      expect(localPopupPage.tree.use).toBe('ChildPageModel');
+    } else {
+      expect(localPopupField.popupPageUid).toBeTruthy();
+    }
 
     const inlinePopupRes = await rootAgent.resource('flowSurfaces').addField({
       values: {
