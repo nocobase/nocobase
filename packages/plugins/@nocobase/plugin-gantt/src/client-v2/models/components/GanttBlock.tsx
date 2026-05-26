@@ -213,7 +213,7 @@ export const GanttBlock = observer(
 
     useEffect(() => {
       setTasks(model.getTasks());
-    }, [model, model.resource.loading, resourceData, fieldNamesProp, dragEnabled]);
+    }, [model, resourceData, fieldNamesProp, dragEnabled]);
 
     useEffect(() => {
       return () => {
