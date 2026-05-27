@@ -23,6 +23,7 @@ type UpgradeParsedFlags = {
   yes: boolean;
   verbose: boolean;
   'skip-download': boolean;
+  'skip-code-update'?: boolean;
   version?: string;
 };
 
@@ -111,6 +112,10 @@ function buildManagedActionArgv(
   return argv;
 }
 
+function shouldSkipDownload(flags: UpgradeParsedFlags): boolean {
+  return Boolean(flags['skip-download'] || flags['skip-code-update']);
+}
+
 function buildLicenseSyncArgv(envName: string, flags: UpgradeParsedFlags, options?: { version?: string }): string[] {
   const argv = ['--env', envName, '--yes', '--skip-if-no-license'];
   if (flags.verbose) {
@@ -195,6 +200,12 @@ export default class AppUpgrade extends Command {
       description: 'Restart with the saved local source or Docker image without downloading updates first',
       required: false,
     }),
+    'skip-code-update': Flags.boolean({
+      hidden: true,
+      deprecated: true,
+      description: 'Deprecated alias for --skip-download',
+      required: false,
+    }),
     version: Flags.string({
       description:
         'Override the saved downloadVersion for this upgrade. When the upgrade succeeds, the new version is saved back to the env config.',
@@ -224,7 +235,7 @@ export default class AppUpgrade extends Command {
       return {};
     }
 
-    if (flags['skip-download']) {
+    if (shouldSkipDownload(flags)) {
       return {
         persistDownloadVersion: requestedVersion || undefined,
       };
@@ -372,13 +383,14 @@ export default class AppUpgrade extends Command {
 
     try {
       const resolvedVersion = AppUpgrade.resolveUpgradeVersion(runtime, parsed);
+      const skipDownload = shouldSkipDownload(parsed);
       const runCommand = this.config.runCommand.bind(this.config) as (id: string, argv?: string[]) => Promise<unknown>;
 
       await runWithSuppressedTargetEnvLog(async () => {
         await runCommand('app:stop', buildManagedActionArgv(runtime.envName, parsed));
       });
 
-      if (parsed['skip-download']) {
+      if (skipDownload) {
         printInfo(`Skipping source download for "${runtime.envName}" (--skip-download).`);
         printInfo(`Skipping commercial plugin sync for "${runtime.envName}" (--skip-download).`);
       } else if (runtime.kind === 'local' && runtime.source === 'local') {
@@ -422,7 +434,7 @@ export default class AppUpgrade extends Command {
         }
       }
 
-      if (!parsed['skip-download']) {
+      if (!skipDownload) {
         await runWithSuppressedTargetEnvLog(async () => {
           await runCommand(
             'license:plugins:sync',

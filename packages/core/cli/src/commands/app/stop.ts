@@ -14,15 +14,27 @@ import {
   resolveManagedAppRuntime,
   runLocalNocoBaseCommand,
 } from '../../lib/app-runtime.js';
-import { commandSucceeds, run } from '../../lib/run-npm.js';
+import { commandOutput, run } from '../../lib/run-npm.js';
 import { announceTargetEnv, failTask, startTask, succeedTask } from '../../lib/ui.js';
+
+function isMissingDockerContainerError(error: unknown): boolean {
+  const message = error instanceof Error ? error.message : String(error);
+  return /No such (container|object)/i.test(message);
+}
 
 async function removeDockerContainerIfExists(
   containerName: string,
   options?: { stdio?: 'inherit' | 'pipe' | 'ignore' },
 ) {
-  if (!(await commandSucceeds('docker', ['container', 'inspect', containerName]))) {
-    return 'missing' as const;
+  try {
+    await commandOutput('docker', ['container', 'inspect', containerName], {
+      errorName: 'docker container inspect',
+    });
+  } catch (error) {
+    if (isMissingDockerContainerError(error)) {
+      return 'missing' as const;
+    }
+    throw error;
   }
 
   await run('docker', ['rm', '-f', containerName], {

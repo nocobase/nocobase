@@ -1955,6 +1955,34 @@ test('license plugins sync can skip cleanly when no saved license key exists', a
   }
 });
 
+test('loadSavedLicenseKeyData throws a dedicated error when no saved license key exists', async () => {
+  const { MissingSavedLicenseKeyError, loadSavedLicenseKeyData } = await import(
+    '../commands/license/plugins/shared.js'
+  );
+  const storagePath = await mkdtemp(path.join(os.tmpdir(), 'nocobase-cli-license-'));
+
+  try {
+    await expect(
+      loadSavedLicenseKeyData({
+        kind: 'local',
+        envName: 'app1',
+        source: 'npm',
+        projectRoot: path.join(storagePath, 'app'),
+        workspaceName: 'nb-demo',
+        env: {
+          config: {},
+          storagePath,
+          envVars: {
+            STORAGE_PATH: storagePath,
+          },
+        },
+      }),
+    ).rejects.toBeInstanceOf(MissingSavedLicenseKeyError);
+  } finally {
+    await rm(storagePath, { recursive: true, force: true });
+  }
+});
+
 test('license plugins sync still throws other license errors when skip-if-no-license is set', async () => {
   const { default: LicensePluginsSync } = await import('../commands/license/plugins/sync.js');
   const storagePath = await mkdtemp(path.join(os.tmpdir(), 'nocobase-cli-license-'));

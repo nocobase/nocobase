@@ -22,7 +22,7 @@ import {
   readSavedLicenseKey,
   requireLicenseRuntime,
 } from '../shared.js';
-import { syncLicensedPlugins } from './shared.js';
+import { MissingSavedLicenseKeyError, syncLicensedPlugins } from './shared.js';
 import { resolvePluginStoragePath } from '../../../lib/plugin-storage.js';
 import { commandOutput } from '../../../lib/run-npm.js';
 import { announceTargetEnv, startTask, stopTask, succeedTask, updateTask } from '../../../lib/ui.js';
@@ -143,11 +143,6 @@ async function resolveManagedAppVersion(runtime: ManagedAppRuntime): Promise<str
     return await resolveDockerAppVersion(runtime);
   }
   throw new Error(`Env "${runtime.envName}" does not support automatic app version detection.`);
-}
-
-function isMissingSavedLicenseKeyError(error: unknown): boolean {
-  const message = error instanceof Error ? error.message : String(error);
-  return message.includes('No saved license key was found for env');
 }
 
 function buildNoLicenseSkipPayload(runtime: ManagedAppRuntime, dryRun: boolean) {
@@ -285,7 +280,7 @@ export default class LicensePluginsSync extends Command {
             : undefined,
         });
       } catch (error) {
-        if (flags['skip-if-no-license'] && isMissingSavedLicenseKeyError(error)) {
+        if (flags['skip-if-no-license'] && error instanceof MissingSavedLicenseKeyError) {
           const payload = buildNoLicenseSkipPayload(runtime, Boolean(flags['dry-run']));
           if (flags.json) {
             this.log(JSON.stringify(payload, null, 2));
