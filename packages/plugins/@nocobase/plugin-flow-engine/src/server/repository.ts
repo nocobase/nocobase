@@ -33,6 +33,19 @@ export interface FlowModelAttachOptions {
   position?: FlowModelAttachPosition;
 }
 
+type FlowModelMovePosition = 'before' | 'after';
+
+interface FlowModelMoveOptions {
+  sourceId: string;
+  targetId: string;
+  position?: FlowModelMovePosition;
+}
+
+interface SiblingInfo {
+  parentUid: string;
+  type: string;
+}
+
 type BreakRemoveOnType = {
   [key: string]: any;
 };
@@ -238,6 +251,19 @@ export class FlowModelRepository extends Repository {
 
   static optionsToJson(options: any) {
     return lodash.isPlainObject(options) ? options : JSON.parse(options);
+  }
+
+  private static getStableSortValue(value: unknown, fallbackIndex: number) {
+    if (typeof value === 'number' && Number.isFinite(value)) {
+      return value;
+    }
+    if (typeof value === 'string' && value.trim()) {
+      const parsed = Number(value);
+      if (Number.isFinite(parsed)) {
+        return parsed;
+      }
+    }
+    return fallbackIndex + 1;
   }
 
   nodesToSchema(nodes, rootUid) {
@@ -1112,6 +1138,79 @@ WHERE TreeTable.depth = 1 AND  TreeTable.ancestor = :ancestor and TreeTable.sort
     return parent ? (parent.get('ancestor') as string) : null;
   }
 
+  private async findSiblingInfo(uid: string, transaction?: Transaction): Promise<SiblingInfo | null> {
+    const rows = (await this.database.sequelize.query(
+      this.sqlAdapter(`SELECT ParentPath.ancestor as parent, NodeInfo.type as type
+        FROM ${this.flowModelTreePathTableName} as ParentPath
+        LEFT JOIN ${this.flowModelTreePathTableName} as NodeInfo
+          ON NodeInfo.ancestor = ParentPath.descendant
+          AND NodeInfo.descendant = ParentPath.descendant
+          AND NodeInfo.depth = 0
+        WHERE ParentPath.descendant = :uid AND ParentPath.depth = 1`),
+      {
+        type: 'SELECT',
+        replacements: { uid },
+        transaction,
+      },
+    )) as Array<{ parent?: string; type?: string }>;
+
+    const row = rows[0];
+    if (!row?.parent || !row?.type) {
+      return null;
+    }
+    return {
+      parentUid: row.parent,
+      type: row.type,
+    };
+  }
+
+  private async normalizeSiblingSorts(parentUid: string, type: string, transaction?: Transaction) {
+    const treeTable = this.flowModelTreePathTableName;
+    const rows = (await this.database.sequelize.query(
+      this.sqlAdapter(`SELECT ChildPath.descendant as uid, ChildPath.sort as sort
+        FROM ${treeTable} as ChildPath
+        LEFT JOIN ${treeTable} as NodeInfo
+          ON NodeInfo.ancestor = ChildPath.descendant
+          AND NodeInfo.descendant = ChildPath.descendant
+          AND NodeInfo.depth = 0
+        WHERE ChildPath.ancestor = :parentUid
+          AND ChildPath.depth = 1
+          AND NodeInfo.type = :type`),
+      {
+        type: 'SELECT',
+        replacements: { parentUid, type },
+        transaction,
+      },
+    )) as Array<{ uid: string; sort: number | string | null }>;
+
+    const sortedRows = rows
+      .map((row, index) => ({
+        uid: row.uid,
+        index,
+        sort: FlowModelRepository.getStableSortValue(row.sort, index),
+      }))
+      .sort((a, b) => a.sort - b.sort || a.index - b.index);
+
+    for (const [index, row] of sortedRows.entries()) {
+      await this.database.sequelize.query(
+        this.sqlAdapter(
+          `UPDATE ${treeTable} SET sort = :sort WHERE ancestor = :parentUid AND descendant = :uid AND depth = 1`,
+        ),
+        {
+          type: 'UPDATE',
+          replacements: {
+            parentUid,
+            uid: row.uid,
+            sort: index + 1,
+          },
+          transaction,
+        },
+      );
+    }
+
+    await this.clearXUidPathCache(parentUid, transaction);
+  }
+
   protected async findNodeSchemaWithParent(uid, transaction) {
     const schema = await this.database.getRepository('flowModels').findOne({
       filter: {
@@ -1482,7 +1581,17 @@ WHERE TreeTable.depth = 1 AND  TreeTable.ancestor = :ancestor and TreeTable.sort
     // 5. 对数组类型的 subModels 排序
     for (const key in subModels) {
       if (Array.isArray(subModels[key])) {
-        subModels[key].sort((a, b) => (a.sortIndex ?? 0) - (b.sortIndex ?? 0));
+        subModels[key] = subModels[key]
+          .map((item, index) => ({
+            item,
+            index,
+            sortIndex: FlowModelRepository.getStableSortValue(item.sortIndex, index),
+          }))
+          .sort((a, b) => a.sortIndex - b.sortIndex || a.index - b.index)
+          .map(({ item, sortIndex }) => {
+            item.sortIndex = sortIndex;
+            return item;
+          });
       }
     }
 
@@ -1748,11 +1857,45 @@ WHERE TreeTable.depth = 1 AND  TreeTable.ancestor = :ancestor and TreeTable.sort
     return await this.findModelById(modelUid, { transaction, includeAsyncNode: true });
   }
 
-  async move(options) {
+  @transaction()
+  async move(options: FlowModelMoveOptions, transactionOptions?: Transactionable) {
     const { sourceId, targetId, position } = options;
-    return await this.insertAdjacent(position === 'after' ? 'afterEnd' : 'beforeBegin', targetId, {
-      ['uid']: sourceId,
-    });
+    const sourceUid = String(sourceId || '').trim();
+    const targetUid = String(targetId || '').trim();
+    if (!sourceUid || !targetUid) {
+      throw new Error('flowModels:move missing required params');
+    }
+    const transaction = transactionOptions?.transaction;
+    if (sourceUid === targetUid) {
+      const sourceInfo = await this.findSiblingInfo(sourceUid, transaction);
+      if (sourceInfo) {
+        await this.normalizeSiblingSorts(sourceInfo.parentUid, sourceInfo.type, transaction);
+      }
+      return null;
+    }
+
+    const sourceInfo = await this.findSiblingInfo(sourceUid, transaction);
+    const targetInfo = await this.findSiblingInfo(targetUid, transaction);
+    if (!sourceInfo || !targetInfo) {
+      throw new Error('flowModels:move source or target is not attached to a parent');
+    }
+    if (sourceInfo.parentUid !== targetInfo.parentUid || sourceInfo.type !== targetInfo.type) {
+      throw new Error('flowModels:move source and target must be sibling nodes under the same parent/subKey');
+    }
+
+    await this.normalizeSiblingSorts(sourceInfo.parentUid, sourceInfo.type, transaction);
+    await this.insertAdjacent(
+      position === 'after' ? 'afterEnd' : 'beforeBegin',
+      targetUid,
+      {
+        uid: sourceUid,
+      },
+      {
+        transaction,
+      },
+    );
+    await this.normalizeSiblingSorts(sourceInfo.parentUid, sourceInfo.type, transaction);
+    return await this.findModelById(sourceUid, { transaction });
   }
 }
 
