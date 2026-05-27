@@ -10,7 +10,7 @@
 import { FlowEngine, FlowModel, FlowModelRenderer, isInheritedFrom, useFlowEngine } from '@nocobase/flow-engine';
 import type { ModelConstructor } from '@nocobase/flow-engine';
 import { useRequest } from 'ahooks';
-import React, { useEffect, useMemo } from 'react';
+import React, { useEffect, useMemo, useRef } from 'react';
 import { useLocation, useMatches } from 'react-router-dom';
 import { SkeletonFallback } from '../flow/components/SkeletonFallback';
 import { useApp } from '../hooks/useApp';
@@ -20,6 +20,8 @@ import type { LayoutDefinition } from './types';
 export interface LayoutRouteProps {
   layoutRouteName: string;
 }
+
+const getRefCurrent = <T,>(ref: React.MutableRefObject<T>) => ref.current;
 
 function isBaseLayoutModelClass(ModelClass: ModelConstructor) {
   return ModelClass === BaseLayoutModel || isInheritedFrom(ModelClass, BaseLayoutModel as ModelConstructor);
@@ -59,16 +61,21 @@ export const LayoutRoute = (props: LayoutRouteProps) => {
   const lastMatch = matches[matches.length - 1];
   const layoutMatch = matches.find((match) => match.id === layout.routeName);
   const lastMatchParamsSignature = JSON.stringify(lastMatch?.params || {});
+  const lastMatchParams = useMemo(
+    () => JSON.parse(lastMatchParamsSignature) as Record<string, string | undefined>,
+    [lastMatchParamsSignature],
+  );
+  const syncVersionRef = useRef(0);
   const routeLike = useMemo(() => {
     return {
       id: lastMatch?.id,
       name: lastMatch?.id,
       pathname: location.pathname,
-      params: (lastMatch?.params || {}) as Record<string, string | undefined>,
+      params: lastMatchParams,
       layoutRouteName: layout.routeName,
       layoutBasePathname: layoutMatch?.pathname,
     };
-  }, [lastMatch?.id, lastMatchParamsSignature, layout.routeName, layoutMatch?.pathname, location.pathname]);
+  }, [lastMatch?.id, lastMatchParams, layout.routeName, layoutMatch?.pathname, location.pathname]);
   const { loading, data, error } = useRequest(
     async () => {
       const existingModel = flowEngine.getModel<BaseLayoutModel>(layout.uid);
@@ -101,9 +108,19 @@ export const LayoutRoute = (props: LayoutRouteProps) => {
       return;
     }
 
+    const syncVersion = ++syncVersionRef.current;
     data.syncLayoutRoute(routeLike);
     return () => {
-      data.clearLayoutRoute(routeLike);
+      Promise.resolve()
+        .then(() => {
+          if (getRefCurrent(syncVersionRef) !== syncVersion) {
+            return;
+          }
+          data.clearLayoutRoute(routeLike);
+        })
+        .catch(() => {
+          // ignore
+        });
     };
   }, [data, routeLike]);
 

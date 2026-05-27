@@ -167,12 +167,103 @@ describe('LayoutRoute', () => {
     expect(await screen.findByTestId('layout-page-uid')).toHaveTextContent('form-1');
     expect(await screen.findByTestId('layout-child-outlet')).toHaveTextContent('child page');
   });
+
+  it('keeps local layout route while parent layout route switches within the same page view stack', async () => {
+    const clearEvents: Array<{ routePathname?: string; before: string | null; after: string | null }> = [];
+
+    class TrackingLayoutModel extends TestLayoutModel {
+      clearLayoutRoute(routeLike?: Parameters<BaseLayoutModel['clearLayoutRoute']>[0]) {
+        const event: { routePathname?: string; before: string | null; after: string | null } = {
+          routePathname: routeLike?.pathname,
+          before: this.currentLayoutRoute?.pathname || null,
+          after: null,
+        };
+        super.clearLayoutRoute(routeLike);
+        event.after = this.currentLayoutRoute?.pathname || null;
+        clearEvents.push(event);
+      }
+    }
+
+    const engine = new FlowEngine();
+    engine.registerModels({ TrackingLayoutModel });
+    const trackingLayout: LayoutDefinition = {
+      ...layout,
+      layoutModelClass: 'TrackingLayoutModel',
+    };
+    engine.context.defineProperty('app', {
+      value: {
+        layoutManager: {
+          getLayout: () => trackingLayout,
+        },
+      },
+    });
+    const router = createMemoryRouter(
+      [
+        {
+          id: layout.routeName,
+          path: layout.routePath,
+          element: <LayoutRoute layoutRouteName={layout.routeName} />,
+          children: [
+            {
+              id: getLayoutPageRouteName(layout.routeName),
+              path: ':name',
+              element: <div data-testid="page-route">page</div>,
+            },
+            {
+              id: getLayoutPageViewRouteName(layout.routeName),
+              path: ':name/view/*',
+              element: <div data-testid="page-view-route">page view</div>,
+            },
+          ],
+        },
+      ],
+      {
+        initialEntries: ['/test/page-1'],
+      },
+    );
+
+    render(
+      <FlowEngineProvider engine={engine}>
+        <RouterProvider router={router} />
+      </FlowEngineProvider>,
+    );
+
+    const model = await waitFor(() => {
+      const layoutModel = engine.getModel<TrackingLayoutModel>(layout.uid);
+      expect(layoutModel?.currentLayoutRoute).toMatchObject({
+        type: 'page',
+        pageUid: 'page-1',
+        pathname: '/test/page-1',
+      });
+      return layoutModel as TrackingLayoutModel;
+    });
+
+    await router.navigate('/test/page-1/view/popup');
+
+    await waitFor(() => {
+      expect(model.currentLayoutRoute).toMatchObject({
+        type: 'page',
+        pageUid: 'page-1',
+        pathname: '/test/page-1/view/popup',
+      });
+    });
+
+    expect(clearEvents).not.toContainEqual({
+      routePathname: '/test/page-1',
+      before: '/test/page-1',
+      after: null,
+    });
+  });
 });
 
 describe('LayoutContentRoute', () => {
-  function setup(initialEntry: string, currentLayout: LayoutDefinition = layout) {
+  function setup(
+    initialEntry: string,
+    currentLayout: LayoutDefinition = layout,
+    ModelClass: typeof TestLayoutModel = TestLayoutModel,
+  ) {
     const engine = new FlowEngine();
-    engine.registerModels({ TestLayoutModel });
+    engine.registerModels({ TestLayoutModel, [ModelClass.name]: ModelClass });
     engine.context.defineProperty('routeRepository', {
       value: {
         refreshAccessible: () => Promise.resolve(),
@@ -194,7 +285,7 @@ describe('LayoutContentRoute', () => {
     });
     const model = engine.createModel<TestLayoutModel>({
       uid: layout.uid,
-      use: TestLayoutModel,
+      use: ModelClass,
       props: {
         layout: currentLayout,
       },
@@ -334,6 +425,49 @@ describe('LayoutContentRoute', () => {
 
     await waitFor(() => {
       expect(model.currentLayoutRoute).toBeNull();
+    });
+  });
+
+  it('does not clear local layout route while switching within the same page view stack', async () => {
+    const clearEvents: Array<{ routePathname?: string; before: string | null; after: string | null }> = [];
+
+    class TrackingLayoutModel extends TestLayoutModel {
+      clearLayoutRoute(routeLike?: Parameters<BaseLayoutModel['clearLayoutRoute']>[0]) {
+        const event: { routePathname?: string; before: string | null; after: string | null } = {
+          routePathname: routeLike?.pathname,
+          before: this.currentLayoutRoute?.pathname || null,
+          after: null,
+        };
+        super.clearLayoutRoute(routeLike);
+        event.after = this.currentLayoutRoute?.pathname || null;
+        clearEvents.push(event);
+      }
+    }
+
+    const { model, router } = setup('/test/page-1', layout, TrackingLayoutModel);
+
+    await waitFor(() => {
+      expect(model.currentLayoutRoute).toMatchObject({
+        type: 'page',
+        pageUid: 'page-1',
+        pathname: '/test/page-1',
+      });
+    });
+
+    await router.navigate('/test/page-1/view/popup');
+
+    await waitFor(() => {
+      expect(model.currentLayoutRoute).toMatchObject({
+        type: 'page',
+        pageUid: 'page-1',
+        pathname: '/test/page-1/view/popup',
+      });
+    });
+
+    expect(clearEvents).not.toContainEqual({
+      routePathname: '/test/page-1',
+      before: '/test/page-1',
+      after: null,
     });
   });
 });
