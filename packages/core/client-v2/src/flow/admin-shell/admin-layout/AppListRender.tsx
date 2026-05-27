@@ -35,8 +35,8 @@ export function useAppListRender() {
           <ul
             className={css`
               display: grid;
-              grid-template-columns: repeat(${columnCount}, 280px);
-              gap: ${token.marginXS}px;
+              grid-template-columns: repeat(${columnCount}, 260px);
+              gap: ${token.marginXXS}px;
               margin: 0;
               padding: 0;
               list-style: none;
@@ -46,8 +46,8 @@ export function useAppListRender() {
               <li
                 key={`${app.url || ''}-${index}`}
                 className={css`
-                  width: 280px;
-                  height: 64px;
+                  width: 260px;
+                  height: 56px;
                   list-style: none;
                 `}
               >
@@ -85,10 +85,10 @@ export function useAppListRender() {
 
                       .ant-card-body {
                         height: 100%;
-                        padding: ${token.paddingSM}px;
+                        padding: ${token.paddingXS}px;
                         display: flex;
                         align-items: center;
-                        gap: ${token.marginSM}px;
+                        gap: ${token.marginXS}px;
                       }
                     `}
                     styles={{
@@ -101,14 +101,14 @@ export function useAppListRender() {
                       className={css`
                         display: inline-flex;
                         flex: 0 0 auto;
-                        width: 36px;
-                        height: 36px;
+                        width: 32px;
+                        height: 32px;
                         align-items: center;
                         justify-content: center;
 
                         img {
-                          max-width: 36px;
-                          max-height: 36px;
+                          max-width: 32px;
+                          max-height: 32px;
                         }
                       `}
                     >

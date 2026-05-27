@@ -72,7 +72,11 @@ export type AppModelOptions = {
 
 export type AppModel = {
   name: string;
+  title?: string;
+  icon?: string;
   cname?: string;
+  sort?: number;
+  pinned?: boolean;
   environment?: string;
   environments?: string[];
   options: AppModelOptions;
