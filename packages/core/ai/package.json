@@ -8,8 +8,8 @@
   "dependencies": {
     "@langchain/anthropic": "^1.3.17",
     "@langchain/classic": "^1.0.21",
-    "@langchain/community": "~1.1.0",
-    "@langchain/core": "~1.1.24",
+    "@langchain/community": "~1.1.18",
+    "@langchain/core": "~1.1.27",
     "@langchain/deepseek": "^1.0.11",
     "@langchain/google-genai": "^2.1.18",
     "@langchain/langgraph": "~1.1.4",
