@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { DrawerFormLayout } from '@nocobase/client-v2';
+import { DrawerFormLayout, useCurrentAppInfo } from '@nocobase/client-v2';
 import { randomId, useFlowContext } from '@nocobase/flow-engine';
 import { getPickerFormat } from '@nocobase/utils/client';
 import { DeleteOutlined, DownOutlined, MenuOutlined, PlusOutlined } from '@ant-design/icons';
@@ -37,8 +37,10 @@ import dayjs from 'dayjs';
 import { cloneDeep, get, set } from 'lodash';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useT } from '../../locale';
+import { PluginDataSourceManagerClientV2 } from '../../plugin';
 import { compileLegacyTemplate, compileLegacyTemplateText } from '../../utils/compileLegacyTemplate';
 import { getCollectionFieldActionUrl } from './collectionFieldApi';
+import { filterFieldInterfacesByCollectionTemplate } from './collectionTemplateFieldInterfaces';
 
 interface FieldFormProps {
   mode: 'create' | 'edit';
@@ -60,6 +62,21 @@ function getFieldInterfaces(ctx: any, dataSourceType?: string) {
 
 function getFieldInterfaceManager(ctx: any) {
   return ctx.dataSourceManager.collectionFieldInterfaceManager as FieldInterfaceManagerWithConfigure | undefined;
+}
+
+function filterFieldInterfacesByTemplate(
+  fieldInterfaces: Array<Record<string, any>>,
+  collection: Record<string, any>,
+  ctx: any,
+  mode: 'create' | 'edit',
+  databaseDialect?: string,
+) {
+  if (mode !== 'create') {
+    return fieldInterfaces;
+  }
+  const plugin = ctx.app.pm.get(PluginDataSourceManagerClientV2);
+  const template = plugin?.getCollectionTemplate?.(collection.template || 'general');
+  return filterFieldInterfacesByCollectionTemplate(fieldInterfaces, template, collection, { databaseDialect });
 }
 
 function normalizeListResponse(response: any) {
@@ -562,6 +579,45 @@ function evaluateLegacyReactions(options: {
   return state;
 }
 
+function evaluateLegacyTargetReactions(options: {
+  context: Record<string, boolean>;
+  currentName: string;
+  formValues: Record<string, any>;
+  properties: Array<{ name: string; schema: any }>;
+  t: (key: string) => string;
+}) {
+  const state: LegacyReactionState = {};
+
+  options.properties.forEach(({ name, schema }) => {
+    normalizeLegacyReactions(schema?.['x-reactions'])
+      .filter((reaction) => reaction.target === options.currentName)
+      .forEach((reaction) => {
+        const dependencies = (reaction.dependencies || []).filter(
+          (dependency: unknown): dependency is string => typeof dependency === 'string',
+        );
+        const deps = dependencies.map((dependency) =>
+          resolveLegacyDependencyValue(dependency, name, options.formValues),
+        );
+        const reactionContext: LegacyReactionContext = {
+          context: options.context,
+          currentName: name,
+          deps,
+          selfValue: get(options.formValues, toNamePath(name)),
+          t: options.t,
+        };
+        const matched =
+          reaction.when === undefined ||
+          (typeof reaction.when === 'string'
+            ? evaluateLegacyBooleanExpression(unwrapLegacyExpression(reaction.when), reactionContext)
+            : !!evaluateLegacyExpression(reaction.when, reactionContext));
+        const result = matched ? reaction.fulfill : reaction.otherwise;
+        mergeLegacyReactionState(state, result?.state, result?.schema, reactionContext);
+      });
+  });
+
+  return state;
+}
+
 function normalizeSchemaEnum(schemaEnum: unknown, t: (key: string) => string) {
   if (!Array.isArray(schemaEnum)) {
     return [];
@@ -650,7 +706,24 @@ function shouldRegenerateUntouchedFieldName(values: Record<string, any>, default
 
 function OptionsEditor(props: { name: Array<string | number>; disabled?: boolean }) {
   const t = useT();
+  const form = Form.useFormInstance();
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }));
+  const cleanupDefaultValue = useCallback(
+    (removedValue: unknown) => {
+      const currentDefaultValue = form.getFieldValue('defaultValue');
+      if (Array.isArray(currentDefaultValue)) {
+        form.setFieldValue(
+          'defaultValue',
+          currentDefaultValue.filter((item) => item !== removedValue),
+        );
+        return;
+      }
+      if (currentDefaultValue === removedValue) {
+        form.setFieldValue('defaultValue', undefined);
+      }
+    },
+    [form],
+  );
 
   return (
     <Form.List name={props.name}>
@@ -713,7 +786,10 @@ function OptionsEditor(props: { name: Array<string | number>; disabled?: boolean
                 icon={<DeleteOutlined />}
                 disabled={props.disabled}
                 type="text"
-                onClick={() => remove(field.name)}
+                onClick={() => {
+                  cleanupDefaultValue(form.getFieldValue([...props.name, field.name, 'value']));
+                  remove(field.name);
+                }}
               />
             ),
           },
@@ -1153,11 +1229,12 @@ function FieldConfigurePropertyItem(props: {
   context: Record<string, boolean>;
   collection: Record<string, any>;
   collections: Array<Record<string, any>>;
+  configureProperties: Array<{ name: string; schema: any }>;
   fieldInterface: Record<string, any>;
   form: ReturnType<typeof Form.useForm>[0];
 }) {
   const t = useT();
-  const { collection, collections, components, context, form, name, schema } = props;
+  const { collection, collections, components, configureProperties, context, form, name, schema } = props;
   const namePath = toNamePath(name);
   const component = schema?.['x-component'];
   const CustomComponent = component ? components?.[component] : undefined;
@@ -1190,18 +1267,31 @@ function FieldConfigurePropertyItem(props: {
     }),
     [autoCreateReverseField, context, form, inputable],
   );
-  const reactionState = useMemo(
-    () =>
-      evaluateLegacyReactions({
-        context: dynamicContext,
-        currentName: name,
-        formValues: formValues as Record<string, any>,
-        schema,
-        selfValue,
-        t,
-      }),
-    [dynamicContext, formValues, name, schema, selfValue, t],
-  );
+  const reactionState = useMemo(() => {
+    const selfState = evaluateLegacyReactions({
+      context: dynamicContext,
+      currentName: name,
+      formValues: formValues as Record<string, any>,
+      schema,
+      selfValue,
+      t,
+    });
+    const targetState = evaluateLegacyTargetReactions({
+      context: dynamicContext,
+      currentName: name,
+      formValues: formValues as Record<string, any>,
+      properties: configureProperties,
+      t,
+    });
+    return {
+      ...targetState,
+      ...selfState,
+      componentProps: {
+        ...(targetState.componentProps || {}),
+        ...(selfState.componentProps || {}),
+      },
+    };
+  }, [configureProperties, dynamicContext, formValues, name, schema, selfValue, t]);
   const disabled = reactionState.disabled ?? isTruthyExpression(schema?.['x-disabled'], dynamicContext);
   const hidden =
     !!reactionState.hidden ||
@@ -1469,13 +1559,21 @@ function FieldConfigurePropertyItem(props: {
 export function FieldForm(props: FieldFormProps) {
   const t = useT();
   const ctx = useFlowContext();
+  const appInfo = useCurrentAppInfo<{ database?: { dialect?: string } }>();
   const fieldInterfaceManager = getFieldInterfaceManager(ctx);
   const [form] = Form.useForm();
   const [submitting, setSubmitting] = useState(false);
   const dataSource = ctx.dataSourceManager.getDataSource(props.dataSourceKey);
   const fieldInterfaces = useMemo(
-    () => getFieldInterfaces(ctx, dataSource?.options?.type),
-    [ctx, dataSource?.options?.type],
+    () =>
+      filterFieldInterfacesByTemplate(
+        getFieldInterfaces(ctx, dataSource?.options?.type),
+        props.collection,
+        ctx,
+        props.mode,
+        appInfo?.database?.dialect,
+      ),
+    [appInfo?.database?.dialect, ctx, dataSource?.options?.type, props.collection, props.mode],
   );
   const [interfaceName, setInterfaceName] = useState(
     props.field?.interface || props.interfaceName || fieldInterfaces[0]?.name,
@@ -1487,13 +1585,16 @@ export function FieldForm(props: FieldFormProps) {
   const configure = interfaceName
     ? fieldInterfaceManager?.getFieldInterfaceConfigure?.(interfaceName, props.collection)
     : undefined;
-  const fieldInterfaceOptions = useMemo(
-    () => ({
-      ...fieldInterface,
-      ...configure,
-      default: configure?.default || fieldInterface?.default,
-      name: configure?.name || fieldInterface?.name,
-    }),
+  const fieldInterfaceOptions = useMemo<Record<string, any> | undefined>(
+    () =>
+      fieldInterface || configure
+        ? {
+            ...fieldInterface,
+            ...configure,
+            default: configure?.default || fieldInterface?.default,
+            name: configure?.name || fieldInterface?.name,
+          }
+        : undefined,
     [configure, fieldInterface],
   );
   const fieldInterfaceTitle = compileLegacyTemplate(fieldInterfaceOptions?.title || interfaceName || '-', t);
@@ -1612,6 +1713,7 @@ export function FieldForm(props: FieldFormProps) {
         set(nextValues, 'uiSchema.title', currentTitle);
       }
       setInterfaceName(nextInterface);
+      form.resetFields();
       form.setFieldsValue(nextValues);
     },
     [fieldInterfaceManager, fieldInterfaces, form, props.collection],
@@ -1757,6 +1859,7 @@ export function FieldForm(props: FieldFormProps) {
             components={configure?.components}
             collection={props.collection}
             collections={collections}
+            configureProperties={fieldConfigureProperties}
             fieldInterface={fieldInterfaceOptions}
             form={form}
             context={{

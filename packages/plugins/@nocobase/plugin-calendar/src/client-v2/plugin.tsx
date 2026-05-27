@@ -121,34 +121,35 @@ export class PluginCalendarClient extends Plugin<any, Application> {
         fields: [
           {
             name: 'cron',
-            interface: 'select',
             type: 'string',
-            title: tExpr('Repeats'),
-            componentProps: {
-              allowClear: true,
+            uiSchema: {
+              type: 'string',
+              title: tExpr('Repeats'),
+              'x-component': 'CronSet',
+              'x-component-props': 'allowClear',
+              enum: [
+                {
+                  label: tExpr('Daily'),
+                  value: '0 0 0 * * ?',
+                },
+                {
+                  label: tExpr('Weekly'),
+                  value: 'every_week',
+                },
+                {
+                  label: tExpr('Monthly'),
+                  value: 'every_month',
+                },
+                {
+                  label: tExpr('Yearly'),
+                  value: 'every_year',
+                },
+              ],
             },
-            options: [
-              {
-                label: tExpr('Daily'),
-                value: '0 0 0 * * ?',
-              },
-              {
-                label: tExpr('Weekly'),
-                value: 'every_week',
-              },
-              {
-                label: tExpr('Monthly'),
-                value: 'every_month',
-              },
-              {
-                label: tExpr('Yearly'),
-                value: 'every_year',
-              },
-            ],
+            interface: 'select',
           },
           {
             name: 'exclude',
-            interface: 'json',
             type: 'json',
           },
         ],

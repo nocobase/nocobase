@@ -23,6 +23,7 @@ import {
   FilterContent,
   Table,
   normalizeCollectionTemplateFields,
+  type CollectionTemplateField,
 } from '@nocobase/client-v2';
 import { observable, observer, randomId, useFlowContext } from '@nocobase/flow-engine';
 import { transformFilter, type FilterGroupType } from '@nocobase/utils/client';
@@ -45,6 +46,7 @@ import {
   Spin,
   Tabs,
   Tag,
+  theme,
   Transfer,
 } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
@@ -73,7 +75,7 @@ type CollectionFormValues = {
   template: string;
   category?: Array<number | string>;
   description?: string;
-  fields?: Record<string, any>[];
+  fields?: CollectionTemplateField[];
 };
 
 type TableItem = {
@@ -216,15 +218,12 @@ function getVisibleCollectionFilter() {
   };
 }
 
-function getCategoryFilterValues(categoryKey: string) {
-  const values: Array<number | string> = [categoryKey];
+function normalizeCategoryFilterValue(categoryKey: string) {
   const numericValue = Number(categoryKey);
-
   if (Number.isSafeInteger(numericValue) && String(numericValue) === categoryKey) {
-    values.push(numericValue);
+    return numericValue;
   }
-
-  return values;
+  return categoryKey;
 }
 
 function buildCollectionListFilter(options: {
@@ -235,22 +234,7 @@ function buildCollectionListFilter(options: {
   const filterItems: Array<Record<string, unknown>> = [getVisibleCollectionFilter()];
 
   if (options.isMainDataSource && options.activeCategoryKey !== 'all') {
-    filterItems.push(
-      {
-        category: {
-          $notEmpty: true,
-        },
-      },
-      {
-        category: {
-          $match: {
-            id: {
-              $in: getCategoryFilterValues(options.activeCategoryKey),
-            },
-          },
-        },
-      },
-    );
+    filterItems.push({ 'category.id': normalizeCategoryFilterValue(options.activeCategoryKey) });
   }
 
   if (options.filterPayload) {
@@ -529,6 +513,19 @@ function buildPresetFields(selectedFieldNames: React.Key[]) {
   return presetFieldRows.filter((field) => selected.has(field.name)).map((field) => structuredClone(field.value));
 }
 
+function normalizeCollectionCategoryValue(category?: Array<number | string>) {
+  return category?.map((value) => {
+    if (typeof value !== 'string') {
+      return value;
+    }
+    const numericValue = Number(value);
+    if (Number.isSafeInteger(numericValue) && String(numericValue) === value) {
+      return numericValue;
+    }
+    return value;
+  });
+}
+
 function resolveTemplateDefaultValues(template: CollectionTemplateOptions) {
   return typeof template.defaultValues === 'function' ? template.defaultValues() : template.defaultValues || {};
 }
@@ -557,6 +554,61 @@ function getTemplatePresetFieldsDisabledIncludes(template: CollectionTemplateOpt
   return template.presetFields?.disabledIncludes || template.presetFieldsDisabledIncludes || [];
 }
 
+function hasTemplateCapability(
+  template: CollectionTemplateOptions | undefined,
+  capability: 'recordUniqueKey' | 'simplePaginate',
+) {
+  return !!template?.capabilities?.[capability];
+}
+
+const CollectionTemplatePreview: FC<{ template?: CollectionTemplateOptions }> = ({ template }) => {
+  const t = useT();
+  const { token } = theme.useToken();
+  const styles = useMemo(
+    () => ({
+      container: {
+        backgroundColor: token.colorFillAlter,
+        marginBottom: token.marginLG,
+        padding: token.paddingSM + token.paddingXXS,
+      },
+      title: {
+        color: token.colorText,
+      },
+      description: {
+        color: token.colorTextDescription,
+        marginTop: token.marginXS,
+      },
+      tag: {
+        background: 'none',
+      },
+    }),
+    [
+      token.colorFillAlter,
+      token.colorText,
+      token.colorTextDescription,
+      token.marginLG,
+      token.marginXS,
+      token.paddingSM,
+      token.paddingXXS,
+    ],
+  );
+
+  if (!template) {
+    return null;
+  }
+
+  return (
+    <div style={styles.container}>
+      <div style={styles.title}>
+        {t('Collection template')}: <Tag style={styles.tag}>{compileLegacyTemplate(template.title, t)}</Tag>
+      </div>
+      {template.description ? (
+        <div style={styles.description}>{compileLegacyTemplate(template.description, t)}</div>
+      ) : null}
+    </div>
+  );
+};
+
 function buildCollectionCreateValues(options: {
   template: CollectionTemplateOptions;
   formValues: CollectionFormValues;
@@ -566,7 +618,17 @@ function buildCollectionCreateValues(options: {
   const { fieldInterfaceManager, formValues, selectedPresetFields, template } = options;
   const templateOptions = resolveTemplateCollectionOptions(template);
   const legacyTemplateFields = Array.isArray(templateOptions.fields) ? templateOptions.fields : [];
-  const formFields = Array.isArray(formValues.fields) ? formValues.fields : [];
+  const formFields = normalizeCollectionTemplateFields(
+    Array.isArray(formValues.fields) ? formValues.fields : [],
+    fieldInterfaceManager,
+    {
+      collectionInfo: {
+        ...templateOptions,
+        ...formValues,
+        template: template.name,
+      },
+    },
+  );
   const templateFields = normalizeCollectionTemplateFields(
     [...legacyTemplateFields, ...resolveTemplateCollectionFields(template)],
     fieldInterfaceManager,
@@ -586,7 +648,8 @@ function buildCollectionCreateValues(options: {
     ...formValues,
     template: template.name,
     logging: true,
-    fields: [...buildPresetFields(selectedPresetFields), ...templateFields, ...formFields],
+    category: normalizeCollectionCategoryValue(formValues.category),
+    fields: [...templateFields, ...buildPresetFields(selectedPresetFields), ...formFields],
   };
 
   const transformedValues = template.configure?.transformSubmitValues?.(values);
@@ -603,6 +666,7 @@ const CollectionTemplateConfigureItems: FC<{
   template: CollectionTemplateOptions;
   form: any;
 }> = ({ form, mode, template }) => {
+  const t = useT();
   const items = template.configure?.items || [];
 
   if (!items.length) {
@@ -616,12 +680,79 @@ const CollectionTemplateConfigureItems: FC<{
         const Component = item.Component;
 
         if (hidden || !Component) {
+          if (hidden || !item.name) {
+            return null;
+          }
+          const label = compileLegacyTemplate(item.label || item.name, t);
+          const rules = item.required ? [{ required: true }] : undefined;
+          const componentProps = item.componentProps || {};
+          let child: React.ReactNode = <Input {...componentProps} />;
+
+          if (item.component === 'Input.TextArea') {
+            child = <Input.TextArea autoSize={{ minRows: 3, maxRows: 8 }} {...componentProps} />;
+          }
+          if (item.component === 'Select') {
+            child = (
+              <Select
+                options={(item.options || []).map((option) => ({
+                  value: option.value,
+                  label: compileLegacyTemplate(option.label, t),
+                }))}
+                {...componentProps}
+              />
+            );
+          }
+          if (item.component === 'Checkbox') {
+            return (
+              <Form.Item key={item.name || index} name={item.name} valuePropName="checked" rules={rules}>
+                <Checkbox {...componentProps}>{label}</Checkbox>
+              </Form.Item>
+            );
+          }
+
+          return (
+            <Form.Item key={item.name || index} name={item.name} label={label} rules={rules}>
+              {child}
+            </Form.Item>
+          );
+        }
+
+        if (!Component) {
           return null;
         }
 
         return <Component key={item.name || index} mode={mode} template={template} form={form} item={item} />;
       })}
     </>
+  );
+};
+
+const CollectionCreateFilterTargetKey: FC<{
+  form: ReturnType<typeof Form.useForm<CollectionFormValues>>[0];
+}> = ({ form }) => {
+  const t = useT();
+  const fields = Form.useWatch('fields', form);
+  const options = useMemo(
+    () =>
+      (Array.isArray(fields) ? fields : [])
+        .filter((field) => field?.name)
+        .map((field) => ({
+          value: field.name,
+          label: compileLegacyTemplate((field.uiSchema?.title || field.title || field.name) as React.ReactNode, t),
+        })),
+    [fields, t],
+  );
+
+  return (
+    <Form.Item
+      name="filterTargetKey"
+      label={t('Record unique key')}
+      extra={t(
+        'If a collection lacks a primary key, you must configure a unique record key to locate row records within a block, failure to configure this will prevent the creation of data blocks for the collection.',
+      )}
+    >
+      <Select mode="multiple" options={options} allowClear />
+    </Form.Item>
   );
 };
 
@@ -722,12 +853,7 @@ function CollectionCreateDrawer(props: {
       onSubmit={handleSubmit}
     >
       <Form form={form} layout="vertical" initialValues={initialValues}>
-        <div style={{ marginBottom: 24, padding: 16, background: 'var(--ant-color-fill-tertiary)' }}>
-          <Space>
-            <span>{t('Collection template')}:</span>
-            <Tag>{compileLegacyTemplate(template.title, t)}</Tag>
-          </Space>
-        </div>
+        <CollectionTemplatePreview template={template} />
         <Form.Item name="template" hidden>
           <Input />
         </Form.Item>
@@ -777,6 +903,7 @@ function CollectionCreateDrawer(props: {
         </Form.Item>
         {TemplateConfigureForm ? <TemplateConfigureForm mode="create" template={template} form={form} /> : null}
         <CollectionTemplateConfigureItems mode="create" template={template} form={form} />
+        {hasTemplateCapability(template, 'recordUniqueKey') ? <CollectionCreateFilterTargetKey form={form} /> : null}
         <Form.Item label={t('Preset fields')}>
           <Table
             size="small"
@@ -913,6 +1040,7 @@ function CollectionEditDrawer(props: {
       onSubmit={handleSubmit}
     >
       <Form form={form} layout="vertical" initialValues={initialValues}>
+        <CollectionTemplatePreview template={template} />
         <Form.Item name="title" label={t('Collection display name')} rules={[{ required: true }]}>
           <Input />
         </Form.Item>
@@ -950,15 +1078,17 @@ function CollectionEditDrawer(props: {
         >
           <Checkbox>{t('Use simple pagination mode')}</Checkbox>
         </Form.Item>
-        <Form.Item
-          name="filterTargetKey"
-          label={t('Record unique key')}
-          extra={t(
-            'If a collection lacks a primary key, you must configure a unique record key to locate row records within a block, failure to configure this will prevent the creation of data blocks for the collection.',
-          )}
-        >
-          <Select mode="multiple" options={filterTargetKeyOptions} loading={fieldsRequest.loading} allowClear />
-        </Form.Item>
+        {hasTemplateCapability(template, 'recordUniqueKey') ? (
+          <Form.Item
+            name="filterTargetKey"
+            label={t('Record unique key')}
+            extra={t(
+              'If a collection lacks a primary key, you must configure a unique record key to locate row records within a block, failure to configure this will prevent the creation of data blocks for the collection.',
+            )}
+          >
+            <Select mode="multiple" options={filterTargetKeyOptions} loading={fieldsRequest.loading} allowClear />
+          </Form.Item>
+        ) : null}
         {template && TemplateConfigureForm ? (
           <TemplateConfigureForm mode="edit" template={template} form={form} />
         ) : null}
@@ -1017,7 +1147,7 @@ function CollectionsPage(props: CollectionsPageProps) {
         isMainDataSource,
       });
       const response = await ctx.api.request({
-        url: `dataSources/${props.dataSourceKey}/collections:list`,
+        url: isMainDataSource ? 'collections:list' : `dataSources/${props.dataSourceKey}/collections:list`,
         params: {
           page,
           pageSize,
@@ -1382,7 +1512,7 @@ function CollectionsPage(props: CollectionsPageProps) {
     }
 
     nextColumns.push(
-      { title: t('Description'), dataIndex: 'description', ellipsis: true, render: (value) => value || '-' },
+      { title: t('Description'), dataIndex: 'description', ellipsis: true },
       {
         title: t('Actions'),
         width: isMainDataSource ? 220 : 140,
@@ -1468,10 +1598,13 @@ function CollectionsPage(props: CollectionsPageProps) {
               </Dropdown>
               <Dropdown
                 menu={{
-                  items: collectionTemplates.map((template) => ({
-                    key: template.name,
-                    label: compileLegacyTemplate(template.title, t),
-                  })),
+                  items: collectionTemplates.flatMap((template) => {
+                    const item = {
+                      key: template.name,
+                      label: compileLegacyTemplate(template.title, t),
+                    };
+                    return template.divider ? [{ type: 'divider' as const }, item] : [item];
+                  }),
                   onClick: ({ key }) => {
                     const template = collectionTemplates.find((item) => item.name === key);
                     if (template) {

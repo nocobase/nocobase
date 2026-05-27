@@ -24,6 +24,7 @@ export interface DataSourceTypeOptions {
   name?: string;
   label?: React.ReactNode;
   defaultValues?: Record<string, any>;
+  disableAddFields?: boolean;
   disableTestConnection?: boolean;
   SettingsForm?: ComponentType<DataSourceSettingsFormProps>;
 }
@@ -41,6 +42,8 @@ export interface CollectionTemplateConfigureItemProps extends CollectionTemplate
 export interface CollectionTemplateConfigureItem {
   name?: string;
   label?: React.ReactNode;
+  component?: 'Input' | 'Input.TextArea' | 'Select' | 'Checkbox';
+  options?: Array<{ label: React.ReactNode; value: string | number | boolean }>;
   Component?: ComponentType<CollectionTemplateConfigureItemProps>;
   componentProps?: Record<string, unknown>;
   required?: boolean;
@@ -50,6 +53,7 @@ export interface CollectionTemplateConfigureItem {
 export interface CollectionTemplateOptions {
   name?: string;
   title: React.ReactNode;
+  description?: React.ReactNode;
   order?: number;
   color?: string;
   divider?: boolean;
@@ -67,7 +71,14 @@ export interface CollectionTemplateOptions {
     transformSubmitValues?: (values: Record<string, any>) => Record<string, any> | void;
   };
   fieldInterfaces?: {
-    include?: string[];
+    include?: Array<string | { interface?: string; name?: string; targetScope?: Record<string, unknown> }>;
+    exclude?: string[];
+  };
+  /**
+   * @deprecated Use fieldInterfaces instead.
+   */
+  availableFieldInterfaces?: {
+    include?: Array<string | { interface?: string; name?: string; targetScope?: Record<string, unknown> }>;
     exclude?: string[];
   };
   presetFields?: {
@@ -224,7 +235,7 @@ export class PluginDataSourceManagerClientV2 extends Plugin<any, Application> {
   private registerBuiltInCollectionTemplates() {
     this.registerCollectionTemplate({
       name: 'general',
-      title: 'General collection',
+      title: '{{t("General collection")}}',
       order: 10,
       color: 'blue',
       collection: {
@@ -237,7 +248,7 @@ export class PluginDataSourceManagerClientV2 extends Plugin<any, Application> {
 
     this.registerCollectionTemplate({
       name: 'tree',
-      title: 'Tree collection',
+      title: '{{t("Tree collection")}}',
       order: 30,
       color: 'blue',
       collection: {
@@ -321,7 +332,7 @@ export class PluginDataSourceManagerClientV2 extends Plugin<any, Application> {
 
     this.registerCollectionTemplate({
       name: 'sql',
-      title: 'SQL collection',
+      title: '{{t("SQL collection")}}',
       order: 40,
       color: 'yellow',
       divider: true,
@@ -338,7 +349,7 @@ export class PluginDataSourceManagerClientV2 extends Plugin<any, Application> {
 
     this.registerCollectionTemplate({
       name: 'view',
-      title: 'Connect to database view',
+      title: '{{t("Connect to database view")}}',
       order: 50,
       color: 'yellow',
       divider: true,

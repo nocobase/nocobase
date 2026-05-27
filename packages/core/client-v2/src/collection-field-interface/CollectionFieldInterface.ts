@@ -141,9 +141,9 @@ export abstract class CollectionFieldInterface {
     const configuredProperties =
       this.configure?.getConfigureFormProperties?.(collectionInfo) || this.configure?.properties || {};
     const defaultValueProps = this.hasDefaultValue ? this.getDefaultValueProperty() : {};
-    this.availableValidationOptions.push('required');
     const isViewCollection = collectionInfo?.view;
     const isSqlCollection = collectionInfo?.template === 'sql' || collectionInfo?.sql;
+    const availableValidationOptions = [...new Set([...this.availableValidationOptions, 'required'])];
     const validationProps =
       !isViewCollection && !isSqlCollection && this.validationType
         ? {
@@ -154,7 +154,7 @@ export abstract class CollectionFieldInterface {
               'x-component': 'FieldValidation',
               'x-component-props': {
                 type: this.validationType,
-                availableValidationOptions: [...new Set(this.availableValidationOptions)],
+                availableValidationOptions,
                 excludeValidationOptions: [...new Set(this.excludeValidationOptions)],
                 isAssociation: this.isAssociation,
               },

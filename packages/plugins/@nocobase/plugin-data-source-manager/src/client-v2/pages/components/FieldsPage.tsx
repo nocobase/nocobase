@@ -7,17 +7,19 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { DeleteOutlined, DownOutlined, PlusOutlined, ReloadOutlined } from '@ant-design/icons';
-import { Table } from '@nocobase/client-v2';
+import { DeleteOutlined, DownOutlined, PlusOutlined, ReloadOutlined, SyncOutlined } from '@ant-design/icons';
+import { isTitleField, Table, useCurrentAppInfo } from '@nocobase/client-v2';
 import { useFlowContext } from '@nocobase/flow-engine';
 import { useRequest } from 'ahooks';
-import { App, Button, Dropdown, Select, Space, Tag } from 'antd';
+import { App, Button, Dropdown, Select, Space, Switch, Tag, Tooltip } from 'antd';
 import type { MenuProps } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useT } from '../../locale';
+import { PluginDataSourceManagerClientV2 } from '../../plugin';
 import { compileLegacyTemplate } from '../../utils/compileLegacyTemplate';
 import { getCollectionFieldActionUrl } from './collectionFieldApi';
+import { filterFieldInterfacesByCollectionTemplate } from './collectionTemplateFieldInterfaces';
 import { FieldForm } from './FieldForm';
 
 interface FieldsPageProps {
@@ -99,6 +101,31 @@ function getFieldInterfaceOptions(ctx: any, dataSourceType?: string) {
     .sort((a, b) => (a.order ?? 0) - (b.order ?? 0)) as FieldInterfaceGroupOption[];
 }
 
+function filterFieldInterfacesByTemplate(
+  fieldInterfaces: FieldInterfaceOption[],
+  collection: Record<string, any>,
+  ctx: any,
+  databaseDialect?: string,
+) {
+  const plugin = ctx.app.pm.get(PluginDataSourceManagerClientV2);
+  const template = plugin?.getCollectionTemplate?.(collection.template || 'general');
+  return filterFieldInterfacesByCollectionTemplate(fieldInterfaces, template, collection, { databaseDialect });
+}
+
+function filterFieldInterfaceGroupsByTemplate(
+  groups: FieldInterfaceGroupOption[],
+  collection: Record<string, any>,
+  ctx: any,
+  databaseDialect?: string,
+) {
+  return groups
+    .map((group) => ({
+      ...group,
+      children: filterFieldInterfacesByTemplate(group.children, collection, ctx, databaseDialect),
+    }))
+    .filter((group) => group.children.length);
+}
+
 function filterCreatableFieldInterfaces(groups: FieldInterfaceGroupOption[], collection: Record<string, any>) {
   const isViewCollection = collection.template === 'view' || collection.view;
 
@@ -150,11 +177,42 @@ function isReadOnlyFieldInterface(record: Record<string, any>, currentFieldInter
   );
 }
 
+function getCollectionUpdateActionUrl(dataSourceKey: string) {
+  return dataSourceKey === 'main' ? 'collections:update' : `dataSources/${dataSourceKey}/collections:update`;
+}
+
+function isSyncFieldsVisible(dataSourceKey: string, collection: Record<string, any>) {
+  return (
+    dataSourceKey === 'main' &&
+    collection.from !== 'db2cm' &&
+    collection.template !== 'view' &&
+    collection.template !== 'sql'
+  );
+}
+
+function isAddFieldVisible(options: {
+  collection: Record<string, any>;
+  dataSourceType?: string;
+  fieldInterfaceGroups: FieldInterfaceGroupOption[];
+  ctx: any;
+}) {
+  const plugin = options.ctx.app.pm.get(PluginDataSourceManagerClientV2);
+  const dataSourceType = plugin?.getType?.(options.dataSourceType);
+  return (
+    !dataSourceType?.disableAddFields &&
+    options.collection.template !== 'sql' &&
+    options.fieldInterfaceGroups.length > 0
+  );
+}
+
 export default function FieldsPage(props: FieldsPageProps) {
   const t = useT();
   const ctx = useFlowContext();
-  const { modal } = App.useApp();
+  const appInfo = useCurrentAppInfo<{ database?: { dialect?: string } }>();
+  const { message, modal } = App.useApp();
   const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
+  const [titleField, setTitleField] = useState<string | undefined>(props.collection.titleField);
+  const [titleFieldLoadingKey, setTitleFieldLoadingKey] = useState<React.Key>();
   const request = useRequest(async () => {
     const response = await ctx.api.request({
       url: getCollectionFieldActionUrl(props.dataSourceKey, props.collection.name, 'list'),
@@ -169,24 +227,39 @@ export default function FieldsPage(props: FieldsPageProps) {
     return normalizeListResponse(response);
   });
 
+  useEffect(() => {
+    setTitleField(props.collection.titleField);
+  }, [props.collection.titleField]);
+
   const dataSource = ctx.dataSourceManager.getDataSource(props.dataSourceKey);
   const allFieldInterfaceGroups = useMemo(
     () => getFieldInterfaceOptions(ctx, dataSource?.options?.type),
     [ctx, dataSource?.options?.type],
   );
   const fieldInterfaceGroups = useMemo(
-    () => filterCreatableFieldInterfaces(allFieldInterfaceGroups, props.collection),
-    [allFieldInterfaceGroups, props.collection],
+    () =>
+      filterCreatableFieldInterfaces(
+        filterFieldInterfaceGroupsByTemplate(
+          allFieldInterfaceGroups,
+          props.collection,
+          ctx,
+          appInfo?.database?.dialect,
+        ),
+        props.collection,
+      ),
+    [allFieldInterfaceGroups, appInfo?.database?.dialect, ctx, props.collection],
   );
   const fieldInterfacesByName = useMemo(() => {
-    return getFieldInterfaces(ctx, dataSource?.options?.type).reduce<Record<string, FieldInterfaceOption>>(
-      (memo, fieldInterface) => {
-        memo[fieldInterface.name] = fieldInterface;
-        return memo;
-      },
-      {},
-    );
-  }, [ctx, dataSource?.options?.type]);
+    return filterFieldInterfacesByTemplate(
+      getFieldInterfaces(ctx, dataSource?.options?.type),
+      props.collection,
+      ctx,
+      appInfo?.database?.dialect,
+    ).reduce<Record<string, FieldInterfaceOption>>((memo, fieldInterface) => {
+      memo[fieldInterface.name] = fieldInterface;
+      return memo;
+    }, {});
+  }, [appInfo?.database?.dialect, ctx, dataSource?.options?.type, props.collection]);
 
   const openFieldForm = useCallback(
     (mode: 'create' | 'edit', field?: Record<string, any>, interfaceName?: string) => {
@@ -280,6 +353,46 @@ export default function FieldsPage(props: FieldsPageProps) {
     [ctx.api, ctx.dataSourceManager, fieldInterfacesByName, props.collection.name, props.dataSourceKey, request],
   );
 
+  const handleTitleFieldChange = useCallback(
+    async (field: Record<string, any>, checked: boolean) => {
+      const nextTitleField = checked ? field.name : 'id';
+      setTitleFieldLoadingKey(field.name);
+      try {
+        await ctx.api.request({
+          url: getCollectionUpdateActionUrl(props.dataSourceKey),
+          method: 'post',
+          params: { filterByTk: props.collection.name },
+          data: { titleField: nextTitleField },
+        });
+        setTitleField(nextTitleField);
+        await ctx.dataSourceManager.getDataSource(props.dataSourceKey)?.reload();
+        message.success(t('Saved successfully'));
+      } finally {
+        setTitleFieldLoadingKey(undefined);
+      }
+    },
+    [ctx.api, ctx.dataSourceManager, message, props.collection.name, props.dataSourceKey, t],
+  );
+
+  const handleSyncFields = useCallback(async () => {
+    await ctx.api.resource('mainDataSource').syncFields({
+      values: {
+        collections: [props.collection.name],
+      },
+    });
+    request.refresh();
+    await ctx.dataSourceManager.getDataSource('main')?.reload();
+    message.success(t('Sync successfully'));
+  }, [ctx.api, ctx.dataSourceManager, message, props.collection.name, request, t]);
+
+  const syncFieldsVisible = isSyncFieldsVisible(props.dataSourceKey, props.collection);
+  const addFieldVisible = isAddFieldVisible({
+    collection: props.collection,
+    ctx,
+    dataSourceType: dataSource?.options?.type,
+    fieldInterfaceGroups,
+  });
+
   const columns = useMemo<ColumnsType<Record<string, any>>>(
     () => [
       {
@@ -325,6 +438,23 @@ export default function FieldsPage(props: FieldsPageProps) {
           );
         },
       },
+      {
+        title: t('Title field'),
+        dataIndex: 'titleField',
+        width: 120,
+        render: (_, record) =>
+          isTitleField(ctx.dataSourceManager, record) ? (
+            <Tooltip title={t('Default title for each record')} placement="right">
+              <Switch
+                aria-label={`switch-title-field-${record.name}`}
+                size="small"
+                loading={record.name === titleFieldLoadingKey}
+                checked={record.name === (titleField || 'id')}
+                onChange={(checked) => handleTitleFieldChange(record, checked)}
+              />
+            </Tooltip>
+          ) : null,
+      },
       { title: t('Description'), dataIndex: 'description', ellipsis: true },
       {
         title: t('Actions'),
@@ -337,7 +467,18 @@ export default function FieldsPage(props: FieldsPageProps) {
         ),
       },
     ],
-    [allFieldInterfaceGroups, fieldInterfacesByName, handleDelete, handleFieldInterfaceChange, openFieldForm, t],
+    [
+      allFieldInterfaceGroups,
+      ctx.dataSourceManager,
+      fieldInterfacesByName,
+      handleDelete,
+      handleFieldInterfaceChange,
+      handleTitleFieldChange,
+      openFieldForm,
+      t,
+      titleField,
+      titleFieldLoadingKey,
+    ],
   );
 
   return (
@@ -354,7 +495,12 @@ export default function FieldsPage(props: FieldsPageProps) {
           >
             {t('Delete')}
           </Button>
-          {props.collection.template !== 'sql' ? (
+          {syncFieldsVisible ? (
+            <Button icon={<SyncOutlined />} onClick={handleSyncFields}>
+              {t('Sync from database')}
+            </Button>
+          ) : null}
+          {addFieldVisible ? (
             <Dropdown menu={addFieldMenu} placement="bottomRight" trigger={['hover']}>
               <Button type="primary" icon={<PlusOutlined />}>
                 {t('Add field')} <DownOutlined />
