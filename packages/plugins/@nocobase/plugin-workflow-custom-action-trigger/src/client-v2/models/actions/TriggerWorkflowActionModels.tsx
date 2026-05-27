@@ -15,11 +15,49 @@ import {
   FormActionModel,
   TextAreaWithContextSelector,
 } from '@nocobase/client-v2';
+import { css } from '@emotion/css';
 import { MultiRecordResource, resolveExpressions, useFlowContext } from '@nocobase/flow-engine';
-import { Alert, Select } from 'antd';
+import { Alert, Select, Space } from 'antd';
 import type { ButtonProps } from 'antd/es/button';
 import { CONTEXT_TYPE, EVENT_TYPE } from '../../../common/constants';
 import { NAMESPACE, tExpr } from '../../locale';
+
+type WorkflowCollection = {
+  name?: string;
+  dataSourceKey?: string;
+  dataSource?: {
+    key?: string;
+  };
+};
+
+type WorkflowSchemaContext = {
+  blockModel?: {
+    collection?: WorkflowCollection | null;
+  };
+};
+
+function joinWorkflowCollectionName(dataSourceKey: string | undefined, collectionName: string | undefined) {
+  if (!collectionName) {
+    return undefined;
+  }
+  if (!dataSourceKey || dataSourceKey === 'main') {
+    return collectionName;
+  }
+  return `${dataSourceKey}:${collectionName}`;
+}
+
+function getWorkflowCollectionName(collection?: WorkflowCollection | null) {
+  return joinWorkflowCollectionName(collection?.dataSourceKey || collection?.dataSource?.key, collection?.name);
+}
+
+function getWorkflowCollectionFilter(ctx?: WorkflowSchemaContext) {
+  const workflowCollection = getWorkflowCollectionName(ctx?.blockModel?.collection);
+  return workflowCollection
+    ? {
+        'config.collection': workflowCollection,
+      }
+    : undefined;
+}
 
 const buildTriggerWorkflows = (group?: any[]) => {
   return group?.length
@@ -41,7 +79,7 @@ function getRecordKey(record, collection) {
   return record[filterByTk];
 }
 
-function WorkflowSelect(props) {
+function WorkflowSelect({ filter, optionFilter, ...props }) {
   const ctx = useFlowContext();
   const [options, setOptions] = React.useState<any[]>([]);
   const [loading, setLoading] = React.useState(false);
@@ -59,7 +97,7 @@ function WorkflowSelect(props) {
             filter: {
               type: EVENT_TYPE,
               enabled: true,
-              ...props.filter,
+              ...filter,
             },
           },
         });
@@ -67,7 +105,7 @@ function WorkflowSelect(props) {
           return;
         }
         const rows = res?.data?.data || [];
-        const filtered = typeof props.optionFilter === 'function' ? rows.filter(props.optionFilter) : rows;
+        const filtered = typeof optionFilter === 'function' ? rows.filter(optionFilter) : rows;
         setOptions(
           filtered.map((item) => ({
             label: item.title,
@@ -86,17 +124,19 @@ function WorkflowSelect(props) {
     return () => {
       mounted = false;
     };
-  }, [ctx.api, props.filter, props.optionFilter]);
+  }, [ctx.api, filter, optionFilter]);
 
   return <Select {...props} loading={loading} options={options} />;
 }
 
 function createTriggerWorkflowsSchema({
   description,
+  filter,
   optionFilter,
   withContextData = false,
 }: {
   description?: string;
+  filter?: Record<string, unknown>;
   optionFilter?: (item: any) => boolean;
   withContextData?: boolean;
 }) {
@@ -108,6 +148,9 @@ function createTriggerWorkflowsSchema({
         type: 'info',
         showIcon: true,
         message: description,
+        style: {
+          marginBottom: '1em',
+        },
       },
     },
     group: {
@@ -117,25 +160,55 @@ function createTriggerWorkflowsSchema({
       items: {
         type: 'object',
         properties: {
-          sort: {
+          space: {
             type: 'void',
-            'x-decorator': 'FormItem',
-            'x-component': 'ArrayItems.SortHandle',
-          },
-          workflowKey: {
-            type: 'string',
-            title: `{{t('Workflow', { ns: 'workflow' })}}`,
-            'x-decorator': 'FormItem',
-            'x-component': WorkflowSelect,
             'x-component-props': {
-              optionFilter,
+              align: 'center',
+              style: {
+                display: 'flex',
+                width: '100%',
+              },
+              className: css`
+                & > .ant-space-item:first-child,
+                & > .ant-space-item:last-child {
+                  flex: 0 0 auto;
+                }
+                & > .ant-space-item:nth-child(2) {
+                  flex: 1;
+                  min-width: 0;
+                }
+                & > .ant-space-item:nth-child(2) .ant-select {
+                  width: 100%;
+                }
+              `,
             },
-            required: true,
-          },
-          remove: {
-            type: 'void',
-            'x-decorator': 'FormItem',
-            'x-component': 'ArrayItems.Remove',
+            'x-component': Space,
+            properties: {
+              sort: {
+                type: 'void',
+                'x-decorator': 'FormItem',
+                'x-component': 'ArrayItems.SortHandle',
+              },
+              workflowKey: {
+                type: 'string',
+                'x-decorator': 'FormItem',
+                'x-component': WorkflowSelect,
+                'x-component-props': {
+                  filter,
+                  optionFilter,
+                  placeholder: `{{t('Select workflow', { ns: 'workflow' })}}`,
+                  style: {
+                    width: '100%',
+                  },
+                },
+                required: true,
+              },
+              remove: {
+                type: 'void',
+                'x-decorator': 'FormItem',
+                'x-component': 'ArrayItems.Remove',
+              },
+            },
           },
         },
       },
@@ -190,12 +263,14 @@ FormTriggerWorkflowActionModel.registerFlow({
     },
     triggerWorkflows: {
       title: `{{t('Bind workflows', { ns: 'workflow' })}}`,
-      uiSchema: createTriggerWorkflowsSchema({
-        description: customActionDescription,
-        optionFilter(item) {
-          return item.config?.type === CONTEXT_TYPE.SINGLE_RECORD;
-        },
-      }),
+      uiSchema: (ctx) =>
+        createTriggerWorkflowsSchema({
+          description: customActionDescription,
+          filter: getWorkflowCollectionFilter(ctx),
+          optionFilter(item) {
+            return item.config?.type === CONTEXT_TYPE.SINGLE_RECORD;
+          },
+        }),
       async handler(ctx, params) {
         if (!params.group?.length) {
           ctx.message.error(
@@ -259,12 +334,14 @@ RecordTriggerWorkflowActionModel.registerFlow({
     },
     triggerWorkflows: {
       title: `{{t('Bind workflows', { ns: 'workflow' })}}`,
-      uiSchema: createTriggerWorkflowsSchema({
-        description: customActionDescription,
-        optionFilter(item) {
-          return item.config?.type === CONTEXT_TYPE.SINGLE_RECORD;
-        },
-      }),
+      uiSchema: (ctx) =>
+        createTriggerWorkflowsSchema({
+          description: customActionDescription,
+          filter: getWorkflowCollectionFilter(ctx),
+          optionFilter(item) {
+            return item.config?.type === CONTEXT_TYPE.SINGLE_RECORD;
+          },
+        }),
       async handler(ctx, params) {
         const { resource, collection } = ctx.blockModel;
         if (!resource || !collection) {
@@ -349,6 +426,7 @@ CollectionTriggerWorkflowActionModel.registerFlow({
         const { type } = ctx.model.stepParams.customCollectionTriggerWorkflowsActionSettings?.setContextType ?? {};
         return createTriggerWorkflowsSchema({
           withContextData: !type,
+          filter: type ? getWorkflowCollectionFilter(ctx) : undefined,
           description: type
             ? tExpr('Only support custom action workflow with context type set to "Multiple records".')
             : tExpr('Only support custom action workflow with context type set to "Custom context".'),
