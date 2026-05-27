@@ -250,7 +250,16 @@ export const PluginCard: FC<PluginCardProps> = ({ data }) => {
       >
         <Card.Meta
           description={
-            <Typography.Paragraph type="secondary" ellipsis={{ rows: 2 }} style={{ marginBottom: 0 }}>
+            <Typography.Paragraph
+              type="secondary"
+              className={css`
+                display: -webkit-box;
+                -webkit-box-orient: vertical;
+                -webkit-line-clamp: 2;
+                overflow: hidden;
+                margin-bottom: 0;
+              `}
+            >
               {description}
             </Typography.Paragraph>
           }
