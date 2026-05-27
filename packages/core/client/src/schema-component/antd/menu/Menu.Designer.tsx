@@ -7,12 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { ExclamationCircleFilled } from '@ant-design/icons';
 import { TreeSelect } from '@formily/antd-v5';
 import { Field, onFieldChange } from '@formily/core';
 import { ISchema, Schema, useField, useFieldSchema } from '@formily/react';
 import { uid } from '@formily/shared';
-import { Modal } from 'antd';
 import React, { useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { findByUid } from '.';
@@ -25,7 +23,6 @@ import {
   SchemaSettingsModalItem,
   SchemaSettingsRemove,
   SchemaSettingsSubMenu,
-  SchemaSettingsSwitchItem,
   useAPIClient,
   useDesignable,
   useURLAndHTMLSchema,
@@ -273,10 +270,8 @@ export const MenuDesigner = () => {
   const menuSchema = findMenuSchema(fieldSchema);
   const compile = useCompile();
   const { urlSchema, paramsSchema } = useURLAndHTMLSchema();
-  const onSelect = useMemo(
-    () => compile(menuSchema?.['x-component-props']?.['onSelect']),
-    [menuSchema?.['x-component-props']?.['onSelect']],
-  );
+  const onSelectExpression = menuSchema?.['x-component-props']?.['onSelect'];
+  const onSelect = useMemo(() => compile(onSelectExpression), [compile, onSelectExpression]);
   const items = useMemo(() => toItems(menuSchema?.properties, { t, compile }), [menuSchema?.properties, t, compile]);
   const effects = useCallback(
     (form) => {
@@ -394,7 +389,7 @@ export const MenuDesigner = () => {
         });
       }
     },
-    [fieldSchema, field, dn, refresh, onSelect],
+    [fieldSchema, field, dn, refresh, onSelect, updateRoute],
   );
   const onEditTooltipSubmit: (values: any) => void = useCallback(
     ({ tooltip }) => {
@@ -405,7 +400,7 @@ export const MenuDesigner = () => {
         });
       }
     },
-    [fieldSchema, field, dn, refresh, onSelect],
+    [fieldSchema, updateRoute],
   );
 
   const modalSchema = useMemo(() => {
@@ -506,37 +501,6 @@ export const MenuDesigner = () => {
         schema={editTooltipSchema as ISchema}
         initialValues={initialTooltipValues}
         onSubmit={onEditTooltipSubmit}
-      />
-      <SchemaSettingsSwitchItem
-        title={t('Hidden')}
-        checked={fieldSchema['x-component-props']?.hidden}
-        onChange={(v) => {
-          Modal.confirm({
-            title: t('Are you sure you want to hide this menu?'),
-            icon: <ExclamationCircleFilled />,
-            content: t(
-              'After hiding, this menu will no longer appear in the menu bar. To show it again, you need to go to the route management page to configure it.',
-            ),
-            async onOk() {
-              fieldSchema['x-component-props'].hidden = !!v;
-              field.componentProps.hidden = !!v;
-
-              // 更新菜单对应的路由
-              if (fieldSchema['__route__']?.id) {
-                await updateRoute(fieldSchema['__route__'].id, {
-                  hideInMenu: !!v,
-                });
-              }
-
-              dn.emit('patch', {
-                schema: {
-                  'x-uid': fieldSchema['x-uid'],
-                  'x-component-props': fieldSchema['x-component-props'],
-                },
-              });
-            },
-          });
-        }}
       />
       <SchemaSettingsModalItem
         title={t('Move to')}
