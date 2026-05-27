@@ -11,6 +11,25 @@ import { css } from '@emotion/css';
 import { SORT_HANDLE_GUTTER } from './constants';
 
 /**
+ * Restore horizontal scrolling on `.ant-table-content` so wide tables in
+ * narrow containers (drawer / settings panel) scroll their inner `<table>`
+ * instead of getting clipped or forcing the outer container to grow.
+ *
+ * `width: max-content` on the inner `<table>` lets columns size to their
+ * natural width; `min-width: 100%` keeps the table filling the viewport
+ * when total column width is smaller than the container.
+ */
+export const tableScrollClassName = css`
+  &.ant-table-wrapper .ant-table-content {
+    overflow: auto hidden;
+  }
+  &.ant-table-wrapper .ant-table-content > table {
+    width: max-content;
+    min-width: 100%;
+  }
+`;
+
+/**
  * Reserve a `SORT_HANDLE_GUTTER`-wide gap on the left of the rowSelection
  * column so the handle's `left:0` lands inside a `position:relative` cell.
  * Padding is mirrored on both the header `<th>` and body `<td>` so the

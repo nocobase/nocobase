@@ -7,6 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import type { BranchContextValue } from './BranchContext';
+import { lang } from './locale';
+
 export function linkNodes(nodes): void {
   const nodesMap = new Map();
   nodes.forEach((item) => nodesMap.set(item.id, item));
@@ -36,4 +39,37 @@ export function getWorkflowDetailPath(id: string | number) {
 
 export function getWorkflowExecutionsPath(id: string | number) {
   return `/admin/settings/workflow/executions/${id}`;
+}
+
+type WorkflowCapabilityContext = {
+  engine: {
+    isWorkflowSync(workflow: any): boolean;
+  };
+  workflow: any;
+  upstream: any;
+  branchIndex: number | null;
+  syncOnly?: boolean;
+  branchContext?: Pick<BranchContextValue, 'syncOnly'> | null;
+};
+
+type AvailableInstruction = {
+  async?: boolean;
+  isAvailable?(ctx: WorkflowCapabilityContext): boolean;
+};
+
+export function getInstructionAvailable(instruction: AvailableInstruction, ctx: WorkflowCapabilityContext) {
+  if (instruction.async && ctx.engine.isWorkflowSync(ctx.workflow)) {
+    return lang('This type of node can not be used in current type of workflow or execute mode.');
+  }
+
+  const syncOnly = ctx.branchContext?.syncOnly ?? ctx.syncOnly ?? false;
+  if (instruction.async && syncOnly) {
+    return lang('This branch does not support asynchronous nodes.');
+  }
+
+  if (instruction.isAvailable && !instruction.isAvailable({ ...ctx, syncOnly })) {
+    return lang('This type of node can not be used in current type of workflow or execute mode.');
+  }
+
+  return null;
 }

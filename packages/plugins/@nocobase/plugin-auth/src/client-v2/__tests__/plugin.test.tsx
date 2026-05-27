@@ -21,27 +21,24 @@ describe('plugin-auth client-v2', () => {
     vi.restoreAllMocks();
   });
 
-  it('should redirect runtime 401 to v2 signin with replace', async () => {
-    const replace = vi.fn();
-    Object.defineProperty(globalThis.window, 'location', {
-      configurable: true,
-      value: {
-        ...originalLocation,
-        pathname: '/v2/admin/7vu4c2sdk6h',
-        search: '?tab=overview',
-        hash: '#panel',
-        replace,
-      },
-    });
+  it('should navigate to v2 signin on runtime 401 with EXPIRED_SESSION', async () => {
+    // Aligns with v1: use react-router (data router) `navigate` rather than
+    // `window.location.replace`, so a `window.location.href` queued by a sibling
+    // response interceptor (e.g. plugin-two-factor-authentication's `code:302`
+    // handler) can win the race instead of being clobbered.
+    const navigateSpy = vi.fn();
 
     const app = createMockClient({
       publicPath: '/v2/',
       plugins: [PluginAuthClientV2 as any],
       router: { type: 'memory', initialEntries: ['/v2/admin/7vu4c2sdk6h?tab=overview#panel'] },
     });
+    // `addPageTabItem({ menuKey: 'security' })` in plugin-auth's `load()` requires the parent menu to exist. In production, the v2 buildin plugin registers it; `createMockClient` does not load that plugin, so the test registers the menu directly before `app.load()`.
+    app.pluginSettingsManager.addMenuItem({ key: 'security', title: 'Security' });
     await app.load();
     app.router.router = {
       basename: '/v2',
+      navigate: navigateSpy,
       state: {
         location: {
           pathname: '/v2/admin/7vu4c2sdk6h',
@@ -65,31 +62,61 @@ describe('plugin-auth client-v2', () => {
     app.apiClient.axios.interceptors.response.handlers[0].rejected(error);
 
     await vi.waitFor(() => {
-      expect(replace).toHaveBeenCalledWith('/v2/signin?redirect=%2Fv2%2Fadmin%2F7vu4c2sdk6h%3Ftab%3Doverview%23panel');
+      expect(navigateSpy).toHaveBeenCalledWith(
+        '/signin?redirect=%2Fv2%2Fadmin%2F7vu4c2sdk6h%3Ftab%3Doverview%23panel',
+        {
+          replace: true,
+        },
+      );
+    });
+  });
+
+  it('should clear auth token on runtime 401 with EXPIRED_SESSION', async () => {
+    // The redirect uses navigate (no full-page reload), so the auth token must be
+    // wiped explicitly — otherwise downstream requests on the in-memory page would
+    // re-send the now-invalid token before the signin page mounts.
+    const navigateSpy = vi.fn();
+    const app = createMockClient({
+      publicPath: '/v2/',
+      plugins: [PluginAuthClientV2 as any],
+      router: { type: 'memory', initialEntries: ['/v2/admin/anywhere'] },
+    });
+    // `addPageTabItem({ menuKey: 'security' })` in plugin-auth's `load()` requires the parent menu to exist. In production, the v2 buildin plugin registers it; `createMockClient` does not load that plugin, so the test registers the menu directly before `app.load()`.
+    app.pluginSettingsManager.addMenuItem({ key: 'security', title: 'Security' });
+    await app.load();
+    app.apiClient.auth.setToken('stale-token');
+    app.router.router = {
+      basename: '/v2',
+      navigate: navigateSpy,
+      state: { location: { pathname: '/v2/admin/anywhere', search: '', hash: '' } },
+    } as any;
+
+    const error = {
+      response: { status: 401, data: { errors: [{ code: 'EXPIRED_SESSION' }] } },
+      config: {},
+    } as any;
+
+    // @ts-ignore
+    app.apiClient.axios.interceptors.response.handlers[0].rejected(error);
+
+    await vi.waitFor(() => {
+      expect(app.apiClient.auth.token).toBe('');
     });
   });
 
   it('should not redirect skipped auth routes on runtime 401', async () => {
-    const replace = vi.fn();
-    Object.defineProperty(globalThis.window, 'location', {
-      configurable: true,
-      value: {
-        ...originalLocation,
-        pathname: '/v2/signin',
-        search: '',
-        hash: '',
-        replace,
-      },
-    });
-
+    const navigateSpy = vi.fn();
     const app = createMockClient({
       publicPath: '/v2/',
       plugins: [PluginAuthClientV2 as any],
       router: { type: 'memory', initialEntries: ['/v2/signin'] },
     });
+    // `addPageTabItem({ menuKey: 'security' })` in plugin-auth's `load()` requires the parent menu to exist. In production, the v2 buildin plugin registers it; `createMockClient` does not load that plugin, so the test registers the menu directly before `app.load()`.
+    app.pluginSettingsManager.addMenuItem({ key: 'security', title: 'Security' });
     await app.load();
     app.router.router = {
       basename: '/v2',
+      navigate: navigateSpy,
       state: {
         location: {
           pathname: '/v2/signin',
@@ -116,6 +143,6 @@ describe('plugin-auth client-v2', () => {
     } catch (thrownError) {
       expect(thrownError).toBe(error);
     }
-    expect(replace).not.toHaveBeenCalled();
+    expect(navigateSpy).not.toHaveBeenCalled();
   });
 });

@@ -521,6 +521,7 @@ exports.initEnv = function initEnv() {
     // PM2_HOME: generatePm2Home(),
     // SOCKET_PATH: generateGatewayPath(),
     NODE_MODULES_PATH: resolve(process.cwd(), 'node_modules'),
+    NODE_PATH: resolve(process.cwd(), 'node_modules'),
     PLUGIN_PACKAGE_PREFIX: '@nocobase/plugin-,@nocobase/plugin-sample-,@nocobase/preset-',
     SERVER_TSCONFIG_PATH: './tsconfig.server.json',
     CACHE_DEFAULT_STORE: 'memory',

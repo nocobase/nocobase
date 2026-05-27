@@ -12,6 +12,7 @@ import { useFlowEngineContext } from '@nocobase/flow-engine';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
 import { Outlet } from 'react-router-dom';
+import { escapeHTML, getAppVersionHTML } from '../utils';
 
 const waitForAppReady = async () => {
   await waitFor(() => {
@@ -32,6 +33,7 @@ describe('app', () => {
 
     afterEach(() => {
       document.querySelectorAll('link[rel="shortcut icon"]').forEach((node) => node.remove());
+      document.documentElement.removeAttribute('lang');
       vi.restoreAllMocks();
     });
 
@@ -64,6 +66,44 @@ describe('app', () => {
       const favicon = document.querySelector('link[rel="shortcut icon"]') as HTMLLinkElement;
       expect(favicon).toBeInTheDocument();
       expect(favicon.getAttribute('href')).toBe('/custom-favicon.ico');
+    });
+
+    it('should reset favicon to default when favicon is cleared', () => {
+      const app = new Application({ router });
+
+      app.updateFavicon('/custom-favicon.ico');
+      app.updateFavicon(null);
+
+      const favicon = document.querySelector('link[rel="shortcut icon"]') as HTMLLinkElement;
+      expect(favicon).toBeInTheDocument();
+      expect(favicon.getAttribute('href')).toBe('/favicon/favicon.ico');
+    });
+
+    it('should reset favicon to default when favicon is explicitly undefined', () => {
+      const app = new Application({ router });
+
+      app.updateFavicon('/custom-favicon.ico');
+      app.updateFavicon(undefined);
+
+      const favicon = document.querySelector('link[rel="shortcut icon"]') as HTMLLinkElement;
+      expect(favicon).toBeInTheDocument();
+      expect(favicon.getAttribute('href')).toBe('/favicon/favicon.ico');
+    });
+
+    it('should sync document language when app language changes', async () => {
+      const app = new Application({ router });
+
+      await app.i18n.changeLanguage('ja-JP');
+
+      expect(document.documentElement.lang).toBe('ja-JP');
+    });
+
+    it('should escape app version html placeholder content', () => {
+      expect(getAppVersionHTML('<script>alert(1)</script>&"')).toBe(
+        '<span class="nb-app-version">v&lt;script&gt;alert(1)&lt;/script&gt;&amp;&quot;</span>',
+      );
+      expect(getAppVersionHTML(undefined)).toBe('');
+      expect(escapeHTML("NocoBase <v2> & 'beta'")).toBe('NocoBase &lt;v2&gt; &amp; &#39;beta&#39;');
     });
 
     it('should reject invalid component objects but keep valid exotic components', () => {
@@ -339,7 +379,10 @@ describe('app', () => {
 
       await waitFor(() => expect(screen.queryByText('maintaining error message')).not.toBeInTheDocument());
       expect(screen.getByText('Hello')).toBeInTheDocument();
-      expect(reloadMock).toHaveBeenCalled();
+      // Aligned with v1: a routine maintaining→APP_RUNNING cycle does not
+      // reload the page. Only `hasLoadError === true` (set when the initial
+      // `app.load()` itself fails) triggers a recovery reload.
+      expect(reloadMock).not.toHaveBeenCalled();
     } finally {
       Object.defineProperty(globalThis.window, 'location', {
         configurable: true,

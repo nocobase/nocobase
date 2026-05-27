@@ -27,14 +27,58 @@ export function resolveApiBaseUrl(config: {
   return String(config.apiBaseUrl ?? config.baseUrl ?? config.apibaseUrl ?? '').trim();
 }
 
-export function appUrl(runtime: ManagedAppRuntime): string {
-  const port = String(runtime.env.config.appPort ?? '').trim();
-  if (port) {
-    return `http://127.0.0.1:${port}`;
+function buildAppPath(publicPath: string, subapp?: string): string {
+  const normalizedPublicPath = publicPath.replace(/\/+$/, '');
+  if (!subapp) {
+    return normalizedPublicPath ? `${normalizedPublicPath}/` : '/';
   }
 
-  const baseUrl = resolveApiBaseUrl(runtime.env.config);
-  return baseUrl.replace(/\/api\/?$/, '');
+  const normalizedSubapp = subapp.replace(/^\/+|\/+$/g, '');
+  return `${normalizedPublicPath ? normalizedPublicPath : ''}/apps/${normalizedSubapp}/`;
+}
+
+export function resolveAppUrlFromApiBaseUrl(apiBaseUrl: unknown): string {
+  const value = String(apiBaseUrl ?? '').trim();
+  if (!value) {
+    return '';
+  }
+
+  try {
+    const url = new URL(value);
+    const subappMatch = url.pathname.match(/^(.*)\/api\/__app\/([^/]+)\/?$/);
+    if (subappMatch) {
+      url.pathname = buildAppPath(subappMatch[1] ?? '', subappMatch[2]);
+      url.search = '';
+      url.hash = '';
+      return url.toString();
+    }
+
+    const appMatch = url.pathname.match(/^(.*)\/api\/?$/);
+    if (appMatch) {
+      url.pathname = buildAppPath(appMatch[1] ?? '');
+      url.search = '';
+      url.hash = '';
+      return url.toString();
+    }
+  } catch {
+    return value;
+  }
+
+  return value;
+}
+
+export function appUrl(runtime: ManagedAppRuntime): string {
+  const resolvedFromApiBaseUrl = resolveAppUrlFromApiBaseUrl(runtime.env.apiBaseUrl ?? resolveApiBaseUrl(runtime.env.config));
+  if (resolvedFromApiBaseUrl) {
+    return resolvedFromApiBaseUrl;
+  }
+
+  const port = String(runtime.env.config.appPort ?? '').trim();
+  if (port) {
+    return `http://127.0.0.1:${port}/`;
+  }
+
+  return '';
 }
 
 export function appRootPath(runtime: ManagedAppRuntime): string {

@@ -78,6 +78,9 @@ export interface FlowSurfaceAuthoringValidationContext {
   hostDataSourceKey?: string;
   currentCollectionName?: string;
   currentDataSourceKey?: string;
+  isPopupSurface?: boolean;
+  popupScene?: string;
+  popupHasCurrentRecord?: boolean;
   enabledPackages?: ReadonlySet<string>;
   currentNode?: any;
   skipGeneratedPopupDefaultFieldGroups?: boolean;
@@ -103,6 +106,8 @@ const FIELD_GRID_BLOCK_TYPES = new Set(['createForm', 'editForm', 'details', 'fi
 const DEFAULT_FORM_BEHAVIOR_REACTION_FORM_BLOCK_TYPES = new Set(['createForm', 'editForm']);
 const SORTABLE_BLOCK_TYPES = new Set(['table', 'details', 'list', 'tree', 'kanban', 'gridCard', 'map']);
 const CHART_BLOCK_TYPES = new Set(['chart']);
+const COMMENTS_PAGE_SIZE_VALUES = new Set([5, 10, 20, 50, 100, 200]);
+const RECORD_HISTORY_INTERNAL_COLLECTIONS = new Set(['recordHistories', 'recordFieldHistories']);
 const ANT_DESIGN_ICON_NAMES = new Set(Object.keys(antDesignIconAsn || {}));
 const PUBLIC_BLOCK_TYPE_BY_MODEL_USE: Record<string, string> = {
   TableBlockModel: 'table',
@@ -119,6 +124,7 @@ const PUBLIC_BLOCK_TYPE_BY_MODEL_USE: Record<string, string> = {
   ChartBlockModel: 'chart',
   MapBlockModel: 'map',
   CommentsBlockModel: 'comments',
+  RecordHistoryBlockModel: 'recordHistory',
   JSBlockModel: 'jsBlock',
   MarkdownBlockModel: 'markdown',
   IframeBlockModel: 'iframe',
@@ -197,6 +203,7 @@ const TREE_CONNECT_TARGET_BLOCK_USES = new Set([
   'ChartBlockModel',
   'MapBlockModel',
   'CommentsBlockModel',
+  'RecordHistoryBlockModel',
 ]);
 const HIDDEN_POPUP_SETTINGS_KEYS_BY_BLOCK_TYPE: Record<string, string[]> = {
   calendar: ['quickCreatePopup', 'eventPopup'],
@@ -206,6 +213,7 @@ const SUPPORTED_DEFAULT_FILTER_OPERATORS = buildSupportedDefaultFilterOperators(
 const ACTION_TYPE_ALIASES = new Map([
   ['addchild', 'addChild'],
   ['addnew', 'addNew'],
+  ['aiemployee', 'aiEmployee'],
   ['bulkupdate', 'bulkUpdate'],
   ['jsitem', 'jsItem'],
   ['selectview', 'selectView'],
@@ -229,6 +237,7 @@ const CALENDAR_ACTION_TYPE_ALIASES = new Map([
 const KANBAN_ACTION_TYPE_ALIASES = new Map([
   ['filter', 'filter'],
   ['addnew', 'addNew'],
+  ['aiemployee', 'aiEmployee'],
   ['popup', 'popup'],
   ['refresh', 'refresh'],
   ['js', 'js'],
@@ -338,7 +347,7 @@ export async function collectFlowSurfaceAuthoringErrors(
   collectDefaultsShapeErrors(values?.defaults, '$.defaults', errors);
   collectDefaultCollectionFieldGroupSemanticErrors(values?.defaults, validationContext, errors);
   collectDefaultFormBehaviorCompletenessErrors(actionName, values, validationContext, errors);
-  collectApplyBlueprintChartAssetErrors(actionName, values, errors);
+  collectApplyBlueprintChartAssetErrors(actionName, values, validationContext, errors);
 
   if (actionName === 'configure') {
     await collectConfigureErrors(values, errors, validationContext);
@@ -498,13 +507,14 @@ function getAuthoringBlocks(actionName: FlowSurfaceAuthoringWriteAction, values:
 function collectApplyBlueprintChartAssetErrors(
   actionName: FlowSurfaceAuthoringWriteAction,
   values: any,
+  context: FlowSurfaceAuthoringValidationContext,
   errors: AuthoringErrorInput[],
 ) {
   if (actionName !== 'applyBlueprint') {
     return;
   }
   const chartAssets = _.isPlainObject(values?.assets?.charts) ? values.assets.charts : {};
-  collectChartAssetRegistryErrors(chartAssets, '$.assets.charts', errors);
+  collectChartAssetRegistryErrors(chartAssets, '$.assets.charts', context, errors);
   _.castArray(values?.tabs || []).forEach((tab, tabIndex) => {
     collectChartAssetBlockListErrors(tab?.blocks, `$.tabs[${tabIndex}].blocks`, chartAssets, errors);
   });
@@ -610,7 +620,12 @@ function collectChartBlockAssetReferenceErrors(
   }
 }
 
-function collectChartAssetRegistryErrors(charts: any, path: string, errors: AuthoringErrorInput[]) {
+function collectChartAssetRegistryErrors(
+  charts: any,
+  path: string,
+  context: FlowSurfaceAuthoringValidationContext,
+  errors: AuthoringErrorInput[],
+) {
   if (!_.isPlainObject(charts)) {
     return;
   }
@@ -624,12 +639,17 @@ function collectChartAssetRegistryErrors(charts: any, path: string, errors: Auth
       });
       return;
     }
-    collectChartAssetQueryErrors(asset, assetPath, errors);
+    collectChartAssetQueryErrors(asset, assetPath, context, errors);
     collectChartAssetVisualErrors(asset, assetPath, errors);
   });
 }
 
-function collectChartAssetQueryErrors(asset: any, path: string, errors: AuthoringErrorInput[]) {
+function collectChartAssetQueryErrors(
+  asset: any,
+  path: string,
+  context: FlowSurfaceAuthoringValidationContext,
+  errors: AuthoringErrorInput[],
+) {
   const query = asset.query;
   if (!_.isPlainObject(query)) {
     pushAuthoringError(errors, {
@@ -655,10 +675,15 @@ function collectChartAssetQueryErrors(asset: any, path: string, errors: Authorin
     collectSqlChartAssetQueryErrors(query, path, errors);
     return;
   }
-  collectBuilderChartAssetQueryErrors(query, path, errors);
+  collectBuilderChartAssetQueryErrors(query, path, context, errors);
 }
 
-function collectBuilderChartAssetQueryErrors(query: any, path: string, errors: AuthoringErrorInput[]) {
+function collectBuilderChartAssetQueryErrors(
+  query: any,
+  path: string,
+  context: FlowSurfaceAuthoringValidationContext,
+  errors: AuthoringErrorInput[],
+) {
   const resource = _.isPlainObject(query.resource) ? query.resource : null;
   if (!String(resource?.collectionName || '').trim()) {
     pushAuthoringError(errors, {
@@ -681,6 +706,116 @@ function collectBuilderChartAssetQueryErrors(query: any, path: string, errors: A
     'chart-builder-query-forbidden-keys',
     errors,
   );
+  collectBuilderChartAssetFieldErrors(query, path, context, errors);
+}
+
+function normalizeChartAssetFieldPath(input: any) {
+  if (Array.isArray(input)) {
+    return input
+      .map((item) => String(item || '').trim())
+      .filter(Boolean)
+      .join('.');
+  }
+  return String(input || '').trim();
+}
+
+function collectBuilderChartAssetFieldErrors(
+  query: any,
+  path: string,
+  context: FlowSurfaceAuthoringValidationContext,
+  errors: AuthoringErrorInput[],
+) {
+  const resource = _.isPlainObject(query.resource) ? query.resource : null;
+  const collectionName = String(resource?.collectionName || '').trim();
+  if (!collectionName || typeof context.getCollection !== 'function') {
+    return;
+  }
+  const dataSourceKey = String(resource?.dataSourceKey || 'main').trim() || 'main';
+  const collection = context.getCollection(dataSourceKey, collectionName);
+  if (!collection) {
+    return;
+  }
+
+  const selections = [
+    ..._.castArray(query.measures || []).map((selection, index) => ({
+      selection,
+      fieldPath: `${path}.query.measures[${index}].field`,
+    })),
+    ..._.castArray(query.dimensions || []).map((selection, index) => ({
+      selection,
+      fieldPath: `${path}.query.dimensions[${index}].field`,
+    })),
+  ];
+
+  for (const item of selections) {
+    if (!_.isPlainObject(item.selection)) {
+      continue;
+    }
+    const fieldPath = normalizeChartAssetFieldPath(item.selection.field);
+    if (!fieldPath) {
+      continue;
+    }
+    const field = resolveFieldFromCollection(collection, fieldPath);
+    if (!field) {
+      if (collectionHasConcreteField(collection, fieldPath)) {
+        continue;
+      }
+      pushAuthoringError(errors, {
+        path: item.fieldPath,
+        ruleId: 'chart-builder-query-field-unknown',
+        message: `flowSurfaces authoring ${item.fieldPath} references unknown field '${fieldPath}' on collection '${dataSourceKey}.${collectionName}'`,
+        details: {
+          fieldPath,
+          dataSourceKey,
+          collectionName,
+        },
+      });
+      continue;
+    }
+    if (!fieldPath.includes('.') && isAssociationField(field)) {
+      const suggestion = resolveChartBuilderAssociationSubfieldSuggestion(
+        fieldPath,
+        field,
+        dataSourceKey,
+        context.getCollection,
+      );
+      pushAuthoringError(errors, {
+        path: item.fieldPath,
+        ruleId: 'chart-builder-query-association-field-requires-subfield',
+        message: `flowSurfaces authoring ${item.fieldPath} references association field '${fieldPath}' directly; use scalar subfield '${suggestion.suggestedFieldPath}' for builder charts`,
+        details: {
+          fieldPath,
+          dataSourceKey,
+          collectionName,
+          ...suggestion,
+        },
+      });
+    }
+  }
+}
+
+function resolveChartBuilderAssociationSubfieldSuggestion(
+  fieldPath: string,
+  field: any,
+  dataSourceKey: string,
+  getCollection: (dataSourceKey: string, collectionName: string) => any,
+) {
+  try {
+    const resolved = resolveAssociationSafeTitleField(field, dataSourceKey, getCollection, { fieldPath });
+    const titleField = resolved?.fieldName ? String(resolved.fieldName).trim() : '';
+    if (titleField) {
+      return {
+        suggestedFieldPath: `${fieldPath}.${titleField}`,
+        suggestedTitleField: titleField,
+        targetCollectionName: getCollectionName(resolved?.targetCollection) || undefined,
+      };
+    }
+  } catch {
+    // Fall back to generic guidance; the title-field validator reports exact title-field problems elsewhere.
+  }
+  return {
+    suggestedFieldPath: `${fieldPath}.<field>`,
+  };
 }
 
 function collectSqlChartAssetQueryErrors(query: any, path: string, errors: AuthoringErrorInput[]) {
@@ -3615,6 +3750,8 @@ function collectBlockErrors(
     context,
   );
   collectSemanticBindingErrors(block, blockType, path, errors, context);
+  collectCommentsBlockErrors(block, blockType, path, errors, context);
+  collectRecordHistoryBlockErrors(block, blockType, path, errors, context);
   collectChartDisplayTitleErrors(block, blockType, path, errors);
   collectTreeTableExplicitFieldsErrors(block, blockType, path, errors, context);
   collectTreeConnectFieldsErrors(block.settings?.connectFields, `${path}.settings.connectFields`, errors);
@@ -3973,6 +4110,8 @@ async function collectConfigureErrors(
   collectSortingAliasErrors(changes, '$.changes', hostBlockType, errors);
   collectDefaultFilterErrors(changes.defaultFilter, '$.changes.defaultFilter', errors, changesBlock, context);
   collectSemanticBindingErrors(changesBlock, hostBlockType, '$.changes', errors, context);
+  collectCommentsBlockErrors(changesBlock, hostBlockType, '$.changes', errors, context);
+  collectRecordHistoryBlockErrors(changesBlock, hostBlockType, '$.changes', errors, context);
   collectChartDisplayTitleErrors(changes, hostBlockType, '$.changes', errors);
   collectGridCardSettingsErrors(changes, hostBlockType, '$.changes', errors, { directSettings: true });
   collectAssignValuesErrors(changes.assignValues, '$.changes.assignValues', errors, changesBlock, context);
@@ -4787,6 +4926,215 @@ function collectSemanticBindingErrors(
       message: `flowSurfaces authoring ${settingsPath}.${settingKey} references unknown ${blockType} semantic field '${fieldPath}'`,
     });
   });
+}
+
+function collectCommentsBlockErrors(
+  block: any,
+  blockType: string,
+  blockPath: string,
+  errors: AuthoringErrorInput[],
+  context: FlowSurfaceAuthoringValidationContext,
+) {
+  if (blockType !== 'comments') {
+    return;
+  }
+  const settings = _.isPlainObject(block.settings) ? block.settings : block;
+  const settingsPath = _.isPlainObject(block.settings) ? `${blockPath}.settings` : blockPath;
+  if (_.isPlainObject(settings) && hasOwnDefined(settings, 'pageSize')) {
+    const pageSize = Number(settings.pageSize);
+    if (!COMMENTS_PAGE_SIZE_VALUES.has(pageSize)) {
+      pushAuthoringError(errors, {
+        path: `${settingsPath}.pageSize`,
+        ruleId: 'comments-pageSize-unsupported',
+        message: `flowSurfaces authoring ${settingsPath}.pageSize must be one of ${Array.from(
+          COMMENTS_PAGE_SIZE_VALUES,
+        ).join(', ')}`,
+      });
+    }
+  }
+
+  const binding = getResourceBinding(block);
+  if (context.isPopupSurface) {
+    if (binding && binding !== 'associatedrecords') {
+      const rawBinding =
+        String(block?.resource?.binding || block?.binding || '').trim() ||
+        (binding === 'currentrecord' ? 'currentRecord' : binding);
+      pushAuthoringError(errors, {
+        path: `${blockPath}.resource.binding`,
+        ruleId: 'comments-popup-binding-unsupported',
+        message: `flowSurfaces authoring ${blockPath} comments blocks in popups do not support resource.binding='${rawBinding}'; use resource.binding='associatedRecords'`,
+      });
+      return;
+    }
+    if (binding === 'associatedrecords') {
+      collectCommentsAssociationFieldErrors(block, blockPath, errors, context);
+    }
+    return;
+  }
+
+  if (binding === 'associatedrecords' || binding === 'currentrecord') {
+    pushAuthoringError(errors, {
+      path: `${blockPath}.resource.binding`,
+      ruleId: 'comments-page-binding-unsupported',
+      message: `flowSurfaces authoring ${blockPath} comments blocks outside popups require a direct comment template collection resource`,
+    });
+    return;
+  }
+
+  const collection = getBlockCollection(block, context);
+  if (collection && !isCommentTemplateCollection(collection)) {
+    pushAuthoringError(errors, {
+      path: `${blockPath}.resource.collectionName`,
+      ruleId: 'comments-collection-template-required',
+      message: `flowSurfaces authoring ${blockPath} comments block requires a comment template collection`,
+      details: {
+        collection: getCollectionName(collection),
+      },
+    });
+  }
+}
+
+function collectCommentsAssociationFieldErrors(
+  block: any,
+  blockPath: string,
+  errors: AuthoringErrorInput[],
+  context: FlowSurfaceAuthoringValidationContext,
+) {
+  const associationFieldName = getResourceAssociationFieldName(block);
+  if (!associationFieldName || !context.getCollection) {
+    return;
+  }
+  const sourceCollectionName = String(context.currentCollectionName || context.hostCollectionName || '').trim();
+  if (!sourceCollectionName) {
+    return;
+  }
+  const dataSourceKey = getBlockDataSourceKey(block, context);
+  const sourceCollection = context.getCollection(dataSourceKey, sourceCollectionName);
+  const associationField = sourceCollection
+    ? resolveFieldFromCollection(sourceCollection, normalizeFieldPath(associationFieldName))
+    : null;
+  if (!associationField || !isAssociationField(associationField)) {
+    return;
+  }
+  const fieldType = String(getFieldType(associationField) || '')
+    .trim()
+    .toLowerCase();
+  const targetCollection = resolveFieldTargetCollection(
+    associationField,
+    dataSourceKey,
+    (nextDataSourceKey, collectionName) => context.getCollection?.(nextDataSourceKey, collectionName),
+  );
+  if (
+    (fieldType === 'hasmany' || fieldType === 'belongstomany') &&
+    targetCollection &&
+    isCommentTemplateCollection(targetCollection)
+  ) {
+    return;
+  }
+  pushAuthoringError(errors, {
+    path: `${blockPath}.resource.associationField`,
+    ruleId: 'comments-association-field-unsupported',
+    message: `flowSurfaces authoring ${blockPath} associationField '${associationFieldName}' is not available; comments popup blocks require a hasMany or belongsToMany associationField targeting a comment template collection`,
+    details: {
+      associationField: associationFieldName,
+      fieldType,
+      targetCollection: getCollectionName(targetCollection),
+    },
+  });
+}
+
+function collectRecordHistoryBlockErrors(
+  block: any,
+  blockType: string,
+  blockPath: string,
+  errors: AuthoringErrorInput[],
+  context: FlowSurfaceAuthoringValidationContext,
+) {
+  if (blockType !== 'recordHistory') {
+    return;
+  }
+  const settings = _.isPlainObject(block.settings) ? block.settings : block;
+  const settingsPath = _.isPlainObject(block.settings) ? `${blockPath}.settings` : blockPath;
+  collectRecordHistorySettingsErrors(settings, settingsPath, errors);
+
+  const binding = getResourceBinding(block);
+  if (binding === 'associatedrecords') {
+    pushAuthoringError(errors, {
+      path: `${blockPath}.resource.binding`,
+      ruleId: 'recordHistory-association-resource-unsupported',
+      message: `flowSurfaces authoring ${blockPath} recordHistory blocks do not support resource.binding='associatedRecords'`,
+    });
+  }
+  if (binding === 'currentrecord' && (!context.isPopupSurface || context.popupScene !== 'one')) {
+    pushAuthoringError(errors, {
+      path: `${blockPath}.resource.binding`,
+      ruleId: 'recordHistory-currentRecord-popup-required',
+      message: `flowSurfaces authoring ${blockPath} recordHistory resource.binding='currentRecord' is only supported in one-record popup/details scenes`,
+    });
+  }
+
+  const collectionName = getBlockCollectionName(block, context);
+  if (!collectionName) {
+    return;
+  }
+  if (RECORD_HISTORY_INTERNAL_COLLECTIONS.has(collectionName)) {
+    pushAuthoringError(errors, {
+      path: `${blockPath}.resource.collectionName`,
+      ruleId: 'recordHistory-internal-collection-unsupported',
+      message: `flowSurfaces authoring ${blockPath} recordHistory does not support internal collection '${collectionName}'`,
+    });
+    return;
+  }
+  const collection = getBlockCollection(block, context);
+  if (!collection) {
+    return;
+  }
+  const filterTargetKey = getRecordHistoryDeclaredFilterTargetKey(collection);
+  if (!filterTargetKey || !collectionHasConcreteField(collection, filterTargetKey)) {
+    pushAuthoringError(errors, {
+      path: `${blockPath}.resource.collectionName`,
+      ruleId: 'recordHistory-filterTargetKey-required',
+      message: `flowSurfaces authoring ${blockPath} recordHistory requires a real filterTargetKey`,
+      details: {
+        collection: collectionName,
+        filterTargetKey,
+      },
+    });
+  }
+}
+
+function collectRecordHistorySettingsErrors(settings: any, settingsPath: string, errors: AuthoringErrorInput[]) {
+  if (!_.isPlainObject(settings)) {
+    return;
+  }
+  if (hasOwnDefined(settings, 'sortOrder')) {
+    const order = String(settings.sortOrder?.order || '').trim();
+    if (!_.isPlainObject(settings.sortOrder) || (order !== 'asc' && order !== 'desc')) {
+      pushAuthoringError(errors, {
+        path: `${settingsPath}.sortOrder.order`,
+        ruleId: 'recordHistory-sortOrder-unsupported',
+        message: `flowSurfaces authoring ${settingsPath}.sortOrder.order must be 'asc' or 'desc'`,
+      });
+    }
+  }
+  if (hasOwnDefined(settings, 'expand')) {
+    if (!_.isPlainObject(settings.expand) || typeof settings.expand.expand !== 'boolean') {
+      pushAuthoringError(errors, {
+        path: `${settingsPath}.expand.expand`,
+        ruleId: 'recordHistory-expand-invalid',
+        message: `flowSurfaces authoring ${settingsPath}.expand.expand must be a boolean`,
+      });
+    }
+  }
+  if (hasOwnDefined(settings, 'template')) {
+    if (!_.isPlainObject(settings.template) || settings.template.apply !== 'current') {
+      pushAuthoringError(errors, {
+        path: `${settingsPath}.template.apply`,
+        ruleId: 'recordHistory-template-unsupported',
+        message: `flowSurfaces authoring ${settingsPath}.template only supports apply='current'`,
+      });
+    }
+  }
 }
 
 function collectChartDisplayTitleErrors(
@@ -6383,8 +6731,52 @@ function getResourceBinding(block: any) {
     .toLowerCase();
 }
 
+function getResourceAssociationFieldName(block: any) {
+  return String(
+    block?.associationField || block?.resource?.associationField || block?.resource?.associationPathName || '',
+  ).trim();
+}
+
 function getFieldTargetName(field: any) {
   return String(field?.target || field?.options?.target || '').trim();
+}
+
+function isCommentTemplateCollection(collection: any) {
+  return collection?.template === 'comment' || collection?.options?.template === 'comment';
+}
+
+function getRecordHistoryDeclaredFilterTargetKey(collection: any) {
+  const raw = Array.isArray(collection?.filterTargetKey)
+    ? collection.filterTargetKey[0]
+    : !_.isUndefined(collection?.filterTargetKey)
+      ? collection.filterTargetKey
+      : Array.isArray(collection?.options?.filterTargetKey)
+        ? collection.options.filterTargetKey[0]
+        : collection?.options?.filterTargetKey;
+  return String(raw || '').trim();
+}
+
+function collectionHasConcreteField(collection: any, fieldName: string) {
+  const normalized = String(fieldName || '').trim();
+  if (!normalized) {
+    return false;
+  }
+  const modelAttributes =
+    (typeof collection?.model?.getAttributes === 'function' ? collection.model.getAttributes() : null) ||
+    collection?.model?.rawAttributes ||
+    collection?.model?.attributes ||
+    {};
+  const primaryKeyAttributes = _.castArray(
+    collection?.model?.primaryKeyAttributes || collection?.model?.primaryKeyAttribute || [],
+  );
+  const modelAttribute = modelAttributes?.[normalized];
+  const isModelPrimaryKey = primaryKeyAttributes.includes(normalized) || !!modelAttribute?.primaryKey;
+  return !!(
+    resolveFieldFromCollection(collection, normalized) ||
+    collection?.getField?.(normalized) ||
+    getCollectionFields(collection).some((field) => getFieldName(field) === normalized) ||
+    isModelPrimaryKey
+  );
 }
 
 function collectDefaultFilterFieldPathError(

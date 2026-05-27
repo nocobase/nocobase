@@ -8,7 +8,7 @@
  */
 
 import { Command } from '@oclif/core';
-import { getCurrentEnvName, listEnvs } from '../../lib/auth-store.js';
+import { getCurrentEnvName, listEnvs, resolveConfiguredAuthType } from '../../lib/auth-store.js';
 import { resolveDefaultConfigScope } from '../../lib/cli-home.js';
 import { renderTable } from '../../lib/ui.js';
 import { resolveApiBaseUrl } from './shared.js';
@@ -42,7 +42,7 @@ export default class EnvList extends Command {
         name,
         env.kind ?? '-',
         resolveApiBaseUrl(env),
-        env.auth?.type ?? '',
+        resolveConfiguredAuthType(env) ?? env.auth?.type ?? '',
         env.runtime?.version ?? '',
       ]);
     }

@@ -20,7 +20,7 @@ import { getPublicFieldTypeForUse } from '../flow-surfaces/field-type-resolver';
 import { buildPlanKeyKind } from '../flow-surfaces/planning/key-kind';
 import { getReactionKindsForUse } from '../flow-surfaces/reaction/registry';
 
-describe.skip('flowSurfaces approval surface', () => {
+describe('flowSurfaces approval surface', () => {
   it('should expose approval blocks only under approval containers', () => {
     const triggerBlockKeys = getAvailableBlockCatalogItems('TriggerBlockGridModel').map((item) => item.key);
     const approvalBlockKeys = getAvailableBlockCatalogItems('ApprovalBlockGridModel').map((item) => item.key);

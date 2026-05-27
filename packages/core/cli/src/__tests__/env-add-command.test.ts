@@ -17,6 +17,7 @@ const mocks = vi.hoisted(() => ({
   printStage: vi.fn(),
   printSuccess: vi.fn(),
   printVerbose: vi.fn(),
+  printInfo: vi.fn(),
 }));
 
 vi.mock('../lib/prompt-catalog.js', async (importOriginal) => {
@@ -37,6 +38,7 @@ vi.mock('../lib/ui.js', () => ({
   printStage: mocks.printStage,
   printSuccess: mocks.printSuccess,
   printVerbose: mocks.printVerbose,
+  printInfo: mocks.printInfo,
 }));
 
 beforeEach(() => {
@@ -113,6 +115,7 @@ test('env add saves builtinDb into env config when provided by install', async (
       rootEmail: 'admin@nocobase.com',
       rootPassword: 'admin123',
       rootNickname: 'Admin',
+      authType: 'token',
       accessToken: 'token-123',
     },
     { scope: 'global' },
@@ -156,6 +159,7 @@ test('env add stores config globally by default', async () => {
     {
       kind: 'http',
       apiBaseUrl: 'http://127.0.0.1:13000/api',
+      authType: 'oauth',
     },
     { scope: 'global' },
   ]);
@@ -165,4 +169,90 @@ test('env add stores config globally by default', async () => {
   ]);
   expect(mocks.setCurrentEnv).toHaveBeenCalledWith('local', { scope: 'global' });
   expect(mocks.printSuccess).toHaveBeenCalledWith('✔ Env "local" is ready.');
+});
+
+test('env add can defer authentication and tell the user to run env auth later', async () => {
+  const { default: EnvAdd } = await import('../commands/env/add.js');
+  mocks.runPromptCatalog.mockResolvedValue({
+    name: 'local',
+    apiBaseUrl: 'http://127.0.0.1:13000/api',
+    authType: 'token',
+  });
+  mocks.upsertEnv.mockResolvedValue(undefined);
+  mocks.setCurrentEnv.mockResolvedValue(undefined);
+
+  const runCommand = vi.fn(async () => undefined);
+  const command = Object.assign(Object.create(EnvAdd.prototype), {
+    parse: vi.fn(async () => ({
+      args: { name: 'local' },
+      flags: {
+        verbose: false,
+        'api-base-url': 'http://127.0.0.1:13000/api',
+        'auth-type': 'token',
+        'skip-auth': true,
+      },
+    })),
+    config: {
+      runCommand,
+    },
+    error: (message: string) => {
+      throw new Error(message);
+    },
+  });
+
+  await EnvAdd.prototype.run.call(command);
+
+  expect(mocks.runPromptCatalog).toHaveBeenCalledTimes(1);
+  const promptCatalog = mocks.runPromptCatalog.mock.calls[0]?.[0];
+  expect(promptCatalog?.accessToken?.hidden?.({ authType: 'token' })).toBe(true);
+  expect(mocks.upsertEnv.mock.calls[0]).toEqual([
+    'local',
+    {
+      kind: 'http',
+      apiBaseUrl: 'http://127.0.0.1:13000/api',
+      authType: 'token',
+    },
+    { scope: 'global' },
+  ]);
+  expect(runCommand).not.toHaveBeenCalled();
+  expect(mocks.printSuccess).toHaveBeenCalledWith('✔ Env "local" was saved.');
+  expect(mocks.printInfo).toHaveBeenCalledWith(
+    'Authentication was skipped for env "local". Run `nb env auth local` to finish setup. You will be prompted for an access token.',
+  );
+});
+
+test('env add explains that deferred basic auth will prompt for username and password', async () => {
+  const { default: EnvAdd } = await import('../commands/env/add.js');
+  mocks.runPromptCatalog.mockResolvedValue({
+    name: 'local',
+    apiBaseUrl: 'http://127.0.0.1:13000/api',
+    authType: 'basic',
+    username: 'admin',
+  });
+  mocks.upsertEnv.mockResolvedValue(undefined);
+  mocks.setCurrentEnv.mockResolvedValue(undefined);
+
+  const runCommand = vi.fn(async () => undefined);
+  const command = Object.assign(Object.create(EnvAdd.prototype), {
+    parse: vi.fn(async () => ({
+      args: { name: 'local' },
+      flags: {
+        verbose: false,
+        'api-base-url': 'http://127.0.0.1:13000/api',
+        'auth-type': 'basic',
+        username: 'admin',
+        'skip-auth': true,
+      },
+    })),
+    config: {
+      runCommand,
+    },
+  });
+
+  await EnvAdd.prototype.run.call(command);
+
+  expect(runCommand).not.toHaveBeenCalled();
+  expect(mocks.printInfo).toHaveBeenCalledWith(
+    'Authentication was skipped for env "local". Run `nb env auth local` to finish setup. You will be prompted for a username and password.',
+  );
 });

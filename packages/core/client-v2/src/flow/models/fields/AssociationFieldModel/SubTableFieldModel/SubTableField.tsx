@@ -269,7 +269,7 @@ export function SubTableField(props) {
               display: 'flex',
               justifyContent: 'space-between',
               alignItems: 'center',
-              minHeight: '20px',
+              minHeight: '36px',
             }}
           >
             <Space>

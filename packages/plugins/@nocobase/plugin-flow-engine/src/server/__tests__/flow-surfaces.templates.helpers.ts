@@ -61,7 +61,13 @@ function buildDefaultFilter(collectionName: string, collectionMeta: any[]) {
 
 export function getData(response: any) {
   expect(response.status, readErrorMessage(response)).toBe(200);
-  return response.body?.data?.data ?? response.body?.data;
+  if (response.body?.data && Object.prototype.hasOwnProperty.call(response.body.data, 'data')) {
+    return response.body.data.data;
+  }
+  if (response.body && Object.prototype.hasOwnProperty.call(response.body, 'data')) {
+    return response.body.data;
+  }
+  return response.body;
 }
 
 export function getListData(response: any) {

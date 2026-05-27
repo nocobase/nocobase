@@ -34,6 +34,8 @@
       "back": "Back",
       "next": "Next",
       "submit": "Submit & continue in terminal",
+      "showPassword": "Show password",
+      "hidePassword": "Hide password",
       "checking": "Checking...",
       "sending": "Sending...",
       "successTitle": "Success",
@@ -73,7 +75,8 @@
       "timeout": "Timed out connecting to the database at {{host}}:{{port}} after about {{seconds}} seconds.",
       "authenticationFailed": "Failed to sign in to database \"{{database}}\" with user \"{{user}}\". Check the username and password.",
       "databaseNotFound": "Database \"{{database}}\" does not exist or is not accessible with the current connection settings.",
-      "connectionFailed": "Database connection check failed. Details: {{details}}"
+      "connectionFailed": "Database connection check failed. Details: {{details}}",
+      "lowerCaseTableNamesRequiresUnderscored": "MySQL lower_case_table_names=1 requires DB_UNDERSCORED=true."
     }
   },
   "commands": {
@@ -94,15 +97,27 @@
         },
         "authType": {
           "message": "How would you like to sign in?",
+          "basicLabel": "Basic login (username + password)",
+          "basicHint": "uses your credentials to fetch a token after save",
           "oauthLabel": "OAuth (browser login)",
           "oauthHint": "runs nb env auth after save",
           "tokenLabel": "API token / API key"
+        },
+        "username": {
+          "message": "Enter the username for basic login",
+          "placeholder": "admin"
+        },
+        "password": {
+          "message": "Enter the password for basic login"
         },
         "accessToken": {
           "message": "Enter an API token or API key",
           "placeholder": "Enter your API token / API key"
         }
       }
+    },
+    "shared": {
+      "missingCommand": "Couldn't run `{{action}}` because the {{displayName}} executable could not be found. Install {{displayName}} or update `nb config set {{configKey}} <path>` and try again."
     },
     "download": {
       "failures": {
@@ -206,6 +221,10 @@
       }
     },
     "install": {
+      "messages": {
+        "skipDownloadDockerImageMissing": "Cannot continue with `--skip-download` because Docker image \"{{imageRef}}\" is not available locally. Load or pull the image first, or run the command again without `--skip-download`.",
+        "skipDownloadLocalAppMissing": "Cannot continue with `--skip-download` because \"{{projectRoot}}\" is missing or does not contain a package.json file. Point `--app-root-path` to an existing NocoBase app, or run the command again without `--skip-download`."
+      },
       "validation": {
         "builtinDbUnsupported": "Built-in database does not support \"{{dialect}}\" yet. Choose PostgreSQL, MySQL, or MariaDB, or turn off built-in database."
       },
@@ -228,9 +247,6 @@
         "storagePath": {
           "message": "Where should uploads and local files be stored?",
           "placeholder": "./<env>/storage/"
-        },
-        "fetchSource": {
-          "message": "Download NocoBase automatically if the app directory is empty?"
         },
         "dbDialect": {
           "message": "Which database would you like to use?"
@@ -258,6 +274,17 @@
         },
         "dbPassword": {
           "message": "What is the database password?"
+        },
+        "dbSchema": {
+          "message": "What is the database schema? (PostgreSQL only, optional)",
+          "placeholder": "Leave empty to use the default schema"
+        },
+        "dbTablePrefix": {
+          "message": "What table prefix should be used? (optional)",
+          "placeholder": "For example: nb_"
+        },
+        "dbUnderscored": {
+          "message": "Use underscored names for database tables and columns?"
         },
         "rootUsername": {
           "message": "Choose the initial admin username",
@@ -290,7 +317,8 @@
         "uiOpening": "A local setup form will open in your browser. That form needs a person to fill it in. If you are using an AI agent, do not stop this process while the CLI waits for the submission.",
         "uiReady": "Local setup form is ready.",
         "uiReadyHelp": "If your browser does not open automatically, copy the URL below into your browser to continue. Keep this terminal session running while the CLI waits for the submission.",
-        "uiOpenBrowserFallback": "We could not open your browser automatically. Copy the URL above into your browser to continue setup, and keep this terminal session running. If you are using an AI agent, do not stop the current process."
+        "uiOpenBrowserFallback": "We could not open your browser automatically. Copy the URL above into your browser to continue setup, and keep this terminal session running. If you are using an AI agent, do not stop the current process.",
+        "skillsSyncRegistryUnavailable": "Couldn't reach the npm registry to sync NocoBase AI coding skills. Skipping skills install and continuing init. Run `nb skills install` later when registry access is available."
       },
       "prompts": {
         "appName": {
@@ -308,6 +336,9 @@
         "apiBaseUrl": {
           "message": "API base URL",
           "placeholder": "https://demo.example.com/api or https://demo.example.com/api/__app/<subapp>"
+        },
+        "skipDownload": {
+          "message": "Skip downloading NocoBase and reuse existing local app files or Docker images"
         }
       },
       "webUi": {

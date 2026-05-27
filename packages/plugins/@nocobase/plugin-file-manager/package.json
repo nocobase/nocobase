@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-file-manager",
-  "version": "2.1.0-beta.35",
+  "version": "2.1.0-beta.37",
   "displayName": "File manager",
   "displayName.ru-RU": "Менеджер файлов",
   "displayName.zh-CN": "文件管理器",
@@ -27,6 +27,7 @@
     "antd": "5.x",
     "axios": "^1.7.0",
     "cos-nodejs-sdk-v5": "^2.11.14",
+    "file-type": "^21.0.0",
     "koa-static": "^5.0.0",
     "mime-match": "^1.0.2",
     "mime-types": "^3.0.1",
@@ -34,13 +35,11 @@
     "multer": "^1.4.5-lts.2",
     "multer-s3": "^3.0.1",
     "multistream": "^4.1.0",
+    "pdfjs-dist": "^5.3.31",
     "react": "^18.2.0",
     "react-i18next": "^11.15.1",
     "supertest": "^6.1.6",
     "url-join": "4.0.1"
-  },
-  "dependencies": {
-    "file-type": "^21.0.0"
   },
   "peerDependencies": {
     "@nocobase/actions": "2.x",

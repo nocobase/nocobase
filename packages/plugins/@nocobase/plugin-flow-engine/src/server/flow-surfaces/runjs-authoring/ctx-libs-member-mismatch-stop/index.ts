@@ -13,5 +13,5 @@ export const ctxLibsMemberMismatchStopRule: RunJsAuthoringRuleDefinition = {
   repairClass: 'ctx-libs-member-mismatch-stop',
   defaultRuleId: 'runjs-ctx-libs-member-case-invalid',
   suggestedAction:
-    'Use exact case-sensitive ctx.libs keys, such as ctx.libs.React, ctx.libs.ReactDOM, and ctx.libs.antdIcons.',
+    "Use exact case-sensitive ctx.libs keys and supported library exports. For Ant Design color palettes, import '@ant-design/colors' with ctx.importAsync.",
 };

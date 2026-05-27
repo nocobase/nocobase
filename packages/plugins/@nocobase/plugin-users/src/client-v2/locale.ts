@@ -8,15 +8,10 @@
  */
 
 import { useTranslation } from 'react-i18next';
-import enUS from '../locale/en-US.json';
-import zhCN from '../locale/zh-CN.json';
 
 export const NAMESPACE = 'users';
 
-export const usersLocaleResources = {
-  'en-US': enUS,
-  'zh-CN': zhCN,
-};
+// Locale resources auto-loaded by v2 buildin `LocalePlugin.afterAdd`.
 
 export function useUsersTranslation() {
   return useTranslation([NAMESPACE, 'client'], { nsMode: 'fallback' });

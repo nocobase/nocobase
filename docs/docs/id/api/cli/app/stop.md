@@ -1,12 +1,12 @@
 ---
 title: "nb app stop"
-description: "Referensi perintah nb app stop: menghentikan aplikasi NocoBase atau container Docker dari env yang ditentukan."
+description: "Referensi perintah nb app stop: menghentikan aplikasi NocoBase pada env yang ditentukan dan, untuk env Docker, menghapus container aplikasinya."
 keywords: "nb app stop,NocoBase CLI,menghentikan aplikasi,Docker"
 ---
 
 # nb app stop
 
-Menghentikan aplikasi NocoBase dari env yang ditentukan. Instalasi npm/Git akan menghentikan proses aplikasi lokal, instalasi Docker akan menghentikan container aplikasi yang tersimpan.
+Menghentikan aplikasi NocoBase dari env yang ditentukan. Instalasi npm/Git akan menghentikan proses aplikasi lokal, instalasi Docker akan menghapus container aplikasi yang tersimpan.
 
 ## Penggunaan
 

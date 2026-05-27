@@ -9,8 +9,10 @@
 
 import { afterEach, beforeEach, test, vi, expect } from 'vitest';
 
+const ANSI_SGR_REGEX = new RegExp(String.raw`\u001B\[[0-9;]*m`, 'g');
+
 function stripAnsi(value: string) {
-  return value.replace(/\u001B\[[0-9;]*m/g, '');
+  return value.replace(ANSI_SGR_REGEX, '');
 }
 
 const mocks = vi.hoisted(() => ({
@@ -182,6 +184,15 @@ test('nb init continues from the browser UI result and runs env:add for an exist
     'If your browser does not open automatically, copy the URL below into your browser to continue. Keep this terminal session running while the CLI waits for the submission.',
   );
   expect(log).toHaveBeenCalledWith('URL: http://127.0.0.1:60128/');
+  expect(webUiOptions?.stages[2]?.catalog).toMatchObject({
+    skipDownload: expect.any(Object),
+  });
+  expect(webUiOptions?.stages[4]?.catalog).toMatchObject({
+    dbPassword: expect.any(Object),
+    dbSchema: expect.any(Object),
+    dbTablePrefix: expect.any(Object),
+    dbUnderscored: expect.any(Object),
+  });
   expect(mocks.runPromptCatalog.mock.calls.length).toBe(1);
   expect(mocks.runPromptCatalog.mock.calls[0]?.[1]?.values).toEqual({
     appName: 'staging',
@@ -236,7 +247,7 @@ test('nb init shows a concise fallback message when the setup browser cannot be 
     })),
     config: { runCommand: vi.fn(async () => undefined) },
     log: mocks.log,
-      error: mocks.error,
+    error: mocks.error,
     exit: vi.fn((code?: number) => {
       throw new Error(`unexpected exit: ${code ?? 'unknown'}`);
     }),
@@ -279,7 +290,7 @@ test('nb init localizes the browser UI intro title', async () => {
     })),
     config: { runCommand: vi.fn(async () => undefined) },
     log: mocks.log,
-      error: mocks.error,
+    error: mocks.error,
     exit: vi.fn((code?: number) => {
       throw new Error(`unexpected exit: ${code ?? 'unknown'}`);
     }),
@@ -300,7 +311,6 @@ test('nb init forwards download options to nb install for a new app flow', async
     appRootPath: './apps/demoapp',
     appPort: '13080',
     storagePath: './storage/demoapp',
-    fetchSource: true,
     source: 'git',
     version: 'beta',
     gitUrl: 'https://github.com/nocobase/nocobase.git',
@@ -315,6 +325,9 @@ test('nb init forwards download options to nb install for a new app flow', async
     dbDatabase: 'demoapp',
     dbUser: 'nocobase',
     dbPassword: 'secret',
+    dbSchema: 'tenant_a',
+    dbTablePrefix: 'nb_',
+    dbUnderscored: true,
     rootUsername: 'admin',
     rootEmail: 'admin@nocobase.com',
     rootPassword: 'admin123',
@@ -353,29 +366,35 @@ test('nb init forwards download options to nb install for a new app flow', async
   await Init.prototype.run.call(command);
 
   expect(mocks.runNpm.mock.calls.length).toBe(0);
-  expect(mocks.upsertEnv.mock.calls).toEqual([[
-    'demoapp',
-    {
-      apiBaseUrl: 'http://127.0.0.1:13080/api',
-      source: 'git',
-      downloadVersion: 'beta',
-      gitUrl: 'https://github.com/nocobase/nocobase.git',
-      npmRegistry: 'https://registry.npmmirror.com',
-      appRootPath: './apps/demoapp',
-      storagePath: './storage/demoapp',
-      appPort: '13080',
-      builtinDb: true,
-      dbDialect: 'postgres',
-      builtinDbImage: 'registry.example.com/postgres:16',
-      dbHost: '127.0.0.1',
-      dbPort: '5432',
-      dbDatabase: 'demoapp',
-      dbUser: 'nocobase',
-      dbPassword: 'secret',
-      kind: 'local',
-    },
-    { scope: 'global' },
-  ]]);
+  expect(mocks.upsertEnv.mock.calls).toEqual([
+    [
+      'demoapp',
+      {
+        apiBaseUrl: 'http://127.0.0.1:13080/api',
+        authType: 'oauth',
+        source: 'git',
+        downloadVersion: 'beta',
+        gitUrl: 'https://github.com/nocobase/nocobase.git',
+        npmRegistry: 'https://registry.npmmirror.com',
+        appRootPath: './apps/demoapp',
+        storagePath: './storage/demoapp',
+        appPort: '13080',
+        builtinDb: true,
+        dbDialect: 'postgres',
+        builtinDbImage: 'registry.example.com/postgres:16',
+        dbHost: '127.0.0.1',
+        dbPort: '5432',
+        dbDatabase: 'demoapp',
+        dbUser: 'nocobase',
+        dbPassword: 'secret',
+        dbSchema: 'tenant_a',
+        dbTablePrefix: 'nb_',
+        dbUnderscored: true,
+        kind: 'local',
+      },
+      { scope: 'global' },
+    ],
+  ]);
   expect(runCommand.mock.calls).toEqual([
     [
       'install',
@@ -393,17 +412,16 @@ test('nb init forwards download options to nb install for a new app flow', async
         '13080',
         '--storage-path',
         './storage/demoapp',
-        '--fetch-source',
         '--source',
         'git',
         '--version',
         'beta',
-        '--output-dir',
-        './apps/demoapp',
         '--git-url',
         'https://github.com/nocobase/nocobase.git',
         '--npm-registry',
         'https://registry.npmmirror.com',
+        '--output-dir',
+        './apps/demoapp',
         '--replace',
         '--builtin-db',
         '--db-dialect',
@@ -420,6 +438,11 @@ test('nb init forwards download options to nb install for a new app flow', async
         'nocobase',
         '--db-password',
         'secret',
+        '--db-schema',
+        'tenant_a',
+        '--db-table-prefix',
+        'nb_',
+        '--db-underscored',
         '--root-username',
         'admin',
         '--root-email',
@@ -433,6 +456,62 @@ test('nb init forwards download options to nb install for a new app flow', async
   ]);
 });
 
+test('nb init keeps prompted dbUnderscored when preset values still contain false', async () => {
+  const { default: Init } = await import('../commands/init.js');
+
+  mocks.runPromptCatalog.mockResolvedValue({
+    appName: 'demoapp',
+    hasNocobase: 'no',
+    lang: 'en-US',
+    appRootPath: './apps/demoapp',
+    appPort: '13080',
+    storagePath: './storage/demoapp',
+    builtinDb: false,
+    dbDialect: 'postgres',
+    dbHost: '127.0.0.1',
+    dbPort: '5432',
+    dbDatabase: 'demoapp',
+    dbUser: 'nocobase',
+    dbPassword: 'secret',
+    dbUnderscored: true,
+    rootUsername: 'admin',
+    rootEmail: 'admin@nocobase.com',
+    rootPassword: 'admin123',
+    rootNickname: 'Admin',
+  });
+  mocks.runNpm.mockResolvedValue(undefined);
+
+  const runCommand = vi.fn(async () => undefined);
+  const command = Object.assign(Object.create(Init.prototype), {
+    buildPresetValuesFromFlags: vi.fn(() => ({
+      appName: 'demoapp',
+      hasNocobase: 'no',
+      dbUnderscored: false,
+    })),
+    parse: vi.fn(async () => ({
+      flags: {
+        ui: false,
+        yes: false,
+      },
+    })),
+    config: { runCommand },
+    log: mocks.log,
+    error: mocks.error,
+    exit: vi.fn((code?: number) => {
+      throw new Error(`unexpected exit: ${code ?? 'unknown'}`);
+    }),
+  });
+
+  await Init.prototype.run.call(command);
+
+  expect(mocks.upsertEnv.mock.calls[0]?.[1]).toMatchObject({
+    dbUnderscored: true,
+  });
+  const installArgv = runCommand.mock.calls.find(([name]) => name === 'install')?.[1] as string[];
+  expect(installArgv).toContain('--db-underscored');
+  expect(installArgv).not.toContain('--no-db-underscored');
+});
+
 test('nb init saves env config before install starts so failures still leave the env configured', async () => {
   const { default: Init } = await import('../commands/init.js');
 
@@ -443,7 +522,6 @@ test('nb init saves env config before install starts so failures still leave the
     appRootPath: './apps/demoapp',
     appPort: '13080',
     storagePath: './storage/demoapp',
-    fetchSource: true,
     source: 'docker',
     version: 'alpha',
     dockerRegistry: 'nocobase/nocobase',
@@ -479,7 +557,7 @@ test('nb init saves env config before install starts so failures still leave the
     })),
     config: { runCommand },
     log: mocks.log,
-      error: mocks.error,
+    error: mocks.error,
     exit: (code?: number) => {
       throw new Error(`exit: ${code ?? 'unknown'}`);
     },
@@ -516,7 +594,6 @@ test('nb init install failures include a full resume command', async () => {
       appRootPath: './app12/source/',
       appPort: '13080',
       storagePath: './app12/storage/',
-      fetchSource: true,
       source: 'git',
       version: 'beta',
       gitUrl: 'git@example.com:nocobase/nocobase fork.git',
@@ -594,7 +671,6 @@ test('nb init forwards otherVersion as the final --version value to nb install',
       lang: 'en-US',
       appRootPath: './apps/demoapp',
       storagePath: './storage/demoapp',
-      fetchSource: true,
       source: 'git',
       version: 'other',
       otherVersion: 'fix/cli-v2',
@@ -667,7 +743,6 @@ test('nb init treats arbitrary CLI --version values as otherVersion prompt value
       appRootPath: './app8/source/',
       appPort: '13000',
       storagePath: './app8/storage/',
-      fetchSource: true,
       outputDir: './app8/source/',
       gitUrl: 'https://github.com/nocobase/nocobase.git',
       builtinDb: true,
@@ -740,10 +815,7 @@ test('nb init --resume delegates to nb install --resume for the selected env', a
 
   expect(mocks.runPromptCatalog.mock.calls.length).toBe(0);
   expect(runCommand.mock.calls).toEqual([
-    [
-      'install',
-      ['--no-intro', '--skip-save-env-log', '--env', 'app1', '--resume'],
-    ],
+    ['install', ['--no-intro', '--skip-save-env-log', '--env', 'app1', '--resume', '--replace']],
   ]);
   expect(mocks.printInfo).toHaveBeenCalledWith('Agent skills ready.');
 });
@@ -788,7 +860,6 @@ test('nb init --resume --yes forwards setup-only defaults to nb install', async 
           '--resume',
           '--lang',
           'en-US',
-          '--fetch-source',
           '--source',
           'git',
           '--version',
@@ -833,7 +904,7 @@ test('nb init skips skills sync when --skip-skills is provided in flags mode', a
     })),
     config: { runCommand },
     log: mocks.log,
-      error: mocks.error,
+    error: mocks.error,
     exit: (code?: number) => {
       throw new Error(`unexpected exit: ${code ?? 'unknown'}`);
     },
@@ -861,9 +932,6 @@ test('nb init installs skills automatically when they are missing', async () => 
     authType: 'oauth',
     ...(options.values ?? {}),
   }));
-  mocks.inspectSkillsStatus.mockResolvedValue({
-    installed: false,
-  });
   mocks.installNocoBaseSkills.mockResolvedValue({
     action: 'installed',
     status: {
@@ -893,7 +961,7 @@ test('nb init installs skills automatically when they are missing', async () => 
     })),
     config: { runCommand },
     log: mocks.log,
-      error: mocks.error,
+    error: mocks.error,
     exit: (code?: number) => {
       throw new Error(`unexpected exit: ${code ?? 'unknown'}`);
     },
@@ -901,13 +969,102 @@ test('nb init installs skills automatically when they are missing', async () => 
 
   await Init.prototype.run.call(command);
 
-  expect(mocks.inspectSkillsStatus).toHaveBeenCalledTimes(1);
   expect(mocks.installNocoBaseSkills.mock.calls.length).toBe(1);
   expect(mocks.updateNocoBaseSkills).not.toHaveBeenCalled();
   expect(runCommand.mock.calls[0]).toEqual([
     'env:add',
     ['staging', '--no-intro', '--api-base-url', 'http://localhost:13000/api', '--auth-type', 'oauth'],
   ]);
+});
+
+test('nb init warns and continues when skills sync times out', async () => {
+  const { default: Init } = await import('../commands/init.js');
+
+  mocks.runPromptCatalog.mockImplementation(async (_catalog, options) => ({
+    hasNocobase: 'yes',
+    appName: 'staging',
+    apiBaseUrl: 'http://localhost:13000/api',
+    authType: 'oauth',
+    ...(options.values ?? {}),
+  }));
+  mocks.installNocoBaseSkills.mockRejectedValue(new Error('skills list timed out after 5000ms'));
+
+  const runCommand = vi.fn(async () => undefined);
+  const command = Object.assign(Object.create(Init.prototype), {
+    parse: vi.fn(async () => ({
+      flags: {
+        yes: false,
+        ui: false,
+      },
+    })),
+    config: { runCommand },
+    log: mocks.log,
+    error: mocks.error,
+    exit: (code?: number) => {
+      throw new Error(`unexpected exit: ${code ?? 'unknown'}`);
+    },
+  });
+
+  await Init.prototype.run.call(command);
+
+  expect(mocks.installNocoBaseSkills).toHaveBeenCalledTimes(1);
+  expect(mocks.printWarning).toHaveBeenCalledWith(
+    "Couldn't reach the npm registry to sync NocoBase AI coding skills. Skipping skills install and continuing init. Run `nb skills install` later when registry access is available.",
+  );
+  expect(runCommand.mock.calls[0]).toEqual([
+    'env:add',
+    ['staging', '--no-intro', '--api-base-url', 'http://localhost:13000/api', '--auth-type', 'oauth'],
+  ]);
+});
+
+test('nb init still fails when skills sync errors are not caused by npm registry access', async () => {
+  const { default: Init } = await import('../commands/init.js');
+
+  mocks.runPromptCatalog.mockImplementation(async (_catalog, options) => ({
+    hasNocobase: 'yes',
+    appName: 'staging',
+    apiBaseUrl: 'http://localhost:13000/api',
+    authType: 'oauth',
+    ...(options.values ?? {}),
+  }));
+  mocks.installNocoBaseSkills.mockRejectedValue(
+    new Error(
+      'failed to extract @nocobase/skills tarball: packed tarball resolved to @nocobase/not-skills instead of @nocobase/skills.',
+    ),
+  );
+
+  const runCommand = vi.fn(async () => undefined);
+  const command = Object.assign(Object.create(Init.prototype), {
+    parse: vi.fn(async () => ({
+      flags: {
+        yes: false,
+        ui: false,
+      },
+    })),
+    config: { runCommand },
+    log: mocks.log,
+    error: mocks.error,
+    exit: (code?: number) => {
+      throw new Error(`unexpected exit: ${code ?? 'unknown'}`);
+    },
+  });
+
+  let thrown = '';
+  try {
+    await Init.prototype.run.call(command);
+  } catch (error: unknown) {
+    thrown = stripAnsi(error instanceof Error ? error.message : String(error));
+  }
+
+  expect(thrown).toContain(
+    'Skills sync failed: failed to extract @nocobase/skills tarball: packed tarball resolved to @nocobase/not-skills instead of @nocobase/skills.',
+  );
+  expect(
+    mocks.printWarning.mock.calls.some(([message]) =>
+      String(message).includes("Couldn't reach the npm registry to sync NocoBase AI coding skills."),
+    ),
+  ).toBe(false);
+  expect(runCommand).not.toHaveBeenCalled();
 });
 
 test('nb init does not forward the default app port in --yes mode unless it was explicitly provided', async () => {
@@ -933,7 +1090,6 @@ test('nb init does not forward the default app port in --yes mode unless it was 
         appRootPath: './nocobase',
         appPort: '13000',
         storagePath: './storage/local',
-        fetchSource: false,
       },
       { yes: true },
     );
@@ -947,9 +1103,7 @@ test('nb init does not forward the default app port in --yes mode unless it was 
 test('nb init logs duplicate env validation errors in --yes mode', async () => {
   const { default: Init } = await import('../commands/init.js');
   mocks.runPromptCatalog.mockImplementation(async (_catalog, options) => {
-    options.hooks?.onMissingNonInteractive?.(
-      'Env "local3" already exists. Choose another env name.',
-    );
+    options.hooks?.onMissingNonInteractive?.('Env "local3" already exists. Choose another env name.');
     return {};
   });
 
@@ -966,7 +1120,7 @@ test('nb init logs duplicate env validation errors in --yes mode', async () => {
       runCommand: vi.fn(async () => undefined),
     },
     log: mocks.log,
-      error: mocks.error,
+    error: mocks.error,
     exit: (code?: number) => {
       throw new Error(`exit: ${code ?? 'unknown'}`);
     },
@@ -999,19 +1153,23 @@ test('nb init explains that --env is required when --yes skips prompts', async (
       runCommand,
     },
     log: mocks.log,
-      error: mocks.error,
+    error: mocks.error,
     exit: (code?: number) => {
       throw new Error(`exit: ${code ?? 'unknown'}`);
     },
   });
 
-  await expect((() => Init.prototype.run.call(command))()).rejects.toThrow(/Env name is required when prompts are skipped\./);
+  await expect((() => Init.prototype.run.call(command))()).rejects.toThrow(
+    /Env name is required when prompts are skipped\./,
+  );
   expect(mocks.runPromptCatalog.mock.calls.length).toBe(0);
   expect(mocks.log.mock.calls.length).toBe(0);
   expect(mocks.printWarning.mock.calls.length).toBe(0);
   expect(runCommand.mock.calls.length).toBe(0);
   expect(mocks.error.mock.calls.length).toBe(1);
-  expect(String(mocks.error.mock.calls[0]?.[0] ?? '')).toMatch(/Env name is required when prompts are skipped\..*nb init --yes --env <envName>/s);
+  expect(String(mocks.error.mock.calls[0]?.[0] ?? '')).toMatch(
+    /Env name is required when prompts are skipped\..*nb init --yes --env <envName>/s,
+  );
 });
 
 test('nb init --locale overrides the environment locale for prompt-side messages', async () => {
@@ -1031,13 +1189,15 @@ test('nb init --locale overrides the environment locale for prompt-side messages
       runCommand,
     },
     log: mocks.log,
-      error: mocks.error,
+    error: mocks.error,
     exit: (code?: number) => {
       throw new Error(`exit: ${code ?? 'unknown'}`);
     },
   });
 
-  await expect((() => Init.prototype.run.call(command))()).rejects.toThrow(/Env name is required when prompts are skipped\./);
+  await expect((() => Init.prototype.run.call(command))()).rejects.toThrow(
+    /Env name is required when prompts are skipped\./,
+  );
   expect(mocks.error.mock.calls.length).toBe(1);
   expect(String(mocks.error.mock.calls[0]?.[0] ?? '')).toMatch(
     /Env name is required when prompts are skipped\..*nb init --yes --env <envName>/s,
@@ -1063,7 +1223,6 @@ test('nb init --force allows reconfiguring an existing global env and warns befo
     appRootPath: './nocobase',
     appPort: '13000',
     storagePath: './storage/local5',
-    fetchSource: false,
     ...(options.values ?? {}),
   }));
 
@@ -1079,7 +1238,7 @@ test('nb init --force allows reconfiguring an existing global env and warns befo
     })),
     config: { runCommand },
     log: mocks.log,
-      error: mocks.error,
+    error: mocks.error,
     exit: (code?: number) => {
       throw new Error(`unexpected exit: ${code ?? 'unknown'}`);
     },
@@ -1093,9 +1252,24 @@ test('nb init --force allows reconfiguring an existing global env and warns befo
 
   expect(runCommand.mock.calls[0]).toEqual([
     'install',
-    ['-y', '--no-intro', '--skip-save-env-log', '--env', 'local5', '--lang', 'en-US', '--app-root-path', './nocobase', '--storage-path', './storage/local5', '--force'],
+    [
+      '-y',
+      '--no-intro',
+      '--skip-save-env-log',
+      '--env',
+      'local5',
+      '--lang',
+      'en-US',
+      '--app-root-path',
+      './nocobase',
+      '--storage-path',
+      './storage/local5',
+      '--force',
+    ],
   ]);
-  expect(mocks.printWarning.mock.calls.some((call) => String(call[0]).includes('Reconfiguring existing env'))).toBe(true);
+  expect(mocks.printWarning.mock.calls.some((call) => String(call[0]).includes('Reconfiguring existing env'))).toBe(
+    true,
+  );
   expect(mocks.printWarning.mock.calls.some((call) => String(call[0]).includes('local5'))).toBe(true);
 });
 
@@ -1120,7 +1294,6 @@ test('nb init forwards dynamically selected ports in --yes mode', async () => {
         appName: 'local',
         appPort: '54180',
         dbPort: '54181',
-        fetchSource: true,
         source: 'npm',
         version: 'alpha',
         builtinDb: true,
@@ -1193,7 +1366,6 @@ test('nb init forwards --no-builtin-db to nb install', async () => {
       Object.create(Init.prototype),
       {
         appName: 'local',
-        fetchSource: true,
         source: 'npm',
         version: 'alpha',
         builtinDb: false,
@@ -1209,10 +1381,7 @@ test('nb init forwards --no-builtin-db to nb install', async () => {
 
     expect(argv).toContain('--no-builtin-db');
     expect(argv).not.toContain('--builtin-db');
-    expect(argv.slice(argv.indexOf('--db-host'), argv.indexOf('--db-host') + 2)).toEqual([
-      '--db-host',
-      '127.0.0.1',
-    ]);
+    expect(argv.slice(argv.indexOf('--db-host'), argv.indexOf('--db-host') + 2)).toEqual(['--db-host', '127.0.0.1']);
   } finally {
     process.argv = originalArgv;
   }
@@ -1224,9 +1393,7 @@ test('nb init treats explicit --db-host as an external database', async () => {
   const originalArgv = process.argv;
   process.argv = ['node', 'nb', 'init', '--yes', '--db-host', 'db.example.com'];
 
-  const buildDbPromptInitialValues = vi
-    .spyOn(Install, 'buildDbPromptInitialValues')
-    .mockResolvedValue({});
+  const buildDbPromptInitialValues = vi.spyOn(Install, 'buildDbPromptInitialValues').mockResolvedValue({});
 
   try {
     const buildPresetValuesFromFlags = (
@@ -1325,7 +1492,6 @@ test('nb init --yes keeps explicit --db-host external after prompt defaults are 
       appRootPath: './app611/source/',
       appPort: '13080',
       storagePath: './app611/storage/',
-      fetchSource: true,
       outputDir: './app611/source/',
       builtinDb: true,
       rootUsername: 'nocobase',
@@ -1407,7 +1573,6 @@ test('nb init does not forward a hidden Docker built-in database port in --yes m
       {
         appName: 'local',
         dbPort: '54181',
-        fetchSource: true,
         source: 'docker',
         version: 'alpha',
         builtinDb: true,
@@ -1425,9 +1590,7 @@ test('nb init does not forward a hidden Docker built-in database port in --yes m
 test('nb init treats the --yes download source as docker when resolving dynamic defaults', async () => {
   const { default: Init } = await import('../commands/init.js');
   const { default: Install } = await import('../commands/install.js');
-  const buildDbPromptInitialValues = vi
-    .spyOn(Install, 'buildDbPromptInitialValues')
-    .mockResolvedValue({});
+  const buildDbPromptInitialValues = vi.spyOn(Install, 'buildDbPromptInitialValues').mockResolvedValue({});
 
   try {
     const buildDynamicInitialValuesForInstall = (
@@ -1474,7 +1637,6 @@ test('nb init resolves dynamic port defaults without showing fallback warnings',
       { yes: false },
       {
         appName: 'app1',
-        fetchSource: true,
         source: 'npm',
         builtinDb: true,
         dbDialect: 'postgres',
@@ -1490,7 +1652,6 @@ test('nb init resolves dynamic port defaults without showing fallback warnings',
     buildDbPromptInitialValues.mockRestore();
   }
 });
-
 
 test('nb init preserves argument values that contain spaces when building install argv', async () => {
   const { default: Init } = await import('../commands/init.js');
@@ -1515,7 +1676,6 @@ test('nb init preserves argument values that contain spaces when building instal
         appRootPath: './nocobase',
         appPort: '13352',
         storagePath: './storage/local',
-        fetchSource: true,
         source: 'docker',
         version: 'alpha',
         dockerRegistry: 'nocobase/nocobase',
@@ -1536,7 +1696,10 @@ test('nb init preserves argument values that contain spaces when building instal
     const nicknameIndex = argv.indexOf('--root-nickname');
     expect(nicknameIndex).not.toBe(-1);
     expect(argv[nicknameIndex + 1]).toBe('Super Admin');
-    expect(argv.slice(argv.indexOf('--docker-platform'), argv.indexOf('--docker-platform') + 2)).toEqual(['--docker-platform', 'linux/arm64']);
+    expect(argv.slice(argv.indexOf('--docker-platform'), argv.indexOf('--docker-platform') + 2)).toEqual([
+      '--docker-platform',
+      'linux/arm64',
+    ]);
   } finally {
     process.argv = originalArgv;
   }
@@ -1565,7 +1728,6 @@ test('nb init forwards --verbose to nb install', async () => {
         appRootPath: './app1/source/',
         appPort: '13000',
         storagePath: './app1/storage/',
-        fetchSource: true,
         source: 'git',
         version: 'alpha',
         outputDir: './app1/source/',
@@ -1585,7 +1747,7 @@ test('nb init forwards --verbose to nb install', async () => {
   }
 });
 
-test('nb init updates skills automatically when they are already installed', async () => {
+test('nb init does not change skills automatically when they are already installed', async () => {
   const { default: Init } = await import('../commands/init.js');
 
   mocks.runPromptCatalog.mockImplementation(async (_catalog, options) => ({
@@ -1595,12 +1757,11 @@ test('nb init updates skills automatically when they are already installed', asy
     authType: 'oauth',
     ...(options.values ?? {}),
   }));
-  mocks.inspectSkillsStatus.mockResolvedValue({
-    installed: true,
-  });
-  mocks.updateNocoBaseSkills.mockResolvedValue({
-    action: 'updated',
-    status: {},
+  mocks.installNocoBaseSkills.mockResolvedValue({
+    action: 'noop',
+    status: {
+      installed: true,
+    },
   });
   mocks.runNpm.mockResolvedValue(undefined);
 
@@ -1614,7 +1775,7 @@ test('nb init updates skills automatically when they are already installed', asy
     })),
     config: { runCommand },
     log: mocks.log,
-      error: mocks.error,
+    error: mocks.error,
     exit: (code?: number) => {
       throw new Error(`unexpected exit: ${code ?? 'unknown'}`);
     },
@@ -1622,9 +1783,9 @@ test('nb init updates skills automatically when they are already installed', asy
 
   await Init.prototype.run.call(command);
 
-  expect(mocks.inspectSkillsStatus).toHaveBeenCalledTimes(1);
-  expect(mocks.installNocoBaseSkills).not.toHaveBeenCalled();
-  expect(mocks.updateNocoBaseSkills).toHaveBeenCalledTimes(1);
+  expect(mocks.installNocoBaseSkills).toHaveBeenCalledTimes(1);
+  expect(mocks.updateNocoBaseSkills).not.toHaveBeenCalled();
+  expect(mocks.printInfo).toHaveBeenCalledWith('Agent skills ready.');
   expect(runCommand.mock.calls[0]).toEqual([
     'env:add',
     ['staging', '--no-intro', '--api-base-url', 'http://localhost:13000/api', '--auth-type', 'oauth'],
@@ -1637,6 +1798,7 @@ test('nb init exposes env add flags and forwards them for an existing app flow',
   expect(Init.flags['api-base-url']).toBeDefined();
   expect(Init.flags['auth-type']).toBeDefined();
   expect(Init.flags['access-token']).toBeDefined();
+  expect(Init.flags['skip-auth']).toBeDefined();
   expect(Init.flags.locale).toBeDefined();
   expect(Init.flags['skip-skills']).toBeDefined();
   expect(Init.flags['skip-skills'].hidden).not.toBe(true);
@@ -1665,7 +1827,7 @@ test('nb init exposes env add flags and forwards them for an existing app flow',
     config: { runCommand },
     log: mocks.log,
     hasAgentsDirInCwd: () => false,
-      error: mocks.error,
+    error: mocks.error,
     exit: (code?: number) => {
       throw new Error(`unexpected exit: ${code ?? 'unknown'}`);
     },
@@ -1695,4 +1857,208 @@ test('nb init exposes env add flags and forwards them for an existing app flow',
       'secret-token',
     ],
   ]);
+});
+
+test('nb init forwards --skip-auth to env add for an existing app flow', async () => {
+  const { default: Init } = await import('../commands/init.js');
+
+  mocks.runPromptCatalog.mockImplementation(async (_catalog, options) => ({
+    hasNocobase: 'yes',
+    appName: 'staging',
+    authType: 'token',
+    ...(options.values ?? {}),
+  }));
+  mocks.runNpm.mockResolvedValue(undefined);
+  mocks.getEnv.mockResolvedValue(undefined);
+
+  const runCommand = vi.fn(async () => undefined);
+  const command = Object.assign(Object.create(Init.prototype), {
+    parse: vi.fn(async () => ({
+      flags: {
+        yes: false,
+        ui: false,
+        env: 'staging',
+        'api-base-url': 'http://demo.example.com/api',
+        'auth-type': 'token',
+        'skip-auth': true,
+      },
+    })),
+    config: { runCommand },
+    log: mocks.log,
+    hasAgentsDirInCwd: () => false,
+    error: mocks.error,
+    exit: (code?: number) => {
+      throw new Error(`unexpected exit: ${code ?? 'unknown'}`);
+    },
+  });
+
+  await Init.prototype.run.call(command);
+
+  expect(mocks.runPromptCatalog).toHaveBeenCalledTimes(1);
+  const promptCatalog = mocks.runPromptCatalog.mock.calls[0]?.[0];
+  expect(
+    promptCatalog?.accessToken?.hidden?.({
+      hasNocobase: 'yes',
+      authType: 'token',
+    }),
+  ).toBe(true);
+  expect(runCommand.mock.calls[0]).toEqual([
+    'env:add',
+    ['staging', '--no-intro', '--api-base-url', 'http://demo.example.com/api', '--auth-type', 'token', '--skip-auth'],
+  ]);
+});
+
+test('nb init forwards --skip-auth to install for a new app flow', async () => {
+  const { default: Init } = await import('../commands/init.js');
+
+  mocks.runPromptCatalog.mockImplementation(async (_catalog, options) => ({
+    hasNocobase: 'no',
+    appName: 'demoapp',
+    lang: 'en-US',
+    appRootPath: './apps/demoapp',
+    appPort: '13080',
+    storagePath: './storage/demoapp',
+    ...(options.values ?? {}),
+  }));
+  mocks.runNpm.mockResolvedValue(undefined);
+
+  const runCommand = vi.fn(async () => undefined);
+  const command = Object.assign(Object.create(Init.prototype), {
+    parse: vi.fn(async () => ({
+      flags: {
+        yes: false,
+        ui: false,
+        env: 'demoapp',
+        'skip-auth': true,
+      },
+    })),
+    config: { runCommand },
+    log: mocks.log,
+    error: mocks.error,
+    exit: (code?: number) => {
+      throw new Error(`unexpected exit: ${code ?? 'unknown'}`);
+    },
+  });
+
+  await Init.prototype.run.call(command);
+
+  const installArgv = runCommand.mock.calls.find(([name]) => name === 'install')?.[1] as string[];
+  expect(installArgv).toContain('--skip-auth');
+});
+
+test('nb init forwards prompted skipDownload to install while keeping source metadata', async () => {
+  const { default: Init } = await import('../commands/init.js');
+
+  mocks.runPromptCatalog.mockImplementation(async (_catalog, options) => ({
+    hasNocobase: 'no',
+    appName: 'demoapp',
+    lang: 'en-US',
+    appRootPath: './apps/demoapp',
+    appPort: '13080',
+    storagePath: './storage/demoapp',
+    skipDownload: true,
+    source: 'git',
+    version: 'beta',
+    gitUrl: 'https://github.com/nocobase/nocobase.git',
+    npmRegistry: 'https://registry.npmmirror.com',
+    builtinDb: true,
+    dbDialect: 'postgres',
+    rootUsername: 'admin',
+    rootEmail: 'admin@nocobase.com',
+    rootPassword: 'admin123',
+    rootNickname: 'Admin',
+    ...(options.values ?? {}),
+  }));
+  mocks.runNpm.mockResolvedValue(undefined);
+
+  const runCommand = vi.fn(async () => undefined);
+  const command = Object.assign(Object.create(Init.prototype), {
+    parse: vi.fn(async () => ({
+      flags: {
+        yes: false,
+        ui: false,
+        env: 'demoapp',
+      },
+    })),
+    config: { runCommand },
+    log: mocks.log,
+    error: mocks.error,
+    exit: (code?: number) => {
+      throw new Error(`unexpected exit: ${code ?? 'unknown'}`);
+    },
+  });
+
+  await Init.prototype.run.call(command);
+
+  const installArgv = runCommand.mock.calls.find(([name]) => name === 'install')?.[1] as string[];
+  expect(installArgv).toContain('--skip-download');
+  expect(installArgv).toContain('--source');
+  expect(installArgv).toContain('git');
+  expect(installArgv).toContain('--version');
+  expect(installArgv).toContain('beta');
+  expect(installArgv).toContain('--git-url');
+  expect(installArgv).toContain('https://github.com/nocobase/nocobase.git');
+  expect(installArgv).toContain('--npm-registry');
+  expect(installArgv).toContain('https://registry.npmmirror.com');
+  expect(installArgv).not.toContain('--output-dir');
+  expect(installArgv).not.toContain('--replace');
+});
+
+test('nb init --yes preserves hidden basic auth settings for a new app flow', async () => {
+  const { default: Init } = await import('../commands/init.js');
+
+  mocks.runPromptCatalog.mockImplementation(async (_catalog, options) => ({
+    hasNocobase: 'no',
+    appName: 'test10',
+    lang: 'zh-CN',
+    appPort: '5000',
+    rootUsername: 'nocobase',
+    rootEmail: 'admin@nocobase.com',
+    rootPassword: 'admin123',
+    rootNickname: 'Super Admin',
+    ...(options.values?.storagePath ? { storagePath: options.values.storagePath } : {}),
+    ...(options.values?.appRootPath ? { appRootPath: options.values.appRootPath } : {}),
+  }));
+  mocks.runNpm.mockResolvedValue(undefined);
+
+  const runCommand = vi.fn(async () => undefined);
+  const command = Object.assign(Object.create(Init.prototype), {
+    parse: vi.fn(async () => ({
+      flags: {
+        yes: true,
+        ui: false,
+        env: 'test10',
+        locale: 'zh-CN',
+        'app-port': '5000',
+        'auth-type': 'basic',
+      },
+    })),
+    config: { runCommand },
+    log: mocks.log,
+    error: mocks.error,
+    exit: (code?: number) => {
+      throw new Error(`unexpected exit: ${code ?? 'unknown'}`);
+    },
+  });
+
+  await Init.prototype.run.call(command);
+
+  expect(mocks.upsertEnv.mock.calls[0]).toEqual([
+    'test10',
+    expect.objectContaining({
+      apiBaseUrl: 'http://127.0.0.1:5000/api',
+      authType: 'basic',
+      authUsername: 'nocobase',
+      appPort: '5000',
+      kind: 'http',
+    }),
+    { scope: 'global' },
+  ]);
+  const installArgv = runCommand.mock.calls.find(([name]) => name === 'install')?.[1] as string[];
+  expect(installArgv).toContain('--auth-type');
+  expect(installArgv).toContain('basic');
+  expect(installArgv).toContain('--root-username');
+  expect(installArgv).toContain('nocobase');
+  expect(installArgv).toContain('--root-password');
+  expect(installArgv).toContain('admin123');
 });

@@ -313,7 +313,7 @@ describe('transformItems - searchable flags', () => {
 
   it('filters searchable field menus by display label instead of item key', async () => {
     const engine = new FlowEngine();
-    engine.flowSettings.forceEnable();
+    await engine.flowSettings.forceEnable();
     const parent = engine.createModel<FlowModel>({ use: FlowModel });
     const user = userEvent.setup();
 
