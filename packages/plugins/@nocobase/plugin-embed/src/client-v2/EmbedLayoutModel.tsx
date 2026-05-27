@@ -18,7 +18,11 @@ import { EmbedLayoutComponent } from './EmbedLayoutComponent';
  */
 export class EmbedLayoutModelV2 extends BaseLayoutModel {
   render() {
-    return <EmbedLayoutComponent {...this.props} model={this} />;
+    return (
+      <EmbedLayoutComponent {...this.props} model={this}>
+        {this.props.children}
+      </EmbedLayoutComponent>
+    );
   }
 }
 

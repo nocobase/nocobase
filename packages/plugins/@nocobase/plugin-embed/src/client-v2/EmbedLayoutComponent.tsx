@@ -10,16 +10,17 @@
 import type { ThemeConfig } from '@nocobase/client-v2';
 import { observer } from '@nocobase/flow-engine';
 import { ConfigProvider, Grid, theme as antdTheme } from 'antd';
-import React, { useCallback, useEffect, useMemo } from 'react';
+import React, { type PropsWithChildren, useCallback, useEffect, useMemo } from 'react';
 import { useOutlet } from 'react-router-dom';
 import EmbedEmptyPage from './EmbedEmptyPage';
 import type { EmbedLayoutModelV2 } from './EmbedLayoutModel';
 
 const embedContainerStyle: React.CSSProperties = { width: 'fit-content', position: 'relative' };
 
-export const EmbedLayoutComponent = observer((props: { model: EmbedLayoutModelV2 }) => {
-  const { model } = props;
+export const EmbedLayoutComponent = observer((props: PropsWithChildren<{ model: EmbedLayoutModelV2 }>) => {
+  const { children, model } = props;
   const outlet = useOutlet();
+  const content = children ?? outlet;
   const isRootRoute = model.currentLayoutRoute?.type === 'root';
   const { token } = antdTheme.useToken();
   const screens = Grid.useBreakpoint();
@@ -57,7 +58,7 @@ export const EmbedLayoutComponent = observer((props: { model: EmbedLayoutModelV2
           } as React.CSSProperties
         }
       >
-        {isRootRoute || !outlet ? <EmbedEmptyPage /> : outlet}
+        {isRootRoute || !content ? <EmbedEmptyPage /> : content}
       </div>
       <div id="nocobase-embed-container" style={embedContainerStyle} />
     </ConfigProvider>

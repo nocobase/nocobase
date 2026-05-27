@@ -18,6 +18,7 @@
 
 import { uid } from '@formily/shared';
 import { PageTabs, Plugin } from '@nocobase/client';
+import { registerCopyEmbedLinkFlow } from '../client-v2/copyEmbedLinkFlow';
 import { EmbedLayout, EmbedPage, useBlockSettingProps } from './EmbedLayout';
 
 const Key = 'embed';
@@ -50,10 +51,27 @@ class PluginEmbedClient extends Plugin {
       Component: PageTabs,
     });
 
+    this.router.add(`${Key}.page.flowTab`, {
+      path: `${UrlPrefix}/:name/tab/:tabUid`,
+      Component: EmbedPage,
+    });
+
+    this.router.add(`${Key}.page.view`, {
+      path: `${UrlPrefix}/:name/view/*`,
+      Component: EmbedPage,
+    });
+
+    this.router.add(`${Key}.page.flowTabView`, {
+      path: `${UrlPrefix}/:name/tab/:tabUid/view/*`,
+      Component: EmbedPage,
+    });
+
     this.schemaSettingsManager.addItem('PageSettings', Key, {
       type: 'item',
       useComponentProps: useBlockSettingProps,
     });
+
+    registerCopyEmbedLinkFlow();
   }
 }
 
