@@ -13,6 +13,113 @@ import { FlowSettingsContextProvider } from '@nocobase/flow-engine';
 import { describe, expect, it, vi } from 'vitest';
 import { fieldLinkageRules, linkageSetFieldProps, subFormLinkageSetFieldProps } from '../linkageRules';
 
+const createSubFormFieldModel = ({
+  uid,
+  fieldPath,
+  hidden,
+  blockUid = 'block-1',
+  fieldIndex,
+  fieldPathArray,
+}: {
+  uid: string;
+  fieldPath: string;
+  hidden: boolean;
+  blockUid?: string;
+  fieldIndex?: string[];
+  fieldPathArray?: Array<string | number>;
+}) => ({
+  uid,
+  hidden,
+  props: {},
+  context: {
+    blockModel: { uid: blockUid },
+    ...(fieldIndex ? { fieldIndex } : {}),
+    ...(fieldPathArray ? { fieldPathArray } : {}),
+  },
+  forks: new Set(),
+  getStepParams: (flowKey: string, stepKey: string) => {
+    if (flowKey === 'fieldSettings' && stepKey === 'init') {
+      return { fieldPath };
+    }
+  },
+  setProps(key: any, value?: any) {
+    if (typeof key === 'string') {
+      this.props[key] = value;
+    } else {
+      this.props = { ...this.props, ...key };
+    }
+  },
+});
+
+const runSubFormFieldStateRule = async ({
+  state,
+  fieldUid,
+  fieldKey,
+  targetModel,
+  models,
+}: {
+  state: 'visible' | 'hidden';
+  fieldUid: string;
+  fieldKey: string[];
+  targetModel: any;
+  models: any[];
+}) => {
+  const formItemModel: any = {
+    uid: fieldUid,
+    forks: new Set([targetModel]),
+    getFork: vi.fn((key: string) => (key === `${fieldKey}:${fieldUid}` ? targetModel : undefined)),
+  };
+  const allModels = [formItemModel, ...models];
+  const ctx: any = {
+    app: {
+      jsonLogic: {
+        apply: vi.fn(() => true),
+      },
+    },
+    model: {
+      context: {
+        blockModel: { uid: 'block-1' },
+        fieldKey,
+      },
+      flowEngine: {
+        forEachModel: (visitor: (model: any) => void) => {
+          allModels.forEach(visitor);
+        },
+      },
+    },
+    engine: {
+      getModel: vi.fn((uid: string) => (uid === fieldUid ? formItemModel : undefined)),
+      forEachModel: (visitor: (model: any) => void) => {
+        allModels.forEach(visitor);
+      },
+    },
+    getAction: (name: string) => (name === 'subFormLinkageSetFieldProps' ? subFormLinkageSetFieldProps : null),
+    resolveJsonTemplate: vi.fn(async (value) => value),
+  };
+
+  await fieldLinkageRules.handler(ctx, {
+    value: [
+      {
+        key: 'rule-1',
+        enable: true,
+        condition: { logic: '$and', items: [] },
+        actions: [
+          {
+            key: 'action-1',
+            name: 'subFormLinkageSetFieldProps',
+            params: {
+              value: {
+                fields: [fieldUid],
+                state,
+              },
+            },
+          },
+        ],
+      },
+    ],
+  });
+};
+
 describe('subFormLinkageSetFieldProps action', () => {
   it('should not throw when engine.getModel returns undefined', () => {
     const setProps = vi.fn();
@@ -143,6 +250,90 @@ describe('subFormLinkageSetFieldProps action', () => {
     });
 
     expect(setProps).toHaveBeenCalledWith(forkModel, { options: selectedOptions });
+  });
+
+  it('should sync hidden state when a subform field changes from hidden to visible', async () => {
+    const targetModel = createSubFormFieldModel({
+      uid: 'field-a',
+      fieldPath: 'a',
+      hidden: true,
+      fieldIndex: ['items:0'],
+    });
+    const collectedModel = createSubFormFieldModel({
+      uid: 'field-a-collected',
+      fieldPath: 'a',
+      hidden: true,
+      fieldPathArray: ['items', 0, 'a'],
+    });
+
+    await runSubFormFieldStateRule({
+      state: 'visible',
+      fieldUid: 'field-a',
+      fieldKey: ['items:0'],
+      targetModel,
+      models: [collectedModel],
+    });
+
+    expect(targetModel.hidden).toBe(false);
+    expect(collectedModel.hidden).toBe(false);
+  });
+
+  it('should sync hidden state when a subform field changes from visible to hidden', async () => {
+    const targetModel = createSubFormFieldModel({
+      uid: 'field-a',
+      fieldPath: 'a',
+      hidden: false,
+      fieldIndex: ['items:0'],
+    });
+    const collectedModel = createSubFormFieldModel({
+      uid: 'field-a-collected',
+      fieldPath: 'a',
+      hidden: false,
+      fieldPathArray: ['items', 0, 'a'],
+    });
+
+    await runSubFormFieldStateRule({
+      state: 'hidden',
+      fieldUid: 'field-a',
+      fieldKey: ['items:0'],
+      targetModel,
+      models: [collectedModel],
+    });
+
+    expect(targetModel.hidden).toBe(true);
+    expect(collectedModel.hidden).toBe(true);
+  });
+
+  it('should only sync hidden state for the current subform row', async () => {
+    const targetModel = createSubFormFieldModel({
+      uid: 'field-a',
+      fieldPath: 'a',
+      hidden: true,
+      fieldIndex: ['items:0'],
+    });
+    const row0CollectedModel = createSubFormFieldModel({
+      uid: 'field-a-row-0',
+      fieldPath: 'a',
+      hidden: true,
+      fieldPathArray: ['items', 0, 'a'],
+    });
+    const row1CollectedModel = createSubFormFieldModel({
+      uid: 'field-a-row-1',
+      fieldPath: 'a',
+      hidden: true,
+      fieldPathArray: ['items', 1, 'a'],
+    });
+
+    await runSubFormFieldStateRule({
+      state: 'visible',
+      fieldUid: 'field-a',
+      fieldKey: ['items:0'],
+      targetModel,
+      models: [row0CollectedModel, row1CollectedModel],
+    });
+
+    expect(row0CollectedModel.hidden).toBe(false);
+    expect(row1CollectedModel.hidden).toBe(true);
   });
 });
 
