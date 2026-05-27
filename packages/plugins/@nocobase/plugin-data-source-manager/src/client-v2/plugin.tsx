@@ -29,6 +29,22 @@ export interface DataSourceTypeOptions {
   SettingsForm?: ComponentType<DataSourceSettingsFormProps>;
 }
 
+export interface CollectionPresetFieldOptions {
+  name?: string;
+  order?: number;
+  field?: React.ReactNode;
+  interfaceLabel?: React.ReactNode;
+  description?: React.ReactNode;
+  defaultSelected?: boolean;
+  value: CollectionTemplateField & {
+    name: string;
+    interface?: string;
+    primaryKey?: boolean;
+    uiSchema?: Record<string, any>;
+    [key: string]: any;
+  };
+}
+
 export interface CollectionTemplateFormProps {
   mode: 'create' | 'edit';
   template: CollectionTemplateOptions;
@@ -132,6 +148,29 @@ class CollectionTemplateRegistry {
   }
 }
 
+class CollectionPresetFieldRegistry {
+  protected fields = new Map<string, CollectionPresetFieldOptions>();
+
+  register(options: CollectionPresetFieldOptions) {
+    const name = options.name || options.value?.name;
+    if (!name) {
+      return;
+    }
+    this.fields.set(name, {
+      ...options,
+      name,
+    });
+  }
+
+  remove(name: string) {
+    this.fields.delete(name);
+  }
+
+  getAll() {
+    return [...this.fields.values()].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+  }
+}
+
 class ExtensionManager {
   protected managerActions: Array<{ order: number; component: ComponentType }> = [];
 
@@ -148,8 +187,10 @@ export class PluginDataSourceManagerClientV2 extends Plugin<any, Application> {
   types = new Map<string, DataSourceTypeOptions>();
   extensionManager = new ExtensionManager();
   collectionTemplateRegistry = new CollectionTemplateRegistry();
+  collectionPresetFieldRegistry = new CollectionPresetFieldRegistry();
 
   async load() {
+    this.registerBuiltInCollectionPresetFields();
     this.registerBuiltInCollectionTemplates();
 
     this.dataSourceManager.registerLoader('*', async () => {
@@ -224,12 +265,134 @@ export class PluginDataSourceManagerClientV2 extends Plugin<any, Application> {
     this.collectionTemplateRegistry.register(nameOrOptions, options);
   }
 
+  registerCollectionPresetField(options: CollectionPresetFieldOptions) {
+    this.collectionPresetFieldRegistry.register(options);
+  }
+
+  addCollectionPresetField(options: CollectionPresetFieldOptions) {
+    this.registerCollectionPresetField(options);
+  }
+
+  removeCollectionPresetField(name: string) {
+    this.collectionPresetFieldRegistry.remove(name);
+  }
+
+  getCollectionPresetFields() {
+    return this.collectionPresetFieldRegistry.getAll();
+  }
+
   getCollectionTemplate(name?: string) {
     return this.collectionTemplateRegistry.get(name);
   }
 
   getCollectionTemplates() {
     return this.collectionTemplateRegistry.getAll();
+  }
+
+  private registerBuiltInCollectionPresetFields() {
+    this.registerCollectionPresetField({
+      order: 100,
+      description: '{{t("Primary key, distributed uniqueness, time-ordering") }}',
+      value: {
+        name: 'id',
+        type: 'snowflakeId',
+        autoIncrement: false,
+        primaryKey: true,
+        allowNull: false,
+        uiSchema: {
+          type: 'number',
+          title: '{{t("ID")}}',
+          'x-component': 'InputNumber',
+          'x-component-props': {
+            stringMode: true,
+            separator: '0.00',
+            step: '1',
+          },
+          'x-validator': 'integer',
+        },
+        interface: 'snowflakeId',
+      },
+    });
+    this.registerCollectionPresetField({
+      order: 200,
+      description: '{{t("Store the creation time of each record")}}',
+      value: {
+        name: 'createdAt',
+        interface: 'createdAt',
+        type: 'date',
+        field: 'createdAt',
+        uiSchema: {
+          type: 'datetime',
+          title: '{{t("Created at")}}',
+          'x-component': 'DatePicker',
+          'x-component-props': {},
+          'x-read-pretty': true,
+        },
+      },
+    });
+    this.registerCollectionPresetField({
+      order: 300,
+      description: '{{t("Store the creation user of each record") }}',
+      value: {
+        name: 'createdBy',
+        interface: 'createdBy',
+        type: 'belongsTo',
+        target: 'users',
+        foreignKey: 'createdById',
+        uiSchema: {
+          type: 'object',
+          title: '{{t("Created by")}}',
+          'x-component': 'AssociationField',
+          'x-component-props': {
+            fieldNames: {
+              value: 'id',
+              label: 'nickname',
+            },
+          },
+          'x-read-pretty': true,
+        },
+      },
+    });
+    this.registerCollectionPresetField({
+      order: 400,
+      description: '{{t("Store the last update time of each record")}}',
+      value: {
+        type: 'date',
+        field: 'updatedAt',
+        name: 'updatedAt',
+        interface: 'updatedAt',
+        uiSchema: {
+          type: 'datetime',
+          title: '{{t("Last updated at")}}',
+          'x-component': 'DatePicker',
+          'x-component-props': {},
+          'x-read-pretty': true,
+        },
+      },
+    });
+    this.registerCollectionPresetField({
+      order: 500,
+      description: '{{t("Store the last update user of each record")}}',
+      value: {
+        type: 'belongsTo',
+        target: 'users',
+        foreignKey: 'updatedById',
+        name: 'updatedBy',
+        interface: 'updatedBy',
+        uiSchema: {
+          type: 'object',
+          title: '{{t("Last updated by")}}',
+          'x-component': 'AssociationField',
+          'x-component-props': {
+            fieldNames: {
+              value: 'id',
+              label: 'nickname',
+            },
+          },
+          'x-read-pretty': true,
+        },
+      },
+    });
   }
 
   private registerBuiltInCollectionTemplates() {

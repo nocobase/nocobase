@@ -213,6 +213,7 @@ export default function FieldsPage(props: FieldsPageProps) {
   const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
   const [titleField, setTitleField] = useState<string | undefined>(props.collection.titleField);
   const [titleFieldLoadingKey, setTitleFieldLoadingKey] = useState<React.Key>();
+  const [syncFieldsLoading, setSyncFieldsLoading] = useState(false);
   const request = useRequest(async () => {
     const response = await ctx.api.request({
       url: getCollectionFieldActionUrl(props.dataSourceKey, props.collection.name, 'list'),
@@ -375,14 +376,19 @@ export default function FieldsPage(props: FieldsPageProps) {
   );
 
   const handleSyncFields = useCallback(async () => {
-    await ctx.api.resource('mainDataSource').syncFields({
-      values: {
-        collections: [props.collection.name],
-      },
-    });
-    request.refresh();
-    await ctx.dataSourceManager.getDataSource('main')?.reload();
-    message.success(t('Sync successfully'));
+    setSyncFieldsLoading(true);
+    try {
+      await ctx.api.resource('mainDataSource').syncFields({
+        values: {
+          collections: [props.collection.name],
+        },
+      });
+      request.refresh();
+      await ctx.dataSourceManager.getDataSource('main')?.reload();
+      message.success(t('Sync successfully'));
+    } finally {
+      setSyncFieldsLoading(false);
+    }
   }, [ctx.api, ctx.dataSourceManager, message, props.collection.name, request, t]);
 
   const syncFieldsVisible = isSyncFieldsVisible(props.dataSourceKey, props.collection);
@@ -496,7 +502,7 @@ export default function FieldsPage(props: FieldsPageProps) {
             {t('Delete')}
           </Button>
           {syncFieldsVisible ? (
-            <Button icon={<SyncOutlined />} onClick={handleSyncFields}>
+            <Button icon={<SyncOutlined />} loading={syncFieldsLoading} onClick={handleSyncFields}>
               {t('Sync from database')}
             </Button>
           ) : null}

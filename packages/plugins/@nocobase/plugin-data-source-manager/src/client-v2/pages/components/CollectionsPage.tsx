@@ -10,6 +10,7 @@
 import {
   DeleteOutlined,
   DownOutlined,
+  ExclamationCircleFilled,
   FilterOutlined,
   ImportOutlined,
   MenuOutlined,
@@ -52,7 +53,11 @@ import {
 import type { ColumnsType } from 'antd/es/table';
 import React, { type FC, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useT } from '../../locale';
-import { type CollectionTemplateOptions, PluginDataSourceManagerClientV2 } from '../../plugin';
+import {
+  type CollectionPresetFieldOptions,
+  type CollectionTemplateOptions,
+  PluginDataSourceManagerClientV2,
+} from '../../plugin';
 import { compileLegacyTemplate } from '../../utils/compileLegacyTemplate';
 import { getCollectionFieldActionUrl } from './collectionFieldApi';
 import FieldsPage from './FieldsPage';
@@ -392,125 +397,39 @@ const CollectionFilterPopover: FC<{
   { displayName: 'CollectionFilterPopover' },
 );
 
-const presetFieldRows = [
-  {
-    name: 'id',
-    field: 'ID',
-    interfaceLabel: 'Snowflake ID (53-bit)',
-    description: 'Primary key, distributed uniqueness, time-ordering',
-    value: {
-      name: 'id',
-      type: 'snowflakeId',
-      autoIncrement: false,
-      primaryKey: true,
-      allowNull: false,
-      uiSchema: {
-        type: 'number',
-        title: '{{t("ID")}}',
-        'x-component': 'InputNumber',
-        'x-component-props': {
-          stringMode: true,
-          separator: '0.00',
-          step: '1',
-        },
-        'x-validator': 'integer',
-      },
-      interface: 'snowflakeId',
-    },
-  },
-  {
-    name: 'createdAt',
-    field: 'Created at',
-    interfaceLabel: 'Created at',
-    description: 'Store the creation time of each record',
-    value: {
-      name: 'createdAt',
-      interface: 'createdAt',
-      type: 'date',
-      field: 'createdAt',
-      uiSchema: {
-        type: 'datetime',
-        title: '{{t("Created at")}}',
-        'x-component': 'DatePicker',
-        'x-component-props': {},
-        'x-read-pretty': true,
-      },
-    },
-  },
-  {
-    name: 'createdBy',
-    field: 'Created by',
-    interfaceLabel: 'Created by',
-    description: 'Store the creation user of each record',
-    value: {
-      name: 'createdBy',
-      interface: 'createdBy',
-      type: 'belongsTo',
-      target: 'users',
-      foreignKey: 'createdById',
-      uiSchema: {
-        type: 'object',
-        title: '{{t("Created by")}}',
-        'x-component': 'AssociationField',
-        'x-component-props': {
-          fieldNames: {
-            value: 'id',
-            label: 'nickname',
-          },
-        },
-        'x-read-pretty': true,
-      },
-    },
-  },
-  {
-    name: 'updatedAt',
-    field: 'Last updated at',
-    interfaceLabel: 'Last updated at',
-    description: 'Store the last update time of each record',
-    value: {
-      name: 'updatedAt',
-      interface: 'updatedAt',
-      type: 'date',
-      field: 'updatedAt',
-      uiSchema: {
-        type: 'datetime',
-        title: '{{t("Last updated at")}}',
-        'x-component': 'DatePicker',
-        'x-component-props': {},
-        'x-read-pretty': true,
-      },
-    },
-  },
-  {
-    name: 'updatedBy',
-    field: 'Last updated by',
-    interfaceLabel: 'Last updated by',
-    description: 'Store the last update user of each record',
-    value: {
-      name: 'updatedBy',
-      interface: 'updatedBy',
-      type: 'belongsTo',
-      target: 'users',
-      foreignKey: 'updatedById',
-      uiSchema: {
-        type: 'object',
-        title: '{{t("Last updated by")}}',
-        'x-component': 'AssociationField',
-        'x-component-props': {
-          fieldNames: {
-            value: 'id',
-            label: 'nickname',
-          },
-        },
-        'x-read-pretty': true,
-      },
-    },
-  },
-];
+type PresetFieldRow = {
+  name: string;
+  field: React.ReactNode;
+  interfaceLabel: React.ReactNode;
+  description?: React.ReactNode;
+};
 
-function buildPresetFields(selectedFieldNames: React.Key[]) {
+function getPresetFieldName(field: CollectionPresetFieldOptions) {
+  return field.name || field.value.name;
+}
+
+function getPresetFieldRows(
+  presetFields: CollectionPresetFieldOptions[],
+  fieldInterfaceManager?: { getFieldInterface?: (name: string) => { title?: React.ReactNode } | undefined },
+) {
+  return presetFields.map((field) => {
+    const fieldInterface = field.value.interface
+      ? fieldInterfaceManager?.getFieldInterface?.(field.value.interface)
+      : undefined;
+    return {
+      name: getPresetFieldName(field),
+      field: field.field || field.value.uiSchema?.title || field.value.name,
+      interfaceLabel: field.interfaceLabel || fieldInterface?.title || field.value.interface || field.value.type,
+      description: field.description,
+    };
+  });
+}
+
+function buildPresetFields(selectedFieldNames: React.Key[], presetFields: CollectionPresetFieldOptions[]) {
   const selected = new Set(selectedFieldNames.map(String));
-  return presetFieldRows.filter((field) => selected.has(field.name)).map((field) => structuredClone(field.value));
+  return presetFields
+    .filter((field) => selected.has(getPresetFieldName(field)))
+    .map((field) => structuredClone(field.value));
 }
 
 function normalizeCollectionCategoryValue(category?: Array<number | string>) {
@@ -613,9 +532,10 @@ function buildCollectionCreateValues(options: {
   template: CollectionTemplateOptions;
   formValues: CollectionFormValues;
   selectedPresetFields: React.Key[];
+  presetFields: CollectionPresetFieldOptions[];
   fieldInterfaceManager?: any;
 }) {
-  const { fieldInterfaceManager, formValues, selectedPresetFields, template } = options;
+  const { fieldInterfaceManager, formValues, presetFields, selectedPresetFields, template } = options;
   const templateOptions = resolveTemplateCollectionOptions(template);
   const legacyTemplateFields = Array.isArray(templateOptions.fields) ? templateOptions.fields : [];
   const formFields = normalizeCollectionTemplateFields(
@@ -649,7 +569,7 @@ function buildCollectionCreateValues(options: {
     template: template.name,
     logging: true,
     category: normalizeCollectionCategoryValue(formValues.category),
-    fields: [...templateFields, ...buildPresetFields(selectedPresetFields), ...formFields],
+    fields: [...templateFields, ...buildPresetFields(selectedPresetFields, presetFields), ...formFields],
   };
 
   const transformedValues = template.configure?.transformSubmitValues?.(values);
@@ -765,10 +685,12 @@ function CollectionCreateDrawer(props: {
   const { activeCategoryKey, categories, onSubmitted, template } = props;
   const t = useT();
   const ctx = useFlowContext();
+  const plugin = ctx.app.pm.get(PluginDataSourceManagerClientV2);
   const [form] = Form.useForm<CollectionFormValues>();
+  const collectionPresetFields = useMemo(() => plugin.getCollectionPresetFields(), [plugin]);
   const [submitting, setSubmitting] = useState(false);
   const [selectedPresetFields, setSelectedPresetFields] = useState<React.Key[]>(() =>
-    presetFieldRows.map((item) => item.name),
+    collectionPresetFields.filter((field) => field.defaultSelected !== false).map((field) => getPresetFieldName(field)),
   );
   const collectionRequest = useRequest(async () => {
     const response = await ctx.api.request({
@@ -801,22 +723,26 @@ function CollectionCreateDrawer(props: {
     [activeCategoryKey, template],
   );
   const disabledPresetFields = useMemo(() => new Set(getTemplatePresetFieldsDisabledIncludes(template)), [template]);
-  const presetColumns = useMemo<ColumnsType<(typeof presetFieldRows)[number]>>(
+  const presetFieldRows = useMemo(
+    () => getPresetFieldRows(collectionPresetFields, ctx.dataSourceManager.collectionFieldInterfaceManager),
+    [collectionPresetFields, ctx.dataSourceManager.collectionFieldInterfaceManager],
+  );
+  const presetColumns = useMemo<ColumnsType<PresetFieldRow>>(
     () => [
       {
         title: t('Field'),
         dataIndex: 'field',
-        render: (value) => t(value),
+        render: (value) => compileLegacyTemplate(value, t),
       },
       {
         title: t('Interface'),
         dataIndex: 'interfaceLabel',
-        render: (value) => <Tag>{t(value)}</Tag>,
+        render: (value) => <Tag>{compileLegacyTemplate(value, t)}</Tag>,
       },
       {
         title: t('Description'),
         dataIndex: 'description',
-        render: (value) => t(value),
+        render: (value) => compileLegacyTemplate(value, t),
       },
     ],
     [t],
@@ -829,6 +755,7 @@ function CollectionCreateDrawer(props: {
       template,
       formValues: values,
       selectedPresetFields,
+      presetFields: collectionPresetFields,
       fieldInterfaceManager: ctx.dataSourceManager.collectionFieldInterfaceManager,
     });
 
@@ -842,7 +769,7 @@ function CollectionCreateDrawer(props: {
     } finally {
       setSubmitting(false);
     }
-  }, [ctx.api, ctx.dataSourceManager, form, onSubmitted, selectedPresetFields, template]);
+  }, [collectionPresetFields, ctx.api, ctx.dataSourceManager, form, onSubmitted, selectedPresetFields, template]);
 
   return (
     <DrawerFormLayout
@@ -1305,12 +1232,28 @@ function CollectionsPage(props: CollectionsPageProps) {
       if (!keys.length) {
         return;
       }
+      let cascade = false;
       modal.confirm({
+        closable: true,
+        icon: <ExclamationCircleFilled style={{ color: '#faad14' }} />,
+        okText: t('Ok'),
+        cancelText: t('Cancel'),
         title: t('Delete collection'),
-        content: t('Are you sure you want to delete it?'),
+        width: 520,
+        content: (
+          <div>
+            <div>{t('Are you sure you want to delete it?')}</div>
+            <Checkbox style={{ marginTop: 8 }} onChange={(event) => (cascade = event.target.checked)}>
+              {t(
+                'Automatically drop objects that depend on the collection (such as views), and in turn all objects that depend on those objects',
+              )}
+            </Checkbox>
+          </div>
+        ),
         async onOk() {
           await ctx.api.resource('collections').destroy({
             filterByTk: keys,
+            cascade,
           });
           setSelectedRowKeys([]);
           request.refresh();
