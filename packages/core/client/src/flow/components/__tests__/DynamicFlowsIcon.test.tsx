@@ -15,6 +15,7 @@ import { DynamicFlowsIcon } from '../DynamicFlowsIcon';
 
 const mockState = vi.hoisted(() => ({
   capturedSelectProps: [] as any[],
+  capturedTabsProps: [] as any[],
   flowContextValue: undefined as any,
 }));
 
@@ -63,12 +64,14 @@ vi.mock('antd', async (importOriginal) => {
       return <div data-testid={String(props.placeholder || 'select')} />;
     },
     Space: ({ children }: any) => <div>{children}</div>,
-    Tabs: ({ items, activeKey, onChange }: any) => {
+    Tabs: (props: any) => {
+      mockState.capturedTabsProps.push(props);
+      const { items, activeKey, onChange, tabBarStyle } = props;
       const currentKey = activeKey || items?.[0]?.key;
       const activeItem = items?.find((item: any) => item.key === currentKey) || items?.[0];
       return (
         <div data-testid="dynamic-flow-source-tabs">
-          <div role="tablist">
+          <div role="tablist" style={tabBarStyle}>
             {items?.map((item: any) => (
               <button
                 key={item.key}
@@ -256,6 +259,7 @@ const createView = () => {
 describe('DynamicFlowsIcon', () => {
   beforeEach(() => {
     mockState.capturedSelectProps.length = 0;
+    mockState.capturedTabsProps.length = 0;
     mockState.flowContextValue = {
       modal: {
         confirm: vi.fn(),
@@ -419,7 +423,7 @@ describe('DynamicFlowsIcon', () => {
     expect(model.context.message.success).toHaveBeenCalledWith('Configuration saved');
   });
 
-  it('renders source tabs and keeps the editor open when saving one source', async () => {
+  it('renders source tabs and closes the editor when saving one source', async () => {
     const model = createModel();
     const targetSaveStepParams = vi.fn(async () => undefined);
     const target = createPeerModel(model, 'target-model', targetSaveStepParams);
@@ -432,6 +436,7 @@ describe('DynamicFlowsIcon', () => {
     const { view } = await openDynamicFlowsEditor(model);
 
     expect(screen.getByRole('tab', { name: 'Current block' })).toHaveAttribute('aria-selected', 'true');
+    expect(mockState.capturedTabsProps.at(-1)?.tabBarStyle?.paddingLeft).toBeGreaterThan(0);
     await userEvent.click(screen.getByRole('tab', { name: 'Referenced template' }));
 
     await userEvent.click(screen.getByRole('button', { name: 'Add event flow' }));
@@ -439,7 +444,7 @@ describe('DynamicFlowsIcon', () => {
 
     expect(targetSaveStepParams).toHaveBeenCalledTimes(1);
     expect(target.flowRegistry.getFlows().size).toBe(2);
-    expect(view.destroy).not.toHaveBeenCalled();
+    expect(view.destroy).toHaveBeenCalledTimes(1);
     expect(target.context.message.success).toHaveBeenCalledWith('Configuration saved');
   });
 
