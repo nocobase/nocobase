@@ -1,12 +1,12 @@
 ---
 title: "nb app restart"
-description: "nb app restart 命令参考：重启指定 env 的 NocoBase 应用或 Docker 容器。"
+description: "nb app restart 命令参考：重启指定 env 的 NocoBase 应用，并在 Docker env 中按已保存配置重建应用容器。"
 keywords: "nb app restart,NocoBase CLI,重启应用,Docker"
 ---
 
 # nb app restart
 
-先停止再启动指定 env 的 NocoBase 应用。
+先停止再启动指定 env 的 NocoBase 应用。本地 env 会复用 `nb app stop` 和 `nb app start` 的流程；Docker env 会先清理当前容器，再按已保存配置重建应用容器。
 
 ## 用法
 
@@ -44,6 +44,8 @@ nb app restart --env local-docker
 ## 说明
 
 只有在你显式传入 `--env` 时，CLI 才会检查它是否与当前 env 一致。如果显式指定了不同的 env，交互终端会先确认；在非交互终端或 AI agent 场景下，需要由你自己显式追加 `--yes`，或者先执行 `nb env use <name>` 再重试。
+
+只要 CLI 需要等待应用就绪，就会检查 `__health_check` 接口：先输出一条等待日志，之后每 10 秒输出一条进度提示，直到应用可用或超时。如果本地 env 传入 `--no-daemon`，应用会以前台模式运行，此时 CLI 不会在启动后继续等待健康检查。
 
 ## 相关命令
 

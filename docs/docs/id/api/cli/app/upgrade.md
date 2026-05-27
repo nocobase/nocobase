@@ -1,12 +1,12 @@
 ---
 title: "nb app upgrade"
-description: "Referensi perintah nb app upgrade: memperbarui source code atau image dan me-restart aplikasi NocoBase yang ditentukan."
-keywords: "nb app upgrade,NocoBase CLI,upgrade,update,Docker image"
+description: "Referensi perintah nb app upgrade: menghentikan aplikasi, mengganti source code atau image yang tersimpan, lalu menjalankan kembali aplikasi NocoBase yang dipilih."
+keywords: "nb app upgrade,NocoBase CLI,upgrade,memperbarui,Docker image"
 ---
 
 # nb app upgrade
 
-Mengupgrade aplikasi NocoBase yang ditentukan. Instalasi npm/Git akan memuat ulang source code yang tersimpan dan me-restart dengan quickstart; instalasi Docker akan memuat ulang image yang tersimpan dan membangun ulang container aplikasi.
+Memperbarui aplikasi NocoBase yang dipilih. CLI akan menghentikan aplikasi saat ini terlebih dahulu, secara default mengganti source code atau image yang tersimpan, menyinkronkan plugin komersial, menjalankan kembali aplikasi dengan quickstart, lalu memperbarui runtime env di akhir. Env Docker akan membuat ulang container aplikasi dari konfigurasi env yang tersimpan saat startup.
 
 ## Penggunaan
 
@@ -18,10 +18,10 @@ nb app upgrade [flags]
 
 | Parameter | Tipe | Penjelasan |
 | --- | --- | --- |
-| `--env`, `-e` | string | Nama env CLI yang akan diupgrade, jika dilewati menggunakan env saat ini |
+| `--env`, `-e` | string | Nama env CLI yang akan di-upgrade, jika dilewati menggunakan env saat ini |
 | `--yes`, `-y` | boolean | Saat `--env` yang diberikan secara eksplisit menargetkan env yang berbeda dari env saat ini, lewati konfirmasi interaktif |
-| `--skip-code-update`, `-s` | boolean | Restart menggunakan source code lokal atau image Docker yang sudah tersimpan, tanpa mendownload pembaruan |
-| `--version` | string | Ganti `downloadVersion` yang tersimpan; ketika upgrade berhasil, versi baru akan ditulis kembali ke konfigurasi env |
+| `--skip-download`, `-s` | boolean | Menjalankan ulang source code lokal atau image Docker yang saat ini tersimpan tanpa mengunduh update lebih dulu; juga melewati `nb license plugins sync` |
+| `--version` | string | Menimpa versi target untuk upgrade ini; saat berhasil, versi baru akan ditulis kembali ke `downloadVersion` di konfigurasi env |
 | `--verbose` | boolean | Menampilkan output perintah update dan restart yang mendasarinya |
 
 ## Contoh
@@ -29,13 +29,29 @@ nb app upgrade [flags]
 ```bash
 nb app upgrade
 nb app upgrade --env local
-nb app upgrade --env local -s
+nb app upgrade --env local --skip-download
+nb app upgrade --env local --skip-download --version beta
 nb app upgrade --env local --version beta
 nb app upgrade --env local --verbose
-nb app upgrade --env local-docker -s
+nb app upgrade --env local-docker --skip-download
 ```
 
 Jika Anda memberikan `--env` secara eksplisit dan nilainya berbeda dari env saat ini, CLI akan meminta konfirmasi terlebih dahulu. Pada terminal non-interaktif atau sesi AI agent, tambahkan `--yes` sendiri atau jalankan `nb env use <name>` terlebih dahulu lalu coba lagi.
+
+Secara default, `nb app upgrade` menjalankan langkah-langkah berikut:
+
+1. `nb app stop`
+2. `nb source download --replace`
+3. `nb license plugins sync --skip-if-no-license`
+4. `nb app start --quickstart`
+5. Menyimpan `downloadVersion` baru bila diperlukan
+6. `nb env update`
+
+Saat `--skip-download` diberikan, CLI akan melewati langkah 2 dan 3 lalu langsung menjalankan ulang source code atau image yang saat ini tersimpan. Jika `--version` juga diberikan, CLI tidak akan mengunduh versi itu pada proses ini; sebagai gantinya, CLI hanya menyimpannya sebagai `downloadVersion` baru setelah restart berhasil agar upgrade berikutnya bisa menggunakannya.
+
+Langkah 4 akan menunggu aplikasi lolos `__health_check`. Selama menunggu, CLI akan menampilkan satu baris waiting terlebih dahulu, lalu satu baris progress setiap 10 detik sampai aplikasi siap atau health check kehabisan waktu.
+
+Jika langkah terakhir `nb env update` gagal, upgrade tetap dianggap berhasil. CLI akan menampilkan warning dan meminta Anda menjalankan `nb env update <envName>` secara manual setelahnya.
 
 ## Perintah Terkait
 
