@@ -528,9 +528,19 @@ describe('flowSurfaces backend authoring applyBlueprint compiler', () => {
     expect(topLevelCodeError?.details?.repairHint).toContain('Do not change this block type');
     expect(chartError?.details?.repairHint).toContain('assets.charts');
     expect(chartError?.details?.repairHint).toContain('Do not change this block type');
+    expect(chartError?.details?.repairHint).toContain('do not drop or defer the chart');
     expect(chartError?.details?.repairHint).toContain('KPI');
+    expect(chartError?.details?.repairSteps).toEqual(
+      expect.arrayContaining([
+        expect.stringContaining('Keep the block type as chart'),
+        expect.stringContaining('assets.charts.<key>.query'),
+      ]),
+    );
+    expect(chartError?.details?.expectedShape?.block).toEqual({ type: 'chart', chart: 'chartKey' });
+    expect(chartError?.details?.forbiddenFallbacks).toEqual(expect.arrayContaining(['table', 'drop chart']));
     expect(chartError?.message).toContain('chart payload shape problem');
     expect(chartError?.message).toContain('Do not change this block type');
+    expect(chartError?.message).toContain('do not drop or defer the chart');
   });
 
   it('should include repair hints on invalid jsBlock script assets', async () => {
@@ -621,7 +631,64 @@ describe('flowSurfaces backend authoring applyBlueprint compiler', () => {
     expect(chartError?.message).toContain('Do not change this block type');
     expect(chartError?.details?.repairHint).toContain('chart payload shape problem');
     expect(chartError?.details?.repairHint).toContain('Do not change this block type');
+    expect(chartError?.details?.repairSteps).toEqual(
+      expect.arrayContaining([expect.stringContaining('Retry the chart payload')]),
+    );
     expect(chartError?.details?.supportedOutputs).toEqual(['value']);
+  });
+
+  it('should include repair hints on invalid chart SQL during applyBlueprint', async () => {
+    const response = await rootAgent.resource('flowSurfaces').applyBlueprint({
+      values: {
+        mode: 'create',
+        navigation: {
+          item: {
+            title: 'Authoring chart invalid SQL repair hint blueprint',
+          },
+        },
+        assets: {
+          charts: {
+            statusChart: {
+              query: {
+                mode: 'sql',
+                sql: 'select * from missing_flow_surfaces_chart_table',
+              },
+              visual: {
+                mode: 'basic',
+                type: 'bar',
+                mappings: {
+                  x: 'status',
+                  y: 'value',
+                },
+              },
+            },
+          },
+        },
+        tabs: [
+          {
+            title: 'Overview',
+            blocks: [
+              {
+                key: 'statusChart',
+                type: 'chart',
+                title: 'Status chart',
+                chart: 'statusChart',
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(response.status).toBe(400);
+    const chartError = response.body?.errors?.[0];
+    expect(chartError?.message).toContain('chart query.sql is invalid');
+    expect(chartError?.message).toContain('Do not change this block type');
+    expect(chartError?.details?.repairHint).toContain('chart payload shape problem');
+    expect(chartError?.details?.repairSteps).toEqual(
+      expect.arrayContaining([expect.stringContaining('Retry the chart payload')]),
+    );
+    expect(chartError?.details?.forbiddenFallbacks).toEqual(expect.arrayContaining(['table', 'drop chart']));
   });
 
   it('should aggregate explicit empty defaultFilter groups before applyBlueprint writes', async () => {

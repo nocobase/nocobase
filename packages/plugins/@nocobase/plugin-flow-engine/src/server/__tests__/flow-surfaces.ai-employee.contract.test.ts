@@ -323,6 +323,63 @@ describe('flowSurfaces AI employee action contract', () => {
     expect(updatedRecordUserMessage.match(/\{\{\s*ctx\.record\s*\}\}/g) || []).toHaveLength(1);
   });
 
+  it('defaults AI employee workContext type and canonicalizes task prompt aliases', async () => {
+    const { table } = await createTable();
+    const prompt = 'Summarize the current table context and list the next action.';
+    const action = getData(
+      await rootAgent.resource('flowSurfaces').addAction({
+        values: {
+          target: { uid: table.uid },
+          type: 'aiEmployee',
+          settings: aiEmployeeSettings({
+            workContext: [{ target: 'self' }],
+            tasks: [
+              {
+                title: 'Prompt alias task',
+                prompt,
+                message: {
+                  system: 'Use the current UI context.',
+                  workContext: [{ target: 'self' }],
+                },
+                autoSend: false,
+                skillSettings: null,
+                model: null,
+                webSearch: false,
+              },
+            ],
+          }),
+        },
+      }),
+    );
+
+    const persisted = await readAction(action.uid);
+    expectResolvedFlowModelContext(persisted?.props?.context?.workContext, table.uid);
+    const task = getPersistedTasks(persisted)?.[0];
+    expect(task?.prompt).toBeUndefined();
+    expect(task?.message?.user).toBe(prompt);
+    expectResolvedFlowModelContext(task?.message?.workContext, table.uid);
+
+    const updateRes = await rootAgent.resource('flowSurfaces').updateSettings({
+      values: {
+        target: { uid: action.uid },
+        tasks: [
+          {
+            prompt: 'Updated prompt through alias.',
+            message: {
+              system: 'Updated system.',
+              workContext: [{ target: 'self' }],
+            },
+          },
+        ],
+      },
+    });
+    expect(updateRes.status, readErrorMessage(updateRes)).toBe(200);
+    const updated = await readAction(action.uid);
+    expect(getPersistedTasks(updated)?.[0]?.prompt).toBeUndefined();
+    expect(getPersistedTasks(updated)?.[0]?.message?.user).toBe('Updated prompt through alias.');
+    expectResolvedFlowModelContext(getPersistedTasks(updated)?.[0]?.message?.workContext, table.uid);
+  });
+
   it('treats unversioned empty AI employee task skills and tools as preset on create', async () => {
     const { table } = await createTable();
     const action = getData(
@@ -1312,11 +1369,14 @@ describe('flowSurfaces AI employee action contract', () => {
 
     const invalidCases = [
       {
-        label: 'missing workContext type',
+        label: 'unsupported workContext type',
         settings: aiEmployeeSettings({
-          workContext: [{ uid: table.uid }],
+          workContext: [{ type: 'record', uid: table.uid }],
         }),
-        message: "settings.workContext[0].type must be 'flow-model'",
+        messages: [
+          "settings.workContext[0].type only supports 'flow-model'",
+          'type is optional and defaults to flow-model',
+        ],
       },
       {
         label: 'workContext has unsupported key',
@@ -1448,7 +1508,26 @@ describe('flowSurfaces AI employee action contract', () => {
             },
           ],
         }),
-        message: "settings.tasks[0] does not support key 'rawProps'",
+        messages: [
+          "settings.tasks[0] does not support key 'rawProps'",
+          'allowed keys: title, message, autoSend, skillSettings, model, webSearch, prompt',
+          'Put user instructions in tasks[n].message.user or the prompt alias',
+        ],
+      },
+      {
+        label: 'prompt conflicts with message user',
+        settings: aiEmployeeSettings({
+          tasks: [
+            {
+              title: 'Conflicting prompt',
+              prompt: 'Alias prompt.',
+              message: {
+                user: 'Canonical prompt.',
+              },
+            },
+          ],
+        }),
+        messages: ['settings.tasks[0] cannot set both prompt and message.user', 'prompt is an alias for message.user'],
       },
       {
         label: 'style mask is not boolean',
@@ -1479,7 +1558,10 @@ describe('flowSurfaces AI employee action contract', () => {
         },
       });
       expect(res.status, item.label).toBe(400);
-      expect(readErrorMessage(res)).toContain(item.message);
+      const expectedMessages = 'messages' in item ? item.messages : [item.message];
+      for (const message of expectedMessages) {
+        expect(readErrorMessage(res)).toContain(message);
+      }
     }
 
     const action = getData(

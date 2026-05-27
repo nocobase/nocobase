@@ -354,6 +354,7 @@ describe('flowSurfaces chart write paths', () => {
     });
     expect(invalidSqlRes.status).toBe(400);
     expect(readErrorMessage(invalidSqlRes)).toContain('chart query.sql is invalid');
+    expectChartRepairDetails(invalidSqlRes);
 
     const zeroOutputRes = await rootAgent.resource('flowSurfaces').configure({
       values: {
@@ -374,6 +375,7 @@ describe('flowSurfaces chart write paths', () => {
     } else {
       expect(zeroOutputMessage).toContain('chart query.sql is invalid');
     }
+    expectChartRepairDetails(zeroOutputRes);
 
     // MySQL cannot infer SQL output aliases from an empty aggregate result set,
     // so seed one row to exercise the mapping-validation branch consistently.
@@ -444,6 +446,7 @@ describe('flowSurfaces chart write paths', () => {
 
     expect(response.status).toBe(400);
     expect(readErrorMessage(response)).toContain("chart visual.mode='basic' requires previewable SQL query outputs");
+    expectChartRepairDetails(response);
   });
 
   it('should clear stale basic visual when query switches to risky sql without an explicit visual patch', async () => {
@@ -1138,6 +1141,14 @@ function getData(response: any) {
 
 function readErrorMessage(response: any) {
   return response?.body?.errors?.[0]?.message || response?.body?.message || response?.message || '';
+}
+
+function expectChartRepairDetails(response: any) {
+  const details = response?.body?.errors?.[0]?.details;
+  expect(details?.repairHint).toContain('chart payload shape problem');
+  expect(details?.repairHint).toContain('Do not change this block type');
+  expect(details?.repairSteps).toEqual(expect.arrayContaining([expect.stringContaining('Retry the chart payload')]));
+  expect(details?.forbiddenFallbacks).toEqual(expect.arrayContaining(['table', 'drop chart']));
 }
 
 function buildInvalidInlineChartSettings() {

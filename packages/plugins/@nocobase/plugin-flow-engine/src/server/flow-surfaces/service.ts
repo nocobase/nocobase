@@ -446,10 +446,63 @@ import type {
 import type { FlowSurfaceContextResponse, FlowSurfaceContextVarInfo } from './types';
 
 const FLOW_SURFACE_CHART_REPAIR_HINT =
-  'This is a chart payload shape problem. Repair the current chart block payload using assets.charts.<key>.query/visual plus block.chart, or localized settings.query/settings.visual. Do not change this block type to table, jsBlock, actionPanel, gridCard, or another block type. KPI / summary numbers should use jsBlock; charts are for trends, distributions, rankings, and visual analysis.';
+  'This is a chart payload shape problem. Repair the current chart block payload using assets.charts.<key>.query/visual plus block.chart, or localized settings.query/settings.visual. Do not change this block type to table, jsBlock, actionPanel, gridCard, or another block type. Do not drop or defer the chart. KPI / summary numbers should use jsBlock; charts are for trends, distributions, rankings, and visual analysis.';
+
+const FLOW_SURFACE_CHART_REPAIR_STEPS = [
+  'Keep the block type as chart.',
+  'Define assets.charts.<key>.query and assets.charts.<key>.visual, or repair the localized settings.query/settings.visual on the existing chart block.',
+  'Reference the asset from the chart block with block.chart = <key> when using assets.charts.',
+  'Retry the chart payload instead of replacing the chart with another block type, omitting it, or deferring it.',
+];
+
+const FLOW_SURFACE_CHART_EXPECTED_SHAPE = {
+  assets: {
+    charts: {
+      chartKey: {
+        query: 'builder/sql query configuration',
+        visual: 'basic/custom visual configuration',
+      },
+    },
+  },
+  block: {
+    type: 'chart',
+    chart: 'chartKey',
+  },
+};
+
+const FLOW_SURFACE_CHART_FORBIDDEN_FALLBACKS = [
+  'table',
+  'jsBlock',
+  'actionPanel',
+  'gridCard',
+  'drop chart',
+  'defer chart',
+];
 
 function withChartRepairMessage(message: string) {
   return `${message}. ${FLOW_SURFACE_CHART_REPAIR_HINT}`;
+}
+
+function withFlowSurfaceChartRepairDetails(details: Record<string, any> = {}) {
+  return {
+    ...details,
+    repairHint: FLOW_SURFACE_CHART_REPAIR_HINT,
+    repairSteps: FLOW_SURFACE_CHART_REPAIR_STEPS,
+    expectedShape: FLOW_SURFACE_CHART_EXPECTED_SHAPE,
+    forbiddenFallbacks: FLOW_SURFACE_CHART_FORBIDDEN_FALLBACKS,
+  };
+}
+
+function throwChartRepairBadRequest(message: string, details: Record<string, any> = {}): never {
+  throwBadRequest(withChartRepairMessage(message), {
+    details: withFlowSurfaceChartRepairDetails(details),
+  });
+}
+
+function isFlowSurfaceChartRepairError(error: unknown) {
+  return (
+    error instanceof FlowSurfaceBadRequestError && error.options?.details?.repairHint === FLOW_SURFACE_CHART_REPAIR_HINT
+  );
 }
 
 type FlowSurfaceChartHint = {
@@ -985,10 +1038,15 @@ const AI_EMPLOYEE_INTERNAL_PROP_KEYS = ['aiEmployee', 'context', 'auto', 'tasks'
 const AI_EMPLOYEE_TASK_STEP_PARAMS_PATH = ['shortcutSettings', 'editTasks', 'tasks'];
 const AI_EMPLOYEE_WORK_CONTEXT_PUBLIC_KEYS = ['type', 'uid', 'target'];
 const AI_EMPLOYEE_TASK_PUBLIC_SETTING_KEYS = ['title', 'message', 'autoSend', 'skillSettings', 'model', 'webSearch'];
+const AI_EMPLOYEE_TASK_PATCH_PUBLIC_SETTING_KEYS = [...AI_EMPLOYEE_TASK_PUBLIC_SETTING_KEYS, 'prompt'];
 const AI_EMPLOYEE_TASK_MESSAGE_PUBLIC_KEYS = ['system', 'user', 'workContext'];
 const AI_EMPLOYEE_TASK_MODEL_PUBLIC_KEYS = ['llmService', 'model'];
 const AI_EMPLOYEE_SKILL_SETTINGS_PUBLIC_KEYS = ['skills', 'tools', 'skillsVersion', 'toolsVersion'];
 const AI_EMPLOYEE_STYLE_PUBLIC_KEYS = ['size', 'mask'];
+const AI_EMPLOYEE_WORK_CONTEXT_REPAIR_HINT =
+  'Use workContext entries like { "target": "self" } or { "uid": "<flow-model-uid>" }. The only supported type is flow-model, so type is optional and defaults to flow-model.';
+const AI_EMPLOYEE_TASK_REPAIR_HINT =
+  'Use task keys title, message, prompt, autoSend, skillSettings, model, and webSearch. Put user instructions in tasks[n].message.user or the prompt alias; do not write raw props, stepParams, or prompt beside message.user.';
 const AI_EMPLOYEE_PROMPT_CONTEXT_MAX_DEPTH = 8;
 const AI_EMPLOYEE_PROMPT_VARIABLE_INVALID = 'FLOW_SURFACE_AI_EMPLOYEE_PROMPT_VARIABLE_INVALID';
 const AI_EMPLOYEE_CURRENT_RECORD_PROMPT_VARIABLE = '{{ ctx.record }}';
@@ -15394,9 +15452,7 @@ export class FlowSurfacesService {
           "chart visual.mode='basic' requires previewable SQL query outputs; write query first, then read flowSurfaces:context(path='chart'), or use visual.mode='custom' after browser verification",
         ),
         {
-          details: {
-            repairHint: FLOW_SURFACE_CHART_REPAIR_HINT,
-          },
+          details: withFlowSurfaceChartRepairDetails(),
         },
       );
     }
@@ -15412,10 +15468,9 @@ export class FlowSurfacesService {
             `chart visual mappings only support SQL query output fields: ${Array.from(supportedOutputs).join(', ')}`,
           ),
           {
-            details: {
-              repairHint: FLOW_SURFACE_CHART_REPAIR_HINT,
+            details: withFlowSurfaceChartRepairDetails({
               supportedOutputs: Array.from(supportedOutputs),
-            },
+            }),
           },
         );
       }
@@ -15476,12 +15531,11 @@ export class FlowSurfacesService {
             `flowSurfaces ${actionName} ${item.path} '${fieldPath}' does not exist on collection '${dataSourceKey}.${collectionName}'`,
           ),
           {
-            details: {
-              repairHint: FLOW_SURFACE_CHART_REPAIR_HINT,
+            details: withFlowSurfaceChartRepairDetails({
               fieldPath,
               dataSourceKey,
               collectionName,
-            },
+            }),
           },
         );
       }
@@ -15492,13 +15546,12 @@ export class FlowSurfacesService {
             `flowSurfaces ${actionName} ${item.path} '${fieldPath}' references an association field directly; use scalar subfield '${suggestion.suggestedFieldPath}' for builder charts`,
           ),
           {
-            details: {
-              repairHint: FLOW_SURFACE_CHART_REPAIR_HINT,
+            details: withFlowSurfaceChartRepairDetails({
               fieldPath,
               dataSourceKey,
               collectionName,
               ...suggestion,
-            },
+            }),
           },
         );
       }
@@ -15550,9 +15603,7 @@ export class FlowSurfacesService {
           "chart visual.mode='basic' requires previewable SQL query outputs; write query first, then read flowSurfaces:context(path='chart'), or use visual.mode='custom' after browser verification",
         ),
         {
-          details: {
-            repairHint: FLOW_SURFACE_CHART_REPAIR_HINT,
-          },
+          details: withFlowSurfaceChartRepairDetails(),
         },
       );
     }
@@ -15568,10 +15619,9 @@ export class FlowSurfacesService {
             `chart visual mappings only support SQL query output fields: ${Array.from(supportedOutputs).join(', ')}`,
           ),
           {
-            details: {
-              repairHint: FLOW_SURFACE_CHART_REPAIR_HINT,
+            details: withFlowSurfaceChartRepairDetails({
               supportedOutputs: Array.from(supportedOutputs),
-            },
+            }),
           },
         );
       }
@@ -15592,18 +15642,18 @@ export class FlowSurfacesService {
       .replace(/;+\s*$/, '')
       .trim();
     if (!inspected) {
-      throwBadRequest('chart query.sql cannot be empty');
+      throwChartRepairBadRequest('chart query.sql cannot be empty');
     }
     if (inspected.includes(';')) {
-      throwBadRequest('chart query.sql must be a single read-only SELECT statement');
+      throwChartRepairBadRequest('chart query.sql must be a single read-only SELECT statement');
     }
     if (!/^(with|select)\b/i.test(inspected)) {
-      throwBadRequest('chart query.sql must start with SELECT or WITH');
+      throwChartRepairBadRequest('chart query.sql must start with SELECT or WITH');
     }
     if (
       /\b(insert|update|delete|drop|alter|truncate|create|replace|grant|revoke|merge|call|execute)\b/i.test(inspected)
     ) {
-      throwBadRequest('chart query.sql must be read-only');
+      throwChartRepairBadRequest('chart query.sql must be read-only');
     }
     return normalized.replace(/;+\s*$/, '').trim();
   }
@@ -15623,7 +15673,7 @@ export class FlowSurfacesService {
     if (db?.sequelize?.query) {
       return db.sequelize.query(sql, { bind, transaction });
     }
-    throwBadRequest('chart SQL preview is unavailable for the target data source');
+    throwChartRepairBadRequest('chart SQL preview is unavailable for the target data source');
   }
 
   private extractSqlChartPreviewAliases(metadata: any): string[] {
@@ -15667,7 +15717,13 @@ export class FlowSurfacesService {
 
   private async resolveSqlChartPreview(query: any, _transaction?: any): Promise<FlowSurfaceSqlChartPreview> {
     const normalizedSql = this.normalizeReadOnlyChartSql(query?.sql);
-    const transformed = await transformSQL(normalizedSql);
+    let transformed: any;
+    try {
+      transformed = await transformSQL(normalizedSql);
+    } catch (error: any) {
+      const message = error?.message || String(error);
+      throwChartRepairBadRequest(`chart query.sql is invalid: ${message}`);
+    }
     const riskyHints: FlowSurfaceChartHint[] = [];
     const hasRuntimeContext =
       Object.keys(transformed?.bind || {}).length > 0 || Object.keys(transformed?.liquidContext || {}).length > 0;
@@ -15735,7 +15791,7 @@ export class FlowSurfacesService {
 
       const outputAliases = Object.keys(firstRow);
       if (!outputAliases.length) {
-        throwBadRequest('chart query.sql must expose at least one output column');
+        throwChartRepairBadRequest('chart query.sql must expose at least one output column');
       }
 
       return {
@@ -15747,8 +15803,11 @@ export class FlowSurfacesService {
         riskyHints,
       };
     } catch (error: any) {
+      if (isFlowSurfaceChartRepairError(error)) {
+        throw error;
+      }
       const message = error?.message || String(error);
-      throwBadRequest(`chart query.sql is invalid: ${message}`);
+      throwChartRepairBadRequest(`chart query.sql is invalid: ${message}`);
     }
   }
 
@@ -21698,9 +21757,23 @@ export class FlowSurfacesService {
     const unsupportedKeys = Object.keys(settings || {}).filter((key) => !AI_EMPLOYEE_PUBLIC_SETTING_KEYS.includes(key));
     if (unsupportedKeys.length) {
       throwBadRequest(
-        `flowSurfaces ${actionName} AI employee settings do not support keys: ${unsupportedKeys.join(', ')}`,
+        `flowSurfaces ${actionName} AI employee settings do not support keys: ${unsupportedKeys.join(
+          ', ',
+        )}; allowed keys: ${AI_EMPLOYEE_PUBLIC_SETTING_KEYS.join(
+          ', ',
+        )}; repairHint: use top-level username, auto, workContext, tasks, or style instead of raw props/stepParams`,
       );
     }
+  }
+
+  private aiEmployeeNestedRepairHint(path: string) {
+    if (path.includes('workContext')) {
+      return AI_EMPLOYEE_WORK_CONTEXT_REPAIR_HINT;
+    }
+    if (path.includes('tasks')) {
+      return AI_EMPLOYEE_TASK_REPAIR_HINT;
+    }
+    return 'Use only the documented public AI employee settings keys for this nested object.';
   }
 
   private assertOnlyAIEmployeeNestedPublicSettings(
@@ -21713,7 +21786,11 @@ export class FlowSurfacesService {
     if (!unsupportedKeys.length) {
       return;
     }
-    throwBadRequest(`flowSurfaces ${actionName} ${path} does not support key '${unsupportedKeys[0]}'`);
+    throwBadRequest(
+      `flowSurfaces ${actionName} ${path} does not support key '${
+        unsupportedKeys[0]
+      }'; allowed keys: ${allowedKeys.join(', ')}; repairHint: ${this.aiEmployeeNestedRepairHint(path)}`,
+    );
   }
 
   private assertNoAIEmployeeInternalPropSettings(actionName: string, values: Record<string, any>) {
@@ -21908,8 +21985,13 @@ export class FlowSurfacesService {
   }
 
   private assertAIEmployeeWorkContextType(actionName: string, itemPath: string, item: Record<string, any>) {
+    if (!Object.prototype.hasOwnProperty.call(item, 'type') || _.isUndefined(item.type) || item.type === null) {
+      return;
+    }
     if (String(item.type || '').trim() !== 'flow-model') {
-      throwBadRequest(`flowSurfaces ${actionName} ${itemPath}.type must be 'flow-model'`);
+      throwBadRequest(
+        `flowSurfaces ${actionName} ${itemPath}.type only supports 'flow-model'; omit type to use the default flow-model context. repairHint: ${AI_EMPLOYEE_WORK_CONTEXT_REPAIR_HINT}`,
+      );
     }
   }
 
@@ -22464,15 +22546,42 @@ export class FlowSurfacesService {
       throwBadRequest(`flowSurfaces ${actionName} ${options.path} must be an object`);
     }
     const next = _.pick(_.isPlainObject(existing) ? _.cloneDeep(existing) : {}, AI_EMPLOYEE_TASK_PUBLIC_SETTING_KEYS);
+    if (
+      Object.prototype.hasOwnProperty.call(patch, 'prompt') &&
+      _.isPlainObject(patch.message) &&
+      Object.prototype.hasOwnProperty.call(patch.message, 'user')
+    ) {
+      throwBadRequest(
+        `flowSurfaces ${actionName} ${options.path} cannot set both prompt and message.user; prompt is an alias for message.user. repairHint: keep only one of ${options.path}.prompt or ${options.path}.message.user`,
+      );
+    }
     Object.entries(patch).forEach(([key, value]) => {
-      if (!AI_EMPLOYEE_TASK_PUBLIC_SETTING_KEYS.includes(key)) {
-        throwBadRequest(`flowSurfaces ${actionName} ${options.path} does not support key '${key}'`);
+      if (!AI_EMPLOYEE_TASK_PATCH_PUBLIC_SETTING_KEYS.includes(key)) {
+        throwBadRequest(
+          `flowSurfaces ${actionName} ${
+            options.path
+          } does not support key '${key}'; allowed keys: ${AI_EMPLOYEE_TASK_PATCH_PUBLIC_SETTING_KEYS.join(
+            ', ',
+          )}; repairHint: ${AI_EMPLOYEE_TASK_REPAIR_HINT}`,
+        );
       }
       if (key === 'message') {
         next.message = this.normalizeAIEmployeeTaskMessage(actionName, `${options.path}.message`, value, next.message, {
           selfUid: options.selfUid,
           keyMap: options.keyMap,
         });
+        return;
+      }
+      if (key === 'prompt') {
+        if (typeof value !== 'string') {
+          throwBadRequest(
+            `flowSurfaces ${actionName} ${options.path}.prompt must be a string; repairHint: ${AI_EMPLOYEE_TASK_REPAIR_HINT}`,
+          );
+        }
+        next.message = {
+          ...(_.isPlainObject(next.message) ? _.cloneDeep(next.message) : {}),
+          user: value,
+        };
         return;
       }
       if (key === 'title') {

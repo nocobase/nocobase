@@ -204,7 +204,7 @@ const JS_BLOCK_INTERNAL_AUTHORING_KEYS = ['props', 'decoratorProps', 'flowRegist
 const JS_BLOCK_REPAIR_HINT =
   'This is a jsBlock payload shape problem. Repair this jsBlock using inline settings.code/settings.version, or applyBlueprint assets.scripts.<key>.code plus block.script. Do not change this block type to table, chart, actionPanel, gridCard, or another block type.';
 const CHART_REPAIR_HINT =
-  'This is a chart payload shape problem. Repair this chart using assets.charts.<key>.query/visual plus block.chart, or localized settings.query/settings.visual. Do not change this block type to table, jsBlock, actionPanel, gridCard, or another block type. KPI / summary numbers should use jsBlock; charts are for trends, distributions, rankings, and visual analysis.';
+  'This is a chart payload shape problem. Repair this chart using assets.charts.<key>.query/visual plus block.chart, or localized settings.query/settings.visual. Do not change this block type to table, jsBlock, actionPanel, gridCard, or another block type, and do not drop or defer the chart. KPI / summary numbers should use jsBlock; charts are for trends, distributions, rankings, and visual analysis.';
 
 const CHART_QUERY_MODE_SET = new Set(CHART_QUERY_MODES);
 const CHART_VISUAL_MODE_SET = new Set(CHART_VISUAL_MODES);
@@ -758,6 +758,27 @@ function withChartRepairHint(details: Record<string, any> = {}) {
   return {
     ...details,
     repairHint: CHART_REPAIR_HINT,
+    repairSteps: [
+      'Keep the block type as chart.',
+      'Define assets.charts.<key>.query and assets.charts.<key>.visual.',
+      'Reference that asset from the chart block with block.chart = <key>.',
+      'Retry the chart payload instead of replacing the chart with another block type or omitting it.',
+    ],
+    expectedShape: {
+      assets: {
+        charts: {
+          chartKey: {
+            query: 'builder/sql query configuration',
+            visual: 'basic/custom visual configuration',
+          },
+        },
+      },
+      block: {
+        type: 'chart',
+        chart: 'chartKey',
+      },
+    },
+    forbiddenFallbacks: ['table', 'jsBlock', 'actionPanel', 'gridCard', 'drop chart', 'defer chart'],
   };
 }
 
@@ -6315,9 +6336,16 @@ function normalizeAuthoringAIEmployeePublicSettingsForIdentity(settings: Record<
 }
 
 function normalizeAuthoringAIEmployeeWorkContextForIdentity(value: any) {
-  return _.castArray(value || []).map((item: any) =>
-    _.isPlainObject(item) ? _.pick(item, AUTHORING_AI_EMPLOYEE_WORK_CONTEXT_PUBLIC_KEYS) : item,
-  );
+  return _.castArray(value || []).map((item: any) => {
+    if (!_.isPlainObject(item)) {
+      return item;
+    }
+    const output = _.pick(item, AUTHORING_AI_EMPLOYEE_WORK_CONTEXT_PUBLIC_KEYS);
+    if (!Object.prototype.hasOwnProperty.call(output, 'type') || _.isUndefined(output.type) || output.type === null) {
+      output.type = 'flow-model';
+    }
+    return output;
+  });
 }
 
 function normalizeAuthoringAIEmployeeTasksForIdentity(value: any) {
@@ -6333,6 +6361,15 @@ function normalizeAuthoringAIEmployeeTasksForIdentity(value: any) {
       } else if (Array.isArray(output.message.workContext)) {
         output.message.workContext = normalizeAuthoringAIEmployeeWorkContextForIdentity(output.message.workContext);
       }
+    }
+    if (
+      Object.prototype.hasOwnProperty.call(task, 'prompt') &&
+      !Object.prototype.hasOwnProperty.call(output.message || {}, 'user')
+    ) {
+      output.message = {
+        ...(_.isPlainObject(output.message) ? output.message : {}),
+        user: task.prompt,
+      };
     }
     if (_.isPlainObject(output.model)) {
       output.model = _.pick(output.model, AUTHORING_AI_EMPLOYEE_TASK_MODEL_PUBLIC_KEYS);
