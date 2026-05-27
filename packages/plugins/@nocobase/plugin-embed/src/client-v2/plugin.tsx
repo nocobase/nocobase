@@ -38,6 +38,7 @@ export class PluginEmbedClientV2 extends Plugin<any, Application> {
       routePath: EMBED_ROUTE_PREFIX,
       uid: EMBED_LAYOUT_MODEL_UID,
       layoutModelClass: EMBED_LAYOUT_MODEL_CLASS,
+      authCheck: false,
     });
     registerCopyEmbedLinkFlow();
   }

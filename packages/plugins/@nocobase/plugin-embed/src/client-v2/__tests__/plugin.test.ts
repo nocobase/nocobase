@@ -53,6 +53,7 @@ describe('PluginEmbedClientV2', () => {
       routePath: '/embed',
       uid: EMBED_LAYOUT_MODEL_UID,
       layoutModelClass: EMBED_LAYOUT_MODEL_CLASS,
+      authCheck: false,
     });
     expect(app.router.add).not.toHaveBeenCalled();
     expect(registerCopyEmbedLinkFlow).toHaveBeenCalledTimes(1);

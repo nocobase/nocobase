@@ -12,6 +12,7 @@ import { observer } from '@nocobase/flow-engine';
 import { ConfigProvider, Grid, theme as antdTheme } from 'antd';
 import React, { type PropsWithChildren, useCallback, useEffect, useMemo } from 'react';
 import { useOutlet } from 'react-router-dom';
+import { EmbedAccessGuard } from './EmbedAccessGuard';
 import EmbedEmptyPage from './EmbedEmptyPage';
 import type { EmbedLayoutModelV2 } from './EmbedLayoutModel';
 
@@ -58,7 +59,7 @@ export const EmbedLayoutComponent = observer((props: PropsWithChildren<{ model: 
           } as React.CSSProperties
         }
       >
-        {isRootRoute || !content ? <EmbedEmptyPage /> : content}
+        {isRootRoute || !content ? <EmbedEmptyPage /> : <EmbedAccessGuard>{content}</EmbedAccessGuard>}
       </div>
       <div id="nocobase-embed-container" style={embedContainerStyle} />
     </ConfigProvider>

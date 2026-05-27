@@ -177,7 +177,8 @@ export function EmbedPage() {
 }
 
 export function NotAuthorized() {
-  return <Result status="403" title="403" subTitle="Sorry, you are not authorized to access this page." />;
+  const { t } = useEmbedTranslation();
+  return <Result status="403" title="403" subTitle={t('Sorry, you are not authorized to access this page.')} />;
 }
 
 export function useEmbedTranslation() {

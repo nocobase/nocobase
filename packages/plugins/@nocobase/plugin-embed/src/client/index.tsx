@@ -39,31 +39,37 @@ class PluginEmbedClient extends Plugin {
     this.router.add(Key, {
       path: UrlPrefix,
       Component: EmbedLayout,
+      skipAuthCheck: true,
     });
 
     this.router.add(`${Key}.page`, {
       path: `${UrlPrefix}/:name`,
       Component: EmbedPage,
+      skipAuthCheck: true,
     });
 
     this.router.add(`${Key}.page.tab`, {
       path: `${UrlPrefix}/:name/tabs/:tabUid`,
       Component: PageTabs,
+      skipAuthCheck: true,
     });
 
     this.router.add(`${Key}.page.flowTab`, {
       path: `${UrlPrefix}/:name/tab/:tabUid`,
       Component: EmbedPage,
+      skipAuthCheck: true,
     });
 
     this.router.add(`${Key}.page.view`, {
       path: `${UrlPrefix}/:name/view/*`,
       Component: EmbedPage,
+      skipAuthCheck: true,
     });
 
     this.router.add(`${Key}.page.flowTabView`, {
       path: `${UrlPrefix}/:name/tab/:tabUid/view/*`,
       Component: EmbedPage,
+      skipAuthCheck: true,
     });
 
     this.schemaSettingsManager.addItem('PageSettings', Key, {

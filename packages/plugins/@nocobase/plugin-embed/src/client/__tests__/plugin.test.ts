@@ -58,21 +58,38 @@ describe('PluginEmbedClient', () => {
     await plugin.load();
 
     expect(app.router.add).toHaveBeenCalledWith(
+      'embed',
+      expect.objectContaining({
+        path: '/embed',
+        skipAuthCheck: true,
+      }),
+    );
+    expect(app.router.add).toHaveBeenCalledWith(
+      'embed.page',
+      expect.objectContaining({
+        path: '/embed/:name',
+        skipAuthCheck: true,
+      }),
+    );
+    expect(app.router.add).toHaveBeenCalledWith(
       'embed.page.flowTab',
       expect.objectContaining({
         path: '/embed/:name/tab/:tabUid',
+        skipAuthCheck: true,
       }),
     );
     expect(app.router.add).toHaveBeenCalledWith(
       'embed.page.view',
       expect.objectContaining({
         path: '/embed/:name/view/*',
+        skipAuthCheck: true,
       }),
     );
     expect(app.router.add).toHaveBeenCalledWith(
       'embed.page.flowTabView',
       expect.objectContaining({
         path: '/embed/:name/tab/:tabUid/view/*',
+        skipAuthCheck: true,
       }),
     );
     expect(app.schemaSettingsManager.addItem).toHaveBeenCalledWith('PageSettings', 'embed', {
