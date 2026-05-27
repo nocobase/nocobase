@@ -14,7 +14,7 @@
     "@langchain/google-genai": "^2.1.18",
     "@langchain/langgraph": "~1.1.4",
     "@langchain/langgraph-checkpoint": "^1.0.0",
-    "@langchain/ollama": "^1.2.2",
+    "@langchain/ollama": "~1.2.7",
     "@langchain/openai": "^1.2.7",
     "@nocobase/logger": "2.0.57",
     "@nocobase/resourcer": "2.0.57",
