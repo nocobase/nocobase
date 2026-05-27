@@ -336,6 +336,7 @@ export class AIEmployee {
     userDecisions,
     writer,
     context,
+    signal,
   }: {
     messageId?: string;
     userMessages?: AIMessageInput[];
@@ -345,6 +346,7 @@ export class AIEmployee {
     };
     writer?: (chunk: any) => void;
     context?: any;
+    signal?: AbortSignal;
   }) {
     await this.aiConversationsRepo.update({
       values: { llmActiveState: 'invoking' },
@@ -365,6 +367,7 @@ export class AIEmployee {
         recursionLimit: 100,
         configurable: this.from === 'main-agent' ? { thread_id: threadId } : undefined,
         writer,
+        signal,
         ...config,
       };
 

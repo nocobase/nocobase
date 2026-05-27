@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Model, Transaction } from '@nocobase/database';
+import { Model, Transaction, Transactionable } from '@nocobase/database';
 import { parseCollectionName } from '@nocobase/data-source-manager';
 import type { DataSourceManager } from '@nocobase/data-source-manager';
 import type PluginWorkflowServer from './Plugin';
@@ -15,8 +15,7 @@ import { EXECUTION_REASON, EXECUTION_STATUS, JOB_STATUS } from './constants';
 import type { ExecutionModel, WorkflowModel } from './types';
 import Processor from './Processor';
 
-type AbortOptions = {
-  transaction?: Transaction;
+type AbortOptions = Transactionable & {
   reason?: (typeof EXECUTION_REASON)[keyof typeof EXECUTION_REASON];
 };
 
@@ -34,11 +33,8 @@ export function validateCollectionField(
   dataSourceManager: DataSourceManager,
 ): Record<string, string> | null {
   const [dataSourceName, collectionName] = parseCollectionName(collection);
-  if (collection.includes(':')) {
-    const parts = collection.split(':');
-    if (parts.length !== 2 || !parts[0] || !parts[1]) {
-      return { collection: `"collection" must be in the format "dataSourceName:collectionName"` };
-    }
+  if (!dataSourceName || !collectionName) {
+    return { collection: `"collection" must be in the format "dataSourceName:collectionName"` };
   }
 
   const dataSource = dataSourceManager.dataSources.get(dataSourceName);

@@ -77,7 +77,12 @@ export abstract class Instruction implements InstructionInterface {
     return errors;
   }
 
-  abstract run(node: FlowNodeModel, input: any, processor: Processor): InstructionResult | Promise<InstructionResult>;
+  abstract run(
+    node: FlowNodeModel,
+    input: any,
+    processor: Processor,
+    options?: { signal?: AbortSignal },
+  ): InstructionResult | Promise<InstructionResult>;
 }
 
 export default Instruction;

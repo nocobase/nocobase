@@ -84,34 +84,29 @@ function useJobData(id) {
   );
 }
 
-function JobResult(props) {
-  const { viewJob } = useFlowContext();
-  const { data, loading } = useJobData(viewJob.id);
-
+function JobResult({ jobData, loading, ...props }) {
   if (loading) {
     return <Spin />;
   }
-  const result = get(data, 'data.result');
+  const result = get(jobData, 'result');
   return <Input.JSON {...props} value={result} disabled />;
 }
 
-function JobLog() {
-  const { viewJob } = useFlowContext();
-  const { data, loading } = useJobData(viewJob.id);
-
+function JobLog({ jobData, loading }) {
   if (loading) {
     return null;
   }
-  const log = get(data, 'data.log');
+  const log = get(jobData, 'log');
   return <LogCollapse value={log} />;
 }
 
-function JobModal() {
+function JobModalContent({ job, setViewJob }) {
   const { instructions } = usePlugin(WorkflowPlugin);
   const compile = useCompile();
-  const { viewJob: job, setViewJob } = useFlowContext();
   const { styles } = useStyles();
 
+  const { data, loading } = useJobData(job.id);
+  const latestJob = get(data, 'data') ?? job;
   const { node = {} } = job ?? {};
   const instruction = instructions.get(node.type);
 
@@ -125,11 +120,15 @@ function JobModal() {
         schema={{
           type: 'void',
           properties: {
-            [`${job?.id}-${job?.updatedAt}-modal`]: {
+            [`${latestJob.id}-${latestJob.updatedAt}-modal`]: {
               type: 'void',
               'x-decorator': 'Form',
               'x-decorator-props': {
-                initialValue: job,
+                initialValue: {
+                  ...job,
+                  ...latestJob,
+                  node,
+                },
               },
               'x-component': 'Action.Modal',
               title: (
@@ -164,6 +163,8 @@ function JobModal() {
                   'x-decorator': 'FormItem',
                   'x-component': 'JobResult',
                   'x-component-props': {
+                    jobData: latestJob,
+                    loading,
                     className: styles.nodeJobResultClass,
                     autoSize: {
                       minRows: 4,
@@ -174,6 +175,10 @@ function JobModal() {
                 log: {
                   type: 'string',
                   'x-component': 'JobLog',
+                  'x-component-props': {
+                    jobData: latestJob,
+                    loading,
+                  },
                 },
               },
             },
@@ -182,6 +187,16 @@ function JobModal() {
       />
     </ActionContextProvider>
   );
+}
+
+function JobModal() {
+  const { viewJob: job, setViewJob } = useFlowContext();
+
+  if (!job) {
+    return null;
+  }
+
+  return <JobModalContent job={job} setViewJob={setViewJob} />;
 }
 
 function ExecutionsDropdown(props) {

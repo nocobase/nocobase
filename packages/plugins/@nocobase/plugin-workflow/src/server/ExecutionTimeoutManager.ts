@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Op, type Transaction } from '@nocobase/database';
+import { Op, Transactionable, type Transaction } from '@nocobase/database';
 import type PluginWorkflowServer from './Plugin';
 import { EXECUTION_REASON, EXECUTION_STATUS } from './constants';
 import type { ExecutionModel } from './types';
@@ -74,7 +74,7 @@ export default class ExecutionTimeoutManager {
     return execution.expiresAt.getTime() - now.getTime();
   }
 
-  async abort(execution: ExecutionModel, options: { transaction?: Transaction } = {}) {
+  async abort(execution: ExecutionModel, options: Transactionable = {}) {
     const aborted = await abortExecution(this.plugin, execution, {
       ...options,
       reason: EXECUTION_REASON.TIMEOUT,
@@ -85,7 +85,7 @@ export default class ExecutionTimeoutManager {
     return aborted;
   }
 
-  async abortExecutionIfExpired(execution: ExecutionModel, options: { transaction?: Transaction } = {}) {
+  async abortExecutionIfExpired(execution: ExecutionModel, options: Transactionable = {}) {
     if (execution.status !== EXECUTION_STATUS.STARTED || !this.isExpired(execution)) {
       return false;
     }
@@ -96,7 +96,7 @@ export default class ExecutionTimeoutManager {
     this.clearExecutionTimeout(executionId);
   }
 
-  async shouldContinue(execution: ExecutionModel, options: { transaction?: Transaction } = {}) {
+  async shouldContinue(execution: ExecutionModel, options: Transactionable = {}) {
     if (execution.status !== EXECUTION_STATUS.STARTED) {
       return false;
     }

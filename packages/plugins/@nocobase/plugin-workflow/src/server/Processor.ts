@@ -24,6 +24,12 @@ export interface ProcessorOptions extends Transactionable {
   [key: string]: any;
 }
 
+export type BackgroundAbortHandle = {
+  signal: AbortSignal;
+  dispose: () => void;
+  throwIfAborted: () => void;
+};
+
 export default class Processor {
   static StatusMap = {
     [JOB_STATUS.PENDING]: EXECUTION_STATUS.STARTED,
@@ -107,6 +113,75 @@ export default class Processor {
 
   isTimeoutAborted() {
     return this.abortSignal.aborted;
+  }
+
+  /**
+   * Create an independent abort handle for background work that outlives this processor's
+   * run loop (e.g. fire-and-forget instructions that resume the job later). It mirrors the
+   * current abort state and sets its own timer based on the execution's `expiresAt`, so the
+   * timeout still applies after the processor has exited its synchronous run.
+   *
+   * The caller must invoke `dispose()` once the background work settles to release the timer
+   * and the abort listener.
+   */
+  createBackgroundAbortHandle(): BackgroundAbortHandle {
+    const controller = new AbortController();
+    const sourceSignal = this.abortSignal;
+    let timeoutGuard: NodeJS.Timeout | null = null;
+    let sourceListener: (() => void) | null = null;
+
+    const abort = (reason?: any) => {
+      if (!controller.signal.aborted) {
+        controller.abort(isWorkflowTimeoutError(reason) ? reason : new WorkflowTimeoutError());
+      }
+    };
+
+    if (sourceSignal.aborted) {
+      abort(sourceSignal.reason);
+    } else {
+      sourceListener = () => abort(sourceSignal.reason);
+      sourceSignal.addEventListener('abort', sourceListener, { once: true });
+    }
+
+    const remaining = this.execution.expiresAt ? this.execution.expiresAt.getTime() - Date.now() : null;
+    if (remaining != null) {
+      if (remaining <= 0) {
+        abort();
+      } else {
+        timeoutGuard = setTimeout(abort, remaining);
+      }
+    }
+
+    return {
+      signal: controller.signal,
+      dispose: () => {
+        if (timeoutGuard) {
+          clearTimeout(timeoutGuard);
+          timeoutGuard = null;
+        }
+        if (sourceListener) {
+          sourceSignal.removeEventListener('abort', sourceListener);
+          sourceListener = null;
+        }
+      },
+      throwIfAborted: () => {
+        if (controller.signal.aborted) {
+          throw controller.signal.reason ?? new WorkflowTimeoutError();
+        }
+      },
+    };
+  }
+
+  /**
+   * Reload a job and return it only when it is still pending, otherwise `null`. Background
+   * work uses this before resuming so it never overwrites a job that another path (timeout
+   * abort, a competing resume) has already settled.
+   */
+  async findPendingJob(jobId: number | string): Promise<JobModel | null> {
+    const job = await this.options.plugin.db.getRepository('jobs').findOne({
+      filterByTk: jobId,
+    });
+    return job?.status === JOB_STATUS.PENDING ? job : null;
   }
 
   // make dual linked nodes list then cache
@@ -237,7 +312,7 @@ export default class Processor {
     try {
       // call instruction to get result and status
       this.logger.debug(`config of node`, { data: node.config, workflowId: node.workflowId });
-      job = await instruction(node, prevJob, this, { signal: this.abortSignal } as any);
+      job = await instruction(node, prevJob, this, { signal: this.abortSignal });
       if (job === null) {
         return this.exit();
       }
