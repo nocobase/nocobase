@@ -30,6 +30,7 @@ export interface StorageModel {
 }
 
 export interface AttachmentModel {
+  id?: number;
   title: string;
   filename: string;
   mimetype?: string;
@@ -46,6 +47,14 @@ export abstract class StorageType {
   constructor(public storage: StorageModel) {}
   abstract make(): StorageEngine;
   abstract delete(records: AttachmentModel[]): [number, AttachmentModel[]] | Promise<[number, AttachmentModel[]]>;
+
+  async exists(record: AttachmentModel): Promise<boolean> {
+    throw new Error(`Storage type "${this.storage.type}" does not support object existence checks`);
+  }
+
+  async copy(source: AttachmentModel, target: AttachmentModel): Promise<void> {
+    throw new Error(`Storage type "${this.storage.type}" does not support object copy`);
+  }
 
   getFileKey(record: AttachmentModel) {
     return getFileKey(record);

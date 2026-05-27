@@ -6,7 +6,7 @@ keywords: "nb app,NocoBase CLI,app runtime,start,stop,logs,upgrade"
 
 # nb app
 
-Manage the runtime of a selected NocoBase env. npm/Git envs run local app commands; Docker envs manage saved app containers.
+Manage the runtime of a selected NocoBase env. npm/Git envs run local app commands; Docker envs manage app containers from the saved env config.
 
 ## Usage
 
@@ -18,12 +18,12 @@ nb app <command>
 
 | Command | Description |
 | --- | --- |
-| [`nb app start`](./start.md) | Start the app or Docker container |
-| [`nb app stop`](./stop.md) | Stop the app or Docker container |
+| [`nb app start`](./start.md) | Start the app or recreate the Docker container |
+| [`nb app stop`](./stop.md) | Stop the app or remove the Docker container |
 | [`nb app restart`](./restart.md) | Stop and then start the app |
 | [`nb app logs`](./logs.md) | View app logs |
 | [`nb app down`](./down.md) | Stop and clean up local runtime resources |
-| [`nb app upgrade`](./upgrade.md) | Update source or image and restart the app |
+| [`nb app upgrade`](./upgrade.md) | Stop the app, replace the source or image, then start it again |
 
 ## Examples
 

@@ -76,14 +76,16 @@ class AliYunOssStorage {
       .catch(cb);
   }
 
-  _removeFile(req, file, cb) {
+  async _removeFile(req, file, cb) {
     if (!this.client) {
       return cb(ERROR_NO_CLIENT);
     }
-    this.client
-      .delete(file.filename)
-      .then((result) => cb(null, result))
-      .catch(cb);
+    try {
+      const result = await this.client.delete(file.filename);
+      cb(null, result);
+    } catch (error) {
+      cb(error);
+    }
   }
 }
 
@@ -109,6 +111,25 @@ export default class extends StorageType {
       filename: cloudFilenameGetter(this.storage),
     });
   }
+
+  async exists(record: AttachmentModel): Promise<boolean> {
+    const { client } = this.make();
+    try {
+      await client.head(getFileKey(record));
+      return true;
+    } catch (error) {
+      if (['NoSuchKey', 'NotFoundError'].includes((error as Error).name)) {
+        return false;
+      }
+      throw error;
+    }
+  }
+
+  async copy(source: AttachmentModel, target: AttachmentModel): Promise<void> {
+    const { client } = this.make();
+    await client.copy(getFileKey(target), getFileKey(source));
+  }
+
   async delete(records: AttachmentModel[]): Promise<[number, AttachmentModel[]]> {
     const { client } = this.make();
     const { deleted } = await client.deleteMulti(records.map(getFileKey));

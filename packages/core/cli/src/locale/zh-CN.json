@@ -221,6 +221,10 @@
       }
     },
     "install": {
+      "messages": {
+        "skipDownloadDockerImageMissing": "无法继续执行 `--skip-download`，因为本地不存在 Docker 镜像 \"{{imageRef}}\"。请先手动加载或拉取这个镜像，或者去掉 `--skip-download` 后重试。",
+        "skipDownloadLocalAppMissing": "无法继续执行 `--skip-download`，因为 \"{{projectRoot}}\" 不存在，或者其中缺少 package.json。请把 `--app-root-path` 指向一个现有的 NocoBase 应用目录，或者去掉 `--skip-download` 后重试。"
+      },
       "validation": {
         "builtinDbUnsupported": "内置数据库暂不支持 \"{{dialect}}\"。请选择 PostgreSQL、MySQL 或 MariaDB，或者关闭内置数据库。"
       },
@@ -243,9 +247,6 @@
         "storagePath": {
           "message": "上传文件和本地存储目录要放到哪里？",
           "placeholder": "./<env>/storage/"
-        },
-        "fetchSource": {
-          "message": "如果应用目录为空，是否自动下载 NocoBase？"
         },
         "dbDialect": {
           "message": "你想使用哪种数据库？"
@@ -316,7 +317,8 @@
         "uiOpening": "本地 setup 表单即将在浏览器中打开。这个表单需要等待人工填写。如果你正在使用 AI agent，请不要停止当前进程，CLI 会继续等待表单提交结果。",
         "uiReady": "本地 setup 表单已就绪。",
         "uiReadyHelp": "如果没有自动打开浏览器，请复制下面的地址到浏览器中继续。CLI 会继续等待表单提交，请保持当前终端会话继续运行。",
-        "uiOpenBrowserFallback": "无法自动打开浏览器。请复制上面的地址到浏览器中继续 setup，并保持当前终端会话继续运行。如果你正在使用 AI agent，请不要停止当前进程。"
+        "uiOpenBrowserFallback": "无法自动打开浏览器。请复制上面的地址到浏览器中继续 setup，并保持当前终端会话继续运行。如果你正在使用 AI agent，请不要停止当前进程。",
+        "skillsSyncRegistryUnavailable": "无法访问 npm registry 来同步 NocoBase AI coding skills。将跳过 skills 安装并继续执行 init。等 registry 可访问后，再运行 `nb skills install` 即可。"
       },
       "prompts": {
         "appName": {
@@ -334,6 +336,9 @@
         "apiBaseUrl": {
           "message": "API 基础地址",
           "placeholder": "https://demo.example.com/api 或 https://demo.example.com/api/__app/<subapp>"
+        },
+        "skipDownload": {
+          "message": "跳过下载 NocoBase，直接复用已有的本地应用文件或 Docker 镜像"
         }
       },
       "webUi": {
