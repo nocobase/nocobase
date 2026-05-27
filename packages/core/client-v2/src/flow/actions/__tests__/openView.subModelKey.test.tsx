@@ -91,7 +91,7 @@ describe('openView action - subModelKey behavior', () => {
     // FlowPage should receive parent model uid
     expect(capturedElement?.type).toBe(FlowPage);
     expect(capturedElement?.props?.parentId).toBe('parent-model-uid');
-    expect(capturedElement?.props?.layoutContext).toBe(ctx.layoutContext);
+    expect(capturedElement?.props).not.toHaveProperty('layoutContext');
     expect(capturedElement?.props?.pageModelClass).toBe('ChildPageModel');
   });
 

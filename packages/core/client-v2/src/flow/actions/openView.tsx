@@ -374,7 +374,6 @@ export const openView = defineAction({
     const pageModelClass =
       ctx.inputArgs.pageModelClass || params.pageModelClass || ctx.layout?.childPageModelClass || 'ChildPageModel';
     const size = ctx.inputArgs.size || params.size || 'medium';
-    const layoutContext = ctx.layoutContext;
     let pageModelUid: string | null = null;
     let pageModelRef: FlowModel | null = null;
 
@@ -446,7 +445,6 @@ export const openView = defineAction({
           <FlowPage
             parentId={parentIdForChild}
             pageModelClass={pageModelClass}
-            layoutContext={layoutContext}
             onModelLoaded={(uid, model) => {
               pageModelUid = uid;
               const pageModel = (model as FlowModel) || (ctx.engine.getModel(pageModelUid) as FlowModel | undefined);

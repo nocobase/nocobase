@@ -14,7 +14,7 @@ import {
   useFlowModelById,
   useFlowViewContext,
 } from '@nocobase/flow-engine';
-import type { FlowContext, FlowModel, FlowModelRendererProps, ModelConstructor } from '@nocobase/flow-engine';
+import type { FlowModel, FlowModelRendererProps, ModelConstructor } from '@nocobase/flow-engine';
 import { useRequest } from 'ahooks';
 import React from 'react';
 import FlowRoute from './components/FlowRoute';
@@ -52,14 +52,13 @@ function InternalFlowPage({
 type FlowPageProps = {
   pageModelClass?: string;
   parentId?: string;
-  layoutContext?: FlowContext;
   onModelLoaded?: (uid: string, model: FlowModel) => void;
   defaultTabTitle?: string;
   showFlowSettings?: FlowModelRendererProps['showFlowSettings'];
 };
 
 export const FlowPage = React.memo((props: FlowPageProps & Record<string, unknown>) => {
-  const { pageModelClass = 'ChildPageModel', parentId, layoutContext, onModelLoaded, defaultTabTitle, ...rest } = props;
+  const { pageModelClass = 'ChildPageModel', parentId, onModelLoaded, defaultTabTitle, ...rest } = props;
   const flowEngine = useFlowEngine();
   const ctx = useFlowViewContext();
   const { loading, data, error } = useRequest(
@@ -104,18 +103,15 @@ export const FlowPage = React.memo((props: FlowPageProps & Record<string, unknow
         };
       }
       const data = await flowEngine.loadOrCreateModel(options, { skipSave: !flowEngine.context.flowSettingsEnabled });
-      if (data?.uid && (onModelLoaded || layoutContext)) {
-        const contextDelegate = layoutContext || ctx;
-        if (contextDelegate) {
-          data.context.addDelegate(contextDelegate);
-        }
+      if (data?.uid && onModelLoaded) {
+        data.context.addDelegate(ctx);
         data.removeParentDelegate();
-        onModelLoaded?.(data.uid, data);
+        onModelLoaded(data.uid, data);
       }
       return data;
     },
     {
-      refreshDeps: [parentId, pageModelClass, defaultTabTitle, layoutContext],
+      refreshDeps: [parentId, pageModelClass, defaultTabTitle],
     },
   );
   if (error) {
