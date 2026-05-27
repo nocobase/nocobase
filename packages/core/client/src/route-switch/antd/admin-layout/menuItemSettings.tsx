@@ -7,7 +7,6 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { ExclamationCircleFilled } from '@ant-design/icons';
 import { TreeSelect } from '@formily/antd-v5';
 import { Field, onFieldChange } from '@formily/core';
 import { ISchema } from '@formily/react';
@@ -39,7 +38,6 @@ import {
   SchemaSettingsItem,
   SchemaSettingsModalItem,
   SchemaSettingsSubMenu,
-  SchemaSettingsSwitchItem,
 } from '../../../schema-settings/SchemaSettings';
 import { NocoBaseDesktopRoute } from './convertRoutesToSchema';
 import { useDeleteRouteSchema } from './useDeleteRouteSchema';
@@ -456,23 +454,26 @@ const EditMenuItem = () => {
   }
 
   const { updateRoute } = useNocoBaseRoutes();
-  const onEditSubmit: (values: any) => void = useCallback(({ title, icon, href, params, openInNewWindow }) => {
-    // 更新菜单对应的路由
-    if (currentRoute.id !== undefined) {
-      updateRoute(currentRoute.id, {
-        title,
-        icon,
-        options:
-          href || params
-            ? {
-                href,
-                params,
-                openInNewWindow,
-              }
-            : undefined,
-      });
-    }
-  }, []);
+  const onEditSubmit: (values: any) => void = useCallback(
+    ({ title, icon, href, params, openInNewWindow }) => {
+      // 更新菜单对应的路由
+      if (currentRoute.id !== undefined) {
+        updateRoute(currentRoute.id, {
+          title,
+          icon,
+          options:
+            href || params
+              ? {
+                  href,
+                  params,
+                  openInNewWindow,
+                }
+              : undefined,
+        });
+      }
+    },
+    [currentRoute.id, updateRoute],
+  );
 
   return (
     <SchemaSettingsModalItem
@@ -481,36 +482,6 @@ const EditMenuItem = () => {
       schema={schema as ISchema}
       initialValues={initialValues}
       onSubmit={onEditSubmit}
-    />
-  );
-};
-
-const HiddenMenuItem = () => {
-  const { t } = useTranslation();
-  const currentRoute = useCurrentRoute();
-  const { updateRoute } = useNocoBaseRoutes();
-  const { modal } = App.useApp();
-
-  return (
-    <SchemaSettingsSwitchItem
-      title={t('Hidden')}
-      checked={currentRoute.hideInMenu}
-      onChange={(value) => {
-        modal.confirm({
-          title: t('Are you sure you want to hide this menu?'),
-          icon: <ExclamationCircleFilled />,
-          content: t(
-            'After hiding, this menu will no longer appear in the menu bar. To show it again, you need to go to the route management page to configure it.',
-          ),
-          async onOk() {
-            if (currentRoute.id !== undefined) {
-              await updateRoute(currentRoute.id, {
-                hideInMenu: !!value,
-              });
-            }
-          },
-        });
-      }}
     />
   );
 };
@@ -537,7 +508,7 @@ const MoveToMenuItem = () => {
         });
       });
     },
-    [t],
+    [currentRoute?.id, t],
   );
   const compile = useCompile();
   const { allAccessRoutes } = useAllAccessDesktopRoutes();
@@ -545,7 +516,7 @@ const MoveToMenuItem = () => {
     const result = toItems(allAccessRoutes, { t, compile });
     // The last two empty options are placeholders to prevent the last option from being hidden (a bug in TreeSelect)
     return [...result, { label: '', value: '', disabled: true }, { label: '', value: '', disabled: true }];
-  }, []);
+  }, [allAccessRoutes, compile, t]);
   const modalSchema = useMemo(() => {
     return {
       type: 'object',
@@ -684,11 +655,6 @@ export const menuItemSettings = new SchemaSettings({
       name: 'editTooltip',
       Component: EditTooltip,
       sort: 200,
-    },
-    {
-      name: 'hidden',
-      Component: HiddenMenuItem,
-      sort: 300,
     },
     {
       name: 'moveTo',
