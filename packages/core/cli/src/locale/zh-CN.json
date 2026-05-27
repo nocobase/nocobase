@@ -338,7 +338,7 @@
           "placeholder": "https://demo.example.com/api 或 https://demo.example.com/api/__app/<subapp>"
         },
         "skipDownload": {
-          "message": "是否跳过下载 NocoBase，直接复用已有的本地应用文件或 Docker 镜像？"
+          "message": "跳过下载 NocoBase，直接复用已有的本地应用文件或 Docker 镜像"
         }
       },
       "webUi": {
