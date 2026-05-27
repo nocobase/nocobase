@@ -13,8 +13,6 @@ import { uid } from '@formily/shared';
 import { css } from '@emotion/css';
 import { DateFormatCom } from '../../../flow/components/ExpiresRadio';
 
-export * as operators from './operators';
-
 export const type: ISchema = {
   type: 'string',
   title: '{{t("Storage type")}}',

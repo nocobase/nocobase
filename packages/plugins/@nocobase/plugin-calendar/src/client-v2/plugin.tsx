@@ -9,6 +9,7 @@
 
 import { Application, Plugin } from '@nocobase/client-v2';
 import React from 'react';
+import { tExpr } from './locale';
 
 const TitleRenderer = ({ value }) => {
   return <span aria-label="event-title">{value || 'N/A'}</span>;
@@ -97,6 +98,66 @@ export class PluginCalendarClient extends Plugin<any, Application> {
   }
 
   async load() {
+    const dataSourceManager = (this.app.pm.get('@nocobase/plugin-data-source-manager') ||
+      this.app.pm.get('data-source-manager')) as
+      | {
+          registerCollectionTemplate?: (options: Record<string, unknown>) => void;
+        }
+      | undefined;
+    dataSourceManager?.registerCollectionTemplate?.({
+      name: 'calendar',
+      title: tExpr('Calendar collection'),
+      order: 20,
+      color: 'orange',
+      collection: {
+        options: {
+          template: 'calendar',
+          createdBy: true,
+          updatedBy: true,
+          createdAt: true,
+          updatedAt: true,
+          sortable: true,
+        },
+        fields: [
+          {
+            name: 'cron',
+            interface: 'select',
+            type: 'string',
+            title: tExpr('Repeats'),
+            componentProps: {
+              allowClear: true,
+            },
+            options: [
+              {
+                label: tExpr('Daily'),
+                value: '0 0 0 * * ?',
+              },
+              {
+                label: tExpr('Weekly'),
+                value: 'every_week',
+              },
+              {
+                label: tExpr('Monthly'),
+                value: 'every_month',
+              },
+              {
+                label: tExpr('Yearly'),
+                value: 'every_year',
+              },
+            ],
+          },
+          {
+            name: 'exclude',
+            interface: 'json',
+            type: 'json',
+          },
+        ],
+      },
+      fieldInterfaces: {
+        include: [],
+      },
+    });
+
     this.flowEngine.registerModelLoaders({
       CalendarBlockModel: {
         loader: () => import('./models/CalendarBlockModel'),

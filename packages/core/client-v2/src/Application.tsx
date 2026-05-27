@@ -193,4 +193,16 @@ export class Application extends BaseApplication<
   addFieldInterfaceOperator(name: string, operatorOption: any) {
     return this.dataSourceManager.addFieldInterfaceOperator(name, operatorOption);
   }
+
+  registerFieldFilterOperator(operator: any) {
+    return this.dataSourceManager.registerFieldFilterOperator(operator);
+  }
+
+  registerFieldFilterOperatorGroup(name: string, operators: any[] = []) {
+    return this.dataSourceManager.registerFieldFilterOperatorGroup(name, operators);
+  }
+
+  addFieldFilterOperatorsToGroup(name: string, operators: any[] = []) {
+    return this.dataSourceManager.addFieldFilterOperatorsToGroup(name, operators);
+  }
 }

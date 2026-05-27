@@ -9,6 +9,7 @@
 
 import { CollectionFieldInterface } from '@nocobase/client-v2';
 import { tExpr } from './locale';
+import { SortFieldConfigureForm } from './SortFieldConfigureForm';
 
 const defaultProps = {
   'uiSchema.title': {
@@ -30,17 +31,6 @@ const defaultProps = {
       "{{t('Randomly generated and can be modified. Support letters, numbers and underscores, must start with an letter.')}}",
   },
 };
-
-const numberOperators = [
-  { label: '{{t("=")}}', value: '$eq', selected: true },
-  { label: '{{t("≠")}}', value: '$ne' },
-  { label: '{{t(">")}}', value: '$gt' },
-  { label: '{{t("≥")}}', value: '$gte' },
-  { label: '{{t("<")}}', value: '$lt' },
-  { label: '{{t("≤")}}', value: '$lte' },
-  { label: '{{t("is empty")}}', value: '$empty', noValue: true },
-  { label: '{{t("is not empty")}}', value: '$notEmpty', noValue: true },
-];
 
 export class SortFieldInterface extends CollectionFieldInterface {
   name = 'sort';
@@ -65,20 +55,32 @@ export class SortFieldInterface extends CollectionFieldInterface {
   };
   availableTypes = ['sort'];
   hasDefaultValue = false;
-  properties = {
-    ...defaultProps,
-    scopeKey: {
-      type: 'string',
-      title: tExpr('Grouped sorting'),
-      'x-disabled': '{{ !editMainOnly}}',
-      'x-decorator': 'FormItem',
-      'x-component': 'Select',
-      enum: '{{scopeKeyOptions}}',
-      description: tExpr('When a field is selected for grouping, it will be grouped first before sorting.'),
+  configure = {
+    Component: SortFieldConfigureForm,
+    getConfigureFormProperties(collectionInfo?: Record<string, any>) {
+      const scopeKeyOptions = (collectionInfo?.fields || [])
+        .filter((field) => ['string', 'bigInt', 'integer'].includes(field.type))
+        .map((field) => ({
+          value: field.name,
+          label: field.uiSchema?.title || field.name,
+        }));
+
+      return {
+        ...defaultProps,
+        scopeKey: {
+          type: 'string',
+          title: tExpr('Grouped sorting'),
+          'x-disabled': '{{ !editMainOnly}}',
+          'x-decorator': 'FormItem',
+          'x-component': 'Select',
+          enum: scopeKeyOptions,
+          description: tExpr('When a field is selected for grouping, it will be grouped first before sorting.'),
+        },
+      };
     },
   };
   filterable = {
-    operators: numberOperators,
+    operators: 'number',
   };
   validateSchema = () => {
     return {

@@ -9,7 +9,7 @@
 
 import { CollectionFieldInterface } from '../../collection-field-interface/CollectionFieldInterface';
 import { i18n } from '../../i18n';
-import { defaultProps, unique, operators } from './properties';
+import { defaultProps, unique } from './properties';
 
 export class PasswordFieldInterface extends CollectionFieldInterface {
   name = 'password';
@@ -75,6 +75,6 @@ export class PasswordFieldInterface extends CollectionFieldInterface {
     };
   };
   filterable = {
-    operators: operators.string,
+    operators: 'string',
   };
 }

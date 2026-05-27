@@ -7,9 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { ISchema } from '@formily/react';
 import { i18n } from '../../i18n';
-import { defaultProps, operators } from './properties';
+import { defaultProps } from './properties';
 import { CollectionFieldInterface } from '../../collection-field-interface/CollectionFieldInterface';
 
 export class MarkdownFieldInterface extends CollectionFieldInterface {
@@ -31,12 +30,6 @@ export class MarkdownFieldInterface extends CollectionFieldInterface {
   properties = {
     ...defaultProps,
   };
-  schemaInitialize(schema: ISchema, { block }) {
-    if (['Table', 'Kanban'].includes(block)) {
-      schema['x-component-props'] = schema['x-component-props'] || {};
-      schema['x-component-props']['ellipsis'] = true;
-    }
-  }
   validateSchema(fieldSchema) {
     return {
       max: {
@@ -79,6 +72,6 @@ export class MarkdownFieldInterface extends CollectionFieldInterface {
     };
   }
   filterable = {
-    operators: operators.bigField,
+    operators: 'bigField',
   };
 }

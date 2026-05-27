@@ -8,17 +8,11 @@
  */
 
 import { Application, Plugin } from '@nocobase/client-v2';
-import { PluginDataSourceManagerClientV2 } from '@nocobase/plugin-data-source-manager/client-v2';
-import { SortFieldConfigureForm } from './SortFieldConfigureForm';
 import { SortFieldInterface } from './sort-interface';
 
 export class PluginFieldSortClient extends Plugin<any, Application> {
   async load() {
     this.app.addFieldInterfaces([SortFieldInterface]);
-    this.app.pm.get(PluginDataSourceManagerClientV2)?.registerFieldInterfaceConfigure({
-      name: 'sort',
-      ConfigureForm: SortFieldConfigureForm,
-    });
     this.flowEngine.registerModelLoaders({
       SortFieldModel: {
         loader: () => import('./models/SortFieldModel'),

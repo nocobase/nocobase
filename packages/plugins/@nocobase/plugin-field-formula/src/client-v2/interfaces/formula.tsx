@@ -7,11 +7,22 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import type { ISchema } from '@formily/react';
-import { CollectionFieldInterface } from '@nocobase/client-v2';
+import { CollectionFieldInterface, createTypedFilterable, resolveFilterOperators } from '@nocobase/client-v2';
 import { Evaluator, evaluators } from '@nocobase/evaluators/client';
 import { Registry } from '@nocobase/utils/client';
+import { FormulaExpressionConfigureField } from '../components/FormulaExpressionConfigureField';
 import { tExpr } from '../locale';
+
+type FormulaFilterMeta = {
+  options?: {
+    dataType?: string;
+  };
+  dataType?: string;
+  type?: string;
+  uiSchema?: {
+    type?: string;
+  };
+};
 
 const numberReactions = [
   {
@@ -35,133 +46,12 @@ const datetimeReactions = [
   },
 ];
 
-const resolveFormulaDataType = (meta?: any) => {
+const resolveFormulaDataType = (meta?: FormulaFilterMeta) => {
   return meta?.options?.dataType || meta?.dataType || meta?.type || meta?.uiSchema?.type || 'double';
 };
 
-const operators = {
-  boolean: [
-    {
-      label: '{{t("Yes")}}',
-      value: '$isTruly',
-      selected: true,
-      noValue: true,
-      schema: {
-        'x-component': 'Select',
-        'x-component-props': {
-          multiple: false,
-          options: [
-            { label: '{{t("Yes")}}', value: true },
-            { label: '{{t("No")}}', value: false },
-          ],
-        },
-      },
-    },
-    {
-      label: '{{t("No")}}',
-      value: '$isFalsy',
-      noValue: true,
-      schema: {
-        'x-component': 'Select',
-        'x-component-props': {
-          multiple: false,
-          options: [
-            { label: '{{t("Yes")}}', value: true },
-            { label: '{{t("No")}}', value: false },
-          ],
-        },
-      },
-    },
-    { label: "{{ t('is empty') }}", value: '$empty', noValue: true },
-    { label: "{{ t('is not empty') }}", value: '$notEmpty', noValue: true },
-  ],
-  string: [
-    { label: '{{t("contains")}}', value: '$includes', selected: true },
-    { label: '{{t("does not contain")}}', value: '$notIncludes' },
-    { label: '{{t("is")}}', value: '$eq' },
-    { label: '{{t("is not")}}', value: '$ne' },
-    { label: '{{t("is empty")}}', value: '$empty', noValue: true },
-    { label: '{{t("is not empty")}}', value: '$notEmpty', noValue: true },
-  ],
-  datetime: [
-    {
-      label: "{{ t('is') }}",
-      value: '$dateOn',
-      selected: true,
-      schema: {
-        'x-component': 'DateFilterDynamicComponent',
-        'x-component-props': { isRange: false },
-      },
-      onlyFilterAction: true,
-    },
-    {
-      label: "{{ t('is not') }}",
-      value: '$dateNotOn',
-      schema: {
-        'x-component': 'DateFilterDynamicComponent',
-        'x-component-props': { isRange: false },
-      },
-      onlyFilterAction: true,
-    },
-    {
-      label: "{{ t('is before') }}",
-      value: '$dateBefore',
-      schema: {
-        'x-component': 'DateFilterDynamicComponent',
-        'x-component-props': { isRange: false },
-      },
-      onlyFilterAction: true,
-    },
-    {
-      label: "{{ t('is after') }}",
-      value: '$dateAfter',
-      schema: {
-        'x-component': 'DateFilterDynamicComponent',
-        'x-component-props': { isRange: false },
-      },
-      onlyFilterAction: true,
-    },
-    {
-      label: "{{ t('is between') }}",
-      value: '$dateBetween',
-      schema: {
-        'x-component': 'DateFilterDynamicComponent',
-        'x-component-props': { isRange: true },
-      },
-    },
-    { label: "{{ t('is empty') }}", value: '$empty', noValue: true },
-    { label: "{{ t('is not empty') }}", value: '$notEmpty', noValue: true },
-  ],
-  number: [
-    { label: '{{t("=")}}', value: '$eq', selected: true },
-    { label: '{{t("≠")}}', value: '$ne' },
-    { label: '{{t(">")}}', value: '$gt' },
-    { label: '{{t("≥")}}', value: '$gte' },
-    { label: '{{t("<")}}', value: '$lt' },
-    { label: '{{t("≤")}}', value: '$lte' },
-    { label: '{{t("is empty")}}', value: '$empty', noValue: true },
-    { label: '{{t("is not empty")}}', value: '$notEmpty', noValue: true },
-  ],
-};
-
-const formulaOperatorGroups = [
-  { types: ['boolean'], operators: operators.boolean },
-  { types: ['string'], operators: operators.string },
-  { types: ['date'], operators: operators.datetime },
-  { types: ['integer', 'double', 'bigInt', 'number'], operators: operators.number },
-];
-
-const formulaFilterOperators = formulaOperatorGroups.flatMap(({ types, operators: operatorList }) =>
-  operatorList.map((operator) => ({
-    ...operator,
-    visible: (meta: any) => {
-      const matches = types.includes(resolveFormulaDataType(meta));
-      if (typeof (operator as any).visible === 'function') {
-        return (operator as any).visible(meta) && matches;
-      }
-      return matches;
-    },
-  })),
+export const formulaDateOperators = resolveFilterOperators('datetime').filter(
+  (operator) => !['$dateNotBefore', '$dateNotAfter'].includes(operator.value),
 );
 
 const dateTimeProperties = {
@@ -231,83 +121,86 @@ export class FormulaFieldInterface extends CollectionFieldInterface {
       },
     },
   };
-  properties = {
-    dataType: {
-      type: 'string',
-      title: '{{t("Storage type")}}',
-      'x-decorator': 'FormItem',
-      'x-component': 'Select',
-      'x-disabled': '{{ !createOnly }}',
-      enum: [
-        { value: 'boolean', label: 'Boolean' },
-        { value: 'integer', label: 'Integer' },
-        { value: 'bigInt', label: 'Big integer' },
-        { value: 'double', label: 'Double' },
-        { value: 'string', label: 'String' },
-        { value: 'date', label: 'Datetime' },
-      ],
-      required: true,
-      default: 'double',
+  configure = {
+    components: {
+      FormulaExpression: FormulaExpressionConfigureField,
     },
-    'uiSchema.x-component-props.step': {
-      type: 'string',
-      title: '{{t("Precision")}}',
-      'x-component': 'Select',
-      'x-decorator': 'FormItem',
-      required: true,
-      default: '0',
-      enum: [
-        { value: '0', label: '1' },
-        { value: '0.1', label: '1.0' },
-        { value: '0.01', label: '1.00' },
-        { value: '0.001', label: '1.000' },
-        { value: '0.0001', label: '1.0000' },
-        { value: '0.00001', label: '1.00000' },
-      ],
-      'x-reactions': numberReactions,
-    },
-    ...dateTimeProperties,
-    engine: {
-      type: 'string',
-      title: tExpr('Calculation engine'),
-      'x-decorator': 'FormItem',
-      'x-component': 'Radio.Group',
-      enum: Array.from((evaluators as Registry<Evaluator>).getEntities()).reduce(
-        (result: any[], [value, options]) => result.concat({ value, ...options }),
-        [],
-      ),
-      required: true,
-      default: 'formula.js',
-    },
-    expression: {
-      type: 'string',
-      title: tExpr('Expression'),
-      required: true,
-      'x-component': 'FormulaExpression',
-      'x-decorator': 'FormItem',
-      'x-component-props': {
-        useCurrentFields: '{{ useCurrentFields }}',
+    properties: {
+      dataType: {
+        type: 'string',
+        title: '{{t("Storage type")}}',
+        'x-decorator': 'FormItem',
+        'x-component': 'Select',
+        'x-disabled': '{{ !createOnly }}',
+        enum: [
+          { value: 'boolean', label: 'Boolean' },
+          { value: 'integer', label: 'Integer' },
+          { value: 'bigInt', label: 'Big integer' },
+          { value: 'double', label: 'Double' },
+          { value: 'string', label: 'String' },
+          { value: 'date', label: 'Datetime' },
+        ],
+        required: true,
+        default: 'double',
       },
-      'x-reactions': {
-        dependencies: ['engine'],
-        fulfill: {
-          schema: {
-            description: '{{ $deps[0] ? t("Syntax references") : "" }}',
+      'uiSchema.x-component-props.step': {
+        type: 'string',
+        title: '{{t("Precision")}}',
+        'x-component': 'Select',
+        'x-decorator': 'FormItem',
+        required: true,
+        default: '0',
+        enum: [
+          { value: '0', label: '1' },
+          { value: '0.1', label: '1.0' },
+          { value: '0.01', label: '1.00' },
+          { value: '0.001', label: '1.000' },
+          { value: '0.0001', label: '1.0000' },
+          { value: '0.00001', label: '1.00000' },
+        ],
+        'x-reactions': numberReactions,
+      },
+      ...dateTimeProperties,
+      engine: {
+        type: 'string',
+        title: tExpr('Calculation engine'),
+        'x-decorator': 'FormItem',
+        'x-component': 'Radio.Group',
+        enum: Array.from((evaluators as Registry<Evaluator>).getEntities()).reduce(
+          (result: any[], [value, options]) => result.concat({ value, ...options }),
+          [],
+        ),
+        required: true,
+        default: 'formula.js',
+      },
+      expression: {
+        type: 'string',
+        title: tExpr('Expression'),
+        required: true,
+        'x-component': 'FormulaExpression',
+        'x-decorator': 'FormItem',
+        'x-component-props': {
+          useCurrentFields: '{{ useCurrentFields }}',
+        },
+        'x-reactions': {
+          dependencies: ['engine'],
+          fulfill: {
+            schema: {
+              description: '{{ $deps[0] ? t("Syntax references") : "" }}',
+            },
           },
         },
       },
     },
   };
-  filterable = {
-    operators: formulaFilterOperators,
-  };
+  filterable = createTypedFilterable(
+    [
+      { types: ['boolean'], operators: 'boolean' },
+      { types: ['string'], operators: 'string' },
+      { types: ['date'], operators: 'formulaDate' },
+      { types: ['integer', 'double', 'bigInt', 'number'], operators: 'number' },
+    ],
+    resolveFormulaDataType,
+  );
   titleUsable = true;
-
-  schemaInitialize(schema: ISchema, { block }: any) {
-    if (['Table', 'Kanban'].includes(block)) {
-      schema['x-component-props'] = schema['x-component-props'] || {};
-      schema['x-component-props'].ellipsis = true;
-      schema['x-component-props'].size = 'small';
-    }
-  }
 }

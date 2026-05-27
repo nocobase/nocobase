@@ -7,9 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { ISchema } from '@formily/react';
 import { CollectionFieldInterface } from '../../collection-field-interface/CollectionFieldInterface';
-import { getUniqueKeyFromCollection } from './utils';
 import { constraintsProps, relationshipType, reverseFieldProperties } from './properties';
 
 export class O2OFieldInterface extends CollectionFieldInterface {
@@ -56,21 +54,6 @@ export class O2OFieldInterface extends CollectionFieldInterface {
     },
   };
   availableTypes = ['hasOne'];
-  schemaInitialize(schema: ISchema, { field, block, readPretty, action, targetCollection }) {
-    if (['Table', 'Kanban'].includes(block)) {
-      schema['x-component-props'] = schema['x-component-props'] || {};
-      schema['x-component-props']['ellipsis'] = true;
-
-      // 预览文件时需要的参数
-      schema['x-component-props']['size'] = 'small';
-    }
-    schema['x-component-props'] = schema['x-component-props'] || {};
-    schema['x-component-props'].fieldNames = schema['x-component-props'].fieldNames || {
-      value: getUniqueKeyFromCollection(targetCollection),
-    };
-    schema['x-component-props'].fieldNames.label =
-      targetCollection?.titleField || getUniqueKeyFromCollection(targetCollection);
-  }
   properties = {
     'uiSchema.title': {
       type: 'string',
@@ -242,24 +225,6 @@ export class OHOFieldInterface extends CollectionFieldInterface {
     },
   };
   availableTypes = ['hasOne'];
-  schemaInitialize(schema: ISchema, { field, block, readPretty, action, targetCollection }) {
-    // schema['type'] = 'object';
-    if (['Table', 'Kanban'].includes(block)) {
-      schema['x-component-props'] = schema['x-component-props'] || {};
-      schema['x-component-props']['ellipsis'] = true;
-
-      // 预览文件时需要的参数
-      schema['x-component-props']['size'] = 'small';
-    }
-    schema['x-component-props'] = schema['x-component-props'] || {};
-    schema['x-component-props'].fieldNames = schema['x-component-props'].fieldNames || {
-      value: getUniqueKeyFromCollection(targetCollection),
-    };
-    schema['x-component-props'].fieldNames.label =
-      schema['x-component-props'].fieldNames?.label ||
-      targetCollection?.titleField ||
-      getUniqueKeyFromCollection(targetCollection);
-  }
   properties = {
     'uiSchema.title': {
       type: 'string',
@@ -422,24 +387,6 @@ export class OBOFieldInterface extends CollectionFieldInterface {
     },
   };
   availableTypes = ['belongsTo'];
-  schemaInitialize(schema: ISchema, { field, block, readPretty, action, targetCollection }) {
-    // schema['type'] = 'object';
-    if (['Table', 'Kanban'].includes(block)) {
-      schema['x-component-props'] = schema['x-component-props'] || {};
-      schema['x-component-props']['ellipsis'] = true;
-      // 预览文件时需要的参数
-      schema['x-component-props']['size'] = 'small';
-    }
-
-    schema['x-component-props'] = schema['x-component-props'] || {};
-    schema['x-component-props'].fieldNames = schema['x-component-props'].fieldNames || {
-      value: getUniqueKeyFromCollection(targetCollection),
-    };
-    schema['x-component-props'].fieldNames.label =
-      schema['x-component-props'].fieldNames?.label ||
-      targetCollection?.titleField ||
-      getUniqueKeyFromCollection(targetCollection);
-  }
   properties = {
     'uiSchema.title': {
       type: 'string',

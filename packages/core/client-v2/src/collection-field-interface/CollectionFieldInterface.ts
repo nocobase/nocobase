@@ -10,7 +10,14 @@
 import type { ISchema } from '@formily/react';
 import { tval } from '@nocobase/utils/client';
 import { capitalize, cloneDeep, set } from 'lodash';
+import type { ComponentType, ReactNode } from 'react';
 
+import {
+  normalizeFilterableOperators,
+  resolveFilterOperators,
+  type FieldFilterable,
+  type FieldFilterOperator,
+} from '../collection-manager/filter-operators';
 import { defaultProps } from '../collection-manager/interfaces/properties';
 import { CollectionFieldInterfaceManager } from './CollectionFieldInterfaceManager';
 export type CollectionFieldInterfaceFactory = new (
@@ -22,6 +29,54 @@ export interface CollectionFieldInterfaceComponentOption {
   value: string;
   useVisible?: () => boolean;
   useProps?: () => any;
+}
+
+export type FieldConfigureFormMode = 'create' | 'edit';
+
+export interface FieldConfigureContext {
+  mode: FieldConfigureFormMode;
+  fieldInterface: CollectionFieldInterface | FieldInterfaceConfigure;
+  collection?: Record<string, any>;
+  field?: Record<string, any>;
+  disabledJSONB?: boolean;
+  createOnly?: boolean;
+  editMainOnly?: boolean;
+}
+
+export type FieldConfigureFormProps = FieldConfigureContext;
+
+export interface FieldConfigurePropertyComponentProps extends FieldConfigureContext {
+  name: string;
+  namePath: Array<string | number>;
+  schema: Record<string, any>;
+  form?: any;
+  disabled?: boolean;
+  collections?: Array<Record<string, any>>;
+  context: Record<string, boolean>;
+  title?: ReactNode;
+  tooltip?: ReactNode;
+  componentProps?: Record<string, any>;
+}
+
+export interface FieldInterfaceConfigure {
+  name?: string;
+  title?: ReactNode;
+  group?: string;
+  order?: number;
+  default?: Record<string, any>;
+  titleUsable?: boolean;
+  isAssociation?: boolean;
+  supportDataSourceType?: string[];
+  notSupportDataSourceType?: string[];
+  properties?: Record<string, any>;
+  getConfigureFormProperties?: (collectionInfo?: Record<string, any>) => Record<string, any>;
+  components?: Record<string, ComponentType<FieldConfigurePropertyComponentProps>>;
+  initialize?: (values: Record<string, any>, context?: FieldConfigureContext) => void;
+  ConfigureForm?: ComponentType<FieldConfigureFormProps>;
+  Component?: ComponentType<FieldConfigureFormProps>;
+  normalizeValues?: (values: Record<string, any>, context: FieldConfigureContext) => Record<string, any>;
+  normalize?: (values: Record<string, any>, context: FieldConfigureContext) => Record<string, any>;
+  validate?: (values: Record<string, any>, context: FieldConfigureContext) => Promise<void> | void;
 }
 
 export abstract class CollectionFieldInterface {
@@ -45,30 +100,20 @@ export abstract class CollectionFieldInterface {
   hasDefaultValue?: boolean;
   componentOptions?: CollectionFieldInterfaceComponentOption[];
   isAssociation?: boolean;
-  operators?: any[];
+  operators?: FieldFilterOperator[];
   properties?: any;
   validationType?: string;
   availableValidationOptions: string[] = [];
+  configure?: FieldInterfaceConfigure;
   excludeValidationOptions?: string[];
   /**
    * - 如果该值为空，则在 Filter 组件中该字段会被过滤掉
    * - 如果该值为空，则不会在变量列表中看到该字段
    */
-  filterable?: {
-    /**
-     * 字段所支持的操作符，会在 Filter 组件中显示，比如设置 `数据范围` 的时候可以看见
-     */
-    operators?: any[];
-    /**
-     * 为当前字段添加子选项，这个子选项会在 Filter 组件中显示，比如设置 `数据范围` 的时候可以看见
-     */
-    children?: any[];
-    [key: string]: any;
-  };
+  filterable?: FieldFilterable;
   titleUsable?: boolean;
   validateSchema?(fieldSchema: ISchema): Record<string, ISchema>;
   usePathOptions?(field: any): any;
-  schemaInitialize?(schema: ISchema, data: any): void;
   hidden?: boolean;
 
   addComponentOption(componentOption: CollectionFieldInterfaceComponentOption) {
@@ -93,6 +138,8 @@ export abstract class CollectionFieldInterface {
     this.componentOptions.push(componentOption);
   }
   getConfigureFormProperties(collectionInfo?: any): Record<string, ISchema> {
+    const configuredProperties =
+      this.configure?.getConfigureFormProperties?.(collectionInfo) || this.configure?.properties || {};
     const defaultValueProps = this.hasDefaultValue ? this.getDefaultValueProperty() : {};
     this.availableValidationOptions.push('required');
     const isViewCollection = collectionInfo?.view;
@@ -115,7 +162,7 @@ export abstract class CollectionFieldInterface {
           }
         : {};
     return {
-      ...cloneDeep({ ...defaultProps, ...this?.properties }),
+      ...cloneDeep({ ...defaultProps, ...this?.properties, ...configuredProperties }),
       ...defaultValueProps,
       ...validationProps,
     };
@@ -188,13 +235,15 @@ export abstract class CollectionFieldInterface {
     };
   }
 
-  addOperator(operatorOption: any) {
-    set(this, 'filterable.operators', [...(this.filterable.operators || [])]);
+  addOperator(operatorOption: FieldFilterOperator) {
+    normalizeFilterableOperators(this.filterable);
+    const operators = [...resolveFilterOperators(this.filterable?.operators)];
+    set(this, 'filterable.operators', operators);
 
-    if (this.filterable.operators.find((item) => item.value === operatorOption.value)) {
+    if (operators.find((item) => item.value === operatorOption.value)) {
       return;
     }
 
-    this.filterable.operators.push(operatorOption);
+    operators.push(operatorOption);
   }
 }

@@ -7,16 +7,34 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import {
+  filterOperatorRegistry,
+  normalizeFilterableOperators,
+  type FieldFilterable,
+  type FieldFilterOperator,
+  type FieldFilterOperatorReference,
+} from '../collection-manager/filter-operators';
+import type { FieldInterfaceConfigure } from './CollectionFieldInterface';
+import type { ReactNode } from 'react';
+
 interface FieldInterfaceLike {
   name?: string;
+  title?: ReactNode;
+  group?: string;
+  order?: number;
+  isAssociation?: boolean;
   supportDataSourceType?: string[];
   notSupportDataSourceType?: string[];
+  properties?: Record<string, any>;
+  configure?: FieldInterfaceConfigure;
+  filterable?: FieldFilterable;
   addComponentOption?: (option: any) => void;
-  addOperator?: (option: any) => void;
+  addOperator?: (option: FieldFilterOperator) => void;
+  getConfigureFormProperties?: (collectionInfo?: any) => Record<string, any>;
 }
 
 interface PendingAction {
-  type: 'addComponentOption' | 'addOperator';
+  type: 'addComponentOption' | 'addOperator' | 'registerConfigure';
   data: any;
 }
 
@@ -54,11 +72,16 @@ export class CollectionFieldInterfaceManager {
         if (!instance?.name) {
           return acc;
         }
+        normalizeFilterableOperators(instance.filterable);
         acc[instance.name] = instance;
         if (Array.isArray(this.actionList[instance.name])) {
           this.actionList[instance.name].forEach((item) => {
             if (item.type === 'addComponentOption') {
               instance.addComponentOption?.(item.data);
+              return;
+            }
+            if (item.type === 'registerConfigure') {
+              instance.configure = this.mergeFieldInterfaceConfigure(instance.configure, item.data);
               return;
             }
             instance.addOperator?.(item.data);
@@ -96,13 +119,69 @@ export class CollectionFieldInterfaceManager {
    * @param operatorOption 操作符配置
    * @returns void
    */
-  addFieldInterfaceOperator(name: string, operatorOption: any) {
+  addFieldInterfaceOperator(name: string, operatorOption: FieldFilterOperator) {
     const fieldInterface = this.getFieldInterface(name);
     if (!fieldInterface) {
       this.enqueueAction(name, { type: 'addOperator', data: operatorOption });
       return;
     }
     fieldInterface.addOperator?.(operatorOption);
+  }
+
+  /**
+   * 注册 v2 字段过滤操作符。
+   *
+   * 插件可通过该方法补充自己的过滤操作符，再把它们加入自定义 operator group。
+   *
+   * @param operator 过滤操作符配置
+   * @returns void
+   */
+  registerFieldFilterOperator(operator: FieldFilterOperator) {
+    filterOperatorRegistry.register(operator);
+  }
+
+  /**
+   * 注册 v2 字段过滤操作符分组。
+   *
+   * 字段 interface 可以通过 `createFilterable(groupName)` 引用这里注册的分组。
+   *
+   * @param name 分组名
+   * @param operators 操作符配置或已注册操作符名
+   * @returns void
+   */
+  registerFieldFilterOperatorGroup(name: string, operators: FieldFilterOperatorReference[] = []) {
+    filterOperatorRegistry.registerGroup(name, operators);
+    this.normalizeFieldInterfaceFilterables();
+  }
+
+  /**
+   * 向已有 v2 字段过滤操作符分组追加操作符。
+   *
+   * @param name 分组名
+   * @param operators 操作符配置或已注册操作符名
+   * @returns void
+   */
+  addFieldFilterOperatorsToGroup(name: string, operators: FieldFilterOperatorReference[] = []) {
+    filterOperatorRegistry.addToGroup(name, operators);
+    this.normalizeFieldInterfaceFilterables();
+  }
+
+  /**
+   * 注册字段接口创建/编辑字段时的配置项。
+   *
+   * 字段插件可以把复杂配置组件、配置属性、normalize / initialize 等逻辑挂到字段接口自身。
+   * 如果字段接口尚未注册，配置会暂存并在接口注册后回放。
+   *
+   * @param options 字段接口配置
+   * @returns void
+   */
+  registerFieldInterfaceConfigure(options: FieldInterfaceConfigure & { name: string }) {
+    const fieldInterface = this.getFieldInterface(options.name);
+    if (!fieldInterface) {
+      this.enqueueAction(options.name, { type: 'registerConfigure', data: options });
+      return;
+    }
+    fieldInterface.configure = this.mergeFieldInterfaceConfigure(fieldInterface.configure, options);
   }
 
   /**
@@ -140,6 +219,52 @@ export class CollectionFieldInterfaceManager {
   }
 
   /**
+   * 获取字段接口创建/编辑字段时的配置属性。
+   *
+   * 字段接口可以通过自身的 properties / getConfigureFormProperties() 定义专属配置项。
+   * 数据源管理等 v2 页面只需要通过该方法读取，不需要硬编码具体字段类型。
+   *
+   * @param name 字段接口名
+   * @param collectionInfo 当前数据表信息
+   * @returns 配置属性映射
+   */
+  getFieldInterfaceConfigureProperties(name: string, collectionInfo?: any) {
+    const configure = this.getFieldInterfaceConfigure(name, collectionInfo);
+    return configure?.getConfigureFormProperties?.(collectionInfo) || configure?.properties || {};
+  }
+
+  /**
+   * 获取字段接口配置。
+   *
+   * 返回值会合并字段接口自身声明和后注册配置；后注册配置优先。
+   *
+   * @param name 字段接口名
+   * @param collectionInfo 当前数据表信息
+   * @returns 字段接口配置
+   */
+  getFieldInterfaceConfigure(name: string, collectionInfo?: any) {
+    const fieldInterface = this.getFieldInterface(name);
+    if (!fieldInterface) {
+      return undefined;
+    }
+    const baseConfigure: FieldInterfaceConfigure = {
+      name: fieldInterface.name,
+      title: fieldInterface.title,
+      group: fieldInterface.group,
+      order: fieldInterface.order,
+      default: (fieldInterface as any).default,
+      titleUsable: (fieldInterface as any).titleUsable,
+      isAssociation: fieldInterface.isAssociation,
+      supportDataSourceType: fieldInterface.supportDataSourceType,
+      notSupportDataSourceType: fieldInterface.notSupportDataSourceType,
+      properties: fieldInterface.getConfigureFormProperties?.(collectionInfo) || fieldInterface.properties || {},
+      getConfigureFormProperties: fieldInterface.getConfigureFormProperties?.bind(fieldInterface),
+    };
+
+    return this.mergeFieldInterfaceConfigure(baseConfigure, fieldInterface.configure);
+  }
+
+  /**
    * 注册字段接口分组。
    *
    * @param groups 分组配置
@@ -173,5 +298,36 @@ export class CollectionFieldInterfaceManager {
       this.actionList[interfaceName] = [];
     }
     this.actionList[interfaceName].push(action);
+  }
+
+  protected normalizeFieldInterfaceFilterables() {
+    Object.values(this.collectionFieldInterfaceInstances).forEach((fieldInterface) => {
+      normalizeFilterableOperators(fieldInterface.filterable);
+    });
+  }
+
+  protected mergeFieldInterfaceConfigure(
+    base?: FieldInterfaceConfigure,
+    override?: FieldInterfaceConfigure,
+  ): FieldInterfaceConfigure | undefined {
+    if (!base) {
+      return override;
+    }
+    if (!override) {
+      return base;
+    }
+    return {
+      ...base,
+      ...override,
+      default: override.default || base.default,
+      properties: {
+        ...(base.properties || {}),
+        ...(override.properties || {}),
+      },
+      components: {
+        ...(base.components || {}),
+        ...(override.components || {}),
+      },
+    };
   }
 }

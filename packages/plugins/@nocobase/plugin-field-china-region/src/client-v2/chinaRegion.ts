@@ -17,15 +17,6 @@ import {
   initializeChinaRegionValues,
 } from './chinaRegionConstants';
 
-const stringOperators = [
-  { label: '{{t("contains")}}', value: '$includes', selected: true },
-  { label: '{{t("does not contain")}}', value: '$notIncludes' },
-  { label: '{{t("is")}}', value: '$eq' },
-  { label: '{{t("is not")}}', value: '$ne' },
-  { label: '{{t("is empty")}}', value: '$empty', noValue: true },
-  { label: '{{t("is not empty")}}', value: '$notEmpty', noValue: true },
-];
-
 export class ChinaRegionFieldInterface extends CollectionFieldInterface {
   name = CHINA_REGION_INTERFACE_NAME;
   type = 'object';
@@ -46,20 +37,22 @@ export class ChinaRegionFieldInterface extends CollectionFieldInterface {
     initializeChinaRegionValues(values);
   }
 
-  properties = {
-    'uiSchema.x-component-props.maxLevel': {
-      type: 'number',
-      'x-component': 'Radio.Group',
-      'x-decorator': 'FormItem',
-      title: '{{t("Select level")}}',
-      default: 3,
-      enum: CHINA_REGION_LEVEL_OPTIONS,
-    },
-    'uiSchema.x-component-props.changeOnSelectLast': {
-      type: 'boolean',
-      'x-component': 'Checkbox',
-      'x-content': '{{t("Must select to the last level")}}',
-      'x-decorator': 'FormItem',
+  configure = {
+    properties: {
+      'uiSchema.x-component-props.maxLevel': {
+        type: 'number',
+        'x-component': 'Radio.Group',
+        'x-decorator': 'FormItem',
+        title: '{{t("Select level")}}',
+        default: 3,
+        enum: CHINA_REGION_LEVEL_OPTIONS,
+      },
+      'uiSchema.x-component-props.changeOnSelectLast': {
+        type: 'boolean',
+        'x-component': 'Checkbox',
+        'x-content': '{{t("Must select to the last level")}}',
+        'x-decorator': 'FormItem',
+      },
     },
   };
 
@@ -67,7 +60,7 @@ export class ChinaRegionFieldInterface extends CollectionFieldInterface {
     children: [
       {
         ...CHINA_REGION_FILTERABLE_CHILD_BASE,
-        operators: stringOperators,
+        operators: 'string',
       },
     ],
   };

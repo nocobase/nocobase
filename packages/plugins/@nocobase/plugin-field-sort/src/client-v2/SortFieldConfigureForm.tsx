@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import type { FieldConfigureFormProps } from '@nocobase/plugin-data-source-manager/client-v2';
+import type { FieldConfigureFormProps } from '@nocobase/client-v2';
 import { Form, Select } from 'antd';
 import React, { useMemo } from 'react';
 import { useT } from './locale';

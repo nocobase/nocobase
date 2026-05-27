@@ -11,19 +11,48 @@ import {
   DeleteOutlined,
   DownOutlined,
   FilterOutlined,
+  ImportOutlined,
   MenuOutlined,
   PlusOutlined,
   ReloadOutlined,
   SyncOutlined,
 } from '@ant-design/icons';
-import { DEFAULT_PAGE_SIZE, Table } from '@nocobase/client-v2';
-import { randomId, useFlowContext } from '@nocobase/flow-engine';
+import {
+  DEFAULT_PAGE_SIZE,
+  DrawerFormLayout,
+  FilterContent,
+  Table,
+  normalizeCollectionTemplateFields,
+} from '@nocobase/client-v2';
+import { observable, observer, randomId, useFlowContext } from '@nocobase/flow-engine';
+import { transformFilter, type FilterGroupType } from '@nocobase/utils/client';
 import { useRequest } from 'ahooks';
-import { App, Badge, Button, Card, Dropdown, Form, Input, Modal, Select, Space, Tabs, Tag } from 'antd';
+import {
+  App,
+  Badge,
+  Button,
+  Card,
+  Checkbox,
+  Drawer,
+  Dropdown,
+  Flex,
+  Form,
+  Input,
+  Modal,
+  Popover,
+  Select,
+  Space,
+  Spin,
+  Tabs,
+  Tag,
+  Transfer,
+} from 'antd';
 import type { ColumnsType } from 'antd/es/table';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { type FC, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useT } from '../../locale';
+import { type CollectionTemplateOptions, PluginDataSourceManagerClientV2 } from '../../plugin';
 import { compileLegacyTemplate } from '../../utils/compileLegacyTemplate';
+import { getCollectionFieldActionUrl } from './collectionFieldApi';
 import FieldsPage from './FieldsPage';
 
 interface CollectionsPageProps {
@@ -38,14 +67,43 @@ type CollectionCategoryRecord = {
   sort?: number;
 };
 
-type CollectionTemplateName = 'general' | 'calendar' | 'tree' | 'file' | 'sql' | 'view' | 'expression';
-
 type CollectionFormValues = {
   title: string;
   name: string;
-  template: CollectionTemplateName;
+  template: string;
   category?: Array<number | string>;
   description?: string;
+  fields?: Record<string, any>[];
+};
+
+type TableItem = {
+  key: string;
+  name: string;
+  title: string;
+  description?: string;
+};
+
+type FilterGroupValue = {
+  logic: '$and' | '$or';
+  items: Array<CollectionFilterItemValue | FilterGroupValue>;
+};
+
+type CollectionFilterItemValue = {
+  path: string;
+  operator: string;
+  value: string | undefined;
+};
+
+type CollectionFilterPayload = Record<string, unknown> | undefined;
+
+type CollectionFilterField = {
+  name: 'title' | 'name' | 'template' | 'description';
+  title: string;
+  operators: Array<{ value: string; label: string }>;
+  RenderValue: FC<{
+    value: string | undefined;
+    onChange: (value: string | undefined) => void;
+  }>;
 };
 
 const colorOptions = ['default', 'red', 'orange', 'yellow', 'green', 'cyan', 'blue', 'purple'];
@@ -59,15 +117,79 @@ const colorLabels: Record<string, string> = {
   blue: 'Blue',
   purple: 'Purple',
 };
-const collectionTemplateOptions: Array<{ value: CollectionTemplateName; label: string }> = [
-  { value: 'general', label: 'General collection' },
-  { value: 'calendar', label: 'Calendar collection' },
-  { value: 'tree', label: 'Tree collection' },
-  { value: 'file', label: 'File collection' },
-  { value: 'sql', label: 'SQL collection' },
-  { value: 'view', label: 'Connect to database view' },
-  { value: 'expression', label: 'Expression collection' },
-];
+function createEmptyFilter(): FilterGroupValue {
+  return observable({ logic: '$and', items: [] }) as FilterGroupValue;
+}
+
+function getTextFilterOperators(t: (key: string) => string) {
+  return [
+    { value: '$includes', label: t('contains') },
+    { value: '$notIncludes', label: t('does not contain') },
+    { value: '$eq', label: t('is') },
+    { value: '$ne', label: t('is not') },
+  ];
+}
+
+const TextFilterInput: CollectionFilterField['RenderValue'] = ({ value, onChange }) => (
+  <Input style={{ minWidth: 180 }} value={value ?? ''} onChange={(event) => onChange(event.target.value)} />
+);
+
+const TemplateFilterSelect: CollectionFilterField['RenderValue'] = ({ value, onChange }) => {
+  const t = useT();
+  const ctx = useFlowContext();
+  const plugin = ctx.app.pm.get(PluginDataSourceManagerClientV2);
+  const templateOptions = plugin.getCollectionTemplates();
+
+  return (
+    <Select
+      style={{ minWidth: 220 }}
+      value={value}
+      options={templateOptions.map((option) => ({
+        value: option.name,
+        label: compileLegacyTemplate(option.title, t),
+      }))}
+      onChange={(next) => onChange(next)}
+      allowClear
+    />
+  );
+};
+
+function useCollectionFilterFields() {
+  const t = useT();
+
+  return useMemo<CollectionFilterField[]>(
+    () => [
+      {
+        name: 'title',
+        title: t('Collection display name'),
+        operators: getTextFilterOperators(t),
+        RenderValue: TextFilterInput,
+      },
+      {
+        name: 'name',
+        title: t('Collection name'),
+        operators: getTextFilterOperators(t),
+        RenderValue: TextFilterInput,
+      },
+      {
+        name: 'template',
+        title: t('Collection template'),
+        operators: [
+          { value: '$eq', label: t('is') },
+          { value: '$ne', label: t('is not') },
+        ],
+        RenderValue: TemplateFilterSelect,
+      },
+      {
+        name: 'description',
+        title: t('Description'),
+        operators: getTextFilterOperators(t),
+        RenderValue: TextFilterInput,
+      },
+    ],
+    [t],
+  );
+}
 
 function normalizeListResponse(response: any) {
   const body = response?.data;
@@ -86,11 +208,68 @@ function normalizeArrayResponse(response: any) {
   return Array.isArray(payload) ? payload : Array.isArray(payload?.data) ? payload.data : [];
 }
 
-function getCollectionTemplateLabel(t: (key: string) => string, value?: string) {
-  const template = value || 'general';
+function getVisibleCollectionFilter() {
+  return {
+    hidden: {
+      $isFalsy: true,
+    },
+  };
+}
 
-  if (template === 'general') {
-    return t('General collection');
+function getCategoryFilterValues(categoryKey: string) {
+  const values: Array<number | string> = [categoryKey];
+  const numericValue = Number(categoryKey);
+
+  if (Number.isSafeInteger(numericValue) && String(numericValue) === categoryKey) {
+    values.push(numericValue);
+  }
+
+  return values;
+}
+
+function buildCollectionListFilter(options: {
+  activeCategoryKey: string;
+  filterPayload?: CollectionFilterPayload;
+  isMainDataSource: boolean;
+}) {
+  const filterItems: Array<Record<string, unknown>> = [getVisibleCollectionFilter()];
+
+  if (options.isMainDataSource && options.activeCategoryKey !== 'all') {
+    filterItems.push(
+      {
+        category: {
+          $notEmpty: true,
+        },
+      },
+      {
+        category: {
+          $match: {
+            id: {
+              $in: getCategoryFilterValues(options.activeCategoryKey),
+            },
+          },
+        },
+      },
+    );
+  }
+
+  if (options.filterPayload) {
+    filterItems.push(options.filterPayload);
+  }
+
+  return filterItems.length > 1 ? { $and: filterItems } : filterItems[0];
+}
+
+function getCollectionTemplateLabel(
+  t: (key: string) => string,
+  plugin: PluginDataSourceManagerClientV2,
+  value?: string,
+) {
+  const template = value || 'general';
+  const option = plugin.getCollectionTemplate(template);
+
+  if (option) {
+    return compileLegacyTemplate(option.title, t);
   }
 
   return template;
@@ -98,7 +277,7 @@ function getCollectionTemplateLabel(t: (key: string) => string, value?: string) 
 
 function renderCategoryTags(value: CollectionCategoryRecord[] | undefined, t: (key: string) => string) {
   if (!Array.isArray(value) || !value.length) {
-    return '-';
+    return null;
   }
 
   return (
@@ -112,100 +291,690 @@ function renderCategoryTags(value: CollectionCategoryRecord[] | undefined, t: (k
   );
 }
 
-function getCollectionDefaultValues(template: CollectionTemplateName) {
-  const values: Record<string, unknown> = {
-    template,
-    fields: [],
+function normalizeFilterTargetKey(value: unknown) {
+  if (Array.isArray(value)) {
+    return value.filter(Boolean).map(String);
+  }
+
+  return value ? [String(value)] : undefined;
+}
+
+function getCollectionFilterTargetKey(collection: Record<string, any>) {
+  const configuredFilterTargetKey = normalizeFilterTargetKey(collection.filterTargetKey);
+  if (configuredFilterTargetKey?.length) {
+    return configuredFilterTargetKey;
+  }
+
+  if (!Array.isArray(collection.fields)) {
+    return undefined;
+  }
+
+  const primaryKeys = collection.fields
+    .filter((field) => field?.primaryKey && field?.name)
+    .map((field) => String(field.name));
+
+  return primaryKeys.length === 1 ? primaryKeys : undefined;
+}
+
+const CollectionFilterItem: FC<{ value: CollectionFilterItemValue }> = observer(
+  ({ value }) => {
+    const t = useT();
+    const fields = useCollectionFilterFields();
+    const currentField = fields.find((field) => field.name === value.path);
+    const operatorOptions = currentField?.operators ?? [];
+    const RenderValue = currentField?.RenderValue ?? TextFilterInput;
+    const fieldOptions = useMemo(() => fields.map((field) => ({ value: field.name, label: field.title })), [fields]);
+
+    return (
+      <Space style={{ flex: 1 }} wrap>
+        <Select
+          style={{ minWidth: 180 }}
+          placeholder={t('Select field')}
+          value={value.path || undefined}
+          options={fieldOptions}
+          onChange={(next: CollectionFilterField['name']) => {
+            const nextField = fields.find((field) => field.name === next);
+            value.path = next;
+            value.operator = nextField?.operators[0]?.value ?? '';
+            value.value = undefined;
+          }}
+        />
+        <Select
+          style={{ minWidth: 140 }}
+          placeholder={t('Comparison')}
+          value={value.operator || undefined}
+          options={operatorOptions}
+          disabled={!value.path}
+          onChange={(next: string) => {
+            value.operator = next;
+            value.value = undefined;
+          }}
+        />
+        <RenderValue value={value.value} onChange={(next) => (value.value = next)} />
+      </Space>
+    );
+  },
+  { displayName: 'CollectionFilterItem' },
+);
+
+const CollectionFilterPopover: FC<{
+  value: FilterGroupValue;
+  onSubmit: () => void;
+  onReset: () => void;
+}> = observer(
+  ({ value, onSubmit, onReset }) => {
+    const t = useT();
+    const [open, setOpen] = useState(false);
+    const filterContext = useMemo(
+      () => ({
+        model: {
+          translate: (key: string) => t(key),
+          dispatchEvent: (eventName: string) => {
+            if (eventName === 'submit') {
+              onSubmit();
+              setOpen(false);
+            }
+            if (eventName === 'reset') {
+              onReset();
+            }
+          },
+        },
+      }),
+      [onReset, onSubmit, t],
+    );
+    const conditionCount = value.items.length;
+    const label = conditionCount
+      ? t('{{count}} filter items').replace('{{count}}', String(conditionCount))
+      : t('Filter');
+
+    return (
+      <Popover
+        open={open}
+        onOpenChange={setOpen}
+        trigger="click"
+        placement="bottomLeft"
+        content={
+          <div style={{ minWidth: 560 }}>
+            <FilterContent value={value} ctx={filterContext} FilterItem={CollectionFilterItem} />
+          </div>
+        }
+      >
+        <Button icon={<FilterOutlined />} type={conditionCount ? 'primary' : 'default'}>
+          {label}
+        </Button>
+      </Popover>
+    );
+  },
+  { displayName: 'CollectionFilterPopover' },
+);
+
+const presetFieldRows = [
+  {
+    name: 'id',
+    field: 'ID',
+    interfaceLabel: 'Snowflake ID (53-bit)',
+    description: 'Primary key, distributed uniqueness, time-ordering',
+    value: {
+      name: 'id',
+      type: 'snowflakeId',
+      autoIncrement: false,
+      primaryKey: true,
+      allowNull: false,
+      uiSchema: {
+        type: 'number',
+        title: '{{t("ID")}}',
+        'x-component': 'InputNumber',
+        'x-component-props': {
+          stringMode: true,
+          separator: '0.00',
+          step: '1',
+        },
+        'x-validator': 'integer',
+      },
+      interface: 'snowflakeId',
+    },
+  },
+  {
+    name: 'createdAt',
+    field: 'Created at',
+    interfaceLabel: 'Created at',
+    description: 'Store the creation time of each record',
+    value: {
+      name: 'createdAt',
+      interface: 'createdAt',
+      type: 'date',
+      field: 'createdAt',
+      uiSchema: {
+        type: 'datetime',
+        title: '{{t("Created at")}}',
+        'x-component': 'DatePicker',
+        'x-component-props': {},
+        'x-read-pretty': true,
+      },
+    },
+  },
+  {
+    name: 'createdBy',
+    field: 'Created by',
+    interfaceLabel: 'Created by',
+    description: 'Store the creation user of each record',
+    value: {
+      name: 'createdBy',
+      interface: 'createdBy',
+      type: 'belongsTo',
+      target: 'users',
+      foreignKey: 'createdById',
+      uiSchema: {
+        type: 'object',
+        title: '{{t("Created by")}}',
+        'x-component': 'AssociationField',
+        'x-component-props': {
+          fieldNames: {
+            value: 'id',
+            label: 'nickname',
+          },
+        },
+        'x-read-pretty': true,
+      },
+    },
+  },
+  {
+    name: 'updatedAt',
+    field: 'Last updated at',
+    interfaceLabel: 'Last updated at',
+    description: 'Store the last update time of each record',
+    value: {
+      name: 'updatedAt',
+      interface: 'updatedAt',
+      type: 'date',
+      field: 'updatedAt',
+      uiSchema: {
+        type: 'datetime',
+        title: '{{t("Last updated at")}}',
+        'x-component': 'DatePicker',
+        'x-component-props': {},
+        'x-read-pretty': true,
+      },
+    },
+  },
+  {
+    name: 'updatedBy',
+    field: 'Last updated by',
+    interfaceLabel: 'Last updated by',
+    description: 'Store the last update user of each record',
+    value: {
+      name: 'updatedBy',
+      interface: 'updatedBy',
+      type: 'belongsTo',
+      target: 'users',
+      foreignKey: 'updatedById',
+      uiSchema: {
+        type: 'object',
+        title: '{{t("Last updated by")}}',
+        'x-component': 'AssociationField',
+        'x-component-props': {
+          fieldNames: {
+            value: 'id',
+            label: 'nickname',
+          },
+        },
+        'x-read-pretty': true,
+      },
+    },
+  },
+];
+
+function buildPresetFields(selectedFieldNames: React.Key[]) {
+  const selected = new Set(selectedFieldNames.map(String));
+  return presetFieldRows.filter((field) => selected.has(field.name)).map((field) => structuredClone(field.value));
+}
+
+function resolveTemplateDefaultValues(template: CollectionTemplateOptions) {
+  return typeof template.defaultValues === 'function' ? template.defaultValues() : template.defaultValues || {};
+}
+
+function resolveTemplateCollectionOptions(template: CollectionTemplateOptions) {
+  const options = template.collection?.options;
+  if (typeof options === 'function') {
+    return options();
+  }
+  return options || resolveTemplateDefaultValues(template);
+}
+
+function resolveTemplateCollectionFields(template: CollectionTemplateOptions) {
+  const fields = template.collection?.fields;
+  if (typeof fields === 'function') {
+    return fields();
+  }
+  return fields || [];
+}
+
+function getTemplatePresetFieldsDisabled(template: CollectionTemplateOptions) {
+  return template.presetFields?.disabled ?? template.presetFieldsDisabled;
+}
+
+function getTemplatePresetFieldsDisabledIncludes(template: CollectionTemplateOptions) {
+  return template.presetFields?.disabledIncludes || template.presetFieldsDisabledIncludes || [];
+}
+
+function buildCollectionCreateValues(options: {
+  template: CollectionTemplateOptions;
+  formValues: CollectionFormValues;
+  selectedPresetFields: React.Key[];
+  fieldInterfaceManager?: any;
+}) {
+  const { fieldInterfaceManager, formValues, selectedPresetFields, template } = options;
+  const templateOptions = resolveTemplateCollectionOptions(template);
+  const legacyTemplateFields = Array.isArray(templateOptions.fields) ? templateOptions.fields : [];
+  const formFields = Array.isArray(formValues.fields) ? formValues.fields : [];
+  const templateFields = normalizeCollectionTemplateFields(
+    [...legacyTemplateFields, ...resolveTemplateCollectionFields(template)],
+    fieldInterfaceManager,
+    {
+      collectionInfo: {
+        ...templateOptions,
+        ...formValues,
+        template: template.name,
+      },
+    },
+  );
+
+  const values: Record<string, any> = {
+    autoGenId: false,
+    view: false,
+    ...templateOptions,
+    ...formValues,
+    template: template.name,
+    logging: true,
+    fields: [...buildPresetFields(selectedPresetFields), ...templateFields, ...formFields],
   };
 
-  if (template === 'tree') {
-    values.tree = 'adjacencyList';
-    values.fields = [
-      {
-        interface: 'integer',
-        name: 'parentId',
-        type: 'bigInt',
-        isForeignKey: true,
-        uiSchema: {
-          type: 'number',
-          title: '{{t("Parent ID")}}',
-          'x-component': 'InputNumber',
-          'x-read-pretty': true,
-        },
-      },
-      {
-        interface: 'm2o',
-        type: 'belongsTo',
-        name: 'parent',
-        foreignKey: 'parentId',
-        treeParent: true,
-        target: undefined,
-        onDelete: 'CASCADE',
-        uiSchema: {
-          title: '{{t("Parent")}}',
-          'x-component': 'AssociationField',
-          'x-component-props': {
-            multiple: false,
-            fieldNames: {
-              label: 'id',
-              value: 'id',
-            },
-          },
-        },
-      },
-      {
-        interface: 'o2m',
-        type: 'hasMany',
-        name: 'children',
-        foreignKey: 'parentId',
-        treeChildren: true,
-        target: undefined,
-        onDelete: 'CASCADE',
-        uiSchema: {
-          title: '{{t("Children")}}',
-          'x-component': 'AssociationField',
-          'x-component-props': {
-            multiple: true,
-            fieldNames: {
-              label: 'id',
-              value: 'id',
-            },
-          },
-        },
-      },
-    ];
+  const transformedValues = template.configure?.transformSubmitValues?.(values);
+  if (transformedValues) {
+    return transformedValues;
   }
 
-  if (template === 'calendar') {
-    values.createdBy = true;
-    values.updatedBy = true;
-    values.createdAt = true;
-    values.updatedAt = true;
-    values.sortable = true;
-  }
-
-  if (template === 'file') {
-    values.createdBy = true;
-    values.updatedBy = true;
-  }
-
-  if (template === 'expression') {
-    values.createdBy = true;
-    values.updatedBy = true;
-    values.createdAt = true;
-    values.updatedAt = true;
-  }
-
+  template.beforeSubmit?.(values);
   return values;
 }
 
-export default function CollectionsPage(props: CollectionsPageProps) {
+const CollectionTemplateConfigureItems: FC<{
+  mode: 'create' | 'edit';
+  template: CollectionTemplateOptions;
+  form: any;
+}> = ({ form, mode, template }) => {
+  const items = template.configure?.items || [];
+
+  if (!items.length) {
+    return null;
+  }
+
+  return (
+    <>
+      {items.map((item, index) => {
+        const hidden = typeof item.hidden === 'function' ? item.hidden({ mode, template, form }) : Boolean(item.hidden);
+        const Component = item.Component;
+
+        if (hidden || !Component) {
+          return null;
+        }
+
+        return <Component key={item.name || index} mode={mode} template={template} form={form} item={item} />;
+      })}
+    </>
+  );
+};
+
+function CollectionCreateDrawer(props: {
+  template: CollectionTemplateOptions;
+  categories: CollectionCategoryRecord[];
+  activeCategoryKey: string;
+  onSubmitted: () => void;
+}) {
+  const { activeCategoryKey, categories, onSubmitted, template } = props;
   const t = useT();
   const ctx = useFlowContext();
-  const { modal } = App.useApp();
+  const [form] = Form.useForm<CollectionFormValues>();
+  const [submitting, setSubmitting] = useState(false);
+  const [selectedPresetFields, setSelectedPresetFields] = useState<React.Key[]>(() =>
+    presetFieldRows.map((item) => item.name),
+  );
+  const collectionRequest = useRequest(async () => {
+    const response = await ctx.api.request({
+      url: 'dataSources/main/collections:list',
+      params: {
+        paginate: false,
+        sort: ['sort'],
+        filter: JSON.stringify(getVisibleCollectionFilter()),
+      },
+    });
+    return normalizeArrayResponse(response) as Array<Record<string, string>>;
+  });
+  const collectionOptions = useMemo(
+    () =>
+      (collectionRequest.data || [])
+        .filter((collection) => collection.name)
+        .map((collection) => ({
+          value: collection.name,
+          label: compileLegacyTemplate(collection.title || collection.name, t),
+        })),
+    [collectionRequest.data, t],
+  );
+  const initialValues = useMemo(
+    () => ({
+      ...resolveTemplateCollectionOptions(template),
+      template: template.name,
+      name: randomId('t_'),
+      category: activeCategoryKey === 'all' ? [] : [activeCategoryKey],
+    }),
+    [activeCategoryKey, template],
+  );
+  const disabledPresetFields = useMemo(() => new Set(getTemplatePresetFieldsDisabledIncludes(template)), [template]);
+  const presetColumns = useMemo<ColumnsType<(typeof presetFieldRows)[number]>>(
+    () => [
+      {
+        title: t('Field'),
+        dataIndex: 'field',
+        render: (value) => t(value),
+      },
+      {
+        title: t('Interface'),
+        dataIndex: 'interfaceLabel',
+        render: (value) => <Tag>{t(value)}</Tag>,
+      },
+      {
+        title: t('Description'),
+        dataIndex: 'description',
+        render: (value) => t(value),
+      },
+    ],
+    [t],
+  );
+  const TemplateConfigureForm = template.configure?.Form || template.ConfigureForm;
+
+  const handleSubmit = useCallback(async () => {
+    const values = await form.validateFields();
+    const normalizedValues = buildCollectionCreateValues({
+      template,
+      formValues: values,
+      selectedPresetFields,
+      fieldInterfaceManager: ctx.dataSourceManager.collectionFieldInterfaceManager,
+    });
+
+    setSubmitting(true);
+    try {
+      await ctx.api.resource('collections').create({
+        values: normalizedValues,
+      });
+      onSubmitted();
+      ctx.dataSourceManager.getDataSource('main')?.reload();
+    } finally {
+      setSubmitting(false);
+    }
+  }, [ctx.api, ctx.dataSourceManager, form, onSubmitted, selectedPresetFields, template]);
+
+  return (
+    <DrawerFormLayout
+      title={t('Create collection')}
+      submitting={submitting}
+      submitText={t('Submit')}
+      cancelText={t('Cancel')}
+      onSubmit={handleSubmit}
+    >
+      <Form form={form} layout="vertical" initialValues={initialValues}>
+        <div style={{ marginBottom: 24, padding: 16, background: 'var(--ant-color-fill-tertiary)' }}>
+          <Space>
+            <span>{t('Collection template')}:</span>
+            <Tag>{compileLegacyTemplate(template.title, t)}</Tag>
+          </Space>
+        </div>
+        <Form.Item name="template" hidden>
+          <Input />
+        </Form.Item>
+        <Form.Item name="title" label={t('Collection display name')} rules={[{ required: true }]}>
+          <Input />
+        </Form.Item>
+        <Form.Item
+          name="name"
+          label={t('Collection name')}
+          rules={[
+            { required: true },
+            {
+              pattern: /^[A-Za-z][A-Za-z0-9_]*$/,
+              message: t('Support letters, numbers and underscores, must start with an letter.'),
+            },
+          ]}
+          extra={t(
+            'Randomly generated and can be modified. Support letters, numbers and underscores, must start with an letter.',
+          )}
+        >
+          <Input />
+        </Form.Item>
+        <Form.Item name="inherits" label={t('Inherits')}>
+          <Select mode="multiple" options={collectionOptions} loading={collectionRequest.loading} allowClear />
+        </Form.Item>
+        <Form.Item name="category" label={t('Categories')}>
+          <Select
+            mode="multiple"
+            options={categories.map((category) => ({
+              value: String(category.id),
+              label: compileLegacyTemplate(category.name || category.id, t),
+            }))}
+            allowClear
+          />
+        </Form.Item>
+        <Form.Item name="description" label={t('Description')}>
+          <Input.TextArea autoSize={{ minRows: 3, maxRows: 8 }} />
+        </Form.Item>
+        <Form.Item
+          name="simplePaginate"
+          valuePropName="checked"
+          extra={t(
+            'Skip getting the total number of table records during paging to speed up loading. It is recommended to enable this option for data tables with a large amount of data',
+          )}
+        >
+          <Checkbox>{t('Use simple pagination mode')}</Checkbox>
+        </Form.Item>
+        {TemplateConfigureForm ? <TemplateConfigureForm mode="create" template={template} form={form} /> : null}
+        <CollectionTemplateConfigureItems mode="create" template={template} form={form} />
+        <Form.Item label={t('Preset fields')}>
+          <Table
+            size="small"
+            rowKey="name"
+            bordered
+            pagination={false}
+            dataSource={presetFieldRows}
+            columns={presetColumns}
+            rowSelection={{
+              type: 'checkbox',
+              selectedRowKeys: selectedPresetFields,
+              getCheckboxProps: (record) => ({
+                disabled: getTemplatePresetFieldsDisabled(template) || disabledPresetFields.has(record.name),
+              }),
+              onChange: (keys) => setSelectedPresetFields(keys),
+            }}
+          />
+        </Form.Item>
+      </Form>
+    </DrawerFormLayout>
+  );
+}
+
+function CollectionEditDrawer(props: {
+  collection: Record<string, any>;
+  categories: CollectionCategoryRecord[];
+  onSubmitted: () => void;
+}) {
+  const { categories, collection, onSubmitted } = props;
+  const t = useT();
+  const ctx = useFlowContext();
+  const plugin = ctx.app.pm.get(PluginDataSourceManagerClientV2);
+  const [form] = Form.useForm();
+  const [submitting, setSubmitting] = useState(false);
+  const template = useMemo(
+    () => plugin.getCollectionTemplate(collection.template || 'general'),
+    [collection.template, plugin],
+  );
+  const collectionRequest = useRequest(async () => {
+    const response = await ctx.api.request({
+      url: 'dataSources/main/collections:list',
+      params: {
+        paginate: false,
+        sort: ['sort'],
+        filter: JSON.stringify(getVisibleCollectionFilter()),
+      },
+    });
+    return normalizeArrayResponse(response) as Array<Record<string, any>>;
+  });
+  const fieldsRequest = useRequest(async () => {
+    const response = await ctx.api.request({
+      url: getCollectionFieldActionUrl('main', collection.name, 'list'),
+      params: {},
+    });
+    return normalizeArrayResponse(response) as Array<Record<string, any>>;
+  });
+
+  const collectionOptions = useMemo(
+    () =>
+      (collectionRequest.data || [])
+        .filter(
+          (item) => item.name && item.name !== collection.name && item.template !== 'view' && item.template !== 'file',
+        )
+        .map((item) => ({
+          value: item.name,
+          label: compileLegacyTemplate(item.title || item.name, t),
+        })),
+    [collection.name, collectionRequest.data, t],
+  );
+  const filterTargetKeyOptions = useMemo(() => {
+    const fields =
+      Array.isArray(collection.fields) && collection.fields.length ? collection.fields : fieldsRequest.data || [];
+    const selectedFilterTargetKeys = getCollectionFilterTargetKey(collection) || [];
+    const options = fields
+      .filter((field) => {
+        return !!field.name;
+      })
+      .map((field) => ({
+        value: field.name,
+        label: compileLegacyTemplate(field.uiSchema?.title || field.name, t),
+      }));
+
+    selectedFilterTargetKeys.forEach((key) => {
+      if (!options.some((option) => option.value === key)) {
+        options.push({ value: key, label: key });
+      }
+    });
+
+    return options;
+  }, [collection, fieldsRequest.data, t]);
+  const initialValues = useMemo(
+    () => ({
+      title: collection.title,
+      name: collection.name,
+      inherits: Array.isArray(collection.inherits)
+        ? collection.inherits
+        : collection.inherits
+          ? [collection.inherits]
+          : undefined,
+      category: Array.isArray(collection.category) ? collection.category.map((item) => String(item.id)) : [],
+      description: collection.description,
+      simplePaginate: collection.simplePaginate,
+      filterTargetKey: getCollectionFilterTargetKey(collection),
+    }),
+    [collection],
+  );
+
+  const handleSubmit = useCallback(async () => {
+    const values = await form.validateFields();
+    let submitValues = { ...values };
+    delete submitValues.name;
+    submitValues = template?.configure?.transformSubmitValues?.(submitValues) || submitValues;
+    setSubmitting(true);
+    try {
+      await ctx.api.resource('collections').update({
+        filterByTk: collection.name,
+        values: submitValues,
+      });
+      onSubmitted();
+      ctx.dataSourceManager.getDataSource('main')?.reload();
+    } finally {
+      setSubmitting(false);
+    }
+  }, [collection.name, ctx.api, ctx.dataSourceManager, form, onSubmitted, template]);
+
+  const TemplateConfigureForm = template?.configure?.Form || template?.ConfigureForm;
+
+  return (
+    <DrawerFormLayout
+      title={t('Edit collection')}
+      submitting={submitting}
+      submitText={t('Submit')}
+      cancelText={t('Cancel')}
+      onSubmit={handleSubmit}
+    >
+      <Form form={form} layout="vertical" initialValues={initialValues}>
+        <Form.Item name="title" label={t('Collection display name')} rules={[{ required: true }]}>
+          <Input />
+        </Form.Item>
+        <Form.Item
+          name="name"
+          label={t('Collection name')}
+          extra={t(
+            'Randomly generated and can be modified. Support letters, numbers and underscores, must start with an letter.',
+          )}
+        >
+          <Input disabled />
+        </Form.Item>
+        <Form.Item name="inherits" label={t('Inherits')}>
+          <Select mode="multiple" options={collectionOptions} loading={collectionRequest.loading} allowClear />
+        </Form.Item>
+        <Form.Item name="category" label={t('Categories')}>
+          <Select
+            mode="multiple"
+            options={categories.map((category) => ({
+              value: String(category.id),
+              label: compileLegacyTemplate(category.name || category.id, t),
+            }))}
+            allowClear
+          />
+        </Form.Item>
+        <Form.Item name="description" label={t('Description')}>
+          <Input.TextArea autoSize={{ minRows: 3, maxRows: 8 }} />
+        </Form.Item>
+        <Form.Item
+          name="simplePaginate"
+          valuePropName="checked"
+          extra={t(
+            'Skip getting the total number of table records during paging to speed up loading. It is recommended to enable this option for data tables with a large amount of data',
+          )}
+        >
+          <Checkbox>{t('Use simple pagination mode')}</Checkbox>
+        </Form.Item>
+        <Form.Item
+          name="filterTargetKey"
+          label={t('Record unique key')}
+          extra={t(
+            'If a collection lacks a primary key, you must configure a unique record key to locate row records within a block, failure to configure this will prevent the creation of data blocks for the collection.',
+          )}
+        >
+          <Select mode="multiple" options={filterTargetKeyOptions} loading={fieldsRequest.loading} allowClear />
+        </Form.Item>
+        {template && TemplateConfigureForm ? (
+          <TemplateConfigureForm mode="edit" template={template} form={form} />
+        ) : null}
+        {template ? <CollectionTemplateConfigureItems mode="edit" template={template} form={form} /> : null}
+      </Form>
+    </DrawerFormLayout>
+  );
+}
+
+function CollectionsPage(props: CollectionsPageProps) {
+  const t = useT();
+  const ctx = useFlowContext();
+  const { message, modal } = App.useApp();
+  const plugin = ctx.app.pm.get(PluginDataSourceManagerClientV2);
   const [categoryForm] = Form.useForm();
-  const [collectionForm] = Form.useForm<CollectionFormValues>();
-  const [filterForm] = Form.useForm<{ keyword?: string }>();
+  const filterValueRef = useRef<FilterGroupValue>(createEmptyFilter());
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
   const [activeCategoryKey, setActiveCategoryKey] = useState('all');
@@ -213,12 +982,15 @@ export default function CollectionsPage(props: CollectionsPageProps) {
   const [categorySubmitting, setCategorySubmitting] = useState(false);
   const [editingCategory, setEditingCategory] = useState<CollectionCategoryRecord>();
   const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
-  const [collectionModalOpen, setCollectionModalOpen] = useState(false);
-  const [collectionSubmitting, setCollectionSubmitting] = useState(false);
-  const [editingCollection, setEditingCollection] = useState<Record<string, any>>();
-  const [filterModalOpen, setFilterModalOpen] = useState(false);
-  const [filterValues, setFilterValues] = useState<{ keyword?: string }>({});
+  const [filterPayload, setFilterPayload] = useState<CollectionFilterPayload>();
+  const [loadTablesDrawerOpen, setLoadTablesDrawerOpen] = useState(false);
+  const [loadTablesLoading, setLoadTablesLoading] = useState(false);
+  const [availableTables, setAvailableTables] = useState<TableItem[]>([]);
+  const [selectedTableKeys, setSelectedTableKeys] = useState<string[]>([]);
+  const [selectedTransferKeys, setSelectedTransferKeys] = useState<string[]>([]);
+  const [tableSearchValue, setTableSearchValue] = useState('');
   const isMainDataSource = props.dataSourceKey === 'main';
+  const collectionTemplates = useMemo(() => plugin.getCollectionTemplates(), [plugin]);
   const categoryRequest = useRequest(
     async () => {
       if (!isMainDataSource) {
@@ -239,50 +1011,25 @@ export default function CollectionsPage(props: CollectionsPageProps) {
   );
   const request = useRequest(
     async () => {
-      const filterItems: Array<Record<string, unknown>> = [
-        {
-          'hidden.$isFalsy': true,
-        },
-      ];
-
-      if (isMainDataSource && activeCategoryKey !== 'all') {
-        filterItems.push({
-          'category.id': activeCategoryKey,
-        });
-      }
-
-      if (filterValues.keyword) {
-        filterItems.push({
-          $or: [
-            {
-              title: {
-                $includes: filterValues.keyword,
-              },
-            },
-            {
-              name: {
-                $includes: filterValues.keyword,
-              },
-            },
-          ],
-        });
-      }
-
-      const filter = filterItems.length > 1 ? { $and: filterItems } : filterItems[0];
+      const filter = buildCollectionListFilter({
+        activeCategoryKey,
+        filterPayload,
+        isMainDataSource,
+      });
       const response = await ctx.api.request({
         url: `dataSources/${props.dataSourceKey}/collections:list`,
         params: {
           page,
           pageSize,
           sort: ['sort'],
-          filter,
-          appends: ['category'],
+          filter: JSON.stringify(filter),
+          appends: isMainDataSource ? ['fields', 'category'] : ['fields'],
         },
       });
       return normalizeListResponse(response);
     },
     {
-      refreshDeps: [activeCategoryKey, filterValues.keyword, isMainDataSource, props.dataSourceKey, page, pageSize],
+      refreshDeps: [activeCategoryKey, filterPayload, isMainDataSource, props.dataSourceKey, page, pageSize],
     },
   );
   const categories = useMemo(() => categoryRequest.data || [], [categoryRequest.data]);
@@ -301,12 +1048,17 @@ export default function CollectionsPage(props: CollectionsPageProps) {
   const openFields = useCallback(
     (collection: Record<string, any>) => {
       ctx.viewer.drawer({
+        title: (
+          <span>
+            {compileLegacyTemplate(collection.title || collection.name, t)} - {t('Configure fields')}
+          </span>
+        ),
         width: '80%',
         closable: true,
         content: () => <FieldsPage dataSourceKey={props.dataSourceKey} collection={collection} />,
       });
     },
-    [ctx.viewer, props.dataSourceKey],
+    [ctx.viewer, props.dataSourceKey, t],
   );
 
   const handleCategoryChange = useCallback((key: string) => {
@@ -376,71 +1128,46 @@ export default function CollectionsPage(props: CollectionsPageProps) {
     [activeCategoryKey, categoryRequest, ctx.api, modal, request, t],
   );
 
-  const openCreateCollectionModal = useCallback(
-    (template: CollectionTemplateName) => {
-      setEditingCollection(undefined);
-      collectionForm.setFieldsValue({
-        template,
-        name: randomId('t_'),
-        category: activeCategoryKey === 'all' ? [] : [activeCategoryKey],
+  const openCreateCollectionDrawer = useCallback(
+    (template: CollectionTemplateOptions) => {
+      ctx.viewer.drawer({
+        width: '50%',
+        closable: true,
+        content: () => (
+          <CollectionCreateDrawer
+            template={template}
+            categories={categories}
+            activeCategoryKey={activeCategoryKey}
+            onSubmitted={() => {
+              setSelectedRowKeys([]);
+              request.refresh();
+            }}
+          />
+        ),
       });
-      setCollectionModalOpen(true);
     },
-    [activeCategoryKey, collectionForm],
+    [activeCategoryKey, categories, ctx.viewer, request],
   );
 
-  const openEditCollectionModal = useCallback(
+  const openEditCollectionDrawer = useCallback(
     (record: Record<string, any>) => {
-      setEditingCollection(record);
-      collectionForm.setFieldsValue({
-        title: record.title,
-        name: record.name,
-        template: record.template || 'general',
-        category: Array.isArray(record.category) ? record.category.map((item) => item.id) : [],
-        description: record.description,
+      ctx.viewer.drawer({
+        width: '50%',
+        closable: true,
+        content: () => (
+          <CollectionEditDrawer
+            collection={record}
+            categories={categories}
+            onSubmitted={() => {
+              setSelectedRowKeys([]);
+              request.refresh();
+            }}
+          />
+        ),
       });
-      setCollectionModalOpen(true);
     },
-    [collectionForm],
+    [categories, ctx.viewer, request],
   );
-
-  const handleSubmitCollection = useCallback(async () => {
-    const values = await collectionForm.validateFields();
-    setCollectionSubmitting(true);
-    try {
-      const normalizedValues = {
-        ...getCollectionDefaultValues(values.template),
-        ...values,
-        logging: true,
-      };
-
-      if (values.template === 'tree' && Array.isArray(normalizedValues.fields)) {
-        normalizedValues.fields = normalizedValues.fields.map((field: Record<string, unknown>) =>
-          field.target === undefined ? { ...field, target: values.name } : field,
-        );
-      }
-
-      if (editingCollection) {
-        await ctx.api.resource('collections').update({
-          filterByTk: editingCollection.name,
-          values: normalizedValues,
-        });
-      } else {
-        await ctx.api.resource('collections').create({
-          values: normalizedValues,
-        });
-      }
-
-      setCollectionModalOpen(false);
-      setEditingCollection(undefined);
-      collectionForm.resetFields();
-      setSelectedRowKeys([]);
-      request.refresh();
-      ctx.dataSourceManager.getDataSource('main')?.reload();
-    } finally {
-      setCollectionSubmitting(false);
-    }
-  }, [collectionForm, ctx.api, ctx.dataSourceManager, editingCollection, request]);
 
   const handleDeleteCollections = useCallback(
     (filterByTk: React.Key | React.Key[]) => {
@@ -464,6 +1191,22 @@ export default function CollectionsPage(props: CollectionsPageProps) {
     [ctx.api, ctx.dataSourceManager, modal, request, t],
   );
 
+  const handleSortCollection = useCallback(
+    async (from: Record<string, any>, to: Record<string, any>) => {
+      if (!isMainDataSource) {
+        return;
+      }
+      await ctx.api.resource('collections').move({
+        sourceId: from.name,
+        targetId: to.name,
+      });
+      message.success(t('Saved successfully'));
+      request.refresh();
+      ctx.dataSourceManager.getDataSource('main')?.reload();
+    },
+    [ctx.api, ctx.dataSourceManager, isMainDataSource, message, request, t],
+  );
+
   const handleSyncFromDatabase = useCallback(() => {
     modal.confirm({
       title: t('Sync field changes from database'),
@@ -472,23 +1215,103 @@ export default function CollectionsPage(props: CollectionsPageProps) {
         await ctx.api.resource('mainDataSource').syncFields();
         request.refresh();
         ctx.dataSourceManager.getDataSource('main')?.reload();
+        message.success(t('Sync successfully'));
       },
     });
-  }, [ctx.api, ctx.dataSourceManager, modal, request, t]);
+  }, [ctx.api, ctx.dataSourceManager, message, modal, request, t]);
 
-  const handleSubmitFilter = useCallback(async () => {
-    const values = await filterForm.validateFields();
-    setFilterValues(values);
-    setPage(1);
-    setFilterModalOpen(false);
-  }, [filterForm]);
+  const resetLoadTablesDrawer = useCallback(() => {
+    setLoadTablesDrawerOpen(false);
+    setSelectedTableKeys([]);
+    setSelectedTransferKeys([]);
+    setTableSearchValue('');
+  }, []);
 
-  const resetFilter = useCallback(() => {
-    filterForm.resetFields();
-    setFilterValues({});
+  const openLoadTablesDrawer = useCallback(async () => {
+    setLoadTablesDrawerOpen(true);
+    setLoadTablesLoading(true);
+    try {
+      const response = await ctx.api.resource('dataSources').readTables({
+        values: { dataSourceKey: 'main' },
+      });
+      const tables = response?.data?.data;
+      setAvailableTables(
+        (Array.isArray(tables) ? tables : []).map((item: Record<string, string>) => ({
+          key: item.name,
+          name: item.name,
+          title: item.title || item.name,
+          description: item.description,
+        })),
+      );
+      setSelectedTableKeys([]);
+      setSelectedTransferKeys([]);
+    } catch (error) {
+      message.error(t('Failed to load tables'));
+    } finally {
+      setLoadTablesLoading(false);
+    }
+  }, [ctx.api, message, t]);
+
+  const handleLoadTables = useCallback(() => {
+    if (!selectedTableKeys.length) {
+      message.warning(t('Please select at least one table'));
+      return;
+    }
+
+    modal.confirm({
+      title: t('Confirm load tables'),
+      content: t('Are you sure you want to load {{count}} table(s)?').replace(
+        '{{count}}',
+        String(selectedTableKeys.length),
+      ),
+      async onOk() {
+        setLoadTablesLoading(true);
+        try {
+          await ctx.api.resource('dataSources').loadTables({
+            values: {
+              dataSourceKey: 'main',
+              tables: selectedTableKeys,
+            },
+          });
+          message.success(t('Tables loaded successfully'));
+          resetLoadTablesDrawer();
+          request.refresh();
+          ctx.dataSourceManager.getDataSource('main')?.reload();
+        } catch (error) {
+          message.error(t('Failed to load tables'));
+        } finally {
+          setLoadTablesLoading(false);
+        }
+      },
+    });
+  }, [ctx.api, ctx.dataSourceManager, message, modal, request, resetLoadTablesDrawer, selectedTableKeys, t]);
+
+  const handleSubmitFilter = useCallback(() => {
+    setFilterPayload(transformFilter(filterValueRef.current as FilterGroupType) as CollectionFilterPayload);
     setPage(1);
-    setFilterModalOpen(false);
-  }, [filterForm]);
+  }, []);
+
+  const handleResetFilter = useCallback(() => {
+    filterValueRef.current.logic = '$and';
+    filterValueRef.current.items.splice(0, filterValueRef.current.items.length);
+    setFilterPayload(undefined);
+    setPage(1);
+  }, []);
+
+  const filteredAvailableTables = useMemo(() => {
+    if (!tableSearchValue) {
+      return availableTables;
+    }
+
+    const lowerSearchValue = tableSearchValue.toLowerCase();
+    return availableTables.filter((item) => {
+      return (
+        item.title.toLowerCase().includes(lowerSearchValue) ||
+        item.name.toLowerCase().includes(lowerSearchValue) ||
+        item.description?.toLowerCase().includes(lowerSearchValue)
+      );
+    });
+  }, [availableTables, tableSearchValue]);
 
   const categoryTabs = useMemo(
     () => [
@@ -546,7 +1369,7 @@ export default function CollectionsPage(props: CollectionsPageProps) {
       {
         title: t('Collection template'),
         dataIndex: 'template',
-        render: (value) => <Tag>{getCollectionTemplateLabel(t, value)}</Tag>,
+        render: (value) => <Tag>{getCollectionTemplateLabel(t, plugin, value)}</Tag>,
       },
     ];
 
@@ -562,17 +1385,23 @@ export default function CollectionsPage(props: CollectionsPageProps) {
       { title: t('Description'), dataIndex: 'description', ellipsis: true, render: (value) => value || '-' },
       {
         title: t('Actions'),
-        width: 140,
+        width: isMainDataSource ? 220 : 140,
         render: (_, record) => (
           <Space>
-            <a onClick={() => openFields(record)}>{t('Fields')}</a>
+            <a onClick={() => openFields(record)}>{t('Configure fields')}</a>
+            {isMainDataSource ? (
+              <>
+                <a onClick={() => openEditCollectionDrawer(record)}>{t('Edit')}</a>
+                <a onClick={() => handleDeleteCollections(record.name)}>{t('Delete')}</a>
+              </>
+            ) : null}
           </Space>
         ),
       },
     );
 
     return nextColumns;
-  }, [activeCategoryKey, isMainDataSource, openFields, t]);
+  }, [activeCategoryKey, handleDeleteCollections, isMainDataSource, openEditCollectionDrawer, openFields, plugin, t]);
 
   return (
     <Card title={compileLegacyTemplate(props.title, t)} variant="borderless">
@@ -589,16 +1418,91 @@ export default function CollectionsPage(props: CollectionsPageProps) {
           }}
         />
       ) : null}
-      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 16 }}>
-        <Button icon={<ReloadOutlined />} onClick={() => request.refresh()}>
-          {t('Refresh')}
-        </Button>
-      </div>
+      <Flex justify="space-between" align="center" style={{ marginBottom: 16 }}>
+        <CollectionFilterPopover
+          value={filterValueRef.current}
+          onSubmit={handleSubmitFilter}
+          onReset={handleResetFilter}
+        />
+        <Space>
+          <Button icon={<ReloadOutlined />} onClick={() => request.refresh()}>
+            {t('Refresh')}
+          </Button>
+          {isMainDataSource ? (
+            <>
+              <Button
+                icon={<DeleteOutlined />}
+                disabled={!selectedRowKeys.length}
+                onClick={() => handleDeleteCollections(selectedRowKeys)}
+              >
+                {t('Delete')}
+              </Button>
+              <Dropdown
+                placement="bottomLeft"
+                menu={{
+                  items: [
+                    {
+                      key: 'load-tables',
+                      icon: <ImportOutlined />,
+                      label: t('Load tables from database'),
+                    },
+                    {
+                      key: 'sync-fields',
+                      icon: <ReloadOutlined />,
+                      label: t('Sync field changes from database'),
+                    },
+                  ],
+                  onClick: ({ key }) => {
+                    if (key === 'load-tables') {
+                      openLoadTablesDrawer();
+                    }
+                    if (key === 'sync-fields') {
+                      handleSyncFromDatabase();
+                    }
+                  },
+                }}
+              >
+                <Button icon={<SyncOutlined />}>
+                  {t('Sync from database')} <DownOutlined />
+                </Button>
+              </Dropdown>
+              <Dropdown
+                menu={{
+                  items: collectionTemplates.map((template) => ({
+                    key: template.name,
+                    label: compileLegacyTemplate(template.title, t),
+                  })),
+                  onClick: ({ key }) => {
+                    const template = collectionTemplates.find((item) => item.name === key);
+                    if (template) {
+                      openCreateCollectionDrawer(template);
+                    }
+                  },
+                }}
+              >
+                <Button type="primary" icon={<PlusOutlined />}>
+                  {t('Create collection')} <DownOutlined />
+                </Button>
+              </Dropdown>
+            </>
+          ) : null}
+        </Space>
+      </Flex>
       <Table<Record<string, any>>
         rowKey="name"
+        isDraggable={isMainDataSource}
+        onSortEnd={isMainDataSource ? handleSortCollection : undefined}
         loading={request.loading}
         dataSource={request.data?.records || []}
         columns={columns}
+        rowSelection={
+          isMainDataSource
+            ? {
+                selectedRowKeys,
+                onChange: (keys) => setSelectedRowKeys(keys),
+              }
+            : undefined
+        }
         pagination={{
           current: page,
           pageSize,
@@ -640,6 +1544,54 @@ export default function CollectionsPage(props: CollectionsPageProps) {
           </Form.Item>
         </Form>
       </Modal>
+      <Drawer
+        title={t('Load tables from database')}
+        placement="right"
+        width={800}
+        open={loadTablesDrawerOpen}
+        onClose={resetLoadTablesDrawer}
+        footer={
+          <Flex justify="flex-end" gap={8}>
+            <Button onClick={resetLoadTablesDrawer}>{t('Cancel')}</Button>
+            <Button
+              type="primary"
+              loading={loadTablesLoading}
+              disabled={!selectedTableKeys.length}
+              onClick={handleLoadTables}
+            >
+              {t('Submit')}
+            </Button>
+          </Flex>
+        }
+      >
+        <Spin spinning={loadTablesLoading}>
+          <Transfer
+            dataSource={filteredAvailableTables}
+            titles={[t('Available tables'), t('Selected tables')]}
+            targetKeys={selectedTableKeys}
+            selectedKeys={selectedTransferKeys}
+            onChange={(nextTargetKeys) => setSelectedTableKeys(nextTargetKeys.map(String))}
+            onSelectChange={(sourceSelectedKeys, targetSelectedKeys) =>
+              setSelectedTransferKeys([...sourceSelectedKeys, ...targetSelectedKeys].map(String))
+            }
+            onSearch={(_, value) => setTableSearchValue(value)}
+            render={(item) => item.title}
+            showSearch
+            style={{ height: 'calc(100vh - 160px)' }}
+            listStyle={{
+              width: 350,
+              height: 'calc(100vh - 220px)',
+            }}
+            locale={{
+              itemUnit: t('item'),
+              itemsUnit: t('items'),
+              searchPlaceholder: t('Search collections...'),
+            }}
+          />
+        </Spin>
+      </Drawer>
     </Card>
   );
 }
+
+export default CollectionsPage;

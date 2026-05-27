@@ -7,12 +7,11 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { ISchema } from '@formily/react';
 import { isArr, isEmpty, isValid } from '@formily/shared';
 import { registerValidateRules } from '@formily/validator';
 import { CollectionFieldInterface } from '../../collection-field-interface/CollectionFieldInterface';
 import { i18n } from '../../i18n';
-import { defaultProps, operators, primaryKey, unique } from './properties';
+import { defaultProps, primaryKey, unique } from './properties';
 
 const isValidateEmpty = (value: any) => {
   if (isArr(value)) {
@@ -88,15 +87,9 @@ export class InputFieldInterface extends CollectionFieldInterface {
     },
   };
   filterable = {
-    operators: operators.string,
+    operators: 'string',
   };
   titleUsable = true;
-  schemaInitialize(schema: ISchema, { block }) {
-    if (['Table', 'Kanban'].includes(block)) {
-      schema['x-component-props'] = schema['x-component-props'] || {};
-      schema['x-component-props']['ellipsis'] = true;
-    }
-  }
   validateSchema(fieldSchema) {
     return {
       max: {

@@ -9,7 +9,7 @@
 
 import { CollectionFieldInterface } from '../../collection-field-interface/CollectionFieldInterface';
 import { i18n } from '../../i18n';
-import { defaultProps, operators, unique } from './properties';
+import { defaultProps, unique } from './properties';
 
 export class NumberFieldInterface extends CollectionFieldInterface {
   name = 'number';
@@ -101,7 +101,7 @@ export class NumberFieldInterface extends CollectionFieldInterface {
     },
   };
   filterable = {
-    operators: operators.number,
+    operators: 'number',
   };
   titleUsable = true;
   validateSchema(fieldSchema) {

@@ -7,7 +7,6 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { ISchema } from '@formily/react';
 import { uid } from '@formily/shared';
 import { defaultProps } from './properties';
 import { CollectionFieldInterface } from '../../collection-field-interface/CollectionFieldInterface';
@@ -28,48 +27,6 @@ export class SubTableFieldInterface extends CollectionFieldInterface {
     },
   };
   availableTypes = ['hasMany'];
-  schemaInitialize(schema: ISchema, { field, readPretty }) {
-    const association = `${field.collectionName}.${field.name}`;
-    schema['type'] = 'void';
-    schema['x-component'] = 'TableField';
-    schema['properties'] = {
-      block: {
-        type: 'void',
-        'x-decorator': 'TableFieldProvider',
-        'x-acl-action': `${field.target}:list`,
-        'x-decorator-props': {
-          collection: field.target,
-          association: association,
-          resource: association,
-          action: 'list',
-          params: {
-            paginate: false,
-          },
-          showIndex: true,
-          dragSort: false,
-        },
-        properties: {
-          actions: {
-            type: 'void',
-            'x-initializer': 'subTable:configureActions',
-            'x-component': 'TableField.ActionBar',
-            'x-component-props': {},
-          },
-          [field.name]: {
-            type: 'array',
-            'x-initializer': 'table:configureColumns',
-            'x-component': 'TableV2',
-            'x-use-component-props': 'useTableFieldProps',
-            'x-component-props': {
-              rowSelection: {
-                type: 'checkbox',
-              },
-            },
-          },
-        },
-      },
-    };
-  }
   initialize = (values: any) => {
     if (!values.target) {
       values.target = `t_${uid()}`;

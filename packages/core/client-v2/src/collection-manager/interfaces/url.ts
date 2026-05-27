@@ -7,8 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { ISchema } from '@formily/react';
-import { defaultProps, operators } from './properties';
+import { defaultProps } from './properties';
 import { CollectionFieldInterface } from '../../collection-field-interface/CollectionFieldInterface';
 
 export class UrlFieldInterface extends CollectionFieldInterface {
@@ -35,7 +34,6 @@ export class UrlFieldInterface extends CollectionFieldInterface {
     },
   ];
   availableTypes = ['string', 'text'];
-  schemaInitialize(schema: ISchema, { block }) {}
   validationType = 'string';
   availableValidationOptions = ['uri', 'pattern'];
   properties = {
@@ -43,6 +41,6 @@ export class UrlFieldInterface extends CollectionFieldInterface {
   };
   titleUsable = true;
   filterable = {
-    operators: operators.string,
+    operators: 'string',
   };
 }
