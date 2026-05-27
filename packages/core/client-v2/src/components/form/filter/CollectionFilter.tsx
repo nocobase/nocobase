@@ -25,7 +25,15 @@ export interface CollectionFilterProps {
   t?: (key: string, options?: Record<string, any>) => string;
   /** Whitelist of root-level field names to expose. */
   filterableFieldNames?: string[];
-  /** Bypass the `filterableFieldNames` whitelist. */
+  /**
+   * Blacklist of root-level field names to drop. Mirrors v1's `nonfilterable: [...]` on `Filter.Action`. When both `filterableFieldNames` and this prop are supplied, both apply (final = whitelist ∩ ¬blacklist).
+   */
+  nonfilterableFieldNames?: string[];
+  /**
+   * Bypass the `filterableFieldNames` whitelist.
+   *
+   * Legacy escape hatch — prefer adjusting `filterableFieldNames` / `nonfilterableFieldNames` instead.
+   */
   noIgnore?: boolean;
   /** Override the trigger button's label. Defaults to `t('Filter')`, or the v1-style `t('{{count}} filter items', { count })` when conditions are present. */
   buttonText?: React.ReactNode;
@@ -50,6 +58,7 @@ export const CollectionFilter: FC<CollectionFilterProps> = (props) => {
     onChange,
     t = identity,
     filterableFieldNames,
+    nonfilterableFieldNames,
     noIgnore,
     buttonText,
     showCount = true,
@@ -63,6 +72,7 @@ export const CollectionFilter: FC<CollectionFilterProps> = (props) => {
   const filterAction = useFilterActionProps({
     collection,
     filterableFieldNames,
+    nonfilterableFieldNames,
     noIgnore,
     t,
     onApply: (filter: CompiledFilter, action: FilterApplyAction) => {
