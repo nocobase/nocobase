@@ -14,16 +14,12 @@ import { Alert, Form } from 'antd';
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useUsersTranslation } from '../locale';
+import { PluginUsersClientV2 } from '../plugin';
 
 /**
- * Drawer body for "Change password". Three antd `Form.Item`s, with
- * `confirmPassword` cross-validating against `newPassword`. On success,
- * the drawer closes and the user is redirected to `/signin` so they
- * sign back in with the new credentials.
+ * Drawer body for "Change password". Three antd `Form.Item`s, with `confirmPassword` cross-validating against `newPassword`. On success, the drawer closes and the user is redirected to `/signin` so they sign back in with the new credentials.
  *
- * Server-side validation (`auth:changePassword`) catches the heavier
- * checks — mismatch / wrong old password / disabled by system setting —
- * and the error message is surfaced inline via an antd `<Alert>`.
+ * Server-side validation (`auth:changePassword`) catches the heavier checks — mismatch / wrong old password / disabled by system setting — and the error message is surfaced inline via an antd `<Alert>`.
  */
 function ChangePasswordDrawerContent() {
   const { t } = useUsersTranslation();
@@ -32,6 +28,19 @@ function ChangePasswordDrawerContent() {
   const [form] = Form.useForm();
   const [submitting, setSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+
+  // Async client-side validator that fans out to every PasswordValidator registered on PluginUsersClientV2 (typically contributed by plugin-password-policy). `username: undefined` matches v1's ChangePassword flow — the policy's `cantIncludeUsername` rule is intentionally skipped here, because the user-center form has no username field to feed it.
+  const validateNewPassword = useMemoizedFn(async (_rule: unknown, value: unknown) => {
+    if (typeof value !== 'string' || !value) return;
+    const plugin = ctx.app?.pm?.get?.(PluginUsersClientV2) as PluginUsersClientV2 | undefined;
+    const validators = plugin?.getPasswordValidators?.() || [];
+    for (const validator of validators) {
+      const message = await validator(value, { username: undefined });
+      if (message) {
+        throw new Error(message);
+      }
+    }
+  });
 
   const handleSubmit = useMemoizedFn(async () => {
     const values = await form.validateFields();
@@ -70,7 +79,7 @@ function ChangePasswordDrawerContent() {
         <Form.Item
           name="newPassword"
           label={t('New password')}
-          rules={[{ required: true, message: t('Please enter the new password') }]}
+          rules={[{ required: true, message: t('Please enter the new password') }, { validator: validateNewPassword }]}
         >
           <PasswordInput autoComplete="new-password" checkStrength />
         </Form.Item>
@@ -80,8 +89,7 @@ function ChangePasswordDrawerContent() {
           dependencies={['newPassword']}
           rules={[
             { required: true, message: t('Please confirm the new password') },
-            // antd's validator with closure access to other field values —
-            // mirrors v1's `x-reactions` based cross-field comparison.
+            // antd's validator with closure access to other field values — mirrors v1's `x-reactions` based cross-field comparison.
             ({ getFieldValue }) => ({
               validator(_, value) {
                 if (!value || getFieldValue('newPassword') === value) {
@@ -100,14 +108,9 @@ function ChangePasswordDrawerContent() {
 }
 
 /**
- * "Change password" entry in the User Center dropdown. Section `profile`
- * with sort 100 puts it between `CurrentUserSummaryItemModel` (sort 0)
- * and `SignOutItemModel` (sort 1000) — same neighborhood as v1.
+ * "Change password" entry in the User Center dropdown. Section `profile` with sort 100 puts it between `CurrentUserSummaryItemModel` (sort 0) and `SignOutItemModel` (sort 1000) — same neighborhood as v1.
  *
- * `prepare()` reads `systemSettings.enableChangePassword`; when the
- * admin has explicitly disabled it, `ready = false` removes the entry
- * from the dropdown. Undefined / true both leave the entry visible
- * (matches v1: only an explicit `=== false` hides it).
+ * `prepare()` reads `systemSettings.enableChangePassword`; when the admin has explicitly disabled it, `ready = false` removes the entry from the dropdown. Undefined / true both leave the entry visible (matches v1: only an explicit `=== false` hides it).
  */
 export class ChangePasswordItemModel extends UserCenterActionItemModel {
   static itemId = 'change-password';

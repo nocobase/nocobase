@@ -6,7 +6,7 @@ keywords: "nb app,NocoBase CLI,démarrer,arrêter,redémarrer,logs,mise à nivea
 
 # nb app
 
-Gérer l'état d'exécution d'une application NocoBase. Pour un env npm/Git, les commandes d'application sont exécutées dans le répertoire des sources locales ; pour un env Docker, elles agissent sur le conteneur d'application enregistré.
+Gérer l'état d'exécution d'une application NocoBase. Pour un env npm/Git, les commandes d'application sont exécutées dans le répertoire des sources locales ; pour un env Docker, les conteneurs d'application sont gérés à partir de la configuration d'env enregistrée.
 
 ## Utilisation
 
@@ -18,12 +18,12 @@ nb app <command>
 
 | Commande | Description |
 | --- | --- |
-| [`nb app start`](./start.md) | Démarrer l'application ou le conteneur Docker |
-| [`nb app stop`](./stop.md) | Arrêter l'application ou le conteneur Docker |
+| [`nb app start`](./start.md) | Démarrer l'application ou recréer le conteneur Docker |
+| [`nb app stop`](./stop.md) | Arrêter l'application ou supprimer le conteneur Docker |
 | [`nb app restart`](./restart.md) | Arrêter puis redémarrer l'application |
 | [`nb app logs`](./logs.md) | Consulter les logs de l'application |
 | [`nb app down`](./down.md) | Arrêter et nettoyer les ressources d'exécution locales |
-| [`nb app upgrade`](./upgrade.md) | Mettre à jour les sources ou l'image et redémarrer l'application |
+| [`nb app upgrade`](./upgrade.md) | Arrêter l'application, remplacer les sources ou l'image, puis la redémarrer |
 
 ## Exemples
 
@@ -31,7 +31,7 @@ nb app <command>
 nb app start --env app1
 nb app restart --env app1
 nb app logs --env app1
-nb app upgrade --env app1 -s
+nb app upgrade --env app1 --skip-download
 nb app down --env app1 --all --force
 ```
 

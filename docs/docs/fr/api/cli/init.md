@@ -63,7 +63,7 @@ nb init --env app1 --resume
 | `--db-database` | string | Nom de la base de données |
 | `--db-user` | string | Utilisateur de la base de données |
 | `--db-password` | string | Mot de passe de la base de données |
-| `--fetch-source` | boolean | Télécharger les fichiers de l'application ou récupérer l'image Docker avant l'installation |
+| `--skip-download` | boolean | Ignorer le téléchargement des fichiers de l'application ou le pull de l'image Docker avant l'installation et réutiliser les ressources locales existantes |
 | `--source`, `-s` | string | Mode d'obtention de NocoBase : `docker`, `npm` ou `git` |
 | `--version`, `-v` | string | Version : version npm, tag d'image Docker ou ref Git |
 | `--replace`, `-r` | boolean | Remplacer le répertoire cible s'il existe déjà |
