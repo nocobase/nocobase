@@ -20,6 +20,7 @@ nb app upgrade [flags]
 | --- | --- | --- |
 | `--env`, `-e` | string | 要升级的 CLI env 名称，省略时使用当前 env |
 | `--yes`, `-y` | boolean | 当显式 `--env` 指向的 env 与当前 env 不一致时，跳过交互确认 |
+| `--force`, `-f` | boolean | 跳过升级确认。在非交互终端和 AI agent 会话中必需显式传入 |
 | `--skip-download`, `-s` | boolean | 跳过源码或镜像下载，直接重启当前已保存的本地源码或 Docker 镜像；同时跳过 `nb license plugins sync` |
 | `--version` | string | 覆盖本次 upgrade 的目标版本；升级成功后会把新版本写回 env 配置中的 `downloadVersion` |
 | `--verbose` | boolean | 显示底层更新和重启命令输出 |
@@ -28,7 +29,9 @@ nb app upgrade [flags]
 
 ```bash
 nb app upgrade
+nb app upgrade --force
 nb app upgrade --env local
+nb app upgrade --env local --force
 nb app upgrade --env local --skip-download
 nb app upgrade --env local --skip-download --version beta
 nb app upgrade --env local --version beta
@@ -39,6 +42,8 @@ nb app upgrade --env local-docker --skip-download
 ## 说明
 
 只有在你显式传入 `--env` 时，CLI 才会检查它是否与当前 env 一致。如果显式指定了不同的 env，交互终端会先确认；在非交互终端或 AI agent 场景下，需要由你自己显式追加 `--yes`，或者先执行 `nb env use <name>` 再重试。
+
+在真正开始升级前，交互终端还会再做一次升级确认，除非你显式传入 `--force`。在非交互终端和 AI agent 会话中，如果没有 `--force`，`nb app upgrade` 会直接拒绝执行，并输出一条可直接复制的重跑命令。如果同时还是跨 env 操作，则需要同时传入 `--yes` 和 `--force`。
 
 默认流程下，`nb app upgrade` 会依次执行：
 

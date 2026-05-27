@@ -20,6 +20,7 @@ nb app upgrade [flags]
 | --- | --- | --- |
 | `--env`, `-e` | string | アップグレードする CLI env 名。省略時は現在の env を使用します |
 | `--yes`, `-y` | boolean | 明示的に指定した `--env` が現在の env と異なる場合、対話確認をスキップします |
+| `--force`, `-f` | boolean | アップグレード確認をスキップします。非対話端末と AI エージェントのセッションでは明示的に必要です |
 | `--skip-download`, `-s` | boolean | 更新を事前にダウンロードせず、現在保存されているローカルソースコードまたは Docker イメージで再起動します。`nb license plugins sync` もスキップします |
 | `--version` | string | 今回のアップグレード対象バージョンを上書きします。成功すると新しいバージョンは env 設定の `downloadVersion` に書き戻されます |
 | `--verbose` | boolean | 内部の更新・再起動コマンド出力を表示します |
@@ -28,7 +29,9 @@ nb app upgrade [flags]
 
 ```bash
 nb app upgrade
+nb app upgrade --force
 nb app upgrade --env local
+nb app upgrade --env local --force
 nb app upgrade --env local --skip-download
 nb app upgrade --env local --skip-download --version beta
 nb app upgrade --env local --version beta
@@ -37,6 +40,8 @@ nb app upgrade --env local-docker --skip-download
 ```
 
 `--env` を明示的に指定し、その値が現在の env と異なる場合、CLI は最初に確認を求めます。非対話端末や AI エージェントのセッションでは、自分で `--yes` を追加するか、先に `nb env use <name>` を実行してから再試行してください。
+
+実際のアップグレード開始前には、`--force` を渡さない限り、対話端末で追加のアップグレード確認も表示されます。非対話端末と AI エージェントのセッションでは、`--force` がないと `nb app upgrade` は実行を拒否し、再実行用のコマンドを表示します。さらに cross-env 操作でもある場合は、`--yes` と `--force` の両方が必要です。
 
 デフォルトでは、`nb app upgrade` は次の手順で実行されます。
 

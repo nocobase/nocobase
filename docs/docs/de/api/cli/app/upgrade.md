@@ -20,6 +20,7 @@ nb app upgrade [flags]
 | --- | --- | --- |
 | `--env`, `-e` | string | Name der zu aktualisierenden CLI env; bei Auslassung wird die aktuelle env verwendet |
 | `--yes`, `-y` | boolean | Wenn ein explizit übergebenes `--env` auf eine andere env als die aktuelle env zeigt, die interaktive Bestätigung überspringen |
+| `--force`, `-f` | boolean | Die Upgrade-Bestätigung überspringen. In nicht interaktiven Terminals und AI-Agent-Sitzungen muss dieser Flag explizit gesetzt werden |
 | `--skip-download`, `-s` | boolean | Mit dem aktuell gespeicherten lokalen Quellcode oder Docker-Image neu starten, ohne vorher Updates herunterzuladen; überspringt auch `nb license plugins sync` |
 | `--version` | string | Überschreibt die Zielversion für dieses Upgrade; bei Erfolg wird die neue Version in `downloadVersion` der env-Konfiguration zurückgeschrieben |
 | `--verbose` | boolean | Ausgabe der zugrunde liegenden Aktualisierungs- und Neustartbefehle anzeigen |
@@ -28,7 +29,9 @@ nb app upgrade [flags]
 
 ```bash
 nb app upgrade
+nb app upgrade --force
 nb app upgrade --env local
+nb app upgrade --env local --force
 nb app upgrade --env local --skip-download
 nb app upgrade --env local --skip-download --version beta
 nb app upgrade --env local --version beta
@@ -37,6 +40,8 @@ nb app upgrade --env local-docker --skip-download
 ```
 
 Wenn Sie `--env` explizit übergeben und es sich von der aktuellen env unterscheidet, fragt die CLI zuerst nach einer Bestätigung. In nicht interaktiven Terminals oder AI-Agent-Sitzungen fügen Sie `--yes` selbst hinzu oder führen zuerst `nb env use <name>` aus und versuchen es dann erneut.
+
+Bevor das eigentliche Upgrade startet, fragt ein interaktives Terminal zusätzlich nach einer Upgrade-Bestätigung, sofern Sie nicht ausdrücklich `--force` übergeben. In nicht interaktiven Terminals und AI-Agent-Sitzungen verweigert `nb app upgrade` die Ausführung ohne `--force` und gibt einen direkt kopierbaren Befehl zum erneuten Ausführen aus. Wenn es sich gleichzeitig um eine cross-env-Operation handelt, werden sowohl `--yes` als auch `--force` benötigt.
 
 Standardmäßig führt `nb app upgrade` diese Schritte aus:
 

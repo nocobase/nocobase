@@ -20,6 +20,7 @@ nb app upgrade [flags]
 | --- | --- | --- |
 | `--env`, `-e` | string | Nome do env do CLI a ser atualizado; usa o env atual quando omitido |
 | `--yes`, `-y` | boolean | Quando `--env` é passado explicitamente e aponta para uma env diferente da env atual, pula a confirmação interativa |
+| `--force`, `-f` | boolean | Pula a confirmação do upgrade. Esse sinalizador precisa ser passado explicitamente em terminais não interativos e em sessões de agentes de IA |
 | `--skip-download`, `-s` | boolean | Reinicia usando o código-fonte local ou a imagem Docker atualmente salvos sem baixar atualizações antes; também ignora `nb license plugins sync` |
 | `--version` | string | Sobrescreve a versão de destino deste upgrade; quando tiver sucesso, a nova versão será gravada de volta em `downloadVersion` na configuração do env |
 | `--verbose` | boolean | Exibe a saída dos comandos subjacentes de atualização e reinicialização |
@@ -28,7 +29,9 @@ nb app upgrade [flags]
 
 ```bash
 nb app upgrade
+nb app upgrade --force
 nb app upgrade --env local
+nb app upgrade --env local --force
 nb app upgrade --env local --skip-download
 nb app upgrade --env local --skip-download --version beta
 nb app upgrade --env local --version beta
@@ -37,6 +40,8 @@ nb app upgrade --env local-docker --skip-download
 ```
 
 Se você passar `--env` explicitamente e ele for diferente da env atual, a CLI pedirá confirmação primeiro. Em terminais não interativos ou sessões de agentes de IA, adicione `--yes` manualmente ou execute primeiro `nb env use <name>` e tente novamente.
+
+Antes de o upgrade realmente começar, terminais interativos também pedirão uma confirmação adicional de upgrade, a menos que você passe `--force`. Em terminais não interativos e em sessões de agentes de IA, `nb app upgrade` se recusará a continuar sem `--force` e exibirá um comando de nova execução que pode ser copiado diretamente. Se a operação também for cross-env, você precisará de `--yes` e `--force`.
 
 Por padrão, `nb app upgrade` executa estas etapas:
 
