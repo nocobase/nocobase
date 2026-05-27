@@ -99,6 +99,13 @@ type ReactDefaultAlias = SourceRange & {
   name: string;
 };
 
+type AstCapabilityAlias = SourceRange & {
+  capability: string;
+  name: string;
+};
+
+const AST_DYNAMIC_MEMBER_ALIAS = '[*]';
+
 type InvalidReactRuntimeBinding = SourceRange & {
   binding: string;
   capability: string;
@@ -3175,6 +3182,30 @@ function collectAstIdentifierWritesFromAst(
     index: number;
     name: string;
   }> = [];
+  const addLoopHeaderWrites = (target: any, ancestors: any[], fallbackIndex: number) => {
+    const executionScope = getAstExecutionScopeRange(ancestors, source.length);
+    const alwaysRunsInExecutionScope = isAstAlwaysExecutedInCurrentExecutionScope(ancestors);
+    collectAstPatternBindingIdentifiers(target, (name, bindingNode) => {
+      writes.push({
+        alwaysRunsInExecutionScope,
+        executionScope,
+        name,
+        index: typeof bindingNode?.start === 'number' ? bindingNode.start : fallbackIndex,
+      });
+    });
+    collectAstPatternMemberExpressions(target, (memberNode) => {
+      const memberWrite = getAstMemberAliasLookup(memberNode);
+      if (!memberWrite) {
+        return;
+      }
+      writes.push({
+        alwaysRunsInExecutionScope,
+        executionScope,
+        name: memberWrite.aliasName,
+        index: memberWrite.index,
+      });
+    });
+  };
   walkAstAncestor(ast, {
     AssignmentExpression(node: any, ancestors: any[]) {
       if (!isAstDefiniteAssignmentOperator(node.operator)) {
@@ -3190,15 +3221,18 @@ function collectAstIdentifierWritesFromAst(
           index: typeof bindingNode?.start === 'number' ? bindingNode.start : node.start || 0,
         });
       });
-      const memberWrite = getAstMemberAliasLookup(node.left);
-      if (memberWrite) {
+      collectAstPatternMemberExpressions(node.left, (memberNode) => {
+        const memberWrite = getAstMemberAliasLookup(memberNode);
+        if (!memberWrite) {
+          return;
+        }
         writes.push({
           alwaysRunsInExecutionScope,
           executionScope,
           name: memberWrite.aliasName,
           index: memberWrite.index,
         });
-      }
+      });
     },
     VariableDeclarator(node: any, ancestors: any[]) {
       if (!node.init) {
@@ -3226,43 +3260,30 @@ function collectAstIdentifierWritesFromAst(
           index: typeof node.argument.start === 'number' ? node.argument.start : node.start || 0,
         });
       }
-      const memberWrite = getAstMemberAliasLookup(node.argument);
-      if (memberWrite) {
+      collectAstPatternMemberExpressions(node.argument, (memberNode) => {
+        const memberWrite = getAstMemberAliasLookup(memberNode);
+        if (!memberWrite) {
+          return;
+        }
         writes.push({
           alwaysRunsInExecutionScope,
           executionScope,
           name: memberWrite.aliasName,
           index: memberWrite.index,
         });
-      }
+      });
     },
     ForInStatement(node: any, ancestors: any[]) {
       if (!isAstDefinitelyNonEmptyForInSource(node.right) || node.left?.type === 'VariableDeclaration') {
         return;
       }
-      const executionScope = getAstExecutionScopeRange(ancestors, source.length);
-      collectAstPatternBindingIdentifiers(node.left, (name, bindingNode) => {
-        writes.push({
-          alwaysRunsInExecutionScope: isAstAlwaysExecutedInCurrentExecutionScope(ancestors),
-          executionScope,
-          name,
-          index: typeof bindingNode?.start === 'number' ? bindingNode.start : node.left?.start || node.start || 0,
-        });
-      });
+      addLoopHeaderWrites(node.left, ancestors, node.left?.start || node.start || 0);
     },
     ForOfStatement(node: any, ancestors: any[]) {
       if (!isAstDefinitelyNonEmptyForOfSource(node.right) || node.left?.type === 'VariableDeclaration') {
         return;
       }
-      const executionScope = getAstExecutionScopeRange(ancestors, source.length);
-      collectAstPatternBindingIdentifiers(node.left, (name, bindingNode) => {
-        writes.push({
-          alwaysRunsInExecutionScope: isAstAlwaysExecutedInCurrentExecutionScope(ancestors),
-          executionScope,
-          name,
-          index: typeof bindingNode?.start === 'number' ? bindingNode.start : node.left?.start || node.start || 0,
-        });
-      });
+      addLoopHeaderWrites(node.left, ancestors, node.left?.start || node.start || 0);
     },
   });
   return writes;
@@ -3288,6 +3309,126 @@ function isAstDefinitelyNonEmptyForOfSource(node: any) {
     return (unwrapped.elements || []).some(isAstDefinitelyNonEmptyArrayElement);
   }
   return false;
+}
+
+function getAstLoopPatternTarget(left: any) {
+  if (left?.type === 'VariableDeclaration') {
+    return left.declarations?.length === 1 ? left.declarations[0]?.id : undefined;
+  }
+  return left;
+}
+
+function isAstForOfLoopVariableDeclaratorWithSourceTargets<T extends AstCapabilityAlias>(
+  node: any,
+  ancestors: any[],
+  aliases: T[],
+  identifierBindings: AstIdentifierBinding[],
+) {
+  const declaration = ancestors[ancestors.length - 2];
+  const loop = ancestors[ancestors.length - 3];
+  return (
+    declaration?.type === 'VariableDeclaration' &&
+    loop?.type === 'ForOfStatement' &&
+    loop.left === declaration &&
+    declaration.declarations?.length === 1 &&
+    declaration.declarations[0] === node &&
+    hasAstForOfSourceTargets(loop.right, aliases, identifierBindings)
+  );
+}
+
+function hasAstForOfSourceTargets<T extends AstCapabilityAlias>(
+  sourceNode: any,
+  aliases: T[],
+  identifierBindings: AstIdentifierBinding[],
+) {
+  let hasSourceTarget = false;
+  collectAstForOfSourceTargets(sourceNode, aliases, identifierBindings, () => {
+    hasSourceTarget = true;
+  });
+  return hasSourceTarget;
+}
+
+function collectAstForOfSourceTargets<T extends AstCapabilityAlias>(
+  sourceNode: any,
+  aliases: T[],
+  identifierBindings: AstIdentifierBinding[],
+  visit: (sourceTarget: any) => void,
+) {
+  const seenTargets = new Set<string>();
+  const emitSourceTarget = (sourceTarget: any) => {
+    if (!sourceTarget) {
+      return;
+    }
+    const key = sourceTarget.aliasName
+      ? `${sourceTarget.aliasName}@${sourceTarget.index || 0}`
+      : sourceTarget.node
+        ? `${sourceTarget.node.start || 0}:${sourceTarget.node.end || 0}`
+        : `source:${sourceTarget.index || 0}`;
+    if (seenTargets.has(key)) {
+      return;
+    }
+    seenTargets.add(key);
+    visit(sourceTarget);
+  };
+  const collectSourceTargets = (node: any) => {
+    const unwrapped = unwrapAstChainExpression(node);
+    if (!unwrapped) {
+      return;
+    }
+    if (unwrapped.type === 'ConditionalExpression') {
+      collectSourceTargets(unwrapped.consequent);
+      collectSourceTargets(unwrapped.alternate);
+      return;
+    }
+    if (unwrapped.type === 'LogicalExpression') {
+      collectSourceTargets(unwrapped.left);
+      collectSourceTargets(unwrapped.right);
+      return;
+    }
+    if (unwrapped.type === 'SequenceExpression') {
+      const expressions = unwrapped.expressions || [];
+      collectSourceTargets(expressions[expressions.length - 1]);
+      return;
+    }
+    if (unwrapped.type === 'AssignmentExpression' && isAstCtxApiAliasAssignmentOperator(unwrapped.operator)) {
+      collectSourceTargets(unwrapped.right);
+      return;
+    }
+    if (unwrapped.type === 'ArrayExpression') {
+      for (const element of unwrapped.elements || []) {
+        if (!element) {
+          continue;
+        }
+        if (element.type === 'SpreadElement') {
+          collectSourceTargets(element.argument);
+          continue;
+        }
+        emitSourceTarget(createAstPatternSourceTarget(element));
+      }
+      return;
+    }
+    const sourceTarget = createAstPatternSourceTarget(unwrapped);
+    collectAstForOfSourceTargetElementMembers(sourceTarget, aliases, identifierBindings).forEach((member) => {
+      emitSourceTarget(getAstPatternMemberSourceTarget(sourceTarget, member));
+    });
+  };
+  collectSourceTargets(sourceNode);
+}
+
+function collectAstForOfSourceTargetElementMembers<T extends AstCapabilityAlias>(
+  sourceTarget: any,
+  aliases: T[],
+  identifierBindings: AstIdentifierBinding[],
+) {
+  const members = new Set<string>();
+  collectAstRestCarrierAliasCopies(sourceTarget, '__forof__', aliases, identifierBindings, (suffix) => {
+    const firstMember = suffix.split('.')[0];
+    const numericMember = Number(firstMember);
+    if (firstMember === AST_DYNAMIC_MEMBER_ALIAS || (Number.isInteger(numericMember) && numericMember >= 0)) {
+      members.add(firstMember);
+    }
+  });
+  return members;
 }
 
 function isAstDefinitelyNonEmptyArrayElement(element: any): boolean {
@@ -3521,13 +3662,35 @@ function collectReactNamespaceAliasesFromAst(
         });
       }
       if (node.operator === '=') {
-        collectReactNamespacePatternDefaultAliasesFromAst(node.left, ancestors, false);
+        collectReactNamespacePatternSourceAliasesFromAst(node.left, node.right, ancestors, false);
+        collectReactNamespacePatternDefaultAliasesFromAst(node.left, ancestors, false, undefined, node.right);
       }
     },
+    ForOfStatement(node: any, ancestors: any[]) {
+      const target = getAstLoopPatternTarget(node.left);
+      if (!target) {
+        return;
+      }
+      const isVar = node.left?.type === 'VariableDeclaration' && node.left.kind === 'var';
+      const activeAliases = getActiveAliases();
+      collectAstForOfSourceTargets(node.right, activeAliases, identifierBindings, (loopSourceTarget) => {
+        collectReactNamespacePatternSourceTargetAliasesFromAst(target, loopSourceTarget, ancestors, isVar);
+        collectReactNamespacePatternDefaultAliasesFromSourceTarget(
+          target,
+          ancestors,
+          isVar,
+          undefined,
+          loopSourceTarget,
+        );
+      });
+    },
     VariableDeclarator(node: any, ancestors: any[]) {
+      const activeAliases = getActiveAliases();
+      if (isAstForOfLoopVariableDeclaratorWithSourceTargets(node, ancestors, activeAliases, identifierBindings)) {
+        return;
+      }
       const declaration = findAstAncestor(ancestors, 'VariableDeclaration');
       const isVar = declaration?.kind === 'var';
-      const activeAliases = getActiveAliases();
       if (node.id?.type === 'Identifier') {
         const capability = getReactNamespaceCapabilityFromAst(
           node.init,
@@ -3548,6 +3711,7 @@ function collectReactNamespaceAliasesFromAst(
             addAlias(`${node.id.name}.${member}`, memberCapability, aliasNode || node, ancestors, isVar);
           },
         );
+        collectReactNamespacePatternSourceAliasesFromAst(node.id, node.init, ancestors, isVar);
         return;
       }
       if (node.id?.type === 'ObjectPattern' && isCtxRootFromAst(node.init, ctxRootAliases, identifierBindings)) {
@@ -3557,7 +3721,8 @@ function collectReactNamespaceAliasesFromAst(
           }
         });
       }
-      collectReactNamespacePatternDefaultAliasesFromAst(node.id, ancestors, isVar);
+      collectReactNamespacePatternSourceAliasesFromAst(node.id, node.init, ancestors, isVar);
+      collectReactNamespacePatternDefaultAliasesFromAst(node.id, ancestors, isVar, undefined, node.init);
     },
     FunctionDeclaration(node: any, ancestors: any[]) {
       collectReactNamespaceFunctionParamAliasesFromAst(node, ancestors);
@@ -3579,10 +3744,12 @@ function collectReactNamespaceAliasesFromAst(
     };
     const activeAliases = getActiveAliases();
     for (const param of node.params || []) {
-      collectReactNamespacePatternDefaultAliasesFromAst(param, ancestors, false, scope);
       if (param?.type !== 'AssignmentPattern') {
+        collectReactNamespacePatternDefaultAliasesFromAst(param, ancestors, false, scope);
         continue;
       }
+      collectReactNamespacePatternDefaultAliasesFromAst(param.left, ancestors, false, scope, param.right);
+      collectReactNamespacePatternSourceAliasesFromAst(param.left, param.right, ancestors, false, scope);
       if (param.left?.type === 'Identifier') {
         const capability = getReactNamespaceCapabilityFromAst(
           param.right,
@@ -3605,57 +3772,225 @@ function collectReactNamespaceAliasesFromAst(
     }
   }
 
+  function collectReactNamespacePatternSourceAliasesFromAst(
+    pattern: any,
+    sourceNode: any,
+    ancestors: any[],
+    isVar = false,
+    scopeOverride?: SourceRange,
+  ) {
+    collectReactNamespacePatternSourceTargetAliasesFromAst(
+      pattern,
+      createAstPatternSourceTarget(sourceNode),
+      ancestors,
+      isVar,
+      scopeOverride,
+    );
+  }
+
+  function collectReactNamespacePatternSourceTargetAliasesFromAst(
+    pattern: any,
+    sourceTarget: any,
+    ancestors: any[],
+    isVar = false,
+    scopeOverride?: SourceRange,
+  ) {
+    const activeAliases = getActiveAliases();
+    collectAstPatternSourceTargetsRec(pattern, sourceTarget, (target, patternSourceTarget) => {
+      const capability = getReactNamespaceCapabilityFromAstPatternSource(
+        patternSourceTarget,
+        identifierBindings,
+        activeAliases,
+        ctxRootAliases,
+      );
+      if (!capability) {
+        return;
+      }
+      addReactNamespaceAliasTarget(target, capability, ancestors, isVar, scopeOverride);
+    });
+    const collectCarrierTarget = (carrierTarget: {
+      sourceAlias?: ReactNamespaceAlias;
+      sourceTarget?: any;
+      target: any;
+      targetAliasName: string;
+    }) => {
+      if (carrierTarget.sourceAlias) {
+        addReactNamespaceAliasByName(
+          carrierTarget.targetAliasName,
+          carrierTarget.sourceAlias.capability,
+          carrierTarget.target,
+          ancestors,
+          isVar,
+          scopeOverride,
+        );
+        return;
+      }
+      const capability = getReactNamespaceCapabilityFromAstPatternSource(
+        carrierTarget.sourceTarget,
+        identifierBindings,
+        activeAliases,
+        ctxRootAliases,
+      );
+      if (!capability) {
+        return;
+      }
+      addReactNamespaceAliasByName(
+        carrierTarget.targetAliasName,
+        capability,
+        carrierTarget.target,
+        ancestors,
+        isVar,
+        scopeOverride,
+      );
+    };
+    collectAstPatternCarrierSourceTargetsFromSourceTarget(
+      pattern,
+      sourceTarget,
+      activeAliases,
+      identifierBindings,
+      collectCarrierTarget,
+    );
+    collectAstPatternRestCarrierSourceTargetsRec(
+      pattern,
+      sourceTarget,
+      activeAliases,
+      identifierBindings,
+      collectCarrierTarget,
+    );
+  }
+
   function collectReactNamespacePatternDefaultAliasesFromAst(
     pattern: any,
     ancestors: any[],
     isVar = false,
     scopeOverride?: SourceRange,
+    sourceNode?: any,
   ) {
-    collectAstPatternDefaultValueAliases(pattern, (alias, valueNode, aliasNode, defaultPattern) => {
-      const activeAliases = getActiveAliases();
-      const capability = getReactNamespaceCapabilityFromAst(
-        valueNode,
-        identifierBindings,
-        activeAliases,
-        ctxRootAliases,
-      );
-      if (capability && defaultPattern?.type === 'Identifier') {
-        addAlias(alias, capability, aliasNode || defaultPattern, ancestors, isVar, scopeOverride);
-      }
-      if (defaultPattern?.type === 'Identifier') {
-        collectReactNamespaceCarrierAliasesFromAst(
-          alias,
+    collectReactNamespacePatternDefaultAliasesFromSourceTarget(
+      pattern,
+      ancestors,
+      isVar,
+      scopeOverride,
+      createMaybeAstPatternSourceTarget(sourceNode),
+    );
+  }
+
+  function collectReactNamespacePatternDefaultAliasesFromSourceTarget(
+    pattern: any,
+    ancestors: any[],
+    isVar = false,
+    scopeOverride?: SourceRange,
+    sourceTarget?: any,
+  ) {
+    collectAstPatternDefaultValueAliasesWithSource(
+      pattern,
+      sourceTarget,
+      (alias, valueNode, aliasNode, defaultPattern, sourceTarget) => {
+        if (
+          isAstPatternDefaultValueSuppressedByReactNamespace(sourceTarget, identifierBindings, aliases, ctxRootAliases)
+        ) {
+          return;
+        }
+        const activeAliases = getActiveAliases();
+        const capability = getReactNamespaceCapabilityFromAst(
           valueNode,
           identifierBindings,
           activeAliases,
           ctxRootAliases,
-          (member, memberCapability, memberAliasNode) => {
-            addAlias(
-              `${alias}.${member}`,
-              memberCapability,
-              memberAliasNode || aliasNode || defaultPattern,
-              ancestors,
-              isVar,
-              scopeOverride,
-            );
-          },
         );
+        if (capability && defaultPattern?.type === 'Identifier') {
+          addAlias(alias, capability, aliasNode || defaultPattern, ancestors, isVar, scopeOverride);
+        }
+        if (defaultPattern?.type === 'Identifier') {
+          collectReactNamespaceCarrierAliasesFromAst(
+            alias,
+            valueNode,
+            identifierBindings,
+            activeAliases,
+            ctxRootAliases,
+            (member, memberCapability, memberAliasNode) => {
+              addAlias(
+                `${alias}.${member}`,
+                memberCapability,
+                memberAliasNode || aliasNode || defaultPattern,
+                ancestors,
+                isVar,
+                scopeOverride,
+              );
+            },
+          );
+        }
+        if (
+          defaultPattern?.type === 'ObjectPattern' &&
+          isCtxRootFromAst(valueNode, ctxRootAliases, identifierBindings)
+        ) {
+          collectAstObjectPatternPathAliases(defaultPattern, (pathAlias, members, pathAliasNode) => {
+            if (members.length === 1 && members[0] === 'React') {
+              addAlias(
+                pathAlias,
+                'ctx.React',
+                pathAliasNode || aliasNode || defaultPattern,
+                ancestors,
+                isVar,
+                scopeOverride,
+              );
+            }
+          });
+        }
+      },
+    );
+  }
+
+  function addReactNamespaceAliasTarget(
+    target: any,
+    capability: string,
+    ancestors: any[],
+    isVar = false,
+    scopeOverride?: SourceRange,
+  ) {
+    const unwrapped = unwrapAstChainExpression(target);
+    if (unwrapped?.type === 'Identifier') {
+      addAlias(
+        unwrapped.name,
+        capability,
+        unwrapped,
+        ancestors,
+        isVar,
+        scopeOverride || getAstAssignmentTargetScope(unwrapped, ancestors, source.length, identifierBindings),
+      );
+      return;
+    }
+    if (unwrapped?.type === 'MemberExpression') {
+      const memberAlias = getAstMemberAliasLookup(unwrapped);
+      if (!memberAlias) {
+        return;
       }
-      if (defaultPattern?.type === 'ObjectPattern' && isCtxRootFromAst(valueNode, ctxRootAliases, identifierBindings)) {
-        collectAstObjectPatternPathAliases(defaultPattern, (pathAlias, members, pathAliasNode) => {
-          if (members.length === 1 && members[0] === 'React') {
-            addAlias(
-              pathAlias,
-              'ctx.React',
-              pathAliasNode || aliasNode || defaultPattern,
-              ancestors,
-              isVar,
-              scopeOverride,
-            );
-          }
-        });
-      }
-    });
+      addAlias(
+        memberAlias.aliasName,
+        capability,
+        unwrapped,
+        ancestors,
+        false,
+        scopeOverride || getAstMemberAssignmentTargetScope(unwrapped, ancestors, source.length, identifierBindings),
+      );
+    }
+  }
+
+  function addReactNamespaceAliasByName(
+    name: string,
+    capability: string,
+    target: any,
+    ancestors: any[],
+    isVar = false,
+    scopeOverride?: SourceRange,
+  ) {
+    const unwrapped = unwrapAstChainExpression(target);
+    const scope =
+      scopeOverride ||
+      (unwrapped?.type === 'MemberExpression'
+        ? getAstMemberAssignmentTargetScope(unwrapped, ancestors, source.length, identifierBindings)
+        : getAstAssignmentTargetScope(unwrapped, ancestors, source.length, identifierBindings));
+    addAlias(name, capability, unwrapped || target, ancestors, isVar, scope);
   }
 }
 
@@ -3751,7 +4086,6 @@ function collectReactDefaultAliasesFromAst(
             getAstMemberAssignmentTargetScope(node.left, ancestors, source.length, identifierBindings),
           );
         }
-        return;
       }
       if (
         node.left?.type === 'ObjectPattern' &&
@@ -3791,10 +4125,29 @@ function collectReactDefaultAliasesFromAst(
         });
       }
       if (node.operator === '=') {
-        collectReactDefaultPatternDefaultAliasesFromAst(node.left, ancestors, false);
+        collectReactDefaultPatternSourceAliasesFromAst(node.left, node.right, ancestors, false);
+        collectReactDefaultPatternDefaultAliasesFromAst(node.left, ancestors, false, undefined, node.right);
       }
     },
+    ForOfStatement(node: any, ancestors: any[]) {
+      const target = getAstLoopPatternTarget(node.left);
+      if (!target) {
+        return;
+      }
+      const isVar = node.left?.type === 'VariableDeclaration' && node.left.kind === 'var';
+      const activeAliases = getActiveAliases();
+      const sourceTargetAliases = [...namespaceAliases, ...activeAliases];
+      collectAstForOfSourceTargets(node.right, sourceTargetAliases, identifierBindings, (loopSourceTarget) => {
+        collectReactDefaultPatternSourceTargetAliasesFromAst(target, loopSourceTarget, ancestors, isVar);
+        collectReactDefaultPatternDefaultAliasesFromSourceTarget(target, ancestors, isVar, undefined, loopSourceTarget);
+      });
+    },
     VariableDeclarator(node: any, ancestors: any[]) {
+      const activeAliases = getActiveAliases();
+      const sourceTargetAliases = [...namespaceAliases, ...activeAliases];
+      if (isAstForOfLoopVariableDeclaratorWithSourceTargets(node, ancestors, sourceTargetAliases, identifierBindings)) {
+        return;
+      }
       const declaration = findAstAncestor(ancestors, 'VariableDeclaration');
       const isVar = declaration?.kind === 'var';
       if (node.id?.type === 'Identifier') {
@@ -3819,6 +4172,7 @@ function collectReactDefaultAliasesFromAst(
             addAlias(`${node.id.name}.${member}`, memberCapability, aliasNode || node, ancestors, isVar);
           },
         );
+        collectReactDefaultPatternSourceAliasesFromAst(node.id, node.init, ancestors, isVar);
         return;
       }
       if (
@@ -3836,6 +4190,7 @@ function collectReactDefaultAliasesFromAst(
             addAlias(alias, `${namespace}.default`, aliasNode || node, ancestors, isVar);
           }
         });
+        collectReactDefaultPatternSourceAliasesFromAst(node.id, node.init, ancestors, isVar);
         return;
       }
       if (node.id?.type === 'ObjectPattern' && isCtxRootFromAst(node.init, ctxRootAliases, identifierBindings)) {
@@ -3845,7 +4200,8 @@ function collectReactDefaultAliasesFromAst(
           }
         });
       }
-      collectReactDefaultPatternDefaultAliasesFromAst(node.id, ancestors, isVar);
+      collectReactDefaultPatternSourceAliasesFromAst(node.id, node.init, ancestors, isVar);
+      collectReactDefaultPatternDefaultAliasesFromAst(node.id, ancestors, isVar, undefined, node.init);
     },
     FunctionDeclaration(node: any, ancestors: any[]) {
       collectReactDefaultFunctionParamAliasesFromAst(node, ancestors);
@@ -3867,10 +4223,12 @@ function collectReactDefaultAliasesFromAst(
     };
     const activeAliases = getActiveAliases();
     for (const param of node.params || []) {
-      collectReactDefaultPatternDefaultAliasesFromAst(param, ancestors, false, scope);
       if (param?.type !== 'AssignmentPattern') {
+        collectReactDefaultPatternDefaultAliasesFromAst(param, ancestors, false, scope);
         continue;
       }
+      collectReactDefaultPatternDefaultAliasesFromAst(param.left, ancestors, false, scope, param.right);
+      collectReactDefaultPatternSourceAliasesFromAst(param.left, param.right, ancestors, false, scope);
       if (param.left?.type === 'Identifier') {
         const capability = getReactDefaultNamespaceCapabilityFromAst(
           param.right,
@@ -3909,82 +4267,254 @@ function collectReactDefaultAliasesFromAst(
     }
   }
 
-  function collectReactDefaultPatternDefaultAliasesFromAst(
+  function collectReactDefaultPatternSourceAliasesFromAst(
     pattern: any,
+    sourceNode: any,
     ancestors: any[],
     isVar = false,
     scopeOverride?: SourceRange,
   ) {
-    collectAstPatternDefaultValueAliases(pattern, (alias, valueNode, aliasNode, defaultPattern) => {
-      const activeAliases = getActiveAliases();
-      const capability = getReactDefaultNamespaceCapabilityFromAst(
-        valueNode,
+    collectReactDefaultPatternSourceTargetAliasesFromAst(
+      pattern,
+      createAstPatternSourceTarget(sourceNode),
+      ancestors,
+      isVar,
+      scopeOverride,
+    );
+  }
+
+  function collectReactDefaultPatternSourceTargetAliasesFromAst(
+    pattern: any,
+    sourceTarget: any,
+    ancestors: any[],
+    isVar = false,
+    scopeOverride?: SourceRange,
+  ) {
+    const activeAliases = getActiveAliases();
+    collectAstPatternSourceTargetsRec(pattern, sourceTarget, (target, patternSourceTarget) => {
+      const capability = getReactDefaultNamespaceCapabilityFromAstPatternSource(
+        patternSourceTarget,
         identifierBindings,
         namespaceAliases,
         ctxRootAliases,
         activeAliases,
       );
-      if (capability && defaultPattern?.type === 'Identifier') {
-        addAlias(alias, capability, aliasNode || defaultPattern, ancestors, isVar, scopeOverride);
+      if (!capability) {
+        return;
       }
-      if (defaultPattern?.type === 'Identifier') {
-        collectReactDefaultCarrierAliasesFromAst(
-          alias,
+      addReactDefaultAliasTarget(target, capability, ancestors, isVar, scopeOverride);
+    });
+    const collectCarrierTarget = (carrierTarget: {
+      sourceAlias?: ReactDefaultAlias;
+      sourceTarget?: any;
+      target: any;
+      targetAliasName: string;
+    }) => {
+      if (carrierTarget.sourceAlias) {
+        addReactDefaultAliasByName(
+          carrierTarget.targetAliasName,
+          carrierTarget.sourceAlias.capability,
+          carrierTarget.target,
+          ancestors,
+          isVar,
+          scopeOverride,
+        );
+        return;
+      }
+      const capability = getReactDefaultNamespaceCapabilityFromAstPatternSource(
+        carrierTarget.sourceTarget,
+        identifierBindings,
+        namespaceAliases,
+        ctxRootAliases,
+        activeAliases,
+      );
+      if (!capability) {
+        return;
+      }
+      addReactDefaultAliasByName(
+        carrierTarget.targetAliasName,
+        capability,
+        carrierTarget.target,
+        ancestors,
+        isVar,
+        scopeOverride,
+      );
+    };
+    collectAstPatternCarrierSourceTargetsFromSourceTarget(
+      pattern,
+      sourceTarget,
+      activeAliases,
+      identifierBindings,
+      collectCarrierTarget,
+    );
+    collectAstPatternRestCarrierSourceTargetsRec(
+      pattern,
+      sourceTarget,
+      activeAliases,
+      identifierBindings,
+      collectCarrierTarget,
+    );
+  }
+
+  function collectReactDefaultPatternDefaultAliasesFromAst(
+    pattern: any,
+    ancestors: any[],
+    isVar = false,
+    scopeOverride?: SourceRange,
+    sourceNode?: any,
+  ) {
+    collectReactDefaultPatternDefaultAliasesFromSourceTarget(
+      pattern,
+      ancestors,
+      isVar,
+      scopeOverride,
+      createMaybeAstPatternSourceTarget(sourceNode),
+    );
+  }
+
+  function collectReactDefaultPatternDefaultAliasesFromSourceTarget(
+    pattern: any,
+    ancestors: any[],
+    isVar = false,
+    scopeOverride?: SourceRange,
+    sourceTarget?: any,
+  ) {
+    collectAstPatternDefaultValueAliasesWithSource(
+      pattern,
+      sourceTarget,
+      (alias, valueNode, aliasNode, defaultPattern, sourceTarget) => {
+        if (
+          isAstPatternDefaultValueSuppressedByReactNamespace(
+            sourceTarget,
+            identifierBindings,
+            namespaceAliases,
+            ctxRootAliases,
+          )
+        ) {
+          return;
+        }
+        const activeAliases = getActiveAliases();
+        const capability = getReactDefaultNamespaceCapabilityFromAst(
           valueNode,
           identifierBindings,
           namespaceAliases,
           ctxRootAliases,
           activeAliases,
-          (member, memberCapability, memberAliasNode) => {
-            addAlias(
-              `${alias}.${member}`,
-              memberCapability,
-              memberAliasNode || aliasNode || defaultPattern,
-              ancestors,
-              isVar,
-              scopeOverride,
-            );
-          },
         );
-      }
-      if (defaultPattern?.type !== 'ObjectPattern') {
+        if (capability && defaultPattern?.type === 'Identifier') {
+          addAlias(alias, capability, aliasNode || defaultPattern, ancestors, isVar, scopeOverride);
+        }
+        if (defaultPattern?.type === 'Identifier') {
+          collectReactDefaultCarrierAliasesFromAst(
+            alias,
+            valueNode,
+            identifierBindings,
+            namespaceAliases,
+            ctxRootAliases,
+            activeAliases,
+            (member, memberCapability, memberAliasNode) => {
+              addAlias(
+                `${alias}.${member}`,
+                memberCapability,
+                memberAliasNode || aliasNode || defaultPattern,
+                ancestors,
+                isVar,
+                scopeOverride,
+              );
+            },
+          );
+        }
+        if (defaultPattern?.type !== 'ObjectPattern') {
+          return;
+        }
+        const namespace = getReactNamespaceCapabilityFromAst(
+          valueNode,
+          identifierBindings,
+          namespaceAliases,
+          ctxRootAliases,
+        );
+        if (namespace) {
+          collectAstObjectPatternPathAliases(defaultPattern, (pathAlias, members, pathAliasNode) => {
+            if (members.length === 1 && members[0] === 'default') {
+              addAlias(
+                pathAlias,
+                `${namespace}.default`,
+                pathAliasNode || aliasNode || defaultPattern,
+                ancestors,
+                isVar,
+                scopeOverride,
+              );
+            }
+          });
+        }
+        if (isCtxRootFromAst(valueNode, ctxRootAliases, identifierBindings)) {
+          collectAstObjectPatternPathAliases(defaultPattern, (pathAlias, members, pathAliasNode) => {
+            if (members.length === 2 && members[0] === 'React' && members[1] === 'default') {
+              addAlias(
+                pathAlias,
+                'ctx.React.default',
+                pathAliasNode || aliasNode || defaultPattern,
+                ancestors,
+                isVar,
+                scopeOverride,
+              );
+            }
+          });
+        }
+      },
+    );
+  }
+
+  function addReactDefaultAliasTarget(
+    target: any,
+    capability: string,
+    ancestors: any[],
+    isVar = false,
+    scopeOverride?: SourceRange,
+  ) {
+    const unwrapped = unwrapAstChainExpression(target);
+    if (unwrapped?.type === 'Identifier') {
+      addAlias(
+        unwrapped.name,
+        capability,
+        unwrapped,
+        ancestors,
+        isVar,
+        scopeOverride || getAstAssignmentTargetScope(unwrapped, ancestors, source.length, identifierBindings),
+      );
+      return;
+    }
+    if (unwrapped?.type === 'MemberExpression') {
+      const memberAlias = getAstMemberAliasLookup(unwrapped);
+      if (!memberAlias) {
         return;
       }
-      const namespace = getReactNamespaceCapabilityFromAst(
-        valueNode,
-        identifierBindings,
-        namespaceAliases,
-        ctxRootAliases,
+      addAlias(
+        memberAlias.aliasName,
+        capability,
+        unwrapped,
+        ancestors,
+        false,
+        scopeOverride || getAstMemberAssignmentTargetScope(unwrapped, ancestors, source.length, identifierBindings),
       );
-      if (namespace) {
-        collectAstObjectPatternPathAliases(defaultPattern, (pathAlias, members, pathAliasNode) => {
-          if (members.length === 1 && members[0] === 'default') {
-            addAlias(
-              pathAlias,
-              `${namespace}.default`,
-              pathAliasNode || aliasNode || defaultPattern,
-              ancestors,
-              isVar,
-              scopeOverride,
-            );
-          }
-        });
-      }
-      if (isCtxRootFromAst(valueNode, ctxRootAliases, identifierBindings)) {
-        collectAstObjectPatternPathAliases(defaultPattern, (pathAlias, members, pathAliasNode) => {
-          if (members.length === 2 && members[0] === 'React' && members[1] === 'default') {
-            addAlias(
-              pathAlias,
-              'ctx.React.default',
-              pathAliasNode || aliasNode || defaultPattern,
-              ancestors,
-              isVar,
-              scopeOverride,
-            );
-          }
-        });
-      }
-    });
+    }
+  }
+
+  function addReactDefaultAliasByName(
+    name: string,
+    capability: string,
+    target: any,
+    ancestors: any[],
+    isVar = false,
+    scopeOverride?: SourceRange,
+  ) {
+    const unwrapped = unwrapAstChainExpression(target);
+    const scope =
+      scopeOverride ||
+      (unwrapped?.type === 'MemberExpression'
+        ? getAstMemberAssignmentTargetScope(unwrapped, ancestors, source.length, identifierBindings)
+        : getAstAssignmentTargetScope(unwrapped, ancestors, source.length, identifierBindings));
+    addAlias(name, capability, unwrapped || target, ancestors, isVar, scope);
   }
 }
 
@@ -4017,13 +4547,7 @@ function collectAstInvalidReactRuntimeBindingsFromAst(
         return;
       }
       if (node.left?.type === 'Identifier' && node.left.name === 'React') {
-        const capability = getReactDefaultNamespaceCapabilityFromAst(
-          node.right,
-          identifierBindings,
-          namespaceAliases,
-          ctxRootAliases,
-          defaultAliases,
-        );
+        const capability = getInvalidReactDefaultCapabilityFromSource(node.right);
         if (capability) {
           addEntry(node.left.name, capability, node.left, ancestors);
         }
@@ -4053,18 +4577,28 @@ function collectAstInvalidReactRuntimeBindingsFromAst(
         });
       }
       if (node.operator === '=') {
-        collectInvalidReactPatternDefaultBindingsFromAst(node.left, ancestors);
+        collectInvalidReactPatternSourceBindingsFromAst(node.left, node.right, ancestors);
+        collectInvalidReactPatternDefaultBindingsFromAst(node.left, ancestors, node.right);
       }
     },
+    ForOfStatement(node: any, ancestors: any[]) {
+      const target = getAstLoopPatternTarget(node.left);
+      if (!target) {
+        return;
+      }
+      const sourceTargetAliases = [...namespaceAliases, ...defaultAliases];
+      collectAstForOfSourceTargets(node.right, sourceTargetAliases, identifierBindings, (loopSourceTarget) => {
+        collectInvalidReactPatternSourceTargetBindingsFromAst(target, loopSourceTarget, ancestors);
+        collectInvalidReactPatternDefaultBindingsFromSourceTarget(target, ancestors, loopSourceTarget);
+      });
+    },
     VariableDeclarator(node: any, ancestors: any[]) {
+      const sourceTargetAliases = [...namespaceAliases, ...defaultAliases];
+      if (isAstForOfLoopVariableDeclaratorWithSourceTargets(node, ancestors, sourceTargetAliases, identifierBindings)) {
+        return;
+      }
       if (node.id?.type === 'Identifier' && node.id.name === 'React') {
-        const capability = getReactDefaultNamespaceCapabilityFromAst(
-          node.init,
-          identifierBindings,
-          namespaceAliases,
-          ctxRootAliases,
-          defaultAliases,
-        );
+        const capability = getInvalidReactDefaultCapabilityFromSource(node.init);
         if (capability) {
           addEntry(node.id.name, capability, node.id, ancestors);
         }
@@ -4085,6 +4619,7 @@ function collectAstInvalidReactRuntimeBindingsFromAst(
             addEntry(alias, `${namespace}.default`, aliasNode || node, ancestors);
           }
         });
+        collectInvalidReactPatternSourceBindingsFromAst(node.id, node.init, ancestors);
         return;
       }
       if (node.id?.type === 'ObjectPattern' && isCtxRootFromAst(node.init, ctxRootAliases, identifierBindings)) {
@@ -4094,7 +4629,8 @@ function collectAstInvalidReactRuntimeBindingsFromAst(
           }
         });
       }
-      collectInvalidReactPatternDefaultBindingsFromAst(node.id, ancestors);
+      collectInvalidReactPatternSourceBindingsFromAst(node.id, node.init, ancestors);
+      collectInvalidReactPatternDefaultBindingsFromAst(node.id, ancestors, node.init);
     },
     FunctionDeclaration(node: any, ancestors: any[]) {
       collectInvalidReactFunctionParamBindingsFromAst(node, ancestors);
@@ -4111,18 +4647,14 @@ function collectAstInvalidReactRuntimeBindingsFromAst(
 
   function collectInvalidReactFunctionParamBindingsFromAst(node: any, ancestors: any[]) {
     for (const param of node.params || []) {
-      collectInvalidReactPatternDefaultBindingsFromAst(param, ancestors);
       if (param?.type !== 'AssignmentPattern') {
+        collectInvalidReactPatternDefaultBindingsFromAst(param, ancestors);
         continue;
       }
+      collectInvalidReactPatternDefaultBindingsFromAst(param.left, ancestors, param.right);
+      collectInvalidReactPatternSourceBindingsFromAst(param.left, param.right, ancestors);
       if (param.left?.type === 'Identifier' && param.left.name === 'React') {
-        const capability = getReactDefaultNamespaceCapabilityFromAst(
-          param.right,
-          identifierBindings,
-          namespaceAliases,
-          ctxRootAliases,
-          defaultAliases,
-        );
+        const capability = getInvalidReactDefaultCapabilityFromSource(param.right);
         if (capability) {
           addEntry(param.left.name, capability, param.left, ancestors);
         }
@@ -4154,68 +4686,160 @@ function collectAstInvalidReactRuntimeBindingsFromAst(
     }
   }
 
-  function collectInvalidReactPatternDefaultBindingsFromAst(pattern: any, ancestors: any[]) {
-    collectAstPatternDefaultValueAliases(pattern, (alias, valueNode, aliasNode, defaultPattern) => {
-      const capability = getReactDefaultNamespaceCapabilityFromAst(
-        valueNode,
+  function getInvalidReactDefaultCapabilityFromSource(sourceNode: any) {
+    if (!sourceNode) {
+      return '';
+    }
+    return getReactDefaultNamespaceCapabilityFromAstPatternSource(
+      createAstPatternSourceTarget(sourceNode),
+      identifierBindings,
+      namespaceAliases,
+      ctxRootAliases,
+      defaultAliases,
+    );
+  }
+
+  function collectInvalidReactPatternSourceBindingsFromAst(pattern: any, sourceNode: any, ancestors: any[]) {
+    collectInvalidReactPatternSourceTargetBindingsFromAst(pattern, createAstPatternSourceTarget(sourceNode), ancestors);
+  }
+
+  function collectInvalidReactPatternSourceTargetBindingsFromAst(pattern: any, sourceTarget: any, ancestors: any[]) {
+    collectAstPatternSourceTargetsRec(pattern, sourceTarget, (target, patternSourceTarget) => {
+      const unwrapped = unwrapAstChainExpression(target);
+      if (unwrapped?.type !== 'Identifier' || unwrapped.name !== 'React') {
+        return;
+      }
+      const capability = getReactDefaultNamespaceCapabilityFromAstPatternSource(
+        patternSourceTarget,
         identifierBindings,
         namespaceAliases,
         ctxRootAliases,
         defaultAliases,
       );
-      if (capability && alias === 'React' && defaultPattern?.type === 'Identifier') {
-        addEntry(alias, capability, aliasNode || defaultPattern, ancestors);
-      }
-      if (defaultPattern?.type !== 'ObjectPattern') {
-        return;
-      }
-      const namespace = getReactNamespaceCapabilityFromAst(
-        valueNode,
-        identifierBindings,
-        namespaceAliases,
-        ctxRootAliases,
-      );
-      if (namespace) {
-        collectAstObjectPatternPathAliases(defaultPattern, (pathAlias, members, pathAliasNode) => {
-          if (members.length === 1 && members[0] === 'default' && pathAlias === 'React') {
-            addEntry(pathAlias, `${namespace}.default`, pathAliasNode || aliasNode || defaultPattern, ancestors);
-          }
-        });
-      }
-      if (isCtxRootFromAst(valueNode, ctxRootAliases, identifierBindings)) {
-        collectAstObjectPatternPathAliases(defaultPattern, (pathAlias, members, pathAliasNode) => {
-          if (members.length === 2 && members[0] === 'React' && members[1] === 'default' && pathAlias === 'React') {
-            addEntry(pathAlias, 'ctx.React.default', pathAliasNode || aliasNode || defaultPattern, ancestors);
-          }
-        });
+      if (capability) {
+        addEntry(unwrapped.name, capability, unwrapped, ancestors);
       }
     });
+  }
+
+  function collectInvalidReactPatternDefaultBindingsFromAst(pattern: any, ancestors: any[], sourceNode?: any) {
+    collectInvalidReactPatternDefaultBindingsFromSourceTarget(
+      pattern,
+      ancestors,
+      createMaybeAstPatternSourceTarget(sourceNode),
+    );
+  }
+
+  function collectInvalidReactPatternDefaultBindingsFromSourceTarget(
+    pattern: any,
+    ancestors: any[],
+    sourceTarget?: any,
+  ) {
+    collectAstPatternDefaultValueAliasesWithSource(
+      pattern,
+      sourceTarget,
+      (alias, valueNode, aliasNode, defaultPattern, sourceTarget) => {
+        if (
+          isAstPatternDefaultValueSuppressedByReactNamespace(
+            sourceTarget,
+            identifierBindings,
+            namespaceAliases,
+            ctxRootAliases,
+          )
+        ) {
+          return;
+        }
+        const capability = getReactDefaultNamespaceCapabilityFromAst(
+          valueNode,
+          identifierBindings,
+          namespaceAliases,
+          ctxRootAliases,
+          defaultAliases,
+        );
+        if (capability && alias === 'React' && defaultPattern?.type === 'Identifier') {
+          addEntry(alias, capability, aliasNode || defaultPattern, ancestors);
+        }
+        if (defaultPattern?.type !== 'ObjectPattern') {
+          return;
+        }
+        const namespace = getReactNamespaceCapabilityFromAst(
+          valueNode,
+          identifierBindings,
+          namespaceAliases,
+          ctxRootAliases,
+        );
+        if (namespace) {
+          collectAstObjectPatternPathAliases(defaultPattern, (pathAlias, members, pathAliasNode) => {
+            if (members.length === 1 && members[0] === 'default' && pathAlias === 'React') {
+              addEntry(pathAlias, `${namespace}.default`, pathAliasNode || aliasNode || defaultPattern, ancestors);
+            }
+          });
+        }
+        if (isCtxRootFromAst(valueNode, ctxRootAliases, identifierBindings)) {
+          collectAstObjectPatternPathAliases(defaultPattern, (pathAlias, members, pathAliasNode) => {
+            if (members.length === 2 && members[0] === 'React' && members[1] === 'default' && pathAlias === 'React') {
+              addEntry(pathAlias, 'ctx.React.default', pathAliasNode || aliasNode || defaultPattern, ancestors);
+            }
+          });
+        }
+      },
+    );
   }
 }
 
 function collectReactNamespaceCarrierAliasesFromAst(
-  _containerName: string,
+  containerName: string,
   sourceNode: any,
   identifierBindings: AstIdentifierBinding[],
   namespaceAliases: ReactNamespaceAlias[],
   ctxRootAliases: CtxRootAlias[],
   addAlias: (member: string, capability: string, node?: any) => void,
 ) {
-  collectAstStaticCarrierMembers(sourceNode, (member, valueNode, aliasNode) => {
-    const capability = getReactNamespaceCapabilityFromAst(
-      valueNode,
-      identifierBindings,
-      namespaceAliases,
-      ctxRootAliases,
-    );
-    if (capability) {
-      addAlias(member, capability, aliasNode);
+  const visitedTargets = new Set<string>();
+  const collectAliases = (targetAliasName: string, sourceTarget: any) => {
+    if (!sourceTarget) {
+      return;
     }
-  });
+    const visitKey = `${targetAliasName}:${sourceTarget.aliasName || ''}:${sourceTarget.node?.start || 0}:${
+      sourceTarget.node?.end || 0
+    }:${sourceTarget.index || 0}`;
+    if (visitedTargets.has(visitKey)) {
+      return;
+    }
+    visitedTargets.add(visitKey);
+    collectAstCarrierSourceTargets(
+      undefined,
+      targetAliasName,
+      sourceTarget,
+      namespaceAliases,
+      identifierBindings,
+      (carrierTarget) => {
+        const member = getAstNestedCarrierMemberName(containerName, carrierTarget.targetAliasName);
+        if (!member) {
+          return;
+        }
+        if (carrierTarget.sourceAlias) {
+          addAlias(member, carrierTarget.sourceAlias.capability, carrierTarget.sourceTarget?.node);
+          return;
+        }
+        const capability = getReactNamespaceCapabilityFromAstPatternSource(
+          carrierTarget.sourceTarget,
+          identifierBindings,
+          namespaceAliases,
+          ctxRootAliases,
+        );
+        if (capability) {
+          addAlias(member, capability, carrierTarget.sourceTarget?.node);
+        }
+        collectAliases(carrierTarget.targetAliasName, carrierTarget.sourceTarget);
+      },
+    );
+  };
+  collectAliases(containerName, createAstPatternSourceTarget(sourceNode));
 }
 
 function collectReactDefaultCarrierAliasesFromAst(
-  _containerName: string,
+  containerName: string,
   sourceNode: any,
   identifierBindings: AstIdentifierBinding[],
   namespaceAliases: ReactNamespaceAlias[],
@@ -4223,18 +4847,67 @@ function collectReactDefaultCarrierAliasesFromAst(
   defaultAliases: ReactDefaultAlias[],
   addAlias: (member: string, capability: string, node?: any) => void,
 ) {
-  collectAstStaticCarrierMembers(sourceNode, (member, valueNode, aliasNode) => {
-    const capability = getReactDefaultNamespaceCapabilityFromAst(
-      valueNode,
-      identifierBindings,
-      namespaceAliases,
-      ctxRootAliases,
-      defaultAliases,
-    );
-    if (capability) {
-      addAlias(member, capability, aliasNode);
+  const carrierAliases: AstCapabilityAlias[] = [...namespaceAliases, ...defaultAliases];
+  const visitedTargets = new Set<string>();
+  const collectAliases = (targetAliasName: string, sourceTarget: any) => {
+    if (!sourceTarget) {
+      return;
     }
-  });
+    const visitKey = `${targetAliasName}:${sourceTarget.aliasName || ''}:${sourceTarget.node?.start || 0}:${
+      sourceTarget.node?.end || 0
+    }:${sourceTarget.index || 0}`;
+    if (visitedTargets.has(visitKey)) {
+      return;
+    }
+    visitedTargets.add(visitKey);
+    collectAstCarrierSourceTargets(
+      undefined,
+      targetAliasName,
+      sourceTarget,
+      carrierAliases,
+      identifierBindings,
+      (carrierTarget) => {
+        const member = getAstNestedCarrierMemberName(containerName, carrierTarget.targetAliasName);
+        if (!member) {
+          return;
+        }
+        if (carrierTarget.sourceAlias) {
+          const capability = getReactDefaultNamespaceCapabilityFromAstPatternSource(
+            {
+              aliasName: carrierTarget.sourceAlias.name,
+              index: carrierTarget.sourceAlias.start,
+              rootName: getAstAliasRootName(carrierTarget.sourceAlias.name),
+            },
+            identifierBindings,
+            namespaceAliases,
+            ctxRootAliases,
+            defaultAliases,
+          );
+          if (capability) {
+            addAlias(member, capability, carrierTarget.sourceTarget?.node);
+          }
+          return;
+        }
+        const capability = getReactDefaultNamespaceCapabilityFromAstPatternSource(
+          carrierTarget.sourceTarget,
+          identifierBindings,
+          namespaceAliases,
+          ctxRootAliases,
+          defaultAliases,
+        );
+        if (capability) {
+          addAlias(member, capability, carrierTarget.sourceTarget?.node);
+        }
+        collectAliases(carrierTarget.targetAliasName, carrierTarget.sourceTarget);
+      },
+    );
+  };
+  collectAliases(containerName, createAstPatternSourceTarget(sourceNode));
+}
+
+function getAstNestedCarrierMemberName(containerName: string, targetAliasName: string) {
+  const prefix = `${containerName}.`;
+  return targetAliasName.startsWith(prefix) ? targetAliasName.slice(prefix.length) : '';
 }
 
 function collectReactAsyncComponentBindingsFromAst(
@@ -8339,10 +9012,7 @@ function resolveAstMemberAliasBinding<T extends SourceRange & { name: string }>(
   if (!lookup) {
     return undefined;
   }
-  const candidates = aliases
-    .filter((entry) => entry.name === lookup.aliasName && lookup.index >= entry.start && lookup.index < entry.end)
-    .sort((left, right) => right.start - left.start);
-  return candidates.find((entry) => !hasAstShadowBinding(lookup.rootName, lookup.index, entry, identifierBindings));
+  return resolveAstNamedAliasBinding(lookup.aliasName, lookup.index, lookup.rootName, aliases, identifierBindings);
 }
 
 function getAstMemberAliasLookup(node: any): { aliasName: string; index: number; rootName: string } | undefined {
@@ -8350,23 +9020,314 @@ function getAstMemberAliasLookup(node: any): { aliasName: string; index: number;
   if (member?.type !== 'MemberExpression') {
     return undefined;
   }
-  const object = unwrapAstChainExpression(member.object);
-  if (object?.type !== 'Identifier') {
-    return undefined;
-  }
   const memberKey = getAstStaticMemberKey(member);
   if (!memberKey) {
     return undefined;
   }
+  const object = unwrapAstChainExpression(member.object);
+  if (object?.type === 'Identifier') {
+    return {
+      aliasName: `${object.name}.${memberKey}`,
+      index: typeof member.start === 'number' ? member.start : typeof object.start === 'number' ? object.start : 0,
+      rootName: object.name,
+    };
+  }
+  const objectLookup = getAstMemberAliasLookup(object);
+  if (!objectLookup) {
+    return undefined;
+  }
   return {
-    aliasName: `${object.name}.${memberKey}`,
-    index: typeof member.start === 'number' ? member.start : typeof object.start === 'number' ? object.start : 0,
-    rootName: object.name,
+    aliasName: `${objectLookup.aliasName}.${memberKey}`,
+    index: typeof member.start === 'number' ? member.start : objectLookup.index,
+    rootName: objectLookup.rootName,
   };
 }
 
 function getAstAliasRootName(name: string) {
   return String(name || '').split('.')[0] || name;
+}
+
+function resolveAstNamedAliasBinding<T extends SourceRange & { name: string }>(
+  name: string,
+  index: number,
+  rootName: string | undefined,
+  aliases: T[],
+  identifierBindings: AstIdentifierBinding[],
+): T | undefined {
+  const candidates = aliases
+    .filter((entry) => entry.name === name && index >= entry.start && index < entry.end)
+    .sort((left, right) => right.start - left.start);
+  return candidates.find(
+    (entry) => !hasAstShadowBinding(rootName || getAstAliasRootName(name), index, entry, identifierBindings),
+  );
+}
+
+function resolveAstDynamicAliasBinding<T extends SourceRange & { name: string }>(
+  name: string,
+  index: number,
+  rootName: string | undefined,
+  aliases: T[],
+  identifierBindings: AstIdentifierBinding[],
+): T | undefined {
+  const candidates = aliases
+    .filter(
+      (entry) =>
+        entry.name !== name &&
+        index >= entry.start &&
+        index < entry.end &&
+        isAstDynamicMemberAliasMatch(entry.name, name),
+    )
+    .sort((left, right) => right.start - left.start);
+  return candidates.find(
+    (entry) => !hasAstShadowBinding(rootName || getAstAliasRootName(name), index, entry, identifierBindings),
+  );
+}
+
+function isAstDynamicMemberAliasMatch(patternName: string, name: string) {
+  if (!patternName.includes(AST_DYNAMIC_MEMBER_ALIAS)) {
+    return false;
+  }
+  const patternParts = patternName.split('.');
+  const nameParts = name.split('.');
+  return (
+    patternParts.length === nameParts.length &&
+    patternParts.every((part, index) => part === AST_DYNAMIC_MEMBER_ALIAS || part === nameParts[index])
+  );
+}
+
+function getReactNamespaceCapabilityFromAstPatternSource(
+  sourceTarget: any,
+  identifierBindings: AstIdentifierBinding[],
+  aliases: ReactNamespaceAlias[],
+  ctxRootAliases: CtxRootAlias[],
+) {
+  if (sourceTarget?.ambiguous) {
+    return '';
+  }
+  if (sourceTarget?.node) {
+    const capability = getReactNamespaceCapabilityFromAst(
+      sourceTarget.node,
+      identifierBindings,
+      aliases,
+      ctxRootAliases,
+    );
+    if (capability) {
+      return capability;
+    }
+  }
+  const fallbackCapability = getReactNamespaceCapabilityFromAstPatternFallbackSources(
+    sourceTarget,
+    identifierBindings,
+    aliases,
+    ctxRootAliases,
+  );
+  if (fallbackCapability) {
+    return fallbackCapability;
+  }
+  if (!sourceTarget?.aliasName) {
+    return '';
+  }
+  const directCapability = getDirectReactNamespaceCapabilityFromAstAliasName(sourceTarget, identifierBindings);
+  if (directCapability) {
+    return directCapability;
+  }
+  const alias = resolveAstNamedAliasBinding(
+    sourceTarget.aliasName,
+    sourceTarget.index || 0,
+    sourceTarget.rootName,
+    aliases,
+    identifierBindings,
+  );
+  return alias?.capability || '';
+}
+
+function getReactDefaultNamespaceCapabilityFromAstPatternSource(
+  sourceTarget: any,
+  identifierBindings: AstIdentifierBinding[],
+  aliases: ReactNamespaceAlias[],
+  ctxRootAliases: CtxRootAlias[] = [],
+  defaultAliases: ReactDefaultAlias[] = [],
+) {
+  if (sourceTarget?.node) {
+    const capability = getReactDefaultNamespaceCapabilityFromAst(
+      sourceTarget.node,
+      identifierBindings,
+      aliases,
+      ctxRootAliases,
+      defaultAliases,
+    );
+    if (capability) {
+      return capability;
+    }
+  }
+  const fallbackCapability = getReactDefaultCapabilityFromAstPatternFallbackSources(
+    sourceTarget,
+    identifierBindings,
+    aliases,
+    ctxRootAliases,
+    defaultAliases,
+  );
+  if (fallbackCapability) {
+    return fallbackCapability;
+  }
+  if (!sourceTarget?.aliasName) {
+    return '';
+  }
+  const directCapability = getDirectReactDefaultCapabilityFromAstAliasName(sourceTarget, identifierBindings);
+  if (directCapability) {
+    return directCapability;
+  }
+  const exactAlias = resolveAstNamedAliasBinding(
+    sourceTarget.aliasName,
+    sourceTarget.index || 0,
+    sourceTarget.rootName,
+    defaultAliases,
+    identifierBindings,
+  );
+  if (exactAlias) {
+    return exactAlias.capability;
+  }
+  const exactNamespaceCapability = getReactNamespaceCapabilityFromAstPatternSource(
+    sourceTarget,
+    identifierBindings,
+    aliases,
+    ctxRootAliases,
+  );
+  if (exactNamespaceCapability) {
+    return '';
+  }
+  const dynamicAlias = resolveAstDynamicAliasBinding(
+    sourceTarget.aliasName,
+    sourceTarget.index || 0,
+    sourceTarget.rootName,
+    defaultAliases,
+    identifierBindings,
+  );
+  if (dynamicAlias) {
+    return dynamicAlias.capability;
+  }
+  const namespaceAliasName = getAstDefaultMemberAliasBase(sourceTarget.aliasName);
+  if (!namespaceAliasName) {
+    return '';
+  }
+  const directNamespaceCapability = getDirectReactNamespaceCapabilityFromAstAliasName(
+    {
+      ...sourceTarget,
+      aliasName: namespaceAliasName,
+    },
+    identifierBindings,
+  );
+  if (directNamespaceCapability) {
+    return `${directNamespaceCapability}.default`;
+  }
+  const namespaceAlias = resolveAstNamedAliasBinding(
+    namespaceAliasName,
+    sourceTarget.index || 0,
+    sourceTarget.rootName,
+    aliases,
+    identifierBindings,
+  );
+  return namespaceAlias ? `${namespaceAlias.capability}.default` : '';
+}
+
+function getReactNamespaceCapabilityFromAstPatternFallbackSources(
+  sourceTarget: any,
+  identifierBindings: AstIdentifierBinding[],
+  aliases: ReactNamespaceAlias[],
+  ctxRootAliases: CtxRootAlias[],
+) {
+  for (const fallbackTarget of sourceTarget?.fallbackSourceTargets || []) {
+    const capability = getReactNamespaceCapabilityFromAstPatternSource(
+      fallbackTarget,
+      identifierBindings,
+      aliases,
+      ctxRootAliases,
+    );
+    if (capability) {
+      return capability;
+    }
+  }
+  return '';
+}
+
+function getReactDefaultCapabilityFromAstPatternFallbackSources(
+  sourceTarget: any,
+  identifierBindings: AstIdentifierBinding[],
+  aliases: ReactNamespaceAlias[],
+  ctxRootAliases: CtxRootAlias[],
+  defaultAliases: ReactDefaultAlias[],
+) {
+  for (const fallbackTarget of sourceTarget?.fallbackSourceTargets || []) {
+    const capability = getReactDefaultNamespaceCapabilityFromAstPatternSource(
+      fallbackTarget,
+      identifierBindings,
+      aliases,
+      ctxRootAliases,
+      defaultAliases,
+    );
+    if (capability) {
+      return capability;
+    }
+    const namespaceCapability = getReactNamespaceCapabilityFromAstPatternSource(
+      fallbackTarget,
+      identifierBindings,
+      aliases,
+      ctxRootAliases,
+    );
+    if (namespaceCapability) {
+      return '';
+    }
+  }
+  return '';
+}
+
+function getAstDefaultMemberAliasBase(aliasName: string) {
+  const suffix = '.default';
+  return aliasName.endsWith(suffix) ? aliasName.slice(0, -suffix.length) : '';
+}
+
+function getDirectReactNamespaceCapabilityFromAstAliasName(
+  sourceTarget: any,
+  identifierBindings: AstIdentifierBinding[],
+) {
+  const aliasName = String(sourceTarget?.aliasName || '');
+  const index = sourceTarget?.index || 0;
+  if (aliasName === 'React' && !hasAstActiveBinding('React', index, identifierBindings)) {
+    return 'React';
+  }
+  if (
+    aliasName === 'ctx.React' &&
+    sourceTarget.rootName === 'ctx' &&
+    !hasAstActiveBinding('ctx', index, identifierBindings)
+  ) {
+    return 'ctx.React';
+  }
+  if (
+    aliasName === 'ctx.libs.React' &&
+    sourceTarget.rootName === 'ctx' &&
+    !hasAstActiveBinding('ctx', index, identifierBindings)
+  ) {
+    return 'ctx.libs.React';
+  }
+  return '';
+}
+
+function getDirectReactDefaultCapabilityFromAstAliasName(
+  sourceTarget: any,
+  identifierBindings: AstIdentifierBinding[],
+) {
+  const namespaceAliasName = getAstDefaultMemberAliasBase(String(sourceTarget?.aliasName || ''));
+  if (!namespaceAliasName) {
+    return '';
+  }
+  const namespaceCapability = getDirectReactNamespaceCapabilityFromAstAliasName(
+    {
+      ...sourceTarget,
+      aliasName: namespaceAliasName,
+    },
+    identifierBindings,
+  );
+  return namespaceCapability ? `${namespaceCapability}.default` : '';
 }
 
 function resolveAstActiveIdentifierBinding(
@@ -8527,6 +9488,1071 @@ function collectAstPatternDefaultValueAliases(
   }
 }
 
+function collectAstPatternDefaultValueAliasesWithSource(
+  pattern: any,
+  sourceTarget: any,
+  addAlias: (alias: string, valueNode: any, aliasNode: any, defaultPattern: any, sourceTarget: any) => void,
+) {
+  const unwrapped = unwrapAstChainExpression(pattern);
+  if (!unwrapped) {
+    return;
+  }
+  if (unwrapped.type === 'AssignmentPattern') {
+    collectAstPatternBindingIdentifiers(unwrapped.left, (alias, aliasNode) => {
+      addAlias(alias, unwrapped.right, aliasNode, unwrapped.left, sourceTarget);
+    });
+    collectAstPatternDefaultValueAliasesWithSource(unwrapped.left, sourceTarget, addAlias);
+    return;
+  }
+  if (unwrapped.type === 'ObjectPattern') {
+    for (const property of unwrapped.properties || []) {
+      if (!property) {
+        continue;
+      }
+      if (property.type === 'RestElement') {
+        collectAstPatternDefaultValueAliasesWithSource(property.argument, undefined, addAlias);
+        continue;
+      }
+      if (property.type !== 'Property') {
+        continue;
+      }
+      const member = getAstStaticPropertyName(property);
+      collectAstPatternDefaultValueAliasesWithSource(
+        property.value,
+        member ? getAstPatternMemberSourceTarget(sourceTarget, member) : undefined,
+        addAlias,
+      );
+    }
+    return;
+  }
+  if (unwrapped.type === 'ArrayPattern') {
+    for (let index = 0; index < (unwrapped.elements || []).length; index += 1) {
+      collectAstPatternDefaultValueAliasesWithSource(
+        unwrapped.elements[index],
+        getAstPatternMemberSourceTarget(sourceTarget, String(index)),
+        addAlias,
+      );
+    }
+    return;
+  }
+  if (unwrapped.type === 'RestElement') {
+    collectAstPatternDefaultValueAliasesWithSource(unwrapped.argument, undefined, addAlias);
+  }
+}
+
+function collectAstPatternSourceTargets(
+  pattern: any,
+  sourceNode: any,
+  visit: (target: any, sourceTarget: any) => void,
+) {
+  collectAstPatternSourceTargetsRec(pattern, createAstPatternSourceTarget(sourceNode), visit);
+}
+
+function collectAstPatternCarrierSourceTargets<T extends AstCapabilityAlias>(
+  pattern: any,
+  sourceNode: any,
+  aliases: T[],
+  identifierBindings: AstIdentifierBinding[],
+  visit: (target: { sourceAlias?: T; sourceTarget?: any; target: any; targetAliasName: string }) => void,
+) {
+  collectAstPatternCarrierSourceTargetsFromSourceTarget(
+    pattern,
+    createAstPatternSourceTarget(sourceNode),
+    aliases,
+    identifierBindings,
+    visit,
+  );
+}
+
+function collectAstPatternCarrierSourceTargetsFromSourceTarget<T extends AstCapabilityAlias>(
+  pattern: any,
+  sourceTarget: any,
+  aliases: T[],
+  identifierBindings: AstIdentifierBinding[],
+  visit: (target: { sourceAlias?: T; sourceTarget?: any; target: any; targetAliasName: string }) => void,
+) {
+  collectAstPatternSourceTargetsRec(pattern, sourceTarget, (target, patternSourceTarget) => {
+    const targetLookup = getAstPatternTargetAliasLookup(target);
+    if (!targetLookup) {
+      return;
+    }
+    collectAstCarrierSourceTargets(
+      target,
+      targetLookup.aliasName,
+      patternSourceTarget,
+      aliases,
+      identifierBindings,
+      visit,
+    );
+  });
+}
+
+function collectAstPatternSourceTargetsRec(
+  pattern: any,
+  sourceTarget: any,
+  visit: (target: any, sourceTarget: any) => void,
+) {
+  const unwrapped = unwrapAstChainExpression(pattern);
+  if (!unwrapped) {
+    return;
+  }
+  if (unwrapped.type === 'Identifier' || unwrapped.type === 'MemberExpression') {
+    visit(unwrapped, sourceTarget);
+    return;
+  }
+  if (unwrapped.type === 'AssignmentPattern') {
+    collectAstPatternSourceTargetsRec(unwrapped.left, sourceTarget, visit);
+    return;
+  }
+  if (unwrapped.type === 'RestElement') {
+    collectAstPatternSourceTargetsRec(unwrapped.argument, sourceTarget, visit);
+    return;
+  }
+  if (unwrapped.type === 'ObjectPattern') {
+    for (const property of unwrapped.properties || []) {
+      if (!property || property.type !== 'Property') {
+        continue;
+      }
+      const member = getAstStaticPropertyName(property);
+      if (!member) {
+        continue;
+      }
+      collectAstPatternSourceTargetsRec(property.value, getAstPatternMemberSourceTarget(sourceTarget, member), visit);
+    }
+    return;
+  }
+  if (unwrapped.type === 'ArrayPattern') {
+    for (let index = 0; index < (unwrapped.elements || []).length; index += 1) {
+      if (unwrapped.elements[index]?.type === 'RestElement') {
+        continue;
+      }
+      collectAstPatternSourceTargetsRec(
+        unwrapped.elements[index],
+        getAstPatternMemberSourceTarget(sourceTarget, String(index)),
+        visit,
+      );
+    }
+  }
+}
+
+function collectAstPatternRestCarrierSourceTargets<T extends AstCapabilityAlias>(
+  pattern: any,
+  sourceNode: any,
+  aliases: T[],
+  identifierBindings: AstIdentifierBinding[],
+  visit: (target: { sourceAlias?: T; sourceTarget?: any; target: any; targetAliasName: string }) => void,
+) {
+  collectAstPatternRestCarrierSourceTargetsRec(
+    pattern,
+    createAstPatternSourceTarget(sourceNode),
+    aliases,
+    identifierBindings,
+    visit,
+  );
+}
+
+function collectAstPatternRestCarrierSourceTargetsRec<T extends AstCapabilityAlias>(
+  pattern: any,
+  sourceTarget: any,
+  aliases: T[],
+  identifierBindings: AstIdentifierBinding[],
+  visit: (target: { sourceAlias?: T; sourceTarget?: any; target: any; targetAliasName: string }) => void,
+) {
+  const unwrapped = unwrapAstChainExpression(pattern);
+  if (!unwrapped) {
+    return;
+  }
+  if (unwrapped.type === 'AssignmentPattern') {
+    collectAstPatternRestCarrierSourceTargetsRec(unwrapped.left, sourceTarget, aliases, identifierBindings, visit);
+    return;
+  }
+  if (unwrapped.type === 'ObjectPattern') {
+    const excludedMembers = collectAstObjectPatternStaticMembers(unwrapped);
+    for (const property of unwrapped.properties || []) {
+      if (!property) {
+        continue;
+      }
+      if (property.type === 'RestElement') {
+        collectAstObjectRestCarrierSourceTargets(
+          property.argument,
+          sourceTarget,
+          excludedMembers,
+          aliases,
+          identifierBindings,
+          visit,
+        );
+        continue;
+      }
+      if (property.type !== 'Property') {
+        continue;
+      }
+      const member = getAstStaticPropertyName(property);
+      if (!member) {
+        continue;
+      }
+      collectAstPatternRestCarrierSourceTargetsRec(
+        property.value,
+        getAstPatternMemberSourceTarget(sourceTarget, member),
+        aliases,
+        identifierBindings,
+        visit,
+      );
+    }
+    return;
+  }
+  if (unwrapped.type === 'ArrayPattern') {
+    for (let index = 0; index < (unwrapped.elements || []).length; index += 1) {
+      const element = unwrapped.elements[index];
+      if (!element) {
+        continue;
+      }
+      if (element.type === 'RestElement') {
+        collectAstArrayRestCarrierSourceTargets(
+          element.argument,
+          sourceTarget,
+          index,
+          aliases,
+          identifierBindings,
+          visit,
+        );
+        continue;
+      }
+      collectAstPatternRestCarrierSourceTargetsRec(
+        element,
+        getAstPatternMemberSourceTarget(sourceTarget, String(index)),
+        aliases,
+        identifierBindings,
+        visit,
+      );
+    }
+  }
+}
+
+function collectAstObjectRestCarrierSourceTargets<T extends AstCapabilityAlias>(
+  target: any,
+  sourceTarget: any,
+  excludedMembers: Set<string>,
+  aliases: T[],
+  identifierBindings: AstIdentifierBinding[],
+  visit: (target: { sourceAlias?: T; sourceTarget?: any; target: any; targetAliasName: string }) => void,
+) {
+  const targetLookup = getAstPatternTargetAliasLookup(target);
+  if (!targetLookup) {
+    return;
+  }
+  collectAstCarrierCandidateMembers(sourceTarget?.node, aliases, identifierBindings).forEach((member) => {
+    if (excludedMembers.has(member)) {
+      return;
+    }
+    const memberSourceTarget = getAstStaticCarrierMemberSourceTarget(sourceTarget?.node, member);
+    if (!memberSourceTarget) {
+      return;
+    }
+    visit({
+      sourceTarget: memberSourceTarget,
+      target,
+      targetAliasName: `${targetLookup.aliasName}.${member}`,
+    });
+  });
+  collectAstRestCarrierAliasCopies(
+    sourceTarget,
+    targetLookup.aliasName,
+    aliases,
+    identifierBindings,
+    (suffix, sourceAlias) => {
+      const firstMember = suffix.split('.')[0];
+      if (!firstMember || excludedMembers.has(firstMember)) {
+        return;
+      }
+      visit({
+        sourceAlias,
+        target,
+        targetAliasName: `${targetLookup.aliasName}.${suffix}`,
+      });
+    },
+  );
+  collectAstObjectSpreadCarrierCopies(
+    sourceTarget?.node,
+    targetLookup.aliasName,
+    aliases,
+    identifierBindings,
+    (suffix, sourceAlias, spreadSourceTarget) => {
+      const firstMember = suffix.split('.')[0];
+      if (!firstMember || excludedMembers.has(firstMember)) {
+        return;
+      }
+      visit({
+        sourceAlias,
+        sourceTarget: spreadSourceTarget,
+        target,
+        targetAliasName: `${targetLookup.aliasName}.${suffix}`,
+      });
+    },
+    excludedMembers,
+  );
+}
+
+function collectAstCarrierSourceTargets<T extends AstCapabilityAlias>(
+  target: any,
+  targetAliasName: string,
+  sourceTarget: any,
+  aliases: T[],
+  identifierBindings: AstIdentifierBinding[],
+  visit: (target: { sourceAlias?: T; sourceTarget?: any; target: any; targetAliasName: string }) => void,
+) {
+  collectAstKnownCarrierMembers(sourceTarget?.node, (member, valueNode) => {
+    visit({
+      sourceTarget: createAstPatternSourceTarget(valueNode),
+      target,
+      targetAliasName: `${targetAliasName}.${member}`,
+    });
+  });
+  collectAstRestCarrierAliasCopies(
+    sourceTarget,
+    targetAliasName,
+    aliases,
+    identifierBindings,
+    (suffix, sourceAlias) => {
+      visit({
+        sourceAlias,
+        target,
+        targetAliasName: `${targetAliasName}.${suffix}`,
+      });
+    },
+  );
+  collectAstLiteralSpreadCarrierCopies(
+    sourceTarget?.node,
+    targetAliasName,
+    aliases,
+    identifierBindings,
+    (suffix, sourceAlias, spreadSourceTarget) => {
+      visit({
+        sourceAlias,
+        sourceTarget: spreadSourceTarget,
+        target,
+        targetAliasName: `${targetAliasName}.${suffix}`,
+      });
+    },
+  );
+  collectAstDynamicCarrierSourceTargets(sourceTarget?.node, (suffix, dynamicSourceTarget) => {
+    visit({
+      sourceTarget: dynamicSourceTarget,
+      target,
+      targetAliasName: `${targetAliasName}.${suffix}`,
+    });
+  });
+}
+
+function collectAstArrayRestCarrierSourceTargets<T extends AstCapabilityAlias>(
+  target: any,
+  sourceTarget: any,
+  restStartIndex: number,
+  aliases: T[],
+  identifierBindings: AstIdentifierBinding[],
+  visit: (target: { sourceAlias?: T; sourceTarget?: any; target: any; targetAliasName: string }) => void,
+) {
+  const targetLookup = getAstPatternTargetAliasLookup(target);
+  if (!targetLookup) {
+    return;
+  }
+  const mapRestSuffix = (suffix: string) => {
+    const [sourceIndexText, ...restSuffixParts] = suffix.split('.');
+    const restSuffix = restSuffixParts.length ? `.${restSuffixParts.join('.')}` : '';
+    if (sourceIndexText === AST_DYNAMIC_MEMBER_ALIAS) {
+      return `${AST_DYNAMIC_MEMBER_ALIAS}${restSuffix}`;
+    }
+    const sourceIndex = Number(sourceIndexText);
+    if (!Number.isInteger(sourceIndex) || sourceIndex < restStartIndex) {
+      return '';
+    }
+    return `${sourceIndex - restStartIndex}${restSuffix}`;
+  };
+  collectAstKnownCarrierMembers(sourceTarget?.node, (member, valueNode) => {
+    const sourceIndex = Number(member);
+    if (!Number.isInteger(sourceIndex) || sourceIndex < restStartIndex) {
+      return;
+    }
+    visit({
+      sourceTarget: createAstPatternSourceTarget(valueNode),
+      target,
+      targetAliasName: `${targetLookup.aliasName}.${sourceIndex - restStartIndex}`,
+    });
+  });
+  collectAstRestCarrierAliasCopies(
+    sourceTarget,
+    targetLookup.aliasName,
+    aliases,
+    identifierBindings,
+    (suffix, sourceAlias) => {
+      const mappedSuffix = mapRestSuffix(suffix);
+      if (!mappedSuffix) {
+        return;
+      }
+      visit({
+        sourceAlias,
+        target,
+        targetAliasName: `${targetLookup.aliasName}.${mappedSuffix}`,
+      });
+    },
+  );
+  collectAstArraySpreadCarrierCopies(
+    sourceTarget?.node,
+    targetLookup.aliasName,
+    aliases,
+    identifierBindings,
+    (suffix, sourceAlias, spreadSourceTarget) => {
+      const mappedSuffix = mapRestSuffix(suffix);
+      if (!mappedSuffix) {
+        return;
+      }
+      visit({
+        sourceAlias,
+        sourceTarget: spreadSourceTarget,
+        target,
+        targetAliasName: `${targetLookup.aliasName}.${mappedSuffix}`,
+      });
+    },
+  );
+}
+
+function collectAstRestCarrierAliasCopies<T extends AstCapabilityAlias>(
+  sourceTarget: any,
+  targetAliasName: string,
+  aliases: T[],
+  identifierBindings: AstIdentifierBinding[],
+  visit: (suffix: string, sourceAlias: T) => void,
+) {
+  const sourceAliasName = sourceTarget?.aliasName;
+  if (!sourceAliasName) {
+    return;
+  }
+  const sourcePrefix = `${sourceAliasName}.`;
+  const sourceIndex = sourceTarget.index || 0;
+  const rootName = sourceTarget.rootName || getAstAliasRootName(sourceAliasName);
+  const copied = new Set<string>();
+  const sourceAliases = aliases
+    .filter((entry) => entry.name.startsWith(sourcePrefix) && sourceIndex >= entry.start && sourceIndex < entry.end)
+    .sort((left, right) => right.start - left.start);
+  for (const sourceAlias of sourceAliases) {
+    const suffix = sourceAlias.name.slice(sourcePrefix.length);
+    if (!suffix || copied.has(`${targetAliasName}.${suffix}`)) {
+      continue;
+    }
+    if (hasAstShadowBinding(rootName, sourceIndex, sourceAlias, identifierBindings)) {
+      continue;
+    }
+    copied.add(`${targetAliasName}.${suffix}`);
+    visit(suffix, sourceAlias);
+  }
+}
+
+function collectAstLiteralSpreadCarrierCopies<T extends AstCapabilityAlias>(
+  sourceNode: any,
+  targetAliasName: string,
+  aliases: T[],
+  identifierBindings: AstIdentifierBinding[],
+  visit: (suffix: string, sourceAlias?: T, sourceTarget?: any) => void,
+) {
+  collectAstObjectSpreadCarrierCopies(sourceNode, targetAliasName, aliases, identifierBindings, visit);
+  collectAstArraySpreadCarrierCopies(sourceNode, targetAliasName, aliases, identifierBindings, visit);
+}
+
+function collectAstCarrierCandidateMembers<T extends AstCapabilityAlias>(
+  sourceNode: any,
+  aliases: T[],
+  identifierBindings: AstIdentifierBinding[],
+) {
+  const members = new Set<string>();
+  collectAstStaticCarrierMembers(sourceNode, (member) => members.add(member));
+  collectAstKnownCarrierMembers(sourceNode, (member) => members.add(member));
+  collectAstLiteralSpreadCarrierCopies(sourceNode, '__candidate__', aliases, identifierBindings, (suffix) => {
+    const firstMember = suffix.split('.')[0];
+    if (firstMember) {
+      members.add(firstMember);
+    }
+  });
+  collectAstDynamicCarrierSourceTargets(sourceNode, (suffix) => {
+    const firstMember = suffix.split('.')[0];
+    if (firstMember) {
+      members.add(firstMember);
+    }
+  });
+  return members;
+}
+
+function collectAstObjectSpreadCarrierCopies<T extends AstCapabilityAlias>(
+  sourceNode: any,
+  targetAliasName: string,
+  aliases: T[],
+  identifierBindings: AstIdentifierBinding[],
+  visit: (suffix: string, sourceAlias?: T, sourceTarget?: any) => void,
+  excludedMembers = new Set<string>(),
+) {
+  const unwrapped = unwrapAstChainExpression(sourceNode);
+  if (unwrapped?.type !== 'ObjectExpression') {
+    return;
+  }
+  const seenMembers = new Set<string>(excludedMembers);
+  for (let index = (unwrapped.properties || []).length - 1; index >= 0; index -= 1) {
+    const property = unwrapped.properties[index];
+    if (!property) {
+      continue;
+    }
+    if (property.type === 'Property') {
+      const member = getAstStaticMemberKey(property);
+      if (member) {
+        seenMembers.add(member);
+      }
+      continue;
+    }
+    if (property.type !== 'SpreadElement') {
+      continue;
+    }
+    const sourceTarget = createAstPatternSourceTarget(property.argument);
+    const visitSpreadMember = (suffix: string, sourceAlias?: T, spreadSourceTarget?: any) => {
+      const firstMember = suffix.split('.')[0];
+      if (!firstMember || seenMembers.has(firstMember)) {
+        return;
+      }
+      seenMembers.add(firstMember);
+      visit(suffix, sourceAlias, spreadSourceTarget);
+    };
+    collectAstRestCarrierAliasCopies(
+      sourceTarget,
+      targetAliasName,
+      aliases,
+      identifierBindings,
+      (suffix, sourceAlias) => visitSpreadMember(suffix, sourceAlias),
+    );
+    collectAstStaticCarrierMemberSourceTargets(property.argument, (suffix, spreadSourceTarget) =>
+      visitSpreadMember(suffix, undefined, spreadSourceTarget),
+    );
+    collectAstDynamicCarrierSourceTargets(property.argument, (suffix, dynamicSourceTarget) => {
+      visitSpreadMember(suffix, undefined, dynamicSourceTarget);
+    });
+  }
+}
+
+function collectAstDynamicCarrierSourceTargets(sourceNode: any, visit: (suffix: string, sourceTarget: any) => void) {
+  const unwrapped = unwrapAstChainExpression(sourceNode);
+  if (unwrapped?.type !== 'ObjectExpression') {
+    return;
+  }
+  for (const property of unwrapped.properties || []) {
+    if (!property || property.type !== 'Property') {
+      continue;
+    }
+    const member = getAstStaticMemberKey(property);
+    if (member) {
+      continue;
+    }
+    visit(
+      AST_DYNAMIC_MEMBER_ALIAS,
+      createAstAmbiguousSourceTarget(createAstPatternSourceTarget(property.value || property)),
+    );
+  }
+}
+
+function collectAstArraySpreadCarrierCopies<T extends AstCapabilityAlias>(
+  sourceNode: any,
+  targetAliasName: string,
+  aliases: T[],
+  identifierBindings: AstIdentifierBinding[],
+  visit: (suffix: string, sourceAlias?: T, sourceTarget?: any) => void,
+) {
+  const unwrapped = unwrapAstChainExpression(sourceNode);
+  if (unwrapped?.type !== 'ArrayExpression') {
+    return;
+  }
+  let concreteIndexOffset = 0;
+  let hasUnboundedSpread = false;
+  for (const element of unwrapped.elements || []) {
+    if (!element) {
+      if (!hasUnboundedSpread) {
+        concreteIndexOffset += 1;
+      }
+      continue;
+    }
+    if (element.type !== 'SpreadElement') {
+      if (!hasUnboundedSpread) {
+        concreteIndexOffset += 1;
+        continue;
+      }
+      visit(AST_DYNAMIC_MEMBER_ALIAS, undefined, createAstPatternSourceTarget(element));
+      continue;
+    }
+    if (hasUnboundedSpread) {
+      const sourceTarget = createAstPatternSourceTarget(element.argument);
+      const mapUnboundedSpreadSuffix = (suffix: string) => {
+        const [, ...restSuffixParts] = suffix.split('.');
+        const restSuffix = restSuffixParts.length ? `.${restSuffixParts.join('.')}` : '';
+        return `${AST_DYNAMIC_MEMBER_ALIAS}${restSuffix}`;
+      };
+      collectAstRestCarrierAliasCopies(
+        sourceTarget,
+        targetAliasName,
+        aliases,
+        identifierBindings,
+        (suffix, sourceAlias) => {
+          visit(mapUnboundedSpreadSuffix(suffix), sourceAlias);
+        },
+      );
+      collectAstStaticCarrierMemberSourceTargets(element.argument, (suffix, spreadSourceTarget) => {
+        visit(mapUnboundedSpreadSuffix(suffix), undefined, spreadSourceTarget);
+      });
+      continue;
+    }
+    const sourceTarget = createAstPatternSourceTarget(element.argument);
+    const mapSpreadSuffix = (suffix: string) => {
+      const [sourceIndexText, ...restSuffixParts] = suffix.split('.');
+      const sourceIndex = Number(sourceIndexText);
+      if (!Number.isInteger(sourceIndex) || sourceIndex < 0) {
+        return '';
+      }
+      const restSuffix = restSuffixParts.length ? `.${restSuffixParts.join('.')}` : '';
+      const targetIndex = hasUnboundedSpread ? sourceIndex : sourceIndex + concreteIndexOffset;
+      return `${targetIndex}${restSuffix}`;
+    };
+    collectAstRestCarrierAliasCopies(
+      sourceTarget,
+      targetAliasName,
+      aliases,
+      identifierBindings,
+      (suffix, sourceAlias) => {
+        const mappedSuffix = mapSpreadSuffix(suffix);
+        if (!mappedSuffix) {
+          return;
+        }
+        visit(mappedSuffix, sourceAlias);
+      },
+    );
+    collectAstStaticCarrierMemberSourceTargets(element.argument, (suffix, spreadSourceTarget) => {
+      const mappedSuffix = mapSpreadSuffix(suffix);
+      if (!mappedSuffix) {
+        return;
+      }
+      visit(mappedSuffix, undefined, spreadSourceTarget);
+    });
+    const spreadLength = getAstStaticArrayElementCount(element.argument);
+    if (!hasUnboundedSpread && typeof spreadLength === 'number') {
+      concreteIndexOffset += spreadLength;
+      continue;
+    }
+    hasUnboundedSpread = true;
+  }
+}
+
+function collectAstStaticCarrierMemberSourceTargets(node: any, visit: (member: string, sourceTarget: any) => void) {
+  const unwrapped = unwrapAstChainExpression(node);
+  if (!unwrapped) {
+    return;
+  }
+  if (unwrapped.type === 'ObjectExpression') {
+    const seenMembers = new Set<string>();
+    for (let index = (unwrapped.properties || []).length - 1; index >= 0; index -= 1) {
+      const property = unwrapped.properties[index];
+      if (!property) {
+        continue;
+      }
+      if (property.type === 'SpreadElement') {
+        collectAstStaticCarrierMemberSourceTargets(property.argument, (member, sourceTarget) => {
+          if (seenMembers.has(member)) {
+            return;
+          }
+          seenMembers.add(member);
+          visit(member, sourceTarget);
+        });
+        continue;
+      }
+      if (property.type !== 'Property') {
+        break;
+      }
+      const member = getAstStaticMemberKey(property);
+      if (!member) {
+        break;
+      }
+      if (seenMembers.has(member)) {
+        continue;
+      }
+      seenMembers.add(member);
+      visit(member, createAstPatternSourceTarget(property.value));
+    }
+    return;
+  }
+  if (unwrapped.type === 'ArrayExpression') {
+    let targetIndex = 0;
+    for (const element of unwrapped.elements || []) {
+      if (!element) {
+        targetIndex += 1;
+        continue;
+      }
+      if (element.type !== 'SpreadElement') {
+        visit(String(targetIndex), createAstPatternSourceTarget(element));
+        targetIndex += 1;
+        continue;
+      }
+      const spreadLength = getAstStaticArrayElementCount(element.argument);
+      if (typeof spreadLength !== 'number') {
+        return;
+      }
+      collectAstStaticCarrierMemberSourceTargets(element.argument, (member, sourceTarget) => {
+        const sourceIndex = Number(member);
+        if (!Number.isInteger(sourceIndex) || sourceIndex < 0) {
+          return;
+        }
+        visit(String(targetIndex + sourceIndex), sourceTarget);
+      });
+      targetIndex += spreadLength;
+    }
+  }
+}
+
+function getAstStaticArrayElementCount(node: any): number | undefined {
+  const unwrapped = unwrapAstChainExpression(node);
+  if (unwrapped?.type !== 'ArrayExpression') {
+    return undefined;
+  }
+  let count = 0;
+  for (const element of unwrapped.elements || []) {
+    if (!element) {
+      count += 1;
+      continue;
+    }
+    if (element.type !== 'SpreadElement') {
+      count += 1;
+      continue;
+    }
+    const spreadLength = getAstStaticArrayElementCount(element.argument);
+    if (typeof spreadLength !== 'number') {
+      return undefined;
+    }
+    count += spreadLength;
+  }
+  return count;
+}
+
+function collectAstObjectPatternStaticMembers(pattern: any) {
+  const members = new Set<string>();
+  for (const property of pattern?.properties || []) {
+    if (!property || property.type !== 'Property') {
+      continue;
+    }
+    const member = getAstStaticPropertyName(property);
+    if (member) {
+      members.add(member);
+    }
+  }
+  return members;
+}
+
+function getAstPatternTargetAliasLookup(
+  target: any,
+): { aliasName: string; index: number; rootName: string } | undefined {
+  const unwrapped = unwrapAstChainExpression(target);
+  if (unwrapped?.type === 'Identifier') {
+    return {
+      aliasName: unwrapped.name,
+      index: typeof unwrapped.start === 'number' ? unwrapped.start : 0,
+      rootName: unwrapped.name,
+    };
+  }
+  return getAstMemberAliasLookup(unwrapped);
+}
+
+function collectAstPatternMemberExpressions(pattern: any, visit: (memberNode: any) => void) {
+  const unwrapped = unwrapAstChainExpression(pattern);
+  if (!unwrapped) {
+    return;
+  }
+  if (unwrapped.type === 'MemberExpression') {
+    visit(unwrapped);
+    return;
+  }
+  if (unwrapped.type === 'AssignmentPattern') {
+    collectAstPatternMemberExpressions(unwrapped.left, visit);
+    return;
+  }
+  if (unwrapped.type === 'RestElement') {
+    collectAstPatternMemberExpressions(unwrapped.argument, visit);
+    return;
+  }
+  if (unwrapped.type === 'ObjectPattern') {
+    for (const property of unwrapped.properties || []) {
+      if (!property) {
+        continue;
+      }
+      collectAstPatternMemberExpressions(property.type === 'Property' ? property.value : property.argument, visit);
+    }
+    return;
+  }
+  if (unwrapped.type === 'ArrayPattern') {
+    for (const element of unwrapped.elements || []) {
+      collectAstPatternMemberExpressions(element, visit);
+    }
+  }
+}
+
+function createAstPatternSourceTarget(node: any) {
+  const sourceRoot = getAstPatternSourceRoot(node);
+  return {
+    node,
+    aliasName: sourceRoot?.aliasName,
+    rootName: sourceRoot?.rootName,
+    index: sourceRoot?.index ?? (typeof node?.start === 'number' ? node.start : 0),
+  };
+}
+
+function createMaybeAstPatternSourceTarget(node: any) {
+  return node ? createAstPatternSourceTarget(node) : undefined;
+}
+
+function isAstPatternDefaultValueSuppressedByReactNamespace(
+  sourceTarget: any,
+  identifierBindings: AstIdentifierBinding[],
+  namespaceAliases: ReactNamespaceAlias[],
+  ctxRootAliases: CtxRootAlias[],
+) {
+  if (!sourceTarget) {
+    return false;
+  }
+  return Boolean(
+    getReactNamespaceCapabilityFromAstPatternSource(sourceTarget, identifierBindings, namespaceAliases, ctxRootAliases),
+  );
+}
+
+function getAstPatternMemberSourceTarget(sourceTarget: any, member: string) {
+  const memberSourceTarget = getAstStaticCarrierMemberSourceTarget(sourceTarget?.node, member);
+  if (memberSourceTarget) {
+    return memberSourceTarget;
+  }
+  const sourceRoot = sourceTarget?.aliasName ? sourceTarget : getAstPatternSourceRoot(sourceTarget?.node);
+  if (sourceRoot?.aliasName) {
+    return {
+      aliasName: `${sourceRoot.aliasName}.${member}`,
+      rootName: sourceRoot.rootName,
+      index: sourceRoot.index ?? sourceTarget?.index ?? 0,
+    };
+  }
+  return { index: sourceTarget?.index ?? 0 };
+}
+
+function getAstStaticCarrierMemberSourceTarget(node: any, member: string): any {
+  const unwrapped = unwrapAstChainExpression(node);
+  if (!unwrapped) {
+    return undefined;
+  }
+  if (unwrapped.type === 'ObjectExpression') {
+    return getAstObjectCarrierMemberSourceTarget(unwrapped, member);
+  }
+  if (unwrapped.type === 'ArrayExpression') {
+    return getAstArrayCarrierMemberSourceTarget(unwrapped, member);
+  }
+  return undefined;
+}
+
+function getAstObjectCarrierMemberSourceTarget(node: any, member: string): any {
+  const fallbackSourceTargets: any[] = [];
+  for (let index = (node.properties || []).length - 1; index >= 0; index -= 1) {
+    const property = node.properties[index];
+    if (!property) {
+      continue;
+    }
+    if (property.type === 'SpreadElement') {
+      const spreadTarget = getAstSpreadMemberSourceTarget(property.argument, member);
+      if (spreadTarget) {
+        fallbackSourceTargets.push(spreadTarget);
+      }
+      continue;
+    }
+    if (property.type !== 'Property') {
+      return createAstFallbackSourceTarget(fallbackSourceTargets, property.start || node.start || 0);
+    }
+    const propertyKey = getAstStaticMemberKey(property);
+    if (!propertyKey) {
+      fallbackSourceTargets.push(createAstAmbiguousSourceTarget(createAstPatternSourceTarget(property.value)));
+      continue;
+    }
+    if (propertyKey !== member) {
+      continue;
+    }
+    const propertyTarget = createAstPatternSourceTarget(property.value);
+    if (!fallbackSourceTargets.length) {
+      return propertyTarget;
+    }
+    return createAstFallbackSourceTarget(
+      [...fallbackSourceTargets, propertyTarget],
+      typeof property.value?.start === 'number' ? property.value.start : property.start || node.start || 0,
+    );
+  }
+  return createAstFallbackSourceTarget(fallbackSourceTargets, node.start || 0);
+}
+
+function getAstArrayCarrierMemberSourceTarget(node: any, member: string): any {
+  const targetIndex = Number(member);
+  if (!Number.isInteger(targetIndex) || targetIndex < 0) {
+    return undefined;
+  }
+  const fallbackSourceTargets: any[] = [];
+  let concreteIndex = 0;
+  let hasSpreadBefore = false;
+  for (const element of node.elements || []) {
+    if (!element) {
+      if (!hasSpreadBefore && concreteIndex === targetIndex && !fallbackSourceTargets.length) {
+        return undefined;
+      }
+      concreteIndex += 1;
+      continue;
+    }
+    if (element.type === 'SpreadElement') {
+      const spreadLength = getAstStaticArrayElementCount(element.argument);
+      if (!hasSpreadBefore && typeof spreadLength === 'number') {
+        const spreadIndex = targetIndex - concreteIndex;
+        if (spreadIndex < 0) {
+          return createAstFallbackSourceTarget(fallbackSourceTargets, node.start || 0);
+        }
+        if (spreadIndex < spreadLength) {
+          return getAstSpreadMemberSourceTarget(element.argument, String(spreadIndex));
+        }
+        concreteIndex += spreadLength;
+        continue;
+      }
+      const spreadMember = hasSpreadBefore ? String(targetIndex) : String(targetIndex - concreteIndex);
+      if (targetIndex >= concreteIndex || hasSpreadBefore) {
+        const spreadTarget = getAstSpreadMemberSourceTarget(element.argument, spreadMember);
+        if (spreadTarget) {
+          fallbackSourceTargets.push(hasSpreadBefore ? createAstAmbiguousSourceTarget(spreadTarget) : spreadTarget);
+        }
+      }
+      hasSpreadBefore = true;
+      continue;
+    }
+    if (!hasSpreadBefore && concreteIndex === targetIndex) {
+      const elementTarget = createAstPatternSourceTarget(element);
+      if (!fallbackSourceTargets.length) {
+        return elementTarget;
+      }
+      return createAstFallbackSourceTarget(
+        [...fallbackSourceTargets, elementTarget],
+        typeof element.start === 'number' ? element.start : node.start || 0,
+      );
+    }
+    if (hasSpreadBefore) {
+      fallbackSourceTargets.push(createAstAmbiguousSourceTarget(createAstPatternSourceTarget(element)));
+    }
+    concreteIndex += 1;
+  }
+  return createAstFallbackSourceTarget(fallbackSourceTargets, node.start || 0);
+}
+
+function createAstAmbiguousSourceTarget(sourceTarget: any) {
+  return sourceTarget ? { ...sourceTarget, ambiguous: true } : undefined;
+}
+
+function getAstSpreadMemberSourceTarget(spreadArgument: any, member: string): any {
+  const sourceRoot = getAstPatternSourceRoot(spreadArgument);
+  if (sourceRoot?.aliasName) {
+    return {
+      aliasName: `${sourceRoot.aliasName}.${member}`,
+      rootName: sourceRoot.rootName,
+      index: sourceRoot.index ?? (typeof spreadArgument?.start === 'number' ? spreadArgument.start : 0),
+    };
+  }
+  return getAstStaticCarrierMemberSourceTarget(spreadArgument, member);
+}
+
+function createAstFallbackSourceTarget(fallbackSourceTargets: any[], index: number) {
+  const targets = fallbackSourceTargets.filter(Boolean);
+  return targets.length
+    ? {
+        fallbackSourceTargets: targets,
+        index,
+      }
+    : undefined;
+}
+
+function getAstPatternSourceRoot(node: any): { aliasName: string; index: number; rootName: string } | undefined {
+  const unwrapped = unwrapAstChainExpression(node);
+  if (unwrapped?.type === 'Identifier') {
+    return {
+      aliasName: unwrapped.name,
+      index: typeof unwrapped.start === 'number' ? unwrapped.start : 0,
+      rootName: unwrapped.name,
+    };
+  }
+  return getAstMemberAliasLookup(unwrapped);
+}
+
+function getAstStaticCarrierMemberValue(node: any, member: string) {
+  const unwrapped = unwrapAstChainExpression(node);
+  if (!unwrapped) {
+    return undefined;
+  }
+  if (unwrapped.type === 'ObjectExpression') {
+    for (let index = (unwrapped.properties || []).length - 1; index >= 0; index -= 1) {
+      const property = unwrapped.properties[index];
+      if (!property) {
+        continue;
+      }
+      if (property.type !== 'Property') {
+        return undefined;
+      }
+      const propertyKey = getAstStaticMemberKey(property);
+      if (!propertyKey) {
+        return undefined;
+      }
+      if (propertyKey === member) {
+        return property.value;
+      }
+    }
+  }
+  if (unwrapped.type === 'ArrayExpression') {
+    const index = Number(member);
+    if (Number.isInteger(index) && index >= 0) {
+      const element = unwrapped.elements?.[index];
+      return element && element.type !== 'SpreadElement' ? element : undefined;
+    }
+  }
+  return undefined;
+}
+
+function collectAstKnownCarrierMembers(node: any, visit: (member: string, valueNode: any, aliasNode?: any) => void) {
+  const unwrapped = unwrapAstChainExpression(node);
+  if (!unwrapped) {
+    return;
+  }
+  if (unwrapped.type === 'ObjectExpression') {
+    const seenMembers = new Set<string>();
+    for (let index = (unwrapped.properties || []).length - 1; index >= 0; index -= 1) {
+      const property = unwrapped.properties[index];
+      if (!property) {
+        continue;
+      }
+      if (property.type !== 'Property') {
+        return;
+      }
+      const member = getAstStaticMemberKey(property);
+      if (!member) {
+        return;
+      }
+      if (seenMembers.has(member)) {
+        continue;
+      }
+      seenMembers.add(member);
+      visit(member, property.value, property.value || property);
+    }
+    return;
+  }
+  if (unwrapped.type === 'ArrayExpression') {
+    for (let index = 0; index < (unwrapped.elements || []).length; index += 1) {
+      const element = unwrapped.elements[index];
+      if (!element || element.type === 'SpreadElement') {
+        return;
+      }
+      visit(String(index), element, element);
+    }
+  }
+}
+
 function collectAstStaticCarrierMembers(node: any, visit: (member: string, valueNode: any, aliasNode?: any) => void) {
   const unwrapped = unwrapAstChainExpression(node);
   if (!unwrapped) {
@@ -8586,6 +10612,10 @@ function getAstStaticPropertyName(node: any): string {
   }
   if (!node.computed && property.type === 'Identifier') {
     return property.name;
+  }
+  const unwrapped = unwrapAstChainExpression(property);
+  if (unwrapped?.type === 'Literal' && (typeof unwrapped.value === 'string' || typeof unwrapped.value === 'number')) {
+    return String(unwrapped.value);
   }
   const value = resolveAstStaticStringValue(property, '');
   return typeof value === 'string' ? value : '';
@@ -8778,13 +10808,11 @@ function getAstMemberAssignmentTargetScope(
   identifierBindings: AstIdentifierBinding[],
 ): SourceRange {
   const fallbackScope = getAstBindingScopeRange(ancestors, sourceLength);
-  const member = unwrapAstChainExpression(target);
-  const object = unwrapAstChainExpression(member?.object);
-  if (object?.type !== 'Identifier') {
+  const lookup = getAstMemberAliasLookup(target);
+  if (!lookup) {
     return fallbackScope;
   }
-  const index = typeof object.start === 'number' ? object.start : typeof member?.start === 'number' ? member.start : 0;
-  const binding = resolveAstActiveIdentifierBinding(object.name, index, identifierBindings);
+  const binding = resolveAstActiveIdentifierBinding(lookup.rootName, lookup.index, identifierBindings);
   if (!binding) {
     return fallbackScope;
   }

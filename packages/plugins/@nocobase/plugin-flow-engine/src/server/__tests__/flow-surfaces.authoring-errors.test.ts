@@ -4192,6 +4192,537 @@ ctx.render(React.createElement(DashboardKPIs));
         path: '$.defaultReactArrayCarrierMemberReassignedToDefault.code',
       },
       {
+        code: [
+          'const { ns: React } = { ns: ctx.React.default };',
+          "ctx.render(React.createElement('div', null, 'broken'));",
+        ],
+        path: '$.defaultReactObjectCarrierDestructureRead.code',
+      },
+      {
+        code: ['const [React] = [ctx.React.default];', "ctx.render(React.createElement('div', null, 'broken'));"],
+        path: '$.defaultReactArrayCarrierDestructureRead.code',
+      },
+      {
+        code: [
+          'const box = { ns: ctx.React.default };',
+          'const { ns: React } = box;',
+          "ctx.render(React.createElement('div', null, 'broken'));",
+        ],
+        path: '$.defaultReactObjectAliasCarrierDestructureRead.code',
+      },
+      {
+        code: [
+          'const arr = [ctx.React.default];',
+          'const [React] = arr;',
+          "ctx.render(React.createElement('div', null, 'broken'));",
+        ],
+        path: '$.defaultReactArrayAliasCarrierDestructureRead.code',
+      },
+      {
+        code: [
+          'const { ns: ReactNs } = { ns: ctx.React };',
+          'const React = ReactNs.default;',
+          "ctx.render(React.createElement('div', null, 'broken'));",
+        ],
+        path: '$.defaultReactObjectNamespaceCarrierDestructureRead.code',
+      },
+      {
+        code: [
+          'const { ns: { default: React } } = { ns: ctx.React };',
+          "ctx.render(React.createElement('div', null, 'broken'));",
+        ],
+        path: '$.defaultReactNestedObjectNamespaceCarrierDestructureRead.code',
+      },
+      {
+        code: ['const [{ default: React }] = [ctx.React];', "ctx.render(React.createElement('div', null, 'broken'));"],
+        path: '$.defaultReactNestedArrayNamespaceCarrierDestructureRead.code',
+      },
+      {
+        code: ['const { 0: React } = [ctx.React.default];', "ctx.render(React.createElement('div', null, 'broken'));"],
+        path: '$.defaultReactNumericObjectPatternArrayDefault.code',
+      },
+      {
+        code: [
+          'const { 0: ReactNs } = [ctx.React];',
+          'const React = ReactNs.default;',
+          "ctx.render(React.createElement('div', null, 'broken'));",
+        ],
+        path: '$.defaultReactNumericObjectPatternArrayNamespaceDefault.code',
+      },
+      {
+        code: [
+          'const box = { ns: ctx.React };',
+          '({ ns: box.ns } = { ns: ctx.React.default });',
+          'const React = box.ns;',
+          "ctx.render(React.createElement('div', null, 'broken'));",
+        ],
+        path: '$.defaultReactObjectCarrierDestructureMemberWriteToDefault.code',
+      },
+      {
+        code: [
+          'const arr = [ctx.React];',
+          '[arr[0]] = [ctx.React.default];',
+          'const React = arr[0];',
+          "ctx.render(React.createElement('div', null, 'broken'));",
+        ],
+        path: '$.defaultReactArrayCarrierDestructureMemberWriteToDefault.code',
+      },
+      {
+        code: [
+          'const { ...box } = { ns: ctx.React.default };',
+          'const React = box.ns;',
+          "ctx.render(React.createElement('div', null, 'broken'));",
+        ],
+        path: '$.defaultReactObjectRestCarrierDefault.code',
+      },
+      {
+        code: [
+          'const { ...box } = { ns: ctx.React.default, [fieldName]: 1 };',
+          'const React = box.ns;',
+          "ctx.render(React.createElement('div', null, 'broken'));",
+        ],
+        path: '$.defaultReactObjectRestCarrierDynamicKeyCannotHideDefault.code',
+      },
+      {
+        code: [
+          'const { ...box } = { [fieldName]: ctx.React.default };',
+          'const React = box.ns;',
+          "ctx.render(React.createElement('div', null, 'broken'));",
+        ],
+        path: '$.defaultReactObjectRestCarrierDynamicKeyOnlyDefault.code',
+      },
+      {
+        code: [
+          'const unsafe = { ns: ctx.React.default };',
+          'const { ns: React } = { ...unsafe };',
+          "ctx.render(React.createElement('div', null, 'broken'));",
+        ],
+        path: '$.defaultReactObjectSpreadCarrierDestructureDefault.code',
+      },
+      {
+        code: [
+          'const unsafe = { ns: ctx.React.default };',
+          'const { ns: React } = { ...unsafe, [fieldName]: 1 };',
+          "ctx.render(React.createElement('div', null, 'broken'));",
+        ],
+        path: '$.defaultReactObjectSpreadCarrierDynamicKeyCannotHideDefault.code',
+      },
+      {
+        code: [
+          'const safe = { ns: ctx.React };',
+          'const box = { ...safe, [fieldName]: ctx.React.default };',
+          'const React = box.ns;',
+          "ctx.render(React.createElement('div', null, 'broken'));",
+        ],
+        path: '$.defaultReactObjectDynamicKeyCarrierCannotHideDefault.code',
+      },
+      {
+        code: [
+          'const { ns: React } = { [fieldName]: ctx.React.default };',
+          "ctx.render(React.createElement('div', null, 'broken'));",
+        ],
+        path: '$.defaultReactObjectDynamicKeyOnlyCarrierDefault.code',
+      },
+      {
+        code: [
+          'const box = { [fieldName]: ctx.React.default };',
+          'const React = box.ns;',
+          "ctx.render(React.createElement('div', null, 'broken'));",
+        ],
+        path: '$.defaultReactObjectDynamicKeyCarrierAliasDefault.code',
+      },
+      {
+        code: [
+          'const unsafe = { [fieldName]: ctx.React.default };',
+          'const box = { ...unsafe };',
+          'const React = box.ns;',
+          "ctx.render(React.createElement('div', null, 'broken'));",
+        ],
+        path: '$.defaultReactObjectDynamicKeySpreadAliasDefault.code',
+      },
+      {
+        code: [
+          'const box = { ...{ [fieldName]: ctx.React.default } };',
+          'const React = box.ns;',
+          "ctx.render(React.createElement('div', null, 'broken'));",
+        ],
+        path: '$.defaultReactObjectLiteralDynamicKeySpreadAliasDefault.code',
+      },
+      {
+        code: [
+          'const safe = { ns: ctx.React };',
+          'const unsafe = { ns: ctx.React.default };',
+          'const { ns: React } = { ...safe, ...unsafe };',
+          "ctx.render(React.createElement('div', null, 'broken'));",
+        ],
+        path: '$.defaultReactObjectSpreadCarrierLaterDefault.code',
+      },
+      {
+        code: [
+          'const unsafe = { ns: ctx.React.default };',
+          'const box = { ...unsafe };',
+          'const React = box.ns;',
+          "ctx.render(React.createElement('div', null, 'broken'));",
+        ],
+        path: '$.defaultReactObjectSpreadCarrierAliasDefault.code',
+      },
+      {
+        code: [
+          'const box = { ...{ ns: ctx.React.default } };',
+          'const React = box.ns;',
+          "ctx.render(React.createElement('div', null, 'broken'));",
+        ],
+        path: '$.defaultReactObjectLiteralSpreadCarrierAliasDefault.code',
+      },
+      {
+        code: [
+          'const source = { ns: ctx.React.default };',
+          'const { ...box } = source;',
+          'const React = box.ns;',
+          "ctx.render(React.createElement('div', null, 'broken'));",
+        ],
+        path: '$.defaultReactObjectAliasRestCarrierDefault.code',
+      },
+      {
+        code: [
+          'const { ...box } = { ...{ ns: ctx.React.default } };',
+          'const React = box.ns;',
+          "ctx.render(React.createElement('div', null, 'broken'));",
+        ],
+        path: '$.defaultReactObjectLiteralSpreadRestCarrierDefault.code',
+      },
+      {
+        code: [
+          'const [...arr] = [ctx.React.default];',
+          'const React = arr[0];',
+          "ctx.render(React.createElement('div', null, 'broken'));",
+        ],
+        path: '$.defaultReactArrayRestCarrierDefault.code',
+      },
+      {
+        code: [
+          'const unsafe = [ctx.React.default];',
+          'const [React] = [...unsafe];',
+          "ctx.render(React.createElement('div', null, 'broken'));",
+        ],
+        path: '$.defaultReactArraySpreadCarrierDestructureDefault.code',
+      },
+      {
+        code: [
+          'const [skip, React] = [...[0], ...[ctx.React.default]];',
+          "ctx.render(React.createElement('div', null, 'broken'));",
+        ],
+        path: '$.defaultReactArrayFixedSpreadPrefixDestructureDefault.code',
+      },
+      {
+        code: [
+          'const [React = ctx.React.default] = [...items, ctx.React];',
+          "ctx.render(React.createElement('div', null, 'broken'));",
+        ],
+        path: '$.defaultReactArrayUnboundedSpreadPatternDefaultAlias.code',
+      },
+      {
+        code: [
+          'const arr = [...items, ctx.React.default];',
+          'const React = arr[0];',
+          "ctx.render(React.createElement('div', null, 'broken'));",
+        ],
+        path: '$.defaultReactArrayUnboundedSpreadTrailingDefaultCarrierAlias.code',
+      },
+      {
+        code: [
+          'const arr = [...items, ...[ctx.React.default]];',
+          'const React = arr[0];',
+          "ctx.render(React.createElement('div', null, 'broken'));",
+        ],
+        path: '$.defaultReactArrayUnboundedSpreadTrailingDefaultSpreadCarrierAlias.code',
+      },
+      {
+        code: [
+          'const [...arr] = [...items, ctx.React.default];',
+          'const React = arr[0];',
+          "ctx.render(React.createElement('div', null, 'broken'));",
+        ],
+        path: '$.defaultReactArrayUnboundedSpreadTrailingDefaultRestCarrierAlias.code',
+      },
+      {
+        code: [
+          'const [...arr] = [...items, ...[ctx.React.default]];',
+          'const React = arr[0];',
+          "ctx.render(React.createElement('div', null, 'broken'));",
+        ],
+        path: '$.defaultReactArrayUnboundedSpreadTrailingDefaultSpreadRestCarrierAlias.code',
+      },
+      {
+        code: [
+          'const { 0: React = ctx.React.default } = [...items, ctx.React];',
+          "ctx.render(React.createElement('div', null, 'broken'));",
+        ],
+        path: '$.defaultReactNumericObjectPatternUnboundedSpreadDefaultAlias.code',
+      },
+      {
+        code: [
+          'const unsafe = [ctx.React.default];',
+          'const safe = [ctx.React];',
+          'const [React] = [...unsafe, ...safe];',
+          "ctx.render(React.createElement('div', null, 'broken'));",
+        ],
+        path: '$.defaultReactArraySpreadCarrierFirstDefault.code',
+      },
+      {
+        code: [
+          'const unsafe = [ctx.React.default];',
+          'const arr = [...unsafe];',
+          'const React = arr[0];',
+          "ctx.render(React.createElement('div', null, 'broken'));",
+        ],
+        path: '$.defaultReactArraySpreadCarrierAliasDefault.code',
+      },
+      {
+        code: [
+          'const arr = [...[ctx.React.default]];',
+          'const React = arr[0];',
+          "ctx.render(React.createElement('div', null, 'broken'));",
+        ],
+        path: '$.defaultReactArrayLiteralSpreadCarrierAliasDefault.code',
+      },
+      {
+        code: [
+          'const arr = [...[0], ...[ctx.React.default]];',
+          'const React = arr[1];',
+          "ctx.render(React.createElement('div', null, 'broken'));",
+        ],
+        path: '$.defaultReactArrayFixedSpreadPrefixCarrierAliasDefault.code',
+      },
+      {
+        code: [
+          'const source = [ctx.React.default];',
+          'const [...arr] = source;',
+          'const React = arr[0];',
+          "ctx.render(React.createElement('div', null, 'broken'));",
+        ],
+        path: '$.defaultReactArrayAliasRestCarrierDefault.code',
+      },
+      {
+        code: [
+          'const [...arr] = [...[ctx.React.default]];',
+          'const React = arr[0];',
+          "ctx.render(React.createElement('div', null, 'broken'));",
+        ],
+        path: '$.defaultReactArrayLiteralSpreadRestCarrierDefault.code',
+      },
+      {
+        code: [
+          'const [...arr] = [...[0], ...[ctx.React.default]];',
+          'const React = arr[1];',
+          "ctx.render(React.createElement('div', null, 'broken'));",
+        ],
+        path: '$.defaultReactArrayFixedSpreadPrefixRestCarrierDefault.code',
+      },
+      {
+        code: [
+          'const [first, ...arr] = [ctx.React, ctx.React.default];',
+          'const React = arr[0];',
+          "ctx.render(React.createElement('div', null, 'broken'));",
+        ],
+        path: '$.defaultReactArrayOffsetRestCarrierDefault.code',
+      },
+      {
+        code: [
+          'const { ...box } = { ns: ctx.React };',
+          'const React = box.ns.default;',
+          "ctx.render(React.createElement('div', null, 'broken'));",
+        ],
+        path: '$.defaultReactObjectRestCarrierNamespace.code',
+      },
+      {
+        code: [
+          'const source = { ns: ctx.React };',
+          'const { ...box } = source;',
+          'const React = box.ns.default;',
+          "ctx.render(React.createElement('div', null, 'broken'));",
+        ],
+        path: '$.defaultReactObjectAliasRestCarrierNamespace.code',
+      },
+      {
+        code: [
+          'const { ns: box } = { ns: { default: ctx.React.default } };',
+          'const { default: React } = box;',
+          "ctx.render(React.createElement('div', null, 'broken'));",
+        ],
+        path: '$.defaultReactObjectDestructuredNestedCarrierDefault.code',
+      },
+      {
+        code: [
+          'const [box] = [{ default: ctx.React.default }];',
+          'const { default: React } = box;',
+          "ctx.render(React.createElement('div', null, 'broken'));",
+        ],
+        path: '$.defaultReactArrayDestructuredNestedCarrierDefault.code',
+      },
+      {
+        code: [
+          'const box = {};',
+          'box.ns = { default: ctx.React.default };',
+          'const { default: React } = box.ns;',
+          "ctx.render(React.createElement('div', null, 'broken'));",
+        ],
+        path: '$.defaultReactMemberAssignedNestedCarrierDefault.code',
+      },
+      {
+        code: [
+          'const { ns: box } = { ns: { runtime: ctx.React } };',
+          'const React = box.runtime.default;',
+          "ctx.render(React.createElement('div', null, 'broken'));",
+        ],
+        path: '$.defaultReactObjectDestructuredNestedCarrierNamespace.code',
+      },
+      {
+        code: [
+          'const box = {};',
+          'box.ns = { runtime: ctx.React.default };',
+          'const React = box.ns.runtime;',
+          "ctx.render(React.createElement('div', null, 'broken'));",
+        ],
+        path: '$.defaultReactMultiHopMemberAssignedCarrierDefault.code',
+      },
+      {
+        code: [
+          'const box = { ns: {} };',
+          'box.ns.runtime = ctx.React.default;',
+          'const React = box.ns.runtime;',
+          "ctx.render(React.createElement('div', null, 'broken'));",
+        ],
+        path: '$.defaultReactMultiHopMemberAssignedDefault.code',
+      },
+      {
+        code: [
+          'const box = {};',
+          'box.ns = [ctx.React.default];',
+          'const React = box.ns[0];',
+          "ctx.render(React.createElement('div', null, 'broken'));",
+        ],
+        path: '$.defaultReactMultiHopArrayMemberAssignedCarrierDefault.code',
+      },
+      {
+        code: [
+          'for (const React of [ctx.React.default]) {',
+          "  ctx.render(React.createElement('div', null, 'broken'));",
+          '}',
+        ],
+        path: '$.defaultReactForOfDirectDefaultAlias.code',
+      },
+      {
+        code: [
+          'for (const React of [ctx.React, ctx.React.default]) {',
+          "  ctx.render(React.createElement('div', null, 'broken'));",
+          '}',
+        ],
+        path: '$.defaultReactForOfMultiElementDirectDefaultAlias.code',
+      },
+      {
+        code: [
+          'for (const ReactNs of [ctx.React]) {',
+          '  const React = ReactNs.default;',
+          "  ctx.render(React.createElement('div', null, 'broken'));",
+          '}',
+        ],
+        path: '$.defaultReactForOfNamespaceDefaultAlias.code',
+      },
+      {
+        code: [
+          'for (const { ns: ReactNs } of [{ ns: ctx.React }]) {',
+          '  const React = ReactNs.default;',
+          "  ctx.render(React.createElement('div', null, 'broken'));",
+          '}',
+        ],
+        path: '$.defaultReactForOfDestructuredNamespaceDefaultAlias.code',
+      },
+      {
+        code: [
+          'for (const ReactNs of [{}, ctx.React]) {',
+          '  const React = ReactNs.default;',
+          "  ctx.render(React.createElement('div', null, 'broken'));",
+          '}',
+        ],
+        path: '$.defaultReactForOfMultiElementNamespaceDefaultAlias.code',
+      },
+      {
+        code: [
+          'for (const React of [...[ctx.React.default]]) {',
+          "  ctx.render(React.createElement('div', null, 'broken'));",
+          '}',
+        ],
+        path: '$.defaultReactForOfLiteralSpreadDefaultAlias.code',
+      },
+      {
+        code: [
+          'for (const React of [...[0], ...[ctx.React.default]]) {',
+          "  ctx.render(React.createElement('div', null, 'broken'));",
+          '}',
+        ],
+        path: '$.defaultReactForOfFixedSpreadPrefixDefaultAlias.code',
+      },
+      {
+        code: [
+          'for (const { ns: React } of [...[{ ns: ctx.React.default }]]) {',
+          "  ctx.render(React.createElement('div', null, 'broken'));",
+          '}',
+        ],
+        path: '$.defaultReactForOfDestructuredLiteralSpreadDefaultAlias.code',
+      },
+      {
+        code: [
+          'for (const React of (flag ? [ctx.React.default] : [ctx.React])) {',
+          "  ctx.render(React.createElement('div', null, 'broken'));",
+          '}',
+        ],
+        path: '$.defaultReactForOfConditionalDefaultAlias.code',
+      },
+      {
+        code: [
+          'const values = [ctx.React.default];',
+          'for (const React of values) {',
+          "  ctx.render(React.createElement('div', null, 'broken'));",
+          '}',
+        ],
+        path: '$.defaultReactForOfArrayAliasDefaultAlias.code',
+      },
+      {
+        code: [
+          'const values = [{ ns: ctx.React.default }];',
+          'for (const { ns: React } of values) {',
+          "  ctx.render(React.createElement('div', null, 'broken'));",
+          '}',
+        ],
+        path: '$.defaultReactForOfArrayAliasDestructuredDefaultAlias.code',
+      },
+      {
+        code: [
+          'const box = { ns: ctx.React };',
+          'for ({ ns: box.ns } of [{ ns: ctx.React.default }]) break;',
+          'const React = box.ns;',
+          "ctx.render(React.createElement('div', null, 'broken'));",
+        ],
+        path: '$.defaultReactForOfMemberWriteToDefaultAlias.code',
+      },
+      {
+        code: [
+          'for (const { React = ctx.React.default } of records) {',
+          "  ctx.render(React.createElement('div', null, 'broken'));",
+          '}',
+        ],
+        path: '$.defaultReactForOfUnknownSourcePatternDefaultAlias.code',
+      },
+      {
+        code: [
+          'for (const { React = ctx.React.default } of [{ React: ctx.React }, {}]) {',
+          "  ctx.render(React.createElement('div', null, 'broken'));",
+          '}',
+        ],
+        path: '$.defaultReactForOfMultiElementPatternDefaultAlias.code',
+      },
+      {
         code: ['const { React = ctx.React.default } = {};', "ctx.render(React.createElement('div', null, 'broken'));"],
         path: '$.defaultReactObjectPatternDefaultAlias.code',
       },
@@ -4498,6 +5029,317 @@ ctx.render(React.createElement(DashboardKPIs));
           "ctx.render(React.createElement('div', null, 'allowed-reassigned-runtime-namespace'));",
         ],
         path: '$.defaultReactArrayCarrierMemberReassignedToNamespaceAllowed.code',
+      },
+      {
+        code: [
+          'const { ns: React } = { ns: ctx.React };',
+          "ctx.render(React.createElement('div', null, 'allowed-runtime-namespace'));",
+        ],
+        path: '$.defaultReactObjectCarrierDestructureNamespaceAllowed.code',
+      },
+      {
+        code: [
+          'const safe = { ns: ctx.React };',
+          'const { ns: React } = { ns: ctx.React.default, ...safe };',
+          "ctx.render(React.createElement('div', null, 'allowed-spread-override-namespace'));",
+        ],
+        path: '$.defaultReactObjectCarrierDestructureLaterSpreadNamespaceAllowed.code',
+      },
+      {
+        code: [
+          'const safe = { ns: ctx.React };',
+          'const { ns: React } = { ...safe };',
+          "ctx.render(React.createElement('div', null, 'allowed-spread-namespace'));",
+        ],
+        path: '$.defaultReactObjectSpreadCarrierDestructureNamespaceAllowed.code',
+      },
+      {
+        code: [
+          'const safe = { ns: ctx.React };',
+          'const { ns: React } = { ...safe, [fieldName]: 1 };',
+          "ctx.render(React.createElement('div', null, 'allowed-spread-namespace'));",
+        ],
+        path: '$.defaultReactObjectSpreadCarrierDynamicNonReactNamespaceAllowed.code',
+      },
+      {
+        code: [
+          'const box = { [fieldName]: ctx.React.default, ns: ctx.React };',
+          'const React = box.ns;',
+          "ctx.render(React.createElement('div', null, 'allowed-runtime-namespace'));",
+        ],
+        path: '$.defaultReactObjectDynamicKeyExactNamespaceAllowed.code',
+      },
+      {
+        code: [
+          'const box = { [fieldName]: ctx.React.default };',
+          'box.ns = ctx.React;',
+          'const React = box.ns;',
+          "ctx.render(React.createElement('div', null, 'allowed-runtime-namespace'));",
+        ],
+        path: '$.defaultReactObjectDynamicKeyReassignedNamespaceAllowed.code',
+      },
+      {
+        code: [
+          'const box = { ...{ ns: ctx.React } };',
+          'const React = box.ns;',
+          "ctx.render(React.createElement('div', null, 'allowed-spread-namespace'));",
+        ],
+        path: '$.defaultReactObjectLiteralSpreadCarrierAliasNamespaceAllowed.code',
+      },
+      {
+        code: [
+          'const { ...box } = { ...{ ns: ctx.React } };',
+          'const React = box.ns;',
+          "ctx.render(React.createElement('div', null, 'allowed-spread-namespace'));",
+        ],
+        path: '$.defaultReactObjectLiteralSpreadRestCarrierNamespaceAllowed.code',
+      },
+      {
+        code: [
+          'const unsafe = { ns: ctx.React.default };',
+          'const safe = { ns: ctx.React };',
+          'const { ns: React } = { ...unsafe, ...safe };',
+          "ctx.render(React.createElement('div', null, 'allowed-spread-override-namespace'));",
+        ],
+        path: '$.defaultReactObjectSpreadCarrierLaterNamespaceAllowed.code',
+      },
+      {
+        code: [
+          'const { 0: React = ctx.React.default } = [ctx.React];',
+          "ctx.render(React.createElement('div', null, 'allowed-default-source-namespace'));",
+        ],
+        path: '$.defaultReactNumericObjectPatternDefaultSourceNamespaceAllowed.code',
+      },
+      {
+        code: [
+          'const box = { ns: ctx.React.default };',
+          '({ ns: box.ns } = { ns: ctx.React });',
+          'const React = box.ns;',
+          "ctx.render(React.createElement('div', null, 'allowed-reassigned-runtime-namespace'));",
+        ],
+        path: '$.defaultReactObjectCarrierDestructureMemberWriteToNamespaceAllowed.code',
+      },
+      {
+        code: [
+          'const arr = [ctx.React.default];',
+          '[arr[0]] = [ctx.React];',
+          'const React = arr[0];',
+          "ctx.render(React.createElement('div', null, 'allowed-reassigned-runtime-namespace'));",
+        ],
+        path: '$.defaultReactArrayCarrierDestructureMemberWriteToNamespaceAllowed.code',
+      },
+      {
+        code: [
+          'const { ns, ...box } = { ns: ctx.React.default, other: ctx.React };',
+          'const React = box.other;',
+          "ctx.render(React.createElement('div', null, 'allowed-runtime-namespace'));",
+        ],
+        path: '$.defaultReactObjectRestExcludedDefaultAllowed.code',
+      },
+      {
+        code: [
+          'const { ...box } = { [fieldName]: ctx.React.default, ns: ctx.React };',
+          'const React = box.ns;',
+          "ctx.render(React.createElement('div', null, 'allowed-runtime-namespace'));",
+        ],
+        path: '$.defaultReactObjectRestDynamicKeyExactNamespaceAllowed.code',
+      },
+      {
+        code: [
+          'const [...arr] = [ctx.React];',
+          'const React = arr[0];',
+          "ctx.render(React.createElement('div', null, 'allowed-runtime-namespace'));",
+        ],
+        path: '$.defaultReactArrayRestCarrierNamespaceAllowed.code',
+      },
+      {
+        code: [
+          'const safe = [ctx.React];',
+          'const [React] = [...safe];',
+          "ctx.render(React.createElement('div', null, 'allowed-spread-namespace'));",
+        ],
+        path: '$.defaultReactArraySpreadCarrierDestructureNamespaceAllowed.code',
+      },
+      {
+        code: [
+          'const [skip, React] = [...[0], ...[ctx.React]];',
+          "ctx.render(React.createElement('div', null, 'allowed-spread-namespace'));",
+        ],
+        path: '$.defaultReactArrayFixedSpreadPrefixDestructureNamespaceAllowed.code',
+      },
+      {
+        code: [
+          'const arr = [...[ctx.React]];',
+          'const React = arr[0];',
+          "ctx.render(React.createElement('div', null, 'allowed-spread-namespace'));",
+        ],
+        path: '$.defaultReactArrayLiteralSpreadCarrierAliasNamespaceAllowed.code',
+      },
+      {
+        code: [
+          'const arr = [...[0], ...[ctx.React]];',
+          'const React = arr[1];',
+          "ctx.render(React.createElement('div', null, 'allowed-spread-namespace'));",
+        ],
+        path: '$.defaultReactArrayFixedSpreadPrefixCarrierAliasNamespaceAllowed.code',
+      },
+      {
+        code: [
+          'const arr = [...items, ctx.React.default];',
+          'arr[0] = ctx.React;',
+          'const React = arr[0];',
+          "ctx.render(React.createElement('div', null, 'allowed-reassigned-runtime-namespace'));",
+        ],
+        path: '$.defaultReactArrayUnboundedSpreadTrailingDefaultReassignedNamespaceAllowed.code',
+      },
+      {
+        code: [
+          'const source = [ctx.React];',
+          'const [...arr] = source;',
+          'const React = arr[0];',
+          "ctx.render(React.createElement('div', null, 'allowed-runtime-namespace'));",
+        ],
+        path: '$.defaultReactArrayAliasRestCarrierNamespaceAllowed.code',
+      },
+      {
+        code: [
+          'const [...arr] = [...[ctx.React]];',
+          'const React = arr[0];',
+          "ctx.render(React.createElement('div', null, 'allowed-spread-namespace'));",
+        ],
+        path: '$.defaultReactArrayLiteralSpreadRestCarrierNamespaceAllowed.code',
+      },
+      {
+        code: [
+          'const [...arr] = [...[0], ...[ctx.React]];',
+          'const React = arr[1];',
+          "ctx.render(React.createElement('div', null, 'allowed-spread-namespace'));",
+        ],
+        path: '$.defaultReactArrayFixedSpreadPrefixRestCarrierNamespaceAllowed.code',
+      },
+      {
+        code: [
+          'const safe = { ns: ctx.React };',
+          'const { ...box } = { ns: ctx.React.default, ...safe };',
+          'const React = box.ns;',
+          "ctx.render(React.createElement('div', null, 'allowed-spread-override-namespace'));",
+        ],
+        path: '$.defaultReactObjectRestCarrierSpreadOverrideAllowed.code',
+      },
+      {
+        code: [
+          'const { React = ctx.React.default } = { React: ctx.React };',
+          "ctx.render(React.createElement('div', null, 'allowed-default-source-namespace'));",
+        ],
+        path: '$.defaultReactObjectPatternDefaultSourceNamespaceAllowed.code',
+      },
+      {
+        code: [
+          'const box = {};',
+          'box.ns = { runtime: ctx.React };',
+          'const React = box.ns.runtime;',
+          "ctx.render(React.createElement('div', null, 'allowed-runtime-namespace'));",
+        ],
+        path: '$.defaultReactMultiHopMemberAssignedCarrierNamespaceAllowed.code',
+      },
+      {
+        code: [
+          'const box = { ns: {} };',
+          'box.ns.runtime = ctx.React;',
+          'const React = box.ns.runtime;',
+          "ctx.render(React.createElement('div', null, 'allowed-runtime-namespace'));",
+        ],
+        path: '$.defaultReactMultiHopMemberAssignedNamespaceAllowed.code',
+      },
+      {
+        code: [
+          'for (const React of [ctx.React]) {',
+          "  ctx.render(React.createElement('div', null, 'allowed-runtime-namespace'));",
+          '}',
+        ],
+        path: '$.defaultReactForOfRuntimeNamespaceAllowed.code',
+      },
+      {
+        code: [
+          'for (const React of [ctx.React, ctx.React]) {',
+          "  ctx.render(React.createElement('div', null, 'allowed-runtime-namespace'));",
+          '}',
+        ],
+        path: '$.defaultReactForOfMultiElementRuntimeNamespaceAllowed.code',
+      },
+      {
+        code: [
+          'for (const React of [...[ctx.React]]) {',
+          "  ctx.render(React.createElement('div', null, 'allowed-runtime-namespace'));",
+          '}',
+        ],
+        path: '$.defaultReactForOfLiteralSpreadNamespaceAllowed.code',
+      },
+      {
+        code: [
+          'const values = [ctx.React];',
+          'for (const React of values) {',
+          "  ctx.render(React.createElement('div', null, 'allowed-runtime-namespace'));",
+          '}',
+        ],
+        path: '$.defaultReactForOfArrayAliasNamespaceAllowed.code',
+      },
+      {
+        code: [
+          'const box = { ns: ctx.React.default };',
+          'for ({ ns: box.ns } of [{ ns: ctx.React }]) break;',
+          'const React = box.ns;',
+          "ctx.render(React.createElement('div', null, 'allowed-runtime-namespace'));",
+        ],
+        path: '$.defaultReactForOfMemberWriteToNamespaceAllowed.code',
+      },
+      {
+        code: [
+          'for (const { React = ctx.React.default } of [{ React: ctx.React }]) {',
+          "  ctx.render(React.createElement('div', null, 'allowed-default-source-namespace'));",
+          '}',
+        ],
+        path: '$.defaultReactForOfPatternDefaultSourceNamespaceAllowed.code',
+      },
+      {
+        code: [
+          'for (const { React = ctx.React.default } of [{ React: ctx.React }, { React: ctx.React }]) {',
+          "  ctx.render(React.createElement('div', null, 'allowed-default-source-namespace'));",
+          '}',
+        ],
+        path: '$.defaultReactForOfMultiElementPatternDefaultSourceNamespaceAllowed.code',
+      },
+      {
+        code: [
+          'const values = [{ React: ctx.React }];',
+          'for (const { React = ctx.React.default } of values) {',
+          "  ctx.render(React.createElement('div', null, 'allowed-default-source-namespace'));",
+          '}',
+        ],
+        path: '$.defaultReactForOfArrayAliasPatternDefaultSourceNamespaceAllowed.code',
+      },
+      {
+        code: [
+          'const { ReactDefault = ctx.React.default } = { ReactDefault: ctx.React };',
+          'const React = ReactDefault;',
+          "ctx.render(React.createElement('div', null, 'allowed-default-source-namespace'));",
+        ],
+        path: '$.defaultReactObjectPatternDefaultTwoStepSourceNamespaceAllowed.code',
+      },
+      {
+        code: [
+          'const [React = ctx.React.default] = [ctx.React];',
+          "ctx.render(React.createElement('div', null, 'allowed-default-source-namespace'));",
+        ],
+        path: '$.defaultReactArrayPatternDefaultSourceNamespaceAllowed.code',
+      },
+      {
+        code: [
+          '(({ React = ctx.React.default } = { React: ctx.React }) => {',
+          "  ctx.render(React.createElement('div', null, 'allowed-default-source-namespace'));",
+          '})();',
+        ],
+        path: '$.defaultReactFunctionObjectPatternDefaultSourceNamespaceAllowed.code',
       },
     ].forEach(({ code, path }) => {
       const errors = inspectRunJsAuthoringCode({
