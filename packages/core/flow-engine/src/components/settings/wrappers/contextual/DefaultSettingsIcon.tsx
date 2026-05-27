@@ -599,7 +599,7 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
         return [];
       }
     },
-    [],
+    [t],
   );
 
   // 获取可配置的flows和steps
@@ -655,8 +655,22 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
       }
     };
 
+    const shouldDeferConfigLoading = flattenSubMenus && menuLevels > 1 && (showCopyUidButton || showDeleteButton);
+    if (!visible && shouldDeferConfigLoading) {
+      setIsLoading(false);
+      return;
+    }
+
     loadConfigurableFlowsAndSteps();
-  }, [getConfigurableFlowsAndSteps, refreshTick]);
+  }, [
+    flattenSubMenus,
+    getConfigurableFlowsAndSteps,
+    menuLevels,
+    refreshTick,
+    showCopyUidButton,
+    showDeleteButton,
+    visible,
+  ]);
 
   // 构建菜单项，包含错误处理和记忆化
   const menuItems = useMemo((): NonNullable<MenuProps['items']> => {
@@ -823,7 +837,7 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
     }
 
     return items;
-  }, [configurableFlowsAndSteps, disabledIconColor, flattenSubMenus, t]);
+  }, [configurableFlowsAndSteps, disabledIconColor, flattenSubMenus, message, model, t]);
 
   // 向菜单项添加额外按钮
   const finalMenuItems = useMemo((): NonNullable<MenuProps['items']> => {
@@ -872,7 +886,9 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
   // 如果正在加载或没有可配置的flows且不显示删除按钮和复制UID按钮，不显示菜单
   const hasExtras = extraMenuItems.some((it) => it.group === 'common-actions');
 
-  if (isLoading || (configurableFlowsAndSteps.length === 0 && !showDeleteButton && !showCopyUidButton && !hasExtras)) {
+  const hasCommonActions = showCopyUidButton || showDeleteButton || hasExtras;
+
+  if (!hasCommonActions && (isLoading || configurableFlowsAndSteps.length === 0)) {
     return null;
   }
 

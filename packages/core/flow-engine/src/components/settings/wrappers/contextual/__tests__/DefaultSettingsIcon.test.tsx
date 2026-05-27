@@ -141,6 +141,53 @@ describe('DefaultSettingsIcon - only static flows are shown', () => {
     vi.clearAllMocks();
   });
 
+  it('defers nested configurable step resolution until opened when common actions are available', async () => {
+    class TestFlowModel extends FlowModel {}
+
+    const engine = new FlowEngine();
+    const model = new TestFlowModel({ uid: 'model-lazy-settings', flowEngine: engine });
+    const uiSchema = vi.fn(() => ({
+      field: { type: 'string', 'x-component': 'Input' },
+    }));
+
+    TestFlowModel.registerFlow({
+      key: 'lazyFlow',
+      title: 'Lazy Flow',
+      steps: {
+        general: {
+          title: 'General',
+          uiSchema,
+        },
+      },
+    });
+
+    const { getByLabelText } = render(
+      React.createElement(
+        ConfigProvider as any,
+        null,
+        React.createElement(
+          App as any,
+          null,
+          React.createElement(DefaultSettingsIcon as any, { model, menuLevels: 2 }),
+        ),
+      ),
+    );
+
+    expect(getByLabelText('flows-settings')).toBeTruthy();
+    expect(uiSchema).not.toHaveBeenCalled();
+
+    await act(async () => {
+      (globalThis as any).__lastDropdownOnOpenChange?.(true, { source: 'trigger' });
+    });
+
+    await waitFor(() => {
+      expect(uiSchema).toHaveBeenCalledTimes(1);
+      const menu = (globalThis as any).__lastDropdownMenu;
+      const items = (menu?.items || []) as any[];
+      expect(items.some((it) => String(it.key || '') === 'lazyFlow:general')).toBe(true);
+    });
+  });
+
   it('excludes instance (dynamic) flows from the settings menu', async () => {
     class TestFlowModel extends FlowModel {}
 
@@ -612,7 +659,7 @@ describe('DefaultSettingsIcon - only static flows are shown', () => {
       const items = (menu?.items || []) as any[];
       const subMenu = items.find((it) => Array.isArray(it?.children));
       expect(subMenu).toBeTruthy();
-      expect(subMenu!.children.some((it: any) => String(it.key).startsWith('items[0]:childFlow:cstep'))).toBe(true);
+      expect(subMenu?.children.some((it: any) => String(it.key).startsWith('items[0]:childFlow:cstep'))).toBe(true);
     });
   });
 
@@ -715,6 +762,10 @@ describe('DefaultSettingsIcon - only static flows are shown', () => {
         ),
       ),
     );
+
+    await act(async () => {
+      (globalThis as any).__lastDropdownOnOpenChange?.(true, { source: 'trigger' });
+    });
 
     await waitFor(() => {
       const menu = (globalThis as any).__lastDropdownMenu;

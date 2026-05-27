@@ -15,6 +15,7 @@ import { observable } from '@formily/reactive';
 import { get as lodashGet, merge as lodashMerge, set as lodashSet } from 'lodash';
 import { FlowContext, JSRunner } from '@nocobase/flow-engine';
 import { FormValueRuntime } from '..';
+import type { FormInstance } from 'antd';
 
 function createFormStub(initialValues: any = {}) {
   const store: any = JSON.parse(JSON.stringify(initialValues || {}));
@@ -121,6 +122,34 @@ function createFieldContext(runtime: FormValueRuntime) {
 }
 
 describe('FormValueRuntime (default rules)', () => {
+  it('skips object patches when values are unchanged', async () => {
+    const engineEmitter = new EventEmitter();
+    const blockEmitter = new EventEmitter();
+    const formStub = createFormStub({ name: 'old' });
+    const dispatchEvent = vi.fn();
+
+    const blockModel = {
+      uid: 'form-noop-patch',
+      flowEngine: { emitter: engineEmitter },
+      emitter: blockEmitter,
+      dispatchEvent,
+      getAclActionName: () => 'create',
+    } as ConstructorParameters<typeof FormValueRuntime>[0]['model'];
+
+    const runtime = new FormValueRuntime({ model: blockModel, getForm: () => formStub as unknown as FormInstance });
+    runtime.mount({ sync: true });
+
+    const blockCtx = createFieldContext(runtime);
+    await runtime.setFormValues(blockCtx, { name: 'old' }, { source: 'system' });
+
+    expect(dispatchEvent).not.toHaveBeenCalled();
+
+    await runtime.setFormValues(blockCtx, { name: 'new' }, { source: 'system' });
+
+    expect(formStub.getFieldValue(['name'])).toBe('new');
+    expect(dispatchEvent).toHaveBeenCalledTimes(1);
+  });
+
   it('recomputes default on dependency change when current equals last default; user change disables default permanently', async () => {
     const engineEmitter = new EventEmitter();
     const blockEmitter = new EventEmitter();

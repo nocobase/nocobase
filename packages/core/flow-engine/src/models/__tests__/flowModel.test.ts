@@ -313,6 +313,19 @@ describe('FlowModel', () => {
 
         model.emitter.off('onStepParamsChanged', listener);
       });
+
+      test('should not emit onStepParamsChanged when params are unchanged', () => {
+        const listener = vi.fn();
+        model.emitter.on('onStepParamsChanged', listener);
+
+        model.setStepParams('testFlow', 'step1', { param1: 'value1' });
+        model.setStepParams('testFlow', { step1: { param1: 'value1' } });
+        model.setStepParams({ testFlow: { step1: { param1: 'value1' } } });
+
+        expect(listener).not.toHaveBeenCalled();
+
+        model.emitter.off('onStepParamsChanged', listener);
+      });
     });
   });
 

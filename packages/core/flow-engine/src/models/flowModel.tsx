@@ -712,25 +712,42 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
     stepKeyOrStepsParams?: string | Record<string, ParamObject>,
     params?: ParamObject,
   ): void {
+    let hasChanged = false;
+
     if (typeof flowKeyOrAllParams === 'string') {
       const flowKey = flowKeyOrAllParams;
       if (typeof stepKeyOrStepsParams === 'string' && params !== undefined) {
-        if (!this.stepParams[flowKey]) {
-          this.stepParams[flowKey] = {};
+        const currentStepParams = this.stepParams[flowKey]?.[stepKeyOrStepsParams] || {};
+        const nextStepParams = { ...currentStepParams, ...params };
+        if (!_.isEqual(currentStepParams, nextStepParams)) {
+          if (!this.stepParams[flowKey]) {
+            this.stepParams[flowKey] = {};
+          }
+          this.stepParams[flowKey][stepKeyOrStepsParams] = nextStepParams;
+          hasChanged = true;
         }
-        this.stepParams[flowKey][stepKeyOrStepsParams] = {
-          ...this.stepParams[flowKey][stepKeyOrStepsParams],
-          ...params,
-        };
       } else if (typeof stepKeyOrStepsParams === 'object' && stepKeyOrStepsParams !== null) {
-        this.stepParams[flowKey] = { ...(this.stepParams[flowKey] || {}), ...stepKeyOrStepsParams };
+        const currentFlowParams = this.stepParams[flowKey] || {};
+        const nextFlowParams = { ...currentFlowParams, ...stepKeyOrStepsParams };
+        if (!_.isEqual(currentFlowParams, nextFlowParams)) {
+          this.stepParams[flowKey] = nextFlowParams;
+          hasChanged = true;
+        }
       }
     } else if (typeof flowKeyOrAllParams === 'object' && flowKeyOrAllParams !== null) {
       for (const fk in flowKeyOrAllParams) {
         if (Object.prototype.hasOwnProperty.call(flowKeyOrAllParams, fk)) {
-          this.stepParams[fk] = { ...(this.stepParams[fk] || {}), ...flowKeyOrAllParams[fk] };
+          const currentFlowParams = this.stepParams[fk] || {};
+          const nextFlowParams = { ...currentFlowParams, ...flowKeyOrAllParams[fk] };
+          if (!_.isEqual(currentFlowParams, nextFlowParams)) {
+            this.stepParams[fk] = nextFlowParams;
+            hasChanged = true;
+          }
         }
       }
+    }
+    if (!hasChanged) {
+      return;
     }
     // 发起配置修改事件
     this.emitter.emit('onStepParamsChanged');
