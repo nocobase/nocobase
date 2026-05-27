@@ -21,10 +21,13 @@ export function createFlowEngineMockServer(options: MockServerOptions = {}) {
   const databaseOptions = isRecord(database) ? database : {};
 
   return createMockServer({
+    skipSupervisor: true,
     ...restOptions,
     database: {
       dialect: 'sqlite',
       storage: ':memory:',
+      // CI postgres jobs set DB_SCHEMA; SQLite cannot create schemas.
+      schema: undefined,
       ...databaseOptions,
     },
   });
