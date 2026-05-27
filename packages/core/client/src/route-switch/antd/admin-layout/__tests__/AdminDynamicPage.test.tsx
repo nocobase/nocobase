@@ -8,9 +8,9 @@
  */
 
 import { FlowEngine, FlowEngineProvider } from '@nocobase/flow-engine';
-import { render, screen, waitFor } from '@nocobase/test/client';
+import { act, render, screen, userEvent, waitFor } from '@nocobase/test/client';
 import React from 'react';
-import { MemoryRouter, Route, Routes } from 'react-router-dom';
+import { MemoryRouter, Route, Routes, useNavigate } from 'react-router-dom';
 import { ADMIN_LAYOUT_MODEL_UID } from '@nocobase/client-v2';
 import { CurrentPageUidProvider } from '../../../../application/CustomRouterContextProvider';
 import { AdminDynamicPage } from '../AdminDynamicPage';
@@ -54,6 +54,35 @@ vi.mock('../KeepAlive', async (importOriginal) => {
 vi.mock('../../../../schema-component', () => ({
   RemoteSchemaComponent: ({ uid }) => <div data-testid="remote-schema" data-uid={uid} />,
 }));
+
+const flushPromises = async (times = 3) => {
+  for (let i = 0; i < times; i += 1) {
+    await Promise.resolve();
+  }
+};
+
+const NavigateToPopup = () => {
+  const navigate = useNavigate();
+  return (
+    <>
+      <button type="button" onClick={() => navigate('/admin/flow-page-1/view/detail')}>
+        open popup
+      </button>
+      <button type="button" onClick={() => navigate('/admin/flow-page-1')}>
+        close popup
+      </button>
+    </>
+  );
+};
+
+const AdminDynamicPageRoute = () => (
+  <>
+    <CurrentPageUidProvider>
+      <AdminDynamicPage />
+    </CurrentPageUidProvider>
+    <NavigateToPopup />
+  </>
+);
 
 describe('AdminDynamicPage', () => {
   let engine: FlowEngine;
@@ -111,6 +140,79 @@ describe('AdminDynamicPage', () => {
     await waitFor(() => {
       expect(adminLayoutModel.currentLayoutRoute).toBeNull();
     });
+  });
+
+  it('should not deactivate the current page when opening a popup route in legacy admin route', async () => {
+    render(
+      <FlowEngineProvider engine={engine}>
+        <MemoryRouter initialEntries={['/admin/flow-page-1']}>
+          <Routes>
+            <Route path="/admin/:name" element={<AdminDynamicPageRoute />} />
+            <Route path="/admin/:name/view/*" element={<AdminDynamicPageRoute />} />
+          </Routes>
+        </MemoryRouter>
+      </FlowEngineProvider>,
+    );
+
+    await waitFor(() => {
+      expect(adminLayoutModel.currentLayoutRoute).toMatchObject({
+        type: 'page',
+        pageUid: 'flow-page-1',
+        pathname: '/admin/flow-page-1',
+      });
+    });
+
+    const routeModel = engine.createModel({
+      uid: 'flow-page-1',
+      use: 'FlowModel',
+    });
+    const activateSpy = vi.fn();
+    const deactivateSpy = vi.fn();
+    routeModel.dispatchEvent = vi.fn(async (_eventName: string, args: any) => {
+      args.activateRef.current = activateSpy;
+      args.deactivateRef.current = deactivateSpy;
+      args.onOpen?.();
+      return [];
+    });
+    adminLayoutModel.registerRoutePage('flow-page-1', { active: true });
+
+    adminLayoutModel.syncLayoutRoute({
+      name: 'admin.page',
+      pathname: '/admin/flow-page-1',
+      params: { name: 'flow-page-1' },
+      layoutRouteName: 'admin',
+      layoutBasePathname: '/admin',
+    });
+    await flushPromises();
+
+    await act(async () => {
+      await userEvent.click(screen.getByRole('button', { name: 'open popup' }));
+    });
+    await waitFor(() => {
+      expect(adminLayoutModel.currentLayoutRoute).toMatchObject({
+        pathname: '/admin/flow-page-1/view/detail',
+      });
+    });
+    await flushPromises();
+
+    expect(deactivateSpy).not.toHaveBeenCalled();
+    expect(activateSpy).not.toHaveBeenCalled();
+
+    deactivateSpy.mockClear();
+    activateSpy.mockClear();
+
+    await act(async () => {
+      await userEvent.click(screen.getByRole('button', { name: 'close popup' }));
+    });
+    await waitFor(() => {
+      expect(adminLayoutModel.currentLayoutRoute).toMatchObject({
+        pathname: '/admin/flow-page-1',
+      });
+    });
+    await flushPromises();
+
+    expect(deactivateSpy).not.toHaveBeenCalled();
+    expect(activateSpy).not.toHaveBeenCalled();
   });
 
   it('should render flow pages through v2 FlowRoute in legacy admin route', async () => {

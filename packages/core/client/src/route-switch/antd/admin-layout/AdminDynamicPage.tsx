@@ -9,7 +9,7 @@
 
 import { type FlowEngine, useFlowEngine } from '@nocobase/flow-engine';
 import { FlowRoute, getAdminLayoutModel, type LayoutRouteLike } from '@nocobase/client-v2';
-import React, { useEffect, useMemo } from 'react';
+import React, { useEffect, useMemo, useRef } from 'react';
 import { useLocation, useParams } from 'react-router-dom';
 import { CurrentPageUidContext, useCurrentPageUid } from '../../../application/CustomRouterContextProvider';
 import { AppNotFound } from '../../../common/AppNotFound';
@@ -18,6 +18,8 @@ import { KeepAlive, useKeepAlive } from './KeepAlive';
 import { CurrentRouteProvider, useAllAccessDesktopRoutes } from './route-runtime';
 import { NocoBaseDesktopRoute, NocoBaseDesktopRouteType } from './route-types';
 import { findRouteBySchemaUid, isGroup } from './route-utils';
+
+const getRefCurrent = <T,>(ref: React.MutableRefObject<T>) => ref.current;
 
 const noAccessPermission = (currentPageUid: string, allAccessRoutes: NocoBaseDesktopRoute[]) => {
   if (!currentPageUid) {
@@ -38,6 +40,7 @@ const useSyncLegacyAdminLayoutRoute = () => {
   const params = useParams();
   const { name, tabUid } = params;
   const viewPath = params['*'];
+  const syncVersionRef = useRef(0);
   const routeParams = useMemo(
     () => ({ name, tabUid, '*': viewPath }) as Record<string, string | undefined>,
     [name, tabUid, viewPath],
@@ -54,6 +57,7 @@ const useSyncLegacyAdminLayoutRoute = () => {
   );
 
   useEffect(() => {
+    const syncVersion = ++syncVersionRef.current;
     const adminLayoutModel = getAdminLayoutModel(flowEngine, { required: false });
     if (!adminLayoutModel || !name) {
       return;
@@ -62,7 +66,16 @@ const useSyncLegacyAdminLayoutRoute = () => {
     adminLayoutModel.syncLayoutRoute(routeLike);
 
     return () => {
-      adminLayoutModel.clearLayoutRoute(routeLike);
+      Promise.resolve()
+        .then(() => {
+          if (getRefCurrent(syncVersionRef) !== syncVersion) {
+            return;
+          }
+          adminLayoutModel.clearLayoutRoute(routeLike);
+        })
+        .catch(() => {
+          // ignore
+        });
     };
   }, [flowEngine, name, routeLike]);
 };
