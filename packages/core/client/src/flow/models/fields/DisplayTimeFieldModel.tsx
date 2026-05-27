@@ -15,7 +15,7 @@ import { ClickableFieldModel } from './ClickableFieldModel';
 export class DisplayTimeFieldModel extends ClickableFieldModel {
   public renderComponent(value) {
     const { prefix, suffix } = this.props;
-    const format = this.props['format'] || 'HH:mm:ss';
+    const format = this.props['timeFormat'] || this.props['format'] || 'HH:mm:ss';
     const result = value && dayjs(value, 'HH:mm:ss').format(format);
     return (
       <span>
