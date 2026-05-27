@@ -15,8 +15,8 @@ Sebelum memulai, pastikan:
 - Anda sudah memiliki lingkungan NocoBase yang berjalan. Untuk instalasi sistem utama, silakan merujuk ke [dokumentasi instalasi resmi](https://docs-cn.nocobase.com/welcome/getting-started/installation) yang lebih detail.
 - Versi NocoBase **v2.1.0-beta.2 atau lebih tinggi**
 - Anda telah mengunduh file yang sesuai untuk sistem CRM:
-  - **File backup**: [nocobase_crm_v2_backup_260406.nbdata](https://static-docs.nocobase.com/nocobase_crm_v2_backup_260406.nbdata) - untuk metode satu
-  - **File SQL**: [nocobase_crm_v2_sql_260406.zip](https://static-docs.nocobase.com/nocobase_crm_v2_sql_260406.zip) - untuk metode dua
+  - **File backup**: [nocobase_crm_v2_backup_260523.nbdata](https://static-docs.nocobase.com/nocobase_crm_v2_backup_260523.nbdata) - untuk metode satu
+  - **File SQL**: [nocobase_crm_v2_sql_260523.zip](https://static-docs.nocobase.com/nocobase_crm_v2_sql_260523.zip) - untuk metode dua
 
 **Catatan Penting**:
 - Solusi ini dibuat berdasarkan database **PostgreSQL 16**, pastikan lingkungan Anda menggunakan PostgreSQL 16.
@@ -100,13 +100,13 @@ Siapkan database baru yang kosong untuk data yang akan diimpor.
 Dapatkan file database yang sudah diunduh (biasanya format `.sql`), dan impor isinya ke database yang sudah disiapkan di langkah sebelumnya. Ada beberapa cara eksekusi, tergantung pada lingkungan Anda:
 
 * **Opsi A: Melalui command line server (contoh Docker)**
-  Jika Anda menginstal NocoBase dan database menggunakan Docker, Anda dapat mengupload file `.sql` ke server, lalu menggunakan perintah `docker exec` untuk menjalankan impor. Misalkan nama container PostgreSQL Anda adalah `my-nocobase-db`, dan nama file adalah `nocobase_crm_v2_sql_260327.sql`:
+  Jika Anda menginstal NocoBase dan database menggunakan Docker, Anda dapat mengupload file `.sql` ke server, lalu menggunakan perintah `docker exec` untuk menjalankan impor. Misalkan nama container PostgreSQL Anda adalah `my-nocobase-db`, dan nama file adalah `nocobase_crm_v2_sql_260523.sql`:
 
   ```bash
   # Salin file sql ke dalam container
-  docker cp nocobase_crm_v2_sql_260327.sql my-nocobase-db:/tmp/
+  docker cp nocobase_crm_v2_sql_260523.sql my-nocobase-db:/tmp/
   # Masuk ke container untuk menjalankan perintah impor
-  docker exec -it my-nocobase-db psql -U nocobase -d nocobase -f /tmp/nocobase_crm_v2_sql_260327.sql
+  docker exec -it my-nocobase-db psql -U nocobase -d nocobase -f /tmp/nocobase_crm_v2_sql_260523.sql
   ```
 * **Opsi B: Melalui Client Database Remote (Navicat, dll.)**
   Jika database Anda mengekspos port, Anda dapat menggunakan client database grafis apa pun (seperti Navicat, DBeaver, pgAdmin, dll.) untuk terhubung ke database, lalu:
