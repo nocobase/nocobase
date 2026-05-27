@@ -7,7 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { CompatibleSchemaInitializer, useActionAvailable } from '@nocobase/client';
+import { useFieldSchema } from '@formily/react';
+import { CompatibleSchemaInitializer, useActionAvailable, useCollection } from '@nocobase/client';
 
 const commonOptions = {
   title: "{{t('Configure actions')}}",
@@ -57,6 +58,21 @@ const commonOptions = {
       Component: 'RefreshActionInitializer',
       schema: {
         'x-align': 'right',
+      },
+    },
+    {
+      name: 'toggle',
+      title: "{{t('Expand/Collapse')}}",
+      Component: 'ExpandableActionInitializer',
+      schema: {
+        'x-align': 'right',
+      },
+
+      useVisible() {
+        const schema = useFieldSchema();
+        const collection = useCollection();
+        const { treeTable } = schema?.parent?.['x-decorator-props'] || {};
+        return collection.tree && treeTable;
       },
     },
     {
