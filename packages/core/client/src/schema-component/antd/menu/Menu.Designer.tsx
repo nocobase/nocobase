@@ -270,8 +270,8 @@ export const MenuDesigner = () => {
   const menuSchema = findMenuSchema(fieldSchema);
   const compile = useCompile();
   const { urlSchema, paramsSchema } = useURLAndHTMLSchema();
-  const menuOnSelect = menuSchema?.['x-component-props']?.['onSelect'];
-  const onSelect = useMemo(() => compile(menuOnSelect), [compile, menuOnSelect]);
+  const onSelectExpression = menuSchema?.['x-component-props']?.['onSelect'];
+  const onSelect = useMemo(() => compile(onSelectExpression), [compile, onSelectExpression]);
   const items = useMemo(() => toItems(menuSchema?.properties, { t, compile }), [menuSchema?.properties, t, compile]);
   const effects = useCallback(
     (form) => {
