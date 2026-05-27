@@ -7,10 +7,11 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import actions, { Context } from '@nocobase/actions';
+import actions, { Context, Next } from '@nocobase/actions';
 import { Op } from '@nocobase/database';
 import PluginWorkflowServer from '../Plugin';
 import { EXECUTION_STATUS, JOB_STATUS } from '../constants';
+import { JobModel } from '../types';
 
 function getExecutionLockKey(executionId: number | string) {
   return `workflow:execution:${executionId}`;
@@ -20,7 +21,7 @@ function isLockAcquireError(error: unknown) {
   return error instanceof Error && error.constructor.name === 'LockAcquireError';
 }
 
-export async function destroy(context: Context, next) {
+export async function destroy(context: Context, next: Next) {
   context.action.mergeParams({
     filter: {
       status: {
@@ -32,7 +33,7 @@ export async function destroy(context: Context, next) {
   await actions.destroy(context, next);
 }
 
-export async function cancel(context: Context, next) {
+export async function cancel(context: Context, next: Next) {
   const { filterByTk } = context.action.params;
   const ExecutionRepo = context.db.getRepository('executions');
   const JobRepo = context.db.getRepository('jobs');
@@ -58,13 +59,13 @@ export async function cancel(context: Context, next) {
           { transaction },
         );
 
-        const pendingJobs = execution.jobs.filter((job) => job.status === JOB_STATUS.PENDING);
+        const pendingJobs = execution.jobs.filter((job: JobModel) => job.status === JOB_STATUS.PENDING);
         await JobRepo.update({
           values: {
             status: JOB_STATUS.ABORTED,
           },
           filter: {
-            id: pendingJobs.map((job) => job.id),
+            id: pendingJobs.map((job: JobModel) => job.id),
           },
           individualHooks: false,
           transaction,
@@ -82,7 +83,7 @@ export async function cancel(context: Context, next) {
   await next();
 }
 
-export async function rerun(context: Context, next) {
+export async function rerun(context: Context, next: Next) {
   const workflowPlugin = context.app.pm.get(PluginWorkflowServer) as PluginWorkflowServer;
   const { filterByTk, values = {} } = context.action.params;
   const { nodeId, overwrite } = values;
