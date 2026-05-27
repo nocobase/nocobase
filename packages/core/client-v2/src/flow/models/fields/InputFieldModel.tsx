@@ -12,9 +12,13 @@ import { Input } from 'antd';
 import React from 'react';
 import { customAlphabet as Alphabet } from 'nanoid';
 import { FieldModel } from '../base/FieldModel';
+import { ScanInput } from '../../../components/form/ScanInput';
 
 export class InputFieldModel extends FieldModel {
   render() {
+    if (this.props.enableScan) {
+      return <ScanInput {...this.props} />;
+    }
     return <Input {...this.props} />;
   }
 }
@@ -30,6 +34,51 @@ InputFieldModel.registerFlow({
             const { size, customAlphabet } = ctx.collectionField.options || { size: 21 };
             ctx.model.props.onChange(Alphabet(customAlphabet, size)());
           }
+        });
+      },
+    },
+  },
+});
+
+InputFieldModel.registerFlow({
+  key: 'scanInputSettings',
+  sort: 800,
+  title: tExpr('Scan input settings'),
+  steps: {
+    enableScan: {
+      title: tExpr('Enable Scan'),
+      uiMode: { type: 'switch', key: 'enableScan' },
+      hideInSettings(ctx) {
+        return ctx.model.getProps().pattern === 'readPretty' || ctx.model.getProps().disabled;
+      },
+      defaultParams(ctx) {
+        return {
+          enableScan: !!ctx.model.props.enableScan,
+        };
+      },
+      handler(ctx, params) {
+        ctx.model.setProps({
+          enableScan: !!params.enableScan,
+          disableManualInput: params.enableScan ? ctx.model.props.disableManualInput : false,
+        });
+      },
+    },
+    disableManualInput: {
+      title: tExpr('Disable manual input'),
+      uiMode: { type: 'switch', key: 'disableManualInput' },
+      hideInSettings(ctx) {
+        return (
+          !ctx.model.props.enableScan || ctx.model.getProps().pattern === 'readPretty' || ctx.model.getProps().disabled
+        );
+      },
+      defaultParams(ctx) {
+        return {
+          disableManualInput: !!ctx.model.props.disableManualInput,
+        };
+      },
+      handler(ctx, params) {
+        ctx.model.setProps({
+          disableManualInput: !!params.disableManualInput,
         });
       },
     },

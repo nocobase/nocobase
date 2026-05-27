@@ -16,4 +16,5 @@ export * from './FileSizeInput';
 export * from './JsonTextArea';
 export * from './PasswordInput';
 export * from './RemoteSelect';
+export * from './ScanInput';
 export * from './VariableInput';
