@@ -7,21 +7,18 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-// @ts-ignore
-import pkg from '../../package.json';
-import { useApp } from '@nocobase/client';
-import type { FlowModel } from '@nocobase/flow-engine';
+import { tExpr, useFlowEngine, type FlowModel } from '@nocobase/flow-engine';
 
-export const NAMESPACE = pkg.name;
+export const NAMESPACE = '@nocobase/plugin-ui-templates';
 
 export function useT() {
-  const app = useApp();
+  const engine = useFlowEngine();
   return (str: string, options?: Record<string, any>) =>
-    app.i18n.t(str, { ns: [pkg.name, 'client'], ...(options || {}) });
+    engine.context.t(str, { ns: [NAMESPACE, 'client'], nsMode: 'fallback', ...(options || {}) });
 }
 
 export function tStr(key: string) {
-  return `{{t(${JSON.stringify(key)}, { ns: ['${pkg.name}', 'client'], nsMode: 'fallback' })}}`;
+  return tExpr(key, { ns: [NAMESPACE, 'client'], nsMode: 'fallback' });
 }
 
 /**
@@ -32,7 +29,7 @@ export function tStr(key: string) {
 export function getPluginT(model: FlowModel): (key: string, options?: any) => string {
   if (model.flowEngine?.translate) {
     return (key: string, options?: any) => {
-      return model.flowEngine.translate(key, { ns: [pkg.name, 'client'], nsMode: 'fallback', ...options });
+      return model.flowEngine.translate(key, { ns: [NAMESPACE, 'client'], nsMode: 'fallback', ...options });
     };
   }
   // 回退到原始键值

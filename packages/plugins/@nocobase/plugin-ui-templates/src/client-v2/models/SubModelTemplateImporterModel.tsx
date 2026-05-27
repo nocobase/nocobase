@@ -9,7 +9,7 @@
 
 import React from 'react';
 import { Button, Space } from 'antd';
-import { BlockModel, CommonItemModel, FilterFormBlockModel, FormBlockModel } from '@nocobase/client';
+import { BlockModel, CommonItemModel, FilterFormBlockModel, FormBlockModel } from '@nocobase/client-v2';
 import {
   FlowModel,
   FlowContext,

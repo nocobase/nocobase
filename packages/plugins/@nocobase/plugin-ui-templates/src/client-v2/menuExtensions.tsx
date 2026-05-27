@@ -12,7 +12,7 @@ import { Button, Form, Input, Modal, Radio, Space, Tooltip, Typography } from 'a
 import { ExclamationCircleFilled, QuestionCircleOutlined } from '@ant-design/icons';
 import _ from 'lodash';
 import { FlowModel, createBlockScopedEngine } from '@nocobase/flow-engine';
-import { BlockModel } from '@nocobase/client';
+import { BlockModel } from '@nocobase/client-v2';
 import { ReferenceBlockModel } from './models/ReferenceBlockModel';
 import { NAMESPACE, tStr, getPluginT } from './locale';
 import {
@@ -45,6 +45,7 @@ const openCopyDialogs = new WeakSet<FlowModel>();
 const openFieldsCopyDialogs = new WeakSet<FlowModel>();
 const openSavePopupTemplateDialogs = new Set<string>();
 const openConvertPopupTemplateDialogs = new Set<string>();
+let unregisterMenuExtensions: (() => void) | undefined;
 
 const GRID_REF_FLOW_KEY = 'referenceSettings';
 const GRID_REF_STEP_KEY = 'useTemplate';
@@ -961,134 +962,147 @@ function isReferenceTarget(model: FlowModel): boolean {
 }
 
 export function registerMenuExtensions() {
-  BlockModel.registerExtraMenuItems({
-    group: 'common-actions',
-    sort: -10,
-    matcher: (model) => {
-      return (
-        !isReferenceTarget(model) &&
-        model?.use !== 'ApplyTaskCardDetailsModel' &&
-        model?.use !== 'ApprovalTaskCardDetailsModel'
-      );
-    },
-    items: async (model: FlowModel, t) => {
-      const pluginT = getPluginT(model);
-      const items: MenuItem[] = [];
-      const hasReferenceFields = !!getReferenceFormGridSettings(model);
-      if (hasReferenceFields) {
-        items.push({
-          key: 'block-reference:convert-fields-to-copy',
-          label: pluginT('Convert reference fields to duplicate'),
-          onClick: () => handleConvertFieldsToCopy(model, t),
-          sort: -6,
-          group: 'common-actions',
-        });
-      } else {
-        items.push({
-          key: 'block-reference:convert-to-template',
-          label: pluginT('Save as template'),
-          onClick: () => handleConvertToTemplate(model, t),
-          sort: -10,
-          group: 'common-actions',
-        });
-      }
-      return items;
-    },
-  });
+  if (unregisterMenuExtensions) {
+    return unregisterMenuExtensions;
+  }
 
-  ReferenceBlockModel.registerExtraMenuItems({
-    group: 'common-actions',
-    sort: -5,
-    matcher: () => true,
-    items: async (model: FlowModel, t) => {
-      const pluginT = getPluginT(model);
-      const items: MenuItem[] = [];
-      const tpl = model.getStepParams('referenceSettings', 'useTemplate') || {};
-      const hasTpl = !!tpl?.templateUid;
-      if (hasTpl) {
-        items.push({
-          key: 'block-reference:convert-to-copy',
-          label: pluginT('Convert reference to duplicate'),
-          onClick: () => handleConvertToCopy(model, t),
-          sort: -5,
-          group: 'common-actions',
-        });
-      }
-      return items;
-    },
-  });
-
-  // Register popup template menu items on FlowModel base class with matcher
-  // This ensures any model with popupSettings flow (not just PopupActionModel) gets these menu items
-  FlowModel.registerExtraMenuItems({
-    group: 'common-actions',
-    sort: -8,
-    matcher: (model) => {
-      // Check if model has popupSettings flow
-      const popupFlow = model.getFlow?.('popupSettings');
-      if (!popupFlow) return false;
-
-      // 对于字段，检查是否启用了 click-to-open
-      // 如果是字段但没有启用 click-to-open，不显示弹窗相关菜单
-      const displayFieldSettingsFlow = model.getFlow?.('displayFieldSettings');
-      if (displayFieldSettingsFlow) {
-        const clickToOpen = model.getStepParams?.('displayFieldSettings', 'clickToOpen')?.clickToOpen;
-        // 如果显式设置了 clickToOpen 为 false，不显示菜单
-        if (clickToOpen === false) {
-          return false;
+  const disposers = [
+    BlockModel.registerExtraMenuItems({
+      group: 'common-actions',
+      sort: -10,
+      matcher: (model) => {
+        return (
+          !isReferenceTarget(model) &&
+          model?.use !== 'ApplyTaskCardDetailsModel' &&
+          model?.use !== 'ApprovalTaskCardDetailsModel'
+        );
+      },
+      items: async (model: FlowModel, t) => {
+        const pluginT = getPluginT(model);
+        const items: MenuItem[] = [];
+        const hasReferenceFields = !!getReferenceFormGridSettings(model);
+        if (hasReferenceFields) {
+          items.push({
+            key: 'block-reference:convert-fields-to-copy',
+            label: pluginT('Convert reference fields to duplicate'),
+            onClick: () => handleConvertFieldsToCopy(model, t),
+            sort: -6,
+            group: 'common-actions',
+          });
+        } else {
+          items.push({
+            key: 'block-reference:convert-to-template',
+            label: pluginT('Save as template'),
+            onClick: () => handleConvertToTemplate(model, t),
+            sort: -10,
+            group: 'common-actions',
+          });
         }
-        // 如果未设置 clickToOpen，对于非关联字段默认不显示
-        if (clickToOpen === undefined) {
-          const collectionField = (model.context as any)?.collectionField;
-          if (collectionField && !collectionField?.isAssociationField?.()) {
+        return items;
+      },
+    }),
+
+    ReferenceBlockModel.registerExtraMenuItems({
+      group: 'common-actions',
+      sort: -5,
+      matcher: () => true,
+      items: async (model: FlowModel, t) => {
+        const pluginT = getPluginT(model);
+        const items: MenuItem[] = [];
+        const tpl = model.getStepParams('referenceSettings', 'useTemplate') || {};
+        const hasTpl = !!tpl?.templateUid;
+        if (hasTpl) {
+          items.push({
+            key: 'block-reference:convert-to-copy',
+            label: pluginT('Convert reference to duplicate'),
+            onClick: () => handleConvertToCopy(model, t),
+            sort: -5,
+            group: 'common-actions',
+          });
+        }
+        return items;
+      },
+    }),
+
+    // Register popup template menu items on FlowModel base class with matcher.
+    // This ensures any model with popupSettings flow (not just PopupActionModel) gets these menu items.
+    FlowModel.registerExtraMenuItems({
+      group: 'common-actions',
+      sort: -8,
+      matcher: (model) => {
+        // Check if model has popupSettings flow
+        const popupFlow = model.getFlow?.('popupSettings');
+        if (!popupFlow) return false;
+
+        // 对于字段，检查是否启用了 click-to-open
+        // 如果是字段但没有启用 click-to-open，不显示弹窗相关菜单
+        const displayFieldSettingsFlow = model.getFlow?.('displayFieldSettings');
+        if (displayFieldSettingsFlow) {
+          const clickToOpen = model.getStepParams?.('displayFieldSettings', 'clickToOpen')?.clickToOpen;
+          // 如果显式设置了 clickToOpen 为 false，不显示菜单
+          if (clickToOpen === false) {
             return false;
           }
+          // 如果未设置 clickToOpen，对于非关联字段默认不显示
+          if (clickToOpen === undefined) {
+            const collectionField = (model.context as any)?.collectionField;
+            if (collectionField && !collectionField?.isAssociationField?.()) {
+              return false;
+            }
+          }
         }
-      }
 
-      return true;
-    },
-    items: async (model: FlowModel, t) => {
-      const popupFlow = model.getFlow?.('popupSettings');
-      const resolveOpenViewStepKey = (flow: any): string | undefined => {
-        const steps = flow?.steps || {};
-        if (steps?.openView) return 'openView';
-        const found = Object.entries(steps).find(([, def]) => (def as any)?.use === 'openView');
-        return found?.[0];
-      };
-      const openViewStepKey =
-        (model.getStepParams('popupSettings', 'openView') !== undefined && 'openView') ||
-        resolveOpenViewStepKey(popupFlow) ||
-        'openView';
-      const openViewParams = model.getStepParams('popupSettings', openViewStepKey) || {};
-      const templateUid =
-        typeof (openViewParams as any)?.popupTemplateUid === 'string'
-          ? (openViewParams as any).popupTemplateUid.trim()
-          : '';
-      const hasTemplate = !!templateUid;
-      const disablePopupTemplateMenu = !!(openViewParams as any)?.disablePopupTemplateMenu;
-      const pluginT = getPluginT(model);
-      if (hasTemplate) {
+        return true;
+      },
+      items: async (model: FlowModel, t) => {
+        const popupFlow = model.getFlow?.('popupSettings');
+        const resolveOpenViewStepKey = (flow: any): string | undefined => {
+          const steps = flow?.steps || {};
+          if (steps?.openView) return 'openView';
+          const found = Object.entries(steps).find(([, def]) => (def as any)?.use === 'openView');
+          return found?.[0];
+        };
+        const openViewStepKey =
+          (model.getStepParams('popupSettings', 'openView') !== undefined && 'openView') ||
+          resolveOpenViewStepKey(popupFlow) ||
+          'openView';
+        const openViewParams = model.getStepParams('popupSettings', openViewStepKey) || {};
+        const templateUid =
+          typeof (openViewParams as any)?.popupTemplateUid === 'string'
+            ? (openViewParams as any).popupTemplateUid.trim()
+            : '';
+        const hasTemplate = !!templateUid;
+        const disablePopupTemplateMenu = !!(openViewParams as any)?.disablePopupTemplateMenu;
+        const pluginT = getPluginT(model);
+        if (hasTemplate) {
+          return [
+            {
+              key: 'block-reference:convert-popup-template-to-copy',
+              label: pluginT('Convert reference to duplicate'),
+              onClick: () => handleConvertPopupTemplateToCopy(model, t),
+              sort: -8,
+            },
+          ];
+        }
+        if (disablePopupTemplateMenu) {
+          return [];
+        }
         return [
           {
-            key: 'block-reference:convert-popup-template-to-copy',
-            label: pluginT('Convert reference to duplicate'),
-            onClick: () => handleConvertPopupTemplateToCopy(model, t),
+            key: 'block-reference:save-popup-as-template',
+            label: pluginT('Save as template'),
+            onClick: () => handleSavePopupAsTemplate(model, t),
             sort: -8,
           },
         ];
-      }
-      if (disablePopupTemplateMenu) {
-        return [];
-      }
-      return [
-        {
-          key: 'block-reference:save-popup-as-template',
-          label: pluginT('Save as template'),
-          onClick: () => handleSavePopupAsTemplate(model, t),
-          sort: -8,
-        },
-      ];
-    },
-  });
+      },
+    }),
+  ];
+
+  unregisterMenuExtensions = () => {
+    disposers.forEach((dispose) => dispose());
+    unregisterMenuExtensions = undefined;
+  };
+
+  return unregisterMenuExtensions;
 }

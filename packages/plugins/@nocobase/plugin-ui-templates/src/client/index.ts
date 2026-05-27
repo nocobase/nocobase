@@ -7,17 +7,17 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Plugin } from '@nocobase/client';
-import { ReferenceBlockModel } from './models/ReferenceBlockModel';
-import { ReferenceFormGridModel } from './models/ReferenceFormGridModel';
-import { SubModelTemplateImporterModel } from './models/SubModelTemplateImporterModel';
-import { BlockTemplatesPage, PopupTemplatesPage } from './components/FlowModelTemplatesPage';
-// @ts-ignore
-import pkg from '../../package.json';
-import { registerMenuExtensions } from './menuExtensions';
-import { registerOpenViewPopupTemplateAction } from './openViewActionExtensions';
+import { lazy, Plugin } from '@nocobase/client';
+import { ReferenceBlockModel } from '../client-v2/models/ReferenceBlockModel';
+import { ReferenceFormGridModel } from '../client-v2/models/ReferenceFormGridModel';
+import { SubModelTemplateImporterModel } from '../client-v2/models/SubModelTemplateImporterModel';
+import { registerMenuExtensions } from '../client-v2/menuExtensions';
+import { registerOpenViewPopupTemplateAction } from '../client-v2/openViewActionExtensions';
 
 const NAMESPACE = 'ui-templates';
+const PLUGIN_NAMESPACE = '@nocobase/plugin-ui-templates';
+const BlockTemplatesPage = lazy(() => import('../client-v2/pages/BlockTemplatesPage'));
+const PopupTemplatesPage = lazy(() => import('../client-v2/pages/PopupTemplatesPage'));
 
 export class PluginBlockReferenceClient extends Plugin {
   async load() {
@@ -30,20 +30,23 @@ export class PluginBlockReferenceClient extends Plugin {
 
     // 父级菜单（只有标题，无组件）
     this.app.pluginSettingsManager.add(NAMESPACE, {
-      title: `{{t("UI templates", { ns: "${pkg.name}", nsMode: "fallback" })}}`,
+      title: `{{t("UI templates", { ns: "${PLUGIN_NAMESPACE}", nsMode: "fallback" })}}`,
       icon: 'ProfileOutlined',
+      aclSnippet: 'pm.ui-templates.templates',
     });
 
-    // 子级：区块模板 (v2)
+    // 子级：区块模板
     this.app.pluginSettingsManager.add(`${NAMESPACE}.block`, {
-      title: `{{t("Block templates (v2)", { ns: "${pkg.name}", nsMode: "fallback" })}}`,
+      title: `{{t("Block templates", { ns: "${PLUGIN_NAMESPACE}", nsMode: "fallback" })}}`,
       Component: BlockTemplatesPage,
+      aclSnippet: 'pm.ui-templates.templates',
     });
 
-    // 子级：弹窗模板 (v2)
+    // 子级：弹窗模板
     this.app.pluginSettingsManager.add(`${NAMESPACE}.popup`, {
-      title: `{{t("Popup templates (v2)", { ns: "${pkg.name}", nsMode: "fallback" })}}`,
+      title: `{{t("Popup templates", { ns: "${PLUGIN_NAMESPACE}", nsMode: "fallback" })}}`,
       Component: PopupTemplatesPage,
+      aclSnippet: 'pm.ui-templates.templates',
     });
     registerMenuExtensions();
   }

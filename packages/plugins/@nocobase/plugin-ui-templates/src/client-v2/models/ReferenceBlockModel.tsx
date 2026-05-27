@@ -18,7 +18,7 @@ import {
   type FlowModel,
 } from '@nocobase/flow-engine';
 import { tStr, NAMESPACE } from '../locale';
-import { BlockModel } from '@nocobase/client';
+import { BlockModel } from '@nocobase/client-v2';
 import { renderTemplateSelectLabel, renderTemplateSelectOption } from '../components/TemplateSelectOption';
 import {
   TEMPLATE_LIST_PAGE_SIZE,
