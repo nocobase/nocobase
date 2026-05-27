@@ -76,16 +76,25 @@ const getTreeCollectionState = (ctx: FlowModelContext) => {
   };
 };
 
+const withGanttBlockModel = (ctx: FlowModelContext, blockModel: any) => {
+  if (!blockModel || ctx.blockModel) {
+    return ctx;
+  }
+
+  if (typeof (ctx as any).defineProperty === 'function') {
+    (ctx as any).defineProperty('blockModel', { value: blockModel });
+    return ctx;
+  }
+
+  return {
+    ...ctx,
+    blockModel,
+  } as unknown as FlowModelContext;
+};
+
 export class GanttCollectionActionGroupModel extends ActionGroupModel {
   static async defineChildren(ctx: FlowModelContext) {
-    const blockModel = resolveGanttBlockModel(ctx);
-    const normalizedCtx =
-      blockModel && !ctx.blockModel
-        ? ({
-            ...ctx,
-            blockModel,
-          } as FlowModelContext)
-        : ctx;
+    const normalizedCtx = withGanttBlockModel(ctx, resolveGanttBlockModel(ctx));
     const items = [];
 
     for (const modelName of ALLOWED_GANTT_COLLECTION_ACTIONS) {

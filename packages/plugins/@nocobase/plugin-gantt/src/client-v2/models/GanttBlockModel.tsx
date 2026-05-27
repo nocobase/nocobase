@@ -500,9 +500,11 @@ export class GanttBlockModel extends TableBlockModel {
   }
 
   renderConfigureActions() {
+    const actionMenuKey = `gantt-add-actions-${this.isTreeTableEnabled() ? 'tree' : 'plain'}`;
+
     return (
       <AddSubModelButton
-        key={'gantt-add-actions'}
+        key={actionMenuKey}
         model={this}
         subModelBaseClass={this.getModelClassName('CollectionActionGroupModel')}
         subModelKey="actions"

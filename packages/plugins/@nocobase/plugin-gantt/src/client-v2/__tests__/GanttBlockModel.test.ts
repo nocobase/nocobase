@@ -184,6 +184,25 @@ describe('GanttBlockModel row actions column', () => {
 
     expect(actionsColumn?.props?.width).toBe(250);
   });
+
+  test('rebuilds the action configurator when tree table mode changes', () => {
+    const flowEngine = new FlowEngine();
+    flowEngine.registerModels({ GanttBlockModel });
+
+    const model = flowEngine.createModel<GanttBlockModel>({
+      use: 'GanttBlockModel',
+    });
+
+    const treeTableSpy = vi.spyOn(model, 'isTreeTableEnabled');
+    treeTableSpy.mockReturnValue(false);
+    const plainButton = model.renderConfigureActions();
+
+    treeTableSpy.mockReturnValue(true);
+    const treeButton = model.renderConfigureActions();
+
+    expect(plainButton.key).toBe('gantt-add-actions-plain');
+    expect(treeButton.key).toBe('gantt-add-actions-tree');
+  });
 });
 
 describe('GanttBlockModel scroll helpers', () => {
