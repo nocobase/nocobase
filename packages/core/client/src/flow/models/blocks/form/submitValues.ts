@@ -84,7 +84,10 @@ function forEachModelIncludingForks(engine: any, visitor: (model: any) => void) 
 
     const forks: any = model?.forks;
     if (forks && typeof forks.forEach === 'function') {
-      forks.forEach((fork: any) => visitor(fork));
+      forks.forEach((fork: any) => {
+        if (!fork || fork.disposed) return;
+        visitor(fork);
+      });
     }
   });
 }
