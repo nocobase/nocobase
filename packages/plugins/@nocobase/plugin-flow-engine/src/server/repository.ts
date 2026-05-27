@@ -46,6 +46,11 @@ interface SiblingInfo {
   type: string;
 }
 
+interface SiblingSortRow {
+  uid: string;
+  sort: number | string | null;
+}
+
 type BreakRemoveOnType = {
   [key: string]: any;
 };
@@ -253,7 +258,7 @@ export class FlowModelRepository extends Repository {
     return lodash.isPlainObject(options) ? options : JSON.parse(options);
   }
 
-  private static getStableSortValue(value: unknown, fallbackIndex: number) {
+  private static getSortNumber(value: unknown) {
     if (typeof value === 'number' && Number.isFinite(value)) {
       return value;
     }
@@ -263,7 +268,22 @@ export class FlowModelRepository extends Repository {
         return parsed;
       }
     }
-    return fallbackIndex + 1;
+    return null;
+  }
+
+  private static compareBySortAndUid(a: { sort?: unknown; uid?: unknown }, b: { sort?: unknown; uid?: unknown }) {
+    const aSort = FlowModelRepository.getSortNumber(a.sort);
+    const bSort = FlowModelRepository.getSortNumber(b.sort);
+    if (aSort !== null && bSort !== null && aSort !== bSort) {
+      return aSort - bSort;
+    }
+    if (aSort !== null && bSort === null) {
+      return -1;
+    }
+    if (aSort === null && bSort !== null) {
+      return 1;
+    }
+    return String(a.uid || '').localeCompare(String(b.uid || ''));
   }
 
   nodesToSchema(nodes, rootUid) {
@@ -275,8 +295,9 @@ export class FlowModelRepository extends Repository {
         ['x-async']: !!node.async,
       };
 
-      if (lodash.isNumber(node.sort)) {
-        schema['x-index'] = node.sort;
+      const sort = FlowModelRepository.getSortNumber(node.sort);
+      if (sort !== null) {
+        schema['x-index'] = sort;
       }
 
       return schema;
@@ -294,7 +315,12 @@ export class FlowModelRepository extends Repository {
         for (const childType of Object.keys(childrenGroupByType)) {
           const properties = childrenGroupByType[childType]
             .map((child) => buildTree(child))
-            .sort((a, b) => a['x-index'] - b['x-index']) as any;
+            .sort((a, b) =>
+              FlowModelRepository.compareBySortAndUid(
+                { sort: a['x-index'], uid: a.uid },
+                { sort: b['x-index'], uid: b.uid },
+              ),
+            ) as any;
 
           rootNode[childType] =
             childType == 'items'
@@ -1164,7 +1190,11 @@ WHERE TreeTable.depth = 1 AND  TreeTable.ancestor = :ancestor and TreeTable.sort
     };
   }
 
-  private async normalizeSiblingSorts(parentUid: string, type: string, transaction?: Transaction) {
+  private async findSiblingSortRows(
+    parentUid: string,
+    type: string,
+    transaction?: Transaction,
+  ): Promise<SiblingSortRow[]> {
     const treeTable = this.flowModelTreePathTableName;
     const rows = (await this.database.sequelize.query(
       this.sqlAdapter(`SELECT ChildPath.descendant as uid, ChildPath.sort as sort
@@ -1181,17 +1211,14 @@ WHERE TreeTable.depth = 1 AND  TreeTable.ancestor = :ancestor and TreeTable.sort
         replacements: { parentUid, type },
         transaction,
       },
-    )) as Array<{ uid: string; sort: number | string | null }>;
+    )) as SiblingSortRow[];
 
-    const sortedRows = rows
-      .map((row, index) => ({
-        uid: row.uid,
-        index,
-        sort: FlowModelRepository.getStableSortValue(row.sort, index),
-      }))
-      .sort((a, b) => a.sort - b.sort || a.index - b.index);
+    return rows.sort((a, b) => FlowModelRepository.compareBySortAndUid(a, b));
+  }
 
-    for (const [index, row] of sortedRows.entries()) {
+  private async writeSiblingSorts(parentUid: string, orderedUids: string[], transaction?: Transaction) {
+    const treeTable = this.flowModelTreePathTableName;
+    for (const [index, uid] of orderedUids.entries()) {
       await this.database.sequelize.query(
         this.sqlAdapter(
           `UPDATE ${treeTable} SET sort = :sort WHERE ancestor = :parentUid AND descendant = :uid AND depth = 1`,
@@ -1200,7 +1227,7 @@ WHERE TreeTable.depth = 1 AND  TreeTable.ancestor = :ancestor and TreeTable.sort
           type: 'UPDATE',
           replacements: {
             parentUid,
-            uid: row.uid,
+            uid,
             sort: index + 1,
           },
           transaction,
@@ -1582,14 +1609,14 @@ WHERE TreeTable.depth = 1 AND  TreeTable.ancestor = :ancestor and TreeTable.sort
     for (const key in subModels) {
       if (Array.isArray(subModels[key])) {
         subModels[key] = subModels[key]
-          .map((item, index) => ({
-            item,
-            index,
-            sortIndex: FlowModelRepository.getStableSortValue(item.sortIndex, index),
-          }))
-          .sort((a, b) => a.sortIndex - b.sortIndex || a.index - b.index)
-          .map(({ item, sortIndex }) => {
-            item.sortIndex = sortIndex;
+          .sort((a, b) =>
+            FlowModelRepository.compareBySortAndUid(
+              { sort: a.sortIndex, uid: a.uid },
+              { sort: b.sortIndex, uid: b.uid },
+            ),
+          )
+          .map((item, index) => {
+            item.sortIndex = index + 1;
             return item;
           });
       }
@@ -1865,11 +1892,20 @@ WHERE TreeTable.depth = 1 AND  TreeTable.ancestor = :ancestor and TreeTable.sort
     if (!sourceUid || !targetUid) {
       throw new Error('flowModels:move missing required params');
     }
+    if (position !== 'before' && position !== 'after') {
+      throw new Error('flowModels:move invalid position');
+    }
+
     const transaction = transactionOptions?.transaction;
     if (sourceUid === targetUid) {
       const sourceInfo = await this.findSiblingInfo(sourceUid, transaction);
       if (sourceInfo) {
-        await this.normalizeSiblingSorts(sourceInfo.parentUid, sourceInfo.type, transaction);
+        const siblingRows = await this.findSiblingSortRows(sourceInfo.parentUid, sourceInfo.type, transaction);
+        await this.writeSiblingSorts(
+          sourceInfo.parentUid,
+          siblingRows.map((row) => row.uid),
+          transaction,
+        );
       }
       return null;
     }
@@ -1883,18 +1919,21 @@ WHERE TreeTable.depth = 1 AND  TreeTable.ancestor = :ancestor and TreeTable.sort
       throw new Error('flowModels:move source and target must be sibling nodes under the same parent/subKey');
     }
 
-    await this.normalizeSiblingSorts(sourceInfo.parentUid, sourceInfo.type, transaction);
-    await this.insertAdjacent(
-      position === 'after' ? 'afterEnd' : 'beforeBegin',
-      targetUid,
-      {
-        uid: sourceUid,
-      },
-      {
-        transaction,
-      },
+    const siblingRows = await this.findSiblingSortRows(sourceInfo.parentUid, sourceInfo.type, transaction);
+    const sourceRow = siblingRows.find((row) => row.uid === sourceUid);
+    const targetIndex = siblingRows.findIndex((row) => row.uid === targetUid);
+    if (!sourceRow || targetIndex === -1) {
+      throw new Error('flowModels:move source and target must be sibling nodes under the same parent/subKey');
+    }
+
+    const rowsWithoutSource = siblingRows.filter((row) => row.uid !== sourceUid);
+    const insertIndex = rowsWithoutSource.findIndex((row) => row.uid === targetUid);
+    rowsWithoutSource.splice(position === 'after' ? insertIndex + 1 : insertIndex, 0, sourceRow);
+    await this.writeSiblingSorts(
+      sourceInfo.parentUid,
+      rowsWithoutSource.map((row) => row.uid),
+      transaction,
     );
-    await this.normalizeSiblingSorts(sourceInfo.parentUid, sourceInfo.type, transaction);
     return await this.findModelById(sourceUid, { transaction });
   }
 }
