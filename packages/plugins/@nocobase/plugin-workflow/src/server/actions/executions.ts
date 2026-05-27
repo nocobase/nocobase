@@ -106,18 +106,19 @@ export async function rerun(context: Context, next) {
         nodeId,
         overwrite: overwrite === true,
       });
-      await workflowPlugin.run(
-        {
-          execution,
-          loaded: true,
-          rerun: {
-            nodeId,
-            overwrite: overwrite === true,
-          },
-        },
-        { dispatch: false },
-      );
     }, 60_000);
+    await workflowPlugin.run(
+      {
+        execution,
+        loaded: true,
+        rerun: {
+          nodeId,
+          overwrite: overwrite === true,
+        },
+      },
+      { dispatch: false },
+    );
+    workflowPlugin.dispatch();
   } catch (error) {
     if (isLockAcquireError(error)) {
       return context.throw(409, 'Execution is being processed');
@@ -127,8 +128,6 @@ export async function rerun(context: Context, next) {
     }
     throw error;
   }
-
-  workflowPlugin.dispatch();
 
   context.body = execution;
   context.status = 202;
