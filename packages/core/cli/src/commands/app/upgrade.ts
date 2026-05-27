@@ -8,7 +8,7 @@
  */
 
 import { Command, Flags } from '@oclif/core';
-import { upsertEnv, type Env } from '../../lib/auth-store.js';
+import { getCurrentEnvName, upsertEnv, type Env } from '../../lib/auth-store.js';
 import {
   formatMissingManagedAppEnvMessage,
   resolveManagedAppRuntime,
@@ -16,11 +16,13 @@ import {
 } from '../../lib/app-runtime.js';
 import { ensureCrossEnvConfirmed, hasExplicitEnvSelection } from '../../lib/env-guard.js';
 import { DEFAULT_DOCKER_REGISTRY } from '../../lib/docker-image.ts';
-import { announceTargetEnv, printInfo, printWarning, succeedTask } from '../../lib/ui.js';
+import { confirm } from '../../lib/inquirer.ts';
+import { announceTargetEnv, isInteractiveTerminal, printInfo, printWarning, succeedTask } from '../../lib/ui.js';
 
 type UpgradeParsedFlags = {
   env?: string;
   yes: boolean;
+  force: boolean;
   verbose: boolean;
   'skip-download': boolean;
   'skip-code-update'?: boolean;
@@ -38,6 +40,11 @@ type DownloadableLocalManagedRuntime = LocalManagedRuntime & { source: 'npm' | '
 
 function trimValue(value: unknown): string {
   return String(value ?? '').trim();
+}
+
+function normalizeEnvName(value: unknown): string | undefined {
+  const text = trimValue(value);
+  return text || undefined;
 }
 
 function formatAppUrl(port?: string): string | undefined {
@@ -116,6 +123,156 @@ function shouldSkipDownload(flags: UpgradeParsedFlags): boolean {
   return Boolean(flags['skip-download'] || flags['skip-code-update']);
 }
 
+function buildUpgradeCliArgv(
+  envName: string,
+  flags: UpgradeParsedFlags,
+  options?: {
+    yes?: boolean;
+    force?: boolean;
+  },
+): string[] {
+  const argv = ['--env', envName];
+  if (shouldSkipDownload(flags)) {
+    argv.push('--skip-download');
+  }
+
+  const version = normalizeEnvName(flags.version);
+  if (version) {
+    argv.push('--version', version);
+  }
+
+  if (flags.verbose) {
+    argv.push('--verbose');
+  }
+
+  if (options?.yes ?? flags.yes) {
+    argv.push('--yes');
+  }
+  if (options?.force ?? flags.force) {
+    argv.push('--force');
+  }
+
+  return argv;
+}
+
+function buildUpgradeCliCommand(
+  envName: string,
+  flags: UpgradeParsedFlags,
+  options?: {
+    yes?: boolean;
+    force?: boolean;
+  },
+): string {
+  return ['nb', 'app', 'upgrade', ...buildUpgradeCliArgv(envName, flags, options)].join(' ');
+}
+
+function formatUpgradeOperationSummary(runtime: UpgradeManagedRuntime, flags: UpgradeParsedFlags): string {
+  const mayRunUpgradeMigrations = 'It may also run upgrade migrations.';
+
+  if (shouldSkipDownload(flags)) {
+    const sourceLabel =
+      runtime.kind === 'docker'
+        ? 'saved Docker image'
+        : runtime.source === 'local'
+          ? 'saved local app path'
+          : runtime.source === 'git'
+            ? 'saved Git checkout'
+            : 'saved npm app';
+
+    return [
+      'This operation will stop the app, skip source download and commercial plugin sync,',
+      `and start it again with the ${sourceLabel}.`,
+      mayRunUpgradeMigrations,
+    ].join(' ');
+  }
+
+  if (runtime.kind === 'docker') {
+    return [
+      'This operation will stop the app, replace the saved Docker image,',
+      'sync commercial plugins when applicable, and start the app again.',
+      mayRunUpgradeMigrations,
+    ].join(' ');
+  }
+
+  if (runtime.source === 'local') {
+    return [
+      'This operation will stop the app, reuse the saved local app path,',
+      'sync commercial plugins when applicable, and start the app again.',
+      mayRunUpgradeMigrations,
+    ].join(' ');
+  }
+
+  return [
+    'This operation will stop the app, replace the saved source,',
+    'sync commercial plugins when applicable, and start the app again.',
+    mayRunUpgradeMigrations,
+  ].join(' ');
+}
+
+function formatUpgradePromptSummary(flags: UpgradeParsedFlags): string {
+  if (shouldSkipDownload(flags)) {
+    return 'This will stop and restart the app, and may run upgrade migrations.';
+  }
+
+  return 'This will stop and restart the app, update the saved source or image, and may run upgrade migrations.';
+}
+
+function formatUpgradeForceRequiredMessage(runtime: UpgradeManagedRuntime, flags: UpgradeParsedFlags): string {
+  return [
+    `\`nb app upgrade\` needs confirmation in non-interactive mode before upgrading "${runtime.envName}".`,
+    '',
+    formatUpgradeOperationSummary(runtime, flags),
+    '',
+    'Interactive confirmation is unavailable in the current AI agent session, and the agent will not add `--force` on your behalf.',
+    '',
+    'To continue:',
+    `- re-run \`${buildUpgradeCliCommand(runtime.envName, flags, { force: true })}\``,
+    `- or switch to an interactive terminal and re-run \`${buildUpgradeCliCommand(runtime.envName, flags, {
+      force: false,
+    })}\``,
+  ].join('\n');
+}
+
+function formatMissingUpgradeFlagList(options: { missingYes: boolean; missingForce: boolean }): string {
+  const missingFlags = [
+    options.missingYes ? '`--yes`' : undefined,
+    options.missingForce ? '`--force`' : undefined,
+  ].filter(Boolean) as string[];
+
+  if (missingFlags.length <= 1) {
+    return missingFlags[0] ?? '';
+  }
+
+  return `${missingFlags[0]} or ${missingFlags[1]}`;
+}
+
+function formatUpgradeCrossEnvConfirmationRequiredMessage(
+  currentEnv: string,
+  runtime: UpgradeManagedRuntime,
+  flags: UpgradeParsedFlags,
+  options: {
+    missingYes: boolean;
+    missingForce: boolean;
+  },
+): string {
+  return [
+    `Refusing to upgrade env "${runtime.envName}" because the current env is "${currentEnv}" and interactive confirmation is unavailable in the current AI agent session.`,
+    '',
+    formatUpgradeOperationSummary(runtime, flags),
+    '',
+    `For safety, the agent will not switch envs automatically and will not add ${formatMissingUpgradeFlagList(
+      options,
+    )} on your behalf.`,
+    '',
+    'To continue:',
+    `- run \`nb env use ${runtime.envName}\` yourself, then re-run \`${buildUpgradeCliCommand(runtime.envName, flags, {
+      yes: false,
+      force: true,
+    })}\``,
+    `- or re-run \`${buildUpgradeCliCommand(runtime.envName, flags, { yes: true, force: true })}\``,
+  ].join('\n');
+}
+
 function buildLicenseSyncArgv(envName: string, flags: UpgradeParsedFlags, options?: { version?: string }): string[] {
   const argv = ['--env', envName, '--yes', '--skip-if-no-license'];
   if (flags.verbose) {
@@ -178,7 +335,9 @@ export default class AppUpgrade extends Command {
 
   static override examples = [
     '<%= config.bin %> <%= command.id %>',
+    '<%= config.bin %> <%= command.id %> --force',
     '<%= config.bin %> <%= command.id %> --env local',
+    '<%= config.bin %> <%= command.id %> --env local --force',
     '<%= config.bin %> <%= command.id %> --env local -s',
     '<%= config.bin %> <%= command.id %> --env local --version beta',
     '<%= config.bin %> <%= command.id %> --env local --verbose',
@@ -193,6 +352,11 @@ export default class AppUpgrade extends Command {
     yes: Flags.boolean({
       char: 'y',
       description: 'Confirm using --env when it targets a different env than the current env',
+      default: false,
+    }),
+    force: Flags.boolean({
+      char: 'f',
+      description: 'Skip the upgrade confirmation prompt',
       default: false,
     }),
     'skip-download': Flags.boolean({
@@ -341,17 +505,8 @@ export default class AppUpgrade extends Command {
   public async run(): Promise<void> {
     const { flags } = await this.parse(AppUpgrade);
     const parsed = flags as UpgradeParsedFlags;
-    const requestedEnv = parsed.env?.trim() || undefined;
-    if (requestedEnv && hasExplicitEnvSelection(this.argv)) {
-      const confirmed = await ensureCrossEnvConfirmed({
-        command: this,
-        requestedEnv,
-        yes: parsed.yes,
-      });
-      if (!confirmed) {
-        return;
-      }
-    }
+    const requestedEnv = normalizeEnvName(parsed.env);
+    const explicitEnvSelection = Boolean(requestedEnv && hasExplicitEnvSelection(this.argv));
 
     const runtime = await resolveManagedAppRuntime(requestedEnv);
 
@@ -377,6 +532,54 @@ export default class AppUpgrade extends Command {
           'Use a local or Docker env if you need CLI-managed upgrades right now.',
         ].join('\n'),
       );
+    }
+
+    const interactiveTerminal = isInteractiveTerminal();
+    if (explicitEnvSelection) {
+      if (!interactiveTerminal) {
+        const currentEnv = normalizeEnvName(await getCurrentEnvName());
+        if (currentEnv && currentEnv !== requestedEnv) {
+          const missingYes = !parsed.yes;
+          const missingForce = !parsed.force;
+
+          if (missingYes || missingForce) {
+            this.error(
+              formatUpgradeCrossEnvConfirmationRequiredMessage(currentEnv, runtime, parsed, {
+                missingYes,
+                missingForce,
+              }),
+            );
+          }
+        }
+      } else {
+        const confirmed = await ensureCrossEnvConfirmed({
+          command: this,
+          requestedEnv,
+          yes: parsed.yes,
+        });
+        if (!confirmed) {
+          return;
+        }
+      }
+    }
+
+    if (!interactiveTerminal) {
+      if (!parsed.force) {
+        this.error(formatUpgradeForceRequiredMessage(runtime, parsed));
+      }
+    } else if (!parsed.force) {
+      let confirmed = false;
+      try {
+        confirmed = await confirm({
+          message: `Upgrade "${runtime.envName}"? ${formatUpgradePromptSummary(parsed)}`,
+          default: false,
+        });
+      } catch {
+        return;
+      }
+      if (!confirmed) {
+        return;
+      }
     }
 
     announceTargetEnv(runtime.envName);

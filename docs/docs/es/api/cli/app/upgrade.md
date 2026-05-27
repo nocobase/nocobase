@@ -20,6 +20,7 @@ nb app upgrade [flags]
 | --- | --- | --- |
 | `--env`, `-e` | string | Nombre del env del CLI a actualizar; si se omite, se utiliza el env actual |
 | `--yes`, `-y` | boolean | Cuando un `--env` pasado explícitamente apunta a una env distinta de la env actual, omite la confirmación interactiva |
+| `--force`, `-f` | boolean | Omite la confirmación de la actualización. Es obligatorio pasarlo explícitamente en terminales no interactivos y en sesiones de agentes de IA |
 | `--skip-download`, `-s` | boolean | Reinicia usando el código fuente local o la imagen Docker guardados actualmente sin descargar actualizaciones antes; también omite `nb license plugins sync` |
 | `--version` | string | Sobrescribe la versión de destino para esta actualización; cuando tiene éxito, la nueva versión se vuelve a guardar en `downloadVersion` dentro de la configuración del env |
 | `--verbose` | boolean | Mostrar la salida de los comandos subyacentes de actualización y reinicio |
@@ -28,7 +29,9 @@ nb app upgrade [flags]
 
 ```bash
 nb app upgrade
+nb app upgrade --force
 nb app upgrade --env local
+nb app upgrade --env local --force
 nb app upgrade --env local --skip-download
 nb app upgrade --env local --skip-download --version beta
 nb app upgrade --env local --version beta
@@ -37,6 +40,8 @@ nb app upgrade --env local-docker --skip-download
 ```
 
 Si pasa `--env` explícitamente y es diferente de la env actual, la CLI pedirá confirmación primero. En terminales no interactivos o sesiones de agentes de IA, agregue `--yes` usted mismo o ejecute antes `nb env use <name>` y vuelva a intentarlo.
+
+Antes de que comience la actualización real, los terminales interactivos también pedirán una confirmación adicional de la actualización, a menos que pase `--force`. En terminales no interactivos y en sesiones de agentes de IA, `nb app upgrade` se negará a continuar sin `--force` y mostrará un comando reutilizable que puede copiar directamente. Si además es una operación cross-env, necesitará tanto `--yes` como `--force`.
 
 De forma predeterminada, `nb app upgrade` ejecuta estos pasos:
 

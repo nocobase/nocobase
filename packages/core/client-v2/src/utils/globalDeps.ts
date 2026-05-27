@@ -10,6 +10,7 @@
 import * as antdCssinjs from '@ant-design/cssinjs';
 import * as antdIcons from '@ant-design/icons';
 import * as antdStyle from 'antd-style';
+import * as ctrlTinycolor from '@ctrl/tinycolor';
 import * as emotionCss from '@emotion/css';
 import * as formilyAntdV5 from '@formily/antd-v5';
 import * as formilyCore from '@formily/core';
@@ -96,6 +97,7 @@ export function defineGlobalDeps(requirejs: RequireJS) {
   defineGlobalDep(requirejs, '@dnd-kit/sortable', dndKitSortable);
 
   // utils
+  defineGlobalDep(requirejs, '@ctrl/tinycolor', ctrlTinycolor);
   defineGlobalDep(requirejs, 'ahooks', ahooks);
   defineGlobalDep(requirejs, 'axios', axios);
   defineGlobalDep(requirejs, 'dayjs', dayjs);

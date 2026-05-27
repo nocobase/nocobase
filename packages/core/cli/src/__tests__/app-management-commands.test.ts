@@ -3844,6 +3844,186 @@ test('upgrade rejects --version for local app-path envs', async () => {
   await expect(Upgrade.prototype.run.call(command)).rejects.toThrow(/does not support `nb app upgrade --version`/i);
 });
 
+test('upgrade asks for confirmation in interactive terminals when --force is omitted', async () => {
+  const { default: Upgrade } = await import('../commands/app/upgrade.js');
+  mocks.resolveManagedAppRuntime.mockResolvedValue({
+    kind: 'docker',
+    envName: 'docker-local',
+    source: 'docker',
+    containerName: 'nb-demo-docker-local-app',
+    workspaceName: 'nb-demo',
+    dockerNetworkName: 'nb-demo',
+    dockerContainerPrefix: 'nb-demo',
+    env: {
+      baseUrl: 'http://127.0.0.1:13000/api',
+      appPort: 13000,
+      config: {
+        dockerRegistry: 'nocobase/nocobase',
+        downloadVersion: 'alpha',
+      },
+    },
+  });
+  const runCommand = vi.fn(async () => undefined);
+
+  const command = createCommandHarness(
+    {
+      flags: {
+        env: 'docker-local',
+      },
+    },
+    runCommand,
+  );
+
+  await Upgrade.prototype.run.call(command);
+
+  expect(mocks.crossEnvConfirm.mock.calls.at(-1)).toEqual([
+    {
+      message:
+        'Upgrade "docker-local"? This will stop and restart the app, update the saved source or image, and may run upgrade migrations.',
+      default: false,
+    },
+  ]);
+  expect(runCommand.mock.calls[0]).toEqual(['app:stop', ['--env', 'docker-local', '--yes']]);
+});
+
+test('upgrade requires --force in non-interactive mode and preserves the rerun command flags', async () => {
+  const { default: Upgrade } = await import('../commands/app/upgrade.js');
+  mocks.resolveManagedAppRuntime.mockResolvedValue({
+    kind: 'docker',
+    envName: 'docker-local',
+    source: 'docker',
+    containerName: 'nb-demo-docker-local-app',
+    workspaceName: 'nb-demo',
+    dockerNetworkName: 'nb-demo',
+    dockerContainerPrefix: 'nb-demo',
+    env: {
+      baseUrl: 'http://127.0.0.1:13000/api',
+      appPort: 13000,
+      config: {
+        dockerRegistry: 'nocobase/nocobase',
+        downloadVersion: 'alpha',
+      },
+    },
+  });
+  mocks.isInteractiveTerminal.mockReturnValue(false);
+
+  const command = createCommandHarness({
+    flags: {
+      'skip-download': true,
+      version: 'beta',
+      verbose: true,
+    },
+  });
+
+  await expect((() => Upgrade.prototype.run.call(command))()).rejects.toThrow(
+    /needs confirmation in non-interactive mode before upgrading "docker-local".*nb app upgrade --env docker-local --skip-download --version beta --verbose --force/s,
+  );
+});
+
+test('upgrade rejects non-interactive cross-env execution without --yes and --force', async () => {
+  const { default: Upgrade } = await import('../commands/app/upgrade.js');
+  mocks.resolveManagedAppRuntime.mockResolvedValue({
+    kind: 'docker',
+    envName: 'prod',
+    source: 'docker',
+    containerName: 'nb-demo-prod-app',
+    workspaceName: 'nb-demo',
+    dockerNetworkName: 'nb-demo',
+    dockerContainerPrefix: 'nb-demo',
+    env: {
+      baseUrl: 'http://127.0.0.1:13000/api',
+      appPort: 13000,
+      config: {
+        dockerRegistry: 'nocobase/nocobase',
+        downloadVersion: 'beta',
+      },
+    },
+  });
+  mocks.isInteractiveTerminal.mockReturnValue(false);
+
+  const command = createCommandHarness({
+    flags: {
+      env: 'prod',
+      version: 'beta',
+    },
+  });
+  command.argv = ['--env', 'prod', '--version', 'beta'];
+
+  await expect((() => Upgrade.prototype.run.call(command))()).rejects.toThrow(
+    /will not switch envs automatically and will not add `--yes` or `--force` on your behalf\..*nb app upgrade --env prod --version beta --yes --force/s,
+  );
+});
+
+test('upgrade rejects non-interactive cross-env execution when only --force is missing', async () => {
+  const { default: Upgrade } = await import('../commands/app/upgrade.js');
+  mocks.resolveManagedAppRuntime.mockResolvedValue({
+    kind: 'docker',
+    envName: 'prod',
+    source: 'docker',
+    containerName: 'nb-demo-prod-app',
+    workspaceName: 'nb-demo',
+    dockerNetworkName: 'nb-demo',
+    dockerContainerPrefix: 'nb-demo',
+    env: {
+      baseUrl: 'http://127.0.0.1:13000/api',
+      appPort: 13000,
+      config: {
+        dockerRegistry: 'nocobase/nocobase',
+        downloadVersion: 'beta',
+      },
+    },
+  });
+  mocks.isInteractiveTerminal.mockReturnValue(false);
+
+  const command = createCommandHarness({
+    flags: {
+      env: 'prod',
+      yes: true,
+      'skip-download': true,
+    },
+  });
+  command.argv = ['--env', 'prod', '--yes', '--skip-download'];
+
+  await expect((() => Upgrade.prototype.run.call(command))()).rejects.toThrow(
+    /will not switch envs automatically and will not add `--force` on your behalf\..*nb app upgrade --env prod --skip-download --yes --force/s,
+  );
+});
+
+test('upgrade rejects non-interactive cross-env execution when only --yes is missing', async () => {
+  const { default: Upgrade } = await import('../commands/app/upgrade.js');
+  mocks.resolveManagedAppRuntime.mockResolvedValue({
+    kind: 'docker',
+    envName: 'prod',
+    source: 'docker',
+    containerName: 'nb-demo-prod-app',
+    workspaceName: 'nb-demo',
+    dockerNetworkName: 'nb-demo',
+    dockerContainerPrefix: 'nb-demo',
+    env: {
+      baseUrl: 'http://127.0.0.1:13000/api',
+      appPort: 13000,
+      config: {
+        dockerRegistry: 'nocobase/nocobase',
+        downloadVersion: 'beta',
+      },
+    },
+  });
+  mocks.isInteractiveTerminal.mockReturnValue(false);
+
+  const command = createCommandHarness({
+    flags: {
+      env: 'prod',
+      force: true,
+      verbose: true,
+    },
+  });
+  command.argv = ['--env', 'prod', '--force', '--verbose'];
+
+  await expect((() => Upgrade.prototype.run.call(command))()).rejects.toThrow(
+    /will not switch envs automatically and will not add `--yes` on your behalf\..*nb app upgrade --env prod --verbose --yes --force/s,
+  );
+});
+
 test('upgrade can save --version while skipping download and license sync', async () => {
   const { default: Upgrade } = await import('../commands/app/upgrade.js');
   mocks.resolveManagedAppRuntime.mockResolvedValue({

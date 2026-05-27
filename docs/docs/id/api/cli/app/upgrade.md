@@ -20,6 +20,7 @@ nb app upgrade [flags]
 | --- | --- | --- |
 | `--env`, `-e` | string | Nama env CLI yang akan di-upgrade, jika dilewati menggunakan env saat ini |
 | `--yes`, `-y` | boolean | Saat `--env` yang diberikan secara eksplisit menargetkan env yang berbeda dari env saat ini, lewati konfirmasi interaktif |
+| `--force`, `-f` | boolean | Lewati konfirmasi upgrade. Flag ini wajib diberikan secara eksplisit di terminal non-interaktif dan sesi AI agent |
 | `--skip-download`, `-s` | boolean | Menjalankan ulang source code lokal atau image Docker yang saat ini tersimpan tanpa mengunduh update lebih dulu; juga melewati `nb license plugins sync` |
 | `--version` | string | Menimpa versi target untuk upgrade ini; saat berhasil, versi baru akan ditulis kembali ke `downloadVersion` di konfigurasi env |
 | `--verbose` | boolean | Menampilkan output perintah update dan restart yang mendasarinya |
@@ -28,7 +29,9 @@ nb app upgrade [flags]
 
 ```bash
 nb app upgrade
+nb app upgrade --force
 nb app upgrade --env local
+nb app upgrade --env local --force
 nb app upgrade --env local --skip-download
 nb app upgrade --env local --skip-download --version beta
 nb app upgrade --env local --version beta
@@ -37,6 +40,8 @@ nb app upgrade --env local-docker --skip-download
 ```
 
 Jika Anda memberikan `--env` secara eksplisit dan nilainya berbeda dari env saat ini, CLI akan meminta konfirmasi terlebih dahulu. Pada terminal non-interaktif atau sesi AI agent, tambahkan `--yes` sendiri atau jalankan `nb env use <name>` terlebih dahulu lalu coba lagi.
+
+Sebelum upgrade benar-benar dimulai, terminal interaktif juga akan meminta konfirmasi upgrade tambahan kecuali Anda memberikan `--force`. Pada terminal non-interaktif dan sesi AI agent, `nb app upgrade` akan menolak berjalan tanpa `--force` dan menampilkan perintah ulang yang bisa langsung disalin. Jika sekaligus merupakan operasi cross-env, Anda memerlukan `--yes` dan `--force`.
 
 Secara default, `nb app upgrade` menjalankan langkah-langkah berikut:
 
