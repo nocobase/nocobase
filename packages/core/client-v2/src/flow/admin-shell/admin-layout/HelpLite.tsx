@@ -9,44 +9,18 @@
 
 import { QuestionCircleOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
-import { observer, useFlowEngine } from '@nocobase/flow-engine';
+import { observer } from '@nocobase/flow-engine';
 import { parseHTML } from '@nocobase/utils/client';
 import { Dropdown, Menu, Popover, theme as antdTheme } from 'antd';
 import type { MenuItemType, MenuDividerType } from 'antd/es/menu/interface';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { usePlugin } from '../../../flow-compat';
+import { useCurrentAppInfo } from '../../../hooks';
 import type { CustomToken } from '../../../theme';
+import { getAppVersionHTML } from '../../../utils';
 
 type SettingsMenuItemType = MenuItemType | MenuDividerType;
-
-/**
- * 读取当前应用信息，避免继续依赖旧的 CurrentAppInfoProvider。
- */
-function useCurrentAppInfoLite() {
-  const flowEngine = useFlowEngine();
-  const [data, setData] = useState<any>();
-
-  useEffect(() => {
-    let active = true;
-
-    Promise.resolve(flowEngine.context.appInfo)
-      .then((info) => {
-        if (active) {
-          setData(info);
-        }
-      })
-      .catch((error) => {
-        console.error(error);
-      });
-
-    return () => {
-      active = false;
-    };
-  }, [flowEngine]);
-
-  return data;
-}
 
 const helpClassName = css`
   display: inline-block;
@@ -60,7 +34,7 @@ const helpClassName = css`
 
 const SettingsMenu: React.FC = () => {
   const { t } = useTranslation();
-  const appInfo = useCurrentAppInfoLite();
+  const appInfo = useCurrentAppInfo();
   const { token } = antdTheme.useToken();
   const isSimplifiedChinese = appInfo?.lang === 'zh-CN';
 
@@ -136,7 +110,7 @@ export const HelpLite = observer(
     const { token } = antdTheme.useToken();
     const customToken = token as CustomToken;
     const customBrandPlugin: any = usePlugin('@nocobase/plugin-custom-brand');
-    const appInfo = useCurrentAppInfoLite();
+    const appInfo = useCurrentAppInfo();
 
     const icon = (
       <span
@@ -156,7 +130,7 @@ export const HelpLite = observer(
     );
 
     if (customBrandPlugin?.options?.options?.about) {
-      const appVersion = `<span class="nb-app-version">v${appInfo?.version}</span>`;
+      const appVersion = getAppVersionHTML(appInfo?.version);
       const content = parseHTML(customBrandPlugin.options.options.about, { appVersion });
 
       return (

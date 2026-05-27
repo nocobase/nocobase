@@ -11,6 +11,7 @@ const chalk = require('chalk');
 const { Command } = require('commander');
 const fs = require('fs-extra');
 const { resolve } = require('path');
+const { storagePathJoin } = require('../util');
 
 /**
  * 复制主应用客户端文件
@@ -110,7 +111,7 @@ module.exports = (cli) => {
     .allowUnknownOption()
     .action(async () => {
       const version = require('../../package.json').version;
-      const target = resolve(process.cwd(), 'storage/dist-client', version);
+      const target = storagePathJoin('dist-client', version);
       const mainClientSource = resolve(process.cwd(), 'node_modules/@nocobase/app/dist/client');
       await copyMainClient(mainClientSource, target);
       await copyPluginClients('packages/plugins', '@nocobase', target);
@@ -123,7 +124,7 @@ module.exports = (cli) => {
     .allowUnknownOption()
     .action(async () => {
       const version = require('../../package.json').version;
-      const target = resolve(process.cwd(), 'storage/dist-client', version);
+      const target = storagePathJoin('dist-client', version);
 
       // 检查必要的环境变量
       if (

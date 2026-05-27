@@ -36,10 +36,10 @@ const FLOW_SURFACE_LOCAL_TRANSLATIONS: Record<string, Record<string, string>> = 
     'Popup for Edit': '编辑弹窗',
     'Popup for Details': '详情弹窗',
     'Auto generated': '自动生成',
-    'Automatically generated popup template for collection "{{collectionLabel}}" ({{popupLabel}}).':
-      '为数据表“{{collectionLabel}}”自动生成的弹窗模板（{{popupLabel}}）。',
-    'Automatically generated popup template for relation field "{{associationFieldLabel}}" in collection "{{sourceCollectionLabel}}", targeting "{{targetCollectionLabel}}" ({{popupLabel}}).':
-      '为数据表“{{sourceCollectionLabel}}”中的关系字段“{{associationFieldLabel}}”自动生成的弹窗模板，目标数据表为“{{targetCollectionLabel}}”（{{popupLabel}}）。',
+    'Automatically generated popup template for collection "{{collectionLabel}}" ({{popupLabel}}). Scene: {{scene}}; collection: "{{collectionLabel}}".':
+      '为数据表“{{collectionLabel}}”自动生成的弹窗模板（{{popupLabel}}）。场景：{{scene}}；数据表：{{collectionLabel}}。',
+    'Automatically generated popup template for relation field "{{associationFieldLabel}}" in collection "{{sourceCollectionLabel}}", targeting "{{targetCollectionLabel}}" ({{popupLabel}}). Scene: {{scene}}; source collection: "{{sourceCollectionLabel}}"; association field: "{{associationFieldLabel}}"; target collection: "{{targetCollectionLabel}}".':
+      '为数据表“{{sourceCollectionLabel}}”中的关系字段“{{associationFieldLabel}}”自动生成的弹窗模板，目标数据表为“{{targetCollectionLabel}}”（{{popupLabel}}）。场景：{{scene}}；源数据表：{{sourceCollectionLabel}}；关系字段：{{associationFieldLabel}}；目标数据表：{{targetCollectionLabel}}。',
   },
 };
 
@@ -226,11 +226,19 @@ function invokeFlowSurfaceServiceAction(
   service: FlowSurfacesService,
   actionName: FlowSurfacesActionName,
   values: Record<string, any>,
-  options: { transaction?: any; t?: (key: string, options?: Record<string, any>) => string } = {},
+  options: {
+    transaction?: any;
+    currentRoles?: readonly string[] | string;
+    t?: (key: string, options?: Record<string, any>) => string;
+  } = {},
 ) {
   const handler = service[actionName] as unknown as (
     values: Record<string, any>,
-    options?: { transaction?: any; t?: (key: string, options?: Record<string, any>) => string },
+    options?: {
+      transaction?: any;
+      currentRoles?: readonly string[] | string;
+      t?: (key: string, options?: Record<string, any>) => string;
+    },
   ) => Promise<any>;
   return handler.call(service, values, options);
 }
@@ -296,14 +304,15 @@ export function registerFlowSurfacesResource(plugin: Plugin) {
           const definition = FLOW_SURFACE_ACTION_DEFINITIONS[actionName];
           const values = definition.valueSource === 'read' ? getReadValues(ctx) : getValues(ctx);
           const t = getFlowSurfaceTranslate(ctx);
+          const currentRoles = ctx.state?.currentRoles;
 
           if (definition.transaction) {
             return service.transaction((transaction) =>
-              invokeFlowSurfaceServiceAction(service, actionName, values, { transaction, t }),
+              invokeFlowSurfaceServiceAction(service, actionName, values, { transaction, currentRoles, t }),
             );
           }
 
-          return invokeFlowSurfaceServiceAction(service, actionName, values, { t });
+          return invokeFlowSurfaceServiceAction(service, actionName, values, { currentRoles, t });
         });
       },
     ]),

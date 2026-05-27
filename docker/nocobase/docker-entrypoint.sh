@@ -16,8 +16,8 @@ cd /app/nocobase && yarn nocobase postinstall
 cd /app/nocobase && yarn nocobase db:auth
 cd /app/nocobase && yarn nocobase create-nginx-conf
 cd /app/nocobase && yarn nocobase generate-instance-id
-rm -rf /etc/nginx/sites-enabled/nocobase.conf
-ln -s /app/nocobase/storage/nocobase.conf /etc/nginx/sites-enabled/nocobase.conf
+rm -f /etc/nginx/conf.d/nocobase.conf
+ln -s /app/nocobase/storage/nocobase.conf /etc/nginx/conf.d/nocobase.conf
 
 nginx
 echo 'nginx started';

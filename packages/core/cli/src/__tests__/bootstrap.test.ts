@@ -59,7 +59,7 @@ test('formatSwaggerSchemaError returns actionable guidance for invalid tokens', 
   expect(message).toMatch(/Authentication failed while loading the command runtime/);
   expect(message).toMatch(/env "local"/);
   expect(message).toMatch(/INVALID_TOKEN/);
-  expect(message).toMatch(/env add <name> --api-base-url <url> --auth-type token --token <api-key>/);
+  expect(message).toMatch(/env add <name> --api-base-url <url> --auth-type token --access-token <api-key>/);
   expect(message).toMatch(/nb env update/);
   expect(message).toMatch(/nb --help/);
 });
@@ -87,7 +87,7 @@ test('formatSwaggerSchemaError returns actionable guidance for missing tokens', 
   expect(message).toMatch(/env "app1"/);
   expect(message).toMatch(/EMPTY_TOKEN/);
   expect(message).toMatch(/nb env auth <name>/);
-  expect(message).toMatch(/--token <api-key>/);
+  expect(message).toMatch(/--access-token <api-key>/);
 });
 
 test('formatSwaggerSchemaError falls back to the raw swagger error for non-auth failures', () => {

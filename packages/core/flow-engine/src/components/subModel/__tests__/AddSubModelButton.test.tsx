@@ -311,6 +311,50 @@ describe('transformItems - searchable flags', () => {
     expect(Array.isArray(submenu.children)).toBe(true);
   });
 
+  it('filters searchable field menus by display label instead of item key', async () => {
+    const engine = new FlowEngine();
+    await engine.flowSettings.forceEnable();
+    const parent = engine.createModel<FlowModel>({ use: FlowModel });
+    const user = userEvent.setup();
+
+    const items = [
+      {
+        key: 'fields',
+        label: '',
+        type: 'group' as const,
+        searchable: true,
+        searchPlaceholder: 'Search fields',
+        children: [
+          { key: 'field_name', label: 'Field display name' },
+          { key: 'other_field', label: 'Other field' },
+        ],
+      },
+    ];
+
+    render(
+      <FlowEngineProvider engine={engine}>
+        <ConfigProvider>
+          <App>
+            <AddSubModelButton model={parent} items={items as any} subModelKey="items">
+              Open
+            </AddSubModelButton>
+          </App>
+        </ConfigProvider>
+      </FlowEngineProvider>,
+    );
+
+    await user.click(screen.getByText('Open'));
+    const searchInput = await screen.findByPlaceholderText('Search fields');
+    expect(screen.getByText('Field display name')).toBeInTheDocument();
+
+    await user.type(searchInput, 'field_name');
+    await waitFor(() => expect(screen.queryByText('Field display name')).not.toBeInTheDocument());
+
+    await user.clear(searchInput);
+    await user.type(searchInput, 'display');
+    await waitFor(() => expect(screen.getByText('Field display name')).toBeInTheDocument());
+  });
+
   it('keeps searchable submenu children during IME composition', async () => {
     const engine = new FlowEngine();
     await engine.flowSettings.forceEnable();

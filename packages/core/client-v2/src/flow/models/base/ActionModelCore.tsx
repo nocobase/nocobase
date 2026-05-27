@@ -50,12 +50,13 @@ export const ActionSceneEnum = {
 };
 
 export class ActionModel<T extends DefaultStructure = DefaultStructure> extends FlowModel<T> {
-  declare props: ButtonProps & { tooltip?: string };
+  declare props: ButtonProps & { tooltip?: string; iconOnly?: boolean };
   declare scene: ActionSceneType;
 
-  defaultProps: ButtonProps & { tooltip?: string } = {
+  defaultProps: ButtonProps & { tooltip?: string; iconOnly?: boolean } = {
     type: 'default',
     title: tExpr('Action'),
+    iconOnly: false,
   };
 
   enableEditTooltip = true;
@@ -64,6 +65,13 @@ export class ActionModel<T extends DefaultStructure = DefaultStructure> extends 
   enableEditType = true;
   enableEditDanger = true;
   enableEditColor = false;
+  buttonTypeOptions = [
+    { value: 'default', label: '{{t("Default")}}' },
+    { value: 'primary', label: '{{t("Primary")}}' },
+    { value: 'dashed', label: '{{t("Dashed")}}' },
+    { value: 'link', label: '{{t("Link")}}' },
+    { value: 'text', label: '{{t("Text")}}' },
+  ];
 
   static _getScene() {
     return _.castArray(this['scene'] || []);
@@ -133,12 +141,12 @@ export class ActionModel<T extends DefaultStructure = DefaultStructure> extends 
   }
 
   renderButton() {
-    const props = this.props;
+    const { iconOnly, ...props } = this.props;
     const icon = this.getIcon() ? <Icon type={this.getIcon() as any} /> : undefined;
 
     return (
       <Button {...props} onClick={this.onClick.bind(this)} icon={icon}>
-        {props.children || this.getTitle()}
+        {iconOnly ? null : props.children || this.getTitle()}
       </Button>
     );
   }
@@ -152,13 +160,13 @@ export class ActionModel<T extends DefaultStructure = DefaultStructure> extends 
   }
 
   renderHiddenInConfig(): React.ReactNode | undefined {
-    const props = this.props;
+    const { iconOnly, ...props } = this.props;
     const icon = this.getIcon() ? <Icon type={this.getIcon() as any} /> : undefined;
     if (this.forbidden) {
       return (
         <ActionWithoutPermission>
           <Button {...props} onClick={this.onClick.bind(this)} icon={icon} style={{ opacity: '0.3' }}>
-            {props.children || this.getTitle()}
+            {iconOnly ? null : props.children || this.getTitle()}
           </Button>
         </ActionWithoutPermission>
       );
@@ -166,7 +174,7 @@ export class ActionModel<T extends DefaultStructure = DefaultStructure> extends 
     return (
       <Tooltip title={this.context.t('The button is hidden and only visible when the UI Editor is active')}>
         <Button {...props} onClick={this.onClick.bind(this)} icon={icon} style={{ opacity: '0.3' }}>
-          {props.children || this.getTitle()}
+          {iconOnly ? null : props.children || this.getTitle()}
         </Button>
       </Tooltip>
     );

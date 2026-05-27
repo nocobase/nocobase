@@ -7,8 +7,6 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { model } from '@formily/reactive';
-
 interface ConfigState {
   results: {
     [uid: string]: {
@@ -17,21 +15,45 @@ interface ConfigState {
     };
   };
   setResult: (uid: string, result: any) => void;
-  setError?: (uid: string, error: string) => void;
+  setError: (uid: string, error: string) => void;
 }
 
-export const configStore = model<ConfigState>({
+type ConfigStore = ConfigState & {
+  version: number;
+  subscribe: (listener: () => void) => () => void;
+};
+
+const listeners = new Set<() => void>();
+
+const notify = () => {
+  listeners.forEach((listener) => listener());
+};
+
+const store: ConfigStore = {
   results: {},
+  version: 0,
   setResult(uid: string, result: any) {
     this.results[uid] = {
       result,
       error: null,
     };
+    this.version += 1;
+    notify();
   },
   setError(uid: string, error: string) {
     this.results[uid] = {
       result: null,
       error,
     };
+    this.version += 1;
+    notify();
   },
-});
+  subscribe(listener: () => void) {
+    listeners.add(listener);
+    return () => {
+      listeners.delete(listener);
+    };
+  },
+};
+
+export const configStore = store;

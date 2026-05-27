@@ -63,6 +63,7 @@ export type FlowSurfaceComposeNormalizedBlockSpec = {
   resource?: FlowSurfaceComposeNormalizedResource;
   template?: FlowSurfaceComposeObject;
   settings?: FlowSurfaceComposeObject;
+  explicitFields?: boolean;
   fields: FlowSurfaceComposeNormalizedFieldSpec[];
   fieldsLayout?: FlowSurfaceComposeObject;
   actions: FlowSurfaceComposeNormalizedActionSpec[];
@@ -215,7 +216,7 @@ export function resolveComposeFieldContainerSource(
 export function resolveComposeTargetKey(
   targetKey: string,
   keyMap: Record<string, FlowSurfaceComposeTargetKey | undefined>,
-  kind: 'field' | 'layout' | 'tree connectFields',
+  kind: string,
 ) {
   const key = String(targetKey || '').trim();
   if (!key) {

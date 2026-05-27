@@ -45,11 +45,11 @@ async function promptActivationMode(): Promise<ActivationMode> {
     return await select<ActivationMode>({
       message: 'How do you want to activate the license?',
       choices: [
-        { value: 'key', name: 'Use an existing license key' },
         { value: 'online', name: 'Request and activate a license online' },
+        { value: 'key', name: 'Use an existing license key' },
         { value: 'cancel', name: 'Cancel' },
       ],
-      default: 'key',
+      default: 'online',
     });
   } catch {
     return 'cancel';
@@ -96,6 +96,7 @@ async function promptLicenseKeyInput(): Promise<{ key?: string; keyFile?: string
 
 async function promptOnlineActivationInput(
   initial: Partial<OnlineActivationAnswers>,
+  defaultAppName?: string,
 ): Promise<OnlineActivationAnswers | undefined> {
   let account = String(initial.account ?? '').trim();
   if (!account) {
@@ -133,8 +134,10 @@ async function promptOnlineActivationInput(
   let appName = String(initial.appName ?? '').trim();
   if (!appName) {
     try {
+      const resolvedDefaultAppName = String(defaultAppName ?? '').trim();
       const answer = await input({
         message: 'Application name',
+        default: resolvedDefaultAppName || undefined,
         validate: (value) => String(value ?? '').trim() ? true : 'Application name is required.',
       });
       appName = String(answer ?? '').trim();
@@ -310,7 +313,7 @@ export default class LicenseActivate extends Command {
           this.error('Online activation requires --account, --password, and --desc when not using a TTY.');
         }
 
-        const prompted = await promptOnlineActivationInput(initialOnline);
+        const prompted = await promptOnlineActivationInput(initialOnline, runtime.envName);
         if (!prompted) {
           return;
         }

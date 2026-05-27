@@ -227,11 +227,28 @@ const useStyles = createStyles(({ css, token }) => {
         justify-content: center;
         width: 0;
         height: 4em;
-        border-left: 1px dashed ${token.colorBgLayout};
+
+        &:before {
+          content: '';
+          position: absolute;
+          top: 0;
+          bottom: 0;
+          left: calc(50% - 0.5px);
+          width: 1px;
+          background-color: ${token.colorBorder};
+          background-image: repeating-linear-gradient(to bottom, ${token.colorBgLayout} 0 2px, transparent 2px 4px);
+        }
 
         .anticon {
           font-size: 1.5em;
           line-height: 100%;
+        }
+      }
+
+      &.workflow-branch-dashed {
+        .workflow-branch-lines {
+          background-color: ${token.colorBorder};
+          background-image: repeating-linear-gradient(to bottom, ${token.colorBgLayout} 0 2px, transparent 2px 4px);
         }
       }
     `,

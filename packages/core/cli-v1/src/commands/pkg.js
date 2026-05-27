@@ -22,7 +22,7 @@ class Package {
   constructor(packageName, packageManager) {
     this.packageName = packageName;
     this.packageManager = packageManager;
-    this.outputDir = path.resolve(process.cwd(), `storage/plugins/${this.packageName}`);
+    this.outputDir = path.resolve(resolvePluginStoragePath(), this.packageName);
   }
 
   get token() {

@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { normalizeApprovalSemanticUse } from './approval';
+import { normalizeApprovalSemanticUse } from './approval/semantic-use';
 import { MULTI_VALUE_ASSOCIATION_INTERFACES } from './association-interfaces';
 
 export { MULTI_VALUE_ASSOCIATION_INTERFACES } from './association-interfaces';

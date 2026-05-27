@@ -10,14 +10,23 @@
 const chalk = require('chalk');
 const { Command } = require('commander');
 const { resolve } = require('path');
-const { run, promptForTs, runAppCommand, hasCorePackages, downloadPro, hasTsNode, checkDBDialect } = require('../util');
+const {
+  run,
+  promptForTs,
+  runAppCommand,
+  hasCorePackages,
+  downloadPro,
+  hasTsNode,
+  checkDBDialect,
+  storagePathJoin,
+} = require('../util');
 const { existsSync, rmSync } = require('fs');
 const { readJSON, writeJSON } = require('fs-extra');
 const deepmerge = require('deepmerge');
 
 const rmAppDir = () => {
   // If ts-node is not installed, do not do the following
-  const appDevDir = resolve(process.cwd(), './storage/.app-dev');
+  const appDevDir = storagePathJoin('.app-dev');
   if (existsSync(appDevDir)) {
     rmSync(appDevDir, { recursive: true, force: true });
   }

@@ -312,7 +312,7 @@ export async function buildServerDeps(cwd: string, serverFiles: string[], log: P
   const includePackages = getIncludePackages(sourcePackages, external, pluginPrefix);
   const excludePackages = getExcludePackages(sourcePackages, external, pluginPrefix);
 
-  let tips = [];
+  const tips = [];
   if (includePackages.length) {
     tips.push(
       `These packages ${chalk.yellow(includePackages.join(', '))} will be ${chalk.italic(
@@ -374,10 +374,12 @@ export async function buildServerDeps(cwd: string, serverFiles: string[], log: P
     await ncc(dep, nccConfig).then(
       ({ code, assets }: { code: string; assets: Record<string, { source: string; permissions: number }> }) => {
         // emit dist file
+        fs.ensureDirSync(path.dirname(mainFile));
         fs.writeFileSync(mainFile, code, 'utf-8');
 
         // emit assets
         Object.entries(assets).forEach(([name, item]) => {
+          fs.ensureDirSync(path.dirname(path.join(outputDir, name)));
           fs.writeFileSync(path.join(outputDir, name), item.source, {
             encoding: 'utf-8',
             mode: item.permissions,
@@ -429,6 +431,7 @@ export async function buildPluginServer(cwd: string, userConfig: UserConfig, sou
       loader: {
         ...otherExts.reduce((prev, cur) => ({ ...prev, [cur]: 'copy' }), {}),
         '.json': 'copy',
+        '.txt': 'copy',
       },
     }),
   );
@@ -485,6 +488,7 @@ export async function buildProPluginServer(cwd: string, userConfig: UserConfig, 
       loader: {
         ...otherExts.reduce((prev, cur) => ({ ...prev, [cur]: 'copy' }), {}),
         '.json': 'copy',
+        '.txt': 'copy',
       },
     }),
   );
@@ -539,6 +543,7 @@ export async function buildProPluginServer(cwd: string, userConfig: UserConfig, 
       loader: {
         ...otherExts.reduce((prev, cur) => ({ ...prev, [cur]: 'copy' }), {}),
         '.json': 'copy',
+        '.txt': 'copy',
       },
 
       ...externalOptions,

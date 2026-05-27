@@ -33,6 +33,7 @@ export const FLOW_SURFACES_TEST_PLUGINS = [
   'block-tree',
   'kanban',
   'block-markdown',
+  'field-markdown-vditor',
   'block-iframe',
   'block-workbench',
   'calendar',
@@ -131,6 +132,17 @@ export const FLOW_SURFACES_TEST_PLUGIN_INSTALLS = [
     createFlowSurfacesExternalPluginStub,
   ),
 ];
+
+export const FLOW_SURFACES_AI_TEST_PLUGINS = [...FLOW_SURFACES_TEST_PLUGINS, 'ai'] as const;
+export const FLOW_SURFACES_AI_TEST_PLUGIN_INSTALLS = [
+  ...FLOW_SURFACES_TEST_PLUGIN_INSTALLS,
+  createFlowSurfacesExternalPluginStub('ai'),
+] as const;
+
+export const FLOW_SURFACES_RECORD_HISTORY_TEST_PLUGIN_INSTALLS = [
+  ...FLOW_SURFACES_TEST_PLUGIN_INSTALLS,
+  createFlowSurfacesExternalPluginStub('record-history'),
+] as const;
 
 export const FLOW_SURFACES_APPROVAL_TEST_ENABLED_PLUGIN_ALIASES = Array.from(
   new Set([...FLOW_SURFACES_TEST_PLUGINS, ...FLOW_SURFACES_APPROVAL_REAL_PLUGIN_ALIASES]),

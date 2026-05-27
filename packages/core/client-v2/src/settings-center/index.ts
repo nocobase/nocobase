@@ -9,6 +9,6 @@
 
 export * from './AdminSettingsLayout';
 export * from './AdminSettingsLayoutModel';
-export * from './PluginManagerPage';
+export * from './plugin-manager';
 export * from './SystemSettingsPage';
 export * from './utils';

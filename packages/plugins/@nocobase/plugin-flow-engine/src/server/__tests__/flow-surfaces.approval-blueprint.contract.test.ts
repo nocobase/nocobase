@@ -98,7 +98,7 @@ describe('flowSurfaces approval blueprint API contract', () => {
               type: 'jsBlock',
               title: 'Approval script',
               settings: {
-                code: "return 'Approval';",
+                code: "ctx.render('Approval');",
               },
             },
           ],

@@ -11,7 +11,7 @@ import fsp from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { afterEach, expect, test, vi } from 'vitest';
-import { commandOutputViaFile, resolveProjectCwd, run } from '../lib/run-npm.js';
+import { commandOutput, commandOutputViaFile, resolveProjectCwd, run } from '../lib/run-npm.js';
 
 test('run preserves arguments containing spaces', async () => {
   const dir = await fsp.mkdtemp(path.join(os.tmpdir(), 'nocobase-cli-run-'));
@@ -38,14 +38,82 @@ test('commandOutputViaFile captures long stdout without truncation', async () =>
     name: `skill-${index}`,
     value: 'x'.repeat(80),
   }));
-  await fsp.writeFile(
-    script,
-    `process.stdout.write(${JSON.stringify(JSON.stringify(payload))});`,
-  );
+  await fsp.writeFile(script, `process.stdout.write(${JSON.stringify(JSON.stringify(payload))});`);
 
   try {
     const output = await commandOutputViaFile(process.execPath, [script]);
     expect(JSON.parse(output)).toEqual(payload);
+  } finally {
+    await fsp.rm(dir, { recursive: true, force: true });
+  }
+});
+
+test('run rejects and terminates the child process when a timeout is reached', async () => {
+  const dir = await fsp.mkdtemp(path.join(os.tmpdir(), 'nocobase-cli-run-timeout-'));
+  const script = path.join(dir, 'hang.cjs');
+  await fsp.writeFile(script, 'setInterval(() => {}, 1000);');
+
+  try {
+    await expect(run(process.execPath, [script], { stdio: 'ignore', timeoutMs: 50 })).rejects.toThrow(
+      `${process.execPath} timed out after 50ms`,
+    );
+  } finally {
+    await fsp.rm(dir, { recursive: true, force: true });
+  }
+});
+
+test('commandOutput rejects when a timeout is reached', async () => {
+  const dir = await fsp.mkdtemp(path.join(os.tmpdir(), 'nocobase-cli-output-timeout-'));
+  const script = path.join(dir, 'hang-output.cjs');
+  await fsp.writeFile(script, 'setInterval(() => {}, 1000);');
+
+  try {
+    await expect(commandOutput(process.execPath, [script], { timeoutMs: 50 })).rejects.toThrow(
+      `${process.execPath} timed out after 50ms`,
+    );
+  } finally {
+    await fsp.rm(dir, { recursive: true, force: true });
+  }
+});
+
+test('commandOutputViaFile rejects when a timeout is reached', async () => {
+  const dir = await fsp.mkdtemp(path.join(os.tmpdir(), 'nocobase-cli-output-file-timeout-'));
+  const script = path.join(dir, 'hang-output-file.cjs');
+  await fsp.writeFile(script, 'setInterval(() => {}, 1000);');
+
+  try {
+    await expect(commandOutputViaFile(process.execPath, [script], { timeoutMs: 50 })).rejects.toThrow(
+      `${process.execPath} timed out after 50ms`,
+    );
+  } finally {
+    await fsp.rm(dir, { recursive: true, force: true });
+  }
+});
+
+test('run forwards piped stdout and stderr to callbacks', async () => {
+  const dir = await fsp.mkdtemp(path.join(os.tmpdir(), 'nocobase-cli-run-pipe-'));
+  const script = path.join(dir, 'print-streams.cjs');
+  await fsp.writeFile(
+    script,
+    ["process.stdout.write('hello stdout');", "process.stderr.write('hello stderr');"].join('\n'),
+  );
+
+  let stdout = '';
+  let stderr = '';
+
+  try {
+    await run(process.execPath, [script], {
+      stdio: 'pipe',
+      onStdout: (chunk) => {
+        stdout += chunk;
+      },
+      onStderr: (chunk) => {
+        stderr += chunk;
+      },
+    });
+
+    expect(stdout).toBe('hello stdout');
+    expect(stderr).toBe('hello stderr');
   } finally {
     await fsp.rm(dir, { recursive: true, force: true });
   }
@@ -60,6 +128,7 @@ test('resolveProjectCwd walks up parent directories to find a NocoBase project r
   const projectRoot = path.join(dir, 'app2', 'source');
   const nestedCwd = path.join(projectRoot, 'packages', 'core', 'cli');
   const marker = path.join(projectRoot, 'node_modules', '.bin', 'nocobase-v1');
+  const relativeProjectPath = path.relative(nestedCwd, projectRoot);
 
   try {
     await fsp.mkdir(path.dirname(marker), { recursive: true });
@@ -71,10 +140,43 @@ test('resolveProjectCwd walks up parent directories to find a NocoBase project r
       cwd: vi.fn(() => nestedCwd),
     });
 
-    expect(resolveProjectCwd('./app2/source')).toBe(projectRoot);
-    expect(resolveProjectCwd('')).toBe(nestedCwd);
-    expect(resolveProjectCwd('   ')).toBe(nestedCwd);
+    expect(resolveProjectCwd()).toBe(projectRoot);
+    expect(resolveProjectCwd(relativeProjectPath)).toBe(projectRoot);
+    expect(resolveProjectCwd(nestedCwd)).toBe(projectRoot);
+    expect(resolveProjectCwd('')).toBe(projectRoot);
+    expect(resolveProjectCwd('   ')).toBe(projectRoot);
   } finally {
     await fsp.rm(dir, { recursive: true, force: true });
   }
+});
+
+test('resolveProjectCwd keeps an explicit relative cwd anchored to its resolved path', async () => {
+  const dir = await fsp.mkdtemp(path.join(os.tmpdir(), 'nocobase-cli-project-relative-'));
+  const outsideCwd = path.join(dir, 'workspace');
+  const projectRoot = path.join(dir, 'app2', 'source');
+  const nestedCwd = path.join(projectRoot, 'packages', 'core', 'cli');
+  const marker = path.join(projectRoot, 'node_modules', '.bin', 'nocobase-v1');
+  const relativeNestedPath = path.relative(outsideCwd, nestedCwd);
+
+  try {
+    await fsp.mkdir(path.dirname(marker), { recursive: true });
+    await fsp.mkdir(outsideCwd, { recursive: true });
+    await fsp.mkdir(nestedCwd, { recursive: true });
+    await fsp.writeFile(marker, '');
+
+    vi.stubGlobal('process', {
+      ...process,
+      cwd: vi.fn(() => outsideCwd),
+    });
+
+    expect(resolveProjectCwd(relativeNestedPath)).toBe(projectRoot);
+  } finally {
+    await fsp.rm(dir, { recursive: true, force: true });
+  }
+});
+
+test('resolveProjectCwd explains when an explicit cwd does not exist', () => {
+  expect(() => resolveProjectCwd('/tmp/nocobase-cli-missing-project-root')).toThrow(
+    'The specified --cwd does not exist: /tmp/nocobase-cli-missing-project-root',
+  );
 });

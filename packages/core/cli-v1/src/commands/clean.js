@@ -9,7 +9,7 @@
 
 const chalk = require('chalk');
 const { Command } = require('commander');
-const { run, isDev } = require('../util');
+const { run, isDev, storagePathJoin } = require('../util');
 
 /**
  *
@@ -34,7 +34,7 @@ module.exports = (cli) => {
           run('rimraf', ['-rf', ...distDirs]);
         }
       } else {
-        run('rimraf', ['-rf', './storage/app-dev']);
+        run('rimraf', ['-rf', storagePathJoin('.app-dev')]);
         run('rimraf', ['-rf', 'packages/*/*/{lib,esm,es,dist,node_modules}']);
         run('rimraf', ['-rf', 'packages/*/@*/*/{lib,esm,es,dist,node_modules}']);
       }

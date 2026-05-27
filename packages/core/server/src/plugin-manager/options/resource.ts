@@ -30,6 +30,32 @@ const PLUGIN_CLIENT_MARKER_FILES: Record<PluginClientLane, string> = {
   'client-v2': 'client-v2.js',
 };
 
+function getAppDevPluginUrls(): Record<string, Partial<Record<PluginClientLane, string>>> {
+  if (process.env.NOCOBASE_APP_DEV !== 'true' || !process.env.NOCOBASE_APP_DEV_PLUGIN_URLS) {
+    return {};
+  }
+  try {
+    return JSON.parse(process.env.NOCOBASE_APP_DEV_PLUGIN_URLS);
+  } catch (error) {
+    return {};
+  }
+}
+
+function getAppDevPluginDependencies(packageJson: any, lane: PluginClientLane): string[] {
+  const appDevPluginUrls = getAppDevPluginUrls();
+  const deps = {
+    ...packageJson.dependencies,
+    ...packageJson.peerDependencies,
+    ...packageJson.devDependencies,
+  };
+  return Object.keys(deps).filter(
+    (packageName) =>
+      appDevPluginUrls[packageName]?.[lane] ||
+      packageName.startsWith('@nocobase/plugin-') ||
+      packageName.startsWith('@nocobase/preset-'),
+  );
+}
+
 export class PackageUrls {
   static items: Record<string, string | undefined> = {};
 
@@ -42,6 +68,11 @@ export class PackageUrls {
   }
 
   static async get(packageName: string, lane: PluginClientLane = 'client') {
+    const appDevUrl = this.getAppDevUrl(packageName, lane);
+    if (appDevUrl) {
+      return appDevUrl;
+    }
+
     const cacheKey = this.getCacheKey(packageName, lane);
     const cached = this.items[cacheKey];
     if (cached) {
@@ -59,7 +90,15 @@ export class PackageUrls {
     return nextUrl;
   }
 
+  static getAppDevUrl(packageName: string, lane: PluginClientLane) {
+    return getAppDevPluginUrls()[packageName]?.[lane];
+  }
+
   static async hasClientEntry(packageName: string, lane: PluginClientLane) {
+    if (this.getAppDevUrl(packageName, lane)) {
+      return true;
+    }
+
     const pkgPath = path.resolve(process.env.NODE_MODULES_PATH, packageName);
     if (!(await fse.exists(pkgPath))) {
       return false;
@@ -128,12 +167,19 @@ async function listEnabledPlugins(ctx, lane: PluginClientLane = 'client') {
         options: unknown;
         url: string;
         clientV2Url?: string;
+        devMode?: 'esm';
+        appDevDependencies?: string[];
       } = {
         name,
         packageName,
         options,
         url,
       };
+      if (PackageUrls.getAppDevUrl(packageName, lane)) {
+        const packageJson = await PluginManager.getPackageJson(packageName);
+        entry.devMode = 'esm';
+        entry.appDevDependencies = getAppDevPluginDependencies(packageJson, lane);
+      }
       // 让 v1 lane 的前端 PluginManager 能精准注册跨 lane 的 paths,而不必猜 URL。
       if (lane === 'client' && (await PackageUrls.hasClientEntry(packageName, 'client-v2'))) {
         const clientV2Url = await PackageUrls.get(packageName, 'client-v2');

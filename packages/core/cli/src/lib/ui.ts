@@ -68,7 +68,10 @@ export function printInfo(message: string) {
 }
 
 export function announceTargetEnv(envName: string) {
-  printInfo(`Target env: ${envName}`);
+  if (process.env.NB_SKIP_TARGET_ENV_LOG === '1') {
+    return;
+  }
+  printInfo(`Using env "${envName}".`);
 }
 
 export function printVerbose(message: string) {

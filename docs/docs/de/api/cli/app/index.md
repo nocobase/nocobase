@@ -6,7 +6,7 @@ keywords: "nb app,NocoBase CLI,Starten,Stoppen,Neustarten,Logs,Aktualisieren"
 
 # nb app
 
-Laufzeitstatus einer NocoBase-Anwendung verwalten. Bei npm/Git-envs werden die Anwendungsbefehle im lokalen Quellcode-Verzeichnis ausgeführt, bei Docker-envs werden die gespeicherten Anwendungs-Container verwaltet.
+Laufzeitstatus einer NocoBase-Anwendung verwalten. Bei npm/Git-envs werden die Anwendungsbefehle im lokalen Quellcode-Verzeichnis ausgeführt, bei Docker-envs werden die Anwendungs-Container anhand der gespeicherten env-Konfiguration verwaltet.
 
 ## Verwendung
 
@@ -18,12 +18,12 @@ nb app <command>
 
 | Befehl | Beschreibung |
 | --- | --- |
-| [`nb app start`](./start.md) | Anwendung oder Docker-Container starten |
-| [`nb app stop`](./stop.md) | Anwendung oder Docker-Container stoppen |
+| [`nb app start`](./start.md) | Anwendung starten oder Docker-Container neu erstellen |
+| [`nb app stop`](./stop.md) | Anwendung stoppen oder Docker-Container entfernen |
 | [`nb app restart`](./restart.md) | Anwendung erst stoppen und dann starten |
 | [`nb app logs`](./logs.md) | Anwendungs-Logs anzeigen |
 | [`nb app down`](./down.md) | Lokale Laufzeitressourcen stoppen und bereinigen |
-| [`nb app upgrade`](./upgrade.md) | Quellcode oder Image aktualisieren und Anwendung neu starten |
+| [`nb app upgrade`](./upgrade.md) | Anwendung stoppen, Quellcode oder Image ersetzen und erneut starten |
 
 ## Beispiele
 
@@ -31,7 +31,7 @@ nb app <command>
 nb app start --env app1
 nb app restart --env app1
 nb app logs --env app1
-nb app upgrade --env app1 -s
+nb app upgrade --env app1 --skip-download
 nb app down --env app1 --all --force
 ```
 

@@ -14,6 +14,7 @@ const dotenv = require('dotenv');
 const fs = require('fs');
 const glob = require('glob');
 const _ = require('lodash');
+const { storagePathJoin } = require('../util');
 
 let ENV_FILE = resolve(process.cwd(), '.env.e2e');
 
@@ -55,16 +56,16 @@ async function runApp(dir, index = 0) {
       APP_ENV: 'production',
       APP_PORT: 20000 + index,
       DB_DATABASE: `nocobase${index}`,
-      SOCKET_PATH: `storage/e2e/gateway-e2e-${index}.sock`,
-      PM2_HOME: resolve(process.cwd(), `storage/e2e/.pm2-${index}`),
-      PLAYWRIGHT_AUTH_FILE: resolve(process.cwd(), `storage/playwright/.auth/admin-${index}.json`),
+      SOCKET_PATH: storagePathJoin('e2e', `gateway-e2e-${index}.sock`),
+      PM2_HOME: storagePathJoin('e2e', `.pm2-${index}`),
+      PLAYWRIGHT_AUTH_FILE: storagePathJoin('playwright', '.auth', `admin-${index}.json`),
       E2E_JOB_ID: index,
     },
   });
 }
 
 exports.pTest = async (options) => {
-  const dir = resolve(process.cwd(), 'storage/e2e');
+  const dir = storagePathJoin('e2e');
 
   if (!fs.existsSync(dir)) {
     fs.mkdirSync(dir, { recursive: true });

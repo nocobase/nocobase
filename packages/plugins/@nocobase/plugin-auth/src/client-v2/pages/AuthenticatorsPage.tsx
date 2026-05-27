@@ -9,7 +9,7 @@
 
 import { CheckOutlined, DeleteOutlined, DownOutlined, PlusOutlined } from '@ant-design/icons';
 import { DEFAULT_PAGE_SIZE, DrawerFormLayout, Table } from '@nocobase/client-v2';
-import { useFlowContext } from '@nocobase/flow-engine';
+import { randomId, useFlowContext } from '@nocobase/flow-engine';
 import { useMemoizedFn, useRequest } from 'ahooks';
 import { App, Button, Card, Checkbox, Dropdown, Form, Input, Select, Space, Spin, Tag, theme } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
@@ -30,10 +30,6 @@ type AuthenticatorRecord = {
 };
 
 type AuthTypeOption = { name: string; title?: string };
-
-function createAuthenticatorName() {
-  return `s_${Math.random().toString(36).slice(2, 12)}`;
-}
 
 function recursiveTrim(value: any): any {
   if (typeof value === 'string') return value.trim();
@@ -67,7 +63,7 @@ function AuthenticatorFormView(props: {
   mode: 'create' | 'edit';
   authType: string;
   authTypeOptions: AuthTypeOption[];
-  adminSettingsFormLoader?: AuthOptions['adminSettingsFormLoader'];
+  plugin: PluginAuthClientV2;
   record?: AuthenticatorRecord;
   onSubmitted: () => void;
 }) {
@@ -88,7 +84,7 @@ function AuthenticatorFormView(props: {
   const initialValues = useMemo(() => {
     if (props.mode === 'edit') return cloneDeep(props.record || {});
     return {
-      name: createAuthenticatorName(),
+      name: randomId('s_'),
       authType: props.authType,
       enabled: false,
       options: {},
@@ -99,10 +95,30 @@ function AuthenticatorFormView(props: {
     form.setFieldsValue(initialValues);
   }, [form, initialValues]);
 
-  const AdminSettingsBody = useMemo(
-    () => (props.adminSettingsFormLoader ? lazy(props.adminSettingsFormLoader) : null),
-    [props.adminSettingsFormLoader],
+  // Watch the form's authType so the admin-settings body swaps in sync with
+  // the Select. Falls back to props.authType for the first render before
+  // the form has settled (avoids a flash of "no settings body").
+  const watchedAuthType = Form.useWatch('authType', form);
+  const currentAuthType = watchedAuthType ?? props.authType;
+
+  const currentAdminSettingsFormLoader = useMemo<AuthOptions['adminSettingsFormLoader']>(
+    () => props.plugin.authTypes.get(currentAuthType)?.adminSettingsFormLoader,
+    [props.plugin, currentAuthType],
   );
+
+  const AdminSettingsBody = useMemo(
+    () => (currentAdminSettingsFormLoader ? lazy(currentAdminSettingsFormLoader) : null),
+    [currentAdminSettingsFormLoader],
+  );
+
+  // Switching auth type discards the previous type's `options` payload —
+  // each auth type owns its own option shape (e.g. SMS needs `verifier`,
+  // OIDC needs `clientId/clientSecret`) and leaking unrelated keys into
+  // the new submission would either fail server validation or persist
+  // ghost config. v1 had the same reset behavior via Formily's onTypeChange.
+  const handleAuthTypeChange = useMemoizedFn(() => {
+    form.setFieldValue('options', {});
+  });
 
   const handleSubmit = useMemoizedFn(async () => {
     const raw = await form.validateFields();
@@ -155,7 +171,7 @@ function AuthenticatorFormView(props: {
           <Input disabled={props.mode === 'edit'} />
         </Form.Item>
         <Form.Item name="authType" label={t('Auth Type')} rules={[{ required: true }]}>
-          <Select options={compiledTypeOptions} disabled />
+          <Select options={compiledTypeOptions} onChange={handleAuthTypeChange} />
         </Form.Item>
         <Form.Item name="title" label={t('Title')}>
           <Input />
@@ -233,15 +249,15 @@ export default function AuthenticatorsPage() {
   const authTypeOptions = useMemo<AuthTypeOption[]>(() => authTypes || [], [authTypes]);
 
   const openForm = useMemoizedFn((mode: 'create' | 'edit', authType: string, record?: AuthenticatorRecord) => {
-    const adminSettingsFormLoader = plugin.authTypes.get(authType)?.adminSettingsFormLoader;
     ctx.viewer.drawer({
       width: '50%',
+      closable: true,
       content: () => (
         <AuthenticatorFormView
           mode={mode}
           authType={authType}
           authTypeOptions={authTypeOptions}
-          adminSettingsFormLoader={adminSettingsFormLoader}
+          plugin={plugin}
           record={record}
           onSubmitted={() => refresh()}
         />

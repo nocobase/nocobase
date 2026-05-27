@@ -125,14 +125,15 @@ test('install reuses env add prompts without online apiBaseUrl validation', asyn
 
   vi.spyOn(command as any, 'resolveResumePresetValues').mockResolvedValue(undefined);
 
-  const runPromptCatalogMock = vi.fn()
+  const runPromptCatalogMock = vi
+    .fn()
     .mockResolvedValueOnce({ env: 'app7593' })
     .mockResolvedValueOnce({
       appRootPath: './app7593/source/',
       appPort: '13000',
       storagePath: './app7593/storage/',
-      fetchSource: false,
     })
+    .mockResolvedValueOnce({})
     .mockResolvedValueOnce({
       dbDialect: 'postgres',
       builtinDb: true,
@@ -164,10 +165,299 @@ test('install reuses env add prompts without online apiBaseUrl validation', asyn
     runPromptCatalogSpy.mockRestore();
   }
 
-  const envAddCatalog = runPromptCatalogMock.mock.calls[4]?.[0];
+  const envAddCatalog = runPromptCatalogMock.mock.calls[5]?.[0];
   expect(envAddCatalog.apiBaseUrl).toBeDefined();
   expect(envAddCatalog.apiBaseUrl).not.toBe(EnvAdd.prompts.apiBaseUrl);
   expect(envAddCatalog.apiBaseUrl.validate).toBe(undefined);
+});
+
+test('install hides the deferred accessToken prompt when --skip-auth is used with token auth', async () => {
+  const command = Object.create(Install.prototype) as Install & {
+    resolveResumePresetValues: typeof Install.prototype.resolveResumePresetValues;
+  };
+
+  vi.spyOn(command as any, 'resolveResumePresetValues').mockResolvedValue(undefined);
+
+  const runPromptCatalogMock = vi
+    .fn()
+    .mockResolvedValueOnce({ env: 'app7593' })
+    .mockResolvedValueOnce({
+      appRootPath: './app7593/source/',
+      appPort: '13000',
+      storagePath: './app7593/storage/',
+    })
+    .mockResolvedValueOnce({})
+    .mockResolvedValueOnce({
+      dbDialect: 'postgres',
+      builtinDb: true,
+    })
+    .mockResolvedValueOnce({
+      rootUsername: 'nocobase',
+      rootEmail: 'admin@nocobase.com',
+      rootPassword: 'nocobase',
+      rootNickname: 'NocoBase',
+    })
+    .mockResolvedValueOnce({
+      name: 'app7593',
+      apiBaseUrl: 'http://127.0.0.1:13000/api',
+      authType: 'token',
+    });
+
+  const promptCatalogModule = await import('../lib/prompt-catalog.js');
+  const runPromptCatalogSpy = vi
+    .spyOn(promptCatalogModule, 'runPromptCatalog')
+    .mockImplementation(runPromptCatalogMock as any);
+
+  const parsed = {
+    resume: false,
+    'skip-auth': true,
+    'auth-type': 'token',
+  } as any;
+
+  try {
+    await (Install.prototype as any).collectPromptResults.call(command, parsed, true);
+  } finally {
+    runPromptCatalogSpy.mockRestore();
+  }
+
+  const envAddCatalog = runPromptCatalogMock.mock.calls[5]?.[0];
+  expect(envAddCatalog.accessToken).toBeDefined();
+  expect(envAddCatalog.accessToken.hidden?.({ authType: 'token' })).toBe(true);
+});
+
+test('install keeps optional database prompt results for schema, table prefix, and underscored mode', async () => {
+  const command = Object.create(Install.prototype) as Install & {
+    resolveResumePresetValues: typeof Install.prototype.resolveResumePresetValues;
+  };
+
+  vi.spyOn(
+    command as { resolveResumePresetValues: typeof Install.prototype.resolveResumePresetValues },
+    'resolveResumePresetValues',
+  ).mockResolvedValue(undefined);
+
+  const runPromptCatalogMock = vi
+    .fn()
+    .mockResolvedValueOnce({ env: 'app7593' })
+    .mockResolvedValueOnce({
+      appRootPath: './app7593/source/',
+      appPort: '13000',
+      storagePath: './app7593/storage/',
+    })
+    .mockResolvedValueOnce({})
+    .mockResolvedValueOnce({
+      dbDialect: 'postgres',
+      builtinDb: false,
+      dbHost: 'db.example.com',
+      dbPort: '5432',
+      dbDatabase: 'nocobase',
+      dbUser: 'nocobase',
+      dbPassword: 'secret',
+      dbSchema: 'custom',
+      dbTablePrefix: 'nb_',
+      dbUnderscored: true,
+    })
+    .mockResolvedValueOnce({
+      rootUsername: 'nocobase',
+      rootEmail: 'admin@nocobase.com',
+      rootPassword: 'nocobase',
+      rootNickname: 'NocoBase',
+    })
+    .mockResolvedValueOnce({
+      apiBaseUrl: 'http://127.0.0.1:13000/api',
+      authType: 'oauth',
+    });
+
+  const promptCatalogModule = await import('../lib/prompt-catalog.js');
+  const runPromptCatalogSpy = vi
+    .spyOn(promptCatalogModule, 'runPromptCatalog')
+    .mockImplementation(runPromptCatalogMock as never);
+
+  try {
+    const result = await (
+      Install.prototype as unknown as {
+        collectPromptResults: (
+          parsed: Record<string, unknown>,
+          yes: boolean,
+        ) => Promise<{
+          dbResults: Record<string, unknown>;
+        }>;
+      }
+    ).collectPromptResults.call(
+      command,
+      {
+        resume: false,
+      },
+      false,
+    );
+
+    expect(result.dbResults).toMatchObject({
+      dbSchema: 'custom',
+      dbTablePrefix: 'nb_',
+      dbUnderscored: true,
+    });
+  } finally {
+    runPromptCatalogSpy.mockRestore();
+  }
+});
+
+test('install lets prompted optional database values override saved resume presets', async () => {
+  const command = Object.create(Install.prototype) as Install & {
+    resolveResumePresetValues: typeof Install.prototype.resolveResumePresetValues;
+  };
+
+  vi.spyOn(
+    command as { resolveResumePresetValues: typeof Install.prototype.resolveResumePresetValues },
+    'resolveResumePresetValues',
+  ).mockResolvedValue({
+    dbPreset: {
+      dbSchema: 'saved_schema',
+      dbTablePrefix: 'saved_',
+      dbUnderscored: false,
+    },
+  });
+
+  const runPromptCatalogMock = vi
+    .fn()
+    .mockResolvedValueOnce({ env: 'app7593' })
+    .mockResolvedValueOnce({
+      appRootPath: './app7593/source/',
+      appPort: '13000',
+      storagePath: './app7593/storage/',
+    })
+    .mockResolvedValueOnce({})
+    .mockResolvedValueOnce({
+      dbDialect: 'postgres',
+      builtinDb: false,
+      dbHost: 'db.example.com',
+      dbPort: '5432',
+      dbDatabase: 'nocobase',
+      dbUser: 'nocobase',
+      dbPassword: 'secret',
+      dbSchema: 'custom',
+      dbTablePrefix: 'nb_',
+      dbUnderscored: true,
+    })
+    .mockResolvedValueOnce({
+      rootUsername: 'nocobase',
+      rootEmail: 'admin@nocobase.com',
+      rootPassword: 'nocobase',
+      rootNickname: 'NocoBase',
+    })
+    .mockResolvedValueOnce({
+      apiBaseUrl: 'http://127.0.0.1:13000/api',
+      authType: 'oauth',
+    });
+
+  const promptCatalogModule = await import('../lib/prompt-catalog.js');
+  const runPromptCatalogSpy = vi
+    .spyOn(promptCatalogModule, 'runPromptCatalog')
+    .mockImplementation(runPromptCatalogMock as never);
+
+  try {
+    const result = await (
+      Install.prototype as unknown as {
+        collectPromptResults: (
+          parsed: Record<string, unknown>,
+          yes: boolean,
+        ) => Promise<{
+          dbResults: Record<string, unknown>;
+        }>;
+      }
+    ).collectPromptResults.call(
+      command,
+      {
+        resume: true,
+      },
+      false,
+    );
+
+    expect(result.dbResults).toMatchObject({
+      dbSchema: 'custom',
+      dbTablePrefix: 'nb_',
+      dbUnderscored: true,
+    });
+  } finally {
+    runPromptCatalogSpy.mockRestore();
+  }
+});
+
+test('install preserves forwarded dbUnderscored flags when invoked through nb init in the same process', async () => {
+  const originalArgv = process.argv;
+  process.argv = ['node', 'nb', 'init', '--ui'];
+
+  const command = Object.assign(Object.create(Install.prototype), {
+    argv: ['-y', '--env', 'app7593', '--no-builtin-db', '--db-underscored'],
+  }) as Install & {
+    argv: string[];
+    resolveResumePresetValues: typeof Install.prototype.resolveResumePresetValues;
+  };
+
+  vi.spyOn(
+    command as { resolveResumePresetValues: typeof Install.prototype.resolveResumePresetValues },
+    'resolveResumePresetValues',
+  ).mockResolvedValue(undefined);
+
+  const runPromptCatalogMock = vi
+    .fn()
+    .mockResolvedValueOnce({ env: 'app7593' })
+    .mockResolvedValueOnce({
+      appRootPath: './app7593/source/',
+      appPort: '13000',
+      storagePath: './app7593/storage/',
+    })
+    .mockResolvedValueOnce({})
+    .mockResolvedValueOnce({
+      dbDialect: 'postgres',
+      builtinDb: false,
+      dbHost: 'db.example.com',
+      dbPort: '5432',
+      dbDatabase: 'nocobase',
+      dbUser: 'nocobase',
+      dbPassword: 'secret',
+    })
+    .mockResolvedValueOnce({
+      rootUsername: 'nocobase',
+      rootEmail: 'admin@nocobase.com',
+      rootPassword: 'nocobase',
+      rootNickname: 'NocoBase',
+    })
+    .mockResolvedValueOnce({
+      apiBaseUrl: 'http://127.0.0.1:13000/api',
+      authType: 'oauth',
+    });
+
+  const promptCatalogModule = await import('../lib/prompt-catalog.js');
+  const runPromptCatalogSpy = vi
+    .spyOn(promptCatalogModule, 'runPromptCatalog')
+    .mockImplementation(runPromptCatalogMock as never);
+
+  try {
+    const result = await (
+      Install.prototype as unknown as {
+        collectPromptResults: (
+          parsed: Record<string, unknown>,
+          yes: boolean,
+        ) => Promise<{
+          dbResults: Record<string, unknown>;
+        }>;
+      }
+    ).collectPromptResults.call(
+      command,
+      {
+        env: 'app7593',
+        'builtin-db': false,
+        'db-underscored': true,
+      },
+      true,
+    );
+
+    expect(result.dbResults).toMatchObject({
+      dbUnderscored: true,
+    });
+  } finally {
+    process.argv = originalArgv;
+    runPromptCatalogSpy.mockRestore();
+  }
 });
 
 test('builtin postgres db plan uses a custom built-in database image when provided', () => {
@@ -285,7 +575,11 @@ test('builtin kingbase db plan uses the default kingbase image and runtime optio
   expect(plan.args.includes('DB_MODE=pg')).toBe(true);
   expect(plan.args.includes('NEED_START=yes')).toBe(true);
   expect(plan.args.includes('54321:54321')).toBe(true);
-  expect(plan.args.includes(`${path.resolve(resolveCliHomeRoot(), './storage/kingapp', 'db', 'kingbase')}:/home/kingbase/userdata`)).toBe(true);
+  expect(
+    plan.args.includes(
+      `${path.resolve(resolveCliHomeRoot(), './storage/kingapp', 'db', 'kingbase')}:/home/kingbase/userdata`,
+    ),
+  ).toBe(true);
 });
 
 test('docker app plan wires app, db, network, port, and image settings', async () => {
@@ -312,6 +606,9 @@ test('docker app plan wires app, db, network, port, and image settings', async (
       dbDatabase: 'nocobase',
       dbUser: 'nocobase',
       dbPassword: 'nocobase',
+      dbSchema: 'test',
+      dbTablePrefix: 'nb_',
+      dbUnderscored: true,
     },
     rootResults: {
       rootUsername: 'nocobase',
@@ -349,6 +646,9 @@ test('docker app plan wires app, db, network, port, and image settings', async (
   expect(plan.args.includes('DB_DATABASE=nocobase')).toBe(true);
   expect(plan.args.includes('DB_USER=nocobase')).toBe(true);
   expect(plan.args.includes('DB_PASSWORD=nocobase')).toBe(true);
+  expect(plan.args.includes('DB_SCHEMA=test')).toBe(true);
+  expect(plan.args.includes('DB_TABLE_PREFIX=nb_')).toBe(true);
+  expect(plan.args.includes('DB_UNDERSCORED=true')).toBe(true);
 });
 
 test('install saved env config forwards endpoint, auth, app, storage, and db settings', () => {
@@ -379,6 +679,9 @@ test('install saved env config forwards endpoint, auth, app, storage, and db set
       dbDatabase: 'nocobase',
       dbUser: 'nocobase',
       dbPassword: 'secret',
+      dbSchema: 'test',
+      dbTablePrefix: 'nb_',
+      dbUnderscored: true,
     },
     rootResults: {
       rootUsername: 'admin',
@@ -396,6 +699,7 @@ test('install saved env config forwards endpoint, auth, app, storage, and db set
   expect(envConfig).toEqual({
     kind: 'local',
     apiBaseUrl: 'http://127.0.0.1:13080/api',
+    authType: 'token',
     source: 'git',
     downloadVersion: 'alpha',
     gitUrl: 'https://github.com/nocobase/nocobase.git',
@@ -414,6 +718,9 @@ test('install saved env config forwards endpoint, auth, app, storage, and db set
     dbDatabase: 'nocobase',
     dbUser: 'nocobase',
     dbPassword: 'secret',
+    dbSchema: 'test',
+    dbTablePrefix: 'nb_',
+    dbUnderscored: true,
     rootUsername: 'admin',
     rootEmail: 'admin@nocobase.com',
     rootPassword: 'admin123',
@@ -556,13 +863,13 @@ test('install saved env config records docker download settings for later upgrad
   expect(envConfig.dbPort).toBe(undefined);
 });
 
-test('install resolves an available app port default when the preferred port is busy', async () => {
+test('install resolves an available app port default when the preferred port is busy on 0.0.0.0', async () => {
   const installStatics = Install as unknown as InstallStatics;
   const server = net.createServer();
 
   await new Promise<void>((resolve, reject) => {
     server.once('error', reject);
-    server.listen(0, '127.0.0.1', () => resolve());
+    server.listen(0, '0.0.0.0', () => resolve());
   });
 
   const address = server.address();
@@ -587,15 +894,68 @@ test('install resolves an available app port default when the preferred port is 
   }
 });
 
+test('install resolves an available built-in database host port default when the preferred port is busy on 0.0.0.0', async () => {
+  const installStatics = Install as unknown as InstallStatics;
+  const server = net.createServer();
+  let occupiedByTest = false;
+
+  try {
+    await new Promise<void>((resolve, reject) => {
+      server.once('error', reject);
+      server.listen(54321, '0.0.0.0', () => {
+        occupiedByTest = true;
+        resolve();
+      });
+    });
+  } catch (error: unknown) {
+    const code = typeof error === 'object' && error !== null && 'code' in error ? String(error.code) : undefined;
+    if (code !== 'EADDRINUSE') {
+      throw error;
+    }
+  }
+
+  try {
+    const initialValues = await installStatics.buildDbPromptInitialValues({
+      flags: {},
+      downloadResults: {
+        source: 'git',
+      },
+      dbPreset: {
+        builtinDb: true,
+        dbDialect: 'kingbase',
+      },
+    });
+
+    expect(initialValues.dbPort).toBeTruthy();
+    expect(initialValues.dbPort).not.toBe('54321');
+    expect(Number(initialValues.dbPort)).toBeGreaterThan(0);
+  } finally {
+    if (occupiedByTest && server.listening) {
+      await new Promise<void>((resolve, reject) => {
+        server.close((error) => {
+          if (error) {
+            reject(error);
+            return;
+          }
+          resolve();
+        });
+      });
+    }
+  }
+});
+
 test('install seeds app port initial values unless the user provided --app-port', async () => {
   const installStatics = Install as unknown as InstallStatics;
   const resolveAvailableDefaultPort = vi
-    .spyOn(Install as unknown as {
-      resolveAvailableDefaultPort: (
-        defaultPort: string,
-        options?: { label?: string; warn?: boolean },
-      ) => Promise<string>;
-    }, 'resolveAvailableDefaultPort')
+    .spyOn(
+      Install as unknown as {
+        resolveAvailableDefaultPort: (
+          defaultPort: string,
+          options?: { label?: string; warn?: boolean },
+        ) => Promise<string>;
+      },
+      'resolveAvailableDefaultPort',
+    )
     .mockResolvedValueOnce('61522');
 
   try {
@@ -610,10 +970,12 @@ test('install seeds app port initial values unless the user provided --app-port'
       label: 'Default app port',
       warn: true,
     });
-    expect(await installStatics.buildAppPromptInitialValues({
-      envName: 'demo',
-      flags: { 'app-port': '14000', 'app-root-path': './custom/source/', 'storage-path': './custom/storage/' },
-    })).toEqual({});
+    expect(
+      await installStatics.buildAppPromptInitialValues({
+        envName: 'demo',
+        flags: { 'app-port': '14000', 'app-root-path': './custom/source/', 'storage-path': './custom/storage/' },
+      }),
+    ).toEqual({});
   } finally {
     resolveAvailableDefaultPort.mockRestore();
   }
@@ -622,12 +984,15 @@ test('install seeds app port initial values unless the user provided --app-port'
 test('install seeds built-in database host port for npm/git sources when the default port is busy', async () => {
   const installStatics = Install as unknown as InstallStatics;
   const resolveAvailableDefaultPort = vi
-    .spyOn(Install as unknown as {
-      resolveAvailableDefaultPort: (
-        defaultPort: string,
-        options?: { label?: string; warn?: boolean },
-      ) => Promise<string>;
-    }, 'resolveAvailableDefaultPort')
+    .spyOn(
+      Install as unknown as {
+        resolveAvailableDefaultPort: (
+          defaultPort: string,
+          options?: { label?: string; warn?: boolean },
+        ) => Promise<string>;
+      },
+      'resolveAvailableDefaultPort',
+    )
     .mockResolvedValueOnce('61523');
 
   try {
@@ -654,7 +1019,8 @@ test('install seeds built-in database host port for npm/git sources when the def
 test('install does not seed built-in database host port for docker source or explicit --db-port', async () => {
   const installStatics = Install as unknown as InstallStatics;
 
-  expect(await installStatics.buildDbPromptInitialValues({
+  expect(
+    await installStatics.buildDbPromptInitialValues({
       flags: {},
       downloadResults: {
         source: 'docker',
@@ -663,8 +1029,10 @@ test('install does not seed built-in database host port for docker source or exp
         builtinDb: true,
         dbDialect: 'postgres',
       },
-    })).toEqual({});
-  expect(await installStatics.buildDbPromptInitialValues({
+    }),
+  ).toEqual({});
+  expect(
+    await installStatics.buildDbPromptInitialValues({
       flags: {
         'db-port': '15432',
       },
@@ -675,21 +1043,24 @@ test('install does not seed built-in database host port for docker source or exp
         builtinDb: true,
         dbDialect: 'postgres',
       },
-    })).toEqual({});
+    }),
+  ).toEqual({});
 });
 
 test('install does not seed a built-in database host port for external db host presets', async () => {
   const installStatics = Install as unknown as InstallStatics;
 
-  await expect(installStatics.buildDbPromptInitialValues({
-    flags: {},
-    downloadResults: {
-      source: 'npm',
-    },
-    dbPreset: {
-      builtinDb: false,
-      dbDialect: 'postgres',
-      dbHost: 'db.example.com',
-    },
-  })).resolves.toEqual({});
+  await expect(
+    installStatics.buildDbPromptInitialValues({
+      flags: {},
+      downloadResults: {
+        source: 'npm',
+      },
+      dbPreset: {
+        builtinDb: false,
+        dbDialect: 'postgres',
+        dbHost: 'db.example.com',
+      },
+    }),
+  ).resolves.toEqual({});
 });
