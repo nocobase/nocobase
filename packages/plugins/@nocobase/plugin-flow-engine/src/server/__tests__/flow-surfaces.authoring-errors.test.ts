@@ -4342,6 +4342,15 @@ ctx.render(React.createElement(DashboardKPIs));
       },
       {
         code: [
+          'const unsafe = { ns: ctx.React, [fieldName]: ctx.React.default };',
+          'const box = { ...unsafe };',
+          'const React = box.ns;',
+          "ctx.render(React.createElement('div', null, 'broken'));",
+        ],
+        path: '$.defaultReactObjectSpreadDynamicKeyOverridesNamespaceDefault.code',
+      },
+      {
+        code: [
           'const box = { ...{ [fieldName]: ctx.React.default } };',
           'const React = box.ns;',
           "ctx.render(React.createElement('div', null, 'broken'));",
@@ -5060,6 +5069,24 @@ ctx.render(React.createElement(DashboardKPIs));
           "ctx.render(React.createElement('div', null, 'allowed-spread-namespace'));",
         ],
         path: '$.defaultReactObjectSpreadCarrierDynamicNonReactNamespaceAllowed.code',
+      },
+      {
+        code: [
+          'const safe = { ns: ctx.React };',
+          'const box = { [fieldName]: ctx.React.default, ...safe };',
+          'const React = box.ns;',
+          "ctx.render(React.createElement('div', null, 'allowed-spread-override-namespace'));",
+        ],
+        path: '$.defaultReactObjectDynamicKeyLaterSpreadNamespaceAllowed.code',
+      },
+      {
+        code: [
+          'const safe = { [fieldName]: ctx.React.default, ns: ctx.React };',
+          'const box = { ...safe };',
+          'const React = box.ns;',
+          "ctx.render(React.createElement('div', null, 'allowed-spread-namespace'));",
+        ],
+        path: '$.defaultReactObjectSpreadSourceStaticNamespaceOverridesDynamicKeyAllowed.code',
       },
       {
         code: [

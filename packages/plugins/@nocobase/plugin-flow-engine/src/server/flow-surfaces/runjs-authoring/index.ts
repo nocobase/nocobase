@@ -90,6 +90,7 @@ type ReactNamespaceAlias = SourceRange & {
   declarationStart?: number;
   executionScope: SourceRange;
   name: string;
+  precedenceStart?: number;
 };
 
 type ReactDefaultAlias = SourceRange & {
@@ -97,11 +98,13 @@ type ReactDefaultAlias = SourceRange & {
   declarationStart?: number;
   executionScope: SourceRange;
   name: string;
+  precedenceStart?: number;
 };
 
 type AstCapabilityAlias = SourceRange & {
   capability: string;
   name: string;
+  precedenceStart?: number;
 };
 
 const AST_DYNAMIC_MEMBER_ALIAS = '[*]';
@@ -3574,6 +3577,7 @@ function collectReactNamespaceAliasesFromAst(
     ancestors: any[],
     isVar = false,
     scopeOverride?: SourceRange,
+    precedenceStart?: number,
   ) => {
     const scope = scopeOverride || getAstBindingScopeRange(ancestors, source.length, isVar);
     aliases.push({
@@ -3583,6 +3587,7 @@ function collectReactNamespaceAliasesFromAst(
       executionScope: getAstExecutionScopeRange(ancestors, source.length),
       start: typeof node.start === 'number' ? node.start : scope.start,
       end: scope.end,
+      ...(typeof precedenceStart === 'number' ? { precedenceStart } : {}),
     });
   };
   const getActiveAliases = () => trimAstAliasesAfterWrites(aliases, writes, identifierBindings);
@@ -3631,7 +3636,7 @@ function collectReactNamespaceAliasesFromAst(
           identifierBindings,
           activeAliases,
           ctxRootAliases,
-          (member, capability, aliasNode) => {
+          (member, capability, aliasNode, precedenceStart) => {
             addAlias(
               `${node.left.name}.${member}`,
               capability,
@@ -3639,6 +3644,7 @@ function collectReactNamespaceAliasesFromAst(
               ancestors,
               false,
               getAstAssignmentTargetScope(node.left, ancestors, source.length, identifierBindings),
+              precedenceStart,
             );
           },
         );
@@ -3707,8 +3713,16 @@ function collectReactNamespaceAliasesFromAst(
           identifierBindings,
           activeAliases,
           ctxRootAliases,
-          (member, memberCapability, aliasNode) => {
-            addAlias(`${node.id.name}.${member}`, memberCapability, aliasNode || node, ancestors, isVar);
+          (member, memberCapability, aliasNode, precedenceStart) => {
+            addAlias(
+              `${node.id.name}.${member}`,
+              memberCapability,
+              aliasNode || node,
+              ancestors,
+              isVar,
+              undefined,
+              precedenceStart,
+            );
           },
         );
         collectReactNamespacePatternSourceAliasesFromAst(node.id, node.init, ancestors, isVar);
@@ -3815,6 +3829,7 @@ function collectReactNamespaceAliasesFromAst(
       targetAliasName: string;
     }) => {
       if (carrierTarget.sourceAlias) {
+        const precedenceStart = getAstAliasPrecedenceStart(carrierTarget.sourceAlias);
         addReactNamespaceAliasByName(
           carrierTarget.targetAliasName,
           carrierTarget.sourceAlias.capability,
@@ -3822,6 +3837,8 @@ function collectReactNamespaceAliasesFromAst(
           ancestors,
           isVar,
           scopeOverride,
+          carrierTarget.sourceTarget?.node,
+          precedenceStart,
         );
         return;
       }
@@ -3841,6 +3858,7 @@ function collectReactNamespaceAliasesFromAst(
         ancestors,
         isVar,
         scopeOverride,
+        carrierTarget.sourceTarget?.node,
       );
     };
     collectAstPatternCarrierSourceTargetsFromSourceTarget(
@@ -3908,7 +3926,7 @@ function collectReactNamespaceAliasesFromAst(
             identifierBindings,
             activeAliases,
             ctxRootAliases,
-            (member, memberCapability, memberAliasNode) => {
+            (member, memberCapability, memberAliasNode, precedenceStart) => {
               addAlias(
                 `${alias}.${member}`,
                 memberCapability,
@@ -3916,6 +3934,7 @@ function collectReactNamespaceAliasesFromAst(
                 ancestors,
                 isVar,
                 scopeOverride,
+                precedenceStart,
               );
             },
           );
@@ -3983,6 +4002,8 @@ function collectReactNamespaceAliasesFromAst(
     ancestors: any[],
     isVar = false,
     scopeOverride?: SourceRange,
+    aliasNode?: any,
+    precedenceStart?: number,
   ) {
     const unwrapped = unwrapAstChainExpression(target);
     const scope =
@@ -3990,7 +4011,15 @@ function collectReactNamespaceAliasesFromAst(
       (unwrapped?.type === 'MemberExpression'
         ? getAstMemberAssignmentTargetScope(unwrapped, ancestors, source.length, identifierBindings)
         : getAstAssignmentTargetScope(unwrapped, ancestors, source.length, identifierBindings));
-    addAlias(name, capability, unwrapped || target, ancestors, isVar, scope);
+    addAlias(
+      name,
+      capability,
+      unwrapAstChainExpression(aliasNode) || aliasNode || unwrapped || target,
+      ancestors,
+      isVar,
+      scope,
+      precedenceStart,
+    );
   }
 }
 
@@ -4010,6 +4039,7 @@ function collectReactDefaultAliasesFromAst(
     ancestors: any[],
     isVar = false,
     scopeOverride?: SourceRange,
+    precedenceStart?: number,
   ) => {
     const scope = scopeOverride || getAstBindingScopeRange(ancestors, source.length, isVar);
     aliases.push({
@@ -4019,6 +4049,7 @@ function collectReactDefaultAliasesFromAst(
       executionScope: getAstExecutionScopeRange(ancestors, source.length),
       start: typeof node.start === 'number' ? node.start : scope.start,
       end: scope.end,
+      ...(typeof precedenceStart === 'number' ? { precedenceStart } : {}),
     });
   };
   const getActiveAliases = () => trimAstAliasesAfterWrites(aliases, writes, identifierBindings);
@@ -4054,7 +4085,7 @@ function collectReactDefaultAliasesFromAst(
           namespaceAliases,
           ctxRootAliases,
           activeAliases,
-          (member, capability, aliasNode) => {
+          (member, capability, aliasNode, precedenceStart) => {
             addAlias(
               `${node.left.name}.${member}`,
               capability,
@@ -4062,6 +4093,7 @@ function collectReactDefaultAliasesFromAst(
               ancestors,
               false,
               getAstAssignmentTargetScope(node.left, ancestors, source.length, identifierBindings),
+              precedenceStart,
             );
           },
         );
@@ -4168,8 +4200,16 @@ function collectReactDefaultAliasesFromAst(
           namespaceAliases,
           ctxRootAliases,
           getActiveAliases(),
-          (member, memberCapability, aliasNode) => {
-            addAlias(`${node.id.name}.${member}`, memberCapability, aliasNode || node, ancestors, isVar);
+          (member, memberCapability, aliasNode, precedenceStart) => {
+            addAlias(
+              `${node.id.name}.${member}`,
+              memberCapability,
+              aliasNode || node,
+              ancestors,
+              isVar,
+              undefined,
+              precedenceStart,
+            );
           },
         );
         collectReactDefaultPatternSourceAliasesFromAst(node.id, node.init, ancestors, isVar);
@@ -4311,6 +4351,7 @@ function collectReactDefaultAliasesFromAst(
       targetAliasName: string;
     }) => {
       if (carrierTarget.sourceAlias) {
+        const precedenceStart = getAstAliasPrecedenceStart(carrierTarget.sourceAlias);
         addReactDefaultAliasByName(
           carrierTarget.targetAliasName,
           carrierTarget.sourceAlias.capability,
@@ -4318,6 +4359,8 @@ function collectReactDefaultAliasesFromAst(
           ancestors,
           isVar,
           scopeOverride,
+          carrierTarget.sourceTarget?.node,
+          precedenceStart,
         );
         return;
       }
@@ -4338,6 +4381,7 @@ function collectReactDefaultAliasesFromAst(
         ancestors,
         isVar,
         scopeOverride,
+        carrierTarget.sourceTarget?.node,
       );
     };
     collectAstPatternCarrierSourceTargetsFromSourceTarget(
@@ -4412,7 +4456,7 @@ function collectReactDefaultAliasesFromAst(
             namespaceAliases,
             ctxRootAliases,
             activeAliases,
-            (member, memberCapability, memberAliasNode) => {
+            (member, memberCapability, memberAliasNode, precedenceStart) => {
               addAlias(
                 `${alias}.${member}`,
                 memberCapability,
@@ -4420,6 +4464,7 @@ function collectReactDefaultAliasesFromAst(
                 ancestors,
                 isVar,
                 scopeOverride,
+                precedenceStart,
               );
             },
           );
@@ -4507,6 +4552,8 @@ function collectReactDefaultAliasesFromAst(
     ancestors: any[],
     isVar = false,
     scopeOverride?: SourceRange,
+    aliasNode?: any,
+    precedenceStart?: number,
   ) {
     const unwrapped = unwrapAstChainExpression(target);
     const scope =
@@ -4514,7 +4561,15 @@ function collectReactDefaultAliasesFromAst(
       (unwrapped?.type === 'MemberExpression'
         ? getAstMemberAssignmentTargetScope(unwrapped, ancestors, source.length, identifierBindings)
         : getAstAssignmentTargetScope(unwrapped, ancestors, source.length, identifierBindings));
-    addAlias(name, capability, unwrapped || target, ancestors, isVar, scope);
+    addAlias(
+      name,
+      capability,
+      unwrapAstChainExpression(aliasNode) || aliasNode || unwrapped || target,
+      ancestors,
+      isVar,
+      scope,
+      precedenceStart,
+    );
   }
 }
 
@@ -4793,7 +4848,7 @@ function collectReactNamespaceCarrierAliasesFromAst(
   identifierBindings: AstIdentifierBinding[],
   namespaceAliases: ReactNamespaceAlias[],
   ctxRootAliases: CtxRootAlias[],
-  addAlias: (member: string, capability: string, node?: any) => void,
+  addAlias: (member: string, capability: string, node?: any, precedenceStart?: number) => void,
 ) {
   const visitedTargets = new Set<string>();
   const collectAliases = (targetAliasName: string, sourceTarget: any) => {
@@ -4819,7 +4874,12 @@ function collectReactNamespaceCarrierAliasesFromAst(
           return;
         }
         if (carrierTarget.sourceAlias) {
-          addAlias(member, carrierTarget.sourceAlias.capability, carrierTarget.sourceTarget?.node);
+          addAlias(
+            member,
+            carrierTarget.sourceAlias.capability,
+            carrierTarget.sourceTarget?.node,
+            getAstAliasPrecedenceStart(carrierTarget.sourceAlias),
+          );
           return;
         }
         const capability = getReactNamespaceCapabilityFromAstPatternSource(
@@ -4845,7 +4905,7 @@ function collectReactDefaultCarrierAliasesFromAst(
   namespaceAliases: ReactNamespaceAlias[],
   ctxRootAliases: CtxRootAlias[],
   defaultAliases: ReactDefaultAlias[],
-  addAlias: (member: string, capability: string, node?: any) => void,
+  addAlias: (member: string, capability: string, node?: any, precedenceStart?: number) => void,
 ) {
   const carrierAliases: AstCapabilityAlias[] = [...namespaceAliases, ...defaultAliases];
   const visitedTargets = new Set<string>();
@@ -4884,7 +4944,12 @@ function collectReactDefaultCarrierAliasesFromAst(
             defaultAliases,
           );
           if (capability) {
-            addAlias(member, capability, carrierTarget.sourceTarget?.node);
+            addAlias(
+              member,
+              capability,
+              carrierTarget.sourceTarget?.node,
+              getAstAliasPrecedenceStart(carrierTarget.sourceAlias),
+            );
           }
           return;
         }
@@ -9083,6 +9148,20 @@ function resolveAstDynamicAliasBinding<T extends SourceRange & { name: string }>
   );
 }
 
+function compareAstAliasPrecedence(
+  left: SourceRange & { precedenceStart?: number },
+  right: SourceRange & { precedenceStart?: number },
+) {
+  if (left.start !== right.start) {
+    return left.start - right.start;
+  }
+  return getAstAliasPrecedenceStart(left) - getAstAliasPrecedenceStart(right);
+}
+
+function getAstAliasPrecedenceStart(alias: SourceRange & { precedenceStart?: number }) {
+  return typeof alias.precedenceStart === 'number' ? alias.precedenceStart : alias.start;
+}
+
 function isAstDynamicMemberAliasMatch(patternName: string, name: string) {
   if (!patternName.includes(AST_DYNAMIC_MEMBER_ALIAS)) {
     return false;
@@ -9187,6 +9266,23 @@ function getReactDefaultNamespaceCapabilityFromAstPatternSource(
   if (exactAlias) {
     return exactAlias.capability;
   }
+  const dynamicAlias = resolveAstDynamicAliasBinding(
+    sourceTarget.aliasName,
+    sourceTarget.index || 0,
+    sourceTarget.rootName,
+    defaultAliases,
+    identifierBindings,
+  );
+  const exactNamespaceAlias = resolveAstNamedAliasBinding(
+    sourceTarget.aliasName,
+    sourceTarget.index || 0,
+    sourceTarget.rootName,
+    aliases,
+    identifierBindings,
+  );
+  if (dynamicAlias && (!exactNamespaceAlias || compareAstAliasPrecedence(dynamicAlias, exactNamespaceAlias) >= 0)) {
+    return dynamicAlias.capability;
+  }
   const exactNamespaceCapability = getReactNamespaceCapabilityFromAstPatternSource(
     sourceTarget,
     identifierBindings,
@@ -9196,13 +9292,6 @@ function getReactDefaultNamespaceCapabilityFromAstPatternSource(
   if (exactNamespaceCapability) {
     return '';
   }
-  const dynamicAlias = resolveAstDynamicAliasBinding(
-    sourceTarget.aliasName,
-    sourceTarget.index || 0,
-    sourceTarget.rootName,
-    defaultAliases,
-    identifierBindings,
-  );
   if (dynamicAlias) {
     return dynamicAlias.capability;
   }
@@ -10022,7 +10111,7 @@ function collectAstObjectSpreadCarrierCopies<T extends AstCapabilityAlias>(
       targetAliasName,
       aliases,
       identifierBindings,
-      (suffix, sourceAlias) => visitSpreadMember(suffix, sourceAlias),
+      (suffix, sourceAlias) => visitSpreadMember(suffix, sourceAlias, sourceTarget),
     );
     collectAstStaticCarrierMemberSourceTargets(property.argument, (suffix, spreadSourceTarget) =>
       visitSpreadMember(suffix, undefined, spreadSourceTarget),
@@ -10094,7 +10183,7 @@ function collectAstArraySpreadCarrierCopies<T extends AstCapabilityAlias>(
         aliases,
         identifierBindings,
         (suffix, sourceAlias) => {
-          visit(mapUnboundedSpreadSuffix(suffix), sourceAlias);
+          visit(mapUnboundedSpreadSuffix(suffix), sourceAlias, sourceTarget);
         },
       );
       collectAstStaticCarrierMemberSourceTargets(element.argument, (suffix, spreadSourceTarget) => {
@@ -10123,7 +10212,7 @@ function collectAstArraySpreadCarrierCopies<T extends AstCapabilityAlias>(
         if (!mappedSuffix) {
           return;
         }
-        visit(mappedSuffix, sourceAlias);
+        visit(mappedSuffix, sourceAlias, sourceTarget);
       },
     );
     collectAstStaticCarrierMemberSourceTargets(element.argument, (suffix, spreadSourceTarget) => {
