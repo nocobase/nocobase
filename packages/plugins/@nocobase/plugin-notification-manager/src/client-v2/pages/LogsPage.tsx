@@ -8,16 +8,30 @@
  */
 
 import { ReloadOutlined } from '@ant-design/icons';
-import { DEFAULT_PAGE_SIZE, DrawerFormLayout, Table } from '@nocobase/client-v2';
-import { useFlowContext } from '@nocobase/flow-engine';
+import {
+  CollectionFilter,
+  DEFAULT_PAGE_SIZE,
+  DrawerFormLayout,
+  ExtendCollectionsProvider,
+  Table,
+} from '@nocobase/client-v2';
+import { useFlowContext, useFlowEngine } from '@nocobase/flow-engine';
 import { useMemoizedFn, useRequest } from 'ahooks';
-import { Button, Card, Form, Input, Space, Tag, theme } from 'antd';
+import { Button, Card, Flex, Form, Input, Space, Tag, Typography, theme } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import dayjs from 'dayjs';
 import React, { useMemo, useState } from 'react';
+import messageLogCollection from '../../collections/messageLog';
 import { COLLECTION_NAME } from '../../constant';
 import { useNotificationTranslation, useT } from '../locale';
 import PluginNotificationManagerClientV2 from '../plugin';
+
+const collections = [messageLogCollection];
+
+// Mirror v1's `nonfilterable: ['receiver', 'reason']` on its `Filter.Action`
+// schema. `receiver` isn't on this collection so it would be a no-op; `reason`
+// is the one that actually subtracts.
+const LOGS_NONFILTERABLE_FIELD_NAMES = ['receiver', 'reason'];
 
 type LogRecord = {
   id: string;
@@ -64,25 +78,31 @@ function normalizeListResponse(response: any) {
 function LogDetailDrawer({ record }: { record: LogRecord }) {
   const { t } = useNotificationTranslation();
   const compileT = useT();
+  const ctx = useFlowContext();
+  const plugin = ctx.app.pm.get(PluginNotificationManagerClientV2);
   const isFailure = record.status === 'failure';
 
+  const notificationTypeLabel = record.notificationType
+    ? compileT(plugin?.channelTypes.get(record.notificationType)?.title || record.notificationType)
+    : '';
+
   return (
-    <DrawerFormLayout title={t('Log detail')} footer={null}>
+    <DrawerFormLayout title={t('Log detail')} footer={<></>}>
       <Form layout="vertical">
         <Form.Item label={t('ID')}>
           <Input value={record.id} disabled />
         </Form.Item>
         <Form.Item label={t('Channel name')}>
-          <Input value={record.channelName} disabled />
+          <Typography.Text>{record.channelName}</Typography.Text>
         </Form.Item>
         <Form.Item label={t('Channel display name')}>
-          <Input value={record.channelTitle} disabled />
+          <Typography.Text>{compileT(record.channelTitle || '')}</Typography.Text>
         </Form.Item>
         <Form.Item label={t('Notification type')}>
-          <Input value={compileT(record.notificationType || '')} disabled />
+          {record.notificationType ? <Tag>{notificationTypeLabel}</Tag> : null}
         </Form.Item>
         <Form.Item label={t('Trigger from')}>
-          <Input value={record.triggerFrom} disabled />
+          <Typography.Text>{record.triggerFrom}</Typography.Text>
         </Form.Item>
         <Form.Item label={t('Status')}>
           {record.status === 'success' ? (
@@ -92,31 +112,41 @@ function LogDetailDrawer({ record }: { record: LogRecord }) {
           ) : null}
         </Form.Item>
         <Form.Item label={t('Message')}>
-          <Input.TextArea value={formatJson(record.message)} autoSize={{ minRows: 5 }} disabled />
+          <Typography.Text>
+            <pre style={{ margin: 0, fontFamily: 'inherit', whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
+              {formatJson(record.message)}
+            </pre>
+          </Typography.Text>
         </Form.Item>
         {isFailure ? (
           <Form.Item label={t('Failed reason')}>
-            <Input.TextArea value={record.reason} autoSize={{ minRows: 2 }} disabled />
+            <Typography.Text>{record.reason}</Typography.Text>
           </Form.Item>
         ) : null}
         <Form.Item label={t('Created at')}>
-          <Input value={formatDate(record.createdAt)} disabled />
+          <Typography.Text>{formatDate(record.createdAt)}</Typography.Text>
         </Form.Item>
       </Form>
     </DrawerFormLayout>
   );
 }
 
-export default function LogsPage() {
+function LogsPageInner() {
   const { t } = useNotificationTranslation();
   const compileT = useT();
   const ctx = useFlowContext();
+  const engine = useFlowEngine();
   const { token } = theme.useToken();
   const resource = useMemo(() => ctx.api.resource(COLLECTION_NAME.logs), [ctx.api]);
   const plugin = ctx.app.pm.get(PluginNotificationManagerClientV2);
+  const filterCollection = useMemo(
+    () => engine.context.dataSourceManager?.getDataSource?.('main')?.getCollection?.(COLLECTION_NAME.logs),
+    [engine],
+  );
 
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
+  const [filterPayload, setFilterPayload] = useState<any>(undefined);
 
   const { data, loading, refresh } = useRequest(
     async () => {
@@ -124,11 +154,12 @@ export default function LogsPage() {
         page,
         pageSize,
         sort: ['-createdAt'],
+        ...(filterPayload ? { filter: filterPayload } : {}),
       });
       return normalizeListResponse(response);
     },
     {
-      refreshDeps: [page, pageSize],
+      refreshDeps: [page, pageSize, filterPayload],
     },
   );
 
@@ -213,18 +244,19 @@ export default function LogsPage() {
 
   return (
     <Card variant="borderless">
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'flex-end',
-          gap: token.marginSM,
-          marginBottom: token.margin,
-        }}
-      >
-        <Button icon={<ReloadOutlined />} onClick={() => refresh()}>
-          {t('Refresh')}
-        </Button>
-      </div>
+      <Flex justify="space-between" style={{ marginBottom: token.margin }}>
+        <CollectionFilter
+          collection={filterCollection}
+          nonfilterableFieldNames={LOGS_NONFILTERABLE_FIELD_NAMES}
+          onChange={setFilterPayload}
+          t={compileT}
+        />
+        <Space>
+          <Button icon={<ReloadOutlined />} onClick={() => refresh()}>
+            {t('Refresh')}
+          </Button>
+        </Space>
+      </Flex>
       <Table<LogRecord>
         rowKey="id"
         loading={loading}
@@ -239,5 +271,13 @@ export default function LogsPage() {
         }}
       />
     </Card>
+  );
+}
+
+export default function LogsPage() {
+  return (
+    <ExtendCollectionsProvider collections={collections}>
+      <LogsPageInner />
+    </ExtendCollectionsProvider>
   );
 }
