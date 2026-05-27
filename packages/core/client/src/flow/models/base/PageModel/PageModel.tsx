@@ -39,6 +39,15 @@ type PageModelStructure = {
   };
 };
 
+type CurrentRouteWithTabs = {
+  id?: string | number | null;
+  enableTabs?: boolean;
+};
+
+type PageModelContextWithRoute = {
+  currentRoute?: CurrentRouteWithTabs | null;
+};
+
 export class PageModel extends FlowModel<PageModelStructure> {
   tabBarExtraContent: { left?: ReactNode; right?: ReactNode } = {};
   private viewActivatedListener?: (_payload?: unknown) => void;
@@ -52,9 +61,15 @@ export class PageModel extends FlowModel<PageModelStructure> {
    * 根页面标签页开关以路由表为准，避免 flow model 里的旧配置覆盖路由管理设置。
    */
   private getEnableTabs(): boolean {
-    const routeEnableTabs = (this.context as any)?.currentRoute?.enableTabs;
-    if (this.props.routeId != null && typeof routeEnableTabs === 'boolean') {
-      return routeEnableTabs;
+    const currentRoute = (this.context as PageModelContextWithRoute).currentRoute;
+    const routeId = this.props.routeId;
+    if (
+      routeId != null &&
+      currentRoute?.id != null &&
+      String(currentRoute.id) === String(routeId) &&
+      typeof currentRoute.enableTabs === 'boolean'
+    ) {
+      return currentRoute.enableTabs;
     }
     return !!this.props.enableTabs;
   }
