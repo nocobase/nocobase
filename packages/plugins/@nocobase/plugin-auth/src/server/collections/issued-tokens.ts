@@ -46,5 +46,10 @@ export default defineCollection({
       name: 'userId',
       allowNull: false,
     },
+    {
+      type: 'string',
+      name: 'authenticator',
+      index: true,
+    },
   ],
 });

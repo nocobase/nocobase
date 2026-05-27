@@ -25,6 +25,7 @@ import { I18nextProvider } from 'react-i18next';
 import { ErrorBoundary } from 'react-error-boundary';
 import { Link, NavLink, Navigate } from 'react-router-dom';
 import { isValidElementType } from 'react-is';
+import type { AppListProps } from '@ant-design/pro-layout/es/components/AppsLogoComponents/types';
 import AntdAppProvider from './theme/AntdAppProvider';
 import { GlobalThemeProvider } from './theme';
 import { AIManager } from './ai';
@@ -54,6 +55,7 @@ declare global {
 }
 
 type AnyComponent = RenderableComponentType<any>;
+type AppListLoader = (app: BaseApplication<any>) => Promise<AppListProps> | AppListProps;
 type AuthTokenPayload = {
   token: string;
   authenticator: string | null;
@@ -153,8 +155,10 @@ export abstract class BaseApplication<
   private wsAuthorized = false;
   apps: {
     Component?: AnyComponent | null;
+    loadAppList?: AppListLoader | null;
   } = {
     Component: null,
+    loadAppList: null,
   };
 
   get pm(): TPluginManager {
@@ -231,6 +235,7 @@ export abstract class BaseApplication<
       maintained: observable.ref,
       maintaining: observable.ref,
       error: observable.ref,
+      apps: observable,
     });
   }
 
@@ -528,6 +533,14 @@ export abstract class BaseApplication<
     Object.keys(components).forEach((name) => {
       this.addComponent(components[name], name);
     });
+  }
+
+  setAppsComponent({ Component }: { Component: AnyComponent }) {
+    this.apps.Component = Component;
+  }
+
+  setAppsProvider({ loadAppList }: { loadAppList: AppListLoader }) {
+    this.apps.loadAppList = loadAppList;
   }
 
   protected getRootFallback() {

@@ -8,8 +8,41 @@
  */
 
 import { useApp } from '../../../flow-compat';
+import React from 'react';
 
 export const useApplications = () => {
   const app = useApp();
-  return { Component: app.apps.Component };
+  const loadAppList = app.apps.loadAppList;
+  const [appList, setAppList] = React.useState([]);
+
+  React.useEffect(() => {
+    let canceled = false;
+
+    if (!loadAppList) {
+      setAppList([]);
+      return;
+    }
+
+    void Promise.resolve(loadAppList(app))
+      .then((list) => {
+        if (!canceled) {
+          setAppList(Array.isArray(list) ? list : []);
+        }
+      })
+      .catch((error) => {
+        console.error('[NocoBase] Failed to load application switcher list.', error);
+        if (!canceled) {
+          setAppList([]);
+        }
+      });
+
+    return () => {
+      canceled = true;
+    };
+  }, [app, loadAppList]);
+
+  return {
+    Component: app.apps.Component,
+    appList,
+  };
 };
