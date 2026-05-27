@@ -9,7 +9,7 @@
 
 import { CopyOutlined } from '@ant-design/icons';
 import { useFlowContext } from '@nocobase/flow-engine';
-import { Alert, App, Button, Card, Descriptions, Form, Input, Spin, Tag } from 'antd';
+import { Alert, App, Button, Card, Form, Input, Spin } from 'antd';
 import type { ComponentType } from 'react';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useT } from '../locale';
@@ -32,6 +32,12 @@ type LicenseValidateResult = {
 
 type LicenseFormValues = {
   licenseKey?: string;
+};
+
+type ApiResponse<T> = {
+  data?: {
+    data?: T;
+  };
 };
 
 const copyTextToClipboard = async (text: string) => {
@@ -75,7 +81,7 @@ function LicenseStatusPanel({ refreshToken }: { refreshToken: number }) {
   useEffect(() => {
     let mounted = true;
     setState(null);
-    void api
+    api
       .request({
         url: '/license:license-validate',
         method: 'get',
@@ -115,6 +121,9 @@ function LicenseStatusPanel({ refreshToken }: { refreshToken: number }) {
             </>
           }
           type="warning"
+          style={{
+            marginBottom: 12,
+          }}
         />
       );
     }
@@ -127,6 +136,9 @@ function LicenseStatusPanel({ refreshToken }: { refreshToken: number }) {
             'Due to network issues, the license key cannot be updated automatically. Please update it manually if necessary.',
           )}
           type="warning"
+          style={{
+            marginBottom: 12,
+          }}
         />
       );
     }
@@ -139,6 +151,9 @@ function LicenseStatusPanel({ refreshToken }: { refreshToken: number }) {
             'Due to network issues, plugins cannot be updated automatically (they are still usable). To update plugins, please check your network connection or refer to the NocoBase Service documentation to upload plugins manually.',
           )}
           type="warning"
+          style={{
+            marginBottom: 12,
+          }}
         />
       );
     }
@@ -146,41 +161,7 @@ function LicenseStatusPanel({ refreshToken }: { refreshToken: number }) {
     return null;
   }, [state, t]);
 
-  if (!state?.keyExist) {
-    return warning;
-  }
-
-  return (
-    <>
-      {warning}
-      <Descriptions title={t('License information')} bordered size="small" column={1}>
-        <Descriptions.Item label={t('Status')}>
-          {state.licenseStatus === 'active' ? (
-            <Tag color="success">{t('Active')}</Tag>
-          ) : (
-            <Tag color="error">{t('Invalid')}</Tag>
-          )}
-        </Descriptions.Item>
-        {state.current?.domain ? (
-          <Descriptions.Item label={t('Current domain')}>{state.current.domain}</Descriptions.Item>
-        ) : null}
-        <Descriptions.Item label={t('Service connection')}>
-          {state.isServiceConnection === false ? (
-            <Tag color="error">{t('Disconnected')}</Tag>
-          ) : (
-            <Tag color="success">{t('Connected')}</Tag>
-          )}
-        </Descriptions.Item>
-        <Descriptions.Item label={t('Plugin service login')}>
-          {state.isPkgLogin === false ? (
-            <Tag color="error">{t('Disconnected')}</Tag>
-          ) : (
-            <Tag color="success">{t('Connected')}</Tag>
-          )}
-        </Descriptions.Item>
-      </Descriptions>
-    </>
-  );
+  return warning;
 }
 
 export default function LicenseSetting() {
@@ -229,7 +210,7 @@ export default function LicenseSetting() {
 
   useEffect(() => {
     let mounted = true;
-    void api
+    api
       .request({
         url: '/license:instance-id',
         method: 'GET',
@@ -277,13 +258,13 @@ export default function LicenseSetting() {
     async (licenseKey: string) => {
       setSubmitting(true);
       try {
-        const res: any = await api.request({
+        const res = (await api.request({
           url: '/license:license-key',
           method: 'POST',
           data: {
             licenseKey,
           },
-        });
+        })) as ApiResponse<LicenseValidateResult>;
 
         const licenseValidateResult: LicenseValidateResult = res?.data?.data || {};
 
@@ -398,10 +379,12 @@ export default function LicenseSetting() {
   }, [form, saveLicenseKey]);
 
   const LicenseCard = app.getComponent('LicenseCard', false) as ComponentType | undefined;
+  const shouldRenderLicenseCard = Boolean(LicenseCard && keyExist);
 
   return (
     <Card bordered={false}>
       <Spin spinning={checking}>
+        <LicenseStatusPanel refreshToken={refreshToken} />
         <Form form={form} layout="vertical">
           <Form.Item label={t('Instance ID')}>
             <Button onClick={handleCopyInstanceId} icon={<CopyOutlined />} type="link" loading={copyingInstanceId}>
@@ -428,7 +411,7 @@ export default function LicenseSetting() {
             </Form.Item>
           ) : null}
         </Form>
-        {LicenseCard ? <LicenseCard /> : <LicenseStatusPanel refreshToken={refreshToken} />}
+        {shouldRenderLicenseCard ? <LicenseCard /> : null}
       </Spin>
     </Card>
   );
