@@ -908,13 +908,6 @@ describe('flowSurfaces backend authoring aggregate errors', () => {
           },
         },
         {
-          key: 'blockedCapability',
-          type: 'jsBlock',
-          settings: {
-            code: 'ctx.render(null);\nctx.openView({});',
-          },
-        },
-        {
           key: 'ctxMismatch',
           type: 'jsBlock',
           settings: {
@@ -967,7 +960,6 @@ describe('flowSurfaces backend authoring aggregate errors', () => {
         'render-top-level-function-wrapper',
         'render-unreachable-render-call',
         'blocked-global-stop',
-        'blocked-capability-reroute',
         'ctx-root-mismatch-stop',
       ]),
     );
@@ -1122,6 +1114,42 @@ describe('flowSurfaces backend authoring aggregate errors', () => {
         modelUse: 'ChartEventsModel',
       }),
     ).toEqual([]);
+  });
+
+  it('should allow documented RunJS ctx roots on JS authoring surfaces', () => {
+    const allowedCtxRootSnippets = [
+      "ctx.render(null);\nawait ctx.openView('popup-uid', { mode: 'dialog' });",
+      'ctx.render(null);\nctx.exit();',
+      'ctx.render(null);\nctx.exitAll();',
+      'ctx.render(ctx.view?.inputArgs?.viewUid);',
+      "ctx.render(ctx.getModel('block-uid')?.uid);",
+      'ctx.render(null);\nawait ctx.getApiInfos();',
+      "ctx.render(null);\nawait ctx.getVarInfos({ path: 'record', maxDepth: 1 });",
+      'ctx.render(null);\nawait ctx.getEnvInfos();',
+      "ctx.render(null);\nawait ctx.resolveJsonTemplate('{{ ctx.record.id }}');",
+      "ctx.render(null);\nctx.createResource('SingleRecordResource');",
+      "ctx.render(null);\nctx.useResource('MultiRecordResource');",
+      'ctx.render(ctx.blockModel?.uid);',
+      'ctx.render(ctx.collectionField?.name);',
+      'ctx.render(ctx.filterManager?.uid);',
+      'ctx.render(ctx.router?.basename);',
+      'ctx.render(ctx.route?.pathname);',
+      'ctx.render(ctx.location?.pathname);',
+      'ctx.render(ctx.i18n?.language);',
+      'ctx.render(Boolean(ctx.sql));',
+      "ctx.render(null);\nctx.on?.('refresh', () => {});",
+      "ctx.render(null);\nctx.off?.('refresh', () => {});",
+    ];
+
+    allowedCtxRootSnippets.forEach((code, index) => {
+      expect(
+        inspectRunJsAuthoringCode({
+          code,
+          path: `$.allowedCtxRoots[${index}].code`,
+          modelUse: 'JSBlockModel',
+        }),
+      ).toEqual([]);
+    });
   });
 
   it('should validate FlowResource instance method calls on RunJS resource aliases', () => {
@@ -2241,13 +2269,6 @@ describe('flowSurfaces backend authoring aggregate errors', () => {
       target: { uid: 'missing-target-never-resolved' },
       blocks: [
         {
-          key: 'optionalOpenView',
-          type: 'jsBlock',
-          settings: {
-            code: 'ctx?.render(null);\nctx?.openView({});',
-          },
-        },
-        {
           key: 'optionalRequest',
           type: 'jsBlock',
           settings: {
@@ -2296,21 +2317,13 @@ describe('flowSurfaces backend authoring aggregate errors', () => {
       expect.arrayContaining([
         expect.objectContaining({
           path: '$.blocks[0].settings.code',
-          ruleId: 'runjs-ctx-capability-blocked',
-          details: expect.objectContaining({
-            repairClass: 'blocked-capability-reroute',
-            capability: 'ctx.openView',
-          }),
-        }),
-        expect.objectContaining({
-          path: '$.blocks[1].settings.code',
           ruleId: 'runjs-resource-api-required',
           details: expect.objectContaining({
             repairClass: 'switch-to-resource-api',
           }),
         }),
         expect.objectContaining({
-          path: '$.blocks[2].settings.code',
+          path: '$.blocks[1].settings.code',
           ruleId: 'runjs-ctx-root-unknown',
           details: expect.objectContaining({
             repairClass: 'ctx-root-mismatch-stop',
@@ -2318,14 +2331,14 @@ describe('flowSurfaces backend authoring aggregate errors', () => {
           }),
         }),
         expect.objectContaining({
-          path: '$.blocks[3].settings.code',
+          path: '$.blocks[2].settings.code',
           ruleId: 'runjs-dynamic-ctx-member-unresolved',
           details: expect.objectContaining({
             repairClass: 'ctx-root-mismatch-stop',
           }),
         }),
         expect.objectContaining({
-          path: '$.blocks[4].settings.code',
+          path: '$.blocks[3].settings.code',
           ruleId: 'runjs-direct-dom-render-forbidden',
           details: expect.objectContaining({
             repairClass: 'replace-innerhtml-with-render',
@@ -2333,7 +2346,7 @@ describe('flowSurfaces backend authoring aggregate errors', () => {
           }),
         }),
         expect.objectContaining({
-          path: '$.blocks[5].settings.code',
+          path: '$.blocks[4].settings.code',
           ruleId: 'runjs-window-property-blocked',
           details: expect.objectContaining({
             repairClass: 'blocked-global-stop',
@@ -2342,7 +2355,7 @@ describe('flowSurfaces backend authoring aggregate errors', () => {
           }),
         }),
         expect.objectContaining({
-          path: '$.blocks[6].settings.code',
+          path: '$.blocks[5].settings.code',
           ruleId: 'runjs-navigator-property-blocked',
           details: expect.objectContaining({
             repairClass: 'blocked-global-stop',
@@ -2600,17 +2613,6 @@ describe('flowSurfaces backend authoring aggregate errors', () => {
               ],
             },
           },
-          eventPopup: {
-            blocks: [
-              {
-                key: 'hiddenPopupJsBlock',
-                type: 'jsBlock',
-                settings: {
-                  code: 'ctx.render(null);\nctx.openView({});',
-                },
-              },
-            ],
-          },
         },
       },
       {
@@ -2621,14 +2623,10 @@ describe('flowSurfaces backend authoring aggregate errors', () => {
     );
 
     expect(errors.map((error: any) => error.path)).toEqual(
-      expect.arrayContaining([
-        '$.changes.popup.blocks[0].settings.code',
-        '$.changes.popup.reaction.items[0].code',
-        '$.changes.eventPopup.blocks[0].settings.code',
-      ]),
+      expect.arrayContaining(['$.changes.popup.blocks[0].settings.code', '$.changes.popup.reaction.items[0].code']),
     );
     expect(errors.map((error: any) => error.details?.repairClass)).toEqual(
-      expect.arrayContaining(['blocked-global-stop', 'blocked-capability-reroute']),
+      expect.arrayContaining(['blocked-global-stop']),
     );
   });
 
@@ -2966,9 +2964,7 @@ ctx.render(React.createElement(DashboardKPIs));
       path: '$.templateInterpolation.code',
       modelUse: 'JSBlockModel',
     });
-    expect(templateLiteralErrors.map((error: any) => error.details?.repairClass)).toContain(
-      'blocked-capability-reroute',
-    );
+    expect(templateLiteralErrors).toEqual([]);
 
     expect(
       inspectRunJsAuthoringCode({
