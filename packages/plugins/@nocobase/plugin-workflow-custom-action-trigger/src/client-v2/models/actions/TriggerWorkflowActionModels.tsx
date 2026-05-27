@@ -170,6 +170,14 @@ const customActionDescription = tExpr(
   'Workflow will be triggered directly once the button clicked, without data saving. Only supports to be bound with "Custom action event".',
 );
 
+function matchWorkflowContextType(config?: { type?: number | null } | null, contextType?: number | null) {
+  const configType = config?.type;
+  if (contextType === CONTEXT_TYPE.GLOBAL || contextType == null) {
+    return configType === CONTEXT_TYPE.GLOBAL || configType == null;
+  }
+  return configType === contextType;
+}
+
 export class FormTriggerWorkflowActionModel extends FormActionModel {
   defaultProps: ButtonProps = {
     title: tExpr('Trigger workflow'),
@@ -353,7 +361,7 @@ CollectionTriggerWorkflowActionModel.registerFlow({
             ? tExpr('Only support custom action workflow with context type set to "Multiple records".')
             : tExpr('Only support custom action workflow with context type set to "Custom context".'),
           optionFilter(item) {
-            return type ? item.config?.type === CONTEXT_TYPE.MULTIPLE_RECORDS : !item.config?.type;
+            return matchWorkflowContextType(item.config, type);
           },
         });
       },
@@ -457,7 +465,7 @@ function globalTriggerWorkflowUiSchema() {
     withContextData: true,
     description: tExpr('Only support custom action workflow with context type set to "Custom context".'),
     optionFilter(item) {
-      return !item.config?.type;
+      return matchWorkflowContextType(item.config, CONTEXT_TYPE.GLOBAL);
     },
   });
 }
