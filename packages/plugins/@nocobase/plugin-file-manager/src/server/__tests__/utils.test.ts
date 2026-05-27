@@ -24,6 +24,7 @@ import {
 import { AttachmentModel, StorageType } from '../storages';
 
 const MOCK_REPAIR_STORAGE_TYPE = 'mock-repair-storage';
+const describeLocalRepair = process.platform === 'win32' ? describe.skip : describe;
 
 class MockRepairStorage extends StorageType {
   static sourceKeys = new Set<string>();
@@ -303,7 +304,7 @@ describe('file manager > utils', () => {
     });
   });
 
-  describe('repairAttachmentFilenames', () => {
+  describeLocalRepair('repairAttachmentFilenames with local storage', () => {
     let documentRoot: string;
 
     beforeEach(async () => {
