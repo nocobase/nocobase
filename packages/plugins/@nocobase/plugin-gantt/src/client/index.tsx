@@ -21,6 +21,7 @@ import { useCreateAssociationGanttBlock, useCreateGanttBlock } from './GanttBloc
 import {
   GanttBlockModel,
   GanttCollectionActionGroupModel,
+  GanttExpandCollapseActionModel,
   GanttEventViewActionModel,
   GanttTodayActionModel,
 } from '../client-v2/models';
@@ -58,6 +59,7 @@ export class PluginGanttClient extends Plugin {
     this.flowEngine.registerModels({
       GanttBlockModel,
       GanttCollectionActionGroupModel,
+      GanttExpandCollapseActionModel,
       GanttEventViewActionModel,
       GanttTodayActionModel,
     });

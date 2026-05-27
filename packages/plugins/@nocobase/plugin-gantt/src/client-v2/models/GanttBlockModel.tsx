@@ -52,6 +52,10 @@ type GanttBlockStructure = {
   };
 };
 
+type GanttScrollToDateOptions = {
+  behavior?: ScrollBehavior;
+};
+
 export class GanttBlockModel extends TableBlockModel {
   static scene = BlockSceneEnum.many;
 
@@ -166,12 +170,48 @@ export class GanttBlockModel extends TableBlockModel {
     );
   }
 
-  scrollToDate(date: Date) {
-    this.emitter.emit('scrollToDate', date);
+  private treeExpanded = false;
+
+  isTreeExpanded() {
+    return this.treeExpanded;
   }
 
-  scrollToToday() {
-    this.scrollToDate(new Date());
+  setTreeExpandFlag(expanded: boolean) {
+    this.treeExpanded = expanded;
+    this.mapSubModels('actions', (action: any) => {
+      if (action?.use === 'GanttExpandCollapseActionModel' && typeof action.setExpandFlag === 'function') {
+        action.setExpandFlag(expanded);
+      }
+    });
+  }
+
+  expandAllTreeRows() {
+    this.emitter.emit('expandAllTreeRows');
+  }
+
+  collapseAllTreeRows() {
+    this.emitter.emit('collapseAllTreeRows');
+  }
+
+  toggleAllTreeRows() {
+    if (this.isTreeExpanded()) {
+      this.collapseAllTreeRows();
+    } else {
+      this.expandAllTreeRows();
+    }
+  }
+
+  scrollToDate(date: Date, options?: GanttScrollToDateOptions) {
+    this.emitter.emit('scrollToDate', {
+      date,
+      behavior: options?.behavior,
+    });
+  }
+
+  scrollToToday(options?: GanttScrollToDateOptions) {
+    this.scrollToDate(new Date(), {
+      behavior: options?.behavior ?? 'smooth',
+    });
   }
 
   getCollectionFields() {

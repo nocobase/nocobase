@@ -20,6 +20,7 @@ import { GanttBlockModel } from '../models/GanttBlockModel';
 import {
   ALLOWED_GANTT_COLLECTION_ACTIONS,
   GanttCollectionActionGroupModel,
+  GanttExpandCollapseActionModel,
   GanttTodayActionModel,
 } from '../models/actions/GanttActionModels';
 import { GanttEventViewActionModel } from '../models/actions/GanttPopupModels';
@@ -74,6 +75,7 @@ describe('PluginGanttClient model discovery', () => {
     await flowEngine.preloadModelLoaders();
 
     expect(flowEngine.getModelClass('GanttBlockModel')).toBe(GanttBlockModel);
+    expect(flowEngine.getModelClass('GanttExpandCollapseActionModel')).toBe(GanttExpandCollapseActionModel);
     expect(flowEngine.getModelClass('GanttTodayActionModel')).toBe(GanttTodayActionModel);
     expect(Array.from(flowEngine.getSubclassesOf('DataBlockModel').keys())).toContain('GanttBlockModel');
   });
@@ -181,6 +183,28 @@ describe('GanttBlockModel row actions column', () => {
     step?.handler?.({ model: actionsColumn } as any, { width: 250 });
 
     expect(actionsColumn?.props?.width).toBe(250);
+  });
+});
+
+describe('GanttBlockModel scroll helpers', () => {
+  test('emits a smooth scroll request when scrolling to today', () => {
+    const flowEngine = new FlowEngine();
+    flowEngine.registerModels({ GanttBlockModel });
+
+    const model = flowEngine.createModel<GanttBlockModel>({
+      use: 'GanttBlockModel',
+    });
+    const emitSpy = vi.spyOn(model.emitter, 'emit');
+
+    model.scrollToToday();
+
+    expect(emitSpy).toHaveBeenCalledWith(
+      'scrollToDate',
+      expect.objectContaining({
+        date: expect.any(Date),
+        behavior: 'smooth',
+      }),
+    );
   });
 });
 
@@ -860,8 +884,8 @@ describe('GanttCollectionActionGroupModel', () => {
   });
 });
 
-describe('GanttTodayActionModel', () => {
-  test('is only offered by gantt action configuration', async () => {
+describe('Gantt gantt-only actions', () => {
+  test('are only offered by gantt action configuration', async () => {
     class VisibleActionModel extends ActionModel {
       static scene = ActionSceneEnum.collection;
     }
@@ -874,6 +898,7 @@ describe('GanttTodayActionModel', () => {
     flowEngine.registerModels({
       CollectionActionGroupModel,
       GanttCollectionActionGroupModel,
+      GanttExpandCollapseActionModel,
       GanttTodayActionModel,
       VisibleActionModel,
     });
@@ -885,16 +910,41 @@ describe('GanttTodayActionModel', () => {
     } as any);
     expect(commonItems.map((item) => item.useModel)).toContain('VisibleActionModel');
     expect(commonItems.map((item) => item.useModel)).not.toContain('GanttTodayActionModel');
+    expect(commonItems.map((item) => item.useModel)).not.toContain('GanttExpandCollapseActionModel');
 
     const ganttItems = await GanttCollectionActionGroupModel.defineChildren({
       engine: flowEngine,
       dataSourceManager: flowEngine.dataSourceManager,
       model: {
         uid: 'gantt-1',
+        isTreeCollection: () => true,
+        isTreeTableEnabled: () => true,
         getModelClassName: () => 'GanttCollectionActionGroupModel',
       },
     } as any);
+    expect(ganttItems.map((item) => item.useModel)).toContain('GanttExpandCollapseActionModel');
     expect(ganttItems.map((item) => item.useModel)).toContain('GanttTodayActionModel');
+  });
+
+  test('does not offer expand collapse when gantt tree table is disabled', async () => {
+    const flowEngine = new FlowEngine();
+    flowEngine.registerModels({
+      GanttCollectionActionGroupModel,
+      GanttExpandCollapseActionModel,
+    });
+
+    const ganttItems = await GanttCollectionActionGroupModel.defineChildren({
+      engine: flowEngine,
+      dataSourceManager: flowEngine.dataSourceManager,
+      model: {
+        uid: 'gantt-1',
+        isTreeCollection: () => true,
+        isTreeTableEnabled: () => false,
+        getModelClassName: () => 'GanttCollectionActionGroupModel',
+      },
+    } as any);
+
+    expect(ganttItems.map((item) => item.useModel)).not.toContain('GanttExpandCollapseActionModel');
   });
 
   test('requests the gantt block to scroll to today on click', async () => {
@@ -913,5 +963,26 @@ describe('GanttTodayActionModel', () => {
     await action.dispatchEvent('click');
 
     expect(blockModel.scrollToToday).toHaveBeenCalledTimes(1);
+  });
+
+  test('toggles gantt tree rows on click', async () => {
+    const flowEngine = new FlowEngine();
+    flowEngine.registerModels({ GanttExpandCollapseActionModel });
+    const blockModel = {
+      isTreeTableEnabled: () => true,
+      isTreeExpanded: vi.fn(() => false),
+      toggleAllTreeRows: vi.fn(),
+    };
+
+    const action = flowEngine.createModel<GanttExpandCollapseActionModel>({
+      uid: 'expand-collapse-action',
+      use: 'GanttExpandCollapseActionModel',
+    });
+    action.context.defineProperty('blockModel', { value: blockModel });
+
+    await action.dispatchEvent('click');
+
+    expect(blockModel.toggleAllTreeRows).toHaveBeenCalledTimes(1);
+    expect(action.props?.icon).toBe('NodeCollapseOutlined');
   });
 });

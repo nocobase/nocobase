@@ -98,6 +98,13 @@ export const getVisibleGanttTasks = ({
   return visibleTasks;
 };
 
+export const getExpandableGanttRowKeys = (tasks: Task[]) => {
+  const { childrenByParent } = getGanttTreeMeta(tasks);
+  return tasks
+    .filter((task) => (childrenByParent.get(String(task.id)) || []).length > 0)
+    .map((task) => String(task.id));
+};
+
 export const getOrderedGanttTasks = ({ tasks, treeTableEnabled }: { tasks: Task[]; treeTableEnabled: boolean }) => {
   if (treeTableEnabled) {
     return tasks;
@@ -152,7 +159,7 @@ export const useGanttTree = ({
   const [expandedRowKeys, setExpandedRowKeys] = useState<React.Key[]>([]);
   const expandedRowKeySet = useMemo(() => new Set(expandedRowKeys.map((key) => String(key))), [expandedRowKeys]);
   const orderedTasks = useMemo(() => getOrderedGanttTasks({ tasks, treeTableEnabled }), [tasks, treeTableEnabled]);
-  const treeMeta = useMemo(() => getGanttTreeMeta(orderedTasks), [orderedTasks]);
+  const expandableRowKeys = useMemo(() => getExpandableGanttRowKeys(orderedTasks), [orderedTasks]);
 
   const visibleTasks = useMemo(
     () => getVisibleGanttTasks({ expandedRowKeySet, tasks: orderedTasks, treeTableEnabled }),
@@ -166,15 +173,44 @@ export const useGanttTree = ({
   useEffect(() => {
     if (!treeTableEnabled) {
       setExpandedRowKeys([]);
+      model.setTreeExpandFlag(false);
       return;
     }
 
     if (defaultExpandAllRows) {
-      setExpandedRowKeys(
-        orderedTasks.filter((task) => treeMeta.childrenByParent.get(String(task.id))?.length).map((task) => task.id),
-      );
+      setExpandedRowKeys(expandableRowKeys);
     }
-  }, [defaultExpandAllRows, orderedTasks, treeMeta, treeTableEnabled]);
+  }, [defaultExpandAllRows, expandableRowKeys, model, treeTableEnabled]);
+
+  useEffect(() => {
+    if (!treeTableEnabled) {
+      return;
+    }
+
+    const handleExpandAll = () => {
+      setExpandedRowKeys(expandableRowKeys);
+    };
+    const handleCollapseAll = () => {
+      setExpandedRowKeys([]);
+    };
+
+    model.emitter.on('expandAllTreeRows', handleExpandAll);
+    model.emitter.on('collapseAllTreeRows', handleCollapseAll);
+
+    return () => {
+      model.emitter.off('expandAllTreeRows', handleExpandAll);
+      model.emitter.off('collapseAllTreeRows', handleCollapseAll);
+    };
+  }, [expandableRowKeys, model, treeTableEnabled]);
+
+  useEffect(() => {
+    const expandedRowKeySet = new Set(expandedRowKeys.map((key) => String(key)));
+    const isExpanded =
+      treeTableEnabled &&
+      expandableRowKeys.length > 0 &&
+      expandableRowKeys.every((key) => expandedRowKeySet.has(String(key)));
+    model.setTreeExpandFlag(isExpanded);
+  }, [expandableRowKeys, expandedRowKeys, model, treeTableEnabled]);
 
   const expandable = useMemo(() => {
     if (!treeTableEnabled) {

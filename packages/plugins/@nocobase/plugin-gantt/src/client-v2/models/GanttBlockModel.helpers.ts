@@ -56,7 +56,7 @@ export const DRAG_HANDLER_TOOLBAR_ITEMS = [
 
 export const HIDDEN_GANTT_TABLE_SETTING_STEPS = ['quickEdit', 'tableDensity', 'dragSort', 'dragSortBy'];
 
-export const HIDDEN_GANTT_TOP_ACTION_MODELS = new Set(['ExpandCollapseActionModel', 'GanttExpandCollapseActionModel']);
+export const HIDDEN_GANTT_TOP_ACTION_MODELS = new Set(['ExpandCollapseActionModel']);
 
 export const isSupportedByValues = (value: any, values: string[]) => {
   return value && values.includes(value);

@@ -36,6 +36,8 @@ import {
 import { createGanttBlockClassNames } from './GanttBlock.styles';
 import { GANTT_TREE_CHILDREN_COLUMN, useGanttTree } from './GanttBlock.tree';
 
+type ScrollToDatePayload = Date | { date: Date; behavior?: ScrollBehavior };
+
 export const GanttBlock = observer(
   ({ model }: { model: GanttBlockModel }) => {
     const { token } = theme.useToken();
@@ -165,23 +167,34 @@ export const GanttBlock = observer(
     const selectedRowKeys = model.resource.getSelectedRows().map((row) => getGanttRowKey(model, row));
     const pagination = model.pagination();
 
-    const syncHorizontalScroll = useCallback((nextScrollX: number, source?: 'chart' | 'scrollbar') => {
-      const normalizedScrollX = Math.max(0, nextScrollX);
-      if (Math.abs(scrollXRef.current - normalizedScrollX) <= 1) {
-        return;
-      }
+    const syncHorizontalScroll = useCallback(
+      (nextScrollX: number, source?: 'chart' | 'scrollbar', behavior: ScrollBehavior = 'auto') => {
+        const normalizedScrollX = Math.max(0, nextScrollX);
+        if (Math.abs(scrollXRef.current - normalizedScrollX) <= 1) {
+          return;
+        }
 
-      scrollXRef.current = normalizedScrollX;
-      const chartContainer = verticalGanttContainerRef.current;
-      const scrollContainer = horizontalScrollRef.current;
+        scrollXRef.current = normalizedScrollX;
+        const chartContainer = verticalGanttContainerRef.current;
+        const scrollContainer = horizontalScrollRef.current;
 
-      if (source !== 'chart' && chartContainer && Math.abs(chartContainer.scrollLeft - normalizedScrollX) > 1) {
-        chartContainer.scrollLeft = normalizedScrollX;
-      }
-      if (source !== 'scrollbar' && scrollContainer && Math.abs(scrollContainer.scrollLeft - normalizedScrollX) > 1) {
-        scrollContainer.scrollLeft = normalizedScrollX;
-      }
-    }, []);
+        if (source !== 'chart' && chartContainer && Math.abs(chartContainer.scrollLeft - normalizedScrollX) > 1) {
+          if (behavior === 'smooth' && typeof chartContainer.scrollTo === 'function') {
+            chartContainer.scrollTo({ left: normalizedScrollX, behavior });
+          } else {
+            chartContainer.scrollLeft = normalizedScrollX;
+          }
+        }
+        if (source !== 'scrollbar' && scrollContainer && Math.abs(scrollContainer.scrollLeft - normalizedScrollX) > 1) {
+          if (behavior === 'smooth' && typeof scrollContainer.scrollTo === 'function') {
+            scrollContainer.scrollTo({ left: normalizedScrollX, behavior });
+          } else {
+            scrollContainer.scrollLeft = normalizedScrollX;
+          }
+        }
+      },
+      [],
+    );
 
     const setHorizontalScrollRef = useCallback(
       (element: HTMLDivElement | null) => {
@@ -200,12 +213,12 @@ export const GanttBlock = observer(
       [syncHorizontalScroll],
     );
     const scrollToDate = useCallback(
-      (date: Date) => {
+      (date: Date, behavior: ScrollBehavior = 'auto') => {
         const index = getDateIndex(date, dateSetup.dates);
         if (index === -1) {
           return false;
         }
-        syncHorizontalScroll(columnWidth * index);
+        syncHorizontalScroll(columnWidth * index, undefined, behavior);
         return true;
       },
       [columnWidth, dateSetup.dates, syncHorizontalScroll],
@@ -347,8 +360,15 @@ export const GanttBlock = observer(
     }, [viewDate, dateSetup.viewMode, viewMode, currentViewDate, setCurrentViewDate, scrollToDate]);
 
     useEffect(() => {
-      const handleScrollToDate = (date: Date) => {
-        scrollToDate(date);
+      const handleScrollToDate = (payload: ScrollToDatePayload) => {
+        if (payload instanceof Date) {
+          scrollToDate(payload);
+          return;
+        }
+
+        if (payload?.date instanceof Date) {
+          scrollToDate(payload.date, payload.behavior);
+        }
       };
 
       model.emitter.on('scrollToDate', handleScrollToDate);

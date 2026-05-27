@@ -9,9 +9,10 @@
 
 import { ActionGroupModel, ActionModel, ActionSceneEnum, CollectionActionGroupModel } from '@nocobase/client-v2';
 import { buildSubModelItem, type FlowModelContext } from '@nocobase/flow-engine';
-import { tExpr } from '../../locale';
+import { LEGACY_NAMESPACE, NAMESPACE, tExpr } from '../../locale';
 
 export const ALLOWED_GANTT_COLLECTION_ACTIONS = [
+  'GanttExpandCollapseActionModel',
   'GanttTodayActionModel',
   'FilterActionModel',
   'AddNewActionModel',
@@ -49,23 +50,57 @@ const isGanttActionContext = (ctx: FlowModelContext) => {
   );
 };
 
+const resolveGanttBlockModel = (ctx: FlowModelContext) => {
+  const model = ctx.blockModel || ctx.model;
+  if (isGanttActionContext(ctx)) {
+    return model as any;
+  }
+  return undefined;
+};
+
+const getTreeCollectionState = (ctx: FlowModelContext) => {
+  const blockModel = resolveGanttBlockModel(ctx);
+  const collection = ctx.collection || blockModel?.collection;
+  const isTreeCollection =
+    blockModel?.isTreeCollection?.() ||
+    collection?.template === 'tree' ||
+    collection?.options?.template === 'tree' ||
+    !!collection?.tree;
+  const treeTableEnabled =
+    blockModel?.isTreeTableEnabled?.() || blockModel?.props?.treeTable === true || blockModel?.treeTable === true;
+
+  return {
+    blockModel,
+    isTreeCollection,
+    treeTableEnabled,
+  };
+};
+
 export class GanttCollectionActionGroupModel extends ActionGroupModel {
   static async defineChildren(ctx: FlowModelContext) {
+    const blockModel = resolveGanttBlockModel(ctx);
+    const normalizedCtx =
+      blockModel && !ctx.blockModel
+        ? ({
+            ...ctx,
+            blockModel,
+          } as FlowModelContext)
+        : ctx;
     const items = [];
 
     for (const modelName of ALLOWED_GANTT_COLLECTION_ACTIONS) {
-      const ModelClass = getGanttActionModelClass(modelName, ctx, this);
+      const ModelClass = getGanttActionModelClass(modelName, normalizedCtx, this);
       if (!ModelClass) {
         continue;
       }
-      if (!this.isActionModelVisible(ModelClass, ctx)) {
+      if (!this.isActionModelVisible(ModelClass, normalizedCtx)) {
         continue;
       }
       if (!ModelClass._isScene?.(ActionSceneEnum.collection)) {
         continue;
       }
 
-      const item = await buildSubModelItem(ModelClass, ctx);
+      const item = await buildSubModelItem(ModelClass, normalizedCtx);
       if (item) {
         items.push(item);
       }
@@ -98,6 +133,71 @@ GanttTodayActionModel.define({
   },
 });
 
+export class GanttExpandCollapseActionModel extends ActionModel {
+  static scene = ActionSceneEnum.collection;
+
+  expandFlag = false;
+
+  defaultProps = {
+    type: 'default' as const,
+    title: tExpr('Expand all'),
+    icon: 'NodeExpandOutlined',
+  };
+
+  getTitle() {
+    return this.context.t(this.expandFlag ? 'Collapse all' : 'Expand all', {
+      ns: [NAMESPACE, LEGACY_NAMESPACE, 'client'],
+      nsMode: 'fallback',
+    });
+  }
+
+  setExpandFlag(flag: boolean) {
+    this.expandFlag = flag;
+    this.setProps({
+      icon: flag ? 'NodeCollapseOutlined' : 'NodeExpandOutlined',
+    });
+  }
+}
+
+GanttExpandCollapseActionModel.define({
+  label: tExpr('Expand/Collapse'),
+  toggleable: true,
+  sort: 11,
+  hide(ctx) {
+    const { blockModel, isTreeCollection, treeTableEnabled } = getTreeCollectionState(ctx);
+    return !blockModel || !isTreeCollection || !treeTableEnabled;
+  },
+});
+
+GanttExpandCollapseActionModel.registerFlow({
+  key: 'expandCollapseSettingsInit',
+  sort: 200,
+  steps: {
+    init: {
+      handler(ctx) {
+        ctx.model.setExpandFlag(!!ctx.blockModel?.isTreeExpanded?.());
+      },
+    },
+  },
+});
+
+GanttExpandCollapseActionModel.registerFlow({
+  key: 'expandCollapseSettings',
+  title: tExpr('Expand/Collapse'),
+  on: 'click',
+  steps: {
+    expandCollapse: {
+      handler(ctx) {
+        if (!ctx.blockModel?.isTreeTableEnabled?.()) {
+          return;
+        }
+        ctx.blockModel.toggleAllTreeRows?.();
+        ctx.model.setExpandFlag(!ctx.blockModel.isTreeExpanded?.());
+      },
+    },
+  },
+});
+
 GanttTodayActionModel.registerFlow({
   key: 'todaySettings',
   title: tExpr('Today'),
@@ -112,5 +212,6 @@ GanttTodayActionModel.registerFlow({
 });
 
 GanttCollectionActionGroupModel.registerActionModels({
+  GanttExpandCollapseActionModel,
   GanttTodayActionModel,
 });
