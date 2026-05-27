@@ -338,7 +338,7 @@
           "placeholder": "https://demo.example.com/api or https://demo.example.com/api/__app/<subapp>"
         },
         "skipDownload": {
-          "message": "Skip downloading NocoBase and reuse existing local app files or Docker images?"
+          "message": "Skip downloading NocoBase and reuse existing local app files or Docker images"
         }
       },
       "webUi": {

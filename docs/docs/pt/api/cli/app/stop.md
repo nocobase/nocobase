@@ -1,12 +1,12 @@
 ---
 title: "nb app stop"
-description: "Referência do comando nb app stop: para a aplicação NocoBase ou o contêiner Docker do env especificado."
+description: "Referência do comando nb app stop: para a aplicação NocoBase do env especificado e, em envs Docker, remove o contêiner da aplicação."
 keywords: "nb app stop,NocoBase CLI,parar aplicação,Docker"
 ---
 
 # nb app stop
 
-Para a aplicação NocoBase do env especificado. Instalações npm/Git param o processo da aplicação local; instalações Docker param o contêiner da aplicação salvo.
+Para a aplicação NocoBase do env especificado. Instalações npm/Git param o processo da aplicação local; instalações Docker removem o contêiner da aplicação salvo.
 
 ## Uso
 

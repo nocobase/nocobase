@@ -1,12 +1,12 @@
 ---
 title: "nb app stop"
-description: "Tài liệu lệnh nb app stop: dừng ứng dụng NocoBase hoặc Docker container của env được chỉ định."
+description: "Tài liệu lệnh nb app stop: dừng ứng dụng NocoBase của env được chỉ định và, với env Docker, xóa container ứng dụng."
 keywords: "nb app stop,NocoBase CLI,Dừng ứng dụng,Docker"
 ---
 
 # nb app stop
 
-Dừng ứng dụng NocoBase của env được chỉ định. Cài đặt npm/Git sẽ dừng tiến trình ứng dụng cục bộ, còn cài đặt Docker sẽ dừng container ứng dụng đã lưu.
+Dừng ứng dụng NocoBase của env được chỉ định. Cài đặt npm/Git sẽ dừng tiến trình ứng dụng cục bộ, còn cài đặt Docker sẽ xóa container ứng dụng đã lưu.
 
 ## Cách dùng
 

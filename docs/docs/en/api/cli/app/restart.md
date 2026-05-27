@@ -1,12 +1,12 @@
 ---
 title: "nb app restart"
-description: "nb app restart command reference: restart the NocoBase app or Docker container for a selected env."
+description: "nb app restart command reference: restart the NocoBase app for a selected env and recreate the Docker app container from saved env config when needed."
 keywords: "nb app restart,NocoBase CLI,restart app,Docker"
 ---
 
 # nb app restart
 
-Stop and then start the NocoBase app for a selected env.
+Stop and then start the NocoBase app for a selected env. Local envs reuse the `nb app stop` and `nb app start` flow; Docker envs remove the current container first, then recreate the app container from saved env config.
 
 ## Usage
 
@@ -42,6 +42,8 @@ nb app restart --env local-docker
 ```
 
 If you explicitly pass `--env` and it differs from the current env, the CLI asks for confirmation first. In non-interactive terminals or AI agent sessions, add `--yes` yourself or run `nb env use <name>` first and try again.
+
+Whenever the CLI needs to wait for readiness, it checks `__health_check`: it prints one waiting line first, then one progress line every 10 seconds until the app becomes available or times out. If you pass `--no-daemon` for a local env, the app runs in the foreground, so the CLI does not keep waiting for the readiness check after startup.
 
 ## Related Commands
 
