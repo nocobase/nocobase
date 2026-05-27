@@ -31,7 +31,6 @@ test('buildInstallArgv does not forward api-base-url for new installs', () => {
       appRootPath: './app7593/source/',
       appPort: '13000',
       storagePath: './app7593/storage/',
-      fetchSource: true,
       source: 'docker',
       version: 'beta',
       builtinDb: true,
@@ -93,7 +92,6 @@ test('buildInstallArgv forwards db schema and db underscored for new installs', 
       appRootPath: './app7593/source/',
       appPort: '13000',
       storagePath: './app7593/storage/',
-      fetchSource: true,
       source: 'docker',
       version: 'beta',
       builtinDb: true,
@@ -113,4 +111,53 @@ test('buildInstallArgv forwards db schema and db underscored for new installs', 
   expect(argv).toContain('--db-table-prefix');
   expect(argv).toContain('nb_');
   expect(argv).toContain('--db-underscored');
+});
+
+test('buildInstallArgv forwards --skip-download and omits download execution options', () => {
+  const buildInstallArgv = (
+    Init.prototype as unknown as {
+      buildInstallArgv: (
+        results: Record<string, string | number | boolean>,
+        flags: { yes?: boolean; force?: boolean; build?: boolean; verbose?: boolean; 'skip-download'?: boolean },
+      ) => string[];
+    }
+  ).buildInstallArgv;
+
+  const argv = buildInstallArgv.call(
+    Object.create(Init.prototype),
+    {
+      hasNocobase: 'no',
+      appName: 'app7593',
+      authType: 'oauth',
+      lang: 'en-US',
+      appRootPath: './app7593/source/',
+      appPort: '13000',
+      storagePath: './app7593/storage/',
+      skipDownload: true,
+      source: 'git',
+      version: 'beta',
+      gitUrl: 'https://github.com/nocobase/nocobase.git',
+      npmRegistry: 'https://registry.npmmirror.com',
+      outputDir: './app7593/source/',
+      replace: true,
+      builtinDb: true,
+      dbDialect: 'postgres',
+    },
+    {
+      yes: true,
+      'skip-download': true,
+    },
+  );
+
+  expect(argv).toContain('--skip-download');
+  expect(argv).toContain('--source');
+  expect(argv).toContain('git');
+  expect(argv).toContain('--version');
+  expect(argv).toContain('beta');
+  expect(argv).toContain('--git-url');
+  expect(argv).toContain('https://github.com/nocobase/nocobase.git');
+  expect(argv).toContain('--npm-registry');
+  expect(argv).toContain('https://registry.npmmirror.com');
+  expect(argv).not.toContain('--output-dir');
+  expect(argv).not.toContain('--replace');
 });

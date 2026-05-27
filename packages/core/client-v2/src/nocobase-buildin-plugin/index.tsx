@@ -73,15 +73,9 @@ export function useCurrentUserContext() {
 }
 
 /**
- * 返回当前用户在 v2 应用上下文中可选的角色列表，等价于 v1 `useCurrentRoles`：
- * 从 FlowEngine 全局上下文 `engine.context.user.roles` 派生（CurrentUserProvider 在
- * `/auth:check` 成功后通过 `defineProperty('user', { value })` 写入），按需追加匿名角色，
- * 并去掉合并角色 `__union__`。v2 中角色 title 可能含有 `{{t('...')}}` 模板，因此用
- * flowEngine.context.t 解析。
+ * 返回当前用户在 v2 应用上下文中可选的角色列表，等价于 v1 `useCurrentRoles`：从 FlowEngine 全局上下文 `engine.context.user.roles` 派生（CurrentUserProvider 在 `/auth:check` 成功后通过 `defineProperty('user', { value })` 写入），按需追加匿名角色，并去掉合并角色 `__union__`。v2 中角色 title 可能含有 `{{t('...')}}` 模板，因此用 flowEngine.context.t 解析。
  *
- * 不读 React `CurrentUserContext`：FlowEngine 的 dialog/drawer/popover 内容通过 `ctx.viewer`
- * 渲染到独立的 ElementsHolder，部分场景会脱离原 Provider 树；FlowEngine 全局上下文是同一份
- * 数据但不受 React 树位置影响。
+ * 不读 React `CurrentUserContext`：FlowEngine 的 dialog/drawer/popover 内容通过 `ctx.viewer` 渲染到独立的 ElementsHolder，部分场景会脱离原 Provider 树；FlowEngine 全局上下文是同一份数据但不受 React 树位置影响。
  */
 export function useCurrentRoles(): CurrentRoleOption[] {
   const { allowAnonymous } = useACLRoleContext();
@@ -192,10 +186,7 @@ const CurrentUserProvider: FC = ({ children }) => {
         });
 
         const user = res?.data?.data;
-        // 服务端通过 `{ code: 302, redirect }` 通知客户端先去某个中间页(例如 2FA 验证页)。
-        // 这类响应没有 user.id,但也不能视为未登录——否则会和处理 302 的全局响应拦截器
-        // (例如 plugin-two-factor-authentication 注册的那一个)竞态,而 `window.location.replace`
-        // 会覆盖更早发出的 `window.location.href`,把用户错误地弹回登录页。让响应拦截器接管跳转。
+        // 服务端通过 `{ code: 302, redirect }` 通知客户端先去某个中间页(例如 2FA 验证页)。这类响应没有 user.id,但也不能视为未登录——否则会和处理 302 的全局响应拦截器 (例如 plugin-two-factor-authentication 注册的那一个)竞态,而 `window.location.replace` 会覆盖更早发出的 `window.location.href`,把用户错误地弹回登录页。让响应拦截器接管跳转。
         if (user?.code === 302) {
           if (mounted) {
             setState({ loading: false });
@@ -203,9 +194,7 @@ const CurrentUserProvider: FC = ({ children }) => {
           return;
         }
         if (user?.id == null) {
-          // 用 react-router navigate (虚拟跳转)而不是 location.replace, 这样如果有其他响应拦截器
-          // 已经发起了 window.location.href 整页跳转(例如 2FA 插件接收到服务端 302 重定向),
-          // 真实跳转可以胜出 navigate, 不会被这里的 signin 重定向覆盖。
+          // 用 react-router navigate (虚拟跳转)而不是 location.replace, 这样如果有其他响应拦截器已经发起了 window.location.href 整页跳转(例如 2FA 插件接收到服务端 302 重定向), 真实跳转可以胜出 navigate, 不会被这里的 signin 重定向覆盖。
           navigate(`/signin?redirect=${encodeURIComponent(getCurrentV2RedirectPath(app, locationRef.current))}`, {
             replace: true,
           });
@@ -265,8 +254,7 @@ const RootRedirect: FC = () => {
   const targetPath = getDefaultV2AdminRedirectPath(app);
 
   if (!hasToken) {
-    // 用 react-router <Navigate /> 而非 location.replace, 避免覆盖同时段其它响应拦截器
-    // 触发的 window.location.href (例如 2FA 接收到服务端 302 时设置的整页跳转)。
+    // 用 react-router <Navigate /> 而非 location.replace, 避免覆盖同时段其它响应拦截器触发的 window.location.href (例如 2FA 接收到服务端 302 时设置的整页跳转)。
     return <Navigate replace to={`/signin?redirect=${encodeURIComponent(targetPath)}`} />;
   }
 
@@ -276,8 +264,7 @@ const RootRedirect: FC = () => {
 /**
  * client-v2 使用的内建插件集合。
  *
- * 只迁移当前 v2 运行时仍然需要的部分，显式跳过 schemaInitializerManager
- * 以及用户标注暂不迁移的旧插件注册逻辑。
+ * 只迁移当前 v2 运行时仍然需要的部分，显式跳过 schemaInitializerManager 以及用户标注暂不迁移的旧插件注册逻辑。
  */
 export class NocoBaseBuildInPlugin extends Plugin<any, Application> {
   async afterAdd() {
@@ -313,7 +300,7 @@ export class NocoBaseBuildInPlugin extends Plugin<any, Application> {
       menuKey: 'plugin-manager',
       key: 'index',
       title: this.app.i18n.t('Plugin manager'),
-      componentLoader: () => import('../settings-center/PluginManagerPage'),
+      componentLoader: () => import('../settings-center/plugin-manager'),
       aclSnippet: 'pm',
       sort: -200,
     });
@@ -331,6 +318,13 @@ export class NocoBaseBuildInPlugin extends Plugin<any, Application> {
       componentLoader: () => import('../settings-center/SystemSettingsPage'),
       aclSnippet: 'pm.system-settings.system-settings',
       sort: -100,
+    });
+    // Parent menu for security-related plugin settings (password policy, locked users, etc.). Registered here in the buildin plugin so any pro plugin can attach page tabs to `menuKey: 'security'` without each one re-registering the same parent.
+    this.app.pluginSettingsManager.addMenuItem({
+      key: 'security',
+      title: this.app.i18n.t('Security'),
+      icon: 'SafetyOutlined',
+      aclSnippet: 'pm.security',
     });
   }
 

@@ -383,7 +383,10 @@ describe('app', () => {
 
       await waitFor(() => expect(screen.queryByText('maintaining error message')).not.toBeInTheDocument());
       expect(screen.getByText('Hello')).toBeInTheDocument();
-      expect(reloadMock).toHaveBeenCalled();
+      // Aligned with v1: a routine maintaining→APP_RUNNING cycle does not
+      // reload the page. Only `hasLoadError === true` (set when the initial
+      // `app.load()` itself fails) triggers a recovery reload.
+      expect(reloadMock).not.toHaveBeenCalled();
     } finally {
       Object.defineProperty(globalThis.window, 'location', {
         configurable: true,

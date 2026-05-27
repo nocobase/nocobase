@@ -8,6 +8,7 @@
  */
 
 export * from './createFormRegistry';
+export * from './filter';
 export * from './DialogFormLayout';
 export * from './DrawerFormLayout';
 export * from './EnvVariableInput';

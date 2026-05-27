@@ -63,7 +63,7 @@ nb init --env app1 --resume
 | `--db-database` | string | Nama database |
 | `--db-user` | string | User database |
 | `--db-password` | string | Password database |
-| `--fetch-source` | boolean | Download file aplikasi atau pull image Docker sebelum instalasi |
+| `--skip-download` | boolean | Lewati download file aplikasi atau pull image Docker sebelum instalasi, dan gunakan ulang resource lokal yang sudah ada |
 | `--source`, `-s` | string | Cara mendapatkan NocoBase: `docker`, `npm`, atau `git` |
 | `--version`, `-v` | string | Parameter versi: versi npm, tag image Docker, atau ref Git |
 | `--replace`, `-r` | boolean | Ganti jika direktori target sudah ada |
