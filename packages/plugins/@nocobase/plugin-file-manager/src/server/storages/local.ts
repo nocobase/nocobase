@@ -66,6 +66,26 @@ export default class extends StorageType {
       filename: diskFilenameGetter(this.storage),
     });
   }
+  async exists(record: AttachmentModel): Promise<boolean> {
+    try {
+      await fs.stat(resolveSafePath(getDocumentRoot(this.storage), record.path, record.filename));
+      return true;
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
+        return false;
+      }
+      throw error;
+    }
+  }
+
+  async copy(source: AttachmentModel, target: AttachmentModel): Promise<void> {
+    const documentRoot = getDocumentRoot(this.storage);
+    const sourcePath = resolveSafePath(documentRoot, source.path, source.filename);
+    const targetPath = resolveSafePath(documentRoot, target.path, target.filename);
+    await fs.mkdir(path.dirname(targetPath), { recursive: true });
+    await fs.copyFile(sourcePath, targetPath);
+  }
+
   async delete(records: AttachmentModel[]): Promise<[number, AttachmentModel[]]> {
     const documentRoot = getDocumentRoot(this.storage);
     let count = 0;
