@@ -225,6 +225,7 @@ export class BaseLayoutRouteCoordinator {
     if (runtime.routeModel.context.pageActive?.value !== active) {
       runtime.routeModel.context.pageActive.value = active;
     }
+    this.syncViewListVisibility(runtime);
     if (wasActive === active) {
       return;
     }
@@ -285,9 +286,25 @@ export class BaseLayoutRouteCoordinator {
       }
 
       runtime.prevViewList = [...viewList];
+      this.syncViewListVisibility(runtime);
     } catch (error) {
       console.error(`[NocoBase] Failed to resolve view params to view list:`, error);
     }
+  }
+
+  private syncViewListVisibility(runtime: RoutePageRuntime, viewList = runtime.prevViewList) {
+    if (!viewList.length) {
+      return;
+    }
+
+    if (runtime.meta.active) {
+      updateViewListHidden(viewList);
+      return;
+    }
+
+    viewList.forEach((viewItem) => {
+      viewItem.hidden.value = true;
+    });
   }
 
   private shouldStepNavigate(runtime: RoutePageRuntime, viewList: ViewItem[]) {
@@ -349,7 +366,7 @@ export class BaseLayoutRouteCoordinator {
       return;
     }
 
-    updateViewListHidden(viewList);
+    this.syncViewListVisibility(runtime, viewList);
     this.openViews(runtime, viewList, viewsToOpen, 0);
   }
 

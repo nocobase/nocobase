@@ -11,7 +11,7 @@ import { FlowContext, FlowEngine } from '@nocobase/flow-engine';
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { getViewDiffAndUpdateHidden } from '../../getViewDiffAndUpdateHidden';
 import { getOpenViewStepParams } from '../../flows/openViewFlow';
-import { resolveViewParamsToViewList } from '../../resolveViewParamsToViewList';
+import { resolveViewParamsToViewList, updateViewListHidden } from '../../resolveViewParamsToViewList';
 import { AdminLayoutRouteCoordinator } from '../AdminLayoutRouteCoordinator';
 import { BaseLayoutRouteCoordinator, toViewStack } from '../BaseLayoutRouteCoordinator';
 import { RouteModel } from '../../models/base/RouteModel';
@@ -37,6 +37,7 @@ vi.mock('../../flows/openViewFlow', async (importOriginal) => {
 const mockResolveViewParamsToViewList = vi.mocked(resolveViewParamsToViewList);
 const mockGetViewDiffAndUpdateHidden = vi.mocked(getViewDiffAndUpdateHidden);
 const mockGetOpenViewStepParams = vi.mocked(getOpenViewStepParams);
+const mockUpdateViewListHidden = vi.mocked(updateViewListHidden);
 
 function setupRouteReplay(viewParams: Record<string, any>) {
   const engine = new FlowEngine();
@@ -295,6 +296,84 @@ describe('AdminLayoutRouteCoordinator', () => {
 
     expect(payload.deactivateRef.current).toHaveBeenCalledTimes(1);
     expect(payload.activateRef.current).toHaveBeenCalledWith(true);
+  });
+
+  it('syncs cached embed page visibility when switching pages', () => {
+    const engine = new FlowEngine();
+    engine.registerModels({ RouteModel });
+    engine.context.defineProperty('route', {
+      value: {},
+    });
+    engine.context.defineProperty('routeRepository', {
+      value: {
+        getRouteBySchemaUid: vi.fn(() => ({})),
+      },
+    });
+
+    const viewItemsByPageUid = new Map<string, any>();
+    const createViewItem = (pageUid: string) => {
+      const dispatchEvent = vi.fn((_eventName: string, payload: any) => {
+        payload.activateRef.current = vi.fn();
+        payload.deactivateRef.current = vi.fn();
+        return Promise.resolve();
+      });
+      return {
+        params: { viewUid: pageUid },
+        modelUid: pageUid,
+        model: { uid: pageUid, dispatchEvent } as any,
+        hidden: { value: false },
+        index: 0,
+      };
+    };
+
+    mockResolveViewParamsToViewList.mockImplementation((_engine, viewParams) => {
+      const pageUid = viewParams[0].viewUid;
+      if (!viewItemsByPageUid.has(pageUid)) {
+        viewItemsByPageUid.set(pageUid, createViewItem(pageUid));
+      }
+      return [viewItemsByPageUid.get(pageUid)];
+    });
+    mockGetViewDiffAndUpdateHidden.mockImplementation((prevViewList, currentViewList) => ({
+      viewsToClose: prevViewList.filter((prevViewItem) => !currentViewList.includes(prevViewItem)),
+      viewsToOpen: currentViewList.filter((currentViewItem) => !prevViewList.includes(currentViewItem)),
+    }));
+    mockUpdateViewListHidden.mockImplementation((viewItems) => {
+      viewItems.forEach((viewItem) => {
+        viewItem.hidden.value = false;
+      });
+    });
+
+    const coordinator = new BaseLayoutRouteCoordinator(engine, { basePathname: '/admin' });
+    coordinator.registerPage('page-1', {
+      active: false,
+      layoutContentElement: document.createElement('div'),
+    });
+    coordinator.registerPage('page-3', {
+      active: false,
+      layoutContentElement: document.createElement('div'),
+    });
+
+    coordinator.syncRoute({
+      pageUid: 'page-3',
+      pathname: '/admin/page-3',
+    });
+    const page3ViewItem = viewItemsByPageUid.get('page-3');
+    expect(page3ViewItem.hidden.value).toBe(false);
+
+    coordinator.syncRoute({
+      pageUid: 'page-1',
+      pathname: '/admin/page-1',
+    });
+    const page1ViewItem = viewItemsByPageUid.get('page-1');
+    expect(page1ViewItem.hidden.value).toBe(false);
+    expect(page3ViewItem.hidden.value).toBe(true);
+
+    coordinator.syncRoute({
+      pageUid: 'page-3',
+      pathname: '/admin/page-3',
+    });
+    expect(page3ViewItem.hidden.value).toBe(false);
+    expect(page1ViewItem.hidden.value).toBe(true);
   });
 
   it('notifies cached route page activation when page meta active changes', () => {
