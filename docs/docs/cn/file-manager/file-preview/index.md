@@ -16,3 +16,20 @@ keywords: "文件预览,Preview,缩略图,Office 预览,PDF 预览,图片预览,
 目前 NocoBase 提供的文件预览插件：
 
 * [Office 文件预览插件](../file-preview/ms-office.md)
+
+## 外部存储的 PDF 预览
+
+PDF 文件预览使用 PDF.js 在浏览器中渲染。浏览器需要先读取 PDF 文件内容，再交给 PDF.js 渲染，因此当文件保存在 OSS、S3、COS、CDN 等外部存储，且文件访问域名与 NocoBase 站点域名不一致时，外部存储需要允许 NocoBase 站点跨域读取文件。
+
+如果未配置 CORS，PDF 文件下载仍可正常使用，但预览可能会提示文件加载失败。
+
+外部存储或 CDN 的 CORS 配置建议包含：
+
+```http
+Access-Control-Allow-Origin: https://your-nocobase-domain
+Access-Control-Allow-Methods: GET, HEAD
+Access-Control-Allow-Headers: *
+Access-Control-Expose-Headers: Content-Length, Content-Range, Accept-Ranges, Content-Disposition, Content-Type
+```
+
+其中 `Access-Control-Allow-Origin` 应配置为实际访问 NocoBase 的站点域名。不建议对非公开文件长期使用 `*`，以免扩大文件读取范围。
