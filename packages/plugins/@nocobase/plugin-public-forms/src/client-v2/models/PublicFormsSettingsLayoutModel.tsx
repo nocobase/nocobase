@@ -11,7 +11,7 @@ import { EyeOutlined, SettingOutlined } from '@ant-design/icons';
 import { BaseLayoutModel, DrawerFormLayout, EnvVariableInput } from '@nocobase/client-v2';
 import { observer, useFlowContext } from '@nocobase/flow-engine';
 import { useRequest } from 'ahooks';
-import { App, Breadcrumb, Button, Dropdown, Form, Input, Popover, QRCode, Space, Spin, Switch, theme } from 'antd';
+import { App, Breadcrumb, Button, Dropdown, Form, Popover, QRCode, Space, Spin, Switch, theme } from 'antd';
 import React, { useCallback, useMemo, useState } from 'react';
 import { Link, useOutlet } from 'react-router-dom';
 import type { PublicFormRecord } from '../modelTree';
@@ -53,7 +53,7 @@ const PublicFormQRCode = (props: { link: string }) => {
   );
 };
 
-function PasswordForm(props: { record: PublicFormRecord; onSubmitted: () => void }) {
+function PasswordForm(props: { record: PublicFormRecord; onSubmitted: (values: Partial<PublicFormRecord>) => void }) {
   const { record, onSubmitted } = props;
   const t = useT();
   const ctx = useFlowContext();
@@ -69,7 +69,7 @@ function PasswordForm(props: { record: PublicFormRecord; onSubmitted: () => void
         filterByTk: record.key,
         values,
       });
-      onSubmitted();
+      onSubmitted(values);
     } finally {
       setSubmitting(false);
     }
@@ -102,7 +102,7 @@ const PublicFormsSettingsLayoutComponent = observer((props: { model: PublicForms
   const pageUid = model.getPageUidFromLayoutRoute(model.currentLayoutRoute);
   const publicFormLink = usePublicFormLink(pageUid);
   const resource = ctx.api.resource('publicForms');
-  const { data, loading, refresh, mutate } = useRequest(
+  const { data, mutate } = useRequest(
     async () => {
       if (!pageUid) {
         return null;
@@ -114,7 +114,7 @@ const PublicFormsSettingsLayoutComponent = observer((props: { model: PublicForms
       refreshDeps: [pageUid],
     },
   );
-  const record = data as PublicFormRecord | null;
+  const record = data?.key === pageUid ? (data as PublicFormRecord) : null;
 
   const handleUpdate = useCallback(
     async (values: Partial<PublicFormRecord>) => {
@@ -145,15 +145,15 @@ const PublicFormsSettingsLayoutComponent = observer((props: { model: PublicForms
     ctx.viewer.drawer({
       width: token.screenSM,
       closable: true,
-      content: () => <PasswordForm record={record} onSubmitted={() => refresh()} />,
+      content: () => <PasswordForm record={record} onSubmitted={(values) => mutate({ ...record, ...values })} />,
     });
-  }, [ctx.viewer, record, refresh, token.screenSM]);
+  }, [ctx.viewer, mutate, record, token.screenSM]);
 
   if (!outlet) {
     return null;
   }
 
-  if (loading || !record) {
+  if (!record) {
     return <Spin />;
   }
 
