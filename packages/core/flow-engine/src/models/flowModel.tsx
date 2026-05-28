@@ -757,7 +757,7 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
     }
     const isFork = (this as any).isFork === true;
     const target = this;
-    console.log(
+    currentFlowEngine.logger.debug(
       `[FlowModel] applyFlow: uid=${this.uid}, flowKey=${flowKey}, isFork=${isFork}, cleanRun=${
         this.cleanRun
       }, targetIsFork=${(target as any)?.isFork === true}`,
@@ -777,7 +777,7 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
     }
     const isFork = (this as any).isFork === true;
     const target = this;
-    console.log(
+    currentFlowEngine.logger.debug(
       `[FlowModel] dispatchEvent: uid=${this.uid}, event=${eventName}, isFork=${isFork}, cleanRun=${
         this.cleanRun
       }, targetIsFork=${(target as any)?.isFork === true}`,
@@ -1313,7 +1313,7 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
   }
 
   clearForks() {
-    console.log(`FlowModel ${this.uid} clearing all forks.`);
+    this.flowEngine.logger.debug(`FlowModel ${this.uid} clearing all forks.`);
     // 主动使所有 fork 失效
     if (this.forks?.size) {
       this.forks.forEach((fork) => fork.dispose());
