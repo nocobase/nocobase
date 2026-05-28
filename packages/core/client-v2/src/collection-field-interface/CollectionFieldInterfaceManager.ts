@@ -14,6 +14,14 @@ import {
   type FieldFilterOperator,
   type FieldFilterOperatorReference,
 } from '../collection-manager/filter-operators';
+import {
+  addFieldValidationConfiguresToGroup,
+  fieldValidationConfigureRegistry,
+  registerFieldValidationConfigure,
+  registerFieldValidationConfigureGroup,
+  type FieldValidationConfigureInput,
+  type FieldValidationConfigureItem,
+} from '../collection-manager/field-validation';
 import type { FieldInterfaceConfigure } from './CollectionFieldInterface';
 import type { ReactNode } from 'react';
 
@@ -166,6 +174,22 @@ export class CollectionFieldInterfaceManager {
     this.normalizeFieldInterfaceFilterables();
   }
 
+  registerFieldValidationConfigure(item: FieldValidationConfigureItem) {
+    registerFieldValidationConfigure(item);
+  }
+
+  registerFieldValidationConfigureGroup(name: string, items: FieldValidationConfigureInput[] = []) {
+    registerFieldValidationConfigureGroup(name, items);
+  }
+
+  addFieldValidationConfiguresToGroup(name: string, items: FieldValidationConfigureInput[] = []) {
+    addFieldValidationConfiguresToGroup(name, items);
+  }
+
+  getFieldValidationConfigureGroup(name: string) {
+    return fieldValidationConfigureRegistry.getGroup(name);
+  }
+
   /**
    * 注册字段接口创建/编辑字段时的配置项。
    *
@@ -258,6 +282,7 @@ export class CollectionFieldInterfaceManager {
       supportDataSourceType: fieldInterface.supportDataSourceType,
       notSupportDataSourceType: fieldInterface.notSupportDataSourceType,
       properties: fieldInterface.getConfigureFormProperties?.(collectionInfo) || fieldInterface.properties || {},
+      items: fieldInterface.configure?.items,
       getConfigureFormProperties: fieldInterface.getConfigureFormProperties?.bind(fieldInterface),
     };
 
@@ -324,6 +349,7 @@ export class CollectionFieldInterfaceManager {
         ...(base.properties || {}),
         ...(override.properties || {}),
       },
+      items: override.items || base.items,
       components: {
         ...(base.components || {}),
         ...(override.components || {}),

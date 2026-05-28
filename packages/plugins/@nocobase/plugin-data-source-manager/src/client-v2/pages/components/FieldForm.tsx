@@ -7,7 +7,16 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { DrawerFormLayout, useCurrentAppInfo } from '@nocobase/client-v2';
+import {
+  DrawerFormLayout,
+  fieldValidationConfigureRegistry,
+  getCoreFieldConfigureState,
+  runCoreFieldConfigureEffects,
+  type FieldConfigureItem,
+  type FieldConfigureRuntimeContext,
+  type FieldValidationConfigureItem,
+  useCurrentAppInfo,
+} from '@nocobase/client-v2';
 import { randomId, useFlowContext } from '@nocobase/flow-engine';
 import { getPickerFormat } from '@nocobase/utils/client';
 import { DeleteOutlined, DownOutlined, MenuOutlined, PlusOutlined } from '@ant-design/icons';
@@ -29,6 +38,7 @@ import {
   Space,
   Table,
   Tag,
+  theme,
   TimePicker,
 } from 'antd';
 import type { MenuProps } from 'antd';
@@ -56,8 +66,12 @@ interface FieldInterfaceManagerWithConfigure {
   getFieldInterfaceConfigure?: (name: string, collectionInfo?: Record<string, any>) => Record<string, any> | undefined;
 }
 
-function getFieldInterfaces(ctx: any, dataSourceType?: string) {
-  return ctx.dataSourceManager.collectionFieldInterfaceManager?.getFieldInterfaces?.(dataSourceType) || [];
+type ConfigureProperty = { name: string; schema: any };
+type FieldInterfaceOption = Record<string, any> & { name: string };
+
+function getFieldInterfaces(ctx: any, dataSourceType?: string): FieldInterfaceOption[] {
+  return (ctx.dataSourceManager.collectionFieldInterfaceManager?.getFieldInterfaces?.(dataSourceType) ||
+    []) as FieldInterfaceOption[];
 }
 
 function getFieldInterfaceManager(ctx: any) {
@@ -65,7 +79,7 @@ function getFieldInterfaceManager(ctx: any) {
 }
 
 function filterFieldInterfacesByTemplate(
-  fieldInterfaces: Array<Record<string, any>>,
+  fieldInterfaces: FieldInterfaceOption[],
   collection: Record<string, any>,
   ctx: any,
   mode: 'create' | 'edit',
@@ -76,7 +90,9 @@ function filterFieldInterfacesByTemplate(
   }
   const plugin = ctx.app.pm.get(PluginDataSourceManagerClientV2);
   const template = plugin?.getCollectionTemplate?.(collection.template || 'general');
-  return filterFieldInterfacesByCollectionTemplate(fieldInterfaces, template, collection, { databaseDialect });
+  return filterFieldInterfacesByCollectionTemplate<FieldInterfaceOption>(fieldInterfaces, template, collection, {
+    databaseDialect,
+  });
 }
 
 function normalizeListResponse(response: any) {
@@ -108,7 +124,6 @@ const optionColorOptions = ['red', 'orange', 'gold', 'green', 'cyan', 'blue', 'p
   }),
 );
 const REQUIRED_RULE_KEY = 'required';
-const defaultValidationRules = [{ key: REQUIRED_RULE_KEY, label: 'Required', hasValue: false, params: [] }];
 type SortableOptionRowProps = React.HTMLAttributes<HTMLTableRowElement> & {
   'data-row-key': string;
 };
@@ -158,126 +173,7 @@ function OptionSortHandle(props: { disabled?: boolean }) {
   );
 }
 
-const fieldValidationOptions: Record<string, Array<Record<string, any>>> = {
-  string: [
-    ...defaultValidationRules,
-    {
-      key: 'max',
-      label: 'Max length',
-      hasValue: true,
-      params: [{ key: 'limit', label: 'Limit', componentType: 'inputNumber', required: true }],
-    },
-    {
-      key: 'min',
-      label: 'Min length',
-      hasValue: true,
-      params: [{ key: 'limit', label: 'Limit', componentType: 'inputNumber', required: true }],
-    },
-    {
-      key: 'pattern',
-      label: 'Pattern',
-      hasValue: true,
-      params: [{ key: 'regex', label: 'Regular Expression', componentType: 'text', required: true }],
-    },
-    { key: 'email', label: 'Email', hasValue: false, params: [], paramsType: 'object' },
-    { key: 'uuid', label: 'UUID', hasValue: false, params: [], paramsType: 'object' },
-    {
-      key: 'length',
-      label: 'Length',
-      hasValue: true,
-      params: [{ key: 'limit', label: 'Limit', componentType: 'inputNumber', required: true }],
-    },
-    { key: 'uri', label: 'URI', hasValue: false, params: [], paramsType: 'object' },
-  ],
-  number: [
-    ...defaultValidationRules,
-    {
-      key: 'greater',
-      label: 'Greater than',
-      hasValue: true,
-      params: [{ key: 'limit', label: 'Limit', componentType: 'inputNumber', required: true }],
-    },
-    {
-      key: 'less',
-      label: 'Less than',
-      hasValue: true,
-      params: [{ key: 'limit', label: 'Limit', componentType: 'inputNumber', required: true }],
-    },
-    {
-      key: 'max',
-      label: 'Max value',
-      hasValue: true,
-      params: [{ key: 'limit', label: 'Limit', componentType: 'inputNumber', required: true }],
-    },
-    {
-      key: 'min',
-      label: 'Min value',
-      hasValue: true,
-      params: [{ key: 'limit', label: 'Limit', componentType: 'inputNumber', required: true }],
-    },
-    {
-      key: 'multiple',
-      label: 'Multiple',
-      hasValue: true,
-      params: [{ key: 'base', label: 'Base', componentType: 'inputNumber', required: true }],
-    },
-    { key: 'integer', label: 'Integer', hasValue: false, params: [] },
-    {
-      key: 'precision',
-      label: 'Precision',
-      hasValue: true,
-      params: [{ key: 'limit', label: 'Limit', componentType: 'inputNumber', required: true }],
-    },
-    { key: 'unsafe', label: 'Unsafe integer', hasValue: false, params: [] },
-  ],
-  date: [
-    ...defaultValidationRules,
-    {
-      key: 'greater',
-      label: 'Greater than',
-      hasValue: true,
-      params: [{ key: 'date', label: 'Date', componentType: 'datePicker', required: true }],
-    },
-    {
-      key: 'less',
-      label: 'Less than',
-      hasValue: true,
-      params: [{ key: 'date', label: 'Date', componentType: 'datePicker', required: true }],
-    },
-    {
-      key: 'max',
-      label: 'Max value',
-      hasValue: true,
-      params: [{ key: 'date', label: 'Date', componentType: 'datePicker', required: true }],
-    },
-    {
-      key: 'min',
-      label: 'Min value',
-      hasValue: true,
-      params: [{ key: 'date', label: 'Date', componentType: 'datePicker', required: true }],
-    },
-    {
-      key: 'timestamp',
-      label: 'Timestamp',
-      hasValue: true,
-      params: [
-        {
-          key: 'type',
-          label: 'Type',
-          componentType: 'singleSelect',
-          options: [
-            { label: 'JavaScript', value: 'javascript' },
-            { label: 'Unix', value: 'unix' },
-          ],
-          defaultValue: 'javascript',
-        },
-      ],
-    },
-  ],
-  object: defaultValidationRules,
-};
-
-function isTruthyExpression(value: unknown, context: Record<string, boolean>) {
+function isTruthyExpression(value: unknown, context: Record<string, unknown>) {
   if (typeof value === 'boolean') {
     return value;
   }
@@ -298,324 +194,6 @@ function isTruthyExpression(value: unknown, context: Record<string, boolean>) {
   };
 
   return expression.split('||').some((orPart) => orPart.split('&&').every((andPart) => evaluateToken(andPart)));
-}
-
-type LegacyReactionState = {
-  componentProps?: Record<string, any>;
-  dataSource?: unknown;
-  description?: React.ReactNode;
-  disabled?: boolean;
-  hidden?: boolean;
-  value?: unknown;
-  hasValue?: boolean;
-};
-
-type LegacyReactionContext = {
-  context: Record<string, boolean>;
-  currentName: string;
-  deps: unknown[];
-  selfValue: unknown;
-  t: (key: string) => string;
-};
-
-function normalizeLegacyReactions(reactions: unknown): Array<Record<string, any>> {
-  if (!reactions) {
-    return [];
-  }
-
-  return (Array.isArray(reactions) ? reactions : [reactions]).filter(
-    (reaction): reaction is Record<string, any> => typeof reaction === 'object' && reaction !== null,
-  );
-}
-
-function getLegacyReactionDependencies(schema: Record<string, any>) {
-  return Array.from(
-    new Set(
-      normalizeLegacyReactions(schema?.['x-reactions'])
-        .flatMap((reaction) => reaction.dependencies || [])
-        .filter((name): name is string => typeof name === 'string'),
-    ),
-  );
-}
-
-function resolveLegacyDependencyValue(dependency: string, currentName: string, values: Record<string, any>) {
-  if (dependency.startsWith('.')) {
-    const parentPath = currentName.split('.').slice(0, -1);
-    return get(values, [...parentPath, dependency.slice(1)]);
-  }
-
-  return get(values, dependency);
-}
-
-function unwrapLegacyExpression(value: string) {
-  return value
-    .replace(/^\s*\{\{\s*/, '')
-    .replace(/\s*\}\}\s*$/, '')
-    .trim();
-}
-
-function parseLegacyLiteral(value: string) {
-  const trimmed = value.trim();
-  if (trimmed === 'true') {
-    return true;
-  }
-  if (trimmed === 'false') {
-    return false;
-  }
-  if (trimmed === 'null') {
-    return null;
-  }
-  if (trimmed === 'undefined') {
-    return undefined;
-  }
-
-  const stringMatch = trimmed.match(/^(['"])([\s\S]*)\1$/);
-  if (stringMatch) {
-    return stringMatch[2];
-  }
-
-  const numberValue = Number(trimmed);
-  return Number.isNaN(numberValue) ? trimmed : numberValue;
-}
-
-function evaluateLegacyBooleanExpression(expression: string, context: LegacyReactionContext): boolean {
-  const trimmed = expression.trim();
-  if (trimmed.includes('&&')) {
-    return trimmed.split('&&').every((item) => evaluateLegacyBooleanExpression(item, context));
-  }
-  if (trimmed.includes('||')) {
-    return trimmed.split('||').some((item) => evaluateLegacyBooleanExpression(item, context));
-  }
-  if (trimmed.startsWith('!!')) {
-    return !!evaluateLegacyExpression(trimmed.slice(2), context);
-  }
-  if (trimmed.startsWith('!')) {
-    return !evaluateLegacyBooleanExpression(trimmed.slice(1), context);
-  }
-
-  return !!evaluateLegacyExpression(trimmed, context);
-}
-
-function evaluateLegacyExpression(source: unknown, context: LegacyReactionContext): unknown {
-  if (typeof source !== 'string') {
-    return source;
-  }
-
-  const expression = unwrapLegacyExpression(source);
-  const depsMatch = expression.match(/^\$deps\[(\d+)\]$/);
-  if (depsMatch) {
-    return context.deps[Number(depsMatch[1])];
-  }
-
-  if (expression === '$self.value') {
-    return context.selfValue;
-  }
-
-  const contextMatch = expression.match(/^!?[a-zA-Z][a-zA-Z0-9_]*$/);
-  if (contextMatch) {
-    const negated = expression.startsWith('!');
-    const key = negated ? expression.slice(1) : expression;
-    return negated ? !context.context[key] : !!context.context[key];
-  }
-
-  const arrayIncludesTernaryMatch = expression.match(
-    /^\[([^\]]+)\]\.includes\(\$deps\[(\d+)\]\)\s*\?\s*(.+?)\s*:\s*(.+)$/,
-  );
-  if (arrayIncludesTernaryMatch) {
-    const values = arrayIncludesTernaryMatch[1]
-      .split(',')
-      .map((item) => parseLegacyLiteral(item))
-      .filter((item) => typeof item === 'string');
-    return values.includes(context.deps[Number(arrayIncludesTernaryMatch[2])] as string)
-      ? parseLegacyLiteral(arrayIncludesTernaryMatch[3])
-      : parseLegacyLiteral(arrayIncludesTernaryMatch[4]);
-  }
-
-  const equalityTernaryMatch = expression.match(/^\$deps\[(\d+)\]\s*(={2,3}|!={1,2})\s*(.+?)\s*\?\s*(.+?)\s*:\s*(.+)$/);
-  if (equalityTernaryMatch) {
-    const left = context.deps[Number(equalityTernaryMatch[1])];
-    const right = parseLegacyLiteral(equalityTernaryMatch[3]);
-    const matched = equalityTernaryMatch[2].startsWith('!') ? left !== right : left === right;
-    return matched ? parseLegacyLiteral(equalityTernaryMatch[4]) : parseLegacyLiteral(equalityTernaryMatch[5]);
-  }
-
-  const equalityMatch = expression.match(/^\$deps\[(\d+)\]\s*(={2,3}|!={1,2})\s*(.+)$/);
-  if (equalityMatch) {
-    const left = context.deps[Number(equalityMatch[1])];
-    const right = parseLegacyLiteral(equalityMatch[3]);
-    return equalityMatch[2].startsWith('!') ? left !== right : left === right;
-  }
-
-  const depTernaryTranslateMatch = expression.match(/^\$deps\[(\d+)\]\s*\?\s*t\((['"])(.*?)\2\)\s*:\s*(.+)$/);
-  if (depTernaryTranslateMatch) {
-    return context.deps[Number(depTernaryTranslateMatch[1])]
-      ? context.t(depTernaryTranslateMatch[3])
-      : parseLegacyLiteral(depTernaryTranslateMatch[4]);
-  }
-
-  const depTernaryMatch = expression.match(/^\$deps\[(\d+)\]\s*\?\s*(.+?)\s*:\s*(.+)$/);
-  if (depTernaryMatch) {
-    return context.deps[Number(depTernaryMatch[1])]
-      ? parseLegacyLiteral(depTernaryMatch[2])
-      : parseLegacyLiteral(depTernaryMatch[3]);
-  }
-
-  const getPickerFormatMatch = expression.match(/^getPickerFormat\(\$deps\[(\d+)\]\)$/);
-  if (getPickerFormatMatch) {
-    return getPickerFormat(context.deps[Number(getPickerFormatMatch[1])] as string);
-  }
-
-  return parseLegacyLiteral(expression);
-}
-
-function evaluateLegacyObjectExpressions(value: unknown, context: LegacyReactionContext): unknown {
-  if (Array.isArray(value)) {
-    return value.map((item) => evaluateLegacyObjectExpressions(item, context));
-  }
-  if (typeof value === 'object' && value !== null) {
-    return Object.fromEntries(
-      Object.entries(value).map(([key, item]) => [key, evaluateLegacyObjectExpressions(item, context)]),
-    );
-  }
-  return evaluateLegacyExpression(value, context);
-}
-
-function mergeLegacyReactionState(
-  state: LegacyReactionState,
-  rawState: Record<string, any> | undefined,
-  rawSchema: Record<string, any> | undefined,
-  context: LegacyReactionContext,
-) {
-  if (!rawState && !rawSchema) {
-    return;
-  }
-
-  if (rawState) {
-    if ('hidden' in rawState) {
-      state.hidden =
-        typeof rawState.hidden === 'string'
-          ? evaluateLegacyBooleanExpression(unwrapLegacyExpression(rawState.hidden), context)
-          : !!evaluateLegacyExpression(rawState.hidden, context);
-    }
-    if ('visible' in rawState) {
-      state.hidden =
-        typeof rawState.visible === 'string'
-          ? !evaluateLegacyBooleanExpression(unwrapLegacyExpression(rawState.visible), context)
-          : !evaluateLegacyExpression(rawState.visible, context);
-    }
-    if ('display' in rawState) {
-      const display = evaluateLegacyExpression(rawState.display, context);
-      state.hidden = display === 'none' || display === 'hidden';
-    }
-    if ('disabled' in rawState) {
-      state.disabled =
-        typeof rawState.disabled === 'string'
-          ? evaluateLegacyBooleanExpression(unwrapLegacyExpression(rawState.disabled), context)
-          : !!evaluateLegacyExpression(rawState.disabled, context);
-    }
-    if ('value' in rawState) {
-      state.value = evaluateLegacyObjectExpressions(rawState.value, context);
-      state.hasValue = true;
-    }
-    if ('componentProps' in rawState) {
-      state.componentProps = {
-        ...(state.componentProps || {}),
-        ...(evaluateLegacyObjectExpressions(rawState.componentProps, context) as Record<string, any>),
-      };
-    }
-    if ('dataSource' in rawState) {
-      state.dataSource = evaluateLegacyObjectExpressions(rawState.dataSource, context);
-    }
-  }
-
-  if (rawSchema?.description !== undefined) {
-    state.description = evaluateLegacyExpression(rawSchema.description, context) as React.ReactNode;
-  }
-}
-
-function evaluateLegacyReactions(options: {
-  context: Record<string, boolean>;
-  currentName: string;
-  formValues: Record<string, any>;
-  schema: Record<string, any>;
-  selfValue: unknown;
-  t: (key: string) => string;
-}): LegacyReactionState {
-  const { context, currentName, formValues, schema, selfValue, t } = options;
-  const reactions = normalizeLegacyReactions(schema?.['x-reactions']);
-  const state: LegacyReactionState = {};
-
-  reactions.forEach((reaction) => {
-    if (reaction.target) {
-      return;
-    }
-
-    const dependencies = (reaction.dependencies || []).filter(
-      (name: unknown): name is string => typeof name === 'string',
-    );
-    const deps = dependencies.map((dependency) => resolveLegacyDependencyValue(dependency, currentName, formValues));
-    const reactionContext: LegacyReactionContext = {
-      context,
-      currentName,
-      deps,
-      selfValue,
-      t,
-    };
-    const matched =
-      reaction.when === undefined ||
-      (typeof reaction.when === 'string'
-        ? evaluateLegacyBooleanExpression(unwrapLegacyExpression(reaction.when), reactionContext)
-        : !!evaluateLegacyExpression(reaction.when, reactionContext));
-    const result = matched ? reaction.fulfill : reaction.otherwise;
-    mergeLegacyReactionState(state, result?.state, result?.schema, reactionContext);
-  });
-
-  if (currentName === 'autoCreateReverseField' && get(formValues, ['reverseField', 'key'])) {
-    state.disabled = true;
-    state.value = true;
-    state.hasValue = true;
-  }
-
-  return state;
-}
-
-function evaluateLegacyTargetReactions(options: {
-  context: Record<string, boolean>;
-  currentName: string;
-  formValues: Record<string, any>;
-  properties: Array<{ name: string; schema: any }>;
-  t: (key: string) => string;
-}) {
-  const state: LegacyReactionState = {};
-
-  options.properties.forEach(({ name, schema }) => {
-    normalizeLegacyReactions(schema?.['x-reactions'])
-      .filter((reaction) => reaction.target === options.currentName)
-      .forEach((reaction) => {
-        const dependencies = (reaction.dependencies || []).filter(
-          (dependency: unknown): dependency is string => typeof dependency === 'string',
-        );
-        const deps = dependencies.map((dependency) =>
-          resolveLegacyDependencyValue(dependency, name, options.formValues),
-        );
-        const reactionContext: LegacyReactionContext = {
-          context: options.context,
-          currentName: name,
-          deps,
-          selfValue: get(options.formValues, toNamePath(name)),
-          t: options.t,
-        };
-        const matched =
-          reaction.when === undefined ||
-          (typeof reaction.when === 'string'
-            ? evaluateLegacyBooleanExpression(unwrapLegacyExpression(reaction.when), reactionContext)
-            : !!evaluateLegacyExpression(reaction.when, reactionContext));
-        const result = matched ? reaction.fulfill : reaction.otherwise;
-        mergeLegacyReactionState(state, result?.state, result?.schema, reactionContext);
-      });
-  });
-
-  return state;
 }
 
 function normalizeSchemaEnum(schemaEnum: unknown, t: (key: string) => string) {
@@ -677,6 +255,46 @@ function applyPropertyDefaults(values: Record<string, any>, properties: Array<{ 
   });
 }
 
+function applyItemDefaults(values: Record<string, any>, items: FieldConfigureItem[]) {
+  items.forEach((item) => {
+    if (get(values, item.name) !== undefined || item.defaultValue === undefined) {
+      return;
+    }
+    set(values, item.name, cloneDeep(item.defaultValue));
+  });
+}
+
+function buildConfigureItemSchema(item: FieldConfigureItem) {
+  return {
+    title: item.title,
+    description: item.description,
+    required: item.required,
+    enum: item.options,
+    default: item.defaultValue,
+    'x-component': item.component,
+    'x-component-props': item.componentProps,
+  };
+}
+
+function createConfigureRuntimeContext(
+  form: ReturnType<typeof Form.useForm>[0],
+  values: Record<string, any>,
+  context: FieldConfigureRuntimeContext,
+  changedName?: string,
+) {
+  return {
+    changedName,
+    context,
+    values,
+    getValue: (name: string) => get(values, name),
+    setValue: (name: string, value: unknown) => {
+      if (get(form.getFieldsValue(true), name) !== value) {
+        form.setFieldValue(toNamePath(name), value);
+      }
+    },
+  };
+}
+
 function toInitialValues(interfaceOptions?: Record<string, any>, field?: Record<string, any>) {
   if (field) {
     return cloneDeep(field);
@@ -695,13 +313,40 @@ function toInitialValues(interfaceOptions?: Record<string, any>, field?: Record<
   return values;
 }
 
+function normalizeFieldNameComparisonText(value: unknown) {
+  return typeof value === 'string' ? value.replace(/[^a-zA-Z0-9_-]/g, '') : '';
+}
+
 function shouldRegenerateUntouchedFieldName(values: Record<string, any>, defaultTitle: string) {
   const fieldName = values?.name;
   if (!fieldName) {
     return true;
   }
   const title = get(values, 'uiSchema.title');
-  return fieldName === title || fieldName === defaultTitle;
+  const normalizedFieldName = normalizeFieldNameComparisonText(fieldName);
+  return (
+    fieldName === title ||
+    fieldName === defaultTitle ||
+    (!!normalizedFieldName &&
+      (normalizedFieldName === normalizeFieldNameComparisonText(title) ||
+        normalizedFieldName === normalizeFieldNameComparisonText(defaultTitle)))
+  );
+}
+
+function buildInitialValuesKey(options: {
+  collectionName?: string;
+  dataSourceKey: string;
+  fieldName?: string;
+  interfaceName?: string;
+  mode: FieldFormProps['mode'];
+}) {
+  return [
+    options.mode,
+    options.dataSourceKey,
+    options.collectionName || '',
+    options.fieldName || '',
+    options.interfaceName || '',
+  ].join(':');
 }
 
 function OptionsEditor(props: { name: Array<string | number>; disabled?: boolean }) {
@@ -989,7 +634,7 @@ function NativeFieldValidation(props: {
   const rules = useMemo(() => value?.rules || [], [value?.rules]);
   const validationType = value?.type || type || 'string';
   const validationOptions = useMemo(() => {
-    const allOptions = [...(fieldValidationOptions[validationType] || [])];
+    const allOptions = fieldValidationConfigureRegistry.getGroup(validationType);
     const filteredOptions = excludeValidationOptions?.length
       ? allOptions.filter((option) => !excludeValidationOptions.includes(option.key))
       : allOptions;
@@ -1006,7 +651,7 @@ function NativeFieldValidation(props: {
     .filter((option) => !usedOptions.has(option.key))
     .map((option) => ({
       key: option.key,
-      label: t(option.label),
+      label: compileLegacyTemplate(option.label, t),
     }));
   const getRuleOption = useCallback(
     (ruleName: string) => validationOptions.find((option) => option.key === ruleName),
@@ -1026,7 +671,7 @@ function NativeFieldValidation(props: {
       items: menuItems,
       onClick({ key }) {
         const option = getRuleOption(String(key));
-        const args = (option?.params || []).reduce((memo: Record<string, any>, param: Record<string, any>) => {
+        const args = (option?.params || []).reduce<Record<string, unknown>>((memo, param) => {
           if (param.defaultValue !== undefined) {
             memo[param.key] = param.defaultValue;
           }
@@ -1052,7 +697,7 @@ function NativeFieldValidation(props: {
     [onChange, rules, validationType],
   );
   const renderParamControl = useCallback(
-    (rule: (typeof rules)[number], param: Record<string, any>) => {
+    (rule: (typeof rules)[number], param: NonNullable<FieldValidationConfigureItem['params']>[number]) => {
       const currentValue = rule.args?.[param.key] ?? param.defaultValue;
       const handleChange = (nextValue: any) => {
         updateRule(rule.key, (currentRule) => ({
@@ -1072,7 +717,10 @@ function NativeFieldValidation(props: {
         return (
           <Radio.Group
             value={currentValue}
-            options={(param.options || []).map((option) => ({ label: t(option.label), value: option.value }))}
+            options={(param.options || []).map((option) => ({
+              label: compileLegacyTemplate(option.label, t),
+              value: option.value,
+            }))}
             onChange={(event) => handleChange(event.target.value)}
           />
         );
@@ -1084,7 +732,10 @@ function NativeFieldValidation(props: {
             allowClear
             mode={param.componentType === 'multipleSelect' ? 'multiple' : undefined}
             value={currentValue}
-            options={(param.options || []).map((option) => ({ label: t(option.label), value: option.value }))}
+            options={(param.options || []).map((option) => ({
+              label: compileLegacyTemplate(option.label, t),
+              value: option.value,
+            }))}
             onChange={handleChange}
           />
         );
@@ -1134,7 +785,7 @@ function NativeFieldValidation(props: {
               >
                 <Space>
                   <DownOutlined />
-                  <span>{t(option?.label || rule.name)}</span>
+                  <span>{compileLegacyTemplate(option?.label || rule.name, t)}</span>
                 </Space>
                 <Button
                   aria-label={t('Delete')}
@@ -1155,7 +806,7 @@ function NativeFieldValidation(props: {
                   {option.params.map((param) => (
                     <Form.Item
                       key={param.key}
-                      label={t(param.label)}
+                      label={compileLegacyTemplate(param.label, t)}
                       required={!!param.required}
                       style={{ marginBottom: 0 }}
                     >
@@ -1185,21 +836,154 @@ function NativeFieldValidation(props: {
   );
 }
 
-function FieldInterfaceSummary(props: { label: React.ReactNode }) {
-  const t = useT();
+function DateTimeFormatPreview(props: { content?: React.ReactNode }) {
+  const { token } = theme.useToken();
+
+  if (!props.content) {
+    return null;
+  }
 
   return (
-    <div
+    <span
       style={{
-        marginBottom: 24,
-        padding: '16px 16px',
-        background: 'var(--ant-color-fill-quaternary)',
+        background: token.colorBgTextHover,
+        borderRadius: token.borderRadiusOuter,
+        display: 'inline-block',
+        lineHeight: 1,
+        marginLeft: token.marginMD,
+        padding: token.paddingXXS,
       }}
     >
-      <Space>
-        <span>{t('Field interface')}:</span>
-        <Tag style={{ marginInlineEnd: 0 }}>{props.label}</Tag>
+      {props.content}
+    </span>
+  );
+}
+
+function DateTimeFormatOption(props: { format: string }) {
+  return (
+    <span style={{ display: 'inline-flex' }}>
+      <span>{props.format}</span>
+      <DateTimeFormatPreview content={dayjs().format(props.format)} />
+    </span>
+  );
+}
+
+function NativeExpiresRadio(props: {
+  defaultValue?: string;
+  disabled?: boolean;
+  formats?: string[];
+  onChange?: (value?: string) => void;
+  options: Array<{ label?: React.ReactNode; value?: string | number | boolean }>;
+  picker?: string;
+  value?: string;
+}) {
+  const formats = useMemo(() => props.formats || [], [props.formats]);
+  const isCustomValue = !!props.value && !formats.includes(props.value);
+  const [targetValue, setTargetValue] = useState(isCustomValue ? props.value : props.defaultValue || formats[0] || '');
+
+  useEffect(() => {
+    const nextIsCustom = !!props.value && !formats.includes(props.value);
+    setTargetValue(nextIsCustom ? props.value : props.defaultValue || formats[0] || '');
+  }, [formats, props.defaultValue, props.value]);
+
+  return (
+    <Radio.Group
+      disabled={props.disabled}
+      value={isCustomValue ? 'custom' : props.value}
+      onChange={(event) => {
+        if (event.target.value === 'custom') {
+          props.onChange?.(targetValue);
+          return;
+        }
+        props.onChange?.(event.target.value);
+      }}
+    >
+      <Space direction="vertical">
+        {props.options.map((option) => {
+          if (option.value === 'custom') {
+            return (
+              <Radio key="custom" value="custom" style={{ display: 'flex', margin: '5px 0' }}>
+                <Input
+                  disabled={props.disabled}
+                  style={{ width: 150 }}
+                  value={targetValue}
+                  onChange={(event) => {
+                    setTargetValue(event.target.value);
+                    if (isCustomValue) {
+                      props.onChange?.(event.target.value);
+                    }
+                  }}
+                />
+                <DateTimeFormatPreview content={targetValue ? dayjs().format(targetValue) : null} />
+              </Radio>
+            );
+          }
+
+          if (props.picker && props.picker !== 'date') {
+            return null;
+          }
+
+          const value = String(option.value);
+          return (
+            <Radio key={value} value={option.value} aria-label={value} style={{ display: 'flex', margin: '5px 0' }}>
+              {React.isValidElement(option.label) ? (
+                option.label
+              ) : (
+                <DateTimeFormatOption format={typeof option.label === 'string' ? option.label : value} />
+              )}
+            </Radio>
+          );
+        })}
       </Space>
+    </Radio.Group>
+  );
+}
+
+function FieldInterfaceSummary(props: {
+  fieldInterface?: Record<string, any>;
+  label: React.ReactNode;
+  fallbackTitle: React.ReactNode;
+}) {
+  const { fallbackTitle, fieldInterface, label } = props;
+  const t = useT();
+  const { token } = theme.useToken();
+  const styles = useMemo(
+    () => ({
+      container: {
+        backgroundColor: token.colorFillAlter,
+        marginBottom: token.marginLG,
+        padding: token.paddingSM + token.paddingXXS,
+      },
+      title: {
+        color: token.colorText,
+      },
+      description: {
+        color: token.colorTextDescription,
+        marginTop: token.marginXS,
+      },
+      tag: {
+        background: 'none',
+      },
+    }),
+    [
+      token.colorFillAlter,
+      token.colorText,
+      token.colorTextDescription,
+      token.marginLG,
+      token.marginXS,
+      token.paddingSM,
+      token.paddingXXS,
+    ],
+  );
+
+  return (
+    <div style={styles.container}>
+      <div style={styles.title}>
+        {label}: <Tag style={styles.tag}>{compileLegacyTemplate(fieldInterface?.title || fallbackTitle, t)}</Tag>
+      </div>
+      {fieldInterface?.description ? (
+        <div style={styles.description}>{compileLegacyTemplate(fieldInterface.description, t)}</div>
+      ) : null}
     </div>
   );
 }
@@ -1226,7 +1010,7 @@ function FieldConfigurePropertyItem(props: {
   name: string;
   schema: any;
   components?: Record<string, React.ComponentType<any>>;
-  context: Record<string, boolean>;
+  context: FieldConfigureRuntimeContext;
   collection: Record<string, any>;
   collections: Array<Record<string, any>>;
   configureProperties: Array<{ name: string; schema: any }>;
@@ -1234,31 +1018,16 @@ function FieldConfigurePropertyItem(props: {
   form: ReturnType<typeof Form.useForm>[0];
 }) {
   const t = useT();
-  const { collection, collections, components, configureProperties, context, form, name, schema } = props;
+  const { collection, collections, components, context, form, name, schema } = props;
   const namePath = toNamePath(name);
   const component = schema?.['x-component'];
   const CustomComponent = component ? components?.[component] : undefined;
   const targetCollectionName = Form.useWatch('target', form);
   const autoCreateReverseField = Form.useWatch('autoCreateReverseField', form);
   const inputable = Form.useWatch('inputable', form);
-  const dataType = Form.useWatch('dataType', form);
-  const showTime = Form.useWatch(['uiSchema', 'x-component-props', 'showTime'], form);
   const uiSchemaEnum = Form.useWatch(['uiSchema', 'enum'], form);
   const formValues = Form.useWatch([], form) || form.getFieldsValue(true);
-  const selfValue = get(formValues, namePath);
-  const reactionDependencies = useMemo(() => getLegacyReactionDependencies(schema), [schema]);
-  const reactionDependencyValues = useMemo(
-    () =>
-      reactionDependencies.map((dependency) =>
-        resolveLegacyDependencyValue(dependency, name, formValues as Record<string, any>),
-      ),
-    [formValues, name, reactionDependencies],
-  );
-  const reactionDependencySignature = useMemo(
-    () => JSON.stringify(reactionDependencyValues),
-    [reactionDependencyValues],
-  );
-  const lastReactionDependencySignatureRef = useRef<string>();
+  const lastRuntimeStateSignatureRef = useRef<string>();
   const dynamicContext = useMemo(
     () => ({
       ...context,
@@ -1267,64 +1036,41 @@ function FieldConfigurePropertyItem(props: {
     }),
     [autoCreateReverseField, context, form, inputable],
   );
-  const reactionState = useMemo(() => {
-    const selfState = evaluateLegacyReactions({
-      context: dynamicContext,
-      currentName: name,
-      formValues: formValues as Record<string, any>,
-      schema,
-      selfValue,
-      t,
-    });
-    const targetState = evaluateLegacyTargetReactions({
-      context: dynamicContext,
-      currentName: name,
-      formValues: formValues as Record<string, any>,
-      properties: configureProperties,
-      t,
-    });
-    return {
-      ...targetState,
-      ...selfState,
-      componentProps: {
-        ...(targetState.componentProps || {}),
-        ...(selfState.componentProps || {}),
-      },
-    };
-  }, [configureProperties, dynamicContext, formValues, name, schema, selfValue, t]);
-  const disabled = reactionState.disabled ?? isTruthyExpression(schema?.['x-disabled'], dynamicContext);
+  const coreState = getCoreFieldConfigureState(name, formValues as Record<string, any>, dynamicContext);
+  const runtimeStateSignature = useMemo(
+    () => JSON.stringify([coreState?.hasValue, coreState?.value]),
+    [coreState?.hasValue, coreState?.value],
+  );
+  const disabled = coreState.disabled ?? isTruthyExpression(schema?.['x-disabled'], dynamicContext);
   const hidden =
-    !!reactionState.hidden ||
+    !!coreState.hidden ||
     isTruthyExpression(schema?.['x-hidden'], dynamicContext) ||
-    (name === 'uiSchema.x-component-props.step' && !['double', 'decimal'].includes(dataType)) ||
-    (['uiSchema.x-component-props.dateFormat', 'uiSchema.x-component-props.showTime'].includes(name) &&
-      dataType !== 'date') ||
-    (name === 'uiSchema.x-component-props.timeFormat' && (dataType !== 'date' || showTime === false)) ||
+    (schema?.['x-visible'] !== undefined && !isTruthyExpression(schema?.['x-visible'], dynamicContext)) ||
     (name.startsWith('reverseField.') && !dynamicContext.showReverseFieldConfig);
   const title = compileLegacyTemplate(schema?.title || schema?.['x-content'] || name, t);
-  const tooltip = compileLegacyTemplate(reactionState.description ?? schema?.description, t);
+  const tooltip = compileLegacyTemplate(schema?.description, t);
   const componentProps = {
     ...(schema?.['x-component-props'] || {}),
-    ...(reactionState.componentProps || {}),
+    ...(coreState.componentProps || {}),
   };
   const currentCollectionFields = collection.fields || [];
   const targetCollection = collections.find((item) => item.name === targetCollectionName);
   const targetCollectionFields = targetCollection?.fields || [];
 
   useEffect(() => {
-    if (!reactionState.hasValue) {
-      lastReactionDependencySignatureRef.current = undefined;
+    if (!coreState.hasValue) {
+      lastRuntimeStateSignatureRef.current = undefined;
       return;
     }
-    if (lastReactionDependencySignatureRef.current === reactionDependencySignature) {
+    if (lastRuntimeStateSignatureRef.current === runtimeStateSignature) {
       return;
     }
-    lastReactionDependencySignatureRef.current = reactionDependencySignature;
-    if (get(form.getFieldsValue(true), namePath) === reactionState.value) {
+    lastRuntimeStateSignatureRef.current = runtimeStateSignature;
+    if (get(form.getFieldsValue(true), namePath) === coreState.value) {
       return;
     }
-    form.setFieldValue(namePath, reactionState.value);
-  }, [form, namePath, reactionDependencySignature, reactionState.hasValue, reactionState.value]);
+    form.setFieldValue(namePath, coreState.value);
+  }, [coreState.hasValue, coreState.value, form, namePath, runtimeStateSignature]);
 
   if (hidden) {
     return null;
@@ -1332,7 +1078,7 @@ function FieldConfigurePropertyItem(props: {
 
   if (name === 'defaultValue') {
     const optionsSource =
-      reactionState.dataSource ||
+      coreState.dataSource ||
       (Array.isArray(uiSchemaEnum) ? uiSchemaEnum : undefined) ||
       schema?.enum ||
       componentProps.options;
@@ -1420,13 +1166,33 @@ function FieldConfigurePropertyItem(props: {
     );
   }
 
+  if (component === 'ExpiresRadio') {
+    const { defaultValue, formats, picker } = componentProps;
+
+    return (
+      <Form.Item
+        name={namePath}
+        label={title}
+        tooltip={tooltip}
+        rules={schema?.required ? [{ required: true }] : undefined}
+      >
+        <NativeExpiresRadio
+          defaultValue={defaultValue}
+          disabled={disabled}
+          formats={formats}
+          options={normalizeSchemaEnum(schema?.enum, t)}
+          picker={picker}
+        />
+      </Form.Item>
+    );
+  }
+
   if (
     component === 'Select' ||
     component === 'CollectionSelect' ||
     component === 'RemoteSelect' ||
     component === 'TargetKey' ||
-    component === 'SourceKey' ||
-    component === 'ExpiresRadio'
+    component === 'SourceKey'
   ) {
     const fieldOptions = targetKeyPropertyNames.has(name)
       ? targetCollectionFields
@@ -1556,6 +1322,94 @@ function FieldConfigurePropertyItem(props: {
   );
 }
 
+function FieldConfigureItemEffect(props: {
+  context: FieldConfigureRuntimeContext;
+  form: ReturnType<typeof Form.useForm>[0];
+  item: FieldConfigureItem;
+}) {
+  const values = Form.useWatch([], props.form) || props.form.getFieldsValue(true);
+  const dependencyValues = useMemo(
+    () => (props.item.dependencies || [props.item.name]).map((name) => get(values, name)),
+    [props.item.dependencies, props.item.name, values],
+  );
+  const signature = useMemo(() => JSON.stringify(dependencyValues), [dependencyValues]);
+  const lastSignatureRef = useRef<string>();
+
+  useEffect(() => {
+    if (!props.item.effect || lastSignatureRef.current === signature) {
+      return;
+    }
+    lastSignatureRef.current = signature;
+    props.item.effect(createConfigureRuntimeContext(props.form, values as Record<string, any>, props.context));
+  }, [props.context, props.form, props.item, signature, values]);
+
+  return null;
+}
+
+function FieldConfigureItemRenderer(props: {
+  collection: Record<string, any>;
+  collections: Array<Record<string, any>>;
+  context: FieldConfigureRuntimeContext;
+  configureProperties: ConfigureProperty[];
+  fieldInterface: Record<string, any>;
+  form: ReturnType<typeof Form.useForm>[0];
+  item: FieldConfigureItem;
+}) {
+  const t = useT();
+  const values = Form.useWatch([], props.form) || props.form.getFieldsValue(true);
+  const runtimeContext = createConfigureRuntimeContext(props.form, values as Record<string, any>, props.context);
+  const hidden = typeof props.item.hidden === 'function' ? props.item.hidden(runtimeContext) : props.item.hidden;
+  const disabled =
+    typeof props.item.disabled === 'function' ? props.item.disabled(runtimeContext) : props.item.disabled;
+  const Component = props.item.Component;
+  const schema = {
+    ...buildConfigureItemSchema(props.item),
+    'x-disabled': disabled,
+  };
+
+  if (hidden) {
+    return <FieldConfigureItemEffect context={props.context} form={props.form} item={props.item} />;
+  }
+
+  if (Component) {
+    return (
+      <>
+        <FieldConfigureItemEffect context={props.context} form={props.form} item={props.item} />
+        <Component
+          name={props.item.name}
+          namePath={toNamePath(props.item.name)}
+          schema={schema}
+          form={props.form}
+          disabled={disabled}
+          collection={props.collection}
+          collections={props.collections}
+          context={props.context}
+          title={compileLegacyTemplate(props.item.title, t)}
+          tooltip={compileLegacyTemplate(props.item.description, t)}
+          componentProps={props.item.componentProps}
+          fieldInterface={props.fieldInterface}
+        />
+      </>
+    );
+  }
+
+  return (
+    <>
+      <FieldConfigureItemEffect context={props.context} form={props.form} item={props.item} />
+      <FieldConfigurePropertyItem
+        name={props.item.name}
+        schema={schema}
+        collection={props.collection}
+        collections={props.collections}
+        configureProperties={props.configureProperties}
+        fieldInterface={props.fieldInterface}
+        form={props.form}
+        context={props.context}
+      />
+    </>
+  );
+}
+
 export function FieldForm(props: FieldFormProps) {
   const t = useT();
   const ctx = useFlowContext();
@@ -1563,6 +1417,8 @@ export function FieldForm(props: FieldFormProps) {
   const fieldInterfaceManager = getFieldInterfaceManager(ctx);
   const [form] = Form.useForm();
   const [submitting, setSubmitting] = useState(false);
+  const generatedFieldNameRef = useRef<string>();
+  const lastInitialValuesKeyRef = useRef<string>();
   const dataSource = ctx.dataSourceManager.getDataSource(props.dataSourceKey);
   const fieldInterfaces = useMemo(
     () =>
@@ -1582,9 +1438,11 @@ export function FieldForm(props: FieldFormProps) {
     () => fieldInterfaces.find((item) => item.name === interfaceName),
     [fieldInterfaces, interfaceName],
   );
-  const configure = interfaceName
-    ? fieldInterfaceManager?.getFieldInterfaceConfigure?.(interfaceName, props.collection)
-    : undefined;
+  const configure = useMemo(
+    () =>
+      interfaceName ? fieldInterfaceManager?.getFieldInterfaceConfigure?.(interfaceName, props.collection) : undefined,
+    [fieldInterfaceManager, interfaceName, props.collection],
+  );
   const fieldInterfaceOptions = useMemo<Record<string, any> | undefined>(
     () =>
       fieldInterface || configure
@@ -1600,14 +1458,15 @@ export function FieldForm(props: FieldFormProps) {
   const fieldInterfaceTitle = compileLegacyTemplate(fieldInterfaceOptions?.title || interfaceName || '-', t);
   const fieldInterfaceTitleText = compileLegacyTemplateText(fieldInterfaceOptions?.title || interfaceName || '-', t);
   const ConfigureForm = configure?.ConfigureForm || configure?.Component;
+  const fieldConfigureItems = useMemo(() => configure?.items || [], [configure?.items]);
   const fieldConfigureProperties = useMemo(() => {
-    if (!interfaceName || ConfigureForm) {
+    if (!interfaceName || ConfigureForm || fieldConfigureItems.length) {
       return [];
     }
     const properties = configure?.properties || fieldInterface?.getConfigureFormProperties?.(props.collection) || {};
 
     return collectLeafProperties(properties).filter(({ name, schema }) => isRenderableConfigureProperty(name, schema));
-  }, [ConfigureForm, configure, fieldInterface, interfaceName, props.collection]);
+  }, [ConfigureForm, configure, fieldConfigureItems.length, fieldInterface, interfaceName, props.collection]);
   const [collections, setCollections] = useState<Array<Record<string, any>>>([]);
   const needsCollectionOptions = useMemo(
     () =>
@@ -1621,6 +1480,16 @@ export function FieldForm(props: FieldFormProps) {
       ),
     [fieldConfigureProperties],
   );
+  const needsCollectionOptionsForItems = useMemo(
+    () =>
+      fieldConfigureItems.some(
+        (item) =>
+          relationCollectionPropertyNames.has(item.name) ||
+          item.component === 'CollectionSelect' ||
+          item.component === 'RemoteSelect',
+      ),
+    [fieldConfigureItems],
+  );
   const rendersStorageType = useMemo(
     () => fieldConfigureProperties.some((property) => property.name === 'type'),
     [fieldConfigureProperties],
@@ -1628,7 +1497,12 @@ export function FieldForm(props: FieldFormProps) {
   const initialValues = useMemo(() => {
     const values = toInitialValues(fieldInterfaceOptions, props.field);
     if (!props.field) {
+      if (!generatedFieldNameRef.current) {
+        generatedFieldNameRef.current = values.name || randomId('f_');
+      }
+      values.name = generatedFieldNameRef.current;
       applyPropertyDefaults(values, fieldConfigureProperties);
+      applyItemDefaults(values, fieldConfigureItems);
       if ((fieldInterface?.isAssociation || configure?.isAssociation) && !get(values, 'source')) {
         set(values, 'source', props.collection.name);
       }
@@ -1637,18 +1511,66 @@ export function FieldForm(props: FieldFormProps) {
   }, [
     configure?.isAssociation,
     fieldConfigureProperties,
+    fieldConfigureItems,
     fieldInterface?.isAssociation,
     fieldInterfaceOptions,
     props.collection.name,
     props.field,
   ]);
+  const initialValuesKey = useMemo(
+    () =>
+      buildInitialValuesKey({
+        mode: props.mode,
+        dataSourceKey: props.dataSourceKey,
+        collectionName: props.collection.name,
+        fieldName: props.field?.name,
+        interfaceName,
+      }),
+    [interfaceName, props.collection.name, props.dataSourceKey, props.field?.name, props.mode],
+  );
+  const fieldConfigureContext = useMemo<FieldConfigureRuntimeContext>(
+    () => ({
+      createOnly: props.mode === 'create',
+      editMainOnly: props.mode === 'edit',
+      createMainOnly: props.mode === 'create' && props.dataSourceKey === 'main',
+      disabledJSONB: props.mode === 'edit',
+      primaryKeyOnly: false,
+    }),
+    [props.dataSourceKey, props.mode],
+  );
 
   useEffect(() => {
+    if (lastInitialValuesKeyRef.current === initialValuesKey) {
+      return;
+    }
+    lastInitialValuesKeyRef.current = initialValuesKey;
+    form.resetFields();
     form.setFieldsValue(initialValues);
-  }, [form, initialValues]);
+  }, [form, initialValues, initialValuesKey]);
+
+  const watchedValues = Form.useWatch([], form) || form.getFieldsValue(true);
+  const watchedValuesSignature = useMemo(() => JSON.stringify(watchedValues), [watchedValues]);
+  const previousWatchedValuesRef = useRef<Record<string, any>>();
 
   useEffect(() => {
-    if (!needsCollectionOptions) {
+    const previousValues = previousWatchedValuesRef.current || {};
+    const changedName = [
+      'primaryKey',
+      'unique',
+      'autoIncrement',
+      'autoCreateReverseField',
+      'defaultToCurrentTime',
+      'uiSchema.x-component-props.picker',
+      'uiSchema.x-component-props.showTime',
+    ].find((name) => get(previousValues, name) !== get(watchedValues, name));
+    previousWatchedValuesRef.current = cloneDeep(watchedValues as Record<string, any>);
+    runCoreFieldConfigureEffects(
+      createConfigureRuntimeContext(form, watchedValues as Record<string, any>, fieldConfigureContext, changedName),
+    );
+  }, [fieldConfigureContext, form, watchedValues, watchedValuesSignature]);
+
+  useEffect(() => {
+    if (!needsCollectionOptions && !needsCollectionOptionsForItems) {
       return undefined;
     }
 
@@ -1675,7 +1597,7 @@ export function FieldForm(props: FieldFormProps) {
     return () => {
       ignore = true;
     };
-  }, [ctx.api, needsCollectionOptions, props.dataSourceKey]);
+  }, [ctx.api, needsCollectionOptions, needsCollectionOptionsForItems, props.dataSourceKey]);
 
   useEffect(() => {
     if (!interfaceName && props.interfaceName) {
@@ -1706,17 +1628,33 @@ export function FieldForm(props: FieldFormProps) {
               ({ name, schema }) => isRenderableConfigureProperty(name, schema),
             );
       applyPropertyDefaults(nextValues, nextProperties);
+      applyItemDefaults(nextValues, nextConfigure?.items || []);
       if ((nextFieldInterface?.isAssociation || nextConfigure?.isAssociation) && !get(nextValues, 'source')) {
         set(nextValues, 'source', props.collection.name);
       }
       if (currentTitle) {
         set(nextValues, 'uiSchema.title', currentTitle);
       }
+      const currentName = form.getFieldValue('name');
+      if (form.isFieldTouched('name') && currentName) {
+        set(nextValues, 'name', currentName);
+      } else {
+        if (!generatedFieldNameRef.current) {
+          generatedFieldNameRef.current = nextValues.name || randomId('f_');
+        }
+        set(nextValues, 'name', generatedFieldNameRef.current);
+      }
+      lastInitialValuesKeyRef.current = buildInitialValuesKey({
+        mode: props.mode,
+        dataSourceKey: props.dataSourceKey,
+        collectionName: props.collection.name,
+        interfaceName: nextInterface,
+      });
       setInterfaceName(nextInterface);
       form.resetFields();
       form.setFieldsValue(nextValues);
     },
-    [fieldInterfaceManager, fieldInterfaces, form, props.collection],
+    [fieldInterfaceManager, fieldInterfaces, form, props.collection, props.dataSourceKey, props.mode],
   );
 
   const normalizeValues = useCallback(
@@ -1756,7 +1694,10 @@ export function FieldForm(props: FieldFormProps) {
       !form.isFieldTouched('name') &&
       shouldRegenerateUntouchedFieldName(currentValues, fieldInterfaceTitleText)
     ) {
-      form.setFieldValue('name', randomId('f_'));
+      if (!generatedFieldNameRef.current) {
+        generatedFieldNameRef.current = randomId('f_');
+      }
+      form.setFieldValue('name', generatedFieldNameRef.current);
     }
     const formValues = await form.validateFields();
     await configure?.validate?.(formValues, {
@@ -1812,8 +1753,12 @@ export function FieldForm(props: FieldFormProps) {
       submitText={t('Submit')}
       cancelText={t('Cancel')}
     >
-      <Form form={form} layout="vertical" initialValues={initialValues}>
-        <FieldInterfaceSummary label={fieldInterfaceTitle} />
+      <Form form={form} layout="vertical" initialValues={initialValues} autoComplete="off">
+        <FieldInterfaceSummary
+          fieldInterface={fieldInterfaceOptions}
+          label={t('Field interface')}
+          fallbackTitle={fieldInterfaceTitle}
+        />
         {!props.interfaceName && props.mode === 'create' ? (
           <Form.Item name="interface" label={t('Field interface')} rules={[{ required: true }]}>
             <Select
@@ -1830,7 +1775,7 @@ export function FieldForm(props: FieldFormProps) {
           </Form.Item>
         )}
         <Form.Item name={['uiSchema', 'title']} label={t('Field display name')} rules={[{ required: true }]}>
-          <Input />
+          <Input autoComplete="off" />
         </Form.Item>
         <Form.Item
           name="name"
@@ -1849,7 +1794,7 @@ export function FieldForm(props: FieldFormProps) {
           ]}
           extra={t(fieldNameDescription)}
         >
-          <Input disabled={props.mode === 'edit'} />
+          <Input autoComplete="off" disabled={props.mode === 'edit'} />
         </Form.Item>
         {fieldConfigureProperties.map(({ name, schema }) => (
           <FieldConfigurePropertyItem
@@ -1862,13 +1807,19 @@ export function FieldForm(props: FieldFormProps) {
             configureProperties={fieldConfigureProperties}
             fieldInterface={fieldInterfaceOptions}
             form={form}
-            context={{
-              createOnly: props.mode === 'create',
-              editMainOnly: props.mode === 'edit',
-              createMainOnly: props.mode === 'create' && props.dataSourceKey === 'main',
-              disabledJSONB: props.mode === 'edit',
-              primaryKeyOnly: false,
-            }}
+            context={fieldConfigureContext}
+          />
+        ))}
+        {fieldConfigureItems.map((item) => (
+          <FieldConfigureItemRenderer
+            key={item.name}
+            item={item}
+            collection={props.collection}
+            collections={collections}
+            configureProperties={fieldConfigureProperties}
+            fieldInterface={fieldInterfaceOptions}
+            form={form}
+            context={fieldConfigureContext}
           />
         ))}
         {rendersStorageType ? null : (

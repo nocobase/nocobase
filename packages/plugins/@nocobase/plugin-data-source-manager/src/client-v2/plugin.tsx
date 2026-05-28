@@ -11,6 +11,13 @@ import { Application, Plugin, type CollectionTemplateField } from '@nocobase/cli
 import React, { ComponentType } from 'react';
 import { FieldInterfaceConfigureOptions } from './field-interfaces';
 import { NAMESPACE } from './locale';
+import {
+  normalizeSqlCollectionSubmitValues,
+  SqlFieldsConfigureItem,
+  SqlPreviewConfigureItem,
+  SqlSourceCollectionsConfigureItem,
+  SqlStatementConfigureItem,
+} from './pages/components/SqlCollectionConfigure';
 import { syncDataSourcesToRuntime } from './runtime';
 
 export interface DataSourceSettingsFormProps {
@@ -507,6 +514,29 @@ export class PluginDataSourceManagerClientV2 extends Plugin<any, Application> {
       },
       capabilities: {
         recordUniqueKey: true,
+      },
+      configure: {
+        items: [
+          {
+            name: 'sql',
+            Component: SqlStatementConfigureItem,
+            required: true,
+          },
+          {
+            name: 'sources',
+            Component: SqlSourceCollectionsConfigureItem,
+          },
+          {
+            name: 'fields',
+            Component: SqlFieldsConfigureItem,
+            required: true,
+          },
+          {
+            name: 'preview',
+            Component: SqlPreviewConfigureItem,
+          },
+        ],
+        transformSubmitValues: normalizeSqlCollectionSubmitValues,
       },
     });
 

@@ -18,6 +18,7 @@ import {
   type FieldFilterable,
   type FieldFilterOperator,
 } from '../collection-manager/filter-operators';
+import type { FieldConfigureItem } from '../collection-manager/field-configure';
 import { defaultProps } from '../collection-manager/interfaces/properties';
 import { CollectionFieldInterfaceManager } from './CollectionFieldInterfaceManager';
 export type CollectionFieldInterfaceFactory = new (
@@ -69,6 +70,7 @@ export interface FieldInterfaceConfigure {
   supportDataSourceType?: string[];
   notSupportDataSourceType?: string[];
   properties?: Record<string, any>;
+  items?: FieldConfigureItem[];
   getConfigureFormProperties?: (collectionInfo?: Record<string, any>) => Record<string, any>;
   components?: Record<string, ComponentType<FieldConfigurePropertyComponentProps>>;
   initialize?: (values: Record<string, any>, context?: FieldConfigureContext) => void;
@@ -112,7 +114,6 @@ export abstract class CollectionFieldInterface {
    */
   filterable?: FieldFilterable;
   titleUsable?: boolean;
-  validateSchema?(fieldSchema: ISchema): Record<string, ISchema>;
   usePathOptions?(field: any): any;
   hidden?: boolean;
 
@@ -175,62 +176,6 @@ export abstract class CollectionFieldInterface {
         required: false,
         title: '{{ t("Default value") }}',
         'x-decorator': 'FormItem',
-        'x-reactions': [
-          {
-            dependencies: [
-              'uiSchema.x-component-props.gmt',
-              'uiSchema.x-component-props.showTime',
-              'uiSchema.x-component-props.dateFormat',
-              'uiSchema.x-component-props.timeFormat',
-              'uiSchema.x-component-props.picker',
-              'uiSchema.x-component-props.format',
-            ],
-            fulfill: {
-              state: {
-                componentProps: {
-                  gmt: '{{$deps[0]}}',
-                  showTime: '{{$deps[1]}}',
-                  dateFormat: '{{$deps[2]}}',
-                  timeFormat: '{{$deps[3]}}',
-                  picker: '{{$deps[4]}}',
-                  format: '{{$deps[5]}}',
-                },
-              },
-            },
-          },
-          {
-            // 当 picker 改变时，清空 defaultValue
-            dependencies: ['uiSchema.x-component-props.picker'],
-            fulfill: {
-              state: {
-                value: null,
-              },
-            },
-          },
-          {
-            dependencies: ['primaryKey', 'unique', 'autoIncrement', 'defaultToCurrentTime'],
-            when: '{{$deps[0]||$deps[1]||$deps[2]||$deps[3]}}',
-            fulfill: {
-              state: {
-                hidden: true,
-                value: null,
-              },
-            },
-            otherwise: {
-              state: {
-                hidden: false,
-              },
-            },
-          },
-          {
-            dependencies: ['uiSchema.enum'],
-            fulfill: {
-              state: {
-                dataSource: '{{$deps[0]}}',
-              },
-            },
-          },
-        ],
       },
     };
   }

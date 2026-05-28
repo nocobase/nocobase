@@ -31,6 +31,8 @@ export { default as languageCodes } from './locale/languageCodes';
 export * from './nocobase-buildin-plugin';
 export * from './collection-field-interface/CollectionFieldInterface';
 export * from './collection-field-interface/CollectionFieldInterfaceManager';
+export * from './collection-manager/field-configure';
+export * from './collection-manager/field-validation';
 export * from './collection-manager/filter-operators';
 export * from './collection-manager/interfaces';
 export * from './collection-manager/template-fields';

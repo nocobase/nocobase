@@ -411,7 +411,7 @@ function getPresetFieldName(field: CollectionPresetFieldOptions) {
 function getPresetFieldRows(
   presetFields: CollectionPresetFieldOptions[],
   fieldInterfaceManager?: { getFieldInterface?: (name: string) => { title?: React.ReactNode } | undefined },
-) {
+): PresetFieldRow[] {
   return presetFields.map((field) => {
     const fieldInterface = field.value.interface
       ? fieldInterfaceManager?.getFieldInterface?.(field.value.interface)
@@ -689,8 +689,13 @@ function CollectionCreateDrawer(props: {
   const [form] = Form.useForm<CollectionFormValues>();
   const collectionPresetFields = useMemo(() => plugin.getCollectionPresetFields(), [plugin]);
   const [submitting, setSubmitting] = useState(false);
+  const isSqlTemplate = template.name === 'sql';
   const [selectedPresetFields, setSelectedPresetFields] = useState<React.Key[]>(() =>
-    collectionPresetFields.filter((field) => field.defaultSelected !== false).map((field) => getPresetFieldName(field)),
+    isSqlTemplate
+      ? []
+      : collectionPresetFields
+          .filter((field) => field.defaultSelected !== false)
+          .map((field) => getPresetFieldName(field)),
   );
   const collectionRequest = useRequest(async () => {
     const response = await ctx.api.request({
@@ -748,6 +753,23 @@ function CollectionCreateDrawer(props: {
     [t],
   );
   const TemplateConfigureForm = template.configure?.Form || template.ConfigureForm;
+  const collectionCategoryFormItem = (
+    <Form.Item name="category" label={t('Categories')}>
+      <Select
+        mode="multiple"
+        options={categories.map((category) => ({
+          value: String(category.id),
+          label: compileLegacyTemplate(category.name || category.id, t),
+        }))}
+        allowClear
+      />
+    </Form.Item>
+  );
+  const collectionDescriptionFormItem = (
+    <Form.Item name="description" label={t('Description')}>
+      <Input.TextArea autoSize={{ minRows: 3, maxRows: 8 }} />
+    </Form.Item>
+  );
 
   const handleSubmit = useCallback(async () => {
     const values = await form.validateFields();
@@ -803,52 +825,57 @@ function CollectionCreateDrawer(props: {
         >
           <Input />
         </Form.Item>
-        <Form.Item name="inherits" label={t('Inherits')}>
-          <Select mode="multiple" options={collectionOptions} loading={collectionRequest.loading} allowClear />
-        </Form.Item>
-        <Form.Item name="category" label={t('Categories')}>
-          <Select
-            mode="multiple"
-            options={categories.map((category) => ({
-              value: String(category.id),
-              label: compileLegacyTemplate(category.name || category.id, t),
-            }))}
-            allowClear
-          />
-        </Form.Item>
-        <Form.Item name="description" label={t('Description')}>
-          <Input.TextArea autoSize={{ minRows: 3, maxRows: 8 }} />
-        </Form.Item>
-        <Form.Item
-          name="simplePaginate"
-          valuePropName="checked"
-          extra={t(
-            'Skip getting the total number of table records during paging to speed up loading. It is recommended to enable this option for data tables with a large amount of data',
-          )}
-        >
-          <Checkbox>{t('Use simple pagination mode')}</Checkbox>
-        </Form.Item>
-        {TemplateConfigureForm ? <TemplateConfigureForm mode="create" template={template} form={form} /> : null}
-        <CollectionTemplateConfigureItems mode="create" template={template} form={form} />
-        {hasTemplateCapability(template, 'recordUniqueKey') ? <CollectionCreateFilterTargetKey form={form} /> : null}
-        <Form.Item label={t('Preset fields')}>
-          <Table
-            size="small"
-            rowKey="name"
-            bordered
-            pagination={false}
-            dataSource={presetFieldRows}
-            columns={presetColumns}
-            rowSelection={{
-              type: 'checkbox',
-              selectedRowKeys: selectedPresetFields,
-              getCheckboxProps: (record) => ({
-                disabled: getTemplatePresetFieldsDisabled(template) || disabledPresetFields.has(record.name),
-              }),
-              onChange: (keys) => setSelectedPresetFields(keys),
-            }}
-          />
-        </Form.Item>
+        {isSqlTemplate ? (
+          <>
+            {TemplateConfigureForm ? <TemplateConfigureForm mode="create" template={template} form={form} /> : null}
+            <CollectionTemplateConfigureItems mode="create" template={template} form={form} />
+            {hasTemplateCapability(template, 'recordUniqueKey') ? (
+              <CollectionCreateFilterTargetKey form={form} />
+            ) : null}
+            {collectionCategoryFormItem}
+            {collectionDescriptionFormItem}
+          </>
+        ) : (
+          <>
+            <Form.Item name="inherits" label={t('Inherits')}>
+              <Select mode="multiple" options={collectionOptions} loading={collectionRequest.loading} allowClear />
+            </Form.Item>
+            {collectionCategoryFormItem}
+            {collectionDescriptionFormItem}
+            <Form.Item
+              name="simplePaginate"
+              valuePropName="checked"
+              extra={t(
+                'Skip getting the total number of table records during paging to speed up loading. It is recommended to enable this option for data tables with a large amount of data',
+              )}
+            >
+              <Checkbox>{t('Use simple pagination mode')}</Checkbox>
+            </Form.Item>
+            {TemplateConfigureForm ? <TemplateConfigureForm mode="create" template={template} form={form} /> : null}
+            <CollectionTemplateConfigureItems mode="create" template={template} form={form} />
+            {hasTemplateCapability(template, 'recordUniqueKey') ? (
+              <CollectionCreateFilterTargetKey form={form} />
+            ) : null}
+            <Form.Item label={t('Preset fields')}>
+              <Table
+                size="small"
+                rowKey="name"
+                bordered
+                pagination={false}
+                dataSource={presetFieldRows}
+                columns={presetColumns}
+                rowSelection={{
+                  type: 'checkbox',
+                  selectedRowKeys: selectedPresetFields,
+                  getCheckboxProps: (record) => ({
+                    disabled: getTemplatePresetFieldsDisabled(template) || disabledPresetFields.has(record.name),
+                  }),
+                  onChange: (keys) => setSelectedPresetFields(keys),
+                }}
+              />
+            </Form.Item>
+          </>
+        )}
       </Form>
     </DrawerFormLayout>
   );
@@ -934,6 +961,9 @@ function CollectionEditDrawer(props: {
       description: collection.description,
       simplePaginate: collection.simplePaginate,
       filterTargetKey: getCollectionFilterTargetKey(collection),
+      sql: collection.sql,
+      sources: collection.sources,
+      fields: collection.fields,
     }),
     [collection],
   );
@@ -941,11 +971,16 @@ function CollectionEditDrawer(props: {
   const handleSubmit = useCallback(async () => {
     const values = await form.validateFields();
     let submitValues = { ...values };
-    delete submitValues.name;
+    if (collection.template === 'sql') {
+      submitValues.name = collection.name;
+      submitValues.key = collection.key;
+    } else {
+      delete submitValues.name;
+    }
     submitValues = template?.configure?.transformSubmitValues?.(submitValues) || submitValues;
     setSubmitting(true);
     try {
-      await ctx.api.resource('collections').update({
+      await ctx.api.resource(collection.template === 'sql' ? 'sqlCollection' : 'collections').update({
         filterByTk: collection.name,
         values: submitValues,
       });
@@ -954,7 +989,16 @@ function CollectionEditDrawer(props: {
     } finally {
       setSubmitting(false);
     }
-  }, [collection.name, ctx.api, ctx.dataSourceManager, form, onSubmitted, template]);
+  }, [
+    collection.key,
+    collection.name,
+    collection.template,
+    ctx.api,
+    ctx.dataSourceManager,
+    form,
+    onSubmitted,
+    template,
+  ]);
 
   const TemplateConfigureForm = template?.configure?.Form || template?.ConfigureForm;
 

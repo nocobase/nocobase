@@ -53,13 +53,7 @@ export class MarkdownVditorFieldInterface extends CollectionFieldInterface {
         enum: '{{fileCollections}}',
         'x-decorator': 'FormItem',
         default: 'attachments',
-        'x-reactions': {
-          fulfill: {
-            schema: {
-              description: tExpr('Used to store files uploaded in the Markdown editor (default: attachments)'),
-            },
-          },
-        },
+        description: tExpr('Used to store files uploaded in the Markdown editor (default: attachments)'),
       },
       'uiSchema.x-component-props.toolbar': {
         type: 'array',

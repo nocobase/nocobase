@@ -72,7 +72,6 @@ export class LinkToFieldInterface extends CollectionFieldInterface {
       type: 'string',
       title: '{{t("Related collection")}}',
       required: true,
-      'x-reactions': ['{{useAsyncDataSource(loadCollections)}}'],
       'x-decorator': 'FormItem',
       'x-component': 'Select',
       'x-disabled': '{{ !createOnly }}',

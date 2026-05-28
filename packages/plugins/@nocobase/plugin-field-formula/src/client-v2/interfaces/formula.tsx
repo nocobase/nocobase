@@ -7,9 +7,17 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { CollectionFieldInterface, createTypedFilterable, resolveFilterOperators } from '@nocobase/client-v2';
+import {
+  CollectionFieldInterface,
+  createTypedFilterable,
+  dateTimeFormatConfigureItems,
+  type FieldConfigureEffectContext,
+  type FieldInterfaceConfigure,
+  resolveFilterOperators,
+} from '@nocobase/client-v2';
 import { Evaluator, evaluators } from '@nocobase/evaluators/client';
 import { Registry } from '@nocobase/utils/client';
+import type { ReactNode } from 'react';
 import { FormulaExpressionConfigureField } from '../components/FormulaExpressionConfigureField';
 import { tExpr } from '../locale';
 
@@ -24,28 +32,6 @@ type FormulaFilterMeta = {
   };
 };
 
-const numberReactions = [
-  {
-    dependencies: ['dataType'],
-    fulfill: {
-      state: {
-        display: '{{["double", "decimal"].includes($deps[0]) ? "visible" : "none"}}',
-      },
-    },
-  },
-];
-
-const datetimeReactions = [
-  {
-    dependencies: ['dataType'],
-    fulfill: {
-      state: {
-        display: '{{$deps[0] === "date" ? "visible" : "none"}}',
-      },
-    },
-  },
-];
-
 const resolveFormulaDataType = (meta?: FormulaFilterMeta) => {
   return meta?.options?.dataType || meta?.dataType || meta?.type || meta?.uiSchema?.type || 'double';
 };
@@ -54,49 +40,15 @@ export const formulaDateOperators = resolveFilterOperators('datetime').filter(
   (operator) => !['$dateNotBefore', '$dateNotAfter'].includes(operator.value),
 );
 
-const dateTimeProperties = {
-  'uiSchema.x-component-props.dateFormat': {
-    type: 'string',
-    title: '{{t("Date format")}}',
-    'x-decorator': 'FormItem',
-    'x-component': 'Select',
-    enum: [
-      { label: 'YYYY-MM-DD', value: 'YYYY-MM-DD' },
-      { label: 'YYYY/MM/DD', value: 'YYYY/MM/DD' },
-      { label: 'MM/DD/YY', value: 'MM/DD/YY' },
-      { label: 'DD/MM/YYYY', value: 'DD/MM/YYYY' },
-      { label: '{{t("Custom")}}', value: 'custom' },
-    ],
-    default: 'YYYY-MM-DD',
-    'x-reactions': datetimeReactions,
-  },
-  'uiSchema.x-component-props.showTime': {
-    type: 'boolean',
-    'x-decorator': 'FormItem',
-    'x-component': 'Checkbox',
-    'x-content': '{{t("Show time")}}',
-    default: true,
-    'x-reactions': datetimeReactions,
-  },
-  'uiSchema.x-component-props.timeFormat': {
-    type: 'string',
-    title: '{{t("Time format")}}',
-    'x-component': 'Radio.Group',
-    'x-decorator': 'FormItem',
-    default: 'HH:mm:ss',
-    enum: [
-      { label: '{{t("12 hour")}}', value: 'hh:mm:ss a' },
-      { label: '{{t("24 hour")}}', value: 'HH:mm:ss' },
-    ],
-    'x-reactions': [
-      ...datetimeReactions,
-      {
-        dependencies: ['uiSchema.x-component-props.showTime'],
-        fulfill: { state: { hidden: '{{ !$deps[0] }}' } },
-      },
-    ],
-  },
-};
+const isDateFormula = ({ getValue }: FieldConfigureEffectContext) => getValue('dataType') === 'date';
+const isNumberFormula = ({ getValue }: FieldConfigureEffectContext) =>
+  ['double', 'decimal'].includes(String(getValue('dataType')));
+
+function getEvaluatorOptions() {
+  return Array.from((evaluators as Registry<Evaluator>).getEntities()).reduce<
+    Array<{ label: ReactNode; value: string }>
+  >((result, [value, options]) => result.concat({ value: String(value), label: options.label }), []);
+}
 
 export class FormulaFieldInterface extends CollectionFieldInterface {
   name = 'formula';
@@ -121,18 +73,14 @@ export class FormulaFieldInterface extends CollectionFieldInterface {
       },
     },
   };
-  configure = {
-    components: {
-      FormulaExpression: FormulaExpressionConfigureField,
-    },
-    properties: {
-      dataType: {
-        type: 'string',
+  configure: FieldInterfaceConfigure = {
+    items: [
+      {
+        name: 'dataType',
         title: '{{t("Storage type")}}',
-        'x-decorator': 'FormItem',
-        'x-component': 'Select',
-        'x-disabled': '{{ !createOnly }}',
-        enum: [
+        component: 'Select',
+        disabled: ({ context }) => !context.createOnly,
+        options: [
           { value: 'boolean', label: 'Boolean' },
           { value: 'integer', label: 'Integer' },
           { value: 'bigInt', label: 'Big integer' },
@@ -141,16 +89,15 @@ export class FormulaFieldInterface extends CollectionFieldInterface {
           { value: 'date', label: 'Datetime' },
         ],
         required: true,
-        default: 'double',
+        defaultValue: 'double',
       },
-      'uiSchema.x-component-props.step': {
-        type: 'string',
+      {
+        name: 'uiSchema.x-component-props.step',
         title: '{{t("Precision")}}',
-        'x-component': 'Select',
-        'x-decorator': 'FormItem',
+        component: 'Select',
         required: true,
-        default: '0',
-        enum: [
+        defaultValue: '0',
+        options: [
           { value: '0', label: '1' },
           { value: '0.1', label: '1.0' },
           { value: '0.01', label: '1.00' },
@@ -158,40 +105,32 @@ export class FormulaFieldInterface extends CollectionFieldInterface {
           { value: '0.0001', label: '1.0000' },
           { value: '0.00001', label: '1.00000' },
         ],
-        'x-reactions': numberReactions,
+        hidden: (context) => !isNumberFormula(context),
       },
-      ...dateTimeProperties,
-      engine: {
-        type: 'string',
+      ...dateTimeFormatConfigureItems({
+        includePicker: false,
+        showTimeDefault: true,
+        hidden: (context) => !isDateFormula(context),
+      }),
+      {
+        name: 'engine',
         title: tExpr('Calculation engine'),
-        'x-decorator': 'FormItem',
-        'x-component': 'Radio.Group',
-        enum: Array.from((evaluators as Registry<Evaluator>).getEntities()).reduce(
-          (result: any[], [value, options]) => result.concat({ value, ...options }),
-          [],
-        ),
+        component: 'Radio.Group',
+        options: getEvaluatorOptions(),
         required: true,
-        default: 'formula.js',
+        defaultValue: 'formula.js',
       },
-      expression: {
-        type: 'string',
+      {
+        name: 'expression',
         title: tExpr('Expression'),
         required: true,
-        'x-component': 'FormulaExpression',
-        'x-decorator': 'FormItem',
-        'x-component-props': {
+        Component: FormulaExpressionConfigureField,
+        componentProps: {
           useCurrentFields: '{{ useCurrentFields }}',
         },
-        'x-reactions': {
-          dependencies: ['engine'],
-          fulfill: {
-            schema: {
-              description: '{{ $deps[0] ? t("Syntax references") : "" }}',
-            },
-          },
-        },
+        description: tExpr('Syntax references'),
       },
-    },
+    ],
   };
   filterable = createTypedFilterable(
     [

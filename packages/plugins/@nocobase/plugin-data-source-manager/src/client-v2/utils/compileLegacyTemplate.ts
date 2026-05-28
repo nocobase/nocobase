@@ -12,16 +12,18 @@ import type { ReactNode } from 'react';
 type TFunction = (key: string) => string;
 
 const LEGACY_T_TEMPLATE = /^\s*\{\{\s*t\s*\(\s*(['"])(.*?)\1(?:\s*,[\s\S]*?)?\)\s*\}\}\s*$/;
+const LEGACY_T_TEMPLATE_FRAGMENT = /\{\{\s*t\s*\(\s*(['"])(.*?)\1(?:\s*,[\s\S]*?)?\)\s*\}\}/g;
 
 export function compileLegacyTemplate(value: ReactNode, t: TFunction): ReactNode {
   if (typeof value !== 'string') {
     return value;
   }
   const match = value.match(LEGACY_T_TEMPLATE);
-  if (!match?.[2]) {
-    return value;
+  if (match?.[2]) {
+    return t(match[2]);
   }
-  return t(match[2]);
+
+  return value.replace(LEGACY_T_TEMPLATE_FRAGMENT, (_source, _quote, key) => t(key));
 }
 
 export function compileLegacyTemplateText(value: ReactNode, t: TFunction, fallback = '-'): string {
