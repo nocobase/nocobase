@@ -37,7 +37,7 @@ export function ChannelConfigForm() {
             <EnvVariableInput placeholder="smtp.example.com" />
           </Form.Item>
         </Col>
-        <Col span={6}>
+        <Col span={4}>
           <Form.Item
             label={t('Port')}
             name={['options', 'port']}
@@ -47,7 +47,7 @@ export function ChannelConfigForm() {
             <InputNumber min={1} max={65535} step={1} style={{ width: '100%' }} />
           </Form.Item>
         </Col>
-        <Col span={6}>
+        <Col span={8}>
           <Form.Item
             label={t('Secure')}
             name={['options', 'secure']}
