@@ -164,6 +164,25 @@ describe('AdminLayoutRouteCoordinator', () => {
     expect(dispatchEvent.mock.calls[0][1].target).toBe(layoutContentElement);
   });
 
+  it('replaces stale non-route model before registering route page', () => {
+    const engine = new FlowEngine();
+    engine.registerModels({ RouteModel });
+    const staleModel = engine.createModel({
+      uid: 'test-route',
+      use: 'FlowModel',
+    });
+    const coordinator = new BaseLayoutRouteCoordinator(engine, { basePathname: '/admin' });
+
+    const routeModel = coordinator.registerPage('test-route', {
+      active: true,
+      layoutContentElement: document.createElement('div'),
+    });
+
+    expect(routeModel).toBeInstanceOf(RouteModel);
+    expect(engine.getModel('test-route')).toBe(routeModel);
+    expect(engine.getModel('test-route')).not.toBe(staleModel);
+  });
+
   it('parses view stack with custom layout prefix', () => {
     const engine = new FlowEngine();
     engine.registerModels({ RouteModel });

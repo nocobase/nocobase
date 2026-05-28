@@ -214,4 +214,31 @@ describe('PublicFormLayoutModel public form repository binding', () => {
 
     (model as any).onUnmount();
   });
+
+  it('applies public form collections to layout context without mutating the global data source manager', () => {
+    const flowEngine = new FlowEngine();
+    const globalDataSourceManager = flowEngine.context.dataSourceManager;
+    globalDataSourceManager.getDataSource('main')?.setCollections([{ name: 'users', fields: [] } as any]);
+    flowEngine.registerModels({ PublicFormLayoutModel });
+
+    const model = flowEngine.createModel<PublicFormLayoutModel>({
+      uid: 'public-form-layout',
+      use: 'PublicFormLayoutModel',
+    });
+    (model as any).onMount();
+
+    model.applyPublicDataSource({
+      key: 'main',
+      displayName: 'Main',
+      collections: [{ name: 'orders', fields: [] } as any],
+    });
+
+    const localDataSourceManager = model.context.dataSourceManager;
+    expect(localDataSourceManager).not.toBe(globalDataSourceManager);
+    expect(localDataSourceManager.getDataSource('main')?.getCollection('orders')).toBeTruthy();
+    expect(globalDataSourceManager.getDataSource('main')?.getCollection('users')).toBeTruthy();
+    expect(globalDataSourceManager.getDataSource('main')?.getCollection('orders')).toBeFalsy();
+
+    (model as any).onUnmount();
+  });
 });

@@ -593,9 +593,91 @@ describe('FlowRoute', () => {
     expect(screen.queryByText('404')).not.toBeInTheDocument();
   });
 
-  it('should skip accessible route loading for authCheck false layout', async () => {
+  it('should check model existence without occupying the route model uid', async () => {
     const engine = new FlowEngine();
-    const ensureAccessibleLoaded = vi.fn().mockRejectedValue(new Error('should not load accessible routes'));
+    const findOne = vi.fn().mockResolvedValue({
+      uid: 'public-form-1',
+    });
+    const request = vi.fn().mockResolvedValue({
+      data: {
+        data: {
+          uid: 'public-form-1',
+        },
+      },
+    });
+    engine.setModelRepository({
+      findOne,
+      save: vi.fn(),
+      destroy: vi.fn(),
+    } as any);
+    engine.context.defineProperty('routeRepository', {
+      value: {
+        refreshAccessible: hookState.refresh,
+        isAccessibleLoaded: () => true,
+        ensureAccessibleLoaded: vi.fn().mockResolvedValue([]),
+        getRouteBySchemaUid: vi.fn(() => undefined),
+      },
+    });
+    engine.context.defineProperty('app', {
+      value: {
+        apiClient: {
+          request,
+        },
+        getPublicPath: () => '/v2/',
+        router: {
+          getBasename: () => '/v2',
+        },
+      },
+    });
+    const routeModel = engine.createModel({
+      uid: 'public-form-route-model',
+      use: 'FlowModel',
+    });
+    routeModel.context.defineProperty('layout', {
+      value: {
+        routeName: 'public-forms',
+        routePath: '/public-forms',
+        rootRouteName: 'public-forms',
+        uid: 'public-form-layout-model',
+        layoutModelClass: 'PublicFormLayoutModel',
+        rootPageModelClass: 'PublicFormPageModel',
+        childPageModelClass: 'ChildPageModel',
+        authCheck: false,
+      },
+    });
+
+    const layoutModel: MockAdminLayoutModel = Object.assign(
+      engine.createModel({ uid: 'public-form-layout-model', use: 'FlowModel' }),
+      {
+        registerRoutePage: vi.fn(),
+        updateRoutePage: vi.fn(),
+        unregisterRoutePage: vi.fn(),
+      },
+    );
+
+    render(
+      <FlowEngineProvider engine={engine}>
+        <FlowContextProvider context={routeModel.context}>
+          <MemoryRouter initialEntries={['/public-forms/public-form-1']}>
+            <Routes>
+              <Route path="/public-forms/:name" element={<FlowRoute legacyPageBehavior="notFound" />} />
+            </Routes>
+          </MemoryRouter>
+        </FlowContextProvider>
+      </FlowEngineProvider>,
+    );
+
+    await waitFor(() => {
+      expect(layoutModel.registerRoutePage).toHaveBeenCalledWith('public-form-1', expect.any(Object));
+    });
+    expect(findOne).toHaveBeenCalledWith({ uid: 'public-form-1' });
+    expect(request).not.toHaveBeenCalled();
+    expect(engine.getModel('public-form-1')).toBeUndefined();
+  });
+
+  it('should not skip accessible route loading just because layout authCheck is false', async () => {
+    const engine = new FlowEngine();
+    const ensureAccessibleLoaded = vi.fn().mockRejectedValue(new Error('cannot load accessible routes'));
     const getRouteBySchemaUid = vi.fn();
     engine.setModelRepository({
       findOne: vi.fn().mockResolvedValue({
@@ -662,7 +744,7 @@ describe('FlowRoute', () => {
     await waitFor(() => {
       expect(layoutModel.registerRoutePage).toHaveBeenCalledWith('public-form-1', expect.any(Object));
     });
-    expect(ensureAccessibleLoaded).not.toHaveBeenCalled();
+    expect(ensureAccessibleLoaded).toHaveBeenCalledTimes(1);
     expect(getRouteBySchemaUid).not.toHaveBeenCalled();
   });
 

@@ -63,7 +63,15 @@ const hasFlowModel = async (flowEngine: FlowEngine, pageUid: string) => {
     return true;
   }
 
+  const modelData = await flowEngine.modelRepository?.findOne({ uid: pageUid }).catch(() => null);
+  if (modelData?.uid) {
+    return true;
+  }
+
   const model = await flowEngine.loadModel({ uid: pageUid }).catch(() => null);
+  if (model && flowEngine.getModel(pageUid) === model) {
+    flowEngine.removeModelWithSubModels(pageUid);
+  }
   return !!model;
 };
 
@@ -152,7 +160,7 @@ const FlowRoute = (props: FlowRouteProps = {}) => {
   const routeRepository = flowEngine.context.routeRepository;
   const params = useParams();
   const pageUid = props.pageUid || params?.name;
-  const skipRouteRepositoryCheck = contextLayout?.authCheck === false;
+  const skipRouteRepositoryCheck = !routeRepository;
   const [guardState, setGuardState] = useState<FlowRouteGuardState>({
     pending: true,
     allowBridge: false,

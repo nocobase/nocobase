@@ -25,6 +25,7 @@ const mocks = vi.hoisted(() => {
   const context = {
     acl: aclStore,
     dataSourceManager: {
+      ensureLoaded: vi.fn(),
       getDataSource: vi.fn(() => ({
         getCollection: vi.fn(() => ({})),
       })),
@@ -32,6 +33,7 @@ const mocks = vi.hoisted(() => {
     defineProperty: vi.fn(),
     routeRepository: {
       ensureAccessibleLoaded: vi.fn(),
+      getRouteBySchemaUid: vi.fn(() => ({ uid: 'test-page' })),
     },
   };
   const app = {
@@ -64,6 +66,7 @@ const mocks = vi.hoisted(() => {
     app,
     createAclSnippetAllow: vi.fn(() => () => true),
     createCollectionContextMeta: vi.fn(() => ({ sort: 0 })),
+    pageUid: 'test-page',
   };
 });
 
@@ -86,15 +89,28 @@ vi.mock('@nocobase/flow-engine', async (importOriginal) => {
   };
 });
 
+vi.mock('react-router-dom', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('react-router-dom')>();
+  return {
+    ...actual,
+    useParams: () => ({
+      name: mocks.pageUid,
+    }),
+  };
+});
+
 describe('EmbedAccessGuard', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mocks.app.apiClient.auth.role = null;
     mocks.app.apiClient.request.mockReset();
     mocks.app.dataSourceManager.ensureLoaded.mockResolvedValue(undefined);
+    mocks.app.flowEngine.context.dataSourceManager.ensureLoaded.mockResolvedValue(undefined);
     mocks.app.flowEngine.context.routeRepository.ensureAccessibleLoaded.mockResolvedValue(undefined);
+    mocks.app.flowEngine.context.routeRepository.getRouteBySchemaUid.mockReturnValue({ uid: 'test-page' });
     mocks.aclStore.data = {};
     mocks.aclStore.meta = {};
+    mocks.pageUid = 'test-page';
   });
 
   it('renders 403 instead of redirecting when current user is missing', async () => {
@@ -187,5 +203,75 @@ describe('EmbedAccessGuard', () => {
       expect(mocks.app.pluginSettingsManager.setAclSnippets).toHaveBeenCalledWith(['ui.*']);
       expect(mocks.app.apiClient.auth.setRole).toHaveBeenCalledWith('admin');
     });
+  });
+
+  it('falls back to flow engine data source runtime for v1 compatible app', async () => {
+    const originalEnsureLoaded = mocks.app.dataSourceManager.ensureLoaded;
+    (
+      mocks.app.dataSourceManager as {
+        ensureLoaded?: typeof originalEnsureLoaded;
+      }
+    ).ensureLoaded = undefined;
+    mocks.app.apiClient.request
+      .mockResolvedValueOnce({
+        data: {
+          data: {
+            id: 1,
+            roles: [{ name: 'admin', title: 'Admin' }],
+          },
+        },
+      })
+      .mockResolvedValueOnce({
+        data: {
+          data: {
+            role: 'admin',
+            snippets: ['ui.*'],
+          },
+          meta: {},
+        },
+      });
+
+    try {
+      const { EmbedAccessGuard } = await import('../EmbedAccessGuard');
+
+      render(
+        <EmbedAccessGuard>
+          <div data-testid="embed-content" />
+        </EmbedAccessGuard>,
+      );
+
+      expect(await screen.findByTestId('embed-content')).toBeInTheDocument();
+      expect(originalEnsureLoaded).not.toHaveBeenCalled();
+      expect(mocks.app.flowEngine.context.dataSourceManager.ensureLoaded).toHaveBeenCalledTimes(1);
+      expect(mocks.app.flowEngine.context.routeRepository.ensureAccessibleLoaded).toHaveBeenCalledTimes(1);
+    } finally {
+      mocks.app.dataSourceManager.ensureLoaded = originalEnsureLoaded;
+    }
+  });
+
+  it('renders 403 when the embed page is not accessible to current user', async () => {
+    mocks.app.flowEngine.context.routeRepository.getRouteBySchemaUid.mockReturnValue(undefined);
+    mocks.app.apiClient.request.mockResolvedValueOnce({
+      data: {
+        data: {
+          id: 1,
+          roles: [{ name: 'member', title: 'Member' }],
+        },
+      },
+    });
+    const { EmbedAccessGuard } = await import('../EmbedAccessGuard');
+
+    render(
+      <EmbedAccessGuard>
+        <div data-testid="embed-content" />
+      </EmbedAccessGuard>,
+    );
+
+    expect(await screen.findByText('403')).toBeInTheDocument();
+    expect(screen.queryByTestId('embed-content')).not.toBeInTheDocument();
+    expect(mocks.app.flowEngine.context.routeRepository.ensureAccessibleLoaded).toHaveBeenCalledTimes(1);
+    expect(mocks.app.flowEngine.context.routeRepository.getRouteBySchemaUid).toHaveBeenCalledWith('test-page');
+    expect(mocks.app.apiClient.request).toHaveBeenCalledTimes(1);
+    expect(mocks.aclStore.setData).not.toHaveBeenCalledWith(expect.objectContaining({ role: 'member' }));
   });
 });

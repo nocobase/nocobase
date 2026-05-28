@@ -19,6 +19,7 @@ import {
 import React from 'react';
 import { getViewDiffAndUpdateHidden, getKey } from '../getViewDiffAndUpdateHidden';
 import { getOpenViewStepParams } from '../flows/openViewFlow';
+import { RouteModel } from '../models/base/RouteModel';
 import { resolveViewParamsToViewList, updateViewListHidden, type ViewItem } from '../resolveViewParamsToViewList';
 import type { LayoutDefinition } from '../../layout-manager/types';
 
@@ -470,13 +471,19 @@ export class BaseLayoutRouteCoordinator {
   }
 
   private getOrCreateRouteModel(pageUid: string): FlowModel {
-    return (
-      this.flowEngine.getModel(pageUid) ||
-      this.flowEngine.createModel({
-        uid: pageUid,
-        use: 'RouteModel',
-      })
-    );
+    const existing = this.flowEngine.getModel(pageUid);
+    if (existing instanceof RouteModel) {
+      return existing;
+    }
+
+    if (existing) {
+      this.flowEngine.removeModelWithSubModels(pageUid);
+    }
+
+    return this.flowEngine.createModel({
+      uid: pageUid,
+      use: 'RouteModel',
+    });
   }
 }
 

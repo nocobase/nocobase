@@ -10,8 +10,8 @@
 import { css } from '@emotion/css';
 import { define, observable } from '@formily/reactive';
 import { BaseLayoutModel, PoweredBy, useApp } from '@nocobase/client-v2';
-import { observer, useFlowEngine } from '@nocobase/flow-engine';
-import type { FlowModel, IFlowModelRepository } from '@nocobase/flow-engine';
+import { DataSourceManager, observer, useFlowEngine } from '@nocobase/flow-engine';
+import type { CollectionOptions, DataSourceOptions, FlowModel, IFlowModelRepository } from '@nocobase/flow-engine';
 import { useRequest } from 'ahooks';
 import { Form, Input, Modal, Result, Spin, theme } from 'antd';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -23,6 +23,10 @@ import { isPublicFormFlowModelRepository, PublicFormFlowModelRepository } from '
 function getResponseData(response: any) {
   return response?.data?.data;
 }
+
+type PublicFormDataSourceOptions = DataSourceOptions & {
+  collections?: CollectionOptions[];
+};
 
 function usePublicFormTokenHeader() {
   const app = useApp();
@@ -38,21 +42,6 @@ function usePublicFormTokenHeader() {
       app.apiClient.axios.interceptors.request.eject(interceptor);
     };
   }, [app.apiClient.axios.interceptors.request]);
-}
-
-function useApplyPublicDataSource(meta: any) {
-  const app = useApp();
-
-  useEffect(() => {
-    const dataSource = meta?.dataSource;
-    if (!dataSource?.key) {
-      return;
-    }
-
-    const { collections = [], ...options } = dataSource;
-    app.dataSourceManager.upsertDataSource(options);
-    app.dataSourceManager.getDataSource(dataSource.key)?.setCollections(collections, { clearFields: true });
-  }, [app.dataSourceManager, meta]);
 }
 
 function usePublicFormFlowModel(meta: any) {
@@ -102,7 +91,9 @@ const PublicFormLayoutComponent = observer((props: { model: PublicFormLayoutMode
               }
             : undefined,
       } as any);
-      return getResponseData(response);
+      const nextData = getResponseData(response);
+      model.applyPublicDataSource(nextData?.dataSource);
+      return nextData;
     },
     {
       onSuccess(nextData: any) {
@@ -192,7 +183,6 @@ const PublicFormLayoutComponent = observer((props: { model: PublicFormLayoutMode
   );
 
   usePublicFormTokenHeader();
-  useApplyPublicDataSource(data);
 
   useEffect(() => {
     const host = routeContentRef.current;
@@ -313,6 +303,7 @@ export class PublicFormLayoutModel extends BaseLayoutModel {
   private publicFormKey = '';
   private originalModelRepository?: IFlowModelRepository<FlowModel> | null;
   private publicFormModelRepository?: PublicFormFlowModelRepository;
+  private publicDataSourceManager?: DataSourceManager;
 
   constructor(options: any) {
     super(options);
@@ -328,6 +319,32 @@ export class PublicFormLayoutModel extends BaseLayoutModel {
   setPublicFormKey(formKey?: string) {
     this.publicFormKey = formKey || '';
     this.publicFormModelRepository?.setFormKey(this.publicFormKey);
+  }
+
+  private getPublicDataSourceManager() {
+    if (!this.publicDataSourceManager) {
+      const manager = new DataSourceManager();
+      const rootManager = this.flowEngine.context.dataSourceManager;
+
+      manager.setFlowEngine(this.flowEngine);
+      manager.setRequester(rootManager?.requester);
+      manager.setCollectionFieldInterfaceManager(rootManager?.collectionFieldInterfaceManager);
+      this.publicDataSourceManager = manager;
+    }
+
+    return this.publicDataSourceManager;
+  }
+
+  applyPublicDataSource(dataSource?: PublicFormDataSourceOptions | null) {
+    if (!dataSource?.key) {
+      return;
+    }
+
+    const { collections = [], ...options } = dataSource;
+    const manager = this.getPublicDataSourceManager();
+
+    manager.upsertDataSource(options);
+    manager.getDataSource(dataSource.key)?.setCollections(collections, { clearFields: true });
   }
 
   private setupPublicFormModelRepository() {
@@ -371,6 +388,10 @@ export class PublicFormLayoutModel extends BaseLayoutModel {
     this.setupPublicFormModelRepository();
     this.context.defineProperty('publicFormRuntime', {
       get: () => true,
+      cache: false,
+    });
+    this.context.defineProperty('dataSourceManager', {
+      get: () => this.getPublicDataSourceManager(),
       cache: false,
     });
     this.context.defineProperty('publicFormSubmitted', {

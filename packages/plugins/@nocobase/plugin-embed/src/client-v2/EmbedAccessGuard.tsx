@@ -20,6 +20,7 @@ import {
 import { createCollectionContextMeta } from '@nocobase/flow-engine';
 import { Result } from 'antd';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useParams } from 'react-router-dom';
 import { useTranslation } from './locale';
 
 type EmbedAccessState = {
@@ -53,6 +54,14 @@ type ACLStore = {
   meta: ACLMeta;
   setData: (data: ACLRoleData) => void;
   setMeta: (meta: ACLMeta) => void;
+};
+
+type DataSourceRuntime = {
+  ensureLoaded?: () => Promise<unknown> | unknown;
+};
+
+type RouteRepositoryRuntime = {
+  getRouteBySchemaUid?: (uid: string) => unknown;
 };
 
 const initialState: EmbedAccessState = {
@@ -113,6 +122,15 @@ function resetAcl(app: Application) {
   app.apiClient.auth.setRole(null);
 }
 
+function getDataSourceRuntime(value: unknown): DataSourceRuntime | null {
+  if (!value || typeof value !== 'object') {
+    return null;
+  }
+
+  const runtime = value as DataSourceRuntime;
+  return typeof runtime.ensureLoaded === 'function' ? runtime : null;
+}
+
 async function checkCurrentUser(app: Application) {
   const response = (await app.apiClient.request({
     url: '/auth:check',
@@ -164,14 +182,29 @@ async function loadAcl(app: Application) {
 }
 
 async function loadEmbedRuntime(app: Application) {
-  await app.dataSourceManager.ensureLoaded();
+  const dataSourceRuntime =
+    getDataSourceRuntime((app as { dataSourceManager?: unknown }).dataSourceManager) ||
+    getDataSourceRuntime(app.flowEngine.context.dataSourceManager);
+
+  await dataSourceRuntime?.ensureLoaded?.();
   await app.flowEngine.context.routeRepository?.ensureAccessibleLoaded?.();
+}
+
+function canAccessEmbedPage(app: Application, pageUid?: string) {
+  if (!pageUid) {
+    return false;
+  }
+
+  const routeRepository = app.flowEngine.context.routeRepository as RouteRepositoryRuntime | undefined;
+  return !!routeRepository?.getRouteBySchemaUid?.(pageUid);
 }
 
 export function EmbedAccessGuard(props: { children: React.ReactNode }) {
   const { children } = props;
   const app = useApp<Application>();
   const { t } = useTranslation();
+  const params = useParams();
+  const pageUid = params.name;
   const mountedRef = useRef(false);
   const [state, setState] = useState<EmbedAccessState>(initialState);
 
@@ -212,6 +245,16 @@ export function EmbedAccessGuard(props: { children: React.ReactNode }) {
         await loadEmbedRuntime(app);
 
         if (!active) {
+          return;
+        }
+
+        if (!canAccessEmbedPage(app, pageUid)) {
+          if (active && mountedRef.current) {
+            setState({
+              ...initialState,
+              loading: false,
+            });
+          }
           return;
         }
 
@@ -256,7 +299,7 @@ export function EmbedAccessGuard(props: { children: React.ReactNode }) {
       active = false;
       mountedRef.current = false;
     };
-  }, [app]);
+  }, [app, pageUid]);
 
   const aclContextValue = useMemo(
     () => ({
