@@ -45,7 +45,7 @@ interface ViewRuntimeState {
 
 interface RoutePageRuntime {
   pageUid: string;
-  routeModel: FlowModel;
+  routeModel: RouteModel;
   meta: RoutePageMeta;
   viewState: Record<string, ViewRuntimeState>;
   prevViewList: ViewItem[];
@@ -470,10 +470,10 @@ export class BaseLayoutRouteCoordinator {
     });
   }
 
-  private getOrCreateRouteModel(pageUid: string): FlowModel {
+  private getOrCreateRouteModel(pageUid: string): RouteModel {
     const existing = this.flowEngine.getModel(pageUid);
     if (existing instanceof RouteModel) {
-      return existing;
+      return existing as RouteModel;
     }
 
     if (existing) {
@@ -483,7 +483,7 @@ export class BaseLayoutRouteCoordinator {
     return this.flowEngine.createModel({
       uid: pageUid,
       use: 'RouteModel',
-    });
+    }) as RouteModel;
   }
 }
 
