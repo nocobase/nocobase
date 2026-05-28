@@ -10,6 +10,7 @@
 import React, { forwardRef, useEffect, useRef, useCallback, MutableRefObject } from 'react';
 import * as echarts from 'echarts';
 import type { EChartsType, EChartsOption } from 'echarts';
+import './chartBlock.css';
 
 interface Props {
   option: EChartsOption;
@@ -17,9 +18,10 @@ interface Props {
   className?: string;
   theme?: string;
   onRefReady?: (chart: EChartsType) => void;
+  fillHeight?: boolean;
 }
 
-const ECharts = forwardRef<EChartsType, Props>(({ option, style, className, theme, onRefReady }, ref) => {
+const ECharts = forwardRef<EChartsType, Props>(({ option, style, className, theme, onRefReady, fillHeight }, ref) => {
   const chartRef = useRef<HTMLDivElement>(null);
   // inner instance ref
   const instanceRef = useRef<EChartsType | null>(null);
@@ -77,7 +79,13 @@ const ECharts = forwardRef<EChartsType, Props>(({ option, style, className, them
     }
   }, [option]);
 
-  return <div ref={chartRef} style={{ width: '100%', height: 400, ...style }} className={className} />;
+  return (
+    <div
+      ref={chartRef}
+      style={{ width: '100%', height: fillHeight ? '100%' : 400, minHeight: 0, ...style }}
+      className={['data-visualization-chart', className].filter(Boolean).join(' ')}
+    />
+  );
 });
 
 export default ECharts;

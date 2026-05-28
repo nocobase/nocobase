@@ -39,6 +39,7 @@ interface QRCodeScannerProps {
 }
 
 const qrcodeEleId = 'qrcode-scanner';
+const MAX_QR_CODE_IMAGE_SIZE = 10 * 1024 * 1024;
 
 const QRCodeScannerInner = ({ visible, onClose, onScanSuccess, containerRef }) => {
   const imgUploaderRef = useRef<HTMLInputElement>(null);
@@ -92,7 +93,7 @@ const QRCodeScannerInner = ({ visible, onClose, onScanSuccess, containerRef }) =
         containerRef.current.style.position = `absolute`;
       }
     }
-  }, [originVideoSize, visible]);
+  }, [containerRef, originVideoSize, vh, visible, vw]);
 
   if (!visible || !cameraAvailable) return null;
   const handleImgClick = () => {
@@ -101,10 +102,10 @@ const QRCodeScannerInner = ({ visible, onClose, onScanSuccess, containerRef }) =
 
   const handleImgUploaded = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file && file.size < 1024 * 1024) {
+    if (file && file.size <= MAX_QR_CODE_IMAGE_SIZE) {
       startScanFile(file);
     } else {
-      alert(t('The image size is too large. Please compress it to below 1MB before uploading'));
+      alert(t('The image size is too large. Please compress it to below 10MB before uploading'));
     }
   };
   return (

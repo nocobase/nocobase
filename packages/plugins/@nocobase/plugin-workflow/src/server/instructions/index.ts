@@ -36,7 +36,7 @@ export type Runner = (
   node: FlowNodeModel,
   input: any,
   processor: Processor,
-  options?: { signal?: AbortSignal },
+  options?: { rerun?: true; signal?: AbortSignal },
 ) => InstructionResult | Promise<InstructionResult>;
 
 export type InstructionInterface = {
@@ -81,7 +81,7 @@ export abstract class Instruction implements InstructionInterface {
     node: FlowNodeModel,
     input: any,
     processor: Processor,
-    options?: { signal?: AbortSignal },
+    options?: { rerun?: true; signal?: AbortSignal },
   ): InstructionResult | Promise<InstructionResult>;
 }
 

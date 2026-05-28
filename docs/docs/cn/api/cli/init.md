@@ -63,7 +63,7 @@ nb init --env app1 --resume
 | `--db-database` | string | 数据库名 |
 | `--db-user` | string | 数据库用户 |
 | `--db-password` | string | 数据库密码 |
-| `--fetch-source` | boolean | 安装前下载应用文件或拉取 Docker 镜像 |
+| `--skip-download` | boolean | 安装前跳过下载应用文件或拉取 Docker 镜像，复用已有的本地资源 |
 | `--source`, `-s` | string | 获取 NocoBase 的方式：`docker`、`npm` 或 `git` |
 | `--version`, `-v` | string | 版本参数：npm 版本、Docker 镜像 tag 或 Git ref |
 | `--replace`, `-r` | boolean | 目标目录已存在时替换 |

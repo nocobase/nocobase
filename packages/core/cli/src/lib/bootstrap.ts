@@ -168,7 +168,7 @@ function getHealthCheckUrl(baseUrl: string) {
   return `${baseUrl.replace(/\/+$/, '')}/__health_check`;
 }
 
-async function waitForServiceReady(baseUrl: string, token?: string, role?: string) {
+async function waitForServiceReady(baseUrl: string, token?: string, role?: string, options?: { quiet?: boolean }) {
   const healthCheckUrl = getHealthCheckUrl(baseUrl);
   const startedAt = Date.now();
   let notified = false;
@@ -197,8 +197,10 @@ async function waitForServiceReady(baseUrl: string, token?: string, role?: strin
     }
 
     if (!notified) {
-      printVerbose(`Waiting for health check: ${healthCheckUrl}`);
-      updateTask(`Waiting for application readiness (${healthCheckUrl})`);
+      if (!options?.quiet) {
+        printVerbose(`Waiting for health check: ${healthCheckUrl}`);
+        updateTask(`Waiting for application readiness (${healthCheckUrl})`);
+      }
       notified = true;
     }
 
@@ -208,11 +210,13 @@ async function waitForServiceReady(baseUrl: string, token?: string, role?: strin
   throw new Error(`The application did not become ready in time. Expected \`${healthCheckUrl}\` to respond with \`ok\`.`);
 }
 
-async function waitForSwaggerSchema(baseUrl: string, token?: string, role?: string) {
+async function waitForSwaggerSchema(baseUrl: string, token?: string, role?: string, options?: { quiet?: boolean }) {
   const swaggerUrl = getSwaggerUrl(baseUrl);
   const startedAt = Date.now();
 
-  printVerbose(`Checking swagger schema: ${swaggerUrl}`);
+  if (!options?.quiet) {
+    printVerbose(`Checking swagger schema: ${swaggerUrl}`);
+  }
 
   while (Date.now() - startedAt < APP_RETRY_TIMEOUT) {
     const response = await requestJson(swaggerUrl, { token, role });
@@ -224,7 +228,7 @@ async function waitForSwaggerSchema(baseUrl: string, token?: string, role?: stri
       return response;
     }
 
-    await waitForServiceReady(baseUrl, token, role);
+    await waitForServiceReady(baseUrl, token, role, options);
   }
 
   return await requestJson(swaggerUrl, { token, role });
@@ -252,15 +256,16 @@ async function fetchSwaggerSchema(
   options: {
     allowEnableApiDoc?: boolean;
     retryAppAvailability?: boolean;
+    quiet?: boolean;
   } = {},
 ) {
   let response =
     options.retryAppAvailability === false
       ? await requestJson(getSwaggerUrl(baseUrl), { token, role })
-      : await waitForSwaggerSchema(baseUrl, token, role);
+      : await waitForSwaggerSchema(baseUrl, token, role, { quiet: options.quiet });
 
   if (response.status === 404) {
-    if (options.allowEnableApiDoc === false) {
+    if (options.allowEnableApiDoc === false || options.quiet) {
       throw new Error('`swagger:get` returned 404. Check the base URL and enable the `API documentation plugin` if needed.');
     }
 
@@ -334,7 +339,7 @@ export function formatSwaggerSchemaError(
       `Authentication failed while loading the command runtime from \`swagger:get\`${envLabel}.`,
       `Base URL: ${context.baseUrl}`,
       details,
-      'Update the API key with `nb env add <name> --api-base-url <url> --auth-type token --token <api-key>`, log in with `nb env auth <name>`, or rerun the command with `--token <api-key>`.',
+      'Update the API key with `nb env add <name> --api-base-url <url> --auth-type token --access-token <api-key>`, log in with `nb env auth <name>`, or rerun the command with `--access-token <api-key>`.',
       commandHint,
     ].join('\n');
   }
@@ -448,6 +453,7 @@ export async function updateEnvRuntime(options: {
   configFile: string;
   verbose?: boolean;
   scope?: CliHomeScope;
+  quiet?: boolean;
 }) {
   setVerboseMode(Boolean(options.verbose));
   const envName = options.envName ?? (await getCurrentEnvName({ scope: options.scope }));
@@ -473,10 +479,14 @@ export async function updateEnvRuntime(options: {
     );
   }
 
-  updateTask('Loading command runtime...');
+  if (!options.quiet) {
+    updateTask('Loading command runtime...');
+  }
   try {
-    printVerbose(`Runtime source: ${baseUrl}`);
-    const document = await fetchSwaggerSchema(baseUrl, token, options.role, { envName });
+    if (!options.quiet) {
+      printVerbose(`Runtime source: ${baseUrl}`);
+    }
+    const document = await fetchSwaggerSchema(baseUrl, token, options.role, { envName }, { quiet: options.quiet });
     const runtime = await generateRuntime(document, options.configFile, baseUrl);
     await saveRuntime(runtime, { scope: options.scope });
     if (options.baseUrl !== undefined || options.token !== undefined) {
@@ -496,6 +506,8 @@ export async function updateEnvRuntime(options: {
     }, { scope: options.scope });
     return runtime;
   } finally {
-    stopTask();
+    if (!options.quiet) {
+      stopTask();
+    }
   }
 }

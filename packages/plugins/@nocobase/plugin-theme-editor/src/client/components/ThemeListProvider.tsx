@@ -11,7 +11,7 @@ import { ReturnTypeOfUseRequest, useRequest } from '@nocobase/client';
 import { error } from '@nocobase/utils/client';
 import React, { createContext, useMemo } from 'react';
 import { ThemeItem } from '../../types';
-import { changeAlgorithmFromStringToFunction } from '../utils/changeAlgorithmFromStringToFunction';
+import { changeAlgorithmFromStringToFunction } from '../../client-v2/utils/changeAlgorithmFromStringToFunction';
 
 interface TData extends Pick<ReturnTypeOfUseRequest, 'data' | 'error' | 'run' | 'refresh' | 'loading'> {
   data?: ThemeItem[];

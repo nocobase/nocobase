@@ -24,19 +24,11 @@ import {
 } from '../lib/prompt-catalog.ts';
 import { applyCliLocale, localeText, translateCli } from '../lib/cli-locale.ts';
 import { resolveDefaultConfigScope } from '../lib/cli-home.js';
-import {
-  type RunPromptCatalogWebUIStage,
-  runPromptCatalogWebUI,
-} from '../lib/prompt-web-ui.ts';
+import { type RunPromptCatalogWebUIStage, runPromptCatalogWebUI } from '../lib/prompt-web-ui.ts';
 import { validateApiBaseUrl, validateEnvKey } from '../lib/prompt-validators.ts';
-import { run } from '../lib/run-npm.ts';
-import {
-  inspectSkillsStatus,
-  installNocoBaseSkills,
-  updateNocoBaseSkills,
-} from '../lib/skills-manager.js';
+import { installNocoBaseSkills, isNpmRegistryUnavailable } from '../lib/skills-manager.js';
 import { omitKeys, pickKeys } from '../lib/object-utils.ts';
-import { isVerboseMode, printInfo, printStage, printVerbose, printWarning } from '../lib/ui.js';
+import { printInfo, printStage, printVerbose, printWarning } from '../lib/ui.js';
 import Download from './download.ts';
 import EnvAdd from './env/add.ts';
 import Install, { defaultDbPortForDialect } from './install.ts';
@@ -51,15 +43,14 @@ const INIT_ENV_ADD_FLAG_NAMES = [
   'auth-type',
   'access-token',
   'token',
+  'username',
+  'password',
+  'skip-auth',
 ] as const;
 
-const initText = (key: string, values?: Record<string, unknown>) =>
-  localeText(`commands.init.${key}`, values);
+const initText = (key: string, values?: Record<string, unknown>) => localeText(`commands.init.${key}`, values);
 
-function withExtraHidden(
-  def: PromptBlock,
-  extraHidden: (values: PromptCatalogValues) => boolean,
-): PromptBlock {
+function withExtraHidden(def: PromptBlock, extraHidden: (values: PromptCatalogValues) => boolean): PromptBlock {
   if (def.type === 'run') {
     return def;
   }
@@ -78,11 +69,8 @@ function newInstallOnly(def: PromptBlock): PromptBlock {
   return withExtraHidden(def, (values) => values.hasNocobase !== 'no');
 }
 
-function downloadInNewInstallOnly(def: PromptBlock): PromptBlock {
-  return withExtraHidden(
-    def,
-    (values) => values.hasNocobase !== 'no' || values.fetchSource !== true,
-  );
+function newInstallDownloadExecutionOnly(def: PromptBlock): PromptBlock {
+  return withExtraHidden(def, (values) => values.hasNocobase !== 'no' || values.skipDownload === true);
 }
 
 function argvHasToken(argv: string[], tokens: string[]): boolean {
@@ -98,9 +86,7 @@ function resolveInitDownloadVersion(results: Record<string, string | number | bo
 }
 
 function initVersionPromptValue(version: string): 'latest' | 'beta' | 'alpha' | 'other' {
-  return version === 'latest' || version === 'beta' || version === 'alpha'
-    ? version
-    : 'other';
+  return version === 'latest' || version === 'beta' || version === 'alpha' ? version : 'other';
 }
 
 function yesInitialValue(def: PromptBlock, fallback: string): string {
@@ -111,15 +97,10 @@ function yesInitialValue(def: PromptBlock, fallback: string): string {
 }
 
 function hasDownloadOverride(flags: { source?: string; version?: string }): boolean {
-  return Boolean(
-    String(flags.source ?? '').trim()
-    || String(flags.version ?? '').trim(),
-  );
+  return Boolean(String(flags.source ?? '').trim() || String(flags.version ?? '').trim());
 }
 
-function explicitApiBaseUrlFlag(
-  flags: { 'api-base-url'?: string },
-): string {
+function explicitApiBaseUrlFlag(flags: { 'api-base-url'?: string }): string {
   return String(flags['api-base-url'] ?? '').trim();
 }
 
@@ -154,10 +135,7 @@ async function validateInitAppName(value: PromptValue): Promise<string | undefin
 }
 
 function highlightInitValidationMessage(message: string): string {
-  return message.replace(
-    /Env "([^"]+)"/,
-    (_match, envName: string) => `Env ${pc.cyan(pc.bold(`"${envName}"`))}`,
-  );
+  return message.replace(/Env "([^"]+)"/, (_match, envName: string) => `Env ${pc.cyan(pc.bold(`"${envName}"`))}`);
 }
 
 function formatInitValidationMessage(message: string): string {
@@ -179,9 +157,7 @@ function formatSkippedAppNameRequiredMessage(): string {
 }
 
 function shellQuoteArg(value: string): string {
-  return /^[A-Za-z0-9_@%+=:,./-]+$/.test(value)
-    ? value
-    : `'${value.replace(/'/g, `'\\''`)}'`;
+  return /^[A-Za-z0-9_@%+=:,./-]+$/.test(value) ? value : `'${value.replace(/'/g, `'\\''`)}'`;
 }
 
 function initTitle(): string {
@@ -210,8 +186,7 @@ function formatBrowserOpenError(error: unknown) {
 }
 
 export default class Init extends Command {
-  static override summary =
-    'Set up NocoBase so coding agents can connect and work with it';
+  static override summary = 'Set up NocoBase so coding agents can connect and work with it';
   static override description = `Set up NocoBase for coding agents in the current workspace.
 
 \`nb init\` prepares a NocoBase environment that coding agents can use. It supports two setup paths:
@@ -297,20 +272,27 @@ Prompt modes:
       validate: validateApiBaseUrl,
     }),
     authType: existingAppOnly(EnvAdd.prompts.authType),
+    username: existingAppOnly(EnvAdd.prompts.username),
+    password: existingAppOnly(EnvAdd.prompts.password),
     accessToken: existingAppOnly(EnvAdd.prompts.accessToken),
     lang: newInstallOnly(Install.appPrompts.lang),
     appRootPath: newInstallOnly(Install.appPrompts.appRootPath),
     appPort: newInstallOnly(Install.appPrompts.appPort),
     storagePath: newInstallOnly(Install.appPrompts.storagePath),
-    fetchSource: newInstallOnly(Install.appPrompts.fetchSource),
-    source: downloadInNewInstallOnly(Download.prompts.source),
-    version: downloadInNewInstallOnly(Download.prompts.version),
-    otherVersion: downloadInNewInstallOnly(Download.prompts.otherVersion),
-    dockerRegistry: downloadInNewInstallOnly(Download.prompts.dockerRegistry),
-    dockerPlatform: downloadInNewInstallOnly(Download.prompts.dockerPlatform),
-    dockerSave: downloadInNewInstallOnly(Download.prompts.dockerSave),
-    gitUrl: downloadInNewInstallOnly(Download.prompts.gitUrl),
-    outputDir: downloadInNewInstallOnly({
+    skipDownload: newInstallOnly({
+      type: 'boolean',
+      message: initText('prompts.skipDownload.message'),
+      initialValue: false,
+      yesInitialValue: false,
+    }),
+    source: newInstallOnly(Download.prompts.source),
+    version: newInstallOnly(Download.prompts.version),
+    otherVersion: newInstallOnly(Download.prompts.otherVersion),
+    dockerRegistry: newInstallOnly(Download.prompts.dockerRegistry),
+    dockerPlatform: newInstallOnly(Download.prompts.dockerPlatform),
+    dockerSave: newInstallDownloadExecutionOnly(Download.prompts.dockerSave),
+    gitUrl: newInstallOnly(Download.prompts.gitUrl),
+    outputDir: newInstallDownloadExecutionOnly({
       ...DOWNLOAD_OUTPUT_DIR_PROMPT,
       hidden: (values) => {
         const source = String(values.source ?? '').trim();
@@ -331,11 +313,11 @@ Prompt modes:
         return typeof initialValue === 'function' ? initialValue(values) : String(initialValue ?? '');
       },
     }),
-    npmRegistry: downloadInNewInstallOnly(Download.prompts.npmRegistry),
-    replace: downloadInNewInstallOnly(Download.prompts.replace),
-    devDependencies: downloadInNewInstallOnly(Download.prompts.devDependencies),
-    build: downloadInNewInstallOnly(Download.prompts.build),
-    buildDts: downloadInNewInstallOnly(Download.prompts.buildDts),
+    npmRegistry: newInstallOnly(Download.prompts.npmRegistry),
+    replace: newInstallDownloadExecutionOnly(Download.prompts.replace),
+    devDependencies: newInstallDownloadExecutionOnly(Download.prompts.devDependencies),
+    build: newInstallDownloadExecutionOnly(Download.prompts.build),
+    buildDts: newInstallDownloadExecutionOnly(Download.prompts.buildDts),
     dbDialect: newInstallOnly(Install.dbPrompts.dbDialect),
     builtinDb: newInstallOnly(Install.dbPrompts.builtinDb),
     builtinDbImage: newInstallOnly(Install.dbPrompts.builtinDbImage),
@@ -344,16 +326,46 @@ Prompt modes:
     dbDatabase: newInstallOnly(Install.dbPrompts.dbDatabase),
     dbUser: newInstallOnly(Install.dbPrompts.dbUser),
     dbPassword: newInstallOnly(Install.dbPrompts.dbPassword),
+    dbSchema: newInstallOnly(Install.dbPrompts.dbSchema),
+    dbTablePrefix: newInstallOnly(Install.dbPrompts.dbTablePrefix),
+    dbUnderscored: newInstallOnly(Install.dbPrompts.dbUnderscored),
     rootUsername: newInstallOnly(Install.rootUserPrompts.rootUsername),
     rootEmail: newInstallOnly(Install.rootUserPrompts.rootEmail),
     rootPassword: newInstallOnly(Install.rootUserPrompts.rootPassword),
     rootNickname: newInstallOnly(Install.rootUserPrompts.rootNickname),
   };
 
+  private buildPromptCatalog(flags: { 'skip-auth'?: boolean }): PromptsCatalog {
+    const prompts: PromptsCatalog = {
+      ...Init.prompts,
+    };
+
+    if (flags['skip-auth']) {
+      const accessTokenPrompt: TextPromptBlock = {
+        ...(EnvAdd.prompts.accessToken as TextPromptBlock),
+        hidden: () => true,
+      };
+      const usernamePrompt: TextPromptBlock = {
+        ...(EnvAdd.prompts.username as TextPromptBlock),
+        hidden: () => true,
+      };
+      const passwordPrompt = {
+        ...EnvAdd.prompts.password,
+        hidden: () => true,
+      };
+
+      prompts.username = existingAppOnly(usernamePrompt);
+      prompts.password = existingAppOnly(passwordPrompt);
+      prompts.accessToken = existingAppOnly(accessTokenPrompt);
+    }
+
+    return prompts;
+  }
+
   private parsedFlagsForPromptSeeds?:
     | {
-      resume?: boolean;
-    }
+        resume?: boolean;
+      }
     | undefined;
 
   static flags = {
@@ -367,8 +379,7 @@ Prompt modes:
       description: 'Env name for this setup. Required with --yes and --resume',
     }),
     ui: Flags.boolean({
-      description:
-        'Open the guided setup flow in a local browser form (not valid with --yes)',
+      description: 'Open the guided setup flow in a local browser form (not valid with --yes)',
       default: false,
     }),
     verbose: Flags.boolean({
@@ -376,16 +387,14 @@ Prompt modes:
       default: false,
     }),
     'skip-skills': Flags.boolean({
-      description: 'Skip installing or updating NocoBase AI coding skills during init',
+      description: 'Skip installing NocoBase AI coding skills during init',
       default: false,
     }),
     'ui-host': Flags.string({
-      description:
-        'Host for the local --ui setup server (default: 127.0.0.1)',
+      description: 'Host for the local --ui setup server (default: 127.0.0.1)',
     }),
     'ui-port': Flags.integer({
-      description:
-        'Port for the local --ui setup server; 0 lets the OS choose an available port',
+      description: 'Port for the local --ui setup server; 0 lets the OS choose an available port',
       min: 0,
       max: 65535,
     }),
@@ -406,14 +415,18 @@ Prompt modes:
       this.error('--ui cannot be used with --yes.');
     }
 
+    if (
+      normalizedFlags['skip-auth'] &&
+      (normalizedFlags['access-token'] !== undefined || normalizedFlags.token !== undefined)
+    ) {
+      this.error('--skip-auth cannot be used with --access-token or --token.');
+    }
+
     if (normalizedFlags.ui && normalizedFlags.resume) {
       this.error('--ui cannot be used with --resume.');
     }
 
-    if (
-      !normalizedFlags.ui &&
-      (normalizedFlags['ui-host'] !== undefined || normalizedFlags['ui-port'] !== undefined)
-    ) {
+    if (!normalizedFlags.ui && (normalizedFlags['ui-host'] !== undefined || normalizedFlags['ui-port'] !== undefined)) {
       this.error('--ui-host and --ui-port require --ui.');
     }
 
@@ -455,7 +468,10 @@ Prompt modes:
               'db-database'?: string;
               'db-user'?: string;
               'db-password'?: string;
-              'fetch-source'?: boolean;
+              'db-schema'?: string;
+              'db-table-prefix'?: string;
+              'db-underscored'?: boolean;
+              'skip-download'?: boolean;
               source?: string;
               version?: string;
               'dev-dependencies'?: boolean;
@@ -502,7 +518,10 @@ Prompt modes:
         'db-database'?: string;
         'db-user'?: string;
         'db-password'?: string;
-        'fetch-source'?: boolean;
+        'db-schema'?: string;
+        'db-table-prefix'?: string;
+        'db-underscored'?: boolean;
+        'skip-download'?: boolean;
         source?: string;
         version?: string;
         'dev-dependencies'?: boolean;
@@ -566,9 +585,10 @@ Prompt modes:
       },
       presetValues,
     );
+    const promptCatalog = this.buildPromptCatalog(normalizedFlags);
     if (useBrowserUi) {
       presetValues = await runPromptCatalogWebUI({
-        stages: Init.buildWebUiStages(),
+        stages: Init.buildWebUiStages(promptCatalog),
         values: {
           ...dynamicInitialValues,
           ...presetValues,
@@ -588,7 +608,7 @@ Prompt modes:
       });
     }
 
-    const results = await runPromptCatalog(Init.prompts, {
+    const results = await runPromptCatalog(promptCatalog, {
       initialValues: dynamicInitialValues,
       values: presetValues,
       yes: normalizedFlags.yes || useBrowserUi || !interactive,
@@ -604,15 +624,32 @@ Prompt modes:
       },
       command: this,
     });
+    const normalizedResults: Record<string, string | number | boolean> = {
+      ...pickKeys(presetValues, [
+        'authType',
+        'accessToken',
+        'dbSchema',
+        'dbTablePrefix',
+        'dbUnderscored',
+        'skipAuth',
+        'username',
+        'password',
+      ]),
+      ...results,
+    };
 
-    const hasNocobase = results.hasNocobase === 'yes';
+    const hasNocobase = normalizedResults.hasNocobase === 'yes';
     const existingEnv = !hasNocobase
-      ? await getEnv(String(results.appName ?? '').trim(), { scope: resolveDefaultConfigScope() })
+      ? await getEnv(String(normalizedResults.appName ?? '').trim(), { scope: resolveDefaultConfigScope() })
       : undefined;
 
     if (existingEnv && Boolean(normalizedFlags.force)) {
       printWarning(
-        `Reconfiguring existing env ${pc.cyan(pc.bold(`"${existingEnv.name}"`))} from the global config because ${pc.bold('--force')} was set. The env config will be updated before install starts, then refreshed again after install succeeds.`,
+        `Reconfiguring existing env ${pc.cyan(
+          pc.bold(`"${existingEnv.name}"`),
+        )} from the global config because ${pc.bold(
+          '--force',
+        )} was set. The env config will be updated before install starts, then refreshed again after install succeeds.`,
       );
     }
 
@@ -627,14 +664,18 @@ Prompt modes:
       if (hasNocobase) {
         logInitStage('Connecting to the env');
         printVerbose('Running nb env add');
-        await this.config.runCommand('env:add', this.buildEnvAddArgv(results));
+        await this.config.runCommand('env:add', this.buildEnvAddArgv(normalizedResults));
       } else {
         logInitStage('Saving env config');
-        await this.persistManagedEnvConfig(results, normalizedFlags);
-        managedInstallResults = results;
-        printInfo(`Saved env config for "${String(results.appName ?? DEFAULT_INIT_APP_NAME).trim() || DEFAULT_INIT_APP_NAME}".`);
+        await this.persistManagedEnvConfig(normalizedResults, normalizedFlags);
+        managedInstallResults = normalizedResults;
+        printInfo(
+          `Saved env config for "${
+            String(normalizedResults.appName ?? DEFAULT_INIT_APP_NAME).trim() || DEFAULT_INIT_APP_NAME
+          }".`,
+        );
         printVerbose('Running nb init');
-        await this.config.runCommand('install', this.buildInstallArgv(results, normalizedFlags));
+        await this.config.runCommand('install', this.buildInstallArgv(normalizedResults, normalizedFlags));
       }
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : String(error);
@@ -644,7 +685,6 @@ Prompt modes:
       this.error(pc.red(formatted));
       this.exit(1);
     }
-
   }
 
   private static async buildDynamicInitialValuesForInstall(
@@ -675,11 +715,7 @@ Prompt modes:
     }
 
     const downloadSeed = { ...presetValues };
-    if (
-      flags.yes
-      && !Object.prototype.hasOwnProperty.call(downloadSeed, 'source')
-      && downloadSeed.fetchSource !== false
-    ) {
+    if (flags.yes && !Object.prototype.hasOwnProperty.call(downloadSeed, 'source')) {
       downloadSeed.source = 'docker';
     }
 
@@ -698,9 +734,7 @@ Prompt modes:
     return out;
   }
 
-  private static buildWebUiStages(): RunPromptCatalogWebUIStage[] {
-    const c = Init.prompts;
-
+  private static buildWebUiStages(c: PromptsCatalog = Init.prompts): RunPromptCatalogWebUIStage[] {
     return [
       {
         sectionTitle: initText('webUi.gettingStarted.title'),
@@ -716,6 +750,8 @@ Prompt modes:
         catalog: {
           apiBaseUrl: c.apiBaseUrl,
           authType: c.authType,
+          username: c.username,
+          password: c.password,
           accessToken: c.accessToken,
         } satisfies PromptsCatalog,
       },
@@ -727,7 +763,7 @@ Prompt modes:
           appRootPath: c.appRootPath,
           appPort: c.appPort,
           storagePath: c.storagePath,
-          fetchSource: c.fetchSource,
+          skipDownload: c.skipDownload,
         } satisfies PromptsCatalog,
       },
       {
@@ -761,6 +797,9 @@ Prompt modes:
           dbDatabase: c.dbDatabase,
           dbUser: c.dbUser,
           dbPassword: c.dbPassword,
+          dbSchema: c.dbSchema,
+          dbTablePrefix: c.dbTablePrefix,
+          dbUnderscored: c.dbUnderscored,
         } satisfies PromptsCatalog,
       },
       {
@@ -784,6 +823,8 @@ Prompt modes:
     'auth-type'?: string;
     'access-token'?: string;
     token?: string;
+    username?: string;
+    password?: string;
     lang?: string;
     'app-root-path'?: string;
     'app-port'?: string;
@@ -800,7 +841,10 @@ Prompt modes:
     'db-database'?: string;
     'db-user'?: string;
     'db-password'?: string;
-    'fetch-source'?: boolean;
+    'db-schema'?: string;
+    'db-table-prefix'?: string;
+    'db-underscored'?: boolean;
+    'skip-download'?: boolean;
     source?: string;
     version?: string;
     replace?: boolean;
@@ -813,6 +857,7 @@ Prompt modes:
     'docker-platform'?: string;
     'docker-save'?: boolean;
     'npm-registry'?: string;
+    'skip-auth'?: boolean;
   }): PromptInitialValues {
     const preset: PromptInitialValues = {};
     const argv = process.argv.slice(2);
@@ -824,18 +869,24 @@ Prompt modes:
     if (apiBaseUrl) {
       preset.hasNocobase = 'yes';
       preset.apiBaseUrl = apiBaseUrl;
-    } else if (
-      flags['default-api-base-url'] !== undefined
-      && String(flags['default-api-base-url']).trim() !== ''
-    ) {
+    } else if (flags['default-api-base-url'] !== undefined && String(flags['default-api-base-url']).trim() !== '') {
       preset.apiBaseUrl = String(flags['default-api-base-url']).trim();
     }
     if (flags['auth-type'] !== undefined && String(flags['auth-type']).trim() !== '') {
       preset.authType = String(flags['auth-type']).trim();
     }
+    if (flags['skip-auth']) {
+      preset.skipAuth = true;
+    }
     const accessToken = String(flags['access-token'] ?? flags.token ?? '');
     if (flags['access-token'] !== undefined || flags.token !== undefined) {
       preset.accessToken = accessToken;
+    }
+    if (flags.username !== undefined) {
+      preset.username = String(flags.username ?? '').trim();
+    }
+    if (flags.password !== undefined) {
+      preset.password = String(flags.password ?? '');
     }
     if (flags.lang !== undefined && String(flags.lang).trim() !== '') {
       preset.lang = String(flags.lang).trim();
@@ -883,8 +934,24 @@ Prompt modes:
     if (flags['db-password'] !== undefined) {
       preset.dbPassword = String(flags['db-password'] ?? '');
     }
-    if (argvHasToken(argv, ['--fetch-source'])) {
-      preset.fetchSource = Boolean(flags['fetch-source']);
+    if (flags['db-schema'] !== undefined && String(flags['db-schema']).trim() !== '') {
+      preset.dbSchema = String(flags['db-schema']).trim();
+    }
+    if (flags['db-table-prefix'] !== undefined && String(flags['db-table-prefix']).trim() !== '') {
+      preset.dbTablePrefix = String(flags['db-table-prefix']).trim();
+    }
+    if (argvHasToken(argv, ['--db-underscored', '--no-db-underscored'])) {
+      preset.dbUnderscored = Boolean(flags['db-underscored']);
+    }
+    if (argvHasToken(argv, ['--skip-download'])) {
+      preset.skipDownload = Boolean(flags['skip-download']);
+      if (preset.skipDownload) {
+        preset.dockerSave = false;
+        preset.replace = false;
+        preset.devDependencies = false;
+        preset.build = false;
+        preset.buildDts = false;
+      }
     }
     if (flags.source !== undefined && String(flags.source).trim() !== '') {
       preset.source = String(flags.source).trim();
@@ -951,19 +1018,15 @@ Prompt modes:
 
     try {
       logInitStage('Syncing agent skills');
-      const status = await inspectSkillsStatus();
-      if (!status.installed) {
-        printVerbose('Installing NocoBase agent skills (nb skills install)');
-        await installNocoBaseSkills();
-        printInfo('Agent skills ready.');
-        return;
-      }
-
-      printVerbose('Updating NocoBase agent skills (nb skills update)');
-      await updateNocoBaseSkills();
+      await installNocoBaseSkills();
       printInfo('Agent skills ready.');
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : String(error);
+      if (isNpmRegistryUnavailable(error)) {
+        printWarning(translateCli('commands.init.messages.skillsSyncRegistryUnavailable'));
+        printVerbose(`Skipped agent skills sync because the npm registry was unavailable: ${message}`);
+        return;
+      }
       this.error(pc.red(`Skills sync failed: ${message}`));
       this.exit(1);
     }
@@ -971,7 +1034,12 @@ Prompt modes:
 
   private async persistManagedEnvConfig(
     results: Record<string, string | number | boolean>,
-    flags: { 'db-host'?: string } = {},
+    flags: {
+      'db-host'?: string;
+      'db-schema'?: string;
+      'db-table-prefix'?: string;
+      'db-underscored'?: boolean;
+    } = {},
   ): Promise<void> {
     const envName = String(results.appName ?? DEFAULT_INIT_APP_NAME).trim() || DEFAULT_INIT_APP_NAME;
     const appPort = String(results.appPort ?? '').trim();
@@ -990,15 +1058,18 @@ Prompt modes:
     const dbDatabase = String(results.dbDatabase ?? '').trim();
     const dbUser = String(results.dbUser ?? '').trim();
     const dbPassword = String(results.dbPassword ?? '');
+    const dbSchema = String(results.dbSchema ?? '').trim();
+    const dbTablePrefix = String(results.dbTablePrefix ?? '').trim();
     const apiBaseUrl = String(results.apiBaseUrl ?? '').trim();
     const authType = String(results.authType ?? '').trim() || 'oauth';
+    const authUsername = authType === 'basic' ? String(results.username ?? results.rootUsername ?? '').trim() : '';
     const accessToken = String(results.accessToken ?? '');
-    const builtinDb =
-      explicitDbHostFlag(flags)
-        ? false
-        : results.builtinDb === undefined
-          ? undefined
-          : Boolean(results.builtinDb);
+    const skipDownload = results.skipDownload === true;
+    const builtinDb = explicitDbHostFlag(flags)
+      ? false
+      : results.builtinDb === undefined
+        ? undefined
+        : Boolean(results.builtinDb);
 
     await upsertEnv(
       envName,
@@ -1011,7 +1082,9 @@ Prompt modes:
               ? { kind: 'http' }
               : {}),
         ...(apiBaseUrl ? { apiBaseUrl } : appPort ? { apiBaseUrl: `http://127.0.0.1:${appPort}/api` } : {}),
-        ...(authType === 'token' && accessToken ? { accessToken } : {}),
+        ...(authType ? { authType } : {}),
+        ...(authUsername ? { authUsername } : {}),
+        ...((authType === 'token' || authType === 'basic') && accessToken ? { accessToken } : {}),
         ...(source ? { source } : {}),
         ...(version ? { downloadVersion: version } : {}),
         ...(dockerRegistry ? { dockerRegistry } : {}),
@@ -1021,9 +1094,11 @@ Prompt modes:
         ...(appRootPath ? { appRootPath } : {}),
         ...(storagePath ? { storagePath } : {}),
         ...(appPort ? { appPort } : {}),
-        ...(results.devDependencies !== undefined ? { devDependencies: Boolean(results.devDependencies) } : {}),
-        ...(results.build !== undefined ? { build: Boolean(results.build) } : {}),
-        ...(results.buildDts !== undefined ? { buildDts: Boolean(results.buildDts) } : {}),
+        ...(!skipDownload && results.devDependencies !== undefined
+          ? { devDependencies: Boolean(results.devDependencies) }
+          : {}),
+        ...(!skipDownload && results.build !== undefined ? { build: Boolean(results.build) } : {}),
+        ...(!skipDownload && results.buildDts !== undefined ? { buildDts: Boolean(results.buildDts) } : {}),
         ...(builtinDb !== undefined ? { builtinDb } : {}),
         ...(dbDialect ? { dbDialect } : {}),
         ...(builtinDbImage || builtinDb === false ? { builtinDbImage: builtinDbImage || undefined } : {}),
@@ -1032,6 +1107,9 @@ Prompt modes:
         ...(dbDatabase ? { dbDatabase } : {}),
         ...(dbUser ? { dbUser } : {}),
         ...(dbPassword ? { dbPassword } : {}),
+        ...(dbSchema ? { dbSchema } : {}),
+        ...(dbTablePrefix ? { dbTablePrefix } : {}),
+        ...(results.dbUnderscored !== undefined ? { dbUnderscored: Boolean(results.dbUnderscored) } : {}),
       },
       { scope: resolveDefaultConfigScope() },
     );
@@ -1042,9 +1120,19 @@ Prompt modes:
     argv.push('--no-intro');
     argv.push('--api-base-url', String(results.apiBaseUrl ?? DEFAULT_INIT_API_BASE_URL));
     argv.push('--auth-type', String(results.authType ?? 'oauth'));
-
-    if (results.authType === 'token') {
-      argv.push('--access-token', String(results.accessToken ?? ''));
+    const accessToken = String(results.accessToken ?? '');
+    const username = String(results.username ?? '').trim();
+    const password = String(results.password ?? '');
+    if (results.skipAuth === true) {
+      argv.push('--skip-auth');
+    } else if (results.authType === 'token' && accessToken) {
+      argv.push('--access-token', accessToken);
+    }
+    if (results.authType === 'basic' && username) {
+      argv.push('--username', username);
+    }
+    if (results.authType === 'basic' && results.skipAuth !== true && password) {
+      argv.push('--password', password);
     }
 
     return argv;
@@ -1052,7 +1140,20 @@ Prompt modes:
 
   private buildInstallArgv(
     results: Record<string, string | number | boolean>,
-    flags: { yes?: boolean; force?: boolean; build?: boolean; verbose?: boolean; 'db-host'?: string },
+    flags: {
+      yes?: boolean;
+      force?: boolean;
+      build?: boolean;
+      verbose?: boolean;
+      username?: string;
+      password?: string;
+      'skip-auth'?: boolean;
+      'skip-download'?: boolean;
+      'db-host'?: string;
+      'db-schema'?: string;
+      'db-table-prefix'?: string;
+      'db-underscored'?: boolean;
+    },
     options?: {
       nonInteractive?: boolean;
       resume?: boolean;
@@ -1066,17 +1167,20 @@ Prompt modes:
     const processArgv = process.argv.slice(2);
     const envName = String(results.appName ?? DEFAULT_INIT_APP_NAME).trim() || DEFAULT_INIT_APP_NAME;
     const source = String(results.source ?? '').trim();
+    const skipDownload = Boolean(flags['skip-download']) || results.skipDownload === true;
     const hasNocobase = String(results.hasNocobase ?? '').trim() === 'yes';
     const apiBaseUrl = String(results.apiBaseUrl ?? '').trim();
     const authType = String(results.authType ?? '').trim();
     const accessToken = String(results.accessToken ?? '');
+    const username = String(results.username ?? flags.username ?? '').trim();
+    const password = String(results.password ?? flags.password ?? '');
 
     argv.push('--env', envName);
     if (options?.resume) {
       argv.push('--resume');
     }
 
-    if (Boolean(flags.verbose)) {
+    if (flags.verbose) {
       argv.push('--verbose');
     }
 
@@ -1088,8 +1192,18 @@ Prompt modes:
       argv.push('--auth-type', authType);
     }
 
+    if (Boolean(flags['skip-auth']) || results.skipAuth === true) {
+      argv.push('--skip-auth');
+    }
+
     if (authType === 'token' && accessToken) {
       argv.push('--access-token', accessToken);
+    }
+    if (authType === 'basic' && username) {
+      argv.push('--username', username);
+    }
+    if (authType === 'basic' && password) {
+      argv.push('--password', password);
     }
 
     const lang = String(results.lang ?? '').trim();
@@ -1112,62 +1226,62 @@ Prompt modes:
       argv.push('--storage-path', storagePath);
     }
 
-    if (Boolean(flags.force)) {
+    if (flags.force) {
       argv.push('--force');
     }
 
-    if (Boolean(results.fetchSource)) {
-      argv.push('--fetch-source');
+    if (source) {
+      argv.push('--source', source);
+    }
 
-      if (source) {
-        argv.push('--source', source);
-      }
+    const version = resolveInitDownloadVersion(results);
+    if (version) {
+      argv.push('--version', version);
+    }
 
-      const version = resolveInitDownloadVersion(results);
-      if (version) {
-        argv.push('--version', version);
-      }
+    const gitUrl = String(results.gitUrl ?? '').trim();
+    if (gitUrl) {
+      argv.push('--git-url', gitUrl);
+    }
 
+    const dockerRegistry = String(results.dockerRegistry ?? '').trim();
+    if (dockerRegistry) {
+      argv.push('--docker-registry', dockerRegistry);
+    }
+
+    const dockerPlatform = String(results.dockerPlatform ?? '').trim();
+    if (dockerPlatform) {
+      argv.push('--docker-platform', dockerPlatform);
+    }
+
+    const npmRegistry = String(results.npmRegistry ?? '').trim();
+    if (npmRegistry) {
+      argv.push('--npm-registry', npmRegistry);
+    }
+
+    if (skipDownload) {
+      argv.push('--skip-download');
+    } else {
       const outputDir = String(results.outputDir ?? '').trim();
       if (outputDir) {
         argv.push('--output-dir', outputDir);
       }
 
-      const gitUrl = String(results.gitUrl ?? '').trim();
-      if (gitUrl) {
-        argv.push('--git-url', gitUrl);
-      }
-
-      const dockerRegistry = String(results.dockerRegistry ?? '').trim();
-      if (dockerRegistry) {
-        argv.push('--docker-registry', dockerRegistry);
-      }
-
-      const dockerPlatform = String(results.dockerPlatform ?? '').trim();
-      if (dockerPlatform) {
-        argv.push('--docker-platform', dockerPlatform);
-      }
-
-      const npmRegistry = String(results.npmRegistry ?? '').trim();
-      if (npmRegistry) {
-        argv.push('--npm-registry', npmRegistry);
-      }
-
-      if (Boolean(results.replace)) {
+      if (results.replace) {
         argv.push('--replace');
       }
-      if (Boolean(results.devDependencies)) {
+      if (results.devDependencies) {
         argv.push('--dev-dependencies');
       }
-      if (Boolean(results.dockerSave)) {
+      if (results.dockerSave) {
         argv.push('--docker-save');
       }
-      if (results.build !== undefined && !Boolean(results.build)) {
+      if (results.build !== undefined && !results.build) {
         argv.push('--no-build');
       } else if (argvHasToken(processArgv, ['--build', '--no-build']) && flags.build === false) {
         argv.push('--no-build');
       }
-      if (Boolean(results.buildDts)) {
+      if (results.buildDts) {
         argv.push('--build-dts');
       }
     }
@@ -1200,9 +1314,9 @@ Prompt modes:
     const dockerBuiltinDbPortIsHidden = builtinDb && source === 'docker';
     const dbDefaultPort = defaultDbPortForDialect(dbDialect);
     if (
-      dbPort
-      && (!dockerBuiltinDbPortIsHidden || dbPortWasProvided)
-      && (!flags.yes || dbPortWasProvided || dbPort !== dbDefaultPort)
+      dbPort &&
+      (!dockerBuiltinDbPortIsHidden || dbPortWasProvided) &&
+      (!flags.yes || dbPortWasProvided || dbPort !== dbDefaultPort)
     ) {
       argv.push('--db-port', dbPort);
     }
@@ -1220,6 +1334,17 @@ Prompt modes:
     const dbPassword = String(results.dbPassword ?? '');
     if (dbPassword) {
       argv.push('--db-password', dbPassword);
+    }
+    const dbSchema = String(results.dbSchema ?? '').trim();
+    if (dbSchema) {
+      argv.push('--db-schema', dbSchema);
+    }
+    const dbTablePrefix = String(results.dbTablePrefix ?? '').trim();
+    if (dbTablePrefix) {
+      argv.push('--db-table-prefix', dbTablePrefix);
+    }
+    if (results.dbUnderscored !== undefined) {
+      argv.push(results.dbUnderscored ? '--db-underscored' : '--no-db-underscored');
     }
 
     const rootUsername = String(results.rootUsername ?? '').trim();
@@ -1247,62 +1372,65 @@ Prompt modes:
 
   private buildManagedInstallResumeCommand(
     results: Record<string, string | number | boolean>,
-    flags: { yes?: boolean },
+    flags: { yes?: boolean; 'skip-download'?: boolean },
   ): string {
     const argv = ['nb', 'init'];
-    if (Boolean(flags.yes)) {
+    if (flags.yes) {
       argv.push('--yes');
     }
 
     const envName = String(results.appName ?? DEFAULT_INIT_APP_NAME).trim() || DEFAULT_INIT_APP_NAME;
     argv.push('--env', envName);
 
-    if (Boolean(results.fetchSource)) {
-      const source = String(results.source ?? '').trim();
-      if (source) {
-        argv.push('--source', source);
-      }
+    const source = String(results.source ?? '').trim();
+    const skipDownload = Boolean(flags['skip-download']) || results.skipDownload === true;
+    if (source) {
+      argv.push('--source', source);
+    }
 
-      const version = resolveInitDownloadVersion(results);
-      if (version) {
-        argv.push('--version', version);
-      }
+    const version = resolveInitDownloadVersion(results);
+    if (version) {
+      argv.push('--version', version);
+    }
 
+    const gitUrl = String(results.gitUrl ?? '').trim();
+    if (gitUrl) {
+      argv.push('--git-url', gitUrl);
+    }
+
+    const dockerRegistry = String(results.dockerRegistry ?? '').trim();
+    if (dockerRegistry) {
+      argv.push('--docker-registry', dockerRegistry);
+    }
+
+    const dockerPlatform = String(results.dockerPlatform ?? '').trim();
+    if (dockerPlatform) {
+      argv.push('--docker-platform', dockerPlatform);
+    }
+
+    const npmRegistry = String(results.npmRegistry ?? '').trim();
+    if (npmRegistry) {
+      argv.push('--npm-registry', npmRegistry);
+    }
+
+    if (skipDownload) {
+      argv.push('--skip-download');
+    } else {
       const outputDir = String(results.outputDir ?? '').trim();
       if (outputDir && outputDir !== String(results.appRootPath ?? '').trim()) {
         argv.push('--output-dir', outputDir);
       }
 
-      const gitUrl = String(results.gitUrl ?? '').trim();
-      if (gitUrl) {
-        argv.push('--git-url', gitUrl);
-      }
-
-      const dockerRegistry = String(results.dockerRegistry ?? '').trim();
-      if (dockerRegistry) {
-        argv.push('--docker-registry', dockerRegistry);
-      }
-
-      const dockerPlatform = String(results.dockerPlatform ?? '').trim();
-      if (dockerPlatform) {
-        argv.push('--docker-platform', dockerPlatform);
-      }
-
-      const npmRegistry = String(results.npmRegistry ?? '').trim();
-      if (npmRegistry) {
-        argv.push('--npm-registry', npmRegistry);
-      }
-
-      if (Boolean(results.devDependencies)) {
+      if (results.devDependencies) {
         argv.push('--dev-dependencies');
       }
-      if (Boolean(results.dockerSave)) {
+      if (results.dockerSave) {
         argv.push('--docker-save');
       }
-      if (results.build !== undefined && !Boolean(results.build)) {
+      if (results.build !== undefined && !results.build) {
         argv.push('--no-build');
       }
-      if (Boolean(results.buildDts)) {
+      if (results.buildDts) {
         argv.push('--build-dts');
       }
     }
@@ -1317,11 +1445,7 @@ Prompt modes:
     flags: { yes?: boolean },
   ): string {
     const command = this.buildManagedInstallResumeCommand(results, flags);
-    return [
-      message,
-      '',
-      translateCli('commands.init.messages.resumeAfterInstallFailure', { command }),
-    ].join('\n');
+    return [message, '', translateCli('commands.init.messages.resumeAfterInstallFailure', { command })].join('\n');
   }
 
   private buildResumeInstallArgv(flags: {
@@ -1345,7 +1469,10 @@ Prompt modes:
     'db-database'?: string;
     'db-user'?: string;
     'db-password'?: string;
-    'fetch-source'?: boolean;
+    'db-schema'?: string;
+    'db-table-prefix'?: string;
+    'db-underscored'?: boolean;
+    'skip-download'?: boolean;
     source?: string;
     version?: string;
     'dev-dependencies'?: boolean;
@@ -1357,6 +1484,7 @@ Prompt modes:
     'docker-platform'?: string;
     'docker-save'?: boolean;
     'npm-registry'?: string;
+    'skip-auth'?: boolean;
   }): string[] {
     const preset = this.buildPresetValuesFromFlags(flags) as Record<string, string | number | boolean>;
     if (flags.yes) {
@@ -1366,18 +1494,13 @@ Prompt modes:
       preset.rootPassword ??= yesInitialValue(Install.rootUserPrompts.rootPassword, 'admin123');
       preset.rootNickname ??= yesInitialValue(Install.rootUserPrompts.rootNickname, 'Super Admin');
     }
-    if (hasDownloadOverride(flags)) {
-      preset.fetchSource ??= true;
+    if (!flags['skip-download']) {
+      preset.replace ??= true;
     }
-    preset.replace ??= true;
 
-    return this.buildInstallArgv(
-      preset,
-      flags,
-      {
-        nonInteractive: Boolean(flags.yes),
-        resume: true,
-      },
-    );
+    return this.buildInstallArgv(preset, flags, {
+      nonInteractive: Boolean(flags.yes),
+      resume: true,
+    });
   }
 }

@@ -12,13 +12,27 @@ import crypto from 'crypto';
 import path from 'path';
 import urlJoin from 'url-join';
 
+const INVALID_FILENAME_CHARS = new Set(['<', '>', '?', '*', '|', ':', '"', '\\', '/']);
+
+function sanitizeFilename(value: string) {
+  return Array.from(value)
+    .map((char) => {
+      const code = char.charCodeAt(0);
+      return code < 32 || code === 127 || INVALID_FILENAME_CHARS.has(char) ? '-' : char;
+    })
+    .join('');
+}
+
 function normalizeOriginalname(file) {
-  const originalname = file?.originalname;
+  const originalname: string | Buffer | undefined = file?.originalname;
   if (!originalname) {
     return '';
   }
   if (Buffer.isBuffer(originalname)) {
     return originalname.toString('utf8');
+  }
+  if (Array.from(originalname).some((char: string) => char.charCodeAt(0) > 0xff)) {
+    return originalname;
   }
   const decoded = Buffer.from(originalname, 'binary').toString('utf8');
   if (decoded.includes('\uFFFD')) {
@@ -30,14 +44,14 @@ function normalizeOriginalname(file) {
 export function getFilename(req, file, cb) {
   const originalname = normalizeOriginalname(file);
   // Filename in Windows cannot contain the following characters: < > ? * | : " \ /
-  const baseName = path.basename(originalname.replace(/[<>?*|:"\\/]/g, '-'), path.extname(originalname));
+  const baseName = path.basename(sanitizeFilename(originalname), path.extname(originalname));
   cb(null, `${baseName}-${uid(6)}${path.extname(originalname)}`);
 }
 
 function getOriginalFilename(file) {
   const originalname = normalizeOriginalname(file);
   const extname = path.extname(originalname);
-  const baseName = path.basename(originalname.replace(/[<>?*|:"\\/]/g, '-'), extname);
+  const baseName = path.basename(sanitizeFilename(originalname), extname);
   return `${baseName}${extname}`;
 }
 

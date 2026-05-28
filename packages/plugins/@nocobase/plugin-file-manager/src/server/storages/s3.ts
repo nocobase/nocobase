@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { DeleteObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import { CopyObjectCommand, DeleteObjectCommand, HeadObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { Upload } from '@aws-sdk/lib-storage';
 import urlJoin from 'url-join';
 import { isURL } from '@nocobase/utils';
@@ -164,6 +164,37 @@ export default class extends StorageType {
     return {
       Deleted,
     };
+  }
+
+  async exists(record: AttachmentModel): Promise<boolean> {
+    try {
+      await this.client.send(
+        new HeadObjectCommand({
+          Bucket: this.storage.options.bucket,
+          Key: this.getFileKey(record),
+        }),
+      );
+      return true;
+    } catch (error) {
+      if (['NotFound', 'NoSuchKey', 'NoSuchBucket'].includes((error as Error).name)) {
+        return false;
+      }
+      throw error;
+    }
+  }
+
+  async copy(source: AttachmentModel, target: AttachmentModel): Promise<void> {
+    const sourceKey = this.getFileKey(source);
+    await this.client.send(
+      new CopyObjectCommand({
+        Bucket: this.storage.options.bucket,
+        Key: this.getFileKey(target),
+        CopySource: `${this.storage.options.bucket}/${sourceKey
+          .split('/')
+          .map((segment) => encodeURIComponent(segment))
+          .join('/')}`,
+      }),
+    );
   }
 
   async delete(records: AttachmentModel[]): Promise<[number, AttachmentModel[]]> {

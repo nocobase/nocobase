@@ -15,7 +15,7 @@ import { isBareFlowContextPath } from '../flow-surfaces/context';
 import { waitForFixtureCollectionsReady } from './flow-surfaces.fixture-ready';
 import { createFlowSurfacesMockServer, loginFlowSurfacesRootAgent } from './flow-surfaces.mock-server';
 
-describe.skip('flowSurfaces context', () => {
+describe('flowSurfaces context', () => {
   let app: MockServer;
   let db: Database;
   let flowRepo: FlowModelRepository;
@@ -692,7 +692,16 @@ describe.skip('flowSurfaces context', () => {
 });
 
 function getData(response: any) {
-  return response?.body?.data || response?.data || response;
+  if (response?.body?.data && Object.prototype.hasOwnProperty.call(response.body.data, 'data')) {
+    return response.body.data.data;
+  }
+  if (response?.body && Object.prototype.hasOwnProperty.call(response.body, 'data')) {
+    return response.body.data;
+  }
+  if (response && Object.prototype.hasOwnProperty.call(response, 'data')) {
+    return response.data;
+  }
+  return response?.body || response;
 }
 
 function readErrorMessage(response: any) {

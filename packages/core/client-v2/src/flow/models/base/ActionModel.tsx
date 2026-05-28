@@ -48,18 +48,19 @@ ActionModel.registerFlow({
                 title: tExpr('Button icon'),
               }
             : undefined,
+          iconOnly: ctx.model.enableEditIcon
+            ? {
+                'x-decorator': 'FormItem',
+                'x-component': 'Switch',
+                title: tExpr('Icon only'),
+              }
+            : undefined,
           type: ctx.model.enableEditType
             ? {
                 'x-decorator': 'FormItem',
                 'x-component': 'Radio.Group',
                 title: tExpr('Button type'),
-                enum: [
-                  { value: 'default', label: '{{t("Default")}}' },
-                  { value: 'primary', label: '{{t("Primary")}}' },
-                  { value: 'dashed', label: '{{t("Dashed")}}' },
-                  { value: 'link', label: '{{t("Link")}}' },
-                  { value: 'text', label: '{{t("Text")}}' },
-                ],
+                enum: ctx.model.buttonTypeOptions,
               }
             : undefined,
           danger: ctx.model.enableEditDanger

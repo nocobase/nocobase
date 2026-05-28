@@ -9,10 +9,25 @@
 
 import { useFlowModelContext } from '@nocobase/flow-engine';
 import { dayjs } from '@nocobase/utils/client';
+import type { Dayjs } from 'dayjs';
 import { DatePicker } from 'antd';
 import { DatePicker as AntdMobileDatePicker } from 'antd-mobile';
 import React from 'react';
 import { useCallback, useState } from 'react';
+
+type DateValue = string | number | Date | Dayjs | null | undefined;
+
+function toNativeDate(value: DateValue): Date | null {
+  if (value === null || value === undefined || value === '') {
+    return null;
+  }
+  if (value instanceof Date) {
+    return Number.isNaN(value.getTime()) ? null : value;
+  }
+
+  const parsed = dayjs.isDayjs(value) ? value : dayjs(value);
+  return parsed.isValid() ? parsed.toDate() : null;
+}
 
 export const MobileDatePicker = (props) => {
   const {
@@ -56,9 +71,9 @@ export const MobileDatePicker = (props) => {
         return data;
     }
   }, []);
-  // Convert dayjs min/max to native Date for Antd Mobile Picker
-  const minDate = min ? (min as any).toDate() : new Date(1950, 0, 1);
-  const maxDate = max ? (max as any).toDate() : new Date(2050, 11, 31);
+  const mobileValue = toNativeDate(value);
+  const minDate = toNativeDate(min) ?? new Date(1950, 0, 1);
+  const maxDate = toNativeDate(max) ?? new Date(2050, 11, 31);
 
   return (
     <>
@@ -78,6 +93,7 @@ export const MobileDatePicker = (props) => {
         cancelText={t('Cancel')}
         confirmText={t('Confirm')}
         visible={visible}
+        value={mobileValue}
         title={<a onClick={handleClear}>{t('Clear')}</a>}
         onClose={() => {
           setVisible(false);

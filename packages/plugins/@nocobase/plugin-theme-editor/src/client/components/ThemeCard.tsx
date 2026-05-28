@@ -13,7 +13,7 @@ import { error } from '@nocobase/utils/client';
 import { App, Card, ConfigProvider, Dropdown, Space, Switch, Tag, message } from 'antd';
 import React, { useCallback, useMemo } from 'react';
 import { ThemeConfig, ThemeItem } from '../../types';
-import { Primary } from '../antd-token-previewer';
+import { Primary } from '../../client-v2/antd-token-previewer';
 import { useUpdateThemeSettings } from '../hooks/useUpdateThemeSettings';
 import { useTranslation } from '../locale';
 import { useThemeId } from './InitializeTheme';

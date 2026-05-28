@@ -14,16 +14,8 @@ import type { ReadableStream as NodeReadableStream } from 'node:stream/web';
 import { createGunzip } from 'node:zlib';
 import * as tar from 'tar';
 import type { ManagedAppRuntime } from '../../../lib/app-runtime.js';
-import {
-  removeStoragePluginSymlink,
-  resolvePluginStoragePath,
-} from '../../../lib/plugin-storage.js';
-import {
-  parseLicenseKey,
-  readSavedLicenseKey,
-  resolveLicensePkgUrl,
-  type LicenseKeyData,
-} from '../shared.js';
+import { removeStoragePluginSymlink, resolvePluginStoragePath } from '../../../lib/plugin-storage.js';
+import { parseLicenseKey, readSavedLicenseKey, resolveLicensePkgUrl, type LicenseKeyData } from '../shared.js';
 
 export type LicensedPluginPackages = {
   commercialPlugins: string[];
@@ -63,6 +55,13 @@ export type LicensePluginCleanResult = {
 };
 
 export type LicensePluginCleanDetail = LicensePluginCleanResult['details'][number];
+
+export class MissingSavedLicenseKeyError extends Error {
+  constructor(envName: string) {
+    super(`No saved license key was found for env "${envName}". Run \`nb license activate\` first.`);
+    this.name = 'MissingSavedLicenseKeyError';
+  }
+}
 
 async function resolvePkgBaseUrl(pkgUrl?: string): Promise<string> {
   return await resolveLicensePkgUrl(pkgUrl);
@@ -109,7 +108,7 @@ async function loginPkg(baseURL: string, keyData: LicenseKeyData): Promise<strin
 export async function loadSavedLicenseKeyData(runtime: ManagedAppRuntime): Promise<LicenseKeyData> {
   const licenseKey = await readSavedLicenseKey(runtime);
   if (!licenseKey) {
-    throw new Error(`No saved license key was found for env "${runtime.envName}". Run \`nb license activate\` first.`);
+    throw new MissingSavedLicenseKeyError(runtime.envName);
   }
   return parseLicenseKey(licenseKey);
 }
@@ -344,13 +343,7 @@ export async function syncLicensedPlugins(
       continue;
     }
 
-    const { action, warning } = await downloadPlugin(
-      baseURL,
-      token,
-      pluginName,
-      options.version,
-      storagePath,
-    );
+    const { action, warning } = await downloadPlugin(baseURL, token, pluginName, options.version, storagePath);
     if (warning) {
       result.warnings.push(warning);
     }

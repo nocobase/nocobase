@@ -213,6 +213,7 @@ const ArrayNester = ({
   const isConfigMode = !!model.context.flowSettingsEnabled;
   const { t } = useTranslation();
   const rowIndex = model.context.fieldIndex || [];
+  const parentFieldPathArray = (model?.parent as any)?.context?.fieldPathArray || [];
   // 用来缓存每行的 fork，保证每行只创建一次
   const forksRef = useRef<Record<string, any>>({});
   const collectionName = model.context.collectionField.name;
@@ -251,7 +252,7 @@ const ArrayNester = ({
               {displayFields.map((field: any, index) => {
                 const { key, name: fieldName, isDefault } = field;
                 const fieldIndex = [...rowIndex, `${collectionName}:${index}`];
-
+                const fieldPathArray = parentFieldPathArray;
                 // 每行只创建一次 fork
                 if (!forksRef.current[key]) {
                   const fork = gridModel.createFork({ disabled });
@@ -266,6 +267,11 @@ const ArrayNester = ({
 
                 currentFork.context.defineProperty('fieldIndex', {
                   get: () => fieldIndex,
+                  cache: false,
+                });
+                console.log(fieldPathArray);
+                currentFork.context.defineProperty('fieldPathArray', {
+                  get: () => fieldPathArray,
                   cache: false,
                 });
 

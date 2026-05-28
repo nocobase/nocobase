@@ -455,6 +455,7 @@ describe('PageModel', () => {
       } as any;
       (pageModel as any).context = {
         currentRoute: {
+          id: 'route-1',
           enableTabs: false,
         },
       };
@@ -479,6 +480,7 @@ describe('PageModel', () => {
       } as any;
       (pageModel as any).context = {
         currentRoute: {
+          id: 'route-1',
           enableTabs: true,
         },
       };
@@ -494,6 +496,59 @@ describe('PageModel', () => {
         backgroundColor: 'var(--colorBgLayout)',
         paddingBottom: 0,
       });
+    });
+
+    it('should ignore stale desktop route enableTabs=false from another route', () => {
+      pageModel.props = {
+        routeId: 'route-1',
+        displayTitle: true,
+        enableTabs: true,
+        title: 'Title',
+        headerStyle: { backgroundColor: 'var(--colorBgLayout)' },
+      } as any;
+      (pageModel as any).context = {
+        currentRoute: {
+          id: 'route-2',
+          enableTabs: false,
+        },
+      };
+      pageModel.renderTabs = vi.fn(() => null);
+      pageModel.renderFirstTab = vi.fn(() => null);
+
+      const result = pageModel.render() as any;
+      const header = result.props.children[0];
+
+      expect(pageModel.renderTabs).toHaveBeenCalled();
+      expect(pageModel.renderFirstTab).not.toHaveBeenCalled();
+      expect(header.props.style).toMatchObject({
+        backgroundColor: 'var(--colorBgLayout)',
+        paddingBottom: 0,
+      });
+    });
+
+    it('should ignore stale desktop route enableTabs=true from another route', () => {
+      pageModel.props = {
+        routeId: 'route-1',
+        displayTitle: true,
+        enableTabs: false,
+        title: 'Title',
+        headerStyle: { backgroundColor: 'var(--colorBgLayout)' },
+      } as any;
+      (pageModel as any).context = {
+        currentRoute: {
+          id: 'route-2',
+          enableTabs: true,
+        },
+      };
+      pageModel.renderTabs = vi.fn(() => null);
+      pageModel.renderFirstTab = vi.fn(() => null);
+
+      const result = pageModel.render() as any;
+      const header = result.props.children[0];
+
+      expect(pageModel.renderTabs).not.toHaveBeenCalled();
+      expect(pageModel.renderFirstTab).toHaveBeenCalled();
+      expect(header.props.style).toEqual({ backgroundColor: 'var(--colorBgLayout)' });
     });
   });
 
@@ -630,6 +685,7 @@ describe('PageModel', () => {
     it('should use page documentTitle when desktop route disables tabs even if flow model enables tabs', async () => {
       pageModel.props = { routeId: 'route-1', enableTabs: true, title: 'Route page title' } as any;
       (pageModel as any).context.currentRoute = {
+        id: 'route-1',
         enableTabs: false,
       };
       (pageModel as any).stepParams = {

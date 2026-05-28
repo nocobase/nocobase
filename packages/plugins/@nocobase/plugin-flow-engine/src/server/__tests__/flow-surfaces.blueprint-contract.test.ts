@@ -26,7 +26,7 @@ import { waitForFixtureCollectionsReady } from './flow-surfaces.fixture-ready';
 import { expectTemplateUsage, getListData } from './flow-surfaces.templates.helpers';
 import { FlowSurfacesService } from '../flow-surfaces/service';
 
-describe.skip('flowSurfaces applyBlueprint contract', () => {
+describe('flowSurfaces applyBlueprint contract', () => {
   const DEFAULT_COLLECTION_BLOCK_ACTION_USES = new Set([
     'FilterActionModel',
     'RefreshActionModel',

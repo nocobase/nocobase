@@ -7,10 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import enUS from '../locale/en-US.json';
-import zhCN from '../locale/zh-CN.json';
+// No client-side locale bundle. Resources under namespaces
+// `@nocobase/plugin-acl` and `acl` are auto-loaded by the v2 buildin
+// `LocalePlugin.afterAdd`, which fetches them from server's `app:getLang`
+// endpoint.
 
-export const aclLocaleResources = {
-  'en-US': enUS,
-  'zh-CN': zhCN,
-};
+export {};

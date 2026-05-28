@@ -22,7 +22,6 @@ import { Form, Space, Cascader, Select, Input, Checkbox, Button, InputNumber } f
 import { DeleteOutlined, ArrowUpOutlined, ArrowDownOutlined, PlusOutlined } from '@ant-design/icons';
 import isEqual from 'lodash/isEqual';
 import { useT } from '../../locale';
-import { useForm as useFormilyForm } from '@formily/react';
 import {
   getFieldOptions,
   getCollectionOptions,
@@ -111,16 +110,17 @@ function ensureQueryShape(query?: QueryValue): Required<QueryValue> {
 
 const QueryBuilderInner: FC<{
   forwardedRef: ForwardedRef<QueryBuilderRef>;
-}> = observer(({ forwardedRef }) => {
+  value?: QueryValue;
+  onChange?: (value: QueryValue) => void;
+}> = observer(({ forwardedRef, value, onChange }) => {
   const t = useT();
-  const stepForm = useFormilyForm();
   const [form] = Form.useForm();
   const ctx = useFlowSettingsContext<any>();
   const lang = ctx?.i18n?.language;
   const dm = ctx?.model?.context?.dataSourceManager;
   const compile = useCompile();
 
-  const rawQuery = stepForm.values?.query;
+  const rawQuery = value;
   const query = useMemo(() => ensureQueryShape(rawQuery), [rawQuery]);
   const collectionPath = query.collectionPath;
   const measuresValue = query.measures;
@@ -137,14 +137,14 @@ const QueryBuilderInner: FC<{
     forwardedRef,
     () => ({
       validate: async () => {
-        const candidate = { ...(stepForm.values?.query || {}), mode: 'builder' };
+        const candidate = { ...(value || {}), mode: 'builder' };
         const { success, message } = validateQuery(candidate);
         if (!success) {
           throw new Error(message);
         }
       },
     }),
-    [stepForm],
+    [value],
   );
 
   const collectionOptions = useMemo(() => getCollectionOptions(dm, compile), [dm, compile]);
@@ -156,19 +156,22 @@ const QueryBuilderInner: FC<{
 
   const setQueryValue = useCallback(
     (key: keyof QueryValue, value: any) => {
-      stepForm.setValuesIn?.(`query.${key}`, value);
+      onChange?.({
+        ...(rawQuery || {}),
+        [key]: value,
+      });
     },
-    [stepForm],
+    [onChange, rawQuery],
   );
 
   const syncQuery = useCallback(
     (patch: Partial<QueryValue>) => {
-      stepForm.setValuesIn?.('query', {
-        ...(stepForm.values?.query || {}),
+      onChange?.({
+        ...(rawQuery || {}),
         ...patch,
       });
     },
-    [stepForm],
+    [onChange, rawQuery],
   );
 
   const moveItem = useCallback(
@@ -187,7 +190,7 @@ const QueryBuilderInner: FC<{
   const handleCollectionChange = useCallback(
     (val: any) => {
       const nextQuery = {
-        ...(stepForm.values?.query || {}),
+        ...(rawQuery || {}),
         collectionPath: val,
         measures: [],
         dimensions: [],
@@ -195,9 +198,9 @@ const QueryBuilderInner: FC<{
         filter: createEmptyFilter(),
       };
       form.setFieldsValue(nextQuery);
-      stepForm.setValuesIn?.('query', nextQuery);
+      onChange?.(nextQuery);
     },
-    [form, stepForm],
+    [form, onChange, rawQuery],
   );
 
   const handleValuesChange = useCallback(
@@ -427,6 +430,8 @@ const QueryBuilderInner: FC<{
   );
 });
 
-export const QueryBuilder = forwardRef<QueryBuilderRef>((_props, ref) => {
-  return <QueryBuilderInner forwardedRef={ref} />;
-});
+export const QueryBuilder = forwardRef<QueryBuilderRef, { value?: QueryValue; onChange?: (value: QueryValue) => void }>(
+  (props, ref) => {
+    return <QueryBuilderInner forwardedRef={ref} value={props.value} onChange={props.onChange} />;
+  },
+);

@@ -14,7 +14,7 @@ import {
 } from '../flow-surfaces/compose-compiler';
 import { executeComposeRuntime } from '../flow-surfaces/compose-runtime';
 
-describe.skip('flowSurfaces compose runtime helpers', () => {
+describe('flowSurfaces compose runtime helpers', () => {
   it('should compile list fields against item containers and preserve append layout strategy', () => {
     const normalizedBlocks: FlowSurfaceComposeNormalizedBlockSpec[] = [
       {

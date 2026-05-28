@@ -35,7 +35,7 @@ const FLOW_SURFACE_TEST_DEFAULT_FILTER_FIELDS_BY_COLLECTION: Record<string, stri
   roles: ['title', 'name'],
 };
 
-describe.skip('flowSurfaces resource', () => {
+describe('flowSurfaces resource', () => {
   let app: MockServer;
   let db: Database;
   let flowRepo: FlowModelRepository;
@@ -416,7 +416,7 @@ describe.skip('flowSurfaces resource', () => {
     );
     expect(tabCatalog.blocks.find((item: any) => item.use === 'FormBlockModel')).toBeUndefined();
     expect(tabCatalog.blocks.find((item: any) => item.use === 'MapBlockModel')?.createSupported).toBe(false);
-    expect(tabCatalog.blocks.find((item: any) => item.use === 'CommentsBlockModel')?.createSupported).toBe(false);
+    expect(tabCatalog.blocks.find((item: any) => item.use === 'CommentsBlockModel')?.createSupported).toBe(true);
     expect(tabCatalog.node.configureOptions).toMatchObject({
       title: {
         type: 'string',
@@ -7996,7 +7996,7 @@ describe.skip('flowSurfaces resource', () => {
         changes: {
           title: 'Run diagnostics',
           version: '1.0.1',
-          code: 'await ctx.runjs(\'console.log("diagnostics")\');',
+          code: "ctx.message.info('Diagnostics ready');",
         },
       },
     });
@@ -8078,7 +8078,7 @@ describe.skip('flowSurfaces resource', () => {
     });
     expect(jsActionReadback.tree.stepParams?.clickSettings?.runJs).toMatchObject({
       version: '1.0.1',
-      code: 'await ctx.runjs(\'console.log("diagnostics")\');',
+      code: "ctx.message.info('Diagnostics ready');",
     });
     expect(jsItemActionReadback.tree.stepParams?.jsSettings?.runJs).toMatchObject({
       version: '1.0.1',
@@ -10873,6 +10873,9 @@ describe.skip('flowSurfaces resource', () => {
 
 function getData(response: any) {
   expect(response.status).toBe(200);
+  if (response.body?.data && Object.prototype.hasOwnProperty.call(response.body.data, 'data')) {
+    return response.body.data.data;
+  }
   if (response.body && Object.prototype.hasOwnProperty.call(response.body, 'data')) {
     return response.body.data;
   }

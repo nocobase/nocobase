@@ -237,6 +237,8 @@ export type FlowSurfaceApplyBlueprintBlockType =
   | 'markdown'
   | 'iframe'
   | 'chart'
+  | 'comments'
+  | 'recordHistory'
   | 'actionPanel'
   | 'jsBlock'
   | 'tree';

@@ -8,7 +8,7 @@
  */
 
 import React from 'react';
-import { act, render, screen, userEvent, waitFor } from '@nocobase/test/client';
+import { act, fireEvent, render, screen, userEvent, waitFor } from '@nocobase/test/client';
 import { vi, beforeEach } from 'vitest';
 import {
   AddSubModelButton,
@@ -309,6 +309,252 @@ describe('transformItems - searchable flags', () => {
     expect(submenu.searchable).toBe(true);
     expect(submenu.searchPlaceholder).toBe('Search blocks');
     expect(Array.isArray(submenu.children)).toBe(true);
+  });
+
+  it('filters searchable field menus by display label instead of item key', async () => {
+    const engine = new FlowEngine();
+    await engine.flowSettings.forceEnable();
+    const parent = engine.createModel<FlowModel>({ use: FlowModel });
+    const user = userEvent.setup();
+
+    const items = [
+      {
+        key: 'fields',
+        label: '',
+        type: 'group' as const,
+        searchable: true,
+        searchPlaceholder: 'Search fields',
+        children: [
+          { key: 'field_name', label: 'Field display name' },
+          { key: 'other_field', label: 'Other field' },
+        ],
+      },
+    ];
+
+    render(
+      <FlowEngineProvider engine={engine}>
+        <ConfigProvider>
+          <App>
+            <AddSubModelButton model={parent} items={items as any} subModelKey="items">
+              Open
+            </AddSubModelButton>
+          </App>
+        </ConfigProvider>
+      </FlowEngineProvider>,
+    );
+
+    await user.click(screen.getByText('Open'));
+    const searchInput = await screen.findByPlaceholderText('Search fields');
+    expect(screen.getByText('Field display name')).toBeInTheDocument();
+
+    await user.type(searchInput, 'field_name');
+    await waitFor(() => expect(screen.queryByText('Field display name')).not.toBeInTheDocument());
+
+    await user.clear(searchInput);
+    await user.type(searchInput, 'display');
+    await waitFor(() => expect(screen.getByText('Field display name')).toBeInTheDocument());
+  });
+
+  it('keeps searchable submenu children during IME composition', async () => {
+    const engine = new FlowEngine();
+    await engine.flowSettings.forceEnable();
+    class Parent extends FlowModel {}
+    engine.registerModels({ Parent });
+    const parent = engine.createModel<FlowModel>({ use: 'Parent' });
+
+    const items = [
+      {
+        key: 'fields',
+        label: 'Fields',
+        searchable: true,
+        children: [
+          { key: 'f1', label: 'Field 1', createModelOptions: { use: 'Parent' } },
+          { key: 'f2', label: 'Field 2', createModelOptions: { use: 'Parent' } },
+        ],
+      },
+    ];
+
+    const user = userEvent.setup();
+    render(
+      <FlowEngineProvider engine={engine}>
+        <ConfigProvider>
+          <App>
+            <AddSubModelButton model={parent} subModelKey="items" items={items as any}>
+              Open
+            </AddSubModelButton>
+          </App>
+        </ConfigProvider>
+      </FlowEngineProvider>,
+    );
+
+    await user.click(screen.getByText('Open'));
+    await waitFor(() => expect(screen.getByText('Fields')).toBeInTheDocument());
+    await user.hover(screen.getByText('Fields'));
+    await waitFor(() => expect(screen.getByText('Field 1')).toBeInTheDocument());
+
+    const input = screen.getByRole('textbox');
+    await user.click(input);
+    fireEvent.compositionStart(input);
+    fireEvent.change(input, { target: { value: 'zzzz' }, nativeEvent: { isComposing: true } });
+    fireEvent.mouseLeave(screen.getByText('Fields'));
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 300));
+    });
+
+    expect(input).toHaveValue('zzzz');
+    expect(screen.getByText('Field 1')).toBeInTheDocument();
+    expect(screen.getByText('Field 2')).toBeInTheDocument();
+
+    fireEvent.compositionEnd(input);
+    fireEvent.change(input, { target: { value: 'zzzz' } });
+
+    await waitFor(() => expect(screen.getAllByText('No data').length).toBeGreaterThan(0));
+  });
+
+  it('closes searchable submenu after focus without input', async () => {
+    const engine = new FlowEngine();
+    await engine.flowSettings.forceEnable();
+    class Parent extends FlowModel {}
+    engine.registerModels({ Parent });
+    const parent = engine.createModel<FlowModel>({ use: 'Parent' });
+
+    const items = [
+      {
+        key: 'fields',
+        label: 'Fields',
+        searchable: true,
+        children: [
+          { key: 'f1', label: 'Field 1', createModelOptions: { use: 'Parent' } },
+          { key: 'f2', label: 'Field 2', createModelOptions: { use: 'Parent' } },
+        ],
+      },
+    ];
+
+    const user = userEvent.setup();
+    render(
+      <FlowEngineProvider engine={engine}>
+        <ConfigProvider>
+          <App>
+            <AddSubModelButton model={parent} subModelKey="items" items={items as any}>
+              Open
+            </AddSubModelButton>
+          </App>
+        </ConfigProvider>
+      </FlowEngineProvider>,
+    );
+
+    await user.click(screen.getByText('Open'));
+    await waitFor(() => expect(screen.getByText('Fields')).toBeInTheDocument());
+    await user.hover(screen.getByText('Fields'));
+    await waitFor(() => expect(screen.getByText('Field 1')).toBeInTheDocument());
+
+    await user.click(screen.getByRole('textbox'));
+    fireEvent.mouseLeave(screen.getByText('Fields'));
+
+    await waitFor(() => expect(screen.queryByText('Field 1')).not.toBeInTheDocument());
+  });
+
+  it('closes active searchable submenu after outside click', async () => {
+    const engine = new FlowEngine();
+    await engine.flowSettings.forceEnable();
+    class Parent extends FlowModel {}
+    engine.registerModels({ Parent });
+    const parent = engine.createModel<FlowModel>({ use: 'Parent' });
+
+    const items = [
+      {
+        key: 'fields',
+        label: 'Fields',
+        searchable: true,
+        children: [
+          { key: 'f1', label: 'Field 1', createModelOptions: { use: 'Parent' } },
+          { key: 'f2', label: 'Field 2', createModelOptions: { use: 'Parent' } },
+        ],
+      },
+    ];
+
+    const user = userEvent.setup();
+    render(
+      <FlowEngineProvider engine={engine}>
+        <ConfigProvider>
+          <App>
+            <AddSubModelButton model={parent} subModelKey="items" items={items as any}>
+              Open
+            </AddSubModelButton>
+          </App>
+        </ConfigProvider>
+      </FlowEngineProvider>,
+    );
+
+    await user.click(screen.getByText('Open'));
+    await waitFor(() => expect(screen.getByText('Fields')).toBeInTheDocument());
+    await user.hover(screen.getByText('Fields'));
+    await waitFor(() => expect(screen.getByText('Field 1')).toBeInTheDocument());
+
+    fireEvent.change(screen.getByRole('textbox'), { target: { value: 'Field' } });
+    expect(screen.getByText('Field 1')).toBeInTheDocument();
+
+    fireEvent.pointerDown(document.body);
+
+    await waitFor(() => expect(screen.queryByText('Fields')).not.toBeInTheDocument());
+  });
+
+  it('switches away from active searchable submenu and resets its input', async () => {
+    const engine = new FlowEngine();
+    await engine.flowSettings.forceEnable();
+    class Parent extends FlowModel {}
+    engine.registerModels({ Parent });
+    const parent = engine.createModel<FlowModel>({ use: 'Parent' });
+
+    const items = [
+      {
+        key: 'fields',
+        label: 'Fields',
+        searchable: true,
+        children: [
+          { key: 'f1', label: 'Field 1', createModelOptions: { use: 'Parent' } },
+          { key: 'f2', label: 'Field 2', createModelOptions: { use: 'Parent' } },
+        ],
+      },
+      {
+        key: 'blocks',
+        label: 'Blocks',
+        searchable: true,
+        children: [
+          { key: 'b1', label: 'Block 1', createModelOptions: { use: 'Parent' } },
+          { key: 'b2', label: 'Block 2', createModelOptions: { use: 'Parent' } },
+        ],
+      },
+    ];
+
+    const user = userEvent.setup();
+    render(
+      <FlowEngineProvider engine={engine}>
+        <ConfigProvider>
+          <App>
+            <AddSubModelButton model={parent} subModelKey="items" items={items as any}>
+              Open
+            </AddSubModelButton>
+          </App>
+        </ConfigProvider>
+      </FlowEngineProvider>,
+    );
+
+    await user.click(screen.getByText('Open'));
+    await waitFor(() => expect(screen.getByText('Fields')).toBeInTheDocument());
+    await user.hover(screen.getByText('Fields'));
+    await waitFor(() => expect(screen.getByText('Field 1')).toBeInTheDocument());
+
+    fireEvent.change(screen.getByRole('textbox'), { target: { value: 'zzzz' } });
+    await waitFor(() => expect(screen.getAllByText('No data').length).toBeGreaterThan(0));
+
+    await user.hover(screen.getByText('Blocks'));
+    await waitFor(() => expect(screen.getByText('Block 1')).toBeInTheDocument());
+    expect(screen.queryByText('No data')).not.toBeInTheDocument();
+
+    await user.hover(screen.getByText('Fields'));
+    await waitFor(() => expect(screen.getByText('Field 1')).toBeInTheDocument());
+    expect(screen.getByRole('textbox')).toHaveValue('');
   });
 });
 

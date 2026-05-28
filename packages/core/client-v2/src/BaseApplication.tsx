@@ -169,6 +169,18 @@ export abstract class BaseApplication<
     return this.wsAuthorized;
   }
 
+  public setDocumentLanguage(language?: string | null) {
+    if (typeof document === 'undefined') {
+      return;
+    }
+
+    if (language) {
+      document.documentElement.lang = language;
+    } else {
+      document.documentElement.removeAttribute('lang');
+    }
+  }
+
   constructor(protected options: TOptions = {} as TOptions) {
     this.initRequireJs();
     this.defineObservableState();
@@ -205,6 +217,7 @@ export abstract class BaseApplication<
     this.addRoutes();
     this.i18n.on('languageChanged', (lng) => {
       this.apiClient.auth.locale = lng;
+      this.setDocumentLanguage(lng);
     });
     this.initListeners();
     this.afterManagersInitialized();
@@ -368,11 +381,11 @@ export abstract class BaseApplication<
     });
   }
 
-  updateFavicon(favicon?: string) {
+  updateFavicon(favicon?: string | null) {
     let faviconLinkElement = document.querySelector('link[rel="shortcut icon"]') as HTMLLinkElement;
 
-    if (favicon) {
-      this.favicon = favicon;
+    if (arguments.length > 0) {
+      this.favicon = favicon || '';
     }
 
     const iconHref = this.favicon || '/favicon/favicon.ico';

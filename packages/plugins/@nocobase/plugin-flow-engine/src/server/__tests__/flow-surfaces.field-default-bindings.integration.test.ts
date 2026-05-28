@@ -12,7 +12,7 @@ import { MockServer } from '@nocobase/test';
 import { waitForFixtureCollectionsReady } from './flow-surfaces.fixture-ready';
 import { createFlowSurfacesMockServer, loginFlowSurfacesRootAgent } from './flow-surfaces.mock-server';
 
-describe.skip('flowSurfaces field default bindings', () => {
+describe('flowSurfaces field default bindings', () => {
   let app: MockServer;
   let rootAgent: any;
 

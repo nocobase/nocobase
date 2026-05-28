@@ -8,11 +8,12 @@
  */
 
 import type { ManagedAppRuntime } from './app-runtime.js';
-import { printInfo, startTask, stopTask, updateTask } from './ui.js';
+import { printInfo } from './ui.js';
 
 const APP_HEALTH_CHECK_INTERVAL_MS = 2_000;
 const APP_HEALTH_CHECK_TIMEOUT_MS = 600_000;
 const APP_HEALTH_CHECK_REQUEST_TIMEOUT_MS = 5_000;
+const APP_HEALTH_CHECK_PROGRESS_LOG_INTERVAL_MS = 10_000;
 
 function trimValue(value: unknown): string {
   return String(value ?? '').trim();
@@ -118,6 +119,10 @@ export async function waitForAppReady(params: {
   containerName?: string;
   logHint?: string;
   fetchImpl?: typeof fetch;
+  timeoutMs?: number;
+  intervalMs?: number;
+  requestTimeoutMs?: number;
+  progressLogIntervalMs?: number;
 }): Promise<void> {
   const apiBaseUrl = trimValue(params.apiBaseUrl);
   if (!apiBaseUrl) {
@@ -127,35 +132,42 @@ export async function waitForAppReady(params: {
 
   const healthCheckUrl = buildHealthCheckUrl(apiBaseUrl);
   const startedAt = Date.now();
+  const timeoutMs = params.timeoutMs ?? APP_HEALTH_CHECK_TIMEOUT_MS;
+  const intervalMs = params.intervalMs ?? APP_HEALTH_CHECK_INTERVAL_MS;
+  const progressLogIntervalMs = Math.max(
+    1,
+    params.progressLogIntervalMs ?? APP_HEALTH_CHECK_PROGRESS_LOG_INTERVAL_MS,
+  );
   let lastMessage = 'No response yet';
-  let spinnerActive = true;
+  let nextProgressLogAt = startedAt + progressLogIntervalMs;
 
-  startTask(`Waiting for NocoBase to become ready for "${params.envName}"...`);
+  printInfo(`Waiting for NocoBase to become ready for "${params.envName}"...`);
 
-  try {
-    while (Date.now() - startedAt < APP_HEALTH_CHECK_TIMEOUT_MS) {
-      const result = await requestAppHealthCheck({
-        healthCheckUrl,
-        fetchImpl: params.fetchImpl,
-      });
+  while (Date.now() - startedAt < timeoutMs) {
+    const result = await requestAppHealthCheck({
+      healthCheckUrl,
+      fetchImpl: params.fetchImpl,
+      requestTimeoutMs: params.requestTimeoutMs,
+    });
 
-      if (result.ok) {
-        stopTask();
-        spinnerActive = false;
-        return;
+    if (result.ok) {
+      return;
+    }
+
+    lastMessage = result.message;
+    const now = Date.now();
+    if (now >= nextProgressLogAt) {
+      const elapsedSeconds = Math.max(1, Math.floor((now - startedAt) / 1000));
+      printInfo(`Still waiting for "${params.envName}"... (${elapsedSeconds}s elapsed)`);
+      while (nextProgressLogAt <= now) {
+        nextProgressLogAt += progressLogIntervalMs;
       }
-
-      lastMessage = result.message;
-      const elapsedSeconds = Math.max(1, Math.floor((Date.now() - startedAt) / 1000));
-      updateTask(
-        `Waiting for NocoBase to become ready for "${params.envName}"... (${elapsedSeconds}s elapsed, last status: ${lastMessage})`,
-      );
-      await sleep(APP_HEALTH_CHECK_INTERVAL_MS);
     }
-  } finally {
-    if (spinnerActive) {
-      stopTask();
+    const remainingMs = timeoutMs - (Date.now() - startedAt);
+    if (remainingMs <= 0) {
+      break;
     }
+    await sleep(Math.min(intervalMs, remainingMs));
   }
 
   const hints = [

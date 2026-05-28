@@ -1,12 +1,12 @@
 ---
 title: "nb app start"
-description: "nb app start command reference: start the NocoBase app or Docker container for a selected env."
+description: "nb app start command reference: start the NocoBase app for a selected env and recreate the Docker app container from saved env config when needed."
 keywords: "nb app start,NocoBase CLI,start app,Docker,pm2"
 ---
 
 # nb app start
 
-Start the NocoBase app for a selected env. npm/Git installations run local app commands; Docker installations start the saved app container.
+Start the NocoBase app for a selected env. npm/Git installations run local app commands; Docker installations recreate the saved app container from the saved env config.
 
 ## Usage
 
@@ -43,6 +43,10 @@ nb app start --env local-docker
 ```
 
 If you explicitly pass `--env` and it differs from the current env, the CLI asks for confirmation first. In non-interactive terminals or AI agent sessions, add `--yes` yourself or run `nb env use <name>` first and try again.
+
+By default, local envs start in daemon mode and Docker envs recreate the app container from saved env config. Whenever the CLI needs to wait for readiness, it checks `__health_check`: it prints one waiting line first, then one progress line every 10 seconds until the app becomes available or times out.
+
+If you pass `--no-daemon` for a local env, the app runs in the foreground. In that case, the CLI does not keep waiting for the readiness check after startup.
 
 ## Related Commands
 
