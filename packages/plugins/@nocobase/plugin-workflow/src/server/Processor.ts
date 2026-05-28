@@ -18,6 +18,20 @@ import { EXECUTION_STATUS, JOB_STATUS } from './constants';
 import { Runner } from './instructions';
 import type { ExecutionModel, FlowNodeModel, JobModel } from './types';
 
+export type ProcessorRunOptions = {
+  rerun?: true;
+};
+
+export type ProcessorRerunOptions = {
+  nodeId?: string | number;
+  overwrite?: boolean;
+};
+
+type RerunContext = {
+  overwrite: boolean;
+  targetJob?: JobModel;
+};
+
 export interface ProcessorOptions extends Transactionable {
   plugin: Plugin;
   [key: string]: any;
@@ -60,6 +74,7 @@ export default class Processor {
   private jobsMapByNodeKey: { [key: string]: JobModel } = {};
   private jobResultsMapByNodeKey: { [key: string]: any } = {};
   private jobsToSave: Map<string, JobModel> = new Map();
+  private rerunContext: RerunContext | null = null;
 
   /**
    * @experimental
@@ -118,6 +133,9 @@ export default class Processor {
     if (!execution.workflow) {
       execution.workflow =
         plugin.enabledCache.get(execution.workflowId) || (await execution.getWorkflow({ transaction }));
+    }
+    if (!execution.workflow) {
+      throw new Error(`workflow (#${execution.workflowId}) not found for execution (#${execution.id})`);
     }
 
     const nodes = execution.workflow.nodes || (await execution.workflow.getNodes({ transaction }));
@@ -178,12 +196,77 @@ export default class Processor {
     await this.recall(node, job);
   }
 
-  private async exec(instruction: Runner, node: FlowNodeModel, prevJob) {
+  public resolveRerun(options: ProcessorRerunOptions = {}) {
+    const node = this.getRerunNode(options.nodeId);
+    const targetJob = this.jobsMapByNodeKey[node.key];
+
+    if (options.nodeId != null && !targetJob) {
+      throw new Error(`job of node (#${node.id}) not found in execution (#${this.execution.id})`);
+    }
+
+    if (options.nodeId == null && options.overwrite && !targetJob) {
+      throw new Error(`job of head node (#${node.id}) not found in execution (#${this.execution.id})`);
+    }
+
+    const input = this.getRerunInput(node);
+    return { node, input, targetJob };
+  }
+
+  public async rerun(options: ProcessorRerunOptions = {}) {
+    const { execution } = this;
+    if (execution.status !== EXECUTION_STATUS.STARTED) {
+      throw new Error(`execution (#${execution.id}) is not started`);
+    }
+
+    await this.prepare();
+    const { node, input, targetJob } = this.resolveRerun(options);
+    this.rerunContext = {
+      overwrite: options.overwrite === true,
+      targetJob,
+    };
+
+    try {
+      return await this.run(node, input, { rerun: true });
+    } finally {
+      this.rerunContext = null;
+    }
+  }
+
+  private getRerunNode(nodeId?: string | number) {
+    if (nodeId != null) {
+      const node = this.nodesMap.get(nodeId) || this.nodes.find((item) => String(item.id) === String(nodeId));
+      if (!node) {
+        throw new Error(`node (#${nodeId}) not found in workflow (#${this.execution.workflowId})`);
+      }
+      return node;
+    }
+
+    const head = this.nodes.find((item) => !item.upstream);
+    if (!head) {
+      throw new Error(`head node not found in workflow (#${this.execution.workflowId})`);
+    }
+    return head;
+  }
+
+  private getRerunInput(node: FlowNodeModel) {
+    if (!node.upstream) {
+      return { result: this.execution.context };
+    }
+
+    const upstreamJob = this.jobsMapByNodeKey[node.upstream.key];
+    if (!upstreamJob) {
+      throw new Error(`upstream job of node (#${node.id}) not found in execution (#${this.execution.id})`);
+    }
+
+    return upstreamJob;
+  }
+
+  private async exec(instruction: Runner, node: FlowNodeModel, prevJob, options?: ProcessorRunOptions) {
     let job;
     try {
       // call instruction to get result and status
       this.logger.debug(`config of node`, { data: node.config, workflowId: node.workflowId });
-      job = await instruction(node, prevJob, this);
+      job = await instruction(node, prevJob, this, options);
       if (job === null) {
         return this.exit();
       }
@@ -238,7 +321,7 @@ export default class Processor {
     return this.end(node, savedJob);
   }
 
-  public async run(node, input?) {
+  public async run(node, input?, options?: ProcessorRunOptions) {
     const { instructions } = this.options.plugin;
     const instruction = instructions.get(node.type);
     if (!instruction) {
@@ -251,7 +334,7 @@ export default class Processor {
     this.logger.info(`execution (${this.execution.id}) run instruction [${node.type}] for node (${node.id})`, {
       workflowId: node.workflowId,
     });
-    return this.exec(instruction.run.bind(instruction), node, input);
+    return this.exec(instruction.run.bind(instruction), node, input, options);
   }
 
   // parent node should take over the control
@@ -363,6 +446,18 @@ export default class Processor {
     if (payload instanceof model) {
       job = payload;
       job.set('updatedAt', new Date());
+    } else if (
+      this.rerunContext?.overwrite &&
+      this.rerunContext.targetJob &&
+      this.rerunContext.targetJob.nodeId === payload.nodeId
+    ) {
+      job = this.rerunContext.targetJob;
+      job.set({
+        status: payload.status,
+        result: Object.prototype.hasOwnProperty.call(payload, 'result') ? payload.result : null,
+        meta: Object.prototype.hasOwnProperty.call(payload, 'meta') ? payload.meta : null,
+        updatedAt: new Date(),
+      });
     } else {
       job = model.build(
         {
