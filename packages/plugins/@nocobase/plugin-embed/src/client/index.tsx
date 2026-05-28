@@ -19,6 +19,8 @@
 import { uid } from '@formily/shared';
 import { PageTabs, Plugin } from '@nocobase/client';
 import { registerCopyEmbedLinkFlow } from '../client-v2/copyEmbedLinkFlow';
+import { isEmbedRoutePathname } from '../client-v2/route';
+import { registerEmbedAuthCheckInterceptor } from './embedAuth';
 import { EmbedLayout, EmbedPage, useBlockSettingProps } from './EmbedLayout';
 
 const Key = 'embed';
@@ -28,14 +30,15 @@ class PluginEmbedClient extends Plugin {
   async beforeLoad() {
     const url = new URL(window.location.href);
     const token = url.searchParams.get('token');
-    const prefix = this.app.getRouteUrl('embed');
-    if (token && window.location.pathname.startsWith(prefix)) {
+    if (token && isEmbedRoutePathname(this.app, window.location.pathname)) {
       this.app.apiClient.storagePrefix = `${uid().toUpperCase()}_`;
       this.app.apiClient.storage = this.app.apiClient.createStorage('sessionStorage');
       this.app.apiClient.auth.setToken(token);
     }
   }
   async load() {
+    registerEmbedAuthCheckInterceptor(this.app);
+
     this.router.add(Key, {
       path: UrlPrefix,
       Component: EmbedLayout,

@@ -16,11 +16,11 @@ const { registerCopyEmbedLinkFlow } = vi.hoisted(() => ({
 vi.mock('@nocobase/client', () => ({
   PageTabs: vi.fn(),
   Plugin: class {
-    app: { router: unknown; schemaSettingsManager: unknown };
+    app: { apiClient: unknown; router: unknown; schemaSettingsManager: unknown };
     router: unknown;
     schemaSettingsManager: unknown;
 
-    constructor(_options: unknown, app: { router: unknown; schemaSettingsManager: unknown }) {
+    constructor(_options: unknown, app: { apiClient: unknown; router: unknown; schemaSettingsManager: unknown }) {
       this.app = app;
       this.router = app.router;
       this.schemaSettingsManager = app.schemaSettingsManager;
@@ -41,11 +41,25 @@ vi.mock('../../client-v2/copyEmbedLinkFlow', () => ({
 describe('PluginEmbedClient', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    window.history.pushState({}, '', '/');
   });
 
-  it('registers the v2 copy embed action for flow pages rendered by the v1 admin route', async () => {
-    const { default: PluginEmbedClient } = await import('../index');
+  function createApp() {
+    const rejectedHandlers: Array<(error: unknown) => unknown> = [];
     const app = {
+      apiClient: {
+        axios: {
+          interceptors: {
+            response: {
+              use: vi.fn((_fulfilled, rejected) => {
+                rejectedHandlers.push(rejected);
+                return rejectedHandlers.length - 1;
+              }),
+            },
+          },
+        },
+      },
+      getPublicPath: () => '/',
       router: {
         add: vi.fn(),
       },
@@ -53,6 +67,16 @@ describe('PluginEmbedClient', () => {
         addItem: vi.fn(),
       },
     };
+
+    return {
+      app,
+      rejectedHandlers,
+    };
+  }
+
+  it('registers the v2 copy embed action for flow pages rendered by the v1 admin route', async () => {
+    const { default: PluginEmbedClient } = await import('../index');
+    const { app } = createApp();
     const plugin = new PluginEmbedClient({} as never, app as never);
 
     await plugin.load();
@@ -97,5 +121,51 @@ describe('PluginEmbedClient', () => {
       useComponentProps: expect.any(Function),
     });
     expect(registerCopyEmbedLinkFlow).toHaveBeenCalledTimes(1);
+  });
+
+  it('lets embed routes render 403 after auth-check returns 401', async () => {
+    const { default: PluginEmbedClient } = await import('../index');
+    const { isEmbedUnauthorizedUser } = await import('../embedAuth');
+    const { app, rejectedHandlers } = createApp();
+    const plugin = new PluginEmbedClient({} as never, app as never);
+    window.history.pushState({}, '', '/embed/page-uid');
+
+    await plugin.load();
+    const response = rejectedHandlers[0]({
+      config: {
+        url: '/auth:check',
+      },
+      response: {
+        status: 401,
+      },
+    }) as { data?: { data?: unknown } };
+
+    expect(isEmbedUnauthorizedUser(response?.data?.data)).toBe(true);
+  });
+
+  it('does not swallow auth-check errors outside embed routes', async () => {
+    const { default: PluginEmbedClient } = await import('../index');
+    const { app, rejectedHandlers } = createApp();
+    const plugin = new PluginEmbedClient({} as never, app as never);
+    const error = {
+      config: {
+        url: '/auth:check',
+      },
+      response: {
+        status: 401,
+      },
+    };
+    window.history.pushState({}, '', '/admin/page-uid');
+
+    await plugin.load();
+
+    let thrown: unknown;
+    try {
+      rejectedHandlers[0](error);
+    } catch (err) {
+      thrown = err;
+    }
+
+    expect(thrown).toBe(error);
   });
 });

@@ -39,6 +39,7 @@ import { useTranslation } from 'react-i18next';
 import { useLocation, useParams } from 'react-router-dom';
 import { EMBED_LAYOUT_MODEL_CLASS, EMBED_LAYOUT_MODEL_UID } from '../client-v2/constants';
 import { EmbedLayoutModelV2, getEmbedLayoutModel } from '../client-v2/EmbedLayoutModel';
+import { isEmbedUnauthorizedUser } from './embedAuth';
 // @ts-ignore
 import pkg from './../../package.json';
 
@@ -66,7 +67,8 @@ export const EmbedAdminLayout = () => {
 
 export const EmbedLayout = () => {
   const result = useCurrentUserContext();
-  const noUser = result.loading === false && !result.data?.data?.id;
+  const user = result.data?.data;
+  const noUser = result.loading === false && (!user?.id || isEmbedUnauthorizedUser(user));
   if (noUser) {
     return <NotAuthorized />;
   }

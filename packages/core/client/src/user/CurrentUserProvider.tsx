@@ -12,7 +12,7 @@ import React, { createContext, useContext, useMemo } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useACLRoleContext } from '../acl';
 import { ReturnTypeOfUseRequest, useAPIClient, useRequest } from '../api-client';
-import { useApp, useAppSpin, useRouter } from '../application';
+import { useApp, useAppSpin } from '../application';
 import { useCompile } from '../schema-component';
 
 export const CurrentUserContext = createContext<ReturnTypeOfUseRequest>(null);
@@ -61,9 +61,7 @@ export const CurrentUserProvider = (props) => {
   const flowEngine = useFlowEngine();
   const navigate = useNavigate();
   const location = useLocation();
-  const router = useRouter();
   const runtimeFlowEngine = app?.flowEngine || flowEngine;
-  const isSkippedAuthCheckRoute = router?.isSkippedAuthCheckRoute?.(location.pathname);
   const result = useRequest<any>(() =>
     api
       .request({
@@ -73,10 +71,7 @@ export const CurrentUserProvider = (props) => {
       })
       .then((res) => {
         if (res?.data?.data?.id == null) {
-          if (!isSkippedAuthCheckRoute) {
-            navigate('/signin?redirect=' + location.pathname + location.search);
-          }
-          return res?.data;
+          navigate('/signin?redirect=' + location.pathname + location.search);
         }
         const userMeta = createCollectionContextMeta(
           () => runtimeFlowEngine.context.dataSourceManager.getDataSource('main')?.getCollection('users'),
