@@ -82,6 +82,38 @@
       }
     }
   },
+  "nocobase": {
+    "apiCommandCompat": {
+      "rules": [
+        {
+          "code": "FLOW_SURFACES_OLD_APP_NEW_SKILLS_UNSUPPORTED",
+          "target": {
+            "commandPrefix": "flow-surfaces"
+          },
+          "when": {
+            "appByChannel": {
+              "stable": {
+                "lt": "2.1.0"
+              },
+              "beta": {
+                "lt": "2.1.0-beta.36"
+              },
+              "alpha": {
+                "lt": "2.1.0-alpha.40"
+              },
+              "rc": {
+                "lt": "2.1.0"
+              },
+              "unknownPrerelease": "block"
+            },
+            "skills": {
+              "gt": "1.0.20"
+            }
+          }
+        }
+      ]
+    }
+  },
   "dependencies": {
     "@inquirer/ansi": "^2.0.5",
     "@inquirer/confirm": "^6.0.13",

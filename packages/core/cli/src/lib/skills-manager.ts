@@ -198,6 +198,13 @@ async function readManagedSkillsState(workspaceRoot: string): Promise<ManagedSki
   }
 }
 
+export async function readInstalledManagedSkillsVersion(options: SkillsManagerOptions = {}): Promise<string | undefined> {
+  const globalRoot = resolveSkillsRoot(options);
+  const state = await readManagedSkillsState(globalRoot);
+  const installedVersion = String(state?.installedVersion ?? state?.installedRef ?? '').trim();
+  return installedVersion || undefined;
+}
+
 async function writeManagedSkillsState(workspaceRoot: string, state: ManagedSkillsState): Promise<void> {
   const filePath = getManagedSkillsStateFile(workspaceRoot);
   await fsp.mkdir(path.dirname(filePath), { recursive: true });
