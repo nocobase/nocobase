@@ -11,7 +11,8 @@
   "keywords": [],
   "nocobase": {
     "supportedVersions": [
-      "1.x"
+      "1.x",
+      "2.x"
     ],
     "editionLevel": 0
   },

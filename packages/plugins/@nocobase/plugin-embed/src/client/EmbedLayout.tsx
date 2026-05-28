@@ -32,6 +32,7 @@ import copy from 'copy-to-clipboard';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useParams } from 'react-router-dom';
+import { EmbedFlowRoute } from './flow/EmbedFlowRoute';
 // @ts-ignore
 import pkg from './../../package.json';
 
@@ -59,13 +60,19 @@ export const EmbedLayout = () => {
 
 export function EmbedPage() {
   const currentPageUid = useCurrentPageUid();
+  const components = React.useMemo(
+    () => ({
+      FlowRoute: EmbedFlowRoute,
+    }),
+    [],
+  );
 
   return (
     <KeepAlive uid={currentPageUid}>
       {(uid) => (
         <CurrentPageUidContext.Provider value={uid}>
           <CurrentRouteProvider uid={uid}>
-            <RemoteSchemaComponent uid={uid} />
+            <RemoteSchemaComponent uid={uid} components={components} />
           </CurrentRouteProvider>
         </CurrentPageUidContext.Provider>
       )}

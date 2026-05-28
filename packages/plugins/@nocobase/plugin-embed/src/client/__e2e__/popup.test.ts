@@ -1,12 +1,24 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { expect, test } from '@nocobase/test/e2e';
 import { popupInEmbed, shouldCanOpenSubpageInEmbed } from './templates';
 
 test.describe('popup in embed', () => {
+  const popupPageUid = (popupInEmbed as any)?.pageSchema?.['x-uid'];
+  const popupPagePath = popupPageUid || 'azco21q3to8';
+
   test('should can open popup in all blocks', async ({ page, mockPage, mockRecord }) => {
     const baseURL = process.env.APP_BASE_URL || `http://localhost:${process.env.APP_PORT || 20000}`;
     await mockPage(popupInEmbed).waitForInit();
     await mockRecord('testEmbed');
-    await page.goto(`${baseURL}/embed/azco21q3to8`);
+    await page.goto(`${baseURL}/embed/${popupPagePath}`);
 
     // Table ------------------------------------------------------------------------------
     await page.getByLabel('action-Action-Add new table-').click();
@@ -84,5 +96,27 @@ test.describe('popup in embed', () => {
     await page.getByText('open drawer level 9').click();
 
     await expect(page.getByLabel('block-item-Markdown.Void-').getByText('The end level.')).toBeVisible();
+  });
+
+  test('should keep embed prefix and restore popup from deep link', async ({ page, mockPage, mockRecord }) => {
+    const baseURL = process.env.APP_BASE_URL || `http://localhost:${process.env.APP_PORT || 20000}`;
+    await mockPage(popupInEmbed).waitForInit();
+    await mockRecord('testEmbed');
+
+    await page.goto(`${baseURL}/embed/${popupPagePath}`);
+    await page.getByLabel('action-Action.Link-View table').click();
+
+    const drawer = page.getByTestId('drawer-Action.Container-testEmbed-View record');
+    await expect(drawer).toBeVisible();
+
+    const deepLink = page.url();
+    expect(deepLink).toContain(`/embed/${popupPagePath}/view/`);
+
+    await page.keyboard.press('Escape');
+    await expect(drawer).not.toBeVisible();
+
+    await page.goto(deepLink);
+    await expect(page.getByTestId('drawer-Action.Container-testEmbed-View record')).toBeVisible();
+    await expect(page).toHaveURL(deepLink);
   });
 });
