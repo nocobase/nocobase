@@ -1544,6 +1544,228 @@ describe('flowSurfaces catalog + compose contract', () => {
     }
   });
 
+  it('should guide JS nodes to ctx.openView when declarative popup is requested', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'JS popup guidance page',
+      tabTitle: 'JS popup guidance tab',
+    });
+    const table = await addBlockData(rootAgent, {
+      target: {
+        uid: page.tabSchemaUid,
+      },
+      type: 'table',
+      resourceInit: {
+        dataSourceKey: 'main',
+        collectionName: 'users',
+      },
+    });
+    const actionPanel = await addBlockData(rootAgent, {
+      target: {
+        uid: page.tabSchemaUid,
+      },
+      type: 'actionPanel',
+    });
+    const createForm = await addBlockData(rootAgent, {
+      target: {
+        uid: page.tabSchemaUid,
+      },
+      type: 'createForm',
+      resourceInit: {
+        dataSourceKey: 'main',
+        collectionName: 'users',
+      },
+    });
+    const popup = {
+      tryTemplate: true,
+    };
+
+    const jsActionPopupRes = await rootAgent.resource('flowSurfaces').addAction({
+      values: {
+        target: {
+          uid: actionPanel.uid,
+        },
+        type: 'js',
+        popup,
+      },
+    });
+    expect(jsActionPopupRes.status).toBe(400);
+    expect(readErrorMessage(jsActionPopupRes)).toContain(`flowSurfaces addAction type 'js' does not support popup`);
+    expect(readErrorMessage(jsActionPopupRes)).toContain('should use ctx.openView to open popup');
+
+    const jsRecordActionPopupRes = await rootAgent.resource('flowSurfaces').addRecordAction({
+      values: {
+        target: {
+          uid: table.uid,
+        },
+        type: 'js',
+        popup,
+      },
+    });
+    expect(jsRecordActionPopupRes.status).toBe(400);
+    expect(readErrorMessage(jsRecordActionPopupRes)).toContain(
+      `flowSurfaces addRecordAction type 'js' does not support popup`,
+    );
+    expect(readErrorMessage(jsRecordActionPopupRes)).toContain('should use ctx.openView to open popup');
+
+    const jsFieldPopupRes = await rootAgent.resource('flowSurfaces').addField({
+      values: {
+        target: {
+          uid: table.uid,
+        },
+        fieldPath: 'nickname',
+        renderer: 'js',
+        popup,
+      },
+    });
+    expect(jsFieldPopupRes.status).toBe(400);
+    expect(readErrorMessage(jsFieldPopupRes)).toContain(
+      `flowSurfaces addField field 'JSFieldModel' does not support popup`,
+    );
+    expect(readErrorMessage(jsFieldPopupRes)).toContain('should use ctx.openView to open popup');
+
+    const jsDisplayField = getData(
+      await rootAgent.resource('flowSurfaces').addField({
+        values: {
+          target: {
+            uid: table.uid,
+          },
+          fieldPath: 'nickname',
+          renderer: 'js',
+        },
+      }),
+    );
+    const configureJsDisplayFieldOpenViewRes = await rootAgent.resource('flowSurfaces').configure({
+      values: {
+        target: {
+          uid: jsDisplayField.fieldUid,
+        },
+        changes: {
+          openView: {
+            mode: 'dialog',
+          },
+        },
+      },
+    });
+    expect(configureJsDisplayFieldOpenViewRes.status).toBe(400);
+    expect(readErrorMessage(configureJsDisplayFieldOpenViewRes)).toContain(
+      `flowSurfaces configure field 'JSFieldModel' does not support openView`,
+    );
+    expect(readErrorMessage(configureJsDisplayFieldOpenViewRes)).toContain('should use ctx.openView to open popup');
+
+    const jsEditableField = getData(
+      await rootAgent.resource('flowSurfaces').addField({
+        values: {
+          target: {
+            uid: createForm.uid,
+          },
+          fieldPath: 'nickname',
+          renderer: 'js',
+        },
+      }),
+    );
+    const configureJsEditableFieldOpenViewRes = await rootAgent.resource('flowSurfaces').configure({
+      values: {
+        target: {
+          uid: jsEditableField.wrapperUid,
+        },
+        changes: {
+          openView: {
+            mode: 'dialog',
+          },
+        },
+      },
+    });
+    expect(configureJsEditableFieldOpenViewRes.status).toBe(400);
+    expect(readErrorMessage(configureJsEditableFieldOpenViewRes)).toContain(
+      `flowSurfaces configure field 'JSEditableFieldModel' does not support openView`,
+    );
+    expect(readErrorMessage(configureJsEditableFieldOpenViewRes)).toContain('should use ctx.openView to open popup');
+
+    const jsColumn = getData(
+      await rootAgent.resource('flowSurfaces').addField({
+        values: {
+          target: {
+            uid: table.uid,
+          },
+          type: 'jsColumn',
+        },
+      }),
+    );
+    const configureJsColumnOpenViewRes = await rootAgent.resource('flowSurfaces').configure({
+      values: {
+        target: {
+          uid: jsColumn.uid,
+        },
+        changes: {
+          openView: {
+            mode: 'dialog',
+          },
+        },
+      },
+    });
+    expect(configureJsColumnOpenViewRes.status).toBe(400);
+    expect(readErrorMessage(configureJsColumnOpenViewRes)).toContain(
+      `flowSurfaces configure jsColumn 'JSColumnModel' does not support openView`,
+    );
+    expect(readErrorMessage(configureJsColumnOpenViewRes)).toContain('should use ctx.openView to open popup');
+
+    const jsItem = getData(
+      await rootAgent.resource('flowSurfaces').addField({
+        values: {
+          target: {
+            uid: createForm.uid,
+          },
+          type: 'jsItem',
+        },
+      }),
+    );
+    const configureJsItemOpenViewRes = await rootAgent.resource('flowSurfaces').configure({
+      values: {
+        target: {
+          uid: jsItem.uid,
+        },
+        changes: {
+          openView: {
+            mode: 'dialog',
+          },
+        },
+      },
+    });
+    expect(configureJsItemOpenViewRes.status).toBe(400);
+    expect(readErrorMessage(configureJsItemOpenViewRes)).toContain(
+      `flowSurfaces configure jsItem 'JSItemModel' does not support openView`,
+    );
+    expect(readErrorMessage(configureJsItemOpenViewRes)).toContain('should use ctx.openView to open popup');
+
+    const jsAction = getData(
+      await rootAgent.resource('flowSurfaces').addAction({
+        values: {
+          target: {
+            uid: actionPanel.uid,
+          },
+          type: 'js',
+        },
+      }),
+    );
+    const configureJsOpenViewRes = await rootAgent.resource('flowSurfaces').configure({
+      values: {
+        target: {
+          uid: jsAction.uid,
+        },
+        changes: {
+          openView: {
+            mode: 'dialog',
+          },
+        },
+      },
+    });
+    expect(configureJsOpenViewRes.status).toBe(400);
+    expect(readErrorMessage(configureJsOpenViewRes)).toContain(
+      `flowSurfaces configure action 'JSActionModel' does not support openView`,
+    );
+    expect(readErrorMessage(configureJsOpenViewRes)).toContain('should use ctx.openView to open popup');
+  });
+
   it('should compose jsItem actions and recordActions into public action slots', async () => {
     const page = await createPage(rootAgent, {
       title: 'Compose JS item actions page',
@@ -7357,6 +7579,7 @@ describe('flowSurfaces catalog + compose contract', () => {
       type: 'bad_request',
     });
     expect(addActionsData.actions[4].error.message).toContain(`type 'refresh' does not support popup`);
+    expect(addActionsData.actions[4].error.message).not.toContain('should use ctx.openView to open popup');
 
     const bulkUpdateReadback = await getSurface(rootAgent, {
       uid: addActionsData.actions[3].result.uid,

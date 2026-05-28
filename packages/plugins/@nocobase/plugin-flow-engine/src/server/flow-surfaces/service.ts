@@ -691,6 +691,17 @@ const JS_ACTION_USES = new Set([
   'JSActionModel',
 ]);
 const JS_ITEM_ACTION_USES = new Set(['JSItemActionModel']);
+const JS_POPUP_GUIDANCE_MESSAGE = 'should use ctx.openView to open popup';
+const JS_POPUP_GUIDANCE_USES = new Set([
+  ...JS_ACTION_USES,
+  ...JS_ITEM_ACTION_USES,
+  'JSColumnModel',
+  'JSItemModel',
+  'JSFieldModel',
+  'JSEditableFieldModel',
+  'FormJSFieldItemModel',
+]);
+const JS_POPUP_GUIDANCE_PUBLIC_KEYS = new Set(['js', 'jsColumn', 'jsItem']);
 const POPUP_ACTION_USES = new Set([
   'AddNewActionModel',
   'ViewActionModel',
@@ -704,6 +715,27 @@ const POPUP_ACTION_USES = new Set([
   'AddChildActionModel',
   'MailSendActionModel',
 ]);
+
+function withJsPopupGuidance(message: string, value?: string) {
+  const normalizedValue = String(value || '').trim();
+  if (JS_POPUP_GUIDANCE_USES.has(normalizedValue) || JS_POPUP_GUIDANCE_PUBLIC_KEYS.has(normalizedValue)) {
+    return `${message}; ${JS_POPUP_GUIDANCE_MESSAGE}`;
+  }
+  return message;
+}
+
+function assertNoJsDeclarativeOpenView(context: string, changes: Record<string, unknown>, use?: string) {
+  const normalizedUse = String(use || '').trim();
+  if (hasOwnDefined(changes, 'openView') && JS_POPUP_GUIDANCE_USES.has(normalizedUse)) {
+    throwBadRequest(
+      withJsPopupGuidance(
+        `flowSurfaces configure ${context} '${normalizedUse}' does not support openView`,
+        normalizedUse,
+      ),
+    );
+  }
+}
+
 const POPUP_HOST_DEFAULT_RECORD_CONTEXT_ACTION_USES = new Set([
   'ViewActionModel',
   'EditActionModel',
@@ -7326,7 +7358,7 @@ export class FlowSurfacesService {
       if (current?.use === 'DividerItemModel') {
         return this.configureDividerItem(target, changes, options);
       }
-      return this.configureJSItem(target, changes, options);
+      return this.configureJSItem(target, changes, { ...options, currentUse: current?.use || 'JSItemModel' });
     }
     if (isFieldNodeUse(current?.use)) {
       return this.configureFieldNode(target, changes, configureOptions);
@@ -9061,7 +9093,9 @@ export class FlowSurfacesService {
         throwBadRequest('flowSurfaces fieldType is only supported for relation fields');
       }
       if (inlinePopup) {
-        throwBadRequest(`flowSurfaces addField type '${values.type}' does not support popup`);
+        throwBadRequest(
+          withJsPopupGuidance(`flowSurfaces addField type '${values.type}' does not support popup`, values.type),
+        );
       }
       if (isFilterFormItem) {
         throwBadRequest(`flowSurfaces addField type '${values.type}' is not allowed under filter-form`);
@@ -9286,7 +9320,12 @@ export class FlowSurfacesService {
       }
     }
     if (inlinePopup && !this.isPopupFieldHostUse(boundFieldCapability.fieldUse)) {
-      throwBadRequest(`flowSurfaces addField field '${boundFieldCapability.fieldUse}' does not support popup`);
+      throwBadRequest(
+        withJsPopupGuidance(
+          `flowSurfaces addField field '${boundFieldCapability.fieldUse}' does not support popup`,
+          boundFieldCapability.fieldUse,
+        ),
+      );
     }
     const inlineSettingsOpenView = this.peekInlineFieldSettingsOpenView(
       inlineSettings,
@@ -9493,7 +9532,12 @@ export class FlowSurfacesService {
       );
     }
     if (inlinePopup && !POPUP_ACTION_USES.has(actionCatalogItem.use)) {
-      throwBadRequest(`flowSurfaces addAction type '${actionCatalogItem.key}' does not support popup`);
+      throwBadRequest(
+        withJsPopupGuidance(
+          `flowSurfaces addAction type '${actionCatalogItem.key}' does not support popup`,
+          actionCatalogItem.key,
+        ),
+      );
     }
     await this.assertApprovalActionSingleton(container.parentUid, actionCatalogItem.use, options.transaction);
     assertRequestedActionScope({
@@ -9626,7 +9670,12 @@ export class FlowSurfacesService {
     );
     const resolvedScope = actionCatalogItem.scope;
     if (inlinePopup && !POPUP_ACTION_USES.has(actionCatalogItem.use)) {
-      throwBadRequest(`flowSurfaces addRecordAction type '${actionCatalogItem.key}' does not support popup`);
+      throwBadRequest(
+        withJsPopupGuidance(
+          `flowSurfaces addRecordAction type '${actionCatalogItem.key}' does not support popup`,
+          actionCatalogItem.key,
+        ),
+      );
     }
     if (this.isAddChildCatalogItem(actionCatalogItem)) {
       await this.assertAddChildSupportedForOwnerNode(container.ownerNode, 'addRecordAction', options.transaction);
@@ -12125,7 +12174,12 @@ export class FlowSurfacesService {
       return {};
     }
     if (input.popup && !this.isPopupFieldHostUse(fieldNode.use)) {
-      throwBadRequest(`flowSurfaces ${actionName} field '${fieldNode.use}' does not support popup`);
+      throwBadRequest(
+        withJsPopupGuidance(
+          `flowSurfaces ${actionName} field '${fieldNode.use}' does not support popup`,
+          fieldNode.use,
+        ),
+      );
     }
 
     let openView = this.resolvePopupHostOpenView(fieldNode);
@@ -20977,6 +21031,7 @@ export class FlowSurfacesService {
     changes: Record<string, any>,
     options: { transaction?: any },
   ) {
+    assertNoJsDeclarativeOpenView('jsColumn', changes, 'JSColumnModel');
     const allowedKeys = getConfigureOptionKeysForUse('JSColumnModel');
     assertSupportedSimpleChanges('jsColumn', changes, allowedKeys);
     return this.updateSettings(
@@ -21017,8 +21072,10 @@ export class FlowSurfacesService {
   private async configureJSItem(
     target: FlowSurfaceWriteTarget,
     changes: Record<string, any>,
-    options: { transaction?: any },
+    options: { transaction?: any; currentUse?: string },
   ) {
+    const { currentUse = 'JSItemModel', ...updateOptions } = options;
+    assertNoJsDeclarativeOpenView('jsItem', changes, currentUse);
     const allowedKeys = getConfigureOptionKeysForUse('JSItemModel');
     assertSupportedSimpleChanges('jsItem', changes, allowedKeys);
     return this.updateSettings(
@@ -21045,7 +21102,7 @@ export class FlowSurfacesService {
             }
           : undefined,
       },
-      options,
+      updateOptions,
     );
   }
 
@@ -21121,6 +21178,7 @@ export class FlowSurfacesService {
           includeAsyncNode: true,
         }))
       : null;
+    assertNoJsDeclarativeOpenView('field', changes, innerField?.use);
     const currentFieldInit =
       current?.stepParams?.fieldSettings?.init || innerField?.stepParams?.fieldSettings?.init || {};
     const bindingChange = hasDefinedValue(wrapperChanges, ['fieldPath', 'associationPathName']);
@@ -21382,6 +21440,8 @@ export class FlowSurfacesService {
     const enabledPackages = await this.resolveEnabledPluginPackages(options);
     const resolved = await this.locator.resolve(target, options);
     const current = await this.loadResolvedNode(resolved, options.transaction);
+    const isJsFieldNode = ['JSFieldModel', 'JSEditableFieldModel'].includes(current?.use || '');
+    assertNoJsDeclarativeOpenView('field', changes, current?.use);
     assertSupportedSimpleChanges(
       'field',
       changes,
@@ -21394,7 +21454,6 @@ export class FlowSurfacesService {
           includeAsyncNode: true,
         })
       : null;
-    const isJsFieldNode = ['JSFieldModel', 'JSEditableFieldModel'].includes(current?.use || '');
     if (hasDefinedValue(changes, ['code', 'version']) && !isJsFieldNode) {
       throwBadRequest(`flowSurfaces configure field '${current?.use}' does not support code/version`);
     }
@@ -22876,6 +22935,9 @@ export class FlowSurfacesService {
         : null);
     changes = await this.normalizeActionPanelActionChanges(changes, options);
     const allowedKeys = getConfigureOptionKeysForUse(use);
+    if (hasOwnDefined(changes, 'openView') && !allowedKeys.includes('openView') && JS_POPUP_GUIDANCE_USES.has(use)) {
+      throwBadRequest(withJsPopupGuidance(`flowSurfaces configure action '${use}' does not support openView`, use));
+    }
     assertSupportedSimpleChanges('action', changes, allowedKeys);
     if (this.isAIEmployeeActionUse(use)) {
       const aiEmployeeSettingsPayload = await this.normalizeAIEmployeeActionPublicSettings(
@@ -22977,7 +23039,7 @@ export class FlowSurfacesService {
           openView: _.cloneDeep(changes.openView),
         };
       } else if (!POPUP_ACTION_USES.has(use)) {
-        throwBadRequest(`flowSurfaces configure action '${use}' does not support openView`);
+        throwBadRequest(withJsPopupGuidance(`flowSurfaces configure action '${use}' does not support openView`, use));
       } else {
         let openView = _.cloneDeep(changes.openView);
         if (use === 'AddChildActionModel') {

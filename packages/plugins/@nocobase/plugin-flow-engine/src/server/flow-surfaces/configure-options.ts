@@ -560,8 +560,16 @@ const FIELD_NODE_OPTIONS: FlowSurfaceConfigureOptions = {
   options: objectOption('Component options'),
 };
 
+function omitConfigureOptions(options: FlowSurfaceConfigureOptions, keys: string[]) {
+  const next = { ...options };
+  for (const key of keys) {
+    delete next[key];
+  }
+  return next;
+}
+
 const JS_FIELD_NODE_OPTIONS: FlowSurfaceConfigureOptions = {
-  ...FIELD_NODE_OPTIONS,
+  ...omitConfigureOptions(FIELD_NODE_OPTIONS, ['openView']),
   code: JS_CODE,
   version: JS_VERSION,
 };
