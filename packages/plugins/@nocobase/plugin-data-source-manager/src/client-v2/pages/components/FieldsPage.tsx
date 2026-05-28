@@ -11,7 +11,22 @@ import { DeleteOutlined, DownOutlined, PlusOutlined, SyncOutlined } from '@ant-d
 import { DrawerFormLayout, isTitleField, Table, useCurrentAppInfo } from '@nocobase/client-v2';
 import { useFlowContext } from '@nocobase/flow-engine';
 import { useRequest } from 'ahooks';
-import { App, Button, Dropdown, Form, Select, Space, Spin, Switch, Tag, Tooltip } from 'antd';
+import {
+  Alert,
+  App,
+  Button,
+  Cascader,
+  Dropdown,
+  Form,
+  Input,
+  Select,
+  Space,
+  Spin,
+  Switch,
+  Table as AntdTable,
+  Tag,
+  Tooltip,
+} from 'antd';
 import type { MenuProps } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
@@ -52,6 +67,28 @@ type FieldInterfaceGroupOption = {
   label: React.ReactNode;
   order?: number;
   children: FieldInterfaceOption[];
+};
+
+type ViewFieldRecord = {
+  interface?: string;
+  name: string;
+  possibleTypes?: string[];
+  source?: string | string[] | null;
+  type?: string;
+  uiSchema?: Record<string, any>;
+  [key: string]: any;
+};
+
+type ViewFieldsResponse = {
+  fields?: ViewFieldRecord[] | Record<string, ViewFieldRecord>;
+  sources?: string[];
+  unsupportedFields?: ViewFieldRecord[];
+};
+
+type SourceFieldOption = {
+  children: Array<{ label: React.ReactNode; value: string }>;
+  label: React.ReactNode;
+  value: string;
 };
 
 function normalizeListResponse(response: any) {
@@ -193,16 +230,24 @@ function isSqlCollection(collection: Record<string, any>) {
   return collection.template === 'sql';
 }
 
+function isViewCollection(collection: Record<string, any>) {
+  return collection.template === 'view' || collection.view;
+}
+
 function isSyncFieldsVisible(dataSourceKey: string, collection: Record<string, any>) {
+  if (isSqlCollection(collection)) {
+    return true;
+  }
+
+  if (isViewCollection(collection)) {
+    return dataSourceKey === 'main';
+  }
+
   if (collection.from === 'db2cm') {
     return false;
   }
 
-  if (collection.template === 'view') {
-    return dataSourceKey === 'main';
-  }
-
-  return isSqlCollection(collection);
+  return dataSourceKey === 'main';
 }
 
 function isAddFieldVisible(options: {
@@ -241,12 +286,461 @@ function getSqlSyncErrorMessage(error: unknown, fallback: string) {
   );
 }
 
+function getViewName(collection: Record<string, any>) {
+  return collection.viewName || collection.name;
+}
+
+function normalizeViewFieldsPayload(value: unknown): ViewFieldsResponse {
+  const payload = (value as any)?.data?.data || (value as any)?.data || value || {};
+  return {
+    fields: (payload as ViewFieldsResponse).fields,
+    sources: (payload as ViewFieldsResponse).sources,
+    unsupportedFields: (payload as ViewFieldsResponse).unsupportedFields,
+  };
+}
+
+function normalizeViewFields(fields?: ViewFieldsResponse['fields']) {
+  if (!fields) {
+    return [];
+  }
+  return (Array.isArray(fields) ? fields : Object.values(fields)).filter(Boolean);
+}
+
+function omitRawTitle(uiSchema?: Record<string, any>) {
+  const { rawTitle, ...rest } = uiSchema || {};
+  return rest;
+}
+
+function toSourcePath(source?: string | string[] | null) {
+  if (Array.isArray(source)) {
+    return source.filter(Boolean) as string[];
+  }
+  return typeof source === 'string' ? source.split('.').filter(Boolean) : [];
+}
+
+function normalizeSource(source?: string | string[] | null) {
+  const sourcePath = toSourcePath(source);
+  return sourcePath.length ? sourcePath.join('.') : null;
+}
+
+function getFieldOptions(field: any) {
+  return field?.options || field || {};
+}
+
+function getFieldTitle(field: any) {
+  const options = getFieldOptions(field);
+  return options.uiSchema?.title || options.title || options.name;
+}
+
+function getViewFieldInterfaceOptions(groups: FieldInterfaceGroupOption[], fieldType?: string) {
+  return groups
+    .filter((group) => !['relation', 'systemInfo'].includes(group.key))
+    .map((group) => ({
+      label: group.label,
+      options: group.children
+        .filter((fieldInterface) => {
+          if (!fieldType) {
+            return true;
+          }
+          return fieldInterface.availableTypes?.includes(fieldType) || fieldInterface.default?.type === fieldType;
+        })
+        .map((fieldInterface) => ({
+          label: fieldInterface.title || fieldInterface.label || fieldInterface.name,
+          value: fieldInterface.name,
+        })),
+    }))
+    .filter((group) => group.options.length);
+}
+
+function mergeViewFields(options: {
+  currentFields?: ViewFieldRecord[];
+  fieldInterfacesByName: Record<string, FieldInterfaceOption>;
+  inferredFields: ViewFieldRecord[];
+}) {
+  const currentFieldsByName = new Map((options.currentFields || []).map((field) => [field.name, field]));
+
+  return options.inferredFields.map((field) => {
+    const currentField = currentFieldsByName.get(field.name) || field;
+    const fieldInterface = options.fieldInterfacesByName[currentField.interface || field.interface || ''];
+    const fallbackUiSchema = fieldInterface?.default?.uiSchema || {};
+    const title = currentField.uiSchema?.title || currentField.title || field.uiSchema?.title || field.name;
+    const uiSchema = {
+      ...omitRawTitle(fallbackUiSchema),
+      ...omitRawTitle(currentField.uiSchema || field.uiSchema),
+      title,
+    };
+
+    if (field.source) {
+      return {
+        ...field,
+        interface: field.interface || currentField.interface,
+        type: field.type || currentField.type,
+        uiSchema,
+      };
+    }
+
+    return {
+      ...field,
+      ...currentField,
+      uiSchema,
+    };
+  });
+}
+
+function ViewSyncFieldsDrawer(props: {
+  collection: Record<string, any>;
+  currentFields?: ViewFieldRecord[];
+  fieldInterfaceGroups: FieldInterfaceGroupOption[];
+  fieldInterfacesByName: Record<string, FieldInterfaceOption>;
+  onSubmitted: () => void;
+}) {
+  const t = useT();
+  const ctx = useFlowContext();
+  const { message } = App.useApp();
+  const [form] = Form.useForm();
+  const [fields, setFields] = useState<ViewFieldRecord[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [previewData, setPreviewData] = useState<Array<Record<string, unknown>>>([]);
+  const [previewLoading, setPreviewLoading] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [unsupportedFields, setUnsupportedFields] = useState<ViewFieldRecord[]>([]);
+  const [sourceCollections, setSourceCollections] = useState<string[]>([]);
+  const mainDataSource = ctx.dataSourceManager.getDataSource('main');
+  const viewName = getViewName(props.collection);
+
+  const sourceFieldOptions = useMemo(() => {
+    const options: SourceFieldOption[] = [];
+    sourceCollections.forEach((collectionName) => {
+      const collection = mainDataSource?.getCollection(collectionName);
+      if (!collection) {
+        return;
+      }
+      const children = collection
+        .getFields()
+        .filter((field) => !['hasOne', 'hasMany', 'belongsToMany'].includes(field.type))
+        .map((field) => ({
+          value: field.name,
+          label: compileLegacyTemplate(getFieldTitle(field), t),
+        }));
+      options.push({
+        value: collectionName,
+        label: compileLegacyTemplate(collection.title || collection.name, t),
+        children,
+      });
+    });
+    return options;
+  }, [mainDataSource, sourceCollections, t]);
+
+  const previewColumns = useMemo(() => {
+    return fields
+      .filter((field) => field.source || field.interface)
+      .map((field) => ({
+        title: compileLegacyTemplate(field.uiSchema?.title || field.name, t),
+        dataIndex: field.name,
+        key: field.name,
+        width: 200,
+        ellipsis: true,
+        render: (value: unknown) => {
+          if (value == null) {
+            return null;
+          }
+          if (typeof value === 'object') {
+            return JSON.stringify(value);
+          }
+          return String(value);
+        },
+      }));
+  }, [fields, t]);
+
+  const loadPreviewData = useCallback(
+    async (nextFields: ViewFieldRecord[]) => {
+      setPreviewLoading(true);
+      try {
+        const mapFieldTypes = ['lineString', 'point', 'circle', 'polygon'];
+        const fieldTypes = nextFields.reduce<Record<string, string>>((memo, field) => {
+          if (field.type && mapFieldTypes.includes(field.type)) {
+            memo[field.name] = field.type;
+          }
+          return memo;
+        }, {});
+        const response = await ctx.api.resource('dbViews').query({
+          filterByTk: viewName,
+          schema: props.collection.schema,
+          fieldTypes,
+        });
+        setPreviewData(((response as any)?.data?.data || []) as Array<Record<string, unknown>>);
+      } finally {
+        setPreviewLoading(false);
+      }
+    },
+    [ctx.api, props.collection.schema, viewName],
+  );
+
+  useEffect(() => {
+    let ignore = false;
+
+    const loadFields = async () => {
+      setLoading(true);
+      try {
+        const response = await ctx.api.resource('dbViews').get({
+          filterByTk: viewName,
+          schema: props.collection.schema,
+        });
+        if (ignore) {
+          return;
+        }
+        const payload = normalizeViewFieldsPayload(response);
+        const nextFields = mergeViewFields({
+          currentFields: props.currentFields,
+          fieldInterfacesByName: props.fieldInterfacesByName,
+          inferredFields: normalizeViewFields(payload.fields),
+        });
+        const nextSources = Array.isArray(payload.sources) ? payload.sources : [];
+        setFields(nextFields);
+        setUnsupportedFields(Array.isArray(payload.unsupportedFields) ? payload.unsupportedFields : []);
+        setSourceCollections(nextSources);
+        form.setFieldsValue({
+          fields: nextFields.map((field) => ({
+            ...field,
+            source: normalizeSource(field.source),
+          })),
+          schema: props.collection.schema,
+          sources: nextSources,
+          viewName,
+        });
+        await loadPreviewData(nextFields);
+      } finally {
+        if (!ignore) {
+          setLoading(false);
+        }
+      }
+    };
+
+    loadFields();
+
+    return () => {
+      ignore = true;
+    };
+  }, [
+    ctx.api,
+    form,
+    loadPreviewData,
+    props.collection.schema,
+    props.currentFields,
+    props.fieldInterfacesByName,
+    viewName,
+  ]);
+
+  const handleFieldChange = useCallback(
+    (index: number, nextField: ViewFieldRecord) => {
+      const nextFields = [...fields];
+      nextFields[index] = nextField;
+      setFields(nextFields);
+      form.setFieldValue(
+        'fields',
+        nextFields.map((field) => ({
+          ...field,
+          source: normalizeSource(field.source),
+        })),
+      );
+    },
+    [fields, form],
+  );
+
+  const fieldColumns = useMemo<ColumnsType<ViewFieldRecord>>(
+    () => [
+      {
+        title: t('Field name'),
+        dataIndex: 'name',
+        width: 130,
+      },
+      {
+        title: t('Field source'),
+        dataIndex: 'source',
+        width: 220,
+        render: (_, record, index) => (
+          <Cascader
+            allowClear
+            options={sourceFieldOptions}
+            value={toSourcePath(record.source)}
+            style={{ width: '100%' }}
+            placeholder={t('Select field source')}
+            onChange={(value) => {
+              const sourcePath = (value || []).map(String);
+              const sourceField = sourcePath.length
+                ? mainDataSource?.getCollectionField(sourcePath.join('.'))?.options
+                : undefined;
+              handleFieldChange(index, {
+                ...record,
+                interface: sourceField?.interface || record.interface,
+                source: sourcePath,
+                type: sourceField?.type || record.type,
+                uiSchema: {
+                  ...record.uiSchema,
+                  ...sourceField?.uiSchema,
+                  title: sourceField?.uiSchema?.title || record.uiSchema?.title || record.name,
+                },
+              });
+            }}
+          />
+        ),
+      },
+      {
+        title: t('Field type'),
+        dataIndex: 'type',
+        width: 140,
+        render: (value, record, index) =>
+          record.source || !record.possibleTypes?.length ? (
+            <Tag>{value}</Tag>
+          ) : (
+            <Select
+              value={value}
+              style={{ width: '100%' }}
+              popupMatchSelectWidth={false}
+              options={record.possibleTypes.map((type) => ({ label: type, value: type }))}
+              onChange={(nextType) => handleFieldChange(index, { ...record, type: nextType })}
+            />
+          ),
+      },
+      {
+        title: t('Field interface'),
+        dataIndex: 'interface',
+        width: 170,
+        render: (value, record, index) => {
+          if (record.source) {
+            return (
+              <Tag>{compileLegacyTemplate(getFieldInterfaceLabel(props.fieldInterfacesByName[value], value), t)}</Tag>
+            );
+          }
+          return (
+            <Select
+              allowClear
+              value={value || undefined}
+              style={{ width: '100%' }}
+              popupMatchSelectWidth={false}
+              options={getViewFieldInterfaceOptions(props.fieldInterfaceGroups, record.type).map((group) => ({
+                label: compileLegacyTemplate(group.label, t),
+                options: group.options.map((option) => ({
+                  value: option.value,
+                  label: compileLegacyTemplate(option.label, t),
+                })),
+              }))}
+              onChange={(nextInterfaceName) => {
+                const fieldInterface = props.fieldInterfacesByName[nextInterfaceName];
+                handleFieldChange(index, {
+                  ...record,
+                  interface: nextInterfaceName || null,
+                  type: fieldInterface?.default?.type || record.type,
+                  uiSchema: {
+                    ...fieldInterface?.default?.uiSchema,
+                    title: fieldInterface?.default?.uiSchema?.title || record.uiSchema?.title || record.name,
+                  },
+                });
+              }}
+            />
+          );
+        },
+      },
+      {
+        title: t('Field display name'),
+        dataIndex: ['uiSchema', 'title'],
+        width: 200,
+        render: (_, record, index) => (
+          <Input
+            value={record.uiSchema?.title || record.name}
+            onChange={(event) =>
+              handleFieldChange(index, {
+                ...record,
+                uiSchema: {
+                  ...omitRawTitle(record.uiSchema),
+                  title: event.target.value,
+                },
+              })
+            }
+          />
+        ),
+      },
+    ],
+    [handleFieldChange, mainDataSource, props.fieldInterfaceGroups, props.fieldInterfacesByName, sourceFieldOptions, t],
+  );
+
+  const handleSubmit = useCallback(async () => {
+    await form.validateFields();
+    const values = form.getFieldsValue(true);
+    setSubmitting(true);
+    try {
+      await ctx.api.resource('collections').setFields({
+        filterByTk: props.collection.name,
+        values: {
+          fields: values.fields,
+          schema: values.schema,
+          sources: values.sources,
+          viewName: values.viewName,
+        },
+      });
+      await ctx.dataSourceManager.getDataSource('main')?.reload();
+      props.onSubmitted();
+      message.success(t('Sync successfully'));
+    } finally {
+      setSubmitting(false);
+    }
+  }, [ctx.api, ctx.dataSourceManager, form, message, props, t]);
+
+  return (
+    <DrawerFormLayout
+      title={t('Sync from database')}
+      submitting={submitting}
+      submitText={t('Submit')}
+      cancelText={t('Cancel')}
+      onSubmit={handleSubmit}
+    >
+      <Spin spinning={loading}>
+        <Form form={form} layout="vertical">
+          {fields.length ? (
+            <Form.Item label={t('Fields')}>
+              <AntdTable<ViewFieldRecord>
+                bordered
+                columns={fieldColumns}
+                dataSource={fields}
+                pagination={false}
+                rowKey="name"
+                scroll={{ y: 300 }}
+                size="middle"
+              />
+            </Form.Item>
+          ) : null}
+          {unsupportedFields.length ? (
+            <Alert
+              showIcon
+              type="warning"
+              message={t('Unsupported fields')}
+              description={unsupportedFields.map((field) => field.name).join(', ')}
+            />
+          ) : null}
+          <Form.Item label={t('Preview')}>
+            <Spin spinning={previewLoading}>
+              <AntdTable
+                bordered
+                columns={previewColumns}
+                dataSource={previewData}
+                pagination={false}
+                rowKey={(_, index) => String(index ?? 0)}
+                scroll={{ x: 1000, y: 300 }}
+                size="middle"
+              />
+            </Spin>
+          </Form.Item>
+        </Form>
+      </Spin>
+    </DrawerFormLayout>
+  );
+}
+
 function SqlSyncFieldsDrawer(props: { collection: Record<string, any>; onSubmitted: () => void }) {
   const t = useT();
   const ctx = useFlowContext();
   const { message } = App.useApp();
   const [form] = Form.useForm();
-  const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const previewName = getSqlPreviewInternalName();
 
@@ -263,7 +757,6 @@ function SqlSyncFieldsDrawer(props: { collection: Record<string, any>; onSubmitt
         return;
       }
 
-      setLoading(true);
       try {
         const response = await ctx.api.resource('sqlCollection').execute({
           values: {
@@ -295,10 +788,6 @@ function SqlSyncFieldsDrawer(props: { collection: Record<string, any>; onSubmitt
           form.setFieldValue(previewName, {
             error: getSqlSyncErrorMessage(error, t('SQL error')),
           });
-        }
-      } finally {
-        if (!ignore) {
-          setLoading(false);
         }
       }
     };
@@ -337,13 +826,11 @@ function SqlSyncFieldsDrawer(props: { collection: Record<string, any>; onSubmitt
       cancelText={t('Cancel')}
       onSubmit={handleSubmit}
     >
-      <Spin spinning={loading}>
-        <Form form={form} layout="vertical" initialValues={props.collection}>
-          <SqlSourceCollectionsConfigureItem form={form} mode="edit" template={{ title: '', name: 'sql' }} item={{}} />
-          <SqlFieldsConfigureItem form={form} mode="edit" template={{ title: '', name: 'sql' }} item={{}} />
-          <SqlPreviewConfigureItem form={form} mode="edit" template={{ title: '', name: 'sql' }} item={{}} />
-        </Form>
-      </Spin>
+      <Form form={form} layout="vertical" initialValues={props.collection}>
+        <SqlSourceCollectionsConfigureItem form={form} mode="edit" template={{ title: '', name: 'sql' }} item={{}} />
+        <SqlFieldsConfigureItem form={form} mode="edit" template={{ title: '', name: 'sql' }} item={{}} />
+        <SqlPreviewConfigureItem form={form} mode="edit" template={{ title: '', name: 'sql' }} item={{}} />
+      </Form>
     </DrawerFormLayout>
   );
 }
@@ -460,6 +947,24 @@ export default function FieldsPage(props: FieldsPageProps) {
     });
   }, [ctx.viewer, props.collection, request]);
 
+  const openViewSyncFieldsDrawer = useCallback(() => {
+    ctx.viewer.drawer({
+      width: 900,
+      closable: true,
+      content: () => (
+        <ViewSyncFieldsDrawer
+          collection={props.collection}
+          currentFields={(request.data || props.collection.fields || []) as ViewFieldRecord[]}
+          fieldInterfaceGroups={allFieldInterfaceGroups}
+          fieldInterfacesByName={fieldInterfacesByName}
+          onSubmitted={() => {
+            request.refresh();
+          }}
+        />
+      ),
+    });
+  }, [allFieldInterfaceGroups, ctx.viewer, fieldInterfacesByName, props.collection, request]);
+
   const handleDelete = useCallback(
     (filterByTk: React.Key | React.Key[]) => {
       modal.confirm({
@@ -539,6 +1044,11 @@ export default function FieldsPage(props: FieldsPageProps) {
       return;
     }
 
+    if (isViewCollection(props.collection)) {
+      openViewSyncFieldsDrawer();
+      return;
+    }
+
     setSyncFieldsLoading(true);
     try {
       await ctx.api.resource('mainDataSource').syncFields({
@@ -552,7 +1062,16 @@ export default function FieldsPage(props: FieldsPageProps) {
     } finally {
       setSyncFieldsLoading(false);
     }
-  }, [ctx.api, ctx.dataSourceManager, message, openSqlSyncFieldsDrawer, props.collection, request, t]);
+  }, [
+    ctx.api,
+    ctx.dataSourceManager,
+    message,
+    openSqlSyncFieldsDrawer,
+    openViewSyncFieldsDrawer,
+    props.collection,
+    request,
+    t,
+  ]);
 
   const syncFieldsVisible = isSyncFieldsVisible(props.dataSourceKey, props.collection);
   const addFieldVisible = isAddFieldVisible({
