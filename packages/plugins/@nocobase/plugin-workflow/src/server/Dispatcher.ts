@@ -18,6 +18,7 @@ import { EXECUTION_STATUS } from './constants';
 import type { ExecutionModel, JobModel, WorkflowModel } from './types';
 import type PluginWorkflowServer from './Plugin';
 import { WORKER_JOB_WORKFLOW_PROCESS } from './Plugin';
+import { getExecutionLockKey, isLockAcquireError } from './utils';
 
 type ExecutionPlan = [ExecutionModel, JobModel?, ProcessorRerunOptions?];
 type Pending = {
@@ -26,8 +27,6 @@ type Pending = {
   loaded?: boolean;
   rerun?: ProcessorRerunOptions;
 };
-
-type RunOptions = { dispatch?: boolean };
 
 type CachedEvent = [WorkflowModel, any, EventOptions];
 
@@ -68,7 +67,7 @@ export default class Dispatcher {
     this.plugin
       .getLogger(execution.workflowId)
       .info(`execution (${execution.id}) received from queue, adding to pending list`);
-    this.run({ execution });
+    await this.run({ execution });
   };
 
   public setReady(ready: boolean) {
@@ -185,7 +184,7 @@ export default class Dispatcher {
       .getLogger(execution.workflowId)
       .info(`execution (${execution.id}) resuming from job (${job.id}) added to pending list`);
 
-    this.run({ execution, job, loaded: true });
+    await this.run({ execution, job, loaded: true });
   }
 
   public async start(execution: ExecutionModel) {
@@ -194,7 +193,7 @@ export default class Dispatcher {
     }
     this.plugin.getLogger(execution.workflowId).info(`starting deferred execution (${execution.id})`);
 
-    this.run({ execution, loaded: true });
+    await this.run({ execution, loaded: true });
   }
 
   public async beforeStop() {
@@ -258,7 +257,7 @@ export default class Dispatcher {
           await this.process(next[0], next[1], { rerun: next[2] });
         } catch (error) {
           this.plugin.getLogger(next[0].workflowId).error(`execution (${next[0].id}) process failed`, { error });
-          if (pending && this.isLockAcquireError(error)) {
+          if (pending && isLockAcquireError(error)) {
             this.pending.unshift({ ...pending, execution: next[0], loaded: true });
           }
         }
@@ -274,12 +273,10 @@ export default class Dispatcher {
     })();
   }
 
-  public async run(pending: Pending, options: RunOptions = {}): Promise<void> {
+  public async run(pending: Pending): Promise<void> {
     this.pending.push(pending);
 
-    if (options.dispatch !== false) {
-      this.dispatch();
-    }
+    this.dispatch();
   }
 
   private async triggerSync(
@@ -534,14 +531,6 @@ export default class Dispatcher {
     return execution;
   }
 
-  private getExecutionLockKey(executionId: number | string) {
-    return `workflow:execution:${executionId}`;
-  }
-
-  private isLockAcquireError(error: unknown) {
-    return error instanceof Error && error.constructor.name === 'LockAcquireError';
-  }
-
   private async process(
     execution: ExecutionModel,
     job: JobModel | null = null,
@@ -576,7 +565,7 @@ export default class Dispatcher {
       return processor;
     };
 
-    const lock = await this.plugin.app.lockManager.tryAcquire(this.getExecutionLockKey(execution.id), 60_000);
+    const lock = await this.plugin.app.lockManager.tryAcquire(getExecutionLockKey(execution.id), 60_000);
     try {
       return await lock.runExclusive(run, 60_000);
     } catch (error) {

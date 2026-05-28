@@ -508,11 +508,8 @@ export default class PluginWorkflowServer extends Plugin {
     return this.dispatcher.trigger(workflow, context, options);
   }
 
-  public async run(
-    pending: Parameters<Dispatcher['run']>[0],
-    options?: Parameters<Dispatcher['run']>[1],
-  ): Promise<void> {
-    return this.dispatcher.run(pending, options);
+  public async run(pending: Parameters<Dispatcher['run']>[0]): Promise<void> {
+    return this.dispatcher.run(pending);
   }
 
   public dispatch() {

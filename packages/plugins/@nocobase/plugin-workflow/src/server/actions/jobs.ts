@@ -11,14 +11,7 @@ import { Context, Next, utils } from '@nocobase/actions';
 import { EXECUTION_STATUS } from '../constants';
 import PluginWorkflowServer from '../Plugin';
 import { NAMESPACE } from '../../common/constants';
-
-function getExecutionLockKey(executionId: number | string) {
-  return `workflow:execution:${executionId}`;
-}
-
-function isLockAcquireError(error: unknown) {
-  return error instanceof Error && error.constructor.name === 'LockAcquireError';
-}
+import { getExecutionLockKey, isLockAcquireError } from '../utils';
 
 export async function resume(context: Context, next: Next) {
   const repository = utils.getRepositoryFromParams(context);

@@ -19,6 +19,14 @@ type AbortOptions = Transactionable & {
   reason?: (typeof EXECUTION_REASON)[keyof typeof EXECUTION_REASON];
 };
 
+export function getExecutionLockKey(executionId: number | string) {
+  return `workflow:execution:${executionId}`;
+}
+
+export function isLockAcquireError(error: unknown) {
+  return error instanceof Error && error.constructor.name === 'LockAcquireError';
+}
+
 function afterTransactionCommit(transaction: Transaction, callback: () => void) {
   if (typeof (transaction as any).afterCommit === 'function') {
     (transaction as any).afterCommit(callback);

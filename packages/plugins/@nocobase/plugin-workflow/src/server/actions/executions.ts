@@ -11,15 +11,7 @@ import actions, { Context, Next } from '@nocobase/actions';
 import { Op } from '@nocobase/database';
 import PluginWorkflowServer from '../Plugin';
 import { EXECUTION_REASON, EXECUTION_STATUS } from '../constants';
-import { abortExecution } from '../utils';
-
-function getExecutionLockKey(executionId: number | string) {
-  return `workflow:execution:${executionId}`;
-}
-
-function isLockAcquireError(error: unknown) {
-  return error instanceof Error && error.constructor.name === 'LockAcquireError';
-}
+import { abortExecution, getExecutionLockKey, isLockAcquireError } from '../utils';
 
 export async function destroy(context: Context, next: Next) {
   context.action.mergeParams({
@@ -79,37 +71,14 @@ export async function rerun(context: Context, next: Next) {
     return context.throw(409, 'Only started executions can be rerun');
   }
 
-  try {
-    const lock = await context.app.lockManager.tryAcquire(getExecutionLockKey(execution.id));
-    await lock.runExclusive(async () => {
-      const processor = workflowPlugin.createProcessor(execution);
-      await processor.prepare();
-      processor.resolveRerun({
-        nodeId,
-        overwrite: overwrite === true,
-      });
-    }, 60_000);
-    await workflowPlugin.run(
-      {
-        execution,
-        loaded: true,
-        rerun: {
-          nodeId,
-          overwrite: overwrite === true,
-        },
-      },
-      { dispatch: false },
-    );
-    workflowPlugin.dispatch();
-  } catch (error) {
-    if (isLockAcquireError(error)) {
-      return context.throw(409, 'Execution is being processed');
-    }
-    if (error instanceof Error) {
-      return context.throw(400, error.message);
-    }
-    throw error;
-  }
+  await workflowPlugin.run({
+    execution,
+    loaded: true,
+    rerun: {
+      nodeId,
+      overwrite: overwrite === true,
+    },
+  });
 
   context.body = execution;
   context.status = 202;
