@@ -8,9 +8,9 @@
  */
 
 import { vi } from 'vitest';
-import { createMockServer, MockServer } from '@nocobase/test';
+import { MockServer } from '@nocobase/test';
 import { variables, inferSelectsFromUsage } from '../variables/registry';
-import { resetVariablesRegistryForTest } from './test-utils';
+import { createFlowEngineMockServer, resetVariablesRegistryForTest } from './test-utils';
 
 describe('plugin-flow-engine variables:resolve (no HTTP)', () => {
   let app: MockServer;
@@ -49,7 +49,7 @@ describe('plugin-flow-engine variables:resolve (no HTTP)', () => {
   };
 
   beforeEach(async () => {
-    app = await createMockServer({
+    app = await createFlowEngineMockServer({
       plugins: [
         'error-handler',
         'auth',

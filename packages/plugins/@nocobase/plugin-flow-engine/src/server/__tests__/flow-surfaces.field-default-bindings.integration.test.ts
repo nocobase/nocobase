@@ -180,7 +180,7 @@ describe('flowSurfaces field default bindings', () => {
                 dataSourceKey: 'main',
                 collectionName,
               },
-              fields: ['status'],
+              fields: ['title', 'status', 'stage'],
             },
             {
               key: 'composeForm',
@@ -281,7 +281,10 @@ async function createFieldDefaultBindingCollection(rootAgent: any, app: MockServ
 async function createPage(rootAgent: any, values: Record<string, any>) {
   return getData(
     await rootAgent.resource('flowSurfaces').createPage({
-      values,
+      values: {
+        icon: 'FileOutlined',
+        ...values,
+      },
     }),
   );
 }
@@ -295,6 +298,7 @@ async function addBlock(rootAgent: any, targetUid: string, type: string, resourc
         },
         type,
         resourceInit,
+        fields: type === 'table' ? ['title', 'status', 'stage'] : ['title'],
       },
     }),
   ).uid;

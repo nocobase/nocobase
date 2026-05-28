@@ -10,6 +10,13 @@
 import _ from 'lodash';
 import { FlowSurfaceBadRequestError } from './errors';
 
+const CHART_REPAIR_HINT =
+  'This is a chart payload shape problem. Repair the current chart query/visual mappings and keep the chart block type. Do not change this block type to table, jsBlock, actionPanel, gridCard, or another block type. KPI / summary numbers should use jsBlock; charts are for trends, distributions, rankings, and visual analysis.';
+
+function withChartRepairMessage(message: string) {
+  return `${message}. ${CHART_REPAIR_HINT}`;
+}
+
 export const CHART_DEFAULT_DATA_SOURCE_KEY = 'main';
 export const CHART_QUERY_MODES = ['builder', 'sql'] as const;
 export const CHART_VISUAL_MODES = ['basic', 'custom'] as const;
@@ -1243,7 +1250,16 @@ function assertBasicVisualMappingsAgainstBuilderQuery(builderVisual: Record<stri
   for (const value of mappingValues) {
     if (!value || !allowedOutputs.has(value)) {
       throw new FlowSurfaceBadRequestError(
-        `chart visual mappings only support query output fields: ${Array.from(allowedOutputs).join(', ')}`,
+        withChartRepairMessage(
+          `chart visual mappings only support query output fields: ${Array.from(allowedOutputs).join(', ')}`,
+        ),
+        undefined,
+        {
+          details: {
+            repairHint: CHART_REPAIR_HINT,
+            allowedOutputs: Array.from(allowedOutputs),
+          },
+        },
       );
     }
   }
