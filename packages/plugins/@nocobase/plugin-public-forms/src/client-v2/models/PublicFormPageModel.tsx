@@ -11,10 +11,19 @@ import { css } from '@emotion/css';
 import { define, observable } from '@formily/reactive';
 import { ChildPageModel, PoweredBy } from '@nocobase/client-v2';
 import { observer } from '@nocobase/flow-engine';
+import type { DataSourceManager, FlowModel } from '@nocobase/flow-engine';
 import { theme } from 'antd';
 import React, { useMemo } from 'react';
-import { PUBLIC_FORM_SUBMIT_ACTION_MODEL } from '../constants';
+import { PUBLIC_FORM_LAYOUT_UID, PUBLIC_FORM_SUBMIT_ACTION_MODEL } from '../constants';
 import { useT } from '../locale';
+
+type PublicFormLayoutRuntimeModel = FlowModel & {
+  currentLayoutRoute?: unknown;
+  getPageUidFromLayoutRoute?: (match: unknown) => string;
+  context: FlowModel['context'] & {
+    dataSourceManager?: DataSourceManager;
+  };
+};
 
 const PublicFormSettingsContent = observer((props: { model: PublicFormPageModel }) => {
   const { model } = props;
@@ -81,9 +90,25 @@ export class PublicFormPageModel extends ChildPageModel {
     });
   }
 
+  private getPublicFormDataSourceManager() {
+    const layoutModel = this.flowEngine.getModel<PublicFormLayoutRuntimeModel>(PUBLIC_FORM_LAYOUT_UID, true);
+    const routePageUid = this.parent?.uid;
+    const layoutPageUid = layoutModel?.getPageUidFromLayoutRoute?.(layoutModel.currentLayoutRoute);
+
+    if (!routePageUid || layoutPageUid !== routePageUid) {
+      return undefined;
+    }
+
+    return layoutModel?.context?.dataSourceManager;
+  }
+
   onInit(options: any): void {
     super.onInit(options);
     this.setProps('showFlowSettings', false);
+    this.context.defineProperty('dataSourceManager', {
+      get: () => this.getPublicFormDataSourceManager() || this.flowEngine.context.dataSourceManager,
+      cache: false,
+    });
     this.context.defineProperty('publicFormPageModel', {
       value: this,
     });

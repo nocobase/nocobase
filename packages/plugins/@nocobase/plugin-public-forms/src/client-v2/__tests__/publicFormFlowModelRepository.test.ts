@@ -7,9 +7,13 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { BlockGridModel, ChildPageTabModel, CreateFormModel, FormGridModel, RouteModel } from '@nocobase/client-v2';
+import type { LayoutRouteMatch } from '@nocobase/client-v2';
 import { FlowEngine } from '@nocobase/flow-engine';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { PUBLIC_FORM_LAYOUT_UID } from '../constants';
 import { PublicFormLayoutModel } from '../models/PublicFormLayoutModel';
+import { PublicFormPageModel } from '../models/PublicFormPageModel';
 import { PublicFormFlowModelRepository } from '../publicFormFlowModelRepository';
 
 describe('PublicFormFlowModelRepository', () => {
@@ -240,5 +244,87 @@ describe('PublicFormLayoutModel public form repository binding', () => {
     expect(globalDataSourceManager.getDataSource('main')?.getCollection('orders')).toBeFalsy();
 
     (model as any).onUnmount();
+  });
+
+  it('resolves public form collections before detached page context is attached', () => {
+    const flowEngine = new FlowEngine();
+    flowEngine.registerModels({
+      PublicFormLayoutModel,
+      PublicFormPageModel,
+      RouteModel,
+      ChildPageTabModel,
+      BlockGridModel,
+      CreateFormModel,
+      FormGridModel,
+    });
+
+    const layoutModel = flowEngine.createModel<PublicFormLayoutModel>({
+      uid: PUBLIC_FORM_LAYOUT_UID,
+      use: 'PublicFormLayoutModel',
+    });
+    (layoutModel as any).onMount();
+    const publicFormRoute: LayoutRouteMatch = {
+      type: 'page',
+      pathname: '/public-forms/pf1',
+      basePathname: '/public-forms',
+      relativePath: 'pf1',
+      pageUid: 'pf1',
+      viewStack: [],
+    };
+    layoutModel.currentLayoutRoute = publicFormRoute;
+    layoutModel.applyPublicDataSource({
+      key: 'main',
+      displayName: 'Main',
+      collections: [{ name: 'users', fields: [] } as any],
+    });
+
+    flowEngine.createModel({
+      uid: 'pf1',
+      use: 'RouteModel',
+      subModels: {
+        page: {
+          use: 'PublicFormPageModel',
+          subModels: {
+            tabs: [
+              {
+                use: 'ChildPageTabModel',
+                subModels: {
+                  grid: {
+                    use: 'BlockGridModel',
+                    subModels: {
+                      items: [
+                        {
+                          uid: 'form-block',
+                          use: 'CreateFormModel',
+                          stepParams: {
+                            resourceSettings: {
+                              init: {
+                                dataSourceKey: 'main',
+                                collectionName: 'users',
+                              },
+                            },
+                          },
+                          subModels: {
+                            grid: {
+                              use: 'FormGridModel',
+                            },
+                          },
+                        },
+                      ],
+                    },
+                  },
+                },
+              },
+            ],
+          },
+        },
+      },
+    });
+
+    const formBlock = flowEngine.getModel<CreateFormModel>('form-block');
+    expect(formBlock?.context.dataSourceManager).toBe(layoutModel.context.dataSourceManager);
+    expect(formBlock?.context.collection?.name).toBe('users');
+
+    (layoutModel as any).onUnmount();
   });
 });
