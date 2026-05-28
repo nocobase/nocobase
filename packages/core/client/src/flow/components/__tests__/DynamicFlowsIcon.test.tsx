@@ -448,6 +448,35 @@ describe('DynamicFlowsIcon', () => {
     expect(target.context.message.success).toHaveBeenCalledWith('Configuration saved');
   });
 
+  it('keeps the editor open when saving the active source would discard inactive source changes', async () => {
+    const saveStepParams = vi.fn(async () => undefined);
+    const model = createModel({ saveStepParams });
+    const target = createPeerModel(model, 'target-model');
+    mockState.flowContextValue.modal.confirm.mockResolvedValue(false);
+
+    model.flowEngine.flowSettings.registerDynamicFlowSourceProvider({
+      key: 'test-source-unsaved-provider',
+      getSources: () => [{ key: 'referenced-template', label: 'Referenced template', model: target }],
+    });
+
+    const { view } = await openDynamicFlowsEditor(model);
+
+    await userEvent.click(screen.getByRole('tab', { name: 'Referenced template' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Add event flow' }));
+    await userEvent.click(screen.getByRole('tab', { name: 'Current block' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Save' }));
+
+    expect(saveStepParams).toHaveBeenCalledTimes(1);
+    expect(mockState.flowContextValue.modal.confirm).toHaveBeenCalledWith({
+      title: 'Unsaved changes',
+      content: "Are you sure you don't want to save?",
+      okText: 'Confirm',
+      cancelText: 'Cancel',
+    });
+    expect(view.destroy).not.toHaveBeenCalled();
+    expect(target.flowRegistry.getFlows().size).toBe(1);
+  });
+
   it('provides the active source model context inside source tabs', async () => {
     const model = createModel();
     const target = createPeerModel(model, 'target-model');

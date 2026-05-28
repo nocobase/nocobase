@@ -99,6 +99,17 @@ function validateFlowOnPhase(onObj: FlowOnObject): 'flowKey' | 'stepKey' | undef
   }
 }
 
+const confirmDiscardUnsavedChanges = async (ctx: FlowEngineContext, t: (key: string) => string) => {
+  return (
+    (await ctx.modal?.confirm?.({
+      title: t('Unsaved changes'),
+      content: t("Are you sure you don't want to save?"),
+      okText: t('Confirm'),
+      cancelText: t('Cancel'),
+    })) ?? true
+  );
+};
+
 export const DynamicFlowsIcon: React.FC<{ model: FlowModel }> = (props) => {
   const { model } = props;
   const t = React.useMemo(() => model.translate.bind(model), [model]);
@@ -143,7 +154,13 @@ export const DynamicFlowsIcon: React.FC<{ model: FlowModel }> = (props) => {
 
 const DynamicFlowsSourceTabs = observer(({ sources }: { sources: DynamicFlowSource[] }) => {
   const [activeKey, setActiveKey] = React.useState(sources[0]?.key);
+  const ctx = useFlowContext<FlowEngineContext>();
   const { token } = theme.useToken();
+  const dirtySourceKeysRef = React.useRef(new Set<string>());
+  const t = React.useMemo(
+    () => sources[0]?.model.translate.bind(sources[0].model) || ((key: string) => key),
+    [sources],
+  );
   const tabBarStyle = React.useMemo(
     () => ({
       paddingLeft: token.paddingLG,
@@ -152,6 +169,37 @@ const DynamicFlowsSourceTabs = observer(({ sources }: { sources: DynamicFlowSour
     }),
     [token.paddingLG],
   );
+  const handleDirtyChange = React.useCallback((sourceKey: string, dirty: boolean) => {
+    if (dirty) {
+      dirtySourceKeysRef.current.add(sourceKey);
+    } else {
+      dirtySourceKeysRef.current.delete(sourceKey);
+    }
+  }, []);
+
+  React.useEffect(() => {
+    const view = ctx.view;
+    const previousBeforeClose = view.beforeClose;
+    const beforeClose = async (payload) => {
+      if (dirtySourceKeysRef.current.size > 0) {
+        const confirmed = await confirmDiscardUnsavedChanges(ctx, t);
+        if (!confirmed) {
+          return false;
+        }
+      }
+
+      const result = await previousBeforeClose?.(payload);
+      return result !== false;
+    };
+
+    view.beforeClose = beforeClose;
+
+    return () => {
+      if (view.beforeClose === beforeClose) {
+        view.beforeClose = previousBeforeClose;
+      }
+    };
+  }, [ctx, t]);
 
   return (
     <Tabs
@@ -163,13 +211,26 @@ const DynamicFlowsSourceTabs = observer(({ sources }: { sources: DynamicFlowSour
       items={sources.map((source) => ({
         key: source.key,
         label: source.label,
-        children: <DynamicFlowsSourceEditor key={source.key} source={source} active={source.key === activeKey} />,
+        children: (
+          <DynamicFlowsSourceEditor
+            key={source.key}
+            source={source}
+            active={source.key === activeKey}
+            onDirtyChange={(dirty) => handleDirtyChange(source.key, dirty)}
+          />
+        ),
       }))}
     />
   );
 });
 
-const DynamicFlowsSourceEditor = observer(({ source, active }: { source: DynamicFlowSource; active: boolean }) => {
+type DynamicFlowsSourceEditorProps = {
+  source: DynamicFlowSource;
+  active: boolean;
+  onDirtyChange: (dirty: boolean) => void;
+};
+
+const DynamicFlowsSourceEditor = observer(({ source, active, onDirtyChange }: DynamicFlowsSourceEditorProps) => {
   const hostCtx = useFlowContext<FlowEngineContext>();
   const sourceContext = React.useMemo(() => {
     const context = new FlowContext();
@@ -190,7 +251,13 @@ const DynamicFlowsSourceEditor = observer(({ source, active }: { source: Dynamic
 
   return (
     <FlowContextProvider context={sourceContext}>
-      <DynamicFlowsEditor key={source.model.uid} model={source.model} active={active} />
+      <DynamicFlowsEditor
+        key={source.model.uid}
+        model={source.model}
+        active={active}
+        guardBeforeClose={false}
+        onDirtyChange={onDirtyChange}
+      />
     </FlowContextProvider>
   );
 });
@@ -553,9 +620,18 @@ const EventConfigSection = observer(
   },
 );
 
-const DynamicFlowsEditor = observer((props: { model: FlowModel; active?: boolean }) => {
+type DynamicFlowsEditorProps = {
+  model: FlowModel;
+  active?: boolean;
+  guardBeforeClose?: boolean;
+  onDirtyChange?: (dirty: boolean) => void;
+};
+
+const DynamicFlowsEditor = observer((props: DynamicFlowsEditorProps) => {
   const { model } = props;
   const active = props.active ?? true;
+  const guardBeforeClose = props.guardBeforeClose ?? true;
+  const onDirtyChange = props.onDirtyChange;
   const ctx = useFlowContext<FlowEngineContext>();
   const flowEngine = model.flowEngine;
   const initialFlows = React.useMemo(() => serializeFlowRegistry(model.flowRegistry), [model]);
@@ -568,17 +644,19 @@ const DynamicFlowsEditor = observer((props: { model: FlowModel; active?: boolean
   }, [draftFlowRegistry]);
 
   React.useEffect(() => {
+    onDirtyChange?.(hasUnsavedChanges());
+  });
+
+  React.useEffect(() => {
+    if (!guardBeforeClose) {
+      return;
+    }
+
     const view = ctx.view;
     const previousBeforeClose = view.beforeClose;
     const beforeClose = async (payload) => {
       if (hasUnsavedChanges()) {
-        const confirmed =
-          (await ctx.modal?.confirm?.({
-            title: t('Unsaved changes'),
-            content: t("Are you sure you don't want to save?"),
-            okText: t('Confirm'),
-            cancelText: t('Cancel'),
-          })) ?? true;
+        const confirmed = await confirmDiscardUnsavedChanges(ctx, t);
 
         if (!confirmed) {
           return false;
@@ -596,7 +674,7 @@ const DynamicFlowsEditor = observer((props: { model: FlowModel; active?: boolean
         view.beforeClose = previousBeforeClose;
       }
     };
-  }, [ctx, hasUnsavedChanges, t]);
+  }, [ctx, guardBeforeClose, hasUnsavedChanges, t]);
 
   // 添加新流
   const handleAddFlow = () => {
@@ -812,8 +890,9 @@ const DynamicFlowsEditor = observer((props: { model: FlowModel; active?: boolean
           }
           setSubmitLoading(false);
           initialFlowsRef.current = serializeFlowRegistry(draftFlowRegistry);
+          onDirtyChange?.(false);
           model.context?.message?.success?.(t('Configuration saved'));
-          ctx.view.destroy();
+          await ctx.view.close();
         }}
       >
         {t('Save')}
