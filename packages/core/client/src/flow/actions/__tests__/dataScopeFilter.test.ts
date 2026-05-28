@@ -168,7 +168,7 @@ describe('normalizeDataScopeFilter', () => {
     await (dataScope as { handler: (ctx: typeof ctx, params: typeof params) => Promise<void> }).handler(ctx, params);
 
     expect(resource.addFilterGroup).toHaveBeenCalledWith('table-1', {
-      $and: [{ 'roles.name': { $includes: ['admin', 'member'] } }],
+      $and: [{ roles: { name: { $includes: ['admin', 'member'] } } }],
     });
     expect(resource.removeFilterGroup).not.toHaveBeenCalled();
   });
