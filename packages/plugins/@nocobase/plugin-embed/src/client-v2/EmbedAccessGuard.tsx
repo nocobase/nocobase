@@ -272,7 +272,7 @@ export function EmbedAccessGuard(props: { children: React.ReactNode }) {
           });
         }
       } catch (error) {
-        if (!mountedRef.current) {
+        if (!active || !mountedRef.current) {
           return;
         }
 

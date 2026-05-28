@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { render, screen, waitFor } from '@nocobase/test/client';
+import { act, render, screen, waitFor } from '@nocobase/test/client';
 import React from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -69,6 +69,21 @@ const mocks = vi.hoisted(() => {
     pageUid: 'test-page',
   };
 });
+
+function createDeferred<T>() {
+  let resolveDeferred!: (value: T) => void;
+  let rejectDeferred!: (reason?: unknown) => void;
+  const promise = new Promise<T>((resolve, reject) => {
+    resolveDeferred = resolve;
+    rejectDeferred = reject;
+  });
+
+  return {
+    promise,
+    resolve: resolveDeferred,
+    reject: rejectDeferred,
+  };
+}
 
 vi.mock('@nocobase/client-v2', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@nocobase/client-v2')>();
@@ -273,5 +288,63 @@ describe('EmbedAccessGuard', () => {
     expect(mocks.app.flowEngine.context.routeRepository.getRouteBySchemaUid).toHaveBeenCalledWith('test-page');
     expect(mocks.app.apiClient.request).toHaveBeenCalledTimes(1);
     expect(mocks.aclStore.setData).not.toHaveBeenCalledWith(expect.objectContaining({ role: 'member' }));
+  });
+
+  it('ignores stale failures from the previous page guard run', async () => {
+    const firstAuthCheck = createDeferred<{
+      data: {
+        data: {
+          id: number;
+        };
+      };
+    }>();
+    mocks.pageUid = 'old-page';
+    mocks.app.apiClient.request
+      .mockReturnValueOnce(firstAuthCheck.promise)
+      .mockResolvedValueOnce({
+        data: {
+          data: {
+            id: 2,
+            roles: [{ name: 'admin', title: 'Admin' }],
+          },
+        },
+      })
+      .mockResolvedValueOnce({
+        data: {
+          data: {
+            role: 'admin',
+            snippets: ['ui.*'],
+          },
+          meta: {},
+        },
+      });
+    const { EmbedAccessGuard } = await import('../EmbedAccessGuard');
+
+    const view = render(
+      <EmbedAccessGuard>
+        <div data-testid="embed-content" />
+      </EmbedAccessGuard>,
+    );
+
+    await waitFor(() => {
+      expect(mocks.app.apiClient.request).toHaveBeenCalledTimes(1);
+    });
+
+    mocks.pageUid = 'new-page';
+    view.rerender(
+      <EmbedAccessGuard>
+        <div data-testid="embed-content" />
+      </EmbedAccessGuard>,
+    );
+
+    expect(await screen.findByTestId('embed-content')).toBeInTheDocument();
+
+    await act(async () => {
+      firstAuthCheck.reject(new Error('old page request failed'));
+      await firstAuthCheck.promise.catch(() => undefined);
+    });
+
+    expect(screen.getByTestId('embed-content')).toBeInTheDocument();
+    expect(screen.queryByText('403')).not.toBeInTheDocument();
   });
 });

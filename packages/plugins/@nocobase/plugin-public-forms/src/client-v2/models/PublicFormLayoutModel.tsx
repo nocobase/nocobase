@@ -28,13 +28,21 @@ type PublicFormDataSourceOptions = DataSourceOptions & {
   collections?: CollectionOptions[];
 };
 
+function getPublicFormToken() {
+  if (typeof localStorage === 'undefined') {
+    return '';
+  }
+
+  return localStorage.getItem(PUBLIC_FORM_TOKEN_KEY) || '';
+}
+
 function usePublicFormTokenHeader() {
   const app = useApp();
 
   useEffect(() => {
     const interceptor = app.apiClient.axios.interceptors.request.use((config) => {
       config.headers = config.headers || {};
-      config.headers['X-Form-Token'] = localStorage.getItem(PUBLIC_FORM_TOKEN_KEY) || '';
+      config.headers['X-Form-Token'] = getPublicFormToken();
       return config;
     });
 
@@ -75,6 +83,8 @@ const PublicFormLayoutComponent = observer((props: { model: PublicFormLayoutMode
   const [routeContentElement, setRouteContentElement] = useState<HTMLDivElement | null>(null);
   const routeContentRef = useRef<HTMLDivElement | null>(null);
   const pageUid = model.getPageUidFromLayoutRoute(model.currentLayoutRoute);
+  usePublicFormTokenHeader();
+
   const { data, error, loading, run } = useRequest(
     async (nextPassword?: string) => {
       if (!pageUid) {
@@ -84,6 +94,9 @@ const PublicFormLayoutComponent = observer((props: { model: PublicFormLayoutMode
       const response = await app.apiClient.request({
         url: `publicForms:getMeta/${pageUid}`,
         skipAuth: true,
+        headers: {
+          'X-Form-Token': getPublicFormToken(),
+        },
         params:
           typeof nextPassword === 'string'
             ? {
@@ -181,8 +194,6 @@ const PublicFormLayoutComponent = observer((props: { model: PublicFormLayoutMode
     `,
     [token.colorBgLayout, token.padding, token.paddingXL, token.screenSM],
   );
-
-  usePublicFormTokenHeader();
 
   useEffect(() => {
     const host = routeContentRef.current;

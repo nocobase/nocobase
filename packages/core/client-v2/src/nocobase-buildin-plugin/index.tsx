@@ -65,6 +65,21 @@ function shouldCheckRuntimeRoute(app: Application, pathname: string) {
   return isAdminRuntimeRoute(pathname, app.router.getBasename()) || hasAuthCheckRoute(app, pathname);
 }
 
+type CurrentUserAuthCheckRouteState = 'skipped' | 'unchecked' | 'required';
+
+function getCurrentUserAuthCheckRouteState(app: Application, pathname: string): CurrentUserAuthCheckRouteState {
+  const basename = app.router.getBasename();
+  if (isBuiltinAuthRoute(pathname, basename) || app.router.isSkippedAuthCheckRoute(pathname)) {
+    return 'skipped';
+  }
+
+  if (!shouldCheckRuntimeRoute(app, pathname)) {
+    return 'unchecked';
+  }
+
+  return 'required';
+}
+
 export const CurrentUserContext = createContext<CurrentUserState | null>(null);
 CurrentUserContext.displayName = 'CurrentUserContext';
 
@@ -159,23 +174,20 @@ const CurrentUserProvider: FC = ({ children }) => {
   const location = useLocation();
   const navigate = useNavigate();
   const [state, setState] = useState<CurrentUserState>({ loading: true });
-  const pathnameRef = useRef(location.pathname);
-  pathnameRef.current = location.pathname;
   const locationRef = useRef(location);
   locationRef.current = location;
+  const authCheckRouteState = getCurrentUserAuthCheckRouteState(app, location.pathname);
 
   useEffect(() => {
     let mounted = true;
-    const isSkippedAuthCheckRoute =
-      isBuiltinAuthRoute(pathnameRef.current, app.router.getBasename()) ||
-      app.router.isSkippedAuthCheckRoute(pathnameRef.current);
-    const shouldCheckCurrentUser = shouldCheckRuntimeRoute(app, pathnameRef.current);
 
-    if (isSkippedAuthCheckRoute || !shouldCheckCurrentUser) {
+    if (authCheckRouteState !== 'required') {
       // 认证页等免鉴权路由不应再执行 `/auth:check`，否则未登录时会重复鉴权并触发重定向抖动。
       setState({ loading: false });
       return;
     }
+
+    setState((previous) => (previous.loading ? previous : { ...previous, loading: true }));
 
     const run = async () => {
       try {
@@ -185,12 +197,14 @@ const CurrentUserProvider: FC = ({ children }) => {
           skipAuth: true,
         });
 
+        if (!mounted) {
+          return;
+        }
+
         const user = res?.data?.data;
         // 服务端通过 `{ code: 302, redirect }` 通知客户端先去某个中间页(例如 2FA 验证页)。这类响应没有 user.id,但也不能视为未登录——否则会和处理 302 的全局响应拦截器 (例如 plugin-two-factor-authentication 注册的那一个)竞态,而 `window.location.replace` 会覆盖更早发出的 `window.location.href`,把用户错误地弹回登录页。让响应拦截器接管跳转。
         if (user?.code === 302) {
-          if (mounted) {
-            setState({ loading: false });
-          }
+          setState({ loading: false });
           return;
         }
         if (user?.id == null) {
@@ -213,13 +227,15 @@ const CurrentUserProvider: FC = ({ children }) => {
           meta: userMeta,
         });
 
-        if (mounted) {
-          setState({
-            data: res?.data,
-            loading: false,
-          });
-        }
+        setState({
+          data: res?.data,
+          loading: false,
+        });
       } catch (error: any) {
+        if (!mounted) {
+          return;
+        }
+
         const isAuthError = error?.response?.status === 401 || error?.status === 401;
         if (isAuthError) {
           navigate(`/signin?redirect=${encodeURIComponent(getCurrentV2RedirectPath(app, locationRef.current))}`, {
@@ -227,19 +243,17 @@ const CurrentUserProvider: FC = ({ children }) => {
           });
           return;
         }
-        if (mounted) {
-          setState({ loading: false });
-        }
+        setState({ loading: false });
         throw error;
       }
     };
 
-    void run();
+    run();
 
     return () => {
       mounted = false;
     };
-  }, [app, navigate]);
+  }, [app, authCheckRouteState, navigate]);
 
   if (state.loading) {
     return app.renderComponent('AppSpin');
