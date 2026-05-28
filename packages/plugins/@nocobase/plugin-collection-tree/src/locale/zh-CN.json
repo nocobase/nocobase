@@ -1,5 +1,0 @@
-{
-  "Cannot set itself as the parent node": "不能将自身设置为父节点",
-  "Cannot set a descendant node as the parent node": "不能将子节点或后代节点设置为父节点",
-  "Cycle detected in {{collectionName}}: {{cyclePath}}": "检测到树形数据循环：{{collectionName}}: {{cyclePath}}"
-}
