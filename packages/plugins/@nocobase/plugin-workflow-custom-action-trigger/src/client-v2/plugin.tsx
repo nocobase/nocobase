@@ -9,34 +9,36 @@
 
 import { Plugin } from '@nocobase/client-v2';
 import { EVENT_TYPE } from '../common/constants';
+import {
+  CollectionTriggerWorkflowActionModel,
+  FormTriggerWorkflowActionModel,
+  RecordTriggerWorkflowActionModel,
+  registerTriggerWorkflowActionGroups,
+  WorkbenchTriggerWorkflowActionModel,
+} from './models/actions/TriggerWorkflowActionModels';
 import { CustomActionTrigger } from './triggers/CustomActionTrigger';
+
+type WorkflowPluginLike = {
+  registerTrigger?: (eventType: typeof EVENT_TYPE, trigger: typeof CustomActionTrigger) => void;
+};
 
 export class CustomActionTriggerPlugin extends Plugin {
   async load() {
-    this.flowEngine.registerModelLoaders({
-      FormTriggerWorkflowActionModel: {
-        loader: () => import('./models/actions/TriggerWorkflowActionModels'),
-      },
-      RecordTriggerWorkflowActionModel: {
-        loader: () => import('./models/actions/TriggerWorkflowActionModels'),
-      },
-      CollectionTriggerWorkflowActionModel: {
-        loader: () => import('./models/actions/TriggerWorkflowActionModels'),
-      },
-      WorkbenchTriggerWorkflowActionModel: {
-        loader: () => import('./models/actions/TriggerWorkflowActionModels'),
-      },
+    this.flowEngine.registerModels({
+      FormTriggerWorkflowActionModel,
+      RecordTriggerWorkflowActionModel,
+      CollectionTriggerWorkflowActionModel,
+      WorkbenchTriggerWorkflowActionModel,
     });
 
-    const workflow = this.app.pm.get('workflow') as any;
+    const workflow = this.app.pm.get('workflow') as WorkflowPluginLike | undefined;
     workflow?.registerTrigger?.(EVENT_TYPE, CustomActionTrigger);
 
-    const registerActionGroups = async () => {
-      const { registerTriggerWorkflowActionGroups } = await import('./models/actions/TriggerWorkflowActionModels');
+    const registerActionGroups = () => {
       registerTriggerWorkflowActionGroups(this.flowEngine);
     };
 
-    await registerActionGroups();
+    registerActionGroups();
     this.app.eventBus.addEventListener('plugin:block-workbench:loaded', registerActionGroups);
   }
 }
