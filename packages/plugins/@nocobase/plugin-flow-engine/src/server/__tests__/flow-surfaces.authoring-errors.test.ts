@@ -8087,6 +8087,269 @@ ctx.render(React.createElement(DashboardKPIs));
     }
   });
 
+  it('should reject table dataScope field maps before applyBlueprint writes', async () => {
+    const errors = await collectFlowSurfaceAuthoringErrors(
+      'applyBlueprint',
+      {
+        mode: 'create',
+        tabs: [
+          {
+            title: 'Overview',
+            blocks: [
+              {
+                key: 'employeeTableWithInvalidDataScope',
+                type: 'table',
+                collection: 'employees',
+                settings: {
+                  dataScope: {
+                    nickname: {
+                      $eq: 'Ada',
+                    },
+                  },
+                },
+                fields: ['nickname', 'email'],
+              },
+            ],
+          },
+        ],
+      },
+      {
+        getCollection: (_dataSourceKey, collectionName) => context.db.getCollection(collectionName),
+      },
+    );
+
+    const dataScopeError = errors.find((error: any) => error.ruleId === 'dataScope-filter-group-invalid-shape');
+    expect(dataScopeError).toMatchObject({
+      path: '$.tabs[0].blocks[0].settings.dataScope',
+      ruleId: 'dataScope-filter-group-invalid-shape',
+    });
+    expect(dataScopeError?.message).toContain('expects FilterGroup');
+    expect(dataScopeError?.details?.repairHint).toContain('logic/items');
+  });
+
+  it('should accept table dataScope FilterGroup authoring', async () => {
+    const errors = await collectFlowSurfaceAuthoringErrors(
+      'applyBlueprint',
+      {
+        mode: 'create',
+        tabs: [
+          {
+            title: 'Overview',
+            blocks: [
+              {
+                key: 'employeeTableWithValidDataScope',
+                type: 'table',
+                collection: 'employees',
+                settings: {
+                  dataScope: {
+                    logic: '$and',
+                    items: [
+                      {
+                        path: 'nickname',
+                        operator: '$eq',
+                        value: 'Ada',
+                      },
+                    ],
+                  },
+                },
+                fields: ['nickname', 'email'],
+              },
+            ],
+          },
+        ],
+      },
+      {
+        getCollection: (_dataSourceKey, collectionName) => context.db.getCollection(collectionName),
+      },
+    );
+
+    expect(errors.map((error: any) => error.ruleId)).not.toContain('dataScope-filter-group-invalid-shape');
+  });
+
+  it.each([
+    ['undefined', undefined],
+    ['null', null],
+    ['empty object', {}],
+  ])('should accept table dataScope %s authoring', async (_label, dataScope) => {
+    const errors = await collectFlowSurfaceAuthoringErrors(
+      'applyBlueprint',
+      {
+        mode: 'create',
+        tabs: [
+          {
+            title: 'Overview',
+            blocks: [
+              {
+                key: `employeeTableWithAllowedDataScope${_label.replace(/\W/g, '')}`,
+                type: 'table',
+                collection: 'employees',
+                settings: {
+                  dataScope,
+                },
+                fields: ['nickname', 'email'],
+              },
+            ],
+          },
+        ],
+      },
+      {
+        getCollection: (_dataSourceKey, collectionName) => context.db.getCollection(collectionName),
+      },
+    );
+
+    expect(errors.map((error: any) => error.ruleId)).not.toContain('dataScope-filter-group-invalid-shape');
+  });
+
+  it('should reject implicit relation fields when no safe titleField can be resolved before applyBlueprint writes', async () => {
+    const errors = await collectFlowSurfaceAuthoringErrors(
+      'applyBlueprint',
+      {
+        mode: 'create',
+        tabs: [
+          {
+            title: 'Overview',
+            blocks: [
+              {
+                key: 'relationTitleFieldTable',
+                type: 'table',
+                collection: GENERATED_POPUP_RELATION_OVERRIDE_SOURCE_COLLECTION,
+                fields: [GENERATED_POPUP_RELATION_OVERRIDE_FIELD],
+              },
+            ],
+          },
+        ],
+      },
+      {
+        getCollection: (_dataSourceKey, collectionName) => context.db.getCollection(collectionName),
+      },
+    );
+
+    const relationTitleFieldError = errors.find(
+      (error: any) => error.path === '$.tabs[0].blocks[0].fields[0].titleField',
+    );
+    expect(relationTitleFieldError).toMatchObject({
+      ruleId: 'relation-titleField-unreadable',
+      details: {
+        fieldPath: GENERATED_POPUP_RELATION_OVERRIDE_FIELD,
+        titleField: 'id',
+      },
+    });
+    expect(relationTitleFieldError?.details?.repairHint).toContain('"titleField"');
+  });
+
+  it('should reject implicit relation fieldGroups when no safe titleField can be resolved before applyBlueprint writes', async () => {
+    const errors = await collectFlowSurfaceAuthoringErrors(
+      'applyBlueprint',
+      {
+        mode: 'create',
+        tabs: [
+          {
+            title: 'Overview',
+            blocks: [
+              {
+                key: 'relationTitleFieldDetails',
+                type: 'details',
+                collection: GENERATED_POPUP_RELATION_OVERRIDE_SOURCE_COLLECTION,
+                fieldGroups: [
+                  {
+                    title: 'Main',
+                    fields: [
+                      GENERATED_POPUP_RELATION_OVERRIDE_FIELD,
+                      GENERATED_POPUP_RELATION_OVERRIDE_FIELDS[0],
+                      GENERATED_POPUP_RELATION_OVERRIDE_FIELDS[1],
+                    ],
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+      {
+        getCollection: (_dataSourceKey, collectionName) => context.db.getCollection(collectionName),
+      },
+    );
+
+    const relationTitleFieldError = errors.find(
+      (error: any) => error.path === '$.tabs[0].blocks[0].fieldGroups[0].fields[0].titleField',
+    );
+    expect(relationTitleFieldError).toMatchObject({
+      ruleId: 'relation-titleField-unreadable',
+      details: {
+        fieldPath: GENERATED_POPUP_RELATION_OVERRIDE_FIELD,
+        titleField: 'id',
+      },
+    });
+    expect(relationTitleFieldError?.details?.repairHint).toContain('"titleField"');
+  });
+
+  it('should allow strict registered attachment display bindings without implicit titleField before applyBlueprint writes', async () => {
+    const errors = await collectFlowSurfaceAuthoringErrors(
+      'applyBlueprint',
+      {
+        mode: 'create',
+        tabs: [
+          {
+            title: 'Overview',
+            blocks: [
+              {
+                key: 'attachmentPreviewTable',
+                type: 'table',
+                collection: 'employees',
+                fields: ['nickname', 'status', 'email', 'fujian'],
+              },
+              {
+                key: 'attachmentPreviewDetails',
+                type: 'details',
+                collection: 'employees',
+                fieldGroups: [
+                  {
+                    title: 'Main',
+                    fields: ['nickname', 'status', 'email', 'fujian'],
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+      {
+        enabledPackages: new Set(['@nocobase/plugin-file-manager']),
+        getCollection: (_dataSourceKey, collectionName) => context.db.getCollection(collectionName),
+      },
+    );
+
+    expect(errors.filter((error: any) => String(error.ruleId).startsWith('relation-titleField'))).toEqual([]);
+  });
+
+  it('should not apply blueprint-only implicit relation titleField validation to compose', async () => {
+    const errors = await collectFlowSurfaceAuthoringErrors(
+      'compose',
+      {
+        target: {
+          uid: 'missing-target-never-resolved',
+        },
+        blocks: [
+          {
+            key: 'composeRelationTitleFieldTable',
+            type: 'table',
+            collection: GENERATED_POPUP_RELATION_OVERRIDE_SOURCE_COLLECTION,
+            fields: [
+              GENERATED_POPUP_RELATION_OVERRIDE_FIELD,
+              GENERATED_POPUP_RELATION_OVERRIDE_FIELDS[0],
+              GENERATED_POPUP_RELATION_OVERRIDE_FIELDS[1],
+            ],
+          },
+        ],
+      },
+      {
+        getCollection: (_dataSourceKey, collectionName) => context.db.getCollection(collectionName),
+      },
+    );
+
+    expect(errors.filter((error: any) => String(error.ruleId).startsWith('relation-titleField'))).toEqual([]);
+  });
+
   it('should reject visible data blocks without valid business fields before compose writes', async () => {
     const page = await createPage(rootAgent, {
       title: 'Authoring compose visible data fields page',

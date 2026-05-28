@@ -63,6 +63,7 @@ import {
 } from './blueprint/defaults';
 import { collectRunJsAuthoringErrors } from './runjs-authoring';
 import { getConfigureOptionKeysForUse } from './configure-options';
+import { assertFlowSurfaceFilterGroupShape, FLOW_SURFACE_FILTER_GROUP_EXAMPLE } from './filter-group';
 
 export type FlowSurfaceAuthoringWriteAction = 'applyBlueprint' | 'compose' | 'addBlock' | 'addBlocks' | 'configure';
 
@@ -120,6 +121,13 @@ const VISIBLE_FIELD_REQUIRED_DATA_BLOCK_TYPES = new Set([
   'kanban',
 ]);
 const VISIBLE_FIELD_MINIMUM_DATA_BLOCK_TYPES = new Set(['table', 'list', 'gridCard', 'details']);
+const IMPLICIT_RELATION_TITLE_FIELD_DISPLAY_BLOCK_TYPES = new Set(['table', 'list', 'gridCard', 'details']);
+const IMPLICIT_RELATION_TITLE_FIELD_CONTAINER_USE_BY_BLOCK_TYPE: Record<string, string> = {
+  details: 'DetailsItemModel',
+  gridCard: 'GridCardItemModel',
+  list: 'ListItemModel',
+  table: 'TableColumnModel',
+};
 const RICH_COLLECTION_VISIBLE_FIELD_THRESHOLD = FLOW_SURFACE_DEFAULT_FILTER_REQUIRED_FIELD_COUNT * 2;
 const RICH_DATA_BLOCK_VISIBLE_FIELD_MINIMUM = 3;
 const NON_BUSINESS_VISIBLE_FIELD_NAMES = new Set([
@@ -4288,6 +4296,7 @@ function collectFieldGroupsShapeErrors(
         if (fieldPath) {
           collectUnknownFieldPathError(fieldPath, itemPath, block, context, errors);
         }
+        collectImplicitRelationTitleFieldErrors(field, itemPath, block, context, errors);
         if (!_.isPlainObject(field)) {
           return;
         }
@@ -6146,6 +6155,7 @@ function collectTableSettingsErrors(
     }
     pushTableSettingsUnsupportedError(errors, `${settingsPath}.${key}`, key);
   });
+  collectPublicDataScopeErrors(settings.dataScope, `${settingsPath}.dataScope`, errors);
 }
 
 function pushTableSettingsUnsupportedError(errors: AuthoringErrorInput[], path: string, key: string) {
@@ -6159,6 +6169,29 @@ function pushTableSettingsUnsupportedError(errors: AuthoringErrorInput[], path: 
       repairHint: TABLE_SETTINGS_REPAIR_HINT,
     },
   });
+}
+
+function collectPublicDataScopeErrors(value: any, path: string, errors: AuthoringErrorInput[]) {
+  if (_.isUndefined(value)) {
+    return;
+  }
+  if (value === null || (_.isPlainObject(value) && !Object.keys(value).length)) {
+    return;
+  }
+  try {
+    assertFlowSurfaceFilterGroupShape(value);
+  } catch (error) {
+    const reason = error instanceof Error ? error.message : String(error);
+    pushAuthoringError(errors, {
+      path,
+      ruleId: 'dataScope-filter-group-invalid-shape',
+      message: `flowSurfaces authoring ${path} expects FilterGroup like ${FLOW_SURFACE_FILTER_GROUP_EXAMPLE}: ${reason}`,
+      details: {
+        repairHint:
+          'Use settings.dataScope with logic/items, for example {"logic":"$and","items":[{"path":"status","operator":"$eq","value":"Active"}]}; do not use a field-name map.',
+      },
+    });
+  }
 }
 
 function collectGridCardSettingsErrors(
@@ -6985,6 +7018,7 @@ function collectFieldListErrors(
     if (fieldPath) {
       collectUnknownFieldPathError(fieldPath, `${path}[${index}]`, block, context, errors);
     }
+    collectImplicitRelationTitleFieldErrors(field, `${path}[${index}]`, block, context, errors);
     if (!_.isPlainObject(field)) {
       return;
     }
@@ -7357,6 +7391,85 @@ function collectRelationTitleFieldErrors(
       invalidReason: 'missing',
     }),
   });
+}
+
+function collectImplicitRelationTitleFieldErrors(
+  fieldSpec: any,
+  path: string,
+  block: any,
+  context: FlowSurfaceAuthoringValidationContext,
+  errors: AuthoringErrorInput[],
+) {
+  if (context.authoringActionName !== 'applyBlueprint') {
+    return;
+  }
+  const hostBlockType = String(block?.type || '').trim();
+  if (!IMPLICIT_RELATION_TITLE_FIELD_DISPLAY_BLOCK_TYPES.has(hostBlockType)) {
+    return;
+  }
+  if (_.isPlainObject(fieldSpec) && fieldSpec.__autoPopupForRelationField === true) {
+    return;
+  }
+  if (_.isPlainObject(fieldSpec) && Object.prototype.hasOwnProperty.call(fieldSpec, 'titleField')) {
+    return;
+  }
+  const fieldPath = getFieldPathInput(fieldSpec);
+  if (!fieldPath || fieldPath.includes('.')) {
+    return;
+  }
+  const collection = getBlockCollection(block, context);
+  if (!collection || !context.getCollection) {
+    return;
+  }
+  const resolvedField = resolveFieldFromCollection(collection, normalizeFieldPath(fieldPath));
+  if (!resolvedField || !isAssociationField(resolvedField)) {
+    return;
+  }
+  const dataSourceKey = getBlockDataSourceKey(block, context);
+  const registeredBinding = resolveRegisteredFieldBinding({
+    containerUse: IMPLICIT_RELATION_TITLE_FIELD_CONTAINER_USE_BY_BLOCK_TYPE[hostBlockType],
+    field: resolvedField,
+    dataSourceKey,
+    enabledPackages: context.enabledPackages,
+    getCollection: (resolvedDataSourceKey, targetCollectionName) =>
+      context.getCollection?.(resolvedDataSourceKey, targetCollectionName),
+    useStrictOnly: true,
+  });
+  if (registeredBinding?.modelClassName) {
+    return;
+  }
+  try {
+    const resolvedTitleField = resolveAssociationSafeTitleField(resolvedField, dataSourceKey, context.getCollection, {
+      action: context.authoringActionName,
+      path: `${path}.titleField`,
+      fieldPath,
+    });
+    if (!resolvedTitleField?.fieldName) {
+      pushAuthoringError(errors, {
+        path: `${path}.titleField`,
+        ruleId: 'relation-titleField-unavailable',
+        message: `flowSurfaces authoring ${path} relation field '${fieldPath}' requires an explicit readable titleField`,
+        details: {
+          fieldPath,
+          repairHint: `Use object field form such as {"field":"${fieldPath}","titleField":"<readable target field>"}.`,
+        },
+      });
+    }
+  } catch (error) {
+    if (!(error instanceof FlowSurfaceBadRequestError)) {
+      throw error;
+    }
+    pushAuthoringError(errors, {
+      path: `${path}.titleField`,
+      ruleId: error.options.ruleId || 'relation-titleField-unavailable',
+      message: `flowSurfaces authoring ${path} relation field '${fieldPath}' requires an explicit readable titleField`,
+      details: {
+        ...(error.options.details || {}),
+        fieldPath,
+        repairHint: `Use object field form such as {"field":"${fieldPath}","titleField":"<readable target field>"}.`,
+      },
+    });
+  }
 }
 
 function getRelationTitleFieldInvalidReason(titleField: string, targetField: any) {

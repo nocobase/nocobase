@@ -4849,16 +4849,6 @@ export class FlowSurfacesService {
       await this.assertApplyBlueprintAuthoringPayload(values, options);
       const document = prepareFlowSurfaceApplyBlueprintDocument(values);
       await this.prevalidateApplyBlueprintChartAssets(document);
-      if (document.mode === 'create') {
-        return await this.applyBlueprintWithTransaction(
-          values,
-          { ...options, skipAuthoringValidation: true },
-          createdKanbanSortFields,
-          {
-            readSurface: false,
-          },
-        );
-      }
       return await this.transaction((transaction) =>
         this.applyBlueprintWithTransaction(
           values,
