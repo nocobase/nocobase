@@ -263,7 +263,7 @@ describe('workflow > actions > executions', () => {
       const res1 = await agent.resource('executions').rerun({
         filterByTk: execution.id,
       });
-      expect(res1.status).toBe(409);
+      expect(res1.status).toBe(400);
 
       const queued = await workflow.createExecution({
         status: EXECUTION_STATUS.QUEUEING,
@@ -273,7 +273,7 @@ describe('workflow > actions > executions', () => {
       const res2 = await agent.resource('executions').rerun({
         filterByTk: queued.id,
       });
-      expect(res2.status).toBe(409);
+      expect(res2.status).toBe(400);
     });
 
     it('rerun without overwrite creates new jobs from head node', async () => {

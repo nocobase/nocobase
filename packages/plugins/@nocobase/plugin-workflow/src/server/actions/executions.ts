@@ -68,7 +68,7 @@ export async function rerun(context: Context, next: Next) {
     return context.throw(404);
   }
   if (execution.status !== EXECUTION_STATUS.STARTED) {
-    return context.throw(409, 'Only started executions can be rerun');
+    return context.throw(400, 'Only started executions can be rerun');
   }
 
   await workflowPlugin.run({
