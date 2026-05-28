@@ -24,7 +24,7 @@ type ExecutionPlan = [ExecutionModel, JobModel?, ProcessorRerunOptions?];
 type Pending = {
   execution: ExecutionModel;
   job?: JobModel;
-  loaded?: boolean;
+  immediate?: boolean;
   rerun?: ProcessorRerunOptions;
 };
 
@@ -184,7 +184,7 @@ export default class Dispatcher {
       .getLogger(execution.workflowId)
       .info(`execution (${execution.id}) resuming from job (${job.id}) added to pending list`);
 
-    await this.run({ execution, job, loaded: true });
+    await this.run({ execution, job });
   }
 
   public async start(execution: ExecutionModel) {
@@ -193,7 +193,7 @@ export default class Dispatcher {
     }
     this.plugin.getLogger(execution.workflowId).info(`starting deferred execution (${execution.id})`);
 
-    await this.run({ execution, loaded: true });
+    await this.run({ execution });
   }
 
   public async beforeStop() {
@@ -238,7 +238,9 @@ export default class Dispatcher {
       let next: ExecutionPlan | null = null;
       const pending: Pending | null = this.pending.shift() ?? null;
       if (pending || (this.ready && this.plugin.serving())) {
-        const execution: ExecutionModel | null = await this.prepare(pending?.execution ?? null);
+        const execution: ExecutionModel | null = await this.prepare(pending?.execution ?? null, {
+          immediate: pending?.immediate,
+        });
         if (execution) {
           next = [execution, pending?.job, pending?.rerun];
         }
@@ -258,7 +260,7 @@ export default class Dispatcher {
         } catch (error) {
           this.plugin.getLogger(next[0].workflowId).error(`execution (${next[0].id}) process failed`, { error });
           if (pending && isLockAcquireError(error)) {
-            this.pending.unshift({ ...pending, execution: next[0], loaded: true });
+            this.pending.unshift({ ...pending, execution: next[0], immediate: true });
           }
         }
       }
@@ -274,7 +276,10 @@ export default class Dispatcher {
   }
 
   public async run(pending: Pending): Promise<void> {
-    this.pending.push(pending);
+    this.pending.push({
+      ...pending,
+      immediate: !this.executing && !this.pending.length && !this.saving && !this.events.length,
+    });
 
     this.dispatch();
   }
@@ -417,7 +422,7 @@ export default class Dispatcher {
 
   private async prepare(
     input: ExecutionModel | null,
-    options: { transaction?: Transaction } = {},
+    options: { transaction?: Transaction; immediate?: boolean } = {},
   ): Promise<ExecutionModel | null> {
     const transaction = options.transaction;
     const ownTransaction = !transaction;
@@ -432,7 +437,9 @@ export default class Dispatcher {
     try {
       let execution: ExecutionModel | null = input;
       if (execution) {
-        await execution.reload({ transaction: tx });
+        if (!options.immediate || execution.status !== EXECUTION_STATUS.QUEUEING) {
+          await execution.reload({ transaction: tx });
+        }
       } else {
         execution = (await this.plugin.db.getRepository('executions').findOne({
           filter: {

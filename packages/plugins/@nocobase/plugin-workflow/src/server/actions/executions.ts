@@ -73,7 +73,6 @@ export async function rerun(context: Context, next: Next) {
 
   await workflowPlugin.run({
     execution,
-    loaded: true,
     rerun: {
       nodeId,
       overwrite: overwrite === true,
