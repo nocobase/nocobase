@@ -196,6 +196,24 @@ test('generated API commands let --yes skip the interactive cross-env confirmati
   }
 });
 
+test('generated API commands let --yes skip the non-interactive cross-env refusal', async () => {
+  const restoreTerminal = setTerminalInteractivity(false);
+  const { command } = createCommand({
+    env: 'prod',
+    yes: true,
+    verbose: false,
+    'json-output': true,
+  });
+
+  try {
+    await TestGeneratedCommand.prototype.run.call(command);
+    expect(mocks.confirm).not.toHaveBeenCalled();
+    expect(mocks.executeApiRequest).toHaveBeenCalledOnce();
+  } finally {
+    restoreTerminal();
+  }
+});
+
 test('generated API commands reject incompatible CLI and app version combinations before sending the request', async () => {
   const restoreTerminal = setTerminalInteractivity(true);
   const { command } = createCommand({
