@@ -560,8 +560,16 @@ const FIELD_NODE_OPTIONS: FlowSurfaceConfigureOptions = {
   options: objectOption('Component options'),
 };
 
+function omitConfigureOptions(options: FlowSurfaceConfigureOptions, keys: string[]) {
+  const next = { ...options };
+  for (const key of keys) {
+    delete next[key];
+  }
+  return next;
+}
+
 const JS_FIELD_NODE_OPTIONS: FlowSurfaceConfigureOptions = {
-  ...FIELD_NODE_OPTIONS,
+  ...omitConfigureOptions(FIELD_NODE_OPTIONS, ['openView']),
   code: JS_CODE,
   version: JS_VERSION,
 };
@@ -694,17 +702,20 @@ const ACTION_EMAIL_OPTIONS: FlowSurfaceConfigureOptions = {
 const ACTION_AI_EMPLOYEE_OPTIONS: FlowSurfaceConfigureOptions = {
   username: stringOption('AI employee username', { example: 'dex' }),
   auto: booleanOption('Whether the single configured task is prepared automatically', { example: false }),
-  workContext: arrayOption('Top-level AI work context. Use target=self or a same-blueprint block key before write.', {
-    example: [{ type: 'flow-model', target: 'self' }],
-  }),
-  tasks: arrayOption('AI employee task definitions', {
+  workContext: arrayOption(
+    'Top-level AI work context. Use target=self or a same-blueprint block key before write; type defaults to flow-model.',
+    {
+      example: [{ target: 'self' }],
+    },
+  ),
+  tasks: arrayOption('AI employee task definitions. prompt is accepted as an alias for message.user.', {
     example: [
       {
         title: 'Analyze current record',
+        prompt: 'Analyze the current record and suggest next steps.',
         message: {
           system: 'Use the current UI context.',
-          user: 'Analyze the current record and suggest next steps.',
-          workContext: [{ type: 'flow-model', target: 'self' }],
+          workContext: [{ target: 'self' }],
         },
         autoSend: false,
         skillSettings: null,

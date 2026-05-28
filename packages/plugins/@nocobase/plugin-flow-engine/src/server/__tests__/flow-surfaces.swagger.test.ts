@@ -1522,6 +1522,8 @@ describe('flowSurfaces swagger', () => {
     expect(addActionRequest.examples.aiEmployee.value.type).toBe('aiEmployee');
     expect(addActionRequest.examples.aiEmployee.value.settings.username).toBe('dex');
     expect(addActionRequest.examples.aiEmployee.value.settings.workContext[0].target).toBe('self');
+    expect(addActionRequest.examples.aiEmployee.value.settings.workContext[0].type).toBeUndefined();
+    expect(addActionRequest.examples.aiEmployee.value.settings.tasks[0].prompt).toContain('Analyze');
     expect(addActionRequest.examples.autoPopupTemplate.value.popup.tryTemplate).toBe(true);
     expect(addActionRequest.examples.savePopupTemplate.value.popup.saveAsTemplate.name).toBe('employee-popup-template');
     expect(schemas.FlowSurfaceAddActionRequest.properties.scope).toBeUndefined();
@@ -1624,7 +1626,9 @@ describe('flowSurfaces swagger', () => {
     expect(updateSettingsRequest.examples.aiEmployee.value.target.uid).toBe('ai-employee-action-uid');
     expect(updateSettingsRequest.examples.aiEmployee.value.props).toBeUndefined();
     expect(updateSettingsRequest.examples.aiEmployee.value.tasks[0].title).toBe('Generate table insights');
+    expect(updateSettingsRequest.examples.aiEmployee.value.tasks[0].prompt).toContain('Summarize');
     expect(updateSettingsRequest.examples.aiEmployee.value.tasks[0].message.workContext[0].target).toBe('self');
+    expect(updateSettingsRequest.examples.aiEmployee.value.tasks[0].message.workContext[0].type).toBeUndefined();
     expect(updateSettingsRequest.examples.aiEmployee.value.style.mask).toBe(true);
     expect(schemas.FlowSurfaceUpdateSettingsRequest.properties.username.type).toBe('string');
     expect(schemas.FlowSurfaceUpdateSettingsRequest.properties.auto.type).toBe('boolean');
@@ -1632,6 +1636,7 @@ describe('flowSurfaces swagger', () => {
     expect(schemas.FlowSurfaceUpdateSettingsRequest.properties.workContext.items.properties.type.enum).toEqual([
       'flow-model',
     ]);
+    expect(schemas.FlowSurfaceUpdateSettingsRequest.properties.workContext.items.required).toBeUndefined();
     expect(schemas.FlowSurfaceUpdateSettingsRequest.properties.workContext.items.anyOf).toEqual([
       { required: ['uid'] },
       { required: ['target'] },
@@ -1639,10 +1644,17 @@ describe('flowSurfaces swagger', () => {
     expect(schemas.FlowSurfaceUpdateSettingsRequest.properties.workContext.items.properties.uid.minLength).toBe(1);
     expect(schemas.FlowSurfaceUpdateSettingsRequest.properties.workContext.items.properties.target.minLength).toBe(1);
     expect(schemas.FlowSurfaceUpdateSettingsRequest.properties.tasks.type).toBe('array');
+    expect(schemas.FlowSurfaceUpdateSettingsRequest.properties.tasks.items.properties.prompt.description).toContain(
+      'Alias for message.user',
+    );
     expect(
       schemas.FlowSurfaceUpdateSettingsRequest.properties.tasks.items.properties.message.properties.workContext.items
         .properties.type.enum,
     ).toEqual(['flow-model']);
+    expect(
+      schemas.FlowSurfaceUpdateSettingsRequest.properties.tasks.items.properties.message.properties.workContext.items
+        .required,
+    ).toBeUndefined();
     expect(
       schemas.FlowSurfaceUpdateSettingsRequest.properties.tasks.items.properties.message.properties.workContext.items
         .anyOf,

@@ -62,6 +62,7 @@ import {
   resolveFlowSurfaceApplyBlueprintDefaultCollection,
 } from './blueprint/defaults';
 import { collectRunJsAuthoringErrors } from './runjs-authoring';
+import { getConfigureOptionKeysForUse } from './configure-options';
 
 export type FlowSurfaceAuthoringWriteAction = 'applyBlueprint' | 'compose' | 'addBlock' | 'addBlocks' | 'configure';
 
@@ -108,6 +109,55 @@ const SORTABLE_BLOCK_TYPES = new Set(['table', 'details', 'list', 'tree', 'kanba
 const CHART_BLOCK_TYPES = new Set(['chart']);
 const COMMENTS_PAGE_SIZE_VALUES = new Set([5, 10, 20, 50, 100, 200]);
 const RECORD_HISTORY_INTERNAL_COLLECTIONS = new Set(['recordHistories', 'recordFieldHistories']);
+const VISIBLE_FIELD_REQUIRED_DATA_BLOCK_TYPES = new Set([
+  'table',
+  'list',
+  'gridCard',
+  'details',
+  'createForm',
+  'editForm',
+  'filterForm',
+  'kanban',
+]);
+const VISIBLE_FIELD_MINIMUM_DATA_BLOCK_TYPES = new Set(['table', 'list', 'gridCard', 'details']);
+const RICH_COLLECTION_VISIBLE_FIELD_THRESHOLD = FLOW_SURFACE_DEFAULT_FILTER_REQUIRED_FIELD_COUNT * 2;
+const RICH_DATA_BLOCK_VISIBLE_FIELD_MINIMUM = 3;
+const NON_BUSINESS_VISIBLE_FIELD_NAMES = new Set([
+  'id',
+  'uid',
+  'createdAt',
+  'updatedAt',
+  'deletedAt',
+  'createdBy',
+  'updatedBy',
+  'deletedBy',
+  'createdById',
+  'updatedById',
+  'deletedById',
+  'created_at',
+  'updated_at',
+  'deleted_at',
+  'created_by',
+  'updated_by',
+  'deleted_by',
+]);
+const NON_BUSINESS_VISIBLE_FIELD_INTERFACES = new Set([
+  'id',
+  'createdAt',
+  'updatedAt',
+  'createdBy',
+  'updatedBy',
+  'sort',
+]);
+const NON_BUSINESS_VISIBLE_FIELD_TYPES = new Set([
+  'action',
+  'actions',
+  'button',
+  'divider',
+  'operation',
+  'operations',
+  'sort',
+]);
 const ANT_DESIGN_ICON_NAMES = new Set(Object.keys(antDesignIconAsn || {}));
 const PUBLIC_BLOCK_TYPE_BY_MODEL_USE: Record<string, string> = {
   TableBlockModel: 'table',
@@ -144,9 +194,17 @@ const GRID_CARD_ALLOWED_SETTINGS_KEYS = new Set([
   'sorting',
   'layout',
 ]);
+const TABLE_ALLOWED_SETTINGS_KEYS = new Set([...getConfigureOptionKeysForUse('TableBlockModel'), 'sort']);
+const TABLE_INTERNAL_AUTHORING_KEYS = ['tableSettings', 'defaultSorting', 'stepParams'];
+const TABLE_SETTINGS_REPAIR_HINT =
+  'Use public table settings keys such as settings.pageSize, settings.sorting, settings.dataScope, settings.density, settings.showRowNumbers, settings.treeTable, settings.dragSort, and settings.dragSortBy. Do not nest persisted tableSettings/defaultSorting/stepParams payloads.';
 const JS_BLOCK_ALLOWED_SETTINGS_KEYS = new Set(['title', 'description', 'className', 'code', 'version']);
 const JS_BLOCK_TOP_LEVEL_JS_KEYS = ['code', 'version'] as const;
 const JS_BLOCK_INTERNAL_AUTHORING_KEYS = ['props', 'decoratorProps', 'flowRegistry', 'stepParams'];
+const JS_BLOCK_REPAIR_HINT =
+  'This is a jsBlock payload shape problem. Repair this jsBlock using inline settings.code/settings.version, or applyBlueprint assets.scripts.<key>.code plus block.script. Do not change this block type to table, chart, actionPanel, gridCard, or another block type.';
+const CHART_REPAIR_HINT =
+  'This is a chart payload shape problem. Repair this chart using assets.charts.<key>.query/visual plus block.chart, or localized settings.query/settings.visual. Do not change this block type to table, jsBlock, actionPanel, gridCard, or another block type, and do not drop or defer the chart. KPI / summary numbers should use jsBlock; charts are for trends, distributions, rankings, and visual analysis.';
 
 const CHART_QUERY_MODE_SET = new Set(CHART_QUERY_MODES);
 const CHART_VISUAL_MODE_SET = new Set(CHART_VISUAL_MODES);
@@ -311,6 +369,77 @@ const DEFAULT_POPUPS_ALLOWED_KEYS = ['view', 'addNew', 'edit', 'associations'];
 const DEFAULT_POPUP_ACTION_ALLOWED_KEYS = ['name', 'description'];
 const DEFAULT_POPUP_ASSOCIATION_ALLOWED_KEYS = ['view', 'addNew', 'edit'];
 const DEFAULT_POPUP_ACTIONS = ['view', 'addNew', 'edit'];
+const AUTHORING_AI_EMPLOYEE_WORK_CONTEXT_PUBLIC_KEYS = ['type', 'uid', 'target'];
+const AUTHORING_AI_EMPLOYEE_TASK_PUBLIC_SETTING_KEYS = [
+  'title',
+  'message',
+  'autoSend',
+  'skillSettings',
+  'model',
+  'webSearch',
+];
+const AUTHORING_AI_EMPLOYEE_TASK_MESSAGE_PUBLIC_KEYS = ['system', 'user', 'workContext'];
+const AUTHORING_AI_EMPLOYEE_TASK_MODEL_PUBLIC_KEYS = ['llmService', 'model'];
+const AUTHORING_AI_EMPLOYEE_SKILL_SETTINGS_PUBLIC_KEYS = ['skills', 'tools', 'skillsVersion', 'toolsVersion'];
+const AUTHORING_AI_EMPLOYEE_STYLE_PUBLIC_KEYS = ['size', 'mask'];
+const AUTHORING_AI_EMPLOYEE_DEFAULT_STYLE = {
+  size: 40,
+  mask: false,
+};
+
+function buildCalendarMainBlockRepairDetails(section: string) {
+  const popupSectionHint =
+    section === 'fieldGroups' || section === 'recordActions' || section === 'fieldsLayout'
+      ? ' Put event form/details content under settings.quickCreatePopup or settings.eventPopup instead of on the calendar main block.'
+      : '';
+  return {
+    repairHint:
+      'Calendar main block payload shape issue. Put event bindings under settings.titleField, settings.startField, settings.endField, and optional settings.colorField; do not put collection fields in block fields. Keep block type calendar and repair this payload.' +
+      popupSectionHint,
+    example: {
+      type: 'calendar',
+      collection: 'tasks',
+      settings: {
+        titleField: 'title',
+        startField: 'startAt',
+        endField: 'endAt',
+      },
+    },
+  };
+}
+
+function buildKanbanMainBlockRepairDetails(section: string) {
+  return {
+    repairHint:
+      'Kanban main block payload shape issue. Put card display fields in block fields, grouping in settings.groupField, and quick-create/card details under settings.quickCreatePopup or settings.cardPopup. Keep block type kanban and repair this payload.',
+    section,
+    example: {
+      type: 'kanban',
+      collection: 'tasks',
+      fields: ['title', 'priority'],
+      settings: {
+        groupField: 'status',
+      },
+    },
+  };
+}
+
+function buildTwoColumnLayoutRepairDetails() {
+  return {
+    repairHint:
+      'When multiple non-filter blocks should share a row, put them in the same layout row. Do not place every block on a separate row.',
+    example: {
+      layout: {
+        rows: [
+          [
+            { key: 'calendar', span: 12 },
+            { key: 'kanban', span: 12 },
+          ],
+        ],
+      },
+    },
+  };
+}
 
 export async function assertFlowSurfaceAuthoringPayload(
   actionName: FlowSurfaceAuthoringWriteAction,
@@ -395,16 +524,18 @@ async function collectNavigationGroupErrors(
     return;
   }
   const matchedRoutes = await context.findMenuGroupRoutesByTitle(groupTitle, context.transaction);
-  if (matchedRoutes.length <= 1) {
+  const rootMatchedRoutes = filterRootMenuGroupRoutes(matchedRoutes);
+  if (rootMatchedRoutes.length <= 1) {
     return;
   }
   pushAuthoringError(errors, {
     path: '$.navigation.group.title',
     ruleId: 'navigation-group-title-ambiguous',
-    message: `flowSurfaces authoring $.navigation.group.title '${groupTitle}' matches ${matchedRoutes.length} existing menu groups; pass navigation.group.routeId explicitly`,
+    message: `flowSurfaces authoring $.navigation.group.title '${groupTitle}' matches ${rootMatchedRoutes.length} existing root menu groups; pass navigation.group.routeId explicitly`,
     details: {
       title: groupTitle,
-      matches: matchedRoutes.length,
+      parentMenuRouteId: null,
+      matches: rootMatchedRoutes.length,
     },
   });
 }
@@ -420,18 +551,22 @@ async function collectNavigationIconErrors(
   }
   const group = _.isPlainObject(values?.navigation?.group) ? values.navigation.group : null;
   const groupRouteId = String(group?.routeId || '').trim();
-  if (group && !groupRouteId) {
+  if (group && !groupRouteId && group.hideInMenu !== true) {
     const groupIcon = String(group.icon || '').trim();
     if (!groupIcon && (await shouldRequireNewNavigationGroupIcon(group, context))) {
       pushAuthoringError(errors, {
         path: '$.navigation.group.icon',
-        ruleId: 'missing-menu-group-icon',
-        message: 'flowSurfaces authoring $.navigation.group.icon is required when creating a new navigation group',
+        ruleId: 'navigation-icon-required',
+        message: 'flowSurfaces authoring $.navigation.group.icon is required when creating a visible navigation group',
+        details: {
+          repairHint:
+            'Pass a valid Ant Design icon name such as AppstoreOutlined, DashboardOutlined, or FolderOpenOutlined.',
+        },
       });
     } else if (groupIcon && !isValidAntDesignIconName(groupIcon)) {
       pushAuthoringError(errors, {
         path: '$.navigation.group.icon',
-        ruleId: 'invalid-menu-group-icon',
+        ruleId: 'navigation-icon-unknown',
         message: 'flowSurfaces authoring $.navigation.group.icon must be a valid Ant Design icon name',
         details: {
           icon: groupIcon,
@@ -441,7 +576,7 @@ async function collectNavigationIconErrors(
   } else if (group && String(group.icon || '').trim() && !isValidAntDesignIconName(group.icon)) {
     pushAuthoringError(errors, {
       path: '$.navigation.group.icon',
-      ruleId: 'invalid-menu-group-icon',
+      ruleId: 'navigation-icon-unknown',
       message: 'flowSurfaces authoring $.navigation.group.icon must be a valid Ant Design icon name',
       details: {
         icon: String(group.icon || '').trim(),
@@ -454,10 +589,22 @@ async function collectNavigationIconErrors(
   if (itemIcon && !isValidAntDesignIconName(itemIcon)) {
     pushAuthoringError(errors, {
       path: '$.navigation.item.icon',
-      ruleId: 'invalid-menu-item-icon',
+      ruleId: 'navigation-icon-unknown',
       message: 'flowSurfaces authoring $.navigation.item.icon must be a valid Ant Design icon name',
       details: {
         icon: itemIcon,
+      },
+    });
+  }
+  const pageIcon = String(values?.page?.icon || '').trim();
+  if (pageIcon && !isValidAntDesignIconName(pageIcon)) {
+    pushAuthoringError(errors, {
+      path: '$.page.icon',
+      ruleId: 'navigation-icon-unknown',
+      message:
+        'flowSurfaces authoring $.page.icon must be a valid Ant Design icon name when used as the create-mode page route icon',
+      details: {
+        icon: pageIcon,
       },
     });
   }
@@ -469,7 +616,24 @@ async function shouldRequireNewNavigationGroupIcon(group: any, context: FlowSurf
     return true;
   }
   const matchedRoutes = await context.findMenuGroupRoutesByTitle(groupTitle, context.transaction);
-  return matchedRoutes.length === 0;
+  return filterRootMenuGroupRoutes(matchedRoutes).length === 0;
+}
+
+function filterRootMenuGroupRoutes(routes: any[]) {
+  return _.castArray(routes || []).filter((route) =>
+    routeParentIdMatches(readAuthoringRouteField(route, 'parentId'), null),
+  );
+}
+
+function readAuthoringRouteField(route: any, key: string) {
+  return route?.get?.(key) ?? route?.[key];
+}
+
+function routeParentIdMatches(routeParentId: any, parentId: any) {
+  if (_.isNil(routeParentId) && _.isNil(parentId)) {
+    return true;
+  }
+  return String(routeParentId ?? '') === String(parentId ?? '');
 }
 
 function isValidAntDesignIconName(value: any) {
@@ -583,6 +747,41 @@ function collectChartAssetBlockTreeErrors(
   });
 }
 
+function withJsBlockRepairHint(details: Record<string, any> = {}) {
+  return {
+    ...details,
+    repairHint: JS_BLOCK_REPAIR_HINT,
+  };
+}
+
+function withChartRepairHint(details: Record<string, any> = {}) {
+  return {
+    ...details,
+    repairHint: CHART_REPAIR_HINT,
+    repairSteps: [
+      'Keep the block type as chart.',
+      'Define assets.charts.<key>.query and assets.charts.<key>.visual.',
+      'Reference that asset from the chart block with block.chart = <key>.',
+      'Retry the chart payload instead of replacing the chart with another block type or omitting it.',
+    ],
+    expectedShape: {
+      assets: {
+        charts: {
+          chartKey: {
+            query: 'builder/sql query configuration',
+            visual: 'basic/custom visual configuration',
+          },
+        },
+      },
+      block: {
+        type: 'chart',
+        chart: 'chartKey',
+      },
+    },
+    forbiddenFallbacks: ['table', 'jsBlock', 'actionPanel', 'gridCard', 'drop chart', 'defer chart'],
+  };
+}
+
 function collectChartBlockAssetReferenceErrors(
   block: any,
   path: string,
@@ -597,6 +796,7 @@ function collectChartBlockAssetReferenceErrors(
       path: `${path}.stepParams`,
       ruleId: 'chart-block-step-params-unsupported',
       message: `flowSurfaces authoring ${path}.stepParams is not accepted on public chart blocks; put chart configuration under assets.charts and reference it with block.chart`,
+      details: withChartRepairHint(),
     });
   }
   const chartKey = String(block.chart || '').trim();
@@ -605,6 +805,7 @@ function collectChartBlockAssetReferenceErrors(
       path: `${path}.chart`,
       ruleId: 'chart-block-asset-reference-required',
       message: `flowSurfaces authoring ${path}.chart must reference one key from assets.charts`,
+      details: withChartRepairHint(),
     });
     return;
   }
@@ -613,9 +814,9 @@ function collectChartBlockAssetReferenceErrors(
       path: `${path}.chart`,
       ruleId: 'chart-block-asset-reference-missing',
       message: `flowSurfaces authoring ${path}.chart references missing chart asset '${chartKey}'`,
-      details: {
+      details: withChartRepairHint({
         chartKey,
-      },
+      }),
     });
   }
 }
@@ -636,6 +837,7 @@ function collectChartAssetRegistryErrors(
         path: assetPath,
         ruleId: 'chart-asset-invalid',
         message: `flowSurfaces authoring ${assetPath} must be an object`,
+        details: withChartRepairHint(),
       });
       return;
     }
@@ -656,6 +858,7 @@ function collectChartAssetQueryErrors(
       path: `${path}.query`,
       ruleId: 'chart-query-missing',
       message: `flowSurfaces authoring ${path}.query is required`,
+      details: withChartRepairHint(),
     });
     return;
   }
@@ -665,9 +868,9 @@ function collectChartAssetQueryErrors(
       path: `${path}.query.mode`,
       ruleId: 'chart-query-mode-unsupported',
       message: `flowSurfaces authoring ${path}.query.mode '${mode}' is not supported`,
-      details: {
+      details: withChartRepairHint({
         mode,
-      },
+      }),
     });
     return;
   }
@@ -690,6 +893,7 @@ function collectBuilderChartAssetQueryErrors(
       path: `${path}.query.resource`,
       ruleId: 'chart-builder-query-resource-missing',
       message: `flowSurfaces authoring ${path}.query.resource.collectionName is required for builder chart assets`,
+      details: withChartRepairHint(),
     });
   }
   if (!Array.isArray(query.measures) || !query.measures.length) {
@@ -697,6 +901,7 @@ function collectBuilderChartAssetQueryErrors(
       path: `${path}.query.measures`,
       ruleId: 'chart-builder-query-measures-missing',
       message: `flowSurfaces authoring ${path}.query.measures must include at least one measure`,
+      details: withChartRepairHint(),
     });
   }
   collectForbiddenObjectKeyErrors(
@@ -705,6 +910,7 @@ function collectBuilderChartAssetQueryErrors(
     CHART_BUILDER_QUERY_FORBIDDEN_KEYS,
     'chart-builder-query-forbidden-keys',
     errors,
+    withChartRepairHint(),
   );
   collectBuilderChartAssetFieldErrors(query, path, context, errors);
 }
@@ -764,11 +970,11 @@ function collectBuilderChartAssetFieldErrors(
         path: item.fieldPath,
         ruleId: 'chart-builder-query-field-unknown',
         message: `flowSurfaces authoring ${item.fieldPath} references unknown field '${fieldPath}' on collection '${dataSourceKey}.${collectionName}'`,
-        details: {
+        details: withChartRepairHint({
           fieldPath,
           dataSourceKey,
           collectionName,
-        },
+        }),
       });
       continue;
     }
@@ -783,12 +989,12 @@ function collectBuilderChartAssetFieldErrors(
         path: item.fieldPath,
         ruleId: 'chart-builder-query-association-field-requires-subfield',
         message: `flowSurfaces authoring ${item.fieldPath} references association field '${fieldPath}' directly; use scalar subfield '${suggestion.suggestedFieldPath}' for builder charts`,
-        details: {
+        details: withChartRepairHint({
           fieldPath,
           dataSourceKey,
           collectionName,
           ...suggestion,
-        },
+        }),
       });
     }
   }
@@ -824,6 +1030,7 @@ function collectSqlChartAssetQueryErrors(query: any, path: string, errors: Autho
       path: `${path}.query.sql`,
       ruleId: 'chart-sql-query-text-missing',
       message: `flowSurfaces authoring ${path}.query.sql must be a non-empty string`,
+      details: withChartRepairHint(),
     });
   }
   collectForbiddenObjectKeyErrors(
@@ -832,6 +1039,7 @@ function collectSqlChartAssetQueryErrors(query: any, path: string, errors: Autho
     CHART_SQL_QUERY_FORBIDDEN_KEYS,
     'chart-sql-query-forbidden-builder-keys',
     errors,
+    withChartRepairHint(),
   );
 }
 
@@ -842,6 +1050,7 @@ function collectChartAssetVisualErrors(asset: any, path: string, errors: Authori
       path: `${path}.visual`,
       ruleId: 'chart-visual-missing',
       message: `flowSurfaces authoring ${path}.visual is required`,
+      details: withChartRepairHint(),
     });
     return;
   }
@@ -851,6 +1060,7 @@ function collectChartAssetVisualErrors(asset: any, path: string, errors: Authori
     CHART_VISUAL_LEGACY_BUILDER_KEYS,
     'chart-visual-legacy-builder-keys-unsupported',
     errors,
+    withChartRepairHint(),
   );
   const mode = String(visual.mode || 'basic').trim();
   if (!CHART_VISUAL_MODE_SET.has(mode as any)) {
@@ -858,9 +1068,9 @@ function collectChartAssetVisualErrors(asset: any, path: string, errors: Authori
       path: `${path}.visual.mode`,
       ruleId: 'chart-visual-mode-unsupported',
       message: `flowSurfaces authoring ${path}.visual.mode '${mode}' is not supported`,
-      details: {
+      details: withChartRepairHint({
         mode,
-      },
+      }),
     });
     return;
   }
@@ -870,6 +1080,7 @@ function collectChartAssetVisualErrors(asset: any, path: string, errors: Authori
         path: `${path}.visual.raw`,
         ruleId: 'chart-custom-visual-raw-missing',
         message: `flowSurfaces authoring ${path}.visual.raw is required for custom chart assets`,
+        details: withChartRepairHint(),
       });
     }
     collectForbiddenObjectKeyErrors(
@@ -878,6 +1089,7 @@ function collectChartAssetVisualErrors(asset: any, path: string, errors: Authori
       CHART_CUSTOM_VISUAL_FORBIDDEN_KEYS,
       'chart-custom-visual-public-keys-unsupported',
       errors,
+      withChartRepairHint(),
     );
     return;
   }
@@ -887,15 +1099,16 @@ function collectChartAssetVisualErrors(asset: any, path: string, errors: Authori
       path: `${path}.visual.type`,
       ruleId: 'chart-visual-type-missing',
       message: `flowSurfaces authoring ${path}.visual.type is required for basic chart assets`,
+      details: withChartRepairHint(),
     });
   } else if (!CHART_BASIC_VISUAL_TYPE_SET.has(type as any)) {
     pushAuthoringError(errors, {
       path: `${path}.visual.type`,
       ruleId: 'chart-visual-type-unsupported',
       message: `flowSurfaces authoring ${path}.visual.type '${type}' is not supported`,
-      details: {
+      details: withChartRepairHint({
         type,
-      },
+      }),
     });
   }
   if (!_.isPlainObject(visual.mappings)) {
@@ -903,6 +1116,7 @@ function collectChartAssetVisualErrors(asset: any, path: string, errors: Authori
       path: `${path}.visual.mappings`,
       ruleId: 'chart-visual-mappings-missing',
       message: `flowSurfaces authoring ${path}.visual.mappings is required for basic chart assets`,
+      details: withChartRepairHint(),
     });
     return;
   }
@@ -914,10 +1128,10 @@ function collectChartAssetVisualErrors(asset: any, path: string, errors: Authori
       path: `${path}.visual.mappings`,
       ruleId: 'chart-visual-required-mappings-missing',
       message: `flowSurfaces authoring ${path}.visual.mappings is missing required keys: ${missingMappings.join(', ')}`,
-      details: {
+      details: withChartRepairHint({
         type,
         missingMappings,
-      },
+      }),
     });
   }
 }
@@ -928,6 +1142,7 @@ function collectForbiddenObjectKeyErrors(
   forbiddenKeys: Set<string>,
   ruleId: string,
   errors: AuthoringErrorInput[],
+  details: Record<string, any> = {},
 ) {
   if (!_.isPlainObject(value)) {
     return;
@@ -941,6 +1156,7 @@ function collectForbiddenObjectKeyErrors(
     ruleId,
     message: `flowSurfaces authoring ${path} does not accept keys: ${keys.join(', ')}`,
     details: {
+      ...details,
       keys,
     },
   });
@@ -3750,11 +3966,13 @@ function collectBlockErrors(
     context,
   );
   collectSemanticBindingErrors(block, blockType, path, errors, context);
+  collectVisibleDataBlockFieldErrors(block, blockType, path, errors, context);
   collectCommentsBlockErrors(block, blockType, path, errors, context);
   collectRecordHistoryBlockErrors(block, blockType, path, errors, context);
   collectChartDisplayTitleErrors(block, blockType, path, errors);
   collectTreeTableExplicitFieldsErrors(block, blockType, path, errors, context);
   collectTreeConnectFieldsErrors(block.settings?.connectFields, `${path}.settings.connectFields`, errors);
+  collectTableSettingsErrors(block, blockType, path, errors);
   collectGridCardSettingsErrors(block, blockType, path, errors);
   const descendantContext = getBlockDescendantValidationContext(block, context);
   collectActionListErrors(block.actions, `${path}.actions`, errors, block, descendantContext, 'actions');
@@ -3785,6 +4003,7 @@ function collectJsBlockPublicContractErrors(
       path: `${path}.type`,
       ruleId: 'jsBlock-type-alias-unsupported',
       message: `flowSurfaces authoring ${path}.type must be "jsBlock"; "js" is only an action type and is not a public JSBlock block alias. Use ${path}.settings.code for inline JSBlock code`,
+      details: withJsBlockRepairHint(),
     });
     return;
   }
@@ -3800,6 +4019,7 @@ function collectJsBlockPublicContractErrors(
       path: `${path}.${key}`,
       ruleId: `jsBlock-top-level-${key}-unsupported`,
       message: `flowSurfaces authoring ${path}.${key} is not accepted on public jsBlock blocks; use ${path}.settings.code and ${path}.settings.version for inline JS code`,
+      details: withJsBlockRepairHint({ key }),
     });
   });
 
@@ -3811,9 +4031,9 @@ function collectJsBlockPublicContractErrors(
       path: `${path}.${key}`,
       ruleId: key === 'stepParams' ? 'jsBlock-stepParams-unsupported' : 'jsBlock-internal-field-unsupported',
       message: `flowSurfaces authoring ${path}.${key} is not accepted on public jsBlock blocks; use ${path}.settings.code and ${path}.settings.version instead of internal persisted fields`,
-      details: {
+      details: withJsBlockRepairHint({
         key,
-      },
+      }),
     });
   });
 
@@ -3822,6 +4042,7 @@ function collectJsBlockPublicContractErrors(
       path: `${path}.script`,
       ruleId: 'jsBlock-script-unsupported',
       message: `flowSurfaces authoring ${path}.script is only supported by applyBlueprint assets.scripts; use ${path}.settings.code for localized jsBlock inline JS code`,
+      details: withJsBlockRepairHint(),
     });
   }
 
@@ -3835,10 +4056,10 @@ function collectJsBlockPublicContractErrors(
         path: `${path}.settings.${key}`,
         ruleId: 'jsBlock-settings-unsupported-key',
         message: `flowSurfaces authoring ${path}.settings.${key} is not part of the public jsBlock contract; use ${path}.settings.code and ${path}.settings.version for inline JS code`,
-        details: {
+        details: withJsBlockRepairHint({
           key,
           allowedKeys: Array.from(JS_BLOCK_ALLOWED_SETTINGS_KEYS),
-        },
+        }),
       });
     });
   }
@@ -3851,9 +4072,9 @@ function collectJsBlockPublicContractErrors(
       message: `flowSurfaces authoring ${path} cannot combine script asset references with ${inlineKeys
         .map((key) => `settings.${key}`)
         .join(', ')}; use either applyBlueprint assets.scripts + block.script or inline ${path}.settings.code`,
-      details: {
+      details: withJsBlockRepairHint({
         inlineKeys,
-      },
+      }),
     });
   }
 
@@ -3866,6 +4087,7 @@ function collectJsBlockPublicContractErrors(
       path,
       ruleId: 'jsBlock-source-required',
       message: `flowSurfaces authoring ${path} jsBlock must include inline ${path}.settings.code or, for applyBlueprint only, a block.script asset reference`,
+      details: withJsBlockRepairHint(),
     });
   }
 }
@@ -3883,9 +4105,9 @@ function collectJsBlockConfigurePublicContractErrors(changes: any, path: string,
       path: `${path}.${key}`,
       ruleId: key === 'stepParams' ? 'jsBlock-stepParams-unsupported' : 'jsBlock-internal-field-unsupported',
       message: `flowSurfaces authoring ${path}.${key} is not accepted on public jsBlock configure changes; use ${path}.code and ${path}.version instead of internal persisted fields`,
-      details: {
+      details: withJsBlockRepairHint({
         key,
-      },
+      }),
     });
   });
 
@@ -3894,6 +4116,7 @@ function collectJsBlockConfigurePublicContractErrors(changes: any, path: string,
       path: `${path}.script`,
       ruleId: 'jsBlock-script-unsupported',
       message: `flowSurfaces authoring ${path}.script is only supported by applyBlueprint assets.scripts; use ${path}.code for localized jsBlock configure JS code`,
+      details: withJsBlockRepairHint(),
     });
   }
 
@@ -3905,9 +4128,9 @@ function collectJsBlockConfigurePublicContractErrors(changes: any, path: string,
       message: `flowSurfaces authoring ${path} cannot combine script asset references with ${inlineKeys
         .map((key) => `${path}.${key}`)
         .join(', ')}; use either applyBlueprint assets.scripts + block.script or localized ${path}.code`,
-      details: {
+      details: withJsBlockRepairHint({
         inlineKeys,
-      },
+      }),
     });
   }
 
@@ -3920,6 +4143,7 @@ function collectJsBlockConfigurePublicContractErrors(changes: any, path: string,
       path: `${path}.settings`,
       ruleId: 'jsBlock-settings-unsupported-key',
       message: `flowSurfaces authoring ${path}.settings is not part of the public jsBlock configure contract; use ${path}.code and ${path}.version`,
+      details: withJsBlockRepairHint(),
     });
     return;
   }
@@ -3928,9 +4152,9 @@ function collectJsBlockConfigurePublicContractErrors(changes: any, path: string,
       path: `${path}.settings.${key}`,
       ruleId: 'jsBlock-settings-unsupported-key',
       message: `flowSurfaces authoring ${path}.settings.${key} is not part of the public jsBlock configure contract; use ${path}.${key}`,
-      details: {
+      details: withJsBlockRepairHint({
         key,
-      },
+      }),
     });
   });
 }
@@ -3972,6 +4196,12 @@ function collectUnsupportedMainBlockSectionErrors(
       path: `${path}.${section}`,
       ruleId: `${blockType}-main-block-unsupported-${section}`,
       message: `flowSurfaces authoring ${path} ${blockType} main blocks do not support ${section}`,
+      details:
+        blockType === 'calendar'
+          ? buildCalendarMainBlockRepairDetails(section)
+          : blockType === 'kanban'
+            ? buildKanbanMainBlockRepairDetails(section)
+            : undefined,
     });
   });
 }
@@ -4001,6 +4231,8 @@ function collectApplyBlueprintKanbanFieldLimitErrors(
     details: {
       max: 2,
       count: block.fields.length,
+      repairHint:
+        'Kanban main block fields controls compact card display only. Keep at most 2 fields in applyBlueprint kanban fields, move richer card details to settings.cardPopup, and keep block type kanban.',
     },
   });
 }
@@ -4113,6 +4345,7 @@ async function collectConfigureErrors(
   collectCommentsBlockErrors(changesBlock, hostBlockType, '$.changes', errors, context);
   collectRecordHistoryBlockErrors(changesBlock, hostBlockType, '$.changes', errors, context);
   collectChartDisplayTitleErrors(changes, hostBlockType, '$.changes', errors);
+  collectTableSettingsErrors(changes, hostBlockType, '$.changes', errors, { directSettings: true });
   collectGridCardSettingsErrors(changes, hostBlockType, '$.changes', errors, { directSettings: true });
   collectAssignValuesErrors(changes.assignValues, '$.changes.assignValues', errors, changesBlock, context);
   collectTriggerWorkflowsErrors(changes.triggerWorkflows, '$.changes.triggerWorkflows', errors);
@@ -4164,7 +4397,16 @@ function pushAuthoringError(errors: AuthoringErrorInput[], error: AuthoringError
     code: 'FLOW_SURFACE_AUTHORING_VALIDATION_ERROR',
     status: 400,
     ...error,
+    message: appendRepairHintToAuthoringMessage(error),
   });
+}
+
+function appendRepairHintToAuthoringMessage(error: AuthoringErrorInput) {
+  const repairHint = typeof error.details?.repairHint === 'string' ? error.details.repairHint.trim() : '';
+  if (!repairHint || error.message.includes(repairHint)) {
+    return error.message;
+  }
+  return `${error.message}. ${repairHint}`;
 }
 
 function hasOwnDefined(value: any, key: string) {
@@ -4361,6 +4603,7 @@ function collectPublicLayoutErrors(
       path: `${layoutPath}.rows`,
       ruleId: 'block-layout-single-column',
       message: `flowSurfaces authoring ${layoutPath}.rows must not place every non-filter block on its own row`,
+      details: buildTwoColumnLayoutRepairDetails(),
     });
   }
 }
@@ -4864,6 +5107,223 @@ function collectDefaultActionSettingsFilterErrors(
 function doesBlockConsumeDefaultFilterAction(block: any) {
   const blockType = String(block?.type || '').trim();
   return isFlowSurfacePublicDataSurfaceBlockType(blockType) && !hasFlowSurfaceTemplateDocument(block?.template);
+}
+
+function collectVisibleDataBlockFieldErrors(
+  block: any,
+  blockType: string,
+  path: string,
+  errors: AuthoringErrorInput[],
+  context: FlowSurfaceAuthoringValidationContext,
+) {
+  if (!VISIBLE_FIELD_REQUIRED_DATA_BLOCK_TYPES.has(blockType) || hasFlowSurfaceTemplateReference(block?.template)) {
+    return;
+  }
+  const fieldEntries = collectVisibleDataBlockFieldEntries(block, path);
+  const validBusinessFieldNames = collectVisibleDataBlockValidBusinessFieldNames(block, context, fieldEntries);
+  if (!fieldEntries.length || !validBusinessFieldNames.length) {
+    const hasBlockFields = Array.isArray(block?.fields);
+    const hasBlockFieldGroups = Array.isArray(block?.fieldGroups);
+    const fieldConfigPath = !hasBlockFields && hasBlockFieldGroups ? `${path}.fieldGroups` : `${path}.fields`;
+    const fieldConfigLabel = !hasBlockFields && hasBlockFieldGroups ? `${path}.fieldGroups[].fields` : `${path}.fields`;
+    const suggestedFields = pickVisibleDataBlockFieldSuggestions(block, context);
+    pushAuthoringError(errors, {
+      path: fieldConfigPath,
+      ruleId: 'data-block-visible-fields-required',
+      message: `flowSurfaces authoring ${path} ${blockType} block has no valid business fields. Add collection field names to ${fieldConfigLabel}; defaults.collections.*.fieldGroups only configures generated popups/forms and is not a substitute for visible block columns.`,
+      details: {
+        blockType,
+        collection: getBlockCollectionName(block, context),
+        fieldCount: fieldEntries.length,
+        ...(suggestedFields.length ? { suggestion: { fields: suggestedFields } } : {}),
+      },
+    });
+    return;
+  }
+
+  if (!VISIBLE_FIELD_MINIMUM_DATA_BLOCK_TYPES.has(blockType)) {
+    return;
+  }
+  if (hasUnknownVisibleDataBlockFieldPath(block, context, fieldEntries)) {
+    return;
+  }
+  const eligibleBusinessFields = collectVisibleDataBlockEligibleBusinessFieldNames(block, context);
+  if (eligibleBusinessFields.length < RICH_COLLECTION_VISIBLE_FIELD_THRESHOLD) {
+    return;
+  }
+  const requiredFieldCount = Math.min(RICH_DATA_BLOCK_VISIBLE_FIELD_MINIMUM, eligibleBusinessFields.length);
+  if (validBusinessFieldNames.length >= requiredFieldCount) {
+    return;
+  }
+  const hasBlockFields = Array.isArray(block?.fields);
+  const hasBlockFieldGroups = Array.isArray(block?.fieldGroups);
+  const fieldConfigPath = !hasBlockFields && hasBlockFieldGroups ? `${path}.fieldGroups` : `${path}.fields`;
+  const fieldConfigLabel = !hasBlockFields && hasBlockFieldGroups ? `${path}.fieldGroups[].fields` : `${path}.fields`;
+  pushAuthoringError(errors, {
+    path: fieldConfigPath,
+    ruleId: 'data-block-visible-fields-minimum',
+    message: `flowSurfaces authoring ${path} ${blockType} block only has ${validBusinessFieldNames.length} valid business field(s). Add at least ${requiredFieldCount} collection field names to ${fieldConfigLabel}; defaults.collections.*.fieldGroups only configures generated popups/forms and is not a substitute for visible block columns.`,
+    details: {
+      blockType,
+      collection: getBlockCollectionName(block, context),
+      fieldCount: validBusinessFieldNames.length,
+      requiredFieldCount,
+      eligibleBusinessFieldCount: eligibleBusinessFields.length,
+      suggestion: {
+        fields: eligibleBusinessFields.slice(0, requiredFieldCount),
+      },
+    },
+  });
+}
+
+function collectVisibleDataBlockFieldEntries(block: any, path: string): Array<{ field: any; path: string }> {
+  const entries: Array<{ field: any; path: string }> = [];
+  if (Array.isArray(block?.fields)) {
+    block.fields.forEach((field: any, index: number) => {
+      entries.push({ field, path: `${path}.fields[${index}]` });
+    });
+  }
+  if (Array.isArray(block?.fieldGroups)) {
+    block.fieldGroups.forEach((group: any, groupIndex: number) => {
+      if (!Array.isArray(group?.fields)) {
+        return;
+      }
+      group.fields.forEach((field: any, fieldIndex: number) => {
+        entries.push({
+          field,
+          path: `${path}.fieldGroups[${groupIndex}].fields[${fieldIndex}]`,
+        });
+      });
+    });
+  }
+  return entries;
+}
+
+function collectVisibleDataBlockValidBusinessFieldNames(
+  block: any,
+  context: FlowSurfaceAuthoringValidationContext,
+  fieldEntries: Array<{ field: any; path: string }>,
+) {
+  const names = new Set<string>();
+  fieldEntries.forEach((entry) => {
+    const fieldPath = getAssociationAwareFieldPathInput(entry.field);
+    if (!fieldPath || fieldPath.startsWith('$') || fieldPath.startsWith('{{')) {
+      return;
+    }
+    if (!isVisibleDataBlockBusinessField(entry.field, block, context)) {
+      return;
+    }
+    names.add(normalizeFieldPath(fieldPath));
+  });
+  return Array.from(names);
+}
+
+function hasUnknownVisibleDataBlockFieldPath(
+  block: any,
+  context: FlowSurfaceAuthoringValidationContext,
+  fieldEntries: Array<{ field: any; path: string }>,
+) {
+  const collection = getBlockCollection(block, context);
+  if (!collection) {
+    return false;
+  }
+  return fieldEntries.some((entry) => {
+    const fieldPath = getAssociationAwareFieldPathInput(entry.field);
+    if (!fieldPath || fieldPath.startsWith('$') || fieldPath.startsWith('{{')) {
+      return false;
+    }
+    return !resolveFieldFromCollection(collection, normalizeFieldPath(fieldPath));
+  });
+}
+
+function collectVisibleDataBlockEligibleBusinessFieldNames(block: any, context: FlowSurfaceAuthoringValidationContext) {
+  const collection = getBlockCollection(block, context);
+  if (!collection) {
+    return [];
+  }
+  return getCollectionFields(collection)
+    .map((field) => {
+      const name = String(getFieldName(field) || '').trim();
+      if (!name || !isVisibleDataBlockMinimumCandidateResolvedField(field, name)) {
+        return '';
+      }
+      return name;
+    })
+    .filter(Boolean);
+}
+
+function isVisibleDataBlockMinimumCandidateResolvedField(field: any, fieldName: string) {
+  if (!isVisibleDataBlockBusinessResolvedField(field, fieldName)) {
+    return false;
+  }
+  if (isAssociationField(field)) {
+    return false;
+  }
+  if (/Id$/.test(fieldName)) {
+    return false;
+  }
+  return true;
+}
+
+function isVisibleDataBlockBusinessField(field: any, block: any, context: FlowSurfaceAuthoringValidationContext) {
+  const fieldPath = getAssociationAwareFieldPathInput(field);
+  if (!fieldPath || fieldPath.startsWith('$') || fieldPath.startsWith('{{')) {
+    return false;
+  }
+  if (_.isPlainObject(field)) {
+    if (field.hidden === true || field.internal === true || field.synthetic === true || field.actionOnly === true) {
+      return false;
+    }
+    const semanticType = String(field.type || field.fieldType || field.interface || '').trim();
+    if (semanticType && NON_BUSINESS_VISIBLE_FIELD_TYPES.has(semanticType)) {
+      return false;
+    }
+  }
+  const collection = getBlockCollection(block, context);
+  if (!collection) {
+    return true;
+  }
+  const resolvedField = resolveFieldFromCollection(collection, normalizeFieldPath(fieldPath));
+  if (!resolvedField) {
+    return true;
+  }
+  const fieldName = getFieldName(resolvedField) || fieldPath;
+  return isVisibleDataBlockBusinessResolvedField(resolvedField, fieldName);
+}
+
+function pickVisibleDataBlockFieldSuggestions(block: any, context: FlowSurfaceAuthoringValidationContext) {
+  const collection = getBlockCollection(block, context);
+  if (!collection) {
+    return [];
+  }
+  return getCollectionFields(collection)
+    .map((field) => {
+      const name = String(getFieldName(field) || '').trim();
+      if (!name || !isVisibleDataBlockBusinessResolvedField(field, name)) {
+        return '';
+      }
+      return name;
+    })
+    .filter(Boolean)
+    .slice(0, 3);
+}
+
+function isVisibleDataBlockBusinessResolvedField(field: any, fieldName: string) {
+  if (NON_BUSINESS_VISIBLE_FIELD_NAMES.has(fieldName)) {
+    return false;
+  }
+  const fieldInterface = String(getFieldInterface(field) || '').trim();
+  if (NON_BUSINESS_VISIBLE_FIELD_INTERFACES.has(fieldInterface)) {
+    return false;
+  }
+  const fieldType = String(getFieldType(field) || '').trim();
+  if (NON_BUSINESS_VISIBLE_FIELD_TYPES.has(fieldType)) {
+    return false;
+  }
+  if (field?.hidden === true || field?.options?.hidden === true) {
+    return false;
+  }
+  return true;
 }
 
 function hasConcreteFilterItem(value: any): boolean {
@@ -5655,6 +6115,52 @@ function normalizeDataSourceKey(value: any) {
   return String(value || 'main').trim() || 'main';
 }
 
+function collectTableSettingsErrors(
+  block: any,
+  blockType: string,
+  blockPath: string,
+  errors: AuthoringErrorInput[],
+  options: { directSettings?: boolean } = {},
+) {
+  if (blockType !== 'table' || !_.isPlainObject(block)) {
+    return;
+  }
+  TABLE_INTERNAL_AUTHORING_KEYS.forEach((key) => {
+    if (Object.prototype.hasOwnProperty.call(block, key)) {
+      pushTableSettingsUnsupportedError(errors, `${blockPath}.${key}`, key);
+    }
+  });
+  const hasSettings = _.isPlainObject(block?.settings);
+  if (!hasSettings) {
+    return;
+  }
+  const settings = block.settings;
+  const settingsPath = `${blockPath}.settings`;
+
+  Object.keys(settings).forEach((key) => {
+    if (TABLE_ALLOWED_SETTINGS_KEYS.has(key) && options.directSettings !== true) {
+      return;
+    }
+    if (options.directSettings === true && !TABLE_INTERNAL_AUTHORING_KEYS.includes(key)) {
+      return;
+    }
+    pushTableSettingsUnsupportedError(errors, `${settingsPath}.${key}`, key);
+  });
+}
+
+function pushTableSettingsUnsupportedError(errors: AuthoringErrorInput[], path: string, key: string) {
+  pushAuthoringError(errors, {
+    path,
+    ruleId: 'table-settings-unsupported-key',
+    message: `flowSurfaces authoring ${path} is not part of the public table settings contract`,
+    details: {
+      key,
+      allowedKeys: Array.from(TABLE_ALLOWED_SETTINGS_KEYS),
+      repairHint: TABLE_SETTINGS_REPAIR_HINT,
+    },
+  });
+}
+
 function collectGridCardSettingsErrors(
   block: any,
   blockType: string,
@@ -5764,7 +6270,140 @@ function collectActionListErrors(
   if (!Array.isArray(actions)) {
     return;
   }
+  collectDuplicateAIEmployeeActionErrors(actions, path, errors, block);
   actions.forEach((action, index) => collectActionErrors(action, `${path}[${index}]`, errors, block, context, slot));
+}
+
+function collectDuplicateAIEmployeeActionErrors(
+  actions: any[],
+  path: string,
+  errors: AuthoringErrorInput[],
+  block?: any,
+) {
+  const seen = new Map<string, string>();
+  actions.forEach((action, index) => {
+    const actionType = resolveAuthoringActionType(action, block);
+    if (actionType !== 'aiEmployee' || !_.isPlainObject(action)) {
+      return;
+    }
+    const identity = buildAuthoringAIEmployeeActionIdentity(action.settings);
+    if (!identity) {
+      return;
+    }
+    const currentPath = `${path}[${index}]`;
+    const previousPath = seen.get(identity);
+    if (previousPath) {
+      pushAuthoringError(errors, {
+        path: currentPath,
+        ruleId: 'duplicate-ai-employee-action',
+        message: `flowSurfaces authoring ${currentPath} duplicates an existing AI employee action in the same action container; reuse or update the existing button instead of appending another identical AI employee action.`,
+        details: {
+          duplicateOf: previousPath,
+          repairHint:
+            'Remove the duplicate aiEmployee action, or change username, task title/key, or workContext if this is a genuinely different AI employee action.',
+        },
+      });
+      return;
+    }
+    seen.set(identity, currentPath);
+  });
+}
+
+function buildAuthoringAIEmployeeActionIdentity(settings: any) {
+  if (!_.isPlainObject(settings)) {
+    return '';
+  }
+  const username = String(settings.username || '').trim();
+  if (!username) {
+    return '';
+  }
+  return stableSerializeAuthoringValue(normalizeAuthoringAIEmployeePublicSettingsForIdentity(settings));
+}
+
+function normalizeAuthoringAIEmployeePublicSettingsForIdentity(settings: Record<string, any>) {
+  return {
+    username: String(settings.username || '').trim(),
+    auto: typeof settings.auto === 'boolean' ? settings.auto : false,
+    workContext: Object.prototype.hasOwnProperty.call(settings, 'workContext')
+      ? normalizeAuthoringAIEmployeeWorkContextForIdentity(settings.workContext)
+      : [{ type: 'flow-model', target: 'self' }],
+    tasks: normalizeAuthoringAIEmployeeTasksForIdentity(settings.tasks),
+    style: {
+      ...AUTHORING_AI_EMPLOYEE_DEFAULT_STYLE,
+      ...(_.isPlainObject(settings.style) ? _.pick(settings.style, AUTHORING_AI_EMPLOYEE_STYLE_PUBLIC_KEYS) : {}),
+    },
+  };
+}
+
+function normalizeAuthoringAIEmployeeWorkContextForIdentity(value: any) {
+  return _.castArray(value || []).map((item: any) => {
+    if (!_.isPlainObject(item)) {
+      return item;
+    }
+    const output = _.pick(item, AUTHORING_AI_EMPLOYEE_WORK_CONTEXT_PUBLIC_KEYS);
+    if (!Object.prototype.hasOwnProperty.call(output, 'type') || _.isUndefined(output.type) || output.type === null) {
+      output.type = 'flow-model';
+    }
+    return output;
+  });
+}
+
+function normalizeAuthoringAIEmployeeTasksForIdentity(value: any) {
+  return _.castArray(value || []).map((task: any) => {
+    if (!_.isPlainObject(task)) {
+      return task;
+    }
+    const output = _.pick(task, AUTHORING_AI_EMPLOYEE_TASK_PUBLIC_SETTING_KEYS);
+    if (_.isPlainObject(output.message)) {
+      output.message = _.pick(output.message, AUTHORING_AI_EMPLOYEE_TASK_MESSAGE_PUBLIC_KEYS);
+      if (_.isPlainObject(output.message.workContext)) {
+        output.message.workContext = normalizeAuthoringAIEmployeeWorkContextForIdentity(output.message.workContext);
+      } else if (Array.isArray(output.message.workContext)) {
+        output.message.workContext = normalizeAuthoringAIEmployeeWorkContextForIdentity(output.message.workContext);
+      }
+    }
+    if (
+      Object.prototype.hasOwnProperty.call(task, 'prompt') &&
+      !Object.prototype.hasOwnProperty.call(output.message || {}, 'user')
+    ) {
+      output.message = {
+        ...(_.isPlainObject(output.message) ? output.message : {}),
+        user: task.prompt,
+      };
+    }
+    if (_.isPlainObject(output.model)) {
+      output.model = _.pick(output.model, AUTHORING_AI_EMPLOYEE_TASK_MODEL_PUBLIC_KEYS);
+    }
+    if (_.isPlainObject(output.skillSettings)) {
+      output.skillSettings = _.pick(output.skillSettings, AUTHORING_AI_EMPLOYEE_SKILL_SETTINGS_PUBLIC_KEYS);
+      if (
+        Array.isArray(output.skillSettings.skills) &&
+        !Object.prototype.hasOwnProperty.call(output.skillSettings, 'skillsVersion')
+      ) {
+        output.skillSettings.skillsVersion = 2;
+      }
+      if (
+        Array.isArray(output.skillSettings.tools) &&
+        !Object.prototype.hasOwnProperty.call(output.skillSettings, 'toolsVersion')
+      ) {
+        output.skillSettings.toolsVersion = 2;
+      }
+    }
+    return output;
+  });
+}
+
+function stableSerializeAuthoringValue(value: any): string {
+  if (Array.isArray(value)) {
+    return `[${value.map((item) => stableSerializeAuthoringValue(item)).join(',')}]`;
+  }
+  if (_.isPlainObject(value)) {
+    return `{${Object.keys(value)
+      .sort()
+      .map((key) => `${JSON.stringify(key)}:${stableSerializeAuthoringValue(value[key])}`)
+      .join(',')}}`;
+  }
+  return JSON.stringify(value);
 }
 
 function resolveAuthoringActionType(action: any, block?: any) {
@@ -6462,6 +7101,7 @@ function collectApplyBlueprintScriptAssetReferenceErrors(
         path: `${path}.script`,
         ruleId: 'apply-blueprint-script-asset-key-invalid',
         message: `flowSurfaces applyBlueprint ${publicPath}.script must be a non-empty string asset key; use settings.code for inline JS code`,
+        details: withJsBlockRepairHint(),
       });
       return;
     }
@@ -6478,6 +7118,9 @@ function collectApplyBlueprintScriptAssetReferenceErrors(
       path: `${path}.script`,
       ruleId: 'apply-blueprint-script-asset-code-required',
       message: `flowSurfaces applyBlueprint ${publicPath}.script references script asset '${scriptKey}' without non-empty code; use settings.code for inline JS code`,
+      details: withJsBlockRepairHint({
+        scriptKey,
+      }),
     });
     return;
   }
@@ -6485,6 +7128,7 @@ function collectApplyBlueprintScriptAssetReferenceErrors(
     path: `${path}.script`,
     ruleId: 'apply-blueprint-script-asset-key-invalid',
     message: `flowSurfaces applyBlueprint ${publicPath}.script must be a string asset key; use settings.code for inline JS code`,
+    details: withJsBlockRepairHint(),
   });
 }
 
