@@ -245,7 +245,12 @@ describe('PublicFormsSettingsPage toolbar', () => {
       expect(testState.list).toHaveBeenCalledTimes(1);
     });
 
-    fireEvent.click(screen.getByRole('button', { name: /Refresh/i }));
+    const refreshButton = screen.getByRole('button', { name: /Refresh/i });
+    await waitFor(() => {
+      expect(refreshButton).not.toBeDisabled();
+    });
+
+    fireEvent.click(refreshButton);
 
     await waitFor(() => {
       expect(testState.list).toHaveBeenCalledTimes(2);
