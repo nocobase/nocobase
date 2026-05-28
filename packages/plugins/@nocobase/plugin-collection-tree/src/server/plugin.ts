@@ -12,7 +12,7 @@ import { Collection, DestroyOptions, Model, SyncOptions } from '@nocobase/databa
 import { Plugin } from '@nocobase/server';
 import lodash from 'lodash';
 import { Transaction } from 'sequelize';
-import { findCyclePath, formatTreeCycleError, TreeNodeKey } from './cycle-detection';
+import { findCyclePath, TreeNodeKey } from './cycle-detection';
 import { TreeCollection } from './tree-collection';
 
 class PluginCollectionTreeServer extends Plugin {
@@ -278,9 +278,8 @@ class PluginCollectionTreeServer extends Plugin {
     let currentParentPrimaryKey: TreeNodeKey | null = parentPrimaryKey;
 
     while (currentParentPrimaryKey !== null && currentParentPrimaryKey !== undefined) {
-      const cyclePath = findCyclePath(path, currentParentPrimaryKey);
-      if (cyclePath) {
-        throw new Error(formatTreeCycleError(collection.name, cyclePath));
+      if (findCyclePath(path, currentParentPrimaryKey)) {
+        throw new Error('Cannot set a descendant node as the parent node');
       }
 
       path.push(currentParentPrimaryKey);

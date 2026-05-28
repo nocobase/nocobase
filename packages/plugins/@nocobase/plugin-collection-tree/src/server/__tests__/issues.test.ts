@@ -83,9 +83,7 @@ describe('issues', async () => {
         parentId: child.get('id'),
       });
     } catch (error) {
-      expect(error.message).toBe(
-        `Cycle detected in tree: ${root.get('id')} -> ${child.get('id')} -> ${root.get('id')}`,
-      );
+      expect(error.message).toBe('Cannot set a descendant node as the parent node');
     }
   });
 
