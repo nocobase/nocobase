@@ -237,11 +237,9 @@ export default class Dispatcher {
 
     this.executing = (async () => {
       let next: ExecutionPlan | null = null;
-      let execution: ExecutionModel | null = null;
-      let pending: Pending | null = null;
-      pending = this.pending.shift() ?? null;
+      const pending: Pending | null = this.pending.shift() ?? null;
       if (pending || (this.ready && this.plugin.serving())) {
-        execution = await this.prepare(pending?.execution ?? null);
+        const execution: ExecutionModel | null = await this.prepare(pending?.execution ?? null);
         if (execution) {
           next = [execution, pending?.job, pending?.rerun];
         }
@@ -293,7 +291,9 @@ export default class Dispatcher {
     try {
       execution = await this.createExecution(workflow, context, options);
     } catch (err) {
-      this.plugin.getLogger(workflow.id).error(`creating execution failed: ${err.message}`, err);
+      if (err instanceof Error) {
+        this.plugin.getLogger(workflow.id).error(`creating execution failed: ${err.message}`, err);
+      }
       return null;
     }
 
@@ -306,7 +306,9 @@ export default class Dispatcher {
       }
       return this.process(entered, undefined, options);
     } catch (err) {
-      this.plugin.getLogger(execution.workflowId).error(`execution (${execution.id}) error: ${err.message}`, err);
+      if (err instanceof Error) {
+        this.plugin.getLogger(execution.workflowId).error(`execution (${execution.id}) error: ${err.message}`, err);
+      }
     }
     return null;
   }
@@ -468,7 +470,9 @@ export default class Dispatcher {
       if (ownTransaction) {
         await tx.rollback();
       }
-      logger.error(`entering execution failed: ${error.message}`, { error });
+      if (error instanceof Error) {
+        logger.error(`entering execution failed: ${error.message}`, { error });
+      }
       return null;
     }
   }
@@ -564,7 +568,9 @@ export default class Dispatcher {
           await execution.destroy({ transaction: processor.mainTransaction });
         }
       } catch (err) {
-        logger.error(`execution (${execution.id}) error: ${err.message}`, err);
+        if (err instanceof Error) {
+          logger.error(`execution (${execution.id}) error: ${err.message}`, err);
+        }
       }
 
       return processor;
