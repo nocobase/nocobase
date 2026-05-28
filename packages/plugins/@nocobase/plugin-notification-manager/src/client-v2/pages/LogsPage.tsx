@@ -25,8 +25,7 @@ import messageLogCollection from '../../collections/messageLog';
 import { COLLECTION_NAME } from '../../constant';
 import { useNotificationTranslation, useT } from '../locale';
 import PluginNotificationManagerClientV2 from '../plugin';
-
-const collections = [messageLogCollection];
+import { getNotificationTypeOptions, withResolvedNotificationTypeEnum } from '../utils/notificationTypeOptions';
 
 // Mirror v1's `nonfilterable: ['receiver', 'reason']` on its `Filter.Action`
 // schema. `receiver` isn't on this collection so it would be a no-op; `reason`
@@ -275,6 +274,13 @@ function LogsPageInner() {
 }
 
 export default function LogsPage() {
+  const ctx = useFlowContext();
+  const compileT = useT();
+  const plugin = ctx.app.pm.get(PluginNotificationManagerClientV2);
+  const collections = useMemo(() => {
+    const options = getNotificationTypeOptions(plugin, compileT);
+    return [withResolvedNotificationTypeEnum(messageLogCollection, options)];
+  }, [plugin, compileT]);
   return (
     <ExtendCollectionsProvider collections={collections}>
       <LogsPageInner />

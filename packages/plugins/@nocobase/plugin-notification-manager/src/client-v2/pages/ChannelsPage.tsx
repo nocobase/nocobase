@@ -26,8 +26,7 @@ import { COLLECTION_NAME } from '../../constant';
 import { useNotificationTranslation, useT } from '../locale';
 import PluginNotificationManagerClientV2 from '../plugin';
 import type { RegisterChannelOptions } from '../notification-manager';
-
-const collections = [channelCollection];
+import { getNotificationTypeOptions, withResolvedNotificationTypeEnum } from '../utils/notificationTypeOptions';
 
 type ChannelRecord = {
   name: string;
@@ -371,6 +370,13 @@ function ChannelsPageInner() {
 }
 
 export default function ChannelsPage() {
+  const ctx = useFlowContext();
+  const compileT = useT();
+  const plugin = ctx.app.pm.get(PluginNotificationManagerClientV2);
+  const collections = useMemo(() => {
+    const options = getNotificationTypeOptions(plugin, compileT);
+    return [withResolvedNotificationTypeEnum(channelCollection, options)];
+  }, [plugin, compileT]);
   return (
     <ExtendCollectionsProvider collections={collections}>
       <ChannelsPageInner />
