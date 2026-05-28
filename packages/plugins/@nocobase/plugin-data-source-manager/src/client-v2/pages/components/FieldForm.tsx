@@ -117,12 +117,20 @@ const relationCollectionPropertyNames = new Set(['target']);
 const fileCollectionEnum = '{{fileCollections}}';
 const sourceKeyPropertyNames = new Set(['sourceKey']);
 const targetKeyPropertyNames = new Set(['targetKey']);
-const optionColorOptions = ['red', 'orange', 'gold', 'green', 'cyan', 'blue', 'purple', 'magenta', 'default'].map(
-  (value) => ({
-    value,
-    label: value,
-  }),
-);
+const optionColorLabels: Record<string, string> = {
+  red: 'Red',
+  magenta: 'Magenta',
+  volcano: 'Volcano',
+  orange: 'Orange',
+  gold: 'Gold',
+  lime: 'Lime',
+  green: 'Green',
+  cyan: 'Cyan',
+  blue: 'Blue',
+  geekblue: 'Geek blue',
+  purple: 'Purple',
+  default: 'Default',
+};
 const REQUIRED_RULE_KEY = 'required';
 type SortableOptionRowProps = React.HTMLAttributes<HTMLTableRowElement> & {
   'data-row-key': string;
@@ -353,6 +361,18 @@ function OptionsEditor(props: { name: Array<string | number>; disabled?: boolean
   const t = useT();
   const form = Form.useFormInstance();
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }));
+  const colorOptions = useMemo(
+    () =>
+      Object.keys(optionColorLabels).map((color) => ({
+        value: color,
+        label: (
+          <Tag color={color} style={{ marginInlineEnd: 0 }}>
+            {t(optionColorLabels[color] || optionColorLabels.default)}
+          </Tag>
+        ),
+      })),
+    [t],
+  );
   const cleanupDefaultValue = useCallback(
     (removedValue: unknown) => {
       const currentDefaultValue = form.getFieldValue('defaultValue');
@@ -417,7 +437,7 @@ function OptionsEditor(props: { name: Array<string | number>; disabled?: boolean
             width: 180,
             render: (_, field) => (
               <Form.Item name={[field.name, 'color']} style={{ marginBottom: 0 }}>
-                <Select allowClear disabled={props.disabled} options={optionColorOptions} />
+                <Select allowClear disabled={props.disabled} options={colorOptions} />
               </Form.Item>
             ),
           },

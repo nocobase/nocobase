@@ -7,11 +7,11 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { DeleteOutlined, DownOutlined, PlusOutlined, ReloadOutlined, SyncOutlined } from '@ant-design/icons';
-import { isTitleField, Table, useCurrentAppInfo } from '@nocobase/client-v2';
+import { DeleteOutlined, DownOutlined, PlusOutlined, SyncOutlined } from '@ant-design/icons';
+import { DrawerFormLayout, isTitleField, Table, useCurrentAppInfo } from '@nocobase/client-v2';
 import { useFlowContext } from '@nocobase/flow-engine';
 import { useRequest } from 'ahooks';
-import { App, Button, Dropdown, Select, Space, Switch, Tag, Tooltip } from 'antd';
+import { App, Button, Dropdown, Form, Select, Space, Spin, Switch, Tag, Tooltip } from 'antd';
 import type { MenuProps } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
@@ -21,6 +21,14 @@ import { compileLegacyTemplate } from '../../utils/compileLegacyTemplate';
 import { getCollectionFieldActionUrl } from './collectionFieldApi';
 import { filterFieldInterfacesByCollectionTemplate } from './collectionTemplateFieldInterfaces';
 import { FieldForm } from './FieldForm';
+import {
+  buildSqlFieldsFromPreview,
+  getSqlPreviewInternalName,
+  normalizeSqlPreviewResult,
+  SqlFieldsConfigureItem,
+  SqlPreviewConfigureItem,
+  SqlSourceCollectionsConfigureItem,
+} from './SqlCollectionConfigure';
 
 interface FieldsPageProps {
   dataSourceKey: string;
@@ -181,13 +189,20 @@ function getCollectionUpdateActionUrl(dataSourceKey: string) {
   return dataSourceKey === 'main' ? 'collections:update' : `dataSources/${dataSourceKey}/collections:update`;
 }
 
+function isSqlCollection(collection: Record<string, any>) {
+  return collection.template === 'sql';
+}
+
 function isSyncFieldsVisible(dataSourceKey: string, collection: Record<string, any>) {
-  return (
-    dataSourceKey === 'main' &&
-    collection.from !== 'db2cm' &&
-    collection.template !== 'view' &&
-    collection.template !== 'sql'
-  );
+  if (collection.from === 'db2cm') {
+    return false;
+  }
+
+  if (collection.template === 'view') {
+    return dataSourceKey === 'main';
+  }
+
+  return isSqlCollection(collection);
 }
 
 function isAddFieldVisible(options: {
@@ -202,6 +217,134 @@ function isAddFieldVisible(options: {
     !dataSourceType?.disableAddFields &&
     options.collection.template !== 'sql' &&
     options.fieldInterfaceGroups.length > 0
+  );
+}
+
+function getSqlSyncErrorMessage(error: unknown, fallback: string) {
+  const typedError = error as
+    | {
+        message?: string;
+        response?: {
+          data?: {
+            errors?: Array<{ message?: string }>;
+          };
+        };
+      }
+    | undefined;
+  return (
+    typedError?.response?.data?.errors
+      ?.map((item) => item.message)
+      .filter(Boolean)
+      .join('\n') ||
+    typedError?.message ||
+    fallback
+  );
+}
+
+function SqlSyncFieldsDrawer(props: { collection: Record<string, any>; onSubmitted: () => void }) {
+  const t = useT();
+  const ctx = useFlowContext();
+  const { message } = App.useApp();
+  const [form] = Form.useForm();
+  const [loading, setLoading] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const previewName = getSqlPreviewInternalName();
+
+  useEffect(() => {
+    form.setFieldsValue(props.collection);
+  }, [form, props.collection]);
+
+  useEffect(() => {
+    let ignore = false;
+
+    const loadPreview = async () => {
+      const sql = props.collection.sql;
+      if (!sql) {
+        return;
+      }
+
+      setLoading(true);
+      try {
+        const response = await ctx.api.resource('sqlCollection').execute({
+          values: {
+            sql,
+          },
+        });
+        if (ignore) {
+          return;
+        }
+        const preview = normalizeSqlPreviewResult(response);
+        const currentSources = props.collection.sources || [];
+        const currentFields = props.collection.fields || [];
+        form.setFieldsValue({
+          sources: Array.from(
+            new Set([
+              ...(Array.isArray(currentSources) ? currentSources : []),
+              ...(Array.isArray(preview.sources) ? preview.sources : []),
+            ]),
+          ),
+          fields: buildSqlFieldsFromPreview({
+            currentFields: Array.isArray(currentFields) ? currentFields : [],
+            manager: ctx.dataSourceManager.collectionFieldInterfaceManager,
+            preview,
+          }),
+          [previewName]: preview,
+        });
+      } catch (error) {
+        if (!ignore) {
+          form.setFieldValue(previewName, {
+            error: getSqlSyncErrorMessage(error, t('SQL error')),
+          });
+        }
+      } finally {
+        if (!ignore) {
+          setLoading(false);
+        }
+      }
+    };
+
+    loadPreview();
+
+    return () => {
+      ignore = true;
+    };
+  }, [ctx.api, ctx.dataSourceManager.collectionFieldInterfaceManager, form, previewName, props.collection, t]);
+
+  const handleSubmit = useCallback(async () => {
+    const values = await form.validateFields();
+    setSubmitting(true);
+    try {
+      await ctx.api.resource('sqlCollection').setFields({
+        filterByTk: props.collection.name,
+        values: {
+          fields: values.fields,
+          sources: values.sources,
+        },
+      });
+      await ctx.dataSourceManager.getDataSource('main')?.reload();
+      props.onSubmitted();
+      message.success(t('Sync successfully'));
+    } finally {
+      setSubmitting(false);
+    }
+  }, [ctx.api, ctx.dataSourceManager, form, message, props, t]);
+
+  return (
+    <DrawerFormLayout
+      title={t('Sync from database')}
+      submitting={submitting}
+      submitText={t('Submit')}
+      cancelText={t('Cancel')}
+      onSubmit={handleSubmit}
+    >
+      <Spin spinning={loading}>
+        <Form form={form} layout="vertical" initialValues={props.collection}>
+          <SqlSourceCollectionsConfigureItem form={form} mode="edit" template={{ title: '', name: 'sql' }} item={{}} />
+          <SqlFieldsConfigureItem form={form} mode="edit" template={{ title: '', name: 'sql' }} item={{}} />
+          <SqlPreviewConfigureItem form={form} mode="edit" template={{ title: '', name: 'sql' }} item={{}} />
+        </Form>
+      </Spin>
+    </DrawerFormLayout>
   );
 }
 
@@ -302,6 +445,21 @@ export default function FieldsPage(props: FieldsPageProps) {
     [fieldInterfaceGroups, openFieldForm, t],
   );
 
+  const openSqlSyncFieldsDrawer = useCallback(() => {
+    ctx.viewer.drawer({
+      width: 900,
+      closable: true,
+      content: () => (
+        <SqlSyncFieldsDrawer
+          collection={props.collection}
+          onSubmitted={() => {
+            request.refresh();
+          }}
+        />
+      ),
+    });
+  }, [ctx.viewer, props.collection, request]);
+
   const handleDelete = useCallback(
     (filterByTk: React.Key | React.Key[]) => {
       modal.confirm({
@@ -376,6 +534,11 @@ export default function FieldsPage(props: FieldsPageProps) {
   );
 
   const handleSyncFields = useCallback(async () => {
+    if (isSqlCollection(props.collection)) {
+      openSqlSyncFieldsDrawer();
+      return;
+    }
+
     setSyncFieldsLoading(true);
     try {
       await ctx.api.resource('mainDataSource').syncFields({
@@ -389,7 +552,7 @@ export default function FieldsPage(props: FieldsPageProps) {
     } finally {
       setSyncFieldsLoading(false);
     }
-  }, [ctx.api, ctx.dataSourceManager, message, props.collection.name, request, t]);
+  }, [ctx.api, ctx.dataSourceManager, message, openSqlSyncFieldsDrawer, props.collection, request, t]);
 
   const syncFieldsVisible = isSyncFieldsVisible(props.dataSourceKey, props.collection);
   const addFieldVisible = isAddFieldVisible({
@@ -491,9 +654,6 @@ export default function FieldsPage(props: FieldsPageProps) {
     <>
       <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginBottom: 16 }}>
         <Space>
-          <Button icon={<ReloadOutlined />} onClick={() => request.refresh()}>
-            {t('Refresh')}
-          </Button>
           <Button
             icon={<DeleteOutlined />}
             disabled={!selectedRowKeys.length}

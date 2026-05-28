@@ -18,7 +18,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { CollectionTemplateConfigureItemProps } from '../../plugin';
 import { compileLegacyTemplate } from '../../utils/compileLegacyTemplate';
 
-type SqlPreviewField = {
+export type SqlPreviewField = {
   collection?: string;
   interface?: string;
   source?: string | string[];
@@ -26,7 +26,7 @@ type SqlPreviewField = {
   uiSchema?: Record<string, unknown>;
 };
 
-type SqlPreviewResult = {
+export type SqlPreviewResult = {
   data?: Array<Record<string, unknown>>;
   error?: string;
   fields?: Record<string, SqlPreviewField>;
@@ -40,7 +40,7 @@ type CollectionRecord = {
   title?: React.ReactNode;
 };
 
-type SqlFieldRecord = {
+export type SqlFieldRecord = {
   interface?: string;
   name: string;
   source?: string | string[] | null;
@@ -91,7 +91,7 @@ function isSqlPreviewPayload(value: unknown): value is Record<string, unknown> {
   );
 }
 
-function normalizeSqlPreviewResult(value: unknown): SqlPreviewResult {
+export function normalizeSqlPreviewResult(value: unknown): SqlPreviewResult {
   const candidates = [value, get(value, 'data'), get(value, 'data.data'), get(value, 'data.data.data')];
   const payload = candidates.find(isSqlPreviewPayload);
 
@@ -209,7 +209,7 @@ function findSourceField(collections: CollectionRecord[], sourcePath?: string[])
     });
 }
 
-function buildSqlFieldsFromPreview(options: {
+export function buildSqlFieldsFromPreview(options: {
   currentFields?: SqlFieldRecord[];
   manager?: FieldInterfaceManager;
   preview?: SqlPreviewResult;
@@ -327,6 +327,7 @@ export function SqlStatementConfigureItem(props: CollectionTemplateConfigureItem
   const [editing, setEditing] = useState(() => !props.form.getFieldValue('sql'));
   const sql = Form.useWatch('sql', props.form);
   const manager = ctx.dataSourceManager.collectionFieldInterfaceManager as FieldInterfaceManager;
+  const autoPreviewRunRef = useRef(false);
   const request = useRequest(
     async (statement: string) => {
       const response = await ctx.api.resource('sqlCollection').execute({
@@ -406,6 +407,23 @@ export function SqlStatementConfigureItem(props: CollectionTemplateConfigureItem
   const handleExecute = useCallback(async () => {
     await runSql();
   }, [runSql]);
+
+  useEffect(() => {
+    if (autoPreviewRunRef.current || props.mode !== 'edit') {
+      return;
+    }
+
+    const currentSql = props.form.getFieldValue('sql') || sql;
+    if (!currentSql) {
+      return;
+    }
+
+    autoPreviewRunRef.current = true;
+    const runInitialPreview = async () => {
+      await runSql({ confirm: true });
+    };
+    runInitialPreview();
+  }, [props.form, props.mode, runSql, sql]);
 
   return (
     <Form.Item
