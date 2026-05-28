@@ -117,7 +117,7 @@ const packageJsonWithAppByChannelRule = {
               unknownPrerelease: 'block',
             },
             skills: {
-              gte: '1.0.20',
+              gt: '1.0.20',
             },
           },
         },
@@ -142,7 +142,7 @@ const packageJsonWithRcByChannelRule = {
               },
             },
             skills: {
-              gte: '1.0.20',
+              gt: '1.0.20',
             },
           },
         },
@@ -222,7 +222,7 @@ test('getApiCommandCompatRules reads appByChannel rules from package.json', () =
           unknownPrerelease: 'block',
         },
         skills: {
-          gte: '1.0.20',
+          gt: '1.0.20',
         },
       },
     },
@@ -261,13 +261,25 @@ test('findApiCommandCompatViolation skips checks when the target app version is 
   expect(violation).toBeUndefined();
 });
 
-test('findApiCommandCompatViolation matches combined appByChannel and skills rules for beta releases', () => {
+test('findApiCommandCompatViolation does not block the boundary skills version when the rule uses gt', () => {
   const violation = findApiCommandCompatViolation({
     packageJson: packageJsonWithAppByChannelRule,
     commandId: 'flow-surfaces apply',
     cliVersion: '2.1.0-beta.41',
     appVersion: '2.1.0-beta.35',
     skillsVersion: '1.0.20',
+  });
+
+  expect(violation).toBeUndefined();
+});
+
+test('findApiCommandCompatViolation matches combined appByChannel and skills rules for beta releases above the skills boundary', () => {
+  const violation = findApiCommandCompatViolation({
+    packageJson: packageJsonWithAppByChannelRule,
+    commandId: 'flow-surfaces apply',
+    cliVersion: '2.1.0-beta.41',
+    appVersion: '2.1.0-beta.35',
+    skillsVersion: '1.0.21',
   });
 
   expect(violation?.rule.code).toBe('FLOW_SURFACES_OLD_APP_NEW_SKILLS_UNSUPPORTED');
@@ -384,7 +396,7 @@ test('formatApiCommandCompatViolation includes combined app and skills guidance 
     commandId: 'flow-surfaces apply',
     cliVersion: '2.1.0-beta.41',
     appVersion: '2.1.0-beta.35',
-    skillsVersion: '1.0.20',
+    skillsVersion: '1.0.21',
   });
 
   expect(violation).toBeDefined();
@@ -393,9 +405,9 @@ test('formatApiCommandCompatViolation includes combined app and skills guidance 
   }
 
   expect(formatApiCommandCompatViolation(violation)).toContain('beta app version < 2.1.0-beta.36');
-  expect(formatApiCommandCompatViolation(violation)).toContain('NocoBase AI skills version >= 1.0.20');
+  expect(formatApiCommandCompatViolation(violation)).toContain('NocoBase AI skills version > 1.0.20');
   expect(formatApiCommandCompatViolation(violation)).toContain('upgrade the app to >= 2.1.0-beta.36');
-  expect(formatApiCommandCompatViolation(violation)).toContain('use a NocoBase AI skills version < 1.0.20');
+  expect(formatApiCommandCompatViolation(violation)).toContain('use a NocoBase AI skills version <= 1.0.20');
 });
 
 test('findApiCommandCompatViolation matches skills version conditions for generated API commands', () => {
