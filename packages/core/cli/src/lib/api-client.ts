@@ -27,6 +27,8 @@ import { fetchWithPreservedAuthRedirect } from './http-request.js';
 
 const CLI_REQUEST_SOURCE_HEADER = 'x-request-source';
 const CLI_REQUEST_SOURCE_VALUE = 'cli';
+const CLI_VERSION_HEADER = 'x-nb-cli-version';
+const SKILLS_VERSION_HEADER = 'x-nb-skills-version';
 
 export interface RequestParameter {
   name: string;
@@ -51,6 +53,8 @@ export interface RequestOperation {
 }
 
 export interface RequestOptions {
+  cliVersion: string;
+  skillsVersion?: string;
   envName?: string;
   baseUrl?: string;
   token?: string;
@@ -307,6 +311,10 @@ export async function executeApiRequest(options: RequestOptions) {
 
   const headers = new Headers();
   headers.set(CLI_REQUEST_SOURCE_HEADER, CLI_REQUEST_SOURCE_VALUE);
+  headers.set(CLI_VERSION_HEADER, options.cliVersion);
+  if (options.skillsVersion) {
+    headers.set(SKILLS_VERSION_HEADER, options.skillsVersion);
+  }
   if (token) {
     headers.set('authorization', `Bearer ${token}`);
   }
