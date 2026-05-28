@@ -10,6 +10,27 @@
 import { Database } from '@nocobase/database';
 import { MockServer, createMockServer } from '@nocobase/test';
 
+const zhCNContext = {
+  t: (
+    key: string,
+    options?: {
+      collectionName?: string;
+      cyclePath?: string;
+    },
+  ) => {
+    const translations: Record<string, string> = {
+      'Cannot set itself as the parent node': '不能将自身设置为父节点',
+      'Cannot set a descendant node as the parent node': '不能将子节点或后代节点设置为父节点',
+    };
+
+    if (key === 'Cycle detected in {{collectionName}}: {{cyclePath}}') {
+      return `检测到树形数据循环：${options?.collectionName}: ${options?.cyclePath}`;
+    }
+
+    return translations[key] || key;
+  },
+};
+
 describe('issues', async () => {
   let app: MockServer;
   let db: Database;
@@ -61,6 +82,33 @@ describe('issues', async () => {
       });
     } catch (error) {
       expect(error.message).toBe('Cannot set itself as the parent node');
+    }
+  });
+
+  it('should translate parent cycle error with context', async () => {
+    expect.assertions(1);
+    const root = await db.getRepository('tree').create({
+      values: {
+        name: 'root',
+      },
+    });
+    const child = await db.getRepository('tree').create({
+      values: {
+        name: 'child',
+        parentId: root.get('id'),
+      },
+    });
+
+    try {
+      await db.getRepository('tree').update({
+        filterByTk: root.get('id'),
+        values: {
+          parentId: child.get('id'),
+        },
+        context: zhCNContext,
+      });
+    } catch (error) {
+      expect(error.message).toBe('不能将子节点或后代节点设置为父节点');
     }
   });
 
@@ -123,6 +171,47 @@ describe('issues', async () => {
     } catch (error) {
       expect(error.message).toBe(
         `Cycle detected in tree: ${root.get('id')} -> ${child.get('id')} -> ${root.get('id')}`,
+      );
+    }
+  });
+
+  it('should translate cycle path when listing dirty tree data with context', async () => {
+    expect.assertions(1);
+    const root = await db.getRepository('tree').create({
+      values: {
+        name: 'root',
+      },
+    });
+    const child = await db.getRepository('tree').create({
+      values: {
+        name: 'child',
+        parentId: root.get('id'),
+      },
+    });
+
+    await db.getModel('tree').update(
+      {
+        parentId: child.get('id'),
+      },
+      {
+        where: {
+          id: root.get('id'),
+        },
+        hooks: false,
+      },
+    );
+
+    try {
+      await db.getRepository('tree').find({
+        tree: true,
+        filter: {
+          id: [root.get('id'), child.get('id')],
+        },
+        context: zhCNContext,
+      });
+    } catch (error) {
+      expect(error.message).toBe(
+        `检测到树形数据循环：tree: ${root.get('id')} -> ${child.get('id')} -> ${root.get('id')}`,
       );
     }
   });

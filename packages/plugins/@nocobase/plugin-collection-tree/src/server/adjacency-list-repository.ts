@@ -114,7 +114,9 @@ export class AdjacencyListRepository extends Repository {
         const childPrimaryKey = getNodePrimaryKey(child);
         const cycleStartIndex = pathIndex.get(String(childPrimaryKey));
         if (cycleStartIndex !== undefined) {
-          throw new Error(formatTreeCycleError(collection.name, [...path.slice(cycleStartIndex), childPrimaryKey]));
+          throw new Error(
+            formatTreeCycleError(collection.name, [...path.slice(cycleStartIndex), childPrimaryKey], options.context),
+          );
         }
 
         pathIndex.set(String(childPrimaryKey), path.length);

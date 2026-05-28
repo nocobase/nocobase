@@ -1,0 +1,5 @@
+{
+  "Cannot set itself as the parent node": "Cannot set itself as the parent node",
+  "Cannot set a descendant node as the parent node": "Cannot set a descendant node as the parent node",
+  "Cycle detected in {{collectionName}}: {{cyclePath}}": "Cycle detected in {{collectionName}}: {{cyclePath}}"
+}

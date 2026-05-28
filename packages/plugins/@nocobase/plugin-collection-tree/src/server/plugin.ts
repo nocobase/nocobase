@@ -12,8 +12,20 @@ import { Collection, DestroyOptions, Model, SyncOptions } from '@nocobase/databa
 import { Plugin } from '@nocobase/server';
 import lodash from 'lodash';
 import { Transaction } from 'sequelize';
-import { findCyclePath, TreeNodeKey } from './cycle-detection';
+import {
+  CANNOT_SET_DESCENDANT_AS_PARENT,
+  CANNOT_SET_SELF_AS_PARENT,
+  findCyclePath,
+  translateTreeError,
+  TreeNodeKey,
+  TreeTranslationContext,
+} from './cycle-detection';
 import { TreeCollection } from './tree-collection';
+
+interface TreeSaveOptions {
+  transaction?: Transaction;
+  context?: TreeTranslationContext;
+}
 
 class PluginCollectionTreeServer extends Plugin {
   async beforeLoad() {
@@ -132,7 +144,7 @@ class PluginCollectionTreeServer extends Plugin {
             });
           });
 
-          this.db.on(`${collection.name}.beforeSave`, async (model: Model, options?: { transaction?: Transaction }) => {
+          this.db.on(`${collection.name}.beforeSave`, async (model: Model, options?: TreeSaveOptions) => {
             const tk = collection.filterTargetKey as string;
             const parentForeignKey = collection.treeParentField?.foreignKey || 'parentId';
             const nodePrimaryKey = model.get(tk) as TreeNodeKey | null;
@@ -144,7 +156,7 @@ class PluginCollectionTreeServer extends Plugin {
               parentPrimaryKey !== undefined &&
               String(parentPrimaryKey) === String(nodePrimaryKey)
             ) {
-              throw new Error('Cannot set itself as the parent node');
+              throw new Error(translateTreeError(CANNOT_SET_SELF_AS_PARENT, options?.context));
             }
 
             if (
@@ -169,6 +181,7 @@ class PluginCollectionTreeServer extends Plugin {
               nodePrimaryKey,
               parentPrimaryKey,
               transaction: options?.transaction,
+              context: options?.context,
             });
           });
 
@@ -266,11 +279,13 @@ class PluginCollectionTreeServer extends Plugin {
     nodePrimaryKey,
     parentPrimaryKey,
     transaction,
+    context,
   }: {
     collection: Collection;
     nodePrimaryKey: TreeNodeKey;
     parentPrimaryKey: TreeNodeKey;
     transaction?: Transaction;
+    context?: TreeTranslationContext;
   }) {
     const tk = collection.filterTargetKey as string;
     const parentForeignKey = collection.treeParentField?.foreignKey || 'parentId';
@@ -279,7 +294,7 @@ class PluginCollectionTreeServer extends Plugin {
 
     while (currentParentPrimaryKey !== null && currentParentPrimaryKey !== undefined) {
       if (findCyclePath(path, currentParentPrimaryKey)) {
-        throw new Error('Cannot set a descendant node as the parent node');
+        throw new Error(translateTreeError(CANNOT_SET_DESCENDANT_AS_PARENT, context));
       }
 
       path.push(currentParentPrimaryKey);
