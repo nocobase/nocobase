@@ -9,18 +9,15 @@
 
 import type { LoaderContext } from '@rspack/core';
 
-export default function myLoader(
-  this: LoaderContext<Record<string, unknown>>,
-  source: string,
-) {
+export default function myLoader(this: LoaderContext<Record<string, unknown>>, source: string) {
   const options = this.getOptions();
   if (!options?.isCommercial) {
     return source;
   }
-  const isClientV2Entry =
-    this.resourcePath.match(/client-v2\/index\.(ts|tsx)/) && !this.resourcePath.includes('plugin-commercial');
+  const isClientV2Plugin =
+    this.resourcePath.match(/client-v2\/plugin\.(ts|tsx)/) && !this.resourcePath.includes('plugin-commercial');
   const isEntry =
-    (this.resourcePath.match(/client\/index\.(ts|tsx)/) || isClientV2Entry) &&
+    (this.resourcePath.match(/client\/index\.(ts|tsx)/) || isClientV2Plugin) &&
     !this.resourcePath.includes('plugin-commercial');
 
   if (isEntry) {
@@ -29,9 +26,8 @@ export default function myLoader(
     if (match) {
       source = source.replace(regex, ``);
       const moduleName = match[1];
-      source =
-        `
-        import { withCommercial } from '@nocobase/plugin-commercial/${isClientV2Entry ? 'client-v2' : 'client'}';
+      source = `
+        import { withCommercial } from '@nocobase/plugin-commercial/${isClientV2Plugin ? 'client-v2' : 'client'}';
         ${source}
         export default withCommercial(${moduleName});
         `;

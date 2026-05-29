@@ -40,6 +40,10 @@ type ApiResponse<T> = {
   };
 };
 
+type LicenseCardComponentProps = {
+  key?: React.Key;
+};
+
 const copyTextToClipboard = async (text: string) => {
   if (!text) {
     return false;
@@ -378,7 +382,7 @@ export default function LicenseSetting() {
     await saveLicenseKey(values.licenseKey);
   }, [form, saveLicenseKey]);
 
-  const LicenseCard = app.getComponent('LicenseCard', false) as ComponentType | undefined;
+  const LicenseCard = app.getComponent('LicenseCard', false) as ComponentType<LicenseCardComponentProps> | undefined;
   const shouldRenderLicenseCard = Boolean(LicenseCard && keyExist);
 
   return (
@@ -411,7 +415,7 @@ export default function LicenseSetting() {
             </Form.Item>
           ) : null}
         </Form>
-        {shouldRenderLicenseCard ? <LicenseCard /> : null}
+        {shouldRenderLicenseCard ? <LicenseCard key={refreshToken} /> : null}
       </Spin>
     </Card>
   );
