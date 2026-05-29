@@ -8,7 +8,7 @@
  */
 
 import { createCollectionContextMeta, useFlowEngine } from '@nocobase/flow-engine';
-import React, { createContext, useContext, useMemo } from 'react';
+import React, { createContext, useContext, useMemo, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useACLRoleContext } from '../acl';
 import { ReturnTypeOfUseRequest, useAPIClient, useRequest } from '../api-client';
@@ -62,6 +62,7 @@ export const CurrentUserProvider = (props) => {
   const navigate = useNavigate();
   const location = useLocation();
   const runtimeFlowEngine = app?.flowEngine || flowEngine;
+  const hasLoadedRef = useRef(false);
   const result = useRequest<any>(() =>
     api
       .request({
@@ -90,7 +91,11 @@ export const CurrentUserProvider = (props) => {
 
   const { render } = useAppSpin();
 
-  if (result.loading) {
+  if (!result.loading) {
+    hasLoadedRef.current = true;
+  }
+
+  if (result.loading && !hasLoadedRef.current) {
     return render();
   }
   return <CurrentUserContext.Provider value={result}>{props.children}</CurrentUserContext.Provider>;
