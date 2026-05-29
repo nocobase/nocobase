@@ -589,6 +589,14 @@ function normalizeCollectionCategoryValue(category?: Array<number | string>) {
   });
 }
 
+function getDatabaseViewFormValue(collection: Record<string, any>) {
+  const viewName = collection.viewName || collection.name;
+  if (!viewName) {
+    return undefined;
+  }
+  return collection.schema ? `${collection.schema}@${viewName}` : viewName;
+}
+
 function resolveTemplateDefaultValues(template: CollectionTemplateOptions) {
   return typeof template.defaultValues === 'function' ? template.defaultValues() : template.defaultValues || {};
 }
@@ -834,8 +842,9 @@ function CollectionCreateDrawer(props: {
   const collectionPresetFields = useMemo(() => plugin.getCollectionPresetFields(), [plugin]);
   const [submitting, setSubmitting] = useState(false);
   const isSqlTemplate = template.name === 'sql';
+  const isViewTemplate = template.name === 'view';
   const [selectedPresetFields, setSelectedPresetFields] = useState<React.Key[]>(() =>
-    isSqlTemplate
+    isSqlTemplate || isViewTemplate
       ? []
       : collectionPresetFields
           .filter((field) => field.defaultSelected !== false)
@@ -979,6 +988,25 @@ function CollectionCreateDrawer(props: {
             {collectionCategoryFormItem}
             {collectionDescriptionFormItem}
           </>
+        ) : isViewTemplate ? (
+          <>
+            {TemplateConfigureForm ? <TemplateConfigureForm mode="create" template={template} form={form} /> : null}
+            <CollectionTemplateConfigureItems mode="create" template={template} form={form} />
+            {hasTemplateCapability(template, 'recordUniqueKey') ? (
+              <CollectionCreateFilterTargetKey form={form} />
+            ) : null}
+            {collectionCategoryFormItem}
+            {collectionDescriptionFormItem}
+            <Form.Item
+              name="simplePaginate"
+              valuePropName="checked"
+              extra={t(
+                'Skip getting the total number of table records during paging to speed up loading. It is recommended to enable this option for data tables with a large amount of data',
+              )}
+            >
+              <Checkbox>{t('Use simple pagination mode')}</Checkbox>
+            </Form.Item>
+          </>
         ) : (
           <>
             <Form.Item name="inherits" label={t('Inherits')}>
@@ -1105,6 +1133,10 @@ function CollectionEditDrawer(props: {
       description: collection.description,
       simplePaginate: collection.simplePaginate,
       filterTargetKey: getCollectionFilterTargetKey(collection),
+      databaseView: getDatabaseViewFormValue(collection),
+      schema: collection.schema,
+      viewName: collection.viewName || collection.name,
+      writableView: collection.writableView,
       sql: collection.sql,
       sources: collection.sources,
       fields: collection.fields,

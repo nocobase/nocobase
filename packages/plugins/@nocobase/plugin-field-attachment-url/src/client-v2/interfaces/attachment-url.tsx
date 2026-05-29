@@ -26,22 +26,23 @@ export class AttachmentURLFieldInterface extends CollectionFieldInterface {
   validationType = 'string';
   availableValidationOptions = ['min', 'max', 'length', 'pattern'];
   configure = {
-    properties: {
-      target: {
-        required: true,
-        type: 'string',
+    items: [
+      {
+        name: 'target',
         title: '{{t("Which file collection should it be uploaded to")}}',
-        'x-decorator': 'FormItem',
-        'x-component': 'Select',
-        enum: '{{fileCollections}}',
-        default: 'attachments',
+        component: 'Select',
+        required: true,
+        defaultValue: 'attachments',
+        schema: {
+          enum: '{{fileCollections}}',
+        },
       },
-      targetKey: {
-        type: 'string',
-        default: 'id',
-        'x-hidden': true,
+      {
+        name: 'targetKey',
+        defaultValue: 'id',
+        hidden: true,
       },
-    },
+    ],
   };
   filterable = {
     operators: 'bigField',

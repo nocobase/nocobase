@@ -14,6 +14,10 @@ type FieldInterfaceIncludeItem = string | { interface?: string; name?: string };
 type FieldInterfacePolicy = {
   include?: FieldInterfaceIncludeItem[];
   exclude?: string[];
+  create?: {
+    include?: FieldInterfaceIncludeItem[];
+    exclude?: string[];
+  };
 };
 
 type FieldInterfaceLike = {
@@ -56,6 +60,23 @@ export function filterFieldInterfacesByCollectionTemplate<T extends FieldInterfa
       return isIncludedFieldInterface(include, fieldInterface.name);
     }
 
+    return !exclude.includes(fieldInterface.name);
+  });
+}
+
+export function filterCreateFieldInterfacesByCollectionTemplate<T extends FieldInterfaceLike>(
+  fieldInterfaces: T[],
+  template: CollectionTemplateOptions | undefined,
+) {
+  const { create } = getFieldInterfacePolicy(template) || {};
+  const include = create?.include;
+  const exclude = create?.exclude || [];
+  const hasIncludes = Array.isArray(include) && include.length > 0;
+
+  return fieldInterfaces.filter((fieldInterface) => {
+    if (hasIncludes) {
+      return isIncludedFieldInterface(include, fieldInterface.name);
+    }
     return !exclude.includes(fieldInterface.name);
   });
 }

@@ -53,7 +53,9 @@ type FieldInterfaceRecord = {
     type?: string;
     uiSchema?: Record<string, unknown>;
   };
+  name?: string;
   title?: React.ReactNode;
+  availableTypes?: string[];
 };
 
 type FieldInterfaceManager = {
@@ -112,7 +114,7 @@ export function normalizeSqlPreviewResult(value: unknown): SqlPreviewResult {
 }
 
 function inferFieldInterface(field: string, value: unknown) {
-  if (field.toLowerCase().includes('id')) {
+  if (field.toLowerCase() === 'id') {
     return 'id';
   }
   if (typeof value === 'number') {
@@ -135,7 +137,12 @@ function normalizeFieldSource(source?: string | string[] | null) {
 }
 
 function getFieldTitle(field: SqlFieldRecord) {
-  return (field.uiSchema?.title as React.ReactNode) || field.name;
+  const options = getFieldOptions(field);
+  return (options.uiSchema?.title as React.ReactNode) || options.title || options.name;
+}
+
+function getFieldOptions(field: any) {
+  return field?.options || field || {};
 }
 
 function getCollectionOptions(collections: CollectionRecord[], t: (key: string) => string) {
@@ -153,7 +160,10 @@ function getFieldInterfaceOptions(manager: {
 }) {
   const groups = manager?.getFieldInterfaceGroups?.() || {};
   const interfaces = manager?.getFieldInterfaces?.() || [];
-  const grouped = new Map<string, Array<{ label: React.ReactNode; value: string }>>();
+  const grouped = new Map<
+    string,
+    Array<{ availableTypes?: string[]; defaultType?: string; label: React.ReactNode; value: string }>
+  >();
 
   interfaces
     .filter((fieldInterface) => fieldInterface.name && fieldInterface.group !== 'relation')
@@ -163,6 +173,8 @@ function getFieldInterfaceOptions(manager: {
       items.push({
         value: String(fieldInterface.name),
         label: (fieldInterface.title as React.ReactNode) || String(fieldInterface.name),
+        availableTypes: fieldInterface.availableTypes as string[] | undefined,
+        defaultType: (fieldInterface.default as { type?: string } | undefined)?.type,
       });
       grouped.set(group, items);
     });
@@ -177,36 +189,62 @@ function getFieldInterfaceOptions(manager: {
 
 function getSourceFieldOptions(options: {
   collections: CollectionRecord[];
+  dataSource?: { getCollection?: (name: string) => any };
   sources: string[];
   t: (key: string) => string;
 }) {
-  const { collections, sources, t } = options;
+  const { collections, dataSource, sources, t } = options;
 
   return sources
     .map((source) => collections.find((collection) => collection.name === source))
     .filter(Boolean)
-    .map((collection) => ({
-      value: collection.name,
-      label: compileLegacyTemplate(collection.title || collection.name, t),
-      children: (collection.fields || [])
-        .filter((field) => field.name && !relationTypes.has(String(field.type)))
-        .map((field) => ({
-          value: field.name,
-          label: compileLegacyTemplate(getFieldTitle(field), t),
-        })),
-    }));
+    .map((collection) => {
+      const runtimeCollection = collection.name ? dataSource?.getCollection?.(collection.name) : undefined;
+      const fields =
+        typeof runtimeCollection?.getFields === 'function' ? runtimeCollection.getFields() : collection.fields || [];
+      return {
+        value: collection.name,
+        label: compileLegacyTemplate(collection.title || runtimeCollection?.title || collection.name, t),
+        children: fields
+          .map(getFieldOptions)
+          .filter((field) => field.name && !relationTypes.has(String(field.type)))
+          .map((field) => ({
+            value: field.name,
+            label: compileLegacyTemplate(getFieldTitle(field), t),
+          })),
+      };
+    });
 }
 
-function findSourceField(collections: CollectionRecord[], sourcePath?: string[]) {
+function findSourceField(
+  collections: CollectionRecord[],
+  sourcePath?: string[],
+  dataSource?: { getCollection?: (name: string) => any },
+) {
   if (!sourcePath?.length) {
     return undefined;
   }
   const [collectionName, fieldName] = sourcePath;
-  return collections
-    .find((collection) => collection.name === collectionName)
-    ?.fields?.find((field) => {
-      return field.name === fieldName;
-    });
+  const runtimeCollection = dataSource?.getCollection?.(collectionName);
+  const fields =
+    typeof runtimeCollection?.getFields === 'function'
+      ? runtimeCollection.getFields().map(getFieldOptions)
+      : collections.find((collection) => collection.name === collectionName)?.fields || [];
+  return fields.find((field) => field.name === fieldName);
+}
+
+function getSqlFieldInterfaceOptions(groups: ReturnType<typeof getFieldInterfaceOptions>, fieldType?: string) {
+  return groups
+    .map((group) => ({
+      label: group.label,
+      options: group.options.filter((option) => {
+        if (!fieldType) {
+          return true;
+        }
+        return option.availableTypes?.includes(fieldType) || option.defaultType === fieldType;
+      }),
+    }))
+    .filter((group) => group.options.length);
 }
 
 export function buildSqlFieldsFromPreview(options: {
@@ -497,6 +535,7 @@ export function SqlFieldsConfigureItem(props: CollectionTemplateConfigureItemPro
     () =>
       getSourceFieldOptions({
         collections: collectionsRequest.data || [],
+        dataSource: mainDataSource,
         sources,
         t,
       }),
@@ -591,7 +630,7 @@ export function SqlFieldsConfigureItem(props: CollectionTemplateConfigureItemPro
           value={typeof value === 'string' ? value.split('.') : value}
           onChange={(nextValue) => {
             const sourcePath = nextValue as string[] | undefined;
-            const sourceField = findSourceField(collectionsRequest.data || [], sourcePath);
+            const sourceField = findSourceField(collectionsRequest.data || [], sourcePath, mainDataSource);
             updateField(index, {
               ...record,
               source: sourcePath,
@@ -618,7 +657,7 @@ export function SqlFieldsConfigureItem(props: CollectionTemplateConfigureItemPro
             allowClear
             popupMatchSelectWidth={false}
             style={{ width: '100%' }}
-            options={fieldOptions.map((group) => ({
+            options={getSqlFieldInterfaceOptions(fieldOptions, record.type).map((group) => ({
               label: compileLegacyTemplate(group.label, t),
               options: group.options.map((option) => ({
                 value: option.value,
@@ -631,7 +670,7 @@ export function SqlFieldsConfigureItem(props: CollectionTemplateConfigureItemPro
               updateField(index, {
                 ...record,
                 interface: nextInterface || null,
-                type: fieldInterface?.default?.type,
+                type: fieldInterface?.default?.type || record.type,
                 uiSchema: {
                   ...(fieldInterface?.default?.uiSchema || {}),
                   title: fieldInterface?.default?.uiSchema?.title || record.uiSchema?.title,

@@ -9,6 +9,7 @@
 
 import {
   DrawerFormLayout,
+  evaluateFieldConfigureExpression,
   fieldValidationConfigureRegistry,
   getCoreFieldConfigureState,
   runCoreFieldConfigureEffects,
@@ -50,7 +51,10 @@ import { useT } from '../../locale';
 import { PluginDataSourceManagerClientV2 } from '../../plugin';
 import { compileLegacyTemplate, compileLegacyTemplateText } from '../../utils/compileLegacyTemplate';
 import { getCollectionFieldActionUrl } from './collectionFieldApi';
-import { filterFieldInterfacesByCollectionTemplate } from './collectionTemplateFieldInterfaces';
+import {
+  filterCreateFieldInterfacesByCollectionTemplate,
+  filterFieldInterfacesByCollectionTemplate,
+} from './collectionTemplateFieldInterfaces';
 
 interface FieldFormProps {
   mode: 'create' | 'edit';
@@ -62,7 +66,6 @@ interface FieldFormProps {
 }
 
 interface FieldInterfaceManagerWithConfigure {
-  getFieldInterfaceConfigureProperties?: (name: string, collectionInfo?: Record<string, any>) => Record<string, any>;
   getFieldInterfaceConfigure?: (name: string, collectionInfo?: Record<string, any>) => Record<string, any> | undefined;
 }
 
@@ -90,9 +93,15 @@ function filterFieldInterfacesByTemplate(
   }
   const plugin = ctx.app.pm.get(PluginDataSourceManagerClientV2);
   const template = plugin?.getCollectionTemplate?.(collection.template || 'general');
-  return filterFieldInterfacesByCollectionTemplate<FieldInterfaceOption>(fieldInterfaces, template, collection, {
-    databaseDialect,
-  });
+  const templateFieldInterfaces = filterFieldInterfacesByCollectionTemplate<FieldInterfaceOption>(
+    fieldInterfaces,
+    template,
+    collection,
+    {
+      databaseDialect,
+    },
+  );
+  return filterCreateFieldInterfacesByCollectionTemplate(templateFieldInterfaces, template);
 }
 
 function normalizeListResponse(response: any) {
@@ -107,11 +116,9 @@ function toNamePath(name: string) {
   return name.split('.');
 }
 
-const commonPropertyNames = new Set(['name', 'uiSchema.title']);
 const fieldNamePattern = /^[a-zA-Z][a-zA-Z0-9_-]*$/;
 const fieldNameDescription =
   'Randomly generated and can be modified. Support letters, numbers and underscores, must start with an letter.';
-const layoutComponents = new Set(['Grid', 'Grid.Row', 'Grid.Col', 'div']);
 const collectionOptionComponents = new Set(['Select', 'CollectionSelect', 'RemoteSelect']);
 const relationCollectionPropertyNames = new Set(['target']);
 const fileCollectionEnum = '{{fileCollections}}';
@@ -182,26 +189,12 @@ function OptionSortHandle(props: { disabled?: boolean }) {
 }
 
 function isTruthyExpression(value: unknown, context: Record<string, unknown>) {
-  if (typeof value === 'boolean') {
-    return value;
-  }
-  if (typeof value !== 'string') {
-    return false;
-  }
-
-  const expression = value.replace(/^\s*\{\{\s*/, '').replace(/\s*\}\}\s*$/, '');
-  const evaluateToken = (token: string) => {
-    const trimmed = token.trim().replace(/^\$/, '');
-    if (!trimmed) {
-      return false;
-    }
-    if (trimmed.startsWith('!')) {
-      return !context[trimmed.slice(1).trim().replace(/^\$?/, '')];
-    }
-    return !!context[trimmed];
-  };
-
-  return expression.split('||').some((orPart) => orPart.split('&&').every((andPart) => evaluateToken(andPart)));
+  return evaluateFieldConfigureExpression(value, {
+    context,
+    values: context,
+    getValue: (name) => get(context, name),
+    setValue: () => {},
+  });
 }
 
 function normalizeSchemaEnum(schemaEnum: unknown, t: (key: string) => string) {
@@ -221,48 +214,6 @@ function normalizeSchemaEnum(schemaEnum: unknown, t: (key: string) => string) {
   });
 }
 
-function collectLeafProperties(properties: Record<string, any>, prefix = ''): Array<{ name: string; schema: any }> {
-  return Object.entries(properties).flatMap(([key, schema]) => {
-    const name = prefix ? `${prefix}.${key}` : key;
-    const childProperties = schema?.properties;
-    const component = schema?.['x-component'];
-
-    if (childProperties && (!component || layoutComponents.has(component))) {
-      return collectLeafProperties(childProperties, prefix);
-    }
-
-    return [{ name, schema }];
-  });
-}
-
-function isRenderableConfigureProperty(name: string, schema: any) {
-  if (commonPropertyNames.has(name)) {
-    return false;
-  }
-  if (schema?.['x-hidden'] === true) {
-    return false;
-  }
-  return !!schema?.['x-component'];
-}
-
-function applyPropertyDefaults(values: Record<string, any>, properties: Array<{ name: string; schema: any }>) {
-  properties.forEach(({ name, schema }) => {
-    if (get(values, name) !== undefined) {
-      return;
-    }
-    if (schema?.default === '{{ useNewId("f_") }}') {
-      set(values, name, randomId('f_'));
-      return;
-    }
-    if (
-      schema?.default !== undefined &&
-      (typeof schema.default !== 'string' || !schema.default.trim().startsWith('{{'))
-    ) {
-      set(values, name, cloneDeep(schema.default));
-    }
-  });
-}
-
 function applyItemDefaults(values: Record<string, any>, items: FieldConfigureItem[]) {
   items.forEach((item) => {
     if (get(values, item.name) !== undefined || item.defaultValue === undefined) {
@@ -273,15 +224,29 @@ function applyItemDefaults(values: Record<string, any>, items: FieldConfigureIte
 }
 
 function buildConfigureItemSchema(item: FieldConfigureItem) {
-  return {
-    title: item.title,
-    description: item.description,
-    required: item.required,
-    enum: item.options,
-    default: item.defaultValue,
-    'x-component': item.component,
-    'x-component-props': item.componentProps,
-  };
+  const schema: Record<string, any> = {};
+  if (item.title !== undefined) {
+    schema.title = item.title;
+  }
+  if (item.description !== undefined) {
+    schema.description = item.description;
+  }
+  if (item.required !== undefined) {
+    schema.required = item.required;
+  }
+  if (item.options !== undefined) {
+    schema.enum = item.options;
+  }
+  if (item.defaultValue !== undefined) {
+    schema.default = item.defaultValue;
+  }
+  if (item.component !== undefined) {
+    schema['x-component'] = item.component;
+  }
+  if (item.componentProps !== undefined) {
+    schema['x-component-props'] = item.componentProps;
+  }
+  return schema;
 }
 
 function createConfigureRuntimeContext(
@@ -1379,15 +1344,18 @@ function FieldConfigureItemRenderer(props: {
   const values = Form.useWatch([], props.form) || props.form.getFieldsValue(true);
   const runtimeContext = createConfigureRuntimeContext(props.form, values as Record<string, any>, props.context);
   const hidden = typeof props.item.hidden === 'function' ? props.item.hidden(runtimeContext) : props.item.hidden;
-  const disabled =
+  const rawDisabled =
     typeof props.item.disabled === 'function' ? props.item.disabled(runtimeContext) : props.item.disabled;
+  const disabled =
+    typeof rawDisabled === 'string' ? evaluateFieldConfigureExpression(rawDisabled, runtimeContext) : rawDisabled;
   const Component = props.item.Component;
   const schema = {
+    ...(props.item.schema || {}),
     ...buildConfigureItemSchema(props.item),
     'x-disabled': disabled,
   };
 
-  if (hidden) {
+  if (typeof hidden === 'string' ? evaluateFieldConfigureExpression(hidden, runtimeContext) : hidden) {
     return <FieldConfigureItemEffect context={props.context} form={props.form} item={props.item} />;
   }
 
@@ -1407,6 +1375,10 @@ function FieldConfigureItemRenderer(props: {
           title={compileLegacyTemplate(props.item.title, t)}
           tooltip={compileLegacyTemplate(props.item.description, t)}
           componentProps={props.item.componentProps}
+          mode={props.context.createOnly ? 'create' : 'edit'}
+          createOnly={props.context.createOnly}
+          editMainOnly={props.context.editMainOnly}
+          disabledJSONB={props.context.disabledJSONB}
           fieldInterface={props.fieldInterface}
         />
       </>
@@ -1479,40 +1451,22 @@ export function FieldForm(props: FieldFormProps) {
   const fieldInterfaceTitleText = compileLegacyTemplateText(fieldInterfaceOptions?.title || interfaceName || '-', t);
   const ConfigureForm = configure?.ConfigureForm || configure?.Component;
   const fieldConfigureItems = useMemo(() => configure?.items || [], [configure?.items]);
-  const fieldConfigureProperties = useMemo(() => {
-    if (!interfaceName || ConfigureForm || fieldConfigureItems.length) {
-      return [];
-    }
-    const properties = configure?.properties || fieldInterface?.getConfigureFormProperties?.(props.collection) || {};
-
-    return collectLeafProperties(properties).filter(({ name, schema }) => isRenderableConfigureProperty(name, schema));
-  }, [ConfigureForm, configure, fieldConfigureItems.length, fieldInterface, interfaceName, props.collection]);
   const [collections, setCollections] = useState<Array<Record<string, any>>>([]);
   const needsCollectionOptions = useMemo(
-    () =>
-      fieldConfigureProperties.some(
-        ({ name, schema }) =>
-          relationCollectionPropertyNames.has(name) ||
-          schema?.enum === '{{collections}}' ||
-          schema?.enum === fileCollectionEnum ||
-          schema?.['x-component'] === 'CollectionSelect' ||
-          schema?.['x-component'] === 'RemoteSelect',
-      ),
-    [fieldConfigureProperties],
-  );
-  const needsCollectionOptionsForItems = useMemo(
     () =>
       fieldConfigureItems.some(
         (item) =>
           relationCollectionPropertyNames.has(item.name) ||
+          item.schema?.enum === '{{collections}}' ||
+          item.schema?.enum === fileCollectionEnum ||
           item.component === 'CollectionSelect' ||
           item.component === 'RemoteSelect',
       ),
     [fieldConfigureItems],
   );
   const rendersStorageType = useMemo(
-    () => fieldConfigureProperties.some((property) => property.name === 'type'),
-    [fieldConfigureProperties],
+    () => fieldConfigureItems.some((item) => item.name === 'type'),
+    [fieldConfigureItems],
   );
   const initialValues = useMemo(() => {
     const values = toInitialValues(fieldInterfaceOptions, props.field);
@@ -1521,7 +1475,6 @@ export function FieldForm(props: FieldFormProps) {
         generatedFieldNameRef.current = values.name || randomId('f_');
       }
       values.name = generatedFieldNameRef.current;
-      applyPropertyDefaults(values, fieldConfigureProperties);
       applyItemDefaults(values, fieldConfigureItems);
       if ((fieldInterface?.isAssociation || configure?.isAssociation) && !get(values, 'source')) {
         set(values, 'source', props.collection.name);
@@ -1530,7 +1483,6 @@ export function FieldForm(props: FieldFormProps) {
     return values;
   }, [
     configure?.isAssociation,
-    fieldConfigureProperties,
     fieldConfigureItems,
     fieldInterface?.isAssociation,
     fieldInterfaceOptions,
@@ -1554,9 +1506,10 @@ export function FieldForm(props: FieldFormProps) {
       editMainOnly: props.mode === 'edit',
       createMainOnly: props.mode === 'create' && props.dataSourceKey === 'main',
       disabledJSONB: props.mode === 'edit',
+      isDialect: (dialect: string) => appInfo?.database?.dialect === dialect,
       primaryKeyOnly: false,
     }),
-    [props.dataSourceKey, props.mode],
+    [appInfo?.database?.dialect, props.dataSourceKey, props.mode],
   );
 
   useEffect(() => {
@@ -1590,7 +1543,7 @@ export function FieldForm(props: FieldFormProps) {
   }, [fieldConfigureContext, form, watchedValues, watchedValuesSignature]);
 
   useEffect(() => {
-    if (!needsCollectionOptions && !needsCollectionOptionsForItems) {
+    if (!needsCollectionOptions) {
       return undefined;
     }
 
@@ -1617,7 +1570,7 @@ export function FieldForm(props: FieldFormProps) {
     return () => {
       ignore = true;
     };
-  }, [ctx.api, needsCollectionOptions, needsCollectionOptionsForItems, props.dataSourceKey]);
+  }, [ctx.api, needsCollectionOptions, props.dataSourceKey]);
 
   useEffect(() => {
     if (!interfaceName && props.interfaceName) {
@@ -1641,13 +1594,6 @@ export function FieldForm(props: FieldFormProps) {
         name: nextConfigure?.name || nextFieldInterface?.name,
       };
       const nextValues = toInitialValues(nextOptions);
-      const nextProperties =
-        nextConfigure?.ConfigureForm || nextConfigure?.Component || !nextInterface
-          ? []
-          : collectLeafProperties(nextConfigure?.properties || nextFieldInterface?.properties || {}).filter(
-              ({ name, schema }) => isRenderableConfigureProperty(name, schema),
-            );
-      applyPropertyDefaults(nextValues, nextProperties);
       applyItemDefaults(nextValues, nextConfigure?.items || []);
       if ((nextFieldInterface?.isAssociation || nextConfigure?.isAssociation) && !get(nextValues, 'source')) {
         set(nextValues, 'source', props.collection.name);
@@ -1816,27 +1762,13 @@ export function FieldForm(props: FieldFormProps) {
         >
           <Input autoComplete="off" disabled={props.mode === 'edit'} />
         </Form.Item>
-        {fieldConfigureProperties.map(({ name, schema }) => (
-          <FieldConfigurePropertyItem
-            key={name}
-            name={name}
-            schema={schema}
-            components={configure?.components}
-            collection={props.collection}
-            collections={collections}
-            configureProperties={fieldConfigureProperties}
-            fieldInterface={fieldInterfaceOptions}
-            form={form}
-            context={fieldConfigureContext}
-          />
-        ))}
         {fieldConfigureItems.map((item) => (
           <FieldConfigureItemRenderer
             key={item.name}
             item={item}
             collection={props.collection}
             collections={collections}
-            configureProperties={fieldConfigureProperties}
+            configureProperties={[]}
             fieldInterface={fieldInterfaceOptions}
             form={form}
             context={fieldConfigureContext}

@@ -34,7 +34,10 @@ import { useT } from '../../locale';
 import { PluginDataSourceManagerClientV2 } from '../../plugin';
 import { compileLegacyTemplate } from '../../utils/compileLegacyTemplate';
 import { getCollectionFieldActionUrl } from './collectionFieldApi';
-import { filterFieldInterfacesByCollectionTemplate } from './collectionTemplateFieldInterfaces';
+import {
+  filterCreateFieldInterfacesByCollectionTemplate,
+  filterFieldInterfacesByCollectionTemplate,
+} from './collectionTemplateFieldInterfaces';
 import { FieldForm } from './FieldForm';
 import {
   buildSqlFieldsFromPreview,
@@ -171,18 +174,13 @@ function filterFieldInterfaceGroupsByTemplate(
     .filter((group) => group.children.length);
 }
 
-function filterCreatableFieldInterfaces(groups: FieldInterfaceGroupOption[], collection: Record<string, any>) {
-  const isViewCollection = collection.template === 'view' || collection.view;
-
+function filterCreateFieldInterfaces(groups: FieldInterfaceGroupOption[], collection: Record<string, any>, ctx: any) {
+  const plugin = ctx.app.pm.get(PluginDataSourceManagerClientV2);
+  const template = plugin?.getCollectionTemplate?.(collection.template || 'general');
   return groups
     .map((group) => ({
       ...group,
-      children: group.children.filter((fieldInterface) => {
-        if (isViewCollection) {
-          return fieldInterface.name === 'm2o';
-        }
-        return !['o2o', 'subTable', 'linkTo'].includes(fieldInterface.name);
-      }),
+      children: filterCreateFieldInterfacesByCollectionTemplate(group.children, template),
     }))
     .filter((group) => group.children.length);
 }
@@ -869,7 +867,7 @@ export default function FieldsPage(props: FieldsPageProps) {
   );
   const fieldInterfaceGroups = useMemo(
     () =>
-      filterCreatableFieldInterfaces(
+      filterCreateFieldInterfaces(
         filterFieldInterfaceGroupsByTemplate(
           allFieldInterfaceGroups,
           props.collection,
@@ -877,6 +875,7 @@ export default function FieldsPage(props: FieldsPageProps) {
           appInfo?.database?.dialect,
         ),
         props.collection,
+        ctx,
       ),
     [allFieldInterfaceGroups, appInfo?.database?.dialect, ctx, props.collection],
   );

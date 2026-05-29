@@ -45,26 +45,26 @@ export class MarkdownVditorFieldInterface extends CollectionFieldInterface {
   };
   availableTypes = ['text', 'json', 'string'];
   configure = {
-    properties: {
-      'uiSchema.x-component-props.fileCollection': {
-        type: 'string',
+    items: [
+      {
+        name: 'uiSchema.x-component-props.fileCollection',
         title: tExpr('File collection'),
-        'x-component': 'Select',
-        enum: '{{fileCollections}}',
-        'x-decorator': 'FormItem',
-        default: 'attachments',
+        component: 'Select',
+        defaultValue: 'attachments',
         description: tExpr('Used to store files uploaded in the Markdown editor (default: attachments)'),
+        schema: {
+          enum: '{{fileCollections}}',
+        },
       },
-      'uiSchema.x-component-props.toolbar': {
-        type: 'array',
+      {
+        name: 'uiSchema.x-component-props.toolbar',
         title: tExpr('Toolbar'),
-        'x-component': 'Select',
-        'x-component-props': {
+        component: 'Select',
+        componentProps: {
           mode: 'multiple',
         },
-        'x-decorator': 'FormItem',
-        default: defaultToolbar,
-        enum: [
+        defaultValue: defaultToolbar,
+        options: [
           { value: 'emoji', label: tExpr('Emoji') },
           { value: 'headings', label: tExpr('Headings') },
           { value: 'bold', label: tExpr('Bold') },
@@ -94,7 +94,7 @@ export class MarkdownVditorFieldInterface extends CollectionFieldInterface {
           { value: 'outline', label: tExpr('Outline') },
         ],
       },
-    },
+    ],
   };
 
   filterable = {

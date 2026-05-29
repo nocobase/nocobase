@@ -16,6 +16,9 @@ export type FieldConfigureComponentType =
   | 'Input.TextArea'
   | 'InputNumber'
   | 'Checkbox'
+  | 'Checkbox.Group'
+  | 'ColorPicker'
+  | 'DatePicker'
   | 'Radio.Group'
   | 'Select'
   | 'CollectionSelect'
@@ -24,7 +27,18 @@ export type FieldConfigureComponentType =
   | 'SourceKey'
   | 'ExpiresRadio'
   | 'ArrayTable'
-  | 'FieldValidation';
+  | 'FieldValidation'
+  | 'ForeignKey'
+  | 'Input.JSON'
+  | 'Markdown'
+  | 'Percent'
+  | 'RichText'
+  | 'SourceCollection'
+  | 'Space'
+  | 'ThroughCollection'
+  | 'TimePicker'
+  | 'UnixTimestamp'
+  | (string & {});
 
 export const CollectionSelect = 'CollectionSelect';
 
@@ -63,12 +77,133 @@ export interface FieldConfigureItem {
   componentProps?: Record<string, unknown>;
   defaultValue?: unknown;
   description?: ReactNode;
-  hidden?: boolean | ((context: FieldConfigureEffectContext) => boolean);
-  disabled?: boolean | ((context: FieldConfigureEffectContext) => boolean);
+  hidden?: boolean | string | ((context: FieldConfigureEffectContext) => boolean);
+  disabled?: boolean | string | ((context: FieldConfigureEffectContext) => boolean);
   options?: Array<{ label: ReactNode; value: string | number | boolean }>;
   required?: boolean;
   dependencies?: string[];
   effect?: (context: FieldConfigureEffectContext) => void;
+  schema?: Record<string, unknown>;
+}
+
+const commonConfigurePropertyNames = new Set(['name', 'uiSchema.title']);
+const propertyLayoutComponents = new Set(['Grid', 'Grid.Row', 'Grid.Col', 'div']);
+
+function getExpressionContext(context: FieldConfigureEffectContext) {
+  return {
+    ...context.context,
+    ...context.values,
+  };
+}
+
+export function evaluateFieldConfigureExpression(value: unknown, context: FieldConfigureEffectContext) {
+  if (typeof value === 'boolean') {
+    return value;
+  }
+  if (typeof value !== 'string') {
+    return false;
+  }
+
+  const expression = value.replace(/^\s*\{\{\s*/, '').replace(/\s*\}\}\s*$/, '');
+  const expressionContext = getExpressionContext(context);
+  const evaluateToken = (token: string) => {
+    const trimmed = token.trim().replace(/^\$/, '');
+    if (!trimmed) {
+      return false;
+    }
+    if (trimmed.startsWith('!')) {
+      return !evaluateToken(trimmed.slice(1).trim());
+    }
+    if (trimmed === 'true') {
+      return true;
+    }
+    if (trimmed === 'false') {
+      return false;
+    }
+    const callExpression = trimmed.match(/^([A-Za-z_$][\w$]*)\((.*)\)$/);
+    if (callExpression) {
+      const [, functionName, rawArgs] = callExpression;
+      const fn = get(expressionContext, functionName);
+      if (typeof fn !== 'function') {
+        return false;
+      }
+      const args = rawArgs
+        .split(',')
+        .map((arg) => arg.trim())
+        .filter(Boolean)
+        .map((arg) => arg.replace(/^['"]|['"]$/g, ''));
+      return !!fn(...args);
+    }
+    return !!get(expressionContext, trimmed);
+  };
+
+  return expression.split('||').some((orPart) => orPart.split('&&').every((andPart) => evaluateToken(andPart)));
+}
+
+function normalizeConfigureStateExpression(value: unknown) {
+  if (typeof value === 'string') {
+    return (context: FieldConfigureEffectContext) => evaluateFieldConfigureExpression(value, context);
+  }
+  return value as FieldConfigureItem['hidden'];
+}
+
+function normalizeConfigureHiddenExpression(schema: Record<string, any>) {
+  if (schema?.['x-hidden'] !== undefined) {
+    return normalizeConfigureStateExpression(schema['x-hidden']);
+  }
+  if (schema?.['x-visible'] !== undefined) {
+    return (context: FieldConfigureEffectContext) => !evaluateFieldConfigureExpression(schema['x-visible'], context);
+  }
+  return undefined;
+}
+
+function collectConfigureLeafProperties(
+  properties: Record<string, any>,
+  prefix = '',
+): Array<{ name: string; schema: any }> {
+  return Object.entries(properties || {}).flatMap(([key, schema]) => {
+    const name = prefix ? `${prefix}.${key}` : key;
+    const childProperties = schema?.properties;
+    const component = schema?.['x-component'];
+
+    if (childProperties && (!component || propertyLayoutComponents.has(component))) {
+      return collectConfigureLeafProperties(childProperties, prefix);
+    }
+
+    return [{ name, schema }];
+  });
+}
+
+function isConvertibleConfigureProperty(name: string, schema: Record<string, any>) {
+  if (commonConfigurePropertyNames.has(name)) {
+    return false;
+  }
+  return !!schema?.['x-component'] || schema?.default !== undefined || schema?.['x-hidden'] !== undefined;
+}
+
+export function configurePropertiesToItems(
+  properties: Record<string, any> = {},
+  options: { components?: Record<string, ComponentType<any>> } = {},
+): FieldConfigureItem[] {
+  return collectConfigureLeafProperties(properties)
+    .filter(({ name, schema }) => isConvertibleConfigureProperty(name, schema))
+    .map(({ name, schema }) => {
+      const component = schema?.['x-component'] as FieldConfigureComponentType | undefined;
+      return {
+        name,
+        title: schema?.title || schema?.['x-content'],
+        component,
+        Component: component ? options.components?.[component] : undefined,
+        componentProps: schema?.['x-component-props'],
+        defaultValue: schema?.default,
+        description: schema?.description,
+        hidden: normalizeConfigureHiddenExpression(schema),
+        disabled: normalizeConfigureStateExpression(schema?.['x-disabled']) as FieldConfigureItem['disabled'],
+        options: Array.isArray(schema?.enum) ? schema.enum : undefined,
+        required: schema?.required,
+        schema,
+      };
+    });
 }
 
 const DATE_FORMAT_OPTIONS = [

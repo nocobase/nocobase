@@ -38,22 +38,20 @@ export class ChinaRegionFieldInterface extends CollectionFieldInterface {
   }
 
   configure = {
-    properties: {
-      'uiSchema.x-component-props.maxLevel': {
-        type: 'number',
-        'x-component': 'Radio.Group',
-        'x-decorator': 'FormItem',
+    items: [
+      {
+        name: 'uiSchema.x-component-props.maxLevel',
         title: '{{t("Select level")}}',
-        default: 3,
-        enum: CHINA_REGION_LEVEL_OPTIONS,
+        component: 'Radio.Group',
+        defaultValue: 3,
+        options: CHINA_REGION_LEVEL_OPTIONS,
       },
-      'uiSchema.x-component-props.changeOnSelectLast': {
-        type: 'boolean',
-        'x-component': 'Checkbox',
-        'x-content': '{{t("Must select to the last level")}}',
-        'x-decorator': 'FormItem',
+      {
+        name: 'uiSchema.x-component-props.changeOnSelectLast',
+        title: '{{t("Must select to the last level")}}',
+        component: 'Checkbox',
       },
-    },
+    ],
   };
 
   filterable = {

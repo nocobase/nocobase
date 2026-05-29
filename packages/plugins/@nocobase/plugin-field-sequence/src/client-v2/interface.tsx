@@ -11,27 +11,6 @@ import { CollectionFieldInterface } from '@nocobase/client-v2';
 import { SequenceRulesConfigureField } from './SequenceRulesConfigureField';
 import { tExpr } from './locale';
 
-const defaultProps = {
-  'uiSchema.title': {
-    type: 'string',
-    title: '{{t("Field display name")}}',
-    required: true,
-    'x-decorator': 'FormItem',
-    'x-component': 'Input',
-  },
-  name: {
-    type: 'string',
-    title: '{{t("Field name")}}',
-    required: true,
-    'x-disabled': '{{ !createOnly }}',
-    'x-decorator': 'FormItem',
-    'x-component': 'Input',
-    'x-validator': 'uid',
-    description:
-      "{{t('Randomly generated and can be modified. Support letters, numbers and underscores, must start with an letter.')}}",
-  },
-};
-
 const sequenceRuleTypes = [
   {
     value: 'string',
@@ -122,42 +101,33 @@ export class SequenceFieldInterface extends CollectionFieldInterface {
   };
   titleUsable = true;
   configure = {
-    components: {
-      SequenceRules: SequenceRulesConfigureField,
-    },
-    properties: {
-      ...defaultProps,
-      unique: {
-        type: 'boolean',
-        'x-content': '{{t("Unique")}}',
-        'x-decorator': 'FormItem',
-        'x-component': 'Checkbox',
-        'x-disabled': '{{ !createMainOnly || primaryKeyOnly }}',
+    items: [
+      {
+        name: 'unique',
+        title: '{{t("Unique")}}',
+        component: 'Checkbox',
       },
-      patterns: {
-        type: 'array',
+      {
+        name: 'patterns',
         title: tExpr('Sequence rules'),
         required: true,
-        'x-decorator': 'FormItem',
-        'x-component': 'SequenceRules',
-        'x-component-props': {
+        Component: SequenceRulesConfigureField,
+        componentProps: {
           ruleTypes: sequenceRuleTypes,
         },
-        default: [{ type: 'integer', options: { digits: 4, start: 1 } }],
+        defaultValue: [{ type: 'integer', options: { digits: 4, start: 1 } }],
       },
-      inputable: {
-        type: 'boolean',
+      {
+        name: 'inputable',
         title: tExpr('Inputable'),
-        'x-decorator': 'FormItem',
-        'x-component': 'Checkbox',
+        component: 'Checkbox',
       },
-      match: {
-        type: 'boolean',
+      {
+        name: 'match',
         title: tExpr('Match rules'),
-        'x-decorator': 'FormItem',
-        'x-component': 'Checkbox',
-        'x-hidden': '{{ !inputable }}',
+        component: 'Checkbox',
+        hidden: ({ values }) => !values.inputable,
       },
-    },
+    ],
   };
 }

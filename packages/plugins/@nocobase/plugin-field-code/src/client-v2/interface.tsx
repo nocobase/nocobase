@@ -33,23 +33,22 @@ export class CodeFieldInterface extends CollectionFieldInterface {
   };
   titleUsable = false;
   configure = {
-    properties: {
-      'uiSchema.x-component-props.language': {
-        type: 'string',
+    items: [
+      {
+        name: 'uiSchema.x-component-props.language',
         title: `{{t("Programming language", { ns: "${NAMESPACE}" })}}`,
-        'x-decorator': 'FormItem',
-        'x-component': 'Select',
-        'x-component-props': {
+        component: 'Select',
+        componentProps: {
           showSearch: true,
           allowClear: true,
           placeholder: `{{t("Choose language", { ns: "${NAMESPACE}" })}}`,
         },
-        enum: LANGUAGES_LIST.map((item) => ({
+        options: LANGUAGES_LIST.map((item) => ({
           label: item.label,
           value: item.value,
         })),
-        default: 'javascript',
+        defaultValue: 'javascript',
       },
-    },
+    ],
   };
 }

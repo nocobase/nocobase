@@ -14,6 +14,7 @@ import {
   type FieldFilterOperator,
   type FieldFilterOperatorReference,
 } from '../collection-manager/filter-operators';
+import { configurePropertiesToItems } from '../collection-manager/field-configure';
 import {
   addFieldValidationConfiguresToGroup,
   fieldValidationConfigureRegistry,
@@ -94,7 +95,7 @@ export class CollectionFieldInterfaceManager {
             }
             instance.addOperator?.(item.data);
           });
-          this.actionList[instance.name] = undefined;
+          delete this.actionList[instance.name];
         }
         return acc;
       },
@@ -271,6 +272,7 @@ export class CollectionFieldInterfaceManager {
     if (!fieldInterface) {
       return undefined;
     }
+    const properties = fieldInterface.getConfigureFormProperties?.(collectionInfo) || fieldInterface.properties || {};
     const baseConfigure: FieldInterfaceConfigure = {
       name: fieldInterface.name,
       title: fieldInterface.title,
@@ -281,8 +283,8 @@ export class CollectionFieldInterfaceManager {
       isAssociation: fieldInterface.isAssociation,
       supportDataSourceType: fieldInterface.supportDataSourceType,
       notSupportDataSourceType: fieldInterface.notSupportDataSourceType,
-      properties: fieldInterface.getConfigureFormProperties?.(collectionInfo) || fieldInterface.properties || {},
-      items: fieldInterface.configure?.items,
+      properties,
+      items: configurePropertiesToItems(properties, { components: fieldInterface.configure?.components }),
       getConfigureFormProperties: fieldInterface.getConfigureFormProperties?.bind(fieldInterface),
     };
 
@@ -349,11 +351,21 @@ export class CollectionFieldInterfaceManager {
         ...(base.properties || {}),
         ...(override.properties || {}),
       },
-      items: override.items || base.items,
+      items: this.mergeFieldConfigureItems(base.items, override.items),
       components: {
         ...(base.components || {}),
         ...(override.components || {}),
       },
     };
+  }
+
+  protected mergeFieldConfigureItems(
+    baseItems: FieldInterfaceConfigure['items'] = [],
+    overrideItems: FieldInterfaceConfigure['items'] = [],
+  ) {
+    const itemMap = new Map<string, NonNullable<FieldInterfaceConfigure['items']>[number]>();
+    baseItems.forEach((item) => itemMap.set(item.name, item));
+    overrideItems.forEach((item) => itemMap.set(item.name, item));
+    return Array.from(itemMap.values());
   }
 }

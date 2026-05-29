@@ -18,6 +18,13 @@ import {
   SqlSourceCollectionsConfigureItem,
   SqlStatementConfigureItem,
 } from './pages/components/SqlCollectionConfigure';
+import {
+  normalizeViewCollectionSubmitValues,
+  ViewDatabaseConfigureItem,
+  ViewFieldsConfigureItem,
+  ViewPreviewConfigureItem,
+  ViewSourcesConfigureItem,
+} from './pages/components/ViewCollectionConfigure';
 import { syncDataSourcesToRuntime } from './runtime';
 
 export interface DataSourceSettingsFormProps {
@@ -96,6 +103,10 @@ export interface CollectionTemplateOptions {
   fieldInterfaces?: {
     include?: Array<string | { interface?: string; name?: string; targetScope?: Record<string, unknown> }>;
     exclude?: string[];
+    create?: {
+      include?: Array<string | { interface?: string; name?: string; targetScope?: Record<string, unknown> }>;
+      exclude?: string[];
+    };
   };
   /**
    * @deprecated Use fieldInterfaces instead.
@@ -103,6 +114,10 @@ export interface CollectionTemplateOptions {
   availableFieldInterfaces?: {
     include?: Array<string | { interface?: string; name?: string; targetScope?: Record<string, unknown> }>;
     exclude?: string[];
+    create?: {
+      include?: Array<string | { interface?: string; name?: string; targetScope?: Record<string, unknown> }>;
+      exclude?: string[];
+    };
   };
   presetFields?: {
     disabled?: boolean;
@@ -556,6 +571,44 @@ export class PluginDataSourceManagerClientV2 extends Plugin<any, Application> {
       capabilities: {
         recordUniqueKey: true,
         simplePaginate: true,
+      },
+      presetFields: {
+        disabled: true,
+      },
+      fieldInterfaces: {
+        create: {
+          include: ['m2o'],
+        },
+      },
+      configure: {
+        items: [
+          {
+            name: 'databaseView',
+            Component: ViewDatabaseConfigureItem,
+            required: true,
+          },
+          {
+            name: 'sources',
+            Component: ViewSourcesConfigureItem,
+          },
+          {
+            name: 'fields',
+            Component: ViewFieldsConfigureItem,
+            required: true,
+            hidden: ({ mode }) => mode === 'edit',
+          },
+          {
+            name: 'preview',
+            Component: ViewPreviewConfigureItem,
+            hidden: ({ mode }) => mode === 'edit',
+          },
+          {
+            name: 'writableView',
+            label: '{{t("Allow add new, update and delete actions")}}',
+            component: 'Checkbox',
+          },
+        ],
+        transformSubmitValues: normalizeViewCollectionSubmitValues,
       },
     });
   }
