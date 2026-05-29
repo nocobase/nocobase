@@ -39,7 +39,9 @@ const InnerInboxContent = () => {
     if (lastChannel?.latestMsgReceiveTimestamp) {
       filter.latestMsgReceiveTimestamp = { $lt: lastChannel.latestMsgReceiveTimestamp };
     }
-    fetchChannels({ filter, limit: 30 });
+    fetchChannels({ filter, limit: 30 }).catch((error) => {
+      console.error('Failed to load more channels', error);
+    });
   }, [channels]);
 
   const onSelectChannel = useMemoizedFn((name: string) => {
@@ -47,9 +49,10 @@ const InnerInboxContent = () => {
   });
 
   useEffect(() => {
-    if (visible) {
-      fetchChannels({ limit: 30 });
-    }
+    if (!visible) return;
+    fetchChannels({ limit: 30 }).catch((error) => {
+      console.error('Failed to fetch channels on inbox open', error);
+    });
   }, [visible]);
 
   const loadMoreNode = showChannelLoadingMoreObs.value ? (

@@ -26,9 +26,13 @@ const InnerFilterTab = () => {
     [t],
   );
 
-  const onChange = useMemoizedFn((key: string) => {
+  const onChange = useMemoizedFn(async (key: string) => {
     channelStatusFilterObs.value = key as ChannelStatus;
-    fetchChannels();
+    try {
+      await fetchChannels();
+    } catch (error) {
+      console.error('Failed to fetch channels for status filter', error);
+    }
   });
 
   return <Tabs activeKey={channelStatusFilterObs.value} items={items} onChange={onChange} />;

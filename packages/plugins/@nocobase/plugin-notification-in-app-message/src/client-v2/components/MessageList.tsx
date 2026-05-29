@@ -53,11 +53,18 @@ const InnerMessageList = () => {
 
   const basename = (ctx.app?.router?.basename ?? '').replace(/\/+$/, '');
 
-  const onItemClicked = useMemoizedFn((message: Message) => {
-    updateMessage({
-      filterByTk: message.id,
-      values: { status: 'read' },
-    });
+  const onItemClicked = useMemoizedFn(async (message: Message) => {
+    // Await the read-status write *before* navigation — when the URL is an
+    // external (non-router) target, `window.location.href = ...` aborts any
+    // in-flight fetch, which would silently drop the "mark as read" call.
+    try {
+      await updateMessage({
+        filterByTk: message.id,
+        values: { status: 'read' },
+      });
+    } catch (error) {
+      console.error('Failed to mark message as read', error);
+    }
     if (message.options?.url) {
       inboxVisibleObs.value = false;
       const url = String(message.options.url);
@@ -69,17 +76,24 @@ const InnerMessageList = () => {
     }
   });
 
-  const onMarkAllReadClick = useMemoizedFn(() => {
-    if (selectedChannelName) {
-      markAllMessagesAsRead(selectedChannelName);
+  const onMarkAllReadClick = useMemoizedFn(async () => {
+    if (!selectedChannelName) return;
+    try {
+      await markAllMessagesAsRead(selectedChannelName);
+    } catch (error) {
+      console.error('Failed to mark all messages as read', error);
     }
   });
 
-  const onToggleStatus = useMemoizedFn((message: Message) => {
-    updateMessage({
-      filterByTk: message.id,
-      values: { status: message.status === 'read' ? 'unread' : 'read' },
-    });
+  const onToggleStatus = useMemoizedFn(async (message: Message) => {
+    try {
+      await updateMessage({
+        filterByTk: message.id,
+        values: { status: message.status === 'read' ? 'unread' : 'read' },
+      });
+    } catch (error) {
+      console.error('Failed to toggle message status', error);
+    }
   });
 
   const onLoadMessagesMore = useCallback(() => {
@@ -89,7 +103,9 @@ const InnerMessageList = () => {
     if (lastMessage) {
       filter.receiveTimestamp = { $lt: lastMessage.receiveTimestamp };
     }
-    fetchMessages({ filter, limit: 30 });
+    fetchMessages({ filter, limit: 30 }).catch((error) => {
+      console.error('Failed to load more messages', error);
+    });
   }, [messages, selectedChannelName]);
 
   if (!selectedChannelName) return null;

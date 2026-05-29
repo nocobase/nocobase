@@ -7,9 +7,13 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export type ApiClient = {
-  request: (config: { url?: string; resource?: string; action?: string; method: string; params?: any }) => Promise<any>;
-};
+import type { APIClient } from '@nocobase/client-v2';
+
+// Reuse the client-v2 `APIClient` shape directly — the caller passes
+// `this.app.apiClient` from `Plugin.load()`, which IS an `APIClient`
+// instance. Keep the local `ApiClient` alias so call sites read naturally
+// and the rest of this module isn't tied to the import path.
+export type ApiClient = APIClient;
 
 let apiClient: ApiClient | null = null;
 

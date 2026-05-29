@@ -88,8 +88,12 @@ const InboxButton = observer(
       const detail = (event as CustomEvent<IncomingMessage>).detail;
       if (!detail) return;
       messageMapObs.value[detail.id] = detail as any;
-      fetchChannels({ filter: { name: detail.channelName, status: 'all' } });
-      updateUnreadMsgsCount();
+      fetchChannels({ filter: { name: detail.channelName, status: 'all' } }).catch((error) => {
+        console.error('Failed to refresh channel after message created', error);
+      });
+      updateUnreadMsgsCount().catch((error) => {
+        console.error('Failed to update unread count after message created', error);
+      });
 
       notification.info({
         message: (
@@ -118,12 +122,18 @@ const InboxButton = observer(
       const detail = (event as CustomEvent<IncomingMessage>).detail;
       if (!detail) return;
       messageMapObs.value[detail.id] = detail as any;
-      fetchChannels({ filter: { name: detail.channelName } });
-      updateUnreadMsgsCount();
+      fetchChannels({ filter: { name: detail.channelName } }).catch((error) => {
+        console.error('Failed to refresh channel after message updated', error);
+      });
+      updateUnreadMsgsCount().catch((error) => {
+        console.error('Failed to update unread count after message updated', error);
+      });
     });
 
     useEffect(() => {
-      updateUnreadMsgsCount();
+      updateUnreadMsgsCount().catch((error) => {
+        console.error('Failed to initialize unread count', error);
+      });
     }, []);
 
     useEffect(() => {
