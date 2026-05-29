@@ -298,11 +298,8 @@ export const TaskGanttContent: React.FC<TaskGanttContentProps> = ({
     } else if (action === 'dblclick') {
       !!onDoubleClick && onDoubleClick(task);
     } else if (action === 'click') {
-      const targetElement = event.target as HTMLElement; // 将 event.target 转换为 HTMLElement 类型
-      if (targetElement.tagName === 'rect') {
-        setGanttEvent({ action: '' });
-        !!onClick && onClick(task);
-      }
+      setGanttEvent({ action: '' });
+      !!onClick && onClick(task);
     }
     // Change task event start
     else if (action === 'move') {

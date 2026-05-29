@@ -10,6 +10,7 @@
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import React, { useState } from 'react';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
+import { FlowEngine, FlowEngineProvider } from '@nocobase/flow-engine';
 import type { BarTask } from '../../../types/bar-task';
 import type { GanttEvent } from '../../../types/gantt-task-actions';
 import { TaskGanttContent } from '../task-gantt-content';
@@ -44,7 +45,12 @@ const createTask = (id: string, name: string, x1: number): BarTask =>
 
 const tasks = [createTask('1', 'Task 1', 0), createTask('2', 'Task 2', 120)];
 
-const Harness = () => {
+const renderHarness = (node: React.ReactElement) => {
+  const engine = new FlowEngine();
+  return render(<FlowEngineProvider engine={engine}>{node}</FlowEngineProvider>);
+};
+
+const Harness = ({ onClick = vi.fn() }: { onClick?: (task: BarTask) => void }) => {
   const [ganttEvent, setGanttEvent] = useState<GanttEvent>({ action: '' });
 
   return (
@@ -68,6 +74,7 @@ const Harness = () => {
           setGanttEvent={setGanttEvent}
           setFailedTask={vi.fn()}
           setSelectedTask={vi.fn()}
+          onClick={onClick}
         />
       </svg>
       <div data-testid="hovered-task-id">{ganttEvent.changedTask?.id || ''}</div>
@@ -88,7 +95,7 @@ describe('TaskGanttContent tooltip hover', () => {
   });
 
   test('does not clear the second task tooltip when leaving the first task quickly', () => {
-    render(<Harness />);
+    renderHarness(<Harness />);
 
     fireEvent.mouseEnter(screen.getByText('Task 1').parentElement as Element);
     expect(screen.getByTestId('hovered-task-id')).toHaveTextContent('1');
@@ -104,5 +111,16 @@ describe('TaskGanttContent tooltip hover', () => {
 
     expect(screen.getByTestId('hovered-task-id')).toHaveTextContent('2');
     expect(screen.getByTestId('hover-action')).toHaveTextContent('mouseenter');
+  });
+
+  test('opens the task when clicking the task label text', () => {
+    const handleClick = vi.fn();
+
+    renderHarness(<Harness onClick={handleClick} />);
+
+    fireEvent.click(screen.getByText('Task 1'));
+
+    expect(handleClick).toHaveBeenCalledTimes(1);
+    expect(handleClick).toHaveBeenCalledWith(expect.objectContaining({ id: '1', name: 'Task 1' }));
   });
 });
