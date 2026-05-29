@@ -7,10 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { ISchema } from '@formily/react';
 import { uid } from '@formily/shared';
 import { CollectionFieldInterface } from '../../collection-field-interface/CollectionFieldInterface';
-import { getUniqueKeyFromCollection } from './utils';
 import { defaultProps, relationshipType, reverseFieldProperties } from './properties';
 
 export class M2MFieldInterface extends CollectionFieldInterface {
@@ -56,24 +54,6 @@ export class M2MFieldInterface extends CollectionFieldInterface {
   };
   availableTypes = ['belongsToMany'];
   validationType = 'object';
-  schemaInitialize(schema: ISchema, { field, readPretty, block, targetCollection }) {
-    // schema['type'] = 'array';
-    schema['x-component-props'] = schema['x-component-props'] || {};
-    schema['x-component-props'].fieldNames = schema['x-component-props'].fieldNames || {
-      value: getUniqueKeyFromCollection(targetCollection),
-    };
-    schema['x-component-props'].fieldNames.label =
-      schema['x-component-props'].fieldNames?.label ||
-      targetCollection?.titleField ||
-      getUniqueKeyFromCollection(targetCollection);
-
-    if (['Table', 'Kanban'].includes(block)) {
-      schema['x-component-props'] = schema['x-component-props'] || {};
-      schema['x-component-props']['ellipsis'] = true;
-      // 预览文件时需要的参数
-      schema['x-component-props']['size'] = 'small';
-    }
-  }
   initialize(values: any) {
     if (values.type === 'belongsToMany') {
       if (!values.through) {
@@ -142,7 +122,6 @@ export class M2MFieldInterface extends CollectionFieldInterface {
                   type: 'string',
                   title: '{{t("Target collection")}}',
                   required: true,
-                  'x-reactions': ['{{useAsyncDataSource(loadCollections)}}'],
                   'x-decorator': 'FormItem',
                   'x-component': 'Select',
                   'x-disabled': '{{ !createOnly }}',

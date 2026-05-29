@@ -7,7 +7,18 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export const string = [
+export type FieldFilterOperator<TMeta = unknown> = {
+  label: string;
+  value: string;
+  selected?: boolean;
+  noValue?: boolean;
+  schema?: Record<string, unknown>;
+  onlyFilterAction?: boolean;
+  visible?: (meta: TMeta) => boolean;
+  [key: string]: unknown;
+};
+
+export const string: FieldFilterOperator[] = [
   { label: '{{t("contains")}}', value: '$includes', selected: true },
   { label: '{{t("does not contain")}}', value: '$notIncludes' },
   { label: '{{t("is")}}', value: '$eq' },
@@ -16,7 +27,7 @@ export const string = [
   { label: '{{t("is not empty")}}', value: '$notEmpty', noValue: true },
 ];
 
-export const array = [
+export const array: FieldFilterOperator[] = [
   {
     label: '{{t("is")}}',
     value: '$match',
@@ -54,12 +65,12 @@ export const array = [
   { label: '{{t("is not empty")}}', value: '$notEmpty', noValue: true },
 ];
 
-export const object = [
+export const object: FieldFilterOperator[] = [
   { label: '{{t("is")}}', value: '$eq', selected: true },
   { label: '{{t("is not")}}', value: '$ne' },
 ];
 
-export const datetime = [
+export const datetime: FieldFilterOperator[] = [
   {
     label: "{{ t('is') }}",
     value: '$dateOn',
@@ -70,7 +81,7 @@ export const datetime = [
         isRange: false,
       },
     },
-    onlyFilterAction: true, //schema 仅在Filter.Action生效，筛选表单中不生效
+    onlyFilterAction: true,
   },
   {
     label: "{{ t('is not') }}",
@@ -141,7 +152,7 @@ export const datetime = [
   { label: "{{ t('is not empty') }}", value: '$notEmpty', noValue: true },
 ];
 
-export const number = [
+export const number: FieldFilterOperator[] = [
   { label: '{{t("=")}}', value: '$eq', selected: true },
   { label: '{{t("≠")}}', value: '$ne' },
   { label: '{{t(">")}}', value: '$gt' },
@@ -152,14 +163,14 @@ export const number = [
   { label: '{{t("is not empty")}}', value: '$notEmpty', noValue: true },
 ];
 
-export const id = [
+export const id: FieldFilterOperator[] = [
   { label: '{{t("is")}}', value: '$eq', selected: true },
   { label: '{{t("is not")}}', value: '$ne' },
   { label: '{{t("exists")}}', value: '$exists', noValue: true },
   { label: '{{t("not exists")}}', value: '$notExists', noValue: true },
 ];
 
-export const enumType = [
+export const enumType: FieldFilterOperator[] = [
   {
     label: '{{t("is")}}',
     value: '$eq',
@@ -191,14 +202,14 @@ export const enumType = [
   { label: '{{t("is not empty")}}', value: '$notEmpty', noValue: true },
 ];
 
-export const time = [
+export const time: FieldFilterOperator[] = [
   { label: '{{t("is")}}', value: '$eq', selected: true },
   { label: '{{t("is not")}}', value: '$neq' },
   { label: '{{t("is empty")}}', value: '$empty', noValue: true },
   { label: '{{t("is not empty")}}', value: '$notEmpty', noValue: true },
 ];
 
-export const boolean = [
+export const boolean: FieldFilterOperator[] = [
   {
     label: '{{t("Yes")}}',
     value: '$isTruly',
@@ -246,7 +257,7 @@ export const boolean = [
   { label: "{{ t('is not empty') }}", value: '$notEmpty', noValue: true },
 ];
 
-export const tableoid = [
+export const tableoid: FieldFilterOperator[] = [
   {
     label: '{{t("is any of")}}',
     value: '$childIn',
@@ -265,7 +276,7 @@ export const tableoid = [
   },
 ];
 
-export const collection = [
+export const collection: FieldFilterOperator[] = [
   {
     label: '{{t("is")}}',
     value: '$eq',
@@ -297,7 +308,7 @@ export const collection = [
   { label: '{{t("is not empty")}}', value: '$notEmpty', noValue: true },
 ];
 
-export const bigField = [
+export const bigField: FieldFilterOperator[] = [
   {
     label: '{{t("contains")}}',
     value: '$includes',

@@ -7,10 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { ISchema } from '@formily/react';
-import { cloneDeep } from 'lodash';
 import { CollectionFieldInterface } from '../../collection-field-interface/CollectionFieldInterface';
-import { defaultProps, recordPickerViewer } from './properties';
+import { defaultProps } from './properties';
 
 export class UpdatedByFieldInterface extends CollectionFieldInterface {
   name = 'updatedBy';
@@ -66,14 +64,5 @@ export class UpdatedByFieldInterface extends CollectionFieldInterface {
     //   },
     // ],
   };
-  schemaInitialize(schema: ISchema, { block }) {
-    schema['properties'] = {
-      viewer: cloneDeep(recordPickerViewer),
-    };
-    if (['Table', 'Kanban'].includes(block)) {
-      schema['x-component-props'] = schema['x-component-props'] || {};
-      schema['x-component-props']['ellipsis'] = true;
-    }
-  }
   description = '{{t("Store the last update user of each record")}}';
 }

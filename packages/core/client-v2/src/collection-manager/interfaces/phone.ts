@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { defaultProps, operators, unique } from './properties';
+import { defaultProps, unique } from './properties';
 import { CollectionFieldInterface } from '../../collection-field-interface/CollectionFieldInterface';
 
 export class PhoneFieldInterface extends CollectionFieldInterface {
@@ -37,7 +37,7 @@ export class PhoneFieldInterface extends CollectionFieldInterface {
     unique,
   };
   filterable = {
-    operators: operators.string,
+    operators: 'string',
   };
   titleUsable = true;
 }
