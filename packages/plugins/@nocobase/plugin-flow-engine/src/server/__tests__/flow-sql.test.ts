@@ -7,7 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { MockDatabase, MockServer, createMockServer } from '@nocobase/test';
+import { MockDatabase, MockServer } from '@nocobase/test';
+import { createFlowEngineMockServer } from './test-utils';
 
 describe.skipIf(() => {
   return process.env.DB_DIALECT !== 'sqlite';
@@ -17,7 +18,7 @@ describe.skipIf(() => {
   let agent: any;
 
   beforeEach(async () => {
-    app = await createMockServer({
+    app = await createFlowEngineMockServer({
       plugins: ['flow-engine'],
     });
     db = app.db;

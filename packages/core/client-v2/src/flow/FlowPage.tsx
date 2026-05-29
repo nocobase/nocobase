@@ -7,15 +7,33 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { FlowModelRenderer, useFlowEngine, useFlowModelById, useFlowViewContext } from '@nocobase/flow-engine';
-import type { FlowModel } from '@nocobase/flow-engine';
+import {
+  FlowModelRenderer,
+  isInheritedFrom,
+  useFlowEngine,
+  useFlowModelById,
+  useFlowViewContext,
+} from '@nocobase/flow-engine';
+import type { FlowModel, FlowModelRendererProps, ModelConstructor } from '@nocobase/flow-engine';
 import { useRequest } from 'ahooks';
 import React from 'react';
 import FlowRoute from './components/FlowRoute';
 import { SkeletonFallback } from './components/SkeletonFallback';
+import { ChildPageModel } from './models';
 
-function InternalFlowPage({ uid, ...props }) {
+const defaultPageFlowSettings: FlowModelRendererProps['showFlowSettings'] = {
+  showBackground: false,
+  showBorder: false,
+};
+
+function InternalFlowPage({
+  uid,
+  showFlowSettings,
+  ...props
+}: { uid: string; showFlowSettings?: FlowModelRendererProps['showFlowSettings'] } & Record<string, unknown>) {
   const model = useFlowModelById(uid);
+  const resolvedShowFlowSettings = showFlowSettings ?? model?.props?.showFlowSettings ?? defaultPageFlowSettings;
+
   return (
     <FlowModelRenderer
       model={model}
@@ -25,7 +43,7 @@ function InternalFlowPage({ uid, ...props }) {
         />
       }
       hideRemoveInSettings
-      showFlowSettings={{ showBackground: false, showBorder: false }}
+      showFlowSettings={resolvedShowFlowSettings}
       {...props}
     />
   );
@@ -36,14 +54,21 @@ type FlowPageProps = {
   parentId?: string;
   onModelLoaded?: (uid: string, model: FlowModel) => void;
   defaultTabTitle?: string;
+  showFlowSettings?: FlowModelRendererProps['showFlowSettings'];
 };
 
 export const FlowPage = React.memo((props: FlowPageProps & Record<string, unknown>) => {
   const { pageModelClass = 'ChildPageModel', parentId, onModelLoaded, defaultTabTitle, ...rest } = props;
   const flowEngine = useFlowEngine();
   const ctx = useFlowViewContext();
-  const { loading, data } = useRequest(
+  const { loading, data, error } = useRequest(
     async () => {
+      const ModelClass = await flowEngine.getModelClassAsync(pageModelClass);
+      if (!ModelClass) {
+        throw new Error(`[NocoBase] Page model class '${pageModelClass}' is not registered.`);
+      }
+      const shouldInjectDefaultChildTab =
+        ModelClass === ChildPageModel || isInheritedFrom(ModelClass as ModelConstructor, ChildPageModel);
       const options = {
         async: true,
         parentId,
@@ -51,7 +76,7 @@ export const FlowPage = React.memo((props: FlowPageProps & Record<string, unknow
         subType: 'object',
         use: pageModelClass,
       };
-      if (pageModelClass === 'ChildPageModel') {
+      if (shouldInjectDefaultChildTab) {
         const tabTitle = defaultTabTitle || flowEngine.translate?.('Details');
         options['subModels'] = {
           tabs: [
@@ -86,9 +111,12 @@ export const FlowPage = React.memo((props: FlowPageProps & Record<string, unknow
       return data;
     },
     {
-      refreshDeps: [parentId],
+      refreshDeps: [parentId, pageModelClass, defaultTabTitle],
     },
   );
+  if (error) {
+    throw error;
+  }
   if (loading || !data?.uid) {
     return <SkeletonFallback style={{ margin: ctx?.isMobileLayout ? 8 : ctx?.themeToken.marginBlock }} />;
   }

@@ -44,6 +44,63 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
+append_repo_specs() {
+  local repos_json="${1:-}"
+
+  if [[ -z "$repos_json" ]]; then
+    return 0
+  fi
+
+  echo "$repos_json" | jq -r '.[]' | while read -r repo; do
+    [[ -n "$repo" ]] || continue
+    echo "$repo|./packages/pro-plugins/@nocobase/$repo"
+  done
+}
+
+list_release_repos() {
+  echo "nocobase|."
+  echo "pro-plugins|./packages/pro-plugins"
+  append_repo_specs "${PRO_PLUGIN_REPOS:-}"
+  append_repo_specs "${CUSTOM_PRO_PLUGIN_REPOS:-}"
+}
+
+check_release_tag_state() {
+  local version="$1"
+  local tag="v${version}"
+  local -a existing=()
+  local -a missing=()
+  local repo_name
+  local repo_path
+
+  while IFS='|' read -r repo_name repo_path; do
+    [[ -n "$repo_name" ]] || continue
+
+    if git -C "$repo_path" rev-parse -q --verify "refs/tags/$tag" >/dev/null; then
+      existing+=("$repo_name")
+    else
+      missing+=("$repo_name")
+    fi
+  done < <(list_release_repos)
+
+  if [[ ${#existing[@]} -eq 0 ]]; then
+    echo "Release tag $tag does not exist in any repo yet."
+    return 0
+  fi
+
+  if [[ ${#missing[@]} -eq 0 ]]; then
+    echo "Release tag $tag already exists in all repos. Treating this run as an idempotent no-op."
+    printf ' - %s\n' "${existing[@]}"
+    return 2
+  fi
+
+  echo "ERROR: Release tag $tag already exists in some repos but is missing in others." >&2
+  echo "Existing tag repos:" >&2
+  printf ' - %s\n' "${existing[@]}" >&2
+  echo "Missing tag repos:" >&2
+  printf ' - %s\n' "${missing[@]}" >&2
+  return 3
+}
+
 if [[ -n "$EXPLICIT_VERSION" ]]; then
   new_version="$EXPLICIT_VERSION"
 elif [[ "$branch" == "main" || "$branch" == "v1" ]]; then
@@ -84,6 +141,21 @@ if [[ "$ONLY_VERSION" == "true" ]]; then
   exit 0
 fi
 
+tag_state=0
+if check_release_tag_state "$new_version"; then
+  tag_state=0
+else
+  tag_state=$?
+fi
+
+if [[ "$tag_state" -eq 2 ]]; then
+  exit 0
+fi
+
+if [[ "$tag_state" -eq 3 ]]; then
+  exit 1
+fi
+
 if [[ "$DRY_RUN" == "true" ]]; then
   echo "DRY_RUN: computed version = $new_version"
   echo "DRY_RUN: would tag v$new_version in:"
@@ -116,6 +188,16 @@ commit_and_tag_if_changed() {
   local msg="chore(versions): 😊 publish v${version}"
   local tag="v${version}"
 
+  if git rev-parse -q --verify "refs/tags/$tag" >/dev/null; then
+    if ! git diff --cached --quiet; then
+      echo "ERROR: Refusing to create an untagged release commit because $tag already exists in $(pwd)." >&2
+      return 1
+    fi
+
+    echo "Skip commit+tag (tag already exists): $(pwd)"
+    return 0
+  fi
+
   if ! git diff --cached --quiet; then
     git commit -m "$msg"
     git tag "$tag"
@@ -144,4 +226,3 @@ cd ../../
 git add .
 commit_and_tag_if_changed "$VERSION"
 # git push --atomic origin main v$VERSION
-

@@ -243,6 +243,10 @@ describe('app', () => {
     });
     await renderApp(app);
     expect(await screen.findByText('Hello Basename Route')).toBeInTheDocument();
+    expect(app.router.matchRoutes('/v2/demo/app-info')?.some((match) => match.route.path === '/demo/app-info')).toBe(
+      true,
+    );
+    expect(app.router.matchRoutes('/demo/app-info')?.some((match) => match.route.path === '/demo/app-info')).toBe(true);
   });
 
   it('should support plugin settings componentLoader lazy functionality', async () => {

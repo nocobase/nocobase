@@ -747,18 +747,6 @@ AdminLayoutMenuItemModel.registerFlow({
         });
       },
     },
-    hidden: {
-      title: 'Hidden',
-      uiMode: { type: 'switch', key: 'hideInMenu' },
-      defaultParams: async (ctx: FlowSettingsContext<AdminLayoutMenuItemModel>) => ({
-        hideInMenu: !!ctx.model.getRoute()?.hideInMenu,
-      }),
-      beforeParamsSave: async (ctx: FlowSettingsContext<AdminLayoutMenuItemModel>, params) => {
-        await ctx.model.updateMenuRoute({
-          hideInMenu: !!params.hideInMenu,
-        });
-      },
-    },
     linkageRules: {
       use: 'menuLinkageRules',
       hideInSettings: async (ctx: FlowSettingsContext<AdminLayoutMenuItemModel>) => ctx.model.isCreationSession(),

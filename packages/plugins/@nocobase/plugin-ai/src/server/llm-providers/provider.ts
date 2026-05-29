@@ -105,7 +105,13 @@ export abstract class LLMProvider {
     const builder = this.getModelRequestBuilder(this.modelOptions?.model);
     const request = builder?.({ context, options }) || { context, options };
     const chain = this.prepareChain(request.context);
-    const { modelKwargs, modelRequestParams, options: requestOptions, ...restOptions } = request.options || {};
+    const requestInvokeOptions = options?.signal
+      ? {
+          ...(request.options || {}),
+          signal: request.options?.signal ?? options.signal,
+        }
+      : request.options;
+    const { modelKwargs, modelRequestParams, options: requestOptions, ...restOptions } = requestInvokeOptions || {};
     const invokeOptions = modelKwargs
       ? {
           ...restOptions,

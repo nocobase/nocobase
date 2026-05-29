@@ -7,4 +7,5 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export const NAMESPACE = 'file-manager';
+export { PluginPublicFormsClientV2 } from './plugin';
+export { default } from './plugin';
