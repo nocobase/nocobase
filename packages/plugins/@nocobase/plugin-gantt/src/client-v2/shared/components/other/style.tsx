@@ -21,6 +21,7 @@ const useStyles = createStyles(({ token, css }) => {
       max-width: 100%;
       height: 17px;
       scrollbar-color: ${token.colorTextPlaceholder} ${token.colorSplit};
+      border-left: 2px solid ${token.colorSplit};
       &::-webkit-scrollbar {
         width: 16px;
         height: 16px;
@@ -49,7 +50,7 @@ const useStyles = createStyles(({ token, css }) => {
         display: block;
         margin-bottom: ${token.marginXS};
       }
-      .tooltipdefaultcontainerparagraph {
+      .tooltipDefaultContainerParagraph {
         font-size: ${token.fontSizeSM};
         margin-bottom: ${token.marginXS}px;
         color: ${token.colorText};

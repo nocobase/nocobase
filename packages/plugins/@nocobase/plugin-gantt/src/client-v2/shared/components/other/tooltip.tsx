@@ -9,6 +9,7 @@
 
 import { cx } from '@emotion/css';
 import React, { useEffect, useRef, useState } from 'react';
+import { useT } from '../../../locale';
 import { getYmd } from '../../helpers/other-helper';
 import { BarTask } from '../../types/bar-task';
 import { Task } from '../../types/public-types';
@@ -120,6 +121,11 @@ export const StandardTooltipContent: React.FC<{
   fontFamily: string;
 }> = ({ task, fontSize, fontFamily }) => {
   const { styles } = useStyles();
+  const t = useT();
+  const duration =
+    task.end?.getTime?.() - task.start?.getTime?.() !== 0
+      ? Math.round(((task.end?.getTime?.() - task.start?.getTime?.()) / (1000 * 60 * 60 * 24)) * 10) / 10 || ''
+      : null;
 
   const style = {
     fontSize,
@@ -128,15 +134,22 @@ export const StandardTooltipContent: React.FC<{
   return (
     <div className={cx(styles.nbGridOther, styles.tooltipDefaultContainer)} aria-label="nb-gantt-tooltip" style={style}>
       <b style={{ fontSize: fontSize }}>
-        {task.name}: {getYmd(task.start)} ~ {getYmd(task.end)}
+        {t('Task date range', {
+          name: task.name,
+          start: getYmd(task.start),
+          end: getYmd(task.end),
+          interpolation: { escapeValue: false },
+        })}
       </b>
-      {task.end?.getTime?.() - task.start?.getTime?.() !== 0 && (
-        <p className="tooltipDefaultContainerParagraph">{`Duration: ${
-          Math.round(((task.end?.getTime?.() - task.start?.getTime?.()) / (1000 * 60 * 60 * 24)) * 10) / 10 || ''
-        } day(s)`}</p>
+      {duration !== null && (
+        <p className="tooltipDefaultContainerParagraph">
+          {t('Duration: {{value}} day(s)', { value: duration, interpolation: { escapeValue: false } })}
+        </p>
       )}
 
-      <p className="tooltipDefaultContainerParagraph">{!!task.progress && `Progress: ${task.progress}%`}</p>
+      <p className="tooltipDefaultContainerParagraph">
+        {!!task.progress && t('Progress: {{value}}%', { value: task.progress, interpolation: { escapeValue: false } })}
+      </p>
     </div>
   );
 };

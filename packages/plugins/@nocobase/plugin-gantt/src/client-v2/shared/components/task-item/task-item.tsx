@@ -9,6 +9,7 @@
 
 import { cx } from '@emotion/css';
 import React, { useEffect, useRef, useState } from 'react';
+import { useT } from '../../../locale';
 import { getYmd } from '../../helpers/other-helper';
 import { BarTask } from '../../types/bar-task';
 import { GanttContentMoveAction } from '../../types/gantt-task-actions';
@@ -36,6 +37,7 @@ export type TaskItemProps = {
 
 export const TaskItem: React.FC<TaskItemProps> = (props) => {
   const { styles } = useStyles();
+  const t = useT();
   const { task, arrowIndent, isDelete, taskHeight, rtl, onEventStart } = {
     ...props,
   };
@@ -110,7 +112,12 @@ export const TaskItem: React.FC<TaskItemProps> = (props) => {
         ref={textRef}
       >
         {isProjectBar && getYmd(task.start) && getYmd(task.end)
-          ? `${task.name}:  ${getYmd(task.start)} ~ ${getYmd(task.end)}`
+          ? t('Task date range', {
+              name: task.name,
+              start: getYmd(task.start),
+              end: getYmd(task.end),
+              interpolation: { escapeValue: false },
+            })
           : task.name}
       </text>
     </g>
