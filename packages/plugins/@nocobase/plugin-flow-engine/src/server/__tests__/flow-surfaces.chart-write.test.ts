@@ -430,14 +430,14 @@ describe('flowSurfaces chart write paths', () => {
         changes: {
           query: {
             mode: 'sql',
-            sql: `select nickname, count(*) as employeeCount from ${employeesTable} group by nickname`,
+            sql: `select nickname, count(*) as employee_count from ${employeesTable} group by nickname`,
             sqlDatasource: 'main',
           },
           visual: {
             type: 'bar',
             mappings: {
               x: 'missingField',
-              y: 'employeeCount',
+              y: 'employee_count',
             },
           },
         },
@@ -447,7 +447,7 @@ describe('flowSurfaces chart write paths', () => {
     expect(readErrorMessage(invalidMappingRes)).toContain('chart visual mappings only support SQL query output fields');
     expectChartRepairDetails(invalidMappingRes);
     expect(invalidMappingRes.body?.errors?.[0]?.details?.supportedOutputs).toEqual(
-      expect.arrayContaining(['nickname', 'employeeCount']),
+      expect.arrayContaining(['nickname', 'employee_count']),
     );
   });
 
@@ -1368,7 +1368,7 @@ chart.on('click', 'series', function(params) {
         changes: {
           query: {
             mode: 'sql',
-            sql: `select nickname, count(*) as employeeCount from ${employeesTable} group by nickname`,
+            sql: `select nickname, count(*) as employee_count from ${employeesTable} group by nickname`,
             sqlDatasource: 'main',
           },
         },
