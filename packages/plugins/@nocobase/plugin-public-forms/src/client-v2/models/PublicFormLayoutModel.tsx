@@ -33,9 +33,8 @@ function usePublicFormTokenHeader() {
 
   useEffect(() => {
     const interceptor = app.apiClient.axios.interceptors.request.use((config) => {
-      if (config.headers) {
-        config.headers['X-Form-Token'] = localStorage.getItem(PUBLIC_FORM_TOKEN_KEY) || '';
-      }
+      config.headers = config.headers || ({} as typeof config.headers);
+      config.headers['X-Form-Token'] = localStorage.getItem(PUBLIC_FORM_TOKEN_KEY) || '';
       return config;
     });
 
