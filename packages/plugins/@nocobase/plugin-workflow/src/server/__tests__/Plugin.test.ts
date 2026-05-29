@@ -568,6 +568,34 @@ describe('workflow > Plugin', () => {
       expect(e2s[0].status).toBe(EXECUTION_STATUS.RESOLVED);
     });
 
+    it('timeout should start counting after deferred execution starts', async () => {
+      const w1 = await WorkflowModel.create({
+        enabled: true,
+        type: 'asyncTrigger',
+        options: {
+          timeout: 1000,
+        },
+      });
+
+      plugin.trigger(w1, {}, { deferred: true });
+
+      await sleep(500);
+
+      const [e1] = await w1.getExecutions();
+      expect(e1.status).toBe(EXECUTION_STATUS.STARTED);
+      expect(e1.startedAt).toBeNull();
+      expect(e1.expiresAt).toBeNull();
+
+      await plugin.start(e1);
+      await sleep(500);
+
+      const [e2] = await w1.getExecutions();
+      expect(e2.status).toBe(EXECUTION_STATUS.RESOLVED);
+      expect(e2.startedAt).toBeTruthy();
+      expect(e2.expiresAt).toBeTruthy();
+      expect(e2.expiresAt.getTime()).toBeGreaterThan(e2.startedAt.getTime());
+    });
+
     it('sync workflow will ignore the deferred option, and start it immediately', async () => {
       const w1 = await WorkflowModel.create({
         enabled: true,
