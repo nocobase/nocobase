@@ -8,8 +8,9 @@
  */
 
 import { Collection, Database } from '@nocobase/database';
-import { MockServer, createMockServer } from '@nocobase/test';
+import { MockServer } from '@nocobase/test';
 import FlowModelRepository from '../repository';
+import { createFlowEngineMockServer } from './test-utils';
 
 describe('ui_schema repository', () => {
   let app: MockServer;
@@ -23,7 +24,7 @@ describe('ui_schema repository', () => {
   });
 
   beforeEach(async () => {
-    app = await createMockServer({
+    app = await createFlowEngineMockServer({
       registerActions: true,
       plugins: ['flow-engine'],
     });

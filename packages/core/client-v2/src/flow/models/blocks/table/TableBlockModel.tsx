@@ -39,6 +39,7 @@ import { TableColumnModel } from './TableColumnModel';
 import { extractIndex, adjustColumnOrder, setNestedValue, extractIds, getRowKey, useBlockHeight } from './utils';
 import { resolveTableSorterField } from './sortUtils';
 import { commonConditionHandler, ConditionBuilder } from '../../../components/ConditionBuilder';
+import { BulkDeleteActionModel } from '../../actions/BulkDeleteActionModel';
 import {
   applyMobilePaginationProps,
   createCompactSimpleItemRender,
@@ -126,6 +127,18 @@ const rowSelectCheckboxWrapperNoIndexClass = css`
   .nb-origin-node {
     display: block;
   }
+`;
+
+const leftAuxiliaryColumnCellClass = css`
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 22px;
+`;
+
+const leftAuxiliaryColumnCellWithHandleClass = css`
+  padding-left: 24px;
 `;
 
 const highlightedRowClass = css`
@@ -382,21 +395,76 @@ export class TableBlockModel extends CollectionBlockModel<TableBlockModelStructu
     },
   };
 
-  renderCell = (checked, record, index, originNode) => {
-    if (!this.props.dragSort && !this.props.showIndex) {
-      return originNode;
-    }
-    const current = this.resource.getPage();
+  isRowSelectionEnabled() {
+    return this.props.enableRowSelection !== false;
+  }
 
+  isShowIndexEnabled() {
+    return this.props.showIndex !== false;
+  }
+
+  getRecordIndex(record: Record<string, unknown>, index: number) {
+    let nextIndex = index;
+    const current = this.resource.getPage();
     const pageSize = this.resource.getPageSize() || 20;
     if (current) {
-      index = index + (current - 1) * pageSize + 1;
+      nextIndex = nextIndex + (current - 1) * pageSize + 1;
     } else {
-      index = index + 1;
+      nextIndex = nextIndex + 1;
     }
-    if (record.__index) {
-      index = extractIndex(record.__index);
+    const treeIndex = record?.__index;
+    if (treeIndex) {
+      return extractIndex(treeIndex);
     }
+    return nextIndex;
+  }
+
+  getLeftAuxiliaryColumn() {
+    const showIndex = this.isShowIndexEnabled();
+    const showDragHandle = this.props.dragSort && this.props.dragSortBy;
+    if (!showIndex && !showDragHandle) {
+      return null;
+    }
+
+    return {
+      key: '__rowSelectionDisabledAuxiliary__',
+      width: showDragHandle ? 74 : 50,
+      align: 'center' as const,
+      render: (_value: unknown, record: Record<string, unknown>, index: number) => {
+        const displayIndex = this.getRecordIndex(record, index);
+        const rowKey = getRowKey(record, this.collection.filterTargetKey);
+        const rowKeyString = rowKey == null ? rowKey : String(rowKey);
+        return (
+          <div
+            className={classNames(leftAuxiliaryColumnCellClass, {
+              [leftAuxiliaryColumnCellWithHandleClass]: showDragHandle,
+            })}
+          >
+            {showDragHandle && (
+              <SortHandle
+                id={rowKeyString}
+                style={{
+                  position: 'absolute',
+                  left: 0,
+                  top: '50%',
+                  justifyContent: 'center',
+                  transform: 'translateY(-50%)',
+                }}
+              />
+            )}
+            {showIndex && <TableIndex index={displayIndex} aria-label={`table-index-${displayIndex}`} />}
+          </div>
+        );
+      },
+    };
+  }
+
+  renderCell = (checked, record, index, originNode) => {
+    const showIndex = this.isShowIndexEnabled();
+    if (!this.props.dragSort && !showIndex) {
+      return originNode;
+    }
+    index = this.getRecordIndex(record, index);
     const rowKey = getRowKey(record, this.collection.filterTargetKey);
     const rowKeyString = rowKey == null ? rowKey : String(rowKey);
     const showDragHandle = this.props.dragSort && this.props.dragSortBy;
@@ -406,7 +474,7 @@ export class TableBlockModel extends CollectionBlockModel<TableBlockModelStructu
         aria-label={`table-index-${index}`}
         className={classNames(checked ? 'checked' : null, rowSelectCheckboxWrapperClass, {
           [rowSelectCheckboxWrapperClassHover]: true,
-          [rowSelectCheckboxWrapperNoIndexClass]: !this.props.showIndex,
+          [rowSelectCheckboxWrapperNoIndexClass]: !showIndex,
         })}
       >
         {showDragHandle && (
@@ -422,7 +490,7 @@ export class TableBlockModel extends CollectionBlockModel<TableBlockModelStructu
           />
         )}
         <div className={classNames(checked ? 'checked' : null, rowSelectCheckboxContentClass)}>
-          {this.props.showIndex && <TableIndex index={index} />}
+          {showIndex && <TableIndex index={index} />}
         </div>
 
         <div className={classNames('nb-origin-node', checked ? 'checked' : null, rowSelectCheckboxCheckedClassHover)}>
@@ -443,6 +511,16 @@ export class TableBlockModel extends CollectionBlockModel<TableBlockModelStructu
         <FlowSettingsButton icon={<SettingOutlined />}>{this.translate('Actions')}</FlowSettingsButton>
       </AddSubModelButton>
     );
+  }
+
+  shouldRenderAction(action: ActionModel, isConfigMode: boolean) {
+    if (action.hidden && !isConfigMode) {
+      return false;
+    }
+    if (!isConfigMode && !this.isRowSelectionEnabled() && action instanceof BulkDeleteActionModel) {
+      return false;
+    }
+    return true;
   }
 
   pagination() {
@@ -509,6 +587,9 @@ export class TableBlockModel extends CollectionBlockModel<TableBlockModelStructu
           >
             <Space wrap>
               {this.mapSubModels('actions', (action) => {
+                if (!this.shouldRenderAction(action, isConfigMode)) {
+                  return null;
+                }
                 // @ts-ignore
                 if (action.props.position === 'left') {
                   return (
@@ -527,8 +608,8 @@ export class TableBlockModel extends CollectionBlockModel<TableBlockModelStructu
             </Space>
             <Space wrap>
               {this.mapSubModels('actions', (action) => {
-                if (action.hidden && !isConfigMode) {
-                  return;
+                if (!this.shouldRenderAction(action, isConfigMode)) {
+                  return null;
                 }
                 // @ts-ignore
                 if (action.props.position !== 'left') {
@@ -671,6 +752,20 @@ TableBlockModel.registerFlow({
           const hasAssociationPath = !!column?.associationPathName;
           column.setProps('editable', isReadonly || hasAssociationPath ? false : !!params.editable);
         });
+      },
+    },
+    enableRowSelection: {
+      title: tExpr('Enable row selection'),
+      uiMode: { type: 'switch', key: 'enableRowSelection' },
+      defaultParams: {
+        enableRowSelection: true,
+      },
+      handler(ctx, params) {
+        const model = ctx.model as TableBlockModel;
+        model.setProps('enableRowSelection', params.enableRowSelection);
+        if (!params.enableRowSelection) {
+          model.resource.setSelectedRows([]);
+        }
       },
     },
     showRowNumbers: {
@@ -875,7 +970,11 @@ const HighPerformanceTable = React.memo(
       [model.collection.filterTargetKey],
     );
 
+    const enableRowSelection = model.isRowSelectionEnabled();
     const rowSelection = useMemo(() => {
+      if (!enableRowSelection) {
+        return undefined;
+      }
       return {
         columnWidth: 50,
         type: 'checkbox',
@@ -887,7 +986,10 @@ const HighPerformanceTable = React.memo(
         renderCell: model.renderCell,
         ...model.rowSelectionProps,
       };
-    }, [model, selectedRowKeys]);
+    }, [enableRowSelection, model, selectedRowKeys]);
+
+    const leftAuxiliaryColumn = enableRowSelection ? null : model.getLeftAuxiliaryColumn();
+    const mergedColumns = leftAuxiliaryColumn ? [leftAuxiliaryColumn, ...columns] : columns;
 
     const handleChange = useCallback(
       async (pagination, filters, sorter) => {
@@ -923,7 +1025,7 @@ const HighPerformanceTable = React.memo(
       [highlightedRowKey, model.collection?.filterTargetKey],
     );
 
-    const pagination = useMemo(() => _pagination, [dataSource]);
+    const pagination = _pagination;
 
     const onRow = useCallback(
       (record, rowIndex) => {
@@ -1029,7 +1131,7 @@ const HighPerformanceTable = React.memo(
         virtual={virtual}
         scroll={tableScroll}
         dataSource={dataSource}
-        columns={columns}
+        columns={mergedColumns}
         pagination={pagination}
         onChange={handleChange}
         rowClassName={rowClassName}

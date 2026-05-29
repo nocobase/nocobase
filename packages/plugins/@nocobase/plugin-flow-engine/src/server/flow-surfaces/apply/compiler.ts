@@ -49,6 +49,7 @@ type CompiledNodeRef = {
   use: string;
   sourceOpId?: string;
   ownerUidRef?: any;
+  defaultFieldUse?: string;
 };
 
 type SyncChildrenResult = {
@@ -788,7 +789,7 @@ function createFieldNode(
   const fieldCapability = resolveSupportedFieldCapability({
     containerUse: parentRef.use,
     requestedWrapperUse: desiredNode.use,
-    requestedFieldUse: innerField?.use,
+    requestedFieldUse: requestedRenderer ? undefined : innerField?.use,
     requestedRenderer,
     allowUnresolvedFieldUse: true,
   });
@@ -827,6 +828,7 @@ function createFieldNode(
     uidRef: makeOpRef(`${opId}.wrapperUid`),
     use: desiredNode.use,
     sourceOpId: opId,
+    defaultFieldUse: fieldCapability.fieldUse,
   };
   syncCreatedNode(ops, state, ref, desiredNode);
   return ref;
@@ -1130,7 +1132,11 @@ function getDefaultChildRef(parentRef: CompiledNodeRef, subKey: string, childUse
     };
   }
 
-  if (FIELD_WRAPPER_USES.has(parentRef.use) && subKey === 'field') {
+  if (
+    FIELD_WRAPPER_USES.has(parentRef.use) &&
+    subKey === 'field' &&
+    childUse === (parentRef.defaultFieldUse || fieldUseFromAddFieldRenderer(parentRef))
+  ) {
     return {
       uidRef: makeOpRef(`${parentRef.sourceOpId}.fieldUid`),
       use: childUse,
@@ -1160,6 +1166,21 @@ function resolveRecordActionCreateTargetUidRef(parentRef: CompiledNodeRef, curre
   throw new FlowSurfaceBadRequestError(
     `flowSurfaces apply cannot resolve owning surface for record action container '${parentRef.use}'`,
   );
+}
+
+function fieldUseFromAddFieldRenderer(parentRef: CompiledNodeRef) {
+  if (!parentRef.sourceOpId || !String(parentRef.sourceOpId).startsWith('addField_')) {
+    return undefined;
+  }
+  switch (parentRef.use) {
+    case 'FormItemModel':
+      return 'JSEditableFieldModel';
+    case 'DetailsItemModel':
+    case 'TableColumnModel':
+      return 'JSFieldModel';
+    default:
+      return undefined;
+  }
 }
 
 function isFieldWrapperNode(use?: string) {

@@ -5441,10 +5441,9 @@ const schemas = {
       workContext: {
         type: 'array',
         description:
-          'AIEmployeeButtonModel only. Public work context entries. Use `target: "self"` for the owning block/action context, or pass existing resolved Flow Model `uid` values in localized writes.',
+          'AIEmployeeButtonModel only. Public work context entries. Use `target: "self"` for the owning block/action context, or pass existing resolved Flow Model `uid` values in localized writes. `type` is optional and defaults to `flow-model`.',
         items: {
           type: 'object',
-          required: ['type'],
           anyOf: [{ required: ['uid'] }, { required: ['target'] }],
           properties: {
             type: {
@@ -5477,6 +5476,10 @@ const schemas = {
             title: {
               type: 'string',
             },
+            prompt: {
+              type: 'string',
+              description: 'Alias for message.user. Do not send prompt together with message.user.',
+            },
             message: {
               type: 'object',
               properties: {
@@ -5490,7 +5493,6 @@ const schemas = {
                   type: 'array',
                   items: {
                     type: 'object',
-                    required: ['type'],
                     anyOf: [{ required: ['uid'] }, { required: ['target'] }],
                     properties: {
                       type: {

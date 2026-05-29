@@ -9,7 +9,6 @@
 
 import {
   addBlockData,
-  createMenu,
   createFlowSurfacesContractContext,
   createPage,
   destroyFlowSurfacesContractContext,
@@ -19,6 +18,7 @@ import {
   readErrorMessage,
   type FlowSurfacesContractContext,
 } from './flow-surfaces.contract.helpers';
+import { uid } from '@nocobase/utils';
 import { waitForFixtureCollectionsReady } from './flow-surfaces.fixture-ready';
 import { collectFlowSurfaceAuthoringErrors } from '../flow-surfaces/authoring-validation';
 import { collectFlowRegistryRunJsAuthoringErrors, inspectRunJsAuthoringCode } from '../flow-surfaces/runjs-authoring';
@@ -408,6 +408,14 @@ describe('flowSurfaces backend authoring aggregate errors', () => {
         'fieldGroups-group-fields-required',
       ]),
     );
+    const calendarFieldsError = response.body.errors.find(
+      (error: any) => error.ruleId === 'calendar-main-block-unsupported-fields',
+    );
+    expect(calendarFieldsError?.details?.repairHint).toContain('settings.titleField');
+    expect(calendarFieldsError?.details?.repairHint).toContain('settings.startField');
+    expect(calendarFieldsError?.details?.repairHint).toContain('settings.endField');
+    expect(calendarFieldsError?.details?.repairHint).toContain('Keep block type calendar');
+    expect(calendarFieldsError?.message).toContain('Keep block type calendar');
   });
 
   it('should aggregate deterministic authoring hard errors before target resolution', async () => {
@@ -682,6 +690,88 @@ describe('flowSurfaces backend authoring aggregate errors', () => {
     }
   });
 
+  it('should reject persisted table settings payloads before table writes', async () => {
+    const composeErrors = await collectFlowSurfaceAuthoringErrors('compose', {
+      target: { uid: 'missing-target-never-resolved' },
+      blocks: [
+        {
+          key: 'auditTable',
+          type: 'table',
+          collection: 'employees',
+          stepParams: {
+            tableSettings: {
+              pageSize: { pageSize: 20 },
+            },
+          },
+          settings: {
+            pageSize: 20,
+            tableSettings: {
+              defaultSorting: {
+                sort: [{ field: 'createdAt', direction: 'desc' }],
+              },
+            },
+          },
+        },
+      ],
+    });
+
+    expect(composeErrors).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          path: '$.blocks[0].settings.tableSettings',
+          ruleId: 'table-settings-unsupported-key',
+          details: expect.objectContaining({
+            repairHint: expect.stringContaining('settings.sorting'),
+          }),
+        }),
+        expect.objectContaining({
+          path: '$.blocks[0].stepParams',
+          ruleId: 'table-settings-unsupported-key',
+        }),
+      ]),
+    );
+
+    const configureErrors = await collectFlowSurfaceAuthoringErrors(
+      'configure',
+      {
+        target: { uid: 'table-target' },
+        changes: {
+          title: 'Audit trail',
+          tableSettings: {
+            pageSize: { pageSize: 20 },
+          },
+          settings: {
+            defaultSorting: {
+              sort: [{ field: 'createdAt', direction: 'desc' }],
+            },
+          },
+        },
+      },
+      { hostBlockType: 'table' },
+    );
+
+    expect(configureErrors).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          path: '$.changes.tableSettings',
+          ruleId: 'table-settings-unsupported-key',
+        }),
+        expect.objectContaining({
+          path: '$.changes.settings.defaultSorting',
+          ruleId: 'table-settings-unsupported-key',
+        }),
+      ]),
+    );
+    expect(configureErrors).not.toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          path: '$.changes.title',
+          ruleId: 'table-settings-unsupported-key',
+        }),
+      ]),
+    );
+  });
+
   it('should aggregate non-canonical jsBlock public authoring shapes before writes', async () => {
     const errors = await collectFlowSurfaceAuthoringErrors('compose', {
       target: { uid: 'missing-target-never-resolved' },
@@ -818,13 +908,6 @@ describe('flowSurfaces backend authoring aggregate errors', () => {
           },
         },
         {
-          key: 'blockedCapability',
-          type: 'jsBlock',
-          settings: {
-            code: 'ctx.render(null);\nctx.openView({});',
-          },
-        },
-        {
           key: 'ctxMismatch',
           type: 'jsBlock',
           settings: {
@@ -877,7 +960,6 @@ describe('flowSurfaces backend authoring aggregate errors', () => {
         'render-top-level-function-wrapper',
         'render-unreachable-render-call',
         'blocked-global-stop',
-        'blocked-capability-reroute',
         'ctx-root-mismatch-stop',
       ]),
     );
@@ -1032,6 +1114,42 @@ describe('flowSurfaces backend authoring aggregate errors', () => {
         modelUse: 'ChartEventsModel',
       }),
     ).toEqual([]);
+  });
+
+  it('should allow documented RunJS ctx roots on JS authoring surfaces', () => {
+    const allowedCtxRootSnippets = [
+      "ctx.render(null);\nawait ctx.openView('popup-uid', { mode: 'dialog' });",
+      'ctx.render(null);\nctx.exit();',
+      'ctx.render(null);\nctx.exitAll();',
+      'ctx.render(ctx.view?.inputArgs?.viewUid);',
+      "ctx.render(ctx.getModel('block-uid')?.uid);",
+      'ctx.render(null);\nawait ctx.getApiInfos();',
+      "ctx.render(null);\nawait ctx.getVarInfos({ path: 'record', maxDepth: 1 });",
+      'ctx.render(null);\nawait ctx.getEnvInfos();',
+      "ctx.render(null);\nawait ctx.resolveJsonTemplate('{{ ctx.record.id }}');",
+      "ctx.render(null);\nctx.createResource('SingleRecordResource');",
+      "ctx.render(null);\nctx.useResource('MultiRecordResource');",
+      'ctx.render(ctx.blockModel?.uid);',
+      'ctx.render(ctx.collectionField?.name);',
+      'ctx.render(ctx.filterManager?.uid);',
+      'ctx.render(ctx.router?.basename);',
+      'ctx.render(ctx.route?.pathname);',
+      'ctx.render(ctx.location?.pathname);',
+      'ctx.render(ctx.i18n?.language);',
+      'ctx.render(Boolean(ctx.sql));',
+      "ctx.render(null);\nctx.on?.('refresh', () => {});",
+      "ctx.render(null);\nctx.off?.('refresh', () => {});",
+    ];
+
+    allowedCtxRootSnippets.forEach((code, index) => {
+      expect(
+        inspectRunJsAuthoringCode({
+          code,
+          path: `$.allowedCtxRoots[${index}].code`,
+          modelUse: 'JSBlockModel',
+        }),
+      ).toEqual([]);
+    });
   });
 
   it('should validate FlowResource instance method calls on RunJS resource aliases', () => {
@@ -2151,13 +2269,6 @@ describe('flowSurfaces backend authoring aggregate errors', () => {
       target: { uid: 'missing-target-never-resolved' },
       blocks: [
         {
-          key: 'optionalOpenView',
-          type: 'jsBlock',
-          settings: {
-            code: 'ctx?.render(null);\nctx?.openView({});',
-          },
-        },
-        {
           key: 'optionalRequest',
           type: 'jsBlock',
           settings: {
@@ -2206,21 +2317,13 @@ describe('flowSurfaces backend authoring aggregate errors', () => {
       expect.arrayContaining([
         expect.objectContaining({
           path: '$.blocks[0].settings.code',
-          ruleId: 'runjs-ctx-capability-blocked',
-          details: expect.objectContaining({
-            repairClass: 'blocked-capability-reroute',
-            capability: 'ctx.openView',
-          }),
-        }),
-        expect.objectContaining({
-          path: '$.blocks[1].settings.code',
           ruleId: 'runjs-resource-api-required',
           details: expect.objectContaining({
             repairClass: 'switch-to-resource-api',
           }),
         }),
         expect.objectContaining({
-          path: '$.blocks[2].settings.code',
+          path: '$.blocks[1].settings.code',
           ruleId: 'runjs-ctx-root-unknown',
           details: expect.objectContaining({
             repairClass: 'ctx-root-mismatch-stop',
@@ -2228,14 +2331,14 @@ describe('flowSurfaces backend authoring aggregate errors', () => {
           }),
         }),
         expect.objectContaining({
-          path: '$.blocks[3].settings.code',
+          path: '$.blocks[2].settings.code',
           ruleId: 'runjs-dynamic-ctx-member-unresolved',
           details: expect.objectContaining({
             repairClass: 'ctx-root-mismatch-stop',
           }),
         }),
         expect.objectContaining({
-          path: '$.blocks[4].settings.code',
+          path: '$.blocks[3].settings.code',
           ruleId: 'runjs-direct-dom-render-forbidden',
           details: expect.objectContaining({
             repairClass: 'replace-innerhtml-with-render',
@@ -2243,7 +2346,7 @@ describe('flowSurfaces backend authoring aggregate errors', () => {
           }),
         }),
         expect.objectContaining({
-          path: '$.blocks[5].settings.code',
+          path: '$.blocks[4].settings.code',
           ruleId: 'runjs-window-property-blocked',
           details: expect.objectContaining({
             repairClass: 'blocked-global-stop',
@@ -2252,7 +2355,7 @@ describe('flowSurfaces backend authoring aggregate errors', () => {
           }),
         }),
         expect.objectContaining({
-          path: '$.blocks[6].settings.code',
+          path: '$.blocks[5].settings.code',
           ruleId: 'runjs-navigator-property-blocked',
           details: expect.objectContaining({
             repairClass: 'blocked-global-stop',
@@ -2510,17 +2613,6 @@ describe('flowSurfaces backend authoring aggregate errors', () => {
               ],
             },
           },
-          eventPopup: {
-            blocks: [
-              {
-                key: 'hiddenPopupJsBlock',
-                type: 'jsBlock',
-                settings: {
-                  code: 'ctx.render(null);\nctx.openView({});',
-                },
-              },
-            ],
-          },
         },
       },
       {
@@ -2531,14 +2623,10 @@ describe('flowSurfaces backend authoring aggregate errors', () => {
     );
 
     expect(errors.map((error: any) => error.path)).toEqual(
-      expect.arrayContaining([
-        '$.changes.popup.blocks[0].settings.code',
-        '$.changes.popup.reaction.items[0].code',
-        '$.changes.eventPopup.blocks[0].settings.code',
-      ]),
+      expect.arrayContaining(['$.changes.popup.blocks[0].settings.code', '$.changes.popup.reaction.items[0].code']),
     );
     expect(errors.map((error: any) => error.details?.repairClass)).toEqual(
-      expect.arrayContaining(['blocked-global-stop', 'blocked-capability-reroute']),
+      expect.arrayContaining(['blocked-global-stop']),
     );
   });
 
@@ -2876,9 +2964,7 @@ ctx.render(React.createElement(DashboardKPIs));
       path: '$.templateInterpolation.code',
       modelUse: 'JSBlockModel',
     });
-    expect(templateLiteralErrors.map((error: any) => error.details?.repairClass)).toContain(
-      'blocked-capability-reroute',
-    );
+    expect(templateLiteralErrors).toEqual([]);
 
     expect(
       inspectRunJsAuthoringCode({
@@ -3775,6 +3861,1563 @@ ctx.render(React.createElement(DashboardKPIs));
       ]),
     );
 
+    const defaultAliasErrors = inspectRunJsAuthoringCode({
+      code: ['const React = ctx.React.default;', "ctx.render(React.createElement('div', null, 'broken'));"].join('\n'),
+      path: '$.defaultReactAlias.code',
+      modelUse: 'JSBlockModel',
+    });
+    expect(defaultAliasErrors).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          ruleId: 'runjs-react-default-alias-forbidden',
+          details: expect.objectContaining({
+            capability: 'ctx.React.default',
+            binding: 'React',
+          }),
+        }),
+      ]),
+    );
+
+    const defaultRenameErrors = inspectRunJsAuthoringCode({
+      code: ['const { default: React } = ctx.React;', 'ctx.render(<div>broken</div>);'].join('\n'),
+      path: '$.defaultReactRename.code',
+      modelUse: 'JSBlockModel',
+    });
+    expect(defaultRenameErrors).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          ruleId: 'runjs-react-default-alias-forbidden',
+          details: expect.objectContaining({
+            capability: 'ctx.React.default',
+            binding: 'React',
+          }),
+        }),
+      ]),
+    );
+
+    const defaultIntermediateAliasErrors = inspectRunJsAuthoringCode({
+      code: [
+        'const { default: ReactDefault } = ctx.React;',
+        "ctx.render(ctx.React.createElement('div', null, 'ok'));",
+      ].join('\n'),
+      path: '$.defaultReactIntermediateAlias.code',
+      modelUse: 'JSBlockModel',
+    });
+    expect(defaultIntermediateAliasErrors).not.toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          ruleId: 'runjs-react-default-alias-forbidden',
+        }),
+      ]),
+    );
+
+    const defaultTwoStepAliasErrors = inspectRunJsAuthoringCode({
+      code: [
+        'const ReactDefault = ctx.React.default;',
+        'const React = ReactDefault;',
+        "ctx.render(React.createElement('div', null, 'broken'));",
+      ].join('\n'),
+      path: '$.defaultReactTwoStepAlias.code',
+      modelUse: 'JSBlockModel',
+    });
+    expect(defaultTwoStepAliasErrors).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          ruleId: 'runjs-react-default-alias-forbidden',
+          details: expect.objectContaining({
+            capability: 'ctx.React.default',
+            binding: 'React',
+          }),
+        }),
+      ]),
+    );
+
+    [
+      {
+        code: ['let React;', 'React ||= ctx.React.default;', "ctx.render(React.createElement('div', null, 'broken'));"],
+        path: '$.defaultReactLogicalOrAssignment.code',
+      },
+      {
+        code: ['let React;', 'React ??= ctx.React.default;', "ctx.render(React.createElement('div', null, 'broken'));"],
+        path: '$.defaultReactNullishAssignment.code',
+      },
+      {
+        code: ['let React;', 'React &&= ctx.React.default;', "ctx.render(React.createElement('div', null, 'broken'));"],
+        path: '$.defaultReactLogicalAndAssignment.code',
+      },
+      {
+        code: [
+          'let ReactDefault;',
+          'ReactDefault ||= ctx.React.default;',
+          'const React = ReactDefault;',
+          "ctx.render(React.createElement('div', null, 'broken'));",
+        ],
+        path: '$.defaultReactLogicalTwoStepAlias.code',
+      },
+      {
+        code: [
+          'let ReactDefault;',
+          'ReactDefault ??= ctx.React.default;',
+          'const React = ReactDefault;',
+          "ctx.render(React.createElement('div', null, 'broken'));",
+        ],
+        path: '$.defaultReactNullishTwoStepAlias.code',
+      },
+      {
+        code: [
+          'let ReactDefault = {};',
+          'ReactDefault &&= ctx.React.default;',
+          'const React = ReactDefault;',
+          "ctx.render(React.createElement('div', null, 'broken'));",
+        ],
+        path: '$.defaultReactLogicalAndTwoStepAlias.code',
+      },
+      {
+        code: [
+          'let ReactNs;',
+          'ReactNs ||= ctx.React;',
+          'const React = ReactNs.default;',
+          "ctx.render(React.createElement('div', null, 'broken'));",
+        ],
+        path: '$.defaultReactNamespaceLogicalOrAlias.code',
+      },
+      {
+        code: [
+          'let ReactNs;',
+          'ReactNs ??= ctx.React;',
+          'const React = ReactNs.default;',
+          "ctx.render(React.createElement('div', null, 'broken'));",
+        ],
+        path: '$.defaultReactNamespaceNullishAlias.code',
+      },
+      {
+        code: [
+          'let ReactNs = {};',
+          'ReactNs &&= ctx.React;',
+          'const React = ReactNs.default;',
+          "ctx.render(React.createElement('div', null, 'broken'));",
+        ],
+        path: '$.defaultReactNamespaceLogicalAndAlias.code',
+      },
+      {
+        code: [
+          'let ReactNs;',
+          'ReactNs ||= ctx.React;',
+          'const { default: React } = ReactNs;',
+          'ctx.render(<div>broken</div>);',
+        ],
+        path: '$.defaultReactNamespaceLogicalDestructure.code',
+      },
+      {
+        code: [
+          'let ReactDefault;',
+          'const React = (ReactDefault = ctx.React.default);',
+          "ctx.render(React.createElement('div', null, 'broken'));",
+        ],
+        path: '$.defaultReactInlineAssignmentAlias.code',
+      },
+      {
+        code: [
+          'let ReactDefault;',
+          'const React = (ReactDefault ||= ctx.React.default);',
+          "ctx.render(React.createElement('div', null, 'broken'));",
+        ],
+        path: '$.defaultReactInlineLogicalOrAlias.code',
+      },
+      {
+        code: [
+          'let ReactDefault;',
+          'const React = (ReactDefault ??= ctx.React.default);',
+          "ctx.render(React.createElement('div', null, 'broken'));",
+        ],
+        path: '$.defaultReactInlineNullishAlias.code',
+      },
+      {
+        code: [
+          'let ReactDefault = {};',
+          'const React = (ReactDefault &&= ctx.React.default);',
+          "ctx.render(React.createElement('div', null, 'broken'));",
+        ],
+        path: '$.defaultReactInlineLogicalAndAlias.code',
+      },
+      {
+        code: ['let ReactNs;', 'const { default: React } = (ReactNs = ctx.React);', 'ctx.render(<div>broken</div>);'],
+        path: '$.defaultReactInlineNamespaceAssignmentDestructure.code',
+      },
+      {
+        code: ['let ReactNs;', 'const { default: React } = (ReactNs ||= ctx.React);', 'ctx.render(<div>broken</div>);'],
+        path: '$.defaultReactInlineNamespaceLogicalDestructure.code',
+      },
+      {
+        code: ['let ReactNs;', 'const { default: React } = (ReactNs ??= ctx.React);', 'ctx.render(<div>broken</div>);'],
+        path: '$.defaultReactInlineNamespaceNullishDestructure.code',
+      },
+      {
+        code: [
+          'let ReactNs = {};',
+          'const { default: React } = (ReactNs &&= ctx.React);',
+          'ctx.render(<div>broken</div>);',
+        ],
+        path: '$.defaultReactInlineNamespaceLogicalAndDestructure.code',
+      },
+      {
+        code: [
+          'let ReactDefault;',
+          'const React = (0, ReactDefault ||= ctx.React.default);',
+          "ctx.render(React.createElement('div', null, 'broken'));",
+        ],
+        path: '$.defaultReactSequenceInlineLogicalAlias.code',
+      },
+      {
+        code: [
+          'let ReactNs;',
+          'const { default: React } = (0, ReactNs ||= ctx.React);',
+          'ctx.render(<div>broken</div>);',
+        ],
+        path: '$.defaultReactSequenceInlineNamespaceDestructure.code',
+      },
+      {
+        code: [
+          'const ReactNs1 = ctx.React;',
+          'const ReactNs2 = ReactNs1;',
+          'const React = ReactNs2.default;',
+          "ctx.render(React.createElement('div', null, 'broken'));",
+        ],
+        path: '$.defaultReactMultiHopNamespaceAlias.code',
+      },
+      {
+        code: [
+          '((React = ctx.React.default) => {',
+          "  ctx.render(React.createElement('div', null, 'broken'));",
+          '})();',
+        ],
+        path: '$.defaultReactFunctionParamAlias.code',
+      },
+      {
+        code: [
+          '((ReactDefault = ctx.React.default) => {',
+          '  const React = ReactDefault;',
+          "  ctx.render(React.createElement('div', null, 'broken'));",
+          '})();',
+        ],
+        path: '$.defaultReactFunctionParamTwoStepAlias.code',
+      },
+      {
+        code: [
+          '(({ React: ReactNs } = ctx) => {',
+          '  const React = ReactNs.default;',
+          "  ctx.render(React.createElement('div', null, 'broken'));",
+          '})();',
+        ],
+        path: '$.defaultReactFunctionParamNamespaceDestructure.code',
+      },
+      {
+        code: [
+          '(({ React: { default: React } } = ctx) => {',
+          "  ctx.render(React.createElement('div', null, 'broken'));",
+          '})();',
+        ],
+        path: '$.defaultReactFunctionParamNestedDestructure.code',
+      },
+      {
+        code: [
+          '((box = { ns: ctx.React }) => {',
+          '  const React = box.ns.default;',
+          "  ctx.render(React.createElement('div', null, 'broken'));",
+          '})();',
+        ],
+        path: '$.defaultReactFunctionParamObjectNamespaceCarrierAlias.code',
+      },
+      {
+        code: [
+          '((arr = [ctx.React.default]) => {',
+          '  const React = arr[0];',
+          "  ctx.render(React.createElement('div', null, 'broken'));",
+          '})();',
+        ],
+        path: '$.defaultReactFunctionParamArrayDefaultCarrierAlias.code',
+      },
+      {
+        code: [
+          'const box = { ns: ctx.React };',
+          'const React = box.ns.default;',
+          "ctx.render(React.createElement('div', null, 'broken'));",
+        ],
+        path: '$.defaultReactObjectNamespaceCarrierAlias.code',
+      },
+      {
+        code: [
+          'const box = { ReactDefault: ctx.React.default };',
+          'const React = box.ReactDefault;',
+          "ctx.render(React.createElement('div', null, 'broken'));",
+        ],
+        path: '$.defaultReactObjectDefaultCarrierAlias.code',
+      },
+      {
+        code: [
+          'const arr = [ctx.React.default];',
+          'const React = arr[0];',
+          "ctx.render(React.createElement('div', null, 'broken'));",
+        ],
+        path: '$.defaultReactArrayDefaultCarrierAlias.code',
+      },
+      {
+        code: [
+          'const arr = [ctx.React];',
+          'const React = arr[0].default;',
+          "ctx.render(React.createElement('div', null, 'broken'));",
+        ],
+        path: '$.defaultReactArrayNamespaceCarrierAlias.code',
+      },
+      {
+        code: [
+          'const box = { ns: ctx.React };',
+          'box.ns = ctx.React.default;',
+          'const React = box.ns;',
+          "ctx.render(React.createElement('div', null, 'broken'));",
+        ],
+        path: '$.defaultReactObjectCarrierMemberReassignedToDefault.code',
+      },
+      {
+        code: [
+          'const arr = [ctx.React];',
+          'arr[0] = ctx.React.default;',
+          'const React = arr[0];',
+          "ctx.render(React.createElement('div', null, 'broken'));",
+        ],
+        path: '$.defaultReactArrayCarrierMemberReassignedToDefault.code',
+      },
+      {
+        code: [
+          'const { ns: React } = { ns: ctx.React.default };',
+          "ctx.render(React.createElement('div', null, 'broken'));",
+        ],
+        path: '$.defaultReactObjectCarrierDestructureRead.code',
+      },
+      {
+        code: ['const [React] = [ctx.React.default];', "ctx.render(React.createElement('div', null, 'broken'));"],
+        path: '$.defaultReactArrayCarrierDestructureRead.code',
+      },
+      {
+        code: [
+          'const box = { ns: ctx.React.default };',
+          'const { ns: React } = box;',
+          "ctx.render(React.createElement('div', null, 'broken'));",
+        ],
+        path: '$.defaultReactObjectAliasCarrierDestructureRead.code',
+      },
+      {
+        code: [
+          'const arr = [ctx.React.default];',
+          'const [React] = arr;',
+          "ctx.render(React.createElement('div', null, 'broken'));",
+        ],
+        path: '$.defaultReactArrayAliasCarrierDestructureRead.code',
+      },
+      {
+        code: [
+          'const { ns: ReactNs } = { ns: ctx.React };',
+          'const React = ReactNs.default;',
+          "ctx.render(React.createElement('div', null, 'broken'));",
+        ],
+        path: '$.defaultReactObjectNamespaceCarrierDestructureRead.code',
+      },
+      {
+        code: [
+          'const { ns: { default: React } } = { ns: ctx.React };',
+          "ctx.render(React.createElement('div', null, 'broken'));",
+        ],
+        path: '$.defaultReactNestedObjectNamespaceCarrierDestructureRead.code',
+      },
+      {
+        code: ['const [{ default: React }] = [ctx.React];', "ctx.render(React.createElement('div', null, 'broken'));"],
+        path: '$.defaultReactNestedArrayNamespaceCarrierDestructureRead.code',
+      },
+      {
+        code: ['const { 0: React } = [ctx.React.default];', "ctx.render(React.createElement('div', null, 'broken'));"],
+        path: '$.defaultReactNumericObjectPatternArrayDefault.code',
+      },
+      {
+        code: [
+          'const { 0: ReactNs } = [ctx.React];',
+          'const React = ReactNs.default;',
+          "ctx.render(React.createElement('div', null, 'broken'));",
+        ],
+        path: '$.defaultReactNumericObjectPatternArrayNamespaceDefault.code',
+      },
+      {
+        code: [
+          'const box = { ns: ctx.React };',
+          '({ ns: box.ns } = { ns: ctx.React.default });',
+          'const React = box.ns;',
+          "ctx.render(React.createElement('div', null, 'broken'));",
+        ],
+        path: '$.defaultReactObjectCarrierDestructureMemberWriteToDefault.code',
+      },
+      {
+        code: [
+          'const arr = [ctx.React];',
+          '[arr[0]] = [ctx.React.default];',
+          'const React = arr[0];',
+          "ctx.render(React.createElement('div', null, 'broken'));",
+        ],
+        path: '$.defaultReactArrayCarrierDestructureMemberWriteToDefault.code',
+      },
+      {
+        code: [
+          'const { ...box } = { ns: ctx.React.default };',
+          'const React = box.ns;',
+          "ctx.render(React.createElement('div', null, 'broken'));",
+        ],
+        path: '$.defaultReactObjectRestCarrierDefault.code',
+      },
+      {
+        code: [
+          'const { ...box } = { ns: ctx.React.default, [fieldName]: 1 };',
+          'const React = box.ns;',
+          "ctx.render(React.createElement('div', null, 'broken'));",
+        ],
+        path: '$.defaultReactObjectRestCarrierDynamicKeyCannotHideDefault.code',
+      },
+      {
+        code: [
+          'const { ...box } = { [fieldName]: ctx.React.default };',
+          'const React = box.ns;',
+          "ctx.render(React.createElement('div', null, 'broken'));",
+        ],
+        path: '$.defaultReactObjectRestCarrierDynamicKeyOnlyDefault.code',
+      },
+      {
+        code: [
+          'const unsafe = { ns: ctx.React.default };',
+          'const { ns: React } = { ...unsafe };',
+          "ctx.render(React.createElement('div', null, 'broken'));",
+        ],
+        path: '$.defaultReactObjectSpreadCarrierDestructureDefault.code',
+      },
+      {
+        code: [
+          'const unsafe = { ns: ctx.React.default };',
+          'const { ns: React } = { ...unsafe, [fieldName]: 1 };',
+          "ctx.render(React.createElement('div', null, 'broken'));",
+        ],
+        path: '$.defaultReactObjectSpreadCarrierDynamicKeyCannotHideDefault.code',
+      },
+      {
+        code: [
+          'const safe = { ns: ctx.React };',
+          'const box = { ...safe, [fieldName]: ctx.React.default };',
+          'const React = box.ns;',
+          "ctx.render(React.createElement('div', null, 'broken'));",
+        ],
+        path: '$.defaultReactObjectDynamicKeyCarrierCannotHideDefault.code',
+      },
+      {
+        code: [
+          'const { ns: React } = { [fieldName]: ctx.React.default };',
+          "ctx.render(React.createElement('div', null, 'broken'));",
+        ],
+        path: '$.defaultReactObjectDynamicKeyOnlyCarrierDefault.code',
+      },
+      {
+        code: [
+          'const box = { [fieldName]: ctx.React.default };',
+          'const React = box.ns;',
+          "ctx.render(React.createElement('div', null, 'broken'));",
+        ],
+        path: '$.defaultReactObjectDynamicKeyCarrierAliasDefault.code',
+      },
+      {
+        code: [
+          'const unsafe = { [fieldName]: ctx.React.default };',
+          'const box = { ...unsafe };',
+          'const React = box.ns;',
+          "ctx.render(React.createElement('div', null, 'broken'));",
+        ],
+        path: '$.defaultReactObjectDynamicKeySpreadAliasDefault.code',
+      },
+      {
+        code: [
+          'const unsafe = { ns: ctx.React, [fieldName]: ctx.React.default };',
+          'const box = { ...unsafe };',
+          'const React = box.ns;',
+          "ctx.render(React.createElement('div', null, 'broken'));",
+        ],
+        path: '$.defaultReactObjectSpreadDynamicKeyOverridesNamespaceDefault.code',
+      },
+      {
+        code: [
+          'const box = { ...{ [fieldName]: ctx.React.default } };',
+          'const React = box.ns;',
+          "ctx.render(React.createElement('div', null, 'broken'));",
+        ],
+        path: '$.defaultReactObjectLiteralDynamicKeySpreadAliasDefault.code',
+      },
+      {
+        code: [
+          'const safe = { ns: ctx.React };',
+          'const unsafe = { ns: ctx.React.default };',
+          'const { ns: React } = { ...safe, ...unsafe };',
+          "ctx.render(React.createElement('div', null, 'broken'));",
+        ],
+        path: '$.defaultReactObjectSpreadCarrierLaterDefault.code',
+      },
+      {
+        code: [
+          'const unsafe = { ns: ctx.React.default };',
+          'const box = { ...unsafe };',
+          'const React = box.ns;',
+          "ctx.render(React.createElement('div', null, 'broken'));",
+        ],
+        path: '$.defaultReactObjectSpreadCarrierAliasDefault.code',
+      },
+      {
+        code: [
+          'const box = { ...{ ns: ctx.React.default } };',
+          'const React = box.ns;',
+          "ctx.render(React.createElement('div', null, 'broken'));",
+        ],
+        path: '$.defaultReactObjectLiteralSpreadCarrierAliasDefault.code',
+      },
+      {
+        code: [
+          'const source = { ns: ctx.React.default };',
+          'const { ...box } = source;',
+          'const React = box.ns;',
+          "ctx.render(React.createElement('div', null, 'broken'));",
+        ],
+        path: '$.defaultReactObjectAliasRestCarrierDefault.code',
+      },
+      {
+        code: [
+          'const { ...box } = { ...{ ns: ctx.React.default } };',
+          'const React = box.ns;',
+          "ctx.render(React.createElement('div', null, 'broken'));",
+        ],
+        path: '$.defaultReactObjectLiteralSpreadRestCarrierDefault.code',
+      },
+      {
+        code: [
+          'const [...arr] = [ctx.React.default];',
+          'const React = arr[0];',
+          "ctx.render(React.createElement('div', null, 'broken'));",
+        ],
+        path: '$.defaultReactArrayRestCarrierDefault.code',
+      },
+      {
+        code: [
+          'const unsafe = [ctx.React.default];',
+          'const [React] = [...unsafe];',
+          "ctx.render(React.createElement('div', null, 'broken'));",
+        ],
+        path: '$.defaultReactArraySpreadCarrierDestructureDefault.code',
+      },
+      {
+        code: [
+          'const [skip, React] = [...[0], ...[ctx.React.default]];',
+          "ctx.render(React.createElement('div', null, 'broken'));",
+        ],
+        path: '$.defaultReactArrayFixedSpreadPrefixDestructureDefault.code',
+      },
+      {
+        code: [
+          'const [React = ctx.React.default] = [...items, ctx.React];',
+          "ctx.render(React.createElement('div', null, 'broken'));",
+        ],
+        path: '$.defaultReactArrayUnboundedSpreadPatternDefaultAlias.code',
+      },
+      {
+        code: [
+          'const arr = [...items, ctx.React.default];',
+          'const React = arr[0];',
+          "ctx.render(React.createElement('div', null, 'broken'));",
+        ],
+        path: '$.defaultReactArrayUnboundedSpreadTrailingDefaultCarrierAlias.code',
+      },
+      {
+        code: [
+          'const arr = [...items, ...[ctx.React.default]];',
+          'const React = arr[0];',
+          "ctx.render(React.createElement('div', null, 'broken'));",
+        ],
+        path: '$.defaultReactArrayUnboundedSpreadTrailingDefaultSpreadCarrierAlias.code',
+      },
+      {
+        code: [
+          'const [...arr] = [...items, ctx.React.default];',
+          'const React = arr[0];',
+          "ctx.render(React.createElement('div', null, 'broken'));",
+        ],
+        path: '$.defaultReactArrayUnboundedSpreadTrailingDefaultRestCarrierAlias.code',
+      },
+      {
+        code: [
+          'const [...arr] = [...items, ...[ctx.React.default]];',
+          'const React = arr[0];',
+          "ctx.render(React.createElement('div', null, 'broken'));",
+        ],
+        path: '$.defaultReactArrayUnboundedSpreadTrailingDefaultSpreadRestCarrierAlias.code',
+      },
+      {
+        code: [
+          'const { 0: React = ctx.React.default } = [...items, ctx.React];',
+          "ctx.render(React.createElement('div', null, 'broken'));",
+        ],
+        path: '$.defaultReactNumericObjectPatternUnboundedSpreadDefaultAlias.code',
+      },
+      {
+        code: [
+          'const unsafe = [ctx.React.default];',
+          'const safe = [ctx.React];',
+          'const [React] = [...unsafe, ...safe];',
+          "ctx.render(React.createElement('div', null, 'broken'));",
+        ],
+        path: '$.defaultReactArraySpreadCarrierFirstDefault.code',
+      },
+      {
+        code: [
+          'const unsafe = [ctx.React.default];',
+          'const arr = [...unsafe];',
+          'const React = arr[0];',
+          "ctx.render(React.createElement('div', null, 'broken'));",
+        ],
+        path: '$.defaultReactArraySpreadCarrierAliasDefault.code',
+      },
+      {
+        code: [
+          'const arr = [...[ctx.React.default]];',
+          'const React = arr[0];',
+          "ctx.render(React.createElement('div', null, 'broken'));",
+        ],
+        path: '$.defaultReactArrayLiteralSpreadCarrierAliasDefault.code',
+      },
+      {
+        code: [
+          'const arr = [...[0], ...[ctx.React.default]];',
+          'const React = arr[1];',
+          "ctx.render(React.createElement('div', null, 'broken'));",
+        ],
+        path: '$.defaultReactArrayFixedSpreadPrefixCarrierAliasDefault.code',
+      },
+      {
+        code: [
+          'const source = [ctx.React.default];',
+          'const [...arr] = source;',
+          'const React = arr[0];',
+          "ctx.render(React.createElement('div', null, 'broken'));",
+        ],
+        path: '$.defaultReactArrayAliasRestCarrierDefault.code',
+      },
+      {
+        code: [
+          'const [...arr] = [...[ctx.React.default]];',
+          'const React = arr[0];',
+          "ctx.render(React.createElement('div', null, 'broken'));",
+        ],
+        path: '$.defaultReactArrayLiteralSpreadRestCarrierDefault.code',
+      },
+      {
+        code: [
+          'const [...arr] = [...[0], ...[ctx.React.default]];',
+          'const React = arr[1];',
+          "ctx.render(React.createElement('div', null, 'broken'));",
+        ],
+        path: '$.defaultReactArrayFixedSpreadPrefixRestCarrierDefault.code',
+      },
+      {
+        code: [
+          'const [first, ...arr] = [ctx.React, ctx.React.default];',
+          'const React = arr[0];',
+          "ctx.render(React.createElement('div', null, 'broken'));",
+        ],
+        path: '$.defaultReactArrayOffsetRestCarrierDefault.code',
+      },
+      {
+        code: [
+          'const { ...box } = { ns: ctx.React };',
+          'const React = box.ns.default;',
+          "ctx.render(React.createElement('div', null, 'broken'));",
+        ],
+        path: '$.defaultReactObjectRestCarrierNamespace.code',
+      },
+      {
+        code: [
+          'const source = { ns: ctx.React };',
+          'const { ...box } = source;',
+          'const React = box.ns.default;',
+          "ctx.render(React.createElement('div', null, 'broken'));",
+        ],
+        path: '$.defaultReactObjectAliasRestCarrierNamespace.code',
+      },
+      {
+        code: [
+          'const { ns: box } = { ns: { default: ctx.React.default } };',
+          'const { default: React } = box;',
+          "ctx.render(React.createElement('div', null, 'broken'));",
+        ],
+        path: '$.defaultReactObjectDestructuredNestedCarrierDefault.code',
+      },
+      {
+        code: [
+          'const [box] = [{ default: ctx.React.default }];',
+          'const { default: React } = box;',
+          "ctx.render(React.createElement('div', null, 'broken'));",
+        ],
+        path: '$.defaultReactArrayDestructuredNestedCarrierDefault.code',
+      },
+      {
+        code: [
+          'const box = {};',
+          'box.ns = { default: ctx.React.default };',
+          'const { default: React } = box.ns;',
+          "ctx.render(React.createElement('div', null, 'broken'));",
+        ],
+        path: '$.defaultReactMemberAssignedNestedCarrierDefault.code',
+      },
+      {
+        code: [
+          'const { ns: box } = { ns: { runtime: ctx.React } };',
+          'const React = box.runtime.default;',
+          "ctx.render(React.createElement('div', null, 'broken'));",
+        ],
+        path: '$.defaultReactObjectDestructuredNestedCarrierNamespace.code',
+      },
+      {
+        code: [
+          'const box = {};',
+          'box.ns = { runtime: ctx.React.default };',
+          'const React = box.ns.runtime;',
+          "ctx.render(React.createElement('div', null, 'broken'));",
+        ],
+        path: '$.defaultReactMultiHopMemberAssignedCarrierDefault.code',
+      },
+      {
+        code: [
+          'const box = { ns: {} };',
+          'box.ns.runtime = ctx.React.default;',
+          'const React = box.ns.runtime;',
+          "ctx.render(React.createElement('div', null, 'broken'));",
+        ],
+        path: '$.defaultReactMultiHopMemberAssignedDefault.code',
+      },
+      {
+        code: [
+          'const box = {};',
+          'box.ns = [ctx.React.default];',
+          'const React = box.ns[0];',
+          "ctx.render(React.createElement('div', null, 'broken'));",
+        ],
+        path: '$.defaultReactMultiHopArrayMemberAssignedCarrierDefault.code',
+      },
+      {
+        code: [
+          'for (const React of [ctx.React.default]) {',
+          "  ctx.render(React.createElement('div', null, 'broken'));",
+          '}',
+        ],
+        path: '$.defaultReactForOfDirectDefaultAlias.code',
+      },
+      {
+        code: [
+          'for (const React of [ctx.React, ctx.React.default]) {',
+          "  ctx.render(React.createElement('div', null, 'broken'));",
+          '}',
+        ],
+        path: '$.defaultReactForOfMultiElementDirectDefaultAlias.code',
+      },
+      {
+        code: [
+          'for (const ReactNs of [ctx.React]) {',
+          '  const React = ReactNs.default;',
+          "  ctx.render(React.createElement('div', null, 'broken'));",
+          '}',
+        ],
+        path: '$.defaultReactForOfNamespaceDefaultAlias.code',
+      },
+      {
+        code: [
+          'for (const { ns: ReactNs } of [{ ns: ctx.React }]) {',
+          '  const React = ReactNs.default;',
+          "  ctx.render(React.createElement('div', null, 'broken'));",
+          '}',
+        ],
+        path: '$.defaultReactForOfDestructuredNamespaceDefaultAlias.code',
+      },
+      {
+        code: [
+          'for (const ReactNs of [{}, ctx.React]) {',
+          '  const React = ReactNs.default;',
+          "  ctx.render(React.createElement('div', null, 'broken'));",
+          '}',
+        ],
+        path: '$.defaultReactForOfMultiElementNamespaceDefaultAlias.code',
+      },
+      {
+        code: [
+          'for (const React of [...[ctx.React.default]]) {',
+          "  ctx.render(React.createElement('div', null, 'broken'));",
+          '}',
+        ],
+        path: '$.defaultReactForOfLiteralSpreadDefaultAlias.code',
+      },
+      {
+        code: [
+          'for (const React of [...[0], ...[ctx.React.default]]) {',
+          "  ctx.render(React.createElement('div', null, 'broken'));",
+          '}',
+        ],
+        path: '$.defaultReactForOfFixedSpreadPrefixDefaultAlias.code',
+      },
+      {
+        code: [
+          'for (const { ns: React } of [...[{ ns: ctx.React.default }]]) {',
+          "  ctx.render(React.createElement('div', null, 'broken'));",
+          '}',
+        ],
+        path: '$.defaultReactForOfDestructuredLiteralSpreadDefaultAlias.code',
+      },
+      {
+        code: [
+          'for (const React of (flag ? [ctx.React.default] : [ctx.React])) {',
+          "  ctx.render(React.createElement('div', null, 'broken'));",
+          '}',
+        ],
+        path: '$.defaultReactForOfConditionalDefaultAlias.code',
+      },
+      {
+        code: [
+          'const values = [ctx.React.default];',
+          'for (const React of values) {',
+          "  ctx.render(React.createElement('div', null, 'broken'));",
+          '}',
+        ],
+        path: '$.defaultReactForOfArrayAliasDefaultAlias.code',
+      },
+      {
+        code: [
+          'const values = [{ ns: ctx.React.default }];',
+          'for (const { ns: React } of values) {',
+          "  ctx.render(React.createElement('div', null, 'broken'));",
+          '}',
+        ],
+        path: '$.defaultReactForOfArrayAliasDestructuredDefaultAlias.code',
+      },
+      {
+        code: [
+          'const box = { ns: ctx.React };',
+          'for ({ ns: box.ns } of [{ ns: ctx.React.default }]) break;',
+          'const React = box.ns;',
+          "ctx.render(React.createElement('div', null, 'broken'));",
+        ],
+        path: '$.defaultReactForOfMemberWriteToDefaultAlias.code',
+      },
+      {
+        code: [
+          'for (const { React = ctx.React.default } of records) {',
+          "  ctx.render(React.createElement('div', null, 'broken'));",
+          '}',
+        ],
+        path: '$.defaultReactForOfUnknownSourcePatternDefaultAlias.code',
+      },
+      {
+        code: [
+          'for (const { React = ctx.React.default } of [{ React: ctx.React }, {}]) {',
+          "  ctx.render(React.createElement('div', null, 'broken'));",
+          '}',
+        ],
+        path: '$.defaultReactForOfMultiElementPatternDefaultAlias.code',
+      },
+      {
+        code: ['const { React = ctx.React.default } = {};', "ctx.render(React.createElement('div', null, 'broken'));"],
+        path: '$.defaultReactObjectPatternDefaultAlias.code',
+      },
+      {
+        code: [
+          'const { ReactDefault = ctx.React.default } = {};',
+          'const React = ReactDefault;',
+          "ctx.render(React.createElement('div', null, 'broken'));",
+        ],
+        path: '$.defaultReactObjectPatternDefaultTwoStepAlias.code',
+      },
+      {
+        code: ['const [React = ctx.React.default] = [];', "ctx.render(React.createElement('div', null, 'broken'));"],
+        path: '$.defaultReactArrayPatternDefaultAlias.code',
+      },
+      {
+        code: [
+          'const { ns: ReactNs = ctx.React } = {};',
+          'const React = ReactNs.default;',
+          "ctx.render(React.createElement('div', null, 'broken'));",
+        ],
+        path: '$.defaultReactObjectPatternNamespaceDefaultAlias.code',
+      },
+      {
+        code: [
+          '(({ React = ctx.React.default } = {}) => {',
+          "  ctx.render(React.createElement('div', null, 'broken'));",
+          '})({});',
+        ],
+        path: '$.defaultReactFunctionObjectPatternDefaultAlias.code',
+      },
+      {
+        code: [
+          'const { box = { ns: ctx.React } } = {};',
+          'const React = box.ns.default;',
+          "ctx.render(React.createElement('div', null, 'broken'));",
+        ],
+        path: '$.defaultReactObjectPatternDefaultObjectCarrierAlias.code',
+      },
+      {
+        code: [
+          'const [arr = [ctx.React.default]] = [];',
+          'const React = arr[0];',
+          "ctx.render(React.createElement('div', null, 'broken'));",
+        ],
+        path: '$.defaultReactArrayPatternDefaultArrayCarrierAlias.code',
+      },
+      {
+        code: [
+          'const { view: { default: React } = ctx.React } = {};',
+          "ctx.render(React.createElement('div', null, 'broken'));",
+        ],
+        path: '$.defaultReactNestedObjectPatternNamespaceDefaultAlias.code',
+      },
+      {
+        code: [
+          'const c = ctx;',
+          'const React = c.React.default;',
+          "ctx.render(React.createElement('div', null, 'broken'));",
+        ],
+        path: '$.defaultReactCtxRootAlias.code',
+      },
+      {
+        code: [
+          'const { React: ReactNs } = ctx;',
+          'const React = ReactNs.default;',
+          "ctx.render(React.createElement('div', null, 'broken'));",
+        ],
+        path: '$.defaultReactDestructuredNamespaceAlias.code',
+      },
+      {
+        code: [
+          'const c = ctx;',
+          'const { React: ReactNs } = c;',
+          'const React = ReactNs.default;',
+          "ctx.render(React.createElement('div', null, 'broken'));",
+        ],
+        path: '$.defaultReactCtxAliasDestructuredNamespace.code',
+      },
+      {
+        code: [
+          'let c;',
+          'const React = (c = ctx).React.default;',
+          "ctx.render(React.createElement('div', null, 'broken'));",
+        ],
+        path: '$.defaultReactInlineCtxRootAlias.code',
+      },
+      {
+        code: ['const { React: { default: React } } = ctx;', "ctx.render(React.createElement('div', null, 'broken'));"],
+        path: '$.defaultReactNestedCtxDestructure.code',
+      },
+      {
+        code: [
+          'let React;',
+          '({ React: { default: React } } = ctx);',
+          "ctx.render(React.createElement('div', null, 'broken'));",
+        ],
+        path: '$.defaultReactNestedCtxAssignmentDestructure.code',
+      },
+      {
+        code: [
+          'const c = ctx;',
+          'const { React: { default: React } } = c;',
+          "ctx.render(React.createElement('div', null, 'broken'));",
+        ],
+        path: '$.defaultReactNestedCtxAliasDestructure.code',
+      },
+      {
+        code: [
+          'let c;',
+          'const { React: { default: React } } = (c = ctx);',
+          "ctx.render(React.createElement('div', null, 'broken'));",
+        ],
+        path: '$.defaultReactNestedInlineCtxAliasDestructure.code',
+      },
+      {
+        code: [
+          'const { React: { default: ReactDefault } } = ctx;',
+          'const React = ReactDefault;',
+          "ctx.render(React.createElement('div', null, 'broken'));",
+        ],
+        path: '$.defaultReactNestedCtxDestructureTwoStepAlias.code',
+      },
+      {
+        code: [
+          'let ReactDefault;',
+          '({ React: { default: ReactDefault } } = ctx);',
+          'const React = ReactDefault;',
+          "ctx.render(React.createElement('div', null, 'broken'));",
+        ],
+        path: '$.defaultReactNestedCtxAssignmentDestructureTwoStepAlias.code',
+      },
+      {
+        code: [
+          'let ReactDefault;',
+          '{ ReactDefault = ctx.React.default; }',
+          'const React = ReactDefault;',
+          "ctx.render(React.createElement('div', null, 'broken'));",
+        ],
+        path: '$.defaultReactNestedBlockAssignmentAlias.code',
+      },
+      {
+        code: [
+          'let ReactDefault;',
+          '{ ReactDefault ||= ctx.React.default; }',
+          'const React = ReactDefault;',
+          "ctx.render(React.createElement('div', null, 'broken'));",
+        ],
+        path: '$.defaultReactNestedBlockLogicalOrAlias.code',
+      },
+      {
+        code: [
+          'let ReactDefault;',
+          '{ ReactDefault ??= ctx.React.default; }',
+          'const React = ReactDefault;',
+          "ctx.render(React.createElement('div', null, 'broken'));",
+        ],
+        path: '$.defaultReactNestedBlockNullishAlias.code',
+      },
+      {
+        code: [
+          'let ReactDefault = {};',
+          '{ ReactDefault &&= ctx.React.default; }',
+          'const React = ReactDefault;',
+          "ctx.render(React.createElement('div', null, 'broken'));",
+        ],
+        path: '$.defaultReactNestedBlockLogicalAndAlias.code',
+      },
+      {
+        code: [
+          'let ReactDefault;',
+          '{ ({ default: ReactDefault } = ctx.React); }',
+          'const React = ReactDefault;',
+          "ctx.render(React.createElement('div', null, 'broken'));",
+        ],
+        path: '$.defaultReactNestedBlockDestructuredDefaultAlias.code',
+      },
+      {
+        code: [
+          'let ReactNs;',
+          '{ ReactNs = ctx.React; }',
+          'const React = ReactNs.default;',
+          "ctx.render(React.createElement('div', null, 'broken'));",
+        ],
+        path: '$.defaultReactNestedBlockNamespaceAssignmentAlias.code',
+      },
+      {
+        code: [
+          'let ReactNs;',
+          '{ ReactNs ||= ctx.React; }',
+          'const React = ReactNs.default;',
+          "ctx.render(React.createElement('div', null, 'broken'));",
+        ],
+        path: '$.defaultReactNestedBlockNamespaceLogicalOrAlias.code',
+      },
+      {
+        code: [
+          'let ReactNs;',
+          '{ ReactNs ??= ctx.React; }',
+          'const React = ReactNs.default;',
+          "ctx.render(React.createElement('div', null, 'broken'));",
+        ],
+        path: '$.defaultReactNestedBlockNamespaceNullishAlias.code',
+      },
+      {
+        code: [
+          'let ReactNs = {};',
+          '{ ReactNs &&= ctx.React; }',
+          'const React = ReactNs.default;',
+          "ctx.render(React.createElement('div', null, 'broken'));",
+        ],
+        path: '$.defaultReactNestedBlockNamespaceLogicalAndAlias.code',
+      },
+      {
+        code: [
+          'let ReactNs;',
+          '{ ({ React: ReactNs } = ctx); }',
+          'const React = ReactNs.default;',
+          "ctx.render(React.createElement('div', null, 'broken'));",
+        ],
+        path: '$.defaultReactNestedBlockDestructuredNamespaceAlias.code',
+      },
+      {
+        code: [
+          'const React = Math.random() > 0.5 ? ctx.React.default : ctx.React;',
+          "ctx.render(React.createElement('div', null, 'broken'));",
+        ],
+        path: '$.defaultReactConditionalAlias.code',
+      },
+      {
+        code: [
+          'const React = window.__React || ctx.React.default;',
+          "ctx.render(React.createElement('div', null, 'broken'));",
+        ],
+        path: '$.defaultReactLogicalFallbackAlias.code',
+      },
+      {
+        code: [
+          'const ReactNs = Math.random() > 0.5 ? ctx.React : window.__React;',
+          'const { default: React } = ReactNs;',
+          'ctx.render(<div>broken</div>);',
+        ],
+        path: '$.defaultReactConditionalNamespaceDestructure.code',
+      },
+    ].forEach(({ code, path }) => {
+      const errors = inspectRunJsAuthoringCode({
+        code: code.join('\n'),
+        path,
+        modelUse: 'JSBlockModel',
+      });
+      expect(errors).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            ruleId: 'runjs-react-default-alias-forbidden',
+            details: expect.objectContaining({
+              capability: 'ctx.React.default',
+              binding: 'React',
+            }),
+          }),
+        ]),
+      );
+    });
+
+    [
+      {
+        code: [
+          'let ReactNs;',
+          'function initReactNs() { ReactNs = ctx.React; }',
+          'const React = ReactNs.default;',
+          "ctx.render(React.createElement('div', null, 'not-an-authoring-default-alias'));",
+        ],
+        path: '$.defaultReactNestedFunctionNamespaceAssignmentNotPropagated.code',
+      },
+      {
+        code: [
+          'let ReactDefault;',
+          '[1].forEach(() => { ReactDefault = ctx.React.default; });',
+          'const React = ReactDefault;',
+          "ctx.render(React.createElement('div', null, 'not-an-authoring-default-alias'));",
+        ],
+        path: '$.defaultReactCallbackDefaultAssignmentNotPropagated.code',
+      },
+      {
+        code: [
+          'const React = ctx.React;',
+          "ctx.render(React.createElement('div', null, 'allowed-runtime-namespace'));",
+        ],
+        path: '$.defaultReactRuntimeNamespaceAllowed.code',
+      },
+      {
+        code: [
+          'const box = { ns: ctx.React.default };',
+          'box.ns = ctx.React;',
+          'const React = box.ns;',
+          "ctx.render(React.createElement('div', null, 'allowed-reassigned-runtime-namespace'));",
+        ],
+        path: '$.defaultReactObjectCarrierMemberReassignedToNamespaceAllowed.code',
+      },
+      {
+        code: [
+          'const arr = [ctx.React.default];',
+          'arr[0] = ctx.React;',
+          'const React = arr[0];',
+          "ctx.render(React.createElement('div', null, 'allowed-reassigned-runtime-namespace'));",
+        ],
+        path: '$.defaultReactArrayCarrierMemberReassignedToNamespaceAllowed.code',
+      },
+      {
+        code: [
+          'const { ns: React } = { ns: ctx.React };',
+          "ctx.render(React.createElement('div', null, 'allowed-runtime-namespace'));",
+        ],
+        path: '$.defaultReactObjectCarrierDestructureNamespaceAllowed.code',
+      },
+      {
+        code: [
+          'const safe = { ns: ctx.React };',
+          'const { ns: React } = { ns: ctx.React.default, ...safe };',
+          "ctx.render(React.createElement('div', null, 'allowed-spread-override-namespace'));",
+        ],
+        path: '$.defaultReactObjectCarrierDestructureLaterSpreadNamespaceAllowed.code',
+      },
+      {
+        code: [
+          'const safe = { ns: ctx.React };',
+          'const { ns: React } = { ...safe };',
+          "ctx.render(React.createElement('div', null, 'allowed-spread-namespace'));",
+        ],
+        path: '$.defaultReactObjectSpreadCarrierDestructureNamespaceAllowed.code',
+      },
+      {
+        code: [
+          'const safe = { ns: ctx.React };',
+          'const { ns: React } = { ...safe, [fieldName]: 1 };',
+          "ctx.render(React.createElement('div', null, 'allowed-spread-namespace'));",
+        ],
+        path: '$.defaultReactObjectSpreadCarrierDynamicNonReactNamespaceAllowed.code',
+      },
+      {
+        code: [
+          'const safe = { ns: ctx.React };',
+          'const box = { [fieldName]: ctx.React.default, ...safe };',
+          'const React = box.ns;',
+          "ctx.render(React.createElement('div', null, 'allowed-spread-override-namespace'));",
+        ],
+        path: '$.defaultReactObjectDynamicKeyLaterSpreadNamespaceAllowed.code',
+      },
+      {
+        code: [
+          'const safe = { [fieldName]: ctx.React.default, ns: ctx.React };',
+          'const box = { ...safe };',
+          'const React = box.ns;',
+          "ctx.render(React.createElement('div', null, 'allowed-spread-namespace'));",
+        ],
+        path: '$.defaultReactObjectSpreadSourceStaticNamespaceOverridesDynamicKeyAllowed.code',
+      },
+      {
+        code: [
+          'const box = { [fieldName]: ctx.React.default, ns: ctx.React };',
+          'const React = box.ns;',
+          "ctx.render(React.createElement('div', null, 'allowed-runtime-namespace'));",
+        ],
+        path: '$.defaultReactObjectDynamicKeyExactNamespaceAllowed.code',
+      },
+      {
+        code: [
+          'const box = { [fieldName]: ctx.React.default };',
+          'box.ns = ctx.React;',
+          'const React = box.ns;',
+          "ctx.render(React.createElement('div', null, 'allowed-runtime-namespace'));",
+        ],
+        path: '$.defaultReactObjectDynamicKeyReassignedNamespaceAllowed.code',
+      },
+      {
+        code: [
+          'const box = { ...{ ns: ctx.React } };',
+          'const React = box.ns;',
+          "ctx.render(React.createElement('div', null, 'allowed-spread-namespace'));",
+        ],
+        path: '$.defaultReactObjectLiteralSpreadCarrierAliasNamespaceAllowed.code',
+      },
+      {
+        code: [
+          'const { ...box } = { ...{ ns: ctx.React } };',
+          'const React = box.ns;',
+          "ctx.render(React.createElement('div', null, 'allowed-spread-namespace'));",
+        ],
+        path: '$.defaultReactObjectLiteralSpreadRestCarrierNamespaceAllowed.code',
+      },
+      {
+        code: [
+          'const unsafe = { ns: ctx.React.default };',
+          'const safe = { ns: ctx.React };',
+          'const { ns: React } = { ...unsafe, ...safe };',
+          "ctx.render(React.createElement('div', null, 'allowed-spread-override-namespace'));",
+        ],
+        path: '$.defaultReactObjectSpreadCarrierLaterNamespaceAllowed.code',
+      },
+      {
+        code: [
+          'const { 0: React = ctx.React.default } = [ctx.React];',
+          "ctx.render(React.createElement('div', null, 'allowed-default-source-namespace'));",
+        ],
+        path: '$.defaultReactNumericObjectPatternDefaultSourceNamespaceAllowed.code',
+      },
+      {
+        code: [
+          'const box = { ns: ctx.React.default };',
+          '({ ns: box.ns } = { ns: ctx.React });',
+          'const React = box.ns;',
+          "ctx.render(React.createElement('div', null, 'allowed-reassigned-runtime-namespace'));",
+        ],
+        path: '$.defaultReactObjectCarrierDestructureMemberWriteToNamespaceAllowed.code',
+      },
+      {
+        code: [
+          'const arr = [ctx.React.default];',
+          '[arr[0]] = [ctx.React];',
+          'const React = arr[0];',
+          "ctx.render(React.createElement('div', null, 'allowed-reassigned-runtime-namespace'));",
+        ],
+        path: '$.defaultReactArrayCarrierDestructureMemberWriteToNamespaceAllowed.code',
+      },
+      {
+        code: [
+          'const { ns, ...box } = { ns: ctx.React.default, other: ctx.React };',
+          'const React = box.other;',
+          "ctx.render(React.createElement('div', null, 'allowed-runtime-namespace'));",
+        ],
+        path: '$.defaultReactObjectRestExcludedDefaultAllowed.code',
+      },
+      {
+        code: [
+          'const { ...box } = { [fieldName]: ctx.React.default, ns: ctx.React };',
+          'const React = box.ns;',
+          "ctx.render(React.createElement('div', null, 'allowed-runtime-namespace'));",
+        ],
+        path: '$.defaultReactObjectRestDynamicKeyExactNamespaceAllowed.code',
+      },
+      {
+        code: [
+          'const [...arr] = [ctx.React];',
+          'const React = arr[0];',
+          "ctx.render(React.createElement('div', null, 'allowed-runtime-namespace'));",
+        ],
+        path: '$.defaultReactArrayRestCarrierNamespaceAllowed.code',
+      },
+      {
+        code: [
+          'const safe = [ctx.React];',
+          'const [React] = [...safe];',
+          "ctx.render(React.createElement('div', null, 'allowed-spread-namespace'));",
+        ],
+        path: '$.defaultReactArraySpreadCarrierDestructureNamespaceAllowed.code',
+      },
+      {
+        code: [
+          'const [skip, React] = [...[0], ...[ctx.React]];',
+          "ctx.render(React.createElement('div', null, 'allowed-spread-namespace'));",
+        ],
+        path: '$.defaultReactArrayFixedSpreadPrefixDestructureNamespaceAllowed.code',
+      },
+      {
+        code: [
+          'const arr = [...[ctx.React]];',
+          'const React = arr[0];',
+          "ctx.render(React.createElement('div', null, 'allowed-spread-namespace'));",
+        ],
+        path: '$.defaultReactArrayLiteralSpreadCarrierAliasNamespaceAllowed.code',
+      },
+      {
+        code: [
+          'const arr = [...[0], ...[ctx.React]];',
+          'const React = arr[1];',
+          "ctx.render(React.createElement('div', null, 'allowed-spread-namespace'));",
+        ],
+        path: '$.defaultReactArrayFixedSpreadPrefixCarrierAliasNamespaceAllowed.code',
+      },
+      {
+        code: [
+          'const arr = [...items, ctx.React.default];',
+          'arr[0] = ctx.React;',
+          'const React = arr[0];',
+          "ctx.render(React.createElement('div', null, 'allowed-reassigned-runtime-namespace'));",
+        ],
+        path: '$.defaultReactArrayUnboundedSpreadTrailingDefaultReassignedNamespaceAllowed.code',
+      },
+      {
+        code: [
+          'const source = [ctx.React];',
+          'const [...arr] = source;',
+          'const React = arr[0];',
+          "ctx.render(React.createElement('div', null, 'allowed-runtime-namespace'));",
+        ],
+        path: '$.defaultReactArrayAliasRestCarrierNamespaceAllowed.code',
+      },
+      {
+        code: [
+          'const [...arr] = [...[ctx.React]];',
+          'const React = arr[0];',
+          "ctx.render(React.createElement('div', null, 'allowed-spread-namespace'));",
+        ],
+        path: '$.defaultReactArrayLiteralSpreadRestCarrierNamespaceAllowed.code',
+      },
+      {
+        code: [
+          'const [...arr] = [...[0], ...[ctx.React]];',
+          'const React = arr[1];',
+          "ctx.render(React.createElement('div', null, 'allowed-spread-namespace'));",
+        ],
+        path: '$.defaultReactArrayFixedSpreadPrefixRestCarrierNamespaceAllowed.code',
+      },
+      {
+        code: [
+          'const safe = { ns: ctx.React };',
+          'const { ...box } = { ns: ctx.React.default, ...safe };',
+          'const React = box.ns;',
+          "ctx.render(React.createElement('div', null, 'allowed-spread-override-namespace'));",
+        ],
+        path: '$.defaultReactObjectRestCarrierSpreadOverrideAllowed.code',
+      },
+      {
+        code: [
+          'const { React = ctx.React.default } = { React: ctx.React };',
+          "ctx.render(React.createElement('div', null, 'allowed-default-source-namespace'));",
+        ],
+        path: '$.defaultReactObjectPatternDefaultSourceNamespaceAllowed.code',
+      },
+      {
+        code: [
+          'const box = {};',
+          'box.ns = { runtime: ctx.React };',
+          'const React = box.ns.runtime;',
+          "ctx.render(React.createElement('div', null, 'allowed-runtime-namespace'));",
+        ],
+        path: '$.defaultReactMultiHopMemberAssignedCarrierNamespaceAllowed.code',
+      },
+      {
+        code: [
+          'const box = { ns: {} };',
+          'box.ns.runtime = ctx.React;',
+          'const React = box.ns.runtime;',
+          "ctx.render(React.createElement('div', null, 'allowed-runtime-namespace'));",
+        ],
+        path: '$.defaultReactMultiHopMemberAssignedNamespaceAllowed.code',
+      },
+      {
+        code: [
+          'for (const React of [ctx.React]) {',
+          "  ctx.render(React.createElement('div', null, 'allowed-runtime-namespace'));",
+          '}',
+        ],
+        path: '$.defaultReactForOfRuntimeNamespaceAllowed.code',
+      },
+      {
+        code: [
+          'for (const React of [ctx.React, ctx.React]) {',
+          "  ctx.render(React.createElement('div', null, 'allowed-runtime-namespace'));",
+          '}',
+        ],
+        path: '$.defaultReactForOfMultiElementRuntimeNamespaceAllowed.code',
+      },
+      {
+        code: [
+          'for (const React of [...[ctx.React]]) {',
+          "  ctx.render(React.createElement('div', null, 'allowed-runtime-namespace'));",
+          '}',
+        ],
+        path: '$.defaultReactForOfLiteralSpreadNamespaceAllowed.code',
+      },
+      {
+        code: [
+          'const values = [ctx.React];',
+          'for (const React of values) {',
+          "  ctx.render(React.createElement('div', null, 'allowed-runtime-namespace'));",
+          '}',
+        ],
+        path: '$.defaultReactForOfArrayAliasNamespaceAllowed.code',
+      },
+      {
+        code: [
+          'const box = { ns: ctx.React.default };',
+          'for ({ ns: box.ns } of [{ ns: ctx.React }]) break;',
+          'const React = box.ns;',
+          "ctx.render(React.createElement('div', null, 'allowed-runtime-namespace'));",
+        ],
+        path: '$.defaultReactForOfMemberWriteToNamespaceAllowed.code',
+      },
+      {
+        code: [
+          'for (const { React = ctx.React.default } of [{ React: ctx.React }]) {',
+          "  ctx.render(React.createElement('div', null, 'allowed-default-source-namespace'));",
+          '}',
+        ],
+        path: '$.defaultReactForOfPatternDefaultSourceNamespaceAllowed.code',
+      },
+      {
+        code: [
+          'for (const { React = ctx.React.default } of [{ React: ctx.React }, { React: ctx.React }]) {',
+          "  ctx.render(React.createElement('div', null, 'allowed-default-source-namespace'));",
+          '}',
+        ],
+        path: '$.defaultReactForOfMultiElementPatternDefaultSourceNamespaceAllowed.code',
+      },
+      {
+        code: [
+          'const values = [{ React: ctx.React }];',
+          'for (const { React = ctx.React.default } of values) {',
+          "  ctx.render(React.createElement('div', null, 'allowed-default-source-namespace'));",
+          '}',
+        ],
+        path: '$.defaultReactForOfArrayAliasPatternDefaultSourceNamespaceAllowed.code',
+      },
+      {
+        code: [
+          'const { ReactDefault = ctx.React.default } = { ReactDefault: ctx.React };',
+          'const React = ReactDefault;',
+          "ctx.render(React.createElement('div', null, 'allowed-default-source-namespace'));",
+        ],
+        path: '$.defaultReactObjectPatternDefaultTwoStepSourceNamespaceAllowed.code',
+      },
+      {
+        code: [
+          'const [React = ctx.React.default] = [ctx.React];',
+          "ctx.render(React.createElement('div', null, 'allowed-default-source-namespace'));",
+        ],
+        path: '$.defaultReactArrayPatternDefaultSourceNamespaceAllowed.code',
+      },
+      {
+        code: [
+          '(({ React = ctx.React.default } = { React: ctx.React }) => {',
+          "  ctx.render(React.createElement('div', null, 'allowed-default-source-namespace'));",
+          '})();',
+        ],
+        path: '$.defaultReactFunctionObjectPatternDefaultSourceNamespaceAllowed.code',
+      },
+    ].forEach(({ code, path }) => {
+      const errors = inspectRunJsAuthoringCode({
+        code: code.join('\n'),
+        path,
+        modelUse: 'JSBlockModel',
+      });
+      expect(errors).not.toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            ruleId: 'runjs-react-default-alias-forbidden',
+          }),
+        ]),
+      );
+    });
+
+    const defaultAssignmentRenameErrors = inspectRunJsAuthoringCode({
+      code: ['let React;', '({ default: React } = ctx.React);', 'ctx.render(<div>broken</div>);'].join('\n'),
+      path: '$.defaultReactAssignmentRename.code',
+      modelUse: 'JSBlockModel',
+    });
+    expect(defaultAssignmentRenameErrors).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          ruleId: 'runjs-react-default-alias-forbidden',
+          details: expect.objectContaining({
+            capability: 'ctx.React.default',
+            binding: 'React',
+          }),
+        }),
+      ]),
+    );
+
+    const defaultAssignmentTwoStepAliasErrors = inspectRunJsAuthoringCode({
+      code: [
+        'let ReactDefault;',
+        '({ default: ReactDefault } = ctx.React);',
+        'const React = ReactDefault;',
+        "ctx.render(React.createElement('div', null, 'broken'));",
+      ].join('\n'),
+      path: '$.defaultReactAssignmentTwoStepAlias.code',
+      modelUse: 'JSBlockModel',
+    });
+    expect(defaultAssignmentTwoStepAliasErrors).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          ruleId: 'runjs-react-default-alias-forbidden',
+          details: expect.objectContaining({
+            capability: 'ctx.React.default',
+            binding: 'React',
+          }),
+        }),
+      ]),
+    );
+
     const componentCallErrors = inspectRunJsAuthoringCode({
       code: [
         'function MetricCard(props) {',
@@ -4356,6 +5999,9 @@ ctx.render(React.createElement(DashboardKPIs));
       reimbursement_requests: makeCollection('reimbursement_requests', [
         { name: 'request_status', type: 'string', interface: 'select' },
       ]),
+      intelligenceItems: makeCollection('intelligenceItems', [
+        { name: 'occurDate', type: 'date', interface: 'datetime' },
+      ]),
       claims: makeCollection('claims', [
         { name: 'review_status', type: 'string', interface: 'select' },
         { name: 'claim_category', type: 'string', interface: 'select' },
@@ -4608,6 +6254,23 @@ ctx.render(React.createElement(DashboardKPIs));
             },
           },
           {
+            key: 'helperForwardedInvalidDateRangeObject',
+            type: 'jsBlock',
+            settings: {
+              code: [
+                'async function countRecords(collectionName, filter) {',
+                "  const resource = ctx.makeResource('MultiRecordResource');",
+                '  resource.setResourceName(collectionName);',
+                '  if (filter) resource.setFilter(filter);',
+                '  await resource.refresh();',
+                '  return resource.getMeta?.()?.count ?? 0;',
+                '}',
+                "await countRecords('intelligenceItems', { occurDate: { $dateOn: { $dateTo: 'now', $dateFrom: '-7d' } } });",
+                'ctx.render(null);',
+              ].join('\n'),
+            },
+          },
+          {
             key: 'topLevelNotWrapper',
             type: 'jsBlock',
             settings: {
@@ -4702,6 +6365,16 @@ ctx.render(React.createElement(DashboardKPIs));
           ruleId: 'runjs-resource-collection-unknown',
           details: expect.objectContaining({
             collectionName: 'missing_collection',
+          }),
+        }),
+        expect.objectContaining({
+          ruleId: 'runjs-resource-filter-date-range-object-invalid',
+          details: expect.objectContaining({
+            collectionName: 'intelligenceItems',
+            fieldPath: 'occurDate',
+            operator: '$dateOn',
+            unsupportedKeys: ['$dateTo', '$dateFrom'],
+            suggestedValue: { type: 'past', number: 7, unit: 'day' },
           }),
         }),
       ]),
@@ -6260,6 +7933,9 @@ ctx.render(React.createElement(DashboardKPIs));
         '$.tabs[0].blocks[5].recordActions[0].popup',
       ]),
     );
+    const singleColumnError = response.body.errors.find((error: any) => error.ruleId === 'block-layout-single-column');
+    expect(singleColumnError?.details?.repairHint).toContain('same layout row');
+    expect(singleColumnError?.details?.example?.layout?.rows?.[0]).toHaveLength(2);
     for (const error of response.body.errors) {
       expectStructuredError(error, {
         status: 400,
@@ -6328,6 +8004,294 @@ ctx.render(React.createElement(DashboardKPIs));
     }
   });
 
+  it('should reject visible data blocks without valid business fields before applyBlueprint writes', async () => {
+    const response = await rootAgent.resource('flowSurfaces').applyBlueprint({
+      values: {
+        mode: 'create',
+        navigation: {
+          item: {
+            title: 'Authoring empty visible data block fields',
+          },
+        },
+        defaults: {
+          collections: {
+            employees: {
+              fieldGroups: [
+                {
+                  title: 'Employee defaults',
+                  fields: ['nickname'],
+                },
+              ],
+            },
+          },
+        },
+        tabs: [
+          {
+            title: 'Overview',
+            blocks: [
+              {
+                key: 'emptyEmployeeTable',
+                type: 'table',
+                collection: 'employees',
+              },
+              {
+                key: 'systemOnlyEmployeeList',
+                type: 'list',
+                collection: 'employees',
+                fields: [
+                  {
+                    key: 'systemOnlyDivider',
+                    type: 'divider',
+                    settings: {
+                      label: 'System',
+                    },
+                  },
+                ],
+              },
+              {
+                key: 'actionOnlyEmployeeGrid',
+                type: 'gridCard',
+                collection: 'employees',
+                fields: [
+                  {
+                    field: 'nickname',
+                    type: 'operation',
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(response.status).toBe(400);
+    const visibleFieldErrors = response.body?.errors?.filter(
+      (error: any) => error.ruleId === 'data-block-visible-fields-required',
+    );
+    expect(visibleFieldErrors).toHaveLength(3);
+    expect(visibleFieldErrors.map((error: any) => error.path)).toEqual(
+      expect.arrayContaining([
+        '$.tabs[0].blocks[0].fields',
+        '$.tabs[0].blocks[1].fields',
+        '$.tabs[0].blocks[2].fields',
+      ]),
+    );
+    for (const error of visibleFieldErrors) {
+      expectStructuredError(error, {
+        status: 400,
+        type: 'bad_request',
+      });
+      expect(error.message).toContain('Add collection field names');
+      expect(error.message).toContain('defaults.collections.*.fieldGroups');
+    }
+  });
+
+  it('should reject visible data blocks without valid business fields before compose writes', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Authoring compose visible data fields page',
+      tabTitle: 'Authoring compose visible data fields tab',
+    });
+
+    const response = await rootAgent.resource('flowSurfaces').compose({
+      values: {
+        target: { uid: page.gridUid },
+        blocks: [
+          {
+            key: 'emptyGridCard',
+            type: 'gridCard',
+            collection: 'employees',
+          },
+          {
+            key: 'emptyEmployeeList',
+            type: 'list',
+            collection: 'employees',
+            fields: [],
+          },
+          {
+            key: 'dividerOnlyDetails',
+            type: 'details',
+            collection: 'employees',
+            fieldGroups: [
+              {
+                title: 'Display',
+                fields: [
+                  {
+                    key: 'displayDivider',
+                    type: 'divider',
+                    settings: {
+                      label: 'Display',
+                    },
+                  },
+                ],
+              },
+            ],
+          },
+          {
+            key: 'emptyCreateForm',
+            type: 'createForm',
+            collection: 'employees',
+            fields: [],
+          },
+          {
+            key: 'emptyEditForm',
+            type: 'editForm',
+            collection: 'employees',
+            fields: [],
+          },
+          {
+            key: 'emptyFilterForm',
+            type: 'filterForm',
+            collection: 'employees',
+            fields: [],
+          },
+          {
+            key: 'emptyKanban',
+            type: 'kanban',
+            collection: 'employees',
+            fields: [],
+          },
+        ],
+      },
+    });
+
+    expect(response.status).toBe(400);
+    const visibleFieldErrors = response.body?.errors?.filter(
+      (error: any) => error.ruleId === 'data-block-visible-fields-required',
+    );
+    expect(visibleFieldErrors).toHaveLength(7);
+    expect(visibleFieldErrors.map((error: any) => error.path)).toEqual(
+      expect.arrayContaining([
+        '$.blocks[0].fields',
+        '$.blocks[1].fields',
+        '$.blocks[2].fieldGroups',
+        '$.blocks[3].fields',
+        '$.blocks[4].fields',
+        '$.blocks[5].fields',
+        '$.blocks[6].fields',
+      ]),
+    );
+  });
+
+  it('should not require visible fields on template-backed data blocks', async () => {
+    const errors = await collectFlowSurfaceAuthoringErrors('compose', {
+      blocks: [
+        {
+          key: 'templateBackedTable',
+          type: 'table',
+          template: {
+            uid: 'existing-template-uid',
+          },
+        },
+      ],
+    });
+
+    expect(errors.map((error: any) => error.ruleId)).not.toContain('data-block-visible-fields-required');
+  });
+
+  it('should reject visible data blocks without valid business fields before addBlock and addBlocks writes', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Authoring add block visible data fields page',
+      tabTitle: 'Authoring add block visible data fields tab',
+    });
+
+    const addBlockResponse = await rootAgent.resource('flowSurfaces').addBlock({
+      values: {
+        target: { uid: page.gridUid },
+        type: 'table',
+        resource: {
+          collectionName: 'employees',
+        },
+      },
+    });
+
+    expect(addBlockResponse.status).toBe(400);
+    expect(addBlockResponse.body?.errors?.map((error: any) => error.ruleId)).toContain(
+      'data-block-visible-fields-required',
+    );
+    expect(addBlockResponse.body?.errors?.map((error: any) => error.path)).toContain('$.fields');
+
+    const addBlocksResponse = await rootAgent.resource('flowSurfaces').addBlocks({
+      values: {
+        blocks: [
+          {
+            target: { uid: page.gridUid },
+            type: 'list',
+            resource: {
+              collectionName: 'employees',
+            },
+          },
+        ],
+      },
+    });
+
+    expect(addBlocksResponse.status).toBe(400);
+    expect(addBlocksResponse.body?.errors?.map((error: any) => error.ruleId)).toContain(
+      'data-block-visible-fields-required',
+    );
+    expect(addBlocksResponse.body?.errors?.map((error: any) => error.path)).toContain('$.blocks[0].fields');
+  });
+
+  it('should allow direct visible data blocks with valid business fields', async () => {
+    const response = await rootAgent.resource('flowSurfaces').applyBlueprint({
+      values: {
+        mode: 'create',
+        navigation: {
+          item: {
+            title: 'Authoring valid visible data block fields',
+          },
+        },
+        tabs: [
+          {
+            title: 'Overview',
+            blocks: [
+              {
+                key: 'validEmployeeTable',
+                type: 'table',
+                collection: 'employees',
+                fields: ['nickname', 'status'],
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(response.status, readErrorMessage(response)).toBe(200);
+  });
+
+  it('should leave unknown visible data block fields on the field-path-unknown rule', async () => {
+    const response = await rootAgent.resource('flowSurfaces').applyBlueprint({
+      values: {
+        mode: 'create',
+        navigation: {
+          item: {
+            title: 'Authoring unknown visible data block field',
+          },
+        },
+        tabs: [
+          {
+            title: 'Overview',
+            blocks: [
+              {
+                key: 'unknownFieldEmployeeTable',
+                type: 'table',
+                collection: 'employees',
+                fields: ['missingNickname'],
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(response.status).toBe(400);
+    expect(response.body?.errors?.map((error: any) => error.ruleId)).toContain('field-path-unknown');
+    expect(response.body?.errors?.map((error: any) => error.ruleId)).not.toContain(
+      'data-block-visible-fields-required',
+    );
+  });
+
   it('should reject generated action popups for large collections without collection default fieldGroups', async () => {
     const response = await rootAgent.resource('flowSurfaces').applyBlueprint({
       values: {
@@ -6345,7 +8309,7 @@ ctx.render(React.createElement(DashboardKPIs));
                 key: 'largeRecordsTable',
                 type: 'table',
                 collection: LARGE_GENERATED_POPUP_COLLECTION,
-                fields: ['field1'],
+                fields: LARGE_GENERATED_POPUP_FIELDS.slice(0, 3),
                 defaultFilter: {
                   logic: '$and',
                   items: [
@@ -6408,7 +8372,7 @@ ctx.render(React.createElement(DashboardKPIs));
                 key: 'tenEffectiveRecordsTable',
                 type: 'table',
                 collection: GENERATED_POPUP_TEN_EFFECTIVE_COLLECTION,
-                fields: [GENERATED_POPUP_TEN_EFFECTIVE_FIELDS[0]],
+                fields: GENERATED_POPUP_TEN_EFFECTIVE_FIELDS.slice(0, 3),
                 defaultFilter: {
                   logic: '$and',
                   items: [
@@ -7277,7 +9241,7 @@ ctx.render(React.createElement(DashboardKPIs));
                 key: 'descriptionBehaviorFieldGroupTable',
                 type: 'table',
                 collection: DESCRIPTION_FORM_BEHAVIOR_FIELD_GROUP_COLLECTION,
-                fields: ['field1'],
+                fields: ['field1', 'field2', 'field3'],
                 defaultFilter: {
                   logic: '$and',
                   items: [
@@ -7753,7 +9717,7 @@ ctx.render(React.createElement(DashboardKPIs));
                 key: 'largeRecordsTable',
                 type: 'table',
                 collection: LARGE_GENERATED_POPUP_COLLECTION,
-                fields: ['field1'],
+                fields: LARGE_GENERATED_POPUP_FIELDS.slice(0, 3),
                 defaultFilter: {
                   logic: '$and',
                   items: [
@@ -8973,6 +10937,7 @@ ctx.render(React.createElement(DashboardKPIs));
         dataSourceKey: 'main',
         collectionName: LARGE_GENERATED_POPUP_SOURCE_COLLECTION,
       },
+      fields: ['title'],
     });
     const field = getData(
       await rootAgent.resource('flowSurfaces').addField({
@@ -9296,7 +11261,7 @@ ctx.render(React.createElement(DashboardKPIs));
                 key: 'employeesTable',
                 type: 'table',
                 collection: 'employees',
-                fields: ['nickname'],
+                fields: ['nickname', 'status', 'email'],
               },
             ],
           },
@@ -9306,7 +11271,7 @@ ctx.render(React.createElement(DashboardKPIs));
 
     expect(response.status).toBe(400);
     expect(response.body?.errors?.map((error: any) => error.ruleId)).toEqual(
-      expect.arrayContaining(['missing-menu-group-icon', 'invalid-menu-item-icon']),
+      expect.arrayContaining(['navigation-icon-required', 'navigation-icon-unknown']),
     );
     expect(response.body.errors.map((error: any) => error.ruleId)).not.toContain(
       'public-data-surface-default-filter-required',
@@ -10132,13 +12097,20 @@ ctx.render(React.createElement(DashboardKPIs));
   });
 
   it('should aggregate ambiguous navigation group titles before applyBlueprint writes', async () => {
-    await createMenu(rootAgent, {
-      type: 'group',
-      title: 'Duplicate authoring group',
+    const title = `Duplicate authoring group ${uid()}`;
+    await context.routesRepo.create({
+      values: {
+        type: 'group',
+        title,
+        schemaUid: uid(),
+      },
     });
-    await createMenu(rootAgent, {
-      type: 'group',
-      title: 'Duplicate authoring group',
+    await context.routesRepo.create({
+      values: {
+        type: 'group',
+        title,
+        schemaUid: uid(),
+      },
     });
 
     const response = await rootAgent.resource('flowSurfaces').applyBlueprint({
@@ -10146,7 +12118,7 @@ ctx.render(React.createElement(DashboardKPIs));
         mode: 'create',
         navigation: {
           group: {
-            title: 'Duplicate authoring group',
+            title,
           },
           item: {
             title: 'Ambiguous navigation authoring page',
