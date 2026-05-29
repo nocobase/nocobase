@@ -165,9 +165,14 @@ export class PluginPublicFormsServer extends Plugin {
         const collection = dataSource.collectionManager.getCollection(fieldCollectionName);
         const fieldName = String(fieldPath).split('.')[0];
         const collectionField = collection?.getField(fieldName);
+        const collectionFieldOptions = collectionField?.options;
 
-        if (collectionField && this.associationFieldTypes.includes(collectionField.type) && collectionField.target) {
-          appends.add(collectionField.target);
+        if (
+          collectionFieldOptions &&
+          this.associationFieldTypes.includes(collectionFieldOptions.type) &&
+          collectionFieldOptions.target
+        ) {
+          appends.add(collectionFieldOptions.target);
         }
       }
 
