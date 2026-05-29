@@ -18,6 +18,7 @@ test.describe('group page side menus schema settings', () => {
       page,
       showMenu: () => showSettingsInSide(page, 'group page in side'),
       supportedOptions: ['Edit', 'Edit tooltip', 'Move to', 'Insert before', 'Insert after', 'Insert inner', 'Delete'],
+      unsupportedOptions: ['Hidden'],
     });
   });
 
@@ -29,6 +30,7 @@ test.describe('group page side menus schema settings', () => {
       page,
       showMenu: () => showSettingsInSide(page, 'link page in side'),
       supportedOptions: ['Edit', 'Edit tooltip', 'Move to', 'Insert before', 'Insert after', 'Delete'],
+      unsupportedOptions: ['Hidden'],
     });
   });
 
@@ -40,6 +42,7 @@ test.describe('group page side menus schema settings', () => {
       page,
       showMenu: () => showSettingsInSide(page, 'single page in side'),
       supportedOptions: ['Edit', 'Edit tooltip', 'Move to', 'Insert before', 'Insert after', 'Delete'],
+      unsupportedOptions: ['Hidden'],
     });
   });
 });
@@ -55,6 +58,7 @@ test.describe('link page menu schema settings', () => {
         await page.getByRole('button', { name: 'designer-schema-settings-' }).hover();
       },
       supportedOptions: ['Edit', 'Move to', 'Insert before', 'Insert after', 'Delete'],
+      unsupportedOptions: ['Hidden'],
     });
   });
 });
@@ -70,6 +74,7 @@ test.describe('single page menu schema settings', () => {
         await page.getByRole('button', { name: 'designer-schema-settings-' }).click();
       },
       supportedOptions: ['Edit', 'Move to', 'Insert before', 'Insert after', 'Delete'],
+      unsupportedOptions: ['Hidden'],
     });
   });
 });

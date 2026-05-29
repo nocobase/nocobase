@@ -420,6 +420,7 @@ describe('AdminLayoutMenuItemModel legacy behavior', () => {
 
   it('should expose menu linkage rules only for existing menu items in client v1', async () => {
     const menuSettingsFlow = AdminLayoutMenuItemModel.globalFlowRegistry.getFlow('menuSettings');
+    expect(menuSettingsFlow?.steps?.hidden).toBeUndefined();
     expect(menuSettingsFlow?.steps?.linkageRules?.use).toBe('menuLinkageRules');
 
     const model = engine.createModel<AdminLayoutMenuItemModel>({

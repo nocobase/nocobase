@@ -9,6 +9,8 @@
 
 export * from './AdminLayoutComponent';
 export * from './AdminLayoutModel';
+export * from '../BaseLayoutModel';
+export * from '../BaseLayoutRouteCoordinator';
 export * from './AdminLayoutSlotModels';
 export * from './AdminLayoutMenuModels';
 export * from './AdminLayoutMenuFlowUtils';

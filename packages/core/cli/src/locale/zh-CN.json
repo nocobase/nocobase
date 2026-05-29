@@ -371,5 +371,55 @@
         }
       }
     }
+  },
+  "apiCommandCompat": {
+    "refusalTitle": "拒绝执行 `nb api {{commandId}}`，因为当前 CLI 版本为 {{cliVersion}}，目标应用版本为 {{appVersion}}。",
+    "refusalTitleMissingVersion": "拒绝执行 `nb api {{commandId}}`，因为 {{versionLabel}} 不可用。",
+    "refusalTitleGeneric": "拒绝执行 `nb api {{commandId}}`，因为当前版本组合不兼容。",
+    "currentVersionsLine": "当前版本：{{versions}}。",
+    "refusalBodyWithRequirements": "当 {{requirements}} 时，这个 API 命令会被拦截。",
+    "refusalBody": "这个 API 命令在当前 CLI 与应用版本组合下可能不兼容。",
+    "channel": {
+      "stable": "正式版",
+      "beta": "beta",
+      "alpha": "alpha",
+      "rc": "rc",
+      "unknownPrerelease": "不受支持的预发布"
+    },
+    "requirement": {
+      "cli": "CLI 版本 {{condition}}",
+      "app": "应用版本 {{condition}}",
+      "skills": "NocoBase AI skills 版本 {{condition}}",
+      "appChannel": "{{channelLabel}}应用版本 {{condition}}",
+      "appUnknownPrereleaseBlocked": "{{channelLabel}}应用版本会被拦截"
+    },
+    "currentVersion": {
+      "cli": "CLI {{version}}",
+      "app": "应用 {{version}}",
+      "appUnavailable": "应用版本不可用",
+      "skills": "NocoBase AI skills {{version}}",
+      "skillsUnavailable": "NocoBase AI skills 不可用"
+    },
+    "versionLabel": {
+      "cli": "CLI 版本",
+      "app": "目标应用版本",
+      "skills": "已安装的 NocoBase AI skills 版本"
+    },
+    "join": {
+      "two": "{{left}} 和 {{right}}",
+      "many": "{{head}}，以及 {{tail}}"
+    },
+    "continueTitle": "如需继续：",
+    "continueUpgradeApp": "- 请将应用升级到兼容版本",
+    "continueUpgradeAppToVersion": "- 请将应用升级到 {{suggestedUpgradeTarget}}",
+    "continueUseSupportedAppVersion": "- 请使用受支持的应用版本：{{supportedTargets}}",
+    "continueRefreshAppVersion": "- 请先刷新目标 env runtime，让当前应用版本可被识别后再重试",
+    "continueUseCompatibleCli": "- 或使用兼容的 CLI 版本",
+    "continueUseCompatibleCliVersion": "- 或使用 {{suggestedCliTarget}} 的 CLI 版本",
+    "continueUpdateSkillsToVersion": "- 请安装或更新 NocoBase AI coding skills 到 {{suggestedSkillsUpgradeTarget}}。可运行 `nb skills update --yes` 刷新受管理的 skills。",
+    "continueUseCompatibleSkillsVersion": "- 或使用 {{suggestedSkillsTarget}} 的 NocoBase AI skills 版本",
+    "continueInstallOrUpdateSkillsToVersion": "- 请运行 `nb skills install --yes` 或 `nb skills update --yes`，并确保受管理的 skills 版本为 {{suggestedSkillsUpgradeTarget}} 后再重试",
+    "continueInstallOrUpdateSkills": "- 请运行 `nb skills install --yes` 或 `nb skills update --yes`，待受管理的 skills 版本可用后再重试",
+    "supportedAppTarget": "{{channelLabel}} {{target}}"
   }
 }

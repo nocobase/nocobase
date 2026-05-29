@@ -7,11 +7,49 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { FlowEngine } from '@nocobase/flow-engine';
+import { FlowEngine, FlowModel } from '@nocobase/flow-engine';
 import { describe, expect, it, vi } from 'vitest';
 import { BulkUpdateActionModel } from '../BulkUpdateActionModel';
 
+class TestAssignFormModel extends FlowModel {
+  private values: Record<string, unknown> = {};
+
+  setAssignedValues(values: Record<string, unknown>) {
+    this.values = values || {};
+  }
+
+  getAssignedValues() {
+    return this.values;
+  }
+}
+
 describe('BulkUpdateActionModel apply action', () => {
+  it('reuses assignFieldValues step and saves assignedValues from AssignForm', async () => {
+    const engine = new FlowEngine();
+    engine.registerModels({ BulkUpdateActionModel, AssignFormModel: TestAssignFormModel });
+    const action = engine.createModel<BulkUpdateActionModel>({
+      use: 'BulkUpdateActionModel',
+      uid: 'bulk-update-action',
+    });
+    const form = engine.createModel<TestAssignFormModel>({
+      use: 'AssignFormModel',
+      uid: 'bulk-update-assign-form',
+      parentId: action.uid,
+      subKey: 'assignForm',
+    });
+    form.setAssignedValues({ status: 'published' });
+    action.assignFormUid = form.uid;
+
+    const step = action.getFlow('assignSettings')?.getStep('assignFieldValues')?.serialize();
+    expect(step?.beforeParamsSave).toBeTypeOf('function');
+
+    await step?.beforeParamsSave({ engine, model: action });
+
+    expect(action.getStepParams('assignSettings', 'assignFieldValues')?.assignedValues).toEqual({
+      status: 'published',
+    });
+  });
+
   it('resets loading when selected records update fails', async () => {
     const engine = new FlowEngine();
     const model = new BulkUpdateActionModel({ uid: 'bulk-update-action', flowEngine: engine } as any);

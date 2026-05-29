@@ -279,9 +279,9 @@ const MobileActions: FC = () => {
  * @param props
  * @returns
  */
-function SetIsMobileLayout(props: { isMobile: boolean; children: any }) {
+function SetIsMobileLayout(props: { isMobile: boolean; children: any; model?: AdminLayoutModel }) {
   const flowEngine = useFlowEngine();
-  const adminLayoutModel = flowEngine.getModel<AdminLayoutModel>(ADMIN_LAYOUT_MODEL_UID);
+  const adminLayoutModel = props.model || flowEngine.getModel<AdminLayoutModel>(ADMIN_LAYOUT_MODEL_UID);
 
   useEffect(() => {
     adminLayoutModel?.setIsMobileLayout(props.isMobile);
@@ -367,7 +367,7 @@ const renderMenuNodeWithModel = (
 
 export const AdminLayoutComponent = observer((props: any) => {
   const flowEngine = useFlowEngine();
-  const adminLayoutModel = flowEngine.getModel<AdminLayoutModel>(ADMIN_LAYOUT_MODEL_UID);
+  const adminLayoutModel = props.model || flowEngine.getModel<AdminLayoutModel>(ADMIN_LAYOUT_MODEL_UID);
   const [allAccessRoutes, setAllAccessRoutes] = useState<NocoBaseDesktopRoute[]>(
     () => flowEngine.context.routeRepository?.listAccessible?.() || [],
   );
@@ -666,7 +666,7 @@ export const AdminLayoutComponent = observer((props: any) => {
                   const { isMobile } = value;
 
                   return (
-                    <SetIsMobileLayout isMobile={isMobile}>
+                    <SetIsMobileLayout isMobile={isMobile} model={adminLayoutModel}>
                       <ConfigProvider theme={isMobile ? mobileTheme : theme}>
                         <GlobalStyle />
                         <AdminLayoutContent onContentElementChange={handleLayoutContentElementChange} />

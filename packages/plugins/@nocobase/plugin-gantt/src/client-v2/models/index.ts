@@ -7,4 +7,6 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export const NAMESPACE = 'file-manager';
+export * from './GanttBlockModel';
+export * from './actions/GanttActionModels';
+export * from './actions/GanttPopupModels';

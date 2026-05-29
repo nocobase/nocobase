@@ -21,7 +21,7 @@ RouteModel.registerFlow({
         return {
           mode: 'embed',
           preventClose: true,
-          pageModelClass: 'RootPageModel',
+          pageModelClass: ctx.layout?.rootPageModelClass || 'RootPageModel',
         };
       },
     },

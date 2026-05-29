@@ -26,6 +26,7 @@ export * from './WebSocketClient';
 export * from './RouterManager';
 export * from './PluginManager';
 export * from './PluginSettingsManager';
+export * from './layout-manager';
 export * from './hooks';
 export { default as languageCodes } from './locale/languageCodes';
 export * from './nocobase-buildin-plugin';

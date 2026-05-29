@@ -42,6 +42,8 @@ export type FlowSurfaceComposeNormalizedFieldSpec = {
   pageSize?: number;
   showIndex?: boolean;
   target?: string | Record<string, unknown>;
+  defaultTargetUid?: string;
+  targetBlockUid?: string;
   settings?: FlowSurfaceComposeObject;
   popup?: FlowSurfaceComposeObject;
   __autoPopupForRelationField?: boolean;
@@ -258,6 +260,8 @@ function buildComposeFieldCreatePayload(fieldSpec: FlowSurfaceComposeNormalizedF
     ...(fieldSpec.popupSize ? { popupSize: fieldSpec.popupSize } : {}),
     ...(typeof fieldSpec.pageSize !== 'undefined' ? { pageSize: fieldSpec.pageSize } : {}),
     ...(typeof fieldSpec.showIndex !== 'undefined' ? { showIndex: fieldSpec.showIndex } : {}),
+    ...(fieldSpec.defaultTargetUid ? { defaultTargetUid: fieldSpec.defaultTargetUid } : {}),
+    ...(fieldSpec.targetBlockUid ? { targetBlockUid: fieldSpec.targetBlockUid } : {}),
     ...(fieldSpec.popup ? { popup: fieldSpec.popup } : {}),
     ...(fieldSpec.__autoPopupForRelationField ? { __autoPopupForRelationField: true } : {}),
     ...(fieldSpec[FLOW_SURFACE_APPLY_BLUEPRINT_POPUP_DEFAULTS_KEY]

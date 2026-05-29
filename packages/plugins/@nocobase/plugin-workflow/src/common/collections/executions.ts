@@ -93,9 +93,32 @@ export default {
       },
     },
     {
+      type: 'string',
+      name: 'reason',
+      uiSchema: {
+        title: `{{t("Reason", { ns: "${NAMESPACE}" })}}`,
+        type: 'string',
+        'x-component': 'Select',
+        'x-decorator': 'FormItem',
+        enum: '{{ExecutionReasonOptions}}',
+      },
+    },
+    {
       type: 'boolean',
       name: 'dispatched',
       defaultValue: false,
+    },
+    {
+      type: 'bigInt',
+      name: 'parentExecutionId',
+      interface: 'id',
+      uiSchema: {
+        type: 'number',
+        title: `{{t("Parent execution ID", { ns: "${NAMESPACE}" })}}`,
+        'x-component': 'InputNumber',
+        'x-component-props': {},
+        'x-read-pretty': true,
+      },
     },
     {
       type: 'json',
@@ -104,6 +127,28 @@ export default {
     {
       type: 'json',
       name: 'output',
+    },
+    {
+      type: 'datetime',
+      name: 'startedAt',
+      uiSchema: {
+        type: 'datetime',
+        title: `{{t("Started at", { ns: "${NAMESPACE}" })}}`,
+        'x-component': 'DatePicker',
+        'x-component-props': {},
+        'x-read-pretty': true,
+      },
+    },
+    {
+      type: 'datetime',
+      name: 'expiresAt',
+      uiSchema: {
+        type: 'datetime',
+        title: `{{t("Expires at", { ns: "${NAMESPACE}" })}}`,
+        'x-component': 'DatePicker',
+        'x-component-props': {},
+        'x-read-pretty': true,
+      },
     },
     {
       type: 'datetime',
@@ -130,5 +175,9 @@ export default {
       },
     },
   ],
-  indexes: [{ fields: ['dispatched', 'id'] }],
+  indexes: [
+    { fields: ['dispatched', 'id'] },
+    { fields: ['status', 'expiresAt'] },
+    { fields: ['parentExecutionId', 'status'] },
+  ],
 };

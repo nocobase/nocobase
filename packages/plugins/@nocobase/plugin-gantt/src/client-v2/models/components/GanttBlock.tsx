@@ -1,0 +1,756 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
+import { MultiRecordResource, observer } from '@nocobase/flow-engine';
+import { Pagination, Table, theme } from 'antd';
+import { debounce } from 'lodash';
+import React, { SyntheticEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { convertToBarTasks } from '../../../shared/helpers/bar-helper';
+import { ganttDateRange, seedDates } from '../../../shared/helpers/date-helper';
+import { BarTask } from '../../../shared/types/bar-task';
+import { DateSetup } from '../../../shared/types/date-setup';
+import { GanttEvent } from '../../../shared/types/gantt-task-actions';
+import { Task } from '../../../shared/types/public-types';
+import { CalendarProps } from '../../../shared/components/calendar/calendar';
+import { GridProps } from '../../../shared/components/grid/grid';
+import { HorizontalScroll } from '../../../shared/components/other/horizontal-scroll';
+import { StandardTooltipContent, Tooltip } from '../../../shared/components/other/tooltip';
+import { VerticalScroll } from '../../../shared/components/other/vertical-scroll';
+import { TaskGantt } from '../../../shared/components/gantt/task-gantt';
+import { TaskGanttContentProps } from '../../../shared/components/gantt/task-gantt-content';
+import type { GanttBlockModel } from '../GanttBlockModel';
+import {
+  getColumnWidth,
+  getDateIndex,
+  getGanttRowKey,
+  getRowNumber,
+  measureElementHeight,
+  ROW_SELECTION_COLUMN_WIDTH,
+} from './GanttBlock.helpers';
+import { createGanttBlockClassNames } from './GanttBlock.styles';
+import { GANTT_TREE_CHILDREN_COLUMN, useGanttTree } from './GanttBlock.tree';
+
+type ScrollToDatePayload = Date | { date: Date; behavior?: ScrollBehavior };
+
+export const GanttBlock = observer(
+  ({ model }: { model: GanttBlockModel }) => {
+    const { token } = theme.useToken();
+    const {
+      ganttHeight = 0,
+      preStepsCount = 1,
+      barFill = 60,
+      barCornerRadius = token.borderRadiusXS,
+      barProgressColor = token.colorPrimary,
+      barProgressSelectedColor = token.colorPrimary,
+      barBackgroundColor = token.colorPrimary,
+      barBackgroundSelectedColor = token.colorPrimary,
+      projectProgressColor = token.colorPrimary,
+      projectProgressSelectedColor = token.colorPrimary,
+      projectBackgroundColor = token.colorPrimary,
+      projectBackgroundSelectedColor = token.colorPrimary,
+      milestoneBackgroundColor = token.colorWarning,
+      milestoneBackgroundSelectedColor = token.colorWarningActive,
+      rtl = false,
+      handleWidth = token.sizeXXS,
+      timeStep = 300000,
+      arrowColor = token.colorTextSecondary,
+      fontFamily = token.fontFamily,
+      fontSize = token.fontSize,
+      arrowIndent = token.margin,
+      todayColor = token.colorFillQuaternary,
+      viewDate,
+      TooltipContent = StandardTooltipContent,
+      enableDragToReschedule = true,
+    } = model.props || {};
+    const fallbackHeaderHeight = token.controlHeight + token.paddingSM;
+    const fallbackRowHeight = token.controlHeightLG + token.marginLG;
+    const viewMode = model.getFieldNames().range || 'day';
+    const wrapperRef = useRef<HTMLDivElement>(null);
+    const verticalGanttContainerRef = useRef<HTMLDivElement>(null);
+    const horizontalScrollRef = useRef<HTMLDivElement>(null);
+    const ganttRef = useRef<HTMLDivElement>(null);
+    const chartRef = useRef<HTMLDivElement>(null);
+    const actionsTableRef = useRef<HTMLDivElement>(null);
+    const [tableMetrics, setTableMetrics] = useState({
+      headerHeight: fallbackHeaderHeight,
+      rowHeight: fallbackRowHeight,
+    });
+    const [tasks, setTasks] = useState<Task[]>(() => model.getTasks());
+    const [dateSetup, setDateSetup] = useState<DateSetup>(() => {
+      const [startDate, endDate] = ganttDateRange(tasks, viewMode, preStepsCount);
+      return { viewMode, dates: seedDates(startDate, endDate, viewMode) };
+    });
+    const [currentViewDate, setCurrentViewDate] = useState<Date | undefined>(undefined);
+    const [tableClientWidth, setTableClientWidth] = useState(0);
+    const [svgContainerWidth, setSvgContainerWidth] = useState(0);
+    const [svgContainerHeight, setSvgContainerHeight] = useState(ganttHeight);
+    const [barTasks, setBarTasks] = useState<BarTask[]>([]);
+    const [ganttEvent, setGanttEvent] = useState<GanttEvent>({
+      action: '',
+    });
+    const { headerHeight, rowHeight } = tableMetrics;
+    const taskHeight = useMemo(() => (rowHeight * barFill) / 100, [rowHeight, barFill]);
+    const [selectedTask, setSelectedTask] = useState<BarTask>();
+    const [failedTask, setFailedTask] = useState<BarTask | null>(null);
+    const [scrollY, setScrollY] = useState(0);
+    const syncingScrollRef = useRef(false);
+    const scrollXRef = useRef(-1);
+    const debounceHandleTaskChange = useMemo(
+      () =>
+        debounce(async (task: Task) => {
+          const fieldNames = model.getFieldNames();
+          const resource = model.resource as MultiRecordResource;
+          await resource.update(model.getRecordFilterByTk((task as any).record, task.id), {
+            [fieldNames.start]: task.start,
+            [fieldNames.end]: task.end,
+          });
+          model.context.message?.success(model.context.t('Saved successfully'));
+        }, 300),
+      [model],
+    );
+    const debounceHandleProcessChange = useMemo(
+      () =>
+        debounce(async (task: Task) => {
+          const fieldNames = model.getFieldNames();
+          const resource = model.resource as MultiRecordResource;
+          await resource.update(model.getRecordFilterByTk((task as any).record, task.id), {
+            [fieldNames.progress]: task.progress / 100,
+          });
+          model.context.message?.success(model.context.t('Saved successfully'));
+        }, 300),
+      [model],
+    );
+    const columnWidth: number = getColumnWidth(dateSetup.dates.length, verticalGanttContainerRef.current?.clientWidth);
+    const svgWidth = dateSetup.dates.length * columnWidth;
+    const ganttFullHeight = barTasks.length * rowHeight;
+    const bodyHeight = ganttHeight ? Math.min(ganttHeight, ganttFullHeight) : undefined;
+    const hasVerticalScroll = !!bodyHeight && ganttFullHeight > bodyHeight;
+    const loading = model.resource.loading;
+    const resourceData = model.resource.getData();
+    const fieldNamesProp = model.props?.fieldNames;
+    const dragEnabled = model.props?.enableDragToReschedule;
+    const showTable = model.props?.showTable !== false;
+    const showRowNumbers = model.shouldShowRowNumbers();
+    const tableColumns = model.getColumns().filter((column: any) => column?.key !== 'empty');
+    const showActionsTable = showTable && tableColumns.length > 0;
+    const treeTableEnabled = model.isTreeTableEnabled();
+    const tableContentWidth = model.getAutoTableWidth();
+    const tableWidth = model.getTableWidth();
+    const tableVisibleWidth = tableClientWidth || tableWidth;
+    const hasHorizontalTableScroll = tableContentWidth > tableVisibleWidth + 1;
+    const chartVisibleWidth = svgContainerWidth || chartRef.current?.offsetWidth || 0;
+    const hasHorizontalGanttScroll = chartVisibleWidth > 0 && svgWidth > chartVisibleWidth + 1;
+    const tableScroll = bodyHeight
+      ? { y: bodyHeight, ...(hasHorizontalTableScroll ? { x: tableContentWidth } : {}) }
+      : hasHorizontalTableScroll
+        ? { x: tableContentWidth }
+        : undefined;
+    const { tableClass, contentClass, actionsColumnClass, actionsTableClass, chartClass, paginationClass } =
+      createGanttBlockClassNames({
+        token,
+        tableWidth,
+        hasVerticalScroll,
+        hasHorizontalScroll: hasHorizontalGanttScroll,
+        hasHorizontalTableScroll,
+      });
+    const { visibleTasks, tableRecords, resolvedTableColumns, expandable } = useGanttTree({
+      model,
+      tasks,
+      tableColumns,
+    });
+    const selectedRowKeys = model.resource.getSelectedRows().map((row) => getGanttRowKey(model, row));
+    const pagination = model.pagination();
+
+    const syncHorizontalScroll = useCallback(
+      (nextScrollX: number, source?: 'chart' | 'scrollbar', behavior: ScrollBehavior = 'auto') => {
+        const normalizedScrollX = Math.max(0, nextScrollX);
+        if (Math.abs(scrollXRef.current - normalizedScrollX) <= 1) {
+          return;
+        }
+
+        scrollXRef.current = normalizedScrollX;
+        const chartContainer = verticalGanttContainerRef.current;
+        const scrollContainer = horizontalScrollRef.current;
+
+        if (source !== 'chart' && chartContainer && Math.abs(chartContainer.scrollLeft - normalizedScrollX) > 1) {
+          if (behavior === 'smooth' && typeof chartContainer.scrollTo === 'function') {
+            chartContainer.scrollTo({ left: normalizedScrollX, behavior });
+          } else {
+            chartContainer.scrollLeft = normalizedScrollX;
+          }
+        }
+        if (source !== 'scrollbar' && scrollContainer && Math.abs(scrollContainer.scrollLeft - normalizedScrollX) > 1) {
+          if (behavior === 'smooth' && typeof scrollContainer.scrollTo === 'function') {
+            scrollContainer.scrollTo({ left: normalizedScrollX, behavior });
+          } else {
+            scrollContainer.scrollLeft = normalizedScrollX;
+          }
+        }
+      },
+      [],
+    );
+
+    const setHorizontalScrollRef = useCallback(
+      (element: HTMLDivElement | null) => {
+        horizontalScrollRef.current = element;
+        if (element && scrollXRef.current >= 0) {
+          syncHorizontalScroll(scrollXRef.current);
+        }
+      },
+      [syncHorizontalScroll],
+    );
+
+    const handleHorizontalScroll = useCallback(
+      (nextScrollX: number) => {
+        syncHorizontalScroll(nextScrollX, 'chart');
+      },
+      [syncHorizontalScroll],
+    );
+    const scrollToDate = useCallback(
+      (date: Date, behavior: ScrollBehavior = 'auto') => {
+        const index = getDateIndex(date, dateSetup.dates);
+        if (index === -1) {
+          return false;
+        }
+        syncHorizontalScroll(columnWidth * index, undefined, behavior);
+        return true;
+      },
+      [columnWidth, dateSetup.dates, syncHorizontalScroll],
+    );
+
+    useEffect(() => {
+      setTasks(model.getTasks());
+    }, [model, resourceData, fieldNamesProp, dragEnabled]);
+
+    useEffect(() => {
+      return () => {
+        debounceHandleTaskChange.cancel();
+        debounceHandleProcessChange.cancel();
+      };
+    }, [debounceHandleProcessChange, debounceHandleTaskChange]);
+
+    useEffect(() => {
+      const actionsTable = actionsTableRef.current;
+      if (!actionsTable) {
+        return;
+      }
+
+      let frameId = 0;
+      const getTableHeaderElement = () =>
+        actionsTable.querySelector('.ant-table-thead > tr:not(.ant-table-measure-row)') ||
+        actionsTable.querySelector('.ant-table-thead > tr') ||
+        actionsTable.querySelector('.ant-table-thead');
+      const getTableRowElement = () =>
+        actionsTable.querySelector('.ant-table-tbody > tr.ant-table-row') ||
+        actionsTable.querySelector('.ant-table-tbody > tr:not(.ant-table-measure-row)') ||
+        actionsTable.querySelector('.ant-table-row');
+
+      const measureTableMetrics = () => {
+        cancelAnimationFrame(frameId);
+        frameId = requestAnimationFrame(() => {
+          const nextHeaderHeight = measureElementHeight(getTableHeaderElement());
+          const nextRowHeight = measureElementHeight(getTableRowElement());
+          setTableClientWidth(actionsTable.clientWidth);
+
+          setTableMetrics((prev) => {
+            const measuredHeaderHeight = nextHeaderHeight || prev.headerHeight;
+            const measuredRowHeight = nextRowHeight || prev.rowHeight;
+
+            if (prev.headerHeight === measuredHeaderHeight && prev.rowHeight === measuredRowHeight) {
+              return prev;
+            }
+
+            return {
+              headerHeight: measuredHeaderHeight,
+              rowHeight: measuredRowHeight,
+            };
+          });
+        });
+      };
+
+      measureTableMetrics();
+
+      const resizeObserver = new ResizeObserver(measureTableMetrics);
+      resizeObserver.observe(actionsTable);
+      actionsTable
+        .querySelectorAll(
+          '.ant-table-thead, .ant-table-tbody, .ant-table-thead > tr, .ant-table-tbody > tr, .ant-table-row, .ant-table-body, .ant-table-content',
+        )
+        .forEach((element) => resizeObserver.observe(element));
+
+      return () => {
+        cancelAnimationFrame(frameId);
+        resizeObserver.disconnect();
+      };
+    }, [bodyHeight, hasHorizontalTableScroll, tableColumns.length, tableRecords.length]);
+
+    useEffect(() => {
+      const filteredTasks = visibleTasks;
+      const [startDate, endDate] = ganttDateRange(filteredTasks, viewMode, preStepsCount);
+      let newDates = seedDates(startDate, endDate, viewMode);
+      if (rtl) {
+        newDates = newDates.reverse();
+        if (scrollXRef.current === -1) {
+          syncHorizontalScroll(newDates.length * columnWidth);
+        }
+      }
+      setDateSetup({ dates: newDates, viewMode });
+      setBarTasks(
+        convertToBarTasks(
+          filteredTasks,
+          newDates,
+          columnWidth,
+          rowHeight,
+          taskHeight,
+          barCornerRadius,
+          handleWidth,
+          rtl,
+          barProgressColor,
+          barProgressSelectedColor,
+          barBackgroundColor,
+          barBackgroundSelectedColor,
+          projectProgressColor,
+          projectProgressSelectedColor,
+          projectBackgroundColor,
+          projectBackgroundSelectedColor,
+          milestoneBackgroundColor,
+          milestoneBackgroundSelectedColor,
+        ),
+      );
+    }, [
+      visibleTasks,
+      viewMode,
+      preStepsCount,
+      rowHeight,
+      barCornerRadius,
+      columnWidth,
+      taskHeight,
+      handleWidth,
+      barProgressColor,
+      barProgressSelectedColor,
+      barBackgroundColor,
+      barBackgroundSelectedColor,
+      projectProgressColor,
+      projectProgressSelectedColor,
+      projectBackgroundColor,
+      projectBackgroundSelectedColor,
+      milestoneBackgroundColor,
+      milestoneBackgroundSelectedColor,
+      rtl,
+      treeTableEnabled,
+      syncHorizontalScroll,
+    ]);
+
+    useEffect(() => {
+      if (
+        viewMode === dateSetup.viewMode &&
+        ((viewDate && !currentViewDate) || (viewDate && currentViewDate?.valueOf() !== viewDate.valueOf()))
+      ) {
+        if (!scrollToDate(viewDate)) {
+          return;
+        }
+        setCurrentViewDate(viewDate);
+      }
+    }, [viewDate, dateSetup.viewMode, viewMode, currentViewDate, setCurrentViewDate, scrollToDate]);
+
+    useEffect(() => {
+      const handleScrollToDate = (payload: ScrollToDatePayload) => {
+        if (payload instanceof Date) {
+          scrollToDate(payload);
+          return;
+        }
+
+        if (payload?.date instanceof Date) {
+          scrollToDate(payload.date, payload.behavior);
+        }
+      };
+
+      model.emitter.on('scrollToDate', handleScrollToDate);
+      return () => {
+        model.emitter.off('scrollToDate', handleScrollToDate);
+      };
+    }, [model, scrollToDate]);
+
+    useEffect(() => {
+      const { changedTask, action } = ganttEvent;
+      if (changedTask) {
+        if (action === 'delete') {
+          setGanttEvent({ action: '' });
+          setBarTasks(barTasks.filter((t) => t.id !== changedTask.id));
+        } else if (action === 'move' || action === 'end' || action === 'start' || action === 'progress') {
+          const prevStateTask = barTasks.find((t) => t.id === changedTask.id);
+          if (
+            prevStateTask &&
+            prevStateTask.start &&
+            prevStateTask.end &&
+            (prevStateTask.start.getTime() !== changedTask.start.getTime() ||
+              prevStateTask.end.getTime() !== changedTask.end.getTime() ||
+              prevStateTask.progress !== changedTask.progress)
+          ) {
+            setBarTasks(barTasks.map((t) => (t.id === changedTask.id ? changedTask : t)));
+            setTasks((prevTasks) => prevTasks.map((task) => (task.id === changedTask.id ? changedTask : task)));
+          }
+        }
+      }
+    }, [ganttEvent, barTasks]);
+
+    useEffect(() => {
+      if (failedTask) {
+        setBarTasks(barTasks.map((t) => (t.id !== failedTask.id ? t : failedTask)));
+        setFailedTask(null);
+      }
+    }, [failedTask, barTasks]);
+
+    useEffect(() => {
+      if (wrapperRef.current) {
+        setSvgContainerWidth(chartRef.current?.offsetWidth || wrapperRef.current.offsetWidth);
+      }
+    }, [wrapperRef, tableWidth]);
+
+    useEffect(() => {
+      if (ganttHeight) {
+        setSvgContainerHeight((bodyHeight || 0) + headerHeight);
+      } else {
+        setSvgContainerHeight(ganttFullHeight + headerHeight);
+      }
+    }, [bodyHeight, ganttHeight, ganttFullHeight, headerHeight]);
+
+    useEffect(() => {
+      const tableBody = actionsTableRef.current?.querySelector('.ant-table-body') as HTMLDivElement | null;
+      if (tableBody && tableBody.scrollTop !== scrollY) {
+        syncingScrollRef.current = true;
+        tableBody.scrollTop = scrollY;
+        requestAnimationFrame(() => {
+          syncingScrollRef.current = false;
+        });
+      }
+    }, [scrollY]);
+
+    useEffect(() => {
+      const tableBody = actionsTableRef.current?.querySelector('.ant-table-body') as HTMLDivElement | null;
+      if (!tableBody) {
+        return;
+      }
+
+      const handleActionsTableScroll = () => {
+        if (syncingScrollRef.current) {
+          return;
+        }
+        if (tableBody.scrollTop !== scrollY) {
+          setScrollY(tableBody.scrollTop);
+        }
+      };
+
+      tableBody.addEventListener('scroll', handleActionsTableScroll);
+      return () => {
+        tableBody.removeEventListener('scroll', handleActionsTableScroll);
+      };
+    }, [scrollY]);
+
+    useEffect(() => {
+      const wrapperNode = wrapperRef.current;
+      const handleWheel = (event: WheelEvent) => {
+        if (event.shiftKey || event.deltaX) {
+          const scrollMove = event.deltaX ? event.deltaX : event.deltaY;
+          let newScrollX = scrollXRef.current + scrollMove;
+          if (newScrollX < 0) {
+            newScrollX = 0;
+          } else if (newScrollX > svgWidth) {
+            newScrollX = svgWidth;
+          }
+          syncHorizontalScroll(newScrollX);
+          event.preventDefault();
+        } else if (ganttHeight) {
+          let newScrollY = scrollY + event.deltaY;
+          if (newScrollY < 0) {
+            newScrollY = 0;
+          } else if (newScrollY > ganttFullHeight - ganttHeight) {
+            newScrollY = ganttFullHeight - ganttHeight;
+          }
+          if (newScrollY !== scrollY) {
+            setScrollY(newScrollY);
+            event.preventDefault();
+          }
+        }
+      };
+
+      wrapperNode?.addEventListener('wheel', handleWheel, {
+        passive: false,
+      });
+      return () => {
+        wrapperNode?.removeEventListener('wheel', handleWheel);
+      };
+    }, [wrapperRef, scrollY, ganttHeight, svgWidth, rtl, ganttFullHeight, syncHorizontalScroll]);
+
+    const handleScrollY = (event: SyntheticEvent<HTMLDivElement>) => {
+      if (syncingScrollRef.current) {
+        return;
+      }
+      if (scrollY !== event.currentTarget.scrollTop) {
+        setScrollY(event.currentTarget.scrollTop);
+      }
+    };
+
+    const handleScrollX = (event: SyntheticEvent<HTMLDivElement>) => {
+      syncHorizontalScroll(event.currentTarget.scrollLeft, 'scrollbar');
+    };
+
+    const handlePaginationChange = useCallback(
+      async (page: number, pageSize: number) => {
+        const nextPageSize = model.normalizePageSize(pageSize);
+        if (model.resource.getPageSize() !== nextPageSize) {
+          model.resource.setPage(1);
+        } else {
+          model.resource.setPage(page);
+        }
+        model.resource.loading = true;
+        model.resource.setPageSize(nextPageSize);
+        await model.resource.refresh();
+        setScrollY(0);
+      },
+      [model],
+    );
+
+    const renderSelectionCell = useCallback(
+      (checked: boolean, record: any, index: number, originNode: React.ReactNode) => {
+        if (!showRowNumbers) {
+          return originNode;
+        }
+
+        const rowIndex = Number.isFinite(Number(record.__ganttTaskIndex)) ? Number(record.__ganttTaskIndex) : index;
+        const rowNumber = getRowNumber({
+          page: model.resource.getPage(),
+          pageSize: model.resource.getPageSize(),
+          rowIndex,
+          rowPath: record.__ganttTaskIndexPath,
+        });
+
+        return (
+          <div
+            role="button"
+            aria-label={`table-index-${rowNumber}`}
+            className={`nb-gantt-row-selection${checked ? ' checked' : ''}`}
+            style={{
+              position: 'relative',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              minHeight: 16,
+              paddingRight: 0,
+            }}
+          >
+            <div
+              className="nb-gantt-table-index"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                width: '100%',
+              }}
+            >
+              {rowNumber}
+            </div>
+            <div
+              className={`nb-gantt-origin-node${checked ? ' checked' : ''}`}
+              style={{
+                position: 'absolute',
+                right: '50%',
+                transform: 'translateX(50%)',
+              }}
+            >
+              {originNode}
+            </div>
+          </div>
+        );
+      },
+      [model.resource, showRowNumbers],
+    );
+
+    const handleKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
+      event.preventDefault();
+      let newScrollY = scrollY;
+      let newScrollX = scrollXRef.current;
+      let isX = true;
+      switch (event.key) {
+        case 'Down':
+        case 'ArrowDown':
+          newScrollY += rowHeight;
+          isX = false;
+          break;
+        case 'Up':
+        case 'ArrowUp':
+          newScrollY -= rowHeight;
+          isX = false;
+          break;
+        case 'Left':
+        case 'ArrowLeft':
+          newScrollX -= columnWidth;
+          break;
+        case 'Right':
+        case 'ArrowRight':
+          newScrollX += columnWidth;
+          break;
+      }
+      if (isX) {
+        if (newScrollX < 0) {
+          newScrollX = 0;
+        } else if (newScrollX > svgWidth) {
+          newScrollX = svgWidth;
+        }
+        syncHorizontalScroll(newScrollX);
+      } else {
+        if (newScrollY < 0) {
+          newScrollY = 0;
+        } else if (newScrollY > ganttFullHeight - ganttHeight) {
+          newScrollY = ganttFullHeight - ganttHeight;
+        }
+        setScrollY(newScrollY);
+      }
+    };
+
+    const handleSelectedTask = (taskId: string) => {
+      setSelectedTask(barTasks.find((t) => t.id === taskId));
+    };
+    const handleTaskClick = (task: Task) => {
+      handleSelectedTask(task.id);
+      void model.openEvent((task as any).record);
+    };
+
+    const handleProgressChange = async (task: Task) => {
+      await debounceHandleProcessChange(task);
+    };
+    const handleTaskChange = async (task: Task) => {
+      await debounceHandleTaskChange(task);
+    };
+
+    const gridProps: GridProps = {
+      columnWidth,
+      svgWidth,
+      tasks: barTasks,
+      rowHeight,
+      dates: dateSetup.dates,
+      todayColor,
+      rtl,
+      selectedRowKeys,
+    };
+    const calendarProps: CalendarProps = {
+      dateSetup,
+      locale: model.context.locale || 'en-US',
+      viewMode,
+      headerHeight,
+      columnWidth,
+      fontFamily,
+      fontSize,
+      rtl,
+    };
+    const barProps: TaskGanttContentProps = {
+      tasks: barTasks,
+      dates: dateSetup.dates,
+      ganttEvent,
+      selectedTask,
+      rowHeight,
+      taskHeight,
+      columnWidth,
+      arrowColor,
+      timeStep,
+      fontFamily,
+      fontSize,
+      arrowIndent,
+      svgWidth,
+      rtl,
+      setGanttEvent,
+      setFailedTask,
+      setSelectedTask: handleSelectedTask,
+      onDateChange: handleTaskChange,
+      onProgressChange: model.getFieldNames().progress && handleProgressChange,
+      onClick: handleTaskClick,
+      enableDragToReschedule,
+      loading,
+    };
+
+    return (
+      <div className={tableClass} ref={ganttRef}>
+        <div onKeyDown={handleKeyDown} tabIndex={0} ref={wrapperRef}>
+          <div className={contentClass}>
+            {showActionsTable && (
+              <div className={actionsColumnClass} ref={actionsTableRef}>
+                <Table
+                  className={actionsTableClass}
+                  columns={resolvedTableColumns}
+                  dataSource={tableRecords}
+                  pagination={false}
+                  rowKey={(record) => record.__ganttTaskId}
+                  rowSelection={{
+                    columnWidth: ROW_SELECTION_COLUMN_WIDTH,
+                    type: 'checkbox',
+                    selectedRowKeys: model.resource.getSelectedRows().map((row) => getGanttRowKey(model, row)),
+                    onChange: (_selectedRowKeys, selectedRows) => {
+                      model.resource.setSelectedRows(selectedRows);
+                    },
+                    renderCell: renderSelectionCell,
+                  }}
+                  scroll={tableScroll}
+                  expandable={expandable}
+                  childrenColumnName={GANTT_TREE_CHILDREN_COLUMN}
+                  indentSize={15}
+                  showSorterTooltip={false}
+                />
+              </div>
+            )}
+            <div className={chartClass} ref={chartRef}>
+              <TaskGantt
+                gridProps={gridProps}
+                calendarProps={calendarProps}
+                barProps={barProps}
+                ganttHeight={bodyHeight}
+                ganttFullHeight={ganttFullHeight}
+                scrollY={scrollY}
+                onHorizontalScroll={handleHorizontalScroll}
+                showLeftBorder={showActionsTable}
+                ref={verticalGanttContainerRef}
+              />
+              {ganttEvent.changedTask && (
+                <Tooltip
+                  arrowIndent={arrowIndent}
+                  rowHeight={rowHeight}
+                  svgContainerHeight={svgContainerHeight}
+                  svgContainerWidth={svgContainerWidth}
+                  fontFamily={fontFamily}
+                  fontSize={fontSize}
+                  scrollX={scrollXRef.current}
+                  scrollY={scrollY}
+                  task={ganttEvent.changedTask}
+                  headerHeight={headerHeight}
+                  TooltipContent={TooltipContent}
+                  rtl={rtl}
+                  svgWidth={svgWidth}
+                />
+              )}
+              {hasVerticalScroll && (
+                <VerticalScroll
+                  ganttFullHeight={ganttFullHeight}
+                  ganttHeight={bodyHeight}
+                  headerHeight={headerHeight}
+                  scroll={scrollY}
+                  onScroll={handleScrollY}
+                  rtl={rtl}
+                />
+              )}
+              <HorizontalScroll svgWidth={svgWidth} rtl={rtl} onScroll={handleScrollX} ref={setHorizontalScrollRef} />
+            </div>
+          </div>
+          <div className={paginationClass}>
+            <Pagination {...pagination} onChange={handlePaginationChange} />
+          </div>
+        </div>
+      </div>
+    );
+  },
+  { displayName: 'GanttBlock' },
+);

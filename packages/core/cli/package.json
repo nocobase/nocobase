@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/cli",
-  "version": "2.1.0-beta.37",
+  "version": "2.1.0-beta.38",
   "description": "NocoBase Command Line Tool",
   "type": "module",
   "main": "dist/generated/command-registry.js",
@@ -80,6 +80,38 @@
       "api": {
         "description": "Work with NocoBase API."
       }
+    }
+  },
+  "nocobase": {
+    "apiCommandCompat": {
+      "rules": [
+        {
+          "code": "FLOW_SURFACES_OLD_APP_NEW_SKILLS_UNSUPPORTED",
+          "target": {
+            "commandPrefix": "flow-surfaces"
+          },
+          "when": {
+            "appByChannel": {
+              "stable": {
+                "lt": "2.1.0"
+              },
+              "beta": {
+                "lt": "2.1.0-beta.36"
+              },
+              "alpha": {
+                "lt": "2.1.0-alpha.40"
+              },
+              "rc": {
+                "lt": "2.1.0"
+              },
+              "unknownPrerelease": "block"
+            },
+            "skills": {
+              "gt": "1.0.20"
+            }
+          }
+        }
+      ]
     }
   },
   "dependencies": {

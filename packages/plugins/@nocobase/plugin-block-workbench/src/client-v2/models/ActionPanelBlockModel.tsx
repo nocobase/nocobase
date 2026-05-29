@@ -148,6 +148,7 @@ export class ActionPanelBlockModel extends BlockModel {
 
                     action.enableEditDanger = false;
                     action.enableEditType = false;
+                    action.enableEditColor = true;
                     action.renderButton = () => {
                       return (
                         <Button className={buttonResetClass} onClick={action.onClick.bind(action)}>
@@ -220,6 +221,7 @@ export class ActionPanelBlockModel extends BlockModel {
 
                     action.enableEditDanger = false;
                     action.enableEditType = false;
+                    action.enableEditColor = true;
                     action.renderButton = () => {
                       return (
                         <Button className={buttonResetClass} onClick={action.onClick.bind(action)}>

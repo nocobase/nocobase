@@ -8,7 +8,7 @@
  */
 
 import { describe, expect, it, vi } from 'vitest';
-import { dateTimeFormat } from '../dateTimeFormat';
+import { dateTimeFormat } from '../../actions/dateTimeFormat';
 
 describe('dateTimeFormat', () => {
   it('only shows the time format schema for interface time fields', () => {

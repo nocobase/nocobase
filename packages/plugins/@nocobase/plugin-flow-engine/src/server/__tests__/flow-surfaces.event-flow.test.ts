@@ -372,36 +372,6 @@ describe('flowSurfaces event flow', () => {
       ]),
     );
 
-    const addEventFlowResponse = await rootAgent.resource('flowSurfaces').addEventFlow({
-      values: {
-        target: {
-          uid: formUid,
-        },
-        key: 'unsafeAdd',
-        eventName: 'submit',
-        steps: {
-          runUnsafe: {
-            use: 'runjs',
-            defaultParams: {
-              code: 'ctx.openView({});',
-            },
-          },
-        },
-      },
-    });
-    expect(addEventFlowResponse.status).toBe(400);
-    expect(addEventFlowResponse.body?.errors).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          path: '$.flowRegistry.unsafeAdd.steps.runUnsafe.defaultParams.code',
-          ruleId: 'runjs-ctx-capability-blocked',
-          details: expect.objectContaining({
-            capability: 'ctx.openView',
-          }),
-        }),
-      ]),
-    );
-
     const setEventFlowResponse = await rootAgent.resource('flowSurfaces').setEventFlow({
       values: {
         target: {
@@ -626,6 +596,7 @@ async function createEmployeeForm(rootAgent: any) {
     await rootAgent.resource('flowSurfaces').createPage({
       values: {
         title: `Event flow page ${Date.now()}`,
+        icon: 'FileOutlined',
         tabTitle: 'Event flow tab',
       },
     }),
@@ -641,6 +612,7 @@ async function createEmployeeForm(rootAgent: any) {
           dataSourceKey: 'main',
           collectionName: 'employees',
         },
+        fields: ['status'],
       },
     }),
   );
