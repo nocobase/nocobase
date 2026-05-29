@@ -7,8 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { MultiRecordResource, SingleRecordResource, resolveRunJSObjectValues } from '@nocobase/flow-engine';
+import { MultiRecordResource, SingleRecordResource } from '@nocobase/flow-engine';
 import { dispatchEventDeep } from '../../utils';
+import { resolveAssignFieldValues } from '../blocks/assign-form/assignFieldValuesFlow';
 
 export async function refreshLinkageRulesAfterUpdate(ctx: any) {
   const blockModel = ctx?.blockModel || ctx?.model?.context?.blockModel || ctx?.model;
@@ -59,12 +60,8 @@ export async function applyUpdateRecordAction(
   const confirmParams = savedConfirm && typeof savedConfirm === 'object' ? savedConfirm : { enable: false };
   await ctx.runAction('confirm', confirmParams);
 
-  let assignedValues: Record<string, any> = {};
-  try {
-    assignedValues = await resolveRunJSObjectValues(ctx, params?.assignedValues);
-  } catch (error) {
-    console.error('[UpdateRecordAction] RunJS execution failed', error);
-    ctx.message.error(ctx.t('RunJS execution failed'));
+  const assignedValues = await resolveAssignFieldValues(ctx, params?.assignedValues, 'UpdateRecordAction');
+  if (!assignedValues) {
     return;
   }
 
