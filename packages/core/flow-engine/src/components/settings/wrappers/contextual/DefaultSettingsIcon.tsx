@@ -237,6 +237,15 @@ const getToolbarPopupContainer = (triggerNode?: HTMLElement | null) => {
   );
 };
 
+const removeExtraMenuItemClickHandlers = (item: FlowModelExtraMenuItem): FlowModelExtraMenuItem => {
+  const { onClick: _onClick, children, ...rest } = item;
+
+  return {
+    ...rest,
+    children: children?.length ? children.map(removeExtraMenuItemClickHandlers) : undefined,
+  };
+};
+
 export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
   model,
   showDeleteButton = true,
@@ -870,7 +879,8 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
       // });
 
       if (commonExtras.length > 0) {
-        items.push(...(commonExtras as MenuProps['items']));
+        // Antd Menu 会同时触发 item.onClick 和 menu.onClick，这里统一交给 handleMenuClick 执行。
+        items.push(...(commonExtras.map(removeExtraMenuItemClickHandlers) as MenuProps['items']));
       }
 
       // 添加复制uid按钮

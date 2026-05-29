@@ -181,6 +181,7 @@ const TABLE_OPTIONS: FlowSurfaceConfigureOptions = {
   resource: COMMON_RESOURCE,
   pageSize: numberOption('Page size', { example: 20 }),
   density: stringOption('Table density', { enum: ['large', 'middle', 'small'], example: 'middle' }),
+  enableRowSelection: booleanOption('Whether to enable row selection checkboxes', { example: true }),
   showRowNumbers: booleanOption('Whether to display row numbers', { example: true }),
   sorting: SORTING,
   dataScope: FILTER_GROUP,

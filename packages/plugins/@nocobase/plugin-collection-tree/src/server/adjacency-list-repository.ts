@@ -11,6 +11,7 @@ import { CountOptions, FindAndCountOptions, FindOptions, Model, Repository, Tran
 import { isValidFilter } from '@nocobase/utils';
 import lodash from 'lodash';
 import { TreeCollection } from './tree-collection';
+import { formatTreeCycleError, TreeNodeKey } from './cycle-detection';
 
 export class AdjacencyListRepository extends Repository {
   declare collection: TreeCollection;
@@ -91,7 +92,7 @@ export class AdjacencyListRepository extends Repository {
     }
     const childInstances = await super.find(findChildrenOptions);
 
-    const nodeMap = {};
+    const nodeMap: Record<string, Model[]> = {};
     childInstances.forEach((node) => {
       if (!nodeMap[`${node[foreignKey]}`]) {
         nodeMap[`${node[foreignKey]}`] = [];
@@ -100,15 +101,28 @@ export class AdjacencyListRepository extends Repository {
       nodeMap[`${node[foreignKey]}`].push(node);
     });
 
-    function buildTree(rootId: string | number) {
-      const children = nodeMap[rootId];
+    const getNodePrimaryKey = (node: Model) => node.get(primaryKey) as TreeNodeKey;
+
+    function buildTree(rootId: TreeNodeKey, path: TreeNodeKey[], pathIndex: Map<string, number>) {
+      const children = nodeMap[String(rootId)];
 
       if (!children) {
         return [];
       }
 
       return children.map((child) => {
-        const childrenValues = buildTree(child.id);
+        const childPrimaryKey = getNodePrimaryKey(child);
+        const cycleStartIndex = pathIndex.get(String(childPrimaryKey));
+        if (cycleStartIndex !== undefined) {
+          throw new Error(formatTreeCycleError(collection.name, [...path.slice(cycleStartIndex), childPrimaryKey]));
+        }
+
+        pathIndex.set(String(childPrimaryKey), path.length);
+        path.push(childPrimaryKey);
+        const childrenValues = buildTree(childPrimaryKey, path, pathIndex);
+        path.pop();
+        pathIndex.delete(String(childPrimaryKey));
+
         if (childrenValues.length > 0) {
           child.setDataValue(childrenKey, childrenValues);
         }
@@ -117,8 +131,8 @@ export class AdjacencyListRepository extends Repository {
     }
 
     for (const root of rootNodes) {
-      const rootId = root[primaryKey];
-      const children = buildTree(rootId);
+      const rootId = getNodePrimaryKey(root);
+      const children = buildTree(rootId, [rootId], new Map([[String(rootId), 0]]));
       if (children.length > 0) {
         root.setDataValue(childrenKey, children);
       }

@@ -3581,6 +3581,9 @@ export class FlowEngineContext extends BaseFlowEngineContext {
       },
     });
     this.defineMethod('aclCheck', function (params) {
+      if (this.skipAclCheck) {
+        return true;
+      }
       return this.acl.aclCheck(params);
     });
     this.defineMethod('createResource', function (this: BaseFlowEngineContext, resourceType) {

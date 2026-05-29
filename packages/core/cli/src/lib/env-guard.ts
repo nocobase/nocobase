@@ -58,7 +58,7 @@ export async function ensureCrossEnvConfirmed(options: {
 
   const currentEnv = normalizeEnvName(await getCurrentEnvName());
   const interactiveTerminal = isInteractiveTerminal();
-  const bypassInteractivePrompt = interactiveTerminal && Boolean(options.yes);
+  const bypassInteractivePrompt = Boolean(options.yes);
 
   if (!currentEnv || currentEnv === requestedEnv || bypassInteractivePrompt) {
     return true;

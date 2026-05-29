@@ -8,6 +8,7 @@
  */
 
 import { MultiRecordResource, SingleRecordResource } from '@nocobase/flow-engine';
+import { mergeAssignFieldValues, resolveAssignFieldValues } from '../assign-form/assignFieldValuesFlow';
 import type { FormBlockModel } from './FormBlockModel';
 import { omitHiddenModelValuesFromSubmit, shouldSkipSubmitValidation, validateSubmitForm } from './submitValues';
 
@@ -24,7 +25,13 @@ export async function submitHandler(ctx, params, cb?: (values?: any, filterByTk?
     skipValidator: shouldSkipSubmitValidation(ctx?.model),
   });
   const rawValues = blockModel.form.getFieldsValue(true);
-  const values = omitHiddenModelValuesFromSubmit(rawValues, blockModel);
+  const formValues = omitHiddenModelValuesFromSubmit(rawValues, blockModel);
+  const assignedValues = await resolveAssignFieldValues(ctx, params?.assignedValues, 'FormSubmitAction');
+  if (!assignedValues) {
+    ctx.exit?.();
+    return;
+  }
+  const values = mergeAssignFieldValues(formValues, assignedValues);
   if (resource instanceof SingleRecordResource) {
     if (isEditFormModel) {
       const currentFilterByTk = resource.getMeta('currentFilterByTk');

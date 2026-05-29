@@ -87,7 +87,7 @@ describe('AdminLayoutRouteCoordinator', () => {
     expect(loadSpy).not.toHaveBeenCalled();
   });
 
-  it('should sync current route immediately after page registration', () => {
+  it('should not replay current route during page registration', () => {
     const engine = createEngine();
     engine.context.defineProperty('route', {
       value: {
@@ -104,7 +104,7 @@ describe('AdminLayoutRouteCoordinator', () => {
       active: true,
     });
 
-    expect(navigateToSpy).toHaveBeenCalledTimes(2);
+    expect(navigateToSpy).not.toHaveBeenCalled();
   });
 
   it('should cleanup opened views and remove models', async () => {
@@ -274,7 +274,7 @@ describe('AdminLayoutRouteCoordinator', () => {
     expect(page1RouteModel.dispatchEvent).not.toHaveBeenCalled();
   });
 
-  it('should prefer page specific layout content element as target', async () => {
+  it('should prefer global layout content element as target', async () => {
     const engine = createEngine();
     const coordinator = new AdminLayoutRouteCoordinator(engine);
     const globalElement = document.createElement('div');
@@ -303,7 +303,7 @@ describe('AdminLayoutRouteCoordinator', () => {
     await flushPromises();
 
     expect(dispatchSpy).toHaveBeenCalled();
-    expect(dispatchSpy.mock.calls[0][1]?.target).toBe(pageElement);
+    expect(dispatchSpy.mock.calls[0][1]?.target).toBe(globalElement);
   });
 
   it('should expose live currentRoute from route model context after route repository updates', () => {

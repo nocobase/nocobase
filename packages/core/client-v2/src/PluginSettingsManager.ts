@@ -524,7 +524,7 @@ export class PluginSettingsManager<TApp extends BaseApplication<any> = BaseAppli
 
     if (page.key === 'index') {
       this.app.router.add(this.getRouteName(page.name), {
-        index: true,
+        path: '',
         Component: fallbackComponent,
         componentLoader: page.componentLoader,
       });
