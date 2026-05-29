@@ -23,7 +23,12 @@ import {
   STORAGE_TYPE_LOCAL,
 } from '../../constants';
 import { StorageClassType, StorageType } from '../storages';
-import { getDocumentRoot, resolveSafePath } from '../storages/local';
+import {
+  getDocumentRoot,
+  normalizeLocalStoragePath,
+  resolveSafePath,
+  validateLocalStorageConfig,
+} from '../storages/local';
 
 function makeMulterStorage(storage: StorageType) {
   const innerStorage = storage.make();
@@ -192,8 +197,55 @@ async function multipart(ctx: Context, next: Next) {
   await next();
 }
 
+async function validateStorageAction(ctx: Context) {
+  const { actionName, params } = ctx.action;
+  if (!['create', 'update'].includes(actionName)) {
+    return;
+  }
+
+  const values = params.values || {};
+  let storage = values;
+  const hasSubmittedDocumentRoot = Object.prototype.hasOwnProperty.call(values.options || {}, 'documentRoot');
+
+  if (actionName === 'update' && params.filterByTk) {
+    const repository = ctx.db.getRepository('storages');
+    let existing = await repository.findById(params.filterByTk);
+    if (!existing) {
+      existing = await repository.findOne({
+        filter: {
+          name: params.filterByTk,
+        },
+      });
+    }
+    if (existing) {
+      const existingValues = existing.toJSON();
+      storage = {
+        ...existingValues,
+        ...values,
+        options: {
+          ...(existingValues.options || {}),
+          ...(values.options || {}),
+        },
+      };
+    }
+  }
+
+  try {
+    validateLocalStorageConfig(storage, { validateDocumentRoot: hasSubmittedDocumentRoot });
+  } catch (error) {
+    if (['INVALID_LOCAL_STORAGE_PATH', 'PATH_TRAVERSAL'].includes((error as NodeJS.ErrnoException).code)) {
+      return ctx.throw(400, (error as Error).message);
+    }
+    throw error;
+  }
+}
+
 export async function createMiddleware(ctx: Context, next: Next) {
   const { resourceName, actionName } = ctx.action;
+  if (resourceName === 'storages') {
+    await validateStorageAction(ctx);
+  }
+
   const { attachmentField } = ctx.action.params;
   const collection = ctx.db.getCollection(resourceName);
 
@@ -229,10 +281,10 @@ export async function createMiddleware(ctx: Context, next: Next) {
       const filePath = values?.path ?? '';
       const filename = values?.filename ?? '';
       try {
-        resolveSafePath(getDocumentRoot(storage), filePath, filename);
+        resolveSafePath(getDocumentRoot(storage), normalizeLocalStoragePath(filePath), filename);
       } catch (error) {
         if ((error as NodeJS.ErrnoException).code === 'PATH_TRAVERSAL') {
-          return ctx.throw(400, error);
+          return ctx.throw(400, (error as Error).message);
         }
         throw error;
       }
