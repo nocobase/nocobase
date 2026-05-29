@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Avatar, Spin, Popover, Card, Tag, Select, Switch, Alert, Typography, Input } from 'antd';
 import { FlowModel, tExpr, useFlowSettingsContext, observer, useFlowContext } from '@nocobase/flow-engine';
 import { avatars } from '../../avatars';
@@ -59,6 +59,7 @@ const Shortcut: React.FC<ShortcutProps> = ({
   context,
   auto,
 }) => {
+  const ctx = useFlowContext();
   const { size, mask } = style;
   const [focus, setFocus] = useState(false);
   const aiConfigRepository = useAIConfigRepository();
@@ -91,6 +92,29 @@ const Shortcut: React.FC<ShortcutProps> = ({
     });
   }, [aiEmployee, focus, showNotice, mask]);
 
+  const getShortcutContext = useCallback(() => {
+    const workContext = context.workContext ?? [];
+    if (!workContext.length) {
+      return workContext;
+    }
+    const nextWorkContext = workContext.filter((item) => {
+      if (item.type !== 'flow-model') {
+        return true;
+      }
+      return Boolean(ctx.engine.getModel(item.uid));
+    });
+    if (nextWorkContext.every((item) => item.type !== 'flow-model')) {
+      const parent = ctx.model.parent;
+      if (parent) {
+        nextWorkContext.push({
+          type: 'flow-model',
+          uid: parent.uid,
+        });
+      }
+    }
+    return nextWorkContext;
+  }, [ctx, context.workContext]);
+
   if (!aiEmployee) {
     return null;
   }
@@ -113,8 +137,9 @@ const Shortcut: React.FC<ShortcutProps> = ({
           onClick={() => {
             triggerTask({ aiEmployee, tasks, auto });
             if (context?.workContext?.length) {
-              addContextItems(context.workContext);
-              syncContextAttachments(context.workContext);
+              const shortcutContext = getShortcutContext();
+              addContextItems(shortcutContext);
+              syncContextAttachments(shortcutContext);
             }
           }}
         />
