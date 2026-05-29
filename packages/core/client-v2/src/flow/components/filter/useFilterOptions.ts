@@ -39,10 +39,22 @@ export type FilterOption = {
 
 export interface UseFilterOptionsArgs {
   /**
+   * **Preferred way to restrict fields**, alongside `nonfilterableFieldNames`.
+   *
    * Whitelist of root-level field names to expose. Empty/undefined means "all filterable fields". The whitelist applies only at depth 1 — nested fields under an allowed association field are always included, matching the legacy v1 `Filter.Action` behaviour.
    */
   filterableFieldNames?: string[];
-  /** Bypass the `filterableFieldNames` whitelist (mirrors v1 `noIgnore`). */
+  /**
+   * **Preferred way to restrict fields**, alongside `filterableFieldNames`.
+   *
+   * Blacklist of root-level field names to drop. Mirrors v1's `nonfilterable: [...]` schema prop on `Filter.Action`. Applies at depth 1 only, same as the whitelist. When both `filterableFieldNames` and `nonfilterableFieldNames` are provided, both apply: the final field set is `(whitelist or all) minus blacklist`.
+   */
+  nonfilterableFieldNames?: string[];
+  /**
+   * Bypass the `filterableFieldNames` whitelist (mirrors v1 `noIgnore`).
+   *
+   * Legacy escape hatch from v1 schemas — prefer adjusting `filterableFieldNames` / `nonfilterableFieldNames` instead. Kept only for parity with existing v1 schemas that already set `noIgnore`.
+   */
   noIgnore?: boolean;
   /** Translator used for field/operator labels. Defaults to identity. */
   t?: (key: string) => string;
@@ -58,14 +70,24 @@ const identity = (s: string) => s;
  * - the whitelist applies at depth 1 only, so capping the root field list (e.g. to `['lockedTs', 'unlockTs', 'user']`) doesn't accidentally hide the nested `user.username` / `user.nickname` leaves.
  */
 export function useFilterOptions(collection: Collection | undefined, args: UseFilterOptionsArgs = {}): FilterOption[] {
-  const { filterableFieldNames, noIgnore = false, t = identity } = args;
+  const { filterableFieldNames, nonfilterableFieldNames, noIgnore = false, t = identity } = args;
 
   const fields = useMemo(() => collection?.getFields() || [], [collection]);
 
   const ignoreFieldsNames = useMemo(() => {
-    if (noIgnore || !filterableFieldNames?.length) return [];
-    return fields.map((f) => f.name).filter((n) => !filterableFieldNames.includes(n));
-  }, [fields, filterableFieldNames, noIgnore]);
+    // Whitelist contribution: every field not in `filterableFieldNames`.
+    // Skipped when `noIgnore` is set, or when no whitelist was provided.
+    const whitelistIgnored =
+      noIgnore || !filterableFieldNames?.length
+        ? []
+        : fields.map((f) => f.name).filter((n) => !filterableFieldNames.includes(n));
+    // Blacklist contribution: explicit names. Always applied, even with
+    // `noIgnore` (the blacklist's whole job is to subtract specific fields).
+    const blacklistIgnored = nonfilterableFieldNames ?? [];
+    if (!blacklistIgnored.length) return whitelistIgnored;
+    // Union the two so the final ignore set is `whitelist-derived ∪ blacklist`.
+    return Array.from(new Set([...whitelistIgnored, ...blacklistIgnored]));
+  }, [fields, filterableFieldNames, nonfilterableFieldNames, noIgnore]);
 
   return useMemo(
     () =>

@@ -44,7 +44,15 @@ export interface CollectionFilterItemProps {
   collection: Collection;
   /** Whitelist of field names to expose; empty/undefined means all filterable fields. */
   filterableFieldNames?: string[];
-  /** Bypass the `filterableFieldNames` whitelist (matches the legacy FilterItem `noIgnore`). */
+  /**
+   * Blacklist of field names to drop. Mirrors v1's `nonfilterable: [...]` on `Filter.Action`. When both whitelist and blacklist are supplied, both apply (final = whitelist ∩ ¬blacklist).
+   */
+  nonfilterableFieldNames?: string[];
+  /**
+   * Bypass the `filterableFieldNames` whitelist (matches the legacy FilterItem `noIgnore`).
+   *
+   * Legacy escape hatch — prefer adjusting `filterableFieldNames` / `nonfilterableFieldNames` instead.
+   */
   noIgnore?: boolean;
   /** Translator; defaults to identity so callers can omit it. */
   t?: (key: string) => string;
@@ -84,10 +92,10 @@ const toCascaderOptions = (options: FilterOption[]): CascaderOption[] =>
  */
 export const CollectionFilterItem: FC<CollectionFilterItemProps> = observer(
   (props) => {
-    const { collection, filterableFieldNames, noIgnore = false, t = identity } = props;
+    const { collection, filterableFieldNames, nonfilterableFieldNames, noIgnore = false, t = identity } = props;
     const { path: leftValue, operator, value: rightValue } = props.value;
 
-    const options = useFilterOptions(collection, { filterableFieldNames, noIgnore, t });
+    const options = useFilterOptions(collection, { filterableFieldNames, nonfilterableFieldNames, noIgnore, t });
 
     const cascaderOptions = useMemo(() => toCascaderOptions(options), [options]);
 
@@ -164,7 +172,7 @@ export const CollectionFilterItem: FC<CollectionFilterItemProps> = observer(
  */
 export function createCollectionFilterItem(
   collection: Collection,
-  bound?: Pick<CollectionFilterItemProps, 'filterableFieldNames' | 'noIgnore' | 't'>,
+  bound?: Pick<CollectionFilterItemProps, 'filterableFieldNames' | 'nonfilterableFieldNames' | 'noIgnore' | 't'>,
 ) {
   const Component: FC<{ value: CollectionFilterItemValue }> = (props) => (
     <CollectionFilterItem {...bound} value={props.value} collection={collection} />
