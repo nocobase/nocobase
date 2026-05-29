@@ -483,6 +483,7 @@ const KANBAN_SETTINGS_GROUP = {
 const TABLE_SETTINGS_GROUP = {
   allowedPaths: [
     'quickEdit.editable',
+    'enableRowSelection.enableRowSelection',
     'showRowNumbers.showIndex',
     'pageSize.pageSize',
     'dataScope.filter',
@@ -495,6 +496,7 @@ const TABLE_SETTINGS_GROUP = {
   ],
   eventBindingSteps: [
     'quickEdit',
+    'enableRowSelection',
     'showRowNumbers',
     'pageSize',
     'dataScope',
@@ -507,6 +509,7 @@ const TABLE_SETTINGS_GROUP = {
   ],
   pathSchemas: {
     'quickEdit.editable': BOOLEAN_SCHEMA,
+    'enableRowSelection.enableRowSelection': BOOLEAN_SCHEMA,
     'showRowNumbers.showIndex': BOOLEAN_SCHEMA,
     'pageSize.pageSize': NUMBER_SCHEMA,
     'dataScope.filter': FILTER_GROUP_SCHEMA,

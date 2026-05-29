@@ -34,12 +34,91 @@ const LARGE_DEFAULTS_ASSOCIATION_TARGET_FIELDS = Array.from(
   { length: 11 },
   (_item, index) => `targetField${index + 1}`,
 );
+const EMPLOYEE_VISIBLE_FIELDS = ['nickname', 'status', 'email'];
+const USER_VISIBLE_FIELDS = ['username', 'nickname', 'email'];
+const ROLE_VISIBLE_FIELDS = ['name', 'title', 'description'];
+const DEFAULT_FILTER_CAP_VISIBLE_FIELDS = DEFAULT_FILTER_CAP_FIELDS.slice(0, 3);
+const LARGE_DEFAULTS_ACTION_VISIBLE_FIELDS = LARGE_DEFAULTS_ACTION_FIELDS.slice(0, 3);
 
 describe('flowSurfaces backend authoring applyBlueprint compiler', () => {
   let context: FlowSurfacesContractContext;
   let rootAgent: FlowSurfacesContractContext['rootAgent'];
   let flowRepo: FlowSurfacesContractContext['flowRepo'];
   let routesRepo: FlowSurfacesContractContext['routesRepo'];
+
+  async function createAuthoringRelationFixture() {
+    const suffix = _.uniqueId();
+    const sourceCollection = `fab_s_${suffix}`;
+    const targetCollection = `fab_t_${suffix}`;
+    const throughCollection = `fab_m_${suffix}`;
+    await rootAgent.resource('collections').create({
+      values: {
+        name: targetCollection,
+        title: targetCollection,
+        titleField: 'title',
+        fields: [
+          { name: 'name', type: 'string', interface: 'input' },
+          { name: 'title', type: 'string', interface: 'input' },
+          { name: 'description', type: 'string', interface: 'input' },
+        ],
+      },
+    });
+    await rootAgent.resource('collections').create({
+      values: {
+        name: sourceCollection,
+        title: sourceCollection,
+        titleField: 'username',
+        fields: [
+          { name: 'username', type: 'string', interface: 'input' },
+          { name: 'nickname', type: 'string', interface: 'input' },
+          { name: 'email', type: 'string', interface: 'email' },
+        ],
+      },
+    });
+    await rootAgent.resource('collections').create({
+      values: {
+        name: throughCollection,
+        title: throughCollection,
+        fields: [
+          {
+            name: 'id',
+            type: 'integer',
+            autoIncrement: true,
+            primaryKey: true,
+            allowNull: false,
+            interface: 'id',
+          },
+        ],
+      },
+    });
+    await rootAgent.resource('collections.fields', sourceCollection).create({
+      values: {
+        name: 'roles',
+        type: 'belongsToMany',
+        target: targetCollection,
+        through: throughCollection,
+        foreignKey: 'sourceId',
+        otherKey: 'targetId',
+        interface: 'm2m',
+        reverseField: {
+          type: 'belongsToMany',
+          name: 'users',
+          interface: 'm2m',
+        },
+      },
+    });
+    await waitForFixtureCollectionsReady(context.db, {
+      [sourceCollection]: USER_VISIBLE_FIELDS,
+      [targetCollection]: ROLE_VISIBLE_FIELDS,
+      [throughCollection]: ['id', 'sourceId', 'targetId'],
+    });
+    return {
+      sourceCollection,
+      targetCollection,
+      sourceAssociationName: `${sourceCollection}.roles`,
+      targetAssociationName: `${targetCollection}.users`,
+    };
+  }
 
   beforeAll(async () => {
     context = await createFlowSurfacesContractContext({
@@ -160,7 +239,7 @@ describe('flowSurfaces backend authoring applyBlueprint compiler', () => {
                 settings: {
                   sort: ['-createdAt', 'nickname'],
                 },
-                fields: ['nickname'],
+                fields: EMPLOYEE_VISIBLE_FIELDS,
               },
             ],
           },
@@ -282,7 +361,7 @@ describe('flowSurfaces backend authoring applyBlueprint compiler', () => {
                 settings: {
                   title: 'Should not persist either',
                 },
-                fields: ['nickname'],
+                fields: EMPLOYEE_VISIBLE_FIELDS,
               },
             ],
           },
@@ -320,7 +399,7 @@ describe('flowSurfaces backend authoring applyBlueprint compiler', () => {
                 title: 'Employees table',
                 collection: 'employees',
                 defaultFilter: employeeDefaultFilter(),
-                fields: ['nickname'],
+                fields: EMPLOYEE_VISIBLE_FIELDS,
               },
               {
                 key: 'employeesList',
@@ -328,7 +407,7 @@ describe('flowSurfaces backend authoring applyBlueprint compiler', () => {
                 title: 'Employees list',
                 collection: 'employees',
                 defaultFilter: employeeDefaultFilter(),
-                fields: ['nickname'],
+                fields: EMPLOYEE_VISIBLE_FIELDS,
               },
             ],
           },
@@ -373,7 +452,7 @@ describe('flowSurfaces backend authoring applyBlueprint compiler', () => {
                     },
                   ],
                 },
-                fields: ['nickname'],
+                fields: EMPLOYEE_VISIBLE_FIELDS,
               },
             ],
           },
@@ -394,6 +473,222 @@ describe('flowSurfaces backend authoring applyBlueprint compiler', () => {
         type: 'bad_request',
       });
     }
+  });
+
+  it('should include repair hints on jsBlock and chart authoring errors', async () => {
+    const response = await rootAgent.resource('flowSurfaces').applyBlueprint({
+      values: {
+        mode: 'create',
+        navigation: {
+          item: {
+            title: 'Authoring jsBlock chart repair hint blueprint',
+          },
+        },
+        tabs: [
+          {
+            title: 'Overview',
+            blocks: [
+              {
+                key: 'missingJsSource',
+                type: 'jsBlock',
+                title: 'KPI summary',
+              },
+              {
+                key: 'topLevelJsCode',
+                type: 'jsBlock',
+                title: 'KPI summary with wrong key',
+                code: 'return { value: 1 };',
+              },
+              {
+                key: 'missingChartAsset',
+                type: 'chart',
+                title: 'Status chart',
+                chart: 'missingAsset',
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(response.status).toBe(400);
+    expect(response.body?.errors).toEqual(expect.any(Array));
+    const jsBlockError = response.body.errors.find((error: any) => error.ruleId === 'jsBlock-source-required');
+    const chartError = response.body.errors.find(
+      (error: any) => error.ruleId === 'chart-block-asset-reference-missing',
+    );
+    const topLevelCodeError = response.body.errors.find(
+      (error: any) => error.ruleId === 'jsBlock-top-level-code-unsupported',
+    );
+    expect(jsBlockError?.details?.repairHint).toContain('settings.code');
+    expect(jsBlockError?.details?.repairHint).toContain('Do not change this block type');
+    expect(jsBlockError?.message).toContain('jsBlock payload shape problem');
+    expect(jsBlockError?.message).toContain('Do not change this block type');
+    expect(topLevelCodeError?.details?.repairHint).toContain('settings.code');
+    expect(topLevelCodeError?.details?.repairHint).toContain('Do not change this block type');
+    expect(chartError?.details?.repairHint).toContain('assets.charts');
+    expect(chartError?.details?.repairHint).toContain('Do not change this block type');
+    expect(chartError?.details?.repairHint).toContain('do not drop or defer the chart');
+    expect(chartError?.details?.repairHint).toContain('KPI');
+    expect(chartError?.details?.repairSteps).toEqual(
+      expect.arrayContaining([
+        expect.stringContaining('Keep the block type as chart'),
+        expect.stringContaining('assets.charts.<key>.query'),
+      ]),
+    );
+    expect(chartError?.details?.expectedShape?.block).toEqual({ type: 'chart', chart: 'chartKey' });
+    expect(chartError?.details?.forbiddenFallbacks).toEqual(expect.arrayContaining(['table', 'drop chart']));
+    expect(chartError?.message).toContain('chart payload shape problem');
+    expect(chartError?.message).toContain('Do not change this block type');
+    expect(chartError?.message).toContain('do not drop or defer the chart');
+  });
+
+  it('should include repair hints on invalid jsBlock script assets', async () => {
+    const response = await rootAgent.resource('flowSurfaces').applyBlueprint({
+      values: {
+        mode: 'create',
+        navigation: {
+          item: {
+            title: 'Authoring script asset chart mapping repair hint blueprint',
+          },
+        },
+        assets: {
+          scripts: {
+            brokenKpi: {},
+          },
+        },
+        tabs: [
+          {
+            title: 'Overview',
+            blocks: [
+              {
+                key: 'brokenKpi',
+                type: 'jsBlock',
+                title: 'KPI summary',
+                script: 'brokenKpi',
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(response.status).toBe(400);
+    expect(response.body?.errors).toEqual(expect.any(Array));
+    const scriptError = response.body.errors.find(
+      (error: any) => error.ruleId === 'apply-blueprint-script-asset-code-required',
+    );
+    expect(scriptError?.details?.repairHint).toContain('assets.scripts');
+    expect(scriptError?.details?.repairHint).toContain('Do not change this block type');
+  });
+
+  it('should include repair hints on invalid chart SQL output mappings', async () => {
+    const response = await rootAgent.resource('flowSurfaces').applyBlueprint({
+      values: {
+        mode: 'create',
+        navigation: {
+          item: {
+            title: 'Authoring chart SQL mapping repair hint blueprint',
+          },
+        },
+        assets: {
+          charts: {
+            statusChart: {
+              query: {
+                mode: 'sql',
+                sql: 'select 1 as value',
+              },
+              visual: {
+                mode: 'basic',
+                type: 'bar',
+                mappings: {
+                  x: 'value',
+                  y: 'missingOutput',
+                },
+              },
+            },
+          },
+        },
+        tabs: [
+          {
+            title: 'Overview',
+            blocks: [
+              {
+                key: 'statusChart',
+                type: 'chart',
+                title: 'Status chart',
+                chart: 'statusChart',
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(response.status).toBe(400);
+    const chartError = response.body?.errors?.[0];
+    expect(chartError?.message).toContain('chart visual mappings only support SQL query output fields');
+    expect(chartError?.message).toContain('Do not change this block type');
+    expect(chartError?.details?.repairHint).toContain('chart payload shape problem');
+    expect(chartError?.details?.repairHint).toContain('Do not change this block type');
+    expect(chartError?.details?.repairSteps).toEqual(
+      expect.arrayContaining([expect.stringContaining('Retry the chart payload')]),
+    );
+    expect(chartError?.details?.supportedOutputs).toEqual(['value']);
+  });
+
+  it('should include repair hints on invalid chart SQL during applyBlueprint', async () => {
+    const response = await rootAgent.resource('flowSurfaces').applyBlueprint({
+      values: {
+        mode: 'create',
+        navigation: {
+          item: {
+            title: 'Authoring chart invalid SQL repair hint blueprint',
+          },
+        },
+        assets: {
+          charts: {
+            statusChart: {
+              query: {
+                mode: 'sql',
+                sql: 'select * from missing_flow_surfaces_chart_table',
+              },
+              visual: {
+                mode: 'basic',
+                type: 'bar',
+                mappings: {
+                  x: 'status',
+                  y: 'value',
+                },
+              },
+            },
+          },
+        },
+        tabs: [
+          {
+            title: 'Overview',
+            blocks: [
+              {
+                key: 'statusChart',
+                type: 'chart',
+                title: 'Status chart',
+                chart: 'statusChart',
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(response.status).toBe(400);
+    const chartError = response.body?.errors?.[0];
+    expect(chartError?.message).toContain('chart query.sql is invalid');
+    expect(chartError?.message).toContain('Do not change this block type');
+    expect(chartError?.details?.repairHint).toContain('chart payload shape problem');
+    expect(chartError?.details?.repairSteps).toEqual(
+      expect.arrayContaining([expect.stringContaining('Retry the chart payload')]),
+    );
+    expect(chartError?.details?.forbiddenFallbacks).toEqual(expect.arrayContaining(['table', 'drop chart']));
   });
 
   it('should aggregate explicit empty defaultFilter groups before applyBlueprint writes', async () => {
@@ -417,7 +712,7 @@ describe('flowSurfaces backend authoring applyBlueprint compiler', () => {
                   logic: '$and',
                   items: [],
                 },
-                fields: ['nickname'],
+                fields: EMPLOYEE_VISIBLE_FIELDS,
               },
             ],
           },
@@ -560,7 +855,7 @@ describe('flowSurfaces backend authoring applyBlueprint compiler', () => {
                 key: 'largeDefaultsTable',
                 type: 'table',
                 collection: DEFAULT_FILTER_CAP_COLLECTION,
-                fields: ['capField1'],
+                fields: DEFAULT_FILTER_CAP_VISIBLE_FIELDS,
               },
             ],
           },
@@ -604,7 +899,7 @@ describe('flowSurfaces backend authoring applyBlueprint compiler', () => {
                 key: 'largeDefaultsTable',
                 type: 'table',
                 collection: DEFAULT_FILTER_CAP_COLLECTION,
-                fields: ['capField1'],
+                fields: DEFAULT_FILTER_CAP_VISIBLE_FIELDS,
                 defaultFilter: {
                   logic: '$and',
                   items: [
@@ -641,7 +936,7 @@ describe('flowSurfaces backend authoring applyBlueprint compiler', () => {
                 key: 'largeDefaultsTable',
                 type: 'table',
                 collection: DEFAULT_FILTER_CAP_COLLECTION,
-                fields: ['capField1'],
+                fields: DEFAULT_FILTER_CAP_VISIBLE_FIELDS,
                 defaultFilter: {
                   logic: '$and',
                   items: [
@@ -833,7 +1128,7 @@ describe('flowSurfaces backend authoring applyBlueprint compiler', () => {
                 key: 'largeDefaultsTable',
                 type: 'table',
                 collection: DEFAULT_FILTER_CAP_COLLECTION,
-                fields: ['capField1'],
+                fields: DEFAULT_FILTER_CAP_VISIBLE_FIELDS,
                 defaultFilter: explicitFilter,
               },
             ],
@@ -854,6 +1149,103 @@ describe('flowSurfaces backend authoring applyBlueprint compiler', () => {
       'capField4',
     ]);
     expect(filterAction?.props?.filterableFieldNames).toEqual(['capField1', 'capField2', 'capField3', 'capField4']);
+  });
+
+  it('should reject rich data blocks with too few visible business fields before applyBlueprint writes', async () => {
+    const response = await rootAgent.resource('flowSurfaces').applyBlueprint({
+      values: {
+        mode: 'create',
+        navigation: {
+          item: {
+            title: 'Authoring minimum visible fields blueprint',
+          },
+        },
+        page: {
+          title: 'Authoring minimum visible fields blueprint',
+        },
+        tabs: [
+          {
+            title: 'Overview',
+            blocks: [
+              {
+                key: 'largeDefaultsTable',
+                type: 'table',
+                collection: DEFAULT_FILTER_CAP_COLLECTION,
+                fields: ['capField1'],
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(response.status).toBe(400);
+    const minimumError = response.body?.errors?.find(
+      (error: any) => error.ruleId === 'data-block-visible-fields-minimum',
+    );
+    expect(minimumError).toMatchObject({
+      path: '$.tabs[0].blocks[0].fields',
+      details: {
+        blockType: 'table',
+        collection: DEFAULT_FILTER_CAP_COLLECTION,
+        fieldCount: 1,
+        requiredFieldCount: 3,
+      },
+    });
+    expect(minimumError?.message).toContain('Add at least 3 collection field names');
+  });
+
+  it('should not count defaults.collections fieldGroups as visible table fields', async () => {
+    const response = await rootAgent.resource('flowSurfaces').applyBlueprint({
+      values: {
+        mode: 'create',
+        defaults: {
+          collections: {
+            [DEFAULT_FILTER_CAP_COLLECTION]: {
+              fieldGroups: [
+                {
+                  title: 'Generated popup fields',
+                  fields: DEFAULT_FILTER_CAP_VISIBLE_FIELDS,
+                },
+              ],
+            },
+          },
+        },
+        navigation: {
+          item: {
+            title: 'Authoring defaults fieldGroups only blueprint',
+          },
+        },
+        page: {
+          title: 'Authoring defaults fieldGroups only blueprint',
+        },
+        tabs: [
+          {
+            title: 'Overview',
+            blocks: [
+              {
+                key: 'largeDefaultsTable',
+                type: 'table',
+                collection: DEFAULT_FILTER_CAP_COLLECTION,
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(response.status).toBe(400);
+    const visibleFieldError = response.body?.errors?.find(
+      (error: any) => error.ruleId === 'data-block-visible-fields-required',
+    );
+    expect(visibleFieldError).toMatchObject({
+      path: '$.tabs[0].blocks[0].fields',
+      details: {
+        blockType: 'table',
+        collection: DEFAULT_FILTER_CAP_COLLECTION,
+      },
+    });
+    expect(visibleFieldError?.message).toContain('defaults.collections.*.fieldGroups');
   });
 
   it('should add default table record actions when raw applyBlueprint omits recordActions', async () => {
@@ -878,7 +1270,7 @@ describe('flowSurfaces backend authoring applyBlueprint compiler', () => {
                 collection: 'employees',
                 template: {},
                 defaultFilter: employeeDefaultFilter(),
-                fields: ['nickname'],
+                fields: EMPLOYEE_VISIBLE_FIELDS,
               },
             ],
           },
@@ -890,6 +1282,54 @@ describe('flowSurfaces backend authoring applyBlueprint compiler', () => {
     const data = getData(executeRes);
     const tableBlock = collectDescendantNodes(data.surface.tree, (item) => item?.use === 'TableBlockModel')[0];
     const persistedTable = await flowRepo.findModelById(tableBlock.uid, { includeAsyncNode: true });
+    expect(readTableRecordActionUses(persistedTable)).toEqual([
+      'ViewActionModel',
+      'EditActionModel',
+      'DeleteActionModel',
+    ]);
+  });
+
+  it('should auto-complete default table actions when raw applyBlueprint passes empty action arrays', async () => {
+    const executeRes = await rootAgent.resource('flowSurfaces').applyBlueprint({
+      values: {
+        mode: 'create',
+        navigation: {
+          item: {
+            title: 'Authoring empty table action arrays',
+          },
+        },
+        page: {
+          title: 'Authoring empty table action arrays',
+        },
+        tabs: [
+          {
+            title: 'Overview',
+            blocks: [
+              {
+                key: 'employeesTable',
+                type: 'table',
+                collection: 'employees',
+                defaultFilter: employeeDefaultFilter(),
+                fields: EMPLOYEE_VISIBLE_FIELDS,
+                actions: [],
+                recordActions: [],
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(executeRes.status, readErrorMessage(executeRes)).toBe(200);
+    const data = getData(executeRes);
+    const tableBlock = collectDescendantNodes(data.surface.tree, (item) => item?.use === 'TableBlockModel')[0];
+    const persistedTable = await flowRepo.findModelById(tableBlock.uid, { includeAsyncNode: true });
+    expect(readTableActionUses(persistedTable)).toEqual([
+      'FilterActionModel',
+      'RefreshActionModel',
+      'BulkDeleteActionModel',
+      'AddNewActionModel',
+    ]);
     expect(readTableRecordActionUses(persistedTable)).toEqual([
       'ViewActionModel',
       'EditActionModel',
@@ -918,7 +1358,7 @@ describe('flowSurfaces backend authoring applyBlueprint compiler', () => {
                 type: 'table',
                 collection: 'employees',
                 defaultFilter: employeeDefaultFilter(),
-                fields: ['nickname'],
+                fields: EMPLOYEE_VISIBLE_FIELDS,
                 actions: [
                   {
                     type: 'filter',
@@ -984,7 +1424,7 @@ describe('flowSurfaces backend authoring applyBlueprint compiler', () => {
                 type: 'table',
                 collection: 'employees',
                 defaultFilter: employeeDefaultFilter(),
-                fields: ['nickname'],
+                fields: EMPLOYEE_VISIBLE_FIELDS,
                 actions: [],
                 recordActions: [],
                 skipDefaultActions: true,
@@ -1027,7 +1467,7 @@ describe('flowSurfaces backend authoring applyBlueprint compiler', () => {
                 type: 'table',
                 collection: 'employees',
                 defaultFilter: employeeDefaultFilter(),
-                fields: ['nickname'],
+                fields: EMPLOYEE_VISIBLE_FIELDS,
               },
             ],
           },
@@ -1114,7 +1554,7 @@ describe('flowSurfaces backend authoring applyBlueprint compiler', () => {
                 type: 'table',
                 collection: 'employees',
                 defaultFilter: employeeDefaultFilter(),
-                fields: ['nickname'],
+                fields: EMPLOYEE_VISIBLE_FIELDS,
                 recordActions: [
                   {
                     key: 'viewEmployee',
@@ -1128,7 +1568,7 @@ describe('flowSurfaces backend authoring applyBlueprint compiler', () => {
                           resource: {
                             binding: 'currentRecord',
                           },
-                          fields: ['nickname'],
+                          fields: EMPLOYEE_VISIBLE_FIELDS,
                         },
                       ],
                     },
@@ -1173,7 +1613,7 @@ describe('flowSurfaces backend authoring applyBlueprint compiler', () => {
                 type: 'table',
                 collection: 'employees',
                 defaultFilter: employeeDefaultFilter(),
-                fields: ['nickname'],
+                fields: EMPLOYEE_VISIBLE_FIELDS,
                 recordActions: [
                   {
                     key: 'viewEmployee',
@@ -1186,7 +1626,7 @@ describe('flowSurfaces backend authoring applyBlueprint compiler', () => {
                           resource: {
                             binding: 'currentRecord',
                           },
-                          fields: ['nickname'],
+                          fields: EMPLOYEE_VISIBLE_FIELDS,
                         },
                         {
                           key: 'second',
@@ -1194,7 +1634,7 @@ describe('flowSurfaces backend authoring applyBlueprint compiler', () => {
                           resource: {
                             binding: 'currentRecord',
                           },
-                          fields: ['nickname'],
+                          fields: EMPLOYEE_VISIBLE_FIELDS,
                         },
                         {
                           key: 'third',
@@ -1202,7 +1642,7 @@ describe('flowSurfaces backend authoring applyBlueprint compiler', () => {
                           resource: {
                             binding: 'currentRecord',
                           },
-                          fields: ['nickname'],
+                          fields: EMPLOYEE_VISIBLE_FIELDS,
                         },
                         {
                           key: 'fourth',
@@ -1276,7 +1716,7 @@ describe('flowSurfaces backend authoring applyBlueprint compiler', () => {
                 type: 'table',
                 collection: 'employees',
                 defaultFilter: employeeDefaultFilter(),
-                fields: ['nickname'],
+                fields: EMPLOYEE_VISIBLE_FIELDS,
                 recordActions: [
                   {
                     key: 'viewEmployee',
@@ -1291,7 +1731,7 @@ describe('flowSurfaces backend authoring applyBlueprint compiler', () => {
                           resource: {
                             binding: 'currentRecord',
                           },
-                          fields: ['nickname'],
+                          fields: EMPLOYEE_VISIBLE_FIELDS,
                         },
                       ],
                     },
@@ -1819,7 +2259,7 @@ describe('flowSurfaces backend authoring applyBlueprint compiler', () => {
                 type: 'table',
                 collection: 'employees',
                 defaultFilter: employeeDefaultFilter(),
-                fields: ['nickname'],
+                fields: EMPLOYEE_VISIBLE_FIELDS,
                 pageSize: 99,
                 sort: ['nickname'],
                 sorting: [{ field: 'createdAt', direction: 'asc' }],
@@ -2144,7 +2584,9 @@ describe('flowSurfaces backend authoring applyBlueprint compiler', () => {
     });
 
     expect(emptyResponse.status).toBe(400);
-    expect(readErrorMessage(emptyResponse)).toContain('explicit fields must include at least one direct readable');
+    expect(emptyResponse.body?.errors?.map((error: any) => error.ruleId)).toEqual(
+      expect.arrayContaining(['data-block-visible-fields-required', 'tree-table-explicit-fields-readable-required']),
+    );
   });
 
   it('should normalize a unique navigation.group.title to the existing routeId before writing', async () => {
@@ -2177,7 +2619,7 @@ describe('flowSurfaces backend authoring applyBlueprint compiler', () => {
                 type: 'table',
                 collection: 'employees',
                 defaultFilter: employeeDefaultFilter(),
-                fields: ['nickname'],
+                fields: EMPLOYEE_VISIBLE_FIELDS,
               },
             ],
           },
@@ -2195,6 +2637,185 @@ describe('flowSurfaces backend authoring applyBlueprint compiler', () => {
       },
     });
     expect(matchedGroups).toHaveLength(1);
+  });
+
+  it('should require a group icon when the only same-title group is under a different parent', async () => {
+    const parent = await createMenu(rootAgent, {
+      title: `Authoring nested parent ${Date.now()}`,
+      type: 'group',
+    });
+    const nestedGroupTitle = `Authoring nested duplicate title ${Date.now()}`;
+    await createMenu(rootAgent, {
+      title: nestedGroupTitle,
+      type: 'group',
+      parentMenuRouteId: parent.routeId,
+    });
+
+    const response = await rootAgent.resource('flowSurfaces').applyBlueprint({
+      values: {
+        mode: 'create',
+        navigation: {
+          group: {
+            title: nestedGroupTitle,
+          },
+          item: {
+            title: 'Authoring nested duplicate title item',
+          },
+        },
+        page: {
+          title: 'Authoring nested duplicate title item',
+        },
+        tabs: [
+          {
+            title: 'Overview',
+            blocks: [
+              {
+                key: 'employeesTable',
+                type: 'table',
+                collection: 'employees',
+                defaultFilter: employeeDefaultFilter(),
+                fields: EMPLOYEE_VISIBLE_FIELDS,
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(response.status).toBe(400);
+    expect(response.body?.errors?.[0]).toMatchObject({
+      ruleId: 'navigation-icon-required',
+      path: '$.navigation.group.icon',
+    });
+  });
+
+  it('should create a root group instead of reusing a same-title group from another parent', async () => {
+    const parent = await createMenu(rootAgent, {
+      title: `Authoring scoped parent ${Date.now()}`,
+      type: 'group',
+    });
+    const groupTitle = `Authoring scoped group ${Date.now()}`;
+    const nestedGroup = await createMenu(rootAgent, {
+      title: groupTitle,
+      type: 'group',
+      parentMenuRouteId: parent.routeId,
+    });
+
+    const executeRes = await rootAgent.resource('flowSurfaces').applyBlueprint({
+      values: {
+        mode: 'create',
+        navigation: {
+          group: {
+            title: groupTitle,
+            icon: 'FolderOpenOutlined',
+          },
+          item: {
+            title: 'Authoring scoped group item',
+          },
+        },
+        page: {
+          title: 'Authoring scoped group item',
+        },
+        tabs: [
+          {
+            title: 'Overview',
+            blocks: [
+              {
+                key: 'employeesTable',
+                type: 'table',
+                collection: 'employees',
+                defaultFilter: employeeDefaultFilter(),
+                fields: EMPLOYEE_VISIBLE_FIELDS,
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(executeRes.status, readErrorMessage(executeRes)).toBe(200);
+    const data = getData(executeRes);
+    expect(data.surface.pageRoute.parentId).not.toBe(nestedGroup.routeId);
+    const matchedGroups = await routesRepo.find({
+      filter: {
+        type: 'group',
+        title: groupTitle,
+      },
+    });
+    expect(_.castArray(matchedGroups).filter((route: any) => _.isNil(route.get('parentId')))).toHaveLength(1);
+  });
+
+  it('should validate the effective create-mode page icon fallback for the navigation item', async () => {
+    const invalidFallbackRes = await rootAgent.resource('flowSurfaces').applyBlueprint({
+      values: {
+        mode: 'create',
+        navigation: {
+          item: {
+            title: 'Authoring invalid page icon fallback',
+          },
+        },
+        page: {
+          title: 'Authoring invalid page icon fallback',
+          icon: 'NotARealAntDesignIcon',
+        },
+        tabs: [
+          {
+            title: 'Overview',
+            blocks: [
+              {
+                key: 'employeesTable',
+                type: 'table',
+                collection: 'employees',
+                defaultFilter: employeeDefaultFilter(),
+                fields: EMPLOYEE_VISIBLE_FIELDS,
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(invalidFallbackRes.status).toBe(400);
+    expect(invalidFallbackRes.body?.errors?.[0]).toMatchObject({
+      ruleId: 'navigation-icon-unknown',
+      path: '$.page.icon',
+    });
+
+    const explicitItemIconRes = await rootAgent.resource('flowSurfaces').applyBlueprint({
+      values: {
+        mode: 'create',
+        navigation: {
+          item: {
+            title: 'Authoring explicit item icon still validates page icon',
+            icon: 'FileOutlined',
+          },
+        },
+        page: {
+          title: 'Authoring explicit item icon still validates page icon',
+          icon: 'NotARealAntDesignIcon',
+        },
+        tabs: [
+          {
+            title: 'Overview',
+            blocks: [
+              {
+                key: 'employeesTable',
+                type: 'table',
+                collection: 'employees',
+                defaultFilter: employeeDefaultFilter(),
+                fields: EMPLOYEE_VISIBLE_FIELDS,
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(explicitItemIconRes.status).toBe(400);
+    expect(explicitItemIconRes.body?.errors?.[0]).toMatchObject({
+      ruleId: 'navigation-icon-unknown',
+      path: '$.page.icon',
+    });
   });
 
   it('should infer replace target when create matches an existing page in the same navigation group', async () => {
@@ -2227,7 +2848,7 @@ describe('flowSurfaces backend authoring applyBlueprint compiler', () => {
                 type: 'table',
                 collection: 'employees',
                 defaultFilter: employeeDefaultFilter(),
-                fields: ['nickname'],
+                fields: EMPLOYEE_VISIBLE_FIELDS,
               },
             ],
           },
@@ -2259,7 +2880,7 @@ describe('flowSurfaces backend authoring applyBlueprint compiler', () => {
                 key: 'replacementEmployeesDetails',
                 type: 'details',
                 collection: 'employees',
-                fields: ['nickname'],
+                fields: EMPLOYEE_VISIBLE_FIELDS,
               },
             ],
           },
@@ -2314,7 +2935,7 @@ describe('flowSurfaces backend authoring applyBlueprint compiler', () => {
                 type: 'table',
                 collection: 'employees',
                 defaultFilter: employeeDefaultFilter(),
-                fields: ['nickname'],
+                fields: EMPLOYEE_VISIBLE_FIELDS,
               },
             ],
           },
@@ -2356,7 +2977,7 @@ describe('flowSurfaces backend authoring applyBlueprint compiler', () => {
                 key: 'replacementEmployeesDetails',
                 type: 'details',
                 collection: 'employees',
-                fields: ['nickname'],
+                fields: EMPLOYEE_VISIBLE_FIELDS,
               },
             ],
           },
@@ -2368,7 +2989,7 @@ describe('flowSurfaces backend authoring applyBlueprint compiler', () => {
     expect(readErrorMessage(response)).toContain('already has 2 flow pages titled');
   });
 
-  it('should auto-generate fieldGroups for raw details blocks from live metadata', async () => {
+  it('should reject raw details blocks without visible fields before generating fieldGroups', async () => {
     const executeRes = await rootAgent.resource('flowSurfaces').applyBlueprint({
       values: {
         mode: 'create',
@@ -2395,22 +3016,18 @@ describe('flowSurfaces backend authoring applyBlueprint compiler', () => {
       },
     });
 
-    expect(executeRes.status, readErrorMessage(executeRes)).toBe(200);
-    const data = getData(executeRes);
-    const detailsBlock = collectDescendantNodes(data.surface.tree, (item) => item?.use === 'DetailsBlockModel')[0];
-    const items = _.castArray(detailsBlock?.subModels?.grid?.subModels?.items || []);
-    expect(items.some((item: any) => item?.use === 'DividerItemModel' && item?.props?.label === 'Main')).toBe(true);
-    expect(items.map((item: any) => item?.stepParams?.fieldSettings?.init?.fieldPath).filter(Boolean)).toEqual(
-      expect.arrayContaining(['nickname', 'status']),
+    expect(executeRes.status).toBe(400);
+    const visibleFieldError = executeRes.body?.errors?.find(
+      (error: any) => error.ruleId === 'data-block-visible-fields-required',
     );
-    const persistedDetails = await flowRepo.findModelById(detailsBlock.uid, { includeAsyncNode: true });
-    const persistedFields = _.castArray(persistedDetails?.subModels?.grid?.subModels?.items || []);
-    expect(persistedFields.some((item: any) => item?.use === 'DividerItemModel' && item?.props?.label === 'Main')).toBe(
-      true,
-    );
-    expect(
-      persistedFields.map((field: any) => field?.stepParams?.fieldSettings?.init?.fieldPath).filter(Boolean),
-    ).toEqual(expect.arrayContaining(['nickname', 'status']));
+    expect(visibleFieldError).toMatchObject({
+      path: '$.tabs[0].blocks[0].fields',
+      details: {
+        blockType: 'details',
+        collection: 'employees',
+      },
+    });
+    expect(visibleFieldError.message).toContain('Add collection field names');
   });
 
   it('should auto-fill tryTemplate for raw action popups before persisting', async () => {
@@ -2434,7 +3051,7 @@ describe('flowSurfaces backend authoring applyBlueprint compiler', () => {
                 type: 'table',
                 collection: 'employees',
                 defaultFilter: employeeDefaultFilter(),
-                fields: ['nickname'],
+                fields: EMPLOYEE_VISIBLE_FIELDS,
                 actions: [
                   {
                     key: 'inspect',
@@ -2446,7 +3063,7 @@ describe('flowSurfaces backend authoring applyBlueprint compiler', () => {
                           key: 'inspectCreateForm',
                           type: 'createForm',
                           collection: 'employees',
-                          fields: ['nickname'],
+                          fields: EMPLOYEE_VISIBLE_FIELDS,
                         },
                       ],
                     },
@@ -2522,7 +3139,7 @@ describe('flowSurfaces backend authoring applyBlueprint compiler', () => {
                     { path: LARGE_DEFAULTS_ACTION_FIELDS[3], operator: '$notEmpty' },
                   ],
                 },
-                fields: [LARGE_DEFAULTS_ACTION_FIELDS[0]],
+                fields: LARGE_DEFAULTS_ACTION_VISIBLE_FIELDS,
                 actions: [
                   {
                     key: 'createEmployee',
@@ -2721,7 +3338,7 @@ describe('flowSurfaces backend authoring applyBlueprint compiler', () => {
                           resource: {
                             binding: 'currentRecord',
                           },
-                          fields: ['nickname'],
+                          fields: EMPLOYEE_VISIBLE_FIELDS,
                         },
                       ],
                       saveAsTemplate: {
@@ -2807,7 +3424,7 @@ describe('flowSurfaces backend authoring applyBlueprint compiler', () => {
     expect(readDetailsFieldPaths(detailsBlock)).toEqual(expect.arrayContaining(['name']));
   });
 
-  it('should auto-generate fieldGroups for raw createForm blocks from live metadata', async () => {
+  it('should reject raw createForm blocks without visible fields before generating fieldGroups', async () => {
     const executeRes = await rootAgent.resource('flowSurfaces').applyBlueprint({
       values: {
         mode: 'create',
@@ -2834,25 +3451,21 @@ describe('flowSurfaces backend authoring applyBlueprint compiler', () => {
       },
     });
 
-    expect(executeRes.status, readErrorMessage(executeRes)).toBe(200);
-    const data = getData(executeRes);
-    const createFormBlock = collectDescendantNodes(data.surface.tree, (item) => item?.use === 'CreateFormModel')[0];
-    const items = _.castArray(createFormBlock?.subModels?.grid?.subModels?.items || []);
-    expect(items.some((item: any) => item?.use === 'DividerItemModel' && item?.props?.label === 'Main')).toBe(true);
-    expect(items.map((item: any) => item?.stepParams?.fieldSettings?.init?.fieldPath).filter(Boolean)).toEqual(
-      expect.arrayContaining(['nickname', 'status']),
+    expect(executeRes.status).toBe(400);
+    const visibleFieldError = executeRes.body?.errors?.find(
+      (error: any) => error.ruleId === 'data-block-visible-fields-required',
     );
-    const persistedCreateForm = await flowRepo.findModelById(createFormBlock.uid, { includeAsyncNode: true });
-    const persistedFields = _.castArray(persistedCreateForm?.subModels?.grid?.subModels?.items || []);
-    expect(persistedFields.some((item: any) => item?.use === 'DividerItemModel' && item?.props?.label === 'Main')).toBe(
-      true,
-    );
-    expect(
-      persistedFields.map((field: any) => field?.stepParams?.fieldSettings?.init?.fieldPath).filter(Boolean),
-    ).toEqual(expect.arrayContaining(['nickname', 'status']));
+    expect(visibleFieldError).toMatchObject({
+      path: '$.tabs[0].blocks[0].fields',
+      details: {
+        blockType: 'createForm',
+        collection: 'employees',
+      },
+    });
+    expect(visibleFieldError.message).toContain('Add collection field names');
   });
 
-  it('should preserve wide field rows when auto-generated fieldGroups use live richText metadata', async () => {
+  it('should preserve wide field rows when explicit fields use live richText metadata', async () => {
     const collectionName = `flow_surface_authoring_wide_${_.uniqueId()}`;
     await rootAgent.resource('collections').create({
       values: {
@@ -2889,6 +3502,7 @@ describe('flowSurfaces backend authoring applyBlueprint compiler', () => {
                 key: 'wideCreateForm',
                 type: 'createForm',
                 collection: collectionName,
+                fields: ['title', 'status', 'body', 'summary'],
               },
             ],
           },
@@ -2901,8 +3515,6 @@ describe('flowSurfaces backend authoring applyBlueprint compiler', () => {
     const createFormBlock = collectDescendantNodes(data.surface.tree, (item) => item?.use === 'CreateFormModel')[0];
     const grid = createFormBlock?.subModels?.grid;
     const items = _.castArray(grid?.subModels?.items || []);
-    const mainDivider = items.find((item: any) => item?.use === 'DividerItemModel' && item?.props?.label === 'Main')
-      ?.uid;
     const titleWrapper = items.find((item: any) => item?.stepParams?.fieldSettings?.init?.fieldPath === 'title')?.uid;
     const statusWrapper = items.find((item: any) => item?.stepParams?.fieldSettings?.init?.fieldPath === 'status')?.uid;
     const bodyWrapper = items.find((item: any) => item?.stepParams?.fieldSettings?.init?.fieldPath === 'body')?.uid;
@@ -2910,16 +3522,14 @@ describe('flowSurfaces backend authoring applyBlueprint compiler', () => {
       ?.uid;
 
     expect(grid?.props?.rows).toEqual({
-      row1: [[mainDivider]],
-      row2: [[titleWrapper], [statusWrapper]],
-      row3: [[bodyWrapper]],
-      row4: [[summaryWrapper]],
+      row1: [[titleWrapper], [statusWrapper]],
+      row2: [[bodyWrapper]],
+      row3: [[summaryWrapper]],
     });
     expect(grid?.props?.sizes).toEqual({
-      row1: [24],
-      row2: [12, 12],
+      row1: [12, 12],
+      row2: [24],
       row3: [24],
-      row4: [24],
     });
   });
 
@@ -3035,6 +3645,7 @@ describe('flowSurfaces backend authoring applyBlueprint compiler', () => {
   });
 
   it('should resolve associatedRecords inside relation field popup from the popup target collection', async () => {
+    const { sourceCollection, targetCollection, targetAssociationName } = await createAuthoringRelationFixture();
     const executeRes = await rootAgent.resource('flowSurfaces').applyBlueprint({
       values: {
         mode: 'create',
@@ -3053,9 +3664,9 @@ describe('flowSurfaces backend authoring applyBlueprint compiler', () => {
               {
                 key: 'usersTable',
                 type: 'table',
-                collection: 'users',
+                collection: sourceCollection,
                 fields: [
-                  'username',
+                  ...USER_VISIBLE_FIELDS,
                   {
                     field: 'roles',
                     popup: {
@@ -3068,7 +3679,7 @@ describe('flowSurfaces backend authoring applyBlueprint compiler', () => {
                             binding: 'associatedRecords',
                             associationField: 'users',
                           },
-                          fields: ['nickname'],
+                          fields: USER_VISIBLE_FIELDS,
                         },
                       ],
                     },
@@ -3094,17 +3705,20 @@ describe('flowSurfaces backend authoring applyBlueprint compiler', () => {
     const templateSurface = await readPopupTemplateSurface(rootAgent, flowRepo, popupTemplateUid);
     const roleUsersTable = collectDescendantNodes(
       templateSurface,
-      (item) => item?.use === 'TableBlockModel' && item?.stepParams?.resourceSettings?.init?.collectionName === 'users',
+      (item) =>
+        item?.use === 'TableBlockModel' &&
+        item?.stepParams?.resourceSettings?.init?.collectionName === sourceCollection,
     )[0];
     expect(roleUsersTable?.stepParams?.resourceSettings?.init).toMatchObject({
       dataSourceKey: 'main',
-      collectionName: 'users',
-      associationName: 'roles.users',
+      collectionName: sourceCollection,
+      associationName: targetAssociationName,
       sourceId: '{{ctx.view.inputArgs.filterByTk}}',
     });
   });
 
   it('should validate nested associatedRecords blocks against the current popup collection', async () => {
+    const { sourceCollection, targetCollection, sourceAssociationName } = await createAuthoringRelationFixture();
     const executeRes = await rootAgent.resource('flowSurfaces').applyBlueprint({
       values: {
         mode: 'create',
@@ -3123,8 +3737,8 @@ describe('flowSurfaces backend authoring applyBlueprint compiler', () => {
               {
                 key: 'usersTable',
                 type: 'table',
-                collection: 'users',
-                fields: ['username', 'roles'],
+                collection: sourceCollection,
+                fields: [...USER_VISIBLE_FIELDS, 'roles'],
                 recordActions: [
                   {
                     key: 'maintainUser',
@@ -3143,7 +3757,7 @@ describe('flowSurfaces backend authoring applyBlueprint compiler', () => {
                           resource: {
                             binding: 'currentRecord',
                           },
-                          fields: ['username', 'roles'],
+                          fields: [...USER_VISIBLE_FIELDS, 'roles'],
                         },
                         {
                           key: 'userEditForm',
@@ -3160,7 +3774,7 @@ describe('flowSurfaces backend authoring applyBlueprint compiler', () => {
                             binding: 'associatedRecords',
                             associationField: 'roles',
                           },
-                          fields: ['title', 'name'],
+                          fields: ROLE_VISIBLE_FIELDS,
                         },
                       ],
                     },
@@ -3190,12 +3804,14 @@ describe('flowSurfaces backend authoring applyBlueprint compiler', () => {
     );
     const roleTable = collectDescendantNodes(
       templateSurface,
-      (item) => item?.use === 'TableBlockModel' && item?.stepParams?.resourceSettings?.init?.collectionName === 'roles',
+      (item) =>
+        item?.use === 'TableBlockModel' &&
+        item?.stepParams?.resourceSettings?.init?.collectionName === targetCollection,
     )[0];
     expect(roleTable?.stepParams?.resourceSettings?.init).toMatchObject({
       dataSourceKey: 'main',
-      collectionName: 'roles',
-      associationName: 'users.roles',
+      collectionName: targetCollection,
+      associationName: sourceAssociationName,
       sourceId: '{{ctx.view.inputArgs.filterByTk}}',
     });
   });

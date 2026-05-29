@@ -12,8 +12,30 @@
  * 说明：避免在实现文件中暴露测试专用 API，这里通过测试侧工具完成清理与基础内置变量的恢复。
  */
 import type { ResourcerContext } from '@nocobase/resourcer';
+import { createMockServer, type MockServerOptions } from '@nocobase/test';
 import type { HttpRequestContext } from '../template/contexts';
 import { variables, inferSelectsFromUsage } from '../variables/registry';
+
+export function createFlowEngineMockServer(options: MockServerOptions = {}) {
+  const { database, ...restOptions } = options;
+  const databaseOptions = isRecord(database) ? database : {};
+
+  return createMockServer({
+    skipSupervisor: true,
+    ...restOptions,
+    database: {
+      dialect: 'sqlite',
+      storage: ':memory:',
+      // CI postgres jobs set DB_SCHEMA; SQLite cannot create schemas.
+      schema: undefined,
+      ...databaseOptions,
+    },
+  });
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
 
 /**
  * 重置变量注册表：

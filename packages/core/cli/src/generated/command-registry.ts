@@ -10,6 +10,7 @@
 import { Command, loadHelpClass } from '@oclif/core';
 import { dirname, join, relative } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+import type { GeneratedOperation } from '../lib/generated-command.ts';
 import {
   collectCommandModulePaths,
   commandRelativePathToRegistryKey,
@@ -55,13 +56,14 @@ function readEnvName(argv: string[]) {
   return undefined;
 }
 
-function createRuntimeCommand(operation: any) {
+function createRuntimeCommand(operation: GeneratedOperation, runtimeVersion?: string) {
   return class RuntimeCommand extends GeneratedApiCommand {
     static summary = operation.summary;
     static description = operation.description;
     static examples = operation.examples as any;
     static flags = createGeneratedFlags(operation);
     static operation = operation;
+    static runtimeVersion = runtimeVersion;
   };
 }
 
@@ -139,7 +141,7 @@ const runtime = loadRuntimeSync(env?.runtime?.version);
 for (const operation of runtime?.commands ?? []) {
   const commandSegments = operation.commandId.split(' ');
   const commandKey = commandSegments.join(':');
-  registry[`api:${commandKey}`] = createRuntimeCommand(operation);
+  registry[`api:${commandKey}`] = createRuntimeCommand(operation, runtime?.version);
 
   for (const [topicCommandId, metadata] of getRuntimeTopicEntries(operation)) {
     const topicKey = `api:${topicCommandId.split(' ').join(':')}`;
