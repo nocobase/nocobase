@@ -12,6 +12,90 @@ import { FlowSurfaceBadRequestError } from './errors';
 
 const CHART_REPAIR_HINT =
   'This is a chart payload shape problem. Repair the current chart query/visual mappings and keep the chart block type. Do not change this block type to table, jsBlock, actionPanel, gridCard, or another block type. KPI / summary numbers should use jsBlock; charts are for trends, distributions, rankings, and visual analysis.';
+const CHART_FORBIDDEN_FALLBACKS = [
+  'table',
+  'list',
+  'jsBlock',
+  'actionPanel',
+  'gridCard',
+  'markdown',
+  'drop chart',
+  'defer chart',
+];
+const CHART_REPAIR_STEPS = [
+  'Keep the block type as chart.',
+  'Repair the chart query and visual mappings on the current chart payload.',
+  'Retry the chart payload instead of replacing the chart with another block type, omitting it, or deferring it.',
+];
+const CHART_EXPECTED_SHAPE = {
+  settings: {
+    query: {
+      mode: 'builder',
+      resource: {
+        dataSourceKey: 'main',
+        collectionName: 'employees',
+      },
+      measures: [
+        {
+          field: 'id',
+          aggregation: 'count',
+          alias: 'employeeCount',
+        },
+      ],
+    },
+    visual: {
+      mode: 'basic',
+      type: 'bar',
+      mappings: {
+        x: 'status',
+        y: 'employeeCount',
+      },
+    },
+  },
+};
+
+function withChartRepairDetails(details: Record<string, any> = {}) {
+  return {
+    ...details,
+    requiredBlockType: 'chart',
+    fixStrategy: 'repair_same_block_type',
+    repairHint: CHART_REPAIR_HINT,
+    repairSteps: CHART_REPAIR_STEPS,
+    expectedShape: CHART_EXPECTED_SHAPE,
+    repairExample: {
+      settings: {
+        query: {
+          mode: 'builder',
+          resource: {
+            dataSourceKey: 'main',
+            collectionName: '<collectionName>',
+          },
+          measures: [
+            {
+              field: 'id',
+              aggregation: 'count',
+              alias: 'recordCount',
+            },
+          ],
+          dimensions: [
+            {
+              field: '<dimensionField>',
+            },
+          ],
+        },
+        visual: {
+          mode: 'basic',
+          type: 'bar',
+          mappings: {
+            x: '<dimensionField>',
+            y: 'recordCount',
+          },
+        },
+      },
+    },
+    forbiddenFallbacks: CHART_FORBIDDEN_FALLBACKS,
+  };
+}
 
 function withChartRepairMessage(message: string) {
   return `${message}. ${CHART_REPAIR_HINT}`;
@@ -1255,10 +1339,9 @@ function assertBasicVisualMappingsAgainstBuilderQuery(builderVisual: Record<stri
         ),
         undefined,
         {
-          details: {
-            repairHint: CHART_REPAIR_HINT,
+          details: withChartRepairDetails({
             allowedOutputs: Array.from(allowedOutputs),
-          },
+          }),
         },
       );
     }

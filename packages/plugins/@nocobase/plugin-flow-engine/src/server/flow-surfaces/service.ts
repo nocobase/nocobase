@@ -446,16 +446,40 @@ import type {
 import type { FlowSurfaceContextResponse, FlowSurfaceContextVarInfo } from './types';
 
 const FLOW_SURFACE_CHART_REPAIR_HINT =
-  'This is a chart payload shape problem. Repair the current chart block payload using assets.charts.<key>.query/visual plus block.chart, or localized settings.query/settings.visual. Do not change this block type to table, jsBlock, actionPanel, gridCard, or another block type. Do not drop or defer the chart. KPI / summary numbers should use jsBlock; charts are for trends, distributions, rankings, and visual analysis.';
+  'This is a chart payload shape problem. Keep using chart and repair the current chart block payload using assets.charts.<key>.query/visual plus block.chart, or localized settings.query/settings.visual. Do not change this block type to table, jsBlock, actionPanel, gridCard, or another block type. Do not drop or defer the chart. KPI / summary numbers should use jsBlock; charts are for trends, distributions, rankings, and visual analysis.';
 
 const FLOW_SURFACE_CHART_REPAIR_STEPS = [
   'Keep the block type as chart.',
-  'Define assets.charts.<key>.query and assets.charts.<key>.visual, or repair the localized settings.query/settings.visual on the existing chart block.',
+  'Define assets.charts.<key>.query and assets.charts.<key>.visual, or fill localized settings.query and settings.visual on the existing chart block.',
   'Reference the asset from the chart block with block.chart = <key> when using assets.charts.',
   'Retry the chart payload instead of replacing the chart with another block type, omitting it, or deferring it.',
 ];
 
 const FLOW_SURFACE_CHART_EXPECTED_SHAPE = {
+  settings: {
+    query: {
+      mode: 'builder',
+      resource: {
+        dataSourceKey: 'main',
+        collectionName: 'employees',
+      },
+      measures: [
+        {
+          field: 'id',
+          aggregation: 'count',
+          alias: 'employeeCount',
+        },
+      ],
+    },
+    visual: {
+      mode: 'basic',
+      type: 'bar',
+      mappings: {
+        x: 'status',
+        y: 'employeeCount',
+      },
+    },
+  },
   assets: {
     charts: {
       chartKey: {
@@ -472,12 +496,46 @@ const FLOW_SURFACE_CHART_EXPECTED_SHAPE = {
 
 const FLOW_SURFACE_CHART_FORBIDDEN_FALLBACKS = [
   'table',
+  'list',
   'jsBlock',
   'actionPanel',
   'gridCard',
+  'markdown',
   'drop chart',
   'defer chart',
 ];
+
+const FLOW_SURFACE_CHART_REPAIR_EXAMPLE = {
+  settings: {
+    query: {
+      mode: 'builder',
+      resource: {
+        dataSourceKey: 'main',
+        collectionName: '<collectionName>',
+      },
+      measures: [
+        {
+          field: 'id',
+          aggregation: 'count',
+          alias: 'recordCount',
+        },
+      ],
+      dimensions: [
+        {
+          field: '<dimensionField>',
+        },
+      ],
+    },
+    visual: {
+      mode: 'basic',
+      type: 'bar',
+      mappings: {
+        x: '<dimensionField>',
+        y: 'recordCount',
+      },
+    },
+  },
+};
 
 function withChartRepairMessage(message: string) {
   return `${message}. ${FLOW_SURFACE_CHART_REPAIR_HINT}`;
@@ -486,9 +544,12 @@ function withChartRepairMessage(message: string) {
 function withFlowSurfaceChartRepairDetails(details: Record<string, any> = {}) {
   return {
     ...details,
+    requiredBlockType: 'chart',
+    fixStrategy: 'repair_same_block_type',
     repairHint: FLOW_SURFACE_CHART_REPAIR_HINT,
     repairSteps: FLOW_SURFACE_CHART_REPAIR_STEPS,
     expectedShape: FLOW_SURFACE_CHART_EXPECTED_SHAPE,
+    repairExample: FLOW_SURFACE_CHART_REPAIR_EXAMPLE,
     forbiddenFallbacks: FLOW_SURFACE_CHART_FORBIDDEN_FALLBACKS,
   };
 }
@@ -497,6 +558,21 @@ function throwChartRepairBadRequest(message: string, details: Record<string, any
   throwBadRequest(withChartRepairMessage(message), {
     details: withFlowSurfaceChartRepairDetails(details),
   });
+}
+
+function isChartConfigureBadRequestError(error: unknown) {
+  return error instanceof FlowSurfaceBadRequestError && String(error.message || '').startsWith('chart ');
+}
+
+function buildChartConfigureFromSemanticChangesWithRepair(currentConfigure: any, changes: Record<string, any>) {
+  try {
+    return buildChartConfigureFromSemanticChanges(currentConfigure, changes);
+  } catch (error: any) {
+    if (isChartConfigureBadRequestError(error)) {
+      throwChartRepairBadRequest(error.message, _.isPlainObject(error.options?.details) ? error.options.details : {});
+    }
+    throw error;
+  }
 }
 
 function isFlowSurfaceChartRepairError(error: unknown) {
@@ -4347,7 +4423,7 @@ export class FlowSurfacesService {
         continue;
       }
       assertSupportedSimpleChanges('chart', chartAsset, getConfigureOptionKeysForUse('ChartBlockModel'));
-      const nextConfigure = buildChartConfigureFromSemanticChanges(undefined, chartAsset);
+      const nextConfigure = buildChartConfigureFromSemanticChangesWithRepair(undefined, chartAsset);
       await this.validateChartConfigureForRuntime(
         `applyBlueprint assets.charts.${chartKey}`,
         nextConfigure,
@@ -9796,6 +9872,7 @@ export class FlowSurfacesService {
           {
             ...options,
             preserveSingleScopeDataBlockTitle,
+            skipAuthoringValidation: true,
           },
         ),
     });
@@ -20432,7 +20509,10 @@ export class FlowSurfacesService {
     const resolved = shouldLoadCurrent ? await this.locator.resolve(target, options) : null;
     const current = resolved ? await this.loadResolvedNode(resolved, options.transaction) : null;
     let nextConfigure = shouldUpdateConfigure
-      ? buildChartConfigureFromSemanticChanges(_.get(current, ['stepParams', 'chartSettings', 'configure']), changes)
+      ? buildChartConfigureFromSemanticChangesWithRepair(
+          _.get(current, ['stepParams', 'chartSettings', 'configure']),
+          changes,
+        )
       : undefined;
     if (shouldUpdateConfigure) {
       nextConfigure = await this.stripBasicSqlVisualWhenPreviewUnavailable(nextConfigure, changes, options.transaction);

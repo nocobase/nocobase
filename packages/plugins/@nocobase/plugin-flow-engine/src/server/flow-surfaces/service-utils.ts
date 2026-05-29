@@ -684,7 +684,7 @@ export function rethrowInlineConfigurationError(error: any, prefix: string): nev
   if (isFlowSurfaceError(error)) {
     const normalized = normalizeFlowSurfaceError(error);
     if (normalized.type === 'bad_request') {
-      throwBadRequest(message, normalized.code);
+      throwBadRequest(message, normalized.code, normalized.options);
     }
     if (normalized.type === 'conflict') {
       throwConflict(message, normalized.code);
