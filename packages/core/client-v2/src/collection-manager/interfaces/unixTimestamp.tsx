@@ -8,7 +8,7 @@
  */
 
 import { CollectionFieldInterface } from '../../collection-field-interface/CollectionFieldInterface';
-import { defaultProps, operators, dateTimeProps } from './properties';
+import { defaultProps, dateTimeProps } from './properties';
 export class UnixTimestampFieldInterface extends CollectionFieldInterface {
   name = 'unixTimestamp';
   type = 'object';
@@ -62,7 +62,7 @@ export class UnixTimestampFieldInterface extends CollectionFieldInterface {
     },
   };
   filterable = {
-    operators: operators.datetime,
+    operators: 'datetime',
   };
   titleUsable = true;
 }

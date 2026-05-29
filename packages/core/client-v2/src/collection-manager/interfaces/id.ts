@@ -8,7 +8,6 @@
  */
 
 import { CollectionFieldInterface } from '../../collection-field-interface/CollectionFieldInterface';
-import { operators } from './properties';
 
 export class IdFieldInterface extends CollectionFieldInterface {
   name = 'id';
@@ -53,7 +52,7 @@ export class IdFieldInterface extends CollectionFieldInterface {
     },
   };
   filterable = {
-    operators: operators.id,
+    operators: 'id',
   };
 
   description = '{{t("Primary key, unique identifier, self growth") }}';

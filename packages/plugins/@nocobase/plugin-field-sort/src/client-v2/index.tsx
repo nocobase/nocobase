@@ -8,5 +8,6 @@
  */
 
 export { SortFieldModel } from './models/SortFieldModel';
+export { SortFieldConfigureForm } from './SortFieldConfigureForm';
 export { SortFieldInterface } from './sort-interface';
 export { default } from './plugin';
