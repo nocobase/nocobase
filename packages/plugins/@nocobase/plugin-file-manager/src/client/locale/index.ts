@@ -8,7 +8,7 @@
  */
 
 import { useTranslation } from 'react-i18next';
-import { NAMESPACE } from '../../shared/locale';
+import { NAMESPACE } from '../../common/constants';
 
 export { NAMESPACE };
 
