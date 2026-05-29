@@ -38,7 +38,11 @@ export default function UserFormDrawer(props: UserFormDrawerProps) {
   const isEdit = !!props.user;
 
   const rolesService = useRequest(async () => {
-    const response = await ctx.api.resource('roles').list({ paginate: false, showAnonymous: true });
+    const response = await ctx.api.resource('roles').list({
+      paginate: false,
+      showAnonymous: true,
+      filter: { 'name.$ne': 'root' },
+    });
     return toListPayload<Role>(response?.data).data ?? [];
   });
 
@@ -141,7 +145,9 @@ export default function UserFormDrawer(props: UserFormDrawerProps) {
             <Select
               mode="multiple"
               loading={rolesService.loading}
-              options={(rolesService.data ?? []).map((role) => ({ value: role.name, label: t(role.title) }))}
+              options={(rolesService.data ?? [])
+                .filter((role) => role.name !== 'root')
+                .map((role) => ({ value: role.name, label: t(role.title) }))}
             />
           </Form.Item>
         </>

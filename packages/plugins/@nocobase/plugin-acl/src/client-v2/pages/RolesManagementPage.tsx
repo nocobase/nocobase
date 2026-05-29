@@ -175,12 +175,76 @@ export default function RolesManagementPage() {
   const [selectedRoleName, setSelectedRoleName] = useState<string | null>(null);
   const [selectedRole, setSelectedRole] = useState<Role | null>(null);
   const [activeTabKey, setActiveTabKey] = useState('permissions');
+  const rightPanelMaxHeight = '70vh';
   const layoutClassName = css`
-    .acl-role-tabs .ant-tabs-nav {
+    &.acl-role-tabs > .ant-tabs-nav {
       margin-bottom: ${token.marginLG}px;
     }
 
-    .acl-role-tabs .ant-tabs-tabpane {
+    &.acl-role-tabs,
+    &.acl-role-tabs > .ant-tabs-content-holder,
+    &.acl-role-tabs > .ant-tabs-content-holder > .ant-tabs-content,
+    &.acl-role-tabs > .ant-tabs-content-holder > .ant-tabs-content > .ant-tabs-tabpane {
+      min-height: 0;
+    }
+
+    &.acl-role-tabs {
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+    }
+
+    &.acl-role-tabs > .ant-tabs-nav {
+      flex: none;
+    }
+
+    &.acl-role-tabs > .ant-tabs-content-holder {
+      flex: 1;
+      min-height: 0;
+      overflow: hidden;
+    }
+
+    &.acl-role-tabs > .ant-tabs-content-holder > .ant-tabs-content,
+    &.acl-role-tabs > .ant-tabs-content-holder > .ant-tabs-content > .ant-tabs-tabpane {
+      height: 100%;
+      min-height: 0;
+    }
+
+    &.acl-role-tabs > .ant-tabs-content-holder > .ant-tabs-content > .ant-tabs-tabpane {
+      overflow: hidden;
+      padding: 0;
+    }
+  `;
+  const scrollPaneStyle: React.CSSProperties = {
+    height: '100%',
+    minHeight: 0,
+    overflow: 'auto',
+    paddingRight: token.paddingXS,
+  };
+  const nestedTabsClassName = css`
+    height: 100%;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+
+    > .ant-tabs-nav {
+      flex: none;
+    }
+
+    > .ant-tabs-content-holder {
+      flex: 1;
+      min-height: 0;
+      overflow: hidden;
+    }
+
+    > .ant-tabs-content-holder > .ant-tabs-content,
+    > .ant-tabs-content-holder > .ant-tabs-content > .ant-tabs-tabpane {
+      height: 100%;
+      min-height: 0;
+    }
+
+    > .ant-tabs-content-holder > .ant-tabs-content > .ant-tabs-tabpane {
+      overflow: hidden;
       padding: 0;
     }
   `;
@@ -217,6 +281,10 @@ export default function RolesManagementPage() {
     },
   );
 
+  const loadSelectedRole = useMemoizedFn(() => {
+    selectedRoleService.run();
+  });
+
   useEffect(() => {
     if (selectedRoleName && roles.some((role) => role.name === selectedRoleName)) {
       return;
@@ -233,8 +301,8 @@ export default function RolesManagementPage() {
       setSelectedRole(null);
       return;
     }
-    selectedRoleService.run();
-  }, [selectedRoleName, selectedRoleService]);
+    loadSelectedRole();
+  }, [loadSelectedRole, selectedRoleName]);
 
   const handleRoleChange = useMemoizedFn((role: Role | null) => {
     setSelectedRole(role);
@@ -303,34 +371,56 @@ export default function RolesManagementPage() {
     }
   });
 
-  const roleTabs = aclPlugin.rolesManager.list().map(([key, item]) => {
-    const Component = lazy(item.componentLoader);
+  const roleTabDefinitions = useMemo(
+    () =>
+      aclPlugin.rolesManager.list().map(([key, item]) => ({
+        key,
+        label: item.title,
+        Component: lazy(item.componentLoader),
+      })),
+    [aclPlugin.rolesManager],
+  );
+
+  const permissionTabDefinitions = useMemo(
+    () =>
+      aclPlugin.settingsUI.getPermissionsTabs().map((item) => ({
+        key: item.key,
+        label: item.label,
+        Component: lazy(item.componentLoader),
+      })),
+    [aclPlugin.settingsUI],
+  );
+
+  const roleTabs = roleTabDefinitions.map(({ key, label, Component }) => {
     return {
       key,
-      label: item.title,
+      label,
       children: (
-        <Suspense fallback={null}>
-          <Component active={activeTabKey === key} role={selectedRole} onRoleChange={handleRoleChange} />
-        </Suspense>
+        <div style={scrollPaneStyle}>
+          <Suspense fallback={null}>
+            <Component active={activeTabKey === key} role={selectedRole} onRoleChange={handleRoleChange} />
+          </Suspense>
+        </div>
       ),
     };
   });
 
-  const permissionTabs = aclPlugin.settingsUI.getPermissionsTabs().map((item) => {
-    const Component = lazy(item.componentLoader);
+  const permissionTabs = permissionTabDefinitions.map(({ key, label, Component }) => {
     const props: PermissionTabProps = {
-      activeKey: item.key,
+      activeKey: key,
       activeRole: selectedRole,
       currentUserRole: null,
       onRoleChange: handleRoleChange,
     };
     return {
-      key: item.key,
-      label: item.label,
+      key,
+      label,
       children: (
-        <Suspense fallback={null}>
-          <Component {...props} />
-        </Suspense>
+        <div style={scrollPaneStyle}>
+          <Suspense fallback={null}>
+            <Component {...props} />
+          </Suspense>
+        </div>
       ),
     };
   });
@@ -340,7 +430,7 @@ export default function RolesManagementPage() {
       key: 'permissions',
       label: t('Permissions'),
       children: permissionTabs.length ? (
-        <Tabs items={permissionTabs} />
+        <Tabs className={nestedTabsClassName} style={{ height: '100%', minHeight: 0 }} items={permissionTabs} />
       ) : (
         <div style={{ color: token.colorTextDescription }}>{t('Select a role to configure permissions')}</div>
       ),
@@ -454,11 +544,21 @@ export default function RolesManagementPage() {
             <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} />
           )}
         </div>
-        <div style={{ flex: '1 1 auto', minWidth: 0 }}>
+        <div
+          style={{
+            flex: '1 1 auto',
+            minWidth: 0,
+            maxHeight: rightPanelMaxHeight,
+            minHeight: 320,
+            overflow: 'hidden',
+            display: 'flex',
+            flexDirection: 'column',
+          }}
+        >
           {selectedRoleName && selectedRoleService.loading && selectedRole?.name !== selectedRoleName ? (
             <div
               style={{
-                minHeight: 320,
+                height: '100%',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -469,6 +569,7 @@ export default function RolesManagementPage() {
           ) : selectedRole ? (
             <Tabs
               className={`acl-role-tabs ${layoutClassName}`}
+              style={{ flex: 1, minHeight: 0 }}
               activeKey={activeTabKey}
               onChange={setActiveTabKey}
               items={tabs}

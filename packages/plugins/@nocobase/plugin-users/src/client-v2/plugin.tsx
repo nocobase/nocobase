@@ -64,6 +64,10 @@ export class PluginUsersClientV2 extends Plugin {
     });
 
     this.app.flowEngine.registerModelLoaders({
+      EditProfileItemModel: {
+        extends: 'UserCenterItemModel',
+        loader: () => import('./user-center/EditProfileItemModel'),
+      },
       ChangePasswordItemModel: {
         extends: 'UserCenterItemModel',
         loader: () => import('./user-center/ChangePasswordItemModel'),
