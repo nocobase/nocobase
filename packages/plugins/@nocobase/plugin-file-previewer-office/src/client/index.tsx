@@ -13,61 +13,32 @@ import { saveAs } from 'file-saver';
 
 import { Plugin, attachmentFileTypes } from '@nocobase/client';
 import { filePreviewTypes, wrapWithModalPreviewer } from '@nocobase/plugin-file-manager/client';
+// Core office logic + inline previewer live in client-v2; v1 reuses them via relative path
+// so there is a single implementation shared by both runtimes.
+import { getOfficePreviewUrl, isOfficeFile } from '../client-v2/utils';
+import { OfficeInlinePreviewer } from '../client-v2/OfficeInlinePreviewer';
 import { useT } from './locale';
 
-const OFFICE_MIME_TYPES = [
-  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-  'application/vnd.openxmlformats-officedocument.presentationml.presentation',
-  'application/msword',
-  'application/vnd.ms-excel',
-  'application/vnd.ms-powerpoint',
-  'application/vnd.oasis.opendocument.text',
-];
+interface OfficeModalPreviewerFile {
+  url: string;
+  title: string;
+  extname: string;
+}
 
-const OFFICE_EXTS = ['docx', 'xlsx', 'pptx', 'odt', 'doc', 'xls', 'ppt'];
+interface OfficeModalPreviewerProps {
+  index: number;
+  list: OfficeModalPreviewerFile[];
+  onSwitchIndex: (index: number | null) => void;
+}
 
-const getOfficeFileExt = (file: any) => {
-  const value = typeof file === 'string' ? file : file?.extname || file?.name || file?.filename || file?.url || '';
-  const clean = value.split('?')[0].split('#')[0];
-  const index = clean.lastIndexOf('.');
-  return index !== -1 ? clean.slice(index + 1).toLowerCase() : '';
-};
-
-const resolveFileUrl = (file: any) => {
-  const url = typeof file === 'string' ? file : file?.url;
-  if (!url) {
-    return '';
-  }
-  return url.startsWith('https://') || url.startsWith('http://') ? url : `${location.origin}/${url.replace(/^\//, '')}`;
-};
-
-const getOfficePreviewUrl = (file: any) => {
-  const src = resolveFileUrl(file);
-  if (!src) {
-    return '';
-  }
-  const url = new URL('https://view.officeapps.live.com/op/embed.aspx');
-  url.searchParams.set('src', src);
-  return url.href;
-};
-
-const isOfficeFile = (file: any) => {
-  if (file?.mimetype && OFFICE_MIME_TYPES.includes(file.mimetype)) {
-    return true;
-  }
-  const ext = getOfficeFileExt(file);
-  return !!ext && OFFICE_EXTS.includes(ext);
-};
-
-function OfficeModalPreviewer({ index, list, onSwitchIndex }) {
+function OfficeModalPreviewer({ index, list, onSwitchIndex }: OfficeModalPreviewerProps) {
   const t = useT();
   const file = list[index];
   const url = useMemo(() => {
     return getOfficePreviewUrl(file);
   }, [file]);
   const onOpen = useCallback(
-    (e) => {
+    (e: React.MouseEvent<HTMLElement>) => {
       e.preventDefault();
       e.stopPropagation();
       window.open(url);
@@ -75,7 +46,7 @@ function OfficeModalPreviewer({ index, list, onSwitchIndex }) {
     [url],
   );
   const onDownload = useCallback(
-    (e) => {
+    (e: React.MouseEvent<HTMLElement>) => {
       e.preventDefault();
       e.stopPropagation();
       saveAs(file.url, `${file.title}${file.extname}`);
@@ -125,14 +96,6 @@ function OfficeModalPreviewer({ index, list, onSwitchIndex }) {
       </div>
     </Modal>
   );
-}
-
-function OfficeInlinePreviewer({ file }) {
-  const url = useMemo(() => getOfficePreviewUrl(file), [typeof file === 'string' ? file : file?.url]);
-  if (!url) {
-    return null;
-  }
-  return <iframe src={url} width="100%" height="100%" style={{ border: 'none' }} />;
 }
 
 export class PluginFilePreviewerOfficeClient extends Plugin {

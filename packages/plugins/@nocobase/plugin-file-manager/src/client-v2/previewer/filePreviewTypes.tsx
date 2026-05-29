@@ -23,7 +23,16 @@ import { Alert, Image, Modal, Space, Spin } from 'antd';
 import match from 'mime-match';
 import { Trans, useTranslation } from 'react-i18next';
 import type { PDFDocumentLoadingTask, PDFDocumentProxy, PDFWorker, RenderTask } from 'pdfjs-dist';
-import { NAMESPACE } from '../locale';
+import { NAMESPACE } from '../../common/constants';
+
+// Static placeholder icons live under the app's public folder, served by the gateway at the
+// runtime public path (`/nocobase/v2/` in v2, `/nocobase/` in v1). Prefix the bare
+// `/file-placeholder/...` paths so they resolve when APP_PUBLIC_PATH !== '/'. We intentionally
+// read only `__nocobase_public_path__` (not v1's `__nocobase_dev_public_path__`, which is '/'
+// for the v1 dev-server-direct scenario) because this app is always reached through the gateway.
+const PUBLIC_PATH = (typeof window !== 'undefined' && window['__nocobase_public_path__']) || '/';
+
+const withPublicPath = (path: string) => `${PUBLIC_PATH.replace(/\/$/, '')}/${path.replace(/^\//, '')}`;
 
 export interface FilePreviewerProps {
   file: any;
@@ -244,7 +253,7 @@ export const getDownloadFileName = (file: any, url?: string) => {
 
 export const getFallbackIcon = (file: any, url?: string) => {
   const ext = getFileExt(file, url);
-  return FALLBACK_ICON_MAP[ext] || FALLBACK_ICON_MAP.default;
+  return withPublicPath(FALLBACK_ICON_MAP[ext] || FALLBACK_ICON_MAP.default);
 };
 
 export const getPreviewThumbnailUrl = (file: any) => {
