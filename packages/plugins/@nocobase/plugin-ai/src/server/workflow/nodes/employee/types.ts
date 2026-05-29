@@ -7,6 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { RequiresApproval } from './constants';
+
 export type AIEmployeeInstructionConfig = {
   username: string;
   message: {
@@ -23,7 +25,7 @@ export type AIEmployeeInstructionConfig = {
     llmService: string;
     model: string;
   };
-  requiresApproval?: 'no_required' | 'ai_decision' | 'human_decision';
+  requiresApproval?: RequiresApproval;
   assignees?: string[];
   userId: string;
   files: AIEmployeeInstructionFiles[];

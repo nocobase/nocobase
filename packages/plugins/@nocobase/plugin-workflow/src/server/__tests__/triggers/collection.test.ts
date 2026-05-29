@@ -632,7 +632,10 @@ describe('workflow > triggers > collection', () => {
       });
 
       await workflow.createNode({
-        type: 'echo',
+        type: 'echoVariable',
+        config: {
+          variable: '{{$context}}',
+        },
       });
 
       const category = await CategoryRepo.create({ values: { title: 'c1' } });
@@ -664,7 +667,10 @@ describe('workflow > triggers > collection', () => {
       });
 
       await workflow.createNode({
-        type: 'echo',
+        type: 'echoVariable',
+        config: {
+          variable: '{{$context}}',
+        },
       });
 
       const category = await CategoryRepo.create({ values: { title: 'c1' } });
@@ -696,7 +702,10 @@ describe('workflow > triggers > collection', () => {
       });
 
       await workflow.createNode({
-        type: 'echo',
+        type: 'echoVariable',
+        config: {
+          variable: '{{$context}}',
+        },
       });
 
       const post = await PostRepo.create({
@@ -725,7 +734,10 @@ describe('workflow > triggers > collection', () => {
       });
 
       await workflow.createNode({
-        type: 'echo',
+        type: 'echoVariable',
+        config: {
+          variable: '{{$context}}',
+        },
       });
 
       const comments = await CommentRepo.create({ values: [{}] });
@@ -757,7 +769,10 @@ describe('workflow > triggers > collection', () => {
       });
 
       await workflow.createNode({
-        type: 'echo',
+        type: 'echoVariable',
+        config: {
+          variable: '{{$context}}',
+        },
       });
 
       const tags = await TagRepo.create({ values: [{}] });

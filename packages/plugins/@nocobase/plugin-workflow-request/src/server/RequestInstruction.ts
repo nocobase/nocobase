@@ -11,7 +11,7 @@ import Joi from 'joi';
 import { AxiosRequestConfig } from 'axios';
 import { trim } from 'lodash';
 
-import { Processor, Instruction, JOB_STATUS, FlowNodeModel, IJob } from '@nocobase/plugin-workflow';
+import { Processor, Instruction, JOB_STATUS, FlowNodeModel, IJob, JobModel } from '@nocobase/plugin-workflow';
 import PluginFileManagerServer, { AttachmentModel } from '@nocobase/plugin-file-manager';
 import { Application } from '@nocobase/server';
 import { Readable } from 'stream';
@@ -105,7 +105,10 @@ function createInvalidUrlError(cause?: unknown) {
   return error;
 }
 
-function validateUrl(url: string) {
+function validateUrl(url?: string) {
+  if (!url) {
+    throw createInvalidUrlError();
+  }
   try {
     const parsed = new URL(url);
     if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
@@ -116,20 +119,21 @@ function validateUrl(url: string) {
   }
 }
 
-async function request(config: RequestInstructionConfig, app: Application) {
+async function request(config: RequestInstructionConfig, app: Application, signal?: AbortSignal) {
   // default headers
   const { url, method = 'POST', contentType = 'application/json', data, timeout = 5000 } = config;
 
   validateUrl(url);
-  const headers = (config.headers ?? []).reduce((result, header) => {
+  const headers: Record<string, string> = (config.headers ?? []).reduce((result, header) => {
     const name = trim(header.name);
     if (name.toLowerCase() === 'content-type') {
       return result;
     }
     return Object.assign(result, { [name]: trim(header.value) });
   }, {});
-  const params = (config.params ?? []).reduce(
-    (result, param) => Object.assign(result, { [param.name]: trim(param.value) }),
+  const params: Record<string, any> = (config.params ?? []).reduce(
+    (result: Record<string, any>, param: { name: string; value: string }) =>
+      Object.assign(result, { [param.name]: trim(param.value) }),
     {},
   );
 
@@ -145,6 +149,7 @@ async function request(config: RequestInstructionConfig, app: Application) {
     headers,
     params,
     timeout,
+    signal,
     ...(method.toLowerCase() !== 'get' && data != null
       ? {
           data: transformer ? await transformer(data) : data,
@@ -182,6 +187,14 @@ function responseFailure(error) {
   }
 
   return result;
+}
+
+function failureStatus(config: RequestInstructionConfig, error) {
+  if (config.ignoreFail) {
+    return JOB_STATUS.RESOLVED;
+  }
+
+  return error?.code === 'ECONNABORTED' ? JOB_STATUS.ABORTED : JOB_STATUS.FAILED;
 }
 
 const METHODS = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'];
@@ -233,7 +246,7 @@ export default class extends Instruction {
     onlyData: Joi.boolean().default(false),
   });
 
-  async run(node: FlowNodeModel, prevJob, processor: Processor) {
+  async run(node: FlowNodeModel, prevJob: JobModel, processor: Processor, options?: { signal?: AbortSignal }) {
     const config = processor.getParsedValue(node.config, node.id) as RequestInstructionConfig;
 
     const { workflow } = processor.execution;
@@ -241,7 +254,7 @@ export default class extends Instruction {
 
     if (sync) {
       try {
-        const response = await request(config, this.workflow.app);
+        const response = await request(config, this.workflow.app, options?.signal);
         return {
           status: JOB_STATUS.RESOLVED,
           result: responseSuccess(response, config.onlyData),
@@ -249,7 +262,7 @@ export default class extends Instruction {
       } catch (error) {
         logFailureDebug(this.workflow.app.logger, error);
         return {
-          status: config.ignoreFail ? JOB_STATUS.RESOLVED : JOB_STATUS.FAILED,
+          status: failureStatus(config, error),
           result: responseFailure(error),
         };
       }
@@ -267,11 +280,11 @@ export default class extends Instruction {
     const jobDone: IJob = { status: JOB_STATUS.PENDING };
     try {
       processor.logger.info(`request (#${node.id}) sent to "${config.url}", waiting for response...`);
-      const response = await request(config, this.workflow.app);
+      const response = await request(config, this.workflow.app, options?.signal);
       processor.logger.info(`request (#${node.id}) response success, status: ${response.status}`);
       jobDone.status = JOB_STATUS.RESOLVED;
       jobDone.result = responseSuccess(response, config.onlyData);
-    } catch (error) {
+    } catch (error: any) {
       if (error.isAxiosError) {
         if (error.response) {
           processor.logger.info(`request (#${node.id}) failed with response, status: ${error.response.status}`);
@@ -284,20 +297,25 @@ export default class extends Instruction {
         processor.logger.error(`request (#${node.id}) failed unexpectedly: ${error.message}`);
       }
       logFailureDebug(processor.logger, error);
-      jobDone.status = config.ignoreFail ? JOB_STATUS.RESOLVED : JOB_STATUS.FAILED;
+      jobDone.status = failureStatus(config, error);
       jobDone.result = responseFailure(error);
     } finally {
       // At this point, the job is guaranteed to be in the database.
       const job = await this.workflow.app.db.getRepository('jobs').findOne({
         filterByTk: id,
       });
-
-      job.set(jobDone);
-      this.workflow.resume(job);
+      const execution = await job.getExecution();
+      if (!execution.status) {
+        job.set(jobDone);
+        job.execution = execution;
+        this.workflow.resume(job);
+      } else {
+        processor.logger.warn(`request (#${node.id}) result discarded because execution (${execution.id}) is ended`);
+      }
     }
   }
 
-  async resume(node: FlowNodeModel, job, processor: Processor) {
+  async resume(node: FlowNodeModel, job: JobModel, processor: Processor) {
     const { ignoreFail } = node.config as RequestInstructionConfig;
     if (ignoreFail) {
       job.set('status', JOB_STATUS.RESOLVED);
@@ -315,7 +333,7 @@ export default class extends Instruction {
     } catch (error) {
       logFailureDebug(this.workflow.app.logger, error);
       return {
-        status: config.ignoreFail ? JOB_STATUS.RESOLVED : JOB_STATUS.FAILED,
+        status: failureStatus(config, error),
         result: responseFailure(error),
       };
     }
