@@ -7,52 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import {
-  getCurrentV2RedirectPath,
-  Plugin,
-  redirectToV2Signin,
-  resolveV2SigninRedirect,
-  UserCenterActionItemModel,
-  UserCenterTextItemModel,
-} from '@nocobase/client-v2';
-import { ChangePasswordItemModel } from './user-center/ChangePasswordItemModel';
-
-class CurrentUserSummaryItemModel extends UserCenterTextItemModel {
-  static itemId = 'current-user-summary';
-
-  section = 'profile' as const;
-  sort = 0;
-
-  async prepare() {
-    const user = this.context.user || {};
-    this.label = user.nickname || user.username || user.email || '';
-    this.value = undefined;
-    this.description = undefined;
-    this.ready = Boolean(this.label);
-  }
-}
-
-class SignOutItemModel extends UserCenterActionItemModel {
-  static itemId = 'sign-out';
-
-  section = 'danger' as const;
-  sort = 1000;
-  label = 'Sign out';
-
-  async onClick() {
-    const response = await this.context.api.auth.signOut();
-    const redirect = resolveV2SigninRedirect(response?.data?.data?.redirect, this.context.app);
-
-    if (redirect) {
-      window.location.replace(redirect);
-      return;
-    }
-
-    redirectToV2Signin(this.context.app, getCurrentV2RedirectPath(this.context.app, window.location), {
-      replace: true,
-    });
-  }
-}
+import { Plugin } from '@nocobase/client-v2';
+import PluginAclClientV2 from '@nocobase/plugin-acl/client-v2';
 
 /**
  * Async password validator contributed by another plugin (typically `@nocobase/plugin-password-policy`). Receives the candidate password and an optional `username` (matching v1's `verifyPasswordRules` third argument). Resolve with `null` / `undefined` for valid input, or with the already-translated error message for invalid input — the validator owns its own i18n namespace so consumers don't need to know how to interpolate the policy plugin's `{{n}}` placeholders.
@@ -80,10 +36,46 @@ export class PluginUsersClientV2 extends Plugin {
 
   async load() {
     // i18n resources are auto-loaded by v2 buildin `LocalePlugin.afterAdd`; see plugin-password-policy/locale.ts for the full rationale.
-    this.app.flowEngine.registerModels({
-      ChangePasswordItemModel,
-      CurrentUserSummaryItemModel,
-      SignOutItemModel,
+    if (!this.pluginSettingsManager.has('users-permissions')) {
+      this.pluginSettingsManager.addMenuItem({
+        key: 'users-permissions',
+        title: this.t('Users & Permissions'),
+        isPinned: true,
+        sort: 200,
+        icon: 'TeamOutlined',
+        showTabs: true,
+      });
+    }
+    this.pluginSettingsManager.addPageTabItem({
+      menuKey: 'users-permissions',
+      key: 'users',
+      title: this.t('Users'),
+      icon: 'UserOutlined',
+      aclSnippet: 'pm.users',
+      sort: 2,
+      componentLoader: () => import('./pages/UsersManagementPage'),
+    });
+
+    const aclPlugin = this.app.pm.get(PluginAclClientV2) as PluginAclClientV2 | undefined;
+    aclPlugin?.rolesManager.add('users', {
+      title: String(this.t('Users')),
+      sort: 10,
+      componentLoader: () => import('./pages/RoleUsersManager'),
+    });
+
+    this.app.flowEngine.registerModelLoaders({
+      ChangePasswordItemModel: {
+        extends: 'UserCenterItemModel',
+        loader: () => import('./user-center/ChangePasswordItemModel'),
+      },
+      CurrentUserSummaryItemModel: {
+        extends: 'UserCenterItemModel',
+        loader: () => import('./user-center/CurrentUserSummaryItemModel'),
+      },
+      SignOutItemModel: {
+        extends: 'UserCenterItemModel',
+        loader: () => import('./user-center/SignOutItemModel'),
+      },
     });
   }
 }
