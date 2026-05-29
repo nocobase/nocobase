@@ -608,21 +608,24 @@ WorkbenchTriggerWorkflowActionModel.registerFlow({
   },
 });
 
-const triggerWorkflowActionModels: Record<string, ModelConstructor> = {
-  FormTriggerWorkflowActionModel,
-  RecordTriggerWorkflowActionModel,
-  CollectionTriggerWorkflowActionModel,
-  WorkbenchTriggerWorkflowActionModel,
+const triggerWorkflowActionModelsByGroup: Record<string, Record<string, ModelConstructor>> = {
+  CollectionActionGroupModel: {
+    CollectionTriggerWorkflowActionModel,
+  },
+  RecordActionGroupModel: {
+    RecordTriggerWorkflowActionModel,
+  },
+  FormActionGroupModel: {
+    FormTriggerWorkflowActionModel,
+  },
+  ActionPanelGroupActionModel: {
+    WorkbenchTriggerWorkflowActionModel,
+  },
 };
 
 export function registerTriggerWorkflowActionGroups(flowEngine: FlowEngine) {
-  [
-    'CollectionActionGroupModel',
-    'RecordActionGroupModel',
-    'FormActionGroupModel',
-    'ActionPanelGroupActionModel',
-  ].forEach((modelName) => {
+  Object.entries(triggerWorkflowActionModelsByGroup).forEach(([modelName, actionModels]) => {
     const modelClass = flowEngine.getModelClass(modelName) as ActionGroupModelClass | undefined;
-    modelClass?.registerActionModels?.(triggerWorkflowActionModels);
+    modelClass?.registerActionModels?.(actionModels);
   });
 }
