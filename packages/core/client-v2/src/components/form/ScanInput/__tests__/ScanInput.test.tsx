@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { fireEvent, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen } from '@testing-library/react';
 import React from 'react';
 import { describe, expect, it, vi } from 'vitest';
 import { ScanInput } from '../ScanInput';
@@ -35,10 +35,29 @@ describe('ScanInput', () => {
     const handleChange = vi.fn();
 
     render(<ScanInput value="" onChange={handleChange} />);
-    fireEvent.click(screen.getByRole('button', { name: 'Scan to input' }));
+    fireEvent.pointerDown(screen.getByRole('button', { name: 'Scan to input' }));
     fireEvent.click(screen.getByText('mock scan result'));
 
     expect(handleChange).toHaveBeenCalledWith('CODE-128');
+  });
+
+  it('opens scanner on pointer down without focusing the input', () => {
+    const handleFocus = vi.fn();
+
+    render(<ScanInput value="" onChange={() => undefined} onFocus={handleFocus} />);
+
+    const input = screen.getByRole('textbox');
+    const button = screen.getByRole('button', { name: 'Scan to input' });
+
+    expect(button).toHaveAttribute('tabindex', '-1');
+    fireEvent.pointerDown(button);
+
+    act(() => {
+      input.focus();
+    });
+
+    expect(handleFocus).not.toHaveBeenCalled();
+    expect(screen.getByText('mock scan result')).toBeInTheDocument();
   });
 
   it('keeps scan available when manual input is disabled', () => {

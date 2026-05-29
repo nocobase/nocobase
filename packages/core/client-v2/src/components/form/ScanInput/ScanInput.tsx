@@ -30,23 +30,62 @@ export function ScanInput({
   disableManualInput,
   enableScan: _enableScan,
   formatsToSupport,
+  onFocus,
   suffix,
   ...rest
 }: ScanInputProps) {
   const { t } = useTranslation();
   const [scanVisible, setScanVisible] = useState(false);
   const inputRef = useRef<InputRef>(null);
+  const suppressInputFocusRef = useRef(false);
 
   const handleScanSuccess = (text: string) => {
     if (!text) {
       return;
     }
     onChange?.(text);
-    setTimeout(() => inputRef.current?.focus(), 100);
   };
 
   const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     onChange?.(event);
+  };
+
+  const openScanner = () => {
+    if (disabled) {
+      return;
+    }
+    suppressInputFocusRef.current = true;
+    inputRef.current?.blur();
+    setScanVisible(true);
+    window.setTimeout(() => {
+      suppressInputFocusRef.current = false;
+    }, 300);
+  };
+
+  const handleInputFocus = (event: React.FocusEvent<HTMLInputElement>) => {
+    if (suppressInputFocusRef.current) {
+      inputRef.current?.blur();
+      event.preventDefault();
+      return;
+    }
+    onFocus?.(event);
+  };
+
+  const handleScanButtonPointerDownCapture = (event: React.PointerEvent<HTMLElement>) => {
+    event.preventDefault();
+    event.stopPropagation();
+    openScanner();
+  };
+
+  const handleScanButtonTouchStartCapture = (event: React.TouchEvent<HTMLElement>) => {
+    event.preventDefault();
+    event.stopPropagation();
+    openScanner();
+  };
+
+  const handleScanButtonClick = (event: React.MouseEvent<HTMLElement>) => {
+    event.preventDefault();
+    event.stopPropagation();
   };
 
   const scanButton = (
@@ -54,14 +93,14 @@ export function ScanInput({
       <Button
         aria-label={t('Scan to input')}
         disabled={disabled}
+        htmlType="button"
         icon={<ScanOutlined />}
         size="small"
+        tabIndex={-1}
         type="text"
-        onMouseDown={(event) => event.preventDefault()}
-        onClick={() => {
-          inputRef.current?.blur();
-          setScanVisible(true);
-        }}
+        onClick={handleScanButtonClick}
+        onPointerDownCapture={handleScanButtonPointerDownCapture}
+        onTouchStartCapture={handleScanButtonTouchStartCapture}
       />
     </Tooltip>
   );
@@ -81,6 +120,7 @@ export function ScanInput({
         }
         value={value}
         onChange={handleInputChange}
+        onFocus={handleInputFocus}
       />
       <CodeScanner
         formatsToSupport={formatsToSupport}

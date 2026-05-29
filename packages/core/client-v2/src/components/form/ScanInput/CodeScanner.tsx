@@ -152,18 +152,6 @@ function CodeScannerContent({ visible, formatsToSupport, onClose, onScanSuccess 
     overflow: hidden;
     background: ${token.colorBgMask};
   `;
-  const titleClass = css`
-    position: absolute;
-    top: ${token.paddingLG}px;
-    right: ${token.paddingXXL}px;
-    left: ${token.paddingXXL}px;
-    z-index: ${token.zIndexPopupBase + 1002};
-    color: ${token.colorTextLightSolid};
-    font-size: ${token.fontSizeHeading4}px;
-    font-weight: ${token.fontWeightStrong};
-    line-height: ${token.lineHeightHeading4};
-    text-align: center;
-  `;
   const closeButtonClass = css`
     position: absolute;
     top: ${token.padding}px;
@@ -196,7 +184,6 @@ function CodeScannerContent({ visible, formatsToSupport, onClose, onScanSuccess 
               height: `${scanBoxHeight}px`,
             }}
           />
-          <div className={titleClass}>{t('Scan code')}</div>
           <Button
             aria-label={t('Close')}
             className={closeButtonClass}
