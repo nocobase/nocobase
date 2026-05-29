@@ -32,6 +32,7 @@ import {
   getGanttRowKey,
   getMaxHorizontalScrollLeft,
   mapHorizontalScrollLeft,
+  measureMaxElementHeight,
   getRowNumber,
   measureElementHeight,
   ROW_SELECTION_COLUMN_WIDTH,
@@ -104,7 +105,12 @@ export const GanttBlock = observer(
     const [failedTask, setFailedTask] = useState<BarTask | null>(null);
     const [scrollY, setScrollY] = useState(0);
     const syncingScrollRef = useRef(false);
+    const scrollYRef = useRef(0);
     const scrollXRef = useRef(-1);
+    const setScrollYValue = useCallback((nextScrollY: number) => {
+      scrollYRef.current = nextScrollY;
+      setScrollY(nextScrollY);
+    }, []);
     const debounceHandleTaskChange = useMemo(
       () =>
         debounce(async (task: Task) => {
@@ -132,7 +138,25 @@ export const GanttBlock = observer(
     );
     const columnWidth: number = getColumnWidth(dateSetup.dates.length, verticalGanttContainerRef.current?.clientWidth);
     const svgWidth = dateSetup.dates.length * columnWidth;
-    const ganttFullHeight = barTasks.length * rowHeight;
+    const displayBarTasks = useMemo(() => {
+      const { action, changedTask } = ganttEvent;
+      if (!changedTask || (action !== 'move' && action !== 'end' && action !== 'start' && action !== 'progress')) {
+        return barTasks;
+      }
+
+      let replaced = false;
+      const nextTasks = barTasks.map((task) => {
+        if (task.id !== changedTask.id) {
+          return task;
+        }
+
+        replaced = true;
+        return changedTask;
+      });
+
+      return replaced ? nextTasks : barTasks;
+    }, [barTasks, ganttEvent]);
+    const ganttFullHeight = displayBarTasks.length * rowHeight;
     const bodyHeight = ganttHeight ? Math.min(ganttHeight, ganttFullHeight) : undefined;
     const hasVerticalScroll = !!bodyHeight && ganttFullHeight > bodyHeight;
     const loading = model.resource.loading;
@@ -162,6 +186,7 @@ export const GanttBlock = observer(
         hasVerticalScroll,
         hasHorizontalScroll: hasHorizontalGanttScroll,
         hasHorizontalTableScroll,
+        rowHeight,
       });
     const { visibleTasks, tableRecords, resolvedTableColumns, expandable } = useGanttTree({
       model,
@@ -305,12 +330,39 @@ export const GanttBlock = observer(
         actionsTable.querySelector('.ant-table-tbody > tr.ant-table-row') ||
         actionsTable.querySelector('.ant-table-tbody > tr:not(.ant-table-measure-row)') ||
         actionsTable.querySelector('.ant-table-row');
+      const getTableRowElements = () =>
+        Array.from(actionsTable.querySelectorAll('.ant-table-tbody > tr:not(.ant-table-measure-row)'));
+      const measureNaturalRowHeight = () => {
+        const rows = getTableRowElements();
+        const previousStyles = rows.map((row) => {
+          const rowElement = row as HTMLElement;
+          const cells = Array.from(row.children).filter((child) => child.tagName === 'TD') as HTMLElement[];
+          const rowHeight = rowElement.style.height;
+          const cellHeights = cells.map((cell) => cell.style.height);
+          rowElement.style.height = 'auto';
+          cells.forEach((cell) => {
+            cell.style.height = 'auto';
+          });
+          return { row: rowElement, rowHeight, cells, cellHeights };
+        });
+
+        const nextRowHeight = measureMaxElementHeight(rows);
+
+        previousStyles.forEach(({ row, rowHeight, cells, cellHeights }) => {
+          row.style.height = rowHeight;
+          cells.forEach((cell, index) => {
+            cell.style.height = cellHeights[index];
+          });
+        });
+
+        return nextRowHeight;
+      };
 
       const measureTableMetrics = () => {
         cancelAnimationFrame(frameId);
         frameId = requestAnimationFrame(() => {
           const nextHeaderHeight = measureElementHeight(getTableHeaderElement());
-          const nextRowHeight = measureElementHeight(getTableRowElement());
+          const nextRowHeight = measureNaturalRowHeight() || measureElementHeight(getTableRowElement());
           setTableClientWidth(actionsTable.clientWidth);
 
           setTableMetrics((prev) => {
@@ -434,33 +486,18 @@ export const GanttBlock = observer(
 
     useEffect(() => {
       const { changedTask, action } = ganttEvent;
-      if (changedTask) {
-        if (action === 'delete') {
-          setGanttEvent({ action: '' });
-          setBarTasks(barTasks.filter((t) => t.id !== changedTask.id));
-        } else if (action === 'move' || action === 'end' || action === 'start' || action === 'progress') {
-          const prevStateTask = barTasks.find((t) => t.id === changedTask.id);
-          if (
-            prevStateTask &&
-            prevStateTask.start &&
-            prevStateTask.end &&
-            (prevStateTask.start.getTime() !== changedTask.start.getTime() ||
-              prevStateTask.end.getTime() !== changedTask.end.getTime() ||
-              prevStateTask.progress !== changedTask.progress)
-          ) {
-            setBarTasks(barTasks.map((t) => (t.id === changedTask.id ? changedTask : t)));
-            setTasks((prevTasks) => prevTasks.map((task) => (task.id === changedTask.id ? changedTask : task)));
-          }
-        }
+      if (changedTask && action === 'delete') {
+        setGanttEvent({ action: '' });
+        setBarTasks((prevBarTasks) => prevBarTasks.filter((task) => task.id !== changedTask.id));
       }
-    }, [ganttEvent, barTasks]);
+    }, [ganttEvent]);
 
     useEffect(() => {
       if (failedTask) {
-        setBarTasks(barTasks.map((t) => (t.id !== failedTask.id ? t : failedTask)));
+        setBarTasks((prevBarTasks) => prevBarTasks.map((task) => (task.id !== failedTask.id ? task : failedTask)));
         setFailedTask(null);
       }
-    }, [failedTask, barTasks]);
+    }, [failedTask]);
 
     useEffect(() => {
       if (wrapperRef.current) {
@@ -486,7 +523,7 @@ export const GanttBlock = observer(
       return () => {
         resizeObserver.disconnect();
       };
-    }, [svgWidth, bodyHeight, headerHeight, barTasks.length]);
+    }, [svgWidth, bodyHeight, headerHeight, displayBarTasks.length]);
 
     useEffect(() => {
       if (ganttHeight) {
@@ -517,8 +554,8 @@ export const GanttBlock = observer(
         if (syncingScrollRef.current) {
           return;
         }
-        if (tableBody.scrollTop !== scrollY) {
-          setScrollY(tableBody.scrollTop);
+        if (tableBody.scrollTop !== scrollYRef.current) {
+          setScrollYValue(tableBody.scrollTop);
         }
       };
 
@@ -526,7 +563,7 @@ export const GanttBlock = observer(
       return () => {
         tableBody.removeEventListener('scroll', handleActionsTableScroll);
       };
-    }, [scrollY]);
+    }, [bodyHeight, hasHorizontalTableScroll, setScrollYValue, showActionsTable, tableRecords.length]);
 
     useEffect(() => {
       const wrapperNode = wrapperRef.current;
@@ -537,14 +574,15 @@ export const GanttBlock = observer(
           syncHorizontalScroll(newScrollX);
           event.preventDefault();
         } else if (ganttHeight) {
-          let newScrollY = scrollY + event.deltaY;
+          const currentScrollY = scrollYRef.current;
+          let newScrollY = currentScrollY + event.deltaY;
           if (newScrollY < 0) {
             newScrollY = 0;
           } else if (newScrollY > ganttFullHeight - ganttHeight) {
             newScrollY = ganttFullHeight - ganttHeight;
           }
-          if (newScrollY !== scrollY) {
-            setScrollY(newScrollY);
+          if (newScrollY !== currentScrollY) {
+            setScrollYValue(newScrollY);
             event.preventDefault();
           }
         }
@@ -556,14 +594,14 @@ export const GanttBlock = observer(
       return () => {
         wrapperNode?.removeEventListener('wheel', handleWheel);
       };
-    }, [wrapperRef, scrollY, ganttHeight, rtl, ganttFullHeight, syncHorizontalScroll, getChartMaxScrollLeft]);
+    }, [wrapperRef, ganttHeight, ganttFullHeight, syncHorizontalScroll, getChartMaxScrollLeft, setScrollYValue]);
 
     const handleScrollY = (event: SyntheticEvent<HTMLDivElement>) => {
       if (syncingScrollRef.current) {
         return;
       }
-      if (scrollY !== event.currentTarget.scrollTop) {
-        setScrollY(event.currentTarget.scrollTop);
+      if (scrollYRef.current !== event.currentTarget.scrollTop) {
+        setScrollYValue(event.currentTarget.scrollTop);
       }
     };
 
@@ -582,9 +620,9 @@ export const GanttBlock = observer(
         model.resource.loading = true;
         model.resource.setPageSize(nextPageSize);
         await model.resource.refresh();
-        setScrollY(0);
+        setScrollYValue(0);
       },
-      [model],
+      [model, setScrollYValue],
     );
 
     const renderSelectionCell = useCallback(
@@ -644,7 +682,7 @@ export const GanttBlock = observer(
 
     const handleKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
       event.preventDefault();
-      let newScrollY = scrollY;
+      let newScrollY = scrollYRef.current;
       let newScrollX = scrollXRef.current;
       let isX = true;
       switch (event.key) {
@@ -676,29 +714,41 @@ export const GanttBlock = observer(
         } else if (newScrollY > ganttFullHeight - ganttHeight) {
           newScrollY = ganttFullHeight - ganttHeight;
         }
-        setScrollY(newScrollY);
+        setScrollYValue(newScrollY);
       }
     };
 
     const handleSelectedTask = (taskId: string) => {
-      setSelectedTask(barTasks.find((t) => t.id === taskId));
+      setSelectedTask(displayBarTasks.find((t) => t.id === taskId));
     };
     const handleTaskClick = (task: Task) => {
       handleSelectedTask(task.id);
       void model.openEvent((task as any).record);
     };
 
+    const commitChangedTask = (task: Task) => {
+      const taskId = String(task.id);
+      setTasks((prevTasks) => prevTasks.map((prevTask) => (String(prevTask.id) === taskId ? task : prevTask)));
+      setBarTasks((prevBarTasks) =>
+        prevBarTasks.map((prevTask) =>
+          String(prevTask.id) === taskId ? ({ ...prevTask, ...task } as BarTask) : prevTask,
+        ),
+      );
+    };
+
     const handleProgressChange = async (task: Task) => {
+      commitChangedTask(task);
       await debounceHandleProcessChange(task);
     };
     const handleTaskChange = async (task: Task) => {
+      commitChangedTask(task);
       await debounceHandleTaskChange(task);
     };
 
     const gridProps: GridProps = {
       columnWidth,
       svgWidth,
-      tasks: barTasks,
+      tasks: displayBarTasks,
       rowHeight,
       dates: dateSetup.dates,
       todayColor,
@@ -716,7 +766,7 @@ export const GanttBlock = observer(
       rtl,
     };
     const barProps: TaskGanttContentProps = {
-      tasks: barTasks,
+      tasks: displayBarTasks,
       dates: dateSetup.dates,
       ganttEvent,
       selectedTask,

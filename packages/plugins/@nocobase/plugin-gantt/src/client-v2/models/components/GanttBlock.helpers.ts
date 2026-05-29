@@ -64,6 +64,10 @@ export const measureElementHeight = (element: Element | null) => {
   return element?.getBoundingClientRect().height || 0;
 };
 
+export const measureMaxElementHeight = (elements: Element[]) => {
+  return elements.reduce((maxHeight, element) => Math.max(maxHeight, measureElementHeight(element)), 0);
+};
+
 export const getDateIndex = (date: Date, dates: Date[]) => {
   return dates.findIndex(
     (currentDate, index) =>

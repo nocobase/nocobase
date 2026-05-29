@@ -31,7 +31,7 @@ export const convertToBarTasks = (
   milestoneBackgroundColor: string,
   milestoneBackgroundSelectedColor: string,
 ) => {
-  let barTasks = tasks.map((t, i) => {
+  const barTasks = tasks.map((t, i) => {
     return convertToBarTask(
       t,
       i,
@@ -55,14 +55,15 @@ export const convertToBarTasks = (
     );
   });
 
-  // set dependencies
-  barTasks = barTasks.map((task) => {
+  const barTaskById = new Map(barTasks.map((task) => [task.id, task]));
+  barTasks.forEach((task) => {
     const dependencies = task.dependencies || [];
     for (let j = 0; j < dependencies.length; j++) {
-      const dependence = barTasks.findIndex((value) => value.id === dependencies[j]);
-      if (dependence !== -1) barTasks[dependence].barChildren.push(task);
+      const dependencyTask = barTaskById.get(dependencies[j]);
+      if (dependencyTask) {
+        dependencyTask.barChildren.push(task);
+      }
     }
-    return task;
   });
 
   return barTasks;
