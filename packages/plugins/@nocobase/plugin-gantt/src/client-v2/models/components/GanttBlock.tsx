@@ -11,24 +11,27 @@ import { MultiRecordResource, observer } from '@nocobase/flow-engine';
 import { Pagination, Table, theme } from 'antd';
 import { debounce } from 'lodash';
 import React, { SyntheticEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { convertToBarTasks } from '../../../shared/helpers/bar-helper';
-import { ganttDateRange, seedDates } from '../../../shared/helpers/date-helper';
-import { BarTask } from '../../../shared/types/bar-task';
-import { DateSetup } from '../../../shared/types/date-setup';
-import { GanttEvent } from '../../../shared/types/gantt-task-actions';
-import { Task } from '../../../shared/types/public-types';
-import { CalendarProps } from '../../../shared/components/calendar/calendar';
-import { GridProps } from '../../../shared/components/grid/grid';
-import { HorizontalScroll } from '../../../shared/components/other/horizontal-scroll';
-import { StandardTooltipContent, Tooltip } from '../../../shared/components/other/tooltip';
-import { VerticalScroll } from '../../../shared/components/other/vertical-scroll';
-import { TaskGantt } from '../../../shared/components/gantt/task-gantt';
-import { TaskGanttContentProps } from '../../../shared/components/gantt/task-gantt-content';
+import { convertToBarTasks } from '../../shared/helpers/bar-helper';
+import { ganttDateRange, seedDates } from '../../shared/helpers/date-helper';
+import { BarTask } from '../../shared/types/bar-task';
+import { DateSetup } from '../../shared/types/date-setup';
+import { GanttEvent } from '../../shared/types/gantt-task-actions';
+import { Task } from '../../shared/types/public-types';
+import { CalendarProps } from '../../shared/components/calendar/calendar';
+import { GridProps } from '../../shared/components/grid/grid';
+import { HorizontalScroll } from '../../shared/components/other/horizontal-scroll';
+import { StandardTooltipContent, Tooltip } from '../../shared/components/other/tooltip';
+import { VerticalScroll } from '../../shared/components/other/vertical-scroll';
+import { TaskGantt } from '../../shared/components/gantt/task-gantt';
+import { TaskGanttContentProps } from '../../shared/components/gantt/task-gantt-content';
 import type { GanttBlockModel } from '../GanttBlockModel';
 import {
+  clampHorizontalScrollLeft,
   getColumnWidth,
   getDateIndex,
   getGanttRowKey,
+  getMaxHorizontalScrollLeft,
+  mapHorizontalScrollLeft,
   getRowNumber,
   measureElementHeight,
   ROW_SELECTION_COLUMN_WIDTH,
@@ -63,7 +66,7 @@ export const GanttBlock = observer(
       fontFamily = token.fontFamily,
       fontSize = token.fontSize,
       arrowIndent = token.margin,
-      todayColor = token.colorFillQuaternary,
+      todayColor = token.colorPrimaryBg,
       viewDate,
       TooltipContent = StandardTooltipContent,
       enableDragToReschedule = true,
@@ -89,6 +92,7 @@ export const GanttBlock = observer(
     const [currentViewDate, setCurrentViewDate] = useState<Date | undefined>(undefined);
     const [tableClientWidth, setTableClientWidth] = useState(0);
     const [svgContainerWidth, setSvgContainerWidth] = useState(0);
+    const [chartScrollWidth, setChartScrollWidth] = useState(0);
     const [svgContainerHeight, setSvgContainerHeight] = useState(ganttHeight);
     const [barTasks, setBarTasks] = useState<BarTask[]>([]);
     const [ganttEvent, setGanttEvent] = useState<GanttEvent>({
@@ -167,33 +171,84 @@ export const GanttBlock = observer(
     const selectedRowKeys = model.resource.getSelectedRows().map((row) => getGanttRowKey(model, row));
     const pagination = model.pagination();
 
+    const getChartMaxScrollLeft = useCallback(() => {
+      const chartContainer = verticalGanttContainerRef.current;
+      if (chartContainer) {
+        return getMaxHorizontalScrollLeft(chartContainer.scrollWidth, chartContainer.clientWidth);
+      }
+      return getMaxHorizontalScrollLeft(svgWidth, chartVisibleWidth);
+    }, [chartVisibleWidth, svgWidth]);
+
+    const getScrollbarMaxScrollLeft = useCallback(() => {
+      const scrollContainer = horizontalScrollRef.current;
+      if (scrollContainer) {
+        return getMaxHorizontalScrollLeft(scrollContainer.scrollWidth, scrollContainer.clientWidth);
+      }
+      return getMaxHorizontalScrollLeft(svgWidth, chartVisibleWidth);
+    }, [chartVisibleWidth, svgWidth]);
+
     const syncHorizontalScroll = useCallback(
       (nextScrollX: number, source?: 'chart' | 'scrollbar', behavior: ScrollBehavior = 'auto') => {
-        const normalizedScrollX = Math.max(0, nextScrollX);
-        if (Math.abs(scrollXRef.current - normalizedScrollX) <= 1) {
-          return;
-        }
-
-        scrollXRef.current = normalizedScrollX;
         const chartContainer = verticalGanttContainerRef.current;
         const scrollContainer = horizontalScrollRef.current;
+        const chartMaxScrollLeft = getChartMaxScrollLeft();
+        const scrollbarMaxScrollLeft = getScrollbarMaxScrollLeft();
 
-        if (source !== 'chart' && chartContainer && Math.abs(chartContainer.scrollLeft - normalizedScrollX) > 1) {
+        const chartScrollLeft =
+          source === 'scrollbar'
+            ? mapHorizontalScrollLeft({
+                scrollLeft: nextScrollX,
+                fromMaxScrollLeft: scrollbarMaxScrollLeft,
+                toMaxScrollLeft: chartMaxScrollLeft,
+              })
+            : clampHorizontalScrollLeft(nextScrollX, chartMaxScrollLeft);
+
+        const scrollbarScrollLeft =
+          source === 'chart'
+            ? mapHorizontalScrollLeft({
+                scrollLeft: nextScrollX,
+                fromMaxScrollLeft: chartMaxScrollLeft,
+                toMaxScrollLeft: scrollbarMaxScrollLeft,
+              })
+            : source === 'scrollbar'
+              ? clampHorizontalScrollLeft(nextScrollX, scrollbarMaxScrollLeft)
+              : mapHorizontalScrollLeft({
+                  scrollLeft: chartScrollLeft,
+                  fromMaxScrollLeft: chartMaxScrollLeft,
+                  toMaxScrollLeft: scrollbarMaxScrollLeft,
+                });
+
+        const normalizedChartScrollLeft =
+          Math.abs(chartMaxScrollLeft - chartScrollLeft) <= 1 ? chartMaxScrollLeft : chartScrollLeft;
+        const normalizedScrollbarScrollLeft =
+          Math.abs(scrollbarMaxScrollLeft - scrollbarScrollLeft) <= 1 ? scrollbarMaxScrollLeft : scrollbarScrollLeft;
+
+        scrollXRef.current = normalizedChartScrollLeft;
+
+        if (
+          source !== 'chart' &&
+          chartContainer &&
+          Math.abs(chartContainer.scrollLeft - normalizedChartScrollLeft) > 1
+        ) {
           if (behavior === 'smooth' && typeof chartContainer.scrollTo === 'function') {
-            chartContainer.scrollTo({ left: normalizedScrollX, behavior });
+            chartContainer.scrollTo({ left: normalizedChartScrollLeft, behavior });
           } else {
-            chartContainer.scrollLeft = normalizedScrollX;
+            chartContainer.scrollLeft = normalizedChartScrollLeft;
           }
         }
-        if (source !== 'scrollbar' && scrollContainer && Math.abs(scrollContainer.scrollLeft - normalizedScrollX) > 1) {
+        if (
+          source !== 'scrollbar' &&
+          scrollContainer &&
+          Math.abs(scrollContainer.scrollLeft - normalizedScrollbarScrollLeft) > 1
+        ) {
           if (behavior === 'smooth' && typeof scrollContainer.scrollTo === 'function') {
-            scrollContainer.scrollTo({ left: normalizedScrollX, behavior });
+            scrollContainer.scrollTo({ left: normalizedScrollbarScrollLeft, behavior });
           } else {
-            scrollContainer.scrollLeft = normalizedScrollX;
+            scrollContainer.scrollLeft = normalizedScrollbarScrollLeft;
           }
         }
       },
-      [],
+      [getChartMaxScrollLeft, getScrollbarMaxScrollLeft],
     );
 
     const setHorizontalScrollRef = useCallback(
@@ -414,6 +469,26 @@ export const GanttBlock = observer(
     }, [wrapperRef, tableWidth]);
 
     useEffect(() => {
+      const chartContainer = verticalGanttContainerRef.current;
+      if (!chartContainer) {
+        return;
+      }
+
+      const updateChartScrollMetrics = () => {
+        setChartScrollWidth(chartContainer.scrollWidth);
+      };
+
+      updateChartScrollMetrics();
+      const resizeObserver = new ResizeObserver(updateChartScrollMetrics);
+      resizeObserver.observe(chartContainer);
+      Array.from(chartContainer.children).forEach((child) => resizeObserver.observe(child));
+
+      return () => {
+        resizeObserver.disconnect();
+      };
+    }, [svgWidth, bodyHeight, headerHeight, barTasks.length]);
+
+    useEffect(() => {
       if (ganttHeight) {
         setSvgContainerHeight((bodyHeight || 0) + headerHeight);
       } else {
@@ -458,12 +533,7 @@ export const GanttBlock = observer(
       const handleWheel = (event: WheelEvent) => {
         if (event.shiftKey || event.deltaX) {
           const scrollMove = event.deltaX ? event.deltaX : event.deltaY;
-          let newScrollX = scrollXRef.current + scrollMove;
-          if (newScrollX < 0) {
-            newScrollX = 0;
-          } else if (newScrollX > svgWidth) {
-            newScrollX = svgWidth;
-          }
+          const newScrollX = clampHorizontalScrollLeft(scrollXRef.current + scrollMove, getChartMaxScrollLeft());
           syncHorizontalScroll(newScrollX);
           event.preventDefault();
         } else if (ganttHeight) {
@@ -486,7 +556,7 @@ export const GanttBlock = observer(
       return () => {
         wrapperNode?.removeEventListener('wheel', handleWheel);
       };
-    }, [wrapperRef, scrollY, ganttHeight, svgWidth, rtl, ganttFullHeight, syncHorizontalScroll]);
+    }, [wrapperRef, scrollY, ganttHeight, rtl, ganttFullHeight, syncHorizontalScroll, getChartMaxScrollLeft]);
 
     const handleScrollY = (event: SyntheticEvent<HTMLDivElement>) => {
       if (syncingScrollRef.current) {
@@ -598,11 +668,7 @@ export const GanttBlock = observer(
           break;
       }
       if (isX) {
-        if (newScrollX < 0) {
-          newScrollX = 0;
-        } else if (newScrollX > svgWidth) {
-          newScrollX = svgWidth;
-        }
+        newScrollX = clampHorizontalScrollLeft(newScrollX, getChartMaxScrollLeft());
         syncHorizontalScroll(newScrollX);
       } else {
         if (newScrollY < 0) {
@@ -742,7 +808,12 @@ export const GanttBlock = observer(
                   rtl={rtl}
                 />
               )}
-              <HorizontalScroll svgWidth={svgWidth} rtl={rtl} onScroll={handleScrollX} ref={setHorizontalScrollRef} />
+              <HorizontalScroll
+                scrollWidth={chartScrollWidth || svgWidth}
+                rtl={rtl}
+                onScroll={handleScrollX}
+                ref={setHorizontalScrollRef}
+              />
             </div>
           </div>
           <div className={paginationClass}>

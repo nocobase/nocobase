@@ -9,8 +9,8 @@
 
 import type { ColumnsType } from 'antd/es/table';
 import React, { useEffect, useMemo, useState } from 'react';
-import { sortTasks } from '../../../shared/helpers/other-helper';
-import type { Task } from '../../../shared/types/public-types';
+import { sortTasks } from '../../shared/helpers/other-helper';
+import type { Task } from '../../shared/types/public-types';
 import type { GanttBlockModel } from '../GanttBlockModel';
 
 export const GANTT_TREE_CHILDREN_COLUMN = '__ganttChildren';

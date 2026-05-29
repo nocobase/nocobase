@@ -44,7 +44,7 @@ const createTask = (id: string, name: string, x1: number): BarTask =>
 
 const tasks = [createTask('1', 'Task 1', 0), createTask('2', 'Task 2', 120)];
 
-const Harness = () => {
+const Harness = ({ onClick = vi.fn() }: { onClick?: (task: BarTask) => void }) => {
   const [ganttEvent, setGanttEvent] = useState<GanttEvent>({ action: '' });
 
   return (
@@ -68,6 +68,7 @@ const Harness = () => {
           setGanttEvent={setGanttEvent}
           setFailedTask={vi.fn()}
           setSelectedTask={vi.fn()}
+          onClick={onClick}
         />
       </svg>
       <div data-testid="hovered-task-id">{ganttEvent.changedTask?.id || ''}</div>
@@ -104,5 +105,16 @@ describe('TaskGanttContent tooltip hover', () => {
 
     expect(screen.getByTestId('hovered-task-id')).toHaveTextContent('2');
     expect(screen.getByTestId('hover-action')).toHaveTextContent('mouseenter');
+  });
+
+  test('opens the task when clicking the task label text', () => {
+    const handleClick = vi.fn();
+
+    render(<Harness onClick={handleClick} />);
+
+    fireEvent.click(screen.getByText('Task 1'));
+
+    expect(handleClick).toHaveBeenCalledTimes(1);
+    expect(handleClick).toHaveBeenCalledWith(expect.objectContaining({ id: '1', name: 'Task 1' }));
   });
 });

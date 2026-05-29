@@ -12,12 +12,14 @@ import { createStyles } from 'antd-style';
 const useStyles = createStyles(({ token, css }) => {
   return {
     scrollWrapper: css`
-      overflow: auto;
+      overflow-x: auto;
+      overflow-y: hidden;
       position: absolute;
       bottom: 0;
+      left: 0;
+      width: 100%;
       max-width: 100%;
-      height: 16px;
-      background: ${token.colorSplit};
+      height: 17px;
       scrollbar-color: ${token.colorTextPlaceholder} ${token.colorSplit};
       &::-webkit-scrollbar {
         width: 16px;
@@ -75,10 +77,20 @@ const useStyles = createStyles(({ token, css }) => {
         height: 1px;
       }
 
-      .verticalScroll {
+      &.verticalScroll {
         overflow: hidden auto;
         width: 1rem;
         flex-shrink: 0;
+        &::before {
+          content: '';
+          position: absolute;
+          top: -17px;
+          left: 0;
+          right: 0;
+          height: 17px;
+          background: ${token.colorSplit};
+          pointer-events: none;
+        }
         scrollbar-color: ${token.colorTextPlaceholder} ${token.colorSplit};
         &::-webkit-scrollbar {
           width: 8px;
