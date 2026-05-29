@@ -12,13 +12,13 @@ import { cx } from '@emotion/css';
 import useStyles from './style';
 
 type HorizontalScrollProps = {
-  svgWidth: number;
+  scrollWidth: number;
   rtl: boolean;
   onScroll: (event: SyntheticEvent<HTMLDivElement>) => void;
 };
 
 export const HorizontalScroll = forwardRef<HTMLDivElement, HorizontalScrollProps>(
-  ({ svgWidth, rtl, onScroll }, ref) => {
+  ({ scrollWidth, rtl, onScroll }, ref) => {
     const { styles } = useStyles();
 
     return (
@@ -28,7 +28,7 @@ export const HorizontalScroll = forwardRef<HTMLDivElement, HorizontalScrollProps
         onScroll={onScroll}
         ref={ref}
       >
-        <div style={{ width: svgWidth, height: 1 }} className="horizontalScroll" />
+        <div style={{ width: scrollWidth, height: 1 }} className="horizontalScroll" />
       </div>
     );
   },

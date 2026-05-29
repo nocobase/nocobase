@@ -11,22 +11,19 @@ import { createStyles } from 'antd-style';
 
 const useStyles = createStyles(({ token, css }) => {
   return {
-    gridRow: css`
+    gridBackground: css`
       fill: ${token.colorBgContainer};
     `,
-    gridHeightRow: css`
-      fill: #e6f7ff;
-      border-color: ${token.colorBorder};
+    gridColumnShade: css`
+      fill: ${token.colorFillAlter};
+      opacity: 0.8;
     `,
-    nbGridbody: css`
-      .gridrowline: {
-        stroke: ${token.colorBorderSecondary};
-        stroke-width: 0;
-        border-bottom: 1px solid ${token.colorBorderSecondary};
-      }
-      .gridtick: {
-        stroke: ${token.colorBorderSecondary};
-      }
+    gridSelectedRow: css`
+      fill: ${token.colorPrimaryBg};
+    `,
+    gridRowLine: css`
+      stroke: ${token.colorBorderSecondary};
+      stroke-width: 1;
     `,
   };
 });

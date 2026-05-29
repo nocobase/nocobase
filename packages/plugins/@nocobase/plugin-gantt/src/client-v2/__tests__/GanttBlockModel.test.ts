@@ -26,12 +26,14 @@ import {
 import { GanttEventViewActionModel } from '../models/actions/GanttPopupModels';
 import {
   GANTT_TREE_CHILDREN_COLUMN,
+  getGanttTreeMeta,
   getOrderedGanttTasks,
   getGanttTableRecords,
   getVisibleGanttTasks,
 } from '../models/components/GanttBlock.tree';
-import { getDateIndex, getRowNumber } from '../models/components/GanttBlock.helpers';
+import { getDateIndex, getRowNumber, measureMaxElementHeight } from '../models/components/GanttBlock.helpers';
 import PluginGanttClient from '../plugin';
+import { convertToBarTasks } from '../shared/helpers/bar-helper';
 
 describe('GanttBlockModel.filterCollection', () => {
   test('accepts collections with common NocoBase date fields', () => {
@@ -773,11 +775,14 @@ describe('GanttBlock tree helpers', () => {
   ] as any;
 
   test('uses the same visible tree order for the table and gantt chart', () => {
+    const treeMeta = getGanttTreeMeta(tasks);
+
     expect(
       getVisibleGanttTasks({
         expandedRowKeySet: new Set(),
         tasks,
         treeTableEnabled: true,
+        treeMeta,
       }).map((task) => task.id),
     ).toEqual(['1', '3']);
 
@@ -786,12 +791,14 @@ describe('GanttBlock tree helpers', () => {
         expandedRowKeySet: new Set(['1']),
         tasks,
         treeTableEnabled: true,
+        treeMeta,
       }).map((task) => task.id),
     ).toEqual(['1', '2', '3']);
   });
 
   test('stores gantt tree children in an internal column name instead of record.children', () => {
-    const records = getGanttTableRecords({ tasks, treeTableEnabled: true });
+    const treeMeta = getGanttTreeMeta(tasks);
+    const records = getGanttTableRecords({ tasks, treeTableEnabled: true, treeMeta });
 
     expect(records[0].children).toEqual([{ id: 2 }]);
     expect(records[0][GANTT_TREE_CHILDREN_COLUMN].map((record) => record.__ganttTaskId)).toEqual(['2']);
@@ -801,6 +808,8 @@ describe('GanttBlock tree helpers', () => {
     expect(records[0].__ganttTaskIndexPath).toBe('0');
     expect(records[0][GANTT_TREE_CHILDREN_COLUMN][0].__ganttTaskIndexPath).toBe('0.children.0');
     expect(records[1].__ganttTaskIndexPath).toBe('1');
+    expect(records[0].__ganttTaskDepth).toBe(0);
+    expect(records[0][GANTT_TREE_CHILDREN_COLUMN][0].__ganttTaskDepth).toBe(1);
     expect(records.map((record) => record.__ganttTaskId)).toEqual(['1', '3']);
   });
 
@@ -848,6 +857,64 @@ describe('GanttBlock tree helpers', () => {
     expect(getDateIndex(new Date('2026-05-25T12:00:00'), dates)).toBe(1);
     expect(getDateIndex(new Date('2026-05-26T00:00:00'), dates)).toBe(-1);
     expect(getDateIndex(new Date('2026-05-23T23:59:59'), dates)).toBe(-1);
+  });
+
+  test('uses the tallest visible table row as the gantt row height baseline', () => {
+    const shortRow = document.createElement('tr');
+    const tallActionRow = document.createElement('tr');
+
+    vi.spyOn(shortRow, 'getBoundingClientRect').mockReturnValue({ height: 48 } as DOMRect);
+    vi.spyOn(tallActionRow, 'getBoundingClientRect').mockReturnValue({ height: 72 } as DOMRect);
+
+    expect(measureMaxElementHeight([shortRow, tallActionRow])).toBe(72);
+  });
+});
+
+describe('Gantt bar task helpers', () => {
+  test('keeps dependency children linked to the dependency task', () => {
+    const tasks = [
+      {
+        id: '1',
+        name: 'Dependency',
+        type: 'task',
+        start: new Date('2026-05-01T00:00:00'),
+        end: new Date('2026-05-02T00:00:00'),
+        progress: 0,
+      },
+      {
+        id: '2',
+        name: 'Dependent',
+        type: 'task',
+        start: new Date('2026-05-02T00:00:00'),
+        end: new Date('2026-05-03T00:00:00'),
+        progress: 0,
+        dependencies: ['1', 'missing'],
+      },
+    ] as any;
+
+    const barTasks = convertToBarTasks(
+      tasks,
+      [new Date('2026-05-01T00:00:00'), new Date('2026-05-02T00:00:00'), new Date('2026-05-03T00:00:00')],
+      80,
+      40,
+      20,
+      2,
+      8,
+      false,
+      '#1677ff',
+      '#1677ff',
+      '#1677ff',
+      '#1677ff',
+      '#1677ff',
+      '#1677ff',
+      '#1677ff',
+      '#1677ff',
+      '#faad14',
+      '#faad14',
+    );
+
+    expect(barTasks[0].barChildren.map((task) => task.id)).toEqual(['2']);
+    expect(barTasks[1].barChildren).toEqual([]);
   });
 });
 

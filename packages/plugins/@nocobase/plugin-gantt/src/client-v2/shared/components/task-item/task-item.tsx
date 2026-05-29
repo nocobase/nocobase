@@ -9,6 +9,7 @@
 
 import { cx } from '@emotion/css';
 import React, { useEffect, useRef, useState } from 'react';
+import { useT } from '../../../locale';
 import { getYmd } from '../../helpers/other-helper';
 import { BarTask } from '../../types/bar-task';
 import { GanttContentMoveAction } from '../../types/gantt-task-actions';
@@ -36,12 +37,23 @@ export type TaskItemProps = {
 
 export const TaskItem: React.FC<TaskItemProps> = (props) => {
   const { styles } = useStyles();
+  const t = useT();
   const { task, arrowIndent, isDelete, taskHeight, rtl, onEventStart } = {
     ...props,
   };
   const textRef = useRef<SVGTextElement>(null);
-  const [isTextInside, setIsTextInside] = useState(true);
+  const [textWidth, setTextWidth] = useState(0);
   const isProjectBar = task.typeInternal === 'project';
+  const label =
+    isProjectBar && getYmd(task.start) && getYmd(task.end)
+      ? t('Task date range', {
+          name: task.name,
+          start: getYmd(task.start),
+          end: getYmd(task.end),
+          interpolation: { escapeValue: false },
+        })
+      : task.name;
+  const isTextInside = textWidth < task.x2 - task.x1;
 
   const renderTaskItem = () => {
     switch (task.typeInternal) {
@@ -58,9 +70,10 @@ export const TaskItem: React.FC<TaskItemProps> = (props) => {
 
   useEffect(() => {
     if (textRef.current) {
-      setIsTextInside(textRef.current.getBBox().width < task.x2 - task.x1);
+      const nextTextWidth = textRef.current.getBBox().width;
+      setTextWidth((prevTextWidth) => (prevTextWidth === nextTextWidth ? prevTextWidth : nextTextWidth));
     }
-  }, [textRef, task]);
+  }, [label, task.x1, task.x2]);
 
   const getX = () => {
     const width = task.x2 - task.x1;
@@ -68,8 +81,8 @@ export const TaskItem: React.FC<TaskItemProps> = (props) => {
     if (isTextInside) {
       return task.x1 + width * 0.5;
     }
-    if (rtl && textRef.current) {
-      return task.x1 - textRef.current.getBBox().width - arrowIndent * +hasChild - arrowIndent * 0.2;
+    if (rtl) {
+      return task.x1 - textWidth - arrowIndent * +hasChild - arrowIndent * 0.2;
     } else {
       return task.x1 + width + arrowIndent * +hasChild + arrowIndent * 0.2;
     }
@@ -109,9 +122,7 @@ export const TaskItem: React.FC<TaskItemProps> = (props) => {
         className={isProjectBar ? cx('projectLabel') : isTextInside ? cx('barLabel') : cx('barLabelOutside')}
         ref={textRef}
       >
-        {isProjectBar && getYmd(task.start) && getYmd(task.end)
-          ? `${task.name}:  ${getYmd(task.start)} ~ ${getYmd(task.end)}`
-          : task.name}
+        {label}
       </text>
     </g>
   );

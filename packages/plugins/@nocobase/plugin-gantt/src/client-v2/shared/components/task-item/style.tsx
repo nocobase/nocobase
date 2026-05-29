@@ -12,6 +12,7 @@ import { createStyles } from 'antd-style';
 const useStyles = createStyles(({ token, css }) => {
   return {
     nbganttTaskitem: css`
+      cursor: pointer;
       .barLabel: {
         fill: ${token.colorTextLightSolid},
         textAnchor: middle,
@@ -23,6 +24,7 @@ const useStyles = createStyles(({ token, css }) => {
         msUserSelect: none,
         userSelect: none,
         pointerEvents: none,
+        cursor: pointer,
       },
       .projectLabel: {
         fill: #130d0d,
@@ -35,6 +37,7 @@ const useStyles = createStyles(({ token, css }) => {
         msUserSelect: none,
         userSelect: none,
         pointerEvents: none,
+        cursor: pointer,
       },
       .barLabelOutside: {
         fill: ${token.colorTextLabel},
@@ -45,6 +48,7 @@ const useStyles = createStyles(({ token, css }) => {
         msUserSelect: none,
         userSelect: none,
         pointerEvents: none,
+        cursor: pointer,
       },
     }
   }`,
