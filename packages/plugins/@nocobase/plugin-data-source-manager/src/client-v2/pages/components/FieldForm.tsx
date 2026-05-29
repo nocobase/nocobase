@@ -736,7 +736,7 @@ function ConfigureSelectControl(props: {
       onChange={onChange}
       {...restSelectProps}
       filterOption={(input, option) =>
-        String(option?.label || '')
+        String((option as { label?: React.ReactNode } | undefined)?.label || '')
           .toLowerCase()
           .includes(input.toLowerCase())
       }

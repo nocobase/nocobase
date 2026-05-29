@@ -522,6 +522,7 @@ export function SqlFieldsConfigureItem(props: CollectionTemplateConfigureItemPro
   const t = ctx.t;
   const collectionsRequest = useCollections();
   const manager = ctx.dataSourceManager.collectionFieldInterfaceManager as FieldInterfaceManager;
+  const mainDataSource = ctx.dataSourceManager.getDataSource('main');
   const rawPreview = Form.useWatch(internalPreviewName, { form: props.form, preserve: true }) as
     | SqlPreviewResult
     | undefined;
@@ -539,7 +540,7 @@ export function SqlFieldsConfigureItem(props: CollectionTemplateConfigureItemPro
         sources,
         t,
       }),
-    [collectionsRequest.data, sources, t],
+    [collectionsRequest.data, mainDataSource, sources, t],
   );
   const lastPreviewRef = useRef<SqlPreviewResult>();
 

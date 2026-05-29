@@ -552,7 +552,7 @@ export function ViewFieldsConfigureItem(props: CollectionTemplateConfigureItemPr
       width: 180,
       render: (_, record, index) => (
         <Input
-          value={record.uiSchema?.title || record.name}
+          value={(record.uiSchema?.title as string) || record.name}
           onChange={(event) => {
             updateField(index, {
               ...record,
