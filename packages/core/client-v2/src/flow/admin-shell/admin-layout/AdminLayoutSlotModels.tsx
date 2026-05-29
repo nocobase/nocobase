@@ -13,7 +13,9 @@ import { observer, useFlowEngine } from '@nocobase/flow-engine';
 import { Result, theme as antdTheme } from 'antd';
 import React, { FC, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Outlet, useLocation } from 'react-router-dom';
+import { Outlet, useLocation, useMatches, useParams } from 'react-router-dom';
+import { KeepAlive } from '../../../components/KeepAlive';
+import { getLayoutContentRouteNames } from '../../../layout-manager/utils';
 import { isV2AdminRuntime, isV2MenuRoute } from './resolveAdminRouteRuntimeTarget';
 
 type AdminLayoutContentProps = {
@@ -46,6 +48,8 @@ const pageContentStyle: React.CSSProperties = {
 const mobileHeight = {
   height: `calc(100dvh - var(--nb-header-height))`,
 };
+
+const adminLayoutContentRouteNames = getLayoutContentRouteNames('admin');
 
 /**
  * 检测当前浏览器是否支持 dvh，移动端支持时优先使用它计算可视区域高度。
@@ -93,6 +97,11 @@ const ShowTipWhenNoPages = observer(() => {
  */
 export const AdminLayoutContent: FC<AdminLayoutContentProps> = ({ onContentElementChange }) => {
   const style = useMemo(() => (isDvhSupported() ? mobileHeight : undefined), []);
+  const params = useParams();
+  const matches = useMatches();
+  const pageUid = params.name;
+  const currentRouteId = matches.at(-1)?.id;
+  const shouldKeepAlive = !!pageUid && adminLayoutContentRouteNames.includes(currentRouteId || '');
   const bindLayoutContentRef = useCallback(
     (node: HTMLDivElement | null) => {
       // shell 直接渲染内容区时，仍需把挂载目标同步给 root model。
@@ -108,7 +117,7 @@ export const AdminLayoutContent: FC<AdminLayoutContentProps> = ({ onContentEleme
       style={style}
     >
       <div style={pageContentStyle}>
-        <Outlet />
+        {shouldKeepAlive && pageUid ? <KeepAlive uid={pageUid}>{() => <Outlet />}</KeepAlive> : <Outlet />}
         <ShowTipWhenNoPages />
       </div>
     </div>
