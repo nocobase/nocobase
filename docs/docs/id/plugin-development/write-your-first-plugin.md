@@ -118,6 +118,33 @@ Setelah diaktifkan, buat halaman "Modern page (v2)" baru, saat menambahkan Block
 
 ![20250928174529](https://static-docs.nocobase.com/20250928174529.png)
 
+### Membuat Plugin Default Preset atau Default Aktif (Opsional)
+
+Di atas dijelaskan cara mengaktifkan plugin secara manual satu per satu. Jika Anda memelihara aplikasi NocoBase sendiri dan ingin beberapa plugin sudah siap secara otomatis setelah menjalankan `nocobase install` (instalasi pertama) atau `nocobase upgrade` (upgrade), Anda dapat menggunakan dua environment variable untuk mengontrol status default plugin:
+
+- **`APPEND_PRESET_LOCAL_PLUGINS` (tambahkan plugin preset lokal default)** — Menambahkan plugin ke daftar plugin preset lokal; setelah instalasi akan muncul di "Plugin Manager", tetapi tidak aktif secara default dan perlu diaktifkan secara manual
+- **`APPEND_PRESET_BUILT_IN_PLUGINS` (tambahkan plugin built-in default)** — Menambahkan plugin ke daftar plugin built-in; saat instalasi plugin diaktifkan secara otomatis, dan sebagai plugin built-in, **tidak dapat dinonaktifkan atau dihapus di "Plugin Manager"**
+
+Nilai kedua variable ini adalah nama paket plugin (field `name` di `package.json`), pisahkan beberapa plugin dengan koma. Konfigurasi di file `.env` seperti berikut:
+
+```bash
+# Default preset: muncul di daftar Plugin Manager, tetapi tidak diaktifkan secara otomatis
+APPEND_PRESET_LOCAL_PLUGINS=@my-project/plugin-hello,@my-project/plugin-hello-world
+
+# Default aktif: diinstal dan diaktifkan secara otomatis, serta tidak dapat dinonaktifkan melalui antarmuka
+APPEND_PRESET_BUILT_IN_PLUGINS=@my-project/plugin-hello,@my-project/plugin-hello-world
+```
+
+Pada umumnya, untuk pengembangan dan debugging lokal, `yarn pm enable` sudah cukup. Kedua variable ini lebih cocok untuk skenario distribusi "siap pakai" — misalnya Anda mengemas aplikasi NocoBase dengan plugin tertentu dan ingin plugin langsung tersedia setelah inisialisasi.
+
+:::tip Tips
+
+- Plugin harus sudah diunduh ke lokal dan dapat ditemukan di `node_modules`, lihat [Struktur Direktori Proyek](./project-structure.md)
+- Setelah dikonfigurasi, perlu menjalankan ulang `nocobase install` atau `nocobase upgrade` agar perubahan berlaku
+- Penjelasan lengkap environment variable lihat [Environment Variable](../get-started/installation/env.md#append_preset_local_plugins)
+
+:::
+
 ## Langkah 4: Build & Packaging
 
 Ketika Anda siap mendistribusikan plugin ke environment lain, Anda perlu build kemudian packaging:
@@ -158,3 +185,4 @@ Upload dan ekstrak file packaging ke direktori `./storage/plugins` aplikasi targ
 - [Instalasi menggunakan create-nocobase-app](../get-started/installation/create-nocobase-app) — Salah satu cara instalasi NocoBase
 - [Instalasi dari source code Git](../get-started/installation/git) — Instalasi NocoBase dari source code
 - [Instalasi & Upgrade Plugin](../get-started/install-upgrade-plugins.mdx) — Upload plugin yang sudah di-package ke environment lain
+- [Environment Variable](../get-started/installation/env.md) — Konfigurasi environment variable untuk plugin preset dan built-in

@@ -378,7 +378,8 @@ SERVER_REQUEST_WHITELIST=1.2.3.4,10.0.0.0/8,api.example.com,*.trusted.com
 
 1. プラグインがローカルにダウンロードされ、`node_modules` ディレクトリ内に存在することを確認してください。詳細は[プラグインの構成](/plugin-development/project-structure)を参照してください。
 2. 環境変数を追加した後、初期インストール `nocobase install` またはアップグレード `nocobase upgrade` を実行すると、プラグイン管理ページに表示されるようになります。
-   :::
+
+:::
 
 ```bash
 APPEND_PRESET_LOCAL_PLUGINS=@my-project/plugin-foo,@my-project/plugin-bar
@@ -392,7 +393,8 @@ APPEND_PRESET_LOCAL_PLUGINS=@my-project/plugin-foo,@my-project/plugin-bar
 
 1. プラグインがローカルにダウンロードされ、`node_modules` ディレクトリ内に存在することを確認してください。詳細は[プラグインの構成](/plugin-development/project-structure)を参照してください。
 2. 環境変数を追加した後、初期インストール `nocobase install` またはアップグレード `nocobase upgrade` 時にプラグインが自動的にインストールまたはアップグレードされます。
-   :::
+
+:::
 
 ```bash
 APPEND_PRESET_BUILT_IN_PLUGINS=@my-project/plugin-foo,@my-project/plugin-bar
