@@ -77,6 +77,9 @@ export class CollectionFieldInterfaceManager {
   ) {
     const newCollectionFieldInterfaces = fieldInterfaceClasses.reduce<Record<string, FieldInterfaceLike>>(
       (acc, Interface) => {
+        if (typeof Interface !== 'function') {
+          return acc;
+        }
         const instance = new Interface(this);
         if (!instance?.name) {
           return acc;
