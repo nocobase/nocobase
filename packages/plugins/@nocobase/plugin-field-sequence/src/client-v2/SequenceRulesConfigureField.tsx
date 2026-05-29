@@ -10,7 +10,7 @@
 import { DeleteOutlined, MenuOutlined, PlusOutlined } from '@ant-design/icons';
 import type { FieldConfigurePropertyComponentProps } from '@nocobase/client-v2';
 import { Button, Drawer, Form, Input, InputNumber, Select, Space, Table, theme } from 'antd';
-import type { FormInstance, FormListFieldData, Rule } from 'antd';
+import type { FormInstance, FormListFieldData, Rule } from 'antd/es/form';
 import { cloneDeep, get } from 'lodash';
 import React, { useEffect, useMemo, useState } from 'react';
 import { useT } from './locale';
