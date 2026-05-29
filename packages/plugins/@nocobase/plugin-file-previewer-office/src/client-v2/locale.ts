@@ -7,15 +7,12 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { tExpr as flowTExpr, useFlowEngine } from '@nocobase/flow-engine';
-import { NAMESPACE } from '../common/constants';
+import { useFlowEngine } from '@nocobase/flow-engine';
+
+export const NAMESPACE = 'file-previewer-office';
 
 export function useT() {
   const engine = useFlowEngine();
   return (key: string, options?: Record<string, any>) =>
     engine.context.t(key, { ns: [NAMESPACE, 'client'], ...options });
-}
-
-export function tExpr(key: string) {
-  return flowTExpr(key, { ns: [NAMESPACE, 'client'] });
 }
