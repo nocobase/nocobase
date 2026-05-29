@@ -43,6 +43,12 @@ const fieldNames = {
   color: 'color',
 };
 
+function getConfiguredCollectionNames(collectionField) {
+  return (collectionField?.uiSchema?.enum || collectionField?.enum || [])
+    .map((item) => (item && typeof item === 'object' ? item.value : item))
+    .filter((value) => value !== null && typeof value !== 'undefined');
+}
+
 export class DisplayEnumFieldModel extends ClickableFieldModel {
   isEmpty(value: any) {
     return value === null || value === undefined || value === '';
@@ -134,12 +140,12 @@ DisplayEnumFieldModel.registerFlow({
             });
           } else {
             const collections = ctx.dataSourceManager.getDataSource('main').getCollections();
-            const defaultOptions = ctx.model.context.collectionField.enum || [];
+            const defaultOptions = getConfiguredCollectionNames(ctx.model.context.collectionField);
             const options = collections
               .filter((item: any) => !item.options.hidden)
               .filter((v) => {
                 if (defaultOptions.length) {
-                  return defaultOptions.find((c) => c.value === v.name);
+                  return defaultOptions.includes(v.name);
                 }
                 return true;
               })

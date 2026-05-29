@@ -8,36 +8,37 @@
  */
 
 import type { FieldConfigurePropertyComponentProps } from '@nocobase/client-v2';
-import { SlateVariableEditor, type MetaTreeNode, useFlowContext } from '@nocobase/flow-engine';
+import { Evaluator, evaluators } from '@nocobase/evaluators/client';
+import {
+  type MetaTreeNode,
+  useFlowContext,
+  VariableHybridInput,
+  type VariableHybridInputConverters,
+} from '@nocobase/flow-engine';
+import { Registry } from '@nocobase/utils/client';
 import { Form } from 'antd';
-import React, { useCallback } from 'react';
+import React, { useCallback, useMemo } from 'react';
+import { useT } from '../locale';
 
 const formulaExpressionFieldInterfaces = [
-  'bigInt',
-  'boolean',
-  'chinaRegion',
-  'createdAt',
-  'createdBy',
-  'date',
-  'datetime',
-  'decimal',
-  'double',
-  'email',
-  'float',
-  'id',
-  'integer',
-  'json',
+  'checkbox',
   'number',
   'percent',
+  'integer',
+  'input',
+  'textarea',
+  'email',
   'phone',
-  'radioGroup',
-  'select',
-  'string',
-  'text',
-  'time',
+  'date',
+  'datetime',
+  'datetimeNoTz',
+  'unixTimestamp',
+  'createdAt',
   'updatedAt',
-  'updatedBy',
-  'url',
+  'radioGroup',
+  'checkboxGroup',
+  'select',
+  'multipleSelect',
 ];
 
 function normalizePathOptionsToMetaTree(
@@ -78,20 +79,46 @@ function FormulaExpressionEditor(props: {
   value?: string;
   onChange?: (value: string) => void;
   collection?: Record<string, any>;
+  currentFieldName?: string;
 }) {
   const ctx = useFlowContext();
   const interfaces = ctx.dataSourceManager.collectionFieldInterfaceManager;
-  const expressionFields = ctx.flowEngine?.context?.fieldFormula?.expressionFields || formulaExpressionFieldInterfaces;
+  const expressionFields =
+    ctx.fieldFormula?.expressionFields ||
+    ctx.flowEngine?.context?.fieldFormula?.expressionFields ||
+    formulaExpressionFieldInterfaces;
+  const converters = useMemo<VariableHybridInputConverters>(
+    () => ({
+      formatPathToValue: (meta) => (meta?.paths?.length ? `{{${meta.paths.join('.')}}}` : undefined),
+      parseValueToPath: (value) => {
+        const match = value?.trim().match(/^\{\{\s*(.+?)\s*\}\}$/);
+        return match?.[1] ? match[1].split('.') : undefined;
+      },
+    }),
+    [],
+  );
+  const foreignKeyNames = useMemo(() => {
+    return new Set(
+      (props.collection?.fields || [])
+        .map((field: Record<string, any>) => field?.foreignKey)
+        .filter((foreignKey: unknown): foreignKey is string => typeof foreignKey === 'string' && !!foreignKey),
+    );
+  }, [props.collection?.fields]);
 
   const metaTree = useCallback(async () => {
     const currentFields = props.collection?.fields || [];
     return currentFields
-      .filter((field: Record<string, any>) => field?.interface && expressionFields.includes(field.interface))
+      .filter((field: Record<string, any>) => {
+        if (!field?.name || field.name === props.currentFieldName || foreignKeyNames.has(field.name)) {
+          return false;
+        }
+        return field?.interface && expressionFields.includes(field.interface);
+      })
       .map((field: Record<string, any>) => {
         const interfaceInstance = interfaces?.getFieldInterface?.(field.interface);
         const getPathOptions = interfaceInstance?.usePathOptions as undefined | ((field: Record<string, any>) => any);
         const pathOptions = typeof getPathOptions === 'function' ? getPathOptions(field) : undefined;
-        const title = String(field?.uiSchema?.title ?? field?.name ?? '');
+        const title = String(field?.uiSchema?.title ?? field?.title ?? field?.name ?? '');
         const children = normalizePathOptionsToMetaTree(pathOptions, [title], [String(field?.name ?? '')]);
         return {
           name: String(field?.name ?? ''),
@@ -104,28 +131,50 @@ function FormulaExpressionEditor(props: {
           children: children.length ? children : undefined,
         } as MetaTreeNode;
       });
-  }, [expressionFields, interfaces, props.collection?.fields]);
+  }, [expressionFields, foreignKeyNames, interfaces, props.collection?.fields, props.currentFieldName]);
 
   return (
-    <SlateVariableEditor
+    <VariableHybridInput
       value={props.value || ''}
       onChange={(value) => props.onChange?.(value)}
       metaTree={metaTree}
+      converters={converters}
       placeholder={ctx.t('Input text, use {{ to insert variables')}
-      multiline
     />
   );
 }
 
+function FormulaExpressionSyntaxReference(props: { engine?: string }) {
+  const t = useT();
+  const engine = props.engine ? (evaluators as Registry<Evaluator>).get(props.engine) : undefined;
+
+  if (!engine?.link) {
+    return null;
+  }
+
+  return (
+    <span>
+      {t('Syntax references')}:&nbsp;
+      <a href={t(engine.link)} target="_blank" rel="noreferrer">
+        {engine.label}
+      </a>
+    </span>
+  );
+}
+
 export function FormulaExpressionConfigureField(props: FieldConfigurePropertyComponentProps) {
+  const engine = Form.useWatch('engine', props.form);
+  const currentFieldName = Form.useWatch('name', props.form);
+  const extra = useMemo(() => <FormulaExpressionSyntaxReference engine={engine || 'formula.js'} />, [engine]);
+
   return (
     <Form.Item
       name={props.namePath}
       label={props.title}
-      tooltip={props.tooltip}
+      extra={extra}
       rules={props.schema?.required ? [{ required: true }] : undefined}
     >
-      <FormulaExpressionEditor collection={props.collection} />
+      <FormulaExpressionEditor collection={props.collection} currentFieldName={currentFieldName} />
     </Form.Item>
   );
 }

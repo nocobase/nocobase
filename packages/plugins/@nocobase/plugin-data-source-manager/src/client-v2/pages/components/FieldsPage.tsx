@@ -119,6 +119,10 @@ function getFieldInterfaces(ctx: any, dataSourceType?: string) {
   return (manager?.getFieldInterfaces?.(dataSourceType) || []) as FieldInterfaceOption[];
 }
 
+function getAppInfoDatabaseDialect(appInfo?: Record<string, any>) {
+  return appInfo?.database?.dialect || appInfo?.data?.database?.dialect;
+}
+
 function getFieldInterfaceOptions(ctx: any, dataSourceType?: string) {
   const manager = ctx.dataSourceManager.collectionFieldInterfaceManager;
   const fieldInterfaces = getFieldInterfaces(ctx, dataSourceType);
@@ -861,6 +865,7 @@ export default function FieldsPage(props: FieldsPageProps) {
   }, [props.collection.titleField]);
 
   const dataSource = ctx.dataSourceManager.getDataSource(props.dataSourceKey);
+  const databaseDialect = getAppInfoDatabaseDialect(appInfo);
   const allFieldInterfaceGroups = useMemo(
     () => getFieldInterfaceOptions(ctx, dataSource?.options?.type),
     [ctx, dataSource?.options?.type],
@@ -868,28 +873,23 @@ export default function FieldsPage(props: FieldsPageProps) {
   const fieldInterfaceGroups = useMemo(
     () =>
       filterCreateFieldInterfaces(
-        filterFieldInterfaceGroupsByTemplate(
-          allFieldInterfaceGroups,
-          props.collection,
-          ctx,
-          appInfo?.database?.dialect,
-        ),
+        filterFieldInterfaceGroupsByTemplate(allFieldInterfaceGroups, props.collection, ctx, databaseDialect),
         props.collection,
         ctx,
       ),
-    [allFieldInterfaceGroups, appInfo?.database?.dialect, ctx, props.collection],
+    [allFieldInterfaceGroups, databaseDialect, ctx, props.collection],
   );
   const fieldInterfacesByName = useMemo(() => {
     return filterFieldInterfacesByTemplate(
       getFieldInterfaces(ctx, dataSource?.options?.type),
       props.collection,
       ctx,
-      appInfo?.database?.dialect,
+      databaseDialect,
     ).reduce<Record<string, FieldInterfaceOption>>((memo, fieldInterface) => {
       memo[fieldInterface.name] = fieldInterface;
       return memo;
     }, {});
-  }, [appInfo?.database?.dialect, ctx, dataSource?.options?.type, props.collection]);
+  }, [databaseDialect, ctx, dataSource?.options?.type, props.collection]);
 
   const openFieldForm = useCallback(
     (mode: 'create' | 'edit', field?: Record<string, any>, interfaceName?: string) => {

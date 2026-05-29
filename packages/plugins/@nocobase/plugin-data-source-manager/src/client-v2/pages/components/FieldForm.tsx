@@ -28,6 +28,7 @@ import { CSS } from '@dnd-kit/utilities';
 import {
   Button,
   Checkbox,
+  Col,
   ColorPicker,
   DatePicker,
   Dropdown,
@@ -35,12 +36,14 @@ import {
   Input,
   InputNumber,
   Radio,
+  Row,
   Select,
   Space,
   Table,
   Tag,
   theme,
   TimePicker,
+  App,
 } from 'antd';
 import type { MenuProps } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
@@ -75,6 +78,10 @@ type FieldInterfaceOption = Record<string, any> & { name: string };
 function getFieldInterfaces(ctx: any, dataSourceType?: string): FieldInterfaceOption[] {
   return (ctx.dataSourceManager.collectionFieldInterfaceManager?.getFieldInterfaces?.(dataSourceType) ||
     []) as FieldInterfaceOption[];
+}
+
+function getAppInfoDatabaseDialect(appInfo?: Record<string, any>) {
+  return appInfo?.database?.dialect || appInfo?.data?.database?.dialect;
 }
 
 function getFieldInterfaceManager(ctx: any) {
@@ -112,6 +119,23 @@ function normalizeListResponse(response: any) {
   return Array.isArray(payload?.data) ? payload.data : [];
 }
 
+function isFormValidationError(error: unknown) {
+  return Array.isArray((error as { errorFields?: unknown[] })?.errorFields);
+}
+
+function getSubmitErrorMessage(error: unknown, fallback: string) {
+  const errors = get(error, 'response.data.errors') as Array<{ message?: string }> | undefined;
+  const message =
+    errors
+      ?.map((item) => item.message)
+      .filter(Boolean)
+      .join('\n') ||
+    get(error, 'response.data.message') ||
+    get(error, 'message');
+
+  return typeof message === 'string' && message ? message : fallback;
+}
+
 function toNamePath(name: string) {
   return name.split('.');
 }
@@ -138,6 +162,29 @@ const optionColorLabels: Record<string, string> = {
   purple: 'Purple',
   default: 'Default',
 };
+const defaultColorPickerPresets = [
+  {
+    label: 'Recommended',
+    colors: [
+      '#8BBB11',
+      '#52C41A',
+      '#13A8A8',
+      '#1677FF',
+      '#F5222D',
+      '#FADB14',
+      '#E6F4FF',
+      '#fff1f0',
+      '#F6FFED',
+      '#E6FFFB',
+      '#FA8C164D',
+      '#FADB144D',
+      '#52C41A4D',
+      '#1677FF4D',
+      '#2F54EB4D',
+      '#722ED14D',
+    ],
+  },
+];
 const REQUIRED_RULE_KEY = 'required';
 type SortableOptionRowProps = React.HTMLAttributes<HTMLTableRowElement> & {
   'data-row-key': string;
@@ -214,12 +261,25 @@ function normalizeSchemaEnum(schemaEnum: unknown, t: (key: string) => string) {
   });
 }
 
+function resolveConfigureDefaultValue(value: unknown) {
+  if (typeof value !== 'string') {
+    return cloneDeep(value);
+  }
+
+  const useNewIdExpression = value.match(/^\s*\{\{\s*useNewId\((['"])(.*?)\1\)\s*\}\}\s*$/);
+  if (useNewIdExpression) {
+    return randomId(useNewIdExpression[2]);
+  }
+
+  return value;
+}
+
 function applyItemDefaults(values: Record<string, any>, items: FieldConfigureItem[]) {
   items.forEach((item) => {
     if (get(values, item.name) !== undefined || item.defaultValue === undefined) {
       return;
     }
-    set(values, item.name, cloneDeep(item.defaultValue));
+    set(values, item.name, resolveConfigureDefaultValue(item.defaultValue));
   });
 }
 
@@ -268,7 +328,11 @@ function createConfigureRuntimeContext(
   };
 }
 
-function toInitialValues(interfaceOptions?: Record<string, any>, field?: Record<string, any>) {
+function toInitialValues(
+  interfaceOptions: Record<string, any> | undefined,
+  field: Record<string, any> | undefined,
+  t: (key: string) => string,
+) {
   if (field) {
     return cloneDeep(field);
   }
@@ -280,8 +344,12 @@ function toInitialValues(interfaceOptions?: Record<string, any>, field?: Record<
   if (values.reverseField) {
     values.reverseField.name = randomId('f_');
   }
-  if (values.uiSchema) {
+  if (values.uiSchema && interfaceOptions?.name !== 'tableoid') {
     delete values.uiSchema.title;
+  }
+  if (interfaceOptions?.name === 'tableoid') {
+    set(values, 'name', '__collection');
+    set(values, 'uiSchema.title', compileLegacyTemplateText(get(values, 'uiSchema.title') || '{{t("Table OID")}}', t));
   }
   return values;
 }
@@ -584,7 +652,18 @@ function DefaultValueControl(props: {
   }
 
   if (component === 'ColorPicker') {
-    return <ColorPicker disabled={disabled} value={value} onChange={(_, hex) => onChange?.(hex)} />;
+    return (
+      <ColorPicker
+        allowClear
+        disabled={disabled}
+        value={value}
+        trigger="hover"
+        destroyTooltipOnHide
+        presets={defaultColorPickerPresets}
+        onChange={(_, hex) => onChange?.(hex)}
+        {...componentProps}
+      />
+    );
   }
 
   if (['Input.TextArea', 'Markdown', 'RichText', 'Input.JSON'].includes(component || '')) {
@@ -599,6 +678,70 @@ function DefaultValueControl(props: {
   }
 
   return <Input disabled={disabled} value={value} onChange={(event) => onChange?.(event.target.value)} />;
+}
+
+function ConfigureSelectControl(props: {
+  allowClear?: boolean;
+  autoSelectFirstOption?: boolean;
+  disabled?: boolean;
+  form: ReturnType<typeof Form.useForm>[0];
+  namePath: Array<string | number>;
+  onChange?: (value: unknown, option: unknown) => void;
+  options: Array<{ label: React.ReactNode; value: string | number | boolean }>;
+  selectProps: Record<string, any>;
+  showSearch?: boolean;
+  value?: unknown;
+}) {
+  const {
+    allowClear,
+    autoSelectFirstOption,
+    disabled,
+    form,
+    namePath,
+    onChange,
+    options,
+    selectProps,
+    showSearch,
+    value,
+  } = props;
+  const watchedValue = Form.useWatch(namePath, form);
+  const currentValue = value ?? watchedValue;
+  const {
+    allowClear: _allowClear,
+    filterOption: _filterOption,
+    showSearch: _showSearch,
+    ...restSelectProps
+  } = selectProps;
+
+  useEffect(() => {
+    if (
+      !autoSelectFirstOption ||
+      (currentValue !== undefined && currentValue !== null && currentValue !== '') ||
+      !options.length
+    ) {
+      return;
+    }
+    const firstValue = options[0].value;
+    form.setFieldValue(namePath, firstValue);
+    onChange?.(firstValue, options[0]);
+  }, [autoSelectFirstOption, currentValue, form, namePath, onChange, options]);
+
+  return (
+    <Select
+      allowClear={allowClear}
+      disabled={disabled}
+      options={options}
+      showSearch={showSearch}
+      value={value}
+      onChange={onChange}
+      {...restSelectProps}
+      filterOption={(input, option) =>
+        String(option?.label || '')
+          .toLowerCase()
+          .includes(input.toLowerCase())
+      }
+    />
+  );
 }
 
 function NativeFieldValidation(props: {
@@ -893,10 +1036,9 @@ function NativeExpiresRadio(props: {
                   style={{ width: 150 }}
                   value={targetValue}
                   onChange={(event) => {
-                    setTargetValue(event.target.value);
-                    if (isCustomValue) {
-                      props.onChange?.(event.target.value);
-                    }
+                    const nextValue = event.target.value;
+                    setTargetValue(nextValue);
+                    props.onChange?.(nextValue || undefined);
                   }}
                 />
                 <DateTimeFormatPreview content={targetValue ? dayjs().format(targetValue) : null} />
@@ -1032,13 +1174,21 @@ function FieldConfigurePropertyItem(props: {
     isTruthyExpression(schema?.['x-hidden'], dynamicContext) ||
     (schema?.['x-visible'] !== undefined && !isTruthyExpression(schema?.['x-visible'], dynamicContext)) ||
     (name.startsWith('reverseField.') && !dynamicContext.showReverseFieldConfig);
-  const title = compileLegacyTemplate(schema?.title || schema?.['x-content'] || name, t);
+  const rawTitle = schema?.title;
+  const rawContent = schema?.['x-content'];
+  const title = compileLegacyTemplate(rawTitle || rawContent || name, t);
+  const checkboxContent = compileLegacyTemplate(rawContent || rawTitle || name, t);
+  const shouldRenderCheckboxWithLabel = !!rawTitle && !!rawContent && rawTitle !== rawContent;
   const tooltip = compileLegacyTemplate(schema?.description, t);
   const componentProps = {
     ...(schema?.['x-component-props'] || {}),
     ...(coreState.componentProps || {}),
   };
-  const currentCollectionFields = collection.fields || [];
+  const loadedCurrentCollection = collections.find((item) => item.name === collection.name);
+  const currentCollectionFields =
+    Array.isArray(collection.fields) && collection.fields.length
+      ? collection.fields
+      : loadedCurrentCollection?.fields || [];
   const targetCollection = collections.find((item) => item.name === targetCollectionName);
   const targetCollectionFields = targetCollection?.fields || [];
 
@@ -1107,9 +1257,23 @@ function FieldConfigurePropertyItem(props: {
   }
 
   if (component === 'Checkbox') {
+    if (shouldRenderCheckboxWithLabel) {
+      return (
+        <Form.Item
+          name={namePath}
+          label={title}
+          valuePropName="checked"
+          tooltip={tooltip}
+          rules={schema?.required ? [{ required: true }] : undefined}
+        >
+          <Checkbox disabled={disabled}>{checkboxContent}</Checkbox>
+        </Form.Item>
+      );
+    }
+
     return (
       <Form.Item name={namePath} valuePropName="checked" tooltip={tooltip}>
-        <Checkbox disabled={disabled}>{title}</Checkbox>
+        <Checkbox disabled={disabled}>{checkboxContent}</Checkbox>
       </Form.Item>
     );
   }
@@ -1200,13 +1364,19 @@ function FieldConfigurePropertyItem(props: {
               collections.filter((item) => item.name && item.name !== collection.name),
               t,
             )
-          : schema?.enum === fileCollectionEnum
-            ? getFileCollectionOptions(collections, t)
-            : component === 'CollectionSelect' || component === 'RemoteSelect'
-              ? getCollectionOptions(collections, t)
-              : normalizeSchemaEnum(schema?.enum, t);
+          : schema?.enum === '{{collections}}'
+            ? getCollectionOptions(collections, t)
+            : schema?.enum === fileCollectionEnum
+              ? getFileCollectionOptions(collections, t)
+              : component === 'CollectionSelect' || component === 'RemoteSelect'
+                ? getCollectionOptions(collections, t)
+                : normalizeSchemaEnum(schema?.enum, t);
 
-    const { filter, ...selectProps } = componentProps;
+    const { filter, multiple, ...selectProps } = componentProps;
+    const resolvedSelectProps = {
+      ...selectProps,
+      mode: multiple ? 'multiple' : selectProps.mode,
+    };
     const filteredOptions =
       typeof filter === 'function'
         ? fieldOptions.filter((option) => {
@@ -1222,11 +1392,15 @@ function FieldConfigurePropertyItem(props: {
         tooltip={tooltip}
         rules={schema?.required ? [{ required: true }] : undefined}
       >
-        <Select
-          allowClear={selectProps.allowClear ?? true}
+        <ConfigureSelectControl
+          allowClear={component === 'SourceKey' ? false : selectProps.allowClear ?? true}
+          autoSelectFirstOption={component === 'SourceKey'}
           disabled={disabled}
+          form={form}
+          namePath={namePath}
           options={filteredOptions}
-          {...selectProps}
+          selectProps={resolvedSelectProps}
+          showSearch={component === 'SourceKey' || resolvedSelectProps.showSearch}
         />
       </Form.Item>
     );
@@ -1402,9 +1576,88 @@ function FieldConfigureItemRenderer(props: {
   );
 }
 
+function FieldConfigureItemsRenderer(props: {
+  collection: Record<string, any>;
+  collections: Array<Record<string, any>>;
+  context: FieldConfigureRuntimeContext;
+  fieldInterface: Record<string, any>;
+  form: ReturnType<typeof Form.useForm>[0];
+  items: FieldConfigureItem[];
+}) {
+  const renderItem = (item: FieldConfigureItem) => (
+    <FieldConfigureItemRenderer
+      key={item.name}
+      item={item}
+      collection={props.collection}
+      collections={props.collections}
+      configureProperties={[]}
+      fieldInterface={props.fieldInterface}
+      form={props.form}
+      context={props.context}
+    />
+  );
+
+  const nodes: React.ReactNode[] = [];
+  let index = 0;
+
+  while (index < props.items.length) {
+    const item = props.items[index];
+    const row = item.layout?.row;
+
+    if (!row) {
+      nodes.push(renderItem(item));
+      index += 1;
+      continue;
+    }
+
+    const rowItems: FieldConfigureItem[] = [];
+    while (index < props.items.length && props.items[index].layout?.row === row) {
+      rowItems.push(props.items[index]);
+      index += 1;
+    }
+
+    const columnItems = rowItems
+      .reduce<Array<{ key: string; index: number; span: number; items: FieldConfigureItem[] }>>((memo, rowItem) => {
+        const key = rowItem.layout?.column || rowItem.name;
+        const existing = memo.find((column) => column.key === key);
+        if (existing) {
+          existing.items.push(rowItem);
+          return memo;
+        }
+        memo.push({
+          key,
+          index: rowItem.layout?.columnIndex ?? memo.length,
+          span: rowItem.layout?.span || 24,
+          items: [rowItem],
+        });
+        return memo;
+      }, [])
+      .sort((a, b) => a.index - b.index);
+
+    let previousColumnEnd = 0;
+
+    nodes.push(
+      <Row key={`${row}-${nodes.length}`} gutter={24}>
+        {columnItems.map((column) => {
+          const offset = Math.max(column.index - previousColumnEnd, 0) * column.span;
+          previousColumnEnd = column.index + 1;
+          return (
+            <Col key={column.key} xs={24} md={{ span: column.span, offset }}>
+              {column.items.map((rowItem) => renderItem(rowItem))}
+            </Col>
+          );
+        })}
+      </Row>,
+    );
+  }
+
+  return <>{nodes}</>;
+}
+
 export function FieldForm(props: FieldFormProps) {
   const t = useT();
   const ctx = useFlowContext();
+  const { notification } = App.useApp();
   const appInfo = useCurrentAppInfo<{ database?: { dialect?: string } }>();
   const fieldInterfaceManager = getFieldInterfaceManager(ctx);
   const [form] = Form.useForm();
@@ -1412,6 +1665,7 @@ export function FieldForm(props: FieldFormProps) {
   const generatedFieldNameRef = useRef<string>();
   const lastInitialValuesKeyRef = useRef<string>();
   const dataSource = ctx.dataSourceManager.getDataSource(props.dataSourceKey);
+  const databaseDialect = getAppInfoDatabaseDialect(appInfo);
   const fieldInterfaces = useMemo(
     () =>
       filterFieldInterfacesByTemplate(
@@ -1419,9 +1673,9 @@ export function FieldForm(props: FieldFormProps) {
         props.collection,
         ctx,
         props.mode,
-        appInfo?.database?.dialect,
+        databaseDialect,
       ),
-    [appInfo?.database?.dialect, ctx, dataSource?.options?.type, props.collection, props.mode],
+    [databaseDialect, ctx, dataSource?.options?.type, props.collection, props.mode],
   );
   const [interfaceName, setInterfaceName] = useState(
     props.field?.interface || props.interfaceName || fieldInterfaces[0]?.name,
@@ -1469,7 +1723,7 @@ export function FieldForm(props: FieldFormProps) {
     [fieldConfigureItems],
   );
   const initialValues = useMemo(() => {
-    const values = toInitialValues(fieldInterfaceOptions, props.field);
+    const values = toInitialValues(fieldInterfaceOptions, props.field, t);
     if (!props.field) {
       if (!generatedFieldNameRef.current) {
         generatedFieldNameRef.current = values.name || randomId('f_');
@@ -1488,6 +1742,7 @@ export function FieldForm(props: FieldFormProps) {
     fieldInterfaceOptions,
     props.collection.name,
     props.field,
+    t,
   ]);
   const initialValuesKey = useMemo(
     () =>
@@ -1506,27 +1761,53 @@ export function FieldForm(props: FieldFormProps) {
       editMainOnly: props.mode === 'edit',
       createMainOnly: props.mode === 'create' && props.dataSourceKey === 'main',
       disabledJSONB: props.mode === 'edit',
-      isDialect: (dialect: string) => appInfo?.database?.dialect === dialect,
+      isDialect: (dialect: string) => databaseDialect === dialect,
       primaryKeyOnly: false,
     }),
-    [appInfo?.database?.dialect, props.dataSourceKey, props.mode],
+    [databaseDialect, props.dataSourceKey, props.mode],
   );
+  const previousWatchedValuesRef = useRef<Record<string, any>>();
+  const pendingInitialValuesRef = useRef<Record<string, any>>();
 
   useEffect(() => {
     if (lastInitialValuesKeyRef.current === initialValuesKey) {
       return;
     }
     lastInitialValuesKeyRef.current = initialValuesKey;
+    pendingInitialValuesRef.current = cloneDeep(initialValues);
+    previousWatchedValuesRef.current = cloneDeep(initialValues);
     form.resetFields();
     form.setFieldsValue(initialValues);
   }, [form, initialValues, initialValuesKey]);
 
   const watchedValues = Form.useWatch([], form) || form.getFieldsValue(true);
   const watchedValuesSignature = useMemo(() => JSON.stringify(watchedValues), [watchedValues]);
-  const previousWatchedValuesRef = useRef<Record<string, any>>();
 
   useEffect(() => {
+    if (pendingInitialValuesRef.current) {
+      const pendingInitialValues = pendingInitialValuesRef.current;
+      const initialValuesReady =
+        get(watchedValues, 'name') === get(pendingInitialValues, 'name') &&
+        get(watchedValues, 'interface') === get(pendingInitialValues, 'interface') &&
+        get(watchedValues, 'type') === get(pendingInitialValues, 'type');
+      if (!initialValuesReady) {
+        return;
+      }
+      pendingInitialValuesRef.current = undefined;
+      previousWatchedValuesRef.current = cloneDeep(watchedValues as Record<string, any>);
+      runCoreFieldConfigureEffects(
+        createConfigureRuntimeContext(form, watchedValues as Record<string, any>, fieldConfigureContext),
+      );
+      return;
+    }
     const previousValues = previousWatchedValuesRef.current || {};
+    if (!previousWatchedValuesRef.current) {
+      previousWatchedValuesRef.current = cloneDeep(watchedValues as Record<string, any>);
+      runCoreFieldConfigureEffects(
+        createConfigureRuntimeContext(form, watchedValues as Record<string, any>, fieldConfigureContext),
+      );
+      return;
+    }
     const changedName = [
       'primaryKey',
       'unique',
@@ -1593,7 +1874,7 @@ export function FieldForm(props: FieldFormProps) {
         default: nextConfigure?.default || nextFieldInterface?.default,
         name: nextConfigure?.name || nextFieldInterface?.name,
       };
-      const nextValues = toInitialValues(nextOptions);
+      const nextValues = toInitialValues(nextOptions, undefined, t);
       applyItemDefaults(nextValues, nextConfigure?.items || []);
       if ((nextFieldInterface?.isAssociation || nextConfigure?.isAssociation) && !get(nextValues, 'source')) {
         set(nextValues, 'source', props.collection.name);
@@ -1620,7 +1901,7 @@ export function FieldForm(props: FieldFormProps) {
       form.resetFields();
       form.setFieldsValue(nextValues);
     },
-    [fieldInterfaceManager, fieldInterfaces, form, props.collection, props.dataSourceKey, props.mode],
+    [fieldInterfaceManager, fieldInterfaces, form, props.collection, props.dataSourceKey, props.mode, t],
   );
 
   const normalizeValues = useCallback(
@@ -1654,30 +1935,30 @@ export function FieldForm(props: FieldFormProps) {
   );
 
   const handleSubmit = useCallback(async () => {
-    const currentValues = form.getFieldsValue(true);
-    if (
-      props.mode === 'create' &&
-      !form.isFieldTouched('name') &&
-      shouldRegenerateUntouchedFieldName(currentValues, fieldInterfaceTitleText)
-    ) {
-      if (!generatedFieldNameRef.current) {
-        generatedFieldNameRef.current = randomId('f_');
-      }
-      form.setFieldValue('name', generatedFieldNameRef.current);
-    }
-    const formValues = await form.validateFields();
-    await configure?.validate?.(formValues, {
-      mode: props.mode,
-      fieldInterface: fieldInterfaceOptions,
-      collection: props.collection,
-      field: props.field,
-      createOnly: props.mode === 'create',
-      editMainOnly: props.mode === 'edit',
-      disabledJSONB: props.mode === 'edit',
-    } as any);
-    const values = normalizeValues(formValues);
-    setSubmitting(true);
     try {
+      const currentValues = form.getFieldsValue(true);
+      if (
+        props.mode === 'create' &&
+        !form.isFieldTouched('name') &&
+        shouldRegenerateUntouchedFieldName(currentValues, fieldInterfaceTitleText)
+      ) {
+        if (!generatedFieldNameRef.current) {
+          generatedFieldNameRef.current = randomId('f_');
+        }
+        form.setFieldValue('name', generatedFieldNameRef.current);
+      }
+      const formValues = await form.validateFields();
+      await configure?.validate?.(formValues, {
+        mode: props.mode,
+        fieldInterface: fieldInterfaceOptions,
+        collection: props.collection,
+        field: props.field,
+        createOnly: props.mode === 'create',
+        editMainOnly: props.mode === 'edit',
+        disabledJSONB: props.mode === 'edit',
+      } as any);
+      const values = normalizeValues(formValues);
+      setSubmitting(true);
       if (props.mode === 'create') {
         await ctx.api.request({
           url: getCollectionFieldActionUrl(props.dataSourceKey, props.collection.name, 'create'),
@@ -1693,6 +1974,13 @@ export function FieldForm(props: FieldFormProps) {
       }
       await ctx.dataSourceManager.getDataSource(props.dataSourceKey)?.reload();
       props.onSubmitted();
+    } catch (error) {
+      if (!isFormValidationError(error)) {
+        notification.error({
+          message: getSubmitErrorMessage(error, t('Submit failed')),
+        });
+      }
+      throw error;
     } finally {
       setSubmitting(false);
     }
@@ -1704,7 +1992,9 @@ export function FieldForm(props: FieldFormProps) {
     fieldInterfaceTitleText,
     form,
     normalizeValues,
+    notification,
     props,
+    t,
   ]);
 
   const collectionTitle = compileLegacyTemplateText(get(props.collection, 'title') || props.collection.name, t);
@@ -1748,7 +2038,10 @@ export function FieldForm(props: FieldFormProps) {
           label={t('Field name')}
           rules={[
             { required: true },
-            { pattern: fieldNamePattern, message: t(fieldNameDescription) },
+            {
+              pattern: interfaceName === 'tableoid' ? /^__collection$/ : fieldNamePattern,
+              message: t(fieldNameDescription),
+            },
             {
               validator: (_, value) => {
                 if (props.mode === 'edit' || !value || !existingFieldNames.has(value)) {
@@ -1760,20 +2053,16 @@ export function FieldForm(props: FieldFormProps) {
           ]}
           extra={t(fieldNameDescription)}
         >
-          <Input autoComplete="off" disabled={props.mode === 'edit'} />
+          <Input autoComplete="off" disabled={props.mode === 'edit' || interfaceName === 'tableoid'} />
         </Form.Item>
-        {fieldConfigureItems.map((item) => (
-          <FieldConfigureItemRenderer
-            key={item.name}
-            item={item}
-            collection={props.collection}
-            collections={collections}
-            configureProperties={[]}
-            fieldInterface={fieldInterfaceOptions}
-            form={form}
-            context={fieldConfigureContext}
-          />
-        ))}
+        <FieldConfigureItemsRenderer
+          items={fieldConfigureItems}
+          collection={props.collection}
+          collections={collections}
+          fieldInterface={fieldInterfaceOptions}
+          form={form}
+          context={fieldConfigureContext}
+        />
         {rendersStorageType ? null : (
           <Form.Item name="type" hidden rules={[{ required: true }]}>
             <Input />

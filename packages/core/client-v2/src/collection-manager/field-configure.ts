@@ -84,6 +84,12 @@ export interface FieldConfigureItem {
   dependencies?: string[];
   effect?: (context: FieldConfigureEffectContext) => void;
   schema?: Record<string, unknown>;
+  layout?: {
+    row?: string;
+    column?: string;
+    columnIndex?: number;
+    span?: number;
+  };
 }
 
 const commonConfigurePropertyNames = new Set(['name', 'uiSchema.title']);
@@ -160,17 +166,34 @@ function normalizeConfigureHiddenExpression(schema: Record<string, any>) {
 function collectConfigureLeafProperties(
   properties: Record<string, any>,
   prefix = '',
-): Array<{ name: string; schema: any }> {
+  layout?: FieldConfigureItem['layout'],
+): Array<{ name: string; schema: any; layout?: FieldConfigureItem['layout'] }> {
   return Object.entries(properties || {}).flatMap(([key, schema]) => {
     const name = prefix ? `${prefix}.${key}` : key;
     const childProperties = schema?.properties;
     const component = schema?.['x-component'];
 
-    if (childProperties && (!component || propertyLayoutComponents.has(component))) {
-      return collectConfigureLeafProperties(childProperties, prefix);
+    if (childProperties && component === 'Grid.Row') {
+      const columns = Object.entries(childProperties).filter(
+        ([, childSchema]) => (childSchema as Record<string, any>)?.['x-component'] === 'Grid.Col',
+      );
+      const span = columns.length > 0 ? Math.floor(24 / columns.length) : 24;
+
+      return columns.flatMap(([columnKey, columnSchema], columnIndex) =>
+        collectConfigureLeafProperties((columnSchema as Record<string, any>)?.properties || {}, prefix, {
+          row: name,
+          column: columnKey,
+          columnIndex,
+          span,
+        }),
+      );
     }
 
-    return [{ name, schema }];
+    if (childProperties && (!component || propertyLayoutComponents.has(component))) {
+      return collectConfigureLeafProperties(childProperties, prefix, layout);
+    }
+
+    return [{ name, schema, layout }];
   });
 }
 
@@ -187,7 +210,7 @@ export function configurePropertiesToItems(
 ): FieldConfigureItem[] {
   return collectConfigureLeafProperties(properties)
     .filter(({ name, schema }) => isConvertibleConfigureProperty(name, schema))
-    .map(({ name, schema }) => {
+    .map(({ name, schema, layout }) => {
       const component = schema?.['x-component'] as FieldConfigureComponentType | undefined;
       return {
         name,
@@ -202,6 +225,7 @@ export function configurePropertiesToItems(
         options: Array.isArray(schema?.enum) ? schema.enum : undefined,
         required: schema?.required,
         schema,
+        layout,
       };
     });
 }

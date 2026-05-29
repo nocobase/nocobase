@@ -40,6 +40,12 @@ export class DateFieldInterface extends CollectionFieldInterface {
       'x-component': 'Checkbox',
       'x-visible': false,
     },
+    'uiSchema.x-component-props.timeFormat': {
+      type: 'string',
+      'x-decorator': 'FormItem',
+      'x-component': 'Radio.Group',
+      'x-visible': false,
+    },
   };
   filterable = {
     operators: 'datetime',

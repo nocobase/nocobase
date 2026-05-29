@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import type { FieldConfigureFormProps } from '@nocobase/client-v2';
+import type { FieldConfigurePropertyComponentProps } from '@nocobase/client-v2';
 import { Form, Select } from 'antd';
 import React, { useMemo } from 'react';
 import { useT } from './locale';
@@ -22,7 +22,7 @@ function compileLegacyTemplate(value: React.ReactNode, t: (key: string) => strin
   return match?.[2] ? t(match[2]) : value;
 }
 
-export function SortFieldConfigureForm(props: FieldConfigureFormProps) {
+export function SortFieldConfigureForm(props: FieldConfigurePropertyComponentProps) {
   const t = useT();
   const scopeKeyOptions = useMemo(() => {
     const fields = props.field?.fields || props.collection?.fields || [];
@@ -40,7 +40,7 @@ export function SortFieldConfigureForm(props: FieldConfigureFormProps) {
       label={t('Grouped sorting')}
       tooltip={t('When a field is selected for grouping, it will be grouped first before sorting.')}
     >
-      <Select allowClear disabled={!props.editMainOnly} options={scopeKeyOptions} />
+      <Select allowClear disabled={props.disabled} options={scopeKeyOptions} />
     </Form.Item>
   );
 }

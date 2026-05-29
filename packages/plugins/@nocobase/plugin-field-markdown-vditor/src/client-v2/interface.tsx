@@ -32,7 +32,7 @@ export class MarkdownVditorFieldInterface extends CollectionFieldInterface {
   type = 'object';
   group = 'media';
   order = 1;
-  title = tExpr('Vditor');
+  title = 'Markdown(Vditor)';
   sortable = true;
   default = {
     interface: 'vditor',

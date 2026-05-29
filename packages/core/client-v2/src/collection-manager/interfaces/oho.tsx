@@ -9,49 +9,36 @@
 
 import { CollectionFieldInterface } from '../../collection-field-interface/CollectionFieldInterface';
 import { constraintsProps, relationshipType, reverseFieldProperties } from './properties';
-export class O2MFieldInterface extends CollectionFieldInterface {
-  name = 'o2m';
+
+export class OHOFieldInterface extends CollectionFieldInterface {
+  name = 'oho';
   type = 'object';
   group = 'relation';
-  order = 4;
-  title = '{{t("One to many")}}';
-  description = '{{t("One to many description")}}';
+  order = 3;
+  title = '{{t("One to one (has one)")}}';
+  description = '{{t("One to one description")}}';
   isAssociation = true;
   validationType = 'object';
   default = {
-    type: 'hasMany',
-    // name,
+    type: 'hasOne',
     uiSchema: {
-      // title,
       'x-component': 'AssociationField',
       'x-component-props': {
-        // mode: 'tags',
-        multiple: true,
-        // fieldNames: {
-        //   label: 'id',
-        //   value: 'id',
-        // },
+        multiple: false,
       },
     },
     reverseField: {
-      interface: 'm2o',
+      interface: 'obo',
       type: 'belongsTo',
-      // name,
       uiSchema: {
-        // title,
         'x-component': 'AssociationField',
         'x-component-props': {
-          // mode: 'tags',
           multiple: false,
-          // fieldNames: {
-          //   label: 'id',
-          //   value: 'id',
-          // },
         },
       },
     },
   };
-  availableTypes = ['hasMany'];
+  availableTypes = ['hasOne'];
   properties = {
     'uiSchema.title': {
       type: 'string',
@@ -88,6 +75,7 @@ export class O2MFieldInterface extends CollectionFieldInterface {
                   title: '{{t("Source collection")}}',
                   'x-decorator': 'FormItem',
                   'x-component': 'SourceCollection',
+                  'x-disabled': true,
                 },
               },
             },
@@ -145,31 +133,6 @@ export class O2MFieldInterface extends CollectionFieldInterface {
             },
           },
         },
-        row3: {
-          type: 'void',
-          'x-component': 'Grid.Row',
-          properties: {
-            col21: {
-              type: 'void',
-              'x-component': 'Grid.Col',
-              properties: {},
-            },
-            col22: {
-              type: 'void',
-              'x-component': 'Grid.Col',
-              properties: {
-                targetKey: {
-                  type: 'string',
-                  title: '{{t("Target key")}}',
-                  'x-decorator': 'FormItem',
-                  'x-component': 'TargetKey',
-                  'x-disabled': '{{ !createOnly }}',
-                  description: "{{t('Field values must be unique.')}}",
-                },
-              },
-            },
-          },
-        },
       },
     },
     ...constraintsProps,
@@ -177,20 +140,6 @@ export class O2MFieldInterface extends CollectionFieldInterface {
   };
   filterable = {
     nested: true,
-    children: [
-      // {
-      //   name: 'id',
-      //   title: '{{t("Exists")}}',
-      //   operators: [
-      //     { label: '{{t("exists")}}', value: '$exists', noValue: true },
-      //     { label: '{{t("not exists")}}', value: '$notExists', noValue: true },
-      //   ],
-      //   schema: {
-      //     title: '{{t("Exists")}}',
-      //     type: 'string',
-      //     'x-component': 'Input',
-      //   },
-      // },
-    ],
+    children: [],
   };
 }
