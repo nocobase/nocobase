@@ -152,7 +152,7 @@ export interface UseFilterActionPropsResult {
  * ```
  */
 export function useFilterActionProps(args: UseFilterActionPropsArgs): UseFilterActionPropsResult {
-  const { collection, onApply, filterableFieldNames, noIgnore, t } = args;
+  const { collection, onApply, filterableFieldNames, nonfilterableFieldNames, noIgnore, t } = args;
 
   // Held in a ref so the group object identity is stable for the lifetime of the host component — `<FilterContent>` mutates this object directly (push/splice on `items`, swap `logic`), and a fresh observable on every render would reset that internal state.
   const valueRef = useRef<FilterGroupValue>();
@@ -161,11 +161,14 @@ export function useFilterActionProps(args: UseFilterActionPropsArgs): UseFilterA
   }
   const value = valueRef.current;
 
-  const options = useFilterOptions(collection, { filterableFieldNames, noIgnore, t });
+  const options = useFilterOptions(collection, { filterableFieldNames, nonfilterableFieldNames, noIgnore, t });
 
   const FilterItem = useMemo(
-    () => (collection ? createCollectionFilterItem(collection, { filterableFieldNames, noIgnore, t }) : undefined),
-    [collection, filterableFieldNames, noIgnore, t],
+    () =>
+      collection
+        ? createCollectionFilterItem(collection, { filterableFieldNames, nonfilterableFieldNames, noIgnore, t })
+        : undefined,
+    [collection, filterableFieldNames, nonfilterableFieldNames, noIgnore, t],
   );
 
   const onSubmit = useMemoizedFn(() => {

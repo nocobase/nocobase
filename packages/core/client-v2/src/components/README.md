@@ -164,6 +164,7 @@ Key props:
 - `namespaces`: restrict the picker to specific top-level namespaces. Omit to expose every registered top-level property
 - `extraNodes`: static leaves appended after the namespace-filtered nodes. Use for variables that only make sense in the current page (e.g. `$resetLink`)
 - `converters`: override the default path ↔ string converters. `EnvVariableInput` uses this hook to lock its output to `$env`
+- `delimiters`: token pair wrapping the stored variable reference. Defaults to `['{{', '}}']` (Handlebars HTML-escaped). Pass `['{{{', '}}}']` for fields rendered as HTML where escaping would corrupt the variable value — e.g. the in-app message body
 - `value` / `onChange` / `placeholder` / `disabled`: standard controlled-input props
 
 Under the hood `VariableInput` wraps `VariableHybridInput` (inline pills), `VariableTextArea` wraps `TextAreaWithContextSelector` (textarea + variable button). Both share the same MetaTree.

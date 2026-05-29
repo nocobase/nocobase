@@ -24,6 +24,7 @@
     "@formily/reactive": "2.x",
     "@formily/reactive-react": "^2",
     "@nocobase/client": "2.x",
+    "@nocobase/client-v2": "2.x",
     "@nocobase/plugin-mobile": "2.x",
     "@nocobase/plugin-notification-manager": "2.x",
     "@nocobase/plugin-workflow": "2.x",
