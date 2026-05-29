@@ -1916,6 +1916,120 @@ const commonLinkageRulesHandler = async (ctx: FlowContext, params: any) => {
 
     return null;
   };
+  const normalizeNamePathForKey = (namePath: any): Array<string | number> | null => {
+    if (!Array.isArray(namePath) || !namePath.length) return null;
+    const normalized = namePath.filter((seg) => typeof seg === 'string' || typeof seg === 'number') as Array<
+      string | number
+    >;
+    return normalized.length ? normalized : null;
+  };
+  const getFieldIndexEntries = (fieldIndex: any): Array<{ name: string; index: number }> => {
+    if (!Array.isArray(fieldIndex)) return [];
+    return fieldIndex
+      .map((entry) => {
+        if (typeof entry !== 'string') return null;
+        const [name, indexText] = entry.split(':');
+        const index = Number(indexText);
+        if (!name || !Number.isFinite(index)) return null;
+        return { name, index };
+      })
+      .filter(Boolean) as Array<{ name: string; index: number }>;
+  };
+  const resolveIndexedRelativePath = (path: string, fieldIndex: any): Array<string | number> | null => {
+    const pathSegs = parsePathString(path).filter((seg) => typeof seg === 'string' || typeof seg === 'number') as Array<
+      string | number
+    >;
+    if (!pathSegs.length) return null;
+
+    const entries = getFieldIndexEntries(fieldIndex);
+    if (!entries.length) return null;
+
+    const firstSeg = typeof pathSegs[0] === 'string' ? pathSegs[0] : '';
+    const matchedEntryIndex = firstSeg ? entries.findIndex((entry) => entry.name === firstSeg) : -1;
+    const prefixEntries = matchedEntryIndex >= 0 ? entries.slice(0, matchedEntryIndex) : entries;
+    const remainingEntries = matchedEntryIndex >= 0 ? entries.slice(matchedEntryIndex) : [];
+    const out: Array<string | number> = [];
+
+    prefixEntries.forEach((entry) => {
+      out.push(entry.name, entry.index);
+    });
+
+    let entryIndex = 0;
+    pathSegs.forEach((seg, index) => {
+      out.push(seg);
+      const entry = remainingEntries[entryIndex];
+      if (typeof seg !== 'string' || !entry || entry.name !== seg) return;
+
+      const nextSeg = pathSegs[index + 1];
+      if (typeof nextSeg === 'number') {
+        entryIndex += 1;
+        return;
+      }
+      out.push(entry.index);
+      entryIndex += 1;
+    });
+
+    return out;
+  };
+  const getModelTargetPathKeys = (model: any): Set<string> => {
+    const keys = new Set<string>();
+    const fieldPathArray = normalizeNamePathForKey(model?.context?.fieldPathArray);
+    if (fieldPathArray) {
+      keys.add(namePathToPathKey(fieldPathArray));
+      return keys;
+    }
+
+    const targetPath = getModelTargetPathForPatch(model);
+    if (targetPath) {
+      const fieldIndexEntries = getFieldIndexEntries(model?.context?.fieldIndex);
+      if (!fieldIndexEntries.length) {
+        keys.add(`raw:${targetPath}`);
+      }
+
+      const resolved = normalizeNamePathForKey(resolveDynamicNamePath(targetPath, model?.context?.fieldIndex));
+      if (resolved) {
+        keys.add(namePathToPathKey(resolved));
+      }
+
+      const indexedRelativePath = resolveIndexedRelativePath(targetPath, model?.context?.fieldIndex);
+      if (indexedRelativePath) {
+        keys.add(namePathToPathKey(indexedRelativePath));
+      }
+    }
+
+    return keys;
+  };
+  const forEachModelIncludingForks = (visitor: (model: any) => void) => {
+    const engine = (ctx as any)?.engine || ctx.model?.flowEngine;
+    if (!engine?.forEachModel) return;
+    engine.forEachModel((model: any) => {
+      visitor(model);
+
+      const forks: any = model?.forks;
+      if (forks && typeof forks.forEach === 'function') {
+        forks.forEach((fork: any) => {
+          if (!fork || fork.disposed) return;
+          visitor(fork);
+        });
+      }
+    });
+  };
+  const syncHiddenStateByTargetPath = (targetModel: any, hidden: boolean) => {
+    const targetPathKeys = getModelTargetPathKeys(targetModel);
+    if (!targetPathKeys.size) return;
+
+    const targetBlockUid = targetModel?.context?.blockModel?.uid;
+    if (!targetBlockUid) return;
+    forEachModelIncludingForks((model: any) => {
+      if (!model || typeof model !== 'object') return;
+      const modelBlockUid = model?.context?.blockModel?.uid;
+      if (String(modelBlockUid) !== String(targetBlockUid)) return;
+      const modelPathKeys = getModelTargetPathKeys(model);
+      if (!Array.from(modelPathKeys).some((key) => targetPathKeys.has(key))) return;
+
+      model.hidden = hidden;
+    });
+  };
 
   // 1. 运行所有的联动规则
   for (const rule of linkageRules.filter((r) => r.enable)) {
@@ -1981,9 +2095,11 @@ const commonLinkageRulesHandler = async (ctx: FlowContext, params: any) => {
     }
   });
 
+  const hiddenStatePatches: Array<{ model: any; hidden: boolean }> = [];
   mergedByUid.forEach((model: any, uid) => {
     const patchProps = mergedPropsByUid.get(uid) || {};
     const newProps = { ...model.__originalProps, ...patchProps };
+    const hasHiddenModelPatch = Object.prototype.hasOwnProperty.call(patchProps, 'hiddenModel');
 
     model.setProps(_.omit(newProps, ['hiddenModel', 'value', 'hiddenText']));
     syncFieldOptionsToForks(model, patchProps);
@@ -1991,6 +2107,9 @@ const commonLinkageRulesHandler = async (ctx: FlowContext, params: any) => {
       model.setHidden(!!newProps.hiddenModel);
     } else {
       model.hidden = !!newProps.hiddenModel;
+      if (hasHiddenModelPatch) {
+        hiddenStatePatches.push({ model, hidden: model.hidden });
+      }
     }
 
     if (newProps.required === true) {
@@ -2026,6 +2145,9 @@ const commonLinkageRulesHandler = async (ctx: FlowContext, params: any) => {
     }
 
     model.__props = null;
+  });
+  hiddenStatePatches.forEach(({ model, hidden }) => {
+    syncHiddenStateByTargetPath(model, hidden);
   });
 
   const allPatches = [...directValuePatches];

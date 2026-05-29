@@ -891,34 +891,9 @@ describe('AdminLayoutModel menu items', () => {
     });
   });
 
-  it('should persist hidden setting through route repository', async () => {
-    const updateRoute = vi.fn().mockResolvedValue(undefined);
-    engine.context.routeRepository.updateRoute = updateRoute;
-
-    const model = engine.createModel<AdminLayoutMenuItemModel>({
-      uid: 'menu-item-hidden',
-      use: AdminLayoutMenuItemModel,
-      props: {
-        route: {
-          id: 1,
-          title: 'Page 1',
-          schemaUid: 'current-page',
-          type: NocoBaseDesktopRouteType.page,
-          hideInMenu: false,
-        },
-      },
-    });
-
-    const menuSettingsFlow = AdminLayoutMenuItemModel.globalFlowRegistry.getFlow('menuSettings');
-    await menuSettingsFlow?.steps?.hidden?.beforeParamsSave?.({ model } as any, { hideInMenu: true }, {});
-
-    expect(updateRoute).toHaveBeenCalledWith(1, {
-      hideInMenu: true,
-    });
-  });
-
   it('should expose menu linkage rules only for existing menu items', async () => {
     const menuSettingsFlow = AdminLayoutMenuItemModel.globalFlowRegistry.getFlow('menuSettings');
+    expect(menuSettingsFlow?.steps?.hidden).toBeUndefined();
     expect(menuSettingsFlow?.steps?.linkageRules?.use).toBe('menuLinkageRules');
 
     const model = engine.createModel<AdminLayoutMenuItemModel>({

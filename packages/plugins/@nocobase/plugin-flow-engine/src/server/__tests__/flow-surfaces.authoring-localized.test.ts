@@ -63,6 +63,11 @@ describe('flowSurfaces backend authoring localized compiler', () => {
       'fieldGroups-group-title-required',
       'fieldGroups-group-fields-required',
     ]);
+    const kanbanFieldGroupsError = response.body.errors.find(
+      (error: any) => error.ruleId === 'kanban-main-block-unsupported-fieldGroups',
+    );
+    expect(kanbanFieldGroupsError?.details?.repairHint).toContain('settings.groupField');
+    expect(kanbanFieldGroupsError?.details?.repairHint).toContain('Keep block type kanban');
   });
 
   it('should aggregate addBlocks item authoring errors before batch writes', async () => {
@@ -410,6 +415,7 @@ describe('flowSurfaces backend authoring localized compiler', () => {
           dataSourceKey: 'main',
           collectionName: 'employees',
         },
+        fields: ['nickname'],
       },
     });
 
@@ -443,6 +449,7 @@ describe('flowSurfaces backend authoring localized compiler', () => {
           collectionName: 'employees',
         },
         defaultFilter: employeeDefaultFilter(),
+        fields: ['nickname'],
       },
     });
 
@@ -767,6 +774,7 @@ describe('flowSurfaces backend authoring localized compiler', () => {
           collectionName: 'kanban_tasks',
         },
         defaultFilter: kanbanDefaultFilter(),
+        fields: ['title'],
         settings: {
           groupField: 'status',
           dragSortBy: 'status_sort',
