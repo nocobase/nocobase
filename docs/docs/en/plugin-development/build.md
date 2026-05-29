@@ -44,6 +44,10 @@ yarn build @my-project/plugin-hello --tar
 
 Upload and extract the `.tar.gz` file to the target application's `./storage/plugins` directory. For detailed steps, see [Install and Upgrade Plugins](../get-started/install-upgrade-plugins.mdx).
 
+### Enable a Plugin by Default
+
+After uploading, the plugin is not activated automatically — it appears in the Plugin Manager and must be enabled manually. If you are maintaining your own NocoBase application and want the plugin to be enabled by default along with the application, you can use the `APPEND_PRESET_BUILT_IN_PLUGINS` (append built-in plugins) environment variable. See [Make a Plugin Preset or Built-in by Default](./write-your-first-plugin.md#make-a-plugin-preset-or-built-in-by-default-optional) for usage.
+
 ## Custom Build Configuration
 
 In most cases, the default build configuration is sufficient. If you need to customize it — such as modifying the bundle entry, adding aliases, adjusting compression options, etc. — you can create a `build.config.ts` file in the plugin root directory:
@@ -84,3 +88,4 @@ Key points:
 - [Dependency Management](./dependency-management.md) — Plugin dependency declarations and global dependencies
 - [Plugin Development Overview](./index.md) — Overall introduction to plugin development
 - [Install and Upgrade Plugins](../get-started/install-upgrade-plugins.mdx) — Upload packaged files to target environments
+- [Environment Variables](../get-started/installation/env.md) — Environment variable configuration for preset and built-in plugins
