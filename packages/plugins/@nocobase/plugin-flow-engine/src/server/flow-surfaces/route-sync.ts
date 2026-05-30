@@ -154,6 +154,23 @@ export class FlowSurfaceRouteSync {
         values: routeValues,
         transaction,
       });
+      if (Object.prototype.hasOwnProperty.call(routeValues, 'enableTabs')) {
+        const tabRouteHidden = !routeValues.enableTabs;
+        await Promise.all(
+          _.castArray(route?.get?.('children') || route?.children || [])
+            .map((tabRoute: any) => tabRoute?.get?.('id') ?? tabRoute?.id)
+            .filter((routeId) => !_.isNil(routeId) && routeId !== '')
+            .map((routeId) =>
+              this.db.getRepository('desktopRoutes').update({
+                filterByTk: String(routeId),
+                values: {
+                  hidden: tabRouteHidden,
+                },
+                transaction,
+              }),
+            ),
+        );
+      }
     }
 
     const pageSchemaUid = route?.get?.('schemaUid') || route?.schemaUid;
