@@ -28,6 +28,7 @@ describe('openView action - subModelKey behavior', () => {
         flowEngine: { context: { themeToken: { colorBgLayout: '#fff' } } },
       },
       layoutContentElement: {},
+      layoutContext: { source: 'layout-context' },
       view: {},
       viewer: {
         open: vi.fn(async (_opts: any) => undefined),
@@ -90,6 +91,38 @@ describe('openView action - subModelKey behavior', () => {
     // FlowPage should receive parent model uid
     expect(capturedElement?.type).toBe(FlowPage);
     expect(capturedElement?.props?.parentId).toBe('parent-model-uid');
+    expect(capturedElement?.props).not.toHaveProperty('layoutContext');
     expect(capturedElement?.props?.pageModelClass).toBe('ChildPageModel');
+  });
+
+  it('uses current layout child page model as default pageModelClass', async () => {
+    const { ctx } = createCtx();
+    ctx.layout = {
+      childPageModelClass: 'MobileChildPageModel',
+    };
+
+    let capturedElement: any;
+    (ctx.viewer.open as any).mockImplementation(async (opts) => {
+      const currentView = { close: vi.fn(), update: vi.fn() };
+      capturedElement = opts.content(currentView);
+      return undefined;
+    });
+
+    await openView.handler(ctx, { navigation: false });
+
+    expect(capturedElement?.type).toBe(FlowPage);
+    expect(capturedElement?.props?.pageModelClass).toBe('MobileChildPageModel');
+  });
+
+  it('uses current layout child page model in default params', async () => {
+    const { ctx } = createCtx();
+    ctx.layout = {
+      childPageModelClass: 'MobileChildPageModel',
+    };
+    ctx.getPropertyMetaTree = vi.fn(() => []);
+
+    await expect(openView.defaultParams(ctx)).resolves.toMatchObject({
+      pageModelClass: 'MobileChildPageModel',
+    });
   });
 });

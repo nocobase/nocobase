@@ -63,4 +63,67 @@ describe('issues', async () => {
       expect(error.message).toBe('Cannot set itself as the parent node');
     }
   });
+
+  it('should not set descendant as parent', async () => {
+    expect.assertions(1);
+    const root = await db.getRepository('tree').create({
+      values: {
+        name: 'root',
+      },
+    });
+    const child = await db.getRepository('tree').create({
+      values: {
+        name: 'child',
+        parentId: root.get('id'),
+      },
+    });
+
+    try {
+      await root.update({
+        parentId: child.get('id'),
+      });
+    } catch (error) {
+      expect(error.message).toBe('Cannot set a descendant node as the parent node');
+    }
+  });
+
+  it('should report cycle path when listing dirty tree data', async () => {
+    expect.assertions(1);
+    const root = await db.getRepository('tree').create({
+      values: {
+        name: 'root',
+      },
+    });
+    const child = await db.getRepository('tree').create({
+      values: {
+        name: 'child',
+        parentId: root.get('id'),
+      },
+    });
+
+    await db.getModel('tree').update(
+      {
+        parentId: child.get('id'),
+      },
+      {
+        where: {
+          id: root.get('id'),
+        },
+        hooks: false,
+      },
+    );
+
+    try {
+      await db.getRepository('tree').find({
+        tree: true,
+        filter: {
+          id: [root.get('id'), child.get('id')],
+        },
+      });
+    } catch (error) {
+      expect(error.message).toBe(
+        `Cycle detected in tree: ${root.get('id')} -> ${child.get('id')} -> ${root.get('id')}`,
+      );
+    }
+  });
 });

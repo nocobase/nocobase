@@ -9,20 +9,27 @@
 
 import type { ColumnsType } from 'antd/es/table';
 import React, { useEffect, useMemo, useState } from 'react';
-import { sortTasks } from '../../../shared/helpers/other-helper';
-import type { Task } from '../../../shared/types/public-types';
+import { sortTasks } from '../../shared/helpers/other-helper';
+import type { Task } from '../../shared/types/public-types';
 import type { GanttBlockModel } from '../GanttBlockModel';
 
 export const GANTT_TREE_CHILDREN_COLUMN = '__ganttChildren';
+
+export type GanttTreeMeta = {
+  childrenByParent: Map<string, Task[]>;
+  depthByTaskId: Map<string, number>;
+  roots: Task[];
+};
 
 const getParentId = (task: Task) => {
   const parentId = (task as any).project;
   return parentId === undefined || parentId === null ? undefined : String(parentId);
 };
 
-export const getGanttTreeMeta = (tasks: Task[]) => {
+export const getGanttTreeMeta = (tasks: Task[]): GanttTreeMeta => {
   const taskMap = new Map<string, Task>();
   const childrenByParent = new Map<string, Task[]>();
+  const depthByTaskId = new Map<string, number>();
 
   tasks.forEach((task) => {
     taskMap.set(String(task.id), task);
@@ -44,27 +51,39 @@ export const getGanttTreeMeta = (tasks: Task[]) => {
     return !parentId || !taskMap.has(parentId);
   });
 
-  const getDepth = (task: Task) => {
-    let depth = 0;
-    let parentId = getParentId(task);
-    const visited = new Set<string>();
-
-    while (parentId && !visited.has(parentId)) {
-      visited.add(parentId);
-      const parent = taskMap.get(parentId);
-      if (!parent) {
-        break;
-      }
-      depth += 1;
-      parentId = getParentId(parent);
+  const resolveDepth = (task: Task, visiting = new Set<string>()): number => {
+    const taskId = String(task.id);
+    const cachedDepth = depthByTaskId.get(taskId);
+    if (cachedDepth !== undefined) {
+      return cachedDepth;
     }
 
+    const parentId = getParentId(task);
+    const parent = parentId ? taskMap.get(parentId) : undefined;
+    if (!parent) {
+      depthByTaskId.set(taskId, 0);
+      return 0;
+    }
+
+    if (visiting.has(taskId)) {
+      depthByTaskId.set(taskId, 0);
+      return 0;
+    }
+
+    visiting.add(taskId);
+    const depth = resolveDepth(parent, visiting) + 1;
+    visiting.delete(taskId);
+    depthByTaskId.set(taskId, depth);
     return depth;
   };
 
+  tasks.forEach((task) => {
+    resolveDepth(task);
+  });
+
   return {
     childrenByParent,
-    getDepth,
+    depthByTaskId,
     roots,
   };
 };
@@ -73,16 +92,18 @@ export const getVisibleGanttTasks = ({
   expandedRowKeySet,
   tasks,
   treeTableEnabled,
+  treeMeta,
 }: {
   expandedRowKeySet: Set<string>;
   tasks: Task[];
   treeTableEnabled: boolean;
+  treeMeta?: GanttTreeMeta;
 }) => {
   if (!treeTableEnabled) {
     return tasks;
   }
 
-  const { childrenByParent, roots } = getGanttTreeMeta(tasks);
+  const { childrenByParent, roots } = treeMeta || getGanttTreeMeta(tasks);
   const visibleTasks: Task[] = [];
 
   const collect = (task: Task) => {
@@ -98,8 +119,8 @@ export const getVisibleGanttTasks = ({
   return visibleTasks;
 };
 
-export const getExpandableGanttRowKeys = (tasks: Task[]) => {
-  const { childrenByParent } = getGanttTreeMeta(tasks);
+export const getExpandableGanttRowKeys = (tasks: Task[], treeMeta?: GanttTreeMeta) => {
+  const { childrenByParent } = treeMeta || getGanttTreeMeta(tasks);
   return tasks
     .filter((task) => (childrenByParent.get(String(task.id)) || []).length > 0)
     .map((task) => String(task.id));
@@ -113,9 +134,17 @@ export const getOrderedGanttTasks = ({ tasks, treeTableEnabled }: { tasks: Task[
   return [...tasks].sort(sortTasks);
 };
 
-export const getGanttTableRecords = ({ tasks, treeTableEnabled }: { tasks: Task[]; treeTableEnabled: boolean }) => {
+export const getGanttTableRecords = ({
+  tasks,
+  treeTableEnabled,
+  treeMeta,
+}: {
+  tasks: Task[];
+  treeTableEnabled: boolean;
+  treeMeta?: GanttTreeMeta;
+}) => {
   const orderedTasks = getOrderedGanttTasks({ tasks, treeTableEnabled });
-  const { childrenByParent, getDepth, roots } = getGanttTreeMeta(orderedTasks);
+  const { childrenByParent, depthByTaskId, roots } = treeMeta || getGanttTreeMeta(orderedTasks);
   let rowIndex = 0;
 
   const toRecord = (task: Task, index: number, parentPath?: string): Record<string, any> => {
@@ -127,7 +156,7 @@ export const getGanttTableRecords = ({ tasks, treeTableEnabled }: { tasks: Task[
       __ganttTaskId: task.id,
       __ganttTaskIndex: rowIndex++,
       __ganttTaskIndexPath: rowPath,
-      __ganttTaskDepth: getDepth(task),
+      __ganttTaskDepth: depthByTaskId.get(String(task.id)) ?? 0,
       __ganttHasChildren: children.length > 0,
     };
 
@@ -159,15 +188,16 @@ export const useGanttTree = ({
   const [expandedRowKeys, setExpandedRowKeys] = useState<React.Key[]>([]);
   const expandedRowKeySet = useMemo(() => new Set(expandedRowKeys.map((key) => String(key))), [expandedRowKeys]);
   const orderedTasks = useMemo(() => getOrderedGanttTasks({ tasks, treeTableEnabled }), [tasks, treeTableEnabled]);
-  const expandableRowKeys = useMemo(() => getExpandableGanttRowKeys(orderedTasks), [orderedTasks]);
+  const treeMeta = useMemo(() => getGanttTreeMeta(orderedTasks), [orderedTasks]);
+  const expandableRowKeys = useMemo(() => getExpandableGanttRowKeys(orderedTasks, treeMeta), [orderedTasks, treeMeta]);
 
   const visibleTasks = useMemo(
-    () => getVisibleGanttTasks({ expandedRowKeySet, tasks: orderedTasks, treeTableEnabled }),
-    [expandedRowKeySet, orderedTasks, treeTableEnabled],
+    () => getVisibleGanttTasks({ expandedRowKeySet, tasks: orderedTasks, treeTableEnabled, treeMeta }),
+    [expandedRowKeySet, orderedTasks, treeTableEnabled, treeMeta],
   );
   const tableRecords = useMemo(
-    () => getGanttTableRecords({ tasks: orderedTasks, treeTableEnabled }),
-    [orderedTasks, treeTableEnabled],
+    () => getGanttTableRecords({ tasks: orderedTasks, treeTableEnabled, treeMeta }),
+    [orderedTasks, treeTableEnabled, treeMeta],
   );
 
   useEffect(() => {

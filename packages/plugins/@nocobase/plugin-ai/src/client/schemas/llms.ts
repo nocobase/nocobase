@@ -58,7 +58,7 @@ export const createLLMSchema = {
           type: 'string',
           'x-decorator': 'FormItem',
           title: '{{ t("Base URL") }}',
-          'x-component': 'Input',
+          'x-component': 'TextAreaWithGlobalScope',
           'x-component-props': {
             placeholder: '{{ t("Base URL is optional, leave blank to use default (recommended)") }}',
           },
@@ -286,7 +286,7 @@ export const llmsSchema = {
                               type: 'string',
                               'x-decorator': 'FormItem',
                               title: '{{ t("Base URL") }}',
-                              'x-component': 'Input',
+                              'x-component': 'TextAreaWithGlobalScope',
                               'x-component-props': {
                                 placeholder:
                                   '{{ t("Base URL is optional, leave blank to use default (recommended)") }}',

@@ -7,8 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { ISchema } from '@formily/react';
-import { collectionDataSource, defaultProps, operators } from './properties';
+import { collectionDataSource, defaultProps } from './properties';
 import { CollectionFieldInterface } from '../../collection-field-interface/CollectionFieldInterface';
 
 export class CollectionSelectFieldInterface extends CollectionFieldInterface {
@@ -36,18 +35,6 @@ export class CollectionSelectFieldInterface extends CollectionFieldInterface {
   };
 
   filterable = {
-    operators: operators.collection,
+    operators: 'collection',
   };
-
-  schemaInitialize(schema: ISchema, { block }): void {
-    const props = (schema['x-component-props'] = schema['x-component-props'] || {});
-    props.style = {
-      ...(props.style || {}),
-      width: '100%',
-    };
-
-    if (['Table', 'Kanban'].includes(block)) {
-      props['ellipsis'] = true;
-    }
-  }
 }

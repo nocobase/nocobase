@@ -247,7 +247,7 @@ describe('workflow > instructions > request', () => {
 
       const [execution] = await workflow.getExecutions();
       const [job] = await execution.getJobs();
-      expect(job.status).toBe(JOB_STATUS.FAILED);
+      expect(job.status).toBe(JOB_STATUS.ABORTED);
 
       expect(job.result).toMatchObject({
         code: 'ECONNABORTED',
@@ -259,6 +259,57 @@ describe('workflow > instructions > request', () => {
 
       // NOTE: to wait for the response to finish and avoid non finished promise.
       await sleep(1500);
+    });
+
+    it('workflow timeout should abort async request and discard late response', async () => {
+      workflow = await WorkflowModel.create({
+        enabled: true,
+        type: 'collection',
+        options: {
+          timeout: 300,
+        },
+        config: {
+          mode: 1,
+          collection: 'posts',
+        },
+      });
+
+      await workflow.createNode({
+        type: 'request',
+        config: {
+          url: api.URL_TIMEOUT,
+          method: 'GET',
+          timeout: 5000,
+        } as RequestInstructionConfig,
+      });
+
+      await PostRepo.create({ values: { title: 't1' } });
+
+      await sleep(100);
+
+      const plugin = app.pm.get(PluginWorkflow) as PluginWorkflow;
+      let [execution] = await workflow.getExecutions();
+      expect(execution.status).toBe(EXECUTION_STATUS.STARTED);
+      expect(execution.startedAt).toBeTruthy();
+      expect(execution.expiresAt).toBeTruthy();
+
+      let [job] = await execution.getJobs();
+      expect(job.status).toBe(JOB_STATUS.PENDING);
+
+      await sleep(350);
+
+      [execution] = await workflow.getExecutions();
+      expect(execution.status).toBe(EXECUTION_STATUS.ABORTED);
+      [job] = await execution.getJobs();
+      expect(job.status).toBe(JOB_STATUS.ABORTED);
+
+      await sleep(2200);
+
+      [execution] = await workflow.getExecutions();
+      expect(execution.status).toBe(EXECUTION_STATUS.ABORTED);
+      const jobs = await execution.getJobs();
+      expect(jobs).toHaveLength(1);
+      expect(jobs[0].status).toBe(JOB_STATUS.ABORTED);
     });
 
     it('ignoreFail', async () => {
@@ -762,7 +813,7 @@ describe('workflow > instructions > request', () => {
         timeout: 1000,
         contentType: '',
       });
-      expect(status).toBe(JOB_STATUS.FAILED);
+      expect(status).toBe(JOB_STATUS.ABORTED);
       expect(result.code).toBe('ECONNABORTED');
       expect(result).not.toHaveProperty('config');
       expect(result).not.toHaveProperty('stack');

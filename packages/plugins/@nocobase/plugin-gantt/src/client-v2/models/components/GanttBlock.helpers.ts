@@ -16,6 +16,42 @@ export const getColumnWidth = (dataSetLength: any, clientWidth: any) => {
   return clientWidth / dataSetLength > 50 ? Math.floor(clientWidth / dataSetLength) + 20 : 60;
 };
 
+export const getMaxHorizontalScrollLeft = (scrollWidth: number, clientWidth: number) => {
+  return Math.max(0, scrollWidth - clientWidth);
+};
+
+export const clampHorizontalScrollLeft = (scrollLeft: number, maxScrollLeft: number) => {
+  const safeMaxScrollLeft = Math.max(0, maxScrollLeft);
+  if (!Number.isFinite(scrollLeft)) {
+    return 0;
+  }
+  return Math.min(Math.max(0, scrollLeft), safeMaxScrollLeft);
+};
+
+export const mapHorizontalScrollLeft = ({
+  scrollLeft,
+  fromMaxScrollLeft,
+  toMaxScrollLeft,
+}: {
+  scrollLeft: number;
+  fromMaxScrollLeft: number;
+  toMaxScrollLeft: number;
+}) => {
+  const safeFromMaxScrollLeft = Math.max(0, fromMaxScrollLeft);
+  const safeToMaxScrollLeft = Math.max(0, toMaxScrollLeft);
+
+  if (safeToMaxScrollLeft === 0) {
+    return 0;
+  }
+
+  if (safeFromMaxScrollLeft === 0) {
+    return clampHorizontalScrollLeft(scrollLeft, safeToMaxScrollLeft);
+  }
+
+  const ratio = clampHorizontalScrollLeft(scrollLeft, safeFromMaxScrollLeft) / safeFromMaxScrollLeft;
+  return ratio * safeToMaxScrollLeft;
+};
+
 export const getGanttRowKey = (model: GanttBlockModel, record: any) => {
   const filterByTk = model.collection?.getFilterByTK?.(record);
   if (filterByTk !== undefined && filterByTk !== null) {
@@ -26,6 +62,10 @@ export const getGanttRowKey = (model: GanttBlockModel, record: any) => {
 
 export const measureElementHeight = (element: Element | null) => {
   return element?.getBoundingClientRect().height || 0;
+};
+
+export const measureMaxElementHeight = (elements: Element[]) => {
+  return elements.reduce((maxHeight, element) => Math.max(maxHeight, measureElementHeight(element)), 0);
 };
 
 export const getDateIndex = (date: Date, dates: Date[]) => {

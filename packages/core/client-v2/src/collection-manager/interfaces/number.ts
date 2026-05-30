@@ -8,8 +8,7 @@
  */
 
 import { CollectionFieldInterface } from '../../collection-field-interface/CollectionFieldInterface';
-import { i18n } from '../../i18n';
-import { defaultProps, operators, unique } from './properties';
+import { defaultProps, unique } from './properties';
 
 export class NumberFieldInterface extends CollectionFieldInterface {
   name = 'number';
@@ -74,14 +73,6 @@ export class NumberFieldInterface extends CollectionFieldInterface {
       'x-decorator': 'FormItem',
       'x-disabled': '{{ !createOnly }}',
       default: 10,
-      'x-reactions': {
-        dependencies: ['type'],
-        fulfill: {
-          state: {
-            visible: '{{$deps[0] === "decimal"}}',
-          },
-        },
-      },
     },
     scale: {
       type: 'string',
@@ -90,84 +81,10 @@ export class NumberFieldInterface extends CollectionFieldInterface {
       'x-decorator': 'FormItem',
       'x-disabled': '{{ !createOnly }}',
       default: 2,
-      'x-reactions': {
-        dependencies: ['type'],
-        fulfill: {
-          state: {
-            visible: '{{$deps[0] === "decimal"}}',
-          },
-        },
-      },
     },
   };
   filterable = {
-    operators: operators.number,
+    operators: 'number',
   };
   titleUsable = true;
-  validateSchema(fieldSchema) {
-    return {
-      maximum: {
-        type: 'number',
-        title: '{{ t("Maximum") }}',
-        'x-decorator': 'FormItem',
-        'x-component': 'InputNumber',
-        'x-reactions': `{{(field) => {
-          const targetValue = field.query('.minimum').value();
-          field.selfErrors =
-            !!targetValue && !!field.value && targetValue > field.value ? '${i18n.t(
-              'Maximum must greater than minimum',
-            )}' : ''
-        }}}`,
-      },
-      minimum: {
-        type: 'number',
-        title: '{{ t("Minimum") }}',
-        'x-decorator': 'FormItem',
-        'x-component': 'InputNumber',
-        'x-reactions': {
-          dependencies: ['.maximum'],
-          fulfill: {
-            state: {
-              selfErrors: `{{!!$deps[0] && !!$self.value && $deps[0] < $self.value ? '${i18n.t(
-                'Minimum must less than maximum',
-              )}' : ''}}`,
-            },
-          },
-        },
-      },
-      format: {
-        type: 'string',
-        title: '{{ t("Format") }}',
-        'x-decorator': 'FormItem',
-        'x-component': 'Select',
-        'x-component-props': {
-          allowClear: true,
-        },
-        enum: [
-          {
-            label: '{{ t("Integer") }}',
-            value: 'integer',
-          },
-          {
-            label: '{{ t("Odd") }}',
-            value: 'odd',
-          },
-          {
-            label: '{{ t("Even") }}',
-            value: 'even',
-          },
-        ],
-      },
-      pattern: {
-        type: 'string',
-        title: '{{ t("Regular expression") }}',
-        'x-decorator': 'FormItem',
-        'x-component': 'Input',
-        'x-component-props': {
-          prefix: '/',
-          suffix: '/',
-        },
-      },
-    };
-  }
 }

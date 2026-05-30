@@ -164,6 +164,7 @@ import { VariableInput, VariableTextArea } from '@nocobase/client-v2';
 - `namespaces`：限定可选的顶层命名空间。不传就用 `flowEngine.context` 里全部已注册的
 - `extraNodes`：在命名空间过滤后追加几条静态变量（用于 `$resetLink` 这类只在当前页面有意义的局部变量）
 - `converters`：覆盖默认的 path ↔ string 转换器。`EnvVariableInput` 就是用这个钩子把输出锁定到 `$env`
+- `delimiters`：变量在存储字符串里使用的开闭分隔符，默认 `['{{', '}}']`（对应 Handlebars 的 HTML 转义形式）。若字段最终以 HTML 渲染、转义会破坏变量内容（如站内信正文），传 `['{{{', '}}}']` 走 Handlebars 的原样输出形式
 - `value` / `onChange` / `placeholder` / `disabled`：标准受控字段属性
 
 底层共用 `VariableHybridInput`（`VariableInput`）和 `TextAreaWithContextSelector`（`VariableTextArea`），用同一套 MetaTree 数据。

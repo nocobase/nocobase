@@ -19236,6 +19236,7 @@ export class FlowSurfacesService {
           ...(hasDefinedValue(changes, [
             'pageSize',
             'density',
+            'enableRowSelection',
             'showRowNumbers',
             'sorting',
             'dataScope',
@@ -19250,6 +19251,9 @@ export class FlowSurfacesService {
                   ...(hasOwnDefined(changes, 'pageSize') ? { pageSize: { pageSize: changes.pageSize } } : {}),
                   ...(hasOwnDefined(changes, 'density') ? { tableDensity: { size: changes.density } } : {}),
                   ...(hasOwnDefined(changes, 'quickEdit') ? { quickEdit: { editable: changes.quickEdit } } : {}),
+                  ...(hasOwnDefined(changes, 'enableRowSelection')
+                    ? { enableRowSelection: { enableRowSelection: changes.enableRowSelection } }
+                    : {}),
                   ...(hasOwnDefined(changes, 'showRowNumbers')
                     ? { showRowNumbers: { showIndex: changes.showRowNumbers } }
                     : {}),

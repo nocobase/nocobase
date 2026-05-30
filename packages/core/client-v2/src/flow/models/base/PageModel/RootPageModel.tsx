@@ -68,22 +68,15 @@ export class RootPageModel extends PageModel {
     reaction(
       () => this.context.pageActive.value,
       () => {
+        if (this.context.view?.inputArgs?.activationControlledByLayout) {
+          this.mounted = true;
+          return;
+        }
         if (this.context.pageActive.value && this.mounted) {
-          const firstTab = this.subModels.tabs?.[0];
-          if (firstTab) {
-            this.setProps('tabActiveKey', firstTab.uid);
-            this.invokeTabModelLifecycleMethod(firstTab.uid, 'onActive', true);
-          }
+          this.activateCurrentTab(true);
         }
         if (this.context.pageActive.value === false) {
-          if (this.props.tabActiveKey) {
-            this.invokeTabModelLifecycleMethod(this.props.tabActiveKey, 'onInactive');
-          } else {
-            const firstTab = this.subModels.tabs?.[0];
-            if (firstTab) {
-              this.invokeTabModelLifecycleMethod(firstTab.uid, 'onInactive');
-            }
-          }
+          this.deactivateCurrentTab();
         }
         this.mounted = true;
       },

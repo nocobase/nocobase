@@ -13,7 +13,14 @@ import { Worker } from 'node:worker_threads';
 import winston, { Logger } from 'winston';
 import Joi from 'joi';
 
-import { Processor, Instruction, JOB_STATUS, FlowNodeModel, IJob } from '@nocobase/plugin-workflow';
+import {
+  Processor,
+  Instruction,
+  JOB_STATUS,
+  FlowNodeModel,
+  IJob,
+  WorkflowTimeoutError,
+} from '@nocobase/plugin-workflow';
 
 import { CacheTransport } from './cache-logger';
 
@@ -30,13 +37,18 @@ export default class ScriptInstruction extends Instruction {
     return path.join(__dirname, hasModules ? 'Vm.js' : 'QuickJs.js');
   }
 
-  static async run(source, args, options: { logger: Logger; timeout?: number }) {
-    const { logger, timeout } = options;
+  static async run(source, args, options: { logger: Logger; timeout?: number; signal?: AbortSignal }) {
+    const { logger, timeout, signal } = options;
     let result;
 
     const worker = new Worker(this.workerScript, {
       workerData: { source, args, options: timeout ? { timeout } : {} },
     });
+
+    const abortListener = () => {
+      void worker.terminate();
+    };
+    signal?.addEventListener('abort', abortListener, { once: true });
 
     worker.on('message', (message) => {
       if (message.type === 'result') {
@@ -74,12 +86,17 @@ export default class ScriptInstruction extends Instruction {
     try {
       await excution;
     } catch (e) {
-      console.log(e);
+      signal?.removeEventListener('abort', abortListener);
+      if (signal?.aborted) {
+        throw signal.reason instanceof Error ? signal.reason : new WorkflowTimeoutError();
+      }
       return {
         status: JOB_STATUS.ERROR,
         result: e.message,
       };
     }
+
+    signal?.removeEventListener('abort', abortListener);
 
     return {
       status: JOB_STATUS.RESOLVED,
@@ -101,7 +118,7 @@ export default class ScriptInstruction extends Instruction {
       .optional(),
   });
 
-  async run(node: FlowNodeModel, prevJob, processor: Processor) {
+  async run(node: FlowNodeModel, prevJob, processor: Processor, options?: { signal?: AbortSignal }) {
     const { content = '', continue: cont, timeout } = node.config as ScriptConfig;
     const args = processor.getParsedValue(node.config.arguments ?? [], node.id);
     const _args = args.reduce((pre, item) => ({ ...pre, [item.name]: item.value }), {});
@@ -114,6 +131,7 @@ export default class ScriptInstruction extends Instruction {
       const result = await (this.constructor as typeof ScriptInstruction).run(content, _args, {
         timeout,
         logger: processor.logger,
+        signal: options?.signal,
       });
 
       if (result.status === JOB_STATUS.RESOLVED) {
@@ -149,7 +167,7 @@ export default class ScriptInstruction extends Instruction {
 
     // eslint-disable-next-line promise/catch-or-return
     (this.constructor as typeof ScriptInstruction)
-      .run(content, _args, { timeout, logger: processor.logger })
+      .run(content, _args, { timeout, logger: processor.logger, signal: options?.signal })
       .then((res) => {
         if (res.status === JOB_STATUS.RESOLVED) {
           processor.logger.info(`script (#${node.id}) get result success`);
@@ -181,7 +199,13 @@ export default class ScriptInstruction extends Instruction {
         processor.logger.debug(`script (#${node.id}) ended, resume workflow...`);
         setImmediate(async () => {
           const job = await this.workflow.db.getRepository('jobs').findOne({ filterByTk: id });
+          const execution = await job.getExecution();
+          if (execution.status !== 0) {
+            processor.logger.warn(`script (#${node.id}) result discarded because execution (${execution.id}) is ended`);
+            return;
+          }
           job.set(jobResult);
+          job.execution = execution;
           this.workflow.resume(job);
         });
       });
