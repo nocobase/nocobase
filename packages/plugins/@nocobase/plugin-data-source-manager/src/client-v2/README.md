@@ -451,7 +451,9 @@ dataSourceManagerPlugin.extensionManager.registerManagerAction({
 
 ### 筛选操作符
 
-字段 Interface 的 `filterable` 推荐引用 core client-v2 中注册的 operator group：
+字段 Interface 的 `filterable` 用于告诉 v2 筛选组件、筛选区块、变量筛选等场景：这个字段是否可筛选，以及应该展示哪些操作符。
+
+推荐写法是引用 core client-v2 中注册的 operator group，而不是在每个字段 Interface 里重复写完整操作符数组：
 
 ```ts
 filterable = {
@@ -459,7 +461,114 @@ filterable = {
 };
 ```
 
-如果插件有特殊操作符，应先注册操作符组，再在 Interface 中引用该组名。
+core client-v2 当前常用 operator group：
+
+| group | 适用字段 | 典型操作符 |
+| --- | --- | --- |
+| `string` | 单行文本、邮箱、手机号、URL、UUID、NanoID、密码等 | contains / does not contain / is / is not / is empty |
+| `number` | integer、number、percent、sort、snowflakeId 等 | = / != / > / >= / < / <= / is empty |
+| `datetime` | datetime、dateOnly、createdAt、updatedAt、unixTimestamp 等 | is / is before / is after / is between / is empty |
+| `enumType` | select、radioGroup 等单选枚举 | is / is not / is any of / is none of |
+| `array` | multipleSelect、checkboxGroup 等多值字段 | is / is not / is any of / is none of |
+| `boolean` | checkbox 等布尔字段 | Yes / No / is empty |
+| `id` | id 字段 | is / is not / exists / not exists |
+| `time` | time 字段 | is / is not / is empty |
+| `bigField` | markdown、richText、code、attachment-url 等大文本或长内容字段 | contains |
+| `collection` | collection selector 字段 | is / is not / is any of / is none of |
+| `tableoid` | tableoid 字段 | is any of / is none of |
+
+
+动态类型字段可以使用 `createTypedFilterable()`。例如 Formula 字段的返回类型可能是 boolean、string、date 或 number，不同类型应该显示不同操作符：
+
+```ts
+import { createTypedFilterable } from '@nocobase/client-v2';
+
+filterable = createTypedFilterable(
+  [
+    { types: ['boolean'], operators: 'boolean' },
+    { types: ['string'], operators: 'string' },
+    { types: ['date'], operators: 'datetime' },
+    { types: ['integer', 'double', 'bigInt', 'number'], operators: 'number' },
+  ],
+  (meta) => meta?.dataType,
+);
+```
+
+如果插件需要特殊操作符，应先注册操作符或操作符组，再在字段 Interface 里引用：
+
+```ts
+export class PluginFieldFormulaClient extends Plugin {
+  async load() {
+    this.app.registerFieldFilterOperatorGroup('formulaDate', [
+      {
+        label: '{{t("is current fiscal year", { ns: "field-formula" })}}',
+        value: '$isCurrentFiscalYear',
+        noValue: true,
+      },
+      {
+        label: '{{t("is previous fiscal year", { ns: "field-formula" })}}',
+        value: '$isPreviousFiscalYear',
+        noValue: true,
+      },
+    ]);
+
+    this.app.addFieldInterfaces([FormulaFieldInterface]);
+  }
+}
+
+export class FormulaFieldInterface extends CollectionFieldInterface {
+  name = 'formula';
+  filterable = {
+    operators: 'formulaDate',
+  };
+}
+```
+
+也可以先注册单个 operator，再用 operator 名组装 group：
+
+```ts
+this.app.registerFieldFilterOperator({
+  label: '{{t("matches regex")}}',
+  value: '$regex',
+  schema: {
+    'x-component': 'Input',
+  },
+});
+
+this.app.registerFieldFilterOperatorGroup('advancedString', ['$regex']);
+```
+
+如果这个操作符还会用于联动规则，需要同时注册前端 JSON Logic 操作。操作符注册只决定下拉列表里能不能选到，联动规则的条件判断是在前端通过 `app.jsonLogic.apply()` 执行的：
+
+```ts
+this.app.registerFieldFilterOperator({
+  label: '{{t("is any of")}}',
+  value: '$isAnyOf',
+  schema: {
+    'x-component': 'Select',
+    'x-component-props': {
+      mode: 'multiple',
+    },
+  },
+});
+
+this.app.registerFieldFilterOperatorGroup('customSelect', ['$isAnyOf']);
+
+this.app.jsonLogic.addOperation('$isAnyOf', (left, right) => {
+  const values = Array.isArray(right) ? right : [right];
+  return values.includes(left);
+});
+```
+
+如果同一个操作符还要用于数据表查询、区块筛选或服务端资源查询，还需要在服务端注册对应的 database operator。
+
+注意事项：
+
+- `filterable` 为空或不设置时，该字段通常不会出现在依赖 filterable 元数据的筛选列表中。
+- 如果字段明确不允许筛选，可以设置 `filterable = false`。
+- `operator.value` 用于生成筛选条件；如果用于服务端查询，必须有后端查询层能识别的 database operator；如果用于联动规则，必须有前端 `jsonLogic` operation。
+- `operator.schema` 用于控制该操作符对应的值输入组件；`noValue: true` 表示该操作符不需要输入值，例如 empty、exists。
+- 注册自定义 group 时应尽量使用插件命名空间语义，避免和 core group 重名。
 
 ### 与 v1 的边界
 
