@@ -9,6 +9,7 @@
 
 import _ from 'lodash';
 import { FlowSurfaceBadRequestError } from './errors';
+import { FLOW_SURFACE_EMPTY_FILTER_GROUP, normalizeFlowSurfaceFilterGroupValue } from './filter-group';
 
 const CHART_REPAIR_HINT =
   'This is a chart payload shape problem. Repair the current chart query/visual mappings and keep the chart block type. Do not change this block type to table, jsBlock, actionPanel, gridCard, or another block type. KPI / summary numbers should use jsBlock; charts are for trends, distributions, rankings, and visual analysis.';
@@ -185,11 +186,6 @@ type DerivedChartSemanticState = {
   visual?: ReturnType<typeof deriveChartVisual>;
   events?: ReturnType<typeof deriveChartEvents>;
 };
-
-const EMPTY_FILTER_GROUP = {
-  logic: '$and',
-  items: [],
-} as const;
 
 const CHART_SAFE_DEFAULT_HINTS: ChartCapabilityHint[] = [
   {
@@ -558,7 +554,7 @@ function fromPersistedOrder(input: any) {
 }
 
 function createEmptyFilterGroup() {
-  return _.cloneDeep(EMPTY_FILTER_GROUP);
+  return _.cloneDeep(FLOW_SURFACE_EMPTY_FILTER_GROUP);
 }
 
 function assertAllowedKeys(input: Record<string, any>, allowed: Set<string>, label: string) {
@@ -702,13 +698,117 @@ function normalizeChartSortingItem(input: any, index: number) {
   });
 }
 
+function isFilterGroupLike(input: any) {
+  return _.isPlainObject(input) && isBackendQueryLogicKey(input.logic) && Array.isArray(input.items);
+}
+
+function assertFilterGroupKeys(input: any, label: string) {
+  if (!isFilterGroupLike(input)) {
+    return;
+  }
+  const unsupportedKeys = Object.keys(input).filter((key) => key !== 'logic' && key !== 'items');
+  if (unsupportedKeys.length) {
+    throw new FlowSurfaceBadRequestError(`${label} does not support: ${unsupportedKeys.join(', ')}`);
+  }
+  if (Array.isArray(input.items)) {
+    input.items.forEach((item: any, index: number) => {
+      assertFilterGroupKeys(item, `${label}.items[${index}]`);
+    });
+  }
+}
+
+function isBackendQueryLogicKey(key: string): key is '$and' | '$or' {
+  return key === '$and' || key === '$or';
+}
+
+function getBackendQueryLogicKey(input: Record<string, any>, label: string) {
+  const keys = Object.keys(input);
+  const logicKeys = keys.filter(isBackendQueryLogicKey);
+  if (!logicKeys.length) {
+    return undefined;
+  }
+  if (logicKeys.length > 1 || keys.length > 1) {
+    throw new FlowSurfaceBadRequestError(
+      `${label}: cannot convert backend query filter with mixed logical and field conditions`,
+    );
+  }
+  return logicKeys[0];
+}
+
+function convertBackendFieldConditionToFilterItems(field: string, condition: any, label: string) {
+  if (!field.trim() || field.startsWith('$')) {
+    throw new FlowSurfaceBadRequestError(`${label}: cannot convert backend query filter field "${field}"`);
+  }
+  if (!_.isPlainObject(condition)) {
+    throw new FlowSurfaceBadRequestError(`${label}.${field}: backend query filter condition must be an object`);
+  }
+
+  const operators = Object.keys(condition);
+  if (!operators.length) {
+    throw new FlowSurfaceBadRequestError(`${label}.${field}: backend query filter condition cannot be empty`);
+  }
+
+  return operators.map((operator) => {
+    if (!operator.startsWith('$') || isBackendQueryLogicKey(operator)) {
+      throw new FlowSurfaceBadRequestError(
+        `${label}.${field}: cannot convert backend query filter operator "${operator}"`,
+      );
+    }
+    return {
+      path: field,
+      operator,
+      value: _.cloneDeep(condition[operator]),
+    };
+  });
+}
+
+function convertBackendQueryFilterToFilterGroup(input: Record<string, any>, label: string) {
+  const logicKey = getBackendQueryLogicKey(input, label);
+  if (logicKey) {
+    const operands = input[logicKey];
+    if (!Array.isArray(operands)) {
+      throw new FlowSurfaceBadRequestError(`${label}.${logicKey}: backend query filter operands must be an array`);
+    }
+    return {
+      logic: logicKey,
+      items: operands.map((operand, index) =>
+        convertBackendQueryOperandToFilterItem(operand, `${label}.${logicKey}[${index}]`),
+      ),
+    };
+  }
+
+  return {
+    logic: '$and',
+    items: Object.entries(input).flatMap(([field, condition]) =>
+      convertBackendFieldConditionToFilterItems(field, condition, label),
+    ),
+  };
+}
+
+function convertBackendQueryOperandToFilterItem(input: any, label: string) {
+  if (isFilterGroupLike(input)) {
+    throw new FlowSurfaceBadRequestError(`${label}: cannot mix filter groups with backend query filters`);
+  }
+
+  const group = convertBackendQueryFilterToFilterGroup(ensurePlainObject(input, label), label);
+  if (group.logic === '$and' && group.items.length === 1) {
+    return group.items[0];
+  }
+  return group;
+}
+
 function normalizeFilterGroupValue(input: any, label: string) {
   if (_.isUndefined(input) || _.isNull(input)) {
     return undefined;
   }
   const normalized = ensurePlainObject(input, label);
-  validateFilterGroupPaths(normalized, label);
-  return _.cloneDeep(normalized);
+  assertFilterGroupKeys(normalized, label);
+  const filterGroup =
+    !Object.keys(normalized).length || isFilterGroupLike(normalized)
+      ? normalizeFlowSurfaceFilterGroupValue(normalized, label)
+      : normalizeFlowSurfaceFilterGroupValue(convertBackendQueryFilterToFilterGroup(normalized, label), label);
+  validateFilterGroupPaths(filterGroup, label);
+  return filterGroup;
 }
 
 function validateFilterGroupPaths(input: any, label: string) {
@@ -782,7 +882,10 @@ function mergeChartQuerySection(current: any, patch: any) {
   const nextMode = inferQueryMode(normalizedPatch);
   const modeChanged = currentMode && currentMode !== nextMode;
   const base = modeChanged ? {} : current || {};
-  const merged = mergeReplaceArrays(base, normalizedPatch);
+  const merged = mergeReplaceArrays(base, _.omit(normalizedPatch, ['filter']));
+  if (hasOwn(normalizedPatch, 'filter')) {
+    merged.filter = _.cloneDeep(normalizedPatch.filter);
+  }
 
   if (nextMode !== 'builder') {
     return merged;

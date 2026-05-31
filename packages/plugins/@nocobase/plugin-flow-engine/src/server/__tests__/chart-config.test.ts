@@ -117,6 +117,226 @@ describe('chart-config semantic helpers', () => {
     expect(next.query.offset).toBe(0);
   });
 
+  it('should canonicalize backend query-object filters to filter groups', () => {
+    const next = canonicalizeChartConfigure({
+      ...baseConfigure,
+      query: {
+        ...baseConfigure.query,
+        filter: {
+          lastFollowupAt: { $lt: '2026-05-16T00:00:00.000Z' },
+          stage: { $notIn: ['won', 'lost'] },
+        },
+      },
+    });
+
+    expect(next.query.filter).toEqual({
+      logic: '$and',
+      items: [
+        {
+          path: 'lastFollowupAt',
+          operator: '$lt',
+          value: '2026-05-16T00:00:00.000Z',
+        },
+        {
+          path: 'stage',
+          operator: '$notIn',
+          value: ['won', 'lost'],
+        },
+      ],
+    });
+  });
+
+  it('should allow backend query-object filters on fields named logic and items', () => {
+    const next = canonicalizeChartConfigure({
+      ...baseConfigure,
+      query: {
+        ...baseConfigure.query,
+        filter: {
+          logic: { $eq: 'manual' },
+          items: { $gt: 0 },
+        },
+      },
+    });
+
+    expect(next.query.filter).toEqual({
+      logic: '$and',
+      items: [
+        {
+          path: 'logic',
+          operator: '$eq',
+          value: 'manual',
+        },
+        {
+          path: 'items',
+          operator: '$gt',
+          value: 0,
+        },
+      ],
+    });
+  });
+
+  it('should preserve valid filter groups while canonicalizing chart configure', () => {
+    const next = canonicalizeChartConfigure(baseConfigure);
+
+    expect(next.query.filter).toEqual(baseConfigure.query.filter);
+    expect(next.query.filter).not.toBe(baseConfigure.query.filter);
+  });
+
+  it('should persist semantic backend query-object filters as filter groups', () => {
+    const next = buildChartConfigureFromSemanticChanges(undefined, {
+      query: {
+        mode: 'builder',
+        resource: {
+          dataSourceKey: 'main',
+          collectionName: 'sales_leads',
+        },
+        measures: [{ field: 'expectedRevenue', aggregation: 'sum', alias: 'totalRevenue' }],
+        dimensions: [{ field: 'stage' }],
+        filter: {
+          stage: { $notIn: ['won', 'lost'] },
+        },
+      },
+      visual: {
+        type: 'bar',
+        mappings: {
+          x: 'stage',
+          y: 'totalRevenue',
+        },
+      },
+    });
+
+    expect(next.query.filter).toEqual({
+      logic: '$and',
+      items: [
+        {
+          path: 'stage',
+          operator: '$notIn',
+          value: ['won', 'lost'],
+        },
+      ],
+    });
+  });
+
+  it('should replace existing filters when semantic changes provide a backend query-object filter', () => {
+    const next = buildChartConfigureFromSemanticChanges(baseConfigure, {
+      query: {
+        filter: {
+          stage: { $notIn: ['won', 'lost'] },
+        },
+      },
+    });
+
+    expect(next.query.filter).toEqual({
+      logic: '$and',
+      items: [
+        {
+          path: 'stage',
+          operator: '$notIn',
+          value: ['won', 'lost'],
+        },
+      ],
+    });
+  });
+
+  it('should clear existing filters when semantic changes provide an empty filter object', () => {
+    const next = buildChartConfigureFromSemanticChanges(baseConfigure, {
+      query: {
+        filter: {},
+      },
+    });
+
+    expect(next.query.filter).toEqual({
+      logic: '$and',
+      items: [],
+    });
+  });
+
+  it('should convert nested backend logical filters to nested filter groups', () => {
+    const next = canonicalizeChartConfigure({
+      ...baseConfigure,
+      query: {
+        ...baseConfigure.query,
+        filter: {
+          $or: [
+            { status: { $eq: 'paid' } },
+            {
+              $and: [{ amount: { $gt: 100 } }, { customerName: { $includes: 'Acme' } }],
+            },
+          ],
+        },
+      },
+    });
+
+    expect(next.query.filter).toEqual({
+      logic: '$or',
+      items: [
+        {
+          path: 'status',
+          operator: '$eq',
+          value: 'paid',
+        },
+        {
+          logic: '$and',
+          items: [
+            {
+              path: 'amount',
+              operator: '$gt',
+              value: 100,
+            },
+            {
+              path: 'customerName',
+              operator: '$includes',
+              value: 'Acme',
+            },
+          ],
+        },
+      ],
+    });
+  });
+
+  it('should reject unconvertible backend query-object filters', () => {
+    expect(() =>
+      canonicalizeChartConfigure({
+        ...baseConfigure,
+        query: {
+          ...baseConfigure.query,
+          filter: {
+            stage: 'paid',
+          },
+        },
+      }),
+    ).toThrowError(FlowSurfaceBadRequestError);
+  });
+
+  it('should reject mixed filter-group and backend query-object filters', () => {
+    expect(() =>
+      canonicalizeChartConfigure({
+        ...baseConfigure,
+        query: {
+          ...baseConfigure.query,
+          filter: {
+            ...baseConfigure.query.filter,
+            stage: { $eq: 'paid' },
+          },
+        },
+      }),
+    ).toThrowError(FlowSurfaceBadRequestError);
+  });
+
+  it('should reject backend logical filters containing filter-group operands', () => {
+    expect(() =>
+      canonicalizeChartConfigure({
+        ...baseConfigure,
+        query: {
+          ...baseConfigure.query,
+          filter: {
+            $or: [baseConfigure.query.filter, { stage: { $eq: 'paid' } }],
+          },
+        },
+      }),
+    ).toThrowError(FlowSurfaceBadRequestError);
+  });
+
   it('should reset stale builder state when resource changes unless explicitly replaced', () => {
     const next = buildChartConfigureFromSemanticChanges(baseConfigure, {
       query: {

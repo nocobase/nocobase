@@ -11,6 +11,20 @@ import _ from 'lodash';
 import FlowModelRepository from '../repository';
 import { buildSyntheticRootPageTabModel } from './builder';
 
+type PageRoutePatch = {
+  title?: unknown;
+  icon?: unknown;
+  enableTabs?: boolean;
+  enableHeader?: boolean;
+  displayTitle?: boolean;
+};
+
+type TabRoutePatch = {
+  title?: unknown;
+  icon?: unknown;
+  options?: Record<string, unknown>;
+};
+
 export class FlowSurfaceRouteSync {
   constructor(
     private readonly db: any,
@@ -264,10 +278,10 @@ export class FlowSurfaceRouteSync {
     };
   }
 
-  private buildPageRoutePatch(current: any, nextPayload: Record<string, any>, route: any) {
+  private buildPageRoutePatch(current: any, nextPayload: Record<string, any>, route: any): PageRoutePatch {
     const nextProps = nextPayload.props || {};
     const nextGeneral = nextPayload.stepParams?.pageSettings?.general || {};
-    const routePatch: Record<string, any> = {};
+    const routePatch: PageRoutePatch = {};
     const nextTitle = firstDefined(nextGeneral.title, nextProps.title);
     const nextIcon = firstDefined(nextGeneral.icon, nextProps.icon);
     const nextEnableTabs = firstDefined(nextGeneral.enableTabs, nextProps.enableTabs);
@@ -343,11 +357,11 @@ export class FlowSurfaceRouteSync {
     };
   }
 
-  private buildTabRoutePatch(_current: any, nextPayload: Record<string, any>, route: any) {
+  private buildTabRoutePatch(_current: any, nextPayload: Record<string, any>, route: any): TabRoutePatch {
     const nextProps = nextPayload.props || {};
     const nextTab = nextPayload.stepParams?.pageTabSettings?.tab || {};
     const routeOptions = readRouteOptions(route);
-    const patch: Record<string, any> = {};
+    const patch: TabRoutePatch = {};
     const nextTitle = firstDefined(nextTab.title, nextProps.title);
     const nextIcon = firstDefined(nextTab.icon, nextProps.icon);
 
