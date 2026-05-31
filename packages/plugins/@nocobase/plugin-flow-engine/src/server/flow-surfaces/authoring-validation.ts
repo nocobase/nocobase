@@ -63,7 +63,12 @@ import {
 } from './blueprint/defaults';
 import { collectRunJsAuthoringErrors } from './runjs-authoring';
 import { getConfigureOptionKeysForUse } from './configure-options';
-import { assertFlowSurfaceFilterGroupShape, FLOW_SURFACE_FILTER_GROUP_EXAMPLE } from './filter-group';
+import {
+  assertFlowSurfaceFilterGroupShape,
+  normalizeFlowSurfaceFilterDateValue,
+  assertFlowSurfaceFilterOperator,
+  FLOW_SURFACE_FILTER_GROUP_EXAMPLE,
+} from './filter-group';
 
 export type FlowSurfaceAuthoringWriteAction = 'applyBlueprint' | 'compose' | 'addBlock' | 'addBlocks' | 'configure';
 
@@ -559,12 +564,7 @@ function appendRunJsAuthoringErrors(
       return;
     }
     if (isChartBadRequestError(error)) {
-      pushAuthoringError(errors, {
-        path: actionName === 'configure' ? '$.changes' : '$',
-        ruleId: 'chart-configure-invalid',
-        message: error.message,
-        details: withChartRepairHint(),
-      });
+      pushChartBadRequestAuthoringError(errors, error, actionName === 'configure' ? '$.changes' : '$');
       return;
     }
     throw error;
@@ -577,6 +577,23 @@ function isChartBadRequestError(error: any) {
 
 function shouldKeepExistingChartAuthoringErrors(error: any, errors: AuthoringErrorInput[]) {
   return isChartBadRequestError(error) && errors.some((item) => item.details?.repairHint === CHART_REPAIR_HINT);
+}
+
+function pushChartBadRequestAuthoringError(
+  errors: AuthoringErrorInput[],
+  error: FlowSurfaceBadRequestError,
+  fallbackPath: string,
+) {
+  const details = _.isPlainObject(error.options?.details) ? error.options.details : {};
+  pushAuthoringError(errors, {
+    path: typeof error.options?.path === 'string' && error.options.path ? error.options.path : fallbackPath,
+    ruleId:
+      typeof error.options?.ruleId === 'string' && error.options.ruleId
+        ? error.options.ruleId
+        : 'chart-configure-invalid',
+    message: error.message,
+    details: withChartRepairHint(details),
+  });
 }
 
 async function collectNavigationGroupErrors(
@@ -1067,6 +1084,8 @@ function collectLegacyChartQueryCompatibilityErrors(query: any, path: string, er
     return;
   }
 
+  collectChartQueryFilterOperatorErrors(query, path, errors);
+
   const hasResource = hasOwn(query, 'resource');
   const hasCollectionPath = hasOwn(query, 'collectionPath');
   if (!hasResource && !hasCollectionPath) {
@@ -1327,7 +1346,99 @@ function collectBuilderChartAssetQueryErrors(
     errors,
     withChartRepairHint(),
   );
+  collectChartQueryFilterOperatorErrors(query, `${path}.query`, errors);
   collectBuilderChartAssetFieldErrors(query, path, context, errors);
+}
+
+function collectChartQueryFilterOperatorErrors(query: any, path: string, errors: AuthoringErrorInput[]) {
+  if (!_.isPlainObject(query) || !hasOwn(query, 'filter')) {
+    return;
+  }
+  collectChartFilterOperatorErrors(query.filter, `${path}.filter`, errors);
+}
+
+function collectChartFilterOperatorErrors(filter: any, path: string, errors: AuthoringErrorInput[]) {
+  if (_.isUndefined(filter) || _.isNull(filter) || !_.isPlainObject(filter)) {
+    return;
+  }
+  if (Array.isArray(filter.items)) {
+    collectChartFilterGroupOperatorErrors(filter.items, `${path}.items`, errors);
+    return;
+  }
+  collectBackendQueryFilterOperatorErrors(filter, path, errors);
+}
+
+function collectChartFilterGroupOperatorErrors(items: any[], path: string, errors: AuthoringErrorInput[]) {
+  items.forEach((item, index) => {
+    const itemPath = `${path}[${index}]`;
+    if (!_.isPlainObject(item)) {
+      return;
+    }
+    if (Array.isArray(item.items)) {
+      collectChartFilterGroupOperatorErrors(item.items, `${itemPath}.items`, errors);
+      return;
+    }
+    if (hasOwn(item, 'operator')) {
+      collectChartFilterOperatorError(item.operator, `${itemPath}.operator`, errors);
+      collectChartFilterDateValueError(item.operator, item.value, `${itemPath}.value`, errors);
+    }
+  });
+}
+
+function collectBackendQueryFilterOperatorErrors(
+  filter: Record<string, any>,
+  path: string,
+  errors: AuthoringErrorInput[],
+) {
+  Object.entries(filter).forEach(([field, condition]) => {
+    const fieldPath = `${path}.${field}`;
+    if ((field === '$and' || field === '$or') && Array.isArray(condition)) {
+      condition.forEach((operand, index) =>
+        collectChartFilterOperatorErrors(operand, `${fieldPath}[${index}]`, errors),
+      );
+      return;
+    }
+    if (!_.isPlainObject(condition)) {
+      return;
+    }
+    Object.keys(condition).forEach((operator) => {
+      if (operator === '$and' || operator === '$or') {
+        collectChartFilterOperatorErrors({ [operator]: condition[operator] }, fieldPath, errors);
+        return;
+      }
+      collectChartFilterOperatorError(operator, `${fieldPath}.${operator}`, errors);
+      collectChartFilterDateValueError(operator, condition[operator], `${fieldPath}.${operator}`, errors);
+    });
+  });
+}
+
+function collectChartFilterOperatorError(operator: unknown, path: string, errors: AuthoringErrorInput[]) {
+  try {
+    assertFlowSurfaceFilterOperator(operator, path);
+  } catch (error) {
+    if (error instanceof FlowSurfaceBadRequestError) {
+      pushChartBadRequestAuthoringError(errors, error, path);
+      return;
+    }
+    throw error;
+  }
+}
+
+function collectChartFilterDateValueError(
+  operator: unknown,
+  value: unknown,
+  path: string,
+  errors: AuthoringErrorInput[],
+) {
+  try {
+    normalizeFlowSurfaceFilterDateValue(operator, value, path);
+  } catch (error) {
+    if (error instanceof FlowSurfaceBadRequestError) {
+      pushChartBadRequestAuthoringError(errors, error, path);
+      return;
+    }
+    throw error;
+  }
 }
 
 function normalizeChartAssetFieldPath(input: any) {
@@ -4764,6 +4875,7 @@ async function collectConfigureErrors(
   collectCommentsBlockErrors(changesBlock, hostBlockType, '$.changes', errors, context);
   collectRecordHistoryBlockErrors(changesBlock, hostBlockType, '$.changes', errors, context);
   collectChartDisplayTitleErrors(changes, hostBlockType, '$.changes', errors);
+  collectChartConfigureFilterOperatorErrors(changes, hostBlockType, '$.changes', errors);
   collectTableSettingsErrors(changes, hostBlockType, '$.changes', errors, { directSettings: true });
   collectGridCardSettingsErrors(changes, hostBlockType, '$.changes', errors, { directSettings: true });
   collectAssignValuesErrors(changes.assignValues, '$.changes.assignValues', errors, changesBlock, context);
@@ -6036,6 +6148,21 @@ function collectChartDisplayTitleErrors(
     message:
       'Chart block settings do not support displayTitle in the current flowSurfaces runtime; keep settings.title and omit displayTitle.',
   });
+}
+
+function collectChartConfigureFilterOperatorErrors(
+  changes: any,
+  hostBlockType: string | undefined,
+  path: string,
+  errors: AuthoringErrorInput[],
+) {
+  if (hostBlockType !== 'chart' || !_.isPlainObject(changes)) {
+    return;
+  }
+  collectChartQueryFilterOperatorErrors(changes.query, `${path}.query`, errors);
+  if (_.isPlainObject(changes.configure)) {
+    collectChartQueryFilterOperatorErrors(changes.configure.query, `${path}.configure.query`, errors);
+  }
 }
 
 function visitFilterItems(

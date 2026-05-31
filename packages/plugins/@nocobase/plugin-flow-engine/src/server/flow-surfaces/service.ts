@@ -43,6 +43,7 @@ import { buildAutoLayout } from './apply/layout';
 import { FlowSurfaceContractGuard } from './contract-guard';
 import {
   FlowSurfaceBadRequestError,
+  type FlowSurfaceErrorOptions,
   isFlowSurfaceError,
   throwBadRequest,
   throwAggregateBadRequest,
@@ -554,8 +555,10 @@ function withFlowSurfaceChartRepairDetails(details: Record<string, any> = {}) {
   };
 }
 
-function throwChartRepairBadRequest(message: string, details: Record<string, any> = {}): never {
+function throwChartRepairBadRequest(message: string, options: FlowSurfaceErrorOptions = {}): never {
+  const details = _.isPlainObject(options.details) ? options.details : {};
   throwBadRequest(withChartRepairMessage(message), {
+    ...options,
     details: withFlowSurfaceChartRepairDetails(details),
   });
 }
@@ -569,7 +572,7 @@ function buildChartConfigureFromSemanticChangesWithRepair(currentConfigure: any,
     return buildChartConfigureFromSemanticChanges(currentConfigure, changes);
   } catch (error: any) {
     if (isChartConfigureBadRequestError(error)) {
-      throwChartRepairBadRequest(error.message, _.isPlainObject(error.options?.details) ? error.options.details : {});
+      throwChartRepairBadRequest(error.message, error.options);
     }
     throw error;
   }

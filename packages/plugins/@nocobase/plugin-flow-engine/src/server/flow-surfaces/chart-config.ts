@@ -9,7 +9,11 @@
 
 import _ from 'lodash';
 import { FlowSurfaceBadRequestError } from './errors';
-import { FLOW_SURFACE_EMPTY_FILTER_GROUP, normalizeFlowSurfaceFilterGroupValue } from './filter-group';
+import {
+  FLOW_SURFACE_EMPTY_FILTER_GROUP,
+  assertFlowSurfaceFilterOperator,
+  normalizeFlowSurfaceFilterGroupValue,
+} from './filter-group';
 
 const CHART_REPAIR_HINT =
   'This is a chart payload shape problem. Repair the current chart query/visual mappings and keep the chart block type. Do not change this block type to table, jsBlock, actionPanel, gridCard, or another block type. KPI / summary numbers should use jsBlock; charts are for trends, distributions, rankings, and visual analysis.';
@@ -749,6 +753,9 @@ function convertBackendFieldConditionToFilterItems(field: string, condition: any
   }
 
   return operators.map((operator) => {
+    if (!operator.startsWith('$')) {
+      assertFlowSurfaceFilterOperator(operator, `${label}.${field}.${operator}`);
+    }
     if (!operator.startsWith('$') || isBackendQueryLogicKey(operator)) {
       throw new FlowSurfaceBadRequestError(
         `${label}.${field}: cannot convert backend query filter operator "${operator}"`,
@@ -843,6 +850,7 @@ function inferQueryMode(query: Record<string, any>) {
 
 function validateLooseChartQuery(query: Record<string, any>) {
   inferQueryMode(query);
+  validateChartQueryFilterOperators(query);
   if (!hasOwn(query, 'resource') || !hasOwn(query, 'collectionPath')) {
     return;
   }
@@ -855,6 +863,12 @@ function validateLooseChartQuery(query: Record<string, any>) {
     throw new FlowSurfaceBadRequestError(
       'chart query.resource and chart query.collectionPath must reference the same collection',
     );
+  }
+}
+
+function validateChartQueryFilterOperators(query: Record<string, any>) {
+  if (hasOwn(query, 'filter')) {
+    normalizeFilterGroupValue(query.filter, 'chart query.filter');
   }
 }
 

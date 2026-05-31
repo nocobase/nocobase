@@ -182,6 +182,356 @@ describe('chart-config semantic helpers', () => {
     expect(next.query.filter).not.toBe(baseConfigure.query.filter);
   });
 
+  it('should normalize relative date shorthand in chart filter groups', () => {
+    const next = canonicalizeChartConfigure({
+      ...baseConfigure,
+      query: {
+        ...baseConfigure.query,
+        filter: {
+          logic: '$and',
+          items: [
+            {
+              path: 'lastFollowupAt',
+              operator: '$dateBefore',
+              value: '-14d',
+            },
+          ],
+        },
+      },
+    });
+
+    expect(next.query.filter.items[0].value).toEqual({
+      type: 'past',
+      number: 14,
+      unit: 'day',
+    });
+  });
+
+  it('should preserve UI relative date descriptors in chart filter groups', () => {
+    const relativeDate = { type: 'past', number: 14, unit: 'day' };
+    const next = canonicalizeChartConfigure({
+      ...baseConfigure,
+      query: {
+        ...baseConfigure.query,
+        filter: {
+          logic: '$and',
+          items: [
+            {
+              path: 'lastFollowupAt',
+              operator: '$dateBefore',
+              value: relativeDate,
+            },
+          ],
+        },
+      },
+    });
+
+    expect(next.query.filter.items[0].value).toEqual(relativeDate);
+    expect(next.query.filter.items[0].value).not.toBe(relativeDate);
+  });
+
+  it('should fill missing relative date descriptor defaults in chart filter groups', () => {
+    const next = canonicalizeChartConfigure({
+      ...baseConfigure,
+      query: {
+        ...baseConfigure.query,
+        filter: {
+          logic: '$and',
+          items: [
+            {
+              path: 'lastFollowupAt',
+              operator: '$dateBefore',
+              value: { type: 'past' },
+            },
+          ],
+        },
+      },
+    });
+
+    expect(next.query.filter.items[0].value).toEqual({
+      type: 'past',
+      number: 1,
+      unit: 'day',
+    });
+  });
+
+  it('should reject zero-day relative date shorthand in chart filter groups', () => {
+    expect(() =>
+      canonicalizeChartConfigure({
+        ...baseConfigure,
+        query: {
+          ...baseConfigure.query,
+          filter: {
+            logic: '$and',
+            items: [
+              {
+                path: 'lastFollowupAt',
+                operator: '$dateBefore',
+                value: '-0d',
+              },
+            ],
+          },
+        },
+      }),
+    ).toThrowError(FlowSurfaceBadRequestError);
+  });
+
+  it('should reject unsupported relative date units in chart filter groups', () => {
+    expect(() =>
+      canonicalizeChartConfigure({
+        ...baseConfigure,
+        query: {
+          ...baseConfigure.query,
+          filter: {
+            logic: '$and',
+            items: [
+              {
+                path: 'lastFollowupAt',
+                operator: '$dateBefore',
+                value: { type: 'past', number: 1, unit: 'quarter' },
+              },
+            ],
+          },
+        },
+      }),
+    ).toThrowError(FlowSurfaceBadRequestError);
+  });
+
+  it('should reject invalid static date values inside templated chart date ranges', () => {
+    expect(() =>
+      canonicalizeChartConfigure({
+        ...baseConfigure,
+        query: {
+          ...baseConfigure.query,
+          filter: {
+            logic: '$and',
+            items: [
+              {
+                path: 'lastFollowupAt',
+                operator: '$dateBetween',
+                value: ['{{ $vars.start }}', '-14x'],
+              },
+            ],
+          },
+        },
+      }),
+    ).toThrowError(FlowSurfaceBadRequestError);
+  });
+
+  it('should reject invalid extra date range array slots in chart filter groups', () => {
+    expect(() =>
+      canonicalizeChartConfigure({
+        ...baseConfigure,
+        query: {
+          ...baseConfigure.query,
+          filter: {
+            logic: '$and',
+            items: [
+              {
+                path: 'lastFollowupAt',
+                operator: '$dateBetween',
+                value: ['{{ $vars.start }}', '2026-01-02', 'junk'],
+              },
+            ],
+          },
+        },
+      }),
+    ).toThrowError(FlowSurfaceBadRequestError);
+  });
+
+  it('should reject invalid date filter values with repair details', () => {
+    let error: FlowSurfaceBadRequestError | undefined;
+
+    try {
+      canonicalizeChartConfigure({
+        ...baseConfigure,
+        query: {
+          ...baseConfigure.query,
+          filter: {
+            logic: '$and',
+            items: [
+              {
+                path: 'lastFollowupAt',
+                operator: '$dateBefore',
+                value: '-14x',
+              },
+            ],
+          },
+        },
+      });
+    } catch (caught) {
+      error = caught as FlowSurfaceBadRequestError;
+    }
+
+    expect(error).toBeInstanceOf(FlowSurfaceBadRequestError);
+    expect(error?.options).toMatchObject({
+      path: 'chart query.filter.items[0].value',
+      ruleId: 'filter-group-date-value-invalid',
+      details: {
+        invalidValue: '-14x',
+      },
+    });
+  });
+
+  it('should reject filter group operators missing the dollar prefix with repair details', () => {
+    let error: FlowSurfaceBadRequestError | undefined;
+
+    try {
+      canonicalizeChartConfigure({
+        ...baseConfigure,
+        query: {
+          ...baseConfigure.query,
+          filter: {
+            logic: '$and',
+            items: [
+              {
+                path: 'lastFollowupAt',
+                operator: 'dateBefore',
+                value: '2026-05-16',
+              },
+              {
+                path: 'stage',
+                operator: 'notIn',
+                value: ['won', 'lost'],
+              },
+            ],
+          },
+        },
+      });
+    } catch (caught) {
+      error = caught as FlowSurfaceBadRequestError;
+    }
+
+    expect(error).toBeInstanceOf(FlowSurfaceBadRequestError);
+    expect(error?.options).toMatchObject({
+      path: 'chart query.filter.items[0].operator',
+      ruleId: 'filter-group-operator-missing-dollar',
+      details: {
+        invalidOperator: 'dateBefore',
+        suggestedOperator: '$dateBefore',
+      },
+    });
+  });
+
+  it('should reject backend query-object operators missing the dollar prefix with repair details', () => {
+    let error: FlowSurfaceBadRequestError | undefined;
+
+    try {
+      canonicalizeChartConfigure({
+        ...baseConfigure,
+        query: {
+          ...baseConfigure.query,
+          filter: {
+            stage: { notIn: ['won', 'lost'] },
+          },
+        },
+      });
+    } catch (caught) {
+      error = caught as FlowSurfaceBadRequestError;
+    }
+
+    expect(error).toBeInstanceOf(FlowSurfaceBadRequestError);
+    expect(error?.options).toMatchObject({
+      path: 'chart query.filter.stage.notIn',
+      ruleId: 'filter-group-operator-missing-dollar',
+      details: {
+        invalidOperator: 'notIn',
+        suggestedOperator: '$notIn',
+      },
+    });
+  });
+
+  it('should suggest dollar-prefixed Sequelize operators from backend query-object filters', () => {
+    let error: FlowSurfaceBadRequestError | undefined;
+
+    try {
+      canonicalizeChartConfigure({
+        ...baseConfigure,
+        query: {
+          ...baseConfigure.query,
+          filter: {
+            amount: { gt: 100 },
+            customerName: { like: '%Acme%' },
+          },
+        },
+      });
+    } catch (caught) {
+      error = caught as FlowSurfaceBadRequestError;
+    }
+
+    expect(error).toBeInstanceOf(FlowSurfaceBadRequestError);
+    expect(error?.options).toMatchObject({
+      path: 'chart query.filter.amount.gt',
+      ruleId: 'filter-group-operator-missing-dollar',
+      details: {
+        invalidOperator: 'gt',
+        suggestedOperator: '$gt',
+      },
+    });
+  });
+
+  it('should suggest dollar-prefixed Sequelize operators from filter group items', () => {
+    let error: FlowSurfaceBadRequestError | undefined;
+
+    try {
+      canonicalizeChartConfigure({
+        ...baseConfigure,
+        query: {
+          ...baseConfigure.query,
+          filter: {
+            logic: '$and',
+            items: [
+              {
+                path: 'customerName',
+                operator: 'like',
+                value: '%Acme%',
+              },
+            ],
+          },
+        },
+      });
+    } catch (caught) {
+      error = caught as FlowSurfaceBadRequestError;
+    }
+
+    expect(error).toBeInstanceOf(FlowSurfaceBadRequestError);
+    expect(error?.options).toMatchObject({
+      path: 'chart query.filter.items[0].operator',
+      ruleId: 'filter-group-operator-missing-dollar',
+      details: {
+        invalidOperator: 'like',
+        suggestedOperator: '$like',
+      },
+    });
+  });
+
+  it('should reject missing-dollar operators on incomplete legacy chart query filters', () => {
+    let error: FlowSurfaceBadRequestError | undefined;
+
+    try {
+      canonicalizeChartConfigure({
+        query: {
+          mode: 'builder',
+          filter: {
+            stage: { notIn: ['won', 'lost'] },
+          },
+        },
+      });
+    } catch (caught) {
+      error = caught as FlowSurfaceBadRequestError;
+    }
+
+    expect(error).toBeInstanceOf(FlowSurfaceBadRequestError);
+    expect(error?.options).toMatchObject({
+      path: 'chart query.filter.stage.notIn',
+      ruleId: 'filter-group-operator-missing-dollar',
+      details: {
+        invalidOperator: 'notIn',
+        suggestedOperator: '$notIn',
+      },
+    });
+  });
+
   it('should persist semantic backend query-object filters as filter groups', () => {
     const next = buildChartConfigureFromSemanticChanges(undefined, {
       query: {
