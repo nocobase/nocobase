@@ -68,11 +68,19 @@ describe('flowSurfaces event flow', () => {
     expect(meta.target.uid).toBe(formUid);
     expect(meta.flowRegistry.legacyBeforeRender).toMatchObject({
       key: 'legacyBeforeRender',
-      on: 'beforeRender',
+      on: {
+        eventName: 'beforeRender',
+        defaultParams: {
+          condition: {
+            logic: '$and',
+            items: [],
+          },
+        },
+      },
     });
     expect(meta.fingerprint).toEqual(expect.any(String));
     expect(meta.events.direct).toEqual(expect.arrayContaining(['beforeRender']));
-    expect(meta.events.object).toEqual(expect.arrayContaining(['submit']));
+    expect(meta.events.object).toEqual(expect.arrayContaining(['beforeRender', 'submit']));
     expect(meta.phases.supported).toEqual(
       expect.arrayContaining(['beforeAllFlows', 'afterAllFlows', 'beforeFlow', 'afterFlow', 'beforeStep', 'afterStep']),
     );
@@ -160,7 +168,6 @@ describe('flowSurfaces event flow', () => {
       },
       on: {
         eventName: 'submit',
-        phase: 'beforeAllFlows',
         defaultParams: {
           condition: {
             logic: '$and',
@@ -200,10 +207,7 @@ describe('flowSurfaces event flow', () => {
           },
           key: 'submitGuard',
           flow: {
-            on: {
-              eventName: 'submit',
-              phase: 'beforeAllFlows',
-            },
+            on: 'submit',
             steps: {
               runGuard: {
                 use: 'runjs',
@@ -227,6 +231,15 @@ describe('flowSurfaces event flow', () => {
       },
     });
     expect(updated.flowRegistry.submitGuard.steps.runGuard.params).toBeUndefined();
+    expect(updated.flowRegistry.submitGuard.on).toMatchObject({
+      eventName: 'submit',
+      defaultParams: {
+        condition: {
+          logic: '$and',
+          items: [],
+        },
+      },
+    });
 
     const removed = await service.transaction((transaction) =>
       service.removeEventFlow(
@@ -250,10 +263,94 @@ describe('flowSurfaces event flow', () => {
     expect(readback.tree.flowRegistry).toEqual({
       keepExisting: {
         key: 'keepExisting',
-        on: 'beforeRender',
+        on: {
+          eventName: 'beforeRender',
+          defaultParams: {
+            condition: {
+              logic: '$and',
+              items: [],
+            },
+          },
+        },
         steps: {},
       },
     });
+  });
+
+  it('should normalize string event names to object on values with empty conditions', async () => {
+    const { formUid } = await createEmployeeForm(rootAgent);
+
+    const result = await service.transaction((transaction) =>
+      service.setEventFlows(
+        {
+          target: {
+            uid: formUid,
+          },
+          flowRegistry: {
+            beforeRenderFlow: {
+              key: 'beforeRenderFlow',
+              on: 'beforeRender',
+              steps: {},
+            },
+            submitFlow: {
+              key: 'submitFlow',
+              on: 'submit',
+              steps: {},
+            },
+            existingConditionFlow: {
+              key: 'existingConditionFlow',
+              on: {
+                eventName: 'submit',
+                phase: 'beforeAllFlows',
+                defaultParams: {
+                  condition: {
+                    logic: '$or',
+                    items: [],
+                  },
+                  auditLabel: 'keep-me',
+                },
+              },
+              steps: {},
+            },
+          },
+        },
+        { transaction },
+      ),
+    );
+
+    expect(result.flowRegistry.beforeRenderFlow.on).toEqual({
+      eventName: 'beforeRender',
+      defaultParams: {
+        condition: {
+          logic: '$and',
+          items: [],
+        },
+      },
+    });
+    expect(result.flowRegistry.submitFlow.on).toEqual({
+      eventName: 'submit',
+      defaultParams: {
+        condition: {
+          logic: '$and',
+          items: [],
+        },
+      },
+    });
+    expect(result.flowRegistry.existingConditionFlow.on).toEqual({
+      eventName: 'submit',
+      defaultParams: {
+        condition: {
+          logic: '$or',
+          items: [],
+        },
+        auditLabel: 'keep-me',
+      },
+    });
+
+    const readback = await getSurface(rootAgent, {
+      uid: formUid,
+    });
+    expect(readback.tree.flowRegistry).toEqual(result.flowRegistry);
   });
 
   it('should reject stale event-flow expectedFingerprint and unsupported add phases', async () => {

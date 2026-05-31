@@ -16001,6 +16001,8 @@ export class FlowSurfacesService {
       options,
     );
     const flowRegistry = this.getEventFlowRegistry(current);
+    const directEvents = _.cloneDeep(contract.eventCapabilities?.direct || []);
+    const objectEvents = _.uniq([..._.cloneDeep(contract.eventCapabilities?.object || []), ...directEvents]);
     return {
       target: {
         uid: target.uid,
@@ -16009,8 +16011,8 @@ export class FlowSurfacesService {
       },
       flowRegistry,
       events: {
-        direct: _.cloneDeep(contract.eventCapabilities?.direct || []),
-        object: _.cloneDeep(contract.eventCapabilities?.object || []),
+        direct: directEvents,
+        object: objectEvents,
       },
       phases: {
         supported: ['beforeAllFlows', 'afterAllFlows', 'beforeFlow', 'afterFlow', 'beforeStep', 'afterStep'],
@@ -16045,13 +16047,12 @@ export class FlowSurfacesService {
     if (phase !== 'beforeAllFlows') {
       throwBadRequest(`flowSurfaces addEventFlow only supports phase 'beforeAllFlows'`);
     }
-    const flow = this.normalizeAddEventFlowInput(key, values, phase);
-    const nextFlowRegistry = {
+    const nextFlowRegistry = this.normalizeEventFlowRegistry('addEventFlow', {
       ...flowRegistry,
-      [key]: flow,
-    };
+      [key]: this.normalizeAddEventFlowInput(key, values, phase),
+    });
     await this.persistEventFlowRegistry('addEventFlow', target, current, nextFlowRegistry, options);
-    return this.buildEventFlowWriteResult(target, key, flow, nextFlowRegistry);
+    return this.buildEventFlowWriteResult(target, key, nextFlowRegistry[key], nextFlowRegistry);
   }
 
   async setEventFlow(values: Record<string, any>, options: { transaction?: any } = {}) {
@@ -16065,13 +16066,12 @@ export class FlowSurfacesService {
     const key = this.normalizeEventFlowKey('setEventFlow', values?.key ?? values?.flow?.key);
     this.assertEventFlowFingerprint('setEventFlow', values?.expectedFingerprint, flowRegistry);
     const flowInput = _.isPlainObject(values?.flow) ? values.flow : values;
-    const flow = this.normalizeEventFlowObject('setEventFlow', key, flowInput);
-    const nextFlowRegistry = {
+    const nextFlowRegistry = this.normalizeEventFlowRegistry('setEventFlow', {
       ...flowRegistry,
-      [key]: flow,
-    };
+      [key]: this.normalizeEventFlowObject('setEventFlow', key, flowInput),
+    });
     await this.persistEventFlowRegistry('setEventFlow', target, current, nextFlowRegistry, options);
-    return this.buildEventFlowWriteResult(target, key, flow, nextFlowRegistry);
+    return this.buildEventFlowWriteResult(target, key, nextFlowRegistry[key], nextFlowRegistry);
   }
 
   async removeEventFlow(values: Record<string, any>, options: { transaction?: any } = {}) {
@@ -16087,7 +16087,7 @@ export class FlowSurfacesService {
       throwBadRequest(`flowSurfaces removeEventFlow flow '${key}' does not exist`);
     }
     this.assertEventFlowFingerprint('removeEventFlow', values?.expectedFingerprint, flowRegistry);
-    const nextFlowRegistry = _.omit(flowRegistry, [key]);
+    const nextFlowRegistry = this.normalizeEventFlowRegistry('removeEventFlow', _.omit(flowRegistry, [key]));
     await this.persistEventFlowRegistry('removeEventFlow', target, current, nextFlowRegistry, options);
     return this.buildEventFlowWriteResult(target, key, undefined, nextFlowRegistry);
   }
@@ -16095,7 +16095,7 @@ export class FlowSurfacesService {
   async setEventFlows(values: Record<string, any>, options: { transaction?: any } = {}) {
     validateFlowSurfacePayloadShape('setEventFlows', values, 'values');
     const { target, current } = await this.resolveEventFlowTarget('setEventFlows', values?.target, values, options);
-    const flows = values.flowRegistry || values.flows || {};
+    const flows = this.normalizeEventFlowRegistry('setEventFlows', values.flowRegistry || values.flows || {});
     await this.persistEventFlowRegistry('setEventFlows', target, current, flows, options);
     return {
       uid: target.uid,
@@ -16129,6 +16129,57 @@ export class FlowSurfacesService {
 
   private getEventFlowRegistry(node: any) {
     return _.isPlainObject(node?.flowRegistry) ? _.cloneDeep(node.flowRegistry) : {};
+  }
+
+  private normalizeEventFlowRegistry(actionName: string, flowRegistry: Record<string, any>) {
+    if (!_.isPlainObject(flowRegistry)) {
+      return flowRegistry;
+    }
+    return Object.fromEntries(
+      Object.entries(flowRegistry).map(([key, flow]) => [key, this.normalizeEventFlowObject(actionName, key, flow)]),
+    );
+  }
+
+  private normalizeEventFlowOn(on: any) {
+    const emptyCondition = () => ({ logic: '$and', items: [] });
+
+    if (typeof on === 'string') {
+      const eventName = on.trim();
+      if (!eventName) {
+        return on;
+      }
+      return {
+        eventName,
+        defaultParams: {
+          condition: emptyCondition(),
+        },
+      };
+    }
+
+    if (!_.isPlainObject(on)) {
+      return on;
+    }
+
+    const next = _.cloneDeep(on);
+    const eventName = String(next.eventName || '').trim();
+    if (eventName) {
+      next.eventName = eventName;
+    }
+
+    const phase = String(next.phase || '').trim();
+    if (!phase || phase === 'beforeAllFlows') {
+      delete next.phase;
+    } else {
+      next.phase = phase;
+    }
+
+    const defaultParams = _.isPlainObject(next.defaultParams) ? next.defaultParams : {};
+    if (!_.isPlainObject(defaultParams.condition)) {
+      defaultParams.condition = emptyCondition();
+    }
+    next.defaultParams = defaultParams;
+
+    return next;
   }
 
   private buildEventFlowFingerprint(flowRegistry: any) {
@@ -16170,7 +16221,9 @@ export class FlowSurfacesService {
 
   private normalizeAddEventFlowInput(key: string, values: Record<string, any>, phase?: string) {
     const flow = _.isPlainObject(values.flow) ? _.cloneDeep(values.flow) : {};
-    const eventName = String(values.eventName ?? flow?.on?.eventName ?? '').trim();
+    const eventName = String(
+      values.eventName ?? (typeof flow.on === 'string' ? flow.on : flow?.on?.eventName) ?? '',
+    ).trim();
     if (!eventName) {
       throwBadRequest(`flowSurfaces addEventFlow requires eventName`);
     }
@@ -16202,14 +16255,9 @@ export class FlowSurfacesService {
     const flow = _.cloneDeep(flowInput);
     flow.key = key;
     if (_.isPlainObject(flow.on)) {
-      const eventName = String(flow.on.eventName || '').trim();
-      if (eventName) {
-        flow.on.eventName = eventName;
-      }
-      const phase = String(flow.on.phase || '').trim();
-      if (phase) {
-        flow.on.phase = phase;
-      }
+      flow.on = this.normalizeEventFlowOn(flow.on);
+    } else if (typeof flow.on === 'string') {
+      flow.on = this.normalizeEventFlowOn(flow.on);
     }
     if (_.isUndefined(flow.steps)) {
       flow.steps = {};
