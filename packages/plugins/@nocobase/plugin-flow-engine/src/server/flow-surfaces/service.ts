@@ -148,6 +148,11 @@ import { FlowSurfaceContextResolver } from './surface-context';
 import { buildFlowSurfaceContextResponse, isBareFlowContextPath } from './context';
 import type { FlowSurfaceContextSemantic } from './context';
 import {
+  normalizeFlowSurfaceEventFlow,
+  normalizeFlowSurfaceEventFlowRegistry,
+  type FlowSurfaceEventFlowRegistry,
+} from './event-flow-normalizer';
+import {
   getConfigureOptionKeysForResolvedNode,
   getConfigureOptionKeysForUse,
   getConfigureOptionsForCatalogItem,
@@ -1799,7 +1804,7 @@ export class FlowSurfacesService {
             parentId: null,
             options: {
               documentTitle: values.tabDocumentTitle,
-              flowRegistry: values.tabFlowRegistry || {},
+              flowRegistry: this.normalizeEventFlowRegistry('createMenu', values.tabFlowRegistry || {}),
             },
           },
         ],
@@ -4132,7 +4137,7 @@ export class FlowSurfacesService {
           use: 'RootPageTabModel',
           props: _.omit(_.cloneDeep(currentNode?.props || {}), ['route']),
           decoratorProps: _.cloneDeep(currentNode?.decoratorProps || {}),
-          flowRegistry: _.cloneDeep(currentNode?.flowRegistry || {}),
+          flowRegistry: this.getEventFlowRegistry(currentNode),
           stepParams: _.cloneDeep(values?.stepParams || currentNode?.stepParams || {}),
         }),
         { transaction: options?.transaction },
@@ -7534,7 +7539,7 @@ export class FlowSurfacesService {
           parentId: routeId,
           options: {
             documentTitle: values.tabDocumentTitle,
-            flowRegistry: values.tabFlowRegistry || {},
+            flowRegistry: this.normalizeEventFlowRegistry('createPage', values.tabFlowRegistry || {}),
           },
         },
         transaction,
@@ -7555,7 +7560,10 @@ export class FlowSurfacesService {
           options: {
             ...this.readRouteOptions(tabRoute),
             documentTitle: values.tabDocumentTitle ?? this.readRouteOptions(tabRoute).documentTitle,
-            flowRegistry: values.tabFlowRegistry || this.readRouteOptions(tabRoute).flowRegistry || {},
+            flowRegistry: this.normalizeEventFlowRegistry(
+              'createPage',
+              values.tabFlowRegistry || this.readRouteOptions(tabRoute).flowRegistry || {},
+            ),
           },
         },
         transaction,
@@ -7702,7 +7710,7 @@ export class FlowSurfacesService {
         hidden: !pageRoute.get('enableTabs'),
         options: {
           documentTitle: values.documentTitle,
-          flowRegistry: values.flowRegistry || {},
+          flowRegistry: this.normalizeEventFlowRegistry('addTab', values.flowRegistry || {}),
         },
       },
       transaction: options.transaction,
@@ -7758,7 +7766,9 @@ export class FlowSurfacesService {
               },
             }
           : undefined,
-      flowRegistry: !_.isUndefined(values.flowRegistry) ? values.flowRegistry : undefined,
+      flowRegistry: !_.isUndefined(values.flowRegistry)
+        ? this.normalizeEventFlowRegistry('updateTab', values.flowRegistry)
+        : undefined,
     });
     await this.routeSync.persistTabSettings(target, current, nextPayload, options.transaction);
 
@@ -7881,7 +7891,7 @@ export class FlowSurfacesService {
       title: values.title,
       icon: values.icon,
       documentTitle: values.documentTitle,
-      flowRegistry: values.flowRegistry,
+      flowRegistry: this.normalizeEventFlowRegistry('addPopupTab', values.flowRegistry),
     });
     await this.repository.upsertModel(
       {
@@ -7942,7 +7952,9 @@ export class FlowSurfacesService {
               },
             }
           : undefined,
-      flowRegistry: !_.isUndefined(values.flowRegistry) ? values.flowRegistry : undefined,
+      flowRegistry: !_.isUndefined(values.flowRegistry)
+        ? this.normalizeEventFlowRegistry('updatePopupTab', values.flowRegistry)
+        : undefined,
     });
     if (Object.keys(nextPayload).length === 1) {
       return { uid: popupTab.uid };
@@ -8167,7 +8179,7 @@ export class FlowSurfacesService {
           use: 'ReferenceFormGridModel',
           props: currentGrid.props,
           decoratorProps: currentGrid.decoratorProps,
-          flowRegistry: currentGrid.flowRegistry,
+          flowRegistry: this.getEventFlowRegistry(currentGrid),
           sortIndex: currentGrid.sortIndex,
           parentId: blockUid,
           subKey: 'grid',
@@ -9674,7 +9686,7 @@ export class FlowSurfacesService {
       props: actionSettingsPayload.props,
       decoratorProps: values.decoratorProps,
       stepParams: actionSettingsPayload.stepParams,
-      flowRegistry: values.flowRegistry,
+      flowRegistry: this.normalizeEventFlowRegistry('addAction', values.flowRegistry),
     });
     this.contractGuard.validateNodeTreeAgainstContract(action);
     const created = await this.repository.upsertModel(
@@ -9818,7 +9830,7 @@ export class FlowSurfacesService {
       props: actionSettingsPayload.props,
       decoratorProps: values.decoratorProps,
       stepParams: actionSettingsPayload.stepParams,
-      flowRegistry: values.flowRegistry,
+      flowRegistry: this.normalizeEventFlowRegistry('addRecordAction', values.flowRegistry),
     });
     this.contractGuard.validateNodeTreeAgainstContract(action);
     const created = await this.repository.upsertModel(
@@ -14399,6 +14411,7 @@ export class FlowSurfacesService {
       }
       if (domain === 'flowRegistry') {
         this.assertNoTreeConnectFieldsFlowRegistry(current, normalizedValues[domain], 'updateSettings');
+        normalizedValues[domain] = this.normalizeEventFlowRegistry('updateSettings', normalizedValues[domain]);
       }
       if (!contract.editableDomains.includes(domain)) {
         throwBadRequest(`flowSurfaces updateSettings domain '${domain}' is not editable`);
@@ -14415,6 +14428,9 @@ export class FlowSurfacesService {
         current.use,
       );
     });
+    if (!_.isUndefined(nextPayload.flowRegistry)) {
+      nextPayload.flowRegistry = this.normalizeEventFlowRegistry('updateSettings', nextPayload.flowRegistry);
+    }
 
     this.replaceExplicitPopupStepParamSubtreesForUpdateSettings(
       current,
@@ -14485,7 +14501,7 @@ export class FlowSurfacesService {
       props: nextPayload.props ?? current.props,
       decoratorProps: nextPayload.decoratorProps ?? current.decoratorProps,
       stepParams: nextPayload.stepParams ?? current.stepParams,
-      flowRegistry: nextPayload.flowRegistry ?? current.flowRegistry,
+      flowRegistry: nextPayload.flowRegistry ?? this.getEventFlowRegistry(current),
     };
     const shouldValidateFlowRegistry =
       !_.isUndefined(nextPayload.flowRegistry) || !_.isUndefined(nextPayload.stepParams);
@@ -16127,59 +16143,19 @@ export class FlowSurfacesService {
     };
   }
 
-  private getEventFlowRegistry(node: any) {
-    return _.isPlainObject(node?.flowRegistry) ? _.cloneDeep(node.flowRegistry) : {};
+  private getEventFlowRegistry(node: any): FlowSurfaceEventFlowRegistry {
+    return _.isPlainObject(node?.flowRegistry)
+      ? this.normalizeEventFlowRegistry('getEventFlowRegistry', node.flowRegistry)
+      : {};
   }
 
-  private normalizeEventFlowRegistry(actionName: string, flowRegistry: Record<string, any>) {
-    if (!_.isPlainObject(flowRegistry)) {
-      return flowRegistry;
-    }
-    return Object.fromEntries(
-      Object.entries(flowRegistry).map(([key, flow]) => [key, this.normalizeEventFlowObject(actionName, key, flow)]),
-    );
-  }
-
-  private normalizeEventFlowOn(on: any) {
-    const emptyCondition = () => ({ logic: '$and', items: [] });
-
-    if (typeof on === 'string') {
-      const eventName = on.trim();
-      if (!eventName) {
-        return on;
-      }
-      return {
-        eventName,
-        defaultParams: {
-          condition: emptyCondition(),
-        },
-      };
-    }
-
-    if (!_.isPlainObject(on)) {
-      return on;
-    }
-
-    const next = _.cloneDeep(on);
-    const eventName = String(next.eventName || '').trim();
-    if (eventName) {
-      next.eventName = eventName;
-    }
-
-    const phase = String(next.phase || '').trim();
-    if (!phase || phase === 'beforeAllFlows') {
-      delete next.phase;
-    } else {
-      next.phase = phase;
-    }
-
-    const defaultParams = _.isPlainObject(next.defaultParams) ? next.defaultParams : {};
-    if (!_.isPlainObject(defaultParams.condition)) {
-      defaultParams.condition = emptyCondition();
-    }
-    next.defaultParams = defaultParams;
-
-    return next;
+  private normalizeEventFlowRegistry(
+    actionName: string,
+    flowRegistry: Record<string, unknown>,
+  ): FlowSurfaceEventFlowRegistry;
+  private normalizeEventFlowRegistry<T>(actionName: string, flowRegistry: T): T;
+  private normalizeEventFlowRegistry(actionName: string, flowRegistry: unknown) {
+    return normalizeFlowSurfaceEventFlowRegistry(actionName, flowRegistry);
   }
 
   private buildEventFlowFingerprint(flowRegistry: any) {
@@ -16249,20 +16225,7 @@ export class FlowSurfacesService {
   }
 
   private normalizeEventFlowObject(actionName: string, key: string, flowInput: any) {
-    if (!_.isPlainObject(flowInput)) {
-      throwBadRequest(`flowSurfaces ${actionName} flow '${key}' must be an object`);
-    }
-    const flow = _.cloneDeep(flowInput);
-    flow.key = key;
-    if (_.isPlainObject(flow.on)) {
-      flow.on = this.normalizeEventFlowOn(flow.on);
-    } else if (typeof flow.on === 'string') {
-      flow.on = this.normalizeEventFlowOn(flow.on);
-    }
-    if (_.isUndefined(flow.steps)) {
-      flow.steps = {};
-    }
-    return flow;
+    return normalizeFlowSurfaceEventFlow(actionName, key, flowInput);
   }
 
   private async persistEventFlowRegistry(
@@ -27607,7 +27570,7 @@ export class FlowSurfacesService {
         (value) => !_.isUndefined(value),
       ),
       decoratorProps: _.cloneDeep(innerField.decoratorProps || {}),
-      flowRegistry: _.cloneDeep(innerField.flowRegistry || {}),
+      flowRegistry: this.getEventFlowRegistry(innerField),
       stepParams: _.merge({}, innerField.stepParams || {}, {
         fieldBinding: {
           use: normalizedTargetUse,

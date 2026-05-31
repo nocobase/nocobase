@@ -14,6 +14,10 @@ import { FlowSurfacesService } from '../flow-surfaces/service';
 import { waitForFixtureCollectionsReady } from './flow-surfaces.fixture-ready';
 import { createFlowSurfacesMockServer, loginFlowSurfacesRootAgent } from './flow-surfaces.mock-server';
 
+type FlowSurfaceModelOptionsPatcher = {
+  patchFlowSurfaceModelOptions(values: Record<string, unknown>): Promise<void>;
+};
+
 describe('flowSurfaces event flow', () => {
   let app: MockServer;
   let db: Database;
@@ -353,6 +357,52 @@ describe('flowSurfaces event flow', () => {
     expect(readback.tree.flowRegistry).toEqual(result.flowRegistry);
   });
 
+  it('should tolerate legacy string event names when updating unrelated settings', async () => {
+    const { formUid } = await createEmployeeForm(rootAgent);
+
+    await (service as unknown as FlowSurfaceModelOptionsPatcher).patchFlowSurfaceModelOptions({
+      uid: formUid,
+      flowRegistry: {
+        legacySubmit: {
+          key: 'legacySubmit',
+          on: 'submit',
+          steps: {},
+        },
+      },
+    });
+
+    const updateSettings = await rootAgent.resource('flowSurfaces').updateSettings({
+      values: {
+        target: {
+          uid: formUid,
+        },
+        stepParams: {
+          formModelSettings: {
+            layout: {
+              layout: 'vertical',
+            },
+          },
+        },
+      },
+    });
+    expect(updateSettings.status).toBe(200);
+
+    const meta = await service.getEventFlowMeta({
+      target: {
+        uid: formUid,
+      },
+    });
+    expect(meta.flowRegistry.legacySubmit.on).toEqual({
+      eventName: 'submit',
+      defaultParams: {
+        condition: {
+          logic: '$and',
+          items: [],
+        },
+      },
+    });
+  });
+
   it('should reject stale event-flow expectedFingerprint and unsupported add phases', async () => {
     const { formUid } = await createEmployeeForm(rootAgent);
     const meta = await service.getEventFlowMeta({
@@ -630,7 +680,15 @@ describe('flowSurfaces event flow', () => {
           key: 'updateMe',
           flow: {
             key: 'updateMe',
-            on: 'beforeRender',
+            on: {
+              eventName: 'beforeRender',
+              defaultParams: {
+                condition: {
+                  logic: '$and',
+                  items: [],
+                },
+              },
+            },
             steps: {
               runChanged: {
                 use: 'runjs',
@@ -653,7 +711,6 @@ describe('flowSurfaces event flow', () => {
             key: 'addMe',
             on: {
               eventName: 'submit',
-              phase: 'beforeAllFlows',
               defaultParams: {
                 condition: {
                   logic: '$and',
@@ -677,6 +734,44 @@ describe('flowSurfaces event flow', () => {
         },
       },
     ]);
+  });
+
+  it('should compile canonical event-flow apply specs without repeated mutations', () => {
+    const compiled = compileApplySpec(
+      {
+        uid: 'form-uid',
+      },
+      {
+        uid: 'form-uid',
+        use: 'CreateFormModel',
+        flowRegistry: {
+          beforeRenderApply: {
+            key: 'beforeRenderApply',
+            on: {
+              eventName: 'beforeRender',
+              defaultParams: {
+                condition: {
+                  logic: '$and',
+                  items: [],
+                },
+              },
+            },
+            steps: {},
+          },
+        },
+      },
+      {
+        flowRegistry: {
+          beforeRenderApply: {
+            key: 'beforeRenderApply',
+            on: 'beforeRender',
+            steps: {},
+          },
+        },
+      },
+    );
+
+    expect(compiled.ops).toEqual([]);
   });
 });
 

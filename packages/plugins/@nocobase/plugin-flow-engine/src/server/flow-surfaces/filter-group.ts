@@ -82,6 +82,12 @@ const FLOW_SURFACE_DATE_VALUE_REPAIR_EXAMPLE = {
 
 const FLOW_SURFACE_KNOWN_FILTER_OPERATORS = buildFlowSurfaceKnownFilterOperators();
 
+type FlowSurfaceRelativeDateDescriptor = Record<string, unknown> & {
+  type: string;
+  number?: unknown;
+  unit?: unknown;
+};
+
 function buildFlowSurfaceKnownFilterOperators() {
   const operators = new Set(Object.keys(databaseOperators));
   for (const key in Op) {
@@ -253,7 +259,7 @@ function normalizeFlowSurfaceDateValuePart(value: unknown, path: string): unknow
   }
 
   if (_.isPlainObject(value)) {
-    return normalizeRelativeDateDescriptor(value, path);
+    return normalizeRelativeDateDescriptor(value as Record<string, unknown>, path);
   }
 
   assertFlowSurfaceDateValueParsable(value, path);
@@ -275,7 +281,7 @@ function normalizeRelativeDateShorthand(value: string, path: string) {
   );
 }
 
-function normalizeRelativeDateDescriptor(value: Record<string, any>, path: string) {
+function normalizeRelativeDateDescriptor(value: Record<string, unknown>, path: string) {
   const rawType = value.type;
   const type = typeof rawType === 'string' ? rawType.trim() : '';
   if (!isTemplateDateString(rawType) && !FLOW_SURFACE_DATE_RANGE_TYPES.has(type)) {
@@ -284,7 +290,7 @@ function normalizeRelativeDateDescriptor(value: Record<string, any>, path: strin
     });
   }
 
-  const normalized = {
+  const normalized: FlowSurfaceRelativeDateDescriptor = {
     ...value,
     type: isTemplateDateString(rawType) ? rawType : type,
   };
