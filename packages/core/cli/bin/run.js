@@ -70,43 +70,14 @@ const startupUpdatePath = isDev
   ? path.join(root, 'src/lib/startup-update.ts')
   : path.join(root, 'dist/lib/startup-update.js');
 const { maybeRunStartupUpdatePrompt } = await import(pathToFileURL(startupUpdatePath).href);
+const cliEntryErrorPath = isDev
+  ? path.join(root, 'src/lib/cli-entry-error.ts')
+  : path.join(root, 'dist/lib/cli-entry-error.js');
+const { formatCliEntryError } = await import(pathToFileURL(cliEntryErrorPath).href);
 const { flush, run, settings } = await import('@oclif/core');
 
 if (isDev) {
   settings.debug = true;
-}
-
-function getCommandToken(argv) {
-  const tokens = [];
-
-  for (const token of argv) {
-    if (!token || token.startsWith('-')) {
-      continue;
-    }
-
-    tokens.push(token);
-  }
-
-  if (tokens[0] === 'api') {
-    return tokens[1] ?? tokens[0];
-  }
-
-  return tokens[0];
-}
-
-function formatCliEntryError(error, argv) {
-  const message = error instanceof Error ? error.message : String(error);
-  const missingCommandMatch = message.match(/^Command (.+) not found\.$/);
-  if (missingCommandMatch) {
-    const commandToken = getCommandToken(argv) ?? missingCommandMatch[1];
-    return [
-      `Unknown command: \`${commandToken}\`.`,
-      'If this is a built-in command or a typo, run `nb --help` to inspect available commands.',
-      `If \`${commandToken}\` should be a runtime command from your NocoBase app, run \`nb env update\` and try again.`,
-    ].join('\n');
-  }
-
-  return message;
 }
 
 try {

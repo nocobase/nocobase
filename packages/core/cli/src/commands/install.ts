@@ -1412,7 +1412,7 @@ export default class Install extends Command {
           [
             `Cannot continue setup for "${env.name}" in non-interactive resume mode yet.`,
             `These setup-only flags are not saved in the env config: ${missingFlags.join(', ')}`,
-            `Run \`nb init --env ${env.name} --resume\` without \`--yes\`, or pass those flags again.`,
+            `Run \`nb init --ui --env ${env.name} --resume\` without \`--yes\`, or pass those flags again.`,
           ].join('\n'),
         );
       }

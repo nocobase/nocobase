@@ -22,9 +22,9 @@ const mocks = vi.hoisted(() => ({
     envName
       ? [
           `Env "${envName}" is not configured in this workspace.`,
-          `If you want to create a new NocoBase AI environment, run \`nb init --env ${envName}\` first.`,
+          `If you want to create a new NocoBase AI environment, run \`nb init --ui --env ${envName}\` first.`,
         ].join('\n')
-      : 'No NocoBase env is configured yet. Run `nb init` to create one first.',
+      : 'No NocoBase env is configured yet. Run `nb init --ui` to create one first.',
   ),
   resolveManagedAppRuntime: vi.fn(),
   runLocalNocoBaseCommand: vi.fn(),
@@ -225,9 +225,9 @@ beforeEach(() => {
     envName
       ? [
           `Env "${envName}" is not configured in this workspace.`,
-          `If you want to create a new NocoBase AI environment, run \`nb init --env ${envName}\` first.`,
+          `If you want to create a new NocoBase AI environment, run \`nb init --ui --env ${envName}\` first.`,
         ].join('\n')
-      : 'No NocoBase env is configured yet. Run `nb init` to create one first.',
+      : 'No NocoBase env is configured yet. Run `nb init --ui` to create one first.',
   );
   mocks.defaultWorkspaceName.mockImplementation((cwd?: string) => {
     const value =
@@ -450,7 +450,7 @@ test('start explains when the requested env does not exist', async () => {
   });
 
   await expect((() => Start.prototype.run.call(command))()).rejects.toThrow(
-    /Env "local53" is not configured in this workspace\..*new NocoBase AI environment.*run `nb init --env local53` first\./s,
+    /Env "local53" is not configured in this workspace\..*new NocoBase AI environment.*run `nb init --ui --env local53` first\./s,
   );
 });
 
@@ -1144,7 +1144,7 @@ test('stop explains when the requested env does not exist', async () => {
   });
 
   await expect((() => Stop.prototype.run.call(command))()).rejects.toThrow(
-    /Env "local53" is not configured in this workspace\..*new NocoBase AI environment.*run `nb init --env local53` first\./s,
+    /Env "local53" is not configured in this workspace\..*new NocoBase AI environment.*run `nb init --ui --env local53` first\./s,
   );
 });
 
@@ -1159,7 +1159,7 @@ test('upgrade explains when the requested env does not exist', async () => {
   });
 
   await expect((() => Upgrade.prototype.run.call(command))()).rejects.toThrow(
-    /Env "local53" is not configured in this workspace\..*run `nb init --env local53` first\./s,
+    /Env "local53" is not configured in this workspace\..*run `nb init --ui --env local53` first\./s,
   );
 });
 
@@ -1174,7 +1174,7 @@ test('pm list explains when the requested env does not exist', async () => {
   });
 
   await expect((() => PmList.prototype.run.call(command))()).rejects.toThrow(
-    /Env "local53" is not configured in this workspace\..*run `nb init --env local53` first\./s,
+    /Env "local53" is not configured in this workspace\..*run `nb init --ui --env local53` first\./s,
   );
 });
 
@@ -1666,7 +1666,7 @@ test('logs explains when the requested env does not exist', async () => {
   });
 
   await expect((() => Logs.prototype.run.call(command))()).rejects.toThrow(
-    /Env "local53" is not configured in this workspace\..*run `nb init --env local53` first\./s,
+    /Env "local53" is not configured in this workspace\..*run `nb init --ui --env local53` first\./s,
   );
 });
 
@@ -1729,6 +1729,22 @@ test('env list shows configured envs without runtime status probing', async () =
     ['*', 'local', 'local', 'http://127.0.0.1:13001/api', 'oauth', '2.0.0'],
     ['', 'remote', 'http', 'https://demo.example.com/api', '', ''],
   ]);
+});
+
+test('env list points empty workspaces to nb init', async () => {
+  const { default: EnvList } = await import('../commands/env/list.js');
+  mocks.listEnvs.mockResolvedValue({
+    lastEnv: undefined,
+    envs: {},
+  });
+
+  const command = createCommandHarness({
+    flags: {},
+  });
+
+  await EnvList.prototype.run.call(command);
+
+  expect(command.log.mock.calls).toEqual([['No envs configured.'], ['Run `nb init --ui` to create one first.']]);
 });
 
 test('env status shows runtime status for all configured envs', async () => {
@@ -1815,6 +1831,23 @@ test('env status shows runtime status for all configured envs', async () => {
     ['local', 'running', 'http://127.0.0.1:13001/api'],
     ['remote', 'ok', 'https://demo.example.com/api'],
   ]);
+});
+
+test('env status points empty workspaces to nb init', async () => {
+  const { default: EnvStatus } = await import('../commands/env/status.js');
+  mocks.listEnvs.mockResolvedValue({
+    lastEnv: undefined,
+    envs: {},
+  });
+
+  const command = createCommandHarness({
+    args: {},
+    flags: { all: false, 'json-output': false },
+  });
+
+  await EnvStatus.prototype.run.call(command);
+
+  expect(command.log.mock.calls).toEqual([['No envs configured.'], ['Run `nb init --ui` to create one first.']]);
 });
 
 test('env info shows grouped app details with secrets masked by default', async () => {
@@ -2195,7 +2228,7 @@ test('env info explains when the requested env does not exist', async () => {
   });
 
   await expect((() => EnvInfo.prototype.run.call(command))()).rejects.toThrow(
-    /Env "local53" is not configured in this workspace\..*run `nb init --env local53` first\./s,
+    /Env "local53" is not configured in this workspace\..*run `nb init --ui --env local53` first\./s,
   );
 });
 
@@ -4814,7 +4847,7 @@ test('dev explains when the requested env does not exist', async () => {
   });
 
   await expect((() => Dev.prototype.run.call(command))()).rejects.toThrow(
-    /Env "local53" is not configured in this workspace\..*run `nb init --env local53` first\./s,
+    /Env "local53" is not configured in this workspace\..*run `nb init --ui --env local53` first\./s,
   );
 });
 
