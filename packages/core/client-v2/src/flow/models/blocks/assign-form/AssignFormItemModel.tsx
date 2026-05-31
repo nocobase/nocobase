@@ -230,7 +230,6 @@ export class AssignFormItemModel extends FormItemModel {
         fm?.setProps?.({
           disabled: false,
           readPretty: false,
-          pattern: 'editable',
           updateAssociation: false,
           multiple: multi,
         });
