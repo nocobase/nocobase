@@ -1082,6 +1082,24 @@ export default class Install extends Command {
     return text || undefined;
   }
 
+  private static resolveManagedAppKey(value: unknown): string {
+    return Install.toOptionalPromptString(value) ?? crypto.randomBytes(32).toString('hex');
+  }
+
+  private static resolveManagedTimeZone(value: unknown): string {
+    return Install.toOptionalPromptString(value) ?? (Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC');
+  }
+
+  private async ensureManagedAppRuntimeConfig(params: {
+    envName: string;
+    appResults: Record<string, PromptValue>;
+  }): Promise<void> {
+    const savedEnv = await getEnv(params.envName, { scope: resolveDefaultConfigScope() });
+    const savedConfig = savedEnv?.config;
+    params.appResults.appKey = Install.resolveManagedAppKey(params.appResults.appKey ?? savedConfig?.appKey);
+    params.appResults.timeZone = Install.resolveManagedTimeZone(params.appResults.timeZone ?? savedConfig?.timezone);
+  }
+
   private static async validateAppPort(value, values): Promise<void | string | undefined> {
     const formatError = validateTcpPort(value);
     if (formatError) {
@@ -2148,8 +2166,8 @@ export default class Install extends Command {
     const dbSchema = optionalEnvString(params.dbResults.dbSchema);
     const dbTablePrefix = optionalEnvString(params.dbResults.dbTablePrefix);
     const dbUnderscored = optionalEnvBoolean(params.dbResults.dbUnderscored);
-    const appKey = crypto.randomBytes(32).toString('hex');
-    const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
+    const appKey = Install.resolveManagedAppKey(params.appResults.appKey);
+    const timeZone = Install.resolveManagedTimeZone(params.appResults.timeZone);
     const containerName = Install.buildDockerAppContainerName(
       params.envName,
       params.dockerContainerPrefix ?? params.workspaceName,
@@ -2488,8 +2506,8 @@ export default class Install extends Command {
       resolveConfiguredEnvPath(configuredStoragePath) ??
       resolveEnvRelativePath(defaultInstallStoragePath(params.envName));
     const dbDialect = String(params.dbResults.dbDialect ?? 'postgres').trim() || 'postgres';
-    const appKey = crypto.randomBytes(32).toString('hex');
-    const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
+    const appKey = Install.resolveManagedAppKey(params.appResults.appKey);
+    const timeZone = Install.resolveManagedTimeZone(params.appResults.timeZone);
     const env: Record<string, string> = {
       STORAGE_PATH: storagePath,
       APP_PORT: String(params.appResults.appPort ?? DEFAULT_INSTALL_APP_PORT).trim() || DEFAULT_INSTALL_APP_PORT,
@@ -2974,6 +2992,10 @@ export default class Install extends Command {
     }
     const promptResults = await this.collectPromptResults(parsed, flags.yes);
     const { envName, appResults, downloadResults, dbResults, rootResults, envAddResults } = promptResults;
+    await this.ensureManagedAppRuntimeConfig({
+      envName,
+      appResults,
+    });
 
     const source = String(downloadResultsValue(downloadResults, 'source') ?? '').trim();
     const usesDockerResources = Boolean(dbResults.builtinDb) || source === 'docker';
