@@ -118,6 +118,33 @@ export default {
 
 ![20250928174529](https://static-docs.nocobase.com/20250928174529.png)
 
+### 让插件默认预置或默认启用（可选）
+
+上面讲的是手动开启单个插件。如果你在维护自己的 NocoBase 应用，希望某些插件在执行 `nocobase install`（首次安装）或 `nocobase upgrade`（升级）后就自动准备好，可以用两个环境变量来控制插件的默认状态：
+
+- **`APPEND_PRESET_LOCAL_PLUGINS`（追加默认预置插件）** — 把插件加入预置的本地插件列表，安装后出现在「插件管理器」里，但默认不激活，需要你手动开启
+- **`APPEND_PRESET_BUILT_IN_PLUGINS`（追加默认内置插件）** — 把插件加入内置插件列表，安装时自动激活，而且作为内置插件，**在「插件管理器」里不能被停用或删除**
+
+两个变量的值都是插件包名（`package.json` 里的 `name`），多个插件用英文逗号分隔。在 `.env` 里这样配置：
+
+```bash
+# 默认预置：出现在插件管理器列表，但不自动激活
+APPEND_PRESET_LOCAL_PLUGINS=@my-project/plugin-hello,@my-project/plugin-hello-world
+
+# 默认启用：自动安装并激活，且不能在界面停用
+APPEND_PRESET_BUILT_IN_PLUGINS=@my-project/plugin-hello,@my-project/plugin-hello-world
+```
+
+通常来说，本地开发调试用前面的 `yarn pm enable` 就够了。这两个变量更适合「开箱即用」的发行场景——比如你打包了一套带固定插件的 NocoBase 应用，想让插件在初始化后直接可用。
+
+:::tip 提示
+
+- 插件要已经下载到本地、能在 `node_modules` 里被解析到，参考[项目目录结构](./project-structure.md)
+- 配置后需要重新执行 `nocobase install` 或 `nocobase upgrade` 才会生效
+- 完整的环境变量说明见[环境变量](../get-started/installation/env.md#append_preset_local_plugins)
+
+:::
+
 ## 第 4 步：构建与打包
 
 当你准备把插件分发到其他环境时，需要先构建再打包：
@@ -158,3 +185,4 @@ yarn nocobase tar @my-project/plugin-hello
 - [使用 create-nocobase-app 安装](../get-started/installation/create-nocobase-app) — NocoBase 安装方式之一
 - [从 Git 源码安装](../get-started/installation/git) — 从源码安装 NocoBase
 - [安装与升级插件](../get-started/install-upgrade-plugins.mdx) — 把打包后的插件上传到其他环境
+- [环境变量](../get-started/installation/env.md) — 预置、内置插件等环境变量配置

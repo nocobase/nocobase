@@ -47,6 +47,13 @@ vi.mock('@nocobase/flow-engine', () => {
       return [];
     }
 
+    findSubModel(key: string, callback: any) {
+      if (this.subModels[key]) {
+        return this.subModels[key].find(callback) || null;
+      }
+      return null;
+    }
+
     addSubModel() {}
     setSubModel() {}
 
@@ -257,6 +264,44 @@ describe('PageModel', () => {
     it('should return undefined if subModels.tabs is undefined', () => {
       (pageModel as any).subModels = {};
       expect(pageModel.getFirstTab()).toBeUndefined();
+    });
+  });
+
+  describe('tab lifecycle', () => {
+    it('should invoke tab lifecycle on PageModel subModels before engine lookup', () => {
+      const blockOnActive = vi.fn();
+      const blockOnInactive = vi.fn();
+      const tabModel = {
+        uid: 'tab1',
+        context: {
+          tabActive: { value: false },
+        },
+        subModels: {
+          grid: {
+            mapSubModels: vi.fn((_key, callback) => {
+              callback({ onActive: blockOnActive, onInactive: blockOnInactive });
+            }),
+          },
+        },
+      };
+      (pageModel as any).subModels = { tabs: [tabModel] };
+      (pageModel as any).flowEngine = {
+        getModel: vi.fn(() => undefined),
+      };
+      (pageModel as any).context = {
+        pageInfo: {},
+        view: {
+          inputArgs: { pageActive: true },
+        },
+      };
+
+      pageModel.invokeTabModelLifecycleMethod('tab1', 'onActive', true);
+      pageModel.invokeTabModelLifecycleMethod('tab1', 'onInactive');
+
+      expect((pageModel as any).flowEngine.getModel).not.toHaveBeenCalled();
+      expect(tabModel.context.tabActive.value).toBe(false);
+      expect(blockOnActive).toHaveBeenCalledWith(true);
+      expect(blockOnInactive).toHaveBeenCalledWith(false);
     });
   });
 
@@ -609,7 +654,7 @@ describe('PageModel', () => {
       pageModel.onMount();
 
       expect(typeof listeners['view:activated']).toBe('function');
-      expect(invokeSpy).toHaveBeenCalledWith('tab1', 'onActive');
+      expect(invokeSpy).toHaveBeenCalledWith('tab1', 'onActive', false);
     });
   });
 

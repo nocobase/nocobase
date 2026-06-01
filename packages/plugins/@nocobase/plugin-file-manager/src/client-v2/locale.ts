@@ -8,7 +8,7 @@
  */
 
 import { tExpr as flowTExpr, useFlowEngine } from '@nocobase/flow-engine';
-import { NAMESPACE } from '../shared/locale';
+import { NAMESPACE } from '../common/constants';
 
 export function useT() {
   const engine = useFlowEngine();

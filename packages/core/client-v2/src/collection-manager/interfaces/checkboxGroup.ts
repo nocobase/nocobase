@@ -7,8 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { ISchema } from '@formily/react';
-import { dataSource, defaultProps, operators } from './properties';
+import { dataSource, defaultProps } from './properties';
 import { CollectionFieldInterface } from '../../collection-field-interface/CollectionFieldInterface';
 
 export class CheckboxGroupFieldInterface extends CollectionFieldInterface {
@@ -33,13 +32,6 @@ export class CheckboxGroupFieldInterface extends CollectionFieldInterface {
     'uiSchema.enum': dataSource,
   };
   filterable = {
-    operators: operators.array,
+    operators: 'array',
   };
-
-  schemaInitialize(schema: ISchema, { block }: { block: string }): void {
-    if (['Table', 'Kanban'].includes(block)) {
-      schema['x-component-props'] = schema['x-component-props'] || {};
-      schema['x-component-props']['ellipsis'] = true;
-    }
-  }
 }

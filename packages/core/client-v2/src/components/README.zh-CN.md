@@ -164,9 +164,58 @@ import { VariableInput, VariableTextArea } from '@nocobase/client-v2';
 - `namespaces`：限定可选的顶层命名空间。不传就用 `flowEngine.context` 里全部已注册的
 - `extraNodes`：在命名空间过滤后追加几条静态变量（用于 `$resetLink` 这类只在当前页面有意义的局部变量）
 - `converters`：覆盖默认的 path ↔ string 转换器。`EnvVariableInput` 就是用这个钩子把输出锁定到 `$env`
+- `delimiters`：变量在存储字符串里使用的开闭分隔符，默认 `['{{', '}}']`（对应 Handlebars 的 HTML 转义形式）。若字段最终以 HTML 渲染、转义会破坏变量内容（如站内信正文），传 `['{{{', '}}}']` 走 Handlebars 的原样输出形式
 - `value` / `onChange` / `placeholder` / `disabled`：标准受控字段属性
 
 底层共用 `VariableHybridInput`（`VariableInput`）和 `TextAreaWithContextSelector`（`VariableTextArea`），用同一套 MetaTree 数据。
+
+#### TypedVariableInput
+
+类型化常量 + 变量混合输入器。移植 v1 `Variable.Input` 的 `useTypedConstant` 形态：右侧斜体 `x` 按钮触发 Cascader 切换 `[空值 | 常量<types> | 变量和密钥<…namespaces>]`，左侧根据当前模式渲染对应编辑器（`Input` / `InputNumber` / `Select(True/False)` / `DatePicker`）或一颗带变量路径的 pill。
+
+用于字段**同时接受**字面量**和**变量引用的场景。最典型的就是 `plugin-notification-email` 的 SMTP `port` 和 `secure`：可以填具体数字 / 布尔值，也可以填 `{{ $env.SMTP_PORT }}` 走环境变量。
+
+```tsx
+import { TypedVariableInput } from '@nocobase/client-v2';
+
+// 端口：数字常量 + $env 变量
+<Form.Item name={['options', 'port']} label={t('端口')} initialValue={465}>
+  <TypedVariableInput
+    types={[['number', { min: 1, max: 65535, step: 1 }]]}
+    namespaces={['$env']}
+  />
+</Form.Item>
+
+// 安全模式：布尔常量 + $env 变量
+<Form.Item name={['options', 'secure']} label={t('安全模式')} initialValue={true}>
+  <TypedVariableInput types={['boolean']} namespaces={['$env']} />
+</Form.Item>
+```
+
+主要属性：
+
+- `types`：允许的常量类型。形态对齐 v1 `useTypedConstant`，可以传裸类型名 `['number', 'boolean']`，也可以传 `[type, editorProps]` 元组 `[['number', { min, max, step }]]` 把 props 透传给底层 antd 编辑器。默认 `['string', 'number', 'boolean', 'date']`。**即使只允许一种类型，「常量」入口也会展开二级菜单**（数字 / 逻辑值 / 日期 / 字符串）——跟 v1 一致，让用户能直观看到当前常量是什么类型
+- `namespaces`：限定变量 picker 可选的顶层命名空间（如 `['$env']`）。不传就用 `flowEngine.context` 里所有已注册命名空间
+- `extraNodes`：在命名空间过滤后追加几条静态变量节点
+- `nullable`：是否暴露「空值」入口，默认 `true`。配合 `Form.Item.rules={[{ required: true }]}` 可以让用户能手动清空、但提交时会被校验拦截——跟 v1 的「空值 + required」组合一致
+- `delimiters`：变量 token 开闭分隔符，默认 `['{{', '}}']`，跟 `VariableInput` 一致
+- `value` / `onChange` / `placeholder` / `disabled` / `style` / `className`：标准受控字段属性
+
+值的形态：
+
+- 常量：原生类型直接存（`number` / `boolean` / `Date` / `string`）
+- 变量：字符串 `'{{ $env.SMTP_PORT }}'`
+- 空值：`null`
+
+什么时候**不该用**：
+
+- **纯字面量字段**（用户不会想填变量）→ 直接用 antd `InputNumber` / `Select` / `DatePicker` / `Input`，省掉 Cascader 那一格的视觉开销
+- **纯变量字段**（用户不会想填字面量）→ 用 `EnvVariableInput`（`$env` 专用，带 password mask）或 `VariableInput`（更通用）
+
+跳过的能力（v1 有但 v2 还没补）：
+
+- `object` 类型（JSON 编辑器）——v2 还没对应的「内联 JSON 编辑器 + Cascader 切换」组件，等真有需求再补
+- 异步 `loadChildren` 分支——大多数命名空间的 MetaTree 已经由 `useFilteredMetaTree` 提前展平，没遇到刚需
 
 #### FileSizeInput
 

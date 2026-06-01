@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v2.0.60](https://github.com/nocobase/nocobase/compare/v2.0.59...v2.0.60) - 2026-05-29
+
+### 🚀 Improvements
+
+- **[AI employees]** Improved the LLM Base URL field so it can use global-scope variables in create and edit forms. ([#9615](https://github.com/nocobase/nocobase/pull/9615)) by @cgyrock
+
+### 🐛 Bug Fixes
+
+- **[client]** Fix the badge width in the top navigation bar ([#9607](https://github.com/nocobase/nocobase/pull/9607)) by @zhangzhonghe
+
+- **[AI employees]** Fixed AI shortcut buttons getting an empty block context after referenced table blocks are removed. ([#9617](https://github.com/nocobase/nocobase/pull/9617)) by @cgyrock
+
+- **[Migration manager]** Fix PostgreSQL migration diffs so child inherited columns are not dropped when a local column becomes inherited. by @hongboji
+
 ## [v2.0.59](https://github.com/nocobase/nocobase/compare/v2.0.58...v2.0.59) - 2026-05-28
 
 ### 🐛 Bug Fixes

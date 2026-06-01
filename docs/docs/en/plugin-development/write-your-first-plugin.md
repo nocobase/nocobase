@@ -118,6 +118,33 @@ After activation, create a new "Modern page (v2)" page. When adding blocks, you'
 
 ![20250928174529](https://static-docs.nocobase.com/20250928174529.png)
 
+### Make a Plugin Preset or Built-in by Default (Optional)
+
+The steps above describe manually enabling a single plugin. If you are maintaining your own NocoBase application and want certain plugins to be automatically ready after running `nocobase install` (first-time installation) or `nocobase upgrade` (upgrade), you can use two environment variables to control a plugin's default state:
+
+- **`APPEND_PRESET_LOCAL_PLUGINS` (append preset local plugins)** — Adds the plugin to the preset local plugin list. After installation it appears in the Plugin Manager but is not activated by default; you need to enable it manually.
+- **`APPEND_PRESET_BUILT_IN_PLUGINS` (append built-in plugins)** — Adds the plugin to the built-in plugin list. It is automatically activated on installation and, as a built-in plugin, **cannot be disabled or deleted from the Plugin Manager**.
+
+The value for both variables is the plugin package name (the `name` field in `package.json`); separate multiple plugins with commas. Configure them in `.env` like this:
+
+```bash
+# Preset: appears in the Plugin Manager list but is not activated automatically
+APPEND_PRESET_LOCAL_PLUGINS=@my-project/plugin-hello,@my-project/plugin-hello-world
+
+# Built-in: automatically installed and activated, and cannot be disabled from the UI
+APPEND_PRESET_BUILT_IN_PLUGINS=@my-project/plugin-hello,@my-project/plugin-hello-world
+```
+
+For day-to-day local development and debugging, `yarn pm enable` (described above) is usually sufficient. These two variables are better suited for "out-of-the-box" distribution scenarios — for example, when you are shipping a NocoBase application bundled with a fixed set of plugins and want those plugins to be ready immediately after initialization.
+
+:::tip Note
+
+- The plugin must already be downloaded locally and resolvable in `node_modules`. See [Project Structure](./project-structure.md) for details.
+- After configuring, you need to re-run `nocobase install` or `nocobase upgrade` for the changes to take effect.
+- For the full list of environment variable options, see [Environment Variables](../get-started/installation/env.md#append_preset_local_plugins).
+
+:::
+
 ## Step 4: Build and Package
 
 When you're ready to distribute the plugin to other environments, you need to build and package it first:
@@ -158,4 +185,5 @@ Upload and extract the package file to the target application's `./storage/plugi
 - [Install using create-nocobase-app](../get-started/installation/create-nocobase-app) — One of the NocoBase installation methods
 - [Install from Git source](../get-started/installation/git) — Install NocoBase from source code
 - [Install and Upgrade Plugins](../get-started/install-upgrade-plugins.mdx) — Upload packaged plugins to other environments
+- [Environment Variables](../get-started/installation/env.md) — Environment variable configuration for preset and built-in plugins
 

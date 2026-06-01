@@ -7,11 +7,111 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { FlowEngine } from '@nocobase/flow-engine';
+import { FlowEngine, FlowModel } from '@nocobase/flow-engine';
 import { describe, expect, it, vi } from 'vitest';
 import { BulkUpdateActionModel } from '../BulkUpdateActionModel';
 
+class TestAssignFormModel extends FlowModel {
+  private values: Record<string, unknown> = {};
+
+  setAssignedValues(values: Record<string, unknown>) {
+    this.values = values || {};
+  }
+
+  getAssignedValues() {
+    return this.values;
+  }
+}
+
+type AssignFieldValuesBeforeParamsSave = (
+  ctx: { engine: FlowEngine; model: BulkUpdateActionModel },
+  params?: { assignedValues?: Record<string, unknown> },
+  previousParams?: { assignedValues?: Record<string, unknown> },
+) => Promise<void> | void;
+
+function getAssignFieldValuesBeforeParamsSave(action: BulkUpdateActionModel): AssignFieldValuesBeforeParamsSave {
+  const step = action.getFlow('assignSettings')?.getStep('assignFieldValues')?.serialize() as unknown as
+    | { beforeParamsSave?: AssignFieldValuesBeforeParamsSave }
+    | undefined;
+  expect(step?.beforeParamsSave).toBeTypeOf('function');
+  return step.beforeParamsSave;
+}
+
 describe('BulkUpdateActionModel apply action', () => {
+  it('reuses assignFieldValues step and saves assignedValues from AssignForm', async () => {
+    const engine = new FlowEngine();
+    engine.registerModels({ BulkUpdateActionModel, AssignFormModel: TestAssignFormModel });
+    const action = engine.createModel<BulkUpdateActionModel>({
+      use: 'BulkUpdateActionModel',
+      uid: 'bulk-update-action',
+    });
+    const form = engine.createModel<TestAssignFormModel>({
+      use: 'AssignFormModel',
+      uid: 'bulk-update-assign-form',
+      parentId: action.uid,
+      subKey: 'assignForm',
+    });
+    form.setAssignedValues({ status: 'published' });
+    action.assignFormUid = form.uid;
+
+    const beforeParamsSave = getAssignFieldValuesBeforeParamsSave(action);
+
+    await beforeParamsSave({ engine, model: action }, {}, {});
+
+    expect(action.getStepParams('assignSettings', 'assignFieldValues')?.assignedValues).toEqual({
+      status: 'published',
+    });
+  });
+
+  it('saves assignedValues from assignForm subModel when assignFormUid is not ready', async () => {
+    const engine = new FlowEngine();
+    engine.registerModels({ BulkUpdateActionModel, AssignFormModel: TestAssignFormModel });
+    const action = engine.createModel<BulkUpdateActionModel>({
+      use: 'BulkUpdateActionModel',
+      uid: 'bulk-update-action-sub-model',
+    });
+    const form = engine.createModel<TestAssignFormModel>({
+      use: 'AssignFormModel',
+      uid: 'bulk-update-assign-form-sub-model',
+      parentId: action.uid,
+      subKey: 'assignForm',
+    });
+    form.setAssignedValues({ status: 'draft' });
+    action.setSubModel('assignForm', form);
+
+    const beforeParamsSave = getAssignFieldValuesBeforeParamsSave(action);
+
+    await beforeParamsSave({ engine, model: action }, {}, {});
+
+    expect(action.getStepParams('assignSettings', 'assignFieldValues')?.assignedValues).toEqual({
+      status: 'draft',
+    });
+  });
+
+  it('keeps previous assignedValues when AssignForm is unavailable during save', async () => {
+    const engine = new FlowEngine();
+    engine.registerModels({ BulkUpdateActionModel, AssignFormModel: TestAssignFormModel });
+    const action = engine.createModel<BulkUpdateActionModel>({
+      use: 'BulkUpdateActionModel',
+      uid: 'bulk-update-action-missing-form',
+    });
+    action.setStepParams('assignSettings', 'assignFieldValues', {});
+
+    const beforeParamsSave = getAssignFieldValuesBeforeParamsSave(action);
+
+    await beforeParamsSave(
+      { engine, model: action },
+      {},
+      {
+        assignedValues: { status: 'published' },
+      },
+    );
+
+    expect(action.getStepParams('assignSettings', 'assignFieldValues')?.assignedValues).toEqual({
+      status: 'published',
+    });
+  });
+
   it('resets loading when selected records update fails', async () => {
     const engine = new FlowEngine();
     const model = new BulkUpdateActionModel({ uid: 'bulk-update-action', flowEngine: engine } as any);

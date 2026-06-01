@@ -325,6 +325,44 @@ describe('flowSurfaces chart write paths', () => {
     expect(readErrorMessage(invalidRes)).toContain('does not support aggregated measure outputs');
   });
 
+  it('should preserve chart-config repair details for invalid builder visual mappings', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Chart invalid builder mapping page',
+      tabTitle: 'Chart invalid builder mapping tab',
+    });
+    const chartBlock = getData(
+      await rootAgent.resource('flowSurfaces').addBlock({
+        values: {
+          target: { uid: page.gridUid },
+          type: 'chart',
+        },
+      }),
+    );
+
+    const invalidRes = await rootAgent.resource('flowSurfaces').configure({
+      values: {
+        target: { uid: chartBlock.uid },
+        changes: {
+          query: buildCompleteChartQuery(),
+          visual: {
+            type: 'bar',
+            mappings: {
+              x: 'missingField',
+              y: 'employeeCount',
+            },
+          },
+        },
+      },
+    });
+
+    expect(invalidRes.status).toBe(400);
+    expect(readErrorMessage(invalidRes)).toContain('chart visual mappings only support query output fields');
+    expectChartRepairDetails(invalidRes);
+    expect(invalidRes.body?.errors?.[0]?.details?.allowedOutputs).toEqual(
+      expect.arrayContaining(['status', 'employeeCount']),
+    );
+  });
+
   it('should reject invalid sql preview and sql mappings outside inferred outputs', async () => {
     const employeesTable = getFixtureTableName(db, 'employees');
     const page = await createPage(rootAgent, {
@@ -392,14 +430,14 @@ describe('flowSurfaces chart write paths', () => {
         changes: {
           query: {
             mode: 'sql',
-            sql: `select nickname, count(*) as employeeCount from ${employeesTable} group by nickname`,
+            sql: `select nickname, count(*) as employee_count from ${employeesTable} group by nickname`,
             sqlDatasource: 'main',
           },
           visual: {
             type: 'bar',
             mappings: {
               x: 'missingField',
-              y: 'employeeCount',
+              y: 'employee_count',
             },
           },
         },
@@ -407,6 +445,10 @@ describe('flowSurfaces chart write paths', () => {
     });
     expect(invalidMappingRes.status).toBe(400);
     expect(readErrorMessage(invalidMappingRes)).toContain('chart visual mappings only support SQL query output fields');
+    expectChartRepairDetails(invalidMappingRes);
+    expect(invalidMappingRes.body?.errors?.[0]?.details?.supportedOutputs).toEqual(
+      expect.arrayContaining(['nickname', 'employee_count']),
+    );
   });
 
   it('should reject basic visual writes when sql preview outputs are unavailable', async () => {
@@ -796,18 +838,51 @@ chart.on('click', 'series', function(params) {
     expectInlineChartRawErrors(addBlocksResponse, '$.blocks[0].settings');
   });
 
-  it('should keep legacy partial configure writes during compose for backward compatibility', async () => {
+  it('should keep stepwise localized chart placeholders during compose and addBlocks', async () => {
     const page = await createPage(rootAgent, {
-      title: 'Chart legacy compose page',
-      tabTitle: 'Chart legacy compose tab',
+      title: 'Chart partial compose page',
+      tabTitle: 'Chart partial compose tab',
     });
 
-    const composeRes = await rootAgent.resource('flowSurfaces').compose({
+    const titleOnlyRes = await rootAgent.resource('flowSurfaces').compose({
       values: {
         target: { uid: page.gridUid },
         blocks: [
           {
-            key: 'chart',
+            key: 'titleOnlyChart',
+            type: 'chart',
+            settings: {
+              title: 'Title only chart',
+            },
+          },
+        ],
+      },
+    });
+    expect(titleOnlyRes.status, readErrorMessage(titleOnlyRes)).toBe(200);
+
+    const collectionOnlyRes = await rootAgent.resource('flowSurfaces').compose({
+      values: {
+        target: { uid: page.gridUid },
+        blocks: [
+          {
+            key: 'collectionOnlyChart',
+            type: 'chart',
+            collection: 'employees',
+            settings: {
+              title: 'Collection only chart',
+            },
+          },
+        ],
+      },
+    });
+    expect(collectionOnlyRes.status, readErrorMessage(collectionOnlyRes)).toBe(200);
+
+    const legacyPartialRes = await rootAgent.resource('flowSurfaces').compose({
+      values: {
+        target: { uid: page.gridUid },
+        blocks: [
+          {
+            key: 'legacyPartialChart',
             type: 'chart',
             settings: {
               configure: {
@@ -827,9 +902,83 @@ chart.on('click', 'series', function(params) {
         ],
       },
     });
-    expect(composeRes.status).toBe(200);
+    expect(legacyPartialRes.status, readErrorMessage(legacyPartialRes)).toBe(200);
 
-    const chartUid = getData(composeRes).blocks.find((block: any) => block.key === 'chart')?.uid;
+    const addBlocksRes = await rootAgent.resource('flowSurfaces').addBlocks({
+      values: {
+        target: { uid: page.gridUid },
+        blocks: [
+          {
+            key: 'batchTitleOnlyChart',
+            type: 'chart',
+            settings: {
+              title: 'Batch title only chart',
+            },
+          },
+        ],
+      },
+    });
+    expect(addBlocksRes.status, readErrorMessage(addBlocksRes)).toBe(200);
+  });
+
+  it('should reject localized chart query without visual during compose with repair details', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Chart missing visual compose page',
+      tabTitle: 'Chart missing visual compose tab',
+    });
+
+    const composeRes = await rootAgent.resource('flowSurfaces').compose({
+      values: {
+        target: { uid: page.gridUid },
+        blocks: [
+          {
+            key: 'queryOnlyChart',
+            type: 'chart',
+            settings: {
+              title: 'Query only chart',
+              query: buildCompleteChartQuery(),
+            },
+          },
+        ],
+      },
+    });
+    expect(composeRes.status).toBe(400);
+    expectChartRepairDetails(composeRes);
+    expect(composeRes.body?.errors).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          path: '$.blocks[0].settings.visual',
+          ruleId: 'chart-visual-missing',
+        }),
+      ]),
+    );
+  });
+
+  it('should compose localized chart blocks with complete query and visual settings', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Chart complete compose page',
+      tabTitle: 'Chart complete compose tab',
+    });
+
+    const composeRes = await rootAgent.resource('flowSurfaces').compose({
+      values: {
+        target: { uid: page.gridUid },
+        blocks: [
+          {
+            key: 'completeChart',
+            type: 'chart',
+            settings: {
+              title: 'Employees by status',
+              query: buildCompleteChartQuery(),
+              visual: buildCompleteChartVisual(),
+            },
+          },
+        ],
+      },
+    });
+    expect(composeRes.status, readErrorMessage(composeRes)).toBe(200);
+
+    const chartUid = getData(composeRes).blocks.find((block: any) => block.key === 'completeChart')?.uid;
     expect(chartUid).toBeTruthy();
 
     const surface = getData(
@@ -837,18 +986,163 @@ chart.on('click', 'series', function(params) {
         uid: chartUid,
       }),
     );
-    expect(surface.tree.stepParams?.chartSettings?.configure).toEqual({
-      query: {
-        mode: 'builder',
+    expectCompleteChartConfigure(surface.tree.stepParams?.chartSettings?.configure);
+  });
+
+  it('should compose chart blocks with complete legacy configure settings', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Chart legacy complete compose page',
+      tabTitle: 'Chart legacy complete compose tab',
+    });
+
+    const composeRes = await rootAgent.resource('flowSurfaces').compose({
+      values: {
+        target: { uid: page.gridUid },
+        blocks: [
+          {
+            key: 'legacyCompleteChart',
+            type: 'chart',
+            settings: {
+              title: 'Legacy complete chart',
+              configure: buildCompleteLegacyChartConfigure(),
+            },
+          },
+        ],
       },
-      chart: {
-        option: {
-          legend: {
-            show: true,
+    });
+    expect(composeRes.status, readErrorMessage(composeRes)).toBe(200);
+
+    const chartUid = getData(composeRes).blocks.find((block: any) => block.key === 'legacyCompleteChart')?.uid;
+    expect(chartUid).toBeTruthy();
+
+    const surface = getData(
+      await rootAgent.resource('flowSurfaces').get({
+        uid: chartUid,
+      }),
+    );
+    expectCompleteChartConfigure(surface.tree.stepParams?.chartSettings?.configure);
+  });
+
+  it('should reject legacy chart configure with conflicting resource and collectionPath', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Chart legacy conflict compose page',
+      tabTitle: 'Chart legacy conflict compose tab',
+    });
+    const configure = buildCompleteLegacyChartConfigure();
+
+    const composeRes = await rootAgent.resource('flowSurfaces').compose({
+      values: {
+        target: { uid: page.gridUid },
+        blocks: [
+          {
+            key: 'legacyConflictChart',
+            type: 'chart',
+            settings: {
+              title: 'Legacy conflict chart',
+              configure: {
+                ...configure,
+                query: {
+                  ...configure.query,
+                  resource: {
+                    dataSourceKey: 'main',
+                    collectionName: 'employees',
+                  },
+                  collectionPath: ['main', 'departments'],
+                },
+              },
+            },
+          },
+        ],
+      },
+    });
+
+    expect(composeRes.status).toBe(400);
+    expectChartRepairDetails(composeRes);
+    expect(composeRes.body?.errors).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          path: '$.blocks[0].settings.configure.query',
+          ruleId: 'chart-legacy-query-resource-conflict',
+        }),
+      ]),
+    );
+  });
+
+  it('should return chart repair details for invalid addBlock inline chart configure', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Chart addBlock conflict page',
+      tabTitle: 'Chart addBlock conflict tab',
+    });
+    const configure = buildCompleteLegacyChartConfigure();
+
+    const addRes = await rootAgent.resource('flowSurfaces').addBlock({
+      values: {
+        target: { uid: page.gridUid },
+        type: 'chart',
+        settings: {
+          configure: {
+            ...configure,
+            query: {
+              ...configure.query,
+              resource: {
+                dataSourceKey: 'main',
+                collectionName: 'employees',
+              },
+              collectionPath: ['main', 'departments'],
+            },
           },
         },
       },
     });
+
+    expect(addRes.status).toBe(400);
+    expectChartRepairDetails(addRes);
+    expect(readErrorMessage(addRes)).toContain(
+      'chart query.resource and chart query.collectionPath must reference the same collection',
+    );
+  });
+
+  it('should keep addBlock chart creation stepwise configurable', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Chart stepwise addBlock page',
+      tabTitle: 'Chart stepwise addBlock tab',
+    });
+    const addRes = await rootAgent.resource('flowSurfaces').addBlock({
+      values: {
+        target: { uid: page.gridUid },
+        type: 'chart',
+      },
+    });
+    expect(addRes.status, readErrorMessage(addRes)).toBe(200);
+    const chartUid = getData(addRes).uid;
+    expect(chartUid).toBeTruthy();
+
+    const queryRes = await rootAgent.resource('flowSurfaces').configure({
+      values: {
+        target: { uid: chartUid },
+        changes: {
+          query: buildCompleteChartQuery(),
+        },
+      },
+    });
+    expect(queryRes.status, readErrorMessage(queryRes)).toBe(200);
+
+    const visualRes = await rootAgent.resource('flowSurfaces').configure({
+      values: {
+        target: { uid: chartUid },
+        changes: {
+          visual: buildCompleteChartVisual(),
+        },
+      },
+    });
+    expect(visualRes.status, readErrorMessage(visualRes)).toBe(200);
+
+    const surface = getData(
+      await rootAgent.resource('flowSurfaces').get({
+        uid: chartUid,
+      }),
+    );
+    expectCompleteChartConfigure(surface.tree.stepParams?.chartSettings?.configure);
   });
 
   it('should persist chart block chrome into stepParams.cardSettings only when configuring block chrome', async () => {
@@ -1074,7 +1368,7 @@ chart.on('click', 'series', function(params) {
         changes: {
           query: {
             mode: 'sql',
-            sql: `select nickname, count(*) as employeeCount from ${employeesTable} group by nickname`,
+            sql: `select nickname, count(*) as employee_count from ${employeesTable} group by nickname`,
             sqlDatasource: 'main',
           },
         },
@@ -1147,8 +1441,86 @@ function expectChartRepairDetails(response: any) {
   const details = response?.body?.errors?.[0]?.details;
   expect(details?.repairHint).toContain('chart payload shape problem');
   expect(details?.repairHint).toContain('Do not change this block type');
+  expect(details?.requiredBlockType).toBe('chart');
+  expect(details?.fixStrategy).toBe('repair_same_block_type');
   expect(details?.repairSteps).toEqual(expect.arrayContaining([expect.stringContaining('Retry the chart payload')]));
-  expect(details?.forbiddenFallbacks).toEqual(expect.arrayContaining(['table', 'drop chart']));
+  expect(details?.expectedShape?.settings?.query?.resource?.collectionName).toBeTruthy();
+  expect(details?.expectedShape?.settings?.query?.measures).toEqual(expect.any(Array));
+  expect(details?.expectedShape?.settings?.visual?.type).toBeTruthy();
+  expect(details?.expectedShape?.settings?.visual?.mappings).toEqual(expect.any(Object));
+  expect(details?.repairExample?.settings?.visual?.mappings).toEqual(expect.any(Object));
+  expect(details?.forbiddenFallbacks).toEqual(expect.arrayContaining(['table', 'list', 'drop chart', 'defer chart']));
+}
+
+function expectCompleteChartConfigure(configure: any) {
+  expect(configure?.query).toMatchObject({
+    mode: 'builder',
+    collectionPath: ['main', 'employees'],
+    measures: [{ field: 'status', aggregation: 'count', alias: 'employeeCount' }],
+    dimensions: [{ field: 'status' }],
+  });
+  expect(configure?.query?.resource).toBeUndefined();
+  expect(configure?.chart?.option?.builder).toMatchObject({
+    type: 'bar',
+    xField: 'status',
+    yField: 'employeeCount',
+  });
+}
+
+function buildCompleteChartQuery() {
+  return {
+    mode: 'builder',
+    resource: {
+      dataSourceKey: 'main',
+      collectionName: 'employees',
+    },
+    measures: [
+      {
+        field: 'id',
+        aggregation: 'count',
+        alias: 'employeeCount',
+      },
+    ],
+    dimensions: [{ field: 'status' }],
+  };
+}
+
+function buildCompleteChartVisual() {
+  return {
+    mode: 'basic',
+    type: 'bar',
+    mappings: {
+      x: 'status',
+      y: 'employeeCount',
+    },
+  };
+}
+
+function buildCompleteLegacyChartConfigure() {
+  return {
+    query: {
+      mode: 'builder',
+      collectionPath: ['main', 'employees'],
+      measures: [
+        {
+          field: 'id',
+          aggregation: 'count',
+          alias: 'employeeCount',
+        },
+      ],
+      dimensions: [{ field: 'status' }],
+    },
+    chart: {
+      option: {
+        mode: 'basic',
+        builder: {
+          type: 'bar',
+          xField: 'status',
+          yField: 'employeeCount',
+        },
+      },
+    },
+  };
 }
 
 function buildInvalidInlineChartSettings() {

@@ -11,7 +11,7 @@ import { sleep } from '@nocobase/test';
 import { getCluster } from '@nocobase/plugin-workflow-test';
 
 import Plugin, { Processor } from '..';
-import { EXECUTION_STATUS } from '../constants';
+import { EXECUTION_REASON, EXECUTION_STATUS, JOB_STATUS } from '../constants';
 import { MemoryEventQueueAdapter, QueueMessageOptions } from '@nocobase/server';
 
 class MockMemoryEventQueueAdapter extends MemoryEventQueueAdapter {
@@ -188,6 +188,76 @@ describe('workflow > cluster', () => {
         // expect(appNameJobs[5].result).toBe(app3.instanceId);
         // expect(appNameJobs[6].result).toBe(app1.instanceId);
         // expect(appNameJobs[7].result).toBe(app2.instanceId);
+      },
+    );
+  });
+
+  describe('timeout handling', () => {
+    it.skipIf(process.env['DB_DIALECT'] == 'sqlite')(
+      'should allow only one node to abort the same expired execution',
+      async () => {
+        const [app1, app2, app3] = cluster.nodes;
+        const p1 = app1.pm.get(Plugin) as Plugin;
+        const p2 = app2.pm.get(Plugin) as Plugin;
+        const p3 = app3.pm.get(Plugin) as Plugin;
+
+        const workflow = await app1.db.getRepository('workflows').create({
+          values: {
+            type: 'asyncTrigger',
+            enabled: true,
+            options: {
+              timeout: 60_000,
+            },
+          },
+        });
+
+        await workflow.createNode({
+          type: 'prompt',
+        });
+
+        p1.trigger(workflow, { from: 'cluster-timeout-race' });
+
+        let execution = null;
+        for (let i = 0; i < 20; i++) {
+          [execution] = await workflow.getExecutions();
+          if (execution?.status === EXECUTION_STATUS.STARTED) {
+            break;
+          }
+          await sleep(100);
+        }
+
+        expect(execution).toBeTruthy();
+        expect(execution.status).toBe(EXECUTION_STATUS.STARTED);
+
+        const expiredAt = new Date(Date.now() - 1_000);
+        await execution.update({
+          expiresAt: expiredAt,
+        });
+
+        const [e1, e2, e3] = await Promise.all([
+          app1.db.getRepository('executions').findOne({ filterByTk: execution.id }),
+          app2.db.getRepository('executions').findOne({ filterByTk: execution.id }),
+          app3.db.getRepository('executions').findOne({ filterByTk: execution.id }),
+        ]);
+
+        const results = await Promise.all([
+          p1.abortExecutionIfExpired(e1),
+          p2.abortExecutionIfExpired(e2),
+          p3.abortExecutionIfExpired(e3),
+        ]);
+
+        expect(results.filter(Boolean)).toHaveLength(1);
+        expect(results.filter((value) => value === false)).toHaveLength(2);
+
+        const finalExecution = await app1.db.getRepository('executions').findOne({
+          filterByTk: execution.id,
+          appends: ['jobs'],
+        });
+
+        expect(finalExecution.status).toBe(EXECUTION_STATUS.ABORTED);
+        expect(finalExecution.reason).toBe(EXECUTION_REASON.TIMEOUT);
+        expect(finalExecution.jobs).toHaveLength(1);
+        expect(finalExecution.jobs[0].status).toBe(JOB_STATUS.ABORTED);
       },
     );
   });

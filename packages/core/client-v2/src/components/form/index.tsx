@@ -17,4 +17,5 @@ export * from './JsonTextArea';
 export * from './PasswordInput';
 export * from './RemoteSelect';
 export * from './resource';
+export * from './TypedVariableInput';
 export * from './VariableInput';

@@ -97,6 +97,51 @@ describe('workflow > instructions > delay', () => {
       expect(j2.status).toBe(JOB_STATUS.FAILED);
     });
 
+    it('workflow timeout should abort delayed execution', async () => {
+      workflow = await WorkflowModel.create({
+        enabled: true,
+        type: 'collection',
+        options: {
+          timeout: 300,
+        },
+        config: {
+          mode: 1,
+          collection: 'posts',
+        },
+      });
+
+      await workflow.createNode({
+        type: 'delay',
+        config: {
+          duration: 2,
+          unit: 1000,
+          endStatus: JOB_STATUS.RESOLVED,
+        },
+      });
+
+      await PostRepo.create({ values: { title: 't1' } });
+
+      await sleep(200);
+
+      let [execution] = await workflow.getExecutions();
+      expect(execution.status).toEqual(EXECUTION_STATUS.STARTED);
+      expect(execution.startedAt).toBeTruthy();
+      expect(execution.expiresAt).toBeTruthy();
+
+      for (let i = 0; i < 10; i++) {
+        [execution] = await workflow.getExecutions();
+        if (execution.status === EXECUTION_STATUS.ABORTED) {
+          break;
+        }
+        await sleep(100);
+      }
+
+      [execution] = await workflow.getExecutions();
+      expect(execution.status).toEqual(EXECUTION_STATUS.ABORTED);
+      const [job] = await execution.getJobs();
+      expect(job.status).toBe(JOB_STATUS.ABORTED);
+    });
+
     it('duration by variable', async () => {
       const n1 = await workflow.createNode({
         type: 'echoVariable',

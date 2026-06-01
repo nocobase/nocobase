@@ -43,18 +43,22 @@ describe('flowSurfaces applyBlueprint transaction boundary', () => {
     ],
   };
 
-  it('should not wrap create-mode mutations in a long service transaction', async () => {
+  it('should read create-mode mutations back outside the mutation transaction', async () => {
     const service = new FlowSurfacesService({} as any);
     const events: string[] = [];
+    const transactionContext = { id: 'tx-apply-blueprint-create' };
     const readbackError = new Error('readback failed after commit');
 
-    const transaction = vi.spyOn(service as any, 'transaction').mockImplementation(async () => {
-      throw new Error('create mode should not open an enclosing transaction');
+    const transaction = vi.spyOn(service as any, 'transaction').mockImplementation(async (callback) => {
+      events.push('transaction:start');
+      const result = await callback(transactionContext);
+      events.push('transaction:committed');
+      return result;
     });
     vi.spyOn(service as any, 'applyBlueprintWithTransaction').mockImplementation(
       async (_values, options, _createdKanbanSortFields, resultOptions) => {
         events.push('mutate');
-        expect(options.transaction).toBeUndefined();
+        expect(options.transaction).toBe(transactionContext);
         expect(resultOptions).toEqual({ readSurface: false });
         return {
           version: '1',
@@ -75,8 +79,8 @@ describe('flowSurfaces applyBlueprint transaction boundary', () => {
 
     await expect(service.applyBlueprint(createBlueprint, { currentRoles: ['root'] })).rejects.toThrow(readbackError);
 
-    expect(events).toEqual(['mutate', 'readback']);
-    expect(transaction).not.toHaveBeenCalled();
+    expect(events).toEqual(['transaction:start', 'mutate', 'transaction:committed', 'readback']);
+    expect(transaction).toHaveBeenCalledTimes(1);
     expect(cleanup).not.toHaveBeenCalled();
   });
 
@@ -232,6 +236,7 @@ describe('flowSurfaces applyBlueprint transaction boundary', () => {
   it('should cleanup created kanban sort fields when create-mode mutation fails', async () => {
     const service = new FlowSurfacesService({} as any);
     const mutationError = new Error('mutation failed');
+    const transactionContext = { id: 'tx-apply-blueprint-create-fail' };
     const createdKanbanSortFields = [
       {
         collectionName: 'tasks',
@@ -239,7 +244,9 @@ describe('flowSurfaces applyBlueprint transaction boundary', () => {
       },
     ];
 
-    vi.spyOn(service as any, 'applyBlueprintWithTransaction').mockImplementation(async () => {
+    vi.spyOn(service as any, 'transaction').mockImplementation(async (callback) => callback(transactionContext));
+    vi.spyOn(service as any, 'applyBlueprintWithTransaction').mockImplementation(async (_values, options) => {
+      expect(options.transaction).toBe(transactionContext);
       throw mutationError;
     });
     const cleanup = vi.spyOn(service as any, 'cleanupApplyBlueprintKanbanSortFields').mockResolvedValue([]);

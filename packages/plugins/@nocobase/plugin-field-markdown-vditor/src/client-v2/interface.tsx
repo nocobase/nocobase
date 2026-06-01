@@ -7,28 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { ISchema } from '@formily/react';
 import { CollectionFieldInterface } from '@nocobase/client-v2';
 import { tExpr } from './locale';
-
-const bigFieldOperators = [
-  {
-    label: '{{t("contains")}}',
-    value: '$includes',
-    selected: true,
-    schema: { type: 'string', 'x-component': 'Input' },
-  },
-  { label: '{{t("does not contain")}}', value: '$notIncludes', schema: { type: 'string', 'x-component': 'Input' } },
-  { label: '{{t("is")}}', value: '$eq', schema: { type: 'string', 'x-component': 'Input' } },
-  { label: '{{t("is not")}}', value: '$ne', schema: { type: 'string', 'x-component': 'Input' } },
-  { label: '{{t("is empty")}}', value: '$empty', noValue: true, schema: { type: 'string', 'x-component': 'Input' } },
-  {
-    label: '{{t("is not empty")}}',
-    value: '$notEmpty',
-    noValue: true,
-    schema: { type: 'string', 'x-component': 'Input' },
-  },
-];
 
 export const defaultToolbar = [
   'headings',
@@ -52,7 +32,7 @@ export class MarkdownVditorFieldInterface extends CollectionFieldInterface {
   type = 'object';
   group = 'media';
   order = 1;
-  title = tExpr('Vditor');
+  title = 'Markdown(Vditor)';
   sortable = true;
   default = {
     interface: 'vditor',
@@ -64,70 +44,61 @@ export class MarkdownVditorFieldInterface extends CollectionFieldInterface {
     },
   };
   availableTypes = ['text', 'json', 'string'];
-  properties = {
-    'uiSchema.x-component-props.fileCollection': {
-      type: 'string',
-      title: tExpr('File collection'),
-      'x-component': 'CollectionSelect',
-      'x-component-props': { filter: (collection) => collection?.options?.template === 'file' },
-      'x-decorator': 'FormItem',
-      default: '',
-      'x-reactions': {
-        fulfill: {
-          schema: {
-            description: tExpr('Used to store files uploaded in the Markdown editor (default: attachments)'),
-          },
+  configure = {
+    items: [
+      {
+        name: 'uiSchema.x-component-props.fileCollection',
+        title: tExpr('File collection'),
+        component: 'Select',
+        defaultValue: 'attachments',
+        description: tExpr('Used to store files uploaded in the Markdown editor (default: attachments)'),
+        schema: {
+          enum: '{{fileCollections}}',
         },
       },
-    },
-    'uiSchema.x-component-props.toolbar': {
-      type: 'array',
-      title: tExpr('Toolbar'),
-      'x-component': 'Select',
-      'x-component-props': {
-        mode: 'multiple',
+      {
+        name: 'uiSchema.x-component-props.toolbar',
+        title: tExpr('Toolbar'),
+        component: 'Select',
+        componentProps: {
+          mode: 'multiple',
+        },
+        defaultValue: defaultToolbar,
+        options: [
+          { value: 'emoji', label: tExpr('Emoji') },
+          { value: 'headings', label: tExpr('Headings') },
+          { value: 'bold', label: tExpr('Bold') },
+          { value: 'italic', label: tExpr('Italic') },
+          { value: 'strike', label: tExpr('Strike') },
+          { value: 'line', label: tExpr('Line') },
+          { value: 'quote', label: tExpr('Quote') },
+          { value: 'list', label: tExpr('List') },
+          { value: 'ordered-list', label: tExpr('OrderedList') },
+          { value: 'check', label: tExpr('Check') },
+          { value: 'outdent', label: tExpr('Outdent') },
+          { value: 'indent', label: tExpr('Indent') },
+          { value: 'code', label: tExpr('Code') },
+          { value: 'inline-code', label: tExpr('InlineCode') },
+          { value: 'insert-after', label: tExpr('InsertAfter') },
+          { value: 'insert-before', label: tExpr('InsertBefore') },
+          { value: 'undo', label: tExpr('Undo') },
+          { value: 'redo', label: tExpr('Redo') },
+          { value: 'upload', label: tExpr('Upload') },
+          { value: 'link', label: tExpr('Link') },
+          { value: 'record', label: tExpr('Record') },
+          { value: 'table', label: tExpr('Table') },
+          { value: 'edit-mode', label: tExpr('EditMode') },
+          { value: 'both', label: tExpr('Both') },
+          { value: 'preview', label: tExpr('Preview') },
+          { value: 'fullscreen', label: tExpr('Fullscreen') },
+          { value: 'outline', label: tExpr('Outline') },
+        ],
       },
-      'x-decorator': 'FormItem',
-      default: defaultToolbar,
-      enum: [
-        { value: 'emoji', label: tExpr('Emoji') },
-        { value: 'headings', label: tExpr('Headings') },
-        { value: 'bold', label: tExpr('Bold') },
-        { value: 'italic', label: tExpr('Italic') },
-        { value: 'strike', label: tExpr('Strike') },
-        { value: 'line', label: tExpr('Line') },
-        { value: 'quote', label: tExpr('Quote') },
-        { value: 'list', label: tExpr('List') },
-        { value: 'ordered-list', label: tExpr('OrderedList') },
-        { value: 'check', label: tExpr('Check') },
-        { value: 'outdent', label: tExpr('Outdent') },
-        { value: 'indent', label: tExpr('Indent') },
-        { value: 'code', label: tExpr('Code') },
-        { value: 'inline-code', label: tExpr('InlineCode') },
-        { value: 'insert-after', label: tExpr('InsertAfter') },
-        { value: 'insert-before', label: tExpr('InsertBefore') },
-        { value: 'undo', label: tExpr('Undo') },
-        { value: 'redo', label: tExpr('Redo') },
-        { value: 'upload', label: tExpr('Upload') },
-        { value: 'link', label: tExpr('Link') },
-        { value: 'record', label: tExpr('Record') },
-        { value: 'table', label: tExpr('Table') },
-        { value: 'edit-mode', label: tExpr('EditMode') },
-        { value: 'both', label: tExpr('Both') },
-        { value: 'preview', label: tExpr('Preview') },
-        { value: 'fullscreen', label: tExpr('Fullscreen') },
-        { value: 'outline', label: tExpr('Outline') },
-      ],
-    },
+    ],
   };
-  schemaInitialize(schema: ISchema, { block }) {
-    if (['Table', 'Kanban'].includes(block)) {
-      schema['x-component-props'] = schema['x-component-props'] || {};
-      schema['x-component-props']['ellipsis'] = true;
-    }
-  }
+
   filterable = {
-    operators: bigFieldOperators,
+    operators: 'bigField',
   };
   titleUsable = true;
 }

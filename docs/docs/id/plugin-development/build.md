@@ -44,6 +44,10 @@ yarn build @my-project/plugin-hello --tar
 
 Cukup upload dan ekstrak file `.tar.gz` ke direktori `./storage/plugins` aplikasi target. Untuk langkah detail, lihat [Instalasi & Upgrade Plugin](../get-started/install-upgrade-plugins.mdx).
 
+### Plugin Default Aktif
+
+Setelah diupload, plugin tidak akan diaktifkan secara otomatis — plugin akan muncul di "Plugin Manager" dan perlu diaktifkan secara manual. Jika Anda memelihara aplikasi NocoBase sendiri dan ingin plugin ikut aktif secara default bersama aplikasi, Anda dapat menggunakan environment variable `APPEND_PRESET_BUILT_IN_PLUGINS` (tambahkan plugin built-in default) untuk mengontrolnya. Untuk cara penggunaannya, lihat [Membuat Plugin Default Preset atau Default Aktif](./write-your-first-plugin.md#membuat-plugin-default-preset-atau-default-aktif-opsional).
+
 ## Konfigurasi Build Kustom
 
 Umumnya konfigurasi build default sudah cukup. Jika Anda perlu melakukan kustomisasi — misalnya mengubah entry packaging, menambah alias, mengatur opsi kompresi, dan sebagainya — Anda dapat membuat file `build.config.ts` di root direktori plugin:
@@ -84,3 +88,4 @@ Beberapa poin kunci:
 - [Manajemen Dependensi](./dependency-management.md) — Deklarasi dependensi plugin dan dependensi global
 - [Ikhtisar Plugin Development](./index.md) — Pengantar menyeluruh tentang plugin development
 - [Instalasi & Upgrade Plugin](../get-started/install-upgrade-plugins.mdx) — Upload file hasil packaging ke environment target
+- [Environment Variable](../get-started/installation/env.md) — Konfigurasi environment variable untuk plugin preset dan built-in

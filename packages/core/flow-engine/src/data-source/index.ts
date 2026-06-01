@@ -37,7 +37,13 @@ export class DataSourceManager {
     addFieldInterfaceGroups?: (groups: Record<string, { label: string; order?: number }>) => void;
     addFieldInterfaceComponentOption?: (name: string, option: any) => void;
     addFieldInterfaceOperator?: (name: string, operator: any) => void;
+    registerFieldFilterOperator?: (operator: any) => void;
+    registerFieldFilterOperatorGroup?: (name: string, operators?: any[]) => void;
+    addFieldFilterOperatorsToGroup?: (name: string, operators?: any[]) => void;
     getFieldInterface?: (name: string) => any;
+    registerFieldInterfaceConfigure?: (options: unknown) => void;
+    getFieldInterfaceConfigure?: (name: string, collectionInfo?: unknown) => unknown;
+    getFieldInterfaceConfigureProperties?: (name: string, collectionInfo?: any) => Record<string, any>;
   };
   loaders = new Map<string, DataSourceLoader>();
   loadedKeys = new Set<string>();
@@ -75,6 +81,18 @@ export class DataSourceManager {
 
   addFieldInterfaceOperator(name: string, operator: any) {
     this.collectionFieldInterfaceManager?.addFieldInterfaceOperator?.(name, operator);
+  }
+
+  registerFieldFilterOperator(operator: any) {
+    this.collectionFieldInterfaceManager?.registerFieldFilterOperator?.(operator);
+  }
+
+  registerFieldFilterOperatorGroup(name: string, operators: any[] = []) {
+    this.collectionFieldInterfaceManager?.registerFieldFilterOperatorGroup?.(name, operators);
+  }
+
+  addFieldFilterOperatorsToGroup(name: string, operators: any[] = []) {
+    this.collectionFieldInterfaceManager?.addFieldFilterOperatorsToGroup?.(name, operators);
   }
 
   registerLoader(key: string, loader: DataSourceLoader) {

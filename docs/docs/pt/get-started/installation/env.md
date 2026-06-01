@@ -374,8 +374,10 @@ Formatos suportados:
 Usada para anexar **plugins** locais predefinidos e não ativados. O valor é o nome do pacote do **plugin** (o parâmetro `name` no `package.json`), com múltiplos **plugins** separados por vírgulas.
 
 :::info
+
 1. Certifique-se de que o **plugin** foi baixado localmente e pode ser encontrado no diretório `node_modules`. Para mais detalhes, consulte [Estrutura do Projeto de Plugins](/plugin-development/project-structure).
 2. Após adicionar a variável de ambiente, o **plugin** só aparecerá na página do gerenciador de **plugins** após uma instalação inicial (`nocobase install`) ou uma atualização (`nocobase upgrade`).
+
 :::
 
 ```bash
@@ -387,8 +389,10 @@ APPEND_PRESET_LOCAL_PLUGINS=@my-project/plugin-foo,@my-project/plugin-bar
 Usada para anexar **plugins** integrados que são instalados por padrão. O valor é o nome do pacote do **plugin** (o parâmetro `name` no `package.json`), com múltiplos **plugins** separados por vírgulas.
 
 :::info
+
 1. Certifique-se de que o **plugin** foi baixado localmente e pode ser encontrado no diretório `node_modules`. Para mais detalhes, consulte [Estrutura do Projeto de Plugins](/plugin-development/project-structure).
 2. Após adicionar a variável de ambiente, o **plugin** será automaticamente instalado ou atualizado durante a instalação inicial (`nocobase install`) ou a atualização (`nocobase upgrade`).
+
 :::
 
 ```bash
