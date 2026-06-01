@@ -23,6 +23,20 @@ class TestAssignFormModel extends FlowModel {
   }
 }
 
+type AssignFieldValuesBeforeParamsSave = (
+  ctx: { engine: FlowEngine; model: BulkUpdateActionModel },
+  params?: { assignedValues?: Record<string, unknown> },
+  previousParams?: { assignedValues?: Record<string, unknown> },
+) => Promise<void> | void;
+
+function getAssignFieldValuesBeforeParamsSave(action: BulkUpdateActionModel): AssignFieldValuesBeforeParamsSave {
+  const step = action.getFlow('assignSettings')?.getStep('assignFieldValues')?.serialize() as unknown as
+    | { beforeParamsSave?: AssignFieldValuesBeforeParamsSave }
+    | undefined;
+  expect(step?.beforeParamsSave).toBeTypeOf('function');
+  return step.beforeParamsSave;
+}
+
 describe('BulkUpdateActionModel apply action', () => {
   it('reuses assignFieldValues step and saves assignedValues from AssignForm', async () => {
     const engine = new FlowEngine();
@@ -40,10 +54,58 @@ describe('BulkUpdateActionModel apply action', () => {
     form.setAssignedValues({ status: 'published' });
     action.assignFormUid = form.uid;
 
-    const step = action.getFlow('assignSettings')?.getStep('assignFieldValues')?.serialize();
-    expect(step?.beforeParamsSave).toBeTypeOf('function');
+    const beforeParamsSave = getAssignFieldValuesBeforeParamsSave(action);
 
-    await step?.beforeParamsSave({ engine, model: action });
+    await beforeParamsSave({ engine, model: action }, {}, {});
+
+    expect(action.getStepParams('assignSettings', 'assignFieldValues')?.assignedValues).toEqual({
+      status: 'published',
+    });
+  });
+
+  it('saves assignedValues from assignForm subModel when assignFormUid is not ready', async () => {
+    const engine = new FlowEngine();
+    engine.registerModels({ BulkUpdateActionModel, AssignFormModel: TestAssignFormModel });
+    const action = engine.createModel<BulkUpdateActionModel>({
+      use: 'BulkUpdateActionModel',
+      uid: 'bulk-update-action-sub-model',
+    });
+    const form = engine.createModel<TestAssignFormModel>({
+      use: 'AssignFormModel',
+      uid: 'bulk-update-assign-form-sub-model',
+      parentId: action.uid,
+      subKey: 'assignForm',
+    });
+    form.setAssignedValues({ status: 'draft' });
+    action.setSubModel('assignForm', form);
+
+    const beforeParamsSave = getAssignFieldValuesBeforeParamsSave(action);
+
+    await beforeParamsSave({ engine, model: action }, {}, {});
+
+    expect(action.getStepParams('assignSettings', 'assignFieldValues')?.assignedValues).toEqual({
+      status: 'draft',
+    });
+  });
+
+  it('keeps previous assignedValues when AssignForm is unavailable during save', async () => {
+    const engine = new FlowEngine();
+    engine.registerModels({ BulkUpdateActionModel, AssignFormModel: TestAssignFormModel });
+    const action = engine.createModel<BulkUpdateActionModel>({
+      use: 'BulkUpdateActionModel',
+      uid: 'bulk-update-action-missing-form',
+    });
+    action.setStepParams('assignSettings', 'assignFieldValues', {});
+
+    const beforeParamsSave = getAssignFieldValuesBeforeParamsSave(action);
+
+    await beforeParamsSave(
+      { engine, model: action },
+      {},
+      {
+        assignedValues: { status: 'published' },
+      },
+    );
 
     expect(action.getStepParams('assignSettings', 'assignFieldValues')?.assignedValues).toEqual({
       status: 'published',
