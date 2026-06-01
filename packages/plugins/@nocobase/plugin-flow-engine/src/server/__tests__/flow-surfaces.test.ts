@@ -9009,7 +9009,15 @@ describe('flowSurfaces resource', () => {
     expect(tabRoute?.get('options').flowRegistry).toEqual({
       beforeRenderApply: {
         key: 'beforeRenderApply',
-        on: 'beforeRender',
+        on: {
+          eventName: 'beforeRender',
+          defaultParams: {
+            condition: {
+              logic: '$and',
+              items: [],
+            },
+          },
+        },
         steps: {},
       },
     });
@@ -9446,7 +9454,15 @@ describe('flowSurfaces resource', () => {
     });
     expect(popupPage?.flowRegistry).toMatchObject({
       popupPageFlow: {
-        on: 'beforeRender',
+        on: {
+          eventName: 'beforeRender',
+          defaultParams: {
+            condition: {
+              logic: '$and',
+              items: [],
+            },
+          },
+        },
       },
     });
     expect(popupTab?.props).toMatchObject({
@@ -9460,12 +9476,28 @@ describe('flowSurfaces resource', () => {
     });
     expect(popupTab?.flowRegistry).toMatchObject({
       popupTabFlow: {
-        on: 'beforeRender',
+        on: {
+          eventName: 'beforeRender',
+          defaultParams: {
+            condition: {
+              logic: '$and',
+              items: [],
+            },
+          },
+        },
       },
     });
     expect(popupGrid?.flowRegistry).toMatchObject({
       popupGridFlow: {
-        on: 'beforeRender',
+        on: {
+          eventName: 'beforeRender',
+          defaultParams: {
+            condition: {
+              logic: '$and',
+              items: [],
+            },
+          },
+        },
       },
     });
     expect(popupItems).toHaveLength(1);

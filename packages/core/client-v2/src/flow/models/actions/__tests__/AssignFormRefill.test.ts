@@ -9,7 +9,7 @@
 
 import { describe, it, expect } from 'vitest';
 import { FlowEngine, FlowModel } from '@nocobase/flow-engine';
-import { UpdateRecordActionModel } from '../../..'; // 这样可以解决循环依赖问题
+import { FormSubmitActionModel, UpdateRecordActionModel } from '../../..'; // 这样可以解决循环依赖问题
 
 /**
  * 精简版 AssignFormModel（仅用于单测）：
@@ -51,5 +51,120 @@ describe('AssignForm value refill and save (beforeParamsSave)', () => {
 
     const saved = action.getStepParams('assignSettings', 'assignFieldValues');
     expect(saved?.assignedValues).toEqual({ nickname: 'Alice', score: 99 });
+  });
+
+  it('UpdateRecordActionModel: saves assignedValues from assignForm subModel when assignFormUid is not ready', async () => {
+    const root = new FlowEngine();
+    root.registerModels({ UpdateRecordActionModel, AssignFormModel: TestAssignFormModel });
+
+    const action = root.createModel<UpdateRecordActionModel>({ use: 'UpdateRecordActionModel', uid: 'act-u-sub' });
+    const form = root.createModel<TestAssignFormModel>({
+      use: 'AssignFormModel',
+      uid: 'form-u-sub',
+      parentId: action.uid,
+      subKey: 'assignForm',
+    });
+    form.setAssignedValues({ nickname: 'Bob' });
+    action.setSubModel('assignForm', form);
+
+    const flow = action.getFlow('assignSettings') as any;
+    const step = flow?.steps?.assignFieldValues;
+
+    await step.beforeParamsSave({ engine: root, model: action }, {}, {});
+
+    const saved = action.getStepParams('assignSettings', 'assignFieldValues');
+    expect(saved?.assignedValues).toEqual({ nickname: 'Bob' });
+  });
+
+  it('UpdateRecordActionModel: keeps previous assignedValues when AssignForm is unavailable during save', async () => {
+    const root = new FlowEngine();
+    root.registerModels({ UpdateRecordActionModel, AssignFormModel: TestAssignFormModel });
+
+    const action = root.createModel<UpdateRecordActionModel>({ use: 'UpdateRecordActionModel', uid: 'act-u-missing' });
+    action.setStepParams('assignSettings', 'assignFieldValues', {});
+
+    const flow = action.getFlow('assignSettings') as any;
+    const step = flow?.steps?.assignFieldValues;
+
+    await step.beforeParamsSave(
+      { engine: root, model: action },
+      {},
+      {
+        assignedValues: { nickname: 'Previous' },
+      },
+    );
+
+    const saved = action.getStepParams('assignSettings', 'assignFieldValues');
+    expect(saved?.assignedValues).toEqual({ nickname: 'Previous' });
+  });
+
+  it('FormSubmitActionModel: reuses assignFieldValues step and saves assignedValues from AssignForm', async () => {
+    const root = new FlowEngine();
+
+    root.registerModels({ FormSubmitActionModel, AssignFormModel: TestAssignFormModel });
+
+    const action = root.createModel<FormSubmitActionModel>({ use: 'FormSubmitActionModel', uid: 'submit-u' });
+    const form = root.createModel<TestAssignFormModel>({
+      use: 'AssignFormModel',
+      uid: 'submit-form-u',
+      parentId: action.uid,
+      subKey: 'assignForm',
+    });
+    form.setAssignedValues({ status: 'published' });
+    action.assignFormUid = form.uid;
+
+    const flow = action.getFlow('submitSettings') as any;
+    const step = flow?.steps?.assignFieldValues;
+    expect(step?.beforeParamsSave).toBeTypeOf('function');
+
+    await step.beforeParamsSave({ engine: root, model: action });
+
+    const saved = action.getStepParams('submitSettings', 'assignFieldValues');
+    expect(saved?.assignedValues).toEqual({ status: 'published' });
+  });
+
+  it('FormSubmitActionModel: saves assignedValues from assignForm subModel when assignFormUid is not ready', async () => {
+    const root = new FlowEngine();
+    root.registerModels({ FormSubmitActionModel, AssignFormModel: TestAssignFormModel });
+
+    const action = root.createModel<FormSubmitActionModel>({ use: 'FormSubmitActionModel', uid: 'submit-u-sub' });
+    const form = root.createModel<TestAssignFormModel>({
+      use: 'AssignFormModel',
+      uid: 'submit-form-u-sub',
+      parentId: action.uid,
+      subKey: 'assignForm',
+    });
+    form.setAssignedValues({ status: 'draft' });
+    action.setSubModel('assignForm', form);
+
+    const flow = action.getFlow('submitSettings') as any;
+    const step = flow?.steps?.assignFieldValues;
+
+    await step.beforeParamsSave({ engine: root, model: action }, {}, {});
+
+    const saved = action.getStepParams('submitSettings', 'assignFieldValues');
+    expect(saved?.assignedValues).toEqual({ status: 'draft' });
+  });
+
+  it('FormSubmitActionModel: keeps previous assignedValues when AssignForm is unavailable during save', async () => {
+    const root = new FlowEngine();
+    root.registerModels({ FormSubmitActionModel, AssignFormModel: TestAssignFormModel });
+
+    const action = root.createModel<FormSubmitActionModel>({ use: 'FormSubmitActionModel', uid: 'submit-u-missing' });
+    action.setStepParams('submitSettings', 'assignFieldValues', {});
+
+    const flow = action.getFlow('submitSettings') as any;
+    const step = flow?.steps?.assignFieldValues;
+
+    await step.beforeParamsSave(
+      { engine: root, model: action },
+      {},
+      {
+        assignedValues: { status: 'published' },
+      },
+    );
+
+    const saved = action.getStepParams('submitSettings', 'assignFieldValues');
+    expect(saved?.assignedValues).toEqual({ status: 'published' });
   });
 });

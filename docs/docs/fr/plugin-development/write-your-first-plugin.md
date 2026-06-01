@@ -118,6 +118,33 @@ Après l'activation, créez une nouvelle page «Modern page (v2)». Lors de l'aj
 
 ![20250928174529](https://static-docs.nocobase.com/20250928174529.png)
 
+### Rendre le plugin préinstallé ou activé par défaut (optionnel)
+
+Ce qui précède décrit l'activation manuelle d'un plugin individuel. Si vous maintenez votre propre application NocoBase et souhaitez que certains plugins soient automatiquement disponibles après l'exécution de `nocobase install` (première installation) ou `nocobase upgrade` (mise à niveau), vous pouvez utiliser deux variables d'environnement pour contrôler l'état par défaut des plugins :
+
+- **`APPEND_PRESET_LOCAL_PLUGINS` (ajouter aux plugins locaux préinstallés par défaut)** — ajoute le plugin à la liste des plugins locaux préinstallés ; il apparaît dans le «Gestionnaire de plugins» après l'installation, mais n'est pas activé par défaut et doit être activé manuellement
+- **`APPEND_PRESET_BUILT_IN_PLUGINS` (ajouter aux plugins intégrés par défaut)** — ajoute le plugin à la liste des plugins intégrés, qui sont automatiquement activés lors de l'installation ; en tant que plugins intégrés, **ils ne peuvent pas être désactivés ni supprimés dans le «Gestionnaire de plugins»**
+
+La valeur de ces deux variables est le nom du package du plugin (le champ `name` dans `package.json`), avec plusieurs plugins séparés par des virgules. Configurez-les dans le fichier `.env` :
+
+```bash
+# Préinstallé par défaut : apparaît dans la liste du Gestionnaire de plugins, mais n'est pas activé automatiquement
+APPEND_PRESET_LOCAL_PLUGINS=@my-project/plugin-hello,@my-project/plugin-hello-world
+
+# Activé par défaut : installé et activé automatiquement, et ne peut pas être désactivé depuis l'interface
+APPEND_PRESET_BUILT_IN_PLUGINS=@my-project/plugin-hello,@my-project/plugin-hello-world
+```
+
+En règle générale, `yarn pm enable` suffit pour le développement et le débogage en local. Ces deux variables sont davantage adaptées aux scénarios de distribution «prêts à l'emploi» — par exemple, si vous avez empaqueté une application NocoBase avec un ensemble fixe de plugins et souhaitez que ces plugins soient directement disponibles après l'initialisation.
+
+:::tip Astuce
+
+- Le plugin doit être téléchargé localement et pouvoir être résolu dans `node_modules` ; voir [Structure du projet](./project-structure.md)
+- Après configuration, il faut réexécuter `nocobase install` ou `nocobase upgrade` pour que les changements prennent effet
+- La description complète des variables d'environnement est disponible dans [Variables d'environnement](../get-started/installation/env.md#append_preset_local_plugins)
+
+:::
+
 ## Étape 4 : compiler et empaqueter
 
 Lorsque vous êtes prêt à distribuer votre plugin vers d'autres environnements, vous devez d'abord le compiler, puis l'empaqueter :
@@ -158,3 +185,4 @@ Téléversez et décompressez le fichier dans le répertoire `./storage/plugins`
 - [Installer avec create-nocobase-app](../get-started/installation/create-nocobase-app) — l'une des méthodes d'installation de NocoBase
 - [Installer depuis les sources Git](../get-started/installation/git) — installer NocoBase depuis le code source
 - [Installer et mettre à niveau les plugins](../get-started/install-upgrade-plugins.mdx) — téléverser le plugin empaqueté vers d'autres environnements
+- [Variables d'environnement](../get-started/installation/env.md) — configuration des variables d'environnement pour les plugins préinstallés et intégrés

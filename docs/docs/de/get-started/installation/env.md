@@ -374,8 +374,10 @@ Unterstützte Formate:
 Dient zum Anhängen vordefinierter, nicht aktivierter **Plugins**. Der Wert ist der Paketname (der `name`-Parameter in `package.json`), wobei mehrere **Plugins** durch Kommas getrennt werden.
 
 :::info
+
 1. Stellen Sie sicher, dass das **Plugin** lokal heruntergeladen wurde und im Verzeichnis `node_modules` gefunden werden kann. Weitere Details finden Sie unter [**Plugin**-Organisation](/plugin-development/project-structure).
 2. Nachdem Sie die Umgebungsvariable hinzugefügt haben, wird das **Plugin** auf der **Plugin**-Manager-Seite erst nach einer Erstinstallation (`nocobase install`) oder einem Upgrade (`nocobase upgrade`) angezeigt.
+
 :::
 
 ```bash
@@ -387,8 +389,10 @@ APPEND_PRESET_LOCAL_PLUGINS=@my-project/plugin-foo,@my-project/plugin-bar
 Dient zum Anhängen integrierter **Plugins**, die standardmäßig installiert werden. Der Wert ist der Paketname (der `name`-Parameter in `package.json`), wobei mehrere **Plugins** durch Kommas getrennt werden.
 
 :::info
+
 1. Stellen Sie sicher, dass das **Plugin** lokal heruntergeladen wurde und im Verzeichnis `node_modules` gefunden werden kann. Weitere Details finden Sie unter [**Plugin**-Organisation](/plugin-development/project-structure).
 2. Nachdem Sie die Umgebungsvariable hinzugefügt haben, wird das **Plugin** bei der Erstinstallation (`nocobase install`) oder einem Upgrade (`nocobase upgrade`) automatisch installiert oder aktualisiert.
+
 :::
 
 ```bash

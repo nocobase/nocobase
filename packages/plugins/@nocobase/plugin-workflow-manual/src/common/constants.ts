@@ -14,6 +14,7 @@ export const TASK_TYPE_MANUAL = 'manual';
 export const TASK_STATUS = {
   PENDING: 0,
   RESOLVED: 1,
+  ABORTED: -3,
   REJECTED: -5,
 };
 
@@ -27,6 +28,11 @@ export const TaskStatusOptions = [
     value: TASK_STATUS.RESOLVED,
     label: `{{t("Resolved", { ns: "workflow" })}}`,
     color: 'green',
+  },
+  {
+    value: TASK_STATUS.ABORTED,
+    label: `{{t("Aborted", { ns: "workflow" })}}`,
+    color: 'volcano',
   },
   {
     value: TASK_STATUS.REJECTED,

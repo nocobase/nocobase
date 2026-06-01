@@ -44,6 +44,10 @@ yarn build @my-project/plugin-hello --tar
 
 Téléversez et décompressez le fichier `.tar.gz` dans le répertoire `./storage/plugins` de l'application cible. Voir [Installer et mettre à niveau les plugins](../get-started/install-upgrade-plugins.mdx) pour les détails.
 
+### Activer le plugin par défaut
+
+Après le téléversement, le plugin n'est pas automatiquement activé — il apparaît dans le «Gestionnaire de plugins» et doit être activé manuellement. Si vous maintenez votre propre application NocoBase et souhaitez que le plugin soit activé par défaut avec l'application, vous pouvez utiliser la variable d'environnement `APPEND_PRESET_BUILT_IN_PLUGINS` (ajouter aux plugins intégrés par défaut) pour le contrôler. Consultez [Rendre le plugin préinstallé ou activé par défaut](./write-your-first-plugin.md#rendre-le-plugin-préinstallé-ou-activé-par-défaut-optionnel) pour plus de détails.
+
 ## Configuration de construction personnalisée
 
 En général, la configuration de construction par défaut suffit. Si vous avez besoin de personnaliser — par exemple modifier le point d'entrée du package, ajouter des alias ou ajuster les options de compression — vous pouvez créer un fichier `build.config.ts` à la racine du plugin :
@@ -84,3 +88,4 @@ Quelques points clés :
 - [Gestion des dépendances](./dependency-management.md) — Déclaration des dépendances de plugin et dépendances globales
 - [Vue d'ensemble du développement de plugins](./index.md) — Présentation générale du développement de plugin
 - [Installer et mettre à niveau les plugins](../get-started/install-upgrade-plugins.mdx) — Téléverser le fichier package dans l'environnement cible
+- [Variables d'environnement](../get-started/installation/env.md) — Configuration des variables d'environnement pour les plugins préinstallés et intégrés

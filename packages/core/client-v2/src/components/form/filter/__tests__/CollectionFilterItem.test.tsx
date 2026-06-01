@@ -136,6 +136,48 @@ describe('CollectionFilterItem', () => {
     expect(screen.queryByText('Lock reason')).not.toBeInTheDocument();
   });
 
+  it('honours nonfilterableFieldNames blacklist', async () => {
+    const value = observable({ path: '', operator: '', value: '' });
+    const collection = buildStubCollection([
+      { name: 'username', title: 'Username' },
+      { name: 'lockReason', title: 'Lock reason' },
+    ]);
+
+    const { container } = render(
+      <CollectionFilterItem value={value} collection={collection} nonfilterableFieldNames={['lockReason']} />,
+    );
+
+    openFieldCascader(container);
+    expect(await screen.findByText('Username')).toBeInTheDocument();
+    expect(screen.queryByText('Lock reason')).not.toBeInTheDocument();
+  });
+
+  it('applies both whitelist and blacklist (final = whitelist minus blacklist)', async () => {
+    const value = observable({ path: '', operator: '', value: '' });
+    const collection = buildStubCollection([
+      { name: 'username', title: 'Username' },
+      { name: 'nickname', title: 'Nickname' },
+      { name: 'lockReason', title: 'Lock reason' },
+    ]);
+
+    // Whitelist permits username + nickname; blacklist then subtracts nickname. Result: only username should appear.
+    const { container } = render(
+      <CollectionFilterItem
+        value={value}
+        collection={collection}
+        filterableFieldNames={['username', 'nickname']}
+        nonfilterableFieldNames={['nickname']}
+      />,
+    );
+
+    openFieldCascader(container);
+    expect(await screen.findByText('Username')).toBeInTheDocument();
+    // nickname is whitelisted but also blacklisted — blacklist wins for that field.
+    expect(screen.queryByText('Nickname')).not.toBeInTheDocument();
+    // lockReason isn't in the whitelist either, so it stays hidden.
+    expect(screen.queryByText('Lock reason')).not.toBeInTheDocument();
+  });
+
   it('writes through value.value on input change', () => {
     const value = observable({ path: 'username', operator: '$eq', value: '' });
     const collection = buildStubCollection([{ name: 'username', title: 'Username' }]);

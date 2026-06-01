@@ -43,6 +43,7 @@ import { buildAutoLayout } from './apply/layout';
 import { FlowSurfaceContractGuard } from './contract-guard';
 import {
   FlowSurfaceBadRequestError,
+  type FlowSurfaceErrorOptions,
   isFlowSurfaceError,
   throwBadRequest,
   throwAggregateBadRequest,
@@ -146,6 +147,11 @@ import { FlowSurfaceRouteSync } from './route-sync';
 import { FlowSurfaceContextResolver } from './surface-context';
 import { buildFlowSurfaceContextResponse, isBareFlowContextPath } from './context';
 import type { FlowSurfaceContextSemantic } from './context';
+import {
+  normalizeFlowSurfaceEventFlow,
+  normalizeFlowSurfaceEventFlowRegistry,
+  type FlowSurfaceEventFlowRegistry,
+} from './event-flow-normalizer';
 import {
   getConfigureOptionKeysForResolvedNode,
   getConfigureOptionKeysForUse,
@@ -446,16 +452,40 @@ import type {
 import type { FlowSurfaceContextResponse, FlowSurfaceContextVarInfo } from './types';
 
 const FLOW_SURFACE_CHART_REPAIR_HINT =
-  'This is a chart payload shape problem. Repair the current chart block payload using assets.charts.<key>.query/visual plus block.chart, or localized settings.query/settings.visual. Do not change this block type to table, jsBlock, actionPanel, gridCard, or another block type. Do not drop or defer the chart. KPI / summary numbers should use jsBlock; charts are for trends, distributions, rankings, and visual analysis.';
+  'This is a chart payload shape problem. Keep using chart and repair the current chart block payload using assets.charts.<key>.query/visual plus block.chart, or localized settings.query/settings.visual. Do not change this block type to table, jsBlock, actionPanel, gridCard, or another block type. Do not drop or defer the chart. KPI / summary numbers should use jsBlock; charts are for trends, distributions, rankings, and visual analysis.';
 
 const FLOW_SURFACE_CHART_REPAIR_STEPS = [
   'Keep the block type as chart.',
-  'Define assets.charts.<key>.query and assets.charts.<key>.visual, or repair the localized settings.query/settings.visual on the existing chart block.',
+  'Define assets.charts.<key>.query and assets.charts.<key>.visual, or fill localized settings.query and settings.visual on the existing chart block.',
   'Reference the asset from the chart block with block.chart = <key> when using assets.charts.',
   'Retry the chart payload instead of replacing the chart with another block type, omitting it, or deferring it.',
 ];
 
 const FLOW_SURFACE_CHART_EXPECTED_SHAPE = {
+  settings: {
+    query: {
+      mode: 'builder',
+      resource: {
+        dataSourceKey: 'main',
+        collectionName: 'employees',
+      },
+      measures: [
+        {
+          field: 'id',
+          aggregation: 'count',
+          alias: 'employeeCount',
+        },
+      ],
+    },
+    visual: {
+      mode: 'basic',
+      type: 'bar',
+      mappings: {
+        x: 'status',
+        y: 'employeeCount',
+      },
+    },
+  },
   assets: {
     charts: {
       chartKey: {
@@ -472,12 +502,46 @@ const FLOW_SURFACE_CHART_EXPECTED_SHAPE = {
 
 const FLOW_SURFACE_CHART_FORBIDDEN_FALLBACKS = [
   'table',
+  'list',
   'jsBlock',
   'actionPanel',
   'gridCard',
+  'markdown',
   'drop chart',
   'defer chart',
 ];
+
+const FLOW_SURFACE_CHART_REPAIR_EXAMPLE = {
+  settings: {
+    query: {
+      mode: 'builder',
+      resource: {
+        dataSourceKey: 'main',
+        collectionName: '<collectionName>',
+      },
+      measures: [
+        {
+          field: 'id',
+          aggregation: 'count',
+          alias: 'recordCount',
+        },
+      ],
+      dimensions: [
+        {
+          field: '<dimensionField>',
+        },
+      ],
+    },
+    visual: {
+      mode: 'basic',
+      type: 'bar',
+      mappings: {
+        x: '<dimensionField>',
+        y: 'recordCount',
+      },
+    },
+  },
+};
 
 function withChartRepairMessage(message: string) {
   return `${message}. ${FLOW_SURFACE_CHART_REPAIR_HINT}`;
@@ -486,17 +550,37 @@ function withChartRepairMessage(message: string) {
 function withFlowSurfaceChartRepairDetails(details: Record<string, any> = {}) {
   return {
     ...details,
+    requiredBlockType: 'chart',
+    fixStrategy: 'repair_same_block_type',
     repairHint: FLOW_SURFACE_CHART_REPAIR_HINT,
     repairSteps: FLOW_SURFACE_CHART_REPAIR_STEPS,
     expectedShape: FLOW_SURFACE_CHART_EXPECTED_SHAPE,
+    repairExample: FLOW_SURFACE_CHART_REPAIR_EXAMPLE,
     forbiddenFallbacks: FLOW_SURFACE_CHART_FORBIDDEN_FALLBACKS,
   };
 }
 
-function throwChartRepairBadRequest(message: string, details: Record<string, any> = {}): never {
+function throwChartRepairBadRequest(message: string, options: FlowSurfaceErrorOptions = {}): never {
+  const details = _.isPlainObject(options.details) ? options.details : {};
   throwBadRequest(withChartRepairMessage(message), {
+    ...options,
     details: withFlowSurfaceChartRepairDetails(details),
   });
+}
+
+function isChartConfigureBadRequestError(error: unknown) {
+  return error instanceof FlowSurfaceBadRequestError && String(error.message || '').startsWith('chart ');
+}
+
+function buildChartConfigureFromSemanticChangesWithRepair(currentConfigure: any, changes: Record<string, any>) {
+  try {
+    return buildChartConfigureFromSemanticChanges(currentConfigure, changes);
+  } catch (error: any) {
+    if (isChartConfigureBadRequestError(error)) {
+      throwChartRepairBadRequest(error.message, error.options);
+    }
+    throw error;
+  }
 }
 
 function isFlowSurfaceChartRepairError(error: unknown) {
@@ -1720,7 +1804,7 @@ export class FlowSurfacesService {
             parentId: null,
             options: {
               documentTitle: values.tabDocumentTitle,
-              flowRegistry: values.tabFlowRegistry || {},
+              flowRegistry: this.normalizeEventFlowRegistry('createMenu', values.tabFlowRegistry || {}),
             },
           },
         ],
@@ -4053,7 +4137,7 @@ export class FlowSurfacesService {
           use: 'RootPageTabModel',
           props: _.omit(_.cloneDeep(currentNode?.props || {}), ['route']),
           decoratorProps: _.cloneDeep(currentNode?.decoratorProps || {}),
-          flowRegistry: _.cloneDeep(currentNode?.flowRegistry || {}),
+          flowRegistry: this.getEventFlowRegistry(currentNode),
           stepParams: _.cloneDeep(values?.stepParams || currentNode?.stepParams || {}),
         }),
         { transaction: options?.transaction },
@@ -4347,7 +4431,7 @@ export class FlowSurfacesService {
         continue;
       }
       assertSupportedSimpleChanges('chart', chartAsset, getConfigureOptionKeysForUse('ChartBlockModel'));
-      const nextConfigure = buildChartConfigureFromSemanticChanges(undefined, chartAsset);
+      const nextConfigure = buildChartConfigureFromSemanticChangesWithRepair(undefined, chartAsset);
       await this.validateChartConfigureForRuntime(
         `applyBlueprint assets.charts.${chartKey}`,
         nextConfigure,
@@ -4849,16 +4933,6 @@ export class FlowSurfacesService {
       await this.assertApplyBlueprintAuthoringPayload(values, options);
       const document = prepareFlowSurfaceApplyBlueprintDocument(values);
       await this.prevalidateApplyBlueprintChartAssets(document);
-      if (document.mode === 'create') {
-        return await this.applyBlueprintWithTransaction(
-          values,
-          { ...options, skipAuthoringValidation: true },
-          createdKanbanSortFields,
-          {
-            readSurface: false,
-          },
-        );
-      }
       return await this.transaction((transaction) =>
         this.applyBlueprintWithTransaction(
           values,
@@ -7465,7 +7539,7 @@ export class FlowSurfacesService {
           parentId: routeId,
           options: {
             documentTitle: values.tabDocumentTitle,
-            flowRegistry: values.tabFlowRegistry || {},
+            flowRegistry: this.normalizeEventFlowRegistry('createPage', values.tabFlowRegistry || {}),
           },
         },
         transaction,
@@ -7486,7 +7560,10 @@ export class FlowSurfacesService {
           options: {
             ...this.readRouteOptions(tabRoute),
             documentTitle: values.tabDocumentTitle ?? this.readRouteOptions(tabRoute).documentTitle,
-            flowRegistry: values.tabFlowRegistry || this.readRouteOptions(tabRoute).flowRegistry || {},
+            flowRegistry: this.normalizeEventFlowRegistry(
+              'createPage',
+              values.tabFlowRegistry || this.readRouteOptions(tabRoute).flowRegistry || {},
+            ),
           },
         },
         transaction,
@@ -7633,7 +7710,7 @@ export class FlowSurfacesService {
         hidden: !pageRoute.get('enableTabs'),
         options: {
           documentTitle: values.documentTitle,
-          flowRegistry: values.flowRegistry || {},
+          flowRegistry: this.normalizeEventFlowRegistry('addTab', values.flowRegistry || {}),
         },
       },
       transaction: options.transaction,
@@ -7689,7 +7766,9 @@ export class FlowSurfacesService {
               },
             }
           : undefined,
-      flowRegistry: !_.isUndefined(values.flowRegistry) ? values.flowRegistry : undefined,
+      flowRegistry: !_.isUndefined(values.flowRegistry)
+        ? this.normalizeEventFlowRegistry('updateTab', values.flowRegistry)
+        : undefined,
     });
     await this.routeSync.persistTabSettings(target, current, nextPayload, options.transaction);
 
@@ -7812,7 +7891,7 @@ export class FlowSurfacesService {
       title: values.title,
       icon: values.icon,
       documentTitle: values.documentTitle,
-      flowRegistry: values.flowRegistry,
+      flowRegistry: this.normalizeEventFlowRegistry('addPopupTab', values.flowRegistry),
     });
     await this.repository.upsertModel(
       {
@@ -7873,7 +7952,9 @@ export class FlowSurfacesService {
               },
             }
           : undefined,
-      flowRegistry: !_.isUndefined(values.flowRegistry) ? values.flowRegistry : undefined,
+      flowRegistry: !_.isUndefined(values.flowRegistry)
+        ? this.normalizeEventFlowRegistry('updatePopupTab', values.flowRegistry)
+        : undefined,
     });
     if (Object.keys(nextPayload).length === 1) {
       return { uid: popupTab.uid };
@@ -8098,7 +8179,7 @@ export class FlowSurfacesService {
           use: 'ReferenceFormGridModel',
           props: currentGrid.props,
           decoratorProps: currentGrid.decoratorProps,
-          flowRegistry: currentGrid.flowRegistry,
+          flowRegistry: this.getEventFlowRegistry(currentGrid),
           sortIndex: currentGrid.sortIndex,
           parentId: blockUid,
           subKey: 'grid',
@@ -9605,7 +9686,7 @@ export class FlowSurfacesService {
       props: actionSettingsPayload.props,
       decoratorProps: values.decoratorProps,
       stepParams: actionSettingsPayload.stepParams,
-      flowRegistry: values.flowRegistry,
+      flowRegistry: this.normalizeEventFlowRegistry('addAction', values.flowRegistry),
     });
     this.contractGuard.validateNodeTreeAgainstContract(action);
     const created = await this.repository.upsertModel(
@@ -9749,7 +9830,7 @@ export class FlowSurfacesService {
       props: actionSettingsPayload.props,
       decoratorProps: values.decoratorProps,
       stepParams: actionSettingsPayload.stepParams,
-      flowRegistry: values.flowRegistry,
+      flowRegistry: this.normalizeEventFlowRegistry('addRecordAction', values.flowRegistry),
     });
     this.contractGuard.validateNodeTreeAgainstContract(action);
     const created = await this.repository.upsertModel(
@@ -9806,6 +9887,7 @@ export class FlowSurfacesService {
           {
             ...options,
             preserveSingleScopeDataBlockTitle,
+            skipAuthoringValidation: true,
           },
         ),
     });
@@ -14329,6 +14411,7 @@ export class FlowSurfacesService {
       }
       if (domain === 'flowRegistry') {
         this.assertNoTreeConnectFieldsFlowRegistry(current, normalizedValues[domain], 'updateSettings');
+        normalizedValues[domain] = this.normalizeEventFlowRegistry('updateSettings', normalizedValues[domain]);
       }
       if (!contract.editableDomains.includes(domain)) {
         throwBadRequest(`flowSurfaces updateSettings domain '${domain}' is not editable`);
@@ -14345,6 +14428,9 @@ export class FlowSurfacesService {
         current.use,
       );
     });
+    if (!_.isUndefined(nextPayload.flowRegistry)) {
+      nextPayload.flowRegistry = this.normalizeEventFlowRegistry('updateSettings', nextPayload.flowRegistry);
+    }
 
     this.replaceExplicitPopupStepParamSubtreesForUpdateSettings(
       current,
@@ -14415,7 +14501,7 @@ export class FlowSurfacesService {
       props: nextPayload.props ?? current.props,
       decoratorProps: nextPayload.decoratorProps ?? current.decoratorProps,
       stepParams: nextPayload.stepParams ?? current.stepParams,
-      flowRegistry: nextPayload.flowRegistry ?? current.flowRegistry,
+      flowRegistry: nextPayload.flowRegistry ?? this.getEventFlowRegistry(current),
     };
     const shouldValidateFlowRegistry =
       !_.isUndefined(nextPayload.flowRegistry) || !_.isUndefined(nextPayload.stepParams);
@@ -15931,6 +16017,8 @@ export class FlowSurfacesService {
       options,
     );
     const flowRegistry = this.getEventFlowRegistry(current);
+    const directEvents = _.cloneDeep(contract.eventCapabilities?.direct || []);
+    const objectEvents = _.uniq([..._.cloneDeep(contract.eventCapabilities?.object || []), ...directEvents]);
     return {
       target: {
         uid: target.uid,
@@ -15939,8 +16027,8 @@ export class FlowSurfacesService {
       },
       flowRegistry,
       events: {
-        direct: _.cloneDeep(contract.eventCapabilities?.direct || []),
-        object: _.cloneDeep(contract.eventCapabilities?.object || []),
+        direct: directEvents,
+        object: objectEvents,
       },
       phases: {
         supported: ['beforeAllFlows', 'afterAllFlows', 'beforeFlow', 'afterFlow', 'beforeStep', 'afterStep'],
@@ -15975,13 +16063,12 @@ export class FlowSurfacesService {
     if (phase !== 'beforeAllFlows') {
       throwBadRequest(`flowSurfaces addEventFlow only supports phase 'beforeAllFlows'`);
     }
-    const flow = this.normalizeAddEventFlowInput(key, values, phase);
-    const nextFlowRegistry = {
+    const nextFlowRegistry = this.normalizeEventFlowRegistry('addEventFlow', {
       ...flowRegistry,
-      [key]: flow,
-    };
+      [key]: this.normalizeAddEventFlowInput(key, values, phase),
+    });
     await this.persistEventFlowRegistry('addEventFlow', target, current, nextFlowRegistry, options);
-    return this.buildEventFlowWriteResult(target, key, flow, nextFlowRegistry);
+    return this.buildEventFlowWriteResult(target, key, nextFlowRegistry[key], nextFlowRegistry);
   }
 
   async setEventFlow(values: Record<string, any>, options: { transaction?: any } = {}) {
@@ -15995,13 +16082,12 @@ export class FlowSurfacesService {
     const key = this.normalizeEventFlowKey('setEventFlow', values?.key ?? values?.flow?.key);
     this.assertEventFlowFingerprint('setEventFlow', values?.expectedFingerprint, flowRegistry);
     const flowInput = _.isPlainObject(values?.flow) ? values.flow : values;
-    const flow = this.normalizeEventFlowObject('setEventFlow', key, flowInput);
-    const nextFlowRegistry = {
+    const nextFlowRegistry = this.normalizeEventFlowRegistry('setEventFlow', {
       ...flowRegistry,
-      [key]: flow,
-    };
+      [key]: this.normalizeEventFlowObject('setEventFlow', key, flowInput),
+    });
     await this.persistEventFlowRegistry('setEventFlow', target, current, nextFlowRegistry, options);
-    return this.buildEventFlowWriteResult(target, key, flow, nextFlowRegistry);
+    return this.buildEventFlowWriteResult(target, key, nextFlowRegistry[key], nextFlowRegistry);
   }
 
   async removeEventFlow(values: Record<string, any>, options: { transaction?: any } = {}) {
@@ -16017,7 +16103,7 @@ export class FlowSurfacesService {
       throwBadRequest(`flowSurfaces removeEventFlow flow '${key}' does not exist`);
     }
     this.assertEventFlowFingerprint('removeEventFlow', values?.expectedFingerprint, flowRegistry);
-    const nextFlowRegistry = _.omit(flowRegistry, [key]);
+    const nextFlowRegistry = this.normalizeEventFlowRegistry('removeEventFlow', _.omit(flowRegistry, [key]));
     await this.persistEventFlowRegistry('removeEventFlow', target, current, nextFlowRegistry, options);
     return this.buildEventFlowWriteResult(target, key, undefined, nextFlowRegistry);
   }
@@ -16025,7 +16111,7 @@ export class FlowSurfacesService {
   async setEventFlows(values: Record<string, any>, options: { transaction?: any } = {}) {
     validateFlowSurfacePayloadShape('setEventFlows', values, 'values');
     const { target, current } = await this.resolveEventFlowTarget('setEventFlows', values?.target, values, options);
-    const flows = values.flowRegistry || values.flows || {};
+    const flows = this.normalizeEventFlowRegistry('setEventFlows', values.flowRegistry || values.flows || {});
     await this.persistEventFlowRegistry('setEventFlows', target, current, flows, options);
     return {
       uid: target.uid,
@@ -16057,8 +16143,19 @@ export class FlowSurfacesService {
     };
   }
 
-  private getEventFlowRegistry(node: any) {
-    return _.isPlainObject(node?.flowRegistry) ? _.cloneDeep(node.flowRegistry) : {};
+  private getEventFlowRegistry(node: any): FlowSurfaceEventFlowRegistry {
+    return _.isPlainObject(node?.flowRegistry)
+      ? this.normalizeEventFlowRegistry('getEventFlowRegistry', node.flowRegistry)
+      : {};
+  }
+
+  private normalizeEventFlowRegistry(
+    actionName: string,
+    flowRegistry: Record<string, unknown>,
+  ): FlowSurfaceEventFlowRegistry;
+  private normalizeEventFlowRegistry<T>(actionName: string, flowRegistry: T): T;
+  private normalizeEventFlowRegistry(actionName: string, flowRegistry: unknown) {
+    return normalizeFlowSurfaceEventFlowRegistry(actionName, flowRegistry);
   }
 
   private buildEventFlowFingerprint(flowRegistry: any) {
@@ -16100,7 +16197,9 @@ export class FlowSurfacesService {
 
   private normalizeAddEventFlowInput(key: string, values: Record<string, any>, phase?: string) {
     const flow = _.isPlainObject(values.flow) ? _.cloneDeep(values.flow) : {};
-    const eventName = String(values.eventName ?? flow?.on?.eventName ?? '').trim();
+    const eventName = String(
+      values.eventName ?? (typeof flow.on === 'string' ? flow.on : flow?.on?.eventName) ?? '',
+    ).trim();
     if (!eventName) {
       throwBadRequest(`flowSurfaces addEventFlow requires eventName`);
     }
@@ -16126,25 +16225,7 @@ export class FlowSurfacesService {
   }
 
   private normalizeEventFlowObject(actionName: string, key: string, flowInput: any) {
-    if (!_.isPlainObject(flowInput)) {
-      throwBadRequest(`flowSurfaces ${actionName} flow '${key}' must be an object`);
-    }
-    const flow = _.cloneDeep(flowInput);
-    flow.key = key;
-    if (_.isPlainObject(flow.on)) {
-      const eventName = String(flow.on.eventName || '').trim();
-      if (eventName) {
-        flow.on.eventName = eventName;
-      }
-      const phase = String(flow.on.phase || '').trim();
-      if (phase) {
-        flow.on.phase = phase;
-      }
-    }
-    if (_.isUndefined(flow.steps)) {
-      flow.steps = {};
-    }
-    return flow;
+    return normalizeFlowSurfaceEventFlow(actionName, key, flowInput);
   }
 
   private async persistEventFlowRegistry(
@@ -20446,7 +20527,10 @@ export class FlowSurfacesService {
     const resolved = shouldLoadCurrent ? await this.locator.resolve(target, options) : null;
     const current = resolved ? await this.loadResolvedNode(resolved, options.transaction) : null;
     let nextConfigure = shouldUpdateConfigure
-      ? buildChartConfigureFromSemanticChanges(_.get(current, ['stepParams', 'chartSettings', 'configure']), changes)
+      ? buildChartConfigureFromSemanticChangesWithRepair(
+          _.get(current, ['stepParams', 'chartSettings', 'configure']),
+          changes,
+        )
       : undefined;
     if (shouldUpdateConfigure) {
       nextConfigure = await this.stripBasicSqlVisualWhenPreviewUnavailable(nextConfigure, changes, options.transaction);
@@ -27486,7 +27570,7 @@ export class FlowSurfacesService {
         (value) => !_.isUndefined(value),
       ),
       decoratorProps: _.cloneDeep(innerField.decoratorProps || {}),
-      flowRegistry: _.cloneDeep(innerField.flowRegistry || {}),
+      flowRegistry: this.getEventFlowRegistry(innerField),
       stepParams: _.merge({}, innerField.stepParams || {}, {
         fieldBinding: {
           use: normalizedTargetUse,
