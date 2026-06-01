@@ -169,6 +169,54 @@ Key props:
 
 Under the hood `VariableInput` wraps `VariableHybridInput` (inline pills), `VariableTextArea` wraps `TextAreaWithContextSelector` (textarea + variable button). Both share the same MetaTree.
 
+#### TypedVariableInput
+
+Typed-constant + variable hybrid input. Ported from v1 `Variable.Input`'s `useTypedConstant` pattern: an italic `x` button on the right triggers a Cascader switcher `[Null | Constant<types> | Variable<…namespaces>]`; the left side renders the matching editor (`Input` / `InputNumber` / `Select(True/False)` / `DatePicker`) or a pill carrying the variable path.
+
+Reach for this when a field **accepts both** a typed literal **and** a variable reference. The canonical example is `plugin-notification-email`'s SMTP `port` and `secure` fields: users can type a numeric port / boolean flag, or pass `{{ $env.SMTP_PORT }}` to read from environment variables.
+
+```tsx
+import { TypedVariableInput } from '@nocobase/client-v2';
+
+// Port — numeric constant + $env variable
+<Form.Item name={['options', 'port']} label={t('Port')} initialValue={465}>
+  <TypedVariableInput
+    types={[['number', { min: 1, max: 65535, step: 1 }]]}
+    namespaces={['$env']}
+  />
+</Form.Item>
+
+// Secure mode — boolean constant + $env variable
+<Form.Item name={['options', 'secure']} label={t('Secure')} initialValue={true}>
+  <TypedVariableInput types={['boolean']} namespaces={['$env']} />
+</Form.Item>
+```
+
+Key props:
+
+- `types`: allowed constant types. Shape mirrors v1 `useTypedConstant` — pass bare type names (`['number', 'boolean']`) or `[type, editorProps]` tuples (`[['number', { min, max, step }]]`) to forward props to the underlying antd editor. Defaults to `['string', 'number', 'boolean', 'date']`. **Even when only one type is allowed, the `Constant` entry still expands into a typed submenu** (Number / Boolean / Date / String) — matches v1 so users can see what type the constant is
+- `namespaces`: restrict the variable picker to specific top-level namespaces (e.g. `['$env']`). Omit to expose every namespace registered on `flowEngine.context`
+- `extraNodes`: static leaves appended after the namespace-filtered nodes
+- `nullable`: whether to expose the `Null` switcher entry. Default `true`. Combined with `Form.Item.rules={[{ required: true }]}`, the user can explicitly clear the field but submission is still blocked by validation — mirrors v1's "Null + required" pairing
+- `delimiters`: variable-token delimiters, default `['{{', '}}']` — same as `VariableInput`
+- `value` / `onChange` / `placeholder` / `disabled` / `style` / `className`: standard controlled-input props
+
+Value shape:
+
+- Constant: stored as the native type (`number` / `boolean` / `Date` / `string`)
+- Variable: a string like `'{{ $env.SMTP_PORT }}'`
+- Null: `null`
+
+When **not** to use it:
+
+- **Pure literal fields** (users will never pass a variable) → use the antd primitive directly (`InputNumber` / `Select` / `DatePicker` / `Input`) and skip the Cascader column overhead
+- **Pure variable fields** (users will never pass a literal) → use `EnvVariableInput` (`$env`-only, with optional password masking) or `VariableInput` (general-purpose)
+
+Capabilities skipped (present in v1, not yet ported to v2):
+
+- `object` constant type (JSON editor) — v2 has no inline "JSON editor + Cascader switcher" yet; add when there's a concrete caller
+- Async `loadChildren` cascading — most MetaTree namespaces are already eagerly resolved by `useFilteredMetaTree`, so this hasn't been needed
+
 #### FileSizeInput
 
 A byte-valued size input paired with a unit selector (Byte / KB / MB / GB). The persisted value is always in bytes; the displayed number is derived from the picked unit.
