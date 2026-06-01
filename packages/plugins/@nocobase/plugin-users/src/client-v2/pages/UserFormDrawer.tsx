@@ -14,7 +14,7 @@ import { Button, Col, Form, Input, Row, Select } from 'antd';
 import React from 'react';
 import { useT } from '../locale';
 import { PluginUsersClientV2 } from '../plugin';
-import { generatePassword } from '../../shared/generatePassword';
+import { generatePassword } from '../shared/generatePassword';
 import type { Role, User } from './types';
 import { toListPayload } from './types';
 

@@ -430,7 +430,12 @@ export default function RolesManagementPage() {
       key: 'permissions',
       label: t('Permissions'),
       children: permissionTabs.length ? (
-        <Tabs className={nestedTabsClassName} style={{ height: '100%', minHeight: 0 }} items={permissionTabs} />
+        <Tabs
+          type="card"
+          className={nestedTabsClassName}
+          style={{ height: '100%', minHeight: 0 }}
+          items={permissionTabs}
+        />
       ) : (
         <div style={{ color: token.colorTextDescription }}>{t('Select a role to configure permissions')}</div>
       ),

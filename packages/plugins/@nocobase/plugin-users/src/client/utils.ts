@@ -7,4 +7,4 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export { generatePassword } from '../shared/generatePassword';
+export { generatePassword } from '../client-v2/shared/generatePassword';
