@@ -69,7 +69,7 @@ const { ensureRuntimeFromArgv } = await import(pathToFileURL(bootstrapPath).href
 const startupUpdatePath = isDev
   ? path.join(root, 'src/lib/startup-update.ts')
   : path.join(root, 'dist/lib/startup-update.js');
-const { maybeRunStartupUpdatePrompt } = await import(pathToFileURL(startupUpdatePath).href);
+const { maybeRunStartupUpdate } = await import(pathToFileURL(startupUpdatePath).href);
 const cliEntryErrorPath = isDev
   ? path.join(root, 'src/lib/cli-entry-error.ts')
   : path.join(root, 'dist/lib/cli-entry-error.js');
@@ -82,7 +82,7 @@ if (isDev) {
 
 try {
   const argv = process.argv.slice(2);
-  const startupUpdate = await maybeRunStartupUpdatePrompt(argv);
+  const startupUpdate = await maybeRunStartupUpdate(argv);
   if (startupUpdate.kind === 'updated') {
     const result = spawnSync(process.execPath, process.argv.slice(1), {
       stdio: 'inherit',
