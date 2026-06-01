@@ -16,6 +16,7 @@ const STRING_ENV_CONFIG_KEYS = [
   'dockerPlatform',
   'gitUrl',
   'npmRegistry',
+  'appPath',
   'appRootPath',
   'storagePath',
   'envFile',
@@ -68,13 +69,14 @@ function trimConfigValue(value: unknown): string | undefined {
 
 function resolveEnvKind(input: StoredEnvConfigInput): EnvConfigEntry['kind'] {
   const source = trimConfigValue(input.source);
+  const appPath = trimConfigValue(input.appPath);
   const appRootPath = trimConfigValue(input.appRootPath);
 
   if (source === 'docker') {
     return 'docker';
   }
 
-  if (source === 'npm' || source === 'git' || source === 'local' || appRootPath) {
+  if (source === 'npm' || source === 'git' || source === 'local' || appPath || appRootPath) {
     return 'local';
   }
 

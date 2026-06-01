@@ -113,6 +113,43 @@ test('buildInstallArgv forwards db schema and db underscored for new installs', 
   expect(argv).toContain('--db-underscored');
 });
 
+test('buildInstallArgv prefers --app-path and omits derived legacy path flags', () => {
+  const buildInstallArgv = (
+    Init.prototype as unknown as {
+      buildInstallArgv: (
+        results: Record<string, string | number | boolean>,
+        flags: { yes?: boolean; force?: boolean; build?: boolean; verbose?: boolean },
+      ) => string[];
+    }
+  ).buildInstallArgv;
+
+  const argv = buildInstallArgv.call(
+    Object.create(Init.prototype),
+    {
+      hasNocobase: 'no',
+      appName: 'app7593',
+      authType: 'oauth',
+      lang: 'en-US',
+      appPath: './app7593/',
+      appRootPath: './app7593/source/',
+      appPort: '13000',
+      storagePath: './app7593/storage/',
+      source: 'docker',
+      version: 'beta',
+      builtinDb: true,
+      dbDialect: 'postgres',
+    },
+    {
+      yes: true,
+    },
+  );
+
+  expect(argv).toContain('--app-path');
+  expect(argv).toContain('./app7593/');
+  expect(argv).not.toContain('--app-root-path');
+  expect(argv).not.toContain('--storage-path');
+});
+
 test('buildInstallArgv forwards --skip-download and omits download execution options', () => {
   const buildInstallArgv = (
     Init.prototype as unknown as {

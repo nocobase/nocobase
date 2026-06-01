@@ -816,6 +816,30 @@ test('install saved env config keeps absolute appRootPath and storagePath', () =
   expect(envConfig.storagePath).toBe('/tmp/absolute/storage');
 });
 
+test('install saved env config prefers appPath and omits derived legacy paths', () => {
+  const installStatics = Install as unknown as InstallStatics;
+  const envConfig = installStatics.buildSavedEnvConfig({
+    envName: 'derived',
+    appResults: {
+      appPath: './derived/',
+      appRootPath: './derived/source/',
+      appPort: '13081',
+      storagePath: './derived/storage/',
+    },
+    downloadResults: {},
+    dbResults: {},
+    rootResults: {},
+    envAddResults: {
+      apiBaseUrl: 'http://127.0.0.1:13081/api',
+      authType: 'oauth',
+    },
+  });
+
+  expect(envConfig.appPath).toBe('./derived/');
+  expect(Object.prototype.hasOwnProperty.call(envConfig, 'appRootPath')).toBe(false);
+  expect(Object.prototype.hasOwnProperty.call(envConfig, 'storagePath')).toBe(false);
+});
+
 test('install saved env config records docker download settings for later upgrades', () => {
   const installStatics = Install as unknown as InstallStatics;
   const envConfig = installStatics.buildSavedEnvConfig({

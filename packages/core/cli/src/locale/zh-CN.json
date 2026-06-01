@@ -236,9 +236,9 @@
         "lang": {
           "message": "你想使用哪种语言？"
         },
-        "appRootPath": {
-          "message": "应用代码要放到哪里？",
-          "placeholder": "./<env>/source/"
+        "appPath": {
+          "message": "应用要放到哪里？（相对路径基于 {{root}}）",
+          "placeholder": "./<env>/"
         },
         "appPort": {
           "message": "应用要使用哪个端口？",

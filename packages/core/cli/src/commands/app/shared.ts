@@ -143,7 +143,7 @@ export function managedDockerNetworkName(
 }
 
 export function resolveManagedLocalAppPath(runtime: Extract<ManagedAppRuntime, { kind: 'local' }>): string | undefined {
-  return resolveConfiguredPath(runtime.env.config.appRootPath) || runtime.projectRoot;
+  return runtime.projectRoot || resolveConfiguredPath(runtime.env.config.appRootPath);
 }
 
 export function shouldRemoveManagedLocalAppFiles(runtime: Extract<ManagedAppRuntime, { kind: 'local' }>): boolean {

@@ -236,9 +236,9 @@
         "lang": {
           "message": "Which language would you like to use?"
         },
-        "appRootPath": {
-          "message": "Where should this app be stored?",
-          "placeholder": "./<env>/source/"
+        "appPath": {
+          "message": "Where should this app be stored? (relative to {{root}})",
+          "placeholder": "./<env>/"
         },
         "appPort": {
           "message": "Which port should this app use?",

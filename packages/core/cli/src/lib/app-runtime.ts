@@ -146,7 +146,7 @@ export async function resolveManagedAppRuntime(envName?: string): Promise<Manage
       env,
       envName: resolvedName,
       source: source === 'git' ? 'git' : source === 'npm' ? 'npm' : 'local',
-      projectRoot: env.appRootPath,
+      projectRoot: env.sourcePath,
       dockerNetworkName,
       dockerContainerPrefix,
       workspaceName: dockerNetworkName,

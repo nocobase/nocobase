@@ -644,10 +644,8 @@ test('reflow recomputes init app paths from the current app name', async () => {
     appName: 'demoapp',
   });
 
-  expect(state.show.appRootPath).toBe(true);
-  expect(state.show.storagePath).toBe(true);
-  expect(state.values.appRootPath).toBe('./demoapp/source/');
-  expect(state.values.storagePath).toBe('./demoapp/storage/');
+  expect(state.show.appPath).toBe(true);
+  expect(state.values.appPath).toBe('./demoapp/');
 });
 
 test('reflow recomputes the built-in database image from the current database dialect until the field is edited', async () => {

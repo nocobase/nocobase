@@ -11,7 +11,7 @@ import { mkdir, readdir } from 'node:fs/promises';
 import type { ManagedAppRuntime } from './app-runtime.js';
 import { dockerContainerExists, runLocalNocoBaseCommand, startDockerContainer } from './app-runtime.js';
 import { deriveBuiltinDbConnection, resolveBuiltinDbConnection } from './builtin-db.js';
-import { resolveConfiguredEnvPath } from './cli-home.js';
+import { resolveConfiguredStoragePath } from './env-paths.js';
 import { resolveDockerEnvFileArg } from './docker-env-file.ts';
 import {
   DEFAULT_DOCKER_REGISTRY,
@@ -137,10 +137,7 @@ export async function buildSavedDockerRunArgs(
   args: string[];
 }> {
   const config = runtime.env.config ?? {};
-  const configuredStoragePath = trimValue(config.storagePath);
-  const storagePath = configuredStoragePath
-    ? trimValue(resolveConfiguredEnvPath(configuredStoragePath))
-    : '';
+  const storagePath = trimValue(resolveConfiguredStoragePath(config));
   const envFile = await resolveDockerEnvFileArg(runtime.envName, config);
   const appPort =
     runtime.env.appPort === undefined || runtime.env.appPort === null
@@ -298,6 +295,7 @@ export async function ensureBuiltinDbReady(
     envName: runtime.envName,
     workspaceName: runtime.workspaceName,
     dockerContainerPrefix: runtime.dockerContainerPrefix,
+    appPath: config.appPath,
     storagePath: config.storagePath,
     source: runtime.source,
     dbDialect: builtinDbConnection.dbDialect,

@@ -25,6 +25,11 @@ import {
 } from '../lib/prompt-catalog.ts';
 import { applyCliLocale, localeText, translateCli } from '../lib/cli-locale.ts';
 import { resolveDefaultConfigScope } from '../lib/cli-home.js';
+import {
+  deriveConfiguredSourcePath,
+  deriveConfiguredStoragePath,
+  inferConfiguredAppPathFromLegacyConfig,
+} from '../lib/env-paths.js';
 import { type RunPromptCatalogWebUIStage, runPromptCatalogWebUI } from '../lib/prompt-web-ui.ts';
 import { validateApiBaseUrl, validateEnvKey } from '../lib/prompt-validators.ts';
 import { installNocoBaseSkills, isNpmRegistryUnavailable } from '../lib/skills-manager.js';
@@ -290,9 +295,8 @@ Prompt modes:
     password: existingAppOnly(EnvAdd.prompts.password),
     accessToken: existingAppOnly(EnvAdd.prompts.accessToken),
     lang: newInstallOnly(Install.appPrompts.lang),
-    appRootPath: newInstallOnly(Install.appPrompts.appRootPath),
+    appPath: newInstallOnly(Install.appPrompts.appPath),
     appPort: newInstallOnly(Install.appPrompts.appPort),
-    storagePath: newInstallOnly(Install.appPrompts.storagePath),
     skipDownload: newInstallOnly({
       type: 'boolean',
       message: initText('prompts.skipDownload.message'),
@@ -318,7 +322,11 @@ Prompt modes:
       initialValue: (values) => {
         const source = String(values.source ?? '').trim();
         if (source === 'npm' || source === 'git') {
-          const appRootPath = String(values.appRootPath ?? '').trim();
+          const appPath = String(
+            values.appPath ?? inferConfiguredAppPathFromLegacyConfig(values as Record<string, unknown>) ?? '',
+          ).trim();
+          const appRootPath =
+            String(values.appRootPath ?? '').trim() || (appPath ? deriveConfiguredSourcePath(appPath) : '');
           if (appRootPath) {
             return appRootPath;
           }
@@ -467,6 +475,7 @@ Prompt modes:
               lang?: string;
               force?: boolean;
               replace?: boolean;
+              'app-path'?: string;
               'app-root-path'?: string;
               'app-port'?: string;
               'storage-path'?: string;
@@ -517,6 +526,7 @@ Prompt modes:
         lang?: string;
         force?: boolean;
         replace?: boolean;
+        'app-path'?: string;
         'app-root-path'?: string;
         'app-port'?: string;
         'storage-path'?: string;
@@ -703,6 +713,7 @@ Prompt modes:
 
   private static async buildDynamicInitialValuesForInstall(
     flags: {
+      'app-path'?: string;
       'app-root-path'?: string;
       'app-port'?: string;
       'storage-path'?: string;
@@ -718,6 +729,7 @@ Prompt modes:
         envName: String(presetValues.appName ?? '').trim(),
         flags: {
           ...flags,
+          'app-path': flags['app-path'] ?? '',
           'app-root-path': flags['app-root-path'] ?? '',
           'storage-path': flags['storage-path'] ?? '',
         },
@@ -774,9 +786,8 @@ Prompt modes:
         sectionDescription: initText('webUi.createNewApp.description'),
         catalog: {
           lang: c.lang,
-          appRootPath: c.appRootPath,
+          appPath: c.appPath,
           appPort: c.appPort,
-          storagePath: c.storagePath,
           skipDownload: c.skipDownload,
         } satisfies PromptsCatalog,
       },
@@ -859,6 +870,7 @@ Prompt modes:
     'db-table-prefix'?: string;
     'db-underscored'?: boolean;
     'skip-download'?: boolean;
+    'app-path'?: string;
     source?: string;
     version?: string;
     replace?: boolean;
@@ -904,6 +916,9 @@ Prompt modes:
     }
     if (flags.lang !== undefined && String(flags.lang).trim() !== '') {
       preset.lang = String(flags.lang).trim();
+    }
+    if (flags['app-path'] !== undefined && String(flags['app-path']).trim() !== '') {
+      preset.appPath = String(flags['app-path']).trim();
     }
     if (flags['app-root-path'] !== undefined && String(flags['app-root-path']).trim() !== '') {
       preset.appRootPath = String(flags['app-root-path']).trim();
@@ -1064,8 +1079,17 @@ Prompt modes:
     const dockerPlatform = String(results.dockerPlatform ?? '').trim();
     const gitUrl = String(results.gitUrl ?? '').trim();
     const npmRegistry = String(results.npmRegistry ?? '').trim();
+    const appPath =
+      String(results.appPath ?? '').trim() ||
+      inferConfiguredAppPathFromLegacyConfig({
+        appRootPath: results.appRootPath,
+        storagePath: results.storagePath,
+      }) ||
+      '';
     const appRootPath = String(results.appRootPath ?? '').trim();
     const storagePath = String(results.storagePath ?? '').trim();
+    const derivedAppRootPath = appPath ? deriveConfiguredSourcePath(appPath) : '';
+    const derivedStoragePath = appPath ? deriveConfiguredStoragePath(appPath) : '';
     const dbDialect = String(results.dbDialect ?? '').trim();
     const builtinDbImage = String(results.builtinDbImage ?? '').trim();
     const dbHost = String(results.dbHost ?? '').trim();
@@ -1096,7 +1120,7 @@ Prompt modes:
       {
         ...(source === 'docker'
           ? { kind: 'docker' }
-          : source || appRootPath
+          : source || appPath || appRootPath
             ? { kind: 'local' }
             : appPort
               ? { kind: 'http' }
@@ -1111,8 +1135,9 @@ Prompt modes:
         ...(dockerPlatform ? { dockerPlatform } : {}),
         ...(gitUrl ? { gitUrl } : {}),
         ...(npmRegistry ? { npmRegistry } : {}),
-        ...(appRootPath ? { appRootPath } : {}),
-        ...(storagePath ? { storagePath } : {}),
+        ...(appPath ? { appPath } : {}),
+        ...(appRootPath && (!derivedAppRootPath || appRootPath !== derivedAppRootPath) ? { appRootPath } : {}),
+        ...(storagePath && (!derivedStoragePath || storagePath !== derivedStoragePath) ? { storagePath } : {}),
         ...(appPort ? { appPort } : {}),
         ...(appKey ? { appKey } : {}),
         ...(timeZone ? { timezone: timeZone } : {}),
@@ -1171,6 +1196,7 @@ Prompt modes:
       password?: string;
       'skip-auth'?: boolean;
       'skip-download'?: boolean;
+      'app-path'?: string;
       'db-host'?: string;
       'db-schema'?: string;
       'db-table-prefix'?: string;
@@ -1233,8 +1259,19 @@ Prompt modes:
       argv.push('--lang', lang);
     }
 
+    const appPath =
+      String(results.appPath ?? '').trim() ||
+      inferConfiguredAppPathFromLegacyConfig({
+        appRootPath: results.appRootPath,
+        storagePath: results.storagePath,
+      }) ||
+      '';
+    if (appPath) {
+      argv.push('--app-path', appPath);
+    }
+
     const appRootPath = String(results.appRootPath ?? '').trim();
-    if (appRootPath) {
+    if (appRootPath && (!appPath || appRootPath !== deriveConfiguredSourcePath(appPath))) {
       argv.push('--app-root-path', appRootPath);
     }
 
@@ -1244,7 +1281,7 @@ Prompt modes:
     }
 
     const storagePath = String(results.storagePath ?? '').trim();
-    if (storagePath) {
+    if (storagePath && (!appPath || storagePath !== deriveConfiguredStoragePath(appPath))) {
       argv.push('--storage-path', storagePath);
     }
 
@@ -1439,7 +1476,16 @@ Prompt modes:
       argv.push('--skip-download');
     } else {
       const outputDir = String(results.outputDir ?? '').trim();
-      if (outputDir && outputDir !== String(results.appRootPath ?? '').trim()) {
+      const appPath =
+        String(results.appPath ?? '').trim() ||
+        inferConfiguredAppPathFromLegacyConfig({
+          appRootPath: results.appRootPath,
+          storagePath: results.storagePath,
+        }) ||
+        '';
+      const expectedOutputDir =
+        String(results.appRootPath ?? '').trim() || (appPath ? deriveConfiguredSourcePath(appPath) : '');
+      if (outputDir && outputDir !== expectedOutputDir) {
         argv.push('--output-dir', outputDir);
       }
 
@@ -1495,6 +1541,7 @@ Prompt modes:
     'db-table-prefix'?: string;
     'db-underscored'?: boolean;
     'skip-download'?: boolean;
+    'app-path'?: string;
     source?: string;
     version?: string;
     'dev-dependencies'?: boolean;

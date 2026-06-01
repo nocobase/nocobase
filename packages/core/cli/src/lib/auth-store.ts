@@ -13,6 +13,12 @@ import type { CliHomeScope } from './cli-home.js';
 import { resolveCliHomeDir, resolveConfiguredEnvPath, resolveEnvRelativePath } from './cli-home.js';
 import { normalizeCliLocale } from './cli-locale.js';
 import {
+  inferConfiguredAppPathFromLegacyConfig,
+  resolveConfiguredAppPath,
+  resolveConfiguredSourcePath,
+  resolveConfiguredStoragePath,
+} from './env-paths.js';
+import {
   cleanupCurrentSessionAfterEnvRemoval,
   resolveEffectiveCurrentEnv,
   setSessionCurrentEnv,
@@ -65,6 +71,7 @@ export interface EnvConfigEntry {
   build?: boolean;
   /** Whether download emitted declaration files during build. */
   buildDts?: boolean;
+  appPath?: string;
   appRootPath?: string;
   storagePath?: string;
   /** Optional Docker --env-file path. Defaults to <envName>/.env for Docker envs when present on disk. */
@@ -201,7 +208,7 @@ export function resolveEnvKind(config?: Partial<EnvConfigEntry>): EnvKind | unde
     return 'local';
   }
 
-  if (String(config.appRootPath ?? '').trim()) {
+  if (String(config.appPath ?? '').trim() || String(config.appRootPath ?? '').trim()) {
     return 'local';
   }
 
@@ -374,7 +381,31 @@ export class Env {
         return configuredPath;
       }
     }
-    return resolveConfiguredEnvPath(this.config.appRootPath) ?? resolveEnvRelativePath('.');
+    const legacyPath = resolveConfiguredEnvPath(this.config.appRootPath);
+    if (legacyPath) {
+      return legacyPath;
+    }
+    return this.kind === 'local' ? this.sourcePath : resolveEnvRelativePath('.');
+  }
+
+  get appPath() {
+    if (this.kind === 'ssh') {
+      const configuredPath = String(this.config.appPath ?? inferConfiguredAppPathFromLegacyConfig(this.config) ?? '').trim();
+      if (configuredPath) {
+        return configuredPath;
+      }
+    }
+    return resolveConfiguredAppPath(this.config) ?? resolveEnvRelativePath('.');
+  }
+
+  get sourcePath() {
+    if (this.kind === 'ssh') {
+      const configuredPath = String(this.config.appRootPath ?? '').trim();
+      if (configuredPath) {
+        return configuredPath;
+      }
+    }
+    return resolveConfiguredSourcePath(this.config) ?? path.join(this.appPath, 'source');
   }
 
   get storagePath() {
@@ -384,7 +415,13 @@ export class Env {
         return configuredPath;
       }
     }
-    return resolveConfiguredEnvPath(this.config.storagePath) ?? resolveEnvRelativePath('.');
+    const resolvedStoragePath = resolveConfiguredStoragePath(this.config);
+    if (resolvedStoragePath) {
+      return resolvedStoragePath;
+    }
+    return this.kind === 'local' || this.kind === 'docker'
+      ? path.join(this.appPath, 'storage')
+      : resolveEnvRelativePath('.');
   }
 
   get appPort() {

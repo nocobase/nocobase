@@ -16,6 +16,7 @@ import {
   type ManagedAppRuntime,
 } from '../../lib/app-runtime.js';
 import { hasExplicitEnvSelection } from '../../lib/env-guard.js';
+import { resolveConfiguredStoragePath } from '../../lib/env-paths.js';
 import { input } from '../../lib/inquirer.ts';
 import { announceTargetEnv, failTask, isInteractiveTerminal, printInfo, startTask, succeedTask } from '../../lib/ui.js';
 import {
@@ -24,7 +25,6 @@ import {
   removeDockerContainerIfExists,
   removeDockerNetworkIfUnused,
   removePathIfExists,
-  resolveConfiguredPath,
   resolveManagedLocalAppPath,
   shouldRemoveManagedLocalAppFiles,
 } from './shared.js';
@@ -163,7 +163,7 @@ export default class AppDestroy extends Command {
       shouldRemoveManagedLocalAppFiles(runtime);
     const removesStorageData =
       (runtime.kind === 'local' || runtime.kind === 'docker') &&
-      Boolean(resolveConfiguredPath(runtime.env.config.storagePath));
+      Boolean(resolveConfiguredStoragePath(runtime.env.config));
 
     let confirmed = false;
     try {
@@ -243,7 +243,7 @@ export default class AppDestroy extends Command {
           }
         }
 
-        const configuredStoragePath = resolveConfiguredPath(runtime.env.config.storagePath);
+        const configuredStoragePath = resolveConfiguredStoragePath(runtime.env.config);
         if (configuredStoragePath) {
           startTask(`Removing storage data for "${runtime.envName}"...`);
           await removePathIfExists(configuredStoragePath, `storage data for "${runtime.envName}"`);

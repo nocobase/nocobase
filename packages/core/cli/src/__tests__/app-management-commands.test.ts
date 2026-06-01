@@ -1916,7 +1916,7 @@ test('env info shows grouped app details with secrets masked by default', async 
   await EnvInfo.prototype.run.call(command);
 
   expect(String(command.log.mock.calls[0]?.[0] ?? '')).toContain('App');
-  expect(String(command.log.mock.calls[0]?.[0] ?? '')).toContain('appRootPath');
+  expect(String(command.log.mock.calls[0]?.[0] ?? '')).toContain('sourcePath');
   expect(String(command.log.mock.calls[0]?.[0] ?? '')).toContain('/tmp/local-app');
   expect(String(command.log.mock.calls[0]?.[0] ?? '')).toContain('dockerRegistry');
   expect(String(command.log.mock.calls[0]?.[0] ?? '')).toContain('nocobase/nocobase');
@@ -1976,7 +1976,8 @@ test('env info supports the deprecated --env alias with grouped json output', as
     env: 'remote',
     app: {
       url: 'https://demo.example.com/',
-      appRootPath: '-',
+      appPath: '-',
+      sourcePath: '-',
       storagePath: '-',
       appPort: '-',
       appStatus: 'http',
