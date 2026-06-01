@@ -15,19 +15,16 @@ import {
   ADMIN_PROFILE_EDIT_FORM_MODEL_UID,
 } from '../shared/adminProfileFormModels';
 
-const { create, update, save, destroy, loadModel, createModelAsync, removeModelWithSubModels, submit, close, success } =
-  vi.hoisted(() => ({
-    create: vi.fn(),
-    update: vi.fn(),
-    save: vi.fn(),
-    destroy: vi.fn(),
-    loadModel: vi.fn(),
-    createModelAsync: vi.fn(),
-    removeModelWithSubModels: vi.fn(),
-    submit: vi.fn(),
-    close: vi.fn(),
-    success: vi.fn(),
-  }));
+const { create, update, save, loadModel, createModelAsync, submit, close, success } = vi.hoisted(() => ({
+  create: vi.fn(),
+  update: vi.fn(),
+  save: vi.fn(),
+  loadModel: vi.fn(),
+  createModelAsync: vi.fn(),
+  submit: vi.fn(),
+  close: vi.fn(),
+  success: vi.fn(),
+}));
 
 vi.mock('@nocobase/client-v2', async () => {
   return {
@@ -63,42 +60,44 @@ vi.mock('@nocobase/client-v2', async () => {
 });
 
 vi.mock('@nocobase/flow-engine', () => {
+  const flowEngine = {
+    loadModel,
+    createModelAsync,
+  };
+  const flowContext = {
+    api: {
+      resource: (name: string) =>
+        name === 'users'
+          ? {
+              create,
+              update,
+            }
+          : name === 'flowModels'
+            ? {
+                save,
+              }
+            : {},
+    },
+    message: {
+      success,
+    },
+    view: {
+      close,
+      Header: ({ title }: { title: React.ReactNode }) => <div>{title}</div>,
+    },
+    themeToken: {
+      paddingLG: 24,
+      colorBorderSecondary: '#f0f0f0',
+    },
+    flowSettingsEnabled: false,
+  };
+  const flowViewContext = {};
+
   return {
     FlowModelRenderer: () => <div data-testid="flow-model-renderer" />,
-    useFlowEngine: () => ({
-      loadModel,
-      createModelAsync,
-      removeModelWithSubModels,
-    }),
-    useFlowContext: () => ({
-      api: {
-        resource: (name: string) =>
-          name === 'users'
-            ? {
-                create,
-                update,
-              }
-            : name === 'flowModels'
-              ? {
-                  save,
-                  destroy,
-                }
-              : {},
-      },
-      message: {
-        success,
-      },
-      view: {
-        close,
-        Header: ({ title }: { title: React.ReactNode }) => <div>{title}</div>,
-      },
-      themeToken: {
-        paddingLG: 24,
-        colorBorderSecondary: '#f0f0f0',
-      },
-      flowSettingsEnabled: false,
-    }),
-    useFlowViewContext: () => ({}),
+    useFlowEngine: () => flowEngine,
+    useFlowContext: () => flowContext,
+    useFlowViewContext: () => flowViewContext,
   };
 });
 
@@ -121,9 +120,7 @@ describe('UserFormDrawer', () => {
     update.mockReset();
     createModelAsync.mockReset();
     createModelAsync.mockResolvedValue(model);
-    removeModelWithSubModels.mockReset();
     save.mockReset();
-    destroy.mockReset();
     close.mockReset();
     success.mockReset();
   });
@@ -198,118 +195,50 @@ describe('UserFormDrawer', () => {
     });
   });
 
-  it('should cleanup stale tree path rows and retry save when flowModels save hits duplicate ancestor/descendant', async () => {
+  it('should persist the create form model with password defaults', async () => {
     loadModel.mockResolvedValueOnce(null).mockResolvedValueOnce({
-      use: 'CreateFormModel',
-      serialize: () => ({
-        uid: ADMIN_PROFILE_CREATE_FORM_MODEL_UID,
-        use: 'CreateFormModel',
-      }),
       context: {
         addDelegate: vi.fn(),
       },
       submit,
-    });
-    save.mockRejectedValueOnce({
-      response: {
-        data: {
-          errors: [{ message: 'ancestor 字段值已存在' }, { message: 'descendant 字段值已存在' }],
-        },
-      },
     });
 
     render(<UserFormDrawer onSubmitted={() => undefined} />);
 
     await waitFor(() => {
-      expect(destroy).toHaveBeenCalledWith({
-        filterByTk: ADMIN_PROFILE_CREATE_FORM_MODEL_UID,
-      });
-    });
-
-    expect(save).toHaveBeenCalledTimes(2);
-    expect(removeModelWithSubModels).toHaveBeenCalledWith(ADMIN_PROFILE_CREATE_FORM_MODEL_UID);
-    expect(createModelAsync).toHaveBeenCalledWith({
-      uid: ADMIN_PROFILE_CREATE_FORM_MODEL_UID,
-      use: 'UserCreateFormModel',
-    });
-  });
-
-  it('should rebuild persisted edit form model when username settings are outdated', async () => {
-    loadModel.mockResolvedValueOnce({
-      uid: ADMIN_PROFILE_EDIT_FORM_MODEL_UID,
-      use: 'EditFormModel',
-      serialize: () => ({
-        uid: ADMIN_PROFILE_EDIT_FORM_MODEL_UID,
-        use: 'EditFormModel',
-        subModels: {
-          grid: {
-            subModels: {
-              items: [
-                {
-                  use: 'FormItemModel',
-                  props: {
-                    disabled: true,
-                  },
-                  stepParams: {
-                    fieldSettings: {
-                      init: {
-                        fieldPath: 'username',
-                      },
-                    },
-                  },
-                },
-              ],
-            },
-          },
-        },
-      }),
-      context: {
-        addDelegate: vi.fn(),
-      },
-      submit,
-    });
-
-    render(
-      <UserFormDrawer
-        user={{
-          id: 18,
-          username: 'alice',
-        }}
-        onSubmitted={() => undefined}
-      />,
-    );
-
-    await waitFor(() => {
-      expect(removeModelWithSubModels).toHaveBeenCalledWith(ADMIN_PROFILE_EDIT_FORM_MODEL_UID);
-    });
-
-    expect(createModelAsync).toHaveBeenCalledWith(
-      expect.objectContaining({
-        uid: ADMIN_PROFILE_EDIT_FORM_MODEL_UID,
-        use: 'UserEditFormModel',
-        subModels: {
-          grid: {
-            subModels: {
-              items: [
-                expect.objectContaining({
-                  stepParams: {
-                    fieldSettings: {
-                      init: {
-                        fieldPath: 'username',
-                      },
-                    },
-                    editItemSettings: {
-                      required: {
-                        required: true,
-                      },
-                    },
-                  },
+      expect(save).toHaveBeenCalledWith(
+        expect.objectContaining({
+          values: expect.objectContaining({
+            uid: ADMIN_PROFILE_CREATE_FORM_MODEL_UID,
+            use: 'UserCreateFormModel',
+            subModels: expect.objectContaining({
+              grid: expect.objectContaining({
+                subModels: expect.objectContaining({
+                  items: expect.arrayContaining([
+                    expect.objectContaining({
+                      stepParams: expect.objectContaining({
+                        fieldSettings: expect.objectContaining({
+                          init: expect.objectContaining({
+                            fieldPath: 'password',
+                          }),
+                        }),
+                      }),
+                      subModels: expect.objectContaining({
+                        field: expect.objectContaining({
+                          props: expect.objectContaining({
+                            checkStrength: false,
+                            initialValue: 'admin123',
+                          }),
+                        }),
+                      }),
+                    }),
+                  ]),
                 }),
-              ],
-            },
-          },
-        },
-      }),
-    );
+              }),
+            }),
+          }),
+        }),
+      );
+    });
   });
 });

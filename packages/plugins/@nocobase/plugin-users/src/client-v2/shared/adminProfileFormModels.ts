@@ -7,10 +7,12 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export const ADMIN_PROFILE_CREATE_FORM_MODEL_UID = 'nocobase-admin-profile-create-form-v2';
-export const ADMIN_PROFILE_EDIT_FORM_MODEL_UID = 'nocobase-admin-profile-edit-form-v2';
+import type { CreateModelOptions } from '@nocobase/flow-engine';
 
-type FlowModelTree = Record<string, unknown>;
+export const ADMIN_PROFILE_CREATE_FORM_MODEL_UID = 'nocobase-admin-profile-create-form-2';
+export const ADMIN_PROFILE_EDIT_FORM_MODEL_UID = 'nocobase-admin-profile-edit-form-2';
+
+type FlowModelTree = CreateModelOptions & Record<string, unknown>;
 
 function buildFieldInit(fieldPath: string) {
   return {
@@ -60,6 +62,9 @@ function buildPasswordFieldItem(): FlowModelTree {
         required: {
           required: true,
         },
+        initialValue: {
+          defaultValue: 'admin123',
+        },
       },
     },
     subModels: {
@@ -67,13 +72,8 @@ function buildPasswordFieldItem(): FlowModelTree {
         use: 'UserPasswordFieldModel',
         props: {
           autoComplete: 'new-password',
-        },
-        stepParams: {
-          passwordSettings: {
-            checkStrength: {
-              checkStrength: true,
-            },
-          },
+          checkStrength: false,
+          initialValue: 'admin123',
         },
       },
     },
@@ -115,7 +115,7 @@ function buildRolesFieldItem(): FlowModelTree {
 export function buildAdminProfileCreateFormModel(): FlowModelTree {
   return {
     uid: ADMIN_PROFILE_CREATE_FORM_MODEL_UID,
-    use: 'CreateFormModel',
+    use: 'UserCreateFormModel',
     stepParams: {
       resourceSettings: {
         init: {
@@ -145,7 +145,7 @@ export function buildAdminProfileCreateFormModel(): FlowModelTree {
 export function buildAdminProfileEditFormModel(): FlowModelTree {
   return {
     uid: ADMIN_PROFILE_EDIT_FORM_MODEL_UID,
-    use: 'EditFormModel',
+    use: 'UserEditFormModel',
     stepParams: {
       resourceSettings: {
         init: {

@@ -53,6 +53,10 @@ export interface PermissionTabOptions {
   sort?: number;
 }
 
+export type PermissionTabOptionResolver =
+  | PermissionTabOptions
+  | ((props: PermissionTabProps) => PermissionTabOptions | null | undefined);
+
 export class RolesManager {
   private readonly items = new Map<string, RoleTabOptions>();
 
@@ -66,13 +70,17 @@ export class RolesManager {
 }
 
 export class ACLSettingsUI {
-  private readonly permissionTabs = new Map<string, PermissionTabOptions>();
+  private readonly permissionTabs = new Map<string, PermissionTabOptionResolver>();
 
-  addPermissionsTab(options: PermissionTabOptions) {
-    this.permissionTabs.set(options.key, options);
+  addPermissionsTab(options: PermissionTabOptionResolver) {
+    const key = typeof options === 'function' ? `callback:${this.permissionTabs.size}` : options.key;
+    this.permissionTabs.set(key, options);
   }
 
-  getPermissionsTabs() {
-    return Array.from(this.permissionTabs.values()).sort((a, b) => (a.sort ?? 100) - (b.sort ?? 100));
+  getPermissionsTabs(props: PermissionTabProps) {
+    return Array.from(this.permissionTabs.values())
+      .map((item) => (typeof item === 'function' ? item(props) : item))
+      .filter((item): item is PermissionTabOptions => !!item)
+      .sort((a, b) => (a.sort ?? 100) - (b.sort ?? 100));
   }
 }

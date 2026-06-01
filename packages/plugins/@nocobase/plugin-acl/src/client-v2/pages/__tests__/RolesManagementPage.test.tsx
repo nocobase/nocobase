@@ -19,10 +19,27 @@ interface MockPermissionTabOptions {
   componentLoader: () => Promise<{ default: React.ComponentType<PermissionTabProps> }>;
 }
 
-const { mockPermissionTabs, runSelectedRoleRequest } = vi.hoisted(() => ({
-  mockPermissionTabs: [] as MockPermissionTabOptions[],
-  runSelectedRoleRequest: vi.fn(),
-}));
+const { currentUserRole, getPermissionsTabs, mockPermissionTabs, runSelectedRoleRequest } = vi.hoisted(() => {
+  const state = {
+    currentUserRole: {
+      name: 'manager',
+      title: 'Manager',
+    },
+    mockPermissionTabs: [] as MockPermissionTabOptions[],
+    runSelectedRoleRequest: vi.fn(),
+    getPermissionsTabs: vi.fn(() => state.mockPermissionTabs),
+  };
+
+  return state;
+});
+
+vi.mock('@nocobase/client-v2', async () => {
+  const actual = await vi.importActual<typeof import('@nocobase/client-v2')>('@nocobase/client-v2');
+  return {
+    ...actual,
+    useACLRoleContext: () => currentUserRole,
+  };
+});
 
 vi.mock('ahooks', async () => {
   const actual = await vi.importActual<typeof import('ahooks')>('ahooks');
@@ -69,7 +86,7 @@ vi.mock('@nocobase/flow-engine', async () => {
       list: () => [],
     },
     settingsUI: {
-      getPermissionsTabs: () => mockPermissionTabs,
+      getPermissionsTabs,
     },
   };
 
@@ -113,6 +130,7 @@ vi.mock('../../locale', () => ({
 
 describe('RolesManagementPage', () => {
   beforeEach(() => {
+    getPermissionsTabs.mockClear();
     runSelectedRoleRequest.mockClear();
     mockPermissionTabs.length = 0;
   });
@@ -172,5 +190,50 @@ describe('RolesManagementPage', () => {
     await new Promise((resolve) => setTimeout(resolve, 50));
     expect(componentLoader).toHaveBeenCalledTimes(1);
     expect(mount).toHaveBeenCalledTimes(1);
+  });
+
+  it('should pass the active permission tab key and current user role to the permissions registry', async () => {
+    function MockPermissionTab() {
+      return <div>Permission content</div>;
+    }
+
+    mockPermissionTabs.push(
+      {
+        key: 'general',
+        label: 'System',
+        componentLoader: async () => ({ default: MockPermissionTab }),
+      },
+      {
+        key: 'menu',
+        label: 'Desktop routes',
+        componentLoader: async () => ({ default: MockPermissionTab }),
+      },
+    );
+
+    render(
+      <App>
+        <RolesManagementPage />
+      </App>,
+    );
+
+    await screen.findByText('Permission content');
+
+    expect(getPermissionsTabs).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        activeKey: 'general',
+        currentUserRole: expect.objectContaining(currentUserRole),
+      }),
+    );
+
+    fireEvent.click(screen.getByRole('tab', { name: 'Desktop routes' }));
+
+    await waitFor(() => {
+      expect(getPermissionsTabs).toHaveBeenLastCalledWith(
+        expect.objectContaining({
+          activeKey: 'menu',
+          currentUserRole: expect.objectContaining(currentUserRole),
+        }),
+      );
+    });
   });
 });

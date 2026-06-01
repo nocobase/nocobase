@@ -8,10 +8,8 @@
  */
 
 import { PasswordFieldModel, PasswordInput } from '@nocobase/client-v2';
-import { Button, Space } from 'antd';
 import React from 'react';
 import { PluginUsersClientV2 } from '../plugin';
-import { generatePassword } from '../shared/generatePassword';
 
 type PasswordValidationRule = {
   validator?: (_rule: unknown, value: unknown) => Promise<void>;
@@ -65,21 +63,6 @@ export class UserPasswordFieldModel extends PasswordFieldModel {
 
   render() {
     this.ensurePasswordValidationRule();
-    const name = this.props.name ?? this.context.fieldPathArray;
-
-    return (
-      <Space.Compact style={{ width: '100%' }}>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <PasswordInput {...this.props} checkStrength={this.props.checkStrength ?? true} style={{ width: '100%' }} />
-        </div>
-        <Button
-          onClick={() => {
-            this.context.form?.setFieldValue?.(name, generatePassword());
-          }}
-        >
-          {this.context.t('Random password')}
-        </Button>
-      </Space.Compact>
-    );
+    return <PasswordInput {...this.props} checkStrength={this.props.checkStrength ?? false} />;
   }
 }

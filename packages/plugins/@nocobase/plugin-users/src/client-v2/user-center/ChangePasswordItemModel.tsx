@@ -7,12 +7,17 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { DrawerFormLayout, PasswordInput, UserCenterActionItemModel } from '@nocobase/client-v2';
+import {
+  DrawerFormLayout,
+  getCurrentV2RedirectPath,
+  PasswordInput,
+  redirectToV2Signin,
+  UserCenterActionItemModel,
+} from '@nocobase/client-v2';
 import { useFlowContext } from '@nocobase/flow-engine';
 import { useMemoizedFn } from 'ahooks';
 import { Alert, Form, theme } from 'antd';
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { useUsersTranslation } from '../locale';
 import { PluginUsersClientV2 } from '../plugin';
 
@@ -24,7 +29,6 @@ import { PluginUsersClientV2 } from '../plugin';
 function ChangePasswordDrawerContent() {
   const { t } = useUsersTranslation();
   const ctx = useFlowContext();
-  const navigate = useNavigate();
   const { token } = theme.useToken();
   const [form] = Form.useForm();
   const [submitting, setSubmitting] = useState(false);
@@ -50,7 +54,9 @@ function ChangePasswordDrawerContent() {
     try {
       await ctx.api.resource('auth').changePassword({ values });
       form.resetFields();
-      navigate('/signin');
+      redirectToV2Signin(ctx.app, getCurrentV2RedirectPath(ctx.app, window.location), {
+        replace: true,
+      });
     } catch (error: unknown) {
       const apiError = error as { response?: { data?: { errors?: { message?: string }[] } }; message?: string };
       const message = apiError?.response?.data?.errors?.[0]?.message || apiError?.message || String(error);

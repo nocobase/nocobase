@@ -187,16 +187,7 @@ export class PluginAIClientV2 extends Plugin {
 
 - `activeKey`
 - `activeRole`
+- `currentUserRole`
 - `onRoleChange`
 
-也就是说，子 tab 里的组件仍然可以拿到当前角色上下文。
-
-这里有一个当前 v2 需要注意的点：
-
-- `PermissionTabProps` 类型里虽然有 `currentUserRole`
-- 但 `RolesManagementPage` 目前传给权限子 tab 的 `currentUserRole` 是 `null`
-
-当前更稳妥的方式是：
-
-- 始终注册这个子 tab
-- 在组件内部根据 `activeRole` 或其他可用上下文决定渲染什么内容
+也就是说，子 tab 里的组件可以同时拿到正在配置的角色 `activeRole`，以及当前登录用户的角色 `currentUserRole`。`currentUserRole` 会经过 `RolesManagementPage` 归一化，至少包含 `name`、`title`、`snippets` 等常用字段；如果当前角色上下文不可用，则为 `null`。

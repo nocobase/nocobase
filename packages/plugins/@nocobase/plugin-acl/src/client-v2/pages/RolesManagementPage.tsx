@@ -9,7 +9,7 @@
 
 import { css } from '@emotion/css';
 import { MoreOutlined, PlusOutlined, TagOutlined } from '@ant-design/icons';
-import { ResourceFormDrawer } from '@nocobase/client-v2';
+import { ResourceFormDrawer, useACLRoleContext } from '@nocobase/client-v2';
 import { randomId, useFlowContext } from '@nocobase/flow-engine';
 import { useMemoizedFn, useRequest } from 'ahooks';
 import {
@@ -34,7 +34,7 @@ import {
 import React, { lazy, Suspense, useEffect, useMemo, useState } from 'react';
 import { useT } from '../locale';
 import PluginAclClientV2 from '../plugin';
-import type { PermissionTabProps, Role } from '../registries';
+import type { ComponentLoader, PermissionTabProps, Role, RoleTabProps } from '../registries';
 
 interface RoleFormValues {
   title: string;
@@ -52,6 +52,8 @@ interface RoleListPayload {
   };
 }
 
+type ACLRoleContextValue = ReturnType<typeof useACLRoleContext>;
+
 function toRoleListPayload(responseData: unknown): RoleListPayload {
   if (!responseData || typeof responseData !== 'object') {
     return {};
@@ -61,6 +63,45 @@ function toRoleListPayload(responseData: unknown): RoleListPayload {
     data: Array.isArray(payload.data) ? payload.data : [],
     meta: payload.meta,
   };
+}
+
+function toCurrentUserRole(roleContext: ACLRoleContextValue | null | undefined): Role | null {
+  if (!roleContext) {
+    return null;
+  }
+
+  const roleContextRecord = roleContext as Record<string, unknown>;
+  const name = typeof roleContextRecord.name === 'string' ? roleContextRecord.name : roleContext.role || null;
+  const title = typeof roleContextRecord.title === 'string' ? roleContextRecord.title : name;
+
+  if (!name || !title) {
+    return null;
+  }
+
+  return {
+    name,
+    title,
+    snippets: Array.isArray(roleContext.snippets) ? roleContext.snippets : [],
+    strategy: roleContext.strategy,
+    allowConfigure: roleContext.allowConfigure,
+  };
+}
+
+function getStableLazyComponent<Props>(
+  cache: Map<
+    string,
+    { loader: ComponentLoader<Props>; Component: React.LazyExoticComponent<React.ComponentType<Props>> }
+  >,
+  key: string,
+  loader: ComponentLoader<Props>,
+) {
+  const cached = cache.get(key);
+  if (cached?.loader === loader) {
+    return cached.Component;
+  }
+  const Component = lazy(loader);
+  cache.set(key, { loader, Component });
+  return Component;
 }
 
 function RoleFormDrawerContent(props: {
@@ -172,9 +213,26 @@ export default function RolesManagementPage() {
   const { modal } = App.useApp();
   const { token } = theme.useToken();
   const aclPlugin = ctx.app.pm.get(PluginAclClientV2) as PluginAclClientV2;
+  const currentUserRole = toCurrentUserRole(useACLRoleContext());
+  const roleTabComponentCache = React.useRef<
+    Map<
+      string,
+      { loader: ComponentLoader<RoleTabProps>; Component: React.LazyExoticComponent<React.ComponentType<RoleTabProps>> }
+    >
+  >(new Map());
+  const permissionTabComponentCache = React.useRef<
+    Map<
+      string,
+      {
+        loader: ComponentLoader<PermissionTabProps>;
+        Component: React.LazyExoticComponent<React.ComponentType<PermissionTabProps>>;
+      }
+    >
+  >(new Map());
   const [selectedRoleName, setSelectedRoleName] = useState<string | null>(null);
   const [selectedRole, setSelectedRole] = useState<Role | null>(null);
   const [activeTabKey, setActiveTabKey] = useState('permissions');
+  const [activePermissionTabKey, setActivePermissionTabKey] = useState('general');
   const rightPanelMaxHeight = '70vh';
   const layoutClassName = css`
     &.acl-role-tabs > .ant-tabs-nav {
@@ -304,6 +362,10 @@ export default function RolesManagementPage() {
     loadSelectedRole();
   }, [loadSelectedRole, selectedRoleName]);
 
+  useEffect(() => {
+    setActivePermissionTabKey('general');
+  }, [selectedRole?.name]);
+
   const handleRoleChange = useMemoizedFn((role: Role | null) => {
     setSelectedRole(role);
     if (role?.name && role.name !== selectedRoleName) {
@@ -376,20 +438,37 @@ export default function RolesManagementPage() {
       aclPlugin.rolesManager.list().map(([key, item]) => ({
         key,
         label: item.title,
-        Component: lazy(item.componentLoader),
+        Component: getStableLazyComponent(roleTabComponentCache.current, key, item.componentLoader),
       })),
     [aclPlugin.rolesManager],
   );
 
   const permissionTabDefinitions = useMemo(
     () =>
-      aclPlugin.settingsUI.getPermissionsTabs().map((item) => ({
-        key: item.key,
-        label: item.label,
-        Component: lazy(item.componentLoader),
-      })),
-    [aclPlugin.settingsUI],
+      aclPlugin.settingsUI
+        .getPermissionsTabs({
+          activeKey: activePermissionTabKey,
+          activeRole: selectedRole,
+          currentUserRole,
+          onRoleChange: handleRoleChange,
+        })
+        .map((item) => ({
+          key: item.key,
+          label: item.label,
+          Component: getStableLazyComponent(permissionTabComponentCache.current, item.key, item.componentLoader),
+        })),
+    [aclPlugin.settingsUI, activePermissionTabKey, currentUserRole, handleRoleChange, selectedRole],
   );
+
+  useEffect(() => {
+    if (!permissionTabDefinitions.length) {
+      return;
+    }
+    if (permissionTabDefinitions.some((item) => item.key === activePermissionTabKey)) {
+      return;
+    }
+    setActivePermissionTabKey(permissionTabDefinitions[0].key);
+  }, [activePermissionTabKey, permissionTabDefinitions]);
 
   const roleTabs = roleTabDefinitions.map(({ key, label, Component }) => {
     return {
@@ -407,9 +486,9 @@ export default function RolesManagementPage() {
 
   const permissionTabs = permissionTabDefinitions.map(({ key, label, Component }) => {
     const props: PermissionTabProps = {
-      activeKey: key,
+      activeKey: activePermissionTabKey,
       activeRole: selectedRole,
-      currentUserRole: null,
+      currentUserRole,
       onRoleChange: handleRoleChange,
     };
     return {
@@ -434,6 +513,8 @@ export default function RolesManagementPage() {
           type="card"
           className={nestedTabsClassName}
           style={{ height: '100%', minHeight: 0 }}
+          activeKey={activePermissionTabKey}
+          onChange={setActivePermissionTabKey}
           items={permissionTabs}
         />
       ) : (

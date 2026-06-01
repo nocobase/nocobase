@@ -14,6 +14,8 @@ import {
   useFlowContext,
   useFlowEngine,
   useFlowViewContext,
+  type CreateModelOptions,
+  type FlowEngineContext,
   type FlowModel,
 } from '@nocobase/flow-engine';
 import { useRequest } from 'ahooks';
@@ -36,13 +38,10 @@ type LoadedUserFormModel = FlowModel & {
     params?: Record<string, unknown>,
     cb?: (values?: UserFormValues, filterByTk?: unknown) => Promise<unknown>,
   ) => Promise<unknown>;
-  use?: string;
-  serialize: () => Record<string, any>;
 };
 
 type FlowModelsResource = {
   save: (params: { values: Record<string, unknown> }) => Promise<unknown>;
-  destroy: (params: { filterByTk: string }) => Promise<unknown>;
 };
 
 const userFormBlockClassName = css`
@@ -64,93 +63,13 @@ const userFormBlockClassName = css`
   }
 `;
 
-type FlowModelTree = Record<string, any>;
-
-function normalizeUserFormRootUse(serialized: FlowModelTree, isEdit: boolean) {
-  const expectedUse = isEdit ? 'UserEditFormModel' : 'UserCreateFormModel';
-  if (serialized.use === expectedUse) {
-    return serialized;
-  }
-  return {
-    ...serialized,
-    use: expectedUse,
-  };
-}
-
-function isUsernameFieldItem(item: unknown) {
-  if (!item || typeof item !== 'object') {
-    return false;
-  }
-  const record = item as FlowModelTree;
-  return record.stepParams?.fieldSettings?.init?.fieldPath === 'username';
-}
-
-function normalizeUsernameFieldItem(item: FlowModelTree, isEdit: boolean) {
-  const nextItem: FlowModelTree = {
-    ...item,
-    stepParams: {
-      ...(item.stepParams || {}),
-      editItemSettings: {
-        ...(item.stepParams?.editItemSettings || {}),
-        required: {
-          ...(item.stepParams?.editItemSettings?.required || {}),
-          required: true,
-        },
-      },
-    },
-  };
-
-  const nextProps = { ...(nextItem.props || {}) };
-  if (isEdit) {
-    delete nextProps.disabled;
-  }
-
-  if (Object.keys(nextProps).length > 0) {
-    nextItem.props = nextProps;
-  } else {
-    delete nextItem.props;
-  }
-
-  return nextItem;
-}
-
-function normalizeUserFormModelTree(serialized: FlowModelTree, isEdit: boolean) {
-  const withNormalizedUse = normalizeUserFormRootUse(serialized, isEdit);
-  const items = withNormalizedUse.subModels?.grid?.subModels?.items;
-  if (!Array.isArray(items)) {
-    return withNormalizedUse;
-  }
-
-  const nextItems = items.map((item) =>
-    isUsernameFieldItem(item) ? normalizeUsernameFieldItem(item as FlowModelTree, isEdit) : item,
-  );
-
-  return {
-    ...withNormalizedUse,
-    subModels: {
-      ...(withNormalizedUse.subModels || {}),
-      grid: {
-        ...(withNormalizedUse.subModels?.grid || {}),
-        subModels: {
-          ...(withNormalizedUse.subModels?.grid?.subModels || {}),
-          items: nextItems,
-        },
-      },
-    },
-  };
-}
-
-function shouldRebuildUserFormModel(loadedModel: LoadedUserFormModel, isEdit: boolean) {
-  const serialized = loadedModel.serialize();
-  const normalized = normalizeUserFormModelTree(serialized, isEdit);
-  return JSON.stringify(serialized) !== JSON.stringify(normalized);
-}
+type PersistedFlowModelTree = CreateModelOptions;
 
 async function ensurePersistedUserFormModel(options: {
   flowEngine: ReturnType<typeof useFlowEngine>;
-  api: ReturnType<typeof useFlowContext>['api'];
+  api: FlowEngineContext['api'];
   uid: string;
-  fallbackTree: Record<string, unknown>;
+  fallbackTree: PersistedFlowModelTree;
 }) {
   const { flowEngine, api, uid, fallbackTree } = options;
   const flowModels = api.resource('flowModels') as FlowModelsResource;
@@ -158,47 +77,11 @@ async function ensurePersistedUserFormModel(options: {
   if (loaded) {
     return loaded;
   }
-  try {
-    await flowModels.save({
-      values: fallbackTree,
-    });
-  } catch (error) {
-    if (!isFlowModelTreePathDuplicateError(error)) {
-      throw error;
-    }
-    await flowModels.destroy({
-      filterByTk: uid,
-    });
-    await flowModels.save({
-      values: fallbackTree,
-    });
-  }
+  await flowModels.save({
+    values: fallbackTree,
+  });
   loaded = (await flowEngine.loadModel({ uid })) as LoadedUserFormModel | null;
   return loaded;
-}
-
-function isFlowModelTreePathDuplicateError(error: unknown) {
-  if (!error || typeof error !== 'object') {
-    return false;
-  }
-
-  const record = error as {
-    response?: {
-      data?: {
-        errors?: Array<{ message?: string }>;
-      };
-    };
-    errors?: Array<{ message?: string }>;
-  };
-
-  const messages = [
-    ...(record.errors?.map((item) => item?.message) ?? []),
-    ...(record.response?.data?.errors?.map((item) => item?.message) ?? []),
-  ]
-    .filter((message): message is string => !!message)
-    .join(' ');
-
-  return messages.includes('ancestor') && messages.includes('descendant');
 }
 
 export interface UserFormDrawerProps {
@@ -263,20 +146,11 @@ export default function UserFormDrawer(props: UserFormDrawerProps) {
           uid: formModelUid,
           fallbackTree,
         })) ?? ((await flowEngine.createModelAsync(fallbackTree)) as LoadedUserFormModel);
-      const loaded = !shouldRebuildUserFormModel(loadedModel, isEdit)
-        ? loadedModel
-        : (() => {
-            flowEngine.removeModelWithSubModels(loadedModel.uid);
-            return flowEngine.createModelAsync(
-              normalizeUserFormModelTree(loadedModel.serialize(), isEdit),
-            ) as Promise<LoadedUserFormModel>;
-          })();
-      const normalizedModel = await loaded;
       if (viewCtx) {
-        normalizedModel.context.addDelegate(viewCtx);
+        loadedModel.context.addDelegate(viewCtx);
       }
-      setModel(normalizedModel);
-      return normalizedModel;
+      setModel(loadedModel);
+      return loadedModel;
     },
     {
       refreshDeps: [flowEngine, viewCtx, formModelUid, fallbackTree, user?.id],

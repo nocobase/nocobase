@@ -21,6 +21,10 @@ interface EditProfileValues {
   phone?: string;
 }
 
+function validateUsername(value: unknown) {
+  return typeof value === 'string' && /^[^@<>"'/]{1,50}$/.test(value);
+}
+
 function EditProfileDrawerContent() {
   const ctx = useFlowContext();
   const t = useT();
@@ -80,7 +84,17 @@ function EditProfileDrawerContent() {
         <Form.Item
           name="username"
           label={t('Username')}
-          rules={[{ required: true, message: t('Username is required') }]}
+          rules={[
+            { required: true, message: t('Username is required') },
+            {
+              validator: async (_, value) => {
+                if (!value || validateUsername(value)) {
+                  return;
+                }
+                throw new Error(t('Must be 1-50 characters in length (excluding @.<>"\'/)'));
+              },
+            },
+          ]}
         >
           <Input autoComplete="username" />
         </Form.Item>
