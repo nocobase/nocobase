@@ -9,11 +9,13 @@
 
 import { Args, Command } from '@oclif/core';
 import { assertSupportedCliConfigKey, deleteCliConfigValue } from '../../lib/cli-config.js';
+import { clearLegacyStartupUpdatePolicyForCurrentInstall } from '../../lib/startup-update.js';
 
 export default class ConfigDelete extends Command {
   static override summary = 'Delete an explicitly configured CLI setting';
   static override examples = [
     '<%= config.bin %> <%= command.id %> locale',
+    '<%= config.bin %> <%= command.id %> update.policy',
     '<%= config.bin %> <%= command.id %> license.pkg-url',
     '<%= config.bin %> <%= command.id %> docker.network',
     '<%= config.bin %> <%= command.id %> docker.container-prefix',
@@ -33,6 +35,7 @@ export default class ConfigDelete extends Command {
     const { args } = await this.parse(ConfigDelete);
     const key = assertSupportedCliConfigKey(args.key);
     const removed = await deleteCliConfigValue(key);
-    this.log(removed ? `Deleted ${key}` : `${key} was not set`);
+    const clearedLegacy = key === 'update.policy' ? await clearLegacyStartupUpdatePolicyForCurrentInstall() : false;
+    this.log(removed || clearedLegacy ? `Deleted ${key}` : `${key} was not set`);
   }
 }

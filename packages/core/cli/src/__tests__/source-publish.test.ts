@@ -92,14 +92,17 @@ test('resolveSourcePublishRegistry falls back to the running local source regist
 test('buildSnapshotVersion uses date and git sha to form a unique version', async () => {
   const { buildSnapshotVersion, buildSuggestedInitCommand } = await import('../lib/source-publish.js');
 
-  expect(buildSnapshotVersion('2.1.0-beta.34', 'abc12345', new Date('2026-05-19T08:00:00Z')))
-    .toBe('2.1.0-beta.34-snapshot.20260519.abc12345');
-  expect(buildSuggestedInitCommand({
-    version: '2.1.0-beta.34-snapshot.20260519.abc12345',
-    npmRegistry: 'http://127.0.0.1:4873',
-    gitSha: 'abc12345',
-  })).toBe(
-    'nb init --env snapshotabc12345 --yes --source npm --version 2.1.0-beta.34-snapshot.20260519.abc12345 --npm-registry=http://127.0.0.1:4873',
+  expect(buildSnapshotVersion('2.1.0-beta.34', 'abc12345', new Date('2026-05-19T08:00:00Z'))).toBe(
+    '2.1.0-beta.34-snapshot.20260519.abc12345',
+  );
+  expect(
+    buildSuggestedInitCommand({
+      version: '2.1.0-beta.34-snapshot.20260519.abc12345',
+      npmRegistry: 'http://127.0.0.1:4873',
+      gitSha: 'abc12345',
+    }),
+  ).toBe(
+    'nb init --ui --env snapshotabc12345 --yes --source npm --version 2.1.0-beta.34-snapshot.20260519.abc12345 --npm-registry=http://127.0.0.1:4873',
   );
 });
 
@@ -132,14 +135,17 @@ test('publishSourceSnapshot versions and publishes from a temporary git branch',
     ],
     [
       'yarn',
-      ['lerna', 'version', '2.1.0-beta.34-snapshot.20260519.abc12345', '--force-publish=*', '--no-git-tag-version', '-y'],
+      [
+        'lerna',
+        'version',
+        '2.1.0-beta.34-snapshot.20260519.abc12345',
+        '--force-publish=*',
+        '--no-git-tag-version',
+        '-y',
+      ],
       { cwd: '/repo', errorName: 'lerna version', stdio: 'ignore' },
     ],
-    [
-      'git',
-      ['add', '-A'],
-      { cwd: '/repo', errorName: 'git add', env: undefined, stdio: 'ignore' },
-    ],
+    ['git', ['add', '-A'], { cwd: '/repo', errorName: 'git add', env: undefined, stdio: 'ignore' }],
     [
       'git',
       ['commit', '--no-verify', '-m', 'chore(source-publish): 2.1.0-beta.34-snapshot.20260519.abc12345'],
@@ -147,7 +153,19 @@ test('publishSourceSnapshot versions and publishes from a temporary git branch',
     ],
     [
       'yarn',
-      ['lerna', 'publish', 'from-package', '--registry', 'http://127.0.0.1:4873', '--dist-tag', 'local', '--yes', '--no-verify-access', '--git-head', 'abc12345'],
+      [
+        'lerna',
+        'publish',
+        'from-package',
+        '--registry',
+        'http://127.0.0.1:4873',
+        '--dist-tag',
+        'local',
+        '--yes',
+        '--no-verify-access',
+        '--git-head',
+        'abc12345',
+      ],
       {
         cwd: '/repo',
         errorName: 'lerna publish',
@@ -162,16 +180,8 @@ test('publishSourceSnapshot versions and publishes from a temporary git branch',
       ['reset', '--hard', 'HEAD'],
       { cwd: '/repo', errorName: 'git reset --hard', env: undefined, stdio: 'ignore' },
     ],
-    [
-      'git',
-      ['clean', '-fd'],
-      { cwd: '/repo', errorName: 'git clean -fd', env: undefined, stdio: 'ignore' },
-    ],
-    [
-      'git',
-      ['switch', 'main'],
-      { cwd: '/repo', errorName: 'git switch', env: undefined, stdio: 'ignore' },
-    ],
+    ['git', ['clean', '-fd'], { cwd: '/repo', errorName: 'git clean -fd', env: undefined, stdio: 'ignore' }],
+    ['git', ['switch', 'main'], { cwd: '/repo', errorName: 'git switch', env: undefined, stdio: 'ignore' }],
     [
       'git',
       ['stash', 'pop', '--index', 'stash@{0}'],
@@ -217,14 +227,17 @@ test('publishSourceSnapshot skips stash steps when the worktree is already clean
     ],
     [
       'yarn',
-      ['lerna', 'version', '2.1.0-beta.34-snapshot.20260519.abc12345', '--force-publish=*', '--no-git-tag-version', '-y'],
+      [
+        'lerna',
+        'version',
+        '2.1.0-beta.34-snapshot.20260519.abc12345',
+        '--force-publish=*',
+        '--no-git-tag-version',
+        '-y',
+      ],
       { cwd: '/repo', errorName: 'lerna version', stdio: 'ignore' },
     ],
-    [
-      'git',
-      ['add', '-A'],
-      { cwd: '/repo', errorName: 'git add', env: undefined, stdio: 'ignore' },
-    ],
+    ['git', ['add', '-A'], { cwd: '/repo', errorName: 'git add', env: undefined, stdio: 'ignore' }],
     [
       'git',
       ['commit', '--no-verify', '-m', 'chore(source-publish): 2.1.0-beta.34-snapshot.20260519.abc12345'],
@@ -232,7 +245,19 @@ test('publishSourceSnapshot skips stash steps when the worktree is already clean
     ],
     [
       'yarn',
-      ['lerna', 'publish', 'from-package', '--registry', 'http://127.0.0.1:4873', '--dist-tag', 'local', '--yes', '--no-verify-access', '--git-head', 'abc12345'],
+      [
+        'lerna',
+        'publish',
+        'from-package',
+        '--registry',
+        'http://127.0.0.1:4873',
+        '--dist-tag',
+        'local',
+        '--yes',
+        '--no-verify-access',
+        '--git-head',
+        'abc12345',
+      ],
       {
         cwd: '/repo',
         errorName: 'lerna publish',
@@ -247,16 +272,8 @@ test('publishSourceSnapshot skips stash steps when the worktree is already clean
       ['reset', '--hard', 'HEAD'],
       { cwd: '/repo', errorName: 'git reset --hard', env: undefined, stdio: 'ignore' },
     ],
-    [
-      'git',
-      ['clean', '-fd'],
-      { cwd: '/repo', errorName: 'git clean -fd', env: undefined, stdio: 'ignore' },
-    ],
-    [
-      'git',
-      ['switch', 'main'],
-      { cwd: '/repo', errorName: 'git switch', env: undefined, stdio: 'ignore' },
-    ],
+    ['git', ['clean', '-fd'], { cwd: '/repo', errorName: 'git clean -fd', env: undefined, stdio: 'ignore' }],
+    ['git', ['switch', 'main'], { cwd: '/repo', errorName: 'git switch', env: undefined, stdio: 'ignore' }],
     [
       'git',
       ['branch', '-D', 'nb/source-publish-20260519080000-abc12345'],

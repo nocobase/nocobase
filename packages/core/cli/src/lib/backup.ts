@@ -80,17 +80,17 @@ export async function resolveBackupTargetEnv(requestedEnv?: string) {
   const configuredEnvNames = Object.keys(envs);
 
   if (!configuredEnvNames.length) {
-    throw new Error('No env is configured. Run `nb env add <name> --api-base-url <url>` first.');
+    throw new Error('No env is configured. Run `nb init --ui` first.');
   }
 
   if (requestedEnv?.trim()) {
-    throw new Error(`Env "${envName}" is not configured. Run \`nb env add ${envName} --api-base-url <url>\` first.`);
+    throw new Error(`Env "${envName}" is not configured. Run \`nb init --ui --env ${envName}\` first.`);
   }
 
   throw new Error(
     [
       `Current env "${envName}" is not configured.`,
-      'Switch to an existing env with `nb env use <name>`, or add one with `nb env add <name> --api-base-url <url>`.',
+      `Switch to an existing env with \`nb env use <name>\`, or run \`nb init --ui --env ${envName}\` to create or connect it.`,
     ].join('\n'),
   );
 }

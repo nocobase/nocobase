@@ -22,6 +22,8 @@ const mocks = vi.hoisted(() => ({
 
 beforeEach(() => {
   vi.clearAllMocks();
+  mocks.getEnv.mockReset();
+  mocks.getEnv.mockResolvedValue(undefined);
   mocks.upsertEnv.mockResolvedValue(undefined);
   mocks.setCurrentEnv.mockResolvedValue(undefined);
   mocks.validateExternalDbConfig.mockReset();
@@ -135,6 +137,10 @@ test('install saves env config immediately after collecting prompt results for f
   expect(saveInstalledEnv.mock.invocationCallOrder[0]).toBeGreaterThan(
     collectPromptResults.mock.invocationCallOrder[0],
   );
+  expect(saveInstalledEnv.mock.calls[0]?.[0].appResults).toMatchObject({
+    timeZone: expect.any(String),
+  });
+  expect(String(saveInstalledEnv.mock.calls[0]?.[0].appResults.appKey ?? '')).toMatch(/^[a-f0-9]{64}$/);
   expect(waitForAppHealthCheck).not.toHaveBeenCalled();
 });
 
@@ -516,6 +522,70 @@ test('install --resume reuses the saved workspace env config for prompt values',
   expect(result.envAddResults.authType).toBe('token');
   expect(result.envAddResults.accessToken).toBe('resume-token');
   expect(result.envAddResults.apiBaseUrl).toBe('http://127.0.0.1:13080/api');
+});
+
+test('install reuses saved appKey and timezone before resuming docker startup', async () => {
+  const { default: Install } = await import('../commands/install.js');
+
+  mocks.getEnv.mockResolvedValue({
+    name: 'app1',
+    config: {
+      appKey: 'saved-app-key',
+      timezone: 'Asia/Shanghai',
+    },
+  });
+
+  const saveInstalledEnv = vi.fn(async () => undefined);
+  const waitForAppHealthCheck = vi.fn(async () => undefined);
+  const downloadManagedSource = vi.fn(async () => undefined);
+  const installDockerApp = vi.fn(async () => ({
+    containerName: 'nb-chen-app1-app',
+    appPort: '13080',
+    appKey: 'saved-app-key',
+    timeZone: 'Asia/Shanghai',
+  }));
+
+  const command = Object.assign(Object.create(Install.prototype), {
+    parse: vi.fn(async () => ({
+      flags: {
+        yes: false,
+        resume: true,
+        force: false,
+        verbose: false,
+        'no-intro': true,
+      },
+    })),
+    collectPromptResults: vi.fn(async () => ({
+      envName: 'app1',
+      envResults: {},
+      appResults: {
+        appPort: '13080',
+        storagePath: './app1/storage/',
+      },
+      downloadResults: {
+        source: 'docker',
+      },
+      dbResults: {},
+      rootResults: {},
+      envAddResults: {
+        apiBaseUrl: 'http://127.0.0.1:13080/api',
+        authType: 'oauth',
+      },
+    })),
+    saveInstalledEnv,
+    waitForAppHealthCheck,
+    downloadManagedSource,
+    installDockerApp,
+    commandStdio: vi.fn(() => 'ignore'),
+    config: { runCommand: vi.fn(async () => undefined) },
+  });
+
+  await Install.prototype.run.call(command);
+
+  expect(installDockerApp.mock.calls[0]?.[0].appResults).toMatchObject({
+    appKey: 'saved-app-key',
+    timeZone: 'Asia/Shanghai',
+  });
 });
 
 test('install --resume keeps saved basic auth credentials editable in prompts', async () => {

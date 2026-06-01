@@ -370,6 +370,12 @@
           "description": "Set up the first admin."
         }
       }
+    },
+    "env": {
+      "messages": {
+        "noEnvsConfigured": "No envs configured.",
+        "noEnvsConfiguredHelp": "Run `nb init --ui` to create one first."
+      }
     }
   },
   "apiCommandCompat": {
