@@ -46,6 +46,7 @@ import { omitKeys, upperFirst } from '../lib/object-utils.ts';
 import { getEnv, loadAuthConfig, setCurrentEnv, type Env, upsertEnv } from '../lib/auth-store.js';
 import { buildStoredEnvConfig, type StoredEnvConfig } from '../lib/env-config.js';
 import { resolveDockerEnvFileArg } from '../lib/docker-env-file.ts';
+import { startDockerLogFollower } from '../lib/docker-log-stream.js';
 import Download, { DownloadParsedFlags, defaultDockerRegistryForLang, type DownloadCommandResult } from './download.js';
 import EnvAdd from './env/add.ts';
 
@@ -2636,6 +2637,7 @@ export default class Install extends Command {
       requestTimeoutMs?: number;
       fetchImpl?: typeof fetch;
       containerName?: string;
+      verbose?: boolean;
     },
   ): Promise<void> {
     const healthCheckUrl = Install.buildHealthCheckUrl(apiBaseUrl);
@@ -2648,43 +2650,49 @@ export default class Install extends Command {
     let lastLoggedStatus = '';
 
     printInfo('Waiting for NocoBase to become ready...');
+    const dockerLogFollower =
+      options?.verbose && options.containerName ? startDockerLogFollower(options.containerName) : undefined;
 
-    while (Date.now() - startedAt < timeoutMs) {
-      const result = await Install.requestAppHealthCheck({
-        healthCheckUrl,
-        fetchImpl,
-        requestTimeoutMs,
-      });
+    try {
+      while (Date.now() - startedAt < timeoutMs) {
+        const result = await Install.requestAppHealthCheck({
+          healthCheckUrl,
+          fetchImpl,
+          requestTimeoutMs,
+        });
 
-      if (result.ok) {
-        return;
+        if (result.ok) {
+          return;
+        }
+
+        lastMessage = result.message;
+        const elapsedSeconds = Math.max(1, Math.floor((Date.now() - startedAt) / 1000));
+        const statusLine = `Waiting for NocoBase to become ready... (${elapsedSeconds}s elapsed, last status: ${Install.formatHealthCheckMessage(
+          lastMessage,
+        )})`;
+        if (statusLine !== lastLoggedStatus) {
+          printInfo(statusLine);
+          lastLoggedStatus = statusLine;
+        }
+
+        const remainingMs = timeoutMs - (Date.now() - startedAt);
+        if (remainingMs <= 0) {
+          break;
+        }
+        await Install.sleep(Math.min(intervalMs, remainingMs));
       }
 
-      lastMessage = result.message;
-      const elapsedSeconds = Math.max(1, Math.floor((Date.now() - startedAt) / 1000));
-      const statusLine = `Waiting for NocoBase to become ready... (${elapsedSeconds}s elapsed, last status: ${Install.formatHealthCheckMessage(
-        lastMessage,
-      )})`;
-      if (statusLine !== lastLoggedStatus) {
-        printInfo(statusLine);
-        lastLoggedStatus = statusLine;
-      }
-
-      const remainingMs = timeoutMs - (Date.now() - startedAt);
-      if (remainingMs <= 0) {
-        break;
-      }
-      await Install.sleep(Math.min(intervalMs, remainingMs));
+      const logHint = options?.containerName
+        ? ` You can inspect startup logs with: docker logs ${options.containerName}`
+        : '';
+      throw new Error(
+        `The application did not become ready in time. Expected \`${healthCheckUrl}\` to respond with \`ok\`, but the last status was: ${Install.formatHealthCheckMessage(
+          lastMessage,
+        )}.${logHint}`,
+      );
+    } finally {
+      await dockerLogFollower?.stop();
     }
-
-    const logHint = options?.containerName
-      ? ` You can inspect startup logs with: docker logs ${options.containerName}`
-      : '';
-    throw new Error(
-      `The application did not become ready in time. Expected \`${healthCheckUrl}\` to respond with \`ok\`, but the last status was: ${Install.formatHealthCheckMessage(
-        lastMessage,
-      )}.${logHint}`,
-    );
   }
 
   private async saveInstalledEnv(params: {
@@ -3092,6 +3100,7 @@ export default class Install extends Command {
         }),
         {
           containerName: dockerAppPlan?.containerName,
+          verbose: parsed.verbose,
         },
       );
       printInfo(`NocoBase is ready at http://127.0.0.1:${dockerAppPlan?.appPort ?? localAppPlan?.appPort}`);

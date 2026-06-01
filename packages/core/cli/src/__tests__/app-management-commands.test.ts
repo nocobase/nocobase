@@ -1015,6 +1015,7 @@ test('start recreates docker app containers through docker run', async () => {
         apiBaseUrl: 'http://127.0.0.1:13000/api',
         containerName: 'nb-demo-docker-local-app',
         logHint: 'You can inspect startup logs with `nb app logs --env docker-local`.',
+        verbose: true,
       },
     ],
   ]);
@@ -1474,6 +1475,7 @@ test('restart recreates docker envs so envFile changes can take effect', async (
       apiBaseUrl: 'http://127.0.0.1:13000/api',
       containerName: 'nb-demo-docker-local-app',
       logHint: 'You can inspect startup logs with `nb app logs --env docker-local`.',
+      verbose: true,
     });
   } finally {
     recreateSavedDockerApp.mockRestore();
@@ -1534,6 +1536,7 @@ test('restart recreates docker envs by default', async () => {
       apiBaseUrl: 'http://127.0.0.1:13000/api',
       containerName: 'nb-demo-docker-local-app',
       logHint: 'You can inspect startup logs with `nb app logs --env docker-local`.',
+      verbose: true,
     });
   } finally {
     recreateSavedDockerApp.mockRestore();
