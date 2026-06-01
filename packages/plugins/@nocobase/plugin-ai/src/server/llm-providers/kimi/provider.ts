@@ -26,7 +26,7 @@ export class KimiProvider extends LLMProvider {
   }
 
   createModel() {
-    const { baseURL, apiKey } = this.serviceOptions || {};
+    const { apiKey } = this.serviceOptions || {};
     const { responseFormat, structuredOutput } = this.modelOptions || {};
     const { schema } = structuredOutput || {};
     const responseFormatOptions = {
@@ -42,7 +42,7 @@ export class KimiProvider extends LLMProvider {
         response_format: responseFormatOptions,
       },
       configuration: {
-        baseURL: baseURL || this.baseURL,
+        baseURL: this.getResolvedBaseURL(),
       },
     });
   }
@@ -83,7 +83,7 @@ export class KimiProvider extends LLMProvider {
     if (!this._documentLoader) {
       const loader = new KimiDocumentLoader(this.aiPlugin.fileManager, {
         apiKey: this.serviceOptions?.apiKey,
-        baseURL: this.serviceOptions?.baseURL || this.baseURL,
+        baseURL: this.getResolvedBaseURL(),
       });
       this._documentLoader = new CachedDocumentLoader(this.aiPlugin, {
         loader,
