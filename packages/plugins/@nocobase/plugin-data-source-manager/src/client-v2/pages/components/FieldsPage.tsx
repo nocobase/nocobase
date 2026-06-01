@@ -91,6 +91,20 @@ function normalizeListResponse(response: any) {
   return Array.isArray(payload) ? payload : [];
 }
 
+function getErrorMessage(error: unknown, fallback: string) {
+  const response = (error as any)?.response?.data;
+  const message =
+    (Array.isArray(response?.errors)
+      ? response.errors
+          .map((item: { message?: string }) => item.message)
+          .filter(Boolean)
+          .join('\n')
+      : undefined) ||
+    response?.message ||
+    (error as Error)?.message;
+  return typeof message === 'string' && message ? message : fallback;
+}
+
 const fallbackFieldInterfaceGroups: Record<string, { label: string; order: number }> = {
   basic: { label: 'Basic', order: 1 },
   choices: { label: 'Choices', order: 20 },
@@ -204,6 +218,46 @@ function getSelectableFieldInterfaceGroups(groups: FieldInterfaceGroupOption[], 
 
 function getFieldInterfaceLabel(fieldInterface?: FieldInterfaceOption, fallback?: React.ReactNode) {
   return fieldInterface?.title || fieldInterface?.label || fallback || fieldInterface?.name;
+}
+
+function getEditableFieldDisplayName(record: Record<string, any>) {
+  const title = record.uiSchema?.title;
+  return typeof title === 'string' ? title : title == null ? record.name : String(title);
+}
+
+function EditableFieldDisplayNameCell(props: {
+  loading?: boolean;
+  onSave: (record: Record<string, any>, value: string) => Promise<void>;
+  record: Record<string, any>;
+}) {
+  const [value, setValue] = useState(getEditableFieldDisplayName(props.record));
+
+  useEffect(() => {
+    setValue(getEditableFieldDisplayName(props.record));
+  }, [props.record]);
+
+  const handleSave = useCallback(() => {
+    const currentValue = getEditableFieldDisplayName(props.record);
+    const nextValue = value.trim();
+    if (!nextValue || nextValue === currentValue) {
+      setValue(currentValue);
+      return;
+    }
+    props.onSave(props.record, nextValue).catch(() => {
+      setValue(currentValue);
+    });
+  }, [props, value]);
+
+  return (
+    <Input
+      disabled={props.loading}
+      value={value}
+      onBlur={handleSave}
+      onChange={(event) => setValue(event.target.value)}
+      onPressEnter={(event) => event.currentTarget.blur()}
+      suffix={props.loading ? <Spin size="small" /> : null}
+    />
+  );
 }
 
 function isReadOnlyFieldInterface(record: Record<string, any>, currentFieldInterface?: FieldInterfaceOption) {
@@ -729,10 +783,11 @@ export default function FieldsPage(props: FieldsPageProps) {
   const t = useT();
   const ctx = useFlowContext();
   const appInfo = useCurrentAppInfo<{ database?: { dialect?: string } }>();
-  const { message, modal } = App.useApp();
+  const { message, modal, notification } = App.useApp();
   const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
   const [titleField, setTitleField] = useState<string | undefined>(props.collection.titleField);
   const [titleFieldLoadingKey, setTitleFieldLoadingKey] = useState<React.Key>();
+  const [displayNameLoadingKey, setDisplayNameLoadingKey] = useState<React.Key>();
   const [syncFieldsLoading, setSyncFieldsLoading] = useState(false);
   const request = useRequest(async () => {
     const response = await ctx.api.request({
@@ -911,6 +966,41 @@ export default function FieldsPage(props: FieldsPageProps) {
     [ctx.api, ctx.dataSourceManager, fieldInterfacesByName, props.collection.name, props.dataSourceKey, request],
   );
 
+  const handleFieldDisplayNameSave = useCallback(
+    async (field: Record<string, any>, title: string) => {
+      const nextTitle = title.trim();
+      if (!nextTitle) {
+        message.error(t('Field display name is required'));
+        throw new Error('Field display name is required');
+      }
+      setDisplayNameLoadingKey(field.name);
+      try {
+        await ctx.api.request({
+          url: getCollectionFieldActionUrl(props.dataSourceKey, props.collection.name, 'update', field.name),
+          method: 'post',
+          data: {
+            ...field,
+            uiSchema: {
+              ...omitRawTitle(field.uiSchema),
+              title: nextTitle,
+            },
+          },
+        });
+        await ctx.dataSourceManager.getDataSource(props.dataSourceKey)?.reload();
+        request.refresh();
+        message.success(t('Saved successfully'));
+      } catch (error) {
+        notification.error({
+          message: getErrorMessage(error, t('Save failed')),
+        });
+        throw error;
+      } finally {
+        setDisplayNameLoadingKey(undefined);
+      }
+    },
+    [ctx.api, ctx.dataSourceManager, message, notification, props.collection.name, props.dataSourceKey, request, t],
+  );
+
   const handleTitleFieldChange = useCallback(
     async (field: Record<string, any>, checked: boolean) => {
       const nextTitleField = checked ? field.name : 'id';
@@ -980,7 +1070,14 @@ export default function FieldsPage(props: FieldsPageProps) {
     () => [
       {
         title: t('Field display name'),
-        render: (record) => compileLegacyTemplate(record.uiSchema?.title || record.name, t),
+        width: 240,
+        render: (record) => (
+          <EditableFieldDisplayNameCell
+            loading={displayNameLoadingKey === record.name}
+            record={record}
+            onSave={handleFieldDisplayNameSave}
+          />
+        ),
       },
       { title: t('Field name'), dataIndex: 'name' },
       { title: t('Field type'), dataIndex: 'type', render: (value) => <Tag>{value}</Tag> },
@@ -1055,10 +1152,12 @@ export default function FieldsPage(props: FieldsPageProps) {
       ctx.dataSourceManager,
       fieldInterfacesByName,
       handleDelete,
+      handleFieldDisplayNameSave,
       handleFieldInterfaceChange,
       handleTitleFieldChange,
       openFieldForm,
       t,
+      displayNameLoadingKey,
       titleField,
       titleFieldLoadingKey,
     ],
