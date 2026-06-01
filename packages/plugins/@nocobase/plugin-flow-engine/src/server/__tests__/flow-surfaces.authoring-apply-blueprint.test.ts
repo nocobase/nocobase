@@ -522,12 +522,21 @@ describe('flowSurfaces backend authoring applyBlueprint compiler', () => {
     );
     expect(jsBlockError?.details?.repairHint).toContain('settings.code');
     expect(jsBlockError?.details?.repairHint).toContain('Do not change this block type');
+    expect(jsBlockError?.details?.requiredBlockType).toBe('jsBlock');
+    expect(jsBlockError?.details?.fixStrategy).toBe('repair_same_block_type');
+    expect(jsBlockError?.details?.repairExample?.inlineBlock?.type).toBe('jsBlock');
+    expect(jsBlockError?.details?.forbiddenFallbacks).toEqual(
+      expect.arrayContaining(['table', 'list', 'defer jsBlock']),
+    );
     expect(jsBlockError?.message).toContain('jsBlock payload shape problem');
     expect(jsBlockError?.message).toContain('Do not change this block type');
     expect(topLevelCodeError?.details?.repairHint).toContain('settings.code');
     expect(topLevelCodeError?.details?.repairHint).toContain('Do not change this block type');
     expect(chartError?.details?.repairHint).toContain('assets.charts');
     expect(chartError?.details?.repairHint).toContain('Do not change this block type');
+    expect(chartError?.details?.requiredBlockType).toBe('chart');
+    expect(chartError?.details?.fixStrategy).toBe('repair_same_block_type');
+    expect(chartError?.details?.repairExample?.block).toEqual({ type: 'chart', chart: 'chartKey' });
     expect(chartError?.details?.repairHint).toContain('do not drop or defer the chart');
     expect(chartError?.details?.repairHint).toContain('KPI');
     expect(chartError?.details?.repairSteps).toEqual(
@@ -580,6 +589,9 @@ describe('flowSurfaces backend authoring applyBlueprint compiler', () => {
     );
     expect(scriptError?.details?.repairHint).toContain('assets.scripts');
     expect(scriptError?.details?.repairHint).toContain('Do not change this block type');
+    expect(scriptError?.details?.requiredBlockType).toBe('jsBlock');
+    expect(scriptError?.details?.fixStrategy).toBe('repair_same_block_type');
+    expect(scriptError?.details?.repairExample?.assetBlock?.block?.type).toBe('jsBlock');
   });
 
   it('should include repair hints on invalid chart SQL output mappings', async () => {
