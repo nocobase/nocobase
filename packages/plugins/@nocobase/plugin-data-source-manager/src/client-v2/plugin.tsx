@@ -12,13 +12,6 @@ import React, { ComponentType } from 'react';
 import { FieldInterfaceConfigureOptions } from './field-interfaces';
 import { NAMESPACE } from './locale';
 import {
-  normalizeSqlCollectionSubmitValues,
-  SqlFieldsConfigureItem,
-  SqlPreviewConfigureItem,
-  SqlSourceCollectionsConfigureItem,
-  SqlStatementConfigureItem,
-} from './pages/components/SqlCollectionConfigure';
-import {
   normalizeViewCollectionSubmitValues,
   ViewDatabaseConfigureItem,
   ViewFieldsConfigureItem,
@@ -69,6 +62,17 @@ export interface CollectionTemplateConfigureItemProps extends CollectionTemplate
   item: CollectionTemplateConfigureItem;
 }
 
+export interface CollectionTemplateSyncFieldsProps {
+  collection: Record<string, any>;
+  dataSourceKey: string;
+  onSubmitted: () => void;
+}
+
+export interface CollectionTemplateSyncFieldsOptions {
+  Component?: ComponentType<CollectionTemplateSyncFieldsProps>;
+  visible?: boolean | ((props: { collection: Record<string, any>; dataSourceKey: string }) => boolean);
+}
+
 export interface CollectionTemplateConfigureItem {
   name?: string;
   label?: React.ReactNode;
@@ -98,6 +102,7 @@ export interface CollectionTemplateOptions {
   configure?: {
     items?: CollectionTemplateConfigureItem[];
     Form?: ComponentType<CollectionTemplateFormProps>;
+    syncFields?: CollectionTemplateSyncFieldsOptions;
     transformSubmitValues?: (values: Record<string, any>) => Record<string, any> | void;
   };
   fieldInterfaces?: {
@@ -428,130 +433,6 @@ export class PluginDataSourceManagerClientV2 extends Plugin<any, Application> {
           template: 'general',
         },
         fields: [],
-      },
-    });
-
-    this.registerCollectionTemplate({
-      name: 'tree',
-      title: '{{t("Tree collection")}}',
-      order: 30,
-      color: 'blue',
-      collection: {
-        options: {
-          template: 'tree',
-          tree: 'adjacencyList',
-        },
-        fields: [
-          {
-            interface: 'integer',
-            name: 'parentId',
-            type: 'bigInt',
-            title: '{{t("Parent ID")}}',
-            isForeignKey: true,
-            uiSchema: {
-              'x-read-pretty': true,
-            },
-          },
-          {
-            interface: 'm2o',
-            type: 'belongsTo',
-            name: 'parent',
-            title: '{{t("Parent")}}',
-            foreignKey: 'parentId',
-            treeParent: true,
-            onDelete: 'CASCADE',
-            componentProps: {
-              multiple: false,
-              fieldNames: {
-                label: 'id',
-                value: 'id',
-              },
-            },
-          },
-          {
-            interface: 'o2m',
-            type: 'hasMany',
-            name: 'children',
-            title: '{{t("Children")}}',
-            foreignKey: 'parentId',
-            treeChildren: true,
-            onDelete: 'CASCADE',
-            componentProps: {
-              multiple: true,
-              fieldNames: {
-                label: 'id',
-                value: 'id',
-              },
-            },
-          },
-        ],
-      },
-      presetFields: {
-        disabledIncludes: ['id'],
-      },
-      configure: {
-        transformSubmitValues(values) {
-          if (!Array.isArray(values.fields)) {
-            return;
-          }
-          values.fields = values.fields.map((field) => {
-            if (!field.target && ['belongsToMany', 'belongsTo', 'hasMany', 'hasOne'].includes(field.type)) {
-              return { ...field, target: values.name };
-            }
-            return field;
-          });
-
-          const primaryKey = values.fields.find((field) => field.primaryKey);
-          const parentId = values.fields.find((field) => field.name === 'parentId' && field.isForeignKey);
-          if (primaryKey && parentId) {
-            const parentIdTitle = parentId.uiSchema?.title;
-            parentId.interface = primaryKey.interface;
-            parentId.type = primaryKey.type;
-            parentId.uiSchema = structuredClone(primaryKey.uiSchema || {});
-            parentId.uiSchema.title = parentIdTitle;
-            parentId.autoFill = false;
-          }
-        },
-      },
-    });
-
-    this.registerCollectionTemplate({
-      name: 'sql',
-      title: '{{t("SQL collection")}}',
-      order: 40,
-      color: 'yellow',
-      divider: true,
-      collection: {
-        options: {
-          template: 'sql',
-        },
-        fields: [],
-      },
-      capabilities: {
-        recordUniqueKey: true,
-      },
-      configure: {
-        items: [
-          {
-            name: 'sql',
-            Component: SqlStatementConfigureItem,
-            required: true,
-          },
-          {
-            name: 'sources',
-            Component: SqlSourceCollectionsConfigureItem,
-          },
-          {
-            name: 'fields',
-            Component: SqlFieldsConfigureItem,
-            required: true,
-          },
-          {
-            name: 'preview',
-            Component: SqlPreviewConfigureItem,
-          },
-        ],
-        transformSubmitValues: normalizeSqlCollectionSubmitValues,
       },
     });
 

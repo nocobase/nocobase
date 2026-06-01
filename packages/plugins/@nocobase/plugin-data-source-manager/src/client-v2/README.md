@@ -340,7 +340,7 @@ dataSourceManagerPlugin.registerCollectionTemplate({
 
 ### configure.items 示例
 
-SQL / View 模板使用 `configure.items` 提供复杂配置：
+SQL / View 这类模板可以在所属插件里使用 `configure.items` 提供复杂配置：
 
 ```tsx
 dataSourceManagerPlugin.registerCollectionTemplate({
@@ -377,12 +377,17 @@ dataSourceManagerPlugin.registerCollectionTemplate({
         Component: SqlPreviewConfigureItem,
       },
     ],
+    syncFields: {
+      visible: true,
+      Component: SqlSyncFieldsDrawer,
+    },
     transformSubmitValues: normalizeSqlCollectionSubmitValues,
   },
 });
 ```
 
 `configure.items` 会同时用于创建和编辑。可以通过 `hidden: ({ mode }) => mode === 'edit'` 控制不同状态下的显示。
+`configure.syncFields` 用于扩展 Configure fields 抽屉里的 `Sync from database` 行为，适合 SQL collection 这类需要自定义同步字段交互的模板。
 
 ### fieldInterfaces 限制
 

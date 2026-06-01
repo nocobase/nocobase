@@ -158,7 +158,11 @@ export default function DataSourcesPage() {
           value === 'main' ? t('Main') : compileLegacyTemplate(plugin.getType(value)?.label || value || '-', t),
       },
       { title: t('Status'), dataIndex: 'status', render: (value: string) => statusTag(t, value) },
-      { title: t('Enabled'), dataIndex: 'enabled', render: (value: boolean) => <Switch checked={value} disabled /> },
+      {
+        title: t('Enabled'),
+        dataIndex: 'enabled',
+        render: (value: boolean) => <Switch checked={value} disabled size="small" />,
+      },
       {
         title: t('Actions'),
         width: 220,
