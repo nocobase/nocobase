@@ -812,8 +812,10 @@ function normalizeFilterGroupValue(input: any, label: string) {
   assertFilterGroupKeys(normalized, label);
   const filterGroup =
     !Object.keys(normalized).length || isFilterGroupLike(normalized)
-      ? normalizeFlowSurfaceFilterGroupValue(normalized, label)
-      : normalizeFlowSurfaceFilterGroupValue(convertBackendQueryFilterToFilterGroup(normalized, label), label);
+      ? normalizeFlowSurfaceFilterGroupValue(normalized, label, { strictDateValues: true })
+      : normalizeFlowSurfaceFilterGroupValue(convertBackendQueryFilterToFilterGroup(normalized, label), label, {
+          strictDateValues: true,
+        });
   validateFilterGroupPaths(filterGroup, label);
   return filterGroup;
 }

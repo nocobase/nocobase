@@ -218,6 +218,81 @@ describe('flowSurfaces authoring validation unit', () => {
     );
   });
 
+  it('should reject invalid chart date descriptor objects on applyBlueprint authoring writes', async () => {
+    const errors = await collectFlowSurfaceAuthoringErrors('applyBlueprint', {
+      mode: 'create',
+      navigation: {
+        item: {
+          title: 'Invalid chart date descriptor page',
+        },
+      },
+      assets: {
+        charts: {
+          staleChart: {
+            query: {
+              mode: 'builder',
+              resource: {
+                dataSourceKey: 'main',
+                collectionName: 'employees',
+              },
+              measures: [
+                {
+                  field: 'id',
+                  aggregation: 'count',
+                  alias: 'employeeCount',
+                },
+              ],
+              dimensions: [{ field: 'status' }],
+              filter: {
+                logic: '$and',
+                items: [
+                  {
+                    path: 'lastFollowupAt',
+                    operator: '$dateOn',
+                    value: { $toNow: 'd', $gt: -7 },
+                  },
+                ],
+              },
+            },
+            visual: {
+              mode: 'basic',
+              type: 'bar',
+              mappings: {
+                x: 'status',
+                y: 'employeeCount',
+              },
+            },
+          },
+        },
+      },
+      tabs: [
+        {
+          title: 'Overview',
+          blocks: [
+            {
+              key: 'staleChart',
+              type: 'chart',
+              chart: 'staleChart',
+            },
+          ],
+        },
+      ],
+    });
+
+    expect(errors).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          path: '$.assets.charts.staleChart.query.filter.items[0].value',
+          ruleId: 'filter-group-date-value-invalid',
+          details: expect.objectContaining({
+            invalidValue: { $toNow: 'd', $gt: -7 },
+            requiredBlockType: 'chart',
+          }),
+        }),
+      ]),
+    );
+  });
+
   it('should reject invalid chart date filter values on configure authoring writes', async () => {
     const errors = await collectFlowSurfaceAuthoringErrors(
       'configure',

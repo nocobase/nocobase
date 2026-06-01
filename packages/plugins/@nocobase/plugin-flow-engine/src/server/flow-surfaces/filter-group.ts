@@ -147,7 +147,25 @@ export function normalizeFlowSurfaceFilterDateValue(operator: unknown, value: un
   return normalizeFlowSurfaceDateValue(value, path);
 }
 
-export function normalizeFlowSurfaceFilterGroupValue(value: any, errorPrefix: string) {
+export function normalizeFlowSurfaceStrictFilterDateValue(operator: unknown, value: unknown, path: string) {
+  if (typeof operator !== 'string' || !FLOW_SURFACE_DATE_FILTER_OPERATORS.has(operator)) {
+    return value;
+  }
+  if (_.isNil(value) || value === '') {
+    throwInvalidFlowSurfaceDateValue(path, value, {
+      invalidReason: 'date filter value is required',
+    });
+  }
+  return normalizeFlowSurfaceDateValue(value, path);
+}
+
+export function normalizeFlowSurfaceFilterGroupValue(
+  value: any,
+  errorPrefix: string,
+  options: {
+    strictDateValues?: boolean;
+  } = {},
+) {
   const normalized =
     value === null || (_.isPlainObject(value) && !Object.keys(value).length)
       ? _.cloneDeep(FLOW_SURFACE_EMPTY_FILTER_GROUP)
@@ -156,7 +174,7 @@ export function normalizeFlowSurfaceFilterGroupValue(value: any, errorPrefix: st
   try {
     assertFlowSurfaceFilterGroupShape(normalized);
     assertFlowSurfaceFilterGroupOperators(normalized, errorPrefix);
-    normalizeFlowSurfaceFilterGroupDateValues(normalized, errorPrefix);
+    normalizeFlowSurfaceFilterGroupDateValues(normalized, errorPrefix, options);
     transformFilter(normalized);
     return normalized;
   } catch (error) {
@@ -204,14 +222,22 @@ function assertFlowSurfaceFilterGroupOperators(filter: any, errorPrefix: string)
   });
 }
 
-function normalizeFlowSurfaceFilterGroupDateValues(filter: any, errorPrefix: string) {
+function normalizeFlowSurfaceFilterGroupDateValues(
+  filter: any,
+  errorPrefix: string,
+  options: {
+    strictDateValues?: boolean;
+  },
+) {
   filter.items.forEach((item: any, index: number) => {
     const itemPath = `${errorPrefix}.items[${index}]`;
     if (_.isPlainObject(item) && 'logic' in item && 'items' in item) {
-      normalizeFlowSurfaceFilterGroupDateValues(item, itemPath);
+      normalizeFlowSurfaceFilterGroupDateValues(item, itemPath, options);
       return;
     }
-    item.value = normalizeFlowSurfaceFilterDateValue(item.operator, item.value, `${itemPath}.value`);
+    item.value = options.strictDateValues
+      ? normalizeFlowSurfaceStrictFilterDateValue(item.operator, item.value, `${itemPath}.value`)
+      : normalizeFlowSurfaceFilterDateValue(item.operator, item.value, `${itemPath}.value`);
   });
 }
 
