@@ -8,11 +8,104 @@
  */
 
 import { describe, expect, it, vi } from 'vitest';
-import { FlowSurfaceBadRequestError } from '../flow-surfaces/errors';
+import { FlowSurfaceAggregateError, FlowSurfaceBadRequestError } from '../flow-surfaces/errors';
 import { FlowSurfacesService } from '../flow-surfaces/service';
 import { collectFlowSurfaceAuthoringErrors } from '../flow-surfaces/authoring-validation';
+import { rethrowInlineConfigurationError, toFlowSurfaceBatchItemError } from '../flow-surfaces/service-utils';
 
 describe('flowSurfaces authoring validation unit', () => {
+  it('should front-load aggregate authoring repair instructions for agents', () => {
+    const error = new FlowSurfaceAggregateError([
+      {
+        path: '$.tabs[0].blocks[0].fields',
+        ruleId: 'data-block-visible-fields-required',
+        message: 'list block has no valid business fields',
+      },
+      {
+        path: '$.tabs[0].blocks[1].chart',
+        ruleId: 'chart-block-asset-reference-required',
+        message: 'chart block requires an asset reference',
+        details: {
+          requiredBlockType: 'chart',
+        },
+      },
+    ]);
+
+    expect(error.toResponseBody()).toEqual(
+      expect.objectContaining({
+        message: expect.stringContaining('2 error(s)'),
+        errorCount: 2,
+        details: expect.objectContaining({
+          errorCount: 2,
+          mustFixAllErrorsBeforeRetry: true,
+          retryPolicy: 'fix_all_errors_before_retry_same_write',
+          sameWriteRetryRequired: true,
+          agentInstruction: expect.stringContaining('Fix every listed error'),
+          requiredBlockPolicy: expect.objectContaining({
+            requiredBlockTypes: ['chart'],
+            fixStrategy: 'repair_same_block_type',
+            doNotReplaceOrDrop: true,
+          }),
+        }),
+        errors: [
+          expect.objectContaining({ index: 1, ruleId: 'data-block-visible-fields-required' }),
+          expect.objectContaining({ index: 2, ruleId: 'chart-block-asset-reference-required' }),
+        ],
+      }),
+    );
+  });
+
+  it('should preserve aggregate authoring repair instructions through inline and batch wrappers', () => {
+    const aggregate = new FlowSurfaceAggregateError([
+      {
+        path: '$.changes.code',
+        ruleId: 'runjs-render-required',
+        message: 'jsBlock code must call ctx.render',
+        details: {
+          requiredBlockType: 'jsBlock',
+        },
+      },
+    ]);
+
+    let inlineError: unknown;
+    try {
+      rethrowInlineConfigurationError(aggregate, 'flowSurfaces addBlock settings invalid');
+    } catch (caught) {
+      inlineError = caught;
+    }
+
+    expect(inlineError).toBeInstanceOf(FlowSurfaceAggregateError);
+    expect((inlineError as FlowSurfaceAggregateError).toResponseBody()).toEqual(
+      expect.objectContaining({
+        message: expect.stringContaining('flowSurfaces addBlock settings invalid'),
+        errorCount: 1,
+        details: expect.objectContaining({
+          mustFixAllErrorsBeforeRetry: true,
+          requiredBlockPolicy: expect.objectContaining({
+            requiredBlockTypes: ['jsBlock'],
+          }),
+        }),
+        errors: [expect.objectContaining({ index: 1, ruleId: 'runjs-render-required' })],
+      }),
+    );
+
+    expect(toFlowSurfaceBatchItemError(aggregate)).toEqual(
+      expect.objectContaining({
+        code: 'FLOW_SURFACE_AUTHORING_VALIDATION_FAILED',
+        status: 400,
+        type: 'bad_request',
+        errorCount: 1,
+        details: expect.objectContaining({
+          retryPolicy: 'fix_all_errors_before_retry_same_write',
+          requiredBlockPolicy: expect.objectContaining({
+            requiredBlockTypes: ['jsBlock'],
+          }),
+        }),
+        errors: [expect.objectContaining({ index: 1, ruleId: 'runjs-render-required' })],
+      }),
+    );
+  });
+
   it('should preserve chart filter operator repair details on applyBlueprint authoring writes', async () => {
     const errors = await collectFlowSurfaceAuthoringErrors('applyBlueprint', {
       mode: 'create',

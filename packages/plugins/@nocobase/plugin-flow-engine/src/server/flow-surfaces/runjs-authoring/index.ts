@@ -865,9 +865,10 @@ const CONTEXT_FIRST_REPAIR_CLASSES = new Set<RunJsAuthoringRepairClass>([
   'ctx-root-mismatch-stop',
   'blocked-capability-reroute',
 ]);
-const RUNJS_FIX_AND_RETRY_INSTRUCTION = 'Do not skip this JS/RunJS step. Fix the error and retry the same write.';
+const RUNJS_FIX_AND_RETRY_INSTRUCTION =
+  'Do not skip this JS/RunJS step. Fix the error and retry the same write. If the response contains errors[], fix every listed error in one payload revision before retrying. Do not remove, defer, or replace the JS/RunJS capability to bypass validation.';
 const RUNJS_CONTEXT_AND_RETRY_INSTRUCTION =
-  'Do not skip this JS/RunJS step. Resolve the blocking context/problem first, then retry the same write.';
+  'Do not skip this JS/RunJS step. Resolve the blocking context/problem first, then retry the same write. If the response contains errors[], fix every listed error in one payload revision before retrying. Do not remove, defer, or replace the JS/RunJS capability to bypass validation.';
 
 function unionMethodSets(methodSets: Array<Set<string>>) {
   const union = new Set<string>();

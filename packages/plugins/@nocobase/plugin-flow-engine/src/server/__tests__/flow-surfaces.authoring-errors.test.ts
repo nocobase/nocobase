@@ -844,6 +844,13 @@ describe('flowSurfaces backend authoring aggregate errors', () => {
     );
     errors.forEach((error: any) => {
       expect(error.message).toContain('settings.code');
+      expect(error.details).toEqual(
+        expect.objectContaining({
+          requiredBlockType: 'jsBlock',
+          fixStrategy: 'repair_same_block_type',
+          agentInstruction: expect.stringContaining('fix every listed error'),
+        }),
+      );
     });
   });
 
@@ -972,7 +979,7 @@ describe('flowSurfaces backend authoring aggregate errors', () => {
           suggestedAction: expect.any(String),
           skipForbidden: true,
           mustRetry: true,
-          agentInstruction: expect.any(String),
+          agentInstruction: expect.stringContaining('fix every listed error'),
           line: expect.any(Number),
           column: expect.any(Number),
         }),
@@ -7319,9 +7326,20 @@ ctx.render(React.createElement(DashboardKPIs));
     });
 
     expect(response.status).toBe(400);
+    expect(response.body).toEqual(
+      expect.objectContaining({
+        errorCount: response.body.errors.length,
+        details: expect.objectContaining({
+          mustFixAllErrorsBeforeRetry: true,
+          retryPolicy: 'fix_all_errors_before_retry_same_write',
+          agentInstruction: expect.stringContaining('Fix every listed error'),
+        }),
+      }),
+    );
     const issue = response.body?.errors?.find((error: any) => error.ruleId === 'runjs-render-required');
     expect(issue).toEqual(
       expect.objectContaining({
+        index: expect.any(Number),
         type: 'bad_request',
         code: 'FLOW_SURFACE_AUTHORING_VALIDATION_ERROR',
         status: 400,
@@ -8084,6 +8102,12 @@ ctx.render(React.createElement(DashboardKPIs));
       });
       expect(error.message).toContain('Add collection field names');
       expect(error.message).toContain('defaults.collections.*.fieldGroups');
+      expect(error.details).toEqual(
+        expect.objectContaining({
+          repairHint: expect.stringContaining('Add direct visible collection fields'),
+          agentInstruction: expect.stringContaining('fix every listed error'),
+        }),
+      );
     }
   });
 
@@ -11595,6 +11619,21 @@ ctx.render(React.createElement(DashboardKPIs));
     });
 
     expect(response.status).toBe(400);
+    expect(response.body).toEqual(
+      expect.objectContaining({
+        errorCount: response.body.errors.length,
+        details: expect.objectContaining({
+          mustFixAllErrorsBeforeRetry: true,
+          retryPolicy: 'fix_all_errors_before_retry_same_write',
+          agentInstruction: expect.stringContaining('Fix every listed error'),
+          requiredBlockPolicy: expect.objectContaining({
+            requiredBlockTypes: expect.arrayContaining(['chart']),
+            fixStrategy: 'repair_same_block_type',
+            doNotReplaceOrDrop: true,
+          }),
+        }),
+      }),
+    );
     expect(response.body?.errors?.map((error: any) => error.ruleId)).toEqual(
       expect.arrayContaining([
         'chart-asset-invalid',
@@ -11609,6 +11648,19 @@ ctx.render(React.createElement(DashboardKPIs));
     );
     expect(response.body.errors.map((error: any) => error.ruleId)).not.toContain(
       'public-data-surface-default-filter-required',
+    );
+    const chartIssue = response.body.errors.find(
+      (error: any) => error.ruleId === 'chart-block-asset-reference-required',
+    );
+    expect(chartIssue).toEqual(
+      expect.objectContaining({
+        index: expect.any(Number),
+        details: expect.objectContaining({
+          requiredBlockType: 'chart',
+          fixStrategy: 'repair_same_block_type',
+          agentInstruction: expect.stringContaining('Repair it as chart'),
+        }),
+      }),
     );
   });
 

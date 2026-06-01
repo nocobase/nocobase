@@ -219,6 +219,12 @@ const JS_BLOCK_REPAIR_HINT =
   'This is a jsBlock payload shape problem. Repair this jsBlock using inline settings.code/settings.version, or applyBlueprint assets.scripts.<key>.code plus block.script. Do not change this block type to table, chart, actionPanel, gridCard, or another block type.';
 const CHART_REPAIR_HINT =
   'This is a chart payload shape problem. Keep using chart and repair this chart using assets.charts.<key>.query/visual plus block.chart, or localized settings.query/settings.visual. Do not change this block type to table, jsBlock, actionPanel, gridCard, or another block type, and do not drop or defer the chart. KPI / summary numbers should use jsBlock; charts are for trends, distributions, rankings, and visual analysis.';
+const REPAIR_ALL_ERRORS_AGENT_INSTRUCTION =
+  'If this response contains errors[], fix every listed error in one payload revision before retrying the same write. Do not fix only this error and immediately retry.';
+const JS_BLOCK_AGENT_INSTRUCTION = `${REPAIR_ALL_ERRORS_AGENT_INSTRUCTION} Do not skip, drop, defer, or replace this required jsBlock. Repair it as jsBlock.`;
+const CHART_AGENT_INSTRUCTION = `${REPAIR_ALL_ERRORS_AGENT_INSTRUCTION} Do not skip, drop, defer, or replace this required chart. Repair it as chart.`;
+const VISIBLE_DATA_BLOCK_FIELDS_REPAIR_HINT =
+  'Add direct visible collection fields to this block. Do not rely on defaults.collections.*.fieldGroups, action-only fields, dividers, or generated popup/form defaults as a substitute for visible block fields.';
 const JS_BLOCK_FORBIDDEN_FALLBACKS = [
   'table',
   'list',
@@ -842,6 +848,7 @@ function withJsBlockRepairHint(details: Record<string, any> = {}) {
     requiredBlockType: 'jsBlock',
     fixStrategy: 'repair_same_block_type',
     repairHint: JS_BLOCK_REPAIR_HINT,
+    agentInstruction: JS_BLOCK_AGENT_INSTRUCTION,
     repairExample: {
       inlineBlock: {
         type: 'jsBlock',
@@ -873,6 +880,7 @@ function withChartRepairHint(details: Record<string, any> = {}) {
     requiredBlockType: 'chart',
     fixStrategy: 'repair_same_block_type',
     repairHint: CHART_REPAIR_HINT,
+    agentInstruction: CHART_AGENT_INSTRUCTION,
     repairSteps: [
       'Keep the block type as chart.',
       'Define assets.charts.<key>.query and assets.charts.<key>.visual.',
@@ -5666,6 +5674,8 @@ function collectVisibleDataBlockFieldErrors(
         blockType,
         collection: getBlockCollectionName(block, context),
         fieldCount: fieldEntries.length,
+        repairHint: VISIBLE_DATA_BLOCK_FIELDS_REPAIR_HINT,
+        agentInstruction: REPAIR_ALL_ERRORS_AGENT_INSTRUCTION,
         ...(suggestedFields.length ? { suggestion: { fields: suggestedFields } } : {}),
       },
     });
@@ -5700,6 +5710,8 @@ function collectVisibleDataBlockFieldErrors(
       fieldCount: validBusinessFieldNames.length,
       requiredFieldCount,
       eligibleBusinessFieldCount: eligibleBusinessFields.length,
+      repairHint: VISIBLE_DATA_BLOCK_FIELDS_REPAIR_HINT,
+      agentInstruction: REPAIR_ALL_ERRORS_AGENT_INSTRUCTION,
       suggestion: {
         fields: eligibleBusinessFields.slice(0, requiredFieldCount),
       },
