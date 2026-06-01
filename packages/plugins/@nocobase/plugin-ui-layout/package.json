@@ -1,0 +1,16 @@
+{
+  "name": "@nocobase/plugin-ui-layout",
+  "version": "2.1.0-beta.38",
+  "main": "dist/server/index.js",
+  "displayName": "UI layout",
+  "displayName.zh-CN": "UI 布局",
+  "description": "Provides UI layout configuration storage.",
+  "description.zh-CN": "提供 UI 布局配置存储。",
+  "dependencies": {},
+  "peerDependencies": {
+    "@nocobase/client-v2": "2.x",
+    "@nocobase/database": "2.x",
+    "@nocobase/server": "2.x",
+    "@nocobase/test": "2.x"
+  }
+}
