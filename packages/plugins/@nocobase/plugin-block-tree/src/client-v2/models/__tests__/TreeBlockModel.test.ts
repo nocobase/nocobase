@@ -10,6 +10,7 @@
 import { DisplayItemModel, FlowEngine, FlowModel } from '@nocobase/flow-engine';
 import { AddChildActionModel, PopupActionModel } from '@nocobase/client-v2';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { TreeFilterBlockMenuModel } from '../TreeFilterBlockMenuModel';
 import { TreeBlockModel, TreeTitleFieldSettingsModel } from '../TreeBlockModel';
 
 describe('TreeBlockModel', () => {
@@ -61,6 +62,11 @@ describe('TreeBlockModel', () => {
 
     const children = (await TreeBlockModel.defineChildren(designerCtx)) as any[];
     expect(children.some((item) => String(item?.key).includes('associated'))).toBe(false);
+  });
+
+  it('marks tree filter block menu as searchable', () => {
+    expect(TreeFilterBlockMenuModel.meta?.searchable).toBe(true);
+    expect(String(TreeFilterBlockMenuModel.meta?.searchPlaceholder)).toContain('Search');
   });
 
   it('keeps multi relation entries in associated records for tree filter block menu', async () => {
