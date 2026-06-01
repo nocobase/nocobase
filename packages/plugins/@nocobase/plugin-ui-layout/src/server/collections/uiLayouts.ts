@@ -31,6 +31,12 @@ export default defineCollection({
       allowNull: false,
     },
     {
+      name: 'layoutType',
+      type: 'string',
+      defaultValue: 'desktop',
+      allowNull: false,
+    },
+    {
       name: 'routeName',
       type: 'string',
       unique: true,

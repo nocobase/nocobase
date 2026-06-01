@@ -7,20 +7,24 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { DeleteOutlined, EditOutlined, PlusOutlined, ReloadOutlined } from '@ant-design/icons';
+import { DeleteOutlined, DownOutlined, EditOutlined, PlusOutlined, ReloadOutlined } from '@ant-design/icons';
 import { Table } from '@nocobase/client-v2';
 import { useFlowContext, useFlowView } from '@nocobase/flow-engine';
 import { useRequest } from 'ahooks';
-import { App, Button, Card, Flex, Form, Input, Space, Switch, Tag, theme } from 'antd';
+import { App, Button, Card, Dropdown, Flex, Form, Input, Select, Space, Switch, Tag, theme } from 'antd';
+import type { MenuProps } from 'antd';
 import type { ColumnsType, TableProps } from 'antd/es/table';
 import React, { useCallback, useMemo, useState } from 'react';
+import { UI_LAYOUT_TYPE_DESKTOP } from '../../constants';
 import { useT } from '../locale';
 
 type UiLayoutPrimaryKey = number | string;
+type UiLayoutType = string;
 
 export type UiLayoutRecord = {
   id: UiLayoutPrimaryKey;
   uid: string;
+  layoutType: UiLayoutType;
   routeName: string;
   routePath: string;
   authCheck: boolean;
@@ -29,6 +33,7 @@ export type UiLayoutRecord = {
 
 export type UiLayoutFormValues = {
   uid: string;
+  layoutType: UiLayoutType;
   routeName: string;
   routePath: string;
   authCheck: boolean;
@@ -85,6 +90,18 @@ const defaultFormValues: Pick<UiLayoutFormValues, 'authCheck' | 'enabled'> = {
   enabled: true,
 };
 
+const createLayoutOptions = [
+  {
+    key: UI_LAYOUT_TYPE_DESKTOP,
+    label: 'Desktop layout',
+  },
+] as const;
+
+function getLayoutTypeLabel(t: (key: string) => string, layoutType: string) {
+  const option = createLayoutOptions.find((item) => item.key === layoutType);
+  return option ? t(option.label) : layoutType;
+}
+
 const UiLayoutsPage: React.FC = () => {
   const t = useT();
   const ctx = useFlowContext();
@@ -127,12 +144,13 @@ const UiLayoutsPage: React.FC = () => {
   }, [listRequest]);
 
   const openFormDialog = useCallback(
-    (record?: UiLayoutRecord) => {
+    (options: { record?: UiLayoutRecord; layoutType?: UiLayoutType } = {}) => {
+      const { record, layoutType = UI_LAYOUT_TYPE_DESKTOP } = options;
       ctx.viewer.dialog({
         title: record ? t('Edit UI layout') : t('Add UI layout'),
         maskClosable: false,
         closable: true,
-        content: () => <UiLayoutForm record={record} onSubmitted={refreshList} />,
+        content: () => <UiLayoutForm layoutType={layoutType} record={record} onSubmitted={refreshList} />,
       });
     },
     [ctx.viewer, refreshList, t],
@@ -165,9 +183,25 @@ const UiLayoutsPage: React.FC = () => {
     [selectedRowKeys],
   );
 
+  const createLayoutMenu = useMemo<MenuProps>(
+    () => ({
+      items: createLayoutOptions.map((item) => ({
+        key: item.key,
+        label: t(item.label),
+      })),
+      onClick: ({ key }) => openFormDialog({ layoutType: key as UiLayoutType }),
+    }),
+    [openFormDialog, t],
+  );
+
   const columns = useMemo<ColumnsType<UiLayoutRecord>>(
     () => [
       { title: t('UID'), dataIndex: 'uid', ellipsis: true },
+      {
+        title: t('Layout type'),
+        dataIndex: 'layoutType',
+        render: (value: string) => getLayoutTypeLabel(t, value),
+      },
       { title: t('Route name'), dataIndex: 'routeName', ellipsis: true },
       { title: t('Route path'), dataIndex: 'routePath', ellipsis: true },
       {
@@ -184,7 +218,7 @@ const UiLayoutsPage: React.FC = () => {
         title: t('Actions'),
         render: (_: unknown, record) => (
           <Space>
-            <a onClick={() => openFormDialog(record)}>
+            <a onClick={() => openFormDialog({ record })}>
               <EditOutlined /> {t('Edit')}
             </a>
             <a onClick={() => handleDelete(record.id)}>
@@ -212,9 +246,11 @@ const UiLayoutsPage: React.FC = () => {
           >
             {t('Delete')}
           </Button>
-          <Button type="primary" icon={<PlusOutlined />} onClick={() => openFormDialog()}>
-            {t('Add UI layout')}
-          </Button>
+          <Dropdown menu={createLayoutMenu} trigger={['click']}>
+            <Button type="primary" icon={<PlusOutlined />}>
+              {t('Add UI layout')} <DownOutlined />
+            </Button>
+          </Dropdown>
         </Space>
       </Flex>
       <Table<UiLayoutRecord>
@@ -234,8 +270,8 @@ function BooleanTag(props: { value: boolean }) {
   return <Tag color={props.value ? 'success' : 'default'}>{props.value ? t('Yes') : t('No')}</Tag>;
 }
 
-function UiLayoutForm(props: { record?: UiLayoutRecord; onSubmitted: () => void }) {
-  const { record, onSubmitted } = props;
+function UiLayoutForm(props: { layoutType: UiLayoutType; record?: UiLayoutRecord; onSubmitted: () => void }) {
+  const { layoutType, record, onSubmitted } = props;
   const t = useT();
   const ctx = useFlowContext();
   const view = useFlowView();
@@ -248,13 +284,17 @@ function UiLayoutForm(props: { record?: UiLayoutRecord; onSubmitted: () => void 
       record
         ? {
             uid: record.uid,
+            layoutType: record.layoutType,
             routeName: record.routeName,
             routePath: record.routePath,
             authCheck: record.authCheck,
             enabled: record.enabled,
           }
-        : defaultFormValues,
-    [record],
+        : {
+            ...defaultFormValues,
+            layoutType,
+          },
+    [layoutType, record],
   );
 
   const handleSubmit = useCallback(async () => {
@@ -284,6 +324,15 @@ function UiLayoutForm(props: { record?: UiLayoutRecord; onSubmitted: () => void 
   return (
     <>
       <Form form={form} layout="vertical" initialValues={initialValues}>
+        <Form.Item name="layoutType" label={t('Layout type')}>
+          <Select
+            disabled
+            options={createLayoutOptions.map((item) => ({
+              value: item.key,
+              label: t(item.label),
+            }))}
+          />
+        </Form.Item>
         <Form.Item name="uid" label={t('UID')} rules={[{ required: true, message: t('The field value is required') }]}>
           <Input />
         </Form.Item>

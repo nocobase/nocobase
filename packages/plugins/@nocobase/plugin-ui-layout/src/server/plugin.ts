@@ -8,6 +8,7 @@
  */
 
 import { Plugin } from '@nocobase/server';
+import { ensureDefaultUiLayout } from './ensureDefaultUiLayout';
 
 export class PluginUiLayoutServer extends Plugin {
   async afterAdd() {}
@@ -16,9 +17,13 @@ export class PluginUiLayoutServer extends Plugin {
 
   async load() {}
 
-  async install() {}
+  async install() {
+    await ensureDefaultUiLayout(this.db);
+  }
 
-  async afterEnable() {}
+  async afterEnable() {
+    await ensureDefaultUiLayout(this.db);
+  }
 
   async afterDisable() {}
 

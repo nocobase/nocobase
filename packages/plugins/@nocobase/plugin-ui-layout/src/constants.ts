@@ -8,3 +8,14 @@
  */
 
 export const NAMESPACE = '@nocobase/plugin-ui-layout';
+
+export const UI_LAYOUT_TYPE_DESKTOP = 'desktop';
+
+export const DEFAULT_ADMIN_UI_LAYOUT = {
+  uid: 'admin-layout-model',
+  layoutType: UI_LAYOUT_TYPE_DESKTOP,
+  routeName: 'admin',
+  routePath: '/admin',
+  authCheck: true,
+  enabled: true,
+} as const;
