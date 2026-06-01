@@ -556,6 +556,57 @@ describe('transformItems - searchable flags', () => {
     await waitFor(() => expect(screen.getByText('Field 1')).toBeInTheDocument());
     expect(screen.getByRole('textbox')).toHaveValue('');
   });
+
+  it('keeps root group search value when hovering a sibling submenu', async () => {
+    const engine = new FlowEngine();
+    await engine.flowSettings.forceEnable();
+    class Parent extends FlowModel {}
+    engine.registerModels({ Parent });
+    const parent = engine.createModel<FlowModel>({ use: 'Parent' });
+
+    const items = [
+      {
+        key: 'fields',
+        label: '',
+        type: 'group' as const,
+        searchable: true,
+        searchPlaceholder: 'Search fields',
+        children: [
+          { key: 'nickname', label: 'Nickname', createModelOptions: { use: 'Parent' } },
+          { key: 'email', label: 'Email', createModelOptions: { use: 'Parent' } },
+        ],
+      },
+      {
+        key: 'association-fields',
+        label: 'Display association fields',
+        children: [{ key: 'author', label: 'Author', createModelOptions: { use: 'Parent' } }],
+      },
+    ];
+
+    const user = userEvent.setup();
+    render(
+      <FlowEngineProvider engine={engine}>
+        <ConfigProvider>
+          <App>
+            <AddSubModelButton model={parent} subModelKey="items" items={items as any}>
+              Open
+            </AddSubModelButton>
+          </App>
+        </ConfigProvider>
+      </FlowEngineProvider>,
+    );
+
+    await user.click(screen.getByText('Open'));
+    const searchInput = await screen.findByPlaceholderText('Search fields');
+    await user.type(searchInput, 'nick');
+    await waitFor(() => expect(screen.queryByText('Email')).not.toBeInTheDocument());
+
+    await user.hover(screen.getByText('Display association fields'));
+
+    await waitFor(() => expect(screen.getByText('Author')).toBeInTheDocument());
+    expect(searchInput).toHaveValue('nick');
+    expect(screen.getByText('Nickname')).toBeInTheDocument();
+  });
 });
 
 describe('transformItems - hide', () => {
