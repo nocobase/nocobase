@@ -7,7 +7,14 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { DeleteOutlined, DownOutlined, EditOutlined, PlusOutlined, ReloadOutlined } from '@ant-design/icons';
+import {
+  DeleteOutlined,
+  DownOutlined,
+  EditOutlined,
+  EyeOutlined,
+  PlusOutlined,
+  ReloadOutlined,
+} from '@ant-design/icons';
 import { DrawerFormLayout, Table } from '@nocobase/client-v2';
 import { randomId, useFlowContext } from '@nocobase/flow-engine';
 import { useRequest } from 'ahooks';
@@ -51,6 +58,15 @@ type ListBody = {
   meta?: ListMeta;
 };
 
+type UiLayoutAppLike = {
+  router?: {
+    basename?: string;
+    getBasename?: () => string | undefined;
+  };
+  getPublicPath?: () => string;
+  getRouteUrl?: (pathname: string) => string;
+};
+
 export type UiLayoutResource = {
   create: (params: { values: UiLayoutFormValues }) => Promise<unknown>;
   update: (params: { filterByTk: UiLayoutPrimaryKey; values: UiLayoutFormValues }) => Promise<unknown>;
@@ -83,6 +99,47 @@ export async function deleteUiLayouts(args: {
 }): Promise<void> {
   await args.resource.destroy({ filterByTk: args.filterByTk });
   args.onDeleted();
+}
+
+const normalizeRootPath = (pathname?: string) => {
+  const trimmed = pathname?.trim();
+  if (!trimmed || trimmed === '/') {
+    return '/';
+  }
+  return `/${trimmed.replace(/^\/+/, '')}`;
+};
+
+const normalizeBasePath = (pathname?: string) => {
+  const normalized = normalizeRootPath(pathname).replace(/\/+$/, '');
+  return normalized === '' || normalized === '/' ? '' : normalized;
+};
+
+const joinRoutePath = (basePath: string | undefined, pathname: string) => {
+  const base = normalizeBasePath(basePath);
+  const path = normalizeRootPath(pathname);
+  return base ? `${base}${path}` : path;
+};
+
+function isAbsoluteUrl(value: string) {
+  return /^[a-z][a-z\d+\-.]*:\/\//i.test(value) || value.startsWith('//');
+}
+
+export function getUiLayoutRouteUrl(app: UiLayoutAppLike | undefined, routePath: string) {
+  const normalizedRoutePath = routePath.trim();
+  if (isAbsoluteUrl(normalizedRoutePath)) {
+    return normalizedRoutePath;
+  }
+
+  const basename = app?.router?.getBasename?.() || app?.router?.basename;
+  if (basename) {
+    return joinRoutePath(basename, normalizedRoutePath);
+  }
+
+  if (app?.getRouteUrl) {
+    return normalizeRootPath(app.getRouteUrl(normalizedRoutePath));
+  }
+
+  return joinRoutePath(app?.getPublicPath?.(), normalizedRoutePath);
 }
 
 const defaultFormValues: Pick<UiLayoutFormValues, 'authCheck' | 'enabled'> = {
@@ -221,6 +278,9 @@ const UiLayoutsPage: React.FC = () => {
         title: t('Actions'),
         render: (_: unknown, record) => (
           <Space>
+            <a href={getUiLayoutRouteUrl(ctx.app, record.routePath)} target="_blank" rel="noopener noreferrer">
+              <EyeOutlined /> {t('View')}
+            </a>
             <a onClick={() => openFormDrawer({ record })}>
               <EditOutlined /> {t('Edit')}
             </a>
@@ -231,7 +291,7 @@ const UiLayoutsPage: React.FC = () => {
         ),
       },
     ],
-    [handleDelete, openFormDrawer, t],
+    [ctx.app, handleDelete, openFormDrawer, t],
   );
 
   return (

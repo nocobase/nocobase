@@ -11,6 +11,7 @@ import { describe, expect, it, vi } from 'vitest';
 import {
   createUiLayout,
   deleteUiLayouts,
+  getUiLayoutRouteUrl,
   type UiLayoutFormValues,
   type UiLayoutResource,
   updateUiLayout,
@@ -101,5 +102,35 @@ describe('plugin-ui-layout submit pipeline', () => {
 
     await expect(deleteUiLayouts({ resource, filterByTk: 1, onDeleted })).rejects.toThrow(/delete failed/);
     expect(onDeleted).not.toHaveBeenCalled();
+  });
+});
+
+describe('plugin-ui-layout route URL', () => {
+  it('should build route URL from router basename', () => {
+    expect(
+      getUiLayoutRouteUrl(
+        {
+          router: {
+            getBasename: () => '/v2/apps/app1',
+          },
+        },
+        '/admin',
+      ),
+    ).toBe('/v2/apps/app1/admin');
+  });
+
+  it('should fall back to app route URL', () => {
+    expect(
+      getUiLayoutRouteUrl(
+        {
+          getRouteUrl: (pathname: string) => `/v2/${pathname.replace(/^\/+/, '')}`,
+        },
+        '/mobile',
+      ),
+    ).toBe('/v2/mobile');
+  });
+
+  it('should keep absolute URLs unchanged', () => {
+    expect(getUiLayoutRouteUrl(undefined, 'https://www.nocobase.com/docs')).toBe('https://www.nocobase.com/docs');
   });
 });
