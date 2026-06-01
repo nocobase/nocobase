@@ -19,100 +19,50 @@ import { FILE_SIZE_LIMIT_DEFAULT, STORAGE_TYPE_LOCAL } from '../../constants';
 import { diskFilenameGetter } from '../utils';
 
 const DEFAULT_BASE_URL = '/storage/uploads';
-const SAFE_LOCAL_STORAGE_ROOT = 'storage';
-const LOCAL_STORAGE_ALLOWED_ROOTS = 'LOCAL_STORAGE_ALLOWED_ROOTS';
+const DEFAULT_DOCUMENT_ROOT = process.env.LOCAL_STORAGE_DEST || path.join(process.cwd(), 'storage', 'uploads');
 
-function createInvalidLocalStoragePathError(message: string) {
-  const error = new Error(message);
-  (error as NodeJS.ErrnoException).code = 'INVALID_LOCAL_STORAGE_PATH';
+function pathError(message: string) {
+  const error = new Error(message) as NodeJS.ErrnoException;
+  error.code = 'PATH_TRAVERSAL';
   return error;
 }
 
-function assertSafeChildPath(basePath: string, targetPath: string, message: string) {
-  const relative = path.relative(basePath, targetPath);
-  if (relative.startsWith('..') || path.isAbsolute(relative)) {
-    throw createInvalidLocalStoragePathError(message);
-  }
+function isInside(base: string, target: string) {
+  const relative = path.relative(base, target);
+  return !relative.startsWith('..') && !path.isAbsolute(relative);
 }
 
 function resolveDocumentRoot(documentRoot: unknown) {
-  if (typeof documentRoot !== 'string' || !documentRoot) {
-    throw createInvalidLocalStoragePathError('Invalid local storage document root');
+  if (typeof documentRoot !== 'string' || !documentRoot || documentRoot.includes('\0')) {
+    throw pathError('Invalid local storage document root');
   }
-  if (documentRoot.includes('\0')) {
-    throw createInvalidLocalStoragePathError('Invalid local storage document root');
-  }
-
   return path.resolve(path.isAbsolute(documentRoot) ? documentRoot : path.join(process.cwd(), documentRoot));
 }
 
-function getDefaultAllowedDocumentRoots() {
-  const roots = [path.resolve(process.cwd(), SAFE_LOCAL_STORAGE_ROOT)];
-
-  if (process.env.LOCAL_STORAGE_DEST) {
-    roots.push(resolveDocumentRoot(process.env.LOCAL_STORAGE_DEST));
-  }
-
-  if (process.env[LOCAL_STORAGE_ALLOWED_ROOTS]) {
-    for (const root of process.env[LOCAL_STORAGE_ALLOWED_ROOTS].split(',')) {
-      const trimmed = root.trim();
-      if (trimmed) {
-        roots.push(resolveDocumentRoot(trimmed));
-      }
+// 受信任的允许根：<cwd>/storage 加上环境变量显式声明的目录
+function allowedRoots() {
+  const roots = [path.resolve(process.cwd(), 'storage')];
+  const extra = [process.env.LOCAL_STORAGE_DEST, ...(process.env.LOCAL_STORAGE_ALLOWED_ROOTS?.split(',') ?? [])];
+  for (const item of extra) {
+    if (item?.trim()) {
+      roots.push(resolveDocumentRoot(item.trim()));
     }
   }
-
   return roots;
-}
-
-export function validateLocalDocumentRoot(documentRoot: unknown, allowedRoots = getDefaultAllowedDocumentRoots()) {
-  const resolvedDocumentRoot = resolveDocumentRoot(documentRoot);
-  if (
-    !allowedRoots.some((allowedRoot) => {
-      try {
-        assertSafeChildPath(allowedRoot, resolvedDocumentRoot, 'Invalid local storage document root');
-        return true;
-      } catch (error) {
-        return false;
-      }
-    })
-  ) {
-    throw createInvalidLocalStoragePathError('Invalid local storage document root');
-  }
-  return resolvedDocumentRoot;
 }
 
 export function normalizeLocalStoragePath(storagePath?: unknown) {
   if (storagePath == null || storagePath === '') {
     return '';
   }
-  if (typeof storagePath !== 'string') {
-    throw createInvalidLocalStoragePathError('Invalid local storage path');
-  }
-  if (storagePath.includes('\0')) {
-    throw createInvalidLocalStoragePathError('Invalid local storage path');
+  if (typeof storagePath !== 'string' || storagePath.includes('\0')) {
+    throw pathError('Invalid local storage path');
   }
   return storagePath.replace(/\\/g, '/').replace(/^\/+/, '');
 }
 
-export function validateLocalStorageConfig(
-  storage: Pick<StorageType['storage'], 'type' | 'options' | 'path'>,
-  options: { validateDocumentRoot?: boolean } = {},
-) {
-  if (storage.type !== STORAGE_TYPE_LOCAL) {
-    return;
-  }
-  const { documentRoot = process.env.LOCAL_STORAGE_DEST || path.join(process.cwd(), 'storage', 'uploads') } =
-    storage.options || {};
-  const resolvedDocumentRoot = options.validateDocumentRoot
-    ? validateLocalDocumentRoot(documentRoot)
-    : resolveDocumentRoot(documentRoot);
-  resolveSafePath(resolvedDocumentRoot, normalizeLocalStoragePath(storage.path));
-}
-
 export function getDocumentRoot(storage): string {
-  const { documentRoot = process.env.LOCAL_STORAGE_DEST || path.join(process.cwd(), 'storage', 'uploads') } =
-    storage.options || {};
+  const { documentRoot = DEFAULT_DOCUMENT_ROOT } = storage.options || {};
   // TODO(feature): 后面考虑以字符串模板的方式使用，可注入 req/action 相关变量，以便于区分文件夹
   return resolveDocumentRoot(documentRoot);
 }
@@ -120,13 +70,25 @@ export function getDocumentRoot(storage): string {
 export function resolveSafePath(documentRoot: string, filePath?: string, filename?: string) {
   const root = path.resolve(documentRoot);
   const target = path.resolve(root, filePath || '', filename || '');
-  const relative = path.relative(root, target);
-  if (relative.startsWith('..') || path.isAbsolute(relative)) {
-    const error = new Error('Access denied');
-    (error as NodeJS.ErrnoException).code = 'PATH_TRAVERSAL';
-    throw error;
+  if (!isInside(root, target)) {
+    throw pathError('Access denied');
   }
   return target;
+}
+
+export function validateLocalStorageConfig(
+  storage: Pick<StorageType['storage'], 'type' | 'options' | 'path'>,
+  { validateDocumentRoot = false } = {},
+) {
+  if (storage.type !== STORAGE_TYPE_LOCAL) {
+    return;
+  }
+  const root = getDocumentRoot(storage);
+  // 仅对用户提交的 documentRoot 走白名单校验；env/已存值视为可信
+  if (validateDocumentRoot && !allowedRoots().some((allowed) => isInside(allowed, root))) {
+    throw pathError('Invalid local storage document root');
+  }
+  resolveSafePath(root, normalizeLocalStoragePath(storage.path));
 }
 
 export default class extends StorageType {

@@ -43,7 +43,7 @@ export async function validateStorageMiddleware(ctx: Context, next: Next) {
   try {
     validateLocalStorageConfig(storage, { validateDocumentRoot: hasSubmittedDocumentRoot });
   } catch (error) {
-    if (['INVALID_LOCAL_STORAGE_PATH', 'PATH_TRAVERSAL'].includes((error as NodeJS.ErrnoException).code)) {
+    if ((error as NodeJS.ErrnoException).code === 'PATH_TRAVERSAL') {
       return ctx.throw(400, (error as Error).message);
     }
     throw error;
