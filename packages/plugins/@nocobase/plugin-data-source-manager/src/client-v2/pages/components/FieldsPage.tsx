@@ -255,13 +255,14 @@ function getFieldInterfaceLabel(fieldInterface?: FieldInterfaceOption, fallback?
 function getCollectionPresetFieldInterfaces(ctx: any) {
   const plugin = ctx.app.pm.get(PluginDataSourceManagerClientV2);
   const presetFields = plugin?.getCollectionPresetFields?.() || [];
-  return presetFields.reduce<Set<string>>((memo, presetField) => {
+  const fieldInterfaces = new Set<string>();
+  presetFields.forEach((presetField) => {
     const fieldInterface = presetField.value?.interface || presetField.value?.name;
     if (fieldInterface) {
-      memo.add(fieldInterface);
+      fieldInterfaces.add(fieldInterface);
     }
-    return memo;
-  }, new Set());
+  });
+  return fieldInterfaces;
 }
 
 function getEditableFieldDisplayName(record: Record<string, any>) {
