@@ -10,6 +10,7 @@
 export const NAMESPACE = '@nocobase/plugin-ui-layout';
 
 export const UI_LAYOUT_TYPE_DESKTOP = 'desktop';
+export const UI_LAYOUT_TYPE_MOBILE = 'mobile';
 
 export const DEFAULT_ADMIN_UI_LAYOUT = {
   uid: 'admin-layout-model',

@@ -15,7 +15,7 @@ import { App, Button, Card, Dropdown, Flex, Form, Input, Select, Space, Switch, 
 import type { MenuProps } from 'antd';
 import type { ColumnsType, TableProps } from 'antd/es/table';
 import React, { useCallback, useMemo, useState } from 'react';
-import { UI_LAYOUT_TYPE_DESKTOP } from '../../constants';
+import { UI_LAYOUT_TYPE_DESKTOP, UI_LAYOUT_TYPE_MOBILE } from '../../constants';
 import { useT } from '../locale';
 
 type UiLayoutPrimaryKey = number | string;
@@ -94,6 +94,10 @@ const createLayoutOptions = [
   {
     key: UI_LAYOUT_TYPE_DESKTOP,
     label: 'Desktop layout',
+  },
+  {
+    key: UI_LAYOUT_TYPE_MOBILE,
+    label: 'Mobile layout',
   },
 ] as const;
 
