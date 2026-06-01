@@ -38,6 +38,9 @@ type AssignFieldValuesModel = {
   uid: string;
   assignFormUid?: string;
   context?: AssignFieldValuesContext;
+  subModels?: {
+    assignForm?: AssignFormModel;
+  };
   getStepParams?: (flowKey: string, stepKey: string) => { assignedValues?: AssignedValues } | undefined;
   setStepParams?: (flowKey: string, stepKey: string, params: { assignedValues: AssignedValues }) => void;
 };
@@ -88,11 +91,53 @@ function isValidResourceInit(init: unknown): init is {
   );
 }
 
-function clearResourceContextCache(model: { context?: { removeCache?: (key: string) => void } } | undefined) {
-  model?.context?.removeCache?.('dataSource');
-  model?.context?.removeCache?.('collection');
-  model?.context?.removeCache?.('resource');
-  model?.context?.removeCache?.('association');
+type LocalCacheContext = {
+  _observableCache?: Record<string, unknown>;
+  _cache?: Record<string, unknown>;
+  _pending?: Record<string, unknown>;
+};
+
+function toLocalCacheContext(context: unknown): LocalCacheContext | undefined {
+  return context && typeof context === 'object' ? (context as LocalCacheContext) : undefined;
+}
+
+function clearOwnContextCache(context: unknown, key: string) {
+  const localContext = toLocalCacheContext(context);
+  if (!localContext) {
+    return;
+  }
+  delete localContext._observableCache?.[key];
+  delete localContext._cache?.[key];
+  delete localContext._pending?.[key];
+}
+
+function clearResourceContextCache(model: { context?: unknown } | undefined) {
+  clearOwnContextCache(model?.context, 'dataSource');
+  clearOwnContextCache(model?.context, 'collection');
+  clearOwnContextCache(model?.context, 'resource');
+  clearOwnContextCache(model?.context, 'association');
+}
+
+function resolveAssignFormModel(ctx: {
+  model: AssignFieldValuesModel;
+  engine: {
+    getModel?: (uid: string, fromRoot?: boolean) => AssignFormModel | undefined;
+    findModelByParentId?: (parentId: string, subKey: string) => AssignFormModel | undefined | null;
+  };
+}) {
+  if (ctx.model.assignFormUid) {
+    const form = ctx.engine.getModel?.(ctx.model.assignFormUid, true);
+    if (form) {
+      return form;
+    }
+  }
+
+  const localForm = ctx.model.subModels?.assignForm;
+  if (localForm) {
+    return localForm;
+  }
+
+  return ctx.engine.findModelByParentId?.(ctx.model.uid, 'assignForm') || undefined;
 }
 
 export function createAssignFormSubModelOptions(ctx: AssignFieldValuesContext) {
@@ -235,14 +280,23 @@ export function createAssignFieldValuesStep(options: AssignFieldValuesStepOption
         },
       };
     },
-    async beforeParamsSave(ctx: {
-      model: AssignFieldValuesModel;
-      engine: {
-        getModel?: (uid: string, fromRoot?: boolean) => AssignFormModel | undefined;
-      };
-    }) {
-      const form = ctx.model.assignFormUid ? ctx.engine.getModel?.(ctx.model.assignFormUid, true) : undefined;
-      if (!form) return;
+    async beforeParamsSave(
+      ctx: {
+        model: AssignFieldValuesModel;
+        engine: {
+          getModel?: (uid: string, fromRoot?: boolean) => AssignFormModel | undefined;
+          findModelByParentId?: (parentId: string, subKey: string) => AssignFormModel | undefined | null;
+        };
+      },
+      params?: { assignedValues?: AssignedValues },
+      previousParams?: { assignedValues?: AssignedValues },
+    ) {
+      const form = resolveAssignFormModel(ctx);
+      if (!form) {
+        const assignedValues = params?.assignedValues || previousParams?.assignedValues || {};
+        ctx.model.setStepParams?.(options.settingsFlowKey, ASSIGN_FIELD_VALUES_STEP_KEY, { assignedValues });
+        return;
+      }
       if (options.validateBeforeSave) {
         await form.form?.validateFields?.();
       }
