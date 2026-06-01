@@ -66,13 +66,13 @@ export const TaskGanttContent: React.FC<TaskGanttContentProps> = ({
 }) => {
   const [xStep, setXStep] = useState(0);
   const [initEventX1Delta, setInitEventX1Delta] = useState(0);
-  const lastActionRef = useRef<GanttContentMoveAction | null>(null);
-  const lastStartRef = useRef<Date | null>(null);
   const ganttEventRef = useRef(ganttEvent);
   const xStepRef = useRef(xStep);
   const initEventX1DeltaRef = useRef(initEventX1Delta);
   const rtlRef = useRef(rtl);
   const mouseLeaveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const suppressClickListenerRef = useRef<((event: MouseEvent) => void) | null>(null);
+  const suppressClickTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   ganttEventRef.current = ganttEvent;
   xStepRef.current = xStep;
@@ -82,12 +82,52 @@ export const TaskGanttContent: React.FC<TaskGanttContentProps> = ({
   const hasChangedTask = !!ganttEvent.changedTask;
 
   useEffect(() => {
+    const clearSuppressedClick = () => {
+      if (suppressClickListenerRef.current) {
+        window.removeEventListener('click', suppressClickListenerRef.current, true);
+        suppressClickListenerRef.current = null;
+      }
+      if (suppressClickTimeoutRef.current) {
+        clearTimeout(suppressClickTimeoutRef.current);
+        suppressClickTimeoutRef.current = null;
+      }
+    };
+
     return () => {
       if (mouseLeaveTimeoutRef.current) {
         clearTimeout(mouseLeaveTimeoutRef.current);
       }
+      clearSuppressedClick();
     };
   }, []);
+
+  const clearSuppressedClick = useCallback(() => {
+    if (suppressClickListenerRef.current) {
+      window.removeEventListener('click', suppressClickListenerRef.current, true);
+      suppressClickListenerRef.current = null;
+    }
+    if (suppressClickTimeoutRef.current) {
+      clearTimeout(suppressClickTimeoutRef.current);
+      suppressClickTimeoutRef.current = null;
+    }
+  }, []);
+
+  const suppressUpcomingClick = useCallback(() => {
+    clearSuppressedClick();
+
+    const handleSuppressedClick = (event: MouseEvent) => {
+      event.preventDefault();
+      event.stopPropagation();
+      event.stopImmediatePropagation();
+      clearSuppressedClick();
+    };
+
+    suppressClickListenerRef.current = handleSuppressedClick;
+    window.addEventListener('click', handleSuppressedClick, true);
+    suppressClickTimeoutRef.current = setTimeout(() => {
+      clearSuppressedClick();
+    }, 0);
+  }, [clearSuppressedClick]);
 
   // create xStep
   useEffect(() => {
@@ -175,11 +215,15 @@ export const TaskGanttContent: React.FC<TaskGanttContentProps> = ({
         originalSelectedTask.start !== newChangedTask.start ||
         originalSelectedTask.end !== newChangedTask.end ||
         originalSelectedTask.progress !== newChangedTask.progress;
+      const shouldSuppressClick = action === 'start' || action === 'end' || action === 'progress' || isNotLikeOriginal;
 
       // remove listeners
       window.removeEventListener('mousemove', handleMouseMove);
       window.removeEventListener('mouseup', handleMouseUp);
       setGanttEvent({ action: '' });
+      if (shouldSuppressClick) {
+        suppressUpcomingClick();
+      }
 
       // custom operation start
       let operationSuccess: any = true;
@@ -233,6 +277,7 @@ export const TaskGanttContent: React.FC<TaskGanttContentProps> = ({
     onDateChange,
     svg,
     getSvgCursorX,
+    suppressUpcomingClick,
     setFailedTask,
     setGanttEvent,
   ]);
@@ -321,23 +366,7 @@ export const TaskGanttContent: React.FC<TaskGanttContentProps> = ({
   };
 
   const handleBarEvent = (action, task, event) => {
-    if (['click'].includes(action)) {
-      if (
-        !['start', 'end', 'progress'].includes(lastActionRef.current) &&
-        (!lastStartRef.current || lastStartRef.current === task.start)
-      ) {
-        handleBarEventStart(action, task, event);
-      }
-      lastActionRef.current = null;
-      lastStartRef.current = null;
-    } else if (['move', 'select'].includes(action)) {
-      lastStartRef.current = task.start;
-      handleBarEventStart(action, task, event);
-    } else {
-      lastStartRef.current = task.start;
-      lastActionRef.current = action;
-      handleBarEventStart(action, task, event);
-    }
+    handleBarEventStart(action, task, event);
   };
   return (
     <g className="content">
