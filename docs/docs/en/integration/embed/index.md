@@ -10,12 +10,12 @@ This plugin is used to embed NocoBase pages into other websites or applications.
 
 ## Installation
 
-This is a commercial plugin. For detailed activation instructions, please refer to: [Commercial Plugin Activation Guide](https://www.nocobase.com/en/blog/nocobase-commercial-license-activation-guide)
+Enable the "Embed NocoBase" plugin in the plugin manager to use it.
 
 
 ## User Guide
 
-After activating the interface configuration, click "Copy embedded link" in the page's configuration menu (top right corner).
+After enabling the plugin, click "Copy embedded link" in the page's configuration menu (top right corner).
 
 
 ![](https://static-docs.nocobase.com/f11bd6d5e88d38731d7cd3cb149022c8.png)
