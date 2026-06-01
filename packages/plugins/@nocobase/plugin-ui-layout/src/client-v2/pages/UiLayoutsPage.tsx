@@ -152,7 +152,6 @@ const UiLayoutsPage: React.FC = () => {
       const { record, layoutType = UI_LAYOUT_TYPE_DESKTOP } = options;
       ctx.viewer.drawer({
         width: token.screenMD,
-        maskClosable: false,
         closable: true,
         content: () => <UiLayoutForm layoutType={layoutType} record={record} onSubmitted={refreshList} />,
       });
