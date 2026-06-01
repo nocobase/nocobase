@@ -199,18 +199,18 @@ const UiLayoutsPage: React.FC = () => {
 
   return (
     <Card>
-      <Flex justify="space-between" style={{ marginBottom: token.marginMD }}>
-        <Button
-          danger
-          icon={<DeleteOutlined />}
-          disabled={selectedRowKeys.length === 0}
-          onClick={() => handleDelete(selectedRowKeys, { isBatch: true })}
-        >
-          {t('Delete')}
-        </Button>
+      <Flex justify="flex-end" style={{ marginBottom: token.marginMD }}>
         <Space>
           <Button icon={<ReloadOutlined />} onClick={refreshList}>
             {t('Refresh')}
+          </Button>
+          <Button
+            danger
+            icon={<DeleteOutlined />}
+            disabled={selectedRowKeys.length === 0}
+            onClick={() => handleDelete(selectedRowKeys, { isBatch: true })}
+          >
+            {t('Delete')}
           </Button>
           <Button type="primary" icon={<PlusOutlined />} onClick={() => openFormDialog()}>
             {t('Add UI layout')}
