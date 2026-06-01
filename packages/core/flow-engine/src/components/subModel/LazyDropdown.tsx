@@ -463,6 +463,7 @@ const createSearchItem = (
   },
   activateSearchSubmenu: (key: string) => void,
   deactivateSearchSubmenu: (key: string) => void,
+  shouldActivateSearchSubmenu: boolean,
 ) => ({
   key: `${searchKey}-search`,
   type: 'group' as const,
@@ -480,28 +481,34 @@ const createSearchItem = (
         onChange={(e) => {
           e.stopPropagation();
           const value = e.target.value;
-          activateSearchSubmenu(searchKey);
+          if (shouldActivateSearchSubmenu) {
+            activateSearchSubmenu(searchKey);
+          }
           if ((e.nativeEvent as any)?.isComposing || searchHandlers.isComposing(searchKey)) {
             searchHandlers.updateInputValue(searchKey, value);
             return;
           }
-          if (!value) {
+          if (!value && shouldActivateSearchSubmenu) {
             deactivateSearchSubmenu(searchKey);
           }
           searchHandlers.updateSearchValue(searchKey, value);
         }}
         onCompositionStart={(e) => {
           e.stopPropagation();
-          activateSearchSubmenu(searchKey);
+          if (shouldActivateSearchSubmenu) {
+            activateSearchSubmenu(searchKey);
+          }
           searchHandlers.startComposition(searchKey);
         }}
         onCompositionEnd={(e) => {
           e.stopPropagation();
           const value = e.currentTarget.value;
-          if (value) {
-            activateSearchSubmenu(searchKey);
-          } else {
-            deactivateSearchSubmenu(searchKey);
+          if (shouldActivateSearchSubmenu) {
+            if (value) {
+              activateSearchSubmenu(searchKey);
+            } else {
+              deactivateSearchSubmenu(searchKey);
+            }
           }
           searchHandlers.endComposition(searchKey, value);
         }}
@@ -737,6 +744,7 @@ const LazyDropdown: React.FC<Omit<DropdownProps, 'menu'> & { menu: LazyDropdownM
     const searchKey = keyPath;
     const currentSearchValue = searchValues[searchKey] || '';
     const currentInputValue = inputValues[searchKey] ?? currentSearchValue;
+    const shouldActivateSearchSubmenu = !(item.type === 'group' && path.length === 0);
 
     // 递归过滤：当 child 为分组时，会继续向下过滤其 children；
     // 仅保留自身匹配或存在匹配子项的分组。
@@ -770,6 +778,7 @@ const LazyDropdown: React.FC<Omit<DropdownProps, 'menu'> & { menu: LazyDropdownM
       searchHandlers,
       activateSearchSubmenu,
       deactivateSearchSubmenu,
+      shouldActivateSearchSubmenu,
     );
     const dividerItem = { key: `${keyPath}-search-divider`, type: 'divider' as const };
 
