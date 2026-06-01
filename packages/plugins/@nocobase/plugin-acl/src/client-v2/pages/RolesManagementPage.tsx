@@ -9,7 +9,7 @@
 
 import { css } from '@emotion/css';
 import { MoreOutlined, PlusOutlined, TagOutlined } from '@ant-design/icons';
-import { ResourceFormDrawer, useACLRoleContext } from '@nocobase/client-v2';
+import { useACLRoleContext } from '@nocobase/client-v2';
 import { randomId, useFlowContext } from '@nocobase/flow-engine';
 import { useMemoizedFn, useRequest } from 'ahooks';
 import {
@@ -32,6 +32,7 @@ import {
   theme,
 } from 'antd';
 import React, { lazy, Suspense, useEffect, useMemo, useState } from 'react';
+import { ResourceFormDrawer } from '../components/ResourceFormDrawer';
 import { useT } from '../locale';
 import PluginAclClientV2 from '../plugin';
 import type { ComponentLoader, PermissionTabProps, Role, RoleTabProps } from '../registries';

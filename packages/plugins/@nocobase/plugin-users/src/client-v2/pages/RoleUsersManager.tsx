@@ -8,18 +8,18 @@
  */
 
 import { DeleteOutlined, PlusOutlined } from '@ant-design/icons';
+import type { RoleTabProps } from '@nocobase/plugin-acl/client-v2';
+import type { TableProps } from '@nocobase/client-v2';
+import { useFlowContext } from '@nocobase/flow-engine';
+import { useMemoizedFn } from 'ahooks';
+import { Button, Popconfirm, Typography } from 'antd';
+import React, { useMemo, useRef, useState } from 'react';
 import {
   ResourcePickerView,
   ResourceTablePage,
   SettingsActionCell,
   type ResourceTablePageToolbarArgs,
-  type TableProps,
-} from '@nocobase/client-v2';
-import type { RoleTabProps } from '@nocobase/plugin-acl/client-v2';
-import { useFlowContext } from '@nocobase/flow-engine';
-import { useMemoizedFn } from 'ahooks';
-import { Button, Popconfirm, Typography } from 'antd';
-import React, { useMemo, useRef, useState } from 'react';
+} from '../components/resource';
 import { useT } from '../locale';
 import type { User } from './types';
 import { toListPayload } from './types';

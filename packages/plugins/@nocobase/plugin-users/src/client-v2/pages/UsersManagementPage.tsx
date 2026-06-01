@@ -9,18 +9,12 @@
 
 import { css } from '@emotion/css';
 import { DeleteOutlined, PlusOutlined, ReloadOutlined } from '@ant-design/icons';
-import {
-  ResourceTablePage,
-  SettingsActionCell,
-  useACLRoleContext,
-  type CompiledFilter,
-  type ResourceTablePageToolbarArgs,
-  type TableProps,
-} from '@nocobase/client-v2';
+import { useACLRoleContext, type CompiledFilter, type TableProps } from '@nocobase/client-v2';
 import { useFlowContext } from '@nocobase/flow-engine';
 import { useMemoizedFn } from 'ahooks';
 import { Button, Popconfirm, Space, Tabs, Tag, theme } from 'antd';
 import React, { useMemo, useRef, useState } from 'react';
+import { ResourceTablePage, SettingsActionCell, type ResourceTablePageToolbarArgs } from '../components/resource';
 import { useT } from '../locale';
 import ChangeUserPasswordDrawer from './ChangeUserPasswordDrawer';
 import UserFormDrawer from './UserFormDrawer';

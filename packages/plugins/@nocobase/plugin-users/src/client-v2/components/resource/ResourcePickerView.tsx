@@ -14,8 +14,7 @@ import { useMemoizedFn, useRequest } from 'ahooks';
 import { Button, Space, theme } from 'antd';
 import type { TablePaginationConfig } from 'antd';
 import React, { useMemo, useState } from 'react';
-import { CollectionFilter, type CompiledFilter } from '../filter';
-import { DEFAULT_PAGE_SIZE, Table, type TableProps } from '../table';
+import { CollectionFilter, DEFAULT_PAGE_SIZE, Table, type CompiledFilter, type TableProps } from '@nocobase/client-v2';
 
 export interface ResourcePickerRequestParams {
   filter?: CompiledFilter;

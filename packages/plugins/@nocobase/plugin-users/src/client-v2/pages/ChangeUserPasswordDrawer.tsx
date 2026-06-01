@@ -7,11 +7,12 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { PasswordInput, ResourceFormDrawer } from '@nocobase/client-v2';
+import { PasswordInput } from '@nocobase/client-v2';
 import { useFlowContext } from '@nocobase/flow-engine';
 import { useMemoizedFn } from 'ahooks';
 import { Button, Col, Form, Row } from 'antd';
 import React from 'react';
+import { ResourceFormDrawer } from '../components/resource';
 import { useT } from '../locale';
 import { PluginUsersClientV2 } from '../plugin';
 import { generatePassword } from '../shared/generatePassword';

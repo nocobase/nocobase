@@ -10,7 +10,7 @@
 import { useMemoizedFn } from 'ahooks';
 import { Form, type FormInstance, type FormProps } from 'antd';
 import React, { useEffect, useState } from 'react';
-import { DrawerFormLayout } from '../DrawerFormLayout';
+import { DrawerFormLayout } from '@nocobase/client-v2';
 
 export interface ResourceFormDrawerRenderArgs<Values extends object> {
   form: FormInstance<Values>;
