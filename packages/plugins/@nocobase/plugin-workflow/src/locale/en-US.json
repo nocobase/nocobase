@@ -227,6 +227,7 @@
   "This type of trigger has not been supported to be executed manually.": "This type of trigger has not been supported to be executed manually.",
   "This will perform all the actions configured in the workflow. Are you sure you want to continue?": "This will perform all the actions configured in the workflow. Are you sure you want to continue?",
   "Trigger": "Trigger",
+  "Trigger configuration": "Trigger configuration",
   "Trigger data": "Trigger data",
   "Trigger data context": "Trigger data context",
   "Trigger in executed workflow cannot be modified": "Trigger in executed workflow cannot be modified",

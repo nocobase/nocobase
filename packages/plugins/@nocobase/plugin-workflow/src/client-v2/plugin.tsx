@@ -30,6 +30,11 @@ export type WorkflowTriggerOptions = {
   /** Trigger type display name. Accepts a plain string or a `{{t("…")}}` template. */
   title: string;
   /**
+   * Trigger type description, shown under the title in the "Trigger type"
+   * dropdown. Accepts a plain string or a `{{t("…")}}` template.
+   */
+  description?: string;
+  /**
    * Fixed execute mode for this trigger type. `true` = synchronous only,
    * `false` = asynchronous only, `undefined` = the user may choose.
    */
@@ -90,10 +95,12 @@ export class PluginWorkflowClientV2 extends Plugin {
   private registerBuiltinTriggers() {
     this.registerTrigger('collection', {
       title: `{{t("Collection event", { ns: "${NAMESPACE}" })}}`,
+      description: `{{t('Triggered when data changes in the collection, such as after adding, updating, or deleting a record. Unlike "Post-action event", Collection event listens for data changes rather than HTTP requests. Unless you understand the exact meaning, it is recommended to use "Post-action event".', { ns: "${NAMESPACE}" })}}`,
       createConfigFormLoader: () => import('./triggers/collection/CreateConfigForm'),
     });
     this.registerTrigger('schedule', {
       title: `{{t("Schedule event", { ns: "${NAMESPACE}" })}}`,
+      description: `{{t("Triggered according to preset time conditions. Suitable for one-time or periodic tasks, such as sending notifications and cleaning data on a schedule.", { ns: "${NAMESPACE}" })}}`,
       sync: false,
       createConfigFormLoader: () => import('./triggers/schedule/CreateConfigForm'),
     });
@@ -109,9 +116,12 @@ export class PluginWorkflowClientV2 extends Plugin {
       sort: 300,
       aclSnippet: 'pm.workflow.workflows',
     });
+    // `index` is the menu's default tab: the settings manager registers it at
+    // the menu root (`.../settings/workflow`) with no extra path segment,
+    // matching v1's route instead of `.../settings/workflow/workflows`.
     this.pluginSettingsManager.addPageTabItem({
       menuKey: NAMESPACE,
-      key: 'workflows',
+      key: 'index',
       title: t('Workflow'),
       aclSnippet: 'pm.workflow.workflows',
       sort: 1,

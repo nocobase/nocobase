@@ -10,7 +10,7 @@
 import { DrawerFormLayout } from '@nocobase/client-v2';
 import { useFlowContext } from '@nocobase/flow-engine';
 import { useMemoizedFn } from 'ahooks';
-import { Card, Form, Input, InputNumber, Select, Space, Spin, Tag } from 'antd';
+import { Card, Form, Input, InputNumber, Select, Space, Spin, Tag, Typography } from 'antd';
 import React, { lazy, Suspense, useEffect, useMemo, useState } from 'react';
 import { EXECUTION_STATUS_OPTIONS, EXECUTION_STATUS_OPTIONS_MAP } from '../../common/executionStatus';
 import { SyncModeSelect } from '../components/SyncModeSelect';
@@ -56,11 +56,12 @@ export function WorkflowFormDrawer(props: WorkflowFormDrawerProps) {
     const options = Array.from(plugin.triggers.getEntities()).map(([value, opt]) => ({
       value,
       label: opt?.title ? compile(opt.title) : String(value),
+      description: opt?.description ? compile(opt.description) : undefined,
     }));
     // Keep an existing workflow's type selectable in edit mode even if its
     // trigger plugin hasn't exposed a v2 surface yet.
     if (mode === 'edit' && record?.type && !options.some((item) => item.value === record.type)) {
-      options.push({ value: record.type, label: record.type });
+      options.push({ value: record.type, label: record.type, description: undefined });
     }
     return options.sort((a, b) => String(a.label).localeCompare(String(b.label)));
   }, [plugin, compile, mode, record]);
@@ -175,12 +176,30 @@ export function WorkflowFormDrawer(props: WorkflowFormDrawerProps) {
             onChange={handleTypeChange}
             showSearch
             optionFilterProp="label"
+            popupMatchSelectWidth
+            optionRender={(option) => (
+              <Space direction="vertical">
+                <Tag color="gold">{option.data?.label}</Tag>
+                {option.data?.description ? (
+                  <Typography.Text type="secondary" style={{ whiteSpace: 'normal' }}>
+                    {option.data.description}
+                  </Typography.Text>
+                ) : null}
+              </Space>
+            )}
           />
         </Form.Item>
+        {/* Trigger-specific config sits in its own titled, bordered group
+            (v1's "Trigger configuration" Fieldset). Only rendered when the
+            selected trigger type ships a create-config form. */}
         {ConfigForm ? (
-          <Suspense fallback={<Spin />}>
-            <ConfigForm />
-          </Suspense>
+          <Form.Item label={t('Trigger configuration')}>
+            <Card size="small">
+              <Suspense fallback={<Spin />}>
+                <ConfigForm />
+              </Suspense>
+            </Card>
+          </Form.Item>
         ) : null}
         <Form.Item
           name="sync"
