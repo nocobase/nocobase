@@ -39,14 +39,6 @@ import {
   filterFieldInterfacesByCollectionTemplate,
 } from './collectionTemplateFieldInterfaces';
 import { FieldForm } from './FieldForm';
-import {
-  buildSqlFieldsFromPreview,
-  getSqlPreviewInternalName,
-  normalizeSqlPreviewResult,
-  SqlFieldsConfigureItem,
-  SqlPreviewConfigureItem,
-  SqlSourceCollectionsConfigureItem,
-} from './SqlCollectionConfigure';
 
 interface FieldsPageProps {
   dataSourceKey: string;
@@ -228,21 +220,37 @@ function getCollectionUpdateActionUrl(dataSourceKey: string) {
   return dataSourceKey === 'main' ? 'collections:update' : `dataSources/${dataSourceKey}/collections:update`;
 }
 
-function isSqlCollection(collection: Record<string, any>) {
-  return collection.template === 'sql';
-}
-
 function isViewCollection(collection: Record<string, any>) {
   return collection.template === 'view' || collection.view;
 }
 
-function isSyncFieldsVisible(dataSourceKey: string, collection: Record<string, any>) {
-  if (isSqlCollection(collection)) {
-    return true;
-  }
+function getCollectionTemplate(ctx: any, collection: Record<string, any>) {
+  const plugin = ctx.app.pm.get(PluginDataSourceManagerClientV2);
+  return plugin?.getCollectionTemplate?.(collection.template || 'general');
+}
 
+function isTemplateSyncFieldsVisible(options: { collection: Record<string, any>; ctx: any; dataSourceKey: string }) {
+  const template = getCollectionTemplate(options.ctx, options.collection);
+  const syncFields = template?.configure?.syncFields;
+  if (!syncFields) {
+    return false;
+  }
+  if (typeof syncFields.visible === 'function') {
+    return syncFields.visible({
+      collection: options.collection,
+      dataSourceKey: options.dataSourceKey,
+    });
+  }
+  return syncFields.visible !== false;
+}
+
+function isSyncFieldsVisible(dataSourceKey: string, collection: Record<string, any>, ctx: any) {
   if (isViewCollection(collection)) {
     return dataSourceKey === 'main';
+  }
+
+  if (isTemplateSyncFieldsVisible({ collection, ctx, dataSourceKey })) {
+    return true;
   }
 
   if (collection.from === 'db2cm') {
@@ -264,27 +272,6 @@ function isAddFieldVisible(options: {
     !dataSourceType?.disableAddFields &&
     options.collection.template !== 'sql' &&
     options.fieldInterfaceGroups.length > 0
-  );
-}
-
-function getSqlSyncErrorMessage(error: unknown, fallback: string) {
-  const typedError = error as
-    | {
-        message?: string;
-        response?: {
-          data?: {
-            errors?: Array<{ message?: string }>;
-          };
-        };
-      }
-    | undefined;
-  return (
-    typedError?.response?.data?.errors
-      ?.map((item) => item.message)
-      .filter(Boolean)
-      .join('\n') ||
-    typedError?.message ||
-    fallback
   );
 }
 
@@ -738,105 +725,6 @@ function ViewSyncFieldsDrawer(props: {
   );
 }
 
-function SqlSyncFieldsDrawer(props: { collection: Record<string, any>; onSubmitted: () => void }) {
-  const t = useT();
-  const ctx = useFlowContext();
-  const { message } = App.useApp();
-  const [form] = Form.useForm();
-  const [submitting, setSubmitting] = useState(false);
-  const previewName = getSqlPreviewInternalName();
-
-  useEffect(() => {
-    form.setFieldsValue(props.collection);
-  }, [form, props.collection]);
-
-  useEffect(() => {
-    let ignore = false;
-
-    const loadPreview = async () => {
-      const sql = props.collection.sql;
-      if (!sql) {
-        return;
-      }
-
-      try {
-        const response = await ctx.api.resource('sqlCollection').execute({
-          values: {
-            sql,
-          },
-        });
-        if (ignore) {
-          return;
-        }
-        const preview = normalizeSqlPreviewResult(response);
-        const currentSources = props.collection.sources || [];
-        const currentFields = props.collection.fields || [];
-        form.setFieldsValue({
-          sources: Array.from(
-            new Set([
-              ...(Array.isArray(currentSources) ? currentSources : []),
-              ...(Array.isArray(preview.sources) ? preview.sources : []),
-            ]),
-          ),
-          fields: buildSqlFieldsFromPreview({
-            currentFields: Array.isArray(currentFields) ? currentFields : [],
-            manager: ctx.dataSourceManager.collectionFieldInterfaceManager,
-            preview,
-          }),
-          [previewName]: preview,
-        });
-      } catch (error) {
-        if (!ignore) {
-          form.setFieldValue(previewName, {
-            error: getSqlSyncErrorMessage(error, t('SQL error')),
-          });
-        }
-      }
-    };
-
-    loadPreview();
-
-    return () => {
-      ignore = true;
-    };
-  }, [ctx.api, ctx.dataSourceManager.collectionFieldInterfaceManager, form, previewName, props.collection, t]);
-
-  const handleSubmit = useCallback(async () => {
-    const values = await form.validateFields();
-    setSubmitting(true);
-    try {
-      await ctx.api.resource('sqlCollection').setFields({
-        filterByTk: props.collection.name,
-        values: {
-          fields: values.fields,
-          sources: values.sources,
-        },
-      });
-      await ctx.dataSourceManager.getDataSource('main')?.reload();
-      props.onSubmitted();
-      message.success(t('Sync successfully'));
-    } finally {
-      setSubmitting(false);
-    }
-  }, [ctx.api, ctx.dataSourceManager, form, message, props, t]);
-
-  return (
-    <DrawerFormLayout
-      title={t('Sync from database')}
-      submitting={submitting}
-      submitText={t('Submit')}
-      cancelText={t('Cancel')}
-      onSubmit={handleSubmit}
-    >
-      <Form form={form} layout="vertical" initialValues={props.collection}>
-        <SqlSourceCollectionsConfigureItem form={form} mode="edit" template={{ title: '', name: 'sql' }} item={{}} />
-        <SqlFieldsConfigureItem form={form} mode="edit" template={{ title: '', name: 'sql' }} item={{}} />
-        <SqlPreviewConfigureItem form={form} mode="edit" template={{ title: '', name: 'sql' }} item={{}} />
-      </Form>
-    </DrawerFormLayout>
-  );
-}
-
 export default function FieldsPage(props: FieldsPageProps) {
   const t = useT();
   const ctx = useFlowContext();
@@ -931,20 +819,27 @@ export default function FieldsPage(props: FieldsPageProps) {
     [fieldInterfaceGroups, openFieldForm, t],
   );
 
-  const openSqlSyncFieldsDrawer = useCallback(() => {
+  const collectionTemplate = useMemo(() => getCollectionTemplate(ctx, props.collection), [ctx, props.collection]);
+  const TemplateSyncFieldsDrawer = collectionTemplate?.configure?.syncFields?.Component;
+
+  const openTemplateSyncFieldsDrawer = useCallback(() => {
+    if (!TemplateSyncFieldsDrawer) {
+      return;
+    }
     ctx.viewer.drawer({
       width: 900,
       closable: true,
       content: () => (
-        <SqlSyncFieldsDrawer
+        <TemplateSyncFieldsDrawer
           collection={props.collection}
+          dataSourceKey={props.dataSourceKey}
           onSubmitted={() => {
             request.refresh();
           }}
         />
       ),
     });
-  }, [ctx.viewer, props.collection, request]);
+  }, [TemplateSyncFieldsDrawer, ctx.viewer, props.collection, props.dataSourceKey, request]);
 
   const openViewSyncFieldsDrawer = useCallback(() => {
     ctx.viewer.drawer({
@@ -1038,8 +933,8 @@ export default function FieldsPage(props: FieldsPageProps) {
   );
 
   const handleSyncFields = useCallback(async () => {
-    if (isSqlCollection(props.collection)) {
-      openSqlSyncFieldsDrawer();
+    if (TemplateSyncFieldsDrawer) {
+      openTemplateSyncFieldsDrawer();
       return;
     }
 
@@ -1065,14 +960,15 @@ export default function FieldsPage(props: FieldsPageProps) {
     ctx.api,
     ctx.dataSourceManager,
     message,
-    openSqlSyncFieldsDrawer,
+    openTemplateSyncFieldsDrawer,
     openViewSyncFieldsDrawer,
     props.collection,
     request,
+    TemplateSyncFieldsDrawer,
     t,
   ]);
 
-  const syncFieldsVisible = isSyncFieldsVisible(props.dataSourceKey, props.collection);
+  const syncFieldsVisible = isSyncFieldsVisible(props.dataSourceKey, props.collection, ctx);
   const addFieldVisible = isAddFieldVisible({
     collection: props.collection,
     ctx,
