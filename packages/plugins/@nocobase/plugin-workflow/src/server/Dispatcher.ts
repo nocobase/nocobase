@@ -300,9 +300,7 @@ export default class Dispatcher {
     }
 
     try {
-      const entered = await this.prepare(execution, {
-        transaction: this.plugin.useDataSourceTransaction('main', options.transaction as Transaction),
-      });
+      const entered = await this.prepare(execution);
       if (!entered) {
         return null;
       }
@@ -329,7 +327,6 @@ export default class Dispatcher {
         where: {
           id: stack,
         },
-        transaction: options.transaction,
       });
 
       const limitCount = workflow.options.stackLimit || 1;
@@ -352,67 +349,46 @@ export default class Dispatcher {
     options: EventOptions,
   ): Promise<ExecutionModel> {
     const { deferred } = options;
-    const transaction = await this.plugin.useDataSourceTransaction('main', options.transaction, true);
-    const sameTransaction = options.transaction === transaction;
     let stack = options.stack;
     if (options.parentExecutionId && !stack) {
       const parentExecution = await this.plugin.db.getRepository('executions').findOne({
         filterByTk: options.parentExecutionId,
-        transaction,
       });
       stack = parentExecution ? [...(parentExecution.stack ?? []), parentExecution.id] : [];
     }
-    const valid = await this.validateEvent(workflow, context, { ...options, stack, transaction });
+    const valid = await this.validateEvent(workflow, context, { ...options, stack });
     if (!valid) {
-      if (!sameTransaction) {
-        await transaction.commit();
-      }
       options.onTriggerFail?.(workflow, context, options);
       throw new Error('event is not valid');
     }
 
-    let execution: ExecutionModel;
-    try {
-      execution = await workflow.createExecution(
-        {
-          context,
-          key: workflow.key,
-          eventKey: options.eventKey ?? randomUUID(),
-          stack,
-          parentExecutionId: options.parentExecutionId ?? null,
-          dispatched: deferred ?? false,
-          status: deferred ? EXECUTION_STATUS.STARTED : EXECUTION_STATUS.QUEUEING,
-          manually: options.manually,
-        },
-        { transaction },
-      );
-    } catch (err) {
-      if (!sameTransaction) {
-        await transaction.rollback();
-      }
-      throw err;
-    }
+    const execution: ExecutionModel = await workflow.createExecution({
+      context,
+      key: workflow.key,
+      eventKey: options.eventKey ?? randomUUID(),
+      stack,
+      parentExecutionId: options.parentExecutionId ?? null,
+      dispatched: deferred ?? false,
+      status: deferred ? EXECUTION_STATUS.STARTED : EXECUTION_STATUS.QUEUEING,
+      manually: options.manually,
+    });
 
     this.plugin.getLogger(workflow.id).info(`execution of workflow ${workflow.id} created as ${execution.id}`);
 
     if (!workflow.stats) {
-      workflow.stats = await workflow.getStats({ transaction });
+      workflow.stats = await workflow.getStats();
     }
-    await workflow.stats.increment('executed', { transaction });
+    await workflow.stats.increment('executed');
     // NOTE: https://sequelize.org/api/v6/class/src/model.js~model#instance-method-increment
     if (this.plugin.db.options.dialect !== 'postgres') {
-      await workflow.stats.reload({ transaction });
+      await workflow.stats.reload();
     }
     if (!workflow.versionStats) {
-      workflow.versionStats = await workflow.getVersionStats({ transaction });
+      workflow.versionStats = await workflow.getVersionStats();
     }
-    await workflow.versionStats.increment('executed', { transaction });
+    await workflow.versionStats.increment('executed');
     if (this.plugin.db.options.dialect !== 'postgres') {
-      await workflow.versionStats.reload({ transaction });
-    }
-
-    if (!sameTransaction) {
-      await transaction.commit();
+      await workflow.versionStats.reload();
     }
 
     execution.workflow = workflow;
@@ -422,16 +398,18 @@ export default class Dispatcher {
 
   private async prepare(
     input: ExecutionModel | null,
-    options: { transaction?: Transaction; immediate?: boolean } = {},
+    options: { transaction?: Transaction | null; immediate?: boolean } = {},
   ): Promise<ExecutionModel | null> {
-    const transaction = options.transaction;
-    const ownTransaction = !transaction;
+    const transaction = options.transaction ?? undefined;
+    const ownTransaction = !input && !transaction;
     const tx =
       transaction ||
-      (await this.plugin.db.sequelize.transaction({
-        isolationLevel:
-          this.plugin.db.options.dialect === 'sqlite' ? undefined : Transaction.ISOLATION_LEVELS.REPEATABLE_READ,
-      }));
+      (!input
+        ? await this.plugin.db.sequelize.transaction({
+            isolationLevel:
+              this.plugin.db.options.dialect === 'sqlite' ? undefined : Transaction.ISOLATION_LEVELS.REPEATABLE_READ,
+          })
+        : undefined);
     const logger = input ? this.plugin.getLogger(input.workflowId) : this.plugin.getLogger('dispatcher');
 
     try {
@@ -448,7 +426,7 @@ export default class Dispatcher {
           },
           sort: 'id',
           transaction: tx,
-          lock: tx.LOCK.UPDATE,
+          lock: tx?.LOCK.UPDATE,
           skipLocked: true,
         })) as ExecutionModel;
         if (execution) {
@@ -459,19 +437,19 @@ export default class Dispatcher {
       }
 
       if (!execution) {
-        if (ownTransaction) {
+        if (ownTransaction && tx) {
           await tx.commit();
         }
         return null;
       }
 
       const entered = await this.enter(execution, tx);
-      if (ownTransaction) {
+      if (ownTransaction && tx) {
         await tx.commit();
       }
       return entered;
     } catch (error) {
-      if (ownTransaction) {
+      if (ownTransaction && tx) {
         await tx.rollback();
       }
       if (error instanceof Error) {
@@ -481,7 +459,7 @@ export default class Dispatcher {
     }
   }
 
-  private async enter(execution: ExecutionModel, transaction: Transaction): Promise<ExecutionModel | null> {
+  private async enter(execution: ExecutionModel, transaction?: Transaction): Promise<ExecutionModel | null> {
     const workflow =
       execution.workflow ||
       this.plugin.enabledCache.get(execution.workflowId) ||
@@ -547,8 +525,7 @@ export default class Dispatcher {
     const logger = this.plugin.getLogger(execution.workflowId);
     const run = async () => {
       if (!execution.dispatched) {
-        const transaction = await this.plugin.useDataSourceTransaction('main', processorOptions.transaction);
-        await execution.update({ dispatched: true, status: EXECUTION_STATUS.STARTED }, { transaction });
+        await execution.update({ dispatched: true, status: EXECUTION_STATUS.STARTED });
         logger.info(`execution (${execution.id}) from pending list updated to started`);
       }
       this.plugin.timeoutManager.scheduleExecutionTimeout(execution);
@@ -561,7 +538,7 @@ export default class Dispatcher {
         logger.info(`execution (${execution.id}) finished with status: ${execution.status}`);
         logger.debug(`execution (${execution.id}) details:`, { execution });
         if (execution.status && execution.workflow?.options?.deleteExecutionOnStatus?.includes(execution.status)) {
-          await execution.destroy({ transaction: processor.mainTransaction });
+          await execution.destroy();
         }
       } catch (err) {
         if (err instanceof Error) {
