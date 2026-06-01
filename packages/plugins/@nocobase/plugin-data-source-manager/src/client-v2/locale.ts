@@ -12,6 +12,7 @@ import { tExpr as _tExpr, useFlowEngine } from '@nocobase/flow-engine';
 import pkg from '../../package.json';
 
 export const NAMESPACE = pkg.name;
+export const DATA_SOURCE_MANAGER_SETTINGS_KEY = 'data-source-manager';
 
 export function tExpr(key: string) {
   return _tExpr(key, { ns: [NAMESPACE, 'client'] });

@@ -10,7 +10,7 @@
 import { Application, Plugin, type CollectionTemplateField } from '@nocobase/client-v2';
 import React, { ComponentType } from 'react';
 import { FieldInterfaceConfigureOptions } from './field-interfaces';
-import { NAMESPACE } from './locale';
+import { DATA_SOURCE_MANAGER_SETTINGS_KEY } from './locale';
 import {
   normalizeViewCollectionSubmitValues,
   ViewDatabaseConfigureItem,
@@ -235,7 +235,7 @@ export class PluginDataSourceManagerClientV2 extends Plugin<any, Application> {
     });
 
     this.pluginSettingsManager.addMenuItem({
-      key: NAMESPACE,
+      key: DATA_SOURCE_MANAGER_SETTINGS_KEY,
       title: this.t('Data sources'),
       icon: 'ClusterOutlined',
       isPinned: true,
@@ -245,8 +245,8 @@ export class PluginDataSourceManagerClientV2 extends Plugin<any, Application> {
     });
 
     this.pluginSettingsManager.addPageTabItem({
-      menuKey: NAMESPACE,
-      key: 'index',
+      menuKey: DATA_SOURCE_MANAGER_SETTINGS_KEY,
+      key: 'list',
       title: this.t('Data sources'),
       componentLoader: () => import('./pages/DataSourcesPage'),
       sort: 1,
@@ -254,21 +254,12 @@ export class PluginDataSourceManagerClientV2 extends Plugin<any, Application> {
     });
 
     this.pluginSettingsManager.addPageTabItem({
-      menuKey: NAMESPACE,
-      key: 'collections',
-      title: this.t('Collections'),
-      componentLoader: () => import('./pages/DataSourceCollectionsPage'),
-      sort: 2,
-      aclSnippet: 'pm.data-source-manager',
-    });
-
-    this.pluginSettingsManager.addPageTabItem({
-      menuKey: NAMESPACE,
-      key: 'collections/:dataSourceKey',
+      menuKey: DATA_SOURCE_MANAGER_SETTINGS_KEY,
+      key: ':name/collections',
       title: this.t('Collections'),
       componentLoader: () => import('./pages/DataSourceCollectionsPage'),
       hidden: true,
-      sort: 3,
+      sort: 2,
       aclSnippet: 'pm.data-source-manager',
     });
   }

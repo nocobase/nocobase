@@ -15,7 +15,7 @@ import { App, Button, Card, Dropdown, Empty, Space, Switch, Tag } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import React, { useCallback, useMemo, useState } from 'react';
 import { DataSourceForm } from '../components/DataSourceForm';
-import { NAMESPACE, useT } from '../locale';
+import { DATA_SOURCE_MANAGER_SETTINGS_KEY, useT } from '../locale';
 import { PluginDataSourceManagerClientV2 } from '../plugin';
 import { removeDataSourcesFromRuntime, syncDataSourcesToRuntime } from '../runtime';
 import { compileLegacyTemplate } from '../utils/compileLegacyTemplate';
@@ -111,8 +111,8 @@ export default function DataSourcesPage() {
   const openCollections = useCallback(
     (record: DataSourceRecord) => {
       const path = ctx.app.pluginSettingsManager
-        .getRoutePath(`${NAMESPACE}.collections/:dataSourceKey`)
-        .replace(':dataSourceKey', encodeURIComponent(record.key));
+        .getRoutePath(`${DATA_SOURCE_MANAGER_SETTINGS_KEY}.:name/collections`)
+        .replace(':name', encodeURIComponent(record.key));
 
       ctx.router.navigate(path);
     },
