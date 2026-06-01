@@ -67,6 +67,11 @@ export default class Processor {
   /**
    * @experimental
    */
+  mainTransaction?: Transaction | null = null;
+
+  /**
+   * @experimental
+   */
   nodes: FlowNodeModel[] = [];
 
   /**
@@ -232,14 +237,19 @@ export default class Processor {
       options: { plugin },
     } = this;
 
+    this.mainTransaction = plugin.useDataSourceTransaction('main', this.transaction);
+
+    const transaction = this.mainTransaction;
+
     if (!execution.workflow) {
-      execution.workflow = plugin.enabledCache.get(execution.workflowId) || (await execution.getWorkflow());
+      execution.workflow =
+        plugin.enabledCache.get(execution.workflowId) || (await execution.getWorkflow({ transaction }));
     }
     if (!execution.workflow) {
       throw new Error(`workflow (#${execution.workflowId}) not found for execution (#${execution.id})`);
     }
 
-    const nodes = execution.workflow.nodes || (await execution.workflow.getNodes());
+    const nodes = execution.workflow.nodes || (await execution.workflow.getNodes({ transaction }));
     execution.workflow.nodes = nodes;
 
     this.makeNodes(nodes);
@@ -252,12 +262,14 @@ export default class Processor {
         executionId: execution.id,
       },
       raw: true,
+      transaction,
     });
     const jobs = await execution.getJobs({
       where: {
         id: jobIds.map((item) => item.id),
       },
       order: [['id', 'ASC']],
+      transaction,
     });
 
     execution.jobs = jobs;
@@ -548,10 +560,10 @@ export default class Processor {
               `UPDATE ${JobCollection.quotedTableName()} SET ${changes.map(([key]) => `${key} = ?`)} WHERE id='${
                 job.id
               }'`,
-              { replacements: changes.map(([, value]) => value) },
+              { replacements: changes.map(([, value]) => value), transaction: this.mainTransaction },
             );
           }
-          // await job.save();
+          // await job.save({ transaction: this.mainTransaction });
         }
       }
       if (newJobs.length) {
@@ -559,6 +571,7 @@ export default class Processor {
         await JobsModel.bulkCreate(
           newJobs.map((job) => job.toJSON()),
           {
+            transaction: this.mainTransaction,
             returning: false,
           },
         );
@@ -582,12 +595,16 @@ export default class Processor {
           status: EXECUTION_STATUS.STARTED,
         },
         individualHooks: true,
+        transaction: this.mainTransaction,
       });
       if (affected) {
         this.execution.set(values);
       } else {
-        await this.execution.reload();
+        await this.execution.reload({ transaction: this.mainTransaction });
       }
+    }
+    if (this.mainTransaction && this.mainTransaction !== this.transaction) {
+      await this.mainTransaction.commit();
     }
 
     if (this.execution.status === EXECUTION_STATUS.STARTED) {
@@ -679,7 +696,8 @@ export default class Processor {
   }
 
   private async shouldContinueExecution() {
-    return this.options.plugin.timeoutManager.shouldContinue(this.execution);
+    const transaction = this.mainTransaction ?? this.transaction;
+    return this.options.plugin.timeoutManager.shouldContinue(this.execution, { transaction });
   }
 
   private leaveRunningState() {

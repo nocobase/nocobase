@@ -49,7 +49,7 @@ export default class CCInstruction extends Instruction {
       .getParsedValue(node.config.users ?? [], node.id)
       .flat()
       .filter(Boolean);
-    const users = await getUsers(usersConfig, { db });
+    const users = await getUsers(usersConfig, { db, transaction: processor.mainTransaction });
 
     const RecordRepo = db.getRepository('workflowCcTasks');
     const title = node.config.title ? processor.getParsedValue(node.config.title, node.id) : node.title;
@@ -63,6 +63,7 @@ export default class CCInstruction extends Instruction {
         status: TASK_STATUS.UNREAD,
         title,
       })),
+      transaction: processor.mainTransaction,
     });
 
     // const { notifications = [] } = node.config;

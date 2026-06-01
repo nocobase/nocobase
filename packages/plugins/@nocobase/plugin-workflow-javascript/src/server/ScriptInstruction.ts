@@ -24,8 +24,7 @@ import {
 
 import { CacheTransport } from './cache-logger';
 
-type ScriptArgument = { name: string; value?: unknown };
-type ScriptConfig = { content?: string; timeout?: number; continue?: boolean; arguments?: ScriptArgument[] };
+type ScriptConfig = { content?: string; timeout?: number; continue?: boolean; arguments?: Record<string, unknown>[] };
 
 export default class ScriptInstruction extends Instruction {
   /**

@@ -547,23 +547,18 @@ export default class PluginWorkflowServer extends Plugin {
    * @experimental
    * @param {string} dataSourceName
    * @param {Transaction} transaction
-   * @param {boolean} create Create a new transaction when the input transaction does not belong to this data source.
-   * @returns {Transaction}
+   * @param {boolean} create
+   * @returns {Trasaction}
    */
-  useDataSourceTransaction(dataSourceName = 'main', transaction?: Transaction | null, create = false) {
-    const dataSource = this.app.dataSourceManager.dataSources.get(dataSourceName);
-    if (!dataSource) {
-      throw new Error(`data source ${dataSourceName} is not found`);
-    }
-    const { db } = dataSource.collectionManager as SequelizeCollectionManager;
+  useDataSourceTransaction(dataSourceName = 'main', transaction, create = false) {
+    const { db } = this.app.dataSourceManager.dataSources.get(dataSourceName)
+      .collectionManager as SequelizeCollectionManager;
     if (!db) {
       return;
     }
-
     if (db.sequelize === transaction?.sequelize) {
       return transaction;
     }
-
     if (create) {
       return db.sequelize.transaction();
     }
