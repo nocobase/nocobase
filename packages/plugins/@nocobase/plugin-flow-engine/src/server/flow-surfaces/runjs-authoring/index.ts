@@ -207,6 +207,18 @@ type RunJsAstInspection = {
     matchIndex?: number;
     method: string;
   }>;
+  invalidResourceActionCalls: Array<{
+    actionName: string;
+    allowedActions?: string[];
+    capability: string;
+    collectionName?: string;
+    dataSourceKey?: string;
+    endpoint?: string;
+    index: number;
+    invalidReason: string;
+    resourceType?: FlowResourceInstanceType;
+    suggestedMethod?: string;
+  }>;
   invalidCtxApiMemberAccesses: Array<{
     capability: string;
     index: number;
@@ -633,7 +645,7 @@ const INIT_RESOURCE_CLASS_NAMES = new Set([
   'MultiRecordResource',
   'SQLResource',
 ]);
-const AST_CTX_METHOD_NAMES = new Set(['runjs', 'makeResource', 'initResource', 'render']);
+const AST_CTX_METHOD_NAMES = new Set(['runjs', 'makeResource', 'initResource', 'render', 'request']);
 const REACT_NODE_COMPONENT_PROP_NAMES = new Set(['avatar', 'extra', 'icon', 'prefix', 'suffix']);
 const CANONICAL_CTX_LIB_MEMBERS = ['React', 'ReactDOM', 'antd', 'dayjs', 'antdIcons', 'lodash', 'formula', 'math'];
 const CTX_LIB_MEMBER_BY_LOWERCASE = new Map(CANONICAL_CTX_LIB_MEMBERS.map((member) => [member.toLowerCase(), member]));
@@ -719,6 +731,28 @@ const RUNJS_CTX_LIB_ALLOWED_MEMBERS_BY_LIBRARY = new Map<string, Set<string>>([
 const RUNJS_CTX_API_ALLOWED_MEMBERS = new Set(['auth', 'request', 'resource']);
 const RUNJS_CTX_API_AUTH_ALLOWED_MEMBERS = new Set(['authenticator', 'locale', 'role', 'token']);
 const RUNJS_RESOURCE_METHODS = new Set(['list', 'get', 'create', 'update', 'destroy']);
+const RUNJS_COLLECTION_RESOURCE_ACTIONS = new Set([
+  'add',
+  'create',
+  'destroy',
+  'firstOrCreate',
+  'get',
+  'list',
+  'move',
+  'query',
+  'remove',
+  'set',
+  'toggle',
+  'update',
+  'updateOrCreate',
+]);
+const RUNJS_COLLECTION_RESOURCE_ACTION_ALIASES = new Map<string, string[]>([
+  ['create', ['create', 'firstOrCreate', 'updateOrCreate']],
+  ['view', ['get', 'list', 'query']],
+  ['update', ['add', 'move', 'remove', 'set', 'toggle', 'update']],
+  ['destroy', ['destroy']],
+]);
+const RUNJS_RESOURCE_ENDPOINT_ACTION_PATTERN = '[A-Za-z_$][\\w$-]*';
 const FLOW_RESOURCE_BASE_METHODS = new Set([
   'getData',
   'hasData',
@@ -2101,6 +2135,40 @@ function collectResourceRuntimeErrors(
       }),
     );
   });
+  scan.invalidResourceActionCalls.forEach((entry) => {
+    const allowedActions = entry.allowedActions?.length
+      ? ` Allowed collection actions: ${entry.allowedActions.join(', ')}.`
+      : '';
+    const suggestion =
+      entry.actionName === 'refresh'
+        ? ' Use resource.refresh() for UI resource refresh, or use list/get when making a backend resource action request.'
+        : entry.suggestedMethod
+          ? ` Use ${entry.suggestedMethod}(...) instead.`
+          : '';
+    errors.push(
+      buildRunJsAuthoringError({
+        path,
+        repairClass: 'resource-runtime-contract-stop',
+        ruleId: 'runjs-resource-action-invalid',
+        message: `flowSurfaces authoring ${path} cannot call ${entry.capability}; collection action '${entry.actionName}' is not supported.${allowedActions}${suggestion}`,
+        modelUse,
+        surface,
+        index: entry.index,
+        source,
+        details: {
+          actionName: entry.actionName,
+          allowedActions: entry.allowedActions,
+          capability: entry.capability,
+          collectionName: entry.collectionName,
+          dataSourceKey: entry.dataSourceKey,
+          endpoint: entry.endpoint,
+          invalidReason: entry.invalidReason,
+          resourceType: entry.resourceType,
+          suggestedMethod: entry.suggestedMethod,
+        },
+      }),
+    );
+  });
   scan.invalidResourceFilterCalls.forEach((entry) => {
     errors.push(
       buildRunJsAuthoringError({
@@ -2583,6 +2651,7 @@ function scanJavaScriptSource(source: string, ast?: any, context: RunJsAuthoring
       ...collectInvalidApiResourceCalls(source, masked, sourceBindings),
       ...(astInspection?.invalidApiResourceCalls || []),
     ]).sort((left, right) => left.index - right.index),
+    invalidResourceActionCalls: astInspection?.invalidResourceActionCalls || [],
     invalidResourceTypeCalls:
       astInspection?.invalidResourceTypeCalls ||
       collectInvalidResourceTypeCalls(source, masked, stringLiteralBindings, sourceBindings),
@@ -2639,7 +2708,17 @@ function inspectRunJsAst(
   const ctxApiAliases = collectCtxApiAliasesFromAst(ast, source, identifierBindings);
   const ctxLibsRootAliases = collectCtxLibsRootAliasesFromAst(ast, source, identifierBindings);
   const ctxLibAliases = collectCtxLibAliasesFromAst(ast, source, ctxLibsRootAliases, identifierBindings);
-  const ctxApiResourceAliases = collectCtxApiResourceAliasesFromAst(ast, source, ctxApiAliases, identifierBindings);
+  const staticStringBindings = [
+    ...stringBindings,
+    ...collectStaticStringBindingsFromAst(ast, source, stringBindings, identifierBindings),
+  ];
+  const ctxApiResourceAliases = collectCtxApiResourceAliasesFromAst(
+    ast,
+    source,
+    ctxApiAliases,
+    staticStringBindings,
+    identifierBindings,
+  );
   const reactNamespaceAliases = collectReactNamespaceAliasesFromAst(ast, source, identifierBindings, ctxRootAliases);
   const reactDefaultAliases = collectReactDefaultAliasesFromAst(
     ast,
@@ -2664,7 +2743,6 @@ function inspectRunJsAst(
     ctxRootAliases,
   );
   const asyncComponentBindings = collectReactAsyncComponentBindingsFromAst(ast, source, identifierBindings);
-  const staticStringBindings = [...stringBindings, ...collectStaticStringBindingsFromAst(ast, source)];
   const staticFilterValueBindings = collectStaticFilterValueBindingsFromAst(ast, source, identifierBindings);
   const flowResourceAliases = collectAstFlowResourceAliasesFromAst(
     ast,
@@ -2681,6 +2759,17 @@ function inspectRunJsAst(
     ...collectAstInvalidCtxLibPatternAccesses(ast, ctxLibAliases, ctxLibsRootAliases, identifierBindings, source),
   ];
   const invalidApiResourceCalls: RunJsAstInspection['invalidApiResourceCalls'] = [];
+  const invalidResourceActionCalls = collectAstInvalidResourceActionCalls(
+    ast,
+    source,
+    flowResourceAliases,
+    identifierBindings,
+    aliases,
+    ctxApiAliases,
+    ctxApiResourceAliases,
+    staticStringBindings,
+    context,
+  );
   const invalidResourceTypeCalls: RunJsAstInspection['invalidResourceTypeCalls'] = [];
   const invalidFlowResourceListCalls: RunJsAstInspection['invalidFlowResourceListCalls'] = [];
   const invalidFlowResourceMethodCalls: RunJsAstInspection['invalidFlowResourceMethodCalls'] = [];
@@ -2811,6 +2900,9 @@ function inspectRunJsAst(
 
   return {
     invalidApiResourceCalls: dedupedInvalidApiResourceCalls,
+    invalidResourceActionCalls: dedupeIndexedEntries(invalidResourceActionCalls).sort(
+      (left, right) => left.index - right.index,
+    ),
     invalidCtxApiMemberAccesses: filterInvalidCtxApiMemberAccessesForResourceCalls(
       dedupeIndexedEntries(invalidCtxApiMemberAccesses),
       dedupedInvalidApiResourceCalls,
@@ -5857,25 +5949,36 @@ function collectAstFunctionBindingsFromAst(ast: any, source: string): AstFunctio
   return bindings;
 }
 
-function collectStaticStringBindingsFromAst(ast: any, source: string): StaticStringBinding[] {
+function collectStaticStringBindingsFromAst(
+  ast: any,
+  source: string,
+  seedStringBindings: StaticStringBinding[] = [],
+  identifierBindings: AstIdentifierBinding[] = [],
+): StaticStringBinding[] {
   const bindings: StaticStringBinding[] = [];
+  const availableBindings = [...seedStringBindings];
   walkAstAncestor(ast, {
     VariableDeclarator(node: any, ancestors: any[]) {
       if (node.id?.type !== 'Identifier') {
         return;
       }
-      const resolved = resolveAstStaticStringValue(node.init, source);
+      const declaration = findAstAncestor(ancestors, 'VariableDeclaration');
+      if (declaration?.kind !== 'const') {
+        return;
+      }
+      const resolved = resolveRunJsStaticString(node.init, source, availableBindings, identifierBindings);
       if (typeof resolved !== 'string') {
         return;
       }
-      const declaration = findAstAncestor(ancestors, 'VariableDeclaration');
       const scope = getAstBindingScopeRange(ancestors, source.length, declaration?.kind === 'var');
-      bindings.push({
+      const binding = {
         name: node.id.name,
         value: resolved,
         start: typeof node.start === 'number' ? node.start : scope.start,
         end: scope.end,
-      });
+      };
+      bindings.push(binding);
+      availableBindings.push(binding);
     },
   });
   return bindings;
@@ -5935,6 +6038,7 @@ function collectCtxApiResourceAliasesFromAst(
   ast: any,
   source: string,
   ctxApiAliases: CtxApiAlias[],
+  stringBindings: StaticStringBinding[],
   identifierBindings: AstIdentifierBinding[],
 ): CtxApiResourceAliases {
   type ResourceHandleSource = { args: any[]; calleeSource: string; index: number } | CtxApiResourceHandleAlias;
@@ -5957,7 +6061,7 @@ function collectCtxApiResourceAliasesFromAst(
       name,
       resourceName:
         'args' in resourceFactoryCall
-          ? resolveAstStaticStringValue(resourceFactoryCall.args?.[0], source)
+          ? resolveRunJsStaticString(resourceFactoryCall.args?.[0], source, stringBindings, identifierBindings)
           : resourceFactoryCall.resourceName,
       start: typeof node?.start === 'number' ? node.start : scope.start,
       end: scope.end,
@@ -6817,6 +6921,1050 @@ function collectAstInvalidFlowResourceMethodCall(
       },
     ],
   };
+}
+
+function collectAstInvalidResourceActionCalls(
+  ast: any,
+  source: string,
+  aliases: AstFlowResourceAlias[],
+  identifierBindings: AstIdentifierBinding[],
+  ctxMethodAliases: CtxMethodAlias[],
+  ctxApiAliases: CtxApiAlias[],
+  ctxApiResourceAliases: CtxApiResourceAliases,
+  stringBindings: StaticStringBinding[],
+  context: RunJsAuthoringContext,
+): RunJsAstInspection['invalidResourceActionCalls'] {
+  const entries: RunJsAstInspection['invalidResourceActionCalls'] = [];
+  const ctxResourceStates = new Map<string, { scope: SourceRange; state: AstRunJsResourceState }>();
+  const aliasStates = new Map<string, AstRunJsResourceState>();
+  type ResourceActionEvent =
+    | {
+        type: 'aliasBind';
+        aliasName: string;
+        alwaysRuns: boolean;
+        end: number;
+        executionScope: SourceRange;
+        index: number;
+        sourceNode: any;
+      }
+    | {
+        type: 'ctxResourceAliasBind';
+        aliasName: string;
+        alwaysRuns: boolean;
+        end: number;
+        executionScope: SourceRange;
+        index: number;
+      }
+    | {
+        type: 'initResource';
+        alwaysRuns: boolean;
+        end: number;
+        executionScope: SourceRange;
+        index: number;
+        resourceType: FlowResourceInstanceType;
+      }
+    | {
+        type: 'resourceCall';
+        alwaysRuns: boolean;
+        end: number;
+        executionScope: SourceRange;
+        index: number;
+        node: any;
+      };
+  type ResourceExpressionTarget = {
+    capability: string;
+    state: AstRunJsResourceState;
+    updateState: (state: AstRunJsResourceState) => void;
+  };
+  type CtxApiResourceActionAlias = SourceRange & {
+    actionName: string;
+    capability: string;
+    collectionName?: string;
+    dataSourceKey: string;
+    declarationStart?: number;
+    name: string;
+  };
+  type CtxApiResourceActionSource = Omit<CtxApiResourceActionAlias, 'declarationStart' | 'end' | 'name' | 'start'>;
+  const events: ResourceActionEvent[] = [];
+  const actionAliases: CtxApiResourceActionAlias[] = [];
+  const writes = collectAstIdentifierWritesFromAst(ast, source);
+  const scopeKey = (scope: SourceRange) => `${scope.start}:${scope.end}`;
+  const aliasKey = (alias: AstFlowResourceAlias) => `${alias.name}:${alias.declarationStart ?? alias.start}`;
+  const defaultDataSourceKey = getRunJsDefaultDataSourceKey(context);
+  const defaultCtxState = (): AstRunJsResourceState => ({
+    capability: 'ctx.resource',
+    collectionName: normalizeText(context.currentCollectionName || context.hostCollectionName) || undefined,
+    dataSourceKey: defaultDataSourceKey,
+    resourceType: 'unknown',
+  });
+  const mergeResourceState = (
+    state: AstRunJsResourceState,
+    nextState: AstRunJsResourceState,
+  ): AstRunJsResourceState => {
+    state.capability = nextState.capability;
+    state.dataSourceKey = nextState.dataSourceKey;
+    state.resourceType = nextState.resourceType;
+    state.collectionName = nextState.collectionName;
+    return state;
+  };
+  const getAliasState = (alias: AstFlowResourceAlias): AstRunJsResourceState => {
+    const key = aliasKey(alias);
+    const current = aliasStates.get(key);
+    if (current) {
+      return current;
+    }
+    const initial =
+      alias.capability === 'ctx.resource'
+        ? {
+            ...defaultCtxState(),
+            resourceType: alias.resourceType === 'unknown' ? defaultCtxState().resourceType : alias.resourceType,
+          }
+        : {
+            capability: alias.capability,
+            dataSourceKey: defaultDataSourceKey,
+            resourceType: alias.resourceType,
+          };
+    aliasStates.set(key, initial);
+    return initial;
+  };
+  const setAliasState = (alias: AstFlowResourceAlias, state: AstRunJsResourceState) => {
+    if (alias.resourceType !== 'unknown') {
+      state.resourceType = alias.resourceType;
+    }
+    aliasStates.set(aliasKey(alias), state);
+    return state;
+  };
+  const setCtxState = (executionScope: SourceRange, state: AstRunJsResourceState) => {
+    const nextState = {
+      ...state,
+      capability: 'ctx.resource',
+    };
+    ctxResourceStates.set(scopeKey(executionScope), {
+      scope: executionScope,
+      state: nextState,
+    });
+    return nextState;
+  };
+  const getCtxState = (executionScope: SourceRange) => {
+    const exact = ctxResourceStates.get(scopeKey(executionScope))?.state;
+    if (exact) {
+      return exact;
+    }
+    const inherited = Array.from(ctxResourceStates.values())
+      .filter(({ scope }) => scope.start <= executionScope.start && scope.end >= executionScope.end)
+      .sort(
+        (left, right) =>
+          left.scope.end - left.scope.start - (right.scope.end - right.scope.start) ||
+          right.scope.start - left.scope.start,
+      )[0]?.state;
+    if (inherited) {
+      return inherited;
+    }
+    return setCtxState(executionScope, defaultCtxState());
+  };
+  const findDeclaredAlias = (aliasName: string, index: number) =>
+    aliases
+      .filter((alias) => alias.name === aliasName && (alias.declarationStart ?? alias.start) <= index)
+      .sort((left, right) => (right.declarationStart ?? right.start) - (left.declarationStart ?? left.start))[0];
+  const resolveStaticStringArg = (node: any) => {
+    const resolved = resolveAstResourceTypeExpression(node, source, stringBindings, identifierBindings);
+    return resolved.status === 'resolved' ? resolved.value : undefined;
+  };
+  const applyStaticResourceStateMethod = (
+    state: AstRunJsResourceState,
+    method: string,
+    node: any,
+  ): AstRunJsResourceState => {
+    if (method === 'setDataSourceKey') {
+      const dataSourceKey = resolveStaticStringArg(node.arguments?.[0]);
+      return {
+        ...state,
+        dataSourceKey: dataSourceKey || '',
+      };
+    }
+    if (method === 'setResourceName') {
+      const collectionName = resolveStaticStringArg(node.arguments?.[0]);
+      return {
+        ...state,
+        collectionName,
+      };
+    }
+    return state;
+  };
+  const getAliasResourceTarget = (
+    alias: AstFlowResourceAlias,
+    executionScope: SourceRange,
+  ): ResourceExpressionTarget => ({
+    capability: alias.capability,
+    state: getAliasState(alias),
+    updateState: (nextState) => {
+      mergeResourceState(getAliasState(alias), nextState);
+    },
+  });
+  const resolveResourceExpressionTarget = (
+    node: any,
+    executionScope: SourceRange,
+  ): ResourceExpressionTarget | undefined => {
+    const unwrapped = unwrapAstChainExpression(node);
+    if (!unwrapped) {
+      return undefined;
+    }
+    if (isAstCtxResourceMember(unwrapped, identifierBindings)) {
+      return {
+        capability: 'ctx.resource',
+        state: getCtxState(executionScope),
+        updateState: (nextState) => mergeResourceState(getCtxState(executionScope), nextState),
+      };
+    }
+    if (unwrapped.type === 'Identifier') {
+      const alias = resolveAstAliasBinding(unwrapped.name, unwrapped.start || 0, aliases, identifierBindings);
+      return alias ? getAliasResourceTarget(alias, executionScope) : undefined;
+    }
+    const factory = getAstFlowResourceFactoryCallFromAst(
+      unwrapped,
+      ctxMethodAliases,
+      source,
+      stringBindings,
+      identifierBindings,
+    );
+    if (factory) {
+      return {
+        capability: factory.capability,
+        state: {
+          capability: factory.capability,
+          dataSourceKey: defaultDataSourceKey,
+          resourceType: factory.resourceType,
+        },
+        updateState: _.noop,
+      };
+    }
+    if (unwrapped.type === 'CallExpression') {
+      const callTarget = getResourceCallTarget(unwrapped, executionScope);
+      if (!callTarget || !RUNJS_RESOURCE_CHAINABLE_STATE_METHODS.has(callTarget.method)) {
+        return undefined;
+      }
+      return {
+        ...callTarget,
+        state: applyStaticResourceStateMethod(callTarget.state, callTarget.method, unwrapped),
+      };
+    }
+    return undefined;
+  };
+  const resolveExpressionState = (node: any, executionScope: SourceRange): AstRunJsResourceState | undefined =>
+    resolveResourceExpressionTarget(node, executionScope)?.state;
+  const getResourceCallTarget = (
+    node: any,
+    executionScope: SourceRange,
+  ):
+    | {
+        capability: string;
+        method: string;
+        state: AstRunJsResourceState;
+        updateState: (state: AstRunJsResourceState) => void;
+      }
+    | undefined => {
+    const callee = unwrapAstChainExpression(node.callee);
+    if (!callee || callee.type !== 'MemberExpression') {
+      return undefined;
+    }
+    const method = getAstStaticPropertyName(callee);
+    if (!method) {
+      return undefined;
+    }
+    const objectTarget = resolveResourceExpressionTarget(callee.object, executionScope);
+    if (objectTarget) {
+      return {
+        ...objectTarget,
+        capability: getAstSource(callee, source),
+        method,
+      };
+    }
+    return undefined;
+  };
+  const addInvalidAction = (input: {
+    actionName: string | undefined;
+    capability: string;
+    collectionName?: string;
+    dataSourceKey?: string;
+    endpoint?: string;
+    index: number;
+    resourceType?: FlowResourceInstanceType;
+    strictCollectionEndpoint?: boolean;
+  }) => {
+    const validation = validateRunJsCollectionResourceAction({
+      actionName: input.actionName,
+      collectionName: input.collectionName,
+      dataSourceKey: input.dataSourceKey,
+      context,
+      resourceType: input.resourceType,
+      strictCollectionEndpoint: input.strictCollectionEndpoint,
+    });
+    if (!validation) {
+      return;
+    }
+    entries.push({
+      actionName: validation.actionName,
+      allowedActions: validation.allowedActions,
+      capability: input.capability,
+      collectionName: input.collectionName,
+      dataSourceKey: input.dataSourceKey,
+      endpoint: input.endpoint,
+      index: input.index,
+      invalidReason: validation.invalidReason,
+      resourceType: input.resourceType,
+      suggestedMethod: input.actionName === 'refresh' ? 'refresh' : undefined,
+    });
+  };
+  const getActiveActionAliases = () => trimAstAliasesAfterWrites(actionAliases, writes, identifierBindings);
+  const addActionAlias = (
+    name: string,
+    actionSource: Omit<CtxApiResourceActionAlias, 'declarationStart' | 'end' | 'name' | 'start'>,
+    node: any,
+    ancestors: any[],
+    isVar = false,
+  ) => {
+    if (!name) {
+      return;
+    }
+    const scope = getAstBindingScopeRange(ancestors, source.length, isVar);
+    actionAliases.push({
+      ...actionSource,
+      declarationStart: typeof node?.start === 'number' ? node.start : scope.start,
+      name,
+      start: typeof node?.start === 'number' ? node.start : scope.start,
+      end: scope.end,
+    });
+  };
+  const getApiResourceHandleSource = (
+    node: any,
+  ): { calleeSource: string; index: number; resourceName?: string } | undefined => {
+    const resourceFactoryCall = getMaybeCtxApiResourceCallFromAst(node, ctxApiAliases, source, identifierBindings);
+    if (resourceFactoryCall) {
+      return {
+        calleeSource: resourceFactoryCall.calleeSource,
+        index: resourceFactoryCall.index,
+        resourceName: resolveRunJsStaticString(
+          resourceFactoryCall.args?.[0],
+          source,
+          stringBindings,
+          identifierBindings,
+        ),
+      };
+    }
+    const handleAlias = getMaybeCtxApiResourceHandleAliasFromAst(
+      node,
+      ctxApiResourceAliases.handles,
+      identifierBindings,
+    );
+    return handleAlias
+      ? {
+          calleeSource: handleAlias.calleeSource,
+          index: handleAlias.start,
+          resourceName: handleAlias.resourceName,
+        }
+      : undefined;
+  };
+  const dedupeApiResourceActionSources = (sources: CtxApiResourceActionSource[]) => {
+    const seen = new Set<string>();
+    return sources.filter((entry) => {
+      const key = `${entry.actionName}:${entry.capability}:${entry.collectionName || ''}:${entry.dataSourceKey}`;
+      if (seen.has(key)) {
+        return false;
+      }
+      seen.add(key);
+      return true;
+    });
+  };
+  const resolveApiResourceActionAliasSources = (name: string, index: number) => {
+    const candidates = getActiveActionAliases()
+      .filter(
+        (entry) =>
+          entry.name === name &&
+          index >= entry.start &&
+          index < entry.end &&
+          !hasAstShadowBinding(name, index, entry, identifierBindings),
+      )
+      .sort((left, right) => right.start - left.start);
+    const latestStart = candidates[0]?.start;
+    return candidates
+      .filter((entry) => entry.start === latestStart)
+      .map((alias) => ({
+        actionName: alias.actionName,
+        capability: alias.capability,
+        collectionName: alias.collectionName,
+        dataSourceKey: alias.dataSourceKey,
+      }));
+  };
+  const getApiResourceActionSourcesFromAst = (node: any): CtxApiResourceActionSource[] => {
+    const unwrapped = unwrapAstChainExpression(node);
+    if (!unwrapped) {
+      return [];
+    }
+    if (unwrapped.type === 'Identifier') {
+      return resolveApiResourceActionAliasSources(unwrapped.name, unwrapped.start || 0);
+    }
+    if (unwrapped.type === 'MemberExpression') {
+      const invocationMember = getAstStaticPropertyName(unwrapped);
+      if (invocationMember === 'call' || invocationMember === 'apply' || invocationMember === 'bind') {
+        return getApiResourceActionSourcesFromAst(unwrapped.object).map((wrapped) => ({
+          ...wrapped,
+          capability: getAstSource(unwrapped, source) || wrapped.capability,
+        }));
+      }
+      const actionName = invocationMember;
+      if (!actionName) {
+        return [];
+      }
+      const handleSource = getApiResourceHandleSource(unwrapped.object);
+      if (!handleSource) {
+        return [];
+      }
+      return [
+        {
+          actionName,
+          capability: handleSource.resourceName
+            ? `${handleSource.calleeSource}('${handleSource.resourceName}').${actionName}`
+            : `${handleSource.calleeSource}(...).${actionName}`,
+          collectionName: handleSource.resourceName,
+          dataSourceKey: defaultDataSourceKey,
+        },
+      ];
+    }
+    if (unwrapped.type === 'ConditionalExpression') {
+      return dedupeApiResourceActionSources([
+        ...getApiResourceActionSourcesFromAst(unwrapped.consequent),
+        ...getApiResourceActionSourcesFromAst(unwrapped.alternate),
+      ]);
+    }
+    if (unwrapped.type === 'LogicalExpression') {
+      const leftSources = getApiResourceActionSourcesFromAst(unwrapped.left);
+      if (unwrapped.operator === '&&') {
+        return getApiResourceActionSourcesFromAst(unwrapped.right);
+      }
+      if ((unwrapped.operator === '||' || unwrapped.operator === '??') && leftSources.length) {
+        return leftSources;
+      }
+      return dedupeApiResourceActionSources([...leftSources, ...getApiResourceActionSourcesFromAst(unwrapped.right)]);
+    }
+    if (unwrapped.type === 'SequenceExpression') {
+      const expressions = unwrapped.expressions || [];
+      return getApiResourceActionSourcesFromAst(expressions[expressions.length - 1]);
+    }
+    if (unwrapped.type === 'AssignmentExpression' && isAstCtxApiAliasAssignmentOperator(unwrapped.operator)) {
+      return getApiResourceActionSourcesFromAst(unwrapped.right);
+    }
+    return [];
+  };
+  const getRunJsStaticRequestResourceActionFromAst = (
+    node: any,
+  ): { actionName?: string; collectionName?: string } | undefined => {
+    const objectArg = unwrapAstChainExpression(node.arguments?.[0]);
+    if (objectArg?.type !== 'ObjectExpression') {
+      return undefined;
+    }
+    const properties = objectArg.properties || [];
+    const resourceProperty = properties.find(
+      (property: any) =>
+        property?.type === 'Property' &&
+        ['collection', 'collectionName', 'resource'].includes(getAstStaticPropertyName(property)),
+    );
+    const actionProperty = properties.find(
+      (property: any) => property?.type === 'Property' && getAstStaticPropertyName(property) === 'action',
+    );
+    const actionName = resolveRunJsStaticString(actionProperty?.value, source, stringBindings, identifierBindings);
+    if (!actionName) {
+      return undefined;
+    }
+    return {
+      actionName,
+      collectionName: resolveRunJsStaticString(resourceProperty?.value, source, stringBindings, identifierBindings),
+    };
+  };
+  const collectApiResourceActionPatternAliases = (pattern: any, handleNode: any, ancestors: any[], isVar = false) => {
+    const handleSource = getApiResourceHandleSource(handleNode);
+    if (!handleSource) {
+      return;
+    }
+    collectAstObjectPatternAliases(pattern, (name, actionName, aliasNode) => {
+      addActionAlias(
+        name,
+        {
+          actionName,
+          capability: handleSource.resourceName
+            ? `${handleSource.calleeSource}('${handleSource.resourceName}').${actionName}`
+            : `${handleSource.calleeSource}(...).${actionName}`,
+          collectionName: handleSource.resourceName,
+          dataSourceKey: defaultDataSourceKey,
+        },
+        aliasNode || pattern,
+        ancestors,
+        isVar,
+      );
+    });
+  };
+  const collectApiResourceActions = (node: any) => {
+    const resourceFactoryCall = getCtxApiResourceCallFromAst(node, ctxApiAliases, source, identifierBindings);
+    if (resourceFactoryCall) {
+      const resourceName = resolveRunJsStaticString(node.arguments?.[0], source, stringBindings, identifierBindings);
+      const actionName = resolveStaticStringArg(node.arguments?.[1]);
+      addInvalidAction({
+        actionName,
+        capability: resourceName
+          ? `${resourceFactoryCall.calleeSource}('${resourceName}', '${actionName || ''}')`
+          : `${resourceFactoryCall.calleeSource}(..., '${actionName || ''}')`,
+        collectionName: resourceName,
+        dataSourceKey: defaultDataSourceKey,
+        index: resourceFactoryCall.index,
+      });
+    }
+
+    const callee = unwrapAstChainExpression(node.callee);
+    if (!callee || callee.type !== 'MemberExpression') {
+      return;
+    }
+    const actionName = getAstStaticPropertyName(callee);
+    if (!actionName) {
+      return;
+    }
+    const resourceFactory = getMaybeCtxApiResourceCallFromAst(callee.object, ctxApiAliases, source, identifierBindings);
+    if (resourceFactory) {
+      const resourceName = resolveRunJsStaticString(
+        resourceFactory.args?.[0],
+        source,
+        stringBindings,
+        identifierBindings,
+      );
+      addInvalidAction({
+        actionName,
+        capability: resourceName
+          ? `${resourceFactory.calleeSource}('${resourceName}').${actionName}`
+          : `${resourceFactory.calleeSource}(...).${actionName}`,
+        collectionName: resourceName,
+        dataSourceKey: defaultDataSourceKey,
+        index: resourceFactory.index,
+      });
+      return;
+    }
+    const resourceHandleAlias = getMaybeCtxApiResourceHandleAliasFromAst(
+      callee.object,
+      ctxApiResourceAliases.handles,
+      identifierBindings,
+    );
+    if (resourceHandleAlias) {
+      addInvalidAction({
+        actionName,
+        capability: getAstSource(callee, source),
+        collectionName: resourceHandleAlias.resourceName,
+        dataSourceKey: defaultDataSourceKey,
+        index: typeof callee.start === 'number' ? callee.start : node.start || 0,
+      });
+    }
+  };
+  const collectRequestEndpointAction = (node: any) => {
+    const requestCapability = getRunJsCtxRequestCallCapabilityFromAst(
+      node,
+      ctxMethodAliases,
+      ctxApiAliases,
+      identifierBindings,
+      source,
+    );
+    if (!requestCapability) {
+      return;
+    }
+    const endpoint = getRunJsStaticRequestEndpointFromAst(node, source, stringBindings, identifierBindings);
+    if (endpoint) {
+      const parsed = parseRunJsResourceEndpoint(endpoint, context, defaultDataSourceKey);
+      if (parsed) {
+        addInvalidAction({
+          actionName: parsed.actionName,
+          capability: requestCapability,
+          collectionName: parsed.collectionName,
+          dataSourceKey: defaultDataSourceKey,
+          endpoint: parsed.endpoint,
+          index: node.start || 0,
+          strictCollectionEndpoint: parsed.explicitCollectionPrefix,
+        });
+      }
+    }
+
+    const requestResourceAction = getRunJsStaticRequestResourceActionFromAst(node);
+    if (!requestResourceAction) {
+      return;
+    }
+    addInvalidAction({
+      actionName: requestResourceAction.actionName,
+      capability: requestCapability,
+      collectionName: requestResourceAction.collectionName,
+      dataSourceKey: defaultDataSourceKey,
+      index: node.start || 0,
+    });
+  };
+  const collectRunjsEndpointAction = (node: any, method: CtxMethodAlias | { capability: string; method: string }) => {
+    if (method.method !== 'runjs') {
+      return;
+    }
+    const endpoint = resolveStaticStringArg(node.arguments?.[0]);
+    if (!endpoint) {
+      return;
+    }
+    const parsed = parseRunJsResourceEndpoint(endpoint, context, defaultDataSourceKey);
+    if (!parsed) {
+      return;
+    }
+    addInvalidAction({
+      actionName: parsed.actionName,
+      capability: method.capability,
+      collectionName: parsed.collectionName,
+      dataSourceKey: defaultDataSourceKey,
+      endpoint: parsed.endpoint,
+      index: node.start || 0,
+      strictCollectionEndpoint: parsed.explicitCollectionPrefix,
+    });
+  };
+
+  walkAstAncestor(ast, {
+    AssignmentExpression(node: any, ancestors: any[]) {
+      if (!isAstCtxApiAliasAssignmentOperator(node.operator)) {
+        return;
+      }
+      if (node.left?.type === 'Identifier') {
+        getApiResourceActionSourcesFromAst(node.right).forEach((actionSource) =>
+          addActionAlias(node.left.name, actionSource, node, ancestors),
+        );
+      }
+      if (node.operator === '=' && node.left?.type === 'ObjectPattern') {
+        collectApiResourceActionPatternAliases(node.left, node.right, ancestors);
+      }
+      const alwaysRuns = isAstAlwaysExecutedInCurrentExecutionScope(ancestors);
+      const executionScope = getAstExecutionScopeRange(ancestors, source.length);
+      if (node.left?.type === 'Identifier') {
+        events.push({
+          type: 'aliasBind',
+          aliasName: node.left.name,
+          alwaysRuns,
+          end: typeof node.end === 'number' ? node.end : node.start || 0,
+          executionScope,
+          index: node.start || 0,
+          sourceNode: node.right,
+        });
+        return;
+      }
+      if (node.left?.type === 'ObjectPattern' && isUnshadowedCtxIdentifier(node.right, identifierBindings)) {
+        collectAstObjectPatternAliases(node.left, (aliasName, member, aliasNode) => {
+          if (member !== 'resource') {
+            return;
+          }
+          events.push({
+            type: 'ctxResourceAliasBind',
+            aliasName,
+            alwaysRuns,
+            end: typeof aliasNode?.end === 'number' ? aliasNode.end : node.end || node.start || 0,
+            executionScope,
+            index: typeof aliasNode?.start === 'number' ? aliasNode.start : node.start || 0,
+          });
+        });
+      }
+    },
+    CallExpression(node: any, ancestors: any[]) {
+      const executionScope = getAstExecutionScopeRange(ancestors, source.length);
+      const alwaysRuns = isAstAlwaysExecutedInCurrentExecutionScope(ancestors);
+      const ctxMethod = resolveCtxMethodCall(node, ctxMethodAliases, identifierBindings);
+      if (ctxMethod) {
+        if (ctxMethod.method === 'initResource') {
+          const resolved = node.arguments?.[0]
+            ? resolveAstResourceTypeExpression(node.arguments[0], source, stringBindings, identifierBindings)
+            : undefined;
+          events.push({
+            type: 'initResource',
+            alwaysRuns,
+            end: typeof node.end === 'number' ? node.end : node.start || 0,
+            executionScope,
+            index: node.start || 0,
+            resourceType:
+              resolved?.status === 'resolved' && INIT_RESOURCE_CLASS_NAMES.has(resolved.value)
+                ? (resolved.value as FlowResourceInstanceType)
+                : 'unknown',
+          });
+        }
+        collectRunjsEndpointAction(node, ctxMethod);
+      }
+      getApiResourceActionSourcesFromAst(node.callee).forEach((apiResourceAction) => {
+        addInvalidAction({
+          actionName: apiResourceAction.actionName,
+          capability: apiResourceAction.capability,
+          collectionName: apiResourceAction.collectionName,
+          dataSourceKey: apiResourceAction.dataSourceKey,
+          index: node.start || 0,
+        });
+      });
+      collectApiResourceActions(node);
+      collectRequestEndpointAction(node);
+      if (!getResourceCallTarget(node, executionScope)) {
+        return;
+      }
+      events.push({
+        type: 'resourceCall',
+        alwaysRuns,
+        end: typeof node.end === 'number' ? node.end : node.start || 0,
+        executionScope,
+        index: node.start || 0,
+        node,
+      });
+    },
+    VariableDeclarator(node: any, ancestors: any[]) {
+      const alwaysRuns = isAstAlwaysExecutedInCurrentExecutionScope(ancestors);
+      const executionScope = getAstExecutionScopeRange(ancestors, source.length);
+      if (node.id?.type === 'Identifier') {
+        const actionSources = getApiResourceActionSourcesFromAst(node.init);
+        if (actionSources.length) {
+          const declaration = findAstAncestor(ancestors, 'VariableDeclaration');
+          actionSources.forEach((actionSource) =>
+            addActionAlias(node.id.name, actionSource, node, ancestors, declaration?.kind === 'var'),
+          );
+        }
+        events.push({
+          type: 'aliasBind',
+          aliasName: node.id.name,
+          alwaysRuns,
+          end: typeof node.end === 'number' ? node.end : node.start || 0,
+          executionScope,
+          index: node.start || 0,
+          sourceNode: node.init,
+        });
+        return;
+      }
+      if (node.id?.type === 'ObjectPattern' && isUnshadowedCtxIdentifier(node.init, identifierBindings)) {
+        collectAstObjectPatternAliases(node.id, (aliasName, member, aliasNode) => {
+          if (member !== 'resource') {
+            return;
+          }
+          events.push({
+            type: 'ctxResourceAliasBind',
+            aliasName,
+            alwaysRuns,
+            end: typeof aliasNode?.end === 'number' ? aliasNode.end : node.end || node.start || 0,
+            executionScope,
+            index: typeof aliasNode?.start === 'number' ? aliasNode.start : node.start || 0,
+          });
+        });
+      }
+      if (node.id?.type === 'ObjectPattern') {
+        const declaration = findAstAncestor(ancestors, 'VariableDeclaration');
+        collectApiResourceActionPatternAliases(node.id, node.init, ancestors, declaration?.kind === 'var');
+      }
+    },
+  });
+
+  ctxResourceStates.clear();
+  aliasStates.clear();
+
+  const actionScopes = Array.from(
+    new Map(events.map((event) => [scopeKey(event.executionScope), event.executionScope])).values(),
+  );
+  const actionScopeDepth = (scope: SourceRange) =>
+    actionScopes.filter(
+      (candidate) => candidate.start < scope.start && candidate.end >= scope.end && !isSameAstRange(candidate, scope),
+    ).length;
+
+  events
+    .sort(
+      (left, right) =>
+        actionScopeDepth(left.executionScope) - actionScopeDepth(right.executionScope) ||
+        left.executionScope.start - right.executionScope.start ||
+        left.index - right.index ||
+        left.end - right.end,
+    )
+    .forEach((event) => {
+      if (event.type === 'initResource') {
+        if (!event.alwaysRuns) {
+          return;
+        }
+        setCtxState(event.executionScope, {
+          capability: 'ctx.resource',
+          dataSourceKey: defaultDataSourceKey,
+          resourceType: event.resourceType,
+        });
+        return;
+      }
+      if (event.type === 'aliasBind') {
+        if (!event.alwaysRuns) {
+          return;
+        }
+        const alias = findDeclaredAlias(event.aliasName, event.index);
+        const state = resolveExpressionState(event.sourceNode, event.executionScope);
+        if (alias && state) {
+          setAliasState(alias, state);
+        }
+        return;
+      }
+      if (event.type === 'ctxResourceAliasBind') {
+        if (!event.alwaysRuns) {
+          return;
+        }
+        const alias = findDeclaredAlias(event.aliasName, event.index);
+        if (alias) {
+          setAliasState(alias, getCtxState(event.executionScope));
+        }
+        return;
+      }
+      const target = getResourceCallTarget(event.node, event.executionScope);
+      if (!target) {
+        return;
+      }
+      if (target.method === 'setDataSourceKey' || target.method === 'setResourceName') {
+        if (!event.alwaysRuns) {
+          return;
+        }
+        target.updateState(applyStaticResourceStateMethod(target.state, target.method, event.node));
+        return;
+      }
+      if (target.method !== 'runAction' && target.method !== 'setRefreshAction') {
+        return;
+      }
+      const actionName = resolveStaticStringArg(event.node.arguments?.[0]);
+      addInvalidAction({
+        actionName,
+        capability: target.capability,
+        collectionName: target.state.collectionName,
+        dataSourceKey: target.state.dataSourceKey,
+        index:
+          typeof event.node.arguments?.[0]?.start === 'number'
+            ? event.node.arguments[0].start
+            : typeof event.node.callee?.property?.start === 'number'
+              ? event.node.callee.property.start
+              : event.index,
+        resourceType: target.state.resourceType,
+        strictCollectionEndpoint: true,
+      });
+    });
+
+  return entries;
+}
+
+function validateRunJsCollectionResourceAction(input: {
+  actionName: string | undefined;
+  collectionName?: string;
+  context: RunJsAuthoringContext;
+  dataSourceKey?: string;
+  resourceType?: FlowResourceInstanceType;
+  strictCollectionEndpoint?: boolean;
+}):
+  | {
+      actionName: string;
+      allowedActions: string[];
+      invalidReason: string;
+    }
+  | undefined {
+  const actionName = normalizeText(input.actionName);
+  if (!actionName || input.resourceType === 'SQLResource') {
+    return undefined;
+  }
+
+  const hasUnknownDataSource = input.dataSourceKey === '';
+  const actionPolicy = getRunJsCollectionActionPolicy(
+    input.context,
+    hasUnknownDataSource ? undefined : input.dataSourceKey || getRunJsDefaultDataSourceKey(input.context),
+    input.collectionName,
+  );
+  if (!actionPolicy.collectionResolved && !input.strictCollectionEndpoint && !hasUnknownDataSource) {
+    return undefined;
+  }
+
+  if (!RUNJS_COLLECTION_RESOURCE_ACTIONS.has(actionName)) {
+    return {
+      actionName,
+      allowedActions: actionPolicy.allowedActions,
+      invalidReason: actionName === 'refresh' ? 'refresh-is-flow-resource-method' : 'unknown-collection-action',
+    };
+  }
+
+  if (!hasUnknownDataSource && !actionPolicy.allowedActionSet.has(actionName)) {
+    return {
+      actionName,
+      allowedActions: actionPolicy.allowedActions,
+      invalidReason: 'collection-action-unavailable',
+    };
+  }
+
+  return undefined;
+}
+
+function getRunJsDefaultDataSourceKey(context: RunJsAuthoringContext) {
+  return normalizeText(context.currentDataSourceKey || context.hostDataSourceKey) || 'main';
+}
+
+function getRunJsCollectionActionPolicy(
+  context: RunJsAuthoringContext,
+  dataSourceKey: string | undefined,
+  collectionName?: string,
+) {
+  let collection: any;
+  if (context.getCollection && collectionName && dataSourceKey) {
+    collection = context.getCollection(dataSourceKey || getRunJsDefaultDataSourceKey(context), collectionName);
+  }
+  const availableActions = getRunJsCollectionActionOptionList(collection, 'availableActions');
+  const unavailableActions = getRunJsCollectionActionOptionList(collection, 'unavailableActions');
+  const allowedActionSet = new Set(RUNJS_COLLECTION_RESOURCE_ACTIONS);
+
+  if (availableActions?.length) {
+    [...allowedActionSet].forEach((actionName) => {
+      if (
+        !availableActions.some((capabilityName) =>
+          isRunJsCollectionActionCoveredByCapability(actionName, capabilityName),
+        )
+      ) {
+        allowedActionSet.delete(actionName);
+      }
+    });
+  }
+  if (unavailableActions?.length) {
+    [...allowedActionSet].forEach((actionName) => {
+      if (
+        unavailableActions.some((capabilityName) =>
+          isRunJsCollectionActionCoveredByCapability(actionName, capabilityName),
+        )
+      ) {
+        allowedActionSet.delete(actionName);
+      }
+    });
+  }
+
+  const allowedActions = [...allowedActionSet].sort((left, right) => left.localeCompare(right));
+  return {
+    allowedActionSet,
+    allowedActions,
+    collectionResolved: Boolean(collection),
+  };
+}
+
+function getRunJsCollectionActionOptionList(collection: any, key: 'availableActions' | 'unavailableActions') {
+  const directValue = collection?.[key];
+  const optionsValue = collection?.options?.[key];
+  const value = typeof directValue === 'function' ? directValue.call(collection) : directValue || optionsValue;
+  return Array.isArray(value) ? value.map((item) => normalizeText(item)).filter(Boolean) : undefined;
+}
+
+function isRunJsCollectionActionCoveredByCapability(actionName: string, capabilityName: string) {
+  if (actionName === capabilityName) {
+    return true;
+  }
+  return RUNJS_COLLECTION_RESOURCE_ACTION_ALIASES.get(capabilityName)?.includes(actionName) || false;
+}
+
+function getRunJsCtxRequestCallCapabilityFromAst(
+  node: any,
+  ctxMethodAliases: CtxMethodAlias[],
+  ctxApiAliases: CtxApiAlias[],
+  identifierBindings: AstIdentifierBinding[],
+  source: string,
+) {
+  const ctxMethod = resolveCtxMethodCall(node, ctxMethodAliases, identifierBindings);
+  if (ctxMethod?.method === 'request') {
+    return ctxMethod.capability;
+  }
+  const callee = unwrapAstChainExpression(node.callee);
+  const capability =
+    getCtxApiCapabilityFromAst(callee, ctxApiAliases, identifierBindings) ||
+    getMaybeCtxApiCapabilityFromAst(callee, ctxApiAliases, identifierBindings);
+  return capability === 'ctx.api.request' ? getAstSource(callee, source) || 'ctx.api.request' : '';
+}
+
+function getRunJsStaticRequestEndpointFromAst(
+  node: any,
+  source: string,
+  stringBindings: StaticStringBinding[],
+  identifierBindings: AstIdentifierBinding[],
+) {
+  const firstArg = node.arguments?.[0];
+  const firstArgUrl = resolveRunJsStaticString(firstArg, source, stringBindings, identifierBindings);
+  if (firstArgUrl) {
+    return firstArgUrl;
+  }
+  const objectArg = unwrapAstChainExpression(firstArg);
+  if (objectArg?.type !== 'ObjectExpression') {
+    return '';
+  }
+  const urlProperty = (objectArg.properties || []).find(
+    (property: any) => property?.type === 'Property' && getAstStaticPropertyName(property) === 'url',
+  );
+  return resolveRunJsStaticString(urlProperty?.value, source, stringBindings, identifierBindings) || '';
+}
+
+function resolveRunJsStaticString(
+  node: any,
+  source: string,
+  stringBindings: StaticStringBinding[],
+  identifierBindings: AstIdentifierBinding[],
+) {
+  if (!node) {
+    return undefined;
+  }
+  const resolved = resolveAstResourceTypeExpression(node, source, stringBindings, identifierBindings);
+  return resolved.status === 'resolved' ? resolved.value : undefined;
+}
+
+function parseRunJsResourceEndpoint(
+  value: string,
+  context: RunJsAuthoringContext,
+  dataSourceKey: string,
+):
+  | {
+      actionName: string;
+      collectionName?: string;
+      endpoint: string;
+      explicitCollectionPrefix: boolean;
+    }
+  | undefined {
+  const endpoint = normalizeText(value);
+  if (!endpoint || /^(?:https?:)?\/\//i.test(endpoint)) {
+    return undefined;
+  }
+  const resourceUrl = endpoint.replace(/^\/api\//i, '').replace(/^\//, '');
+  const match = resourceUrl.match(new RegExp(`^(.+?):(${RUNJS_RESOURCE_ENDPOINT_ACTION_PATTERN})(?:$|[/?#])`));
+  if (!match) {
+    return undefined;
+  }
+  const resourcePathSegments = normalizeText(match[1]).split('/').filter(Boolean);
+  const resourceName = normalizeText(resourcePathSegments[resourcePathSegments.length - 1]);
+  const actionName = normalizeText(match[2]);
+  const explicitCollectionPrefix = resourceName === 'collection' || resourceName === 'resource';
+  const collectionName = explicitCollectionPrefix
+    ? undefined
+    : resolveRunJsCollectionNameFromEndpointResourcePath(resourcePathSegments, context, dataSourceKey) || resourceName;
+  return {
+    actionName,
+    collectionName,
+    endpoint,
+    explicitCollectionPrefix,
+  };
+}
+
+function resolveRunJsCollectionNameFromEndpointResourcePath(
+  resourcePathSegments: string[],
+  context: RunJsAuthoringContext,
+  dataSourceKey: string,
+) {
+  if (!context.getCollection || resourcePathSegments.length < 3) {
+    return '';
+  }
+  const sourceCollectionName = normalizeText(resourcePathSegments[0]);
+  const associationFieldName = normalizeText(resourcePathSegments[resourcePathSegments.length - 1]);
+  if (!sourceCollectionName || !associationFieldName) {
+    return '';
+  }
+  const sourceCollection = context.getCollection(
+    dataSourceKey || getRunJsDefaultDataSourceKey(context),
+    sourceCollectionName,
+  );
+  const associationField = resolveFieldFromCollection(sourceCollection, associationFieldName);
+  const targetCollection = associationField
+    ? resolveFieldTargetCollection(
+        associationField,
+        dataSourceKey || getRunJsDefaultDataSourceKey(context),
+        context.getCollection,
+      )
+    : null;
+  return normalizeText(getCollectionName(targetCollection));
 }
 
 function collectAstInvalidResourceFilterCalls(
@@ -9433,11 +10581,16 @@ function resolveAstResourceTypeExpression(
   if (typeof resolved === 'string') {
     return { status: 'resolved', value: resolved };
   }
-  if (node?.type === 'Identifier') {
-    const binding = resolveAstAliasBinding(node.name, node.start || 0, stringBindings, identifierBindings);
+  const unwrapped = unwrapAstChainExpression(node);
+  if (unwrapped?.type === 'Identifier') {
+    const binding = resolveAstAliasBinding(unwrapped.name, unwrapped.start || 0, stringBindings, identifierBindings);
     if (binding) {
       return { status: 'resolved', value: binding.value };
     }
+  }
+  const templateValue = resolveAstStaticTemplateLiteralValue(unwrapped, source, stringBindings, identifierBindings);
+  if (typeof templateValue === 'string') {
+    return { status: 'resolved', value: templateValue };
   }
   return {
     status: 'unresolved',
@@ -9457,6 +10610,34 @@ function resolveAstStaticStringValue(node: any, source: string): string | undefi
     return unwrapped.quasis?.[0]?.value?.cooked ?? source.slice(unwrapped.start + 1, unwrapped.end - 1);
   }
   return undefined;
+}
+
+function resolveAstStaticTemplateLiteralValue(
+  node: any,
+  source: string,
+  stringBindings: StaticStringBinding[],
+  identifierBindings: AstIdentifierBinding[],
+): string | undefined {
+  const unwrapped = unwrapAstChainExpression(node);
+  if (unwrapped?.type !== 'TemplateLiteral' || !(unwrapped.expressions || []).length) {
+    return undefined;
+  }
+  const quasis = unwrapped.quasis || [];
+  const expressions = unwrapped.expressions || [];
+  let value = '';
+  for (let index = 0; index < quasis.length; index += 1) {
+    const quasi = quasis[index];
+    value += quasi?.value?.cooked ?? quasi?.value?.raw ?? '';
+    if (index >= expressions.length) {
+      continue;
+    }
+    const expression = resolveAstResourceTypeExpression(expressions[index], source, stringBindings, identifierBindings);
+    if (expression.status !== 'resolved') {
+      return undefined;
+    }
+    value += expression.value;
+  }
+  return value;
 }
 
 function resolveAstAliasBinding<T extends SourceRange & { name: string }>(
@@ -12033,7 +13214,7 @@ function collectSourceBindings(
 function collectStringLiteralBindings(source: string, masked: string, bindings: SourceBinding[]) {
   const entries: StringLiteralBinding[] = [];
   const commentMasked = maskJavaScriptComments(source);
-  for (const match of commentMasked.matchAll(/\b(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*=\s*(['"`])/g)) {
+  for (const match of commentMasked.matchAll(/\bconst\s+([A-Za-z_$][\w$]*)\s*=\s*(['"`])/g)) {
     const declarationIndex = match.index || 0;
     const literalStart = declarationIndex + match[0].lastIndexOf(match[2]);
     const statementEnd = findSingleStatementEnd(masked, declarationIndex);

@@ -2660,6 +2660,39 @@ describe('flowSurfaces backend authoring aggregate errors', () => {
       }),
     ).toEqual([]);
 
+    const collectionRefreshRequestErrors = inspectRunJsAuthoringCode({
+      code: "ctx.render(null);\nawait ctx.api.request({ url: 'collection:refresh' });",
+      path: '$.collectionRefreshRequest.code',
+      modelUse: 'JSBlockModel',
+    });
+    expect(collectionRefreshRequestErrors).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          ruleId: 'runjs-resource-action-invalid',
+          details: expect.objectContaining({
+            actionName: 'refresh',
+            endpoint: 'collection:refresh',
+            repairClass: 'resource-runtime-contract-stop',
+          }),
+        }),
+      ]),
+    );
+
+    const namedCollectionRefreshRequestErrors = inspectRunJsAuthoringCode(
+      {
+        code: "ctx.render(null);\nawait ctx.api.request({ url: '/api/tasks:refresh' });",
+        path: '$.namedCollectionRefreshRequest.code',
+        modelUse: 'JSBlockModel',
+      },
+      {
+        getCollection: (_dataSourceKey, collectionName) =>
+          collectionName === 'tasks' ? { name: collectionName } : null,
+      },
+    );
+    expect(namedCollectionRefreshRequestErrors.map((error: any) => error.ruleId)).toContain(
+      'runjs-resource-action-invalid',
+    );
+
     const collectionRequestErrors = inspectRunJsAuthoringCode({
       code: "ctx.render(null);\nawait ctx.request({ url: 'tasks:list', method: 'get' });",
       path: '$.collectionRequest.code',
@@ -2772,6 +2805,13 @@ describe('flowSurfaces backend authoring aggregate errors', () => {
     });
     expect(ordinaryRunjsLabelCallErrors.map((error: any) => error.ruleId)).toContain('runjs-nested-runjs-forbidden');
 
+    const collectionRefreshRunjsErrors = inspectRunJsAuthoringCode({
+      code: "ctx.render(null);\nawait ctx.runjs('collection:refresh', {});",
+      path: '$.collectionRefreshRunjs.code',
+      modelUse: 'JSBlockModel',
+    });
+    expect(collectionRefreshRunjsErrors.map((error: any) => error.ruleId)).toContain('runjs-resource-action-invalid');
+
     const invalidApiResourceErrors = inspectRunJsAuthoringCode({
       code: "ctx.render(null);\nawait ctx.api.resource.list({ resource: 'tasks', pageSize: 1 });",
       path: '$.invalidApiResource.code',
@@ -2788,6 +2828,21 @@ describe('flowSurfaces backend authoring aggregate errors', () => {
           }),
         }),
       ]),
+    );
+
+    const invalidApiResourceRefreshErrors = inspectRunJsAuthoringCode(
+      {
+        code: "ctx.render(null);\nawait ctx.api.resource('tasks', 'refresh');\nawait ctx.api.resource('tasks').refresh();",
+        path: '$.invalidApiResourceRefresh.code',
+        modelUse: 'JSBlockModel',
+      },
+      {
+        getCollection: (_dataSourceKey, collectionName) =>
+          collectionName === 'tasks' ? { name: collectionName } : null,
+      },
+    );
+    expect(invalidApiResourceRefreshErrors.map((error: any) => error.ruleId)).toContain(
+      'runjs-resource-action-invalid',
     );
 
     const opencodeActionResourceErrors = inspectRunJsAuthoringCode({

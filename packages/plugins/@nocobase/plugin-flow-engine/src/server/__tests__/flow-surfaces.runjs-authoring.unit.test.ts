@@ -348,6 +348,413 @@ describe('flowSurfaces RunJS authoring unit validation', () => {
     );
   });
 
+  it('should reject invalid collection resource actions before RunJS is persisted', () => {
+    const context = {
+      getCollection: (_dataSourceKey: string, collectionName: string) =>
+        collectionName === 'readonly_tasks'
+          ? { name: collectionName, options: { availableActions: ['view'] } }
+          : { name: collectionName },
+    };
+
+    const refreshErrors = inspectRunJsAuthoringCode(
+      {
+        code: [
+          "const actionName = 'refresh';",
+          "const resource = ctx.makeResource('MultiRecordResource');",
+          "resource.setResourceName('tasks');",
+          'await resource.runAction(actionName, { method: "get" });',
+          'ctx.render(null);',
+        ].join('\n'),
+        path: '$.runjs.invalidAction.code',
+        modelUse: 'JSBlockModel',
+      },
+      context,
+    );
+
+    expect(refreshErrors).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          ruleId: 'runjs-resource-action-invalid',
+          details: expect.objectContaining({
+            actionName: 'refresh',
+            collectionName: 'tasks',
+            invalidReason: 'refresh-is-flow-resource-method',
+            repairClass: 'resource-runtime-contract-stop',
+            suggestedMethod: 'refresh',
+          }),
+        }),
+      ]),
+    );
+
+    const chainedRefreshErrors = inspectRunJsAuthoringCode(
+      {
+        code: [
+          "await ctx.makeResource('MultiRecordResource')",
+          "  .setResourceName('tasks')",
+          "  .runAction('refresh', { method: 'get' });",
+          'ctx.render(null);',
+        ].join('\n'),
+        path: '$.runjs.chainedInvalidAction.code',
+        modelUse: 'JSBlockModel',
+      },
+      context,
+    );
+    expect(chainedRefreshErrors.map((error: any) => error.ruleId)).toContain('runjs-resource-action-invalid');
+
+    const setRefreshActionErrors = inspectRunJsAuthoringCode(
+      {
+        code: [
+          "const resource = ctx.makeResource('MultiRecordResource');",
+          "resource.setResourceName('tasks');",
+          "resource.setRefreshAction('refresh');",
+          'ctx.render(null);',
+        ].join('\n'),
+        path: '$.runjs.invalidRefreshAction.code',
+        modelUse: 'JSBlockModel',
+      },
+      context,
+    );
+    expect(setRefreshActionErrors.map((error: any) => error.ruleId)).toContain('runjs-resource-action-invalid');
+
+    const readonlyErrors = inspectRunJsAuthoringCode(
+      {
+        code: [
+          "const resource = ctx.makeResource('MultiRecordResource');",
+          "resource.setResourceName('readonly_tasks');",
+          "await resource.runAction('destroy', { filterByTk: 1 });",
+          'ctx.render(null);',
+        ].join('\n'),
+        path: '$.runjs.readonlyAction.code',
+        modelUse: 'JSBlockModel',
+      },
+      context,
+    );
+
+    expect(readonlyErrors).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          ruleId: 'runjs-resource-action-invalid',
+          details: expect.objectContaining({
+            actionName: 'destroy',
+            collectionName: 'readonly_tasks',
+            invalidReason: 'collection-action-unavailable',
+          }),
+        }),
+      ]),
+    );
+
+    const validErrors = inspectRunJsAuthoringCode(
+      {
+        code: [
+          "const resource = ctx.makeResource('MultiRecordResource');",
+          "resource.setResourceName('tasks');",
+          "await resource.runAction('list', { method: 'get' });",
+          "await resource.runAction('updateOrCreate', { values: { title: 'Done' } });",
+          "await resource.runAction('move', { sourceId: 1, targetId: 2 });",
+          'ctx.render(null);',
+        ].join('\n'),
+        path: '$.runjs.validActions.code',
+        modelUse: 'JSBlockModel',
+      },
+      context,
+    );
+    expect(validErrors.map((error: any) => error.ruleId)).not.toContain('runjs-resource-action-invalid');
+
+    const sqlErrors = inspectRunJsAuthoringCode({
+      code: [
+        "const resource = ctx.makeResource('SQLResource');",
+        "await resource.runAction('run', { params: {} });",
+        'ctx.render(null);',
+      ].join('\n'),
+      path: '$.runjs.sqlAction.code',
+      modelUse: 'JSBlockModel',
+    });
+    expect(sqlErrors.map((error: any) => error.ruleId)).not.toContain('runjs-resource-action-invalid');
+  });
+
+  it('should reject invalid collection actions in request and ctx.api.resource calls', () => {
+    const context = {
+      getCollection: (_dataSourceKey: string, collectionName: string) =>
+        collectionName === 'tasks' ? { name: collectionName } : null,
+    };
+
+    [
+      {
+        code: "ctx.render(null);\nawait ctx.runjs('collection:refresh', {});",
+        path: '$.runjs.collectionRefresh.code',
+      },
+      {
+        code: "ctx.render(null);\nawait ctx.request('collection:refresh');",
+        path: '$.runjs.requestCollectionRefresh.code',
+      },
+      {
+        code: "ctx.render(null);\nawait ctx.api.request({ url: 'collection:refresh' });",
+        path: '$.runjs.apiRequestCollectionRefresh.code',
+      },
+      {
+        code: "ctx.render(null);\nawait ctx.api.request({ url: '/api/tasks:refresh' });",
+        path: '$.runjs.apiRequestNamedCollectionRefresh.code',
+      },
+      {
+        code: "ctx.render(null);\nawait ctx.api.request({ resource: 'tasks', action: 'refresh' });",
+        path: '$.runjs.apiRequestResourceActionRefresh.code',
+      },
+      {
+        code: "ctx.render(null);\nawait ctx.request({ resource: 'tasks', action: 'refresh' });",
+        path: '$.runjs.requestResourceActionRefresh.code',
+      },
+      {
+        code: "const resource = 'tasks';\nconst action = 'refresh';\nctx.render(null);\nawait ctx.api.request({ resource, action });",
+        path: '$.runjs.apiRequestConstResourceActionRefresh.code',
+      },
+      {
+        code: "const resource = 'tasks';\nconst action = 'refresh';\nctx.render(null);\nawait ctx.request({ resource, action });",
+        path: '$.runjs.requestConstResourceActionRefresh.code',
+      },
+      {
+        code: "ctx.render(null);\nawait ctx.api.resource('tasks', 'refresh');",
+        path: '$.runjs.apiResourceActionRefresh.code',
+      },
+      {
+        code: "ctx.render(null);\nawait ctx.api.resource('tasks').refresh();",
+        path: '$.runjs.apiResourceMethodRefresh.code',
+      },
+      {
+        code: "ctx.render(null);\nawait (true && ctx.api.resource('tasks').refresh)();",
+        path: '$.runjs.apiResourceLogicalRefresh.code',
+      },
+      {
+        code: "const collectionName = 'tasks';\nctx.render(null);\nawait ctx.api.resource(collectionName, 'refresh');",
+        path: '$.runjs.apiResourceConstActionRefresh.code',
+      },
+      {
+        code: "const refresh = cond ? ctx.api.resource('tasks').refresh : ctx.api.resource('tasks').refresh;\nctx.render(null);\nawait refresh();",
+        path: '$.runjs.apiResourceConditionalAliasRefresh.code',
+      },
+      {
+        code: "const collectionName = 'tasks';\nctx.render(null);\nawait ctx.api.request({ url: `/api/${collectionName}:refresh` });",
+        path: '$.runjs.apiRequestTemplateRefresh.code',
+      },
+      {
+        code: "const collectionName = 'tasks';\nconst endpoint = `/api/${collectionName}:refresh`;\nctx.render(null);\nawait ctx.api.request({ url: endpoint });",
+        path: '$.runjs.apiRequestTemplateBindingRefresh.code',
+      },
+      {
+        code: "const collectionName = 'tasks';\nctx.render(null);\nawait ctx.request({ url: `${collectionName}:refresh` });",
+        path: '$.runjs.requestTemplateRefresh.code',
+      },
+      {
+        code: "const collectionName = 'tasks';\nctx.render(null);\nawait ctx.runjs(`${collectionName}:refresh`, {});",
+        path: '$.runjs.runjsTemplateRefresh.code',
+      },
+      {
+        code: "const collectionName = 'tasks';\nconst resource = ctx.api.resource(collectionName);\nctx.render(null);\nawait resource.refresh();",
+        path: '$.runjs.apiResourceConstAliasRefresh.code',
+      },
+      {
+        code: "const refresh = ctx.api.resource('tasks').refresh;\nctx.render(null);\nawait refresh();",
+        path: '$.runjs.apiResourceAssignedRefresh.code',
+      },
+      {
+        code: "const { refresh } = ctx.api.resource('tasks');\nctx.render(null);\nawait refresh();",
+        path: '$.runjs.apiResourceDestructuredRefresh.code',
+      },
+      {
+        code: "ctx.render(null);\nawait ctx.api.resource('tasks').refresh.call(null);",
+        path: '$.runjs.apiResourceRefreshCall.code',
+      },
+    ].forEach(({ code, path }) => {
+      const errors = inspectRunJsAuthoringCode(
+        {
+          code,
+          path,
+          modelUse: 'JSBlockModel',
+        },
+        context,
+      );
+
+      expect(errors).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            path,
+            ruleId: 'runjs-resource-action-invalid',
+            details: expect.objectContaining({
+              actionName: 'refresh',
+              repairClass: 'resource-runtime-contract-stop',
+            }),
+          }),
+        ]),
+      );
+    });
+
+    expect(
+      inspectRunJsAuthoringCode({
+        code: "ctx.render(null);\nawait ctx.api.request({ url: '/app:getInfo', method: 'get' });",
+        path: '$.runjs.customEndpoint.code',
+        modelUse: 'JSBlockModel',
+      }),
+    ).toEqual([]);
+
+    expect(
+      inspectRunJsAuthoringCode(
+        {
+          code: [
+            "let collectionName = 'readonly_tasks';",
+            "collectionName = 'tasks';",
+            'ctx.render(null);',
+            'await ctx.api.resource(collectionName).destroy({ filterByTk: 1 });',
+          ].join('\n'),
+          path: '$.runjs.mutableCollectionName.code',
+          modelUse: 'JSBlockModel',
+        },
+        {
+          getCollection: (_dataSourceKey: string, collectionName: string) =>
+            collectionName === 'readonly_tasks'
+              ? { name: collectionName, options: { availableActions: ['view'] } }
+              : { name: collectionName },
+        },
+      ).map((error: any) => error.ruleId),
+    ).not.toContain('runjs-resource-action-invalid');
+
+    expect(
+      inspectRunJsAuthoringCode(
+        {
+          code: [
+            "let resourceName = 'flowSurfaces';",
+            'ctx.render(null);',
+            "await ctx.api.resource(resourceName).compose({ target: { uid: 'root' } });",
+          ].join('\n'),
+          path: '$.runjs.mutableNonCollectionApiResource.code',
+          modelUse: 'JSBlockModel',
+        },
+        {
+          getCollection: (_dataSourceKey: string, collectionName: string) =>
+            collectionName === 'tasks' ? { name: collectionName } : null,
+        },
+      ).map((error: any) => error.ruleId),
+    ).not.toContain('runjs-resource-action-invalid');
+
+    const externalDataSourceErrors = inspectRunJsAuthoringCode(
+      {
+        code: "ctx.render(null);\nawait ctx.api.request({ url: '/api/tasks:refresh' });\nawait ctx.api.resource('tasks').refresh();",
+        path: '$.runjs.externalDataSourceRefresh.code',
+        modelUse: 'JSBlockModel',
+      },
+      {
+        currentDataSourceKey: 'external',
+        getCollection: (dataSourceKey: string, collectionName: string) =>
+          dataSourceKey === 'external' && collectionName === 'tasks' ? { name: collectionName } : null,
+      },
+    );
+    expect(externalDataSourceErrors).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          ruleId: 'runjs-resource-action-invalid',
+          details: expect.objectContaining({
+            actionName: 'refresh',
+            dataSourceKey: 'external',
+          }),
+        }),
+      ]),
+    );
+
+    const dynamicDataSourceErrors = inspectRunJsAuthoringCode(
+      {
+        code: [
+          "const dataSourceKey = Math.random() > 0.5 ? 'main' : 'external';",
+          "const resource = ctx.makeResource('MultiRecordResource');",
+          'resource.setDataSourceKey(dataSourceKey);',
+          "resource.setResourceName('readonly_tasks');",
+          "await resource.runAction('destroy', { filterByTk: 1 });",
+          'ctx.render(null);',
+        ].join('\n'),
+        path: '$.runjs.dynamicDataSourceAction.code',
+        modelUse: 'JSBlockModel',
+      },
+      {
+        currentDataSourceKey: 'main',
+        getCollection: (dataSourceKey: string, collectionName: string) =>
+          dataSourceKey === 'main' && collectionName === 'readonly_tasks'
+            ? { name: collectionName, options: { availableActions: ['view'] } }
+            : { name: collectionName },
+      },
+    );
+    expect(dynamicDataSourceErrors.map((error: any) => error.ruleId)).not.toContain('runjs-resource-action-invalid');
+
+    const dynamicDataSourceRefreshErrors = inspectRunJsAuthoringCode(
+      {
+        code: [
+          "const dataSourceKey = Math.random() > 0.5 ? 'main' : 'external';",
+          "const resource = ctx.makeResource('MultiRecordResource');",
+          'resource.setDataSourceKey(dataSourceKey);',
+          "resource.setResourceName('tasks');",
+          "await resource.runAction('refresh');",
+          'ctx.render(null);',
+        ].join('\n'),
+        path: '$.runjs.dynamicDataSourceRefresh.code',
+        modelUse: 'JSBlockModel',
+      },
+      {
+        currentDataSourceKey: 'main',
+        getCollection: (dataSourceKey: string, collectionName: string) =>
+          dataSourceKey === 'main' && collectionName === 'tasks' ? { name: collectionName } : null,
+      },
+    );
+    expect(dynamicDataSourceRefreshErrors.map((error: any) => error.ruleId)).toContain('runjs-resource-action-invalid');
+
+    expect(
+      inspectRunJsAuthoringCode({
+        code: "ctx.render(null);\nawait ctx.api.resource('flowSurfaces').compose({ target: { uid: 'root' } });",
+        path: '$.runjs.nonCollectionApiResource.code',
+        modelUse: 'JSBlockModel',
+      }).map((error: any) => error.ruleId),
+    ).not.toContain('runjs-resource-action-invalid');
+
+    expect(
+      inspectRunJsAuthoringCode(
+        {
+          code: "ctx.render(null);\nawait ctx.request({ url: '/api/tasks/1/assignees:refresh' });",
+          path: '$.runjs.associationRefresh.code',
+          modelUse: 'JSBlockModel',
+        },
+        {
+          getCollection: (_dataSourceKey: string, collectionName: string) =>
+            collectionName === 'tasks'
+              ? {
+                  name: collectionName,
+                  getField: (fieldName: string) =>
+                    fieldName === 'assignees' ? { name: fieldName, target: 'users' } : null,
+                }
+              : collectionName === 'users'
+                ? { name: collectionName }
+                : null,
+        },
+      ).map((error: any) => error.ruleId),
+    ).toContain('runjs-resource-action-invalid');
+
+    expect(
+      inspectRunJsAuthoringCode(
+        {
+          code: "ctx.render(null);\nawait ctx.request({ url: '/api/tasks/1/assignees:set' });",
+          path: '$.runjs.associationSet.code',
+          modelUse: 'JSBlockModel',
+        },
+        {
+          getCollection: (_dataSourceKey: string, collectionName: string) =>
+            collectionName === 'tasks'
+              ? {
+                  name: collectionName,
+                  getField: (fieldName: string) =>
+                    fieldName === 'assignees' ? { name: fieldName, target: 'users' } : null,
+                }
+              : collectionName === 'users'
+                ? { name: collectionName, options: { availableActions: ['update'] } }
+                : null,
+        },
+      ).map((error: any) => error.ruleId),
+    ).not.toContain('runjs-resource-action-invalid');
+  });
+
   it('should reject helper-forwarded date range objects in resource filters', () => {
     const fields = [
       { name: 'occurDate', type: 'date', interface: 'datetime' },
