@@ -24,12 +24,12 @@ import {
 
 import { CacheTransport } from './cache-logger';
 
-type ScriptConfig = { content?: string; timeout?: number; continue?: boolean; arguments?: { [key: string]: any }[] };
+type ScriptConfig = { content?: string; timeout?: number; continue?: boolean; arguments?: Record<string, unknown>[] };
 
 export default class ScriptInstruction extends Instruction {
   /**
    * Returns the worker script path based on whether WORKFLOW_SCRIPT_MODULES is configured.
-   * - WORKFLOW_SCRIPT_MODULES set: uses Node.js vm with require support (module whitelist)
+   * - WORKFLOW_SCRIPT_MODULES set: uses Node.js vm with require support (unsafe; not a security boundary)
    * - WORKFLOW_SCRIPT_MODULES unset: uses QuickJS (WASM) for maximum security (no require, no Node.js APIs)
    */
   static get workerScript() {
@@ -46,7 +46,7 @@ export default class ScriptInstruction extends Instruction {
     });
 
     const abortListener = () => {
-      void worker.terminate();
+      worker.terminate();
     };
     signal?.addEventListener('abort', abortListener, { once: true });
 
