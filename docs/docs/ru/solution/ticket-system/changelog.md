@@ -8,7 +8,6 @@
 
 **Файлы резервной копии**:
 - [nocobase_tickets_v2_backup_260324.nbdata](https://static-docs.nocobase.com/nocobase_tickets_v2_backup_260324.nbdata)
-- [nocobase_tickets_v2_sql_260324.zip](https://static-docs.nocobase.com/nocobase_tickets_v2_sql_260324.zip)
 
 **Содержимое обновления**:
 - Исправлена ошибка «не найден SLA Config», возникающая при клике «Завершено» на Тикете
@@ -21,7 +20,6 @@
 
 **Файлы резервной копии**:
 - nocobase_tts_v2_backup_260302.nbdata
-- nocobase_tts_v2_sql_260302.zip
 
 **Содержимое обновления**:
 - Первый выпуск системы Тикетов v2
