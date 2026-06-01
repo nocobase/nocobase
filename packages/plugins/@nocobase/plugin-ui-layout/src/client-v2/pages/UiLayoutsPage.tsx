@@ -246,7 +246,7 @@ const UiLayoutsPage: React.FC = () => {
           >
             {t('Delete')}
           </Button>
-          <Dropdown menu={createLayoutMenu} trigger={['click']}>
+          <Dropdown menu={createLayoutMenu} trigger={['hover']}>
             <Button type="primary" icon={<PlusOutlined />}>
               {t('Add UI layout')} <DownOutlined />
             </Button>
