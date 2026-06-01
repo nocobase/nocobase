@@ -125,7 +125,7 @@ export const fieldsTableSchema: ISchema = {
           'x-component-props': {
             type: 'primary',
           },
-          'x-hidden': '{{ disableAddFields }}',
+          'x-hidden': '{{ disableConfigure || disableAddFields }}',
         },
       },
     },
@@ -153,6 +153,7 @@ export const fieldsTableSchema: ISchema = {
               'x-component': 'FieldTitleInput',
               'x-component-props': {
                 handleFieldChange: '{{enqueueChange}}',
+                disabled: '{{disableConfigure}}',
               },
             },
           },
@@ -178,6 +179,7 @@ export const fieldsTableSchema: ISchema = {
               'x-component': 'FieldType',
               'x-component-props': {
                 handleFieldChange: '{{enqueueChange}}',
+                disabled: '{{disableConfigure}}',
               },
             },
           },
@@ -192,6 +194,7 @@ export const fieldsTableSchema: ISchema = {
               'x-component': 'CollectionFieldInterfaceSelect',
               'x-component-props': {
                 handleFieldChange: '{{enqueueChange}}',
+                disabled: '{{disableConfigure}}',
               },
             },
           },
@@ -243,6 +246,7 @@ export const fieldsTableSchema: ISchema = {
                   type: 'void',
                   title: '{{ t("Edit") }}',
                   'x-component': 'EditCollectionField',
+                  'x-hidden': '{{disableConfigure}}',
                   'x-component-props': {
                     role: 'button',
                     'aria-label': '{{ "edit-button-" + $record.name }}',
@@ -254,6 +258,7 @@ export const fieldsTableSchema: ISchema = {
                   title: '{{ t("Delete") }}',
                   'x-disabled': '{{cm.useDeleteButtonDisabled()}}',
                   'x-component': 'Action.Link',
+                  'x-hidden': '{{disableConfigure}}',
                   'x-component-props': {
                     confirm: {
                       title: "{{t('Delete record')}}",
@@ -266,7 +271,7 @@ export const fieldsTableSchema: ISchema = {
                       dependencies: ['.interface'],
                       fulfill: {
                         state: {
-                          visible: "{{ ['obo','oho','m2m','o2m','m2o'].includes($deps[0]) }}",
+                          visible: "{{ !disableConfigure && ['obo','oho','m2m','o2m','m2o'].includes($deps[0]) }}",
                         },
                       },
                     },
