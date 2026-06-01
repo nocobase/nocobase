@@ -7,14 +7,14 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import { FlowEngine, FlowEngineProvider } from '@nocobase/flow-engine';
 import type { BarTask } from '../../../types/bar-task';
 import { TaskItem } from '../task-item';
 
-const createTask = (name: string): BarTask =>
+const createTask = (name: string, overrides: Partial<BarTask> = {}): BarTask =>
   ({
     id: name,
     name,
@@ -40,9 +40,13 @@ const createTask = (name: string): BarTask =>
       progressColor: '#1677ff',
       progressSelectedColor: '#1677ff',
     },
+    ...overrides,
   }) as BarTask;
 
-const renderTaskItem = (task: BarTask) => {
+const renderTaskItem = (
+  task: BarTask,
+  options: { isDateChangeable?: boolean; onEventStart?: ReturnType<typeof vi.fn> } = {},
+) => {
   const engine = new FlowEngine();
   return render(
     <FlowEngineProvider engine={engine}>
@@ -52,11 +56,11 @@ const renderTaskItem = (task: BarTask) => {
           arrowIndent={8}
           taskHeight={20}
           isProgressChangeable={false}
-          isDateChangeable={false}
+          isDateChangeable={options.isDateChangeable ?? false}
           isDelete={false}
           isSelected={false}
           rtl={false}
-          onEventStart={vi.fn()}
+          onEventStart={options.onEventStart ?? vi.fn()}
         />
       </svg>
     </FlowEngineProvider>,
@@ -87,5 +91,39 @@ describe('TaskItem', () => {
     await waitFor(() => {
       expect(screen.getByText('Task 2')).toHaveAttribute('text-anchor', 'start');
     });
+  });
+
+  test('keeps resize handles available for small tasks', () => {
+    const onEventStart = vi.fn();
+    const { container } = renderTaskItem(
+      createTask('Small Task', {
+        typeInternal: 'smalltask',
+        x1: 0,
+        x2: 16,
+      }),
+      {
+        isDateChangeable: true,
+        onEventStart,
+      },
+    );
+
+    const handles = container.querySelectorAll('.barHandle');
+    expect(handles).toHaveLength(2);
+
+    fireEvent.mouseDown(handles[0]);
+    fireEvent.mouseDown(handles[1]);
+
+    expect(onEventStart).toHaveBeenNthCalledWith(
+      1,
+      'start',
+      expect.objectContaining({ id: 'Small Task' }),
+      expect.anything(),
+    );
+    expect(onEventStart).toHaveBeenNthCalledWith(
+      2,
+      'end',
+      expect.objectContaining({ id: 'Small Task' }),
+      expect.anything(),
+    );
   });
 });
