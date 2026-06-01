@@ -8,11 +8,12 @@
  */
 
 import { act, fireEvent, render, screen } from '@testing-library/react';
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import { FlowEngine, FlowEngineProvider } from '@nocobase/flow-engine';
 import type { BarTask } from '../../../types/bar-task';
 import type { GanttEvent } from '../../../types/gantt-task-actions';
+import type { Task } from '../../../types/public-types';
 import { TaskGanttContent } from '../task-gantt-content';
 
 const createTask = (id: string, name: string, x1: number): BarTask =>
@@ -50,12 +51,19 @@ const renderHarness = (node: React.ReactElement) => {
   return render(<FlowEngineProvider engine={engine}>{node}</FlowEngineProvider>);
 };
 
-const Harness = ({ onClick = vi.fn() }: { onClick?: (task: BarTask) => void }) => {
+const Harness = ({
+  onClick = vi.fn(),
+  onDateChange,
+}: {
+  onClick?: (task: BarTask) => void;
+  onDateChange?: (task: Task, children: Task[]) => void | boolean | Promise<void> | Promise<boolean>;
+}) => {
   const [ganttEvent, setGanttEvent] = useState<GanttEvent>({ action: '' });
+  const svgRef = useRef<SVGSVGElement>(null);
 
   return (
     <>
-      <svg>
+      <svg ref={svgRef}>
         <TaskGanttContent
           tasks={tasks}
           dates={[new Date('2026-05-25T00:00:00'), new Date('2026-05-26T00:00:00')]}
@@ -64,6 +72,7 @@ const Harness = ({ onClick = vi.fn() }: { onClick?: (task: BarTask) => void }) =
           rowHeight={40}
           columnWidth={80}
           timeStep={300000}
+          svg={svgRef}
           svgWidth={240}
           taskHeight={20}
           arrowColor="#999"
@@ -74,6 +83,7 @@ const Harness = ({ onClick = vi.fn() }: { onClick?: (task: BarTask) => void }) =
           setGanttEvent={setGanttEvent}
           setFailedTask={vi.fn()}
           setSelectedTask={vi.fn()}
+          onDateChange={onDateChange}
           onClick={onClick}
         />
       </svg>
@@ -87,6 +97,20 @@ describe('TaskGanttContent tooltip hover', () => {
   beforeEach(() => {
     vi.useFakeTimers();
     SVGElement.prototype.getBBox = vi.fn(() => ({ width: 40, height: 12, x: 0, y: 0 }) as DOMRect);
+    SVGSVGElement.prototype.getScreenCTM = vi.fn(
+      () =>
+        ({
+          inverse: () => ({}),
+        }) as DOMMatrix,
+    );
+    SVGSVGElement.prototype.createSVGPoint = vi.fn(() => {
+      const point = {
+        x: 0,
+        y: 0,
+        matrixTransform: () => ({ x: point.x, y: point.y }),
+      };
+      return point as unknown as SVGPoint;
+    });
   });
 
   afterEach(() => {
@@ -120,6 +144,62 @@ describe('TaskGanttContent tooltip hover', () => {
 
     fireEvent.click(screen.getByText('Task 1'));
 
+    expect(handleClick).toHaveBeenCalledTimes(1);
+    expect(handleClick).toHaveBeenCalledWith(expect.objectContaining({ id: '1', name: 'Task 1' }));
+  });
+
+  test('does not open the task after resizing its date range', async () => {
+    const handleClick = vi.fn();
+    const handleDateChange = vi.fn().mockResolvedValue(true);
+
+    renderHarness(<Harness onClick={handleClick} onDateChange={handleDateChange} />);
+
+    const taskGroup = screen.getByText('Task 1').parentElement as Element;
+    const resizeHandles = taskGroup.querySelectorAll('.barHandle');
+
+    fireEvent.mouseDown(resizeHandles[1], { clientX: 79 });
+    fireEvent.mouseMove(window, { clientX: 120 });
+
+    await act(async () => {
+      fireEvent.mouseUp(window, { clientX: 120 });
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    fireEvent.click(taskGroup);
+
+    expect(handleDateChange).toHaveBeenCalledTimes(1);
+    expect(handleClick).not.toHaveBeenCalled();
+  });
+
+  test('opens the task when clicking again after resizing its date range', async () => {
+    const handleClick = vi.fn();
+    const handleDateChange = vi.fn().mockResolvedValue(true);
+
+    renderHarness(<Harness onClick={handleClick} onDateChange={handleDateChange} />);
+
+    const taskGroup = screen.getByText('Task 1').parentElement as Element;
+    const resizeHandles = taskGroup.querySelectorAll('.barHandle');
+
+    fireEvent.mouseDown(resizeHandles[1], { clientX: 79 });
+    fireEvent.mouseMove(window, { clientX: 120 });
+
+    await act(async () => {
+      fireEvent.mouseUp(window, { clientX: 120 });
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    fireEvent.click(taskGroup);
+    expect(handleClick).not.toHaveBeenCalled();
+
+    act(() => {
+      vi.runAllTimers();
+    });
+
+    fireEvent.click(taskGroup);
+
+    expect(handleDateChange).toHaveBeenCalledTimes(1);
     expect(handleClick).toHaveBeenCalledTimes(1);
     expect(handleClick).toHaveBeenCalledWith(expect.objectContaining({ id: '1', name: 'Task 1' }));
   });
