@@ -23,7 +23,7 @@ export default class ExecutionResultInstruction extends Instruction {
     const { value } = node.config;
     const output = processor.getParsedValue(value, node.id);
     try {
-      await processor.execution.update({ output: output }, { hooks: false });
+      await processor.execution.update({ output: output }, { hooks: false, transaction: processor.mainTransaction });
     } catch (e) {
       return {
         result: e.message,

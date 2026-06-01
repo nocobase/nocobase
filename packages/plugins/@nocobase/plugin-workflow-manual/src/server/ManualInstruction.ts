@@ -130,6 +130,7 @@ export default class extends Instruction {
         status: JOB_STATUS.PENDING,
         title,
       })),
+      transaction: processor.mainTransaction,
     });
 
     return job;
@@ -144,6 +145,7 @@ export default class extends Instruction {
       where: {
         jobId: job.id,
       },
+      transaction: processor.mainTransaction,
     });
     const assignees = [];
     const distributionMap = tasks.reduce((result, item) => {
