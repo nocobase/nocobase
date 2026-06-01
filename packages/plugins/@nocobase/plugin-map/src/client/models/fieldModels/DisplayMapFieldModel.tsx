@@ -10,6 +10,8 @@
 import React from 'react';
 import { DisplayTitleFieldModel, TableColumnModel } from '@nocobase/client';
 import { tExpr } from '@nocobase/flow-engine';
+import { Typography } from 'antd';
+import { css } from '@emotion/css';
 import { MapComponent } from '../MapComponent';
 import { NAMESPACE } from '../../locale';
 
@@ -24,6 +26,42 @@ export const PointReadPretty = (props) => {
 export class DisplayMapFieldModel extends DisplayTitleFieldModel {
   getMapFieldType() {
     return null;
+  }
+
+  render(): any {
+    const { value, displayStyle, overflowMode, width } = this.props;
+
+    if (displayStyle === 'map') {
+      return this.renderComponent(value);
+    }
+
+    return (
+      <Typography.Text
+        ellipsis={
+          overflowMode === 'ellipsis'
+            ? {
+                tooltip: {
+                  rootClassName: css`
+                    .ant-tooltip-inner {
+                      color: #000;
+                      max-height: 500px;
+                      overflow-y: auto;
+                      padding: 10px;
+                    }
+                  `,
+                  color: '#fff',
+                },
+              }
+            : false
+        }
+        style={{
+          whiteSpace: overflowMode === 'wrap' ? 'normal' : 'nowrap',
+          width: width || 'auto',
+        }}
+      >
+        {this.renderComponent(value)}
+      </Typography.Text>
+    );
   }
 
   public renderComponent(value) {
