@@ -59,8 +59,8 @@ test('formatSwaggerSchemaError returns actionable guidance for invalid tokens', 
   expect(message).toMatch(/Authentication failed while loading the command runtime/);
   expect(message).toMatch(/env "local"/);
   expect(message).toMatch(/INVALID_TOKEN/);
-  expect(message).toMatch(/env add <name> --api-base-url <url> --auth-type token --access-token <api-key>/);
-  expect(message).toMatch(/nb env update/);
+  expect(message).toMatch(/nb env update local --token <api-key>/);
+  expect(message).toMatch(/retry it after updating the token/);
   expect(message).toMatch(/nb --help/);
 });
 
@@ -86,7 +86,7 @@ test('formatSwaggerSchemaError returns actionable guidance for missing tokens', 
   expect(message).toMatch(/Authentication failed while loading the command runtime/);
   expect(message).toMatch(/env "app1"/);
   expect(message).toMatch(/EMPTY_TOKEN/);
-  expect(message).toMatch(/nb env auth <name>/);
+  expect(message).toMatch(/nb env auth app1/);
   expect(message).toMatch(/--access-token <api-key>/);
 });
 
@@ -128,7 +128,7 @@ test('formatSwaggerSchemaError explains network fetch failures clearly', () => {
   expect(message).toMatch(/Failed to reach the NocoBase server while loading the command runtime/);
   expect(message).toMatch(/Base URL: http:\/\/localhost:13000\/api/);
   expect(message).toMatch(/Network error: fetch failed/);
-  expect(message).toMatch(/nb env add <name> --api-base-url <url>/);
+  expect(message).toMatch(/nb env update <name> --api-base-url <url>/);
   expect(message).toMatch(/nb env list/);
 });
 
@@ -138,5 +138,5 @@ test('formatMissingRuntimeEnvError explains unknown runtime commands without an 
   expect(message).toMatch(/Unable to resolve runtime command `not-a-real-command`/);
   expect(message).toMatch(/No env is configured/);
   expect(message).toMatch(/nb --help/);
-  expect(message).toMatch(/nb env update/);
+  expect(message).toMatch(/nb init --ui/);
 });

@@ -15,7 +15,46 @@ const mocks = vi.hoisted(() => ({
   startTask: vi.fn(),
   stopTask: vi.fn(),
   updateTask: vi.fn(),
+  childSpawnCalls: [] as Array<{
+    command: string;
+    args: string[];
+    options: Record<string, unknown>;
+  }>,
+  childProcesses: [] as Array<{
+    kill: ReturnType<typeof vi.fn>;
+  }>,
 }));
+
+vi.mock('node:child_process', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('node:child_process')>();
+  const spawn = vi.fn((command: string, args: string[], options: Record<string, unknown>) => {
+    const handlers: Record<string, (...args: unknown[]) => void> = {};
+    const child = {
+      exitCode: null,
+      killed: false,
+      once: vi.fn((event: string, handler: (...args: unknown[]) => void) => {
+        handlers[event] = handler;
+        return child;
+      }),
+      kill: vi.fn(() => {
+        handlers.close?.(0, null);
+        return true;
+      }),
+    };
+    mocks.childSpawnCalls.push({ command, args, options });
+    mocks.childProcesses.push(child);
+    return child;
+  });
+
+  return {
+    ...actual,
+    spawn,
+    default: {
+      ...actual,
+      spawn,
+    },
+  };
+});
 
 vi.mock('../lib/ui.js', () => ({
   printInfo: mocks.printInfo,
@@ -35,6 +74,8 @@ afterEach(() => {
   mocks.startTask.mockReset();
   mocks.stopTask.mockReset();
   mocks.updateTask.mockReset();
+  mocks.childSpawnCalls.length = 0;
+  mocks.childProcesses.length = 0;
 });
 
 test('waitForAppReady prints low-frequency progress logs while retrying health checks', async () => {
@@ -92,4 +133,33 @@ test('waitForAppReady preserves the last health status on timeout without using 
   expect(mocks.startTask).not.toHaveBeenCalled();
   expect(mocks.updateTask).not.toHaveBeenCalled();
   expect(mocks.stopTask).not.toHaveBeenCalled();
+});
+
+test('waitForAppReady streams docker logs in verbose mode and stops when the app is ready', async () => {
+  const fetchImpl = vi
+    .fn()
+    .mockResolvedValueOnce(new Response('starting', { status: 503 }))
+    .mockResolvedValueOnce(new Response('ok', { status: 200 }));
+
+  const promise = waitForAppReady({
+    envName: 'app1',
+    apiBaseUrl: 'http://127.0.0.1:13000/api',
+    containerName: 'nb-demo-app1-app',
+    verbose: true,
+    fetchImpl: fetchImpl as unknown as typeof fetch,
+    intervalMs: 1,
+  });
+  await vi.advanceTimersByTimeAsync(1);
+  await promise;
+
+  expect(mocks.childSpawnCalls).toEqual([
+    {
+      command: 'docker',
+      args: ['logs', '--tail', '50', '--follow', 'nb-demo-app1-app'],
+      options: {
+        stdio: 'inherit',
+      },
+    },
+  ]);
+  expect(mocks.childProcesses[0]?.kill).toHaveBeenCalledTimes(1);
 });

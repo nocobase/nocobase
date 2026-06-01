@@ -41,6 +41,15 @@ vi.mock('../lib/run-npm.js', () => ({
   run: mocks.run,
 }));
 
+function getCliRoot() {
+  const cliRoot = process.env.NB_CLI_ROOT;
+  if (!cliRoot) {
+    throw new Error('NB_CLI_ROOT is not set');
+  }
+
+  return cliRoot;
+}
+
 describe('startup update prompt', () => {
   const originalHome = process.env.NB_CLI_ROOT;
   const originalSkip = process.env.NB_SKIP_STARTUP_UPDATE;
@@ -80,7 +89,7 @@ describe('startup update prompt', () => {
   });
 
   test('non-global installs skip startup update checks', async () => {
-    const { maybeRunStartupUpdatePrompt, shouldRunStartupUpdateCheck } = await import('../lib/startup-update.js');
+    const { maybeRunStartupUpdate, shouldRunStartupUpdateCheck } = await import('../lib/startup-update.js');
     mocks.inspectSelfInstall.mockResolvedValue({
       installMethod: 'source',
       packageRoot: '/tmp/cli',
@@ -88,7 +97,7 @@ describe('startup update prompt', () => {
 
     expect(await shouldRunStartupUpdateCheck(['env', 'list'])).toBe(false);
 
-    const result = await maybeRunStartupUpdatePrompt(['env', 'list']);
+    const result = await maybeRunStartupUpdate(['env', 'list']);
 
     expect(result).toEqual({ kind: 'skipped' });
     expect(mocks.inspectSelfStatus).not.toHaveBeenCalled();
@@ -109,11 +118,12 @@ describe('startup update prompt', () => {
     const fs = await import('node:fs/promises');
     const path = await import('node:path');
     const originalTimezone = process.env.TZ;
+    const cliRoot = getCliRoot();
 
     process.env.TZ = 'Asia/Shanghai';
-    await fs.mkdir(path.join(process.env.NB_CLI_ROOT!, '.nocobase'), { recursive: true });
+    await fs.mkdir(path.join(cliRoot, '.nocobase'), { recursive: true });
     await fs.writeFile(
-      path.join(process.env.NB_CLI_ROOT!, '.nocobase', 'startup-update.json'),
+      path.join(cliRoot, '.nocobase', 'startup-update.json'),
       JSON.stringify({ lastCheckedDate: '2026-04-28' }),
     );
 
@@ -129,7 +139,7 @@ describe('startup update prompt', () => {
   });
 
   test('updates CLI and skills when user accepts', async () => {
-    const { maybeRunStartupUpdatePrompt, shouldRunStartupUpdateCheck } = await import('../lib/startup-update.js');
+    const { maybeRunStartupUpdate, shouldRunStartupUpdateCheck } = await import('../lib/startup-update.js');
     mocks.inspectSelfStatus.mockResolvedValue({
       installMethod: 'npm-global',
       updatable: true,
@@ -145,7 +155,7 @@ describe('startup update prompt', () => {
     mocks.confirm.mockResolvedValue(true);
     mocks.run.mockResolvedValue(undefined);
 
-    const result = await maybeRunStartupUpdatePrompt(['env', 'list']);
+    const result = await maybeRunStartupUpdate(['env', 'list']);
 
     expect(result).toEqual({ kind: 'updated' });
     expect(mocks.confirm).toHaveBeenCalledWith({
@@ -160,17 +170,9 @@ describe('startup update prompt', () => {
     expect(mocks.run.mock.calls).toEqual([
       [
         'nb',
-        ['self', 'update', '--yes'],
+        ['self', 'update', '--yes', '--skills'],
         expect.objectContaining({
           errorName: 'nb self update',
-          env: expect.objectContaining({ NB_SKIP_STARTUP_UPDATE: '1' }),
-        }),
-      ],
-      [
-        'nb',
-        ['skills', 'update', '--yes'],
-        expect.objectContaining({
-          errorName: 'nb skills update',
           env: expect.objectContaining({ NB_SKIP_STARTUP_UPDATE: '1' }),
         }),
       ],
@@ -180,7 +182,7 @@ describe('startup update prompt', () => {
   });
 
   test('warns when user declines updates', async () => {
-    const { maybeRunStartupUpdatePrompt } = await import('../lib/startup-update.js');
+    const { maybeRunStartupUpdate } = await import('../lib/startup-update.js');
     mocks.inspectSelfStatus.mockResolvedValue({
       installMethod: 'npm-global',
       updatable: true,
@@ -193,7 +195,7 @@ describe('startup update prompt', () => {
     });
     mocks.confirm.mockResolvedValue(false);
 
-    const result = await maybeRunStartupUpdatePrompt(['env', 'list']);
+    const result = await maybeRunStartupUpdate(['env', 'list']);
 
     expect(result).toEqual({ kind: 'declined' });
     expect(mocks.run).not.toHaveBeenCalled();
@@ -203,7 +205,7 @@ describe('startup update prompt', () => {
   });
 
   test('warns and continues in non-interactive sessions', async () => {
-    const { maybeRunStartupUpdatePrompt, shouldRunStartupUpdateCheck } = await import('../lib/startup-update.js');
+    const { maybeRunStartupUpdate, shouldRunStartupUpdateCheck } = await import('../lib/startup-update.js');
     mocks.isInteractiveTerminal.mockReturnValue(false);
     mocks.inspectSelfStatus.mockResolvedValue({
       installMethod: 'npm-global',
@@ -218,19 +220,19 @@ describe('startup update prompt', () => {
       latestVersion: '1.0.5',
     });
 
-    const result = await maybeRunStartupUpdatePrompt(['env', 'list']);
+    const result = await maybeRunStartupUpdate(['env', 'list']);
 
     expect(result).toEqual({ kind: 'warned' });
     expect(mocks.confirm).not.toHaveBeenCalled();
     expect(mocks.run).not.toHaveBeenCalled();
     expect(mocks.printWarning).toHaveBeenCalledWith(
-      'Updates available: NocoBase CLI: 2.1.0-beta.20 -> 2.1.0-beta.21, NocoBase AI skills: 1.0.4 -> 1.0.5 Non-interactive session, skipped auto-update. Run: nb self update --yes && nb skills update --yes You may run into compatibility issues until you update.',
+      'Updates available: NocoBase CLI: 2.1.0-beta.20 -> 2.1.0-beta.21, NocoBase AI skills: 1.0.4 -> 1.0.5 Non-interactive session, skipped auto-update. Run: nb self update --yes --skills You may run into compatibility issues until you update.',
     );
     expect(await shouldRunStartupUpdateCheck(['env', 'list'])).toBe(false);
   });
 
   test('only prompts once per day', async () => {
-    const { maybeRunStartupUpdatePrompt } = await import('../lib/startup-update.js');
+    const { maybeRunStartupUpdate } = await import('../lib/startup-update.js');
     mocks.inspectSelfStatus.mockResolvedValue({
       installMethod: 'npm-global',
       updatable: true,
@@ -243,15 +245,15 @@ describe('startup update prompt', () => {
     });
     mocks.confirm.mockResolvedValue(false);
 
-    await maybeRunStartupUpdatePrompt(['env', 'list']);
-    const second = await maybeRunStartupUpdatePrompt(['env', 'list']);
+    await maybeRunStartupUpdate(['env', 'list']);
+    const second = await maybeRunStartupUpdate(['env', 'list']);
 
     expect(second).toEqual({ kind: 'skipped' });
     expect(mocks.confirm).toHaveBeenCalledTimes(1);
   });
 
   test('global installs only check once per day in shouldRunStartupUpdateCheck', async () => {
-    const { maybeRunStartupUpdatePrompt, shouldRunStartupUpdateCheck } = await import('../lib/startup-update.js');
+    const { maybeRunStartupUpdate, shouldRunStartupUpdateCheck } = await import('../lib/startup-update.js');
     mocks.inspectSelfStatus.mockResolvedValue({
       installMethod: 'npm-global',
       updatable: true,
@@ -264,7 +266,140 @@ describe('startup update prompt', () => {
     });
 
     expect(await shouldRunStartupUpdateCheck(['env', 'list'])).toBe(true);
-    await maybeRunStartupUpdatePrompt(['env', 'list']);
+    await maybeRunStartupUpdate(['env', 'list']);
     expect(await shouldRunStartupUpdateCheck(['env', 'list'])).toBe(false);
+  });
+
+  test('update.policy=off skips startup update checks', async () => {
+    const { setCliConfigValue } = await import('../lib/cli-config.js');
+    const { shouldRunStartupUpdateCheck } = await import('../lib/startup-update.js');
+    await setCliConfigValue('update.policy', 'off', { scope: 'global' });
+
+    expect(await shouldRunStartupUpdateCheck(['env', 'list'])).toBe(false);
+    expect(mocks.inspectSelfInstall).not.toHaveBeenCalled();
+  });
+
+  test('update.policy=auto updates without prompting in interactive sessions', async () => {
+    const { setCliConfigValue } = await import('../lib/cli-config.js');
+    const { maybeRunStartupUpdate, shouldRunStartupUpdateCheck } = await import('../lib/startup-update.js');
+    await setCliConfigValue('update.policy', 'auto', { scope: 'global' });
+
+    mocks.inspectSelfStatus.mockResolvedValue({
+      installMethod: 'npm-global',
+      updatable: true,
+      updateAvailable: true,
+      currentVersion: '2.1.0-beta.20',
+      latestVersion: '2.1.0-beta.21',
+    });
+    mocks.inspectSkillsStatus.mockResolvedValue({
+      updateAvailable: true,
+      installedVersion: '1.0.4',
+      latestVersion: '1.0.5',
+    });
+    mocks.run.mockResolvedValue(undefined);
+
+    const result = await maybeRunStartupUpdate(['env', 'list']);
+
+    expect(result).toEqual({ kind: 'updated' });
+    expect(mocks.confirm).not.toHaveBeenCalled();
+    expect(mocks.run.mock.calls).toEqual([
+      [
+        'nb',
+        ['self', 'update', '--yes', '--skills'],
+        expect.objectContaining({
+          errorName: 'nb self update',
+          env: expect.objectContaining({ NB_SKIP_STARTUP_UPDATE: '1' }),
+        }),
+      ],
+    ]);
+    expect(await shouldRunStartupUpdateCheck(['env', 'list'])).toBe(false);
+  });
+
+  test('update.policy=auto warns instead of auto-updating in non-interactive sessions', async () => {
+    const { setCliConfigValue } = await import('../lib/cli-config.js');
+    const { maybeRunStartupUpdate } = await import('../lib/startup-update.js');
+    await setCliConfigValue('update.policy', 'auto', { scope: 'global' });
+
+    mocks.isInteractiveTerminal.mockReturnValue(false);
+    mocks.inspectSelfStatus.mockResolvedValue({
+      installMethod: 'npm-global',
+      updatable: true,
+      updateAvailable: true,
+      currentVersion: '2.1.0-beta.20',
+      latestVersion: '2.1.0-beta.21',
+    });
+    mocks.inspectSkillsStatus.mockResolvedValue({
+      updateAvailable: true,
+      installedVersion: '1.0.4',
+      latestVersion: '1.0.5',
+    });
+
+    const result = await maybeRunStartupUpdate(['env', 'list']);
+
+    expect(result).toEqual({ kind: 'warned' });
+    expect(mocks.confirm).not.toHaveBeenCalled();
+    expect(mocks.run).not.toHaveBeenCalled();
+    expect(mocks.printWarning).toHaveBeenCalledWith(
+      'Updates available: NocoBase CLI: 2.1.0-beta.20 -> 2.1.0-beta.21, NocoBase AI skills: 1.0.4 -> 1.0.5 Non-interactive session, skipped auto-update. Run: nb self update --yes --skills You may run into compatibility issues until you update.',
+    );
+  });
+
+  test('configured prompt overrides a legacy disabled startup-update policy', async () => {
+    const { setCliConfigValue } = await import('../lib/cli-config.js');
+    const { shouldRunStartupUpdateCheck } = await import('../lib/startup-update.js');
+    const fs = await import('node:fs/promises');
+    const path = await import('node:path');
+    const cliRoot = getCliRoot();
+
+    await setCliConfigValue('update.policy', 'prompt', { scope: 'global' });
+    await fs.mkdir(path.join(cliRoot, '.nocobase'), { recursive: true });
+    await fs.writeFile(
+      path.join(cliRoot, '.nocobase', 'startup-update.json'),
+      JSON.stringify({
+        entries: {
+          [path.resolve('packages/core/cli/bin/run.js')]: {
+            policy: 'disabled',
+          },
+        },
+      }),
+    );
+
+    expect(await shouldRunStartupUpdateCheck(['env', 'list'])).toBe(true);
+  });
+
+  test('nb config delete update.policy clears the legacy disabled startup-update policy', async () => {
+    const { default: ConfigDelete } = await import('../commands/config/delete.js');
+    const { shouldRunStartupUpdateCheck } = await import('../lib/startup-update.js');
+    const fs = await import('node:fs/promises');
+    const path = await import('node:path');
+    const cliRoot = getCliRoot();
+
+    await fs.mkdir(path.join(cliRoot, '.nocobase'), { recursive: true });
+    await fs.writeFile(
+      path.join(cliRoot, '.nocobase', 'startup-update.json'),
+      JSON.stringify({
+        entries: {
+          [path.resolve('packages/core/cli/bin/run.js')]: {
+            policy: 'disabled',
+          },
+        },
+      }),
+    );
+
+    expect(await shouldRunStartupUpdateCheck(['env', 'list'])).toBe(false);
+
+    const command = Object.assign(Object.create(ConfigDelete.prototype), {
+      parse: vi.fn(async () => ({
+        args: {
+          key: 'update.policy',
+        },
+      })),
+      log: vi.fn(),
+    });
+
+    await ConfigDelete.prototype.run.call(command);
+
+    expect(command.log).toHaveBeenCalledWith('Deleted update.policy');
+    expect(await shouldRunStartupUpdateCheck(['env', 'list'])).toBe(true);
   });
 });

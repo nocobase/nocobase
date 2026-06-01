@@ -9,13 +9,15 @@
 
 import { Args, Command } from '@oclif/core';
 import { assertSupportedCliConfigKey, setCliConfigValue } from '../../lib/cli-config.js';
+import { clearLegacyStartupUpdatePolicyForCurrentInstall } from '../../lib/startup-update.js';
 
 export default class ConfigSet extends Command {
   static override summary = 'Set a CLI configuration value';
   static override description =
-    'Set a supported CLI configuration key. Supported keys: locale, license.pkg-url, docker.network, docker.container-prefix, bin.docker, bin.git, bin.yarn.';
+    'Set a supported CLI configuration key. Supported keys: locale, update.policy, license.pkg-url, docker.network, docker.container-prefix, bin.docker, bin.git, bin.yarn.';
   static override examples = [
     '<%= config.bin %> <%= command.id %> locale zh-CN',
+    '<%= config.bin %> <%= command.id %> update.policy prompt',
     '<%= config.bin %> <%= command.id %> license.pkg-url https://pkg.nocobase.com/',
     '<%= config.bin %> <%= command.id %> docker.network nocobase',
     '<%= config.bin %> <%= command.id %> docker.container-prefix nb',
@@ -39,6 +41,9 @@ export default class ConfigSet extends Command {
     const { args } = await this.parse(ConfigSet);
     const key = assertSupportedCliConfigKey(args.key);
     const value = await setCliConfigValue(key, args.value);
+    if (key === 'update.policy') {
+      await clearLegacyStartupUpdatePolicyForCurrentInstall();
+    }
     this.log(`${key}=${value}`);
   }
 }

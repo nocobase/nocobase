@@ -12,6 +12,11 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { confirm } from './inquirer.ts';
 import {
+  DEFAULT_UPDATE_POLICY,
+  getExplicitCliConfigValue,
+  loadCliConfig,
+} from './cli-config.js';
+import {
   inspectSelfInstall,
   inspectSelfStatus,
   type SelfInstallMethod,
@@ -21,13 +26,19 @@ import { inspectSkillsStatus } from './skills-manager.js';
 import { resolveCliHomeDir } from './cli-home.js';
 import { isInteractiveTerminal, printWarning } from './ui.js';
 import { run } from './run-npm.js';
+import type { CliUpdatePolicy } from './cli-config.js';
 
 const STARTUP_UPDATE_STATE_FILE = 'startup-update.json';
 const NB_SKIP_STARTUP_UPDATE_ENV = 'NB_SKIP_STARTUP_UPDATE';
+type LegacyStartupUpdatePolicy = 'disabled' | 'daily';
+type StartupUpdateStateEntry = {
+  policy?: LegacyStartupUpdatePolicy;
+  lastCheckedDate?: string;
+};
 
 type StartupUpdateState = {
   lastCheckedDate?: string;
-  entries?: Record<string, { policy?: 'disabled' | 'daily'; lastCheckedDate?: string }>;
+  entries?: Record<string, StartupUpdateStateEntry>;
 };
 
 type StartupUpdatePromptResult =
@@ -110,51 +121,66 @@ function readCurrentInstallLastCheckedDate(state: StartupUpdateState): string | 
 
 async function writeCurrentInstallEntry(
   updater: (
-    current: { policy?: 'disabled' | 'daily'; lastCheckedDate?: string } | undefined,
+    current: StartupUpdateStateEntry | undefined,
     state: StartupUpdateState,
-  ) => { policy?: 'disabled' | 'daily'; lastCheckedDate?: string },
+  ) => StartupUpdateStateEntry | undefined,
 ) {
   const state = await readState();
   const installBinPath = getCurrentInstallBinPath();
   const nextEntry = updater(getCurrentInstallEntry(state), state);
+  const entries = {
+    ...(state.entries ?? {}),
+  };
+
+  if (nextEntry?.policy || nextEntry?.lastCheckedDate) {
+    entries[installBinPath] = nextEntry;
+  } else {
+    delete entries[installBinPath];
+  }
+
   await writeState({
     ...state,
-    entries: {
-      ...(state.entries ?? {}),
-      [installBinPath]: nextEntry,
-    },
+    entries: Object.keys(entries).length ? entries : undefined,
   });
 }
 
 async function markChecked(now = new Date()) {
-  await writeCurrentInstallEntry((current, state) => {
+  await writeCurrentInstallEntry((current) => {
     return {
-      policy: current?.policy ?? 'daily',
+      ...current,
       lastCheckedDate: todayStamp(now),
     };
   });
 }
 
-async function disableStartupUpdateForCurrentInstall() {
-  await writeCurrentInstallEntry((current, state) => {
-    return {
-      policy: 'disabled',
-      lastCheckedDate:
-        current?.lastCheckedDate
-        ?? state.lastCheckedDate,
-    };
-  });
+function resolveLegacyStartupUpdatePolicy(state: StartupUpdateState): CliUpdatePolicy | undefined {
+  const policy = getCurrentInstallEntry(state)?.policy;
+  if (policy === 'disabled') {
+    return 'off';
+  }
+  if (policy === 'daily') {
+    return 'prompt';
+  }
+  return undefined;
 }
 
-async function enableDailyStartupUpdateForCurrentInstall() {
-  await writeCurrentInstallEntry((current, state) => {
-    return {
-      policy: 'daily',
-      lastCheckedDate:
-        current?.lastCheckedDate
-        ?? state.lastCheckedDate,
-    };
-  });
+async function resolveStartupUpdatePolicy(state: StartupUpdateState): Promise<CliUpdatePolicy> {
+  const config = await loadCliConfig({ scope: 'global' });
+  const explicit = getExplicitCliConfigValue(config, 'update.policy');
+  return (explicit as CliUpdatePolicy | undefined) ?? resolveLegacyStartupUpdatePolicy(state) ?? DEFAULT_UPDATE_POLICY;
+}
+
+export async function clearLegacyStartupUpdatePolicyForCurrentInstall(): Promise<boolean> {
+  const state = await readState();
+  const current = getCurrentInstallEntry(state);
+  if (!current?.policy) {
+    return false;
+  }
+
+  await writeCurrentInstallEntry(() => ({
+    lastCheckedDate: current.lastCheckedDate,
+  }));
+  return true;
 }
 
 export async function shouldRunStartupUpdateCheck(argv: string[], now = new Date()) {
@@ -167,21 +193,16 @@ export async function shouldRunStartupUpdateCheck(argv: string[], now = new Date
   }
 
   const state = await readState();
-  const currentEntry = getCurrentInstallEntry(state);
-  if (currentEntry?.policy === 'disabled') {
+  const policy = await resolveStartupUpdatePolicy(state);
+  if (policy === 'off') {
     return false;
-  }
-  if (currentEntry?.policy === 'daily') {
-    return readCurrentInstallLastCheckedDate(state) !== todayStamp(now);
   }
 
   const selfInstall = await inspectSelfInstall();
   if (!shouldEnableStartupUpdateForInstallMethod(selfInstall.installMethod)) {
-    await disableStartupUpdateForCurrentInstall();
     return false;
   }
 
-  await enableDailyStartupUpdateForCurrentInstall();
   return readCurrentInstallLastCheckedDate(state) !== todayStamp(now);
 }
 
@@ -243,17 +264,15 @@ function buildPromptMessage(selfStatus: SelfStatus, skillsStatus: Awaited<Return
 }
 
 function buildUpdateCommands(selfStatus: SelfStatus, skillsStatus: Awaited<ReturnType<typeof inspectSkillsStatus>>) {
-  const commands: string[] = [];
-
   if (selfStatus.updateAvailable && selfStatus.updatable) {
-    commands.push('nb self update --yes');
+    return [skillsStatus.updateAvailable === true ? 'nb self update --yes --skills' : 'nb self update --yes'];
   }
 
   if (skillsStatus.updateAvailable === true) {
-    commands.push('nb skills update --yes');
+    return ['nb skills update --yes'];
   }
 
-  return commands;
+  return [];
 }
 
 function buildNonInteractiveWarning(
@@ -305,29 +324,40 @@ function buildDeclinedWarning(
   ].join(' ');
 }
 
-async function runStartupUpdates() {
-  await run('nb', ['self', 'update', '--yes'], {
-    stdio: 'inherit',
-    env: {
-      [NB_SKIP_STARTUP_UPDATE_ENV]: '1',
-    },
-    errorName: 'nb self update',
-  });
+async function runStartupUpdates(selfStatus: SelfStatus, skillsStatus: Awaited<ReturnType<typeof inspectSkillsStatus>>) {
+  if (selfStatus.updateAvailable && selfStatus.updatable) {
+    const args = ['self', 'update', '--yes'];
+    if (skillsStatus.updateAvailable === true) {
+      args.push('--skills');
+    }
 
-  await run('nb', ['skills', 'update', '--yes'], {
-    stdio: 'inherit',
-    env: {
-      [NB_SKIP_STARTUP_UPDATE_ENV]: '1',
-    },
-    errorName: 'nb skills update',
-  });
+    await run('nb', args, {
+      stdio: 'inherit',
+      env: {
+        [NB_SKIP_STARTUP_UPDATE_ENV]: '1',
+      },
+      errorName: 'nb self update',
+    });
+    return;
+  }
+
+  if (skillsStatus.updateAvailable === true) {
+    await run('nb', ['skills', 'update', '--yes'], {
+      stdio: 'inherit',
+      env: {
+        [NB_SKIP_STARTUP_UPDATE_ENV]: '1',
+      },
+      errorName: 'nb skills update',
+    });
+  }
 }
 
-export async function maybeRunStartupUpdatePrompt(argv: string[]): Promise<StartupUpdatePromptResult> {
+export async function maybeRunStartupUpdate(argv: string[]): Promise<StartupUpdatePromptResult> {
   if (!(await shouldRunStartupUpdateCheck(argv))) {
     return { kind: 'skipped' };
   }
 
+  const policy = await resolveStartupUpdatePolicy(await readState());
   const selfStatus = await inspectSelfStatus();
 
   const skillsStatus = await inspectSkillsStatus();
@@ -340,6 +370,12 @@ export async function maybeRunStartupUpdatePrompt(argv: string[]): Promise<Start
     printWarning(buildNonInteractiveWarning(selfStatus, skillsStatus));
     await markChecked();
     return { kind: 'warned' };
+  }
+
+  if (policy === 'auto') {
+    await runStartupUpdates(selfStatus, skillsStatus);
+    await markChecked();
+    return { kind: 'updated' };
   }
 
   let answer = false;
@@ -358,7 +394,7 @@ export async function maybeRunStartupUpdatePrompt(argv: string[]): Promise<Start
     return { kind: 'declined' };
   }
 
-  await runStartupUpdates();
+  await runStartupUpdates(selfStatus, skillsStatus);
   await markChecked();
   return { kind: 'updated' };
 }
