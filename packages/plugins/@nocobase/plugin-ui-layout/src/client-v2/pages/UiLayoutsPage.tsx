@@ -8,8 +8,8 @@
  */
 
 import { DeleteOutlined, DownOutlined, EditOutlined, PlusOutlined, ReloadOutlined } from '@ant-design/icons';
-import { Table } from '@nocobase/client-v2';
-import { useFlowContext, useFlowView } from '@nocobase/flow-engine';
+import { DrawerFormLayout, Table } from '@nocobase/client-v2';
+import { randomId, useFlowContext } from '@nocobase/flow-engine';
 import { useRequest } from 'ahooks';
 import { App, Button, Card, Dropdown, Flex, Form, Input, Select, Space, Switch, Tag, theme } from 'antd';
 import type { MenuProps } from 'antd';
@@ -143,17 +143,17 @@ const UiLayoutsPage: React.FC = () => {
     listRequest.refresh();
   }, [listRequest]);
 
-  const openFormDialog = useCallback(
+  const openFormDrawer = useCallback(
     (options: { record?: UiLayoutRecord; layoutType?: UiLayoutType } = {}) => {
       const { record, layoutType = UI_LAYOUT_TYPE_DESKTOP } = options;
-      ctx.viewer.dialog({
-        title: record ? t('Edit UI layout') : t('Add UI layout'),
+      ctx.viewer.drawer({
+        width: token.screenMD,
         maskClosable: false,
         closable: true,
         content: () => <UiLayoutForm layoutType={layoutType} record={record} onSubmitted={refreshList} />,
       });
     },
-    [ctx.viewer, refreshList, t],
+    [ctx.viewer, refreshList, token.screenMD],
   );
 
   const handleDelete = useCallback(
@@ -189,9 +189,9 @@ const UiLayoutsPage: React.FC = () => {
         key: item.key,
         label: t(item.label),
       })),
-      onClick: ({ key }) => openFormDialog({ layoutType: key as UiLayoutType }),
+      onClick: ({ key }) => openFormDrawer({ layoutType: key as UiLayoutType }),
     }),
-    [openFormDialog, t],
+    [openFormDrawer, t],
   );
 
   const columns = useMemo<ColumnsType<UiLayoutRecord>>(
@@ -218,7 +218,7 @@ const UiLayoutsPage: React.FC = () => {
         title: t('Actions'),
         render: (_: unknown, record) => (
           <Space>
-            <a onClick={() => openFormDialog({ record })}>
+            <a onClick={() => openFormDrawer({ record })}>
               <EditOutlined /> {t('Edit')}
             </a>
             <a onClick={() => handleDelete(record.id)}>
@@ -228,7 +228,7 @@ const UiLayoutsPage: React.FC = () => {
         ),
       },
     ],
-    [handleDelete, openFormDialog, t],
+    [handleDelete, openFormDrawer, t],
   );
 
   return (
@@ -274,7 +274,6 @@ function UiLayoutForm(props: { layoutType: UiLayoutType; record?: UiLayoutRecord
   const { layoutType, record, onSubmitted } = props;
   const t = useT();
   const ctx = useFlowContext();
-  const view = useFlowView();
   const [form] = Form.useForm<UiLayoutFormValues>();
   const [submitting, setSubmitting] = useState(false);
   const resource = useMemo(() => ctx.api.resource('uiLayouts') as UiLayoutResource, [ctx.api]);
@@ -292,6 +291,7 @@ function UiLayoutForm(props: { layoutType: UiLayoutType; record?: UiLayoutRecord
           }
         : {
             ...defaultFormValues,
+            uid: `ui-layout-${randomId()}`,
             layoutType,
           },
     [layoutType, record],
@@ -315,14 +315,19 @@ function UiLayoutForm(props: { layoutType: UiLayoutType; record?: UiLayoutRecord
           onSubmitted,
         });
       }
-      await view.close();
     } finally {
       setSubmitting(false);
     }
-  }, [form, onSubmitted, record, resource, view]);
+  }, [form, onSubmitted, record, resource]);
 
   return (
-    <>
+    <DrawerFormLayout
+      title={record ? t('Edit UI layout') : t('Add UI layout')}
+      onSubmit={handleSubmit}
+      submitting={submitting}
+      submitText={t('Submit')}
+      cancelText={t('Cancel')}
+    >
       <Form form={form} layout="vertical" initialValues={initialValues}>
         <Form.Item name="layoutType" label={t('Layout type')}>
           <Select
@@ -339,7 +344,15 @@ function UiLayoutForm(props: { layoutType: UiLayoutType; record?: UiLayoutRecord
         <Form.Item
           name="routeName"
           label={t('Route name')}
-          rules={[{ required: true, message: t('The field value is required') }]}
+          rules={[
+            { required: true, message: t('The field value is required') },
+            {
+              validator: (_, value?: string) =>
+                value?.includes('.')
+                  ? Promise.reject(new Error(t('Route name cannot contain dots')))
+                  : Promise.resolve(),
+            },
+          ]}
         >
           <Input />
         </Form.Item>
@@ -357,17 +370,7 @@ function UiLayoutForm(props: { layoutType: UiLayoutType; record?: UiLayoutRecord
           <Switch />
         </Form.Item>
       </Form>
-      {view.Footer ? (
-        <view.Footer>
-          <Space>
-            <Button onClick={async () => view.close()}>{t('Cancel')}</Button>
-            <Button type="primary" loading={submitting} onClick={handleSubmit}>
-              {t('Submit')}
-            </Button>
-          </Space>
-        </view.Footer>
-      ) : null}
-    </>
+    </DrawerFormLayout>
   );
 }
 

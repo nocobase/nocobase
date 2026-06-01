@@ -19,7 +19,7 @@ import {
 const formValues: UiLayoutFormValues = {
   uid: 'desktop-layout',
   layoutType: 'desktop',
-  routeName: 'admin.desktop',
+  routeName: 'adminDesktop',
   routePath: '/admin',
   authCheck: true,
   enabled: true,

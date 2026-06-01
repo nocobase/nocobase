@@ -15,6 +15,7 @@
   "Layout type": "布局类型",
   "No": "否",
   "Refresh": "刷新",
+  "Route name cannot contain dots": "路由名称不能包含点号",
   "Route name": "路由名称",
   "Route path": "路由路径",
   "Submit": "提交",

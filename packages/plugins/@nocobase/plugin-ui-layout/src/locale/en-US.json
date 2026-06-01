@@ -15,6 +15,7 @@
   "Layout type": "Layout type",
   "No": "No",
   "Refresh": "Refresh",
+  "Route name cannot contain dots": "Route name cannot contain dots",
   "Route name": "Route name",
   "Route path": "Route path",
   "Submit": "Submit",
