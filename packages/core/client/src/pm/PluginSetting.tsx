@@ -169,9 +169,10 @@ export const AdminSettingsLayout = () => {
       snippets.includes('pm') && {
         type: 'divider',
       },
-      ...getMenuItems(settings.filter((v) => v.isTopLevel !== false).map((item) => ({ ...item, children: null }))),
+      ...(getMenuItems(settings.filter((v) => v.isTopLevel !== false).map((item) => ({ ...item, children: null }))) ||
+        []),
     ].filter(Boolean) as any[];
-  }, [settings]);
+  }, [settings, snippets, t]);
   if (!currentSetting || location.pathname === ADMIN_SETTINGS_PATH || location.pathname === ADMIN_SETTINGS_PATH + '/') {
     return <Navigate replace to={getFirstDeepChildPath(settings)} />;
   }
