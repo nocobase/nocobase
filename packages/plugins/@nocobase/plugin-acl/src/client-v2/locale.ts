@@ -7,9 +7,18 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-// No client-side locale bundle. Resources under namespaces
-// `@nocobase/plugin-acl` and `acl` are auto-loaded by the v2 buildin
-// `LocalePlugin.afterAdd`, which fetches them from server's `app:getLang`
-// endpoint.
+import { tExpr as flowTExpr, useFlowEngine } from '@nocobase/flow-engine';
 
-export {};
+export const NAMESPACE = '@nocobase/plugin-acl';
+
+// Locale resources under `@nocobase/plugin-acl` and `acl` are auto-loaded by
+// v2 buildin `LocalePlugin.afterAdd`.
+export function useT() {
+  const engine = useFlowEngine();
+  return (key: string, options?: Record<string, unknown>) =>
+    engine.context.t(key, { ns: [NAMESPACE, 'acl', 'client'], ...options });
+}
+
+export function tExpr(key: string, options?: Record<string, unknown>) {
+  return flowTExpr(key, { ns: [NAMESPACE, 'acl', 'client'], ...options });
+}
