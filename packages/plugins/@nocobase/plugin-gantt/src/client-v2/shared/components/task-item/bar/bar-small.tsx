@@ -11,6 +11,7 @@ import { cx } from '@emotion/css';
 import React from 'react';
 import { getProgressPoint } from '../../../helpers/bar-helper';
 import { TaskItemProps } from '../task-item';
+import { BarDateHandle } from './bar-date-handle';
 import { BarDisplay } from './bar-display';
 import { BarProgressHandle } from './bar-progress-handle';
 import { barWrapper } from './style';
@@ -23,6 +24,8 @@ export const BarSmall: React.FC<TaskItemProps> = ({
   isSelected,
 }) => {
   const progressPoint = getProgressPoint(task.progressWidth + task.x1 + 10, task.y, task.height);
+  const handleHeight = task.height - 2;
+
   return (
     <g className={cx(barWrapper)} tabIndex={0}>
       <BarDisplay
@@ -40,6 +43,30 @@ export const BarSmall: React.FC<TaskItemProps> = ({
         }}
       />
       <g className="handleGroup">
+        {isDateChangeable && (
+          <g>
+            <BarDateHandle
+              x={task.x1 + 1}
+              y={task.y + 1}
+              width={task.handleWidth}
+              height={handleHeight}
+              barCornerRadius={task.barCornerRadius}
+              onMouseDown={(e) => {
+                onEventStart('start', task, e);
+              }}
+            />
+            <BarDateHandle
+              x={task.x2 - task.handleWidth - 1}
+              y={task.y + 1}
+              width={task.handleWidth}
+              height={handleHeight}
+              barCornerRadius={task.barCornerRadius}
+              onMouseDown={(e) => {
+                onEventStart('end', task, e);
+              }}
+            />
+          </g>
+        )}
         {isProgressChangeable && (
           <BarProgressHandle
             progressPoint={progressPoint}

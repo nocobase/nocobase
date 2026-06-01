@@ -12,7 +12,7 @@ import { EXECUTION_REASON, EXECUTION_STATUS, JOB_STATUS } from '../constants';
 import { abortExecution } from '../utils';
 
 describe('workflow > utils', () => {
-  it('should run local abort side effects only after transaction commit', async () => {
+  it('should run local abort side effects only after explicit transaction commit', async () => {
     const afterCommitCallbacks: Array<() => void> = [];
     const transaction = {
       LOCK: {
@@ -21,12 +21,6 @@ describe('workflow > utils', () => {
       afterCommit: vi.fn((callback) => {
         afterCommitCallbacks.push(callback);
       }),
-      commit: vi.fn(async () => {
-        expect(plugin.timeoutManager.clear).not.toHaveBeenCalled();
-        expect(plugin.abortRunningExecution).not.toHaveBeenCalled();
-        afterCommitCallbacks.forEach((callback) => callback());
-      }),
-      rollback: vi.fn(),
     };
     const lockedExecution = {
       id: 1,
@@ -50,7 +44,6 @@ describe('workflow > utils', () => {
       update: vi.fn(),
     };
     const plugin = {
-      useDataSourceTransaction: vi.fn().mockResolvedValue(transaction),
       getLogger: () => ({
         info: vi.fn(),
       }),
@@ -68,12 +61,14 @@ describe('workflow > utils', () => {
       abortRunningExecution: vi.fn(),
     };
 
-    await expect(abortExecution(plugin as any, execution as any, { reason: EXECUTION_REASON.TIMEOUT })).resolves.toBe(
-      true,
-    );
+    await expect(
+      abortExecution(plugin as any, execution as any, { reason: EXECUTION_REASON.TIMEOUT, transaction } as any),
+    ).resolves.toBe(true);
 
     expect(transaction.afterCommit).toHaveBeenCalledTimes(1);
-    expect(transaction.commit).toHaveBeenCalledTimes(1);
+    expect(plugin.timeoutManager.clear).not.toHaveBeenCalled();
+    expect(plugin.abortRunningExecution).not.toHaveBeenCalled();
+    afterCommitCallbacks.forEach((callback) => callback());
     expect(plugin.timeoutManager.clear).toHaveBeenCalledWith(execution.id);
     expect(plugin.abortRunningExecution).toHaveBeenCalledWith(execution.id, EXECUTION_REASON.TIMEOUT);
     expect(execution.set).toHaveBeenCalledWith('status', EXECUTION_STATUS.ABORTED);
@@ -81,14 +76,6 @@ describe('workflow > utils', () => {
   });
 
   it('should cascade timeout abort to started child executions', async () => {
-    const transaction = {
-      LOCK: {
-        UPDATE: 'UPDATE',
-      },
-      afterCommit: vi.fn((callback) => callback()),
-      commit: vi.fn(),
-      rollback: vi.fn(),
-    };
     const parent = {
       id: 1,
       workflowId: 1,
@@ -104,6 +91,9 @@ describe('workflow > utils', () => {
       set: vi.fn(),
     };
     const executionRepo = {
+      model: {
+        update: vi.fn().mockResolvedValue([1]),
+      },
       findOne: vi.fn(({ filterByTk }) => {
         if (filterByTk === parent.id) {
           return parent;
@@ -125,7 +115,6 @@ describe('workflow > utils', () => {
       update: vi.fn(),
     };
     const plugin = {
-      useDataSourceTransaction: vi.fn().mockResolvedValue(transaction),
       getLogger: () => ({
         info: vi.fn(),
       }),
@@ -147,33 +136,37 @@ describe('workflow > utils', () => {
       true,
     );
 
-    expect(parent.update).toHaveBeenCalledWith(
+    expect(executionRepo.model.update).toHaveBeenCalledWith(
       {
         status: EXECUTION_STATUS.ABORTED,
         reason: EXECUTION_REASON.TIMEOUT,
       },
-      { transaction },
+      {
+        where: {
+          id: parent.id,
+          status: EXECUTION_STATUS.STARTED,
+        },
+        individualHooks: true,
+      },
     );
-    expect(child.update).toHaveBeenCalledWith(
+    expect(executionRepo.model.update).toHaveBeenCalledWith(
       {
         status: EXECUTION_STATUS.ABORTED,
         reason: EXECUTION_REASON.PARENT_ABORTED,
       },
-      { transaction },
+      {
+        where: {
+          id: child.id,
+          status: EXECUTION_STATUS.STARTED,
+        },
+        individualHooks: true,
+      },
     );
     expect(plugin.timeoutManager.clear).toHaveBeenCalledWith(parent.id);
     expect(plugin.timeoutManager.clear).toHaveBeenCalledWith(child.id);
   });
 
   it('should abort pending jobs when aborting execution', async () => {
-    const transaction = {
-      LOCK: {
-        UPDATE: 'UPDATE',
-      },
-      afterCommit: vi.fn((callback) => callback()),
-      commit: vi.fn(),
-      rollback: vi.fn(),
-    };
     const execution = {
       id: 1,
       workflowId: 1,
@@ -182,6 +175,9 @@ describe('workflow > utils', () => {
       set: vi.fn(),
     };
     const executionRepo = {
+      model: {
+        update: vi.fn().mockResolvedValue([1]),
+      },
       findOne: vi.fn().mockResolvedValue(execution),
       find: vi.fn().mockResolvedValue([]),
     };
@@ -189,7 +185,6 @@ describe('workflow > utils', () => {
       update: vi.fn(),
     };
     const plugin = {
-      useDataSourceTransaction: vi.fn().mockResolvedValue(transaction),
       getLogger: () => ({
         info: vi.fn(),
       }),
@@ -211,6 +206,19 @@ describe('workflow > utils', () => {
       true,
     );
 
+    expect(executionRepo.model.update).toHaveBeenCalledWith(
+      {
+        status: EXECUTION_STATUS.ABORTED,
+        reason: EXECUTION_REASON.TIMEOUT,
+      },
+      {
+        where: {
+          id: execution.id,
+          status: EXECUTION_STATUS.STARTED,
+        },
+        individualHooks: true,
+      },
+    );
     expect(jobRepo.update).toHaveBeenCalledWith({
       values: {
         status: JOB_STATUS.ABORTED,
@@ -220,19 +228,11 @@ describe('workflow > utils', () => {
         status: JOB_STATUS.PENDING,
       },
       individualHooks: false,
-      transaction,
+      transaction: undefined,
     });
   });
 
   it('should abort pending jobs when execution abort reason is not timeout', async () => {
-    const transaction = {
-      LOCK: {
-        UPDATE: 'UPDATE',
-      },
-      afterCommit: vi.fn((callback) => callback()),
-      commit: vi.fn(),
-      rollback: vi.fn(),
-    };
     const execution = {
       id: 1,
       workflowId: 1,
@@ -241,6 +241,9 @@ describe('workflow > utils', () => {
       set: vi.fn(),
     };
     const executionRepo = {
+      model: {
+        update: vi.fn().mockResolvedValue([1]),
+      },
       findOne: vi.fn().mockResolvedValue(execution),
       find: vi.fn().mockResolvedValue([]),
     };
@@ -248,7 +251,6 @@ describe('workflow > utils', () => {
       update: vi.fn(),
     };
     const plugin = {
-      useDataSourceTransaction: vi.fn().mockResolvedValue(transaction),
       getLogger: () => ({
         info: vi.fn(),
       }),
@@ -270,6 +272,19 @@ describe('workflow > utils', () => {
       abortExecution(plugin as any, execution as any, { reason: EXECUTION_REASON.MANUAL_CANCEL }),
     ).resolves.toBe(true);
 
+    expect(executionRepo.model.update).toHaveBeenCalledWith(
+      {
+        status: EXECUTION_STATUS.ABORTED,
+        reason: EXECUTION_REASON.MANUAL_CANCEL,
+      },
+      {
+        where: {
+          id: execution.id,
+          status: EXECUTION_STATUS.STARTED,
+        },
+        individualHooks: true,
+      },
+    );
     expect(jobRepo.update).toHaveBeenCalledWith({
       values: {
         status: JOB_STATUS.ABORTED,
@@ -279,7 +294,7 @@ describe('workflow > utils', () => {
         status: JOB_STATUS.PENDING,
       },
       individualHooks: false,
-      transaction,
+      transaction: undefined,
     });
   });
 });

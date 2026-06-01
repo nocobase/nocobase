@@ -41,7 +41,7 @@ describe('workflow > Processor execution state sync', () => {
       workflowId: 1,
     });
 
-    expect(plugin.timeoutManager.shouldContinue).toHaveBeenCalledWith(execution, { transaction: undefined });
+    expect(plugin.timeoutManager.shouldContinue).toHaveBeenCalledWith(execution);
     expect(instruction).not.toHaveBeenCalled();
     expect(exitSpy).toHaveBeenCalledWith();
     expect(result).toBeNull();
@@ -93,10 +93,9 @@ describe('workflow > Processor execution state sync', () => {
           status: EXECUTION_STATUS.STARTED,
         },
         individualHooks: true,
-        transaction: null,
       },
     );
-    expect(execution.reload).toHaveBeenCalledWith({ transaction: null });
+    expect(execution.reload).toHaveBeenCalledWith();
     expect(plugin.timeoutManager.clear).toHaveBeenCalledWith(execution.id);
     expect(plugin.timeoutManager.invalidateNextExpiresAtIfMatches).toHaveBeenCalledWith(execution.expiresAt);
     expect(plugin.timeoutManager.scheduleExecutionTimeout).not.toHaveBeenCalled();

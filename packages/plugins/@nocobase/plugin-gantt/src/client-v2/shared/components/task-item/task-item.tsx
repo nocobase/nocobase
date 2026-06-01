@@ -44,6 +44,7 @@ export const TaskItem: React.FC<TaskItemProps> = (props) => {
   const textRef = useRef<SVGTextElement>(null);
   const [textWidth, setTextWidth] = useState(0);
   const isProjectBar = task.typeInternal === 'project';
+  const textY = isProjectBar ? task.y - 8 : task.y + taskHeight * 0.5;
   const label =
     isProjectBar && getYmd(task.start) && getYmd(task.end)
       ? t('Task date range', {
@@ -118,8 +119,10 @@ export const TaskItem: React.FC<TaskItemProps> = (props) => {
       {renderTaskItem()}
       <text
         x={isProjectBar ? task.x1 : getX()}
-        y={isProjectBar ? task.y - 8 : isTextInside ? task.y + taskHeight * 0.65 : task.y + taskHeight * 0.65}
+        y={textY}
         className={isProjectBar ? cx('projectLabel') : isTextInside ? cx('barLabel') : cx('barLabelOutside')}
+        textAnchor={isProjectBar ? 'start' : isTextInside ? 'middle' : 'start'}
+        dominantBaseline="central"
         ref={textRef}
       >
         {label}

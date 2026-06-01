@@ -834,7 +834,6 @@ export const GanttBlock = observer(
               {ganttEvent.changedTask && (
                 <Tooltip
                   arrowIndent={arrowIndent}
-                  rowHeight={rowHeight}
                   svgContainerHeight={svgContainerHeight}
                   svgContainerWidth={svgContainerWidth}
                   fontFamily={fontFamily}
