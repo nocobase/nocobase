@@ -59,6 +59,16 @@ function UsersTable() {
       type: 'drawer',
       width: '50%',
       closable: true,
+      styles: {
+        body: {
+          padding: 0,
+        },
+      },
+      inputArgs: {
+        dataSourceKey: 'main',
+        collectionName: 'users',
+        filterByTk: user?.id,
+      },
       content: () => <UserFormDrawer user={user} onSubmitted={refresh} />,
     });
   });
