@@ -51,6 +51,7 @@ export interface DataSourceTypeOptions {
     | DataSourceFieldInterfaceFilterOptions
     | ((context: { collection: Record<string, any> }) => DataSourceFieldInterfaceFilterOptions | undefined);
   disableAddFields?: boolean;
+  disableConfigureFieldsActions?: boolean;
   disableTestConnection?: boolean;
   isFieldInterfaceReadOnly?: (context: DataSourceFieldInterfaceReadOnlyContext) => boolean | undefined;
   normalizeValues?: (values: Record<string, any>) => Record<string, any>;

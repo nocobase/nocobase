@@ -382,6 +382,7 @@ function isAddFieldVisible(options: {
   const plugin = options.ctx.app.pm.get(PluginDataSourceManagerClientV2);
   const dataSourceType = plugin?.getType?.(options.dataSourceType);
   return (
+    !dataSourceType?.disableConfigureFieldsActions &&
     !dataSourceType?.disableAddFields &&
     options.collection.template !== 'sql' &&
     options.fieldInterfaceGroups.length > 0
@@ -1124,6 +1125,7 @@ export default function FieldsPage(props: FieldsPageProps) {
   ]);
 
   const syncFieldsVisible = isSyncFieldsVisible(props.dataSourceKey, props.collection, ctx);
+  const configureFieldsActionsDisabled = Boolean(dataSourceType?.disableConfigureFieldsActions);
   const addFieldVisible = isAddFieldVisible({
     collection: props.collection,
     ctx,
@@ -1131,18 +1133,27 @@ export default function FieldsPage(props: FieldsPageProps) {
     fieldInterfaceGroups,
   });
 
-  const columns = useMemo<ColumnsType<Record<string, any>>>(
-    () => [
+  useEffect(() => {
+    if (configureFieldsActionsDisabled) {
+      setSelectedRowKeys([]);
+    }
+  }, [configureFieldsActionsDisabled]);
+
+  const columns = useMemo<ColumnsType<Record<string, any>>>(() => {
+    const nextColumns: ColumnsType<Record<string, any>> = [
       {
         title: t('Field display name'),
         width: 240,
-        render: (record) => (
-          <EditableFieldDisplayNameCell
-            loading={displayNameLoadingKey === record.name}
-            record={record}
-            onSave={handleFieldDisplayNameSave}
-          />
-        ),
+        render: (record) =>
+          configureFieldsActionsDisabled ? (
+            compileLegacyTemplate(getEditableFieldDisplayName(record), t)
+          ) : (
+            <EditableFieldDisplayNameCell
+              loading={displayNameLoadingKey === record.name}
+              record={record}
+              onSave={handleFieldDisplayNameSave}
+            />
+          ),
       },
       { title: t('Field name'), dataIndex: 'name' },
       { title: t('Field type'), dataIndex: 'type', render: (value) => <Tag>{value}</Tag> },
@@ -1154,6 +1165,7 @@ export default function FieldsPage(props: FieldsPageProps) {
           const currentFieldInterface = value ? fieldInterfacesByName[value] : undefined;
           const optionsGroups = getSelectableFieldInterfaceGroups(allFieldInterfaceGroups, record);
           if (
+            configureFieldsActionsDisabled ||
             (value && !currentFieldInterface) ||
             isReadOnlyFieldInterface(record, {
               collection: props.collection,
@@ -1198,6 +1210,7 @@ export default function FieldsPage(props: FieldsPageProps) {
               <Switch
                 aria-label={`switch-title-field-${record.name}`}
                 size="small"
+                disabled={configureFieldsActionsDisabled}
                 loading={record.name === titleFieldLoadingKey}
                 checked={record.name === (titleField || 'id')}
                 onChange={(checked) => handleTitleFieldChange(record, checked)}
@@ -1206,7 +1219,10 @@ export default function FieldsPage(props: FieldsPageProps) {
           ) : null,
       },
       { title: t('Description'), dataIndex: 'description', ellipsis: true },
-      {
+    ];
+
+    if (!configureFieldsActionsDisabled) {
+      nextColumns.push({
         title: t('Actions'),
         width: 160,
         render: (_, record) => (
@@ -1215,38 +1231,42 @@ export default function FieldsPage(props: FieldsPageProps) {
             <a onClick={() => handleDelete(record.name)}>{t('Delete')}</a>
           </Space>
         ),
-      },
-    ],
-    [
-      allFieldInterfaceGroups,
-      ctx.dataSourceManager,
-      dataSourceType,
-      fieldInterfacesByName,
-      handleDelete,
-      handleFieldDisplayNameSave,
-      handleFieldInterfaceChange,
-      handleTitleFieldChange,
-      openFieldForm,
-      presetFieldInterfaces,
-      props.collection,
-      t,
-      displayNameLoadingKey,
-      titleField,
-      titleFieldLoadingKey,
-    ],
-  );
+      });
+    }
+
+    return nextColumns;
+  }, [
+    allFieldInterfaceGroups,
+    configureFieldsActionsDisabled,
+    ctx.dataSourceManager,
+    dataSourceType,
+    fieldInterfacesByName,
+    handleDelete,
+    handleFieldDisplayNameSave,
+    handleFieldInterfaceChange,
+    handleTitleFieldChange,
+    openFieldForm,
+    presetFieldInterfaces,
+    props.collection,
+    t,
+    displayNameLoadingKey,
+    titleField,
+    titleFieldLoadingKey,
+  ]);
 
   return (
     <>
       <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginBottom: 16 }}>
         <Space>
-          <Button
-            icon={<DeleteOutlined />}
-            disabled={!selectedRowKeys.length}
-            onClick={() => handleDelete(selectedRowKeys)}
-          >
-            {t('Delete')}
-          </Button>
+          {!configureFieldsActionsDisabled ? (
+            <Button
+              icon={<DeleteOutlined />}
+              disabled={!selectedRowKeys.length}
+              onClick={() => handleDelete(selectedRowKeys)}
+            >
+              {t('Delete')}
+            </Button>
+          ) : null}
           {syncFieldsVisible ? (
             <Button icon={<SyncOutlined />} loading={syncFieldsLoading} onClick={handleSyncFields}>
               {t('Sync from database')}
@@ -1267,10 +1287,14 @@ export default function FieldsPage(props: FieldsPageProps) {
         dataSource={request.data || []}
         columns={columns}
         pagination={false}
-        rowSelection={{
-          selectedRowKeys,
-          onChange: setSelectedRowKeys,
-        }}
+        rowSelection={
+          configureFieldsActionsDisabled
+            ? undefined
+            : {
+                selectedRowKeys,
+                onChange: setSelectedRowKeys,
+              }
+        }
       />
     </>
   );

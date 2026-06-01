@@ -80,6 +80,7 @@ export class PluginMyDataSourceClientV2 extends Plugin {
 - `SettingsForm`：当前数据源类型自己的配置表单，使用原生 Ant Design `Form.Item`。字段值会和基础字段一起提交给 `dataSources:create/update`。
 - `disableTestConnection`：隐藏 “Test Connection” 按钮。
 - `disableAddFields`：给后续管理逻辑识别是否允许添加字段。
+- `disableConfigureFieldsActions`：统一禁用 `Configure fields` 中的字段变更动作。启用后只展示字段列表，隐藏新增、编辑、删除，禁止快速修改字段显示名、切换 Interface 和修改 title field。
 - `createFieldInterfaces`：限制该数据源在 “Add field” 中可创建的字段 Interface，避免外部数据源暴露不支持的字段类型。
 - `normalizeValues`：提交、连接测试前统一整理表单值，适合处理端口数字化、SSL 结构兼容、空值清理等数据源特有逻辑。
 - `isFieldInterfaceReadOnly`：可选扩展点，用于让数据源控制某个字段的 `Field interface` 是否只读。没有特殊规则时不需要实现。
@@ -143,6 +144,27 @@ dataSourceManagerPlugin.registerType('external-postgres', {
 ```
 
 `createFieldInterfaces` 只影响创建字段入口；已有字段列表中的 Interface 识别和编辑仍会走字段 Interface 注册信息、模板限制和字段本身的类型兼容规则。
+
+### 只读展示 Configure fields
+
+如果某个外部数据源的表和字段完全由远端 schema 同步，不允许用户在 NocoBase 中变更字段配置，可以使用 `disableConfigureFieldsActions`：
+
+```tsx
+dataSourceManagerPlugin.registerType('external-postgres', {
+  disableConfigureFieldsActions: true,
+});
+```
+
+启用后，`Configure fields` 只保留字段展示和同步入口：
+
+- 隐藏 `Add field` 和批量 `Delete`。
+- 隐藏每行 `Edit` / `Delete` 操作。
+- `Field display name` 以文本展示，不触发快速编辑保存。
+- `Field interface` 以标签展示，不允许切换。
+- `Title field` 只读展示，不允许切换。
+- 不显示表格行选择框。
+
+如果只想限制新增字段，但仍允许编辑已有字段，继续使用 `disableAddFields`。
 
 ### 字段 Interface 只读规则
 
