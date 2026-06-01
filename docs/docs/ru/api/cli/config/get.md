@@ -18,14 +18,17 @@ nb config get <key>
 
 | Параметр | Тип | Описание |
 | --- | --- | --- |
-| `<key>` | string | Ключ конфигурации: `license.pkg-url`, `docker.network` или `docker.container-prefix` |
+| `<key>` | string | Ключ конфигурации: `locale`, `update.policy`, `license.pkg-url`, `docker.network`, `docker.container-prefix`, `bin.docker`, `bin.git` или `bin.yarn` |
 
 ## Примеры
 
 ```bash
+nb config get locale
+nb config get update.policy
 nb config get license.pkg-url
 nb config get docker.network
 nb config get docker.container-prefix
+nb config get bin.git
 ```
 
 ## Связанные команды
