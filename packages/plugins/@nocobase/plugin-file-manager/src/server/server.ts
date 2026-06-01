@@ -20,7 +20,7 @@ import initActions from './actions';
 import { AttachmentInterface } from './interfaces/attachment-interface';
 import { AttachmentModel, GetFileStreamOptions, StorageClassType, StorageModel } from './storages';
 import StorageTypeAliOss from './storages/ali-oss';
-import StorageTypeLocal from './storages/local';
+import StorageTypeLocal, { validateLocalStorageConfig } from './storages/local';
 import StorageTypeS3 from './storages/s3';
 import StorageTypeTxCos from './storages/tx-cos';
 import { encodeURL } from './utils';
@@ -232,6 +232,9 @@ export class PluginFileManagerServer extends Plugin {
     this.storageTypes.register(STORAGE_TYPE_TX_COS, StorageTypeTxCos);
 
     const Storage = this.db.getModel('storages');
+    Storage.beforeSave((m) => {
+      validateLocalStorageConfig(m.toJSON());
+    });
     Storage.afterSave(async (m, { transaction }) => {
       await this.loadStorages({ transaction });
       this.sendSyncMessage({ type: 'reloadStorages' }, { transaction });
