@@ -7,10 +7,26 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import type { Application } from '@nocobase/client-v2';
 import { Plugin } from '@nocobase/client-v2';
 
-export class PluginUiLayoutClientV2 extends Plugin {
-  async load() {}
+export class PluginUiLayoutClientV2 extends Plugin<Record<string, never>, Application> {
+  async load() {
+    const title = this.t('UI layout') as unknown as string;
+
+    this.pluginSettingsManager.addMenuItem({
+      key: 'ui-layout',
+      title,
+      icon: 'LayoutOutlined',
+    });
+
+    this.pluginSettingsManager.addPageTabItem({
+      menuKey: 'ui-layout',
+      key: 'index',
+      title,
+      componentLoader: () => import('./pages/UiLayoutsPage'),
+    });
+  }
 }
 
 export default PluginUiLayoutClientV2;

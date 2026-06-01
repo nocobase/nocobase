@@ -1,1 +1,23 @@
-{}
+{
+  "Actions": "Actions",
+  "Add UI layout": "Add UI layout",
+  "Are you sure you want to delete it?": "Are you sure you want to delete it?",
+  "Are you sure you want to delete the selected UI layouts?": "Are you sure you want to delete the selected UI layouts?",
+  "Auth check": "Auth check",
+  "Cancel": "Cancel",
+  "Delete": "Delete",
+  "Delete UI layout": "Delete UI layout",
+  "Delete UI layouts": "Delete UI layouts",
+  "Edit": "Edit",
+  "Edit UI layout": "Edit UI layout",
+  "Enabled": "Enabled",
+  "No": "No",
+  "Refresh": "Refresh",
+  "Route name": "Route name",
+  "Route path": "Route path",
+  "Submit": "Submit",
+  "The field value is required": "The field value is required",
+  "UID": "UID",
+  "UI layout": "UI layout",
+  "Yes": "Yes"
+}

@@ -1,1 +1,23 @@
-{}
+{
+  "Actions": "操作",
+  "Add UI layout": "新增 UI 布局",
+  "Are you sure you want to delete it?": "确定要删除吗？",
+  "Are you sure you want to delete the selected UI layouts?": "确定要删除选中的 UI 布局吗？",
+  "Auth check": "认证校验",
+  "Cancel": "取消",
+  "Delete": "删除",
+  "Delete UI layout": "删除 UI 布局",
+  "Delete UI layouts": "删除 UI 布局",
+  "Edit": "编辑",
+  "Edit UI layout": "编辑 UI 布局",
+  "Enabled": "启用",
+  "No": "否",
+  "Refresh": "刷新",
+  "Route name": "路由名称",
+  "Route path": "路由路径",
+  "Submit": "提交",
+  "The field value is required": "该字段为必填项",
+  "UID": "UID",
+  "UI layout": "UI 布局",
+  "Yes": "是"
+}
