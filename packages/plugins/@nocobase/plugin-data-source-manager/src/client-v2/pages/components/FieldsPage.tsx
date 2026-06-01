@@ -32,6 +32,7 @@ import type { ColumnsType } from 'antd/es/table';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useT } from '../../locale';
 import { PluginDataSourceManagerClientV2 } from '../../plugin';
+import type { DataSourceTypeOptions } from '../../plugin';
 import { compileLegacyTemplate } from '../../utils/compileLegacyTemplate';
 import { getCollectionFieldActionUrl } from './collectionFieldApi';
 import {
@@ -116,10 +117,6 @@ const fallbackFieldInterfaceGroups: Record<string, { label: string; order: numbe
   others: { label: 'Others', order: 800 },
 };
 
-const readOnlyRelationInterfaces = new Set(['obo', 'oho', 'o2m', 'm2o', 'm2m', 'o2o']);
-
-const readOnlyPresetFieldInterfaces = new Set(['snowflakeId', 'createdAt', 'createdBy', 'updatedAt', 'updatedBy']);
-
 function getFieldInterfaces(ctx: any, dataSourceType?: string) {
   const manager = ctx.dataSourceManager.collectionFieldInterfaceManager;
   return (manager?.getFieldInterfaces?.(dataSourceType) || []) as FieldInterfaceOption[];
@@ -195,6 +192,41 @@ function filterCreateFieldInterfaces(groups: FieldInterfaceGroupOption[], collec
     .filter((group) => group.children.length);
 }
 
+function filterCreateFieldInterfacesByDataSource(
+  groups: FieldInterfaceGroupOption[],
+  dataSourceType: DataSourceTypeOptions | undefined,
+  collection: Record<string, any>,
+) {
+  const filter =
+    typeof dataSourceType?.createFieldInterfaces === 'function'
+      ? dataSourceType.createFieldInterfaces({ collection })
+      : dataSourceType?.createFieldInterfaces;
+  if (!filter) {
+    return groups;
+  }
+  const includedGroups = filter.groups?.length ? new Set(filter.groups) : null;
+  const includedInterfaces = filter.include?.length ? new Set(filter.include) : null;
+  const excludedInterfaces = filter.exclude?.length ? new Set(filter.exclude) : null;
+
+  return groups
+    .map((group) => ({
+      ...group,
+      children:
+        includedGroups && !includedGroups.has(group.key)
+          ? []
+          : group.children.filter((fieldInterface) => {
+              if (includedInterfaces && !includedInterfaces.has(fieldInterface.name)) {
+                return false;
+              }
+              if (excludedInterfaces?.has(fieldInterface.name)) {
+                return false;
+              }
+              return true;
+            }),
+    }))
+    .filter((group) => group.children.length);
+}
+
 function isFieldInterfaceCompatible(fieldInterface: FieldInterfaceOption, field: Record<string, any>) {
   if (fieldInterface.name === field.interface) {
     return true;
@@ -218,6 +250,18 @@ function getSelectableFieldInterfaceGroups(groups: FieldInterfaceGroupOption[], 
 
 function getFieldInterfaceLabel(fieldInterface?: FieldInterfaceOption, fallback?: React.ReactNode) {
   return fieldInterface?.title || fieldInterface?.label || fallback || fieldInterface?.name;
+}
+
+function getCollectionPresetFieldInterfaces(ctx: any) {
+  const plugin = ctx.app.pm.get(PluginDataSourceManagerClientV2);
+  const presetFields = plugin?.getCollectionPresetFields?.() || [];
+  return presetFields.reduce<Set<string>>((memo, presetField) => {
+    const fieldInterface = presetField.value?.interface || presetField.value?.name;
+    if (fieldInterface) {
+      memo.add(fieldInterface);
+    }
+    return memo;
+  }, new Set());
 }
 
 function getEditableFieldDisplayName(record: Record<string, any>) {
@@ -260,13 +304,28 @@ function EditableFieldDisplayNameCell(props: {
   );
 }
 
-function isReadOnlyFieldInterface(record: Record<string, any>, currentFieldInterface?: FieldInterfaceOption) {
-  return (
+function isReadOnlyFieldInterface(
+  record: Record<string, any>,
+  options: {
+    collection: Record<string, any>;
+    currentFieldInterface?: FieldInterfaceOption;
+    dataSourceType?: DataSourceTypeOptions;
+    presetFieldInterfaces: Set<string>;
+  },
+) {
+  const dataSourceReadOnly = options.dataSourceType?.isFieldInterfaceReadOnly?.({
+    collection: options.collection,
+    field: record,
+    fieldInterface: options.currentFieldInterface,
+  });
+  if (typeof dataSourceReadOnly === 'boolean') {
+    return dataSourceReadOnly;
+  }
+  return Boolean(
     record.source ||
-    readOnlyRelationInterfaces.has(record.interface) ||
-    readOnlyPresetFieldInterfaces.has(record.interface) ||
-    currentFieldInterface?.isAssociation ||
-    currentFieldInterface?.group === 'systemInfo'
+      options.currentFieldInterface?.isAssociation ||
+      options.currentFieldInterface?.group === 'systemInfo' ||
+      options.presetFieldInterfaces.has(record.interface),
   );
 }
 
@@ -808,6 +867,7 @@ export default function FieldsPage(props: FieldsPageProps) {
   }, [props.collection.titleField]);
 
   const dataSource = ctx.dataSourceManager.getDataSource(props.dataSourceKey);
+  const dataSourceType = ctx.app.pm.get(PluginDataSourceManagerClientV2)?.getType?.(dataSource?.options?.type);
   const databaseDialect = getAppInfoDatabaseDialect(appInfo);
   const allFieldInterfaceGroups = useMemo(
     () => getFieldInterfaceOptions(ctx, dataSource?.options?.type),
@@ -815,12 +875,16 @@ export default function FieldsPage(props: FieldsPageProps) {
   );
   const fieldInterfaceGroups = useMemo(
     () =>
-      filterCreateFieldInterfaces(
-        filterFieldInterfaceGroupsByTemplate(allFieldInterfaceGroups, props.collection, ctx, databaseDialect),
+      filterCreateFieldInterfacesByDataSource(
+        filterCreateFieldInterfaces(
+          filterFieldInterfaceGroupsByTemplate(allFieldInterfaceGroups, props.collection, ctx, databaseDialect),
+          props.collection,
+          ctx,
+        ),
+        dataSourceType,
         props.collection,
-        ctx,
       ),
-    [allFieldInterfaceGroups, databaseDialect, ctx, props.collection],
+    [allFieldInterfaceGroups, databaseDialect, ctx, dataSourceType, props.collection],
   );
   const fieldInterfacesByName = useMemo(() => {
     return filterFieldInterfacesByTemplate(
@@ -833,6 +897,7 @@ export default function FieldsPage(props: FieldsPageProps) {
       return memo;
     }, {});
   }, [databaseDialect, ctx, dataSource?.options?.type, props.collection]);
+  const presetFieldInterfaces = useMemo(() => getCollectionPresetFieldInterfaces(ctx), [ctx]);
 
   const openFieldForm = useCallback(
     (mode: 'create' | 'edit', field?: Record<string, any>, interfaceName?: string) => {
@@ -1090,7 +1155,12 @@ export default function FieldsPage(props: FieldsPageProps) {
           const optionsGroups = getSelectableFieldInterfaceGroups(allFieldInterfaceGroups, record);
           if (
             (value && !currentFieldInterface) ||
-            isReadOnlyFieldInterface(record, currentFieldInterface) ||
+            isReadOnlyFieldInterface(record, {
+              collection: props.collection,
+              currentFieldInterface,
+              dataSourceType,
+              presetFieldInterfaces,
+            }) ||
             !optionsGroups.length
           ) {
             return <Tag>{compileLegacyTemplate(getFieldInterfaceLabel(currentFieldInterface, value), t) || value}</Tag>;
@@ -1150,12 +1220,15 @@ export default function FieldsPage(props: FieldsPageProps) {
     [
       allFieldInterfaceGroups,
       ctx.dataSourceManager,
+      dataSourceType,
       fieldInterfacesByName,
       handleDelete,
       handleFieldDisplayNameSave,
       handleFieldInterfaceChange,
       handleTitleFieldChange,
       openFieldForm,
+      presetFieldInterfaces,
+      props.collection,
       t,
       displayNameLoadingKey,
       titleField,
