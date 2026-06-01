@@ -148,7 +148,7 @@ export class FlowSurfaceContractGuard {
       if (typeof on === 'string' && !allowedDirectEvents.has(eventName)) {
         throwBadRequest(`flowSurfaces flow '${key}' event '${eventName}' is not allowed on '${node?.use}'`);
       }
-      if (typeof on !== 'string' && !allowedObjectEvents.has(eventName)) {
+      if (typeof on !== 'string' && !allowedObjectEvents.has(eventName) && !allowedDirectEvents.has(eventName)) {
         throwBadRequest(`flowSurfaces flow '${key}' event '${eventName}' is not allowed on '${node?.use}'`);
       }
       const phase = onObj?.phase;

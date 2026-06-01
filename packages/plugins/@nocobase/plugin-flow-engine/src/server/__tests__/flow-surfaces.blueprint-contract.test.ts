@@ -642,6 +642,40 @@ describe('flowSurfaces applyBlueprint contract', () => {
     expect(data.surface.target.locator.pageSchemaUid).toBe(data.target.pageSchemaUid);
   });
 
+  it('should force single-tab applyBlueprint pages to hidden-tab mode even when enableTabs is explicit true', async () => {
+    const executeRes = await rootAgent.resource('flowSurfaces').applyBlueprint({
+      values: {
+        mode: 'create',
+        page: {
+          title: 'Single tab explicit tabs page',
+          enableTabs: true,
+        },
+        tabs: [
+          {
+            title: 'Overview',
+            blocks: [
+              {
+                key: 'employeesTable',
+                type: 'table',
+                collection: 'employees',
+                fields: ['nickname'],
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(executeRes.status, readErrorMessage(executeRes)).toBe(200);
+    const data = getData(executeRes);
+    const tabs = getRouteBackedTabs(data.surface);
+    expect(tabs).toHaveLength(1);
+    expect(data.surface.pageRoute.enableTabs).toBe(false);
+    expect(data.surface.tree.props.enableTabs).toBe(false);
+    expect(data.surface.tree.stepParams?.pageSettings?.general?.enableTabs).toBe(false);
+    expect(tabs[0]?.props?.route?.hidden).toBe(true);
+  });
+
   it('should reject object-shaped applyBlueprint script payloads instead of keeping the default JS block code', async () => {
     const cases = [
       {
@@ -8841,7 +8875,7 @@ describe('flowSurfaces applyBlueprint contract', () => {
     );
   });
 
-  it('should keep page enableTabs unchanged in replace mode when page.enableTabs is omitted', async () => {
+  it('should force replace into hidden-tab mode when the final blueprint has one tab', async () => {
     const page = await createPage(rootAgent, {
       title: 'Preserve enableTabs',
       tabTitle: 'Legacy overview',
@@ -8887,7 +8921,51 @@ describe('flowSurfaces applyBlueprint contract', () => {
     expect(executeRes.status).toBe(200);
     const data = getData(executeRes);
     expect(getRouteBackedTabs(data.surface)).toHaveLength(1);
-    expect(data.surface.pageRoute.enableTabs).toBe(true);
+    expect(data.surface.pageRoute.enableTabs).toBe(false);
+    expect(data.surface.tree.props.enableTabs).toBe(false);
+    expect(data.surface.tree.stepParams?.pageSettings?.general?.enableTabs).toBe(false);
+    expect(getRouteBackedTabs(data.surface)[0]?.props?.route?.hidden).toBe(true);
+  });
+
+  it('should force replace single-tab payloads to hidden-tab mode even when enableTabs is explicit true', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Single explicit replace page',
+      tabTitle: 'Legacy overview',
+      enableTabs: true,
+    });
+
+    const executeRes = await rootAgent.resource('flowSurfaces').applyBlueprint({
+      values: {
+        version: '1',
+        mode: 'replace',
+        target: {
+          pageSchemaUid: page.pageSchemaUid,
+        },
+        page: {
+          enableTabs: true,
+        },
+        tabs: [
+          {
+            key: 'overview',
+            title: 'Overview',
+            blocks: [
+              {
+                key: 'employeesTable',
+                type: 'table',
+                collection: 'employees',
+                fields: ['nickname'],
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(executeRes.status).toBe(200);
+    const data = getData(executeRes);
+    expect(getRouteBackedTabs(data.surface)).toHaveLength(1);
+    expect(data.surface.pageRoute.enableTabs).toBe(false);
+    expect(getRouteBackedTabs(data.surface)[0]?.props?.route?.hidden).toBe(true);
   });
 
   it('should rewrite existing route-backed tab slots by index without requiring tab keys', async () => {
