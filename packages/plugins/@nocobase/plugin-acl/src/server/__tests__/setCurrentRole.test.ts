@@ -11,6 +11,8 @@ import Database from '@nocobase/database';
 import UsersPlugin from '@nocobase/plugin-users';
 import { createMockServer, MockServer } from '@nocobase/test';
 import { vi } from 'vitest';
+import { UNION_ROLE_KEY } from '../constants';
+import { SystemRoleMode } from '../enum';
 import { setCurrentRole } from '../middlewares/setCurrentRole';
 import { prepareApp } from './prepare';
 
@@ -65,6 +67,45 @@ describe('role', () => {
     };
     await setCurrentRole(ctx, () => {});
     expect(ctx.state.currentRole).toBe('root');
+  });
+
+  it('should keep all roles when the default role is union and X-Role is empty', async () => {
+    await db.getRepository('roles').create({
+      values: {
+        name: 'r1',
+      },
+    });
+    const user = await db.getRepository('users').create({
+      values: {
+        name: 'u1',
+        roles: ['member', 'r1'],
+      },
+    });
+    await db.getRepository('systemSettings').update({
+      filter: { id: 1 },
+      values: {
+        roleMode: SystemRoleMode.allowUseUnion,
+      },
+    });
+    await db.getRepository('rolesUsers').create({
+      values: {
+        userId: user.id,
+        roleName: UNION_ROLE_KEY,
+        default: true,
+      },
+    });
+    ctx.state.currentUser = user;
+    ctx.get = function (name) {
+      if (name === 'X-Role') {
+        return '';
+      }
+    };
+
+    await setCurrentRole(ctx, () => {});
+
+    expect(ctx.state.currentRole).toBe(UNION_ROLE_KEY);
+    expect(ctx.state.currentRoles).toEqual(expect.arrayContaining(['member', 'r1']));
+    expect(ctx.state.currentRoles).toHaveLength(2);
   });
 
   it('should throw error', async () => {
