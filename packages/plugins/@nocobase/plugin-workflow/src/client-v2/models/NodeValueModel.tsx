@@ -7,8 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { BlockModel } from '@nocobase/client';
+import { BlockModel } from '@nocobase/client-v2';
 import { parse } from '@nocobase/utils/client';
+import { css } from '@emotion/css';
 import React from 'react';
 
 export class NodeValueModel extends BlockModel {
@@ -48,9 +49,9 @@ function Result({ dataSource, execution, defaultValue }) {
 
   return (
     <pre
-      style={{
-        margin: 0,
-      }}
+      className={css`
+        margin: 0;
+      `}
     >
       {JSON.stringify(result, null, 2)}
     </pre>

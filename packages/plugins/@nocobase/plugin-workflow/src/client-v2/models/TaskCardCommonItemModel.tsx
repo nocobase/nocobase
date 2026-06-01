@@ -7,9 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { DetailsCustomItemModel } from '@nocobase/client';
-import { FlowModelContext, ModelRenderMode, SubModelItem, tExpr } from '@nocobase/flow-engine';
+import { DetailsCustomItemModel } from '@nocobase/client-v2';
+import { FlowModelContext, ModelRenderMode, SubModelItem } from '@nocobase/flow-engine';
 import _ from 'lodash';
+import { tExpr } from '../locale';
 
 export class TaskCardCommonItemModel extends DetailsCustomItemModel {
   static renderMode: ModelRenderMode = ModelRenderMode.RenderFunction;

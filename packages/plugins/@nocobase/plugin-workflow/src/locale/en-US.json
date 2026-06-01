@@ -283,5 +283,7 @@
   "Click a paste button to place": "Click a paste button to place",
   "Confirm paste": "Confirm paste",
   "This action will remove invalid variable references, otherwise the workflow cannot run correctly.": "This action will remove invalid variable references, otherwise the workflow cannot run correctly.",
-  "Failed to paste node": "Failed to paste node"
+  "Failed to paste node": "Failed to paste node",
+  "Search by title": "Search by title",
+  "Available in the classic UI for now": "Available in the classic UI for now"
 }

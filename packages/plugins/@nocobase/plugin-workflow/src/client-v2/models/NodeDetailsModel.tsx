@@ -7,17 +7,17 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { BlockGridModel, CollectionBlockModel, DetailsGridModel, FormComponent } from '@nocobase/client';
+import { BlockGridModel, CollectionBlockModel, DetailsGridModel, FormComponent } from '@nocobase/client-v2';
 import {
   createCurrentRecordMetaFactory,
   createRecordResolveOnServerWithLocal,
   FlowModelRenderer,
   PropertyMetaFactory,
   SingleRecordResource,
-  tExpr,
 } from '@nocobase/flow-engine';
 import { get, noop } from 'lodash';
 import React from 'react';
+import { tExpr } from '../locale';
 
 export class NodeDetailsModel extends CollectionBlockModel<{
   parent?: BlockGridModel;

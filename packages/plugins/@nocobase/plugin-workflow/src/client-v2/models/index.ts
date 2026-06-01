@@ -8,5 +8,6 @@
  */
 
 export { NodeDetailsModel } from './NodeDetailsModel';
+export { NodeDetailsGridModel } from './NodeDetailsGridModel';
 export { NodeValueModel } from './NodeValueModel';
 export { TaskCardCommonItemModel } from './TaskCardCommonItemModel';

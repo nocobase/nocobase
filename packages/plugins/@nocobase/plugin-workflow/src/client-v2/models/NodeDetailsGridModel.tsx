@@ -8,7 +8,7 @@
  */
 
 import { SettingOutlined } from '@ant-design/icons';
-import { DetailsGridModel } from '@nocobase/client';
+import { DetailsGridModel } from '@nocobase/client-v2';
 import { AddSubModelButton, FlowSettingsButton } from '@nocobase/flow-engine';
 import React from 'react';
 

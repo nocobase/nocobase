@@ -49,7 +49,7 @@ import { WorkflowCollectionsProvider } from './WorkflowCollectionsProvider';
 import { Tooltip } from 'antd';
 import React from 'react';
 import { QuestionCircleOutlined } from '@ant-design/icons';
-import { NodeDetailsModel, NodeValueModel, TaskCardCommonItemModel } from './models';
+import { NodeDetailsModel, NodeValueModel, TaskCardCommonItemModel } from '../client-v2/models';
 import { Collection } from '@nocobase/flow-engine';
 import workflows from '../common/collections/workflows';
 import flow_nodes from '../common/collections/flow_nodes';
@@ -57,7 +57,7 @@ import executions from '../common/collections/executions';
 import workflowCategories from '../common/collections/workflowCategories';
 import workflowStats from '../common/collections/workflowStats';
 import workflowVersionStats from '../common/collections/workflowVersionStats';
-import { NodeDetailsGridModel } from './models/NodeDetailsGridModel';
+import { NodeDetailsGridModel } from '../client-v2/models/NodeDetailsGridModel';
 
 const workflowConfigSettings = {
   Component: BindWorkflowConfig,

@@ -36,6 +36,7 @@
   "peerDependencies": {
     "@nocobase/actions": "2.x",
     "@nocobase/client": "2.x",
+    "@nocobase/client-v2": "2.x",
     "@nocobase/database": "2.x",
     "@nocobase/evaluators": "2.x",
     "@nocobase/logger": "2.x",
