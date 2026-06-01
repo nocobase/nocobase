@@ -12,7 +12,7 @@ import { useRequest } from 'ahooks';
 import { Breadcrumb, Select, Space, Spin, Tag } from 'antd';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { NAMESPACE, useT } from '../locale';
+import { DATA_SOURCE_MANAGER_SETTINGS_KEY, useT } from '../locale';
 import { compileLegacyTemplate } from '../utils/compileLegacyTemplate';
 import CollectionsPage from './components/CollectionsPage';
 
@@ -48,8 +48,8 @@ function statusTag(t: (key: string) => string, value?: string) {
 export default function DataSourceCollectionsPage() {
   const t = useT();
   const ctx = useFlowContext();
-  const params = useParams<{ dataSourceKey?: string }>();
-  const routeDataSourceKey = decodeRouteParam(params.dataSourceKey);
+  const params = useParams<{ name?: string; dataSourceKey?: string }>();
+  const routeDataSourceKey = decodeRouteParam(params.name || params.dataSourceKey);
   const [dataSourceKey, setDataSourceKey] = useState<string>('main');
   const currentDataSourceKey = routeDataSourceKey || dataSourceKey;
   const request = useRequest(async () => {
@@ -67,7 +67,7 @@ export default function DataSourceCollectionsPage() {
     [t],
   );
   const dataSourcesPath = useMemo(
-    () => ctx.app.pluginSettingsManager.getRoutePath(`${NAMESPACE}.index`),
+    () => ctx.app.pluginSettingsManager.getRoutePath(`${DATA_SOURCE_MANAGER_SETTINGS_KEY}.list`),
     [ctx.app.pluginSettingsManager],
   );
   const handleBackToDataSources = useCallback(() => {

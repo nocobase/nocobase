@@ -8,15 +8,19 @@
  */
 
 import { EditOutlined, RightSquareOutlined } from '@ant-design/icons';
+import { DrawerFormLayout } from '@nocobase/client-v2';
 import { randomId, useFlowContext } from '@nocobase/flow-engine';
+import type {
+  CollectionTemplateConfigureItemProps,
+  CollectionTemplateSyncFieldsProps,
+} from '@nocobase/plugin-data-source-manager/client-v2';
 import { useRequest } from 'ahooks';
-import { Alert, Button, Cascader, Form, Input, Select, Spin, Table, Tag } from 'antd';
+import { Alert, App, Button, Cascader, Form, Input, Select, Space, Spin, Table, Tag } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import dayjs from 'dayjs';
 import { get } from 'lodash';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import type { CollectionTemplateConfigureItemProps } from '../../plugin';
-import { compileLegacyTemplate } from '../../utils/compileLegacyTemplate';
+import { compileLegacyTemplate } from '@nocobase/plugin-data-source-manager/client-v2';
 
 export type SqlPreviewField = {
   collection?: string;
@@ -247,6 +251,27 @@ function getSqlFieldInterfaceOptions(groups: ReturnType<typeof getFieldInterface
     .filter((group) => group.options.length);
 }
 
+function getSqlSyncErrorMessage(error: unknown, fallback: string) {
+  const typedError = error as
+    | {
+        message?: string;
+        response?: {
+          data?: {
+            errors?: Array<{ message?: string }>;
+          };
+        };
+      }
+    | undefined;
+  return (
+    typedError?.response?.data?.errors
+      ?.map((item) => item.message)
+      .filter(Boolean)
+      .join('\n') ||
+    typedError?.message ||
+    fallback
+  );
+}
+
 export function buildSqlFieldsFromPreview(options: {
   currentFields?: SqlFieldRecord[];
   manager?: FieldInterfaceManager;
@@ -339,7 +364,7 @@ function SqlStatementControl(props: {
           onChange?.(event.target.value);
         }}
       />
-      <Button.Group>
+      <Space size={8} style={{ marginTop: 4 }}>
         <Button
           ghost
           icon={<EditOutlined />}
@@ -353,7 +378,7 @@ function SqlStatementControl(props: {
         <Button ghost icon={<RightSquareOutlined />} loading={loading} size="small" type="primary" onClick={onExecute}>
           {t('Execute')}
         </Button>
-      </Button.Group>
+      </Space>
     </div>
   );
 }
@@ -790,4 +815,103 @@ export function normalizeSqlCollectionSubmitValues(values: Record<string, unknow
 
 export function getSqlPreviewInternalName() {
   return internalPreviewName;
+}
+
+export function SqlSyncFieldsDrawer(props: CollectionTemplateSyncFieldsProps) {
+  const ctx = useFlowContext();
+  const t = ctx.t;
+  const { message } = App.useApp();
+  const [form] = Form.useForm();
+  const [submitting, setSubmitting] = useState(false);
+  const previewName = getSqlPreviewInternalName();
+
+  useEffect(() => {
+    form.setFieldsValue(props.collection);
+  }, [form, props.collection]);
+
+  useEffect(() => {
+    let ignore = false;
+
+    const loadPreview = async () => {
+      const sql = props.collection.sql;
+      if (!sql) {
+        return;
+      }
+
+      try {
+        const response = await ctx.api.resource('sqlCollection').execute({
+          values: {
+            sql,
+          },
+        });
+        if (ignore) {
+          return;
+        }
+        const preview = normalizeSqlPreviewResult(response);
+        const currentSources = props.collection.sources || [];
+        const currentFields = props.collection.fields || [];
+        form.setFieldsValue({
+          sources: Array.from(
+            new Set([
+              ...(Array.isArray(currentSources) ? currentSources : []),
+              ...(Array.isArray(preview.sources) ? preview.sources : []),
+            ]),
+          ),
+          fields: buildSqlFieldsFromPreview({
+            currentFields: Array.isArray(currentFields) ? currentFields : [],
+            manager: ctx.dataSourceManager.collectionFieldInterfaceManager,
+            preview,
+          }),
+          [previewName]: preview,
+        });
+      } catch (error) {
+        if (!ignore) {
+          form.setFieldValue(previewName, {
+            error: getSqlSyncErrorMessage(error, t('SQL error')),
+          });
+        }
+      }
+    };
+
+    loadPreview();
+
+    return () => {
+      ignore = true;
+    };
+  }, [ctx.api, ctx.dataSourceManager.collectionFieldInterfaceManager, form, previewName, props.collection, t]);
+
+  const handleSubmit = useCallback(async () => {
+    const values = await form.validateFields();
+    setSubmitting(true);
+    try {
+      await ctx.api.resource('sqlCollection').setFields({
+        filterByTk: props.collection.name,
+        values: {
+          fields: values.fields,
+          sources: values.sources,
+        },
+      });
+      await ctx.dataSourceManager.getDataSource(props.dataSourceKey)?.reload();
+      props.onSubmitted();
+      message.success(t('Sync successfully'));
+    } finally {
+      setSubmitting(false);
+    }
+  }, [ctx.api, ctx.dataSourceManager, form, message, props, t]);
+
+  return (
+    <DrawerFormLayout
+      title={t('Sync from database')}
+      submitting={submitting}
+      submitText={t('Submit')}
+      cancelText={t('Cancel')}
+      onSubmit={handleSubmit}
+    >
+      <Form form={form} layout="vertical" initialValues={props.collection}>
+        <SqlSourceCollectionsConfigureItem form={form} mode="edit" template={{ title: '', name: 'sql' }} item={{}} />
+        <SqlFieldsConfigureItem form={form} mode="edit" template={{ title: '', name: 'sql' }} item={{}} />
+        <SqlPreviewConfigureItem form={form} mode="edit" template={{ title: '', name: 'sql' }} item={{}} />
+      </Form>
+    </DrawerFormLayout>
+  );
 }
