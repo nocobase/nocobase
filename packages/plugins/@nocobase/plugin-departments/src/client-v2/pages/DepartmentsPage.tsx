@@ -15,7 +15,6 @@ import {
   PlusOutlined,
   ReloadOutlined,
   SearchOutlined,
-  SettingOutlined,
   TeamOutlined,
   UserAddOutlined,
   UserDeleteOutlined,
@@ -372,26 +371,33 @@ function DepartmentPickerForm(props: {
   onSubmitted: (departments: DepartmentRecord[]) => Promise<void> | void;
 }) {
   const t = useT();
+  const ctx = useFlowContext();
   const { token } = theme.useToken();
+  const departmentsCollection = ctx.dataSourceManager?.getDataSource('main')?.getCollection('departments');
   const [selectedKeys, setSelectedKeys] = useState<React.Key[]>([]);
   const [selectedDepartments, setSelectedDepartments] = useState<DepartmentRecord[]>([]);
-  const [filterInput, setFilterInput] = useState('');
-  const [filterKeyword, setFilterKeyword] = useState('');
+  const [filter, setFilter] = useState<CompiledFilter>();
   const [submitting, setSubmitting] = useState(false);
 
-  const filteredDepartments = useMemo(() => {
-    const value = filterKeyword.trim().toLowerCase();
-    if (!value) {
-      return buildDepartmentTree(props.departments);
-    }
+  const departmentsRequest = useRequest(
+    async () => {
+      if (!filter) {
+        return buildDepartmentTree(props.departments);
+      }
 
-    return props.departments
-      .filter((department) => getDepartmentTitle(department).toLowerCase().includes(value))
-      .map((department) => ({
+      const response = await getResource(ctx.api, 'departments').list({
+        appends: ['parent(recursively=true)'],
+        filter,
+        paginate: false,
+        sort: ['sort'],
+      });
+      return extractList<DepartmentRecord>(response).map((department) => ({
         ...department,
         title: getDepartmentTitle(department),
       }));
-  }, [filterKeyword, props.departments]);
+    },
+    { refreshDeps: [filter, props.departments] },
+  );
 
   const columns = useMemo<ColumnsType<DepartmentRecord>>(
     () => [
@@ -421,26 +427,14 @@ function DepartmentPickerForm(props: {
       cancelText={t('Cancel')}
     >
       <Space direction="vertical" style={{ width: '100%' }}>
-        <Input.Search
-          allowClear
-          prefix={<SearchOutlined />}
-          value={filterInput}
-          placeholder={t('Filter')}
-          onChange={(event) => {
-            const value = event.target.value;
-            setFilterInput(value);
-            if (!value) {
-              setFilterKeyword('');
-            }
-          }}
-          onSearch={(value) => setFilterKeyword(value.trim())}
-        />
+        <CollectionFilter collection={departmentsCollection} t={t} onChange={setFilter} />
         <Table<DepartmentRecord>
           rowKey="id"
+          loading={departmentsRequest.loading}
           columns={columns}
-          dataSource={filteredDepartments}
-          expandable={filterKeyword ? undefined : { defaultExpandAllRows: false }}
-          pagination={filterKeyword ? false : { pageSize: 10, showSizeChanger: true }}
+          dataSource={departmentsRequest.data || []}
+          expandable={filter ? undefined : { defaultExpandAllRows: false }}
+          pagination={filter ? false : { pageSize: 10, showSizeChanger: true }}
           rowSelection={{
             selectedRowKeys: selectedKeys,
             onChange: (keys, records) => {
@@ -787,11 +781,11 @@ const DepartmentsPage: React.FC = () => {
         title: t('Actions'),
         render: (record) => (
           <Space>
-            <Button type="link" size="small" icon={<SettingOutlined />} onClick={() => openUserDepartmentsForm(record)}>
+            <Button type="link" size="small" onClick={() => openUserDepartmentsForm(record)}>
               {t('Configure')}
             </Button>
             {selectedDepartment ? (
-              <Button type="link" size="small" icon={<DeleteOutlined />} onClick={() => removeMembers([record.id])}>
+              <Button type="link" size="small" onClick={() => removeMembers([record.id])}>
                 {t('Remove')}
               </Button>
             ) : null}
