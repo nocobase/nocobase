@@ -186,6 +186,22 @@ test('nb init continues from the browser UI result and runs env:add for an exist
     'If your browser does not open automatically, copy the URL below into your browser to continue. Keep this terminal session running while the CLI waits for the submission.',
   );
   expect(log).toHaveBeenCalledWith('URL: http://127.0.0.1:60128/');
+  expect(webUiOptions?.stages[0]?.catalog.setupMode).toMatchObject({
+    options: [
+      expect.objectContaining({
+        value: 'install-new',
+        hint: { key: 'commands.init.prompts.setupMode.installNewHint' },
+      }),
+      expect.objectContaining({
+        value: 'manage-local',
+        hint: { key: 'commands.init.prompts.setupMode.manageLocalHint' },
+      }),
+      expect.objectContaining({
+        value: 'connect-remote',
+        hint: { key: 'commands.init.prompts.setupMode.connectRemoteHint' },
+      }),
+    ],
+  });
   expect(webUiOptions?.stages[2]?.catalog).toMatchObject({
     skipDownload: expect.any(Object),
   });
@@ -877,6 +893,83 @@ test('nb init --resume --yes forwards setup-only defaults to nb install', async 
           'admin123',
           '--root-nickname',
           'Super Admin',
+        ],
+      ],
+    ]);
+    expect(mocks.printInfo).toHaveBeenCalledWith('Agent skills ready.');
+  } finally {
+    process.argv = originalArgv;
+  }
+});
+
+test('nb init --resume --yes can keep builtin db without forwarding admin defaults for manage-local setup', async () => {
+  const { default: Init } = await import('../commands/init.js');
+  const originalArgv = process.argv;
+  process.argv = [
+    'node',
+    'nb',
+    'init',
+    '--yes',
+    '--env',
+    'app9',
+    '--setup-mode',
+    'manage-local',
+    '--resume',
+    '--builtin-db',
+    '--builtin-db-image',
+    'registry.example.com/postgres:16',
+    '--db-dialect',
+    'postgres',
+  ];
+
+  try {
+    const runCommand = vi.fn(async () => undefined);
+    const command = Object.assign(Object.create(Init.prototype), {
+      parse: vi.fn(async () => ({
+        flags: {
+          resume: true,
+          yes: true,
+          ui: false,
+          env: 'app9',
+          'setup-mode': 'manage-local',
+          'builtin-db': true,
+          'builtin-db-image': 'registry.example.com/postgres:16',
+          'db-dialect': 'postgres',
+          source: 'git',
+          version: 'beta',
+        },
+      })),
+      config: { runCommand },
+      log: mocks.log,
+      error: mocks.error,
+      exit: (code?: number) => {
+        throw new Error(`unexpected exit: ${code ?? 'unknown'}`);
+      },
+    });
+
+    await Init.prototype.run.call(command);
+
+    expect(runCommand.mock.calls).toEqual([
+      [
+        'install',
+        [
+          '-y',
+          '--no-intro',
+          '--skip-save-env-log',
+          '--env',
+          'app9',
+          '--resume',
+          '--lang',
+          'en-US',
+          '--source',
+          'git',
+          '--version',
+          'beta',
+          '--builtin-db',
+          '--db-dialect',
+          'postgres',
+          '--builtin-db-image',
+          'registry.example.com/postgres:16',
         ],
       ],
     ]);

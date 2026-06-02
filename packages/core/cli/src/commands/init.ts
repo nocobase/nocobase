@@ -42,6 +42,8 @@ import Install, { defaultDbPortForDialect } from './install.ts';
 const DEFAULT_INIT_API_BASE_URL = 'http://localhost:13000/api';
 const DEFAULT_INIT_APP_NAME = 'local';
 const DOWNLOAD_OUTPUT_DIR_PROMPT = Download.prompts.outputDir as TextPromptBlock;
+const INIT_SETUP_MODES = ['install-new', 'manage-local', 'connect-remote'] as const;
+type InitSetupMode = (typeof INIT_SETUP_MODES)[number];
 const INIT_ENV_ADD_FLAG_NAMES = [
   'locale',
   'default-api-base-url',
@@ -67,16 +69,50 @@ function withExtraHidden(def: PromptBlock, extraHidden: (values: PromptCatalogVa
   };
 }
 
-function existingAppOnly(def: PromptBlock): PromptBlock {
-  return withExtraHidden(def, (values) => values.hasNocobase !== 'yes');
+function normalizeInitSetupMode(value: unknown): InitSetupMode {
+  const mode = String(value ?? '').trim();
+  if (mode === 'manage-local' || mode === 'connect-remote' || mode === 'install-new') {
+    return mode;
+  }
+  if (mode === 'yes') {
+    return 'connect-remote';
+  }
+  if (mode === 'no') {
+    return 'install-new';
+  }
+  return 'install-new';
 }
 
-function newInstallOnly(def: PromptBlock): PromptBlock {
-  return withExtraHidden(def, (values) => values.hasNocobase !== 'no');
+function resolveInitSetupMode(values: PromptCatalogValues | Record<string, unknown>): InitSetupMode {
+  return normalizeInitSetupMode(values.setupMode ?? values.hasNocobase);
 }
 
-function newInstallDownloadExecutionOnly(def: PromptBlock): PromptBlock {
-  return withExtraHidden(def, (values) => values.hasNocobase !== 'no' || values.skipDownload === true);
+function isRemoteSetupMode(values: PromptCatalogValues | Record<string, unknown>): boolean {
+  return resolveInitSetupMode(values) === 'connect-remote';
+}
+
+function isInstallNewSetupMode(values: PromptCatalogValues | Record<string, unknown>): boolean {
+  return resolveInitSetupMode(values) === 'install-new';
+}
+
+function isInstallLikeSetupMode(values: PromptCatalogValues | Record<string, unknown>): boolean {
+  return !isRemoteSetupMode(values);
+}
+
+function remoteConnectionOnly(def: PromptBlock): PromptBlock {
+  return withExtraHidden(def, (values) => !isRemoteSetupMode(values));
+}
+
+function installLikeOnly(def: PromptBlock): PromptBlock {
+  return withExtraHidden(def, (values) => !isInstallLikeSetupMode(values));
+}
+
+function installNewOnly(def: PromptBlock): PromptBlock {
+  return withExtraHidden(def, (values) => !isInstallNewSetupMode(values));
+}
+
+function installLikeDownloadExecutionOnly(def: PromptBlock): PromptBlock {
+  return withExtraHidden(def, (values) => !isInstallLikeSetupMode(values) || values.skipDownload === true);
 }
 
 function argvHasToken(argv: string[], tokens: string[]): boolean {
@@ -112,6 +148,30 @@ function explicitApiBaseUrlFlag(flags: { 'api-base-url'?: string }): string {
 
 function explicitDbHostFlag(flags: { 'db-host'?: string }): string {
   return String(flags['db-host'] ?? '').trim();
+}
+
+function explicitSetupModeFlag(flags: { 'setup-mode'?: string }): InitSetupMode | undefined {
+  const mode = String(flags['setup-mode'] ?? '').trim();
+  return mode ? normalizeInitSetupMode(mode) : undefined;
+}
+
+function applyLegacyHasNocobaseAlias(values: Record<string, unknown>): void {
+  if (
+    !Object.prototype.hasOwnProperty.call(values, 'setupMode') &&
+    !Object.prototype.hasOwnProperty.call(values, 'hasNocobase')
+  ) {
+    return;
+  }
+  const setupMode = resolveInitSetupMode(values);
+  if (setupMode === 'connect-remote') {
+    values.hasNocobase = 'yes';
+    return;
+  }
+  if (setupMode === 'install-new') {
+    values.hasNocobase = 'no';
+    return;
+  }
+  delete values.hasNocobase;
 }
 
 function optionalInitString(value: unknown): string | undefined {
@@ -208,10 +268,11 @@ export default class Init extends Command {
   static override summary = 'Set up NocoBase so coding agents can connect and work with it';
   static override description = `Set up NocoBase for coding agents in the current workspace.
 
-\`nb init\` prepares a NocoBase environment that coding agents can use. It supports two setup paths:
+\`nb init\` prepares a NocoBase environment that coding agents can use. It supports three setup paths:
 
-- Connect an existing NocoBase app and save it as a CLI env.
 - Install a new NocoBase app, then save it as a CLI env.
+- Take over managing an app that already exists on this machine by reusing its database.
+- Connect a remote NocoBase app and save it as a CLI env.
 
 It can also install NocoBase AI coding skills (\`nocobase/skills\`) so agents get the project-specific workflow guidance.
 
@@ -220,7 +281,7 @@ If setup was interrupted earlier, use \`--resume\` with an existing env name to 
 Prompt modes:
 - Default: guided prompts in the terminal.
 - \`--ui\`: open the same setup flow in a local browser form.
-- \`-y\`, \`--yes\`: skip prompts. In this mode \`--env <envName>\` is required, and init creates a new local NocoBase app with safe defaults.
+- \`-y\`, \`--yes\`: skip prompts. In this mode \`--env <envName>\` is required, and init uses flags plus safe defaults for the selected setup mode.
 
 \`--ui\` cannot be combined with \`--yes\`.`;
 
@@ -232,8 +293,10 @@ Prompt modes:
     '<%= config.bin %> <%= command.id %> --env app1 --yes',
     '<%= config.bin %> <%= command.id %> --env app1 --resume',
     '<%= config.bin %> <%= command.id %> --env app1 --yes --source docker --version alpha',
+    '<%= config.bin %> <%= command.id %> --env app1 --yes --setup-mode manage-local --source npm --version beta',
     '<%= config.bin %> <%= command.id %> --env app1 --yes --source npm --version alpha --app-port 13080',
     '<%= config.bin %> <%= command.id %> --env app1 --yes --source git --version fix/cli-v2',
+    '<%= config.bin %> <%= command.id %> --env staging --yes --setup-mode connect-remote --api-base-url https://demo.example.com/api',
     '<%= config.bin %> <%= command.id %> --ui --ui-port 3000',
   ];
 
@@ -265,52 +328,59 @@ Prompt modes:
       required: true,
       validate: validateInitAppName,
     },
-    hasNocobase: {
+    setupMode: {
       type: 'select',
       variant: 'radio',
-      message: initText('prompts.hasNocobase.message'),
+      message: initText('prompts.setupMode.message'),
       options: [
         {
-          value: 'no',
-          label: initText('prompts.hasNocobase.noLabel'),
+          value: 'install-new',
+          label: initText('prompts.setupMode.installNewLabel'),
+          hint: initText('prompts.setupMode.installNewHint'),
         },
         {
-          value: 'yes',
-          label: initText('prompts.hasNocobase.yesLabel'),
+          value: 'manage-local',
+          label: initText('prompts.setupMode.manageLocalLabel'),
+          hint: initText('prompts.setupMode.manageLocalHint'),
+        },
+        {
+          value: 'connect-remote',
+          label: initText('prompts.setupMode.connectRemoteLabel'),
+          hint: initText('prompts.setupMode.connectRemoteHint'),
         },
       ],
-      initialValue: 'no',
-      yesInitialValue: 'no',
+      initialValue: 'install-new',
+      yesInitialValue: 'install-new',
       required: true,
     },
-    apiBaseUrl: existingAppOnly({
+    apiBaseUrl: remoteConnectionOnly({
       type: 'text',
       message: initText('prompts.apiBaseUrl.message'),
       placeholder: initText('prompts.apiBaseUrl.placeholder'),
       required: true,
       validate: validateApiBaseUrl,
     }),
-    authType: existingAppOnly(EnvAdd.prompts.authType),
-    username: existingAppOnly(EnvAdd.prompts.username),
-    password: existingAppOnly(EnvAdd.prompts.password),
-    accessToken: existingAppOnly(EnvAdd.prompts.accessToken),
-    lang: newInstallOnly(Install.appPrompts.lang),
-    appPath: newInstallOnly(Install.appPrompts.appPath),
-    appPort: newInstallOnly(Install.appPrompts.appPort),
-    skipDownload: newInstallOnly({
+    authType: remoteConnectionOnly(EnvAdd.prompts.authType),
+    username: remoteConnectionOnly(EnvAdd.prompts.username),
+    password: remoteConnectionOnly(EnvAdd.prompts.password),
+    accessToken: remoteConnectionOnly(EnvAdd.prompts.accessToken),
+    lang: installLikeOnly(Install.appPrompts.lang),
+    appPath: installLikeOnly(Install.appPrompts.appPath),
+    appPort: installLikeOnly(Install.appPrompts.appPort),
+    skipDownload: installNewOnly({
       type: 'boolean',
       message: initText('prompts.skipDownload.message'),
       initialValue: false,
       yesInitialValue: false,
     }),
-    source: newInstallOnly(Download.prompts.source),
-    version: newInstallOnly(Download.prompts.version),
-    otherVersion: newInstallOnly(Download.prompts.otherVersion),
-    dockerRegistry: newInstallOnly(Download.prompts.dockerRegistry),
-    dockerPlatform: newInstallOnly(Download.prompts.dockerPlatform),
-    dockerSave: newInstallDownloadExecutionOnly(Download.prompts.dockerSave),
-    gitUrl: newInstallOnly(Download.prompts.gitUrl),
-    outputDir: newInstallDownloadExecutionOnly({
+    source: installLikeOnly(Download.prompts.source),
+    version: installLikeOnly(Download.prompts.version),
+    otherVersion: installLikeOnly(Download.prompts.otherVersion),
+    dockerRegistry: installLikeOnly(Download.prompts.dockerRegistry),
+    dockerPlatform: installLikeOnly(Download.prompts.dockerPlatform),
+    dockerSave: installLikeDownloadExecutionOnly(Download.prompts.dockerSave),
+    gitUrl: installLikeOnly(Download.prompts.gitUrl),
+    outputDir: installLikeDownloadExecutionOnly({
       ...DOWNLOAD_OUTPUT_DIR_PROMPT,
       hidden: (values) => {
         const source = String(values.source ?? '').trim();
@@ -335,26 +405,26 @@ Prompt modes:
         return typeof initialValue === 'function' ? initialValue(values) : String(initialValue ?? '');
       },
     }),
-    npmRegistry: newInstallOnly(Download.prompts.npmRegistry),
-    replace: newInstallDownloadExecutionOnly(Download.prompts.replace),
-    devDependencies: newInstallDownloadExecutionOnly(Download.prompts.devDependencies),
-    build: newInstallDownloadExecutionOnly(Download.prompts.build),
-    buildDts: newInstallDownloadExecutionOnly(Download.prompts.buildDts),
-    dbDialect: newInstallOnly(Install.dbPrompts.dbDialect),
-    builtinDb: newInstallOnly(Install.dbPrompts.builtinDb),
-    builtinDbImage: newInstallOnly(Install.dbPrompts.builtinDbImage),
-    dbHost: newInstallOnly(Install.dbPrompts.dbHost),
-    dbPort: newInstallOnly(Install.dbPrompts.dbPort),
-    dbDatabase: newInstallOnly(Install.dbPrompts.dbDatabase),
-    dbUser: newInstallOnly(Install.dbPrompts.dbUser),
-    dbPassword: newInstallOnly(Install.dbPrompts.dbPassword),
-    dbSchema: newInstallOnly(Install.dbPrompts.dbSchema),
-    dbTablePrefix: newInstallOnly(Install.dbPrompts.dbTablePrefix),
-    dbUnderscored: newInstallOnly(Install.dbPrompts.dbUnderscored),
-    rootUsername: newInstallOnly(Install.rootUserPrompts.rootUsername),
-    rootEmail: newInstallOnly(Install.rootUserPrompts.rootEmail),
-    rootPassword: newInstallOnly(Install.rootUserPrompts.rootPassword),
-    rootNickname: newInstallOnly(Install.rootUserPrompts.rootNickname),
+    npmRegistry: installLikeOnly(Download.prompts.npmRegistry),
+    replace: installLikeDownloadExecutionOnly(Download.prompts.replace),
+    devDependencies: installLikeDownloadExecutionOnly(Download.prompts.devDependencies),
+    build: installLikeDownloadExecutionOnly(Download.prompts.build),
+    buildDts: installLikeDownloadExecutionOnly(Download.prompts.buildDts),
+    dbDialect: installLikeOnly(Install.dbPrompts.dbDialect),
+    builtinDb: installLikeOnly(Install.dbPrompts.builtinDb),
+    builtinDbImage: installLikeOnly(Install.dbPrompts.builtinDbImage),
+    dbHost: installLikeOnly(Install.dbPrompts.dbHost),
+    dbPort: installLikeOnly(Install.dbPrompts.dbPort),
+    dbDatabase: installLikeOnly(Install.dbPrompts.dbDatabase),
+    dbUser: installLikeOnly(Install.dbPrompts.dbUser),
+    dbPassword: installLikeOnly(Install.dbPrompts.dbPassword),
+    dbSchema: installLikeOnly(Install.dbPrompts.dbSchema),
+    dbTablePrefix: installLikeOnly(Install.dbPrompts.dbTablePrefix),
+    dbUnderscored: installLikeOnly(Install.dbPrompts.dbUnderscored),
+    rootUsername: installNewOnly(Install.rootUserPrompts.rootUsername),
+    rootEmail: installNewOnly(Install.rootUserPrompts.rootEmail),
+    rootPassword: installNewOnly(Install.rootUserPrompts.rootPassword),
+    rootNickname: installNewOnly(Install.rootUserPrompts.rootNickname),
   };
 
   private buildPromptCatalog(flags: { 'skip-auth'?: boolean }): PromptsCatalog {
@@ -376,9 +446,9 @@ Prompt modes:
         hidden: () => true,
       };
 
-      prompts.username = existingAppOnly(usernamePrompt);
-      prompts.password = existingAppOnly(passwordPrompt);
-      prompts.accessToken = existingAppOnly(accessTokenPrompt);
+      prompts.username = remoteConnectionOnly(usernamePrompt);
+      prompts.password = remoteConnectionOnly(passwordPrompt);
+      prompts.accessToken = remoteConnectionOnly(accessTokenPrompt);
     }
 
     return prompts;
@@ -393,12 +463,16 @@ Prompt modes:
   static flags = {
     yes: Flags.boolean({
       char: 'y',
-      description: 'Skip prompts and create a new local NocoBase app. Requires an env name.',
+      description: 'Skip prompts and use flags plus defaults for the selected setup mode. Requires an env name.',
       default: false,
     }),
     env: Flags.string({
       char: 'e',
       description: 'Env name for this setup. Required with --yes and --resume',
+    }),
+    'setup-mode': Flags.string({
+      description: 'Setup mode: install a new app, manage a local app by reusing its database, or connect a remote app',
+      options: [...INIT_SETUP_MODES],
     }),
     ui: Flags.boolean({
       description: 'Open the guided setup flow in a local browser form (not valid with --yes)',
@@ -506,6 +580,7 @@ Prompt modes:
               'docker-platform'?: string;
               'docker-save'?: boolean;
               'npm-registry'?: string;
+              'setup-mode'?: string;
             },
           ),
         );
@@ -557,6 +632,7 @@ Prompt modes:
         'docker-platform'?: string;
         'docker-save'?: boolean;
         'npm-registry'?: string;
+        'setup-mode'?: string;
       },
     );
 
@@ -633,7 +709,12 @@ Prompt modes:
     }
 
     const results = await runPromptCatalog(promptCatalog, {
-      initialValues: dynamicInitialValues,
+      initialValues: {
+        ...dynamicInitialValues,
+        ...(presetValues.setupMode === undefined && presetValues.hasNocobase !== undefined
+          ? { setupMode: normalizeInitSetupMode(presetValues.hasNocobase) }
+          : {}),
+      },
       values: presetValues,
       yes: normalizedFlags.yes || useBrowserUi || !interactive,
       hooks: {
@@ -648,7 +729,7 @@ Prompt modes:
       },
       command: this,
     });
-    const normalizedResults: Record<string, string | number | boolean> = {
+    const normalizedResults = this.normalizeInitResults({
       ...pickKeys(presetValues, [
         'authType',
         'accessToken',
@@ -660,10 +741,9 @@ Prompt modes:
         'password',
       ]),
       ...results,
-    };
-
-    const hasNocobase = normalizedResults.hasNocobase === 'yes';
-    const existingEnv = !hasNocobase
+    });
+    const setupMode = resolveInitSetupMode(normalizedResults);
+    const existingEnv = isInstallLikeSetupMode(normalizedResults)
       ? await getEnv(String(normalizedResults.appName ?? '').trim(), { scope: resolveDefaultConfigScope() })
       : undefined;
 
@@ -685,7 +765,7 @@ Prompt modes:
 
     try {
       // oclif explicit registry keys use `:` (e.g. `env:add`); users still type `nb env add`.
-      if (hasNocobase) {
+      if (setupMode === 'connect-remote') {
         logInitStage('Connecting to the env');
         printVerbose('Running nb env add');
         await this.config.runCommand('env:add', this.buildEnvAddArgv(normalizedResults));
@@ -767,7 +847,7 @@ Prompt modes:
         sectionDescription: initText('webUi.gettingStarted.description'),
         catalog: {
           appName: c.appName,
-          hasNocobase: c.hasNocobase,
+          setupMode: c.setupMode,
         } satisfies PromptsCatalog,
       },
       {
@@ -842,6 +922,7 @@ Prompt modes:
 
   private buildPresetValuesFromFlags(flags: {
     env?: string;
+    'setup-mode'?: string;
     locale?: string;
     'default-api-base-url'?: string;
     'api-base-url'?: string;
@@ -887,13 +968,17 @@ Prompt modes:
   }): PromptInitialValues {
     const preset: PromptInitialValues = {};
     const argv = process.argv.slice(2);
+    const setupMode = explicitSetupModeFlag(flags);
 
     if (flags.env !== undefined && String(flags.env).trim() !== '') {
       preset.appName = String(flags.env).trim();
     }
+    if (setupMode) {
+      preset.setupMode = setupMode;
+    }
     const apiBaseUrl = explicitApiBaseUrlFlag(flags);
     if (apiBaseUrl) {
-      preset.hasNocobase = 'yes';
+      preset.setupMode ??= 'connect-remote';
       preset.apiBaseUrl = apiBaseUrl;
     } else if (flags['default-api-base-url'] !== undefined && String(flags['default-api-base-url']).trim() !== '') {
       preset.apiBaseUrl = String(flags['default-api-base-url']).trim();
@@ -1028,9 +1113,13 @@ Prompt modes:
     if (explicitDbHostFlag(flags)) {
       preset.builtinDb = false;
     }
-    if (!preset.hasNocobase && hasDownloadOverride(flags)) {
-      preset.hasNocobase = 'no';
+    if (!preset.setupMode && hasDownloadOverride(flags)) {
+      preset.setupMode = 'install-new';
     }
+    if (preset.setupMode === 'manage-local') {
+      preset.skipDownload = false;
+    }
+    applyLegacyHasNocobaseAlias(preset as Record<string, unknown>);
 
     return preset;
   }
@@ -1201,6 +1290,7 @@ Prompt modes:
       'db-schema'?: string;
       'db-table-prefix'?: string;
       'db-underscored'?: boolean;
+      'setup-mode'?: string;
     },
     options?: {
       nonInteractive?: boolean;
@@ -1215,8 +1305,12 @@ Prompt modes:
     const processArgv = process.argv.slice(2);
     const envName = String(results.appName ?? DEFAULT_INIT_APP_NAME).trim() || DEFAULT_INIT_APP_NAME;
     const source = String(results.source ?? '').trim();
-    const skipDownload = Boolean(flags['skip-download']) || results.skipDownload === true;
-    const hasNocobase = String(results.hasNocobase ?? '').trim() === 'yes';
+    const setupMode = resolveInitSetupMode({
+      setupMode: results.setupMode ?? flags['setup-mode'],
+      hasNocobase: results.hasNocobase,
+    });
+    const skipDownload =
+      setupMode === 'manage-local' ? false : Boolean(flags['skip-download']) || results.skipDownload === true;
     const apiBaseUrl = String(results.apiBaseUrl ?? '').trim();
     const authType = String(results.authType ?? '').trim();
     const accessToken = String(results.accessToken ?? '');
@@ -1232,7 +1326,7 @@ Prompt modes:
       argv.push('--verbose');
     }
 
-    if (hasNocobase && apiBaseUrl) {
+    if (setupMode === 'connect-remote' && apiBaseUrl) {
       argv.push('--api-base-url', apiBaseUrl);
     }
 
@@ -1406,23 +1500,24 @@ Prompt modes:
       argv.push(results.dbUnderscored ? '--db-underscored' : '--no-db-underscored');
     }
 
+    const includeRootUser = setupMode === 'install-new';
     const rootUsername = String(results.rootUsername ?? '').trim();
-    if (rootUsername) {
+    if (includeRootUser && rootUsername) {
       argv.push('--root-username', rootUsername);
     }
 
     const rootEmail = String(results.rootEmail ?? '').trim();
-    if (rootEmail) {
+    if (includeRootUser && rootEmail) {
       argv.push('--root-email', rootEmail);
     }
 
     const rootPassword = String(results.rootPassword ?? '');
-    if (rootPassword) {
+    if (includeRootUser && rootPassword) {
       argv.push('--root-password', rootPassword);
     }
 
     const rootNickname = String(results.rootNickname ?? '').trim();
-    if (rootNickname) {
+    if (includeRootUser && rootNickname) {
       argv.push('--root-nickname', rootNickname);
     }
 
@@ -1441,8 +1536,14 @@ Prompt modes:
     const envName = String(results.appName ?? DEFAULT_INIT_APP_NAME).trim() || DEFAULT_INIT_APP_NAME;
     argv.push('--env', envName);
 
+    const setupMode = resolveInitSetupMode(results);
+    if (setupMode === 'manage-local') {
+      argv.push('--setup-mode', 'manage-local');
+    }
+
     const source = String(results.source ?? '').trim();
-    const skipDownload = Boolean(flags['skip-download']) || results.skipDownload === true;
+    const skipDownload =
+      setupMode === 'manage-local' ? false : Boolean(flags['skip-download']) || results.skipDownload === true;
     if (source) {
       argv.push('--source', source);
     }
@@ -1519,6 +1620,7 @@ Prompt modes:
   private buildResumeInstallArgv(flags: {
     yes?: boolean;
     env?: string;
+    'setup-mode'?: string;
     lang?: string;
     force?: boolean;
     replace?: boolean;
@@ -1556,14 +1658,19 @@ Prompt modes:
     'skip-auth'?: boolean;
   }): string[] {
     const preset = this.buildPresetValuesFromFlags(flags) as Record<string, string | number | boolean>;
+    const setupMode = resolveInitSetupMode(preset);
     if (flags.yes) {
       preset.lang ??= yesInitialValue(Install.appPrompts.lang, 'en-US');
-      preset.rootUsername ??= yesInitialValue(Install.rootUserPrompts.rootUsername, 'nocobase');
-      preset.rootEmail ??= yesInitialValue(Install.rootUserPrompts.rootEmail, 'admin@nocobase.com');
-      preset.rootPassword ??= yesInitialValue(Install.rootUserPrompts.rootPassword, 'admin123');
-      preset.rootNickname ??= yesInitialValue(Install.rootUserPrompts.rootNickname, 'Super Admin');
+      if (setupMode === 'install-new') {
+        preset.rootUsername ??= yesInitialValue(Install.rootUserPrompts.rootUsername, 'nocobase');
+        preset.rootEmail ??= yesInitialValue(Install.rootUserPrompts.rootEmail, 'admin@nocobase.com');
+        preset.rootPassword ??= yesInitialValue(Install.rootUserPrompts.rootPassword, 'admin123');
+        preset.rootNickname ??= yesInitialValue(Install.rootUserPrompts.rootNickname, 'Super Admin');
+      }
     }
-    if (!flags['skip-download']) {
+    if (setupMode === 'manage-local') {
+      preset.skipDownload = false;
+    } else if (!flags['skip-download']) {
       preset.replace ??= true;
     }
 
@@ -1571,5 +1678,22 @@ Prompt modes:
       nonInteractive: Boolean(flags.yes),
       resume: true,
     });
+  }
+
+  private normalizeInitResults(
+    results: Record<string, string | number | boolean>,
+  ): Record<string, string | number | boolean> {
+    const normalized = { ...results };
+    const setupMode = resolveInitSetupMode(normalized);
+    normalized.setupMode = setupMode;
+    applyLegacyHasNocobaseAlias(normalized as Record<string, unknown>);
+    if (setupMode === 'manage-local') {
+      normalized.skipDownload = false;
+      delete normalized.rootUsername;
+      delete normalized.rootEmail;
+      delete normalized.rootPassword;
+      delete normalized.rootNickname;
+    }
+    return normalized;
   }
 }

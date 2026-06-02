@@ -198,3 +198,58 @@ test('buildInstallArgv forwards --skip-download and omits download execution opt
   expect(argv).not.toContain('--output-dir');
   expect(argv).not.toContain('--replace');
 });
+
+test('buildInstallArgv keeps builtin db available and omits admin init args for manage-local setup', () => {
+  const buildInstallArgv = (
+    Init.prototype as unknown as {
+      buildInstallArgv: (
+        results: Record<string, string | number | boolean>,
+        flags: { yes?: boolean; force?: boolean; build?: boolean; verbose?: boolean; 'skip-download'?: boolean },
+      ) => string[];
+    }
+  ).buildInstallArgv;
+
+  const argv = buildInstallArgv.call(
+    Object.create(Init.prototype),
+    {
+      setupMode: 'manage-local',
+      appName: 'legacy-app',
+      authType: 'oauth',
+      lang: 'en-US',
+      appRootPath: './legacy-app/source/',
+      appPort: '13000',
+      storagePath: './legacy-app/storage/',
+      skipDownload: true,
+      source: 'git',
+      version: 'beta',
+      gitUrl: 'https://github.com/nocobase/nocobase.git',
+      outputDir: './legacy-app/source/',
+      builtinDb: true,
+      dbDialect: 'postgres',
+      builtinDbImage: 'registry.example.com/postgres:16',
+      dbDatabase: 'legacy',
+      dbUser: 'nocobase',
+      dbPassword: 'secret',
+      rootUsername: 'admin',
+      rootEmail: 'admin@nocobase.com',
+      rootPassword: 'admin123',
+      rootNickname: 'Admin',
+    },
+    {
+      yes: true,
+      'skip-download': true,
+    },
+  );
+
+  expect(argv).not.toContain('--skip-download');
+  expect(argv).toContain('--builtin-db');
+  expect(argv).not.toContain('--no-builtin-db');
+  expect(argv).toContain('--builtin-db-image');
+  expect(argv).toContain('registry.example.com/postgres:16');
+  expect(argv).not.toContain('--root-username');
+  expect(argv).not.toContain('--root-email');
+  expect(argv).not.toContain('--root-password');
+  expect(argv).not.toContain('--root-nickname');
+  expect(argv).toContain('--db-database');
+  expect(argv).toContain('legacy');
+});

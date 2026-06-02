@@ -325,10 +325,14 @@
           "message": "这个环境要使用什么 `--env` 标识？",
           "placeholder": "local"
         },
-        "hasNocobase": {
-          "message": "你是否已经有一个 NocoBase 应用？",
-          "noLabel": "还没有 NocoBase 应用",
-          "yesLabel": "已经有 NocoBase 应用"
+        "setupMode": {
+          "message": "你想用哪种方式配置这个环境？",
+          "installNewLabel": "新安装",
+          "installNewHint": "从零安装一个新的应用，适合首次部署、试用或新建本地开发环境。",
+          "manageLocalLabel": "本机接管",
+          "manageLocalHint": "将本机已有应用纳入 nb 管理，后续可统一执行安装、升级和启动等操作。",
+          "connectRemoteLabel": "远程连接",
+          "connectRemoteHint": "只保存远程应用的连接信息，不在本机安装或接管应用。"
         },
         "installSkills": {
           "message": "是否安装 NocoBase AI coding skills（nocobase/skills）？"
@@ -344,22 +348,22 @@
       "webUi": {
         "pageTitle": "配置供 Coding Agents 使用的 NocoBase",
         "documentHeading": "配置供 Coding Agents 使用的 NocoBase",
-        "documentHint": "连接已有的 NocoBase 应用，或安装一个新的应用，让 Coding Agents 可以在当前工作区中访问和操作 NocoBase。",
+        "documentHint": "安装一个新的应用、接管本机已有应用，或连接远程应用，让 Coding Agents 可以在当前工作区中访问和操作 NocoBase。",
         "gettingStarted": {
           "title": "开始设置",
-          "description": "选择连接已有应用，或安装一个新应用。"
+          "description": "选择新安装、本机接管，或远程连接。"
         },
         "connectExistingApp": {
-          "title": "连接已有应用",
-          "description": "保存现有应用连接。"
+          "title": "远程连接",
+          "description": "保存远程应用连接。"
         },
         "createNewApp": {
-          "title": "安装新应用",
-          "description": "设置应用基础信息和安装选项。"
+          "title": "应用环境信息",
+          "description": "设置应用的基础信息、存储位置和运行端口。"
         },
         "downloadAppFiles": {
-          "title": "下载应用文件",
-          "description": "选择获取应用文件的方式。"
+          "title": "应用来源和版本",
+          "description": "选择应用的获取方式，以及要使用的来源和版本。"
         },
         "configureDatabase": {
           "title": "配置数据库",

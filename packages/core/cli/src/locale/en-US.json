@@ -325,10 +325,14 @@
           "message": "What should this environment use for `--env`?",
           "placeholder": "local"
         },
-        "hasNocobase": {
-          "message": "Do you already have a NocoBase application?",
-          "noLabel": "I don't have a NocoBase application yet",
-          "yesLabel": "I already have a NocoBase application"
+        "setupMode": {
+          "message": "How would you like to set up this environment?",
+          "installNewLabel": "Install a new app",
+          "installNewHint": "Install a brand-new app from scratch. Best for first-time setup, evaluation, or a fresh local environment.",
+          "manageLocalLabel": "Manage an app already on this machine",
+          "manageLocalHint": "Bring an app on this machine under nb management so install, upgrade, and startup can be handled in one place.",
+          "connectRemoteLabel": "Connect a remote app",
+          "connectRemoteHint": "Save only the remote app connection. Nothing will be installed or taken over on this machine."
         },
         "installSkills": {
           "message": "Install NocoBase AI coding skills (nocobase/skills)?"
@@ -344,22 +348,22 @@
       "webUi": {
         "pageTitle": "Set Up NocoBase for Coding Agents",
         "documentHeading": "Set Up NocoBase for Coding Agents",
-        "documentHint": "Connect an existing NocoBase app, or install a new one, so coding agents can access and work with NocoBase.",
+        "documentHint": "Install a new app, manage one that already exists on this machine, or connect a remote app so coding agents can access and work with NocoBase.",
         "gettingStarted": {
           "title": "Getting started",
-          "description": "Choose whether to connect an existing app or install a new one."
+          "description": "Choose whether to install a new app, manage a local app, or connect a remote app."
         },
         "connectExistingApp": {
-          "title": "Connect an existing app",
-          "description": "Save your app connection."
+          "title": "Remote connection",
+          "description": "Save your remote app connection."
         },
         "createNewApp": {
-          "title": "Install a new app",
-          "description": "Set app basics and install options."
+          "title": "App environment",
+          "description": "Set the app basics, storage location, and runtime port."
         },
         "downloadAppFiles": {
-          "title": "Download app files",
-          "description": "Choose how to get the app files."
+          "title": "App source and version",
+          "description": "Choose how to get the app and which source and version to use."
         },
         "configureDatabase": {
           "title": "Configure the database",
