@@ -28,7 +28,7 @@ nb env <command>
 | [`nb env list`](./list.md) | Показывает настроенные env |
 | [`nb env status`](./status.md) | Показывает статус текущего env, одного env или всех env |
 | [`nb env info`](./info.md) | Показывает подробную информацию об одном env |
-| [`nb env remove`](./remove.md) | Удаляет конфигурацию env |
+| [`nb env remove`](./remove.md) | Останавливает управляемый runtime, если он есть, затем удаляет конфигурацию env |
 | [`nb env auth`](./auth.md) | Выполняет вход через OAuth для сохранённого env |
 | [`nb env use`](./use.md) | Переключает текущий env |
 

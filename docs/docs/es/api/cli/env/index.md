@@ -28,7 +28,7 @@ nb env <command>
 | [`nb env list`](./list.md) | Lista los env configurados |
 | [`nb env status`](./status.md) | Muestra el estado del env actual, de un env o de todos los env |
 | [`nb env info`](./info.md) | Muestra la información detallada de un env concreto |
-| [`nb env remove`](./remove.md) | Elimina la configuración de un env |
+| [`nb env remove`](./remove.md) | Detiene el runtime gestionado si existe y luego elimina la configuración del env |
 | [`nb env auth`](./auth.md) | Realiza el inicio de sesión OAuth para un env guardado |
 | [`nb env use`](./use.md) | Cambia el env actual |
 

@@ -29,7 +29,7 @@ nb env <command>
 | [`nb env list`](./list.md) | 列出已配置 env |
 | [`nb env status`](./status.md) | 查看当前 env、指定 env 或全部 env 的状态 |
 | [`nb env info`](./info.md) | 查看单个 env 的详细信息 |
-| [`nb env remove`](./remove.md) | 移除 env 配置 |
+| [`nb env remove`](./remove.md) | 停止托管运行态后移除 env 配置 |
 | [`nb env auth`](./auth.md) | 对已保存 env 执行 OAuth 登录 |
 | [`nb env use`](./use.md) | 切换当前 env |
 

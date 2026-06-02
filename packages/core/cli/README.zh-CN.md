@@ -312,6 +312,19 @@ nb env auth app1
 nb env update app1
 ```
 
+移除某个 env：
+
+```bash
+nb env remove app1
+nb env remove app1 --force
+nb env remove app1 --purge --force
+```
+
+- 对于 local/docker env，`nb env remove` 默认会先停止 CLI 托管的应用运行态和内置数据库运行态，再移除已保存的 env 配置。
+- 对于 http/ssh env，`nb env remove` 只会移除已保存的 env 配置。
+- `--purge` 会尽可能清理当前机器上的 CLI 托管资源；对于 remote API env，它只会移除已保存的 env 配置，不会触碰外部服务。
+- 在非交互模式下，必须显式传入 `--force` 才能执行 remove 或 purge。
+
 ## API 命令
 
 CLI 可以通过已配置的 env 调用 NocoBase 资源 API：

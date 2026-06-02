@@ -28,7 +28,7 @@ nb env <command>
 | [`nb env list`](./list.md) | Liệt kê các env đã cấu hình |
 | [`nb env status`](./status.md) | Hiển thị trạng thái của env hiện tại, một env hoặc tất cả env |
 | [`nb env info`](./info.md) | Xem thông tin chi tiết của một env |
-| [`nb env remove`](./remove.md) | Xóa cấu hình env |
+| [`nb env remove`](./remove.md) | Dừng runtime được CLI quản lý nếu có, rồi xóa cấu hình env |
 | [`nb env auth`](./auth.md) | Đăng nhập OAuth cho env đã lưu |
 | [`nb env use`](./use.md) | Chuyển env hiện tại |
 

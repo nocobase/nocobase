@@ -29,7 +29,7 @@ nb env <command>
 | [`nb env list`](./list.md) | List configured envs |
 | [`nb env status`](./status.md) | Show status for the current env, one env, or all envs |
 | [`nb env info`](./info.md) | Show details for a single env |
-| [`nb env remove`](./remove.md) | Remove env configuration |
+| [`nb env remove`](./remove.md) | Stop managed runtime if present, then remove env configuration |
 | [`nb env auth`](./auth.md) | Run OAuth login for a saved env |
 | [`nb env use`](./use.md) | Switch current env |
 

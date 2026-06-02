@@ -28,7 +28,7 @@ nb env <command>
 | [`nb env list`](./list.md) | 設定済みの env を一覧表示します |
 | [`nb env status`](./status.md) | 現在の env、1 つの env、またはすべての env の状態を表示します |
 | [`nb env info`](./info.md) | 単一の env の詳細情報を表示します |
-| [`nb env remove`](./remove.md) | env 設定を削除します |
+| [`nb env remove`](./remove.md) | 必要に応じて管理対象ランタイムを停止してから env 設定を削除します |
 | [`nb env auth`](./auth.md) | 保存済みの env に対して OAuth ログインを実行します |
 | [`nb env use`](./use.md) | 現在の env を切り替えます |
 

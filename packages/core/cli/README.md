@@ -352,6 +352,19 @@ Update runtime command metadata from the selected app:
 nb env update app1
 ```
 
+Remove an env:
+
+```bash
+nb env remove app1
+nb env remove app1 --force
+nb env remove app1 --purge --force
+```
+
+- For local or Docker envs, `nb env remove` stops the CLI-managed app runtime and built-in database runtime first, then removes the saved env config.
+- For HTTP or SSH envs, `nb env remove` only removes the saved env config.
+- `--purge` cleans up CLI-managed resources on this machine when present. For remote API envs, it only removes the saved env config and does not touch external services.
+- In non-interactive mode, `--force` is required before remove or purge can run.
+
 ## API Commands
 
 The CLI can call NocoBase resources through the configured env:

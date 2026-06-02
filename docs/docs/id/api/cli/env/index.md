@@ -28,7 +28,7 @@ nb env <command>
 | [`nb env list`](./list.md) | Menampilkan env yang dikonfigurasi |
 | [`nb env status`](./status.md) | Menampilkan status env saat ini, satu env, atau semua env |
 | [`nb env info`](./info.md) | Melihat informasi detail satu env |
-| [`nb env remove`](./remove.md) | Menghapus konfigurasi env |
+| [`nb env remove`](./remove.md) | Hentikan runtime terkelola jika ada, lalu hapus konfigurasi env |
 | [`nb env auth`](./auth.md) | Melakukan login OAuth pada env yang tersimpan |
 | [`nb env use`](./use.md) | Beralih env saat ini |
 
