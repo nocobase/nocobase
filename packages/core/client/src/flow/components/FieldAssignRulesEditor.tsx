@@ -125,7 +125,7 @@ export const FieldAssignRulesEditor: React.FC<FieldAssignRulesEditorProps> = (pr
     enableDateVariableAsConstant = false,
   } = props;
 
-  const value = Array.isArray(rawValue) ? rawValue : [];
+  const value = React.useMemo(() => (Array.isArray(rawValue) ? rawValue : []), [rawValue]);
   const [cascaderOptions, setCascaderOptions] = React.useState<FieldAssignCascaderOption[]>(() =>
     Array.isArray(fieldOptions) ? (fieldOptions as FieldAssignCascaderOption[]) : [],
   );
@@ -135,6 +135,14 @@ export const FieldAssignRulesEditor: React.FC<FieldAssignRulesEditorProps> = (pr
   }, [fieldOptions]);
 
   const getRuleKey = React.useCallback((item: FieldAssignRuleItem, index: number) => item?.key || String(index), []);
+  const parseTargetPathToSegments = React.useCallback((targetPath?: string): string[] => {
+    const raw = String(targetPath || '');
+    if (!raw) return [];
+    return raw
+      .split('.')
+      .map((s) => s.trim())
+      .filter(Boolean);
+  }, []);
   const [titleFieldDraftMap, setTitleFieldDraftMap] = React.useState<Record<string, string | undefined>>({});
   const [advancedOpenMap, setAdvancedOpenMap] = React.useState<Record<string, boolean>>({});
   const [syncingRuleKey, setSyncingRuleKey] = React.useState<string | null>(null);
@@ -291,7 +299,7 @@ export const FieldAssignRulesEditor: React.FC<FieldAssignRulesEditorProps> = (pr
 
       return [buildObjectNode(levels.length - 1, ['item'], 'item', 'Current item')];
     },
-    [buildCollectionMetaTreeNodes, rootCollection, t],
+    [buildCollectionMetaTreeNodes, parseTargetPathToSegments, rootCollection, t],
   );
 
   const patchItem = (index: number, patch: Partial<FieldAssignRuleItem>) => {
@@ -380,15 +388,6 @@ export const FieldAssignRulesEditor: React.FC<FieldAssignRulesEditorProps> = (pr
     },
     [t],
   );
-
-  const parseTargetPathToSegments = React.useCallback((targetPath?: string): string[] => {
-    const raw = String(targetPath || '');
-    if (!raw) return [];
-    return raw
-      .split('.')
-      .map((s) => s.trim())
-      .filter(Boolean);
-  }, []);
 
   const getFieldLabel = (targetPath?: string) => {
     const segs = parseTargetPathToSegments(targetPath);
@@ -891,6 +890,7 @@ export const FieldAssignRulesEditor: React.FC<FieldAssignRulesEditorProps> = (pr
                 extraMetaTree={extraMetaTree}
                 {...(getValueInputProps?.(item, index) || {})}
                 enableDateVariableAsConstant={enableDateVariableAsConstant}
+                preserveCascadeParentChain={getEffectiveMode(item) === 'default'}
                 associationFieldNamesOverride={
                   associationQuickContext && previewTitleField
                     ? {

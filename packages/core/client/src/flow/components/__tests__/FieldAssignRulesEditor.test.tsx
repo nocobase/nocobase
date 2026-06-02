@@ -23,6 +23,7 @@ const { mockFieldAssignValueInput, mockConditionBuilder } = vi.hoisted(() => ({
       data-assoc-label={String(props?.associationFieldNamesOverride?.label || '')}
       data-assoc-value={String(props?.associationFieldNamesOverride?.value || '')}
       data-date-constant={props?.enableDateVariableAsConstant ? 'yes' : 'no'}
+      data-preserve-cascade-parent-chain={props?.preserveCascadeParentChain ? 'yes' : 'no'}
     />
   )),
   mockConditionBuilder: vi.fn((props: any) => (
@@ -696,6 +697,25 @@ describe('FieldAssignRulesEditor', () => {
     expect(lastCall?.[0]?.mode).toBe('default');
   });
 
+  it('passes cascade parent-chain preservation intent for default value mode', () => {
+    const value: FieldAssignRuleItem[] = [
+      {
+        key: '1',
+        enable: true,
+        targetPath: 'profile',
+        mode: 'default',
+      },
+    ];
+
+    render(
+      wrap(<FieldAssignRulesEditor t={t} fieldOptions={[]} value={value} showCondition={false} showEnable={false} />),
+    );
+
+    const latestInputCall = mockFieldAssignValueInput.mock.calls[mockFieldAssignValueInput.mock.calls.length - 1]?.[0];
+    expect(latestInputCall?.preserveCascadeParentChain).toBe(true);
+    expect(screen.getByTestId('mock-value-input')).toHaveAttribute('data-preserve-cascade-parent-chain', 'yes');
+  });
+
   it('shows assignment mode tooltips for each option', async () => {
     const value: FieldAssignRuleItem[] = [
       {
@@ -785,7 +805,11 @@ describe('FieldAssignRulesEditor', () => {
     expect(merged.map((node) => node.name)).toEqual(['formValues', 'item', 'user']);
     expect(merged.filter((node) => node.name === 'item')).toHaveLength(1);
 
-    const itemNode = merged.find((node) => node.name === 'item')!;
+    const itemNode = merged.find((node) => node.name === 'item');
+    expect(itemNode).toBeTruthy();
+    if (!itemNode) {
+      throw new Error('Expected item node in merged meta tree.');
+    }
     const parent = (itemNode.children as MetaTreeNode[]).find((node) => node.name === 'parentItem');
     expect(parent).toBeTruthy();
 
