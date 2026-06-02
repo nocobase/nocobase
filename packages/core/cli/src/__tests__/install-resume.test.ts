@@ -14,6 +14,7 @@ const mocks = vi.hoisted(() => ({
   getEnv: vi.fn(),
   upsertEnv: vi.fn(),
   setCurrentEnv: vi.fn(),
+  clearEnvRootSetup: vi.fn(),
   validateExternalDbConfig: vi.fn(async () => undefined),
   validateMysqlLowerCaseTableNamesCompatibility: vi.fn(async () => undefined),
   printInfo: vi.fn(),
@@ -26,6 +27,7 @@ beforeEach(() => {
   mocks.getEnv.mockResolvedValue(undefined);
   mocks.upsertEnv.mockResolvedValue(undefined);
   mocks.setCurrentEnv.mockResolvedValue(undefined);
+  mocks.clearEnvRootSetup.mockResolvedValue(true);
   mocks.validateExternalDbConfig.mockReset();
   mocks.validateExternalDbConfig.mockResolvedValue(undefined);
   mocks.validateMysqlLowerCaseTableNamesCompatibility.mockReset();
@@ -62,6 +64,12 @@ vi.mock('../lib/auth-store.js', async (importOriginal) => {
         return mocks.setCurrentEnv(...args);
       }
       return actual.setCurrentEnv(...args);
+    },
+    clearEnvRootSetup: (...args: Parameters<typeof actual.clearEnvRootSetup>) => {
+      if (mocks.clearEnvRootSetup.mock.calls.length || mocks.clearEnvRootSetup.getMockImplementation()) {
+        return mocks.clearEnvRootSetup(...args);
+      }
+      return actual.clearEnvRootSetup(...args);
     },
   };
 });
@@ -301,6 +309,7 @@ test('install syncs token env connection after the app becomes ready without oau
   await Install.prototype.run.call(command);
 
   expect(runCommand.mock.calls).toEqual([['env:update', ['app1']]]);
+  expect(mocks.clearEnvRootSetup).toHaveBeenCalledWith('app1', { scope: 'global' });
 });
 
 test('install run validates external db config before saving env config', async () => {

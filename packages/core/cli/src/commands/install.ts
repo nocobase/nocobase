@@ -43,7 +43,7 @@ import { formatMissingManagedAppEnvMessage } from '../lib/app-runtime.js';
 import { commandOutput, commandSucceeds, run, runNocoBaseCommand } from '../lib/run-npm.js';
 import { printInfo, printStage, printVerbose, printWarning, setVerboseMode } from '../lib/ui.js';
 import { omitKeys, upperFirst } from '../lib/object-utils.ts';
-import { getEnv, loadAuthConfig, setCurrentEnv, type Env, upsertEnv } from '../lib/auth-store.js';
+import { clearEnvRootSetup, getEnv, loadAuthConfig, setCurrentEnv, type Env, upsertEnv } from '../lib/auth-store.js';
 import { buildStoredEnvConfig, type StoredEnvConfig } from '../lib/env-config.js';
 import { resolveDockerEnvFileArg } from '../lib/docker-env-file.ts';
 import { startDockerLogFollower } from '../lib/docker-log-stream.js';
@@ -3213,6 +3213,7 @@ export default class Install extends Command {
       appReady: Boolean(dockerAppPlan || localAppPlan),
       skipAuth: Boolean(parsed['skip-auth']),
     });
+    await clearEnvRootSetup(envName, { scope: resolveDefaultConfigScope() });
 
     if (!dockerAppPlan && !localAppPlan) {
       printInfo(`Install config for "${envName}" has been saved.`);

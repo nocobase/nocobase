@@ -12,6 +12,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { test, expect, vi } from 'vitest';
 import {
+  clearEnvRootSetup,
   getEnv,
   getCurrentEnvName,
   loadAuthConfig,
@@ -79,6 +80,55 @@ test('upsertEnv clears runtime metadata when base URL or token changes', async (
     const env = await getEnv('test', { scope: 'global' });
     expect(env?.auth?.accessToken).toBe('new-token');
     expect(env?.runtime).toBe(undefined);
+  });
+});
+
+test('clearEnvRootSetup removes saved root setup fields while preserving other env settings', async () => {
+  await withTempCliHome(async () => {
+    await saveAuthConfig(
+      {
+        lastEnv: 'test',
+        envs: {
+          test: {
+            baseUrl: 'http://localhost:13000/api',
+            authType: 'token',
+            auth: {
+              type: 'token',
+              accessToken: 'token-123',
+            },
+            dbDatabase: 'nocobase',
+            rootUsername: 'admin',
+            rootEmail: 'admin@nocobase.com',
+            rootPassword: 'admin123',
+            rootNickname: 'Admin',
+            runtime: {
+              version: 'v1',
+              schemaHash: 'hash',
+              generatedAt: '2026-04-13T00:00:00.000Z',
+            },
+          },
+        },
+      },
+      { scope: 'global' },
+    );
+
+    const removed = await clearEnvRootSetup('test', { scope: 'global' });
+
+    const env = await getEnv('test', { scope: 'global' });
+    expect(removed).toBe(true);
+    expect(env?.baseUrl).toBe('http://localhost:13000/api');
+    expect(env?.authType).toBe('token');
+    expect(env?.auth?.type).toBe('token');
+    expect(env?.auth?.accessToken).toBe('token-123');
+    expect(env?.runtime).toEqual({
+      version: 'v1',
+      schemaHash: 'hash',
+      generatedAt: '2026-04-13T00:00:00.000Z',
+    });
+    expect(env).not.toHaveProperty('rootUsername');
+    expect(env).not.toHaveProperty('rootEmail');
+    expect(env).not.toHaveProperty('rootPassword');
+    expect(env).not.toHaveProperty('rootNickname');
   });
 });
 

@@ -650,6 +650,29 @@ export async function setEnvRuntime(
   await saveAuthConfig(config, options);
 }
 
+export async function clearEnvRootSetup(
+  envName: string,
+  options: AuthStoreOptions = {},
+): Promise<boolean> {
+  const config = await loadExactAuthConfig(options);
+  const current = config.envs[envName];
+  if (!current) {
+    return false;
+  }
+
+  const {
+    rootUsername: _rootUsername,
+    rootEmail: _rootEmail,
+    rootPassword: _rootPassword,
+    rootNickname: _rootNickname,
+    ...rest
+  } = current;
+
+  config.envs[envName] = rest;
+  await saveAuthConfig(config, options);
+  return true;
+}
+
 export async function removeEnv(envName: string, options: AuthStoreOptions = {}) {
   const config = await loadExactAuthConfig(options);
 
