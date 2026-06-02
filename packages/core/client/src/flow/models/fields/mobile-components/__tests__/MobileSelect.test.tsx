@@ -88,20 +88,26 @@ function renderMobileSelect(props: Record<string, any> = {}) {
 
 function renderMobileLazySelect(props: Record<string, any> = {}) {
   const onChange = props.onChange ?? vi.fn();
-
-  render(
+  const renderComponent = (nextProps: Record<string, any> = {}) => (
     <MobileLazySelect
       fieldNames={{ label: 'uuid', value: 'uuid' }}
       value={[]}
       multiple
       allowMultiple
       options={RELATION_OPTIONS}
-      onChange={onChange}
       {...props}
-    />,
+      {...nextProps}
+      onChange={onChange}
+    />
   );
 
-  return { onChange };
+  const result = render(renderComponent());
+
+  return {
+    ...result,
+    onChange,
+    rerender: (nextProps: Record<string, any> = {}) => result.rerender(renderComponent(nextProps)),
+  };
 }
 
 vi.mock('@nocobase/flow-engine', async () => {
@@ -284,12 +290,18 @@ describe('MobileLazySelect', () => {
   });
 
   it('keeps pending relation records selected until confirm', () => {
-    const { onChange } = renderMobileLazySelect();
+    const { onChange, rerender } = renderMobileLazySelect();
 
     openLazyPopup();
     expect(mockState.checklistProps?.value).toEqual([]);
 
     selectValues(['c7d99828-a1de-9e70-4c2d-b0139abdf02e']);
+    expect(mockState.checklistProps?.value).toEqual(['c7d99828-a1de-9e70-4c2d-b0139abdf02e']);
+
+    rerender({
+      options: RELATION_OPTIONS.map((item) => ({ ...item })),
+    });
+
     expect(mockState.checklistProps?.value).toEqual(['c7d99828-a1de-9e70-4c2d-b0139abdf02e']);
 
     confirmSelection();
