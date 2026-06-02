@@ -962,35 +962,39 @@ const DepartmentsPage: React.FC = () => {
             minWidth: 0,
           }}
         >
-          <Flex justify="space-between" align="center" wrap="wrap" gap={token.marginSM}>
-            <Typography.Title level={4}>
+          <Flex vertical gap={token.marginSM}>
+            <Typography.Title level={4} style={{ margin: 0 }}>
               {selectedUser ? t('Search results') : t(selectedDepartment?.title || 'All users')}
             </Typography.Title>
-            <Space wrap>
-              <CollectionFilter
-                collection={usersCollection}
-                t={t}
-                filterableFieldNames={['nickname', 'username', 'email', 'phone']}
-                onChange={setMemberFilter}
-              />
-              <Button icon={<ReloadOutlined />} onClick={() => membersRequest.refresh()}>
-                {t('Refresh')}
-              </Button>
-              {selectedDepartment ? (
-                <>
-                  <Button
-                    icon={<UserDeleteOutlined />}
-                    disabled={!selectedMemberKeys.length}
-                    onClick={() => removeMembers(selectedMemberKeys)}
-                  >
-                    {t('Remove')}
-                  </Button>
-                  <Button type="primary" icon={<UserAddOutlined />} onClick={openAddMembersForm}>
-                    {t('Add members')}
-                  </Button>
-                </>
-              ) : null}
-            </Space>
+            <Flex justify="space-between" align="center" wrap="wrap" gap={token.marginSM}>
+              <Space wrap>
+                <CollectionFilter
+                  collection={usersCollection}
+                  t={t}
+                  filterableFieldNames={['nickname', 'username', 'email', 'phone']}
+                  onChange={setMemberFilter}
+                />
+              </Space>
+              <Space wrap>
+                <Button icon={<ReloadOutlined />} onClick={() => membersRequest.refresh()}>
+                  {t('Refresh')}
+                </Button>
+                {selectedDepartment ? (
+                  <>
+                    <Button
+                      icon={<UserDeleteOutlined />}
+                      disabled={!selectedMemberKeys.length}
+                      onClick={() => removeMembers(selectedMemberKeys)}
+                    >
+                      {t('Remove')}
+                    </Button>
+                    <Button type="primary" icon={<UserAddOutlined />} onClick={openAddMembersForm}>
+                      {t('Add members')}
+                    </Button>
+                  </>
+                ) : null}
+              </Space>
+            </Flex>
           </Flex>
           <Table<UserRecord>
             rowKey="id"
