@@ -46,6 +46,7 @@ import { omitKeys, upperFirst } from '../lib/object-utils.ts';
 import { getEnv, loadAuthConfig, setCurrentEnv, type Env, upsertEnv } from '../lib/auth-store.js';
 import { buildStoredEnvConfig, type StoredEnvConfig } from '../lib/env-config.js';
 import { resolveDockerEnvFileArg } from '../lib/docker-env-file.ts';
+import { startDockerLogFollower } from '../lib/docker-log-stream.js';
 import Download, { DownloadParsedFlags, defaultDockerRegistryForLang, type DownloadCommandResult } from './download.js';
 import EnvAdd from './env/add.ts';
 
@@ -1081,6 +1082,24 @@ export default class Install extends Command {
     return text || undefined;
   }
 
+  private static resolveManagedAppKey(value: unknown): string {
+    return Install.toOptionalPromptString(value) ?? crypto.randomBytes(32).toString('hex');
+  }
+
+  private static resolveManagedTimeZone(value: unknown): string {
+    return Install.toOptionalPromptString(value) ?? (Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC');
+  }
+
+  private async ensureManagedAppRuntimeConfig(params: {
+    envName: string;
+    appResults: Record<string, PromptValue>;
+  }): Promise<void> {
+    const savedEnv = await getEnv(params.envName, { scope: resolveDefaultConfigScope() });
+    const savedConfig = savedEnv?.config;
+    params.appResults.appKey = Install.resolveManagedAppKey(params.appResults.appKey ?? savedConfig?.appKey);
+    params.appResults.timeZone = Install.resolveManagedTimeZone(params.appResults.timeZone ?? savedConfig?.timezone);
+  }
+
   private static async validateAppPort(value, values): Promise<void | string | undefined> {
     const formatError = validateTcpPort(value);
     if (formatError) {
@@ -1412,7 +1431,7 @@ export default class Install extends Command {
           [
             `Cannot continue setup for "${env.name}" in non-interactive resume mode yet.`,
             `These setup-only flags are not saved in the env config: ${missingFlags.join(', ')}`,
-            `Run \`nb init --env ${env.name} --resume\` without \`--yes\`, or pass those flags again.`,
+            `Run \`nb init --ui --env ${env.name} --resume\` without \`--yes\`, or pass those flags again.`,
           ].join('\n'),
         );
       }
@@ -2147,8 +2166,8 @@ export default class Install extends Command {
     const dbSchema = optionalEnvString(params.dbResults.dbSchema);
     const dbTablePrefix = optionalEnvString(params.dbResults.dbTablePrefix);
     const dbUnderscored = optionalEnvBoolean(params.dbResults.dbUnderscored);
-    const appKey = crypto.randomBytes(32).toString('hex');
-    const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
+    const appKey = Install.resolveManagedAppKey(params.appResults.appKey);
+    const timeZone = Install.resolveManagedTimeZone(params.appResults.timeZone);
     const containerName = Install.buildDockerAppContainerName(
       params.envName,
       params.dockerContainerPrefix ?? params.workspaceName,
@@ -2487,8 +2506,8 @@ export default class Install extends Command {
       resolveConfiguredEnvPath(configuredStoragePath) ??
       resolveEnvRelativePath(defaultInstallStoragePath(params.envName));
     const dbDialect = String(params.dbResults.dbDialect ?? 'postgres').trim() || 'postgres';
-    const appKey = crypto.randomBytes(32).toString('hex');
-    const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
+    const appKey = Install.resolveManagedAppKey(params.appResults.appKey);
+    const timeZone = Install.resolveManagedTimeZone(params.appResults.timeZone);
     const env: Record<string, string> = {
       STORAGE_PATH: storagePath,
       APP_PORT: String(params.appResults.appPort ?? DEFAULT_INSTALL_APP_PORT).trim() || DEFAULT_INSTALL_APP_PORT,
@@ -2636,6 +2655,7 @@ export default class Install extends Command {
       requestTimeoutMs?: number;
       fetchImpl?: typeof fetch;
       containerName?: string;
+      verbose?: boolean;
     },
   ): Promise<void> {
     const healthCheckUrl = Install.buildHealthCheckUrl(apiBaseUrl);
@@ -2648,43 +2668,49 @@ export default class Install extends Command {
     let lastLoggedStatus = '';
 
     printInfo('Waiting for NocoBase to become ready...');
+    const dockerLogFollower =
+      options?.verbose && options.containerName ? startDockerLogFollower(options.containerName) : undefined;
 
-    while (Date.now() - startedAt < timeoutMs) {
-      const result = await Install.requestAppHealthCheck({
-        healthCheckUrl,
-        fetchImpl,
-        requestTimeoutMs,
-      });
+    try {
+      while (Date.now() - startedAt < timeoutMs) {
+        const result = await Install.requestAppHealthCheck({
+          healthCheckUrl,
+          fetchImpl,
+          requestTimeoutMs,
+        });
 
-      if (result.ok) {
-        return;
+        if (result.ok) {
+          return;
+        }
+
+        lastMessage = result.message;
+        const elapsedSeconds = Math.max(1, Math.floor((Date.now() - startedAt) / 1000));
+        const statusLine = `Waiting for NocoBase to become ready... (${elapsedSeconds}s elapsed, last status: ${Install.formatHealthCheckMessage(
+          lastMessage,
+        )})`;
+        if (statusLine !== lastLoggedStatus) {
+          printInfo(statusLine);
+          lastLoggedStatus = statusLine;
+        }
+
+        const remainingMs = timeoutMs - (Date.now() - startedAt);
+        if (remainingMs <= 0) {
+          break;
+        }
+        await Install.sleep(Math.min(intervalMs, remainingMs));
       }
 
-      lastMessage = result.message;
-      const elapsedSeconds = Math.max(1, Math.floor((Date.now() - startedAt) / 1000));
-      const statusLine = `Waiting for NocoBase to become ready... (${elapsedSeconds}s elapsed, last status: ${Install.formatHealthCheckMessage(
-        lastMessage,
-      )})`;
-      if (statusLine !== lastLoggedStatus) {
-        printInfo(statusLine);
-        lastLoggedStatus = statusLine;
-      }
-
-      const remainingMs = timeoutMs - (Date.now() - startedAt);
-      if (remainingMs <= 0) {
-        break;
-      }
-      await Install.sleep(Math.min(intervalMs, remainingMs));
+      const logHint = options?.containerName
+        ? ` You can inspect startup logs with: docker logs ${options.containerName}`
+        : '';
+      throw new Error(
+        `The application did not become ready in time. Expected \`${healthCheckUrl}\` to respond with \`ok\`, but the last status was: ${Install.formatHealthCheckMessage(
+          lastMessage,
+        )}.${logHint}`,
+      );
+    } finally {
+      await dockerLogFollower?.stop();
     }
-
-    const logHint = options?.containerName
-      ? ` You can inspect startup logs with: docker logs ${options.containerName}`
-      : '';
-    throw new Error(
-      `The application did not become ready in time. Expected \`${healthCheckUrl}\` to respond with \`ok\`, but the last status was: ${Install.formatHealthCheckMessage(
-        lastMessage,
-      )}.${logHint}`,
-    );
   }
 
   private async saveInstalledEnv(params: {
@@ -2966,6 +2992,10 @@ export default class Install extends Command {
     }
     const promptResults = await this.collectPromptResults(parsed, flags.yes);
     const { envName, appResults, downloadResults, dbResults, rootResults, envAddResults } = promptResults;
+    await this.ensureManagedAppRuntimeConfig({
+      envName,
+      appResults,
+    });
 
     const source = String(downloadResultsValue(downloadResults, 'source') ?? '').trim();
     const usesDockerResources = Boolean(dbResults.builtinDb) || source === 'docker';
@@ -3092,6 +3122,7 @@ export default class Install extends Command {
         }),
         {
           containerName: dockerAppPlan?.containerName,
+          verbose: parsed.verbose,
         },
       );
       printInfo(`NocoBase is ready at http://127.0.0.1:${dockerAppPlan?.appPort ?? localAppPlan?.appPort}`);

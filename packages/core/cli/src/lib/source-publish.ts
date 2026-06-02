@@ -362,7 +362,11 @@ export async function publishSourceSnapshot(params: {
     throw publishError;
   }
 
-  return result!;
+  if (!result) {
+    throw new Error('Source snapshot publishing finished without a result.');
+  }
+
+  return result;
 }
 
 export function buildSuggestedInitCommand(result: Pick<SourcePublishResult, 'version' | 'npmRegistry' | 'gitSha'>): string {
@@ -370,7 +374,7 @@ export function buildSuggestedInitCommand(result: Pick<SourcePublishResult, 'ver
   const normalizedRegistry = result.npmRegistry || `http://${host}:${port || DEFAULT_SOURCE_REGISTRY_PORT}`;
   const suggestedEnv = ['snapshot', sanitizeEnvSegment(result.gitSha)].filter(Boolean).join('');
   return [
-    `nb init --env ${suggestedEnv} --yes --source npm`,
+    `nb init --ui --env ${suggestedEnv} --yes --source npm`,
     `--version ${result.version}`,
     `--npm-registry=${normalizedRegistry}`,
   ].join(' ');

@@ -9,7 +9,12 @@
 
 import { Completion } from '@codemirror/autocomplete';
 import { EditorView } from '@codemirror/view';
-import { getRunJSDocFor, setupRunJSContexts, listSnippetsForContext } from '@nocobase/flow-engine';
+import {
+  getRunJSDocFor,
+  setupRunJSContexts,
+  listSnippetsForContext,
+  type RunJSDocCompletionDoc,
+} from '@nocobase/flow-engine';
 import { formatDocInfo } from './formatDocInfo';
 
 export type SnippetEntry = {
@@ -23,6 +28,483 @@ export type SnippetEntry = {
   scenes?: string[];
 };
 
+type StaticCompletionEntry = {
+  label: string;
+  type: Completion['type'];
+  detail?: string;
+  info?: string;
+  insertText?: string;
+  boost?: number;
+  requires?: Array<'element'>;
+};
+
+const NON_ELEMENT_COMPLETION_SCENES = new Set(['eventFlow', 'formValue', 'linkage']);
+
+const normalizeScenes = (scene?: string | string[]): string[] =>
+  (Array.isArray(scene) ? scene : scene ? [scene] : [])
+    .map((sceneName) => (typeof sceneName === 'string' ? sceneName.trim() : ''))
+    .filter(Boolean);
+
+const hasRunJSElementContext = (doc: any, apiInfos: any, requestedScenes: string[]): boolean => {
+  if (requestedScenes.some((sceneName) => NON_ELEMENT_COMPLETION_SCENES.has(sceneName))) return false;
+  return !!((doc as any)?.properties?.element || (apiInfos as any)?.element);
+};
+
+const usesCtxElement = (text?: string): boolean => typeof text === 'string' && /\bctx\.element\b/.test(text);
+
+const satisfiesCompletionRequirements = (
+  completionSpec: Pick<RunJSDocCompletionDoc, 'requires'> | undefined,
+  capabilities: { element: boolean },
+): boolean => {
+  if (!completionSpec?.requires?.length) return true;
+  return completionSpec.requires.every((requirement) => requirement !== 'element' || capabilities.element);
+};
+
+const createApply = (insertText?: string) => (view: EditorView, _completion: Completion, from: number, to: number) => {
+  if (!insertText) return;
+  view.dispatch({
+    changes: { from, to, insert: insertText },
+    selection: { anchor: from + insertText.length },
+    scrollIntoView: true,
+  });
+};
+
+const staticEntry = ({ label, type, detail, info, insertText, boost = 85 }: StaticCompletionEntry): Completion =>
+  ({
+    label,
+    type,
+    detail,
+    info,
+    boost,
+    apply: insertText ? createApply(insertText) : undefined,
+  }) as Completion;
+
+const SAFE_GLOBAL_COMPLETIONS: StaticCompletionEntry[] = [
+  {
+    label: 'window.open()',
+    type: 'function',
+    detail: '(url: string, target?: string, features?: string) => Window | null',
+    info: 'Open a safe http/https/about:blank URL in a new tab.',
+    insertText: "window.open('https://example.com')",
+    boost: 105,
+  },
+  {
+    label: 'window.addEventListener()',
+    type: 'function',
+    detail: '(type: string, listener: EventListener) => void',
+    info: 'Attach a listener to the safe window proxy.',
+    insertText: "window.addEventListener('resize', () => {})",
+    boost: 105,
+  },
+  {
+    label: 'window.setTimeout()',
+    type: 'function',
+    detail: '(handler: Function, timeout?: number) => number',
+    insertText: 'window.setTimeout(() => {}, 0)',
+    boost: 100,
+  },
+  {
+    label: 'window.clearTimeout()',
+    type: 'function',
+    detail: '(id?: number) => void',
+    insertText: 'window.clearTimeout(timer)',
+    boost: 100,
+  },
+  {
+    label: 'window.setInterval()',
+    type: 'function',
+    detail: '(handler: Function, timeout?: number) => number',
+    insertText: 'window.setInterval(() => {}, 1000)',
+    boost: 100,
+  },
+  {
+    label: 'window.clearInterval()',
+    type: 'function',
+    detail: '(id?: number) => void',
+    insertText: 'window.clearInterval(timer)',
+    boost: 100,
+  },
+  {
+    label: 'window.FormData',
+    type: 'class',
+    detail: 'FormData constructor',
+    insertText: 'new window.FormData()',
+    boost: 95,
+  },
+  { label: 'window.Blob', type: 'class', detail: 'Blob constructor', insertText: 'window.Blob', boost: 95 },
+  { label: 'window.URL', type: 'class', detail: 'URL constructor', insertText: 'window.URL', boost: 95 },
+  { label: 'window.location.origin', type: 'property', detail: 'string', boost: 100 },
+  { label: 'window.location.protocol', type: 'property', detail: 'string', boost: 100 },
+  { label: 'window.location.host', type: 'property', detail: 'string', boost: 100 },
+  { label: 'window.location.hostname', type: 'property', detail: 'string', boost: 100 },
+  { label: 'window.location.port', type: 'property', detail: 'string', boost: 100 },
+  { label: 'window.location.pathname', type: 'property', detail: 'string', boost: 100 },
+  {
+    label: 'window.location.assign()',
+    type: 'function',
+    detail: '(url: string) => void',
+    insertText: "window.location.assign('/path')",
+    boost: 105,
+  },
+  {
+    label: 'window.location.replace()',
+    type: 'function',
+    detail: '(url: string) => void',
+    insertText: "window.location.replace('/path')",
+    boost: 105,
+  },
+  {
+    label: 'window.location.reload()',
+    type: 'function',
+    detail: '() => void',
+    insertText: 'window.location.reload()',
+    boost: 110,
+  },
+  {
+    label: 'window.location.href =',
+    type: 'snippet',
+    detail: 'safe assignment only',
+    info: 'RunJS allows assigning window.location.href, but reading href is blocked.',
+    insertText: "window.location.href = '/path'",
+    boost: 95,
+  },
+  {
+    label: 'document.createElement()',
+    type: 'function',
+    detail: '(tagName: string) => HTMLElement',
+    insertText: "document.createElement('div')",
+    boost: 105,
+  },
+  {
+    label: 'document.querySelector()',
+    type: 'function',
+    detail: '(selectors: string) => Element | null',
+    insertText: "document.querySelector('.selector')",
+    boost: 105,
+  },
+  {
+    label: 'document.querySelectorAll()',
+    type: 'function',
+    detail: '(selectors: string) => NodeListOf<Element>',
+    insertText: "document.querySelectorAll('.selector')",
+    boost: 105,
+  },
+  {
+    label: 'navigator.clipboard.writeText()',
+    type: 'function',
+    detail: '(text: string) => Promise<void>',
+    insertText: "await navigator.clipboard.writeText('text')",
+    boost: 105,
+  },
+  { label: 'navigator.onLine', type: 'property', detail: 'boolean', boost: 100 },
+  { label: 'navigator.language', type: 'property', detail: 'string', boost: 100 },
+  { label: 'navigator.languages', type: 'property', detail: 'string[]', boost: 100 },
+  {
+    label: 'console.log()',
+    type: 'function',
+    detail: '(...args: any[]) => void',
+    insertText: "console.log('message')",
+    boost: 95,
+  },
+  {
+    label: 'console.info()',
+    type: 'function',
+    detail: '(...args: any[]) => void',
+    insertText: "console.info('message')",
+    boost: 95,
+  },
+  {
+    label: 'console.warn()',
+    type: 'function',
+    detail: '(...args: any[]) => void',
+    insertText: "console.warn('message')",
+    boost: 95,
+  },
+  {
+    label: 'console.error()',
+    type: 'function',
+    detail: '(...args: any[]) => void',
+    insertText: "console.error('message')",
+    boost: 95,
+  },
+  {
+    label: 'setTimeout()',
+    type: 'function',
+    detail: '(handler: Function, timeout?: number) => number',
+    insertText: 'setTimeout(() => {}, 0)',
+    boost: 95,
+  },
+  {
+    label: 'clearTimeout()',
+    type: 'function',
+    detail: '(id?: number) => void',
+    insertText: 'clearTimeout(timer)',
+    boost: 95,
+  },
+  {
+    label: 'setInterval()',
+    type: 'function',
+    detail: '(handler: Function, timeout?: number) => number',
+    insertText: 'setInterval(() => {}, 1000)',
+    boost: 95,
+  },
+  {
+    label: 'clearInterval()',
+    type: 'function',
+    detail: '(id?: number) => void',
+    insertText: 'clearInterval(timer)',
+    boost: 95,
+  },
+  { label: 'Blob', type: 'class', detail: 'Blob constructor', insertText: 'Blob', boost: 90 },
+  { label: 'URL', type: 'class', detail: 'URL constructor', insertText: 'URL', boost: 90 },
+];
+
+const RUNJS_RUNTIME_COMPLETIONS: StaticCompletionEntry[] = [
+  {
+    label: 'ctx.runjs()',
+    type: 'function',
+    detail: '(code: string, variables?: object, options?: object) => Promise<any>',
+    insertText: "await ctx.runjs('return 1')",
+    boost: 105,
+  },
+  {
+    label: 'ctx.loadCSS()',
+    type: 'function',
+    detail: '(href: string) => Promise<void>',
+    insertText: "await ctx.loadCSS('https://example.com/style.css')",
+    boost: 105,
+  },
+  {
+    label: 'ctx.previewRunJS()',
+    type: 'function',
+    detail: '(code: string, version?: string) => Promise<PreviewRunJSResult>',
+    insertText: "await ctx.previewRunJS('console.log(1)', 'v2')",
+    boost: 105,
+  },
+  {
+    label: 'ctx.requireAsync()',
+    type: 'function',
+    detail: '(url: string) => Promise<any>',
+    insertText: "const lib = await ctx.requireAsync('https://cdn.example.com/lib.umd.js')",
+    boost: 100,
+  },
+  {
+    label: 'ctx.importAsync()',
+    type: 'function',
+    detail: '(url: string) => Promise<any>',
+    insertText: "const mod = await ctx.importAsync('lodash-es')",
+    boost: 100,
+  },
+  {
+    label: 'ctx.t()',
+    type: 'function',
+    detail: '(key: string, options?: object) => string',
+    insertText: "ctx.t('Hello')",
+    boost: 100,
+  },
+  {
+    label: 'ctx.resolveJsonTemplate()',
+    type: 'function',
+    detail: '(template: any) => Promise<any>',
+    insertText: "await ctx.resolveJsonTemplate({ value: '{{ctx.record.id}}' })",
+    boost: 100,
+  },
+  {
+    label: 'ctx.sql.run()',
+    type: 'function',
+    detail: '(sql: string, options?: SQLRunOptions) => Promise<any>',
+    insertText: "await ctx.sql.run('SELECT 1', { type: 'selectRows' })",
+    boost: 100,
+  },
+  {
+    label: 'ctx.sql.save()',
+    type: 'function',
+    detail: '(data: { uid: string; sql: string; dataSourceKey?: string }) => Promise<void>',
+    insertText: "await ctx.sql.save({ uid: 'sql-uid', sql: 'SELECT 1' })",
+    boost: 95,
+  },
+  {
+    label: 'ctx.sql.runById()',
+    type: 'function',
+    detail: '(uid: string, options?: SQLRunOptions) => Promise<any>',
+    insertText: "await ctx.sql.runById('sql-uid', { type: 'selectRows' })",
+    boost: 100,
+  },
+  {
+    label: 'ctx.sql.destroy()',
+    type: 'function',
+    detail: '(uid: string) => Promise<void>',
+    insertText: "await ctx.sql.destroy('sql-uid')",
+    boost: 95,
+  },
+  {
+    label: 'ctx.logger.info()',
+    type: 'function',
+    detail: 'Pino logger info',
+    insertText: "ctx.logger.info({ foo: 1 }, 'message')",
+    boost: 95,
+  },
+  {
+    label: 'ctx.logger.warn()',
+    type: 'function',
+    detail: 'Pino logger warn',
+    insertText: "ctx.logger.warn({ foo: 1 }, 'message')",
+    boost: 95,
+  },
+  {
+    label: 'ctx.logger.error()',
+    type: 'function',
+    detail: 'Pino logger error',
+    insertText: "ctx.logger.error({ err }, 'message')",
+    boost: 95,
+  },
+  {
+    label: 'ctx.logger.debug()',
+    type: 'function',
+    detail: 'Pino logger debug',
+    insertText: "ctx.logger.debug({ foo: 1 }, 'message')",
+    boost: 95,
+  },
+  {
+    label: 'ctx.logger.child()',
+    type: 'function',
+    detail: '(bindings: object) => Logger',
+    insertText: "ctx.logger.child({ module: 'runjs' })",
+    boost: 90,
+  },
+  {
+    label: 'ctx.libs.React.createElement()',
+    type: 'function',
+    detail: 'React.createElement',
+    insertText: "ctx.libs.React.createElement('div', null, 'Hello')",
+    boost: 90,
+  },
+  {
+    label: 'ctx.libs.React.useState()',
+    type: 'function',
+    detail: 'React.useState',
+    insertText: 'ctx.libs.React.useState(initialValue)',
+    boost: 90,
+  },
+  {
+    label: 'ctx.libs.React.useEffect()',
+    type: 'function',
+    detail: 'React.useEffect',
+    insertText: 'ctx.libs.React.useEffect(() => {}, [])',
+    boost: 90,
+  },
+  {
+    label: 'ctx.libs.React.useMemo()',
+    type: 'function',
+    detail: 'React.useMemo',
+    insertText: 'ctx.libs.React.useMemo(() => value, [])',
+    boost: 85,
+  },
+  {
+    label: 'ctx.libs.React.useCallback()',
+    type: 'function',
+    detail: 'React.useCallback',
+    insertText: 'ctx.libs.React.useCallback(() => {}, [])',
+    boost: 85,
+  },
+  {
+    label: 'ctx.libs.ReactDOM.createRoot()',
+    type: 'function',
+    detail: 'ReactDOM.createRoot',
+    insertText: 'ctx.libs.ReactDOM.createRoot(ctx.element.__el)',
+    boost: 90,
+    requires: ['element'],
+  },
+  { label: 'ctx.libs.antd.Button', type: 'class', detail: 'Ant Design Button', boost: 90 },
+  { label: 'ctx.libs.antd.Table', type: 'class', detail: 'Ant Design Table', boost: 90 },
+  { label: 'ctx.libs.antd.Form', type: 'class', detail: 'Ant Design Form', boost: 90 },
+  { label: 'ctx.libs.antd.Input', type: 'class', detail: 'Ant Design Input', boost: 90 },
+  { label: 'ctx.libs.antd.Select', type: 'class', detail: 'Ant Design Select', boost: 90 },
+  { label: 'ctx.libs.antd.Modal', type: 'class', detail: 'Ant Design Modal', boost: 90 },
+  { label: 'ctx.libs.dayjs()', type: 'function', detail: 'dayjs', insertText: 'ctx.libs.dayjs()', boost: 90 },
+  {
+    label: 'ctx.libs.lodash.get()',
+    type: 'function',
+    detail: 'lodash.get',
+    insertText: "ctx.libs.lodash.get(obj, 'a.b')",
+    boost: 90,
+  },
+  {
+    label: 'ctx.libs.lodash.set()',
+    type: 'function',
+    detail: 'lodash.set',
+    insertText: "ctx.libs.lodash.set(obj, 'a.b', value)",
+    boost: 85,
+  },
+  {
+    label: 'ctx.libs.lodash.debounce()',
+    type: 'function',
+    detail: 'lodash.debounce',
+    insertText: 'ctx.libs.lodash.debounce(() => {}, 300)',
+    boost: 85,
+  },
+  {
+    label: 'ctx.libs.lodash.cloneDeep()',
+    type: 'function',
+    detail: 'lodash.cloneDeep',
+    insertText: 'ctx.libs.lodash.cloneDeep(value)',
+    boost: 85,
+  },
+  {
+    label: 'ctx.libs.formula.SUM()',
+    type: 'function',
+    detail: 'Formula.js SUM',
+    insertText: 'ctx.libs.formula.SUM(1, 2, 3)',
+    boost: 85,
+  },
+  {
+    label: 'ctx.libs.formula.AVERAGE()',
+    type: 'function',
+    detail: 'Formula.js AVERAGE',
+    insertText: 'ctx.libs.formula.AVERAGE(1, 2, 3)',
+    boost: 85,
+  },
+  {
+    label: 'ctx.libs.math.evaluate()',
+    type: 'function',
+    detail: 'mathjs evaluate',
+    insertText: "ctx.libs.math.evaluate('2 + 3')",
+    boost: 85,
+  },
+  {
+    label: 'ctx.libs.math.round()',
+    type: 'function',
+    detail: 'mathjs round',
+    insertText: 'ctx.libs.math.round(value, 2)',
+    boost: 85,
+  },
+  {
+    label: 'ctx.React.createElement()',
+    type: 'function',
+    detail: 'React.createElement alias',
+    insertText: "ctx.React.createElement('div', null, 'Hello')",
+    boost: 80,
+  },
+  {
+    label: 'ctx.ReactDOM.createRoot()',
+    type: 'function',
+    detail: 'ReactDOM.createRoot alias',
+    insertText: 'ctx.ReactDOM.createRoot(ctx.element.__el)',
+    boost: 80,
+    requires: ['element'],
+  },
+  { label: 'ctx.antd.Button', type: 'class', detail: 'Ant Design Button alias', boost: 80 },
+  { label: 'ctx.antd.Modal', type: 'class', detail: 'Ant Design Modal alias', boost: 80 },
+  { label: 'ctx.dayjs()', type: 'function', detail: 'dayjs alias', insertText: 'ctx.dayjs()', boost: 80 },
+];
+
+function buildStaticRuntimeCompletions(capabilities: { element: boolean }): Completion[] {
+  return [...SAFE_GLOBAL_COMPLETIONS, ...RUNJS_RUNTIME_COMPLETIONS]
+    .filter((entry) => satisfiesCompletionRequirements(entry, capabilities))
+    .filter((entry) => capabilities.element || !usesCtxElement(entry.insertText))
+    .map(staticEntry);
+}
+
 export async function buildRunJSCompletions(
   hostCtx: any,
   version = 'v1',
@@ -31,6 +513,7 @@ export async function buildRunJSCompletions(
   completions: Completion[];
   entries: SnippetEntry[];
 }> {
+  const requestedScenes = normalizeScenes(scene);
   const isFunctionLikeDocNode = (node: any, completionSpec: any): boolean => {
     if (!node || typeof node !== 'object' || Array.isArray(node)) return false;
     const type = typeof (node as any).type === 'string' ? String((node as any).type) : '';
@@ -56,7 +539,7 @@ export async function buildRunJSCompletions(
   let apiInfos: any = null;
   try {
     if (hostCtx && typeof (hostCtx as any).getApiInfos === 'function') {
-      apiInfos = await (hostCtx as any).getApiInfos({ version });
+      apiInfos = await (hostCtx as any).getApiInfos({ version, includeCompletion: true });
     }
   } catch (_) {
     apiInfos = null;
@@ -73,10 +556,12 @@ export async function buildRunJSCompletions(
   };
   const docApis = { ...((doc as any)?.properties || {}), ...normalizeMethodsRecord((doc as any)?.methods) };
   const apisSource = { ...(apiInfos && typeof apiInfos === 'object' ? apiInfos : {}), ...(docApis || {}) };
-  const completions: Completion[] = [];
+  const hasElementContext = hasRunJSElementContext(doc, apiInfos, requestedScenes);
+  const completions: Completion[] = buildStaticRuntimeCompletions({ element: hasElementContext });
   const priorityRoots = new Set(['api', 'resource', 'viewer', 'record', 'formValues', 'popup']);
   const hiddenDecisionCache = new Map<string, { hideSelf: boolean; hideSubpaths: string[] }>();
   const hiddenPathPrefixes = new Set<string>();
+  if (!hasElementContext) hiddenPathPrefixes.add('ctx.element');
 
   const isHiddenByPaths = (label: string) => {
     if (!label || typeof label !== 'string') return false;
@@ -201,6 +686,8 @@ export async function buildRunJSCompletions(
       const insertText =
         completionSpec?.insertText ??
         (root === 'popup' ? `await ctx.getVar('${ctxLabel}')` : isCallable ? `${ctxLabel}()` : undefined);
+      if (!satisfiesCompletionRequirements(completionSpec, { element: hasElementContext })) continue;
+      if (!hasElementContext && usesCtxElement(insertText)) continue;
       const apply = insertText
         ? (view: EditorView, _completion: Completion, from: number, to: number) => {
             view.dispatch({
@@ -234,12 +721,6 @@ export async function buildRunJSCompletions(
   } catch (_) {
     entries = [];
   }
-
-  const requestedScenes = Array.isArray(scene)
-    ? scene.filter((s): s is string => typeof s === 'string' && s.trim().length > 0)
-    : scene
-      ? [scene]
-      : [];
 
   const filteredEntries = requestedScenes.length
     ? entries.filter((entry) => {

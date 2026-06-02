@@ -223,6 +223,7 @@ export default class AppStart extends Command {
         apiBaseUrl,
         containerName: runtime.containerName,
         logHint: `You can inspect startup logs with \`nb app logs --env ${runtime.envName}\`.`,
+        ...(flags.verbose ? { verbose: true } : {}),
       });
       if (shouldPrintStartSuccess()) {
         succeedTask(`NocoBase is running for "${runtime.envName}"${appUrl ? ` at ${appUrl}` : ''}.`);

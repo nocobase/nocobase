@@ -66,15 +66,24 @@ export default class AppRestart extends Command {
       default: false,
     }),
     quickstart: Flags.boolean({ description: 'Quickstart the application after stopping it', required: false }),
-    port: Flags.string({ description: 'Port (overrides appPort from env config when set)', char: 'p', required: false }),
+    port: Flags.string({
+      description: 'Port (overrides appPort from env config when set)',
+      char: 'p',
+      required: false,
+    }),
     daemon: Flags.boolean({
-      description: 'Run the application as a daemon after stopping it (default: true; use --no-daemon to stay in the foreground)',
+      description:
+        'Run the application as a daemon after stopping it (default: true; use --no-daemon to stay in the foreground)',
       char: 'd',
       required: false,
       default: true,
       allowNo: true,
     }),
-    instances: Flags.integer({ description: 'Number of instances to run after stopping it', char: 'i', required: false }),
+    instances: Flags.integer({
+      description: 'Number of instances to run after stopping it',
+      char: 'i',
+      required: false,
+    }),
     'launch-mode': Flags.string({ description: 'Launch Mode', required: false, options: ['pm2', 'node'] }),
     verbose: Flags.boolean({
       description: 'Show raw shutdown/startup output from the underlying local or Docker command',
@@ -140,19 +149,16 @@ export default class AppRestart extends Command {
       }
 
       const appUrl = formatAppUrl(
-        runtime.env.appPort === undefined || runtime.env.appPort === null
-          ? undefined
-          : String(runtime.env.appPort),
+        runtime.env.appPort === undefined || runtime.env.appPort === null ? undefined : String(runtime.env.appPort),
       );
       await waitForAppReady({
         envName: runtime.envName,
         apiBaseUrl: resolveManagedAppApiBaseUrl(runtime),
         containerName: runtime.containerName,
         logHint: `You can inspect startup logs with \`nb app logs --env ${runtime.envName}\`.`,
+        ...(flags.verbose ? { verbose: true } : {}),
       });
-      succeedTask(
-        `NocoBase is running for "${runtime.envName}"${appUrl ? ` at ${appUrl}` : ''}.`,
-      );
+      succeedTask(`NocoBase is running for "${runtime.envName}"${appUrl ? ` at ${appUrl}` : ''}.`);
       return;
     }
 

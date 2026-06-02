@@ -9,6 +9,7 @@
 
 import { Command, Flags } from '@oclif/core';
 import pc from 'picocolors';
+import crypto from 'node:crypto';
 import { existsSync } from 'node:fs';
 import path from 'node:path';
 import { stdin as stdinStream, stdout as stdoutStream } from 'node:process';
@@ -106,6 +107,19 @@ function explicitApiBaseUrlFlag(flags: { 'api-base-url'?: string }): string {
 
 function explicitDbHostFlag(flags: { 'db-host'?: string }): string {
   return String(flags['db-host'] ?? '').trim();
+}
+
+function optionalInitString(value: unknown): string | undefined {
+  const text = String(value ?? '').trim();
+  return text || undefined;
+}
+
+function resolveManagedAppKey(value: unknown): string {
+  return optionalInitString(value) ?? crypto.randomBytes(32).toString('hex');
+}
+
+function resolveManagedTimeZone(value: unknown): string {
+  return optionalInitString(value) ?? (Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC');
 }
 
 function shouldAllowExistingInitEnv(): boolean {
@@ -1042,6 +1056,7 @@ Prompt modes:
     } = {},
   ): Promise<void> {
     const envName = String(results.appName ?? DEFAULT_INIT_APP_NAME).trim() || DEFAULT_INIT_APP_NAME;
+    const existingEnv = await getEnv(envName, { scope: resolveDefaultConfigScope() });
     const appPort = String(results.appPort ?? '').trim();
     const source = String(results.source ?? '').trim();
     const version = resolveInitDownloadVersion(results);
@@ -1065,11 +1080,16 @@ Prompt modes:
     const authUsername = authType === 'basic' ? String(results.username ?? results.rootUsername ?? '').trim() : '';
     const accessToken = String(results.accessToken ?? '');
     const skipDownload = results.skipDownload === true;
+    const appKey = resolveManagedAppKey(results.appKey ?? existingEnv?.config.appKey);
+    const timeZone = resolveManagedTimeZone(results.timeZone ?? existingEnv?.config.timezone);
     const builtinDb = explicitDbHostFlag(flags)
       ? false
       : results.builtinDb === undefined
         ? undefined
         : Boolean(results.builtinDb);
+
+    results.appKey = appKey;
+    results.timeZone = timeZone;
 
     await upsertEnv(
       envName,
@@ -1094,6 +1114,8 @@ Prompt modes:
         ...(appRootPath ? { appRootPath } : {}),
         ...(storagePath ? { storagePath } : {}),
         ...(appPort ? { appPort } : {}),
+        ...(appKey ? { appKey } : {}),
+        ...(timeZone ? { timezone: timeZone } : {}),
         ...(!skipDownload && results.devDependencies !== undefined
           ? { devDependencies: Boolean(results.devDependencies) }
           : {}),

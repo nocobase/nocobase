@@ -95,6 +95,28 @@ test('env auth falls back to the current env and refreshes oauth envs', async ()
   expect(mocks.failTask.mock.calls.length).toBe(0);
 });
 
+test('env auth explains how to initialize a missing env', async () => {
+  const { default: EnvAuth } = await import('../commands/env/auth.js');
+  mocks.getEnv.mockResolvedValue(undefined);
+
+  const command = Object.assign(Object.create(EnvAuth.prototype), {
+    parse: vi.fn(async () => ({
+      args: { name: 'staging' },
+      flags: {},
+    })),
+    config: {
+      runCommand: vi.fn(async () => undefined),
+    },
+    error: (message: string) => {
+      throw new Error(message);
+    },
+  });
+
+  await expect((() => EnvAuth.prototype.run.call(command))()).rejects.toThrow(
+    /Env "staging" is not configured\.\s+Run `nb init --ui --env staging` first\./,
+  );
+});
+
 test('env auth prompts for a token when the env uses token auth', async () => {
   const { default: EnvAuth } = await import('../commands/env/auth.js');
   mocks.getEnv.mockResolvedValue({

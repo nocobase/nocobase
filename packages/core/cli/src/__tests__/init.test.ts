@@ -33,6 +33,8 @@ const mocks = vi.hoisted(() => ({
 beforeEach(() => {
   vi.clearAllMocks();
   process.env.NB_LOCALE = 'en-US';
+  mocks.getEnv.mockReset();
+  mocks.getEnv.mockResolvedValue(undefined);
   mocks.upsertEnv.mockResolvedValue(undefined);
   mocks.inspectSkillsStatus.mockResolvedValue({ installed: false });
   mocks.installNocoBaseSkills.mockResolvedValue({ action: 'installed', status: {} });
@@ -366,35 +368,33 @@ test('nb init forwards download options to nb install for a new app flow', async
   await Init.prototype.run.call(command);
 
   expect(mocks.runNpm.mock.calls.length).toBe(0);
-  expect(mocks.upsertEnv.mock.calls).toEqual([
-    [
-      'demoapp',
-      {
-        apiBaseUrl: 'http://127.0.0.1:13080/api',
-        authType: 'oauth',
-        source: 'git',
-        downloadVersion: 'beta',
-        gitUrl: 'https://github.com/nocobase/nocobase.git',
-        npmRegistry: 'https://registry.npmmirror.com',
-        appRootPath: './apps/demoapp',
-        storagePath: './storage/demoapp',
-        appPort: '13080',
-        builtinDb: true,
-        dbDialect: 'postgres',
-        builtinDbImage: 'registry.example.com/postgres:16',
-        dbHost: '127.0.0.1',
-        dbPort: '5432',
-        dbDatabase: 'demoapp',
-        dbUser: 'nocobase',
-        dbPassword: 'secret',
-        dbSchema: 'tenant_a',
-        dbTablePrefix: 'nb_',
-        dbUnderscored: true,
-        kind: 'local',
-      },
-      { scope: 'global' },
-    ],
-  ]);
+  expect(mocks.upsertEnv.mock.calls[0]?.[0]).toBe('demoapp');
+  expect(mocks.upsertEnv.mock.calls[0]?.[1]).toMatchObject({
+    apiBaseUrl: 'http://127.0.0.1:13080/api',
+    authType: 'oauth',
+    source: 'git',
+    downloadVersion: 'beta',
+    gitUrl: 'https://github.com/nocobase/nocobase.git',
+    npmRegistry: 'https://registry.npmmirror.com',
+    appRootPath: './apps/demoapp',
+    storagePath: './storage/demoapp',
+    appPort: '13080',
+    builtinDb: true,
+    dbDialect: 'postgres',
+    builtinDbImage: 'registry.example.com/postgres:16',
+    dbHost: '127.0.0.1',
+    dbPort: '5432',
+    dbDatabase: 'demoapp',
+    dbUser: 'nocobase',
+    dbPassword: 'secret',
+    dbSchema: 'tenant_a',
+    dbTablePrefix: 'nb_',
+    dbUnderscored: true,
+    kind: 'local',
+    timezone: expect.any(String),
+  });
+  expect(String(mocks.upsertEnv.mock.calls[0]?.[1]?.appKey ?? '')).toMatch(/^[a-f0-9]{64}$/);
+  expect(mocks.upsertEnv.mock.calls[0]?.[2]).toEqual({ scope: 'global' });
   expect(runCommand.mock.calls).toEqual([
     [
       'install',
@@ -567,6 +567,10 @@ test('nb init saves env config before install starts so failures still leave the
 
   expect(mocks.upsertEnv.mock.calls.length).toBe(1);
   expect(mocks.upsertEnv.mock.invocationCallOrder[0] < runCommand.mock.invocationCallOrder[0]).toBe(true);
+  expect(mocks.upsertEnv.mock.calls[0]?.[1]).toMatchObject({
+    timezone: expect.any(String),
+  });
+  expect(String(mocks.upsertEnv.mock.calls[0]?.[1]?.appKey ?? '')).toMatch(/^[a-f0-9]{64}$/);
   expect(String(mocks.error.mock.calls.at(-1)?.[0] ?? '')).toContain('install failed');
 });
 
