@@ -18,6 +18,7 @@ import {
   getCollectionFields,
   getCollectionModelAttributes,
   getCollectionName,
+  getInvalidChartBuilderRelationDirectSubfieldDetails,
   getUnsupportedChartBuilderRelationSubfieldDetails,
   getFieldFilterable,
   getFieldInterface,
@@ -1500,24 +1501,100 @@ function collectBuilderChartAssetFieldErrors(
     if (!fieldPath) {
       continue;
     }
-    const field = resolveFieldFromCollection(collection, fieldPath);
-    if (!field) {
-      if (collectionHasConcreteField(collection, fieldPath)) {
+    const fieldPathParts = fieldPath.split('.').filter(Boolean);
+    const isCountMeasureSelection =
+      item.kind === 'measure' &&
+      String(item.selection?.aggregation || '').trim() === 'count' &&
+      !item.selection?.distinct;
+    if (fieldPathParts.length > 1 && !isCountMeasureSelection) {
+      const directAssociationPath = fieldPathParts[0];
+      const directAssociationField = resolveFieldFromCollection(collection, directAssociationPath);
+      const directAssociationTargetCollection =
+        directAssociationField && isAssociationField(directAssociationField)
+          ? resolveFieldTargetCollection(
+              directAssociationField,
+              dataSourceKey,
+              (resolvedDataSourceKey, targetCollection) =>
+                context.getCollection?.(resolvedDataSourceKey, targetCollection),
+            )
+          : null;
+      const invalidDirectSubfield = directAssociationTargetCollection
+        ? getInvalidChartBuilderRelationDirectSubfieldDetails({
+            associationPathName: directAssociationPath,
+            selectedSubfieldPath: fieldPathParts.slice(1).join('.'),
+            targetCollection: directAssociationTargetCollection,
+          })
+        : null;
+      if (invalidDirectSubfield) {
+        pushAuthoringError(errors, {
+          path: item.fieldPath,
+          ruleId: 'chart-builder-query-relation-direct-subfield-required',
+          message: `flowSurfaces authoring ${
+            item.fieldPath
+          } must reference a direct scalar child field under relation '${
+            invalidDirectSubfield.associationPath
+          }'. ${formatChartBuilderSupportedRelationSubfields(
+            invalidDirectSubfield.associationPath,
+            invalidDirectSubfield.supportedFields,
+          )}`,
+          details: withChartRepairHint({
+            fieldPath,
+            dataSourceKey,
+            collectionName,
+            ...invalidDirectSubfield,
+          }),
+        });
         continue;
       }
-      pushAuthoringError(errors, {
-        path: item.fieldPath,
-        ruleId: 'chart-builder-query-field-unknown',
-        message: `flowSurfaces authoring ${item.fieldPath} references unknown field '${fieldPath}' on collection '${dataSourceKey}.${collectionName}'`,
-        details: withChartRepairHint({
-          fieldPath,
-          dataSourceKey,
-          collectionName,
-        }),
-      });
-      continue;
     }
-    if (!fieldPath.includes('.') && isAssociationField(field)) {
+    const field = resolveFieldFromCollection(collection, fieldPath);
+    const associationPath = fieldPath.includes('.') ? fieldPath.split('.').slice(0, -1).join('.') : '';
+    const leafFieldName = fieldPath.split('.').slice(-1)[0];
+    const associationField = associationPath ? resolveFieldFromCollection(collection, associationPath) : null;
+    const associationTargetCollection =
+      associationField && isAssociationField(associationField)
+        ? resolveFieldTargetCollection(
+            associationField,
+            dataSourceKey,
+            (resolvedDataSourceKey, targetCollection) =>
+              context.getCollection?.(resolvedDataSourceKey, targetCollection),
+          )
+        : null;
+    const leafModelAttributes = getCollectionModelAttributes(associationTargetCollection || collection);
+    const hasLeafModelAttribute = Object.prototype.hasOwnProperty.call(leafModelAttributes, leafFieldName);
+    const isCountMeasureRelationSubfield =
+      item.kind === 'measure' &&
+      String(item.selection?.aggregation || '').trim() === 'count' &&
+      !item.selection?.distinct &&
+      associationField &&
+      isAssociationField(associationField);
+    const unsupportedRelationSubfield = associationTargetCollection
+      ? getUnsupportedChartBuilderRelationSubfieldDetails({
+          associationPathName: associationPath,
+          leafFieldName,
+          leafField: field,
+          targetCollection: associationTargetCollection,
+        })
+      : null;
+    if (!field) {
+      const hasConcreteField = associationTargetCollection
+        ? hasLeafModelAttribute || collectionHasConcreteField(associationTargetCollection, leafFieldName)
+        : collectionHasConcreteField(collection, fieldPath);
+      if (!hasConcreteField) {
+        pushAuthoringError(errors, {
+          path: item.fieldPath,
+          ruleId: 'chart-builder-query-field-unknown',
+          message: `flowSurfaces authoring ${item.fieldPath} references unknown field '${fieldPath}' on collection '${dataSourceKey}.${collectionName}'`,
+          details: withChartRepairHint({
+            fieldPath,
+            dataSourceKey,
+            collectionName,
+          }),
+        });
+        continue;
+      }
+    }
+    if (!fieldPath.includes('.') && field && isAssociationField(field)) {
       const suggestion = resolveChartBuilderAssociationSubfieldSuggestion(
         fieldPath,
         field,
@@ -1536,14 +1613,6 @@ function collectBuilderChartAssetFieldErrors(
         }),
       });
     }
-    const associationPath = fieldPath.includes('.') ? fieldPath.split('.').slice(0, -1).join('.') : '';
-    const associationField = associationPath ? resolveFieldFromCollection(collection, associationPath) : null;
-    const isCountMeasureRelationSubfield =
-      item.kind === 'measure' &&
-      String(item.selection?.aggregation || '').trim() === 'count' &&
-      !item.selection?.distinct &&
-      associationField &&
-      isAssociationField(associationField);
     if (isCountMeasureRelationSubfield) {
       pushAuthoringError(errors, {
         path: item.fieldPath,
@@ -1565,23 +1634,6 @@ function collectBuilderChartAssetFieldErrors(
       });
       continue;
     }
-    const associationTargetCollection =
-      associationField && isAssociationField(associationField)
-        ? resolveFieldTargetCollection(
-            associationField,
-            dataSourceKey,
-            (resolvedDataSourceKey, targetCollection) =>
-              context.getCollection?.(resolvedDataSourceKey, targetCollection),
-          )
-        : null;
-    const unsupportedRelationSubfield = associationTargetCollection
-      ? getUnsupportedChartBuilderRelationSubfieldDetails({
-          associationPathName: associationPath,
-          leafFieldName: fieldPath.split('.').slice(-1)[0],
-          leafField: field,
-          targetCollection: associationTargetCollection,
-        })
-      : null;
     if (unsupportedRelationSubfield) {
       pushAuthoringError(errors, {
         path: item.fieldPath,

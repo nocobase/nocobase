@@ -226,6 +226,12 @@ export type RunJsAstInspection = {
     member?: string;
     ruleId: string;
   }>;
+  invalidCtxNonFunctionCalls: Array<{
+    capability: string;
+    index: number;
+    member: string;
+    ruleId: 'runjs-ctx-member-not-callable';
+  }>;
   invalidCtxLibMemberAccesses: InvalidCtxLibMemberAccess[];
   invalidResourceTypeCalls: Array<{
     capability: string;
@@ -299,6 +305,14 @@ export type CtxRootAlias = SourceRange & {
   capability: 'ctx';
   declarationStart?: number;
   executionScope: SourceRange;
+  name: string;
+};
+
+export type CtxNonFunctionRootAlias = SourceRange & {
+  capability: string;
+  declarationStart?: number;
+  executionScope: SourceRange;
+  member: string;
   name: string;
 };
 

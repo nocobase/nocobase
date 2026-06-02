@@ -20,6 +20,7 @@ import type {
   CtxLibMemberCaseMismatch,
   CtxLibsRootAlias,
   CtxMethodAlias,
+  CtxNonFunctionRootAlias,
   CtxRootAlias,
   InvalidCtxLibMemberAccess,
   RunJsAstInspection,
@@ -50,6 +51,7 @@ import {
   getAstStaticPropertyName,
   hasAstShadowBinding,
   isAstCtxApiAliasAssignmentOperator,
+  isAstDefiniteAssignmentOperator,
   isCtxIdentifier,
   isCtxRootFromAst,
   isUnshadowedCtxIdentifier,
@@ -70,6 +72,8 @@ import {
   RUNJS_CTX_API_ALLOWED_MEMBERS,
   RUNJS_CTX_API_AUTH_ALLOWED_MEMBERS,
   RUNJS_CTX_LIB_ALLOWED_MEMBERS_BY_LIBRARY,
+  RUNJS_CTX_NON_FUNCTION_ROOTS,
+  RUNJS_CTX_NON_FUNCTION_ROOTS_BY_MODEL_USE,
   RUNJS_RESOURCE_METHODS,
 } from '../runtime/constants';
 
@@ -77,6 +81,23 @@ export function collectCtxRootAliasesFromAst(
   ast: any,
   source: string,
   identifierBindings: AstIdentifierBinding[],
+): CtxRootAlias[] {
+  return collectCtxRootAliasesFromAstInternal(ast, source, identifierBindings, false);
+}
+
+export function collectCtxDefiniteRootAliasesFromAst(
+  ast: any,
+  source: string,
+  identifierBindings: AstIdentifierBinding[],
+): CtxRootAlias[] {
+  return collectCtxRootAliasesFromAstInternal(ast, source, identifierBindings, true);
+}
+
+function collectCtxRootAliasesFromAstInternal(
+  ast: any,
+  source: string,
+  identifierBindings: AstIdentifierBinding[],
+  definiteOnly: boolean,
 ): CtxRootAlias[] {
   const aliases: CtxRootAlias[] = [];
   const writes = collectAstIdentifierWritesFromAst(ast, source);
@@ -95,10 +116,16 @@ export function collectCtxRootAliasesFromAst(
 
   walkAstAncestor(ast, {
     AssignmentExpression(node: any, ancestors: any[]) {
-      if (!isAstCtxApiAliasAssignmentOperator(node.operator) || node.left?.type !== 'Identifier') {
+      const isAliasAssignmentOperator = definiteOnly
+        ? isAstDefiniteAssignmentOperator(node.operator)
+        : isAstCtxApiAliasAssignmentOperator(node.operator);
+      if (!isAliasAssignmentOperator || node.left?.type !== 'Identifier') {
         return;
       }
-      if (isCtxRootFromAst(node.right, getActiveAliases(), identifierBindings)) {
+      const isCtxRoot = definiteOnly
+        ? isDefiniteCtxRootFromAst(node.right, getActiveAliases(), identifierBindings)
+        : isCtxRootFromAst(node.right, getActiveAliases(), identifierBindings);
+      if (isCtxRoot) {
         addAlias(
           node.left.name,
           node,
@@ -109,7 +136,10 @@ export function collectCtxRootAliasesFromAst(
       }
     },
     VariableDeclarator(node: any, ancestors: any[]) {
-      if (node.id?.type !== 'Identifier' || !isCtxRootFromAst(node.init, getActiveAliases(), identifierBindings)) {
+      const isCtxRoot = definiteOnly
+        ? isDefiniteCtxRootFromAst(node.init, getActiveAliases(), identifierBindings)
+        : isCtxRootFromAst(node.init, getActiveAliases(), identifierBindings);
+      if (node.id?.type !== 'Identifier' || !isCtxRoot) {
         return;
       }
       const declaration = findAstAncestor(ancestors, 'VariableDeclaration');
@@ -118,6 +148,184 @@ export function collectCtxRootAliasesFromAst(
   });
 
   return trimAstAliasesAfterWrites(aliases, writes, identifierBindings);
+}
+
+function isDefiniteCtxRootFromAst(
+  node: any,
+  aliases: CtxRootAlias[],
+  identifierBindings: AstIdentifierBinding[],
+): boolean {
+  const unwrapped = unwrapAstChainExpression(node);
+  if (!unwrapped) {
+    return false;
+  }
+  if (unwrapped.type === 'ConditionalExpression') {
+    return (
+      isDefiniteCtxRootFromAst(unwrapped.consequent, aliases, identifierBindings) &&
+      isDefiniteCtxRootFromAst(unwrapped.alternate, aliases, identifierBindings)
+    );
+  }
+  if (unwrapped.type === 'SequenceExpression') {
+    const expressions = unwrapped.expressions || [];
+    return isDefiniteCtxRootFromAst(expressions[expressions.length - 1], aliases, identifierBindings);
+  }
+  if (unwrapped.type === 'AssignmentExpression' && isAstDefiniteAssignmentOperator(unwrapped.operator)) {
+    return isDefiniteCtxRootFromAst(unwrapped.right, aliases, identifierBindings);
+  }
+  if (isUnshadowedCtxIdentifier(unwrapped, identifierBindings)) {
+    return true;
+  }
+  if (unwrapped.type !== 'Identifier') {
+    return false;
+  }
+  const index = typeof unwrapped.start === 'number' ? unwrapped.start : 0;
+  return !!resolveAstAliasBinding(unwrapped.name, index, aliases, identifierBindings);
+}
+
+export function collectCtxNonFunctionRootAliasesFromAst(
+  ast: any,
+  source: string,
+  ctxRootAliases: CtxRootAlias[],
+  identifierBindings: AstIdentifierBinding[],
+  modelUse = '',
+): CtxNonFunctionRootAlias[] {
+  const aliases: CtxNonFunctionRootAlias[] = [];
+  const writes = collectAstIdentifierWritesFromAst(ast, source);
+  const addAlias = (
+    name: string,
+    member: string,
+    node: any,
+    ancestors: any[],
+    isVar = false,
+    scopeOverride?: SourceRange,
+  ) => {
+    const scope = scopeOverride || getAstBindingScopeRange(ancestors, source.length, isVar);
+    aliases.push({
+      capability: `ctx.${member}`,
+      declarationStart: typeof node?.start === 'number' ? node.start : scope.start,
+      executionScope: getAstExecutionScopeRange(ancestors, source.length),
+      member,
+      name,
+      start: typeof node?.start === 'number' ? node.start : scope.start,
+      end: scope.end,
+    });
+  };
+
+  const collectPatternAliases = (pattern: any, node: any, ancestors: any[], isVar = false) => {
+    collectAstObjectPatternAliases(pattern, (name, member, aliasNode) => {
+      if (isRunJsCtxNonFunctionRoot(member, modelUse)) {
+        addAlias(name, member, aliasNode || node, ancestors, isVar);
+      }
+    });
+  };
+
+  walkAstAncestor(ast, {
+    AssignmentExpression(node: any, ancestors: any[]) {
+      if (!isAstDefiniteAssignmentOperator(node.operator)) {
+        return;
+      }
+      const member = getCtxNonFunctionRootMemberFromAst(node.right, ctxRootAliases, identifierBindings, modelUse);
+      if (node.left?.type === 'Identifier' && member) {
+        addAlias(
+          node.left.name,
+          member,
+          node,
+          ancestors,
+          false,
+          getAstAssignmentTargetScope(node.left, ancestors, source.length, identifierBindings),
+        );
+        return;
+      }
+      if (node.operator === '=' && node.left?.type === 'ObjectPattern') {
+        if (isDefiniteCtxRootFromAst(node.right, ctxRootAliases, identifierBindings)) {
+          collectPatternAliases(node.left, node, ancestors);
+        }
+      }
+    },
+    VariableDeclarator(node: any, ancestors: any[]) {
+      const declaration = findAstAncestor(ancestors, 'VariableDeclaration');
+      const isVar = declaration?.kind === 'var';
+      const member = getCtxNonFunctionRootMemberFromAst(node.init, ctxRootAliases, identifierBindings, modelUse);
+      if (node.id?.type === 'Identifier' && member) {
+        addAlias(node.id.name, member, node, ancestors, isVar);
+        return;
+      }
+      if (
+        node.id?.type === 'ObjectPattern' &&
+        isDefiniteCtxRootFromAst(node.init, ctxRootAliases, identifierBindings)
+      ) {
+        collectPatternAliases(node.id, node, ancestors, isVar);
+      }
+    },
+  });
+
+  return trimAstAliasesAfterWrites(aliases, writes, identifierBindings);
+}
+
+export function collectAstInvalidCtxNonFunctionCall(
+  node: any,
+  ctxRootAliases: CtxRootAlias[],
+  ctxNonFunctionRootAliases: CtxNonFunctionRootAlias[],
+  identifierBindings: AstIdentifierBinding[],
+  modelUse = '',
+): RunJsAstInspection['invalidCtxNonFunctionCalls'] {
+  const callee = unwrapAstChainExpression(node?.callee);
+  const directMember = getCtxNonFunctionRootMemberFromAst(callee, ctxRootAliases, identifierBindings, modelUse);
+  if (directMember) {
+    return [
+      {
+        capability: `ctx.${directMember}`,
+        index: typeof node?.start === 'number' ? node.start : 0,
+        member: directMember,
+        ruleId: 'runjs-ctx-member-not-callable',
+      },
+    ];
+  }
+
+  if (callee?.type !== 'Identifier') {
+    return [];
+  }
+  const alias = resolveAstAliasBinding(
+    callee.name,
+    typeof callee.start === 'number' ? callee.start : typeof node?.start === 'number' ? node.start : 0,
+    ctxNonFunctionRootAliases,
+    identifierBindings,
+  );
+  if (!alias) {
+    return [];
+  }
+  return [
+    {
+      capability: alias.capability,
+      index: typeof node?.start === 'number' ? node.start : alias.start,
+      member: alias.member,
+      ruleId: 'runjs-ctx-member-not-callable',
+    },
+  ];
+}
+
+function getCtxNonFunctionRootMemberFromAst(
+  node: any,
+  ctxRootAliases: CtxRootAlias[],
+  identifierBindings: AstIdentifierBinding[],
+  modelUse: string,
+) {
+  const member = unwrapAstChainExpression(node);
+  if (!member || member.type !== 'MemberExpression') {
+    return '';
+  }
+  const propertyName = getAstStaticPropertyName(member);
+  if (!isRunJsCtxNonFunctionRoot(propertyName, modelUse)) {
+    return '';
+  }
+  return isDefiniteCtxRootFromAst(member.object, ctxRootAliases, identifierBindings) ? propertyName : '';
+}
+
+function isRunJsCtxNonFunctionRoot(member: string, modelUse: string) {
+  return (
+    RUNJS_CTX_NON_FUNCTION_ROOTS.has(member) ||
+    Boolean(modelUse && RUNJS_CTX_NON_FUNCTION_ROOTS_BY_MODEL_USE[modelUse]?.has(member))
+  );
 }
 
 export function collectCtxMethodAliasesFromAst(

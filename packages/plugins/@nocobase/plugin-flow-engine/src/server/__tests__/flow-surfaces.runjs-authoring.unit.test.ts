@@ -1341,6 +1341,160 @@ describe('flowSurfaces RunJS authoring unit validation', () => {
     );
   });
 
+  it('should reject calls to known non-function ctx root values', () => {
+    [
+      {
+        code: [
+          "const total = ctx.collection('customers');",
+          'await total.refresh({ params: { pageSize: 1 } });',
+          "ctx.render('<div>' + (total.getMeta().count || 0) + '</div>');",
+        ].join('\n'),
+        member: 'collection',
+        path: '$.runjs.collectionCall.code',
+      },
+      {
+        code: 'const record = ctx.record();\nctx.render(String(record?.id ?? ""));',
+        member: 'record',
+        path: '$.runjs.recordCall.code',
+      },
+      {
+        code: "const total = ctx['collection']('customers');\nctx.render(String(total));",
+        member: 'collection',
+        path: '$.runjs.bracketCollectionCall.code',
+      },
+      {
+        code: 'const record = ctx?.record?.();\nctx.render(String(record));',
+        member: 'record',
+        path: '$.runjs.optionalRecordCall.code',
+      },
+      {
+        code: "const collection = ctx.collection;\nconst total = collection('customers');\nctx.render(String(total));",
+        member: 'collection',
+        path: '$.runjs.collectionAliasCall.code',
+      },
+      {
+        code: 'const { record } = ctx;\nconst current = record();\nctx.render(String(current));',
+        member: 'record',
+        path: '$.runjs.destructuredRecordCall.code',
+      },
+      {
+        code: "const runCtx = ctx;\nconst total = runCtx.collection('customers');\nctx.render(String(total));",
+        member: 'collection',
+        path: '$.runjs.ctxRootAliasCollectionCall.code',
+      },
+      {
+        code: "let collection = () => 1;\ncollection &&= ctx.collection;\nconst total = collection('customers');\nctx.render(String(total));",
+        member: 'collection',
+        path: '$.runjs.definiteCollectionAliasCall.code',
+      },
+    ].forEach(({ code, member, path }) => {
+      const errors = inspectRunJsAuthoringCode({
+        code,
+        path,
+        modelUse: 'JSBlockModel',
+      });
+
+      expect(errors).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            path,
+            ruleId: 'runjs-ctx-member-not-callable',
+            details: expect.objectContaining({
+              capability: `ctx.${member}`,
+              member,
+              repairClass: 'ctx-root-mismatch-stop',
+            }),
+          }),
+        ]),
+      );
+    });
+
+    const chartDataErrors = inspectRunJsAuthoringCode({
+      code: 'ctx.data();',
+      path: '$.runjs.chartDataCall.code',
+      modelUse: 'ChartEventsModel',
+    });
+    expect(chartDataErrors).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          path: '$.runjs.chartDataCall.code',
+          ruleId: 'runjs-ctx-member-not-callable',
+          details: expect.objectContaining({
+            capability: 'ctx.data',
+            member: 'data',
+            repairClass: 'ctx-root-mismatch-stop',
+          }),
+        }),
+      ]),
+    );
+  });
+
+  it('should allow reading non-function ctx root values and calling methods below them', () => {
+    expect(
+      inspectRunJsAuthoringCode({
+        code: [
+          'const collectionName = ctx.collection?.name || "customers";',
+          'const recordId = ctx.record?.id;',
+          'const resource = ctx.makeResource("MultiRecordResource");',
+          'resource.setResourceName(collectionName);',
+          'await resource.refresh({ params: { pageSize: 1 } });',
+          'ctx.message.info("Loaded");',
+          'ctx.render(String(recordId ?? resource.getMeta()?.count ?? ""));',
+        ].join('\n'),
+        path: '$.runjs.readCtxValues.code',
+        modelUse: 'JSBlockModel',
+      }).map((error: any) => error.ruleId),
+    ).not.toContain('runjs-ctx-member-not-callable');
+
+    expect(
+      inspectRunJsAuthoringCode({
+        code: [
+          'let collection = () => 1;',
+          'collection ||= ctx.collection;',
+          "const total = collection('customers');",
+          'ctx.render(String(total));',
+        ].join('\n'),
+        path: '$.runjs.logicalOrCollectionAliasCall.code',
+        modelUse: 'JSBlockModel',
+      }).map((error: any) => error.ruleId),
+    ).not.toContain('runjs-ctx-member-not-callable');
+
+    expect(
+      inspectRunJsAuthoringCode({
+        code: [
+          'let runCtx = { collection: () => 1 };',
+          'runCtx ??= ctx;',
+          "const total = runCtx.collection('customers');",
+          'ctx.render(String(total));',
+        ].join('\n'),
+        path: '$.runjs.nullishCtxRootAliasCollectionCall.code',
+        modelUse: 'JSBlockModel',
+      }).map((error: any) => error.ruleId),
+    ).not.toContain('runjs-ctx-member-not-callable');
+
+    expect(
+      inspectRunJsAuthoringCode({
+        code: 'ctx.data();\nctx.render(null);',
+        path: '$.runjs.jsBlockDataCall.code',
+        modelUse: 'JSBlockModel',
+      }).map((error: any) => error.ruleId),
+    ).not.toContain('runjs-ctx-member-not-callable');
+
+    expect(
+      inspectRunJsAuthoringCode({
+        code: [
+          'function readExternal(ctx) {',
+          "  return ctx.collection('customers');",
+          '}',
+          'const total = readExternal({ collection: () => 1 });',
+          'ctx.render(String(total));',
+        ].join('\n'),
+        path: '$.runjs.shadowedCtxCollectionCall.code',
+        modelUse: 'JSBlockModel',
+      }).map((error: any) => error.ruleId),
+    ).not.toContain('runjs-ctx-member-not-callable');
+  });
+
   it('should reject helper-forwarded date range objects in resource filters', () => {
     const fields = [
       { name: 'occurDate', type: 'date', interface: 'datetime' },

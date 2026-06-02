@@ -648,6 +648,25 @@ function collectCtxContractErrors(
       }),
     );
   });
+  scan.invalidCtxNonFunctionCalls.forEach((entry) => {
+    errors.push(
+      buildRunJsAuthoringError({
+        path,
+        repairClass: 'ctx-root-mismatch-stop',
+        ruleId: entry.ruleId,
+        message: `flowSurfaces authoring ${path} cannot call ${entry.capability}(...); ${entry.capability} is a RunJS ctx value, not a function`,
+        modelUse,
+        surface,
+        index: entry.index,
+        source,
+        details: {
+          capability: entry.capability,
+          member: entry.member,
+          repairHint: getCtxNonFunctionCallRepairHint(entry.member),
+        },
+      }),
+    );
+  });
   scan.dynamicCtxAccesses.forEach((entry) => {
     errors.push(
       buildRunJsAuthoringError({
@@ -696,6 +715,22 @@ function collectCtxContractErrors(
       );
     }
   });
+}
+
+function getCtxNonFunctionCallRepairHint(member: string) {
+  if (member === 'collection') {
+    return 'ctx.collection is collection metadata. For collection data, create a resource with ctx.makeResource(...) or use ctx.api.resource(...).';
+  }
+  if (member === 'record') {
+    return "ctx.record is the current record value. Read ctx.record fields directly or use await ctx.getVar('ctx.record.id') for variable resolution.";
+  }
+  if (member === 'resource') {
+    return 'ctx.resource is a resource instance. Call a resource method such as ctx.resource.refresh(...), ctx.resource.getData(), or create a local resource with ctx.makeResource(...).';
+  }
+  if (member === 'api') {
+    return 'ctx.api is the API client object. Use ctx.api.request(...) or ctx.api.resource(...), not ctx.api(...).';
+  }
+  return `Read ctx.${member} as a value, or call one of its documented methods instead of calling ctx.${member}(...).`;
 }
 
 function collectSurfaceStyleErrors(

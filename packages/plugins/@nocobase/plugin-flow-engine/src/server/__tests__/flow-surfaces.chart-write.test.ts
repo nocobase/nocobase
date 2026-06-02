@@ -321,6 +321,266 @@ describe('flowSurfaces chart write paths', () => {
     expectChartRepairDetails(updateRes);
   });
 
+  it('should reject incompatible relation dimensions before builder chart writes', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Chart incompatible relation dimension page',
+      tabTitle: 'Chart incompatible relation dimension tab',
+    });
+    const chartBlock = getData(
+      await rootAgent.resource('flowSurfaces').addBlock({
+        values: {
+          target: { uid: page.gridUid },
+          type: 'chart',
+        },
+      }),
+    );
+
+    const updateRes = await rootAgent.resource('flowSurfaces').updateSettings({
+      values: {
+        target: { uid: chartBlock.uid },
+        stepParams: {
+          chartSettings: {
+            configure: {
+              query: {
+                mode: 'builder',
+                resource: {
+                  dataSourceKey: 'main',
+                  collectionName: 'employees',
+                },
+                measures: [{ field: 'id', aggregation: 'count', alias: 'employeeCount' }],
+                dimensions: [{ field: 'department.employerEIN' }],
+              },
+              chart: {
+                option: {
+                  mode: 'basic',
+                  builder: {
+                    type: 'bar',
+                    xField: 'department.employerEIN',
+                    yField: 'employeeCount',
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+
+    expect(updateRes.status).toBe(400);
+    expect(readErrorMessage(updateRes)).toContain("Supported fields under 'department'");
+    expect(readErrorMessage(updateRes)).toContain('department.title');
+    expect(readErrorMessage(updateRes)).toContain('department.location');
+    expect(updateRes.body?.errors?.[0]).toMatchObject({
+      path: 'chart query.dimensions[0].field',
+      ruleId: 'chart-builder-query-relation-subfield-column-unsupported',
+      details: {
+        fieldPath: 'department.employerEIN',
+        associationPath: 'department',
+        leafFieldName: 'employerEIN',
+        columnName: 'employer_e_i_n',
+        supportedFields: expect.arrayContaining([
+          expect.objectContaining({ field: 'department.title' }),
+          expect.objectContaining({ field: 'department.location' }),
+        ]),
+      },
+    });
+    expect(updateRes.body?.errors?.[0]?.details?.supportedFields).not.toEqual(
+      expect.arrayContaining([expect.objectContaining({ field: 'department.employerEIN' })]),
+    );
+    expectChartRepairDetails(updateRes);
+  });
+
+  it('should keep count measure validation precedence for incompatible relation subfield writes', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Chart incompatible relation count measure page',
+      tabTitle: 'Chart incompatible relation count measure tab',
+    });
+    const chartBlock = getData(
+      await rootAgent.resource('flowSurfaces').addBlock({
+        values: {
+          target: { uid: page.gridUid },
+          type: 'chart',
+        },
+      }),
+    );
+
+    const updateRes = await rootAgent.resource('flowSurfaces').updateSettings({
+      values: {
+        target: { uid: chartBlock.uid },
+        stepParams: {
+          chartSettings: {
+            configure: {
+              query: {
+                mode: 'builder',
+                resource: {
+                  dataSourceKey: 'main',
+                  collectionName: 'employees',
+                },
+                measures: [{ field: 'department.employerEIN', aggregation: 'count', alias: 'employeeCount' }],
+                dimensions: [{ field: 'department.location' }],
+              },
+              chart: {
+                option: {
+                  mode: 'basic',
+                  builder: {
+                    type: 'bar',
+                    xField: 'department.location',
+                    yField: 'employeeCount',
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+
+    expect(updateRes.status).toBe(400);
+    expect(updateRes.body?.errors?.[0]).toMatchObject({
+      path: 'chart query.measures[0].field',
+      ruleId: 'chart-builder-query-count-measure-relation-subfield',
+      details: {
+        fieldPath: 'department.employerEIN',
+        suggestedMeasure: {
+          field: 'id',
+          aggregation: 'count',
+          alias: 'employeeCount',
+        },
+      },
+    });
+    expect(updateRes.body?.errors?.[0]?.ruleId).not.toBe('chart-builder-query-relation-subfield-column-unsupported');
+    expectChartRepairDetails(updateRes);
+  });
+
+  it('should reject association-valued relation dimensions before builder chart writes', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Chart association-valued relation dimension page',
+      tabTitle: 'Chart association-valued relation dimension tab',
+    });
+    const chartBlock = getData(
+      await rootAgent.resource('flowSurfaces').addBlock({
+        values: {
+          target: { uid: page.gridUid },
+          type: 'chart',
+        },
+      }),
+    );
+
+    const updateRes = await rootAgent.resource('flowSurfaces').updateSettings({
+      values: {
+        target: { uid: chartBlock.uid },
+        stepParams: {
+          chartSettings: {
+            configure: {
+              query: {
+                mode: 'builder',
+                resource: {
+                  dataSourceKey: 'main',
+                  collectionName: 'employees',
+                },
+                measures: [{ field: 'id', aggregation: 'count', alias: 'employeeCount' }],
+                dimensions: [{ field: 'department.manager' }],
+              },
+              chart: {
+                option: {
+                  mode: 'basic',
+                  builder: {
+                    type: 'bar',
+                    xField: 'department.manager',
+                    yField: 'employeeCount',
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+
+    expect(updateRes.status).toBe(400);
+    expect(updateRes.body?.errors?.[0]).toMatchObject({
+      path: 'chart query.dimensions[0].field',
+      ruleId: 'chart-builder-query-relation-direct-subfield-required',
+      details: {
+        fieldPath: 'department.manager',
+        associationPath: 'department',
+        leafFieldName: 'manager',
+        selectedSubfieldPath: 'manager',
+        supportedFields: expect.arrayContaining([
+          expect.objectContaining({ field: 'department.title' }),
+          expect.objectContaining({ field: 'department.location' }),
+        ]),
+      },
+    });
+    expect(updateRes.body?.errors?.[0]?.details?.supportedFields).not.toEqual(
+      expect.arrayContaining([expect.objectContaining({ field: 'department.manager' })]),
+    );
+    expectChartRepairDetails(updateRes);
+  });
+
+  it('should reject multi-hop relation dimensions before builder chart writes', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Chart multi-hop relation dimension page',
+      tabTitle: 'Chart multi-hop relation dimension tab',
+    });
+    const chartBlock = getData(
+      await rootAgent.resource('flowSurfaces').addBlock({
+        values: {
+          target: { uid: page.gridUid },
+          type: 'chart',
+        },
+      }),
+    );
+
+    const updateRes = await rootAgent.resource('flowSurfaces').updateSettings({
+      values: {
+        target: { uid: chartBlock.uid },
+        stepParams: {
+          chartSettings: {
+            configure: {
+              query: {
+                mode: 'builder',
+                resource: {
+                  dataSourceKey: 'main',
+                  collectionName: 'employees',
+                },
+                measures: [{ field: 'id', aggregation: 'count', alias: 'employeeCount' }],
+                dimensions: [{ field: 'department.manager.nickname' }],
+              },
+              chart: {
+                option: {
+                  mode: 'basic',
+                  builder: {
+                    type: 'bar',
+                    xField: 'department.manager.nickname',
+                    yField: 'employeeCount',
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+
+    expect(updateRes.status).toBe(400);
+    expect(updateRes.body?.errors?.[0]).toMatchObject({
+      path: 'chart query.dimensions[0].field',
+      ruleId: 'chart-builder-query-relation-direct-subfield-required',
+      details: {
+        fieldPath: 'department.manager.nickname',
+        associationPath: 'department',
+        leafFieldName: 'manager',
+        selectedSubfieldPath: 'manager.nickname',
+        supportedFields: expect.arrayContaining([
+          expect.objectContaining({ field: 'department.title' }),
+          expect.objectContaining({ field: 'department.location' }),
+        ]),
+      },
+    });
+    expectChartRepairDetails(updateRes);
+  });
+
   it('should allow configure to clear stale builder sorting with an explicit empty array', async () => {
     const page = await createPage(rootAgent, {
       title: 'Chart clear sorting page',
@@ -1744,6 +2004,7 @@ async function setupFixtureCollections(rootAgent: any, db: Database) {
       fields: [
         { name: 'title', type: 'string', interface: 'input' },
         { name: 'location', type: 'string', interface: 'input' },
+        { name: 'employerEIN', field: 'employer_e_i_n', type: 'string', interface: 'input' },
       ],
     },
   });
@@ -1769,8 +2030,18 @@ async function setupFixtureCollections(rootAgent: any, db: Database) {
     },
   });
 
+  await rootAgent.resource('collections.fields', 'departments').create({
+    values: {
+      name: 'manager',
+      type: 'belongsTo',
+      target: 'employees',
+      foreignKey: 'managerId',
+      interface: 'm2o',
+    },
+  });
+
   await waitForFixtureCollectionsReady(db, {
-    departments: ['title', 'location'],
+    departments: ['title', 'location', 'employerEIN', 'managerId'],
     employees: ['nickname', 'status', 'departmentId'],
   });
 }

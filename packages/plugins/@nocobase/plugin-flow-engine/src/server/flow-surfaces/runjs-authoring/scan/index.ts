@@ -75,13 +75,16 @@ import {
   collectAstInvalidCtxApiMemberAccess,
   collectAstInvalidCtxApiPatternAccesses,
   collectAstInvalidCtxApiReadonlyWrites,
+  collectAstInvalidCtxNonFunctionCall,
   collectAstInvalidCtxLibMemberAccess,
   collectAstInvalidCtxLibPatternAccesses,
   collectCtxApiAliasesFromAst,
   collectCtxApiResourceAliasesFromAst,
+  collectCtxDefiniteRootAliasesFromAst,
   collectCtxLibAliasesFromAst,
   collectCtxLibsRootAliasesFromAst,
   collectCtxMethodAliasesFromAst,
+  collectCtxNonFunctionRootAliasesFromAst,
   collectCtxRootAliasesFromAst,
   filterInvalidCtxApiMemberAccessesForResourceCalls,
 } from './ctx-api';
@@ -196,6 +199,7 @@ export function scanJavaScriptSource(source: string, ast?: any, context: RunJsAu
     ctxAliases,
     ctxLibMemberCaseMismatches: collectCtxLibMemberCaseMismatches(source, masked, sourceBindings),
     invalidCtxApiMemberAccesses: astInspection?.invalidCtxApiMemberAccesses || [],
+    invalidCtxNonFunctionCalls: astInspection?.invalidCtxNonFunctionCalls || [],
     invalidCtxLibMemberAccesses: astInspection?.invalidCtxLibMemberAccesses || [],
     forbiddenBareGlobals,
     ctxMemberAccesses: collectCtxMemberAccesses(masked, sourceBindings),
@@ -305,6 +309,14 @@ function inspectRunJsAst(
   const functionBindings = collectAstFunctionBindingsFromAst(ast, source);
   const aliases = collectCtxMethodAliasesFromAst(ast, source, identifierBindings);
   const ctxRootAliases = collectCtxRootAliasesFromAst(ast, source, identifierBindings);
+  const ctxDefiniteRootAliases = collectCtxDefiniteRootAliasesFromAst(ast, source, identifierBindings);
+  const ctxNonFunctionRootAliases = collectCtxNonFunctionRootAliasesFromAst(
+    ast,
+    source,
+    ctxDefiniteRootAliases,
+    identifierBindings,
+    modelUse,
+  );
   const ctxApiAliases = collectCtxApiAliasesFromAst(ast, source, identifierBindings);
   const ctxLibsRootAliases = collectCtxLibsRootAliasesFromAst(ast, source, identifierBindings);
   const ctxLibAliases = collectCtxLibAliasesFromAst(ast, source, ctxLibsRootAliases, identifierBindings);
@@ -356,6 +368,7 @@ function inspectRunJsAst(
   const invalidCtxApiMemberAccesses: RunJsAstInspection['invalidCtxApiMemberAccesses'] = [
     ...collectAstInvalidCtxApiPatternAccesses(ast, ctxApiAliases, identifierBindings),
   ];
+  const invalidCtxNonFunctionCalls: RunJsAstInspection['invalidCtxNonFunctionCalls'] = [];
   const invalidCtxLibMemberAccesses: RunJsAstInspection['invalidCtxLibMemberAccesses'] = [
     ...collectAstInvalidCtxLibPatternAccesses(ast, ctxLibAliases, ctxLibsRootAliases, identifierBindings, source),
   ];
@@ -444,6 +457,13 @@ function inspectRunJsAst(
       collectAstInvalidApiResourceCall(node, ctxApiAliases, ctxApiResourceAliases, source, identifierBindings).forEach(
         (entry) => invalidApiResourceCalls.push(entry),
       );
+      collectAstInvalidCtxNonFunctionCall(
+        node,
+        ctxDefiniteRootAliases,
+        ctxNonFunctionRootAliases,
+        identifierBindings,
+        modelUse,
+      ).forEach((entry) => invalidCtxNonFunctionCalls.push(entry));
       collectAstReactAsyncComponentReferences(
         node,
         asyncComponentBindings,
@@ -511,6 +531,9 @@ function inspectRunJsAst(
       dedupeIndexedEntries(invalidCtxApiMemberAccesses),
       dedupedInvalidApiResourceCalls,
     ).sort((left, right) => left.index - right.index),
+    invalidCtxNonFunctionCalls: dedupeIndexedEntries(invalidCtxNonFunctionCalls).sort(
+      (left, right) => left.index - right.index,
+    ),
     invalidCtxLibMemberAccesses: dedupeIndexedEntries(invalidCtxLibMemberAccesses).sort(
       (left, right) => left.index - right.index,
     ),

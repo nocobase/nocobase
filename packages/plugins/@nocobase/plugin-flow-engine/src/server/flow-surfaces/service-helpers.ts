@@ -214,14 +214,55 @@ export function formatChartBuilderSupportedRelationSubfields(
   return `Supported fields under '${associationPath}': ${fields.join(', ')}.`;
 }
 
+export function getInvalidChartBuilderRelationDirectSubfieldDetails(input: {
+  associationPathName: string;
+  selectedSubfieldPath: string;
+  targetCollection: any;
+}) {
+  const associationPath = String(input.associationPathName || '').trim();
+  const selectedSubfieldPath = String(input.selectedSubfieldPath || '').trim();
+  const selectedParts = selectedSubfieldPath.split('.').filter(Boolean);
+  if (!associationPath || !input.targetCollection || !selectedParts.length) {
+    return null;
+  }
+
+  const leafFieldName = selectedParts[0];
+  const leafField = resolveFieldFromCollection(input.targetCollection, leafFieldName);
+  const modelAttributes = getCollectionModelAttributes(input.targetCollection);
+  const modelAttribute = modelAttributes?.[leafFieldName];
+  const hasModelAttribute = Object.prototype.hasOwnProperty.call(modelAttributes, leafFieldName);
+  const hasNestedSubfieldPath = selectedParts.length > 1;
+  if (leafField && !hasNestedSubfieldPath && !isAssociationField(leafField)) {
+    return null;
+  }
+  if (!leafField && hasModelAttribute && !hasNestedSubfieldPath) {
+    const columnName = String(modelAttribute?.field || leafFieldName).trim();
+    if (columnName && columnName !== leafFieldName) {
+      return null;
+    }
+  }
+
+  return {
+    associationPath,
+    leafFieldName,
+    selectedSubfieldPath: selectedParts.join('.'),
+    supportedFields: getChartBuilderSupportedRelationSubfields(associationPath, input.targetCollection),
+  };
+}
+
 export function getUnsupportedChartBuilderRelationSubfieldDetails(input: {
   associationPathName: string;
   leafFieldName: string;
-  leafField: any;
+  leafField?: any;
   targetCollection: any;
 }) {
   const leafFieldName = String(input.leafFieldName || '').trim();
-  if (!input.targetCollection || !leafFieldName || !input.leafField || isAssociationField(input.leafField)) {
+  if (!input.targetCollection || !leafFieldName || (input.leafField && isAssociationField(input.leafField))) {
+    return null;
+  }
+
+  const modelAttributes = getCollectionModelAttributes(input.targetCollection);
+  if (!input.leafField && !Object.prototype.hasOwnProperty.call(modelAttributes, leafFieldName)) {
     return null;
   }
 

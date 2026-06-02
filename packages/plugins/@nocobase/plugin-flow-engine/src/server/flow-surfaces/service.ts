@@ -179,6 +179,7 @@ import {
   getCollectionModelAttributes,
   getCollectionName,
   getCollectionTitle,
+  getInvalidChartBuilderRelationDirectSubfieldDetails,
   getUnsupportedChartBuilderRelationSubfieldDetails,
   getFieldFilterable,
   getFieldInterface,
@@ -15666,6 +15667,55 @@ export class FlowSurfacesService {
       if (!fieldPath) {
         continue;
       }
+      const fieldPathParts = fieldPath.split('.').filter(Boolean);
+      const isCountMeasureSelection =
+        item.kind === 'measure' &&
+        String(item.selection?.aggregation || '').trim() === 'count' &&
+        !item.selection?.distinct;
+      if (fieldPathParts.length > 1 && !isCountMeasureSelection) {
+        const directAssociationPath = fieldPathParts[0];
+        const directAssociationField = resolveFieldFromCollection(collection, directAssociationPath);
+        const directAssociationTargetCollection =
+          directAssociationField && isAssociationField(directAssociationField)
+            ? resolveFieldTargetCollection(
+                directAssociationField,
+                dataSourceKey,
+                (resolvedDataSourceKey, targetCollection) =>
+                  this.getCollection(resolvedDataSourceKey, targetCollection),
+              )
+            : null;
+        const invalidDirectSubfield = directAssociationTargetCollection
+          ? getInvalidChartBuilderRelationDirectSubfieldDetails({
+              associationPathName: directAssociationPath,
+              selectedSubfieldPath: fieldPathParts.slice(1).join('.'),
+              targetCollection: directAssociationTargetCollection,
+            })
+          : null;
+        if (invalidDirectSubfield) {
+          throwBadRequest(
+            withChartRepairMessage(
+              `flowSurfaces ${actionName} ${
+                item.path
+              } '${fieldPath}' must reference a direct scalar child field under relation '${
+                invalidDirectSubfield.associationPath
+              }'. ${formatChartBuilderSupportedRelationSubfields(
+                invalidDirectSubfield.associationPath,
+                invalidDirectSubfield.supportedFields,
+              )}`,
+            ),
+            {
+              path: item.path,
+              ruleId: 'chart-builder-query-relation-direct-subfield-required',
+              details: withFlowSurfaceChartRepairDetails({
+                fieldPath,
+                dataSourceKey,
+                collectionName,
+                ...invalidDirectSubfield,
+              }),
+            },
+          );
+        }
+      }
       const parsed = this.parseFieldPath(collection, fieldPath, undefined, dataSourceKey, collectionName);
       if (parsed.associationPathName) {
         const associationField = parsed.associationField;
@@ -15694,24 +15744,42 @@ export class FlowSurfacesService {
         }
       }
       const field = resolveFieldFromCollection(parsed.leafCollection, parsed.leafFieldPath);
+      const leafModelAttributes = getCollectionModelAttributes(parsed.leafCollection);
+      const hasLeafModelAttribute = Object.prototype.hasOwnProperty.call(leafModelAttributes, parsed.leafFieldPath);
+      const isCountMeasureRelationSubfield =
+        item.kind === 'measure' &&
+        String(item.selection?.aggregation || '').trim() === 'count' &&
+        !item.selection?.distinct &&
+        parsed.associationField &&
+        isAssociationField(parsed.associationField);
+      const unsupportedRelationSubfield =
+        parsed.associationField && isAssociationField(parsed.associationField)
+          ? getUnsupportedChartBuilderRelationSubfieldDetails({
+              associationPathName: parsed.associationPathName,
+              leafFieldName: parsed.leafFieldPath,
+              leafField: field,
+              targetCollection: parsed.leafCollection,
+            })
+          : null;
       if (!field) {
-        if (this.collectionHasConcreteField(parsed.leafCollection, parsed.leafFieldPath)) {
-          continue;
+        const hasConcreteField =
+          hasLeafModelAttribute || this.collectionHasConcreteField(parsed.leafCollection, parsed.leafFieldPath);
+        if (!hasConcreteField) {
+          throwBadRequest(
+            withChartRepairMessage(
+              `flowSurfaces ${actionName} ${item.path} '${fieldPath}' does not exist on collection '${dataSourceKey}.${collectionName}'`,
+            ),
+            {
+              details: withFlowSurfaceChartRepairDetails({
+                fieldPath,
+                dataSourceKey,
+                collectionName,
+              }),
+            },
+          );
         }
-        throwBadRequest(
-          withChartRepairMessage(
-            `flowSurfaces ${actionName} ${item.path} '${fieldPath}' does not exist on collection '${dataSourceKey}.${collectionName}'`,
-          ),
-          {
-            details: withFlowSurfaceChartRepairDetails({
-              fieldPath,
-              dataSourceKey,
-              collectionName,
-            }),
-          },
-        );
       }
-      if (!fieldPath.includes('.') && isAssociationField(field)) {
+      if (!fieldPath.includes('.') && field && isAssociationField(field)) {
         const suggestion = this.resolveBuilderChartAssociationSubfieldSuggestion(fieldPath, field, dataSourceKey);
         throwBadRequest(
           withChartRepairMessage(
@@ -15727,12 +15795,6 @@ export class FlowSurfacesService {
           },
         );
       }
-      const isCountMeasureRelationSubfield =
-        item.kind === 'measure' &&
-        String(item.selection?.aggregation || '').trim() === 'count' &&
-        !item.selection?.distinct &&
-        parsed.associationField &&
-        isAssociationField(parsed.associationField);
       if (isCountMeasureRelationSubfield) {
         throwBadRequest(
           withChartRepairMessage(
@@ -15757,15 +15819,6 @@ export class FlowSurfacesService {
           },
         );
       }
-      const unsupportedRelationSubfield =
-        parsed.associationField && isAssociationField(parsed.associationField)
-          ? getUnsupportedChartBuilderRelationSubfieldDetails({
-              associationPathName: parsed.associationPathName,
-              leafFieldName: parsed.leafFieldPath,
-              leafField: field,
-              targetCollection: parsed.leafCollection,
-            })
-          : null;
       if (unsupportedRelationSubfield) {
         throwBadRequest(
           withChartRepairMessage(
