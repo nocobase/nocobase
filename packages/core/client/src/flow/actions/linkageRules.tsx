@@ -2063,13 +2063,14 @@ const commonLinkageRulesHandler = async (ctx: FlowContext, params: any) => {
   mergedByUid.forEach((model: any, uid) => {
     const patchProps = mergedPropsByUid.get(uid) || {};
     const newProps = { ...model.__originalProps, ...patchProps };
-    const hasHiddenModelPatch = Object.prototype.hasOwnProperty.call(patchProps, 'hiddenModel');
+    const prevHidden = !!model.hidden;
+    const nextHidden = !!newProps.hiddenModel;
 
     model.setProps(_.omit(newProps, ['hiddenModel', 'value', 'hiddenText']));
     syncFieldOptionsToForks(model, patchProps);
-    model.hidden = !!newProps.hiddenModel;
-    if (hasHiddenModelPatch) {
-      hiddenStatePatches.push({ model, hidden: model.hidden });
+    model.hidden = nextHidden;
+    if (prevHidden !== nextHidden) {
+      hiddenStatePatches.push({ model, hidden: nextHidden });
     }
 
     if (newProps.required === true) {
