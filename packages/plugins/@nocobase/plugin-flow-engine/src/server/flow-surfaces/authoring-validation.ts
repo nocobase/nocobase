@@ -1479,10 +1479,12 @@ function collectBuilderChartAssetFieldErrors(
   const selections = [
     ..._.castArray(query.measures || []).map((selection, index) => ({
       selection,
+      kind: 'measure',
       fieldPath: `${path}.query.measures[${index}].field`,
     })),
     ..._.castArray(query.dimensions || []).map((selection, index) => ({
       selection,
+      kind: 'dimension',
       fieldPath: `${path}.query.dimensions[${index}].field`,
     })),
   ];
@@ -1528,6 +1530,34 @@ function collectBuilderChartAssetFieldErrors(
           dataSourceKey,
           collectionName,
           ...suggestion,
+        }),
+      });
+    }
+    const associationPath = fieldPath.includes('.') ? fieldPath.split('.').slice(0, -1).join('.') : '';
+    const associationField = associationPath ? resolveFieldFromCollection(collection, associationPath) : null;
+    if (
+      item.kind === 'measure' &&
+      String(item.selection?.aggregation || '').trim() === 'count' &&
+      !item.selection?.distinct &&
+      associationField &&
+      isAssociationField(associationField)
+    ) {
+      pushAuthoringError(errors, {
+        path: item.fieldPath,
+        ruleId: 'chart-builder-query-count-measure-relation-subfield',
+        message: `flowSurfaces authoring ${item.fieldPath} counts relation subfield '${fieldPath}'; count a scalar base field such as 'id' and keep '${fieldPath}' as a dimension`,
+        details: withChartRepairHint({
+          fieldPath,
+          dataSourceKey,
+          collectionName,
+          suggestedMeasure: {
+            field: 'id',
+            aggregation: 'count',
+            alias: String(item.selection?.alias || '').trim() || 'recordCount',
+          },
+          suggestedDimension: {
+            field: fieldPath,
+          },
         }),
       });
     }

@@ -2595,6 +2595,128 @@ describe('flowSurfaces backend authoring aggregate errors', () => {
     );
   });
 
+  it('should reject builder chart assets that count relation subfields', async () => {
+    const employerGroupsCollection = {
+      dataSourceKey: 'main',
+      name: 'employer_groups',
+      getFields: () => [
+        {
+          name: 'title',
+          type: 'string',
+          interface: 'input',
+        },
+      ],
+      getField: (name: string) =>
+        name === 'title'
+          ? {
+              name: 'title',
+              type: 'string',
+              interface: 'input',
+            }
+          : null,
+    };
+    const claimsCollection = {
+      dataSourceKey: 'main',
+      name: 'claims',
+      getField: (name: string) => {
+        if (name === 'id') {
+          return {
+            name: 'id',
+            type: 'bigInt',
+            interface: 'id',
+          };
+        }
+        if (name === 'employer_group') {
+          return {
+            name: 'employer_group',
+            type: 'belongsTo',
+            interface: 'm2o',
+            target: 'employer_groups',
+            targetCollection: employerGroupsCollection,
+            isAssociationField: () => true,
+          };
+        }
+        return null;
+      },
+    };
+
+    const errors = await collectFlowSurfaceAuthoringErrors(
+      'applyBlueprint',
+      {
+        mode: 'create',
+        navigation: {
+          item: {
+            title: 'Invalid relation count chart',
+          },
+        },
+        assets: {
+          charts: {
+            employerGroupChart: {
+              query: {
+                mode: 'builder',
+                resource: {
+                  dataSourceKey: 'main',
+                  collectionName: 'claims',
+                },
+                measures: [{ field: 'employer_group.title', aggregation: 'count', alias: 'claimCount' }],
+                dimensions: [{ field: 'employer_group.title' }],
+              },
+              visual: {
+                mode: 'basic',
+                type: 'bar',
+                mappings: {
+                  x: 'employer_group.title',
+                  y: 'claimCount',
+                },
+              },
+            },
+          },
+        },
+        tabs: [
+          {
+            title: 'Overview',
+            blocks: [
+              {
+                key: 'employerGroupChart',
+                type: 'chart',
+                chart: 'employerGroupChart',
+              },
+            ],
+          },
+        ],
+      },
+      {
+        getCollection: (_dataSourceKey, collectionName) =>
+          collectionName === 'claims'
+            ? claimsCollection
+            : collectionName === 'employer_groups'
+              ? employerGroupsCollection
+              : null,
+      },
+    );
+
+    expect(errors).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          path: '$.assets.charts.employerGroupChart.query.measures[0].field',
+          ruleId: 'chart-builder-query-count-measure-relation-subfield',
+          message: expect.stringContaining("counts relation subfield 'employer_group.title'"),
+          details: expect.objectContaining({
+            fieldPath: 'employer_group.title',
+            suggestedMeasure: {
+              field: 'id',
+              aggregation: 'count',
+              alias: 'claimCount',
+            },
+            suggestedDimension: {
+              field: 'employer_group.title',
+            },
+          }),
+        }),
+      ]),
+    );
+  });
+
   it('should validate configure popup and hidden popup RunJS recursively', async () => {
     const errors = await collectFlowSurfaceAuthoringErrors(
       'configure',

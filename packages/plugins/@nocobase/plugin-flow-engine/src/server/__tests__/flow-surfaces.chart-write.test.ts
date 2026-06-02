@@ -99,9 +99,9 @@ describe('flowSurfaces chart write paths', () => {
     expect(surface.tree.stepParams?.chartSettings?.configure?.query).toMatchObject({
       mode: 'builder',
       collectionPath: ['main', 'employees'],
-      measures: [{ field: 'department.title', aggregation: 'count', alias: 'employeeCount' }],
-      dimensions: [{ field: 'department.title' }],
-      orders: [{ field: 'department.title', order: 'DESC' }],
+      measures: [{ field: 'id', aggregation: 'count', alias: 'employeeCount' }],
+      dimensions: [{ field: ['department', 'title'], alias: 'department.title' }],
+      orders: [{ field: ['department', 'title'], order: 'DESC' }],
     });
     expect(surface.tree.stepParams?.chartSettings?.configure?.query?.resource).toBeUndefined();
 
@@ -194,6 +194,131 @@ describe('flowSurfaces chart write paths', () => {
     expect(readErrorMessage(updateRes)).toContain("chart query.dimensions[0].field 'department'");
     expect(readErrorMessage(updateRes)).toContain('references an association field directly');
     expect(readErrorMessage(updateRes)).toContain("'department.title'");
+  });
+
+  it('should reject invalid dotted association paths in builder chart updateSettings writes', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Chart invalid dotted field update page',
+      tabTitle: 'Chart invalid dotted field update tab',
+    });
+    const chartBlock = getData(
+      await rootAgent.resource('flowSurfaces').addBlock({
+        values: {
+          target: { uid: page.gridUid },
+          type: 'chart',
+        },
+      }),
+    );
+
+    const updateRes = await rootAgent.resource('flowSurfaces').updateSettings({
+      values: {
+        target: { uid: chartBlock.uid },
+        stepParams: {
+          chartSettings: {
+            configure: {
+              query: {
+                mode: 'builder',
+                resource: {
+                  dataSourceKey: 'main',
+                  collectionName: 'employees',
+                },
+                measures: [{ field: 'id', aggregation: 'count', alias: 'employeeCount' }],
+                dimensions: [{ field: 'bogus.id' }],
+              },
+              chart: {
+                option: {
+                  mode: 'basic',
+                  builder: {
+                    type: 'bar',
+                    xField: 'bogus.id',
+                    yField: 'employeeCount',
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+
+    expect(updateRes.status).toBe(400);
+    expect(readErrorMessage(updateRes)).toContain("chart query.dimensions[0].field 'bogus.id'");
+    expect(readErrorMessage(updateRes)).toContain("invalid association path 'bogus'");
+    expect(updateRes.body?.errors?.[0]).toMatchObject({
+      path: 'chart query.dimensions[0].field',
+      ruleId: 'chart-builder-query-association-path-invalid',
+      details: {
+        fieldPath: 'bogus.id',
+        associationPath: 'bogus',
+      },
+    });
+    expectChartRepairDetails(updateRes);
+  });
+
+  it('should reject relation subfield count measures before builder chart writes', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Chart relation count measure page',
+      tabTitle: 'Chart relation count measure tab',
+    });
+    const chartBlock = getData(
+      await rootAgent.resource('flowSurfaces').addBlock({
+        values: {
+          target: { uid: page.gridUid },
+          type: 'chart',
+        },
+      }),
+    );
+
+    const updateRes = await rootAgent.resource('flowSurfaces').updateSettings({
+      values: {
+        target: { uid: chartBlock.uid },
+        stepParams: {
+          chartSettings: {
+            configure: {
+              query: {
+                mode: 'builder',
+                resource: {
+                  dataSourceKey: 'main',
+                  collectionName: 'employees',
+                },
+                measures: [{ field: 'department.title', aggregation: 'count', alias: 'employeeCount' }],
+                dimensions: [{ field: 'department.title' }],
+              },
+              chart: {
+                option: {
+                  mode: 'basic',
+                  builder: {
+                    type: 'bar',
+                    xField: 'department.title',
+                    yField: 'employeeCount',
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+
+    expect(updateRes.status).toBe(400);
+    expect(readErrorMessage(updateRes)).toContain("chart query.measures[0].field 'department.title'");
+    expect(readErrorMessage(updateRes)).toContain('counts a relation subfield');
+    expect(updateRes.body?.errors?.[0]).toMatchObject({
+      path: 'chart query.measures[0].field',
+      ruleId: 'chart-builder-query-count-measure-relation-subfield',
+      details: {
+        fieldPath: 'department.title',
+        suggestedMeasure: {
+          field: 'id',
+          aggregation: 'count',
+          alias: 'employeeCount',
+        },
+        suggestedDimension: {
+          field: 'department.title',
+        },
+      },
+    });
+    expectChartRepairDetails(updateRes);
   });
 
   it('should allow configure to clear stale builder sorting with an explicit empty array', async () => {
@@ -640,8 +765,8 @@ chart.on('click', 'series', function(params) {
     expect(surface.tree.stepParams?.chartSettings?.configure?.query).toMatchObject({
       mode: 'builder',
       collectionPath: ['main', 'employees'],
-      measures: [{ field: 'department.title', aggregation: 'count', alias: 'employeeCount' }],
-      dimensions: [{ field: 'department.title' }],
+      measures: [{ field: 'id', aggregation: 'count', alias: 'employeeCount' }],
+      dimensions: [{ field: ['department', 'title'], alias: 'department.title' }],
     });
     expect(surface.tree.stepParams?.chartSettings?.configure?.chart?.option).toMatchObject({
       mode: 'custom',

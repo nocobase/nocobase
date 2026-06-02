@@ -700,8 +700,8 @@ describe('chart-config semantic helpers', () => {
     expect(next).toMatchObject({
       query: {
         collectionPath: ['main', 'employees'],
-        measures: [{ field: 'department.title', aggregation: 'count', alias: 'employeeCount' }],
-        dimensions: [{ field: 'department.title' }],
+        measures: [{ field: 'id', aggregation: 'count', alias: 'employeeCount' }],
+        dimensions: [{ field: ['department', 'title'], alias: 'department.title' }],
         orders: [],
         filter: {
           logic: '$and',
@@ -746,6 +746,47 @@ describe('chart-config semantic helpers', () => {
             type: 'doughnut',
             doughnutCategory: 'claim_category',
             doughnutValue: 'count',
+          },
+        },
+      },
+    });
+  });
+
+  it('should keep count(id) and alias relation dimensions for builder chart runtime data', () => {
+    const next = canonicalizeChartConfigure({
+      query: {
+        mode: 'builder',
+        collectionPath: ['main', 'employees'],
+        measures: [{ field: 'id', aggregation: 'count', alias: 'employeeCount' }],
+        dimensions: [{ field: 'department.title' }],
+        sorting: [{ field: 'department.title', direction: 'desc' }],
+      },
+      chart: {
+        option: {
+          mode: 'basic',
+          builder: {
+            type: 'bar',
+            xField: 'department.title',
+            yField: 'employeeCount',
+          },
+        },
+      },
+    });
+
+    expect(next).toMatchObject({
+      query: {
+        collectionPath: ['main', 'employees'],
+        measures: [{ field: 'id', aggregation: 'count', alias: 'employeeCount' }],
+        dimensions: [{ field: ['department', 'title'], alias: 'department.title' }],
+        orders: [{ field: ['department', 'title'], order: 'DESC' }],
+      },
+      chart: {
+        option: {
+          mode: 'basic',
+          builder: {
+            type: 'bar',
+            xField: 'department.title',
+            yField: 'employeeCount',
           },
         },
       },
@@ -1048,8 +1089,8 @@ describe('chart-config semantic helpers', () => {
       query: {
         mode: 'builder',
         collectionPath: ['main', 'employees'],
-        measures: [{ field: 'department.title', aggregation: 'count', alias: 'employeeCount' }],
-        dimensions: [{ field: 'department.title' }],
+        measures: [{ field: 'id', aggregation: 'count', alias: 'employeeCount' }],
+        dimensions: [{ field: ['department', 'title'], alias: 'department.title' }],
       },
       chart: {
         option: {

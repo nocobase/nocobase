@@ -15648,10 +15648,12 @@ export class FlowSurfacesService {
     const selections = [
       ..._.castArray(state.query.measures || []).map((selection, index) => ({
         selection,
+        kind: 'measure',
         path: `chart query.measures[${index}].field`,
       })),
       ..._.castArray(state.query.dimensions || []).map((selection, index) => ({
         selection,
+        kind: 'dimension',
         path: `chart query.dimensions[${index}].field`,
       })),
     ];
@@ -15662,6 +15664,32 @@ export class FlowSurfacesService {
         continue;
       }
       const parsed = this.parseFieldPath(collection, fieldPath, undefined, dataSourceKey, collectionName);
+      if (parsed.associationPathName) {
+        const associationField = parsed.associationField;
+        const associationTargetCollection =
+          associationField && isAssociationField(associationField)
+            ? resolveFieldTargetCollection(associationField, dataSourceKey, (resolvedDataSourceKey, targetCollection) =>
+                this.getCollection(resolvedDataSourceKey, targetCollection),
+              )
+            : null;
+        if (!associationField || !isAssociationField(associationField) || !associationTargetCollection) {
+          throwBadRequest(
+            withChartRepairMessage(
+              `flowSurfaces ${actionName} ${item.path} '${fieldPath}' uses invalid association path '${parsed.associationPathName}' for builder charts`,
+            ),
+            {
+              path: item.path,
+              ruleId: 'chart-builder-query-association-path-invalid',
+              details: withFlowSurfaceChartRepairDetails({
+                fieldPath,
+                associationPath: parsed.associationPathName,
+                dataSourceKey,
+                collectionName,
+              }),
+            },
+          );
+        }
+      }
       const field = resolveFieldFromCollection(parsed.leafCollection, parsed.leafFieldPath);
       if (!field) {
         if (this.collectionHasConcreteField(parsed.leafCollection, parsed.leafFieldPath)) {
@@ -15692,6 +15720,36 @@ export class FlowSurfacesService {
               dataSourceKey,
               collectionName,
               ...suggestion,
+            }),
+          },
+        );
+      }
+      if (
+        item.kind === 'measure' &&
+        String(item.selection?.aggregation || '').trim() === 'count' &&
+        !item.selection?.distinct &&
+        parsed.associationField &&
+        isAssociationField(parsed.associationField)
+      ) {
+        throwBadRequest(
+          withChartRepairMessage(
+            `flowSurfaces ${actionName} ${item.path} '${fieldPath}' counts a relation subfield; count a scalar base field such as 'id' and keep '${fieldPath}' as a dimension`,
+          ),
+          {
+            path: item.path,
+            ruleId: 'chart-builder-query-count-measure-relation-subfield',
+            details: withFlowSurfaceChartRepairDetails({
+              fieldPath,
+              dataSourceKey,
+              collectionName,
+              suggestedMeasure: {
+                field: 'id',
+                aggregation: 'count',
+                alias: String(item.selection?.alias || '').trim() || 'recordCount',
+              },
+              suggestedDimension: {
+                field: fieldPath,
+              },
             }),
           },
         );
