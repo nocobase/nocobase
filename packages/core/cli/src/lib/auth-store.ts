@@ -619,6 +619,59 @@ export async function updateEnvConnection(
   );
 }
 
+export async function replaceEnvConfig(
+  envName: string,
+  config: Record<string, any>,
+  options: AuthStoreOptions = {},
+) {
+  await writeEnv(
+    envName,
+    (previous) => {
+      if (!previous) {
+        throw new Error(`Env "${envName}" is not configured`);
+      }
+
+      const {
+        apiBaseUrl: _apiBaseUrl,
+        baseUrl: _baseUrl,
+        apibaseUrl: _legacyApiBaseUrl,
+        accessToken,
+        authType,
+        authUsername,
+        ...rest
+      } = config;
+      const nextApiBaseUrl = readEnvApiBaseUrl(config);
+      const previousApiBaseUrl = readEnvApiBaseUrl(previous);
+      const baseUrlChanged = previousApiBaseUrl !== nextApiBaseUrl;
+      const previousAuthType = resolveConfiguredAuthType(previous);
+      const nextAuthType = normalizeConfiguredAuthType(authType) ?? (accessToken ? 'token' : undefined);
+      const nextAuthUsername = nextAuthType === 'basic' ? normalizeOptionalString(authUsername) : undefined;
+      const nextAuth = accessToken
+        ? ({
+            type: 'token',
+            accessToken,
+          } satisfies TokenAuthConfig)
+        : nextAuthType === 'oauth' && !baseUrlChanged && previous?.auth?.type === 'oauth'
+          ? previous.auth
+          : undefined;
+      const authChanged = !areAuthConfigsEquivalent(previous?.auth, nextAuth);
+      const authTypeChanged = previousAuthType !== nextAuthType;
+      const authUsernameChanged = previous?.authUsername !== nextAuthUsername;
+
+      return {
+        ...rest,
+        ...(nextApiBaseUrl !== undefined ? { apiBaseUrl: nextApiBaseUrl } : {}),
+        ...(nextAuthType ? { authType: nextAuthType } : {}),
+        ...(nextAuthUsername ? { authUsername: nextAuthUsername } : {}),
+        ...(nextAuth ? { auth: nextAuth } : {}),
+        runtime:
+          baseUrlChanged || authChanged || authTypeChanged || authUsernameChanged ? undefined : previous?.runtime,
+      };
+    },
+    options,
+  );
+}
+
 export async function setEnvOauthSession(
   envName: string,
   auth: OauthAuthConfig,

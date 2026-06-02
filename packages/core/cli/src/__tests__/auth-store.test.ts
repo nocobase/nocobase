@@ -16,6 +16,7 @@ import {
   getEnv,
   getCurrentEnvName,
   loadAuthConfig,
+  replaceEnvConfig,
   removeEnv,
   saveAuthConfig,
   setCurrentEnv,
@@ -650,6 +651,94 @@ test('updateEnvConnection preserves runtime metadata when connection settings ar
       schemaHash: 'hash',
       generatedAt: '2026-04-13T00:00:00.000Z',
     });
+  });
+});
+
+test('replaceEnvConfig preserves runtime metadata when only saved app settings change', async () => {
+  await withTempCliHome(async () => {
+    await saveAuthConfig(
+      {
+        lastEnv: 'test',
+        envs: {
+          test: {
+            apiBaseUrl: 'http://localhost:13000/api',
+            authType: 'token',
+            auth: {
+              type: 'token',
+              accessToken: 'same-token',
+            },
+            appPort: '13000',
+            runtime: {
+              version: 'v1',
+              schemaHash: 'hash',
+              generatedAt: '2026-04-13T00:00:00.000Z',
+            },
+          },
+        },
+      },
+      { scope: 'global' },
+    );
+
+    await replaceEnvConfig(
+      'test',
+      {
+        kind: 'http',
+        apiBaseUrl: 'http://localhost:13000/api',
+        authType: 'token',
+        accessToken: 'same-token',
+        appPort: '14000',
+      },
+      { scope: 'global' },
+    );
+
+    const env = await getEnv('test', { scope: 'global' });
+    expect(env?.appPort).toBe('14000');
+    expect(env?.runtime).toEqual({
+      version: 'v1',
+      schemaHash: 'hash',
+      generatedAt: '2026-04-13T00:00:00.000Z',
+    });
+  });
+});
+
+test('replaceEnvConfig can remove a saved token while keeping token auth type', async () => {
+  await withTempCliHome(async () => {
+    await saveAuthConfig(
+      {
+        lastEnv: 'test',
+        envs: {
+          test: {
+            apiBaseUrl: 'http://localhost:13000/api',
+            authType: 'token',
+            auth: {
+              type: 'token',
+              accessToken: 'old-token',
+            },
+            runtime: {
+              version: 'v1',
+              schemaHash: 'hash',
+              generatedAt: '2026-04-13T00:00:00.000Z',
+            },
+          },
+        },
+      },
+      { scope: 'global' },
+    );
+
+    await replaceEnvConfig(
+      'test',
+      {
+        kind: 'http',
+        apiBaseUrl: 'http://localhost:13000/api',
+        authType: 'token',
+      },
+      { scope: 'global' },
+    );
+
+    const env = await getEnv('test', { scope: 'global' });
+    expect(env?.authType).toBe('token');
+    expect(env?.auth).toBe(undefined);
+    expect(env?.runtime).toBe(undefined);
   });
 });
 

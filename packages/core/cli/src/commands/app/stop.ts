@@ -12,6 +12,7 @@ import { getCurrentEnvName } from '../../lib/auth-store.js';
 import { ensureCrossEnvConfirmed, hasExplicitEnvSelection } from '../../lib/env-guard.js';
 import {
   formatMissingManagedAppEnvMessage,
+  managedAppLifecycleEnvVars,
   resolveManagedAppRuntime,
   runLocalNocoBaseCommand,
 } from '../../lib/app-runtime.js';
@@ -142,6 +143,7 @@ export default class AppStop extends Command {
       startTask(`Stopping NocoBase for "${runtime.envName}"...`);
       try {
         await runLocalNocoBaseCommand(runtime, ['pm2', 'kill'], {
+          env: managedAppLifecycleEnvVars(),
           stdio: commandStdio,
         });
         succeedTask(`NocoBase has stopped for "${runtime.envName}".`);

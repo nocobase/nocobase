@@ -11,6 +11,7 @@ import { Command, Flags } from '@oclif/core';
 import { removeEnv } from '../../lib/auth-store.js';
 import {
   formatMissingManagedAppEnvMessage,
+  managedAppLifecycleEnvVars,
   resolveManagedAppRuntime,
   runLocalNocoBaseCommand,
   type ManagedAppRuntime,
@@ -196,6 +197,7 @@ export default class AppDestroy extends Command {
       } else if (runtime.kind === 'local') {
         startTask(`Stopping local NocoBase app for "${runtime.envName}"...`);
         await runLocalNocoBaseCommand(runtime, ['pm2', 'kill'], {
+          env: managedAppLifecycleEnvVars(),
           stdio: flags.verbose ? 'inherit' : 'ignore',
         });
         succeedTask(`Local NocoBase app stopped for "${runtime.envName}".`);

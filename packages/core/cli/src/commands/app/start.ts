@@ -11,6 +11,7 @@ import { Command, Flags } from '@oclif/core';
 import { ensureCrossEnvConfirmed, hasExplicitEnvSelection } from '../../lib/env-guard.js';
 import {
   formatMissingManagedAppEnvMessage,
+  managedAppLifecycleEnvVars,
   resolveManagedAppRuntime,
   runLocalNocoBaseCommand,
 } from '../../lib/app-runtime.js';
@@ -300,6 +301,7 @@ export default class AppStart extends Command {
 
     try {
       await ensureLocalPostinstall(runtime, {
+        env: managedAppLifecycleEnvVars(),
         verbose: flags.verbose,
         onStartTask: startTask,
         onSucceedTask: succeedTask,
@@ -321,6 +323,7 @@ export default class AppStart extends Command {
 
     try {
       await runLocalNocoBaseCommand(runtime, npmArgs, {
+        env: managedAppLifecycleEnvVars(),
         stdio: commandStdio,
       });
       if (flags.daemon !== false) {

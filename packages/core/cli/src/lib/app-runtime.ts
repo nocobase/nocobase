@@ -182,6 +182,13 @@ export function formatMissingManagedAppEnvMessage(envName?: string): string {
   return 'No NocoBase env is configured yet. Run `nb init --ui` to create one first.';
 }
 
+export function managedAppLifecycleEnvVars(): Record<string, string> {
+  return {
+    APP_ENV: 'production',
+    NODE_ENV: 'production',
+  };
+}
+
 export async function runLocalNocoBaseCommand(
   runtime: Extract<ManagedAppRuntime, { kind: 'local' }>,
   args: string[],

@@ -9,7 +9,12 @@
 
 import { mkdir, readdir } from 'node:fs/promises';
 import type { ManagedAppRuntime } from './app-runtime.js';
-import { dockerContainerExists, runLocalNocoBaseCommand, startDockerContainer } from './app-runtime.js';
+import {
+  dockerContainerExists,
+  managedAppLifecycleEnvVars,
+  runLocalNocoBaseCommand,
+  startDockerContainer,
+} from './app-runtime.js';
 import { deriveBuiltinDbConnection, resolveBuiltinDbConnection } from './builtin-db.js';
 import { resolveConfiguredStoragePath } from './env-paths.js';
 import { resolveDockerEnvFileArg } from './docker-env-file.ts';
@@ -217,7 +222,12 @@ export async function buildSavedDockerRunArgs(
     args.push('--env-file', envFile);
   }
 
+  const lifecycleEnvVars = managedAppLifecycleEnvVars();
   args.push(
+    '-e',
+    `APP_ENV=${lifecycleEnvVars.APP_ENV}`,
+    '-e',
+    `NODE_ENV=${lifecycleEnvVars.NODE_ENV}`,
     '-e',
     `APP_KEY=${appKey}`,
     '-e',
@@ -410,6 +420,7 @@ export async function ensureLocalPostinstall(
   runtime: Extract<ManagedAppRuntime, { kind: 'local' }>,
   options?: {
     verbose?: boolean;
+    env?: Record<string, string>;
     onStartTask?: (message: string) => void;
     onSucceedTask?: (message: string) => void;
     onFailTask?: (message: string) => void;
@@ -418,6 +429,7 @@ export async function ensureLocalPostinstall(
   options?.onStartTask?.(`Running local postinstall for "${runtime.envName}"...`);
   try {
     await runLocalNocoBaseCommand(runtime, ['postinstall'], {
+      env: options?.env,
       stdio: commandStdio(options?.verbose),
     });
     options?.onSucceedTask?.(`Local postinstall finished for "${runtime.envName}".`);

@@ -16,6 +16,10 @@ const originalNbLocale = process.env.NB_LOCALE;
 const TEST_CWD = '/tmp/app2';
 const TEST_STORAGE_PATH = path.join(TEST_CWD, 'storage', 'test');
 const TEST_POSTGRES_DATA_DIR = path.resolve(TEST_STORAGE_PATH, 'db', 'postgres');
+const MANAGED_APP_PRODUCTION_ENV = {
+  APP_ENV: 'production',
+  NODE_ENV: 'production',
+};
 
 const mocks = vi.hoisted(() => ({
   formatMissingManagedAppEnvMessage: vi.fn((envName?: string) =>
@@ -26,6 +30,10 @@ const mocks = vi.hoisted(() => ({
         ].join('\n')
       : 'No NocoBase env is configured yet. Run `nb init --ui` to create one first.',
   ),
+  managedAppLifecycleEnvVars: vi.fn(() => ({
+    APP_ENV: 'production',
+    NODE_ENV: 'production',
+  })),
   resolveManagedAppRuntime: vi.fn(),
   runLocalNocoBaseCommand: vi.fn(),
   runDockerNocoBaseCommand: vi.fn(),
@@ -125,6 +133,7 @@ vi.mock('node:child_process', async (importOriginal) => {
 
 vi.mock('../lib/app-runtime.js', () => ({
   formatMissingManagedAppEnvMessage: mocks.formatMissingManagedAppEnvMessage,
+  managedAppLifecycleEnvVars: mocks.managedAppLifecycleEnvVars,
   resolveManagedAppRuntime: mocks.resolveManagedAppRuntime,
   runLocalNocoBaseCommand: mocks.runLocalNocoBaseCommand,
   runDockerNocoBaseCommand: mocks.runDockerNocoBaseCommand,
@@ -238,6 +247,9 @@ beforeEach(() => {
         .at(-1) ?? 'demo';
     return `nb-${value}`;
   });
+  mocks.managedAppLifecycleEnvVars.mockImplementation(() => ({
+    ...MANAGED_APP_PRODUCTION_ENV,
+  }));
   vi.stubGlobal(
     'fetch',
     vi.fn(async () => {
@@ -421,6 +433,7 @@ test('start enables daemon by default for npm/git envs', async () => {
   expect(mocks.runLocalNocoBaseCommand.mock.calls[0]?.[0]?.envName).toBe('local');
   expect(mocks.runLocalNocoBaseCommand.mock.calls[0]?.[1]).toEqual(['postinstall']);
   expect(mocks.runLocalNocoBaseCommand.mock.calls[0]?.[2]).toEqual({
+    env: MANAGED_APP_PRODUCTION_ENV,
     stdio: 'ignore',
   });
   expect(mocks.runLocalNocoBaseCommand.mock.calls[1]?.[1]).toEqual([
@@ -435,6 +448,7 @@ test('start enables daemon by default for npm/git envs', async () => {
     'pm2',
   ]);
   expect(mocks.runLocalNocoBaseCommand.mock.calls[1]?.[2]).toEqual({
+    env: MANAGED_APP_PRODUCTION_ENV,
     stdio: 'ignore',
   });
 });
@@ -548,10 +562,12 @@ test('start supports --no-daemon for npm/git envs', async () => {
   expect(mocks.runLocalNocoBaseCommand.mock.calls.length).toBe(2);
   expect(mocks.runLocalNocoBaseCommand.mock.calls[0]?.[1]).toEqual(['postinstall']);
   expect(mocks.runLocalNocoBaseCommand.mock.calls[0]?.[2]).toEqual({
+    env: MANAGED_APP_PRODUCTION_ENV,
     stdio: 'ignore',
   });
   expect(mocks.runLocalNocoBaseCommand.mock.calls[1]?.[1]).toEqual(['start', '--port', '13000']);
   expect(mocks.runLocalNocoBaseCommand.mock.calls[1]?.[2]).toEqual({
+    env: MANAGED_APP_PRODUCTION_ENV,
     stdio: 'ignore',
   });
 });
@@ -611,6 +627,7 @@ test('start enables raw startup output when --verbose is set', async () => {
   await Start.prototype.run.call(command);
 
   expect(mocks.runLocalNocoBaseCommand.mock.calls[0]?.[2]).toEqual({
+    env: MANAGED_APP_PRODUCTION_ENV,
     stdio: 'inherit',
   });
 });
@@ -794,6 +811,7 @@ test('start restores saved npm/git source files before launching when the app ro
     ],
   ]);
   expect(mocks.runLocalNocoBaseCommand.mock.calls[0]?.[2]).toEqual({
+    env: MANAGED_APP_PRODUCTION_ENV,
     stdio: 'inherit',
   });
 });
@@ -974,6 +992,10 @@ test('start recreates docker app containers through docker run', async () => {
       'nb-demo',
       '-p',
       '13000:80',
+      '-e',
+      'APP_ENV=production',
+      '-e',
+      'NODE_ENV=production',
       '-e',
       'APP_KEY=app-key-123',
       '-e',
@@ -1203,6 +1225,7 @@ test('stop enables raw shutdown output when --verbose is set', async () => {
   expect(mocks.startTask.mock.calls).toEqual([['Stopping NocoBase for "local"...']]);
   expect(mocks.succeedTask.mock.calls).toEqual([['NocoBase has stopped for "local".']]);
   expect(mocks.runLocalNocoBaseCommand.mock.calls[0]?.[2]).toEqual({
+    env: MANAGED_APP_PRODUCTION_ENV,
     stdio: 'inherit',
   });
 });
@@ -1300,7 +1323,9 @@ test('stop --with-db keeps external databases untouched', async () => {
 
   await Stop.prototype.run.call(command);
 
-  expect(mocks.runLocalNocoBaseCommand.mock.calls).toEqual([[runtime, ['pm2', 'kill'], { stdio: 'ignore' }]]);
+  expect(mocks.runLocalNocoBaseCommand.mock.calls).toEqual([
+    [runtime, ['pm2', 'kill'], { env: MANAGED_APP_PRODUCTION_ENV, stdio: 'ignore' }],
+  ]);
   expect(mocks.run.mock.calls.length).toBe(0);
   expect(mocks.printInfo.mock.calls).toContainEqual([
     'Env "local" does not use a CLI-managed built-in database. Only the app runtime was stopped.',
@@ -1590,6 +1615,10 @@ test('logs supports --env and --no-follow for local app logs', async () => {
   expect(mocks.resolveManagedAppRuntime.mock.calls).toEqual([['app1']]);
   expect(mocks.printInfo.mock.calls).toEqual([['Showing recent logs for "app1".']]);
   expect(mocks.runLocalNocoBaseCommand.mock.calls[0]?.[1]).toEqual(['pm2', 'logs', '--lines', '50', '--nostream']);
+  expect(mocks.runLocalNocoBaseCommand.mock.calls[0]?.[2]).toEqual({
+    env: MANAGED_APP_PRODUCTION_ENV,
+    stdio: 'inherit',
+  });
 });
 
 test('logs reads docker app logs', async () => {
@@ -3366,7 +3395,9 @@ test('destroy removes managed local app files for downloaded local envs', async 
 
   await Destroy.prototype.run.call(command);
 
-  expect(mocks.runLocalNocoBaseCommand.mock.calls).toEqual([[runtime, ['pm2', 'kill'], { stdio: 'ignore' }]]);
+  expect(mocks.runLocalNocoBaseCommand.mock.calls).toEqual([
+    [runtime, ['pm2', 'kill'], { env: MANAGED_APP_PRODUCTION_ENV, stdio: 'ignore' }],
+  ]);
   expect(mocks.fsRm.mock.calls).toEqual([
     [path.resolve('/tmp/nocobase/source'), { recursive: true, force: true }],
     [path.resolve(resolveCliHomeRoot(), './local/storage'), { recursive: true, force: true }],
