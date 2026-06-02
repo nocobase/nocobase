@@ -330,7 +330,7 @@
           "installNewLabel": "新安装",
           "installNewHint": "从零安装一个新的应用，适合首次部署、试用或新建本地开发环境。",
           "manageLocalLabel": "本机接管",
-          "manageLocalHint": "将本机已有应用纳入 nb 管理，后续可统一执行安装、升级和启动等操作。",
+          "manageLocalHint": "将本机已有应用纳入 nb 管理，后续可统一执行安装、升级和启动等操作。接管过程中会重新下载应用代码或镜像并升级应用，storage 会在需要时自动创建。",
           "connectRemoteLabel": "远程连接",
           "connectRemoteHint": "只保存远程应用的连接信息，不在本机安装或接管应用。"
         },

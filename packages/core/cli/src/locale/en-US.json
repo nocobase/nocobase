@@ -330,7 +330,7 @@
           "installNewLabel": "Install a new app",
           "installNewHint": "Install a brand-new app from scratch. Best for first-time setup, evaluation, or a fresh local environment.",
           "manageLocalLabel": "Manage an app already on this machine",
-          "manageLocalHint": "Bring an app on this machine under nb management so install, upgrade, and startup can be handled in one place.",
+          "manageLocalHint": "Bring an app on this machine under nb management so install, upgrade, and startup can be handled in one place. During takeover, nb will re-download the app source or image and upgrade the app; storage will be created automatically when needed.",
           "connectRemoteLabel": "Connect a remote app",
           "connectRemoteHint": "Save only the remote app connection. Nothing will be installed or taken over on this machine."
         },
