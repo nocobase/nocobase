@@ -21,7 +21,6 @@ import {
   type LazySelectProps,
   type PopupScrollEvent,
 } from '../AssociationFieldModel/recordSelectShared';
-import _ from 'lodash';
 
 const labelClassName = css`
   div {
@@ -45,7 +44,7 @@ function getValueKey(fieldNames: LazySelectProps['fieldNames']) {
 function deriveRecordsFromValue(
   value: LazySelectProps['value'],
   valueKey: string,
-  optionMap: Map<any, AssociationOption>,
+  optionMap: Map<unknown, AssociationOption>,
   isMultiple: boolean,
   valueMode: LazySelectProps['valueMode'] = 'record',
 ) {
@@ -98,7 +97,7 @@ export function MobileLazySelect(props: Readonly<LazySelectProps>) {
   const valueKey = getValueKey(fieldNames);
   const realOptions = resolveOptions(options, value, isMultiple);
   const optionMap = useMemo(() => {
-    const map = new Map<any, AssociationOption>();
+    const map = new Map<unknown, AssociationOption>();
     for (const item of realOptions) {
       map.set(item?.[valueKey], item);
     }
@@ -154,39 +153,32 @@ export function MobileLazySelect(props: Readonly<LazySelectProps>) {
   }, [onDropdownVisibleChange]);
 
   const handleConfirm = useCallback(() => {
-    if (valueMode === 'value') {
-      if (isMultiple) {
-        const values = selectedRecords
-          .map((item) => item?.[valueKey])
-          .filter((item) => item !== undefined && item !== null);
-        onChange(values as any);
-      } else {
-        onChange(selectedRecords?.[0]?.[valueKey]);
-      }
-      handleClose();
-      return;
-    }
-    onChange(selectedRecords);
     handleClose();
-  }, [handleClose, isMultiple, onChange, selectedRecords, valueKey, valueMode]);
+  }, [handleClose]);
 
   const handleListChange = useCallback(
     (vals: (string | number)[]) => {
       if (isMultiple) {
-        setSelectedRecords((prev) => {
-          const prevMap = new Map<any, AssociationOption>();
-          for (const item of prev) {
-            prevMap.set(item?.[valueKey], item);
+        const selectedMap = new Map<unknown, AssociationOption>();
+        for (const item of selectedRecords) {
+          selectedMap.set(item?.[valueKey], item);
+        }
+        const nextRecords: AssociationOption[] = [];
+        for (const id of vals) {
+          const nextItem = optionMap.get(id) ?? selectedMap.get(id);
+          if (nextItem) {
+            nextRecords.push(nextItem);
           }
-          const result: AssociationOption[] = [];
-          for (const id of vals) {
-            const nextItem = optionMap.get(id) ?? prevMap.get(id);
-            if (nextItem) {
-              result.push(nextItem);
-            }
-          }
-          return result;
-        });
+        }
+        setSelectedRecords(nextRecords);
+        if (valueMode === 'value') {
+          const values = nextRecords
+            .map((item) => item?.[valueKey])
+            .filter((item): item is string | number => item !== undefined && item !== null);
+          onChange(values as string[] | number[]);
+        } else {
+          onChange(nextRecords);
+        }
         return;
       }
       const selectedId = vals[0];
@@ -200,7 +192,7 @@ export function MobileLazySelect(props: Readonly<LazySelectProps>) {
       }
       handleClose();
     },
-    [handleClose, isMultiple, onChange, optionMap, valueKey, valueMode],
+    [handleClose, isMultiple, onChange, optionMap, selectedRecords, valueKey, valueMode],
   );
 
   const handleScroll = useCallback(
