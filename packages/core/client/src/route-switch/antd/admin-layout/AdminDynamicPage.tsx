@@ -9,11 +9,14 @@
 
 import { type FlowEngine, useFlowEngine } from '@nocobase/flow-engine';
 import { FlowRoute, getAdminLayoutModel, type LayoutRouteLike } from '@nocobase/client-v2';
+import { Spin } from 'antd';
 import React, { useEffect, useMemo, useRef } from 'react';
 import { useLocation, useParams } from 'react-router-dom';
 import { CurrentPageUidContext, useCurrentPageUid } from '../../../application/CustomRouterContextProvider';
 import { AppNotFound } from '../../../common/AppNotFound';
+import { useRemoteCollectionManagerLoading } from '../../../collection-manager/CollectionManagerProvider';
 import { RemoteSchemaComponent } from '../../../schema-component';
+import { LOADING_DELAY } from '../../../variables/constants';
 import { KeepAlive, useKeepAlive } from './KeepAlive';
 import { CurrentRouteProvider, useAllAccessDesktopRoutes } from './route-runtime';
 import { NocoBaseDesktopRoute, NocoBaseDesktopRouteType } from './route-types';
@@ -84,13 +87,23 @@ const getLegacyAdminLayoutModel = (flowEngine: FlowEngine) => {
   return getAdminLayoutModel(flowEngine, { required: true });
 };
 
+const LegacyFlowRoute = (props: { pageUid: string; active?: boolean }) => {
+  const collectionManagerLoading = useRemoteCollectionManagerLoading();
+
+  if (collectionManagerLoading) {
+    return <Spin style={{ width: '100%', marginTop: 20 }} delay={LOADING_DELAY} />;
+  }
+
+  return <FlowRoute {...props} getLayoutModel={getLegacyAdminLayoutModel} />;
+};
+
 const AdminPageContent = (props: { uid: string; allAccessRoutes: NocoBaseDesktopRoute[] }) => {
   const { uid, allAccessRoutes } = props;
   const { active } = useKeepAlive();
   const route = findRouteBySchemaUid(uid, allAccessRoutes);
 
   if (route?.type === NocoBaseDesktopRouteType.flowPage) {
-    return <FlowRoute pageUid={uid} active={active} getLayoutModel={getLegacyAdminLayoutModel} />;
+    return <LegacyFlowRoute pageUid={uid} active={active} />;
   }
 
   return <RemoteSchemaComponent uid={uid} />;
