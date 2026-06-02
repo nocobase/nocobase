@@ -144,10 +144,16 @@ export function DataSourceForm(props: DataSourceFormProps) {
       }
       await props.onSubmitted(response?.data?.data || values);
       await view.close();
+    } catch (error) {
+      const errorMessage = getErrorMessage(error) || t('Submit failed');
+      (notification || staticNotification).error({
+        message: t('Submit failed'),
+        description: errorMessage,
+      });
     } finally {
       setSubmitting(false);
     }
-  }, [form, normalizeValues, props, resource, view]);
+  }, [form, normalizeValues, notification, props, resource, t, view]);
 
   const typeLabel = compileLegacyTemplateText(props.type.label || props.type.name, t);
   const title = `${props.mode === 'create' ? t('Add new') : t('Edit')} - ${typeLabel}`;
