@@ -175,7 +175,11 @@ export function MobileLazySelect(props: Readonly<LazySelectProps>) {
           const values = nextRecords
             .map((item) => item?.[valueKey])
             .filter((item): item is string | number => item !== undefined && item !== null);
-          onChange(values as string[] | number[]);
+          if (values.every((item) => typeof item === 'number')) {
+            onChange(values as number[]);
+          } else {
+            onChange(values.map(String));
+          }
         } else {
           onChange(nextRecords);
         }
