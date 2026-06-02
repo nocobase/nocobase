@@ -14,10 +14,9 @@ import {
   MoreOutlined,
   PlusOutlined,
   ReloadOutlined,
-  SearchOutlined,
-  TeamOutlined,
   UserAddOutlined,
   UserDeleteOutlined,
+  UserOutlined,
 } from '@ant-design/icons';
 import { CollectionFilter, DrawerFormLayout, type CompiledFilter } from '@nocobase/client-v2';
 import { useFlowContext } from '@nocobase/flow-engine';
@@ -58,6 +57,7 @@ import { getDepartmentTitle } from '../../shared/department';
 const FORM_DRAWER_WIDTH = '50%';
 const TABLE_DRAWER_WIDTH = '70%';
 const DEPARTMENT_PICKER_DRAWER_WIDTH = '40%';
+const DEPARTMENT_TREE_PANEL_WIDTH = 240;
 
 type MembersFilter = CompiledFilter;
 
@@ -893,7 +893,11 @@ const DepartmentsPage: React.FC = () => {
   return (
     <Card>
       <Flex gap={token.marginLG} align="stretch">
-        <Flex vertical gap={token.marginSM} style={{ minWidth: token.sizeXXL * 8 }}>
+        <Flex
+          vertical
+          gap={token.marginSM}
+          style={{ width: DEPARTMENT_TREE_PANEL_WIDTH, flex: `0 0 ${DEPARTMENT_TREE_PANEL_WIDTH}px` }}
+        >
           <Dropdown trigger={['click']} open={searchOpen} onOpenChange={setSearchOpen} menu={{ items: searchItems }}>
             <Input.Search
               allowClear
@@ -917,8 +921,13 @@ const DepartmentsPage: React.FC = () => {
           </Dropdown>
           <Button
             block
-            icon={<TeamOutlined />}
-            type={!selectedDepartment && !selectedUser ? 'primary' : 'default'}
+            icon={<UserOutlined />}
+            type="text"
+            style={{
+              textAlign: 'left',
+              justifyContent: 'flex-start',
+              background: !selectedDepartment && !selectedUser ? token.colorPrimaryBg : undefined,
+            }}
             onClick={() => {
               setSelectedDepartment(null);
               setSelectedUser(null);
