@@ -1465,7 +1465,9 @@ export class FlowEngine {
     if (!this.ensureModelRepository()) return;
 
     const modelUid = model.uid;
-    const dirtyLoadedPageKey = this._loadedPageCache.getDirtyKeyForModel(model);
+    const dirtyLoadedPageKey = this._loadedPageCache.getDirtyKeyForModel(model, {
+      force: !!options?.onlyStepParams,
+    });
 
     // 如果这个 model 正在保存中，返回现有的保存 Promise
     if (this._savingModels.has(modelUid)) {
