@@ -29,6 +29,8 @@ import { FlowSurfacesService } from '../flow-surfaces/service';
 describe('flowSurfaces applyBlueprint contract', () => {
   const DEFAULT_COLLECTION_BLOCK_ACTION_USES = new Set([
     'FilterActionModel',
+    'CalendarNavActionModel',
+    'CalendarViewSelectActionModel',
     'RefreshActionModel',
     'AddNewActionModel',
   ]);
@@ -1303,6 +1305,8 @@ describe('flowSurfaces applyBlueprint contract', () => {
     });
     expect(readNodeActionUses(calendarBlock).filter((use) => DEFAULT_COLLECTION_BLOCK_ACTION_USES.has(use))).toEqual([
       'FilterActionModel',
+      'CalendarNavActionModel',
+      'CalendarViewSelectActionModel',
       'RefreshActionModel',
       'AddNewActionModel',
     ]);
