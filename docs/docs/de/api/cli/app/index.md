@@ -23,6 +23,7 @@ nb app <command>
 | [`nb app restart`](./restart.md) | Anwendung erst stoppen und dann starten |
 | [`nb app logs`](./logs.md) | Anwendungs-Logs anzeigen |
 | [`nb app down`](./down.md) | Lokale Laufzeitressourcen stoppen und bereinigen |
+| [`nb app destroy`](./destroy.md) | Verwaltete Laufzeitressourcen, Storage-Daten und die gespeicherte env-Konfiguration entfernen |
 | [`nb app upgrade`](./upgrade.md) | Anwendung stoppen, Quellcode oder Image ersetzen und erneut starten |
 
 ## Beispiele
@@ -33,6 +34,7 @@ nb app restart --env app1
 nb app logs --env app1
 nb app upgrade --env app1 --skip-download
 nb app down --env app1 --all --force
+nb app destroy --env app1 --force
 ```
 
 ## Verwandte Befehle

@@ -23,6 +23,7 @@ nb app <command>
 | [`nb app restart`](./restart.md) | Dừng rồi khởi động lại ứng dụng |
 | [`nb app logs`](./logs.md) | Xem log ứng dụng |
 | [`nb app down`](./down.md) | Dừng và dọn dẹp tài nguyên runtime cục bộ |
+| [`nb app destroy`](./destroy.md) | Xóa tài nguyên runtime được quản lý, dữ liệu storage và cấu hình env đã lưu |
 | [`nb app upgrade`](./upgrade.md) | Dừng ứng dụng, thay source code hoặc image, rồi khởi động lại |
 
 ## Ví dụ
@@ -33,6 +34,7 @@ nb app restart --env app1
 nb app logs --env app1
 nb app upgrade --env app1 --skip-download
 nb app down --env app1 --all --force
+nb app destroy --env app1 --force
 ```
 
 ## Lệnh liên quan

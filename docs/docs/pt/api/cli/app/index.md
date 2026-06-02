@@ -23,6 +23,7 @@ nb app <command>
 | [`nb app restart`](./restart.md) | Para e em seguida inicia a aplicação |
 | [`nb app logs`](./logs.md) | Visualiza os logs da aplicação |
 | [`nb app down`](./down.md) | Para e limpa os recursos de execução locais |
+| [`nb app destroy`](./destroy.md) | Remove os recursos de runtime gerenciados, os dados de storage e a configuração salva do env |
 | [`nb app upgrade`](./upgrade.md) | Para a aplicação, substitui o código-fonte ou a imagem e a inicia novamente |
 
 ## Exemplos
@@ -33,6 +34,7 @@ nb app restart --env app1
 nb app logs --env app1
 nb app upgrade --env app1 --skip-download
 nb app down --env app1 --all --force
+nb app destroy --env app1 --force
 ```
 
 ## Comandos relacionados

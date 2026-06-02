@@ -23,6 +23,7 @@ nb app <command>
 | [`nb app restart`](./restart.md) | Остановка и затем запуск приложения |
 | [`nb app logs`](./logs.md) | Просмотр логов приложения |
 | [`nb app down`](./down.md) | Остановка и очистка локальных runtime-ресурсов |
+| [`nb app destroy`](./destroy.md) | Удаление управляемых runtime-ресурсов, данных storage и сохранённой конфигурации env |
 | [`nb app upgrade`](./upgrade.md) | Остановка приложения, замена исходников или образа и повторный запуск |
 
 ## Примеры
@@ -33,6 +34,7 @@ nb app restart --env app1
 nb app logs --env app1
 nb app upgrade --env app1 --skip-download
 nb app down --env app1 --all --force
+nb app destroy --env app1 --force
 ```
 
 ## Связанные команды

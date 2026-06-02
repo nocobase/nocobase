@@ -42,6 +42,11 @@
       },
       {
         "type": "custom-link",
+        "label": "nb app destroy",
+        "link": "/api/cli/app/destroy"
+      },
+      {
+        "type": "custom-link",
         "label": "nb app upgrade",
         "link": "/api/cli/app/upgrade"
       }

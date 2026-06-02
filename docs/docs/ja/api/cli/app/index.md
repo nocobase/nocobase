@@ -23,6 +23,7 @@ nb app <command>
 | [`nb app restart`](./restart.md) | アプリケーションを停止してから再起動します |
 | [`nb app logs`](./logs.md) | アプリケーションのログを表示します |
 | [`nb app down`](./down.md) | ローカル実行リソースを停止してクリーンアップします |
+| [`nb app destroy`](./destroy.md) | 管理対象ランタイムリソース、storage データ、保存済み env 設定を削除します |
 | [`nb app upgrade`](./upgrade.md) | アプリケーションを停止し、ソースコードまたはイメージを置き換えて再起動します |
 
 ## 使用例
@@ -33,6 +34,7 @@ nb app restart --env app1
 nb app logs --env app1
 nb app upgrade --env app1 --skip-download
 nb app down --env app1 --all --force
+nb app destroy --env app1 --force
 ```
 
 ## 関連コマンド

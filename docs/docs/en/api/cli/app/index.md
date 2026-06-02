@@ -23,6 +23,7 @@ nb app <command>
 | [`nb app restart`](./restart.md) | Stop and then start the app |
 | [`nb app logs`](./logs.md) | View app logs |
 | [`nb app down`](./down.md) | Stop and clean up local runtime resources |
+| [`nb app destroy`](./destroy.md) | Remove managed runtime resources, storage data, and saved env config |
 | [`nb app upgrade`](./upgrade.md) | Stop the app, replace the source or image, then start it again |
 
 ## Examples
@@ -33,6 +34,7 @@ nb app restart --env app1
 nb app logs --env app1
 nb app stop --env app1
 nb app down --env app1 --all --force
+nb app destroy --env app1 --force
 ```
 
 ## Related Commands
