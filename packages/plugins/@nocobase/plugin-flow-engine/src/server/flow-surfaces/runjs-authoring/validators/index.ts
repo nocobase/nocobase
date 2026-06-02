@@ -392,6 +392,27 @@ function collectGlobalErrors(
       }),
     );
   });
+  scan.unknownBareGlobals.forEach((entry) => {
+    const suggestion = entry.suggestedCapability
+      ? `; use ${entry.suggestedCapability} or assign it to a local variable first`
+      : '; declare or import it before using it';
+    errors.push(
+      buildRunJsAuthoringError({
+        path,
+        repairClass: 'unknown-global-stop',
+        ruleId: 'runjs-global-unknown',
+        message: `flowSurfaces authoring ${path} cannot access unknown RunJS global ${entry.name}${suggestion}`,
+        modelUse,
+        surface,
+        index: entry.index,
+        source,
+        details: {
+          global: entry.name,
+          suggestedCapability: entry.suggestedCapability,
+        },
+      }),
+    );
+  });
 }
 
 function collectReactRuntimeErrors(

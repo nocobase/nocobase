@@ -7,7 +7,12 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import type { RunJsAuthoringContext, RunJsAstInspection, StringLiteralBinding } from '../internal-types';
+import type {
+  AstIdentifierBinding,
+  RunJsAuthoringContext,
+  RunJsAstInspection,
+  StringLiteralBinding,
+} from '../internal-types';
 import {
   collectBraceRanges,
   collectStaticBlockRanges,
@@ -16,7 +21,7 @@ import {
   isInsideRanges,
   maskJavaScriptSource,
 } from '../ast/source';
-import { walkAstSimple } from '../ast/walk';
+import { walkAstAncestor, walkAstSimple } from '../ast/walk';
 import { collectSourceBindings, collectStringLiteralBindings, dedupeIndexedEntries } from '../ast/bindings';
 import {
   collectCtxAliases,
@@ -46,7 +51,13 @@ import {
   collectStaticFilterValueBindingsFromAst,
   collectStaticStringBindingsFromAst,
 } from '../ast/static-bindings';
-import { dedupeAstResourceEntries, findUnboundCtxMatches, resolveCtxMethodCall } from '../ast/static-values';
+import {
+  dedupeAstResourceEntries,
+  findUnboundCtxMatches,
+  hasAstActiveBinding,
+  resolveAstActiveIdentifierBinding,
+  resolveCtxMethodCall,
+} from '../ast/static-values';
 import {
   collectAstInvalidReactRuntimeBindingsFromAst,
   collectAstReactAsyncComponentReferences,
@@ -82,15 +93,21 @@ import {
   collectAstSharedCtxResourceCallsInFunctions,
 } from './resource';
 import { collectAstInvalidResourceFilterCalls } from './filter';
+import {
+  ALLOWED_CTX_ROOTS,
+  FORBIDDEN_BARE_GLOBALS,
+  RUNJS_ALLOWED_BARE_GLOBALS,
+  RUNJS_ALLOWED_BARE_GLOBALS_BY_MODEL_USE,
+} from '../runtime/constants';
 
-export function scanJavaScriptSource(source: string, ast?: any, context: RunJsAuthoringContext = {}) {
+export function scanJavaScriptSource(source: string, ast?: any, context: RunJsAuthoringContext = {}, modelUse = '') {
   const masked = maskJavaScriptSource(source);
   const functionRanges = findFunctionRanges(masked);
   const blockRanges = collectBraceRanges(masked);
   const staticBlockRanges = collectStaticBlockRanges(masked);
   const sourceBindings = collectSourceBindings(masked, functionRanges, blockRanges, staticBlockRanges);
   const stringLiteralBindings = collectStringLiteralBindings(source, masked, sourceBindings);
-  const astInspection = ast ? inspectRunJsAst(ast, source, stringLiteralBindings, context) : undefined;
+  const astInspection = ast ? inspectRunJsAst(ast, source, stringLiteralBindings, context, modelUse) : undefined;
   const ctxRenderCalls = findUnboundCtxMatches(masked, /\bctx\s*(?:\?\.|\.)\s*render\s*(?:\?\.)?\(/g, sourceBindings);
   const topLevelCtxRenderCalls = ctxRenderCalls.filter((entry) => !isInsideRanges(entry.index, functionRanges));
   const topLevelReachableCtxRenderCalls = astInspection
@@ -125,6 +142,7 @@ export function scanJavaScriptSource(source: string, ast?: any, context: RunJsAu
     functionRanges,
     blockRanges,
     sourceBindings,
+    unknownBareGlobals: astInspection?.unknownBareGlobals || [],
     ctxRenderCalls,
     topLevelCtxRenderCalls,
     topLevelReachableCtxRenderCalls,
@@ -186,11 +204,102 @@ export function scanJavaScriptSource(source: string, ast?: any, context: RunJsAu
   };
 }
 
+function collectAstUnknownBareGlobalsFromAst(
+  ast: any,
+  identifierBindings: AstIdentifierBinding[],
+  modelUse: string,
+): RunJsAstInspection['unknownBareGlobals'] {
+  const allowedGlobals = new Set(RUNJS_ALLOWED_BARE_GLOBALS);
+  RUNJS_ALLOWED_BARE_GLOBALS_BY_MODEL_USE[modelUse]?.forEach((name) => allowedGlobals.add(name));
+
+  const entries: RunJsAstInspection['unknownBareGlobals'] = [];
+  const reported = new Set<string>();
+
+  walkAstAncestor(ast, {
+    Identifier(node: any, ancestors: any[]) {
+      const name = typeof node?.name === 'string' ? node.name : '';
+      if (!name) {
+        return;
+      }
+      if (allowedGlobals.has(name) || FORBIDDEN_BARE_GLOBALS.has(name)) {
+        return;
+      }
+      const index = typeof node.start === 'number' ? node.start : 0;
+      if (hasAstDeclaredBindingAtIndex(name, index, identifierBindings)) {
+        return;
+      }
+      if (!isIdentifierReadReference(node, ancestors)) {
+        return;
+      }
+      const key = `${name}@${index}`;
+      if (reported.has(key)) {
+        return;
+      }
+      reported.add(key);
+      entries.push({
+        index,
+        name,
+        suggestedCapability: ALLOWED_CTX_ROOTS.has(name) ? `ctx.${name}` : undefined,
+      });
+    },
+  });
+
+  return entries.sort((left, right) => left.index - right.index);
+}
+
+function hasAstDeclaredBindingAtIndex(name: string, index: number, identifierBindings: AstIdentifierBinding[]) {
+  const binding = resolveAstActiveIdentifierBinding(name, index, identifierBindings);
+  if (!binding) {
+    return false;
+  }
+  if (binding.unavailableRanges?.some((range) => index >= range.start && index < range.end)) {
+    return false;
+  }
+  return index >= (binding.declarationStart ?? binding.start);
+}
+
+function isIdentifierReadReference(node: any, ancestors: any[]) {
+  const parent = ancestors[ancestors.length - 2];
+  const grandparent = ancestors[ancestors.length - 3];
+  if (!parent) {
+    return true;
+  }
+
+  if (
+    (parent.type === 'VariableDeclarator' && parent.id === node) ||
+    (parent.type === 'FunctionDeclaration' && parent.id === node) ||
+    (parent.type === 'FunctionExpression' && parent.id === node) ||
+    (parent.type === 'ClassDeclaration' && parent.id === node) ||
+    (parent.type === 'ClassExpression' && parent.id === node) ||
+    (parent.type === 'MethodDefinition' && parent.key === node && parent.computed !== true) ||
+    (parent.type === 'PropertyDefinition' && parent.key === node && parent.computed !== true) ||
+    (parent.type === 'MemberExpression' && parent.property === node && parent.computed !== true) ||
+    (parent.type === 'LabeledStatement' && parent.label === node) ||
+    (parent.type === 'BreakStatement' && parent.label === node) ||
+    (parent.type === 'ContinueStatement' && parent.label === node) ||
+    parent.type === 'MetaProperty'
+  ) {
+    return false;
+  }
+
+  if (parent.type === 'Property') {
+    if (grandparent?.type === 'ObjectPattern') {
+      return false;
+    }
+    if (parent.key === node && parent.value !== node && parent.computed !== true) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
 function inspectRunJsAst(
   ast: any,
   source: string,
   stringBindings: StringLiteralBinding[],
   context: RunJsAuthoringContext = {},
+  modelUse = '',
 ): RunJsAstInspection {
   const identifierBindings = collectAstIdentifierBindingsFromAst(ast, source);
   const functionBindings = collectAstFunctionBindingsFromAst(ast, source);
@@ -296,6 +405,7 @@ function inspectRunJsAst(
     aliases,
     identifierBindings,
   );
+  const unknownBareGlobals = collectAstUnknownBareGlobalsFromAst(ast, identifierBindings, modelUse);
 
   walkAstSimple(ast, {
     CallExpression(node: any) {
@@ -392,6 +502,7 @@ function inspectRunJsAst(
   );
 
   return {
+    unknownBareGlobals,
     invalidApiResourceCalls: dedupedInvalidApiResourceCalls,
     invalidResourceActionCalls: dedupeIndexedEntries(invalidResourceActionCalls).sort(
       (left, right) => left.index - right.index,

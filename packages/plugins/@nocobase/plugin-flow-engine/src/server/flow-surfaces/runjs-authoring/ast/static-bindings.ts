@@ -50,12 +50,25 @@ import {
 
 export function collectAstIdentifierBindingsFromAst(ast: any, source: string): AstIdentifierBinding[] {
   const bindings: AstIdentifierBinding[] = [];
-  const addBinding = (name: string, node: any, scope: SourceRange) => {
+  const addBinding = (
+    name: string,
+    node: any,
+    scope: SourceRange,
+    declarationStart?: number,
+    unavailableRanges?: SourceRange[],
+  ) => {
     if (!name) {
       return;
     }
     bindings.push({
       name,
+      declarationStart:
+        typeof declarationStart === 'number'
+          ? declarationStart
+          : typeof node?.start === 'number'
+            ? node.start
+            : scope.start,
+      unavailableRanges,
       start: scope.start,
       end: scope.end,
     });
@@ -65,12 +78,34 @@ export function collectAstIdentifierBindingsFromAst(ast: any, source: string): A
     VariableDeclarator(node: any, ancestors: any[]) {
       const declaration = findAstAncestor(ancestors, 'VariableDeclaration');
       const scope = getAstBindingScopeRange(ancestors, source.length, declaration?.kind === 'var');
-      collectAstPatternBindingIdentifiers(node.id, (name, bindingNode) => addBinding(name, bindingNode, scope));
+      const unavailableRanges =
+        declaration?.kind === 'var' ? undefined : getForHeadUnavailableBindingRanges(declaration, ancestors);
+      if (node.id?.type === 'Identifier') {
+        const declarationStart =
+          declaration?.kind === 'var'
+            ? scope.start
+            : typeof node.end === 'number'
+              ? node.end
+              : typeof node.start === 'number'
+                ? node.start
+                : scope.start;
+        addBinding(node.id.name, node.id, scope, declarationStart, unavailableRanges);
+        return;
+      }
+      collectAstPatternBindingDeclarations(node.id, (name, bindingNode, declarationStart) =>
+        addBinding(
+          name,
+          bindingNode,
+          scope,
+          declaration?.kind === 'var' ? scope.start : declarationStart,
+          unavailableRanges,
+        ),
+      );
     },
     FunctionDeclaration(node: any, ancestors: any[]) {
       const parentScope = getAstBindingScopeRange(ancestors.slice(0, -1), source.length);
       if (node.id?.type === 'Identifier') {
-        addBinding(node.id.name, node.id, parentScope);
+        addBinding(node.id.name, node.id, parentScope, parentScope.start);
       }
       addAstFunctionParamBindings(bindings, node, source.length);
     },
@@ -112,6 +147,86 @@ export function collectAstIdentifierBindingsFromAst(ast: any, source: string): A
   });
 
   return bindings;
+}
+
+function getForHeadUnavailableBindingRanges(declaration: any, ancestors: any[]): SourceRange[] | undefined {
+  const parent = ancestors[ancestors.length - 3];
+  if (
+    (parent?.type !== 'ForOfStatement' && parent?.type !== 'ForInStatement') ||
+    parent.left !== declaration ||
+    typeof parent.right?.start !== 'number' ||
+    typeof parent.right?.end !== 'number'
+  ) {
+    return undefined;
+  }
+  return [
+    {
+      start: parent.right.start,
+      end: parent.right.end,
+    },
+  ];
+}
+
+function collectAstPatternBindingDeclarations(
+  node: any,
+  addBinding: (name: string, node: any, declarationStart: number) => void,
+  declarationStart?: number,
+) {
+  if (!node) {
+    return;
+  }
+  const fallbackStart =
+    typeof declarationStart === 'number'
+      ? declarationStart
+      : typeof node.end === 'number'
+        ? node.end
+        : typeof node.start === 'number'
+          ? node.start
+          : 0;
+  if (node.type === 'Identifier') {
+    addBinding(node.name, node, fallbackStart);
+    return;
+  }
+  if (node.type === 'AssignmentPattern') {
+    collectAstPatternBindingDeclarations(
+      node.left,
+      addBinding,
+      typeof node.end === 'number' ? node.end : fallbackStart,
+    );
+    return;
+  }
+  if (node.type === 'RestElement') {
+    collectAstPatternBindingDeclarations(
+      node.argument,
+      addBinding,
+      typeof node.end === 'number' ? node.end : fallbackStart,
+    );
+    return;
+  }
+  if (node.type === 'ArrayPattern') {
+    for (const element of node.elements || []) {
+      collectAstPatternBindingDeclarations(element, addBinding);
+    }
+    return;
+  }
+  if (node.type === 'ObjectPattern') {
+    for (const property of node.properties || []) {
+      if (!property) {
+        continue;
+      }
+      if (property.type === 'RestElement') {
+        collectAstPatternBindingDeclarations(
+          property.argument,
+          addBinding,
+          typeof property.end === 'number' ? property.end : undefined,
+        );
+        continue;
+      }
+      if (property.type === 'Property') {
+        collectAstPatternBindingDeclarations(property.value, addBinding);
+      }
+    }
+  }
 }
 
 export function collectAstFunctionBindingsFromAst(ast: any, source: string): AstFunctionBinding[] {

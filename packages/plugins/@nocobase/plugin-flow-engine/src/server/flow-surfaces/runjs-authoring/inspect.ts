@@ -133,7 +133,7 @@ export function inspectRunJsAuthoringCode(
     ];
   }
 
-  const scan = scanJavaScriptSource(source, parseResult.ast, context);
+  const scan = scanJavaScriptSource(source, parseResult.ast, context, modelUse);
   errors.push(
     ...collectRunJsInspectionErrors({
       context,
