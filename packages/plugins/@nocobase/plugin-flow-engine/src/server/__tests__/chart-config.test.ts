@@ -182,29 +182,25 @@ describe('chart-config semantic helpers', () => {
     expect(next.query.filter).not.toBe(baseConfigure.query.filter);
   });
 
-  it('should normalize relative date shorthand in chart filter groups', () => {
-    const next = canonicalizeChartConfigure({
-      ...baseConfigure,
-      query: {
-        ...baseConfigure.query,
-        filter: {
-          logic: '$and',
-          items: [
-            {
-              path: 'lastFollowupAt',
-              operator: '$dateBefore',
-              value: '-14d',
-            },
-          ],
+  it('should reject relative date shorthand in chart filter groups', () => {
+    expect(() =>
+      canonicalizeChartConfigure({
+        ...baseConfigure,
+        query: {
+          ...baseConfigure.query,
+          filter: {
+            logic: '$and',
+            items: [
+              {
+                path: 'lastFollowupAt',
+                operator: '$dateBefore',
+                value: '-14d',
+              },
+            ],
+          },
         },
-      },
-    });
-
-    expect(next.query.filter.items[0].value).toEqual({
-      type: 'past',
-      number: 14,
-      unit: 'day',
-    });
+      }),
+    ).toThrowError(FlowSurfaceBadRequestError);
   });
 
   it('should preserve UI relative date descriptors in chart filter groups', () => {
@@ -230,29 +226,25 @@ describe('chart-config semantic helpers', () => {
     expect(next.query.filter.items[0].value).not.toBe(relativeDate);
   });
 
-  it('should fill missing relative date descriptor defaults in chart filter groups', () => {
-    const next = canonicalizeChartConfigure({
-      ...baseConfigure,
-      query: {
-        ...baseConfigure.query,
-        filter: {
-          logic: '$and',
-          items: [
-            {
-              path: 'lastFollowupAt',
-              operator: '$dateBefore',
-              value: { type: 'past' },
-            },
-          ],
+  it('should reject incomplete relative date descriptors in chart filter groups', () => {
+    expect(() =>
+      canonicalizeChartConfigure({
+        ...baseConfigure,
+        query: {
+          ...baseConfigure.query,
+          filter: {
+            logic: '$and',
+            items: [
+              {
+                path: 'lastFollowupAt',
+                operator: '$dateBefore',
+                value: { type: 'past' },
+              },
+            ],
+          },
         },
-      },
-    });
-
-    expect(next.query.filter.items[0].value).toEqual({
-      type: 'past',
-      number: 1,
-      unit: 'day',
-    });
+      }),
+    ).toThrowError(FlowSurfaceBadRequestError);
   });
 
   it('should reject zero-day relative date shorthand in chart filter groups', () => {

@@ -8,7 +8,7 @@
  */
 
 import { operators as databaseOperators } from '@nocobase/database';
-import { getDayRangeByParams, parseDate, transformFilter } from '@nocobase/utils';
+import { dayjs, getDayRangeByParams, transformFilter } from '@nocobase/utils';
 import _ from 'lodash';
 import { Op, Utils } from 'sequelize';
 import { FlowSurfaceBadRequestError, throwBadRequest } from './errors';
@@ -65,9 +65,11 @@ const FLOW_SURFACE_DATE_RANGE_TYPES = new Set([
 ]);
 
 const FLOW_SURFACE_DATE_RANGE_UNITS = new Set(['day', 'week', 'month', 'year']);
+const FLOW_SURFACE_RELATIVE_DATE_DESCRIPTOR_KEYS = new Set(['type', 'number', 'unit']);
+const FLOW_SURFACE_EXACT_DATE_VALUE_FORMATS = ['YYYY-MM-DD', 'YYYY-MM', 'YYYY', 'YYYY[Q]Q', 'YYYY-[Q]Q'];
 
 const FLOW_SURFACE_DATE_VALUE_REPAIR_HINT =
-  'Date filter values must use NocoBase-supported date values such as "2026-05-17", ["2026-05-01","2026-05-31"], or UI relative date descriptors like {"type":"past","number":14,"unit":"day"}.';
+  'Date filter values must match the NocoBase filter UI contract: exact values like "2026-05-17", "2026-05", "2026", "2026-Q2", ranges like ["2026-05-01","2026-05-31"], or relative date descriptors like {"type":"past","number":14,"unit":"day"} and {"type":"thisWeek"}.';
 
 const FLOW_SURFACE_DATE_VALUE_REPAIR_EXAMPLE = {
   logic: '$and',
@@ -247,18 +249,10 @@ function normalizeFlowSurfaceDateValue(value: unknown, path: string): unknown {
   }
 
   if (Array.isArray(value)) {
-    const normalized = normalizeFlowSurfaceDateArrayValue(value, path);
-    if (!hasTemplateDateValue(normalized)) {
-      assertFlowSurfaceDateValueParsable(normalized, path);
-    }
-    return normalized;
+    return normalizeFlowSurfaceDateArrayValue(value, path);
   }
 
-  const normalized = normalizeFlowSurfaceDateValuePart(value, path);
-  if (!hasTemplateDateValue(normalized)) {
-    assertFlowSurfaceDateValueParsable(normalized, path);
-  }
-  return normalized;
+  return normalizeFlowSurfaceDateValuePart(value, path);
 }
 
 function normalizeFlowSurfaceDateArrayValue(value: unknown[], path: string) {
@@ -267,47 +261,57 @@ function normalizeFlowSurfaceDateArrayValue(value: unknown[], path: string) {
       invalidReason: 'date range arrays must contain exactly start and end values',
     });
   }
-  return value.map((item, index) => normalizeFlowSurfaceDateValuePart(item, `${path}[${index}]`));
+  return value.map((item, index) => normalizeFlowSurfaceExactDateValuePart(item, `${path}[${index}]`));
 }
 
 function normalizeFlowSurfaceDateValuePart(value: unknown, path: string): unknown {
-  if (_.isNil(value) || value === '' || isTemplateDateString(value) || value instanceof Date) {
+  if (_.isNil(value) || value === '' || isTemplateDateString(value)) {
     return value;
   }
 
   if (typeof value === 'string') {
-    const relative = normalizeRelativeDateShorthand(value, path);
-    if (relative) {
-      return relative;
-    }
-    assertFlowSurfaceDateValueParsable(value, path);
-    return value;
+    return normalizeFlowSurfaceExactDateValuePart(value, path);
   }
 
   if (_.isPlainObject(value)) {
     return normalizeRelativeDateDescriptor(value as Record<string, unknown>, path);
   }
 
-  assertFlowSurfaceDateValueParsable(value, path);
-  return value;
+  throwInvalidFlowSurfaceDateValue(path, value, {
+    invalidReason: 'date filter value must be an exact date string, date range array, or relative date descriptor',
+  });
 }
 
-function normalizeRelativeDateShorthand(value: string, path: string) {
-  const match = /^\s*([+-])(\d+)d\s*$/i.exec(value);
-  if (!match) {
-    return undefined;
+function normalizeFlowSurfaceExactDateValuePart(value: unknown, path: string) {
+  if (isTemplateDateString(value)) {
+    return value;
   }
-  return normalizeRelativeDateDescriptor(
-    {
-      type: match[1] === '-' ? 'past' : 'next',
-      number: Number(match[2]),
-      unit: 'day',
-    },
-    path,
-  );
+  if (typeof value === 'string') {
+    const normalized = value.trim();
+    if (isFlowSurfaceExactDateValue(normalized)) {
+      return normalized;
+    }
+  }
+  throwInvalidFlowSurfaceDateValue(path, value, {
+    invalidReason: 'date filter strings must use UI exact date formats YYYY-MM-DD, YYYY-MM, YYYY, YYYYQn, or YYYY-Qn',
+  });
+}
+
+function isFlowSurfaceExactDateValue(value: string) {
+  return FLOW_SURFACE_EXACT_DATE_VALUE_FORMATS.some((format) => {
+    const parsed = dayjs(value, format, true);
+    return parsed.isValid() && parsed.format(format) === value;
+  });
 }
 
 function normalizeRelativeDateDescriptor(value: Record<string, unknown>, path: string) {
+  const invalidKeys = Object.keys(value).filter((key) => !FLOW_SURFACE_RELATIVE_DATE_DESCRIPTOR_KEYS.has(key));
+  if (invalidKeys.length) {
+    throwInvalidFlowSurfaceDateValue(path, value, {
+      invalidReason: `relative date descriptor contains unsupported keys: ${invalidKeys.join(', ')}`,
+    });
+  }
+
   const rawType = value.type;
   const type = typeof rawType === 'string' ? rawType.trim() : '';
   if (!isTemplateDateString(rawType) && !FLOW_SURFACE_DATE_RANGE_TYPES.has(type)) {
@@ -323,18 +327,21 @@ function normalizeRelativeDateDescriptor(value: Record<string, unknown>, path: s
 
   if (type === 'past' || type === 'next') {
     if (_.isUndefined(value.number)) {
-      normalized.number = 1;
+      throwInvalidFlowSurfaceDateValue(path, value, {
+        invalidReason: 'past/next relative date descriptor must include number',
+      });
     } else if (!isTemplateDateString(value.number)) {
-      const number = Number(value.number);
-      if (!Number.isFinite(number) || number <= 0) {
+      if (typeof value.number !== 'number' || !Number.isFinite(value.number) || value.number <= 0) {
         throwInvalidFlowSurfaceDateValue(path, value, {
           invalidReason: 'past/next relative date descriptor number must be greater than 0',
         });
       }
-      normalized.number = number;
+      normalized.number = value.number;
     }
     if (_.isUndefined(value.unit)) {
-      normalized.unit = 'day';
+      throwInvalidFlowSurfaceDateValue(path, value, {
+        invalidReason: 'past/next relative date descriptor must include unit',
+      });
     } else if (!isTemplateDateString(value.unit)) {
       const unit = typeof value.unit === 'string' ? value.unit.trim() : '';
       if (!FLOW_SURFACE_DATE_RANGE_UNITS.has(unit)) {
@@ -345,23 +352,15 @@ function normalizeRelativeDateDescriptor(value: Record<string, unknown>, path: s
       normalized.unit = unit;
     }
   } else {
-    if (!_.isUndefined(value.number) && !isTemplateDateString(value.number)) {
-      const number = Number(value.number);
-      if (!Number.isFinite(number) || number <= 0) {
-        throwInvalidFlowSurfaceDateValue(path, value, {
-          invalidReason: 'relative date descriptor number must be greater than 0',
-        });
-      }
-      normalized.number = number;
+    if (!_.isUndefined(value.number)) {
+      throwInvalidFlowSurfaceDateValue(path, value, {
+        invalidReason: `relative date descriptor type "${type}" must not include number`,
+      });
     }
-    if (!_.isUndefined(value.unit) && !isTemplateDateString(value.unit)) {
-      const unit = typeof value.unit === 'string' ? value.unit.trim() : '';
-      if (!FLOW_SURFACE_DATE_RANGE_UNITS.has(unit)) {
-        throwInvalidFlowSurfaceDateValue(path, value, {
-          invalidReason: `unsupported relative date unit "${unit}"`,
-        });
-      }
-      normalized.unit = unit;
+    if (!_.isUndefined(value.unit)) {
+      throwInvalidFlowSurfaceDateValue(path, value, {
+        invalidReason: `relative date descriptor type "${type}" must not include unit`,
+      });
     }
   }
 
@@ -393,18 +392,6 @@ function hasTemplateDateValue(value: unknown): boolean {
     return Object.values(value).some((item) => hasTemplateDateValue(item));
   }
   return false;
-}
-
-function assertFlowSurfaceDateValueParsable(value: unknown, path: string) {
-  try {
-    const parsed = parseDate(value);
-    if (parsed) {
-      return;
-    }
-  } catch {
-    // Fall through to the structured Flow Surfaces error below.
-  }
-  throwInvalidFlowSurfaceDateValue(path, value);
 }
 
 function throwInvalidFlowSurfaceDateValue(path: string, value: unknown, details: Record<string, any> = {}): never {

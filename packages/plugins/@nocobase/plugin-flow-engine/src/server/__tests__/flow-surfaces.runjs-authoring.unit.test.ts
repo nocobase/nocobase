@@ -1514,6 +1514,84 @@ describe('flowSurfaces RunJS authoring unit validation', () => {
       ]),
     );
 
+    const bareRelativeErrors = inspectRunJsAuthoringCode(
+      {
+        code: [
+          "const resource = ctx.makeResource('MultiRecordResource');",
+          "resource.setResourceName('intelligenceItems');",
+          "resource.setFilter({ createdAt: { $dateOn: 'thisWeek' } });",
+          'ctx.render(null);',
+        ].join('\n'),
+        path: '$.runjs.bareRelativeDateFilter.code',
+        modelUse: 'JSBlockModel',
+      },
+      context,
+    );
+    expect(bareRelativeErrors).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          ruleId: 'runjs-resource-filter-date-value-invalid',
+          details: expect.objectContaining({
+            fieldPath: 'createdAt',
+            invalidValue: 'thisWeek',
+            operator: '$dateOn',
+          }),
+        }),
+      ]),
+    );
+
+    const shorthandRelativeErrors = inspectRunJsAuthoringCode(
+      {
+        code: [
+          "const resource = ctx.makeResource('MultiRecordResource');",
+          "resource.setResourceName('intelligenceItems');",
+          "resource.setFilter({ createdAt: { $dateOn: '-7d' } });",
+          'ctx.render(null);',
+        ].join('\n'),
+        path: '$.runjs.shorthandRelativeDateFilter.code',
+        modelUse: 'JSBlockModel',
+      },
+      context,
+    );
+    expect(shorthandRelativeErrors).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          ruleId: 'runjs-resource-filter-date-value-invalid',
+          details: expect.objectContaining({
+            fieldPath: 'createdAt',
+            invalidValue: '-7d',
+            operator: '$dateOn',
+          }),
+        }),
+      ]),
+    );
+
+    const timestampErrors = inspectRunJsAuthoringCode(
+      {
+        code: [
+          "const resource = ctx.makeResource('MultiRecordResource');",
+          "resource.setResourceName('intelligenceItems');",
+          "resource.setFilter({ createdAt: { $dateOn: '2026-01-01T00:00:00.000Z' } });",
+          'ctx.render(null);',
+        ].join('\n'),
+        path: '$.runjs.timestampDateFilter.code',
+        modelUse: 'JSBlockModel',
+      },
+      context,
+    );
+    expect(timestampErrors).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          ruleId: 'runjs-resource-filter-date-value-invalid',
+          details: expect.objectContaining({
+            fieldPath: 'createdAt',
+            invalidValue: '2026-01-01T00:00:00.000Z',
+            operator: '$dateOn',
+          }),
+        }),
+      ]),
+    );
+
     const addFilterGroupErrors = inspectRunJsAuthoringCode(
       {
         code: [
@@ -1658,6 +1736,36 @@ describe('flowSurfaces RunJS authoring unit validation', () => {
       context,
     );
     expect(validErrors).toEqual([]);
+
+    const validNamedRangeErrors = inspectRunJsAuthoringCode(
+      {
+        code: [
+          "const resource = ctx.makeResource('MultiRecordResource');",
+          "resource.setResourceName('intelligenceItems');",
+          "resource.setFilter({ createdAt: { $dateOn: { type: 'thisWeek' } } });",
+          'ctx.render(null);',
+        ].join('\n'),
+        path: '$.runjs.validNamedRangeDateFilter.code',
+        modelUse: 'JSBlockModel',
+      },
+      context,
+    );
+    expect(validNamedRangeErrors).toEqual([]);
+
+    const validExactErrors = inspectRunJsAuthoringCode(
+      {
+        code: [
+          "const resource = ctx.makeResource('MultiRecordResource');",
+          "resource.setResourceName('intelligenceItems');",
+          "resource.setFilter({ createdAt: { $dateOn: '2026-Q1' } });",
+          'ctx.render(null);',
+        ].join('\n'),
+        path: '$.runjs.validExactDateFilter.code',
+        modelUse: 'JSBlockModel',
+      },
+      context,
+    );
+    expect(validExactErrors).toEqual([]);
 
     const validAliasErrors = inspectRunJsAuthoringCode(
       {

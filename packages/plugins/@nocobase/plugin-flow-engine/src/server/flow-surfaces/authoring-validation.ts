@@ -65,7 +65,7 @@ import { collectRunJsAuthoringErrors } from './runjs-authoring';
 import { getConfigureOptionKeysForUse } from './configure-options';
 import {
   assertFlowSurfaceFilterGroupShape,
-  normalizeFlowSurfaceFilterDateValue,
+  normalizeFlowSurfaceStrictFilterDateValue,
   assertFlowSurfaceFilterOperator,
   FLOW_SURFACE_FILTER_GROUP_EXAMPLE,
 } from './filter-group';
@@ -1439,7 +1439,7 @@ function collectChartFilterDateValueError(
   errors: AuthoringErrorInput[],
 ) {
   try {
-    normalizeFlowSurfaceFilterDateValue(operator, value, path);
+    normalizeFlowSurfaceStrictFilterDateValue(operator, value, path);
   } catch (error) {
     if (error instanceof FlowSurfaceBadRequestError) {
       pushChartBadRequestAuthoringError(errors, error, path);
@@ -4986,6 +4986,26 @@ function collectUnsupportedDefaultFilterOperatorError(operator: any, path: strin
   });
 }
 
+function collectDefaultFilterDateValueError(operator: any, value: any, path: string, errors: AuthoringErrorInput[]) {
+  try {
+    normalizeFlowSurfaceStrictFilterDateValue(operator, value, path);
+  } catch (error) {
+    if (!(error instanceof FlowSurfaceBadRequestError)) {
+      throw error;
+    }
+    const details = _.isPlainObject(error.options?.details) ? error.options.details : {};
+    pushAuthoringError(errors, {
+      path: typeof error.options?.path === 'string' && error.options.path ? error.options.path : path,
+      ruleId:
+        typeof error.options?.ruleId === 'string' && error.options.ruleId
+          ? error.options.ruleId
+          : 'filter-group-date-value-invalid',
+      message: error.message,
+      details,
+    });
+  }
+}
+
 function collectTopLevelLayoutErrors(
   actionName: FlowSurfaceAuthoringWriteAction,
   values: any,
@@ -6202,6 +6222,7 @@ function visitFilterItems(
   }
   if (typeof value.operator === 'string') {
     collectUnsupportedDefaultFilterOperatorError(value.operator, `${path}.operator`, errors);
+    collectDefaultFilterDateValueError(value.operator, value.value, `${path}.value`, errors);
   }
   const filterItems = value.items;
   if (Array.isArray(filterItems)) {
@@ -6233,8 +6254,9 @@ function visitFilterItems(
     }
     collectDefaultFilterFieldPathError(key, `${path}.${key}`, block, context, errors);
     if (_.isPlainObject(child)) {
-      Object.keys(child).forEach((operator) => {
+      Object.entries(child).forEach(([operator, operatorValue]) => {
         collectUnsupportedDefaultFilterOperatorError(operator, `${path}.${key}.${operator}`, errors);
+        collectDefaultFilterDateValueError(operator, operatorValue, `${path}.${key}.${operator}`, errors);
       });
     }
   });

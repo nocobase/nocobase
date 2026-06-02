@@ -8470,6 +8470,7 @@ export class FlowSurfacesService {
       normalizedSettings.defaultFilter = normalizeFlowSurfaceFilterGroupValue(
         normalizedSettings.defaultFilter,
         `flowSurfaces ${actionName} defaultActionSettings.filter.defaultFilter expects FilterGroup like ${FLOW_SURFACE_FILTER_GROUP_EXAMPLE}`,
+        { strictDateValues: true },
       );
       normalizedSettings.defaultFilter = this.normalizeEffectivePublicDataSurfaceDefaultFilter(
         normalizedSettings.defaultFilter,
@@ -15050,12 +15051,12 @@ export class FlowSurfacesService {
           "flowSurfaces updateSettings filter action values 'props.defaultFilterValue/filterValue' and 'stepParams.filterSettings.defaultFilter.defaultFilter' must match",
         );
       }
-      const filterValue = this.normalizeEffectivePublicDataSurfaceDefaultFilter(
+      const normalizedFilterValue = this.normalizeFilterActionDefaultFilterValue(
         hasStepDefaultFilter ? nextStepFilter : nextPropFilter,
-        {
-          requiredFieldCount: options.requiredFieldCount,
-        },
       );
+      const filterValue = this.normalizeEffectivePublicDataSurfaceDefaultFilter(normalizedFilterValue, {
+        requiredFieldCount: options.requiredFieldCount,
+      });
       if (!hasPropsFilterableFieldNames && !hasStepFilterableFieldNames) {
         const filterableFieldNames = resolveFlowSurfaceDefaultFilterFieldNames(filterValue);
         if (filterableFieldNames.length) {
@@ -21757,7 +21758,11 @@ export class FlowSurfacesService {
       };
     }
 
-    return _.cloneDeep(value);
+    return normalizeFlowSurfaceFilterGroupValue(
+      value,
+      `flowSurfaces configure action defaultFilter expects FilterGroup like ${FLOW_SURFACE_FILTER_GROUP_EXAMPLE}`,
+      { strictDateValues: true },
+    );
   }
 
   private normalizeActionAssignValues(actionName: string, value: any) {

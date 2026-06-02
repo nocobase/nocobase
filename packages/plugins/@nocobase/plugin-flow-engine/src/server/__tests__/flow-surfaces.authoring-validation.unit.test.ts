@@ -14,6 +14,37 @@ import { collectFlowSurfaceAuthoringErrors } from '../flow-surfaces/authoring-va
 import { rethrowInlineConfigurationError, toFlowSurfaceBatchItemError } from '../flow-surfaces/service-utils';
 
 describe('flowSurfaces authoring validation unit', () => {
+  const createDefaultFilterValidationContext = (extra: Record<string, any> = {}) => {
+    const fields = [
+      { name: 'occurDate', interface: 'input' },
+      { name: 'nickname', interface: 'input' },
+      { name: 'status', interface: 'select' },
+      { name: 'email', interface: 'email' },
+    ];
+    const fieldsByName = new Map(fields.map((field) => [field.name, field]));
+    const collection = {
+      name: 'employees',
+      getField: (fieldName: string) => fieldsByName.get(fieldName),
+      getFields: () => fields,
+      fields: fieldsByName,
+    };
+    return {
+      getCollection: (_dataSourceKey: string, collectionName: string) =>
+        collectionName === 'employees' ? collection : null,
+      ...extra,
+    };
+  };
+
+  const buildDefaultFilter = (dateValue: any, operator = '$dateOn') => ({
+    logic: '$and',
+    items: [
+      { path: 'occurDate', operator, value: dateValue },
+      { path: 'nickname', operator: '$notEmpty' },
+      { path: 'status', operator: '$notEmpty' },
+      { path: 'email', operator: '$notEmpty' },
+    ],
+  });
+
   it('should front-load aggregate authoring repair instructions for agents', () => {
     const error = new FlowSurfaceAggregateError([
       {
@@ -436,6 +467,192 @@ describe('flowSurfaces authoring validation unit', () => {
           }),
         }),
       ]),
+    );
+  });
+
+  it('should reject chart date filter values outside the UI contract on configure authoring writes', async () => {
+    const errors = await collectFlowSurfaceAuthoringErrors(
+      'configure',
+      {
+        target: { uid: 'chart-target' },
+        changes: {
+          query: {
+            mode: 'builder',
+            resource: {
+              dataSourceKey: 'main',
+              collectionName: 'employees',
+            },
+            measures: [
+              {
+                field: 'id',
+                aggregation: 'count',
+                alias: 'employeeCount',
+              },
+            ],
+            dimensions: [{ field: 'status' }],
+            filter: {
+              lastFollowupAt: { $dateOn: 'thisWeek' },
+            },
+          },
+          visual: {
+            mode: 'basic',
+            type: 'bar',
+            mappings: {
+              x: 'status',
+              y: 'employeeCount',
+            },
+          },
+        },
+      },
+      {
+        hostBlockType: 'ChartBlockModel',
+      },
+    );
+
+    expect(errors).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          path: '$.changes.query.filter.lastFollowupAt.$dateOn',
+          ruleId: 'filter-group-date-value-invalid',
+          details: expect.objectContaining({
+            invalidValue: 'thisWeek',
+            requiredBlockType: 'chart',
+          }),
+        }),
+      ]),
+    );
+  });
+
+  it('should reject invalid defaultFilter date values during authoring validation', async () => {
+    const context = createDefaultFilterValidationContext();
+    const composeErrors = await collectFlowSurfaceAuthoringErrors(
+      'compose',
+      {
+        target: { uid: 'missing-target-never-resolved' },
+        blocks: [
+          {
+            key: 'blockDefaultFilterDateTable',
+            type: 'table',
+            collection: 'employees',
+            defaultFilter: buildDefaultFilter('thisWeek'),
+          },
+          {
+            key: 'actionSettingsDefaultFilterDateTable',
+            type: 'table',
+            collection: 'employees',
+            actions: [
+              {
+                key: 'filter',
+                type: 'filter',
+                settings: {
+                  defaultFilter: buildDefaultFilter('-7d'),
+                },
+              },
+            ],
+          },
+          {
+            key: 'defaultActionSettingsDefaultFilterDateTable',
+            type: 'table',
+            collection: 'employees',
+            defaultActionSettings: {
+              filter: {
+                defaultFilter: buildDefaultFilter('2026-01-01T00:00:00.000Z'),
+              },
+            },
+          },
+        ],
+      },
+      context,
+    );
+    const configureErrors = await collectFlowSurfaceAuthoringErrors(
+      'configure',
+      {
+        target: { uid: 'filter-action-target' },
+        changes: {
+          defaultFilter: buildDefaultFilter({ $toNow: 'd', $gt: -7 }),
+        },
+      },
+      createDefaultFilterValidationContext({
+        hostBlockType: 'FilterActionModel',
+        hostCollectionName: 'employees',
+        hostDataSourceKey: 'main',
+      }),
+    );
+
+    const errors = [...composeErrors, ...configureErrors];
+    expect(errors.map((error: any) => error.ruleId)).toEqual(
+      expect.arrayContaining(['filter-group-date-value-invalid']),
+    );
+    expect(
+      errors.filter((error: any) => error.ruleId === 'filter-group-date-value-invalid').map((error: any) => error.path),
+    ).toEqual(
+      expect.arrayContaining([
+        '$.blocks[0].defaultFilter.items[0].value',
+        '$.blocks[1].actions[0].settings.defaultFilter.items[0].value',
+        '$.blocks[2].defaultActionSettings.filter.defaultFilter.items[0].value',
+        '$.changes.defaultFilter.items[0].value',
+      ]),
+    );
+  });
+
+  it('should accept UI-shaped defaultFilter date values during authoring validation', async () => {
+    const context = createDefaultFilterValidationContext();
+    const composeErrors = await collectFlowSurfaceAuthoringErrors(
+      'compose',
+      {
+        target: { uid: 'missing-target-never-resolved' },
+        blocks: [
+          {
+            key: 'blockDefaultFilterDateTable',
+            type: 'table',
+            collection: 'employees',
+            defaultFilter: buildDefaultFilter({ type: 'thisWeek' }),
+          },
+          {
+            key: 'actionSettingsDefaultFilterDateTable',
+            type: 'table',
+            collection: 'employees',
+            actions: [
+              {
+                key: 'filter',
+                type: 'filter',
+                settings: {
+                  defaultFilter: buildDefaultFilter('2026-Q1'),
+                },
+              },
+            ],
+          },
+          {
+            key: 'defaultActionSettingsDefaultFilterDateTable',
+            type: 'table',
+            collection: 'employees',
+            defaultActionSettings: {
+              filter: {
+                defaultFilter: buildDefaultFilter(['2026-01-01', '2026-01-31'], '$dateBetween'),
+              },
+            },
+          },
+        ],
+      },
+      context,
+    );
+    const configureErrors = await collectFlowSurfaceAuthoringErrors(
+      'configure',
+      {
+        target: { uid: 'filter-action-target' },
+        changes: {
+          defaultFilter: buildDefaultFilter({ type: 'past', number: 7, unit: 'day' }),
+        },
+      },
+      createDefaultFilterValidationContext({
+        hostBlockType: 'FilterActionModel',
+        hostCollectionName: 'employees',
+        hostDataSourceKey: 'main',
+      }),
+    );
+
+    expect([...composeErrors, ...configureErrors].map((error: any) => error.ruleId)).not.toContain(
+      'filter-group-date-value-invalid',
     );
   });
 

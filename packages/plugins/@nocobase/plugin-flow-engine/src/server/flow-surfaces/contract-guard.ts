@@ -394,6 +394,7 @@ function normalizeFilterGroupValue(
   return normalizeFlowSurfaceFilterGroupValue(
     value,
     `flowSurfaces updateSettings domain '${domainPath}' on '${context.use}' expects FilterGroup like ${FLOW_SURFACE_FILTER_GROUP_EXAMPLE}`,
+    { strictDateValues: true },
   );
 }
 
