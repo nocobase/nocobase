@@ -9,10 +9,8 @@
 
 import {
   ApartmentOutlined,
-  CheckOutlined,
   DeleteOutlined,
   EditOutlined,
-  FilterOutlined,
   MoreOutlined,
   PlusOutlined,
   ReloadOutlined,
@@ -22,7 +20,7 @@ import {
   UserAddOutlined,
   UserDeleteOutlined,
 } from '@ant-design/icons';
-import { DrawerFormLayout } from '@nocobase/client-v2';
+import { CollectionFilter, DrawerFormLayout, type CompiledFilter } from '@nocobase/client-v2';
 import { useFlowContext } from '@nocobase/flow-engine';
 import { useRequest } from 'ahooks';
 import {
@@ -34,7 +32,6 @@ import {
   Flex,
   Form,
   Input,
-  Popover,
   Select,
   Space,
   Tag,
@@ -63,11 +60,7 @@ const FORM_DRAWER_WIDTH = '50%';
 const TABLE_DRAWER_WIDTH = '70%';
 const DEPARTMENT_PICKER_DRAWER_WIDTH = '40%';
 
-type MembersFilter = Record<string, unknown> | undefined;
-type MembersFilterValues = {
-  field: 'nickname' | 'username' | 'phone' | 'email';
-  keyword?: string;
-};
+type MembersFilter = CompiledFilter;
 
 interface ApiResource {
   list(params?: Record<string, unknown>): Promise<unknown>;
@@ -122,7 +115,7 @@ function buildMembersFilter(department: DepartmentRecord | null, filter?: Member
   }
 
   if (filter) {
-    filters.push(filter);
+    filters.push(filter as Record<string, unknown>);
   }
 
   if (filters.length === 0) {
@@ -216,80 +209,6 @@ function AsyncSelect<T>(props: {
       loading={request.loading}
       options={(request.data || []).map(props.mapOptions)}
     />
-  );
-}
-
-function MemberFilterButton(props: { value: MembersFilter; onChange: (filter: MembersFilter) => void }) {
-  const t = useT();
-  const { token } = theme.useToken();
-  const [form] = Form.useForm<MembersFilterValues>();
-  const [open, setOpen] = useState(false);
-  const hasFilter = Boolean(props.value);
-
-  const fieldOptions = useMemo(
-    () => [
-      { label: t('Nickname'), value: 'nickname' },
-      { label: t('Username'), value: 'username' },
-      { label: t('Phone'), value: 'phone' },
-      { label: t('Email'), value: 'email' },
-    ],
-    [t],
-  );
-
-  const handleSubmit = useCallback(async () => {
-    const values = await form.validateFields();
-    const keyword = values.keyword?.trim();
-    if (!keyword) {
-      props.onChange(undefined);
-      setOpen(false);
-      return;
-    }
-
-    props.onChange({ [values.field]: { $includes: keyword } });
-    setOpen(false);
-  }, [form, props]);
-
-  const handleReset = useCallback(() => {
-    form.resetFields();
-    props.onChange(undefined);
-  }, [form, props]);
-
-  return (
-    <Popover
-      trigger="click"
-      placement="bottomLeft"
-      open={open}
-      onOpenChange={setOpen}
-      content={
-        <div style={{ minWidth: token.sizeXXL * 6 }}>
-          <Form<MembersFilterValues>
-            form={form}
-            layout="vertical"
-            initialValues={{ field: 'username' }}
-            onFinish={handleSubmit}
-          >
-            <Form.Item name="field" label={t('Field')} rules={[{ required: true, message: t('Required') }]}>
-              <Select options={fieldOptions} />
-            </Form.Item>
-            <Form.Item name="keyword" label={t('Keyword')}>
-              <Input />
-            </Form.Item>
-            <Space>
-              <Button icon={<ReloadOutlined />} onClick={handleReset}>
-                {t('Reset')}
-              </Button>
-              <Button type="primary" htmlType="submit" icon={<CheckOutlined />}>
-                {t('Submit')}
-              </Button>
-            </Space>
-          </Form>
-        </div>
-      }
-    >
-      <Button icon={<FilterOutlined />} type={hasFilter ? 'primary' : 'default'}>
-        {hasFilter ? t('{{count}} filter items', { count: 1 }) : t('Filter')}
-      </Button>
-    </Popover>
   );
 }
 
@@ -691,6 +610,7 @@ const DepartmentsPage: React.FC = () => {
   const ctx = useFlowContext();
   const { modal, message } = App.useApp();
   const { token } = theme.useToken();
+  const usersCollection = ctx.dataSourceManager?.getDataSource('main')?.getCollection('users');
   const [selectedDepartment, setSelectedDepartment] = useState<DepartmentRecord | null>(null);
   const [selectedUser, setSelectedUser] = useState<UserRecord | null>(null);
   const [expandedKeys, setExpandedKeys] = useState<React.Key[]>([]);
@@ -884,7 +804,7 @@ const DepartmentsPage: React.FC = () => {
 
   const renderDepartmentTitle = useCallback(
     (department: DepartmentRecord) => (
-      <Flex align="center" justify="space-between" style={{ width: '100%' }}>
+      <Flex align="center" justify="space-between">
         <Space>
           <ApartmentOutlined />
           <span>{department.title}</span>
@@ -1018,7 +938,6 @@ const DepartmentsPage: React.FC = () => {
           {treeNodes.length ? (
             <Tree
               blockNode
-              style={{ fontSize: token.fontSizeLG }}
               treeData={treeNodes}
               selectedKeys={selectedDepartment ? [selectedDepartment.id] : []}
               expandedKeys={expandedKeys}
@@ -1048,7 +967,12 @@ const DepartmentsPage: React.FC = () => {
               {selectedUser ? t('Search results') : t(selectedDepartment?.title || 'All users')}
             </Typography.Title>
             <Space wrap>
-              <MemberFilterButton value={memberFilter} onChange={setMemberFilter} />
+              <CollectionFilter
+                collection={usersCollection}
+                t={t}
+                filterableFieldNames={['nickname', 'username', 'email', 'phone']}
+                onChange={setMemberFilter}
+              />
               <Button icon={<ReloadOutlined />} onClick={() => membersRequest.refresh()}>
                 {t('Refresh')}
               </Button>

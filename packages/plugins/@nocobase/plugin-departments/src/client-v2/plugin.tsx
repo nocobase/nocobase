@@ -27,7 +27,7 @@ export class PluginDepartmentsClientV2 extends Plugin<Record<string, never>, App
       key: 'departments',
       title: this.t('Departments'),
       icon: 'ApartmentOutlined',
-      sort: 2.5,
+      sort: 3,
       aclSnippet: 'pm.departments',
       componentLoader: () => import('./pages/DepartmentsPage'),
     });
