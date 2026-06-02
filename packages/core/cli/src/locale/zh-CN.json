@@ -370,6 +370,12 @@
           "description": "设置第一个管理员账号。"
         }
       }
+    },
+    "env": {
+      "messages": {
+        "noEnvsConfigured": "尚未配置任何 env。",
+        "noEnvsConfiguredHelp": "请先运行 `nb init --ui` 创建一个。"
+      }
     }
   },
   "apiCommandCompat": {

@@ -7,8 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { EnvVariableInput } from '@nocobase/client-v2';
-import { Col, Form, InputNumber, Row, Select } from 'antd';
+import { EnvVariableInput, TypedVariableInput } from '@nocobase/client-v2';
+import { Col, Form, Row, Select } from 'antd';
 import React from 'react';
 import { useNotificationEmailTranslation } from '../locale';
 
@@ -27,7 +27,7 @@ export function ChannelConfigForm() {
       </Form.Item>
 
       <Row gutter={16}>
-        <Col span={12}>
+        <Col span={11}>
           <Form.Item
             label={t('Host')}
             name={['options', 'host']}
@@ -37,14 +37,14 @@ export function ChannelConfigForm() {
             <EnvVariableInput placeholder="smtp.example.com" />
           </Form.Item>
         </Col>
-        <Col span={4}>
+        <Col span={5}>
           <Form.Item
             label={t('Port')}
             name={['options', 'port']}
             initialValue={465}
             rules={[{ required: true, message: t('The field value is required') }]}
           >
-            <InputNumber min={1} max={65535} step={1} style={{ width: '100%' }} />
+            <TypedVariableInput types={[['number', { min: 1, max: 65535, step: 1 }]]} namespaces={['$env']} />
           </Form.Item>
         </Col>
         <Col span={8}>
@@ -54,12 +54,7 @@ export function ChannelConfigForm() {
             initialValue={true}
             extra={t('In most cases, if using port 465, set it to true; otherwise, set it to false.')}
           >
-            <Select
-              options={[
-                { value: true, label: t('Yes') },
-                { value: false, label: t('No') },
-              ]}
-            />
+            <TypedVariableInput types={['boolean']} namespaces={['$env']} />
           </Form.Item>
         </Col>
       </Row>

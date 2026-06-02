@@ -412,7 +412,7 @@ export default class AppUpgrade extends Command {
         [
           `Env "${runtime.envName}" does not have a saved \`downloadVersion\`.`,
           'This env cannot be upgraded until a source version is explicit.',
-          'Re-run `nb init` or `nb env add` for this env, or pass `--version` to `nb app upgrade`.',
+          `Re-run \`nb init --ui --env ${runtime.envName}\` for this env, or pass \`--version\` to \`nb app upgrade\`.`,
         ].join('\n'),
       );
     }
@@ -519,7 +519,7 @@ export default class AppUpgrade extends Command {
         [
           `Can't upgrade "${runtime.envName}" from this machine.`,
           'This env only has an API connection, so there is no saved local app or Docker runtime to upgrade here.',
-          'If you want a local NocoBase AI environment that the CLI can upgrade, run `nb init` first.',
+          'If you want a local NocoBase AI environment that the CLI can upgrade, run `nb init --ui` first.',
         ].join('\n'),
       );
     }

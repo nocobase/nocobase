@@ -17,10 +17,7 @@ export default class DbPs extends Command {
   static override description =
     'Show built-in database runtime status for configured envs without starting or stopping anything.';
 
-  static override examples = [
-    '<%= config.bin %> <%= command.id %>',
-    '<%= config.bin %> <%= command.id %> --env app1',
-  ];
+  static override examples = ['<%= config.bin %> <%= command.id %>', '<%= config.bin %> <%= command.id %> --env app1'];
 
   static override flags = {
     env: Flags.string({
@@ -33,12 +30,10 @@ export default class DbPs extends Command {
     const { flags } = await this.parse(DbPs);
     const requestedEnv = flags.env?.trim() || undefined;
 
-    const envNames = requestedEnv
-      ? [requestedEnv]
-      : Object.keys((await listEnvs()).envs).sort();
+    const envNames = requestedEnv ? [requestedEnv] : Object.keys((await listEnvs()).envs).sort();
 
     if (!envNames.length) {
-      this.log('No NocoBase env is configured yet. Run `nb init` to create one first.');
+      this.log('No NocoBase env is configured yet. Run `nb init --ui` to create one first.');
       return;
     }
 
@@ -54,17 +49,10 @@ export default class DbPs extends Command {
       }
 
       const type = runtime.kind === 'builtin' ? 'builtin' : runtime.status;
-      const status: DbStatus = runtime.kind === 'builtin'
-        ? await builtinDbStatus(runtime.containerName)
-        : runtime.status;
+      const status: DbStatus =
+        runtime.kind === 'builtin' ? await builtinDbStatus(runtime.containerName) : runtime.status;
 
-      rows.push([
-        runtime.envName,
-        type,
-        runtime.dbDialect,
-        status,
-        runtime.address,
-      ]);
+      rows.push([runtime.envName, type, runtime.dbDialect, status, runtime.address]);
     }
 
     this.log(renderTable(['Env', 'Type', 'Dialect', 'Status', 'Address'], rows));

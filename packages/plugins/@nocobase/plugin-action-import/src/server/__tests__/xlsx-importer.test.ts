@@ -2717,7 +2717,7 @@ describe('basic importer', () => {
     await expect(importer.run()).rejects.toThrow();
   });
 
-  it('should import password field, insert data is encrypt', async () => {
+  it('should import numeric password field values as strings', async () => {
     const User = app.db.collection({
       name: 'users',
       fields: [
@@ -2743,7 +2743,7 @@ describe('basic importer', () => {
     const template = (await templateCreator.run({ returnXLSXWorkbook: true })) as XLSX.WorkBook;
     const worksheet = template.Sheets[template.SheetNames[0]];
 
-    XLSX.utils.sheet_add_aoa(worksheet, [['zhangsan', '123456']], {
+    XLSX.utils.sheet_add_aoa(worksheet, [['zhangsan', 123456]], {
       origin: 'A2',
     });
 

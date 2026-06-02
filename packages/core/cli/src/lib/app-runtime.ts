@@ -175,11 +175,11 @@ export function formatMissingManagedAppEnvMessage(envName?: string): string {
   if (requested) {
     return [
       `Env "${requested}" is not configured in this workspace.`,
-      `If you want to create a new NocoBase AI environment, run \`nb init --env ${requested}\` first.`,
+      `If you want to create a new NocoBase AI environment, run \`nb init --ui --env ${requested}\` first.`,
     ].join('\n');
   }
 
-  return 'No NocoBase env is configured yet. Run `nb init` to create one first.';
+  return 'No NocoBase env is configured yet. Run `nb init --ui` to create one first.';
 }
 
 export async function runLocalNocoBaseCommand(

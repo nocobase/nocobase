@@ -7,8 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React from 'react';
-
-export default function DemoFlowSettingsLazyField() {
-  return <div>Demo Flow Settings Lazy Field Loaded</div>;
-}
+export * from './ResourceFormDrawer';
+export * from './ResourcePickerView';
+export * from './ResourceTablePage';
+export * from './SettingsActionCell';

@@ -8,6 +8,7 @@
  */
 
 import type { ManagedAppRuntime } from './app-runtime.js';
+import { startDockerLogFollower } from './docker-log-stream.js';
 import { printInfo } from './ui.js';
 
 const APP_HEALTH_CHECK_INTERVAL_MS = 2_000;
@@ -118,6 +119,7 @@ export async function waitForAppReady(params: {
   apiBaseUrl?: string;
   containerName?: string;
   logHint?: string;
+  verbose?: boolean;
   fetchImpl?: typeof fetch;
   timeoutMs?: number;
   intervalMs?: number;
@@ -142,40 +144,46 @@ export async function waitForAppReady(params: {
   let nextProgressLogAt = startedAt + progressLogIntervalMs;
 
   printInfo(`Waiting for NocoBase to become ready for "${params.envName}"...`);
+  const dockerLogFollower =
+    params.verbose && params.containerName ? startDockerLogFollower(params.containerName) : undefined;
 
-  while (Date.now() - startedAt < timeoutMs) {
-    const result = await requestAppHealthCheck({
-      healthCheckUrl,
-      fetchImpl: params.fetchImpl,
-      requestTimeoutMs: params.requestTimeoutMs,
-    });
+  try {
+    while (Date.now() - startedAt < timeoutMs) {
+      const result = await requestAppHealthCheck({
+        healthCheckUrl,
+        fetchImpl: params.fetchImpl,
+        requestTimeoutMs: params.requestTimeoutMs,
+      });
 
-    if (result.ok) {
-      return;
-    }
-
-    lastMessage = result.message;
-    const now = Date.now();
-    if (now >= nextProgressLogAt) {
-      const elapsedSeconds = Math.max(1, Math.floor((now - startedAt) / 1000));
-      printInfo(`Still waiting for "${params.envName}"... (${elapsedSeconds}s elapsed)`);
-      while (nextProgressLogAt <= now) {
-        nextProgressLogAt += progressLogIntervalMs;
+      if (result.ok) {
+        return;
       }
-    }
-    const remainingMs = timeoutMs - (Date.now() - startedAt);
-    if (remainingMs <= 0) {
-      break;
-    }
-    await sleep(Math.min(intervalMs, remainingMs));
-  }
 
-  const hints = [
-    params.logHint,
-    params.containerName ? `docker logs ${params.containerName}` : undefined,
-  ].filter(Boolean);
-  const hintText = hints.length > 0 ? ` ${hints.join(' ')}` : '';
-  throw new AppHealthCheckError(
-    `NocoBase did not become ready in time for "${params.envName}". Expected \`${healthCheckUrl}\` to respond with \`ok\`, but the last status was: ${lastMessage}.${hintText}`,
-  );
+      lastMessage = result.message;
+      const now = Date.now();
+      if (now >= nextProgressLogAt) {
+        const elapsedSeconds = Math.max(1, Math.floor((now - startedAt) / 1000));
+        printInfo(`Still waiting for "${params.envName}"... (${elapsedSeconds}s elapsed)`);
+        while (nextProgressLogAt <= now) {
+          nextProgressLogAt += progressLogIntervalMs;
+        }
+      }
+      const remainingMs = timeoutMs - (Date.now() - startedAt);
+      if (remainingMs <= 0) {
+        break;
+      }
+      await sleep(Math.min(intervalMs, remainingMs));
+    }
+
+    const hints = [
+      params.logHint,
+      params.containerName ? `docker logs ${params.containerName}` : undefined,
+    ].filter(Boolean);
+    const hintText = hints.length > 0 ? ` ${hints.join(' ')}` : '';
+    throw new AppHealthCheckError(
+      `NocoBase did not become ready in time for "${params.envName}". Expected \`${healthCheckUrl}\` to respond with \`ok\`, but the last status was: ${lastMessage}.${hintText}`,
+    );
+  } finally {
+    await dockerLogFollower?.stop();
+  }
 }
