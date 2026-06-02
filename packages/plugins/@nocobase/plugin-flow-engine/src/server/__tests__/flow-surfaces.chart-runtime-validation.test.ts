@@ -84,6 +84,43 @@ describe('flowSurfaces chart runtime validation', () => {
     throw new Error('Expected relation subfield count measure to be rejected');
   });
 
+  it('should keep count measure validation precedence for incompatible relation subfields', () => {
+    const service = createServiceWithCollections();
+
+    try {
+      (service as any).validateBuilderChartFieldsForRuntime('updateSettings', {
+        query: {
+          mode: 'builder',
+          collectionPath: ['main', 'employees'],
+          measures: [{ field: 'department.employerEIN', aggregation: 'count', alias: 'employeeCount' }],
+          dimensions: [{ field: 'department.state' }],
+        },
+      });
+    } catch (error: any) {
+      expect(error).toBeInstanceOf(FlowSurfaceBadRequestError);
+      expect(error.options).toMatchObject({
+        path: 'chart query.measures[0].field',
+        ruleId: 'chart-builder-query-count-measure-relation-subfield',
+        details: {
+          fieldPath: 'department.employerEIN',
+          suggestedMeasure: {
+            field: 'id',
+            aggregation: 'count',
+            alias: 'employeeCount',
+          },
+          suggestedDimension: {
+            field: 'department.employerEIN',
+          },
+          repairHint: expect.stringContaining('chart payload shape problem'),
+        },
+      });
+      expect(error.options.ruleId).not.toBe('chart-builder-query-relation-subfield-column-unsupported');
+      return;
+    }
+
+    throw new Error('Expected incompatible relation subfield count measure to keep count validation precedence');
+  });
+
   it('should allow count base fields grouped by relation subfields', () => {
     const service = createServiceWithCollections();
 
@@ -94,6 +131,60 @@ describe('flowSurfaces chart runtime validation', () => {
           collectionPath: ['main', 'employees'],
           measures: [{ field: 'id', aggregation: 'count', alias: 'employeeCount' }],
           dimensions: [{ field: 'department.title' }],
+        },
+      }),
+    ).not.toThrow();
+  });
+
+  it('should reject relation subfields whose column names are not chart-builder-compatible', () => {
+    const service = createServiceWithCollections();
+
+    try {
+      (service as any).validateBuilderChartFieldsForRuntime('updateSettings', {
+        query: {
+          mode: 'builder',
+          collectionPath: ['main', 'employees'],
+          measures: [{ field: 'id', aggregation: 'count', alias: 'employeeCount' }],
+          dimensions: [{ field: 'department.employerEIN' }],
+        },
+      });
+    } catch (error: any) {
+      expect(error).toBeInstanceOf(FlowSurfaceBadRequestError);
+      expect(error.message).toContain("Supported fields under 'department'");
+      expect(error.options).toMatchObject({
+        path: 'chart query.dimensions[0].field',
+        ruleId: 'chart-builder-query-relation-subfield-column-unsupported',
+        details: {
+          fieldPath: 'department.employerEIN',
+          associationPath: 'department',
+          leafFieldName: 'employerEIN',
+          columnName: 'employer_e_i_n',
+          supportedFields: expect.arrayContaining([
+            expect.objectContaining({ field: 'department.title' }),
+            expect.objectContaining({ field: 'department.state' }),
+          ]),
+          repairHint: expect.stringContaining('chart payload shape problem'),
+        },
+      });
+      expect(error.options.details.supportedFields).not.toEqual(
+        expect.arrayContaining([expect.objectContaining({ field: 'department.employerEIN' })]),
+      );
+      return;
+    }
+
+    throw new Error('Expected relation subfield with mismatched column name to be rejected');
+  });
+
+  it('should allow relation subfields whose column names match field names', () => {
+    const service = createServiceWithCollections();
+
+    expect(() =>
+      (service as any).validateBuilderChartFieldsForRuntime('updateSettings', {
+        query: {
+          mode: 'builder',
+          collectionPath: ['main', 'employees'],
+          measures: [{ field: 'id', aggregation: 'count', alias: 'employeeCount' }],
+          dimensions: [{ field: 'department.state' }],
         },
       }),
     ).not.toThrow();
@@ -175,6 +266,164 @@ describe('flowSurfaces chart authoring validation', () => {
       ]),
     );
   });
+
+  it('should keep count relation authoring error for incompatible relation count measures', async () => {
+    const collections = createFixtureCollections();
+
+    const errors = await collectFlowSurfaceAuthoringErrors(
+      'applyBlueprint',
+      {
+        mode: 'create',
+        navigation: {
+          item: {
+            title: 'Invalid relation count chart',
+          },
+        },
+        assets: {
+          charts: {
+            departmentChart: {
+              query: {
+                mode: 'builder',
+                resource: {
+                  dataSourceKey: 'main',
+                  collectionName: 'employees',
+                },
+                measures: [{ field: 'department.employerEIN', aggregation: 'count', alias: 'employeeCount' }],
+                dimensions: [{ field: 'department.state' }],
+              },
+              visual: {
+                mode: 'basic',
+                type: 'bar',
+                mappings: {
+                  x: 'department.state',
+                  y: 'employeeCount',
+                },
+              },
+            },
+          },
+        },
+        tabs: [
+          {
+            title: 'Overview',
+            blocks: [
+              {
+                key: 'departmentChart',
+                type: 'chart',
+                chart: 'departmentChart',
+              },
+            ],
+          },
+        ],
+      },
+      {
+        getCollection: (_dataSourceKey, collectionName) => collections[collectionName],
+      },
+    );
+
+    expect(errors).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          path: '$.assets.charts.departmentChart.query.measures[0].field',
+          ruleId: 'chart-builder-query-count-measure-relation-subfield',
+          details: expect.objectContaining({
+            fieldPath: 'department.employerEIN',
+            suggestedMeasure: {
+              field: 'id',
+              aggregation: 'count',
+              alias: 'employeeCount',
+            },
+          }),
+        }),
+      ]),
+    );
+    expect(errors).not.toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          path: '$.assets.charts.departmentChart.query.measures[0].field',
+          ruleId: 'chart-builder-query-relation-subfield-column-unsupported',
+        }),
+      ]),
+    );
+  });
+
+  it('should return supported relation subfields for chart assets with incompatible relation dimensions', async () => {
+    const collections = createFixtureCollections();
+
+    const errors = await collectFlowSurfaceAuthoringErrors(
+      'applyBlueprint',
+      {
+        mode: 'create',
+        navigation: {
+          item: {
+            title: 'Invalid relation dimension chart',
+          },
+        },
+        assets: {
+          charts: {
+            departmentChart: {
+              query: {
+                mode: 'builder',
+                resource: {
+                  dataSourceKey: 'main',
+                  collectionName: 'employees',
+                },
+                measures: [{ field: 'id', aggregation: 'count', alias: 'employeeCount' }],
+                dimensions: [{ field: 'department.employerEIN' }],
+              },
+              visual: {
+                mode: 'basic',
+                type: 'bar',
+                mappings: {
+                  x: 'department.employerEIN',
+                  y: 'employeeCount',
+                },
+              },
+            },
+          },
+        },
+        tabs: [
+          {
+            title: 'Overview',
+            blocks: [
+              {
+                key: 'departmentChart',
+                type: 'chart',
+                chart: 'departmentChart',
+              },
+            ],
+          },
+        ],
+      },
+      {
+        getCollection: (_dataSourceKey, collectionName) => collections[collectionName],
+      },
+    );
+
+    expect(errors).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          path: '$.assets.charts.departmentChart.query.dimensions[0].field',
+          ruleId: 'chart-builder-query-relation-subfield-column-unsupported',
+          message: expect.stringContaining("Supported fields under 'department'"),
+          details: expect.objectContaining({
+            fieldPath: 'department.employerEIN',
+            associationPath: 'department',
+            leafFieldName: 'employerEIN',
+            columnName: 'employer_e_i_n',
+            supportedFields: expect.arrayContaining([
+              expect.objectContaining({ field: 'department.title' }),
+              expect.objectContaining({ field: 'department.state' }),
+            ]),
+          }),
+        }),
+      ]),
+    );
+
+    const error = errors.find((item) => item.ruleId === 'chart-builder-query-relation-subfield-column-unsupported');
+    expect(error?.details?.supportedFields).not.toEqual(
+      expect.arrayContaining([expect.objectContaining({ field: 'department.employerEIN' })]),
+    );
+  });
 });
 
 function createServiceWithCollections() {
@@ -202,7 +451,21 @@ function createServiceWithCollections() {
 function createFixtureCollections() {
   const departments = createCollection('departments', {
     id: { name: 'id', type: 'bigInt', interface: 'id' },
-    title: { name: 'title', type: 'string', interface: 'input' },
+    title: { name: 'title', type: 'string', interface: 'input', uiSchema: { title: 'Title' } },
+    state: { name: 'state', type: 'string', interface: 'input', uiSchema: { title: 'State' } },
+    employerEIN: {
+      name: 'employerEIN',
+      type: 'string',
+      interface: 'input',
+      uiSchema: { title: 'Employer EIN' },
+    },
+    manager: {
+      name: 'manager',
+      type: 'belongsTo',
+      interface: 'm2o',
+      target: 'employees',
+      isAssociationField: () => true,
+    },
   });
   const employees = createCollection('employees', {
     id: { name: 'id', type: 'bigInt', interface: 'id' },
@@ -226,7 +489,19 @@ function createCollection(name: string, fields: Record<string, any>) {
   return {
     dataSourceKey: 'main',
     name,
+    getFields: () => Object.values(fields),
     getField: (fieldName: string) => fields[fieldName] || null,
+    model: {
+      getAttributes: () =>
+        Object.fromEntries(
+          Object.keys(fields).map((fieldName) => [
+            fieldName,
+            {
+              field: fieldName === 'employerEIN' ? 'employer_e_i_n' : fieldName,
+            },
+          ]),
+        ),
+    },
     fields: {
       get: (fieldName: string) => fields[fieldName] || null,
     },

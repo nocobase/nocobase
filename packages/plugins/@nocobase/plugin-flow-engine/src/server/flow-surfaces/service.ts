@@ -173,10 +173,13 @@ import {
   buildCatalogCollectionCycleKey,
   buildFilterFieldMeta,
   dedupeVisibleFieldCandidates,
+  formatChartBuilderSupportedRelationSubfields,
   getAssociationFilterTargetKey,
   getCollectionFields,
+  getCollectionModelAttributes,
   getCollectionName,
   getCollectionTitle,
+  getUnsupportedChartBuilderRelationSubfieldDetails,
   getFieldFilterable,
   getFieldInterface,
   getFieldName,
@@ -15724,13 +15727,13 @@ export class FlowSurfacesService {
           },
         );
       }
-      if (
+      const isCountMeasureRelationSubfield =
         item.kind === 'measure' &&
         String(item.selection?.aggregation || '').trim() === 'count' &&
         !item.selection?.distinct &&
         parsed.associationField &&
-        isAssociationField(parsed.associationField)
-      ) {
+        isAssociationField(parsed.associationField);
+      if (isCountMeasureRelationSubfield) {
         throwBadRequest(
           withChartRepairMessage(
             `flowSurfaces ${actionName} ${item.path} '${fieldPath}' counts a relation subfield; count a scalar base field such as 'id' and keep '${fieldPath}' as a dimension`,
@@ -15750,6 +15753,41 @@ export class FlowSurfacesService {
               suggestedDimension: {
                 field: fieldPath,
               },
+            }),
+          },
+        );
+      }
+      const unsupportedRelationSubfield =
+        parsed.associationField && isAssociationField(parsed.associationField)
+          ? getUnsupportedChartBuilderRelationSubfieldDetails({
+              associationPathName: parsed.associationPathName,
+              leafFieldName: parsed.leafFieldPath,
+              leafField: field,
+              targetCollection: parsed.leafCollection,
+            })
+          : null;
+      if (unsupportedRelationSubfield) {
+        throwBadRequest(
+          withChartRepairMessage(
+            `flowSurfaces ${actionName} ${
+              item.path
+            } '${fieldPath}' references relation subfield '${fieldPath}', but current chart builder SQL generation cannot query relation subfield '${
+              unsupportedRelationSubfield.leafFieldName
+            }' because its database column is '${
+              unsupportedRelationSubfield.columnName
+            }'. ${formatChartBuilderSupportedRelationSubfields(
+              unsupportedRelationSubfield.associationPath,
+              unsupportedRelationSubfield.supportedFields,
+            )}`,
+          ),
+          {
+            path: item.path,
+            ruleId: 'chart-builder-query-relation-subfield-column-unsupported',
+            details: withFlowSurfaceChartRepairDetails({
+              fieldPath,
+              dataSourceKey,
+              collectionName,
+              ...unsupportedRelationSubfield,
             }),
           },
         );
@@ -20770,11 +20808,7 @@ export class FlowSurfacesService {
     if (!normalized) {
       return false;
     }
-    const modelAttributes =
-      (typeof collection?.model?.getAttributes === 'function' ? collection.model.getAttributes() : null) ||
-      collection?.model?.rawAttributes ||
-      collection?.model?.attributes ||
-      {};
+    const modelAttributes = getCollectionModelAttributes(collection);
     const primaryKeyAttributes = _.castArray(
       collection?.model?.primaryKeyAttributes || collection?.model?.primaryKeyAttribute || [],
     );

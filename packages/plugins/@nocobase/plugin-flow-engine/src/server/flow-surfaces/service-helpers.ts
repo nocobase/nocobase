@@ -148,6 +148,96 @@ export function getFieldTitle(field: any) {
   );
 }
 
+export function getCollectionModelAttributes(collection: any) {
+  return (
+    (typeof collection?.model?.getAttributes === 'function' ? collection.model.getAttributes() : null) ||
+    collection?.model?.rawAttributes ||
+    collection?.model?.attributes ||
+    {}
+  );
+}
+
+function getCollectionFieldColumnName(collection: any, fieldName: string) {
+  const normalized = String(fieldName || '').trim();
+  if (!normalized) {
+    return '';
+  }
+  const attribute = getCollectionModelAttributes(collection)?.[normalized];
+  return String(attribute?.field || normalized).trim();
+}
+
+export type FlowSurfaceChartBuilderSupportedSubfield = {
+  field: string;
+  title?: string;
+  interface?: string;
+};
+
+export function getChartBuilderSupportedRelationSubfields(
+  associationPathName: string,
+  targetCollection: any,
+): FlowSurfaceChartBuilderSupportedSubfield[] {
+  const normalizedAssociationPath = String(associationPathName || '').trim();
+  if (!normalizedAssociationPath || !targetCollection) {
+    return [];
+  }
+
+  return getCollectionFields(targetCollection).reduce<FlowSurfaceChartBuilderSupportedSubfield[]>((result, field) => {
+    const fieldName = getFieldName(field);
+    if (!fieldName || isAssociationField(field)) {
+      return result;
+    }
+    if (getCollectionFieldColumnName(targetCollection, fieldName) !== fieldName) {
+      return result;
+    }
+    result.push(
+      _.pickBy(
+        {
+          field: `${normalizedAssociationPath}.${fieldName}`,
+          title: getFieldTitle(field),
+          interface: getFieldInterface(field),
+        },
+        (value) => !_.isUndefined(value),
+      ) as FlowSurfaceChartBuilderSupportedSubfield,
+    );
+    return result;
+  }, []);
+}
+
+export function formatChartBuilderSupportedRelationSubfields(
+  associationPath: string,
+  supportedFields: FlowSurfaceChartBuilderSupportedSubfield[] = [],
+) {
+  const fields = supportedFields.map((item) => String(item?.field || '').trim()).filter(Boolean);
+  if (!fields.length) {
+    return `No chart-builder-compatible fields are available under '${associationPath}'.`;
+  }
+  return `Supported fields under '${associationPath}': ${fields.join(', ')}.`;
+}
+
+export function getUnsupportedChartBuilderRelationSubfieldDetails(input: {
+  associationPathName: string;
+  leafFieldName: string;
+  leafField: any;
+  targetCollection: any;
+}) {
+  const leafFieldName = String(input.leafFieldName || '').trim();
+  if (!input.targetCollection || !leafFieldName || !input.leafField || isAssociationField(input.leafField)) {
+    return null;
+  }
+
+  const columnName = getCollectionFieldColumnName(input.targetCollection, leafFieldName);
+  if (!columnName || columnName === leafFieldName) {
+    return null;
+  }
+
+  return {
+    associationPath: String(input.associationPathName || '').trim(),
+    leafFieldName,
+    columnName,
+    supportedFields: getChartBuilderSupportedRelationSubfields(input.associationPathName, input.targetCollection),
+  };
+}
+
 export function resolveAssociationNameFromField(field: any, fallbackCollection?: any) {
   const resourceName = typeof field?.resourceName === 'string' ? field.resourceName.trim() : '';
   if (resourceName) {

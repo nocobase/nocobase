@@ -14,8 +14,11 @@ import * as antDesignIconAsn from '@ant-design/icons-svg';
 import type { FlowSurfaceErrorItemInput } from './errors';
 import { FlowSurfaceBadRequestError, throwAggregateBadRequest } from './errors';
 import {
+  formatChartBuilderSupportedRelationSubfields,
   getCollectionFields,
+  getCollectionModelAttributes,
   getCollectionName,
+  getUnsupportedChartBuilderRelationSubfieldDetails,
   getFieldFilterable,
   getFieldInterface,
   getFieldName,
@@ -1535,13 +1538,13 @@ function collectBuilderChartAssetFieldErrors(
     }
     const associationPath = fieldPath.includes('.') ? fieldPath.split('.').slice(0, -1).join('.') : '';
     const associationField = associationPath ? resolveFieldFromCollection(collection, associationPath) : null;
-    if (
+    const isCountMeasureRelationSubfield =
       item.kind === 'measure' &&
       String(item.selection?.aggregation || '').trim() === 'count' &&
       !item.selection?.distinct &&
       associationField &&
-      isAssociationField(associationField)
-    ) {
+      isAssociationField(associationField);
+    if (isCountMeasureRelationSubfield) {
       pushAuthoringError(errors, {
         path: item.fieldPath,
         ruleId: 'chart-builder-query-count-measure-relation-subfield',
@@ -1558,6 +1561,46 @@ function collectBuilderChartAssetFieldErrors(
           suggestedDimension: {
             field: fieldPath,
           },
+        }),
+      });
+      continue;
+    }
+    const associationTargetCollection =
+      associationField && isAssociationField(associationField)
+        ? resolveFieldTargetCollection(
+            associationField,
+            dataSourceKey,
+            (resolvedDataSourceKey, targetCollection) =>
+              context.getCollection?.(resolvedDataSourceKey, targetCollection),
+          )
+        : null;
+    const unsupportedRelationSubfield = associationTargetCollection
+      ? getUnsupportedChartBuilderRelationSubfieldDetails({
+          associationPathName: associationPath,
+          leafFieldName: fieldPath.split('.').slice(-1)[0],
+          leafField: field,
+          targetCollection: associationTargetCollection,
+        })
+      : null;
+    if (unsupportedRelationSubfield) {
+      pushAuthoringError(errors, {
+        path: item.fieldPath,
+        ruleId: 'chart-builder-query-relation-subfield-column-unsupported',
+        message: `flowSurfaces authoring ${
+          item.fieldPath
+        } references relation subfield '${fieldPath}', but current chart builder SQL generation cannot query relation subfield '${
+          unsupportedRelationSubfield.leafFieldName
+        }' because its database column is '${
+          unsupportedRelationSubfield.columnName
+        }'. ${formatChartBuilderSupportedRelationSubfields(
+          associationPath,
+          unsupportedRelationSubfield.supportedFields,
+        )}`,
+        details: withChartRepairHint({
+          fieldPath,
+          dataSourceKey,
+          collectionName,
+          ...unsupportedRelationSubfield,
         }),
       });
     }
@@ -8178,11 +8221,7 @@ function collectionHasConcreteField(collection: any, fieldName: string) {
   if (!normalized) {
     return false;
   }
-  const modelAttributes =
-    (typeof collection?.model?.getAttributes === 'function' ? collection.model.getAttributes() : null) ||
-    collection?.model?.rawAttributes ||
-    collection?.model?.attributes ||
-    {};
+  const modelAttributes = getCollectionModelAttributes(collection);
   const primaryKeyAttributes = _.castArray(
     collection?.model?.primaryKeyAttributes || collection?.model?.primaryKeyAttribute || [],
   );
