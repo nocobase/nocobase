@@ -8,14 +8,15 @@
  */
 
 import { FlowRunJSContext } from '../../flowContext';
+import { createElementPropertyDoc, createZhCNElementPropertyDoc } from './elementDoc';
 
 export class JSFieldRunJSContext extends FlowRunJSContext {}
 
 JSFieldRunJSContext.define({
   label: 'JSField RunJS context',
   properties: {
-    element: `ElementProxy instance providing a safe DOM container for field rendering.
-      Supports innerHTML, append, and other DOM manipulation methods.`,
+    element: createElementPropertyDoc(`ElementProxy instance providing a safe DOM container for field rendering.
+      Supports innerHTML, append, and other DOM manipulation methods.`),
     value: `Current value of the field (read-only).
       Contains the data value stored in this field.`,
     record: `Current record data object (read-only).
@@ -34,7 +35,7 @@ JSFieldRunJSContext.define(
   {
     label: 'JS 字段 RunJS 上下文',
     properties: {
-      element: 'ElementProxy，字段渲染容器，支持 innerHTML/append 等 DOM 操作',
+      element: createZhCNElementPropertyDoc('ElementProxy，字段渲染容器，支持 innerHTML/append 等 DOM 操作'),
       value: '字段当前值（只读）',
       record: '当前记录对象（只读，包含父记录全部字段值）',
       collection: '集合定义元数据（只读，描述字段所属集合的 Schema）',
