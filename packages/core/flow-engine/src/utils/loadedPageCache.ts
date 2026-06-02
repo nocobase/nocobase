@@ -14,6 +14,19 @@ type LoadedPageOptions = {
   subKey?: string;
 };
 
+type DirtyKeyOptions = {
+  force?: boolean;
+};
+
+type FlowSettingsContextLike = {
+  flowSettingsEnabled?: boolean;
+};
+
+type FlowEngineLike = {
+  context?: FlowSettingsContextLike;
+  previousEngine?: FlowEngineLike;
+};
+
 const getLoadedPageKey = (options?: LoadedPageOptions): string | undefined => {
   const parentId = options?.parentId;
   const subKey = options?.subKey;
@@ -34,12 +47,29 @@ const getLoadedPageKeyFromModel = (model?: FlowModel | null): string | undefined
   return undefined;
 };
 
-const isFlowSettingsEnabledForModel = (model?: FlowModel | null): boolean => {
+const isFlowSettingsEnabledForContext = (context?: FlowSettingsContextLike): boolean => {
   try {
-    return !!model?.context?.flowSettingsEnabled;
+    return !!context?.flowSettingsEnabled;
   } catch (error) {
     return false;
   }
+};
+
+const isFlowSettingsEnabledForModel = (model?: FlowModel | null): boolean => {
+  if (isFlowSettingsEnabledForContext(model?.context as FlowSettingsContextLike | undefined)) {
+    return true;
+  }
+
+  const visited = new Set<FlowEngineLike>();
+  let engine = model?.flowEngine as FlowEngineLike | undefined;
+  while (engine && !visited.has(engine)) {
+    visited.add(engine);
+    if (isFlowSettingsEnabledForContext(engine.context)) {
+      return true;
+    }
+    engine = engine.previousEngine;
+  }
+  return false;
 };
 
 const removeLoadedModelTree = (model?: FlowModel | null): void => {
@@ -80,8 +110,8 @@ export const createLoadedPageCache = () => {
   const dirtyKeys = new Set<string>();
 
   return {
-    getDirtyKeyForModel(model?: FlowModel | null): string | undefined {
-      if (!isFlowSettingsEnabledForModel(model)) {
+    getDirtyKeyForModel(model?: FlowModel | null, options?: DirtyKeyOptions): string | undefined {
+      if (!options?.force && !isFlowSettingsEnabledForModel(model)) {
         return undefined;
       }
       return getLoadedPageKeyFromModel(model);
