@@ -91,12 +91,12 @@ describe('PluginBlockReferenceClient v1 compatibility', () => {
     const { default: PluginBlockReferenceClient } = await import('../../client');
     const { FlowEngine } = await import('@nocobase/flow-engine');
 
-    const registerModels = vi.fn();
+    const registerModelLoaders = vi.fn();
     const registerActions = vi.fn();
     const add = vi.fn();
     const app = {
       flowEngine: {
-        registerModels,
+        registerModelLoaders,
         getAction: vi.fn(() => ({
           handler: vi.fn(),
           beforeParamsSave: vi.fn(),
@@ -116,26 +116,31 @@ describe('PluginBlockReferenceClient v1 compatibility', () => {
     try {
       await plugin.load();
 
-      expect(registerModels).toHaveBeenCalledWith(
+      expect(registerModelLoaders).toHaveBeenCalledWith(
         expect.objectContaining({
-          ReferenceBlockModel: expect.any(Function),
-          ReferenceFormGridModel: expect.any(Function),
-          SubModelTemplateImporterModel: expect.any(Function),
+          ReferenceBlockModel: expect.objectContaining({ loader: expect.any(Function) }),
+          ReferenceFormGridModel: expect.objectContaining({ loader: expect.any(Function) }),
+          SubModelTemplateImporterModel: expect.objectContaining({ loader: expect.any(Function) }),
         }),
       );
       expect(registerActions).toHaveBeenCalledWith(expect.objectContaining({ openView: expect.any(Object) }));
 
-      const registeredModels = registerModels.mock.calls[0][0] as Record<string, ModelConstructor>;
+      const registeredModelLoaders = registerModelLoaders.mock.calls[0][0];
       const engine = new FlowEngine();
-      engine.registerModels(registeredModels);
+      engine.registerModelLoaders(registeredModelLoaders);
+      const ReferenceBlockModel = (await engine.getModelClassAsync('ReferenceBlockModel')) as ModelConstructor;
+      const ReferenceFormGridModel = (await engine.getModelClassAsync('ReferenceFormGridModel')) as ModelConstructor;
+      const SubModelTemplateImporterModel = (await engine.getModelClassAsync(
+        'SubModelTemplateImporterModel',
+      )) as ModelConstructor;
       expect(engine.createModel({ uid: 'reference-block', use: 'ReferenceBlockModel' })).toBeInstanceOf(
-        registeredModels.ReferenceBlockModel,
+        ReferenceBlockModel,
       );
       expect(engine.createModel({ uid: 'reference-grid', use: 'ReferenceFormGridModel' })).toBeInstanceOf(
-        registeredModels.ReferenceFormGridModel,
+        ReferenceFormGridModel,
       );
       expect(engine.createModel({ uid: 'template-importer', use: 'SubModelTemplateImporterModel' })).toBeInstanceOf(
-        registeredModels.SubModelTemplateImporterModel,
+        SubModelTemplateImporterModel,
       );
 
       const { BlockModel } = await import('@nocobase/client-v2');

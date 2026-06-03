@@ -18,7 +18,6 @@ import {
   FlowExitException,
   isInheritedFrom,
   type ModelConstructor,
-  tExpr,
 } from '@nocobase/flow-engine';
 import { NAMESPACE, tStr } from '../locale';
 import { renderTemplateSelectLabel, renderTemplateSelectOption } from '../components/TemplateSelectOption';
@@ -440,7 +439,7 @@ SubModelTemplateImporterModel.define({
 
 SubModelTemplateImporterModel.registerFlow({
   key: FLOW_KEY,
-  title: tExpr('Field template'),
+  title: tStr('Field template'),
   manual: true,
   sort: -999,
   steps: {

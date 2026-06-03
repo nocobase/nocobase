@@ -8,9 +8,6 @@
  */
 
 import { lazy, Plugin } from '@nocobase/client';
-import { ReferenceBlockModel } from '../client-v2/models/ReferenceBlockModel';
-import { ReferenceFormGridModel } from '../client-v2/models/ReferenceFormGridModel';
-import { SubModelTemplateImporterModel } from '../client-v2/models/SubModelTemplateImporterModel';
 import { registerMenuExtensions } from '../client-v2/menuExtensions';
 import { registerOpenViewPopupTemplateAction } from '../client-v2/openViewActionExtensions';
 
@@ -21,10 +18,16 @@ const PopupTemplatesPage = lazy(() => import('../client-v2/pages/PopupTemplatesP
 
 export class PluginBlockReferenceClient extends Plugin {
   async load() {
-    this.flowEngine.registerModels({
-      ReferenceBlockModel,
-      ReferenceFormGridModel,
-      SubModelTemplateImporterModel,
+    this.flowEngine.registerModelLoaders({
+      ReferenceBlockModel: {
+        loader: () => import('../client-v2/models/ReferenceBlockModel'),
+      },
+      ReferenceFormGridModel: {
+        loader: () => import('../client-v2/models/ReferenceFormGridModel'),
+      },
+      SubModelTemplateImporterModel: {
+        loader: () => import('../client-v2/models/SubModelTemplateImporterModel'),
+      },
     });
     registerOpenViewPopupTemplateAction(this.flowEngine);
 

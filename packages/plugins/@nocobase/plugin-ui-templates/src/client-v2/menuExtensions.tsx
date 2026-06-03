@@ -13,7 +13,6 @@ import { ExclamationCircleFilled, QuestionCircleOutlined } from '@ant-design/ico
 import _ from 'lodash';
 import { FlowModel, createBlockScopedEngine } from '@nocobase/flow-engine';
 import { BlockModel } from '@nocobase/client-v2';
-import { ReferenceBlockModel } from './models/ReferenceBlockModel';
 import { NAMESPACE, tStr, getPluginT } from './locale';
 import {
   extractPopupTemplateContextFlagsFromParams,
@@ -698,6 +697,8 @@ async function handleSavePopupAsTemplate(model: FlowModel, _t: (k: string, opt?:
               nextOpenView.uid = targetUid;
               nextOpenView.popupTemplateUid = tplUid;
               delete nextOpenView.popupTemplateContext;
+              delete nextOpenView.popupTemplateHasFilterByTk;
+              delete nextOpenView.popupTemplateHasSourceId;
               // 推断模板"是否需要 record/source 上下文"，避免 collection 模板被误判为 record 模板（尤其是默认值里带 `{{ ctx.record.* }}` 的情况）。
               // 注：这里使用 model.constructor.name 推断 scene（当前正在配置的 action 类型），
               // 而 inferFromTemplateRow 使用 tplRow.useModel（模板保存时的 action 类型）。两者语义相同：都是获取触发弹窗的 action 场景。
@@ -726,9 +727,6 @@ async function handleSavePopupAsTemplate(model: FlowModel, _t: (k: string, opt?:
                 delete nextOpenView.sourceId;
               }
 
-              // 保存模板侧的 filterByTk/sourceId 可用性：运行时可能解析为空/undefined，需用布尔标记避免误判为"模板未提供"
-              nextOpenView.popupTemplateHasFilterByTk = inferred.hasFilterByTk;
-              nextOpenView.popupTemplateHasSourceId = inferred.hasSourceId;
               model.setStepParams('popupSettings', { [openViewStepKey]: nextOpenView });
               await model.saveStepParams();
             }
@@ -892,12 +890,9 @@ async function handleConvertPopupTemplateToCopy(model: FlowModel, _t: (k: string
 
     const nextOpenView: any = { ...(openViewParams || {}), uid: newUid };
     delete (nextOpenView as any).popupTemplateUid;
-    // 保持与"模板引用"一致的运行时上下文覆写逻辑（特别是关联字段复用非关系弹窗时 filterByTk<-sourceId）
-    (nextOpenView as any).popupTemplateContext = true;
-    // sourceId 是否需要完全由 inferred.hasSourceId 决定
-    // 关键：copy 模式下不再有 popupTemplateUid 可用于运行时推断，因此这里要把"模板是否需要 record/source 上下文"固化下来。
-    nextOpenView.popupTemplateHasFilterByTk = inferred.hasFilterByTk;
-    nextOpenView.popupTemplateHasSourceId = inferred.hasSourceId;
+    delete (nextOpenView as any).popupTemplateContext;
+    delete (nextOpenView as any).popupTemplateHasFilterByTk;
+    delete (nextOpenView as any).popupTemplateHasSourceId;
     // 同步清理 params 侧的 filterByTk/sourceId，避免 record action 复用 collection 弹窗时泄漏 filterByTk
     if (!inferred.hasFilterByTk && 'filterByTk' in nextOpenView) {
       delete nextOpenView.filterByTk;
@@ -950,12 +945,12 @@ async function handleConvertPopupTemplateToCopy(model: FlowModel, _t: (k: string
  * or its parent is a ReferenceBlockModel)
  */
 function isReferenceTarget(model: FlowModel): boolean {
-  if (model instanceof ReferenceBlockModel) {
+  if (model?.use === 'ReferenceBlockModel') {
     return true;
   }
   // Check if model's parent is a ReferenceBlockModel (model is the target sub-model)
   const parent = model.parent;
-  if (parent instanceof ReferenceBlockModel) {
+  if (parent?.use === 'ReferenceBlockModel') {
     return true;
   }
   return false;
@@ -1002,10 +997,10 @@ export function registerMenuExtensions() {
       },
     }),
 
-    ReferenceBlockModel.registerExtraMenuItems({
+    FlowModel.registerExtraMenuItems({
       group: 'common-actions',
       sort: -5,
-      matcher: () => true,
+      matcher: (model) => model?.use === 'ReferenceBlockModel',
       items: async (model: FlowModel, t) => {
         const pluginT = getPluginT(model);
         const items: MenuItem[] = [];

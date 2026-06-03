@@ -38,6 +38,7 @@ export type TemplateListParams = {
   pageSize: number;
   sort: string;
   filter: Record<string, unknown>;
+  search?: string;
 };
 
 export type FlowModelTemplateResource = {
@@ -188,12 +189,15 @@ export const buildTemplateListParams = (args: {
   page: number;
   pageSize: number;
   filter?: Record<string, unknown>;
+  search?: string;
 }): TemplateListParams => {
+  const search = typeof args.search === 'string' ? args.search.trim() : '';
   return {
     page: args.page,
     pageSize: args.pageSize,
     sort: '-createdAt',
     filter: mergeTemplateListFilter(args.templateType, args.filter),
+    ...(search ? { search } : {}),
   };
 };
 
@@ -307,6 +311,7 @@ const FlowModelTemplatesPageContent: React.FC<{ templateType: TemplateType }> = 
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
   const [filter, setFilter] = useState<Record<string, unknown> | undefined>();
+  const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(false);
 
   const fetchTemplates = useCallback(async () => {
@@ -316,10 +321,11 @@ const FlowModelTemplatesPageContent: React.FC<{ templateType: TemplateType }> = 
         page,
         pageSize,
         filter,
+        search,
       }),
     );
     return parseResourceListResponse<FlowModelTemplateRecord>(response);
-  }, [filter, page, pageSize, resource, templateType]);
+  }, [filter, page, pageSize, resource, search, templateType]);
 
   const runLoadTemplates = useCallback(
     async (isActive: () => boolean = () => true) => {
@@ -356,6 +362,11 @@ const FlowModelTemplatesPageContent: React.FC<{ templateType: TemplateType }> = 
 
   const handleFilterChange = useCallback((nextFilter: Record<string, unknown> | undefined) => {
     setFilter(nextFilter);
+    setPage(1);
+  }, []);
+
+  const handleSearch = useCallback((value?: string) => {
+    setSearch((value || '').trim());
     setPage(1);
   }, []);
 
@@ -467,12 +478,24 @@ const FlowModelTemplatesPageContent: React.FC<{ templateType: TemplateType }> = 
   return (
     <Card variant="borderless">
       <Flex justify="space-between" align="center" style={{ marginBottom: token.margin }}>
-        <CollectionFilter
-          collection={templateCollection}
-          filterableFieldNames={FLOW_MODEL_TEMPLATE_FILTER_FIELD_NAMES}
-          onChange={handleFilterChange}
-          t={t}
-        />
+        <Flex align="center" gap={token.marginSM}>
+          <CollectionFilter
+            collection={templateCollection}
+            filterableFieldNames={FLOW_MODEL_TEMPLATE_FILTER_FIELD_NAMES}
+            onChange={handleFilterChange}
+            t={t}
+          />
+          <Input.Search
+            allowClear
+            placeholder={t('Search templates')}
+            onChange={(event) => {
+              if (!event.target.value) {
+                handleSearch('');
+              }
+            }}
+            onSearch={handleSearch}
+          />
+        </Flex>
         <Button icon={<ReloadOutlined />} onClick={loadTemplates}>
           {t('Refresh')}
         </Button>

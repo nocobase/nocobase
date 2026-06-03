@@ -9,8 +9,7 @@
 
 import React, { useCallback, useEffect, useMemo, useState, useRef } from 'react';
 import type { ActionDefinition, FlowEngine, FlowSettingsContext } from '@nocobase/flow-engine';
-import { createEphemeralContext, useFlowSettingsContext } from '@nocobase/flow-engine';
-import { useForm } from '@formily/react';
+import { createEphemeralContext, useFlowSettingsContext, useFlowStep } from '@nocobase/flow-engine';
 import { Select } from 'antd';
 import type { BaseSelectRef } from 'rc-select';
 import debounce from 'lodash/debounce';
@@ -430,6 +429,26 @@ const stripTemplateParams = (params: any) => {
   return next;
 };
 
+const TRANSIENT_TEMPLATE_PARAM_KEYS = [
+  'popupTemplateContext',
+  'popupTemplateHasFilterByTk',
+  'popupTemplateHasSourceId',
+];
+
+const deleteTransientTemplateParams = (params: any) => {
+  if (!params || typeof params !== 'object') return;
+  TRANSIENT_TEMPLATE_PARAM_KEYS.forEach((key) => {
+    delete params[key];
+  });
+};
+
+const stripTransientTemplateParams = (params: any) => {
+  if (!params || typeof params !== 'object') return params;
+  const next = { ...params };
+  deleteTransientTemplateParams(next);
+  return next;
+};
+
 const buildPopupTemplateShadowCtx = async (ctx: any, params: Record<string, any>) => {
   const baseInputArgs = ctx.inputArgs || {};
   const nextInputArgs: Record<string, any> = { ...(baseInputArgs as any) };
@@ -640,8 +659,8 @@ const getPopupTemplateMeta = async (ctx: any, templateUid: string): Promise<Popu
 function PopupTemplateSelect(props: any) {
   const { value, onChange } = props as { value?: string; onChange?: (v: string | undefined) => void };
   const ctx = useFlowSettingsContext();
-  const form = useForm();
-  const formValues = form?.values;
+  const flowStep = useFlowStep();
+  const formValues = (flowStep?.params || {}) as Record<string, any>;
   const expectedResource = resolveExpectedResourceInfo(ctx as any, formValues);
   const expectedSourceResource = resolveExpectedSourceResourceInfo(ctx as any, formValues);
   const [options, setOptions] = useState<PopupTemplateSelectOption[]>([]);
@@ -666,7 +685,7 @@ function PopupTemplateSelect(props: any) {
         tpl,
         expectedResource,
         expectedSourceResource,
-        form?.values,
+        formValues,
       );
       return {
         label: renderTemplateSelectLabel(name),
@@ -678,7 +697,7 @@ function PopupTemplateSelect(props: any) {
         rawName: name,
       };
     },
-    [ctx, expectedResource, expectedSourceResource, form],
+    [ctx, expectedResource, expectedSourceResource, formValues],
   );
 
   const resetAndLoad = useCallback(
@@ -782,23 +801,6 @@ function PopupTemplateSelect(props: any) {
     };
   }, [ctx, options, toOption, value]);
 
-  const setOpenViewValue = useCallback(
-    (k: string, v: any) => {
-      try {
-        if (typeof v === 'undefined') {
-          _.unset(form.values, k);
-          form.setValuesIn(k, undefined);
-        } else {
-          form.setValuesIn(k, v);
-        }
-      } catch (e) {
-        console.error(e);
-        // ignore
-      }
-    },
-    [form],
-  );
-
   const handleSelect = useCallback(
     async (nextUid?: string) => {
       const next = typeof nextUid === 'string' ? nextUid.trim() : '';
@@ -809,66 +811,14 @@ function PopupTemplateSelect(props: any) {
       onChange?.(next);
       try {
         setSelectLoading(true);
-        const tpl = await fetchTemplateByUid(ctx, next);
-        const targetUid = tpl?.targetUid;
-        if (targetUid) {
-          setOpenViewValue('uid', targetUid);
-        }
-        // best-effort: backfill common openView params from template record
-        const shouldApplyTemplateField = (v: any) => {
-          if (v === undefined || v === null) return false;
-          if (typeof v === 'string') return v.trim() !== '';
-          return true;
-        };
-        const tplMeta = inferPopupTemplateMeta(ctx as any, tpl as any);
-        (['dataSourceKey', 'collectionName', 'filterByTk', 'sourceId'] as const).forEach((k) => {
-          const tv = (tpl as any)?.[k];
-          if (
-            k === 'filterByTk' &&
-            shouldUseRuntimeRecordFilterByTk(ctx as any) &&
-            (!tplMeta.hasFilterByTk || !shouldApplyTemplateField(tv) || isRuntimeRecordFilterByTkValue(ctx as any, tv))
-          ) {
-            setOpenViewValue(k, undefined);
-            return;
-          }
-          if (shouldApplyTemplateField(tv)) {
-            setOpenViewValue(k, tv);
-          }
-        });
-        // associationName 仅在模板显式携带时回填；
-        // 模板未携带时不主动清空，避免影响“当前触发上下文”的兼容性判断（否则下次打开下拉会误以为不是 association 上下文）。
-        const tplAssociationName =
-          typeof (tpl as any)?.associationName === 'string' ? String((tpl as any).associationName) : '';
-        if (shouldApplyTemplateField(tplAssociationName)) {
-          setOpenViewValue('associationName', tplAssociationName);
-        }
-
-        // Backfill defaults for important runtime params when template record doesn't carry them.
-        if (
-          !shouldUseRuntimeRecordFilterByTk(ctx as any) &&
-          !shouldApplyTemplateField((tpl as any)?.filterByTk) &&
-          !shouldApplyTemplateField(form.values?.filterByTk)
-        ) {
-          const recordKeyPath = (ctx as any)?.collection?.filterTargetKey || 'id';
-          setOpenViewValue('filterByTk', `{{ ctx.record.${recordKeyPath} }}`);
-        }
-        if (!shouldApplyTemplateField((tpl as any)?.sourceId) && !shouldApplyTemplateField(form.values?.sourceId)) {
-          try {
-            const sid = (ctx as any)?.resource?.getSourceId?.();
-            if (sid !== undefined && sid !== null && String(sid) !== '') {
-              setOpenViewValue('sourceId', `{{ ctx.resource.sourceId }}`);
-            }
-          } catch (_) {
-            // ignore
-          }
-        }
+        await fetchTemplateByUid(ctx, next);
       } catch (e) {
         console.error('load popup template failed', e);
       } finally {
         setSelectLoading(false);
       }
     },
-    [ctx, form.values, onChange, setOpenViewValue],
+    [ctx, onChange],
   );
 
   const debouncedSearch = useMemo(() => debounce((kw: string) => resetAndLoad(kw), 300), [resetAndLoad]);
@@ -1012,6 +962,39 @@ const resolveTemplateToUid = async (ctx: FlowSettingsContext, params: any): Prom
   applyTemplateParam('sourceId', inferred.hasSourceId);
 };
 
+const resolveCurrentStepKey = (ctx: FlowSettingsContext): string | undefined => {
+  const flowKey = typeof ctx?.flowKey === 'string' ? ctx.flowKey : '';
+  if (!flowKey) return undefined;
+  const steps = (ctx.model?.getFlow?.(flowKey) as any)?.steps || {};
+  const currentStep = (ctx as any)?.currentStep;
+  if (currentStep) {
+    const found = Object.entries(steps).find(([, step]) => step === currentStep);
+    if (found) return found[0];
+  }
+  const openViewStep = Object.entries(steps).find(([, step]) => (step as any)?.use === 'openView');
+  return openViewStep?.[0];
+};
+
+const persistCurrentOpenViewParams = (ctx: FlowSettingsContext, params: any) => {
+  const flowKey = typeof ctx?.flowKey === 'string' ? ctx.flowKey : '';
+  const stepKey = resolveCurrentStepKey(ctx);
+  if (!flowKey || !stepKey || !params || typeof params !== 'object') return;
+  ctx.model?.setStepParams?.(flowKey, { [stepKey]: params });
+};
+
+const hasOwnParam = (params: any, key: string) => {
+  return !!params && typeof params === 'object' && Object.prototype.hasOwnProperty.call(params, key);
+};
+
+const shouldUseConfiguredResourceContext = (ctx: any, params: any) => {
+  if (!params || typeof params !== 'object') return false;
+  const inputArgs = ctx?.inputArgs || {};
+  return (['dataSourceKey', 'collectionName', 'associationName'] as const).some((key) => {
+    if (!hasOwnParam(params, key)) return false;
+    return normalizeStr(params[key]) !== normalizeStr(inputArgs?.[key]);
+  });
+};
+
 export function registerOpenViewPopupTemplateAction(flowEngine: FlowEngine) {
   const base = flowEngine.getAction('openView') as ActionDefinition | undefined;
   if (!base) return;
@@ -1038,7 +1021,17 @@ export function registerOpenViewPopupTemplateAction(flowEngine: FlowEngine) {
       // 1) resolve template -> uid (in-place mutation so it will be persisted)
       await resolveTemplateToUid(ctx, params);
       // 2) delegate to original beforeParamsSave (strip template params to avoid leaking)
-      await base.beforeParamsSave(ctx, stripTemplateParams(params), previousParams);
+      const baseParams = stripTemplateParams(params);
+      await base.beforeParamsSave?.(ctx, baseParams, previousParams);
+      Object.assign(params, baseParams);
+      const persistedParams = stripTransientTemplateParams(params);
+      Object.keys(params).forEach((key) => {
+        if (!Object.prototype.hasOwnProperty.call(persistedParams, key)) {
+          delete params[key];
+        }
+      });
+      Object.assign(params, persistedParams);
+      persistCurrentOpenViewParams(ctx, persistedParams);
     },
 
     async handler(ctx, params) {
@@ -1073,7 +1066,9 @@ export function registerOpenViewPopupTemplateAction(flowEngine: FlowEngine) {
       }
 
       const shouldUseTemplateCtx =
-        (typeof templateUid === 'string' && templateUid.trim()) || !!(runtimeParams as any)?.popupTemplateContext;
+        (typeof templateUid === 'string' && templateUid.trim()) ||
+        !!(runtimeParams as any)?.popupTemplateContext ||
+        shouldUseConfiguredResourceContext(ctx, runtimeParams);
       const nextParams = stripTemplateParams(runtimeParams);
 
       // 如果模板不需要 sourceId，从 nextParams 中删除 sourceId：

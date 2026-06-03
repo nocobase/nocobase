@@ -11,9 +11,6 @@ import type { Application } from '@nocobase/client-v2';
 import { Plugin } from '@nocobase/client-v2';
 import { NAMESPACE } from './locale';
 import { registerMenuExtensions } from './menuExtensions';
-import { ReferenceBlockModel } from './models/ReferenceBlockModel';
-import { ReferenceFormGridModel } from './models/ReferenceFormGridModel';
-import { SubModelTemplateImporterModel } from './models/SubModelTemplateImporterModel';
 import { registerOpenViewPopupTemplateAction } from './openViewActionExtensions';
 
 const SETTINGS_MENU_KEY = 'ui-templates';
@@ -23,10 +20,16 @@ export class PluginUiTemplatesClientV2 extends Plugin<Record<string, never>, App
   async load() {
     const t = (key: string) => this.app.i18n.t(key, { ns: NAMESPACE, nsMode: 'fallback' });
 
-    this.flowEngine.registerModels({
-      ReferenceBlockModel,
-      ReferenceFormGridModel,
-      SubModelTemplateImporterModel,
+    this.flowEngine.registerModelLoaders({
+      ReferenceBlockModel: {
+        loader: () => import('./models/ReferenceBlockModel'),
+      },
+      ReferenceFormGridModel: {
+        loader: () => import('./models/ReferenceFormGridModel'),
+      },
+      SubModelTemplateImporterModel: {
+        loader: () => import('./models/SubModelTemplateImporterModel'),
+      },
     });
     registerOpenViewPopupTemplateAction(this.flowEngine);
     registerMenuExtensions();

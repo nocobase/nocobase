@@ -9,7 +9,6 @@
   "main": "./dist/server/index.js",
   "types": "./dist/index.d.ts",
   "devDependencies": {
-    "@formily/shared": "2.x",
     "antd": "5.x",
     "react": "^18.2.0"
   },

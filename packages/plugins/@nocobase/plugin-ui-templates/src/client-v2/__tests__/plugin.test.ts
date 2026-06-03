@@ -17,12 +17,12 @@ const t = (key: string) => key;
 
 describe('PluginUiTemplatesClientV2', () => {
   it('registers v2 models and settings pages', async () => {
-    const registerModels = vi.fn();
+    const registerModelLoaders = vi.fn();
     const addMenuItem = vi.fn();
     const addPageTabItem = vi.fn();
     const app = {
       flowEngine: {
-        registerModels,
+        registerModelLoaders,
         getAction: vi.fn(() => undefined),
         registerActions: vi.fn(),
       },
@@ -39,11 +39,11 @@ describe('PluginUiTemplatesClientV2', () => {
     try {
       await plugin.load();
 
-      expect(registerModels).toHaveBeenCalledWith(
+      expect(registerModelLoaders).toHaveBeenCalledWith(
         expect.objectContaining({
-          ReferenceBlockModel: expect.any(Function),
-          ReferenceFormGridModel: expect.any(Function),
-          SubModelTemplateImporterModel: expect.any(Function),
+          ReferenceBlockModel: expect.objectContaining({ loader: expect.any(Function) }),
+          ReferenceFormGridModel: expect.objectContaining({ loader: expect.any(Function) }),
+          SubModelTemplateImporterModel: expect.objectContaining({ loader: expect.any(Function) }),
         }),
       );
       expect(addMenuItem).toHaveBeenCalledWith(

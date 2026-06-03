@@ -110,6 +110,183 @@ describe('openViewActionExtensions (popup template)', () => {
     expect(out?.uid).toEqual('popup-1');
   });
 
+  it('persists template-derived params after FlowSettings prewrites form values', async () => {
+    const engine = new FlowEngine();
+    const baseBefore = vi.fn(async () => {});
+    const baseOpenView: ActionDefinition = {
+      name: 'openView',
+      title: 'openView',
+      uiSchema: {
+        uid: { type: 'string' },
+      },
+      beforeParamsSave: baseBefore as any,
+      handler: vi.fn(async () => undefined) as any,
+    };
+    engine.registerActions({ openView: baseOpenView });
+
+    registerOpenViewPopupTemplateAction(engine);
+    const enhanced = engine.getAction('openView') as any;
+
+    const api = {
+      resource: (name: string) => {
+        if (name !== 'flowModelTemplates') throw new Error('unexpected resource');
+        return {
+          get: vi.fn(async () => ({
+            data: {
+              data: {
+                uid: 'tpl-1',
+                targetUid: 'popup-1',
+                dataSourceKey: 'main',
+                collectionName: 'orders',
+              },
+            },
+          })),
+        };
+      },
+    };
+
+    const openViewStep = { use: 'openView' };
+    const stepParams: Record<string, Record<string, Record<string, any>>> = {
+      popupSettings: {
+        openView: {
+          associationName: 'users.roles',
+          filterByTk: '{{ ctx.record.id }}',
+          sourceId: '{{ ctx.resource.sourceId }}',
+          popupTemplateContext: true,
+          popupTemplateHasFilterByTk: true,
+          popupTemplateHasSourceId: true,
+        },
+      },
+    };
+    const model: any = {
+      getFlow: vi.fn(() => ({ steps: { openView: openViewStep } })),
+      setStepParams: vi.fn(
+        (flowKey: string, stepKeyOrStepParams: string | Record<string, any>, params?: Record<string, any>) => {
+          stepParams[flowKey] = stepParams[flowKey] || {};
+          if (typeof stepKeyOrStepParams === 'string') {
+            const stepKey = stepKeyOrStepParams;
+            stepParams[flowKey][stepKey] = {
+              ...(stepParams[flowKey][stepKey] || {}),
+              ...(params || {}),
+            };
+          } else {
+            stepParams[flowKey] = {
+              ...stepParams[flowKey],
+              ...stepKeyOrStepParams,
+            };
+          }
+        },
+      ),
+      getStepParams: vi.fn((flowKey: string, stepKey: string) => stepParams[flowKey]?.[stepKey] || {}),
+    };
+    const ctx: any = new FlowContext();
+    ctx.engine = engine;
+    ctx.api = api;
+    ctx.t = (k: string) => k;
+    ctx.model = model;
+    ctx.flowKey = 'popupSettings';
+    ctx.currentStep = openViewStep;
+
+    const formValues: any = { popupTemplateUid: 'tpl-1', uid: 'old' };
+    model.setStepParams('popupSettings', 'openView', formValues);
+    await enhanced.beforeParamsSave(ctx, formValues, {});
+
+    expect(model.setStepParams).toHaveBeenLastCalledWith('popupSettings', {
+      openView: expect.objectContaining({
+        popupTemplateUid: 'tpl-1',
+        uid: 'popup-1',
+        dataSourceKey: 'main',
+        collectionName: 'orders',
+      }),
+    });
+    expect(stepParams.popupSettings.openView).toMatchObject({
+      popupTemplateUid: 'tpl-1',
+      uid: 'popup-1',
+      dataSourceKey: 'main',
+      collectionName: 'orders',
+    });
+    expect(stepParams.popupSettings.openView).not.toHaveProperty('associationName');
+    expect(stepParams.popupSettings.openView).not.toHaveProperty('filterByTk');
+    expect(stepParams.popupSettings.openView).not.toHaveProperty('sourceId');
+    expect(stepParams.popupSettings.openView).not.toHaveProperty('popupTemplateContext');
+    expect(stepParams.popupSettings.openView).not.toHaveProperty('popupTemplateHasFilterByTk');
+    expect(stepParams.popupSettings.openView).not.toHaveProperty('popupTemplateHasSourceId');
+    expect(formValues).not.toHaveProperty('popupTemplateHasFilterByTk');
+    expect(formValues).not.toHaveProperty('popupTemplateHasSourceId');
+    expect(baseBefore).toHaveBeenCalledTimes(1);
+    expect(baseBefore.mock.calls[0][1]).toEqual({
+      uid: 'popup-1',
+      dataSourceKey: 'main',
+      collectionName: 'orders',
+    });
+  });
+
+  it('persists template-derived params when base openView has no beforeParamsSave hook', async () => {
+    const engine = new FlowEngine();
+    const baseOpenView: ActionDefinition = {
+      name: 'openView',
+      title: 'openView',
+      uiSchema: {
+        uid: { type: 'string' },
+      },
+      handler: vi.fn(async () => undefined) as any,
+    };
+    engine.registerActions({ openView: baseOpenView });
+
+    registerOpenViewPopupTemplateAction(engine);
+    const enhanced = engine.getAction('openView') as any;
+
+    const api = {
+      resource: (name: string) => {
+        if (name !== 'flowModelTemplates') throw new Error('unexpected resource');
+        return {
+          get: vi.fn(async () => ({
+            data: {
+              data: {
+                uid: 'tpl-1',
+                targetUid: 'popup-1',
+                dataSourceKey: 'main',
+                collectionName: 'orders',
+              },
+            },
+          })),
+        };
+      },
+    };
+
+    const openViewStep = { use: 'openView' };
+    const model: any = {
+      getFlow: vi.fn(() => ({ steps: { openView: openViewStep } })),
+      setStepParams: vi.fn(),
+      getStepParams: vi.fn(() => ({})),
+    };
+    const ctx: any = new FlowContext();
+    ctx.engine = engine;
+    ctx.api = api;
+    ctx.t = (k: string) => k;
+    ctx.model = model;
+    ctx.flowKey = 'popupSettings';
+    ctx.currentStep = openViewStep;
+
+    const params: any = { popupTemplateUid: 'tpl-1', uid: 'old' };
+    await expect(enhanced.beforeParamsSave(ctx, params, {})).resolves.toBeUndefined();
+
+    expect(params).toMatchObject({
+      popupTemplateUid: 'tpl-1',
+      uid: 'popup-1',
+      dataSourceKey: 'main',
+      collectionName: 'orders',
+    });
+    expect(model.setStepParams).toHaveBeenLastCalledWith('popupSettings', {
+      openView: expect.objectContaining({
+        popupTemplateUid: 'tpl-1',
+        uid: 'popup-1',
+        dataSourceKey: 'main',
+        collectionName: 'orders',
+      }),
+    });
+  });
+
   it('clears filterByTk/sourceId when template does not define them (avoid leaking record defaults)', async () => {
     const engine = new FlowEngine();
     const baseBefore = vi.fn(async () => {});
@@ -1098,7 +1275,7 @@ describe('openViewActionExtensions (popup template)', () => {
     expect(capturedCtx?.inputArgs?.sourceId).toBe('source-1');
   });
 
-  it('runtime overrides resource keys via shadow ctx in copy mode (popupTemplateContext)', async () => {
+  it('runtime overrides resource keys via shadow ctx in copy mode without persisted internal flags', async () => {
     const engine = new FlowEngine();
     let capturedCtx: any;
     let capturedParams: any;
@@ -1138,7 +1315,6 @@ describe('openViewActionExtensions (popup template)', () => {
     ctx.defineProperty('inputArgs', { value: baseInputArgs });
 
     await enhanced.handler(ctx, {
-      popupTemplateContext: true,
       uid: 'popup-1',
       dataSourceKey: 'main',
       collectionName: 'roles',
