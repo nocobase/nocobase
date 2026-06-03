@@ -1,0 +1,608 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
+import _ from 'lodash';
+import { collectProviderPublicCapabilities, type FlowSurfaceCapabilityRegistryLike } from './capability-registry';
+import { FlowSurfaceBadRequestError } from './errors';
+import type {
+  FlowSurfaceCapabilitiesResponse,
+  FlowSurfaceCapabilitiesValues,
+  FlowSurfaceCapabilityKind,
+  FlowSurfaceCapabilityOriginSource,
+  FlowSurfaceCatalogItem,
+  FlowSurfaceCatalogResponse,
+  FlowSurfaceCatalogSection,
+  FlowSurfaceCatalogValues,
+  FlowSurfacePublicCapabilityItem,
+} from './types';
+
+const DEFAULT_CAPABILITY_KINDS = new Set<FlowSurfaceCapabilityKind>(['block', 'action', 'fieldComponent']);
+const FLOW_SURFACE_CAPABILITY_KIND_SET = new Set<FlowSurfaceCapabilityKind>(DEFAULT_CAPABILITY_KINDS);
+const FLOW_SURFACE_CAPABILITY_EXPAND_SET = new Set([
+  'item.identity',
+  'item.semantic',
+  'item.settings',
+  'item.warnings',
+]);
+const CAPABILITIES_REQUEST_FIELDS = new Set([
+  'kinds',
+  'publicTypes',
+  'ownerPlugins',
+  'query',
+  'target',
+  'includeUnavailable',
+  'includeWarnings',
+  'limit',
+  'expand',
+]);
+const CAPABILITIES_TARGET_FIELDS = new Set(['targetUid', 'uid']);
+const DEFAULT_OWNER_PLUGIN = '@nocobase/core/client';
+const CAPABILITY_ORIGIN_PRECEDENCE: Record<FlowSurfaceCapabilityOriginSource, number> = {
+  builtInStatic: 50,
+  officialManifest: 40,
+  pluginManifest: 30,
+  provider: 30,
+  canaryOverlay: 20,
+  autoSnapshot: 10,
+};
+
+type BuildFlowSurfaceCapabilitiesOptions = {
+  enabledPackages: ReadonlySet<string>;
+  providerRegistry?: FlowSurfaceCapabilityRegistryLike;
+  catalog: (values: FlowSurfaceCatalogValues) => Promise<FlowSurfaceCatalogResponse>;
+  generatedAt?: string;
+};
+
+type NormalizedCapabilitiesRequest = {
+  kinds: Set<FlowSurfaceCapabilityKind>;
+  publicTypes: Set<string>;
+  ownerPlugins: Set<string>;
+  query: string;
+  includeUnavailable: boolean;
+  includeWarnings: boolean;
+  limit?: number;
+  expand: Set<string>;
+  targetHintUsed: boolean;
+  catalogTargetUid?: string;
+  catalogValues: FlowSurfaceCatalogValues;
+};
+
+export async function buildFlowSurfaceCapabilitiesResponse(
+  input: FlowSurfaceCapabilitiesValues = {},
+  options: BuildFlowSurfaceCapabilitiesOptions,
+): Promise<FlowSurfaceCapabilitiesResponse> {
+  const request = normalizeCapabilitiesRequest(input);
+  const catalog = await options.catalog(request.catalogValues);
+  const providerItems = request.targetHintUsed
+    ? []
+    : await collectProviderPublicCapabilities({
+        providerRegistry: options.providerRegistry,
+        enabledPackages: options.enabledPackages,
+      });
+  const projectedItems = [
+    ...collectCatalogCapabilityItems(catalog)
+      .map((item) => projectCatalogCapabilityItem(item, request))
+      .filter((item): item is FlowSurfacePublicCapabilityItem => !!item),
+    ...providerItems.map((item) => projectProviderCapabilityItem(item, request)),
+  ].filter((item): item is FlowSurfacePublicCapabilityItem => !!item);
+  const data = arbitratePublicTypeConflicts(dedupeCapabilityItems(projectedItems)).filter((item) =>
+    filterCapabilityItem(item, request),
+  );
+  const limitedData = typeof request.limit === 'number' ? data.slice(0, request.limit) : data;
+
+  return {
+    data: limitedData,
+    meta: {
+      version: 1,
+      generatedAt: options.generatedAt || new Date().toISOString(),
+      enabledPlugins: buildVisiblePluginOwners(limitedData),
+      registrySources: buildRegistrySources(limitedData),
+      targetHintUsed: request.targetHintUsed,
+    },
+  };
+}
+
+function projectProviderCapabilityItem(
+  item: FlowSurfacePublicCapabilityItem,
+  request: NormalizedCapabilitiesRequest,
+): FlowSurfacePublicCapabilityItem | null {
+  if (!request.kinds.has(item.kind)) {
+    return null;
+  }
+  const { identity, initParamsSchema, settingsSchema, configureOptions, warnings, semantic, ...baseItem } = item;
+  const projected: FlowSurfacePublicCapabilityItem = {
+    ...baseItem,
+    semantic: request.expand.has('item.semantic')
+      ? semantic
+      : {
+          title: semantic.title,
+          ...(semantic.aliases?.length ? { aliases: semantic.aliases } : {}),
+        },
+  };
+  if (request.expand.has('item.identity') && identity) {
+    projected.identity = identity;
+  }
+  if (request.expand.has('item.settings')) {
+    if (initParamsSchema) {
+      projected.initParamsSchema = initParamsSchema;
+    }
+    if (settingsSchema) {
+      projected.settingsSchema = settingsSchema;
+    }
+    if (configureOptions) {
+      projected.configureOptions = configureOptions;
+    }
+  }
+  if (request.includeWarnings && warnings?.length) {
+    projected.warnings = warnings;
+  }
+  return projected;
+}
+
+function dedupeCapabilityItems(items: FlowSurfacePublicCapabilityItem[]) {
+  const byPublicIdentity = new Map<string, FlowSurfacePublicCapabilityItem>();
+  items.forEach((item) => {
+    byPublicIdentity.set([item.kind, item.ownerPlugin, item.publicType].join('::'), item);
+  });
+  return Array.from(byPublicIdentity.values());
+}
+
+function arbitratePublicTypeConflicts(items: FlowSurfacePublicCapabilityItem[]) {
+  const winners = new Map<string, FlowSurfacePublicCapabilityItem>();
+  items.forEach((item) => {
+    const key = getPublicTypeConflictKey(item);
+    const current = winners.get(key);
+    if (!current || getCapabilityOriginPrecedence(item) > getCapabilityOriginPrecedence(current)) {
+      winners.set(key, item);
+    }
+  });
+
+  return items.map((item) =>
+    winners.get(getPublicTypeConflictKey(item)) === item ? item : markPublicTypeConflict(item),
+  );
+}
+
+function getPublicTypeConflictKey(item: Pick<FlowSurfacePublicCapabilityItem, 'kind' | 'publicType'>) {
+  return [item.kind, item.publicType].join('::');
+}
+
+function getCapabilityOriginPrecedence(item: Pick<FlowSurfacePublicCapabilityItem, 'origin'>) {
+  return CAPABILITY_ORIGIN_PRECEDENCE[item.origin] || 0;
+}
+
+function markPublicTypeConflict(item: FlowSurfacePublicCapabilityItem): FlowSurfacePublicCapabilityItem {
+  const availability: FlowSurfacePublicCapabilityItem['availability'] = {
+    ...item.availability,
+    create: {
+      ...item.availability.create,
+      supported: false,
+      reasonCode: 'public-type-conflict',
+      reasonSource: 'registry',
+    },
+  };
+  const warnings = [
+    ...(item.warnings || []),
+    ...(item.warnings?.some((warning) => warning.code === 'public-type-conflict')
+      ? []
+      : [
+          {
+            code: 'public-type-conflict' as const,
+            message: `Capability publicType '${item.publicType}' is hidden because a higher-priority capability owns the same publicType.`,
+          },
+        ]),
+  ];
+  return {
+    ...item,
+    availability,
+    supportLevel: resolveSupportLevel(availability),
+    warnings,
+  };
+}
+
+function resolveSupportLevel(availability: FlowSurfacePublicCapabilityItem['availability']) {
+  if (availability.create.supported && availability.configure.supported) {
+    return 'create-and-configure' as const;
+  }
+  if (availability.create.supported) {
+    return availability.create.acceptsSettings ? ('create-with-settings' as const) : ('create-only' as const);
+  }
+  if (availability.configure.supported) {
+    return 'configure-only' as const;
+  }
+  if (availability.readback.supported) {
+    return 'readback-only' as const;
+  }
+  return 'render-only' as const;
+}
+
+function normalizeCapabilitiesRequest(input: FlowSurfaceCapabilitiesValues): NormalizedCapabilitiesRequest {
+  validateSupportedCapabilitiesRequestShape(input);
+  const expand = normalizeCapabilityExpand(input.expand);
+  const kinds = normalizeCapabilityKinds(input.kinds);
+  const publicTypes = normalizeStringSet(input.publicTypes);
+  const ownerPlugins = normalizeStringSet(input.ownerPlugins);
+  const query = String(input.query || '')
+    .trim()
+    .toLowerCase();
+  const catalogTargetUid = getCatalogTargetUid(input.target);
+  const targetHintUsed = !!catalogTargetUid;
+  const catalogExpand = [
+    ...(expand.has('item.settings') ? (['item.configureOptions'] as const) : []),
+    ...(expand.has('item.identity') ? (['item.identity'] as const) : []),
+  ];
+  const catalogValues: FlowSurfaceCatalogValues = {
+    ...(catalogTargetUid ? { target: { uid: catalogTargetUid } } : {}),
+    sections: resolveCatalogSections(kinds, !!catalogTargetUid),
+    ...(catalogExpand.length ? { expand: catalogExpand } : {}),
+  };
+  const limit = normalizeLimit(input.limit);
+
+  return {
+    kinds,
+    publicTypes,
+    ownerPlugins,
+    query,
+    includeUnavailable: input.includeUnavailable === true,
+    includeWarnings: input.includeWarnings === true || expand.has('item.warnings'),
+    limit,
+    expand,
+    targetHintUsed,
+    catalogTargetUid,
+    catalogValues,
+  };
+}
+
+function validateSupportedCapabilitiesRequestShape(input: FlowSurfaceCapabilitiesValues) {
+  if (!_.isPlainObject(input)) {
+    throw new FlowSurfaceBadRequestError(`flowSurfaces capabilities request must be an object`);
+  }
+  const rawInput = input as Record<string, unknown>;
+  Object.keys(rawInput).forEach((key) => {
+    if (!CAPABILITIES_REQUEST_FIELDS.has(key)) {
+      throwUnsupportedCapabilitiesRequestField(key);
+    }
+  });
+  const target = rawInput.target;
+  if (_.isUndefined(target)) {
+    return;
+  }
+  if (_.isNull(target) || !_.isPlainObject(target)) {
+    throw new FlowSurfaceBadRequestError(`flowSurfaces capabilities target must be an object`);
+  }
+  const targetRecord = target as Record<string, unknown>;
+  Object.keys(targetRecord).forEach((key) => {
+    if (!CAPABILITIES_TARGET_FIELDS.has(key)) {
+      throwUnsupportedCapabilitiesRequestField(`target.${key}`);
+    }
+  });
+  const uid = normalizeTargetUidValue(targetRecord.uid);
+  const targetUid = normalizeTargetUidValue(targetRecord.targetUid);
+  if (!uid && !targetUid) {
+    throw new FlowSurfaceBadRequestError(
+      `flowSurfaces capabilities target.uid or target.targetUid is required`,
+      undefined,
+      {
+        details: {
+          reasonCode: 'target-required',
+          reasonSource: 'catalog',
+          path: 'target',
+        },
+      },
+    );
+  }
+  if (uid && targetUid && uid !== targetUid) {
+    throw new FlowSurfaceBadRequestError(
+      `flowSurfaces capabilities target.uid and target.targetUid must reference the same target`,
+      undefined,
+      {
+        details: {
+          reasonCode: 'unsupported',
+          reasonSource: 'catalog',
+          path: 'target',
+        },
+      },
+    );
+  }
+}
+
+function throwUnsupportedCapabilitiesRequestField(path: string): never {
+  throw new FlowSurfaceBadRequestError(
+    `flowSurfaces capabilities ${path} is reserved for future scoped discovery; use target.uid/targetUid or target-scoped catalog`,
+    undefined,
+    {
+      details: {
+        reasonCode: 'unsupported',
+        reasonSource: 'catalog',
+        path,
+      },
+    },
+  );
+}
+
+function normalizeCapabilityKinds(input?: FlowSurfaceCapabilityKind[]) {
+  if (_.isUndefined(input)) {
+    return new Set(DEFAULT_CAPABILITY_KINDS);
+  }
+  if (!Array.isArray(input)) {
+    throw new FlowSurfaceBadRequestError(`flowSurfaces capabilities kinds must be an array`);
+  }
+  const kinds = new Set<FlowSurfaceCapabilityKind>();
+  input.forEach((value, index) => {
+    const kind = String(value || '').trim() as FlowSurfaceCapabilityKind;
+    if (!FLOW_SURFACE_CAPABILITY_KIND_SET.has(kind)) {
+      throw new FlowSurfaceBadRequestError(
+        `flowSurfaces capabilities kinds[${index}] '${String(value || '')}' is not supported`,
+      );
+    }
+    kinds.add(kind);
+  });
+  return kinds;
+}
+
+function normalizeCapabilityExpand(input?: FlowSurfaceCapabilitiesValues['expand']) {
+  const expand = new Set<string>();
+  if (_.isUndefined(input)) {
+    return expand;
+  }
+  if (!Array.isArray(input)) {
+    throw new FlowSurfaceBadRequestError(`flowSurfaces capabilities expand must be an array`);
+  }
+  input.forEach((value, index) => {
+    const normalized = String(value || '').trim();
+    if (normalized === 'debugImplementation') {
+      throw new FlowSurfaceBadRequestError(`flowSurfaces capabilities expand '${normalized}' is forbidden`, undefined, {
+        details: {
+          reasonCode: 'debug-expand-forbidden',
+          reasonSource: 'catalog',
+          path: `expand[${index}]`,
+        },
+      });
+    }
+    if (!FLOW_SURFACE_CAPABILITY_EXPAND_SET.has(normalized)) {
+      throw new FlowSurfaceBadRequestError(
+        `flowSurfaces capabilities expand[${index}] '${String(value || '')}' is not supported`,
+      );
+    }
+    expand.add(normalized);
+  });
+  return expand;
+}
+
+function normalizeStringSet(input?: string[]) {
+  if (_.isUndefined(input)) {
+    return new Set<string>();
+  }
+  if (!Array.isArray(input)) {
+    throw new FlowSurfaceBadRequestError(`flowSurfaces capabilities filter must be an array`);
+  }
+  return new Set(input.map((value) => String(value || '').trim()).filter(Boolean));
+}
+
+function normalizeLimit(input: unknown) {
+  if (_.isUndefined(input)) {
+    return undefined;
+  }
+  const limit = Number(input);
+  if (!Number.isInteger(limit) || limit < 1) {
+    throw new FlowSurfaceBadRequestError(`flowSurfaces capabilities limit must be a positive integer`);
+  }
+  return Math.min(limit, 200);
+}
+
+function getCatalogTargetUid(input: FlowSurfaceCapabilitiesValues['target']) {
+  return normalizeTargetUidValue(input?.targetUid) || normalizeTargetUidValue(input?.uid);
+}
+
+function normalizeTargetUidValue(input: unknown) {
+  return typeof input === 'string' ? input.trim() : '';
+}
+
+function resolveCatalogSections(
+  kinds: Set<FlowSurfaceCapabilityKind>,
+  targetHintUsed: boolean,
+): FlowSurfaceCatalogSection[] {
+  const sections: FlowSurfaceCatalogSection[] = [];
+  if (kinds.has('block')) {
+    sections.push('blocks');
+  }
+  if (kinds.has('action')) {
+    sections.push('actions', 'recordActions');
+  }
+  if (targetHintUsed && kinds.has('fieldComponent')) {
+    sections.push('fields');
+  }
+  return Array.from(new Set(sections));
+}
+
+function collectCatalogCapabilityItems(catalog: FlowSurfaceCatalogResponse): FlowSurfaceCatalogItem[] {
+  return [
+    ...(catalog.blocks || []),
+    ...(catalog.actions || []),
+    ...(catalog.recordActions || []),
+    ...(catalog.fields || []),
+  ];
+}
+
+function toCapabilityKind(item: FlowSurfaceCatalogItem): FlowSurfaceCapabilityKind {
+  switch (item.kind) {
+    case 'block':
+      return 'block';
+    case 'action':
+      return 'action';
+    case 'field':
+      return 'fieldComponent';
+    default:
+      return 'block';
+  }
+}
+
+function projectCatalogCapabilityItem(
+  item: FlowSurfaceCatalogItem,
+  request: NormalizedCapabilitiesRequest,
+): FlowSurfacePublicCapabilityItem | null {
+  const kind = toCapabilityKind(item);
+  if (!request.kinds.has(kind)) {
+    return null;
+  }
+  const publicType = String(item.publicType || item.type || item.key || '').trim();
+  if (!publicType) {
+    return null;
+  }
+  const ownerPlugin = item.ownerPlugin || DEFAULT_OWNER_PLUGIN;
+  const semantic = sanitizeCatalogCapabilitySemantic(item, publicType);
+  const capability: FlowSurfacePublicCapabilityItem = {
+    kind,
+    publicType,
+    publicTypeMeta: {
+      value: publicType,
+      source: 'builtIn',
+      searchAliases: Array.from(new Set(resolveCatalogCapabilitySearchAliases(item, publicType))),
+    },
+    label: item.label,
+    ownerPlugin,
+    origin: item.origin || 'builtInStatic',
+    semantic,
+    availability:
+      item.availability ||
+      ({
+        render: { supported: true },
+        readback: { supported: true },
+        create: {
+          supported: item.createSupported !== false,
+          ...(item.createSupported === false
+            ? { reasonCode: 'missing-create-contract' as const, reasonSource: 'catalog' as const }
+            : {}),
+          acceptsInitParams: !!item.requiredInitParams?.length,
+          acceptsSettings: !!item.settingsSchema || !!item.configureOptions,
+        },
+        configure: {
+          supported: !!item.settingsSchema || !!item.configureOptions,
+        },
+      } as FlowSurfacePublicCapabilityItem['availability']),
+    supportLevel: item.supportLevel || (item.createSupported === false ? 'readback-only' : 'create-only'),
+    confidence: item.confidence || 'high',
+    placement: {
+      slots: resolvePlacementSlots(item),
+      ...(item.scene
+        ? { scenes: [item.scene as NonNullable<FlowSurfacePublicCapabilityItem['placement']>['scenes'][number]] }
+        : {}),
+      ...(item.requiredInitParams?.includes('collectionName') ? { collectionRequired: true } : {}),
+      ...(item.requiredInitParams?.includes('fieldPath') ? { fieldRequired: true } : {}),
+    },
+    ...(request.expand.has('item.identity') && item.identity ? { identity: item.identity } : {}),
+    ...(request.expand.has('item.settings')
+      ? {
+          ...(item.configureOptions ? { configureOptions: item.configureOptions } : {}),
+        }
+      : {}),
+    ...(request.includeWarnings && item.warnings?.length ? { warnings: item.warnings } : {}),
+  };
+  if (!request.expand.has('item.semantic')) {
+    capability.semantic = toLightCapabilitySemantic(semantic);
+  }
+  return capability;
+}
+
+function sanitizeCatalogCapabilitySemantic(
+  item: FlowSurfaceCatalogItem,
+  publicType: string,
+): FlowSurfacePublicCapabilityItem['semantic'] {
+  const semantic = item.semantic || {
+    title: item.label,
+    aliases: [item.key, publicType].filter(Boolean),
+  };
+  const forbiddenAliases = new Set(
+    [item.use, item.fieldUse, item.wrapperUse].map((value) => String(value || '').trim()).filter(Boolean),
+  );
+  return {
+    ...semantic,
+    aliases: (semantic.aliases || [])
+      .filter((alias) => {
+        const normalized = String(alias || '').trim();
+        return !!normalized && !forbiddenAliases.has(normalized) && !/Model$/.test(normalized);
+      })
+      .filter((alias, index, aliases) => aliases.indexOf(alias) === index),
+  };
+}
+
+function toLightCapabilitySemantic(semantic: FlowSurfacePublicCapabilityItem['semantic']) {
+  return {
+    title: semantic.title,
+    ...(semantic.aliases?.length ? { aliases: semantic.aliases } : {}),
+  };
+}
+
+function resolveCatalogCapabilitySearchAliases(item: FlowSurfaceCatalogItem, publicType: string) {
+  if (item.kind === 'field') {
+    return [item.key, item.type, item.publicType, publicType].filter(Boolean) as string[];
+  }
+  return [item.key, item.type, publicType].filter(Boolean) as string[];
+}
+
+function resolvePlacementSlots(
+  item: FlowSurfaceCatalogItem,
+): NonNullable<FlowSurfacePublicCapabilityItem['placement']>['slots'] {
+  if (item.kind === 'block') {
+    return ['blocks'];
+  }
+  if (item.kind === 'field') {
+    return ['fields', 'fieldComponents'];
+  }
+  if (item.scope === 'record') {
+    return ['recordActions'];
+  }
+  return ['actions'];
+}
+
+function filterCapabilityItem(item: FlowSurfacePublicCapabilityItem, request: NormalizedCapabilitiesRequest) {
+  if (!request.includeUnavailable && item.availability.create.reasonCode === 'public-type-conflict') {
+    return false;
+  }
+  if (!request.includeUnavailable && item.availability.render.supported === false) {
+    return false;
+  }
+  if (request.publicTypes.size && !request.publicTypes.has(item.publicType)) {
+    return false;
+  }
+  if (request.ownerPlugins.size && !request.ownerPlugins.has(item.ownerPlugin)) {
+    return false;
+  }
+  if (!request.query) {
+    return true;
+  }
+  const haystack = [
+    item.publicType,
+    item.label,
+    item.ownerPlugin,
+    item.semantic.title,
+    item.semantic.description,
+    ...(item.semantic.aliases || []),
+    ...(item.semantic.domainTags || []),
+    ...(item.semantic.intentTags || []),
+    ...(item.publicTypeMeta.searchAliases || []),
+    ...(item.publicTypeMeta.acceptedAliases || []),
+  ]
+    .filter(Boolean)
+    .join('\n')
+    .toLowerCase();
+  return haystack.includes(request.query);
+}
+
+function buildRegistrySources(data: FlowSurfacePublicCapabilityItem[]) {
+  const counts = new Map<FlowSurfacePublicCapabilityItem['origin'], number>();
+  data.forEach((item) => counts.set(item.origin, (counts.get(item.origin) || 0) + 1));
+  return Array.from(counts.entries()).map(([origin, count]) => ({
+    origin,
+    count,
+  }));
+}
+
+function buildVisiblePluginOwners(data: FlowSurfacePublicCapabilityItem[]) {
+  return Array.from(new Set(data.map((item) => item.ownerPlugin).filter(Boolean))).sort();
+}

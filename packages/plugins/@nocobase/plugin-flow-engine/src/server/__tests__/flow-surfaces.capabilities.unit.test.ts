@@ -1,0 +1,1180 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
+import { buildFlowSurfaceCapabilitiesResponse } from '../flow-surfaces/capabilities';
+import {
+  collectProviderCatalogItems,
+  filterProviderCatalogItemsForCatalog,
+} from '../flow-surfaces/capability-registry';
+import { FlowSurfaceBadRequestError } from '../flow-surfaces/errors';
+import type {
+  FlowSurfaceCapabilitiesProvider,
+  FlowSurfaceCapabilitiesValues,
+  FlowSurfaceCapabilityKind,
+  FlowSurfaceCapabilityManifestItem,
+  FlowSurfaceCatalogValues,
+} from '../flow-surfaces/types';
+
+describe('flowSurfaces capabilities projection', () => {
+  function createProviderRegistry(providers: FlowSurfaceCapabilitiesProvider[]) {
+    return {
+      listProviders: () => providers,
+    };
+  }
+
+  function createGanttProvider(): FlowSurfaceCapabilitiesProvider {
+    return {
+      ownerPlugin: '@nocobase/plugin-gantt',
+      getCapabilities: () => [
+        {
+          id: 'blocks.gantt',
+          capabilityVersion: '1.0.0',
+          kind: 'block',
+          publicType: 'gantt',
+          acceptedAliases: ['ganttBlock', '@nocobase/plugin-gantt:gantt'],
+          label: 'Gantt',
+          semantic: {
+            title: 'Gantt',
+            description: 'Visualizes collection records on a time scale.',
+            aliases: ['gantt', 'timeline'],
+          },
+          placement: {
+            scenes: ['page', 'tab'],
+            slots: ['blocks'],
+            collectionRequired: true,
+          },
+          implementation: {
+            modelUse: 'GanttBlockModel',
+          },
+          availability: {
+            create: {
+              supported: false,
+              reasonCode: 'missing-create-contract',
+              reasonSource: 'registry',
+            },
+            configure: {
+              supported: false,
+              reasonCode: 'contract-not-verified',
+              reasonSource: 'registry',
+            },
+          },
+          supportLevel: 'readback-only',
+          initParamsSchema: {
+            type: 'object',
+            required: ['collectionName'],
+            properties: {
+              collectionName: {
+                type: 'string',
+              },
+            },
+          },
+          settingsSchema: {
+            type: 'object',
+            properties: {
+              titleField: {
+                type: 'string',
+              },
+              startField: {
+                type: 'string',
+              },
+              endField: {
+                type: 'string',
+              },
+            },
+          },
+          configureOptions: {
+            titleField: {
+              type: 'string',
+            },
+          },
+          warnings: [
+            {
+              code: 'contract-not-verified',
+              message: 'Gantt is discovery-only in this test fixture.',
+            },
+          ],
+        },
+      ],
+    };
+  }
+
+  function createActionProvider(): FlowSurfaceCapabilitiesProvider {
+    return {
+      ownerPlugin: '@nocobase/plugin-action-provider',
+      getCapabilities: () => [
+        {
+          id: 'actions.external',
+          kind: 'action',
+          publicType: 'externalAction',
+          label: 'External action',
+          semantic: {
+            title: 'External action',
+          },
+          implementation: {
+            modelUse: 'ExternalActionModel',
+          },
+        },
+      ],
+    };
+  }
+
+  function createConflictingTableProvider(): FlowSurfaceCapabilitiesProvider {
+    return {
+      ownerPlugin: '@nocobase/plugin-conflict',
+      getCapabilities: () => [
+        {
+          id: 'blocks.tableConflict',
+          kind: 'block',
+          publicType: 'table',
+          label: 'Table alternative',
+          semantic: {
+            title: 'Table alternative',
+            aliases: ['table'],
+          },
+          implementation: {
+            modelUse: 'TableAlternativeBlockModel',
+          },
+          availability: {
+            render: {
+              supported: true,
+            },
+            readback: {
+              supported: true,
+            },
+          },
+        },
+      ],
+    };
+  }
+
+  function createCatalogRecorder() {
+    const calls: FlowSurfaceCatalogValues[] = [];
+    return {
+      calls,
+      catalog: async (values: FlowSurfaceCatalogValues) => {
+        calls.push(values);
+        const sections = new Set(values.sections || []);
+        const expand = new Set(values.expand || []);
+        return {
+          target: null,
+          scenario: {
+            surfaceKind: 'global' as const,
+          },
+          selectedSections: values.sections || [],
+          blocks: sections.has('blocks')
+            ? [
+                {
+                  key: 'table',
+                  label: 'Table',
+                  use: 'TableBlockModel',
+                  kind: 'block' as const,
+                  publicType: 'table',
+                  ownerPlugin: '@nocobase/core/client',
+                  origin: 'builtInStatic' as const,
+                  confidence: 'high' as const,
+                  supportLevel: 'create-and-configure' as const,
+                  availability: {
+                    render: { supported: true },
+                    readback: { supported: true },
+                    create: { supported: true, acceptsInitParams: true, acceptsSettings: true },
+                    configure: { supported: true },
+                  },
+                  semantic: {
+                    title: 'Table',
+                    description: 'Collection table block',
+                    aliases: ['table', 'TableBlockModel'],
+                  },
+                  requiredInitParams: ['dataSourceKey', 'collectionName'],
+                  settingsSchema: {
+                    type: 'object',
+                    properties: {
+                      props: {
+                        type: 'object',
+                      },
+                      stepParams: {
+                        type: 'object',
+                        properties: {
+                          openView: {
+                            type: 'object',
+                            properties: {
+                              pageModelClass: {
+                                type: 'string',
+                              },
+                            },
+                          },
+                        },
+                      },
+                    },
+                  },
+                  configureOptions: {
+                    pageSize: {
+                      type: 'number' as const,
+                    },
+                  },
+                  ...(expand.has('item.identity')
+                    ? {
+                        identity: {
+                          capabilityId: 'builtInStatic:block:core:table',
+                        },
+                      }
+                    : {}),
+                },
+              ]
+            : undefined,
+          actions: sections.has('actions')
+            ? [
+                {
+                  key: 'refresh',
+                  label: 'Refresh',
+                  use: 'RefreshActionModel',
+                  kind: 'action' as const,
+                  publicType: 'refresh',
+                  ownerPlugin: '@nocobase/core/client',
+                  origin: 'builtInStatic' as const,
+                  confidence: 'high' as const,
+                  supportLevel: 'create-only' as const,
+                  availability: {
+                    render: { supported: true },
+                    readback: { supported: true },
+                    create: { supported: true },
+                    configure: {
+                      supported: false,
+                      reasonCode: 'unsupported' as const,
+                      reasonSource: 'catalog' as const,
+                    },
+                  },
+                  semantic: {
+                    title: 'Refresh',
+                  },
+                },
+              ]
+            : undefined,
+          recordActions: sections.has('recordActions') ? [] : undefined,
+          fields: sections.has('fields')
+            ? [
+                {
+                  key: 'nickname',
+                  label: 'Nickname',
+                  use: 'InputFieldModel',
+                  kind: 'field' as const,
+                  publicType: 'input',
+                  ownerPlugin: '@nocobase/core/client',
+                  origin: 'builtInStatic' as const,
+                  confidence: 'high' as const,
+                  supportLevel: 'create-only' as const,
+                  availability: {
+                    render: { supported: true },
+                    readback: { supported: true },
+                    create: { supported: true },
+                    configure: {
+                      supported: false,
+                      reasonCode: 'unsupported' as const,
+                      reasonSource: 'catalog' as const,
+                    },
+                  },
+                  semantic: {
+                    title: 'Nickname',
+                  },
+                },
+                {
+                  key: 'script',
+                  label: 'Script',
+                  use: 'CodeFieldModel',
+                  kind: 'field' as const,
+                  publicType: 'code',
+                  ownerPlugin: '@nocobase/plugin-field-code',
+                  origin: 'builtInStatic' as const,
+                  confidence: 'high' as const,
+                  supportLevel: 'create-only' as const,
+                  availability: {
+                    render: { supported: true },
+                    readback: { supported: true },
+                    create: { supported: true },
+                    configure: {
+                      supported: false,
+                      reasonCode: 'unsupported' as const,
+                      reasonSource: 'catalog' as const,
+                    },
+                  },
+                  semantic: {
+                    title: 'Script',
+                  },
+                  ...(expand.has('item.identity')
+                    ? {
+                        identity: {
+                          capabilityId: 'builtInStatic:fieldComponent:%40nocobase%2Fplugin-field-code:code',
+                        },
+                      }
+                    : {}),
+                },
+              ]
+            : undefined,
+        };
+      },
+    };
+  }
+
+  it('should return default public-safe discovery without identity or settings', async () => {
+    const recorder = createCatalogRecorder();
+    const response = await buildFlowSurfaceCapabilitiesResponse(
+      {},
+      {
+        enabledPackages: new Set(['@nocobase/plugin-flow-engine']),
+        catalog: recorder.catalog,
+        generatedAt: '2026-06-03T00:00:00.000Z',
+      },
+    );
+
+    expect(recorder.calls[0]).toEqual({
+      sections: ['blocks', 'actions', 'recordActions'],
+    });
+    expect(response.meta).toMatchObject({
+      version: 1,
+      generatedAt: '2026-06-03T00:00:00.000Z',
+      enabledPlugins: ['@nocobase/core/client'],
+      targetHintUsed: false,
+    });
+    expect(response.data.map((item) => [item.kind, item.publicType])).toEqual([
+      ['block', 'table'],
+      ['action', 'refresh'],
+    ]);
+    expect(response.data[0]).toMatchObject({
+      publicTypeMeta: {
+        value: 'table',
+        source: 'builtIn',
+      },
+      availability: {
+        create: {
+          supported: true,
+        },
+      },
+      placement: {
+        slots: ['blocks'],
+        collectionRequired: true,
+      },
+    });
+    expect(response.data[0]).not.toHaveProperty('identity');
+    expect(response.data[0]).not.toHaveProperty('settingsSchema');
+    expect(response.data[0]).not.toHaveProperty('configureOptions');
+    expect(JSON.stringify(response.data)).not.toContain('TableBlockModel');
+    expect(JSON.stringify(response.data)).not.toContain('RefreshActionModel');
+  });
+
+  it('should honor target uid lookup and explicit identity/settings expands', async () => {
+    const recorder = createCatalogRecorder();
+    const response = await buildFlowSurfaceCapabilitiesResponse(
+      {
+        kinds: ['fieldComponent', 'block'],
+        target: {
+          targetUid: 'target-1',
+        },
+        expand: ['item.identity', 'item.settings'],
+      },
+      {
+        enabledPackages: new Set(),
+        catalog: recorder.catalog,
+        generatedAt: '2026-06-03T00:00:00.000Z',
+      },
+    );
+
+    expect(recorder.calls[0]).toEqual({
+      target: {
+        uid: 'target-1',
+      },
+      sections: ['blocks', 'fields'],
+      expand: ['item.configureOptions', 'item.identity'],
+    });
+    expect(response.meta.targetHintUsed).toBe(true);
+    expect(response.data.map((item) => [item.kind, item.publicType])).toEqual([
+      ['block', 'table'],
+      ['fieldComponent', 'input'],
+      ['fieldComponent', 'code'],
+    ]);
+    expect(response.data[0]).toMatchObject({
+      identity: {
+        capabilityId: 'builtInStatic:block:core:table',
+      },
+      configureOptions: {
+        pageSize: {
+          type: 'number',
+        },
+      },
+    });
+    expect(response.data[0]).not.toHaveProperty('settingsSchema');
+    expect(JSON.stringify(response.data)).not.toContain('props');
+    expect(JSON.stringify(response.data)).not.toContain('stepParams');
+    expect(JSON.stringify(response.data)).not.toContain('pageModelClass');
+    expect(JSON.stringify(response.data)).not.toMatch(/Model/);
+  });
+
+  it('should preserve plugin ownership for target-scoped field capabilities', async () => {
+    const recorder = createCatalogRecorder();
+    const codeResponse = await buildFlowSurfaceCapabilitiesResponse(
+      {
+        kinds: ['fieldComponent'],
+        ownerPlugins: ['@nocobase/plugin-field-code'],
+        target: {
+          uid: 'target-1',
+        },
+        expand: ['item.identity'],
+      },
+      {
+        enabledPackages: new Set(['@nocobase/plugin-field-code']),
+        catalog: recorder.catalog,
+        generatedAt: '2026-06-03T00:00:00.000Z',
+      },
+    );
+
+    expect(codeResponse.data).toEqual([
+      expect.objectContaining({
+        kind: 'fieldComponent',
+        publicType: 'code',
+        ownerPlugin: '@nocobase/plugin-field-code',
+        identity: {
+          capabilityId: 'builtInStatic:fieldComponent:%40nocobase%2Fplugin-field-code:code',
+        },
+      }),
+    ]);
+    expect(codeResponse.meta.enabledPlugins).toEqual(['@nocobase/plugin-field-code']);
+
+    const coreResponse = await buildFlowSurfaceCapabilitiesResponse(
+      {
+        kinds: ['fieldComponent'],
+        publicTypes: ['code'],
+        ownerPlugins: ['@nocobase/core/client'],
+        target: {
+          uid: 'target-1',
+        },
+      },
+      {
+        enabledPackages: new Set(['@nocobase/plugin-field-code']),
+        catalog: recorder.catalog,
+        generatedAt: '2026-06-03T00:00:00.000Z',
+      },
+    );
+
+    expect(coreResponse.data).toEqual([]);
+  });
+
+  it('should reject reserved field binding and interface kinds until they are implemented', async () => {
+    const recorder = createCatalogRecorder();
+
+    for (const kind of ['fieldBinding', 'fieldInterface']) {
+      let caught: unknown;
+      try {
+        await buildFlowSurfaceCapabilitiesResponse(
+          {
+            kinds: [kind as FlowSurfaceCapabilityKind],
+          },
+          {
+            enabledPackages: new Set(),
+            catalog: recorder.catalog,
+            generatedAt: '2026-06-03T00:00:00.000Z',
+          },
+        );
+      } catch (error) {
+        caught = error;
+      }
+      expect(caught).toBeInstanceOf(FlowSurfaceBadRequestError);
+      expect((caught as Error).message).toContain(`'${kind}' is not supported`);
+    }
+    expect(recorder.calls).toHaveLength(0);
+  });
+
+  it('should reject scoped target hints and locale until capabilities supports scoped discovery', async () => {
+    const recorder = createCatalogRecorder();
+    const unsupportedRequests = [
+      {
+        target: {
+          scene: 'page',
+          slot: 'blocks',
+          collectionName: 'tasks',
+        },
+      },
+      {
+        locale: 'en-US',
+      },
+      {
+        target: {
+          foo: 'bar',
+        },
+      },
+      {
+        foo: 'bar',
+      },
+    ] as unknown as FlowSurfaceCapabilitiesValues[];
+
+    for (const input of unsupportedRequests) {
+      let caught: unknown;
+      try {
+        await buildFlowSurfaceCapabilitiesResponse(input, {
+          enabledPackages: new Set(),
+          catalog: recorder.catalog,
+          generatedAt: '2026-06-03T00:00:00.000Z',
+        });
+      } catch (error) {
+        caught = error;
+      }
+      expect(caught).toBeInstanceOf(FlowSurfaceBadRequestError);
+      expect((caught as FlowSurfaceBadRequestError).options.details).toMatchObject({
+        reasonCode: 'unsupported',
+        reasonSource: 'catalog',
+      });
+    }
+    expect(recorder.calls).toHaveLength(0);
+  });
+
+  it('should reject malformed target lookup instead of falling back to global discovery', async () => {
+    const recorder = createCatalogRecorder();
+    const malformedTargets = [
+      {},
+      {
+        uid: '',
+      },
+      {
+        targetUid: '',
+      },
+      {
+        uid: 'target-1',
+        targetUid: 'target-2',
+      },
+    ] as FlowSurfaceCapabilitiesValues['target'][];
+
+    for (const target of malformedTargets) {
+      let caught: unknown;
+      try {
+        await buildFlowSurfaceCapabilitiesResponse(
+          {
+            target,
+          },
+          {
+            enabledPackages: new Set(['@nocobase/plugin-gantt']),
+            providerRegistry: createProviderRegistry([createGanttProvider()]),
+            catalog: recorder.catalog,
+            generatedAt: '2026-06-03T00:00:00.000Z',
+          },
+        );
+      } catch (error) {
+        caught = error;
+      }
+      expect(caught).toBeInstanceOf(FlowSurfaceBadRequestError);
+    }
+    expect(recorder.calls).toHaveLength(0);
+  });
+
+  it('should reject debugImplementation expand with a public reason code', async () => {
+    const recorder = createCatalogRecorder();
+    let caught: unknown;
+
+    try {
+      await buildFlowSurfaceCapabilitiesResponse(
+        {
+          expand: ['debugImplementation'],
+        },
+        {
+          enabledPackages: new Set(),
+          catalog: recorder.catalog,
+        },
+      );
+    } catch (error) {
+      caught = error;
+    }
+    expect(caught).toBeInstanceOf(FlowSurfaceBadRequestError);
+    expect((caught as FlowSurfaceBadRequestError).options.details).toMatchObject({
+      reasonCode: 'debug-expand-forbidden',
+    });
+    expect(recorder.calls).toHaveLength(0);
+  });
+
+  it('should expose enabled provider capabilities without leaking identity or settings by default', async () => {
+    const recorder = createCatalogRecorder();
+    const providerRegistry = createProviderRegistry([createGanttProvider()]);
+    const response = await buildFlowSurfaceCapabilitiesResponse(
+      {
+        query: 'gantt',
+      },
+      {
+        enabledPackages: new Set(['@nocobase/plugin-gantt']),
+        providerRegistry,
+        catalog: recorder.catalog,
+        generatedAt: '2026-06-03T00:00:00.000Z',
+      },
+    );
+
+    expect(response.data).toHaveLength(1);
+    expect(response.data[0]).toMatchObject({
+      kind: 'block',
+      publicType: 'gantt',
+      publicTypeMeta: {
+        value: 'gantt',
+        source: 'canary',
+      },
+      ownerPlugin: '@nocobase/plugin-gantt',
+      origin: 'canaryOverlay',
+      supportLevel: 'readback-only',
+      availability: {
+        create: {
+          supported: false,
+          reasonCode: 'missing-create-contract',
+        },
+      },
+      semantic: {
+        title: 'Gantt',
+        aliases: ['gantt', 'timeline'],
+      },
+    });
+    expect(response.data[0]).not.toHaveProperty('identity');
+    expect(response.data[0]).not.toHaveProperty('initParamsSchema');
+    expect(response.data[0]).not.toHaveProperty('settingsSchema');
+    expect(response.data[0]).not.toHaveProperty('configureOptions');
+    expect(response.data[0]).not.toHaveProperty('warnings');
+    expect(response.meta.registrySources).toEqual([{ origin: 'canaryOverlay', count: 1 }]);
+  });
+
+  it('should prefer higher-priority public types and expose conflicts only diagnostically', async () => {
+    const providerRegistry = createProviderRegistry([createConflictingTableProvider()]);
+    const response = await buildFlowSurfaceCapabilitiesResponse(
+      {
+        query: 'table',
+      },
+      {
+        enabledPackages: new Set(['@nocobase/plugin-conflict']),
+        providerRegistry,
+        catalog: createCatalogRecorder().catalog,
+        generatedAt: '2026-06-03T00:00:00.000Z',
+      },
+    );
+
+    expect(response.data).toEqual([
+      expect.objectContaining({
+        kind: 'block',
+        publicType: 'table',
+        ownerPlugin: '@nocobase/core/client',
+      }),
+    ]);
+
+    const diagnostics = await buildFlowSurfaceCapabilitiesResponse(
+      {
+        publicTypes: ['table'],
+        ownerPlugins: ['@nocobase/plugin-conflict'],
+        includeUnavailable: true,
+        expand: ['item.warnings'],
+      },
+      {
+        enabledPackages: new Set(['@nocobase/plugin-conflict']),
+        providerRegistry,
+        catalog: createCatalogRecorder().catalog,
+        generatedAt: '2026-06-03T00:00:00.000Z',
+      },
+    );
+
+    expect(diagnostics.data).toEqual([
+      expect.objectContaining({
+        ownerPlugin: '@nocobase/plugin-conflict',
+        publicType: 'table',
+        availability: expect.objectContaining({
+          create: expect.objectContaining({
+            supported: false,
+            reasonCode: 'public-type-conflict',
+            reasonSource: 'registry',
+          }),
+        }),
+        warnings: expect.arrayContaining([
+          expect.objectContaining({
+            code: 'public-type-conflict',
+          }),
+        ]),
+      }),
+    ]);
+  });
+
+  it('should hide provider capabilities when their owner plugin is not enabled', async () => {
+    const recorder = createCatalogRecorder();
+    const response = await buildFlowSurfaceCapabilitiesResponse(
+      {
+        query: 'gantt',
+      },
+      {
+        enabledPackages: new Set(),
+        providerRegistry: createProviderRegistry([createGanttProvider()]),
+        catalog: recorder.catalog,
+        generatedAt: '2026-06-03T00:00:00.000Z',
+      },
+    );
+
+    expect(response.data).toEqual([]);
+  });
+
+  it('should match provider capabilities by accepted search aliases', async () => {
+    const response = await buildFlowSurfaceCapabilitiesResponse(
+      {
+        query: 'ganttBlock',
+      },
+      {
+        enabledPackages: new Set(['@nocobase/plugin-gantt']),
+        providerRegistry: createProviderRegistry([createGanttProvider()]),
+        catalog: createCatalogRecorder().catalog,
+        generatedAt: '2026-06-03T00:00:00.000Z',
+      },
+    );
+
+    expect(response.data.map((item) => item.publicType)).toEqual(['gantt']);
+  });
+
+  it('should keep provider capabilities global-only until target placement filtering exists', async () => {
+    const recorder = createCatalogRecorder();
+    const response = await buildFlowSurfaceCapabilitiesResponse(
+      {
+        query: 'gantt',
+        target: {
+          targetUid: 'target-1',
+        },
+      },
+      {
+        enabledPackages: new Set(['@nocobase/plugin-gantt']),
+        providerRegistry: createProviderRegistry([createGanttProvider()]),
+        catalog: recorder.catalog,
+        generatedAt: '2026-06-03T00:00:00.000Z',
+      },
+    );
+
+    expect(recorder.calls[0]).toMatchObject({
+      target: {
+        uid: 'target-1',
+      },
+    });
+    expect(response.data).toEqual([]);
+  });
+
+  it('should return provider identity, settings, warnings, and full semantic only when expanded', async () => {
+    const recorder = createCatalogRecorder();
+    const response = await buildFlowSurfaceCapabilitiesResponse(
+      {
+        publicTypes: ['gantt'],
+        expand: ['item.identity', 'item.settings', 'item.warnings', 'item.semantic'],
+      },
+      {
+        enabledPackages: new Set(['@nocobase/plugin-gantt']),
+        providerRegistry: createProviderRegistry([createGanttProvider()]),
+        catalog: recorder.catalog,
+        generatedAt: '2026-06-03T00:00:00.000Z',
+      },
+    );
+
+    expect(response.data).toHaveLength(1);
+    expect(response.data[0]).toMatchObject({
+      identity: {
+        capabilityId: 'plugin:%40nocobase%2Fplugin-gantt#blocks.gantt',
+        capabilityVersion: '1.0.0',
+      },
+      initParamsSchema: {
+        required: ['collectionName'],
+      },
+      settingsSchema: {
+        properties: {
+          startField: {
+            type: 'string',
+          },
+        },
+      },
+      configureOptions: {
+        titleField: {
+          type: 'string',
+        },
+      },
+      warnings: [
+        {
+          code: 'contract-not-verified',
+        },
+      ],
+      semantic: {
+        description: 'Visualizes collection records on a time scale.',
+      },
+    });
+  });
+
+  it('should project provider catalog items for global catalog composition', async () => {
+    const items = await collectProviderCatalogItems({
+      providerRegistry: createProviderRegistry([createGanttProvider()]),
+      enabledPackages: new Set(['@nocobase/plugin-gantt']),
+    });
+
+    expect(items).toHaveLength(1);
+    expect(items[0]).toMatchObject({
+      key: 'gantt',
+      label: 'Gantt',
+      use: 'GanttBlockModel',
+      kind: 'block',
+      ownerPlugin: '@nocobase/plugin-gantt',
+      origin: 'canaryOverlay',
+      createSupported: false,
+      availability: {
+        create: {
+          supported: false,
+          reasonCode: 'missing-create-contract',
+        },
+      },
+      requiredInitParams: ['collectionName'],
+    });
+  });
+
+  it('should drop provider catalog items that conflict with existing public catalog types', async () => {
+    const providerCatalogItems = await collectProviderCatalogItems({
+      providerRegistry: createProviderRegistry([createConflictingTableProvider()]),
+      enabledPackages: new Set(['@nocobase/plugin-conflict']),
+    });
+
+    expect(
+      filterProviderCatalogItemsForCatalog({
+        existingItems: [
+          {
+            key: 'table',
+            label: 'Table',
+            use: 'TableBlockModel',
+            kind: 'block',
+            publicType: 'table',
+          },
+        ],
+        providerItems: providerCatalogItems,
+      }),
+    ).toEqual([]);
+  });
+
+  it('should ignore non-block provider capabilities until catalog placement is implemented', async () => {
+    const recorder = createCatalogRecorder();
+    const response = await buildFlowSurfaceCapabilitiesResponse(
+      {
+        kinds: ['action'],
+        query: 'external',
+      },
+      {
+        enabledPackages: new Set(['@nocobase/plugin-action-provider']),
+        providerRegistry: createProviderRegistry([createActionProvider()]),
+        catalog: recorder.catalog,
+        generatedAt: '2026-06-03T00:00:00.000Z',
+      },
+    );
+
+    expect(response.data).toEqual([]);
+  });
+
+  it('should not trust provider create/configure support without contracts', async () => {
+    const optimisticProvider: FlowSurfaceCapabilitiesProvider = {
+      ownerPlugin: '@nocobase/plugin-optimistic',
+      getCapabilities: () => [
+        {
+          id: 'blocks.optimistic',
+          kind: 'block',
+          publicType: 'optimistic',
+          label: 'Optimistic',
+          semantic: {
+            title: 'Optimistic',
+          },
+          implementation: {
+            modelUse: 'OptimisticBlockModel',
+          },
+          availability: {
+            create: {
+              supported: true,
+            },
+            configure: {
+              supported: true,
+            },
+          },
+        },
+      ],
+    };
+    const response = await buildFlowSurfaceCapabilitiesResponse(
+      {
+        query: 'optimistic',
+      },
+      {
+        enabledPackages: new Set(['@nocobase/plugin-optimistic']),
+        providerRegistry: createProviderRegistry([optimisticProvider]),
+        catalog: createCatalogRecorder().catalog,
+        generatedAt: '2026-06-03T00:00:00.000Z',
+      },
+    );
+
+    expect(response.data).toHaveLength(1);
+    expect(response.data[0].availability.create).toMatchObject({
+      supported: false,
+      reasonCode: 'missing-create-contract',
+      reasonSource: 'registry',
+    });
+    expect(response.data[0].availability.configure).toMatchObject({
+      supported: false,
+      reasonCode: 'settings-schema-missing',
+      reasonSource: 'registry',
+    });
+  });
+
+  it('should allowlist provider availability metadata', async () => {
+    const unsafeAvailability = {
+      render: {
+        supported: true,
+        reasonCode: 'private-reason',
+        reasonSource: 'private-source',
+        modelUse: 'AvailabilityLeakModel',
+      },
+      readback: {
+        supported: true,
+        reasonCode: 'supported',
+        reasonSource: 'provider',
+        stepParams: {
+          hidden: 'AvailabilityLeakModel',
+        },
+      },
+      create: {
+        supported: true,
+        reasonCode: 'supported',
+        reasonSource: 'provider',
+        acceptsInitParams: true,
+        acceptsSettings: true,
+        hidden: 'AvailabilityLeakModel',
+      },
+      configure: {
+        supported: false,
+        reasonCode: 'private-reason',
+        reasonSource: 'private-source',
+        implementation: {
+          modelUse: 'AvailabilityLeakModel',
+        },
+      },
+    } as unknown as FlowSurfaceCapabilityManifestItem['availability'];
+    const unsafeProvider: FlowSurfaceCapabilitiesProvider = {
+      ownerPlugin: '@nocobase/plugin-availability',
+      getCapabilities: () => [
+        {
+          id: 'blocks.availability',
+          kind: 'block',
+          publicType: 'availability',
+          label: 'Availability',
+          semantic: {
+            title: 'Availability',
+          },
+          implementation: {
+            modelUse: 'AvailabilityBlockModel',
+          },
+          createRecipe: {
+            nodeTemplate: {
+              use: 'AvailabilityBlockModel',
+            },
+          },
+          settingsSchema: {
+            type: 'object',
+          },
+          availability: unsafeAvailability,
+        },
+      ],
+    };
+    const response = await buildFlowSurfaceCapabilitiesResponse(
+      {
+        publicTypes: ['availability'],
+      },
+      {
+        enabledPackages: new Set(['@nocobase/plugin-availability']),
+        providerRegistry: createProviderRegistry([unsafeProvider]),
+        catalog: createCatalogRecorder().catalog,
+        generatedAt: '2026-06-03T00:00:00.000Z',
+      },
+    );
+
+    expect(response.data).toHaveLength(1);
+    expect(response.data[0].availability).toMatchObject({
+      render: {
+        supported: true,
+      },
+      readback: {
+        supported: true,
+        reasonCode: 'supported',
+        reasonSource: 'provider',
+      },
+      create: {
+        supported: true,
+        reasonCode: 'supported',
+        reasonSource: 'provider',
+        acceptsInitParams: true,
+        acceptsSettings: true,
+      },
+      configure: {
+        supported: false,
+        reasonCode: 'unsupported',
+        reasonSource: 'registry',
+      },
+    });
+    expect(response.data[0].availability.render).not.toHaveProperty('reasonCode');
+    expect(response.data[0].availability.render).not.toHaveProperty('reasonSource');
+    expect(JSON.stringify(response.data)).not.toContain('AvailabilityLeakModel');
+    expect(JSON.stringify(response.data)).not.toContain('stepParams');
+    expect(JSON.stringify(response.data)).not.toContain('hidden');
+    expect(JSON.stringify(response.data)).not.toContain('implementation');
+    expect(JSON.stringify(response.data)).not.toContain('private-reason');
+    expect(JSON.stringify(response.data)).not.toContain('private-source');
+  });
+
+  it('should sanitize provider aliases, nested examples, and unsafe public schemas', async () => {
+    const unsafeProvider: FlowSurfaceCapabilitiesProvider = {
+      ownerPlugin: '@nocobase/plugin-unsafe',
+      getCapabilities: () => [
+        {
+          id: 'blocks.unsafe',
+          kind: 'block',
+          publicType: 'unsafeProvider',
+          acceptedAliases: ['UnsafeBlockModel', 'safeAlias'],
+          label: 'UnsafeBlockModel',
+          semantic: {
+            title: 'UnsafeBlockModel',
+            description: 'Uses UnsafeBlockModel internally.',
+            aliases: ['UnsafeBlockModel', 'safeSemanticAlias'],
+            domainTags: ['UnsafeBlockModel', 'safe-domain'],
+            intentTags: ['UnsafeBlockModel', 'safe intent'],
+            examples: [
+              {
+                userIntent: 'safe example',
+                publicPayloadSnippet: {
+                  type: 'unsafeProvider',
+                  settings: {
+                    title: 'Safe',
+                  },
+                },
+              },
+              {
+                userIntent: 'unsafe nested example',
+                publicPayloadSnippet: {
+                  type: 'unsafeProvider',
+                  settings: {
+                    stepParams: {
+                      hidden: true,
+                    },
+                  },
+                },
+              },
+            ],
+          },
+          placement: {
+            scenes: ['page'],
+            slots: ['blocks'],
+            parentPublicTypes: ['UnsafeBlockModel', 'safeParent'],
+            containerKinds: ['UnsafeContainerModel', 'safeContainer'],
+          },
+          implementation: {
+            modelUse: 'UnsafeBlockModel',
+          },
+          settingsSchema: {
+            type: 'object',
+            properties: {
+              stepParams: {
+                type: 'object',
+              },
+            },
+          },
+        },
+      ],
+    };
+    const response = await buildFlowSurfaceCapabilitiesResponse(
+      {
+        publicTypes: ['unsafeProvider'],
+        expand: ['item.semantic', 'item.settings', 'item.warnings'],
+      },
+      {
+        enabledPackages: new Set(['@nocobase/plugin-unsafe']),
+        providerRegistry: createProviderRegistry([unsafeProvider]),
+        catalog: createCatalogRecorder().catalog,
+        generatedAt: '2026-06-03T00:00:00.000Z',
+      },
+    );
+
+    expect(response.data).toHaveLength(1);
+    expect(response.data[0].label).toBe('unsafeProvider');
+    expect(response.data[0].placement).toMatchObject({
+      parentPublicTypes: ['safeParent'],
+      containerKinds: ['safeContainer'],
+    });
+    expect(response.data[0].publicTypeMeta).toMatchObject({
+      acceptedAliases: ['safeAlias'],
+      searchAliases: ['safeAlias', 'blocks.unsafe', 'unsafeProvider'],
+    });
+    expect(response.data[0].semantic).toMatchObject({
+      title: 'unsafeProvider',
+      aliases: ['safeSemanticAlias'],
+      domainTags: ['safe-domain'],
+      intentTags: ['safe intent'],
+      examples: [
+        {
+          userIntent: 'safe example',
+        },
+      ],
+    });
+    expect(response.data[0]).not.toHaveProperty('settingsSchema');
+    expect(response.data[0].availability.configure).toMatchObject({
+      supported: false,
+      reasonCode: 'settings-schema-missing',
+      reasonSource: 'registry',
+    });
+    expect(response.data[0].warnings?.map((warning) => warning.code)).toEqual(
+      expect.arrayContaining(['unsafe-semantic-text', 'partial-settings-schema']),
+    );
+    expect(JSON.stringify(response.data)).not.toContain('UnsafeBlockModel');
+    expect(JSON.stringify(response.data)).not.toContain('stepParams');
+  });
+
+  it('should isolate provider failures and keep built-in capabilities available', async () => {
+    const recorder = createCatalogRecorder();
+    const brokenProvider: FlowSurfaceCapabilitiesProvider = {
+      ownerPlugin: '@nocobase/plugin-broken',
+      getCapabilities() {
+        throw new Error('provider failed');
+      },
+    };
+    const response = await buildFlowSurfaceCapabilitiesResponse(
+      {},
+      {
+        enabledPackages: new Set(['@nocobase/plugin-broken']),
+        providerRegistry: createProviderRegistry([brokenProvider]),
+        catalog: recorder.catalog,
+        generatedAt: '2026-06-03T00:00:00.000Z',
+      },
+    );
+
+    expect(response.data.map((item) => [item.kind, item.publicType])).toEqual([
+      ['block', 'table'],
+      ['action', 'refresh'],
+    ]);
+  });
+
+  it('should deduplicate provider capabilities already appended to catalog', async () => {
+    const provider = createGanttProvider();
+    const providerRegistry = createProviderRegistry([provider]);
+    const providerCatalogItems = await collectProviderCatalogItems({
+      providerRegistry,
+      enabledPackages: new Set(['@nocobase/plugin-gantt']),
+    });
+    const response = await buildFlowSurfaceCapabilitiesResponse(
+      {
+        query: 'gantt',
+      },
+      {
+        enabledPackages: new Set(['@nocobase/plugin-gantt']),
+        providerRegistry,
+        catalog: async () => ({
+          target: null,
+          scenario: {
+            surfaceKind: 'global' as const,
+          },
+          selectedSections: ['blocks'],
+          blocks: providerCatalogItems,
+        }),
+        generatedAt: '2026-06-03T00:00:00.000Z',
+      },
+    );
+
+    expect(response.data.map((item) => item.publicType)).toEqual(['gantt']);
+  });
+});

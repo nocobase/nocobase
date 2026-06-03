@@ -27,6 +27,12 @@ import {
   resolveSupportedActionCatalogItem,
   resolveSupportedBlockCatalogItem,
 } from './catalog';
+import { buildFlowSurfaceCapabilitiesResponse } from './capabilities';
+import {
+  collectProviderCatalogItems,
+  filterProviderCatalogItemsForCatalog,
+  type FlowSurfaceCapabilityRegistryLike,
+} from './capability-registry';
 import { assertRequestedActionScope, getActionContainerScope, normalizeActionScope } from './action-scope';
 import {
   buildActionTree,
@@ -426,7 +432,10 @@ import type {
   FlowSurfaceApplyValues,
   FlowSurfaceAtomicFlag,
   FlowSurfaceActionScope,
+  FlowSurfaceCapabilityAvailability,
   FlowSurfaceBindKey,
+  FlowSurfaceCapabilitiesResponse,
+  FlowSurfaceCapabilitiesValues,
   FlowSurfaceCatalogItem,
   FlowSurfaceCatalogResponse,
   FlowSurfaceCatalogScenario,
@@ -457,6 +466,8 @@ import type { FlowSurfaceContextResponse, FlowSurfaceContextVarInfo } from './ty
 
 const FLOW_SURFACE_CHART_REPAIR_HINT =
   'This is a chart payload shape problem. Keep using chart and repair the current chart block payload using assets.charts.<key>.query/visual plus block.chart, or localized settings.query/settings.visual. Do not change this block type to table, jsBlock, actionPanel, gridCard, or another block type. Do not drop or defer the chart. KPI / summary numbers should use jsBlock; charts are for trends, distributions, rankings, and visual analysis.';
+
+const BUILT_IN_FIELD_CAPABILITY_OWNER_PLUGIN = '@nocobase/core/client';
 
 const FLOW_SURFACE_CHART_REPAIR_STEPS = [
   'Keep the block type as chart.',
@@ -1060,6 +1071,7 @@ type FlowSurfaceFieldMenuCandidate = {
   supportsJs: boolean;
   explicitWrapperUse?: string;
   explicitFieldUse?: string;
+  ownerPlugin?: string;
   defaultTitleField?: string;
 };
 
@@ -1273,6 +1285,11 @@ type FlowSurfaceApplyBlueprintResponse = {
 
 export class FlowSurfacesService {
   constructor(private readonly plugin: Plugin) {}
+
+  private get capabilityProviderRegistry(): FlowSurfaceCapabilityRegistryLike | undefined {
+    return (this.plugin as Plugin & { flowSurfaceCapabilityProviders?: FlowSurfaceCapabilityRegistryLike })
+      .flowSurfaceCapabilityProviders;
+  }
 
   get db() {
     return this.plugin.db;
@@ -2009,9 +2026,22 @@ export class FlowSurfacesService {
         this.surfaceContext.filterBlocksByTarget(node, resolved),
         enabledPackages,
       );
-      response.blocks = availableBlocks
+      const builtInBlocks = availableBlocks
         .filter((item) => this.isCatalogBlockVisibleForPopupProfile(item.use, popupProfile))
-        .map((item) => this.projectCatalogItem(this.buildCatalogBlockItem(item, popupProfile), expandFlags));
+        .map((item) => this.buildCatalogBlockItem(item, popupProfile));
+      const providerBlocks = target
+        ? []
+        : filterProviderCatalogItemsForCatalog({
+            existingItems: builtInBlocks,
+            providerItems: await this.buildProviderCatalogItems({
+              kind: 'block',
+              enabledPackages,
+            }),
+          });
+      response.blocks = [
+        ...builtInBlocks.map((item) => this.projectCatalogItem(item, expandFlags)),
+        ...providerBlocks.map((item) => this.projectCatalogItem(item, expandFlags)),
+      ];
     }
 
     if (catalogAnalysis.selectedSections.includes('fields')) {
@@ -2056,6 +2086,33 @@ export class FlowSurfacesService {
     }
 
     return response;
+  }
+
+  async capabilities(
+    input: FlowSurfaceCapabilitiesValues,
+    options: { transaction?: unknown; enabledPackages?: ReadonlySet<string> } = {},
+  ): Promise<FlowSurfaceCapabilitiesResponse> {
+    const enabledPackages = await this.resolveEnabledPluginPackages(options);
+    return buildFlowSurfaceCapabilitiesResponse(input, {
+      enabledPackages,
+      providerRegistry: this.capabilityProviderRegistry,
+      catalog: (values) =>
+        this.catalog(values, {
+          transaction: options.transaction,
+          enabledPackages,
+        }),
+    });
+  }
+
+  private async buildProviderCatalogItems(input: {
+    kind: 'block' | 'action' | 'field';
+    enabledPackages: ReadonlySet<string>;
+  }) {
+    const items = await collectProviderCatalogItems({
+      providerRegistry: this.capabilityProviderRegistry,
+      enabledPackages: input.enabledPackages,
+    });
+    return items.filter((item) => item.kind === input.kind);
   }
 
   private async analyzeCatalogTarget(input: {
@@ -23870,6 +23927,7 @@ export class FlowSurfacesService {
     if (registeredBinding?.modelClassName) {
       return {
         fieldUse: registeredBinding.modelClassName,
+        ownerPlugin: registeredBinding.ownerPlugin,
         defaultTitleField: undefined,
       };
     }
@@ -24033,6 +24091,7 @@ export class FlowSurfacesService {
           supportsJs: input.mode !== 'form',
           explicitWrapperUse: input.mode === 'form' ? 'FormAssociationItemModel' : undefined,
           explicitFieldUse: displaySemantics.fieldUse,
+          ownerPlugin: displaySemantics.ownerPlugin,
           defaultTitleField: displaySemantics.defaultTitleField,
         });
       }
@@ -24129,6 +24188,66 @@ export class FlowSurfacesService {
     });
   }
 
+  private hasFieldCatalogSettingsContract(use: string) {
+    return Object.keys(getNodeContract(use).domains || {}).length > 0;
+  }
+
+  private buildFieldCatalogAvailability(use: string, requiredInitParams?: string[]): FlowSurfaceCapabilityAvailability {
+    const supportsSettings = this.hasFieldCatalogSettingsContract(use);
+    return {
+      render: { supported: true },
+      readback: { supported: true },
+      create: {
+        supported: true,
+        acceptsInitParams: !!requiredInitParams?.length,
+        acceptsSettings: supportsSettings,
+      },
+      configure: {
+        supported: supportsSettings,
+        ...(supportsSettings ? {} : { reasonCode: 'unsupported' as const, reasonSource: 'catalog' as const }),
+      },
+    };
+  }
+
+  private buildFieldCatalogSummaryFields(input: {
+    use: string;
+    publicType: string;
+    requiredInitParams?: string[];
+    ownerPlugin?: string;
+  }): Partial<FlowSurfaceCatalogItem> {
+    const availability = this.buildFieldCatalogAvailability(input.use, input.requiredInitParams);
+    const ownerPlugin = input.ownerPlugin || BUILT_IN_FIELD_CAPABILITY_OWNER_PLUGIN;
+    return {
+      ownerPlugin,
+      origin: 'builtInStatic',
+      supportLevel: availability.configure.supported ? 'create-and-configure' : 'create-only',
+      confidence: 'high',
+      availability,
+      identity: {
+        capabilityId: [
+          'builtInStatic',
+          'fieldComponent',
+          encodeURIComponent(ownerPlugin),
+          encodeURIComponent(input.publicType || input.use),
+        ].join(':'),
+      },
+    };
+  }
+
+  private resolveFieldCatalogPublicType(input: {
+    field?: unknown;
+    fieldUse?: string;
+    semantic?: { renderer?: 'js'; type?: 'jsColumn' | 'jsItem' };
+  }) {
+    if (input.semantic?.type) {
+      return input.semantic.type;
+    }
+    if (input.semantic?.renderer === 'js') {
+      return 'js';
+    }
+    return getPublicFieldTypeForUse(input.fieldUse) || getFieldInterface(input.field) || String(input.fieldUse || '');
+  }
+
   private buildFieldCatalogEntriesForResource(input: {
     ownerUse: string;
     resourceInit: Record<string, any>;
@@ -24159,6 +24278,7 @@ export class FlowSurfacesService {
 
           let wrapperUse = item.explicitWrapperUse;
           let fieldUse = item.explicitFieldUse;
+          let ownerPlugin = item.ownerPlugin;
           let standaloneUse: string | undefined;
 
           if (semantic.renderer || semantic.type || !wrapperUse || !fieldUse) {
@@ -24179,6 +24299,7 @@ export class FlowSurfacesService {
             });
             wrapperUse = wrapperUse || fieldCapability.wrapperUse;
             fieldUse = fieldUse || fieldCapability.fieldUse;
+            ownerPlugin = fieldCapability.ownerPlugin || ownerPlugin;
             standaloneUse = fieldCapability.standaloneUse;
           }
 
@@ -24186,12 +24307,23 @@ export class FlowSurfacesService {
           if (!use) {
             return;
           }
+          const publicType = this.resolveFieldCatalogPublicType({
+            field: item.field,
+            fieldUse: standaloneUse || fieldUse,
+            semantic,
+          });
+          const requiredInitParams = semantic.type
+            ? []
+            : wrapperUse === 'FilterFormItemModel' && input.requireDefaultTargetUid
+              ? ['fieldPath', 'defaultTargetUid']
+              : ['fieldPath'];
 
           entries.push({
             key: semantic.type ? semantic.type : semantic.renderer === 'js' ? `js:${item.fieldPath}` : item.fieldPath,
             label: semantic.type ? `JS / ${semantic.type}` : semantic.renderer === 'js' ? `JS / ${label}` : label,
             kind: 'field',
             use,
+            publicType,
             fieldUse: standaloneUse || fieldUse,
             wrapperUse,
             associationPathName: item.associationPathName,
@@ -24200,11 +24332,8 @@ export class FlowSurfacesService {
             ...(input.targetBlockUid
               ? { defaultTargetUid: input.targetBlockUid, targetBlockUid: input.targetBlockUid }
               : {}),
-            requiredInitParams: semantic.type
-              ? []
-              : wrapperUse === 'FilterFormItemModel' && input.requireDefaultTargetUid
-                ? ['fieldPath', 'defaultTargetUid']
-                : ['fieldPath'],
+            requiredInitParams,
+            ...this.buildFieldCatalogSummaryFields({ use, publicType, requiredInitParams, ownerPlugin }),
             ...this.buildCatalogItemOptionalFields(use, input),
           });
         };
@@ -24217,27 +24346,35 @@ export class FlowSurfacesService {
       });
 
       if (containerKind === 'table') {
+        const publicType = 'jsColumn';
+        const requiredInitParams: string[] = [];
         semanticEntries.push({
           key: 'jsColumn',
           label: 'JS / jsColumn',
           kind: 'field',
           use: 'JSColumnModel',
+          publicType,
           fieldUse: 'JSColumnModel',
           type: 'jsColumn',
-          requiredInitParams: [],
+          requiredInitParams,
+          ...this.buildFieldCatalogSummaryFields({ use: 'JSColumnModel', publicType, requiredInitParams }),
           ...this.buildCatalogItemOptionalFields('JSColumnModel', input),
         });
       }
 
       if (supportsStandaloneJsItem) {
+        const publicType = 'jsItem';
+        const requiredInitParams: string[] = [];
         semanticEntries.push({
           key: 'jsItem',
           label: 'JS / jsItem',
           kind: 'field',
           use: 'JSItemModel',
+          publicType,
           fieldUse: 'JSItemModel',
           type: 'jsItem',
-          requiredInitParams: [],
+          requiredInitParams,
+          ...this.buildFieldCatalogSummaryFields({ use: 'JSItemModel', publicType, requiredInitParams }),
           ...this.buildCatalogItemOptionalFields('JSItemModel', input),
         });
       }
@@ -24331,11 +24468,22 @@ export class FlowSurfacesService {
           if (!use) {
             return;
           }
+          const publicType = this.resolveFieldCatalogPublicType({
+            field: item.field,
+            fieldUse: fieldCapability.standaloneUse || fieldCapability.fieldUse,
+            semantic,
+          });
+          const requiredInitParams = semantic.type
+            ? []
+            : fieldCapability.wrapperUse === 'FilterFormItemModel' && input.requireDefaultTargetUid
+              ? ['fieldPath', 'defaultTargetUid']
+              : ['fieldPath'];
           entries.push({
             key: semantic.type ? semantic.type : semantic.renderer === 'js' ? `js:${item.fieldPath}` : item.fieldPath,
             label: semantic.type ? `JS / ${semantic.type}` : semantic.renderer === 'js' ? `JS / ${label}` : label,
             kind: 'field',
             use,
+            publicType,
             fieldUse: fieldCapability.standaloneUse || fieldCapability.fieldUse,
             wrapperUse: fieldCapability.wrapperUse,
             associationPathName: item.associationPathName,
@@ -24344,11 +24492,13 @@ export class FlowSurfacesService {
             ...(input.targetBlockUid
               ? { defaultTargetUid: input.targetBlockUid, targetBlockUid: input.targetBlockUid }
               : {}),
-            requiredInitParams: semantic.type
-              ? []
-              : fieldCapability.wrapperUse === 'FilterFormItemModel' && input.requireDefaultTargetUid
-                ? ['fieldPath', 'defaultTargetUid']
-                : ['fieldPath'],
+            requiredInitParams,
+            ...this.buildFieldCatalogSummaryFields({
+              use,
+              publicType,
+              requiredInitParams,
+              ownerPlugin: fieldCapability.ownerPlugin,
+            }),
             ...this.buildCatalogItemOptionalFields(use, input),
           });
         };
@@ -24361,27 +24511,35 @@ export class FlowSurfacesService {
       });
 
     if (containerKind === 'table') {
+      const publicType = 'jsColumn';
+      const requiredInitParams: string[] = [];
       semanticEntries.push({
         key: 'jsColumn',
         label: 'JS / jsColumn',
         kind: 'field',
         use: 'JSColumnModel',
+        publicType,
         fieldUse: 'JSColumnModel',
         type: 'jsColumn',
-        requiredInitParams: [],
+        requiredInitParams,
+        ...this.buildFieldCatalogSummaryFields({ use: 'JSColumnModel', publicType, requiredInitParams }),
         ...this.buildCatalogItemOptionalFields('JSColumnModel', input),
       });
     }
 
     if (supportsStandaloneJsItem) {
+      const publicType = 'jsItem';
+      const requiredInitParams: string[] = [];
       semanticEntries.push({
         key: 'jsItem',
         label: 'JS / jsItem',
         kind: 'field',
         use: 'JSItemModel',
+        publicType,
         fieldUse: 'JSItemModel',
         type: 'jsItem',
-        requiredInitParams: [],
+        requiredInitParams,
+        ...this.buildFieldCatalogSummaryFields({ use: 'JSItemModel', publicType, requiredInitParams }),
         ...this.buildCatalogItemOptionalFields('JSItemModel', input),
       });
     }

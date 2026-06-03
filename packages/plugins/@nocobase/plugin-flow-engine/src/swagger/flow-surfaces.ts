@@ -522,7 +522,7 @@ function buildReactionCapabilitySchema(
 }
 
 const FLOW_SURFACES_READ_ACL_NOTE =
-  'Read actions (`get` / `describeSurface` / `catalog` / `context` / `getReactionMeta` / `getEventFlowMeta` / `listTemplates` / `getTemplate`) are open to `loggedIn` by default. Write actions still require the `ui.flowSurfaces` snippet.';
+  'Read actions (`get` / `describeSurface` / `capabilities` / `catalog` / `context` / `getReactionMeta` / `getEventFlowMeta` / `listTemplates` / `getTemplate`) are open to `loggedIn` by default. Write actions still require the `ui.flowSurfaces` snippet.';
 
 const templateActionDocs = createFlowSurfaceTemplateActionDocs({
   tag: FLOW_SURFACES_TAG,
@@ -539,11 +539,20 @@ const templateSchemas = createFlowSurfaceTemplateSchemas({
 });
 
 const actionDocs: Record<string, any> = {
+  capabilities: {
+    tags: [FLOW_SURFACES_TAG],
+    summary: 'Discover public Flow Surface capabilities',
+    description: valuesCompatibilityNote(
+      `Returns public-safe capability metadata for block, action, and field component candidates. Global results are discovery only; localized writes must still call target-scoped \`catalog\` and then use public \`type\` / \`settings\` payloads. In this discovery slice, \`target\` only supports concrete \`targetUid\` / \`uid\` lookup; scene, slot, collection, and field-interface hints are reserved for future scoped discovery. The response does not expose \`modelUse\`, \`defaultNode\`, \`lens\`, \`createModelOptions\`, \`props\`, \`decoratorProps\`, \`stepParams\`, or \`flowRegistry\`. \`debugImplementation\` expand is forbidden. ${FLOW_SURFACES_READ_ACL_NOTE}`,
+    ),
+    requestBody: requestBody('FlowSurfaceCapabilitiesRequest'),
+    responses: responses('FlowSurfaceCapabilitiesResponse'),
+  },
   catalog: {
     tags: [FLOW_SURFACES_TAG],
     summary: 'List capabilities available in the current surface context',
     description: valuesCompatibilityNote(
-      `Returns the block / field / action capabilities that can be created under the current target context, together with the recommended \`configureOptions\`, the underlying settings contract, event capabilities, and layout capabilities for the current node. The returned \`blocks[] / actions[] / recordActions[]\` only represent the truly available public capabilities under plugins enabled in the current instance. When \`sections\` is omitted, the server smart-selects the sections for the current target scenario, and clients should treat \`selectedSections\` in the response as the final authoritative result. For advanced field-value or linkage authoring, prefer \`getReactionMeta\` + \`set*Rules\` instead of guessing raw \`configureOptions\` keys. ${FLOW_SURFACES_READ_ACL_NOTE}`,
+      `Returns the block / field / action capabilities that can be created under the current target context, together with the recommended public \`configureOptions\`. Legacy raw node contracts are returned only when callers explicitly request \`item.contracts\` or \`node.contracts\`; they are an advanced compatibility surface, not write authorization. The returned \`blocks[] / actions[] / recordActions[]\` only represent the truly available public capabilities under plugins enabled in the current instance. When \`sections\` is omitted, the server smart-selects the sections for the current target scenario, and clients should treat \`selectedSections\` in the response as the final authoritative result. For advanced field-value or linkage authoring, prefer \`getReactionMeta\` + \`set*Rules\` instead of guessing raw \`configureOptions\` keys. ${FLOW_SURFACES_READ_ACL_NOTE}`,
     ),
     requestBody: requestBody('FlowSurfaceCatalogRequest', examples.catalog),
     responses: responses('FlowSurfaceCatalogResponse'),
@@ -1699,6 +1708,269 @@ const schemas = {
     },
     additionalProperties: false,
   },
+  FlowSurfaceCapabilityKind: {
+    type: 'string',
+    enum: ['block', 'action', 'fieldComponent'],
+  },
+  FlowSurfaceCapabilityOriginSource: {
+    type: 'string',
+    enum: ['builtInStatic', 'officialManifest', 'pluginManifest', 'provider', 'canaryOverlay', 'autoSnapshot'],
+  },
+  FlowSurfaceSupportLevel: {
+    type: 'string',
+    enum: [
+      'render-only',
+      'readback-only',
+      'create-only',
+      'create-with-settings',
+      'configure-only',
+      'create-and-configure',
+    ],
+  },
+  FlowSurfaceCapabilityConfidence: {
+    type: 'string',
+    enum: ['high', 'medium', 'low'],
+  },
+  FlowSurfaceAvailabilityState: {
+    type: 'object',
+    required: ['supported'],
+    properties: {
+      supported: {
+        type: 'boolean',
+      },
+      reasonCode: {
+        type: 'string',
+      },
+      reasonSource: {
+        type: 'string',
+        enum: ['registry', 'provider', 'catalog', 'builder'],
+      },
+    },
+    additionalProperties: false,
+  },
+  FlowSurfaceCapabilityAvailability: {
+    type: 'object',
+    required: ['render', 'readback', 'create', 'configure'],
+    properties: {
+      render: ref('FlowSurfaceAvailabilityState'),
+      readback: ref('FlowSurfaceAvailabilityState'),
+      create: {
+        type: 'object',
+        required: ['supported'],
+        properties: {
+          supported: {
+            type: 'boolean',
+          },
+          reasonCode: {
+            type: 'string',
+          },
+          reasonSource: {
+            type: 'string',
+            enum: ['registry', 'provider', 'catalog', 'builder'],
+          },
+          acceptsInitParams: {
+            type: 'boolean',
+          },
+          acceptsSettings: {
+            type: 'boolean',
+          },
+        },
+        additionalProperties: false,
+      },
+      configure: ref('FlowSurfaceAvailabilityState'),
+    },
+    additionalProperties: false,
+  },
+  FlowSurfacePublicTypeMeta: {
+    type: 'object',
+    required: ['value', 'source'],
+    properties: {
+      value: {
+        type: 'string',
+      },
+      source: {
+        type: 'string',
+        enum: ['builtIn', 'manifest', 'canary', 'autoNamespaced'],
+      },
+      searchAliases: {
+        type: 'array',
+        items: {
+          type: 'string',
+        },
+      },
+      acceptedAliases: {
+        type: 'array',
+        items: {
+          type: 'string',
+        },
+      },
+    },
+    additionalProperties: false,
+  },
+  FlowSurfaceCapabilityIdentity: {
+    type: 'object',
+    required: ['capabilityId'],
+    properties: {
+      capabilityId: {
+        type: 'string',
+        description: 'Read-only diagnostic ID. Do not send this in authoring payloads.',
+      },
+      capabilityVersion: {
+        type: 'string',
+      },
+      deprecated: {
+        type: 'boolean',
+      },
+      replacedBy: ANY_OBJECT_SCHEMA,
+    },
+    additionalProperties: false,
+  },
+  FlowSurfaceCapabilitySemantic: {
+    type: 'object',
+    required: ['title'],
+    properties: {
+      title: {
+        type: 'string',
+      },
+      description: {
+        type: 'string',
+      },
+      aliases: {
+        type: 'array',
+        items: {
+          type: 'string',
+        },
+      },
+      domainTags: {
+        type: 'array',
+        items: {
+          type: 'string',
+        },
+      },
+      intentTags: {
+        type: 'array',
+        items: {
+          type: 'string',
+        },
+      },
+      suitableScenes: {
+        type: 'array',
+        items: {
+          type: 'string',
+        },
+      },
+      antiPatterns: {
+        type: 'array',
+        items: {
+          type: 'string',
+        },
+      },
+      locale: {
+        type: 'string',
+      },
+      examples: {
+        type: 'array',
+        items: ANY_OBJECT_SCHEMA,
+      },
+    },
+    additionalProperties: false,
+  },
+  FlowSurfacePlacementSummary: {
+    type: 'object',
+    properties: {
+      scenes: {
+        type: 'array',
+        items: {
+          type: 'string',
+        },
+      },
+      slots: {
+        type: 'array',
+        items: {
+          type: 'string',
+          enum: ['blocks', 'actions', 'recordActions', 'fields', 'fieldComponents', 'subModels'],
+        },
+      },
+      parentPublicTypes: {
+        type: 'array',
+        items: {
+          type: 'string',
+        },
+      },
+      containerKinds: {
+        type: 'array',
+        items: {
+          type: 'string',
+        },
+      },
+      collectionRequired: {
+        type: 'boolean',
+      },
+      fieldRequired: {
+        type: 'boolean',
+      },
+    },
+    additionalProperties: false,
+  },
+  FlowSurfaceCapabilityWarning: {
+    type: 'object',
+    required: ['code', 'message'],
+    properties: {
+      code: {
+        type: 'string',
+      },
+      message: {
+        type: 'string',
+      },
+    },
+    additionalProperties: false,
+  },
+  FlowSurfacePublicCapabilityItem: {
+    type: 'object',
+    required: [
+      'kind',
+      'publicType',
+      'publicTypeMeta',
+      'label',
+      'ownerPlugin',
+      'origin',
+      'semantic',
+      'availability',
+      'supportLevel',
+      'confidence',
+    ],
+    properties: {
+      kind: ref('FlowSurfaceCapabilityKind'),
+      publicType: {
+        type: 'string',
+      },
+      publicTypeMeta: ref('FlowSurfacePublicTypeMeta'),
+      label: {
+        type: 'string',
+      },
+      ownerPlugin: {
+        type: 'string',
+      },
+      ownerPluginTitle: {
+        type: 'string',
+      },
+      origin: ref('FlowSurfaceCapabilityOriginSource'),
+      semantic: ref('FlowSurfaceCapabilitySemantic'),
+      availability: ref('FlowSurfaceCapabilityAvailability'),
+      supportLevel: ref('FlowSurfaceSupportLevel'),
+      confidence: ref('FlowSurfaceCapabilityConfidence'),
+      placement: ref('FlowSurfacePlacementSummary'),
+      warnings: {
+        type: 'array',
+        items: ref('FlowSurfaceCapabilityWarning'),
+      },
+      identity: ref('FlowSurfaceCapabilityIdentity'),
+      initParamsSchema: ANY_OBJECT_SCHEMA,
+      settingsSchema: ANY_OBJECT_SCHEMA,
+      configureOptions: ref('FlowSurfaceConfigureOptions'),
+    },
+    additionalProperties: false,
+  },
   FlowSurfaceCatalogItem: {
     type: 'object',
     properties: {
@@ -1715,6 +1987,22 @@ const schemas = {
         type: 'string',
         enum: ['page', 'tab', 'block', 'field', 'action'],
       },
+      publicType: {
+        type: 'string',
+      },
+      semantic: ref('FlowSurfaceCapabilitySemantic'),
+      ownerPlugin: {
+        type: 'string',
+      },
+      origin: ref('FlowSurfaceCapabilityOriginSource'),
+      supportLevel: ref('FlowSurfaceSupportLevel'),
+      confidence: ref('FlowSurfaceCapabilityConfidence'),
+      availability: ref('FlowSurfaceCapabilityAvailability'),
+      warnings: {
+        type: 'array',
+        items: ref('FlowSurfaceCapabilityWarning'),
+      },
+      identity: ref('FlowSurfaceCapabilityIdentity'),
       scope: {
         type: 'string',
         enum: ['block', 'record', 'form', 'filterForm', 'actionPanel'],
@@ -1784,7 +2072,7 @@ const schemas = {
   },
   FlowSurfaceCatalogExpand: {
     type: 'string',
-    enum: ['item.configureOptions', 'item.contracts', 'item.allowedContainerUses', 'node.contracts'],
+    enum: ['item.configureOptions', 'item.contracts', 'item.allowedContainerUses', 'item.identity', 'node.contracts'],
   },
   FlowSurfaceCatalogPopupScenario: {
     type: 'object',
@@ -2151,6 +2439,117 @@ const schemas = {
       associationPathName: ref('FlowSurfaceResolvableString'),
       sourceId: ref('FlowSurfaceResolvableIdentifier'),
       filterByTk: ref('FlowSurfaceResolvableIdentifier'),
+    },
+    additionalProperties: false,
+  },
+  FlowSurfaceCapabilitiesTarget: {
+    type: 'object',
+    description:
+      'Concrete target lookup for capabilities. Rich scene / slot / collection hints are reserved for future scoped discovery; localized writes must still check target-scoped catalog.',
+    anyOf: [{ required: ['targetUid'] }, { required: ['uid'] }],
+    properties: {
+      targetUid: {
+        type: 'string',
+      },
+      uid: {
+        type: 'string',
+      },
+    },
+    additionalProperties: false,
+  },
+  FlowSurfaceCapabilitiesRequest: {
+    type: 'object',
+    properties: {
+      kinds: {
+        type: 'array',
+        items: ref('FlowSurfaceCapabilityKind'),
+      },
+      publicTypes: {
+        type: 'array',
+        items: {
+          type: 'string',
+        },
+      },
+      ownerPlugins: {
+        type: 'array',
+        items: {
+          type: 'string',
+        },
+      },
+      query: {
+        type: 'string',
+      },
+      target: ref('FlowSurfaceCapabilitiesTarget'),
+      includeUnavailable: {
+        type: 'boolean',
+      },
+      includeWarnings: {
+        type: 'boolean',
+      },
+      limit: {
+        type: 'integer',
+        minimum: 1,
+        maximum: 200,
+      },
+      expand: {
+        type: 'array',
+        description:
+          '`item.identity`, `item.semantic`, `item.settings`, and `item.warnings` are supported. `debugImplementation` is forbidden.',
+        items: {
+          type: 'string',
+          enum: ['item.identity', 'item.semantic', 'item.settings', 'item.warnings'],
+        },
+      },
+    },
+    additionalProperties: false,
+  },
+  FlowSurfaceCapabilitiesResponse: {
+    type: 'object',
+    required: ['data', 'meta'],
+    properties: {
+      data: {
+        type: 'array',
+        items: ref('FlowSurfacePublicCapabilityItem'),
+      },
+      meta: {
+        type: 'object',
+        required: ['version', 'generatedAt', 'enabledPlugins', 'registrySources', 'targetHintUsed'],
+        properties: {
+          version: {
+            type: 'integer',
+            enum: [1],
+          },
+          generatedAt: {
+            type: 'string',
+          },
+          enabledPlugins: {
+            type: 'array',
+            description:
+              'Plugin owners represented by the returned capabilities. This is not the complete enabled package list.',
+            items: {
+              type: 'string',
+            },
+          },
+          registrySources: {
+            type: 'array',
+            items: {
+              type: 'object',
+              required: ['origin', 'count'],
+              properties: {
+                origin: ref('FlowSurfaceCapabilityOriginSource'),
+                count: {
+                  type: 'integer',
+                },
+              },
+              additionalProperties: false,
+            },
+          },
+          targetHintUsed: {
+            type: 'boolean',
+          },
+        },
+        additionalProperties: false,
+      },
     },
     additionalProperties: false,
   },

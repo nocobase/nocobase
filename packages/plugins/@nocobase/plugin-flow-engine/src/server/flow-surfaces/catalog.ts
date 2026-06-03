@@ -9,6 +9,9 @@
 
 import type {
   FlowSurfaceActionScope,
+  FlowSurfaceCapabilityAvailability,
+  FlowSurfaceCapabilityKind,
+  FlowSurfaceCapabilitySemantic,
   FlowSurfaceCatalogItem,
   FlowSurfaceDomainContract,
   FlowSurfaceDomainGroupContract,
@@ -128,6 +131,7 @@ const ACTION_OBJECT_EVENTS = ['click'];
 const GRID_LAYOUT_CAPABILITIES: FlowSurfaceLayoutCapabilities = { supported: true };
 const AI_EMPLOYEE_ACTION_USE = 'AIEmployeeButtonModel';
 const AI_EMPLOYEE_FLOW_SURFACE_OWNER_PLUGIN = '@nocobase/plugin-ai';
+const BUILT_IN_CAPABILITY_ORIGIN = 'builtInStatic';
 const RUN_JS_ALLOWED_PATHS = ['runJs.code', 'runJs.version'];
 const OPEN_VIEW_ALLOWED_PATHS = [
   'openView.mode',
@@ -2849,13 +2853,117 @@ function makeCatalogItem(
   >,
 ): FlowSurfaceCatalogItem {
   const contract = getNodeContract(item.use);
+  const publicType = getCatalogItemPublicType(item);
+  const ownerPlugin = item.ownerPlugin || getCatalogItemOwnerPlugin(item);
+  const availability = item.availability || buildCatalogItemAvailability(item, contract);
   return {
     ...item,
+    publicType,
+    semantic: item.semantic || buildCatalogItemSemantic(item, publicType),
+    ownerPlugin,
+    origin: item.origin || BUILT_IN_CAPABILITY_ORIGIN,
+    supportLevel: item.supportLevel || buildCatalogItemSupportLevel(item, contract),
+    confidence: item.confidence || 'high',
+    availability,
+    warnings: item.warnings,
+    identity:
+      item.identity ||
+      buildCatalogItemIdentity({
+        kind: toCapabilityKind(item.kind),
+        ownerPlugin,
+        publicType,
+        use: item.use,
+      }),
     editableDomains: [...contract.editableDomains],
     settingsSchema: buildSettingsSchema(contract),
     settingsContract: contract.domains,
     eventCapabilities: contract.eventCapabilities,
     layoutCapabilities: contract.layoutCapabilities,
+  };
+}
+
+function toCapabilityKind(kind: FlowSurfaceCatalogItem['kind']): FlowSurfaceCapabilityKind {
+  switch (kind) {
+    case 'block':
+      return 'block';
+    case 'action':
+      return 'action';
+    case 'field':
+      return 'fieldComponent';
+    default:
+      return 'block';
+  }
+}
+
+function getCatalogItemPublicType(item: Pick<FlowSurfaceCatalogItem, 'key'> & Partial<FlowSurfaceCatalogItem>) {
+  return String(item.publicType || item.type || item.key || '').trim();
+}
+
+function buildCatalogItemSemantic(
+  item: Pick<FlowSurfaceCatalogItem, 'label' | 'key' | 'use'> & Partial<FlowSurfaceCatalogItem>,
+  publicType: string,
+): FlowSurfaceCapabilitySemantic {
+  const aliases = [item.key, publicType].filter(
+    (value, index, values): value is string =>
+      typeof value === 'string' && !!value.trim() && values.indexOf(value) === index,
+  );
+  return {
+    title: item.label,
+    aliases,
+  };
+}
+
+function hasCatalogItemSettingsContract(contract: FlowSurfaceNodeContract) {
+  return Object.keys(contract.domains || {}).length > 0;
+}
+
+function buildCatalogItemAvailability(
+  item: Pick<FlowSurfaceCatalogItem, 'createSupported' | 'requiredInitParams'>,
+  contract: FlowSurfaceNodeContract,
+): FlowSurfaceCapabilityAvailability {
+  const createSupported = item.createSupported !== false;
+  return {
+    render: { supported: true },
+    readback: { supported: true },
+    create: {
+      supported: createSupported,
+      ...(createSupported ? {} : { reasonCode: 'missing-create-contract' as const, reasonSource: 'catalog' as const }),
+      acceptsInitParams: !!item.requiredInitParams?.length,
+      acceptsSettings: hasCatalogItemSettingsContract(contract),
+    },
+    configure: {
+      supported: hasCatalogItemSettingsContract(contract),
+      ...(!hasCatalogItemSettingsContract(contract)
+        ? { reasonCode: 'unsupported' as const, reasonSource: 'catalog' as const }
+        : {}),
+    },
+  };
+}
+
+function buildCatalogItemSupportLevel(
+  item: Pick<FlowSurfaceCatalogItem, 'createSupported'>,
+  contract: FlowSurfaceNodeContract,
+) {
+  const supportsSettings = hasCatalogItemSettingsContract(contract);
+  if (item.createSupported === false) {
+    return 'readback-only' as const;
+  }
+  return supportsSettings ? ('create-and-configure' as const) : ('create-only' as const);
+}
+
+function buildCatalogItemIdentity(input: {
+  kind: FlowSurfaceCapabilityKind;
+  ownerPlugin?: string;
+  publicType: string;
+  use: string;
+}) {
+  return {
+    capabilityId: [
+      BUILT_IN_CAPABILITY_ORIGIN,
+      input.kind,
+      encodeURIComponent(input.ownerPlugin || 'core'),
+      encodeURIComponent(input.publicType || input.use),
+    ].join(':'),
   };
 }
 
@@ -2916,6 +3024,15 @@ function getAllowedFieldUseSet(containerUse?: string, enabledPackages?: Readonly
       return null;
   }
 }
+
+type FlowSurfaceFieldCapabilityField = {
+  interface?: string;
+  options?: {
+    interface?: string;
+  };
+};
+
+type FlowSurfaceFieldCapabilityCollectionLookup = (dataSourceKey: string, collectionName: string) => unknown;
 
 function canUseNestedAssociationFieldComponent(input: {
   field?: any;
@@ -3058,6 +3175,18 @@ function inferFieldUseByContainer(
     getCollection?: (dataSourceKey: string, collectionName: string) => any;
   } = {},
 ) {
+  return inferFieldCapabilityByContainer(containerUse, field, options).fieldUse;
+}
+
+function inferFieldCapabilityByContainer(
+  containerUse: string,
+  field: FlowSurfaceFieldCapabilityField,
+  options: {
+    enabledPackages?: ReadonlySet<string>;
+    dataSourceKey?: string;
+    getCollection?: FlowSurfaceFieldCapabilityCollectionLookup;
+  } = {},
+) {
   const fieldInterface = field?.interface || field?.options?.interface;
   const registeredBinding = resolveRegisteredFieldBinding({
     containerUse,
@@ -3067,7 +3196,10 @@ function inferFieldUseByContainer(
     getCollection: options.getCollection,
   });
   if (registeredBinding?.modelClassName) {
-    return registeredBinding.modelClassName;
+    return {
+      fieldUse: registeredBinding.modelClassName,
+      ownerPlugin: registeredBinding.ownerPlugin,
+    };
   }
   if (
     shouldUseAssociationTitleTextDisplay({
@@ -3075,20 +3207,32 @@ function inferFieldUseByContainer(
       fieldInterface,
     })
   ) {
-    return 'DisplayTextFieldModel';
+    return {
+      fieldUse: 'DisplayTextFieldModel',
+      ownerPlugin: undefined,
+    };
   }
+  let fieldUse: string;
   switch (normalizeFieldContainerUse(containerUse)) {
     case 'filter-form':
-      return inferFilterFieldUse(fieldInterface);
+      fieldUse = inferFilterFieldUse(fieldInterface);
+      break;
     case 'form':
-      return inferEditableFieldUse(fieldInterface);
+      fieldUse = inferEditableFieldUse(fieldInterface);
+      break;
     case 'details':
-      return inferDisplayFieldUse(fieldInterface);
+      fieldUse = inferDisplayFieldUse(fieldInterface);
+      break;
     case 'table':
-      return inferDisplayFieldUse(fieldInterface);
+      fieldUse = inferDisplayFieldUse(fieldInterface);
+      break;
     default:
       throw new FlowSurfaceBadRequestError(`flowSurfaces field container '${containerUse}' is not supported`);
   }
+  return {
+    fieldUse,
+    ownerPlugin: undefined,
+  };
 }
 
 function inferJsFieldUseByContainer(containerUse?: string) {
@@ -3176,6 +3320,7 @@ export function resolveSupportedFieldCapability(input: {
       inferredFieldUse: undefined,
       standaloneUse,
       renderer: undefined,
+      ownerPlugin: undefined,
     };
   }
 
@@ -3191,14 +3336,17 @@ export function resolveSupportedFieldCapability(input: {
   }
 
   let inferredFieldUse;
+  let inferredOwnerPlugin;
   if (requestedRenderer === 'js') {
     inferredFieldUse = inferJsFieldUseByContainer(input.containerUse);
   } else if (input.field) {
-    inferredFieldUse = inferFieldUseByContainer(input.containerUse, input.field, {
+    const inferredCapability = inferFieldCapabilityByContainer(input.containerUse, input.field, {
       enabledPackages: input.enabledPackages,
       dataSourceKey: input.dataSourceKey,
       getCollection: input.getCollection,
     });
+    inferredFieldUse = inferredCapability.fieldUse;
+    inferredOwnerPlugin = inferredCapability.ownerPlugin;
   }
   const fieldUse = input.requestedFieldUse || inferredFieldUse;
   if (!fieldUse) {
@@ -3209,6 +3357,7 @@ export function resolveSupportedFieldCapability(input: {
         inferredFieldUse,
         standaloneUse: undefined,
         renderer: requestedRenderer,
+        ownerPlugin: fieldUse === inferredFieldUse ? inferredOwnerPlugin : undefined,
       };
     }
     throw new FlowSurfaceBadRequestError(`flowSurfaces field '${input.containerUse}' requires a supported fieldUse`);
@@ -3248,6 +3397,7 @@ export function resolveSupportedFieldCapability(input: {
     inferredFieldUse,
     standaloneUse: undefined,
     renderer: requestedRenderer,
+    ownerPlugin: fieldUse === inferredFieldUse ? inferredOwnerPlugin : undefined,
   };
 }
 
@@ -4021,7 +4171,7 @@ export const ACTION_CATALOG_BY_USE = actionCatalog.reduce((map, item) => {
 export const BLOCK_KEY_BY_USE = new Map(FLOW_SURFACE_BLOCK_SUPPORT_MATRIX.map((item) => [item.modelUse, item.key]));
 export const ACTION_KEY_BY_USE = new Map(actionCatalog.map((item) => [item.use, toPublicActionCatalogItem(item).key]));
 
-function getCatalogItemOwnerPlugin(item: Pick<FlowSurfaceCatalogItem, 'kind' | 'use'>) {
+export function getCatalogItemOwnerPlugin(item: Pick<FlowSurfaceCatalogItem, 'kind' | 'use'>) {
   if (item.kind === 'block') {
     return APPROVAL_BLOCK_OWNER_PLUGIN_BY_USE.get(item.use) || FLOW_SURFACE_BLOCK_OWNER_PLUGIN_BY_USE.get(item.use);
   }
@@ -4031,7 +4181,7 @@ function getCatalogItemOwnerPlugin(item: Pick<FlowSurfaceCatalogItem, 'kind' | '
   return undefined;
 }
 
-function isAlwaysAvailableCatalogOwnerPlugin(ownerPlugin?: string) {
+export function isAlwaysAvailableCatalogOwnerPlugin(ownerPlugin?: string) {
   return !ownerPlugin || ownerPlugin === CORE_FLOW_SURFACE_OWNER_PLUGIN;
 }
 

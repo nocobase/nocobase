@@ -140,6 +140,13 @@ describe('flowSurfaces swagger', () => {
       'FlowSurfaceApplyApprovalBlueprintResponse',
       'FlowSurfaceBindKey',
       'FlowSurfaceKeysMap',
+      'FlowSurfaceCapabilityKind',
+      'FlowSurfaceCapabilityOriginSource',
+      'FlowSurfaceCapabilityAvailability',
+      'FlowSurfacePublicCapabilityItem',
+      'FlowSurfaceCapabilitiesTarget',
+      'FlowSurfaceCapabilitiesRequest',
+      'FlowSurfaceCapabilitiesResponse',
       'FlowSurfaceCatalogItem',
       'FlowSurfaceNodeContract',
       'FlowSurfaceDomainContract',
@@ -332,6 +339,27 @@ describe('flowSurfaces swagger', () => {
     expect(schemas.FlowSurfaceSetFieldLinkageRulesRequest.required).toEqual(['target', 'rules']);
     expect(schemas.FlowSurfaceSetActionLinkageRulesRequest.required).toEqual(['target', 'rules']);
     expect(schemas.FlowSurfaceReactionSlot.properties.valuePath.description).toContain('nested value path');
+    expect(schemas.FlowSurfaceCapabilityKind.enum).toEqual(['block', 'action', 'fieldComponent']);
+    expect(schemas.FlowSurfaceCapabilityAvailability.properties.create).toMatchObject({
+      type: 'object',
+      required: ['supported'],
+      additionalProperties: false,
+      properties: {
+        supported: {
+          type: 'boolean',
+        },
+        reasonSource: {
+          enum: ['registry', 'provider', 'catalog', 'builder'],
+        },
+        acceptsInitParams: {
+          type: 'boolean',
+        },
+        acceptsSettings: {
+          type: 'boolean',
+        },
+      },
+    });
+    expect(schemas.FlowSurfaceCapabilityAvailability.properties.create.allOf).toBeUndefined();
     expect(schemas.FlowSurfaceSetFieldValueRulesRequest.properties.target.description).toContain(
       'outer form block uid',
     );
@@ -1957,9 +1985,29 @@ describe('flowSurfaces swagger', () => {
 
     const catalogPath = swaggerDocument.paths['/flowSurfaces:catalog'].post;
     expect(catalogPath.description).toContain('truly available public capabilities');
+    expect(catalogPath.description).toContain(
+      'Legacy raw node contracts are returned only when callers explicitly request',
+    );
+    expect(catalogPath.description).toContain('not write authorization');
     expect(catalogPath.description).toContain('When `sections` is omitted');
     expect(catalogPath.description).toContain('`selectedSections` in the response as the final authoritative result');
     expect(catalogPath.description).toContain('`loggedIn`');
+    const capabilitiesPath = swaggerDocument.paths['/flowSurfaces:capabilities'].post;
+    expect(capabilitiesPath.description).toContain('Global results are discovery only');
+    expect(capabilitiesPath.description).toContain('target-scoped `catalog`');
+    expect(capabilitiesPath.description).toContain('only supports concrete `targetUid` / `uid` lookup');
+    expect(capabilitiesPath.description).toContain('`debugImplementation` expand is forbidden');
+    expect(capabilitiesPath.description).toContain('`loggedIn`');
+    expect(capabilitiesPath.description).not.toContain('implementation.modelUse');
+    expect(schemas.FlowSurfaceCapabilitiesRequest.properties.target.$ref).toBe(
+      '#/components/schemas/FlowSurfaceCapabilitiesTarget',
+    );
+    expect(schemas.FlowSurfaceCapabilitiesRequest.properties.locale).toBeUndefined();
+    expect(Object.keys(schemas.FlowSurfaceCapabilitiesTarget.properties).sort()).toEqual(['targetUid', 'uid']);
+    expect(schemas.FlowSurfaceCapabilitiesTarget.anyOf).toEqual([{ required: ['targetUid'] }, { required: ['uid'] }]);
+    expect(schemas.FlowSurfaceCapabilitiesTarget.properties.scene).toBeUndefined();
+    expect(schemas.FlowSurfaceCapabilitySemantic.properties.antiPatterns.items.type).toBe('string');
+    expect(schemas.FlowSurfaceCapabilitySemantic.properties.locale.type).toBe('string');
     const composePath = swaggerDocument.paths['/flowSurfaces:compose'].post;
     expect(composePath.description).toContain('low-level building primitive');
     expect(composePath.description).not.toContain('preferred creation entry for AI callers');
@@ -1976,6 +2024,7 @@ describe('flowSurfaces swagger', () => {
 
     for (const actionName of [
       'catalog',
+      'capabilities',
       'context',
       'listTemplates',
       'getTemplate',

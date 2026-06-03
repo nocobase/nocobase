@@ -74,6 +74,270 @@ export type FlowSurfaceConfigureOption = {
 
 export type FlowSurfaceConfigureOptions = Record<string, FlowSurfaceConfigureOption>;
 
+export type FlowSurfaceCapabilityKind = 'block' | 'action' | 'fieldComponent' | 'fieldBinding' | 'fieldInterface';
+
+export type FlowSurfaceCapabilityOriginSource =
+  | 'builtInStatic'
+  | 'officialManifest'
+  | 'pluginManifest'
+  | 'provider'
+  | 'canaryOverlay'
+  | 'autoSnapshot';
+
+export type FlowSurfaceCapabilityConfidence = 'high' | 'medium' | 'low';
+
+// Display/ranking metadata only. Builders must check availability.create/configure before writing.
+export type FlowSurfaceSupportLevel =
+  | 'render-only'
+  | 'readback-only'
+  | 'create-only'
+  | 'create-with-settings'
+  | 'configure-only'
+  | 'create-and-configure';
+
+export type FlowSurfaceReasonCode =
+  | 'supported'
+  | 'plugin-disabled'
+  | 'public-type-conflict'
+  | 'target-required'
+  | 'slot-not-supported'
+  | 'scene-not-supported'
+  | 'collection-required'
+  | 'field-interface-required'
+  | 'missing-create-contract'
+  | 'dynamic-create-options-not-projectable'
+  | 'unsafe-auto-discovery'
+  | 'manifest-required'
+  | 'permission-denied'
+  | 'license-required'
+  | 'dependency-missing'
+  | 'provider-error'
+  | 'settings-schema-missing'
+  | 'init-param-required'
+  | 'readback-unsupported'
+  | 'dry-run-failed'
+  | 'readback-parity-failed'
+  | 'snapshot-stale'
+  | 'extractor-runtime-error'
+  | 'contract-not-verified'
+  | 'debug-expand-forbidden'
+  | 'unsupported';
+
+export type FlowSurfaceAvailabilityState = {
+  supported: boolean;
+  reasonCode?: FlowSurfaceReasonCode;
+  reasonSource?: 'registry' | 'provider' | 'catalog' | 'builder';
+};
+
+export type FlowSurfaceCapabilityAvailability = {
+  render: FlowSurfaceAvailabilityState;
+  readback: FlowSurfaceAvailabilityState;
+  create: FlowSurfaceAvailabilityState & {
+    acceptsInitParams?: boolean;
+    acceptsSettings?: boolean;
+  };
+  configure: FlowSurfaceAvailabilityState;
+};
+
+export type FlowSurfacePublicTypeMeta = {
+  value: string;
+  source: 'builtIn' | 'manifest' | 'canary' | 'autoNamespaced';
+  searchAliases?: string[];
+  acceptedAliases?: string[];
+};
+
+export type FlowSurfaceCapabilityIdentity = {
+  capabilityId: string;
+  capabilityVersion?: string;
+  deprecated?: boolean;
+  replacedBy?: {
+    kind: FlowSurfaceCapabilityKind;
+    publicType: string;
+    ownerPlugin?: string;
+  };
+};
+
+export type FlowSurfaceCapabilitySemantic = {
+  title: string;
+  description?: string;
+  aliases?: string[];
+  domainTags?: string[];
+  intentTags?: string[];
+  suitableScenes?: string[];
+  antiPatterns?: string[];
+  locale?: string;
+  examples?: Array<{
+    title?: string;
+    userIntent: string;
+    publicPayloadSnippet: Record<string, unknown>;
+    safety?: {
+      validatedPublicPayload: boolean;
+    };
+  }>;
+};
+
+export type FlowSurfacePlacementSummary = {
+  scenes?: Array<'page' | 'tab' | 'popup' | 'form' | 'details' | 'table' | 'record' | 'actionPanel'>;
+  slots?: Array<'blocks' | 'actions' | 'recordActions' | 'fields' | 'fieldComponents' | 'subModels'>;
+  parentPublicTypes?: string[];
+  containerKinds?: string[];
+  collectionRequired?: boolean;
+  fieldRequired?: boolean;
+};
+
+// Discovery hint only. Localized writes must still be authorized through target-scoped catalog/create checks.
+export type FlowSurfaceCatalogQueryContext = {
+  targetUid?: string;
+  uid?: string;
+  scene?: string;
+  slot?: 'blocks' | 'actions' | 'recordActions' | 'fields' | 'fieldComponents' | 'subModels';
+  parentPublicType?: string;
+  collectionName?: string;
+  dataSourceKey?: string;
+  fieldInterface?: string;
+};
+
+export type FlowSurfaceCapabilitiesTarget = Pick<FlowSurfaceCatalogQueryContext, 'targetUid' | 'uid'>;
+
+export type FlowSurfaceCapabilityWarning = {
+  code:
+    | 'auto-discovered-readonly'
+    | 'manifest-recommended'
+    | 'dynamic-create-options'
+    | 'partial-settings-schema'
+    | 'public-type-conflict'
+    | 'unsafe-semantic-text'
+    | 'extractor-runtime-error'
+    | 'snapshot-stale'
+    | 'contract-not-verified'
+    | 'readback-parity-missing';
+  message: string;
+};
+
+export type FlowSurfaceJsonSchema = Record<string, unknown>;
+
+export type FlowSurfaceNodeLens = {
+  domain: FlowSurfaceNodeDomain;
+  path: string;
+  mode?: 'set' | 'merge' | 'append';
+};
+
+export type FlowSurfaceInitParamSpec = {
+  name: string;
+  required: boolean;
+  schema: FlowSurfaceJsonSchema;
+  description?: string;
+  examples?: unknown[];
+  internalLens?: FlowSurfaceNodeLens | FlowSurfaceNodeLens[];
+};
+
+export type FlowSurfaceSettingBinding = {
+  key: string;
+  title?: string;
+  description?: string;
+  schema: FlowSurfaceJsonSchema;
+  default?: unknown;
+  examples?: unknown[];
+  visibility?: {
+    create?: boolean;
+    configure?: boolean;
+  };
+  internalLens?: FlowSurfaceNodeLens | FlowSurfaceNodeLens[];
+  mergeStrategy?: 'replace' | 'shallowMerge' | 'deepMerge';
+};
+
+export type FlowSurfaceJsonCreateRecipe = {
+  nodeTemplate: FlowSurfaceNodeSpec;
+  initParams?: FlowSurfaceInitParamSpec[];
+  settings?: FlowSurfaceSettingBinding[];
+};
+
+export type FlowSurfaceCapabilityManifestItem = {
+  id: string;
+  capabilityVersion?: string;
+  kind: FlowSurfaceCapabilityKind;
+  publicType?: string;
+  acceptedAliases?: string[];
+  deprecated?: boolean;
+  replacedBy?: {
+    kind: FlowSurfaceCapabilityKind;
+    publicType: string;
+    ownerPlugin?: string;
+  };
+  label: string;
+  semantic: FlowSurfaceCapabilitySemantic;
+  placement?: FlowSurfacePlacementSummary;
+  implementation: {
+    modelUse: string;
+    legacyModelUses?: string[];
+  };
+  availability?: Partial<FlowSurfaceCapabilityAvailability>;
+  supportLevel?: FlowSurfaceSupportLevel;
+  confidence?: FlowSurfaceCapabilityConfidence;
+  warnings?: FlowSurfaceCapabilityWarning[];
+  initParamsSchema?: FlowSurfaceJsonSchema;
+  settingsSchema?: FlowSurfaceJsonSchema;
+  configureOptions?: FlowSurfaceConfigureOptions;
+  createRecipe?: FlowSurfaceJsonCreateRecipe;
+};
+
+export type FlowSurfaceCapabilitiesProvider = {
+  ownerPlugin: string;
+  getCapabilities(ctx: {
+    app?: unknown;
+    enabledPlugins: ReadonlySet<string>;
+  }): Promise<FlowSurfaceCapabilityManifestItem[]> | FlowSurfaceCapabilityManifestItem[];
+};
+
+export type FlowSurfacePublicCapabilityItem = {
+  kind: FlowSurfaceCapabilityKind;
+  publicType: string;
+  publicTypeMeta: FlowSurfacePublicTypeMeta;
+  label: string;
+  ownerPlugin: string;
+  ownerPluginTitle?: string;
+  origin: FlowSurfaceCapabilityOriginSource;
+  semantic: FlowSurfaceCapabilitySemantic;
+  availability: FlowSurfaceCapabilityAvailability;
+  supportLevel: FlowSurfaceSupportLevel;
+  confidence: FlowSurfaceCapabilityConfidence;
+  placement?: FlowSurfacePlacementSummary;
+  warnings?: FlowSurfaceCapabilityWarning[];
+  identity?: FlowSurfaceCapabilityIdentity;
+  initParamsSchema?: Record<string, unknown>;
+  settingsSchema?: Record<string, unknown>;
+  configureOptions?: FlowSurfaceConfigureOptions;
+};
+
+export type FlowSurfaceCapabilitiesValues = {
+  kinds?: FlowSurfaceCapabilityKind[];
+  publicTypes?: string[];
+  ownerPlugins?: string[];
+  query?: string;
+  // This first discovery slice only supports concrete target lookup. Rich placement hints are reserved
+  // for future target-scoped discovery and must go through `catalog` for write authorization today.
+  target?: FlowSurfaceCapabilitiesTarget;
+  includeUnavailable?: boolean;
+  includeWarnings?: boolean;
+  limit?: number;
+  expand?: Array<'item.identity' | 'item.semantic' | 'item.settings' | 'item.warnings' | 'debugImplementation'>;
+};
+
+export type FlowSurfaceCapabilitiesResponse = {
+  data: FlowSurfacePublicCapabilityItem[];
+  meta: {
+    version: 1;
+    generatedAt: string;
+    // Kept for wire compatibility: plugin owners represented in `data`, not the full enabled package list.
+    enabledPlugins: string[];
+    registrySources: Array<{
+      origin: FlowSurfaceCapabilityOriginSource;
+      count: number;
+    }>;
+    targetHintUsed: boolean;
+  };
+};
+
 export type FlowSurfaceReadTarget = {
   locator: FlowSurfaceReadLocator;
   uid: string;
@@ -154,6 +418,15 @@ export type FlowSurfaceCatalogItem = {
   label: string;
   use: string;
   kind: 'page' | 'tab' | 'block' | 'field' | 'action';
+  publicType?: string;
+  semantic?: FlowSurfaceCapabilitySemantic;
+  ownerPlugin?: string;
+  origin?: FlowSurfaceCapabilityOriginSource;
+  supportLevel?: FlowSurfaceSupportLevel;
+  confidence?: FlowSurfaceCapabilityConfidence;
+  availability?: FlowSurfaceCapabilityAvailability;
+  warnings?: FlowSurfaceCapabilityWarning[];
+  identity?: FlowSurfaceCapabilityIdentity;
   scope?: FlowSurfaceActionScope;
   scene?: string;
   requiredInitParams?: string[];
@@ -180,6 +453,7 @@ export type FlowSurfaceCatalogExpand =
   | 'item.configureOptions'
   | 'item.contracts'
   | 'item.allowedContainerUses'
+  | 'item.identity'
   | 'node.contracts';
 
 export type FlowSurfaceCatalogPopupScenario = {

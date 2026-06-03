@@ -10,12 +10,15 @@
 import { SequelizeCollectionManager } from '@nocobase/data-source-manager';
 import type { ResourcerContext } from '@nocobase/resourcer';
 import { parseLiquidContext, transformSQL } from '@nocobase/utils';
+import { FlowSurfaceCapabilityProviderRegistry } from './flow-surfaces/capability-provider';
 import { registerFlowSurfacesResource } from './flow-surfaces';
 import PluginUISchemaStorageServer from './server';
 import { JSONValue } from './template/resolver';
 import { resolveVariablesBatch, resolveVariablesTemplate } from './variables/resolve';
 
 export class PluginFlowEngineServer extends PluginUISchemaStorageServer {
+  readonly flowSurfaceCapabilityProviders = new FlowSurfaceCapabilityProviderRegistry();
+
   async afterAdd() {}
 
   async beforeLoad() {
