@@ -20,6 +20,10 @@ import { useTranslation } from 'react-i18next';
 
 const FILE_SIZE_LIMIT_DEFAULT = 1024 * 1024 * 20;
 
+function getDataSourceHeaders(dataSourceKey?: string) {
+  return dataSourceKey && dataSourceKey !== 'main' ? { 'x-data-source': dataSourceKey } : {};
+}
+
 function useSizeHint(size: number) {
   const s = size ?? FILE_SIZE_LIMIT_DEFAULT;
   const { t, i18n } = useTranslation();
@@ -77,7 +81,7 @@ const useUploadFiles = (model) => {
       action = `${s}/${ctx.view?.inputArgs.sourceId}/${t}:create`;
     }
     return action;
-  }, [model.context.collection.name, ctx.view?.inputArgs?.sourceId]);
+  }, [model.context.blockModel.association.resourceName, model.context.collection.name, ctx.view?.inputArgs?.sourceId]);
   const uploadingFiles = {};
 
   let pendingNumber = 0;
@@ -119,18 +123,20 @@ export function useStorage(storage) {
   const name = storage ?? '';
   const url = `storages:getBasicInfo/${name}`;
   const ctx = useFlowContext();
+  const dataSourceKey = ctx.collection?.dataSourceKey;
   const { loading, data, run } = useRequest(
     async () => {
       const response = await ctx.api.request({
         url,
+        headers: getDataSourceHeaders(dataSourceKey),
         skipNotify: true,
       });
       return response?.data;
     },
     {
       manual: true,
-      refreshDeps: [name],
-      cacheKey: url,
+      refreshDeps: [name, dataSourceKey],
+      cacheKey: `${dataSourceKey || 'main'}:${url}`,
     },
   );
   useEffect(() => {
@@ -154,12 +160,19 @@ export function useStorageCfg(model) {
 }
 
 export function useStorageUploadProps(props, model) {
+  const ctx = useFlowContext();
   const { storage, storageType } = useStorageCfg(model);
   const useStorageTypeUploadProps = storageType?.useUploadProps;
   const storageTypeUploadProps = useStorageTypeUploadProps?.({ storage, rules: storage.rules, ...props }) || {};
+  const headers = {
+    ...getDataSourceHeaders(ctx.collection?.dataSourceKey),
+    ...storageTypeUploadProps.headers,
+  };
+
   return {
     rules: storage?.rules,
     ...storageTypeUploadProps,
+    headers,
   };
 }
 type RuleFunction = (file: UploadFile, options: any) => string | null;
@@ -217,7 +230,7 @@ export function useBeforeUpload(rules) {
       }
       return error ? false : Promise.resolve(proxiedFile);
     },
-    [rules],
+    [rules, t],
   );
 }
 

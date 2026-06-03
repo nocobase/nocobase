@@ -23,6 +23,10 @@ import {
   shouldShowUploadActionSlot,
 } from './uploadFieldUtils';
 
+function getDataSourceHeaders(dataSourceKey?: string) {
+  return dataSourceKey && dataSourceKey !== 'main' ? { 'x-data-source': dataSourceKey } : {};
+}
+
 export const CardUpload = (props) => {
   const {
     allowSelectExistingRecord,
@@ -347,16 +351,19 @@ UploadFieldModel.registerFlow({
         const fileManagerPlugin: any = ctx.app.pm.get('@nocobase/plugin-file-manager');
         const fileCollection = ctx.model.props.target;
         const collectionField = ctx.collectionField;
+        const dataSourceKey = ctx.collection?.dataSourceKey;
 
         if (!fileManagerPlugin) {
           return onSuccess(file);
         }
         try {
           // 上传前检查存储策略
-          const { data: checkData } = await ctx.api.resource('storages').check({
-            fileCollectionName: fileCollection,
-            storageName: collectionField.options.storage,
-          });
+          const { data: checkData } = await ctx.api
+            .resource('storages', null, getDataSourceHeaders(dataSourceKey))
+            .check({
+              fileCollectionName: fileCollection,
+              storageName: collectionField.options.storage,
+            });
 
           if (!checkData?.data?.isSupportToUploadFiles) {
             const messageValue = ctx
@@ -396,6 +403,7 @@ UploadFieldModel.registerFlow({
             storageId: checkData?.data?.storage?.id,
             storageType: checkData?.data?.storage?.type,
             storageRules: checkData?.data?.storage?.rules,
+            dataSourceKey,
             onProgress: (percent: number) => {
               onProgress?.({ percent });
             },

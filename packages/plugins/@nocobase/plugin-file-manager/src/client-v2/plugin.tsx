@@ -34,6 +34,7 @@ type StorageUploadOptions = {
     size?: number;
     mimetype?: string | string[];
   };
+  dataSourceKey?: string;
   fileCollectionName: string;
   query?: Record<string, string | number | boolean>;
 };
@@ -301,13 +302,14 @@ export class PluginFileManagerClientV2 extends Plugin<Record<string, never>, App
     storageType?: string;
     storageId?: number;
     storageRules?: StorageUploadOptions['storageRules'];
+    dataSourceKey?: string;
     query?: StorageUploadOptions['query'];
   }): Promise<UploadFileResult> {
     if (!options?.file) {
       return { errorMessage: 'Missing file' };
     }
 
-    const { file, storageType, storageId, storageRules, query = {} } = options;
+    const { file, storageType, storageId, storageRules, dataSourceKey, query = {} } = options;
     const fileCollectionName = options.fileCollectionName || 'attachments';
     const storageTypeObject = this.getStorageType(storageType);
 
@@ -318,6 +320,7 @@ export class PluginFileManagerClientV2 extends Plugin<Record<string, never>, App
         storageType,
         storageId,
         storageRules,
+        dataSourceKey,
         fileCollectionName,
         query,
       });
@@ -336,6 +339,7 @@ export class PluginFileManagerClientV2 extends Plugin<Record<string, never>, App
         url,
         method: 'post',
         data: formData,
+        headers: dataSourceKey && dataSourceKey !== 'main' ? { 'x-data-source': dataSourceKey } : {},
       });
 
       return { data: response.data?.data };
