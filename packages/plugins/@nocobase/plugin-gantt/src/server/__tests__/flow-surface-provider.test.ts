@@ -11,7 +11,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { createGanttFlowSurfaceCapabilityProvider, PluginGanttServer } from '../plugin';
 
 describe('Gantt flow surface capability provider', () => {
-  it('should expose a public-safe read-only Gantt canary manifest', () => {
+  it('should expose a public-safe create-enabled Gantt canary manifest', () => {
     const provider = createGanttFlowSurfaceCapabilityProvider();
     const [capability] = provider.getCapabilities({
       enabledPlugins: new Set(['@nocobase/plugin-gantt']),
@@ -27,15 +27,14 @@ describe('Gantt flow surface capability provider', () => {
       },
       availability: {
         create: {
-          supported: false,
-          reasonCode: 'missing-create-contract',
+          supported: true,
         },
         configure: {
           supported: false,
           reasonCode: 'contract-not-verified',
         },
       },
-      supportLevel: 'readback-only',
+      supportLevel: 'create-only',
       initParamsSchema: {
         required: ['collectionName'],
       },
@@ -68,13 +67,13 @@ describe('Gantt flow surface capability provider', () => {
     expect(publicSchema).not.toContain('props');
   });
 
-  it('should validate and resolve a guarded dry-run node while keeping create disabled', () => {
+  it('should validate and resolve a guarded create node', () => {
     const provider = createGanttFlowSurfaceCapabilityProvider();
     const [capability] = provider.getCapabilities({
       enabledPlugins: new Set(['@nocobase/plugin-gantt']),
     });
 
-    expect(capability.availability?.create?.supported).toBe(false);
+    expect(capability.availability?.create?.supported).toBe(true);
     expect(provider.validateSettings?.(capability, { initParams: {}, settings: {} })).toMatchObject({
       ok: false,
       errors: expect.arrayContaining([

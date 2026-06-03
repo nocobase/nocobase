@@ -57,9 +57,7 @@ describe('flowSurfaces capabilities projection', () => {
           },
           availability: {
             create: {
-              supported: false,
-              reasonCode: 'missing-create-contract',
-              reasonSource: 'registry',
+              supported: true,
             },
             configure: {
               supported: false,
@@ -67,7 +65,7 @@ describe('flowSurfaces capabilities projection', () => {
               reasonSource: 'registry',
             },
           },
-          supportLevel: 'readback-only',
+          supportLevel: 'create-only',
           initParamsSchema: {
             type: 'object',
             required: ['collectionName'],
@@ -102,11 +100,14 @@ describe('flowSurfaces capabilities projection', () => {
           warnings: [
             {
               code: 'contract-not-verified',
-              message: 'Gantt is discovery-only in this test fixture.',
+              message: 'Gantt configure writes remain disabled in this test fixture.',
             },
           ],
         },
       ],
+      resolveCreate: () => ({
+        use: 'GanttBlockModel',
+      }),
     };
   }
 
@@ -127,6 +128,9 @@ describe('flowSurfaces capabilities projection', () => {
           },
         },
       ],
+      resolveCreate: () => ({
+        use: 'GanttBlockModel',
+      }),
     };
   }
 
@@ -647,11 +651,10 @@ describe('flowSurfaces capabilities projection', () => {
       },
       ownerPlugin: '@nocobase/plugin-gantt',
       origin: 'canaryOverlay',
-      supportLevel: 'readback-only',
+      supportLevel: 'create-only',
       availability: {
         create: {
-          supported: false,
-          reasonCode: 'missing-create-contract',
+          supported: true,
         },
       },
       semantic: {
@@ -846,11 +849,10 @@ describe('flowSurfaces capabilities projection', () => {
       kind: 'block',
       ownerPlugin: '@nocobase/plugin-gantt',
       origin: 'canaryOverlay',
-      createSupported: false,
+      createSupported: true,
       availability: {
         create: {
-          supported: false,
-          reasonCode: 'missing-create-contract',
+          supported: true,
         },
       },
       requiredInitParams: ['collectionName'],
@@ -1266,8 +1268,7 @@ describe('flowSurfaces capabilities projection', () => {
       },
       availability: {
         create: {
-          supported: false,
-          reasonCode: 'missing-create-contract',
+          supported: true,
         },
       },
     });

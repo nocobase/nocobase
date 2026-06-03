@@ -30,12 +30,15 @@ import {
 import { buildFlowSurfaceCapabilitiesResponse, buildFlowSurfaceDescribeCapabilityResponse } from './capabilities';
 import { resolveDynamicCapabilityCreate } from './capability-resolver';
 import {
+  collectNormalizedProviderCapabilities,
   collectProviderCatalogItems,
   filterProviderCatalogItemsForCatalog,
   type FlowSurfaceCapabilityRegistryLike,
+  type FlowSurfaceCollectedProviderCapability,
 } from './capability-registry';
 import { assertRequestedActionScope, getActionContainerScope, normalizeActionScope } from './action-scope';
 import {
+  assignClientKeysToUids,
   buildActionTree,
   buildBlockTree,
   buildCanonicalTableActionsColumnNode,
@@ -449,6 +452,7 @@ import type {
   FlowSurfaceDescribeCapabilityResponse,
   FlowSurfaceDescribeCapabilityValues,
   FlowSurfaceDescribeValues,
+  FlowSurfaceDynamicCapabilityCreateActionName,
   FlowSurfaceDynamicCapabilityCreateResponse,
   FlowSurfaceDynamicCapabilityCreateValues,
   FlowSurfaceExecutorContext,
@@ -644,9 +648,11 @@ type FlowSurfaceRuntimeOptions = {
   popupTemplateAliasSession?: FlowSurfacePopupTemplateAliasSession;
   popupTemplateTreeCache?: FlowSurfacePopupTemplateTreeCache;
   skipGeneratedLayoutSingleColumnErrors?: boolean;
+  dynamicCapabilityActionName?: FlowSurfaceDynamicCapabilityCreateActionName;
 };
 
 const FORM_BLOCK_USES = new Set(['FormBlockModel', 'CreateFormModel', 'EditFormModel', ...APPROVAL_FORM_BLOCK_USES]);
+const STATIC_BLOCK_PUBLIC_TYPES = new Set(BLOCK_KEY_BY_USE.values());
 const AUTO_SUBMIT_FORM_BLOCK_USES = new Set(['CreateFormModel', 'EditFormModel']);
 const FLOW_SURFACE_DEFAULT_ACTION_SETTINGS_KEYS = new Set(['filter']);
 const DETAILS_BLOCK_USES = new Set(['DetailsBlockModel', ...APPROVAL_DETAILS_BLOCK_USES]);
@@ -2034,15 +2040,11 @@ export class FlowSurfacesService {
       const builtInBlocks = availableBlocks
         .filter((item) => this.isCatalogBlockVisibleForPopupProfile(item.use, popupProfile))
         .map((item) => this.buildCatalogBlockItem(item, popupProfile));
-      const providerBlocks = target
-        ? []
-        : filterProviderCatalogItemsForCatalog({
-            existingItems: builtInBlocks,
-            providerItems: await this.buildProviderCatalogItems({
-              kind: 'block',
-              enabledPackages,
-            }),
-          });
+      const providerBlocks = await this.buildProviderBlockCatalogItems({
+        builtInBlocks,
+        popupProfile,
+        enabledPackages,
+      });
       response.blocks = [
         ...builtInBlocks.map((item) => this.projectCatalogItem(item, expandFlags)),
         ...providerBlocks.map((item) => this.projectCatalogItem(item, expandFlags)),
@@ -2139,6 +2141,39 @@ export class FlowSurfacesService {
     });
   }
 
+  private async collectDynamicBlockCapabilities(enabledPackages: ReadonlySet<string>) {
+    return (
+      await collectNormalizedProviderCapabilities({
+        providerRegistry: this.capabilityProviderRegistry,
+        enabledPackages,
+      })
+    ).filter((item) => item.publicItem.kind === 'block');
+  }
+
+  private async resolveDynamicBlockTypes(enabledPackages: ReadonlySet<string>) {
+    const capabilities = await this.collectDynamicBlockCapabilities(enabledPackages);
+    return new Set(
+      capabilities
+        .map((item) => String(item.publicItem.publicType || '').trim())
+        .filter((publicType) => publicType && !STATIC_BLOCK_PUBLIC_TYPES.has(publicType)),
+    );
+  }
+
+  private async resolveDynamicBlockCapability(
+    publicType: string,
+    enabledPackages: ReadonlySet<string>,
+  ): Promise<FlowSurfaceCollectedProviderCapability | null> {
+    const normalizedType = String(publicType || '').trim();
+    if (!normalizedType) {
+      return null;
+    }
+    if (STATIC_BLOCK_PUBLIC_TYPES.has(normalizedType)) {
+      return null;
+    }
+    const capabilities = await this.collectDynamicBlockCapabilities(enabledPackages);
+    return capabilities.find((item) => item.publicItem.publicType === normalizedType) || null;
+  }
+
   private async buildProviderCatalogItems(input: {
     kind: 'block' | 'action' | 'field';
     enabledPackages: ReadonlySet<string>;
@@ -2148,6 +2183,23 @@ export class FlowSurfacesService {
       enabledPackages: input.enabledPackages,
     });
     return items.filter((item) => item.kind === input.kind);
+  }
+
+  private async buildProviderBlockCatalogItems(input: {
+    builtInBlocks: FlowSurfaceCatalogItem[];
+    popupProfile: FlowSurfacePopupBlockProfile | null;
+    enabledPackages: ReadonlySet<string>;
+  }) {
+    if (input.popupProfile?.isPopupSurface) {
+      return [];
+    }
+    return filterProviderCatalogItemsForCatalog({
+      existingItems: input.builtInBlocks,
+      providerItems: await this.buildProviderCatalogItems({
+        kind: 'block',
+        enabledPackages: input.enabledPackages,
+      }),
+    });
   }
 
   private async analyzeCatalogTarget(input: {
@@ -4138,6 +4190,56 @@ export class FlowSurfacesService {
     return visit(node);
   }
 
+  private async projectDynamicBlockReadbackTypes<T = unknown>(
+    node: T,
+    options: { transaction?: any; enabledPackages?: ReadonlySet<string> } = {},
+  ): Promise<T> {
+    const enabledPackages = await this.resolveEnabledPluginPackages(options);
+    const capabilities = await this.collectDynamicBlockCapabilities(enabledPackages);
+    const publicTypeByUse = new Map<string, string>();
+
+    capabilities.forEach((capability) => {
+      if (!capability.publicItem.availability.readback.supported) {
+        return;
+      }
+      const publicType = String(capability.publicItem.publicType || '').trim();
+      if (!publicType) {
+        return;
+      }
+      [capability.implementation.modelUse, ...(capability.implementation.legacyModelUses || [])].forEach((modelUse) => {
+        const normalizedUse = String(modelUse || '').trim();
+        if (!normalizedUse || BLOCK_KEY_BY_USE.has(normalizedUse)) {
+          return;
+        }
+        publicTypeByUse.set(normalizedUse, publicType);
+      });
+    });
+
+    if (!publicTypeByUse.size) {
+      return node;
+    }
+
+    const visit = (current: unknown): unknown => {
+      if (!current || typeof current !== 'object') {
+        return current;
+      }
+      const currentNode = current as Record<string, unknown>;
+      const publicType = publicTypeByUse.get(String(currentNode.use || '').trim());
+      if (publicType && !String(currentNode.type || '').trim()) {
+        currentNode.type = publicType;
+      }
+      const subModels = currentNode.subModels;
+      if (subModels && typeof subModels === 'object') {
+        for (const value of Object.values(subModels as Record<string, unknown>)) {
+          _.castArray(value).forEach((child) => visit(child));
+        }
+      }
+      return current;
+    };
+
+    return visit(node) as T;
+  }
+
   private async buildSurfaceReadPayload(
     target: FlowSurfaceReadLocator,
     resolved: FlowSurfaceResolvedTarget,
@@ -4190,7 +4292,12 @@ export class FlowSurfacesService {
         'unknown';
       throwBadRequest(`flowSurfaces:get target '${resolvedUid}' could not resolve a readable surface tree`);
     }
-    const publicNode = this.stripInternalSurfaceMetaFromNodeTree(_.cloneDeep(rawNode));
+    const publicNode = await this.projectDynamicBlockReadbackTypes(
+      this.stripInternalSurfaceMetaFromNodeTree(_.cloneDeep(rawNode)),
+      {
+        transaction: options.transaction,
+      },
+    );
     return this.buildSurfaceReadPayload(target, resolved, publicNode, options);
   }
 
@@ -4321,6 +4428,7 @@ export class FlowSurfacesService {
       popupTemplateAliasSession?: FlowSurfacePopupTemplateAliasSession;
       popupTemplateTreeCache?: FlowSurfacePopupTemplateTreeCache;
       skipGeneratedLayoutSingleColumnErrors?: boolean;
+      dynamicCapabilityActionName?: FlowSurfaceDynamicCapabilityCreateActionName;
     } = {},
   ) {
     const actionOptions = {
@@ -4329,6 +4437,7 @@ export class FlowSurfacesService {
       popupTemplateAliasSession: options.popupTemplateAliasSession,
       popupTemplateTreeCache: options.popupTemplateTreeCache,
       skipGeneratedLayoutSingleColumnErrors: options.skipGeneratedLayoutSingleColumnErrors === true,
+      dynamicCapabilityActionName: options.dynamicCapabilityActionName,
     };
     switch (action) {
       case 'compose':
@@ -4513,10 +4622,13 @@ export class FlowSurfacesService {
         `flowSurfaces applyBlueprint replace mode requires page.enableTabs=true when tabs.length > 1 and the current page has enableTabs=false`,
       );
     }
+    const enabledPackages = await this.resolveEnabledPluginPackages({ transaction });
+    const dynamicBlockTypes = await this.resolveDynamicBlockTypes(enabledPackages);
     return compileFlowSurfaceApplyBlueprintRequest(document, {
       replaceTarget,
       getCollection: (dataSourceKey, collectionName) =>
         this.getCollection(dataSourceKey || 'main', collectionName || ''),
+      dynamicBlockTypes,
     });
   }
 
@@ -5291,9 +5403,11 @@ export class FlowSurfacesService {
     options: { transaction?: any; currentRoles?: FlowSurfaceRequestRoles; enabledPackages?: ReadonlySet<string> } = {},
   ) {
     const enabledPackages = await this.resolveEnabledPluginPackages(options);
+    const dynamicBlockTypes = await this.resolveDynamicBlockTypes(enabledPackages);
     await assertFlowSurfaceAuthoringPayload('applyBlueprint', values, {
       transaction: options.transaction,
       enabledPackages,
+      dynamicBlockTypes,
       findMenuGroupRoutesByTitle: (title, transaction) => this.findMenuGroupRoutesByTitle(title, transaction),
       getCollection: (dataSourceKey, collectionName) =>
         this.getCollection(dataSourceKey || 'main', collectionName || ''),
@@ -5321,10 +5435,12 @@ export class FlowSurfacesService {
     if (options.skipAuthoringValidation !== true) {
       await this.assertApplyBlueprintAuthoringPayload(values, options);
     }
+    const enabledPackages = await this.resolveEnabledPluginPackages(options);
+    const dynamicBlockTypes = await this.resolveDynamicBlockTypes(enabledPackages);
     const prepared = await this.prepareApplyBlueprintRequest(values, options.transaction, createdKanbanSortFields);
     const popupTemplateAliasSession = this.createPopupTemplateAliasSession();
     const popupTemplateTreeCache: FlowSurfacePopupTemplateTreeCache = new Map();
-    this.validateApplyBlueprintPopupTemplateAliases(prepared.document, popupTemplateAliasSession);
+    this.validateApplyBlueprintPopupTemplateAliases(prepared.document, popupTemplateAliasSession, dynamicBlockTypes);
     const result = await executeInternalPlan(
       {
         surface: prepared.surface,
@@ -5337,13 +5453,14 @@ export class FlowSurfacesService {
         popupTemplateAliasSession,
         popupTemplateTreeCache,
         skipGeneratedLayoutSingleColumnErrors: true,
+        dynamicCapabilityActionName: 'applyBlueprint',
       }),
       options,
     );
     const pageLocator = resolveApplyBlueprintPageLocator(prepared, result);
     await this.ensureSurfaceTableDefaultActionIntegrity(pageLocator, {
       ...options,
-      enabledPackages: await this.resolveEnabledPluginPackages(options),
+      enabledPackages,
       popupTemplateAliasSession,
       popupTemplateTreeCache,
     });
@@ -7407,9 +7524,11 @@ export class FlowSurfacesService {
       popupTemplateAliasSession?: FlowSurfacePopupTemplateAliasSession;
       popupTemplateTreeCache?: FlowSurfacePopupTemplateTreeCache;
       skipGeneratedLayoutSingleColumnErrors?: boolean;
+      dynamicCapabilityActionName?: FlowSurfaceDynamicCapabilityCreateActionName;
     } = {},
   ) {
     const enabledPackages = await this.resolveEnabledPluginPackages(options);
+    const dynamicBlockTypes = await this.resolveDynamicBlockTypes(enabledPackages);
     const composeValues = this.prepareComposeChartAssetSettings(values);
     const target = await this.prepareWriteTarget('compose', composeValues?.target, composeValues, options);
     const authoringContext = await this.buildTargetAuthoringContext({
@@ -7419,6 +7538,7 @@ export class FlowSurfacesService {
     await assertFlowSurfaceAuthoringPayload('compose', composeValues, {
       transaction: options.transaction,
       enabledPackages,
+      dynamicBlockTypes,
       skipGeneratedLayoutSingleColumnErrors: options.skipGeneratedLayoutSingleColumnErrors === true,
       ...authoringContext,
       getCollection: (dataSourceKey, collectionName) =>
@@ -7440,6 +7560,7 @@ export class FlowSurfacesService {
         dataSourceKey: authoringContext.currentDataSourceKey,
         collectionName: authoringContext.currentCollectionName,
       },
+      dynamicBlockTypes,
     );
     this.validateComposePopupTemplateAliases(normalizedBlocks, popupTemplateAliasSession);
     const blockParent = await this.surfaceContext.resolveBlockParent(target, options.transaction);
@@ -7452,7 +7573,7 @@ export class FlowSurfacesService {
     const existingItems = _.castArray(initialGrid?.subModels?.items || []).filter((item: any) => item?.uid);
 
     for (const blockSpec of normalizedBlocks) {
-      if (!blockSpec.template && blockSpec.resource?.kind !== 'semantic') {
+      if (!blockSpec.isDynamic && !blockSpec.template && blockSpec.resource?.kind !== 'semantic') {
         this.assertRequiredBlockResourceInit({
           actionName: 'compose',
           blockCatalogItem: blockSpec.catalogItem,
@@ -7519,6 +7640,7 @@ export class FlowSurfacesService {
             skipDefaultBlockActions: true,
             skipAuthoringValidation: true,
             explicitFields: spec.explicitFields === true,
+            dynamicCapabilityActionName: options.dynamicCapabilityActionName || 'compose',
           },
         );
         const generatedDefaultFilterInfo = await this.buildDefaultFilterFromDataBlockUid({
@@ -8969,6 +9091,128 @@ export class FlowSurfacesService {
     };
   }
 
+  private normalizeDynamicCapabilityPublicObject(actionName: string, field: string, value: unknown) {
+    if (_.isUndefined(value)) {
+      return undefined;
+    }
+    if (!_.isPlainObject(value)) {
+      throwBadRequest(`flowSurfaces ${actionName} ${field} must be an object`);
+    }
+    return _.cloneDeep(value) as Record<string, unknown>;
+  }
+
+  private assertDynamicCapabilityNodeUse(input: {
+    actionName: string;
+    publicType: string;
+    capability: FlowSurfaceCollectedProviderCapability;
+    node: FlowSurfaceNodeSpec;
+  }) {
+    const expectedUse = String(input.capability.implementation.modelUse || '').trim();
+    const actualUse = String(input.node?.use || '').trim();
+    if (expectedUse && actualUse === expectedUse) {
+      return;
+    }
+    throwBadRequest(
+      `flowSurfaces ${input.actionName} dynamic block '${input.publicType}' generated an incompatible node`,
+    );
+  }
+
+  private async tryAddDynamicBlock(input: {
+    values: Record<string, any>;
+    options: {
+      transaction?: any;
+      deferAutoLayout?: boolean;
+      dynamicCapabilityActionName?: FlowSurfaceDynamicCapabilityCreateActionName;
+    };
+    enabledPackages: ReadonlySet<string>;
+    blockType: string;
+    target: FlowSurfaceWriteTarget;
+    parentUid: string;
+    subKey: string;
+    subType: string;
+    popupSurface?: any;
+    popupProfile: FlowSurfacePopupBlockProfile | null;
+    semanticResource: FlowSurfaceNormalizedResourceInput;
+    rawResourceInit?: Record<string, any>;
+  }) {
+    const publicType = String(input.blockType || '').trim();
+    if (!publicType) {
+      return null;
+    }
+    const actionName = input.options.dynamicCapabilityActionName || 'addBlock';
+    const capability = await this.resolveDynamicBlockCapability(publicType, input.enabledPackages);
+    if (!capability) {
+      return null;
+    }
+    const explicitInitParams = this.normalizeDynamicCapabilityPublicObject(
+      actionName,
+      'initParams',
+      input.values.initParams,
+    );
+    if (explicitInitParams && (input.semanticResource || input.rawResourceInit)) {
+      throwBadRequest(
+        `flowSurfaces ${actionName} dynamic block '${publicType}' does not allow initParams with resource`,
+      );
+    }
+    const resolvedResourceInit = explicitInitParams
+      ? undefined
+      : await this.resolvePopupCollectionBlockResourceInit({
+          actionName,
+          blockUse: capability.implementation.modelUse,
+          popupProfile: input.popupProfile,
+          semanticResource: input.semanticResource?.kind === 'semantic' ? input.semanticResource.value : undefined,
+          resourceInit:
+            input.rawResourceInit ||
+            (input.semanticResource?.kind === 'raw'
+              ? (input.semanticResource.value as Record<string, any>)
+              : undefined),
+        });
+    const dynamicCreate = await resolveDynamicCapabilityCreate({
+      publicType,
+      target: input.target,
+      initParams: explicitInitParams || resolvedResourceInit || {},
+      settings: this.normalizeDynamicCapabilityPublicObject(actionName, 'settings', input.values.settings) || {},
+      rawPublicPayload: input.values,
+      enabledPackages: input.enabledPackages,
+      providerRegistry: this.capabilityProviderRegistry,
+      actionName,
+    });
+    const tree = assignClientKeysToUids(_.cloneDeep(dynamicCreate.node), {});
+    this.assertDynamicCapabilityNodeUse({
+      actionName,
+      publicType,
+      capability,
+      node: tree,
+    });
+    this.contractGuard.validateNodeTreeAgainstContract(tree);
+    const initialGrid = input.options.deferAutoLayout
+      ? null
+      : await this.repository.findModelById(input.parentUid, {
+          transaction: input.options.transaction,
+          includeAsyncNode: true,
+        });
+    const created = await this.repository.upsertModel(
+      {
+        parentId: input.parentUid,
+        subKey: input.subKey,
+        subType: input.subType,
+        ...tree,
+      },
+      { transaction: input.options.transaction },
+    );
+    const result = this.buildBlockCreateResult(
+      { ...tree, uid: created },
+      input.parentUid,
+      input.subKey,
+      input.popupSurface,
+    );
+    if (!input.options.deferAutoLayout && initialGrid?.uid) {
+      await this.appendAddedBlockLayout(input.parentUid, created, initialGrid, input.options);
+    }
+    await this.persistCreatedKeysForAction('addBlock', input.values, result, input.options.transaction);
+    return result;
+  }
+
   async addBlock(
     values: Record<string, any>,
     options: {
@@ -8980,9 +9224,11 @@ export class FlowSurfacesService {
       skipAuthoringValidation?: boolean;
       explicitFields?: boolean;
       popupTemplateTreeCache?: FlowSurfacePopupTemplateTreeCache;
+      dynamicCapabilityActionName?: FlowSurfaceDynamicCapabilityCreateActionName;
     } = {},
   ) {
     const enabledPackages = await this.resolveEnabledPluginPackages(options);
+    const dynamicBlockTypes = await this.resolveDynamicBlockTypes(enabledPackages);
     const templateRef =
       _.isUndefined(values?.template) || !hasFlowSurfaceTemplateReference(values?.template)
         ? undefined
@@ -9064,6 +9310,7 @@ export class FlowSurfacesService {
       await assertFlowSurfaceAuthoringPayload('addBlock', values, {
         transaction: options.transaction,
         enabledPackages,
+        dynamicBlockTypes,
         ...authoringContext,
         getCollection: (dataSourceKey, collectionName) =>
           this.getCollection(dataSourceKey || 'main', collectionName || ''),
@@ -9077,6 +9324,23 @@ export class FlowSurfacesService {
       transaction: options.transaction,
       includeAsyncNode: true,
     });
+    const dynamicBlockResult = await this.tryAddDynamicBlock({
+      values,
+      options,
+      enabledPackages,
+      blockType,
+      target,
+      parentUid,
+      subKey,
+      subType,
+      popupSurface,
+      popupProfile,
+      semanticResource,
+      rawResourceInit,
+    });
+    if (dynamicBlockResult) {
+      return dynamicBlockResult;
+    }
     const catalogItem = resolveSupportedBlockCatalogItem(
       {
         type: values.type,
@@ -10208,8 +10472,10 @@ export class FlowSurfacesService {
 
   async addBlocks(values: Record<string, any>) {
     const enabledPackages = await this.resolveEnabledPluginPackages();
+    const dynamicBlockTypes = await this.resolveDynamicBlockTypes(enabledPackages);
     await assertFlowSurfaceAuthoringPayload('addBlocks', values, {
       enabledPackages,
+      dynamicBlockTypes,
       getCollection: (dataSourceKey, collectionName) =>
         this.getCollection(dataSourceKey || 'main', collectionName || ''),
     });
@@ -10230,6 +10496,7 @@ export class FlowSurfacesService {
             ...options,
             preserveSingleScopeDataBlockTitle,
             skipAuthoringValidation: true,
+            dynamicCapabilityActionName: 'addBlocks',
           },
         ),
     });
@@ -10540,6 +10807,7 @@ export class FlowSurfacesService {
   private validateApplyBlueprintPopupTemplateAliases(
     document: FlowSurfaceApplyBlueprintDocument,
     popupTemplateAliasSession?: FlowSurfacePopupTemplateAliasSession,
+    dynamicBlockTypes?: ReadonlySet<string>,
   ) {
     const availableAliases = new Set<string>(popupTemplateAliasSession ? popupTemplateAliasSession.keys() : []);
     document.tabs.forEach((tab, tabIndex) => {
@@ -10547,6 +10815,7 @@ export class FlowSurfacesService {
         mode: document.mode === 'replace' ? 'replace' : 'append',
         getCollection: (dataSourceKey, collectionName) =>
           this.getCollection(dataSourceKey || 'main', collectionName || ''),
+        dynamicBlockTypes,
       });
       this.validatePopupTemplateAliasesInBlocks(
         _.castArray(composeValues.blocks || []),
@@ -19040,6 +19309,7 @@ export class FlowSurfacesService {
       dataSourceKey?: string;
       collectionName?: string;
     },
+    dynamicBlockTypes?: ReadonlySet<string>,
   ) {
     if (!_.isPlainObject(input)) {
       throwBadRequest(`flowSurfaces compose block #${index + 1} must be an object`);
@@ -19058,6 +19328,7 @@ export class FlowSurfacesService {
       `flowSurfaces compose block #${index + 1}`,
     );
     const type = String(input.type || '').trim();
+    const isDynamicBlock = !!type && dynamicBlockTypes?.has(type);
     const template = _.isUndefined(input.template)
       ? undefined
       : _.isPlainObject(input.template)
@@ -19080,23 +19351,72 @@ export class FlowSurfacesService {
     if (!key || (!type && !template)) {
       throwBadRequest(`flowSurfaces compose block #${index + 1} requires key and either type or template`);
     }
-    const blockCatalogItem = type
-      ? resolveSupportedBlockCatalogItem(
-          { type },
-          {
-            context: 'compose',
-            enabledPackages,
-            requireCreateSupported: true,
-            skipContainerValidation: true,
-          },
-        )
-      : null;
+    const resource = this.normalizeResourceInput(input.resource);
+    const blockCatalogItem =
+      type && !isDynamicBlock
+        ? resolveSupportedBlockCatalogItem(
+            { type },
+            {
+              context: 'compose',
+              enabledPackages,
+              requireCreateSupported: true,
+              skipContainerValidation: true,
+            },
+          )
+        : null;
+    const hasInitParams = Object.prototype.hasOwnProperty.call(input, 'initParams');
+    if (isDynamicBlock) {
+      if (template) {
+        throwBadRequest(`flowSurfaces compose block #${index + 1} dynamic blocks do not support template`);
+      }
+      [
+        'fields',
+        'fieldGroups',
+        'fieldsLayout',
+        'actions',
+        'recordActions',
+        'popup',
+        'defaultActionSettings',
+        'defaultFilter',
+      ].forEach((section) => {
+        if (Object.prototype.hasOwnProperty.call(input, section)) {
+          throwBadRequest(`flowSurfaces compose block #${index + 1} dynamic blocks do not support ${section}`);
+        }
+      });
+      const initParams = this.normalizeDynamicCapabilityPublicObject(
+        'compose',
+        `block #${index + 1} initParams`,
+        input.initParams,
+      );
+      if (initParams && resource) {
+        throwBadRequest(
+          `flowSurfaces compose block #${index + 1} dynamic blocks do not allow initParams with resource`,
+        );
+      }
+      return {
+        index: index + 1,
+        key,
+        type,
+        isDynamic: true,
+        catalogItem: null,
+        resource: initParams ? undefined : resource,
+        ...(initParams ? { initParams } : {}),
+        settings:
+          this.normalizeDynamicCapabilityPublicObject('compose', `block #${index + 1} settings`, input.settings) || {},
+        explicitFields: false,
+        fields: [],
+        actions: [],
+        recordActions: [],
+      };
+    }
+    if (hasInitParams) {
+      throwBadRequest(`flowSurfaces compose block #${index + 1} initParams is only supported for dynamic blocks`);
+    }
     const blockDefaultFilter = normalizeFlowSurfacePublicBlockDefaultFilter('compose', input.defaultFilter, {
       blockType: type,
       template,
       path: `block #${index + 1}`,
     });
-    const resource = this.normalizeResourceInput(input.resource);
     const defaultFilterResourceRequest = {
       blockType: type,
       template,
@@ -19283,6 +19603,7 @@ export class FlowSurfacesService {
       dataSourceKey?: string;
       collectionName?: string;
     },
+    dynamicBlockTypes?: ReadonlySet<string>,
   ) {
     const rawBlocks = _.castArray(input || []);
     const preserveSingleScopeDataBlockTitle = countFlowSurfaceNonTemplateTitleCleanupDataBlocks(rawBlocks) > 1;
@@ -19294,6 +19615,7 @@ export class FlowSurfacesService {
         preserveSingleScopeDataBlockTitle,
         popupDefaultsMetadata,
         resourceFallback,
+        dynamicBlockTypes,
       ),
     );
     assertFlowSurfaceComposeUniqueKeys(normalizedBlocks, 'flowSurfaces compose blocks');

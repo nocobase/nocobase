@@ -53,10 +53,10 @@ type GanttFlowSurfaceCapabilityManifestItem = {
   availability?: {
     render?: { supported: boolean };
     readback?: { supported: boolean };
-    create?: { supported: boolean; reasonCode?: 'missing-create-contract'; reasonSource?: 'registry' };
+    create?: { supported: boolean };
     configure?: { supported: boolean; reasonCode?: 'contract-not-verified'; reasonSource?: 'registry' };
   };
-  supportLevel?: 'readback-only';
+  supportLevel?: 'create-only' | 'readback-only';
   confidence?: 'high';
   initParamsSchema?: Record<string, unknown>;
   settingsSchema?: Record<string, unknown>;
@@ -138,9 +138,7 @@ export function createGanttFlowSurfaceCapabilityProvider(): GanttFlowSurfaceCapa
             render: { supported: true },
             readback: { supported: true },
             create: {
-              supported: false,
-              reasonCode: 'missing-create-contract',
-              reasonSource: 'registry',
+              supported: true,
             },
             configure: {
               supported: false,
@@ -148,7 +146,7 @@ export function createGanttFlowSurfaceCapabilityProvider(): GanttFlowSurfaceCapa
               reasonSource: 'registry',
             },
           },
-          supportLevel: 'readback-only',
+          supportLevel: 'create-only',
           confidence: 'high',
           initParamsSchema: {
             type: 'object',
@@ -266,7 +264,7 @@ export function createGanttFlowSurfaceCapabilityProvider(): GanttFlowSurfaceCapa
           warnings: [
             {
               code: 'contract-not-verified',
-              message: 'Gantt is exposed for discovery only until create and readback parity are verified.',
+              message: 'Gantt configure writes remain disabled until configure parity is verified.',
             },
           ],
         },

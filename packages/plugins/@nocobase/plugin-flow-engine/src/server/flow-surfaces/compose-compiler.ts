@@ -61,8 +61,10 @@ export type FlowSurfaceComposeNormalizedBlockSpec = {
   index?: number;
   key: string;
   type?: string;
+  isDynamic?: boolean;
   catalogItem?: FlowSurfaceComposeObject | null;
   resource?: FlowSurfaceComposeNormalizedResource;
+  initParams?: FlowSurfaceComposeObject;
   template?: FlowSurfaceComposeObject;
   settings?: FlowSurfaceComposeObject;
   explicitFields?: boolean;
@@ -79,8 +81,10 @@ export type FlowSurfaceComposeBlockCreatePayload = {
   type?: string;
   resource?: FlowSurfaceComposeObject;
   resourceInit?: FlowSurfaceComposeObject;
+  initParams?: FlowSurfaceComposeObject;
   template?: FlowSurfaceComposeObject;
   key?: string;
+  settings?: FlowSurfaceComposeObject;
 };
 
 export type FlowSurfaceCompiledComposeBlockTask = {
@@ -242,6 +246,8 @@ function buildComposeBlockCreatePayload(
     ...(blockSpec.type ? { type: blockSpec.type } : {}),
     ...(blockSpec.resource?.kind === 'semantic' ? { resource: blockSpec.resource.value } : {}),
     ...(blockSpec.resource?.kind === 'raw' ? { resourceInit: blockSpec.resource.value } : {}),
+    ...(blockSpec.initParams ? { initParams: blockSpec.initParams } : {}),
+    ...(blockSpec.isDynamic && blockSpec.settings ? { settings: blockSpec.settings } : {}),
     ...(blockSpec.template ? { template: blockSpec.template } : {}),
   };
 }

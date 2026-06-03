@@ -86,4 +86,126 @@ describe('flowSurfaces applyBlueprint tab normalization', () => {
       enableTabs: true,
     });
   });
+
+  it('should compile dynamic block types into public compose payloads', () => {
+    const document = prepareFlowSurfaceApplyBlueprintDocument({
+      version: '1',
+      mode: 'create',
+      page: {
+        title: 'Timeline',
+      },
+      tabs: [
+        {
+          title: 'Overview',
+          blocks: [
+            {
+              key: 'timeline',
+              type: 'gantt',
+              title: 'Ignored static title',
+              resource: {
+                dataSourceKey: 'main',
+                collectionName: 'tasks',
+              },
+              settings: {
+                titleField: 'title',
+                startField: 'startAt',
+                endField: 'endAt',
+              },
+            },
+            {
+              key: 'timelineByParams',
+              type: 'gantt',
+              initParams: {
+                collectionName: 'tasks',
+              },
+              settings: {
+                titleField: 'title',
+                startField: 'startAt',
+                endField: 'endAt',
+              },
+            },
+          ],
+        },
+      ],
+    });
+    const program = compileFlowSurfaceApplyBlueprintRequest(document, {
+      dynamicBlockTypes: new Set(['gantt']),
+    });
+    const composeStep = program.steps.find((step) => step.action === 'compose');
+    const [block, initParamsBlock] = composeStep?.values?.blocks || [];
+
+    expect(block).toMatchObject({
+      key: 'Overview.timeline',
+      type: 'gantt',
+      resource: {
+        dataSourceKey: 'main',
+        collectionName: 'tasks',
+      },
+      settings: {
+        titleField: 'title',
+        startField: 'startAt',
+        endField: 'endAt',
+      },
+    });
+    expect(block).not.toHaveProperty('fields');
+    expect(block).not.toHaveProperty('actions');
+    expect(block).not.toHaveProperty('recordActions');
+    expect(block).not.toHaveProperty('defaultFilter');
+    expect(block.settings).not.toHaveProperty('title');
+    expect(initParamsBlock).toMatchObject({
+      key: 'Overview.timelineByParams',
+      type: 'gantt',
+      initParams: {
+        collectionName: 'tasks',
+      },
+      settings: {
+        titleField: 'title',
+        startField: 'startAt',
+        endField: 'endAt',
+      },
+    });
+    expect(initParamsBlock).not.toHaveProperty('resource');
+  });
+
+  it('should compile registered dynamic block types so provider availability can gate writes', () => {
+    const document = prepareFlowSurfaceApplyBlueprintDocument({
+      version: '1',
+      mode: 'create',
+      page: {
+        title: 'Disabled dynamic',
+      },
+      tabs: [
+        {
+          title: 'Overview',
+          blocks: [
+            {
+              key: 'disabled',
+              type: 'dryRun',
+              initParams: {
+                collectionName: 'tasks',
+              },
+              settings: {
+                pageSize: 20,
+              },
+            },
+          ],
+        },
+      ],
+    });
+    const program = compileFlowSurfaceApplyBlueprintRequest(document, {
+      dynamicBlockTypes: new Set(['dryRun']),
+    });
+    const composeStep = program.steps.find((step) => step.action === 'compose');
+
+    expect(composeStep?.values?.blocks?.[0]).toMatchObject({
+      key: 'Overview.disabled',
+      type: 'dryRun',
+      initParams: {
+        collectionName: 'tasks',
+      },
+      settings: {
+        pageSize: 20,
+      },
+    });
+  });
 });

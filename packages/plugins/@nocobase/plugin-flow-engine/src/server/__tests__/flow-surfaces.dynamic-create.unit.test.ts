@@ -11,7 +11,12 @@ import { describe, expect, it, vi } from 'vitest';
 import { resolveJsonCreateRecipe } from '../flow-surfaces/capability-recipe';
 import { resolveDynamicCapabilityCreate } from '../flow-surfaces/capability-resolver';
 import { FlowSurfaceAggregateError, FlowSurfaceBadRequestError } from '../flow-surfaces/errors';
-import type { FlowSurfaceCapabilitiesProvider, FlowSurfaceJsonCreateRecipe } from '../flow-surfaces/types';
+import { FlowSurfacesService } from '../flow-surfaces/service';
+import type {
+  FlowSurfaceCapabilitiesProvider,
+  FlowSurfaceCatalogItem,
+  FlowSurfaceJsonCreateRecipe,
+} from '../flow-surfaces/types';
 
 describe('flowSurfaces dynamic capability create dry-run', () => {
   function createProviderRegistry(providers: FlowSurfaceCapabilitiesProvider[]) {
@@ -912,5 +917,283 @@ describe('flowSurfaces dynamic capability create dry-run', () => {
         }),
       ],
     });
+  });
+
+  it('should annotate dynamic provider readback nodes with canonical public type', async () => {
+    const service = new FlowSurfacesService({
+      flowSurfaceCapabilityProviders: createProviderRegistry([
+        {
+          ownerPlugin: '@nocobase/plugin-gantt',
+          getCapabilities: () => [
+            {
+              id: 'blocks.gantt',
+              kind: 'block',
+              publicType: 'gantt',
+              label: 'Gantt',
+              semantic: {
+                title: 'Gantt',
+              },
+              implementation: {
+                modelUse: 'GanttBlockModel',
+              },
+              availability: {
+                create: {
+                  supported: true,
+                },
+              },
+            },
+          ],
+          resolveCreate: () => ({
+            use: 'GanttBlockModel',
+          }),
+        },
+        createDryRunProvider(),
+      ]),
+    } as unknown as ConstructorParameters<typeof FlowSurfacesService>[0]);
+    type DynamicReadbackProjector = {
+      projectDynamicBlockReadbackTypes<T>(node: T, options: { enabledPackages: ReadonlySet<string> }): Promise<T>;
+    };
+    const tree = {
+      uid: 'root',
+      use: 'GridModel',
+      subModels: {
+        items: [
+          {
+            uid: 'gantt-1',
+            use: 'GanttBlockModel',
+          },
+          {
+            uid: 'table-1',
+            use: 'TableBlockModel',
+          },
+        ],
+      },
+    };
+
+    const projected = await (service as unknown as DynamicReadbackProjector).projectDynamicBlockReadbackTypes(tree, {
+      enabledPackages: new Set(['@nocobase/plugin-gantt', '@nocobase/plugin-dry-run']),
+    });
+
+    expect(projected.subModels.items[0]).toMatchObject({
+      use: 'GanttBlockModel',
+      type: 'gantt',
+    });
+    expect(projected.subModels.items[1]).toEqual({
+      uid: 'table-1',
+      use: 'TableBlockModel',
+    });
+  });
+
+  it('should keep provider-backed block catalog items out of popup-scoped raw projection', async () => {
+    const service = new FlowSurfacesService({
+      flowSurfaceCapabilityProviders: createProviderRegistry([createDryRunProvider()]),
+    } as unknown as ConstructorParameters<typeof FlowSurfacesService>[0]);
+    type ProviderBlockCatalogBuilder = {
+      buildProviderBlockCatalogItems(input: {
+        builtInBlocks: FlowSurfaceCatalogItem[];
+        popupProfile: unknown;
+        enabledPackages: ReadonlySet<string>;
+      }): Promise<FlowSurfaceCatalogItem[]>;
+    };
+    const buildProviderBlockCatalogItems = (
+      service as unknown as ProviderBlockCatalogBuilder
+    ).buildProviderBlockCatalogItems.bind(service);
+    const enabledPackages = new Set(['@nocobase/plugin-dry-run']);
+
+    await expect(
+      buildProviderBlockCatalogItems({
+        builtInBlocks: [],
+        popupProfile: null,
+        enabledPackages,
+      }),
+    ).resolves.toEqual([
+      expect.objectContaining({
+        key: 'dryRun',
+        publicType: 'dryRun',
+        use: 'TableBlockModel',
+      }),
+    ]);
+
+    await expect(
+      buildProviderBlockCatalogItems({
+        builtInBlocks: [],
+        popupProfile: {
+          isPopupSurface: true,
+          hasCurrentRecord: true,
+          hasAssociationContext: false,
+          scene: 'one',
+        },
+        enabledPackages,
+      }),
+    ).resolves.toEqual([]);
+  });
+
+  it('should route create-disabled provider block writes through dynamic availability gating', async () => {
+    const service = new FlowSurfacesService({
+      flowSurfaceCapabilityProviders: createProviderRegistry([createDryRunProvider({ createSupported: false })]),
+    } as unknown as ConstructorParameters<typeof FlowSurfacesService>[0]);
+    type DynamicWriteHarness = {
+      resolveDynamicBlockTypes(enabledPackages: ReadonlySet<string>): Promise<Set<string>>;
+      normalizeComposeBlocks(
+        input: unknown,
+        enabledPackages: ReadonlySet<string>,
+        popupDefaultsMetadata: undefined,
+        resourceFallback: undefined,
+        dynamicBlockTypes: ReadonlySet<string>,
+      ): Array<{
+        key: string;
+        type?: string;
+        isDynamic?: boolean;
+        initParams?: Record<string, unknown>;
+        settings?: Record<string, unknown>;
+      }>;
+      tryAddDynamicBlock(input: {
+        values: Record<string, unknown>;
+        options: Record<string, unknown>;
+        enabledPackages: ReadonlySet<string>;
+        blockType: string;
+        target: { uid: string };
+        parentUid: string;
+        subKey: string;
+        subType: string;
+        popupProfile: null;
+        semanticResource: undefined;
+      }): Promise<unknown>;
+    };
+    const harness = service as unknown as DynamicWriteHarness;
+    const enabledPackages = new Set(['@nocobase/plugin-dry-run']);
+    const dynamicBlockTypes = await harness.resolveDynamicBlockTypes(enabledPackages);
+
+    expect(dynamicBlockTypes.has('dryRun')).toBe(true);
+    const [normalizedBlock] = harness.normalizeComposeBlocks(
+      [
+        {
+          key: 'disabledDryRun',
+          type: 'dryRun',
+          initParams: {
+            collectionName: 'tasks',
+          },
+          settings: {
+            pageSize: 20,
+          },
+        },
+      ],
+      enabledPackages,
+      undefined,
+      undefined,
+      dynamicBlockTypes,
+    );
+    expect(normalizedBlock).toMatchObject({
+      key: 'disabledDryRun',
+      type: 'dryRun',
+      isDynamic: true,
+    });
+
+    let caught: unknown;
+    try {
+      await harness.tryAddDynamicBlock({
+        values: {
+          type: 'dryRun',
+          initParams: {
+            collectionName: 'tasks',
+          },
+          settings: {
+            pageSize: 20,
+          },
+        },
+        options: {},
+        enabledPackages,
+        blockType: 'dryRun',
+        target: {
+          uid: 'grid-1',
+        },
+        parentUid: 'grid-1',
+        subKey: 'items',
+        subType: 'array',
+        popupProfile: null,
+        semanticResource: undefined,
+      });
+    } catch (error) {
+      caught = error;
+    }
+
+    expect(caught).toBeInstanceOf(FlowSurfaceBadRequestError);
+    expect(caught).toMatchObject({
+      message: `flowSurfaces dynamic create capability 'dryRun' is not enabled for writes`,
+      options: {
+        details: {
+          reasonCode: 'unsupported',
+          reasonSource: 'registry',
+          publicType: 'dryRun',
+        },
+      },
+    });
+  });
+
+  it('should not classify provider block public types that collide with built-ins as dynamic', async () => {
+    const service = new FlowSurfacesService({
+      flowSurfaceCapabilityProviders: createProviderRegistry([
+        {
+          ownerPlugin: '@nocobase/plugin-conflict',
+          getCapabilities: () => [
+            {
+              id: 'blocks.tableConflict',
+              kind: 'block',
+              publicType: 'table',
+              label: 'Table alternative',
+              semantic: {
+                title: 'Table alternative',
+              },
+              implementation: {
+                modelUse: 'TableAlternativeBlockModel',
+              },
+              availability: {
+                create: {
+                  supported: false,
+                },
+              },
+            },
+          ],
+        },
+      ]),
+    } as unknown as ConstructorParameters<typeof FlowSurfacesService>[0]);
+    type DynamicBlockTypeResolver = {
+      resolveDynamicBlockTypes(enabledPackages: ReadonlySet<string>): Promise<Set<string>>;
+      tryAddDynamicBlock(input: {
+        values: Record<string, unknown>;
+        options: Record<string, unknown>;
+        enabledPackages: ReadonlySet<string>;
+        blockType: string;
+        target: { uid: string };
+        parentUid: string;
+        subKey: string;
+        subType: string;
+        popupProfile: null;
+        semanticResource: undefined;
+      }): Promise<unknown>;
+    };
+    const harness = service as unknown as DynamicBlockTypeResolver;
+    const enabledPackages = new Set(['@nocobase/plugin-conflict']);
+    const dynamicBlockTypes = await harness.resolveDynamicBlockTypes(enabledPackages);
+
+    expect(dynamicBlockTypes.has('table')).toBe(false);
+    await expect(
+      harness.tryAddDynamicBlock({
+        values: {
+          type: 'table',
+        },
+        options: {},
+        enabledPackages,
+        blockType: 'table',
+        target: {
+          uid: 'grid-1',
+        },
+        parentUid: 'grid-1',
+        subKey: 'items',
+        subType: 'array',
+        popupProfile: null,
+        semanticResource: undefined,
+      }),
+    ).resolves.toBeNull();
   });
 });
