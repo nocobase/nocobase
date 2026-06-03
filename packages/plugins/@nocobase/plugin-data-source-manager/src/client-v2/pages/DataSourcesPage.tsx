@@ -165,10 +165,10 @@ export default function DataSourcesPage() {
       },
       {
         title: t('Actions'),
-        width: 220,
+        width: 260,
         render: (_, record) => (
-          <Space>
-            <a onClick={() => openCollections(record)}>{t('View')}</a>
+          <Space size={12} wrap>
+            <a onClick={() => openCollections(record)}>{t('Configure')}</a>
             {record.key !== 'main' ? (
               <a onClick={() => openForm('edit', record.type || '', record)}>{t('Edit')}</a>
             ) : null}
