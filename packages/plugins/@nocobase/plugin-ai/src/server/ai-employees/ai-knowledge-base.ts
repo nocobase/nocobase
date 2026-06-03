@@ -9,10 +9,9 @@
 
 import { ChatPromptTemplate } from '@langchain/core/prompts';
 import { AIEmployee } from '../../collections/ai-employees';
-import { DocumentSegmentedWithScore } from '../features';
 import { EEFeatures } from '../manager/ai-feature-manager';
 import type PluginAIServer from '../plugin';
-import { KnowledgeBaseGroup } from '../types';
+import { KnowledgeBaseGroup, DocumentSegmentedWithScore } from '../types';
 import _ from 'lodash';
 
 export type KnowledgeBaseRetrieveOptions = { username?: string; employee?: AIEmployee; query: string };
