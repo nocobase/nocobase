@@ -176,7 +176,7 @@ export class HelloPlugin extends Plugin<any, Application> {
 }
 ```
 
-Setelah didaftarkan, path akses adalah `/admin/settings/hello`. Saat hanya ada satu halaman di bawah menu, tab bar atas akan otomatis tersembunyi.
+Setelah didaftarkan, path akses adalah `/studio/admin/settings/hello`. Saat hanya ada satu halaman di bawah menu, tab bar atas akan otomatis tersembunyi.
 
 ### Halaman Pengaturan Multi-Tab
 
@@ -194,7 +194,7 @@ class HelloPlugin extends Plugin<any, Application> {
       icon: 'ApiOutlined',
     });
 
-    // Tab 1: Pengaturan Dasar (key adalah 'index', di-map ke /admin/settings/hello)
+    // Tab 1: Pengaturan Dasar (key adalah 'index', di-map ke /studio/admin/settings/hello)
     this.pluginSettingsManager.addPageTabItem({
       menuKey: 'hello',
       key: 'index',
@@ -202,7 +202,7 @@ class HelloPlugin extends Plugin<any, Application> {
       componentLoader: () => import('./settings/GeneralPage'),
     });
 
-    // Tab 2: Pengaturan Lanjutan (di-map ke /admin/settings/hello/advanced)
+    // Tab 2: Pengaturan Lanjutan (di-map ke /studio/admin/settings/hello/advanced)
     this.pluginSettingsManager.addPageTabItem({
       menuKey: 'hello',
       key: 'advanced',

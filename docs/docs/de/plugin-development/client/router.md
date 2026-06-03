@@ -176,7 +176,7 @@ export class HelloPlugin extends Plugin<any, Application> {
 }
 ```
 
-Nach der Registrierung lautet der Aufrufpfad `/admin/settings/hello`. Wenn unter dem Menü nur eine Seite vorhanden ist, wird die obere Tab-Leiste automatisch ausgeblendet.
+Nach der Registrierung lautet der Aufrufpfad `/studio/admin/settings/hello`. Wenn unter dem Menü nur eine Seite vorhanden ist, wird die obere Tab-Leiste automatisch ausgeblendet.
 
 ### Einstellungsseite mit mehreren Tabs
 
@@ -194,7 +194,7 @@ class HelloPlugin extends Plugin<any, Application> {
       icon: 'ApiOutlined',
     });
 
-    // Tab 1: Allgemeine Einstellungen (key 'index' wird auf /admin/settings/hello abgebildet)
+    // Tab 1: Allgemeine Einstellungen (key 'index' wird auf /studio/admin/settings/hello abgebildet)
     this.pluginSettingsManager.addPageTabItem({
       menuKey: 'hello',
       key: 'index',
@@ -202,7 +202,7 @@ class HelloPlugin extends Plugin<any, Application> {
       componentLoader: () => import('./settings/GeneralPage'),
     });
 
-    // Tab 2: Erweiterte Einstellungen (wird auf /admin/settings/hello/advanced abgebildet)
+    // Tab 2: Erweiterte Einstellungen (wird auf /studio/admin/settings/hello/advanced abgebildet)
     this.pluginSettingsManager.addPageTabItem({
       menuKey: 'hello',
       key: 'advanced',

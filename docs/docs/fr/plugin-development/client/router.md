@@ -176,7 +176,7 @@ export class HelloPlugin extends Plugin<any, Application> {
 }
 ```
 
-Une fois enregistrée, l'URL d'accès est `/admin/settings/hello`. Lorsqu'il n'y a qu'une seule page sous le menu, la barre d'onglets en haut est masquée automatiquement.
+Une fois enregistrée, l'URL d'accès est `/studio/admin/settings/hello`. Lorsqu'il n'y a qu'une seule page sous le menu, la barre d'onglets en haut est masquée automatiquement.
 
 ### Page de configuration multi-onglets
 
@@ -194,7 +194,7 @@ class HelloPlugin extends Plugin<any, Application> {
       icon: 'ApiOutlined',
     });
 
-    // Onglet 1 : Configuration de base (key vaut 'index', mappé sur /admin/settings/hello)
+    // Onglet 1 : Configuration de base (key vaut 'index', mappé sur /studio/admin/settings/hello)
     this.pluginSettingsManager.addPageTabItem({
       menuKey: 'hello',
       key: 'index',
@@ -202,7 +202,7 @@ class HelloPlugin extends Plugin<any, Application> {
       componentLoader: () => import('./settings/GeneralPage'),
     });
 
-    // Onglet 2 : Configuration avancée (mappé sur /admin/settings/hello/advanced)
+    // Onglet 2 : Configuration avancée (mappé sur /studio/admin/settings/hello/advanced)
     this.pluginSettingsManager.addPageTabItem({
       menuKey: 'hello',
       key: 'advanced',

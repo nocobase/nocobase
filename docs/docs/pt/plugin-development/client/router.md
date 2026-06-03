@@ -176,7 +176,7 @@ export class HelloPlugin extends Plugin<any, Application> {
 }
 ```
 
-Após o registro, o caminho de acesso é `/admin/settings/hello`. Quando há apenas uma página sob o menu, a barra de abas superior é ocultada automaticamente.
+Após o registro, o caminho de acesso é `/studio/admin/settings/hello`. Quando há apenas uma página sob o menu, a barra de abas superior é ocultada automaticamente.
 
 ### Página de configuração com várias abas
 
@@ -194,7 +194,7 @@ class HelloPlugin extends Plugin<any, Application> {
       icon: 'ApiOutlined',
     });
 
-    // Aba 1: Configurações gerais (a chave 'index' é mapeada para /admin/settings/hello)
+    // Aba 1: Configurações gerais (a chave 'index' é mapeada para /studio/admin/settings/hello)
     this.pluginSettingsManager.addPageTabItem({
       menuKey: 'hello',
       key: 'index',
@@ -202,7 +202,7 @@ class HelloPlugin extends Plugin<any, Application> {
       componentLoader: () => import('./settings/GeneralPage'),
     });
 
-    // Aba 2: Configurações avançadas (mapeada para /admin/settings/hello/advanced)
+    // Aba 2: Configurações avançadas (mapeada para /studio/admin/settings/hello/advanced)
     this.pluginSettingsManager.addPageTabItem({
       menuKey: 'hello',
       key: 'advanced',

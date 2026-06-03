@@ -176,7 +176,7 @@ export class HelloPlugin extends Plugin<any, Application> {
 }
 ```
 
-Sau khi đăng ký, đường dẫn truy cập là `/admin/settings/hello`. Khi dưới menu chỉ có một trang, thanh tab phía trên sẽ tự động ẩn.
+Sau khi đăng ký, đường dẫn truy cập là `/studio/admin/settings/hello`. Khi dưới menu chỉ có một trang, thanh tab phía trên sẽ tự động ẩn.
 
 ### Trang cài đặt nhiều Tab
 
@@ -194,7 +194,7 @@ class HelloPlugin extends Plugin<any, Application> {
       icon: 'ApiOutlined',
     });
 
-    // Tab 1: Cài đặt cơ bản (key là 'index', map đến /admin/settings/hello)
+    // Tab 1: Cài đặt cơ bản (key là 'index', map đến /studio/admin/settings/hello)
     this.pluginSettingsManager.addPageTabItem({
       menuKey: 'hello',
       key: 'index',
@@ -202,7 +202,7 @@ class HelloPlugin extends Plugin<any, Application> {
       componentLoader: () => import('./settings/GeneralPage'),
     });
 
-    // Tab 2: Cài đặt nâng cao (map đến /admin/settings/hello/advanced)
+    // Tab 2: Cài đặt nâng cao (map đến /studio/admin/settings/hello/advanced)
     this.pluginSettingsManager.addPageTabItem({
       menuKey: 'hello',
       key: 'advanced',

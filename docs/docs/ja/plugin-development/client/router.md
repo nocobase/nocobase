@@ -176,7 +176,7 @@ export class HelloPlugin extends Plugin<any, Application> {
 }
 ```
 
-登録後、アクセスパスは `/admin/settings/hello` となります。メニューにページが 1 つしかない場合、上部のタブバーは自動的に非表示になります。
+登録後、アクセスパスは `/studio/admin/settings/hello` となります。メニューにページが 1 つしかない場合、上部のタブバーは自動的に非表示になります。
 
 ### 複数タブの設定ページ
 
@@ -194,7 +194,7 @@ class HelloPlugin extends Plugin<any, Application> {
       icon: 'ApiOutlined',
     });
 
-    // タブ 1：基本設定（key が 'index'、/admin/settings/hello にマッピング）
+    // タブ 1：基本設定（key が 'index'、/studio/admin/settings/hello にマッピング）
     this.pluginSettingsManager.addPageTabItem({
       menuKey: 'hello',
       key: 'index',
@@ -202,7 +202,7 @@ class HelloPlugin extends Plugin<any, Application> {
       componentLoader: () => import('./settings/GeneralPage'),
     });
 
-    // タブ 2：詳細設定（/admin/settings/hello/advanced にマッピング）
+    // タブ 2：詳細設定（/studio/admin/settings/hello/advanced にマッピング）
     this.pluginSettingsManager.addPageTabItem({
       menuKey: 'hello',
       key: 'advanced',

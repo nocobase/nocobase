@@ -176,7 +176,7 @@ export class HelloPlugin extends Plugin<any, Application> {
 }
 ```
 
-После регистрации путь доступа — `/admin/settings/hello`. Когда под меню есть только одна страница, верхняя панель вкладок автоматически скрывается.
+После регистрации путь доступа — `/studio/admin/settings/hello`. Когда под меню есть только одна страница, верхняя панель вкладок автоматически скрывается.
 
 ### Страница настроек с несколькими вкладками
 
@@ -194,7 +194,7 @@ class HelloPlugin extends Plugin<any, Application> {
       icon: 'ApiOutlined',
     });
 
-    // Вкладка 1: Общие настройки (ключ 'index' сопоставляется с /admin/settings/hello)
+    // Вкладка 1: Общие настройки (ключ 'index' сопоставляется с /studio/admin/settings/hello)
     this.pluginSettingsManager.addPageTabItem({
       menuKey: 'hello',
       key: 'index',
@@ -202,7 +202,7 @@ class HelloPlugin extends Plugin<any, Application> {
       componentLoader: () => import('./settings/GeneralPage'),
     });
 
-    // Вкладка 2: Расширенные настройки (сопоставляется с /admin/settings/hello/advanced)
+    // Вкладка 2: Расширенные настройки (сопоставляется с /studio/admin/settings/hello/advanced)
     this.pluginSettingsManager.addPageTabItem({
       menuKey: 'hello',
       key: 'advanced',

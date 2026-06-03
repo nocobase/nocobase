@@ -176,7 +176,7 @@ export class HelloPlugin extends Plugin<any, Application> {
 }
 ```
 
-After registration, the access path is `/admin/settings/hello`. When there is only one page under the menu, the top tab bar is automatically hidden.
+After registration, the access path is `/studio/admin/settings/hello`. When there is only one page under the menu, the top tab bar is automatically hidden.
 
 ### Multi-Tab Settings Page
 
@@ -194,7 +194,7 @@ class HelloPlugin extends Plugin<any, Application> {
       icon: 'ApiOutlined',
     });
 
-    // Tab 1: General settings (key 'index' maps to /admin/settings/hello)
+    // Tab 1: General settings (key 'index' maps to /studio/admin/settings/hello)
     this.pluginSettingsManager.addPageTabItem({
       menuKey: 'hello',
       key: 'index',
@@ -202,7 +202,7 @@ class HelloPlugin extends Plugin<any, Application> {
       componentLoader: () => import('./settings/GeneralPage'),
     });
 
-    // Tab 2: Advanced settings (maps to /admin/settings/hello/advanced)
+    // Tab 2: Advanced settings (maps to /studio/admin/settings/hello/advanced)
     this.pluginSettingsManager.addPageTabItem({
       menuKey: 'hello',
       key: 'advanced',

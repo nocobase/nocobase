@@ -176,7 +176,7 @@ export class HelloPlugin extends Plugin<any, Application> {
 }
 ```
 
-注册后，访问路径为 `/admin/settings/hello`。当菜单下只有一个页面时，顶部 tab 栏会自动隐藏。
+注册后，访问路径为 `/studio/admin/settings/hello`。当菜单下只有一个页面时，顶部 tab 栏会自动隐藏。
 
 ### 多 Tab 设置页
 
@@ -194,7 +194,7 @@ class HelloPlugin extends Plugin<any, Application> {
       icon: 'ApiOutlined',
     });
 
-    // Tab 1：基础设置（key 为 'index'，映射到 /admin/settings/hello）
+    // Tab 1：基础设置（key 为 'index'，映射到 /studio/admin/settings/hello）
     this.pluginSettingsManager.addPageTabItem({
       menuKey: 'hello',
       key: 'index',
@@ -202,7 +202,7 @@ class HelloPlugin extends Plugin<any, Application> {
       componentLoader: () => import('./settings/GeneralPage'),
     });
 
-    // Tab 2：高级设置（映射到 /admin/settings/hello/advanced）
+    // Tab 2：高级设置（映射到 /studio/admin/settings/hello/advanced）
     this.pluginSettingsManager.addPageTabItem({
       menuKey: 'hello',
       key: 'advanced',

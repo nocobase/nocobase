@@ -176,7 +176,7 @@ export class HelloPlugin extends Plugin<any, Application> {
 }
 ```
 
-Tras el registro, la ruta de acceso es `/admin/settings/hello`. Cuando solo hay una página bajo el menú, la barra de pestañas superior se oculta automáticamente.
+Tras el registro, la ruta de acceso es `/studio/admin/settings/hello`. Cuando solo hay una página bajo el menú, la barra de pestañas superior se oculta automáticamente.
 
 ### Página de configuración con varias pestañas
 
@@ -194,7 +194,7 @@ class HelloPlugin extends Plugin<any, Application> {
       icon: 'ApiOutlined',
     });
 
-    // Pestaña 1: Configuración general (la clave 'index' se asigna a /admin/settings/hello)
+    // Pestaña 1: Configuración general (la clave 'index' se asigna a /studio/admin/settings/hello)
     this.pluginSettingsManager.addPageTabItem({
       menuKey: 'hello',
       key: 'index',
@@ -202,7 +202,7 @@ class HelloPlugin extends Plugin<any, Application> {
       componentLoader: () => import('./settings/GeneralPage'),
     });
 
-    // Pestaña 2: Configuración avanzada (se asigna a /admin/settings/hello/advanced)
+    // Pestaña 2: Configuración avanzada (se asigna a /studio/admin/settings/hello/advanced)
     this.pluginSettingsManager.addPageTabItem({
       menuKey: 'hello',
       key: 'advanced',
