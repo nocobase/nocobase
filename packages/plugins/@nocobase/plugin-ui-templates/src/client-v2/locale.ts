@@ -8,13 +8,19 @@
  */
 
 import { tExpr, useFlowEngine, type FlowModel } from '@nocobase/flow-engine';
+import { useCallback } from 'react';
 
 export const NAMESPACE = '@nocobase/plugin-ui-templates';
 
+type TranslationOptions = Record<string, unknown>;
+
 export function useT() {
   const engine = useFlowEngine();
-  return (str: string, options?: Record<string, any>) =>
-    engine.context.t(str, { ns: [NAMESPACE, 'client'], nsMode: 'fallback', ...(options || {}) });
+  return useCallback(
+    (str: string, options?: TranslationOptions) =>
+      engine.context.t(str, { ns: [NAMESPACE, 'client'], nsMode: 'fallback', ...(options || {}) }),
+    [engine],
+  );
 }
 
 export function tStr(key: string) {
@@ -26,9 +32,9 @@ export function tStr(key: string) {
  * @param model FlowModel 实例
  * @returns 翻译函数，使用插件命名空间
  */
-export function getPluginT(model: FlowModel): (key: string, options?: any) => string {
+export function getPluginT(model: FlowModel): (key: string, options?: TranslationOptions) => string {
   if (model.flowEngine?.translate) {
-    return (key: string, options?: any) => {
+    return (key: string, options?: TranslationOptions) => {
       return model.flowEngine.translate(key, { ns: [NAMESPACE, 'client'], nsMode: 'fallback', ...options });
     };
   }
