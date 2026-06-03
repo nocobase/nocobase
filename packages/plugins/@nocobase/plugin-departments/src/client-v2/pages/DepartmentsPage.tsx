@@ -54,8 +54,8 @@ import {
   updateDepartment,
 } from '../api';
 import { useT } from '../locale';
-import type { DepartmentPrimaryKey, DepartmentRecord, RoleRecord, UserRecord } from '../../shared/department';
-import { getDepartmentTitle } from '../../shared/department';
+import type { DepartmentPrimaryKey, DepartmentRecord, RoleRecord, UserRecord } from '../shared/department';
+import { getDepartmentTitle } from '../shared/department';
 
 const FORM_DRAWER_WIDTH = '50%';
 const TABLE_DRAWER_WIDTH = '70%';

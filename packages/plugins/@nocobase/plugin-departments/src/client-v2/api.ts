@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import type { DepartmentPrimaryKey, DepartmentRecord } from '../shared/department';
+import type { DepartmentPrimaryKey, DepartmentRecord } from './shared/department';
 
 export interface DepartmentFormValues {
   title: string;

@@ -8,6 +8,7 @@
  */
 
 import { DeleteOutlined, PlusOutlined, ReloadOutlined } from '@ant-design/icons';
+import { css } from '@emotion/css';
 import { CollectionFilter, DrawerFormLayout, Table, type CompiledFilter, type TableProps } from '@nocobase/client-v2';
 import type { RoleTabProps } from '@nocobase/plugin-acl/client-v2';
 import { useFlowContext } from '@nocobase/flow-engine';
@@ -16,8 +17,8 @@ import { Button, Empty, Popconfirm, Space, Typography, theme } from 'antd';
 import React, { useCallback, useMemo, useState } from 'react';
 
 import { useT } from '../locale';
-import type { DepartmentPrimaryKey, DepartmentRecord } from '../../shared/department';
-import { getDepartmentTitle } from '../../shared/department';
+import type { DepartmentPrimaryKey, DepartmentRecord } from '../shared/department';
+import { getDepartmentTitle } from '../shared/department';
 
 const ROLE_DEPARTMENTS_PAGE_SIZE = 20;
 
@@ -173,6 +174,43 @@ export default function RoleDepartmentsManager(props: RoleTabProps) {
   const [filter, setFilter] = useState<CompiledFilter>();
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(ROLE_DEPARTMENTS_PAGE_SIZE);
+  const tableClassName = useMemo(
+    () => css`
+      flex: 1;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+
+      .ant-spin-nested-loading,
+      .ant-spin-container,
+      .ant-table,
+      .ant-table-container {
+        min-height: 0;
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+      }
+
+      .ant-table-content {
+        flex: 1;
+        min-height: 0;
+      }
+
+      .ant-table-body {
+        flex: 1;
+        min-height: 0;
+      }
+
+      .ant-table-thead > tr > th {
+        white-space: nowrap;
+      }
+
+      .ant-pagination {
+        flex: 0 0 auto;
+      }
+    `,
+    [],
+  );
 
   const departmentsRequest = useRequest(
     async () => {
@@ -254,9 +292,10 @@ export default function RoleDepartmentsManager(props: RoleTabProps) {
   }
 
   return (
-    <div>
+    <div style={{ height: '100%', minHeight: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
       <div
         style={{
+          flex: '0 0 auto',
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
@@ -300,6 +339,8 @@ export default function RoleDepartmentsManager(props: RoleTabProps) {
         loading={departmentsRequest.loading}
         dataSource={departmentsRequest.data?.data || []}
         columns={columns}
+        scroll={{ x: 'max-content', y: '100%' }}
+        className={tableClassName}
         pagination={{
           current: departmentsRequest.data?.page ?? page,
           pageSize: departmentsRequest.data?.pageSize ?? pageSize,
