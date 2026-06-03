@@ -1,40 +1,41 @@
 ---
-title: "nb env"
-description: "Referencia del comando nb env: gestione los env de NocoBase CLI, incluyendo añadir, consultar el env actual, revisar estado, cambiar, autenticar y eliminar."
-keywords: "nb env,NocoBase CLI,gestión de entornos,env,env actual,autenticación,OpenAPI"
+title: 'nb env'
+description: 'Referencia del comando nb env: gestiona los env de NocoBase CLI, incluyendo agregar, ver el current env, comprobar el estado, cambiar, actualizar, autenticar y eliminar.'
+keywords: 'nb env,NocoBase CLI,gestión de entornos,env,current env,autenticación,OpenAPI'
 ---
 
 # nb env
 
-Gestiona los env de NocoBase CLI guardados. Cada env almacena la dirección de la API, la información de autenticación, las rutas locales de la aplicación, la configuración de la base de datos y la caché de comandos en tiempo de ejecución.
+Gestiona los env guardados de NocoBase CLI. Un env guarda información de conexión y de ejecución local, como la dirección de la API, la información de autenticación, la ruta de la aplicación local y la configuración de la base de datos.
 
-En el modelo actual, la CLI separa dos conceptos:
+A partir de esta versión, la CLI separa dos conceptos:
 
-- `current env`: el env usado por la shell o el runtime de agente activo, aislado por `NB_SESSION_ID` cuando está disponible
-- `last env`: el último env usado globalmente, utilizado como respaldo cuando el session mode no está habilitado
+- `current env`: el env que está usando actualmente el shell o agent runtime actual, aislado por `NB_SESSION_ID` siempre que sea posible
+- `last env`: el último env usado globalmente, utilizado como valor de respaldo cuando no está habilitado el modo de sesión
 
 ## Uso
 
-
+```bash
 nb env <command>
+```
 
 ## Subcomandos
 
-| Comando | Descripción |
-| --- | --- |
-| [`nb env add`](./add.md) | Guarda un endpoint de API de NocoBase y cambia a ese env |
-| [`nb env current`](./current.md) | Muestra el env actualmente efectivo |
-| [`nb env update`](./update.md) | Actualiza el OpenAPI Schema y la caché de comandos en tiempo de ejecución desde la aplicación |
-| [`nb env list`](./list.md) | Lista los env configurados |
-| [`nb env status`](./status.md) | Muestra el estado del env actual, de un env o de todos los env |
-| [`nb env info`](./info.md) | Muestra la información detallada de un env concreto |
-| [`nb env remove`](./remove.md) | Detiene el runtime gestionado si existe y luego elimina la configuración del env |
-| [`nb env auth`](./auth.md) | Realiza el inicio de sesión OAuth para un env guardado |
-| [`nb env use`](./use.md) | Cambia el env actual |
+| Comando                          | Descripción                                                                                                            |
+| -------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| [`nb env add`](./add.md)         | Guarda un endpoint de API de NocoBase y cambia a este env                                                              |
+| [`nb env current`](./current.md) | Ver el env actualmente efectivo                                                                                        |
+| [`nb env update`](./update.md)   | Actualiza la configuración de un env guardado y maneja automáticamente la sincronización posterior según sea necesario |
+| [`nb env list`](./list.md)       | Lista los env configurados                                                                                             |
+| [`nb env status`](./status.md)   | Ver el estado del env actual, de un env especificado o de todos los env                                                |
+| [`nb env info`](./info.md)       | Ver la información detallada de un solo env                                                                            |
+| [`nb env remove`](./remove.md)   | Elimina la configuración del env después de detener el runtime gestionado                                              |
+| [`nb env auth`](./auth.md)       | Ejecuta el inicio de sesión OAuth para un env guardado                                                                 |
+| [`nb env use`](./use.md)         | Cambia el env actual                                                                                                   |
 
 ## Ejemplos
 
-
+```bash
 nb env add app1 --api-base-url http://localhost:13000/api
 nb env current
 nb env list
@@ -43,14 +44,15 @@ nb env info app1
 nb env update app1
 nb env use app1
 nb env auth app1
+```
 
-## Session mode
+## session mode
 
-Session mode es la recomendación por defecto. Mantiene `current env` aislado entre distintos terminales, shells y runtimes de agente, para que el trabajo en paralelo no se afecte entre sí.
+Se recomienda habilitar session mode por defecto. Así, el `current env` en distintos terminales, distintos shells o distintos agent runtimes puede mantenerse aislado y no afectarse entre sí en paralelo.
 
-Cuando session mode no está habilitado, `nb env use` actualiza el `last env` global, y otras sesiones sin aislamiento también pueden verse afectadas.
+Si session mode no está habilitado, `nb env use` actualizará el `last env` global, y otras sesiones sin aislamiento de sesión también se verán afectadas.
 
-Actívalo con [`nb session setup`](../session/setup.md).
+Consulta [`nb session setup`](../session/setup.md) para ver cómo habilitarlo.
 
 ## Comandos relacionados
 

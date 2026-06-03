@@ -1,6 +1,6 @@
 ---
 title: "nb app"
-description: "nb app 命令参考：管理 NocoBase 应用运行态，包括启动、停止、重启、日志、清理和升级。"
+description: "nb app 命令参考：管理 NocoBase 应用运行态，包括启动、停止、重启、日志和升级。"
 keywords: "nb app,NocoBase CLI,启动,停止,重启,日志,升级"
 ---
 
@@ -22,8 +22,6 @@ nb app <command>
 | [`nb app stop`](./stop.md) | 停止应用或清理 Docker 容器 |
 | [`nb app restart`](./restart.md) | 先停止再启动应用 |
 | [`nb app logs`](./logs.md) | 查看应用日志 |
-| [`nb app down`](./down.md) | 停止并清理本地运行资源 |
-| [`nb app destroy`](./destroy.md) | 移除托管运行资源、storage 数据和已保存的 env 配置 |
 | [`nb app upgrade`](./upgrade.md) | 停止应用、替换源码或镜像后再启动 |
 
 ## 示例
@@ -33,12 +31,12 @@ nb app start --env app1
 nb app restart --env app1
 nb app logs --env app1
 nb app upgrade --env app1 --skip-download
-nb app down --env app1 --all --force
-nb app destroy --env app1 --force
+nb app stop --env app1 --with-db
 ```
 
 ## 相关命令
 
 - [`nb env info`](../env/info.md)
+- [`nb env remove`](../env/remove.md)
 - [`nb db ps`](../db/ps.md)
 - [`nb source download`](../source/download.md)

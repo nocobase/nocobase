@@ -18,14 +18,13 @@ nb config delete <key>
 
 | 参数 | 类型 | 说明 |
 | --- | --- | --- |
-| `<key>` | string | 配置项名称：`locale`、`update.policy`、`license.pkg-url`、`docker.network`、`docker.container-prefix`、`bin.docker`、`bin.git` 或 `bin.yarn` |
+| `<key>` | string | 配置项名称：`locale`、`update.policy`、`docker.network`、`docker.container-prefix`、`bin.docker`、`bin.git` 或 `bin.yarn` |
 
 ## 示例
 
 ```bash
 nb config delete locale
 nb config delete update.policy
-nb config delete license.pkg-url
 nb config delete docker.network
 nb config delete docker.container-prefix
 nb config delete bin.git

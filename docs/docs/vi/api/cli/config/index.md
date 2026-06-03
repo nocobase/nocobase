@@ -1,34 +1,32 @@
 ---
-title: "nb config"
-description: "Tài liệu lệnh nb config: quản lý các mục cấu hình mặc định của CLI NocoBase."
-keywords: "nb config,NocoBase CLI,configuration"
+title: 'nb config'
+description: 'Tài liệu tham khảo lệnh nb config: quản lý các mục cấu hình mặc định của NocoBase CLI.'
+keywords: 'nb config,NocoBase CLI,cấu hình,cấu hình mặc định'
 ---
 
 # nb config
 
-Quản lý cấu hình mặc định của CLI. Các khóa hiện được hỗ trợ:
+Quản lý cấu hình mặc định của CLI. Các mục cấu hình বর্তমানে được hỗ trợ bao gồm:
 
 - `locale`
 - `update.policy`
-- `license.pkg-url`
 - `docker.network`
 - `docker.container-prefix`
 - `bin.docker`
 - `bin.git`
 - `bin.yarn`
 
-## Các khóa thường dùng
+## Các mục cấu hình thường dùng
 
-| Khóa | Giá trị mặc định | Mô tả |
-| --- | --- | --- |
-| `locale` | quy tắc phân giải locale hiện tại của CLI | Ghi đè ngôn ngữ mà CLI sử dụng |
-| `update.policy` | `prompt` | Hành vi cập nhật khi khởi động: `prompt`, `auto` hoặc `off` |
-| `license.pkg-url` | `https://pkg.nocobase.com/` | Registry gói dùng cho các gói thương mại |
-| `docker.network` | `nocobase` | Mạng Docker mặc định dùng bởi các ứng dụng Docker do CLI quản lý |
-| `docker.container-prefix` | `nb` | Tiền tố container mặc định dùng bởi các ứng dụng Docker do CLI quản lý |
-| `bin.docker` | `docker` | Ghi đè đường dẫn tới tệp thực thi Docker |
-| `bin.git` | `git` | Ghi đè đường dẫn tới tệp thực thi Git |
-| `bin.yarn` | `yarn` | Ghi đè đường dẫn tới tệp thực thi Yarn |
+| Mục cấu hình              | Giá trị mặc định                             | Mô tả                                                          |
+| ------------------------- | -------------------------------------------- | -------------------------------------------------------------- |
+| `locale`                  | Được phân giải theo quy tắc hiện tại của CLI | Ghi đè ngôn ngữ được CLI sử dụng                               |
+| `update.policy`           | `prompt`                                     | Chính sách cập nhật khi khởi động: `prompt`, `auto` hoặc `off` |
+| `docker.network`          | `nocobase`                                   | Mạng mặc định cho các ứng dụng Docker do CLI quản lý           |
+| `docker.container-prefix` | `nb`                                         | Tiền tố mặc định cho các container Docker do CLI quản lý       |
+| `bin.docker`              | `docker`                                     | Ghi đè đường dẫn tệp thực thi Docker                           |
+| `bin.git`                 | `git`                                        | Ghi đè đường dẫn tệp thực thi Git                              |
+| `bin.yarn`                | `yarn`                                       | Ghi đè đường dẫn tệp thực thi Yarn                             |
 
 ## Cách dùng
 
@@ -38,12 +36,12 @@ nb config <command>
 
 ## Lệnh con
 
-| Lệnh | Mô tả |
-| --- | --- |
-| [`nb config get`](./get.md) | Lấy giá trị hiệu lực của một khóa cấu hình |
-| [`nb config set`](./set.md) | Thiết lập một giá trị cấu hình |
-| [`nb config delete`](./delete.md) | Xóa một giá trị đã được cấu hình rõ ràng |
-| [`nb config list`](./list.md) | Liệt kê các giá trị đã được cấu hình rõ ràng |
+| Lệnh                              | Mô tả                                               |
+| --------------------------------- | --------------------------------------------------- |
+| [`nb config get`](./get.md)       | Đọc giá trị có hiệu lực của một mục cấu hình        |
+| [`nb config set`](./set.md)       | Thiết lập một mục cấu hình                          |
+| [`nb config delete`](./delete.md) | Xóa một mục cấu hình được đặt rõ ràng               |
+| [`nb config list`](./list.md)     | Liệt kê các mục cấu hình hiện đang được đặt rõ ràng |
 
 ## Ví dụ
 
@@ -57,7 +55,7 @@ nb config set bin.git /usr/bin/git
 nb config delete docker.container-prefix
 ```
 
-## Lệnh liên quan
+## Các lệnh liên quan
 
 - [`nb init`](../init.md)
 - [`nb license`](../license/index.md)

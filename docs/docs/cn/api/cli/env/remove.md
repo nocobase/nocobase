@@ -12,7 +12,7 @@ keywords: "nb env remove,NocoBase CLI,删除环境,移除配置,purge"
 
 默认情况下，命令会要求确认。在非交互模式下，必须显式传入 `--force` 才能执行。
 
-如需尽可能清理当前机器上的 CLI 托管资源，可传入 `--purge`。对于 local/docker env，`--purge` 会执行与 [`nb app destroy`](../app/destroy.md) 等价的清理；对于 http/ssh env，`--purge` 不会触碰外部服务，只会移除已保存的 CLI env 配置。
+如需尽可能清理当前机器上的 CLI 托管资源，可传入 `--purge`。对于 local/docker env，`--purge` 会一并清理托管运行资源、storage 数据以及适用时的下载型本地 app 文件；对于 http/ssh env，`--purge` 不会触碰外部服务，只会移除已保存的 CLI env 配置。
 
 ## 用法
 
@@ -40,6 +40,5 @@ nb env remove staging --purge --force
 ## 相关命令
 
 - [`nb app stop`](../app/stop.md)
-- [`nb app destroy`](../app/destroy.md)
 - [`nb env current`](./current.md)
 - [`nb env list`](./list.md)

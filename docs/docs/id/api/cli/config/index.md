@@ -1,34 +1,32 @@
 ---
-title: "nb config"
-description: "Referensi perintah nb config: mengelola item konfigurasi default CLI NocoBase."
-keywords: "nb config,NocoBase CLI,configuration"
+title: 'nb config'
+description: 'Referensi perintah nb config: kelola item konfigurasi default NocoBase CLI.'
+keywords: 'nb config,NocoBase CLI,konfigurasi,konfigurasi default'
 ---
 
 # nb config
 
-Mengelola konfigurasi default CLI. Key yang saat ini didukung:
+Kelola konfigurasi default CLI. Item konfigurasi yang saat ini didukung meliputi:
 
 - `locale`
 - `update.policy`
-- `license.pkg-url`
 - `docker.network`
 - `docker.container-prefix`
 - `bin.docker`
 - `bin.git`
 - `bin.yarn`
 
-## Key umum
+## Item konfigurasi umum
 
-| Key | Nilai default | Penjelasan |
-| --- | --- | --- |
-| `locale` | aturan resolusi locale CLI saat ini | Menimpa bahasa yang digunakan oleh CLI |
-| `update.policy` | `prompt` | Perilaku pembaruan saat startup: `prompt`, `auto`, atau `off` |
-| `license.pkg-url` | `https://pkg.nocobase.com/` | Registry paket untuk paket komersial |
-| `docker.network` | `nocobase` | Jaringan Docker default yang dipakai oleh aplikasi Docker yang dikelola CLI |
-| `docker.container-prefix` | `nb` | Prefiks container default yang dipakai oleh aplikasi Docker yang dikelola CLI |
-| `bin.docker` | `docker` | Menimpa path executable Docker |
-| `bin.git` | `git` | Menimpa path executable Git |
-| `bin.yarn` | `yarn` | Menimpa path executable Yarn |
+| Item konfigurasi          | Nilai default                            | Deskripsi                                                      |
+| ------------------------- | ---------------------------------------- | -------------------------------------------------------------- |
+| `locale`                  | Diselesaikan menurut aturan CLI saat ini | Menimpa bahasa yang digunakan oleh CLI                         |
+| `update.policy`           | `prompt`                                 | Kebijakan pembaruan saat startup: `prompt`, `auto`, atau `off` |
+| `docker.network`          | `nocobase`                               | Jaringan default untuk aplikasi Docker yang dikelola oleh CLI  |
+| `docker.container-prefix` | `nb`                                     | Prefiks default untuk kontainer Docker yang dikelola oleh CLI  |
+| `bin.docker`              | `docker`                                 | Menimpa path executable Docker                                 |
+| `bin.git`                 | `git`                                    | Menimpa path executable Git                                    |
+| `bin.yarn`                | `yarn`                                   | Menimpa path executable Yarn                                   |
 
 ## Penggunaan
 
@@ -36,14 +34,14 @@ Mengelola konfigurasi default CLI. Key yang saat ini didukung:
 nb config <command>
 ```
 
-## Subcommand
+## Subperintah
 
-| Perintah | Penjelasan |
-| --- | --- |
-| [`nb config get`](./get.md) | Mengambil nilai efektif dari key konfigurasi |
-| [`nb config set`](./set.md) | Menetapkan nilai konfigurasi |
-| [`nb config delete`](./delete.md) | Menghapus nilai yang dikonfigurasi secara eksplisit |
-| [`nb config list`](./list.md) | Menampilkan daftar nilai yang dikonfigurasi secara eksplisit |
+| Perintah                          | Deskripsi                                                              |
+| --------------------------------- | ---------------------------------------------------------------------- |
+| [`nb config get`](./get.md)       | Membaca nilai efektif dari suatu item konfigurasi                      |
+| [`nb config set`](./set.md)       | Menetapkan suatu item konfigurasi                                      |
+| [`nb config delete`](./delete.md) | Menghapus item konfigurasi yang ditetapkan secara eksplisit            |
+| [`nb config list`](./list.md)     | Menampilkan item konfigurasi yang saat ini ditetapkan secara eksplisit |
 
 ## Contoh
 
@@ -57,7 +55,7 @@ nb config set bin.git /usr/bin/git
 nb config delete docker.container-prefix
 ```
 
-## Perintah Terkait
+## Perintah terkait
 
 - [`nb init`](../init.md)
 - [`nb license`](../license/index.md)

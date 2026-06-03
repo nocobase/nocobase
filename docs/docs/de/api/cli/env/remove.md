@@ -1,18 +1,18 @@
 ---
-title: "nb env remove"
-description: "nb env remove Befehlsreferenz: Stoppt verwaltete Laufzeitressourcen, bevor die env-Konfiguration entfernt wird, oder bereinigt bei Bedarf lokale CLI-Ressourcen vollständig."
-keywords: "nb env remove,NocoBase CLI,Umgebung entfernen,Konfiguration entfernen,purge"
+title: 'nb env remove'
+description: 'Referenz für den Befehl nb env remove: Stoppt verwaltete Laufzeitumgebungen, bevor die env-Konfiguration entfernt wird, oder bereinigt bei Bedarf lokal verwaltete Ressourcen vollständig.'
+keywords: 'nb env remove,NocoBase CLI,Umgebung löschen,Konfiguration entfernen,purge'
 ---
 
 # nb env remove
 
-Entfernt eine konfigurierte env. Bei lokalen und Docker-env stoppt dieser Befehl zuerst die von der CLI verwaltete App-Laufzeit und die integrierte Datenbank-Laufzeit auf diesem Rechner und entfernt danach die gespeicherte CLI-env-Konfiguration. Bei HTTP- und SSH-env wird nur die gespeicherte CLI-env-Konfiguration entfernt.
+Entfernt eine konfigurierte env. Für local/docker-envs stoppt dieser Befehl zunächst die von der CLI verwaltete Anwendungs-Laufzeitumgebung und die integrierte Datenbank-Laufzeitumgebung auf dem aktuellen Rechner und entfernt dann die gespeicherte CLI-env-Konfiguration. Für http/ssh-envs entfernt dieser Befehl nur die gespeicherte CLI-env-Konfiguration.
 
-Wenn die entfernte env zugleich die aktuelle env ist, wählt die CLI automatisch eine neue aktuelle env aus den verbleibenden env. Wenn keine env mehr vorhanden ist, wird die aktuelle env geleert.
+Wenn die entfernte env die aktuelle env ist, wählt die CLI automatisch eine neue aktuelle env aus den verbleibenden envs aus; wenn keine envs mehr verfügbar sind, wird die aktuelle env geleert.
 
-Standardmäßig verlangt der Befehl eine Bestätigung. Im nicht interaktiven Modus ist `--force` erforderlich, bevor der Befehl ausgeführt werden kann.
+Standardmäßig verlangt der Befehl eine Bestätigung. Im nicht-interaktiven Modus muss `--force` ausdrücklich übergeben werden, damit der Befehl ausgeführt werden kann.
 
-Mit `--purge` werden zusätzlich die von der CLI auf diesem Rechner verwalteten Ressourcen bereinigt. Für lokale und Docker-env entspricht `--purge` der Bereinigung von [`nb app destroy`](../app/destroy.md). Für HTTP- und SSH-env werden keine externen Dienste berührt; es wird nur die gespeicherte CLI-env-Konfiguration entfernt.
+Um die von der CLI verwalteten Ressourcen auf dem aktuellen Rechner so weit wie möglich zu bereinigen, kann `--purge` übergeben werden. Für local/docker-envs bereinigt `--purge` zusätzlich verwaltete Laufzeitressourcen, storage-Daten und gegebenenfalls heruntergeladene lokale app-Dateien; für http/ssh-envs greift `--purge` keine externen Dienste an und entfernt nur die gespeicherte CLI-env-Konfiguration.
 
 ## Verwendung
 
@@ -22,12 +22,12 @@ nb env remove <name> [flags]
 
 ## Parameter
 
-| Parameter | Typ | Beschreibung |
-| --- | --- | --- |
-| `<name>` | string | Name der konfigurierten Umgebung, die entfernt werden soll |
-| `--force`, `-f` | boolean | Bestätigung für den gewählten Remove-Modus überspringen; im nicht interaktiven Modus erforderlich |
-| `--purge` | boolean | Entfernt zusätzlich von der CLI verwaltete lokale Laufzeitressourcen, Storage-Daten und – falls zutreffend – heruntergeladene lokale App-Dateien. Bei Remote-API-env wird nur die gespeicherte env-Konfiguration entfernt |
-| `--verbose` | boolean | Ausführliche Fortschrittsanzeige |
+| Parameter       | Typ     | Beschreibung                                                                                                                                                                                                                          |
+| --------------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `<name>`        | string  | Name der konfigurierten Umgebung, die entfernt werden soll                                                                                                                                                                            |
+| `--force`, `-f` | boolean | Überspringt die Bestätigung im aktuellen remove-Modus; im nicht-interaktiven Modus erforderlich                                                                                                                                       |
+| `--purge`       | boolean | Bereinigt zusätzlich die von der CLI verwalteten Ressourcen, storage-Daten und gegebenenfalls heruntergeladene lokale app-Dateien auf dem aktuellen Rechner; für Remote-API-envs wird nur die gespeicherte env-Konfiguration entfernt |
+| `--verbose`     | boolean | Zeigt detaillierten Fortschritt an                                                                                                                                                                                                    |
 
 ## Beispiele
 
@@ -40,6 +40,5 @@ nb env remove staging --purge --force
 ## Verwandte Befehle
 
 - [`nb app stop`](../app/stop.md)
-- [`nb app destroy`](../app/destroy.md)
 - [`nb env current`](./current.md)
 - [`nb env list`](./list.md)

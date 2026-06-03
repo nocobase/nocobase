@@ -1,34 +1,32 @@
 ---
-title: "nb config"
-description: "Referência do comando nb config: gerenciar os itens de configuração padrão do CLI do NocoBase."
-keywords: "nb config,NocoBase CLI,configuration"
+title: 'nb config'
+description: 'Referência do comando nb config: gerencia os itens de configuração padrão do NocoBase CLI.'
+keywords: 'nb config,NocoBase CLI,configuração,configuração padrão'
 ---
 
 # nb config
 
-Gerencia a configuração padrão do CLI. Chaves atualmente suportadas:
+Gerencie a configuração padrão da CLI. Os itens de configuração atualmente suportados incluem:
 
 - `locale`
 - `update.policy`
-- `license.pkg-url`
 - `docker.network`
 - `docker.container-prefix`
 - `bin.docker`
 - `bin.git`
 - `bin.yarn`
 
-## Chaves comuns
+## Itens de configuração comuns
 
-| Chave | Valor padrão | Descrição |
-| --- | --- | --- |
-| `locale` | resolução atual de locale do CLI | Sobrescreve o idioma usado pelo CLI |
-| `update.policy` | `prompt` | Comportamento de atualização na inicialização: `prompt`, `auto` ou `off` |
-| `license.pkg-url` | `https://pkg.nocobase.com/` | Registro de pacotes usado para pacotes comerciais |
-| `docker.network` | `nocobase` | Rede Docker padrão usada por apps Docker gerenciados pelo CLI |
-| `docker.container-prefix` | `nb` | Prefixo padrão de contêiner usado por apps Docker gerenciados pelo CLI |
-| `bin.docker` | `docker` | Sobrescreve o caminho do executável do Docker |
-| `bin.git` | `git` | Sobrescreve o caminho do executável do Git |
-| `bin.yarn` | `yarn` | Sobrescreve o caminho do executável do Yarn |
+| Item de configuração      | Valor padrão                                    | Descrição                                                           |
+| ------------------------- | ----------------------------------------------- | ------------------------------------------------------------------- |
+| `locale`                  | Resolvido de acordo com as regras atuais da CLI | Sobrescreve o idioma usado pela CLI                                 |
+| `update.policy`           | `prompt`                                        | Política de atualização na inicialização: `prompt`, `auto` ou `off` |
+| `docker.network`          | `nocobase`                                      | Rede padrão para aplicativos Docker gerenciados pela CLI            |
+| `docker.container-prefix` | `nb`                                            | Prefixo padrão para contêineres Docker gerenciados pela CLI         |
+| `bin.docker`              | `docker`                                        | Sobrescreve o caminho do executável do Docker                       |
+| `bin.git`                 | `git`                                           | Sobrescreve o caminho do executável do Git                          |
+| `bin.yarn`                | `yarn`                                          | Sobrescreve o caminho do executável do Yarn                         |
 
 ## Uso
 
@@ -38,12 +36,12 @@ nb config <command>
 
 ## Subcomandos
 
-| Comando | Descrição |
-| --- | --- |
-| [`nb config get`](./get.md) | Obter o valor efetivo de uma chave de configuração |
-| [`nb config set`](./set.md) | Definir um valor de configuração |
-| [`nb config delete`](./delete.md) | Excluir um valor configurado explicitamente |
-| [`nb config list`](./list.md) | Listar valores configurados explicitamente |
+| Comando                           | Descrição                                                          |
+| --------------------------------- | ------------------------------------------------------------------ |
+| [`nb config get`](./get.md)       | Lê o valor efetivo de um item de configuração                      |
+| [`nb config set`](./set.md)       | Define um item de configuração                                     |
+| [`nb config delete`](./delete.md) | Exclui um item configurado explicitamente                          |
+| [`nb config list`](./list.md)     | Lista os itens de configuração atualmente definidos explicitamente |
 
 ## Exemplos
 

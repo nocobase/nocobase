@@ -1,12 +1,12 @@
 ---
-title: "nb db stop"
-description: "Referencia del comando nb db stop: detiene el contenedor de la base de datos integrada del env indicado."
-keywords: "nb db stop,NocoBase CLI,detener base de datos,Docker"
+title: 'nb db stop'
+description: 'Referencia del comando nb db stop: detiene el contenedor de base de datos integrado del env especificado.'
+keywords: 'nb db stop,NocoBase CLI,detener base de datos,Docker'
 ---
 
 # nb db stop
 
-Detiene el contenedor de la base de datos integrada del env indicado. Este comando solo es aplicable a los env con la base de datos integrada gestionada por el CLI habilitada.
+Detiene el contenedor de base de datos integrado del env especificado. Este comando solo se aplica a los entornos con la base de datos integrada administrada por CLI habilitada.
 
 ## Uso
 
@@ -16,10 +16,10 @@ nb db stop [flags]
 
 ## Parámetros
 
-| Parámetro | Tipo | Descripción |
-| --- | --- | --- |
-| `--env`, `-e` | string | Nombre del env del CLI cuya base de datos integrada se detiene; si se omite, se utiliza el env actual |
-| `--verbose` | boolean | Mostrar la salida de los comandos subyacentes de Docker |
+| Parámetro     | Tipo    | Descripción                                                                                           |
+| ------------- | ------- | ----------------------------------------------------------------------------------------------------- |
+| `--env`, `-e` | string  | Nombre del env de CLI cuya base de datos integrada se debe detener; si se omite, se usa el env actual |
+| `--verbose`   | boolean | Muestra la salida del comando Docker subyacente                                                       |
 
 ## Ejemplos
 
@@ -33,4 +33,3 @@ nb db stop --env app1 --verbose
 
 - [`nb db start`](./start.md)
 - [`nb app stop`](../app/stop.md)
-- [`nb app down`](../app/down.md)

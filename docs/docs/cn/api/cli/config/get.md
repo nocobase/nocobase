@@ -18,14 +18,13 @@ nb config get <key>
 
 | 参数 | 类型 | 说明 |
 | --- | --- | --- |
-| `<key>` | string | 配置项名称：`locale`、`update.policy`、`license.pkg-url`、`docker.network`、`docker.container-prefix`、`bin.docker`、`bin.git` 或 `bin.yarn` |
+| `<key>` | string | 配置项名称：`locale`、`update.policy`、`docker.network`、`docker.container-prefix`、`bin.docker`、`bin.git` 或 `bin.yarn` |
 
 ## 示例
 
 ```bash
 nb config get locale
 nb config get update.policy
-nb config get license.pkg-url
 nb config get docker.network
 nb config get docker.container-prefix
 nb config get bin.git

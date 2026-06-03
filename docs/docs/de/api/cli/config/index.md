@@ -1,34 +1,32 @@
 ---
-title: "nb config"
-description: "Referenz für den Befehl nb config: Standardkonfigurationselemente der NocoBase CLI verwalten."
-keywords: "nb config,NocoBase CLI,configuration"
+title: 'nb config'
+description: 'Referenz für den Befehl nb config: Verwaltet die Standardkonfigurationseinträge der NocoBase CLI.'
+keywords: 'nb config,NocoBase CLI,Konfiguration,Standardkonfiguration'
 ---
 
 # nb config
 
-CLI-Standardkonfiguration verwalten. Derzeit unterstützte Schlüssel:
+Verwaltet die Standardkonfiguration der CLI. Derzeit werden folgende Konfigurationseinträge unterstützt:
 
 - `locale`
 - `update.policy`
-- `license.pkg-url`
 - `docker.network`
 - `docker.container-prefix`
 - `bin.docker`
 - `bin.git`
 - `bin.yarn`
 
-## Häufig verwendete Schlüssel
+## Häufig verwendete Konfigurationseinträge
 
-| Schlüssel | Standardwert | Beschreibung |
-| --- | --- | --- |
-| `locale` | aktuelle CLI-Locale-Auflösung | Überschreibt die von der CLI verwendete Sprache |
-| `update.policy` | `prompt` | Update-Verhalten beim Start: `prompt`, `auto` oder `off` |
-| `license.pkg-url` | `https://pkg.nocobase.com/` | Paket-Registry für kommerzielle Pakete |
-| `docker.network` | `nocobase` | Standard-Docker-Netzwerk für Docker-Apps, die von der CLI verwaltet werden |
-| `docker.container-prefix` | `nb` | Standard-Präfix für Container von Docker-Apps, die von der CLI verwaltet werden |
-| `bin.docker` | `docker` | Überschreibt den Pfad zur Docker-Programmdatei |
-| `bin.git` | `git` | Überschreibt den Pfad zur Git-Programmdatei |
-| `bin.yarn` | `yarn` | Überschreibt den Pfad zur Yarn-Programmdatei |
+| Konfigurationseintrag     | Standardwert                                     | Beschreibung                                                      |
+| ------------------------- | ------------------------------------------------ | ----------------------------------------------------------------- |
+| `locale`                  | Wird nach den aktuellen Regeln der CLI aufgelöst | Überschreibt die von der CLI verwendete Sprache                   |
+| `update.policy`           | `prompt`                                         | Aktualisierungsrichtlinie beim Start: `prompt`, `auto` oder `off` |
+| `docker.network`          | `nocobase`                                       | Standardnetzwerk für von der CLI verwaltete Docker-Anwendungen    |
+| `docker.container-prefix` | `nb`                                             | Standardpräfix für von der CLI verwaltete Docker-Container        |
+| `bin.docker`              | `docker`                                         | Überschreibt den Pfad zur Docker-Programmdatei                    |
+| `bin.git`                 | `git`                                            | Überschreibt den Pfad zur Git-Programmdatei                       |
+| `bin.yarn`                | `yarn`                                           | Überschreibt den Pfad zur Yarn-Programmdatei                      |
 
 ## Verwendung
 
@@ -38,12 +36,12 @@ nb config <command>
 
 ## Unterbefehle
 
-| Befehl | Beschreibung |
-| --- | --- |
-| [`nb config get`](./get.md) | Effektiven Wert eines Konfigurationsschlüssels auslesen |
-| [`nb config set`](./set.md) | Einen Konfigurationswert setzen |
-| [`nb config delete`](./delete.md) | Einen explizit gesetzten Wert löschen |
-| [`nb config list`](./list.md) | Explizit gesetzte Werte auflisten |
+| Befehl                            | Beschreibung                                                     |
+| --------------------------------- | ---------------------------------------------------------------- |
+| [`nb config get`](./get.md)       | Liest den wirksamen Wert eines Konfigurationseintrags            |
+| [`nb config set`](./set.md)       | Setzt einen Konfigurationseintrag                                |
+| [`nb config delete`](./delete.md) | Löscht einen explizit gesetzten Konfigurationseintrag            |
+| [`nb config list`](./list.md)     | Listet die derzeit explizit gesetzten Konfigurationseinträge auf |
 
 ## Beispiele
 

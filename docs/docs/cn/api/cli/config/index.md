@@ -10,7 +10,6 @@ keywords: "nb config,NocoBase CLI,配置,默认配置"
 
 - `locale`
 - `update.policy`
-- `license.pkg-url`
 - `docker.network`
 - `docker.container-prefix`
 - `bin.docker`
@@ -23,7 +22,6 @@ keywords: "nb config,NocoBase CLI,配置,默认配置"
 | --- | --- | --- |
 | `locale` | 按 CLI 当前规则解析 | 覆盖 CLI 使用的语言 |
 | `update.policy` | `prompt` | 启动时更新策略：`prompt`、`auto` 或 `off` |
-| `license.pkg-url` | `https://pkg.nocobase.com/` | 商业包使用的包仓库地址 |
 | `docker.network` | `nocobase` | CLI 管理的 Docker 应用默认网络 |
 | `docker.container-prefix` | `nb` | CLI 管理的 Docker 容器默认前缀 |
 | `bin.docker` | `docker` | 覆盖 Docker 可执行文件路径 |

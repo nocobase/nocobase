@@ -33,4 +33,3 @@ nb db stop --env app1 --verbose
 
 - [`nb db start`](./start.md)
 - [`nb app stop`](../app/stop.md)
-- [`nb app down`](../app/down.md)

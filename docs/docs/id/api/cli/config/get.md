@@ -1,12 +1,12 @@
 ---
-title: "nb config get"
-description: "Referensi perintah nb config get: mengambil nilai efektif dari key konfigurasi CLI."
-keywords: "nb config get,NocoBase CLI,configuration"
+title: 'nb config get'
+description: 'Referensi perintah nb config get: membaca nilai efektif dari item konfigurasi CLI.'
+keywords: 'nb config get,NocoBase CLI,membaca konfigurasi'
 ---
 
 # nb config get
 
-Mengambil nilai efektif dari key konfigurasi CLI. Jika tidak ada nilai eksplisit yang disetel, nilai default akan dikembalikan.
+Membaca nilai efektif dari item konfigurasi CLI yang ditentukan. Jika belum diatur secara eksplisit, nilai default akan dikembalikan.
 
 ## Penggunaan
 
@@ -16,22 +16,21 @@ nb config get <key>
 
 ## Parameter
 
-| Parameter | Tipe | Penjelasan |
-| --- | --- | --- |
-| `<key>` | string | Key konfigurasi: `locale`, `update.policy`, `license.pkg-url`, `docker.network`, `docker.container-prefix`, `bin.docker`, `bin.git`, atau `bin.yarn` |
+| Parameter | Tipe   | Deskripsi                                                                                                                               |
+| --------- | ------ | --------------------------------------------------------------------------------------------------------------------------------------- |
+| `<key>`   | string | Nama item konfigurasi: `locale`, `update.policy`, `docker.network`, `docker.container-prefix`, `bin.docker`, `bin.git`, atau `bin.yarn` |
 
 ## Contoh
 
 ```bash
 nb config get locale
 nb config get update.policy
-nb config get license.pkg-url
 nb config get docker.network
 nb config get docker.container-prefix
 nb config get bin.git
 ```
 
-## Perintah Terkait
+## Perintah terkait
 
 - [`nb config set`](./set.md)
 - [`nb config list`](./list.md)

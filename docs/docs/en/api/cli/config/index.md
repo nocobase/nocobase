@@ -1,34 +1,32 @@
 ---
-title: "nb config"
-description: "nb config command reference: manage NocoBase CLI default configuration."
-keywords: "nb config,NocoBase CLI,configuration,defaults"
+title: 'nb config'
+description: 'nb config command reference: manage the default configuration items of the NocoBase CLI.'
+keywords: 'nb config,NocoBase CLI,configuration,default configuration'
 ---
 
 # nb config
 
-Manage CLI configuration defaults. Supported keys:
+Manage the default CLI configuration. The currently supported configuration items include:
 
 - `locale`
 - `update.policy`
-- `license.pkg-url`
 - `docker.network`
 - `docker.container-prefix`
 - `bin.docker`
 - `bin.git`
 - `bin.yarn`
 
-## Common Keys
+## Common configuration items
 
-| Key | Default | Description |
-| --- | --- | --- |
-| `locale` | current CLI locale resolution | Override the CLI locale |
-| `update.policy` | `prompt` | Startup update behavior: `prompt`, `auto`, or `off` |
-| `license.pkg-url` | `https://pkg.nocobase.com/` | Package registry for commercial packages |
-| `docker.network` | `nocobase` | Default Docker network used by CLI-managed Docker apps |
-| `docker.container-prefix` | `nb` | Default container prefix used by CLI-managed Docker apps |
-| `bin.docker` | `docker` | Override the Docker executable path |
-| `bin.git` | `git` | Override the Git executable path |
-| `bin.yarn` | `yarn` | Override the Yarn executable path |
+| Configuration item        | Default value                                 | Description                                                |
+| ------------------------- | --------------------------------------------- | ---------------------------------------------------------- |
+| `locale`                  | Resolved according to the CLI's current rules | Override the language used by the CLI                      |
+| `update.policy`           | `prompt`                                      | Update policy at startup: `prompt`, `auto`, or `off`       |
+| `docker.network`          | `nocobase`                                    | Default network for Docker applications managed by the CLI |
+| `docker.container-prefix` | `nb`                                          | Default prefix for Docker containers managed by the CLI    |
+| `bin.docker`              | `docker`                                      | Override the Docker executable path                        |
+| `bin.git`                 | `git`                                         | Override the Git executable path                           |
+| `bin.yarn`                | `yarn`                                        | Override the Yarn executable path                          |
 
 ## Usage
 
@@ -38,12 +36,12 @@ nb config <command>
 
 ## Subcommands
 
-| Command | Description |
-| --- | --- |
-| [`nb config get`](./get.md) | Get the effective value for a configuration key |
-| [`nb config set`](./set.md) | Set a configuration value |
-| [`nb config delete`](./delete.md) | Delete an explicitly configured value |
-| [`nb config list`](./list.md) | List explicitly configured values |
+| Command                           | Description                                                    |
+| --------------------------------- | -------------------------------------------------------------- |
+| [`nb config get`](./get.md)       | Read the effective value of a configuration item               |
+| [`nb config set`](./set.md)       | Set a configuration item                                       |
+| [`nb config delete`](./delete.md) | Delete an explicitly configured item                           |
+| [`nb config list`](./list.md)     | List the configuration items that are currently explicitly set |
 
 ## Examples
 
@@ -57,7 +55,7 @@ nb config set bin.git /usr/bin/git
 nb config delete docker.container-prefix
 ```
 
-## Related Commands
+## Related commands
 
 - [`nb init`](../init.md)
 - [`nb license`](../license/index.md)

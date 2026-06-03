@@ -1,12 +1,12 @@
 ---
-title: "nb config get"
-description: "Referenz für den Befehl nb config get: Effektiven Wert eines CLI-Konfigurationsschlüssels auslesen."
-keywords: "nb config get,NocoBase CLI,configuration"
+title: 'nb config get'
+description: 'Referenz für den Befehl nb config get: Liest den wirksamen Wert eines CLI-Konfigurationseintrags.'
+keywords: 'nb config get,NocoBase CLI,Konfiguration lesen'
 ---
 
 # nb config get
 
-Liest den effektiven Wert eines CLI-Konfigurationsschlüssels aus. Wenn kein expliziter Wert gesetzt ist, wird der Standardwert zurückgegeben.
+Liest den wirksamen Wert des angegebenen CLI-Konfigurationseintrags. Wenn er nicht explizit gesetzt wurde, wird der Standardwert zurückgegeben.
 
 ## Verwendung
 
@@ -16,16 +16,15 @@ nb config get <key>
 
 ## Parameter
 
-| Parameter | Typ | Beschreibung |
-| --- | --- | --- |
-| `<key>` | string | Konfigurationsschlüssel: `locale`, `update.policy`, `license.pkg-url`, `docker.network`, `docker.container-prefix`, `bin.docker`, `bin.git` oder `bin.yarn` |
+| Parameter | Typ    | Beschreibung                                                                                                                                     |
+| --------- | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `<key>`   | string | Name des Konfigurationseintrags: `locale`, `update.policy`, `docker.network`, `docker.container-prefix`, `bin.docker`, `bin.git` oder `bin.yarn` |
 
 ## Beispiele
 
 ```bash
 nb config get locale
 nb config get update.policy
-nb config get license.pkg-url
 nb config get docker.network
 nb config get docker.container-prefix
 nb config get bin.git

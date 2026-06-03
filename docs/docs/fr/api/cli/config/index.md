@@ -1,34 +1,32 @@
 ---
-title: "nb config"
-description: "Référence de la commande nb config : gérer les éléments de configuration par défaut du CLI NocoBase."
-keywords: "nb config,NocoBase CLI,configuration"
+title: 'nb config'
+description: 'Référence de la commande nb config : gérez les éléments de configuration par défaut de la CLI NocoBase.'
+keywords: 'nb config,NocoBase CLI,configuration,configuration par défaut'
 ---
 
 # nb config
 
-Gérer la configuration par défaut du CLI. Clés actuellement prises en charge :
+Gérez la configuration par défaut de la CLI. Les éléments de configuration actuellement pris en charge incluent :
 
 - `locale`
 - `update.policy`
-- `license.pkg-url`
 - `docker.network`
 - `docker.container-prefix`
 - `bin.docker`
 - `bin.git`
 - `bin.yarn`
 
-## Clés courantes
+## Éléments de configuration courants
 
-| Clé | Valeur par défaut | Description |
-| --- | --- | --- |
-| `locale` | résolution actuelle de la locale du CLI | Remplace la langue utilisée par le CLI |
-| `update.policy` | `prompt` | Comportement de mise à jour au démarrage : `prompt`, `auto` ou `off` |
-| `license.pkg-url` | `https://pkg.nocobase.com/` | Registre de paquets utilisé pour les paquets commerciaux |
-| `docker.network` | `nocobase` | Réseau Docker par défaut utilisé par les applications Docker gérées par le CLI |
-| `docker.container-prefix` | `nb` | Préfixe de conteneur par défaut utilisé par les applications Docker gérées par le CLI |
-| `bin.docker` | `docker` | Remplace le chemin de l'exécutable Docker |
-| `bin.git` | `git` | Remplace le chemin de l'exécutable Git |
-| `bin.yarn` | `yarn` | Remplace le chemin de l'exécutable Yarn |
+| Élément de configuration  | Valeur par défaut                           | Description                                                       |
+| ------------------------- | ------------------------------------------- | ----------------------------------------------------------------- |
+| `locale`                  | Résolu selon les règles actuelles de la CLI | Remplace la langue utilisée par la CLI                            |
+| `update.policy`           | `prompt`                                    | Politique de mise à jour au démarrage : `prompt`, `auto` ou `off` |
+| `docker.network`          | `nocobase`                                  | Réseau par défaut pour les applications Docker gérées par la CLI  |
+| `docker.container-prefix` | `nb`                                        | Préfixe par défaut pour les conteneurs Docker gérés par la CLI    |
+| `bin.docker`              | `docker`                                    | Remplace le chemin de l’exécutable Docker                         |
+| `bin.git`                 | `git`                                       | Remplace le chemin de l’exécutable Git                            |
+| `bin.yarn`                | `yarn`                                      | Remplace le chemin de l’exécutable Yarn                           |
 
 ## Utilisation
 
@@ -38,12 +36,12 @@ nb config <command>
 
 ## Sous-commandes
 
-| Commande | Description |
-| --- | --- |
-| [`nb config get`](./get.md) | Obtenir la valeur effective d'une clé de configuration |
-| [`nb config set`](./set.md) | Définir une valeur de configuration |
-| [`nb config delete`](./delete.md) | Supprimer une valeur configurée explicitement |
-| [`nb config list`](./list.md) | Lister les valeurs configurées explicitement |
+| Commande                          | Description                                                            |
+| --------------------------------- | ---------------------------------------------------------------------- |
+| [`nb config get`](./get.md)       | Lit la valeur effective d’un élément de configuration                  |
+| [`nb config set`](./set.md)       | Définit un élément de configuration                                    |
+| [`nb config delete`](./delete.md) | Supprime un élément de configuration défini explicitement              |
+| [`nb config list`](./list.md)     | Liste les éléments de configuration actuellement définis explicitement |
 
 ## Exemples
 
@@ -57,7 +55,7 @@ nb config set bin.git /usr/bin/git
 nb config delete docker.container-prefix
 ```
 
-## Commandes connexes
+## Commandes associées
 
 - [`nb init`](../init.md)
 - [`nb license`](../license/index.md)

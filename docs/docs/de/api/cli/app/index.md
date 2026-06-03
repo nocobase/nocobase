@@ -1,12 +1,12 @@
 ---
-title: "nb app"
-description: "Referenz für den Befehl nb app: Laufzeitstatus einer NocoBase-Anwendung verwalten, einschließlich Starten, Stoppen, Neustarten, Logs, Bereinigen und Aktualisieren."
-keywords: "nb app,NocoBase CLI,Starten,Stoppen,Neustarten,Logs,Aktualisieren"
+title: 'nb app'
+description: 'Referenz für den Befehl nb app: Verwaltet die NocoBase-Anwendungslaufzeit, einschließlich Start, Stopp, Neustart, Protokollen und Upgrade.'
+keywords: 'nb app,NocoBase CLI,starten,stoppen,neu starten,protokolle,upgrade'
 ---
 
 # nb app
 
-Laufzeitstatus einer NocoBase-Anwendung verwalten. Bei npm/Git-envs werden die Anwendungsbefehle im lokalen Quellcode-Verzeichnis ausgeführt, bei Docker-envs werden die Anwendungs-Container anhand der gespeicherten env-Konfiguration verwaltet.
+Verwaltet die NocoBase-Anwendungslaufzeit. In npm/Git env werden Anwendungsbefehle im lokalen Quellcodeverzeichnis ausgeführt; in Docker env werden Anwendung-Container basierend auf der gespeicherten Konfiguration verwaltet.
 
 ## Verwendung
 
@@ -16,15 +16,13 @@ nb app <command>
 
 ## Unterbefehle
 
-| Befehl | Beschreibung |
-| --- | --- |
-| [`nb app start`](./start.md) | Anwendung starten oder Docker-Container neu erstellen |
-| [`nb app stop`](./stop.md) | Anwendung stoppen oder Docker-Container entfernen |
-| [`nb app restart`](./restart.md) | Anwendung erst stoppen und dann starten |
-| [`nb app logs`](./logs.md) | Anwendungs-Logs anzeigen |
-| [`nb app down`](./down.md) | Lokale Laufzeitressourcen stoppen und bereinigen |
-| [`nb app destroy`](./destroy.md) | Verwaltete Laufzeitressourcen, Storage-Daten und die gespeicherte env-Konfiguration entfernen |
-| [`nb app upgrade`](./upgrade.md) | Anwendung stoppen, Quellcode oder Image ersetzen und erneut starten |
+| Befehl                           | Beschreibung                                                                           |
+| -------------------------------- | -------------------------------------------------------------------------------------- |
+| [`nb app start`](./start.md)     | Startet die Anwendung oder erstellt den Docker-Container neu                           |
+| [`nb app stop`](./stop.md)       | Stoppt die Anwendung oder bereinigt den Docker-Container                               |
+| [`nb app restart`](./restart.md) | Stoppt die Anwendung zuerst und startet sie dann                                       |
+| [`nb app logs`](./logs.md)       | Zeigt die Anwendungsprotokolle an                                                      |
+| [`nb app upgrade`](./upgrade.md) | Stoppt die Anwendung, ersetzt den Quellcode oder das Image und startet sie dann erneut |
 
 ## Beispiele
 
@@ -33,12 +31,12 @@ nb app start --env app1
 nb app restart --env app1
 nb app logs --env app1
 nb app upgrade --env app1 --skip-download
-nb app down --env app1 --all --force
-nb app destroy --env app1 --force
+nb app stop --env app1 --with-db
 ```
 
 ## Verwandte Befehle
 
 - [`nb env info`](../env/info.md)
+- [`nb env remove`](../env/remove.md)
 - [`nb db ps`](../db/ps.md)
 - [`nb source download`](../source/download.md)

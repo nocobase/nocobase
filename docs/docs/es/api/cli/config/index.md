@@ -1,34 +1,32 @@
 ---
-title: "nb config"
-description: "Referencia del comando nb config: gestionar los elementos de configuración predeterminados del CLI de NocoBase."
-keywords: "nb config,NocoBase CLI,configuration"
+title: 'nb config'
+description: 'Referencia del comando nb config: administra los elementos de configuración predeterminados de NocoBase CLI.'
+keywords: 'nb config,NocoBase CLI,configuración,configuración predeterminada'
 ---
 
 # nb config
 
-Gestiona la configuración predeterminada del CLI. Claves compatibles actualmente:
+Administra la configuración predeterminada de la CLI. Los elementos de configuración compatibles actualmente incluyen:
 
 - `locale`
 - `update.policy`
-- `license.pkg-url`
 - `docker.network`
 - `docker.container-prefix`
 - `bin.docker`
 - `bin.git`
 - `bin.yarn`
 
-## Claves comunes
+## Elementos de configuración comunes
 
-| Clave | Valor predeterminado | Descripción |
-| --- | --- | --- |
-| `locale` | resolución actual del locale del CLI | Sobrescribe el idioma usado por el CLI |
-| `update.policy` | `prompt` | Comportamiento de actualización al iniciar: `prompt`, `auto` u `off` |
-| `license.pkg-url` | `https://pkg.nocobase.com/` | Registro de paquetes para paquetes comerciales |
-| `docker.network` | `nocobase` | Red de Docker predeterminada usada por las aplicaciones Docker gestionadas por el CLI |
-| `docker.container-prefix` | `nb` | Prefijo de contenedor predeterminado usado por las aplicaciones Docker gestionadas por el CLI |
-| `bin.docker` | `docker` | Sobrescribe la ruta del ejecutable de Docker |
-| `bin.git` | `git` | Sobrescribe la ruta del ejecutable de Git |
-| `bin.yarn` | `yarn` | Sobrescribe la ruta del ejecutable de Yarn |
+| Elemento de configuración | Valor predeterminado                            | Descripción                                                                  |
+| ------------------------- | ----------------------------------------------- | ---------------------------------------------------------------------------- |
+| `locale`                  | Se resuelve según las reglas actuales de la CLI | Sobrescribe el idioma usado por la CLI                                       |
+| `update.policy`           | `prompt`                                        | Política de actualización al iniciar: `prompt`, `auto` o `off`               |
+| `docker.network`          | `nocobase`                                      | Red predeterminada para las aplicaciones Docker administradas por la CLI     |
+| `docker.container-prefix` | `nb`                                            | Prefijo predeterminado para los contenedores Docker administrados por la CLI |
+| `bin.docker`              | `docker`                                        | Sobrescribe la ruta del ejecutable de Docker                                 |
+| `bin.git`                 | `git`                                           | Sobrescribe la ruta del ejecutable de Git                                    |
+| `bin.yarn`                | `yarn`                                          | Sobrescribe la ruta del ejecutable de Yarn                                   |
 
 ## Uso
 
@@ -38,12 +36,12 @@ nb config <command>
 
 ## Subcomandos
 
-| Comando | Descripción |
-| --- | --- |
-| [`nb config get`](./get.md) | Obtener el valor efectivo de una clave de configuración |
-| [`nb config set`](./set.md) | Establecer un valor de configuración |
-| [`nb config delete`](./delete.md) | Eliminar un valor configurado explícitamente |
-| [`nb config list`](./list.md) | Listar los valores configurados explícitamente |
+| Comando                           | Descripción                                                                    |
+| --------------------------------- | ------------------------------------------------------------------------------ |
+| [`nb config get`](./get.md)       | Lee el valor efectivo de un elemento de configuración                          |
+| [`nb config set`](./set.md)       | Establece un elemento de configuración                                         |
+| [`nb config delete`](./delete.md) | Elimina un elemento configurado explícitamente                                 |
+| [`nb config list`](./list.md)     | Muestra los elementos de configuración establecidos explícitamente actualmente |
 
 ## Ejemplos
 

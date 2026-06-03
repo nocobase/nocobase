@@ -1,18 +1,18 @@
 ---
-title: "nb env remove"
-description: "Referência do comando nb env remove: interrompe o runtime gerenciado antes de remover a configuração do env, ou limpa recursos locais do CLI quando necessário."
-keywords: "nb env remove,NocoBase CLI,excluir ambiente,remover configuração,purge"
+title: 'nb env remove'
+description: 'Referência do comando nb env remove: interrompe os runtimes gerenciados antes de remover a configuração do env, ou limpa completamente os recursos locais gerenciados quando necessário.'
+keywords: 'nb env remove,NocoBase CLI,remover ambiente,remover configuração,purge'
 ---
 
 # nb env remove
 
-Remove um env já configurado. Para envs locais e Docker, este comando primeiro interrompe nesta máquina o runtime da aplicação e o runtime do banco de dados embutido gerenciados pelo CLI e depois remove a configuração salva do env. Para envs HTTP e SSH, ele apenas remove a configuração salva do env.
+Remove um env configurado. Para envs local/docker, este comando primeiro interrompe o runtime do aplicativo e o runtime do banco de dados embutido gerenciados pela CLI na máquina atual, e depois remove a configuração salva do env da CLI. Para envs http/ssh, este comando apenas remove a configuração salva do env da CLI.
 
-Se o env removido também for o env atual, a CLI seleciona automaticamente um novo env atual a partir dos envs restantes. Se não restar nenhum env, o env atual será limpo.
+Se o env removido for o env atual, a CLI selecionará automaticamente um novo env atual entre os envs restantes; se não houver mais envs disponíveis, o env atual será limpo.
 
-Por padrão, o comando solicita confirmação. No modo não interativo, `--force` é obrigatório antes da execução.
+Por padrão, o comando exige confirmação. No modo não interativo, é necessário passar `--force` explicitamente para executá-lo.
 
-Passe `--purge` para também limpar os recursos gerenciados pelo CLI nesta máquina. Para envs locais e Docker, `--purge` executa a mesma limpeza de [`nb app destroy`](../app/destroy.md). Para envs HTTP e SSH, `--purge` não toca serviços externos e apenas remove a configuração salva do env.
+Se precisar limpar o máximo possível os recursos gerenciados pela CLI na máquina atual, passe `--purge`. Para envs local/docker, `--purge` também limpa os recursos de runtime gerenciados, os dados de storage e, quando aplicável, os arquivos do app local baixados; para envs http/ssh, `--purge` não afeta serviços externos e apenas remove a configuração salva do env da CLI.
 
 ## Uso
 
@@ -22,12 +22,12 @@ nb env remove <name> [flags]
 
 ## Parâmetros
 
-| Parâmetro | Tipo | Descrição |
-| --- | --- | --- |
-| `<name>` | string | Nome do ambiente configurado a ser removido |
-| `--force`, `-f` | boolean | Pula a confirmação do modo de remoção selecionado; obrigatório no modo não interativo |
-| `--purge` | boolean | Também remove recursos locais gerenciados pelo CLI, dados de storage e, quando aplicável, arquivos locais da app baixados. Para envs de API remota, apenas a configuração salva do env é removida |
-| `--verbose` | boolean | Exibe o progresso detalhado |
+| Parâmetro       | Tipo    | Descrição                                                                                                                                                                                                              |
+| --------------- | ------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `<name>`        | string  | Nome do ambiente configurado a ser removido                                                                                                                                                                            |
+| `--force`, `-f` | boolean | Ignora a confirmação no modo remove atual; obrigatório no modo não interativo                                                                                                                                          |
+| `--purge`       | boolean | Limpa adicionalmente os recursos gerenciados pela CLI, os dados de storage e, quando aplicável, os arquivos do app local baixados na máquina atual; para envs de API remota, apenas remove a configuração salva do env |
+| `--verbose`     | boolean | Exibe o progresso detalhado                                                                                                                                                                                            |
 
 ## Exemplos
 
@@ -40,6 +40,5 @@ nb env remove staging --purge --force
 ## Comandos relacionados
 
 - [`nb app stop`](../app/stop.md)
-- [`nb app destroy`](../app/destroy.md)
 - [`nb env current`](./current.md)
 - [`nb env list`](./list.md)
