@@ -173,10 +173,14 @@ import {
   buildCatalogCollectionCycleKey,
   buildFilterFieldMeta,
   dedupeVisibleFieldCandidates,
+  formatChartBuilderSupportedRelationSubfields,
   getAssociationFilterTargetKey,
   getCollectionFields,
+  getCollectionModelAttributes,
   getCollectionName,
   getCollectionTitle,
+  getInvalidChartBuilderRelationDirectSubfieldDetails,
+  getUnsupportedChartBuilderRelationSubfieldDetails,
   getFieldFilterable,
   getFieldInterface,
   getFieldName,
@@ -4440,6 +4444,245 @@ export class FlowSurfacesService {
     }
   }
 
+  private composeChartBlockHasInlineConfig(block: Record<string, any>) {
+    const settings = _.isPlainObject(block.settings) ? block.settings : {};
+    return ['configure', 'query', 'visual', 'events'].some((key) =>
+      Object.prototype.hasOwnProperty.call(settings, key),
+    );
+  }
+
+  private prepareComposeChartAssetNestedPopupBlocks(
+    input: any,
+    path: string,
+    chartAssets: Record<string, any>,
+  ): { value: any; didResolveChartAsset: boolean } {
+    if (!_.isPlainObject(input)) {
+      return { value: input, didResolveChartAsset: false };
+    }
+
+    let didResolveChartAsset = false;
+    let nextInput = input;
+    const ensureNextInput = () => {
+      if (nextInput === input) {
+        nextInput = { ...input };
+      }
+      return nextInput;
+    };
+
+    const preparePopupBlocks = (key: 'popup' | 'openView') => {
+      const popup = input[key];
+      if (!_.isPlainObject(popup) || !Array.isArray(popup.blocks)) {
+        return;
+      }
+      const prepared = this.prepareComposeChartAssetBlockList(popup.blocks, `${path}.${key}.blocks`, chartAssets);
+      if (!prepared.didResolveChartAsset) {
+        return;
+      }
+      ensureNextInput()[key] = {
+        ...popup,
+        blocks: prepared.blocks,
+      };
+      didResolveChartAsset = true;
+    };
+
+    preparePopupBlocks('popup');
+    preparePopupBlocks('openView');
+
+    return {
+      value: nextInput,
+      didResolveChartAsset,
+    };
+  }
+
+  private prepareComposeChartAssetBlockList(
+    blocks: any,
+    path: string,
+    chartAssets: Record<string, any>,
+  ): { blocks: any[]; didResolveChartAsset: boolean } {
+    const rawBlocks = _.castArray(blocks || []);
+    if (!rawBlocks.length) {
+      return { blocks: rawBlocks, didResolveChartAsset: false };
+    }
+
+    let didResolveChartAsset = false;
+    const hiddenPopupKeys = [
+      'quickCreatePopup',
+      'eventPopup',
+      'cardPopup',
+      'quickCreatePopupSettings',
+      'eventPopupSettings',
+      'cardPopupSettings',
+    ];
+    const nextBlocks = rawBlocks.map((block, index) => {
+      if (!_.isPlainObject(block)) {
+        return block;
+      }
+
+      const blockPath = `${path}[${index}]`;
+      let nextBlock = block;
+      const ensureNextBlock = () => {
+        if (nextBlock === block) {
+          nextBlock = { ...block };
+        }
+        return nextBlock;
+      };
+
+      if (Array.isArray(block.blocks)) {
+        const prepared = this.prepareComposeChartAssetBlockList(block.blocks, `${blockPath}.blocks`, chartAssets);
+        if (prepared.didResolveChartAsset) {
+          ensureNextBlock().blocks = prepared.blocks;
+          didResolveChartAsset = true;
+        }
+      }
+
+      for (const slot of ['actions', 'recordActions', 'fields']) {
+        if (!Array.isArray(block[slot])) {
+          continue;
+        }
+        let didPrepareSlot = false;
+        const nextItems = block[slot].map((item: any, itemIndex: number) => {
+          const prepared = this.prepareComposeChartAssetNestedPopupBlocks(
+            item,
+            `${blockPath}.${slot}[${itemIndex}]`,
+            chartAssets,
+          );
+          didPrepareSlot = didPrepareSlot || prepared.didResolveChartAsset;
+          return prepared.value;
+        });
+        if (didPrepareSlot) {
+          ensureNextBlock()[slot] = nextItems;
+          didResolveChartAsset = true;
+        }
+      }
+
+      if (Array.isArray(block.fieldGroups)) {
+        let didPrepareFieldGroups = false;
+        const nextFieldGroups = block.fieldGroups.map((group: any, groupIndex: number) => {
+          if (!_.isPlainObject(group) || !Array.isArray(group.fields)) {
+            return group;
+          }
+
+          let didPrepareGroupFields = false;
+          const nextFields = group.fields.map((field: any, fieldIndex: number) => {
+            const prepared = this.prepareComposeChartAssetNestedPopupBlocks(
+              field,
+              `${blockPath}.fieldGroups[${groupIndex}].fields[${fieldIndex}]`,
+              chartAssets,
+            );
+            didPrepareGroupFields = didPrepareGroupFields || prepared.didResolveChartAsset;
+            return prepared.value;
+          });
+          if (!didPrepareGroupFields) {
+            return group;
+          }
+          didPrepareFieldGroups = true;
+          return {
+            ...group,
+            fields: nextFields,
+          };
+        });
+        if (didPrepareFieldGroups) {
+          ensureNextBlock().fieldGroups = nextFieldGroups;
+          didResolveChartAsset = true;
+        }
+      }
+
+      if (_.isPlainObject(block.popup) && Array.isArray(block.popup.blocks)) {
+        const prepared = this.prepareComposeChartAssetBlockList(
+          block.popup.blocks,
+          `${blockPath}.popup.blocks`,
+          chartAssets,
+        );
+        if (prepared.didResolveChartAsset) {
+          ensureNextBlock().popup = {
+            ...block.popup,
+            blocks: prepared.blocks,
+          };
+          didResolveChartAsset = true;
+        }
+      }
+
+      if (_.isPlainObject(block.settings)) {
+        for (const key of hiddenPopupKeys) {
+          const popup = block.settings[key];
+          if (!_.isPlainObject(popup) || !Array.isArray(popup.blocks)) {
+            continue;
+          }
+          const prepared = this.prepareComposeChartAssetBlockList(
+            popup.blocks,
+            `${blockPath}.settings.${key}.blocks`,
+            chartAssets,
+          );
+          if (!prepared.didResolveChartAsset) {
+            continue;
+          }
+          ensureNextBlock().settings = {
+            ...(nextBlock.settings || {}),
+            [key]: {
+              ...popup,
+              blocks: prepared.blocks,
+            },
+          };
+          didResolveChartAsset = true;
+        }
+      }
+
+      if (
+        String(nextBlock.type || '').trim() !== 'chart' ||
+        !Object.prototype.hasOwnProperty.call(nextBlock, 'chart') ||
+        this.composeChartBlockHasInlineConfig(nextBlock)
+      ) {
+        return nextBlock;
+      }
+
+      const chartKey = String(nextBlock.chart || '').trim();
+      if (!chartKey) {
+        throwChartRepairBadRequest(`${blockPath}.chart must reference one key from assets.charts`, {
+          path: `${blockPath}.chart`,
+          ruleId: 'chart-block-asset-reference-required',
+        });
+      }
+
+      const chartAsset = chartAssets[chartKey];
+      if (!_.isPlainObject(chartAsset)) {
+        throwChartRepairBadRequest(`${blockPath}.chart references missing chart asset '${chartKey}'`, {
+          path: `${blockPath}.chart`,
+          ruleId: 'chart-block-asset-reference-missing',
+          details: {
+            chartKey,
+          },
+        });
+      }
+
+      if (!_.isUndefined(nextBlock.settings) && !_.isPlainObject(nextBlock.settings)) {
+        return nextBlock;
+      }
+
+      didResolveChartAsset = true;
+      return {
+        ...nextBlock,
+        settings: _.merge({}, _.cloneDeep(nextBlock.settings || {}), _.cloneDeep(chartAsset)),
+      };
+    });
+
+    return {
+      blocks: nextBlocks,
+      didResolveChartAsset,
+    };
+  }
+
+  private prepareComposeChartAssetSettings(values: FlowSurfaceComposeValues): FlowSurfaceComposeValues {
+    const chartAssets = _.isPlainObject(values?.assets?.charts) ? values.assets.charts : {};
+    const prepared = this.prepareComposeChartAssetBlockList(values?.blocks, '$.blocks', chartAssets);
+
+    return prepared.didResolveChartAsset
+      ? {
+          ...values,
+          blocks: prepared.blocks,
+        }
+      : values;
+  }
+
   private getApplyBlueprintKanbanBlockResourceObject(block: any) {
     return _.isPlainObject(block?.resource) ? block.resource : {};
   }
@@ -7075,12 +7318,13 @@ export class FlowSurfacesService {
     } = {},
   ) {
     const enabledPackages = await this.resolveEnabledPluginPackages(options);
-    const target = await this.prepareWriteTarget('compose', values?.target, values, options);
+    const composeValues = this.prepareComposeChartAssetSettings(values);
+    const target = await this.prepareWriteTarget('compose', composeValues?.target, composeValues, options);
     const authoringContext = await this.buildTargetAuthoringContext({
       target,
       transaction: options.transaction,
     });
-    await assertFlowSurfaceAuthoringPayload('compose', values, {
+    await assertFlowSurfaceAuthoringPayload('compose', composeValues, {
       transaction: options.transaction,
       enabledPackages,
       skipGeneratedLayoutSingleColumnErrors: options.skipGeneratedLayoutSingleColumnErrors === true,
@@ -7094,12 +7338,17 @@ export class FlowSurfacesService {
       ...options,
       popupTemplateTreeCache,
     };
-    const mode = this.assertComposeMode(values?.mode);
-    const popupDefaultsMetadata = this.buildPopupDefaultsMetadata(values?.defaults);
-    const normalizedBlocks = this.normalizeComposeBlocks(values?.blocks, enabledPackages, popupDefaultsMetadata, {
-      dataSourceKey: authoringContext.currentDataSourceKey,
-      collectionName: authoringContext.currentCollectionName,
-    });
+    const mode = this.assertComposeMode(composeValues?.mode);
+    const popupDefaultsMetadata = this.buildPopupDefaultsMetadata(composeValues?.defaults);
+    const normalizedBlocks = this.normalizeComposeBlocks(
+      composeValues?.blocks,
+      enabledPackages,
+      popupDefaultsMetadata,
+      {
+        dataSourceKey: authoringContext.currentDataSourceKey,
+        collectionName: authoringContext.currentCollectionName,
+      },
+    );
     this.validateComposePopupTemplateAliases(normalizedBlocks, popupTemplateAliasSession);
     const blockParent = await this.surfaceContext.resolveBlockParent(target, options.transaction);
     const gridUid = blockParent.parentUid;
@@ -7127,7 +7376,7 @@ export class FlowSurfacesService {
       mode,
       normalizedBlocks,
       existingItemUids: existingItems.map((item: any) => item.uid),
-      layout: values.layout,
+      layout: composeValues.layout,
     });
 
     const generatedDefaultFilterByComposeBlockUid = new Map<string, any>();
@@ -7169,7 +7418,7 @@ export class FlowSurfacesService {
           {
             ...payload,
             ...(Object.keys(hiddenPopupSettings).length ? { settings: hiddenPopupSettings } : {}),
-            ...(values.defaults ? { defaults: values.defaults } : {}),
+            ...(composeValues.defaults ? { defaults: composeValues.defaults } : {}),
           },
           {
             ...runtimeOptions,
@@ -8470,6 +8719,7 @@ export class FlowSurfacesService {
       normalizedSettings.defaultFilter = normalizeFlowSurfaceFilterGroupValue(
         normalizedSettings.defaultFilter,
         `flowSurfaces ${actionName} defaultActionSettings.filter.defaultFilter expects FilterGroup like ${FLOW_SURFACE_FILTER_GROUP_EXAMPLE}`,
+        { strictDateValues: true },
       );
       normalizedSettings.defaultFilter = this.normalizeEffectivePublicDataSurfaceDefaultFilter(
         normalizedSettings.defaultFilter,
@@ -15050,12 +15300,12 @@ export class FlowSurfacesService {
           "flowSurfaces updateSettings filter action values 'props.defaultFilterValue/filterValue' and 'stepParams.filterSettings.defaultFilter.defaultFilter' must match",
         );
       }
-      const filterValue = this.normalizeEffectivePublicDataSurfaceDefaultFilter(
+      const normalizedFilterValue = this.normalizeFilterActionDefaultFilterValue(
         hasStepDefaultFilter ? nextStepFilter : nextPropFilter,
-        {
-          requiredFieldCount: options.requiredFieldCount,
-        },
       );
+      const filterValue = this.normalizeEffectivePublicDataSurfaceDefaultFilter(normalizedFilterValue, {
+        requiredFieldCount: options.requiredFieldCount,
+      });
       if (!hasPropsFilterableFieldNames && !hasStepFilterableFieldNames) {
         const filterableFieldNames = resolveFlowSurfaceDefaultFilterFieldNames(filterValue);
         if (filterableFieldNames.length) {
@@ -15647,10 +15897,12 @@ export class FlowSurfacesService {
     const selections = [
       ..._.castArray(state.query.measures || []).map((selection, index) => ({
         selection,
+        kind: 'measure',
         path: `chart query.measures[${index}].field`,
       })),
       ..._.castArray(state.query.dimensions || []).map((selection, index) => ({
         selection,
+        kind: 'dimension',
         path: `chart query.dimensions[${index}].field`,
       })),
     ];
@@ -15660,26 +15912,119 @@ export class FlowSurfacesService {
       if (!fieldPath) {
         continue;
       }
-      const parsed = this.parseFieldPath(collection, fieldPath, undefined, dataSourceKey, collectionName);
-      const field = resolveFieldFromCollection(parsed.leafCollection, parsed.leafFieldPath);
-      if (!field) {
-        if (this.collectionHasConcreteField(parsed.leafCollection, parsed.leafFieldPath)) {
-          continue;
+      const fieldPathParts = fieldPath.split('.').filter(Boolean);
+      const isCountMeasureSelection =
+        item.kind === 'measure' &&
+        String(item.selection?.aggregation || '').trim() === 'count' &&
+        !item.selection?.distinct;
+      if (fieldPathParts.length > 1 && !isCountMeasureSelection) {
+        const directAssociationPath = fieldPathParts[0];
+        const directAssociationField = resolveFieldFromCollection(collection, directAssociationPath);
+        const directAssociationTargetCollection =
+          directAssociationField && isAssociationField(directAssociationField)
+            ? resolveFieldTargetCollection(
+                directAssociationField,
+                dataSourceKey,
+                (resolvedDataSourceKey, targetCollection) =>
+                  this.getCollection(resolvedDataSourceKey, targetCollection),
+              )
+            : null;
+        const invalidDirectSubfield = directAssociationTargetCollection
+          ? getInvalidChartBuilderRelationDirectSubfieldDetails({
+              associationPathName: directAssociationPath,
+              selectedSubfieldPath: fieldPathParts.slice(1).join('.'),
+              targetCollection: directAssociationTargetCollection,
+            })
+          : null;
+        if (invalidDirectSubfield) {
+          throwBadRequest(
+            withChartRepairMessage(
+              `flowSurfaces ${actionName} ${
+                item.path
+              } '${fieldPath}' must reference a direct scalar child field under relation '${
+                invalidDirectSubfield.associationPath
+              }'. ${formatChartBuilderSupportedRelationSubfields(
+                invalidDirectSubfield.associationPath,
+                invalidDirectSubfield.supportedFields,
+              )}`,
+            ),
+            {
+              path: item.path,
+              ruleId: 'chart-builder-query-relation-direct-subfield-required',
+              details: withFlowSurfaceChartRepairDetails({
+                fieldPath,
+                dataSourceKey,
+                collectionName,
+                ...invalidDirectSubfield,
+              }),
+            },
+          );
         }
-        throwBadRequest(
-          withChartRepairMessage(
-            `flowSurfaces ${actionName} ${item.path} '${fieldPath}' does not exist on collection '${dataSourceKey}.${collectionName}'`,
-          ),
-          {
-            details: withFlowSurfaceChartRepairDetails({
-              fieldPath,
-              dataSourceKey,
-              collectionName,
-            }),
-          },
-        );
       }
-      if (!fieldPath.includes('.') && isAssociationField(field)) {
+      const parsed = this.parseFieldPath(collection, fieldPath, undefined, dataSourceKey, collectionName);
+      if (parsed.associationPathName) {
+        const associationField = parsed.associationField;
+        const associationTargetCollection =
+          associationField && isAssociationField(associationField)
+            ? resolveFieldTargetCollection(associationField, dataSourceKey, (resolvedDataSourceKey, targetCollection) =>
+                this.getCollection(resolvedDataSourceKey, targetCollection),
+              )
+            : null;
+        if (!associationField || !isAssociationField(associationField) || !associationTargetCollection) {
+          throwBadRequest(
+            withChartRepairMessage(
+              `flowSurfaces ${actionName} ${item.path} '${fieldPath}' uses invalid association path '${parsed.associationPathName}' for builder charts`,
+            ),
+            {
+              path: item.path,
+              ruleId: 'chart-builder-query-association-path-invalid',
+              details: withFlowSurfaceChartRepairDetails({
+                fieldPath,
+                associationPath: parsed.associationPathName,
+                dataSourceKey,
+                collectionName,
+              }),
+            },
+          );
+        }
+      }
+      const field = resolveFieldFromCollection(parsed.leafCollection, parsed.leafFieldPath);
+      const leafModelAttributes = getCollectionModelAttributes(parsed.leafCollection);
+      const hasLeafModelAttribute = Object.prototype.hasOwnProperty.call(leafModelAttributes, parsed.leafFieldPath);
+      const isCountMeasureRelationSubfield =
+        item.kind === 'measure' &&
+        String(item.selection?.aggregation || '').trim() === 'count' &&
+        !item.selection?.distinct &&
+        parsed.associationField &&
+        isAssociationField(parsed.associationField);
+      const unsupportedRelationSubfield =
+        parsed.associationField && isAssociationField(parsed.associationField)
+          ? getUnsupportedChartBuilderRelationSubfieldDetails({
+              associationPathName: parsed.associationPathName,
+              leafFieldName: parsed.leafFieldPath,
+              leafField: field,
+              targetCollection: parsed.leafCollection,
+            })
+          : null;
+      if (!field) {
+        const hasConcreteField =
+          hasLeafModelAttribute || this.collectionHasConcreteField(parsed.leafCollection, parsed.leafFieldPath);
+        if (!hasConcreteField) {
+          throwBadRequest(
+            withChartRepairMessage(
+              `flowSurfaces ${actionName} ${item.path} '${fieldPath}' does not exist on collection '${dataSourceKey}.${collectionName}'`,
+            ),
+            {
+              details: withFlowSurfaceChartRepairDetails({
+                fieldPath,
+                dataSourceKey,
+                collectionName,
+              }),
+            },
+          );
+        }
+      }
+      if (!fieldPath.includes('.') && field && isAssociationField(field)) {
         const suggestion = this.resolveBuilderChartAssociationSubfieldSuggestion(fieldPath, field, dataSourceKey);
         throwBadRequest(
           withChartRepairMessage(
@@ -15691,6 +16036,56 @@ export class FlowSurfacesService {
               dataSourceKey,
               collectionName,
               ...suggestion,
+            }),
+          },
+        );
+      }
+      if (isCountMeasureRelationSubfield) {
+        throwBadRequest(
+          withChartRepairMessage(
+            `flowSurfaces ${actionName} ${item.path} '${fieldPath}' counts a relation subfield; count a scalar base field such as 'id' and keep '${fieldPath}' as a dimension`,
+          ),
+          {
+            path: item.path,
+            ruleId: 'chart-builder-query-count-measure-relation-subfield',
+            details: withFlowSurfaceChartRepairDetails({
+              fieldPath,
+              dataSourceKey,
+              collectionName,
+              suggestedMeasure: {
+                field: 'id',
+                aggregation: 'count',
+                alias: String(item.selection?.alias || '').trim() || 'recordCount',
+              },
+              suggestedDimension: {
+                field: fieldPath,
+              },
+            }),
+          },
+        );
+      }
+      if (unsupportedRelationSubfield) {
+        throwBadRequest(
+          withChartRepairMessage(
+            `flowSurfaces ${actionName} ${
+              item.path
+            } '${fieldPath}' references relation subfield '${fieldPath}', but current chart builder SQL generation cannot query relation subfield '${
+              unsupportedRelationSubfield.leafFieldName
+            }' because its database column is '${
+              unsupportedRelationSubfield.columnName
+            }'. ${formatChartBuilderSupportedRelationSubfields(
+              unsupportedRelationSubfield.associationPath,
+              unsupportedRelationSubfield.supportedFields,
+            )}`,
+          ),
+          {
+            path: item.path,
+            ruleId: 'chart-builder-query-relation-subfield-column-unsupported',
+            details: withFlowSurfaceChartRepairDetails({
+              fieldPath,
+              dataSourceKey,
+              collectionName,
+              ...unsupportedRelationSubfield,
             }),
           },
         );
@@ -20711,11 +21106,7 @@ export class FlowSurfacesService {
     if (!normalized) {
       return false;
     }
-    const modelAttributes =
-      (typeof collection?.model?.getAttributes === 'function' ? collection.model.getAttributes() : null) ||
-      collection?.model?.rawAttributes ||
-      collection?.model?.attributes ||
-      {};
+    const modelAttributes = getCollectionModelAttributes(collection);
     const primaryKeyAttributes = _.castArray(
       collection?.model?.primaryKeyAttributes || collection?.model?.primaryKeyAttribute || [],
     );
@@ -21757,7 +22148,11 @@ export class FlowSurfacesService {
       };
     }
 
-    return _.cloneDeep(value);
+    return normalizeFlowSurfaceFilterGroupValue(
+      value,
+      `flowSurfaces configure action defaultFilter expects FilterGroup like ${FLOW_SURFACE_FILTER_GROUP_EXAMPLE}`,
+      { strictDateValues: true },
+    );
   }
 
   private normalizeActionAssignValues(actionName: string, value: any) {

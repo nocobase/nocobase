@@ -118,6 +118,10 @@ const FILTER_GROUP_SCHEMA = {
   additionalProperties: false,
   'x-flowSurfaceFormat': 'filter-group',
 };
+const LINKAGE_RULES_SCHEMA = {
+  type: 'array',
+  'x-flowSurfaceFormat': 'linkage-rules',
+};
 const DEFAULT_DIRECT_EVENTS = ['beforeRender'];
 const ACTION_DIRECT_EVENTS = ['click', 'beforeRender'];
 const ACTION_OBJECT_EVENTS = ['click'];
@@ -206,7 +210,7 @@ const ACTION_BUTTON_SETTINGS_GROUP = {
     'general.type': STRING_SCHEMA,
     'general.danger': BOOLEAN_SCHEMA,
     'general.color': STRING_SCHEMA,
-    'linkageRules.value': ARRAY_SCHEMA,
+    'linkageRules.value': LINKAGE_RULES_SCHEMA,
   },
 };
 const TRIGGER_WORKFLOWS_SETTINGS_GROUP = {
@@ -301,7 +305,7 @@ const EVENT_SETTINGS_GROUP = {
   allowedPaths: ['linkageRules.value'],
   eventBindingSteps: ['linkageRules'],
   pathSchemas: {
-    'linkageRules.value': ARRAY_SCHEMA,
+    'linkageRules.value': LINKAGE_RULES_SCHEMA,
   },
 };
 const CREATE_FORM_SETTINGS_EVENT_ONLY_GROUP = {
@@ -322,7 +326,7 @@ const DETAILS_SETTINGS_GROUP = {
     ...FORM_LAYOUT_PATH_SCHEMAS,
     'dataScope.filter': FILTER_GROUP_SCHEMA,
     'defaultSorting.sort': ARRAY_SCHEMA,
-    'linkageRules.value': ARRAY_SCHEMA,
+    'linkageRules.value': LINKAGE_RULES_SCHEMA,
   },
 };
 const FILTER_FORM_BLOCK_SETTINGS_GROUP = {
@@ -349,7 +353,7 @@ const BLOCK_CARD_SETTINGS_GROUP = {
     'titleDescription.description': STRING_SCHEMA,
     'blockHeight.heightMode': BLOCK_HEIGHT_MODE_SCHEMA,
     'blockHeight.height': NUMBER_SCHEMA,
-    'linkageRules.value': ARRAY_SCHEMA,
+    'linkageRules.value': LINKAGE_RULES_SCHEMA,
   },
 };
 const CALENDAR_SETTINGS_GROUP = {
@@ -2288,7 +2292,7 @@ CALENDAR_READONLY_ACTION_CONTRACT.domains.stepParams = groupedDomain({
     mergeStrategy: 'deep',
     eventBindingSteps: ['linkageRules'],
     pathSchemas: {
-      'linkageRules.value': ARRAY_SCHEMA,
+      'linkageRules.value': LINKAGE_RULES_SCHEMA,
     },
   },
 });
