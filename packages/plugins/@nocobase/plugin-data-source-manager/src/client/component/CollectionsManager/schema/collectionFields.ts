@@ -106,6 +106,7 @@ export const fieldsTableSchema: ISchema = {
           type: 'void',
           title: '{{ t("Sync from database") }}',
           'x-component': 'SyncFieldsAction',
+          'x-hidden': '{{ disableConfigureFields }}',
           'x-component-props': {
             type: 'primary',
           },
@@ -114,6 +115,7 @@ export const fieldsTableSchema: ISchema = {
           type: 'void',
           title: '{{ t("Sync from database") }}',
           'x-component': 'SyncSQLFieldsAction',
+          'x-hidden': '{{ disableConfigureFields }}',
           'x-component-props': {
             type: 'primary',
           },
@@ -125,7 +127,7 @@ export const fieldsTableSchema: ISchema = {
           'x-component-props': {
             type: 'primary',
           },
-          'x-hidden': '{{ disableConfigure || disableAddFields }}',
+          'x-hidden': '{{ disableConfigureFields || disableAddFields }}',
         },
       },
     },
@@ -153,7 +155,7 @@ export const fieldsTableSchema: ISchema = {
               'x-component': 'FieldTitleInput',
               'x-component-props': {
                 handleFieldChange: '{{enqueueChange}}',
-                disabled: '{{disableConfigure}}',
+                disabled: '{{disableConfigureFields}}',
               },
             },
           },
@@ -179,7 +181,7 @@ export const fieldsTableSchema: ISchema = {
               'x-component': 'FieldType',
               'x-component-props': {
                 handleFieldChange: '{{enqueueChange}}',
-                disabled: '{{disableConfigure}}',
+                disabled: '{{disableConfigureFields}}',
               },
             },
           },
@@ -194,7 +196,7 @@ export const fieldsTableSchema: ISchema = {
               'x-component': 'CollectionFieldInterfaceSelect',
               'x-component-props': {
                 handleFieldChange: '{{enqueueChange}}',
-                disabled: '{{disableConfigure}}',
+                disabled: '{{disableConfigureFields}}',
               },
             },
           },
@@ -234,6 +236,7 @@ export const fieldsTableSchema: ISchema = {
           type: 'void',
           title: '{{ t("Actions") }}',
           'x-component': 'Table.Column',
+          'x-hidden': '{{disableConfigureFields}}',
           properties: {
             actions: {
               type: 'void',
@@ -246,7 +249,7 @@ export const fieldsTableSchema: ISchema = {
                   type: 'void',
                   title: '{{ t("Edit") }}',
                   'x-component': 'EditCollectionField',
-                  'x-hidden': '{{disableConfigure}}',
+                  'x-hidden': '{{disableConfigureFields}}',
                   'x-component-props': {
                     role: 'button',
                     'aria-label': '{{ "edit-button-" + $record.name }}',
@@ -258,7 +261,7 @@ export const fieldsTableSchema: ISchema = {
                   title: '{{ t("Delete") }}',
                   'x-disabled': '{{cm.useDeleteButtonDisabled()}}',
                   'x-component': 'Action.Link',
-                  'x-hidden': '{{disableConfigure}}',
+                  'x-hidden': '{{disableConfigureFields}}',
                   'x-component-props': {
                     confirm: {
                       title: "{{t('Delete record')}}",
@@ -271,7 +274,8 @@ export const fieldsTableSchema: ISchema = {
                       dependencies: ['.interface'],
                       fulfill: {
                         state: {
-                          visible: "{{ !disableConfigure && ['obo','oho','m2m','o2m','m2o'].includes($deps[0]) }}",
+                          visible:
+                            "{{ !disableConfigureFields && ['obo','oho','m2m','o2m','m2o'].includes($deps[0]) }}",
                         },
                       },
                     },

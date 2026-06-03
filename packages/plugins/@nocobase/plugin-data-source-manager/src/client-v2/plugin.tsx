@@ -32,6 +32,7 @@ export interface DataSourceTypeOptions {
   label?: React.ReactNode;
   defaultValues?: Record<string, any>;
   disableAddFields?: boolean;
+  disableConfigureFields?: boolean;
   disableTestConnection?: boolean;
   SettingsForm?: ComponentType<DataSourceSettingsFormProps>;
 }

@@ -41,14 +41,14 @@ const getSchema = ({
   parentRecord,
   compile,
   getContainer,
-  disableConfigure,
+  disableConfigureFields,
 }: {
   schema: IField;
   record: any;
   parentRecord: any;
   compile;
   getContainer;
-  disableConfigure?: boolean;
+  disableConfigureFields?: boolean;
 }): ISchema => {
   if (!schema) {
     return;
@@ -57,7 +57,7 @@ const getSchema = ({
   if (properties?.name) {
     properties.name['x-disabled'] = true;
   }
-  if (disableConfigure && properties?.['uiSchema.title']) {
+  if (disableConfigureFields && properties?.['uiSchema.title']) {
     properties['uiSchema.title']['x-disabled'] = true;
   }
   if (schema.hasDefaultValue === true) {
@@ -209,7 +209,7 @@ const EditFieldAction = (props) => {
   const compile = useCompile();
   const { name } = useParams();
   const dataSourceType = new URLSearchParams(location.search).get('type');
-  const disableConfigure = !!(dataSourceType && plugin.types.get(dataSourceType)?.disableConfigure);
+  const disableConfigureFields = !!(dataSourceType && plugin.types.get(dataSourceType)?.disableConfigureFields);
   const isDialect = (dialect: string) => currentDatabase?.dialect === dialect;
   const currentCollections = useMemo(() => {
     return collections.map((v) => {
@@ -261,7 +261,7 @@ const EditFieldAction = (props) => {
               parentRecord,
               compile,
               getContainer,
-              disableConfigure,
+              disableConfigureFields,
             });
             setSchema(schema);
             setVisible(true);

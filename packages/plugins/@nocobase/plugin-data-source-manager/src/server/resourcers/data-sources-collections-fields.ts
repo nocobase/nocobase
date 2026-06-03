@@ -13,7 +13,7 @@ import { applyExternalFieldDefinition, parseCollectionNameWithDataSourceKey } fr
 function ensureFieldConfigureEnabled(ctx, dataSourceKey: string) {
   const dataSource = ctx.app.dataSourceManager.dataSources.get(dataSourceKey);
 
-  if (dataSource?.disableConfigure) {
+  if (dataSource?.disableConfigureFields) {
     ctx.throw(403, 'Field configuration is disabled for this data source');
   }
 }
