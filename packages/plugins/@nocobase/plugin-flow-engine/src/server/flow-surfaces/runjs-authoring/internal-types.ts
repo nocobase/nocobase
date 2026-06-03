@@ -259,6 +259,7 @@ export type RunJsAstInspection = {
     fieldInterface?: string;
     fieldPath?: string;
     fieldType?: string;
+    invalidShape?: string;
     index: number;
     invalidReason?: string;
     invalidValue?: any;

@@ -76,9 +76,6 @@ export function collectAstInvalidResourceFilterCalls(
   staticFilterValueBindings: StaticFilterValueBinding[],
   context: RunJsAuthoringContext,
 ): RunJsAstInspection['invalidResourceFilterCalls'] {
-  if (!context.getCollection) {
-    return [];
-  }
   const entries: RunJsAstInspection['invalidResourceFilterCalls'] = [];
   const ctxResourceStates = new Map<string, { scope: SourceRange; state: AstRunJsResourceState }>();
   const aliasStates = new Map<string, AstRunJsResourceState>();
@@ -492,7 +489,7 @@ export function collectAstInvalidResourceFilterCalls(
       if (typeof filterArgumentIndex !== 'number') {
         return;
       }
-      const filterArg = resolveRunJsStaticFilterObjectNode(
+      const filterArg = resolveRunJsStaticFilterRootNode(
         event.node.arguments?.[filterArgumentIndex],
         identifierBindings,
         staticFilterValueBindings,
@@ -501,18 +498,18 @@ export function collectAstInvalidResourceFilterCalls(
         return;
       }
       entries.push(
-        ...collectAstResourceFilterObjectErrors({
+        ...collectAstResourceFilterRootErrors({
           source,
           path: '',
           capability: target.capability,
           dataSourceKey: target.state.dataSourceKey,
           collectionName: target.state.collectionName,
           resourceType: target.state.resourceType,
-          filterObject: filterArg,
+          filterNode: filterArg,
           context,
           identifierBindings,
           staticFilterValueBindings,
-          index: typeof filterArg.start === 'number' ? filterArg.start : event.node.start || 0,
+          index: typeof filterArg.node.start === 'number' ? filterArg.node.start : event.node.start || 0,
         }),
       );
     });
@@ -556,7 +553,7 @@ function collectAstForwardedResourceFilterArgumentErrors(input: {
         return;
       }
 
-      const filterArg = resolveRunJsStaticFilterObjectNode(
+      const filterArg = resolveRunJsStaticFilterRootNode(
         node.arguments?.[helper.filterParamIndex],
         input.identifierBindings,
         input.staticFilterValueBindings,
@@ -579,24 +576,34 @@ function collectAstForwardedResourceFilterArgumentErrors(input: {
       }
 
       errors.push(
-        ...collectAstResourceFilterObjectErrors({
+        ...collectAstResourceFilterRootErrors({
           source: input.source,
           path: '',
           capability: `${helper.name}.setFilter`,
           dataSourceKey: helper.dataSourceKey || 'main',
           collectionName,
           resourceType: helper.resourceType || 'unknown',
-          filterObject: filterArg,
+          filterNode: filterArg,
           context: input.context,
           identifierBindings: input.identifierBindings,
           staticFilterValueBindings: input.staticFilterValueBindings,
-          index: typeof filterArg.start === 'number' ? filterArg.start : node.start || 0,
+          index: typeof filterArg.node.start === 'number' ? filterArg.node.start : node.start || 0,
         }),
       );
     },
   });
   return errors;
 }
+
+type RunJsStaticFilterRootNode =
+  | {
+      kind: 'object';
+      node: any;
+    }
+  | {
+      kind: 'array';
+      node: any;
+    };
 
 type AstResourceFilterHelper = SourceRange & {
   collectionName?: string;
@@ -788,6 +795,34 @@ function resolveAstResourceFilterHelperCollectionName(
   return resolved.status === 'resolved' ? resolved.value : '';
 }
 
+function collectAstResourceFilterRootErrors(input: {
+  source: string;
+  path: string;
+  capability: string;
+  dataSourceKey?: string;
+  collectionName?: string;
+  resourceType: FlowResourceInstanceType;
+  filterNode: RunJsStaticFilterRootNode;
+  context: RunJsAuthoringContext;
+  identifierBindings: AstIdentifierBinding[];
+  staticFilterValueBindings: StaticFilterValueBinding[];
+  index: number;
+}): RunJsAstInspection['invalidResourceFilterCalls'] {
+  if (!isRunJsRecordFilterResourceType(input.resourceType)) {
+    return [];
+  }
+  if (input.filterNode.kind === 'array') {
+    return [buildRunJsResourceFilterShapeError({ ...input, invalidShape: 'array' })];
+  }
+  if (isRunJsFilterGroupObjectNode(input.filterNode.node, input.identifierBindings, input.staticFilterValueBindings)) {
+    return [buildRunJsResourceFilterShapeError({ ...input, invalidShape: 'filter-group' })];
+  }
+  return collectAstResourceFilterObjectErrors({
+    ...input,
+    filterObject: input.filterNode.node,
+  });
+}
+
 function collectAstResourceFilterObjectErrors(input: {
   source: string;
   path: string;
@@ -801,11 +836,7 @@ function collectAstResourceFilterObjectErrors(input: {
   staticFilterValueBindings: StaticFilterValueBinding[];
   index: number;
 }): RunJsAstInspection['invalidResourceFilterCalls'] {
-  if (
-    input.resourceType !== 'unknown' &&
-    input.resourceType !== 'MultiRecordResource' &&
-    input.resourceType !== 'SingleRecordResource'
-  ) {
+  if (!isRunJsRecordFilterResourceType(input.resourceType)) {
     return [];
   }
   if (!input.dataSourceKey || !input.collectionName || !input.context.getCollection) {
@@ -834,6 +865,12 @@ function collectAstResourceFilterObjectErrors(input: {
     collection,
     rootCollection: collection,
   });
+}
+
+function isRunJsRecordFilterResourceType(resourceType: FlowResourceInstanceType) {
+  return (
+    resourceType === 'unknown' || resourceType === 'MultiRecordResource' || resourceType === 'SingleRecordResource'
+  );
 }
 
 function collectAstResourceFilterProperties(input: {
@@ -1261,6 +1298,28 @@ function buildRunJsStrictDateFilterValueError(
   };
 }
 
+function resolveRunJsStaticFilterRootNode(
+  node: any,
+  identifierBindings: AstIdentifierBinding[],
+  staticFilterValueBindings: StaticFilterValueBinding[],
+): RunJsStaticFilterRootNode | undefined {
+  const objectNode = resolveRunJsStaticFilterObjectNode(node, identifierBindings, staticFilterValueBindings);
+  if (objectNode) {
+    return {
+      kind: 'object',
+      node: objectNode,
+    };
+  }
+  const arrayNode = resolveRunJsStaticFilterArrayNode(node, identifierBindings, staticFilterValueBindings);
+  if (arrayNode) {
+    return {
+      kind: 'array',
+      node: arrayNode,
+    };
+  }
+  return undefined;
+}
+
 function resolveRunJsStaticFilterObjectNode(
   node: any,
   identifierBindings: AstIdentifierBinding[],
@@ -1436,6 +1495,351 @@ function resolveRunJsStaticFilterValue(
     return { status: 'resolved', value };
   }
   return { status: 'unresolved' };
+}
+
+function isRunJsFilterGroupObjectNode(
+  objectExpression: any,
+  identifierBindings: AstIdentifierBinding[],
+  staticFilterValueBindings: StaticFilterValueBinding[],
+) {
+  let hasLogic = false;
+  for (const property of objectExpression?.properties || []) {
+    if (!property || property.type === 'SpreadElement') {
+      return false;
+    }
+    const key = getAstStaticPropertyName(property);
+    if (!key) {
+      return false;
+    }
+    if (key === 'logic') {
+      hasLogic = true;
+    }
+  }
+  return (
+    hasLogic && !!resolveRunJsFilterGroupItemsArrayNode(objectExpression, identifierBindings, staticFilterValueBindings)
+  );
+}
+
+function buildRunJsResourceFilterShapeError(input: {
+  source: string;
+  capability: string;
+  dataSourceKey?: string;
+  collectionName?: string;
+  resourceType: FlowResourceInstanceType;
+  filterNode: RunJsStaticFilterRootNode;
+  context: RunJsAuthoringContext;
+  identifierBindings: AstIdentifierBinding[];
+  staticFilterValueBindings: StaticFilterValueBinding[];
+  index: number;
+  invalidShape: 'array' | 'filter-group';
+}): RunJsAstInspection['invalidResourceFilterCalls'][number] {
+  const invalidValue = resolveRunJsStaticFilterValue(
+    input.filterNode.node,
+    input.source,
+    input.identifierBindings,
+    input.staticFilterValueBindings,
+  );
+  const resolvedInvalidValue = invalidValue.status === 'resolved' ? invalidValue.value : undefined;
+  const shapeData = getRunJsResourceFilterShapeData(input, resolvedInvalidValue);
+  return {
+    capability: input.capability,
+    collectionName: input.collectionName,
+    dataSourceKey: input.dataSourceKey,
+    index: input.index,
+    invalidShape: input.invalidShape,
+    invalidValue: resolvedInvalidValue,
+    message: `flowSurfaces authoring ${input.capability}(...) received ${
+      input.invalidShape === 'filter-group' ? 'a FlowSurface FilterGroup' : 'an array'
+    }, but FlowResource filters must be backend query filter objects such as { stage: { $eq: '新线索' } }`,
+    repairExample: buildRunJsResourceFilterShapeRepairExample(shapeData),
+    repairHint:
+      'FlowResource setFilter/addFilterGroup does not accept FlowSurface FilterGroup items. Convert { field/path, operator, value } items to backend query filter object syntax and prefix operators with "$".',
+    resourceType: input.resourceType,
+    ruleId: 'runjs-resource-filter-shape-invalid',
+    suggestedOperator: getSuggestedRunJsResourceFilterShapeOperator(shapeData),
+  };
+}
+
+type RunJsResourceFilterShapeItem = {
+  fieldPath: string;
+  hasValue: boolean;
+  operator?: string;
+  value?: unknown;
+};
+
+function buildRunJsResourceFilterShapeRepairExample(source: {
+  items: RunJsResourceFilterShapeItem[];
+  logic?: string;
+}): Record<string, any> {
+  const items = source.items.map((item) => buildRunJsResourceFilterConditionFromItem(item)).filter(Boolean) as Record<
+    string,
+    any
+  >[];
+  if (items.length === 1) {
+    return items[0];
+  }
+  if (items.length > 1) {
+    return {
+      [source.logic === '$or' ? '$or' : '$and']: items,
+    };
+  }
+  return {
+    stage: {
+      $eq: '新线索',
+    },
+  };
+}
+
+function getRunJsResourceFilterShapeData(
+  input: {
+    filterNode: RunJsStaticFilterRootNode;
+    identifierBindings: AstIdentifierBinding[];
+    source: string;
+    staticFilterValueBindings: StaticFilterValueBinding[];
+  },
+  resolvedValue: unknown,
+): {
+  items: RunJsResourceFilterShapeItem[];
+  logic?: string;
+} {
+  const astShapeData = getRunJsResourceFilterAstShapeData(input);
+  if (astShapeData.items.length) {
+    return astShapeData;
+  }
+  return getRunJsResourceFilterResolvedShapeData(resolvedValue);
+}
+
+function getRunJsResourceFilterAstShapeData(input: {
+  filterNode: RunJsStaticFilterRootNode;
+  identifierBindings: AstIdentifierBinding[];
+  source: string;
+  staticFilterValueBindings: StaticFilterValueBinding[];
+}): {
+  items: RunJsResourceFilterShapeItem[];
+  logic?: string;
+} {
+  if (input.filterNode.kind === 'array') {
+    return {
+      items: getRunJsResourceFilterShapeItemsFromArrayNode(input.filterNode.node, input),
+    };
+  }
+
+  const itemsNode = resolveRunJsFilterGroupItemsArrayNode(
+    input.filterNode.node,
+    input.identifierBindings,
+    input.staticFilterValueBindings,
+  );
+  if (itemsNode) {
+    return {
+      items: getRunJsResourceFilterShapeItemsFromArrayNode(itemsNode, input),
+      logic: resolveRunJsFilterGroupLogic(input.filterNode.node, input),
+    };
+  }
+
+  return {
+    items: [],
+  };
+}
+
+function getRunJsResourceFilterResolvedShapeData(value: unknown): {
+  items: RunJsResourceFilterShapeItem[];
+  logic?: string;
+} {
+  if (Array.isArray(value)) {
+    return {
+      items: value.map((item) => buildRunJsResourceFilterShapeItemFromValue(item)).filter(Boolean),
+    };
+  }
+  if (_.isPlainObject(value)) {
+    const valueObject = value as Record<string, unknown>;
+    if (Array.isArray(valueObject.items)) {
+      return {
+        items: valueObject.items.map((item) => buildRunJsResourceFilterShapeItemFromValue(item)).filter(Boolean),
+        logic: typeof valueObject.logic === 'string' ? valueObject.logic : undefined,
+      };
+    }
+  }
+  return {
+    items: [],
+  };
+}
+
+function getRunJsResourceFilterShapeItemsFromArrayNode(
+  arrayNode: any,
+  input: {
+    identifierBindings: AstIdentifierBinding[];
+    source: string;
+    staticFilterValueBindings: StaticFilterValueBinding[];
+  },
+) {
+  return (arrayNode?.elements || [])
+    .map((element: any) => buildRunJsResourceFilterShapeItemFromNode(element, input))
+    .filter(Boolean);
+}
+
+function buildRunJsResourceFilterShapeItemFromNode(
+  node: any,
+  input: {
+    identifierBindings: AstIdentifierBinding[];
+    source: string;
+    staticFilterValueBindings: StaticFilterValueBinding[];
+  },
+): RunJsResourceFilterShapeItem | null {
+  const objectNode = resolveRunJsStaticFilterObjectNode(
+    node,
+    input.identifierBindings,
+    input.staticFilterValueBindings,
+  );
+  if (!objectNode) {
+    return null;
+  }
+  const fieldPath =
+    resolveRunJsFilterShapeItemStringProperty(objectNode, 'path', input) ||
+    resolveRunJsFilterShapeItemStringProperty(objectNode, 'field', input);
+  if (!fieldPath) {
+    return null;
+  }
+  const operator = resolveRunJsFilterShapeItemStringProperty(objectNode, 'operator', input);
+  const value = resolveRunJsFilterShapeItemValue(objectNode, input);
+  return {
+    fieldPath,
+    operator,
+    ...value,
+  };
+}
+
+function buildRunJsResourceFilterShapeItemFromValue(value: unknown): RunJsResourceFilterShapeItem | null {
+  if (!_.isPlainObject(value)) {
+    return null;
+  }
+  const input = value as Record<string, unknown>;
+  const fieldPath = String(input.path || input.field || '').trim();
+  if (!fieldPath) {
+    return null;
+  }
+  return {
+    fieldPath,
+    hasValue: Object.prototype.hasOwnProperty.call(input, 'value'),
+    operator: typeof input.operator === 'string' ? input.operator : undefined,
+    value: input.value,
+  };
+}
+
+function buildRunJsResourceFilterConditionFromItem(item: RunJsResourceFilterShapeItem): Record<string, any> | null {
+  if (!item.fieldPath) {
+    return null;
+  }
+  const operator = normalizeRunJsResourceFilterShapeOperator(item.operator);
+  return {
+    [item.fieldPath]: {
+      [operator]: item.hasValue ? item.value : '<value>',
+    },
+  };
+}
+
+function resolveRunJsFilterShapeItemStringProperty(
+  objectExpression: any,
+  key: string,
+  input: {
+    identifierBindings: AstIdentifierBinding[];
+    source: string;
+    staticFilterValueBindings: StaticFilterValueBinding[];
+  },
+) {
+  const property = getRunJsFilterShapeObjectProperty(objectExpression, key);
+  if (!property) {
+    return '';
+  }
+  const resolved = resolveRunJsStaticFilterValue(
+    property.value,
+    input.source,
+    input.identifierBindings,
+    input.staticFilterValueBindings,
+  );
+  return resolved.status === 'resolved' && typeof resolved.value === 'string' ? resolved.value.trim() : '';
+}
+
+function resolveRunJsFilterShapeItemValue(
+  objectExpression: any,
+  input: {
+    identifierBindings: AstIdentifierBinding[];
+    source: string;
+    staticFilterValueBindings: StaticFilterValueBinding[];
+  },
+): Pick<RunJsResourceFilterShapeItem, 'hasValue' | 'value'> {
+  const property = getRunJsFilterShapeObjectProperty(objectExpression, 'value');
+  if (!property) {
+    return {
+      hasValue: false,
+    };
+  }
+  const resolved = resolveRunJsStaticFilterValue(
+    property.value,
+    input.source,
+    input.identifierBindings,
+    input.staticFilterValueBindings,
+  );
+  return {
+    hasValue: true,
+    value: resolved.status === 'resolved' ? resolved.value : '<value>',
+  };
+}
+
+function resolveRunJsFilterGroupItemsArrayNode(
+  objectExpression: any,
+  identifierBindings: AstIdentifierBinding[],
+  staticFilterValueBindings: StaticFilterValueBinding[],
+) {
+  const property = getRunJsFilterShapeObjectProperty(objectExpression, 'items');
+  return property
+    ? resolveRunJsStaticFilterArrayNode(property.value, identifierBindings, staticFilterValueBindings)
+    : undefined;
+}
+
+function resolveRunJsFilterGroupLogic(
+  objectExpression: any,
+  input: {
+    identifierBindings: AstIdentifierBinding[];
+    source: string;
+    staticFilterValueBindings: StaticFilterValueBinding[];
+  },
+) {
+  const property = getRunJsFilterShapeObjectProperty(objectExpression, 'logic');
+  if (!property) {
+    return undefined;
+  }
+  const resolved = resolveRunJsStaticFilterValue(
+    property.value,
+    input.source,
+    input.identifierBindings,
+    input.staticFilterValueBindings,
+  );
+  return resolved.status === 'resolved' && typeof resolved.value === 'string' ? resolved.value : undefined;
+}
+
+function getRunJsFilterShapeObjectProperty(objectExpression: any, name: string) {
+  return (objectExpression?.properties || []).find((property: any) => {
+    if (!property || property.type === 'SpreadElement') {
+      return false;
+    }
+    return getAstStaticPropertyName(property) === name;
+  });
+}
+
+function normalizeRunJsResourceFilterShapeOperator(operator: unknown) {
+  const normalized = String(operator || '').trim();
+  if (!normalized) {
+    return '$eq';
+  }
+  return getSuggestedRunJsFilterOperator(normalized) || normalized;
+}
+
+function getSuggestedRunJsResourceFilterShapeOperator(input: { items: RunJsResourceFilterShapeItem[] }) {
+  const operator = input.items.find((item) => typeof item.operator === 'string')?.operator;
+  if (!operator) {
+    return undefined;
+  }
+  return getSuggestedRunJsFilterOperator(operator) || undefined;
 }
 
 function isRunJsDateFilterOperator(operator: string) {

@@ -272,6 +272,7 @@ function collectResourceRuntimeErrors(
           fieldInterface: entry.fieldInterface,
           fieldPath: entry.fieldPath,
           fieldType: entry.fieldType,
+          invalidShape: entry.invalidShape,
           invalidReason: entry.invalidReason,
           invalidValue: entry.invalidValue,
           operator: entry.operator,

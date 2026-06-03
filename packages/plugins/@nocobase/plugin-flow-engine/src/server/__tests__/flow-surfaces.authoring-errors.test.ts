@@ -968,6 +968,7 @@ describe('flowSurfaces backend authoring aggregate errors', () => {
         'render-unreachable-render-call',
         'blocked-global-stop',
         'ctx-root-mismatch-stop',
+        'unknown-global-stop',
       ]),
     );
     errors.forEach((error: any) => {
@@ -5800,6 +5801,7 @@ ctx.render(React.createElement(DashboardKPIs));
           'const React = ctx.libs.React;',
           'const { ReactDOM, antdIcons } = ctx.libs;',
           'const custom = ctx.libs.customLib;',
+          "const libName = 'customLib';",
           'const dynamic = ctx.libs[libName];',
           'ctx.render(React.createElement("div", null, Boolean(ReactDOM || antdIcons || custom || dynamic)));',
         ].join('\n'),
@@ -7065,13 +7067,24 @@ ctx.render(React.createElement(DashboardKPIs));
       ]),
     );
 
-    expect(
-      inspectRunJsAuthoringCode({
-        code: "class Local { static { var run = ctx.runjs; } }\nawait run('return 1;');",
-        path: '$.staticBlockVarRunjsAliasDoesNotLeak.code',
-        modelUse: 'JSActionModel',
-      }),
-    ).toEqual([]);
+    const staticBlockVarRunjsAliasErrors = inspectRunJsAuthoringCode({
+      code: "class Local { static { var run = ctx.runjs; } }\nawait run('return 1;');",
+      path: '$.staticBlockVarRunjsAliasDoesNotLeak.code',
+      modelUse: 'JSActionModel',
+    });
+    expect(staticBlockVarRunjsAliasErrors).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          ruleId: 'runjs-global-unknown',
+          details: expect.objectContaining({
+            global: 'run',
+          }),
+        }),
+      ]),
+    );
+    expect(staticBlockVarRunjsAliasErrors.map((error: any) => error.ruleId)).not.toContain(
+      'runjs-nested-runjs-forbidden',
+    );
 
     expect(
       inspectRunJsAuthoringCode({
@@ -7134,19 +7147,30 @@ ctx.render(React.createElement(DashboardKPIs));
       ]),
     );
 
-    expect(
-      inspectRunJsAuthoringCode({
-        code: [
-          'class Local { static {',
-          "  function wrap() { var resource = ctx.makeResource('MultiRecordResource'); }",
-          '  resource.list();',
-          '} }',
-          "ctx.message.success('Done');",
-        ].join('\n'),
-        path: '$.staticBlockNestedFunctionVarResourceAliasDoesNotLeak.code',
-        modelUse: 'JSActionModel',
-      }),
-    ).toEqual([]);
+    const staticBlockNestedFunctionVarResourceAliasErrors = inspectRunJsAuthoringCode({
+      code: [
+        'class Local { static {',
+        "  function wrap() { var resource = ctx.makeResource('MultiRecordResource'); }",
+        '  resource.list();',
+        '} }',
+        "ctx.message.success('Done');",
+      ].join('\n'),
+      path: '$.staticBlockNestedFunctionVarResourceAliasDoesNotLeak.code',
+      modelUse: 'JSActionModel',
+    });
+    expect(staticBlockNestedFunctionVarResourceAliasErrors).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          ruleId: 'runjs-global-unknown',
+          details: expect.objectContaining({
+            global: 'resource',
+          }),
+        }),
+      ]),
+    );
+    expect(staticBlockNestedFunctionVarResourceAliasErrors.map((error: any) => error.ruleId)).not.toContain(
+      'runjs-resource-method-unknown',
+    );
 
     expect(
       inspectRunJsAuthoringCode({
@@ -7160,31 +7184,53 @@ ctx.render(React.createElement(DashboardKPIs));
       }),
     ).toEqual([]);
 
-    expect(
-      inspectRunJsAuthoringCode({
-        code: [
-          'class Local { static {',
-          '  function wrap() { var Card = ctx.libs.antd.Card; }',
-          '  Card({ bordered: false });',
-          '} }',
-          'ctx.render(null);',
-        ].join('\n'),
-        path: '$.staticBlockNestedFunctionVarReactAliasDoesNotLeak.code',
-        modelUse: 'JSBlockModel',
-      }),
-    ).toEqual([]);
+    const staticBlockNestedFunctionVarReactAliasErrors = inspectRunJsAuthoringCode({
+      code: [
+        'class Local { static {',
+        '  function wrap() { var Card = ctx.libs.antd.Card; }',
+        '  Card({ bordered: false });',
+        '} }',
+        'ctx.render(null);',
+      ].join('\n'),
+      path: '$.staticBlockNestedFunctionVarReactAliasDoesNotLeak.code',
+      modelUse: 'JSBlockModel',
+    });
+    expect(staticBlockNestedFunctionVarReactAliasErrors).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          ruleId: 'runjs-global-unknown',
+          details: expect.objectContaining({
+            global: 'Card',
+          }),
+        }),
+      ]),
+    );
+    expect(staticBlockNestedFunctionVarReactAliasErrors.map((error: any) => error.ruleId)).not.toContain(
+      'runjs-ctx-libs-member-unknown',
+    );
 
-    expect(
-      inspectRunJsAuthoringCode({
-        code: [
-          'class Local { static { var Card = ctx.libs.antd.Card; } }',
-          'Card({ bordered: false });',
-          'ctx.render(null);',
-        ].join('\n'),
-        path: '$.staticBlockVarReactAliasDoesNotLeak.code',
-        modelUse: 'JSBlockModel',
-      }),
-    ).toEqual([]);
+    const staticBlockVarReactAliasErrors = inspectRunJsAuthoringCode({
+      code: [
+        'class Local { static { var Card = ctx.libs.antd.Card; } }',
+        'Card({ bordered: false });',
+        'ctx.render(null);',
+      ].join('\n'),
+      path: '$.staticBlockVarReactAliasDoesNotLeak.code',
+      modelUse: 'JSBlockModel',
+    });
+    expect(staticBlockVarReactAliasErrors).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          ruleId: 'runjs-global-unknown',
+          details: expect.objectContaining({
+            global: 'Card',
+          }),
+        }),
+      ]),
+    );
+    expect(staticBlockVarReactAliasErrors.map((error: any) => error.ruleId)).not.toContain(
+      'runjs-ctx-libs-member-unknown',
+    );
 
     expect(
       inspectRunJsAuthoringCode({

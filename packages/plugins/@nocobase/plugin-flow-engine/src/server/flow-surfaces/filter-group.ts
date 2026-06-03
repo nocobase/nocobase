@@ -188,9 +188,41 @@ export function normalizeFlowSurfaceFilterGroupValue(
   }
 }
 
+export function normalizeFlowSurfaceCompatibleFilterGroupValue(
+  value: unknown,
+  errorPrefix: string,
+  options: {
+    strictDateValues?: boolean;
+  } = {},
+) {
+  const input =
+    value === null || (_.isPlainObject(value) && !Object.keys(value).length)
+      ? _.cloneDeep(FLOW_SURFACE_EMPTY_FILTER_GROUP)
+      : _.cloneDeep(value);
+
+  if (isFlowSurfaceFilterGroupLike(input)) {
+    return normalizeFlowSurfaceFilterGroupValue(input, errorPrefix, options);
+  }
+
+  try {
+    const converted = convertBackendQueryFilterToFlowSurfaceFilterGroup(input, errorPrefix);
+    return normalizeFlowSurfaceFilterGroupValue(converted, errorPrefix, options);
+  } catch (error) {
+    if (error instanceof FlowSurfaceBadRequestError) {
+      throw error;
+    }
+    const reason = error instanceof Error ? error.message : String(error);
+    throwBadRequest(`${errorPrefix}: ${reason}`);
+  }
+}
+
 export function assertFlowSurfaceFilterGroupShape(filter: any) {
   if (!_.isPlainObject(filter)) {
     throw new Error('Invalid filter: filter must be an object');
+  }
+  const unsupportedKeys = Object.keys(filter).filter((key) => key !== 'logic' && key !== 'items');
+  if (unsupportedKeys.length) {
+    throw new Error(`Invalid filter: filter group does not support: ${unsupportedKeys.join(', ')}`);
   }
   if (!('logic' in filter) || !('items' in filter)) {
     throw new Error('Invalid filter: filter must have logic and items properties');
@@ -211,6 +243,99 @@ export function assertFlowSurfaceFilterGroupShape(filter: any) {
     }
     throw new Error('Invalid filter item type');
   });
+}
+
+function isFlowSurfaceFilterGroupLike(value: unknown) {
+  if (!_.isPlainObject(value)) {
+    return false;
+  }
+  const filter = value as Record<string, unknown>;
+  return 'logic' in filter && 'items' in filter;
+}
+
+function isBackendQueryLogicKey(key: string): key is '$and' | '$or' {
+  return key === '$and' || key === '$or';
+}
+
+function convertBackendQueryFilterToFlowSurfaceFilterGroup(input: unknown, label: string) {
+  if (!_.isPlainObject(input)) {
+    throw new Error('Invalid filter: filter must be an object');
+  }
+
+  const keys = Object.keys(input);
+  const logicKeys = keys.filter(isBackendQueryLogicKey);
+  if (logicKeys.length > 1 || (logicKeys.length === 1 && keys.length > 1)) {
+    throw new Error('cannot convert backend query filter with mixed logical and field conditions');
+  }
+  if (logicKeys.length === 1) {
+    const logic = logicKeys[0];
+    const operands = (input as Record<string, unknown>)[logic];
+    if (!Array.isArray(operands)) {
+      throw new Error(`${logic}: backend query filter operands must be an array`);
+    }
+    return {
+      logic,
+      items: operands.map((operand, index) => convertBackendQueryOperandToFlowSurfaceFilterItem(operand, label, index)),
+    };
+  }
+
+  if (keys.some((key) => key.startsWith('$'))) {
+    throw new Error('cannot convert backend query filter with unsupported logical operator');
+  }
+
+  return {
+    logic: '$and',
+    items: Object.entries(input).flatMap(([field, condition]) =>
+      convertBackendFieldConditionToFlowSurfaceFilterItems(field, condition, label),
+    ),
+  };
+}
+
+function convertBackendQueryOperandToFlowSurfaceFilterItem(input: unknown, label: string, index: number) {
+  if (isFlowSurfaceFilterGroupLike(input)) {
+    throw new Error(`${label}.$operand[${index}]: cannot mix filter groups with backend query filters`);
+  }
+  const group = convertBackendQueryFilterToFlowSurfaceFilterGroup(input, `${label}.$operand[${index}]`);
+  if (group.logic === '$and' && group.items.length === 1) {
+    return group.items[0];
+  }
+  return group;
+}
+
+function convertBackendFieldConditionToFlowSurfaceFilterItems(field: string, condition: unknown, label: string): any[] {
+  if (!field.trim() || field.startsWith('$')) {
+    throw new Error(`cannot convert backend query filter field "${field}"`);
+  }
+  if (!_.isPlainObject(condition)) {
+    throw new Error(`${field}: backend query filter condition must be an object`);
+  }
+
+  const keys = Object.keys(condition);
+  if (!keys.length) {
+    throw new Error(`${field}: backend query filter condition cannot be empty`);
+  }
+
+  const operatorKeys = keys.filter((key) => key.startsWith('$'));
+  if (operatorKeys.length) {
+    if (operatorKeys.length !== keys.length) {
+      throw new Error(`${field}: cannot mix backend query operators with nested field conditions`);
+    }
+    return operatorKeys.map((operator) => {
+      if (isBackendQueryLogicKey(operator)) {
+        throw new Error(`${field}: cannot convert backend query filter operator "${operator}"`);
+      }
+      assertFlowSurfaceFilterOperator(operator, `${label}.${field}.${operator}`);
+      return {
+        path: field,
+        operator,
+        value: _.cloneDeep(_.get(condition, operator)),
+      };
+    });
+  }
+
+  return Object.entries(condition).flatMap(([nestedField, nestedCondition]) =>
+    convertBackendFieldConditionToFlowSurfaceFilterItems(`${field}.${nestedField}`, nestedCondition, label),
+  );
 }
 
 function assertFlowSurfaceFilterGroupOperators(filter: any, errorPrefix: string) {

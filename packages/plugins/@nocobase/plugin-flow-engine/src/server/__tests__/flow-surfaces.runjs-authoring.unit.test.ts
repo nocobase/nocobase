@@ -1495,6 +1495,271 @@ describe('flowSurfaces RunJS authoring unit validation', () => {
     ).not.toContain('runjs-ctx-member-not-callable');
   });
 
+  it('should reject FlowResource filter item arrays and FilterGroup shapes with repair details', () => {
+    const fields = [
+      { name: 'stage', type: 'string', interface: 'select' },
+      { name: 'status', type: 'string', interface: 'select' },
+      { name: 'tier', type: 'string', interface: 'select' },
+    ];
+    const fieldsByName = new Map(fields.map((field) => [field.name, field]));
+    const context = {
+      getCollection: (_dataSourceKey, collectionName) =>
+        collectionName === 'customers'
+          ? {
+              dataSourceKey: 'main',
+              name: 'customers',
+              fields: fieldsByName,
+              getField: (fieldName: string) => fieldsByName.get(fieldName),
+              getFields: () => fields,
+            }
+          : null,
+    };
+
+    const directArrayErrors = inspectRunJsAuthoringCode(
+      {
+        code: [
+          "const resource = ctx.makeResource('MultiRecordResource');",
+          "resource.setResourceName('customers');",
+          "resource.setFilter([{ field: 'stage', operator: 'eq', value: '新线索' }]);",
+          'ctx.render(null);',
+        ].join('\n'),
+        path: '$.runjs.filterItemArray.code',
+        modelUse: 'JSBlockModel',
+      },
+      context,
+    );
+    expect(directArrayErrors).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          ruleId: 'runjs-resource-filter-shape-invalid',
+          details: expect.objectContaining({
+            collectionName: 'customers',
+            invalidShape: 'array',
+            suggestedOperator: '$eq',
+            repairExample: {
+              stage: {
+                $eq: '新线索',
+              },
+            },
+          }),
+        }),
+      ]),
+    );
+
+    const aliasAndAddFilterGroupErrors = inspectRunJsAuthoringCode(
+      {
+        code: [
+          "const resource = ctx.makeResource('MultiRecordResource');",
+          "resource.setResourceName('customers');",
+          "const filter = [{ path: 'status', operator: 'in', value: ['open', 'new'] }];",
+          'resource.addFilterGroup("dashboard", filter);',
+          'ctx.render(null);',
+        ].join('\n'),
+        path: '$.runjs.filterItemAliasArray.code',
+        modelUse: 'JSBlockModel',
+      },
+      context,
+    );
+    expect(aliasAndAddFilterGroupErrors).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          ruleId: 'runjs-resource-filter-shape-invalid',
+          details: expect.objectContaining({
+            invalidShape: 'array',
+            suggestedOperator: '$in',
+            repairExample: {
+              status: {
+                $in: ['open', 'new'],
+              },
+            },
+          }),
+        }),
+      ]),
+    );
+
+    const helperForwardedErrors = inspectRunJsAuthoringCode(
+      {
+        code: [
+          'async function countRecords(collectionName, filter) {',
+          "  const resource = ctx.makeResource('MultiRecordResource');",
+          '  resource.setResourceName(collectionName);',
+          '  resource.setFilter(filter);',
+          '  await resource.refresh();',
+          '  return resource.getMeta?.()?.count ?? 0;',
+          '}',
+          "await countRecords('customers', [{ field: 'tier', operator: 'eq', value: 'A' }]);",
+          'ctx.render(null);',
+        ].join('\n'),
+        path: '$.runjs.helperForwardedFilterItemArray.code',
+        modelUse: 'JSBlockModel',
+      },
+      context,
+    );
+    expect(helperForwardedErrors).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          ruleId: 'runjs-resource-filter-shape-invalid',
+          details: expect.objectContaining({
+            collectionName: 'customers',
+            invalidShape: 'array',
+            repairExample: {
+              tier: {
+                $eq: 'A',
+              },
+            },
+          }),
+        }),
+      ]),
+    );
+
+    const filterGroupErrors = inspectRunJsAuthoringCode(
+      {
+        code: [
+          "const resource = ctx.makeResource('MultiRecordResource');",
+          "resource.setResourceName('customers');",
+          'resource.setFilter({',
+          "  logic: '$or',",
+          "  items: [{ path: 'stage', operator: 'eq', value: '新线索' }, { path: 'status', operator: 'eq', value: 'open' }],",
+          '});',
+          'ctx.render(null);',
+        ].join('\n'),
+        path: '$.runjs.filterGroupShape.code',
+        modelUse: 'JSBlockModel',
+      },
+      context,
+    );
+    expect(filterGroupErrors).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          ruleId: 'runjs-resource-filter-shape-invalid',
+          details: expect.objectContaining({
+            invalidShape: 'filter-group',
+            repairExample: {
+              $or: [
+                {
+                  stage: {
+                    $eq: '新线索',
+                  },
+                },
+                {
+                  status: {
+                    $eq: 'open',
+                  },
+                },
+              ],
+            },
+          }),
+        }),
+      ]),
+    );
+
+    const aliasedFilterGroupItemsErrors = inspectRunJsAuthoringCode(
+      {
+        code: [
+          "const resource = ctx.makeResource('MultiRecordResource');",
+          "resource.setResourceName('customers');",
+          "const items = [{ path: 'stage', operator: 'eq', value: '新线索' }];",
+          "resource.setFilter({ logic: '$or', items });",
+          'ctx.render(null);',
+        ].join('\n'),
+        path: '$.runjs.aliasedFilterGroupItems.code',
+        modelUse: 'JSBlockModel',
+      },
+      context,
+    );
+    expect(aliasedFilterGroupItemsErrors).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          ruleId: 'runjs-resource-filter-shape-invalid',
+          details: expect.objectContaining({
+            invalidShape: 'filter-group',
+            repairExample: {
+              stage: {
+                $eq: '新线索',
+              },
+            },
+          }),
+        }),
+      ]),
+    );
+
+    const aliasedAddFilterGroupItemsErrors = inspectRunJsAuthoringCode(
+      {
+        code: [
+          "const resource = ctx.makeResource('MultiRecordResource');",
+          "resource.setResourceName('customers');",
+          "const items = [{ path: 'status', operator: 'eq', value: 'open' }];",
+          "resource.addFilterGroup('dashboard', { logic: '$and', items });",
+          'ctx.render(null);',
+        ].join('\n'),
+        path: '$.runjs.aliasedAddFilterGroupItems.code',
+        modelUse: 'JSBlockModel',
+      },
+      context,
+    );
+    expect(aliasedAddFilterGroupItemsErrors).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          ruleId: 'runjs-resource-filter-shape-invalid',
+          details: expect.objectContaining({
+            invalidShape: 'filter-group',
+            repairExample: {
+              status: {
+                $eq: 'open',
+              },
+            },
+          }),
+        }),
+      ]),
+    );
+
+    const dynamicValueErrors = inspectRunJsAuthoringCode(
+      {
+        code: [
+          "const resource = ctx.makeResource('MultiRecordResource');",
+          "resource.setResourceName('customers');",
+          'const stageValue = ctx.record?.stage;',
+          "resource.setFilter([{ field: 'stage', operator: 'eq', value: stageValue }]);",
+          'ctx.render(null);',
+        ].join('\n'),
+        path: '$.runjs.dynamicFilterItemValue.code',
+        modelUse: 'JSBlockModel',
+      },
+      context,
+    );
+    expect(dynamicValueErrors).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          ruleId: 'runjs-resource-filter-shape-invalid',
+          details: expect.objectContaining({
+            invalidShape: 'array',
+            suggestedOperator: '$eq',
+            repairExample: {
+              stage: {
+                $eq: '<value>',
+              },
+            },
+          }),
+        }),
+      ]),
+    );
+
+    const validErrors = inspectRunJsAuthoringCode(
+      {
+        code: [
+          "const resource = ctx.makeResource('MultiRecordResource');",
+          "resource.setResourceName('customers');",
+          "resource.setFilter({ stage: { $eq: '新线索' } });",
+          'ctx.render(null);',
+        ].join('\n'),
+        path: '$.runjs.validBackendFilterObject.code',
+        modelUse: 'JSBlockModel',
+      },
+      context,
+    );
+    expect(validErrors.map((error: any) => error.ruleId)).not.toContain('runjs-resource-filter-shape-invalid');
+  });
+
   it('should reject helper-forwarded date range objects in resource filters', () => {
     const fields = [
       { name: 'occurDate', type: 'date', interface: 'datetime' },
