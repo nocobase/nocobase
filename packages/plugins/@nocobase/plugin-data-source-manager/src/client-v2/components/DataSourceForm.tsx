@@ -9,7 +9,7 @@
 
 import { DrawerFormLayout } from '@nocobase/client-v2';
 import { randomId, useFlowContext, useFlowView } from '@nocobase/flow-engine';
-import { App, Button, Form, Input, Space } from 'antd';
+import { App, Button, Form, Input, notification as staticNotification, Space } from 'antd';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useT } from '../locale';
 import type { DataSourceTypeOptions } from '../plugin';
@@ -22,11 +22,38 @@ export interface DataSourceFormProps {
   onSubmitted: (record?: Record<string, any>) => void;
 }
 
+function getErrorMessage(error: unknown) {
+  if (typeof error === 'string') {
+    return error;
+  }
+  const responseData = (error as any)?.response?.data;
+  return (
+    (error as any)?.errorFields?.[0]?.errors?.[0] ||
+    responseData?.errors?.[0]?.message ||
+    responseData?.messages?.[0]?.message ||
+    responseData?.messages?.[0] ||
+    responseData?.error?.message ||
+    responseData?.message ||
+    (error as any)?.message
+  );
+}
+
+function getResponseErrorMessage(response: unknown) {
+  const data = (response as any)?.data;
+  return (
+    data?.errors?.[0]?.message ||
+    data?.messages?.[0]?.message ||
+    data?.messages?.[0] ||
+    data?.error?.message ||
+    data?.message
+  );
+}
+
 export function DataSourceForm(props: DataSourceFormProps) {
   const t = useT();
   const ctx = useFlowContext();
   const view = useFlowView();
-  const { message } = App.useApp();
+  const { message, notification } = App.useApp();
   const [form] = Form.useForm();
   const [submitting, setSubmitting] = useState(false);
   const [testing, setTesting] = useState(false);
@@ -60,26 +87,50 @@ export function DataSourceForm(props: DataSourceFormProps) {
     [resource],
   );
 
-  const normalizeValues = useCallback((values: Record<string, any>) => {
-    const collections: Array<{ name: string; selected?: boolean } | string> = values.collections || [];
-    return {
-      ...values,
-      collections: collections
-        .filter((collection) => (typeof collection === 'string' ? true : collection.selected))
-        .map((collection) => (typeof collection === 'string' ? collection : collection.name)),
-    };
-  }, []);
+  const normalizeValues = useCallback(
+    (values: Record<string, any>) => {
+      const collections: Array<{ name: string; selected?: boolean } | string> = values.collections || [];
+      const options = { ...(values.options || {}) };
+      if (typeof options.port === 'string' && /^\d+$/.test(options.port.trim())) {
+        options.port = Number(options.port.trim());
+      }
+      if (options.ssl?.sslMode === 'disable') {
+        options.ssl = { sslMode: 'disable' };
+      }
+
+      const normalizedValues = {
+        ...values,
+        options,
+        collections: collections
+          .filter((collection) => (typeof collection === 'string' ? true : collection.selected))
+          .map((collection) => (typeof collection === 'string' ? collection : collection.name)),
+      };
+
+      return props.type.normalizeValues?.(normalizedValues) || normalizedValues;
+    },
+    [props.type],
+  );
 
   const handleTestConnection = useCallback(async () => {
-    const values = await form.validateFields();
     setTesting(true);
     try {
-      await resource.testConnection({ values: normalizeValues(values) });
+      const values = await form.validateFields();
+      const response = await resource.testConnection({ values: normalizeValues(values) });
+      const responseErrorMessage = getResponseErrorMessage(response);
+      if (responseErrorMessage) {
+        throw new Error(responseErrorMessage);
+      }
       message.success(t('Connection successful'));
+    } catch (error) {
+      const errorMessage = getErrorMessage(error) || t('Connection failed');
+      (notification || staticNotification).error({
+        message: t('Test Connection'),
+        description: errorMessage,
+      });
     } finally {
       setTesting(false);
     }
-  }, [form, message, normalizeValues, resource, t]);
+  }, [form, message, normalizeValues, notification, resource, t]);
 
   const handleSubmit = useCallback(async () => {
     const values = normalizeValues(await form.validateFields());
@@ -91,11 +142,18 @@ export function DataSourceForm(props: DataSourceFormProps) {
       } else {
         response = await resource.update({ filterByTk: props.initialValues?.key, values });
       }
-      props.onSubmitted(response?.data?.data || values);
+      await props.onSubmitted(response?.data?.data || values);
+      await view.close();
+    } catch (error) {
+      const errorMessage = getErrorMessage(error) || t('Submit failed');
+      (notification || staticNotification).error({
+        message: t('Submit failed'),
+        description: errorMessage,
+      });
     } finally {
       setSubmitting(false);
     }
-  }, [form, normalizeValues, props, resource]);
+  }, [form, normalizeValues, notification, props, resource, t, view]);
 
   const typeLabel = compileLegacyTemplateText(props.type.label || props.type.name, t);
   const title = `${props.mode === 'create' ? t('Add new') : t('Edit')} - ${typeLabel}`;

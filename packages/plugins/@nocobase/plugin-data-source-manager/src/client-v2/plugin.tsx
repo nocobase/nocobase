@@ -27,12 +27,48 @@ export interface DataSourceSettingsFormProps {
   loadCollections: (key: string) => Promise<any>;
 }
 
+export interface DataSourceCollectionActionProps {
+  dataSourceKey: string;
+  record?: Record<string, any>;
+  selectedRowKeys?: React.Key[];
+  onSubmitted?: () => void;
+  children?: React.ReactNode;
+  isBulk?: boolean;
+}
+
+export interface DataSourceFieldInterfaceFilterOptions {
+  groups?: string[];
+  include?: string[];
+  exclude?: string[];
+}
+
+export interface DataSourceFieldInterfaceReadOnlyContext {
+  collection: Record<string, unknown>;
+  field: Record<string, unknown>;
+  fieldInterface?: {
+    name?: string;
+    group?: string;
+    isAssociation?: boolean;
+  };
+}
+
 export interface DataSourceTypeOptions {
   name?: string;
   label?: React.ReactNode;
   defaultValues?: Record<string, any>;
+  createFieldInterfaces?:
+    | DataSourceFieldInterfaceFilterOptions
+    | ((context: { collection: Record<string, any> }) => DataSourceFieldInterfaceFilterOptions | undefined);
   disableAddFields?: boolean;
+  disableConfigureFieldsActions?: boolean;
   disableTestConnection?: boolean;
+  AddCollection?: ComponentType<DataSourceCollectionActionProps>;
+  EditCollection?: ComponentType<DataSourceCollectionActionProps>;
+  DeleteCollection?: ComponentType<DataSourceCollectionActionProps>;
+  allowCollectionCreate?: boolean;
+  allowCollectionDeletion?: boolean;
+  isFieldInterfaceReadOnly?: (context: DataSourceFieldInterfaceReadOnlyContext) => boolean | undefined;
+  normalizeValues?: (values: Record<string, any>) => Record<string, any>;
   SettingsForm?: ComponentType<DataSourceSettingsFormProps>;
 }
 
