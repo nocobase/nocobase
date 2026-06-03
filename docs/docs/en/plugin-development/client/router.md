@@ -15,7 +15,7 @@ Route registration is typically done in the plugin's `load()` method. See [Plugi
 
 :::warning Note
 
-For NocoBase v2 plugins, registered routes automatically get a `/v2` prefix. You need to include this prefix when accessing the routes.
+For NocoBase v2 plugins, registered routes automatically get a `/studio` prefix. You need to include this prefix when accessing the routes.
 
 :::
 
@@ -25,9 +25,9 @@ NocoBase has the following default routes registered:
 
 | Name           | Path                  | Component           | Description               |
 | -------------- | --------------------- | ------------------- | ------------------------- |
-| admin          | /v2/admin/\*          | AdminLayout         | Admin pages               |
-| admin.page     | /v2/admin/:name       | AdminDynamicPage    | Dynamically created pages |
-| admin.settings | /v2/admin/settings/\* | AdminSettingsLayout | Plugin settings pages     |
+| admin          | /studio/admin/\*          | AdminLayout         | Admin pages               |
+| admin.page     | /studio/admin/:name       | AdminDynamicPage    | Dynamically created pages |
+| admin.settings | /studio/admin/settings/\* | AdminSettingsLayout | Plugin settings pages     |
 
 ## Page Routes
 
@@ -55,7 +55,7 @@ class MyPlugin extends Plugin {
   async load() {
     this.router.add('hello', {
       path: '/hello',
-      // Lazy loading: the module is loaded only when /v2/hello is visited
+      // Lazy loading: the module is loaded only when /studio/hello is visited
       componentLoader: () => import('./pages/HelloPage'),
     });
   }
@@ -103,12 +103,12 @@ class MyPlugin extends Plugin {
 
     // Child route, using componentLoader for lazy loading
     this.router.add('root.home', {
-      path: '/', // -> /v2/
+      path: '/', // -> /studio/
       componentLoader: () => import('./pages/HomePage'),
     });
 
     this.router.add('root.about', {
-      path: '/about', // -> /v2/about
+      path: '/about', // -> /studio/about
       componentLoader: () => import('./pages/AboutPage'),
     });
   }
@@ -121,7 +121,7 @@ Route paths support dynamic parameters:
 
 ```tsx
 this.router.add('root.user', {
-  path: '/user/:id', // -> /v2/user/:id
+  path: '/user/:id', // -> /studio/user/:id
   componentLoader: () => import('./pages/UserPage'),
 });
 ```

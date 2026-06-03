@@ -15,7 +15,7 @@ L'enregistrement des routes se fait habituellement dans la méthode `load()` du 
 
 :::warning Attention
 
-Pour les plugins de NocoBase v2, les routes enregistrées seront préfixées par `/v2` par défaut ; il faut donc inclure ce préfixe dans l'URL d'accès.
+Pour les plugins de NocoBase v2, les routes enregistrées seront préfixées par `/studio` par défaut ; il faut donc inclure ce préfixe dans l'URL d'accès.
 
 :::
 
@@ -25,9 +25,9 @@ NocoBase a déjà enregistré les routes par défaut suivantes :
 
 | Nom            | Chemin                | Composant           | Description           |
 | -------------- | --------------------- | ------------------- | --------------------- |
-| admin          | /v2/admin/\*          | AdminLayout         | Pages d'administration |
-| admin.page     | /v2/admin/:name       | AdminDynamicPage    | Pages créées dynamiquement |
-| admin.settings | /v2/admin/settings/\* | AdminSettingsLayout | Pages de configuration des plugins |
+| admin          | /studio/admin/\*          | AdminLayout         | Pages d'administration |
+| admin.page     | /studio/admin/:name       | AdminDynamicPage    | Pages créées dynamiquement |
+| admin.settings | /studio/admin/settings/\* | AdminSettingsLayout | Pages de configuration des plugins |
 
 ## Routes de page
 
@@ -55,7 +55,7 @@ class MyPlugin extends Plugin {
   async load() {
     this.router.add('hello', {
       path: '/hello',
-      // Chargement à la demande : le module n'est chargé que lorsque /v2/hello est visité
+      // Chargement à la demande : le module n'est chargé que lorsque /studio/hello est visité
       componentLoader: () => import('./pages/HelloPage'),
     });
   }
@@ -103,12 +103,12 @@ class MyPlugin extends Plugin {
 
     // Sous-route : chargement à la demande via componentLoader
     this.router.add('root.home', {
-      path: '/', // -> /v2/
+      path: '/', // -> /studio/
       componentLoader: () => import('./pages/HomePage'),
     });
 
     this.router.add('root.about', {
-      path: '/about', // -> /v2/about
+      path: '/about', // -> /studio/about
       componentLoader: () => import('./pages/AboutPage'),
     });
   }
@@ -121,7 +121,7 @@ Les chemins de route prennent en charge les paramètres dynamiques :
 
 ```tsx
 this.router.add('root.user', {
-  path: '/user/:id', // -> /v2/user/:id
+  path: '/user/:id', // -> /studio/user/:id
   componentLoader: () => import('./pages/UserPage'),
 });
 ```

@@ -15,7 +15,7 @@ Registrasi route biasanya dilakukan dalam method `load()` plugin, lihat [Plugin]
 
 :::warning Perhatian
 
-Plugin NocoBase v2, route yang didaftarkan secara default akan memiliki prefix `/v2`, perlu menyertakan prefix ini saat diakses.
+Plugin NocoBase v2, route yang didaftarkan secara default akan memiliki prefix `/studio`, perlu menyertakan prefix ini saat diakses.
 
 :::
 
@@ -25,9 +25,9 @@ NocoBase telah mendaftarkan route default berikut:
 
 | Nama           | Path                  | Component                | Penjelasan           |
 | -------------- | --------------------- | ------------------- | -------------- |
-| admin          | /v2/admin/\*          | AdminLayout         | Halaman admin   |
-| admin.page     | /v2/admin/:name       | AdminDynamicPage    | Halaman yang dibuat dinamis |
-| admin.settings | /v2/admin/settings/\* | AdminSettingsLayout | Halaman konfigurasi plugin   |
+| admin          | /studio/admin/\*          | AdminLayout         | Halaman admin   |
+| admin.page     | /studio/admin/:name       | AdminDynamicPage    | Halaman yang dibuat dinamis |
+| admin.settings | /studio/admin/settings/\* | AdminSettingsLayout | Halaman konfigurasi plugin   |
 
 ## Route Halaman
 
@@ -55,7 +55,7 @@ class MyPlugin extends Plugin {
   async load() {
     this.router.add('hello', {
       path: '/hello',
-      // Loading sesuai kebutuhan, modul ini dimuat saat mengakses /v2/hello
+      // Loading sesuai kebutuhan, modul ini dimuat saat mengakses /studio/hello
       componentLoader: () => import('./pages/HelloPage'),
     });
   }
@@ -103,12 +103,12 @@ class MyPlugin extends Plugin {
 
     // Child route, menggunakan componentLoader untuk loading sesuai kebutuhan
     this.router.add('root.home', {
-      path: '/', // -> /v2/
+      path: '/', // -> /studio/
       componentLoader: () => import('./pages/HomePage'),
     });
 
     this.router.add('root.about', {
-      path: '/about', // -> /v2/about
+      path: '/about', // -> /studio/about
       componentLoader: () => import('./pages/AboutPage'),
     });
   }
@@ -121,7 +121,7 @@ Path route mendukung parameter dinamis:
 
 ```tsx
 this.router.add('root.user', {
-  path: '/user/:id', // -> /v2/user/:id
+  path: '/user/:id', // -> /studio/user/:id
   componentLoader: () => import('./pages/UserPage'),
 });
 ```

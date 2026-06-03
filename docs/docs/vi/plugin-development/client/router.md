@@ -15,7 +15,7 @@ Việc đăng ký route thường được thực hiện trong phương thức `
 
 :::warning Lưu ý
 
-Plugin của NocoBase v2, route sau khi đăng ký sẽ tự động thêm tiền tố `/v2`, khi truy cập cần kèm theo tiền tố này.
+Plugin của NocoBase v2, route sau khi đăng ký sẽ tự động thêm tiền tố `/studio`, khi truy cập cần kèm theo tiền tố này.
 
 :::
 
@@ -25,9 +25,9 @@ NocoBase đã đăng ký các route mặc định sau:
 
 | Tên           | Đường dẫn                  | Component                | Mô tả           |
 | -------------- | --------------------- | ------------------- | -------------- |
-| admin          | /v2/admin/\*          | AdminLayout         | Trang quản trị   |
-| admin.page     | /v2/admin/:name       | AdminDynamicPage    | Trang được tạo động |
-| admin.settings | /v2/admin/settings/\* | AdminSettingsLayout | Trang cấu hình plugin   |
+| admin          | /studio/admin/\*          | AdminLayout         | Trang quản trị   |
+| admin.page     | /studio/admin/:name       | AdminDynamicPage    | Trang được tạo động |
+| admin.settings | /studio/admin/settings/\* | AdminSettingsLayout | Trang cấu hình plugin   |
 
 ## Route trang
 
@@ -55,7 +55,7 @@ class MyPlugin extends Plugin {
   async load() {
     this.router.add('hello', {
       path: '/hello',
-      // Tải theo nhu cầu, chỉ tải module này khi truy cập /v2/hello
+      // Tải theo nhu cầu, chỉ tải module này khi truy cập /studio/hello
       componentLoader: () => import('./pages/HelloPage'),
     });
   }
@@ -103,12 +103,12 @@ class MyPlugin extends Plugin {
 
     // Route con, dùng componentLoader để tải theo nhu cầu
     this.router.add('root.home', {
-      path: '/', // -> /v2/
+      path: '/', // -> /studio/
       componentLoader: () => import('./pages/HomePage'),
     });
 
     this.router.add('root.about', {
-      path: '/about', // -> /v2/about
+      path: '/about', // -> /studio/about
       componentLoader: () => import('./pages/AboutPage'),
     });
   }
@@ -121,7 +121,7 @@ class MyPlugin extends Plugin {
 
 ```tsx
 this.router.add('root.user', {
-  path: '/user/:id', // -> /v2/user/:id
+  path: '/user/:id', // -> /studio/user/:id
   componentLoader: () => import('./pages/UserPage'),
 });
 ```
