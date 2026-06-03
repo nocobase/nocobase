@@ -29,14 +29,26 @@ type UiLayoutRegistrationApp = {
 };
 
 const ADMIN_LAYOUT_MODEL_CLASS = 'AdminLayoutModel';
+const MOBILE_LAYOUT_MODEL_CLASS = 'MobileLayoutModel';
+const MOBILE_ROOT_PAGE_MODEL_CLASS = 'MobileRootPageModel';
+const MOBILE_CHILD_PAGE_MODEL_CLASS = 'MobileChildPageModel';
 
-const layoutModelClassByType: Record<string, string> = {
-  [UI_LAYOUT_TYPE_DESKTOP]: ADMIN_LAYOUT_MODEL_CLASS,
-  [UI_LAYOUT_TYPE_MOBILE]: ADMIN_LAYOUT_MODEL_CLASS,
+const layoutRegisterOptionsByType: Record<
+  string,
+  Pick<LayoutRegisterOptions, 'layoutModelClass' | 'rootPageModelClass' | 'childPageModelClass'>
+> = {
+  [UI_LAYOUT_TYPE_DESKTOP]: {
+    layoutModelClass: ADMIN_LAYOUT_MODEL_CLASS,
+  },
+  [UI_LAYOUT_TYPE_MOBILE]: {
+    layoutModelClass: MOBILE_LAYOUT_MODEL_CLASS,
+    rootPageModelClass: MOBILE_ROOT_PAGE_MODEL_CLASS,
+    childPageModelClass: MOBILE_CHILD_PAGE_MODEL_CLASS,
+  },
 };
 
 export function getUiLayoutModelClass(layoutType: string) {
-  return layoutModelClassByType[layoutType];
+  return layoutRegisterOptionsByType[layoutType]?.layoutModelClass;
 }
 
 function isDefaultAdminUiLayout(record: Pick<UiLayoutRuntimeRecord, 'uid'>) {
@@ -48,8 +60,8 @@ export function toUiLayoutRegisterOptions(record: UiLayoutRuntimeRecord): Layout
     return null;
   }
 
-  const layoutModelClass = getUiLayoutModelClass(record.layoutType);
-  if (!layoutModelClass) {
+  const codeDefinedOptions = layoutRegisterOptionsByType[record.layoutType];
+  if (!codeDefinedOptions) {
     return null;
   }
 
@@ -57,7 +69,7 @@ export function toUiLayoutRegisterOptions(record: UiLayoutRuntimeRecord): Layout
     routeName: record.routeName,
     routePath: record.routePath,
     uid: record.uid,
-    layoutModelClass,
+    ...codeDefinedOptions,
     authCheck: record.authCheck,
   };
 }

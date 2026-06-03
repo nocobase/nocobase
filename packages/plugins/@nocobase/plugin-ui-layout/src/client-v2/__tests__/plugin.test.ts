@@ -42,6 +42,9 @@ describe('PluginUiLayoutClientV2', () => {
         hasLayout: vi.fn(() => false),
         registerLayout: vi.fn(),
       },
+      flowEngine: {
+        registerModelLoaders: vi.fn(),
+      },
     };
     const plugin = new PluginUiLayoutClientV2({} as Record<string, never>, app as unknown as Application);
 
@@ -57,6 +60,17 @@ describe('PluginUiLayoutClientV2', () => {
       key: 'index',
       title: 'UI layout',
       componentLoader: expect.any(Function),
+    });
+    expect(app.flowEngine.registerModelLoaders).toHaveBeenCalledWith({
+      MobileLayoutModel: {
+        loader: expect.any(Function),
+      },
+      MobileRootPageModel: {
+        loader: expect.any(Function),
+      },
+      MobileChildPageModel: {
+        loader: expect.any(Function),
+      },
     });
     expect(app.apiClient.request).toHaveBeenCalledWith({
       url: 'uiLayouts:list',

@@ -38,7 +38,7 @@ function createLayoutManager(options: { registeredRouteNames?: string[] } = {}) 
 describe('plugin-ui-layout layout registration', () => {
   it('should use code-defined model classes by layout type', () => {
     expect(getUiLayoutModelClass(UI_LAYOUT_TYPE_DESKTOP)).toBe('AdminLayoutModel');
-    expect(getUiLayoutModelClass(UI_LAYOUT_TYPE_MOBILE)).toBe('AdminLayoutModel');
+    expect(getUiLayoutModelClass(UI_LAYOUT_TYPE_MOBILE)).toBe('MobileLayoutModel');
     expect(getUiLayoutModelClass('unknown')).toBeUndefined();
   });
 
@@ -126,7 +126,9 @@ describe('plugin-ui-layout layout registration', () => {
       routeName: 'mobile',
       routePath: '/mobile',
       uid: 'mobile-layout-model',
-      layoutModelClass: 'AdminLayoutModel',
+      layoutModelClass: 'MobileLayoutModel',
+      rootPageModelClass: 'MobileRootPageModel',
+      childPageModelClass: 'MobileChildPageModel',
       authCheck: false,
     });
   });

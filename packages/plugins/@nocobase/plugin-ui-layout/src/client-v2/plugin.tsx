@@ -15,6 +15,18 @@ export class PluginUiLayoutClientV2 extends Plugin<Record<string, never>, Applic
   async load() {
     const title = this.t('UI layout') as unknown as string;
 
+    this.app.flowEngine.registerModelLoaders({
+      MobileLayoutModel: {
+        loader: () => import('./models/MobileLayoutModel'),
+      },
+      MobileRootPageModel: {
+        loader: () => import('./models/MobilePageModels'),
+      },
+      MobileChildPageModel: {
+        loader: () => import('./models/MobilePageModels'),
+      },
+    });
+
     this.pluginSettingsManager.addMenuItem({
       key: 'ui-layout',
       title,
