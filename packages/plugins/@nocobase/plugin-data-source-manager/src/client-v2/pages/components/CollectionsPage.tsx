@@ -1607,13 +1607,12 @@ function CollectionsPage(props: CollectionsPageProps) {
 
     setRefreshing(true);
     try {
+      const clientStatus = dataSource?.status || 'loaded';
       const response = await ctx.api.request({
-        url: 'dataSources:refresh',
+        url: `dataSources:refresh?filterByTk=${encodeURIComponent(
+          props.dataSourceKey,
+        )}&clientStatus=${encodeURIComponent(clientStatus)}`,
         method: 'post',
-        params: {
-          filterByTk: props.dataSourceKey,
-          clientStatus: dataSource?.status || 'loaded',
-        },
       });
       const status = response?.data?.data?.status || response?.data?.status;
       if (status === 'reloading') {
