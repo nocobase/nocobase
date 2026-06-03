@@ -12,7 +12,7 @@ import { UiSchemaRepository } from '@nocobase/plugin-ui-schema-storage';
 import { Instruction, JOB_STATUS } from '@nocobase/plugin-workflow';
 import { TASK_STATUS } from '../common/constants';
 
-async function getUsers(config, { db, transaction }): Promise<number[]> {
+async function getUsers(config, { db }): Promise<number[]> {
   const users: Set<number> = new Set();
   const UserRepo = db.getRepository('users');
   for (const item of config) {
@@ -23,7 +23,6 @@ async function getUsers(config, { db, transaction }): Promise<number[]> {
       const result = await UserRepo.find({
         ...item,
         fields: ['id'],
-        transaction,
       });
       result.forEach((item) => users.add(item.id));
     } else {
