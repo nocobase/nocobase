@@ -259,6 +259,154 @@ describe('inapp message channels', () => {
       expect(res.body.data.length).toBe(1);
       expect(res.body.data[0].name).toBe(targetChannel.name);
     });
+
+    test('filter channel by latest message receive timestamp', async () => {
+      const channels = await channelsRepo.create({
+        values: [
+          {
+            title: 'old_channel',
+            notificationType: 'in-app-message',
+          },
+          {
+            title: 'new_channel',
+            notificationType: 'in-app-message',
+          },
+        ],
+      });
+      const oldChannel = channels.find((channel) => channel.title === 'old_channel');
+      const newChannel = channels.find((channel) => channel.title === 'new_channel');
+      const now = Date.now();
+
+      await messagesRepo.create({
+        values: [
+          {
+            channelName: oldChannel.name,
+            userId: currUserId,
+            status: 'unread',
+            title: 'old message',
+            content: 'old content',
+            receiveTimestamp: now - 1000,
+          },
+          {
+            channelName: newChannel.name,
+            userId: currUserId,
+            status: 'unread',
+            title: 'new message',
+            content: 'new content',
+            receiveTimestamp: now,
+          },
+        ],
+      });
+
+      const res = await currUserAgent.resource('myInAppChannels').list({
+        filter: {
+          latestMsgReceiveTimestamp: {
+            $lt: now,
+          },
+        },
+      });
+
+      expect(res.status).toBe(200);
+      expect(res.body.data.length).toBe(1);
+      expect(res.body.data[0].name).toBe(oldChannel.name);
+    });
+
+    test('should accept numeric string latest message receive timestamp filter', async () => {
+      const channels = await channelsRepo.create({
+        values: [
+          {
+            title: 'old_channel',
+            notificationType: 'in-app-message',
+          },
+          {
+            title: 'new_channel',
+            notificationType: 'in-app-message',
+          },
+        ],
+      });
+      const oldChannel = channels.find((channel) => channel.title === 'old_channel');
+      const newChannel = channels.find((channel) => channel.title === 'new_channel');
+      const now = Date.now();
+
+      await messagesRepo.create({
+        values: [
+          {
+            channelName: oldChannel.name,
+            userId: currUserId,
+            status: 'unread',
+            title: 'old message',
+            content: 'old content',
+            receiveTimestamp: now - 1000,
+          },
+          {
+            channelName: newChannel.name,
+            userId: currUserId,
+            status: 'unread',
+            title: 'new message',
+            content: 'new content',
+            receiveTimestamp: now,
+          },
+        ],
+      });
+
+      const res = await currUserAgent.resource('myInAppChannels').list({
+        filter: {
+          latestMsgReceiveTimestamp: {
+            $lt: String(now),
+          },
+        },
+      });
+
+      expect(res.status).toBe(200);
+      expect(res.body.data.length).toBe(1);
+      expect(res.body.data[0].name).toBe(oldChannel.name);
+    });
+
+    test('should accept zero latest message receive timestamp filter', async () => {
+      const channels = await channelsRepo.create({
+        values: {
+          title: 'channel',
+          notificationType: 'in-app-message',
+        },
+      });
+
+      await messagesRepo.create({
+        values: {
+          channelName: channels.name,
+          userId: currUserId,
+          status: 'unread',
+          title: 'message',
+          content: 'content',
+          receiveTimestamp: Date.now(),
+        },
+      });
+
+      const res = await currUserAgent.resource('myInAppChannels').list({
+        filter: {
+          latestMsgReceiveTimestamp: {
+            $lt: 0,
+          },
+        },
+      });
+
+      expect(res.status).toBe(200);
+      expect(res.body.data.length).toBe(0);
+    });
+
+    test.each(['0) OR 1=1 --', { value: Date.now() }, 'Infinity', ''])(
+      'should reject invalid latest message receive timestamp filter: %s',
+      async (latestMsgReceiveTimestamp) => {
+        const res = await currUserAgent.resource('myInAppChannels').list({
+          filter: {
+            latestMsgReceiveTimestamp: {
+              $lt: latestMsgReceiveTimestamp,
+            },
+          },
+        });
+
+        expect(res.status).toBe(400);
+      },
+    );
     // test('channel last receive timestamp filter', () => {
     //   const currentTS = Date.now();
     // });
