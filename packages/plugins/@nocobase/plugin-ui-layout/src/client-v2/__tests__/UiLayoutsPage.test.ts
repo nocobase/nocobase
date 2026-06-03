@@ -11,9 +11,12 @@ import { describe, expect, it, vi } from 'vitest';
 import {
   createUiLayout,
   deleteUiLayouts,
+  getLayoutTypeTagColor,
   getUiLayoutRouteUrl,
   type UiLayoutFormValues,
+  type UiLayoutRecord,
   type UiLayoutResource,
+  updateUiLayoutEnabled,
   updateUiLayout,
 } from '../pages/UiLayoutsPage';
 
@@ -24,6 +27,11 @@ const formValues: UiLayoutFormValues = {
   routePath: '/admin',
   authCheck: true,
   enabled: true,
+};
+
+const uiLayoutRecord: UiLayoutRecord = {
+  id: 42,
+  ...formValues,
 };
 
 function makeResource(overrides: Partial<UiLayoutResource> = {}): UiLayoutResource {
@@ -74,6 +82,33 @@ describe('plugin-ui-layout submit pipeline', () => {
     expect(onSubmitted).not.toHaveBeenCalled();
   });
 
+  it('should update enabled from the row switch', async () => {
+    const resource = makeResource();
+    const onSubmitted = vi.fn();
+
+    await updateUiLayoutEnabled({ resource, record: uiLayoutRecord, enabled: false, onSubmitted });
+
+    expect(resource.update).toHaveBeenCalledTimes(1);
+    expect(resource.update).toHaveBeenCalledWith({
+      filterByTk: 42,
+      values: {
+        ...formValues,
+        enabled: false,
+      },
+    });
+    expect(onSubmitted).toHaveBeenCalledTimes(1);
+  });
+
+  it('should not invoke onSubmitted when enabled update rejects', async () => {
+    const resource = makeResource({ update: vi.fn().mockRejectedValue(new Error('switch failed')) });
+    const onSubmitted = vi.fn();
+
+    await expect(
+      updateUiLayoutEnabled({ resource, record: uiLayoutRecord, enabled: false, onSubmitted }),
+    ).rejects.toThrow(/switch failed/);
+    expect(onSubmitted).not.toHaveBeenCalled();
+  });
+
   it('should fire resource.destroy with the numeric id as filterByTk on row delete', async () => {
     const resource = makeResource();
     const onDeleted = vi.fn();
@@ -102,6 +137,14 @@ describe('plugin-ui-layout submit pipeline', () => {
 
     await expect(deleteUiLayouts({ resource, filterByTk: 1, onDeleted })).rejects.toThrow(/delete failed/);
     expect(onDeleted).not.toHaveBeenCalled();
+  });
+});
+
+describe('plugin-ui-layout layout type tag', () => {
+  it('should return different tag colors for built-in layout types', () => {
+    expect(getLayoutTypeTagColor('desktop')).toBe('blue');
+    expect(getLayoutTypeTagColor('mobile')).toBe('purple');
+    expect(getLayoutTypeTagColor('custom')).toBe('default');
   });
 });
 

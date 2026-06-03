@@ -92,6 +92,31 @@ export async function updateUiLayout(args: {
   args.onSubmitted();
 }
 
+function toUiLayoutFormValues(record: UiLayoutRecord, overrides: Partial<UiLayoutFormValues> = {}): UiLayoutFormValues {
+  return {
+    uid: record.uid,
+    layoutType: record.layoutType,
+    routeName: record.routeName,
+    routePath: record.routePath,
+    authCheck: record.authCheck,
+    enabled: record.enabled,
+    ...overrides,
+  };
+}
+
+export async function updateUiLayoutEnabled(args: {
+  resource: UiLayoutResource;
+  record: UiLayoutRecord;
+  enabled: boolean;
+  onSubmitted: () => void;
+}): Promise<void> {
+  await args.resource.update({
+    filterByTk: args.record.id,
+    values: toUiLayoutFormValues(args.record, { enabled: args.enabled }),
+  });
+  args.onSubmitted();
+}
+
 export async function deleteUiLayouts(args: {
   resource: UiLayoutResource;
   filterByTk: UiLayoutPrimaryKey | UiLayoutPrimaryKey[];
@@ -163,12 +188,23 @@ function getLayoutTypeLabel(t: (key: string) => string, layoutType: string) {
   return option ? t(option.label) : layoutType;
 }
 
+export function getLayoutTypeTagColor(layoutType: string) {
+  if (layoutType === UI_LAYOUT_TYPE_DESKTOP) {
+    return 'blue';
+  }
+  if (layoutType === UI_LAYOUT_TYPE_MOBILE) {
+    return 'purple';
+  }
+  return 'default';
+}
+
 const UiLayoutsPage: React.FC = () => {
   const t = useT();
   const ctx = useFlowContext();
   const { token } = theme.useToken();
   const { modal } = App.useApp();
   const [selectedRowKeys, setSelectedRowKeys] = useState<UiLayoutPrimaryKey[]>([]);
+  const [updatingEnabledRowKeys, setUpdatingEnabledRowKeys] = useState<UiLayoutPrimaryKey[]>([]);
   const resource = useMemo(() => ctx.api.resource('uiLayouts') as UiLayoutResource, [ctx.api]);
 
   const listRequest = useRequest(async (): Promise<ListBody> => {
@@ -235,6 +271,23 @@ const UiLayoutsPage: React.FC = () => {
     [modal, refreshList, resource, t],
   );
 
+  const handleToggleEnabled = useCallback(
+    async (record: UiLayoutRecord, enabled: boolean) => {
+      setUpdatingEnabledRowKeys((keys) => (keys.includes(record.id) ? keys : [...keys, record.id]));
+      try {
+        await updateUiLayoutEnabled({
+          resource,
+          record,
+          enabled,
+          onSubmitted: refreshList,
+        });
+      } finally {
+        setUpdatingEnabledRowKeys((keys) => keys.filter((key) => key !== record.id));
+      }
+    },
+    [refreshList, resource],
+  );
+
   const rowSelection = useMemo<TableProps<UiLayoutRecord>['rowSelection']>(
     () => ({
       selectedRowKeys,
@@ -260,7 +313,7 @@ const UiLayoutsPage: React.FC = () => {
       {
         title: t('Layout type'),
         dataIndex: 'layoutType',
-        render: (value: string) => getLayoutTypeLabel(t, value),
+        render: (value: string) => <LayoutTypeTag layoutType={value} />,
       },
       { title: t('Route name'), dataIndex: 'routeName', ellipsis: true },
       { title: t('Route path'), dataIndex: 'routePath', ellipsis: true },
@@ -272,7 +325,16 @@ const UiLayoutsPage: React.FC = () => {
       {
         title: t('Enabled'),
         dataIndex: 'enabled',
-        render: (value: boolean) => <BooleanTag value={value} />,
+        render: (value: boolean, record) => (
+          <Switch
+            aria-label={t('Enabled')}
+            checked={value}
+            loading={updatingEnabledRowKeys.includes(record.id)}
+            onChange={async (checked) => {
+              await handleToggleEnabled(record, checked);
+            }}
+          />
+        ),
       },
       {
         title: t('Actions'),
@@ -291,7 +353,7 @@ const UiLayoutsPage: React.FC = () => {
         ),
       },
     ],
-    [ctx.app, handleDelete, openFormDrawer, t],
+    [ctx.app, handleDelete, handleToggleEnabled, openFormDrawer, t, updatingEnabledRowKeys],
   );
 
   return (
@@ -331,6 +393,11 @@ const UiLayoutsPage: React.FC = () => {
 function BooleanTag(props: { value: boolean }) {
   const t = useT();
   return <Tag color={props.value ? 'success' : 'default'}>{props.value ? t('Yes') : t('No')}</Tag>;
+}
+
+function LayoutTypeTag(props: { layoutType: string }) {
+  const t = useT();
+  return <Tag color={getLayoutTypeTagColor(props.layoutType)}>{getLayoutTypeLabel(t, props.layoutType)}</Tag>;
 }
 
 function UiLayoutForm(props: { layoutType: UiLayoutType; record?: UiLayoutRecord; onSubmitted: () => void }) {
