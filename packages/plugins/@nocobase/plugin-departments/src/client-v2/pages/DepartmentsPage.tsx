@@ -62,9 +62,25 @@ const TABLE_DRAWER_WIDTH = '70%';
 const DEPARTMENT_PICKER_DRAWER_WIDTH = '40%';
 const DEPARTMENT_TREE_PANEL_WIDTH = 280;
 const MEMBER_TABLE_PAGE_SIZE = 20;
+const ADD_MEMBERS_TABLE_PAGE_SIZE = 20;
+const SEARCH_RESULT_LIMIT = 10;
 const DEPARTMENTS_PAGE_HEIGHT = 'calc(100vh - 160px)';
 
 type MembersFilter = CompiledFilter;
+type SearchResultType = 'user' | 'department';
+
+interface SearchResults {
+  users: UserRecord[];
+  departments: DepartmentRecord[];
+  moreUsers: boolean;
+  moreDepartments: boolean;
+}
+
+interface AggregateSearchParams {
+  keyword: string;
+  type?: SearchResultType;
+  last?: DepartmentPrimaryKey;
+}
 
 function isFilterOptionSafe(field: CollectionField, depth = 1): boolean {
   try {
@@ -150,7 +166,11 @@ function extractList<T>(response: unknown): T[] {
 function extractMeta(response: unknown): Record<string, unknown> {
   const data = getResponseData(response);
   const meta = (data as { meta?: unknown })?.meta;
-  return meta && typeof meta === 'object' ? (meta as Record<string, unknown>) : {};
+  if (meta && typeof meta === 'object') {
+    return meta as Record<string, unknown>;
+  }
+
+  return data && typeof data === 'object' ? (data as Record<string, unknown>) : {};
 }
 
 function userLabel(user: Pick<UserRecord, 'nickname' | 'username' | 'email'>) {
@@ -371,16 +391,32 @@ function DepartmentForm(props: {
 function AddMembersForm(props: { department: DepartmentRecord; onSubmitted: () => void }) {
   const t = useT();
   const ctx = useFlowContext();
+  const { token } = theme.useToken();
+  const usersCollection = ctx.dataSourceManager?.getDataSource('main')?.getCollection('users');
+  const usersFilterableFieldNames = getSafeFilterableFieldNames(usersCollection);
   const [selectedKeys, setSelectedKeys] = useState<React.Key[]>([]);
+  const [filter, setFilter] = useState<CompiledFilter>();
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(ADD_MEMBERS_TABLE_PAGE_SIZE);
   const [submitting, setSubmitting] = useState(false);
 
-  const usersRequest = useRequest(async () => {
-    const response = await getResource(ctx.api, 'users').listExcludeDept({
-      departmentId: props.department.id,
-      pageSize: 50,
-    });
-    return extractList<UserRecord>(response);
-  });
+  const usersRequest = useRequest(
+    async () => {
+      const response = await getResource(ctx.api, 'users').listExcludeDept({
+        departmentId: props.department.id,
+        filter,
+        page,
+        pageSize,
+      });
+      return {
+        data: extractList<UserRecord>(response),
+        meta: extractMeta(response),
+      };
+    },
+    {
+      refreshDeps: [filter, page, pageSize, props.department.id],
+    },
+  );
 
   const handleSubmit = useCallback(async () => {
     if (!selectedKeys.length) {
@@ -408,6 +444,10 @@ function AddMembersForm(props: { department: DepartmentRecord; onSubmitted: () =
     [t],
   );
 
+  const usersResponse = usersRequest.data;
+  const users = usersResponse?.data || [];
+  const userCount = usersResponse?.meta?.count as number | undefined;
+
   return (
     <DrawerFormLayout
       title={t('Add members')}
@@ -416,15 +456,41 @@ function AddMembersForm(props: { department: DepartmentRecord; onSubmitted: () =
       submitText={t('Submit')}
       cancelText={t('Cancel')}
     >
-      <Table<UserRecord>
-        rowKey="id"
-        showIndex={false}
-        loading={usersRequest.loading}
-        dataSource={usersRequest.data || []}
-        columns={columns}
-        pagination={false}
-        rowSelection={{ selectedRowKeys: selectedKeys, onChange: setSelectedKeys }}
-      />
+      <Space direction="vertical" style={{ width: '100%' }}>
+        <CollectionFilter
+          collection={usersCollection}
+          t={t}
+          filterableFieldNames={usersFilterableFieldNames}
+          onChange={(nextFilter) => {
+            setSelectedKeys([]);
+            setPage(1);
+            setFilter(nextFilter);
+          }}
+        />
+        <Table<UserRecord>
+          rowKey="id"
+          showIndex={false}
+          loading={usersRequest.loading}
+          dataSource={users}
+          columns={columns}
+          pagination={{
+            current: page,
+            pageSize,
+            total: userCount ?? 0,
+            showSizeChanger: true,
+            onChange: (nextPage, nextPageSize) => {
+              setPage(nextPage);
+              setPageSize(nextPageSize);
+            },
+          }}
+          rowSelection={{
+            preserveSelectedRowKeys: true,
+            selectedRowKeys: selectedKeys,
+            onChange: setSelectedKeys,
+          }}
+          style={{ marginTop: token.marginSM }}
+        />
+      </Space>
     </DrawerFormLayout>
   );
 }
@@ -677,6 +743,12 @@ const DepartmentsPage: React.FC = () => {
   const [selectedMemberKeys, setSelectedMemberKeys] = useState<React.Key[]>([]);
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchKeyword, setSearchKeyword] = useState('');
+  const [searchResults, setSearchResults] = useState<SearchResults>({
+    users: [],
+    departments: [],
+    moreUsers: true,
+    moreDepartments: true,
+  });
   const [memberFilter, setMemberFilter] = useState<MembersFilter>();
   const [memberPage, setMemberPage] = useState(1);
   const [memberPageSize, setMemberPageSize] = useState(MEMBER_TABLE_PAGE_SIZE);
@@ -721,9 +793,9 @@ const DepartmentsPage: React.FC = () => {
   }, [memberFilter, selectedDepartment?.id, selectedUser?.id]);
 
   const searchRequest = useRequest(
-    async (keyword: string) => {
+    async (params: AggregateSearchParams) => {
       const response = await getResource(ctx.api, 'departments').aggregateSearch({
-        values: { keyword, limit: 10 },
+        values: { ...params, limit: SEARCH_RESULT_LIMIT },
       });
       return (
         (getResponseData(response) as { data?: { users?: UserRecord[]; departments?: DepartmentRecord[] } })?.data || {
@@ -732,7 +804,36 @@ const DepartmentsPage: React.FC = () => {
         }
       );
     },
-    { manual: true },
+    {
+      manual: true,
+      onSuccess(data, params) {
+        const requestParams = params[0];
+        const users = data.users || [];
+        const departments = data.departments || [];
+        setSearchResults((current) => ({
+          users:
+            requestParams.type === 'department'
+              ? current.users
+              : requestParams.last
+                ? [...current.users, ...users]
+                : users,
+          departments:
+            requestParams.type === 'user'
+              ? current.departments
+              : requestParams.last
+                ? [...current.departments, ...departments]
+                : departments,
+          moreUsers:
+            !requestParams.type || requestParams.type === 'user'
+              ? users.length >= SEARCH_RESULT_LIMIT
+              : current.moreUsers,
+          moreDepartments:
+            !requestParams.type || requestParams.type === 'department'
+              ? departments.length >= SEARCH_RESULT_LIMIT
+              : current.moreDepartments,
+        }));
+      },
+    },
   );
 
   const refreshAll = useCallback(() => {
@@ -922,8 +1023,8 @@ const DepartmentsPage: React.FC = () => {
   );
 
   const searchItems = useMemo(() => {
-    const users = searchRequest.data?.users || [];
-    const foundDepartments = searchRequest.data?.departments || [];
+    const users = searchResults.users;
+    const foundDepartments = searchResults.departments;
     if (!users.length && !foundDepartments.length) {
       return [{ key: 'empty', disabled: true, label: <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} /> }];
     }
@@ -935,27 +1036,53 @@ const DepartmentsPage: React.FC = () => {
               key: 'users',
               type: 'group' as const,
               label: t('Users'),
-              children: users.map((user) => {
-                const description = userDescription(user);
-                return {
-                  key: `user-${user.id}`,
-                  label: (
-                    <div>
-                      <div>{userLabel(user)}</div>
-                      {description ? (
-                        <div style={{ fontSize: token.fontSizeSM, color: token.colorTextDescription }}>
-                          {description}
-                        </div>
-                      ) : null}
-                    </div>
-                  ),
-                  onClick: () => {
-                    setSelectedUser(user);
-                    setSelectedDepartment(null);
-                    setSearchOpen(false);
-                  },
-                };
-              }),
+              children: [
+                ...users.map((user) => {
+                  const description = userDescription(user);
+                  return {
+                    key: `user-${user.id}`,
+                    label: (
+                      <div>
+                        <div>{userLabel(user)}</div>
+                        {description ? (
+                          <div style={{ fontSize: token.fontSizeSM, color: token.colorTextDescription }}>
+                            {description}
+                          </div>
+                        ) : null}
+                      </div>
+                    ),
+                    onClick: () => {
+                      setSelectedUser(user);
+                      setSelectedDepartment(null);
+                      setSearchOpen(false);
+                    },
+                  };
+                }),
+                ...(searchResults.moreUsers
+                  ? [
+                      {
+                        key: 'user-load-more',
+                        disabled: searchRequest.loading,
+                        label: (
+                          <Button
+                            type="link"
+                            size="small"
+                            loading={searchRequest.loading}
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              const lastUser = users[users.length - 1];
+                              if (lastUser) {
+                                searchRequest.run({ keyword: searchKeyword, type: 'user', last: lastUser.id });
+                              }
+                            }}
+                          >
+                            {t('Load more')}
+                          </Button>
+                        ),
+                      },
+                    ]
+                  : []),
+              ],
             },
           ]
         : []),
@@ -965,20 +1092,60 @@ const DepartmentsPage: React.FC = () => {
               key: 'departments',
               type: 'group' as const,
               label: t('Departments'),
-              children: foundDepartments.map((department) => ({
-                key: `department-${department.id}`,
-                label: getDepartmentTitle(department),
-                onClick: () => {
-                  setSelectedDepartment(department);
-                  setSelectedUser(null);
-                  setSearchOpen(false);
-                },
-              })),
+              children: [
+                ...foundDepartments.map((department) => ({
+                  key: `department-${department.id}`,
+                  label: getDepartmentTitle(department),
+                  onClick: () => {
+                    setSelectedDepartment(department);
+                    setSelectedUser(null);
+                    setSearchOpen(false);
+                  },
+                })),
+                ...(searchResults.moreDepartments
+                  ? [
+                      {
+                        key: 'department-load-more',
+                        disabled: searchRequest.loading,
+                        label: (
+                          <Button
+                            type="link"
+                            size="small"
+                            loading={searchRequest.loading}
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              const lastDepartment = foundDepartments[foundDepartments.length - 1];
+                              if (lastDepartment) {
+                                searchRequest.run({
+                                  keyword: searchKeyword,
+                                  type: 'department',
+                                  last: lastDepartment.id,
+                                });
+                              }
+                            }}
+                          >
+                            {t('Load more')}
+                          </Button>
+                        ),
+                      },
+                    ]
+                  : []),
+              ],
             },
           ]
         : []),
     ];
-  }, [searchRequest.data, t, token.colorTextDescription, token.fontSizeSM]);
+  }, [
+    searchKeyword,
+    searchRequest,
+    searchResults.departments,
+    searchResults.moreDepartments,
+    searchResults.moreUsers,
+    searchResults.users,
+    t,
+    token.colorTextDescription,
+    token.fontSizeSM,
+  ]);
 
   const treeNodes = useMemo(
     () => toTreeNodes(departmentTree, renderDepartmentTitle),
@@ -1090,14 +1257,16 @@ const DepartmentsPage: React.FC = () => {
                 if (!event.target.value) {
                   setSelectedUser(null);
                   setSearchOpen(false);
+                  setSearchResults({ users: [], departments: [], moreUsers: true, moreDepartments: true });
                 }
               }}
               onSearch={(keyword) => {
                 if (!keyword) {
                   return;
                 }
+                setSearchResults({ users: [], departments: [], moreUsers: true, moreDepartments: true });
                 setSearchOpen(true);
-                searchRequest.run(keyword);
+                searchRequest.run({ keyword });
               }}
             />
           </Dropdown>

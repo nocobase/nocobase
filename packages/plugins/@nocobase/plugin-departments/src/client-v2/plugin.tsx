@@ -9,6 +9,7 @@
 
 import type { Application } from '@nocobase/client-v2';
 import { Plugin } from '@nocobase/client-v2';
+import PluginAclClientV2 from '@nocobase/plugin-acl/client-v2';
 
 export class PluginDepartmentsClientV2 extends Plugin<Record<string, never>, Application> {
   async load() {
@@ -30,6 +31,13 @@ export class PluginDepartmentsClientV2 extends Plugin<Record<string, never>, App
       sort: 3,
       aclSnippet: 'pm.departments',
       componentLoader: () => import('./pages/DepartmentsPage'),
+    });
+
+    const aclPlugin = this.app.pm.get(PluginAclClientV2) as PluginAclClientV2 | undefined;
+    aclPlugin?.rolesManager.add('departments', {
+      title: String(this.t('Departments')),
+      sort: 20,
+      componentLoader: () => import('./pages/RoleDepartmentsManager'),
     });
   }
 }
