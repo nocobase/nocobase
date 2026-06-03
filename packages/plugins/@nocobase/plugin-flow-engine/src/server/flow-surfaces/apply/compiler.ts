@@ -29,6 +29,7 @@ import { FlowSurfaceBadRequestError } from '../errors';
 import { CREATABLE_STANDALONE_FIELD_USES, FIELD_WRAPPER_USES } from '../node-use-sets';
 import type { FlowSurfaceApplySpec, FlowSurfaceMutateOp, FlowSurfaceNodeSpec, FlowSurfaceWriteTarget } from '../types';
 import { getPublicFieldTypeForUse } from '../field-type-resolver';
+import { isFlowSurfaceBeforeAllEventFlow, normalizeFlowSurfaceEventFlowRegistry } from '../event-flow-normalizer';
 import {
   didItemRefsChange,
   emitLayoutOp,
@@ -49,6 +50,7 @@ type CompiledNodeRef = {
   use: string;
   sourceOpId?: string;
   ownerUidRef?: any;
+  defaultFieldUse?: string;
 };
 
 type SyncChildrenResult = {
@@ -290,7 +292,6 @@ function syncPageNode(
           'Untitled',
         icon: desiredTab?.stepParams?.pageTabSettings?.tab?.icon || desiredTab?.props?.icon,
         documentTitle: desiredTab?.stepParams?.pageTabSettings?.tab?.documentTitle,
-        flowRegistry: desiredTab?.flowRegistry,
       },
     });
     const createdRef: CompiledNodeRef = {
@@ -788,7 +789,7 @@ function createFieldNode(
   const fieldCapability = resolveSupportedFieldCapability({
     containerUse: parentRef.use,
     requestedWrapperUse: desiredNode.use,
-    requestedFieldUse: innerField?.use,
+    requestedFieldUse: requestedRenderer ? undefined : innerField?.use,
     requestedRenderer,
     allowUnresolvedFieldUse: true,
   });
@@ -827,6 +828,7 @@ function createFieldNode(
     uidRef: makeOpRef(`${opId}.wrapperUid`),
     use: desiredNode.use,
     sourceOpId: opId,
+    defaultFieldUse: fieldCapability.fieldUse,
   };
   syncCreatedNode(ops, state, ref, desiredNode);
   return ref;
@@ -988,12 +990,19 @@ function emitFlowRegistryOps(
   desiredNode: FlowSurfaceNodeSpec,
   explicitTarget?: FlowSurfaceWriteTarget,
 ) {
-  if (_.isNil(desiredNode.flowRegistry) || _.isEqual(desiredNode.flowRegistry, currentNode?.flowRegistry)) {
+  if (_.isNil(desiredNode.flowRegistry)) {
     return;
   }
   const target = explicitTarget || { uid: nodeRef.uidRef };
-  const currentFlowRegistry = _.isPlainObject(currentNode?.flowRegistry) ? currentNode.flowRegistry : {};
-  const desiredFlowRegistry = _.isPlainObject(desiredNode.flowRegistry) ? desiredNode.flowRegistry : {};
+  const currentFlowRegistry = _.isPlainObject(currentNode?.flowRegistry)
+    ? normalizeFlowSurfaceEventFlowRegistry('apply', currentNode.flowRegistry)
+    : {};
+  const desiredFlowRegistry = _.isPlainObject(desiredNode.flowRegistry)
+    ? normalizeFlowSurfaceEventFlowRegistry('apply', desiredNode.flowRegistry)
+    : {};
+  if (_.isEqual(desiredFlowRegistry, currentFlowRegistry)) {
+    return;
+  }
   const currentKeys = Object.keys(currentFlowRegistry);
   const desiredKeys = Object.keys(desiredFlowRegistry);
 
@@ -1025,7 +1034,7 @@ function emitFlowRegistryOps(
       });
       continue;
     }
-    if (isBeforeAllEventFlow(flow)) {
+    if (isFlowSurfaceBeforeAllEventFlow(flow)) {
       ops.push({
         type: 'addEventFlow',
         target,
@@ -1045,15 +1054,6 @@ function emitFlowRegistryOps(
       },
     });
   }
-}
-
-function isBeforeAllEventFlow(flow: any) {
-  return (
-    _.isPlainObject(flow) &&
-    _.isPlainObject(flow.on) &&
-    typeof flow.on.eventName === 'string' &&
-    (typeof flow.on.phase === 'undefined' || flow.on.phase === 'beforeAllFlows')
-  );
 }
 
 function getDefaultChildRef(parentRef: CompiledNodeRef, subKey: string, childUse?: string): CompiledNodeRef | null {
@@ -1130,7 +1130,11 @@ function getDefaultChildRef(parentRef: CompiledNodeRef, subKey: string, childUse
     };
   }
 
-  if (FIELD_WRAPPER_USES.has(parentRef.use) && subKey === 'field') {
+  if (
+    FIELD_WRAPPER_USES.has(parentRef.use) &&
+    subKey === 'field' &&
+    childUse === (parentRef.defaultFieldUse || fieldUseFromAddFieldRenderer(parentRef))
+  ) {
     return {
       uidRef: makeOpRef(`${parentRef.sourceOpId}.fieldUid`),
       use: childUse,
@@ -1160,6 +1164,21 @@ function resolveRecordActionCreateTargetUidRef(parentRef: CompiledNodeRef, curre
   throw new FlowSurfaceBadRequestError(
     `flowSurfaces apply cannot resolve owning surface for record action container '${parentRef.use}'`,
   );
+}
+
+function fieldUseFromAddFieldRenderer(parentRef: CompiledNodeRef) {
+  if (!parentRef.sourceOpId || !String(parentRef.sourceOpId).startsWith('addField_')) {
+    return undefined;
+  }
+  switch (parentRef.use) {
+    case 'FormItemModel':
+      return 'JSEditableFieldModel';
+    case 'DetailsItemModel':
+    case 'TableColumnModel':
+      return 'JSFieldModel';
+    default:
+      return undefined;
+  }
 }
 
 function isFieldWrapperNode(use?: string) {
@@ -1272,7 +1291,6 @@ function createPopupTabNode(
         'Untitled',
       icon: desiredNode?.stepParams?.pageTabSettings?.tab?.icon || desiredNode?.props?.icon,
       documentTitle: desiredNode?.stepParams?.pageTabSettings?.tab?.documentTitle,
-      flowRegistry: desiredNode?.flowRegistry,
     },
   });
   const ref: CompiledNodeRef = {

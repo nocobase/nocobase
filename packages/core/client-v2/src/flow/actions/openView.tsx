@@ -10,7 +10,7 @@
 import { defineAction, tExpr, FlowModelContext, FlowModel, FlowExitAllException } from '@nocobase/flow-engine';
 import React from 'react';
 import { FlowPage } from '../FlowPage';
-import { RootPageModel } from '../models';
+import { PageModel, RootPageModel } from '../models';
 import _ from 'lodash';
 
 type DirtyAwareFlowModel = FlowModel & {
@@ -230,7 +230,7 @@ export const openView = defineAction({
     return {
       mode: 'drawer',
       size: 'medium',
-      pageModelClass: 'ChildPageModel',
+      pageModelClass: ctx.layout?.childPageModelClass || 'ChildPageModel',
       uid: ctx.model?.uid,
       ...(filterByTkExpr ? { filterByTk: filterByTkExpr } : {}),
       ...(sourceIdExpr ? { sourceId: sourceIdExpr } : {}),
@@ -371,7 +371,8 @@ export const openView = defineAction({
       embed: {},
     };
 
-    const pageModelClass = ctx.inputArgs.pageModelClass || params.pageModelClass || 'ChildPageModel';
+    const pageModelClass =
+      ctx.inputArgs.pageModelClass || params.pageModelClass || ctx.layout?.childPageModelClass || 'ChildPageModel';
     const size = ctx.inputArgs.size || params.size || 'medium';
     let pageModelUid: string | null = null;
     let pageModelRef: FlowModel | null = null;
@@ -414,7 +415,12 @@ export const openView = defineAction({
       associationName: runtimeAssociationName,
       tabUid: mergedTabUid,
       openerUids,
-      pageActive: true, // 打开一个弹窗时，页面肯定是激活的
+      pageActive:
+        typeof inputArgs.pageActive === 'boolean'
+          ? inputArgs.pageActive
+          : typeof ctx.inputArgs.pageActive === 'boolean'
+            ? ctx.inputArgs.pageActive
+            : true,
     };
     // Ensure runtime keys propagate to view.inputArgs
     finalInputArgs.filterByTk = mergedFilterByTk;
@@ -475,6 +481,24 @@ export const openView = defineAction({
                 pageModel.context.defineProperty('pageActive', {
                   get: () => ctx.pageActive,
                 });
+              }
+
+              if (ctx.inputArgs.activateRef) {
+                ctx.inputArgs.activateRef.current = (forceRefresh = false) => {
+                  currentView.inputArgs.pageActive = true;
+                  if (pageModel instanceof PageModel) {
+                    pageModel.activateCurrentTab(forceRefresh);
+                  }
+                };
+              }
+
+              if (ctx.inputArgs.deactivateRef) {
+                ctx.inputArgs.deactivateRef.current = () => {
+                  currentView.inputArgs.pageActive = false;
+                  if (pageModel instanceof PageModel) {
+                    pageModel.deactivateCurrentTab();
+                  }
+                };
               }
 
               Object.entries(defineProperties as Record<string, any>).forEach(([key, p]) => {

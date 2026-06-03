@@ -111,7 +111,7 @@ export class AssignFormGridModel extends FormGridModel {
       return;
     }
     const fieldModel = binding.modelName;
-    const created = this.flowEngine.createModel({
+    const created = this.addSubModel('items', {
       use: 'AssignFormItemModel',
       stepParams: {
         fieldSettings: {
@@ -137,8 +137,6 @@ export class AssignFormGridModel extends FormGridModel {
           },
         },
       },
-      parentId: this.uid,
-      subKey: 'items',
     });
     created['assignValue'] = value;
   }

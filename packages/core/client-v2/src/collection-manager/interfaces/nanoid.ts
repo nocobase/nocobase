@@ -8,7 +8,7 @@
  */
 
 import { CollectionFieldInterface } from '../../collection-field-interface/CollectionFieldInterface';
-import { operators, autoFill, primaryKey, unique } from './properties';
+import { autoFill, primaryKey, unique } from './properties';
 export class NanoidFieldInterface extends CollectionFieldInterface {
   name = 'nanoid';
   type = 'object';
@@ -76,7 +76,7 @@ export class NanoidFieldInterface extends CollectionFieldInterface {
     },
   };
   filterable = {
-    operators: operators.string,
+    operators: 'string',
   };
   titleUsable = true;
 }

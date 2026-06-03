@@ -666,13 +666,20 @@ export function prepareFlowSurfaceApplyBlueprintDocument(
   if (tabs.length > 1 && page?.enableTabs === false) {
     throwBadRequest(`flowSurfaces applyBlueprint page.enableTabs cannot be false when tabs.length > 1`);
   }
+  const normalizedPage =
+    tabs.length === 1
+      ? {
+          ...(page || {}),
+          enableTabs: false,
+        }
+      : page;
 
   return {
     version: '1',
     mode,
     ...(target ? { target } : {}),
     ...(navigation ? { navigation } : {}),
-    ...(page ? { page } : {}),
+    ...(normalizedPage ? { page: normalizedPage } : {}),
     ...(defaults ? { defaults } : {}),
     tabs,
     assets,

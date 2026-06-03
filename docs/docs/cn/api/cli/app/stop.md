@@ -1,12 +1,12 @@
 ---
 title: "nb app stop"
-description: "nb app stop 命令参考：停止指定 env 的 NocoBase 应用或 Docker 容器。"
+description: "nb app stop 命令参考：停止指定 env 的 NocoBase 应用，并在 Docker env 中清理应用容器。"
 keywords: "nb app stop,NocoBase CLI,停止应用,Docker"
 ---
 
 # nb app stop
 
-停止指定 env 的 NocoBase 应用。npm/Git 安装会停止本地应用进程，Docker 安装会停止已保存的应用容器。
+停止指定 env 的 NocoBase 应用。npm/Git 安装会停止本地应用进程，Docker 安装会清理已保存的应用容器。
 
 ## 用法
 

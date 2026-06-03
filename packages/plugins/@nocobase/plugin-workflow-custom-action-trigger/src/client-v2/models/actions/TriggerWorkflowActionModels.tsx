@@ -15,13 +15,64 @@ import {
   FormActionModel,
   TextAreaWithContextSelector,
 } from '@nocobase/client-v2';
+import { css } from '@emotion/css';
 import { MultiRecordResource, resolveExpressions, useFlowContext } from '@nocobase/flow-engine';
-import { Alert, Select } from 'antd';
+import type { FlowEngine, FlowRuntimeContext, ModelConstructor } from '@nocobase/flow-engine';
+import { Alert, Select, Space } from 'antd';
 import type { ButtonProps } from 'antd/es/button';
 import { CONTEXT_TYPE, EVENT_TYPE } from '../../../common/constants';
 import { NAMESPACE, tExpr } from '../../locale';
 
-const buildTriggerWorkflows = (group?: any[]) => {
+type WorkflowCollection = {
+  name?: string;
+  dataSourceKey?: string;
+  dataSource?: {
+    key?: string;
+  };
+};
+
+type TriggerWorkflowBinding = {
+  workflowKey?: string;
+  context?: string;
+};
+
+type WorkflowOption = {
+  title?: string;
+  key?: string;
+  config?: {
+    type?: number | null;
+  } | null;
+};
+
+type ActionGroupModelClass = ModelConstructor & {
+  registerActionModels?: (models: Record<string, ModelConstructor>) => void;
+};
+
+function joinWorkflowCollectionName(dataSourceKey: string | undefined, collectionName: string | undefined) {
+  if (!collectionName) {
+    return undefined;
+  }
+  if (!dataSourceKey || dataSourceKey === 'main') {
+    return collectionName;
+  }
+  return `${dataSourceKey}:${collectionName}`;
+}
+
+function getWorkflowCollectionName(collection?: WorkflowCollection | null) {
+  return joinWorkflowCollectionName(collection?.dataSourceKey || collection?.dataSource?.key, collection?.name);
+}
+
+function getWorkflowCollectionFilter(ctx?: FlowRuntimeContext) {
+  const collection = ctx?.blockModel?.collection || ctx?.model?.context?.blockModel?.collection;
+  const workflowCollection = getWorkflowCollectionName(collection);
+  return workflowCollection
+    ? {
+        'config.collection': workflowCollection,
+      }
+    : undefined;
+}
+
+const buildTriggerWorkflows = (group?: TriggerWorkflowBinding[]) => {
   return group?.length
     ? group.map((row) => [row.workflowKey, row.context].filter(Boolean).join('!')).join(',')
     : undefined;
@@ -41,7 +92,7 @@ function getRecordKey(record, collection) {
   return record[filterByTk];
 }
 
-function WorkflowSelect(props) {
+function WorkflowSelect({ filter, optionFilter, ...props }) {
   const ctx = useFlowContext();
   const [options, setOptions] = React.useState<any[]>([]);
   const [loading, setLoading] = React.useState(false);
@@ -59,7 +110,7 @@ function WorkflowSelect(props) {
             filter: {
               type: EVENT_TYPE,
               enabled: true,
-              ...props.filter,
+              ...filter,
             },
           },
         });
@@ -67,7 +118,7 @@ function WorkflowSelect(props) {
           return;
         }
         const rows = res?.data?.data || [];
-        const filtered = typeof props.optionFilter === 'function' ? rows.filter(props.optionFilter) : rows;
+        const filtered = typeof optionFilter === 'function' ? rows.filter(optionFilter) : rows;
         setOptions(
           filtered.map((item) => ({
             label: item.title,
@@ -86,18 +137,20 @@ function WorkflowSelect(props) {
     return () => {
       mounted = false;
     };
-  }, [ctx.api, props.filter, props.optionFilter]);
+  }, [ctx.api, filter, optionFilter]);
 
   return <Select {...props} loading={loading} options={options} />;
 }
 
 function createTriggerWorkflowsSchema({
   description,
+  filter,
   optionFilter,
   withContextData = false,
 }: {
   description?: string;
-  optionFilter?: (item: any) => boolean;
+  filter?: Record<string, unknown>;
+  optionFilter?: (item: WorkflowOption) => boolean;
   withContextData?: boolean;
 }) {
   return {
@@ -108,6 +161,9 @@ function createTriggerWorkflowsSchema({
         type: 'info',
         showIcon: true,
         message: description,
+        style: {
+          marginBottom: '1em',
+        },
       },
     },
     group: {
@@ -117,25 +173,55 @@ function createTriggerWorkflowsSchema({
       items: {
         type: 'object',
         properties: {
-          sort: {
+          space: {
             type: 'void',
-            'x-decorator': 'FormItem',
-            'x-component': 'ArrayItems.SortHandle',
-          },
-          workflowKey: {
-            type: 'string',
-            title: `{{t('Workflow', { ns: 'workflow' })}}`,
-            'x-decorator': 'FormItem',
-            'x-component': WorkflowSelect,
             'x-component-props': {
-              optionFilter,
+              align: 'center',
+              style: {
+                display: 'flex',
+                width: '100%',
+              },
+              className: css`
+                & > .ant-space-item:first-child,
+                & > .ant-space-item:last-child {
+                  flex: 0 0 auto;
+                }
+                & > .ant-space-item:nth-child(2) {
+                  flex: 1;
+                  min-width: 0;
+                }
+                & > .ant-space-item:nth-child(2) .ant-select {
+                  width: 100%;
+                }
+              `,
             },
-            required: true,
-          },
-          remove: {
-            type: 'void',
-            'x-decorator': 'FormItem',
-            'x-component': 'ArrayItems.Remove',
+            'x-component': Space,
+            properties: {
+              sort: {
+                type: 'void',
+                'x-decorator': 'FormItem',
+                'x-component': 'ArrayItems.SortHandle',
+              },
+              workflowKey: {
+                type: 'string',
+                'x-decorator': 'FormItem',
+                'x-component': WorkflowSelect,
+                'x-component-props': {
+                  filter,
+                  optionFilter,
+                  placeholder: `{{t('Select workflow', { ns: 'workflow' })}}`,
+                  style: {
+                    width: '100%',
+                  },
+                },
+                required: true,
+              },
+              remove: {
+                type: 'void',
+                'x-decorator': 'FormItem',
+                'x-component': 'ArrayItems.Remove',
+              },
+            },
           },
         },
       },
@@ -170,6 +256,14 @@ const customActionDescription = tExpr(
   'Workflow will be triggered directly once the button clicked, without data saving. Only supports to be bound with "Custom action event".',
 );
 
+function matchWorkflowContextType(config?: { type?: number | null } | null, contextType?: number | null) {
+  const configType = config?.type;
+  if (contextType === CONTEXT_TYPE.GLOBAL || contextType == null) {
+    return configType === CONTEXT_TYPE.GLOBAL || configType == null;
+  }
+  return configType === contextType;
+}
+
 export class FormTriggerWorkflowActionModel extends FormActionModel {
   defaultProps: ButtonProps = {
     title: tExpr('Trigger workflow'),
@@ -190,12 +284,14 @@ FormTriggerWorkflowActionModel.registerFlow({
     },
     triggerWorkflows: {
       title: `{{t('Bind workflows', { ns: 'workflow' })}}`,
-      uiSchema: createTriggerWorkflowsSchema({
-        description: customActionDescription,
-        optionFilter(item) {
-          return item.config?.type === CONTEXT_TYPE.SINGLE_RECORD;
-        },
-      }),
+      uiSchema: (ctx) =>
+        createTriggerWorkflowsSchema({
+          description: customActionDescription,
+          filter: getWorkflowCollectionFilter(ctx),
+          optionFilter(item) {
+            return item.config?.type === CONTEXT_TYPE.SINGLE_RECORD;
+          },
+        }),
       async handler(ctx, params) {
         if (!params.group?.length) {
           ctx.message.error(
@@ -259,12 +355,14 @@ RecordTriggerWorkflowActionModel.registerFlow({
     },
     triggerWorkflows: {
       title: `{{t('Bind workflows', { ns: 'workflow' })}}`,
-      uiSchema: createTriggerWorkflowsSchema({
-        description: customActionDescription,
-        optionFilter(item) {
-          return item.config?.type === CONTEXT_TYPE.SINGLE_RECORD;
-        },
-      }),
+      uiSchema: (ctx) =>
+        createTriggerWorkflowsSchema({
+          description: customActionDescription,
+          filter: getWorkflowCollectionFilter(ctx),
+          optionFilter(item) {
+            return item.config?.type === CONTEXT_TYPE.SINGLE_RECORD;
+          },
+        }),
       async handler(ctx, params) {
         const { resource, collection } = ctx.blockModel;
         if (!resource || !collection) {
@@ -349,11 +447,12 @@ CollectionTriggerWorkflowActionModel.registerFlow({
         const { type } = ctx.model.stepParams.customCollectionTriggerWorkflowsActionSettings?.setContextType ?? {};
         return createTriggerWorkflowsSchema({
           withContextData: !type,
+          filter: type ? getWorkflowCollectionFilter(ctx) : undefined,
           description: type
             ? tExpr('Only support custom action workflow with context type set to "Multiple records".')
             : tExpr('Only support custom action workflow with context type set to "Custom context".'),
           optionFilter(item) {
-            return type ? item.config?.type === CONTEXT_TYPE.MULTIPLE_RECORDS : !item.config?.type;
+            return matchWorkflowContextType(item.config, type);
           },
         });
       },
@@ -457,7 +556,7 @@ function globalTriggerWorkflowUiSchema() {
     withContextData: true,
     description: tExpr('Only support custom action workflow with context type set to "Custom context".'),
     optionFilter(item) {
-      return !item.config?.type;
+      return matchWorkflowContextType(item.config, CONTEXT_TYPE.GLOBAL);
     },
   });
 }
@@ -509,18 +608,24 @@ WorkbenchTriggerWorkflowActionModel.registerFlow({
   },
 });
 
-export function registerTriggerWorkflowActionGroups(flowEngine: any) {
-  [
-    'CollectionActionGroupModel',
-    'RecordActionGroupModel',
-    'FormActionGroupModel',
-    'ActionPanelGroupActionModel',
-  ].forEach((modelName) => {
-    flowEngine.getModelClass(modelName)?.registerActionModels?.({
-      FormTriggerWorkflowActionModel,
-      RecordTriggerWorkflowActionModel,
-      CollectionTriggerWorkflowActionModel,
-      WorkbenchTriggerWorkflowActionModel,
-    });
+const triggerWorkflowActionModelsByGroup: Record<string, Record<string, ModelConstructor>> = {
+  CollectionActionGroupModel: {
+    CollectionTriggerWorkflowActionModel,
+  },
+  RecordActionGroupModel: {
+    RecordTriggerWorkflowActionModel,
+  },
+  FormActionGroupModel: {
+    FormTriggerWorkflowActionModel,
+  },
+  ActionPanelGroupActionModel: {
+    WorkbenchTriggerWorkflowActionModel,
+  },
+};
+
+export function registerTriggerWorkflowActionGroups(flowEngine: FlowEngine) {
+  Object.entries(triggerWorkflowActionModelsByGroup).forEach(([modelName, actionModels]) => {
+    const modelClass = flowEngine.getModelClass(modelName) as ActionGroupModelClass | undefined;
+    modelClass?.registerActionModels?.(actionModels);
   });
 }

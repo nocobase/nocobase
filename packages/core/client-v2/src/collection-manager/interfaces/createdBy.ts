@@ -7,10 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { ISchema } from '@formily/react';
-import { cloneDeep } from 'lodash';
 import { CollectionFieldInterface } from '../../collection-field-interface/CollectionFieldInterface';
-import { defaultProps, recordPickerViewer } from './properties';
+import { defaultProps } from './properties';
 
 export class CreatedByFieldInterface extends CollectionFieldInterface {
   name = 'createdBy';
@@ -67,14 +65,5 @@ export class CreatedByFieldInterface extends CollectionFieldInterface {
     // ],
   };
 
-  schemaInitialize(schema: ISchema, { block }: { block: string }): void {
-    schema['properties'] = {
-      viewer: cloneDeep(recordPickerViewer),
-    };
-    if (['Table', 'Kanban'].includes(block)) {
-      schema['x-component-props'] = schema['x-component-props'] || {};
-      schema['x-component-props']['ellipsis'] = true;
-    }
-  }
   description = '{{t("Store the creation user of each record")}}';
 }

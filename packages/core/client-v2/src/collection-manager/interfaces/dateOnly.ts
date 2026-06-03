@@ -8,7 +8,7 @@
  */
 
 import { CollectionFieldInterface } from '../../collection-field-interface/CollectionFieldInterface';
-import { dateTimeProps, defaultProps, operators } from './properties';
+import { dateTimeProps, defaultProps } from './properties';
 
 export class DateFieldInterface extends CollectionFieldInterface {
   name = 'date';
@@ -40,9 +40,15 @@ export class DateFieldInterface extends CollectionFieldInterface {
       'x-component': 'Checkbox',
       'x-visible': false,
     },
+    'uiSchema.x-component-props.timeFormat': {
+      type: 'string',
+      'x-decorator': 'FormItem',
+      'x-component': 'Radio.Group',
+      'x-visible': false,
+    },
   };
   filterable = {
-    operators: operators.datetime,
+    operators: 'datetime',
   };
   titleUsable = true;
 }

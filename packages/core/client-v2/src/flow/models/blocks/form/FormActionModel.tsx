@@ -7,15 +7,27 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { tExpr } from '@nocobase/flow-engine';
+import { DefaultStructure, FlowExitAllException, tExpr } from '@nocobase/flow-engine';
 import { ButtonProps } from 'antd';
 import { AxiosRequestConfig } from 'axios';
 import { ActionModel } from '../../base/ActionModelCore';
+import { AssignFormModel } from '../assign-form/AssignFormModel';
+import {
+  createAssignFieldValuesStep,
+  createAssignFormSubModelOptions,
+  getAssignFieldValuesDefaultParams,
+} from '../assign-form/assignFieldValuesFlow';
 import { shouldSkipSubmitValidation, validateSubmitForm } from './submitValues';
 
-export class FormActionModel extends ActionModel {}
+export class FormActionModel<T extends DefaultStructure = DefaultStructure> extends ActionModel<T> {}
 
-export class FormSubmitActionModel extends FormActionModel {
+export class FormSubmitActionModel extends FormActionModel<{
+  subModels: {
+    assignForm: AssignFormModel;
+  };
+}> {
+  assignFormUid?: string;
+
   defaultProps: ButtonProps = {
     title: tExpr('Submit'),
     type: 'primary',
@@ -35,6 +47,11 @@ export class FormSubmitActionModel extends FormActionModel {
 
 FormSubmitActionModel.define({
   label: tExpr('Submit'),
+  createModelOptions: (ctx) => ({
+    subModels: {
+      assignForm: createAssignFormSubModelOptions(ctx),
+    },
+  }),
 });
 
 FormSubmitActionModel.registerFlow({
@@ -82,7 +99,14 @@ FormSubmitActionModel.registerFlow({
       },
       handler() {},
     },
+    assignFieldValues: createAssignFieldValuesStep({
+      settingsFlowKey: 'submitSettings',
+      title: tExpr('Assign field values'),
+    }),
     saveResource: {
+      async defaultParams(ctx) {
+        return getAssignFieldValuesDefaultParams(ctx, 'submitSettings');
+      },
       async handler(ctx, params) {
         if (!ctx?.resource) {
           throw new Error('Resource is not initialized');
@@ -96,6 +120,9 @@ FormSubmitActionModel.registerFlow({
           await submitHandler(ctx, params);
         } catch (error) {
           ctx.model.setProps('loading', false);
+          if (error instanceof FlowExitAllException) {
+            throw error;
+          }
           // 显示保存失败提示
           ctx.message.error(ctx.t('Save failed'));
           console.error('Form submission error:', error);

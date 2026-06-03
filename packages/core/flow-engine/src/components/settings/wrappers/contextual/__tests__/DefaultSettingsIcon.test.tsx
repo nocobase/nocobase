@@ -800,14 +800,16 @@ describe('DefaultSettingsIcon - extra menu items', () => {
       await waitFor(() => {
         const menu = (globalThis as any).__lastDropdownMenu;
         const items = (menu?.items || []) as any[];
-        expect(items.some((it) => String(it.key || '') === 'extra-action')).toBe(true);
+        const extraActionItem = items.find((it) => String(it.key || '') === 'extra-action');
+        expect(extraActionItem).toBeTruthy();
+        expect(extraActionItem.onClick).toBeUndefined();
       });
 
       const menu = (globalThis as any).__lastDropdownMenu;
       await act(async () => {
         menu.onClick?.({ key: 'extra-action' });
       });
-      expect(onClick).toHaveBeenCalled();
+      expect(onClick).toHaveBeenCalledTimes(1);
       expect((globalThis as any).__lastDropdownOpen).toBe(false);
     } finally {
       dispose?.();
@@ -880,6 +882,7 @@ describe('DefaultSettingsIcon - extra menu items', () => {
           'insert-after',
           'insert-inner',
         ]);
+        expect((nested.children || []).find((it) => String(it.key || '') === 'insert-before')?.onClick).toBeUndefined();
         expect((nested.children || []).find((it) => String(it.key || '') === 'insert-inner')?.disabled).toBe(true);
       });
 

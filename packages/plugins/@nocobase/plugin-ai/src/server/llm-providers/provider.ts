@@ -105,7 +105,13 @@ export abstract class LLMProvider {
     const builder = this.getModelRequestBuilder(this.modelOptions?.model);
     const request = builder?.({ context, options }) || { context, options };
     const chain = this.prepareChain(request.context);
-    const { modelKwargs, modelRequestParams, options: requestOptions, ...restOptions } = request.options || {};
+    const requestInvokeOptions = options?.signal
+      ? {
+          ...(request.options || {}),
+          signal: request.options?.signal ?? options.signal,
+        }
+      : request.options;
+    const { modelKwargs, modelRequestParams, options: requestOptions, ...restOptions } = requestInvokeOptions || {};
     const invokeOptions = modelKwargs
       ? {
           ...restOptions,
@@ -230,17 +236,21 @@ export abstract class LLMProvider {
   }
 
   protected async loadDocument(ctx: Context, attachment: any): Promise<any> {
-    const referer = ctx.get('referer') || '';
-    const ua = ctx.get('user-agent') || '';
     const safeFilename = attachment.filename ? path.basename(attachment.filename) : 'document';
-    const parsed = await this.documentLoader.load(attachment, {
-      requestOptions: {
-        headers: {
-          Referer: referer,
-          'User-Agent': ua,
-        },
-      },
-    });
+
+    const loaderOptions =
+      typeof ctx.get === 'function'
+        ? {
+            requestOptions: {
+              headers: {
+                Referer: ctx.get('referer') || '',
+                'User-Agent': ctx.get('user-agent') || '',
+              },
+            },
+          }
+        : undefined;
+
+    const parsed = await this.documentLoader.load(attachment, loaderOptions);
     if (!parsed.supported) {
       return {
         placement: 'system',

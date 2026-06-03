@@ -18,9 +18,13 @@ export const DEFAULT_DOCKER_CONTAINER_PREFIX = 'nb';
 export const DEFAULT_DOCKER_BIN = 'docker';
 export const DEFAULT_GIT_BIN = 'git';
 export const DEFAULT_YARN_BIN = 'yarn';
+export const CLI_UPDATE_POLICY_OPTIONS = ['prompt', 'auto', 'off'] as const;
+export type CliUpdatePolicy = (typeof CLI_UPDATE_POLICY_OPTIONS)[number];
+export const DEFAULT_UPDATE_POLICY: CliUpdatePolicy = 'prompt';
 
 export const SUPPORTED_CLI_CONFIG_KEYS = [
   'locale',
+  'update.policy',
   'license.pkg-url',
   'docker.network',
   'docker.container-prefix',
@@ -55,9 +59,19 @@ export function assertSupportedCliConfigKey(value: string): SupportedCliConfigKe
   return value;
 }
 
+export function normalizeCliUpdatePolicy(value: unknown): CliUpdatePolicy | undefined {
+  const normalized = trimValue(value);
+  if (!normalized) {
+    return undefined;
+  }
+
+  return (CLI_UPDATE_POLICY_OPTIONS as readonly string[]).includes(normalized) ? (normalized as CliUpdatePolicy) : undefined;
+}
+
 function cloneSettings(config: AuthConfig): NonNullable<AuthConfig['settings']> {
   return {
     ...(config.settings?.locale ? { locale: trimValue(config.settings.locale) } : {}),
+    update: config.settings?.update ? { ...config.settings.update } : undefined,
     license: config.settings?.license ? { ...config.settings.license } : undefined,
     docker: config.settings?.docker ? { ...config.settings.docker } : undefined,
     bin: config.settings?.bin ? { ...config.settings.bin } : undefined,
@@ -67,6 +81,11 @@ function cloneSettings(config: AuthConfig): NonNullable<AuthConfig['settings']> 
 function pruneSettings(config: AuthConfig): void {
   if (config.settings && !trimValue(config.settings.locale)) {
     delete config.settings.locale;
+  }
+
+  const update = config.settings?.update;
+  if (update && !normalizeCliUpdatePolicy(update.policy)) {
+    delete config.settings?.update;
   }
 
   const license = config.settings?.license;
@@ -87,6 +106,7 @@ function pruneSettings(config: AuthConfig): void {
   if (
     config.settings &&
     !config.settings.locale &&
+    !config.settings.update &&
     !config.settings.license &&
     !config.settings.docker &&
     !config.settings.bin
@@ -99,6 +119,8 @@ export function getExplicitCliConfigValue(config: AuthConfig, key: SupportedCliC
   switch (key) {
     case 'locale':
       return trimValue(config.settings?.locale);
+    case 'update.policy':
+      return normalizeCliUpdatePolicy(config.settings?.update?.policy);
     case 'license.pkg-url':
       return trimValue(config.settings?.license?.pkgUrl);
     case 'docker.network':
@@ -123,6 +145,8 @@ export function getEffectiveCliConfigValue(config: AuthConfig, key: SupportedCli
   switch (key) {
     case 'locale':
       return resolveCliLocale(undefined, { configuredLocale: trimValue(config.settings?.locale) });
+    case 'update.policy':
+      return explicit ?? DEFAULT_UPDATE_POLICY;
     case 'license.pkg-url':
       return DEFAULT_LICENSE_PKG_URL;
     case 'docker.network':
@@ -155,6 +179,15 @@ export function normalizeCliConfigValue(key: SupportedCliConfigKey, value: strin
     }
 
     return locale;
+  }
+
+  if (key === 'update.policy') {
+    const policy = normalizeCliUpdatePolicy(normalized);
+    if (!policy) {
+      throw new Error(`Config key "${key}" must be one of: ${CLI_UPDATE_POLICY_OPTIONS.join(', ')}`);
+    }
+
+    return policy;
   }
 
   return normalized;
@@ -198,6 +231,12 @@ export async function setCliConfigValue(
   switch (key) {
     case 'locale':
       config.settings.locale = normalized;
+      break;
+    case 'update.policy':
+      config.settings.update = {
+        ...(config.settings.update ?? {}),
+        policy: normalized as CliUpdatePolicy,
+      };
       break;
     case 'license.pkg-url':
       config.settings.license = {
@@ -258,6 +297,11 @@ export async function deleteCliConfigValue(
   switch (key) {
     case 'locale':
       delete config.settings.locale;
+      break;
+    case 'update.policy':
+      if (config.settings.update) {
+        delete config.settings.update.policy;
+      }
       break;
     case 'license.pkg-url':
       if (config.settings.license) {

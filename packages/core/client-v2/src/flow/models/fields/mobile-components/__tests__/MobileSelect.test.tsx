@@ -10,11 +10,17 @@
 import React from 'react';
 import { beforeEach, describe, it, expect, vi } from 'vitest';
 import { act, fireEvent, render, screen } from '@nocobase/test/client';
+import { MobileLazySelect } from '../MobileLazySelect';
 import { MobileSelect } from '../MobileSelect';
 
 const DEFAULT_OPTIONS = [
   { label: 'Option A', value: 'a' },
   { label: 'Option B', value: 'b' },
+];
+
+const RELATION_OPTIONS = [
+  { uuid: '05f6a3b4-bfb7-7943-578a-3819e2687a7e' },
+  { uuid: 'c7d99828-a1de-9e70-4c2d-b0139abdf02e' },
 ];
 
 const mockState = vi.hoisted(() => ({
@@ -41,6 +47,13 @@ function clickTrigger() {
 
 function openPopup() {
   clickTrigger();
+  expect(screen.getByTestId('popup')).toBeInTheDocument();
+}
+
+function openLazyPopup() {
+  act(() => {
+    mockState.selectProps?.onClick?.();
+  });
   expect(screen.getByTestId('popup')).toBeInTheDocument();
 }
 
@@ -73,12 +86,42 @@ function renderMobileSelect(props: Record<string, any> = {}) {
   return { onChange, onChangeComplete };
 }
 
+function renderMobileLazySelect(props: Record<string, any> = {}) {
+  const onChange = props.onChange ?? vi.fn();
+  const renderComponent = (nextProps: Record<string, any> = {}) => (
+    <MobileLazySelect
+      fieldNames={{ label: 'uuid', value: 'uuid' }}
+      value={[]}
+      multiple
+      allowMultiple
+      options={RELATION_OPTIONS}
+      {...props}
+      {...nextProps}
+      onChange={onChange}
+    />
+  );
+
+  const result = render(renderComponent());
+
+  return {
+    ...result,
+    onChange,
+    rerender: (nextProps: Record<string, any> = {}) => result.rerender(renderComponent(nextProps)),
+  };
+}
+
 vi.mock('@nocobase/flow-engine', async () => {
   const actual = await vi.importActual<any>('@nocobase/flow-engine');
   return {
     ...actual,
     useFlowModelContext: () => ({
       t: (value: string) => value,
+    }),
+    useFlowModel: () => ({
+      context: {
+        collectionField: {},
+      },
+      subModels: {},
     }),
   };
 });
@@ -238,5 +281,32 @@ describe('MobileSelect in SubForm/SubTable containers', () => {
     expect(onCommit).toHaveBeenCalledTimes(2);
     expect(onCommit).toHaveBeenNthCalledWith(1, ['a', 'b']);
     expect(onCommit).toHaveBeenNthCalledWith(2, ['a', 'b']);
+  });
+});
+
+describe('MobileLazySelect', () => {
+  beforeEach(() => {
+    resetMockState();
+  });
+
+  it('keeps pending relation records selected until confirm', () => {
+    const { onChange, rerender } = renderMobileLazySelect();
+
+    openLazyPopup();
+    expect(mockState.checklistProps?.value).toEqual([]);
+
+    selectValues(['c7d99828-a1de-9e70-4c2d-b0139abdf02e']);
+    expect(mockState.checklistProps?.value).toEqual(['c7d99828-a1de-9e70-4c2d-b0139abdf02e']);
+
+    rerender({
+      options: RELATION_OPTIONS.map((item) => ({ ...item })),
+    });
+
+    expect(mockState.checklistProps?.value).toEqual(['c7d99828-a1de-9e70-4c2d-b0139abdf02e']);
+
+    confirmSelection();
+
+    expect(onChange).toHaveBeenCalledTimes(1);
+    expect(onChange).toHaveBeenCalledWith([RELATION_OPTIONS[1]]);
   });
 });

@@ -6,7 +6,7 @@ keywords: "nb app,NocoBase CLI,起動,停止,再起動,ログ,アップグレー
 
 # nb app
 
-NocoBase アプリケーションのランタイムを管理します。npm/Git env ではローカルソースディレクトリでアプリケーションコマンドを実行し、Docker env では保存済みのアプリケーションコンテナを管理します。
+NocoBase アプリケーションのランタイムを管理します。npm/Git env ではローカルソースディレクトリでアプリケーションコマンドを実行し、Docker env では保存済みの env 設定に基づいてアプリケーションコンテナを管理します。
 
 ## 使い方
 
@@ -18,12 +18,12 @@ nb app <command>
 
 | コマンド | 説明 |
 | --- | --- |
-| [`nb app start`](./start.md) | アプリケーションまたは Docker コンテナを起動します |
-| [`nb app stop`](./stop.md) | アプリケーションまたは Docker コンテナを停止します |
+| [`nb app start`](./start.md) | アプリケーションを起動するか、Docker コンテナを再作成します |
+| [`nb app stop`](./stop.md) | アプリケーションを停止するか、Docker コンテナを削除します |
 | [`nb app restart`](./restart.md) | アプリケーションを停止してから再起動します |
 | [`nb app logs`](./logs.md) | アプリケーションのログを表示します |
 | [`nb app down`](./down.md) | ローカル実行リソースを停止してクリーンアップします |
-| [`nb app upgrade`](./upgrade.md) | ソースコードまたはイメージを更新し、アプリケーションを再起動します |
+| [`nb app upgrade`](./upgrade.md) | アプリケーションを停止し、ソースコードまたはイメージを置き換えて再起動します |
 
 ## 使用例
 
@@ -31,7 +31,7 @@ nb app <command>
 nb app start --env app1
 nb app restart --env app1
 nb app logs --env app1
-nb app upgrade --env app1 -s
+nb app upgrade --env app1 --skip-download
 nb app down --env app1 --all --force
 ```
 

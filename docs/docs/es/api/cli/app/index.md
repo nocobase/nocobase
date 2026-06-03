@@ -6,7 +6,7 @@ keywords: "nb app,NocoBase CLI,iniciar,detener,reiniciar,registros,actualizar"
 
 # nb app
 
-Gestiona el estado de ejecución de la aplicación NocoBase. Los env de npm/Git ejecutan los comandos de la aplicación en el directorio de código fuente local; los env de Docker gestionan el contenedor de aplicación guardado.
+Gestiona el estado de ejecución de la aplicación NocoBase. Los env de npm/Git ejecutan los comandos de la aplicación en el directorio de código fuente local; los env de Docker gestionan los contenedores de la aplicación a partir de la configuración guardada del env.
 
 ## Uso
 
@@ -18,12 +18,12 @@ nb app <command>
 
 | Comando | Descripción |
 | --- | --- |
-| [`nb app start`](./start.md) | Inicia la aplicación o el contenedor de Docker |
-| [`nb app stop`](./stop.md) | Detiene la aplicación o el contenedor de Docker |
+| [`nb app start`](./start.md) | Inicia la aplicación o vuelve a crear el contenedor de Docker |
+| [`nb app stop`](./stop.md) | Detiene la aplicación o elimina el contenedor de Docker |
 | [`nb app restart`](./restart.md) | Detiene la aplicación y, a continuación, la inicia |
 | [`nb app logs`](./logs.md) | Consulta los registros de la aplicación |
 | [`nb app down`](./down.md) | Detiene y limpia los recursos de ejecución locales |
-| [`nb app upgrade`](./upgrade.md) | Actualiza el código fuente o la imagen y reinicia la aplicación |
+| [`nb app upgrade`](./upgrade.md) | Detiene la aplicación, reemplaza el código fuente o la imagen y vuelve a iniciarla |
 
 ## Ejemplos
 
@@ -31,7 +31,7 @@ nb app <command>
 nb app start --env app1
 nb app restart --env app1
 nb app logs --env app1
-nb app upgrade --env app1 -s
+nb app upgrade --env app1 --skip-download
 nb app down --env app1 --all --force
 ```
 

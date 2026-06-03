@@ -158,6 +158,10 @@ export const aclCheckRefresh = defineAction({
     // 先清理旧状态，避免翻页/fork 复用造成污染
     resetAclDerivedState(ctx);
 
+    if (ctx.skipAclCheck) {
+      return;
+    }
+
     if (strategy === 'formItem') {
       await runFormItemAclCheck(ctx);
       return;

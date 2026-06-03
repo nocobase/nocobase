@@ -15,7 +15,7 @@ import type { Application } from '../Application';
 import { getCurrentV2RedirectPath, getDefaultV2AdminRedirectPath } from '../authRedirect';
 import { AppNotFound } from '../components';
 import { PluginFlowEngine } from '../flow';
-import { AdminLayoutMenuItemModel, AdminLayoutModel } from '../flow/admin-shell/admin-layout';
+import { ADMIN_LAYOUT_MODEL_UID, AdminLayoutMenuItemModel, AdminLayoutModel } from '../flow/admin-shell/admin-layout';
 import { useApp } from '../hooks/useApp';
 import { Plugin } from '../Plugin';
 import { AdminSettingsLayoutModel } from '../settings-center';
@@ -56,6 +56,30 @@ function isAdminRuntimeRoute(pathname: string, basename?: string) {
   return normalizedPathname === '/admin' || normalizedPathname.startsWith('/admin/');
 }
 
+function hasAuthCheckRoute(app: Application, pathname: string) {
+  const matchedRoutes = app.router.matchRoutes(pathname) || [];
+  return matchedRoutes.some((match) => match?.route?.authCheck === true);
+}
+
+function shouldCheckRuntimeRoute(app: Application, pathname: string) {
+  return isAdminRuntimeRoute(pathname, app.router.getBasename()) || hasAuthCheckRoute(app, pathname);
+}
+
+type CurrentUserAuthCheckRouteState = 'skipped' | 'unchecked' | 'required';
+
+function getCurrentUserAuthCheckRouteState(app: Application, pathname: string): CurrentUserAuthCheckRouteState {
+  const basename = app.router.getBasename();
+  if (isBuiltinAuthRoute(pathname, basename) || app.router.isSkippedAuthCheckRoute(pathname)) {
+    return 'skipped';
+  }
+
+  if (!shouldCheckRuntimeRoute(app, pathname)) {
+    return 'unchecked';
+  }
+
+  return 'required';
+}
+
 export const CurrentUserContext = createContext<CurrentUserState | null>(null);
 CurrentUserContext.displayName = 'CurrentUserContext';
 
@@ -87,7 +111,7 @@ export function useCurrentRoles(): CurrentRoleOption[] {
 }
 
 const DataSourceBootstrapProvider: FC = ({ children }) => {
-  const app = useApp();
+  const app = useApp<Application>();
   const location = useLocation();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
@@ -98,7 +122,7 @@ const DataSourceBootstrapProvider: FC = ({ children }) => {
     const basename = app.router.getBasename();
     const isSkippedAuthCheckRoute =
       isBuiltinAuthRoute(location.pathname, basename) || app.router.isSkippedAuthCheckRoute(location.pathname);
-    const shouldBootstrap = isAdminRuntimeRoute(location.pathname, basename);
+    const shouldBootstrap = shouldCheckRuntimeRoute(app, location.pathname);
 
     if (isSkippedAuthCheckRoute || !shouldBootstrap) {
       setLoading(false);
@@ -146,27 +170,24 @@ const DataSourceBootstrapProvider: FC = ({ children }) => {
 };
 
 const CurrentUserProvider: FC = ({ children }) => {
-  const app = useApp();
+  const app = useApp<Application>();
   const location = useLocation();
   const navigate = useNavigate();
   const [state, setState] = useState<CurrentUserState>({ loading: true });
-  const pathnameRef = useRef(location.pathname);
-  pathnameRef.current = location.pathname;
   const locationRef = useRef(location);
   locationRef.current = location;
+  const authCheckRouteState = getCurrentUserAuthCheckRouteState(app, location.pathname);
 
   useEffect(() => {
     let mounted = true;
-    const isSkippedAuthCheckRoute =
-      isBuiltinAuthRoute(pathnameRef.current, app.router.getBasename()) ||
-      app.router.isSkippedAuthCheckRoute(pathnameRef.current);
-    const shouldCheckCurrentUser = isAdminRuntimeRoute(pathnameRef.current, app.router.getBasename());
 
-    if (isSkippedAuthCheckRoute || !shouldCheckCurrentUser) {
+    if (authCheckRouteState !== 'required') {
       // 认证页等免鉴权路由不应再执行 `/auth:check`，否则未登录时会重复鉴权并触发重定向抖动。
       setState({ loading: false });
       return;
     }
+
+    setState((previous) => (previous.loading ? previous : { ...previous, loading: true }));
 
     const run = async () => {
       try {
@@ -176,12 +197,14 @@ const CurrentUserProvider: FC = ({ children }) => {
           skipAuth: true,
         });
 
+        if (!mounted) {
+          return;
+        }
+
         const user = res?.data?.data;
         // 服务端通过 `{ code: 302, redirect }` 通知客户端先去某个中间页(例如 2FA 验证页)。这类响应没有 user.id,但也不能视为未登录——否则会和处理 302 的全局响应拦截器 (例如 plugin-two-factor-authentication 注册的那一个)竞态,而 `window.location.replace` 会覆盖更早发出的 `window.location.href`,把用户错误地弹回登录页。让响应拦截器接管跳转。
         if (user?.code === 302) {
-          if (mounted) {
-            setState({ loading: false });
-          }
+          setState({ loading: false });
           return;
         }
         if (user?.id == null) {
@@ -204,13 +227,15 @@ const CurrentUserProvider: FC = ({ children }) => {
           meta: userMeta,
         });
 
-        if (mounted) {
-          setState({
-            data: res?.data,
-            loading: false,
-          });
-        }
+        setState({
+          data: res?.data,
+          loading: false,
+        });
       } catch (error: any) {
+        if (!mounted) {
+          return;
+        }
+
         const isAuthError = error?.response?.status === 401 || error?.status === 401;
         if (isAuthError) {
           navigate(`/signin?redirect=${encodeURIComponent(getCurrentV2RedirectPath(app, locationRef.current))}`, {
@@ -218,19 +243,17 @@ const CurrentUserProvider: FC = ({ children }) => {
           });
           return;
         }
-        if (mounted) {
-          setState({ loading: false });
-        }
+        setState({ loading: false });
         throw error;
       }
     };
 
-    void run();
+    run();
 
     return () => {
       mounted = false;
     };
-  }, [app, navigate]);
+  }, [app, authCheckRouteState, navigate]);
 
   if (state.loading) {
     return app.renderComponent('AppSpin');
@@ -240,7 +263,7 @@ const CurrentUserProvider: FC = ({ children }) => {
 };
 
 const RootRedirect: FC = () => {
-  const app = useApp();
+  const app = useApp<Application>();
   const hasToken = !!app?.apiClient?.auth?.token;
   const targetPath = getDefaultV2AdminRedirectPath(app);
 
@@ -272,6 +295,12 @@ export class NocoBaseBuildInPlugin extends Plugin<any, Application> {
       AdminLayoutModel,
       AdminLayoutMenuItemModel,
       AdminSettingsLayoutModel,
+    });
+    this.app.layoutManager.registerLayout({
+      routeName: 'admin',
+      routePath: '/admin',
+      uid: ADMIN_LAYOUT_MODEL_UID,
+      layoutModelClass: 'AdminLayoutModel',
     });
 
     this.app.pluginSettingsManager.addMenuItem({
@@ -324,10 +353,6 @@ export class NocoBaseBuildInPlugin extends Plugin<any, Application> {
       Component: AppNotFound,
     });
 
-    this.router.add('admin', {
-      path: '/admin',
-      componentLoader: () => import('../flow/components/AdminLayout'),
-    });
     this.router.add('admin.settings', {
       path: '/admin/settings',
       componentLoader: () => import('../settings-center/AdminSettingsLayout'),
@@ -335,23 +360,6 @@ export class NocoBaseBuildInPlugin extends Plugin<any, Application> {
     this.router.add('admin.settings.route-empty', {
       path: '*',
       Component: Outlet,
-    });
-    this.router.add('admin.page', {
-      path: '/admin/:name',
-      componentLoader: () => import('../flow/components/FlowRoute'),
-    });
-
-    this.router.add('admin.page.tab', {
-      path: '/admin/:name/tab/:tabUid',
-      componentLoader: () => import('../flow/components/FlowRoute'),
-    });
-    this.router.add('admin.page.view', {
-      path: '/admin/:name/view/*',
-      componentLoader: () => import('../flow/components/FlowRoute'),
-    });
-    this.router.add('admin.page.tab.view', {
-      path: '/admin/:name/tab/:tabUid/view/*',
-      componentLoader: () => import('../flow/components/FlowRoute'),
     });
   }
 

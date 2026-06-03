@@ -338,7 +338,7 @@
           "placeholder": "https://demo.example.com/api or https://demo.example.com/api/__app/<subapp>"
         },
         "skipDownload": {
-          "message": "Skip downloading NocoBase and reuse existing local app files or Docker images?"
+          "message": "Skip downloading NocoBase and reuse existing local app files or Docker images"
         }
       },
       "webUi": {
@@ -370,6 +370,62 @@
           "description": "Set up the first admin."
         }
       }
+    },
+    "env": {
+      "messages": {
+        "noEnvsConfigured": "No envs configured.",
+        "noEnvsConfiguredHelp": "Run `nb init --ui` to create one first."
+      }
     }
+  },
+  "apiCommandCompat": {
+    "refusalTitle": "Refusing to run `nb api {{commandId}}` because the current CLI version is {{cliVersion}} while the target app version is {{appVersion}}.",
+    "refusalTitleMissingVersion": "Refusing to run `nb api {{commandId}}` because the {{versionLabel}} is unavailable.",
+    "refusalTitleGeneric": "Refusing to run `nb api {{commandId}}` because the current version combination is not compatible.",
+    "currentVersionsLine": "Current versions: {{versions}}.",
+    "refusalBodyWithRequirements": "This API command is blocked when used with {{requirements}}.",
+    "refusalBody": "This API command may not be compatible with the current CLI and app version combination.",
+    "channel": {
+      "stable": "stable",
+      "beta": "beta",
+      "alpha": "alpha",
+      "rc": "rc",
+      "unknownPrerelease": "unsupported prerelease"
+    },
+    "requirement": {
+      "cli": "CLI version {{condition}}",
+      "app": "app version {{condition}}",
+      "skills": "NocoBase AI skills version {{condition}}",
+      "appChannel": "{{channelLabel}} app version {{condition}}",
+      "appUnknownPrereleaseBlocked": "{{channelLabel}} app versions are blocked"
+    },
+    "currentVersion": {
+      "cli": "CLI {{version}}",
+      "app": "app {{version}}",
+      "appUnavailable": "app unavailable",
+      "skills": "NocoBase AI skills {{version}}",
+      "skillsUnavailable": "NocoBase AI skills unavailable"
+    },
+    "versionLabel": {
+      "cli": "CLI version",
+      "app": "target app version",
+      "skills": "installed NocoBase AI skills version"
+    },
+    "join": {
+      "two": "{{left}} and {{right}}",
+      "many": "{{head}}, and {{tail}}"
+    },
+    "continueTitle": "To continue:",
+    "continueUpgradeApp": "- upgrade the app to a compatible version",
+    "continueUpgradeAppToVersion": "- upgrade the app to {{suggestedUpgradeTarget}}",
+    "continueUseSupportedAppVersion": "- use a supported app version: {{supportedTargets}}",
+    "continueRefreshAppVersion": "- refresh the target env runtime so the current app version can be detected, then retry",
+    "continueUseCompatibleCli": "- or use a compatible CLI version",
+    "continueUseCompatibleCliVersion": "- or use a CLI version {{suggestedCliTarget}}",
+    "continueUpdateSkillsToVersion": "- install or update the NocoBase AI coding skills to {{suggestedSkillsUpgradeTarget}}. Run `nb skills update --yes` to refresh the managed skills.",
+    "continueUseCompatibleSkillsVersion": "- or use a NocoBase AI skills version {{suggestedSkillsTarget}}",
+    "continueInstallOrUpdateSkillsToVersion": "- run `nb skills install --yes` or `nb skills update --yes`, and make sure the managed skills version is {{suggestedSkillsUpgradeTarget}} before retrying",
+    "continueInstallOrUpdateSkills": "- run `nb skills install --yes` or `nb skills update --yes`, then retry once the managed skills version is available",
+    "supportedAppTarget": "{{channelLabel}} {{target}}"
   }
 }
