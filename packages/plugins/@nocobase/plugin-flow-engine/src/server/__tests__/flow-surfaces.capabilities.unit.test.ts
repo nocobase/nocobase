@@ -7,7 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { buildFlowSurfaceCapabilitiesResponse } from '../flow-surfaces/capabilities';
+import {
+  buildFlowSurfaceCapabilitiesResponse,
+  buildFlowSurfaceDescribeCapabilityResponse,
+} from '../flow-surfaces/capabilities';
 import {
   collectProviderCatalogItems,
   filterProviderCatalogItemsForCatalog,
@@ -153,6 +156,36 @@ describe('flowSurfaces capabilities projection', () => {
     };
   }
 
+  function createRenderUnsupportedProvider(): FlowSurfaceCapabilitiesProvider {
+    return {
+      ownerPlugin: '@nocobase/plugin-hidden',
+      getCapabilities: () => [
+        {
+          id: 'blocks.hiddenRender',
+          kind: 'block',
+          publicType: 'hiddenRender',
+          label: 'Hidden render',
+          semantic: {
+            title: 'Hidden render',
+          },
+          implementation: {
+            modelUse: 'HiddenRenderBlockModel',
+          },
+          availability: {
+            render: {
+              supported: false,
+              reasonCode: 'unsupported',
+              reasonSource: 'provider',
+            },
+            readback: {
+              supported: true,
+            },
+          },
+        },
+      ],
+    };
+  }
+
   function createCatalogRecorder() {
     const calls: FlowSurfaceCatalogValues[] = [];
     return {
@@ -191,27 +224,21 @@ describe('flowSurfaces capabilities projection', () => {
                     aliases: ['table', 'TableBlockModel'],
                   },
                   requiredInitParams: ['dataSourceKey', 'collectionName'],
-                  settingsSchema: {
-                    type: 'object',
-                    properties: {
-                      props: {
-                        type: 'object',
-                      },
-                      stepParams: {
-                        type: 'object',
-                        properties: {
-                          openView: {
-                            type: 'object',
-                            properties: {
-                              pageModelClass: {
-                                type: 'string',
-                              },
+                  ...(expand.has('item.contracts')
+                    ? {
+                        settingsSchema: {
+                          type: 'object',
+                          properties: {
+                            pageSize: {
+                              type: 'number',
+                            },
+                            title: {
+                              type: 'string',
                             },
                           },
                         },
-                      },
-                    },
-                  },
+                      }
+                    : {}),
                   configureOptions: {
                     pageSize: {
                       type: 'number' as const,
@@ -1176,5 +1203,381 @@ describe('flowSurfaces capabilities projection', () => {
     );
 
     expect(response.data.map((item) => item.publicType)).toEqual(['gantt']);
+  });
+
+  it('should describe one provider capability with public schemas when settings are expanded', async () => {
+    const recorder = createCatalogRecorder();
+    const response = await buildFlowSurfaceDescribeCapabilityResponse(
+      {
+        publicType: 'gantt',
+        target: {
+          uid: 'target-1',
+        },
+        expand: ['item.settings'],
+      },
+      {
+        enabledPackages: new Set(['@nocobase/plugin-gantt']),
+        providerRegistry: createProviderRegistry([createGanttProvider()]),
+        catalog: recorder.catalog,
+        generatedAt: '2026-06-03T00:00:00.000Z',
+      },
+    );
+
+    expect(response.meta).toEqual({
+      version: 1,
+      generatedAt: '2026-06-03T00:00:00.000Z',
+      targetHintUsed: true,
+    });
+    expect(recorder.calls.map((call) => call.target || null)).toEqual([{ uid: 'target-1' }, null]);
+    expect(response.data).toMatchObject({
+      kind: 'block',
+      publicType: 'gantt',
+      ownerPlugin: '@nocobase/plugin-gantt',
+      identity: {
+        capabilityId: expect.any(String),
+      },
+      semantic: {
+        description: 'Visualizes collection records on a time scale.',
+      },
+      initParamsSchema: {
+        required: ['collectionName'],
+      },
+      settingsSchema: {
+        properties: {
+          startField: {
+            type: 'string',
+          },
+        },
+      },
+      configureOptions: {
+        titleField: {
+          type: 'string',
+        },
+      },
+      availability: {
+        create: {
+          supported: false,
+          reasonCode: 'missing-create-contract',
+        },
+      },
+    });
+    expect(JSON.stringify(response.data)).not.toContain('GanttBlockModel');
+    expect(JSON.stringify(response.data)).not.toContain('stepParams');
+    expect(JSON.stringify(response.data)).not.toContain('createRecipe');
+  });
+
+  it('should describe catalog-backed settings schema only when settings are expanded', async () => {
+    const withoutSettings = await buildFlowSurfaceDescribeCapabilityResponse(
+      {
+        kind: 'block',
+        publicType: 'table',
+      },
+      {
+        enabledPackages: new Set(),
+        catalog: createCatalogRecorder().catalog,
+        generatedAt: '2026-06-03T00:00:00.000Z',
+      },
+    );
+    expect(withoutSettings.data).not.toHaveProperty('settingsSchema');
+    expect(withoutSettings.data).not.toHaveProperty('configureOptions');
+
+    const settingsRecorder = createCatalogRecorder();
+    const withSettings = await buildFlowSurfaceDescribeCapabilityResponse(
+      {
+        kind: 'block',
+        publicType: 'table',
+        expand: ['item.settings'],
+      },
+      {
+        enabledPackages: new Set(),
+        catalog: settingsRecorder.catalog,
+        generatedAt: '2026-06-03T00:00:00.000Z',
+      },
+    );
+    expect(settingsRecorder.calls[0]).toEqual({
+      sections: ['blocks'],
+      expand: ['item.configureOptions', 'item.contracts', 'item.identity'],
+    });
+    expect(withSettings.data.settingsSchema).toMatchObject({
+      type: 'object',
+      properties: {
+        pageSize: {
+          type: 'number',
+        },
+      },
+    });
+    expect(withSettings.data.configureOptions).toMatchObject({
+      pageSize: {
+        type: 'number',
+      },
+    });
+
+    const unsafeRecorder = createCatalogRecorder();
+    const unsafeCatalog = async (values: FlowSurfaceCatalogValues) => {
+      const response = await unsafeRecorder.catalog(values);
+      return {
+        ...response,
+        blocks: [
+          ...(response.blocks || []),
+          {
+            key: 'unsafeSchema',
+            label: 'Unsafe schema',
+            use: 'UnsafeSchemaBlockModel',
+            kind: 'block' as const,
+            publicType: 'unsafeSchema',
+            ownerPlugin: '@nocobase/core/client',
+            origin: 'builtInStatic' as const,
+            confidence: 'high' as const,
+            supportLevel: 'create-and-configure' as const,
+            availability: {
+              render: { supported: true },
+              readback: { supported: true },
+              create: { supported: true, acceptsInitParams: true, acceptsSettings: true },
+              configure: { supported: true },
+            },
+            semantic: {
+              title: 'Unsafe schema',
+            },
+            settingsSchema: {
+              type: 'object',
+              properties: {
+                stepParams: {
+                  type: 'object',
+                  properties: {
+                    openView: {
+                      type: 'object',
+                      properties: {
+                        pageModelClass: {
+                          type: 'string',
+                          enum: ['UnsafeSchemaBlockModel'],
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+            configureOptions: {
+              title: {
+                type: 'string' as const,
+              },
+            },
+          },
+        ],
+      };
+    };
+
+    const unsafe = await buildFlowSurfaceDescribeCapabilityResponse(
+      {
+        kind: 'block',
+        publicType: 'unsafeSchema',
+        expand: ['item.settings'],
+      },
+      {
+        enabledPackages: new Set(),
+        catalog: unsafeCatalog,
+        generatedAt: '2026-06-03T00:00:00.000Z',
+      },
+    );
+    expect(unsafe.data).not.toHaveProperty('settingsSchema');
+    expect(JSON.stringify(unsafe.data)).not.toContain('stepParams');
+    expect(JSON.stringify(unsafe.data)).not.toContain('UnsafeSchemaBlockModel');
+  });
+
+  it('should require includeUnavailable before describing a render-unsupported capability', async () => {
+    const providerRegistry = createProviderRegistry([createRenderUnsupportedProvider()]);
+
+    await expect(
+      buildFlowSurfaceDescribeCapabilityResponse(
+        {
+          publicType: 'hiddenRender',
+        },
+        {
+          enabledPackages: new Set(['@nocobase/plugin-hidden']),
+          providerRegistry,
+          catalog: createCatalogRecorder().catalog,
+          generatedAt: '2026-06-03T00:00:00.000Z',
+        },
+      ),
+    ).rejects.toBeInstanceOf(FlowSurfaceBadRequestError);
+
+    const response = await buildFlowSurfaceDescribeCapabilityResponse(
+      {
+        publicType: 'hiddenRender',
+        includeUnavailable: true,
+      },
+      {
+        enabledPackages: new Set(['@nocobase/plugin-hidden']),
+        providerRegistry,
+        catalog: createCatalogRecorder().catalog,
+        generatedAt: '2026-06-03T00:00:00.000Z',
+      },
+    );
+
+    expect(response.data).toMatchObject({
+      publicType: 'hiddenRender',
+      availability: {
+        render: {
+          supported: false,
+          reasonCode: 'unsupported',
+        },
+      },
+    });
+  });
+
+  it('should reject targetless fieldComponent describe lookups before catalog lookup', async () => {
+    const recorder = createCatalogRecorder();
+
+    for (const input of [
+      {
+        kind: 'fieldComponent',
+        publicType: 'code',
+      },
+      {
+        capabilityId: 'builtInStatic:fieldComponent:%40nocobase%2Fplugin-field-code:code',
+      },
+    ] as const) {
+      let caught: unknown;
+      try {
+        await buildFlowSurfaceDescribeCapabilityResponse(input, {
+          enabledPackages: new Set(['@nocobase/plugin-field-code']),
+          catalog: recorder.catalog,
+          generatedAt: '2026-06-03T00:00:00.000Z',
+        });
+      } catch (error) {
+        caught = error;
+      }
+      expect(caught).toBeInstanceOf(FlowSurfaceBadRequestError);
+      expect((caught as FlowSurfaceBadRequestError).options.details).toMatchObject({
+        reasonCode: 'target-required',
+        reasonSource: 'catalog',
+        path: 'target',
+      });
+    }
+    expect(recorder.calls).toHaveLength(0);
+  });
+
+  it('should describe one capability by read-only capabilityId', async () => {
+    const firstResponse = await buildFlowSurfaceDescribeCapabilityResponse(
+      {
+        publicType: 'gantt',
+      },
+      {
+        enabledPackages: new Set(['@nocobase/plugin-gantt']),
+        providerRegistry: createProviderRegistry([createGanttProvider()]),
+        catalog: createCatalogRecorder().catalog,
+        generatedAt: '2026-06-03T00:00:00.000Z',
+      },
+    );
+
+    const response = await buildFlowSurfaceDescribeCapabilityResponse(
+      {
+        capabilityId: firstResponse.data.identity?.capabilityId,
+      },
+      {
+        enabledPackages: new Set(['@nocobase/plugin-gantt']),
+        providerRegistry: createProviderRegistry([createGanttProvider()]),
+        catalog: createCatalogRecorder().catalog,
+        generatedAt: '2026-06-03T00:00:00.000Z',
+      },
+    );
+
+    expect(response.data.publicType).toBe('gantt');
+    expect(response.data.identity?.capabilityId).toBe(firstResponse.data.identity?.capabilityId);
+    expect(response.data).not.toHaveProperty('settingsSchema');
+    expect(response.data).not.toHaveProperty('configureOptions');
+  });
+
+  it('should require includeUnavailable before describing a lower-priority publicType conflict', async () => {
+    const providerRegistry = createProviderRegistry([createConflictingTableProvider()]);
+
+    await expect(
+      buildFlowSurfaceDescribeCapabilityResponse(
+        {
+          kind: 'block',
+          publicType: 'table',
+          ownerPlugin: '@nocobase/plugin-conflict',
+        },
+        {
+          enabledPackages: new Set(['@nocobase/plugin-conflict']),
+          providerRegistry,
+          catalog: createCatalogRecorder().catalog,
+          generatedAt: '2026-06-03T00:00:00.000Z',
+        },
+      ),
+    ).rejects.toBeInstanceOf(FlowSurfaceBadRequestError);
+
+    const response = await buildFlowSurfaceDescribeCapabilityResponse(
+      {
+        kind: 'block',
+        publicType: 'table',
+        ownerPlugin: '@nocobase/plugin-conflict',
+        includeUnavailable: true,
+      },
+      {
+        enabledPackages: new Set(['@nocobase/plugin-conflict']),
+        providerRegistry,
+        catalog: createCatalogRecorder().catalog,
+        generatedAt: '2026-06-03T00:00:00.000Z',
+      },
+    );
+
+    expect(response.data).toMatchObject({
+      ownerPlugin: '@nocobase/plugin-conflict',
+      availability: {
+        create: {
+          supported: false,
+          reasonCode: 'public-type-conflict',
+        },
+      },
+    });
+  });
+
+  it('should reject malformed describeCapability requests before catalog lookup', async () => {
+    const recorder = createCatalogRecorder();
+
+    for (const input of [
+      {},
+      {
+        publicType: 'gantt',
+        expand: ['debugImplementation'],
+      },
+      {
+        publicType: 'gantt',
+        target: {},
+      },
+      {
+        publicType: 'gantt',
+        foo: 'bar',
+      },
+      {
+        publicType: {},
+      },
+      {
+        capabilityId: ['x'],
+      },
+      {
+        publicType: 'gantt',
+        ownerPlugin: {},
+      },
+      {
+        publicType: 'gantt',
+        kind: 123,
+      },
+    ] as unknown[]) {
+      let caught: unknown;
+      try {
+        await buildFlowSurfaceDescribeCapabilityResponse(input, {
+          enabledPackages: new Set(['@nocobase/plugin-gantt']),
+          providerRegistry: createProviderRegistry([createGanttProvider()]),
+          catalog: recorder.catalog,
+          generatedAt: '2026-06-03T00:00:00.000Z',
+        });
+      } catch (error) {
+        caught = error;
+      }
+      expect(caught).toBeInstanceOf(FlowSurfaceBadRequestError);
+    }
+    expect(recorder.calls).toHaveLength(0);
   });
 });

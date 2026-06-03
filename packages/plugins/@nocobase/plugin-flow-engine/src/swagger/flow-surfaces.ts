@@ -522,7 +522,7 @@ function buildReactionCapabilitySchema(
 }
 
 const FLOW_SURFACES_READ_ACL_NOTE =
-  'Read actions (`get` / `describeSurface` / `capabilities` / `catalog` / `context` / `getReactionMeta` / `getEventFlowMeta` / `listTemplates` / `getTemplate`) are open to `loggedIn` by default. Write actions still require the `ui.flowSurfaces` snippet.';
+  'Read actions (`get` / `describeSurface` / `capabilities` / `describeCapability` / `catalog` / `context` / `getReactionMeta` / `getEventFlowMeta` / `listTemplates` / `getTemplate`) are open to `loggedIn` by default. Write actions still require the `ui.flowSurfaces` snippet.';
 
 const templateActionDocs = createFlowSurfaceTemplateActionDocs({
   tag: FLOW_SURFACES_TAG,
@@ -547,6 +547,15 @@ const actionDocs: Record<string, any> = {
     ),
     requestBody: requestBody('FlowSurfaceCapabilitiesRequest'),
     responses: responses('FlowSurfaceCapabilitiesResponse'),
+  },
+  describeCapability: {
+    tags: [FLOW_SURFACES_TAG],
+    summary: 'Describe one public Flow Surface capability',
+    description: valuesCompatibilityNote(
+      `Returns public-safe detail for one capability selected by \`publicType\` or read-only \`capabilityId\`. Use \`expand:["item.settings"]\` to include public \`initParamsSchema\`, \`settingsSchema\`, and \`configureOptions\`; the response still does not expose \`implementation.modelUse\`, \`createRecipe\`, \`defaultNode\`, \`lens\`, \`createModelOptions\`, \`props\`, \`decoratorProps\`, \`stepParams\`, or \`flowRegistry\`. This is discovery/detail metadata only, not write authorization. Localized writes must still check target-scoped \`catalog\`. ${FLOW_SURFACES_READ_ACL_NOTE}`,
+    ),
+    requestBody: requestBody('FlowSurfaceDescribeCapabilityRequest'),
+    responses: responses('FlowSurfaceDescribeCapabilityResponse'),
   },
   catalog: {
     tags: [FLOW_SURFACES_TAG],
@@ -2543,6 +2552,66 @@ const schemas = {
               },
               additionalProperties: false,
             },
+          },
+          targetHintUsed: {
+            type: 'boolean',
+          },
+        },
+        additionalProperties: false,
+      },
+    },
+    additionalProperties: false,
+  },
+  FlowSurfaceDescribeCapabilityRequest: {
+    type: 'object',
+    description:
+      'Single-capability lookup. `capabilityId` is read-only diagnostic identity; authoring payloads must use `publicType`.',
+    properties: {
+      capabilityId: {
+        type: 'string',
+      },
+      kind: ref('FlowSurfaceCapabilityKind'),
+      publicType: {
+        type: 'string',
+      },
+      ownerPlugin: {
+        type: 'string',
+      },
+      target: ref('FlowSurfaceCapabilitiesTarget'),
+      includeUnavailable: {
+        type: 'boolean',
+      },
+      includeWarnings: {
+        type: 'boolean',
+      },
+      expand: {
+        type: 'array',
+        description:
+          '`item.settings` includes public schemas/options. `item.identity`, `item.semantic`, and `item.warnings` are included in describe responses. `debugImplementation` is forbidden.',
+        items: {
+          type: 'string',
+          enum: ['item.identity', 'item.semantic', 'item.settings', 'item.warnings'],
+        },
+      },
+    },
+    anyOf: [{ required: ['capabilityId'] }, { required: ['publicType'] }],
+    additionalProperties: false,
+  },
+  FlowSurfaceDescribeCapabilityResponse: {
+    type: 'object',
+    required: ['data', 'meta'],
+    properties: {
+      data: ref('FlowSurfacePublicCapabilityItem'),
+      meta: {
+        type: 'object',
+        required: ['version', 'generatedAt', 'targetHintUsed'],
+        properties: {
+          version: {
+            type: 'integer',
+            enum: [1],
+          },
+          generatedAt: {
+            type: 'string',
           },
           targetHintUsed: {
             type: 'boolean',

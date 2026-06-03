@@ -27,7 +27,7 @@ import {
   resolveSupportedActionCatalogItem,
   resolveSupportedBlockCatalogItem,
 } from './catalog';
-import { buildFlowSurfaceCapabilitiesResponse } from './capabilities';
+import { buildFlowSurfaceCapabilitiesResponse, buildFlowSurfaceDescribeCapabilityResponse } from './capabilities';
 import {
   collectProviderCatalogItems,
   filterProviderCatalogItemsForCatalog,
@@ -445,6 +445,8 @@ import type {
   FlowSurfaceComposeValues,
   FlowSurfaceConfigureValues,
   FlowSurfaceContextValues,
+  FlowSurfaceDescribeCapabilityResponse,
+  FlowSurfaceDescribeCapabilityValues,
   FlowSurfaceDescribeValues,
   FlowSurfaceExecutorContext,
   FlowSurfaceMutateOp,
@@ -2094,6 +2096,22 @@ export class FlowSurfacesService {
   ): Promise<FlowSurfaceCapabilitiesResponse> {
     const enabledPackages = await this.resolveEnabledPluginPackages(options);
     return buildFlowSurfaceCapabilitiesResponse(input, {
+      enabledPackages,
+      providerRegistry: this.capabilityProviderRegistry,
+      catalog: (values) =>
+        this.catalog(values, {
+          transaction: options.transaction,
+          enabledPackages,
+        }),
+    });
+  }
+
+  async describeCapability(
+    input: FlowSurfaceDescribeCapabilityValues,
+    options: { transaction?: unknown; enabledPackages?: ReadonlySet<string> } = {},
+  ): Promise<FlowSurfaceDescribeCapabilityResponse> {
+    const enabledPackages = await this.resolveEnabledPluginPackages(options);
+    return buildFlowSurfaceDescribeCapabilityResponse(input, {
       enabledPackages,
       providerRegistry: this.capabilityProviderRegistry,
       catalog: (values) =>

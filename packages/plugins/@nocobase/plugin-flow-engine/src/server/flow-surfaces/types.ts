@@ -338,6 +338,26 @@ export type FlowSurfaceCapabilitiesResponse = {
   };
 };
 
+export type FlowSurfaceDescribeCapabilityValues = {
+  capabilityId?: string;
+  kind?: FlowSurfaceCapabilityKind;
+  publicType?: string;
+  ownerPlugin?: string;
+  target?: FlowSurfaceCapabilitiesTarget;
+  includeUnavailable?: boolean;
+  includeWarnings?: boolean;
+  expand?: Array<'item.identity' | 'item.semantic' | 'item.settings' | 'item.warnings' | 'debugImplementation'>;
+};
+
+export type FlowSurfaceDescribeCapabilityResponse = {
+  data: FlowSurfacePublicCapabilityItem;
+  meta: {
+    version: 1;
+    generatedAt: string;
+    targetHintUsed: boolean;
+  };
+};
+
 export type FlowSurfaceReadTarget = {
   locator: FlowSurfaceReadLocator;
   uid: string;

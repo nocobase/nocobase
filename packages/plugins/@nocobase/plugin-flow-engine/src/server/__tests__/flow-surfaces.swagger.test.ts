@@ -147,6 +147,8 @@ describe('flowSurfaces swagger', () => {
       'FlowSurfaceCapabilitiesTarget',
       'FlowSurfaceCapabilitiesRequest',
       'FlowSurfaceCapabilitiesResponse',
+      'FlowSurfaceDescribeCapabilityRequest',
+      'FlowSurfaceDescribeCapabilityResponse',
       'FlowSurfaceCatalogItem',
       'FlowSurfaceNodeContract',
       'FlowSurfaceDomainContract',
@@ -360,6 +362,19 @@ describe('flowSurfaces swagger', () => {
       },
     });
     expect(schemas.FlowSurfaceCapabilityAvailability.properties.create.allOf).toBeUndefined();
+    expect(schemas.FlowSurfaceDescribeCapabilityRequest.anyOf).toEqual([
+      { required: ['capabilityId'] },
+      { required: ['publicType'] },
+    ]);
+    expect(schemas.FlowSurfaceDescribeCapabilityRequest.properties.expand.items.enum).toEqual([
+      'item.identity',
+      'item.semantic',
+      'item.settings',
+      'item.warnings',
+    ]);
+    expect(schemas.FlowSurfaceDescribeCapabilityResponse.properties.data.$ref).toBe(
+      '#/components/schemas/FlowSurfacePublicCapabilityItem',
+    );
     expect(schemas.FlowSurfaceSetFieldValueRulesRequest.properties.target.description).toContain(
       'outer form block uid',
     );
@@ -816,6 +831,12 @@ describe('flowSurfaces swagger', () => {
     expect(catalogRequest.example?.target?.uid).toBe('table-block-uid');
     expect(swaggerDocument.paths['/flowSurfaces:catalog'].post.description).toContain(
       'prefer `getReactionMeta` + `set*Rules`',
+    );
+    expect(swaggerDocument.paths['/flowSurfaces:describeCapability'].post.description).toContain(
+      'not write authorization',
+    );
+    expect(swaggerDocument.paths['/flowSurfaces:describeCapability'].post.description).toContain(
+      '`implementation.modelUse`',
     );
     const describeRequest =
       swaggerDocument.paths['/flowSurfaces:describeSurface'].post.requestBody.content['application/json'];
