@@ -336,6 +336,78 @@ describe('flowSurfaces backend authoring applyBlueprint compiler', () => {
     });
   });
 
+  it('should include supported chart types and jsBlock guidance for unsupported chart asset visual types', async () => {
+    const response = await rootAgent.resource('flowSurfaces').applyBlueprint({
+      values: {
+        mode: 'create',
+        navigation: {
+          item: {
+            title: 'Authoring unsupported chart type blueprint',
+          },
+        },
+        page: {
+          title: 'Authoring unsupported chart type blueprint',
+        },
+        assets: {
+          charts: {
+            statusChart: {
+              query: {
+                mode: 'builder',
+                resource: {
+                  dataSourceKey: 'main',
+                  collectionName: 'employees',
+                },
+                measures: [
+                  {
+                    field: 'id',
+                    aggregation: 'count',
+                    alias: 'employeeCount',
+                  },
+                ],
+              },
+              visual: {
+                mode: 'basic',
+                type: 'stat',
+                mappings: {
+                  y: 'employeeCount',
+                },
+              },
+            },
+          },
+        },
+        tabs: [
+          {
+            title: 'Overview',
+            blocks: [
+              {
+                key: 'statusChart',
+                type: 'chart',
+                title: 'Status chart',
+                chart: 'statusChart',
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(response.status).toBe(400);
+    const chartError = response.body?.errors?.find((error: any) => error.ruleId === 'chart-visual-type-unsupported');
+    expect(chartError).toMatchObject({
+      path: '$.assets.charts.statusChart.visual.type',
+      details: expect.objectContaining({
+        type: 'stat',
+        supportedVisualTypes: ['line', 'area', 'bar', 'barHorizontal', 'pie', 'doughnut', 'funnel', 'scatter'],
+        alternativeBlockType: 'jsBlock',
+      }),
+    });
+    expect(chartError?.message).toContain('Supported basic chart visual types');
+    expect(chartError?.message).toContain('jsBlock');
+    expect(chartError?.message).not.toContain('Do not change this block type');
+    expect(chartError?.details?.repairHint).not.toContain('Do not change this block type');
+    expect(chartError?.details?.forbiddenFallbacks).not.toContain('jsBlock');
+  });
+
   it('should strip single-scope non-template data block titles before persisting', async () => {
     const executeRes = await rootAgent.resource('flowSurfaces').applyBlueprint({
       values: {

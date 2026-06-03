@@ -417,6 +417,72 @@ describe('flowSurfaces authoring validation unit', () => {
     );
   });
 
+  it('should guide unsupported chart visual types to supported chart types or jsBlock', async () => {
+    const errors = await collectFlowSurfaceAuthoringErrors('applyBlueprint', {
+      mode: 'create',
+      navigation: {
+        item: {
+          title: 'Unsupported chart visual type page',
+        },
+      },
+      assets: {
+        charts: {
+          kpiChart: {
+            query: {
+              mode: 'builder',
+              resource: {
+                dataSourceKey: 'main',
+                collectionName: 'employees',
+              },
+              measures: [
+                {
+                  field: 'id',
+                  aggregation: 'count',
+                  alias: 'employeeCount',
+                },
+              ],
+            },
+            visual: {
+              mode: 'basic',
+              type: 'stat',
+              mappings: {
+                y: 'employeeCount',
+              },
+            },
+          },
+        },
+      },
+      tabs: [
+        {
+          title: 'Overview',
+          blocks: [
+            {
+              key: 'kpiChart',
+              type: 'chart',
+              chart: 'kpiChart',
+            },
+          ],
+        },
+      ],
+    });
+
+    const unsupportedTypeError = errors.find((error: any) => error.ruleId === 'chart-visual-type-unsupported');
+    expect(unsupportedTypeError).toMatchObject({
+      path: '$.assets.charts.kpiChart.visual.type',
+      details: expect.objectContaining({
+        type: 'stat',
+        supportedVisualTypes: ['line', 'area', 'bar', 'barHorizontal', 'pie', 'doughnut', 'funnel', 'scatter'],
+        alternativeBlockType: 'jsBlock',
+        fixStrategy: 'use_supported_chart_type_or_jsBlock',
+      }),
+    });
+    expect(unsupportedTypeError?.message).toContain('Supported basic chart visual types');
+    expect(unsupportedTypeError?.message).toContain('jsBlock');
+    expect(unsupportedTypeError?.message).not.toContain('Do not change this block type');
+    expect(unsupportedTypeError?.details?.repairHint).not.toContain('Do not change this block type');
+    expect(unsupportedTypeError?.details?.forbiddenFallbacks).not.toContain('jsBlock');
+  });
+
   it('should reject invalid chart date filter values on configure authoring writes', async () => {
     const errors = await collectFlowSurfaceAuthoringErrors(
       'configure',

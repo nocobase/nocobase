@@ -253,6 +253,7 @@ const CHART_FORBIDDEN_FALLBACKS = [
 const CHART_QUERY_MODE_SET = new Set(CHART_QUERY_MODES);
 const CHART_VISUAL_MODE_SET = new Set(CHART_VISUAL_MODES);
 const CHART_BASIC_VISUAL_TYPE_SET = new Set(CHART_BASIC_VISUAL_TYPES);
+const CHART_BASIC_VISUAL_TYPE_LIST = CHART_BASIC_VISUAL_TYPES.join(', ');
 const STRICT_LOCALIZED_CHART_ACTIONS = new Set<FlowSurfaceAuthoringWriteAction>(['compose', 'addBlocks']);
 const CHART_VISUAL_LEGACY_BUILDER_KEYS = new Set([
   'xField',
@@ -1029,6 +1030,23 @@ function withChartRepairHint(details: Record<string, any> = {}) {
   };
 }
 
+function withUnsupportedChartVisualTypeHint(details: Record<string, any> = {}) {
+  const jsBlockHint =
+    'Supported basic chart visual types are: ' +
+    `${CHART_BASIC_VISUAL_TYPE_LIST}. ` +
+    'If the required visualization cannot be represented by these chart types, use a jsBlock instead.';
+  return {
+    ...details,
+    fixStrategy: 'use_supported_chart_type_or_jsBlock',
+    repairHint: jsBlockHint,
+    agentInstruction: `${REPAIR_ALL_ERRORS_AGENT_INSTRUCTION} Use one of the supported chart visual types, or use a jsBlock when the requested visualization is outside the chart plugin capabilities.`,
+    supportedVisualTypes: [...CHART_BASIC_VISUAL_TYPES],
+    alternativeBlockType: 'jsBlock',
+    alternativeHint: jsBlockHint,
+    forbiddenFallbacks: CHART_FORBIDDEN_FALLBACKS.filter((item) => item !== 'jsBlock'),
+  };
+}
+
 function collectLocalizedChartSettingsErrors(
   block: any,
   blockType: string | undefined,
@@ -1764,8 +1782,8 @@ function collectChartAssetVisualErrors(asset: any, path: string, errors: Authori
     pushAuthoringError(errors, {
       path: `${path}.visual.type`,
       ruleId: 'chart-visual-type-unsupported',
-      message: `flowSurfaces authoring ${path}.visual.type '${type}' is not supported`,
-      details: withChartRepairHint({
+      message: `flowSurfaces authoring ${path}.visual.type '${type}' is not supported. Supported basic chart visual types: ${CHART_BASIC_VISUAL_TYPE_LIST}. If these types do not satisfy the requirement, use a jsBlock instead.`,
+      details: withUnsupportedChartVisualTypeHint({
         type,
       }),
     });

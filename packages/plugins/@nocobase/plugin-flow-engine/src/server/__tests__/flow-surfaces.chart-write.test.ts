@@ -1374,6 +1374,350 @@ chart.on('click', 'series', function(params) {
     expectCompleteChartConfigure(surface.tree.stepParams?.chartSettings?.configure);
   });
 
+  it('should compose chart blocks from chart assets', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Chart asset compose page',
+      tabTitle: 'Chart asset compose tab',
+    });
+
+    const composeRes = await rootAgent.resource('flowSurfaces').compose({
+      values: {
+        target: { uid: page.gridUid },
+        assets: {
+          charts: {
+            statusChart: {
+              query: buildCompleteChartQuery(),
+              visual: buildCompleteChartVisual(),
+            },
+          },
+        },
+        blocks: [
+          {
+            key: 'assetChart',
+            type: 'chart',
+            chart: 'statusChart',
+            settings: {
+              title: 'Employees by status from asset',
+            },
+          },
+        ],
+      },
+    });
+    expect(composeRes.status, readErrorMessage(composeRes)).toBe(200);
+
+    const chartUid = getData(composeRes).blocks.find((block: any) => block.key === 'assetChart')?.uid;
+    expect(chartUid).toBeTruthy();
+
+    const surface = getData(
+      await rootAgent.resource('flowSurfaces').get({
+        uid: chartUid,
+      }),
+    );
+    expectCompleteChartConfigure(surface.tree.stepParams?.chartSettings?.configure);
+  });
+
+  it('should preserve inline chart settings when compose chart blocks also carry chart keys', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Inline chart with asset key compose page',
+      tabTitle: 'Inline chart with asset key compose tab',
+    });
+
+    const composeRes = await rootAgent.resource('flowSurfaces').compose({
+      values: {
+        target: { uid: page.gridUid },
+        blocks: [
+          {
+            key: 'inlineSemanticChart',
+            type: 'chart',
+            chart: 'missingChart',
+            settings: {
+              title: 'Inline semantic chart',
+              query: buildCompleteChartQuery(),
+              visual: buildCompleteChartVisual(),
+            },
+          },
+          {
+            key: 'inlineLegacyChart',
+            type: 'chart',
+            chart: 'missingChart',
+            settings: {
+              title: 'Inline legacy chart',
+              configure: buildCompleteLegacyChartConfigure(),
+            },
+          },
+        ],
+      },
+    });
+    expect(composeRes.status, readErrorMessage(composeRes)).toBe(200);
+
+    const semanticChartUid = getData(composeRes).blocks.find((block: any) => block.key === 'inlineSemanticChart')?.uid;
+    const legacyChartUid = getData(composeRes).blocks.find((block: any) => block.key === 'inlineLegacyChart')?.uid;
+    expect(semanticChartUid).toBeTruthy();
+    expect(legacyChartUid).toBeTruthy();
+
+    const semanticSurface = getData(
+      await rootAgent.resource('flowSurfaces').get({
+        uid: semanticChartUid,
+      }),
+    );
+    const legacySurface = getData(
+      await rootAgent.resource('flowSurfaces').get({
+        uid: legacyChartUid,
+      }),
+    );
+    expectCompleteChartConfigure(semanticSurface.tree.stepParams?.chartSettings?.configure);
+    expectCompleteChartConfigure(legacySurface.tree.stepParams?.chartSettings?.configure);
+  });
+
+  it('should compose popup chart blocks from top-level chart assets', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Popup chart asset compose page',
+      tabTitle: 'Popup chart asset compose tab',
+    });
+
+    const composeRes = await rootAgent.resource('flowSurfaces').compose({
+      values: {
+        target: { uid: page.gridUid },
+        assets: {
+          charts: {
+            statusChart: {
+              query: buildCompleteChartQuery(),
+              visual: buildCompleteChartVisual(),
+            },
+          },
+        },
+        blocks: [
+          {
+            key: 'employeesList',
+            type: 'list',
+            resource: {
+              dataSourceKey: 'main',
+              collectionName: 'employees',
+            },
+            fields: ['nickname', 'status'],
+            recordActions: [
+              {
+                key: 'chartPopup',
+                type: 'popup',
+                popup: {
+                  blocks: [
+                    {
+                      key: 'popupAssetChart',
+                      type: 'chart',
+                      chart: 'statusChart',
+                    },
+                  ],
+                },
+              },
+            ],
+          },
+        ],
+      },
+    });
+    expect(composeRes.status, readErrorMessage(composeRes)).toBe(200);
+
+    const popupActionUid = getData(composeRes)
+      .blocks.find((block: any) => block.key === 'employeesList')
+      ?.recordActions.find((action: any) => action.key === 'chartPopup')?.uid;
+    expect(popupActionUid).toBeTruthy();
+
+    const popupSurface = getData(
+      await rootAgent.resource('flowSurfaces').get({
+        uid: popupActionUid,
+      }),
+    );
+    const chartBlock = collectDescendantNodes(popupSurface.tree, (item) => item?.use === 'ChartBlockModel')[0];
+    expect(chartBlock?.uid).toBeTruthy();
+    expectCompleteChartConfigure(chartBlock.stepParams?.chartSettings?.configure);
+  });
+
+  it('should compose field group popup chart blocks from top-level chart assets', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Field group popup chart asset compose page',
+      tabTitle: 'Field group popup chart asset compose tab',
+    });
+
+    const composeRes = await rootAgent.resource('flowSurfaces').compose({
+      values: {
+        target: { uid: page.gridUid },
+        assets: {
+          charts: {
+            statusChart: {
+              query: buildCompleteChartQuery(),
+              visual: buildCompleteChartVisual(),
+            },
+          },
+        },
+        blocks: [
+          {
+            key: 'employeeDetails',
+            type: 'details',
+            resource: {
+              dataSourceKey: 'main',
+              collectionName: 'employees',
+            },
+            fieldGroups: [
+              {
+                title: 'Relations',
+                fields: [
+                  {
+                    key: 'departmentField',
+                    fieldPath: 'department',
+                    popup: {
+                      blocks: [
+                        {
+                          key: 'fieldGroupPopupAssetChart',
+                          type: 'chart',
+                          chart: 'statusChart',
+                        },
+                      ],
+                    },
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+    });
+    expect(composeRes.status, readErrorMessage(composeRes)).toBe(200);
+
+    const detailsUid = getData(composeRes).blocks.find((block: any) => block.key === 'employeeDetails')?.uid;
+    expect(detailsUid).toBeTruthy();
+
+    const detailsSurface = getData(
+      await rootAgent.resource('flowSurfaces').get({
+        uid: detailsUid,
+      }),
+    );
+    const chartBlock = collectDescendantNodes(detailsSurface.tree, (item) => item?.use === 'ChartBlockModel')[0];
+    expect(chartBlock?.uid).toBeTruthy();
+    expectCompleteChartConfigure(chartBlock.stepParams?.chartSettings?.configure);
+  });
+
+  it('should reject compose chart blocks that reference missing chart assets', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Missing chart asset compose page',
+      tabTitle: 'Missing chart asset compose tab',
+    });
+
+    const composeRes = await rootAgent.resource('flowSurfaces').compose({
+      values: {
+        target: { uid: page.gridUid },
+        assets: {
+          charts: {},
+        },
+        blocks: [
+          {
+            key: 'missingAssetChart',
+            type: 'chart',
+            chart: 'missingChart',
+          },
+        ],
+      },
+    });
+    expect(composeRes.status).toBe(400);
+    expect(composeRes.body?.errors).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          path: '$.blocks[0].chart',
+          ruleId: 'chart-block-asset-reference-missing',
+          details: expect.objectContaining({
+            chartKey: 'missingChart',
+          }),
+        }),
+      ]),
+    );
+  });
+
+  it('should reject compose chart assets without visual settings', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Missing chart asset visual compose page',
+      tabTitle: 'Missing chart asset visual compose tab',
+    });
+
+    const composeRes = await rootAgent.resource('flowSurfaces').compose({
+      values: {
+        target: { uid: page.gridUid },
+        assets: {
+          charts: {
+            queryOnlyChart: {
+              query: buildCompleteChartQuery(),
+            },
+          },
+        },
+        blocks: [
+          {
+            key: 'queryOnlyAssetChart',
+            type: 'chart',
+            chart: 'queryOnlyChart',
+          },
+        ],
+      },
+    });
+    expect(composeRes.status).toBe(400);
+    expect(composeRes.body?.errors).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          path: '$.blocks[0].settings.visual',
+          ruleId: 'chart-visual-missing',
+        }),
+      ]),
+    );
+  });
+
+  it('should include supported chart types and jsBlock guidance for unsupported compose chart visual types', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Unsupported chart asset visual compose page',
+      tabTitle: 'Unsupported chart asset visual compose tab',
+    });
+
+    const composeRes = await rootAgent.resource('flowSurfaces').compose({
+      values: {
+        target: { uid: page.gridUid },
+        assets: {
+          charts: {
+            statChart: {
+              query: buildCompleteChartQuery(),
+              visual: {
+                mode: 'basic',
+                type: 'stat',
+                mappings: {
+                  y: 'employeeCount',
+                },
+              },
+            },
+          },
+        },
+        blocks: [
+          {
+            key: 'statAssetChart',
+            type: 'chart',
+            chart: 'statChart',
+          },
+        ],
+      },
+    });
+    expect(composeRes.status).toBe(400);
+    const unsupportedTypeError = composeRes.body?.errors?.find(
+      (error: any) => error.ruleId === 'chart-visual-type-unsupported',
+    );
+    expect(unsupportedTypeError).toMatchObject({
+      path: '$.blocks[0].settings.visual.type',
+      details: expect.objectContaining({
+        type: 'stat',
+        supportedVisualTypes: ['line', 'area', 'bar', 'barHorizontal', 'pie', 'doughnut', 'funnel', 'scatter'],
+        alternativeBlockType: 'jsBlock',
+      }),
+    });
+    expect(unsupportedTypeError?.message).toContain('Supported basic chart visual types');
+    expect(unsupportedTypeError?.message).toContain('jsBlock');
+    expect(unsupportedTypeError?.message).not.toContain('Do not change this block type');
+    expect(unsupportedTypeError?.details?.alternativeHint).toContain('jsBlock');
+    expect(unsupportedTypeError?.details?.repairHint).not.toContain('Do not change this block type');
+    expect(unsupportedTypeError?.details?.forbiddenFallbacks).not.toContain('jsBlock');
+  });
+
   it('should compose chart blocks with complete legacy configure settings', async () => {
     const page = await createPage(rootAgent, {
       title: 'Chart legacy complete compose page',
@@ -1835,6 +2179,23 @@ function expectChartRepairDetails(response: any) {
   expect(details?.expectedShape?.settings?.visual?.mappings).toEqual(expect.any(Object));
   expect(details?.repairExample?.settings?.visual?.mappings).toEqual(expect.any(Object));
   expect(details?.forbiddenFallbacks).toEqual(expect.arrayContaining(['table', 'list', 'drop chart', 'defer chart']));
+}
+
+function collectDescendantNodes(root: any, predicate: (item: any) => boolean) {
+  const result: any[] = [];
+  const visit = (node: any) => {
+    if (!node) {
+      return;
+    }
+    if (predicate(node)) {
+      result.push(node);
+    }
+    Object.values(node.subModels || {}).forEach((value) => {
+      _.castArray(value).forEach(visit);
+    });
+  };
+  visit(root);
+  return result;
 }
 
 function expectCompleteChartConfigure(configure: any) {

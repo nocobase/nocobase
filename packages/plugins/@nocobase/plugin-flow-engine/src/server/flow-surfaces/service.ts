@@ -4444,6 +4444,245 @@ export class FlowSurfacesService {
     }
   }
 
+  private composeChartBlockHasInlineConfig(block: Record<string, any>) {
+    const settings = _.isPlainObject(block.settings) ? block.settings : {};
+    return ['configure', 'query', 'visual', 'events'].some((key) =>
+      Object.prototype.hasOwnProperty.call(settings, key),
+    );
+  }
+
+  private prepareComposeChartAssetNestedPopupBlocks(
+    input: any,
+    path: string,
+    chartAssets: Record<string, any>,
+  ): { value: any; didResolveChartAsset: boolean } {
+    if (!_.isPlainObject(input)) {
+      return { value: input, didResolveChartAsset: false };
+    }
+
+    let didResolveChartAsset = false;
+    let nextInput = input;
+    const ensureNextInput = () => {
+      if (nextInput === input) {
+        nextInput = { ...input };
+      }
+      return nextInput;
+    };
+
+    const preparePopupBlocks = (key: 'popup' | 'openView') => {
+      const popup = input[key];
+      if (!_.isPlainObject(popup) || !Array.isArray(popup.blocks)) {
+        return;
+      }
+      const prepared = this.prepareComposeChartAssetBlockList(popup.blocks, `${path}.${key}.blocks`, chartAssets);
+      if (!prepared.didResolveChartAsset) {
+        return;
+      }
+      ensureNextInput()[key] = {
+        ...popup,
+        blocks: prepared.blocks,
+      };
+      didResolveChartAsset = true;
+    };
+
+    preparePopupBlocks('popup');
+    preparePopupBlocks('openView');
+
+    return {
+      value: nextInput,
+      didResolveChartAsset,
+    };
+  }
+
+  private prepareComposeChartAssetBlockList(
+    blocks: any,
+    path: string,
+    chartAssets: Record<string, any>,
+  ): { blocks: any[]; didResolveChartAsset: boolean } {
+    const rawBlocks = _.castArray(blocks || []);
+    if (!rawBlocks.length) {
+      return { blocks: rawBlocks, didResolveChartAsset: false };
+    }
+
+    let didResolveChartAsset = false;
+    const hiddenPopupKeys = [
+      'quickCreatePopup',
+      'eventPopup',
+      'cardPopup',
+      'quickCreatePopupSettings',
+      'eventPopupSettings',
+      'cardPopupSettings',
+    ];
+    const nextBlocks = rawBlocks.map((block, index) => {
+      if (!_.isPlainObject(block)) {
+        return block;
+      }
+
+      const blockPath = `${path}[${index}]`;
+      let nextBlock = block;
+      const ensureNextBlock = () => {
+        if (nextBlock === block) {
+          nextBlock = { ...block };
+        }
+        return nextBlock;
+      };
+
+      if (Array.isArray(block.blocks)) {
+        const prepared = this.prepareComposeChartAssetBlockList(block.blocks, `${blockPath}.blocks`, chartAssets);
+        if (prepared.didResolveChartAsset) {
+          ensureNextBlock().blocks = prepared.blocks;
+          didResolveChartAsset = true;
+        }
+      }
+
+      for (const slot of ['actions', 'recordActions', 'fields']) {
+        if (!Array.isArray(block[slot])) {
+          continue;
+        }
+        let didPrepareSlot = false;
+        const nextItems = block[slot].map((item: any, itemIndex: number) => {
+          const prepared = this.prepareComposeChartAssetNestedPopupBlocks(
+            item,
+            `${blockPath}.${slot}[${itemIndex}]`,
+            chartAssets,
+          );
+          didPrepareSlot = didPrepareSlot || prepared.didResolveChartAsset;
+          return prepared.value;
+        });
+        if (didPrepareSlot) {
+          ensureNextBlock()[slot] = nextItems;
+          didResolveChartAsset = true;
+        }
+      }
+
+      if (Array.isArray(block.fieldGroups)) {
+        let didPrepareFieldGroups = false;
+        const nextFieldGroups = block.fieldGroups.map((group: any, groupIndex: number) => {
+          if (!_.isPlainObject(group) || !Array.isArray(group.fields)) {
+            return group;
+          }
+
+          let didPrepareGroupFields = false;
+          const nextFields = group.fields.map((field: any, fieldIndex: number) => {
+            const prepared = this.prepareComposeChartAssetNestedPopupBlocks(
+              field,
+              `${blockPath}.fieldGroups[${groupIndex}].fields[${fieldIndex}]`,
+              chartAssets,
+            );
+            didPrepareGroupFields = didPrepareGroupFields || prepared.didResolveChartAsset;
+            return prepared.value;
+          });
+          if (!didPrepareGroupFields) {
+            return group;
+          }
+          didPrepareFieldGroups = true;
+          return {
+            ...group,
+            fields: nextFields,
+          };
+        });
+        if (didPrepareFieldGroups) {
+          ensureNextBlock().fieldGroups = nextFieldGroups;
+          didResolveChartAsset = true;
+        }
+      }
+
+      if (_.isPlainObject(block.popup) && Array.isArray(block.popup.blocks)) {
+        const prepared = this.prepareComposeChartAssetBlockList(
+          block.popup.blocks,
+          `${blockPath}.popup.blocks`,
+          chartAssets,
+        );
+        if (prepared.didResolveChartAsset) {
+          ensureNextBlock().popup = {
+            ...block.popup,
+            blocks: prepared.blocks,
+          };
+          didResolveChartAsset = true;
+        }
+      }
+
+      if (_.isPlainObject(block.settings)) {
+        for (const key of hiddenPopupKeys) {
+          const popup = block.settings[key];
+          if (!_.isPlainObject(popup) || !Array.isArray(popup.blocks)) {
+            continue;
+          }
+          const prepared = this.prepareComposeChartAssetBlockList(
+            popup.blocks,
+            `${blockPath}.settings.${key}.blocks`,
+            chartAssets,
+          );
+          if (!prepared.didResolveChartAsset) {
+            continue;
+          }
+          ensureNextBlock().settings = {
+            ...(nextBlock.settings || {}),
+            [key]: {
+              ...popup,
+              blocks: prepared.blocks,
+            },
+          };
+          didResolveChartAsset = true;
+        }
+      }
+
+      if (
+        String(nextBlock.type || '').trim() !== 'chart' ||
+        !Object.prototype.hasOwnProperty.call(nextBlock, 'chart') ||
+        this.composeChartBlockHasInlineConfig(nextBlock)
+      ) {
+        return nextBlock;
+      }
+
+      const chartKey = String(nextBlock.chart || '').trim();
+      if (!chartKey) {
+        throwChartRepairBadRequest(`${blockPath}.chart must reference one key from assets.charts`, {
+          path: `${blockPath}.chart`,
+          ruleId: 'chart-block-asset-reference-required',
+        });
+      }
+
+      const chartAsset = chartAssets[chartKey];
+      if (!_.isPlainObject(chartAsset)) {
+        throwChartRepairBadRequest(`${blockPath}.chart references missing chart asset '${chartKey}'`, {
+          path: `${blockPath}.chart`,
+          ruleId: 'chart-block-asset-reference-missing',
+          details: {
+            chartKey,
+          },
+        });
+      }
+
+      if (!_.isUndefined(nextBlock.settings) && !_.isPlainObject(nextBlock.settings)) {
+        return nextBlock;
+      }
+
+      didResolveChartAsset = true;
+      return {
+        ...nextBlock,
+        settings: _.merge({}, _.cloneDeep(nextBlock.settings || {}), _.cloneDeep(chartAsset)),
+      };
+    });
+
+    return {
+      blocks: nextBlocks,
+      didResolveChartAsset,
+    };
+  }
+
+  private prepareComposeChartAssetSettings(values: FlowSurfaceComposeValues): FlowSurfaceComposeValues {
+    const chartAssets = _.isPlainObject(values?.assets?.charts) ? values.assets.charts : {};
+    const prepared = this.prepareComposeChartAssetBlockList(values?.blocks, '$.blocks', chartAssets);
+
+    return prepared.didResolveChartAsset
+      ? {
+          ...values,
+          blocks: prepared.blocks,
+        }
+      : values;
+  }
+
   private getApplyBlueprintKanbanBlockResourceObject(block: any) {
     return _.isPlainObject(block?.resource) ? block.resource : {};
   }
@@ -7079,12 +7318,13 @@ export class FlowSurfacesService {
     } = {},
   ) {
     const enabledPackages = await this.resolveEnabledPluginPackages(options);
-    const target = await this.prepareWriteTarget('compose', values?.target, values, options);
+    const composeValues = this.prepareComposeChartAssetSettings(values);
+    const target = await this.prepareWriteTarget('compose', composeValues?.target, composeValues, options);
     const authoringContext = await this.buildTargetAuthoringContext({
       target,
       transaction: options.transaction,
     });
-    await assertFlowSurfaceAuthoringPayload('compose', values, {
+    await assertFlowSurfaceAuthoringPayload('compose', composeValues, {
       transaction: options.transaction,
       enabledPackages,
       skipGeneratedLayoutSingleColumnErrors: options.skipGeneratedLayoutSingleColumnErrors === true,
@@ -7098,12 +7338,17 @@ export class FlowSurfacesService {
       ...options,
       popupTemplateTreeCache,
     };
-    const mode = this.assertComposeMode(values?.mode);
-    const popupDefaultsMetadata = this.buildPopupDefaultsMetadata(values?.defaults);
-    const normalizedBlocks = this.normalizeComposeBlocks(values?.blocks, enabledPackages, popupDefaultsMetadata, {
-      dataSourceKey: authoringContext.currentDataSourceKey,
-      collectionName: authoringContext.currentCollectionName,
-    });
+    const mode = this.assertComposeMode(composeValues?.mode);
+    const popupDefaultsMetadata = this.buildPopupDefaultsMetadata(composeValues?.defaults);
+    const normalizedBlocks = this.normalizeComposeBlocks(
+      composeValues?.blocks,
+      enabledPackages,
+      popupDefaultsMetadata,
+      {
+        dataSourceKey: authoringContext.currentDataSourceKey,
+        collectionName: authoringContext.currentCollectionName,
+      },
+    );
     this.validateComposePopupTemplateAliases(normalizedBlocks, popupTemplateAliasSession);
     const blockParent = await this.surfaceContext.resolveBlockParent(target, options.transaction);
     const gridUid = blockParent.parentUid;
@@ -7131,7 +7376,7 @@ export class FlowSurfacesService {
       mode,
       normalizedBlocks,
       existingItemUids: existingItems.map((item: any) => item.uid),
-      layout: values.layout,
+      layout: composeValues.layout,
     });
 
     const generatedDefaultFilterByComposeBlockUid = new Map<string, any>();
@@ -7173,7 +7418,7 @@ export class FlowSurfacesService {
           {
             ...payload,
             ...(Object.keys(hiddenPopupSettings).length ? { settings: hiddenPopupSettings } : {}),
-            ...(values.defaults ? { defaults: values.defaults } : {}),
+            ...(composeValues.defaults ? { defaults: composeValues.defaults } : {}),
           },
           {
             ...runtimeOptions,
