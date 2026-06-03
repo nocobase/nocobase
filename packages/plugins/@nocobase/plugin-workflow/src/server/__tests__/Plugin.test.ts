@@ -13,6 +13,7 @@ import { getApp, sleep } from '@nocobase/plugin-workflow-test';
 
 import Plugin, { Processor } from '..';
 import { EXECUTION_STATUS } from '../constants';
+import type { ExecutionModel } from '../types';
 
 describe('workflow > Plugin', () => {
   let app: MockServer;
@@ -248,6 +249,40 @@ describe('workflow > Plugin', () => {
   });
 
   describe('dispatcher', () => {
+    it.skipIf(process.env['DB_DIALECT'] === 'sqlite')(
+      'should acquire queueing execution only once under concurrent dispatch',
+      async () => {
+        const w1 = await WorkflowModel.create({
+          enabled: true,
+          type: 'asyncTrigger',
+        });
+
+        const e1 = await w1.createExecution({
+          key: w1.key,
+          context: {},
+          dispatched: false,
+          status: EXECUTION_STATUS.QUEUEING,
+        });
+
+        type QueueingDispatcher = {
+          acquireQueueingExecution(): Promise<ExecutionModel | null>;
+        };
+        const dispatcher = (plugin as unknown as { dispatcher: QueueingDispatcher }).dispatcher;
+
+        const acquired = await Promise.all([
+          dispatcher.acquireQueueingExecution(),
+          dispatcher.acquireQueueingExecution(),
+        ]);
+
+        const acquiredExecutions = acquired.filter((execution): execution is ExecutionModel => Boolean(execution));
+        expect(acquiredExecutions.map((execution) => execution.id)).toEqual([e1.id]);
+
+        await e1.reload();
+        expect(e1.dispatched).toBe(true);
+        expect(e1.status).toBe(EXECUTION_STATUS.STARTED);
+      },
+    );
+
     it('multiple triggers in same event', async () => {
       const w1 = await WorkflowModel.create({
         enabled: true,

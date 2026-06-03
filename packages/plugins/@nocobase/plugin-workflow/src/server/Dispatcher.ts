@@ -442,35 +442,68 @@ export default class Dispatcher {
       this.plugin.db.options.dialect === 'sqlite' ? [][0] : Transaction.ISOLATION_LEVELS.REPEATABLE_READ;
     let fetched: ExecutionModel | null = null;
     try {
-      await this.plugin.db.sequelize.transaction(
-        {
-          isolationLevel,
-        },
-        async (transaction) => {
-          const execution = (await this.plugin.db.getRepository('executions').findOne({
-            filter: {
-              dispatched: false,
-              'workflow.enabled': true,
+      while (!fetched) {
+        let shouldRetry = false;
+        try {
+          await this.plugin.db.sequelize.transaction(
+            {
+              isolationLevel,
             },
-            sort: 'id',
-            transaction,
-          })) as ExecutionModel;
-          if (execution) {
-            this.plugin.getLogger(execution.workflowId).info(`execution (${execution.id}) fetched from db`);
-            await execution.update(
-              {
-                dispatched: true,
-                status: EXECUTION_STATUS.STARTED,
-              },
-              { transaction },
-            );
-            execution.workflow = this.plugin.enabledCache.get(execution.workflowId);
-            fetched = execution;
-          } else {
-            this.plugin.getLogger('dispatcher').debug(`no execution in db queued to process`);
+            async (transaction) => {
+              const execution = (await this.plugin.db.getRepository('executions').findOne({
+                filter: {
+                  dispatched: false,
+                  'workflow.enabled': true,
+                },
+                sort: 'id',
+                transaction,
+              })) as ExecutionModel;
+              if (!execution) {
+                this.plugin.getLogger('dispatcher').debug(`no execution in db queued to process`);
+                return;
+              }
+
+              this.plugin.getLogger(execution.workflowId).info(`execution (${execution.id}) fetched from db`);
+              const ExecutionModelClass = this.plugin.db.getModel('executions');
+              const [affected] = await ExecutionModelClass.update(
+                {
+                  dispatched: true,
+                  status: EXECUTION_STATUS.STARTED,
+                },
+                {
+                  where: {
+                    id: execution.id,
+                    dispatched: false,
+                  },
+                  transaction,
+                },
+              );
+              if (!affected) {
+                shouldRetry = true;
+                this.plugin
+                  .getLogger(execution.workflowId)
+                  .warn(`execution (${execution.id}) was already acquired by another worker, retrying`);
+                return;
+              }
+
+              await execution.reload({ transaction });
+              execution.workflow = this.plugin.enabledCache.get(execution.workflowId);
+              fetched = execution;
+            },
+          );
+        } catch (error) {
+          if (!this.isConcurrentAcquireError(error)) {
+            throw error;
           }
-        },
-      );
+          shouldRetry = true;
+          this.plugin.getLogger('dispatcher').warn(`acquiring execution conflicted with another worker, retrying`, {
+            error,
+          });
+        }
+        if (!shouldRetry) {
+          break;
+        }
+      }
     } catch (error) {
       this.plugin.getLogger('dispatcher').error(`fetching execution from db failed: ${error.message}`, { error });
     }
@@ -483,6 +516,20 @@ export default class Dispatcher {
 
   private isLockAcquireError(error: unknown) {
     return error instanceof Error && error.constructor.name === 'LockAcquireError';
+  }
+
+  private isConcurrentAcquireError(error: unknown) {
+    if (!(error instanceof Error)) {
+      return false;
+    }
+    const databaseError = error as Error & {
+      parent?: { code?: string; errno?: number };
+      original?: { code?: string; errno?: number };
+    };
+    const code = databaseError.parent?.code || databaseError.original?.code;
+    const errno = databaseError.parent?.errno || databaseError.original?.errno;
+
+    return code === '40001' || code === 'ER_LOCK_DEADLOCK' || errno === 1205 || errno === 1213;
   }
 
   private async process(
