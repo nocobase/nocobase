@@ -99,9 +99,9 @@ describe('flowSurfaces chart write paths', () => {
     expect(surface.tree.stepParams?.chartSettings?.configure?.query).toMatchObject({
       mode: 'builder',
       collectionPath: ['main', 'employees'],
-      measures: [{ field: 'department.title', aggregation: 'count', alias: 'employeeCount' }],
-      dimensions: [{ field: 'department.title' }],
-      orders: [{ field: 'department.title', order: 'DESC' }],
+      measures: [{ field: 'id', aggregation: 'count', alias: 'employeeCount' }],
+      dimensions: [{ field: ['department', 'title'], alias: 'department.title' }],
+      orders: [{ field: ['department', 'title'], order: 'DESC' }],
     });
     expect(surface.tree.stepParams?.chartSettings?.configure?.query?.resource).toBeUndefined();
 
@@ -194,6 +194,391 @@ describe('flowSurfaces chart write paths', () => {
     expect(readErrorMessage(updateRes)).toContain("chart query.dimensions[0].field 'department'");
     expect(readErrorMessage(updateRes)).toContain('references an association field directly');
     expect(readErrorMessage(updateRes)).toContain("'department.title'");
+  });
+
+  it('should reject invalid dotted association paths in builder chart updateSettings writes', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Chart invalid dotted field update page',
+      tabTitle: 'Chart invalid dotted field update tab',
+    });
+    const chartBlock = getData(
+      await rootAgent.resource('flowSurfaces').addBlock({
+        values: {
+          target: { uid: page.gridUid },
+          type: 'chart',
+        },
+      }),
+    );
+
+    const updateRes = await rootAgent.resource('flowSurfaces').updateSettings({
+      values: {
+        target: { uid: chartBlock.uid },
+        stepParams: {
+          chartSettings: {
+            configure: {
+              query: {
+                mode: 'builder',
+                resource: {
+                  dataSourceKey: 'main',
+                  collectionName: 'employees',
+                },
+                measures: [{ field: 'id', aggregation: 'count', alias: 'employeeCount' }],
+                dimensions: [{ field: 'bogus.id' }],
+              },
+              chart: {
+                option: {
+                  mode: 'basic',
+                  builder: {
+                    type: 'bar',
+                    xField: 'bogus.id',
+                    yField: 'employeeCount',
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+
+    expect(updateRes.status).toBe(400);
+    expect(readErrorMessage(updateRes)).toContain("chart query.dimensions[0].field 'bogus.id'");
+    expect(readErrorMessage(updateRes)).toContain("invalid association path 'bogus'");
+    expect(updateRes.body?.errors?.[0]).toMatchObject({
+      path: 'chart query.dimensions[0].field',
+      ruleId: 'chart-builder-query-association-path-invalid',
+      details: {
+        fieldPath: 'bogus.id',
+        associationPath: 'bogus',
+      },
+    });
+    expectChartRepairDetails(updateRes);
+  });
+
+  it('should reject relation subfield count measures before builder chart writes', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Chart relation count measure page',
+      tabTitle: 'Chart relation count measure tab',
+    });
+    const chartBlock = getData(
+      await rootAgent.resource('flowSurfaces').addBlock({
+        values: {
+          target: { uid: page.gridUid },
+          type: 'chart',
+        },
+      }),
+    );
+
+    const updateRes = await rootAgent.resource('flowSurfaces').updateSettings({
+      values: {
+        target: { uid: chartBlock.uid },
+        stepParams: {
+          chartSettings: {
+            configure: {
+              query: {
+                mode: 'builder',
+                resource: {
+                  dataSourceKey: 'main',
+                  collectionName: 'employees',
+                },
+                measures: [{ field: 'department.title', aggregation: 'count', alias: 'employeeCount' }],
+                dimensions: [{ field: 'department.title' }],
+              },
+              chart: {
+                option: {
+                  mode: 'basic',
+                  builder: {
+                    type: 'bar',
+                    xField: 'department.title',
+                    yField: 'employeeCount',
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+
+    expect(updateRes.status).toBe(400);
+    expect(readErrorMessage(updateRes)).toContain("chart query.measures[0].field 'department.title'");
+    expect(readErrorMessage(updateRes)).toContain('counts a relation subfield');
+    expect(updateRes.body?.errors?.[0]).toMatchObject({
+      path: 'chart query.measures[0].field',
+      ruleId: 'chart-builder-query-count-measure-relation-subfield',
+      details: {
+        fieldPath: 'department.title',
+        suggestedMeasure: {
+          field: 'id',
+          aggregation: 'count',
+          alias: 'employeeCount',
+        },
+        suggestedDimension: {
+          field: 'department.title',
+        },
+      },
+    });
+    expectChartRepairDetails(updateRes);
+  });
+
+  it('should reject incompatible relation dimensions before builder chart writes', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Chart incompatible relation dimension page',
+      tabTitle: 'Chart incompatible relation dimension tab',
+    });
+    const chartBlock = getData(
+      await rootAgent.resource('flowSurfaces').addBlock({
+        values: {
+          target: { uid: page.gridUid },
+          type: 'chart',
+        },
+      }),
+    );
+
+    const updateRes = await rootAgent.resource('flowSurfaces').updateSettings({
+      values: {
+        target: { uid: chartBlock.uid },
+        stepParams: {
+          chartSettings: {
+            configure: {
+              query: {
+                mode: 'builder',
+                resource: {
+                  dataSourceKey: 'main',
+                  collectionName: 'employees',
+                },
+                measures: [{ field: 'id', aggregation: 'count', alias: 'employeeCount' }],
+                dimensions: [{ field: 'department.employerEIN' }],
+              },
+              chart: {
+                option: {
+                  mode: 'basic',
+                  builder: {
+                    type: 'bar',
+                    xField: 'department.employerEIN',
+                    yField: 'employeeCount',
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+
+    expect(updateRes.status).toBe(400);
+    expect(readErrorMessage(updateRes)).toContain("Supported fields under 'department'");
+    expect(readErrorMessage(updateRes)).toContain('department.title');
+    expect(readErrorMessage(updateRes)).toContain('department.location');
+    expect(updateRes.body?.errors?.[0]).toMatchObject({
+      path: 'chart query.dimensions[0].field',
+      ruleId: 'chart-builder-query-relation-subfield-column-unsupported',
+      details: {
+        fieldPath: 'department.employerEIN',
+        associationPath: 'department',
+        leafFieldName: 'employerEIN',
+        columnName: 'employer_e_i_n',
+        supportedFields: expect.arrayContaining([
+          expect.objectContaining({ field: 'department.title' }),
+          expect.objectContaining({ field: 'department.location' }),
+        ]),
+      },
+    });
+    expect(updateRes.body?.errors?.[0]?.details?.supportedFields).not.toEqual(
+      expect.arrayContaining([expect.objectContaining({ field: 'department.employerEIN' })]),
+    );
+    expectChartRepairDetails(updateRes);
+  });
+
+  it('should keep count measure validation precedence for incompatible relation subfield writes', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Chart incompatible relation count measure page',
+      tabTitle: 'Chart incompatible relation count measure tab',
+    });
+    const chartBlock = getData(
+      await rootAgent.resource('flowSurfaces').addBlock({
+        values: {
+          target: { uid: page.gridUid },
+          type: 'chart',
+        },
+      }),
+    );
+
+    const updateRes = await rootAgent.resource('flowSurfaces').updateSettings({
+      values: {
+        target: { uid: chartBlock.uid },
+        stepParams: {
+          chartSettings: {
+            configure: {
+              query: {
+                mode: 'builder',
+                resource: {
+                  dataSourceKey: 'main',
+                  collectionName: 'employees',
+                },
+                measures: [{ field: 'department.employerEIN', aggregation: 'count', alias: 'employeeCount' }],
+                dimensions: [{ field: 'department.location' }],
+              },
+              chart: {
+                option: {
+                  mode: 'basic',
+                  builder: {
+                    type: 'bar',
+                    xField: 'department.location',
+                    yField: 'employeeCount',
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+
+    expect(updateRes.status).toBe(400);
+    expect(updateRes.body?.errors?.[0]).toMatchObject({
+      path: 'chart query.measures[0].field',
+      ruleId: 'chart-builder-query-count-measure-relation-subfield',
+      details: {
+        fieldPath: 'department.employerEIN',
+        suggestedMeasure: {
+          field: 'id',
+          aggregation: 'count',
+          alias: 'employeeCount',
+        },
+      },
+    });
+    expect(updateRes.body?.errors?.[0]?.ruleId).not.toBe('chart-builder-query-relation-subfield-column-unsupported');
+    expectChartRepairDetails(updateRes);
+  });
+
+  it('should reject association-valued relation dimensions before builder chart writes', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Chart association-valued relation dimension page',
+      tabTitle: 'Chart association-valued relation dimension tab',
+    });
+    const chartBlock = getData(
+      await rootAgent.resource('flowSurfaces').addBlock({
+        values: {
+          target: { uid: page.gridUid },
+          type: 'chart',
+        },
+      }),
+    );
+
+    const updateRes = await rootAgent.resource('flowSurfaces').updateSettings({
+      values: {
+        target: { uid: chartBlock.uid },
+        stepParams: {
+          chartSettings: {
+            configure: {
+              query: {
+                mode: 'builder',
+                resource: {
+                  dataSourceKey: 'main',
+                  collectionName: 'employees',
+                },
+                measures: [{ field: 'id', aggregation: 'count', alias: 'employeeCount' }],
+                dimensions: [{ field: 'department.manager' }],
+              },
+              chart: {
+                option: {
+                  mode: 'basic',
+                  builder: {
+                    type: 'bar',
+                    xField: 'department.manager',
+                    yField: 'employeeCount',
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+
+    expect(updateRes.status).toBe(400);
+    expect(updateRes.body?.errors?.[0]).toMatchObject({
+      path: 'chart query.dimensions[0].field',
+      ruleId: 'chart-builder-query-relation-direct-subfield-required',
+      details: {
+        fieldPath: 'department.manager',
+        associationPath: 'department',
+        leafFieldName: 'manager',
+        selectedSubfieldPath: 'manager',
+        supportedFields: expect.arrayContaining([
+          expect.objectContaining({ field: 'department.title' }),
+          expect.objectContaining({ field: 'department.location' }),
+        ]),
+      },
+    });
+    expect(updateRes.body?.errors?.[0]?.details?.supportedFields).not.toEqual(
+      expect.arrayContaining([expect.objectContaining({ field: 'department.manager' })]),
+    );
+    expectChartRepairDetails(updateRes);
+  });
+
+  it('should reject multi-hop relation dimensions before builder chart writes', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Chart multi-hop relation dimension page',
+      tabTitle: 'Chart multi-hop relation dimension tab',
+    });
+    const chartBlock = getData(
+      await rootAgent.resource('flowSurfaces').addBlock({
+        values: {
+          target: { uid: page.gridUid },
+          type: 'chart',
+        },
+      }),
+    );
+
+    const updateRes = await rootAgent.resource('flowSurfaces').updateSettings({
+      values: {
+        target: { uid: chartBlock.uid },
+        stepParams: {
+          chartSettings: {
+            configure: {
+              query: {
+                mode: 'builder',
+                resource: {
+                  dataSourceKey: 'main',
+                  collectionName: 'employees',
+                },
+                measures: [{ field: 'id', aggregation: 'count', alias: 'employeeCount' }],
+                dimensions: [{ field: 'department.manager.nickname' }],
+              },
+              chart: {
+                option: {
+                  mode: 'basic',
+                  builder: {
+                    type: 'bar',
+                    xField: 'department.manager.nickname',
+                    yField: 'employeeCount',
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+
+    expect(updateRes.status).toBe(400);
+    expect(updateRes.body?.errors?.[0]).toMatchObject({
+      path: 'chart query.dimensions[0].field',
+      ruleId: 'chart-builder-query-relation-direct-subfield-required',
+      details: {
+        fieldPath: 'department.manager.nickname',
+        associationPath: 'department',
+        leafFieldName: 'manager',
+        selectedSubfieldPath: 'manager.nickname',
+        supportedFields: expect.arrayContaining([
+          expect.objectContaining({ field: 'department.title' }),
+          expect.objectContaining({ field: 'department.location' }),
+        ]),
+      },
+    });
+    expectChartRepairDetails(updateRes);
   });
 
   it('should allow configure to clear stale builder sorting with an explicit empty array', async () => {
@@ -640,8 +1025,8 @@ chart.on('click', 'series', function(params) {
     expect(surface.tree.stepParams?.chartSettings?.configure?.query).toMatchObject({
       mode: 'builder',
       collectionPath: ['main', 'employees'],
-      measures: [{ field: 'department.title', aggregation: 'count', alias: 'employeeCount' }],
-      dimensions: [{ field: 'department.title' }],
+      measures: [{ field: 'id', aggregation: 'count', alias: 'employeeCount' }],
+      dimensions: [{ field: ['department', 'title'], alias: 'department.title' }],
     });
     expect(surface.tree.stepParams?.chartSettings?.configure?.chart?.option).toMatchObject({
       mode: 'custom',
@@ -987,6 +1372,350 @@ chart.on('click', 'series', function(params) {
       }),
     );
     expectCompleteChartConfigure(surface.tree.stepParams?.chartSettings?.configure);
+  });
+
+  it('should compose chart blocks from chart assets', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Chart asset compose page',
+      tabTitle: 'Chart asset compose tab',
+    });
+
+    const composeRes = await rootAgent.resource('flowSurfaces').compose({
+      values: {
+        target: { uid: page.gridUid },
+        assets: {
+          charts: {
+            statusChart: {
+              query: buildCompleteChartQuery(),
+              visual: buildCompleteChartVisual(),
+            },
+          },
+        },
+        blocks: [
+          {
+            key: 'assetChart',
+            type: 'chart',
+            chart: 'statusChart',
+            settings: {
+              title: 'Employees by status from asset',
+            },
+          },
+        ],
+      },
+    });
+    expect(composeRes.status, readErrorMessage(composeRes)).toBe(200);
+
+    const chartUid = getData(composeRes).blocks.find((block: any) => block.key === 'assetChart')?.uid;
+    expect(chartUid).toBeTruthy();
+
+    const surface = getData(
+      await rootAgent.resource('flowSurfaces').get({
+        uid: chartUid,
+      }),
+    );
+    expectCompleteChartConfigure(surface.tree.stepParams?.chartSettings?.configure);
+  });
+
+  it('should preserve inline chart settings when compose chart blocks also carry chart keys', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Inline chart with asset key compose page',
+      tabTitle: 'Inline chart with asset key compose tab',
+    });
+
+    const composeRes = await rootAgent.resource('flowSurfaces').compose({
+      values: {
+        target: { uid: page.gridUid },
+        blocks: [
+          {
+            key: 'inlineSemanticChart',
+            type: 'chart',
+            chart: 'missingChart',
+            settings: {
+              title: 'Inline semantic chart',
+              query: buildCompleteChartQuery(),
+              visual: buildCompleteChartVisual(),
+            },
+          },
+          {
+            key: 'inlineLegacyChart',
+            type: 'chart',
+            chart: 'missingChart',
+            settings: {
+              title: 'Inline legacy chart',
+              configure: buildCompleteLegacyChartConfigure(),
+            },
+          },
+        ],
+      },
+    });
+    expect(composeRes.status, readErrorMessage(composeRes)).toBe(200);
+
+    const semanticChartUid = getData(composeRes).blocks.find((block: any) => block.key === 'inlineSemanticChart')?.uid;
+    const legacyChartUid = getData(composeRes).blocks.find((block: any) => block.key === 'inlineLegacyChart')?.uid;
+    expect(semanticChartUid).toBeTruthy();
+    expect(legacyChartUid).toBeTruthy();
+
+    const semanticSurface = getData(
+      await rootAgent.resource('flowSurfaces').get({
+        uid: semanticChartUid,
+      }),
+    );
+    const legacySurface = getData(
+      await rootAgent.resource('flowSurfaces').get({
+        uid: legacyChartUid,
+      }),
+    );
+    expectCompleteChartConfigure(semanticSurface.tree.stepParams?.chartSettings?.configure);
+    expectCompleteChartConfigure(legacySurface.tree.stepParams?.chartSettings?.configure);
+  });
+
+  it('should compose popup chart blocks from top-level chart assets', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Popup chart asset compose page',
+      tabTitle: 'Popup chart asset compose tab',
+    });
+
+    const composeRes = await rootAgent.resource('flowSurfaces').compose({
+      values: {
+        target: { uid: page.gridUid },
+        assets: {
+          charts: {
+            statusChart: {
+              query: buildCompleteChartQuery(),
+              visual: buildCompleteChartVisual(),
+            },
+          },
+        },
+        blocks: [
+          {
+            key: 'employeesList',
+            type: 'list',
+            resource: {
+              dataSourceKey: 'main',
+              collectionName: 'employees',
+            },
+            fields: ['nickname', 'status'],
+            recordActions: [
+              {
+                key: 'chartPopup',
+                type: 'popup',
+                popup: {
+                  blocks: [
+                    {
+                      key: 'popupAssetChart',
+                      type: 'chart',
+                      chart: 'statusChart',
+                    },
+                  ],
+                },
+              },
+            ],
+          },
+        ],
+      },
+    });
+    expect(composeRes.status, readErrorMessage(composeRes)).toBe(200);
+
+    const popupActionUid = getData(composeRes)
+      .blocks.find((block: any) => block.key === 'employeesList')
+      ?.recordActions.find((action: any) => action.key === 'chartPopup')?.uid;
+    expect(popupActionUid).toBeTruthy();
+
+    const popupSurface = getData(
+      await rootAgent.resource('flowSurfaces').get({
+        uid: popupActionUid,
+      }),
+    );
+    const chartBlock = collectDescendantNodes(popupSurface.tree, (item) => item?.use === 'ChartBlockModel')[0];
+    expect(chartBlock?.uid).toBeTruthy();
+    expectCompleteChartConfigure(chartBlock.stepParams?.chartSettings?.configure);
+  });
+
+  it('should compose field group popup chart blocks from top-level chart assets', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Field group popup chart asset compose page',
+      tabTitle: 'Field group popup chart asset compose tab',
+    });
+
+    const composeRes = await rootAgent.resource('flowSurfaces').compose({
+      values: {
+        target: { uid: page.gridUid },
+        assets: {
+          charts: {
+            statusChart: {
+              query: buildCompleteChartQuery(),
+              visual: buildCompleteChartVisual(),
+            },
+          },
+        },
+        blocks: [
+          {
+            key: 'employeeDetails',
+            type: 'details',
+            resource: {
+              dataSourceKey: 'main',
+              collectionName: 'employees',
+            },
+            fieldGroups: [
+              {
+                title: 'Relations',
+                fields: [
+                  {
+                    key: 'departmentField',
+                    fieldPath: 'department',
+                    popup: {
+                      blocks: [
+                        {
+                          key: 'fieldGroupPopupAssetChart',
+                          type: 'chart',
+                          chart: 'statusChart',
+                        },
+                      ],
+                    },
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+    });
+    expect(composeRes.status, readErrorMessage(composeRes)).toBe(200);
+
+    const detailsUid = getData(composeRes).blocks.find((block: any) => block.key === 'employeeDetails')?.uid;
+    expect(detailsUid).toBeTruthy();
+
+    const detailsSurface = getData(
+      await rootAgent.resource('flowSurfaces').get({
+        uid: detailsUid,
+      }),
+    );
+    const chartBlock = collectDescendantNodes(detailsSurface.tree, (item) => item?.use === 'ChartBlockModel')[0];
+    expect(chartBlock?.uid).toBeTruthy();
+    expectCompleteChartConfigure(chartBlock.stepParams?.chartSettings?.configure);
+  });
+
+  it('should reject compose chart blocks that reference missing chart assets', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Missing chart asset compose page',
+      tabTitle: 'Missing chart asset compose tab',
+    });
+
+    const composeRes = await rootAgent.resource('flowSurfaces').compose({
+      values: {
+        target: { uid: page.gridUid },
+        assets: {
+          charts: {},
+        },
+        blocks: [
+          {
+            key: 'missingAssetChart',
+            type: 'chart',
+            chart: 'missingChart',
+          },
+        ],
+      },
+    });
+    expect(composeRes.status).toBe(400);
+    expect(composeRes.body?.errors).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          path: '$.blocks[0].chart',
+          ruleId: 'chart-block-asset-reference-missing',
+          details: expect.objectContaining({
+            chartKey: 'missingChart',
+          }),
+        }),
+      ]),
+    );
+  });
+
+  it('should reject compose chart assets without visual settings', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Missing chart asset visual compose page',
+      tabTitle: 'Missing chart asset visual compose tab',
+    });
+
+    const composeRes = await rootAgent.resource('flowSurfaces').compose({
+      values: {
+        target: { uid: page.gridUid },
+        assets: {
+          charts: {
+            queryOnlyChart: {
+              query: buildCompleteChartQuery(),
+            },
+          },
+        },
+        blocks: [
+          {
+            key: 'queryOnlyAssetChart',
+            type: 'chart',
+            chart: 'queryOnlyChart',
+          },
+        ],
+      },
+    });
+    expect(composeRes.status).toBe(400);
+    expect(composeRes.body?.errors).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          path: '$.blocks[0].settings.visual',
+          ruleId: 'chart-visual-missing',
+        }),
+      ]),
+    );
+  });
+
+  it('should include supported chart types and jsBlock guidance for unsupported compose chart visual types', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Unsupported chart asset visual compose page',
+      tabTitle: 'Unsupported chart asset visual compose tab',
+    });
+
+    const composeRes = await rootAgent.resource('flowSurfaces').compose({
+      values: {
+        target: { uid: page.gridUid },
+        assets: {
+          charts: {
+            statChart: {
+              query: buildCompleteChartQuery(),
+              visual: {
+                mode: 'basic',
+                type: 'stat',
+                mappings: {
+                  y: 'employeeCount',
+                },
+              },
+            },
+          },
+        },
+        blocks: [
+          {
+            key: 'statAssetChart',
+            type: 'chart',
+            chart: 'statChart',
+          },
+        ],
+      },
+    });
+    expect(composeRes.status).toBe(400);
+    const unsupportedTypeError = composeRes.body?.errors?.find(
+      (error: any) => error.ruleId === 'chart-visual-type-unsupported',
+    );
+    expect(unsupportedTypeError).toMatchObject({
+      path: '$.blocks[0].settings.visual.type',
+      details: expect.objectContaining({
+        type: 'stat',
+        supportedVisualTypes: ['line', 'area', 'bar', 'barHorizontal', 'pie', 'doughnut', 'funnel', 'scatter'],
+        alternativeBlockType: 'jsBlock',
+      }),
+    });
+    expect(unsupportedTypeError?.message).toContain('Supported basic chart visual types');
+    expect(unsupportedTypeError?.message).toContain('jsBlock');
+    expect(unsupportedTypeError?.message).not.toContain('Do not change this block type');
+    expect(unsupportedTypeError?.details?.alternativeHint).toContain('jsBlock');
+    expect(unsupportedTypeError?.details?.repairHint).not.toContain('Do not change this block type');
+    expect(unsupportedTypeError?.details?.forbiddenFallbacks).not.toContain('jsBlock');
   });
 
   it('should compose chart blocks with complete legacy configure settings', async () => {
@@ -1452,6 +2181,23 @@ function expectChartRepairDetails(response: any) {
   expect(details?.forbiddenFallbacks).toEqual(expect.arrayContaining(['table', 'list', 'drop chart', 'defer chart']));
 }
 
+function collectDescendantNodes(root: any, predicate: (item: any) => boolean) {
+  const result: any[] = [];
+  const visit = (node: any) => {
+    if (!node) {
+      return;
+    }
+    if (predicate(node)) {
+      result.push(node);
+    }
+    Object.values(node.subModels || {}).forEach((value) => {
+      _.castArray(value).forEach(visit);
+    });
+  };
+  visit(root);
+  return result;
+}
+
 function expectCompleteChartConfigure(configure: any) {
   expect(configure?.query).toMatchObject({
     mode: 'builder',
@@ -1619,6 +2365,7 @@ async function setupFixtureCollections(rootAgent: any, db: Database) {
       fields: [
         { name: 'title', type: 'string', interface: 'input' },
         { name: 'location', type: 'string', interface: 'input' },
+        { name: 'employerEIN', field: 'employer_e_i_n', type: 'string', interface: 'input' },
       ],
     },
   });
@@ -1644,8 +2391,18 @@ async function setupFixtureCollections(rootAgent: any, db: Database) {
     },
   });
 
+  await rootAgent.resource('collections.fields', 'departments').create({
+    values: {
+      name: 'manager',
+      type: 'belongsTo',
+      target: 'employees',
+      foreignKey: 'managerId',
+      interface: 'm2o',
+    },
+  });
+
   await waitForFixtureCollectionsReady(db, {
-    departments: ['title', 'location'],
+    departments: ['title', 'location', 'employerEIN', 'managerId'],
     employees: ['nickname', 'status', 'departmentId'],
   });
 }

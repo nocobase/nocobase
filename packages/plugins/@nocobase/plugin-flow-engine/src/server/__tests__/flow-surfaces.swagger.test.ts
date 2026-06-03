@@ -201,6 +201,38 @@ describe('flowSurfaces swagger', () => {
       type: 'string',
       example: 'FLOW_SURFACE_BAD_REQUEST',
     });
+    expect(schemas.FlowSurfaceErrorResponse.properties.message).toMatchObject({
+      type: 'string',
+    });
+    expect(schemas.FlowSurfaceErrorResponse.properties.errorCount).toMatchObject({
+      type: 'integer',
+      example: 2,
+    });
+    expect(schemas.FlowSurfaceErrorResponse.properties.details.properties.retryPolicy).toMatchObject({
+      type: 'string',
+      example: 'fix_all_errors_before_retry_same_write',
+    });
+    expect(schemas.FlowSurfaceErrorResponse.properties.details.properties.mustFixAllErrorsBeforeRetry).toMatchObject({
+      type: 'boolean',
+      example: true,
+    });
+    expect(schemas.FlowSurfaceErrorResponse.properties.details.properties.requiredBlockPolicy.properties).toEqual(
+      expect.objectContaining({
+        requiredBlockTypes: expect.objectContaining({
+          type: 'array',
+        }),
+        fixStrategy: expect.objectContaining({
+          example: 'repair_same_block_type',
+        }),
+        doNotReplaceOrDrop: expect.objectContaining({
+          type: 'boolean',
+        }),
+      }),
+    );
+    expect(schemas.FlowSurfaceErrorResponse.properties.errors.items.properties.index).toMatchObject({
+      type: 'integer',
+      example: 1,
+    });
     expect(schemas.FlowSurfaceErrorResponse.properties.errors.items.properties.status).toMatchObject({
       type: 'integer',
       example: 400,
@@ -1735,6 +1767,12 @@ describe('flowSurfaces swagger', () => {
     expect(schemas.FlowSurfaceBatchItemError.additionalProperties).toBe(false);
     expect(schemas.FlowSurfaceBatchItemError.properties.code.type).toBe('string');
     expect(schemas.FlowSurfaceBatchItemError.properties.status.type).toBe('integer');
+    expect(schemas.FlowSurfaceBatchItemError.properties.errorCount.type).toBe('integer');
+    expect(schemas.FlowSurfaceBatchItemError.properties.details.properties.retryPolicy.example).toBe(
+      'fix_all_errors_before_retry_same_write',
+    );
+    expect(schemas.FlowSurfaceBatchItemError.properties.errors.items.properties.index.type).toBe('integer');
+    expect(schemas.FlowSurfaceBatchItemError.properties.errors.items.additionalProperties).toBe(false);
     expect(schemas.FlowSurfaceBatchItemError.properties.type.enum).toEqual([
       'bad_request',
       'forbidden',

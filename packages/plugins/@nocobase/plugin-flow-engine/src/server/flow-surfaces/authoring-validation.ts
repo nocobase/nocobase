@@ -14,8 +14,12 @@ import * as antDesignIconAsn from '@ant-design/icons-svg';
 import type { FlowSurfaceErrorItemInput } from './errors';
 import { FlowSurfaceBadRequestError, throwAggregateBadRequest } from './errors';
 import {
+  formatChartBuilderSupportedRelationSubfields,
   getCollectionFields,
+  getCollectionModelAttributes,
   getCollectionName,
+  getInvalidChartBuilderRelationDirectSubfieldDetails,
+  getUnsupportedChartBuilderRelationSubfieldDetails,
   getFieldFilterable,
   getFieldInterface,
   getFieldName,
@@ -65,7 +69,7 @@ import { collectRunJsAuthoringErrors } from './runjs-authoring';
 import { getConfigureOptionKeysForUse } from './configure-options';
 import {
   assertFlowSurfaceFilterGroupShape,
-  normalizeFlowSurfaceFilterDateValue,
+  normalizeFlowSurfaceStrictFilterDateValue,
   assertFlowSurfaceFilterOperator,
   FLOW_SURFACE_FILTER_GROUP_EXAMPLE,
 } from './filter-group';
@@ -219,6 +223,12 @@ const JS_BLOCK_REPAIR_HINT =
   'This is a jsBlock payload shape problem. Repair this jsBlock using inline settings.code/settings.version, or applyBlueprint assets.scripts.<key>.code plus block.script. Do not change this block type to table, chart, actionPanel, gridCard, or another block type.';
 const CHART_REPAIR_HINT =
   'This is a chart payload shape problem. Keep using chart and repair this chart using assets.charts.<key>.query/visual plus block.chart, or localized settings.query/settings.visual. Do not change this block type to table, jsBlock, actionPanel, gridCard, or another block type, and do not drop or defer the chart. KPI / summary numbers should use jsBlock; charts are for trends, distributions, rankings, and visual analysis.';
+const REPAIR_ALL_ERRORS_AGENT_INSTRUCTION =
+  'If this response contains errors[], fix every listed error in one payload revision before retrying the same write. Do not fix only this error and immediately retry.';
+const JS_BLOCK_AGENT_INSTRUCTION = `${REPAIR_ALL_ERRORS_AGENT_INSTRUCTION} Do not skip, drop, defer, or replace this required jsBlock. Repair it as jsBlock.`;
+const CHART_AGENT_INSTRUCTION = `${REPAIR_ALL_ERRORS_AGENT_INSTRUCTION} Do not skip, drop, defer, or replace this required chart. Repair it as chart.`;
+const VISIBLE_DATA_BLOCK_FIELDS_REPAIR_HINT =
+  'Add direct visible collection fields to this block. Do not rely on defaults.collections.*.fieldGroups, action-only fields, dividers, or generated popup/form defaults as a substitute for visible block fields.';
 const JS_BLOCK_FORBIDDEN_FALLBACKS = [
   'table',
   'list',
@@ -243,6 +253,7 @@ const CHART_FORBIDDEN_FALLBACKS = [
 const CHART_QUERY_MODE_SET = new Set(CHART_QUERY_MODES);
 const CHART_VISUAL_MODE_SET = new Set(CHART_VISUAL_MODES);
 const CHART_BASIC_VISUAL_TYPE_SET = new Set(CHART_BASIC_VISUAL_TYPES);
+const CHART_BASIC_VISUAL_TYPE_LIST = CHART_BASIC_VISUAL_TYPES.join(', ');
 const STRICT_LOCALIZED_CHART_ACTIONS = new Set<FlowSurfaceAuthoringWriteAction>(['compose', 'addBlocks']);
 const CHART_VISUAL_LEGACY_BUILDER_KEYS = new Set([
   'xField',
@@ -842,6 +853,7 @@ function withJsBlockRepairHint(details: Record<string, any> = {}) {
     requiredBlockType: 'jsBlock',
     fixStrategy: 'repair_same_block_type',
     repairHint: JS_BLOCK_REPAIR_HINT,
+    agentInstruction: JS_BLOCK_AGENT_INSTRUCTION,
     repairExample: {
       inlineBlock: {
         type: 'jsBlock',
@@ -873,6 +885,7 @@ function withChartRepairHint(details: Record<string, any> = {}) {
     requiredBlockType: 'chart',
     fixStrategy: 'repair_same_block_type',
     repairHint: CHART_REPAIR_HINT,
+    agentInstruction: CHART_AGENT_INSTRUCTION,
     repairSteps: [
       'Keep the block type as chart.',
       'Define assets.charts.<key>.query and assets.charts.<key>.visual.',
@@ -1014,6 +1027,23 @@ function withChartRepairHint(details: Record<string, any> = {}) {
       },
     },
     forbiddenFallbacks: CHART_FORBIDDEN_FALLBACKS,
+  };
+}
+
+function withUnsupportedChartVisualTypeHint(details: Record<string, any> = {}) {
+  const jsBlockHint =
+    'Supported basic chart visual types are: ' +
+    `${CHART_BASIC_VISUAL_TYPE_LIST}. ` +
+    'If the required visualization cannot be represented by these chart types, use a jsBlock instead.';
+  return {
+    ...details,
+    fixStrategy: 'use_supported_chart_type_or_jsBlock',
+    repairHint: jsBlockHint,
+    agentInstruction: `${REPAIR_ALL_ERRORS_AGENT_INSTRUCTION} Use one of the supported chart visual types, or use a jsBlock when the requested visualization is outside the chart plugin capabilities.`,
+    supportedVisualTypes: [...CHART_BASIC_VISUAL_TYPES],
+    alternativeBlockType: 'jsBlock',
+    alternativeHint: jsBlockHint,
+    forbiddenFallbacks: CHART_FORBIDDEN_FALLBACKS.filter((item) => item !== 'jsBlock'),
   };
 }
 
@@ -1431,7 +1461,7 @@ function collectChartFilterDateValueError(
   errors: AuthoringErrorInput[],
 ) {
   try {
-    normalizeFlowSurfaceFilterDateValue(operator, value, path);
+    normalizeFlowSurfaceStrictFilterDateValue(operator, value, path);
   } catch (error) {
     if (error instanceof FlowSurfaceBadRequestError) {
       pushChartBadRequestAuthoringError(errors, error, path);
@@ -1471,10 +1501,12 @@ function collectBuilderChartAssetFieldErrors(
   const selections = [
     ..._.castArray(query.measures || []).map((selection, index) => ({
       selection,
+      kind: 'measure',
       fieldPath: `${path}.query.measures[${index}].field`,
     })),
     ..._.castArray(query.dimensions || []).map((selection, index) => ({
       selection,
+      kind: 'dimension',
       fieldPath: `${path}.query.dimensions[${index}].field`,
     })),
   ];
@@ -1487,24 +1519,100 @@ function collectBuilderChartAssetFieldErrors(
     if (!fieldPath) {
       continue;
     }
-    const field = resolveFieldFromCollection(collection, fieldPath);
-    if (!field) {
-      if (collectionHasConcreteField(collection, fieldPath)) {
+    const fieldPathParts = fieldPath.split('.').filter(Boolean);
+    const isCountMeasureSelection =
+      item.kind === 'measure' &&
+      String(item.selection?.aggregation || '').trim() === 'count' &&
+      !item.selection?.distinct;
+    if (fieldPathParts.length > 1 && !isCountMeasureSelection) {
+      const directAssociationPath = fieldPathParts[0];
+      const directAssociationField = resolveFieldFromCollection(collection, directAssociationPath);
+      const directAssociationTargetCollection =
+        directAssociationField && isAssociationField(directAssociationField)
+          ? resolveFieldTargetCollection(
+              directAssociationField,
+              dataSourceKey,
+              (resolvedDataSourceKey, targetCollection) =>
+                context.getCollection?.(resolvedDataSourceKey, targetCollection),
+            )
+          : null;
+      const invalidDirectSubfield = directAssociationTargetCollection
+        ? getInvalidChartBuilderRelationDirectSubfieldDetails({
+            associationPathName: directAssociationPath,
+            selectedSubfieldPath: fieldPathParts.slice(1).join('.'),
+            targetCollection: directAssociationTargetCollection,
+          })
+        : null;
+      if (invalidDirectSubfield) {
+        pushAuthoringError(errors, {
+          path: item.fieldPath,
+          ruleId: 'chart-builder-query-relation-direct-subfield-required',
+          message: `flowSurfaces authoring ${
+            item.fieldPath
+          } must reference a direct scalar child field under relation '${
+            invalidDirectSubfield.associationPath
+          }'. ${formatChartBuilderSupportedRelationSubfields(
+            invalidDirectSubfield.associationPath,
+            invalidDirectSubfield.supportedFields,
+          )}`,
+          details: withChartRepairHint({
+            fieldPath,
+            dataSourceKey,
+            collectionName,
+            ...invalidDirectSubfield,
+          }),
+        });
         continue;
       }
-      pushAuthoringError(errors, {
-        path: item.fieldPath,
-        ruleId: 'chart-builder-query-field-unknown',
-        message: `flowSurfaces authoring ${item.fieldPath} references unknown field '${fieldPath}' on collection '${dataSourceKey}.${collectionName}'`,
-        details: withChartRepairHint({
-          fieldPath,
-          dataSourceKey,
-          collectionName,
-        }),
-      });
-      continue;
     }
-    if (!fieldPath.includes('.') && isAssociationField(field)) {
+    const field = resolveFieldFromCollection(collection, fieldPath);
+    const associationPath = fieldPath.includes('.') ? fieldPath.split('.').slice(0, -1).join('.') : '';
+    const leafFieldName = fieldPath.split('.').slice(-1)[0];
+    const associationField = associationPath ? resolveFieldFromCollection(collection, associationPath) : null;
+    const associationTargetCollection =
+      associationField && isAssociationField(associationField)
+        ? resolveFieldTargetCollection(
+            associationField,
+            dataSourceKey,
+            (resolvedDataSourceKey, targetCollection) =>
+              context.getCollection?.(resolvedDataSourceKey, targetCollection),
+          )
+        : null;
+    const leafModelAttributes = getCollectionModelAttributes(associationTargetCollection || collection);
+    const hasLeafModelAttribute = Object.prototype.hasOwnProperty.call(leafModelAttributes, leafFieldName);
+    const isCountMeasureRelationSubfield =
+      item.kind === 'measure' &&
+      String(item.selection?.aggregation || '').trim() === 'count' &&
+      !item.selection?.distinct &&
+      associationField &&
+      isAssociationField(associationField);
+    const unsupportedRelationSubfield = associationTargetCollection
+      ? getUnsupportedChartBuilderRelationSubfieldDetails({
+          associationPathName: associationPath,
+          leafFieldName,
+          leafField: field,
+          targetCollection: associationTargetCollection,
+        })
+      : null;
+    if (!field) {
+      const hasConcreteField = associationTargetCollection
+        ? hasLeafModelAttribute || collectionHasConcreteField(associationTargetCollection, leafFieldName)
+        : collectionHasConcreteField(collection, fieldPath);
+      if (!hasConcreteField) {
+        pushAuthoringError(errors, {
+          path: item.fieldPath,
+          ruleId: 'chart-builder-query-field-unknown',
+          message: `flowSurfaces authoring ${item.fieldPath} references unknown field '${fieldPath}' on collection '${dataSourceKey}.${collectionName}'`,
+          details: withChartRepairHint({
+            fieldPath,
+            dataSourceKey,
+            collectionName,
+          }),
+        });
+        continue;
+      }
+    }
+    if (!fieldPath.includes('.') && field && isAssociationField(field)) {
       const suggestion = resolveChartBuilderAssociationSubfieldSuggestion(
         fieldPath,
         field,
@@ -1520,6 +1628,49 @@ function collectBuilderChartAssetFieldErrors(
           dataSourceKey,
           collectionName,
           ...suggestion,
+        }),
+      });
+    }
+    if (isCountMeasureRelationSubfield) {
+      pushAuthoringError(errors, {
+        path: item.fieldPath,
+        ruleId: 'chart-builder-query-count-measure-relation-subfield',
+        message: `flowSurfaces authoring ${item.fieldPath} counts relation subfield '${fieldPath}'; count a scalar base field such as 'id' and keep '${fieldPath}' as a dimension`,
+        details: withChartRepairHint({
+          fieldPath,
+          dataSourceKey,
+          collectionName,
+          suggestedMeasure: {
+            field: 'id',
+            aggregation: 'count',
+            alias: String(item.selection?.alias || '').trim() || 'recordCount',
+          },
+          suggestedDimension: {
+            field: fieldPath,
+          },
+        }),
+      });
+      continue;
+    }
+    if (unsupportedRelationSubfield) {
+      pushAuthoringError(errors, {
+        path: item.fieldPath,
+        ruleId: 'chart-builder-query-relation-subfield-column-unsupported',
+        message: `flowSurfaces authoring ${
+          item.fieldPath
+        } references relation subfield '${fieldPath}', but current chart builder SQL generation cannot query relation subfield '${
+          unsupportedRelationSubfield.leafFieldName
+        }' because its database column is '${
+          unsupportedRelationSubfield.columnName
+        }'. ${formatChartBuilderSupportedRelationSubfields(
+          associationPath,
+          unsupportedRelationSubfield.supportedFields,
+        )}`,
+        details: withChartRepairHint({
+          fieldPath,
+          dataSourceKey,
+          collectionName,
+          ...unsupportedRelationSubfield,
         }),
       });
     }
@@ -1631,8 +1782,8 @@ function collectChartAssetVisualErrors(asset: any, path: string, errors: Authori
     pushAuthoringError(errors, {
       path: `${path}.visual.type`,
       ruleId: 'chart-visual-type-unsupported',
-      message: `flowSurfaces authoring ${path}.visual.type '${type}' is not supported`,
-      details: withChartRepairHint({
+      message: `flowSurfaces authoring ${path}.visual.type '${type}' is not supported. Supported basic chart visual types: ${CHART_BASIC_VISUAL_TYPE_LIST}. If these types do not satisfy the requirement, use a jsBlock instead.`,
+      details: withUnsupportedChartVisualTypeHint({
         type,
       }),
     });
@@ -4978,6 +5129,26 @@ function collectUnsupportedDefaultFilterOperatorError(operator: any, path: strin
   });
 }
 
+function collectDefaultFilterDateValueError(operator: any, value: any, path: string, errors: AuthoringErrorInput[]) {
+  try {
+    normalizeFlowSurfaceStrictFilterDateValue(operator, value, path);
+  } catch (error) {
+    if (!(error instanceof FlowSurfaceBadRequestError)) {
+      throw error;
+    }
+    const details = _.isPlainObject(error.options?.details) ? error.options.details : {};
+    pushAuthoringError(errors, {
+      path: typeof error.options?.path === 'string' && error.options.path ? error.options.path : path,
+      ruleId:
+        typeof error.options?.ruleId === 'string' && error.options.ruleId
+          ? error.options.ruleId
+          : 'filter-group-date-value-invalid',
+      message: error.message,
+      details,
+    });
+  }
+}
+
 function collectTopLevelLayoutErrors(
   actionName: FlowSurfaceAuthoringWriteAction,
   values: any,
@@ -5666,6 +5837,8 @@ function collectVisibleDataBlockFieldErrors(
         blockType,
         collection: getBlockCollectionName(block, context),
         fieldCount: fieldEntries.length,
+        repairHint: VISIBLE_DATA_BLOCK_FIELDS_REPAIR_HINT,
+        agentInstruction: REPAIR_ALL_ERRORS_AGENT_INSTRUCTION,
         ...(suggestedFields.length ? { suggestion: { fields: suggestedFields } } : {}),
       },
     });
@@ -5700,6 +5873,8 @@ function collectVisibleDataBlockFieldErrors(
       fieldCount: validBusinessFieldNames.length,
       requiredFieldCount,
       eligibleBusinessFieldCount: eligibleBusinessFields.length,
+      repairHint: VISIBLE_DATA_BLOCK_FIELDS_REPAIR_HINT,
+      agentInstruction: REPAIR_ALL_ERRORS_AGENT_INSTRUCTION,
       suggestion: {
         fields: eligibleBusinessFields.slice(0, requiredFieldCount),
       },
@@ -6190,6 +6365,7 @@ function visitFilterItems(
   }
   if (typeof value.operator === 'string') {
     collectUnsupportedDefaultFilterOperatorError(value.operator, `${path}.operator`, errors);
+    collectDefaultFilterDateValueError(value.operator, value.value, `${path}.value`, errors);
   }
   const filterItems = value.items;
   if (Array.isArray(filterItems)) {
@@ -6221,8 +6397,9 @@ function visitFilterItems(
     }
     collectDefaultFilterFieldPathError(key, `${path}.${key}`, block, context, errors);
     if (_.isPlainObject(child)) {
-      Object.keys(child).forEach((operator) => {
+      Object.entries(child).forEach(([operator, operatorValue]) => {
         collectUnsupportedDefaultFilterOperatorError(operator, `${path}.${key}.${operator}`, errors);
+        collectDefaultFilterDateValueError(operator, operatorValue, `${path}.${key}.${operator}`, errors);
       });
     }
   });
@@ -8114,11 +8291,7 @@ function collectionHasConcreteField(collection: any, fieldName: string) {
   if (!normalized) {
     return false;
   }
-  const modelAttributes =
-    (typeof collection?.model?.getAttributes === 'function' ? collection.model.getAttributes() : null) ||
-    collection?.model?.rawAttributes ||
-    collection?.model?.attributes ||
-    {};
+  const modelAttributes = getCollectionModelAttributes(collection);
   const primaryKeyAttributes = _.castArray(
     collection?.model?.primaryKeyAttributes || collection?.model?.primaryKeyAttribute || [],
   );
