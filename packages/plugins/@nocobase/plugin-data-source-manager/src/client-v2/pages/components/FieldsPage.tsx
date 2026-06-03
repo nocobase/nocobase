@@ -32,6 +32,7 @@ import type { ColumnsType } from 'antd/es/table';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useT } from '../../locale';
 import { PluginDataSourceManagerClientV2 } from '../../plugin';
+import type { DataSourceTypeOptions } from '../../plugin';
 import { compileLegacyTemplate } from '../../utils/compileLegacyTemplate';
 import { getCollectionFieldActionUrl } from './collectionFieldApi';
 import {
@@ -91,6 +92,20 @@ function normalizeListResponse(response: any) {
   return Array.isArray(payload) ? payload : [];
 }
 
+function getErrorMessage(error: unknown, fallback: string) {
+  const response = (error as any)?.response?.data;
+  const message =
+    (Array.isArray(response?.errors)
+      ? response.errors
+          .map((item: { message?: string }) => item.message)
+          .filter(Boolean)
+          .join('\n')
+      : undefined) ||
+    response?.message ||
+    (error as Error)?.message;
+  return typeof message === 'string' && message ? message : fallback;
+}
+
 const fallbackFieldInterfaceGroups: Record<string, { label: string; order: number }> = {
   basic: { label: 'Basic', order: 1 },
   choices: { label: 'Choices', order: 20 },
@@ -101,10 +116,6 @@ const fallbackFieldInterfaceGroups: Record<string, { label: string; order: numbe
   systemInfo: { label: 'System info', order: 400 },
   others: { label: 'Others', order: 800 },
 };
-
-const readOnlyRelationInterfaces = new Set(['obo', 'oho', 'o2m', 'm2o', 'm2m', 'o2o']);
-
-const readOnlyPresetFieldInterfaces = new Set(['snowflakeId', 'createdAt', 'createdBy', 'updatedAt', 'updatedBy']);
 
 function getFieldInterfaces(ctx: any, dataSourceType?: string) {
   const manager = ctx.dataSourceManager.collectionFieldInterfaceManager;
@@ -181,6 +192,41 @@ function filterCreateFieldInterfaces(groups: FieldInterfaceGroupOption[], collec
     .filter((group) => group.children.length);
 }
 
+function filterCreateFieldInterfacesByDataSource(
+  groups: FieldInterfaceGroupOption[],
+  dataSourceType: DataSourceTypeOptions | undefined,
+  collection: Record<string, any>,
+) {
+  const filter =
+    typeof dataSourceType?.createFieldInterfaces === 'function'
+      ? dataSourceType.createFieldInterfaces({ collection })
+      : dataSourceType?.createFieldInterfaces;
+  if (!filter) {
+    return groups;
+  }
+  const includedGroups = filter.groups?.length ? new Set(filter.groups) : null;
+  const includedInterfaces = filter.include?.length ? new Set(filter.include) : null;
+  const excludedInterfaces = filter.exclude?.length ? new Set(filter.exclude) : null;
+
+  return groups
+    .map((group) => ({
+      ...group,
+      children:
+        includedGroups && !includedGroups.has(group.key)
+          ? []
+          : group.children.filter((fieldInterface) => {
+              if (includedInterfaces && !includedInterfaces.has(fieldInterface.name)) {
+                return false;
+              }
+              if (excludedInterfaces?.has(fieldInterface.name)) {
+                return false;
+              }
+              return true;
+            }),
+    }))
+    .filter((group) => group.children.length);
+}
+
 function isFieldInterfaceCompatible(fieldInterface: FieldInterfaceOption, field: Record<string, any>) {
   if (fieldInterface.name === field.interface) {
     return true;
@@ -206,13 +252,81 @@ function getFieldInterfaceLabel(fieldInterface?: FieldInterfaceOption, fallback?
   return fieldInterface?.title || fieldInterface?.label || fallback || fieldInterface?.name;
 }
 
-function isReadOnlyFieldInterface(record: Record<string, any>, currentFieldInterface?: FieldInterfaceOption) {
+function getCollectionPresetFieldInterfaces(ctx: any) {
+  const plugin = ctx.app.pm.get(PluginDataSourceManagerClientV2);
+  const presetFields = plugin?.getCollectionPresetFields?.() || [];
+  const fieldInterfaces = new Set<string>();
+  presetFields.forEach((presetField) => {
+    const fieldInterface = presetField.value?.interface || presetField.value?.name;
+    if (fieldInterface) {
+      fieldInterfaces.add(fieldInterface);
+    }
+  });
+  return fieldInterfaces;
+}
+
+function getEditableFieldDisplayName(record: Record<string, any>) {
+  const title = record.uiSchema?.title;
+  return typeof title === 'string' ? title : title == null ? record.name : String(title);
+}
+
+function EditableFieldDisplayNameCell(props: {
+  loading?: boolean;
+  onSave: (record: Record<string, any>, value: string) => Promise<void>;
+  record: Record<string, any>;
+}) {
+  const [value, setValue] = useState(getEditableFieldDisplayName(props.record));
+
+  useEffect(() => {
+    setValue(getEditableFieldDisplayName(props.record));
+  }, [props.record]);
+
+  const handleSave = useCallback(() => {
+    const currentValue = getEditableFieldDisplayName(props.record);
+    const nextValue = value.trim();
+    if (!nextValue || nextValue === currentValue) {
+      setValue(currentValue);
+      return;
+    }
+    props.onSave(props.record, nextValue).catch(() => {
+      setValue(currentValue);
+    });
+  }, [props, value]);
+
   return (
+    <Input
+      disabled={props.loading}
+      value={value}
+      onBlur={handleSave}
+      onChange={(event) => setValue(event.target.value)}
+      onPressEnter={(event) => event.currentTarget.blur()}
+      suffix={props.loading ? <Spin size="small" /> : null}
+    />
+  );
+}
+
+function isReadOnlyFieldInterface(
+  record: Record<string, any>,
+  options: {
+    collection: Record<string, any>;
+    currentFieldInterface?: FieldInterfaceOption;
+    dataSourceType?: DataSourceTypeOptions;
+    presetFieldInterfaces: Set<string>;
+  },
+) {
+  const dataSourceReadOnly = options.dataSourceType?.isFieldInterfaceReadOnly?.({
+    collection: options.collection,
+    field: record,
+    fieldInterface: options.currentFieldInterface,
+  });
+  if (typeof dataSourceReadOnly === 'boolean') {
+    return dataSourceReadOnly;
+  }
+  return Boolean(
     record.source ||
-    readOnlyRelationInterfaces.has(record.interface) ||
-    readOnlyPresetFieldInterfaces.has(record.interface) ||
-    currentFieldInterface?.isAssociation ||
-    currentFieldInterface?.group === 'systemInfo'
+      options.currentFieldInterface?.isAssociation ||
+      options.currentFieldInterface?.group === 'systemInfo' ||
+      options.presetFieldInterfaces.has(record.interface),
   );
 }
 
@@ -277,6 +391,7 @@ function isAddFieldVisible(options: {
   const plugin = options.ctx.app.pm.get(PluginDataSourceManagerClientV2);
   const dataSourceType = plugin?.getType?.(options.dataSourceType);
   return (
+    !dataSourceType?.disableConfigureFieldsActions &&
     !dataSourceType?.disableAddFields &&
     options.collection.template !== 'sql' &&
     options.fieldInterfaceGroups.length > 0
@@ -737,10 +852,11 @@ export default function FieldsPage(props: FieldsPageProps) {
   const t = useT();
   const ctx = useFlowContext();
   const appInfo = useCurrentAppInfo<{ database?: { dialect?: string } }>();
-  const { message, modal } = App.useApp();
+  const { message, modal, notification } = App.useApp();
   const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
   const [titleField, setTitleField] = useState<string | undefined>(props.collection.titleField);
   const [titleFieldLoadingKey, setTitleFieldLoadingKey] = useState<React.Key>();
+  const [displayNameLoadingKey, setDisplayNameLoadingKey] = useState<React.Key>();
   const [syncFieldsLoading, setSyncFieldsLoading] = useState(false);
   const request = useRequest(async () => {
     const response = await ctx.api.request({
@@ -761,6 +877,7 @@ export default function FieldsPage(props: FieldsPageProps) {
   }, [props.collection.titleField]);
 
   const dataSource = ctx.dataSourceManager.getDataSource(props.dataSourceKey);
+  const dataSourceType = ctx.app.pm.get(PluginDataSourceManagerClientV2)?.getType?.(dataSource?.options?.type);
   const databaseDialect = getAppInfoDatabaseDialect(appInfo);
   const allFieldInterfaceGroups = useMemo(
     () => getFieldInterfaceOptions(ctx, dataSource?.options?.type),
@@ -768,12 +885,16 @@ export default function FieldsPage(props: FieldsPageProps) {
   );
   const fieldInterfaceGroups = useMemo(
     () =>
-      filterCreateFieldInterfaces(
-        filterFieldInterfaceGroupsByTemplate(allFieldInterfaceGroups, props.collection, ctx, databaseDialect),
+      filterCreateFieldInterfacesByDataSource(
+        filterCreateFieldInterfaces(
+          filterFieldInterfaceGroupsByTemplate(allFieldInterfaceGroups, props.collection, ctx, databaseDialect),
+          props.collection,
+          ctx,
+        ),
+        dataSourceType,
         props.collection,
-        ctx,
       ),
-    [allFieldInterfaceGroups, databaseDialect, ctx, props.collection],
+    [allFieldInterfaceGroups, databaseDialect, ctx, dataSourceType, props.collection],
   );
   const fieldInterfacesByName = useMemo(() => {
     return filterFieldInterfacesByTemplate(
@@ -786,6 +907,7 @@ export default function FieldsPage(props: FieldsPageProps) {
       return memo;
     }, {});
   }, [databaseDialect, ctx, dataSource?.options?.type, props.collection]);
+  const presetFieldInterfaces = useMemo(() => getCollectionPresetFieldInterfaces(ctx), [ctx]);
 
   const openFieldForm = useCallback(
     (mode: 'create' | 'edit', field?: Record<string, any>, interfaceName?: string) => {
@@ -919,6 +1041,41 @@ export default function FieldsPage(props: FieldsPageProps) {
     [ctx.api, ctx.dataSourceManager, fieldInterfacesByName, props.collection.name, props.dataSourceKey, request],
   );
 
+  const handleFieldDisplayNameSave = useCallback(
+    async (field: Record<string, any>, title: string) => {
+      const nextTitle = title.trim();
+      if (!nextTitle) {
+        message.error(t('Field display name is required'));
+        throw new Error('Field display name is required');
+      }
+      setDisplayNameLoadingKey(field.name);
+      try {
+        await ctx.api.request({
+          url: getCollectionFieldActionUrl(props.dataSourceKey, props.collection.name, 'update', field.name),
+          method: 'post',
+          data: {
+            ...field,
+            uiSchema: {
+              ...omitRawTitle(field.uiSchema),
+              title: nextTitle,
+            },
+          },
+        });
+        await ctx.dataSourceManager.getDataSource(props.dataSourceKey)?.reload();
+        request.refresh();
+        message.success(t('Saved successfully'));
+      } catch (error) {
+        notification.error({
+          message: getErrorMessage(error, t('Save failed')),
+        });
+        throw error;
+      } finally {
+        setDisplayNameLoadingKey(undefined);
+      }
+    },
+    [ctx.api, ctx.dataSourceManager, message, notification, props.collection.name, props.dataSourceKey, request, t],
+  );
+
   const handleTitleFieldChange = useCallback(
     async (field: Record<string, any>, checked: boolean) => {
       const nextTitleField = checked ? field.name : 'id';
@@ -977,6 +1134,7 @@ export default function FieldsPage(props: FieldsPageProps) {
   ]);
 
   const syncFieldsVisible = isSyncFieldsVisible(props.dataSourceKey, props.collection, ctx);
+  const configureFieldsActionsDisabled = Boolean(dataSourceType?.disableConfigureFieldsActions);
   const addFieldVisible = isAddFieldVisible({
     collection: props.collection,
     ctx,
@@ -984,11 +1142,27 @@ export default function FieldsPage(props: FieldsPageProps) {
     fieldInterfaceGroups,
   });
 
-  const columns = useMemo<ColumnsType<Record<string, any>>>(
-    () => [
+  useEffect(() => {
+    if (configureFieldsActionsDisabled) {
+      setSelectedRowKeys([]);
+    }
+  }, [configureFieldsActionsDisabled]);
+
+  const columns = useMemo<ColumnsType<Record<string, any>>>(() => {
+    const nextColumns: ColumnsType<Record<string, any>> = [
       {
         title: t('Field display name'),
-        render: (record) => compileLegacyTemplate(record.uiSchema?.title || record.name, t),
+        width: 240,
+        render: (record) =>
+          configureFieldsActionsDisabled ? (
+            compileLegacyTemplate(getEditableFieldDisplayName(record), t)
+          ) : (
+            <EditableFieldDisplayNameCell
+              loading={displayNameLoadingKey === record.name}
+              record={record}
+              onSave={handleFieldDisplayNameSave}
+            />
+          ),
       },
       { title: t('Field name'), dataIndex: 'name' },
       { title: t('Field type'), dataIndex: 'type', render: (value) => <Tag>{value}</Tag> },
@@ -1000,8 +1174,14 @@ export default function FieldsPage(props: FieldsPageProps) {
           const currentFieldInterface = value ? fieldInterfacesByName[value] : undefined;
           const optionsGroups = getSelectableFieldInterfaceGroups(allFieldInterfaceGroups, record);
           if (
+            configureFieldsActionsDisabled ||
             (value && !currentFieldInterface) ||
-            isReadOnlyFieldInterface(record, currentFieldInterface) ||
+            isReadOnlyFieldInterface(record, {
+              collection: props.collection,
+              currentFieldInterface,
+              dataSourceType,
+              presetFieldInterfaces,
+            }) ||
             !optionsGroups.length
           ) {
             return <Tag>{compileLegacyTemplate(getFieldInterfaceLabel(currentFieldInterface, value), t) || value}</Tag>;
@@ -1039,6 +1219,7 @@ export default function FieldsPage(props: FieldsPageProps) {
               <Switch
                 aria-label={`switch-title-field-${record.name}`}
                 size="small"
+                disabled={configureFieldsActionsDisabled}
                 loading={record.name === titleFieldLoadingKey}
                 checked={record.name === (titleField || 'id')}
                 onChange={(checked) => handleTitleFieldChange(record, checked)}
@@ -1047,7 +1228,10 @@ export default function FieldsPage(props: FieldsPageProps) {
           ) : null,
       },
       { title: t('Description'), dataIndex: 'description', ellipsis: true },
-      {
+    ];
+
+    if (!configureFieldsActionsDisabled) {
+      nextColumns.push({
         title: t('Actions'),
         width: 160,
         render: (_, record) => (
@@ -1056,33 +1240,42 @@ export default function FieldsPage(props: FieldsPageProps) {
             <a onClick={() => handleDelete(record.name)}>{t('Delete')}</a>
           </Space>
         ),
-      },
-    ],
-    [
-      allFieldInterfaceGroups,
-      ctx.dataSourceManager,
-      fieldInterfacesByName,
-      handleDelete,
-      handleFieldInterfaceChange,
-      handleTitleFieldChange,
-      openFieldForm,
-      t,
-      titleField,
-      titleFieldLoadingKey,
-    ],
-  );
+      });
+    }
+
+    return nextColumns;
+  }, [
+    allFieldInterfaceGroups,
+    configureFieldsActionsDisabled,
+    ctx.dataSourceManager,
+    dataSourceType,
+    fieldInterfacesByName,
+    handleDelete,
+    handleFieldDisplayNameSave,
+    handleFieldInterfaceChange,
+    handleTitleFieldChange,
+    openFieldForm,
+    presetFieldInterfaces,
+    props.collection,
+    t,
+    displayNameLoadingKey,
+    titleField,
+    titleFieldLoadingKey,
+  ]);
 
   return (
     <>
       <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginBottom: 16 }}>
         <Space>
-          <Button
-            icon={<DeleteOutlined />}
-            disabled={!selectedRowKeys.length}
-            onClick={() => handleDelete(selectedRowKeys)}
-          >
-            {t('Delete')}
-          </Button>
+          {!configureFieldsActionsDisabled ? (
+            <Button
+              icon={<DeleteOutlined />}
+              disabled={!selectedRowKeys.length}
+              onClick={() => handleDelete(selectedRowKeys)}
+            >
+              {t('Delete')}
+            </Button>
+          ) : null}
           {syncFieldsVisible ? (
             <Button icon={<SyncOutlined />} loading={syncFieldsLoading} onClick={handleSyncFields}>
               {t('Sync from database')}
@@ -1103,10 +1296,14 @@ export default function FieldsPage(props: FieldsPageProps) {
         dataSource={request.data || []}
         columns={columns}
         pagination={false}
-        rowSelection={{
-          selectedRowKeys,
-          onChange: setSelectedRowKeys,
-        }}
+        rowSelection={
+          configureFieldsActionsDisabled
+            ? undefined
+            : {
+                selectedRowKeys,
+                onChange: setSelectedRowKeys,
+              }
+        }
       />
     </>
   );

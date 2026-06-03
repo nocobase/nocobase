@@ -8,7 +8,6 @@ Trang này ghi lại nội dung cập nhật của từng phiên bản giải ph
 
 **Tệp backup**:
 - [nocobase_crm_v2_backup_260406.nbdata](https://static-docs.nocobase.com/nocobase_crm_v2_backup_260406.nbdata)
-- [nocobase_crm_v2_sql_260406.zip](https://static-docs.nocobase.com/nocobase_crm_v2_sql_260406.zip)
 
 **Nội dung cập nhật**:
 - Sửa lỗi hiển thị bất thường của Summary tổng hợp trong bảng
@@ -24,7 +23,6 @@ Trang này ghi lại nội dung cập nhật của từng phiên bản giải ph
 
 **Tệp backup**:
 - [nocobase_crm_v2_backup_260327.nbdata](https://static-docs.nocobase.com/nocobase_crm_v2_backup_260327.nbdata)
-- [nocobase_crm_v2_sql_260327.zip](https://static-docs.nocobase.com/nocobase_crm_v2_sql_260327.zip)
 
 **Nội dung cập nhật**:
 
@@ -52,7 +50,6 @@ Trang này ghi lại nội dung cập nhật của từng phiên bản giải ph
 
 **Tệp backup**:
 - nocobase_crm_v2_backup_260223.nbdata
-- nocobase_crm_v2_sql_260223.zip
 
 **Nội dung cập nhật**:
 - CRM 2.0 phát hành lần đầu

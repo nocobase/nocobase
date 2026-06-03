@@ -21,12 +21,24 @@ const { useAllAccessDesktopRoutesMock } = vi.hoisted(() => ({
   useAllAccessDesktopRoutesMock: vi.fn(),
 }));
 
+const { useRemoteCollectionManagerLoadingMock } = vi.hoisted(() => ({
+  useRemoteCollectionManagerLoadingMock: vi.fn(),
+}));
+
 vi.mock('@nocobase/client-v2', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@nocobase/client-v2')>();
   const ReactModule = await import('react');
   return {
     ...actual,
     FlowRoute: ({ pageUid }) => ReactModule.createElement('div', { 'data-testid': 'flow-route', 'data-uid': pageUid }),
+  };
+});
+
+vi.mock('../../../../collection-manager/CollectionManagerProvider', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../../../collection-manager/CollectionManagerProvider')>();
+  return {
+    ...actual,
+    useRemoteCollectionManagerLoading: () => useRemoteCollectionManagerLoadingMock(),
   };
 });
 
@@ -102,10 +114,12 @@ describe('AdminDynamicPage', () => {
     useAllAccessDesktopRoutesMock.mockReturnValue({
       allAccessRoutes: [{ schemaUid: 'flow-page-1', type: NocoBaseDesktopRouteType.flowPage }],
     });
+    useRemoteCollectionManagerLoadingMock.mockReturnValue(false);
   });
 
   afterEach(() => {
     useAllAccessDesktopRoutesMock.mockReset();
+    useRemoteCollectionManagerLoadingMock.mockReset();
   });
 
   it('should sync legacy admin route into admin layout model', async () => {
@@ -235,6 +249,32 @@ describe('AdminDynamicPage', () => {
 
     expect(await screen.findByTestId('flow-route')).toHaveAttribute('data-uid', 'flow-page-1');
     expect(screen.getByTestId('keep-alive')).toHaveAttribute('data-uid', 'flow-page-1');
+    expect(screen.queryByTestId('remote-schema')).toBeNull();
+  });
+
+  it('should wait for collection metadata before rendering flow pages in legacy admin route', () => {
+    useRemoteCollectionManagerLoadingMock.mockReturnValue(true);
+
+    const { container } = render(
+      <FlowEngineProvider engine={engine}>
+        <MemoryRouter initialEntries={['/admin/flow-page-1/view/detail']}>
+          <Routes>
+            <Route
+              path="/admin/:name/view/*"
+              element={
+                <CurrentPageUidProvider>
+                  <AdminDynamicPage />
+                </CurrentPageUidProvider>
+              }
+            />
+          </Routes>
+        </MemoryRouter>
+      </FlowEngineProvider>,
+    );
+
+    expect(screen.getByTestId('keep-alive')).toHaveAttribute('data-uid', 'flow-page-1');
+    expect(container.querySelector('.ant-spin')).toBeTruthy();
+    expect(screen.queryByTestId('flow-route')).toBeNull();
     expect(screen.queryByTestId('remote-schema')).toBeNull();
   });
 

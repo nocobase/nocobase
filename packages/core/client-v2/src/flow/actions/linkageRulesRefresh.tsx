@@ -41,16 +41,15 @@ export const linkageRulesRefresh = defineAction({
     const flowSettingsEnabled = Boolean(
       (ctx as any)?.flowSettingsEnabled || (model as any)?.context?.flowSettingsEnabled,
     );
-    const hasMountedForkWithFlow =
+    const hasForkWithFlow =
       !model?.isFork &&
       !!model?.forks?.size &&
       Array.from(model?.forks || []).some((fork: any) => {
         if (!fork || fork.disposed) return false;
-        if (!fork?.context?.ref?.current) return false;
         return !!fork?.getFlow?.(flowKey);
       });
     const isMasterMounted = Boolean((model as any)?.context?.ref?.current);
-    if (hasMountedForkWithFlow && !isMasterMounted && !flowSettingsEnabled) {
+    if (hasForkWithFlow && !isMasterMounted && !flowSettingsEnabled) {
       return;
     }
 

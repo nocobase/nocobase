@@ -105,7 +105,7 @@ function formatSavedDockerSettingsIncomplete(envName: string, missing: string[])
   return [
     `Can't start NocoBase for "${envName}" yet.`,
     `The saved Docker settings for this env are incomplete. Missing: ${missing.join(', ')}.`,
-    'Re-run `nb init` or `nb env add` to refresh this env config, then try again.',
+    `Re-run \`nb init --ui --env ${envName}\` to refresh this env config, then try again.`,
   ].join('\n');
 }
 

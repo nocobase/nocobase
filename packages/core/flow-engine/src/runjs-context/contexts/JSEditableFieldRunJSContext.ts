@@ -8,6 +8,7 @@
  */
 
 import { FlowRunJSContext } from '../../flowContext';
+import { createElementPropertyDoc, createZhCNElementPropertyDoc } from './elementDoc';
 
 /**
  * RunJS context for JSEditableFieldModel (form editable custom field).
@@ -19,11 +20,9 @@ export class JSEditableFieldRunJSContext extends FlowRunJSContext {}
 JSEditableFieldRunJSContext.define({
   label: 'JSEditableField RunJS context',
   properties: {
-    element: {
-      description:
-        'ElementProxy instance providing a safe DOM container for field rendering. In editable mode this container is typically a <span> element.',
-      detail: 'ElementProxy',
-    },
+    element: createElementPropertyDoc(
+      'ElementProxy instance providing a safe DOM container for field rendering. In editable mode this container is typically a <span> element.',
+    ),
     value: {
       description:
         'Current field value (read-only snapshot). In editable scenarios, prefer ctx.getValue()/ctx.setValue(v) for two-way binding.',
@@ -69,10 +68,7 @@ JSEditableFieldRunJSContext.define(
   {
     label: 'JS 可编辑字段 RunJS 上下文',
     properties: {
-      element: {
-        description: 'ElementProxy，字段渲染的安全容器（通常为 <span> 容器）。',
-        detail: 'ElementProxy',
-      },
+      element: createZhCNElementPropertyDoc('ElementProxy，字段渲染的安全容器（通常为 <span> 容器）。'),
       value: {
         description: '字段当前值（只读快照）。可编辑场景建议使用 ctx.getValue()/ctx.setValue(v) 做双向绑定。',
         detail: 'any',

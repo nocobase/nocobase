@@ -27,9 +27,7 @@ function resolveExplicitAuthType(value: unknown): 'basic' | 'token' | 'oauth' | 
 }
 
 function formatMissingEnvMessage(envName: string): string {
-  return [`Env "${envName}" is not configured.`, `Run \`nb env add ${envName} --api-base-url <url>\` first.`].join(
-    '\n',
-  );
+  return [`Env "${envName}" is not configured.`, `Run \`nb init --ui --env ${envName}\` first.`].join('\n');
 }
 
 export default class EnvAuth extends Command {

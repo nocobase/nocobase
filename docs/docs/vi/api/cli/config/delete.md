@@ -18,14 +18,17 @@ nb config delete <key>
 
 | Tham số | Kiểu | Mô tả |
 | --- | --- | --- |
-| `<key>` | string | Khóa cấu hình: `license.pkg-url`, `docker.network` hoặc `docker.container-prefix` |
+| `<key>` | string | Khóa cấu hình: `locale`, `update.policy`, `license.pkg-url`, `docker.network`, `docker.container-prefix`, `bin.docker`, `bin.git` hoặc `bin.yarn` |
 
 ## Ví dụ
 
 ```bash
+nb config delete locale
+nb config delete update.policy
 nb config delete license.pkg-url
 nb config delete docker.network
 nb config delete docker.container-prefix
+nb config delete bin.git
 ```
 
 ## Lệnh liên quan

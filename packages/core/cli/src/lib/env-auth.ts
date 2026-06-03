@@ -780,20 +780,20 @@ async function createLoopbackServer(state: string) {
     let rejectWaiter!: (error: Error) => void;
 
     const waitForCode = () =>
-      new Promise<string>((resolveCode, rejectCode) => {
+      new Promise<string>((resolve, reject) => {
         resolveWaiter = (code) => {
           void close();
-          resolveCode(code);
+          resolve(code);
         };
         rejectWaiter = (error) => {
           void close();
-          rejectCode(error);
+          reject(error);
         };
       });
 
     const close = async () => {
-      await new Promise<void>((resolveClose) => {
-        server.close(() => resolveClose());
+      await new Promise<void>((resolve) => {
+        server.close(() => resolve());
       });
     };
 
@@ -982,7 +982,7 @@ export async function resolveAccessToken(options: {
 
   const baseUrl = options.baseUrl ?? env.baseUrl;
   if (!baseUrl) {
-    throw new Error(`Env "${envName}" is missing a base URL. Run \`nb env add ${envName} --api-base-url <url>\`.`);
+    throw new Error(`Env "${envName}" is missing a base URL. Update it with \`nb env update ${envName} --api-base-url <url>\` first.`);
   }
 
   printVerbose(`Refreshing OAuth session for env "${envName}"`);
@@ -1011,7 +1011,14 @@ export async function resolveServerRequestTarget(options: {
   });
 
   if (!baseUrl) {
-    throw new Error('Missing base URL. Use --api-base-url or configure one with `nb env add`.');
+    throw new Error(
+      [
+        env ? `Env "${envName}" is missing a base URL.` : `Env "${envName}" is not configured.`,
+        env
+          ? `Use --api-base-url or update env "${envName}" with \`nb env update ${envName} --api-base-url <url>\`.`
+          : `Use --api-base-url or run \`nb init --ui --env ${envName}\` first.`,
+      ].join('\n'),
+    );
   }
 
   return { baseUrl, token };
@@ -1034,8 +1041,8 @@ export async function authenticateEnvWithBasic(options: {
           ? `Environment "${envName}" does not have an API base URL yet.`
           : `Environment "${envName}" has not been set up yet.`,
         env
-          ? `Run \`nb env add ${envName} --api-base-url <url>\` to finish setting it up.`
-          : `Run \`nb env add ${envName}\` first.`,
+          ? `Run \`nb env update ${envName} --api-base-url <url>\` to finish setting it up.`
+          : `Run \`nb init --ui --env ${envName}\` first.`,
       ]
         .filter(Boolean)
         .join('\n'),
@@ -1109,8 +1116,8 @@ export async function authenticateEnvWithOauth(options: {
           ? `Environment "${envName}" does not have an API base URL yet.`
           : `Environment "${envName}" has not been set up yet.`,
         env
-          ? `Run \`nb env add ${envName} --api-base-url <url>\` to finish setting it up.`
-          : `Run \`nb env add ${envName}\` first.`,
+          ? `Run \`nb env update ${envName} --api-base-url <url>\` to finish setting it up.`
+          : `Run \`nb init --ui --env ${envName}\` first.`,
       ]
         .filter(Boolean)
         .join('\n'),
@@ -1166,16 +1173,16 @@ export async function authenticateEnvWithOauth(options: {
       );
       timeout.unref?.();
 
-      callback.waitForCode().then(
-        (value) => {
+      callback
+        .waitForCode()
+        .then((value) => {
           clearTimeout(timeout);
           resolve(value);
-        },
-        (error) => {
+        })
+        .catch((error) => {
           clearTimeout(timeout);
           reject(error);
-        },
-      );
+        });
     });
 
     updateTask(`Finishing sign-in for "${envName}"...`);

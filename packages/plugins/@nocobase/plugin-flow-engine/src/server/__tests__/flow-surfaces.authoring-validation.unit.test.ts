@@ -8,11 +8,135 @@
  */
 
 import { describe, expect, it, vi } from 'vitest';
-import { FlowSurfaceBadRequestError } from '../flow-surfaces/errors';
+import { FlowSurfaceAggregateError, FlowSurfaceBadRequestError } from '../flow-surfaces/errors';
 import { FlowSurfacesService } from '../flow-surfaces/service';
 import { collectFlowSurfaceAuthoringErrors } from '../flow-surfaces/authoring-validation';
+import { rethrowInlineConfigurationError, toFlowSurfaceBatchItemError } from '../flow-surfaces/service-utils';
 
 describe('flowSurfaces authoring validation unit', () => {
+  const createDefaultFilterValidationContext = (extra: Record<string, any> = {}) => {
+    const fields = [
+      { name: 'occurDate', interface: 'input' },
+      { name: 'nickname', interface: 'input' },
+      { name: 'status', interface: 'select' },
+      { name: 'email', interface: 'email' },
+    ];
+    const fieldsByName = new Map(fields.map((field) => [field.name, field]));
+    const collection = {
+      name: 'employees',
+      getField: (fieldName: string) => fieldsByName.get(fieldName),
+      getFields: () => fields,
+      fields: fieldsByName,
+    };
+    return {
+      getCollection: (_dataSourceKey: string, collectionName: string) =>
+        collectionName === 'employees' ? collection : null,
+      ...extra,
+    };
+  };
+
+  const buildDefaultFilter = (dateValue: any, operator = '$dateOn') => ({
+    logic: '$and',
+    items: [
+      { path: 'occurDate', operator, value: dateValue },
+      { path: 'nickname', operator: '$notEmpty' },
+      { path: 'status', operator: '$notEmpty' },
+      { path: 'email', operator: '$notEmpty' },
+    ],
+  });
+
+  it('should front-load aggregate authoring repair instructions for agents', () => {
+    const error = new FlowSurfaceAggregateError([
+      {
+        path: '$.tabs[0].blocks[0].fields',
+        ruleId: 'data-block-visible-fields-required',
+        message: 'list block has no valid business fields',
+      },
+      {
+        path: '$.tabs[0].blocks[1].chart',
+        ruleId: 'chart-block-asset-reference-required',
+        message: 'chart block requires an asset reference',
+        details: {
+          requiredBlockType: 'chart',
+        },
+      },
+    ]);
+
+    expect(error.toResponseBody()).toEqual(
+      expect.objectContaining({
+        message: expect.stringContaining('2 error(s)'),
+        errorCount: 2,
+        details: expect.objectContaining({
+          errorCount: 2,
+          mustFixAllErrorsBeforeRetry: true,
+          retryPolicy: 'fix_all_errors_before_retry_same_write',
+          sameWriteRetryRequired: true,
+          agentInstruction: expect.stringContaining('Fix every listed error'),
+          requiredBlockPolicy: expect.objectContaining({
+            requiredBlockTypes: ['chart'],
+            fixStrategy: 'repair_same_block_type',
+            doNotReplaceOrDrop: true,
+          }),
+        }),
+        errors: [
+          expect.objectContaining({ index: 1, ruleId: 'data-block-visible-fields-required' }),
+          expect.objectContaining({ index: 2, ruleId: 'chart-block-asset-reference-required' }),
+        ],
+      }),
+    );
+  });
+
+  it('should preserve aggregate authoring repair instructions through inline and batch wrappers', () => {
+    const aggregate = new FlowSurfaceAggregateError([
+      {
+        path: '$.changes.code',
+        ruleId: 'runjs-render-required',
+        message: 'jsBlock code must call ctx.render',
+        details: {
+          requiredBlockType: 'jsBlock',
+        },
+      },
+    ]);
+
+    let inlineError: unknown;
+    try {
+      rethrowInlineConfigurationError(aggregate, 'flowSurfaces addBlock settings invalid');
+    } catch (caught) {
+      inlineError = caught;
+    }
+
+    expect(inlineError).toBeInstanceOf(FlowSurfaceAggregateError);
+    expect((inlineError as FlowSurfaceAggregateError).toResponseBody()).toEqual(
+      expect.objectContaining({
+        message: expect.stringContaining('flowSurfaces addBlock settings invalid'),
+        errorCount: 1,
+        details: expect.objectContaining({
+          mustFixAllErrorsBeforeRetry: true,
+          requiredBlockPolicy: expect.objectContaining({
+            requiredBlockTypes: ['jsBlock'],
+          }),
+        }),
+        errors: [expect.objectContaining({ index: 1, ruleId: 'runjs-render-required' })],
+      }),
+    );
+
+    expect(toFlowSurfaceBatchItemError(aggregate)).toEqual(
+      expect.objectContaining({
+        code: 'FLOW_SURFACE_AUTHORING_VALIDATION_FAILED',
+        status: 400,
+        type: 'bad_request',
+        errorCount: 1,
+        details: expect.objectContaining({
+          retryPolicy: 'fix_all_errors_before_retry_same_write',
+          requiredBlockPolicy: expect.objectContaining({
+            requiredBlockTypes: ['jsBlock'],
+          }),
+        }),
+        errors: [expect.objectContaining({ index: 1, ruleId: 'runjs-render-required' })],
+      }),
+    );
+  });
+
   it('should preserve chart filter operator repair details on applyBlueprint authoring writes', async () => {
     const errors = await collectFlowSurfaceAuthoringErrors('applyBlueprint', {
       mode: 'create',
@@ -218,6 +342,147 @@ describe('flowSurfaces authoring validation unit', () => {
     );
   });
 
+  it('should reject invalid chart date descriptor objects on applyBlueprint authoring writes', async () => {
+    const errors = await collectFlowSurfaceAuthoringErrors('applyBlueprint', {
+      mode: 'create',
+      navigation: {
+        item: {
+          title: 'Invalid chart date descriptor page',
+        },
+      },
+      assets: {
+        charts: {
+          staleChart: {
+            query: {
+              mode: 'builder',
+              resource: {
+                dataSourceKey: 'main',
+                collectionName: 'employees',
+              },
+              measures: [
+                {
+                  field: 'id',
+                  aggregation: 'count',
+                  alias: 'employeeCount',
+                },
+              ],
+              dimensions: [{ field: 'status' }],
+              filter: {
+                logic: '$and',
+                items: [
+                  {
+                    path: 'lastFollowupAt',
+                    operator: '$dateOn',
+                    value: { $toNow: 'd', $gt: -7 },
+                  },
+                ],
+              },
+            },
+            visual: {
+              mode: 'basic',
+              type: 'bar',
+              mappings: {
+                x: 'status',
+                y: 'employeeCount',
+              },
+            },
+          },
+        },
+      },
+      tabs: [
+        {
+          title: 'Overview',
+          blocks: [
+            {
+              key: 'staleChart',
+              type: 'chart',
+              chart: 'staleChart',
+            },
+          ],
+        },
+      ],
+    });
+
+    expect(errors).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          path: '$.assets.charts.staleChart.query.filter.items[0].value',
+          ruleId: 'filter-group-date-value-invalid',
+          details: expect.objectContaining({
+            invalidValue: { $toNow: 'd', $gt: -7 },
+            requiredBlockType: 'chart',
+          }),
+        }),
+      ]),
+    );
+  });
+
+  it('should guide unsupported chart visual types to supported chart types or jsBlock', async () => {
+    const errors = await collectFlowSurfaceAuthoringErrors('applyBlueprint', {
+      mode: 'create',
+      navigation: {
+        item: {
+          title: 'Unsupported chart visual type page',
+        },
+      },
+      assets: {
+        charts: {
+          kpiChart: {
+            query: {
+              mode: 'builder',
+              resource: {
+                dataSourceKey: 'main',
+                collectionName: 'employees',
+              },
+              measures: [
+                {
+                  field: 'id',
+                  aggregation: 'count',
+                  alias: 'employeeCount',
+                },
+              ],
+            },
+            visual: {
+              mode: 'basic',
+              type: 'stat',
+              mappings: {
+                y: 'employeeCount',
+              },
+            },
+          },
+        },
+      },
+      tabs: [
+        {
+          title: 'Overview',
+          blocks: [
+            {
+              key: 'kpiChart',
+              type: 'chart',
+              chart: 'kpiChart',
+            },
+          ],
+        },
+      ],
+    });
+
+    const unsupportedTypeError = errors.find((error: any) => error.ruleId === 'chart-visual-type-unsupported');
+    expect(unsupportedTypeError).toMatchObject({
+      path: '$.assets.charts.kpiChart.visual.type',
+      details: expect.objectContaining({
+        type: 'stat',
+        supportedVisualTypes: ['line', 'area', 'bar', 'barHorizontal', 'pie', 'doughnut', 'funnel', 'scatter'],
+        alternativeBlockType: 'jsBlock',
+        fixStrategy: 'use_supported_chart_type_or_jsBlock',
+      }),
+    });
+    expect(unsupportedTypeError?.message).toContain('Supported basic chart visual types');
+    expect(unsupportedTypeError?.message).toContain('jsBlock');
+    expect(unsupportedTypeError?.message).not.toContain('Do not change this block type');
+    expect(unsupportedTypeError?.details?.repairHint).not.toContain('Do not change this block type');
+    expect(unsupportedTypeError?.details?.forbiddenFallbacks).not.toContain('jsBlock');
+  });
+
   it('should reject invalid chart date filter values on configure authoring writes', async () => {
     const errors = await collectFlowSurfaceAuthoringErrors(
       'configure',
@@ -268,6 +533,192 @@ describe('flowSurfaces authoring validation unit', () => {
           }),
         }),
       ]),
+    );
+  });
+
+  it('should reject chart date filter values outside the UI contract on configure authoring writes', async () => {
+    const errors = await collectFlowSurfaceAuthoringErrors(
+      'configure',
+      {
+        target: { uid: 'chart-target' },
+        changes: {
+          query: {
+            mode: 'builder',
+            resource: {
+              dataSourceKey: 'main',
+              collectionName: 'employees',
+            },
+            measures: [
+              {
+                field: 'id',
+                aggregation: 'count',
+                alias: 'employeeCount',
+              },
+            ],
+            dimensions: [{ field: 'status' }],
+            filter: {
+              lastFollowupAt: { $dateOn: 'thisWeek' },
+            },
+          },
+          visual: {
+            mode: 'basic',
+            type: 'bar',
+            mappings: {
+              x: 'status',
+              y: 'employeeCount',
+            },
+          },
+        },
+      },
+      {
+        hostBlockType: 'ChartBlockModel',
+      },
+    );
+
+    expect(errors).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          path: '$.changes.query.filter.lastFollowupAt.$dateOn',
+          ruleId: 'filter-group-date-value-invalid',
+          details: expect.objectContaining({
+            invalidValue: 'thisWeek',
+            requiredBlockType: 'chart',
+          }),
+        }),
+      ]),
+    );
+  });
+
+  it('should reject invalid defaultFilter date values during authoring validation', async () => {
+    const context = createDefaultFilterValidationContext();
+    const composeErrors = await collectFlowSurfaceAuthoringErrors(
+      'compose',
+      {
+        target: { uid: 'missing-target-never-resolved' },
+        blocks: [
+          {
+            key: 'blockDefaultFilterDateTable',
+            type: 'table',
+            collection: 'employees',
+            defaultFilter: buildDefaultFilter('thisWeek'),
+          },
+          {
+            key: 'actionSettingsDefaultFilterDateTable',
+            type: 'table',
+            collection: 'employees',
+            actions: [
+              {
+                key: 'filter',
+                type: 'filter',
+                settings: {
+                  defaultFilter: buildDefaultFilter('-7d'),
+                },
+              },
+            ],
+          },
+          {
+            key: 'defaultActionSettingsDefaultFilterDateTable',
+            type: 'table',
+            collection: 'employees',
+            defaultActionSettings: {
+              filter: {
+                defaultFilter: buildDefaultFilter('2026-01-01T00:00:00.000Z'),
+              },
+            },
+          },
+        ],
+      },
+      context,
+    );
+    const configureErrors = await collectFlowSurfaceAuthoringErrors(
+      'configure',
+      {
+        target: { uid: 'filter-action-target' },
+        changes: {
+          defaultFilter: buildDefaultFilter({ $toNow: 'd', $gt: -7 }),
+        },
+      },
+      createDefaultFilterValidationContext({
+        hostBlockType: 'FilterActionModel',
+        hostCollectionName: 'employees',
+        hostDataSourceKey: 'main',
+      }),
+    );
+
+    const errors = [...composeErrors, ...configureErrors];
+    expect(errors.map((error: any) => error.ruleId)).toEqual(
+      expect.arrayContaining(['filter-group-date-value-invalid']),
+    );
+    expect(
+      errors.filter((error: any) => error.ruleId === 'filter-group-date-value-invalid').map((error: any) => error.path),
+    ).toEqual(
+      expect.arrayContaining([
+        '$.blocks[0].defaultFilter.items[0].value',
+        '$.blocks[1].actions[0].settings.defaultFilter.items[0].value',
+        '$.blocks[2].defaultActionSettings.filter.defaultFilter.items[0].value',
+        '$.changes.defaultFilter.items[0].value',
+      ]),
+    );
+  });
+
+  it('should accept UI-shaped defaultFilter date values during authoring validation', async () => {
+    const context = createDefaultFilterValidationContext();
+    const composeErrors = await collectFlowSurfaceAuthoringErrors(
+      'compose',
+      {
+        target: { uid: 'missing-target-never-resolved' },
+        blocks: [
+          {
+            key: 'blockDefaultFilterDateTable',
+            type: 'table',
+            collection: 'employees',
+            defaultFilter: buildDefaultFilter({ type: 'thisWeek' }),
+          },
+          {
+            key: 'actionSettingsDefaultFilterDateTable',
+            type: 'table',
+            collection: 'employees',
+            actions: [
+              {
+                key: 'filter',
+                type: 'filter',
+                settings: {
+                  defaultFilter: buildDefaultFilter('2026-Q1'),
+                },
+              },
+            ],
+          },
+          {
+            key: 'defaultActionSettingsDefaultFilterDateTable',
+            type: 'table',
+            collection: 'employees',
+            defaultActionSettings: {
+              filter: {
+                defaultFilter: buildDefaultFilter(['2026-01-01', '2026-01-31'], '$dateBetween'),
+              },
+            },
+          },
+        ],
+      },
+      context,
+    );
+    const configureErrors = await collectFlowSurfaceAuthoringErrors(
+      'configure',
+      {
+        target: { uid: 'filter-action-target' },
+        changes: {
+          defaultFilter: buildDefaultFilter({ type: 'past', number: 7, unit: 'day' }),
+        },
+      },
+      createDefaultFilterValidationContext({
+        hostBlockType: 'FilterActionModel',
+        hostCollectionName: 'employees',
+        hostDataSourceKey: 'main',
+      }),
+    );
+
+    expect([...composeErrors, ...configureErrors].map((error: any) => error.ruleId)).not.toContain(
+      'filter-group-date-value-invalid',
     );
   });
 

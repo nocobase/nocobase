@@ -24,7 +24,11 @@ import {
 
 import { CacheTransport } from './cache-logger';
 
-type ScriptConfig = { content?: string; timeout?: number; continue?: boolean; arguments?: Record<string, unknown>[] };
+type ScriptArgument = { name: string; value?: unknown };
+
+type ScriptConfig = { content?: string; timeout?: number; continue?: boolean; arguments?: ScriptArgument[] };
+
+type ScriptArguments = Record<string, unknown> | unknown[];
 
 export default class ScriptInstruction extends Instruction {
   /**
@@ -33,13 +37,17 @@ export default class ScriptInstruction extends Instruction {
    * - WORKFLOW_SCRIPT_MODULES unset: uses QuickJS (WASM) for maximum security (no require, no Node.js APIs)
    */
   static get workerScript() {
-    const hasModules = process.env.WORKFLOW_SCRIPT_MODULES?.split(',').filter(Boolean).length > 0;
+    const hasModules = (process.env.WORKFLOW_SCRIPT_MODULES ?? '').split(',').filter(Boolean).length > 0;
     return path.join(__dirname, hasModules ? 'Vm.js' : 'QuickJs.js');
   }
 
-  static async run(source, args, options: { logger: Logger; timeout?: number; signal?: AbortSignal }) {
+  static async run(
+    source: string,
+    args: ScriptArguments,
+    options: { logger: Logger; timeout?: number; signal?: AbortSignal },
+  ) {
     const { logger, timeout, signal } = options;
-    let result;
+    let result: unknown;
 
     const worker = new Worker(this.workerScript, {
       workerData: { source, args, options: timeout ? { timeout } : {} },
@@ -92,7 +100,7 @@ export default class ScriptInstruction extends Instruction {
       }
       return {
         status: JOB_STATUS.ERROR,
-        result: e.message,
+        result: e instanceof Error ? e.message : String(e),
       };
     }
 
@@ -120,8 +128,8 @@ export default class ScriptInstruction extends Instruction {
 
   async run(node: FlowNodeModel, prevJob, processor: Processor, options?: { signal?: AbortSignal }) {
     const { content = '', continue: cont, timeout } = node.config as ScriptConfig;
-    const args = processor.getParsedValue(node.config.arguments ?? [], node.id);
-    const _args = args.reduce((pre, item) => ({ ...pre, [item.name]: item.value }), {});
+    const args = processor.getParsedValue(node.config.arguments ?? [], node.id) as ScriptArgument[];
+    const _args = args.reduce((pre, item) => ({ ...pre, [item.name]: item.value }), {} as Record<string, unknown>);
     const { workflow } = processor.execution;
     const sync = this.workflow.isWorkflowSync(workflow);
 
@@ -191,9 +199,10 @@ export default class ScriptInstruction extends Instruction {
         jobResult.result = res.result;
       })
       .catch((e) => {
-        processor.logger.error(`script (#${node.id}) get result failed, the reason is ${e.message}`);
+        const message = e instanceof Error ? e.message : String(e);
+        processor.logger.error(`script (#${node.id}) get result failed, the reason is ${message}`);
         jobResult.status = JOB_STATUS.ERROR;
-        jobResult.result = e.message;
+        jobResult.result = message;
       })
       .finally(() => {
         processor.logger.debug(`script (#${node.id}) ended, resume workflow...`);
@@ -217,12 +226,15 @@ export default class ScriptInstruction extends Instruction {
 
   async test(config: ScriptConfig = {}) {
     const { content, timeout } = config;
-    const args = (config.arguments ?? []).reduce((pre, item) => ({ ...pre, [item.name]: item.value }), {});
+    const args = (config.arguments ?? []).reduce(
+      (pre, item) => ({ ...pre, [item.name]: item.value }),
+      {} as Record<string, unknown>,
+    );
     const transport = new CacheTransport();
     const logger = winston.createLogger({
       transports: [transport],
     });
-    const result = await (this.constructor as typeof ScriptInstruction).run(content, args, { timeout, logger });
+    const result = await (this.constructor as typeof ScriptInstruction).run(content ?? '', args, { timeout, logger });
     const log = transport.getLogs();
     return {
       ...result,

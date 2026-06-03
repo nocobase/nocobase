@@ -14,6 +14,7 @@ export default class ConfigGet extends Command {
   static override summary = 'Get the effective CLI configuration value for a key';
   static override examples = [
     '<%= config.bin %> <%= command.id %> locale',
+    '<%= config.bin %> <%= command.id %> update.policy',
     '<%= config.bin %> <%= command.id %> license.pkg-url',
     '<%= config.bin %> <%= command.id %> docker.network',
     '<%= config.bin %> <%= command.id %> docker.container-prefix',
