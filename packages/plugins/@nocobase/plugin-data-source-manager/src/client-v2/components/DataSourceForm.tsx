@@ -186,7 +186,18 @@ export function DataSourceForm(props: DataSourceFormProps) {
         <Form.Item
           name="key"
           label={t('Data source name')}
-          rules={[{ required: true, message: t('Data source name') }]}
+          rules={[
+            { required: true, message: t('Data source name') },
+            {
+              pattern: /^[A-Za-z][A-Za-z0-9_]*$/,
+              message: t(
+                'Randomly generated and can be modified. Support letters, numbers and underscores, must start with an letter.',
+              ),
+            },
+          ]}
+          extra={t(
+            'Randomly generated and can be modified. Support letters, numbers and underscores, must start with an letter.',
+          )}
         >
           <Input disabled={props.mode === 'edit'} />
         </Form.Item>

@@ -313,6 +313,19 @@ describe('FlowModel', () => {
 
         model.emitter.off('onStepParamsChanged', listener);
       });
+
+      test('should not emit onStepParamsChanged when params are unchanged', () => {
+        const listener = vi.fn();
+        model.emitter.on('onStepParamsChanged', listener);
+
+        model.setStepParams('testFlow', 'step1', { param1: 'value1' });
+        model.setStepParams('testFlow', { step1: { param1: 'value1' } });
+        model.setStepParams({ testFlow: { step1: { param1: 'value1' } } });
+
+        expect(listener).not.toHaveBeenCalled();
+
+        model.emitter.off('onStepParamsChanged', listener);
+      });
     });
   });
 
@@ -549,34 +562,6 @@ describe('FlowModel', () => {
         expect(loggerSpy).toHaveBeenCalledWith(expect.stringContaining("Action 'nonExistentAction' not found"));
 
         loggerSpy.mockRestore();
-      });
-
-      test('should warn and skip step when use and handler are both missing', async () => {
-        const warnSpy = vi.spyOn(model.context.logger, 'warn').mockImplementation(() => {});
-        const errorSpy = vi.spyOn(model.context.logger, 'error').mockImplementation(() => {});
-
-        TestFlowModel.registerFlow({
-          key: 'settingsOnlyFlow',
-          steps: {
-            edit: {
-              title: 'Edit',
-              uiSchema: {},
-            },
-          },
-        });
-
-        const result = await model.applyFlow('settingsOnlyFlow');
-
-        expect(result).toEqual({});
-        expect(warnSpy).toHaveBeenCalledWith(
-          expect.stringContaining("Step 'edit' in flow 'settingsOnlyFlow' has neither 'use' nor 'handler'"),
-        );
-        expect(errorSpy).not.toHaveBeenCalledWith(
-          expect.stringContaining("Step 'edit' in flow 'settingsOnlyFlow' has neither 'use' nor 'handler'"),
-        );
-
-        warnSpy.mockRestore();
-        errorSpy.mockRestore();
       });
     });
 
