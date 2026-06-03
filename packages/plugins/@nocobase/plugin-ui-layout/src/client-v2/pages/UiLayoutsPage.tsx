@@ -99,10 +99,17 @@ export function getRouteNameFromRoutePath(routePath: string) {
   return pathname.replace(/^\/+/, '').split('/').filter(Boolean)[0] || '';
 }
 
+export function isUiLayoutRoutePathFormatValid(routePath?: string) {
+  const trimmed = routePath?.trim();
+  return !trimmed || trimmed.startsWith('/');
+}
+
 export function completeUiLayoutFormValues(values: UiLayoutFormDraftValues): UiLayoutFormValues {
+  const routePath = values.routePath.trim();
   return {
     ...values,
-    routeName: getRouteNameFromRoutePath(values.routePath),
+    routePath,
+    routeName: getRouteNameFromRoutePath(routePath),
   };
 }
 
@@ -487,7 +494,16 @@ function UiLayoutForm(props: { layoutType: UiLayoutType; record?: UiLayoutRecord
         <Form.Item
           name="routePath"
           label={t('Access path')}
-          rules={[{ required: true, message: t('The field value is required') }]}
+          extra={t('Must start with /. For example: /admin.')}
+          rules={[
+            { required: true, message: t('The field value is required') },
+            {
+              validator: (_, value?: string) =>
+                isUiLayoutRoutePathFormatValid(value)
+                  ? Promise.resolve()
+                  : Promise.reject(new Error(t('Access path must start with /'))),
+            },
+          ]}
         >
           <Input />
         </Form.Item>

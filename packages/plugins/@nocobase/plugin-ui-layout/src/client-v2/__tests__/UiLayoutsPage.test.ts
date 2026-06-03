@@ -15,6 +15,7 @@ import {
   getLayoutTypeTagColor,
   getRouteNameFromRoutePath,
   getUiLayoutRouteUrl,
+  isUiLayoutRoutePathFormatValid,
   type UiLayoutFormValues,
   type UiLayoutRecord,
   type UiLayoutResource,
@@ -143,6 +144,12 @@ describe('plugin-ui-layout submit pipeline', () => {
 });
 
 describe('plugin-ui-layout form values', () => {
+  it('should require access path to start with slash', () => {
+    expect(isUiLayoutRoutePathFormatValid('/admin')).toBe(true);
+    expect(isUiLayoutRoutePathFormatValid(' /mobile ')).toBe(true);
+    expect(isUiLayoutRoutePathFormatValid('admin')).toBe(false);
+  });
+
   it('should derive route name from the access path', () => {
     expect(getRouteNameFromRoutePath('/admin')).toBe('admin');
     expect(getRouteNameFromRoutePath('mobile')).toBe('mobile');
@@ -154,7 +161,7 @@ describe('plugin-ui-layout form values', () => {
       completeUiLayoutFormValues({
         uid: 'mobile-layout',
         layoutType: 'mobile',
-        routePath: '/mobile',
+        routePath: ' /mobile ',
         authCheck: true,
         enabled: true,
       }),
