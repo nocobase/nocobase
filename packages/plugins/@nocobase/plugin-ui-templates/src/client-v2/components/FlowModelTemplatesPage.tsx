@@ -8,8 +8,14 @@
  */
 
 import { DeleteOutlined, EditOutlined, ReloadOutlined } from '@ant-design/icons';
-import { DEFAULT_PAGE_SIZE, DrawerFormLayout, Table } from '@nocobase/client-v2';
-import { useFlowContext } from '@nocobase/flow-engine';
+import {
+  CollectionFilter,
+  DEFAULT_PAGE_SIZE,
+  DrawerFormLayout,
+  ExtendCollectionsProvider,
+  Table,
+} from '@nocobase/client-v2';
+import { useFlowContext, type CollectionOptions } from '@nocobase/flow-engine';
 import { App, Button, Card, Flex, Form, Input, Space, theme, Tooltip, Typography } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
@@ -32,7 +38,6 @@ export type TemplateListParams = {
   pageSize: number;
   sort: string;
   filter: Record<string, unknown>;
-  search?: string;
 };
 
 export type FlowModelTemplateResource = {
@@ -46,6 +51,117 @@ type EditFormValues = {
   description?: string;
 };
 
+const FLOW_MODEL_TEMPLATES_COLLECTION_NAME = 'flowModelTemplates';
+
+const FLOW_MODEL_TEMPLATE_FILTER_FIELD_NAMES = [
+  'name',
+  'description',
+  'targetUid',
+  'useModel',
+  'dataSourceKey',
+  'collectionName',
+  'associationName',
+  'filterByTk',
+  'sourceId',
+];
+
+const flowModelTemplatesCollection: CollectionOptions = {
+  name: FLOW_MODEL_TEMPLATES_COLLECTION_NAME,
+  filterTargetKey: 'uid',
+  fields: [
+    {
+      type: 'string',
+      name: 'name',
+      title: 'Template name',
+      interface: 'input',
+      uiSchema: {
+        type: 'string',
+        'x-component': 'Input',
+      },
+    },
+    {
+      type: 'text',
+      name: 'description',
+      title: 'Template description',
+      interface: 'textarea',
+      uiSchema: {
+        type: 'string',
+        'x-component': 'Input.TextArea',
+      },
+    },
+    {
+      type: 'string',
+      name: 'targetUid',
+      title: 'targetUid',
+      interface: 'input',
+      uiSchema: {
+        type: 'string',
+        'x-component': 'Input',
+      },
+    },
+    {
+      type: 'string',
+      name: 'useModel',
+      title: 'useModel',
+      interface: 'input',
+      uiSchema: {
+        type: 'string',
+        'x-component': 'Input',
+      },
+    },
+    {
+      type: 'string',
+      name: 'dataSourceKey',
+      title: 'dataSourceKey',
+      interface: 'input',
+      uiSchema: {
+        type: 'string',
+        'x-component': 'Input',
+      },
+    },
+    {
+      type: 'string',
+      name: 'collectionName',
+      title: 'collectionName',
+      interface: 'input',
+      uiSchema: {
+        type: 'string',
+        'x-component': 'Input',
+      },
+    },
+    {
+      type: 'string',
+      name: 'associationName',
+      title: 'associationName',
+      interface: 'input',
+      uiSchema: {
+        type: 'string',
+        'x-component': 'Input',
+      },
+    },
+    {
+      type: 'string',
+      name: 'filterByTk',
+      title: 'filterByTk',
+      interface: 'input',
+      uiSchema: {
+        type: 'string',
+        'x-component': 'Input',
+      },
+    },
+    {
+      type: 'string',
+      name: 'sourceId',
+      title: 'sourceId',
+      interface: 'input',
+      uiSchema: {
+        type: 'string',
+        'x-component': 'Input',
+      },
+    },
+  ],
+};
+
 export const getTemplateFilter = (templateType: TemplateType): Record<string, unknown> => {
   if (templateType === 'popup') {
     return { type: 'popup' };
@@ -55,19 +171,28 @@ export const getTemplateFilter = (templateType: TemplateType): Record<string, un
   };
 };
 
+export const mergeTemplateListFilter = (
+  templateType: TemplateType,
+  filter?: Record<string, unknown>,
+): Record<string, unknown> => {
+  const templateFilter = getTemplateFilter(templateType);
+  if (!filter || Object.keys(filter).length === 0) {
+    return templateFilter;
+  }
+  return { $and: [templateFilter, filter] };
+};
+
 export const buildTemplateListParams = (args: {
   templateType: TemplateType;
   page: number;
   pageSize: number;
-  search?: string;
+  filter?: Record<string, unknown>;
 }): TemplateListParams => {
-  const search = args.search?.trim();
   return {
     page: args.page,
     pageSize: args.pageSize,
     sort: '-createdAt',
-    filter: getTemplateFilter(args.templateType),
-    ...(search ? { search } : {}),
+    filter: mergeTemplateListFilter(args.templateType, args.filter),
   };
 };
 
@@ -167,18 +292,20 @@ const TemplateEditForm: React.FC<{
   );
 };
 
-export const FlowModelTemplatesPage: React.FC<{ templateType: TemplateType }> = ({ templateType }) => {
+const FlowModelTemplatesPageContent: React.FC<{ templateType: TemplateType }> = ({ templateType }) => {
   const t = useT();
   const ctx = useFlowContext();
   const { modal, message } = App.useApp();
   const { token } = theme.useToken();
   const resource = useMemo(() => ctx.api.resource('flowModelTemplates') as FlowModelTemplateResource, [ctx.api]);
+  const templateCollection = ctx.dataSourceManager
+    ?.getDataSource?.('main')
+    ?.getCollection?.(FLOW_MODEL_TEMPLATES_COLLECTION_NAME);
   const [records, setRecords] = useState<FlowModelTemplateRecord[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
-  const [search, setSearch] = useState('');
-  const [searchInput, setSearchInput] = useState('');
+  const [filter, setFilter] = useState<Record<string, unknown> | undefined>();
   const [loading, setLoading] = useState(false);
 
   const fetchTemplates = useCallback(async () => {
@@ -187,11 +314,11 @@ export const FlowModelTemplatesPage: React.FC<{ templateType: TemplateType }> = 
         templateType,
         page,
         pageSize,
-        search,
+        filter,
       }),
     );
     return parseResourceListResponse<FlowModelTemplateRecord>(response);
-  }, [page, pageSize, resource, search, templateType]);
+  }, [filter, page, pageSize, resource, templateType]);
 
   const runLoadTemplates = useCallback(
     async (isActive: () => boolean = () => true) => {
@@ -226,8 +353,8 @@ export const FlowModelTemplatesPage: React.FC<{ templateType: TemplateType }> = 
     };
   }, [runLoadTemplates]);
 
-  const handleSearch = useCallback((value: string) => {
-    setSearch(value.trim());
+  const handleFilterChange = useCallback((nextFilter: Record<string, unknown> | undefined) => {
+    setFilter(nextFilter);
     setPage(1);
   }, []);
 
@@ -339,19 +466,11 @@ export const FlowModelTemplatesPage: React.FC<{ templateType: TemplateType }> = 
   return (
     <Card variant="borderless">
       <Flex justify="space-between" align="center" style={{ marginBottom: token.margin }}>
-        <Input.Search
-          allowClear
-          placeholder={t('Search templates')}
-          value={searchInput}
-          onChange={(event) => {
-            const next = event.target.value;
-            setSearchInput(next);
-            if (!next) {
-              handleSearch('');
-            }
-          }}
-          onSearch={handleSearch}
-          style={{ width: 260 }}
+        <CollectionFilter
+          collection={templateCollection}
+          filterableFieldNames={FLOW_MODEL_TEMPLATE_FILTER_FIELD_NAMES}
+          onChange={handleFilterChange}
+          t={t}
         />
         <Button icon={<ReloadOutlined />} onClick={loadTemplates}>
           {t('Refresh')}
@@ -372,6 +491,12 @@ export const FlowModelTemplatesPage: React.FC<{ templateType: TemplateType }> = 
     </Card>
   );
 };
+
+export const FlowModelTemplatesPage: React.FC<{ templateType: TemplateType }> = ({ templateType }) => (
+  <ExtendCollectionsProvider collections={[flowModelTemplatesCollection]}>
+    <FlowModelTemplatesPageContent templateType={templateType} />
+  </ExtendCollectionsProvider>
+);
 
 export const BlockTemplatesPage: React.FC = () => <FlowModelTemplatesPage templateType="block" />;
 
