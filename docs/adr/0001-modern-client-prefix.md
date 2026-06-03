@@ -29,7 +29,7 @@ Server runtime:
 - `server/src/gateway/index.ts` — `getV2AssetPublicPath` (CDN), `getV2IndexTemplate` path (`dist/client/studio`), inject `__nocobase_modern_client_prefix__`.
 
 Build:
-- `app/client-v2/rsbuild.config.ts` — fixed dir `dist/client/studio`, `assetPrefix: isBuild ? 'auto' : …`, inject window prefix, dev base reads env.
+- `app/client-v2/rsbuild.config.ts` — fixed dir `dist/client/studio`, `assetPrefix` bakes the fixed sentinel, inject window prefix, dev base reads env.
 - `app/client/rsbuild.config.ts` — v1 dev proxy base reads env.
 - `build/src/injectPublicPathPlugin.ts` — inline data-URI reads `window.__nocobase_modern_client_prefix__` (only inline exception, cannot import).
 
@@ -47,3 +47,36 @@ Plugins (5 code files + comment updates):
 - Comments only: `plugin-auth` (`buildRedirectPath.ts`, `hooks.ts`), `plugin-file-manager` (`filePreviewTypes.tsx`).
 
 Tests: fixtures build paths from the runtime helper (env/window with `studio` fallback) rather than a hardcoded `/studio/`, so changing the default never breaks them.
+
+## Two distinct kinds of change
+
+There are two very different operations, and they cost very differently:
+
+1. **Change the prefix for a deployment (runtime, no rebuild).** Set `APP_MODERN_CLIENT_PREFIX=/admin/` and restart. nginx, the node gateway, and the browser all read it at runtime; the prefix detaches from the fixed `dist/client/studio` directory by design. This is the common case and the whole point of this ADR — nothing below applies.
+
+2. **Change the baked-in default itself (code change + rebuild).** Only needed when you want to rename the default value or the on-disk build directory (e.g. `studio` → `console`, so artifacts land in `dist/client/console`). This is rare and is what the checklist below is for.
+
+## Changing the baked-in default (rare; requires a rebuild)
+
+Two conceptually separate literals; decide whether you are changing one or both.
+
+**A. The default URL prefix segment** (what `/` resolves to when the env var is unset). Single source of truth:
+- `packages/core/cli-v1/src/util.js` — `DEFAULT_MODERN_CLIENT_PREFIX`.
+
+Every server-side reader gets it from here via `initEnv()`. You may leave the build directory as `studio` and only change this — then the default URL becomes e.g. `/console/` while assets still live in `dist/client/studio/` (the gateway rewrites between them, exactly as a runtime override does).
+
+**B. The fixed build-output directory name** (the on-disk folder + the HTML sentinel the server rewrites). If you also want the folder renamed, change all of these to the same value and rebuild:
+- `packages/core/app/client-v2/rsbuild.config.ts` — `MODERN_CLIENT_DIST_DIR` (drives `output.distPath` + the baked sentinel).
+- `packages/core/server/src/gateway/utils.ts` — `MODERN_CLIENT_DIST_DIR` (drives the rewrite sentinel + asset-path remap; also re-exported and used by `gateway/index.ts` for the `dist/client/<dir>/index.html` read path).
+- `packages/core/cli-v1/nocobase.conf.tpl` — the `alias … /dist/client/studio/assets/` line (nginx serves the physical folder).
+
+**Last-resort fallbacks** that hardcode the string `studio` for the "env unset AND no injected value" edge case — keep them consistent with A (they are defensive, not the source of truth, so a stale value here only affects misconfigured runtimes):
+- `packages/core/app/client-v2/src/main.tsx` (`getBuildAssetDir` fallback)
+- `packages/core/app/client/rsbuild.config.ts` (v1 dev proxy)
+- `packages/core/build/src/injectPublicPathPlugin.ts` (inline data-URI, cannot import a constant)
+- `packages/core/client-v2/src/authRedirect.ts` (`getModernClientPrefix` final fallback)
+- `packages/plugins/@nocobase/plugin-auth/src/server/utils/buildRedirectPath.ts` (`getModernClientPrefix` fallback)
+
+**Do NOT need changes** when renaming the default: test fixtures (they set the env var explicitly and template off it), `.env.example` (update only the documented example for clarity), and CI (prefix-agnostic).
+
+After changing B you MUST rebuild so artifacts land in the new directory; a running app pointed at the old `dist/client/studio` will otherwise 404.
