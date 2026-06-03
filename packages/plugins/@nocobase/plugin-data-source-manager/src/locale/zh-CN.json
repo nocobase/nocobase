@@ -44,6 +44,7 @@
   "Data source display name": "数据源名称",
   "Data source manager": "数据源管理",
   "Data source name": "数据源标识",
+  "Data source synchronization failed": "数据源同步失败",
   "Data source synchronization in progress": "数据源同步中",
   "Data source synchronization successful": "数据源同步成功",
   "Data sources": "数据源",
