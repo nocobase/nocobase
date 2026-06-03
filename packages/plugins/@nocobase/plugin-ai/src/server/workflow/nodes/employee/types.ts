@@ -21,10 +21,10 @@ export type AIEmployeeInstructionConfig = {
     [key: string]: any;
   };
   webSearch?: boolean;
-  model: {
+  model?: {
     llmService: string;
     model: string;
-  };
+  } | null;
   requiresApproval?: RequiresApproval;
   assignees?: string[];
   userId: string;
