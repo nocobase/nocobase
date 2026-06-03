@@ -52,6 +52,7 @@ type EditFormValues = {
 };
 
 const FLOW_MODEL_TEMPLATES_COLLECTION_NAME = 'flowModelTemplates';
+const MIDDLE_DRAWER_WIDTH = '50%';
 
 const FLOW_MODEL_TEMPLATE_FILTER_FIELD_NAMES = [
   'name',
@@ -373,7 +374,7 @@ const FlowModelTemplatesPageContent: React.FC<{ templateType: TemplateType }> = 
   const openEditDrawer = useCallback(
     (record: FlowModelTemplateRecord) => {
       ctx.viewer.drawer({
-        width: 520,
+        width: MIDDLE_DRAWER_WIDTH,
         closable: true,
         content: () => <TemplateEditForm record={record} resource={resource} onSubmitted={loadTemplates} />,
       });
