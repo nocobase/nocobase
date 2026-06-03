@@ -679,7 +679,6 @@ export class AdminLayoutMenuItemModel extends FlowModel<AdminLayoutMenuItemStruc
 AdminLayoutMenuItemModel.registerFlow({
   key: 'menuCreation',
   title: 'Add menu item',
-  manual: true,
   steps: {
     basic: {
       title: 'Add menu item',
@@ -696,7 +695,6 @@ AdminLayoutMenuItemModel.registerFlow({
 AdminLayoutMenuItemModel.registerFlow({
   key: 'menuSettings',
   title: 'Menu settings',
-  manual: true,
   steps: {
     edit: {
       title: 'Edit',

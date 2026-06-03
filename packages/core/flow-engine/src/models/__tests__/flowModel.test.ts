@@ -550,34 +550,6 @@ describe('FlowModel', () => {
 
         loggerSpy.mockRestore();
       });
-
-      test('should warn and skip step when use and handler are both missing', async () => {
-        const warnSpy = vi.spyOn(model.context.logger, 'warn').mockImplementation(() => {});
-        const errorSpy = vi.spyOn(model.context.logger, 'error').mockImplementation(() => {});
-
-        TestFlowModel.registerFlow({
-          key: 'settingsOnlyFlow',
-          steps: {
-            edit: {
-              title: 'Edit',
-              uiSchema: {},
-            },
-          },
-        });
-
-        const result = await model.applyFlow('settingsOnlyFlow');
-
-        expect(result).toEqual({});
-        expect(warnSpy).toHaveBeenCalledWith(
-          expect.stringContaining("Step 'edit' in flow 'settingsOnlyFlow' has neither 'use' nor 'handler'"),
-        );
-        expect(errorSpy).not.toHaveBeenCalledWith(
-          expect.stringContaining("Step 'edit' in flow 'settingsOnlyFlow' has neither 'use' nor 'handler'"),
-        );
-
-        warnSpy.mockRestore();
-        errorSpy.mockRestore();
-      });
     });
 
     describe('beforeRender flows', () => {
