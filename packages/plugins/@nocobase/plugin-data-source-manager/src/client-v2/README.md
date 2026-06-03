@@ -80,7 +80,7 @@ export class PluginMyDataSourceClientV2 extends Plugin {
 - `SettingsForm`：当前数据源类型自己的配置表单，使用原生 Ant Design `Form.Item`。字段值会和基础字段一起提交给 `dataSources:create/update`。
 - `disableTestConnection`：隐藏 “Test Connection” 按钮。
 - `disableAddFields`：给后续管理逻辑识别是否允许添加字段。
-- `disableConfigureFieldsActions`：统一禁用 `Configure fields` 中的字段变更动作。启用后只展示字段列表，隐藏新增、编辑、删除，禁止快速修改字段显示名、切换 Interface 和修改 title field。
+- `disableConfigureFields`：统一禁用 `Configure fields` 中的字段变更动作。启用后只展示字段列表，隐藏新增、编辑、删除，禁止快速修改字段显示名、切换 Interface 和修改 title field。
 - `createFieldInterfaces`：限制该数据源在 “Add field” 中可创建的字段 Interface，避免外部数据源暴露不支持的字段类型。
 - `normalizeValues`：提交、连接测试前统一整理表单值，适合处理端口数字化、SSL 结构兼容、空值清理等数据源特有逻辑。
 - `isFieldInterfaceReadOnly`：可选扩展点，用于让数据源控制某个字段的 `Field interface` 是否只读。没有特殊规则时不需要实现。
@@ -147,11 +147,11 @@ dataSourceManagerPlugin.registerType('external-postgres', {
 
 ### 只读展示 Configure fields
 
-如果某个外部数据源的表和字段完全由远端 schema 同步，不允许用户在 NocoBase 中变更字段配置，可以使用 `disableConfigureFieldsActions`：
+如果某个外部数据源的表和字段完全由远端 schema 同步，不允许用户在 NocoBase 中变更字段配置，可以使用 `disableConfigureFields`：
 
 ```tsx
 dataSourceManagerPlugin.registerType('external-postgres', {
-  disableConfigureFieldsActions: true,
+  disableConfigureFields: true,
 });
 ```
 
