@@ -9,6 +9,7 @@
 
 import {
   ApartmentOutlined,
+  CheckOutlined,
   DeleteOutlined,
   EditOutlined,
   MoreOutlined,
@@ -18,22 +19,24 @@ import {
   UserDeleteOutlined,
   UserOutlined,
 } from '@ant-design/icons';
-import { CollectionFilter, DrawerFormLayout, type CompiledFilter } from '@nocobase/client-v2';
-import { useFlowContext } from '@nocobase/flow-engine';
+import { CollectionFilter, DrawerFormLayout, Table, type CompiledFilter } from '@nocobase/client-v2';
+import { useFlowContext, type Collection, type CollectionField } from '@nocobase/flow-engine';
+import { css } from '@emotion/css';
 import { useRequest } from 'ahooks';
 import {
   App,
   Button,
   Card,
+  Checkbox,
   Dropdown,
   Empty,
   Flex,
   Form,
   Input,
   Select,
+  type SelectProps,
   Space,
   Tag,
-  Table,
   Tree,
   TreeSelect,
   Typography,
@@ -41,7 +44,7 @@ import {
 } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import type { DataNode } from 'antd/es/tree';
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 
 import {
   createDepartment,
@@ -57,9 +60,56 @@ import { getDepartmentTitle } from '../../shared/department';
 const FORM_DRAWER_WIDTH = '50%';
 const TABLE_DRAWER_WIDTH = '70%';
 const DEPARTMENT_PICKER_DRAWER_WIDTH = '40%';
-const DEPARTMENT_TREE_PANEL_WIDTH = 240;
+const DEPARTMENT_TREE_PANEL_WIDTH = 280;
+const MEMBER_TABLE_PAGE_SIZE = 20;
+const DEPARTMENTS_PAGE_HEIGHT = 'calc(100vh - 160px)';
 
 type MembersFilter = CompiledFilter;
+
+function isFilterOptionSafe(field: CollectionField, depth = 1): boolean {
+  try {
+    if (!field.interface || field.filterable === false) {
+      return false;
+    }
+
+    const fieldInterface = field.getInterfaceOptions();
+    const filterable = fieldInterface?.filterable;
+    if (!filterable) {
+      return false;
+    }
+
+    if (field.target && depth > 2) {
+      return true;
+    }
+    if (depth > 2) {
+      return true;
+    }
+
+    if (!filterable.nested) {
+      return true;
+    }
+
+    const targetFields = field.getFields().filter((targetField) => {
+      return targetField.target !== 'attachments' && targetField.interface !== 'formula';
+    });
+    return targetFields.every((targetField) => isFilterOptionSafe(targetField, depth + 1));
+  } catch {
+    return false;
+  }
+}
+
+function getSafeFilterableFieldNames(collection?: Collection) {
+  if (!collection) {
+    return undefined;
+  }
+
+  const fieldNames = collection
+    ?.getFields()
+    .filter((field) => field.target !== 'attachments' && field.interface !== 'formula')
+    .filter((field) => isFilterOptionSafe(field))
+    .map((field) => field.name);
+  return fieldNames.length ? fieldNames : ['__no_filterable_fields__'];
+}
 
 interface ApiResource {
   list(params?: Record<string, unknown>): Promise<unknown>;
@@ -105,6 +155,10 @@ function extractMeta(response: unknown): Record<string, unknown> {
 
 function userLabel(user: Pick<UserRecord, 'nickname' | 'username' | 'email'>) {
   return user.nickname || user.username || user.email || '';
+}
+
+function userDescription(user: Pick<UserRecord, 'username' | 'phone' | 'email'>) {
+  return [user.username, user.phone, user.email].filter(Boolean).join(' | ');
 }
 
 function buildMembersFilter(department: DepartmentRecord | null, filter?: MembersFilter) {
@@ -194,19 +248,23 @@ function collectDepartmentKeys(record?: DepartmentRecord, keys = new Set<Departm
   return keys;
 }
 
-function AsyncSelect<T>(props: {
-  mode?: 'multiple';
-  request: () => Promise<T[]>;
-  mapOptions: (record: T) => { label: React.ReactNode; value: React.Key };
-}) {
-  const request = useRequest(props.request);
+function AsyncSelect<T>(
+  props: {
+    mode?: 'multiple';
+    request: () => Promise<T[]>;
+    mapOptions: (record: T) => { label: React.ReactNode; value: React.Key };
+  } & Omit<SelectProps, 'loading' | 'mode' | 'options'>,
+) {
+  const { mode, request: requestFn, mapOptions, ...selectProps } = props;
+  const request = useRequest(requestFn);
 
   return (
     <Select
+      {...selectProps}
       allowClear
-      mode={props.mode}
+      mode={mode}
       loading={request.loading}
-      options={(request.data || []).map(props.mapOptions)}
+      options={(request.data || []).map(mapOptions)}
     />
   );
 }
@@ -282,7 +340,12 @@ function DepartmentForm(props: {
               const response = await getResource(ctx.api, 'roles').list({ paginate: false });
               return extractList<RoleRecord>(response);
             }}
-            mapOptions={(role) => ({ label: role.title || role.name, value: role.name })}
+            mapOptions={(role) => ({
+              label: role.title
+                ? t(role.title, { ns: ['@nocobase/plugin-acl', 'acl', 'client'], nsMode: 'fallback' })
+                : role.name,
+              value: role.name,
+            })}
           />
         </Form.Item>
         {props.mode === 'edit' ? (
@@ -355,6 +418,7 @@ function AddMembersForm(props: { department: DepartmentRecord; onSubmitted: () =
     >
       <Table<UserRecord>
         rowKey="id"
+        showIndex={false}
         loading={usersRequest.loading}
         dataSource={usersRequest.data || []}
         columns={columns}
@@ -430,6 +494,7 @@ function DepartmentPickerForm(props: {
         <CollectionFilter collection={departmentsCollection} t={t} onChange={setFilter} />
         <Table<DepartmentRecord>
           rowKey="id"
+          showIndex={false}
           loading={departmentsRequest.loading}
           columns={columns}
           dataSource={departmentsRequest.data || []}
@@ -605,6 +670,7 @@ const DepartmentsPage: React.FC = () => {
   const { modal, message } = App.useApp();
   const { token } = theme.useToken();
   const usersCollection = ctx.dataSourceManager?.getDataSource('main')?.getCollection('users');
+  const usersFilterableFieldNames = getSafeFilterableFieldNames(usersCollection);
   const [selectedDepartment, setSelectedDepartment] = useState<DepartmentRecord | null>(null);
   const [selectedUser, setSelectedUser] = useState<UserRecord | null>(null);
   const [expandedKeys, setExpandedKeys] = useState<React.Key[]>([]);
@@ -612,6 +678,8 @@ const DepartmentsPage: React.FC = () => {
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchKeyword, setSearchKeyword] = useState('');
   const [memberFilter, setMemberFilter] = useState<MembersFilter>();
+  const [memberPage, setMemberPage] = useState(1);
+  const [memberPageSize, setMemberPageSize] = useState(MEMBER_TABLE_PAGE_SIZE);
 
   const departmentsRequest = useRequest(async () => {
     const response = await getResource(ctx.api, 'departments').list({
@@ -634,7 +702,8 @@ const DepartmentsPage: React.FC = () => {
       const response = await getResource(ctx.api, 'users').list({
         appends: ['departments', 'departments.parent(recursively=true)'],
         filter: buildMembersFilter(selectedDepartment, memberFilter),
-        pageSize: 20,
+        page: memberPage,
+        pageSize: memberPageSize,
       });
       return {
         data: extractList<UserRecord>(response),
@@ -642,10 +711,14 @@ const DepartmentsPage: React.FC = () => {
       };
     },
     {
-      refreshDeps: [memberFilter, selectedDepartment?.id, selectedUser?.id],
+      refreshDeps: [memberFilter, memberPage, memberPageSize, selectedDepartment?.id, selectedUser?.id],
       onSuccess: () => setSelectedMemberKeys([]),
     },
   );
+
+  useEffect(() => {
+    setMemberPage(1);
+  }, [memberFilter, selectedDepartment?.id, selectedUser?.id]);
 
   const searchRequest = useRequest(
     async (keyword: string) => {
@@ -742,43 +815,53 @@ const DepartmentsPage: React.FC = () => {
 
   const memberColumns = useMemo<ColumnsType<UserRecord>>(
     () => [
-      { title: t('Nickname'), render: (_, record) => userLabel(record) },
-      { title: t('Username'), dataIndex: 'username' },
+      { title: t('Nickname'), width: 160, render: (_, record) => userLabel(record) },
+      { title: t('Username'), dataIndex: 'username', width: 160 },
       {
         title: t('Departments'),
+        width: 260,
         render: (record) => (
-          <Space wrap>
-            {(record.departments || []).map((department) => (
-              <a
-                key={department.id}
-                onClick={() => {
-                  setSelectedDepartment(department);
-                  setSelectedUser(null);
-                }}
-              >
-                {getDepartmentTitle(department)}
-              </a>
+          <>
+            {(record.departments || []).map((department, index) => (
+              <React.Fragment key={department.id}>
+                {index > 0 ? ', ' : null}
+                <a
+                  onClick={() => {
+                    setSelectedDepartment(department);
+                    setSelectedUser(null);
+                  }}
+                >
+                  {getDepartmentTitle(department)}
+                </a>
+              </React.Fragment>
             ))}
-          </Space>
+          </>
         ),
       },
       ...(selectedDepartment
         ? [
             {
               title: t('Owner'),
-              render: (record: UserRecord) =>
-                record.departments?.some(
+              align: 'center' as const,
+              width: 96,
+              render: (record: UserRecord) => {
+                const isOwner = record.departments?.some(
                   (department) => department.id === selectedDepartment.id && department.departmentsUsers?.isOwner,
-                ) ? (
-                  <Tag color="processing">{t('Owner')}</Tag>
-                ) : null,
+                );
+                return isOwner ? (
+                  <CheckOutlined aria-label={t('Owner')} style={{ color: '#52c41a' }} />
+                ) : (
+                  <Checkbox disabled aria-label={t('Owner')} />
+                );
+              },
             },
           ]
         : []),
-      { title: t('Phone'), dataIndex: 'phone' },
-      { title: t('Email'), dataIndex: 'email' },
+      { title: t('Phone'), dataIndex: 'phone', width: 140 },
+      { title: t('Email'), dataIndex: 'email', width: 220 },
       {
         title: t('Actions'),
+        width: 120,
         render: (record) => (
           <Space>
             <Button type="link" size="small" onClick={() => openUserDepartmentsForm(record)}>
@@ -798,11 +881,13 @@ const DepartmentsPage: React.FC = () => {
 
   const renderDepartmentTitle = useCallback(
     (department: DepartmentRecord) => (
-      <Flex align="center" justify="space-between">
-        <Space>
-          <ApartmentOutlined />
-          <span>{department.title}</span>
-        </Space>
+      <Flex align="center" justify="space-between" gap={8} style={{ width: '100%', minWidth: 0 }}>
+        <Flex align="center" gap={8} style={{ flex: '1 1 0', minWidth: 0, overflow: 'hidden' }}>
+          <ApartmentOutlined style={{ flex: '0 0 auto' }} />
+          <span title={department.title} style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {department.title}
+          </span>
+        </Flex>
         <Dropdown
           menu={{
             items: [
@@ -827,6 +912,7 @@ const DepartmentsPage: React.FC = () => {
             size="small"
             title={t('Actions')}
             icon={<MoreOutlined />}
+            style={{ flex: '0 0 auto' }}
             onClick={(event) => event.stopPropagation()}
           />
         </Dropdown>
@@ -849,15 +935,27 @@ const DepartmentsPage: React.FC = () => {
               key: 'users',
               type: 'group' as const,
               label: t('Users'),
-              children: users.map((user) => ({
-                key: `user-${user.id}`,
-                label: userLabel(user),
-                onClick: () => {
-                  setSelectedUser(user);
-                  setSelectedDepartment(null);
-                  setSearchOpen(false);
-                },
-              })),
+              children: users.map((user) => {
+                const description = userDescription(user);
+                return {
+                  key: `user-${user.id}`,
+                  label: (
+                    <div>
+                      <div>{userLabel(user)}</div>
+                      {description ? (
+                        <div style={{ fontSize: token.fontSizeSM, color: token.colorTextDescription }}>
+                          {description}
+                        </div>
+                      ) : null}
+                    </div>
+                  ),
+                  onClick: () => {
+                    setSelectedUser(user);
+                    setSelectedDepartment(null);
+                    setSearchOpen(false);
+                  },
+                };
+              }),
             },
           ]
         : []),
@@ -880,23 +978,107 @@ const DepartmentsPage: React.FC = () => {
           ]
         : []),
     ];
-  }, [searchRequest.data, t]);
+  }, [searchRequest.data, t, token.colorTextDescription, token.fontSizeSM]);
 
   const treeNodes = useMemo(
     () => toTreeNodes(departmentTree, renderDepartmentTitle),
     [departmentTree, renderDepartmentTitle],
+  );
+  const departmentsPageClassName = useMemo(
+    () => css`
+      height: ${DEPARTMENTS_PAGE_HEIGHT};
+      min-height: 0;
+      overflow: hidden;
+      > .ant-card-body {
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+      }
+    `,
+    [],
+  );
+  const membersTableClassName = useMemo(
+    () => css`
+      flex: 1;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      .ant-spin-nested-loading,
+      .ant-spin-container,
+      .ant-table,
+      .ant-table-container {
+        min-height: 0;
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+      }
+      .ant-table-content {
+        flex: 1;
+        min-height: 0;
+      }
+      .ant-table-body {
+        flex: 1;
+        min-height: 0;
+      }
+      .ant-table-thead > tr > th {
+        white-space: nowrap;
+      }
+      .ant-pagination {
+        flex: 0 0 auto;
+      }
+    `,
+    [],
+  );
+  const departmentTreeClassName = useMemo(
+    () => css`
+      flex: 1;
+      min-height: 0;
+      overflow-y: scroll;
+      overflow-x: hidden;
+      .ant-tree-treenode {
+        width: 100%;
+        padding: 2px 0;
+      }
+      .ant-tree-switcher {
+        line-height: 32px;
+      }
+      .ant-tree-switcher::before {
+        height: 32px;
+      }
+      .ant-tree-node-content-wrapper {
+        flex: 1;
+        min-width: 0;
+        height: 32px;
+        line-height: 32px;
+        overflow: hidden;
+        padding-inline: 8px;
+      }
+      .ant-tree-title {
+        display: block;
+      }
+      .ant-tree-node-selected {
+        background-color: ${token.colorPrimaryBg};
+      }
+    `,
+    [token.colorPrimaryBg],
   );
   const memberResponse = membersRequest.data;
   const members = memberResponse?.data || [];
   const memberCount = memberResponse?.meta?.count as number | undefined;
 
   return (
-    <Card>
-      <Flex gap={token.marginLG} align="stretch">
+    <Card className={departmentsPageClassName}>
+      <Flex gap={token.marginLG} align="stretch" style={{ flex: 1, minHeight: 0, overflow: 'hidden' }}>
         <Flex
           vertical
           gap={token.marginSM}
-          style={{ width: DEPARTMENT_TREE_PANEL_WIDTH, flex: `0 0 ${DEPARTMENT_TREE_PANEL_WIDTH}px` }}
+          style={{
+            width: DEPARTMENT_TREE_PANEL_WIDTH,
+            flex: `0 0 ${DEPARTMENT_TREE_PANEL_WIDTH}px`,
+            minHeight: 0,
+            overflow: 'hidden',
+          }}
         >
           <Dropdown trigger={['click']} open={searchOpen} onOpenChange={setSearchOpen} menu={{ items: searchItems }}>
             <Input.Search
@@ -924,8 +1106,8 @@ const DepartmentsPage: React.FC = () => {
             icon={<UserOutlined />}
             type="text"
             style={{
-              textAlign: 'left',
-              justifyContent: 'flex-start',
+              textAlign: 'center',
+              justifyContent: 'center',
               background: !selectedDepartment && !selectedUser ? token.colorPrimaryBg : undefined,
             }}
             onClick={() => {
@@ -938,22 +1120,26 @@ const DepartmentsPage: React.FC = () => {
           <Button block type="dashed" icon={<PlusOutlined />} onClick={() => openDepartmentForm('create')}>
             {t('New department')}
           </Button>
-          {treeNodes.length ? (
-            <Tree
-              blockNode
-              treeData={treeNodes}
-              selectedKeys={selectedDepartment ? [selectedDepartment.id] : []}
-              expandedKeys={expandedKeys}
-              onExpand={(keys) => setExpandedKeys([...keys])}
-              onSelect={(keys) => {
-                const department = findDepartment(departmentTree, keys[0]);
-                setSelectedDepartment(department);
-                setSelectedUser(null);
-              }}
-            />
-          ) : (
-            <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} />
-          )}
+          <div className={departmentTreeClassName}>
+            {treeNodes.length ? (
+              <Tree.DirectoryTree
+                blockNode
+                showIcon={false}
+                expandAction={false}
+                treeData={treeNodes}
+                selectedKeys={selectedDepartment ? [selectedDepartment.id] : []}
+                expandedKeys={expandedKeys}
+                onExpand={(keys) => setExpandedKeys([...keys])}
+                onSelect={(keys) => {
+                  const department = findDepartment(departmentTree, keys[0]);
+                  setSelectedDepartment(department);
+                  setSelectedUser(null);
+                }}
+              />
+            ) : (
+              <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} />
+            )}
+          </div>
         </Flex>
         <Flex
           vertical
@@ -963,9 +1149,11 @@ const DepartmentsPage: React.FC = () => {
             borderInlineStart: `${token.lineWidth}px ${token.lineType} ${token.colorSplit}`,
             paddingInlineStart: token.paddingLG,
             minWidth: 0,
+            minHeight: 0,
+            overflow: 'hidden',
           }}
         >
-          <Flex vertical gap={token.marginSM}>
+          <Flex vertical gap={token.marginSM} style={{ flex: '0 0 auto' }}>
             <Typography.Title level={4} style={{ margin: 0 }}>
               {selectedUser ? t('Search results') : t(selectedDepartment?.title || 'All users')}
             </Typography.Title>
@@ -974,8 +1162,11 @@ const DepartmentsPage: React.FC = () => {
                 <CollectionFilter
                   collection={usersCollection}
                   t={t}
-                  filterableFieldNames={['nickname', 'username', 'email', 'phone']}
-                  onChange={setMemberFilter}
+                  filterableFieldNames={usersFilterableFieldNames}
+                  onChange={(filter) => {
+                    setMemberPage(1);
+                    setMemberFilter(filter);
+                  }}
                 />
               </Space>
               <Space wrap>
@@ -1001,9 +1192,12 @@ const DepartmentsPage: React.FC = () => {
           </Flex>
           <Table<UserRecord>
             rowKey="id"
+            showIndex={false}
+            className={membersTableClassName}
             loading={membersRequest.loading}
             dataSource={members}
             columns={memberColumns}
+            scroll={{ x: 'max-content', y: '100%' }}
             rowSelection={
               selectedDepartment
                 ? {
@@ -1015,8 +1209,14 @@ const DepartmentsPage: React.FC = () => {
             pagination={
               memberCount
                 ? {
+                    current: memberPage,
+                    pageSize: memberPageSize,
                     total: memberCount,
                     showTotal: (count) => t('Total {{count}} members', { count }),
+                    onChange: (page, pageSize) => {
+                      setMemberPage(page);
+                      setMemberPageSize(pageSize);
+                    },
                   }
                 : false
             }
