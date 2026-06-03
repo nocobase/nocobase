@@ -202,7 +202,7 @@ const UiLayoutsPage: React.FC = () => {
   const t = useT();
   const ctx = useFlowContext();
   const { token } = theme.useToken();
-  const { modal } = App.useApp();
+  const { message, modal } = App.useApp();
   const [selectedRowKeys, setSelectedRowKeys] = useState<UiLayoutPrimaryKey[]>([]);
   const [updatingEnabledRowKeys, setUpdatingEnabledRowKeys] = useState<UiLayoutPrimaryKey[]>([]);
   const resource = useMemo(() => ctx.api.resource('uiLayouts') as UiLayoutResource, [ctx.api]);
@@ -281,11 +281,12 @@ const UiLayoutsPage: React.FC = () => {
           enabled,
           onSubmitted: refreshList,
         });
+        message.success(t('Updated successfully'));
       } finally {
         setUpdatingEnabledRowKeys((keys) => keys.filter((key) => key !== record.id));
       }
     },
-    [refreshList, resource],
+    [message, refreshList, resource, t],
   );
 
   const rowSelection = useMemo<TableProps<UiLayoutRecord>['rowSelection']>(
