@@ -56,6 +56,11 @@
   },
   {
     "type": "custom-link",
+    "label": "ファイルプレビュー",
+    "link": "/file-manager/file-preview/index"
+  },
+  {
+    "type": "custom-link",
     "label": "拡張開発",
     "link": "/file-manager/development/index"
   }

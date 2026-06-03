@@ -21,7 +21,7 @@ type ScriptConfig = { content?: string; timeout?: number; continue?: boolean; ar
 export default class ScriptInstruction extends Instruction {
   /**
    * Returns the worker script path based on whether WORKFLOW_SCRIPT_MODULES is configured.
-   * - WORKFLOW_SCRIPT_MODULES set: uses Node.js vm with require support (module whitelist)
+   * - WORKFLOW_SCRIPT_MODULES set: uses Node.js vm with require support (unsafe; not a security boundary)
    * - WORKFLOW_SCRIPT_MODULES unset: uses isolated-vm for maximum security (no require, no Node.js APIs)
    */
   static get workerScript() {

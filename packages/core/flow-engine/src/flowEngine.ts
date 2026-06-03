@@ -20,6 +20,7 @@ import { APIResource, FlowResource, MultiRecordResource, SingleRecordResource, S
 import { Emitter } from './emitter';
 import ModelOperationScheduler from './scheduler/ModelOperationScheduler';
 import type { ScheduleOptions, ScheduledCancel } from './scheduler/ModelOperationScheduler';
+import { createLoadedPageCache } from './utils/loadedPageCache';
 import type {
   ActionDefinition,
   ApplyFlowCacheEntry,
@@ -34,6 +35,8 @@ import type {
   ResolveUseResult,
 } from './types';
 import { isInheritedFrom } from './utils';
+
+const getFlowEngineLoggerLevel = () => (process.env.NODE_ENV === 'production' ? 'warn' : 'trace');
 
 /**
  * FlowEngine is the core class of the flow engine, responsible for managing flow models, actions, model repository, and more.
@@ -102,6 +105,8 @@ export class FlowEngine {
    * @private
    */
   private _savingModels = new Map<string, Promise<any>>();
+
+  private _loadedPageCache = createLoadedPageCache();
 
   /**
    * Flow engine context object.
@@ -183,7 +188,7 @@ export class FlowEngine {
       MultiRecordResource,
     });
     this.logger = pino({
-      level: 'trace',
+      level: getFlowEngineLoggerLevel(),
       browser: {
         write: {
           fatal: (o) => console.trace(o),
@@ -608,7 +613,6 @@ export class FlowEngine {
 
     while (current) {
       if (visited.has(current)) {
-        console.warn(`FlowEngine: resolveUse circular reference detected on '${current.name}'.`);
         break;
       }
       visited.add(current);
@@ -727,7 +731,7 @@ export class FlowEngine {
    */
   public removeModel(uid: string): boolean {
     if (!this._modelInstances.has(uid)) {
-      console.warn(`FlowEngine: Model with UID '${uid}' does not exist.`);
+      this.logger.debug(`FlowEngine: Model with UID '${uid}' does not exist.`);
       return false;
     }
     const modelInstance = this._modelInstances.get(uid) as FlowModel;
@@ -937,7 +941,8 @@ export class FlowEngine {
   async loadModel<T extends FlowModel = FlowModel>(options): Promise<T | null> {
     if (!this.ensureModelRepository()) return;
     const refresh = !!options?.refresh;
-    if (!refresh) {
+    const bypassLoadedPageCache = this._loadedPageCache.shouldBypass(options, () => this.context.flowSettingsEnabled);
+    if (!refresh && !bypassLoadedPageCache) {
       const model = this.findModelByParentId(options.parentId, options.subKey);
       if (model) {
         return model as T;
@@ -948,14 +953,24 @@ export class FlowEngine {
       }
     }
     const data = await this._modelRepository.findOne(options);
-    if (!data?.uid) return null;
-    if (refresh) {
+    if (!data?.uid) {
+      if (bypassLoadedPageCache) {
+        this._loadedPageCache.clear(options);
+      }
+      return null;
+    }
+    if (refresh || bypassLoadedPageCache) {
       const existing = this.getModel(data.uid);
       if (existing) {
         this.removeModelWithSubModels(existing.uid);
       }
     }
-    return this.createModel<T>(data as any);
+    const model = this.createModel<T>(data as any);
+    if (bypassLoadedPageCache) {
+      this._loadedPageCache.mountModelToParent(model, true);
+      this._loadedPageCache.clear(options);
+    }
+    return model;
   }
 
   /**
@@ -995,22 +1010,31 @@ export class FlowEngine {
   ): Promise<T | null> {
     if (!this.ensureModelRepository()) return;
     const { uid, parentId, subKey } = options;
-    if (uid && this._modelInstances.has(uid)) {
+    const bypassLoadedPageCache = this._loadedPageCache.shouldBypass(options, () => this.context.flowSettingsEnabled);
+    if (uid && !bypassLoadedPageCache && this._modelInstances.has(uid)) {
       return this._modelInstances.get(uid) as T;
     }
-    const m = this.findModelByParentId<T>(parentId, subKey);
-    if (m) {
-      return m;
-    }
+    if (!bypassLoadedPageCache) {
+      const m = this.findModelByParentId<T>(parentId, subKey);
+      if (m) {
+        return m;
+      }
 
-    const hydrated = this.hydrateModelFromPreviousEngines<T>(options, extra);
-    if (hydrated) {
-      return hydrated;
+      const hydrated = this.hydrateModelFromPreviousEngines<T>(options, extra);
+      if (hydrated) {
+        return hydrated;
+      }
     }
 
     const data = await this._modelRepository.findOne(options);
     let model: T | null = null;
     if (data?.uid) {
+      if (bypassLoadedPageCache) {
+        const existing = this.getModel(data.uid);
+        if (existing) {
+          this.removeModelWithSubModels(existing.uid);
+        }
+      }
       model = this.createModel<T>(data as any, extra);
     } else {
       model = this.createModel<T>(options, extra);
@@ -1018,18 +1042,9 @@ export class FlowEngine {
         await model.save();
       }
     }
-    if (model.parent) {
-      const subModel = model.parent.findSubModel(model.subKey, (m) => {
-        return m.uid === model.uid;
-      });
-      if (subModel) {
-        return model;
-      }
-      if (model.subType === 'array') {
-        model.parent.addSubModel(model.subKey, model);
-      } else {
-        model.parent.setSubModel(model.subKey, model);
-      }
+    this._loadedPageCache.mountModelToParent(model, bypassLoadedPageCache);
+    if (bypassLoadedPageCache) {
+      this._loadedPageCache.clear(options);
     }
     return model;
   }
@@ -1049,6 +1064,7 @@ export class FlowEngine {
     if (!this.ensureModelRepository()) return;
 
     const modelUid = model.uid;
+    const dirtyLoadedPageKey = this._loadedPageCache.getDirtyKeyForModel(model);
 
     // 如果这个 model 正在保存中，返回现有的保存 Promise
     if (this._savingModels.has(modelUid)) {
@@ -1062,6 +1078,7 @@ export class FlowEngine {
 
     try {
       const result = await savePromise;
+      this._loadedPageCache.markDirty(dirtyLoadedPageKey);
       return result;
     } finally {
       // 无论成功还是失败，都要清除保存状态
@@ -1098,11 +1115,16 @@ export class FlowEngine {
    * @returns {Promise<boolean>} Whether destroyed successfully
    */
   async destroyModel(uid: string) {
-    if (this.ensureModelRepository()) {
+    const modelInstance = this._modelInstances.get(uid) as FlowModel;
+    const dirtyLoadedPageKey = this._loadedPageCache.getDirtyKeyForModel(modelInstance);
+    const hasModelRepository = this.ensureModelRepository();
+    if (hasModelRepository) {
       await this._modelRepository.destroy(uid);
     }
 
-    const modelInstance = this._modelInstances.get(uid) as FlowModel;
+    if (hasModelRepository) {
+      this._loadedPageCache.markDirty(dirtyLoadedPageKey);
+    }
     const parent = modelInstance?.parent;
     const result = this.removeModel(uid);
     parent && parent.emitter.emit('onSubModelDestroyed', modelInstance);
@@ -1224,6 +1246,7 @@ export class FlowEngine {
       return;
     }
     let position: 'before' | 'after' = 'after';
+    const dirtyLoadedPageKey = this._loadedPageCache.getDirtyKeyForModel(sourceModel);
     const move = (sourceModel: FlowModel, targetModel: FlowModel) => {
       if (!sourceModel.parent || !targetModel.parent || sourceModel.parent !== targetModel.parent) {
         console.error('FlowModel.moveTo: Both models must have the same parent to perform move operation.');
@@ -1276,6 +1299,7 @@ export class FlowEngine {
 
     if (options?.persist !== false && this.ensureModelRepository()) {
       await this._modelRepository.move(sourceUid, targetUid, position);
+      this._loadedPageCache.markDirty(dirtyLoadedPageKey);
     }
     // 触发事件以通知其他部分模型已移动
     sourceModel.parent.emitter.emit('onSubModelMoved', { source: sourceModel, target: targetModel });

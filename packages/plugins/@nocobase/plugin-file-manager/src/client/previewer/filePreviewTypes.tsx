@@ -19,10 +19,11 @@ import {
   ZoomInOutlined,
   ZoomOutOutlined,
 } from '@ant-design/icons';
-import { Alert, Button, Image, Modal, Space, Spin } from 'antd';
+import { Alert, Image, Modal, Space, Spin } from 'antd';
 import { matchMimetype } from '@nocobase/client';
 import { useTranslation } from 'react-i18next';
 import type { PDFDocumentLoadingTask, PDFDocumentProxy, PDFWorker, RenderTask } from 'pdfjs-dist';
+import { useFmTranslation } from '../locale';
 
 export interface FilePreviewerProps {
   file: any;
@@ -345,6 +346,27 @@ type PdfJs = typeof import('pdfjs-dist/build/pdf.mjs');
 
 let pdfjsPromise: Promise<PdfJs> | null = null;
 
+type PdfPreviewErrorCode = 'resources' | 'file' | 'document';
+
+class PdfPreviewError extends Error {
+  code: PdfPreviewErrorCode;
+  cause?: unknown;
+
+  constructor(code: PdfPreviewErrorCode, message: string, cause?: unknown) {
+    super(message);
+    this.name = 'PdfPreviewError';
+    this.code = code;
+    this.cause = cause;
+  }
+}
+
+export const getPdfPreviewErrorCode = (error: unknown): PdfPreviewErrorCode => {
+  if (error instanceof PdfPreviewError) {
+    return error.code;
+  }
+  return 'document';
+};
+
 const loadPdfJs = async () => {
   if (!pdfjsPromise) {
     pdfjsPromise = import('pdfjs-dist/build/pdf.mjs');
@@ -353,6 +375,13 @@ const loadPdfJs = async () => {
 };
 
 const PDF_SCALE = 1.4;
+
+const PDF_PREVIEW_ERROR_MESSAGES: Record<PdfPreviewErrorCode, string> = {
+  resources:
+    'PDF preview resources failed to load. Please refresh the page and check whether plugin static files are deployed correctly.',
+  file: 'PDF preview failed to load the file. If the file is stored on another domain, configure CORS for the external storage to allow this site to read the file.',
+  document: 'PDF preview failed. Please download the file to preview it.',
+};
 
 interface PdfMeta {
   numPages: number;
@@ -379,12 +408,12 @@ interface PdfSession {
 }
 
 const PdfPreviewer = ({ file }: FilePreviewerProps) => {
-  const { t } = useTranslation();
+  const { t } = useFmTranslation();
   const src = getFileUrl(file);
   const pageElsRef = React.useRef<Map<number, HTMLDivElement>>(new Map());
   const sessionRef = React.useRef<PdfSession | null>(null);
   const [meta, setMeta] = React.useState<PdfMeta | null>(null);
-  const [error, setError] = React.useState(false);
+  const [errorCode, setErrorCode] = React.useState<PdfPreviewErrorCode | null>(null);
 
   // Load metadata over a streaming document and paint the first page as soon as
   // its bytes arrive. Rendering of the remaining pages happens lazily below.
@@ -403,10 +432,15 @@ const PdfPreviewer = ({ file }: FilePreviewerProps) => {
     };
     sessionRef.current = session;
     setMeta(null);
-    setError(false);
+    setErrorCode(null);
 
     const init = async () => {
-      const pdfjs = await loadPdfJs();
+      let pdfjs: PdfJs;
+      try {
+        pdfjs = await loadPdfJs();
+      } catch (error) {
+        throw new PdfPreviewError('resources', 'Failed to load PDF.js resources.', error);
+      }
       if (session.cancelled) {
         return;
       }
@@ -414,22 +448,43 @@ const PdfPreviewer = ({ file }: FilePreviewerProps) => {
       // Fetch the whole file once into memory. pdf.js's own URL loader proved
       // unreliable in this app (range/credentials handling), so we control the
       // request here and feed the bytes to in-memory documents below.
-      const url = new URL(src, location.href);
-      const response = await fetch(url, {
-        credentials: url.origin === location.origin ? 'include' : 'omit',
-        signal: session.abortController.signal,
-      });
-      if (!response.ok) {
-        throw new Error(`Failed to load PDF: ${response.status}`);
+      let url: URL;
+      try {
+        url = new URL(src, location.href);
+      } catch (error) {
+        throw new PdfPreviewError('file', 'Invalid PDF file URL.', error);
       }
-      const data = new Uint8Array(await response.arrayBuffer());
+      let response: Response;
+      try {
+        response = await fetch(url, {
+          credentials: url.origin === location.origin ? 'include' : 'omit',
+          signal: session.abortController.signal,
+        });
+      } catch (error) {
+        throw new PdfPreviewError('file', 'Failed to fetch PDF file.', error);
+      }
+      if (!response.ok) {
+        throw new PdfPreviewError('file', `Failed to fetch PDF file: ${response.status}`);
+      }
+      let data: Uint8Array;
+      try {
+        data = new Uint8Array(await response.arrayBuffer());
+      } catch (error) {
+        throw new PdfPreviewError('file', 'Failed to read PDF file response.', error);
+      }
       if (session.cancelled) {
         return;
       }
       session.data = data;
-      session.worker = pdfjs.PDFWorker.create({
-        port: new Worker(new URL('pdfjs-dist/build/pdf.worker.min.mjs', import.meta.url), { type: 'module' }),
-      });
+      try {
+        pdfjs.GlobalWorkerOptions.workerSrc = new URL(
+          'pdfjs-dist/build/pdf.worker.min.mjs',
+          import.meta.url,
+        ).toString();
+        session.worker = pdfjs.PDFWorker.create({});
+      } catch (error) {
+        throw new PdfPreviewError('resources', 'Failed to load PDF.js worker.', error);
+      }
       // Security hardening: no eval-based font hinting, no XFA scripting
       // (annotations are disabled per render call). getDocument detaches the
       // buffer it receives, so hand it a copy and keep `data` for later pages.
@@ -441,7 +496,12 @@ const PdfPreviewer = ({ file }: FilePreviewerProps) => {
         worker: session.worker,
       });
       session.loadingTasks.push(metaTask);
-      const metaPdf = await metaTask.promise;
+      let metaPdf: PDFDocumentProxy;
+      try {
+        metaPdf = await metaTask.promise;
+      } catch (error) {
+        throw new PdfPreviewError('document', 'Failed to parse PDF file.', error);
+      }
       if (session.cancelled) {
         return;
       }
@@ -453,9 +513,17 @@ const PdfPreviewer = ({ file }: FilePreviewerProps) => {
       setMeta({ numPages: metaPdf.numPages, width: viewport.width, height: viewport.height });
     };
 
-    init().catch(() => {
+    init().catch((error) => {
       if (!session.cancelled) {
-        setError(true);
+        const code = getPdfPreviewErrorCode(error);
+        // Keep the original error visible for deployment/CORS diagnostics while
+        // showing users a concise, actionable preview failure message.
+        console.warn('[file-manager] PDF preview failed', {
+          code,
+          src,
+          error,
+        });
+        setErrorCode(code);
       }
     });
 
@@ -541,6 +609,13 @@ const PdfPreviewer = ({ file }: FilePreviewerProps) => {
         session.observer?.unobserve(wrapper);
       } catch (renderError) {
         // Leave the placeholder in place; scrolling back can retry the page.
+        if (!session.cancelled) {
+          console.warn('[file-manager] PDF page render failed', {
+            pageNumber,
+            src,
+            error: renderError,
+          });
+        }
       } finally {
         task?.destroy();
         session.inFlight.delete(pageNumber);
@@ -566,7 +641,7 @@ const PdfPreviewer = ({ file }: FilePreviewerProps) => {
         session.observer = undefined;
       }
     };
-  }, [meta]);
+  }, [meta, src]);
 
   if (!src) {
     return null;
@@ -574,14 +649,8 @@ const PdfPreviewer = ({ file }: FilePreviewerProps) => {
 
   return (
     <div style={{ width: '100%', minHeight: '100%', padding: 16 }}>
-      {error ? (
-        <Alert
-          type="warning"
-          showIcon
-          message={t('File type is not supported for previewing, please download it to preview.')}
-        />
-      ) : null}
-      {!meta && !error ? (
+      {errorCode ? <Alert type="warning" showIcon message={t(PDF_PREVIEW_ERROR_MESSAGES[errorCode])} /> : null}
+      {!meta && !errorCode ? (
         <div style={{ display: 'flex', justifyContent: 'center', padding: 48 }}>
           <Spin />
         </div>

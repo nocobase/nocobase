@@ -45,6 +45,19 @@ describe('flow-model attach', () => {
         },
       },
     } as any);
+    const childRow = await repository.model.findByPk('childA');
+    const childOptions = FlowModelRepository.optionsToJson(childRow.get('options') || {});
+    await childRow.update(
+      {
+        options: {
+          ...childOptions,
+          uid: 'childA',
+        },
+      },
+      {
+        hooks: false,
+      },
+    );
 
     const attached = await repository.attach('childA', {
       parentId: 'parent',
@@ -60,6 +73,10 @@ describe('flow-model attach', () => {
     expect(attached.subType).toBe('array');
     expect(attached.subModels?.page).toBeTruthy();
     expect(attached.subModels.page.subModels?.content).toBeTruthy();
+
+    const attachedRow = await repository.model.findByPk('childA');
+    const attachedOptions = FlowModelRepository.optionsToJson(attachedRow.get('options') || {});
+    expect(attachedOptions.uid).toBeUndefined();
 
     const nodes = await repository.findNodesById('childA', { includeAsyncNode: true });
     const pageNode = nodes.find((n: any) => n?.uid === 'page');

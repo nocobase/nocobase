@@ -30,7 +30,12 @@ export interface IJob {
  */
 export type InstructionResult = IJob | Promise<IJob> | Promise<void> | Promise<null> | null | void;
 
-export type Runner = (node: FlowNodeModel, input: any, processor: Processor) => InstructionResult;
+export type Runner = (
+  node: FlowNodeModel,
+  input: any,
+  processor: Processor,
+  options?: { rerun?: true },
+) => InstructionResult;
 
 export type InstructionInterface = {
   run: Runner;
@@ -48,7 +53,7 @@ export type InstructionInterface = {
 export abstract class Instruction implements InstructionInterface {
   constructor(public workflow: Plugin) {}
 
-  abstract run(node: FlowNodeModel, input: any, processor: Processor): InstructionResult;
+  abstract run(node: FlowNodeModel, input: any, processor: Processor, options?: { rerun?: true }): InstructionResult;
 }
 
 export default Instruction;

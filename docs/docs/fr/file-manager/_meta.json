@@ -56,6 +56,11 @@
   },
   {
     "type": "custom-link",
+    "label": "Aperçu des fichiers",
+    "link": "/file-manager/file-preview/index"
+  },
+  {
+    "type": "custom-link",
     "label": "Développement d'extensions",
     "link": "/file-manager/development/index"
   }

@@ -56,6 +56,11 @@
   },
   {
     "type": "custom-link",
+    "label": "Datei-Vorschau",
+    "link": "/file-manager/file-preview/index"
+  },
+  {
+    "type": "custom-link",
     "label": "Erweiterungsentwicklung",
     "link": "/file-manager/development/index"
   }

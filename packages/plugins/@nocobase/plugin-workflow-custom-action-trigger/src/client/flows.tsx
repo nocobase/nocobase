@@ -17,6 +17,14 @@ import { ContextDataJsonInput } from './components';
 
 const customActionDescription = `{{t('Workflow will be triggered directly once the button clicked, without data saving. Only supports to be bound with "Custom action event".', { ns: "${NAMESPACE}" })}}`;
 
+function matchWorkflowContextType(config?: { type?: number | null } | null, contextType?: number | null) {
+  const configType = config?.type;
+  if (contextType === CONTEXT_TYPE.GLOBAL || contextType == null) {
+    return configType === CONTEXT_TYPE.GLOBAL || configType == null;
+  }
+  return configType === contextType;
+}
+
 export class FormTriggerWorkflowActionModel extends FormActionModel {
   defaultProps: ButtonProps = {
     title: tExpr('Trigger workflow', { ns: NAMESPACE }),
@@ -191,7 +199,7 @@ function CollectionActionWorkflowSelectComponent({ ...props }) {
   const optionFilter = useCallback(
     ({ config }) => {
       const { type } = model.stepParams.customCollectionTriggerWorkflowsActionSettings.setContextType;
-      return (type && config.type === type) || !config.type;
+      return matchWorkflowContextType(config, type);
     },
     [model.stepParams.customCollectionTriggerWorkflowsActionSettings.setContextType],
   );
@@ -378,7 +386,7 @@ function globalTriggerWorkflowUiSchema(ctx) {
     },
     description: `{{t('Only support custom action workflow with context type set to "Custom context".', { ns: "${NAMESPACE}" })}}`,
     optionFilter({ config }) {
-      return !config.type;
+      return matchWorkflowContextType(config, CONTEXT_TYPE.GLOBAL);
     },
     usingContext: false,
   })(ctx);

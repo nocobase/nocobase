@@ -80,6 +80,48 @@ describe('ui_schema repository', () => {
     expect(model2.subModels.sub2[1].uid).toBe('sub2-2');
   });
 
+  it('should use row uid and tree parent when stored options are polluted', async () => {
+    await repository.insertModel({
+      uid: 'read-parent',
+      use: 'ParentModel',
+      subModels: {
+        items: [
+          {
+            uid: 'read-child',
+            use: 'ChildModel',
+          },
+        ],
+      },
+    } as any);
+
+    const row = await repository.model.findByPk('read-child');
+    const options = FlowModelRepository.optionsToJson(row.get('options') || {});
+    await row.update(
+      {
+        options: {
+          ...options,
+          uid: 'wrong-child',
+          parent: 'wrong-parent',
+          parentId: 'wrong-parent',
+        },
+      },
+      {
+        hooks: false,
+      },
+    );
+
+    const parent = await repository.findModelById('read-parent', { includeAsyncNode: true });
+    const child = parent.subModels.items[0];
+    expect(child.uid).toBe('read-child');
+    expect(child.parent).toBe('read-parent');
+    expect(child.parentId).toBe('read-parent');
+
+    const directChild = await repository.findModelById('read-child', { includeAsyncNode: true });
+    expect(directChild.uid).toBe('read-child');
+    expect(directChild.parent).toBe('read-parent');
+    expect(directChild.parentId).toBe('read-parent');
+  });
+
   it('should insert model', async () => {
     const model1 = {
       uid: 'uid1',
@@ -379,6 +421,132 @@ describe('ui_schema repository', () => {
     });
     const model5 = await repository.findModelById('uid1');
     expect(model5.subModels.sub2[1].use).toBe('TestSubModel3_1');
+  });
+
+  it('should drop polluted options uid when updating an existing model', async () => {
+    await repository.insertModel({
+      uid: 'update-parent',
+      use: 'ParentModel',
+      subModels: {
+        items: [
+          {
+            uid: 'update-child',
+            use: 'ChildModel',
+          },
+        ],
+      },
+    } as any);
+
+    const row = await repository.model.findByPk('update-child');
+    const options = FlowModelRepository.optionsToJson(row.get('options') || {});
+    await row.update(
+      {
+        options: {
+          ...options,
+          uid: 'update-child',
+        },
+      },
+      {
+        hooks: false,
+      },
+    );
+
+    await repository.upsertModel({
+      uid: 'update-child',
+      parentId: 'update-parent',
+      subKey: 'items',
+      subType: 'array',
+      use: 'UpdatedChildModel',
+    } as any);
+
+    const updatedRow = await repository.model.findByPk('update-child');
+    const updatedOptions = FlowModelRepository.optionsToJson(updatedRow.get('options') || {});
+    expect(updatedOptions.uid).toBeUndefined();
+    expect(updatedOptions.parent).toBe('update-parent');
+    expect(updatedOptions.parentId).toBe('update-parent');
+
+    const parent = await repository.findModelById('update-parent', { includeAsyncNode: true });
+    expect(parent.subModels.items[0].uid).toBe('update-child');
+    expect(parent.subModels.items[0].use).toBe('UpdatedChildModel');
+  });
+
+  it('should drop polluted options uid when patching a model', async () => {
+    await repository.insertModel({
+      uid: 'patch-model',
+      use: 'PatchModel',
+    } as any);
+
+    const row = await repository.model.findByPk('patch-model');
+    const options = FlowModelRepository.optionsToJson(row.get('options') || {});
+    await row.update(
+      {
+        options: {
+          ...options,
+          uid: 'patch-model',
+        },
+      },
+      {
+        hooks: false,
+      },
+    );
+
+    await repository.patch({
+      uid: 'patch-model',
+      stepParams: {
+        patchSettings: {
+          enabled: true,
+        },
+      },
+    });
+
+    const patchedRow = await repository.model.findByPk('patch-model');
+    const patchedOptions = FlowModelRepository.optionsToJson(patchedRow.get('options') || {});
+    expect(patchedOptions.uid).toBeUndefined();
+    expect(patchedOptions.stepParams.patchSettings.enabled).toBe(true);
+  });
+
+  it('should drop polluted options uid when patching a schema tree', async () => {
+    await repository.insert({
+      uid: 'patch-schema-root',
+      type: 'void',
+      properties: {
+        field: {
+          uid: 'patch-schema-field',
+          type: 'string',
+          title: 'Original title',
+        },
+      },
+    });
+
+    const row = await repository.model.findByPk('patch-schema-field');
+    const options = FlowModelRepository.optionsToJson(row.get('options') || {});
+    await row.update(
+      {
+        options: {
+          ...options,
+          uid: 'patch-schema-field',
+        },
+      },
+      {
+        hooks: false,
+      },
+    );
+
+    await repository.patch({
+      uid: 'patch-schema-root',
+      type: 'void',
+      properties: {
+        field: {
+          type: 'string',
+          title: 'Updated title',
+        },
+      },
+    });
+
+    const patchedRow = await repository.model.findByPk('patch-schema-field');
+    const patchedOptions = FlowModelRepository.optionsToJson(patchedRow.get('options') || {});
+    expect(patchedOptions.uid).toBeUndefined();
+    expect(patchedOptions.title).toBe('Updated title');
   });
 
   it('should move model', async () => {

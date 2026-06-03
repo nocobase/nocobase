@@ -5,6 +5,66 @@
 格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/),
 并且本项目遵循 [语义化版本](https://semver.org/spec/v2.0.0.html)。
 
+## [v2.0.60](https://github.com/nocobase/nocobase/compare/v2.0.59...v2.0.60) - 2026-05-29
+
+### 🚀 优化
+
+- **[AI 员工]** 改进 LLM 的 Base URL 字段，使其在创建和编辑表单中都支持使用全局变量。 ([#9615](https://github.com/nocobase/nocobase/pull/9615)) by @cgyrock
+
+### 🐛 修复
+
+- **[client]** 修复顶部导航栏数字徽标背景过宽的问题 ([#9607](https://github.com/nocobase/nocobase/pull/9607)) by @zhangzhonghe
+
+- **[AI 员工]** 修复引用表格区块删除后 AI 快捷操作按钮上下文变成一个空区块的问题。 ([#9617](https://github.com/nocobase/nocobase/pull/9617)) by @cgyrock
+
+- **[迁移管理]** 修复 PostgreSQL 迁移差异计算，避免子表本地列转为继承列时错误生成删除列语句。 by @hongboji
+
+## [v2.0.59](https://github.com/nocobase/nocobase/compare/v2.0.58...v2.0.59) - 2026-05-28
+
+### 🐛 修复
+
+- **[ai]** 将 LangChain 相关依赖锁定到稳定版本，避免 Ollama 模型工具调用异常，并规避存在问题的上游版本 ([#9604](https://github.com/nocobase/nocobase/pull/9604)) by @cgyrock
+
+- **[flow-engine]** 修复前端日志等级不正确的问题。 ([#9577](https://github.com/nocobase/nocobase/pull/9577)) by @gchust
+
+- **[数据表：树]** 修复树形数据存在父子环时查询报错不明确的问题 ([#9603](https://github.com/nocobase/nocobase/pull/9603)) by @zhangzhonghe
+
+- **[AI: 知识库]** 将 LangChain 相关依赖锁定到稳定版本，避免 Ollama 模型工具调用异常，并规避存在问题的上游版本 by @cgyrock
+
+## [v2.0.58](https://github.com/nocobase/nocobase/compare/v2.0.57...v2.0.58) - 2026-05-28
+
+### 🎉 新特性
+
+- **[工作流]** 新增管理员 API，用于从头节点或指定节点重新执行已开始的工作流执行。 ([#9569](https://github.com/nocobase/nocobase/pull/9569)) by @mytharcher
+
+### 🚀 优化
+
+- **[client]** 移除菜单项设置中的隐藏选项 ([#9595](https://github.com/nocobase/nocobase/pull/9595)) by @zhangzhonghe
+
+### 🐛 修复
+
+- **[client]**
+  - 修复 v2 移动端日期弹窗使用当前时间而不是表单值的问题 ([#9582](https://github.com/nocobase/nocobase/pull/9582)) by @katherinehhh
+
+  - 修复 v2 时间字段格式设置后不生效问题 ([#9579](https://github.com/nocobase/nocobase/pull/9579)) by @katherinehhh
+
+  - 提高v1扫描输入组件文件上传上限 到10MB ([#9580](https://github.com/nocobase/nocobase/pull/9580)) by @katherinehhh
+
+  - 修复子表单字段通过联动规则显示后提交仍被过滤的问题 ([#9594](https://github.com/nocobase/nocobase/pull/9594)) by @katherinehhh
+
+  - 修复 v2 子表单中子表格无法添加第二条数据的问题 ([#9586](https://github.com/nocobase/nocobase/pull/9586)) by @katherinehhh
+
+  - 修复切换菜单后页面标签页消失的问题 ([#9583](https://github.com/nocobase/nocobase/pull/9583)) by @zhangzhonghe
+
+- **[flow-engine]** 修复弹窗中表单提交成功后表格操作联动规则执行错误的问题。 ([#9445](https://github.com/nocobase/nocobase/pull/9445)) by @gchust
+
+- **[工作流：自定义操作事件]** 修复自定义操作事件表格按钮在多行数据上下文下仍可选择自定义上下文工作流的问题。 ([#9608](https://github.com/nocobase/nocobase/pull/9608)) by @mytharcher
+
+- **[文件管理器]**
+  - 修复文件上传时 Unicode 文件名被错误二次解码的问题，避免生成包含控制字符的对象 key。 ([#9584](https://github.com/nocobase/nocobase/pull/9584)) by @mytharcher
+
+  - 优化 PDF 预览失败提示，并补充外部存储 CORS 配置说明。 ([#9600](https://github.com/nocobase/nocobase/pull/9600)) by @mytharcher
+参考文档：[文件预览](docs/docs/cn/file-manager/file-preview/index.md)
 ## [v2.0.57](https://github.com/nocobase/nocobase/compare/v2.0.56...v2.0.57) - 2026-05-25
 
 ### 🐛 修复

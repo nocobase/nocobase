@@ -56,6 +56,11 @@
   },
   {
     "type": "custom-link",
+    "label": "Предпросмотр файлов",
+    "link": "/file-manager/file-preview/index"
+  },
+  {
+    "type": "custom-link",
     "label": "Разработка расширений",
     "link": "/file-manager/development/index"
   }

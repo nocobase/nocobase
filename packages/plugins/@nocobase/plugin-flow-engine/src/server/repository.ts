@@ -395,7 +395,10 @@ export class FlowModelRepository extends Repository {
     await this.clearXUidPathCache(rootUid, transaction);
     if (!newSchema['properties']) {
       const s = await this.model.findByPk(rootUid, { transaction });
-      s.set('options', { ...s.toJSON(), ...newSchema });
+      s.set('options', {
+        ...lodash.omit(FlowModelRepository.optionsToJson(s.get('options') || {}), ['uid']),
+        ...lodash.omit(newSchema, ['uid', 'name', 'options']),
+      });
       await s.save({ transaction, hooks: false });
       await this.emitAfterSaveEvent(s, options);
       if (newSchema['x-server-hooks']) {
@@ -648,18 +651,26 @@ export class FlowModelRepository extends Repository {
       const newParentUid = uidMap[oldParentUid] ?? null;
 
       const optionsObj = this.replaceStepParamsModelUids(
-        lodash.isPlainObject(n.options) ? n.options : JSON.parse(n.options),
+        lodash.cloneDeep(FlowModelRepository.optionsToJson(n.options)),
         uidMap,
       );
+      delete optionsObj.uid;
+      delete optionsObj.name;
+      delete optionsObj.childOptions;
+      delete optionsObj['x-async'];
       if (newParentUid) {
         optionsObj.parent = newParentUid;
         optionsObj.parentId = newParentUid;
+      } else {
+        delete optionsObj.parent;
+        delete optionsObj.parentId;
       }
 
       const schemaNode: SchemaNode = {
-        uid: newUid,
-        ['x-async']: !!n.async,
         ...optionsObj,
+        uid: newUid,
+        name: newUid,
+        ['x-async']: !!n.async,
       };
 
       if (newParentUid) {
@@ -1113,7 +1124,7 @@ WHERE TreeTable.depth = 1 AND  TreeTable.ancestor = :ancestor and TreeTable.sort
     await nodeModel.update(
       {
         options: {
-          ...(nodeModel.get('options') as any),
+          ...lodash.omit(FlowModelRepository.optionsToJson(nodeModel.get('options') || {}), ['uid']),
           ...lodash.omit(schema, ['x-async', 'name', 'uid', 'properties']),
         },
       },
@@ -1591,8 +1602,8 @@ WHERE TreeTable.depth = 1 AND  TreeTable.ancestor = :ancestor and TreeTable.sort
       if (!subKey) continue;
       // 递归处理子节点
       const model = FlowModelRepository.nodesToModel(nodes, child['uid']) || {
-        uid: child['uid'],
         ...this.optionsToJson(child.options),
+        uid: child['uid'],
         sortIndex: child.sort,
       };
       // 保证 sortIndex
@@ -1633,11 +1644,19 @@ WHERE TreeTable.depth = 1 AND  TreeTable.ancestor = :ancestor and TreeTable.sort
     }
 
     // 7. 返回最终 model
-    return {
-      uid: rootNode['uid'],
+    const model = {
       ...this.optionsToJson(rootNode.options),
+      uid: rootNode['uid'],
       ...(Object.keys(filteredSubModels).length > 0 ? { subModels: filteredSubModels } : {}),
     };
+    if (rootNode.parent) {
+      model.parent = rootNode.parent;
+      model.parentId = rootNode.parent;
+    } else {
+      delete model.parent;
+      delete model.parentId;
+    }
+    return model;
   }
 
   @transaction()
@@ -1658,8 +1677,14 @@ WHERE TreeTable.depth = 1 AND  TreeTable.ancestor = :ancestor and TreeTable.sort
       await instance.update(
         {
           options: {
-            ...(instance.get('options') as any),
+            ...lodash.omit(instance.get('options') as any, ['uid']),
             ...lodash.omit(node, ['x-async', 'name', 'uid', 'childOptions']),
+            ...(node.childOptions?.parentUid
+              ? {
+                  parent: node.childOptions.parentUid,
+                  parentId: node.childOptions.parentUid,
+                }
+              : {}),
           },
         },
         {
@@ -1857,7 +1882,7 @@ WHERE TreeTable.depth = 1 AND  TreeTable.ancestor = :ancestor and TreeTable.sort
     await modelInstance.update(
       {
         options: {
-          ...(modelInstance.get('options') as any),
+          ...lodash.omit(modelInstance.get('options') as any, ['uid']),
           parentId,
           parent: parentId,
           subKey,
