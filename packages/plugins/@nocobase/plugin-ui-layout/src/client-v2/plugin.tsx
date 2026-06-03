@@ -9,6 +9,7 @@
 
 import type { Application } from '@nocobase/client-v2';
 import { Plugin } from '@nocobase/client-v2';
+import { registerUiLayoutsFromApi } from './layoutRegistration';
 
 export class PluginUiLayoutClientV2 extends Plugin<Record<string, never>, Application> {
   async load() {
@@ -26,6 +27,8 @@ export class PluginUiLayoutClientV2 extends Plugin<Record<string, never>, Applic
       title,
       componentLoader: () => import('./pages/UiLayoutsPage'),
     });
+
+    await registerUiLayoutsFromApi(this.app);
   }
 }
 
