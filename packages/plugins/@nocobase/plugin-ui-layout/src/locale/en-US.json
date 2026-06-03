@@ -1,6 +1,7 @@
 {
   "Actions": "Actions",
   "Add UI layout": "Add UI layout",
+  "Access path": "Access path",
   "Are you sure you want to delete it?": "Are you sure you want to delete it?",
   "Are you sure you want to delete the selected UI layouts?": "Are you sure you want to delete the selected UI layouts?",
   "Auth check": "Auth check",
@@ -19,11 +20,13 @@
   "Route name cannot contain dots": "Route name cannot contain dots",
   "Route name": "Route name",
   "Route path": "Route path",
+  "Require users to sign in before accessing this layout.": "Require users to sign in before accessing this layout.",
   "Submit": "Submit",
   "The field value is required": "The field value is required",
   "UID": "UID",
   "UI layout": "UI layout",
   "Updated successfully": "Updated successfully",
   "View": "View",
+  "When disabled, this layout will not be registered or accessible.": "When disabled, this layout will not be registered or accessible.",
   "Yes": "Yes"
 }

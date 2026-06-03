@@ -1,6 +1,7 @@
 {
   "Actions": "操作",
   "Add UI layout": "新增 UI 布局",
+  "Access path": "访问路径",
   "Are you sure you want to delete it?": "确定要删除吗？",
   "Are you sure you want to delete the selected UI layouts?": "确定要删除选中的 UI 布局吗？",
   "Auth check": "认证校验",
@@ -19,11 +20,13 @@
   "Route name cannot contain dots": "路由名称不能包含点号",
   "Route name": "路由名称",
   "Route path": "路由路径",
+  "Require users to sign in before accessing this layout.": "开启后，用户访问该布局前需要先登录。",
   "Submit": "提交",
   "The field value is required": "该字段为必填项",
   "UID": "UID",
   "UI layout": "UI 布局",
   "Updated successfully": "更新成功",
   "View": "查看",
+  "When disabled, this layout will not be registered or accessible.": "关闭后，该布局不会注册到前端路由，也无法访问。",
   "Yes": "是"
 }

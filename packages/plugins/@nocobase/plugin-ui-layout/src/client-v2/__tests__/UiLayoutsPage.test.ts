@@ -9,9 +9,11 @@
 
 import { describe, expect, it, vi } from 'vitest';
 import {
+  completeUiLayoutFormValues,
   createUiLayout,
   deleteUiLayouts,
   getLayoutTypeTagColor,
+  getRouteNameFromRoutePath,
   getUiLayoutRouteUrl,
   type UiLayoutFormValues,
   type UiLayoutRecord,
@@ -137,6 +139,33 @@ describe('plugin-ui-layout submit pipeline', () => {
 
     await expect(deleteUiLayouts({ resource, filterByTk: 1, onDeleted })).rejects.toThrow(/delete failed/);
     expect(onDeleted).not.toHaveBeenCalled();
+  });
+});
+
+describe('plugin-ui-layout form values', () => {
+  it('should derive route name from the access path', () => {
+    expect(getRouteNameFromRoutePath('/admin')).toBe('admin');
+    expect(getRouteNameFromRoutePath('mobile')).toBe('mobile');
+    expect(getRouteNameFromRoutePath('/mobile/pages?tab=main')).toBe('mobile');
+  });
+
+  it('should complete submit values with the derived route name', () => {
+    expect(
+      completeUiLayoutFormValues({
+        uid: 'mobile-layout',
+        layoutType: 'mobile',
+        routePath: '/mobile',
+        authCheck: true,
+        enabled: true,
+      }),
+    ).toEqual({
+      uid: 'mobile-layout',
+      layoutType: 'mobile',
+      routeName: 'mobile',
+      routePath: '/mobile',
+      authCheck: true,
+      enabled: true,
+    });
   });
 });
 

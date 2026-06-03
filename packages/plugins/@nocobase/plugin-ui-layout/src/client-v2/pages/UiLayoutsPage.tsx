@@ -47,6 +47,8 @@ export type UiLayoutFormValues = {
   enabled: boolean;
 };
 
+type UiLayoutFormDraftValues = Omit<UiLayoutFormValues, 'routeName'>;
+
 type ListMeta = {
   count?: number;
   pageSize?: number;
@@ -90,6 +92,18 @@ export async function updateUiLayout(args: {
 }): Promise<void> {
   await args.resource.update({ filterByTk: args.filterByTk, values: args.values });
   args.onSubmitted();
+}
+
+export function getRouteNameFromRoutePath(routePath: string) {
+  const [pathname] = routePath.trim().split(/[?#]/);
+  return pathname.replace(/^\/+/, '').split('/').filter(Boolean)[0] || '';
+}
+
+export function completeUiLayoutFormValues(values: UiLayoutFormDraftValues): UiLayoutFormValues {
+  return {
+    ...values,
+    routeName: getRouteNameFromRoutePath(values.routePath),
+  };
 }
 
 function toUiLayoutFormValues(record: UiLayoutRecord, overrides: Partial<UiLayoutFormValues> = {}): UiLayoutFormValues {
@@ -317,7 +331,7 @@ const UiLayoutsPage: React.FC = () => {
         render: (value: string) => <LayoutTypeTag layoutType={value} />,
       },
       { title: t('Route name'), dataIndex: 'routeName', ellipsis: true },
-      { title: t('Route path'), dataIndex: 'routePath', ellipsis: true },
+      { title: t('Access path'), dataIndex: 'routePath', ellipsis: true },
       {
         title: t('Auth check'),
         dataIndex: 'authCheck',
@@ -405,17 +419,16 @@ function UiLayoutForm(props: { layoutType: UiLayoutType; record?: UiLayoutRecord
   const { layoutType, record, onSubmitted } = props;
   const t = useT();
   const ctx = useFlowContext();
-  const [form] = Form.useForm<UiLayoutFormValues>();
+  const [form] = Form.useForm<UiLayoutFormDraftValues>();
   const [submitting, setSubmitting] = useState(false);
   const resource = useMemo(() => ctx.api.resource('uiLayouts') as UiLayoutResource, [ctx.api]);
 
-  const initialValues = useMemo<Partial<UiLayoutFormValues>>(
+  const initialValues = useMemo<Partial<UiLayoutFormDraftValues>>(
     () =>
       record
         ? {
             uid: record.uid,
             layoutType: record.layoutType,
-            routeName: record.routeName,
             routePath: record.routePath,
             authCheck: record.authCheck,
             enabled: record.enabled,
@@ -429,7 +442,7 @@ function UiLayoutForm(props: { layoutType: UiLayoutType; record?: UiLayoutRecord
   );
 
   const handleSubmit = useCallback(async () => {
-    const values = await form.validateFields();
+    const values = completeUiLayoutFormValues(await form.validateFields());
     setSubmitting(true);
     try {
       if (record) {
@@ -473,31 +486,26 @@ function UiLayoutForm(props: { layoutType: UiLayoutType; record?: UiLayoutRecord
           <Input />
         </Form.Item>
         <Form.Item
-          name="routeName"
-          label={t('Route name')}
-          rules={[
-            { required: true, message: t('The field value is required') },
-            {
-              validator: (_, value?: string) =>
-                value?.includes('.')
-                  ? Promise.reject(new Error(t('Route name cannot contain dots')))
-                  : Promise.resolve(),
-            },
-          ]}
-        >
-          <Input />
-        </Form.Item>
-        <Form.Item
           name="routePath"
-          label={t('Route path')}
+          label={t('Access path')}
           rules={[{ required: true, message: t('The field value is required') }]}
         >
           <Input />
         </Form.Item>
-        <Form.Item name="authCheck" label={t('Auth check')} valuePropName="checked">
+        <Form.Item
+          name="authCheck"
+          label={t('Auth check')}
+          valuePropName="checked"
+          extra={t('Require users to sign in before accessing this layout.')}
+        >
           <Switch />
         </Form.Item>
-        <Form.Item name="enabled" label={t('Enabled')} valuePropName="checked">
+        <Form.Item
+          name="enabled"
+          label={t('Enabled')}
+          valuePropName="checked"
+          extra={t('When disabled, this layout will not be registered or accessible.')}
+        >
           <Switch />
         </Form.Item>
       </Form>
