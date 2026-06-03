@@ -1228,17 +1228,24 @@ export class FlowEngine {
 
   /**
    * Move a model instance within its parent model.
-   * @param {any} sourceId Source model UID
-   * @param {any} targetId Target model UID
+   * @param {string | number} sourceId Source model UID
+   * @param {string | number} targetId Target model UID
    * @returns {Promise<void>} No return value
    */
-  async moveModel(sourceId: any, targetId: any, options?: PersistOptions): Promise<void> {
-    const sourceModel = this.getModel(sourceId);
-    const targetModel = this.getModel(targetId);
+  async moveModel(sourceId: string | number, targetId: string | number, options?: PersistOptions): Promise<void> {
+    const sourceUid = String(sourceId);
+    const targetUid = String(targetId);
+    if (!sourceUid || !targetUid || sourceUid === targetUid) {
+      return;
+    }
+
+    const sourceModel = this.getModel(sourceUid);
+    const targetModel = this.getModel(targetUid);
     if (!sourceModel || !targetModel) {
       console.warn(`FlowEngine: Cannot move model. Source or target model not found.`);
       return;
     }
+    let position: 'before' | 'after' = 'after';
     const dirtyLoadedPageKey = this._loadedPageCache.getDirtyKeyForModel(sourceModel);
     const move = (sourceModel: FlowModel, targetModel: FlowModel) => {
       if (!sourceModel.parent || !targetModel.parent || sourceModel.parent !== targetModel.parent) {
@@ -1269,6 +1276,8 @@ export class FlowEngine {
         return false;
       }
 
+      position = currentIndex < targetIndex ? 'after' : 'before';
+
       // 使用splice直接移动数组元素（O(n)比排序O(n log n)更快）
       const [movedModel] = subModelsCopy.splice(currentIndex, 1);
       subModelsCopy.splice(targetIndex, 0, movedModel);
@@ -1283,10 +1292,13 @@ export class FlowEngine {
 
       return true;
     };
-    move(sourceModel, targetModel);
+    const moved = move(sourceModel, targetModel);
+    if (!moved) {
+      return;
+    }
+
     if (options?.persist !== false && this.ensureModelRepository()) {
-      const position = sourceModel.sortIndex - targetModel.sortIndex > 0 ? 'after' : 'before';
-      await this._modelRepository.move(sourceId, targetId, position);
+      await this._modelRepository.move(sourceUid, targetUid, position);
       this._loadedPageCache.markDirty(dirtyLoadedPageKey);
     }
     // 触发事件以通知其他部分模型已移动

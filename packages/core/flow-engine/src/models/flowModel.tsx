@@ -58,6 +58,25 @@ const classEventRegistries = new WeakMap<typeof FlowModel, ModelEventRegistry>()
 // 使用WeakMap存储每个类的meta
 const modelMetas = new WeakMap<typeof FlowModel, FlowModelMeta>();
 
+type SortableModelLike = {
+  sortIndex?: number | null;
+};
+
+function getStableSortIndex(item: SortableModelLike, fallbackIndex: number) {
+  return typeof item?.sortIndex === 'number' && Number.isFinite(item.sortIndex) ? item.sortIndex : fallbackIndex + 1;
+}
+
+function sortByStableSortIndex<T extends SortableModelLike>(items: T[]) {
+  return items
+    .map((item, index) => ({
+      item,
+      index,
+      sortIndex: getStableSortIndex(item, index),
+    }))
+    .sort((a, b) => a.sortIndex - b.sortIndex || a.index - b.index)
+    .map(({ item }) => item);
+}
+
 // 使用WeakMap存储每个类的 GlobalFlowRegistry
 const modelGlobalRegistries = new WeakMap<typeof FlowModel, GlobalFlowRegistry>();
 
@@ -178,7 +197,7 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
     };
     this.stepParams = options.stepParams || {};
     this.subModels = {};
-    this.sortIndex = options.sortIndex || 0;
+    this.sortIndex = getStableSortIndex({ sortIndex: options.sortIndex }, -1);
     this._options = options;
     this._title = '';
     this._extraTitle = '';
@@ -447,11 +466,9 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
 
     Object.entries(mergedSubModels || {}).forEach(([key, value]) => {
       if (Array.isArray(value)) {
-        value
-          .sort((a, b) => (a.sortIndex || 0) - (b.sortIndex || 0))
-          .forEach((item) => {
-            this.addSubModel(key, item);
-          });
+        sortByStableSortIndex(value).forEach((item) => {
+          this.addSubModel(key, item);
+        });
       } else {
         this.setSubModel(key, value);
       }
@@ -1140,7 +1157,10 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
     if (!Array.isArray(subModels[subKey])) {
       subModels[subKey] = observable.shallow([]);
     }
-    const maxSortIndex = Math.max(...(subModels[subKey] as FlowModel[]).map((item) => item.sortIndex || 0), 0);
+    const maxSortIndex = Math.max(
+      ...(subModels[subKey] as FlowModel[]).map((item, index) => getStableSortIndex(item, index)),
+      0,
+    );
     model.sortIndex = maxSortIndex + 1;
     subModels[subKey].push(model);
     actualParent.emitter.emit('onSubModelAdded', model);
@@ -1198,14 +1218,12 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
 
     const results: ArrayElementType<Structure['subModels'][K]>[] = [];
 
-    _.castArray(model)
-      .sort((a, b) => (a.sortIndex || 0) - (b.sortIndex || 0))
-      .forEach((item, index) => {
-        const result = (callback as (model: any, index: number) => boolean)(item, index);
-        if (result) {
-          results.push(item);
-        }
-      });
+    sortByStableSortIndex(_.castArray(model)).forEach((item, index) => {
+      const result = (callback as (model: any, index: number) => boolean)(item, index);
+      if (result) {
+        results.push(item);
+      }
+    });
 
     return results;
   }
@@ -1222,12 +1240,10 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
 
     const results: R[] = [];
 
-    _.castArray(model)
-      .sort((a, b) => (a.sortIndex || 0) - (b.sortIndex || 0))
-      .forEach((item, index) => {
-        const result = (callback as (model: any, index: number) => R)(item, index);
-        results.push(result);
-      });
+    sortByStableSortIndex(_.castArray(model)).forEach((item, index) => {
+      const result = (callback as (model: any, index: number) => R)(item, index);
+      results.push(result);
+    });
 
     return results;
   }

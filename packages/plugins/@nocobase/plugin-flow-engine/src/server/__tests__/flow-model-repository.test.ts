@@ -577,4 +577,153 @@ describe('ui_schema repository', () => {
     expect(model2.subModels.sub2[0].uid).toBe('sub2-2');
     expect(model2.subModels.sub2[1].uid).toBe('sub2-1');
   });
+
+  it('should reject invalid move position', async () => {
+    await repository.insertModel({
+      uid: 'uid1',
+      use: 'TestModel',
+      subModels: {
+        sub2: [
+          {
+            uid: 'sub2-1',
+            use: 'TestSubModel2',
+          },
+          {
+            uid: 'sub2-2',
+            use: 'TestSubModel3',
+          },
+        ],
+      },
+    });
+
+    await expect(
+      repository.move({ sourceId: 'sub2-1', targetId: 'sub2-2', position: 'middle' as never }),
+    ).rejects.toThrow('flowModels:move invalid position');
+  });
+
+  it('should ignore self move without changing sort', async () => {
+    await repository.insertModel({
+      uid: 'uid1',
+      use: 'TestModel',
+      subModels: {
+        sub2: [
+          {
+            uid: 'sub2-1',
+            use: 'TestSubModel2',
+          },
+          {
+            uid: 'sub2-2',
+            use: 'TestSubModel3',
+          },
+        ],
+      },
+    });
+
+    await repository.move({ sourceId: 'sub2-1', targetId: 'sub2-1', position: 'before' });
+
+    const model2 = await repository.findModelById('uid1');
+    expect(model2.subModels.sub2.map((item) => item.uid)).toEqual(['sub2-1', 'sub2-2']);
+    const rows = await treePathCollection.model.findAll({
+      where: {
+        ancestor: 'uid1',
+        depth: 1,
+      },
+      order: [['sort', 'ASC']],
+    });
+    expect(rows.map((row) => row.get('sort'))).toEqual([1, 2]);
+  });
+
+  it('should normalize null sibling sort before moving model', async () => {
+    await repository.insertModel({
+      uid: 'uid1',
+      use: 'TestModel',
+      subModels: {
+        sub2: [
+          {
+            uid: 'sub2-1',
+            use: 'TestSubModel2',
+          },
+          {
+            uid: 'sub2-2',
+            use: 'TestSubModel3',
+          },
+          {
+            uid: 'sub2-3',
+            use: 'TestSubModel4',
+          },
+        ],
+      },
+    });
+
+    await treePathCollection.model.update(
+      { sort: null },
+      {
+        where: {
+          ancestor: 'uid1',
+          depth: 1,
+        },
+      },
+    );
+
+    await repository.move({ sourceId: 'sub2-3', targetId: 'sub2-2', position: 'before' });
+
+    const model2 = await repository.findModelById('uid1');
+    expect(model2.subModels.sub2.map((item) => item.uid)).toEqual(['sub2-1', 'sub2-3', 'sub2-2']);
+    expect(model2.subModels.sub2.map((item) => item.sortIndex)).toEqual([1, 2, 3]);
+
+    const rows = await treePathCollection.model.findAll({
+      where: {
+        ancestor: 'uid1',
+        depth: 1,
+      },
+      order: [['sort', 'ASC']],
+    });
+    expect(rows.map((row) => row.get('descendant'))).toEqual(['sub2-1', 'sub2-3', 'sub2-2']);
+    expect(rows.map((row) => row.get('sort'))).toEqual([1, 2, 3]);
+  });
+
+  it('should sort schema children deterministically when sibling sort is null', () => {
+    const schema = repository.nodesToSchema(
+      [
+        {
+          uid: 'uid1',
+          name: 'uid1',
+          options: { type: 'object' },
+          async: false,
+          sort: 0,
+        },
+        {
+          uid: 'field-b',
+          name: 'fieldB',
+          options: { type: 'string' },
+          async: false,
+          parent: 'uid1',
+          type: 'properties',
+          sort: null,
+        },
+        {
+          uid: 'field-a',
+          name: 'fieldA',
+          options: { type: 'string' },
+          async: false,
+          parent: 'uid1',
+          type: 'properties',
+          sort: null,
+        },
+        {
+          uid: 'field-c',
+          name: 'fieldC',
+          options: { type: 'string' },
+          async: false,
+          parent: 'uid1',
+          type: 'properties',
+          sort: '1',
+        },
+      ],
+      'uid1',
+    );
+
+    expect(Object.keys(schema.properties)).toEqual(['fieldC', 'fieldA', 'fieldB']);
+    expect(schema.properties.fieldC['x-index']).toBe(1);
+  });
 });
