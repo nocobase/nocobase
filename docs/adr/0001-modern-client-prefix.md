@@ -39,7 +39,7 @@ Client runtime:
 Nginx / docker:
 - `cli-v1/nocobase.conf.tpl` — alias → `dist/client/studio/assets`.
 - `cli-v1/src/commands/create-nginx-conf.js` — `otherLocation` reads env.
-- `.env.example` — document `APP_MODERN_CLIENT_PREFIX=/studio/`. Docker relies on `initEnv()` default (no Dockerfile `ENV`).
+- Docker relies on `initEnv()` default (no Dockerfile `ENV`). The env var is intentionally NOT documented in `.env.example` for now (not yet exposed to users), though the runtime reads it.
 
 Plugins (5 code files + comment updates):
 - SSO server redirects: `plugin-auth-saml`, `plugin-auth-oidc`, `plugin-auth-cas` → shared server helper reading env.
