@@ -8,6 +8,8 @@
  */
 
 import { normalizeFlowSurfaceCapabilityManifestItem } from './capability-manifest';
+import { callFlowSurfaceProvider } from './capability-provider-executor';
+import type { NormalizedFlowSurfaceProviderCapability } from './capability-manifest';
 import type { FlowSurfaceCapabilityProviderRegistry } from './capability-provider';
 import type {
   FlowSurfaceCapabilitiesProvider,
@@ -16,11 +18,18 @@ import type {
   FlowSurfacePublicCapabilityItem,
 } from './types';
 
+const FLOW_SURFACE_PROVIDER_DISCOVERY_CONCURRENCY = 4;
+
 export type FlowSurfaceCapabilityRegistryLike = Pick<FlowSurfaceCapabilityProviderRegistry, 'listProviders'>;
 
 type FlowSurfaceProviderRegistryProjectionOptions = {
   providerRegistry?: FlowSurfaceCapabilityRegistryLike;
   enabledPackages: ReadonlySet<string>;
+  providerTimeoutMs?: number;
+};
+
+export type FlowSurfaceCollectedProviderCapability = NormalizedFlowSurfaceProviderCapability & {
+  provider: FlowSurfaceCapabilitiesProvider;
 };
 
 export async function collectProviderPublicCapabilities(
@@ -52,41 +61,76 @@ export function filterProviderCatalogItemsForCatalog(input: {
   });
 }
 
-async function collectNormalizedProviderCapabilities(options: FlowSurfaceProviderRegistryProjectionOptions) {
+export async function collectNormalizedProviderCapabilities(
+  options: FlowSurfaceProviderRegistryProjectionOptions,
+): Promise<FlowSurfaceCollectedProviderCapability[]> {
   const providers = options.providerRegistry?.listProviders() || [];
-  const results: NonNullable<ReturnType<typeof normalizeFlowSurfaceCapabilityManifestItem>>[] = [];
-  for (const provider of providers) {
+  const results: FlowSurfaceCollectedProviderCapability[] = [];
+  const enabledProviders = providers.flatMap((provider) => {
     const ownerPlugin = normalizeOwnerPlugin(provider.ownerPlugin);
     if (!ownerPlugin || !options.enabledPackages.has(ownerPlugin)) {
-      continue;
+      return [];
     }
-    const capabilities = await loadProviderCapabilities(provider, options.enabledPackages);
-    capabilities.forEach((item) => {
-      const normalized = normalizeFlowSurfaceCapabilityManifestItem({
-        item,
+    return [
+      {
         ownerPlugin,
-        source: ownerPlugin === '@nocobase/plugin-gantt' ? 'canaryOverlay' : 'provider',
         provider,
-      });
-      if (normalized) {
-        results.push(normalized);
-      }
-    });
+      },
+    ];
+  });
+  for (let index = 0; index < enabledProviders.length; index += FLOW_SURFACE_PROVIDER_DISCOVERY_CONCURRENCY) {
+    const batch = enabledProviders.slice(index, index + FLOW_SURFACE_PROVIDER_DISCOVERY_CONCURRENCY);
+    const batchResults = await Promise.all(
+      batch.map(({ provider, ownerPlugin }) => collectOneProviderCapabilities(provider, ownerPlugin, options)),
+    );
+    results.push(...batchResults.flat());
   }
   return results;
+}
+
+async function collectOneProviderCapabilities(
+  provider: FlowSurfaceCapabilitiesProvider,
+  ownerPlugin: string,
+  options: FlowSurfaceProviderRegistryProjectionOptions,
+): Promise<FlowSurfaceCollectedProviderCapability[]> {
+  const capabilities = await loadProviderCapabilities(provider, options.enabledPackages, options.providerTimeoutMs);
+  return capabilities.flatMap((item) => {
+    const normalized = normalizeFlowSurfaceCapabilityManifestItem({
+      item,
+      ownerPlugin,
+      source: ownerPlugin === '@nocobase/plugin-gantt' ? 'canaryOverlay' : 'provider',
+      provider,
+    });
+    if (!normalized) {
+      return [];
+    }
+    return [
+      {
+        ...normalized,
+        provider,
+      },
+    ];
+  });
 }
 
 async function loadProviderCapabilities(
   provider: FlowSurfaceCapabilitiesProvider,
   enabledPlugins: ReadonlySet<string>,
+  timeoutMs?: number,
 ) {
-  try {
-    return await provider.getCapabilities({
-      enabledPlugins,
-    });
-  } catch {
+  const result = await callFlowSurfaceProvider({
+    provider,
+    method: 'getCapabilities',
+    timeoutMs,
+    run: () =>
+      provider.getCapabilities({
+        enabledPlugins,
+      }),
+  });
+  if (result.ok === false) {
     return [];
   }
+  return result.value;
 }
 
 function normalizeOwnerPlugin(ownerPlugin: string) {

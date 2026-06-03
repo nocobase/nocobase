@@ -28,6 +28,7 @@ import {
   resolveSupportedBlockCatalogItem,
 } from './catalog';
 import { buildFlowSurfaceCapabilitiesResponse, buildFlowSurfaceDescribeCapabilityResponse } from './capabilities';
+import { resolveDynamicCapabilityCreate } from './capability-resolver';
 import {
   collectProviderCatalogItems,
   filterProviderCatalogItemsForCatalog,
@@ -448,6 +449,8 @@ import type {
   FlowSurfaceDescribeCapabilityResponse,
   FlowSurfaceDescribeCapabilityValues,
   FlowSurfaceDescribeValues,
+  FlowSurfaceDynamicCapabilityCreateResponse,
+  FlowSurfaceDynamicCapabilityCreateValues,
   FlowSurfaceExecutorContext,
   FlowSurfaceMutateOp,
   FlowSurfaceMutateValues,
@@ -2119,6 +2122,20 @@ export class FlowSurfacesService {
           transaction: options.transaction,
           enabledPackages,
         }),
+    });
+  }
+
+  async validateCapabilityCreate(
+    input: FlowSurfaceDynamicCapabilityCreateValues,
+    options: { transaction?: unknown; enabledPackages?: ReadonlySet<string> } = {},
+  ): Promise<FlowSurfaceDynamicCapabilityCreateResponse> {
+    const enabledPackages = await this.resolveEnabledPluginPackages(options);
+    return resolveDynamicCapabilityCreate({
+      ...input,
+      actionName: 'validateCapabilityCreate',
+      allowUnavailable: true,
+      enabledPackages,
+      providerRegistry: this.capabilityProviderRegistry,
     });
   }
 

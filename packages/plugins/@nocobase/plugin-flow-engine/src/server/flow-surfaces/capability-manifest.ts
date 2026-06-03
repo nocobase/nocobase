@@ -19,6 +19,7 @@ import type {
   FlowSurfaceCapabilitySemantic,
   FlowSurfaceCapabilityWarning,
   FlowSurfaceCatalogItem,
+  FlowSurfaceJsonCreateRecipe,
   FlowSurfaceJsonSchema,
   FlowSurfacePublicCapabilityItem,
   FlowSurfacePublicTypeMeta,
@@ -71,8 +72,32 @@ const INTERNAL_PUBLIC_PAYLOAD_KEYS = new Set([
   'decoratorProps',
   'stepParams',
   'flowRegistry',
+  'resourceSettings',
+  'tableSettings',
+  'cardSettings',
+  'buttonSettings',
+  'formModelSettings',
+  'eventSettings',
+  'pageSettings',
+  'pageTabSettings',
+  'ganttSettings',
+  'formSettings',
+  'detailsSettings',
+  'calendarSettings',
+  'treeSettings',
+  'kanbanSettings',
+  'listSettings',
+  'gridCardSettings',
+  'markdownBlockSettings',
+  'iframeBlockSettings',
+  'chartSettings',
+  'commentsSettings',
+  'recordHistorySettings',
+  'tableColumnSettings',
   'createModelOptions',
+  'subModels',
   'defaultNode',
+  'nodeTemplate',
   'lens',
   'implementation',
 ]);
@@ -81,6 +106,7 @@ export type NormalizedFlowSurfaceProviderCapability = {
   publicItem: FlowSurfacePublicCapabilityItem;
   catalogItem: FlowSurfaceCatalogItem;
   implementation: FlowSurfaceCapabilityManifestItem['implementation'];
+  createRecipe?: FlowSurfaceJsonCreateRecipe;
 };
 
 export function normalizeFlowSurfaceCapabilityManifestItem(input: {
@@ -175,6 +201,7 @@ export function normalizeFlowSurfaceCapabilityManifestItem(input: {
     publicItem,
     catalogItem,
     implementation: input.item.implementation,
+    ...(input.item.createRecipe ? { createRecipe: input.item.createRecipe } : {}),
   };
 }
 

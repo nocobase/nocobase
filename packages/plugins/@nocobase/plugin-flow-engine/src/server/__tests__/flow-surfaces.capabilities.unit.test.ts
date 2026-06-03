@@ -89,6 +89,9 @@ describe('flowSurfaces capabilities projection', () => {
               endField: {
                 type: 'string',
               },
+              displaySettings: {
+                type: 'object',
+              },
             },
           },
           configureOptions: {
@@ -808,6 +811,9 @@ describe('flowSurfaces capabilities projection', () => {
           startField: {
             type: 'string',
           },
+          displaySettings: {
+            type: 'object',
+          },
         },
       },
       configureOptions: {
@@ -1100,6 +1106,9 @@ describe('flowSurfaces capabilities projection', () => {
               stepParams: {
                 type: 'object',
               },
+              resourceSettings: {
+                type: 'object',
+              },
             },
           },
         },
@@ -1150,6 +1159,7 @@ describe('flowSurfaces capabilities projection', () => {
     );
     expect(JSON.stringify(response.data)).not.toContain('UnsafeBlockModel');
     expect(JSON.stringify(response.data)).not.toContain('stepParams');
+    expect(JSON.stringify(response.data)).not.toContain('resourceSettings');
   });
 
   it('should isolate provider failures and keep built-in capabilities available', async () => {

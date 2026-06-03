@@ -11,6 +11,20 @@ import { Plugin, type InstallOptions } from '@nocobase/server';
 
 const GANTT_OWNER_PLUGIN = '@nocobase/plugin-gantt';
 const GANTT_TIME_SCALE_VALUES = ['hour', 'quarterDay', 'halfDay', 'day', 'week', 'month', 'year', 'quarterYear'];
+const GANTT_REQUIRED_SETTING_FIELDS = ['titleField', 'startField', 'endField'] as const;
+
+type GanttFlowSurfaceCapabilityValidationError = {
+  path: string;
+  code: 'required' | 'invalid-type' | 'invalid-enum';
+  message: string;
+};
+
+type GanttFlowSurfaceNodeSpec = {
+  use: string;
+  props?: Record<string, unknown>;
+  stepParams?: Record<string, unknown>;
+  subModels?: Record<string, GanttFlowSurfaceNodeSpec | GanttFlowSurfaceNodeSpec[]>;
+};
 
 type GanttFlowSurfaceCapabilityManifestItem = {
   id: string;
@@ -67,6 +81,20 @@ type GanttFlowSurfaceCapabilitiesProvider = {
     app?: unknown;
     enabledPlugins: ReadonlySet<string>;
   }): GanttFlowSurfaceCapabilityManifestItem[];
+  validateSettings?(
+    capability: unknown,
+    input: {
+      initParams?: Record<string, unknown>;
+      settings?: Record<string, unknown>;
+    },
+  ): { ok: boolean; errors?: GanttFlowSurfaceCapabilityValidationError[] };
+  resolveCreate?(
+    capability: unknown,
+    input: {
+      initParams?: Record<string, unknown>;
+      settings?: Record<string, unknown>;
+    },
+  ): GanttFlowSurfaceNodeSpec;
 };
 
 type FlowSurfaceCapabilityProviderRegistryLike = {
@@ -139,6 +167,7 @@ export function createGanttFlowSurfaceCapabilityProvider(): GanttFlowSurfaceCapa
           settingsSchema: {
             type: 'object',
             additionalProperties: false,
+            required: [...GANTT_REQUIRED_SETTING_FIELDS],
             properties: {
               titleField: {
                 type: 'string',
@@ -163,6 +192,7 @@ export function createGanttFlowSurfaceCapabilityProvider(): GanttFlowSurfaceCapa
               pageSize: {
                 type: 'number',
                 minimum: 1,
+                maximum: 200,
               },
               showRowNumbers: {
                 type: 'boolean',
@@ -241,6 +271,125 @@ export function createGanttFlowSurfaceCapabilityProvider(): GanttFlowSurfaceCapa
           ],
         },
       ];
+    },
+    validateSettings(_capability, input) {
+      return validateGanttFlowSurfaceSettings(input);
+    },
+    resolveCreate(_capability, input) {
+      return buildGanttFlowSurfaceNode(input);
+    },
+  };
+}
+
+function validateGanttFlowSurfaceSettings(input: {
+  initParams?: Record<string, unknown>;
+  settings?: Record<string, unknown>;
+}) {
+  const initParams = input.initParams || {};
+  const settings = input.settings || {};
+  const errors: GanttFlowSurfaceCapabilityValidationError[] = [];
+  if (typeof initParams.collectionName !== 'string' || !initParams.collectionName.trim()) {
+    errors.push({
+      path: 'initParams.collectionName',
+      code: 'required',
+      message: 'initParams.collectionName is required',
+    });
+  }
+  for (const field of GANTT_REQUIRED_SETTING_FIELDS) {
+    if (typeof settings[field] !== 'string' || !String(settings[field]).trim()) {
+      errors.push({
+        path: `settings.${field}`,
+        code: 'required',
+        message: `settings.${field} is required`,
+      });
+    }
+  }
+  for (const field of ['progressField', 'colorField'] as const) {
+    if (typeof settings[field] !== 'undefined' && typeof settings[field] !== 'string') {
+      errors.push({
+        path: `settings.${field}`,
+        code: 'invalid-type',
+        message: `settings.${field} must be string`,
+      });
+    }
+  }
+  if (typeof settings.timeScale !== 'undefined' && !GANTT_TIME_SCALE_VALUES.includes(String(settings.timeScale))) {
+    errors.push({
+      path: 'settings.timeScale',
+      code: 'invalid-enum',
+      message: `settings.timeScale must be one of: ${GANTT_TIME_SCALE_VALUES.join(', ')}`,
+    });
+  }
+  if (
+    typeof settings.pageSize !== 'undefined' &&
+    (typeof settings.pageSize !== 'number' ||
+      !Number.isFinite(settings.pageSize) ||
+      settings.pageSize < 1 ||
+      settings.pageSize > 200)
+  ) {
+    errors.push({
+      path: 'settings.pageSize',
+      code: 'invalid-type',
+      message: 'settings.pageSize must be between 1 and 200',
+    });
+  }
+  return {
+    ok: errors.length === 0,
+    ...(errors.length ? { errors } : {}),
+  };
+}
+
+function buildGanttFlowSurfaceNode(input: {
+  initParams?: Record<string, unknown>;
+  settings?: Record<string, unknown>;
+}): GanttFlowSurfaceNodeSpec {
+  const initParams = input.initParams || {};
+  const settings = input.settings || {};
+  const fieldNames = {
+    title: String(settings.titleField || ''),
+    start: String(settings.startField || ''),
+    end: String(settings.endField || ''),
+    ...(typeof settings.progressField === 'string' && settings.progressField
+      ? { progress: settings.progressField }
+      : {}),
+    ...(typeof settings.colorField === 'string' && settings.colorField ? { color: settings.colorField } : {}),
+    range: typeof settings.timeScale === 'string' ? settings.timeScale : 'day',
+  };
+  return {
+    use: 'GanttBlockModel',
+    props: {
+      fieldNames,
+      showTable: settings.showTable !== false,
+      enableDragToReschedule: settings.enableDragToReschedule !== false,
+      ...(typeof settings.tableWidth === 'number' ? { tableWidth: settings.tableWidth } : {}),
+      ...(typeof settings.treeTable === 'boolean' ? { treeTable: settings.treeTable } : {}),
+    },
+    stepParams: {
+      resourceSettings: {
+        init: {
+          dataSourceKey: typeof initParams.dataSourceKey === 'string' ? initParams.dataSourceKey : 'main',
+          collectionName: String(initParams.collectionName || ''),
+        },
+      },
+      ganttSettings: {
+        fields: fieldNames,
+        ...(fieldNames.progress ? { processField: { progress: fieldNames.progress } } : {}),
+        ...(fieldNames.color ? { colorField: { color: fieldNames.color } } : {}),
+        showTable: {
+          showTable: settings.showTable !== false,
+        },
+        ...(typeof settings.tableWidth === 'number' ? { tableWidth: { tableWidth: settings.tableWidth } } : {}),
+        enableDragToReschedule: {
+          enableDragToReschedule: settings.enableDragToReschedule !== false,
+        },
+      },
+      tableSettings: {
+        ...(typeof settings.pageSize === 'number' ? { pageSize: { pageSize: settings.pageSize } } : {}),
+        ...(typeof settings.showRowNumbers === 'boolean'
+          ? { showRowNumbers: { showIndex: settings.showRowNumbers } }
+          : {}),
+        ...(typeof settings.treeTable === 'boolean' ? { treeTable: { treeTable: settings.treeTable } } : {}),
+      },
     },
   };
 }

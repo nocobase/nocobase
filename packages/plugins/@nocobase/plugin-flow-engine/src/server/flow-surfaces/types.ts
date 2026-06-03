@@ -214,6 +214,24 @@ export type FlowSurfaceCapabilityWarning = {
   message: string;
 };
 
+export type FlowSurfaceCapabilityValidationError = {
+  path: string;
+  code:
+    | 'required'
+    | 'invalid-type'
+    | 'invalid-enum'
+    | 'unknown-field'
+    | 'collection-not-found'
+    | 'field-not-found'
+    | 'field-interface-mismatch'
+    | 'target-not-allowed'
+    | 'provider-error'
+    | 'contract-guard-failed'
+    | 'unsupported';
+  message: string;
+  details?: Record<string, unknown>;
+};
+
 export type FlowSurfaceJsonSchema = Record<string, unknown>;
 
 export type FlowSurfaceNodeLens = {
@@ -287,6 +305,41 @@ export type FlowSurfaceCapabilitiesProvider = {
     app?: unknown;
     enabledPlugins: ReadonlySet<string>;
   }): Promise<FlowSurfaceCapabilityManifestItem[]> | FlowSurfaceCapabilityManifestItem[];
+  validateSettings?(
+    capability: FlowSurfaceProviderRuntimeCapability,
+    input: FlowSurfaceDynamicCapabilityPublicInput,
+    ctx: FlowSurfaceProviderCreateContext,
+  ):
+    | Promise<{ ok: boolean; errors?: FlowSurfaceCapabilityValidationError[] }>
+    | { ok: boolean; errors?: FlowSurfaceCapabilityValidationError[] };
+  resolveCreate?(
+    capability: FlowSurfaceProviderRuntimeCapability,
+    input: FlowSurfaceDynamicCapabilityPublicInput,
+    ctx: FlowSurfaceProviderCreateContext,
+  ): Promise<FlowSurfaceNodeSpec> | FlowSurfaceNodeSpec;
+};
+
+export type FlowSurfaceProviderRuntimeCapability = {
+  publicItem: FlowSurfacePublicCapabilityItem;
+  implementation: FlowSurfaceCapabilityManifestItem['implementation'];
+};
+
+export type FlowSurfaceDynamicCapabilityPublicInput = {
+  initParams?: Record<string, unknown>;
+  settings?: Record<string, unknown>;
+};
+
+export type FlowSurfaceDynamicCapabilityCreateActionName =
+  | 'addBlock'
+  | 'addBlocks'
+  | 'compose'
+  | 'applyBlueprint'
+  | 'validateCapabilityCreate';
+
+export type FlowSurfaceProviderCreateContext = {
+  actionName: FlowSurfaceDynamicCapabilityCreateActionName;
+  enabledPlugins: ReadonlySet<string>;
+  target?: FlowSurfaceWriteTarget;
 };
 
 export type FlowSurfacePublicCapabilityItem = {
@@ -356,6 +409,24 @@ export type FlowSurfaceDescribeCapabilityResponse = {
     generatedAt: string;
     targetHintUsed: boolean;
   };
+};
+
+export type FlowSurfaceDynamicCapabilityCreateValues = {
+  kind?: 'block';
+  publicType: string;
+  ownerPlugin?: string;
+  target?: FlowSurfaceWriteTarget;
+  initParams?: Record<string, unknown>;
+  settings?: Record<string, unknown>;
+  rawPublicPayload?: Record<string, unknown>;
+  allowUnavailable?: boolean;
+};
+
+export type FlowSurfaceDynamicCapabilityCreateResponse = {
+  capability: FlowSurfacePublicCapabilityItem;
+  publicPayload: Record<string, unknown>;
+  node: FlowSurfaceNodeSpec;
+  warnings: FlowSurfaceCapabilityWarning[];
 };
 
 export type FlowSurfaceReadTarget = {

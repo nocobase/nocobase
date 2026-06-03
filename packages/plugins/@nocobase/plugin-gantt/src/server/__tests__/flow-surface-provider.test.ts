@@ -40,6 +40,7 @@ describe('Gantt flow surface capability provider', () => {
         required: ['collectionName'],
       },
       settingsSchema: {
+        required: ['titleField', 'startField', 'endField'],
         properties: {
           titleField: {
             type: 'string',
@@ -65,6 +66,131 @@ describe('Gantt flow surface capability provider', () => {
     expect(publicSchema).not.toContain('GanttBlockModel');
     expect(publicSchema).not.toContain('stepParams');
     expect(publicSchema).not.toContain('props');
+  });
+
+  it('should validate and resolve a guarded dry-run node while keeping create disabled', () => {
+    const provider = createGanttFlowSurfaceCapabilityProvider();
+    const [capability] = provider.getCapabilities({
+      enabledPlugins: new Set(['@nocobase/plugin-gantt']),
+    });
+
+    expect(capability.availability?.create?.supported).toBe(false);
+    expect(provider.validateSettings?.(capability, { initParams: {}, settings: {} })).toMatchObject({
+      ok: false,
+      errors: expect.arrayContaining([
+        expect.objectContaining({
+          path: 'initParams.collectionName',
+        }),
+        expect.objectContaining({
+          path: 'settings.titleField',
+        }),
+      ]),
+    });
+
+    expect(
+      provider.validateSettings?.(capability, {
+        initParams: {
+          collectionName: 'tasks',
+        },
+        settings: {
+          titleField: 'title',
+          startField: 'startAt',
+          endField: 'endAt',
+          pageSize: 201,
+        },
+      }),
+    ).toMatchObject({
+      ok: false,
+      errors: expect.arrayContaining([
+        expect.objectContaining({
+          path: 'settings.pageSize',
+        }),
+      ]),
+    });
+
+    const validation = provider.validateSettings?.(capability, {
+      initParams: {
+        collectionName: 'tasks',
+      },
+      settings: {
+        titleField: 'title',
+        startField: 'startAt',
+        endField: 'endAt',
+        progressField: 'progress',
+        colorField: 'status',
+        timeScale: 'week',
+        pageSize: 50,
+        showRowNumbers: true,
+        treeTable: false,
+      },
+    });
+    expect(validation).toEqual({
+      ok: true,
+    });
+
+    const node = provider.resolveCreate?.(capability, {
+      initParams: {
+        collectionName: 'tasks',
+      },
+      settings: {
+        titleField: 'title',
+        startField: 'startAt',
+        endField: 'endAt',
+        progressField: 'progress',
+        colorField: 'status',
+        timeScale: 'week',
+        pageSize: 50,
+        showRowNumbers: true,
+        treeTable: false,
+      },
+    });
+
+    expect(node).toMatchObject({
+      use: 'GanttBlockModel',
+      props: {
+        fieldNames: {
+          title: 'title',
+          start: 'startAt',
+          end: 'endAt',
+          progress: 'progress',
+          color: 'status',
+          range: 'week',
+        },
+      },
+      stepParams: {
+        resourceSettings: {
+          init: {
+            dataSourceKey: 'main',
+            collectionName: 'tasks',
+          },
+        },
+        ganttSettings: {
+          fields: {
+            title: 'title',
+            start: 'startAt',
+            end: 'endAt',
+            progress: 'progress',
+            color: 'status',
+            range: 'week',
+          },
+        },
+        tableSettings: {
+          pageSize: {
+            pageSize: 50,
+          },
+          showRowNumbers: {
+            showIndex: true,
+          },
+          treeTable: {
+            treeTable: false,
+          },
+        },
+      },
+    });
+    expect(node).not.toHaveProperty('subModels');
+    expect(JSON.stringify(node)).not.toContain('capabilityId');
+    expect(JSON.stringify(node)).not.toContain('createModelOptions');
+    expect(JSON.stringify(node)).not.toContain('TableActionsColumnModel');
   });
 
   it('should re-register the provider when the plugin is enabled again', async () => {
