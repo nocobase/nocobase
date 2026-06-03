@@ -11,7 +11,7 @@ import * as cp from 'child_process';
 import archiver from 'archiver';
 import path from 'path';
 import { storagePathJoin } from '@nocobase/utils';
-import { BACKUP_EXTENSION, SETTINGS } from '../../utils';
+import { BACKUP_EXTENSION, getDBVersion, SETTINGS } from '../../utils';
 import { getApp } from '..';
 import fs from 'fs';
 import { MockServer, sleep } from '@nocobase/test/server';
@@ -177,6 +177,15 @@ describe('RestoreManager', () => {
     };
   }
 
+  async function createMetadataCompatibleWithCurrentDb(database: Record<string, any> = {}) {
+    const version = await getDBVersion(app.db);
+    return createMetadata({
+      version,
+      backupClientVersion: version,
+      ...database,
+    });
+  }
+
   function createCtx(requestBody: Record<string, any> = {}) {
     return {
       app,
@@ -268,7 +277,7 @@ describe('RestoreManager', () => {
 
   it('restore', async () => {
     const { backupFilePath } = createBackupFile('restore');
-    await createBackupArchive(backupFilePath, createMetadata());
+    await createBackupArchive(backupFilePath, await createMetadataCompatibleWithCurrentDb());
     const runCommandSpy = vi.spyOn(app, 'runCommand').mockResolvedValue({} as any);
     const ctx = {
       app: app,
