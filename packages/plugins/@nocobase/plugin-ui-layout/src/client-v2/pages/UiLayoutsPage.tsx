@@ -18,11 +18,11 @@ import {
 import { DrawerFormLayout, Table } from '@nocobase/client-v2';
 import { randomId, useFlowContext } from '@nocobase/flow-engine';
 import { useRequest } from 'ahooks';
-import { App, Button, Card, Dropdown, Flex, Form, Input, Select, Space, Switch, Tag, theme } from 'antd';
+import { App, Button, Card, Dropdown, Flex, Form, Input, Select, Space, Switch, Tag, Typography, theme } from 'antd';
 import type { MenuProps } from 'antd';
 import type { ColumnsType, TableProps } from 'antd/es/table';
 import React, { useCallback, useMemo, useState } from 'react';
-import { UI_LAYOUT_TYPE_DESKTOP, UI_LAYOUT_TYPE_MOBILE } from '../../constants';
+import { DEFAULT_ADMIN_UI_LAYOUT, UI_LAYOUT_TYPE_DESKTOP, UI_LAYOUT_TYPE_MOBILE } from '../../constants';
 import { useT } from '../locale';
 
 type UiLayoutPrimaryKey = number | string;
@@ -219,6 +219,10 @@ export function getLayoutTypeTagColor(layoutType: string) {
   return 'default';
 }
 
+export function isDefaultAdminUiLayout(record: Pick<UiLayoutRecord, 'uid'>) {
+  return record.uid === DEFAULT_ADMIN_UI_LAYOUT.uid;
+}
+
 const UiLayoutsPage: React.FC = () => {
   const t = useT();
   const ctx = useFlowContext();
@@ -314,6 +318,9 @@ const UiLayoutsPage: React.FC = () => {
     () => ({
       selectedRowKeys,
       onChange: (keys) => setSelectedRowKeys(keys as UiLayoutPrimaryKey[]),
+      getCheckboxProps: (record) => ({
+        disabled: isDefaultAdminUiLayout(record),
+      }),
     }),
     [selectedRowKeys],
   );
@@ -359,19 +366,25 @@ const UiLayoutsPage: React.FC = () => {
       },
       {
         title: t('Actions'),
-        render: (_: unknown, record) => (
-          <Space>
-            <a href={getUiLayoutRouteUrl(ctx.app, record.routePath)} target="_blank" rel="noopener noreferrer">
-              <EyeOutlined /> {t('View')}
-            </a>
-            <a onClick={() => openFormDrawer({ record })}>
-              <EditOutlined /> {t('Edit')}
-            </a>
-            <a onClick={() => handleDelete(record.id)}>
-              <DeleteOutlined /> {t('Delete')}
-            </a>
-          </Space>
-        ),
+        render: (_: unknown, record) => {
+          const deleteDisabled = isDefaultAdminUiLayout(record);
+          return (
+            <Space>
+              <a href={getUiLayoutRouteUrl(ctx.app, record.routePath)} target="_blank" rel="noopener noreferrer">
+                <EyeOutlined /> {t('View')}
+              </a>
+              <a onClick={() => openFormDrawer({ record })}>
+                <EditOutlined /> {t('Edit')}
+              </a>
+              <Typography.Link
+                disabled={deleteDisabled}
+                onClick={deleteDisabled ? undefined : () => handleDelete(record.id)}
+              >
+                <DeleteOutlined /> {t('Delete')}
+              </Typography.Link>
+            </Space>
+          );
+        },
       },
     ],
     [ctx.app, handleDelete, handleToggleEnabled, openFormDrawer, t, updatingEnabledRowKeys],

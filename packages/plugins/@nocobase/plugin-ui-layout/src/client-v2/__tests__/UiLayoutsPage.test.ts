@@ -8,6 +8,7 @@
  */
 
 import { describe, expect, it, vi } from 'vitest';
+import { DEFAULT_ADMIN_UI_LAYOUT } from '../../constants';
 import {
   completeUiLayoutFormValues,
   createUiLayout,
@@ -15,6 +16,7 @@ import {
   getLayoutTypeTagColor,
   getRouteNameFromRoutePath,
   getUiLayoutRouteUrl,
+  isDefaultAdminUiLayout,
   isUiLayoutRoutePathFormatValid,
   type UiLayoutFormValues,
   type UiLayoutRecord,
@@ -181,6 +183,13 @@ describe('plugin-ui-layout layout type tag', () => {
     expect(getLayoutTypeTagColor('desktop')).toBe('blue');
     expect(getLayoutTypeTagColor('mobile')).toBe('purple');
     expect(getLayoutTypeTagColor('custom')).toBe('default');
+  });
+});
+
+describe('plugin-ui-layout default layout', () => {
+  it('should identify the default AdminLayout record', () => {
+    expect(isDefaultAdminUiLayout({ ...uiLayoutRecord, uid: DEFAULT_ADMIN_UI_LAYOUT.uid })).toBe(true);
+    expect(isDefaultAdminUiLayout(uiLayoutRecord)).toBe(false);
   });
 });
 
