@@ -330,7 +330,6 @@ const UiLayoutsPage: React.FC = () => {
         dataIndex: 'layoutType',
         render: (value: string) => <LayoutTypeTag layoutType={value} />,
       },
-      { title: t('Route name'), dataIndex: 'routeName', ellipsis: true },
       { title: t('Access path'), dataIndex: 'routePath', ellipsis: true },
       {
         title: t('Auth check'),
