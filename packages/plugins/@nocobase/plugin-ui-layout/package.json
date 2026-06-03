@@ -8,6 +8,7 @@
   "description.zh-CN": "提供 UI 布局配置存储。",
   "dependencies": {},
   "peerDependencies": {
+    "@nocobase/client": "2.x",
     "@nocobase/client-v2": "2.x",
     "@nocobase/database": "2.x",
     "@nocobase/server": "2.x",
