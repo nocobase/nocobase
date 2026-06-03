@@ -177,7 +177,6 @@ function UsersTable() {
       rowKey="id"
       columns={columns}
       t={t}
-      filterableFieldNames={['nickname', 'username', 'email', 'phone']}
       toolbar={toolbar}
       toolbarLayout="split"
       showRefresh={false}

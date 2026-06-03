@@ -74,7 +74,6 @@ export default function RoleUsersManager(props: RoleTabProps) {
           rowKey="id"
           columns={userColumns(t)}
           t={t}
-          filterableFieldNames={['username', 'nickname', 'email', 'phone']}
           defaultPageSize={20}
           request={async ({ filter, page, pageSize }) => {
             const response = await ctx.api.resource('users').listExcludeRole({
@@ -163,7 +162,6 @@ export default function RoleUsersManager(props: RoleTabProps) {
       rowKey="id"
       columns={columns}
       t={t}
-      filterableFieldNames={['username', 'nickname']}
       toolbar={toolbar}
       toolbarLayout="split"
       showRefresh={false}

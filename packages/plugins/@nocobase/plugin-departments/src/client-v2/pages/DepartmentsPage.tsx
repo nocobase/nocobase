@@ -20,7 +20,7 @@ import {
   UserOutlined,
 } from '@ant-design/icons';
 import { CollectionFilter, DrawerFormLayout, Table, type CompiledFilter } from '@nocobase/client-v2';
-import { useFlowContext, type Collection, type CollectionField } from '@nocobase/flow-engine';
+import { useFlowContext } from '@nocobase/flow-engine';
 import { css } from '@emotion/css';
 import { useRequest } from 'ahooks';
 import {
@@ -81,51 +81,6 @@ interface AggregateSearchParams {
   keyword: string;
   type?: SearchResultType;
   last?: DepartmentPrimaryKey;
-}
-
-function isFilterOptionSafe(field: CollectionField, depth = 1): boolean {
-  try {
-    if (!field.interface || field.filterable === false) {
-      return false;
-    }
-
-    const fieldInterface = field.getInterfaceOptions();
-    const filterable = fieldInterface?.filterable;
-    if (!filterable) {
-      return false;
-    }
-
-    if (field.target && depth > 2) {
-      return true;
-    }
-    if (depth > 2) {
-      return true;
-    }
-
-    if (!filterable.nested) {
-      return true;
-    }
-
-    const targetFields = field.getFields().filter((targetField) => {
-      return targetField.target !== 'attachments' && targetField.interface !== 'formula';
-    });
-    return targetFields.every((targetField) => isFilterOptionSafe(targetField, depth + 1));
-  } catch {
-    return false;
-  }
-}
-
-function getSafeFilterableFieldNames(collection?: Collection) {
-  if (!collection) {
-    return undefined;
-  }
-
-  const fieldNames = collection
-    ?.getFields()
-    .filter((field) => field.target !== 'attachments' && field.interface !== 'formula')
-    .filter((field) => isFilterOptionSafe(field))
-    .map((field) => field.name);
-  return fieldNames.length ? fieldNames : ['__no_filterable_fields__'];
 }
 
 interface ApiResource {
@@ -273,7 +228,7 @@ function AsyncSelect<T>(
   props: {
     mode?: 'multiple';
     request: () => Promise<T[]>;
-    mapOptions: (record: T) => { label: React.ReactNode; value: React.Key };
+    mapOptions: (record: T) => { label: React.ReactNode; value: DepartmentPrimaryKey };
   } & Omit<SelectProps, 'loading' | 'mode' | 'options'>,
 ) {
   const { mode, request: requestFn, mapOptions, ...selectProps } = props;
@@ -394,7 +349,6 @@ function AddMembersForm(props: { department: DepartmentRecord; onSubmitted: () =
   const ctx = useFlowContext();
   const { token } = theme.useToken();
   const usersCollection = ctx.dataSourceManager?.getDataSource('main')?.getCollection('users');
-  const usersFilterableFieldNames = getSafeFilterableFieldNames(usersCollection);
   const [selectedKeys, setSelectedKeys] = useState<React.Key[]>([]);
   const [filter, setFilter] = useState<CompiledFilter>();
   const [page, setPage] = useState(1);
@@ -461,7 +415,6 @@ function AddMembersForm(props: { department: DepartmentRecord; onSubmitted: () =
         <CollectionFilter
           collection={usersCollection}
           t={t}
-          filterableFieldNames={usersFilterableFieldNames}
           onChange={(nextFilter) => {
             setSelectedKeys([]);
             setPage(1);
@@ -737,7 +690,6 @@ const DepartmentsPage: React.FC = () => {
   const { modal, message } = App.useApp();
   const { token } = theme.useToken();
   const usersCollection = ctx.dataSourceManager?.getDataSource('main')?.getCollection('users');
-  const usersFilterableFieldNames = getSafeFilterableFieldNames(usersCollection);
   const [selectedDepartment, setSelectedDepartment] = useState<DepartmentRecord | null>(null);
   const [selectedUser, setSelectedUser] = useState<UserRecord | null>(null);
   const [expandedKeys, setExpandedKeys] = useState<React.Key[]>([]);
@@ -1342,7 +1294,6 @@ const DepartmentsPage: React.FC = () => {
                 <CollectionFilter
                   collection={usersCollection}
                   t={t}
-                  filterableFieldNames={usersFilterableFieldNames}
                   onChange={(filter) => {
                     setMemberPage(1);
                     setMemberFilter(filter);

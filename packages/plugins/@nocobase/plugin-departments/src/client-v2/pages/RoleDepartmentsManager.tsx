@@ -124,7 +124,6 @@ function RoleDepartmentsPicker(props: { roleName: string; onSubmitted: () => Pro
         <CollectionFilter
           collection={collection}
           t={t}
-          filterableFieldNames={['title']}
           onChange={(nextFilter) => {
             setSelectedKeys([]);
             setPage(1);
@@ -309,7 +308,6 @@ export default function RoleDepartmentsManager(props: RoleTabProps) {
           <CollectionFilter
             collection={collection}
             t={t}
-            filterableFieldNames={['title']}
             onChange={(nextFilter) => {
               setPage(1);
               setFilter(nextFilter);
