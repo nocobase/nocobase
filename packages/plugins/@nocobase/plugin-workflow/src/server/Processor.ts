@@ -462,7 +462,7 @@ export default class Processor {
       job = model.build(
         {
           ...payload,
-          id: this.options.plugin.app.snowflakeIdGenerator.generate().toString(),
+          id: this.options.plugin.snowflake.getUniqueID().toString(),
           createdAt: new Date(),
           updatedAt: new Date(),
           executionId: this.execution.id,
