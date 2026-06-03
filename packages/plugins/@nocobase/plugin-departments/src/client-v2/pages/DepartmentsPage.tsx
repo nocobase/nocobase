@@ -65,6 +65,7 @@ const MEMBER_TABLE_PAGE_SIZE = 20;
 const ADD_MEMBERS_TABLE_PAGE_SIZE = 20;
 const SEARCH_RESULT_LIMIT = 10;
 const DEPARTMENTS_PAGE_HEIGHT = 'calc(100vh - 160px)';
+const TABLE_ACTION_BUTTON_STYLE: React.CSSProperties = { paddingInline: 0, height: 'auto' };
 
 type MembersFilter = CompiledFilter;
 type SearchResultType = 'user' | 'department';
@@ -965,11 +966,21 @@ const DepartmentsPage: React.FC = () => {
         width: 120,
         render: (record) => (
           <Space>
-            <Button type="link" size="small" onClick={() => openUserDepartmentsForm(record)}>
+            <Button
+              type="link"
+              size="small"
+              style={TABLE_ACTION_BUTTON_STYLE}
+              onClick={() => openUserDepartmentsForm(record)}
+            >
               {t('Configure')}
             </Button>
             {selectedDepartment ? (
-              <Button type="link" size="small" onClick={() => removeMembers([record.id])}>
+              <Button
+                type="link"
+                size="small"
+                style={TABLE_ACTION_BUTTON_STYLE}
+                onClick={() => removeMembers([record.id])}
+              >
                 {t('Remove')}
               </Button>
             ) : null}

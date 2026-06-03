@@ -21,6 +21,7 @@ import type { DepartmentPrimaryKey, DepartmentRecord } from '../shared/departmen
 import { getDepartmentTitle } from '../shared/department';
 
 const ROLE_DEPARTMENTS_PAGE_SIZE = 20;
+const TABLE_ACTION_BUTTON_STYLE: React.CSSProperties = { paddingInline: 0, height: 'auto' };
 
 interface ListPayload<RecordType extends object> {
   data?: RecordType[];
@@ -277,7 +278,7 @@ export default function RoleDepartmentsManager(props: RoleTabProps) {
             description={t('Are you sure you want to remove it?')}
             onConfirm={() => removeDepartments([record.id])}
           >
-            <Button type="link" size="small">
+            <Button type="link" size="small" style={TABLE_ACTION_BUTTON_STYLE}>
               {t('Remove')}
             </Button>
           </Popconfirm>
