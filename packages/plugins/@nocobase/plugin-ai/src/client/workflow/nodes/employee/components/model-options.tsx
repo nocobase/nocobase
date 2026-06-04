@@ -97,12 +97,11 @@ export const ModelOptions: React.FC = () => {
             title: tExpr('Model', { ns: namespace }),
             'x-decorator': 'FormItem',
             'x-decorator-props': {
-              tooltip: tExpr('Select the LLM to be used for the task', {
+              tooltip: tExpr('Leave empty to use AI employee or global default model.', {
                 ns: namespace,
               }),
             },
             'x-component': ModelSelect,
-            required: true,
           },
         },
       }}

@@ -406,7 +406,7 @@
   "Choose the AI employee for this task": "为当前任务选择 AI 员工",
   "Operator": "操作者",
   "Complete the task using operator permissions": "用操作者权限完成任务",
-  "Select the LLM to be used for the task": "选择任务要使用的大模型",
+  "Leave empty to use AI employee or global default model.": "留空时使用 AI 员工模型或全局默认模型。",
   "Enter the specific task description": "输入具体任务描述",
   "Attachments": "附件",
   "Select the file or image to be sent to the LLM": "选择发送给大模型的文件或图片",
