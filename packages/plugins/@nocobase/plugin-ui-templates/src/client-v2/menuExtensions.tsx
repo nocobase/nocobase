@@ -8,7 +8,7 @@
  */
 
 import React, { useState } from 'react';
-import { Button, Form, Input, Modal, Radio, Space, Tooltip, Typography } from 'antd';
+import { Button, Form, Input, Modal, Radio, Space, theme, Tooltip, Typography } from 'antd';
 import { ExclamationCircleFilled, QuestionCircleOutlined } from '@ant-design/icons';
 import _ from 'lodash';
 import { FlowModel, createBlockScopedEngine } from '@nocobase/flow-engine';
@@ -111,6 +111,7 @@ async function handleConvertToTemplate(model: FlowModel, _t: (k: string, opt?: a
     const [form] = Form.useForm();
     const [submitting, setSubmitting] = useState(false);
     const [closed, setClosed] = useState(false);
+    const { token } = theme.useToken();
 
     const handleSubmit = async () => {
       const values = await form.validateFields();
@@ -278,13 +279,17 @@ async function handleConvertToTemplate(model: FlowModel, _t: (k: string, opt?: a
                 <Radio value="convert">
                   {t('Convert current block to template')}
                   <Tooltip title={t('Convert current block to template description')}>
-                    <QuestionCircleOutlined style={{ marginLeft: 4, color: '#999' }} />
+                    <QuestionCircleOutlined
+                      style={{ marginInlineStart: token.marginXXS, color: token.colorTextTertiary }}
+                    />
                   </Tooltip>
                 </Radio>
                 <Radio value="duplicate">
                   {t('Duplicate current block as template')}
                   <Tooltip title={t('Duplicate current block as template description')}>
-                    <QuestionCircleOutlined style={{ marginLeft: 4, color: '#999' }} />
+                    <QuestionCircleOutlined
+                      style={{ marginInlineStart: token.marginXXS, color: token.colorTextTertiary }}
+                    />
                   </Tooltip>
                 </Radio>
               </Space>
@@ -305,7 +310,6 @@ async function handleConvertToTemplate(model: FlowModel, _t: (k: string, opt?: a
 
   const dialog = viewer.dialog({
     title: t('Save as template'),
-    width: 600,
     destroyOnClose: true,
     content: (currentDialog: any) => <TemplateDialogContent currentDialog={currentDialog} />,
     onClose: release,
@@ -665,12 +669,12 @@ async function handleSavePopupAsTemplate(model: FlowModel, _t: (k: string, opt?:
 
   viewer.dialog({
     title: tNs('Save as template'),
-    width: 520,
     destroyOnClose: true,
     content: (currentDialog: any) => {
       const TemplateDialogContent: React.FC = () => {
         const [form] = Form.useForm();
         const [submitting, setSubmitting] = useState(false);
+        const { token } = theme.useToken();
 
         const handleSubmit = async () => {
           const values = await form.validateFields();
@@ -768,13 +772,17 @@ async function handleSavePopupAsTemplate(model: FlowModel, _t: (k: string, opt?:
                     <Radio value="convert">
                       {tNs('Convert current popup to template')}
                       <Tooltip title={tNs('Convert current popup to template description')}>
-                        <QuestionCircleOutlined style={{ marginLeft: 4, color: '#999' }} />
+                        <QuestionCircleOutlined
+                          style={{ marginInlineStart: token.marginXXS, color: token.colorTextTertiary }}
+                        />
                       </Tooltip>
                     </Radio>
                     <Radio value="duplicate">
                       {tNs('Duplicate current popup as template')}
                       <Tooltip title={tNs('Duplicate current popup as template description')}>
-                        <QuestionCircleOutlined style={{ marginLeft: 4, color: '#999' }} />
+                        <QuestionCircleOutlined
+                          style={{ marginInlineStart: token.marginXXS, color: token.colorTextTertiary }}
+                        />
                       </Tooltip>
                     </Radio>
                   </Space>

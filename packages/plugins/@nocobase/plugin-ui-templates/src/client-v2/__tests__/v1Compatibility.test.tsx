@@ -10,16 +10,10 @@
 import React from 'react';
 import { App } from 'antd';
 import { cleanup, render, screen, waitFor } from '@testing-library/react';
-import type { ModelConstructor } from '@nocobase/flow-engine';
+import type { CollectionOptions, ModelConstructor } from '@nocobase/flow-engine';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 const createLegacyClientMocks = () => {
-  const lazy = vi.fn((loader: () => Promise<unknown>) => {
-    const Component = () => null;
-    Object.assign(Component, { __loader: loader });
-    return Component;
-  });
-
   class Plugin {
     app: unknown;
     engine: unknown;
@@ -32,12 +26,10 @@ const createLegacyClientMocks = () => {
     }
   }
 
-  return { lazy, Plugin };
+  return { Plugin };
 };
 
-type LazyComponent = {
-  __loader: () => Promise<{ default?: unknown }>;
-};
+type ComponentLoader = () => Promise<{ default?: unknown }>;
 
 describe('PluginBlockReferenceClient v1 compatibility', () => {
   afterEach(() => {
@@ -71,25 +63,48 @@ describe('PluginBlockReferenceClient v1 compatibility', () => {
         drawer: vi.fn(),
       },
     };
+    type TestField = NonNullable<CollectionOptions['fields']>[number] & {
+      getFields: () => TestField[];
+      getInterfaceOptions: () => {
+        filterable: {
+          operators: Array<{ label: string; value: string }>;
+        };
+      };
+    };
+    type TestCollection = CollectionOptions & {
+      getFields: () => TestField[];
+    };
+    const makeField = (field: NonNullable<CollectionOptions['fields']>[number]): TestField => ({
+      ...field,
+      getFields: () => [],
+      getInterfaceOptions: () => ({
+        filterable: {
+          operators: [{ label: 'contains', value: '$includes' }],
+        },
+      }),
+    });
+    const collections = new Map<string, TestCollection>();
+    const dataSource = {
+      getCollection: vi.fn((name: string) => collections.get(name)),
+      addCollection: vi.fn((collection: CollectionOptions) => {
+        collections.set(collection.name, {
+          ...collection,
+          getFields: () => (collection.fields || []).map(makeField),
+        });
+      }),
+      removeCollection: vi.fn((name: string) => {
+        collections.delete(name);
+      }),
+    };
+    const dataSourceManager = {
+      getDataSource: vi.fn((name: string) => (name === 'main' ? dataSource : undefined)),
+    };
     vi.resetModules();
     vi.doMock(['@nocobase', 'client'].join('/'), () => ({
-      lazy: mocks.lazy,
       Plugin: mocks.Plugin,
     }));
-    vi.doMock('@nocobase/flow-engine', async () => {
-      const actual = await vi.importActual<typeof import('@nocobase/flow-engine')>('@nocobase/flow-engine');
-      return {
-        ...actual,
-        useFlowEngine: () => ({
-          context: {
-            t: (key: string) => key,
-          },
-        }),
-        useFlowContext: () => flowContext,
-      };
-    });
     const { default: PluginBlockReferenceClient } = await import('../../client');
-    const { FlowEngine } = await import('@nocobase/flow-engine');
+    const { FlowEngine, FlowEngineProvider } = await import('@nocobase/flow-engine');
 
     const registerModelLoaders = vi.fn();
     const registerActions = vi.fn();
@@ -160,17 +175,24 @@ describe('PluginBlockReferenceClient v1 compatibility', () => {
         aclSnippet: 'pm.ui-templates.templates',
       });
 
-      expect(mocks.lazy).toHaveBeenCalledTimes(2);
-      const blockPage = await (settingsByKey['ui-templates.block'].Component as LazyComponent).__loader();
-      const popupPage = await (settingsByKey['ui-templates.popup'].Component as LazyComponent).__loader();
+      const blockPage = await (settingsByKey['ui-templates.block'].componentLoader as ComponentLoader)();
+      const popupPage = await (settingsByKey['ui-templates.popup'].componentLoader as ComponentLoader)();
       expect(blockPage.default).toBeDefined();
       expect(popupPage.default).toBeDefined();
       expect(blockPage.default).not.toBe(popupPage.default);
 
+      engine.context.defineProperty('api', { value: flowContext.api });
+      engine.context.defineProperty('viewer', { value: flowContext.viewer });
+      engine.context.defineProperty('dataSourceManager', { value: dataSourceManager });
+      engine.context.defineProperty('t', { value: (key: string) => key });
+      engine.context.defineProperty('app', { value: { dataSourceManager } });
+
       const BlockPage = blockPage.default as React.ComponentType;
       render(
         <App>
-          <BlockPage />
+          <FlowEngineProvider engine={engine}>
+            <BlockPage />
+          </FlowEngineProvider>
         </App>,
       );
       await waitFor(() => {

@@ -660,7 +660,7 @@ function PopupTemplateSelect(props: any) {
   const { value, onChange } = props as { value?: string; onChange?: (v: string | undefined) => void };
   const ctx = useFlowSettingsContext();
   const flowStep = useFlowStep();
-  const formValues = (flowStep?.params || {}) as Record<string, any>;
+  const formValues = useMemo(() => (flowStep?.params || {}) as Record<string, any>, [flowStep?.params]);
   const expectedResource = resolveExpectedResourceInfo(ctx as any, formValues);
   const expectedSourceResource = resolveExpectedSourceResourceInfo(ctx as any, formValues);
   const [options, setOptions] = useState<PopupTemplateSelectOption[]>([]);
@@ -893,7 +893,6 @@ function PopupTemplateSelect(props: any) {
         loadMore();
       }}
       dropdownMatchSelectWidth
-      dropdownStyle={{ maxWidth: 560 }}
       getPopupContainer={() => document.body}
       optionRender={renderTemplateSelectOption}
     />

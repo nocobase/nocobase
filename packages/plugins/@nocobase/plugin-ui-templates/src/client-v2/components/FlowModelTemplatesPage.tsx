@@ -417,37 +417,31 @@ const FlowModelTemplatesPageContent: React.FC<{ templateType: TemplateType }> = 
       {
         title: t('Template name'),
         dataIndex: 'name',
-        width: 200,
         render: (value) => <TemplateText value={value} />,
       },
       {
         title: t('Template description'),
         dataIndex: 'description',
-        width: 240,
         render: (value) => <TemplateText value={value} />,
       },
       {
         title: t('Data source'),
         dataIndex: 'dataSourceKey',
-        width: 140,
         render: (value) => <TemplateText value={value} />,
       },
       {
         title: t('Collection'),
         dataIndex: 'collectionName',
-        width: 160,
         render: (value) => <TemplateText value={value} />,
       },
       {
         title: t('Usage count'),
         dataIndex: 'usageCount',
-        width: 120,
         render: (value) => value || 0,
       },
       {
         title: t('Actions'),
         key: 'actions',
-        width: 160,
         render: (_, record) => {
           const inUse = isTemplateInUse(record);
           return (

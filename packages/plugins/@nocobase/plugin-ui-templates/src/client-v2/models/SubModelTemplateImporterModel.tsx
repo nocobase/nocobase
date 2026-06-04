@@ -477,7 +477,6 @@ SubModelTemplateImporterModel.registerFlow({
               disabled: disableSelect,
               optionLabelProp: 'label',
               dropdownMatchSelectWidth: true,
-              dropdownStyle: { maxWidth: 560 },
               getPopupContainer: () => document.body,
               optionRender: renderTemplateSelectOption,
             },
@@ -515,7 +514,6 @@ SubModelTemplateImporterModel.registerFlow({
               type: 'info',
               showIcon: false,
               message: tStr('Reference mode description'),
-              style: { marginTop: -8 },
             },
             'x-reactions': {
               dependencies: ['mode'],
@@ -531,7 +529,6 @@ SubModelTemplateImporterModel.registerFlow({
               type: 'info',
               showIcon: false,
               message: tStr('Duplicate mode description'),
-              style: { marginTop: -8 },
             },
             'x-reactions': {
               dependencies: ['mode'],
@@ -673,11 +670,10 @@ SubModelTemplateImporterModel.registerFlow({
                 title:
                   (ctx as FlowContext).t?.('Field template', { ns: [NAMESPACE, 'client'], nsMode: 'fallback' }) ||
                   'Field template',
-                width: 520,
                 destroyOnClose: true,
                 content: (currentDialog: any) => (
                   <>
-                    <div style={{ marginBottom: 16 }}>{message}</div>
+                    <p>{message}</p>
                     <currentDialog.Footer>
                       <Space align="end">
                         <Button

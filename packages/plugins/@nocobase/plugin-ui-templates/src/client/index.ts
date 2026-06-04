@@ -7,29 +7,21 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { lazy, Plugin } from '@nocobase/client';
-import { registerMenuExtensions } from '../client-v2/menuExtensions';
-import { registerOpenViewPopupTemplateAction } from '../client-v2/openViewActionExtensions';
+import { Plugin } from '@nocobase/client';
+import {
+  blockTemplatesPageLoader,
+  popupTemplatesPageLoader,
+  registerLegacyUiTemplateExtensions,
+  registerLegacyUiTemplateModelLoaders,
+} from './legacyV2Bridge';
 
 const NAMESPACE = 'ui-templates';
 const PLUGIN_NAMESPACE = '@nocobase/plugin-ui-templates';
-const BlockTemplatesPage = lazy(() => import('../client-v2/pages/BlockTemplatesPage'));
-const PopupTemplatesPage = lazy(() => import('../client-v2/pages/PopupTemplatesPage'));
 
 export class PluginBlockReferenceClient extends Plugin {
   async load() {
-    this.flowEngine.registerModelLoaders({
-      ReferenceBlockModel: {
-        loader: () => import('../client-v2/models/ReferenceBlockModel'),
-      },
-      ReferenceFormGridModel: {
-        loader: () => import('../client-v2/models/ReferenceFormGridModel'),
-      },
-      SubModelTemplateImporterModel: {
-        loader: () => import('../client-v2/models/SubModelTemplateImporterModel'),
-      },
-    });
-    registerOpenViewPopupTemplateAction(this.flowEngine);
+    registerLegacyUiTemplateModelLoaders(this.flowEngine);
+    registerLegacyUiTemplateExtensions(this.flowEngine);
 
     // 父级菜单（只有标题，无组件）
     this.app.pluginSettingsManager.add(NAMESPACE, {
@@ -41,17 +33,16 @@ export class PluginBlockReferenceClient extends Plugin {
     // 子级：区块模板
     this.app.pluginSettingsManager.add(`${NAMESPACE}.block`, {
       title: `{{t("Block templates", { ns: "${PLUGIN_NAMESPACE}", nsMode: "fallback" })}}`,
-      Component: BlockTemplatesPage,
+      componentLoader: blockTemplatesPageLoader,
       aclSnippet: 'pm.ui-templates.templates',
     });
 
     // 子级：弹窗模板
     this.app.pluginSettingsManager.add(`${NAMESPACE}.popup`, {
       title: `{{t("Popup templates", { ns: "${PLUGIN_NAMESPACE}", nsMode: "fallback" })}}`,
-      Component: PopupTemplatesPage,
+      componentLoader: popupTemplatesPageLoader,
       aclSnippet: 'pm.ui-templates.templates',
     });
-    registerMenuExtensions();
   }
 }
 

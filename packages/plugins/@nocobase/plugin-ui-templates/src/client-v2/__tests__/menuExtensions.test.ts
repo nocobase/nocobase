@@ -54,7 +54,6 @@ describe('registerMenuExtensions', () => {
     expect(dialog).toHaveBeenCalledWith(
       expect.objectContaining({
         title: 'Save as template',
-        width: 600,
         destroyOnClose: true,
       }),
     );
