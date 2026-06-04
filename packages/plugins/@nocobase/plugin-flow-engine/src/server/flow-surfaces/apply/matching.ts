@@ -157,9 +157,11 @@ function getStrongNodeSignature(node: any) {
     _.get(node, ['stepParams', 'fieldSettings', 'init']) ||
     _.get(node, ['subModels', 'field', 'stepParams', 'fieldSettings', 'init']);
   if (fieldInit?.fieldPath) {
+    const innerFieldUse = _.get(node, ['subModels', 'field', 'use']) || '';
     return [
       'field',
       node.use,
+      innerFieldUse,
       fieldInit.dataSourceKey || '',
       fieldInit.collectionName || '',
       fieldInit.associationPathName || '',

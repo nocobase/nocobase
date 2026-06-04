@@ -147,6 +147,10 @@ export class FormItemModel<T extends DefaultStructure = DefaultStructure> extend
                 });
               }
             }
+            fork.context.defineProperty('fieldPathArray', {
+              get: () => this.context.fieldPathArray,
+              cache: false,
+            });
             if (isHiddenReservedValuePreview) {
               fork.setProps({ hidden: false });
             }
@@ -160,7 +164,10 @@ export class FormItemModel<T extends DefaultStructure = DefaultStructure> extend
       : { hidden, ...mergedPropsWithoutInitial };
     const fieldPath = buildDynamicNamePath(this.props.name, idx);
     this.context.defineProperty('fieldPathArray', {
-      value: [...parentFieldPathArray, ..._.castArray(fieldPath)],
+      get: () => {
+        return [...parentFieldPathArray, ..._.castArray(fieldPath)];
+      },
+      cache: false,
     });
     const record = this.context.item?.value || this.context.record;
     const content = (

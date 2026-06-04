@@ -7,59 +7,55 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import {
-  ACLRolesCheckProvider,
-  Plugin,
-  UIEditorTopbarActionModel,
-  UserCenterSelectItemModel,
-} from '@nocobase/client-v2';
-import { aclLocaleResources } from './locale';
+import { ACLRolesCheckProvider, Application, Plugin } from '@nocobase/client-v2';
+import { ACLSettingsUI, RolesManager } from './registries';
 
-class SwitchRoleItemModel extends UserCenterSelectItemModel {
-  static itemId = 'switch-role';
+export class PluginAclClientV2 extends Plugin<any, Application> {
+  rolesManager = new RolesManager();
+  settingsUI = new ACLSettingsUI();
 
-  section = 'preferences' as const;
-  sort = 300;
-  label = 'Switch role';
-
-  async prepare() {
-    const userRoles = Array.isArray(this.context.user?.roles) ? this.context.user.roles : [];
-    const roleMode = this.context.acl?.data?.roleMode;
-    const currentRole = this.context.api.auth.role;
-    const roles = [...userRoles];
-
-    if (roleMode === 'allow-use-union') {
-      roles.unshift({
-        name: '__union__',
-        title: this.context.t('Full permissions', { ns: '@nocobase/plugin-acl' }),
-      });
-    }
-
-    this.options = roles.map((role: any) => ({
-      value: role.name,
-      label: role.title || role.name,
-    }));
-    this.value = currentRole || this.options[0]?.value;
-    this.ready = this.options.length > 1 && roleMode !== 'only-use-union';
-  }
-
-  async onChange(value: string) {
-    this.context.api.auth.setRole(value);
-    await this.context.api.resource('users').setDefaultRole({ values: { roleName: value } });
-    window.location.reload();
-  }
-}
-
-export class PluginAclClientV2 extends Plugin {
   async load() {
-    Object.entries(aclLocaleResources).forEach(([lang, resource]) => {
-      this.app.i18n.addResources(lang, this.options?.['packageName'] || '@nocobase/plugin-acl', resource);
+    // i18n resources are auto-loaded by v2 buildin `LocalePlugin.afterAdd`; see plugin-password-policy/locale.ts for the full rationale.
+    this.app.use(ACLRolesCheckProvider);
+
+    this.pluginSettingsManager.addMenuItem({
+      key: 'users-permissions',
+      title: this.t('Users & Permissions'),
+      isPinned: true,
+      sort: 200,
+      icon: 'TeamOutlined',
+      showTabs: true,
+    });
+    this.pluginSettingsManager.addPageTabItem({
+      menuKey: 'users-permissions',
+      key: 'roles',
+      title: this.t('Roles & Permissions'),
+      icon: 'LockOutlined',
+      aclSnippet: 'pm.acl.roles',
+      sort: 4,
+      componentLoader: () => import('./pages/RolesManagementPage'),
+    });
+    this.settingsUI.addPermissionsTab({
+      key: 'general',
+      label: String(this.t('System')),
+      sort: 10,
+      componentLoader: () => import('./pages/permissions/SystemPermissionsTab'),
+    });
+    this.settingsUI.addPermissionsTab({
+      key: 'menu',
+      label: String(this.t('Desktop routes')),
+      sort: 20,
+      componentLoader: () => import('./pages/permissions/DesktopRoutesPermissionsTab'),
     });
 
-    this.app.use(ACLRolesCheckProvider);
-    this.app.flowEngine.registerModels({
-      UIEditorTopbarActionModel,
-      SwitchRoleItemModel,
+    this.flowEngine.registerModelLoaders({
+      UIEditorTopbarActionModel: {
+        loader: () => import('@nocobase/client-v2').then((module) => module.UIEditorTopbarActionModel),
+      },
+      SwitchRoleItemModel: {
+        extends: 'UserCenterItemModel',
+        loader: () => import('./models/user-center/SwitchRoleItemModel'),
+      },
     });
   }
 }

@@ -14,6 +14,7 @@ import { message } from 'antd';
 import { AdminSettingsLayoutModel as ClientV2AdminSettingsLayoutModel } from '../settings-center';
 import { AdminSettingsLayoutModel as ClientV1AdminSettingsLayoutModel } from '../../../client/src/pm/AdminSettingsLayoutModel';
 import { NocoBaseBuildInPlugin } from '../nocobase-buildin-plugin';
+import { matchSettingsRoute } from '../settings-center/utils';
 
 class TestAclPlugin extends Plugin {
   async load() {
@@ -145,6 +146,28 @@ const mockAdminRuntime = (
 };
 
 describe('settings center', () => {
+  it('should match nested layout paths under a registered settings page', () => {
+    const settings = {
+      '/admin/settings/public-forms': {
+        name: 'public-forms.index',
+        topLevelName: 'public-forms',
+        path: '/admin/settings/public-forms',
+      },
+      '/admin/settings/public-forms/advanced': {
+        name: 'public-forms.advanced',
+        topLevelName: 'public-forms',
+        path: '/admin/settings/public-forms/advanced',
+      },
+    } as any;
+
+    expect(matchSettingsRoute(settings, '/admin/settings/public-forms/form-1')).toMatchObject({
+      name: 'public-forms.index',
+    });
+    expect(matchSettingsRoute(settings, '/admin/settings/public-forms/advanced/form-1')).toMatchObject({
+      name: 'public-forms.advanced',
+    });
+  });
+
   it('should redirect /admin/settings to system-settings by default', async () => {
     const app = createMockClient({
       plugins: [NocoBaseBuildInPlugin, TestAclPlugin],
@@ -211,8 +234,7 @@ describe('settings center', () => {
     await renderApp(app);
     await waitForGetRequests(app, ['/auth:check', 'roles:check', 'pm:list']);
 
-    expect(await screen.findByText('demo-plugin')).toBeInTheDocument();
-    expect(screen.getByText('@nocobase/demo-plugin')).toBeInTheDocument();
+    expect(await screen.findByText('Demo plugin')).toBeInTheDocument();
   });
 
   it('should hide plugin-manager menu item when pm snippet is missing', async () => {

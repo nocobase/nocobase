@@ -9,6 +9,7 @@
 
 import { Command, Flags } from '@oclif/core';
 import pc from 'picocolors';
+import crypto from 'node:crypto';
 import { existsSync } from 'node:fs';
 import path from 'node:path';
 import { stdin as stdinStream, stdout as stdoutStream } from 'node:process';
@@ -26,10 +27,9 @@ import { applyCliLocale, localeText, translateCli } from '../lib/cli-locale.ts';
 import { resolveDefaultConfigScope } from '../lib/cli-home.js';
 import { type RunPromptCatalogWebUIStage, runPromptCatalogWebUI } from '../lib/prompt-web-ui.ts';
 import { validateApiBaseUrl, validateEnvKey } from '../lib/prompt-validators.ts';
-import { run } from '../lib/run-npm.ts';
-import { inspectSkillsStatus, installNocoBaseSkills, updateNocoBaseSkills } from '../lib/skills-manager.js';
+import { installNocoBaseSkills, isNpmRegistryUnavailable } from '../lib/skills-manager.js';
 import { omitKeys, pickKeys } from '../lib/object-utils.ts';
-import { isVerboseMode, printInfo, printStage, printVerbose, printWarning } from '../lib/ui.js';
+import { printInfo, printStage, printVerbose, printWarning } from '../lib/ui.js';
 import Download from './download.ts';
 import EnvAdd from './env/add.ts';
 import Install, { defaultDbPortForDialect } from './install.ts';
@@ -70,8 +70,8 @@ function newInstallOnly(def: PromptBlock): PromptBlock {
   return withExtraHidden(def, (values) => values.hasNocobase !== 'no');
 }
 
-function downloadInNewInstallOnly(def: PromptBlock): PromptBlock {
-  return withExtraHidden(def, (values) => values.hasNocobase !== 'no' || values.fetchSource !== true);
+function newInstallDownloadExecutionOnly(def: PromptBlock): PromptBlock {
+  return withExtraHidden(def, (values) => values.hasNocobase !== 'no' || values.skipDownload === true);
 }
 
 function argvHasToken(argv: string[], tokens: string[]): boolean {
@@ -107,6 +107,19 @@ function explicitApiBaseUrlFlag(flags: { 'api-base-url'?: string }): string {
 
 function explicitDbHostFlag(flags: { 'db-host'?: string }): string {
   return String(flags['db-host'] ?? '').trim();
+}
+
+function optionalInitString(value: unknown): string | undefined {
+  const text = String(value ?? '').trim();
+  return text || undefined;
+}
+
+function resolveManagedAppKey(value: unknown): string {
+  return optionalInitString(value) ?? crypto.randomBytes(32).toString('hex');
+}
+
+function resolveManagedTimeZone(value: unknown): string {
+  return optionalInitString(value) ?? (Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC');
 }
 
 function shouldAllowExistingInitEnv(): boolean {
@@ -280,15 +293,20 @@ Prompt modes:
     appRootPath: newInstallOnly(Install.appPrompts.appRootPath),
     appPort: newInstallOnly(Install.appPrompts.appPort),
     storagePath: newInstallOnly(Install.appPrompts.storagePath),
-    fetchSource: newInstallOnly(Install.appPrompts.fetchSource),
-    source: downloadInNewInstallOnly(Download.prompts.source),
-    version: downloadInNewInstallOnly(Download.prompts.version),
-    otherVersion: downloadInNewInstallOnly(Download.prompts.otherVersion),
-    dockerRegistry: downloadInNewInstallOnly(Download.prompts.dockerRegistry),
-    dockerPlatform: downloadInNewInstallOnly(Download.prompts.dockerPlatform),
-    dockerSave: downloadInNewInstallOnly(Download.prompts.dockerSave),
-    gitUrl: downloadInNewInstallOnly(Download.prompts.gitUrl),
-    outputDir: downloadInNewInstallOnly({
+    skipDownload: newInstallOnly({
+      type: 'boolean',
+      message: initText('prompts.skipDownload.message'),
+      initialValue: false,
+      yesInitialValue: false,
+    }),
+    source: newInstallOnly(Download.prompts.source),
+    version: newInstallOnly(Download.prompts.version),
+    otherVersion: newInstallOnly(Download.prompts.otherVersion),
+    dockerRegistry: newInstallOnly(Download.prompts.dockerRegistry),
+    dockerPlatform: newInstallOnly(Download.prompts.dockerPlatform),
+    dockerSave: newInstallDownloadExecutionOnly(Download.prompts.dockerSave),
+    gitUrl: newInstallOnly(Download.prompts.gitUrl),
+    outputDir: newInstallDownloadExecutionOnly({
       ...DOWNLOAD_OUTPUT_DIR_PROMPT,
       hidden: (values) => {
         const source = String(values.source ?? '').trim();
@@ -309,11 +327,11 @@ Prompt modes:
         return typeof initialValue === 'function' ? initialValue(values) : String(initialValue ?? '');
       },
     }),
-    npmRegistry: downloadInNewInstallOnly(Download.prompts.npmRegistry),
-    replace: downloadInNewInstallOnly(Download.prompts.replace),
-    devDependencies: downloadInNewInstallOnly(Download.prompts.devDependencies),
-    build: downloadInNewInstallOnly(Download.prompts.build),
-    buildDts: downloadInNewInstallOnly(Download.prompts.buildDts),
+    npmRegistry: newInstallOnly(Download.prompts.npmRegistry),
+    replace: newInstallDownloadExecutionOnly(Download.prompts.replace),
+    devDependencies: newInstallDownloadExecutionOnly(Download.prompts.devDependencies),
+    build: newInstallDownloadExecutionOnly(Download.prompts.build),
+    buildDts: newInstallDownloadExecutionOnly(Download.prompts.buildDts),
     dbDialect: newInstallOnly(Install.dbPrompts.dbDialect),
     builtinDb: newInstallOnly(Install.dbPrompts.builtinDb),
     builtinDbImage: newInstallOnly(Install.dbPrompts.builtinDbImage),
@@ -332,29 +350,30 @@ Prompt modes:
   };
 
   private buildPromptCatalog(flags: { 'skip-auth'?: boolean }): PromptsCatalog {
-    if (!flags['skip-auth']) {
-      return Init.prompts;
+    const prompts: PromptsCatalog = {
+      ...Init.prompts,
+    };
+
+    if (flags['skip-auth']) {
+      const accessTokenPrompt: TextPromptBlock = {
+        ...(EnvAdd.prompts.accessToken as TextPromptBlock),
+        hidden: () => true,
+      };
+      const usernamePrompt: TextPromptBlock = {
+        ...(EnvAdd.prompts.username as TextPromptBlock),
+        hidden: () => true,
+      };
+      const passwordPrompt = {
+        ...EnvAdd.prompts.password,
+        hidden: () => true,
+      };
+
+      prompts.username = existingAppOnly(usernamePrompt);
+      prompts.password = existingAppOnly(passwordPrompt);
+      prompts.accessToken = existingAppOnly(accessTokenPrompt);
     }
 
-    const accessTokenPrompt: TextPromptBlock = {
-      ...(EnvAdd.prompts.accessToken as TextPromptBlock),
-      hidden: () => true,
-    };
-    const usernamePrompt: TextPromptBlock = {
-      ...(EnvAdd.prompts.username as TextPromptBlock),
-      hidden: () => true,
-    };
-    const passwordPrompt = {
-      ...EnvAdd.prompts.password,
-      hidden: () => true,
-    };
-
-    return {
-      ...Init.prompts,
-      username: existingAppOnly(usernamePrompt),
-      password: existingAppOnly(passwordPrompt),
-      accessToken: existingAppOnly(accessTokenPrompt),
-    };
+    return prompts;
   }
 
   private parsedFlagsForPromptSeeds?:
@@ -382,7 +401,7 @@ Prompt modes:
       default: false,
     }),
     'skip-skills': Flags.boolean({
-      description: 'Skip installing or updating NocoBase AI coding skills during init',
+      description: 'Skip installing NocoBase AI coding skills during init',
       default: false,
     }),
     'ui-host': Flags.string({
@@ -466,7 +485,7 @@ Prompt modes:
               'db-schema'?: string;
               'db-table-prefix'?: string;
               'db-underscored'?: boolean;
-              'fetch-source'?: boolean;
+              'skip-download'?: boolean;
               source?: string;
               version?: string;
               'dev-dependencies'?: boolean;
@@ -516,7 +535,7 @@ Prompt modes:
         'db-schema'?: string;
         'db-table-prefix'?: string;
         'db-underscored'?: boolean;
-        'fetch-source'?: boolean;
+        'skip-download'?: boolean;
         source?: string;
         version?: string;
         'dev-dependencies'?: boolean;
@@ -710,11 +729,7 @@ Prompt modes:
     }
 
     const downloadSeed = { ...presetValues };
-    if (
-      flags.yes &&
-      !Object.prototype.hasOwnProperty.call(downloadSeed, 'source') &&
-      downloadSeed.fetchSource !== false
-    ) {
+    if (flags.yes && !Object.prototype.hasOwnProperty.call(downloadSeed, 'source')) {
       downloadSeed.source = 'docker';
     }
 
@@ -762,7 +777,7 @@ Prompt modes:
           appRootPath: c.appRootPath,
           appPort: c.appPort,
           storagePath: c.storagePath,
-          fetchSource: c.fetchSource,
+          skipDownload: c.skipDownload,
         } satisfies PromptsCatalog,
       },
       {
@@ -843,7 +858,7 @@ Prompt modes:
     'db-schema'?: string;
     'db-table-prefix'?: string;
     'db-underscored'?: boolean;
-    'fetch-source'?: boolean;
+    'skip-download'?: boolean;
     source?: string;
     version?: string;
     replace?: boolean;
@@ -942,8 +957,15 @@ Prompt modes:
     if (argvHasToken(argv, ['--db-underscored', '--no-db-underscored'])) {
       preset.dbUnderscored = Boolean(flags['db-underscored']);
     }
-    if (argvHasToken(argv, ['--fetch-source'])) {
-      preset.fetchSource = Boolean(flags['fetch-source']);
+    if (argvHasToken(argv, ['--skip-download'])) {
+      preset.skipDownload = Boolean(flags['skip-download']);
+      if (preset.skipDownload) {
+        preset.dockerSave = false;
+        preset.replace = false;
+        preset.devDependencies = false;
+        preset.build = false;
+        preset.buildDts = false;
+      }
     }
     if (flags.source !== undefined && String(flags.source).trim() !== '') {
       preset.source = String(flags.source).trim();
@@ -1010,19 +1032,15 @@ Prompt modes:
 
     try {
       logInitStage('Syncing agent skills');
-      const status = await inspectSkillsStatus();
-      if (!status.installed) {
-        printVerbose('Installing NocoBase agent skills (nb skills install)');
-        await installNocoBaseSkills();
-        printInfo('Agent skills ready.');
-        return;
-      }
-
-      printVerbose('Updating NocoBase agent skills (nb skills update)');
-      await updateNocoBaseSkills();
+      await installNocoBaseSkills();
       printInfo('Agent skills ready.');
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : String(error);
+      if (isNpmRegistryUnavailable(error)) {
+        printWarning(translateCli('commands.init.messages.skillsSyncRegistryUnavailable'));
+        printVerbose(`Skipped agent skills sync because the npm registry was unavailable: ${message}`);
+        return;
+      }
       this.error(pc.red(`Skills sync failed: ${message}`));
       this.exit(1);
     }
@@ -1038,6 +1056,7 @@ Prompt modes:
     } = {},
   ): Promise<void> {
     const envName = String(results.appName ?? DEFAULT_INIT_APP_NAME).trim() || DEFAULT_INIT_APP_NAME;
+    const existingEnv = await getEnv(envName, { scope: resolveDefaultConfigScope() });
     const appPort = String(results.appPort ?? '').trim();
     const source = String(results.source ?? '').trim();
     const version = resolveInitDownloadVersion(results);
@@ -1060,11 +1079,17 @@ Prompt modes:
     const authType = String(results.authType ?? '').trim() || 'oauth';
     const authUsername = authType === 'basic' ? String(results.username ?? results.rootUsername ?? '').trim() : '';
     const accessToken = String(results.accessToken ?? '');
+    const skipDownload = results.skipDownload === true;
+    const appKey = resolveManagedAppKey(results.appKey ?? existingEnv?.config.appKey);
+    const timeZone = resolveManagedTimeZone(results.timeZone ?? existingEnv?.config.timezone);
     const builtinDb = explicitDbHostFlag(flags)
       ? false
       : results.builtinDb === undefined
         ? undefined
         : Boolean(results.builtinDb);
+
+    results.appKey = appKey;
+    results.timeZone = timeZone;
 
     await upsertEnv(
       envName,
@@ -1089,9 +1114,13 @@ Prompt modes:
         ...(appRootPath ? { appRootPath } : {}),
         ...(storagePath ? { storagePath } : {}),
         ...(appPort ? { appPort } : {}),
-        ...(results.devDependencies !== undefined ? { devDependencies: Boolean(results.devDependencies) } : {}),
-        ...(results.build !== undefined ? { build: Boolean(results.build) } : {}),
-        ...(results.buildDts !== undefined ? { buildDts: Boolean(results.buildDts) } : {}),
+        ...(appKey ? { appKey } : {}),
+        ...(timeZone ? { timezone: timeZone } : {}),
+        ...(!skipDownload && results.devDependencies !== undefined
+          ? { devDependencies: Boolean(results.devDependencies) }
+          : {}),
+        ...(!skipDownload && results.build !== undefined ? { build: Boolean(results.build) } : {}),
+        ...(!skipDownload && results.buildDts !== undefined ? { buildDts: Boolean(results.buildDts) } : {}),
         ...(builtinDb !== undefined ? { builtinDb } : {}),
         ...(dbDialect ? { dbDialect } : {}),
         ...(builtinDbImage || builtinDb === false ? { builtinDbImage: builtinDbImage || undefined } : {}),
@@ -1141,6 +1170,7 @@ Prompt modes:
       username?: string;
       password?: string;
       'skip-auth'?: boolean;
+      'skip-download'?: boolean;
       'db-host'?: string;
       'db-schema'?: string;
       'db-table-prefix'?: string;
@@ -1159,6 +1189,7 @@ Prompt modes:
     const processArgv = process.argv.slice(2);
     const envName = String(results.appName ?? DEFAULT_INIT_APP_NAME).trim() || DEFAULT_INIT_APP_NAME;
     const source = String(results.source ?? '').trim();
+    const skipDownload = Boolean(flags['skip-download']) || results.skipDownload === true;
     const hasNocobase = String(results.hasNocobase ?? '').trim() === 'yes';
     const apiBaseUrl = String(results.apiBaseUrl ?? '').trim();
     const authType = String(results.authType ?? '').trim();
@@ -1221,41 +1252,41 @@ Prompt modes:
       argv.push('--force');
     }
 
-    if (results.fetchSource) {
-      argv.push('--fetch-source');
+    if (source) {
+      argv.push('--source', source);
+    }
 
-      if (source) {
-        argv.push('--source', source);
-      }
+    const version = resolveInitDownloadVersion(results);
+    if (version) {
+      argv.push('--version', version);
+    }
 
-      const version = resolveInitDownloadVersion(results);
-      if (version) {
-        argv.push('--version', version);
-      }
+    const gitUrl = String(results.gitUrl ?? '').trim();
+    if (gitUrl) {
+      argv.push('--git-url', gitUrl);
+    }
 
+    const dockerRegistry = String(results.dockerRegistry ?? '').trim();
+    if (dockerRegistry) {
+      argv.push('--docker-registry', dockerRegistry);
+    }
+
+    const dockerPlatform = String(results.dockerPlatform ?? '').trim();
+    if (dockerPlatform) {
+      argv.push('--docker-platform', dockerPlatform);
+    }
+
+    const npmRegistry = String(results.npmRegistry ?? '').trim();
+    if (npmRegistry) {
+      argv.push('--npm-registry', npmRegistry);
+    }
+
+    if (skipDownload) {
+      argv.push('--skip-download');
+    } else {
       const outputDir = String(results.outputDir ?? '').trim();
       if (outputDir) {
         argv.push('--output-dir', outputDir);
-      }
-
-      const gitUrl = String(results.gitUrl ?? '').trim();
-      if (gitUrl) {
-        argv.push('--git-url', gitUrl);
-      }
-
-      const dockerRegistry = String(results.dockerRegistry ?? '').trim();
-      if (dockerRegistry) {
-        argv.push('--docker-registry', dockerRegistry);
-      }
-
-      const dockerPlatform = String(results.dockerPlatform ?? '').trim();
-      if (dockerPlatform) {
-        argv.push('--docker-platform', dockerPlatform);
-      }
-
-      const npmRegistry = String(results.npmRegistry ?? '').trim();
-      if (npmRegistry) {
-        argv.push('--npm-registry', npmRegistry);
       }
 
       if (results.replace) {
@@ -1363,7 +1394,7 @@ Prompt modes:
 
   private buildManagedInstallResumeCommand(
     results: Record<string, string | number | boolean>,
-    flags: { yes?: boolean },
+    flags: { yes?: boolean; 'skip-download'?: boolean },
   ): string {
     const argv = ['nb', 'init'];
     if (flags.yes) {
@@ -1373,40 +1404,43 @@ Prompt modes:
     const envName = String(results.appName ?? DEFAULT_INIT_APP_NAME).trim() || DEFAULT_INIT_APP_NAME;
     argv.push('--env', envName);
 
-    if (results.fetchSource) {
-      const source = String(results.source ?? '').trim();
-      if (source) {
-        argv.push('--source', source);
-      }
+    const source = String(results.source ?? '').trim();
+    const skipDownload = Boolean(flags['skip-download']) || results.skipDownload === true;
+    if (source) {
+      argv.push('--source', source);
+    }
 
-      const version = resolveInitDownloadVersion(results);
-      if (version) {
-        argv.push('--version', version);
-      }
+    const version = resolveInitDownloadVersion(results);
+    if (version) {
+      argv.push('--version', version);
+    }
 
+    const gitUrl = String(results.gitUrl ?? '').trim();
+    if (gitUrl) {
+      argv.push('--git-url', gitUrl);
+    }
+
+    const dockerRegistry = String(results.dockerRegistry ?? '').trim();
+    if (dockerRegistry) {
+      argv.push('--docker-registry', dockerRegistry);
+    }
+
+    const dockerPlatform = String(results.dockerPlatform ?? '').trim();
+    if (dockerPlatform) {
+      argv.push('--docker-platform', dockerPlatform);
+    }
+
+    const npmRegistry = String(results.npmRegistry ?? '').trim();
+    if (npmRegistry) {
+      argv.push('--npm-registry', npmRegistry);
+    }
+
+    if (skipDownload) {
+      argv.push('--skip-download');
+    } else {
       const outputDir = String(results.outputDir ?? '').trim();
       if (outputDir && outputDir !== String(results.appRootPath ?? '').trim()) {
         argv.push('--output-dir', outputDir);
-      }
-
-      const gitUrl = String(results.gitUrl ?? '').trim();
-      if (gitUrl) {
-        argv.push('--git-url', gitUrl);
-      }
-
-      const dockerRegistry = String(results.dockerRegistry ?? '').trim();
-      if (dockerRegistry) {
-        argv.push('--docker-registry', dockerRegistry);
-      }
-
-      const dockerPlatform = String(results.dockerPlatform ?? '').trim();
-      if (dockerPlatform) {
-        argv.push('--docker-platform', dockerPlatform);
-      }
-
-      const npmRegistry = String(results.npmRegistry ?? '').trim();
-      if (npmRegistry) {
-        argv.push('--npm-registry', npmRegistry);
       }
 
       if (results.devDependencies) {
@@ -1460,7 +1494,7 @@ Prompt modes:
     'db-schema'?: string;
     'db-table-prefix'?: string;
     'db-underscored'?: boolean;
-    'fetch-source'?: boolean;
+    'skip-download'?: boolean;
     source?: string;
     version?: string;
     'dev-dependencies'?: boolean;
@@ -1482,10 +1516,9 @@ Prompt modes:
       preset.rootPassword ??= yesInitialValue(Install.rootUserPrompts.rootPassword, 'admin123');
       preset.rootNickname ??= yesInitialValue(Install.rootUserPrompts.rootNickname, 'Super Admin');
     }
-    if (hasDownloadOverride(flags)) {
-      preset.fetchSource ??= true;
+    if (!flags['skip-download']) {
+      preset.replace ??= true;
     }
-    preset.replace ??= true;
 
     return this.buildInstallArgv(preset, flags, {
       nonInteractive: Boolean(flags.yes),

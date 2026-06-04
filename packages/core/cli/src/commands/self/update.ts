@@ -9,6 +9,7 @@
 
 import { Command, Flags } from '@oclif/core';
 import { confirm } from '../../lib/inquirer.ts';
+import { updateNocoBaseSkills } from '../../lib/skills-manager.js';
 import { setVerboseMode } from '../../lib/ui.js';
 import {
   formatSelfUpdateUnavailableMessage,
@@ -18,6 +19,24 @@ import {
   type SelfChannel,
 } from '../../lib/self-manager.js';
 
+type SkillsUpdateResult = Awaited<ReturnType<typeof updateNocoBaseSkills>>;
+
+function formatSkillsUpdateMessage(result: SkillsUpdateResult, verbose: boolean) {
+  if (result.action === 'noop') {
+    if (result.reason === 'not-installed') {
+      return verbose
+        ? 'NocoBase AI coding skills are not installed globally. Run `nb skills install` first.'
+        : 'Skipped skills update because NocoBase AI coding skills are not installed.';
+    }
+
+    return verbose
+      ? 'NocoBase AI coding skills are already up to date globally.'
+      : 'NocoBase AI coding skills are up to date.';
+  }
+
+  return verbose ? 'Updated the global NocoBase AI coding skills.' : 'Updated NocoBase AI coding skills globally.';
+}
+
 export default class SelfUpdate extends Command {
   static override summary = 'Update the globally installed NocoBase CLI';
   static override description =
@@ -25,6 +44,7 @@ export default class SelfUpdate extends Command {
   static override examples = [
     '<%= config.bin %> <%= command.id %>',
     '<%= config.bin %> <%= command.id %> --yes',
+    '<%= config.bin %> <%= command.id %> --skills',
     '<%= config.bin %> <%= command.id %> --channel alpha --json',
   ];
 
@@ -41,6 +61,10 @@ export default class SelfUpdate extends Command {
     }),
     json: Flags.boolean({
       description: 'Output the result as JSON',
+      default: false,
+    }),
+    skills: Flags.boolean({
+      description: 'Also update the globally installed NocoBase AI coding skills',
       default: false,
     }),
     verbose: Flags.boolean({
@@ -64,11 +88,15 @@ export default class SelfUpdate extends Command {
       this.error(formatSelfUpdateUnavailableMessage(status));
     }
 
+    let shouldUpdateSkills = flags.skills;
+
     if (!flags.yes && status.updateAvailable) {
       let confirmed = false;
       try {
         confirmed = await confirm({
-          message: `Update ${status.packageName} from ${status.currentVersion} to ${status.latestVersion}?`,
+          message: flags.skills
+            ? `Update ${status.packageName} from ${status.currentVersion} to ${status.latestVersion} and refresh the globally installed NocoBase AI coding skills?`
+            : `Update ${status.packageName} from ${status.currentVersion} to ${status.latestVersion}?`,
           default: false,
         });
       } catch {
@@ -84,6 +112,25 @@ export default class SelfUpdate extends Command {
       verbose: flags.verbose,
     });
 
+    if (flags.skills && !flags.yes && !status.updateAvailable) {
+      let confirmed = false;
+      try {
+        confirmed = await confirm({
+          message: 'Update the globally installed NocoBase AI coding skills?',
+          default: true,
+        });
+      } catch {
+        return;
+      }
+      shouldUpdateSkills = confirmed;
+    }
+
+    const skillsResult = shouldUpdateSkills
+      ? await updateNocoBaseSkills({
+          verbose: flags.verbose,
+        })
+      : undefined;
+
     if (flags.json) {
       this.log(
         JSON.stringify(
@@ -96,6 +143,17 @@ export default class SelfUpdate extends Command {
             channel: result.status.channel,
             fromVersion: result.status.currentVersion,
             toVersion: result.targetVersion,
+            skills: skillsResult
+              ? {
+                  action: skillsResult.action,
+                  reason: skillsResult.action === 'noop' ? skillsResult.reason : undefined,
+                  globalRoot: skillsResult.status.globalRoot,
+                  workspaceRoot: skillsResult.status.workspaceRoot,
+                  installedSkillNames: skillsResult.status.installedSkillNames,
+                  installedVersion: skillsResult.status.installedVersion,
+                  installedRef: skillsResult.status.installedRef,
+                }
+              : undefined,
           },
           null,
           2,
@@ -110,13 +168,21 @@ export default class SelfUpdate extends Command {
           ? `NocoBase CLI is already up to date at ${result.status.currentVersion}.`
           : `NocoBase CLI is up to date: ${result.status.currentVersion}.`,
       );
+      if (skillsResult) {
+        this.log(formatSkillsUpdateMessage(skillsResult, flags.verbose));
+      }
       return;
     }
 
     this.log(
       flags.verbose
-        ? `Updated NocoBase CLI from ${result.status.currentVersion} using ${result.packageSpec}${result.targetVersion ? ` (latest ${result.status.channel} resolves to ${result.targetVersion})` : ''}.`
+        ? `Updated NocoBase CLI from ${result.status.currentVersion} using ${result.packageSpec}${
+            result.targetVersion ? ` (latest ${result.status.channel} resolves to ${result.targetVersion})` : ''
+          }.`
         : `Updated NocoBase CLI: ${result.status.currentVersion} -> ${result.targetVersion}.`,
     );
+    if (skillsResult) {
+      this.log(formatSkillsUpdateMessage(skillsResult, flags.verbose));
+    }
   }
 }

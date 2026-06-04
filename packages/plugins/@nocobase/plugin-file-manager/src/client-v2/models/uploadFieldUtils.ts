@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { getPreviewThumbnailUrl } from '../../shared/previewer/filePreviewTypes';
+import { getPreviewThumbnailUrl } from '../previewer/filePreviewTypes';
 
 interface UploadFieldFile {
   uid?: string;

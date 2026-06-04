@@ -64,7 +64,9 @@ Este é o modo padrão recomendado, adequado para lógica de computação pura e
 Quando `WORKFLOW_SCRIPT_MODULES` **está configurada**, os scripts utilizam o motor `vm` nativo do Node.js para habilitar a funcionalidade `require`.
 
 :::warning{title="Aviso de segurança"}
-No modo não seguro, embora os scripts sejam executados em um sandbox `vm` com uma lista restrita de módulos permitidos, o módulo `vm` do Node.js não é um mecanismo de sandbox seguro. Habilitar este modo implica confiar em todos os usuários que têm permissão para editar scripts de fluxo de trabalho. Os administradores devem avaliar os riscos de segurança de forma independente e controlar rigorosamente a lista de módulos permitidos e as permissões de edição de fluxos de trabalho.
+O modo não seguro usa o módulo `vm` do Node.js apenas para fornecer suporte a CommonJS `require`. O módulo `vm` do Node.js não é um mecanismo de sandbox seguro. Habilitar este modo significa confiar em todos os usuários que podem editar, testar ou executar scripts de fluxo de trabalho como usuários capazes de executar código com os privilégios do servidor NocoBase.
+
+`WORKFLOW_SCRIPT_MODULES` não é uma fronteira de segurança nem um modelo de permissões. Ele controla apenas quais nomes de módulos são aceitos por `require()` antes da execução do script.
 :::
 
 Os módulos podem ser usados no script de forma consistente com o CommonJS, utilizando a diretiva `require()` para importar módulos.
@@ -76,7 +78,7 @@ WORKFLOW_SCRIPT_MODULES=crypto,timers,lodash,dayjs
 ```
 
 :::info{title="Dica"}
-Módulos não declarados na variável de ambiente `WORKFLOW_SCRIPT_MODULES` **não podem** ser usados no script, mesmo que sejam nativos do Node.js ou já estejam instalados em `node_modules`. Essa estratégia pode ser utilizada no nível operacional para controlar a lista de módulos disponíveis para os usuários, evitando que os scripts tenham permissões excessivas em alguns cenários.
+Módulos não declarados na variável de ambiente `WORKFLOW_SCRIPT_MODULES` **não podem** ser importados diretamente com `require()`, mesmo que sejam nativos do Node.js ou já estejam instalados em `node_modules`. Esta lista serve apenas para configurar imports suportados. Não confie nela para reduzir permissões de scripts nem para delegar com segurança a edição de scripts a usuários menos confiáveis.
 :::
 
 Em ambientes que não sejam de implantação por código-fonte, se um módulo não estiver instalado em `node_modules`, você pode instalar manualmente o pacote necessário no diretório `storage`. Por exemplo, para usar o pacote `exceljs`, você pode executar as seguintes operações:

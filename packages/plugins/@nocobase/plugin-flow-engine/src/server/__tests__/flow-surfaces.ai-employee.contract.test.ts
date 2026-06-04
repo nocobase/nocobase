@@ -323,6 +323,63 @@ describe('flowSurfaces AI employee action contract', () => {
     expect(updatedRecordUserMessage.match(/\{\{\s*ctx\.record\s*\}\}/g) || []).toHaveLength(1);
   });
 
+  it('defaults AI employee workContext type and canonicalizes task prompt aliases', async () => {
+    const { table } = await createTable();
+    const prompt = 'Summarize the current table context and list the next action.';
+    const action = getData(
+      await rootAgent.resource('flowSurfaces').addAction({
+        values: {
+          target: { uid: table.uid },
+          type: 'aiEmployee',
+          settings: aiEmployeeSettings({
+            workContext: [{ target: 'self' }],
+            tasks: [
+              {
+                title: 'Prompt alias task',
+                prompt,
+                message: {
+                  system: 'Use the current UI context.',
+                  workContext: [{ target: 'self' }],
+                },
+                autoSend: false,
+                skillSettings: null,
+                model: null,
+                webSearch: false,
+              },
+            ],
+          }),
+        },
+      }),
+    );
+
+    const persisted = await readAction(action.uid);
+    expectResolvedFlowModelContext(persisted?.props?.context?.workContext, table.uid);
+    const task = getPersistedTasks(persisted)?.[0];
+    expect(task?.prompt).toBeUndefined();
+    expect(task?.message?.user).toBe(prompt);
+    expectResolvedFlowModelContext(task?.message?.workContext, table.uid);
+
+    const updateRes = await rootAgent.resource('flowSurfaces').updateSettings({
+      values: {
+        target: { uid: action.uid },
+        tasks: [
+          {
+            prompt: 'Updated prompt through alias.',
+            message: {
+              system: 'Updated system.',
+              workContext: [{ target: 'self' }],
+            },
+          },
+        ],
+      },
+    });
+    expect(updateRes.status, readErrorMessage(updateRes)).toBe(200);
+    const updated = await readAction(action.uid);
+    expect(getPersistedTasks(updated)?.[0]?.prompt).toBeUndefined();
+    expect(getPersistedTasks(updated)?.[0]?.message?.user).toBe('Updated prompt through alias.');
+    expectResolvedFlowModelContext(getPersistedTasks(updated)?.[0]?.message?.workContext, table.uid);
+  });
+
   it('treats unversioned empty AI employee task skills and tools as preset on create', async () => {
     const { table } = await createTable();
     const action = getData(
@@ -400,6 +457,155 @@ describe('flowSurfaces AI employee action contract', () => {
     expect(getPersistedTasks(recordAction)?.[0]?.message?.user).toBe(DEFAULT_AI_EMPLOYEE_RECORD_USER_MESSAGE);
     expectNoPersistedPropsTasks(collectionAction);
     expectNoPersistedPropsTasks(recordAction);
+  });
+
+  it('rejects duplicate AI employee actions in the same compose action container', async () => {
+    const page = await createPage(rootAgent, {
+      title: `AI employee duplicate compose page ${Date.now()}`,
+      tabTitle: 'Overview',
+    });
+    const composeRes = await rootAgent.resource('flowSurfaces').compose({
+      values: {
+        target: { uid: page.tabSchemaUid },
+        blocks: [
+          {
+            key: 'employeesTable',
+            type: 'table',
+            resource: {
+              dataSourceKey: 'main',
+              collectionName: 'employees',
+            },
+            fields: ['nickname', 'status', 'email'],
+            recordActions: [
+              { type: 'aiEmployee', settings: aiEmployeeSettings() },
+              { type: 'aiEmployee', settings: aiEmployeeSettings() },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(composeRes.status).toBe(400);
+    expect(composeRes.body?.errors?.map((error: any) => error.ruleId)).toEqual(
+      expect.arrayContaining(['duplicate-ai-employee-action']),
+    );
+    expect(readErrorMessage(composeRes)).toContain('duplicates an existing AI employee action');
+  });
+
+  it('rejects duplicate AI employee actions in the same applyBlueprint action container', async () => {
+    const executeRes = await rootAgent.resource('flowSurfaces').applyBlueprint({
+      values: {
+        version: '1',
+        mode: 'create',
+        navigation: {
+          item: {
+            title: `AI employee duplicate blueprint ${Date.now()}`,
+          },
+        },
+        tabs: [
+          {
+            key: 'main',
+            title: 'Overview',
+            blocks: [
+              {
+                key: 'employeesTable',
+                type: 'table',
+                collection: 'employees',
+                fields: ['nickname', 'status', 'email'],
+                recordActions: [
+                  { type: 'aiEmployee', settings: aiEmployeeSettings() },
+                  { type: 'aiEmployee', settings: aiEmployeeSettings() },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(executeRes.status).toBe(400);
+    expect(executeRes.body?.errors?.map((error: any) => error.ruleId)).toEqual(
+      expect.arrayContaining(['duplicate-ai-employee-action']),
+    );
+  });
+
+  it('allows same AI employee and task when public action settings differ in compose', async () => {
+    const page = await createPage(rootAgent, {
+      title: `AI employee non-duplicate compose page ${Date.now()}`,
+      tabTitle: 'Overview',
+    });
+    const composeRes = await rootAgent.resource('flowSurfaces').compose({
+      values: {
+        target: { uid: page.tabSchemaUid },
+        blocks: [
+          {
+            key: 'employeesTable',
+            type: 'table',
+            resource: {
+              dataSourceKey: 'main',
+              collectionName: 'employees',
+            },
+            fields: ['nickname', 'status', 'email'],
+            recordActions: [
+              { key: 'aiEmployeeDefault', type: 'aiEmployee', settings: aiEmployeeSettings() },
+              { key: 'aiEmployeeAuto', type: 'aiEmployee', settings: aiEmployeeSettings({ auto: true }) },
+              { key: 'aiEmployeeMask', type: 'aiEmployee', settings: aiEmployeeSettings({ style: { mask: true } }) },
+              {
+                key: 'aiEmployeeModel',
+                type: 'aiEmployee',
+                settings: aiEmployeeSettings({
+                  tasks: [
+                    {
+                      title: 'Analyze current record',
+                      message: {
+                        system: 'Use the current UI context.',
+                        user: DEFAULT_AI_EMPLOYEE_USER_MESSAGE,
+                        workContext: [{ type: 'flow-model', target: 'self' }],
+                      },
+                      autoSend: false,
+                      skillSettings: { skills: ['crm'], tools: [] },
+                      model: { llmService: 'openai', model: 'gpt-4.1' },
+                      webSearch: false,
+                    },
+                  ],
+                }),
+              },
+              {
+                key: 'aiEmployeeSearch',
+                type: 'aiEmployee',
+                settings: aiEmployeeSettings({
+                  tasks: [
+                    {
+                      title: 'Analyze current record',
+                      message: {
+                        system: 'Use the current UI context.',
+                        user: DEFAULT_AI_EMPLOYEE_USER_MESSAGE,
+                        workContext: [{ type: 'flow-model', target: 'self' }],
+                      },
+                      autoSend: false,
+                      skillSettings: { skills: ['crm'], tools: [] },
+                      model: null,
+                      webSearch: true,
+                    },
+                  ],
+                }),
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(composeRes.status, readErrorMessage(composeRes)).toBe(200);
+    const tableBlock = getComposeBlock(getData(composeRes), 'employeesTable');
+    const tableReadback = await getSurface(rootAgent, { uid: tableBlock.uid });
+    const actionsColumn = _.castArray(tableReadback.tree.subModels?.columns || []).find(
+      (item: any) => item?.use === 'TableActionsColumnModel',
+    );
+    const aiRecordActions = _.castArray(actionsColumn?.subModels?.actions || []).filter(
+      (item: any) => item?.use === 'AIEmployeeButtonModel',
+    );
+    expect(aiRecordActions).toHaveLength(5);
   });
 
   it('resolves AI employee work contexts in applyBlueprint block, record, and form actions', async () => {
@@ -767,7 +973,22 @@ describe('flowSurfaces AI employee action contract', () => {
         values: {
           target: { uid: table.uid },
           type: 'aiEmployee',
-          settings: aiEmployeeSettings(),
+          settings: aiEmployeeSettings({
+            tasks: [
+              {
+                title: 'Configure dynamic path',
+                message: {
+                  system: 'Use the current UI context.',
+                  user: DEFAULT_AI_EMPLOYEE_USER_MESSAGE,
+                  workContext: [{ type: 'flow-model', target: 'self' }],
+                },
+                autoSend: false,
+                skillSettings: { skills: ['crm'], tools: [] },
+                model: null,
+                webSearch: false,
+              },
+            ],
+          }),
         },
       }),
     );
@@ -911,6 +1132,82 @@ describe('flowSurfaces AI employee action contract', () => {
     expect(readErrorMessage(rawStepParamsRes)).toContain('stepParams.shortcutSettings.editTasks.tasks[0].message.user');
     expect(readErrorMessage(rawStepParamsRes)).toContain('{{ctx}}');
     expect(readErrorMessage(rawStepParamsRes)).toContain('flowSurfaces:context');
+  });
+
+  it('rejects adding the same AI employee record action twice to one table', async () => {
+    const { table } = await createTable();
+    const firstRes = await rootAgent.resource('flowSurfaces').addRecordAction({
+      values: {
+        target: { uid: table.uid },
+        type: 'aiEmployee',
+        settings: aiEmployeeSettings(),
+      },
+    });
+    expect(firstRes.status, readErrorMessage(firstRes)).toBe(200);
+
+    const duplicateRes = await rootAgent.resource('flowSurfaces').addRecordAction({
+      values: {
+        target: { uid: table.uid },
+        type: 'aiEmployee',
+        settings: aiEmployeeSettings(),
+      },
+    });
+
+    expect(duplicateRes.status).toBe(400);
+    expect(readErrorMessage(duplicateRes)).toContain('duplicates an existing AI employee action');
+    expect(duplicateRes.body?.errors?.[0]?.ruleId).toBe('duplicate-ai-employee-action');
+  });
+
+  it('allows adding AI employee record actions that differ by public settings', async () => {
+    const { table } = await createTable();
+    const variants = [
+      aiEmployeeSettings(),
+      aiEmployeeSettings({ auto: true }),
+      aiEmployeeSettings({ style: { mask: true } }),
+      aiEmployeeSettings({
+        tasks: [
+          {
+            title: 'Analyze current record',
+            message: {
+              system: 'Use the current UI context.',
+              user: DEFAULT_AI_EMPLOYEE_USER_MESSAGE,
+              workContext: [{ type: 'flow-model', target: 'self' }],
+            },
+            autoSend: false,
+            skillSettings: { skills: ['crm'], tools: [] },
+            model: { llmService: 'openai', model: 'gpt-4.1' },
+            webSearch: false,
+          },
+        ],
+      }),
+      aiEmployeeSettings({
+        tasks: [
+          {
+            title: 'Analyze current record',
+            message: {
+              system: 'Use the current UI context.',
+              user: DEFAULT_AI_EMPLOYEE_USER_MESSAGE,
+              workContext: [{ type: 'flow-model', target: 'self' }],
+            },
+            autoSend: false,
+            skillSettings: { skills: ['crm'], tools: [] },
+            model: null,
+            webSearch: true,
+          },
+        ],
+      }),
+    ];
+
+    for (const settings of variants) {
+      const response = await rootAgent.resource('flowSurfaces').addRecordAction({
+        values: {
+          target: { uid: table.uid },
+          type: 'aiEmployee',
+          settings,
+        },
+      });
+      expect(response.status, readErrorMessage(response)).toBe(200);
+    }
   });
 
   it('clears AI employee tasks through public updateSettings', async () => {
@@ -1072,11 +1369,14 @@ describe('flowSurfaces AI employee action contract', () => {
 
     const invalidCases = [
       {
-        label: 'missing workContext type',
+        label: 'unsupported workContext type',
         settings: aiEmployeeSettings({
-          workContext: [{ uid: table.uid }],
+          workContext: [{ type: 'record', uid: table.uid }],
         }),
-        message: "settings.workContext[0].type must be 'flow-model'",
+        messages: [
+          "settings.workContext[0].type only supports 'flow-model'",
+          'type is optional and defaults to flow-model',
+        ],
       },
       {
         label: 'workContext has unsupported key',
@@ -1208,7 +1508,26 @@ describe('flowSurfaces AI employee action contract', () => {
             },
           ],
         }),
-        message: "settings.tasks[0] does not support key 'rawProps'",
+        messages: [
+          "settings.tasks[0] does not support key 'rawProps'",
+          'allowed keys: title, message, autoSend, skillSettings, model, webSearch, prompt',
+          'Put user instructions in tasks[n].message.user or the prompt alias',
+        ],
+      },
+      {
+        label: 'prompt conflicts with message user',
+        settings: aiEmployeeSettings({
+          tasks: [
+            {
+              title: 'Conflicting prompt',
+              prompt: 'Alias prompt.',
+              message: {
+                user: 'Canonical prompt.',
+              },
+            },
+          ],
+        }),
+        messages: ['settings.tasks[0] cannot set both prompt and message.user', 'prompt is an alias for message.user'],
       },
       {
         label: 'style mask is not boolean',
@@ -1239,7 +1558,10 @@ describe('flowSurfaces AI employee action contract', () => {
         },
       });
       expect(res.status, item.label).toBe(400);
-      expect(readErrorMessage(res)).toContain(item.message);
+      const expectedMessages = 'messages' in item ? item.messages : [item.message];
+      for (const message of expectedMessages) {
+        expect(readErrorMessage(res)).toContain(message);
+      }
     }
 
     const action = getData(

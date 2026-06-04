@@ -331,27 +331,33 @@ export function formatSwaggerSchemaError(
       })
       .join('\n');
     const envLabel = context.envName ? ` for env "${context.envName}"` : '';
+    const tokenHint = context.envName
+      ? `Update the API key with \`nb env update ${context.envName} --token <api-key>\`, log in with \`nb env auth ${context.envName}\`, or rerun the command with \`--access-token <api-key>\`.`
+      : 'Update the API key with `nb env update <name> --token <api-key>`, log in with `nb env auth <name>`, or rerun the command with `--access-token <api-key>`.';
     const commandHint = context.commandToken
-      ? `If \`${context.commandToken}\` is a runtime command, refresh the runtime after updating the token with \`nb env update\`. If it is a typo, run \`nb --help\` to inspect available commands.`
-      : 'Run `nb --help` to inspect built-in commands, then refresh runtime commands with `nb env update` after updating the token.';
+      ? `If \`${context.commandToken}\` is a runtime command, retry it after updating the token. If it is a typo, run \`nb --help\` to inspect available commands.`
+      : 'Run `nb --help` to inspect built-in commands, then retry the original command after updating the token.';
 
     return [
       `Authentication failed while loading the command runtime from \`swagger:get\`${envLabel}.`,
       `Base URL: ${context.baseUrl}`,
       details,
-      'Update the API key with `nb env add <name> --api-base-url <url> --auth-type token --access-token <api-key>`, log in with `nb env auth <name>`, or rerun the command with `--access-token <api-key>`.',
+      tokenHint,
       commandHint,
     ].join('\n');
   }
 
   if (isNetworkFetchFailure(response)) {
     const rawMessage = response.data?.error?.message || 'fetch failed';
+    const updateConnectionHint = context.envName
+      ? `If you recently changed the server address, update env "${context.envName}" with \`nb env update ${context.envName} --api-base-url <url>\` and retry the original command.`
+      : 'If you recently changed the server address, update the saved env connection with `nb env update <name> --api-base-url <url>` and retry the original command.';
     return [
       'Failed to reach the NocoBase server while loading the command runtime from `swagger:get`.',
       `Base URL: ${context.baseUrl}`,
       `Network error: ${rawMessage}`,
       'Check that the NocoBase app is running, the base URL is correct, and the server is reachable from this machine.',
-      'If you recently changed the server address, update it with `nb env add <name> --api-base-url <url>` and retry `nb env update`.',
+      updateConnectionHint,
       'Use `nb env list` to inspect the current env configuration.',
     ].join('\n');
   }
@@ -363,7 +369,7 @@ export function formatMissingRuntimeEnvError(commandToken?: string) {
   if (!commandToken) {
     return [
       'No env is configured for runtime commands.',
-      'Run `nb env add <name> --api-base-url <url>` first.',
+      'Run `nb init --ui` first.',
       'If you configure multiple environments later, switch with `nb env use <name>`.',
     ].join('\n');
   }
@@ -372,7 +378,7 @@ export function formatMissingRuntimeEnvError(commandToken?: string) {
     `Unable to resolve runtime command \`${commandToken}\`.`,
     'No env is configured, so the CLI cannot load runtime commands from `swagger:get`.',
     'If this is a built-in command or a typo, run `nb --help` to inspect available commands.',
-    'If this should be an application runtime command, run `nb env add <name> --api-base-url <url>` and then `nb env update`.',
+    'If this should be an application runtime command, run `nb init --ui` to create or connect a NocoBase app first.',
   ].join('\n');
 }
 
@@ -471,8 +477,8 @@ export async function updateEnvRuntime(options: {
       [
         env
           ? `Env "${envName}" is missing a base URL.`
-          : `Env "${envName}" is not configured. Run \`nb env add ${envName}\` first.`,
-        env ? 'Update it with `nb env add <name> --api-base-url <url>` first.' : '',
+          : `Env "${envName}" is not configured. Run \`nb init --ui --env ${envName}\` first.`,
+        env ? `Update env "${envName}" with \`nb env update ${envName} --api-base-url <url>\` first.` : '',
       ]
         .filter(Boolean)
         .join('\n'),

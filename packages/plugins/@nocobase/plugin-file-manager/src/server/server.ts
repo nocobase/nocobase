@@ -12,7 +12,7 @@ import { basename } from 'path';
 import match from 'mime-match';
 
 import { Collection, Model, Transactionable } from '@nocobase/database';
-import { Plugin } from '@nocobase/server';
+import { Application, Plugin } from '@nocobase/server';
 import { Registry } from '@nocobase/utils';
 import { Readable } from 'stream';
 import { STORAGE_TYPE_ALI_OSS, STORAGE_TYPE_LOCAL, STORAGE_TYPE_S3, STORAGE_TYPE_TX_COS } from '../constants';
@@ -20,10 +20,11 @@ import initActions from './actions';
 import { AttachmentInterface } from './interfaces/attachment-interface';
 import { AttachmentModel, GetFileStreamOptions, StorageClassType, StorageModel } from './storages';
 import StorageTypeAliOss from './storages/ali-oss';
-import StorageTypeLocal from './storages/local';
+import StorageTypeLocal, { validateLocalStorageConfig } from './storages/local';
 import StorageTypeS3 from './storages/s3';
 import StorageTypeTxCos from './storages/tx-cos';
 import { encodeURL } from './utils';
+import { registerRepairFilenamesCommand } from './commands/repair-filenames';
 
 export type * from './storages';
 
@@ -55,6 +56,10 @@ export type UploadFileOptions = {
 export class PluginFileManagerServer extends Plugin {
   storageTypes = new Registry<StorageClassType>();
   storagesCache = new Map<number | string, StorageModel>();
+
+  static async staticImport() {
+    Application.addCommand(registerRepairFilenamesCommand);
+  }
 
   afterDestroy = async (record: Model, options) => {
     const { collection } = record.constructor as typeof Model;
@@ -227,6 +232,9 @@ export class PluginFileManagerServer extends Plugin {
     this.storageTypes.register(STORAGE_TYPE_TX_COS, StorageTypeTxCos);
 
     const Storage = this.db.getModel('storages');
+    Storage.beforeSave((m) => {
+      validateLocalStorageConfig(m.toJSON());
+    });
     Storage.afterSave(async (m, { transaction }) => {
       await this.loadStorages({ transaction });
       this.sendSyncMessage({ type: 'reloadStorages' }, { transaction });

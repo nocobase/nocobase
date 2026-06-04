@@ -58,7 +58,6 @@ describe('flowSurfaces reaction', () => {
       dataSourceKey: 'main',
       collectionName: 'employees',
     });
-    await addField(rootAgent, formUid, 'nickname');
     await addField(rootAgent, formUid, 'status');
     const refreshAction = await addAction(rootAgent, tableUid, 'refresh');
 
@@ -416,7 +415,6 @@ describe('flowSurfaces reaction', () => {
       dataSourceKey: 'main',
       collectionName: 'employees',
     });
-    await addField(rootAgent, formUid, 'nickname');
     await addField(rootAgent, formUid, 'status');
     const refreshAction = await addAction(rootAgent, tableUid, 'refresh');
     const runjsAuthRoleCode =
@@ -1387,7 +1385,10 @@ function findFirstNode(node: any, predicate: (node: any) => boolean): any {
 async function createPage(rootAgent: any, values: Record<string, any>) {
   return getData(
     await rootAgent.resource('flowSurfaces').createPage({
-      values,
+      values: {
+        icon: 'FileOutlined',
+        ...values,
+      },
     }),
   );
 }
@@ -1416,9 +1417,39 @@ async function addBlock(rootAgent: any, targetUid: string, type: string, resourc
         },
         type,
         ...(resourceInit ? { resourceInit } : {}),
+        ...defaultVisibleFieldsForReactionBlock(type, resourceInit),
       },
     }),
   ).uid;
+}
+
+function defaultVisibleFieldsForReactionBlock(type: string, resourceInit?: Record<string, any>) {
+  const visibleBlockTypes = new Set([
+    'table',
+    'list',
+    'gridCard',
+    'details',
+    'createForm',
+    'editForm',
+    'filterForm',
+    'kanban',
+  ]);
+  if (!visibleBlockTypes.has(type) || !resourceInit?.collectionName) {
+    return {};
+  }
+  if (resourceInit.collectionName === 'employees') {
+    return {
+      fields: ['nickname'],
+    };
+  }
+  if (resourceInit.collectionName === 'flow_surface_profiles') {
+    return {
+      fields: ['bio'],
+    };
+  }
+  return {
+    fields: ['title'],
+  };
 }
 
 async function addField(rootAgent: any, targetUid: string, fieldPath: string) {

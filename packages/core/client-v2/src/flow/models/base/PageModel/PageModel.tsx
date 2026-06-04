@@ -40,6 +40,15 @@ type PageModelStructure = {
   };
 };
 
+type CurrentRouteWithTabs = {
+  id?: string | number | null;
+  enableTabs?: boolean;
+};
+
+type PageModelContextWithRoute = {
+  currentRoute?: CurrentRouteWithTabs | null;
+};
+
 export class PageModel extends FlowModel<PageModelStructure> {
   tabBarExtraContent: { left?: ReactNode; right?: ReactNode } = {};
   private viewActivatedListener?: (_payload?: unknown) => void;
@@ -53,9 +62,15 @@ export class PageModel extends FlowModel<PageModelStructure> {
    * 根页面标签页开关以路由表为准，避免 flow model 里的旧配置覆盖路由管理设置。
    */
   private getEnableTabs(): boolean {
-    const routeEnableTabs = (this.context as any)?.currentRoute?.enableTabs;
-    if (this.props.routeId != null && typeof routeEnableTabs === 'boolean') {
-      return routeEnableTabs;
+    const currentRoute = (this.context as PageModelContextWithRoute).currentRoute;
+    const routeId = this.props.routeId;
+    if (
+      routeId != null &&
+      currentRoute?.id != null &&
+      String(currentRoute.id) === String(routeId) &&
+      typeof currentRoute.enableTabs === 'boolean'
+    ) {
+      return currentRoute.enableTabs;
     }
     return !!this.props.enableTabs;
   }
@@ -77,14 +92,25 @@ export class PageModel extends FlowModel<PageModelStructure> {
         if (this.unmounted) return;
         // Only skip when explicitly inactive; treat "unknown" (undefined) as active for backward compatibility.
         if (getPageActive(this.context) === false) return;
-        const activeKey = this.getActiveTabKey();
-        if (activeKey) {
-          this.invokeTabModelLifecycleMethod(activeKey, 'onActive', forceRefresh);
-        }
+        this.activateCurrentTab(forceRefresh);
       })
       .catch(() => {
         // ignore
       });
+  }
+
+  activateCurrentTab(forceRefresh = false) {
+    const activeKey = this.getActiveTabKey();
+    if (activeKey) {
+      this.invokeTabModelLifecycleMethod(activeKey, 'onActive', forceRefresh);
+    }
+  }
+
+  deactivateCurrentTab() {
+    const activeKey = this.props.tabActiveKey || this.getFirstTab()?.uid;
+    if (activeKey) {
+      this.invokeTabModelLifecycleMethod(activeKey, 'onInactive');
+    }
   }
 
   onMount(): void {
@@ -98,10 +124,7 @@ export class PageModel extends FlowModel<PageModelStructure> {
     // We align this with the existing tab lifecycle by invoking `onActive` for the current tab blocks.
     if (!this.viewActivatedListener) {
       this.viewActivatedListener = (_payload?: unknown) => {
-        const activeKey = this.getActiveTabKey();
-        if (activeKey) {
-          this.invokeTabModelLifecycleMethod(activeKey, 'onActive');
-        }
+        this.activateCurrentTab();
       };
       this.flowEngine?.emitter?.on?.(VIEW_ACTIVATED_EVENT, this.viewActivatedListener);
     }
@@ -113,10 +136,7 @@ export class PageModel extends FlowModel<PageModelStructure> {
       emitterActivatedVersion > 0 && emitterActivatedVersion !== this.lastSeenEmitterViewActivatedVersion;
     this.lastSeenEmitterViewActivatedVersion = emitterActivatedVersion;
     if (shouldCatchUp && getPageActive(this.context) !== false) {
-      const activeKey = this.getActiveTabKey();
-      if (activeKey) {
-        this.invokeTabModelLifecycleMethod(activeKey, 'onActive');
-      }
+      this.activateCurrentTab();
     }
 
     // When data is written within the same view, trigger an "active" lifecycle pass so blocks can refresh based on dirty.
@@ -141,11 +161,21 @@ export class PageModel extends FlowModel<PageModelStructure> {
     super.onUnmount();
   }
 
-  invokeTabModelLifecycleMethod(tabActiveKey: string, method: 'onActive' | 'onInactive', forceRefresh = false) {
+  invokeTabModelLifecycleMethod(
+    tabActiveKey: string | undefined,
+    method: 'onActive' | 'onInactive',
+    forceRefresh = false,
+  ) {
+    if (!tabActiveKey) {
+      return;
+    }
+
     if (method === 'onActive' && this.context?.pageInfo) {
       this.context.pageInfo.version = 'v2';
     }
-    const tabModel = this.flowEngine.getModel(tabActiveKey) as BasePageTabModel | undefined;
+    const tabModel =
+      this.findSubModel('tabs', (model) => model.uid === tabActiveKey) ||
+      (this.flowEngine.getModel(tabActiveKey) as BasePageTabModel | undefined);
 
     if (tabModel) {
       if (tabModel.context.tabActive) {
@@ -183,7 +213,10 @@ export class PageModel extends FlowModel<PageModelStructure> {
     const routePathname = this.flowEngine?.context?.route?.pathname;
     // In route-managed multi-view mode, only the top view in URL should mutate document.title.
     if (hasRouteNavigation && currentViewUid && typeof routePathname === 'string') {
-      const topViewUid = parsePathnameToViewParams(routePathname).at(-1)?.viewUid;
+      const layoutRoutePath = this.context?.layout?.routePath;
+      const topViewUid = parsePathnameToViewParams(routePathname, {
+        basePath: this.context?.layoutRoute?.basePathname || (layoutRoutePath?.startsWith('/') ? layoutRoutePath : ''),
+      }).at(-1)?.viewUid;
       if (topViewUid && topViewUid !== currentViewUid) {
         return;
       }

@@ -12,6 +12,7 @@ import { Collection, DestroyOptions, Model, SyncOptions } from '@nocobase/databa
 import { Plugin } from '@nocobase/server';
 import lodash from 'lodash';
 import { Transaction } from 'sequelize';
+import { findCyclePath, TreeNodeKey } from './cycle-detection';
 import { TreeCollection } from './tree-collection';
 
 class PluginCollectionTreeServer extends Plugin {
@@ -131,12 +132,44 @@ class PluginCollectionTreeServer extends Plugin {
             });
           });
 
-          this.db.on(`${collection.name}.beforeSave`, async (model: Model) => {
+          this.db.on(`${collection.name}.beforeSave`, async (model: Model, options?: { transaction?: Transaction }) => {
             const tk = collection.filterTargetKey as string;
             const parentForeignKey = collection.treeParentField?.foreignKey || 'parentId';
-            if (model.get(tk) && model.get(parentForeignKey) === model.get(tk)) {
+            const nodePrimaryKey = model.get(tk) as TreeNodeKey | null;
+            const parentPrimaryKey = model.get(parentForeignKey) as TreeNodeKey | null;
+            if (
+              nodePrimaryKey !== null &&
+              nodePrimaryKey !== undefined &&
+              parentPrimaryKey !== null &&
+              parentPrimaryKey !== undefined &&
+              String(parentPrimaryKey) === String(nodePrimaryKey)
+            ) {
               throw new Error('Cannot set itself as the parent node');
             }
+
+            if (
+              nodePrimaryKey === null ||
+              nodePrimaryKey === undefined ||
+              parentPrimaryKey === null ||
+              parentPrimaryKey === undefined
+            ) {
+              return;
+            }
+
+            const isParentChanged =
+              model.isNewRecord ||
+              (typeof model.changed === 'function' && Boolean(model.changed(parentForeignKey))) ||
+              model['_changed']?.has(parentForeignKey);
+            if (!isParentChanged) {
+              return;
+            }
+
+            await this.validateTreeParent({
+              collection,
+              nodePrimaryKey,
+              parentPrimaryKey,
+              transaction: options?.transaction,
+            });
           });
 
           this.db.on('collections.afterDestroy', async (collection: Model, { transaction }) => {
@@ -226,6 +259,45 @@ class PluginCollectionTreeServer extends Plugin {
       }
     }
     return path;
+  }
+
+  private async validateTreeParent({
+    collection,
+    nodePrimaryKey,
+    parentPrimaryKey,
+    transaction,
+  }: {
+    collection: Collection;
+    nodePrimaryKey: TreeNodeKey;
+    parentPrimaryKey: TreeNodeKey;
+    transaction?: Transaction;
+  }) {
+    const tk = collection.filterTargetKey as string;
+    const parentForeignKey = collection.treeParentField?.foreignKey || 'parentId';
+    const path: TreeNodeKey[] = [nodePrimaryKey];
+    let currentParentPrimaryKey: TreeNodeKey | null = parentPrimaryKey;
+
+    while (currentParentPrimaryKey !== null && currentParentPrimaryKey !== undefined) {
+      if (findCyclePath(path, currentParentPrimaryKey)) {
+        throw new Error('Cannot set a descendant node as the parent node');
+      }
+
+      path.push(currentParentPrimaryKey);
+
+      const parent = await this.app.db.getRepository(collection.name).findOne({
+        fields: [tk, parentForeignKey],
+        filter: {
+          [tk]: currentParentPrimaryKey,
+        },
+        transaction,
+      });
+
+      if (!parent) {
+        return;
+      }
+
+      currentParentPrimaryKey = parent.get(parentForeignKey) as TreeNodeKey | null;
+    }
   }
 
   private async updateTreePath(

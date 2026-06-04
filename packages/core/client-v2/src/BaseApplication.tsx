@@ -30,6 +30,7 @@ import { GlobalThemeProvider } from './theme';
 import { AIManager } from './ai';
 import { AppError, AppMaintaining, AppMaintainingDialog, AppNotFound, AppSpin, BlankComponent } from './components';
 import { SystemSettingsSource } from './flow/system-settings';
+import { LayoutManager } from './layout-manager/LayoutManager';
 import type { PluginClass, PluginManager, PluginType } from './PluginManager';
 import { RouteRepository } from './RouteRepository';
 import type {
@@ -122,6 +123,7 @@ export abstract class BaseApplication<
   public components: Record<string, AnyComponent> = {};
   public pluginManager: TPluginManager;
   public pluginSettingsManager: TPluginSettingsManager;
+  public layoutManager: LayoutManager<this>;
   public aiManager!: AIManager;
   public devDynamicImport?: DevDynamicImport;
   public requirejs!: RequireJS;
@@ -192,6 +194,7 @@ export abstract class BaseApplication<
     this.initializeExtendedState();
     this.i18n = this.createI18n(options);
     this.router = this.createRouterManager(options);
+    this.layoutManager = this.createLayoutManager(options);
     this.pluginManager = this.createPluginManager(options);
     this.flowEngine = new FlowEngine();
     this.flowEngine.registerModels({ ApplicationModel });
@@ -567,6 +570,9 @@ export abstract class BaseApplication<
   protected abstract createRouterManager(options: TOptions): TRouterManager;
   protected abstract createPluginManager(options: TOptions): TPluginManager;
   protected abstract createPluginSettingsManager(options: TOptions): TPluginSettingsManager;
+  protected createLayoutManager(_options: TOptions) {
+    return new LayoutManager(this);
+  }
   protected createWebSocketClient(options: TOptions) {
     return new WebSocketClient(options.ws ?? false);
   }

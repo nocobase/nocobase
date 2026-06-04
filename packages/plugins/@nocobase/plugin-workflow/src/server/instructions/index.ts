@@ -18,6 +18,7 @@ import type { FlowNodeModel, WorkflowModel } from '../types';
 export interface IJob {
   status: number;
   result?: unknown;
+  log?: string;
   [key: string]: unknown;
 }
 
@@ -29,9 +30,14 @@ export interface IJob {
  * 2. `null` | Promise<null>: processor will do exit process.
  * 3. `void` | Promise<void>: processor will do nothing, and terminate the current execution without any action.
  */
-export type InstructionResult = IJob | Promise<IJob> | Promise<void> | Promise<null> | null | void;
+export type InstructionResult = IJob | null | void;
 
-export type Runner = (node: FlowNodeModel, input: any, processor: Processor) => InstructionResult;
+export type Runner = (
+  node: FlowNodeModel,
+  input: any,
+  processor: Processor,
+  options?: { rerun?: true; signal?: AbortSignal },
+) => InstructionResult | Promise<InstructionResult>;
 
 export type InstructionInterface = {
   run: Runner;
@@ -71,7 +77,12 @@ export abstract class Instruction implements InstructionInterface {
     return errors;
   }
 
-  abstract run(node: FlowNodeModel, input: any, processor: Processor): InstructionResult;
+  abstract run(
+    node: FlowNodeModel,
+    input: any,
+    processor: Processor,
+    options?: { rerun?: true; signal?: AbortSignal },
+  ): InstructionResult | Promise<InstructionResult>;
 }
 
 export default Instruction;

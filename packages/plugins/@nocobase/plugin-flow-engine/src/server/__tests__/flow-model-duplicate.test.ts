@@ -7,8 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { MockServer, createMockServer } from '@nocobase/test';
+import { MockServer } from '@nocobase/test';
 import FlowModelRepository from '../repository';
+import { createFlowEngineMockServer } from './test-utils';
 
 describe('flow-model duplicate', () => {
   let app: MockServer;
@@ -19,7 +20,7 @@ describe('flow-model duplicate', () => {
   });
 
   beforeEach(async () => {
-    app = await createMockServer({
+    app = await createFlowEngineMockServer({
       registerActions: true,
       plugins: ['flow-engine'],
     });
@@ -213,14 +214,49 @@ describe('flow-model duplicate', () => {
     } as any;
 
     await repository.insertModel(tree);
+    const polluteNodeOptions = async (rowUid: string, values: Record<string, unknown>) => {
+      const row = await repository.model.findByPk(rowUid);
+      const options = FlowModelRepository.optionsToJson(row.get('options') || {});
+      await row.update(
+        {
+          options: {
+            ...options,
+            ...values,
+          },
+        },
+        {
+          hooks: false,
+        },
+      );
+    };
+    await polluteNodeOptions('dup-options-root', {
+      uid: 'dup-options-root',
+      parent: 'stale-root-parent',
+      parentId: 'stale-root-parent',
+    });
+    await polluteNodeOptions('dup-options-item', {
+      uid: 'dup-options-item',
+      parent: 'stale-item-parent',
+      parentId: 'stale-item-parent',
+    });
+    await polluteNodeOptions('dup-options-field', {
+      uid: 'dup-options-field',
+      parent: 'stale-field-parent',
+      parentId: 'stale-field-parent',
+    });
 
     const duplicatedWithAsync = await repository.findModelById('dup-options-root', { includeAsyncNode: true });
+    expect(duplicatedWithAsync.uid).toBe('dup-options-root');
+    expect(duplicatedWithAsync.parentId).toBe('dup-options-parent');
     expect(duplicatedWithAsync.subModels.items[0].uid).toBe('dup-options-item');
+    expect(duplicatedWithAsync.subModels.items[0].parentId).toBe('dup-options-root');
     expect(duplicatedWithAsync.subModels.items[0].subModels.field.uid).toBe('dup-options-field');
+    expect(duplicatedWithAsync.subModels.items[0].subModels.field.parentId).toBe('dup-options-item');
 
     const duplicated = await repository.duplicate('dup-options-root');
     expect(duplicated).toBeTruthy();
     expect(duplicated.uid).not.toBe('dup-options-root');
+    expect(duplicated.parentId).toBeUndefined();
 
     const duplicatedTree = await repository.findModelById(duplicated.uid, { includeAsyncNode: true });
     const newItem = duplicatedTree.subModels.items[0];
@@ -233,5 +269,15 @@ describe('flow-model duplicate', () => {
     expect(newField.uid).not.toBe('dup-options-field');
     expect(newField.parentId).toBe(newItem.uid);
     expect(newField.stepParams?.popupSettings?.openView?.popupTemplateUid).toBe('popup-template-1');
+
+    const originalTree = await repository.findModelById('dup-options-root', { includeAsyncNode: true });
+    expect(originalTree.parentId).toBe('dup-options-parent');
+    expect(originalTree.subModels.items[0].uid).toBe('dup-options-item');
+
+    for (const duplicatedUid of [duplicatedTree.uid, newItem.uid, newField.uid]) {
+      const row = await repository.model.findByPk(duplicatedUid);
+      const options = FlowModelRepository.optionsToJson(row.get('options') || {});
+      expect(options.uid).toBeUndefined();
+    }
   });
 });

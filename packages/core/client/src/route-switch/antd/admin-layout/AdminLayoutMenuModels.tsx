@@ -53,6 +53,15 @@ const insertPositionToMethod = {
   afterEnd: 'insertAfter',
 } as const;
 
+const omitMenuRuntimeProps = (props: Record<string, unknown> = {}) => {
+  const persistableProps = { ...props };
+  delete persistableProps.item;
+  delete persistableProps.dom;
+  delete persistableProps.options;
+  delete persistableProps.renderType;
+  return persistableProps;
+};
+
 export class AdminLayoutMenuItemModel extends FlowModel<AdminLayoutMenuItemStructure> {
   private creationPersisted = false;
   private persistedStateHydrated = false;
@@ -274,6 +283,12 @@ export class AdminLayoutMenuItemModel extends FlowModel<AdminLayoutMenuItemStruc
     const currentFlowCount = this.flowRegistry.getFlows().size;
     const initialFlowCount = Object.keys((this as any)._options?.flowRegistry || {}).length;
     return currentFlowCount > 0 || initialFlowCount > 0;
+  }
+
+  serialize(): ReturnType<FlowModel['serialize']> {
+    const data = super.serialize();
+    data.props = omitMenuRuntimeProps(data.props);
+    return data;
   }
 
   setHidden(value: boolean) {
@@ -681,7 +696,6 @@ AdminLayoutMenuItemModel.registerFlow({
 AdminLayoutMenuItemModel.registerFlow({
   key: 'menuSettings',
   title: 'Menu settings',
-  manual: true,
   steps: {
     edit: {
       title: 'Edit',
@@ -727,18 +741,6 @@ AdminLayoutMenuItemModel.registerFlow({
       beforeParamsSave: async (ctx: FlowSettingsContext<AdminLayoutMenuItemModel>, params) => {
         await ctx.model.updateMenuRoute({
           tooltip: params.tooltip,
-        });
-      },
-    },
-    hidden: {
-      title: 'Hidden',
-      uiMode: { type: 'switch', key: 'hideInMenu' },
-      defaultParams: async (ctx: FlowSettingsContext<AdminLayoutMenuItemModel>) => ({
-        hideInMenu: !!ctx.model.getRoute()?.hideInMenu,
-      }),
-      beforeParamsSave: async (ctx: FlowSettingsContext<AdminLayoutMenuItemModel>, params) => {
-        await ctx.model.updateMenuRoute({
-          hideInMenu: !!params.hideInMenu,
         });
       },
     },

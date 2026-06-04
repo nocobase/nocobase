@@ -243,6 +243,10 @@ describe('app', () => {
     });
     await renderApp(app);
     expect(await screen.findByText('Hello Basename Route')).toBeInTheDocument();
+    expect(app.router.matchRoutes('/v2/demo/app-info')?.some((match) => match.route.path === '/demo/app-info')).toBe(
+      true,
+    );
+    expect(app.router.matchRoutes('/demo/app-info')?.some((match) => match.route.path === '/demo/app-info')).toBe(true);
   });
 
   it('should support plugin settings componentLoader lazy functionality', async () => {
@@ -379,7 +383,10 @@ describe('app', () => {
 
       await waitFor(() => expect(screen.queryByText('maintaining error message')).not.toBeInTheDocument());
       expect(screen.getByText('Hello')).toBeInTheDocument();
-      expect(reloadMock).toHaveBeenCalled();
+      // Aligned with v1: a routine maintaining→APP_RUNNING cycle does not
+      // reload the page. Only `hasLoadError === true` (set when the initial
+      // `app.load()` itself fails) triggers a recovery reload.
+      expect(reloadMock).not.toHaveBeenCalled();
     } finally {
       Object.defineProperty(globalThis.window, 'location', {
         configurable: true,

@@ -55,7 +55,7 @@ nb init --ui
 
 `nb init` 可以连接已有的 NocoBase 应用，也可以安装一个新的 NocoBase 应用。创建新应用时，还可以全局安装 NocoBase AI coding skills (`nocobase/skills`)。
 
-如果已经自行管理 skills，或在 CI、离线环境中运行，不希望 `nb init` 安装或更新 skills，可以传入 `--skip-skills`。
+如果已经自行管理 skills，或在 CI、离线环境中运行，不希望 `nb init` 安装 skills，可以传入 `--skip-skills`。
 
 ### 非交互式初始化
 
@@ -225,28 +225,40 @@ nb db logs --env app1
 
 说明：
 
+- `nb db start` 在内置数据库容器已被删除时，也可以根据已保存的 env 配置自动恢复它。
 - `nb db start` 和 `nb db stop` 只适用于启用了内置数据库的 env。
 - `nb db logs` 只适用于启用了内置数据库的 env。
 - 对于没有 CLI 托管数据库容器的 env，`nb db ps` 也会显示 `external` 或 `remote` 状态。
 
 ## 清理
 
-关闭并清理某个本地 env：
+只停止应用运行态：
 
 ```bash
-nb app down --env app1
+nb app stop --env app1
 ```
 
-默认情况下，`nb app down` 会停止应用，并在存在时移除应用容器和数据库容器。它不会删除用户数据、源码文件和 CLI env 配置。
-对于本地 env，它还会删除已保存的本地 app 目录。默认仍会保留 storage 数据和 CLI env 配置。
-
-如需执行破坏性清理，需要显式指定参数：
+如果还要一并移除 CLI 托管的内置数据库运行态，可以使用：
 
 ```bash
-nb app down --env app1 --all --yes
+nb app stop --env app1 --with-db
 ```
 
-- `--all`：删除该 env 的所有内容，包括 storage 数据和已保存的 CLI env 配置。必须同时传 `--yes`。
+- `nb app stop` 会保留 storage 数据和已保存的 CLI env 配置。
+- Docker env 停止时会移除已保存的 app container。
+- `--with-db` 只会影响 CLI 托管的内置数据库，external db 不会被处理。
+
+销毁该 env 的本地托管资源：
+
+```bash
+nb app destroy --env app1
+nb app destroy --env app1 --force
+```
+
+- `nb app destroy` 会删除托管的运行时资源、storage 数据以及已保存的 CLI env 配置。
+- 对于通过 npm/Git 下载的 env，`nb app destroy` 还会删除已保存的本地 app 文件。自定义的本地源码目录会被保留。
+- 在交互终端中，`nb app destroy` 需要强确认；在非交互模式下，需要显式传入 `--env <name> --force`。
+- `nb app down` 已废弃。运行态清理请使用 `nb app stop --with-db`，彻底销毁请使用 `nb app destroy`。
 
 ## Env 管理
 

@@ -7,17 +7,24 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { useTranslation } from 'react-i18next';
-import enUS from '../locale/en-US.json';
-import zhCN from '../locale/zh-CN.json';
+import { tExpr as flowTExpr, useFlowEngine } from '@nocobase/flow-engine';
 
-export const NAMESPACE = 'users';
+export const NAMESPACE = '@nocobase/plugin-users';
 
-export const usersLocaleResources = {
-  'en-US': enUS,
-  'zh-CN': zhCN,
-};
+// Locale resources under `@nocobase/plugin-users` and `users` are auto-loaded
+// by v2 buildin `LocalePlugin.afterAdd`.
 
 export function useUsersTranslation() {
-  return useTranslation([NAMESPACE, 'client'], { nsMode: 'fallback' });
+  const t = useT();
+  return { t };
+}
+
+export function useT() {
+  const engine = useFlowEngine();
+  return (key: string, options?: Record<string, unknown>) =>
+    engine.context.t(key, { ns: [NAMESPACE, 'users', 'client'], ...options });
+}
+
+export function tExpr(key: string, options?: Record<string, unknown>) {
+  return flowTExpr(key, { ns: [NAMESPACE, 'users', 'client'], ...options });
 }

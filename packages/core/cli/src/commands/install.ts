@@ -10,7 +10,7 @@
 import { Command, Flags } from '@oclif/core';
 import pc from 'picocolors';
 import crypto from 'node:crypto';
-import { mkdir } from 'node:fs/promises';
+import { access, mkdir } from 'node:fs/promises';
 import path from 'node:path';
 import { exit, stdin as stdinStream, stdout as stdoutStream } from 'node:process';
 import {
@@ -46,6 +46,7 @@ import { omitKeys, upperFirst } from '../lib/object-utils.ts';
 import { getEnv, loadAuthConfig, setCurrentEnv, type Env, upsertEnv } from '../lib/auth-store.js';
 import { buildStoredEnvConfig, type StoredEnvConfig } from '../lib/env-config.js';
 import { resolveDockerEnvFileArg } from '../lib/docker-env-file.ts';
+import { startDockerLogFollower } from '../lib/docker-log-stream.js';
 import Download, { DownloadParsedFlags, defaultDockerRegistryForLang, type DownloadCommandResult } from './download.js';
 import EnvAdd from './env/add.ts';
 
@@ -341,7 +342,7 @@ type InstallParsedFlags = {
   'root-email'?: string;
   'root-password'?: string;
   'root-nickname'?: string;
-  'fetch-source': boolean;
+  'skip-download': boolean;
   'builtin-db': boolean;
   'db-dialect'?: string;
   'builtin-db-image'?: string;
@@ -459,7 +460,7 @@ export default class Install extends Command {
     '<%= config.bin %> <%= command.id %> --env app1 --root-nickname "Super Admin"',
     '<%= config.bin %> <%= command.id %> --env myenv --app-root-path=./myenv/source/ --storage-path=./myenv/storage/',
     '<%= config.bin %> <%= command.id %> --env dev -y --app-root-path=./dev/source/',
-    '<%= config.bin %> <%= command.id %> --env dev -y --fetch-source --app-root-path=./dev/source/',
+    '<%= config.bin %> <%= command.id %> --env dev -y --skip-download --source git --app-root-path=./dev/source/',
   ];
   static override flags = {
     yes: Flags.boolean({
@@ -584,8 +585,8 @@ export default class Install extends Command {
       description: 'Use underscored database naming for the app',
       default: false,
     }),
-    'fetch-source': Flags.boolean({
-      description: 'Download NocoBase app files or pull a Docker image before installing',
+    'skip-download': Flags.boolean({
+      description: 'Skip the download step and reuse an existing local app directory or Docker image',
       default: false,
     }),
     ...omitKeys(Download.flags, ['yes']),
@@ -633,12 +634,6 @@ export default class Install extends Command {
       message: installText('prompts.storagePath.message'),
       placeholder: installText('prompts.storagePath.placeholder'),
       initialValue: (values) => defaultInstallStoragePath(values.env ?? values.appName),
-    },
-    fetchSource: {
-      type: 'boolean',
-      message: installText('prompts.fetchSource.message'),
-      initialValue: true,
-      yesInitialValue: true,
     },
   };
 
@@ -922,8 +917,15 @@ export default class Install extends Command {
       preset.rootNickname = String(flags['root-nickname'] ?? '').trim();
     }
 
-    if (argvHasToken(argv, ['--fetch-source'])) {
-      preset.fetchSource = flags['fetch-source'];
+    if (argvHasToken(argv, ['--skip-download'])) {
+      preset.skipDownload = flags['skip-download'];
+      if (flags['skip-download']) {
+        preset.dockerSave = false;
+        preset.replace = false;
+        preset.devDependencies = false;
+        preset.build = false;
+        preset.buildDts = false;
+      }
     }
 
     if (argvHasToken(argv, ['--builtin-db', '--no-builtin-db'])) {
@@ -1000,7 +1002,6 @@ export default class Install extends Command {
       'appRootPath',
       'appPort',
       'storagePath',
-      'fetchSource',
     ]);
   }
 
@@ -1079,6 +1080,24 @@ export default class Install extends Command {
     }
     const text = String(value).trim();
     return text || undefined;
+  }
+
+  private static resolveManagedAppKey(value: unknown): string {
+    return Install.toOptionalPromptString(value) ?? crypto.randomBytes(32).toString('hex');
+  }
+
+  private static resolveManagedTimeZone(value: unknown): string {
+    return Install.toOptionalPromptString(value) ?? (Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC');
+  }
+
+  private async ensureManagedAppRuntimeConfig(params: {
+    envName: string;
+    appResults: Record<string, PromptValue>;
+  }): Promise<void> {
+    const savedEnv = await getEnv(params.envName, { scope: resolveDefaultConfigScope() });
+    const savedConfig = savedEnv?.config;
+    params.appResults.appKey = Install.resolveManagedAppKey(params.appResults.appKey ?? savedConfig?.appKey);
+    params.appResults.timeZone = Install.resolveManagedTimeZone(params.appResults.timeZone ?? savedConfig?.timezone);
   }
 
   private static async validateAppPort(value, values): Promise<void | string | undefined> {
@@ -1304,7 +1323,6 @@ export default class Install extends Command {
       ...(appRootPath ? { appRootPath } : {}),
       ...(appPort ? { appPort } : {}),
       ...(storagePath ? { storagePath } : {}),
-      ...(source ? { fetchSource: true } : appRootPath ? { fetchSource: false } : {}),
     };
 
     const downloadPreset: PromptInitialValues = {
@@ -1413,7 +1431,7 @@ export default class Install extends Command {
           [
             `Cannot continue setup for "${env.name}" in non-interactive resume mode yet.`,
             `These setup-only flags are not saved in the env config: ${missingFlags.join(', ')}`,
-            `Run \`nb init --env ${env.name} --resume\` without \`--yes\`, or pass those flags again.`,
+            `Run \`nb init --ui --env ${env.name} --resume\` without \`--yes\`, or pass those flags again.`,
           ].join('\n'),
         );
       }
@@ -2148,8 +2166,8 @@ export default class Install extends Command {
     const dbSchema = optionalEnvString(params.dbResults.dbSchema);
     const dbTablePrefix = optionalEnvString(params.dbResults.dbTablePrefix);
     const dbUnderscored = optionalEnvBoolean(params.dbResults.dbUnderscored);
-    const appKey = crypto.randomBytes(32).toString('hex');
-    const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
+    const appKey = Install.resolveManagedAppKey(params.appResults.appKey);
+    const timeZone = Install.resolveManagedTimeZone(params.appResults.timeZone);
     const containerName = Install.buildDockerAppContainerName(
       params.envName,
       params.dockerContainerPrefix ?? params.workspaceName,
@@ -2374,6 +2392,21 @@ export default class Install extends Command {
     );
   }
 
+  private static buildSkipDownloadValues(
+    envName: string,
+    appResults: Record<string, PromptValue>,
+  ): PromptInitialValues {
+    const appRoot = String(appResults.appRootPath ?? '').trim() || defaultInstallAppRootPath(envName);
+    return {
+      outputDir: appRoot,
+      replace: false,
+      dockerSave: false,
+      devDependencies: false,
+      build: false,
+      buildDts: false,
+    };
+  }
+
   private commandStdio(verbose?: boolean): 'inherit' | 'ignore' {
     return verbose ? 'inherit' : 'ignore';
   }
@@ -2387,6 +2420,53 @@ export default class Install extends Command {
       compactLog: true,
     });
     return (await this.config.runCommand('source:download', argv)) as DownloadCommandResult | undefined;
+  }
+
+  private async ensureSkippedDownloadInputsReady(params: {
+    source: string;
+    envName: string;
+    appResults: Record<string, PromptValue>;
+    downloadResults: Record<string, PromptValue>;
+  }): Promise<void> {
+    if (params.source === 'docker') {
+      const dockerRegistry =
+        String(downloadResultsValue(params.downloadResults, 'dockerRegistry') ?? '').trim() ||
+        defaultDockerRegistryForLang(process.env.NB_LOCALE);
+      const version =
+        String(downloadResultsValue(params.downloadResults, 'version') ?? '').trim() || DEFAULT_DOCKER_VERSION;
+      const imageRef = resolveDockerImageRef(dockerRegistry, version, {
+        defaultRegistry: defaultDockerRegistryForLang(process.env.NB_LOCALE),
+        defaultVersion: DEFAULT_DOCKER_VERSION,
+      });
+      const imageExists = await commandSucceeds('docker', ['image', 'inspect', imageRef]);
+      if (!imageExists) {
+        throw new Error(
+          translateCli('commands.install.messages.skipDownloadDockerImageMissing', {
+            imageRef,
+          }),
+        );
+      }
+      return;
+    }
+
+    if (params.source === 'npm' || params.source === 'git') {
+      const projectRoot = Install.resolveLocalProjectRoot({
+        envName: params.envName,
+        appResults: params.appResults,
+        downloadResults: params.downloadResults,
+      });
+
+      try {
+        await access(projectRoot);
+        await access(path.join(projectRoot, 'package.json'));
+      } catch {
+        throw new Error(
+          translateCli('commands.install.messages.skipDownloadLocalAppMissing', {
+            projectRoot,
+          }),
+        );
+      }
+    }
   }
 
   private async downloadLocalApp(params: {
@@ -2426,8 +2506,8 @@ export default class Install extends Command {
       resolveConfiguredEnvPath(configuredStoragePath) ??
       resolveEnvRelativePath(defaultInstallStoragePath(params.envName));
     const dbDialect = String(params.dbResults.dbDialect ?? 'postgres').trim() || 'postgres';
-    const appKey = crypto.randomBytes(32).toString('hex');
-    const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
+    const appKey = Install.resolveManagedAppKey(params.appResults.appKey);
+    const timeZone = Install.resolveManagedTimeZone(params.appResults.timeZone);
     const env: Record<string, string> = {
       STORAGE_PATH: storagePath,
       APP_PORT: String(params.appResults.appPort ?? DEFAULT_INSTALL_APP_PORT).trim() || DEFAULT_INSTALL_APP_PORT,
@@ -2575,6 +2655,7 @@ export default class Install extends Command {
       requestTimeoutMs?: number;
       fetchImpl?: typeof fetch;
       containerName?: string;
+      verbose?: boolean;
     },
   ): Promise<void> {
     const healthCheckUrl = Install.buildHealthCheckUrl(apiBaseUrl);
@@ -2587,43 +2668,49 @@ export default class Install extends Command {
     let lastLoggedStatus = '';
 
     printInfo('Waiting for NocoBase to become ready...');
+    const dockerLogFollower =
+      options?.verbose && options.containerName ? startDockerLogFollower(options.containerName) : undefined;
 
-    while (Date.now() - startedAt < timeoutMs) {
-      const result = await Install.requestAppHealthCheck({
-        healthCheckUrl,
-        fetchImpl,
-        requestTimeoutMs,
-      });
+    try {
+      while (Date.now() - startedAt < timeoutMs) {
+        const result = await Install.requestAppHealthCheck({
+          healthCheckUrl,
+          fetchImpl,
+          requestTimeoutMs,
+        });
 
-      if (result.ok) {
-        return;
+        if (result.ok) {
+          return;
+        }
+
+        lastMessage = result.message;
+        const elapsedSeconds = Math.max(1, Math.floor((Date.now() - startedAt) / 1000));
+        const statusLine = `Waiting for NocoBase to become ready... (${elapsedSeconds}s elapsed, last status: ${Install.formatHealthCheckMessage(
+          lastMessage,
+        )})`;
+        if (statusLine !== lastLoggedStatus) {
+          printInfo(statusLine);
+          lastLoggedStatus = statusLine;
+        }
+
+        const remainingMs = timeoutMs - (Date.now() - startedAt);
+        if (remainingMs <= 0) {
+          break;
+        }
+        await Install.sleep(Math.min(intervalMs, remainingMs));
       }
 
-      lastMessage = result.message;
-      const elapsedSeconds = Math.max(1, Math.floor((Date.now() - startedAt) / 1000));
-      const statusLine = `Waiting for NocoBase to become ready... (${elapsedSeconds}s elapsed, last status: ${Install.formatHealthCheckMessage(
-        lastMessage,
-      )})`;
-      if (statusLine !== lastLoggedStatus) {
-        printInfo(statusLine);
-        lastLoggedStatus = statusLine;
-      }
-
-      const remainingMs = timeoutMs - (Date.now() - startedAt);
-      if (remainingMs <= 0) {
-        break;
-      }
-      await Install.sleep(Math.min(intervalMs, remainingMs));
+      const logHint = options?.containerName
+        ? ` You can inspect startup logs with: docker logs ${options.containerName}`
+        : '';
+      throw new Error(
+        `The application did not become ready in time. Expected \`${healthCheckUrl}\` to respond with \`ok\`, but the last status was: ${Install.formatHealthCheckMessage(
+          lastMessage,
+        )}.${logHint}`,
+      );
+    } finally {
+      await dockerLogFollower?.stop();
     }
-
-    const logHint = options?.containerName
-      ? ` You can inspect startup logs with: docker logs ${options.containerName}`
-      : '';
-    throw new Error(
-      `The application did not become ready in time. Expected \`${healthCheckUrl}\` to respond with \`ok\`, but the last status was: ${Install.formatHealthCheckMessage(
-        lastMessage,
-      )}.${logHint}`,
-    );
   }
 
   private async saveInstalledEnv(params: {
@@ -2770,16 +2857,22 @@ export default class Install extends Command {
       yes,
     });
 
-    let downloadResults: Record<string, PromptValue> = {};
-    if (appResults.fetchSource) {
-      const downloadOpts = Install.buildDownloadPromptOptionsForInstall(appResults, envName);
-      downloadOpts.values = {
-        ...(resumePreset?.downloadPreset ?? {}),
-        ...downloadOpts.values,
-        ...Install.buildDownloadPresetValuesForInstall(parsed, appResults, envName, yes, commandArgv),
-      };
-      downloadOpts.yes = yes;
-      downloadResults = await runPromptCatalog(Download.prompts, downloadOpts);
+    const downloadOpts = Install.buildDownloadPromptOptionsForInstall(appResults, envName);
+    downloadOpts.values = {
+      ...(resumePreset?.downloadPreset ?? {}),
+      ...downloadOpts.values,
+      ...Install.buildDownloadPresetValuesForInstall(parsed, appResults, envName, yes, commandArgv),
+      ...(parsed['skip-download'] ? Install.buildSkipDownloadValues(envName, appResults) : {}),
+    };
+    downloadOpts.yes = yes;
+    const downloadResults = await runPromptCatalog(Download.prompts, downloadOpts);
+    if (parsed['skip-download']) {
+      delete downloadResults.outputDir;
+      delete downloadResults.replace;
+      delete downloadResults.dockerSave;
+      delete downloadResults.devDependencies;
+      delete downloadResults.build;
+      delete downloadResults.buildDts;
     }
 
     const dbPreset = {
@@ -2899,16 +2992,28 @@ export default class Install extends Command {
     }
     const promptResults = await this.collectPromptResults(parsed, flags.yes);
     const { envName, appResults, downloadResults, dbResults, rootResults, envAddResults } = promptResults;
+    await this.ensureManagedAppRuntimeConfig({
+      envName,
+      appResults,
+    });
 
     const source = String(downloadResultsValue(downloadResults, 'source') ?? '').trim();
-    const usesDockerResources =
-      Boolean(dbResults.builtinDb) || (Boolean(appResults.fetchSource) && source === 'docker');
+    const usesDockerResources = Boolean(dbResults.builtinDb) || source === 'docker';
     const dockerNetworkName = usesDockerResources
       ? await resolveDockerNetworkName({ scope: resolveDefaultConfigScope() })
       : undefined;
     const dockerContainerPrefix = usesDockerResources
       ? await resolveDockerContainerPrefix({ scope: resolveDefaultConfigScope() })
       : undefined;
+
+    if (parsed['skip-download']) {
+      await this.ensureSkippedDownloadInputsReady({
+        source,
+        envName,
+        appResults,
+        downloadResults,
+      });
+    }
 
     await Install.ensureExternalDbReadyForInstall(dbResults);
 
@@ -2951,14 +3056,16 @@ export default class Install extends Command {
 
     let dockerAppPlan: DockerAppPlan | undefined;
     let localAppPlan: LocalAppPlan | undefined;
-    if (appResults.fetchSource) {
+    if (source === 'docker' || source === 'npm' || source === 'git') {
       this.logStage('Preparing application');
       if (source === 'docker') {
-        await this.downloadManagedSource({
-          downloadResults,
-          verbose: parsed.verbose,
-        });
-        printInfo('Application image ready.');
+        if (!parsed['skip-download']) {
+          await this.downloadManagedSource({
+            downloadResults,
+            verbose: parsed.verbose,
+          });
+          printInfo('Application image ready.');
+        }
         dockerAppPlan = await this.installDockerApp({
           envName,
           dockerNetworkName,
@@ -2975,13 +3082,21 @@ export default class Install extends Command {
         appResults.timeZone = dockerAppPlan.timeZone;
       } else if (source === 'npm' || source === 'git') {
         const localSource: 'npm' | 'git' = source === 'npm' ? 'npm' : 'git';
-        const projectRoot = await this.downloadLocalApp({
-          envName,
-          appResults,
-          downloadResults,
-          verbose: parsed.verbose,
-        });
-        printInfo('Application files ready.');
+        const projectRoot = parsed['skip-download']
+          ? Install.resolveLocalProjectRoot({
+              envName,
+              appResults,
+              downloadResults,
+            })
+          : await this.downloadLocalApp({
+              envName,
+              appResults,
+              downloadResults,
+              verbose: parsed.verbose,
+            });
+        if (!parsed['skip-download']) {
+          printInfo('Application files ready.');
+        }
         localAppPlan = await this.startLocalApp({
           envName,
           source: localSource,
@@ -3007,6 +3122,7 @@ export default class Install extends Command {
         }),
         {
           containerName: dockerAppPlan?.containerName,
+          verbose: parsed.verbose,
         },
       );
       printInfo(`NocoBase is ready at http://127.0.0.1:${dockerAppPlan?.appPort ?? localAppPlan?.appPort}`);

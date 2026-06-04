@@ -61,7 +61,7 @@ When creating a new app, it can also install NocoBase AI coding skills
 (`nocobase/skills`) globally.
 
 Use `--skip-skills` if the skills are managed separately, or when running in CI
-or offline environments where `nb init` should not install or update them.
+or offline environments where `nb init` should not install them.
 
 ### Non-Interactive Setup
 
@@ -265,28 +265,40 @@ nb db logs --env app1
 
 Notes:
 
+- `nb db start` can also recreate the saved built-in database container when it has been removed.
 - `nb db start` and `nb db stop` only work for envs created with the built-in database option enabled.
 - `nb db logs` only works for envs created with the built-in database option enabled.
 - `nb db ps` can also show `external` or `remote` status for envs that do not have a CLI-managed database container.
 
 ## Cleanup
 
-Bring down a local env:
+Stop only the app runtime:
 
 ```bash
-nb app down --env app1
+nb app stop --env app1
 ```
 
-By default, `nb app down` stops the app and removes app/database containers if they
-exist. For local envs, it also deletes the saved local app files. It keeps storage data and CLI env config.
-
-Use explicit flags for destructive cleanup:
+Stop the app runtime and also remove the CLI-managed built-in database runtime when present:
 
 ```bash
-nb app down --env app1 --all --yes
+nb app stop --env app1 --with-db
 ```
 
-- `--all`: delete everything for the env, including storage data and the saved env config. This requires `--yes`.
+- `nb app stop` keeps storage data and the saved CLI env config.
+- Docker envs remove the saved app container when stopped.
+- `--with-db` only affects CLI-managed built-in databases. External databases are not touched.
+
+Destroy the env's managed local resources:
+
+```bash
+nb app destroy --env app1
+nb app destroy --env app1 --force
+```
+
+- `nb app destroy` removes managed runtime resources, storage data, and the saved CLI env config.
+- For downloaded npm/Git envs, `nb app destroy` also removes the saved local app files. Custom local app directories are kept.
+- In interactive terminals, `nb app destroy` requires a strong confirmation prompt. In non-interactive mode, re-run with `--env <name> --force`.
+- `nb app down` is deprecated. Use `nb app stop --with-db` for runtime cleanup, or `nb app destroy` for destructive cleanup.
 
 ## Environment Management
 

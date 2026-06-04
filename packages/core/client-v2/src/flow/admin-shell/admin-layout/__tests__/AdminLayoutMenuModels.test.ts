@@ -891,34 +891,9 @@ describe('AdminLayoutModel menu items', () => {
     });
   });
 
-  it('should persist hidden setting through route repository', async () => {
-    const updateRoute = vi.fn().mockResolvedValue(undefined);
-    engine.context.routeRepository.updateRoute = updateRoute;
-
-    const model = engine.createModel<AdminLayoutMenuItemModel>({
-      uid: 'menu-item-hidden',
-      use: AdminLayoutMenuItemModel,
-      props: {
-        route: {
-          id: 1,
-          title: 'Page 1',
-          schemaUid: 'current-page',
-          type: NocoBaseDesktopRouteType.page,
-          hideInMenu: false,
-        },
-      },
-    });
-
-    const menuSettingsFlow = AdminLayoutMenuItemModel.globalFlowRegistry.getFlow('menuSettings');
-    await menuSettingsFlow?.steps?.hidden?.beforeParamsSave?.({ model } as any, { hideInMenu: true }, {});
-
-    expect(updateRoute).toHaveBeenCalledWith(1, {
-      hideInMenu: true,
-    });
-  });
-
   it('should expose menu linkage rules only for existing menu items', async () => {
     const menuSettingsFlow = AdminLayoutMenuItemModel.globalFlowRegistry.getFlow('menuSettings');
+    expect(menuSettingsFlow?.steps?.hidden).toBeUndefined();
     expect(menuSettingsFlow?.steps?.linkageRules?.use).toBe('menuLinkageRules');
 
     const model = engine.createModel<AdminLayoutMenuItemModel>({
@@ -968,6 +943,73 @@ describe('AdminLayoutModel menu items', () => {
     await model.saveStepParams();
 
     expect(saveModel).toHaveBeenCalledWith(model, { onlyStepParams: true });
+    expect(updateRoute).toHaveBeenCalledWith(1, {
+      options: {
+        hasPersistedMenuInstanceFlow: true,
+      },
+    });
+  });
+
+  it('should save menu linkage rules without serializing runtime render props', async () => {
+    type SerializedFlowModel = Record<string, unknown> & {
+      props?: Record<string, unknown>;
+      subModels?: unknown;
+    };
+    const save = vi.fn(
+      async (targetModel: { serialize: () => SerializedFlowModel }, options?: { onlyStepParams?: boolean }) => {
+        const data = targetModel.serialize();
+        if (options?.onlyStepParams) {
+          delete data.subModels;
+        }
+
+        expect(data.props?.item).toBeUndefined();
+        expect(data.props?.dom).toBeUndefined();
+        expect(data.props?.options).toBeUndefined();
+        expect(data.props?.renderType).toBeUndefined();
+        expect(() => JSON.stringify(data)).not.toThrow();
+        return data;
+      },
+    );
+    const updateRoute = vi.fn().mockResolvedValue(undefined);
+    engine.setModelRepository({ save } as Parameters<FlowEngine['setModelRepository']>[0]);
+    engine.context.routeRepository.updateRoute = updateRoute;
+
+    const route = createRoute();
+    const model = engine.createModel<AdminLayoutMenuItemModel>({
+      uid: 'menu-item-linkage-runtime-props',
+      use: AdminLayoutMenuItemModel,
+      props: {
+        route,
+      },
+    });
+    const item = {
+      name: 'Page 1',
+      path: '/admin/page-1',
+      _route: route,
+      _model: model,
+    };
+
+    model.setProps({
+      item,
+      dom: React.createElement('span', null, 'Page 1'),
+      renderType: 'item',
+      options: { collapsed: false },
+    });
+    model.setStepParams('menuSettings', 'linkageRules', {
+      value: [
+        {
+          key: 'r1',
+          title: 'Hide menu item',
+          enable: true,
+          condition: { logic: '$and', items: [] },
+          actions: [{ key: 'a1', name: 'linkageSetMenuItemProps', params: { value: 'hidden' } }],
+        },
+      ],
+    });
+
+    await model.saveStepParams();
+
+    expect(save).toHaveBeenCalledWith(model, { onlyStepParams: true });
     expect(updateRoute).toHaveBeenCalledWith(1, {
       options: {
         hasPersistedMenuInstanceFlow: true,

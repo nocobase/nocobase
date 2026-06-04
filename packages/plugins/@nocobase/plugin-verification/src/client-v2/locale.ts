@@ -9,15 +9,10 @@
 
 import { useFlowEngine } from '@nocobase/flow-engine';
 import { useTranslation } from 'react-i18next';
-import enUS from '../locale/en-US.json';
-import zhCN from '../locale/zh-CN.json';
 
 export const NAMESPACE = 'verification';
 
-export const verificationLocaleResources = {
-  'en-US': enUS,
-  'zh-CN': zhCN,
-};
+// Locale resources auto-loaded by v2 buildin `LocalePlugin.afterAdd`.
 
 export function useVerificationTranslation() {
   return useTranslation([NAMESPACE, 'client'], { nsMode: 'fallback' });

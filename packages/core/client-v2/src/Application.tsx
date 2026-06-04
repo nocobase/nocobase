@@ -42,6 +42,7 @@ export class Application extends BaseApplication<
   PluginSettingsManager
 > {
   public declare dataSourceManager: any;
+  public hasLoadError = false;
 
   protected createApiClient(options: ApplicationOptions) {
     return new APIClient({
@@ -99,9 +100,29 @@ export class Application extends BaseApplication<
   }
 
   async load() {
-    await this.loadWebSocket();
-    await this.pm.load();
-    await this.flowEngine.flowSettings.load();
+    try {
+      this.hasLoadError = false;
+      await this.loadWebSocket();
+      await this.pm.load();
+      await this.flowEngine.flowSettings.load();
+    } catch (error: any) {
+      this.hasLoadError = true;
+
+      if (error?.response?.data?.errors?.[0]?.code === 'BLOCKED_IP') {
+        this.hasLoadError = false;
+      }
+
+      if (this.ws.enabled) {
+        await new Promise((resolve) => {
+          setTimeout(() => resolve(null), 1000);
+        });
+      }
+      this.error = {
+        code: 'LOAD_ERROR',
+        ...this.apiClient.toErrMessages(error)?.[0],
+      };
+      console.error(error, this.error);
+    }
     this.updateFavicon();
   }
 
@@ -130,20 +151,14 @@ export class Application extends BaseApplication<
         return;
       }
 
-      if (this.error && data.payload.code === 'APP_RUNNING') {
-        this.maintained = true;
-        this.setMaintaining(false);
-        this.error = null;
-        globalThis.window.location.reload();
-        return;
-      }
-
       const maintaining = data.type === 'maintaining' && data.payload.code !== 'APP_RUNNING';
-      console.log('ws:message', { maintaining, data });
       if (maintaining) {
         this.setMaintaining(true);
         this.error = data.payload;
       } else {
+        if (this.hasLoadError) {
+          globalThis.window.location.reload();
+        }
         this.setMaintaining(false);
         this.maintained = true;
         this.error = null;
@@ -192,5 +207,29 @@ export class Application extends BaseApplication<
 
   addFieldInterfaceOperator(name: string, operatorOption: any) {
     return this.dataSourceManager.addFieldInterfaceOperator(name, operatorOption);
+  }
+
+  registerFieldFilterOperator(operator: any) {
+    return this.dataSourceManager.registerFieldFilterOperator(operator);
+  }
+
+  registerFieldFilterOperatorGroup(name: string, operators: any[] = []) {
+    return this.dataSourceManager.registerFieldFilterOperatorGroup(name, operators);
+  }
+
+  addFieldFilterOperatorsToGroup(name: string, operators: any[] = []) {
+    return this.dataSourceManager.addFieldFilterOperatorsToGroup(name, operators);
+  }
+
+  registerFieldValidationConfigure(item: any) {
+    return this.dataSourceManager.collectionFieldInterfaceManager?.registerFieldValidationConfigure?.(item);
+  }
+
+  registerFieldValidationConfigureGroup(name: string, items: any[] = []) {
+    return this.dataSourceManager.collectionFieldInterfaceManager?.registerFieldValidationConfigureGroup?.(name, items);
+  }
+
+  addFieldValidationConfiguresToGroup(name: string, items: any[] = []) {
+    return this.dataSourceManager.collectionFieldInterfaceManager?.addFieldValidationConfiguresToGroup?.(name, items);
   }
 }

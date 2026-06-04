@@ -22,6 +22,8 @@ const mocks = vi.hoisted(() => ({
 
 beforeEach(() => {
   vi.clearAllMocks();
+  mocks.getEnv.mockReset();
+  mocks.getEnv.mockResolvedValue(undefined);
   mocks.upsertEnv.mockResolvedValue(undefined);
   mocks.setCurrentEnv.mockResolvedValue(undefined);
   mocks.validateExternalDbConfig.mockReset();
@@ -101,7 +103,6 @@ test('install saves env config immediately after collecting prompt results for f
     appResults: {
       appPort: '13080',
       storagePath: './app1/storage/',
-      fetchSource: false,
     },
     downloadResults: {},
     dbResults: {},
@@ -136,6 +137,10 @@ test('install saves env config immediately after collecting prompt results for f
   expect(saveInstalledEnv.mock.invocationCallOrder[0]).toBeGreaterThan(
     collectPromptResults.mock.invocationCallOrder[0],
   );
+  expect(saveInstalledEnv.mock.calls[0]?.[0].appResults).toMatchObject({
+    timeZone: expect.any(String),
+  });
+  expect(String(saveInstalledEnv.mock.calls[0]?.[0].appResults.appKey ?? '')).toMatch(/^[a-f0-9]{64}$/);
   expect(waitForAppHealthCheck).not.toHaveBeenCalled();
 });
 
@@ -150,7 +155,6 @@ test('install --resume does not save env config immediately after collecting pro
     appResults: {
       appPort: '13080',
       storagePath: './app1/storage/',
-      fetchSource: false,
     },
     downloadResults: {},
     dbResults: {},
@@ -204,7 +208,6 @@ test('install syncs oauth env connection after the app becomes ready', async () 
     appResults: {
       appPort: '13080',
       storagePath: './app1/storage/',
-      fetchSource: true,
     },
     downloadResults: {
       source: 'docker',
@@ -263,7 +266,6 @@ test('install syncs token env connection after the app becomes ready without oau
     appResults: {
       appPort: '13080',
       storagePath: './app1/storage/',
-      fetchSource: true,
     },
     downloadResults: {
       source: 'git',
@@ -312,7 +314,6 @@ test('install run validates external db config before saving env config', async 
     appResults: {
       appPort: '13080',
       storagePath: './app1/storage/',
-      fetchSource: false,
     },
     downloadResults: {},
     dbResults: {
@@ -365,8 +366,8 @@ test('install seeds basic auth credentials as prompt defaults instead of fixed v
     .mockResolvedValueOnce({
       appPort: '13080',
       storagePath: './app1/storage/',
-      fetchSource: false,
     })
+    .mockResolvedValueOnce({})
     .mockResolvedValueOnce({})
     .mockResolvedValueOnce({
       rootUsername: 'nocobase',
@@ -412,7 +413,7 @@ test('install seeds basic auth credentials as prompt defaults instead of fixed v
       resume: false,
       yes: false,
       force: false,
-      'fetch-source': false,
+      'skip-download': false,
       'builtin-db': false,
       'auth-type': 'basic',
     },
@@ -488,7 +489,7 @@ test('install --resume reuses the saved workspace env config for prompt values',
       env: 'app1',
       yes: false,
       force: false,
-      'fetch-source': false,
+      'skip-download': false,
       'builtin-db': false,
     },
     false,
@@ -500,7 +501,6 @@ test('install --resume reuses the saved workspace env config for prompt values',
   expect(result.appResults.appRootPath).toBe('./app1/source/');
   expect(result.appResults.appPort).toBe('13080');
   expect(result.appResults.storagePath).toBe('./app1/storage/');
-  expect(result.appResults.fetchSource).toBe(true);
   expect(result.downloadResults.source).toBe('docker');
   expect(result.downloadResults.version).toBe('alpha');
   expect(result.downloadResults.dockerRegistry).toBe('nocobase/nocobase');
@@ -522,6 +522,70 @@ test('install --resume reuses the saved workspace env config for prompt values',
   expect(result.envAddResults.authType).toBe('token');
   expect(result.envAddResults.accessToken).toBe('resume-token');
   expect(result.envAddResults.apiBaseUrl).toBe('http://127.0.0.1:13080/api');
+});
+
+test('install reuses saved appKey and timezone before resuming docker startup', async () => {
+  const { default: Install } = await import('../commands/install.js');
+
+  mocks.getEnv.mockResolvedValue({
+    name: 'app1',
+    config: {
+      appKey: 'saved-app-key',
+      timezone: 'Asia/Shanghai',
+    },
+  });
+
+  const saveInstalledEnv = vi.fn(async () => undefined);
+  const waitForAppHealthCheck = vi.fn(async () => undefined);
+  const downloadManagedSource = vi.fn(async () => undefined);
+  const installDockerApp = vi.fn(async () => ({
+    containerName: 'nb-chen-app1-app',
+    appPort: '13080',
+    appKey: 'saved-app-key',
+    timeZone: 'Asia/Shanghai',
+  }));
+
+  const command = Object.assign(Object.create(Install.prototype), {
+    parse: vi.fn(async () => ({
+      flags: {
+        yes: false,
+        resume: true,
+        force: false,
+        verbose: false,
+        'no-intro': true,
+      },
+    })),
+    collectPromptResults: vi.fn(async () => ({
+      envName: 'app1',
+      envResults: {},
+      appResults: {
+        appPort: '13080',
+        storagePath: './app1/storage/',
+      },
+      downloadResults: {
+        source: 'docker',
+      },
+      dbResults: {},
+      rootResults: {},
+      envAddResults: {
+        apiBaseUrl: 'http://127.0.0.1:13080/api',
+        authType: 'oauth',
+      },
+    })),
+    saveInstalledEnv,
+    waitForAppHealthCheck,
+    downloadManagedSource,
+    installDockerApp,
+    commandStdio: vi.fn(() => 'ignore'),
+    config: { runCommand: vi.fn(async () => undefined) },
+  });
+
+  await Install.prototype.run.call(command);
+
+  expect(installDockerApp.mock.calls[0]?.[0].appResults).toMatchObject({
+    appKey: 'saved-app-key',
+    timeZone: 'Asia/Shanghai',
+  });
 });
 
 test('install --resume keeps saved basic auth credentials editable in prompts', async () => {
@@ -606,7 +670,7 @@ test('install --resume keeps saved basic auth credentials editable in prompts', 
       env: 'app1',
       yes: false,
       force: false,
-      'fetch-source': false,
+      'skip-download': false,
       'builtin-db': false,
     },
     false,
@@ -655,7 +719,7 @@ test('install --resume maps arbitrary saved download versions to otherVersion pr
       env: 'app8',
       yes: false,
       force: false,
-      'fetch-source': false,
+      'skip-download': false,
       'builtin-db': false,
     },
     false,
@@ -685,7 +749,7 @@ test('install --resume fails with a clear message when the env is missing', asyn
           env: 'missing',
           yes: false,
           force: false,
-          'fetch-source': false,
+          'skip-download': false,
           'builtin-db': false,
         },
         false,
@@ -726,7 +790,7 @@ test('install --resume --yes requires only setup-only flags that are not saved i
           env: 'app1',
           yes: true,
           force: false,
-          'fetch-source': false,
+          'skip-download': false,
           'builtin-db': false,
         },
         true,

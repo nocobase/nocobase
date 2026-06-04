@@ -18,4 +18,14 @@ injectGlobal`
   .ant-form-item-label > label {
     font-weight: 600;
   }
+
+  .nb-hidden {
+    display: none;
+  }
+
+  .nb-dialog-overflow-hidden {
+    .ant-modal-content {
+      overflow: hidden;
+    }
+  }
 `;
