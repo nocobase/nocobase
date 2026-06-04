@@ -117,7 +117,56 @@
       }
     },
     "shared": {
-      "missingCommand": "Couldn't run `{{action}}` because the {{displayName}} executable could not be found. Install {{displayName}} or update `nb config set {{configKey}} <path>` and try again."
+      "missingCommand": "Couldn't run `{{action}}` because the {{displayName}} executable could not be found. Install {{displayName}} or update `nb config set {{configKey}} <path>` and try again.",
+      "targetEnv": "Using env \"{{envName}}\".",
+      "crossEnv": {
+        "prompt": "Current env is \"{{currentEnv}}\", but this command targets \"{{requestedEnv}}\" via --env. Continue without switching the current env?",
+        "refusal": "Refusing to run against env \"{{requestedEnv}}\" because the current env is \"{{currentEnv}}\" and interactive confirmation is unavailable in the current agent session.\n\nFor safety, the agent will not switch envs automatically and will not add --yes on your behalf.\n\nTo continue:\n- run `nb env use {{requestedEnv}}` yourself and then re-run the command, or\n- re-run the same command with `--env {{requestedEnv}} --yes` to confirm this one-off cross-env operation."
+      }
+    },
+    "license": {
+      "activate": {
+        "interactive": {
+          "notice": {
+            "hostnameLabel": "❯ Hostname",
+            "instanceIdLabel": "❯ Instance ID",
+            "copyHintWithHostname": "Copy this hostname and instance ID when checking or activating the license key.",
+            "copyHintWithoutHostname": "Copy this instance ID when checking or activating the license key."
+          },
+          "prompts": {
+            "provideMethod": {
+              "message": "How do you want to provide the license key?",
+              "keyOption": "Paste the license key",
+              "fileOption": "Read the key from a file"
+            },
+            "key": {
+              "message": "License key",
+              "transformer": "Entered {{count}} chars",
+              "required": "License key is required."
+            },
+            "keyFile": {
+              "message": "Path to the license key file",
+              "required": "License key file path is required."
+            }
+          }
+        },
+        "errors": {
+          "provideKeyOrKeyFile": "Provide --key or --key-file to continue.",
+          "emptyInput": "License key input was empty.",
+          "activationFailed": "Failed to activate the license for env \"{{envName}}\": {{reason}}.",
+          "reasons": {
+            "keyStatus": "license key is {{status}}",
+            "envMismatch": "license key does not match the current instance environment",
+            "domainMismatch": "license key does not match the current app domain",
+            "licenseStatus": "license status is {{status}}",
+            "validationFailed": "license validation failed"
+          }
+        },
+        "messages": {
+          "activated": "Activated the license for env \"{{envName}}\".",
+          "savedLicenseKey": "Saved license key at {{licenseKeyPath}}"
+        }
+      }
     },
     "download": {
       "failures": {
@@ -308,7 +357,7 @@
         "envExists": "Env \"{{envName}}\" already exists. Choose another env name."
       },
       "messages": {
-        "title": "Set Up NocoBase for Coding Agents",
+        "title": "Set up NocoBase for coding agents",
         "appNameRequiredWhenSkipped": "Env name is required when prompts are skipped.",
         "appNameEnvHelp": "Use `nb init --yes --env <envName>` to continue.",
         "resumeEnvRequired": "Env name is required when resuming setup.",
@@ -346,8 +395,8 @@
         }
       },
       "webUi": {
-        "pageTitle": "Set Up NocoBase for Coding Agents",
-        "documentHeading": "Set Up NocoBase for Coding Agents",
+        "pageTitle": "Set up NocoBase for coding agents",
+        "documentHeading": "Set up NocoBase for coding agents",
         "documentHint": "Install a new app, manage one that already exists on this machine, or connect a remote app so coding agents can access and work with NocoBase.",
         "gettingStarted": {
           "title": "Getting started",

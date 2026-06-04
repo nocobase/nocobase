@@ -1252,6 +1252,198 @@ test('license activate prompts with key as the default key input option', async 
   });
 });
 
+test('license activate uses configured zh-CN locale for interactive prompts and notices', async () => {
+  const { default: LicenseActivate } = await import('../commands/license/activate.js');
+  const storagePath = await mkdtemp(path.join(os.tmpdir(), 'nocobase-cli-license-'));
+  const tempHome = await mkdtemp(path.join(os.tmpdir(), 'nocobase-cli-locale-'));
+  const longInstanceId = `ins_${'b'.repeat(140)}`;
+  const previousRoot = process.env.NB_CLI_ROOT;
+  const previousNbLocale = process.env.NB_LOCALE;
+
+  process.env.NB_CLI_ROOT = tempHome;
+  delete process.env.NB_LOCALE;
+
+  try {
+    await setCliConfigValue('locale', 'zh-CN', { scope: 'global' });
+    mocks.getCurrentEnvName.mockResolvedValue('app1');
+    mocks.isInteractiveTerminal.mockReturnValue(true);
+    mocks.activateSelect.mockResolvedValueOnce('key');
+    mocks.activatePassword.mockResolvedValueOnce('license-key-raw');
+    mocks.resolveManagedAppRuntime.mockResolvedValue({
+      kind: 'local',
+      envName: 'app1',
+      source: 'npm',
+      projectRoot: '/tmp/app1',
+      workspaceName: 'nb-demo',
+      env: {
+        config: {
+          appPort: '13000',
+        },
+        storagePath,
+        envVars: {
+          STORAGE_PATH: storagePath,
+          DB_DIALECT: 'postgres',
+        },
+      },
+    });
+    mocks.getInstanceIdAsync.mockResolvedValue(longInstanceId);
+    mocks.keyDecrypt.mockReturnValue(
+      JSON.stringify({
+        licenseKey: {
+          domain: '127.0.0.1:13000',
+          licenseStatus: 'active',
+        },
+        instanceData: {
+          sys: 'darwin',
+          osVer: '24',
+          db: {
+            id: 'db-1',
+          },
+        },
+      }),
+    );
+
+    const log = vi.fn();
+    const command = Object.assign(Object.create(LicenseActivate.prototype), {
+      argv: ['--env', 'app1'],
+      parse: vi.fn(async () => ({
+        flags: {
+          env: 'app1',
+          json: false,
+          yes: false,
+          key: undefined,
+          'key-file': undefined,
+        },
+      })),
+      log,
+      error: (message: string) => {
+        throw new Error(message);
+      },
+    });
+
+    await LicenseActivate.prototype.run.call(command);
+
+    const instanceIdNotice = String(log.mock.calls[0]?.[0] ?? '');
+    expect(mocks.announceTargetEnv).toHaveBeenCalledWith('app1');
+    expect(instanceIdNotice).toContain('❯ 主机名');
+    expect(instanceIdNotice).toContain('127.0.0.1:13000');
+    expect(instanceIdNotice).toContain('❯ 实例 ID');
+    expect(instanceIdNotice).toContain(longInstanceId);
+    expect(instanceIdNotice).toContain('校验或激活 license key 时，请复制这个主机名和实例 ID。');
+    expect(String(mocks.activateSelect.mock.calls[0]?.[0]?.message)).toBe('你想通过哪种方式提供 license key？');
+    expect(mocks.activateSelect.mock.calls[0]?.[0]?.choices?.[0]).toEqual({
+      value: 'key',
+      name: '直接粘贴 license key',
+    });
+    expect(String(mocks.activatePassword.mock.calls[0]?.[0]?.message)).toBe('License Key');
+    expect(mocks.activatePassword.mock.calls[0]?.[0]?.transformer('license-key-raw')).toBe('已输入 15 个字符');
+    expect(log.mock.calls.some((call) => String(call[0]).includes('已为 env "app1" 激活 license。'))).toBe(true);
+  } finally {
+    if (previousRoot === undefined) {
+      delete process.env.NB_CLI_ROOT;
+    } else {
+      process.env.NB_CLI_ROOT = previousRoot;
+    }
+
+    if (previousNbLocale === undefined) {
+      delete process.env.NB_LOCALE;
+    } else {
+      process.env.NB_LOCALE = previousNbLocale;
+    }
+
+    await rm(storagePath, { recursive: true, force: true });
+    await rm(tempHome, { recursive: true, force: true });
+  }
+});
+
+test('license activate uses zh-CN locale for cross-env confirmation prompt', async () => {
+  const { default: LicenseActivate } = await import('../commands/license/activate.js');
+  const storagePath = await mkdtemp(path.join(os.tmpdir(), 'nocobase-cli-license-'));
+  const tempHome = await mkdtemp(path.join(os.tmpdir(), 'nocobase-cli-locale-'));
+  const previousRoot = process.env.NB_CLI_ROOT;
+  const previousNbLocale = process.env.NB_LOCALE;
+
+  process.env.NB_CLI_ROOT = tempHome;
+  delete process.env.NB_LOCALE;
+
+  try {
+    await setCliConfigValue('locale', 'zh-CN', { scope: 'global' });
+    mocks.isInteractiveTerminal.mockReturnValue(true);
+    mocks.crossEnvConfirm.mockResolvedValueOnce(true);
+    mocks.resolveManagedAppRuntime.mockResolvedValue({
+      kind: 'local',
+      envName: 'prod',
+      source: 'npm',
+      projectRoot: '/tmp/prod',
+      workspaceName: 'nb-demo',
+      env: {
+        config: {
+          appPort: '13000',
+        },
+        storagePath,
+        envVars: {
+          STORAGE_PATH: storagePath,
+          DB_DIALECT: 'postgres',
+        },
+      },
+    });
+    mocks.getInstanceIdAsync.mockResolvedValue('ins_prod_123');
+    mocks.keyDecrypt.mockReturnValue(
+      JSON.stringify({
+        licenseKey: {
+          domain: '127.0.0.1:13000',
+          licenseStatus: 'active',
+        },
+        instanceData: {
+          sys: 'darwin',
+          osVer: '24',
+          db: {
+            id: 'db-1',
+          },
+        },
+      }),
+    );
+
+    const command = Object.assign(Object.create(LicenseActivate.prototype), {
+      argv: ['--env', 'prod', '--key', 'license-key-raw'],
+      parse: vi.fn(async () => ({
+        flags: {
+          env: 'prod',
+          json: false,
+          yes: false,
+          key: 'license-key-raw',
+          'key-file': undefined,
+        },
+      })),
+      log: vi.fn(),
+      error: (message: string) => {
+        throw new Error(message);
+      },
+    });
+
+    await LicenseActivate.prototype.run.call(command);
+
+    expect(String(mocks.crossEnvConfirm.mock.calls[0]?.[0]?.message)).toBe(
+      '当前 env 是 "dev"，但该命令通过 --env 指向了 "prod"。要在不切换当前 env 的情况下继续吗？',
+    );
+  } finally {
+    if (previousRoot === undefined) {
+      delete process.env.NB_CLI_ROOT;
+    } else {
+      process.env.NB_CLI_ROOT = previousRoot;
+    }
+
+    if (previousNbLocale === undefined) {
+      delete process.env.NB_LOCALE;
+    } else {
+      process.env.NB_LOCALE = previousNbLocale;
+    }
+
+    await rm(storagePath, { recursive: true, force: true });
+    await rm(tempHome, { recursive: true, force: true });
+  }
+});
+
 test('license plugins list shows licensed and unlicensed commercial plugins', async () => {
   const { default: LicensePluginsList } = await import('../commands/license/plugins/list.js');
   const storagePath = await mkdtemp(path.join(os.tmpdir(), 'nocobase-cli-license-'));

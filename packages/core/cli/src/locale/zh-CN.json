@@ -117,7 +117,56 @@
       }
     },
     "shared": {
-      "missingCommand": "无法执行 `{{action}}`，因为找不到 {{displayName}} 可执行文件。请先安装 {{displayName}}，或更新 `nb config set {{configKey}} <path>` 后重试。"
+      "missingCommand": "无法执行 `{{action}}`，因为找不到 {{displayName}} 可执行文件。请先安装 {{displayName}}，或更新 `nb config set {{configKey}} <path>` 后重试。",
+      "targetEnv": "正在使用 env \"{{envName}}\"。",
+      "crossEnv": {
+        "prompt": "当前 env 是 \"{{currentEnv}}\"，但该命令通过 --env 指向了 \"{{requestedEnv}}\"。要在不切换当前 env 的情况下继续吗？",
+        "refusal": "拒绝对 env \"{{requestedEnv}}\" 执行该命令，因为当前 env 是 \"{{currentEnv}}\"，且当前 agent 会话无法进行交互确认。\n\n出于安全考虑，agent 不会自动切换 env，也不会替你自动补上 --yes。\n\n如果要继续：\n- 请先自行执行 `nb env use {{requestedEnv}}`，然后重新运行该命令，或\n- 使用相同命令并追加 `--env {{requestedEnv}} --yes`，以确认这是一次性的跨 env 操作。"
+      }
+    },
+    "license": {
+      "activate": {
+        "interactive": {
+          "notice": {
+            "hostnameLabel": "❯ 主机名",
+            "instanceIdLabel": "❯ 实例 ID",
+            "copyHintWithHostname": "校验或激活 license key 时，请复制这个主机名和实例 ID。",
+            "copyHintWithoutHostname": "校验或激活 license key 时，请复制这个实例 ID。"
+          },
+          "prompts": {
+            "provideMethod": {
+              "message": "你想通过哪种方式提供 license key？",
+              "keyOption": "直接粘贴 license key",
+              "fileOption": "从文件读取 key"
+            },
+            "key": {
+              "message": "License Key",
+              "transformer": "已输入 {{count}} 个字符",
+              "required": "必须提供 license key。"
+            },
+            "keyFile": {
+              "message": "license key 文件路径",
+              "required": "必须提供 license key 文件路径。"
+            }
+          }
+        },
+        "errors": {
+          "provideKeyOrKeyFile": "请通过 --key 或 --key-file 继续。",
+          "emptyInput": "license key 输入为空。",
+          "activationFailed": "为 env \"{{envName}}\" 激活 license 失败：{{reason}}。",
+          "reasons": {
+            "keyStatus": "license key 状态为 {{status}}",
+            "envMismatch": "license key 与当前实例环境不匹配",
+            "domainMismatch": "license key 与当前应用域名不匹配",
+            "licenseStatus": "license 状态为 {{status}}",
+            "validationFailed": "license 校验失败"
+          }
+        },
+        "messages": {
+          "activated": "已为 env \"{{envName}}\" 激活 license。",
+          "savedLicenseKey": "license key 已保存到 {{licenseKeyPath}}"
+        }
+      }
     },
     "download": {
       "failures": {

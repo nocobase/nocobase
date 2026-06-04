@@ -10,6 +10,7 @@
 import { Command, Flags } from '@oclif/core';
 import pc from 'picocolors';
 import { readFile } from 'node:fs/promises';
+import { translateCli } from '../../lib/cli-locale.js';
 import { ensureCrossEnvConfirmed, hasExplicitEnvSelection } from '../../lib/env-guard.js';
 import { input, password as promptPassword, select } from '../../lib/inquirer.ts';
 import {
@@ -26,6 +27,9 @@ import {
 } from './shared.js';
 import { announceTargetEnv, isInteractiveTerminal } from '../../lib/ui.js';
 import { appUrl } from '../env/shared.js';
+
+const licenseActivateText = (key: string, values?: Record<string, unknown>, fallback?: string) =>
+  translateCli(`commands.license.activate.${key}`, values, { fallback });
 
 function resolveHostnameNoticeValue(runtime: Awaited<ReturnType<typeof requireLicenseRuntime>>): string | undefined {
   const currentAppUrl = String(appUrl(runtime) ?? '').trim();
@@ -44,10 +48,16 @@ function resolveHostnameNoticeValue(runtime: Awaited<ReturnType<typeof requireLi
 function formatInstanceIdNotice(instanceId: string, hostname?: string): string {
   return [
     '',
-    ...(hostname ? [pc.cyan(pc.bold('❯ Hostname')), `  ${pc.bold(hostname)}`, ''] : []),
-    pc.cyan(pc.bold('❯ Instance ID')),
+    ...(hostname
+      ? [pc.cyan(pc.bold(licenseActivateText('interactive.notice.hostnameLabel'))), `  ${pc.bold(hostname)}`, '']
+      : []),
+    pc.cyan(pc.bold(licenseActivateText('interactive.notice.instanceIdLabel'))),
     `  ${pc.bold(instanceId)}`,
-    pc.dim(`  Copy this ${hostname ? 'hostname and ' : ''}instance ID when checking or activating the license key.`),
+    pc.dim(
+      `  ${licenseActivateText(
+        hostname ? 'interactive.notice.copyHintWithHostname' : 'interactive.notice.copyHintWithoutHostname',
+      )}`,
+    ),
     '',
   ].join('\n');
 }
@@ -56,10 +66,10 @@ async function promptLicenseKeyInput(): Promise<{ key?: string; keyFile?: string
   let answer: 'key' | 'file';
   try {
     answer = await select<'key' | 'file'>({
-      message: 'How do you want to provide the license key?',
+      message: licenseActivateText('interactive.prompts.provideMethod.message'),
       choices: [
-        { value: 'key', name: 'Paste the license key' },
-        { value: 'file', name: 'Read the key from a file' },
+        { value: 'key', name: licenseActivateText('interactive.prompts.provideMethod.keyOption') },
+        { value: 'file', name: licenseActivateText('interactive.prompts.provideMethod.fileOption') },
       ],
       default: 'key',
     });
@@ -70,10 +80,11 @@ async function promptLicenseKeyInput(): Promise<{ key?: string; keyFile?: string
   if (answer === 'key') {
     try {
       const key = await promptPassword({
-        message: 'License key',
+        message: licenseActivateText('interactive.prompts.key.message'),
         mask: false,
-        transformer: (value) => `Entered ${value.length} chars`,
-        validate: (value) => (String(value ?? '').trim() ? true : 'License key is required.'),
+        transformer: (value) => licenseActivateText('interactive.prompts.key.transformer', { count: value.length }),
+        validate: (value) =>
+          String(value ?? '').trim() ? true : licenseActivateText('interactive.prompts.key.required'),
       });
       return { key: String(key ?? '').trim() || undefined };
     } catch {
@@ -83,8 +94,9 @@ async function promptLicenseKeyInput(): Promise<{ key?: string; keyFile?: string
 
   try {
     const keyFile = await input({
-      message: 'Path to the license key file',
-      validate: (value) => (String(value ?? '').trim() ? true : 'License key file path is required.'),
+      message: licenseActivateText('interactive.prompts.keyFile.message'),
+      validate: (value) =>
+        String(value ?? '').trim() ? true : licenseActivateText('interactive.prompts.keyFile.required'),
     });
     return { keyFile: String(keyFile ?? '').trim() || undefined };
   } catch {
@@ -138,7 +150,7 @@ export default class LicenseActivate extends Command {
 
     if (!key && !keyFile) {
       if (!isInteractiveTerminal()) {
-        this.error('Provide --key or --key-file to continue.');
+        this.error(licenseActivateText('errors.provideKeyOrKeyFile'));
       }
 
       interactiveKeyFlowInstanceId = await ensureInstanceId(runtime);
@@ -151,7 +163,7 @@ export default class LicenseActivate extends Command {
       key = String(prompted.key ?? '').trim();
       keyFile = String(prompted.keyFile ?? '').trim();
       if (!key && !keyFile) {
-        this.error('License key input was empty.');
+        this.error(licenseActivateText('errors.emptyInput'));
       }
     }
 
@@ -183,18 +195,18 @@ export default class LicenseActivate extends Command {
 
     if (!ok) {
       const reason = validation.keyStatus
-        ? `license key is ${validation.keyStatus}`
+        ? licenseActivateText('errors.reasons.keyStatus', { status: validation.keyStatus })
         : !validation.envMatch
-          ? 'license key does not match the current instance environment'
+          ? licenseActivateText('errors.reasons.envMismatch')
           : !validation.domainMatch
-            ? 'license key does not match the current app domain'
+            ? licenseActivateText('errors.reasons.domainMismatch')
             : validation.licenseStatus !== 'active'
-              ? `license status is ${validation.licenseStatus}`
-              : 'license validation failed';
-      this.error(`Failed to activate the license for env "${runtime.envName}": ${reason}.`);
+              ? licenseActivateText('errors.reasons.licenseStatus', { status: validation.licenseStatus })
+              : licenseActivateText('errors.reasons.validationFailed');
+      this.error(licenseActivateText('errors.activationFailed', { envName: runtime.envName, reason }));
     }
 
-    this.log(`Activated the license for env "${runtime.envName}".`);
-    this.log(`Saved license key at ${licenseKeyPath}`);
+    this.log(licenseActivateText('messages.activated', { envName: runtime.envName }));
+    this.log(licenseActivateText('messages.savedLicenseKey', { licenseKeyPath }));
   }
 }

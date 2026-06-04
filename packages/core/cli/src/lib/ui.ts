@@ -10,6 +10,7 @@
 import { stdin as input, stdout as output } from 'node:process';
 import ora, { type Ora } from 'ora';
 import pc from 'picocolors';
+import { translateCli } from './cli-locale.js';
 
 let activeSpinner: Ora | undefined;
 let verboseMode = false;
@@ -71,7 +72,7 @@ export function announceTargetEnv(envName: string) {
   if (process.env.NB_SKIP_TARGET_ENV_LOG === '1') {
     return;
   }
-  printInfo(`Using env "${envName}".`);
+  printInfo(translateCli('commands.shared.targetEnv', { envName }));
 }
 
 export function printVerbose(message: string) {
