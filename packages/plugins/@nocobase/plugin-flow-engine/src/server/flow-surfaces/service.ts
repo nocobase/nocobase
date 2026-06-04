@@ -1705,6 +1705,17 @@ export class FlowSurfacesService {
     return options.enabledPackages ?? (await this.loadEnabledPluginPackages(options.transaction));
   }
 
+  private async loadVerifiedAutoAdmissionReports(
+    capabilityPolicyConfig: ReturnType<typeof readFlowSurfaceCapabilityPolicyConfigFromPluginOptions>,
+  ) {
+    if (capabilityPolicyConfig.writePolicy.mode !== 'verifiedAuto') {
+      return undefined;
+    }
+    return loadFlowSurfaceCapabilityAdmissionReportsFromDirectory({
+      dir: getFlowSurfaceCapabilityAdmissionReportStorageDir(),
+    });
+  }
+
   private allocateRouteSortValue(offset = 0) {
     return Date.now() * 1000 + Math.floor(Math.random() * 1000) + offset;
   }
@@ -2268,10 +2279,12 @@ export class FlowSurfacesService {
   ): Promise<FlowSurfaceCapabilitiesResponse> {
     const enabledPackages = await this.resolveEnabledPluginPackages(options);
     const capabilityPolicyConfig = readFlowSurfaceCapabilityPolicyConfigFromPluginOptions(this.plugin.options);
+    const admissionReports = await this.loadVerifiedAutoAdmissionReports(capabilityPolicyConfig);
     return buildFlowSurfaceCapabilitiesResponse(input, {
       enabledPackages,
       providerRegistry: this.capabilityProviderRegistry,
       autoSnapshots: this.autoSnapshots,
+      admissionReports,
       capabilityPolicyConfig,
       catalog: (values) =>
         this.catalog(values, {
@@ -2287,10 +2300,12 @@ export class FlowSurfacesService {
   ): Promise<FlowSurfaceDescribeCapabilityResponse> {
     const enabledPackages = await this.resolveEnabledPluginPackages(options);
     const capabilityPolicyConfig = readFlowSurfaceCapabilityPolicyConfigFromPluginOptions(this.plugin.options);
+    const admissionReports = await this.loadVerifiedAutoAdmissionReports(capabilityPolicyConfig);
     return buildFlowSurfaceDescribeCapabilityResponse(input, {
       enabledPackages,
       providerRegistry: this.capabilityProviderRegistry,
       autoSnapshots: this.autoSnapshots,
+      admissionReports,
       capabilityPolicyConfig,
       catalog: (values) =>
         this.catalog(values, {

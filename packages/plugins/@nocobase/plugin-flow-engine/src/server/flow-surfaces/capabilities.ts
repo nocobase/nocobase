@@ -8,23 +8,32 @@
  */
 
 import _ from 'lodash';
+import { resolveFlowSurfaceCapabilityAdmissionRuntimeEvidence } from './admission-report';
 import {
   applyFlowSurfaceCapabilityWritePolicy,
   normalizeFlowSurfaceCapabilityPolicyConfig,
+  resolveFlowSurfaceVerifiedAutoAdmissionDecision,
   type FlowSurfaceCapabilityPolicyConfig,
   type NormalizedFlowSurfaceCapabilityPolicyConfig,
+  type FlowSurfaceVerifiedAutoAdmissionDecision,
 } from './capability-policy';
 import {
   collectAutoSnapshotPublicCapabilities,
   collectProviderPublicCapabilities,
+  getFlowSurfacePublicCapabilityAdmissionCapabilityId,
+  getFlowSurfacePublicCapabilityAdmissionIntegrity,
   getFlowSurfacePublicCapabilityModelUses,
+  setFlowSurfacePublicCapabilityAdmissionCapabilityId,
+  setFlowSurfacePublicCapabilityAdmissionIntegrity,
   setFlowSurfacePublicCapabilityModelUse,
   type FlowSurfaceCapabilityRegistryLike,
 } from './capability-registry';
 import { resolveFlowSurfaceCapabilityReadiness } from './capability-readiness';
 import { FlowSurfaceBadRequestError } from './errors';
+import type { FlowSurfaceCapabilityAdmissionReport } from './admission-report';
 import type { FlowSurfaceAutoSnapshot } from './extractor/types';
 import type {
+  FlowSurfaceCapabilityAvailability,
   FlowSurfaceCapabilitiesResponse,
   FlowSurfaceCapabilitiesValues,
   FlowSurfaceCapabilityKind,
@@ -95,6 +104,7 @@ type BuildFlowSurfaceCapabilitiesOptions = {
   enabledPackages: ReadonlySet<string>;
   providerRegistry?: FlowSurfaceCapabilityRegistryLike;
   autoSnapshots?: readonly FlowSurfaceAutoSnapshot[];
+  admissionReports?: readonly FlowSurfaceCapabilityAdmissionReport[];
   capabilityPolicyConfig?: FlowSurfaceCapabilityPolicyConfig | NormalizedFlowSurfaceCapabilityPolicyConfig;
   catalog: (values: FlowSurfaceCatalogValues) => Promise<FlowSurfaceCatalogResponse>;
   generatedAt?: string;
@@ -147,6 +157,12 @@ export async function buildFlowSurfaceCapabilitiesResponse(
   ].filter((item): item is FlowSurfacePublicCapabilityItem => !!item);
   const data = arbitratePublicTypeConflicts(dedupeCapabilityItems(projectedItems))
     .map((item) => applyFlowSurfaceCapabilityWritePolicy(item, capabilityPolicyConfig))
+    .map((item) =>
+      applyVerifiedAutoAdmissionProjection(item, {
+        capabilityPolicyConfig,
+        admissionReports: options.admissionReports,
+      }),
+    )
     .filter((item) => filterCapabilityItem(item, request));
   const limitedData = typeof request.limit === 'number' ? data.slice(0, request.limit) : data;
 
@@ -278,7 +294,139 @@ function projectProviderCapabilityItem(
   if (request.includeWarnings && warnings?.length) {
     projected.warnings = warnings;
   }
-  return setFlowSurfacePublicCapabilityModelUse(projected, getFlowSurfacePublicCapabilityModelUses(item));
+  return setFlowSurfacePublicCapabilityAdmissionIntegrity(
+    setFlowSurfacePublicCapabilityAdmissionCapabilityId(
+      setFlowSurfacePublicCapabilityModelUse(projected, getFlowSurfacePublicCapabilityModelUses(item)),
+      getFlowSurfacePublicCapabilityAdmissionCapabilityId(item),
+    ),
+    getFlowSurfacePublicCapabilityAdmissionIntegrity(item),
+  );
+}
+
+function applyVerifiedAutoAdmissionProjection(
+  item: FlowSurfacePublicCapabilityItem,
+  options: {
+    capabilityPolicyConfig: NormalizedFlowSurfaceCapabilityPolicyConfig;
+    admissionReports?: readonly FlowSurfaceCapabilityAdmissionReport[];
+  },
+): FlowSurfacePublicCapabilityItem {
+  if (item.origin !== 'autoSnapshot' || options.capabilityPolicyConfig.writePolicy.mode !== 'verifiedAuto') {
+    return item;
+  }
+  if (!options.admissionReports?.length) {
+    return item;
+  }
+
+  const capabilityId = getFlowSurfacePublicCapabilityAdmissionCapabilityId(item);
+  const evidence = resolveFlowSurfaceCapabilityAdmissionRuntimeEvidence({
+    reports: options.admissionReports,
+    capability: {
+      kind: item.kind,
+      publicType: item.publicType,
+      ownerPlugin: item.ownerPlugin,
+      ...(capabilityId ? { capabilityId } : {}),
+    },
+    expectedIntegrity: getFlowSurfacePublicCapabilityAdmissionIntegrity(item),
+  });
+  const decision = resolveFlowSurfaceVerifiedAutoAdmissionDecision({
+    item,
+    config: options.capabilityPolicyConfig,
+    admissionEvidence: evidence,
+  });
+  if (decision.ok) {
+    return enableVerifiedAutoAdmissionCreate(item);
+  }
+  if (!evidence.reportPlugin) {
+    return item;
+  }
+  return blockVerifiedAutoAdmissionCreate(item, decision);
+}
+
+function enableVerifiedAutoAdmissionCreate(item: FlowSurfacePublicCapabilityItem): FlowSurfacePublicCapabilityItem {
+  const availability: FlowSurfaceCapabilityAvailability = {
+    ...item.availability,
+    create: buildVerifiedAutoAdmissionCreateAvailability(item.availability.create),
+  };
+  const warnings = (item.warnings || []).filter((warning) => warning.code !== 'auto-discovered-readonly');
+  const projected = {
+    ...item,
+    availability,
+    supportLevel: resolveSupportLevel(availability),
+    readiness: 'createEnabled' as const,
+  };
+  if (warnings.length) {
+    return copyProjectedCapabilityMetadata({ ...projected, warnings }, item);
+  }
+  const { warnings: _warnings, ...projectedWithoutWarnings } = projected;
+  return copyProjectedCapabilityMetadata(projectedWithoutWarnings, item);
+}
+
+function blockVerifiedAutoAdmissionCreate(
+  item: FlowSurfacePublicCapabilityItem,
+  decision: FlowSurfaceVerifiedAutoAdmissionDecision,
+): FlowSurfacePublicCapabilityItem {
+  const reasonCode = decision.reasonCode || 'contract-not-verified';
+  const availability: FlowSurfaceCapabilityAvailability = {
+    ...item.availability,
+    create: blockVerifiedAutoAdmissionCreateAvailability(item.availability.create, reasonCode),
+    configure: blockVerifiedAutoAdmissionConfigureAvailability(item.availability.configure, reasonCode),
+  };
+  return copyProjectedCapabilityMetadata(
+    {
+      ...item,
+      availability,
+      supportLevel: resolveSupportLevel(availability),
+      readiness: decision.readiness,
+    },
+    item,
+  );
+}
+
+function buildVerifiedAutoAdmissionCreateAvailability(
+  state: FlowSurfaceCapabilityAvailability['create'],
+): FlowSurfaceCapabilityAvailability['create'] {
+  return {
+    supported: true,
+    ...(typeof state.acceptsInitParams === 'boolean' ? { acceptsInitParams: state.acceptsInitParams } : {}),
+    ...(typeof state.acceptsSettings === 'boolean' ? { acceptsSettings: state.acceptsSettings } : {}),
+  };
+}
+
+function blockVerifiedAutoAdmissionCreateAvailability(
+  state: FlowSurfaceCapabilityAvailability['create'],
+  reasonCode: NonNullable<FlowSurfaceVerifiedAutoAdmissionDecision['reasonCode']>,
+): FlowSurfaceCapabilityAvailability['create'] {
+  return {
+    ...state,
+    supported: false,
+    reasonCode,
+    reasonSource: 'registry',
+  };
+}
+
+function blockVerifiedAutoAdmissionConfigureAvailability(
+  state: FlowSurfaceCapabilityAvailability['configure'],
+  reasonCode: NonNullable<FlowSurfaceVerifiedAutoAdmissionDecision['reasonCode']>,
+): FlowSurfaceCapabilityAvailability['configure'] {
+  return {
+    ...state,
+    supported: false,
+    reasonCode,
+    reasonSource: 'registry',
+  };
+}
+
+function copyProjectedCapabilityMetadata(
+  target: FlowSurfacePublicCapabilityItem,
+  source: FlowSurfacePublicCapabilityItem,
+): FlowSurfacePublicCapabilityItem {
+  return setFlowSurfacePublicCapabilityAdmissionIntegrity(
+    setFlowSurfacePublicCapabilityAdmissionCapabilityId(
+      setFlowSurfacePublicCapabilityModelUse(target, getFlowSurfacePublicCapabilityModelUses(source)),
+      getFlowSurfacePublicCapabilityAdmissionCapabilityId(source),
+    ),
+    getFlowSurfacePublicCapabilityAdmissionIntegrity(source),
+  );
 }
 
 type NormalizedDescribeCapabilityRequest = {

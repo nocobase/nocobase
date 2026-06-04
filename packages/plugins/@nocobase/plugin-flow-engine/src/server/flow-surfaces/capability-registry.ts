@@ -11,6 +11,7 @@ import { normalizeFlowSurfaceCapabilityManifestItem } from './capability-manifes
 import { resolveFlowSurfaceCapabilityReadiness } from './capability-readiness';
 import { callFlowSurfaceProvider } from './capability-provider-executor';
 import { deriveFlowSurfaceAutoCapabilityCandidates } from './extractor/snapshot';
+import type { FlowSurfaceCapabilityAdmissionIntegrity } from './admission-report';
 import type { NormalizedFlowSurfaceProviderCapability } from './capability-manifest';
 import type { FlowSurfaceCapabilityProviderRegistry } from './capability-provider';
 import type { FlowSurfaceAutoSnapshot } from './extractor/types';
@@ -41,6 +42,11 @@ const INTERNAL_PUBLIC_PAYLOAD_KEYS = new Set([
   'implementation',
 ]);
 const capabilityModelUses = new WeakMap<FlowSurfacePublicCapabilityItem, string[]>();
+const capabilityAdmissionIntegrity = new WeakMap<
+  FlowSurfacePublicCapabilityItem,
+  FlowSurfaceCapabilityAdmissionIntegrity
+>();
+const capabilityAdmissionCapabilityIds = new WeakMap<FlowSurfacePublicCapabilityItem, string>();
 
 export type FlowSurfaceCapabilityRegistryLike = Pick<FlowSurfaceCapabilityProviderRegistry, 'listProviders'>;
 
@@ -90,6 +96,36 @@ export function getFlowSurfacePublicCapabilityModelUses(item: FlowSurfacePublicC
   return capabilityModelUses.get(item) || [];
 }
 
+export function setFlowSurfacePublicCapabilityAdmissionIntegrity<T extends FlowSurfacePublicCapabilityItem>(
+  item: T,
+  integrity?: FlowSurfaceCapabilityAdmissionIntegrity,
+): T {
+  const normalized = normalizeFlowSurfaceCapabilityAdmissionIntegrity(integrity);
+  if (normalized) {
+    capabilityAdmissionIntegrity.set(item, normalized);
+  }
+  return item;
+}
+
+export function getFlowSurfacePublicCapabilityAdmissionIntegrity(item: FlowSurfacePublicCapabilityItem) {
+  return capabilityAdmissionIntegrity.get(item);
+}
+
+export function setFlowSurfacePublicCapabilityAdmissionCapabilityId<T extends FlowSurfacePublicCapabilityItem>(
+  item: T,
+  capabilityId?: string,
+): T {
+  const normalized = normalizeString(capabilityId);
+  if (normalized) {
+    capabilityAdmissionCapabilityIds.set(item, normalized);
+  }
+  return item;
+}
+
+export function getFlowSurfacePublicCapabilityAdmissionCapabilityId(item: FlowSurfacePublicCapabilityItem) {
+  return capabilityAdmissionCapabilityIds.get(item);
+}
+
 export function collectAutoSnapshotPublicCapabilities(
   options: FlowSurfaceAutoSnapshotProjectionOptions,
 ): FlowSurfacePublicCapabilityItem[] {
@@ -122,36 +158,43 @@ export function collectAutoSnapshotPublicCapabilities(
         const publicWarnings = sanitizeWarnings(dedupeWarnings(warnings));
         const availability = buildReadOnlyAutoSnapshotAvailability(hasSnapshotStaleWarning(publicWarnings));
         const supportLevel = 'readback-only' as const;
-        return setFlowSurfacePublicCapabilityModelUse(
-          {
-            kind: candidate.kind,
-            publicType,
-            publicTypeMeta: {
-              value: publicType,
-              source: 'autoNamespaced',
-              searchAliases,
-            },
-            label,
-            ownerPlugin,
-            origin: AUTO_SNAPSHOT_ORIGIN,
-            semantic: {
-              title: label,
-              aliases: semanticAliases,
-            },
-            availability,
-            supportLevel,
-            confidence: candidate.confidence,
-            readiness: resolveFlowSurfaceCapabilityReadiness({
-              origin: AUTO_SNAPSHOT_ORIGIN,
-              availability,
-              warnings: publicWarnings,
-            }),
-            warnings: publicWarnings,
-            identity: {
-              capabilityId: [ownerPlugin, 'autoSnapshot', candidate.kind, publicType].join(':'),
-            },
-          } satisfies FlowSurfacePublicCapabilityItem,
-          candidate.modelUse,
+        const capabilityId = [ownerPlugin, 'autoSnapshot', candidate.kind, publicType].join(':');
+        return setFlowSurfacePublicCapabilityAdmissionIntegrity(
+          setFlowSurfacePublicCapabilityAdmissionCapabilityId(
+            setFlowSurfacePublicCapabilityModelUse(
+              {
+                kind: candidate.kind,
+                publicType,
+                publicTypeMeta: {
+                  value: publicType,
+                  source: 'autoNamespaced',
+                  searchAliases,
+                },
+                label,
+                ownerPlugin,
+                origin: AUTO_SNAPSHOT_ORIGIN,
+                semantic: {
+                  title: label,
+                  aliases: semanticAliases,
+                },
+                availability,
+                supportLevel,
+                confidence: candidate.confidence,
+                readiness: resolveFlowSurfaceCapabilityReadiness({
+                  origin: AUTO_SNAPSHOT_ORIGIN,
+                  availability,
+                  warnings: publicWarnings,
+                }),
+                warnings: publicWarnings,
+                identity: {
+                  capabilityId,
+                },
+              } satisfies FlowSurfacePublicCapabilityItem,
+              candidate.modelUse,
+            ),
+            capabilityId,
+          ),
+          buildAutoSnapshotAdmissionIntegrity(snapshot),
         );
       })
       .filter((item): item is FlowSurfacePublicCapabilityItem => !!item);
@@ -277,6 +320,47 @@ function buildReadOnlyAutoSnapshotAvailability(stale: boolean): FlowSurfaceCapab
       reasonSource: 'registry',
     },
   };
+}
+
+function buildAutoSnapshotAdmissionIntegrity(
+  snapshot: FlowSurfaceAutoSnapshot,
+): FlowSurfaceCapabilityAdmissionIntegrity | undefined {
+  const integrity: FlowSurfaceCapabilityAdmissionIntegrity = {};
+  const capabilityVersion = normalizeString(snapshot.pluginVersion);
+  const snapshotHash = normalizeString(snapshot.sourceHash);
+  if (capabilityVersion) {
+    integrity.capabilityVersion = capabilityVersion;
+  }
+  if (snapshotHash) {
+    integrity.snapshotHash = snapshotHash;
+  }
+  return Object.keys(integrity).length ? integrity : undefined;
+}
+
+function normalizeFlowSurfaceCapabilityAdmissionIntegrity(
+  integrity?: FlowSurfaceCapabilityAdmissionIntegrity,
+): FlowSurfaceCapabilityAdmissionIntegrity | undefined {
+  if (!integrity) {
+    return undefined;
+  }
+  const normalized: FlowSurfaceCapabilityAdmissionIntegrity = {};
+  const capabilityVersion = normalizeString(integrity.capabilityVersion);
+  const manifestHash = normalizeString(integrity.manifestHash);
+  const snapshotHash = normalizeString(integrity.snapshotHash);
+  const dryRunFixtureHash = normalizeString(integrity.dryRunFixtureHash);
+  if (capabilityVersion) {
+    normalized.capabilityVersion = capabilityVersion;
+  }
+  if (manifestHash) {
+    normalized.manifestHash = manifestHash;
+  }
+  if (snapshotHash) {
+    normalized.snapshotHash = snapshotHash;
+  }
+  if (dryRunFixtureHash) {
+    normalized.dryRunFixtureHash = dryRunFixtureHash;
+  }
+  return Object.keys(normalized).length ? normalized : undefined;
 }
 
 function hasSnapshotStaleWarning(warnings: FlowSurfaceCapabilityWarning[]) {

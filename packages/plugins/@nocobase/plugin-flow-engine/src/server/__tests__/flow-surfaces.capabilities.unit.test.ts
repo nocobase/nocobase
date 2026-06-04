@@ -717,6 +717,37 @@ describe('flowSurfaces capabilities projection', () => {
     };
   }
 
+  function createVerifiedAutoAdmissionReport(
+    options: {
+      capabilityId?: string;
+      generatedAt?: string;
+      snapshotHash?: string;
+      checks?: Partial<FlowSurfaceCapabilityAdmissionReport['records'][number]['checks']>;
+    } = {},
+  ): FlowSurfaceCapabilityAdmissionReport {
+    return {
+      version: 1,
+      plugin: '@nocobase/plugin-gantt',
+      generatedAt: options.generatedAt || '2026-06-04T00:00:00.000Z',
+      records: [
+        {
+          capabilityId: options.capabilityId || '@nocobase/plugin-gantt:autoSnapshot:block:pluginGantt.gantt',
+          kind: 'block',
+          publicType: 'pluginGantt.gantt',
+          ownerPlugin: '@nocobase/plugin-gantt',
+          capabilityVersion: '1.0.0',
+          manifestHash: 'manifest-hash',
+          snapshotHash: options.snapshotHash || 'snapshot-source-hash',
+          dryRunFixtureHash: 'fixture-hash',
+          readiness: 'createEnabled',
+          updatedAt: '2026-06-04T00:00:00.000Z',
+          approvedAt: '2026-06-04T00:00:00.000Z',
+          checks: createDiagnosticsAdmissionChecks(options.checks),
+        },
+      ],
+    };
+  }
+
   it('should return default public-safe discovery without identity or settings', async () => {
     const recorder = createCatalogRecorder();
     const response = await buildFlowSurfaceCapabilitiesResponse(
@@ -1580,6 +1611,143 @@ describe('flowSurfaces capabilities projection', () => {
       readiness: 'createEnabled',
       failedChecks: [],
     });
+  });
+
+  it('should enable auto snapshot create projection only with verifiedAuto admission evidence', async () => {
+    const response = await buildFlowSurfaceCapabilitiesResponse(
+      {
+        query: 'gantt',
+        includeWarnings: true,
+      },
+      {
+        enabledPackages: new Set(['@nocobase/plugin-gantt']),
+        autoSnapshots: [createGanttAutoSnapshot()],
+        admissionReports: [createVerifiedAutoAdmissionReport()],
+        capabilityPolicyConfig: {
+          writePolicy: {
+            mode: 'verifiedAuto',
+            allowedOwners: ['@nocobase/plugin-gantt'],
+            allowedPublicTypes: ['pluginGantt.gantt'],
+          },
+        },
+        catalog: createCatalogRecorder().catalog,
+        generatedAt: '2026-06-04T00:00:00.000Z',
+      },
+    );
+
+    expect(response.data).toEqual([
+      expect.objectContaining({
+        publicType: 'pluginGantt.gantt',
+        origin: 'autoSnapshot',
+        supportLevel: 'create-only',
+        readiness: 'createEnabled',
+        availability: expect.objectContaining({
+          create: expect.objectContaining({
+            supported: true,
+          }),
+          configure: expect.objectContaining({
+            supported: false,
+            reasonCode: 'contract-not-verified',
+            reasonSource: 'registry',
+          }),
+        }),
+      }),
+    ]);
+    expect(response.data[0].warnings || []).not.toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          code: 'auto-discovered-readonly',
+        }),
+      ]),
+    );
+    expect(JSON.stringify(response.data[0])).not.toContain('snapshot-source-hash');
+    expect(JSON.stringify(response.data[0])).not.toContain('fixture-hash');
+    expect(JSON.stringify(response.data[0])).not.toContain('GanttBlockModel');
+  });
+
+  it('should keep verifiedAuto auto snapshots read-only when admission evidence is stale', async () => {
+    const response = await buildFlowSurfaceCapabilitiesResponse(
+      {
+        query: 'gantt',
+        includeUnavailable: true,
+      },
+      {
+        enabledPackages: new Set(['@nocobase/plugin-gantt']),
+        autoSnapshots: [createGanttAutoSnapshot()],
+        admissionReports: [
+          createVerifiedAutoAdmissionReport({
+            capabilityId: '@nocobase/plugin-gantt:autoSnapshot:block:otherGantt',
+            generatedAt: '2026-06-05T00:00:00.000Z',
+          }),
+          createVerifiedAutoAdmissionReport({
+            snapshotHash: 'older-snapshot-hash',
+          }),
+        ],
+        capabilityPolicyConfig: {
+          writePolicy: {
+            mode: 'verifiedAuto',
+            allowedOwners: ['@nocobase/plugin-gantt'],
+            allowedPublicTypes: ['pluginGantt.gantt'],
+          },
+        },
+        catalog: createCatalogRecorder().catalog,
+        generatedAt: '2026-06-04T00:00:00.000Z',
+      },
+    );
+
+    expect(response.data).toEqual([
+      expect.objectContaining({
+        publicType: 'pluginGantt.gantt',
+        origin: 'autoSnapshot',
+        supportLevel: 'readback-only',
+        readiness: 'blocked',
+        availability: expect.objectContaining({
+          create: expect.objectContaining({
+            supported: false,
+            reasonCode: 'snapshot-stale',
+            reasonSource: 'registry',
+          }),
+        }),
+      }),
+    ]);
+  });
+
+  it('should keep admission reports from enabling auto snapshots under manifestOnly policy', async () => {
+    const response = await buildFlowSurfaceCapabilitiesResponse(
+      {
+        query: 'gantt',
+      },
+      {
+        enabledPackages: new Set(['@nocobase/plugin-gantt']),
+        autoSnapshots: [createGanttAutoSnapshot()],
+        admissionReports: [createVerifiedAutoAdmissionReport()],
+        capabilityPolicyConfig: {
+          writePolicy: {
+            mode: 'manifestOnly',
+            allowedOwners: ['@nocobase/plugin-gantt'],
+            allowedPublicTypes: ['pluginGantt.gantt'],
+          },
+        },
+        catalog: createCatalogRecorder().catalog,
+        generatedAt: '2026-06-04T00:00:00.000Z',
+      },
+    );
+
+    expect(response.data).toEqual([
+      expect.objectContaining({
+        publicType: 'pluginGantt.gantt',
+        origin: 'autoSnapshot',
+        supportLevel: 'readback-only',
+        readiness: 'discovered',
+        availability: expect.objectContaining({
+          create: expect.objectContaining({
+            supported: false,
+            reasonCode: 'manifest-required',
+            reasonSource: 'registry',
+          }),
+        }),
+      }),
+    ]);
   });
 
   it('should block verifiedAuto admission decisions without allowlist or trusted evidence', async () => {

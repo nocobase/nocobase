@@ -9,7 +9,14 @@
 
 import { storagePathJoin } from '@nocobase/utils';
 import { resolveFlowSurfaceCapabilityReadiness } from './capability-readiness';
-import { getFlowSurfacePublicCapabilityModelUses, setFlowSurfacePublicCapabilityModelUse } from './capability-registry';
+import {
+  getFlowSurfacePublicCapabilityAdmissionCapabilityId,
+  getFlowSurfacePublicCapabilityAdmissionIntegrity,
+  getFlowSurfacePublicCapabilityModelUses,
+  setFlowSurfacePublicCapabilityAdmissionCapabilityId,
+  setFlowSurfacePublicCapabilityAdmissionIntegrity,
+  setFlowSurfacePublicCapabilityModelUse,
+} from './capability-registry';
 import type {
   FlowSurfaceAdmissionRuntimeValidationFailedCheck,
   FlowSurfaceAdmissionRuntimeValidationResult,
@@ -163,6 +170,15 @@ export function resolveFlowSurfaceVerifiedAutoAdmissionDecision(
     );
   }
 
+  if (input.item.readiness === 'blocked') {
+    const reasonCode = resolveBlockedVerifiedAutoAdmissionReasonCode(input.item);
+    return buildBlockedVerifiedAutoAdmissionDecision(
+      'blocked',
+      reasonCode,
+      'Verified auto admission requires an unblocked auto snapshot capability.',
+    );
+  }
+
   if (!input.admissionEvidence) {
     return {
       ok: false,
@@ -241,14 +257,20 @@ function blockFlowSurfaceCapabilityWrites(
     create: blockAvailabilityState(item.availability.create, reasonCode),
     configure: blockAvailabilityState(item.availability.configure, reasonCode),
   };
-  return setFlowSurfacePublicCapabilityModelUse(
-    {
-      ...item,
-      availability,
-      supportLevel: resolveFlowSurfaceSupportLevel(availability),
-      readiness: resolveFlowSurfacePolicyReadiness(item, availability),
-    },
-    getFlowSurfacePublicCapabilityModelUses(item),
+  return setFlowSurfacePublicCapabilityAdmissionIntegrity(
+    setFlowSurfacePublicCapabilityAdmissionCapabilityId(
+      setFlowSurfacePublicCapabilityModelUse(
+        {
+          ...item,
+          availability,
+          supportLevel: resolveFlowSurfaceSupportLevel(availability),
+          readiness: resolveFlowSurfacePolicyReadiness(item, availability),
+        },
+        getFlowSurfacePublicCapabilityModelUses(item),
+      ),
+      getFlowSurfacePublicCapabilityAdmissionCapabilityId(item),
+    ),
+    getFlowSurfacePublicCapabilityAdmissionIntegrity(item),
   );
 }
 
@@ -308,6 +330,15 @@ function resolveFlowSurfaceSupportLevel(availability: FlowSurfaceCapabilityAvail
     return 'readback-only';
   }
   return 'render-only';
+}
+
+function resolveBlockedVerifiedAutoAdmissionReasonCode(item: FlowSurfacePublicCapabilityItem): FlowSurfaceReasonCode {
+  return (
+    item.availability.render.reasonCode ||
+    item.availability.create.reasonCode ||
+    item.availability.configure.reasonCode ||
+    'contract-not-verified'
+  );
 }
 
 function isNormalizedPolicyConfig(value: unknown): value is NormalizedFlowSurfaceCapabilityPolicyConfig {
