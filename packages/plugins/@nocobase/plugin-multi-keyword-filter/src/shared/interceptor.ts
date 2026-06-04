@@ -7,21 +7,14 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import type { InternalAxiosRequestConfig } from 'axios';
 import qs from 'qs';
-
-type RequestConfig = {
-  url?: string;
-  params?: Record<string, unknown>;
-  data?: unknown;
-  method?: string;
-  [key: string]: unknown;
-};
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return !!value && typeof value === 'object' && !Array.isArray(value);
 }
 
-export const interceptor = <TConfig extends RequestConfig>(config: TConfig): TConfig => {
+export const interceptor = (config: InternalAxiosRequestConfig<unknown>): InternalAxiosRequestConfig<unknown> => {
   const url = config.url || '';
   const [, queryString] = url.split('?');
 
