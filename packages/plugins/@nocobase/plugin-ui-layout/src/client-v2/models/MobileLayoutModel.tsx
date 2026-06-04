@@ -11,10 +11,12 @@ import {
   AppstoreOutlined,
   BellOutlined,
   CheckSquareOutlined,
+  DragOutlined,
   FileTextOutlined,
   HighlightOutlined,
   HomeOutlined,
   LinkOutlined,
+  MenuOutlined,
   MobileOutlined,
   PlusOutlined,
   QrcodeOutlined,
@@ -24,9 +26,10 @@ import {
 } from '@ant-design/icons';
 import { css } from '@emotion/css';
 import { BaseLayoutModel } from '@nocobase/client-v2';
+import { Icon, IconPicker } from '@nocobase/client-v2/flow-compat';
 import { observer } from '@nocobase/flow-engine';
-import { Dropdown, Grid, type MenuProps, Popover, QRCode, theme, Tooltip } from 'antd';
-import React, { type ReactNode, useCallback, useEffect, useMemo, useState } from 'react';
+import { App, Dropdown, Form, Grid, Input, type MenuProps, Modal, Popover, QRCode, theme, Tooltip } from 'antd';
+import React, { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useOutlet } from 'react-router-dom';
 import { NAMESPACE } from '../../constants';
 import { MobileRootPageModel } from './MobilePageModels';
@@ -56,6 +59,23 @@ type MobileHomeAddMenuItem = {
   label: string;
   icon: ReactNode;
 };
+type MobileAddBlockMenuGroup = {
+  key: string;
+  label: string;
+  children: Array<{
+    key: string;
+    label: string;
+  }>;
+};
+type MobileTabConfigurationValues = {
+  title?: string;
+  icon?: string;
+};
+type FormValidationError = {
+  errorFields?: Array<{
+    errors?: unknown[];
+  }>;
+};
 
 type Translate = (key: string) => string;
 type MobilePreviewSize = {
@@ -76,6 +96,42 @@ const PAD_PREVIEW_SIZE: MobilePreviewSize = {
   width: 768,
   height: 667,
 };
+
+// Keep the desktop preview header in sync with the v2 AdminLayout UI Editor preference.
+export const FLOW_SETTINGS_PREFERENCE_STORAGE_KEY = 'NOCOBASE_V2_FLOW_SETTINGS_ENABLED';
+export const FLOW_SETTINGS_PREFERENCE_CHANGE_EVENT = 'nocobase:v2:flow-settings-preference-change';
+
+export function readMobileFlowSettingsPreference() {
+  if (typeof window === 'undefined') {
+    return false;
+  }
+
+  try {
+    return window.localStorage.getItem(FLOW_SETTINGS_PREFERENCE_STORAGE_KEY) === '1';
+  } catch (error) {
+    console.error('[NocoBase] plugin-ui-layout failed to read flow settings preference.', error);
+    return false;
+  }
+}
+
+export function writeMobileFlowSettingsPreference(enabled: boolean) {
+  if (typeof window === 'undefined') {
+    return;
+  }
+
+  try {
+    window.localStorage.setItem(FLOW_SETTINGS_PREFERENCE_STORAGE_KEY, enabled ? '1' : '0');
+    window.dispatchEvent(
+      new CustomEvent(FLOW_SETTINGS_PREFERENCE_CHANGE_EVENT, {
+        detail: {
+          enabled,
+        },
+      }),
+    );
+  } catch (error) {
+    console.error('[NocoBase] plugin-ui-layout failed to write flow settings preference.', error);
+  }
+}
 
 class MobileHomeRootPagePreviewModel extends MobileRootPageModel {
   content: ReactNode = null;
@@ -206,19 +262,86 @@ export function createMobileHomeAddMenuItems(t: Translate): MobileHomeAddMenuIte
   ];
 }
 
+export function createMobileAddBlockMenuItems(t: Translate): MobileAddBlockMenuGroup[] {
+  return [
+    {
+      key: 'dataBlocks',
+      label: t('Data blocks'),
+      children: [
+        {
+          key: 'data-table',
+          label: t('Table'),
+        },
+        {
+          key: 'data-form',
+          label: t('Form'),
+        },
+        {
+          key: 'data-details',
+          label: t('Details'),
+        },
+        {
+          key: 'data-grid-card',
+          label: t('Grid Card'),
+        },
+      ],
+    },
+    {
+      key: 'filterBlocks',
+      label: t('Filter blocks'),
+      children: [
+        {
+          key: 'filter-form',
+          label: t('Form'),
+        },
+      ],
+    },
+    {
+      key: 'otherBlocks',
+      label: t('Other blocks'),
+      children: [
+        {
+          key: 'other-markdown',
+          label: t('Markdown'),
+        },
+        {
+          key: 'other-settings',
+          label: t('Settings'),
+        },
+      ],
+    },
+  ];
+}
+
+function getMobileTabConfigurationTitle(type: MobileHomeAddMenuKey, t: Translate) {
+  return type === 'page' ? t('Add page') : t('Add link');
+}
+
+function getMobileTabDefaultIcon(type: MobileHomeAddMenuKey) {
+  return type === 'page' ? <FileTextOutlined /> : <LinkOutlined />;
+}
+
+function getFirstFormValidationMessage(error: unknown) {
+  const firstError = (error as FormValidationError).errorFields?.[0]?.errors?.[0];
+  return typeof firstError === 'string' ? firstError : undefined;
+}
+
 function createRuntimeMobileDesktopRoute(
   type: MobileHomeAddMenuKey,
   index: number,
   t: Translate,
+  values: MobileTabConfigurationValues = {},
 ): FakeMobileDesktopRoute {
-  const label = type === 'page' ? t('Page') : t('Link');
+  const defaultLabel = type === 'page' ? t('Page') : t('Link');
+  const title = values.title?.trim();
+  const icon = values.icon?.trim();
 
   return {
     key: `${type}-${index}`,
     schemaUid: `mobile-route-${type}-${index}`,
     type,
-    label: index === 1 ? label : `${label} ${index}`,
-    icon: type === 'page' ? <FileTextOutlined /> : <LinkOutlined />,
+    label: title || (index === 1 ? defaultLabel : `${defaultLabel} ${index}`),
+    icon: icon ? <Icon type={icon} /> : getMobileTabDefaultIcon(type),
     sort: 100 + index,
   };
 }
@@ -238,6 +361,11 @@ const MobileLayoutComponent = observer((props: { model: MobileLayoutModel }) => 
   const { token } = theme.useToken();
   const isDesktopPreview = useIsDesktopPreview(token.screenMD);
   const [previewSize, setPreviewSize] = useState<MobilePreviewSize>(MOBILE_PREVIEW_SIZE);
+  const [preferredFlowSettingsEnabled, setPreferredFlowSettingsEnabled] = useState(() =>
+    readMobileFlowSettingsPreference(),
+  );
+  const flowSettingsSyncRef = useRef(0);
+  const desiredFlowSettingsEnabledRef = useRef(false);
   const className = useMemo(
     () => css`
       width: 100%;
@@ -307,15 +435,84 @@ const MobileLayoutComponent = observer((props: { model: MobileLayoutModel }) => 
     };
   }, [model]);
 
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    const syncPreferredFlowSettings = () => {
+      setPreferredFlowSettingsEnabled(readMobileFlowSettingsPreference());
+    };
+
+    const handleStorage = (event: StorageEvent) => {
+      if (event.key && event.key !== FLOW_SETTINGS_PREFERENCE_STORAGE_KEY) {
+        return;
+      }
+
+      syncPreferredFlowSettings();
+    };
+
+    window.addEventListener(FLOW_SETTINGS_PREFERENCE_CHANGE_EVENT, syncPreferredFlowSettings);
+    window.addEventListener('storage', handleStorage);
+
+    return () => {
+      window.removeEventListener(FLOW_SETTINGS_PREFERENCE_CHANGE_EVENT, syncPreferredFlowSettings);
+      window.removeEventListener('storage', handleStorage);
+    };
+  }, []);
+
+  useEffect(() => {
+    const syncId = ++flowSettingsSyncRef.current;
+    desiredFlowSettingsEnabledRef.current = preferredFlowSettingsEnabled;
+
+    const applyFlowSettingsState = async (enabled: boolean) => {
+      if (enabled) {
+        await model.flowEngine.flowSettings.enable();
+        return;
+      }
+      await model.flowEngine.flowSettings.disable();
+    };
+
+    const syncFlowSettings = async () => {
+      try {
+        await applyFlowSettingsState(preferredFlowSettingsEnabled);
+        if (syncId !== flowSettingsSyncRef.current) {
+          await applyFlowSettingsState(desiredFlowSettingsEnabledRef.current);
+        }
+      } catch (error) {
+        console.error('[NocoBase] plugin-ui-layout failed to sync flow settings preference.', error);
+      }
+    };
+
+    syncFlowSettings();
+
+    return () => {
+      if (flowSettingsSyncRef.current === syncId) {
+        flowSettingsSyncRef.current += 1;
+      }
+    };
+  }, [model.flowEngine.flowSettings, preferredFlowSettingsEnabled]);
+
+  const handleFlowSettingsPreferenceChange = useCallback((enabled: boolean) => {
+    setPreferredFlowSettingsEnabled(enabled);
+    writeMobileFlowSettingsPreference(enabled);
+  }, []);
+
   return (
     <div className={className}>
       {isDesktopPreview ? (
-        <MobileDesktopModeHeader model={model} previewSize={previewSize} onPreviewSizeChange={setPreviewSize} />
+        <MobileDesktopModeHeader
+          designModeEnabled={preferredFlowSettingsEnabled}
+          model={model}
+          previewSize={previewSize}
+          onDesignModeChange={handleFlowSettingsPreferenceChange}
+          onPreviewSizeChange={setPreviewSize}
+        />
       ) : null}
       <div className="nb-ui-layout-mobile-preview">
         <div className="nb-ui-layout-mobile-frame">
           <div ref={handleViewportChange} className="nb-ui-layout-mobile-viewport">
-            {outlet || <MobileHomePlaceholder model={model} />}
+            {outlet || <MobileHomePlaceholder designModeEnabled={preferredFlowSettingsEnabled} model={model} />}
           </div>
         </div>
       </div>
@@ -325,11 +522,13 @@ const MobileLayoutComponent = observer((props: { model: MobileLayoutModel }) => 
 
 const MobileDesktopModeHeader = observer(
   (props: {
+    designModeEnabled: boolean;
     model: MobileLayoutModel;
     previewSize: MobilePreviewSize;
+    onDesignModeChange: (enabled: boolean) => void;
     onPreviewSizeChange: (size: MobilePreviewSize) => void;
   }) => {
-    const { model, previewSize, onPreviewSizeChange } = props;
+    const { designModeEnabled, model, previewSize, onDesignModeChange, onPreviewSizeChange } = props;
     const { token } = theme.useToken();
     const customToken = token as typeof token & MobileLayoutThemeToken;
     const colorSettings = customToken.colorSettings || 'var(--colorSettings, #F18B62)';
@@ -339,7 +538,6 @@ const MobileDesktopModeHeader = observer(
       [model.flowEngine.context],
     );
     const qrCodeValue = typeof window === 'undefined' ? '' : window.location.href;
-    const designModeEnabled = !!model.flowEngine.flowSettings.enabled;
     const className = useMemo(
       () => css`
         flex: 0 0 46px;
@@ -384,13 +582,9 @@ const MobileDesktopModeHeader = observer(
       `,
       [colorSettings, token.fontSizeXL],
     );
-    const handleToggleDesignMode = useCallback(async () => {
-      if (model.flowEngine.flowSettings.enabled) {
-        await model.flowEngine.flowSettings.disable();
-        return;
-      }
-      await model.flowEngine.flowSettings.enable();
-    }, [model.flowEngine.flowSettings]);
+    const handleToggleDesignMode = useCallback(() => {
+      onDesignModeChange(!designModeEnabled);
+    }, [designModeEnabled, onDesignModeChange]);
 
     return (
       <header className={className}>
@@ -441,38 +635,65 @@ const MobileDesktopModeHeader = observer(
   },
 );
 
-function MobileHomeRouteGrid(props: { routes: FakeMobileDesktopRoute[]; t: Translate }) {
-  const { routes, t } = props;
+function MobileHomeRouteGrid(props: {
+  addBlockMenuItems: MenuProps['items'];
+  designModeEnabled: boolean;
+  routes: FakeMobileDesktopRoute[];
+  t: Translate;
+}) {
+  const { addBlockMenuItems, designModeEnabled, routes, t } = props;
 
   return (
-    <div className="nb-ui-layout-mobile-home-menu" aria-label={t('Mobile menu')}>
-      {routes.map((route) => (
-        <button key={route.key} type="button" className="nb-ui-layout-mobile-home-menu-item">
-          <span className="nb-ui-layout-mobile-home-menu-icon">{route.icon}</span>
-          <span>
-            <span className="nb-ui-layout-mobile-home-menu-label">{route.label}</span>
-            {route.description ? (
-              <span className="nb-ui-layout-mobile-home-menu-description">{route.description}</span>
-            ) : null}
-          </span>
-        </button>
-      ))}
+    <div className="nb-ui-layout-mobile-home-content">
+      {designModeEnabled ? (
+        <div className="nb-ui-layout-mobile-home-add-block">
+          <Dropdown menu={{ items: addBlockMenuItems }} placement="bottomLeft" trigger={['hover', 'click']}>
+            <button
+              type="button"
+              className="nb-ui-layout-mobile-home-add-block-button"
+              data-flow-add-block
+              aria-haspopup="menu"
+            >
+              <PlusOutlined />
+              <span>{t('Add block')}</span>
+            </button>
+          </Dropdown>
+        </div>
+      ) : null}
+      <div className="nb-ui-layout-mobile-home-menu" aria-label={t('Mobile menu')}>
+        {routes.map((route) => (
+          <button key={route.key} type="button" className="nb-ui-layout-mobile-home-menu-item">
+            <span className="nb-ui-layout-mobile-home-menu-icon">{route.icon}</span>
+            <span>
+              <span className="nb-ui-layout-mobile-home-menu-label">{route.label}</span>
+              {route.description ? (
+                <span className="nb-ui-layout-mobile-home-menu-description">{route.description}</span>
+              ) : null}
+            </span>
+          </button>
+        ))}
+      </div>
     </div>
   );
 }
 
-const MobileHomePlaceholder = observer((props: { model: MobileLayoutModel }) => {
-  const { model } = props;
+const MobileHomePlaceholder = observer((props: { designModeEnabled: boolean; model: MobileLayoutModel }) => {
+  const { designModeEnabled, model } = props;
   const { token } = theme.useToken();
+  const { message } = App.useApp();
+  const [addTabForm] = Form.useForm<MobileTabConfigurationValues>();
   const customToken = token as typeof token & MobileLayoutThemeToken;
   const colorSettings = customToken.colorSettings || 'var(--colorSettings, #F18B62)';
   const [runtimeDesktopRoutes, setRuntimeDesktopRoutes] = useState<FakeMobileDesktopRoute[]>([]);
+  const [addTabDropdownOpen, setAddTabDropdownOpen] = useState(false);
+  const [configuringTabType, setConfiguringTabType] = useState<MobileHomeAddMenuKey | null>(null);
   const t = useCallback(
     (key: string) => model.flowEngine.context.t(key, { ns: [NAMESPACE, 'client'] }),
     [model.flowEngine.context],
   );
   const fakeDesktopRoutes = useMemo(() => createFakeMobileDesktopRoutes(t), [t]);
   const addMenuItems = useMemo(() => createMobileHomeAddMenuItems(t), [t]);
+  const addBlockMenuGroups = useMemo(() => createMobileAddBlockMenuItems(t), [t]);
   const desktopRoutes = useMemo(
     () => [...fakeDesktopRoutes, ...runtimeDesktopRoutes],
     [fakeDesktopRoutes, runtimeDesktopRoutes],
@@ -487,7 +708,6 @@ const MobileHomePlaceholder = observer((props: { model: MobileLayoutModel }) => 
     () => createMobileHomeTabItemsFromDesktopRoutes(desktopRoutes, activeRoute?.key),
     [activeRoute?.key, desktopRoutes],
   );
-  const designModeEnabled = !!model.flowEngine.flowSettings.enabled;
   const tabBarColumnCount = tabItems.length + (designModeEnabled ? 1 : 0);
   const dropdownMenuItems = useMemo<MenuProps['items']>(
     () =>
@@ -498,18 +718,63 @@ const MobileHomePlaceholder = observer((props: { model: MobileLayoutModel }) => 
       })),
     [addMenuItems],
   );
+  const addBlockMenuItems = useMemo<MenuProps['items']>(
+    () =>
+      addBlockMenuGroups.map((group) => ({
+        key: group.key,
+        type: 'group',
+        label: group.label,
+        children: group.children.map((item) => ({
+          key: item.key,
+          label: item.label,
+        })),
+      })),
+    [addBlockMenuGroups],
+  );
   const handleAddTabMenuClick = useCallback<NonNullable<MenuProps['onClick']>>(
     ({ key }) => {
       const type: MobileHomeAddMenuKey = key === 'link' ? 'link' : 'page';
-      setRuntimeDesktopRoutes((items) => {
-        const index = items.filter((item) => item.type === type).length + 1;
-        const route = createRuntimeMobileDesktopRoute(type, index, t);
-        setActiveRouteKey(route.key);
-        return [...items, route];
-      });
+      setAddTabDropdownOpen(false);
+      addTabForm.resetFields();
+      setConfiguringTabType(type);
     },
-    [t],
+    [addTabForm],
   );
+  const handleAddTabModalCancel = useCallback(() => {
+    setConfiguringTabType(null);
+    addTabForm.resetFields();
+  }, [addTabForm]);
+  const handleAddTabModalSubmit = useCallback(async () => {
+    if (!configuringTabType) {
+      return;
+    }
+
+    try {
+      const values = await addTabForm.validateFields();
+      const index = runtimeDesktopRoutes.filter((item) => item.type === configuringTabType).length + 1;
+      const route = createRuntimeMobileDesktopRoute(configuringTabType, index, t, values);
+      setRuntimeDesktopRoutes([...runtimeDesktopRoutes, route]);
+      setActiveRouteKey(route.key);
+      setConfiguringTabType(null);
+      addTabForm.resetFields();
+    } catch (error) {
+      const validationMessage = getFirstFormValidationMessage(error);
+      if (validationMessage) {
+        message.error(validationMessage);
+      }
+    }
+  }, [addTabForm, configuringTabType, message, runtimeDesktopRoutes, t]);
+  const addTabModalTitle = useMemo(
+    () => (configuringTabType ? getMobileTabConfigurationTitle(configuringTabType, t) : undefined),
+    [configuringTabType, t],
+  );
+
+  useEffect(() => {
+    if (!designModeEnabled) {
+      setAddTabDropdownOpen(false);
+    }
+  }, [designModeEnabled]);
+
   const rootPageModel = useMemo(() => {
     const pageModel = new MobileHomeRootPagePreviewModel({
       flowEngine: model.flowEngine,
@@ -531,7 +796,14 @@ const MobileHomePlaceholder = observer((props: { model: MobileLayoutModel }) => 
 
     return pageModel;
   }, [model.flowEngine, model.uid, t]);
-  rootPageModel.content = <MobileHomeRouteGrid routes={menuItems} t={t} />;
+  rootPageModel.content = (
+    <MobileHomeRouteGrid
+      addBlockMenuItems={addBlockMenuItems}
+      designModeEnabled={designModeEnabled}
+      routes={menuItems}
+      t={t}
+    />
+  );
   const className = useMemo(
     () => css`
       width: 100%;
@@ -543,10 +815,46 @@ const MobileHomePlaceholder = observer((props: { model: MobileLayoutModel }) => 
       color: ${token.colorText};
       background: ${token.colorBgLayout};
 
+      .nb-ui-layout-mobile-home-content {
+        min-height: 100%;
+        display: flex;
+        flex-direction: column;
+        gap: ${token.marginSM}px;
+      }
+
       .nb-ui-layout-mobile-home-menu {
         display: grid;
         grid-template-columns: repeat(2, minmax(0, 1fr));
         gap: ${token.marginSM}px;
+      }
+
+      .nb-ui-layout-mobile-home-add-block {
+        display: flex;
+        align-items: flex-start;
+        justify-content: flex-start;
+      }
+
+      .nb-ui-layout-mobile-home-add-block-button {
+        height: 36px;
+        border: 1px dashed ${colorSettings};
+        border-radius: ${token.borderRadiusSM}px;
+        padding: 0 ${token.paddingSM}px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: ${token.marginXXS}px;
+        color: ${colorSettings};
+        background: ${token.colorBgContainer};
+        cursor: pointer;
+        font-size: ${token.fontSize}px;
+        line-height: 1;
+      }
+
+      .nb-ui-layout-mobile-home-add-block-button:hover,
+      .nb-ui-layout-mobile-home-add-block-button:focus-visible {
+        color: ${colorSettings};
+        border-color: ${colorSettings};
+        background: color-mix(in srgb, ${colorSettings} 8%, transparent);
       }
 
       .nb-ui-layout-mobile-home-menu-item {
@@ -616,8 +924,9 @@ const MobileHomePlaceholder = observer((props: { model: MobileLayoutModel }) => 
       }
 
       .nb-ui-layout-mobile-home-tabbar-item {
+        position: relative;
         min-width: 0;
-        height: 48px;
+        height: 56px;
         border: 0;
         padding: 0;
         display: inline-flex;
@@ -630,17 +939,67 @@ const MobileHomePlaceholder = observer((props: { model: MobileLayoutModel }) => 
         cursor: pointer;
       }
 
+      .nb-ui-layout-mobile-home-tabbar-item-designer {
+        position: absolute;
+        top: 6px;
+        left: 50%;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        transform: translate(-50%, -2px);
+        z-index: 1;
+        box-shadow: ${token.boxShadowTertiary};
+        font-size: ${token.fontSizeSM}px;
+        line-height: 1;
+        opacity: 0;
+        pointer-events: none;
+        transition:
+          opacity ${token.motionDurationMid},
+          transform ${token.motionDurationMid};
+      }
+
+      .nb-ui-layout-mobile-home-tabbar-item-designer-action {
+        width: 22px;
+        height: 22px;
+        border: 0;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        color: #fff;
+        background: ${colorSettings};
+      }
+
+      .nb-ui-layout-mobile-home-tabbar-item-designer-action:first-child {
+        border-start-start-radius: ${token.borderRadiusSM}px;
+        border-end-start-radius: ${token.borderRadiusSM}px;
+        color: ${token.colorPrimary};
+        background: ${token.colorBgContainer};
+      }
+
+      .nb-ui-layout-mobile-home-tabbar-item-designer-action:last-child {
+        border-start-end-radius: ${token.borderRadiusSM}px;
+        border-end-end-radius: ${token.borderRadiusSM}px;
+      }
+
+      .nb-ui-layout-mobile-home-tabbar-item:hover .nb-ui-layout-mobile-home-tabbar-item-designer,
+      .nb-ui-layout-mobile-home-tabbar-item:focus-visible .nb-ui-layout-mobile-home-tabbar-item-designer,
+      .nb-ui-layout-mobile-home-tabbar-item[aria-current='page'] .nb-ui-layout-mobile-home-tabbar-item-designer {
+        opacity: 1;
+        transform: translate(-50%, 0);
+      }
+
       .nb-ui-layout-mobile-home-tabbar-item[aria-current='page'] {
         color: ${token.colorPrimary};
+        background: color-mix(in srgb, ${colorSettings} 10%, transparent);
       }
 
       .nb-ui-layout-mobile-home-tabbar-add {
         display: inline-flex;
         align-self: center;
         justify-self: center;
-        width: 44px;
-        height: 44px;
-        min-width: 44px;
+        width: 36px;
+        height: 36px;
+        min-width: 36px;
         border: 1px dashed ${colorSettings};
         border-radius: ${token.borderRadiusSM}px;
         padding: 0;
@@ -676,6 +1035,7 @@ const MobileHomePlaceholder = observer((props: { model: MobileLayoutModel }) => 
     [
       token.borderRadius,
       token.borderRadiusSM,
+      token.boxShadowTertiary,
       token.colorBgContainer,
       token.colorBgLayout,
       token.colorBorderSecondary,
@@ -691,6 +1051,7 @@ const MobileHomePlaceholder = observer((props: { model: MobileLayoutModel }) => 
       token.lineHeightSM,
       token.marginSM,
       token.marginXXS,
+      token.motionDurationMid,
       token.paddingSM,
       token.paddingXS,
       token.paddingXXS,
@@ -713,11 +1074,26 @@ const MobileHomePlaceholder = observer((props: { model: MobileLayoutModel }) => 
           >
             <span className="nb-ui-layout-mobile-home-tabbar-icon">{item.icon}</span>
             <span className="nb-ui-layout-mobile-home-tabbar-label">{item.label}</span>
+            {designModeEnabled ? (
+              <span className="nb-ui-layout-mobile-home-tabbar-item-designer" aria-hidden="true">
+                <span className="nb-ui-layout-mobile-home-tabbar-item-designer-action">
+                  <LinkOutlined />
+                </span>
+                <span className="nb-ui-layout-mobile-home-tabbar-item-designer-action">
+                  <DragOutlined />
+                </span>
+                <span className="nb-ui-layout-mobile-home-tabbar-item-designer-action">
+                  <MenuOutlined />
+                </span>
+              </span>
+            ) : null}
           </button>
         ))}
         {designModeEnabled ? (
           <Dropdown
             menu={{ items: dropdownMenuItems, onClick: handleAddTabMenuClick }}
+            open={addTabDropdownOpen}
+            onOpenChange={setAddTabDropdownOpen}
             placement="topRight"
             trigger={['hover', 'click']}
           >
@@ -726,12 +1102,49 @@ const MobileHomePlaceholder = observer((props: { model: MobileLayoutModel }) => 
               className="nb-ui-layout-mobile-home-tabbar-add"
               aria-label={t('Add mobile tab')}
               aria-haspopup="menu"
+              onClick={() => setAddTabDropdownOpen(true)}
             >
               <PlusOutlined />
             </button>
           </Dropdown>
         ) : null}
       </nav>
+      <Modal
+        title={addTabModalTitle}
+        open={!!configuringTabType}
+        okText={t('Submit')}
+        cancelText={t('Cancel')}
+        onOk={handleAddTabModalSubmit}
+        onCancel={handleAddTabModalCancel}
+      >
+        <Form<MobileTabConfigurationValues> form={addTabForm} layout="vertical" requiredMark={false}>
+          <Form.Item
+            name="title"
+            label={t('Title')}
+            rules={[
+              {
+                required: true,
+                whitespace: true,
+                message: t('Title field is required'),
+              },
+            ]}
+          >
+            <Input autoFocus />
+          </Form.Item>
+          <Form.Item
+            name="icon"
+            label={t('Icon')}
+            rules={[
+              {
+                required: true,
+                message: t('Icon field is required'),
+              },
+            ]}
+          >
+            <IconPicker />
+          </Form.Item>
+        </Form>
+      </Modal>
     </div>
   );
 });

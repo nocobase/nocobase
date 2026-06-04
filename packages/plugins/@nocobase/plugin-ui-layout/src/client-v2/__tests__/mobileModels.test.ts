@@ -8,17 +8,26 @@
  */
 
 import { BaseLayoutModel, ChildPageModel, RootPageModel } from '@nocobase/client-v2';
-import { describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
+  createMobileAddBlockMenuItems,
   createFakeMobileDesktopRoutes,
   createMobileHomeAddMenuItems,
   createMobileHomeMenuItems,
   createMobileHomeTabItems,
+  FLOW_SETTINGS_PREFERENCE_CHANGE_EVENT,
+  FLOW_SETTINGS_PREFERENCE_STORAGE_KEY,
   MobileLayoutModel,
+  readMobileFlowSettingsPreference,
+  writeMobileFlowSettingsPreference,
 } from '../models/MobileLayoutModel';
 import { MobileChildPageModel, MobileRootPageModel } from '../models/MobilePageModels';
 
 describe('plugin-ui-layout mobile models', () => {
+  beforeEach(() => {
+    window.localStorage.removeItem(FLOW_SETTINGS_PREFERENCE_STORAGE_KEY);
+  });
+
   it('should extend the standard layout and page models', () => {
     expect(MobileLayoutModel.prototype).toBeInstanceOf(BaseLayoutModel);
     expect(MobileRootPageModel.prototype).toBeInstanceOf(RootPageModel);
@@ -59,10 +68,46 @@ describe('plugin-ui-layout mobile models', () => {
     ]);
   });
 
+  it('should provide mobile add block menu groups', () => {
+    const t = (key: string) => `t:${key}`;
+    const groups = createMobileAddBlockMenuItems(t);
+
+    expect(groups.map((group) => [group.key, group.label])).toEqual([
+      ['dataBlocks', 't:Data blocks'],
+      ['filterBlocks', 't:Filter blocks'],
+      ['otherBlocks', 't:Other blocks'],
+    ]);
+    expect(groups[0].children.map((item) => [item.key, item.label])).toEqual([
+      ['data-table', 't:Table'],
+      ['data-form', 't:Form'],
+      ['data-details', 't:Details'],
+      ['data-grid-card', 't:Grid Card'],
+    ]);
+  });
+
   it('should suppress default page tab add buttons in mobile headers', () => {
     const flowEngine = { getModel: () => null };
 
     expect(new MobileRootPageModel({ flowEngine } as never).tabBarExtraContent.right).toBeNull();
     expect(new MobileChildPageModel({ flowEngine } as never).tabBarExtraContent.right).toBeNull();
+  });
+
+  it('should persist mobile UI editor preference to localStorage', () => {
+    const listener = vi.fn();
+    window.addEventListener(FLOW_SETTINGS_PREFERENCE_CHANGE_EVENT, listener);
+
+    expect(readMobileFlowSettingsPreference()).toBe(false);
+
+    writeMobileFlowSettingsPreference(true);
+    expect(window.localStorage.getItem(FLOW_SETTINGS_PREFERENCE_STORAGE_KEY)).toBe('1');
+    expect(readMobileFlowSettingsPreference()).toBe(true);
+    expect(listener).toHaveBeenCalledTimes(1);
+
+    writeMobileFlowSettingsPreference(false);
+    expect(window.localStorage.getItem(FLOW_SETTINGS_PREFERENCE_STORAGE_KEY)).toBe('0');
+    expect(readMobileFlowSettingsPreference()).toBe(false);
+    expect(listener).toHaveBeenCalledTimes(2);
+
+    window.removeEventListener(FLOW_SETTINGS_PREFERENCE_CHANGE_EVENT, listener);
   });
 });
