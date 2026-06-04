@@ -11,6 +11,10 @@ import { storagePathJoin } from '@nocobase/utils';
 import { resolveFlowSurfaceCapabilityReadiness } from './capability-readiness';
 import { getFlowSurfacePublicCapabilityModelUses, setFlowSurfacePublicCapabilityModelUse } from './capability-registry';
 import type {
+  FlowSurfaceAdmissionRuntimeValidationFailedCheck,
+  FlowSurfaceAdmissionRuntimeValidationResult,
+} from './admission-report';
+import type {
   FlowSurfaceCapabilityAvailability,
   FlowSurfaceCapabilityReadiness,
   FlowSurfacePublicCapabilityItem,
@@ -44,6 +48,19 @@ export type NormalizedFlowSurfaceCapabilityPolicyConfig = {
   providerTimeoutMs: number;
   extractorSnapshotDir: string;
   diagnosticsEnabled: boolean;
+};
+
+export type FlowSurfaceVerifiedAutoAdmissionDecision = {
+  ok: boolean;
+  readiness: FlowSurfaceCapabilityReadiness;
+  reasonCode?: FlowSurfaceReasonCode;
+  failedChecks: FlowSurfaceAdmissionRuntimeValidationFailedCheck[];
+};
+
+export type ResolveFlowSurfaceVerifiedAutoAdmissionDecisionInput = {
+  item: FlowSurfacePublicCapabilityItem;
+  config?: FlowSurfaceCapabilityPolicyConfig | NormalizedFlowSurfaceCapabilityPolicyConfig | null;
+  admissionEvidence?: FlowSurfaceAdmissionRuntimeValidationResult | null;
 };
 
 const DEFAULT_PROVIDER_TIMEOUT_MS = 3000;
@@ -115,6 +132,77 @@ export function applyFlowSurfaceCapabilityWritePolicy(
   return item;
 }
 
+export function resolveFlowSurfaceVerifiedAutoAdmissionDecision(
+  input: ResolveFlowSurfaceVerifiedAutoAdmissionDecisionInput,
+): FlowSurfaceVerifiedAutoAdmissionDecision {
+  const normalized = isNormalizedPolicyConfig(input.config)
+    ? input.config
+    : normalizeFlowSurfaceCapabilityPolicyConfig(input.config);
+  if (input.item.origin !== 'autoSnapshot') {
+    return buildBlockedVerifiedAutoAdmissionDecision(
+      input.item.readiness,
+      'unsupported',
+      'Verified auto admission only applies to auto snapshot capabilities.',
+    );
+  }
+
+  if (normalized.writePolicy.mode !== 'verifiedAuto') {
+    const reasonCode = normalized.writePolicy.mode === 'discoveryOnly' ? 'contract-not-verified' : 'manifest-required';
+    return buildBlockedVerifiedAutoAdmissionDecision(
+      input.item.readiness,
+      reasonCode,
+      'Verified auto admission requires writePolicy.mode to be verifiedAuto.',
+    );
+  }
+
+  if (!matchesFlowSurfaceCapabilityWritePolicyAllowlist(input.item, normalized.writePolicy)) {
+    return buildBlockedVerifiedAutoAdmissionDecision(
+      input.item.readiness,
+      'contract-not-verified',
+      'Verified auto admission requires the owner and publicType to match the write policy allowlist.',
+    );
+  }
+
+  if (!input.admissionEvidence) {
+    return {
+      ok: false,
+      readiness: 'blocked',
+      reasonCode: 'contract-not-verified',
+      failedChecks: [
+        {
+          key: 'admissionRecord',
+          reasonCode: 'contract-not-verified',
+          message: 'Verified auto admission requires matching runtime admission evidence.',
+        },
+      ],
+    };
+  }
+
+  if (!input.admissionEvidence.ok || input.admissionEvidence.readiness !== 'createEnabled') {
+    const reasonCode = input.admissionEvidence.reasonCode || 'contract-not-verified';
+    return {
+      ok: false,
+      readiness: input.admissionEvidence.readiness || 'blocked',
+      reasonCode,
+      failedChecks: input.admissionEvidence.failedChecks.length
+        ? input.admissionEvidence.failedChecks
+        : [
+            {
+              key: 'readiness',
+              reasonCode,
+              message: 'Verified auto admission evidence is not createEnabled.',
+            },
+          ],
+    };
+  }
+
+  return {
+    ok: true,
+    readiness: 'createEnabled',
+    failedChecks: [],
+  };
+}
+
 function normalizeFlowSurfaceCapabilityWritePolicy(input: unknown): NormalizedFlowSurfaceCapabilityWritePolicy {
   const policy = isPlainRecord(input) ? input : {};
   const allowedOwners = normalizeStringList(policy.allowedOwners);
@@ -162,6 +250,25 @@ function blockFlowSurfaceCapabilityWrites(
     },
     getFlowSurfacePublicCapabilityModelUses(item),
   );
+}
+
+function buildBlockedVerifiedAutoAdmissionDecision(
+  readiness: FlowSurfaceCapabilityReadiness,
+  reasonCode: FlowSurfaceReasonCode,
+  message: string,
+): FlowSurfaceVerifiedAutoAdmissionDecision {
+  return {
+    ok: false,
+    readiness,
+    reasonCode,
+    failedChecks: [
+      {
+        key: 'admissionRecord',
+        reasonCode,
+        message,
+      },
+    ],
+  };
 }
 
 function blockAvailabilityState<T extends FlowSurfaceCapabilityAvailability['create']>(

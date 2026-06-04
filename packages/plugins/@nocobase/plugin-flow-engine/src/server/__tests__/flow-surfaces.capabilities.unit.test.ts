@@ -19,6 +19,7 @@ import {
 import {
   normalizeFlowSurfaceCapabilityPolicyConfig,
   readFlowSurfaceCapabilityPolicyConfigFromPluginOptions,
+  resolveFlowSurfaceVerifiedAutoAdmissionDecision,
 } from '../flow-surfaces/capability-policy';
 import type { FlowSurfaceCapabilityAdmissionReport } from '../flow-surfaces/admission-report';
 import { FlowSurfaceBadRequestError, FlowSurfaceForbiddenError } from '../flow-surfaces/errors';
@@ -1498,6 +1499,168 @@ describe('flowSurfaces capabilities projection', () => {
         }),
       }),
     ]);
+  });
+
+  it('should resolve verifiedAuto admission decisions without changing default projection', async () => {
+    const response = await buildFlowSurfaceCapabilitiesResponse(
+      {
+        query: 'gantt',
+        includeUnavailable: true,
+      },
+      {
+        enabledPackages: new Set(['@nocobase/plugin-gantt']),
+        autoSnapshots: [createGanttAutoSnapshot()],
+        capabilityPolicyConfig: {
+          writePolicy: {
+            mode: 'verifiedAuto',
+            allowedOwners: ['@nocobase/plugin-gantt'],
+            allowedPublicTypes: ['pluginGantt.gantt'],
+          },
+        },
+        catalog: createCatalogRecorder().catalog,
+        generatedAt: '2026-06-04T00:00:00.000Z',
+      },
+    );
+    const item = response.data[0];
+
+    expect(item.availability.create.supported).toBe(false);
+    expect(resolveFlowSurfaceVerifiedAutoAdmissionDecision({ item })).toEqual({
+      ok: false,
+      readiness: 'discovered',
+      reasonCode: 'manifest-required',
+      failedChecks: [
+        {
+          key: 'admissionRecord',
+          reasonCode: 'manifest-required',
+          message: 'Verified auto admission requires writePolicy.mode to be verifiedAuto.',
+        },
+      ],
+    });
+    expect(
+      resolveFlowSurfaceVerifiedAutoAdmissionDecision({
+        item,
+        config: {
+          writePolicy: {
+            mode: 'verifiedAuto',
+            allowedOwners: ['@nocobase/plugin-gantt'],
+            allowedPublicTypes: ['pluginGantt.gantt'],
+          },
+        },
+      }),
+    ).toEqual({
+      ok: false,
+      readiness: 'blocked',
+      reasonCode: 'contract-not-verified',
+      failedChecks: [
+        {
+          key: 'admissionRecord',
+          reasonCode: 'contract-not-verified',
+          message: 'Verified auto admission requires matching runtime admission evidence.',
+        },
+      ],
+    });
+    expect(
+      resolveFlowSurfaceVerifiedAutoAdmissionDecision({
+        item,
+        config: {
+          writePolicy: {
+            mode: 'verifiedAuto',
+            allowedOwners: ['@nocobase/plugin-gantt'],
+            allowedPublicTypes: ['pluginGantt.gantt'],
+          },
+        },
+        admissionEvidence: {
+          ok: true,
+          readiness: 'createEnabled',
+          failedChecks: [],
+        },
+      }),
+    ).toEqual({
+      ok: true,
+      readiness: 'createEnabled',
+      failedChecks: [],
+    });
+  });
+
+  it('should block verifiedAuto admission decisions without allowlist or trusted evidence', async () => {
+    const response = await buildFlowSurfaceCapabilitiesResponse(
+      {
+        query: 'gantt',
+        includeUnavailable: true,
+      },
+      {
+        enabledPackages: new Set(['@nocobase/plugin-gantt']),
+        autoSnapshots: [createGanttAutoSnapshot()],
+        catalog: createCatalogRecorder().catalog,
+        generatedAt: '2026-06-04T00:00:00.000Z',
+      },
+    );
+    const item = response.data[0];
+
+    expect(
+      resolveFlowSurfaceVerifiedAutoAdmissionDecision({
+        item,
+        config: {
+          writePolicy: {
+            mode: 'verifiedAuto',
+            allowedOwners: ['@nocobase/plugin-other'],
+            allowedPublicTypes: ['pluginGantt.gantt'],
+          },
+        },
+        admissionEvidence: {
+          ok: true,
+          readiness: 'createEnabled',
+          failedChecks: [],
+        },
+      }),
+    ).toEqual({
+      ok: false,
+      readiness: 'discovered',
+      reasonCode: 'contract-not-verified',
+      failedChecks: [
+        {
+          key: 'admissionRecord',
+          reasonCode: 'contract-not-verified',
+          message: 'Verified auto admission requires the owner and publicType to match the write policy allowlist.',
+        },
+      ],
+    });
+
+    expect(
+      resolveFlowSurfaceVerifiedAutoAdmissionDecision({
+        item,
+        config: {
+          writePolicy: {
+            mode: 'verifiedAuto',
+            allowedOwners: ['@nocobase/plugin-gantt'],
+            allowedPublicTypes: ['pluginGantt.gantt'],
+          },
+        },
+        admissionEvidence: {
+          ok: false,
+          readiness: 'blocked',
+          reasonCode: 'snapshot-stale',
+          failedChecks: [
+            {
+              key: 'reportIntegrity',
+              reasonCode: 'snapshot-stale',
+              message: 'Snapshot hash does not match current runtime.',
+            },
+          ],
+        },
+      }),
+    ).toEqual({
+      ok: false,
+      readiness: 'blocked',
+      reasonCode: 'snapshot-stale',
+      failedChecks: [
+        {
+          key: 'reportIntegrity',
+          reasonCode: 'snapshot-stale',
+          message: 'Snapshot hash does not match current runtime.',
+        },
+      ],
+    });
   });
 
   it('should expose auto snapshot capabilities as read-only discovery', async () => {
