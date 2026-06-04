@@ -11,6 +11,7 @@ const chalk = require('chalk');
 const { Command } = require('commander');
 const fs = require('fs-extra');
 const { resolve } = require('path');
+const { discoverPluginPackages } = require('@nocobase/utils/plugin-package');
 const { storagePathJoin } = require('../util');
 
 /**
@@ -32,24 +33,18 @@ async function copyMainClient(source, target) {
 
 /**
  * 复制插件客户端文件
- * @param {string} pluginsBaseDir - 插件基础目录路径
- * @param {string} namespace - 命名空间（如 '@nocobase' 或 '@nocobase-example'）
+ * @param {Array<{ packageName: string, resolvedPath: string }>} plugins - 插件清单
  * @param {string} target - 目标目录
  */
-async function copyPluginClients(pluginsBaseDir, namespace, target) {
-  const pluginsDir = resolve(process.cwd(), pluginsBaseDir, namespace);
-  if (await fs.exists(pluginsDir)) {
-    const pluginNames = await fs.readdir(pluginsDir);
-    for (const pluginName of pluginNames) {
-      const pluginPath = resolve(pluginsDir, pluginName);
-      for (const lane of ['client', 'client-v2']) {
-        const pluginDistClient = resolve(pluginPath, `dist/${lane}`);
-        if (await fs.exists(pluginDistClient)) {
-          const pluginTarget = resolve(target, 'static/plugins', namespace, pluginName, 'dist', lane);
-          await fs.mkdir(resolve(pluginTarget, '..'), { recursive: true });
-          await fs.copy(pluginDistClient, pluginTarget, { recursive: true });
-          console.log(chalk.green(`Copied ${namespace}/${pluginName} ${lane} files`));
-        }
+async function copyPluginClients(plugins, target) {
+  for (const plugin of plugins) {
+    for (const lane of ['client', 'client-v2']) {
+      const pluginDistClient = resolve(plugin.resolvedPath, `dist/${lane}`);
+      if (await fs.exists(pluginDistClient)) {
+        const pluginTarget = resolve(target, 'static/plugins', plugin.packageName, 'dist', lane);
+        await fs.mkdir(resolve(pluginTarget, '..'), { recursive: true });
+        await fs.copy(pluginDistClient, pluginTarget, { recursive: true });
+        console.log(chalk.green(`Copied ${plugin.packageName} ${lane} files`));
       }
     }
   }
@@ -113,10 +108,11 @@ module.exports = (cli) => {
       const version = require('../../package.json').version;
       const target = storagePathJoin('dist-client', version);
       const mainClientSource = resolve(process.cwd(), 'node_modules/@nocobase/app/dist/client');
+      const plugins = await discoverPluginPackages({
+        nodeModulesPath: resolve(process.cwd(), 'node_modules'),
+      });
       await copyMainClient(mainClientSource, target);
-      await copyPluginClients('packages/plugins', '@nocobase', target);
-      await copyPluginClients('packages/plugins', '@nocobase-example', target);
-      await copyPluginClients('packages/pro-plugins', '@nocobase', target);
+      await copyPluginClients(plugins, target);
     });
 
   cli
