@@ -24,7 +24,7 @@ import type { CascaderProps, CollapseProps } from 'antd';
 import React from 'react';
 import { ConditionBuilder } from './ConditionBuilder';
 import { FieldAssignValueInput } from './FieldAssignValueInput';
-import type { FieldAssignCascaderOption } from './fieldAssignOptions';
+import { buildFieldAssignCascaderOptionsFromCollection, type FieldAssignCascaderOption } from './fieldAssignOptions';
 import { isRunJSValue, isVariableExpression, type MetaTreeNode } from '@nocobase/flow-engine';
 import { isToManyAssociationField } from '../internal/utils/modelUtils';
 
@@ -36,6 +36,7 @@ type CollectionFieldLike = {
   type?: unknown;
   interface?: unknown;
   uiSchema?: unknown;
+  target?: unknown;
   targetKey?: unknown;
   targetCollectionTitleFieldName?: unknown;
   targetCollection?: any;
@@ -105,6 +106,7 @@ export interface FieldAssignRulesEditorProps {
   onSyncAssociationTitleField?: (params: SyncAssociationTitleFieldParams) => Promise<void> | void;
   /** 在日期字段下启用“日期变量替换 Constant 位”。 */
   enableDateVariableAsConstant?: boolean;
+  maxAssociationFieldDepth?: number;
 }
 
 export const FieldAssignRulesEditor: React.FC<FieldAssignRulesEditorProps> = (props) => {
@@ -123,9 +125,10 @@ export const FieldAssignRulesEditor: React.FC<FieldAssignRulesEditorProps> = (pr
     isTitleFieldCandidate,
     onSyncAssociationTitleField,
     enableDateVariableAsConstant = false,
+    maxAssociationFieldDepth = 2,
   } = props;
 
-  const value = Array.isArray(rawValue) ? rawValue : [];
+  const value = React.useMemo(() => (Array.isArray(rawValue) ? rawValue : []), [rawValue]);
   const [cascaderOptions, setCascaderOptions] = React.useState<FieldAssignCascaderOption[]>(() =>
     Array.isArray(fieldOptions) ? (fieldOptions as FieldAssignCascaderOption[]) : [],
   );
@@ -171,6 +174,19 @@ export const FieldAssignRulesEditor: React.FC<FieldAssignRulesEditorProps> = (pr
     }
   }, [getRuleKey, syncingRuleKey, value]);
 
+  const parseTargetPathToSegments = React.useCallback((targetPath?: string): string[] => {
+    const raw = String(targetPath || '');
+    if (!raw) return [];
+    return raw
+      .split('.')
+      .map((s) => s.trim())
+      .filter(Boolean);
+  }, []);
+
+  const isAssociationFieldLike = React.useCallback((field?: CollectionFieldLike | null) => {
+    return !!(field?.isAssociationField?.() || field?.target || field?.targetCollection);
+  }, []);
+
   const buildCollectionMetaTreeNodes = React.useCallback(
     (collection: any, basePaths: string[], visited: Set<any>): MetaTreeNode[] => {
       if (!collection?.getFields) return [];
@@ -199,7 +215,7 @@ export const FieldAssignRulesEditor: React.FC<FieldAssignRulesEditorProps> = (pr
           paths: [...basePaths, name],
         };
 
-        const isAssoc = !!f.isAssociationField?.();
+        const isAssoc = isAssociationFieldLike(f);
         const isToMany = isToManyAssociationField(f);
         if (isAssoc && !isToMany && f.targetCollection) {
           node.children = async () =>
@@ -211,7 +227,7 @@ export const FieldAssignRulesEditor: React.FC<FieldAssignRulesEditorProps> = (pr
 
       return nodes;
     },
-    [t],
+    [isAssociationFieldLike, t],
   );
 
   const buildItemMetaTree = React.useCallback(
@@ -226,7 +242,7 @@ export const FieldAssignRulesEditor: React.FC<FieldAssignRulesEditorProps> = (pr
       for (let i = 0; i < segs.length; i++) {
         const seg = segs[i] as string;
         const field = current?.getField?.(seg);
-        if (!field?.isAssociationField?.()) break;
+        if (!isAssociationFieldLike(field)) break;
         const toMany = isToManyAssociationField(field);
         const nextCollection = field?.targetCollection;
         if (!nextCollection) break;
@@ -291,7 +307,7 @@ export const FieldAssignRulesEditor: React.FC<FieldAssignRulesEditorProps> = (pr
 
       return [buildObjectNode(levels.length - 1, ['item'], 'item', 'Current item')];
     },
-    [buildCollectionMetaTreeNodes, rootCollection, t],
+    [buildCollectionMetaTreeNodes, isAssociationFieldLike, parseTargetPathToSegments, rootCollection, t],
   );
 
   const patchItem = (index: number, patch: Partial<FieldAssignRuleItem>) => {
@@ -381,15 +397,6 @@ export const FieldAssignRulesEditor: React.FC<FieldAssignRulesEditorProps> = (pr
     [t],
   );
 
-  const parseTargetPathToSegments = React.useCallback((targetPath?: string): string[] => {
-    const raw = String(targetPath || '');
-    if (!raw) return [];
-    return raw
-      .split('.')
-      .map((s) => s.trim())
-      .filter(Boolean);
-  }, []);
-
   const getFieldLabel = (targetPath?: string) => {
     const segs = parseTargetPathToSegments(targetPath);
     if (!segs.length) return undefined;
@@ -413,7 +420,7 @@ export const FieldAssignRulesEditor: React.FC<FieldAssignRulesEditorProps> = (pr
             : seg,
         ),
       );
-      if (field?.isAssociationField?.() && field?.targetCollection) {
+      if (isAssociationFieldLike(field as CollectionFieldLike) && field?.targetCollection) {
         collection = field.targetCollection;
       }
     }
@@ -435,7 +442,7 @@ export const FieldAssignRulesEditor: React.FC<FieldAssignRulesEditorProps> = (pr
 
         const isLast = i === segs.length - 1;
         if (isLast) {
-          if (!field?.isAssociationField?.() || !field?.targetCollection) return null;
+          if (!isAssociationFieldLike(field) || !field?.targetCollection) return null;
 
           const targetCollection = field.targetCollection;
           const targetFields =
@@ -502,7 +509,7 @@ export const FieldAssignRulesEditor: React.FC<FieldAssignRulesEditorProps> = (pr
           };
         }
 
-        if (!field?.isAssociationField?.() || !field?.targetCollection) {
+        if (!isAssociationFieldLike(field) || !field?.targetCollection) {
           return null;
         }
         collection = field.targetCollection;
@@ -510,7 +517,7 @@ export const FieldAssignRulesEditor: React.FC<FieldAssignRulesEditorProps> = (pr
 
       return null;
     },
-    [isTitleFieldCandidate, parseTargetPathToSegments, rootCollection, t],
+    [isAssociationFieldLike, isTitleFieldCandidate, parseTargetPathToSegments, rootCollection, t],
   );
 
   const resolveTargetCollectionBySegments = React.useCallback(
@@ -519,42 +526,24 @@ export const FieldAssignRulesEditor: React.FC<FieldAssignRulesEditorProps> = (pr
       let collection = rootCollection;
       for (const seg of segments) {
         const field = collection?.getField?.(seg);
-        if (!field?.isAssociationField?.() || !field?.targetCollection) {
+        if (!isAssociationFieldLike(field) || !field?.targetCollection) {
           return null;
         }
         collection = field.targetCollection;
       }
       return collection || null;
     },
-    [rootCollection],
+    [isAssociationFieldLike, rootCollection],
   );
 
   const buildChildrenFromCollection = React.useCallback(
-    (collection: any): FieldAssignCascaderOption[] => {
-      const fields = typeof collection?.getFields === 'function' ? collection.getFields() || [] : [];
-      const out: FieldAssignCascaderOption[] = [];
-      for (const rawField of fields) {
-        if (!rawField) continue;
-        const f = rawField as CollectionFieldLike;
-        const fieldInterface = typeof f.interface === 'string' ? f.interface : undefined;
-        if (!fieldInterface) continue;
-        if (fieldInterface === 'formula') continue;
-
-        const name = String(f.name || '');
-        if (!name) continue;
-
-        const title = t(typeof f.title === 'string' ? f.title : name);
-        const isAssoc = !!f.isAssociationField?.();
-        const hasTarget = !!f.targetCollection;
-        out.push({
-          label: title,
-          value: name,
-          isLeaf: !(isAssoc && hasTarget),
-        });
-      }
-      return out;
+    (collection: any, associationDepth: number): FieldAssignCascaderOption[] => {
+      return buildFieldAssignCascaderOptionsFromCollection(collection, t, {
+        associationDepth,
+        maxAssociationFieldDepth,
+      });
     },
-    [t],
+    [maxAssociationFieldDepth, t],
   );
 
   const loadCascaderData = React.useCallback<NonNullable<CascaderProps<FieldAssignCascaderOption>['loadData']>>(
@@ -573,7 +562,7 @@ export const FieldAssignRulesEditor: React.FC<FieldAssignRulesEditorProps> = (pr
         return;
       }
 
-      const children = buildChildrenFromCollection(targetCollection);
+      const children = buildChildrenFromCollection(targetCollection, segments.length);
       if (!children.length) {
         target.isLeaf = true;
       } else {
@@ -889,6 +878,7 @@ export const FieldAssignRulesEditor: React.FC<FieldAssignRulesEditorProps> = (pr
                 value={item.value}
                 onChange={(v) => patchItem(index, { value: v })}
                 extraMetaTree={extraMetaTree}
+                maxAssociationFieldDepth={maxAssociationFieldDepth}
                 {...(getValueInputProps?.(item, index) || {})}
                 enableDateVariableAsConstant={enableDateVariableAsConstant}
                 associationFieldNamesOverride={
@@ -959,6 +949,7 @@ export const FieldAssignRulesEditor: React.FC<FieldAssignRulesEditorProps> = (pr
                 value={item.condition || { logic: '$and', items: [] }}
                 onChange={(condition) => patchItem(index, { condition })}
                 extraMetaTree={extraMetaTree}
+                maxAssociationFieldDepth={2}
               />
             </div>
           )}

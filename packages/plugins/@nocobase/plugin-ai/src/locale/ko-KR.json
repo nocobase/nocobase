@@ -107,6 +107,7 @@
   "KnowledgeBase": "Knowledge Base",
   "LLM service": "LLM 서비스",
   "LLM services": "LLM 서비스",
+  "LLM service test failed. Please check the service configuration.": "LLM 서비스 테스트에 실패했습니다. 서비스 구성을 확인하세요.",
   "Label for task selection buttons when multiple tasks exist": "Label for task selection buttons when multiple tasks exist",
   "Limit": "Limit",
   "Max completion tokens description": "완료에 대해 생성할 수 있는 토큰 수의 상한값으로, 표시 가능한 출력 토큰과 추론 토큰이 포함됩니다.",

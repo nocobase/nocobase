@@ -48,6 +48,14 @@
           }
         },
         {
+          "alias": "action.calendarNav1",
+          "use": "CalendarNavActionModel"
+        },
+        {
+          "alias": "action.calendarViewSelect1",
+          "use": "CalendarViewSelectActionModel"
+        },
+        {
           "alias": "node.RefreshActionModel1",
           "use": "RefreshActionModel",
           "stepParams": {

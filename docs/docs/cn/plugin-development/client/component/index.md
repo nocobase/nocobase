@@ -118,7 +118,7 @@ const msg = ctx.t('Save success', { ns: '@my-project/plugin-hello' });
 通过 `ctx.router.navigate()` 进行页面跳转：
 
 ```tsx
-ctx.router.navigate('/some-page'); // -> /v2/some-page
+ctx.router.navigate('/some-page'); // -> /v/some-page
 ```
 
 获取当前路由参数：

@@ -13,14 +13,24 @@ import { FilterGroup, LinkageFilterItem } from './filter';
 import { evaluateConditions, FilterGroupType, removeInvalidFilterItems } from '@nocobase/utils/client';
 
 export const ConditionBuilder = observer(
-  (props: { value: FilterGroupType; onChange: (value: FilterGroupType) => void; extraMetaTree?: MetaTreeNode[] }) => {
+  (props: {
+    value: FilterGroupType;
+    onChange: (value: FilterGroupType) => void;
+    extraMetaTree?: MetaTreeNode[];
+    maxAssociationFieldDepth?: number;
+  }) => {
     const ctx = useFlowContext();
 
     return (
       <FilterGroup
         value={props.value || { logic: '$and', items: [] }}
         FilterItem={(itemProps) => (
-          <LinkageFilterItem model={ctx.model} value={itemProps.value} extraMetaTree={props.extraMetaTree} />
+          <LinkageFilterItem
+            model={ctx.model}
+            value={itemProps.value}
+            extraMetaTree={props.extraMetaTree}
+            maxAssociationFieldDepth={props.maxAssociationFieldDepth}
+          />
         )}
         onChange={props.onChange}
       />

@@ -51,7 +51,7 @@ const getTargetFilterableFields = (field: any, collection?: Collection, model?: 
   return (targetCollection.getFields() || []).filter((childField: any) => childField?.filterable);
 };
 
-const MAX_ASSOCIATION_DEPTH = 5;
+const MAX_ASSOCIATION_DEPTH = 2;
 
 const normalizeAssociationDefaultFilterValue = (value: any, fieldModel: any) => {
   const collectionField = fieldModel?.context?.collectionField;

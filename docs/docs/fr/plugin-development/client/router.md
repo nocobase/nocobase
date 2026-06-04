@@ -15,7 +15,7 @@ L'enregistrement des routes se fait habituellement dans la méthode `load()` du 
 
 :::warning Attention
 
-Pour les plugins de NocoBase v2, les routes enregistrées seront préfixées par `/v2` par défaut ; il faut donc inclure ce préfixe dans l'URL d'accès.
+Pour les plugins de NocoBase v2, les routes enregistrées seront préfixées par `/v` par défaut ; il faut donc inclure ce préfixe dans l'URL d'accès.
 
 :::
 
@@ -25,9 +25,9 @@ NocoBase a déjà enregistré les routes par défaut suivantes :
 
 | Nom            | Chemin                | Composant           | Description           |
 | -------------- | --------------------- | ------------------- | --------------------- |
-| admin          | /v2/admin/\*          | AdminLayout         | Pages d'administration |
-| admin.page     | /v2/admin/:name       | AdminDynamicPage    | Pages créées dynamiquement |
-| admin.settings | /v2/admin/settings/\* | AdminSettingsLayout | Pages de configuration des plugins |
+| admin          | /v/admin/\*          | AdminLayout         | Pages d'administration |
+| admin.page     | /v/admin/:name       | AdminDynamicPage    | Pages créées dynamiquement |
+| admin.settings | /v/admin/settings/\* | AdminSettingsLayout | Pages de configuration des plugins |
 
 ## Routes de page
 
@@ -55,7 +55,7 @@ class MyPlugin extends Plugin {
   async load() {
     this.router.add('hello', {
       path: '/hello',
-      // Chargement à la demande : le module n'est chargé que lorsque /v2/hello est visité
+      // Chargement à la demande : le module n'est chargé que lorsque /v/hello est visité
       componentLoader: () => import('./pages/HelloPage'),
     });
   }
@@ -103,12 +103,12 @@ class MyPlugin extends Plugin {
 
     // Sous-route : chargement à la demande via componentLoader
     this.router.add('root.home', {
-      path: '/', // -> /v2/
+      path: '/', // -> /v/
       componentLoader: () => import('./pages/HomePage'),
     });
 
     this.router.add('root.about', {
-      path: '/about', // -> /v2/about
+      path: '/about', // -> /v/about
       componentLoader: () => import('./pages/AboutPage'),
     });
   }
@@ -121,7 +121,7 @@ Les chemins de route prennent en charge les paramètres dynamiques :
 
 ```tsx
 this.router.add('root.user', {
-  path: '/user/:id', // -> /v2/user/:id
+  path: '/user/:id', // -> /v/user/:id
   componentLoader: () => import('./pages/UserPage'),
 });
 ```
@@ -176,7 +176,7 @@ export class HelloPlugin extends Plugin<any, Application> {
 }
 ```
 
-Une fois enregistrée, l'URL d'accès est `/admin/settings/hello`. Lorsqu'il n'y a qu'une seule page sous le menu, la barre d'onglets en haut est masquée automatiquement.
+Une fois enregistrée, l'URL d'accès est `/v/admin/settings/hello`. Lorsqu'il n'y a qu'une seule page sous le menu, la barre d'onglets en haut est masquée automatiquement.
 
 ### Page de configuration multi-onglets
 
@@ -194,7 +194,7 @@ class HelloPlugin extends Plugin<any, Application> {
       icon: 'ApiOutlined',
     });
 
-    // Onglet 1 : Configuration de base (key vaut 'index', mappé sur /admin/settings/hello)
+    // Onglet 1 : Configuration de base (key vaut 'index', mappé sur /v/admin/settings/hello)
     this.pluginSettingsManager.addPageTabItem({
       menuKey: 'hello',
       key: 'index',
@@ -202,7 +202,7 @@ class HelloPlugin extends Plugin<any, Application> {
       componentLoader: () => import('./settings/GeneralPage'),
     });
 
-    // Onglet 2 : Configuration avancée (mappé sur /admin/settings/hello/advanced)
+    // Onglet 2 : Configuration avancée (mappé sur /v/admin/settings/hello/advanced)
     this.pluginSettingsManager.addPageTabItem({
       menuKey: 'hello',
       key: 'advanced',

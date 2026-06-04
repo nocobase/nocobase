@@ -18,14 +18,17 @@ nb config get <key>
 
 | Parameter | Tipe | Penjelasan |
 | --- | --- | --- |
-| `<key>` | string | Key konfigurasi: `license.pkg-url`, `docker.network`, atau `docker.container-prefix` |
+| `<key>` | string | Key konfigurasi: `locale`, `update.policy`, `license.pkg-url`, `docker.network`, `docker.container-prefix`, `bin.docker`, `bin.git`, atau `bin.yarn` |
 
 ## Contoh
 
 ```bash
+nb config get locale
+nb config get update.policy
 nb config get license.pkg-url
 nb config get docker.network
 nb config get docker.container-prefix
+nb config get bin.git
 ```
 
 ## Perintah Terkait

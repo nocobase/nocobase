@@ -124,6 +124,51 @@ test('nb config set/get/delete supports locale', async () => {
   });
 });
 
+test('nb config set/get/delete supports update.policy', async () => {
+  await withTempCliHome(async () => {
+    const { default: ConfigSet } = await import('../commands/config/set.js');
+    const { default: ConfigGet } = await import('../commands/config/get.js');
+    const { default: ConfigDelete } = await import('../commands/config/delete.js');
+
+    const setCommand = Object.assign(Object.create(ConfigSet.prototype), {
+      parse: vi.fn(async () => ({
+        args: {
+          key: 'update.policy',
+          value: 'auto',
+        },
+      })),
+      log: vi.fn(),
+    });
+    await ConfigSet.prototype.run.call(setCommand);
+    expect(setCommand.log).toHaveBeenCalledWith('update.policy=auto');
+
+    const getCommand = Object.assign(Object.create(ConfigGet.prototype), {
+      parse: vi.fn(async () => ({
+        args: {
+          key: 'update.policy',
+        },
+      })),
+      log: vi.fn(),
+    });
+    await ConfigGet.prototype.run.call(getCommand);
+    expect(getCommand.log).toHaveBeenCalledWith('auto');
+
+    const deleteCommand = Object.assign(Object.create(ConfigDelete.prototype), {
+      parse: vi.fn(async () => ({
+        args: {
+          key: 'update.policy',
+        },
+      })),
+      log: vi.fn(),
+    });
+    await ConfigDelete.prototype.run.call(deleteCommand);
+    expect(deleteCommand.log).toHaveBeenCalledWith('Deleted update.policy');
+
+    const config = await loadAuthConfig({ scope: 'global' });
+    expect(config.settings?.update?.policy).toBe(undefined);
+  });
+});
+
 test('nb config set/get/delete supports binary override keys', async () => {
   await withTempCliHome(async () => {
     const { default: ConfigSet } = await import('../commands/config/set.js');

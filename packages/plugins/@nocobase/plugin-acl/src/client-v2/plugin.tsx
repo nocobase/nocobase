@@ -32,7 +32,7 @@ export class PluginAclClientV2 extends Plugin<any, Application> {
       title: this.t('Roles & Permissions'),
       icon: 'LockOutlined',
       aclSnippet: 'pm.acl.roles',
-      sort: 3,
+      sort: 4,
       componentLoader: () => import('./pages/RolesManagementPage'),
     });
     this.settingsUI.addPermissionsTab({

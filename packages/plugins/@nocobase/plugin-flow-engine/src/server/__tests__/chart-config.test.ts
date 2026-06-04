@@ -182,29 +182,25 @@ describe('chart-config semantic helpers', () => {
     expect(next.query.filter).not.toBe(baseConfigure.query.filter);
   });
 
-  it('should normalize relative date shorthand in chart filter groups', () => {
-    const next = canonicalizeChartConfigure({
-      ...baseConfigure,
-      query: {
-        ...baseConfigure.query,
-        filter: {
-          logic: '$and',
-          items: [
-            {
-              path: 'lastFollowupAt',
-              operator: '$dateBefore',
-              value: '-14d',
-            },
-          ],
+  it('should reject relative date shorthand in chart filter groups', () => {
+    expect(() =>
+      canonicalizeChartConfigure({
+        ...baseConfigure,
+        query: {
+          ...baseConfigure.query,
+          filter: {
+            logic: '$and',
+            items: [
+              {
+                path: 'lastFollowupAt',
+                operator: '$dateBefore',
+                value: '-14d',
+              },
+            ],
+          },
         },
-      },
-    });
-
-    expect(next.query.filter.items[0].value).toEqual({
-      type: 'past',
-      number: 14,
-      unit: 'day',
-    });
+      }),
+    ).toThrowError(FlowSurfaceBadRequestError);
   });
 
   it('should preserve UI relative date descriptors in chart filter groups', () => {
@@ -230,29 +226,25 @@ describe('chart-config semantic helpers', () => {
     expect(next.query.filter.items[0].value).not.toBe(relativeDate);
   });
 
-  it('should fill missing relative date descriptor defaults in chart filter groups', () => {
-    const next = canonicalizeChartConfigure({
-      ...baseConfigure,
-      query: {
-        ...baseConfigure.query,
-        filter: {
-          logic: '$and',
-          items: [
-            {
-              path: 'lastFollowupAt',
-              operator: '$dateBefore',
-              value: { type: 'past' },
-            },
-          ],
+  it('should reject incomplete relative date descriptors in chart filter groups', () => {
+    expect(() =>
+      canonicalizeChartConfigure({
+        ...baseConfigure,
+        query: {
+          ...baseConfigure.query,
+          filter: {
+            logic: '$and',
+            items: [
+              {
+                path: 'lastFollowupAt',
+                operator: '$dateBefore',
+                value: { type: 'past' },
+              },
+            ],
+          },
         },
-      },
-    });
-
-    expect(next.query.filter.items[0].value).toEqual({
-      type: 'past',
-      number: 1,
-      unit: 'day',
-    });
+      }),
+    ).toThrowError(FlowSurfaceBadRequestError);
   });
 
   it('should reject zero-day relative date shorthand in chart filter groups', () => {
@@ -708,8 +700,8 @@ describe('chart-config semantic helpers', () => {
     expect(next).toMatchObject({
       query: {
         collectionPath: ['main', 'employees'],
-        measures: [{ field: 'department.title', aggregation: 'count', alias: 'employeeCount' }],
-        dimensions: [{ field: 'department.title' }],
+        measures: [{ field: 'id', aggregation: 'count', alias: 'employeeCount' }],
+        dimensions: [{ field: ['department', 'title'], alias: 'department.title' }],
         orders: [],
         filter: {
           logic: '$and',
@@ -754,6 +746,47 @@ describe('chart-config semantic helpers', () => {
             type: 'doughnut',
             doughnutCategory: 'claim_category',
             doughnutValue: 'count',
+          },
+        },
+      },
+    });
+  });
+
+  it('should keep count(id) and alias relation dimensions for builder chart runtime data', () => {
+    const next = canonicalizeChartConfigure({
+      query: {
+        mode: 'builder',
+        collectionPath: ['main', 'employees'],
+        measures: [{ field: 'id', aggregation: 'count', alias: 'employeeCount' }],
+        dimensions: [{ field: 'department.title' }],
+        sorting: [{ field: 'department.title', direction: 'desc' }],
+      },
+      chart: {
+        option: {
+          mode: 'basic',
+          builder: {
+            type: 'bar',
+            xField: 'department.title',
+            yField: 'employeeCount',
+          },
+        },
+      },
+    });
+
+    expect(next).toMatchObject({
+      query: {
+        collectionPath: ['main', 'employees'],
+        measures: [{ field: 'id', aggregation: 'count', alias: 'employeeCount' }],
+        dimensions: [{ field: ['department', 'title'], alias: 'department.title' }],
+        orders: [{ field: ['department', 'title'], order: 'DESC' }],
+      },
+      chart: {
+        option: {
+          mode: 'basic',
+          builder: {
+            type: 'bar',
+            xField: 'department.title',
+            yField: 'employeeCount',
           },
         },
       },
@@ -1056,8 +1089,8 @@ describe('chart-config semantic helpers', () => {
       query: {
         mode: 'builder',
         collectionPath: ['main', 'employees'],
-        measures: [{ field: 'department.title', aggregation: 'count', alias: 'employeeCount' }],
-        dimensions: [{ field: 'department.title' }],
+        measures: [{ field: 'id', aggregation: 'count', alias: 'employeeCount' }],
+        dimensions: [{ field: ['department', 'title'], alias: 'department.title' }],
       },
       chart: {
         option: {

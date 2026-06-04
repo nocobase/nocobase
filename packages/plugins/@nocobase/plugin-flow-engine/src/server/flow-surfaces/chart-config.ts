@@ -519,6 +519,18 @@ function normalizeFieldPathValue(input: any, label: string, options: { required?
   throw new FlowSurfaceBadRequestError(`${label} must be a string or string[]`);
 }
 
+function normalizeChartQueryFieldPathValue(input: any, label: string, options: { required?: boolean } = {}) {
+  const normalized = normalizeFieldPathValue(input, label, options);
+  if (typeof normalized !== 'string' || !normalized.includes('.')) {
+    return normalized;
+  }
+  const segments = normalized.split('.').map((segment) => segment.trim());
+  if (segments.some((segment) => !segment)) {
+    throw new FlowSurfaceBadRequestError(`${label} cannot contain empty path segments`);
+  }
+  return segments;
+}
+
 function aliasOfFieldValue(input: any) {
   if (Array.isArray(input)) {
     return input
@@ -650,15 +662,17 @@ function normalizeMergedChartResource(query: Record<string, any>, options: { req
 function normalizeChartMeasure(input: any, index: number) {
   const label = `chart query.measures[${index}]`;
   const normalized = ensurePlainObject(input, label);
+  const field = normalizeChartQueryFieldPathValue(normalized.field, `${label}.field`, { required: true });
+  const alias = normalizeOptionalTrimmedString(normalized.alias, `${label}.alias`);
   const aggregation = normalizeOptionalEnumValue(
     normalized.aggregation,
     CHART_QUERY_AGGREGATION_SET,
     `${label}.aggregation`,
   );
   return buildDefinedObject({
-    field: normalizeFieldPathValue(normalized.field, `${label}.field`, { required: true }),
+    field,
     aggregation,
-    alias: normalizeOptionalTrimmedString(normalized.alias, `${label}.alias`),
+    alias: alias || (Array.isArray(field) && field.length > 1 ? aliasOfFieldValue(field) : undefined),
     distinct: normalizeOptionalBoolean(normalized.distinct, `${label}.distinct`),
   });
 }
@@ -666,10 +680,12 @@ function normalizeChartMeasure(input: any, index: number) {
 function normalizeChartDimension(input: any, index: number) {
   const label = `chart query.dimensions[${index}]`;
   const normalized = ensurePlainObject(input, label);
+  const field = normalizeChartQueryFieldPathValue(normalized.field, `${label}.field`, { required: true });
+  const alias = normalizeOptionalTrimmedString(normalized.alias, `${label}.alias`);
   return buildDefinedObject({
-    field: normalizeFieldPathValue(normalized.field, `${label}.field`, { required: true }),
+    field,
     format: normalizeOptionalTrimmedString(normalized.format, `${label}.format`),
-    alias: normalizeOptionalTrimmedString(normalized.alias, `${label}.alias`),
+    alias: alias || (Array.isArray(field) && field.length > 1 ? aliasOfFieldValue(field) : undefined),
   });
 }
 
@@ -679,6 +695,12 @@ function normalizeBuilderCountMeasureFieldForRuntime(measure: Record<string, any
   }
   const fallbackDimension = _.castArray(dimensions || []).find((dimension) => aliasOfFieldValue(dimension?.field));
   if (!fallbackDimension) {
+    return measure;
+  }
+  if (Array.isArray(fallbackDimension.field) && fallbackDimension.field.length > 1) {
+    return measure;
+  }
+  if (typeof fallbackDimension.field === 'string' && fallbackDimension.field.includes('.')) {
     return measure;
   }
   return {
@@ -696,7 +718,7 @@ function normalizeChartSortingItem(input: any, index: number) {
     `${label}.${hasOwn(normalized, 'direction') ? 'direction' : 'order'}`,
   );
   return buildDefinedObject({
-    field: normalizeFieldPathValue(normalized.field, `${label}.field`, { required: true }),
+    field: normalizeChartQueryFieldPathValue(normalized.field, `${label}.field`, { required: true }),
     order: toPersistedOrder(direction),
     nulls: normalizeOptionalEnumValue(normalized.nulls, CHART_SORT_NULLS_SET, `${label}.nulls`),
   });
@@ -812,8 +834,10 @@ function normalizeFilterGroupValue(input: any, label: string) {
   assertFilterGroupKeys(normalized, label);
   const filterGroup =
     !Object.keys(normalized).length || isFilterGroupLike(normalized)
-      ? normalizeFlowSurfaceFilterGroupValue(normalized, label)
-      : normalizeFlowSurfaceFilterGroupValue(convertBackendQueryFilterToFilterGroup(normalized, label), label);
+      ? normalizeFlowSurfaceFilterGroupValue(normalized, label, { strictDateValues: true })
+      : normalizeFlowSurfaceFilterGroupValue(convertBackendQueryFilterToFilterGroup(normalized, label), label, {
+          strictDateValues: true,
+        });
   validateFilterGroupPaths(filterGroup, label);
   return filterGroup;
 }

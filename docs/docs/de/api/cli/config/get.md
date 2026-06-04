@@ -18,14 +18,17 @@ nb config get <key>
 
 | Parameter | Typ | Beschreibung |
 | --- | --- | --- |
-| `<key>` | string | Konfigurationsschlüssel: `license.pkg-url`, `docker.network` oder `docker.container-prefix` |
+| `<key>` | string | Konfigurationsschlüssel: `locale`, `update.policy`, `license.pkg-url`, `docker.network`, `docker.container-prefix`, `bin.docker`, `bin.git` oder `bin.yarn` |
 
 ## Beispiele
 
 ```bash
+nb config get locale
+nb config get update.policy
 nb config get license.pkg-url
 nb config get docker.network
 nb config get docker.container-prefix
+nb config get bin.git
 ```
 
 ## Verwandte Befehle

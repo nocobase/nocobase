@@ -107,6 +107,9 @@ export interface AuthConfig {
   name?: string;
   settings?: {
     locale?: string;
+    update?: {
+      policy?: 'prompt' | 'auto' | 'off';
+    };
     license?: {
       pkgUrl?: string;
     };
@@ -156,6 +159,15 @@ function normalizeOptionalCliLocale(value: unknown): string | undefined {
   }
 
   return normalizeCliLocale(normalized);
+}
+
+function normalizeOptionalCliUpdatePolicy(value: unknown): 'prompt' | 'auto' | 'off' | undefined {
+  const normalized = normalizeOptionalString(value);
+  if (normalized === 'prompt' || normalized === 'auto' || normalized === 'off') {
+    return normalized;
+  }
+
+  return undefined;
 }
 
 export function readEnvApiBaseUrl(config?: Partial<EnvConfigEntry>): string | undefined {
@@ -224,10 +236,12 @@ function normalizeEnvConfigEntry(entry: EnvConfigEntry | undefined): EnvConfigEn
 function normalizeAuthConfig(config: AuthConfig & { dockerResourcePrefix?: string }): AuthConfig {
   const settings = config.settings ?? {};
   const locale = normalizeOptionalCliLocale(settings.locale);
+  const updatePolicy = normalizeOptionalCliUpdatePolicy(settings.update?.policy);
   return {
     name: config.name || config.dockerResourcePrefix,
     settings: {
       ...(locale ? { locale } : {}),
+      ...(updatePolicy ? { update: { policy: updatePolicy } } : {}),
       ...(settings.license?.pkgUrl ? { license: { pkgUrl: normalizeOptionalString(settings.license.pkgUrl) } } : {}),
       ...(settings.docker?.network || settings.docker?.containerPrefix
         ? {

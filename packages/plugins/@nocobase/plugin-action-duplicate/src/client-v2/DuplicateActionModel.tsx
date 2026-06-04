@@ -521,16 +521,19 @@ DuplicateActionModel.registerFlow({
         resource.setDataSourceKey(dataSourceKey);
         resource.setResourceName(ctx.record.__collection || ctx.blockModel.collection.name);
 
-        const data = await fetchTemplateData(resource, template);
-        await ctx.blockModel.resource.create(
-          {
-            ...data,
-          },
-          params.requestConfig,
-        );
-        ctx.message.success(ctx.t('Saved successfully'));
-        ctx.model.duplicateLoading = false;
-        ctx.model.rerender();
+        try {
+          const data = await fetchTemplateData(resource, template);
+          await ctx.blockModel.resource.create(
+            {
+              ...data,
+            },
+            params.requestConfig,
+          );
+          ctx.message.success(ctx.t('Saved successfully'));
+        } finally {
+          ctx.model.duplicateLoading = false;
+          ctx.model.rerender();
+        }
       },
     },
   },

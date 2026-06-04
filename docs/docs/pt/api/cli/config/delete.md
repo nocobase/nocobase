@@ -18,14 +18,17 @@ nb config delete <key>
 
 | Parâmetro | Tipo | Descrição |
 | --- | --- | --- |
-| `<key>` | string | Chave de configuração: `license.pkg-url`, `docker.network` ou `docker.container-prefix` |
+| `<key>` | string | Chave de configuração: `locale`, `update.policy`, `license.pkg-url`, `docker.network`, `docker.container-prefix`, `bin.docker`, `bin.git` ou `bin.yarn` |
 
 ## Exemplos
 
 ```bash
+nb config delete locale
+nb config delete update.policy
 nb config delete license.pkg-url
 nb config delete docker.network
 nb config delete docker.container-prefix
+nb config delete bin.git
 ```
 
 ## Comandos relacionados

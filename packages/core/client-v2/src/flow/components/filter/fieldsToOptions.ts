@@ -59,10 +59,15 @@ const field2option = (field: CollectionField, depth, nonfilterable, t) => {
     option['children'] = children;
   }
   if (nested) {
-    const targetFields = field.getFields().filter((f) => {
-      // 过滤掉附件字段，因为会报错：Target collection attachments not found for field xxx
-      return f.target !== 'attachments' && f.interface !== 'formula';
-    });
+    let targetFields: CollectionField[] = [];
+    try {
+      targetFields = field.getFields().filter((f) => {
+        // 过滤掉附件字段，因为会报错：Target collection attachments not found for field xxx
+        return f.target !== 'attachments' && f.interface !== 'formula';
+      });
+    } catch {
+      targetFields = [];
+    }
     const options = fieldsToOptions(targetFields, depth + 1, nonfilterable, t).filter(Boolean);
     option['children'] = option['children'] || [];
     option['children'].push(...options);
