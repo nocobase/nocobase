@@ -30,7 +30,7 @@
     "officeparser": "^5.2.0",
     "pdf-parse": "^1.1.1",
     "word-extractor": "^1.0.4",
-    "xlsx": "^0.18.5"
+    "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz"
   },
   "repository": {
     "type": "git",
