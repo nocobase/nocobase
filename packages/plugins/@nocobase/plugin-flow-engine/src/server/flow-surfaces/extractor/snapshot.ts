@@ -9,8 +9,9 @@
 
 import { constants, type Stats } from 'fs';
 import { randomUUID } from 'crypto';
-import { lstat, mkdir, open, realpath, rename, unlink, writeFile } from 'fs/promises';
+import { lstat, mkdir, open, readdir, realpath, rename, unlink, writeFile } from 'fs/promises';
 import { basename, parse, resolve, sep } from 'path';
+import { storagePathJoin } from '@nocobase/utils';
 import _ from 'lodash';
 import type {
   FlowSurfaceCapabilityConfidence,
@@ -27,7 +28,11 @@ import {
   type FlowSurfaceAutoSnapshot,
   type FlowSurfaceAutoSourceRef,
   type FlowSurfaceExtractionEvent,
+  type FlowSurfaceExtractorCreateModelOptionsStatus,
+  type FlowSurfaceExtractorEvidenceSource,
+  type FlowSurfaceExtractorFlowStaticStatus,
   type FlowSurfaceExtractorLabelFields,
+  type FlowSurfaceFieldBindingRole,
 } from './types';
 
 type BuildFlowSurfaceAutoSnapshotInput = {
@@ -48,6 +53,10 @@ type WriteFlowSurfaceAutoSnapshotInput = {
   fileName?: string;
 };
 
+type LoadFlowSurfaceAutoSnapshotsFromDirectoryInput = {
+  dir: string;
+};
+
 type PinnedOutputDirectory = {
   handle: Awaited<ReturnType<typeof open>>;
   realPath: string;
@@ -55,6 +64,7 @@ type PinnedOutputDirectory = {
   stats: Stats;
 };
 
+const FLOW_SURFACE_AUTO_SNAPSHOT_STORAGE_DIR = 'flow-surfaces-capabilities';
 const CONFIDENCE_RANK: Record<FlowSurfaceCapabilityConfidence, number> = {
   low: 1,
   medium: 2,
@@ -233,6 +243,36 @@ async function writeSnapshotFileAtomically(pinnedOutDir: PinnedOutputDirectory, 
   }
 }
 
+export function getFlowSurfaceAutoSnapshotStorageDir() {
+  return storagePathJoin(FLOW_SURFACE_AUTO_SNAPSHOT_STORAGE_DIR);
+}
+
+export async function loadFlowSurfaceAutoSnapshotsFromDirectory(
+  input: LoadFlowSurfaceAutoSnapshotsFromDirectoryInput,
+): Promise<FlowSurfaceAutoSnapshot[]> {
+  const pinnedDirectory = await openReadableSnapshotDirectory(input.dir);
+  if (!pinnedDirectory) {
+    return [];
+  }
+
+  try {
+    const fileNames = await readFlowSurfaceAutoSnapshotFileNames(pinnedDirectory);
+    const snapshots: FlowSurfaceAutoSnapshot[] = [];
+    for (const fileName of fileNames.sort((left, right) => left.localeCompare(right))) {
+      if (!isSnapshotJsonFileName(fileName)) {
+        continue;
+      }
+      const snapshot = await readFlowSurfaceAutoSnapshotFile(pinnedDirectory, fileName);
+      if (snapshot) {
+        snapshots.push(snapshot);
+      }
+    }
+    return snapshots;
+  } finally {
+    await pinnedDirectory.handle.close();
+  }
+}
+
 export function getFlowSurfaceAutoSnapshotFileName(plugin: string) {
   return `${plugin.replace(/[\\/]/g, '__')}.json`;
 }
@@ -323,6 +363,195 @@ async function assertNoSymlinkInExistingPath(filePath: string) {
       throw error;
     }
   }
+}
+
+async function openReadableSnapshotDirectory(dir: string): Promise<PinnedOutputDirectory | undefined> {
+  try {
+    const requestedDir = resolve(dir);
+    await assertNoSymlinkInExistingPath(requestedDir);
+    return await openPinnedOutputDirectory(requestedDir);
+  } catch {
+    return undefined;
+  }
+}
+
+function isSnapshotJsonFileName(fileName: string) {
+  return fileName === basename(fileName) && fileName.toLowerCase().endsWith('.json');
+}
+
+async function readFlowSurfaceAutoSnapshotFileNames(input: PinnedOutputDirectory): Promise<string[]> {
+  try {
+    await assertPinnedOutputDirectoryStillCurrent(input);
+    const fileNames = await readdir(input.realPath);
+    await assertPinnedOutputDirectoryStillCurrent(input);
+    return fileNames;
+  } catch {
+    return [];
+  }
+}
+
+async function readFlowSurfaceAutoSnapshotFile(
+  pinnedDirectory: PinnedOutputDirectory,
+  fileName: string,
+): Promise<FlowSurfaceAutoSnapshot | undefined> {
+  const snapshotPath = resolve(pinnedDirectory.realPath, fileName);
+  let handle: Awaited<ReturnType<typeof open>> | undefined;
+  try {
+    await assertPinnedOutputDirectoryStillCurrent(pinnedDirectory);
+    const pathStats = await lstat(snapshotPath);
+    if (pathStats.isSymbolicLink() || !pathStats.isFile()) {
+      return undefined;
+    }
+    await assertPinnedOutputDirectoryStillCurrent(pinnedDirectory);
+    handle = await open(snapshotPath, constants.O_RDONLY | constants.O_NOFOLLOW);
+    const stats = await handle.stat();
+    if (!stats.isFile() || !sameFileIdentity(stats, pathStats)) {
+      return undefined;
+    }
+    await assertPinnedOutputDirectoryStillCurrent(pinnedDirectory);
+    const content = await handle.readFile({ encoding: 'utf8' });
+    const currentPathStats = await lstat(snapshotPath);
+    if (currentPathStats.isSymbolicLink() || !currentPathStats.isFile() || !sameFileIdentity(stats, currentPathStats)) {
+      return undefined;
+    }
+    await assertPinnedOutputDirectoryStillCurrent(pinnedDirectory);
+    const parsed: unknown = JSON.parse(content);
+    return isFlowSurfaceAutoSnapshot(parsed) ? parsed : undefined;
+  } catch {
+    return undefined;
+  } finally {
+    await handle?.close().catch(() => undefined);
+  }
+}
+
+function isFlowSurfaceAutoSnapshot(value: unknown): value is FlowSurfaceAutoSnapshot {
+  if (!isPlainRecord(value)) {
+    return false;
+  }
+  return (
+    value.version === FLOW_SURFACE_AUTO_SNAPSHOT_VERSION &&
+    typeof value.plugin === 'string' &&
+    hasOptionalStringFields(value, ['pluginVersion', 'resolvedEntry', 'dependencyHash']) &&
+    typeof value.generatedAt === 'string' &&
+    typeof value.sourceHash === 'string' &&
+    typeof value.extractorVersion === 'string' &&
+    isArrayOf(value.models, isFlowSurfaceAutoModel) &&
+    isArrayOf(value.menuItems, isFlowSurfaceAutoMenuItem) &&
+    isArrayOf(value.fieldBindings, isFlowSurfaceAutoFieldBinding) &&
+    isArrayOf(value.flows, isFlowSurfaceAutoFlow) &&
+    isArrayOf(value.warnings, isFlowSurfaceCapabilityWarning)
+  );
+}
+
+function isFlowSurfaceAutoModel(value: unknown): value is FlowSurfaceAutoModel {
+  return (
+    isPlainRecord(value) &&
+    typeof value.modelUse === 'string' &&
+    hasOptionalStringFields(value, ['className', 'loaderName']) &&
+    isArrayOf(value.sourceRefs, isFlowSurfaceAutoSourceRef) &&
+    isFlowSurfaceCapabilityConfidence(value.confidence)
+  );
+}
+
+function isFlowSurfaceAutoMenuItem(value: unknown): value is FlowSurfaceAutoMenuItem {
+  return (
+    isPlainRecord(value) &&
+    hasOptionalStringFields(value, [
+      'label',
+      'labelText',
+      'labelKey',
+      'labelFallback',
+      'menuKey',
+      'modelUse',
+      'slot',
+    ]) &&
+    isFlowSurfaceExtractorCreateModelOptionsStatus(value.createModelOptionsStatus) &&
+    isArrayOf(value.sourceRefs, isFlowSurfaceAutoSourceRef) &&
+    isFlowSurfaceCapabilityConfidence(value.confidence)
+  );
+}
+
+function isFlowSurfaceAutoFieldBinding(value: unknown): value is FlowSurfaceAutoFieldBinding {
+  return (
+    isPlainRecord(value) &&
+    hasOptionalStringFields(value, ['fieldInterface', 'modelUse']) &&
+    isFlowSurfaceFieldBindingRole(value.role) &&
+    isArrayOf(value.sourceRefs, isFlowSurfaceAutoSourceRef) &&
+    isFlowSurfaceCapabilityConfidence(value.confidence)
+  );
+}
+
+function isFlowSurfaceAutoFlow(value: unknown): value is FlowSurfaceAutoFlow {
+  return (
+    isPlainRecord(value) &&
+    hasOptionalStringFields(value, ['modelUse', 'flowKey', 'title']) &&
+    (typeof value.sort === 'undefined' || (typeof value.sort === 'number' && Number.isFinite(value.sort))) &&
+    isFlowSurfaceExtractorFlowStaticStatus(value.staticStatus) &&
+    isArrayOf(value.sourceRefs, isFlowSurfaceAutoSourceRef) &&
+    isFlowSurfaceCapabilityConfidence(value.confidence)
+  );
+}
+
+function isFlowSurfaceAutoSourceRef(value: unknown): value is FlowSurfaceAutoSourceRef {
+  return (
+    isPlainRecord(value) &&
+    typeof value.source === 'string' &&
+    hasOptionalStringFields(value, ['ref']) &&
+    (typeof value.evidenceSource === 'undefined' || isFlowSurfaceExtractorEvidenceSource(value.evidenceSource))
+  );
+}
+
+function isFlowSurfaceCapabilityWarning(value: unknown): value is FlowSurfaceCapabilityWarning {
+  return isPlainRecord(value) && isFlowSurfaceCapabilityWarningCode(value.code) && typeof value.message === 'string';
+}
+
+function isFlowSurfaceCapabilityConfidence(value: unknown): value is FlowSurfaceCapabilityConfidence {
+  return value === 'low' || value === 'medium' || value === 'high';
+}
+
+function isFlowSurfaceExtractorEvidenceSource(value: unknown): value is FlowSurfaceExtractorEvidenceSource {
+  return value === 'runtime' || value === 'ast';
+}
+
+function isFlowSurfaceExtractorCreateModelOptionsStatus(
+  value: unknown,
+): value is FlowSurfaceExtractorCreateModelOptionsStatus {
+  return value === 'static' || value === 'dynamic' || value === 'unresolved';
+}
+
+function isFlowSurfaceExtractorFlowStaticStatus(value: unknown): value is FlowSurfaceExtractorFlowStaticStatus {
+  return value === 'static' || value === 'dynamic' || value === 'unresolved';
+}
+
+function isFlowSurfaceFieldBindingRole(value: unknown): value is FlowSurfaceFieldBindingRole {
+  return value === 'display' || value === 'editable' || value === 'filterable' || value === 'wrapper';
+}
+
+function isFlowSurfaceCapabilityWarningCode(value: unknown): value is FlowSurfaceCapabilityWarning['code'] {
+  return (
+    value === 'auto-discovered-readonly' ||
+    value === 'manifest-recommended' ||
+    value === 'dynamic-create-options' ||
+    value === 'partial-settings-schema' ||
+    value === 'public-type-conflict' ||
+    value === 'unsafe-semantic-text' ||
+    value === 'extractor-runtime-error' ||
+    value === 'snapshot-stale' ||
+    value === 'contract-not-verified' ||
+    value === 'readback-parity-missing'
+  );
+}
+
+function isPlainRecord(value: unknown): value is Record<string, unknown> {
+  return _.isPlainObject(value);
+}
+
+function isArrayOf<T>(value: unknown, guard: (item: unknown) => item is T): value is T[] {
+  return Array.isArray(value) && value.every(guard);
+}
+
+function hasOptionalStringFields(value: Record<string, unknown>, fields: readonly string[]) {
+  return fields.every((field) => typeof value[field] === 'undefined' || typeof value[field] === 'string');
 }
 
 function isNodeError(error: unknown): error is NodeJS.ErrnoException {

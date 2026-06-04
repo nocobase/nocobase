@@ -23,6 +23,7 @@ import {
   createFlowSurfaceMockModelClass,
   deriveFlowSurfaceAutoCapabilityCandidates,
   getFlowSurfaceAutoSnapshotFileName,
+  loadFlowSurfaceAutoSnapshotsFromDirectory,
   runWithFlowSurfaceExtractorGuards,
   writeFlowSurfaceAutoSnapshot,
 } from '../flow-surfaces/extractor';
@@ -2506,6 +2507,118 @@ describe('flowSurfaces extractor scaffold', () => {
       await rm(symlinkedParentTarget, { recursive: true, force: true });
       await rm(symlinkedParentRoot, { recursive: true, force: true });
       await rm(swappableOutDir, { recursive: true, force: true });
+    }
+  });
+
+  it('should load valid snapshots from an explicit directory', async () => {
+    const tempRoot = await realpath(tmpdir());
+    const outDir = await mkdtemp(join(tempRoot, 'flow-surfaces-extractor-load-'));
+    try {
+      const snapshot = buildFlowSurfaceAutoSnapshot({
+        plugin: '@nocobase/plugin-gantt',
+        generatedAt: '2026-06-04T00:00:00.000Z',
+        sourceHash: 'source-hash',
+        extractorVersion: 'test',
+        events: [
+          {
+            type: 'model.loaderRegistered',
+            modelUse: 'GanttBlockModel',
+            loaderName: 'loader',
+            source: 'src/client-v2/index.ts',
+            evidenceSource: 'runtime',
+            confidence: 'high',
+          },
+          {
+            type: 'menu.itemRegistered',
+            menuKey: 'gantt',
+            labelText: 'Gantt',
+            modelUse: 'GanttBlockModel',
+            slot: 'blocks',
+            createModelOptionsStatus: 'static',
+            source: 'src/client-v2/index.ts',
+            evidenceSource: 'runtime',
+            confidence: 'high',
+          },
+        ],
+      });
+      await writeFlowSurfaceAutoSnapshot({ snapshot, outDir });
+
+      const loaded = await loadFlowSurfaceAutoSnapshotsFromDirectory({ dir: outDir });
+      expect(loaded).toHaveLength(1);
+      const [loadedSnapshot] = loaded;
+      if (!loadedSnapshot) {
+        throw new Error('snapshot should be loaded');
+      }
+      expect(loadedSnapshot).toMatchObject({
+        plugin: '@nocobase/plugin-gantt',
+        models: [expect.objectContaining({ modelUse: 'GanttBlockModel' })],
+      });
+      expect(deriveFlowSurfaceAutoCapabilityCandidates(loadedSnapshot)).toEqual([
+        expect.objectContaining({
+          kind: 'block',
+          publicType: 'pluginGantt.gantt',
+          modelUse: 'GanttBlockModel',
+        }),
+      ]);
+    } finally {
+      await rm(outDir, { recursive: true, force: true });
+    }
+  });
+
+  it('should treat a missing snapshot directory as empty', async () => {
+    const tempRoot = await realpath(tmpdir());
+    const missingDir = join(tempRoot, `flow-surfaces-extractor-missing-${Date.now()}`);
+
+    await expect(loadFlowSurfaceAutoSnapshotsFromDirectory({ dir: missingDir })).resolves.toEqual([]);
+  });
+
+  it('should skip invalid snapshot files without failing directory loading', async () => {
+    const tempRoot = await realpath(tmpdir());
+    const outDir = await mkdtemp(join(tempRoot, 'flow-surfaces-extractor-invalid-load-'));
+    try {
+      const snapshot = buildFlowSurfaceAutoSnapshot({
+        plugin: '@nocobase/plugin-valid',
+        generatedAt: '2026-06-04T00:00:00.000Z',
+        sourceHash: 'source-hash',
+        extractorVersion: 'test',
+        events: [
+          {
+            type: 'model.loaderRegistered',
+            modelUse: 'ValidBlockModel',
+            source: 'src/client-v2/index.ts',
+            evidenceSource: 'runtime',
+            confidence: 'high',
+          },
+        ],
+      });
+      const validPath = await writeFlowSurfaceAutoSnapshot({ snapshot, outDir });
+      await writeFile(join(outDir, 'invalid-json.json'), '{', 'utf8');
+      await writeFile(join(outDir, 'notes.txt'), JSON.stringify(snapshot), 'utf8');
+      await mkdir(join(outDir, 'directory.json'));
+      await symlink(validPath, join(outDir, 'linked.json'));
+      await writeFile(
+        join(outDir, 'wrong-version.json'),
+        `${JSON.stringify({ ...snapshot, version: 999 }, null, 2)}\n`,
+        'utf8',
+      );
+      await writeFile(
+        join(outDir, 'malformed.json'),
+        `${JSON.stringify(
+          {
+            ...snapshot,
+            models: [{ modelUse: 'BrokenBlockModel', sourceRefs: [], confidence: 'certain' }],
+          },
+          null,
+          2,
+        )}\n`,
+        'utf8',
+      );
+
+      const loaded = await loadFlowSurfaceAutoSnapshotsFromDirectory({ dir: outDir });
+
+      expect(loaded.map((item) => item.plugin)).toEqual(['@nocobase/plugin-valid']);
+    } finally {
+      await rm(outDir, { recursive: true, force: true });
     }
   });
 
