@@ -8,11 +8,8 @@
  */
 
 import { createHash } from 'crypto';
-import { readdir, readFile } from 'fs/promises';
-import { extname, join } from 'path';
-import { types as nodeUtilTypes } from 'util';
+import { readFile } from 'fs/promises';
 import type { Application } from '@nocobase/server';
-import * as ts from 'typescript';
 import { getPackageDir, PluginManager } from '@nocobase/server';
 import {
   buildFlowSurfaceAutoSnapshot,
@@ -20,21 +17,8 @@ import {
   getFlowSurfaceAutoSnapshotStorageDir,
   writeFlowSurfaceAutoSnapshot,
 } from './snapshot';
-import type { FlowSurfaceCapabilityWarning } from '../types';
 import { collectFlowSurfaceExtractorAstEvents } from './ast';
 import { resolveFlowSurfacePluginEntry } from './entry-resolver';
-import {
-  createFlowSurfaceMockClientPluginContext,
-  createFlowSurfaceMockFieldBindingModelClass,
-  createFlowSurfaceMockModelClass,
-} from './runtime';
-import { createFlowSurfaceExtractionRecorder } from './recorder';
-import {
-  createFlowSurfaceExtractorRuntimeWarning,
-  FlowSurfaceExtractorGuardError,
-  runWithFlowSurfaceExtractorGuards,
-  type FlowSurfaceExtractorBridgeValue,
-} from './guards';
 import type { FlowSurfaceAutoSnapshot, FlowSurfaceExtractorCliResult, FlowSurfaceExtractionEvent } from './types';
 
 export type FlowSurfaceExtractorCliTarget = {
@@ -50,7 +34,6 @@ export type FlowSurfaceExtractorCliOptions = {
   generatedAt?: string;
   extractorVersion?: string;
   extractPlugin?: FlowSurfaceExtractorCliExtractPlugin;
-  resolveLoaders?: boolean;
 };
 
 export type FlowSurfaceExtractorCliSummary = {
@@ -62,7 +45,7 @@ export type FlowSurfaceExtractorCliSummary = {
 
 export type FlowSurfaceExtractorCliExtractPlugin = (
   target: FlowSurfaceExtractorCliTarget,
-  options: Pick<FlowSurfaceExtractorCliOptions, 'preferMode' | 'generatedAt' | 'extractorVersion' | 'resolveLoaders'>,
+  options: Pick<FlowSurfaceExtractorCliOptions, 'preferMode' | 'generatedAt' | 'extractorVersion'>,
 ) => Promise<FlowSurfaceExtractorPluginExtraction>;
 
 export type FlowSurfaceExtractorPluginExtraction = {
@@ -80,12 +63,6 @@ type FlowSurfaceExtractorCliCommandOptions = {
   json?: boolean;
   out?: string;
   preferMode?: string;
-  resolveLoaders?: boolean;
-};
-
-type FlowSurfaceExtractorSourceFile = {
-  sourceFile: string;
-  source: string;
 };
 
 type FlowSurfaceCliError = {
@@ -109,7 +86,6 @@ export async function runFlowSurfaceExtractorCli(
         preferMode: options.preferMode,
         generatedAt: options.generatedAt,
         extractorVersion: options.extractorVersion,
-        resolveLoaders: options.resolveLoaders,
       });
     } catch (error) {
       results.push({
@@ -161,10 +137,7 @@ export async function runFlowSurfaceExtractorCli(
 
 export async function extractFlowSurfacePluginCapabilities(
   target: FlowSurfaceExtractorCliTarget,
-  options: Pick<
-    FlowSurfaceExtractorCliOptions,
-    'preferMode' | 'generatedAt' | 'extractorVersion' | 'resolveLoaders'
-  > = {},
+  options: Pick<FlowSurfaceExtractorCliOptions, 'preferMode' | 'generatedAt' | 'extractorVersion'> = {},
 ): Promise<FlowSurfaceExtractorPluginExtraction> {
   const packageRoot = target.packageRoot || getPackageDir(target.plugin);
   const resolution = await resolveFlowSurfacePluginEntry({
@@ -174,41 +147,22 @@ export async function extractFlowSurfacePluginCapabilities(
   });
   const packageJsonSource = await readOptionalTextFile(resolution.packageJsonPath);
   const packageJson = parsePackageJson(packageJsonSource);
-  const sourceEntries = await collectFlowSurfaceExtractorSourceFiles({
-    packageRoot,
-    selectedEntry: resolution.selectedEntry,
-  });
-  const warnings = [...resolution.warnings];
-  if (!resolution.selectedEntry && sourceEntries.length) {
-    warnings.push({
-      code: 'extractor-runtime-error',
-      message: 'Plugin client-v2 entry could not be resolved; extractor should fall back to package-wide AST scan.',
-    });
-  }
-  const events: FlowSurfaceExtractionEvent[] = [];
-  for (const sourceEntry of sourceEntries) {
-    events.push(
-      ...(await collectFlowSurfaceExtractorRuntimeEvents({
-        source: sourceEntry.source,
-        sourceFile: sourceEntry.sourceFile,
-        packageName: resolution.plugin || target.plugin,
-        resolveLoaders: options.resolveLoaders,
-      })),
-      ...collectFlowSurfaceExtractorAstEvents({
-        source: sourceEntry.source,
-        sourceFile: sourceEntry.sourceFile,
-      }),
-    );
-  }
+  const source = resolution.selectedEntry ? await readFile(resolution.selectedEntry, 'utf8') : '';
+  const events = resolution.selectedEntry
+    ? collectFlowSurfaceExtractorAstEvents({
+        source,
+        sourceFile: resolution.selectedEntry,
+      })
+    : [];
   const snapshot = buildFlowSurfaceAutoSnapshot({
     plugin: resolution.plugin || target.plugin,
     pluginVersion: getPackageVersion(packageJson),
     generatedAt: options.generatedAt,
     resolvedEntry: resolution.selectedEntry,
-    sourceHash: hashExtractorSources([packageJsonSource || '', ...sourceEntries.map((entry) => entry.source)]),
+    sourceHash: hashExtractorSources([packageJsonSource || '', source]),
     extractorVersion: options.extractorVersion || FLOW_SURFACE_EXTRACTOR_CLI_VERSION,
     events,
-    warnings,
+    warnings: resolution.warnings,
   });
   return {
     snapshot,
@@ -252,7 +206,6 @@ export function registerFlowSurfaceExtractorCommand(app: Application) {
     .option('--dry-run', 'do not write snapshot files')
     .option('--fail-on-warning', 'return a failing exit code when warnings are produced')
     .option('--prefer-mode <mode>', 'prefer source or dist client-v2 entries')
-    .option('--resolve-loaders', 'experimentally execute no-import model loaders under extractor guards')
     .action(async (options: FlowSurfaceExtractorCliCommandOptions) => {
       const summary = await runFlowSurfaceExtractorCommand(app, options);
       process.stdout.write(formatFlowSurfaceExtractorCliSummary(summary, { json: !!options.json }));
@@ -276,7 +229,6 @@ export async function runFlowSurfaceExtractorCommand(
       extractorVersion: runtimeOptions.extractorVersion,
       outDir: options.out,
       preferMode,
-      resolveLoaders: !!options.resolveLoaders,
     });
   } catch (error) {
     const result: FlowSurfaceExtractorCliResult = {
@@ -372,442 +324,6 @@ function getWarningFailure(failOnWarning: boolean | undefined, warningCount: num
 
 function countNonWarningEvents(events: FlowSurfaceExtractionEvent[]) {
   return events.filter((event) => event.type !== 'warning').length;
-}
-
-async function collectFlowSurfaceExtractorSourceFiles(input: {
-  packageRoot: string;
-  selectedEntry?: string;
-}): Promise<FlowSurfaceExtractorSourceFile[]> {
-  if (input.selectedEntry) {
-    return [
-      {
-        sourceFile: input.selectedEntry,
-        source: await readFile(input.selectedEntry, 'utf8'),
-      },
-    ];
-  }
-  return await collectFlowSurfaceExtractorSourceFilesFromDirectory(join(input.packageRoot, 'src/client-v2'));
-}
-
-async function collectFlowSurfaceExtractorSourceFilesFromDirectory(
-  dir: string,
-): Promise<FlowSurfaceExtractorSourceFile[]> {
-  let entries: Awaited<ReturnType<typeof readdir>>;
-  try {
-    entries = await readdir(dir, { withFileTypes: true });
-  } catch {
-    return [];
-  }
-
-  const sourceFiles: FlowSurfaceExtractorSourceFile[] = [];
-  for (const entry of entries) {
-    const entryPath = join(dir, entry.name);
-    if (entry.isDirectory()) {
-      sourceFiles.push(...(await collectFlowSurfaceExtractorSourceFilesFromDirectory(entryPath)));
-      continue;
-    }
-    if (!entry.isFile() || !isFlowSurfaceExtractorSourceFile(entry.name)) {
-      continue;
-    }
-    sourceFiles.push({
-      sourceFile: entryPath,
-      source: await readFile(entryPath, 'utf8'),
-    });
-  }
-  return sourceFiles.sort((left, right) => left.sourceFile.localeCompare(right.sourceFile));
-}
-
-function isFlowSurfaceExtractorSourceFile(fileName: string) {
-  if (fileName.endsWith('.d.ts')) {
-    return false;
-  }
-  return ['.js', '.jsx', '.ts', '.tsx'].includes(extname(fileName));
-}
-
-type FlowSurfaceRuntimeModelUsage = {
-  runtimeModelNames: Set<string>;
-  declaredRuntimeModelNames: Set<string>;
-};
-
-type FlowSurfaceRuntimeModelLoader = {
-  loader: (...args: unknown[]) => unknown;
-  modelUse: string;
-};
-
-const FIELD_BINDING_MODEL_ROLES = new Map<string, FlowSurfaceFieldBindingRole>([
-  ['DisplayItemModel', 'display'],
-  ['DetailsItemModel', 'display'],
-  ['EditableItemModel', 'editable'],
-  ['FormItemModel', 'editable'],
-  ['FilterableItemModel', 'filterable'],
-  ['FilterFormItemModel', 'filterable'],
-]);
-
-async function collectFlowSurfaceExtractorRuntimeEvents(input: {
-  source: string;
-  sourceFile: string;
-  packageName: string;
-  resolveLoaders?: boolean;
-}): Promise<FlowSurfaceExtractionEvent[]> {
-  if (hasUnsupportedRuntimeModuleDependency(input.source, input.sourceFile)) {
-    return [];
-  }
-
-  const recorder = createFlowSurfaceExtractionRecorder();
-  const usage = collectFlowSurfaceRuntimeModelUsage(input.source, input.sourceFile);
-  const bridges = createFlowSurfaceRuntimeModelBridges({
-    recorder,
-    packageName: input.packageName,
-    resolveLoaders: !!input.resolveLoaders,
-    source: input.sourceFile,
-    usage,
-  });
-
-  try {
-    await runWithFlowSurfaceExtractorGuards(transpileFlowSurfaceRuntimeSource(input.source, input.sourceFile), {
-      bridges,
-      globals: {
-        exports: {},
-        module: {
-          exports: {},
-        },
-      },
-    });
-  } catch (error) {
-    createFlowSurfaceExtractorRuntimeWarnings(error, input.source).forEach((warning) => {
-      recorder.recordWarning(warning);
-    });
-  }
-
-  return recorder.getEvents();
-}
-
-function createFlowSurfaceExtractorRuntimeWarnings(error: unknown, source: string): FlowSurfaceCapabilityWarning[] {
-  const sourceWarnings = isRuntimeTypeErrorLike(error) ? createFlowSurfaceExtractorRuntimeSourceWarnings(source) : [];
-  return sourceWarnings.length ? sourceWarnings : [createFlowSurfaceExtractorRuntimeWarning(error)];
-}
-
-function createFlowSurfaceExtractorRuntimeSourceWarnings(source: string): FlowSurfaceCapabilityWarning[] {
-  const warnings: FlowSurfaceCapabilityWarning[] = [];
-  if (/\blocalStorage\s*\.\s*getItem\b/.test(source)) {
-    warnings.push({
-      code: 'extractor-runtime-error',
-      message: 'Flow surface extractor blocked access to localStorage.getItem.',
-    });
-  }
-  if (/\bwindow\s*\.\s*location\b/.test(source)) {
-    warnings.push({
-      code: 'extractor-runtime-error',
-      message: 'Flow surface extractor blocked access to window.location.',
-    });
-  }
-  return warnings;
-}
-
-function isRuntimeTypeErrorLike(error: unknown) {
-  return error instanceof TypeError || (isPlainRecord(error) && error.name === 'TypeError');
-}
-
-function collectFlowSurfaceRuntimeModelUsage(source: string, sourceFile: string): FlowSurfaceRuntimeModelUsage {
-  const runtimeModelNames = new Set<string>();
-  const declaredRuntimeModelNames = new Set<string>();
-  const sourceFileNode = ts.createSourceFile(sourceFile, source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
-
-  function visit(node: ts.Node) {
-    if (ts.isIdentifier(node) && isRuntimeModelName(node.text)) {
-      runtimeModelNames.add(node.text);
-    }
-    if (ts.isClassDeclaration(node) && node.name && isRuntimeModelName(node.name.text) && !hasDeclareModifier(node)) {
-      declaredRuntimeModelNames.add(node.name.text);
-    }
-    if (
-      ts.isVariableDeclaration(node) &&
-      ts.isIdentifier(node.name) &&
-      isRuntimeModelName(node.name.text) &&
-      !hasDeclareModifier(node.parent.parent)
-    ) {
-      declaredRuntimeModelNames.add(node.name.text);
-    }
-    ts.forEachChild(node, visit);
-  }
-
-  visit(sourceFileNode);
-  return {
-    runtimeModelNames,
-    declaredRuntimeModelNames,
-  };
-}
-
-function hasUnsupportedRuntimeModuleDependency(source: string, sourceFile: string) {
-  const sourceFileNode = ts.createSourceFile(sourceFile, source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
-  return sourceFileNode.statements.some((statement) => {
-    if (ts.isImportDeclaration(statement)) {
-      return !statement.importClause?.isTypeOnly;
-    }
-    if (ts.isImportEqualsDeclaration(statement)) {
-      return !statement.isTypeOnly;
-    }
-    if (ts.isExportDeclaration(statement)) {
-      return !!statement.moduleSpecifier;
-    }
-    return false;
-  });
-}
-
-function createFlowSurfaceRuntimeModelBridges(input: {
-  recorder: ReturnType<typeof createFlowSurfaceExtractionRecorder>;
-  packageName: string;
-  resolveLoaders: boolean;
-  source: string;
-  usage: FlowSurfaceRuntimeModelUsage;
-}) {
-  const pluginContext = createFlowSurfaceMockClientPluginContext({
-    packageName: input.packageName,
-    recorder: input.recorder,
-    source: input.source,
-  });
-  const loaders: FlowSurfaceRuntimeModelLoader[] = [];
-  const registerModelLoaders = (registeredLoaders: Record<string, unknown>) => {
-    input.recorder.recordModelLoaders(registeredLoaders, input.source, 'high', 'runtime');
-    if (input.resolveLoaders) {
-      loaders.push(...getModelLoaderFunctions(registeredLoaders));
-    }
-  };
-  const flowEngine = {
-    registerModels: pluginContext.flowEngine.registerModels,
-    registerModelLoaders,
-    registerActions: pluginContext.flowEngine.registerActions,
-    registerFlow: pluginContext.flowEngine.registerFlow,
-    flowSettings: {
-      registerComponents: pluginContext.flowEngine.flowSettings.registerComponents,
-    },
-  };
-  const app = {
-    flowEngine,
-    addComponents: pluginContext.app.addComponents.bind(pluginContext.app),
-    addFieldInterfaces: pluginContext.app.addFieldInterfaces.bind(pluginContext.app),
-    addFieldInterfaceGroups: pluginContext.app.addFieldInterfaceGroups.bind(pluginContext.app),
-    addFieldInterfaceComponentOption: pluginContext.app.addFieldInterfaceComponentOption.bind(pluginContext.app),
-    addFieldInterfaceOperator: pluginContext.app.addFieldInterfaceOperator.bind(pluginContext.app),
-    registerFieldFilterOperator: pluginContext.app.registerFieldFilterOperator.bind(pluginContext.app),
-    registerFieldFilterOperatorGroup: pluginContext.app.registerFieldFilterOperatorGroup.bind(pluginContext.app),
-    addFieldFilterOperatorsToGroup: pluginContext.app.addFieldFilterOperatorsToGroup.bind(pluginContext.app),
-    registerFieldValidationConfigure: pluginContext.app.registerFieldValidationConfigure.bind(pluginContext.app),
-    registerFieldValidationConfigureGroup: pluginContext.app.registerFieldValidationConfigureGroup.bind(
-      pluginContext.app,
-    ),
-    addFieldValidationConfiguresToGroup: pluginContext.app.addFieldValidationConfiguresToGroup.bind(pluginContext.app),
-    getPublicPath: pluginContext.app.getPublicPath.bind(pluginContext.app),
-    use: pluginContext.app.use.bind(pluginContext.app),
-  };
-  const bridges: Record<string, FlowSurfaceExtractorBridgeValue> = {
-    flowEngine,
-    app,
-    plugin: {
-      app,
-      flowEngine,
-    },
-    EditableItemModel: createFlowSurfaceMockFieldBindingModelClass({
-      role: 'editable',
-      recorder: input.recorder,
-      source: input.source,
-    }),
-    DisplayItemModel: createFlowSurfaceMockFieldBindingModelClass({
-      role: 'display',
-      recorder: input.recorder,
-      source: input.source,
-    }),
-    FilterableItemModel: createFlowSurfaceMockFieldBindingModelClass({
-      role: 'filterable',
-      recorder: input.recorder,
-      source: input.source,
-    }),
-    __flowSurfaceRuntimeExecuteLoaders: () => {
-      executeFlowSurfaceRuntimeModelLoaders({
-        loaders,
-        recorder: input.recorder,
-      });
-    },
-  };
-
-  input.usage.runtimeModelNames.forEach((modelUse) => {
-    const role = FIELD_BINDING_MODEL_ROLES.get(modelUse);
-    const bridge = role
-      ? createFlowSurfaceMockFieldBindingModelClass({
-          role,
-          recorder: input.recorder,
-          source: input.source,
-        })
-      : createFlowSurfaceMockModelClass({
-          modelUse,
-          recorder: input.recorder,
-          source: input.source,
-        });
-    const bridgeMethods = {
-      bindModelToInterface: bridge.bindModelToInterface,
-      define: 'define' in bridge ? bridge.define : () => undefined,
-      registerFlow: 'registerFlow' in bridge ? bridge.registerFlow : () => undefined,
-    };
-    bridges[getModelStaticBridgeIdentifier(modelUse)] = bridgeMethods;
-    if (!input.usage.declaredRuntimeModelNames.has(modelUse)) {
-      bridges[modelUse] = bridgeMethods;
-    }
-  });
-
-  return bridges;
-}
-
-function executeFlowSurfaceRuntimeModelLoaders(input: {
-  loaders: FlowSurfaceRuntimeModelLoader[];
-  recorder: ReturnType<typeof createFlowSurfaceExtractionRecorder>;
-}) {
-  input.loaders.forEach(({ loader, modelUse }) => {
-    try {
-      const result = loader();
-      if (isRuntimePromiseLike(result)) {
-        throw new FlowSurfaceExtractorGuardError(`modelLoader:${modelUse}`);
-      }
-    } catch (error) {
-      input.recorder.recordWarning(createFlowSurfaceExtractorRuntimeWarning(error));
-    }
-  });
-}
-
-function transpileFlowSurfaceRuntimeSource(source: string, sourceFile: string) {
-  return [
-    instrumentFlowSurfaceRuntimeModelClasses(source, sourceFile),
-    '',
-    '__flowSurfaceRuntimeExecuteLoaders();',
-  ].join('\n');
-}
-
-function instrumentFlowSurfaceRuntimeModelClasses(source: string, sourceFile: string) {
-  const sourceFileNode = ts.createSourceFile(sourceFile, source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
-  const transformer: ts.TransformerFactory<ts.SourceFile> = (context) => {
-    const visitStatement = (statement: ts.Statement): ts.VisitResult<ts.Statement> => {
-      if (ts.isClassDeclaration(statement) && statement.name && isRuntimeModelName(statement.name.text)) {
-        const updated = ts.visitEachChild(statement, visitNode, context);
-        return [updated, buildModelClassInstrumentation(statement.name.text)];
-      }
-      if (ts.isVariableStatement(statement)) {
-        const instrumentations = statement.declarationList.declarations
-          .map((declaration) => {
-            if (
-              ts.isIdentifier(declaration.name) &&
-              isRuntimeModelName(declaration.name.text) &&
-              declaration.initializer &&
-              ts.isClassExpression(declaration.initializer)
-            ) {
-              return buildModelClassInstrumentation(declaration.name.text);
-            }
-            return undefined;
-          })
-          .filter((item): item is ts.ExpressionStatement => !!item);
-        if (instrumentations.length) {
-          const updated = ts.visitEachChild(statement, visitNode, context);
-          return [updated, ...instrumentations];
-        }
-      }
-      return ts.visitEachChild(statement, visitNode, context);
-    };
-    const visitNode = (node: ts.Node): ts.Node => ts.visitEachChild(node, visitNode, context);
-    return (node) => ts.visitEachChild(node, visitStatement, context);
-  };
-  const transformed = ts.transform(sourceFileNode, [transformer]);
-  const printer = ts.createPrinter({ newLine: ts.NewLineKind.LineFeed });
-  const printed = printer.printFile(transformed.transformed[0]);
-  transformed.dispose();
-  return ts.transpileModule(printed, {
-    compilerOptions: {
-      esModuleInterop: true,
-      jsx: ts.JsxEmit.React,
-      module: ts.ModuleKind.CommonJS,
-      target: ts.ScriptTarget.ES2020,
-    },
-    fileName: sourceFile,
-  }).outputText;
-}
-
-function buildModelClassInstrumentation(modelUse: string) {
-  const model = ts.factory.createIdentifier(modelUse);
-  const bridge = ts.factory.createIdentifier(getModelStaticBridgeIdentifier(modelUse));
-  return ts.factory.createExpressionStatement(
-    ts.factory.createCallExpression(
-      ts.factory.createPropertyAccessExpression(ts.factory.createIdentifier('Object'), 'assign'),
-      undefined,
-      [model, bridge],
-    ),
-  );
-}
-
-function getModelStaticBridgeIdentifier(modelUse: string) {
-  return `__flowSurfaceExtractorModel_${modelUse}`;
-}
-
-function isRuntimeModelName(value: string) {
-  return /^[A-Z]\w*Model$/.test(value);
-}
-
-function hasDeclareModifier(node: ts.Node) {
-  return !!ts.getModifiers(node)?.some((modifier) => modifier.kind === ts.SyntaxKind.DeclareKeyword);
-}
-
-function getModelLoaderFunctions(loaders: Record<string, unknown>) {
-  return getRuntimeOwnDataDescriptors(loaders).flatMap(([modelUse, descriptor]) => {
-    if (!('value' in descriptor)) {
-      return [];
-    }
-    const loader = getModelLoaderFunction(descriptor.value);
-    return loader
-      ? [
-          {
-            loader,
-            modelUse,
-          },
-        ]
-      : [];
-  });
-}
-
-function getModelLoaderFunction(value: unknown): ((...args: unknown[]) => unknown) | undefined {
-  if (typeof value === 'function') {
-    return value;
-  }
-  if (!isRuntimePlainRecord(value)) {
-    return undefined;
-  }
-  const loader = Object.getOwnPropertyDescriptor(value, 'loader');
-  return loader && 'value' in loader && typeof loader.value === 'function' ? loader.value : undefined;
-}
-
-function getRuntimeOwnDataDescriptors(value: unknown): Array<[string, PropertyDescriptor]> {
-  if (!isRuntimePlainRecord(value) || nodeUtilTypes.isProxy(value)) {
-    return [];
-  }
-  try {
-    return Object.entries(Object.getOwnPropertyDescriptors(value));
-  } catch {
-    return [];
-  }
-}
-
-function isRuntimePlainRecord(value: unknown): value is Record<string, unknown> {
-  return !!value && typeof value === 'object' && !Array.isArray(value) && !nodeUtilTypes.isProxy(value);
-}
-
-function isRuntimePromiseLike(value: unknown): value is PromiseLike<unknown> {
-  if (!value || (typeof value !== 'object' && typeof value !== 'function')) {
-    return false;
-  }
-  if (nodeUtilTypes.isProxy(value)) {
-    return true;
-  }
-  try {
-    const descriptor = Object.getOwnPropertyDescriptor(value, 'then');
-    return !!descriptor && 'value' in descriptor && typeof descriptor.value === 'function';
-  } catch {
-    return true;
-  }
 }
 
 function hashExtractorSources(parts: string[]) {

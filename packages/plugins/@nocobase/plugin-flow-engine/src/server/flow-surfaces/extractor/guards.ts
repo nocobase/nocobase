@@ -139,7 +139,7 @@ ${source}
 }
 
 export function createFlowSurfaceExtractorRuntimeWarning(error: unknown): FlowSurfaceCapabilityWarning {
-  if (isFlowSurfaceExtractorGuardErrorLike(error)) {
+  if (error instanceof FlowSurfaceExtractorGuardError) {
     return {
       code: 'extractor-runtime-error',
       message: error.message,
@@ -149,21 +149,6 @@ export function createFlowSurfaceExtractorRuntimeWarning(error: unknown): FlowSu
     code: 'extractor-runtime-error',
     message: error instanceof Error ? error.message : 'Extractor runtime failed.',
   };
-}
-
-export function isFlowSurfaceExtractorGuardErrorLike(error: unknown): error is { message: string } {
-  if (error instanceof FlowSurfaceExtractorGuardError) {
-    return true;
-  }
-  if (!error || typeof error !== 'object') {
-    return false;
-  }
-  const candidate = error as { code?: unknown; message?: unknown; name?: unknown };
-  return (
-    candidate.name === 'FlowSurfaceExtractorGuardError' &&
-    candidate.code === 'extractor-runtime-error' &&
-    typeof candidate.message === 'string'
-  );
 }
 
 function createFlowSurfaceExtractorVmContext(
