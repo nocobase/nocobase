@@ -69,94 +69,13 @@ nb init
 
 如果你在脚本、CI/CD 或其他非交互环境里运行，直接用 `--yes` 就行。这个模式下必须显式传 `--env`，没有显式指定的参数会按默认值处理。
 
-#### 新安装一个应用
-
-最简单的默认安装方式：
+最短的默认写法是：
 
 ```bash
 nb init --yes --env app1
 ```
 
-这条命令默认会走 `install-new` 流程，通常会使用 Docker 作为来源，并创建一个带内置 PostgreSQL 的本地应用。
-
-使用 Docker 安装指定版本：
-
-```bash
-nb init --yes --env app1 --source docker --version latest
-nb init --yes --env app1 --source docker --version beta
-nb init --yes --env app1 --source docker --version alpha
-
-nb init --yes --env app1 --source docker --version main \
-  --docker-registry registry.cn-beijing.aliyuncs.com/nocobase/nocobase
-```
-
-使用 npm 安装：
-
-```bash
-nb init --yes --env app1 --source npm --version latest
-nb init --yes --env app1 --source npm --version beta
-nb init --yes --env app1 --source npm --version alpha
-nb init --yes --env app1 --source npm --version beta --app-port 13080
-```
-
-使用 Git 源码安装：
-
-```bash
-nb init --yes --env app1 --source git --version latest
-nb init --yes --env app1 --source git --version beta
-nb init --yes --env app1 --source git --version alpha
-nb init --yes --env app1 --source git --version feat/plugin-workflow-timeout
-
-nb init --yes --env app1 --source git --version latest \
-  --git-url https://gitee.com/nocobase/nocobase.git
-```
-
-如果你需要自定义数据库命名，也可以一起带上：
-
-```bash
-nb init --yes --env app1 \
-  --db-dialect postgres \
-  --db-schema public \
-  --db-table-prefix nb_ \
-  --db-underscored
-```
-
-#### 快速安装并使用 basic 认证
-
-如果你想在非交互模式里快速安装一个本地应用，并且安装完成后直接用 `basic` 认证，也可以这样写。这样就不需要打开浏览器完成 OAuth。
-
-如果你沿用 `--yes` 模式下默认的管理员账号，最短可以这样写。
-
-缺失时，默认管理员账号是 `nocobase`，默认密码是 `admin123`：
-
-```bash
-nb init --yes --env app1 --auth-type basic
-```
-
-如果你想同时自定义管理员账号，也可以这样写：
-
-```bash
-nb init --yes --env app1 \
-  --auth-type basic \
-  --root-username admin \
-  --root-password secret123
-```
-
-#### 在 CI/CD 里连接一个已有应用
-
-如果你不是要新装一个本地应用，而是想在 CI/CD 或脚本里先保存一个已有应用的 env，也可以直接用 `basic` 认证。这样就不需要打开浏览器完成 OAuth。
-
-```bash
-nb init --yes --env staging \
-  --api-base-url https://demo.example.com/api \
-  --auth-type basic \
-  --username <username> \
-  --password <password>
-```
-
-#### 其他常用参数
-
-更完整的参数说明见 [`nb init` 命令参考](../../api/cli/init.md)。
+具体到不同安装来源、版本选择、`basic` 认证、CI/CD 连接已有应用，以及数据库命名这类常见组合，直接看 [`nb init` 命令参考的示例](../../api/cli/init.md#示例) 就行。
 
 ## 安装完成后先确认什么
 

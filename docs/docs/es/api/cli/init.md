@@ -186,8 +186,19 @@ Si no especificas `--source`, normalmente se usará Docker como origen de instal
 
 ```bash
 nb init --env app1 --yes
+nb init --env app1 --yes --source docker --version latest
+nb init --env app1 --yes --source docker --version beta
 nb init --env app1 --yes --source docker --version alpha
+nb init --env app1 --yes --source docker --version main \
+  --docker-registry registry.cn-beijing.aliyuncs.com/nocobase/nocobase
+nb init --env app1 --yes --source npm --version latest
+nb init --env app1 --yes --source npm --version beta
+nb init --env app1 --yes --source npm --version alpha
 nb init --env app1 --yes --source npm --version beta --app-port 13080
+nb init --env app1 --yes --source git --version latest
+nb init --env app1 --yes --source git --version beta
+nb init --env app1 --yes --source git --version alpha
+nb init --env app1 --yes --source git --version feat/plugin-workflow-timeout
 nb init --env app1 --yes --source git --version latest \
   --git-url https://gitee.com/nocobase/nocobase.git
 ```

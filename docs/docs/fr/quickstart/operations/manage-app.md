@@ -103,10 +103,10 @@ nb app upgrade
 1. 停止当前应用
 2. 下载并替换已保存的源码或镜像
 3. 同步商业插件
-4. 快速启动应用
+4. 升级并启动应用
 5. 刷新 env runtime 信息
 
-如果你已经提前更新好了源码或镜像，只想基于当前内容重启应用，可以加 `--skip-download`：
+如果你已经提前更新好了源码或镜像，只想基于当前内容继续执行升级并启动应用，可以加 `--skip-download`：
 
 ```bash
 nb app upgrade --skip-download

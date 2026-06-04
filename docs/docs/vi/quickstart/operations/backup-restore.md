@@ -84,14 +84,6 @@ nb backup restore --env app1 --file ./backups/backup_20260520_190408_8397.nbdata
 
 ## 常见情况
 
-如果命令提示缺少 backup 相关运行时命令，先刷新一下当前 env：
-
-```bash
-nb env update app1
-```
-
-如果刷新后还是不行，说明目标 env 还没有暴露对应的 backup/restore 能力。这时需要先处理目标应用本身，再回来执行 `nb backup`。
-
 如果你更习惯在界面里操作，或者需要定时备份、云存储同步这类能力，可以直接看 [备份管理](../../ops-management/backup-manager/index.mdx)。这类场景下，Web UI 往往更合适。
 
 ## 相关链接

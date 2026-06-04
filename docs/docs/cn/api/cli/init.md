@@ -186,8 +186,34 @@ nb init --ui --ui-port 3000
 
 ```bash
 nb init --env app1 --yes
+```
+
+使用 Docker 安装指定版本：
+
+```bash
+nb init --env app1 --yes --source docker --version latest
+nb init --env app1 --yes --source docker --version beta
 nb init --env app1 --yes --source docker --version alpha
+nb init --env app1 --yes --source docker --version main \
+  --docker-registry registry.cn-beijing.aliyuncs.com/nocobase/nocobase
+```
+
+使用 npm 安装：
+
+```bash
+nb init --env app1 --yes --source npm --version latest
+nb init --env app1 --yes --source npm --version beta
+nb init --env app1 --yes --source npm --version alpha
 nb init --env app1 --yes --source npm --version beta --app-port 13080
+```
+
+使用 Git 源码安装：
+
+```bash
+nb init --env app1 --yes --source git --version latest
+nb init --env app1 --yes --source git --version beta
+nb init --env app1 --yes --source git --version alpha
+nb init --env app1 --yes --source git --version feat/plugin-workflow-timeout
 nb init --env app1 --yes --source git --version latest \
   --git-url https://gitee.com/nocobase/nocobase.git
 ```
@@ -220,18 +246,30 @@ nb init --env app1 --yes \
 ```bash
 nb init --env staging --yes \
   --api-base-url https://demo.example.com/api
+```
 
+在 CI/CD 或脚本里直接保存 `basic` 认证：
+
+```bash
 nb init --env staging --yes \
   --api-base-url https://demo.example.com/api \
   --auth-type basic \
   --username <username> \
   --password <password>
+```
 
+如果你已经有 API token，也可以直接保存 `token` 认证：
+
+```bash
 nb init --env staging --yes \
   --api-base-url https://demo.example.com/api \
   --auth-type token \
   --access-token <token>
+```
 
+如果你想先保存 env，稍后再完成 OAuth 登录，也可以这样写：
+
+```bash
 nb init --env staging --yes \
   --api-base-url https://demo.example.com/api \
   --auth-type oauth \
