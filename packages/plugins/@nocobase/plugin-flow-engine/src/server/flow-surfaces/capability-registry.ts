@@ -8,6 +8,7 @@
  */
 
 import { normalizeFlowSurfaceCapabilityManifestItem } from './capability-manifest';
+import { resolveFlowSurfaceCapabilityReadiness } from './capability-readiness';
 import { callFlowSurfaceProvider } from './capability-provider-executor';
 import { deriveFlowSurfaceAutoCapabilityCandidates } from './extractor/snapshot';
 import type { NormalizedFlowSurfaceProviderCapability } from './capability-manifest';
@@ -119,6 +120,8 @@ export function collectAutoSnapshotPublicCapabilities(
         const searchAliases = sanitizePublicAliasList([publicType, label], warnings);
         const semanticAliases = sanitizePublicAliasList([publicType], warnings);
         const publicWarnings = sanitizeWarnings(dedupeWarnings(warnings));
+        const availability = buildReadOnlyAutoSnapshotAvailability(hasSnapshotStaleWarning(publicWarnings));
+        const supportLevel = 'readback-only' as const;
         return setFlowSurfacePublicCapabilityModelUse(
           {
             kind: candidate.kind,
@@ -135,9 +138,14 @@ export function collectAutoSnapshotPublicCapabilities(
               title: label,
               aliases: semanticAliases,
             },
-            availability: buildReadOnlyAutoSnapshotAvailability(hasSnapshotStaleWarning(publicWarnings)),
-            supportLevel: 'readback-only',
+            availability,
+            supportLevel,
             confidence: candidate.confidence,
+            readiness: resolveFlowSurfaceCapabilityReadiness({
+              origin: AUTO_SNAPSHOT_ORIGIN,
+              availability,
+              warnings: publicWarnings,
+            }),
             warnings: publicWarnings,
             identity: {
               capabilityId: [ownerPlugin, 'autoSnapshot', candidate.kind, publicType].join(':'),

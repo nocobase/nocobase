@@ -924,6 +924,7 @@ describe('flowSurfaces capabilities projection', () => {
       ownerPlugin: '@nocobase/plugin-gantt',
       origin: 'canaryOverlay',
       supportLevel: 'create-only',
+      readiness: 'contractDeclared',
       availability: {
         create: {
           supported: true,
@@ -966,6 +967,7 @@ describe('flowSurfaces capabilities projection', () => {
         ownerPlugin: '@nocobase/plugin-gantt',
         origin: 'autoSnapshot',
         supportLevel: 'readback-only',
+        readiness: 'discovered',
         availability: {
           render: {
             supported: true,
@@ -990,6 +992,72 @@ describe('flowSurfaces capabilities projection', () => {
     expect(response.data[0]).not.toHaveProperty('warnings');
     expect(JSON.stringify(response.data[0])).not.toContain('GanttBlockModel');
     expect(response.meta.registrySources).toEqual([{ origin: 'autoSnapshot', count: 1 }]);
+  });
+
+  it('should mark manifest capabilities with failed dry-run readiness as blocked', async () => {
+    const failedDryRunProvider: FlowSurfaceCapabilitiesProvider = {
+      ownerPlugin: '@nocobase/plugin-failed-dry-run',
+      getCapabilities: () => [
+        {
+          id: 'blocks.failedDryRun',
+          kind: 'block',
+          publicType: 'failedDryRun',
+          label: 'Failed dry run',
+          semantic: {
+            title: 'Failed dry run',
+          },
+          placement: {
+            scenes: ['page'],
+            slots: ['blocks'],
+          },
+          implementation: {
+            modelUse: 'FailedDryRunBlockModel',
+          },
+          availability: {
+            create: {
+              supported: false,
+              reasonCode: 'dry-run-failed',
+              reasonSource: 'provider',
+            },
+          },
+          initParamsSchema: {
+            type: 'object',
+            additionalProperties: false,
+          },
+        },
+      ],
+      resolveCreate: () => ({
+        use: 'FailedDryRunBlockModel',
+      }),
+    };
+    const response = await buildFlowSurfaceCapabilitiesResponse(
+      {
+        query: 'failed',
+        includeUnavailable: true,
+      },
+      {
+        enabledPackages: new Set(['@nocobase/plugin-failed-dry-run']),
+        providerRegistry: createProviderRegistry([failedDryRunProvider]),
+        catalog: createCatalogRecorder().catalog,
+        generatedAt: '2026-06-04T00:00:00.000Z',
+      },
+    );
+
+    expect(response.data).toEqual([
+      expect.objectContaining({
+        publicType: 'failedDryRun',
+        origin: 'provider',
+        readiness: 'blocked',
+        availability: expect.objectContaining({
+          create: expect.objectContaining({
+            supported: false,
+            reasonCode: 'dry-run-failed',
+            reasonSource: 'provider',
+          }),
+        }),
+      }),
+    ]);
+    expect(JSON.stringify(response.data[0])).not.toContain('FailedDryRunBlockModel');
   });
 
   it('should not let auto snapshots override same-owner provider capabilities', async () => {
@@ -1326,6 +1394,7 @@ describe('flowSurfaces capabilities projection', () => {
             reasonSource: 'registry',
           }),
         }),
+        readiness: 'blocked',
         warnings: expect.arrayContaining([
           expect.objectContaining({
             code: 'auto-discovered-readonly',
@@ -1617,6 +1686,7 @@ describe('flowSurfaces capabilities projection', () => {
             reasonSource: 'registry',
           }),
         }),
+        readiness: 'blocked',
         warnings: expect.arrayContaining([
           expect.objectContaining({
             code: 'public-type-conflict',
@@ -1658,6 +1728,7 @@ describe('flowSurfaces capabilities projection', () => {
             reasonSource: 'registry',
           }),
         }),
+        readiness: 'blocked',
         warnings: expect.arrayContaining([
           expect.objectContaining({
             code: 'readback-parity-missing',
@@ -1901,6 +1972,7 @@ describe('flowSurfaces capabilities projection', () => {
       reasonCode: 'missing-create-contract',
       reasonSource: 'registry',
     });
+    expect(response.data[0].readiness).toBe('readbackVerified');
     expect(response.data[0].availability.configure).toMatchObject({
       supported: false,
       reasonCode: 'settings-schema-missing',
@@ -2108,6 +2180,7 @@ describe('flowSurfaces capabilities projection', () => {
         },
       ],
     });
+    expect(response.data[0].readiness).toBe('blocked');
     expect(response.data[0]).not.toHaveProperty('settingsSchema');
     expect(response.data[0].availability.configure).toMatchObject({
       supported: false,

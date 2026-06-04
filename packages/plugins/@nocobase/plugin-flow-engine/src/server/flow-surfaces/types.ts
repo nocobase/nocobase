@@ -95,6 +95,14 @@ export type FlowSurfaceSupportLevel =
   | 'configure-only'
   | 'create-and-configure';
 
+export type FlowSurfaceCapabilityReadiness =
+  | 'discovered'
+  | 'readbackVerified'
+  | 'contractDeclared'
+  | 'createDryRunPassed'
+  | 'createEnabled'
+  | 'blocked';
+
 export type FlowSurfaceReasonCode =
   | 'supported'
   | 'plugin-disabled'
@@ -354,6 +362,7 @@ export type FlowSurfacePublicCapabilityItem = {
   availability: FlowSurfaceCapabilityAvailability;
   supportLevel: FlowSurfaceSupportLevel;
   confidence: FlowSurfaceCapabilityConfidence;
+  readiness: FlowSurfaceCapabilityReadiness;
   placement?: FlowSurfacePlacementSummary;
   warnings?: FlowSurfaceCapabilityWarning[];
   identity?: FlowSurfaceCapabilityIdentity;

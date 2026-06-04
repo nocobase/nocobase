@@ -1749,6 +1749,10 @@ const schemas = {
     type: 'string',
     enum: ['high', 'medium', 'low'],
   },
+  FlowSurfaceCapabilityReadiness: {
+    type: 'string',
+    enum: ['discovered', 'readbackVerified', 'contractDeclared', 'createDryRunPassed', 'createEnabled', 'blocked'],
+  },
   FlowSurfaceAvailabilityState: {
     type: 'object',
     required: ['supported'],
@@ -1956,6 +1960,7 @@ const schemas = {
       'availability',
       'supportLevel',
       'confidence',
+      'readiness',
     ],
     properties: {
       kind: ref('FlowSurfaceCapabilityKind'),
@@ -1977,6 +1982,7 @@ const schemas = {
       availability: ref('FlowSurfaceCapabilityAvailability'),
       supportLevel: ref('FlowSurfaceSupportLevel'),
       confidence: ref('FlowSurfaceCapabilityConfidence'),
+      readiness: ref('FlowSurfaceCapabilityReadiness'),
       placement: ref('FlowSurfacePlacementSummary'),
       warnings: {
         type: 'array',

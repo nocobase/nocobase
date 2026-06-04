@@ -142,6 +142,7 @@ describe('flowSurfaces swagger', () => {
       'FlowSurfaceKeysMap',
       'FlowSurfaceCapabilityKind',
       'FlowSurfaceCapabilityOriginSource',
+      'FlowSurfaceCapabilityReadiness',
       'FlowSurfaceCapabilityAvailability',
       'FlowSurfacePublicCapabilityItem',
       'FlowSurfaceCapabilitiesTarget',
@@ -344,6 +345,14 @@ describe('flowSurfaces swagger', () => {
     expect(schemas.FlowSurfaceSetActionLinkageRulesRequest.required).toEqual(['target', 'rules']);
     expect(schemas.FlowSurfaceReactionSlot.properties.valuePath.description).toContain('nested value path');
     expect(schemas.FlowSurfaceCapabilityKind.enum).toEqual(['block', 'action', 'fieldComponent']);
+    expect(schemas.FlowSurfaceCapabilityReadiness.enum).toEqual([
+      'discovered',
+      'readbackVerified',
+      'contractDeclared',
+      'createDryRunPassed',
+      'createEnabled',
+      'blocked',
+    ]);
     expect(schemas.FlowSurfaceCapabilityAvailability.properties.create).toMatchObject({
       type: 'object',
       required: ['supported'],
@@ -2048,6 +2057,18 @@ describe('flowSurfaces swagger', () => {
     expect(schemas.FlowSurfaceCapabilitiesTarget.properties.scene).toBeUndefined();
     expect(schemas.FlowSurfaceCapabilitySemantic.properties.antiPatterns.items.type).toBe('string');
     expect(schemas.FlowSurfaceCapabilitySemantic.properties.locale.type).toBe('string');
+    expect(schemas.FlowSurfaceCapabilityReadiness.enum).toEqual([
+      'discovered',
+      'readbackVerified',
+      'contractDeclared',
+      'createDryRunPassed',
+      'createEnabled',
+      'blocked',
+    ]);
+    expect(schemas.FlowSurfacePublicCapabilityItem.required).toContain('readiness');
+    expect(schemas.FlowSurfacePublicCapabilityItem.properties.readiness.$ref).toBe(
+      '#/components/schemas/FlowSurfaceCapabilityReadiness',
+    );
     const composePath = swaggerDocument.paths['/flowSurfaces:compose'].post;
     expect(composePath.description).toContain('low-level building primitive');
     expect(composePath.description).not.toContain('preferred creation entry for AI callers');

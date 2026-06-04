@@ -8,6 +8,7 @@
  */
 
 import _ from 'lodash';
+import { resolveFlowSurfaceCapabilityReadiness } from './capability-readiness';
 import type {
   FlowSurfaceCapabilitiesProvider,
   FlowSurfaceAvailabilityState,
@@ -171,6 +172,11 @@ export function normalizeFlowSurfaceCapabilityManifestItem(input: {
     availability,
     supportLevel,
     confidence: input.item.confidence || 'high',
+    readiness: resolveFlowSurfaceCapabilityReadiness({
+      origin: input.source,
+      availability,
+      warnings: publicWarnings,
+    }),
     ...(placement ? { placement } : {}),
     ...(publicWarnings.length ? { warnings: publicWarnings } : {}),
     identity,

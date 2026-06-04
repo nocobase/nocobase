@@ -15,6 +15,7 @@ import {
   setFlowSurfacePublicCapabilityModelUse,
   type FlowSurfaceCapabilityRegistryLike,
 } from './capability-registry';
+import { resolveFlowSurfaceCapabilityReadiness } from './capability-readiness';
 import { FlowSurfaceBadRequestError } from './errors';
 import type { FlowSurfaceAutoSnapshot } from './extractor/types';
 import type {
@@ -497,6 +498,10 @@ function mergeAutoSnapshotDiagnostics(
         ...winner.publicTypeMeta,
         ...(searchAliases.length ? { searchAliases } : {}),
       },
+      readiness: resolveFlowSurfaceCapabilityReadiness({
+        ...winner,
+        warnings,
+      }),
       ...(warnings.length ? { warnings } : {}),
     },
     getFlowSurfacePublicCapabilityModelUses(winner),
@@ -564,6 +569,7 @@ function markPublicTypeConflict(item: FlowSurfacePublicCapabilityItem): FlowSurf
       ...item,
       availability,
       supportLevel: resolveSupportLevel(availability),
+      readiness: 'blocked',
       warnings,
     },
     getFlowSurfacePublicCapabilityModelUses(item),
@@ -832,6 +838,26 @@ function projectCatalogCapabilityItem(
   const settingsSchema = request.includeCatalogSettingsSchema
     ? sanitizeCatalogCapabilitySchema(item.settingsSchema)
     : undefined;
+  const availability =
+    item.availability ||
+    ({
+      render: { supported: true },
+      readback: { supported: true },
+      create: {
+        supported: item.createSupported !== false,
+        ...(item.createSupported === false
+          ? { reasonCode: 'missing-create-contract' as const, reasonSource: 'catalog' as const }
+          : {}),
+        acceptsInitParams: !!item.requiredInitParams?.length,
+        acceptsSettings: !!item.settingsSchema || !!item.configureOptions,
+      },
+      configure: {
+        supported: !!item.settingsSchema || !!item.configureOptions,
+      },
+    } as FlowSurfacePublicCapabilityItem['availability']);
+  const supportLevel = item.supportLevel || (item.createSupported === false ? 'readback-only' : 'create-only');
+  const origin = item.origin || 'builtInStatic';
+  const warnings = item.warnings || [];
   const capability: FlowSurfacePublicCapabilityItem = {
     kind,
     publicType,
@@ -842,27 +868,16 @@ function projectCatalogCapabilityItem(
     },
     label: item.label,
     ownerPlugin,
-    origin: item.origin || 'builtInStatic',
+    origin,
     semantic,
-    availability:
-      item.availability ||
-      ({
-        render: { supported: true },
-        readback: { supported: true },
-        create: {
-          supported: item.createSupported !== false,
-          ...(item.createSupported === false
-            ? { reasonCode: 'missing-create-contract' as const, reasonSource: 'catalog' as const }
-            : {}),
-          acceptsInitParams: !!item.requiredInitParams?.length,
-          acceptsSettings: !!item.settingsSchema || !!item.configureOptions,
-        },
-        configure: {
-          supported: !!item.settingsSchema || !!item.configureOptions,
-        },
-      } as FlowSurfacePublicCapabilityItem['availability']),
-    supportLevel: item.supportLevel || (item.createSupported === false ? 'readback-only' : 'create-only'),
+    availability,
+    supportLevel,
     confidence: item.confidence || 'high',
+    readiness: resolveFlowSurfaceCapabilityReadiness({
+      origin,
+      availability,
+      warnings,
+    }),
     placement: {
       slots: resolvePlacementSlots(item),
       ...(item.scene
@@ -878,7 +893,7 @@ function projectCatalogCapabilityItem(
           ...(item.configureOptions ? { configureOptions: item.configureOptions } : {}),
         }
       : {}),
-    ...(request.includeWarnings && item.warnings?.length ? { warnings: item.warnings } : {}),
+    ...(request.includeWarnings && warnings.length ? { warnings } : {}),
   };
   if (!request.expand.has('item.semantic')) {
     capability.semantic = toLightCapabilitySemantic(semantic);
