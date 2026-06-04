@@ -11,13 +11,14 @@ import { DeleteOutlined, ReloadOutlined } from '@ant-design/icons';
 import { CollectionFilter, ExtendCollectionsProvider, Table } from '@nocobase/client-v2';
 import { useFlowContext, useFlowEngine } from '@nocobase/flow-engine';
 import { useMemoizedFn, useRequest } from 'ahooks';
-import { App, Button, Flex, Space, Tooltip, Typography, theme } from 'antd';
+import { App, Button, Flex, Space, theme } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import dayjs from 'dayjs';
 import React, { useMemo, useState } from 'react';
 import executionCollection from '../../common/collections/executions';
 import { EXECUTION_STATUS, EXECUTION_STATUS_OPTIONS } from '../../common/executionStatus';
 import { ExecutionStatusTag } from '../components/ExecutionStatusTag';
+import { getWorkflowExecutionPath } from '../constants';
 import { useT, useWorkflowTranslation } from '../locale';
 
 const EXECUTION_PAGE_SIZE = 20;
@@ -137,6 +138,12 @@ function ExecutionHistoryDrawerInner({ workflowKey }: { workflowKey: string | nu
     });
   });
 
+  const handleView = useMemoizedFn((record: ExecutionRecord) => {
+    // Close the history drawer before leaving for the execution page.
+    ctx.view?.close?.();
+    ctx.router.navigate(getWorkflowExecutionPath(record.id));
+  });
+
   const columns = useMemo<ColumnsType<ExecutionRecord>>(
     () => [
       { title: t('ID'), dataIndex: 'id' },
@@ -171,9 +178,7 @@ function ExecutionHistoryDrawerInner({ workflowKey }: { workflowKey: string | nu
         width: 160,
         render: (_, record) => (
           <Space size="middle" wrap={false} style={{ whiteSpace: 'nowrap' }}>
-            <Tooltip title={t('Available in the classic UI for now')}>
-              <Typography.Link disabled>{t('View')}</Typography.Link>
-            </Tooltip>
+            <a onClick={() => handleView(record)}>{t('View')}</a>
             {record.status !== EXECUTION_STATUS.STARTED ? (
               <a onClick={() => handleDelete(record.id)}>{t('Delete')}</a>
             ) : null}
@@ -182,7 +187,7 @@ function ExecutionHistoryDrawerInner({ workflowKey }: { workflowKey: string | nu
       },
     ],
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [handleCancel, handleDelete, t],
+    [handleCancel, handleDelete, handleView, t],
   );
 
   return (

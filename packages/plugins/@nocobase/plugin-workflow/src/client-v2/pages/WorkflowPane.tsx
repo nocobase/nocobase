@@ -18,10 +18,11 @@ import {
 } from '@nocobase/client-v2';
 import { useFlowContext } from '@nocobase/flow-engine';
 import { useMemoizedFn, useRequest } from 'ahooks';
-import { App, Button, Card, Flex, Form, Input, Space, Switch, Tag, Tooltip, Typography, theme } from 'antd';
+import { App, Button, Card, Flex, Form, Input, Space, Switch, Tag, Tooltip, theme } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import React, { useMemo, useState } from 'react';
 import workflowCollection from '../../common/collections/workflows';
+import { getWorkflowCanvasPath } from '../constants';
 import { useT, useWorkflowTranslation } from '../locale';
 import PluginWorkflowClientV2 from '../plugin';
 import { ExecutionHistoryDrawer } from './ExecutionHistoryDrawer';
@@ -148,7 +149,7 @@ function WorkflowPaneInner() {
   });
   const categories = useMemo(() => categoryData || [], [categoryData]);
   const categoryOptions = useMemo(
-    () => categories.map((category) => ({ value: category.id, label: compile(category.title) })),
+    () => categories.map((category) => ({ value: category.id, label: compile(category.title ?? '') })),
     [categories, compile],
   );
 
@@ -211,6 +212,10 @@ function WorkflowPaneInner() {
       closable: true,
       content: () => <DuplicateWorkflowForm record={record} resource={resource} onSubmitted={() => refresh()} />,
     });
+  });
+
+  const openConfigure = useMemoizedFn((record: WorkflowRecord) => {
+    ctx.router.navigate(getWorkflowCanvasPath(record.id));
   });
 
   const openExecutions = useMemoizedFn((record: WorkflowRecord) => {
@@ -290,9 +295,7 @@ function WorkflowPaneInner() {
         width: 260,
         render: (_, record) => (
           <Space size="middle" wrap={false} style={{ whiteSpace: 'nowrap' }}>
-            <Tooltip title={t('Available in the classic UI for now')}>
-              <Typography.Link disabled>{t('Configure')}</Typography.Link>
-            </Tooltip>
+            <a onClick={() => openConfigure(record)}>{t('Configure')}</a>
             <a onClick={() => openForm('edit', record)}>{t('Edit')}</a>
             <a onClick={() => openDuplicate(record)}>{t('Duplicate')}</a>
             <a onClick={() => handleDelete(record.id)}>{t('Delete')}</a>
@@ -301,7 +304,7 @@ function WorkflowPaneInner() {
       },
     ],
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [handleDelete, openDuplicate, openExecutions, openForm, refresh, resource, t, triggerLabel],
+    [handleDelete, openConfigure, openDuplicate, openExecutions, openForm, refresh, resource, t, triggerLabel],
   );
 
   return (
@@ -368,7 +371,7 @@ export default function WorkflowPane() {
   // compile; replace it with the registered trigger options up front so the
   // Trigger type condition renders as a Select (matching v1).
   const collections = useMemo(() => {
-    const triggerOptions = Array.from(plugin.triggers.getEntities())
+    const triggerOptions = Array.from(plugin.triggers.getEntities() as Iterable<[string, { title?: string }]>)
       .map(([value, opt]) => ({ value, label: opt?.title ? compile(opt.title) : String(value) }))
       .sort((a, b) => String(a.label).localeCompare(String(b.label)));
     return [

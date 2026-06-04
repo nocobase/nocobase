@@ -11,6 +11,12 @@ import { Plugin } from '@nocobase/client-v2';
 import { Registry } from '@nocobase/utils/client';
 import type { ComponentType } from 'react';
 import { NAMESPACE } from './locale';
+import {
+  WORKFLOW_CANVAS_ROUTE_NAME,
+  WORKFLOW_CANVAS_ROUTE_PATH,
+  WORKFLOW_EXECUTION_ROUTE_NAME,
+  WORKFLOW_EXECUTION_ROUTE_PATH,
+} from './constants';
 
 type LoaderOf<P = Record<string, never>> = () => Promise<{ default: ComponentType<P> }>;
 
@@ -66,6 +72,8 @@ export class PluginWorkflowClientV2 extends Plugin {
     this.registerModelLoaders();
     this.registerBuiltinTriggers();
     this.registerSettingsPage();
+    this.registerCanvasRoute();
+    this.registerExecutionRoute();
   }
 
   private registerModelLoaders() {
@@ -126,6 +134,25 @@ export class PluginWorkflowClientV2 extends Plugin {
       aclSnippet: 'pm.workflow.workflows',
       sort: 1,
       componentLoader: () => import('./pages/WorkflowPane'),
+    });
+  }
+
+  // The canvas page is registered directly under `admin` (not `admin.settings`),
+  // so it renders in the admin content area without the settings left menu —
+  // mirroring v1's `router.add('admin.workflow.workflows.id', ...)`.
+  private registerCanvasRoute() {
+    this.app.router.add(WORKFLOW_CANVAS_ROUTE_NAME, {
+      path: WORKFLOW_CANVAS_ROUTE_PATH,
+      componentLoader: () => import('./pages/WorkflowCanvasPage'),
+    });
+  }
+
+  // The execution detail page, a sibling of the canvas under the same
+  // `admin.workflow` namespace — mirrors v1's `admin.workflow.executions.id`.
+  private registerExecutionRoute() {
+    this.app.router.add(WORKFLOW_EXECUTION_ROUTE_NAME, {
+      path: WORKFLOW_EXECUTION_ROUTE_PATH,
+      componentLoader: () => import('./pages/ExecutionViewPage'),
     });
   }
 }

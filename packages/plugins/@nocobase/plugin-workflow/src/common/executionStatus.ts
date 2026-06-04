@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { NAMESPACE } from './constants';
+import { EXECUTION_REASON, NAMESPACE } from './constants';
 
 /**
  * Framework-neutral execution-status metadata shared between the legacy
@@ -98,5 +98,30 @@ export const EXECUTION_STATUS_OPTIONS: ExecutionStatusOption[] = [
 
 export const EXECUTION_STATUS_OPTIONS_MAP: Record<string, ExecutionStatusOption> = EXECUTION_STATUS_OPTIONS.reduce(
   (map, option) => Object.assign(map, { [option.value as number]: option }),
+  {},
+);
+
+export type ExecutionReasonOption = {
+  value: string;
+  label: string;
+};
+
+export const EXECUTION_REASON_OPTIONS: ExecutionReasonOption[] = [
+  {
+    value: EXECUTION_REASON.TIMEOUT,
+    label: `{{t("Timed out", { ns: "${NAMESPACE}" })}}`,
+  },
+  {
+    value: EXECUTION_REASON.MANUAL_CANCEL,
+    label: `{{t("Canceled manually", { ns: "${NAMESPACE}" })}}`,
+  },
+  {
+    value: EXECUTION_REASON.PARENT_ABORTED,
+    label: `{{t("Aborted with parent execution", { ns: "${NAMESPACE}" })}}`,
+  },
+];
+
+export const EXECUTION_REASON_OPTIONS_MAP: Record<string, ExecutionReasonOption> = EXECUTION_REASON_OPTIONS.reduce(
+  (map, option) => Object.assign(map, { [option.value]: option }),
   {},
 );
