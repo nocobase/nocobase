@@ -2618,6 +2618,174 @@ describe('flowSurfaces extractor scaffold', () => {
     );
   });
 
+  it('should normalize extraction event logs into snapshot facts', () => {
+    const recorder = createFlowSurfaceExtractionRecorder();
+
+    recorder.recordModel({
+      modelUse: 'DemoBlockModel',
+      className: 'RuntimeDemoBlockModel',
+      source: 'src/client-v2/plugin.tsx',
+      confidence: 'medium',
+    });
+    recorder.recordModelLoader({
+      modelUse: 'DemoBlockModel',
+      loaderName: 'loadDemoBlock',
+      source: 'src/client-v2/models/index.ts',
+      evidenceSource: 'ast',
+      confidence: 'high',
+    });
+    recorder.recordMenuItem({
+      menuKey: 'demo',
+      label: 'Demo',
+      modelUse: 'DemoBlockModel',
+      slot: 'blocks',
+      createModelOptionsStatus: 'static',
+      source: 'src/client-v2/plugin.tsx',
+      confidence: 'medium',
+    });
+    recorder.recordMenuItem({
+      menuKey: 'demo',
+      label: '{{t("Demo block", {"defaultValue":"Demo block fallback"})}}',
+      modelUse: 'DemoBlockModel',
+      slot: 'blocks',
+      createModelOptionsStatus: 'dynamic',
+      source: 'src/client-v2/models/DemoBlockModel.tsx',
+      evidenceSource: 'ast',
+      confidence: 'high',
+    });
+    recorder.recordFlow({
+      modelUse: 'DemoBlockModel',
+      flowKey: 'demoSettings',
+      staticStatus: 'unresolved',
+      source: 'src/client-v2/plugin.tsx',
+      confidence: 'low',
+    });
+    recorder.recordFlow({
+      modelUse: 'DemoBlockModel',
+      flowKey: 'demoSettings',
+      title: 'Demo settings',
+      sort: 10,
+      staticStatus: 'static',
+      source: 'src/client-v2/models/DemoBlockModel.tsx',
+      evidenceSource: 'ast',
+      confidence: 'high',
+    });
+    recorder.recordFieldBinding({
+      fieldInterface: 'demo',
+      modelUse: 'DemoFieldModel',
+      role: 'editable',
+      source: 'src/client-v2/fields/demo.tsx',
+      confidence: 'medium',
+    });
+    recorder.recordWarning({
+      code: 'extractor-runtime-error',
+      message: 'Runtime extraction failed; AST fallback used.',
+    });
+    recorder.recordWarning({
+      code: 'extractor-runtime-error',
+      message: 'Runtime extraction failed; AST fallback used.',
+    });
+
+    const snapshot = buildFlowSurfaceAutoSnapshot({
+      plugin: '@nocobase/plugin-demo',
+      generatedAt: '2026-06-04T00:00:00.000Z',
+      sourceHash: 'source-hash',
+      extractorVersion: 'test',
+      events: recorder.getEvents(),
+      warnings: [
+        {
+          code: 'extractor-runtime-error',
+          message: 'Runtime extraction failed; AST fallback used.',
+        },
+      ],
+    });
+
+    expect(recorder.getEvents().map((event) => event.type)).toEqual([
+      'model.registered',
+      'model.loaderRegistered',
+      'menu.itemRegistered',
+      'menu.itemRegistered',
+      'model.flowRegistered',
+      'model.flowRegistered',
+      'field.bindingRegistered',
+      'warning',
+      'warning',
+    ]);
+    expect(snapshot.models).toEqual([
+      expect.objectContaining({
+        modelUse: 'DemoBlockModel',
+        className: 'RuntimeDemoBlockModel',
+        loaderName: 'loadDemoBlock',
+        confidence: 'high',
+        sourceRefs: expect.arrayContaining([
+          expect.objectContaining({
+            source: 'src/client-v2/plugin.tsx',
+            evidenceSource: 'runtime',
+          }),
+          expect.objectContaining({
+            source: 'src/client-v2/models/index.ts',
+            evidenceSource: 'ast',
+          }),
+        ]),
+      }),
+    ]);
+    expect(snapshot.menuItems).toEqual([
+      expect.objectContaining({
+        menuKey: 'demo',
+        modelUse: 'DemoBlockModel',
+        label: 'Demo',
+        labelText: 'Demo',
+        labelKey: 'Demo block',
+        labelFallback: 'Demo block fallback',
+        createModelOptionsStatus: 'dynamic',
+        confidence: 'high',
+        sourceRefs: expect.arrayContaining([
+          expect.objectContaining({
+            source: 'src/client-v2/plugin.tsx',
+            evidenceSource: 'runtime',
+          }),
+          expect.objectContaining({
+            source: 'src/client-v2/models/DemoBlockModel.tsx',
+            evidenceSource: 'ast',
+          }),
+        ]),
+      }),
+    ]);
+    expect(snapshot.flows).toEqual([
+      expect.objectContaining({
+        modelUse: 'DemoBlockModel',
+        flowKey: 'demoSettings',
+        title: 'Demo settings',
+        sort: 10,
+        staticStatus: 'static',
+        confidence: 'high',
+        sourceRefs: expect.arrayContaining([
+          expect.objectContaining({
+            source: 'src/client-v2/plugin.tsx',
+            evidenceSource: 'runtime',
+          }),
+          expect.objectContaining({
+            source: 'src/client-v2/models/DemoBlockModel.tsx',
+            evidenceSource: 'ast',
+          }),
+        ]),
+      }),
+    ]);
+    expect(snapshot.fieldBindings).toEqual([
+      expect.objectContaining({
+        fieldInterface: 'demo',
+        modelUse: 'DemoFieldModel',
+        role: 'editable',
+      }),
+    ]);
+    expect(snapshot.warnings).toEqual([
+      {
+        code: 'extractor-runtime-error',
+        message: 'Runtime extraction failed; AST fallback used.',
+      },
+    ]);
+  });
+
   it('should normalize snapshots and derive read-only auto candidates', () => {
     const runtimeRecorder = createFlowSurfaceExtractionRecorder();
     runtimeRecorder.recordModel({
