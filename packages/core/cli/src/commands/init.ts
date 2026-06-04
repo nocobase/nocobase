@@ -26,6 +26,7 @@ import {
 import { applyCliLocale, localeText, translateCli } from '../lib/cli-locale.ts';
 import { resolveDefaultConfigScope } from '../lib/cli-home.js';
 import {
+  areConfiguredPathsEquivalent,
   deriveConfiguredSourcePath,
   deriveConfiguredStoragePath,
   inferConfiguredAppPathFromLegacyConfig,
@@ -1225,8 +1226,8 @@ Prompt modes:
         ...(gitUrl ? { gitUrl } : {}),
         ...(npmRegistry ? { npmRegistry } : {}),
         ...(appPath ? { appPath } : {}),
-        ...(appRootPath && (!derivedAppRootPath || appRootPath !== derivedAppRootPath) ? { appRootPath } : {}),
-        ...(storagePath && (!derivedStoragePath || storagePath !== derivedStoragePath) ? { storagePath } : {}),
+        ...(appRootPath && !areConfiguredPathsEquivalent(appRootPath, derivedAppRootPath) ? { appRootPath } : {}),
+        ...(storagePath && !areConfiguredPathsEquivalent(storagePath, derivedStoragePath) ? { storagePath } : {}),
         ...(appPort ? { appPort } : {}),
         ...(appKey ? { appKey } : {}),
         ...(timeZone ? { timezone: timeZone } : {}),
@@ -1365,7 +1366,7 @@ Prompt modes:
     }
 
     const appRootPath = String(results.appRootPath ?? '').trim();
-    if (appRootPath && (!appPath || appRootPath !== deriveConfiguredSourcePath(appPath))) {
+    if (appRootPath && (!appPath || !areConfiguredPathsEquivalent(appRootPath, deriveConfiguredSourcePath(appPath)))) {
       argv.push('--app-root-path', appRootPath);
     }
 
@@ -1375,7 +1376,7 @@ Prompt modes:
     }
 
     const storagePath = String(results.storagePath ?? '').trim();
-    if (storagePath && (!appPath || storagePath !== deriveConfiguredStoragePath(appPath))) {
+    if (storagePath && (!appPath || !areConfiguredPathsEquivalent(storagePath, deriveConfiguredStoragePath(appPath)))) {
       argv.push('--storage-path', storagePath);
     }
 

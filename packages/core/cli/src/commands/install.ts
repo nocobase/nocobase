@@ -48,6 +48,7 @@ import { buildStoredEnvConfig, type StoredEnvConfig } from '../lib/env-config.js
 import { resolveDockerEnvFileArg } from '../lib/docker-env-file.ts';
 import { startDockerLogFollower } from '../lib/docker-log-stream.js';
 import {
+  areConfiguredPathsEquivalent,
   deriveConfiguredSourcePath,
   deriveConfiguredStoragePath,
   inferConfiguredAppPathFromLegacyConfig,
@@ -2858,9 +2859,9 @@ export default class Install extends Command {
       build: downloadResultsValue(params.downloadResults, 'build'),
       buildDts: downloadResultsValue(params.downloadResults, 'buildDts'),
       ...(appPath ? { appPath } : {}),
-      ...(appRootPath && (!derivedAppRootPath || appRootPath !== derivedAppRootPath) ? { appRootPath } : {}),
+      ...(appRootPath && !areConfiguredPathsEquivalent(appRootPath, derivedAppRootPath) ? { appRootPath } : {}),
       appPort,
-      ...(storagePath && (!derivedStoragePath || storagePath !== derivedStoragePath) ? { storagePath } : {}),
+      ...(storagePath && !areConfiguredPathsEquivalent(storagePath, derivedStoragePath) ? { storagePath } : {}),
       ...(envFile ? { envFile } : {}),
       appKey: params.appResults.appKey,
       timezone: params.appResults.timeZone,

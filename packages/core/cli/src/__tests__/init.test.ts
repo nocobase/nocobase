@@ -590,6 +590,63 @@ test('nb init saves env config before install starts so failures still leave the
   expect(String(mocks.error.mock.calls.at(-1)?.[0] ?? '')).toContain('install failed');
 });
 
+test('nb init omits equivalent legacy paths when appPath already captures the env layout', async () => {
+  const { default: Init } = await import('../commands/init.js');
+
+  mocks.runPromptCatalog.mockImplementation(async (_catalog, options) => ({
+    appName: 'demoapp',
+    hasNocobase: 'no',
+    lang: 'en-US',
+    appPath: './demoapp/',
+    appRootPath: '.\\demoapp\\source',
+    appPort: '13080',
+    storagePath: './demoapp/storage',
+    source: 'docker',
+    version: 'alpha',
+    dockerRegistry: 'nocobase/nocobase',
+    dockerPlatform: 'linux/arm64',
+    builtinDb: true,
+    dbDialect: 'postgres',
+    dbHost: 'demoapp-postgres',
+    dbPort: '5432',
+    dbDatabase: 'demoapp',
+    dbUser: 'nocobase',
+    dbPassword: 'secret',
+    rootUsername: 'admin',
+    rootEmail: 'admin@nocobase.com',
+    rootPassword: 'admin123',
+    rootNickname: 'Admin',
+    ...(options.values ?? {}),
+  }));
+  mocks.runNpm.mockResolvedValue(undefined);
+
+  const runCommand = vi.fn(async () => undefined);
+  const command = Object.assign(Object.create(Init.prototype), {
+    parse: vi.fn(async () => ({
+      flags: {
+        yes: false,
+        ui: false,
+      },
+    })),
+    config: { runCommand },
+    log: mocks.log,
+    error: mocks.error,
+    exit: (code?: number) => {
+      throw new Error(`unexpected exit: ${code ?? 'unknown'}`);
+    },
+  });
+
+  await Init.prototype.run.call(command);
+
+  expect(mocks.upsertEnv.mock.calls[0]?.[1]).toMatchObject({
+    appPath: './demoapp/',
+    appPort: '13080',
+    source: 'docker',
+  });
+  expect(Object.prototype.hasOwnProperty.call(mocks.upsertEnv.mock.calls[0]?.[1] ?? {}, 'appRootPath')).toBe(false);
+  expect(Object.prototype.hasOwnProperty.call(mocks.upsertEnv.mock.calls[0]?.[1] ?? {}, 'storagePath')).toBe(false);
+});
+
 test('nb init install failures include a full resume command', async () => {
   const { default: Init } = await import('../commands/init.js');
   const originalArgv = process.argv;
@@ -1406,7 +1463,7 @@ test('nb init forwards dynamically selected ports in --yes mode', async () => {
   }
 });
 
-test('nb init keeps absolute appRootPath and storagePath when forwarding to nb install', async () => {
+test('nb init normalizes equivalent absolute legacy paths to --app-path when forwarding to nb install', async () => {
   const { default: Init } = await import('../commands/init.js');
   const originalArgv = process.argv;
   process.argv = ['node', 'nb', 'init', '--yes'];
@@ -1431,14 +1488,12 @@ test('nb init keeps absolute appRootPath and storagePath when forwarding to nb i
       { yes: true },
     );
 
-    expect(argv.slice(argv.indexOf('--app-root-path'), argv.indexOf('--app-root-path') + 2)).toEqual([
-      '--app-root-path',
-      '/tmp/nb-app/source',
+    expect(argv.slice(argv.indexOf('--app-path'), argv.indexOf('--app-path') + 2)).toEqual([
+      '--app-path',
+      '/tmp/nb-app/',
     ]);
-    expect(argv.slice(argv.indexOf('--storage-path'), argv.indexOf('--storage-path') + 2)).toEqual([
-      '--storage-path',
-      '/tmp/nb-app/storage',
-    ]);
+    expect(argv).not.toContain('--app-root-path');
+    expect(argv).not.toContain('--storage-path');
   } finally {
     process.argv = originalArgv;
   }

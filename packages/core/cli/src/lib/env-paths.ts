@@ -26,6 +26,15 @@ function normalizePathForComparison(value: string): string {
   return value.replace(/[\\/]+/g, '/').replace(/\/+$/, '');
 }
 
+export function areConfiguredPathsEquivalent(left: unknown, right: unknown): boolean {
+  const leftValue = trimPathValue(left);
+  const rightValue = trimPathValue(right);
+  if (!leftValue || !rightValue) {
+    return leftValue === rightValue;
+  }
+  return normalizePathForComparison(leftValue) === normalizePathForComparison(rightValue);
+}
+
 function trimTrailingSeparators(value: string): string {
   return value.replace(/[\\/]+$/, '');
 }
@@ -90,8 +99,7 @@ export function inferConfiguredAppPathFromLegacyConfig(config: EnvPathConfig): s
     return undefined;
   }
 
-  const normalized = normalizePathForComparison(first);
-  return candidates.every((candidate) => normalizePathForComparison(candidate) === normalized) ? first : undefined;
+  return candidates.every((candidate) => areConfiguredPathsEquivalent(candidate, first)) ? first : undefined;
 }
 
 export function resolveConfiguredAppPath(

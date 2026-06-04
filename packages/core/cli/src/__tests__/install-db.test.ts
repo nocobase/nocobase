@@ -794,7 +794,7 @@ test('install saved env config records when an env uses an external database', (
   expect(envConfig.apiBaseUrl).toBe('http://127.0.0.1:13081/api');
 });
 
-test('install saved env config keeps absolute appRootPath and storagePath', () => {
+test('install saved env config normalizes equivalent absolute legacy paths to appPath', () => {
   const installStatics = Install as unknown as InstallStatics;
   const envConfig = installStatics.buildSavedEnvConfig({
     envName: 'absolute',
@@ -812,8 +812,9 @@ test('install saved env config keeps absolute appRootPath and storagePath', () =
     },
   });
 
-  expect(envConfig.appRootPath).toBe('/tmp/absolute/source');
-  expect(envConfig.storagePath).toBe('/tmp/absolute/storage');
+  expect(envConfig.appPath).toBe('/tmp/absolute/');
+  expect(Object.prototype.hasOwnProperty.call(envConfig, 'appRootPath')).toBe(false);
+  expect(Object.prototype.hasOwnProperty.call(envConfig, 'storagePath')).toBe(false);
 });
 
 test('install saved env config prefers appPath and omits derived legacy paths', () => {
@@ -825,6 +826,30 @@ test('install saved env config prefers appPath and omits derived legacy paths', 
       appRootPath: './derived/source/',
       appPort: '13081',
       storagePath: './derived/storage/',
+    },
+    downloadResults: {},
+    dbResults: {},
+    rootResults: {},
+    envAddResults: {
+      apiBaseUrl: 'http://127.0.0.1:13081/api',
+      authType: 'oauth',
+    },
+  });
+
+  expect(envConfig.appPath).toBe('./derived/');
+  expect(Object.prototype.hasOwnProperty.call(envConfig, 'appRootPath')).toBe(false);
+  expect(Object.prototype.hasOwnProperty.call(envConfig, 'storagePath')).toBe(false);
+});
+
+test('install saved env config omits equivalent legacy paths with different separators', () => {
+  const installStatics = Install as unknown as InstallStatics;
+  const envConfig = installStatics.buildSavedEnvConfig({
+    envName: 'derived-normalized',
+    appResults: {
+      appPath: './derived/',
+      appRootPath: '.\\derived\\source',
+      appPort: '13081',
+      storagePath: './derived/storage',
     },
     downloadResults: {},
     dbResults: {},
