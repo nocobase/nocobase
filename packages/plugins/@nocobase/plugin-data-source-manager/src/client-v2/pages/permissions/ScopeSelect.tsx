@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { CollectionFilter, DEFAULT_PAGE_SIZE, DrawerFormLayout, Table, type CompiledFilter } from '@nocobase/client-v2';
+import { CollectionFilter, DrawerFormLayout, Table, type CompiledFilter } from '@nocobase/client-v2';
 import type { Collection } from '@nocobase/flow-engine';
 import { useFlowContext } from '@nocobase/flow-engine';
 import { PlusOutlined } from '@ant-design/icons';
@@ -20,6 +20,8 @@ import { destroyScopeRecord, saveScopeRecord } from './permissionRequests';
 import type { ScopeRecord } from './types';
 
 type TFunction = (key: string, options?: Record<string, unknown>) => string;
+
+const DATA_SCOPE_PAGE_SIZE = 20;
 
 function normalizeListResponse(response: any) {
   const payload = response?.data?.data;
@@ -121,7 +123,7 @@ function ScopePicker(props: ScopePickerProps) {
   const { modal } = App.useApp();
   const [selectedRowKey, setSelectedRowKey] = useState<React.Key | undefined>(getScopeValueKey(props.value));
   const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
+  const [pageSize, setPageSize] = useState(DATA_SCOPE_PAGE_SIZE);
   const resource = useMemo(
     () => ctx.api.resource(`dataSources/${props.dataSourceKey}/rolesResourcesScopes`),
     [ctx.api, props.dataSourceKey],
@@ -265,13 +267,14 @@ function ScopePicker(props: ScopePickerProps) {
       }
     >
       <Space direction="vertical" size={token.margin} style={{ width: '100%' }}>
-        <div>
+        <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
           <Button type="primary" icon={<PlusOutlined />} onClick={() => openScopeForm()}>
             {props.t('Add new')}
           </Button>
         </div>
         <Table<ScopeRecord>
           rowKey="id"
+          showIndex={false}
           loading={request.loading}
           dataSource={records}
           columns={columns}

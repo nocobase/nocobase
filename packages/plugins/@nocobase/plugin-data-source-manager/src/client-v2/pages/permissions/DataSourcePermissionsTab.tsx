@@ -31,6 +31,7 @@ import type { AvailableAction, DataSourceRecord, RoleCollectionRecord, RoleResou
 import { NAMESPACE } from '../../locale';
 
 const ROLE_COLLECTIONS_FILTER_COLLECTION_NAME = 'dataSourcePermissionCollectionsFilter';
+const COLLECTION_ACTION_PERMISSION_PAGE_SIZE = 20;
 
 const ROLE_COLLECTIONS_FILTER_COLLECTION: CollectionOptions = {
   name: ROLE_COLLECTIONS_FILTER_COLLECTION_NAME,
@@ -298,7 +299,7 @@ function CollectionActionPermissionsContent(props: CollectionActionPermissionsPr
   const engine = useFlowEngine();
   const tableFillClassName = useTableFillClassName();
   const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
+  const [pageSize, setPageSize] = useState(COLLECTION_ACTION_PERMISSION_PAGE_SIZE);
   const [collectionFilter, setCollectionFilter] = useState<CompiledFilter>();
   const collection = ctx.dataSourceManager
     .getDataSource('main')
