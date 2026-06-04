@@ -240,6 +240,7 @@ type PlannedPluginDownload =
       outputDir: string;
       resolvedVersion: string;
       tarballUrl: string;
+      warning?: string;
     }
   | {
       action: 'skipped';
