@@ -316,7 +316,7 @@ Navigate between pages in components via `ctx.router.navigate()`:
 
 ```tsx
 const ctx = useFlowContext();
-ctx.router.navigate('/hello'); // -> /studio/hello
+ctx.router.navigate('/hello'); // -> /v/hello
 ```
 
 ### Route Information (ctx.route)
@@ -351,7 +351,7 @@ interface RouteOptions {
 ```tsx
 const ctx = useFlowContext();
 
-console.log(ctx.location.pathname); // '/studio/hello'
+console.log(ctx.location.pathname); // '/v/hello'
 console.log(ctx.location.search);   // '?page=1'
 console.log(ctx.location.hash);     // '#section'
 ```

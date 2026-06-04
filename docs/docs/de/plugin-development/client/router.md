@@ -15,7 +15,7 @@ Die Registrierung von Routen erfolgt üblicherweise in der `load()`-Methode des 
 
 :::warning Hinweis
 
-Bei NocoBase-v2-Plugins erhalten registrierte Routen standardmäßig das Präfix `/studio`. Beim Aufruf der Routen müssen Sie dieses Präfix angeben.
+Bei NocoBase-v2-Plugins erhalten registrierte Routen standardmäßig das Präfix `/v`. Beim Aufruf der Routen müssen Sie dieses Präfix angeben.
 
 :::
 
@@ -25,9 +25,9 @@ NocoBase hat die folgenden Standardrouten registriert:
 
 | Name           | Pfad                  | Komponente          | Beschreibung               |
 | -------------- | --------------------- | ------------------- | -------------------------- |
-| admin          | /studio/admin/\*          | AdminLayout         | Admin-Seiten               |
-| admin.page     | /studio/admin/:name       | AdminDynamicPage    | Dynamisch erstellte Seiten |
-| admin.settings | /studio/admin/settings/\* | AdminSettingsLayout | Plugin-Einstellungsseiten  |
+| admin          | /v/admin/\*          | AdminLayout         | Admin-Seiten               |
+| admin.page     | /v/admin/:name       | AdminDynamicPage    | Dynamisch erstellte Seiten |
+| admin.settings | /v/admin/settings/\* | AdminSettingsLayout | Plugin-Einstellungsseiten  |
 
 ## Seitenrouten
 
@@ -55,7 +55,7 @@ class MyPlugin extends Plugin {
   async load() {
     this.router.add('hello', {
       path: '/hello',
-      // Lazy Loading: Das Modul wird erst geladen, wenn /studio/hello aufgerufen wird
+      // Lazy Loading: Das Modul wird erst geladen, wenn /v/hello aufgerufen wird
       componentLoader: () => import('./pages/HelloPage'),
     });
   }
@@ -103,12 +103,12 @@ class MyPlugin extends Plugin {
 
     // Untergeordnete Route, mit componentLoader zum Lazy Loading
     this.router.add('root.home', {
-      path: '/', // -> /studio/
+      path: '/', // -> /v/
       componentLoader: () => import('./pages/HomePage'),
     });
 
     this.router.add('root.about', {
-      path: '/about', // -> /studio/about
+      path: '/about', // -> /v/about
       componentLoader: () => import('./pages/AboutPage'),
     });
   }
@@ -121,7 +121,7 @@ Routenpfade unterstützen dynamische Parameter:
 
 ```tsx
 this.router.add('root.user', {
-  path: '/user/:id', // -> /studio/user/:id
+  path: '/user/:id', // -> /v/user/:id
   componentLoader: () => import('./pages/UserPage'),
 });
 ```
@@ -176,7 +176,7 @@ export class HelloPlugin extends Plugin<any, Application> {
 }
 ```
 
-Nach der Registrierung lautet der Aufrufpfad `/studio/admin/settings/hello`. Wenn unter dem Menü nur eine Seite vorhanden ist, wird die obere Tab-Leiste automatisch ausgeblendet.
+Nach der Registrierung lautet der Aufrufpfad `/v/admin/settings/hello`. Wenn unter dem Menü nur eine Seite vorhanden ist, wird die obere Tab-Leiste automatisch ausgeblendet.
 
 ### Einstellungsseite mit mehreren Tabs
 
@@ -194,7 +194,7 @@ class HelloPlugin extends Plugin<any, Application> {
       icon: 'ApiOutlined',
     });
 
-    // Tab 1: Allgemeine Einstellungen (key 'index' wird auf /studio/admin/settings/hello abgebildet)
+    // Tab 1: Allgemeine Einstellungen (key 'index' wird auf /v/admin/settings/hello abgebildet)
     this.pluginSettingsManager.addPageTabItem({
       menuKey: 'hello',
       key: 'index',
@@ -202,7 +202,7 @@ class HelloPlugin extends Plugin<any, Application> {
       componentLoader: () => import('./settings/GeneralPage'),
     });
 
-    // Tab 2: Erweiterte Einstellungen (wird auf /studio/admin/settings/hello/advanced abgebildet)
+    // Tab 2: Erweiterte Einstellungen (wird auf /v/admin/settings/hello/advanced abgebildet)
     this.pluginSettingsManager.addPageTabItem({
       menuKey: 'hello',
       key: 'advanced',

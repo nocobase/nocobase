@@ -12,7 +12,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useApp } from '@nocobase/client-v2';
 
 /**
- * 把 `?redirect=` 上带 modern client basename 的目标(例如 `/nocobase/studio/admin`)规约成
+ * 把 `?redirect=` 上带 modern client basename 的目标(例如 `/nocobase/v/admin`)规约成
  * react-router 接受的、相对 basename 的路径(`/admin`)。如果 target 已经是相对路径(不带
  * basename, 例如服务端 2FA 中间件返回的 `/admin`),原样返回——react-router `navigate` 会自动
  * 加上 basename。

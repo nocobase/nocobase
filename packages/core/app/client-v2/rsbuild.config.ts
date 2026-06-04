@@ -25,9 +25,9 @@ generateV2Plugins();
 // sibling copy of this default lives in packages/core/cli-v1/src/util.js
 // (DEFAULT_MODERN_CLIENT_PREFIX) and packages/core/server/src/gateway (utils.ts
 // MODERN_CLIENT_DIST_DIR). Keep them in sync. See docs/adr/0001-modern-client-prefix.md.
-const MODERN_CLIENT_DIST_DIR = 'studio';
+const MODERN_CLIENT_DIST_DIR = 'v';
 
-// Normalize APP_MODERN_CLIENT_PREFIX (accepts `studio`, `/studio`, `/studio/`)
+// Normalize APP_MODERN_CLIENT_PREFIX (accepts `v`, `/v`, `/v/`)
 // to a bare segment, falling back to the fixed dist dir name.
 function normalizeModernClientPrefix(value: string | undefined) {
   const segment = String(value || '')
@@ -126,7 +126,7 @@ export default defineConfig(({ command }) => {
   const localStorageBasePath = ensurePublicPath(`${appPublicPath.replace(/\/$/, '')}/storage/uploads/`);
   const staticBasePath = ensurePublicPath(`${appPublicPath.replace(/\/$/, '')}/static/`);
   const modernClientPrefix = normalizeModernClientPrefix(process.env.APP_MODERN_CLIENT_PREFIX);
-  // Build bakes the FIXED dist-dir segment (`/studio/`) as a sentinel that the
+  // Build bakes the FIXED dist-dir segment (`/v/`) as a sentinel that the
   // server rewrites to the runtime prefix per request. Dev serves under the
   // actual runtime prefix so URLs line up with the v1 dev proxy.
   const modernClientDistPath = ensurePublicPath(`${appPublicPath.replace(/\/$/, '')}/${MODERN_CLIENT_DIST_DIR}/`);

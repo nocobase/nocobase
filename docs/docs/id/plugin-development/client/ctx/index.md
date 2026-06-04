@@ -85,7 +85,7 @@ async load() {
 ```tsx
 // Di Component: navigasi halaman
 const ctx = useFlowContext();
-ctx.router.navigate('/hello'); // -> /studio/hello
+ctx.router.navigate('/hello'); // -> /v/hello
 ```
 
 ## Kapabilitas Umum yang Disediakan Konteks

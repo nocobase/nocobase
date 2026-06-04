@@ -23,8 +23,8 @@ export interface BuildRedirectPathOptions {
   /**
    * The raw redirect the client supplied. May be:
    *  - v1 basename-relative (`/admin/abc`), needs full prefix prepended.
-   *  - modern-client root-relative (`/nocobase/studio/admin/abc` or
-   *    `/nocobase/studio/apps/<id>/admin/abc`), already absolute under the
+   *  - modern-client root-relative (`/nocobase/v/admin/abc` or
+   *    `/nocobase/v/apps/<id>/admin/abc`), already absolute under the
    *    document root; must NOT be touched.
    *  - missing — falls back to `/admin`.
    */
@@ -40,12 +40,12 @@ export interface BuildRedirectPathOptions {
  * sub-app segment. Modern (v2) clients emit `redirect` as an already-root-
  * relative path that includes `APP_PUBLIC_PATH` and (for sub-apps) the
  * `/<modern-prefix>/apps/<id>` segment — so any further prepending produces
- * nonsense URLs like `/nocobase/apps/<id>/nocobase/studio/apps/<id>/admin/…`.
+ * nonsense URLs like `/nocobase/apps/<id>/nocobase/v/apps/<id>/admin/…`.
  *
  * Detection rule: a target is modern-shaped iff it starts with
  * `appPublicPath + '/'`. The sub-app segment is irrelevant to detection
  * because modern clients always prefix with `appPublicPath` regardless of
- * sub-app (`/<APP_PUBLIC_PATH>/studio/...` or `/<…>/studio/apps/<id>/...`).
+ * sub-app (`/<APP_PUBLIC_PATH>/v/...` or `/<…>/v/apps/<id>/...`).
  *
  * Single export shared by all auth-related SSO plugins (CAS, SAML, …).
  */
@@ -66,14 +66,14 @@ export function buildRedirectPath({ appPublicPath, subAppSegment, target }: Buil
 
 /**
  * The runtime URL segment under which the modern (v2) client is served,
- * read from `APP_MODERN_CLIENT_PREFIX` (default `studio`). Returns a bare
+ * read from `APP_MODERN_CLIENT_PREFIX` (default `v`). Returns a bare
  * segment without surrounding slashes.
  */
 export function getModernClientPrefix(): string {
   return (
     String(process.env.APP_MODERN_CLIENT_PREFIX || '')
       .trim()
-      .replace(/^\/+|\/+$/g, '') || 'studio'
+      .replace(/^\/+|\/+$/g, '') || 'v'
   );
 }
 

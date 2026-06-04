@@ -91,7 +91,7 @@ server {
     }
 
     location {{v2PublicPath}}assets/ {
-        alias {{cwd}}/node_modules/@nocobase/app/dist/client/studio/assets/;
+        alias {{cwd}}/node_modules/@nocobase/app/dist/client/v/assets/;
         expires 365d;
         add_header Cache-Control "public";
         access_log off;

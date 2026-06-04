@@ -374,12 +374,12 @@ exports.resolvePublicPath = resolvePublicPath;
 //   - packages/core/app/client-v2/rsbuild.config.ts (output.distPath)
 //   - packages/core/server/src/gateway/index.ts (MODERN_CLIENT_DIST_DIR)
 // Keep them in sync. See docs/adr/0001-modern-client-prefix.md.
-const DEFAULT_MODERN_CLIENT_PREFIX = 'studio';
+const DEFAULT_MODERN_CLIENT_PREFIX = 'v';
 
 exports.DEFAULT_MODERN_CLIENT_PREFIX = DEFAULT_MODERN_CLIENT_PREFIX;
 
-// Normalize APP_MODERN_CLIENT_PREFIX (accepts `studio`, `/studio`, `/studio/`)
-// down to a bare segment like `studio`.
+// Normalize APP_MODERN_CLIENT_PREFIX (accepts `v`, `/v`, `/v/`)
+// down to a bare segment like `v`.
 function normalizeModernClientPrefix(value) {
   const segment = String(value || '')
     .trim()

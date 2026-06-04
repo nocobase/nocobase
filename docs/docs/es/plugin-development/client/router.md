@@ -15,7 +15,7 @@ El registro de rutas suele realizarse en el método `load()` del plugin. Consult
 
 :::warning Nota
 
-En los plugins de NocoBase v2, las rutas registradas reciben por defecto el prefijo `/studio`. Debe incluir este prefijo al acceder a las rutas.
+En los plugins de NocoBase v2, las rutas registradas reciben por defecto el prefijo `/v`. Debe incluir este prefijo al acceder a las rutas.
 
 :::
 
@@ -25,9 +25,9 @@ NocoBase tiene registradas las siguientes rutas predeterminadas:
 
 | Nombre         | Ruta                  | Componente          | Descripción                   |
 | -------------- | --------------------- | ------------------- | ----------------------------- |
-| admin          | /studio/admin/\*          | AdminLayout         | Páginas de administración     |
-| admin.page     | /studio/admin/:name       | AdminDynamicPage    | Páginas creadas dinámicamente |
-| admin.settings | /studio/admin/settings/\* | AdminSettingsLayout | Páginas de configuración de plugins |
+| admin          | /v/admin/\*          | AdminLayout         | Páginas de administración     |
+| admin.page     | /v/admin/:name       | AdminDynamicPage    | Páginas creadas dinámicamente |
+| admin.settings | /v/admin/settings/\* | AdminSettingsLayout | Páginas de configuración de plugins |
 
 ## Rutas de página
 
@@ -55,7 +55,7 @@ class MyPlugin extends Plugin {
   async load() {
     this.router.add('hello', {
       path: '/hello',
-      // Carga diferida: el módulo solo se carga al visitar /studio/hello
+      // Carga diferida: el módulo solo se carga al visitar /v/hello
       componentLoader: () => import('./pages/HelloPage'),
     });
   }
@@ -103,12 +103,12 @@ class MyPlugin extends Plugin {
 
     // Ruta hija, con componentLoader para la carga diferida
     this.router.add('root.home', {
-      path: '/', // -> /studio/
+      path: '/', // -> /v/
       componentLoader: () => import('./pages/HomePage'),
     });
 
     this.router.add('root.about', {
-      path: '/about', // -> /studio/about
+      path: '/about', // -> /v/about
       componentLoader: () => import('./pages/AboutPage'),
     });
   }
@@ -121,7 +121,7 @@ Las rutas admiten parámetros dinámicos:
 
 ```tsx
 this.router.add('root.user', {
-  path: '/user/:id', // -> /studio/user/:id
+  path: '/user/:id', // -> /v/user/:id
   componentLoader: () => import('./pages/UserPage'),
 });
 ```
@@ -176,7 +176,7 @@ export class HelloPlugin extends Plugin<any, Application> {
 }
 ```
 
-Tras el registro, la ruta de acceso es `/studio/admin/settings/hello`. Cuando solo hay una página bajo el menú, la barra de pestañas superior se oculta automáticamente.
+Tras el registro, la ruta de acceso es `/v/admin/settings/hello`. Cuando solo hay una página bajo el menú, la barra de pestañas superior se oculta automáticamente.
 
 ### Página de configuración con varias pestañas
 
@@ -194,7 +194,7 @@ class HelloPlugin extends Plugin<any, Application> {
       icon: 'ApiOutlined',
     });
 
-    // Pestaña 1: Configuración general (la clave 'index' se asigna a /studio/admin/settings/hello)
+    // Pestaña 1: Configuración general (la clave 'index' se asigna a /v/admin/settings/hello)
     this.pluginSettingsManager.addPageTabItem({
       menuKey: 'hello',
       key: 'index',
@@ -202,7 +202,7 @@ class HelloPlugin extends Plugin<any, Application> {
       componentLoader: () => import('./settings/GeneralPage'),
     });
 
-    // Pestaña 2: Configuración avanzada (se asigna a /studio/admin/settings/hello/advanced)
+    // Pestaña 2: Configuración avanzada (se asigna a /v/admin/settings/hello/advanced)
     this.pluginSettingsManager.addPageTabItem({
       menuKey: 'hello',
       key: 'advanced',

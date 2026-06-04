@@ -126,7 +126,7 @@ function getModernClientWindow(): ModernClientWindow | undefined {
  * The runtime URL segment under which the modern (v2) client is served.
  * Injected by the server as `window.__nocobase_modern_client_prefix__`. Falls
  * back to the trailing segment of `window.__nocobase_public_path__`, then to
- * the default `studio`. Returns a bare segment (no slashes).
+ * the default `v`. Returns a bare segment (no slashes).
  */
 export function getModernClientPrefix(): string {
   const win = getModernClientWindow();
@@ -142,12 +142,12 @@ export function getModernClientPrefix(): string {
       return last;
     }
   }
-  return 'studio';
+  return 'v';
 }
 
 /**
  * Strip the trailing modern-client prefix segment from a public path,
- * recovering the app root public path (e.g. `/nocobase/studio/` -> `/nocobase/`).
+ * recovering the app root public path (e.g. `/nocobase/v/` -> `/nocobase/`).
  */
 export function stripModernClientPrefix(publicPath?: string): string {
   const normalized = normalizePublicPath(publicPath);

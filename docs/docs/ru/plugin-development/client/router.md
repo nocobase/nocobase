@@ -15,7 +15,7 @@ keywords: "Router,маршрутизация,router.add,pluginSettingsManager,ad
 
 :::warning Примечание
 
-В плагинах NocoBase v2 зарегистрированные маршруты по умолчанию получают префикс `/studio`. При обращении к маршрутам необходимо указывать этот префикс.
+В плагинах NocoBase v2 зарегистрированные маршруты по умолчанию получают префикс `/v`. При обращении к маршрутам необходимо указывать этот префикс.
 
 :::
 
@@ -25,9 +25,9 @@ keywords: "Router,маршрутизация,router.add,pluginSettingsManager,ad
 
 | Имя            | Путь                  | Компонент           | Описание                       |
 | -------------- | --------------------- | ------------------- | ------------------------------ |
-| admin          | /studio/admin/\*          | AdminLayout         | Страницы администрирования     |
-| admin.page     | /studio/admin/:name       | AdminDynamicPage    | Динамически создаваемые страницы |
-| admin.settings | /studio/admin/settings/\* | AdminSettingsLayout | Страницы настроек плагинов     |
+| admin          | /v/admin/\*          | AdminLayout         | Страницы администрирования     |
+| admin.page     | /v/admin/:name       | AdminDynamicPage    | Динамически создаваемые страницы |
+| admin.settings | /v/admin/settings/\* | AdminSettingsLayout | Страницы настроек плагинов     |
 
 ## Маршруты страниц
 
@@ -55,7 +55,7 @@ class MyPlugin extends Plugin {
   async load() {
     this.router.add('hello', {
       path: '/hello',
-      // Отложенная загрузка: модуль загружается только при обращении к /studio/hello
+      // Отложенная загрузка: модуль загружается только при обращении к /v/hello
       componentLoader: () => import('./pages/HelloPage'),
     });
   }
@@ -103,12 +103,12 @@ class MyPlugin extends Plugin {
 
     // Дочерний маршрут, componentLoader для отложенной загрузки
     this.router.add('root.home', {
-      path: '/', // -> /studio/
+      path: '/', // -> /v/
       componentLoader: () => import('./pages/HomePage'),
     });
 
     this.router.add('root.about', {
-      path: '/about', // -> /studio/about
+      path: '/about', // -> /v/about
       componentLoader: () => import('./pages/AboutPage'),
     });
   }
@@ -121,7 +121,7 @@ class MyPlugin extends Plugin {
 
 ```tsx
 this.router.add('root.user', {
-  path: '/user/:id', // -> /studio/user/:id
+  path: '/user/:id', // -> /v/user/:id
   componentLoader: () => import('./pages/UserPage'),
 });
 ```
@@ -176,7 +176,7 @@ export class HelloPlugin extends Plugin<any, Application> {
 }
 ```
 
-После регистрации путь доступа — `/studio/admin/settings/hello`. Когда под меню есть только одна страница, верхняя панель вкладок автоматически скрывается.
+После регистрации путь доступа — `/v/admin/settings/hello`. Когда под меню есть только одна страница, верхняя панель вкладок автоматически скрывается.
 
 ### Страница настроек с несколькими вкладками
 
@@ -194,7 +194,7 @@ class HelloPlugin extends Plugin<any, Application> {
       icon: 'ApiOutlined',
     });
 
-    // Вкладка 1: Общие настройки (ключ 'index' сопоставляется с /studio/admin/settings/hello)
+    // Вкладка 1: Общие настройки (ключ 'index' сопоставляется с /v/admin/settings/hello)
     this.pluginSettingsManager.addPageTabItem({
       menuKey: 'hello',
       key: 'index',
@@ -202,7 +202,7 @@ class HelloPlugin extends Plugin<any, Application> {
       componentLoader: () => import('./settings/GeneralPage'),
     });
 
-    // Вкладка 2: Расширенные настройки (сопоставляется с /studio/admin/settings/hello/advanced)
+    // Вкладка 2: Расширенные настройки (сопоставляется с /v/admin/settings/hello/advanced)
     this.pluginSettingsManager.addPageTabItem({
       menuKey: 'hello',
       key: 'advanced',

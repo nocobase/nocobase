@@ -99,11 +99,11 @@ const rootPublicPath = getRootPublicPath();
 const v2PublicPath = getV2PublicPath();
 
 // The fixed build-output directory segment baked into asset paths at build time
-// (e.g. `studio`), derived from the baked BASE_URL. Distinct from the runtime
+// (e.g. `v`), derived from the baked BASE_URL. Distinct from the runtime
 // modern-client prefix, which may be overridden per-deployment.
 function getBuildAssetDir() {
-  const base = (import.meta.env.BASE_URL || '/studio/').replace(/\/+$/, '');
-  return base.split('/').pop() || 'studio';
+  const base = (import.meta.env.BASE_URL || '/v/').replace(/\/+$/, '');
+  return base.split('/').pop() || 'v';
 }
 
 // Point dynamically-imported chunks of the main bundle at the runtime modern

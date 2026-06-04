@@ -16,7 +16,7 @@ import {
   rewriteV2AssetPublicPath,
 } from '../gateway/utils';
 
-const DIR = MODERN_CLIENT_DIST_DIR; // fixed build-output dir / rewrite sentinel, e.g. `studio`
+const DIR = MODERN_CLIENT_DIST_DIR; // fixed build-output dir / rewrite sentinel, e.g. `v`
 
 describe('gateway utils', () => {
   afterEach(() => {
@@ -24,9 +24,9 @@ describe('gateway utils', () => {
   });
 
   it('normalizes the modern client prefix', () => {
-    expect(normalizeModernClientPrefix('studio')).toBe('studio');
-    expect(normalizeModernClientPrefix('/studio')).toBe('studio');
-    expect(normalizeModernClientPrefix('/studio/')).toBe('studio');
+    expect(normalizeModernClientPrefix('v')).toBe('v');
+    expect(normalizeModernClientPrefix('/v')).toBe('v');
+    expect(normalizeModernClientPrefix('/v/')).toBe('v');
     expect(normalizeModernClientPrefix('')).toBe(DIR);
     expect(normalizeModernClientPrefix(undefined)).toBe(DIR);
   });

@@ -38,11 +38,11 @@ Si modificó código del cliente y no se aplicó, primero pruebe a refrescar el 
 
 ### No se accede a la ruta de página registrada
 
-Las rutas de NocoBase v2 incluyen por defecto el prefijo `/studio`. Por ejemplo, si registra `path: '/hello'`, la URL real es `/studio/hello`:
+Las rutas de NocoBase v2 incluyen por defecto el prefijo `/v`. Por ejemplo, si registra `path: '/hello'`, la URL real es `/v/hello`:
 
 ```ts
 this.router.add('hello', {
-  path: '/hello', // URL real -> /studio/hello
+  path: '/hello', // URL real -> /v/hello
   componentLoader: () => import('./pages/HelloPage'),
 });
 ```
@@ -283,7 +283,7 @@ El sistema de build de NocoBase mantiene una [lista de externals](../../dependen
 ## Enlaces relacionados
 
 - [Plugin](../plugin): entrada del plugin y ciclo de vida.
-- [Router](../router): registro de rutas y prefijo `/studio`.
+- [Router](../router): registro de rutas y prefijo `/v`.
 - [Visión general de FlowEngine](../flow-engine/index.md): uso básico de FlowModel.
 - [FlowEngine → Extensión de bloques](../flow-engine/block): BlockModel, TableBlockModel, `filterCollection`.
 - [FlowEngine → Extensión de campos](../flow-engine/field): FieldModel, `bindModelToInterface`.

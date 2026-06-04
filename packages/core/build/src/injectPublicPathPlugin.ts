@@ -28,8 +28,8 @@ if (!publicPath) {
   }
 }
 if (!publicPath) {
-  var modernPrefix = window['__nocobase_modern_client_prefix__'] || 'studio';
-  modernPrefix = String(modernPrefix).replace(/^\\/+|\\/+$/g, '') || 'studio';
+  var modernPrefix = window['__nocobase_modern_client_prefix__'] || 'v';
+  modernPrefix = String(modernPrefix).replace(/^\\/+|\\/+$/g, '') || 'v';
   var marker = '/' + modernPrefix + '/';
   publicPath = window['__nocobase_public_path__'] || '';
   if (!publicPath && window.location && window.location.pathname) {

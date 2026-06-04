@@ -100,9 +100,9 @@ export default defineConfig(({ command }) => {
   const staticBasePath = ensurePublicPath(`${resolvedAppPublicPath}static/`, '/static/');
   const wsBasePath = ensurePublicPath(process.env.WS_PATH, '/ws/');
   const modernClientPrefix =
-    String(process.env.APP_MODERN_CLIENT_PREFIX || 'studio')
+    String(process.env.APP_MODERN_CLIENT_PREFIX || 'v')
       .trim()
-      .replace(/^\/+|\/+$/g, '') || 'studio';
+      .replace(/^\/+|\/+$/g, '') || 'v';
   const v2BasePath = ensurePublicPath(
     `${resolvedAppPublicPath.replace(/\/$/, '')}/${modernClientPrefix}/`,
     `/${modernClientPrefix}/`,

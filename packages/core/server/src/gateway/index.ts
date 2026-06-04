@@ -496,7 +496,7 @@ export class Gateway extends EventEmitter {
 
         req.url = req.url.substring(APP_PUBLIC_PATH.length - 1);
         // Map the runtime modern-client prefix segment back to the fixed
-        // on-disk build directory (e.g. /admin/assets/x.js -> /studio/assets/x.js)
+        // on-disk build directory (e.g. /admin/assets/x.js -> /v/assets/x.js)
         // so assets resolve when serving standalone (no nginx) and the runtime
         // prefix differs from the dist dir. No-op when they match (the default).
         const modernPrefix = normalizeModernClientPrefix(process.env.APP_MODERN_CLIENT_PREFIX);

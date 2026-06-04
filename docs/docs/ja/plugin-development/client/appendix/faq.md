@@ -38,11 +38,11 @@ keywords: "FAQ,よくある質問,トラブルシューティング,Troubleshoot
 
 ### 登録したページルートにアクセスできない
 
-NocoBase v2 のルートにはデフォルトで `/studio` プレフィックスが付きます。例えば `path: '/hello'` で登録した場合、実際のアクセス URL は `/studio/hello` になります：
+NocoBase v2 のルートにはデフォルトで `/v` プレフィックスが付きます。例えば `path: '/hello'` で登録した場合、実際のアクセス URL は `/v/hello` になります：
 
 ```ts
 this.router.add('hello', {
-  path: '/hello', // 実際のアクセス -> /studio/hello
+  path: '/hello', // 実際のアクセス -> /v/hello
   componentLoader: () => import('./pages/HelloPage'),
 });
 ```
@@ -285,7 +285,7 @@ NocoBase のビルドシステムは [external リスト](../../dependency-manag
 ## 関連リンク
 
 - [Plugin プラグイン](../plugin) — プラグインエントリとライフサイクル
-- [Router ルーティング](../router) — ルート登録と `/studio` プレフィックス
+- [Router ルーティング](../router) — ルート登録と `/v` プレフィックス
 - [FlowEngine 概要](../flow-engine/index.md) — FlowModel の基本的な使い方
 - [FlowEngine → ブロック拡張](../flow-engine/block) — BlockModel、TableBlockModel、filterCollection
 - [FlowEngine → フィールド拡張](../flow-engine/field) — FieldModel、bindModelToInterface

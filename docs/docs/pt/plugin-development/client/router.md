@@ -15,7 +15,7 @@ O registro de rotas geralmente é feito no método `load()` do plugin. Consulte 
 
 :::warning Atenção
 
-Nos plugins do NocoBase v2, as rotas registradas recebem por padrão o prefixo `/studio`. É necessário incluir esse prefixo ao acessar as rotas.
+Nos plugins do NocoBase v2, as rotas registradas recebem por padrão o prefixo `/v`. É necessário incluir esse prefixo ao acessar as rotas.
 
 :::
 
@@ -25,9 +25,9 @@ O NocoBase já tem as seguintes rotas padrão registradas:
 
 | Nome           | Caminho               | Componente          | Descrição                     |
 | -------------- | --------------------- | ------------------- | ----------------------------- |
-| admin          | /studio/admin/\*          | AdminLayout         | Páginas de administração      |
-| admin.page     | /studio/admin/:name       | AdminDynamicPage    | Páginas criadas dinamicamente |
-| admin.settings | /studio/admin/settings/\* | AdminSettingsLayout | Páginas de configuração de plugins |
+| admin          | /v/admin/\*          | AdminLayout         | Páginas de administração      |
+| admin.page     | /v/admin/:name       | AdminDynamicPage    | Páginas criadas dinamicamente |
+| admin.settings | /v/admin/settings/\* | AdminSettingsLayout | Páginas de configuração de plugins |
 
 ## Rotas de página
 
@@ -55,7 +55,7 @@ class MyPlugin extends Plugin {
   async load() {
     this.router.add('hello', {
       path: '/hello',
-      // Carregamento sob demanda: o módulo só é carregado ao acessar /studio/hello
+      // Carregamento sob demanda: o módulo só é carregado ao acessar /v/hello
       componentLoader: () => import('./pages/HelloPage'),
     });
   }
@@ -103,12 +103,12 @@ class MyPlugin extends Plugin {
 
     // Rota filha, usando componentLoader para carregamento sob demanda
     this.router.add('root.home', {
-      path: '/', // -> /studio/
+      path: '/', // -> /v/
       componentLoader: () => import('./pages/HomePage'),
     });
 
     this.router.add('root.about', {
-      path: '/about', // -> /studio/about
+      path: '/about', // -> /v/about
       componentLoader: () => import('./pages/AboutPage'),
     });
   }
@@ -121,7 +121,7 @@ Os caminhos de rota aceitam parâmetros dinâmicos:
 
 ```tsx
 this.router.add('root.user', {
-  path: '/user/:id', // -> /studio/user/:id
+  path: '/user/:id', // -> /v/user/:id
   componentLoader: () => import('./pages/UserPage'),
 });
 ```
@@ -176,7 +176,7 @@ export class HelloPlugin extends Plugin<any, Application> {
 }
 ```
 
-Após o registro, o caminho de acesso é `/studio/admin/settings/hello`. Quando há apenas uma página sob o menu, a barra de abas superior é ocultada automaticamente.
+Após o registro, o caminho de acesso é `/v/admin/settings/hello`. Quando há apenas uma página sob o menu, a barra de abas superior é ocultada automaticamente.
 
 ### Página de configuração com várias abas
 
@@ -194,7 +194,7 @@ class HelloPlugin extends Plugin<any, Application> {
       icon: 'ApiOutlined',
     });
 
-    // Aba 1: Configurações gerais (a chave 'index' é mapeada para /studio/admin/settings/hello)
+    // Aba 1: Configurações gerais (a chave 'index' é mapeada para /v/admin/settings/hello)
     this.pluginSettingsManager.addPageTabItem({
       menuKey: 'hello',
       key: 'index',
@@ -202,7 +202,7 @@ class HelloPlugin extends Plugin<any, Application> {
       componentLoader: () => import('./settings/GeneralPage'),
     });
 
-    // Aba 2: Configurações avançadas (mapeada para /studio/admin/settings/hello/advanced)
+    // Aba 2: Configurações avançadas (mapeada para /v/admin/settings/hello/advanced)
     this.pluginSettingsManager.addPageTabItem({
       menuKey: 'hello',
       key: 'advanced',

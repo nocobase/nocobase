@@ -15,7 +15,7 @@ import { IncomingRequest } from '.';
 // prefix (that is APP_MODERN_CLIENT_PREFIX, read per-request). A sibling copy
 // of this default lives in packages/core/cli-v1/src/util.js
 // (DEFAULT_MODERN_CLIENT_PREFIX). See docs/adr/0001-modern-client-prefix.md.
-export const MODERN_CLIENT_DIST_DIR = 'studio';
+export const MODERN_CLIENT_DIST_DIR = 'v';
 
 export function resolvePublicPath(appPublicPath = '/') {
   const normalized = String(appPublicPath || '/').trim() || '/';
@@ -23,7 +23,7 @@ export function resolvePublicPath(appPublicPath = '/') {
   return withLeadingSlash.endsWith('/') ? withLeadingSlash : `${withLeadingSlash}/`;
 }
 
-// Normalize APP_MODERN_CLIENT_PREFIX (accepts `studio`, `/studio`, `/studio/`)
+// Normalize APP_MODERN_CLIENT_PREFIX (accepts `v`, `/v`, `/v/`)
 // down to a bare segment. Falls back to the fixed dist dir name.
 export function normalizeModernClientPrefix(value?: string) {
   const segment = String(value || '')
@@ -44,7 +44,7 @@ function ensureTrailingSlash(value: string) {
 
 export function rewriteV2AssetPublicPath(html: string, assetPublicPath: string) {
   const normalizedAssetPublicPath = ensureTrailingSlash(assetPublicPath);
-  // HTML is built with the fixed dist-dir sentinel (`/studio/`) baked into
+  // HTML is built with the fixed dist-dir sentinel (`/v/`) baked into
   // asset URLs; rewrite it to the runtime asset path when they differ.
   const sentinel = `/${MODERN_CLIENT_DIST_DIR}/`;
   if (normalizedAssetPublicPath === sentinel) {
