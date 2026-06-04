@@ -37,6 +37,12 @@ import {
   type FlowSurfaceCapabilityRegistryLike,
   type FlowSurfaceCollectedProviderCapability,
 } from './capability-registry';
+import {
+  getFlowSurfaceCapabilityAdmissionReportStorageDir,
+  loadFlowSurfaceCapabilityAdmissionReportsFromDirectory,
+  type FlowSurfaceCapabilityAdmissionReport,
+  type FlowSurfaceCapabilityAdmissionRecord,
+} from './admission-report';
 import { assertRequestedActionScope, getActionContainerScope, normalizeActionScope } from './action-scope';
 import {
   assignClientKeysToUids,
@@ -439,6 +445,10 @@ import type {
   FlowSurfaceAtomicFlag,
   FlowSurfaceActionScope,
   FlowSurfaceCapabilityAvailability,
+  FlowSurfaceCapabilityDiagnosticsAdmissionRecord,
+  FlowSurfaceCapabilityDiagnosticsCapabilityRef,
+  FlowSurfaceCapabilityDiagnosticsResponse,
+  FlowSurfaceCapabilityDiagnosticsValues,
   FlowSurfaceBindKey,
   FlowSurfaceCapabilitiesResponse,
   FlowSurfaceCapabilitiesValues,
@@ -464,6 +474,7 @@ import type {
   FlowSurfaceNodeSpec,
   FlowSurfacePlanSelector,
   FlowSurfacePlanStep,
+  FlowSurfacePublicCapabilityItem,
   FlowSurfaceReadLocator,
   FlowSurfaceReadTarget,
   FlowSurfaceResolvedTarget,
@@ -474,6 +485,7 @@ import type {
   FlowSurfaceValidateCapabilityCreateResponse,
   FlowSurfaceValidateCapabilityCreateValues,
   FlowSurfaceWriteTarget,
+  FlowSurfaceReasonCode,
 } from './types';
 import type { FlowSurfaceContextResponse, FlowSurfaceContextVarInfo } from './types';
 
@@ -1297,6 +1309,139 @@ type FlowSurfaceApplyBlueprintResponse = {
   target: Record<string, any>;
   surface: any;
 };
+
+type NormalizedFlowSurfaceCapabilityDiagnosticsValues = {
+  ownerPlugin?: string;
+  publicType?: string;
+  includeImplementation: boolean;
+  includeEvents: boolean;
+};
+
+type FlowSurfaceCapabilityDiagnosticsOptions = {
+  transaction?: unknown;
+  enabledPackages?: ReadonlySet<string>;
+  currentRoles?: FlowSurfaceRequestRoles;
+  admissionReports?: readonly FlowSurfaceCapabilityAdmissionReport[];
+};
+
+const FLOW_SURFACE_DIAGNOSTICS_ADMIN_ROLES = new Set(['admin', 'root']);
+const FLOW_SURFACE_DIAGNOSTIC_AVAILABILITY_KEYS = ['render', 'readback', 'create', 'configure'] as const;
+
+function normalizeFlowSurfaceCapabilityDiagnosticsValues(
+  input: FlowSurfaceCapabilityDiagnosticsValues = {},
+): NormalizedFlowSurfaceCapabilityDiagnosticsValues {
+  if (!_.isPlainObject(input)) {
+    throwBadRequest(`flowSurfaces diagnoseCapabilities request must be an object`);
+  }
+  const ownerPlugin = normalizeOptionalDiagnosticsString(input.ownerPlugin);
+  const publicType = normalizeOptionalDiagnosticsString(input.publicType);
+  return {
+    ...(ownerPlugin ? { ownerPlugin } : {}),
+    ...(publicType ? { publicType } : {}),
+    includeImplementation: input.includeImplementation === true,
+    includeEvents: input.includeEvents === true,
+  };
+}
+
+function normalizeOptionalDiagnosticsString(value: unknown) {
+  return typeof value === 'string' ? value.trim() : undefined;
+}
+
+function hasFlowSurfaceDiagnosticsAdminRole(currentRoles: FlowSurfaceRequestRoles | undefined) {
+  return _.castArray(currentRoles)
+    .map((role) => String(role || '').trim())
+    .some((role) => FLOW_SURFACE_DIAGNOSTICS_ADMIN_ROLES.has(role));
+}
+
+function matchesFlowSurfaceDiagnosticsFilters(
+  input: { ownerPlugin?: string; publicType?: string },
+  item: Pick<FlowSurfacePublicCapabilityItem, 'ownerPlugin' | 'publicType'>,
+) {
+  if (input.ownerPlugin && item.ownerPlugin !== input.ownerPlugin) {
+    return false;
+  }
+  if (input.publicType && item.publicType !== input.publicType) {
+    return false;
+  }
+  return true;
+}
+
+function getFlowSurfaceCapabilityAvailabilityReasonCode(
+  item: FlowSurfacePublicCapabilityItem,
+  reasonCode: FlowSurfaceReasonCode,
+) {
+  return FLOW_SURFACE_DIAGNOSTIC_AVAILABILITY_KEYS.find((key) => item.availability[key].reasonCode === reasonCode)
+    ? reasonCode
+    : undefined;
+}
+
+function getFlowSurfaceCapabilityWarningMessage(
+  item: FlowSurfacePublicCapabilityItem,
+  warningCode: NonNullable<FlowSurfacePublicCapabilityItem['warnings']>[number]['code'],
+) {
+  return item.warnings?.find((warning) => warning.code === warningCode)?.message;
+}
+
+function toFlowSurfaceCapabilityDiagnosticsRef(
+  item: FlowSurfacePublicCapabilityItem,
+  reasonCode?: FlowSurfaceReasonCode,
+  message?: string,
+): FlowSurfaceCapabilityDiagnosticsCapabilityRef {
+  return {
+    kind: item.kind,
+    publicType: item.publicType,
+    ownerPlugin: item.ownerPlugin,
+    origin: item.origin,
+    ...(item.identity?.capabilityId ? { capabilityId: item.identity.capabilityId } : {}),
+    ...(reasonCode ? { reasonCode } : {}),
+    ...(message ? { message } : {}),
+  };
+}
+
+function buildFlowSurfaceAdmissionDiagnostics(
+  reports: readonly FlowSurfaceCapabilityAdmissionReport[],
+  filters: { ownerPlugin?: string; publicType?: string },
+): FlowSurfaceCapabilityDiagnosticsAdmissionRecord[] {
+  return reports
+    .flatMap((report) =>
+      report.records
+        .filter((record) => matchesFlowSurfaceDiagnosticsFilters(filters, record))
+        .map((record) => toFlowSurfaceAdmissionDiagnosticsRecord(report, record)),
+    )
+    .sort((left, right) =>
+      [left.kind, left.ownerPlugin, left.publicType, left.capabilityId]
+        .join(':')
+        .localeCompare([right.kind, right.ownerPlugin, right.publicType, right.capabilityId].join(':')),
+    );
+}
+
+function toFlowSurfaceAdmissionDiagnosticsRecord(
+  report: FlowSurfaceCapabilityAdmissionReport,
+  record: FlowSurfaceCapabilityAdmissionRecord,
+): FlowSurfaceCapabilityDiagnosticsAdmissionRecord {
+  return {
+    reportPlugin: report.plugin,
+    reportGeneratedAt: report.generatedAt,
+    capabilityId: record.capabilityId,
+    kind: record.kind,
+    publicType: record.publicType,
+    ownerPlugin: record.ownerPlugin,
+    readiness: record.readiness,
+    updatedAt: record.updatedAt,
+    ...(record.approvedAt ? { approvedAt: record.approvedAt } : {}),
+    failedChecks: Object.entries(record.checks).flatMap(([key, check]) =>
+      check.ok
+        ? []
+        : [
+            {
+              key,
+              ...(check.reasonCode ? { reasonCode: check.reasonCode } : {}),
+              ...(check.message ? { message: check.message } : {}),
+            },
+          ],
+    ),
+  };
+}
 
 export class FlowSurfacesService {
   constructor(private readonly plugin: Plugin) {}
@@ -2168,6 +2313,82 @@ export class FlowSurfacesService {
         publicType: response.capability.publicType,
       },
       warnings: response.warnings,
+    };
+  }
+
+  async diagnoseCapabilities(
+    input: FlowSurfaceCapabilityDiagnosticsValues = {},
+    options: FlowSurfaceCapabilityDiagnosticsOptions = {},
+  ): Promise<FlowSurfaceCapabilityDiagnosticsResponse> {
+    const values = normalizeFlowSurfaceCapabilityDiagnosticsValues(input);
+    const capabilityPolicyConfig = readFlowSurfaceCapabilityPolicyConfigFromPluginOptions(this.plugin.options);
+    if (!capabilityPolicyConfig.diagnosticsEnabled && !hasFlowSurfaceDiagnosticsAdminRole(options.currentRoles)) {
+      throwForbidden(`flowSurfaces capability diagnostics are disabled`);
+    }
+    if (values.includeImplementation) {
+      throwForbidden(`flowSurfaces capability diagnostics do not expose implementation details`);
+    }
+
+    const enabledPackages = await this.resolveEnabledPluginPackages(options);
+    const capabilities = await this.capabilities(
+      {
+        ...(values.ownerPlugin ? { ownerPlugins: [values.ownerPlugin] } : {}),
+        ...(values.publicType ? { publicTypes: [values.publicType] } : {}),
+        includeUnavailable: true,
+        includeWarnings: true,
+        expand: ['item.identity', 'item.warnings'],
+      },
+      {
+        transaction: options.transaction,
+        enabledPackages,
+      },
+    );
+    const reports =
+      options.admissionReports ||
+      (await loadFlowSurfaceCapabilityAdmissionReportsFromDirectory({
+        dir: getFlowSurfaceCapabilityAdmissionReportStorageDir(),
+      }));
+    const publicTypeConflicts = capabilities.data
+      .filter((item) => getFlowSurfaceCapabilityAvailabilityReasonCode(item, 'public-type-conflict'))
+      .map((item) =>
+        toFlowSurfaceCapabilityDiagnosticsRef(
+          item,
+          'public-type-conflict',
+          getFlowSurfaceCapabilityWarningMessage(item, 'public-type-conflict'),
+        ),
+      );
+    const providerErrors = capabilities.data
+      .filter((item) => getFlowSurfaceCapabilityAvailabilityReasonCode(item, 'provider-error'))
+      .map((item) => toFlowSurfaceCapabilityDiagnosticsRef(item, 'provider-error'));
+    const staleSnapshots = capabilities.data
+      .filter(
+        (item) =>
+          getFlowSurfaceCapabilityAvailabilityReasonCode(item, 'snapshot-stale') ||
+          getFlowSurfaceCapabilityWarningMessage(item, 'snapshot-stale'),
+      )
+      .map((item) =>
+        toFlowSurfaceCapabilityDiagnosticsRef(
+          item,
+          'snapshot-stale',
+          getFlowSurfaceCapabilityWarningMessage(item, 'snapshot-stale'),
+        ),
+      );
+
+    return {
+      data: {
+        registrySources: capabilities.meta.registrySources,
+        publicTypeConflicts,
+        providerErrors,
+        staleSnapshots,
+        admissionRecords: buildFlowSurfaceAdmissionDiagnostics(reports, values),
+      },
+      meta: {
+        version: 1,
+        generatedAt: capabilities.meta.generatedAt,
+        diagnosticsEnabled: capabilityPolicyConfig.diagnosticsEnabled,
+        implementationIncluded: false,
+        eventsIncluded: false,
+      },
     };
   }
 

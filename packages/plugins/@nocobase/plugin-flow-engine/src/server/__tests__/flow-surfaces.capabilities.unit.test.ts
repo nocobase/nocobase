@@ -20,7 +20,8 @@ import {
   normalizeFlowSurfaceCapabilityPolicyConfig,
   readFlowSurfaceCapabilityPolicyConfigFromPluginOptions,
 } from '../flow-surfaces/capability-policy';
-import { FlowSurfaceBadRequestError } from '../flow-surfaces/errors';
+import type { FlowSurfaceCapabilityAdmissionReport } from '../flow-surfaces/admission-report';
+import { FlowSurfaceBadRequestError, FlowSurfaceForbiddenError } from '../flow-surfaces/errors';
 import { buildFlowSurfaceAutoSnapshot } from '../flow-surfaces/extractor';
 import type {
   FlowSurfaceCapabilitiesProvider,
@@ -644,6 +645,64 @@ describe('flowSurfaces capabilities projection', () => {
     };
   }
 
+  function createDiagnosticsService(
+    options: {
+      autoSnapshots?: readonly ReturnType<typeof createGanttAutoSnapshot>[];
+      providerRegistry?: ReturnType<typeof createProviderRegistry>;
+      pluginOptions?: Record<string, unknown>;
+    } = {},
+  ) {
+    const recorder = createCatalogRecorder();
+    class DiagnosticsFlowSurfacesService extends FlowSurfacesService {
+      override async catalog(input: FlowSurfaceCatalogValues): Promise<FlowSurfaceCatalogResponse> {
+        return recorder.catalog(input);
+      }
+    }
+    return {
+      recorder,
+      service: new DiagnosticsFlowSurfacesService({
+        options: options.pluginOptions || {},
+        flowSurfaceAutoSnapshots: options.autoSnapshots || [],
+        ...(options.providerRegistry ? { flowSurfaceCapabilityProviders: options.providerRegistry } : {}),
+      } as unknown as ConstructorParameters<typeof FlowSurfacesService>[0]),
+    };
+  }
+
+  function createDiagnosticsAdmissionReport(): FlowSurfaceCapabilityAdmissionReport {
+    return {
+      version: 1,
+      plugin: '@nocobase/plugin-gantt',
+      generatedAt: '2026-06-04T00:00:00.000Z',
+      records: [
+        {
+          capabilityId: '@nocobase/plugin-gantt:canary:block:gantt',
+          kind: 'block',
+          publicType: 'gantt',
+          ownerPlugin: '@nocobase/plugin-gantt',
+          readiness: 'blocked',
+          updatedAt: '2026-06-04T00:00:00.000Z',
+          checks: {
+            discovered: { ok: true },
+            publicTypeStable: { ok: true },
+            contractDeclared: { ok: true },
+            targetCatalogVerified: { ok: false, reasonCode: 'target-required', message: 'Target catalog missing.' },
+            dryRunCreate: {
+              ok: false,
+              reasonCode: 'dry-run-failed',
+              message: 'Dry-run failed.',
+              evidence: {
+                internalModelUse: 'InternalEvidenceModel',
+              },
+            },
+            readbackParity: { ok: false, reasonCode: 'readback-parity-failed' },
+            unsafePayloadBlocked: { ok: false, reasonCode: 'unsafe-auto-discovery' },
+            testsPresent: { ok: false, reasonCode: 'unsupported' },
+          },
+        },
+      ],
+    };
+  }
+
   it('should return default public-safe discovery without identity or settings', async () => {
     const recorder = createCatalogRecorder();
     const response = await buildFlowSurfaceCapabilitiesResponse(
@@ -1040,6 +1099,117 @@ describe('flowSurfaces capabilities projection', () => {
     );
 
     expect(capability?.publicItem.publicType).toBe('gantt');
+  });
+
+  it('should expose public-safe capability diagnostics when diagnostics are enabled', async () => {
+    const { service } = createDiagnosticsService({
+      autoSnapshots: [createGanttAutoSnapshot({ warnings: [createSnapshotStaleWarning()] })],
+      providerRegistry: createProviderRegistry([createConflictingTableProvider()]),
+      pluginOptions: {
+        flowSurfaceCapabilities: {
+          diagnosticsEnabled: true,
+        },
+      },
+    });
+
+    const response = await service.diagnoseCapabilities(
+      {
+        includeEvents: true,
+      },
+      {
+        enabledPackages: new Set(['@nocobase/plugin-conflict', '@nocobase/plugin-gantt']),
+        admissionReports: [createDiagnosticsAdmissionReport()],
+      },
+    );
+
+    expect(response.meta).toMatchObject({
+      version: 1,
+      diagnosticsEnabled: true,
+      implementationIncluded: false,
+      eventsIncluded: false,
+    });
+    expect(response.data.registrySources).toEqual(
+      expect.arrayContaining([
+        { origin: 'builtInStatic', count: 2 },
+        { origin: 'provider', count: 1 },
+        { origin: 'autoSnapshot', count: 1 },
+      ]),
+    );
+    expect(response.data.publicTypeConflicts).toEqual([
+      expect.objectContaining({
+        kind: 'block',
+        publicType: 'table',
+        ownerPlugin: '@nocobase/plugin-conflict',
+        reasonCode: 'public-type-conflict',
+      }),
+    ]);
+    expect(response.data.staleSnapshots).toEqual([
+      expect.objectContaining({
+        kind: 'block',
+        publicType: 'pluginGantt.gantt',
+        ownerPlugin: '@nocobase/plugin-gantt',
+        reasonCode: 'snapshot-stale',
+      }),
+    ]);
+    expect(response.data.admissionRecords).toEqual([
+      expect.objectContaining({
+        capabilityId: '@nocobase/plugin-gantt:canary:block:gantt',
+        publicType: 'gantt',
+        ownerPlugin: '@nocobase/plugin-gantt',
+        readiness: 'blocked',
+        failedChecks: expect.arrayContaining([
+          expect.objectContaining({
+            key: 'dryRunCreate',
+            reasonCode: 'dry-run-failed',
+          }),
+        ]),
+      }),
+    ]);
+    expect(JSON.stringify(response)).not.toContain('InternalEvidenceModel');
+    expect(JSON.stringify(response)).not.toContain('TableAlternativeBlockModel');
+  });
+
+  it('should gate capability diagnostics by config or administrator role', async () => {
+    const { service } = createDiagnosticsService({
+      pluginOptions: {
+        flowSurfaceCapabilities: {
+          diagnosticsEnabled: false,
+        },
+      },
+    });
+    const enabledPackages = new Set(['@nocobase/plugin-flow-engine']);
+
+    await expect(
+      service.diagnoseCapabilities(
+        {},
+        {
+          enabledPackages,
+        },
+      ),
+    ).rejects.toBeInstanceOf(FlowSurfaceForbiddenError);
+
+    await expect(
+      service.diagnoseCapabilities(
+        {
+          includeImplementation: true,
+        },
+        {
+          enabledPackages,
+          currentRoles: ['admin'],
+        },
+      ),
+    ).rejects.toBeInstanceOf(FlowSurfaceForbiddenError);
+
+    const response = await service.diagnoseCapabilities(
+      {},
+      {
+        enabledPackages,
+        currentRoles: ['admin'],
+      },
+    );
+
+    expect(response.meta.diagnosticsEnabled).toBe(false);
+    expect(response.meta.implementationIncluded).toBe(false);
   });
 
   it('should project provider capabilities as read-only when policy is discoveryOnly', async () => {

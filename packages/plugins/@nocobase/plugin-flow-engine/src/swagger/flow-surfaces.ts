@@ -522,7 +522,7 @@ function buildReactionCapabilitySchema(
 }
 
 const FLOW_SURFACES_READ_ACL_NOTE =
-  'Read actions (`get` / `describeSurface` / `capabilities` / `describeCapability` / `validateCapabilityCreate` / `catalog` / `context` / `getReactionMeta` / `getEventFlowMeta` / `listTemplates` / `getTemplate`) are open to `loggedIn` by default. Write actions still require the `ui.flowSurfaces` snippet.';
+  'Read actions (`get` / `describeSurface` / `capabilities` / `describeCapability` / `validateCapabilityCreate` / `diagnoseCapabilities` / `catalog` / `context` / `getReactionMeta` / `getEventFlowMeta` / `listTemplates` / `getTemplate`) are open to `loggedIn` by default. Write actions still require the `ui.flowSurfaces` snippet.';
 
 const templateActionDocs = createFlowSurfaceTemplateActionDocs({
   tag: FLOW_SURFACES_TAG,
@@ -565,6 +565,15 @@ const actionDocs: Record<string, any> = {
     ),
     requestBody: requestBody('FlowSurfaceValidateCapabilityCreateRequest'),
     responses: responses('FlowSurfaceValidateCapabilityCreateResponse'),
+  },
+  diagnoseCapabilities: {
+    tags: [FLOW_SURFACES_TAG],
+    summary: 'Read Flow Surface capability diagnostics',
+    description: valuesCompatibilityNote(
+      `Returns public-safe registry diagnostics for dynamic capability discovery, including registry source counts, publicType conflicts, provider-error summaries, stale snapshot summaries, and admission readiness records. The action is available only when diagnostics are enabled by server config/non-production defaults or to administrator roles. It does not return internal \`modelUse\`, sourceRefs, full internal nodes, provider evidence payloads, or user business data; \`includeImplementation\` is forbidden. ${FLOW_SURFACES_READ_ACL_NOTE}`,
+    ),
+    requestBody: requestBody('FlowSurfaceCapabilityDiagnosticsRequest'),
+    responses: responses('FlowSurfaceCapabilityDiagnosticsResponse'),
   },
   catalog: {
     tags: [FLOW_SURFACES_TAG],
@@ -2689,6 +2698,178 @@ const schemas = {
       warnings: {
         type: 'array',
         items: ref('FlowSurfaceCapabilityWarning'),
+      },
+    },
+    additionalProperties: false,
+  },
+  FlowSurfaceCapabilityDiagnosticsRequest: {
+    type: 'object',
+    properties: {
+      ownerPlugin: {
+        type: 'string',
+      },
+      publicType: {
+        type: 'string',
+      },
+      includeImplementation: {
+        type: 'boolean',
+        description: 'Forbidden in the public diagnostics action; implementation details are not returned.',
+      },
+      includeEvents: {
+        type: 'boolean',
+        description: 'Reserved for future audit event summaries. Current responses keep eventsIncluded=false.',
+      },
+    },
+    additionalProperties: false,
+  },
+  FlowSurfaceCapabilityDiagnosticsCapabilityRef: {
+    type: 'object',
+    required: ['kind', 'publicType', 'ownerPlugin', 'origin'],
+    properties: {
+      kind: ref('FlowSurfaceCapabilityKind'),
+      publicType: {
+        type: 'string',
+      },
+      ownerPlugin: {
+        type: 'string',
+      },
+      origin: ref('FlowSurfaceCapabilityOriginSource'),
+      capabilityId: {
+        type: 'string',
+      },
+      reasonCode: {
+        type: 'string',
+      },
+      message: {
+        type: 'string',
+      },
+    },
+    additionalProperties: false,
+  },
+  FlowSurfaceCapabilityDiagnosticsAdmissionRecord: {
+    type: 'object',
+    required: [
+      'reportPlugin',
+      'reportGeneratedAt',
+      'capabilityId',
+      'kind',
+      'publicType',
+      'ownerPlugin',
+      'readiness',
+      'updatedAt',
+      'failedChecks',
+    ],
+    properties: {
+      reportPlugin: {
+        type: 'string',
+      },
+      reportGeneratedAt: {
+        type: 'string',
+      },
+      capabilityId: {
+        type: 'string',
+      },
+      kind: ref('FlowSurfaceCapabilityKind'),
+      publicType: {
+        type: 'string',
+      },
+      ownerPlugin: {
+        type: 'string',
+      },
+      readiness: ref('FlowSurfaceCapabilityReadiness'),
+      updatedAt: {
+        type: 'string',
+      },
+      approvedAt: {
+        type: 'string',
+      },
+      failedChecks: {
+        type: 'array',
+        items: {
+          type: 'object',
+          required: ['key'],
+          properties: {
+            key: {
+              type: 'string',
+            },
+            reasonCode: {
+              type: 'string',
+            },
+            message: {
+              type: 'string',
+            },
+          },
+          additionalProperties: false,
+        },
+      },
+    },
+    additionalProperties: false,
+  },
+  FlowSurfaceCapabilityDiagnosticsResponse: {
+    type: 'object',
+    required: ['data', 'meta'],
+    properties: {
+      data: {
+        type: 'object',
+        required: ['registrySources', 'publicTypeConflicts', 'providerErrors', 'staleSnapshots', 'admissionRecords'],
+        properties: {
+          registrySources: {
+            type: 'array',
+            items: {
+              type: 'object',
+              required: ['origin', 'count'],
+              properties: {
+                origin: ref('FlowSurfaceCapabilityOriginSource'),
+                count: {
+                  type: 'integer',
+                },
+              },
+              additionalProperties: false,
+            },
+          },
+          publicTypeConflicts: {
+            type: 'array',
+            items: ref('FlowSurfaceCapabilityDiagnosticsCapabilityRef'),
+          },
+          providerErrors: {
+            type: 'array',
+            items: ref('FlowSurfaceCapabilityDiagnosticsCapabilityRef'),
+          },
+          staleSnapshots: {
+            type: 'array',
+            items: ref('FlowSurfaceCapabilityDiagnosticsCapabilityRef'),
+          },
+          admissionRecords: {
+            type: 'array',
+            items: ref('FlowSurfaceCapabilityDiagnosticsAdmissionRecord'),
+          },
+        },
+        additionalProperties: false,
+      },
+      meta: {
+        type: 'object',
+        required: ['version', 'generatedAt', 'diagnosticsEnabled', 'implementationIncluded', 'eventsIncluded'],
+        properties: {
+          version: {
+            type: 'integer',
+            enum: [1],
+          },
+          generatedAt: {
+            type: 'string',
+          },
+          diagnosticsEnabled: {
+            type: 'boolean',
+          },
+          implementationIncluded: {
+            type: 'boolean',
+            enum: [false],
+          },
+          eventsIncluded: {
+            type: 'boolean',
+            enum: [false],
+          },
+        },
+        additionalProperties: false,
       },
     },
     additionalProperties: false,

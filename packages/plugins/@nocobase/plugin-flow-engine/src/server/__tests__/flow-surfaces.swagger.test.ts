@@ -2069,6 +2069,18 @@ describe('flowSurfaces swagger', () => {
     expect(schemas.FlowSurfacePublicCapabilityItem.properties.readiness.$ref).toBe(
       '#/components/schemas/FlowSurfaceCapabilityReadiness',
     );
+    const diagnosticsPath = swaggerDocument.paths['/flowSurfaces:diagnoseCapabilities'].post;
+    expect(diagnosticsPath.description).toContain('registry diagnostics');
+    expect(diagnosticsPath.description).toContain('includeImplementation` is forbidden');
+    expect(diagnosticsPath.description).toContain('does not return internal `modelUse`');
+    expect(diagnosticsPath.description).toContain('administrator roles');
+    expect(schemas.FlowSurfaceCapabilityDiagnosticsResponse.required).toEqual(['data', 'meta']);
+    expect(
+      schemas.FlowSurfaceCapabilityDiagnosticsResponse.properties.meta.properties.implementationIncluded.enum,
+    ).toEqual([false]);
+    expect(
+      schemas.FlowSurfaceCapabilityDiagnosticsResponse.properties.data.properties.admissionRecords.items.$ref,
+    ).toBe('#/components/schemas/FlowSurfaceCapabilityDiagnosticsAdmissionRecord');
     const composePath = swaggerDocument.paths['/flowSurfaces:compose'].post;
     expect(composePath.description).toContain('low-level building primitive');
     expect(composePath.description).not.toContain('preferred creation entry for AI callers');
@@ -2087,6 +2099,7 @@ describe('flowSurfaces swagger', () => {
       'catalog',
       'capabilities',
       'validateCapabilityCreate',
+      'diagnoseCapabilities',
       'context',
       'listTemplates',
       'getTemplate',

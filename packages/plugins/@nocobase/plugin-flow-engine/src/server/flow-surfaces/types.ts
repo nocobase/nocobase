@@ -420,6 +420,57 @@ export type FlowSurfaceDescribeCapabilityResponse = {
   };
 };
 
+export type FlowSurfaceCapabilityDiagnosticsValues = {
+  ownerPlugin?: string;
+  publicType?: string;
+  includeImplementation?: boolean;
+  includeEvents?: boolean;
+};
+
+export type FlowSurfaceCapabilityDiagnosticsCapabilityRef = {
+  kind: FlowSurfaceCapabilityKind;
+  publicType: string;
+  ownerPlugin: string;
+  origin: FlowSurfaceCapabilityOriginSource;
+  capabilityId?: string;
+  reasonCode?: FlowSurfaceReasonCode;
+  message?: string;
+};
+
+export type FlowSurfaceCapabilityDiagnosticsAdmissionRecord = {
+  reportPlugin: string;
+  reportGeneratedAt: string;
+  capabilityId: string;
+  kind: FlowSurfaceCapabilityKind;
+  publicType: string;
+  ownerPlugin: string;
+  readiness: FlowSurfaceCapabilityReadiness;
+  updatedAt: string;
+  approvedAt?: string;
+  failedChecks: Array<{
+    key: string;
+    reasonCode?: FlowSurfaceReasonCode;
+    message?: string;
+  }>;
+};
+
+export type FlowSurfaceCapabilityDiagnosticsResponse = {
+  data: {
+    registrySources: FlowSurfaceCapabilitiesResponse['meta']['registrySources'];
+    publicTypeConflicts: FlowSurfaceCapabilityDiagnosticsCapabilityRef[];
+    providerErrors: FlowSurfaceCapabilityDiagnosticsCapabilityRef[];
+    staleSnapshots: FlowSurfaceCapabilityDiagnosticsCapabilityRef[];
+    admissionRecords: FlowSurfaceCapabilityDiagnosticsAdmissionRecord[];
+  };
+  meta: {
+    version: 1;
+    generatedAt: string;
+    diagnosticsEnabled: boolean;
+    implementationIncluded: false;
+    eventsIncluded: false;
+  };
+};
+
 export type FlowSurfaceDynamicCapabilityCreateValues = {
   kind?: 'block';
   publicType: string;

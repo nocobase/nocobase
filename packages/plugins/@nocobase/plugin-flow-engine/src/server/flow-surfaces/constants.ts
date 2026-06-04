@@ -24,6 +24,7 @@ export const FLOW_SURFACE_ACTION_DEFINITIONS = {
   capabilities: { method: 'post', read: true, transaction: false, mutate: false, valueSource: 'default' },
   describeCapability: { method: 'post', read: true, transaction: false, mutate: false, valueSource: 'default' },
   validateCapabilityCreate: { method: 'post', read: true, transaction: false, mutate: false, valueSource: 'default' },
+  diagnoseCapabilities: { method: 'post', read: true, transaction: false, mutate: false, valueSource: 'default' },
   catalog: { method: 'post', read: true, transaction: false, mutate: false, valueSource: 'default' },
   context: { method: 'post', read: true, transaction: false, mutate: false, valueSource: 'default' },
   get: { method: 'get', read: true, transaction: false, mutate: false, valueSource: 'read' },
