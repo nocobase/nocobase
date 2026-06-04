@@ -52,11 +52,6 @@
     "items": [
       {
         "type": "custom-link",
-        "label": "商业插件激活与安装",
-        "link": "/quickstart/plugins/commercial"
-      },
-      {
-        "type": "custom-link",
         "label": "第三方插件安装",
         "link": "/quickstart/plugins/third-party"
       }
