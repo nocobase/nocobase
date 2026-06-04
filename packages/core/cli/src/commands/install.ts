@@ -1145,6 +1145,14 @@ export default class Install extends Command {
     return Install.toOptionalPromptString(value) ?? (Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC');
   }
 
+  private static formatLocalClientExtractWarning(envName: string, message: string): string {
+    return [
+      `Client assets were not extracted for "${envName}".`,
+      'NocoBase will keep starting, but versioned client files for CDN or external distribution may be stale or missing.',
+      `Details: ${message}`,
+    ].join('\n');
+  }
+
   private async ensureManagedAppRuntimeConfig(params: {
     envName: string;
     appResults: Record<string, PromptValue>;
@@ -2232,6 +2240,7 @@ export default class Install extends Command {
     const dbSchema = optionalEnvString(params.dbResults.dbSchema);
     const dbTablePrefix = optionalEnvString(params.dbResults.dbTablePrefix);
     const dbUnderscored = optionalEnvBoolean(params.dbResults.dbUnderscored);
+    const extractClientAssets = Install.toOptionalPromptString(process.env.NOCOBASE_EXTRACT_CLIENT_ASSETS);
     const appKey = Install.resolveManagedAppKey(params.appResults.appKey);
     const timeZone = Install.resolveManagedTimeZone(params.appResults.timeZone);
     const containerName = Install.buildDockerAppContainerName(
@@ -2291,6 +2300,7 @@ export default class Install extends Command {
     pushOptionalEnvArg(args, 'DB_SCHEMA', dbSchema);
     pushOptionalEnvArg(args, 'DB_TABLE_PREFIX', dbTablePrefix);
     pushOptionalEnvArg(args, 'DB_UNDERSCORED', dbUnderscored);
+    pushOptionalEnvArg(args, 'NOCOBASE_EXTRACT_CLIENT_ASSETS', extractClientAssets);
     args.push(imageRef);
 
     return {
@@ -2624,6 +2634,25 @@ export default class Install extends Command {
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : String(error);
       this.logDetail(`Skipped local process cleanup before start: ${message}`);
+    }
+
+    this.logDetail(`Running local postinstall in ${params.projectRoot}`);
+    await runNocoBaseCommand(['postinstall'], {
+      cwd: params.projectRoot,
+      env,
+      stdio: params.commandStdio ?? 'ignore',
+    });
+
+    this.logDetail(`Extracting local client assets in ${params.projectRoot}`);
+    try {
+      await runNocoBaseCommand(['client:extract'], {
+        cwd: params.projectRoot,
+        env,
+        stdio: params.commandStdio ?? 'ignore',
+      });
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : String(error);
+      printWarning(Install.formatLocalClientExtractWarning(params.envName, message));
     }
 
     this.logDetail(`Starting local NocoBase app from ${params.projectRoot}`);
