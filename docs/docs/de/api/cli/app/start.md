@@ -1,12 +1,12 @@
 ---
 title: "nb app start"
-description: "Referenz für den Befehl nb app start: NocoBase-Anwendung einer angegebenen env starten; lokale envs führen vor dem Start automatisch die erforderliche Installations- oder Upgrade-Vorbereitung aus, Docker-envs erstellen den Anwendungs-Container anhand der gespeicherten Konfiguration neu."
+description: "Referenz für den Befehl nb app start: NocoBase-Anwendung einer angegebenen env starten; sofern zutreffend, synchronisiert die CLI zuerst die durch die aktuelle Lizenz erlaubten kommerziellen Plugins, anschließend führen lokale envs vor dem Start automatisch die erforderliche Installations- oder Upgrade-Vorbereitung aus, und Docker-envs erstellen den Anwendungs-Container anhand der gespeicherten Konfiguration neu."
 keywords: "nb app start,NocoBase CLI,Anwendung starten,Docker,pm2"
 ---
 
 # nb app start
 
-Startet die NocoBase-Anwendung der angegebenen env. Bei npm/Git-Installationen wird vor dem Ausführen lokaler Anwendungsbefehle automatisch die erforderliche Installations- oder Upgrade-Vorbereitung durchgeführt; bei Docker-Installationen wird der gespeicherte Anwendungs-Container anhand der gespeicherten env-Konfiguration neu erstellt.
+Startet die NocoBase-Anwendung der angegebenen env. Sofern zutreffend, synchronisiert die CLI zuerst die durch die aktuelle Lizenz erlaubten kommerziellen Plugins. Anschließend wird bei npm/Git-Installationen vor dem Ausführen lokaler Anwendungsbefehle automatisch die erforderliche Installations- oder Upgrade-Vorbereitung durchgeführt; bei Docker-Installationen wird der gespeicherte Anwendungs-Container anhand der gespeicherten env-Konfiguration neu erstellt.
 
 ## Verwendung
 
@@ -36,7 +36,7 @@ nb app start --env local-docker
 
 Wenn Sie `--env` explizit übergeben und es sich von der aktuellen env unterscheidet, fragt die CLI zuerst nach einer Bestätigung. In nicht interaktiven Terminals oder AI-Agent-Sitzungen fügen Sie `--yes` selbst hinzu oder führen zuerst `nb env use <name>` aus und versuchen es dann erneut.
 
-Standardmäßig führen lokale envs vor dem Start im Hintergrund automatisch die erforderliche Installations- oder Upgrade-Vorbereitung aus, und Docker-envs erstellen den Anwendungs-Container anhand der gespeicherten env-Konfiguration neu. Immer wenn die CLI auf die Bereitschaft der Anwendung warten muss, prüft sie `__health_check`: zuerst wird eine Wartezeile ausgegeben, danach alle 10 Sekunden eine Fortschrittszeile, bis die Anwendung verfügbar ist oder das Zeitlimit erreicht wird.
+Standardmäßig führt die CLI, sofern zutreffend, zuerst `nb license plugins sync --skip-if-no-license` aus, um die durch die aktuelle Lizenz erlaubten kommerziellen Plugins zu synchronisieren. Danach führen lokale envs vor dem Start im Hintergrund automatisch die erforderliche Installations- oder Upgrade-Vorbereitung aus, und Docker-envs erstellen den Anwendungs-Container anhand der gespeicherten env-Konfiguration neu. Immer wenn die CLI auf die Bereitschaft der Anwendung warten muss, prüft sie `__health_check`: zuerst wird eine Wartezeile ausgegeben, danach alle 10 Sekunden eine Fortschrittszeile, bis die Anwendung verfügbar ist oder das Zeitlimit erreicht wird.
 
 Wenn Sie für eine lokale env `--no-daemon` übergeben, läuft die Anwendung im Vordergrund. In diesem Fall wartet die CLI nach dem Start nicht weiter auf den Readiness-Check.
 

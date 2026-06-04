@@ -409,16 +409,21 @@ test('start enables daemon by default for npm/git envs', async () => {
       envVars: { APP_PORT: '13000' },
     },
   });
+  const runCommand = vi.fn(async () => undefined);
 
-  const command = createCommandHarness({
-    flags: {
-      env: 'local',
-      quickstart: true,
+  const command = createCommandHarness(
+    {
+      flags: {
+        env: 'local',
+        quickstart: true,
+      },
     },
-  });
+    runCommand,
+  );
 
   await Start.prototype.run.call(command);
 
+  expect(runCommand.mock.calls).toEqual([['license:plugins:sync', ['--env', 'local', '--skip-if-no-license']]]);
   expect(mocks.startTask.mock.calls).toEqual([
     ['Running local postinstall for "local"...'],
     ['Starting NocoBase for "local" in the background...'],
@@ -453,6 +458,9 @@ test('start keeps quickstart enabled by default as a hidden compatibility flag',
   expect(Start.flags.quickstart.hidden).toBe(true);
   expect(Start.flags.quickstart.default).toBe(true);
   expect(Start.flags.quickstart.allowNo).toBe(true);
+  expect(Start.flags['sync-licensed-plugins'].hidden).toBe(true);
+  expect(Start.flags['sync-licensed-plugins'].default).toBe(true);
+  expect(Start.flags['sync-licensed-plugins'].allowNo).toBe(true);
   expect('port' in Start.flags).toBe(false);
   expect('instances' in Start.flags).toBe(false);
   expect('launch-mode' in Start.flags).toBe(false);
@@ -511,18 +519,23 @@ test('start reports when the local app is already running', async () => {
     },
   });
   mocks.isAppReady.mockResolvedValueOnce(true);
+  const runCommand = vi.fn(async () => undefined);
 
-  const command = createCommandHarness({
-    flags: {
-      env: 'local',
+  const command = createCommandHarness(
+    {
+      flags: {
+        env: 'local',
+      },
     },
-  });
+    runCommand,
+  );
 
   await Start.prototype.run.call(command);
 
   expect(mocks.succeedTask.mock.calls).toEqual([
     ['NocoBase is already running for "local" at http://127.0.0.1:13000.'],
   ]);
+  expect(runCommand).not.toHaveBeenCalled();
   expect(mocks.runLocalNocoBaseCommand.mock.calls.length).toBe(0);
 });
 
@@ -851,6 +864,7 @@ test('start restores saved npm/git source files before launching when the app ro
         '--build-dts',
       ],
     ],
+    ['license:plugins:sync', ['--env', 'local', '--skip-if-no-license', '--verbose']],
   ]);
   expect(mocks.runLocalNocoBaseCommand.mock.calls[0]?.[2]).toEqual({
     env: MANAGED_APP_PRODUCTION_ENV,
@@ -935,17 +949,24 @@ test('start recreates docker envs without treating the default daemon flag as ex
       config: {},
     },
   });
+  const runCommand = vi.fn(async () => undefined);
 
-  const command = createCommandHarness({
-    flags: {
-      env: 'docker-local',
-      daemon: true,
+  const command = createCommandHarness(
+    {
+      flags: {
+        env: 'docker-local',
+        daemon: true,
+      },
     },
-  });
+    runCommand,
+  );
 
   try {
     await Start.prototype.run.call(command);
 
+    expect(runCommand.mock.calls).toEqual([
+      ['license:plugins:sync', ['--env', 'docker-local', '--skip-if-no-license']],
+    ]);
     expect(mocks.run).toHaveBeenCalledWith('docker', ['rm', '-f', 'nb-demo-docker-local-app'], {
       errorName: 'docker rm',
       stdio: 'ignore',
@@ -1433,8 +1454,9 @@ test('restart runs stop before start and forwards supported startup flags', asyn
   await Restart.prototype.run.call(command);
 
   expect(runCommand.mock.calls).toEqual([
+    ['license:plugins:sync', ['--env', 'local', '--skip-if-no-license', '--verbose']],
     ['app:stop', ['--env', 'local', '--verbose']],
-    ['app:start', ['--env', 'local', '--verbose', '--quickstart', '--no-daemon']],
+    ['app:start', ['--env', 'local', '--verbose', '--quickstart', '--no-sync-licensed-plugins', '--no-daemon']],
   ]);
 });
 
@@ -1444,6 +1466,9 @@ test('restart keeps quickstart enabled by default as a hidden compatibility flag
   expect(Restart.flags.quickstart.hidden).toBe(true);
   expect(Restart.flags.quickstart.default).toBe(true);
   expect(Restart.flags.quickstart.allowNo).toBe(true);
+  expect(Restart.flags['sync-licensed-plugins'].hidden).toBe(true);
+  expect(Restart.flags['sync-licensed-plugins'].default).toBe(true);
+  expect(Restart.flags['sync-licensed-plugins'].allowNo).toBe(true);
   expect('port' in Restart.flags).toBe(false);
   expect('instances' in Restart.flags).toBe(false);
   expect('launch-mode' in Restart.flags).toBe(false);
@@ -1474,8 +1499,9 @@ test('restart forwards quickstart by default for local envs', async () => {
   await Restart.prototype.run.call(command);
 
   expect(runCommand.mock.calls).toEqual([
+    ['license:plugins:sync', ['--env', 'local', '--skip-if-no-license']],
     ['app:stop', ['--env', 'local']],
-    ['app:start', ['--env', 'local', '--quickstart']],
+    ['app:start', ['--env', 'local', '--quickstart', '--no-sync-licensed-plugins']],
   ]);
 });
 
@@ -1506,8 +1532,9 @@ test('restart does not forward default daemon flag unless the user provides it',
   await Restart.prototype.run.call(command);
 
   expect(runCommand.mock.calls).toEqual([
+    ['license:plugins:sync', ['--env', 'docker-local', '--skip-if-no-license']],
     ['app:stop', ['--env', 'docker-local']],
-    ['app:start', ['--env', 'docker-local']],
+    ['app:start', ['--env', 'docker-local', '--no-sync-licensed-plugins']],
   ]);
 });
 
@@ -1545,7 +1572,9 @@ test('restart recreates docker envs so envFile changes can take effect', async (
   try {
     await Restart.prototype.run.call(command);
 
-    expect(runCommand).not.toHaveBeenCalled();
+    expect(runCommand.mock.calls).toEqual([
+      ['license:plugins:sync', ['--env', 'docker-local', '--skip-if-no-license', '--verbose']],
+    ]);
     expect(mocks.stopDockerContainer).toHaveBeenCalledWith('nb-demo-docker-local-app', {
       stdio: 'inherit',
     });
@@ -1606,7 +1635,9 @@ test('restart recreates docker envs by default', async () => {
   try {
     await Restart.prototype.run.call(command);
 
-    expect(runCommand).not.toHaveBeenCalled();
+    expect(runCommand.mock.calls).toEqual([
+      ['license:plugins:sync', ['--env', 'docker-local', '--skip-if-no-license', '--verbose']],
+    ]);
     expect(mocks.stopDockerContainer).toHaveBeenCalledWith('nb-demo-docker-local-app', {
       stdio: 'inherit',
     });
@@ -3775,7 +3806,7 @@ test('upgrade refreshes local npm envs, then restarts them with quickstart', asy
       ],
     ],
     ['license:plugins:sync', ['--env', 'local', '--yes', '--skip-if-no-license']],
-    ['app:start', ['--env', 'local', '--yes', '--quickstart']],
+    ['app:start', ['--env', 'local', '--yes', '--quickstart', '--no-sync-licensed-plugins']],
     ['env:update', ['local']],
   ]);
   expect(mocks.upsertEnv).not.toHaveBeenCalled();
@@ -3847,7 +3878,7 @@ test('upgrade uses --version for local npm envs and saves it on success', async 
       ],
     ],
     ['license:plugins:sync', ['--env', 'local', '--yes', '--skip-if-no-license', '--version', 'beta']],
-    ['app:start', ['--env', 'local', '--yes', '--quickstart']],
+    ['app:start', ['--env', 'local', '--yes', '--quickstart', '--no-sync-licensed-plugins']],
     ['env:update', ['local']],
   ]);
   expect(mocks.upsertEnv).toHaveBeenCalledWith('local', {
@@ -3919,7 +3950,7 @@ test('upgrade forwards --verbose to local source refresh and local runtime comma
       ],
     ],
     ['license:plugins:sync', ['--env', 'local', '--yes', '--skip-if-no-license', '--verbose']],
-    ['app:start', ['--env', 'local', '--yes', '--verbose', '--quickstart']],
+    ['app:start', ['--env', 'local', '--yes', '--verbose', '--quickstart', '--no-sync-licensed-plugins']],
     ['env:update', ['local', '--verbose']],
   ]);
 });
@@ -3964,7 +3995,7 @@ test('upgrade skips download for local app-path envs and still restarts with qui
   expect(runCommand.mock.calls).toEqual([
     ['app:stop', ['--env', 'local-app', '--yes']],
     ['license:plugins:sync', ['--env', 'local-app', '--yes', '--skip-if-no-license']],
-    ['app:start', ['--env', 'local-app', '--yes', '--quickstart']],
+    ['app:start', ['--env', 'local-app', '--yes', '--quickstart', '--no-sync-licensed-plugins']],
     ['env:update', ['local-app']],
   ]);
   expect(mocks.printInfo.mock.calls).toEqual([
@@ -4215,7 +4246,7 @@ test('upgrade can save --version while skipping download and license sync', asyn
 
   expect(runCommand.mock.calls).toEqual([
     ['app:stop', ['--env', 'docker-local', '--yes']],
-    ['app:start', ['--env', 'docker-local', '--yes', '--quickstart']],
+    ['app:start', ['--env', 'docker-local', '--yes', '--quickstart', '--no-sync-licensed-plugins']],
     ['env:update', ['docker-local']],
   ]);
   expect(mocks.upsertEnv).toHaveBeenCalledWith('docker-local', {
@@ -4267,7 +4298,7 @@ test('upgrade keeps deprecated --skip-code-update as a hidden compatibility alia
 
   expect(runCommand.mock.calls).toEqual([
     ['app:stop', ['--env', 'docker-local', '--yes']],
-    ['app:start', ['--env', 'docker-local', '--yes', '--quickstart']],
+    ['app:start', ['--env', 'docker-local', '--yes', '--quickstart', '--no-sync-licensed-plugins']],
     ['env:update', ['docker-local']],
   ]);
   expect(mocks.upsertEnv).toHaveBeenCalledWith('docker-local', {
@@ -4332,7 +4363,7 @@ test('upgrade refreshes docker envs, then restarts them through app commands', a
       ],
     ],
     ['license:plugins:sync', ['--env', 'docker-local', '--yes', '--skip-if-no-license']],
-    ['app:start', ['--env', 'docker-local', '--yes', '--quickstart']],
+    ['app:start', ['--env', 'docker-local', '--yes', '--quickstart', '--no-sync-licensed-plugins']],
     ['env:update', ['docker-local']],
   ]);
   expect(mocks.upsertEnv).not.toHaveBeenCalled();
@@ -4411,7 +4442,7 @@ test('upgrade uses --version for docker envs and saves it on success', async () 
       ],
     ],
     ['license:plugins:sync', ['--env', 'docker-local', '--yes', '--skip-if-no-license', '--version', 'beta']],
-    ['app:start', ['--env', 'docker-local', '--yes', '--quickstart']],
+    ['app:start', ['--env', 'docker-local', '--yes', '--quickstart', '--no-sync-licensed-plugins']],
     ['env:update', ['docker-local']],
   ]);
   expect(mocks.upsertEnv).toHaveBeenCalledWith('docker-local', {
@@ -4501,7 +4532,7 @@ test('upgrade forwards --verbose to docker source refresh and docker runtime com
       ],
     ],
     ['license:plugins:sync', ['--env', 'docker-local', '--yes', '--skip-if-no-license', '--verbose']],
-    ['app:start', ['--env', 'docker-local', '--yes', '--verbose', '--quickstart']],
+    ['app:start', ['--env', 'docker-local', '--yes', '--verbose', '--quickstart', '--no-sync-licensed-plugins']],
     ['env:update', ['docker-local', '--verbose']],
   ]);
 });
@@ -4559,7 +4590,7 @@ test('upgrade can restart docker envs without pulling a new image', async () => 
 
   expect(runCommand.mock.calls).toEqual([
     ['app:stop', ['--env', 'docker-local', '--yes']],
-    ['app:start', ['--env', 'docker-local', '--yes', '--quickstart']],
+    ['app:start', ['--env', 'docker-local', '--yes', '--quickstart', '--no-sync-licensed-plugins']],
     ['env:update', ['docker-local']],
   ]);
   expect(mocks.upsertEnv).not.toHaveBeenCalled();
@@ -4623,7 +4654,7 @@ test('upgrade warns when env update fails after a successful restart', async () 
       ],
     ],
     ['license:plugins:sync', ['--env', 'docker-local', '--yes', '--skip-if-no-license']],
-    ['app:start', ['--env', 'docker-local', '--yes', '--quickstart']],
+    ['app:start', ['--env', 'docker-local', '--yes', '--quickstart', '--no-sync-licensed-plugins']],
     ['env:update', ['docker-local']],
   ]);
   expect(mocks.printWarning).toHaveBeenCalledWith(

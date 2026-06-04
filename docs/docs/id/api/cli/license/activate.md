@@ -37,7 +37,7 @@ nb license activate --env app1 --json --key-file ./license.txt
 
 Saat dijalankan secara interaktif, CLI lebih dulu menampilkan Hostname dan Instance ID saat ini, lalu meminta kamu menempelkan license key secara langsung atau memasukkan path file key. Informasi itu membantu kamu memastikan lisensi terikat ke instance yang benar.
 
-Setelah aktivasi berhasil, restart aplikasi agar lisensi dan status plugin komersial benar-benar berlaku:
+Setelah aktivasi berhasil, restart aplikasi agar lisensi dan status plugin komersial benar-benar berlaku; sebelum restart, CLI akan otomatis menyinkronkan plugin komersial yang diizinkan oleh lisensi saat ini:
 
 ```bash
 nb app restart

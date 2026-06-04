@@ -37,7 +37,7 @@ nb license activate --env app1 --json --key-file ./license.txt
 
 Bei interaktiver Ausführung zeigt die CLI zuerst den aktuellen Hostname und die Instance ID an und fordert dich dann auf, den license key direkt einzufügen oder einen Pfad zu einer key-Datei einzugeben. Damit kannst du prüfen, ob die Lizenz an die richtige Instanz gebunden wird.
 
-Nach einer erfolgreichen Aktivierung solltest du die App neu starten, damit Lizenzstatus und kommerzielle Plugins tatsächlich wirksam werden:
+Nach einer erfolgreichen Aktivierung solltest du die App neu starten, damit Lizenzstatus und kommerzielle Plugins tatsächlich wirksam werden; vor dem Neustart synchronisiert die CLI automatisch die durch die aktuelle Lizenz erlaubten kommerziellen Plugins:
 
 ```bash
 nb app restart

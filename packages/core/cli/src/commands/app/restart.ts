@@ -29,6 +29,38 @@ function pushFlag(argv: string[], flag: string, value: string | number | undefin
   }
 }
 
+function buildLicenseSyncArgv(
+  envName: string,
+  options: {
+    explicitEnvSelection: boolean;
+    yes: boolean;
+    verbose: boolean;
+  },
+): string[] {
+  const argv = ['--env', envName, '--skip-if-no-license'];
+  if (options.yes || options.explicitEnvSelection) {
+    argv.push('--yes');
+  }
+  if (options.verbose) {
+    argv.push('--verbose');
+  }
+  return argv;
+}
+
+async function runWithSuppressedTargetEnvLog<T>(task: () => Promise<T>): Promise<T> {
+  const previousTargetEnv = process.env.NB_SKIP_TARGET_ENV_LOG;
+  process.env.NB_SKIP_TARGET_ENV_LOG = '1';
+  try {
+    return await task();
+  } finally {
+    if (previousTargetEnv === undefined) {
+      delete process.env.NB_SKIP_TARGET_ENV_LOG;
+    } else {
+      process.env.NB_SKIP_TARGET_ENV_LOG = previousTargetEnv;
+    }
+  }
+}
+
 function formatDockerRestartFailure(envName: string, message: string): string {
   return [
     `Couldn't restart NocoBase for "${envName}".`,
@@ -41,7 +73,7 @@ function formatDockerRestartFailure(envName: string, message: string): string {
 export default class AppRestart extends Command {
   static override hidden = false;
   static override description =
-    'Restart NocoBase for the selected env. Local npm/git installs stop and prepare the app again by default, and Docker installs recreate the saved app container so saved env changes can take effect.';
+    'Restart NocoBase for the selected env. When applicable, the CLI synchronizes licensed commercial plugins first, then restarts the local app or recreates the saved Docker container.';
   static override examples = [
     '<%= config.bin %> <%= command.id %>',
     '<%= config.bin %> <%= command.id %> --env local',
@@ -68,6 +100,13 @@ export default class AppRestart extends Command {
       default: true,
       allowNo: true,
     }),
+    'sync-licensed-plugins': Flags.boolean({
+      hidden: true,
+      description: 'Synchronize licensed commercial plugins before restarting the application',
+      required: false,
+      default: true,
+      allowNo: true,
+    }),
     daemon: Flags.boolean({
       description:
         'Run the application as a daemon after stopping it (default: true; use --no-daemon to stay in the foreground)',
@@ -87,6 +126,7 @@ export default class AppRestart extends Command {
     const quickstart = flags.quickstart ?? true;
     const requestedEnv = flags.env?.trim() || undefined;
     const explicitEnvSelection = Boolean(requestedEnv && hasExplicitEnvSelection(this.argv));
+    const shouldSyncLicensedPlugins = flags['sync-licensed-plugins'] ?? true;
     if (explicitEnvSelection) {
       const confirmed = await ensureCrossEnvConfirmed({
         command: this,
@@ -99,15 +139,53 @@ export default class AppRestart extends Command {
     }
 
     const runtime = await resolveManagedAppRuntime(requestedEnv);
+    const runCommand = this.config.runCommand.bind(this.config) as (id: string, argv?: string[]) => Promise<unknown>;
     const commandStdio = flags.verbose ? 'inherit' : 'ignore';
 
     if (!runtime) {
       this.error(formatMissingManagedAppEnvMessage(requestedEnv));
     }
 
-    if (runtime.kind === 'docker') {
-      announceTargetEnv(runtime.envName);
+    if (runtime.kind === 'http') {
+      this.error(
+        [
+          `Can't restart "${runtime.envName}" from this machine.`,
+          'This env only has an API connection, so there is no saved local app or Docker runtime to restart here.',
+          'Connect it to a local checkout or reinstall it with npm, git, or Docker if you want CLI-managed restart.',
+        ].join('\n'),
+      );
+    }
 
+    if (runtime.kind === 'ssh') {
+      this.error(
+        [
+          `Can't restart "${runtime.envName}" yet.`,
+          'SSH env support is reserved but not implemented yet.',
+          'Use a local or Docker env if you need CLI-managed restart right now.',
+        ].join('\n'),
+      );
+    }
+
+    announceTargetEnv(runtime.envName);
+
+    if (shouldSyncLicensedPlugins) {
+      try {
+        await runWithSuppressedTargetEnvLog(async () => {
+          await runCommand(
+            'license:plugins:sync',
+            buildLicenseSyncArgv(runtime.envName, {
+              explicitEnvSelection,
+              yes: flags.yes,
+              verbose: flags.verbose,
+            }),
+          );
+        });
+      } catch (error: unknown) {
+        this.error(error instanceof Error ? error.message : String(error));
+      }
+    }
+
+    if (runtime.kind === 'docker') {
       startTask(`Stopping NocoBase for "${runtime.envName}" before restart...`);
       try {
         const state = await stopDockerContainer(runtime.containerName, {
@@ -165,16 +243,21 @@ export default class AppRestart extends Command {
       stopArgv.push('--verbose');
     }
 
-    await this.config.runCommand('app:stop', stopArgv);
+    await runWithSuppressedTargetEnvLog(async () => {
+      await runCommand('app:stop', stopArgv);
+    });
 
     const startArgv = [...stopArgv];
     if (quickstart) {
       startArgv.push('--quickstart');
     }
+    startArgv.push('--no-sync-licensed-plugins');
     if (daemonFlagWasProvided) {
       startArgv.push(flags.daemon === false ? '--no-daemon' : '--daemon');
     }
 
-    await this.config.runCommand('app:start', startArgv);
+    await runWithSuppressedTargetEnvLog(async () => {
+      await runCommand('app:start', startArgv);
+    });
   }
 }

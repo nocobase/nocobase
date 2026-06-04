@@ -22,6 +22,16 @@ function pkgUrl() {
   return 'https://pkg.nocobase.com/';
 }
 
+function fetchInputUrl(input: string | URL | Request): string {
+  if (typeof input === 'string') {
+    return input;
+  }
+  if (input instanceof URL) {
+    return input.toString();
+  }
+  return input.url;
+}
+
 function createMockTarGz(files: Array<{ name: string; content: string }>): Uint8Array {
   const records: Buffer[] = [];
 
@@ -2037,6 +2047,150 @@ test('license plugins sync skips packages without a matching downloadable versio
     await LicensePluginsSync.prototype.run.call(command);
 
     expect(log.mock.calls.some((call) => String(call[0]).includes('does not have a downloadable version'))).toBe(true);
+  } finally {
+    await rm(storagePath, { recursive: true, force: true });
+  }
+});
+
+test('license plugins sync skips downloading plugins that already match the requested version', async () => {
+  const { default: LicensePluginsSync } = await import('../commands/license/plugins/sync.js');
+  const storagePath = await mkdtemp(path.join(os.tmpdir(), 'nocobase-cli-license-'));
+  const licenseDir = path.join(storagePath, '.license');
+  const downloadedPluginDir = path.join(storagePath, 'plugins', '@nocobase', 'plugin-a');
+
+  try {
+    await mkdir(licenseDir, { recursive: true });
+    await mkdir(downloadedPluginDir, { recursive: true });
+    await writeFile(path.join(licenseDir, 'license-key'), 'license-key-raw');
+    await writeFile(
+      path.join(downloadedPluginDir, 'package.json'),
+      JSON.stringify({ name: '@nocobase/plugin-a', version: '2.1.0-beta.24' }),
+    );
+    mocks.resolveManagedAppRuntime.mockResolvedValue({
+      kind: 'local',
+      envName: 'app1',
+      source: 'npm',
+      projectRoot: '/tmp/app1',
+      workspaceName: 'nb-demo',
+      env: {
+        config: {},
+        storagePath,
+        envVars: {
+          STORAGE_PATH: storagePath,
+        },
+      },
+    });
+    mocks.keyDecrypt.mockReturnValue(
+      JSON.stringify({
+        accessKeyId: 'ak',
+        accessKeySecret: 'sk',
+        service: {
+          domain: 'https://pkg.example.com/',
+        },
+      }),
+    );
+
+    const log = vi.fn();
+    const command = Object.assign(Object.create(LicensePluginsSync.prototype), {
+      parse: vi.fn(async () => ({
+        flags: {
+          env: 'app1',
+          json: false,
+          'dry-run': false,
+          version: '2.1.0-beta.24',
+          verbose: false,
+        },
+      })),
+      config: {
+        pjson: {
+          version: '2.1.0-beta.24',
+        },
+      },
+      log,
+      error: (message: string) => {
+        throw new Error(message);
+      },
+    });
+
+    await LicensePluginsSync.prototype.run.call(command);
+
+    expect(
+      mocks.fetch.mock.calls.some(([input]) => {
+        return fetchInputUrl(input as string | URL | Request).includes('plugin-a.tgz');
+      }),
+    ).toBe(false);
+    expect(log.mock.calls.some((call) => String(call[0]).includes('1 skipped'))).toBe(true);
+    await expect(readFile(path.join(downloadedPluginDir, 'package.json'), 'utf8')).resolves.toContain('2.1.0-beta.24');
+  } finally {
+    await rm(storagePath, { recursive: true, force: true });
+  }
+});
+
+test('license plugins sync dry-run skips plugins that already match the requested version', async () => {
+  const { default: LicensePluginsSync } = await import('../commands/license/plugins/sync.js');
+  const storagePath = await mkdtemp(path.join(os.tmpdir(), 'nocobase-cli-license-'));
+  const licenseDir = path.join(storagePath, '.license');
+  const downloadedPluginDir = path.join(storagePath, 'plugins', '@nocobase', 'plugin-a');
+
+  try {
+    await mkdir(licenseDir, { recursive: true });
+    await mkdir(downloadedPluginDir, { recursive: true });
+    await writeFile(path.join(licenseDir, 'license-key'), 'license-key-raw');
+    await writeFile(
+      path.join(downloadedPluginDir, 'package.json'),
+      JSON.stringify({ name: '@nocobase/plugin-a', version: '2.1.0-beta.24' }),
+    );
+    mocks.resolveManagedAppRuntime.mockResolvedValue({
+      kind: 'local',
+      envName: 'app1',
+      source: 'npm',
+      projectRoot: '/tmp/app1',
+      workspaceName: 'nb-demo',
+      env: {
+        config: {},
+        storagePath,
+        envVars: {
+          STORAGE_PATH: storagePath,
+        },
+      },
+    });
+    mocks.keyDecrypt.mockReturnValue(
+      JSON.stringify({
+        accessKeyId: 'ak',
+        accessKeySecret: 'sk',
+        service: {
+          domain: 'https://pkg.example.com/',
+        },
+      }),
+    );
+
+    const log = vi.fn();
+    const command = Object.assign(Object.create(LicensePluginsSync.prototype), {
+      parse: vi.fn(async () => ({
+        flags: {
+          env: 'app1',
+          json: false,
+          'dry-run': true,
+          version: '2.1.0-beta.24',
+          verbose: false,
+        },
+      })),
+      config: {
+        pjson: {
+          version: '2.1.0-beta.24',
+        },
+      },
+      log,
+      error: (message: string) => {
+        throw new Error(message);
+      },
+    });
+
+    await LicensePluginsSync.prototype.run.call(command);
+
+    const resultLine = String(log.mock.calls.at(-1)?.[0] ?? '');
+    expect(resultLine).toContain('1 skipped');
+    expect(resultLine).not.toContain('updated');
   } finally {
     await rm(storagePath, { recursive: true, force: true });
   }

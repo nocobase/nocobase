@@ -37,7 +37,7 @@ nb license activate --env app1 --json --key-file ./license.txt
 
 Cuando la ejecutas de forma interactiva, la CLI primero muestra el Hostname y el Instance ID actuales, y después te pide que pegues la license key directamente o introduzcas la ruta de un archivo de key. Esa información te ayuda a confirmar que la licencia se está vinculando a la instancia correcta.
 
-Después de activar la licencia correctamente, reinicia la aplicación para que la licencia y el estado de los plugins comerciales surtan efecto de verdad:
+Después de activar la licencia correctamente, reinicia la aplicación para que la licencia y el estado de los plugins comerciales surtan efecto de verdad; la CLI sincronizará automáticamente los plugins comerciales permitidos por la licencia actual antes del reinicio:
 
 ```bash
 nb app restart

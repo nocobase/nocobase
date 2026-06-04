@@ -1,12 +1,12 @@
 ---
 title: "nb app restart"
-description: "Tài liệu lệnh nb app restart: khởi động lại ứng dụng NocoBase của env được chỉ định; env cục bộ mặc định sẽ tự động hoàn tất bước chuẩn bị cài đặt hoặc nâng cấp trong lúc khởi động lại, còn env Docker sẽ tạo lại container ứng dụng từ cấu hình đã lưu."
+description: "Tài liệu lệnh nb app restart: khởi động lại ứng dụng NocoBase của env được chỉ định; khi phù hợp, CLI sẽ đồng bộ trước các plugin thương mại được giấy phép hiện tại cho phép, sau đó env cục bộ sẽ tự động hoàn tất bước chuẩn bị cài đặt hoặc nâng cấp trong lúc khởi động lại, còn env Docker sẽ tạo lại container ứng dụng từ cấu hình đã lưu."
 keywords: "nb app restart,NocoBase CLI,Khởi động lại ứng dụng,Docker"
 ---
 
 # nb app restart
 
-Dừng rồi khởi động lại ứng dụng NocoBase của env được chỉ định. Env cục bộ sẽ dùng lại luồng `nb app stop` và `nb app start`, đồng thời mặc định tự động hoàn tất bước chuẩn bị cài đặt hoặc nâng cấp cần thiết trước khi khởi động lại; env Docker sẽ xóa container hiện tại trước, rồi tạo lại container ứng dụng từ cấu hình env đã lưu.
+Dừng rồi khởi động lại ứng dụng NocoBase của env được chỉ định. Khi phù hợp, CLI sẽ đồng bộ trước các plugin thương mại được giấy phép hiện tại cho phép. Sau đó, env cục bộ sẽ dùng lại luồng `nb app stop` và `nb app start`, đồng thời mặc định tự động hoàn tất bước chuẩn bị cài đặt hoặc nâng cấp cần thiết trước khi khởi động lại; env Docker sẽ xóa container hiện tại trước, rồi tạo lại container ứng dụng từ cấu hình env đã lưu.
 
 ## Cách dùng
 
@@ -35,7 +35,7 @@ nb app restart --env local-docker
 
 Nếu bạn truyền `--env` một cách tường minh và nó khác env hiện tại, CLI sẽ yêu cầu xác nhận trước. Trong terminal không tương tác hoặc phiên AI agent, hãy tự thêm `--yes` hoặc chạy `nb env use <name>` trước rồi thử lại.
 
-Theo mặc định, env cục bộ sẽ tự động hoàn tất bước chuẩn bị cài đặt hoặc nâng cấp cần thiết trước khi khởi động lại. Mỗi khi CLI cần đợi ứng dụng sẵn sàng, CLI sẽ kiểm tra `__health_check`: trước hết in ra một dòng waiting, sau đó in một dòng progress mỗi 10 giây cho đến khi ứng dụng khả dụng hoặc hết thời gian chờ. Nếu bạn truyền `--no-daemon` cho env cục bộ, ứng dụng sẽ chạy ở chế độ foreground, nên CLI sẽ không tiếp tục đợi kiểm tra readiness sau khi khởi động.
+Theo mặc định, khi phù hợp, CLI sẽ chạy `nb license plugins sync --skip-if-no-license` trước để đồng bộ các plugin thương mại được giấy phép hiện tại cho phép. Sau đó, env cục bộ sẽ tự động hoàn tất bước chuẩn bị cài đặt hoặc nâng cấp cần thiết trước khi khởi động lại, còn env Docker sẽ hoàn tất bước này trước khi tạo lại container. Mỗi khi CLI cần đợi ứng dụng sẵn sàng, CLI sẽ kiểm tra `__health_check`: trước hết in ra một dòng waiting, sau đó in một dòng progress mỗi 10 giây cho đến khi ứng dụng khả dụng hoặc hết thời gian chờ. Nếu bạn truyền `--no-daemon` cho env cục bộ, ứng dụng sẽ chạy ở chế độ foreground, nên CLI sẽ không tiếp tục đợi kiểm tra readiness sau khi khởi động.
 
 ## Lệnh liên quan
 

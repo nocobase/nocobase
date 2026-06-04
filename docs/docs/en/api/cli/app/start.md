@@ -1,12 +1,12 @@
 ---
 title: "nb app start"
-description: "nb app start command reference: start the NocoBase app for a selected env; local envs automatically complete install or upgrade preparation before startup, and Docker envs recreate the app container from saved env config."
+description: "nb app start command reference: start the NocoBase app for a selected env; when applicable, the CLI first synchronizes the commercial plugins allowed by the current license, then local envs automatically complete install or upgrade preparation before startup, and Docker envs recreate the app container from saved env config."
 keywords: "nb app start,NocoBase CLI,start app,Docker,pm2"
 ---
 
 # nb app start
 
-Start the NocoBase app for a selected env. npm/Git installations automatically complete install or upgrade preparation before running local app commands; Docker installations recreate the saved app container from saved env config.
+Start the NocoBase app for a selected env. When applicable, the CLI first synchronizes the commercial plugins allowed by the current license. Then npm/Git installations automatically complete install or upgrade preparation before running local app commands; Docker installations recreate the saved app container from saved env config.
 
 ## Usage
 
@@ -36,7 +36,7 @@ nb app start --env local-docker
 
 If you explicitly pass `--env` and it differs from the current env, the CLI asks for confirmation first. In non-interactive terminals or AI agent sessions, add `--yes` yourself or run `nb env use <name>` first and try again.
 
-By default, local envs automatically complete any required install or upgrade preparation before starting in daemon mode, and Docker envs recreate the app container from saved env config. Whenever the CLI needs to wait for readiness, it checks `__health_check`: it prints one waiting line first, then one progress line every 10 seconds until the app becomes available or times out.
+By default, when applicable, the CLI first runs `nb license plugins sync --skip-if-no-license` to synchronize the commercial plugins allowed by the current license. Then local envs automatically complete any required install or upgrade preparation before starting in daemon mode, and Docker envs recreate the app container from saved env config. Whenever the CLI needs to wait for readiness, it checks `__health_check`: it prints one waiting line first, then one progress line every 10 seconds until the app becomes available or times out.
 
 If you pass `--no-daemon` for a local env, the app runs in the foreground. In that case, the CLI does not keep waiting for the readiness check after startup.
 

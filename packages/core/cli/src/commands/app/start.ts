@@ -39,6 +39,38 @@ function argvHasToken(argv: string[], tokens: string[]): boolean {
   return tokens.some((token) => argv.includes(token));
 }
 
+function buildLicenseSyncArgv(
+  envName: string,
+  options: {
+    explicitEnvSelection: boolean;
+    yes: boolean;
+    verbose: boolean;
+  },
+): string[] {
+  const argv = ['--env', envName, '--skip-if-no-license'];
+  if (options.yes || options.explicitEnvSelection) {
+    argv.push('--yes');
+  }
+  if (options.verbose) {
+    argv.push('--verbose');
+  }
+  return argv;
+}
+
+async function runWithSuppressedTargetEnvLog<T>(task: () => Promise<T>): Promise<T> {
+  const previousTargetEnv = process.env.NB_SKIP_TARGET_ENV_LOG;
+  process.env.NB_SKIP_TARGET_ENV_LOG = '1';
+  try {
+    return await task();
+  } finally {
+    if (previousTargetEnv === undefined) {
+      delete process.env.NB_SKIP_TARGET_ENV_LOG;
+    } else {
+      process.env.NB_SKIP_TARGET_ENV_LOG = previousTargetEnv;
+    }
+  }
+}
+
 function formatDockerStartFailure(envName: string, message: string): string {
   return [
     `Couldn't start NocoBase for "${envName}".`,
@@ -87,7 +119,7 @@ function formatLocalReadyFailure(
 export default class AppStart extends Command {
   static override hidden = false;
   static override description =
-    'Start NocoBase for the selected env. Local npm/git installs prepare and run the app by default, and Docker installs recreate the saved app container.';
+    'Start NocoBase for the selected env. When applicable, the CLI synchronizes licensed commercial plugins first, then prepares and starts the app or recreates the saved Docker container.';
   static override examples = [
     '<%= config.bin %> <%= command.id %>',
     '<%= config.bin %> <%= command.id %> --env local',
@@ -114,6 +146,13 @@ export default class AppStart extends Command {
       default: true,
       allowNo: true,
     }),
+    'sync-licensed-plugins': Flags.boolean({
+      hidden: true,
+      description: 'Synchronize licensed commercial plugins before starting the application',
+      required: false,
+      default: true,
+      allowNo: true,
+    }),
     daemon: Flags.boolean({
       description: 'Run the application as a daemon (default: true; use --no-daemon to stay in the foreground)',
       char: 'd',
@@ -131,7 +170,9 @@ export default class AppStart extends Command {
     const { flags } = await this.parse(AppStart);
     const quickstart = flags.quickstart ?? true;
     const requestedEnv = flags.env?.trim() || undefined;
-    if (requestedEnv && hasExplicitEnvSelection(this.argv)) {
+    const explicitEnvSelection = Boolean(requestedEnv && hasExplicitEnvSelection(this.argv));
+    const shouldSyncLicensedPlugins = flags['sync-licensed-plugins'] ?? true;
+    if (explicitEnvSelection) {
       const confirmed = await ensureCrossEnvConfirmed({
         command: this,
         requestedEnv,
@@ -144,6 +185,7 @@ export default class AppStart extends Command {
 
     const daemonFlagWasProvided = argvHasToken(this.argv, ['--daemon', '--no-daemon']);
     const runtime = await resolveManagedAppRuntime(requestedEnv);
+    const runCommand = this.config.runCommand.bind(this.config) as (id: string, argv?: string[]) => Promise<unknown>;
     const commandStdio = flags.verbose ? 'inherit' : 'ignore';
     if (!runtime) {
       this.error(formatMissingManagedAppEnvMessage(requestedEnv));
@@ -184,6 +226,23 @@ export default class AppStart extends Command {
             `Run \`nb app start --env ${runtime.envName}\` to recreate the saved container, or recreate the env if you need different runtime settings.`,
           ].join('\n'),
         );
+      }
+
+      if (shouldSyncLicensedPlugins) {
+        try {
+          await runWithSuppressedTargetEnvLog(async () => {
+            await runCommand(
+              'license:plugins:sync',
+              buildLicenseSyncArgv(runtime.envName, {
+                explicitEnvSelection,
+                yes: flags.yes,
+                verbose: flags.verbose,
+              }),
+            );
+          });
+        } catch (error: unknown) {
+          this.error(error instanceof Error ? error.message : String(error));
+        }
       }
 
       await ensureBuiltinDbReady(runtime, {
@@ -233,7 +292,6 @@ export default class AppStart extends Command {
     });
 
     if (runtime.source === 'npm' || runtime.source === 'git') {
-      const runCommand = this.config.runCommand.bind(this.config) as (id: string, argv?: string[]) => Promise<unknown>;
       const downloadableRuntime = runtime as typeof runtime & { source: 'npm' | 'git' };
       await ensureSavedLocalSource(downloadableRuntime, runCommand, {
         verbose: flags.verbose,
@@ -281,6 +339,23 @@ export default class AppStart extends Command {
         }
       }
       return;
+    }
+
+    if (shouldSyncLicensedPlugins) {
+      try {
+        await runWithSuppressedTargetEnvLog(async () => {
+          await runCommand(
+            'license:plugins:sync',
+            buildLicenseSyncArgv(runtime.envName, {
+              explicitEnvSelection,
+              yes: flags.yes,
+              verbose: flags.verbose,
+            }),
+          );
+        });
+      } catch (error: unknown) {
+        this.error(error instanceof Error ? error.message : String(error));
+      }
     }
 
     try {

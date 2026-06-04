@@ -37,7 +37,7 @@ nb license activate --env app1 --json --key-file ./license.txt
 
 交互式执行时，CLI 会先展示当前实例的 Hostname 和 Instance ID，然后提示你直接粘贴 license key 或输入 key 文件路径。这两项信息可用于核对当前授权绑定是否正确。
 
-激活成功后，需要重启应用让授权和商业插件状态真正生效：
+激活成功后，需要重启应用让授权和商业插件状态真正生效；CLI 会在重启前自动同步当前授权允许使用的商业插件：
 
 ```bash
 nb app restart

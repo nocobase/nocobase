@@ -37,7 +37,7 @@ nb license activate --env app1 --json --key-file ./license.txt
 
 Khi chạy ở chế độ tương tác, CLI sẽ hiển thị Hostname và Instance ID hiện tại trước, rồi yêu cầu bạn dán trực tiếp license key hoặc nhập đường dẫn tới file key. Thông tin đó giúp bạn xác nhận giấy phép đang được gắn với đúng instance.
 
-Sau khi kích hoạt thành công, hãy khởi động lại ứng dụng để giấy phép và trạng thái plugin thương mại thực sự có hiệu lực:
+Sau khi kích hoạt thành công, hãy khởi động lại ứng dụng để giấy phép và trạng thái plugin thương mại thực sự có hiệu lực; trước khi khởi động lại, CLI sẽ tự động đồng bộ các plugin thương mại được giấy phép hiện tại cho phép:
 
 ```bash
 nb app restart

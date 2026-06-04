@@ -649,8 +649,10 @@ export default class AppUpgrade extends Command {
       }
 
       await runWithSuppressedTargetEnvLog(async () => {
+        const startArgv = buildManagedActionArgv(runtime.envName, parsed, { quickstart: true });
+        startArgv.push('--no-sync-licensed-plugins');
         await runWithSuppressedStartSuccessLog(async () => {
-          await runCommand('app:start', buildManagedActionArgv(runtime.envName, parsed, { quickstart: true }));
+          await runCommand('app:start', startArgv);
         });
       });
 

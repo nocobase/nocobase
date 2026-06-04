@@ -1,12 +1,12 @@
 ---
 title: "nb app restart"
-description: "Referensi perintah nb app restart: me-restart aplikasi NocoBase pada env yang ditentukan; env lokal secara default akan otomatis menyiapkan instalasi atau upgrade yang diperlukan saat restart, dan untuk env Docker, container aplikasi dibuat ulang dari konfigurasi yang tersimpan."
+description: "Referensi perintah nb app restart: me-restart aplikasi NocoBase pada env yang ditentukan; bila berlaku, CLI terlebih dahulu menyinkronkan plugin komersial yang diizinkan oleh lisensi saat ini, lalu env lokal secara default akan otomatis menyiapkan instalasi atau upgrade yang diperlukan saat restart, dan untuk env Docker, container aplikasi dibuat ulang dari konfigurasi yang tersimpan."
 keywords: "nb app restart,NocoBase CLI,me-restart aplikasi,Docker"
 ---
 
 # nb app restart
 
-Menghentikan lalu memulai kembali aplikasi NocoBase dari env yang ditentukan. Env lokal memakai ulang alur `nb app stop` dan `nb app start` dan, secara default, akan otomatis menyiapkan instalasi atau upgrade yang diperlukan sebelum memulai kembali; env Docker akan menghapus container saat ini lebih dulu, lalu membuat ulang container aplikasi dari konfigurasi env yang tersimpan.
+Menghentikan lalu memulai kembali aplikasi NocoBase dari env yang ditentukan. Bila berlaku, CLI terlebih dahulu menyinkronkan plugin komersial yang diizinkan oleh lisensi saat ini. Setelah itu, env lokal memakai ulang alur `nb app stop` dan `nb app start` dan, secara default, akan otomatis menyiapkan instalasi atau upgrade yang diperlukan sebelum memulai kembali; env Docker akan menghapus container saat ini lebih dulu, lalu membuat ulang container aplikasi dari konfigurasi env yang tersimpan.
 
 ## Penggunaan
 
@@ -35,7 +35,7 @@ nb app restart --env local-docker
 
 Jika Anda memberikan `--env` secara eksplisit dan nilainya berbeda dari env saat ini, CLI akan meminta konfirmasi terlebih dahulu. Pada terminal non-interaktif atau sesi AI agent, tambahkan `--yes` sendiri atau jalankan `nb env use <name>` terlebih dahulu lalu coba lagi.
 
-Secara default, env lokal akan otomatis menyiapkan instalasi atau upgrade yang diperlukan sebelum memulai kembali. Setiap kali CLI perlu menunggu aplikasi siap, CLI akan memeriksa `__health_check`: pertama menampilkan satu baris waiting, lalu satu baris progress setiap 10 detik sampai aplikasi tersedia atau waktunya habis. Jika Anda memberikan `--no-daemon` untuk env lokal, aplikasi akan berjalan di foreground, jadi CLI tidak akan terus menunggu pemeriksaan readiness setelah startup.
+Secara default, bila berlaku, CLI terlebih dahulu menjalankan `nb license plugins sync --skip-if-no-license` untuk menyinkronkan plugin komersial yang diizinkan oleh lisensi saat ini. Setelah itu, env lokal akan otomatis menyiapkan instalasi atau upgrade yang diperlukan sebelum memulai kembali, sedangkan env Docker menyelesaikan langkah ini sebelum membuat ulang container. Setiap kali CLI perlu menunggu aplikasi siap, CLI akan memeriksa `__health_check`: pertama menampilkan satu baris waiting, lalu satu baris progress setiap 10 detik sampai aplikasi tersedia atau waktunya habis. Jika Anda memberikan `--no-daemon` untuk env lokal, aplikasi akan berjalan di foreground, jadi CLI tidak akan terus menunggu pemeriksaan readiness setelah startup.
 
 ## Perintah Terkait
 
