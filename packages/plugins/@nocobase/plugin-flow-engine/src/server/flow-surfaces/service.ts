@@ -157,6 +157,7 @@ import { FlowSurfaceRouteSync } from './route-sync';
 import { FlowSurfaceContextResolver } from './surface-context';
 import { buildFlowSurfaceContextResponse, isBareFlowContextPath } from './context';
 import type { FlowSurfaceContextSemantic } from './context';
+import type { FlowSurfaceAutoSnapshot } from './extractor/types';
 import {
   normalizeFlowSurfaceEventFlow,
   normalizeFlowSurfaceEventFlowRegistry,
@@ -1302,6 +1303,13 @@ export class FlowSurfacesService {
       .flowSurfaceCapabilityProviders;
   }
 
+  private get autoSnapshots(): readonly FlowSurfaceAutoSnapshot[] {
+    return (
+      (this.plugin as Plugin & { flowSurfaceAutoSnapshots?: readonly FlowSurfaceAutoSnapshot[] })
+        .flowSurfaceAutoSnapshots || []
+    );
+  }
+
   get db() {
     return this.plugin.db;
   }
@@ -2103,6 +2111,7 @@ export class FlowSurfacesService {
     return buildFlowSurfaceCapabilitiesResponse(input, {
       enabledPackages,
       providerRegistry: this.capabilityProviderRegistry,
+      autoSnapshots: this.autoSnapshots,
       catalog: (values) =>
         this.catalog(values, {
           transaction: options.transaction,
@@ -2119,6 +2128,7 @@ export class FlowSurfacesService {
     return buildFlowSurfaceDescribeCapabilityResponse(input, {
       enabledPackages,
       providerRegistry: this.capabilityProviderRegistry,
+      autoSnapshots: this.autoSnapshots,
       catalog: (values) =>
         this.catalog(values, {
           transaction: options.transaction,

@@ -11,16 +11,19 @@ import {
   buildFlowSurfaceCapabilitiesResponse,
   buildFlowSurfaceDescribeCapabilityResponse,
 } from '../flow-surfaces/capabilities';
+import { FlowSurfacesService } from '../flow-surfaces/service';
 import {
   collectProviderCatalogItems,
   filterProviderCatalogItemsForCatalog,
 } from '../flow-surfaces/capability-registry';
 import { FlowSurfaceBadRequestError } from '../flow-surfaces/errors';
+import { buildFlowSurfaceAutoSnapshot } from '../flow-surfaces/extractor';
 import type {
   FlowSurfaceCapabilitiesProvider,
   FlowSurfaceCapabilitiesValues,
   FlowSurfaceCapabilityKind,
   FlowSurfaceCapabilityManifestItem,
+  FlowSurfaceCatalogResponse,
   FlowSurfaceCatalogValues,
 } from '../flow-surfaces/types';
 
@@ -111,6 +114,38 @@ describe('flowSurfaces capabilities projection', () => {
     };
   }
 
+  function createAutoNamespacedGanttProvider(): FlowSurfaceCapabilitiesProvider {
+    return {
+      ownerPlugin: '@nocobase/plugin-gantt',
+      getCapabilities: () => [
+        {
+          id: 'gantt',
+          kind: 'block',
+          label: 'Gantt provider',
+          semantic: {
+            title: 'Gantt provider',
+          },
+          implementation: {
+            modelUse: 'GanttBlockModel',
+          },
+          availability: {
+            create: {
+              supported: true,
+            },
+            configure: {
+              supported: false,
+              reasonCode: 'contract-not-verified',
+              reasonSource: 'registry',
+            },
+          },
+        },
+      ],
+      resolveCreate: () => ({
+        use: 'GanttBlockModel',
+      }),
+    };
+  }
+
   function createActionProvider(): FlowSurfaceCapabilitiesProvider {
     return {
       ownerPlugin: '@nocobase/plugin-action-provider',
@@ -191,6 +226,148 @@ describe('flowSurfaces capabilities projection', () => {
         },
       ],
     };
+  }
+
+  function createGanttAutoSnapshot() {
+    return buildFlowSurfaceAutoSnapshot({
+      plugin: '@nocobase/plugin-gantt',
+      generatedAt: '2026-06-04T00:00:00.000Z',
+      sourceHash: 'snapshot-source-hash',
+      extractorVersion: 'test',
+      warnings: [
+        {
+          code: 'snapshot-stale',
+          message: 'Snapshot was generated before the current plugin build.',
+        },
+      ],
+      events: [
+        {
+          type: 'model.registered',
+          modelUse: 'GanttBlockModel',
+          className: 'GanttBlockModel',
+          source: 'packages/plugins/@nocobase/plugin-gantt/src/client-v2/plugin.tsx',
+          evidenceSource: 'runtime',
+          confidence: 'high',
+        },
+        {
+          type: 'menu.itemRegistered',
+          menuKey: 'gantt',
+          label: 'Gantt',
+          modelUse: 'GanttBlockModel',
+          slot: 'blocks',
+          createModelOptionsStatus: 'static',
+          source: 'packages/plugins/@nocobase/plugin-gantt/src/client-v2/models/GanttBlockModel.tsx',
+          evidenceSource: 'ast',
+          confidence: 'medium',
+        },
+        {
+          type: 'model.flowRegistered',
+          modelUse: 'GanttBlockModel',
+          flowKey: 'ganttSettings',
+          title: 'Gantt settings',
+          staticStatus: 'static',
+          source: 'packages/plugins/@nocobase/plugin-gantt/src/client-v2/models/GanttBlockModel.settings.tsx',
+          evidenceSource: 'ast',
+          confidence: 'medium',
+        },
+      ],
+    });
+  }
+
+  function createUnsafeAutoSnapshot() {
+    return buildFlowSurfaceAutoSnapshot({
+      plugin: '@nocobase/plugin-unsafe',
+      generatedAt: '2026-06-04T00:00:00.000Z',
+      sourceHash: 'unsafe-source-hash',
+      extractorVersion: 'test',
+      warnings: [
+        {
+          code: 'snapshot-stale',
+          message: 'UnsafeBlockModel metadata came from packages/foo/src/client.tsx with props.',
+        },
+      ],
+      events: [
+        {
+          type: 'model.registered',
+          modelUse: 'UnsafeBlockModel',
+          className: 'UnsafeBlockModel',
+          source: 'packages/foo/src/client.tsx',
+          evidenceSource: 'runtime',
+          confidence: 'high',
+        },
+        {
+          type: 'menu.itemRegistered',
+          menuKey: 'unsafe',
+          label: 'UnsafeBlockModel packages/foo/src/client.tsx',
+          modelUse: 'UnsafeBlockModel',
+          slot: 'blocks',
+          createModelOptionsStatus: 'static',
+          source: 'packages/foo/src/client.tsx',
+          evidenceSource: 'ast',
+          confidence: 'medium',
+        },
+      ],
+    });
+  }
+
+  function createUnsafePublicTypeAutoSnapshot() {
+    return buildFlowSurfaceAutoSnapshot({
+      plugin: '@nocobase/plugin-unsafe',
+      generatedAt: '2026-06-04T00:00:00.000Z',
+      sourceHash: 'unsafe-public-type-source-hash',
+      extractorVersion: 'test',
+      events: [
+        {
+          type: 'model.registered',
+          modelUse: 'PropsBlockModel',
+          className: 'PropsBlockModel',
+          source: 'packages/foo/src/PropsBlockModel.tsx',
+          evidenceSource: 'runtime',
+          confidence: 'high',
+        },
+        {
+          type: 'menu.itemRegistered',
+          menuKey: 'props',
+          label: 'Props',
+          modelUse: 'PropsBlockModel',
+          slot: 'blocks',
+          createModelOptionsStatus: 'static',
+          source: 'packages/foo/src/PropsBlockModel.tsx',
+          evidenceSource: 'ast',
+          confidence: 'medium',
+        },
+      ],
+    });
+  }
+
+  function createInputFieldAutoSnapshot() {
+    return buildFlowSurfaceAutoSnapshot({
+      plugin: '@nocobase/plugin-fields',
+      generatedAt: '2026-06-04T00:00:00.000Z',
+      sourceHash: 'field-source-hash',
+      extractorVersion: 'test',
+      events: [
+        {
+          type: 'model.registered',
+          modelUse: 'InputFieldModel',
+          className: 'InputFieldModel',
+          source: 'packages/plugins/@nocobase/plugin-fields/src/client/InputFieldModel.tsx',
+          evidenceSource: 'runtime',
+          confidence: 'high',
+        },
+        {
+          type: 'menu.itemRegistered',
+          menuKey: 'input',
+          label: 'Input',
+          modelUse: 'InputFieldModel',
+          slot: 'fields',
+          createModelOptionsStatus: 'static',
+          source: 'packages/plugins/@nocobase/plugin-fields/src/client/InputFieldModel.tsx',
+          evidenceSource: 'ast',
+          confidence: 'medium',
+        },
+      ],
+    });
   }
 
   function createCatalogRecorder() {
@@ -351,6 +528,21 @@ describe('flowSurfaces capabilities projection', () => {
             : undefined,
         };
       },
+    };
+  }
+
+  function createAutoSnapshotService(autoSnapshots: readonly ReturnType<typeof createGanttAutoSnapshot>[]) {
+    const recorder = createCatalogRecorder();
+    class AutoSnapshotFlowSurfacesService extends FlowSurfacesService {
+      override async catalog(input: FlowSurfaceCatalogValues): Promise<FlowSurfaceCatalogResponse> {
+        return recorder.catalog(input);
+      }
+    }
+    return {
+      recorder,
+      service: new AutoSnapshotFlowSurfacesService({
+        flowSurfaceAutoSnapshots: autoSnapshots,
+      } as unknown as ConstructorParameters<typeof FlowSurfacesService>[0]),
     };
   }
 
@@ -670,6 +862,345 @@ describe('flowSurfaces capabilities projection', () => {
     expect(response.meta.registrySources).toEqual([{ origin: 'canaryOverlay', count: 1 }]);
   });
 
+  it('should expose auto snapshot capabilities as read-only discovery', async () => {
+    const response = await buildFlowSurfaceCapabilitiesResponse(
+      {
+        query: 'gantt',
+      },
+      {
+        enabledPackages: new Set(['@nocobase/plugin-gantt']),
+        autoSnapshots: [createGanttAutoSnapshot()],
+        catalog: createCatalogRecorder().catalog,
+        generatedAt: '2026-06-04T00:00:00.000Z',
+      },
+    );
+
+    expect(response.data).toMatchObject([
+      {
+        kind: 'block',
+        publicType: 'pluginGantt.gantt',
+        publicTypeMeta: {
+          value: 'pluginGantt.gantt',
+          source: 'autoNamespaced',
+        },
+        ownerPlugin: '@nocobase/plugin-gantt',
+        origin: 'autoSnapshot',
+        supportLevel: 'readback-only',
+        availability: {
+          render: {
+            supported: true,
+          },
+          readback: {
+            supported: true,
+          },
+          create: {
+            supported: false,
+            reasonCode: 'manifest-required',
+            reasonSource: 'registry',
+          },
+          configure: {
+            supported: false,
+            reasonCode: 'manifest-required',
+            reasonSource: 'registry',
+          },
+        },
+      },
+    ]);
+    expect(response.data[0]).not.toHaveProperty('identity');
+    expect(response.data[0]).not.toHaveProperty('warnings');
+    expect(JSON.stringify(response.data[0])).not.toContain('GanttBlockModel');
+    expect(response.meta.registrySources).toEqual([{ origin: 'autoSnapshot', count: 1 }]);
+  });
+
+  it('should not let auto snapshots override same-owner provider capabilities', async () => {
+    const response = await buildFlowSurfaceCapabilitiesResponse(
+      {
+        publicTypes: ['pluginGantt.gantt'],
+      },
+      {
+        enabledPackages: new Set(['@nocobase/plugin-gantt']),
+        providerRegistry: createProviderRegistry([createAutoNamespacedGanttProvider()]),
+        autoSnapshots: [createGanttAutoSnapshot()],
+        catalog: createCatalogRecorder().catalog,
+        generatedAt: '2026-06-04T00:00:00.000Z',
+      },
+    );
+
+    expect(response.data).toEqual([
+      expect.objectContaining({
+        publicType: 'pluginGantt.gantt',
+        ownerPlugin: '@nocobase/plugin-gantt',
+        origin: 'canaryOverlay',
+        label: 'Gantt provider',
+        availability: expect.objectContaining({
+          create: expect.objectContaining({
+            supported: true,
+          }),
+        }),
+      }),
+    ]);
+  });
+
+  it('should expose auto snapshot diagnostics only when requested', async () => {
+    const response = await buildFlowSurfaceCapabilitiesResponse(
+      {
+        publicTypes: ['pluginGantt.gantt'],
+        expand: ['item.identity', 'item.warnings'],
+      },
+      {
+        enabledPackages: new Set(['@nocobase/plugin-gantt']),
+        autoSnapshots: [createGanttAutoSnapshot()],
+        catalog: createCatalogRecorder().catalog,
+        generatedAt: '2026-06-04T00:00:00.000Z',
+      },
+    );
+
+    expect(response.data).toEqual([
+      expect.objectContaining({
+        identity: {
+          capabilityId: '@nocobase/plugin-gantt:autoSnapshot:block:pluginGantt.gantt',
+        },
+        warnings: expect.arrayContaining([
+          expect.objectContaining({
+            code: 'auto-discovered-readonly',
+          }),
+          expect.objectContaining({
+            code: 'snapshot-stale',
+          }),
+        ]),
+      }),
+    ]);
+  });
+
+  it('should sanitize unsafe auto snapshot metadata before public exposure', async () => {
+    const options = {
+      enabledPackages: new Set(['@nocobase/plugin-unsafe']),
+      autoSnapshots: [createUnsafeAutoSnapshot()],
+      catalog: createCatalogRecorder().catalog,
+      generatedAt: '2026-06-04T00:00:00.000Z',
+    };
+    const list = await buildFlowSurfaceCapabilitiesResponse(
+      {
+        publicTypes: ['pluginUnsafe.unsafe'],
+        expand: ['item.semantic', 'item.warnings'],
+      },
+      options,
+    );
+    const detail = await buildFlowSurfaceDescribeCapabilityResponse(
+      {
+        publicType: 'pluginUnsafe.unsafe',
+        expand: ['item.semantic', 'item.warnings'],
+      },
+      options,
+    );
+
+    [list.data[0], detail.data].forEach((item) => {
+      const serialized = JSON.stringify(item);
+      expect(serialized).not.toContain('UnsafeBlockModel');
+      expect(serialized).not.toContain('packages/foo');
+      expect(serialized).not.toContain('props');
+      expect(item).toMatchObject({
+        publicType: 'pluginUnsafe.unsafe',
+        label: 'pluginUnsafe.unsafe',
+        semantic: {
+          title: 'pluginUnsafe.unsafe',
+          aliases: ['pluginUnsafe.unsafe'],
+        },
+        warnings: expect.arrayContaining([
+          {
+            code: 'unsafe-semantic-text',
+            message: 'Capability metadata was partially sanitized.',
+          },
+          {
+            code: 'snapshot-stale',
+            message: 'Capability metadata was partially sanitized.',
+          },
+          expect.objectContaining({
+            code: 'auto-discovered-readonly',
+          }),
+        ]),
+      });
+    });
+  });
+
+  it('should reject unsafe auto snapshot public types before public exposure', async () => {
+    const response = await buildFlowSurfaceCapabilitiesResponse(
+      {
+        publicTypes: ['pluginUnsafe.props'],
+        includeUnavailable: true,
+        expand: ['item.identity', 'item.semantic', 'item.warnings'],
+      },
+      {
+        enabledPackages: new Set(['@nocobase/plugin-unsafe']),
+        autoSnapshots: [createUnsafePublicTypeAutoSnapshot()],
+        catalog: createCatalogRecorder().catalog,
+        generatedAt: '2026-06-04T00:00:00.000Z',
+      },
+    );
+
+    expect(response.data).toEqual([]);
+  });
+
+  it('should keep field component auto snapshots out of global discovery', async () => {
+    const options = {
+      enabledPackages: new Set(['@nocobase/plugin-fields']),
+      autoSnapshots: [createInputFieldAutoSnapshot()],
+      catalog: createCatalogRecorder().catalog,
+      generatedAt: '2026-06-04T00:00:00.000Z',
+    };
+    const response = await buildFlowSurfaceCapabilitiesResponse(
+      {
+        kinds: ['fieldComponent'],
+        publicTypes: ['pluginFields.input'],
+        includeUnavailable: true,
+      },
+      options,
+    );
+
+    expect(response.data).toEqual([]);
+
+    let caught: unknown;
+    try {
+      await buildFlowSurfaceDescribeCapabilityResponse(
+        {
+          publicType: 'pluginFields.input',
+        },
+        options,
+      );
+    } catch (error) {
+      caught = error;
+    }
+
+    expect(caught).toBeInstanceOf(FlowSurfaceBadRequestError);
+    expect((caught as FlowSurfaceBadRequestError).options.details).toMatchObject({
+      reasonCode: 'unsupported',
+      reasonSource: 'registry',
+    });
+  });
+
+  it('should hide auto snapshot capabilities when the owner plugin is disabled', async () => {
+    const response = await buildFlowSurfaceCapabilitiesResponse(
+      {
+        query: 'gantt',
+      },
+      {
+        enabledPackages: new Set(),
+        autoSnapshots: [createGanttAutoSnapshot()],
+        catalog: createCatalogRecorder().catalog,
+        generatedAt: '2026-06-04T00:00:00.000Z',
+      },
+    );
+
+    expect(response.data).toEqual([]);
+  });
+
+  it('should keep auto snapshot capabilities out of target-scoped discovery', async () => {
+    const response = await buildFlowSurfaceCapabilitiesResponse(
+      {
+        query: 'gantt',
+        target: {
+          uid: 'target-1',
+        },
+      },
+      {
+        enabledPackages: new Set(['@nocobase/plugin-gantt']),
+        autoSnapshots: [createGanttAutoSnapshot()],
+        catalog: createCatalogRecorder().catalog,
+        generatedAt: '2026-06-04T00:00:00.000Z',
+      },
+    );
+
+    expect(response.data).toEqual([]);
+
+    let caught: unknown;
+    try {
+      await buildFlowSurfaceDescribeCapabilityResponse(
+        {
+          publicType: 'pluginGantt.gantt',
+          target: {
+            uid: 'target-1',
+          },
+        },
+        {
+          enabledPackages: new Set(['@nocobase/plugin-gantt']),
+          autoSnapshots: [createGanttAutoSnapshot()],
+          catalog: createCatalogRecorder().catalog,
+          generatedAt: '2026-06-04T00:00:00.000Z',
+        },
+      );
+    } catch (error) {
+      caught = error;
+    }
+
+    expect(caught).toBeInstanceOf(FlowSurfaceBadRequestError);
+    expect((caught as FlowSurfaceBadRequestError).options.details).toMatchObject({
+      reasonCode: 'unsupported',
+      reasonSource: 'registry',
+      publicType: 'pluginGantt.gantt',
+    });
+  });
+
+  it('should expose auto snapshots through service capabilities and describeCapability', async () => {
+    const { service } = createAutoSnapshotService([createGanttAutoSnapshot()]);
+    const enabledPackages = new Set(['@nocobase/plugin-gantt']);
+
+    const capabilities = await service.capabilities(
+      {
+        query: 'gantt',
+      },
+      {
+        enabledPackages,
+      },
+    );
+
+    expect(capabilities.data).toMatchObject([
+      {
+        publicType: 'pluginGantt.gantt',
+        origin: 'autoSnapshot',
+        availability: {
+          create: {
+            supported: false,
+            reasonCode: 'manifest-required',
+          },
+          configure: {
+            supported: false,
+            reasonCode: 'manifest-required',
+          },
+        },
+      },
+    ]);
+
+    const detail = await service.describeCapability(
+      {
+        publicType: 'pluginGantt.gantt',
+        expand: ['item.warnings'],
+      },
+      {
+        enabledPackages,
+      },
+    );
+
+    expect(detail.data).toMatchObject({
+      publicType: 'pluginGantt.gantt',
+      identity: {
+        capabilityId: '@nocobase/plugin-gantt:autoSnapshot:block:pluginGantt.gantt',
+      },
+      warnings: expect.arrayContaining([
+        expect.objectContaining({
+          code: 'auto-discovered-readonly',
+        }),
+      ]),
+      availability: {
+        create: {
+          supported: false,
+        },
+        configure: {
+          supported: false,
+        },
+      },
+    });
+  });
+
   it('should prefer higher-priority public types and expose conflicts only diagnostically', async () => {
     const providerRegistry = createProviderRegistry([createConflictingTableProvider()]);
     const response = await buildFlowSurfaceCapabilitiesResponse(
@@ -757,7 +1288,15 @@ describe('flowSurfaces capabilities projection', () => {
       },
     );
 
-    expect(response.data.map((item) => item.publicType)).toEqual(['gantt']);
+    expect(response.data).toEqual([
+      expect.objectContaining({
+        publicType: 'gantt',
+        publicTypeMeta: expect.objectContaining({
+          source: 'canary',
+          acceptedAliases: ['ganttBlock', '@nocobase/plugin-gantt:gantt'],
+        }),
+      }),
+    ]);
   });
 
   it('should keep provider capabilities global-only until target placement filtering exists', async () => {
@@ -1214,7 +1753,36 @@ describe('flowSurfaces capabilities projection', () => {
       },
     );
 
-    expect(response.data.map((item) => item.publicType)).toEqual(['gantt']);
+    expect(response.data).toEqual([
+      expect.objectContaining({
+        publicType: 'gantt',
+        publicTypeMeta: expect.objectContaining({
+          source: 'canary',
+          acceptedAliases: ['ganttBlock', '@nocobase/plugin-gantt:gantt'],
+        }),
+      }),
+    ]);
+
+    const aliasResponse = await buildFlowSurfaceCapabilitiesResponse(
+      {
+        query: 'ganttBlock',
+      },
+      {
+        enabledPackages: new Set(['@nocobase/plugin-gantt']),
+        providerRegistry,
+        catalog: async () => ({
+          target: null,
+          scenario: {
+            surfaceKind: 'global' as const,
+          },
+          selectedSections: ['blocks'],
+          blocks: providerCatalogItems,
+        }),
+        generatedAt: '2026-06-03T00:00:00.000Z',
+      },
+    );
+
+    expect(aliasResponse.data.map((item) => item.publicType)).toEqual(['gantt']);
   });
 
   it('should describe one provider capability with public schemas when settings are expanded', async () => {

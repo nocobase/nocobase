@@ -8,8 +8,13 @@
  */
 
 import _ from 'lodash';
-import { collectProviderPublicCapabilities, type FlowSurfaceCapabilityRegistryLike } from './capability-registry';
+import {
+  collectAutoSnapshotPublicCapabilities,
+  collectProviderPublicCapabilities,
+  type FlowSurfaceCapabilityRegistryLike,
+} from './capability-registry';
 import { FlowSurfaceBadRequestError } from './errors';
+import type { FlowSurfaceAutoSnapshot } from './extractor/types';
 import type {
   FlowSurfaceCapabilitiesResponse,
   FlowSurfaceCapabilitiesValues,
@@ -80,6 +85,7 @@ const INTERNAL_PUBLIC_PAYLOAD_KEYS = new Set([
 type BuildFlowSurfaceCapabilitiesOptions = {
   enabledPackages: ReadonlySet<string>;
   providerRegistry?: FlowSurfaceCapabilityRegistryLike;
+  autoSnapshots?: readonly FlowSurfaceAutoSnapshot[];
   catalog: (values: FlowSurfaceCatalogValues) => Promise<FlowSurfaceCatalogResponse>;
   generatedAt?: string;
   includeCatalogSettingsSchema?: boolean;
@@ -114,11 +120,18 @@ export async function buildFlowSurfaceCapabilitiesResponse(
         providerRegistry: options.providerRegistry,
         enabledPackages: options.enabledPackages,
       });
+  const autoSnapshotItems = request.targetHintUsed
+    ? []
+    : collectAutoSnapshotPublicCapabilities({
+        autoSnapshots: options.autoSnapshots,
+        enabledPackages: options.enabledPackages,
+      });
   const projectedItems = [
     ...collectCatalogCapabilityItems(catalog)
       .map((item) => projectCatalogCapabilityItem(item, request))
       .filter((item): item is FlowSurfacePublicCapabilityItem => !!item),
     ...providerItems.map((item) => projectProviderCapabilityItem(item, request)),
+    ...autoSnapshotItems.map((item) => projectProviderCapabilityItem(item, request)),
   ].filter((item): item is FlowSurfacePublicCapabilityItem => !!item);
   const data = arbitratePublicTypeConflicts(dedupeCapabilityItems(projectedItems)).filter((item) =>
     filterCapabilityItem(item, request),
@@ -145,7 +158,9 @@ export async function buildFlowSurfaceDescribeCapabilityResponse(
   const response = await buildDescribeCapabilityListResponse(request, options, request.target);
   let data = response.data.find((item) => matchesDescribeCapabilityRequest(item, request));
   if (!data && request.target) {
-    const globalResponse = await buildDescribeCapabilityListResponse(request, options);
+    const globalResponse = await buildDescribeCapabilityListResponse(request, options, undefined, {
+      includeAutoSnapshots: false,
+    });
     data = globalResponse.data.find((item) => matchesDescribeCapabilityRequest(item, request));
   }
   if (!data || shouldHideUnavailableCapability(data, request.includeUnavailable)) {
@@ -178,6 +193,7 @@ function buildDescribeCapabilityListResponse(
   request: NormalizedDescribeCapabilityRequest,
   options: BuildFlowSurfaceCapabilitiesOptions,
   target?: FlowSurfaceCapabilitiesValues['target'],
+  extraOptions: { includeAutoSnapshots?: boolean } = {},
 ) {
   return buildFlowSurfaceCapabilitiesResponse(
     {
@@ -191,6 +207,7 @@ function buildDescribeCapabilityListResponse(
     },
     {
       ...options,
+      ...(extraOptions.includeAutoSnapshots === false ? { autoSnapshots: undefined } : {}),
       includeCatalogSettingsSchema: request.expand?.includes('item.settings') === true,
     },
   );
@@ -378,7 +395,11 @@ function normalizeDescribeCapabilityExpand(input: FlowSurfaceDescribeCapabilityV
 function dedupeCapabilityItems(items: FlowSurfacePublicCapabilityItem[]) {
   const byPublicIdentity = new Map<string, FlowSurfacePublicCapabilityItem>();
   items.forEach((item) => {
-    byPublicIdentity.set([item.kind, item.ownerPlugin, item.publicType].join('::'), item);
+    const key = [item.kind, item.ownerPlugin, item.publicType].join('::');
+    const current = byPublicIdentity.get(key);
+    if (!current || getCapabilityOriginPrecedence(item) >= getCapabilityOriginPrecedence(current)) {
+      byPublicIdentity.set(key, item);
+    }
   });
   return Array.from(byPublicIdentity.values());
 }

@@ -9,16 +9,36 @@
 
 import { normalizeFlowSurfaceCapabilityManifestItem } from './capability-manifest';
 import { callFlowSurfaceProvider } from './capability-provider-executor';
+import { deriveFlowSurfaceAutoCapabilityCandidates } from './extractor/snapshot';
 import type { NormalizedFlowSurfaceProviderCapability } from './capability-manifest';
 import type { FlowSurfaceCapabilityProviderRegistry } from './capability-provider';
+import type { FlowSurfaceAutoSnapshot } from './extractor/types';
 import type {
   FlowSurfaceCapabilitiesProvider,
+  FlowSurfaceCapabilityAvailability,
   FlowSurfaceCapabilityKind,
+  FlowSurfaceCapabilityOriginSource,
+  FlowSurfaceCapabilityWarning,
   FlowSurfaceCatalogItem,
   FlowSurfacePublicCapabilityItem,
 } from './types';
 
 const FLOW_SURFACE_PROVIDER_DISCOVERY_CONCURRENCY = 4;
+const AUTO_SNAPSHOT_PUBLIC_CAPABILITY_KINDS = new Set<FlowSurfaceCapabilityKind>(['block', 'action']);
+const AUTO_SNAPSHOT_ORIGIN: FlowSurfaceCapabilityOriginSource = 'autoSnapshot';
+const INTERNAL_PUBLIC_PAYLOAD_KEYS = new Set([
+  'capabilityId',
+  'modelUse',
+  'use',
+  'props',
+  'decoratorProps',
+  'stepParams',
+  'flowRegistry',
+  'createModelOptions',
+  'defaultNode',
+  'lens',
+  'implementation',
+]);
 
 export type FlowSurfaceCapabilityRegistryLike = Pick<FlowSurfaceCapabilityProviderRegistry, 'listProviders'>;
 
@@ -26,6 +46,11 @@ type FlowSurfaceProviderRegistryProjectionOptions = {
   providerRegistry?: FlowSurfaceCapabilityRegistryLike;
   enabledPackages: ReadonlySet<string>;
   providerTimeoutMs?: number;
+};
+
+type FlowSurfaceAutoSnapshotProjectionOptions = {
+  autoSnapshots?: readonly FlowSurfaceAutoSnapshot[];
+  enabledPackages: ReadonlySet<string>;
 };
 
 export type FlowSurfaceCollectedProviderCapability = NormalizedFlowSurfaceProviderCapability & {
@@ -37,6 +62,64 @@ export async function collectProviderPublicCapabilities(
 ): Promise<FlowSurfacePublicCapabilityItem[]> {
   const normalized = await collectNormalizedProviderCapabilities(options);
   return normalized.map((item) => item.publicItem);
+}
+
+export function collectAutoSnapshotPublicCapabilities(
+  options: FlowSurfaceAutoSnapshotProjectionOptions,
+): FlowSurfacePublicCapabilityItem[] {
+  return (options.autoSnapshots || []).flatMap((snapshot) => {
+    const ownerPlugin = normalizeOwnerPlugin(snapshot.plugin);
+    if (!ownerPlugin || !options.enabledPackages.has(ownerPlugin)) {
+      return [];
+    }
+    return deriveFlowSurfaceAutoCapabilityCandidates(snapshot)
+      .map((candidate) => {
+        if (!AUTO_SNAPSHOT_PUBLIC_CAPABILITY_KINDS.has(candidate.kind)) {
+          return null;
+        }
+        const publicType = normalizeSafeAutoSnapshotPublicType(candidate.publicType);
+        if (!publicType) {
+          return null;
+        }
+        const warnings = [
+          ...(candidate.warnings || []),
+          ...(snapshot.warnings || []),
+          {
+            code: 'auto-discovered-readonly' as const,
+            message:
+              'Auto snapshot discovery is read-only until a manifest or provider declares an authoring contract.',
+          },
+        ];
+        const label = sanitizePublicText(candidate.label, warnings) || publicType;
+        const searchAliases = sanitizePublicAliasList([publicType, label], warnings);
+        const semanticAliases = sanitizePublicAliasList([publicType], warnings);
+        const publicWarnings = sanitizeWarnings(dedupeWarnings(warnings));
+        return {
+          kind: candidate.kind,
+          publicType,
+          publicTypeMeta: {
+            value: publicType,
+            source: 'autoNamespaced',
+            searchAliases,
+          },
+          label,
+          ownerPlugin,
+          origin: AUTO_SNAPSHOT_ORIGIN,
+          semantic: {
+            title: label,
+            aliases: semanticAliases,
+          },
+          availability: buildReadOnlyAutoSnapshotAvailability(),
+          supportLevel: 'readback-only',
+          confidence: candidate.confidence,
+          warnings: publicWarnings,
+          identity: {
+            capabilityId: [ownerPlugin, 'autoSnapshot', candidate.kind, publicType].join(':'),
+          },
+        } satisfies FlowSurfacePublicCapabilityItem;
+      })
+      .filter((item): item is FlowSurfacePublicCapabilityItem => !!item);
+  });
 }
 
 export async function collectProviderCatalogItems(
@@ -135,6 +218,133 @@ async function loadProviderCapabilities(
 
 function normalizeOwnerPlugin(ownerPlugin: string) {
   return String(ownerPlugin || '').trim();
+}
+
+function buildReadOnlyAutoSnapshotAvailability(): FlowSurfaceCapabilityAvailability {
+  return {
+    render: { supported: true },
+    readback: { supported: true },
+    create: {
+      supported: false,
+      reasonCode: 'manifest-required',
+      reasonSource: 'registry',
+    },
+    configure: {
+      supported: false,
+      reasonCode: 'manifest-required',
+      reasonSource: 'registry',
+    },
+  };
+}
+
+function dedupeWarnings(warnings: FlowSurfaceCapabilityWarning[]) {
+  const seen = new Set<string>();
+  return warnings.filter((warning) => {
+    const key = [warning.code, warning.message].join('::');
+    if (seen.has(key)) {
+      return false;
+    }
+    seen.add(key);
+    return true;
+  });
+}
+
+function sanitizeWarnings(warnings: FlowSurfaceCapabilityWarning[]) {
+  const sanitized: FlowSurfaceCapabilityWarning[] = [];
+  warnings.forEach((warning) => {
+    const message = sanitizeWarningMessage(warning.message);
+    if (!message) {
+      return;
+    }
+    if (message !== normalizeString(warning.message)) {
+      addWarningOnce(sanitized, {
+        code: 'unsafe-semantic-text',
+        message: 'Capability metadata was partially sanitized.',
+      });
+    }
+    addWarningOnce(sanitized, {
+      code: warning.code,
+      message,
+    });
+  });
+  return sanitized;
+}
+
+function normalizeSafeAutoSnapshotPublicType(value: unknown) {
+  const publicType = normalizeString(value);
+  if (!publicType || isUnsafePublicToken(publicType) || looksLikeFilePath(publicType)) {
+    return '';
+  }
+  return publicType;
+}
+
+function sanitizeWarningMessage(message: string) {
+  return isUnsafePublicToken(message) || looksLikeFilePath(message)
+    ? 'Capability metadata was partially sanitized.'
+    : normalizeString(message);
+}
+
+function sanitizePublicAliasList(values: unknown[], warnings: FlowSurfaceCapabilityWarning[]) {
+  const aliases: string[] = [];
+  values.forEach((value) => {
+    const normalized = normalizeString(value);
+    if (!normalized) {
+      return;
+    }
+    if (isUnsafePublicToken(normalized) || looksLikeFilePath(normalized)) {
+      addWarningOnce(warnings, {
+        code: 'unsafe-semantic-text',
+        message: 'Capability alias was dropped because it contained internal implementation tokens.',
+      });
+      return;
+    }
+    aliases.push(normalized);
+  });
+  return Array.from(new Set(aliases));
+}
+
+function sanitizePublicText(value: unknown, warnings: FlowSurfaceCapabilityWarning[]) {
+  const normalized = normalizeString(value);
+  if (!normalized) {
+    return '';
+  }
+  if (isUnsafePublicToken(normalized) || looksLikeFilePath(normalized)) {
+    addWarningOnce(warnings, {
+      code: 'unsafe-semantic-text',
+      message: 'Capability metadata was partially sanitized.',
+    });
+    return '';
+  }
+  return normalized;
+}
+
+function normalizeString(value: unknown) {
+  return typeof value === 'string' ? value.trim() : '';
+}
+
+function isUnsafePublicToken(value: unknown) {
+  const normalized = normalizeString(value);
+  if (!normalized) {
+    return false;
+  }
+  if (INTERNAL_PUBLIC_PAYLOAD_KEYS.has(normalized) || /Model$/.test(normalized)) {
+    return true;
+  }
+  return normalized
+    .split(/[^a-zA-Z0-9_$]+/)
+    .filter(Boolean)
+    .some((segment) => INTERNAL_PUBLIC_PAYLOAD_KEYS.has(segment) || /Model$/.test(segment));
+}
+
+function looksLikeFilePath(value: string) {
+  return /(?:^|[\s'"`])(?:\/|[A-Za-z]:\\|(?:packages|src|storage|node_modules)[\\/])/.test(value);
+}
+
+function addWarningOnce(warnings: FlowSurfaceCapabilityWarning[], warning: FlowSurfaceCapabilityWarning) {
+  if (warnings.some((item) => item.code === warning.code && item.message === warning.message)) {
+    return;
+  }
+  warnings.push(warning);
 }
 
 function getCatalogPublicTypeConflictKey(item: FlowSurfaceCatalogItem) {
