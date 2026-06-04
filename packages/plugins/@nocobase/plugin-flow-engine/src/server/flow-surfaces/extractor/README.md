@@ -34,7 +34,7 @@ plugin failed.
 `--json` prints the machine-readable summary used by CI. Each result includes `ok`, `plugin`, optional `snapshotPath`,
 `eventCount`, `candidateCount`, `warningCount`, and optional `errors`. `--dry-run` skips snapshot writes and prints only
 the summary. `--fail-on-warning` turns extractor warnings into a failing result for CI without changing the read-only
-snapshot contract.
+snapshot contract. Model loaders are recorded by key only; the CLI does not execute loader functions.
 
 ## What Can Be Discovered
 

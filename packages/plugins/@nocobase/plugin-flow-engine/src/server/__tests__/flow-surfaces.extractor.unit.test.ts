@@ -38,7 +38,30 @@ import {
   runWithFlowSurfaceExtractorGuards,
   writeFlowSurfaceAutoSnapshot,
 } from '../flow-surfaces/extractor';
+import { collectAutoSnapshotPublicCapabilities } from '../flow-surfaces/capability-registry';
 import { FlowSurfaceExtractorGuardError } from '../flow-surfaces/extractor/guards';
+
+const FLOW_SURFACE_EXTRACTOR_TEST_DATE = '2026-06-04T00:00:00.000Z';
+const FLOW_SURFACE_EXTRACTOR_FIXTURES_ROOT = join(__dirname, 'flow-surfaces-extractor-fixtures');
+
+type FlowSurfaceExtractorFixtureSource = {
+  packageRoot: string;
+  sourceFile: string;
+  source: string;
+};
+
+async function readFlowSurfaceExtractorFixtureSource(
+  fixtureName: string,
+  entry = 'src/client-v2/index.ts',
+): Promise<FlowSurfaceExtractorFixtureSource> {
+  const packageRoot = join(FLOW_SURFACE_EXTRACTOR_FIXTURES_ROOT, fixtureName);
+  const sourceFile = join(packageRoot, entry);
+  return {
+    packageRoot,
+    sourceFile,
+    source: await readFile(sourceFile, 'utf8'),
+  };
+}
 
 describe('flowSurfaces extractor scaffold', () => {
   it('should record runtime model facts without executing model loaders', () => {
@@ -1816,6 +1839,53 @@ describe('flowSurfaces extractor scaffold', () => {
         }),
       ]),
     );
+  });
+
+  it('should not inspect referenced AST model loader function bodies', () => {
+    const events = collectFlowSurfaceExtractorAstEvents({
+      sourceFile: 'packages/plugins/@nocobase/plugin-demo/src/client-v2/plugin.tsx',
+      source: `
+        const loadDemoActionModel = () => {
+          flowEngine.registerModels({
+            HiddenLoaderBodyModel,
+          });
+          return import('./DemoActionModel');
+        };
+        function loadDemoBlockModel() {
+          flowEngine.registerModels({
+            HiddenFunctionLoaderBodyModel,
+          });
+          return import('./DemoBlockModel');
+        }
+        const loaders = {
+          DemoActionModel: {
+            loader: loadDemoActionModel,
+          },
+          DemoBlockModel: {
+            loader: loadDemoBlockModel,
+          },
+        };
+
+        class PluginDemoClient {
+          async load() {
+            this.flowEngine.registerModelLoaders(loaders);
+          }
+        }
+      `,
+    });
+
+    expect(events).toEqual([
+      expect.objectContaining({
+        type: 'model.loaderRegistered',
+        modelUse: 'DemoActionModel',
+        loaderName: 'loadDemoActionModel',
+      }),
+      expect.objectContaining({
+        type: 'model.loaderRegistered',
+        modelUse: 'DemoBlockModel',
+        loaderName: 'loadDemoBlockModel',
+      }),
+    ]);
   });
 
   it('should extract same-file const object registrations from TSX source', () => {
@@ -3946,10 +4016,14 @@ describe('flowSurfaces extractor scaffold', () => {
     expect(flowSurfacesCommand.command).toHaveBeenCalledWith('extract-capabilities');
     expect(extractCommand.preload).not.toHaveBeenCalled();
     expect(extractCommand.option).toHaveBeenCalledWith('--all-enabled', 'extract every enabled plugin package');
+    expect(extractCommand.option).toHaveBeenCalledWith(
+      '--resolve-loaders',
+      'experimentally execute no-import model loaders under extractor guards',
+    );
     expect(extractCommand.action).toHaveBeenCalled();
   });
 
-  it('should extract client-v2 AST facts for CLI plugin targets', async () => {
+  it('should extract client-v2 runtime and AST facts for CLI plugin targets', async () => {
     const tempRoot = await realpath(tmpdir());
     const packageRoot = await mkdtemp(join(tempRoot, 'flow-surfaces-extractor-cli-target-'));
     const entry = join(packageRoot, 'src/client-v2/index.ts');
@@ -3970,7 +4044,9 @@ describe('flowSurfaces extractor scaffold', () => {
       await writeFile(
         entry,
         `
-          class CliBlockModel {}
+          class CliBlockModel {
+            static define() {}
+          }
           flowEngine.registerModels({ CliBlockModel });
           CliBlockModel.define({
             label: 'CLI block',
@@ -3994,7 +4070,7 @@ describe('flowSurfaces extractor scaffold', () => {
       );
 
       expect(extraction).toMatchObject({
-        eventCount: 2,
+        eventCount: 4,
         candidateCount: 1,
         warningCount: 0,
         snapshot: {
@@ -4008,6 +4084,387 @@ describe('flowSurfaces extractor scaffold', () => {
     } finally {
       await rm(packageRoot, { recursive: true, force: true });
     }
+  });
+
+  it('should instrument variable-declared runtime model constructors', async () => {
+    const tempRoot = await realpath(tmpdir());
+    const packageRoot = await mkdtemp(join(tempRoot, 'flow-surfaces-extractor-cli-variable-'));
+    const entry = join(packageRoot, 'src/client-v2/index.ts');
+    try {
+      await mkdir(join(packageRoot, 'src/client-v2'), { recursive: true });
+      await writeFile(join(packageRoot, 'package.json'), '{"name":"@example/plugin-cli-variable"}\n', 'utf8');
+      await writeFile(
+        entry,
+        `
+          const VariableBlockModel = class {
+            static define() {}
+          };
+          flowEngine.registerModels({ VariableBlockModel });
+          VariableBlockModel.define({
+            label: 'Variable block',
+            createModelOptions: {
+              use: 'VariableBlockModel',
+            },
+          });
+        `,
+        'utf8',
+      );
+
+      const extraction = await extractFlowSurfacePluginCapabilities(
+        {
+          plugin: '@example/plugin-cli-variable',
+          packageRoot,
+        },
+        {
+          generatedAt: FLOW_SURFACE_EXTRACTOR_TEST_DATE,
+          extractorVersion: 'test',
+        },
+      );
+
+      expect(extraction).toMatchObject({
+        eventCount: 4,
+        candidateCount: 1,
+        warningCount: 0,
+        snapshot: {
+          menuItems: [
+            expect.objectContaining({
+              modelUse: 'VariableBlockModel',
+              labelText: 'Variable block',
+              createModelOptionsStatus: 'static',
+            }),
+          ],
+          models: [
+            expect.objectContaining({
+              modelUse: 'VariableBlockModel',
+              confidence: 'high',
+              sourceRefs: expect.arrayContaining([
+                expect.objectContaining({ source: entry, evidenceSource: 'runtime' }),
+                expect.objectContaining({ source: entry, evidenceSource: 'ast' }),
+              ]),
+            }),
+          ],
+        },
+      });
+    } finally {
+      await rm(packageRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('should extract import-dependent CLI targets through AST without runtime warnings', async () => {
+    const tempRoot = await realpath(tmpdir());
+    const packageRoot = await mkdtemp(join(tempRoot, 'flow-surfaces-extractor-cli-imports-'));
+    const entry = join(packageRoot, 'src/client-v2/index.ts');
+    try {
+      await mkdir(join(packageRoot, 'src/client-v2'), { recursive: true });
+      await writeFile(join(packageRoot, 'package.json'), '{"name":"@example/plugin-cli-imports"}\n', 'utf8');
+      await writeFile(
+        entry,
+        `
+          import { tExpr } from '@nocobase/flow-engine';
+
+          class ImportedBlockModel {}
+          flowEngine.registerModels({ ImportedBlockModel });
+          ImportedBlockModel.define({
+            label: tExpr('Imported block'),
+            createModelOptions: {
+              use: 'ImportedBlockModel',
+            },
+          });
+        `,
+        'utf8',
+      );
+
+      const extraction = await extractFlowSurfacePluginCapabilities(
+        {
+          plugin: '@example/plugin-cli-imports',
+          packageRoot,
+        },
+        {
+          generatedAt: FLOW_SURFACE_EXTRACTOR_TEST_DATE,
+          extractorVersion: 'test',
+        },
+      );
+
+      expect(extraction).toMatchObject({
+        eventCount: 2,
+        candidateCount: 1,
+        warningCount: 0,
+        snapshot: {
+          models: [expect.objectContaining({ modelUse: 'ImportedBlockModel' })],
+          menuItems: [expect.objectContaining({ modelUse: 'ImportedBlockModel', label: 'Imported block' })],
+        },
+      });
+    } finally {
+      await rm(packageRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('should derive a high-confidence block candidate from the simple block fixture', async () => {
+    const fixture = await readFlowSurfaceExtractorFixtureSource('simple-block-plugin');
+    const extraction = await extractFlowSurfacePluginCapabilities(
+      {
+        plugin: '@example/simple-block-plugin',
+        packageRoot: fixture.packageRoot,
+      },
+      {
+        generatedAt: FLOW_SURFACE_EXTRACTOR_TEST_DATE,
+        extractorVersion: 'test',
+      },
+    );
+    const snapshot = extraction.snapshot;
+    const candidates = deriveFlowSurfaceAutoCapabilityCandidates(snapshot);
+
+    expect(extraction).toMatchObject({
+      eventCount: 4,
+      candidateCount: 1,
+      warningCount: 0,
+    });
+    expect(snapshot.models).toEqual([
+      expect.objectContaining({
+        modelUse: 'SimpleBlockModel',
+        confidence: 'high',
+        sourceRefs: expect.arrayContaining([
+          expect.objectContaining({
+            source: fixture.sourceFile,
+            evidenceSource: 'runtime',
+          }),
+          expect.objectContaining({
+            source: fixture.sourceFile,
+            evidenceSource: 'ast',
+          }),
+        ]),
+      }),
+    ]);
+    expect(snapshot.menuItems).toEqual([
+      expect.objectContaining({
+        modelUse: 'SimpleBlockModel',
+        labelText: 'Simple block',
+        slot: 'blocks',
+        createModelOptionsStatus: 'static',
+      }),
+    ]);
+    expect(candidates).toEqual([
+      expect.objectContaining({
+        kind: 'block',
+        publicType: 'exampleSimpleBlockPlugin.simple',
+        modelUse: 'SimpleBlockModel',
+        ownerPlugin: '@example/simple-block-plugin',
+        confidence: 'high',
+        evidence: expect.arrayContaining([
+          {
+            type: 'menuItem',
+            ref: 'SimpleBlockModel',
+          },
+          {
+            type: 'model',
+            ref: 'SimpleBlockModel',
+          },
+        ]),
+      }),
+    ]);
+  });
+
+  it('should mark dynamic menu fixture items as dynamic without executing them', async () => {
+    const fixture = await readFlowSurfaceExtractorFixtureSource('dynamic-menu-plugin', 'src/client-v2/index.tsx');
+    const extraction = await extractFlowSurfacePluginCapabilities(
+      {
+        plugin: '@example/dynamic-menu-plugin',
+        packageRoot: fixture.packageRoot,
+      },
+      {
+        generatedAt: FLOW_SURFACE_EXTRACTOR_TEST_DATE,
+        extractorVersion: 'test',
+      },
+    );
+
+    expect(() =>
+      collectFlowSurfaceExtractorAstEvents({
+        source: fixture.source,
+        sourceFile: fixture.sourceFile,
+      }),
+    ).not.toThrow();
+
+    const events = collectFlowSurfaceExtractorAstEvents({
+      source: fixture.source,
+      sourceFile: fixture.sourceFile,
+    });
+
+    expect(events).toEqual([
+      expect.objectContaining({
+        type: 'menu.itemRegistered',
+        modelUse: 'DynamicBlockModel',
+        slot: 'blocks',
+        createModelOptionsStatus: 'dynamic',
+        evidenceSource: 'ast',
+      }),
+    ]);
+    expect(extraction).toMatchObject({
+      eventCount: 1,
+      warningCount: 0,
+      snapshot: {
+        menuItems: [
+          expect.objectContaining({
+            modelUse: 'DynamicBlockModel',
+            createModelOptionsStatus: 'dynamic',
+          }),
+        ],
+      },
+    });
+  });
+
+  it('should discover field binding fixtures without exposing create support', async () => {
+    const fixture = await readFlowSurfaceExtractorFixtureSource('field-binding-plugin');
+    const extraction = await extractFlowSurfacePluginCapabilities(
+      {
+        plugin: '@example/field-binding-plugin',
+        packageRoot: fixture.packageRoot,
+      },
+      {
+        generatedAt: FLOW_SURFACE_EXTRACTOR_TEST_DATE,
+        extractorVersion: 'test',
+      },
+    );
+    const candidates = deriveFlowSurfaceAutoCapabilityCandidates(extraction.snapshot);
+
+    expect(extraction).toMatchObject({
+      eventCount: 2,
+      candidateCount: 1,
+      warningCount: 0,
+    });
+
+    expect(extraction.snapshot.fieldBindings).toEqual([
+      expect.objectContaining({
+        fieldInterface: 'sequence',
+        modelUse: 'SequenceFieldModel',
+        role: 'editable',
+        confidence: 'medium',
+      }),
+    ]);
+    expect(candidates).toEqual([
+      expect.objectContaining({
+        kind: 'fieldBinding',
+        publicType: 'exampleFieldBindingPlugin.sequence',
+        modelUse: 'SequenceFieldModel',
+        warnings: [
+          expect.objectContaining({
+            code: 'auto-discovered-readonly',
+          }),
+        ],
+      }),
+    ]);
+    expect(
+      collectAutoSnapshotPublicCapabilities({
+        autoSnapshots: [extraction.snapshot],
+        enabledPackages: new Set(['@example/field-binding-plugin']),
+      }),
+    ).toEqual([]);
+  });
+
+  it('should convert unsafe browser API fixture guard failures into snapshot warnings', async () => {
+    const fixture = await readFlowSurfaceExtractorFixtureSource('unsafe-browser-api-plugin', 'src/client-v2/fetch.js');
+    const extraction = await extractFlowSurfacePluginCapabilities(
+      {
+        plugin: '@example/unsafe-browser-api-plugin',
+        packageRoot: fixture.packageRoot,
+      },
+      {
+        generatedAt: FLOW_SURFACE_EXTRACTOR_TEST_DATE,
+        extractorVersion: 'test',
+      },
+    );
+
+    expect(extraction).toMatchObject({
+      eventCount: 0,
+      candidateCount: 0,
+      warningCount: 4,
+    });
+    expect(extraction.snapshot.warnings).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          message: expect.stringContaining('fall back to package-wide AST scan'),
+        }),
+        expect.objectContaining({
+          message: expect.stringContaining('fetch'),
+        }),
+        expect.objectContaining({
+          message: expect.stringContaining('getItem'),
+        }),
+        expect.objectContaining({
+          message: expect.stringContaining('location'),
+        }),
+      ]),
+    );
+  });
+
+  it('should record loader fixture keys by default and execute loader code only when explicit', async () => {
+    const fixture = await readFlowSurfaceExtractorFixtureSource('loader-plugin');
+    const extraction = await extractFlowSurfacePluginCapabilities(
+      {
+        plugin: '@example/loader-plugin',
+        packageRoot: fixture.packageRoot,
+      },
+      {
+        generatedAt: FLOW_SURFACE_EXTRACTOR_TEST_DATE,
+        extractorVersion: 'test',
+      },
+    );
+    const resolveLoadersExtraction = await extractFlowSurfacePluginCapabilities(
+      {
+        plugin: '@example/loader-plugin',
+        packageRoot: fixture.packageRoot,
+      },
+      {
+        generatedAt: FLOW_SURFACE_EXTRACTOR_TEST_DATE,
+        extractorVersion: 'test',
+        resolveLoaders: true,
+      },
+    );
+    const explicitLoader = await readFlowSurfaceExtractorFixtureSource(
+      'loader-plugin',
+      'src/client-v2/resolve-loader.js',
+    );
+    const astEvents = collectFlowSurfaceExtractorAstEvents({
+      source: fixture.source,
+      sourceFile: fixture.sourceFile,
+    });
+
+    expect(extraction).toMatchObject({
+      eventCount: 2,
+      candidateCount: 1,
+      warningCount: 0,
+      snapshot: {
+        plugin: '@example/loader-plugin',
+        models: [
+          expect.objectContaining({
+            modelUse: 'LoaderBlockModel',
+          }),
+        ],
+      },
+    });
+    expect(extraction.snapshot.models.map((model) => model.modelUse)).toEqual(['LoaderBlockModel']);
+    expect(astEvents).toEqual(
+      expect.not.arrayContaining([
+        expect.objectContaining({
+          type: 'model.registered',
+          modelUse: 'LoaderResolvedBlockModel',
+        }),
+      ]),
+    );
+    expect(resolveLoadersExtraction).toMatchObject({
+      eventCount: 3,
+      warningCount: 0,
+      snapshot: {
+        models: [
+          expect.objectContaining({
+            modelUse: 'LoaderBlockModel',
+          }),
+          expect.objectContaining({
+            modelUse: 'LoaderResolvedBlockModel',
+          }),
+        ],
+      },
+    });
+    await expect(runWithFlowSurfaceExtractorGuards(explicitLoader.source)).resolves.toBe('loader-executed');
   });
 
   it('should write snapshots only under the selected output directory', async () => {

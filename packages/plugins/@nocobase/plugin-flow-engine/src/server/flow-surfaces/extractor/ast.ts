@@ -83,10 +83,17 @@ export function collectFlowSurfaceExtractorAstEvents(
     namedImports: collectNamedImports(sourceFile),
     moduleSourceCache: new Map(),
   };
+  const skippedLoaderFunctions = collectRegisteredModelLoaderFunctionNodes(sourceFile, context);
 
   function visit(node: ts.Node) {
+    if (skippedLoaderFunctions.has(node)) {
+      return;
+    }
     if (ts.isCallExpression(node)) {
       inspectCallExpression(node, recorder, context);
+      if (getPropertyAccessName(node.expression) === 'registerModelLoaders') {
+        return;
+      }
     }
     if (ts.isJsxOpeningElement(node) || ts.isJsxSelfClosingElement(node)) {
       inspectJsxElement(node, recorder, context.source);
@@ -96,6 +103,25 @@ export function collectFlowSurfaceExtractorAstEvents(
 
   visit(sourceFile);
   return recorder.getEvents();
+}
+
+function collectRegisteredModelLoaderFunctionNodes(
+  sourceFile: ts.SourceFile,
+  context: FlowSurfaceAstExtractionContext,
+) {
+  const nodes = new WeakSet<ts.Node>();
+
+  function visit(node: ts.Node) {
+    if (ts.isCallExpression(node) && getPropertyAccessName(node.expression) === 'registerModelLoaders') {
+      collectModelLoaderFunctionNodes(node.arguments[0], node, context).forEach((loaderNode) => {
+        nodes.add(loaderNode);
+      });
+    }
+    ts.forEachChild(node, visit);
+  }
+
+  visit(sourceFile);
+  return nodes;
 }
 
 function inspectCallExpression(
@@ -197,6 +223,19 @@ function collectRegisteredModelLoaders(
       confidence: 'medium',
     });
   });
+}
+
+function collectModelLoaderFunctionNodes(
+  node: ts.Node | undefined,
+  usageNode: ts.Node,
+  context: FlowSurfaceAstExtractionContext,
+) {
+  const expression =
+    node && ts.isExpression(node) ? resolveStaticExpressionNode(node, usageNode) || unwrapExpression(node) : undefined;
+  const properties = getObjectLiteralProperties(expression);
+  return properties.flatMap((property) =>
+    getLoaderFunctionNodesFromInitializer(getPropertyInitializer(property), usageNode),
+  );
 }
 
 function collectRegisteredFlow(
@@ -666,6 +705,42 @@ function getLoaderNameFromInitializer(node: ts.Expression | undefined) {
   return getExpressionName(loader);
 }
 
+function getLoaderFunctionNodesFromInitializer(node: ts.Expression | undefined, usageNode: ts.Node): ts.Node[] {
+  if (!node) {
+    return [];
+  }
+  const initializer = resolveStaticExpressionNode(node, usageNode) || unwrapExpression(node);
+  const functionNode = getStaticFunctionNode(initializer, usageNode);
+  if (functionNode) {
+    return [functionNode];
+  }
+  if (!ts.isObjectLiteralExpression(initializer)) {
+    return [];
+  }
+  return initializer.properties.flatMap((property) => {
+    if (ts.isMethodDeclaration(property) && getPropertyNameText(property.name) === 'loader') {
+      return [property];
+    }
+    if (!ts.isPropertyAssignment(property) || getPropertyNameText(property.name) !== 'loader') {
+      return [];
+    }
+    const loader =
+      resolveStaticExpressionNode(property.initializer, usageNode) || unwrapExpression(property.initializer);
+    const functionNode = getStaticFunctionNode(loader, usageNode);
+    return functionNode ? [functionNode] : [];
+  });
+}
+
+function getStaticFunctionNode(node: ts.Node, usageNode: ts.Node): ts.Node | undefined {
+  if (ts.isFunctionExpression(node) || ts.isArrowFunction(node)) {
+    return node;
+  }
+  if (ts.isIdentifier(node)) {
+    return findFunctionDeclaration(node, usageNode);
+  }
+  return undefined;
+}
+
 function getObjectPropertyValue(objectLiteral: ts.ObjectLiteralExpression | undefined, key: string) {
   if (!objectLiteral) {
     return undefined;
@@ -972,6 +1047,22 @@ function findConstInitializer(identifier: ts.Identifier, usageNode: ts.Node): ts
       : undefined;
     if (initializer) {
       return unwrapExpression(initializer) as ts.Expression;
+    }
+    current = current.parent;
+  }
+  return undefined;
+}
+
+function findFunctionDeclaration(identifier: ts.Identifier, usageNode: ts.Node): ts.FunctionDeclaration | undefined {
+  let current: ts.Node | undefined = usageNode;
+  while (current) {
+    const statements = getLexicalScopeStatements(current);
+    const declaration = statements?.find(
+      (statement): statement is ts.FunctionDeclaration =>
+        ts.isFunctionDeclaration(statement) && statement.name?.text === identifier.text,
+    );
+    if (declaration) {
+      return declaration;
     }
     current = current.parent;
   }
