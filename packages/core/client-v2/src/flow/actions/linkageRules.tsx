@@ -1606,7 +1606,9 @@ const LinkageRulesUI = observer(
             <div style={{ paddingLeft: 12 }}>
               <FilterGroup
                 value={rule.condition}
-                FilterItem={(props) => <LinkageFilterItem model={ctx.model} value={props.value} />}
+                FilterItem={(props) => (
+                  <LinkageFilterItem model={ctx.model} value={props.value} maxAssociationFieldDepth={2} />
+                )}
               />
             </div>
           </div>

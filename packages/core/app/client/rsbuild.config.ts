@@ -99,7 +99,14 @@ export default defineConfig(({ command }) => {
   const localStorageBasePath = ensurePublicPath(`${resolvedAppPublicPath}storage/uploads/`, '/storage/uploads/');
   const staticBasePath = ensurePublicPath(`${resolvedAppPublicPath}static/`, '/static/');
   const wsBasePath = ensurePublicPath(process.env.WS_PATH, '/ws/');
-  const v2BasePath = ensurePublicPath(`${resolvedAppPublicPath.replace(/\/$/, '')}/v2/`, '/v2/');
+  const modernClientPrefix =
+    String(process.env.APP_MODERN_CLIENT_PREFIX || 'v')
+      .trim()
+      .replace(/^\/+|\/+$/g, '') || 'v';
+  const v2BasePath = ensurePublicPath(
+    `${resolvedAppPublicPath.replace(/\/$/, '')}/${modernClientPrefix}/`,
+    `/${modernClientPrefix}/`,
+  );
   const clientPort = toNumber(process.env.APP_PORT, 13001);
   const v2Port = toNumber(process.env.APP_V2_PORT, clientPort + 2);
   const hmrPath = `${resolvedAppPublicPath.replace(/\/$/, '')}/__rspack_hmr`;

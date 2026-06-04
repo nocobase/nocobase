@@ -34,7 +34,7 @@ Assurez-vous d'avoir :
 
 :::warning Attention
 
-- NocoBase est en cours de migration de `client` (v1) vers `client-v2`. Actuellement, `client-v2` est encore en développement. Le code client généré par AI Development est basé sur `client-v2` et ne peut être utilisé que sous le chemin `/v2/`. Il est destiné à un aperçu et n'est pas recommandé pour une mise en production directe.
+- NocoBase est en cours de migration de `client` (v1) vers `client-v2`. Actuellement, `client-v2` est encore en développement. Le code client généré par AI Development est basé sur `client-v2` et ne peut être utilisé que sous le chemin `/v/`. Il est destiné à un aperçu et n'est pas recommandé pour une mise en production directe.
 - Le code généré par l'IA n'est pas nécessairement correct à 100 %. Il est recommandé de le revoir avant de l'activer. Si vous rencontrez un problème à l'exécution, vous pouvez transmettre le message d'erreur à l'IA pour qu'elle continue le diagnostic et la correction — généralement quelques tours de dialogue suffisent à résoudre le problème.
 
 :::

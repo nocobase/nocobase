@@ -47,7 +47,7 @@ export function FieldDeletePlaceholder(props: any) {
     const dataSourcePrefix = `${t(dataSource.displayName || dataSource.key)} > `;
     const collectionPrefix = collection ? `${t(collection.title) || collection.name || collection.tableName} > ` : '';
     return `${dataSourcePrefix}${collectionPrefix}${name}`;
-  }, []);
+  }, [collection, dataSource.displayName, dataSource.key, name, t]);
   const content = t(`The {{type}} "{{name}}" may have been deleted. Please remove this {{blockType}}.`, {
     type: t('Field'),
     name: nameValue,
@@ -71,7 +71,7 @@ function FieldWithoutPermissionPlaceholder() {
     const dataSourcePrefix = `${t(dataSource.displayName || dataSource.key)} > `;
     const collectionPrefix = collection ? `${t(collection.title) || collection.name || collection.tableName} > ` : '';
     return `${dataSourcePrefix}${collectionPrefix}${name}`;
-  }, []);
+  }, [collection, dataSource.displayName, dataSource.key, name, t]);
   const { actionName } = model.forbidden;
   const messageValue = useMemo(() => {
     return t(
@@ -81,12 +81,21 @@ function FieldWithoutPermissionPlaceholder() {
         actionName: t(capitalize(actionName)),
       },
     ).replaceAll('&gt;', '>');
-  }, [nameValue, t]);
+  }, [actionName, nameValue, t]);
   return (
     <Tooltip title={messageValue}>
       <LockOutlined style={{ opacity: '0.3' }} />
     </Tooltip>
   );
+}
+
+export const TABLE_COLUMN_MIN_WIDTH = 10;
+
+export function normalizeTableColumnWidth(width: number | null | undefined) {
+  if (typeof width === 'number' && width < TABLE_COLUMN_MIN_WIDTH) {
+    return TABLE_COLUMN_MIN_WIDTH;
+  }
+  return width;
 }
 
 export const CustomWidth = ({ setOpen, t, handleChange, defaultValue }) => {
@@ -104,13 +113,14 @@ export const CustomWidth = ({ setOpen, t, handleChange, defaultValue }) => {
       <Space.Compact block>
         <InputNumber
           placeholder={t('Custom column width')}
+          min={TABLE_COLUMN_MIN_WIDTH}
           value={customWidth}
           onChange={(val) => {
             setCustomWidth(val);
           }}
           style={{ width: '100%', minWidth: 200 }}
         />
-        <Button type="primary" onClick={() => handleChange(customWidth)}>
+        <Button type="primary" onClick={() => handleChange(normalizeTableColumnWidth(customWidth))}>
           OK
         </Button>
       </Space.Compact>
@@ -442,7 +452,7 @@ TableColumnModel.registerFlow({
         width: 150,
       },
       handler(ctx, params) {
-        ctx.model.setProps('width', params.width);
+        ctx.model.setProps('width', normalizeTableColumnWidth(params.width));
       },
     },
     aclCheck: {

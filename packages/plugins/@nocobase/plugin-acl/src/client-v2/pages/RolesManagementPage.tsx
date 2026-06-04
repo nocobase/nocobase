@@ -234,7 +234,16 @@ export default function RolesManagementPage() {
   const [selectedRole, setSelectedRole] = useState<Role | null>(null);
   const [activeTabKey, setActiveTabKey] = useState('permissions');
   const [activePermissionTabKey, setActivePermissionTabKey] = useState('general');
-  const rightPanelMaxHeight = '70vh';
+  const cardClassName = css`
+    height: calc(100vh - 160px);
+    min-height: 0;
+
+    > .ant-card-body {
+      height: 100%;
+      min-height: 0;
+      overflow: hidden;
+    }
+  `;
   const layoutClassName = css`
     &.acl-role-tabs > .ant-tabs-nav {
       margin-bottom: ${token.marginLG}px;
@@ -275,6 +284,11 @@ export default function RolesManagementPage() {
     }
   `;
   const scrollPaneStyle: React.CSSProperties = {
+    height: '100%',
+    minHeight: 0,
+    overflow: 'hidden',
+  };
+  const permissionPaneStyle: React.CSSProperties = {
     height: '100%',
     minHeight: 0,
     overflow: 'auto',
@@ -496,7 +510,7 @@ export default function RolesManagementPage() {
       key,
       label,
       children: (
-        <div style={scrollPaneStyle}>
+        <div style={permissionPaneStyle}>
           <Suspense fallback={null}>
             <Component {...props} />
           </Suspense>
@@ -526,9 +540,11 @@ export default function RolesManagementPage() {
   ];
 
   return (
-    <Card>
+    <Card className={cardClassName}>
       <div
         style={{
+          height: '100%',
+          minHeight: 0,
           display: 'flex',
           gap: token.marginLG,
           alignItems: 'stretch',
@@ -539,13 +555,18 @@ export default function RolesManagementPage() {
           style={{
             flex: '0 0 320px',
             minWidth: 320,
+            minHeight: 0,
             paddingRight: token.paddingLG,
             borderRight: `1px solid ${token.colorBorderSecondary}`,
+            display: 'flex',
+            flexDirection: 'column',
+            overflow: 'hidden',
           }}
         >
           <div
             style={{
               display: 'flex',
+              flex: '0 0 auto',
               justifyContent: 'space-between',
               alignItems: 'center',
               gap: token.marginSM,
@@ -556,86 +577,93 @@ export default function RolesManagementPage() {
             </Button>
             <RoleModeSelect />
           </div>
-          <Divider style={{ marginBlock: token.marginSM }} />
-          {roles.length ? (
-            <List<Role>
-              loading={service.loading}
-              dataSource={roles}
-              split={false}
-              renderItem={(role) => {
-                const selected = selectedRole?.name === role.name;
-                return (
-                  <List.Item
-                    onClick={() => setSelectedRoleName(role.name)}
-                    style={{
-                      cursor: 'pointer',
-                      padding: `${token.paddingXS}px ${token.paddingSM}px`,
-                      marginBottom: token.marginXXS,
-                      borderRadius: token.borderRadiusLG,
-                      background: selected ? token.controlItemBgActive : 'transparent',
-                    }}
-                  >
-                    <div
+          <Divider style={{ flex: '0 0 auto', marginBlock: token.marginSM }} />
+          <div style={{ flex: 1, minHeight: 0, overflow: 'auto' }}>
+            {roles.length ? (
+              <List<Role>
+                loading={service.loading}
+                dataSource={roles}
+                split={false}
+                renderItem={(role) => {
+                  const selected = selectedRole?.name === role.name;
+                  return (
+                    <List.Item
+                      onClick={() => setSelectedRoleName(role.name)}
                       style={{
-                        width: '100%',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        gap: token.marginSM,
-                        minWidth: 0,
+                        cursor: 'pointer',
+                        padding: `${token.paddingXS}px ${token.paddingSM}px`,
+                        marginBottom: token.marginXXS,
+                        borderRadius: token.borderRadiusLG,
+                        background: selected ? token.controlItemBgActive : 'transparent',
                       }}
                     >
-                      <Typography.Text ellipsis style={{ flex: '1 1 auto', minWidth: 0 }}>
-                        <span
-                          style={{ display: 'inline-flex', alignItems: 'center', gap: token.marginXS, minWidth: 0 }}
-                        >
-                          <TagOutlined />
-                          <span
-                            style={{
-                              overflow: 'hidden',
-                              textOverflow: 'ellipsis',
-                              whiteSpace: 'nowrap',
-                            }}
-                          >
-                            {t(role.title)}
-                          </span>
-                        </span>
-                      </Typography.Text>
                       <div
-                        style={{ display: 'inline-flex', alignItems: 'center', gap: token.marginXS, flex: '0 0 auto' }}
-                        onClick={(event) => {
-                          event.stopPropagation();
+                        style={{
+                          width: '100%',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          gap: token.marginSM,
+                          minWidth: 0,
                         }}
                       >
-                        {role.default ? <Tag color="success">{t('Default')}</Tag> : null}
-                        <Dropdown
-                          menu={{
-                            items: getRoleMenuItems(role),
-                            onClick: async ({ key }) => {
-                              await handleRoleMenuClick(String(key), role);
-                            },
+                        <Typography.Text ellipsis style={{ flex: '1 1 auto', minWidth: 0 }}>
+                          <span
+                            style={{ display: 'inline-flex', alignItems: 'center', gap: token.marginXS, minWidth: 0 }}
+                          >
+                            <TagOutlined />
+                            <span
+                              style={{
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                                whiteSpace: 'nowrap',
+                              }}
+                            >
+                              {t(role.title)}
+                            </span>
+                          </span>
+                        </Typography.Text>
+                        <div
+                          style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: token.marginXS,
+                            flex: '0 0 auto',
                           }}
-                          trigger={['click']}
+                          onClick={(event) => {
+                            event.stopPropagation();
+                          }}
                         >
-                          <Button type="text" icon={<MoreOutlined />} />
-                        </Dropdown>
+                          {role.default ? <Tag color="success">{t('Default')}</Tag> : null}
+                          <Dropdown
+                            menu={{
+                              items: getRoleMenuItems(role),
+                              onClick: async ({ key }) => {
+                                await handleRoleMenuClick(String(key), role);
+                              },
+                            }}
+                            trigger={['click']}
+                          >
+                            <Button type="text" icon={<MoreOutlined />} />
+                          </Dropdown>
+                        </div>
                       </div>
-                    </div>
-                  </List.Item>
-                );
-              }}
-            />
-          ) : service.loading ? (
-            <List loading />
-          ) : (
-            <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} />
-          )}
+                    </List.Item>
+                  );
+                }}
+              />
+            ) : service.loading ? (
+              <List loading />
+            ) : (
+              <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} />
+            )}
+          </div>
         </div>
         <div
           style={{
             flex: '1 1 auto',
             minWidth: 0,
-            maxHeight: rightPanelMaxHeight,
+            height: '100%',
             minHeight: 320,
             overflow: 'hidden',
             display: 'flex',

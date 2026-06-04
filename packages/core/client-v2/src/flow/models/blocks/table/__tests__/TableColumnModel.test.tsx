@@ -12,6 +12,24 @@ import { describe, expect, it, vi } from 'vitest';
 import { TableColumnModel } from '../TableColumnModel';
 
 describe('TableColumnModel sorter settings', () => {
+  it('clamps custom column width to the minimum value', () => {
+    const engine = new FlowEngine();
+    const model = new TableColumnModel({ uid: 'table-column-min-width', flowEngine: engine } as any);
+    const widthStep = model.getFlow('tableColumnSettings')?.steps?.width as any;
+    const setProps = vi.fn();
+
+    widthStep.handler(
+      {
+        model: {
+          setProps,
+        },
+      },
+      { width: 0 },
+    );
+
+    expect(setProps).toHaveBeenCalledWith('width', 10);
+  });
+
   it('hides quick edit setting for relation path columns added from association groups', async () => {
     const engine = new FlowEngine();
     const model = new TableColumnModel({ uid: 'table-column-relation-path-quick-edit', flowEngine: engine } as any);
