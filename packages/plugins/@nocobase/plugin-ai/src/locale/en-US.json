@@ -400,7 +400,7 @@
   "Choose the AI employee for this task": "Choose the AI employee for this task",
   "Operator": "Operator",
   "Complete the task using operator permissions": "Complete the task using operator permissions",
-  "Select the LLM to be used for the task": "Select the LLM to be used for the task",
+  "Leave empty to use AI employee or global default model.": "Leave empty to use AI employee or global default model.",
   "Enter the specific task description": "Enter the specific task description",
   "Attachments": "Attachments",
   "Select the file or image to be sent to the LLM": "Select the file or image to be sent to the LLM",
