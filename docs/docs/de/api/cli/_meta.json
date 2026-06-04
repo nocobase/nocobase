@@ -278,6 +278,11 @@
     "items": [
       {
         "type": "custom-link",
+        "label": "nb plugin import",
+        "link": "/api/cli/plugin/import"
+      },
+      {
+        "type": "custom-link",
         "label": "nb plugin disable",
         "link": "/api/cli/plugin/disable"
       },
