@@ -43,6 +43,7 @@ import { FlowSurfaceExtractorGuardError } from '../flow-surfaces/extractor/guard
 
 const FLOW_SURFACE_EXTRACTOR_TEST_DATE = '2026-06-04T00:00:00.000Z';
 const FLOW_SURFACE_EXTRACTOR_FIXTURES_ROOT = join(__dirname, 'flow-surfaces-extractor-fixtures');
+const FLOW_SURFACE_GANTT_PACKAGE_ROOT = join(__dirname, '../../../..', 'plugin-gantt');
 
 type FlowSurfaceExtractorFixtureSource = {
   packageRoot: string;
@@ -4230,6 +4231,114 @@ describe('flowSurfaces extractor scaffold', () => {
       });
     } finally {
       await rm(packageRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('should extract the real Gantt client-v2 snapshot as read-only AST discovery', async () => {
+    const globalObject = globalThis as typeof globalThis & Record<TemporaryFlowSurfaceBrowserGlobalKey, unknown>;
+    const originalDescriptors = new Map<TemporaryFlowSurfaceBrowserGlobalKey, PropertyDescriptor | undefined>();
+    const accessedGlobals: string[] = [];
+    const keys: TemporaryFlowSurfaceBrowserGlobalKey[] = ['fetch', 'localStorage', 'window'];
+    keys.forEach((key) => {
+      originalDescriptors.set(key, Object.getOwnPropertyDescriptor(globalObject, key));
+    });
+    Object.defineProperty(globalObject, 'fetch', {
+      configurable: true,
+      value: () => {
+        accessedGlobals.push('fetch');
+        throw new Error('fetch should not execute during AST extraction');
+      },
+    });
+    Object.defineProperty(globalObject, 'localStorage', {
+      configurable: true,
+      value: {
+        getItem() {
+          accessedGlobals.push('localStorage.getItem');
+          throw new Error('localStorage should not execute during AST extraction');
+        },
+      },
+    });
+    Object.defineProperty(globalObject, 'window', {
+      configurable: true,
+      get() {
+        accessedGlobals.push('window');
+        throw new Error('window should not execute during AST extraction');
+      },
+    });
+
+    try {
+      const extraction = await extractFlowSurfacePluginCapabilities(
+        {
+          plugin: '@nocobase/plugin-gantt',
+          packageRoot: FLOW_SURFACE_GANTT_PACKAGE_ROOT,
+        },
+        {
+          generatedAt: FLOW_SURFACE_EXTRACTOR_TEST_DATE,
+          extractorVersion: 'test',
+        },
+      );
+      const { snapshot } = extraction;
+      const modelUses = snapshot.models.map((model) => model.modelUse);
+      const publicCapabilities = collectAutoSnapshotPublicCapabilities({
+        autoSnapshots: [snapshot],
+        enabledPackages: new Set(['@nocobase/plugin-gantt']),
+      });
+      const ganttCapability = publicCapabilities.find((item) => item.publicType === 'pluginGantt.gantt');
+
+      expect(accessedGlobals).toEqual([]);
+      expect(extraction.warningCount).toBe(0);
+      expect(snapshot).toMatchObject({
+        plugin: '@nocobase/plugin-gantt',
+        resolvedEntry: join(FLOW_SURFACE_GANTT_PACKAGE_ROOT, 'src/client-v2/plugin.tsx'),
+      });
+      expect(modelUses).toEqual(
+        expect.arrayContaining([
+          'GanttBlockModel',
+          'GanttCollectionActionGroupModel',
+          'GanttTodayActionModel',
+          'GanttExpandCollapseActionModel',
+          'GanttEventViewActionModel',
+        ]),
+      );
+      expect(snapshot.flows).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            modelUse: 'GanttBlockModel',
+            flowKey: 'ganttSettings',
+            staticStatus: 'dynamic',
+          }),
+          expect.objectContaining({
+            modelUse: 'GanttBlockModel',
+            flowKey: 'tableSettings',
+            staticStatus: 'dynamic',
+          }),
+        ]),
+      );
+      expect(ganttCapability).toMatchObject({
+        kind: 'block',
+        publicType: 'pluginGantt.gantt',
+        origin: 'autoSnapshot',
+        availability: {
+          create: {
+            supported: false,
+            reasonCode: 'manifest-required',
+          },
+          configure: {
+            supported: false,
+            reasonCode: 'manifest-required',
+          },
+        },
+      });
+      expect(JSON.stringify(ganttCapability)).not.toContain('GanttBlockModel');
+    } finally {
+      keys.forEach((key) => {
+        const originalDescriptor = originalDescriptors.get(key);
+        if (originalDescriptor) {
+          Object.defineProperty(globalObject, key, originalDescriptor);
+        } else {
+          Reflect.deleteProperty(globalObject, key);
+        }
+      });
     }
   });
 
