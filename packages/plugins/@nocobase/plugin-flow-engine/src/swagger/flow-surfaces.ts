@@ -543,7 +543,7 @@ const actionDocs: Record<string, any> = {
     tags: [FLOW_SURFACES_TAG],
     summary: 'Discover public Flow Surface capabilities',
     description: valuesCompatibilityNote(
-      `Returns public-safe capability metadata for block, action, and field component candidates. Global results are discovery only; localized writes must still call target-scoped \`catalog\` and then use public \`type\` / \`settings\` payloads. In this discovery slice, \`target\` only supports concrete \`targetUid\` / \`uid\` lookup; scene, slot, collection, and field-interface hints are reserved for future scoped discovery. The response does not expose \`modelUse\`, \`defaultNode\`, \`lens\`, \`createModelOptions\`, \`props\`, \`decoratorProps\`, \`stepParams\`, or \`flowRegistry\`. \`debugImplementation\` expand is forbidden. ${FLOW_SURFACES_READ_ACL_NOTE}`,
+      `Returns public-safe capability metadata for block, action, and field component candidates. Global results are discovery only; localized writes must still call target-scoped \`catalog\` and then use public \`type\` / \`settings\` payloads. When server policy is explicitly \`verifiedAuto\`, trusted admission evidence may advance an auto-snapshot capability's discovery readiness/create availability, but this still is not localized write authorization. In this discovery slice, \`target\` only supports concrete \`targetUid\` / \`uid\` lookup; scene, slot, collection, and field-interface hints are reserved for future scoped discovery. The response does not expose \`modelUse\`, \`defaultNode\`, \`lens\`, \`createModelOptions\`, \`props\`, \`decoratorProps\`, \`stepParams\`, or \`flowRegistry\`. \`debugImplementation\` expand is forbidden. ${FLOW_SURFACES_READ_ACL_NOTE}`,
     ),
     requestBody: requestBody('FlowSurfaceCapabilitiesRequest'),
     responses: responses('FlowSurfaceCapabilitiesResponse'),
@@ -552,7 +552,7 @@ const actionDocs: Record<string, any> = {
     tags: [FLOW_SURFACES_TAG],
     summary: 'Describe one public Flow Surface capability',
     description: valuesCompatibilityNote(
-      `Returns public-safe detail for one capability selected by \`publicType\` or read-only \`capabilityId\`. Use \`expand:["item.settings"]\` to include public \`initParamsSchema\`, \`settingsSchema\`, and \`configureOptions\`; the response still does not expose \`implementation.modelUse\`, \`createRecipe\`, \`defaultNode\`, \`lens\`, \`createModelOptions\`, \`props\`, \`decoratorProps\`, \`stepParams\`, or \`flowRegistry\`. This is discovery/detail metadata only, not write authorization. Localized writes must still check target-scoped \`catalog\`. ${FLOW_SURFACES_READ_ACL_NOTE}`,
+      `Returns public-safe detail for one capability selected by \`publicType\` or read-only \`capabilityId\`. Use \`expand:["item.settings"]\` to include public \`initParamsSchema\`, \`settingsSchema\`, and \`configureOptions\`; the response still does not expose \`implementation.modelUse\`, \`createRecipe\`, \`defaultNode\`, \`lens\`, \`createModelOptions\`, \`props\`, \`decoratorProps\`, \`stepParams\`, or \`flowRegistry\`. Under explicit \`verifiedAuto\` policy, trusted admission evidence may affect readiness/create availability in this detail projection. This is discovery/detail metadata only, not write authorization. Localized writes must still check target-scoped \`catalog\`. ${FLOW_SURFACES_READ_ACL_NOTE}`,
     ),
     requestBody: requestBody('FlowSurfaceDescribeCapabilityRequest'),
     responses: responses('FlowSurfaceDescribeCapabilityResponse'),

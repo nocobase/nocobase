@@ -2044,10 +2044,17 @@ describe('flowSurfaces swagger', () => {
     const capabilitiesPath = swaggerDocument.paths['/flowSurfaces:capabilities'].post;
     expect(capabilitiesPath.description).toContain('Global results are discovery only');
     expect(capabilitiesPath.description).toContain('target-scoped `catalog`');
+    expect(capabilitiesPath.description).toContain('`verifiedAuto`');
+    expect(capabilitiesPath.description).toContain('trusted admission evidence');
+    expect(capabilitiesPath.description).toContain('still is not localized write authorization');
     expect(capabilitiesPath.description).toContain('only supports concrete `targetUid` / `uid` lookup');
     expect(capabilitiesPath.description).toContain('`debugImplementation` expand is forbidden');
     expect(capabilitiesPath.description).toContain('`loggedIn`');
     expect(capabilitiesPath.description).not.toContain('implementation.modelUse');
+    const describeCapabilityPath = swaggerDocument.paths['/flowSurfaces:describeCapability'].post;
+    expect(describeCapabilityPath.description).toContain('`verifiedAuto`');
+    expect(describeCapabilityPath.description).toContain('trusted admission evidence');
+    expect(describeCapabilityPath.description).toContain('discovery/detail metadata only');
     expect(schemas.FlowSurfaceCapabilitiesRequest.properties.target.$ref).toBe(
       '#/components/schemas/FlowSurfaceCapabilitiesTarget',
     );
