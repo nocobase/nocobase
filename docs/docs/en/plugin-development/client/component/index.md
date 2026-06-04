@@ -118,7 +118,7 @@ const msg = ctx.t('Save success', { ns: '@my-project/plugin-hello' });
 Use `ctx.router.navigate()` for page navigation:
 
 ```tsx
-ctx.router.navigate('/some-page'); // -> /v2/some-page
+ctx.router.navigate('/some-page'); // -> /v/some-page
 ```
 
 Get current route parameters:

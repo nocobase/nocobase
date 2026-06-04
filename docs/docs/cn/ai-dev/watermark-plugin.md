@@ -34,7 +34,7 @@ keywords: "AI 开发,水印插件,NocoBase 插件,实战案例,AI 编程"
 
 :::warning 注意
 
-- NocoBase 正在从 `client`（v1）向 `client-v2` 迁移，目前 `client-v2` 还在开发中。AI 开发生成的客户端代码基于 `client-v2`，只能在 `/v2/` 路径下使用，供尝鲜体验，不建议直接上生产环境。
+- NocoBase 正在从 `client`（v1）向 `client-v2` 迁移，目前 `client-v2` 还在开发中。AI 开发生成的客户端代码基于 `client-v2`，只能在 `/v/` 路径下使用，供尝鲜体验，不建议直接上生产环境。
 - AI 生成的代码不一定 100% 正确，建议在启用前先 review 一遍。如果运行时遇到问题，可以把错误信息发给 AI，让它继续排查和修复——通常几轮对话就能解决。
 
 :::
