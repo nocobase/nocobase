@@ -1730,6 +1730,7 @@ const commonLinkageRulesHandler = async (ctx: FlowContext, params: any) => {
   const allModels: FlowModel[] = ctx.model.__allModels || (ctx.model.__allModels = []);
   const modelsToApply = new Set<FlowModel>(allModels);
   const patchPropsByModel = new Map<FlowModel, any>();
+  const clearValueOnHiddenModelUids = new Set<string>();
   const directValuePatches: Array<{ path: Array<string | number>; value: any; whenEmpty?: boolean }> = [];
   const rootCollection = getCollectionFromModel((ctx.model as any)?.context?.blockModel ?? ctx.model);
   const isSafeToWriteAssociationSubpath = (namePath: any): boolean => {
@@ -2022,6 +2023,13 @@ const commonLinkageRulesHandler = async (ctx: FlowContext, params: any) => {
           ...props,
         });
 
+        if (
+          (action.name === 'linkageSetFieldProps' || action.name === 'subFormLinkageSetFieldProps') &&
+          props?.hiddenModel === true
+        ) {
+          clearValueOnHiddenModelUids.add(model?.uid || String(model));
+        }
+
         if (allModels.indexOf(model) === -1) {
           allModels.push(model);
         }
@@ -2087,6 +2095,23 @@ const commonLinkageRulesHandler = async (ctx: FlowContext, params: any) => {
 
     if (newProps.hiddenText) {
       model.setProps('title', '');
+    }
+
+    if (
+      clearValueOnHiddenModelUids.has(uid) &&
+      Object.prototype.hasOwnProperty.call(patchProps, 'hiddenModel') &&
+      patchProps.hiddenModel === true
+    ) {
+      const targetPath = getModelTargetPathForPatch(model);
+      if (!targetPath) {
+        console.warn('[linkageRules] Skip clearing hidden field value due to missing target path', {
+          flowKey: ctx.flowKey,
+          modelUid: ctx.model?.uid,
+          targetUid: model?.uid,
+        });
+      } else {
+        addFormValuePatch({ path: targetPath, value: undefined });
+      }
     }
 
     // 只有本轮联动动作显式写入 value 时，才应执行表单赋值。

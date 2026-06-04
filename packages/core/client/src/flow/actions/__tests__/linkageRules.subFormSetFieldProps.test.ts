@@ -541,6 +541,158 @@ describe('linkageSetFieldProps action', () => {
     expect(form.setFieldValue).not.toHaveBeenCalled();
   });
 
+  it('should clear form value when a field is hidden without reserving value', async () => {
+    const setFormValues = vi.fn(async () => undefined);
+    const form = {
+      getFieldValue: vi.fn(() => '123'),
+      setFieldValue: vi.fn(),
+    };
+    const fieldModel: any = {
+      uid: 'name-field',
+      hidden: false,
+      context: { form },
+      props: {
+        label: 'Name',
+      },
+      getStepParams: vi.fn((flowKey: string, stepKey: string) => {
+        if (flowKey === 'fieldSettings' && stepKey === 'init') {
+          return { fieldPath: 'name' };
+        }
+      }),
+      setProps(key: any, value?: any) {
+        if (typeof key === 'string') {
+          this.props[key] = value;
+        } else {
+          this.props = { ...this.props, ...key };
+        }
+      },
+    };
+    const ctx: any = {
+      app: {
+        jsonLogic: {
+          apply: vi.fn(() => true),
+        },
+      },
+      model: {
+        context: { form },
+        subModels: {
+          grid: {
+            subModels: {
+              items: [fieldModel],
+            },
+          },
+        },
+      },
+      setFormValues,
+      getAction: (name: string) => (name === 'linkageSetFieldProps' ? linkageSetFieldProps : null),
+      resolveJsonTemplate: vi.fn(async (value) => value),
+    };
+
+    await fieldLinkageRules.handler(ctx, {
+      value: [
+        {
+          key: 'rule-1',
+          enable: true,
+          condition: { logic: '$and', items: [] },
+          actions: [
+            {
+              key: 'action-1',
+              name: 'linkageSetFieldProps',
+              params: {
+                value: {
+                  fields: ['name-field'],
+                  state: 'hidden',
+                },
+              },
+            },
+          ],
+        },
+      ],
+    });
+
+    expect(fieldModel.hidden).toBe(true);
+    expect(setFormValues).toHaveBeenCalledWith(
+      [{ path: ['name'], value: undefined }],
+      expect.objectContaining({ source: 'linkage' }),
+    );
+    expect(form.setFieldValue).not.toHaveBeenCalled();
+  });
+
+  it('should not clear form value when a field is hidden with reserved value', async () => {
+    const setFormValues = vi.fn(async () => undefined);
+    const form = {
+      getFieldValue: vi.fn(() => '123'),
+      setFieldValue: vi.fn(),
+    };
+    const fieldModel: any = {
+      uid: 'name-field',
+      hidden: false,
+      context: { form },
+      props: {
+        label: 'Name',
+      },
+      getStepParams: vi.fn((flowKey: string, stepKey: string) => {
+        if (flowKey === 'fieldSettings' && stepKey === 'init') {
+          return { fieldPath: 'name' };
+        }
+      }),
+      setProps(key: any, value?: any) {
+        if (typeof key === 'string') {
+          this.props[key] = value;
+        } else {
+          this.props = { ...this.props, ...key };
+        }
+      },
+    };
+    const ctx: any = {
+      app: {
+        jsonLogic: {
+          apply: vi.fn(() => true),
+        },
+      },
+      model: {
+        context: { form },
+        subModels: {
+          grid: {
+            subModels: {
+              items: [fieldModel],
+            },
+          },
+        },
+      },
+      setFormValues,
+      getAction: (name: string) => (name === 'linkageSetFieldProps' ? linkageSetFieldProps : null),
+      resolveJsonTemplate: vi.fn(async (value) => value),
+    };
+
+    await fieldLinkageRules.handler(ctx, {
+      value: [
+        {
+          key: 'rule-1',
+          enable: true,
+          condition: { logic: '$and', items: [] },
+          actions: [
+            {
+              key: 'action-1',
+              name: 'linkageSetFieldProps',
+              params: {
+                value: {
+                  fields: ['name-field'],
+                  state: 'hiddenReservedValue',
+                },
+              },
+            },
+          ],
+        },
+      ],
+    });
+
+    expect(fieldModel.hidden).toBe(false);
+    expect(fieldModel.props.hidden).toBe(true);
+    expect(setFormValues).not.toHaveBeenCalled();
+    expect(form.setFieldValue).not.toHaveBeenCalled();
+  });
+
   it('should keep all options selectable after options were limited once', async () => {
     const fieldComponentModel: any = {
       uid: 'status-field-component',
