@@ -11,7 +11,7 @@ import { rmSync, symlinkSync } from 'fs';
 import { link, mkdir, mkdtemp, readFile, realpath, rm, symlink, writeFile } from 'fs/promises';
 import { tmpdir } from 'os';
 import { join } from 'path';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import {
   buildAutoNamespacedPublicType,
   buildFlowSurfaceAutoSnapshot,
@@ -24,6 +24,7 @@ import {
   deriveFlowSurfaceAutoCapabilityCandidates,
   getFlowSurfaceAutoSnapshotFileName,
   loadFlowSurfaceAutoSnapshotsFromDirectory,
+  resolveFlowSurfacePluginEntry,
   runWithFlowSurfaceExtractorGuards,
   writeFlowSurfaceAutoSnapshot,
 } from '../flow-surfaces/extractor';
@@ -2619,6 +2620,405 @@ describe('flowSurfaces extractor scaffold', () => {
       expect(loaded.map((item) => item.plugin)).toEqual(['@nocobase/plugin-valid']);
     } finally {
       await rm(outDir, { recursive: true, force: true });
+    }
+  });
+
+  it('should resolve source client-v2 entries before dist entries by default', async () => {
+    const tempRoot = await realpath(tmpdir());
+    const packageRoot = await mkdtemp(join(tempRoot, 'flow-surfaces-entry-source-'));
+    const sourceEntry = join(packageRoot, 'src/client-v2/index.tsx');
+    const distEntry = join(packageRoot, 'dist/client-v2/index.js');
+    try {
+      await mkdir(join(packageRoot, 'src/client-v2'), { recursive: true });
+      await mkdir(join(packageRoot, 'dist/client-v2'), { recursive: true });
+      await writeFile(join(packageRoot, 'package.json'), '{"name":"@nocobase/plugin-gantt"}\n', 'utf8');
+      await writeFile(sourceEntry, 'export default class GanttPlugin {}\n', 'utf8');
+      await writeFile(distEntry, 'module.exports = {};\n', 'utf8');
+
+      const resolution = await resolveFlowSurfacePluginEntry({
+        packageRoot,
+      });
+
+      expect(resolution).toMatchObject({
+        plugin: '@nocobase/plugin-gantt',
+        packageRoot,
+        packageJsonPath: join(packageRoot, 'package.json'),
+        sourceEntry,
+        distEntry,
+        selectedEntry: sourceEntry,
+        mode: 'source',
+        warnings: [],
+      });
+    } finally {
+      await rm(packageRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('should keep source entry preference by default in production mode', async () => {
+    const tempRoot = await realpath(tmpdir());
+    const packageRoot = await mkdtemp(join(tempRoot, 'flow-surfaces-entry-production-'));
+    const sourceEntry = join(packageRoot, 'src/client-v2/index.ts');
+    const distEntry = join(packageRoot, 'dist/client-v2/index.js');
+    try {
+      vi.stubEnv('NODE_ENV', 'production');
+      await mkdir(join(packageRoot, 'src/client-v2'), { recursive: true });
+      await mkdir(join(packageRoot, 'dist/client-v2'), { recursive: true });
+      await writeFile(join(packageRoot, 'package.json'), '{"name":"@nocobase/plugin-gantt"}\n', 'utf8');
+      await writeFile(sourceEntry, 'export default class GanttPlugin {}\n', 'utf8');
+      await writeFile(distEntry, 'module.exports = {};\n', 'utf8');
+
+      const resolution = await resolveFlowSurfacePluginEntry({
+        packageRoot,
+      });
+
+      expect(resolution).toMatchObject({
+        sourceEntry,
+        distEntry,
+        selectedEntry: sourceEntry,
+        mode: 'source',
+        warnings: [],
+      });
+    } finally {
+      vi.unstubAllEnvs();
+      await rm(packageRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('should prefer dist client-v2 entries when requested', async () => {
+    const tempRoot = await realpath(tmpdir());
+    const packageRoot = await mkdtemp(join(tempRoot, 'flow-surfaces-entry-dist-'));
+    const sourceEntry = join(packageRoot, 'src/client-v2/plugin.ts');
+    const distEntry = join(packageRoot, 'dist/client-v2/index.js');
+    try {
+      await mkdir(join(packageRoot, 'src/client-v2'), { recursive: true });
+      await mkdir(join(packageRoot, 'dist/client-v2'), { recursive: true });
+      await writeFile(join(packageRoot, 'package.json'), '{"name":"@nocobase/plugin-gantt"}\n', 'utf8');
+      await writeFile(sourceEntry, 'export default class GanttPlugin {}\n', 'utf8');
+      await writeFile(distEntry, 'module.exports = {};\n', 'utf8');
+
+      const resolution = await resolveFlowSurfacePluginEntry({
+        packageRoot,
+        preferMode: 'dist',
+      });
+
+      expect(resolution).toMatchObject({
+        sourceEntry,
+        distEntry,
+        selectedEntry: distEntry,
+        mode: 'dist',
+        warnings: [],
+      });
+    } finally {
+      await rm(packageRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('should honor source package.json client-v2 entry conventions before common paths', async () => {
+    const tempRoot = await realpath(tmpdir());
+    const cases: Array<{
+      name: string;
+      packageJson: Record<string, unknown>;
+      entryPath: string;
+    }> = [
+      {
+        name: 'top-level-client-v2',
+        packageJson: {
+          'client-v2': 'custom/top-level-client-v2.ts',
+        },
+        entryPath: 'custom/top-level-client-v2.ts',
+      },
+      {
+        name: 'top-level-client-v2-camel',
+        packageJson: {
+          clientV2: 'custom/top-level-client-v2-camel.ts',
+        },
+        entryPath: 'custom/top-level-client-v2-camel.ts',
+      },
+      {
+        name: 'top-level-client-v2-entry',
+        packageJson: {
+          'client-v2-entry': 'custom/top-level-client-v2-entry.ts',
+        },
+        entryPath: 'custom/top-level-client-v2-entry.ts',
+      },
+      {
+        name: 'top-level-client-v2-entry-camel',
+        packageJson: {
+          clientV2Entry: 'custom/top-level-client-v2-entry-camel.ts',
+        },
+        entryPath: 'custom/top-level-client-v2-entry-camel.ts',
+      },
+      {
+        name: 'nested-nocobase-client-v2',
+        packageJson: {
+          nocobase: {
+            'client-v2': 'custom/nested-client-v2.ts',
+          },
+        },
+        entryPath: 'custom/nested-client-v2.ts',
+      },
+      {
+        name: 'nested-nocobase-client-v2-camel',
+        packageJson: {
+          nocobase: {
+            clientV2: 'custom/nested-client-v2-camel.ts',
+          },
+        },
+        entryPath: 'custom/nested-client-v2-camel.ts',
+      },
+      {
+        name: 'nested-nocobase-client-v2-entry',
+        packageJson: {
+          nocobase: {
+            'client-v2-entry': 'custom/nested-client-v2-entry.ts',
+          },
+        },
+        entryPath: 'custom/nested-client-v2-entry.ts',
+      },
+      {
+        name: 'nested-nocobase-client-v2-entry-camel',
+        packageJson: {
+          nocobase: {
+            clientV2Entry: 'custom/nested-client-v2-entry-camel.ts',
+          },
+        },
+        entryPath: 'custom/nested-client-v2-entry-camel.ts',
+      },
+    ];
+
+    for (const item of cases) {
+      const packageRoot = await mkdtemp(join(tempRoot, `flow-surfaces-entry-${item.name}-`));
+      const declaredEntry = join(packageRoot, item.entryPath);
+      const commonEntry = join(packageRoot, 'src/client-v2/index.ts');
+      try {
+        await mkdir(join(packageRoot, 'custom'), { recursive: true });
+        await mkdir(join(packageRoot, 'src/client-v2'), { recursive: true });
+        await writeFile(
+          join(packageRoot, 'package.json'),
+          JSON.stringify(
+            {
+              name: `@example/plugin-${item.name}`,
+              ...item.packageJson,
+            },
+            null,
+            2,
+          ),
+          'utf8',
+        );
+        await writeFile(declaredEntry, 'export default class DeclaredPlugin {}\n', 'utf8');
+        await writeFile(commonEntry, 'export default class CommonPlugin {}\n', 'utf8');
+
+        const resolution = await resolveFlowSurfacePluginEntry({
+          packageRoot,
+        });
+
+        expect(resolution).toMatchObject({
+          plugin: `@example/plugin-${item.name}`,
+          sourceEntry: declaredEntry,
+          selectedEntry: declaredEntry,
+          mode: 'source',
+          warnings: [],
+        });
+      } finally {
+        await rm(packageRoot, { recursive: true, force: true });
+      }
+    }
+  });
+
+  it('should resolve package.json exports client-v2 dist entries', async () => {
+    const tempRoot = await realpath(tmpdir());
+    const packageRoot = await mkdtemp(join(tempRoot, 'flow-surfaces-entry-exports-'));
+    const distEntry = join(packageRoot, 'dist/client-v2/index.js');
+    try {
+      await mkdir(join(packageRoot, 'dist/client-v2'), { recursive: true });
+      await writeFile(
+        join(packageRoot, 'package.json'),
+        JSON.stringify(
+          {
+            name: '@example/plugin-exports',
+            exports: {
+              './client-v2': {
+                require: './dist/client-v2/index.js',
+              },
+              './client-v2.js': './dist/client-v2/index.js',
+            },
+          },
+          null,
+          2,
+        ),
+        'utf8',
+      );
+      await writeFile(distEntry, 'module.exports = {};\n', 'utf8');
+
+      const resolution = await resolveFlowSurfacePluginEntry({
+        packageRoot,
+      });
+
+      expect(resolution).toMatchObject({
+        plugin: '@example/plugin-exports',
+        distEntry,
+        selectedEntry: distEntry,
+        mode: 'dist',
+        warnings: [],
+      });
+    } finally {
+      await rm(packageRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('should classify package-declared root client-v2 markers as dist entries', async () => {
+    const tempRoot = await realpath(tmpdir());
+    const packageRoot = await mkdtemp(join(tempRoot, 'flow-surfaces-entry-root-marker-'));
+    const sourceEntry = join(packageRoot, 'src/client-v2/index.tsx');
+    const distEntry = join(packageRoot, 'client-v2.js');
+    try {
+      await mkdir(join(packageRoot, 'src/client-v2'), { recursive: true });
+      await writeFile(
+        join(packageRoot, 'package.json'),
+        JSON.stringify(
+          {
+            name: '@example/plugin-root-marker',
+            clientV2: './client-v2.js',
+          },
+          null,
+          2,
+        ),
+        'utf8',
+      );
+      await writeFile(sourceEntry, 'export default class SourcePlugin {}\n', 'utf8');
+      await writeFile(distEntry, 'module.exports = {};\n', 'utf8');
+
+      const resolution = await resolveFlowSurfacePluginEntry({
+        packageRoot,
+        preferMode: 'dist',
+      });
+
+      expect(resolution).toMatchObject({
+        plugin: '@example/plugin-root-marker',
+        sourceEntry,
+        distEntry,
+        selectedEntry: distEntry,
+        mode: 'dist',
+        warnings: [],
+      });
+    } finally {
+      await rm(packageRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('should return a nonfatal warning when a client-v2 entry cannot be resolved', async () => {
+    const tempRoot = await realpath(tmpdir());
+    const packageRoot = await mkdtemp(join(tempRoot, 'flow-surfaces-entry-missing-'));
+    try {
+      await writeFile(join(packageRoot, 'package.json'), '{"name":"@example/plugin-server-only"}\n', 'utf8');
+
+      const resolution = await resolveFlowSurfacePluginEntry({
+        packageRoot,
+      });
+
+      expect(resolution).toMatchObject({
+        plugin: '@example/plugin-server-only',
+        packageRoot,
+        packageJsonPath: join(packageRoot, 'package.json'),
+        warnings: [
+          {
+            code: 'extractor-runtime-error',
+            message:
+              'Plugin client-v2 entry could not be resolved; extractor should fall back to package-wide AST scan.',
+          },
+        ],
+      });
+      expect(resolution).not.toHaveProperty('selectedEntry');
+      expect(resolution).not.toHaveProperty('mode');
+    } finally {
+      await rm(packageRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('should ignore package.json client-v2 entries outside the package root', async () => {
+    const tempRoot = await realpath(tmpdir());
+    const packageRoot = await mkdtemp(join(tempRoot, 'flow-surfaces-entry-unsafe-'));
+    try {
+      await writeFile(join(tempRoot, 'outside-entry.ts'), 'export default class OutsidePlugin {}\n', 'utf8');
+      await writeFile(
+        join(packageRoot, 'package.json'),
+        JSON.stringify(
+          {
+            name: '@example/plugin-unsafe-entry',
+            clientV2: '../outside-entry.ts',
+          },
+          null,
+          2,
+        ),
+        'utf8',
+      );
+
+      const resolution = await resolveFlowSurfacePluginEntry({
+        packageRoot,
+      });
+
+      expect(resolution.warnings).toEqual(
+        expect.arrayContaining([
+          {
+            code: 'extractor-runtime-error',
+            message: 'Plugin client-v2 package.json entry was outside package root and was ignored.',
+          },
+          {
+            code: 'extractor-runtime-error',
+            message:
+              'Plugin client-v2 entry could not be resolved; extractor should fall back to package-wide AST scan.',
+          },
+        ]),
+      );
+      expect(resolution).not.toHaveProperty('selectedEntry');
+    } finally {
+      await rm(packageRoot, { recursive: true, force: true });
+      await rm(join(tempRoot, 'outside-entry.ts'), { force: true });
+    }
+  });
+
+  it('should ignore package.json client-v2 entries that escape through symlinks', async () => {
+    const tempRoot = await realpath(tmpdir());
+    const packageRoot = await mkdtemp(join(tempRoot, 'flow-surfaces-entry-symlink-'));
+    const outsideRoot = await mkdtemp(join(tempRoot, 'flow-surfaces-entry-outside-'));
+    try {
+      await mkdir(join(packageRoot, 'links'), { recursive: true });
+      await writeFile(join(outsideRoot, 'entry.ts'), 'export default class OutsidePlugin {}\n', 'utf8');
+      await symlink(outsideRoot, join(packageRoot, 'links/outside'), 'dir');
+      await writeFile(
+        join(packageRoot, 'package.json'),
+        JSON.stringify(
+          {
+            name: '@example/plugin-symlink-entry',
+            clientV2: 'links/outside/entry.ts',
+          },
+          null,
+          2,
+        ),
+        'utf8',
+      );
+
+      const resolution = await resolveFlowSurfacePluginEntry({
+        packageRoot,
+      });
+
+      expect(resolution.warnings).toEqual(
+        expect.arrayContaining([
+          {
+            code: 'extractor-runtime-error',
+            message: 'Plugin client-v2 package.json entry was outside package root and was ignored.',
+          },
+          {
+            code: 'extractor-runtime-error',
+            message:
+              'Plugin client-v2 entry could not be resolved; extractor should fall back to package-wide AST scan.',
+          },
+        ]),
+      );
+      expect(resolution).not.toHaveProperty('selectedEntry');
+    } finally {
+      await rm(packageRoot, { recursive: true, force: true });
+      await rm(outsideRoot, { recursive: true, force: true });
     }
   });
 

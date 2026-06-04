@@ -8,6 +8,7 @@
  */
 
 export * from './ast';
+export * from './entry-resolver';
 export * from './guards';
 export * from './recorder';
 export * from './runtime';
