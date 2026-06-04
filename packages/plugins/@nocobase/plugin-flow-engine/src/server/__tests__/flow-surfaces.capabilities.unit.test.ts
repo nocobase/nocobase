@@ -147,6 +147,36 @@ describe('flowSurfaces capabilities projection', () => {
     };
   }
 
+  function createRenamedGanttProvider(): FlowSurfaceCapabilitiesProvider {
+    return {
+      ownerPlugin: '@nocobase/plugin-gantt',
+      getCapabilities: () => [
+        {
+          id: 'blocks.renamedGantt',
+          capabilityVersion: '2.0.0',
+          kind: 'block',
+          publicType: 'renamedGantt',
+          label: 'Renamed Gantt',
+          semantic: {
+            title: 'Renamed Gantt',
+          },
+          implementation: {
+            modelUse: 'RenamedGanttBlockModel',
+            legacyModelUses: ['GanttBlockModel', 'LegacyTimelineBlockModel'],
+          },
+          availability: {
+            create: {
+              supported: true,
+            },
+          },
+        },
+      ],
+      resolveCreate: () => ({
+        use: 'RenamedGanttBlockModel',
+      }),
+    };
+  }
+
   function createActionProvider(): FlowSurfaceCapabilitiesProvider {
     return {
       ownerPlugin: '@nocobase/plugin-action-provider',
@@ -229,7 +259,18 @@ describe('flowSurfaces capabilities projection', () => {
     };
   }
 
-  function createGanttAutoSnapshot(options: { warnings?: FlowSurfaceCapabilityWarning[]; menuLabel?: string } = {}) {
+  function createGanttAutoSnapshot(
+    options: {
+      flowKey?: string;
+      flowTitle?: string;
+      menuKey?: string;
+      menuLabel?: string;
+      modelUse?: string;
+      warnings?: FlowSurfaceCapabilityWarning[];
+    } = {},
+  ) {
+    const modelUse = options.modelUse || 'GanttBlockModel';
+    const menuKey = options.menuKey || 'gantt';
     return buildFlowSurfaceAutoSnapshot({
       plugin: '@nocobase/plugin-gantt',
       generatedAt: '2026-06-04T00:00:00.000Z',
@@ -239,30 +280,30 @@ describe('flowSurfaces capabilities projection', () => {
       events: [
         {
           type: 'model.registered',
-          modelUse: 'GanttBlockModel',
-          className: 'GanttBlockModel',
+          modelUse,
+          className: modelUse,
           source: 'packages/plugins/@nocobase/plugin-gantt/src/client-v2/plugin.tsx',
           evidenceSource: 'runtime',
           confidence: 'high',
         },
         {
           type: 'menu.itemRegistered',
-          menuKey: 'gantt',
+          menuKey,
           label: options.menuLabel || 'Gantt',
-          modelUse: 'GanttBlockModel',
+          modelUse,
           slot: 'blocks',
           createModelOptionsStatus: 'static',
-          source: 'packages/plugins/@nocobase/plugin-gantt/src/client-v2/models/GanttBlockModel.tsx',
+          source: `packages/plugins/@nocobase/plugin-gantt/src/client-v2/models/${modelUse}.tsx`,
           evidenceSource: 'ast',
           confidence: 'medium',
         },
         {
           type: 'model.flowRegistered',
-          modelUse: 'GanttBlockModel',
-          flowKey: 'ganttSettings',
-          title: 'Gantt settings',
+          modelUse,
+          flowKey: options.flowKey || `${menuKey}Settings`,
+          title: options.flowTitle || 'Gantt settings',
           staticStatus: 'static',
-          source: 'packages/plugins/@nocobase/plugin-gantt/src/client-v2/models/GanttBlockModel.settings.tsx',
+          source: `packages/plugins/@nocobase/plugin-gantt/src/client-v2/models/${modelUse}.settings.tsx`,
           evidenceSource: 'ast',
           confidence: 'medium',
         },
@@ -984,6 +1025,7 @@ describe('flowSurfaces capabilities projection', () => {
     const response = await buildFlowSurfaceCapabilitiesResponse(
       {
         query: 'shadow',
+        expand: ['item.settings', 'item.semantic', 'item.warnings'],
       },
       {
         enabledPackages: new Set(['@nocobase/plugin-gantt']),
@@ -998,14 +1040,112 @@ describe('flowSurfaces capabilities projection', () => {
       },
     );
 
+    expect(response.data).toHaveLength(1);
     expect(response.data).toEqual([
       expect.objectContaining({
         publicType: 'gantt',
         origin: 'canaryOverlay',
         label: 'Gantt',
         publicTypeMeta: expect.objectContaining({
+          value: 'gantt',
           source: 'canary',
+          acceptedAliases: ['ganttBlock', '@nocobase/plugin-gantt:gantt'],
           searchAliases: expect.arrayContaining(['Shadow timeline']),
+        }),
+        semantic: {
+          title: 'Gantt',
+          description: 'Visualizes collection records on a time scale.',
+          aliases: ['gantt', 'timeline'],
+        },
+        placement: {
+          scenes: ['page', 'tab'],
+          slots: ['blocks'],
+          collectionRequired: true,
+        },
+        availability: expect.objectContaining({
+          create: expect.objectContaining({
+            supported: true,
+          }),
+          configure: expect.objectContaining({
+            supported: false,
+            reasonCode: 'contract-not-verified',
+            reasonSource: 'registry',
+          }),
+        }),
+        supportLevel: 'create-only',
+        initParamsSchema: {
+          type: 'object',
+          required: ['collectionName'],
+          properties: {
+            collectionName: {
+              type: 'string',
+            },
+          },
+        },
+        settingsSchema: {
+          type: 'object',
+          properties: {
+            titleField: {
+              type: 'string',
+            },
+            startField: {
+              type: 'string',
+            },
+            endField: {
+              type: 'string',
+            },
+            displaySettings: {
+              type: 'object',
+            },
+          },
+        },
+        configureOptions: {
+          titleField: {
+            type: 'string',
+          },
+        },
+        warnings: [
+          {
+            code: 'contract-not-verified',
+            message: 'Gantt configure writes remain disabled in this test fixture.',
+          },
+        ],
+      }),
+    ]);
+    expect(response.data[0].publicTypeMeta.searchAliases).toEqual(expect.arrayContaining(['pluginGantt.gantt']));
+    expect(response.data[0].publicTypeMeta.searchAliases).not.toEqual(expect.arrayContaining(['GanttBlockModel']));
+    expect(JSON.stringify(response.data[0])).not.toContain('GanttBlockModel');
+    expect(JSON.stringify(response.data[0])).toContain('pluginGantt.gantt');
+    expect(response.meta.registrySources).toEqual([{ origin: 'canaryOverlay', count: 1 }]);
+  });
+
+  it('should absorb auto snapshots through legacy provider model uses', async () => {
+    const response = await buildFlowSurfaceCapabilitiesResponse(
+      {
+        query: 'legacy',
+      },
+      {
+        enabledPackages: new Set(['@nocobase/plugin-gantt']),
+        providerRegistry: createProviderRegistry([createRenamedGanttProvider()]),
+        autoSnapshots: [
+          createGanttAutoSnapshot({
+            menuLabel: 'Legacy Gantt',
+          }),
+        ],
+        catalog: createCatalogRecorder().catalog,
+        generatedAt: '2026-06-04T00:00:00.000Z',
+      },
+    );
+
+    expect(response.data).toEqual([
+      expect.objectContaining({
+        publicType: 'renamedGantt',
+        origin: 'canaryOverlay',
+        label: 'Renamed Gantt',
+        publicTypeMeta: expect.objectContaining({
+          value: 'renamedGantt',
+          source: 'canary',
+          searchAliases: expect.arrayContaining(['Legacy Gantt', 'pluginGantt.gantt']),
         }),
         availability: expect.objectContaining({
           create: expect.objectContaining({
@@ -1014,8 +1154,77 @@ describe('flowSurfaces capabilities projection', () => {
         }),
       }),
     ]);
-    expect(response.data[0]).not.toHaveProperty('warnings');
-    expect(response.meta.registrySources).toEqual([{ origin: 'canaryOverlay', count: 1 }]);
+    expect(response.data.map((item) => item.publicType)).not.toContain('pluginGantt.gantt');
+    expect(JSON.stringify(response.data[0])).not.toContain('GanttBlockModel');
+  });
+
+  it('should preserve multiple auto snapshot diagnostics absorbed by one provider', async () => {
+    const response = await buildFlowSurfaceCapabilitiesResponse(
+      {
+        query: 'legacy',
+        expand: ['item.warnings'],
+      },
+      {
+        enabledPackages: new Set(['@nocobase/plugin-gantt']),
+        providerRegistry: createProviderRegistry([createRenamedGanttProvider()]),
+        autoSnapshots: [
+          createGanttAutoSnapshot({
+            menuLabel: 'Legacy Gantt',
+            warnings: [
+              {
+                code: 'readback-parity-missing',
+                message: 'Legacy Gantt readback parity has not been checked.',
+              },
+            ],
+          }),
+          createGanttAutoSnapshot({
+            menuKey: 'legacyTimeline',
+            menuLabel: 'Legacy Timeline',
+            modelUse: 'LegacyTimelineBlockModel',
+            warnings: [
+              {
+                code: 'partial-settings-schema',
+                message: 'Legacy Timeline settings schema is incomplete.',
+              },
+            ],
+          }),
+        ],
+        catalog: createCatalogRecorder().catalog,
+        generatedAt: '2026-06-04T00:00:00.000Z',
+      },
+    );
+
+    expect(response.data).toEqual([
+      expect.objectContaining({
+        publicType: 'renamedGantt',
+        origin: 'canaryOverlay',
+        publicTypeMeta: expect.objectContaining({
+          searchAliases: expect.arrayContaining([
+            'Legacy Gantt',
+            'pluginGantt.gantt',
+            'Legacy Timeline',
+            'pluginGantt.legacyTimeline',
+          ]),
+        }),
+        warnings: expect.arrayContaining([
+          expect.objectContaining({
+            code: 'readback-parity-missing',
+          }),
+          expect.objectContaining({
+            code: 'partial-settings-schema',
+          }),
+        ]),
+      }),
+    ]);
+    expect(response.data.map((item) => item.publicType)).not.toContain('pluginGantt.gantt');
+    expect(response.data.map((item) => item.publicType)).not.toContain('pluginGantt.legacyTimeline');
+    expect(response.data[0].warnings).not.toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          code: 'auto-discovered-readonly',
+        }),
+      ]),
+    );
   });
 
   it('should merge stale auto snapshot warnings into provider diagnostics without default aliases', async () => {

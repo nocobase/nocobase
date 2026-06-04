@@ -431,19 +431,22 @@ function mergeAutoSnapshotDiagnosticsByModelUse(items: FlowSurfacePublicCapabili
   });
 
   const replacements = new Map<FlowSurfacePublicCapabilityItem, FlowSurfacePublicCapabilityItem>();
+  const originalWinners = new Map<FlowSurfacePublicCapabilityItem, FlowSurfacePublicCapabilityItem>();
   const absorbedAutoSnapshots = new Set<FlowSurfacePublicCapabilityItem>();
   items.forEach((item) => {
     if (item.origin !== 'autoSnapshot') {
       return;
     }
-    const winner = getCapabilityModelUseKeys(item)
+    const matchedWinner = getCapabilityModelUseKeys(item)
       .map((key) => winnersByModelUse.get(key))
       .find(Boolean);
-    if (!winner) {
+    if (!matchedWinner) {
       return;
     }
-    const mergedWinner = mergeAutoSnapshotDiagnostics(replacements.get(winner) || winner, item);
-    replacements.set(winner, mergedWinner);
+    const originalWinner = originalWinners.get(matchedWinner) || matchedWinner;
+    const mergedWinner = mergeAutoSnapshotDiagnostics(replacements.get(originalWinner) || originalWinner, item);
+    replacements.set(originalWinner, mergedWinner);
+    originalWinners.set(mergedWinner, originalWinner);
     getCapabilityModelUseKeys(mergedWinner).forEach((key) => winnersByModelUse.set(key, mergedWinner));
     absorbedAutoSnapshots.add(item);
   });
