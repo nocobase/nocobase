@@ -14,6 +14,7 @@ import {
   DrawerFormLayout,
   ExtendCollectionsProvider,
   Table,
+  useApp,
 } from '@nocobase/client-v2';
 import { useFlowContext, type CollectionOptions } from '@nocobase/flow-engine';
 import { App, Button, Card, Flex, Form, Input, Space, theme, Tooltip, Typography } from 'antd';
@@ -38,7 +39,6 @@ export type TemplateListParams = {
   pageSize: number;
   sort: string;
   filter: Record<string, unknown>;
-  search?: string;
 };
 
 export type FlowModelTemplateResource = {
@@ -54,6 +54,7 @@ type EditFormValues = {
 
 const FLOW_MODEL_TEMPLATES_COLLECTION_NAME = 'flowModelTemplates';
 const MIDDLE_DRAWER_WIDTH = '50%';
+const TEMPLATE_TABLE_SCROLL_X = 1380;
 
 const FLOW_MODEL_TEMPLATE_FILTER_FIELD_NAMES = [
   'name',
@@ -164,6 +165,15 @@ const flowModelTemplatesCollection: CollectionOptions = {
   ],
 };
 
+const getOrAddFlowModelTemplatesCollection = (dataSourceManager?: any) => {
+  const dataSource = dataSourceManager?.getDataSource?.('main');
+  if (!dataSource) return undefined;
+  const collection = dataSource.getCollection?.(FLOW_MODEL_TEMPLATES_COLLECTION_NAME);
+  if (collection) return collection;
+  dataSource.addCollection?.(flowModelTemplatesCollection);
+  return dataSource.getCollection?.(FLOW_MODEL_TEMPLATES_COLLECTION_NAME);
+};
+
 export const getTemplateFilter = (templateType: TemplateType): Record<string, unknown> => {
   if (templateType === 'popup') {
     return { type: 'popup' };
@@ -189,15 +199,12 @@ export const buildTemplateListParams = (args: {
   page: number;
   pageSize: number;
   filter?: Record<string, unknown>;
-  search?: string;
 }): TemplateListParams => {
-  const search = typeof args.search === 'string' ? args.search.trim() : '';
   return {
     page: args.page,
     pageSize: args.pageSize,
     sort: '-createdAt',
     filter: mergeTemplateListFilter(args.templateType, args.filter),
-    ...(search ? { search } : {}),
   };
 };
 
@@ -239,7 +246,9 @@ const TemplateText: React.FC<{ value: unknown }> = ({ value }) => {
   if (!text) return null;
   return (
     <Tooltip title={text}>
-      <Typography.Text ellipsis>{text}</Typography.Text>
+      <Typography.Text ellipsis style={{ display: 'block', maxWidth: '100%' }}>
+        {text}
+      </Typography.Text>
     </Tooltip>
   );
 };
@@ -300,18 +309,18 @@ const TemplateEditForm: React.FC<{
 const FlowModelTemplatesPageContent: React.FC<{ templateType: TemplateType }> = ({ templateType }) => {
   const t = useT();
   const ctx = useFlowContext();
+  const app = useApp();
   const { modal, message } = App.useApp();
   const { token } = theme.useToken();
   const resource = useMemo(() => ctx.api.resource('flowModelTemplates') as FlowModelTemplateResource, [ctx.api]);
-  const templateCollection = ctx.dataSourceManager
-    ?.getDataSource?.('main')
-    ?.getCollection?.(FLOW_MODEL_TEMPLATES_COLLECTION_NAME);
+  const templateCollection =
+    getOrAddFlowModelTemplatesCollection(app.dataSourceManager) ??
+    getOrAddFlowModelTemplatesCollection(ctx.dataSourceManager);
   const [records, setRecords] = useState<FlowModelTemplateRecord[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
   const [filter, setFilter] = useState<Record<string, unknown> | undefined>();
-  const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(false);
 
   const fetchTemplates = useCallback(async () => {
@@ -321,11 +330,10 @@ const FlowModelTemplatesPageContent: React.FC<{ templateType: TemplateType }> = 
         page,
         pageSize,
         filter,
-        search,
       }),
     );
     return parseResourceListResponse<FlowModelTemplateRecord>(response);
-  }, [filter, page, pageSize, resource, search, templateType]);
+  }, [filter, page, pageSize, resource, templateType]);
 
   const runLoadTemplates = useCallback(
     async (isActive: () => boolean = () => true) => {
@@ -362,11 +370,6 @@ const FlowModelTemplatesPageContent: React.FC<{ templateType: TemplateType }> = 
 
   const handleFilterChange = useCallback((nextFilter: Record<string, unknown> | undefined) => {
     setFilter(nextFilter);
-    setPage(1);
-  }, []);
-
-  const handleSearch = useCallback((value?: string) => {
-    setSearch((value || '').trim());
     setPage(1);
   }, []);
 
@@ -417,31 +420,41 @@ const FlowModelTemplatesPageContent: React.FC<{ templateType: TemplateType }> = 
       {
         title: t('Template name'),
         dataIndex: 'name',
+        width: 300,
+        ellipsis: true,
         render: (value) => <TemplateText value={value} />,
       },
       {
         title: t('Template description'),
         dataIndex: 'description',
+        width: 420,
+        ellipsis: true,
         render: (value) => <TemplateText value={value} />,
       },
       {
         title: t('Data source'),
         dataIndex: 'dataSourceKey',
+        width: 160,
+        ellipsis: true,
         render: (value) => <TemplateText value={value} />,
       },
       {
         title: t('Collection'),
         dataIndex: 'collectionName',
+        width: 180,
+        ellipsis: true,
         render: (value) => <TemplateText value={value} />,
       },
       {
         title: t('Usage count'),
         dataIndex: 'usageCount',
+        width: 140,
         render: (value) => value || 0,
       },
       {
         title: t('Actions'),
         key: 'actions',
+        width: 180,
         render: (_, record) => {
           const inUse = isTemplateInUse(record);
           return (
@@ -479,16 +492,6 @@ const FlowModelTemplatesPageContent: React.FC<{ templateType: TemplateType }> = 
             onChange={handleFilterChange}
             t={t}
           />
-          <Input.Search
-            allowClear
-            placeholder={t('Search templates')}
-            onChange={(event) => {
-              if (!event.target.value) {
-                handleSearch('');
-              }
-            }}
-            onSearch={handleSearch}
-          />
         </Flex>
         <Button icon={<ReloadOutlined />} onClick={loadTemplates}>
           {t('Refresh')}
@@ -499,6 +502,8 @@ const FlowModelTemplatesPageContent: React.FC<{ templateType: TemplateType }> = 
         loading={loading}
         columns={columns}
         dataSource={records}
+        tableLayout="fixed"
+        scroll={{ x: TEMPLATE_TABLE_SCROLL_X }}
         pagination={{
           current: page,
           pageSize,

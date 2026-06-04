@@ -27,20 +27,19 @@ function makeResource(overrides: Partial<FlowModelTemplateResource> = {}): FlowM
 }
 
 describe('FlowModelTemplatesPage request helpers', () => {
-  it('builds block list params with the non-popup filter and trimmed search', () => {
-    expect(buildTemplateListParams({ templateType: 'block', page: 2, pageSize: 50, search: '  user  ' })).toEqual({
+  it('builds block list params with the non-popup filter', () => {
+    expect(buildTemplateListParams({ templateType: 'block', page: 2, pageSize: 50 })).toEqual({
       page: 2,
       pageSize: 50,
       sort: '-createdAt',
       filter: {
         $or: [{ type: { $ne: 'popup' } }, { type: { $empty: true } }],
       },
-      search: 'user',
     });
   });
 
-  it('builds popup list params without an empty search field', () => {
-    expect(buildTemplateListParams({ templateType: 'popup', page: 1, pageSize: 20, search: '   ' })).toEqual({
+  it('builds popup list params', () => {
+    expect(buildTemplateListParams({ templateType: 'popup', page: 1, pageSize: 20 })).toEqual({
       page: 1,
       pageSize: 20,
       sort: '-createdAt',
