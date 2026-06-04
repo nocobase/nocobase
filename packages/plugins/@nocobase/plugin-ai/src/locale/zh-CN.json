@@ -133,6 +133,7 @@
   "LLM service": "LLM 服务",
   "LLM service not configured": "LLM 服务未配置",
   "LLM services": "LLM 服务",
+  "LLM service test failed. Please check the service configuration.": "LLM 服务测试失败，请检查服务配置。",
   "Label for task selection buttons when multiple tasks exist": "多个任务可选时，用于让用户选择任务的按钮标题",
   "Limit": "限制",
   "Max completion tokens description": "限制一次请求中模型生成 completion 的最大 token 数。输入 token 和输出 token 的总长度受模型的上下文长度的限制。",
