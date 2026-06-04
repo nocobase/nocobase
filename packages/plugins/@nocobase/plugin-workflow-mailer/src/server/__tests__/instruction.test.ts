@@ -106,7 +106,14 @@ describe('workflow > instructions > mailer', () => {
       throw new Error('execution was not created');
     }
 
-    const [job] = await execution.getJobs();
+    let [job] = await execution.getJobs();
+    for (let i = 0; i < 20 && job?.status !== JOB_STATUS.ABORTED; i++) {
+      await sleep(100);
+      [job] = await execution.getJobs();
+    }
+    if (!job) {
+      throw new Error('job was not created');
+    }
     expect(job.status).toBe(JOB_STATUS.ABORTED);
   });
 });
