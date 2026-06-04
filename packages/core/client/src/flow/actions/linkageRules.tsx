@@ -1812,6 +1812,7 @@ const commonLinkageRulesHandler = async (ctx: FlowContext, params: any) => {
       });
       return;
     }
+    const resolvedPathKey = namePathToPathKey(resolvedPath);
     const whenEmpty = !!(patch as any)?.whenEmpty;
     const value = (patch as any)?.value;
     try {
@@ -1828,7 +1829,10 @@ const commonLinkageRulesHandler = async (ctx: FlowContext, params: any) => {
           return;
         }
       }
-      if (_.isEqual(current, value)) {
+      const hasPendingDifferentValue = directValuePatches.some(
+        (item) => namePathToPathKey(item.path) === resolvedPathKey && !_.isEqual(item.value, value),
+      );
+      if (_.isEqual(current, value) && !hasPendingDifferentValue) {
         return;
       }
     } catch {
@@ -2114,6 +2118,22 @@ const commonLinkageRulesHandler = async (ctx: FlowContext, params: any) => {
       model.setProps('title', '');
     }
 
+    // 只有本轮联动动作显式写入 value 时，才应执行表单赋值。
+    // 普通字段组件也会由 Form.Item/FieldModelRenderer 注入 value；如果从 __originalProps 继承该值，
+    // limitOptions/disabled 等状态联动会误把当前表单值清空。
+    if (Object.prototype.hasOwnProperty.call(patchProps, 'value') && model.context.form) {
+      const targetPath = getModelTargetPathForPatch(model);
+      if (!targetPath) {
+        console.warn('[linkageRules] Skip linkage assignment due to missing target path', {
+          flowKey: ctx.flowKey,
+          modelUid: ctx.model?.uid,
+          targetUid: model?.uid,
+        });
+      } else {
+        addFormValuePatch({ path: targetPath, value: newProps.value });
+      }
+    }
+
     if (
       clearValueOnHiddenModelUids.has(uid) &&
       Object.prototype.hasOwnProperty.call(patchProps, 'hiddenModel') &&
@@ -2128,22 +2148,6 @@ const commonLinkageRulesHandler = async (ctx: FlowContext, params: any) => {
         });
       } else {
         addFormValuePatch({ path: targetPath, value: undefined });
-      }
-    }
-
-    // 只有本轮联动动作显式写入 value 时，才应执行表单赋值。
-    // 普通字段组件也会由 Form.Item/FieldModelRenderer 注入 value；如果从 __originalProps 继承该值，
-    // limitOptions/disabled 等状态联动会误把当前表单值清空。
-    if (Object.prototype.hasOwnProperty.call(patchProps, 'value') && model.context.form) {
-      const targetPath = getModelTargetPathForPatch(model);
-      if (!targetPath) {
-        console.warn('[linkageRules] Skip linkage assignment due to missing target path', {
-          flowKey: ctx.flowKey,
-          modelUid: ctx.model?.uid,
-          targetUid: model?.uid,
-        });
-      } else {
-        addFormValuePatch({ path: targetPath, value: newProps.value });
       }
     }
 

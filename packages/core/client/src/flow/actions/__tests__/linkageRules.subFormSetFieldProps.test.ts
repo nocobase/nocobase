@@ -13,6 +13,7 @@ import { FlowEngine, FlowModel, FlowSettingsContextProvider } from '@nocobase/fl
 import { describe, expect, it, vi } from 'vitest';
 import {
   fieldLinkageRules,
+  linkageAssignField,
   linkageSetFieldProps,
   subFormFieldLinkageRules,
   subFormLinkageSetFieldProps,
@@ -722,6 +723,117 @@ describe('linkageSetFieldProps action', () => {
     expect(fieldModel.hidden).toBe(true);
     expect(setFormValues).toHaveBeenCalledWith(
       [{ path: ['name'], value: undefined }],
+      expect.objectContaining({ source: 'linkage' }),
+    );
+    expect(form.setFieldValue).not.toHaveBeenCalled();
+  });
+
+  it('should keep hidden clear after same-round assignment for the same field', async () => {
+    const formValues: { name?: string } = {};
+    const setFormValues = vi.fn(async (patches: Array<{ path: Array<string | number>; value: string | undefined }>) => {
+      for (const patch of patches) {
+        if (patch.path.length === 1 && patch.path[0] === 'name') {
+          formValues.name = patch.value;
+        }
+      }
+    });
+    const form = {
+      getFieldValue: vi.fn((path: Array<string | number>) => {
+        if (path.length === 1 && path[0] === 'name') {
+          return formValues.name;
+        }
+        return undefined;
+      }),
+      setFieldValue: vi.fn(),
+    };
+    const fieldModel: any = {
+      uid: 'name-field',
+      hidden: false,
+      context: { form },
+      props: {
+        label: 'Name',
+      },
+      getStepParams: vi.fn((flowKey: string, stepKey: string) => {
+        if (flowKey === 'fieldSettings' && stepKey === 'init') {
+          return { fieldPath: 'name' };
+        }
+      }),
+      setProps(key: any, value?: any) {
+        if (typeof key === 'string') {
+          this.props[key] = value;
+        } else {
+          this.props = { ...this.props, ...key };
+        }
+      },
+    };
+    const ctx: any = {
+      app: {
+        jsonLogic: {
+          apply: vi.fn(() => true),
+        },
+      },
+      model: {
+        context: { form },
+        subModels: {
+          grid: {
+            subModels: {
+              items: [fieldModel],
+            },
+          },
+        },
+      },
+      setFormValues,
+      getAction: (name: string) => {
+        if (name === 'linkageSetFieldProps') return linkageSetFieldProps;
+        if (name === 'linkageAssignField') return linkageAssignField;
+        return null;
+      },
+      resolveJsonTemplate: vi.fn(async (value) => value),
+    };
+
+    await fieldLinkageRules.handler(ctx, {
+      value: [
+        {
+          key: 'rule-1',
+          enable: true,
+          condition: { logic: '$and', items: [] },
+          actions: [
+            {
+              key: 'action-1',
+              name: 'linkageSetFieldProps',
+              params: {
+                value: {
+                  fields: ['name-field'],
+                  state: 'hidden',
+                },
+              },
+            },
+            {
+              key: 'action-2',
+              name: 'linkageAssignField',
+              params: {
+                value: [
+                  {
+                    key: 'assign-1',
+                    enable: true,
+                    targetPath: 'name',
+                    value: 'assigned',
+                  },
+                ],
+              },
+            },
+          ],
+        },
+      ],
+    });
+
+    expect(fieldModel.hidden).toBe(true);
+    expect(formValues.name).toBeUndefined();
+    expect(setFormValues).toHaveBeenCalledWith(
+      [
+        { path: ['name'], value: 'assigned' },
+        { path: ['name'], value: undefined },
+      ],
       expect.objectContaining({ source: 'linkage' }),
     );
     expect(form.setFieldValue).not.toHaveBeenCalled();
