@@ -122,7 +122,7 @@ nb env info app1 --json
 | 启动、停止、重启应用，查看日志，或者继续升级应用。 | [`nb app`](../../api/cli/app/index.md)、[管理应用](../operations/manage-app.md)。 |
 | 检查数据库连接、查看内置数据库状态，或者排查数据库容器问题。 | [`nb db`](../../api/cli/db/index.md)。 |
 | 查看已安装插件，启用或停用插件。 | [`nb plugin`](../../api/cli/plugin/index.md)。 |
-| 激活商业授权、查看授权状态、同步商业插件。 | [`nb license`](../../api/cli/license/index.md)、[商业插件](../plugins/commercial.md)。 |
+| 激活商业授权、查看授权状态、同步商业插件。 | [`nb license`](../../api/cli/license/index.md)。 |
 | 管理本地源码工程，比如下载源码、启动开发模式、构建或测试。这个通常用于 npm / Git env。 | [`nb source`](../../api/cli/source/index.md)。 |
 
 如果你刚装完一个本地应用，通常可以先跑这几条命令：
