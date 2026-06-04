@@ -8,10 +8,13 @@
  */
 
 import { describe, expect, it, vi } from 'vitest';
+import { buildFlowSurfaceCapabilitiesResponse } from '../flow-surfaces/capabilities';
 import { resolveJsonCreateRecipe } from '../flow-surfaces/capability-recipe';
 import { resolveDynamicCapabilityCreate } from '../flow-surfaces/capability-resolver';
 import { FlowSurfaceAggregateError, FlowSurfaceBadRequestError } from '../flow-surfaces/errors';
+import { buildFlowSurfaceAutoSnapshot } from '../flow-surfaces/extractor';
 import { FlowSurfacesService } from '../flow-surfaces/service';
+import type { FlowSurfaceCapabilityAdmissionReport } from '../flow-surfaces/admission-report';
 import type {
   FlowSurfaceCapabilitiesProvider,
   FlowSurfaceCatalogItem,
@@ -22,6 +25,84 @@ describe('flowSurfaces dynamic capability create dry-run', () => {
   function createProviderRegistry(providers: FlowSurfaceCapabilitiesProvider[]) {
     return {
       listProviders: () => providers,
+    };
+  }
+
+  function createGanttAutoSnapshot() {
+    return buildFlowSurfaceAutoSnapshot({
+      plugin: '@nocobase/plugin-gantt',
+      pluginVersion: '1.0.0',
+      generatedAt: '2026-06-04T00:00:00.000Z',
+      sourceHash: 'snapshot-source-hash',
+      extractorVersion: 'test',
+      events: [
+        {
+          type: 'model.registered',
+          modelUse: 'GanttBlockModel',
+          className: 'GanttBlockModel',
+          source: 'packages/plugins/@nocobase/plugin-gantt/src/client-v2/plugin.tsx',
+          evidenceSource: 'runtime',
+          confidence: 'high',
+        },
+        {
+          type: 'menu.itemRegistered',
+          menuKey: 'gantt',
+          label: 'Gantt',
+          modelUse: 'GanttBlockModel',
+          slot: 'blocks',
+          createModelOptionsStatus: 'static',
+          source: 'packages/plugins/@nocobase/plugin-gantt/src/client-v2/models/GanttBlockModel.tsx',
+          evidenceSource: 'ast',
+          confidence: 'medium',
+        },
+        {
+          type: 'model.flowRegistered',
+          modelUse: 'GanttBlockModel',
+          flowKey: 'ganttSettings',
+          title: 'Gantt settings',
+          staticStatus: 'static',
+          source: 'packages/plugins/@nocobase/plugin-gantt/src/client-v2/models/GanttBlockModel.settings.tsx',
+          evidenceSource: 'ast',
+          confidence: 'medium',
+        },
+      ],
+    });
+  }
+
+  function createAdmissionChecks(): FlowSurfaceCapabilityAdmissionReport['records'][number]['checks'] {
+    return {
+      discovered: { ok: true },
+      publicTypeStable: { ok: true },
+      contractDeclared: { ok: true },
+      targetCatalogVerified: { ok: true },
+      dryRunCreate: { ok: true },
+      readbackParity: { ok: true },
+      unsafePayloadBlocked: { ok: true },
+      testsPresent: { ok: true },
+    };
+  }
+
+  function createVerifiedAutoAdmissionReport(): FlowSurfaceCapabilityAdmissionReport {
+    return {
+      version: 1,
+      plugin: '@nocobase/plugin-gantt',
+      generatedAt: '2026-06-04T00:00:00.000Z',
+      records: [
+        {
+          capabilityId: '@nocobase/plugin-gantt:autoSnapshot:block:pluginGantt.gantt',
+          kind: 'block',
+          publicType: 'pluginGantt.gantt',
+          ownerPlugin: '@nocobase/plugin-gantt',
+          capabilityVersion: '1.0.0',
+          manifestHash: 'manifest-hash',
+          snapshotHash: 'snapshot-source-hash',
+          dryRunFixtureHash: 'fixture-hash',
+          readiness: 'createEnabled',
+          updatedAt: '2026-06-04T00:00:00.000Z',
+          approvedAt: '2026-06-04T00:00:00.000Z',
+          checks: createAdmissionChecks(),
+        },
+      ],
     };
   }
 
@@ -382,6 +463,81 @@ describe('flowSurfaces dynamic capability create dry-run', () => {
         },
       ),
     ).rejects.toBeInstanceOf(FlowSurfaceAggregateError);
+  });
+
+  it('should keep validateCapabilityCreate fail-closed for verified auto snapshots', async () => {
+    const autoSnapshot = createGanttAutoSnapshot();
+    const verifiedAutoPolicy = {
+      writePolicy: {
+        mode: 'verifiedAuto' as const,
+        allowedOwners: ['@nocobase/plugin-gantt'],
+        allowedPublicTypes: ['pluginGantt.gantt'],
+      },
+    };
+    const discovery = await buildFlowSurfaceCapabilitiesResponse(
+      {
+        publicTypes: ['pluginGantt.gantt'],
+      },
+      {
+        enabledPackages: new Set(['@nocobase/plugin-gantt']),
+        autoSnapshots: [autoSnapshot],
+        admissionReports: [createVerifiedAutoAdmissionReport()],
+        capabilityPolicyConfig: verifiedAutoPolicy,
+        catalog: async () => ({
+          target: null,
+          scenario: {
+            surfaceKind: 'global',
+          },
+          selectedSections: ['blocks'],
+          blocks: [],
+        }),
+        generatedAt: '2026-06-04T00:00:00.000Z',
+      },
+    );
+    expect(discovery.data).toEqual([
+      expect.objectContaining({
+        publicType: 'pluginGantt.gantt',
+        origin: 'autoSnapshot',
+        readiness: 'createEnabled',
+        availability: expect.objectContaining({
+          create: expect.objectContaining({
+            supported: true,
+          }),
+        }),
+      }),
+    ]);
+
+    const service = new FlowSurfacesService({
+      options: {
+        flowSurfaceCapabilities: verifiedAutoPolicy,
+      },
+      flowSurfaceAutoSnapshots: [autoSnapshot],
+      flowSurfaceCapabilityProviders: createProviderRegistry([]),
+    } as unknown as ConstructorParameters<typeof FlowSurfacesService>[0]);
+
+    await expect(
+      service.validateCapabilityCreate(
+        {
+          publicType: 'pluginGantt.gantt',
+          initParams: {
+            collectionName: 'tasks',
+          },
+          settings: {},
+        },
+        {
+          enabledPackages: new Set(['@nocobase/plugin-gantt']),
+        },
+      ),
+    ).rejects.toMatchObject({
+      message: `flowSurfaces dynamic create capability 'pluginGantt.gantt' is not supported`,
+      options: {
+        details: {
+          reasonCode: 'unsupported',
+          reasonSource: 'registry',
+          publicType: 'pluginGantt.gantt',
+        },
+      },
+    });
   });
 
   it('should resolve recipe-only capabilities without calling provider resolveCreate', async () => {
