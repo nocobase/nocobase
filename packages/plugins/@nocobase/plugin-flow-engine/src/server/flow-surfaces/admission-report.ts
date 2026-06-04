@@ -55,6 +55,29 @@ export type FlowSurfaceCapabilityAdmissionReport = {
   records: FlowSurfaceCapabilityAdmissionRecord[];
 };
 
+export type FlowSurfaceCapabilityAdmissionIntegrity = Pick<
+  FlowSurfaceCapabilityAdmissionRecord,
+  'capabilityVersion' | 'manifestHash' | 'snapshotHash' | 'dryRunFixtureHash'
+>;
+
+export type ValidateFlowSurfaceCapabilityAdmissionRuntimeEvidenceInput = {
+  record: FlowSurfaceCapabilityAdmissionRecord;
+  expectedIntegrity?: FlowSurfaceCapabilityAdmissionIntegrity;
+};
+
+export type FlowSurfaceAdmissionRuntimeValidationFailedCheck = {
+  key: FlowSurfaceAdmissionCheckKey | 'readiness' | 'approvedAt' | 'reportIntegrity';
+  reasonCode?: FlowSurfaceReasonCode;
+  message?: string;
+};
+
+export type FlowSurfaceAdmissionRuntimeValidationResult = {
+  ok: boolean;
+  readiness: FlowSurfaceCapabilityReadiness;
+  reasonCode?: FlowSurfaceReasonCode;
+  failedChecks: FlowSurfaceAdmissionRuntimeValidationFailedCheck[];
+};
+
 type BuildFlowSurfaceCapabilityAdmissionReportInput = {
   plugin: string;
   generatedAt?: string;
@@ -88,6 +111,12 @@ const FLOW_SURFACE_ADMISSION_CHECK_KEYS: FlowSurfaceAdmissionCheckKey[] = [
   'readbackParity',
   'unsafePayloadBlocked',
   'testsPresent',
+];
+const FLOW_SURFACE_ADMISSION_CREATE_ENABLED_REQUIRED_FIELDS: Array<keyof FlowSurfaceCapabilityAdmissionIntegrity> = [
+  'capabilityVersion',
+  'manifestHash',
+  'snapshotHash',
+  'dryRunFixtureHash',
 ];
 const FLOW_SURFACE_CAPABILITY_KINDS = new Set<FlowSurfaceCapabilityKind>([
   'block',
@@ -208,6 +237,24 @@ export function getFlowSurfaceCapabilityAdmissionReportFileName(plugin: string) 
   return `${plugin.replace(/[\\/]/g, '__')}.json`;
 }
 
+export function validateFlowSurfaceCapabilityAdmissionRuntimeEvidence(
+  input: ValidateFlowSurfaceCapabilityAdmissionRuntimeEvidenceInput,
+): FlowSurfaceAdmissionRuntimeValidationResult {
+  const failedChecks = [
+    ...getFlowSurfaceAdmissionReadinessFailures(input.record),
+    ...getFlowSurfaceAdmissionApprovedAtFailures(input.record),
+    ...getFlowSurfaceAdmissionIntegrityFailures(input.record, input.expectedIntegrity),
+    ...getFlowSurfaceAdmissionCheckFailures(input.record),
+  ];
+  const reasonCode = failedChecks.find((check) => check.reasonCode)?.reasonCode;
+  return {
+    ok: failedChecks.length === 0,
+    readiness: failedChecks.length ? 'blocked' : input.record.readiness,
+    ...(reasonCode ? { reasonCode } : {}),
+    failedChecks,
+  };
+}
+
 export function isFlowSurfaceCapabilityAdmissionReport(value: unknown): value is FlowSurfaceCapabilityAdmissionReport {
   if (!isPlainRecord(value)) {
     return false;
@@ -234,13 +281,99 @@ function isFlowSurfaceCapabilityAdmissionRecord(value: unknown): value is FlowSu
   ) {
     return false;
   }
-  if (!hasOptionalStringFields(value, ['capabilityVersion', 'manifestHash', 'snapshotHash', 'dryRunFixtureHash'])) {
+  if (
+    !hasOptionalStringFields(value, [
+      'capabilityVersion',
+      'manifestHash',
+      'snapshotHash',
+      'dryRunFixtureHash',
+      'approvedAt',
+    ])
+  ) {
     return false;
   }
   if (value.readiness === 'blocked' && !hasFailedCheckReasonCode(value.checks)) {
     return false;
   }
   return isFlowSurfaceAdmissionChecks(value.checks);
+}
+
+function getFlowSurfaceAdmissionReadinessFailures(
+  record: FlowSurfaceCapabilityAdmissionRecord,
+): FlowSurfaceAdmissionRuntimeValidationFailedCheck[] {
+  if (record.readiness === 'createEnabled') {
+    return [];
+  }
+  return [
+    {
+      key: 'readiness',
+      reasonCode: 'contract-not-verified',
+      message: `Admission record readiness is "${record.readiness}", expected "createEnabled".`,
+    },
+  ];
+}
+
+function getFlowSurfaceAdmissionApprovedAtFailures(
+  record: FlowSurfaceCapabilityAdmissionRecord,
+): FlowSurfaceAdmissionRuntimeValidationFailedCheck[] {
+  if (record.approvedAt) {
+    return [];
+  }
+  return [
+    {
+      key: 'approvedAt',
+      reasonCode: 'contract-not-verified',
+      message: 'Admission record must include approvedAt before it can be used as create-enabled evidence.',
+    },
+  ];
+}
+
+function getFlowSurfaceAdmissionIntegrityFailures(
+  record: FlowSurfaceCapabilityAdmissionRecord,
+  expectedIntegrity?: FlowSurfaceCapabilityAdmissionIntegrity,
+): FlowSurfaceAdmissionRuntimeValidationFailedCheck[] {
+  const missingFields = FLOW_SURFACE_ADMISSION_CREATE_ENABLED_REQUIRED_FIELDS.filter((field) => !record[field]);
+  const mismatchedFields = expectedIntegrity
+    ? FLOW_SURFACE_ADMISSION_CREATE_ENABLED_REQUIRED_FIELDS.filter(
+        (field) => typeof expectedIntegrity[field] === 'string' && record[field] !== expectedIntegrity[field],
+      )
+    : [];
+  if (!missingFields.length && !mismatchedFields.length) {
+    return [];
+  }
+
+  const messages: string[] = [];
+  if (missingFields.length) {
+    messages.push(`missing required integrity fields: ${missingFields.join(', ')}`);
+  }
+  if (mismatchedFields.length) {
+    messages.push(`integrity fields do not match current runtime: ${mismatchedFields.join(', ')}`);
+  }
+  return [
+    {
+      key: 'reportIntegrity',
+      reasonCode: 'snapshot-stale',
+      message: `Admission report createEnabled record is stale or incomplete: ${messages.join('; ')}.`,
+    },
+  ];
+}
+
+function getFlowSurfaceAdmissionCheckFailures(
+  record: FlowSurfaceCapabilityAdmissionRecord,
+): FlowSurfaceAdmissionRuntimeValidationFailedCheck[] {
+  return FLOW_SURFACE_ADMISSION_CHECK_KEYS.flatMap((key) => {
+    const check = record.checks[key];
+    if (check.ok) {
+      return [];
+    }
+    return [
+      {
+        key,
+        reasonCode: check.reasonCode || 'contract-not-verified',
+        ...(check.message ? { message: check.message } : {}),
+      },
+    ];
+  });
 }
 
 function isFlowSurfaceAdmissionChecks(value: unknown): value is FlowSurfaceCapabilityAdmissionRecord['checks'] {

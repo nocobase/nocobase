@@ -18,6 +18,7 @@ import {
   getFlowSurfaceCapabilityAdmissionReportStorageDir,
   isFlowSurfaceCapabilityAdmissionReport,
   loadFlowSurfaceCapabilityAdmissionReportsFromDirectory,
+  validateFlowSurfaceCapabilityAdmissionRuntimeEvidence,
   writeFlowSurfaceCapabilityAdmissionReport,
   type FlowSurfaceAdmissionCheck,
   type FlowSurfaceCapabilityAdmissionRecord,
@@ -176,6 +177,23 @@ describe('flowSurfaces capability admission reports', () => {
         )}\n`,
         'utf8',
       );
+      await writeFile(
+        join(outDir, 'invalid-approved-at.json'),
+        `${JSON.stringify(
+          {
+            ...report,
+            records: [
+              {
+                ...report.records[0],
+                approvedAt: 123,
+              },
+            ],
+          },
+          null,
+          2,
+        )}\n`,
+        'utf8',
+      );
 
       const loaded = await loadFlowSurfaceCapabilityAdmissionReportsFromDirectory({ dir: outDir });
 
@@ -225,5 +243,175 @@ describe('flowSurfaces capability admission reports', () => {
     expect(getFlowSurfaceCapabilityAdmissionReportStorageDir()).toContain('flow-surfaces-capabilities');
     expect(getFlowSurfaceCapabilityAdmissionReportStorageDir()).toContain('admission');
     expect(getFlowSurfaceCapabilityAdmissionReportFileName('@scope/plugin-x')).toBe('@scope__plugin-x.json');
+  });
+
+  it('should validate create-enabled admission runtime evidence', () => {
+    const record = createAdmissionRecord({
+      readiness: 'createEnabled',
+      approvedAt: '2026-06-04T01:00:00.000Z',
+    });
+
+    expect(
+      validateFlowSurfaceCapabilityAdmissionRuntimeEvidence({
+        record,
+        expectedIntegrity: {
+          capabilityVersion: '1.0.0',
+          manifestHash: 'manifest-hash',
+          snapshotHash: 'snapshot-hash',
+          dryRunFixtureHash: 'fixture-hash',
+        },
+      }),
+    ).toEqual({
+      ok: true,
+      readiness: 'createEnabled',
+      failedChecks: [],
+    });
+  });
+
+  it('should block admission runtime evidence without approval time', () => {
+    const result = validateFlowSurfaceCapabilityAdmissionRuntimeEvidence({
+      record: createAdmissionRecord({
+        readiness: 'createEnabled',
+      }),
+    });
+
+    expect(result).toEqual({
+      ok: false,
+      readiness: 'blocked',
+      reasonCode: 'contract-not-verified',
+      failedChecks: [
+        {
+          key: 'approvedAt',
+          reasonCode: 'contract-not-verified',
+          message: 'Admission record must include approvedAt before it can be used as create-enabled evidence.',
+        },
+      ],
+    });
+  });
+
+  it('should block create-enabled runtime evidence with missing integrity fields', () => {
+    const result = validateFlowSurfaceCapabilityAdmissionRuntimeEvidence({
+      record: createAdmissionRecord({
+        readiness: 'createEnabled',
+        approvedAt: '2026-06-04T01:00:00.000Z',
+        manifestHash: undefined,
+        snapshotHash: undefined,
+      }),
+    });
+
+    expect(result).toEqual({
+      ok: false,
+      readiness: 'blocked',
+      reasonCode: 'snapshot-stale',
+      failedChecks: [
+        {
+          key: 'reportIntegrity',
+          reasonCode: 'snapshot-stale',
+          message:
+            'Admission report createEnabled record is stale or incomplete: missing required integrity fields: manifestHash, snapshotHash.',
+        },
+      ],
+    });
+  });
+
+  it('should block admission runtime evidence that is not create enabled', () => {
+    const result = validateFlowSurfaceCapabilityAdmissionRuntimeEvidence({
+      record: createAdmissionRecord({
+        readiness: 'createDryRunPassed',
+        approvedAt: '2026-06-04T01:00:00.000Z',
+      }),
+    });
+
+    expect(result).toEqual({
+      ok: false,
+      readiness: 'blocked',
+      reasonCode: 'contract-not-verified',
+      failedChecks: [
+        {
+          key: 'readiness',
+          reasonCode: 'contract-not-verified',
+          message: 'Admission record readiness is "createDryRunPassed", expected "createEnabled".',
+        },
+      ],
+    });
+  });
+
+  it('should preserve public failed check details without leaking evidence', () => {
+    const result = validateFlowSurfaceCapabilityAdmissionRuntimeEvidence({
+      record: createAdmissionRecord({
+        readiness: 'createEnabled',
+        approvedAt: '2026-06-04T01:00:00.000Z',
+        checks: createChecks({
+          dryRunCreate: {
+            ok: false,
+            reasonCode: 'dry-run-failed',
+            message: 'Public dry-run payload failed contract validation.',
+            evidence: {
+              internalNode: {
+                use: 'GanttBlockModel',
+              },
+            },
+          },
+          readbackParity: {
+            ok: false,
+            reasonCode: 'readback-parity-failed',
+            message: 'Readback did not produce the canonical publicType.',
+            evidence: {
+              persistedUid: 'internal-uid',
+            },
+          },
+        }),
+      }),
+    });
+
+    expect(result).toEqual({
+      ok: false,
+      readiness: 'blocked',
+      reasonCode: 'dry-run-failed',
+      failedChecks: [
+        {
+          key: 'dryRunCreate',
+          reasonCode: 'dry-run-failed',
+          message: 'Public dry-run payload failed contract validation.',
+        },
+        {
+          key: 'readbackParity',
+          reasonCode: 'readback-parity-failed',
+          message: 'Readback did not produce the canonical publicType.',
+        },
+      ],
+    });
+    expect(JSON.stringify(result)).not.toContain('internalNode');
+    expect(JSON.stringify(result)).not.toContain('GanttBlockModel');
+    expect(JSON.stringify(result)).not.toContain('persistedUid');
+  });
+
+  it('should block runtime evidence when expected integrity values do not match', () => {
+    const result = validateFlowSurfaceCapabilityAdmissionRuntimeEvidence({
+      record: createAdmissionRecord({
+        readiness: 'createEnabled',
+        approvedAt: '2026-06-04T01:00:00.000Z',
+      }),
+      expectedIntegrity: {
+        capabilityVersion: '2.0.0',
+        manifestHash: 'manifest-hash',
+        snapshotHash: 'current-snapshot-hash',
+        dryRunFixtureHash: 'fixture-hash',
+      },
+    });
+
+    expect(result).toEqual({
+      ok: false,
+      readiness: 'blocked',
+      reasonCode: 'snapshot-stale',
+      failedChecks: [
+        {
+          key: 'reportIntegrity',
+          reasonCode: 'snapshot-stale',
+          message:
+            'Admission report createEnabled record is stale or incomplete: integrity fields do not match current runtime: capabilityVersion, snapshotHash.',
+        },
+      ],
+    });
   });
 });
