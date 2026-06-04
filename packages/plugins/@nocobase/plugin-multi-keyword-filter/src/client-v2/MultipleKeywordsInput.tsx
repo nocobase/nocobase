@@ -22,12 +22,25 @@ function trimKeyword(value: KeywordValue) {
   return typeof value === 'string' ? value.trim() : value;
 }
 
+function toKeywordText(value: KeywordValue) {
+  return String(trimKeyword(value));
+}
+
+function isIntegerKeyword(value: string) {
+  return /^[+-]?\d+$/.test(value);
+}
+
+function isNumberKeyword(value: string) {
+  return /^[+-]?(?:\d+\.?\d*|\.\d+)(?:e[+-]?\d+)?$/i.test(value);
+}
+
 function normalizeKeywords(values: KeywordValue[], fieldInterface: string) {
-  if (['integer', 'number'].includes(fieldInterface)) {
-    return values
-      .map(trimKeyword)
-      .map((item) => parseInt(String(item), 10))
-      .filter((item) => !Number.isNaN(item));
+  if (fieldInterface === 'integer') {
+    return values.map(toKeywordText).filter(isIntegerKeyword);
+  }
+
+  if (fieldInterface === 'number') {
+    return values.map(toKeywordText).filter(isNumberKeyword);
   }
 
   if (fieldInterface === 'percent') {
