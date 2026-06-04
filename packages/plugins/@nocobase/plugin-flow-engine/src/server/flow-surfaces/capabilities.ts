@@ -11,6 +11,8 @@ import _ from 'lodash';
 import {
   collectAutoSnapshotPublicCapabilities,
   collectProviderPublicCapabilities,
+  getFlowSurfacePublicCapabilityModelUses,
+  setFlowSurfacePublicCapabilityModelUse,
   type FlowSurfaceCapabilityRegistryLike,
 } from './capability-registry';
 import { FlowSurfaceBadRequestError } from './errors';
@@ -266,7 +268,7 @@ function projectProviderCapabilityItem(
   if (request.includeWarnings && warnings?.length) {
     projected.warnings = warnings;
   }
-  return projected;
+  return setFlowSurfacePublicCapabilityModelUse(projected, getFlowSurfacePublicCapabilityModelUses(item));
 }
 
 type NormalizedDescribeCapabilityRequest = {
@@ -397,11 +399,117 @@ function dedupeCapabilityItems(items: FlowSurfacePublicCapabilityItem[]) {
   items.forEach((item) => {
     const key = [item.kind, item.ownerPlugin, item.publicType].join('::');
     const current = byPublicIdentity.get(key);
-    if (!current || getCapabilityOriginPrecedence(item) >= getCapabilityOriginPrecedence(current)) {
+    if (!current) {
       byPublicIdentity.set(key, item);
+      return;
     }
+    if (getCapabilityOriginPrecedence(item) >= getCapabilityOriginPrecedence(current)) {
+      byPublicIdentity.set(key, mergeAutoSnapshotDiagnostics(item, current));
+      return;
+    }
+    byPublicIdentity.set(key, mergeAutoSnapshotDiagnostics(current, item));
   });
-  return Array.from(byPublicIdentity.values());
+  return mergeAutoSnapshotDiagnosticsByModelUse(Array.from(byPublicIdentity.values()));
+}
+
+function mergeAutoSnapshotDiagnosticsByModelUse(items: FlowSurfacePublicCapabilityItem[]) {
+  const winnersByModelUse = new Map<string, FlowSurfacePublicCapabilityItem>();
+  items.forEach((item) => {
+    if (item.origin === 'autoSnapshot') {
+      return;
+    }
+    const keys = getCapabilityModelUseKeys(item);
+    if (!keys.length) {
+      return;
+    }
+    keys.forEach((key) => {
+      const current = winnersByModelUse.get(key);
+      if (!current || getCapabilityOriginPrecedence(item) >= getCapabilityOriginPrecedence(current)) {
+        winnersByModelUse.set(key, item);
+      }
+    });
+  });
+
+  const replacements = new Map<FlowSurfacePublicCapabilityItem, FlowSurfacePublicCapabilityItem>();
+  const absorbedAutoSnapshots = new Set<FlowSurfacePublicCapabilityItem>();
+  items.forEach((item) => {
+    if (item.origin !== 'autoSnapshot') {
+      return;
+    }
+    const winner = getCapabilityModelUseKeys(item)
+      .map((key) => winnersByModelUse.get(key))
+      .find(Boolean);
+    if (!winner) {
+      return;
+    }
+    const mergedWinner = mergeAutoSnapshotDiagnostics(replacements.get(winner) || winner, item);
+    replacements.set(winner, mergedWinner);
+    getCapabilityModelUseKeys(mergedWinner).forEach((key) => winnersByModelUse.set(key, mergedWinner));
+    absorbedAutoSnapshots.add(item);
+  });
+
+  return items.flatMap((item) => {
+    if (absorbedAutoSnapshots.has(item)) {
+      return [];
+    }
+    return [replacements.get(item) || item];
+  });
+}
+
+function getCapabilityModelUseKeys(item: FlowSurfacePublicCapabilityItem) {
+  return getFlowSurfacePublicCapabilityModelUses(item).map((modelUse) =>
+    [item.kind, item.ownerPlugin, modelUse].join('::'),
+  );
+}
+
+function mergeAutoSnapshotDiagnostics(
+  winner: FlowSurfacePublicCapabilityItem,
+  supplemental: FlowSurfacePublicCapabilityItem,
+): FlowSurfacePublicCapabilityItem {
+  if (winner.origin === 'autoSnapshot' || supplemental.origin !== 'autoSnapshot') {
+    return winner;
+  }
+  const supplementalStale = supplemental.availability.render.reasonCode === 'snapshot-stale';
+  const searchAliases = Array.from(
+    new Set(
+      supplementalStale
+        ? winner.publicTypeMeta.searchAliases || []
+        : [
+            ...(winner.publicTypeMeta.searchAliases || []),
+            ...(supplemental.publicTypeMeta.searchAliases || []),
+            supplemental.publicType,
+            supplemental.label,
+          ].filter((value): value is string => typeof value === 'string' && value.length > 0),
+    ),
+  );
+  const supplementalWarnings =
+    winner.origin === 'autoSnapshot'
+      ? supplemental.warnings || []
+      : (supplemental.warnings || []).filter((warning) => warning.code !== 'auto-discovered-readonly');
+  const warnings = dedupeCapabilityWarnings([...(winner.warnings || []), ...supplementalWarnings]);
+  return setFlowSurfacePublicCapabilityModelUse(
+    {
+      ...winner,
+      publicTypeMeta: {
+        ...winner.publicTypeMeta,
+        ...(searchAliases.length ? { searchAliases } : {}),
+      },
+      ...(warnings.length ? { warnings } : {}),
+    },
+    getFlowSurfacePublicCapabilityModelUses(winner),
+  );
+}
+
+function dedupeCapabilityWarnings(warnings: FlowSurfacePublicCapabilityItem['warnings']) {
+  const seen = new Set<string>();
+  return (warnings || []).filter((warning) => {
+    const key = [warning.code, warning.message].join('::');
+    if (seen.has(key)) {
+      return false;
+    }
+    seen.add(key);
+    return true;
+  });
 }
 
 function arbitratePublicTypeConflicts(items: FlowSurfacePublicCapabilityItem[]) {
@@ -448,12 +556,15 @@ function markPublicTypeConflict(item: FlowSurfacePublicCapabilityItem): FlowSurf
           },
         ]),
   ];
-  return {
-    ...item,
-    availability,
-    supportLevel: resolveSupportLevel(availability),
-    warnings,
-  };
+  return setFlowSurfacePublicCapabilityModelUse(
+    {
+      ...item,
+      availability,
+      supportLevel: resolveSupportLevel(availability),
+      warnings,
+    },
+    getFlowSurfacePublicCapabilityModelUses(item),
+  );
 }
 
 function resolveSupportLevel(availability: FlowSurfacePublicCapabilityItem['availability']) {
@@ -769,7 +880,7 @@ function projectCatalogCapabilityItem(
   if (!request.expand.has('item.semantic')) {
     capability.semantic = toLightCapabilitySemantic(semantic);
   }
-  return capability;
+  return setFlowSurfacePublicCapabilityModelUse(capability, item.use);
 }
 
 function sanitizeCatalogCapabilitySchema(schema: FlowSurfaceCatalogItem['settingsSchema']) {

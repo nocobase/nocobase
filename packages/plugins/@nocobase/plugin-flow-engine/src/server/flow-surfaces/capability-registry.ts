@@ -39,6 +39,7 @@ const INTERNAL_PUBLIC_PAYLOAD_KEYS = new Set([
   'lens',
   'implementation',
 ]);
+const capabilityModelUses = new WeakMap<FlowSurfacePublicCapabilityItem, string[]>();
 
 export type FlowSurfaceCapabilityRegistryLike = Pick<FlowSurfaceCapabilityProviderRegistry, 'listProviders'>;
 
@@ -61,7 +62,31 @@ export async function collectProviderPublicCapabilities(
   options: FlowSurfaceProviderRegistryProjectionOptions,
 ): Promise<FlowSurfacePublicCapabilityItem[]> {
   const normalized = await collectNormalizedProviderCapabilities(options);
-  return normalized.map((item) => item.publicItem);
+  return normalized.map((item) =>
+    setFlowSurfacePublicCapabilityModelUse(item.publicItem, [
+      item.implementation.modelUse,
+      ...(item.implementation.legacyModelUses || []),
+    ]),
+  );
+}
+
+export function setFlowSurfacePublicCapabilityModelUse<T extends FlowSurfacePublicCapabilityItem>(
+  item: T,
+  modelUse?: string | readonly string[],
+): T {
+  const normalized = Array.from(
+    new Set(
+      (Array.isArray(modelUse) ? modelUse : [modelUse]).map((value) => String(value || '').trim()).filter(Boolean),
+    ),
+  );
+  if (normalized.length) {
+    capabilityModelUses.set(item, normalized);
+  }
+  return item;
+}
+
+export function getFlowSurfacePublicCapabilityModelUses(item: FlowSurfacePublicCapabilityItem) {
+  return capabilityModelUses.get(item) || [];
 }
 
 export function collectAutoSnapshotPublicCapabilities(
@@ -94,29 +119,32 @@ export function collectAutoSnapshotPublicCapabilities(
         const searchAliases = sanitizePublicAliasList([publicType, label], warnings);
         const semanticAliases = sanitizePublicAliasList([publicType], warnings);
         const publicWarnings = sanitizeWarnings(dedupeWarnings(warnings));
-        return {
-          kind: candidate.kind,
-          publicType,
-          publicTypeMeta: {
-            value: publicType,
-            source: 'autoNamespaced',
-            searchAliases,
-          },
-          label,
-          ownerPlugin,
-          origin: AUTO_SNAPSHOT_ORIGIN,
-          semantic: {
-            title: label,
-            aliases: semanticAliases,
-          },
-          availability: buildReadOnlyAutoSnapshotAvailability(),
-          supportLevel: 'readback-only',
-          confidence: candidate.confidence,
-          warnings: publicWarnings,
-          identity: {
-            capabilityId: [ownerPlugin, 'autoSnapshot', candidate.kind, publicType].join(':'),
-          },
-        } satisfies FlowSurfacePublicCapabilityItem;
+        return setFlowSurfacePublicCapabilityModelUse(
+          {
+            kind: candidate.kind,
+            publicType,
+            publicTypeMeta: {
+              value: publicType,
+              source: 'autoNamespaced',
+              searchAliases,
+            },
+            label,
+            ownerPlugin,
+            origin: AUTO_SNAPSHOT_ORIGIN,
+            semantic: {
+              title: label,
+              aliases: semanticAliases,
+            },
+            availability: buildReadOnlyAutoSnapshotAvailability(hasSnapshotStaleWarning(publicWarnings)),
+            supportLevel: 'readback-only',
+            confidence: candidate.confidence,
+            warnings: publicWarnings,
+            identity: {
+              capabilityId: [ownerPlugin, 'autoSnapshot', candidate.kind, publicType].join(':'),
+            },
+          } satisfies FlowSurfacePublicCapabilityItem,
+          candidate.modelUse,
+        );
       })
       .filter((item): item is FlowSurfacePublicCapabilityItem => !!item);
   });
@@ -220,9 +248,15 @@ function normalizeOwnerPlugin(ownerPlugin: string) {
   return String(ownerPlugin || '').trim();
 }
 
-function buildReadOnlyAutoSnapshotAvailability(): FlowSurfaceCapabilityAvailability {
+function buildReadOnlyAutoSnapshotAvailability(stale: boolean): FlowSurfaceCapabilityAvailability {
   return {
-    render: { supported: true },
+    render: stale
+      ? {
+          supported: false,
+          reasonCode: 'snapshot-stale',
+          reasonSource: 'registry',
+        }
+      : { supported: true },
     readback: { supported: true },
     create: {
       supported: false,
@@ -235,6 +269,10 @@ function buildReadOnlyAutoSnapshotAvailability(): FlowSurfaceCapabilityAvailabil
       reasonSource: 'registry',
     },
   };
+}
+
+function hasSnapshotStaleWarning(warnings: FlowSurfaceCapabilityWarning[]) {
+  return warnings.some((warning) => warning.code === 'snapshot-stale');
 }
 
 function dedupeWarnings(warnings: FlowSurfaceCapabilityWarning[]) {

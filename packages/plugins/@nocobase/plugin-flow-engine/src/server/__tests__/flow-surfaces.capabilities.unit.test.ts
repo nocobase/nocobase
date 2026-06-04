@@ -23,6 +23,7 @@ import type {
   FlowSurfaceCapabilitiesValues,
   FlowSurfaceCapabilityKind,
   FlowSurfaceCapabilityManifestItem,
+  FlowSurfaceCapabilityWarning,
   FlowSurfaceCatalogResponse,
   FlowSurfaceCatalogValues,
 } from '../flow-surfaces/types';
@@ -228,18 +229,13 @@ describe('flowSurfaces capabilities projection', () => {
     };
   }
 
-  function createGanttAutoSnapshot() {
+  function createGanttAutoSnapshot(options: { warnings?: FlowSurfaceCapabilityWarning[]; menuLabel?: string } = {}) {
     return buildFlowSurfaceAutoSnapshot({
       plugin: '@nocobase/plugin-gantt',
       generatedAt: '2026-06-04T00:00:00.000Z',
       sourceHash: 'snapshot-source-hash',
       extractorVersion: 'test',
-      warnings: [
-        {
-          code: 'snapshot-stale',
-          message: 'Snapshot was generated before the current plugin build.',
-        },
-      ],
+      warnings: options.warnings,
       events: [
         {
           type: 'model.registered',
@@ -252,7 +248,7 @@ describe('flowSurfaces capabilities projection', () => {
         {
           type: 'menu.itemRegistered',
           menuKey: 'gantt',
-          label: 'Gantt',
+          label: options.menuLabel || 'Gantt',
           modelUse: 'GanttBlockModel',
           slot: 'blocks',
           createModelOptionsStatus: 'static',
@@ -267,6 +263,49 @@ describe('flowSurfaces capabilities projection', () => {
           title: 'Gantt settings',
           staticStatus: 'static',
           source: 'packages/plugins/@nocobase/plugin-gantt/src/client-v2/models/GanttBlockModel.settings.tsx',
+          evidenceSource: 'ast',
+          confidence: 'medium',
+        },
+      ],
+    });
+  }
+
+  function createSnapshotStaleWarning(message = 'Snapshot was generated before the current plugin build.') {
+    return {
+      code: 'snapshot-stale' as const,
+      message,
+    };
+  }
+
+  function createTableAlternativeAutoSnapshot() {
+    return buildFlowSurfaceAutoSnapshot({
+      plugin: '@nocobase/plugin-conflict',
+      generatedAt: '2026-06-04T00:00:00.000Z',
+      sourceHash: 'snapshot-source-hash',
+      extractorVersion: 'test',
+      warnings: [
+        {
+          code: 'readback-parity-missing',
+          message: 'Snapshot readback parity has not been checked.',
+        },
+      ],
+      events: [
+        {
+          type: 'model.registered',
+          modelUse: 'TableAlternativeBlockModel',
+          className: 'TableAlternativeBlockModel',
+          source: 'packages/plugins/@nocobase/plugin-conflict/src/client-v2/plugin.tsx',
+          evidenceSource: 'runtime',
+          confidence: 'high',
+        },
+        {
+          type: 'menu.itemRegistered',
+          menuKey: 'tableAlternative',
+          label: 'Shadow table alternative',
+          modelUse: 'TableAlternativeBlockModel',
+          slot: 'blocks',
+          createModelOptionsStatus: 'static',
+          source: 'packages/plugins/@nocobase/plugin-conflict/src/client-v2/plugin.tsx',
           evidenceSource: 'ast',
           confidence: 'medium',
         },
@@ -941,15 +980,126 @@ describe('flowSurfaces capabilities projection', () => {
     ]);
   });
 
-  it('should expose auto snapshot diagnostics only when requested', async () => {
+  it('should merge fresh auto snapshot aliases into higher-priority provider capabilities', async () => {
     const response = await buildFlowSurfaceCapabilitiesResponse(
+      {
+        query: 'shadow',
+      },
+      {
+        enabledPackages: new Set(['@nocobase/plugin-gantt']),
+        providerRegistry: createProviderRegistry([createGanttProvider()]),
+        autoSnapshots: [
+          createGanttAutoSnapshot({
+            menuLabel: 'Shadow timeline',
+          }),
+        ],
+        catalog: createCatalogRecorder().catalog,
+        generatedAt: '2026-06-04T00:00:00.000Z',
+      },
+    );
+
+    expect(response.data).toEqual([
+      expect.objectContaining({
+        publicType: 'gantt',
+        origin: 'canaryOverlay',
+        label: 'Gantt',
+        publicTypeMeta: expect.objectContaining({
+          source: 'canary',
+          searchAliases: expect.arrayContaining(['Shadow timeline']),
+        }),
+        availability: expect.objectContaining({
+          create: expect.objectContaining({
+            supported: true,
+          }),
+        }),
+      }),
+    ]);
+    expect(response.data[0]).not.toHaveProperty('warnings');
+    expect(response.meta.registrySources).toEqual([{ origin: 'canaryOverlay', count: 1 }]);
+  });
+
+  it('should merge stale auto snapshot warnings into provider diagnostics without default aliases', async () => {
+    const baseOptions = {
+      enabledPackages: new Set(['@nocobase/plugin-gantt']),
+      providerRegistry: createProviderRegistry([createGanttProvider()]),
+      autoSnapshots: [
+        createGanttAutoSnapshot({
+          menuLabel: 'Shadow timeline',
+          warnings: [createSnapshotStaleWarning()],
+        }),
+      ],
+      catalog: createCatalogRecorder().catalog,
+      generatedAt: '2026-06-04T00:00:00.000Z',
+    };
+    const hiddenAlias = await buildFlowSurfaceCapabilitiesResponse(
+      {
+        query: 'shadow',
+      },
+      baseOptions,
+    );
+    const diagnostics = await buildFlowSurfaceCapabilitiesResponse(
+      {
+        publicTypes: ['gantt'],
+        expand: ['item.warnings'],
+      },
+      baseOptions,
+    );
+
+    expect(hiddenAlias.data).toEqual([]);
+    expect(diagnostics.data).toEqual([
+      expect.objectContaining({
+        publicType: 'gantt',
+        origin: 'canaryOverlay',
+        label: 'Gantt',
+        publicTypeMeta: expect.not.objectContaining({
+          searchAliases: expect.arrayContaining(['Shadow timeline']),
+        }),
+        availability: expect.objectContaining({
+          create: expect.objectContaining({
+            supported: true,
+          }),
+        }),
+        warnings: expect.arrayContaining([
+          expect.objectContaining({
+            code: 'snapshot-stale',
+          }),
+        ]),
+      }),
+    ]);
+    expect(diagnostics.data[0].warnings).not.toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          code: 'auto-discovered-readonly',
+        }),
+      ]),
+    );
+  });
+
+  it('should expose stale auto snapshot diagnostics only with includeUnavailable', async () => {
+    const hidden = await buildFlowSurfaceCapabilitiesResponse(
       {
         publicTypes: ['pluginGantt.gantt'],
         expand: ['item.identity', 'item.warnings'],
       },
       {
         enabledPackages: new Set(['@nocobase/plugin-gantt']),
-        autoSnapshots: [createGanttAutoSnapshot()],
+        autoSnapshots: [createGanttAutoSnapshot({ warnings: [createSnapshotStaleWarning()] })],
+        catalog: createCatalogRecorder().catalog,
+        generatedAt: '2026-06-04T00:00:00.000Z',
+      },
+    );
+
+    expect(hidden.data).toEqual([]);
+
+    const response = await buildFlowSurfaceCapabilitiesResponse(
+      {
+        publicTypes: ['pluginGantt.gantt'],
+        includeUnavailable: true,
+        expand: ['item.identity', 'item.warnings'],
+      },
+      {
+        enabledPackages: new Set(['@nocobase/plugin-gantt']),
+        autoSnapshots: [createGanttAutoSnapshot({ warnings: [createSnapshotStaleWarning()] })],
         catalog: createCatalogRecorder().catalog,
         generatedAt: '2026-06-04T00:00:00.000Z',
       },
@@ -960,6 +1110,13 @@ describe('flowSurfaces capabilities projection', () => {
         identity: {
           capabilityId: '@nocobase/plugin-gantt:autoSnapshot:block:pluginGantt.gantt',
         },
+        availability: expect.objectContaining({
+          render: expect.objectContaining({
+            supported: false,
+            reasonCode: 'snapshot-stale',
+            reasonSource: 'registry',
+          }),
+        }),
         warnings: expect.arrayContaining([
           expect.objectContaining({
             code: 'auto-discovered-readonly',
@@ -982,6 +1139,7 @@ describe('flowSurfaces capabilities projection', () => {
     const list = await buildFlowSurfaceCapabilitiesResponse(
       {
         publicTypes: ['pluginUnsafe.unsafe'],
+        includeUnavailable: true,
         expand: ['item.semantic', 'item.warnings'],
       },
       options,
@@ -989,6 +1147,7 @@ describe('flowSurfaces capabilities projection', () => {
     const detail = await buildFlowSurfaceDescribeCapabilityResponse(
       {
         publicType: 'pluginUnsafe.unsafe',
+        includeUnavailable: true,
         expand: ['item.semantic', 'item.warnings'],
       },
       options,
@@ -1256,6 +1415,57 @@ describe('flowSurfaces capabilities projection', () => {
         ]),
       }),
     ]);
+  });
+
+  it('should preserve absorbed auto snapshot diagnostics after public type conflict marking', async () => {
+    const providerRegistry = createProviderRegistry([createConflictingTableProvider()]);
+    const response = await buildFlowSurfaceCapabilitiesResponse(
+      {
+        publicTypes: ['table'],
+        ownerPlugins: ['@nocobase/plugin-conflict'],
+        includeUnavailable: true,
+        expand: ['item.warnings'],
+      },
+      {
+        enabledPackages: new Set(['@nocobase/plugin-conflict']),
+        providerRegistry,
+        autoSnapshots: [createTableAlternativeAutoSnapshot()],
+        catalog: createCatalogRecorder().catalog,
+        generatedAt: '2026-06-04T00:00:00.000Z',
+      },
+    );
+
+    expect(response.data).toEqual([
+      expect.objectContaining({
+        ownerPlugin: '@nocobase/plugin-conflict',
+        publicType: 'table',
+        publicTypeMeta: expect.objectContaining({
+          searchAliases: expect.arrayContaining(['Shadow table alternative']),
+        }),
+        availability: expect.objectContaining({
+          create: expect.objectContaining({
+            supported: false,
+            reasonCode: 'public-type-conflict',
+            reasonSource: 'registry',
+          }),
+        }),
+        warnings: expect.arrayContaining([
+          expect.objectContaining({
+            code: 'readback-parity-missing',
+          }),
+          expect.objectContaining({
+            code: 'public-type-conflict',
+          }),
+        ]),
+      }),
+    ]);
+    expect(response.data[0].warnings).not.toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          code: 'auto-discovered-readonly',
+        }),
+      ]),
+    );
   });
 
   it('should hide provider capabilities when their owner plugin is not enabled', async () => {
