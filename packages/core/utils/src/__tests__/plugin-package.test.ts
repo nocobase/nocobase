@@ -128,3 +128,5 @@ describe('plugin-package', () => {
     expect(byPackageName.get('@my-project/plugin-local')?.name).toBe('@my-project/plugin-local');
   });
 });
+
+// test
