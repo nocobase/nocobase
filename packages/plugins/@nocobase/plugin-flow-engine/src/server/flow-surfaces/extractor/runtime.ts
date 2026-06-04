@@ -1,0 +1,391 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
+import type { FlowSurfaceExtractionRecorder } from './recorder';
+import { types as nodeUtilTypes } from 'util';
+import { createFlowSurfaceExtractorNoopBridgeReturn } from './guards';
+import type {
+  FlowSurfaceExtractorCreateModelOptionsStatus,
+  FlowSurfaceExtractorFlowStaticStatus,
+  FlowSurfaceExtractorLabelFields,
+  FlowSurfaceFieldBindingRole,
+} from './types';
+
+type FlowSurfaceUnknownFlowDefinition = {
+  key?: unknown;
+  title?: unknown;
+  sort?: unknown;
+  steps?: unknown;
+};
+
+type FlowSurfaceUnknownModelDefinition = {
+  label?: unknown;
+  title?: unknown;
+  group?: unknown;
+  createModelOptions?: unknown;
+};
+
+export type FlowSurfaceMockFlowEngine = {
+  registerModels(models: Record<string, unknown>): void;
+  registerModelLoaders(loaders: Record<string, unknown>): void;
+  registerActions(actions: Record<string, unknown>): void;
+  registerFlow(flow: FlowSurfaceUnknownFlowDefinition): void;
+  registerFlow(key: string, flow: FlowSurfaceUnknownFlowDefinition): void;
+};
+
+export type FlowSurfaceMockClientApp = {
+  flowEngine: FlowSurfaceMockFlowEngine;
+  eventBus: {
+    addEventListener(eventName: unknown, listener: unknown): void;
+    removeEventListener(eventName: unknown, listener: unknown): void;
+  };
+  i18n: {
+    addResources(lang: string, namespace: string, resource: unknown): void;
+    t(key: string): string;
+  };
+  pm: {
+    get(pluginName: unknown): ReturnType<typeof createFlowSurfaceExtractorNoopBridgeReturn>;
+  };
+};
+
+export type FlowSurfaceMockClientPluginContext = {
+  app: FlowSurfaceMockClientApp;
+  flowEngine: FlowSurfaceMockFlowEngine;
+  options: {
+    packageName: string;
+  };
+};
+
+export function createFlowSurfaceMockFlowEngine(input: {
+  recorder: FlowSurfaceExtractionRecorder;
+  source?: string;
+}): FlowSurfaceMockFlowEngine {
+  const source = input.source || 'runtime';
+  return {
+    registerModels: (models) => {
+      input.recorder.recordModels(models, source, 'high', 'runtime');
+    },
+    registerModelLoaders: (loaders) => {
+      input.recorder.recordModelLoaders(loaders, source, 'high', 'runtime');
+    },
+    registerActions() {
+      // Action registration is intentionally ignored by the extractor runtime.
+    },
+    registerFlow: (keyOrDefinition, flowDefinition) => {
+      const flow = normalizeFlowRegistration(keyOrDefinition, flowDefinition);
+      input.recorder.recordFlow({
+        flowKey: flow.flowKey,
+        title: normalizeTitle(getOwnDataPropertyValue(flow.definition, 'title')),
+        sort: normalizeNumber(getOwnDataPropertyValue(flow.definition, 'sort')),
+        staticStatus: getFlowStaticStatus(flow.definition),
+        source,
+        evidenceSource: 'runtime',
+        confidence: 'medium',
+      });
+    },
+  };
+}
+
+export function createFlowSurfaceMockClientPluginContext(input: {
+  packageName: string;
+  recorder: FlowSurfaceExtractionRecorder;
+  source?: string;
+}): FlowSurfaceMockClientPluginContext {
+  const flowEngine = createFlowSurfaceMockFlowEngine({
+    recorder: input.recorder,
+    source: input.source,
+  });
+  return {
+    app: {
+      flowEngine,
+      eventBus: {
+        addEventListener() {
+          // Event listener registration is intentionally ignored by the extractor runtime.
+        },
+        removeEventListener() {
+          // Event listener removal is intentionally ignored by the extractor runtime.
+        },
+      },
+      i18n: {
+        addResources() {
+          // Locale registration is intentionally ignored by the extractor runtime.
+        },
+        t(key) {
+          return key;
+        },
+      },
+      pm: {
+        get() {
+          return createFlowSurfaceExtractorNoopBridgeReturn();
+        },
+      },
+    },
+    flowEngine,
+    options: {
+      packageName: input.packageName,
+    },
+  };
+}
+
+export function createFlowSurfaceMockModelClass(input: {
+  modelUse: string;
+  recorder: FlowSurfaceExtractionRecorder;
+  fieldBindingRole?: FlowSurfaceFieldBindingRole;
+  source?: string;
+}) {
+  const source = input.source || 'runtime';
+  return class FlowSurfaceExtractorModel {
+    static registerFlow(flow: FlowSurfaceUnknownFlowDefinition): void;
+    static registerFlow(key: string, flow: FlowSurfaceUnknownFlowDefinition): void;
+    static registerFlow(
+      keyOrDefinition: string | FlowSurfaceUnknownFlowDefinition,
+      flowDefinition?: FlowSurfaceUnknownFlowDefinition,
+    ) {
+      const flow = normalizeFlowRegistration(keyOrDefinition, flowDefinition);
+      input.recorder.recordFlow({
+        modelUse: input.modelUse,
+        flowKey: flow.flowKey,
+        title: normalizeTitle(getOwnDataPropertyValue(flow.definition, 'title')),
+        sort: normalizeNumber(getOwnDataPropertyValue(flow.definition, 'sort')),
+        staticStatus: getFlowStaticStatus(flow.definition),
+        source,
+        evidenceSource: 'runtime',
+        confidence: 'high',
+      });
+    }
+
+    static define(definition: FlowSurfaceUnknownModelDefinition) {
+      const labelFields = firstLabelFields(
+        normalizeLabel(getOwnDataPropertyValue(definition, 'label')),
+        normalizeLabel(getOwnDataPropertyValue(definition, 'title')),
+      );
+      input.recorder.recordMenuItem({
+        ...labelFields,
+        modelUse: input.modelUse,
+        slot: inferSlotFromModelUse(input.modelUse),
+        createModelOptionsStatus: getCreateModelOptionsStatus(
+          getOwnDataPropertyValue(definition, 'createModelOptions'),
+        ),
+        source,
+        evidenceSource: 'runtime',
+        confidence: 'medium',
+      });
+    }
+
+    static bindModelToInterface(modelUse: unknown, interfaceName: unknown) {
+      const modelUseValue = normalizeString(modelUse) || input.modelUse;
+      normalizeStringList(interfaceName).forEach((fieldInterface) => {
+        input.recorder.recordFieldBinding({
+          fieldInterface,
+          modelUse: modelUseValue,
+          role: input.fieldBindingRole || 'wrapper',
+          source,
+          evidenceSource: 'runtime',
+          confidence: 'medium',
+        });
+      });
+    }
+  };
+}
+
+export function createFlowSurfaceMockFieldBindingModelClass(input: {
+  role: FlowSurfaceFieldBindingRole;
+  recorder: FlowSurfaceExtractionRecorder;
+  source?: string;
+}) {
+  const source = input.source || 'runtime';
+  return class FlowSurfaceExtractorFieldBindingModel {
+    static bindModelToInterface(modelUse: unknown, interfaceName: unknown) {
+      const modelUseValue = normalizeString(modelUse);
+      normalizeStringList(interfaceName).forEach((fieldInterface) => {
+        input.recorder.recordFieldBinding({
+          fieldInterface,
+          ...(modelUseValue ? { modelUse: modelUseValue } : {}),
+          role: input.role,
+          source,
+          evidenceSource: 'runtime',
+          confidence: 'medium',
+        });
+      });
+    }
+  };
+}
+
+export function getFlowStaticStatus(value: unknown): FlowSurfaceExtractorFlowStaticStatus {
+  if (!value || typeof value !== 'object') {
+    return 'unresolved';
+  }
+  return containsFunction(value) ? 'dynamic' : 'static';
+}
+
+export function getCreateModelOptionsStatus(value: unknown): FlowSurfaceExtractorCreateModelOptionsStatus {
+  if (typeof value === 'undefined') {
+    return 'unresolved';
+  }
+  return containsFunction(value) ? 'dynamic' : 'static';
+}
+
+function normalizeFlowRegistration(
+  keyOrDefinition: string | FlowSurfaceUnknownFlowDefinition,
+  flowDefinition?: FlowSurfaceUnknownFlowDefinition,
+) {
+  if (typeof keyOrDefinition === 'string') {
+    return {
+      flowKey: normalizeString(keyOrDefinition),
+      definition: flowDefinition,
+    };
+  }
+  return {
+    flowKey: normalizeString(getOwnDataPropertyValue(keyOrDefinition, 'key')),
+    definition: keyOrDefinition,
+  };
+}
+
+function containsFunction(value: unknown, seen: WeakSet<object> = new WeakSet()): boolean {
+  if (typeof value === 'function') {
+    return true;
+  }
+  if (!value || typeof value !== 'object') {
+    return false;
+  }
+  if (isProxy(value)) {
+    return true;
+  }
+  if (seen.has(value)) {
+    return false;
+  }
+  seen.add(value);
+  const descriptors = getOwnDataDescriptors(value);
+  if (!descriptors) {
+    return true;
+  }
+  return Object.values(descriptors).some((descriptor) => {
+    if (!('value' in descriptor)) {
+      return true;
+    }
+    return containsFunction(descriptor.value, seen);
+  });
+}
+
+function normalizeString(value: unknown) {
+  return typeof value === 'string' ? value.trim() || undefined : undefined;
+}
+
+function normalizeNumber(value: unknown) {
+  return typeof value === 'number' ? value : undefined;
+}
+
+function normalizeTitle(value: unknown) {
+  if (typeof value === 'string') {
+    return value.trim() || undefined;
+  }
+  if (!value || typeof value !== 'object') {
+    return undefined;
+  }
+  return (
+    normalizeString(getOwnDataPropertyValue(value, 'fallback')) ||
+    normalizeString(getOwnDataPropertyValue(value, 'title')) ||
+    normalizeString(getOwnDataPropertyValue(value, 'key'))
+  );
+}
+
+function normalizeLabel(value: unknown): FlowSurfaceExtractorLabelFields {
+  if (typeof value === 'string') {
+    const normalized = normalizeString(value);
+    return normalized
+      ? {
+          label: normalized,
+        }
+      : {};
+  }
+  if (!value || typeof value !== 'object') {
+    return {};
+  }
+  const labelText =
+    normalizeString(getOwnDataPropertyValue(value, 'label')) ||
+    normalizeString(getOwnDataPropertyValue(value, 'text')) ||
+    normalizeString(getOwnDataPropertyValue(value, 'title'));
+  const labelKey = normalizeString(getOwnDataPropertyValue(value, 'key'));
+  const labelFallback =
+    normalizeString(getOwnDataPropertyValue(value, 'fallback')) ||
+    normalizeString(getOwnDataPropertyValue(value, 'defaultValue'));
+  if (!labelText && !labelKey && !labelFallback) {
+    return {};
+  }
+  return {
+    label: labelText || labelFallback || labelKey,
+    ...(labelText ? { labelText } : {}),
+    ...(labelKey ? { labelKey } : {}),
+    ...(labelFallback ? { labelFallback } : {}),
+  };
+}
+
+function firstLabelFields(...items: FlowSurfaceExtractorLabelFields[]) {
+  return items.find((item) => item.label || item.labelText || item.labelKey || item.labelFallback) || {};
+}
+
+function normalizeStringList(value: unknown): string[] {
+  if (value && typeof value === 'object' && isProxy(value)) {
+    return [];
+  }
+  if (Array.isArray(value)) {
+    return value.flatMap((item) => {
+      const normalized = normalizeString(item);
+      return normalized ? [normalized] : [];
+    });
+  }
+  const normalized = normalizeString(value);
+  return normalized ? [normalized] : [];
+}
+
+function inferSlotFromModelUse(modelUse: string) {
+  if (/(?:Action|ActionGroup)Model$/.test(modelUse)) {
+    return 'actions';
+  }
+  if (/FieldModel$/.test(modelUse)) {
+    return 'fields';
+  }
+  if (/(?:Item|Column|FieldGroup)Model$/.test(modelUse)) {
+    return 'fields';
+  }
+  if (/BlockModel$/.test(modelUse)) {
+    return 'blocks';
+  }
+  return undefined;
+}
+
+function getOwnDataPropertyValue(value: unknown, property: string) {
+  if (!value || typeof value !== 'object') {
+    return undefined;
+  }
+  if (isProxy(value)) {
+    return undefined;
+  }
+  try {
+    const descriptor = Object.getOwnPropertyDescriptor(value, property);
+    return descriptor && 'value' in descriptor ? descriptor.value : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+function getOwnDataDescriptors(value: object) {
+  if (isProxy(value)) {
+    return undefined;
+  }
+  try {
+    return Object.getOwnPropertyDescriptors(value);
+  } catch {
+    return undefined;
+  }
+}
+
+function isProxy(value: object) {
+  return nodeUtilTypes.isProxy(value);
+}
