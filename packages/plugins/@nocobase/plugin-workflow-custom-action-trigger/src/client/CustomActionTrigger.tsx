@@ -129,11 +129,11 @@ export default class extends Trigger {
       required: true,
       'x-decorator': 'FormItem',
       'x-component': 'DataSourceCollectionCascader',
-      'x-component-props': {
-        dataSourceFilter(item) {
-          return item.options.key === 'main' || item.options.isDBInstance;
-        },
-      },
+      // 'x-component-props': {
+      //   dataSourceFilter(item) {
+      //     return item.options.key === 'main' || item.options.isDBInstance;
+      //   },
+      // },
       ['x-reactions']: [
         {
           dependencies: ['.type'],
