@@ -21,6 +21,8 @@ import { WORKER_JOB_WORKFLOW_PROCESS } from './Plugin';
 
 const EXECUTION_ACQUIRE_MAX_ATTEMPTS = 5;
 
+type AcquireRetryLogger = Pick<ReturnType<PluginWorkflowServer['getLogger']>, 'warn'>;
+
 type Pending = {
   execution: ExecutionModel;
   job?: JobModel;
@@ -415,9 +417,8 @@ export default class Dispatcher {
       this.plugin.db.options.dialect === 'sqlite' ? [][0] : Transaction.ISOLATION_LEVELS.REPEATABLE_READ;
     let fetched: ExecutionModel | null = null;
     try {
-      for (let attempt = 1; !fetched && attempt <= EXECUTION_ACQUIRE_MAX_ATTEMPTS; attempt++) {
-        let shouldRetry = false;
-        try {
+      await this.acquireWithRetry(
+        async () => {
           await this.plugin.db.sequelize.transaction({ isolationLevel }, async (transaction) => {
             const ExecutionModelClass = this.plugin.db.getModel('executions');
             const [affected] = await ExecutionModelClass.update(
@@ -436,23 +437,14 @@ export default class Dispatcher {
             await execution.reload({ transaction });
             fetched = execution;
           });
-        } catch (error) {
-          if (!this.isConcurrentAcquireError(error)) {
-            throw error;
-          }
-          shouldRetry = true;
-          logger.warn(`acquiring pending execution (${execution.id}) conflicted with another worker, retrying`, {
-            error,
-          });
-        }
-        if (!shouldRetry) {
-          break;
-        }
-        if (attempt >= EXECUTION_ACQUIRE_MAX_ATTEMPTS) {
-          logger.warn(`acquiring pending execution (${execution.id}) reached max retry attempts`);
-          break;
-        }
-      }
+          return false;
+        },
+        {
+          logger,
+          conflictMessage: `acquiring pending execution (${execution.id}) conflicted with another worker, retrying`,
+          maxAttemptsMessage: `acquiring pending execution (${execution.id}) reached max retry attempts`,
+        },
+      );
     } catch (error) {
       fetched = null;
       logger.error(`acquiring pending execution failed: ${error.message}`, { error });
@@ -465,9 +457,9 @@ export default class Dispatcher {
       this.plugin.db.options.dialect === 'sqlite' ? [][0] : Transaction.ISOLATION_LEVELS.REPEATABLE_READ;
     let fetched: ExecutionModel | null = null;
     try {
-      for (let attempt = 1; !fetched && attempt <= EXECUTION_ACQUIRE_MAX_ATTEMPTS; attempt++) {
-        let shouldRetry = false;
-        try {
+      await this.acquireWithRetry(
+        async () => {
+          let shouldRetry = false;
           await this.plugin.db.sequelize.transaction(
             {
               isolationLevel,
@@ -486,7 +478,6 @@ export default class Dispatcher {
                 return;
               }
 
-              this.plugin.getLogger(execution.workflowId).info(`execution (${execution.id}) fetched from db`);
               const ExecutionModelClass = this.plugin.db.getModel('executions');
               const [affected] = await ExecutionModelClass.update(
                 {
@@ -509,34 +500,53 @@ export default class Dispatcher {
                 return;
               }
 
+              this.plugin.getLogger(execution.workflowId).info(`execution (${execution.id}) fetched from db`);
               await execution.reload({ transaction });
               execution.workflow = this.plugin.enabledCache.get(execution.workflowId);
               fetched = execution;
             },
           );
-        } catch (error) {
-          if (!this.isConcurrentAcquireError(error)) {
-            throw error;
-          }
-          shouldRetry = true;
-          this.plugin.getLogger('dispatcher').warn(`acquiring execution conflicted with another worker, retrying`, {
-            error,
-          });
-        }
-        if (!shouldRetry) {
-          break;
-        }
-        if (attempt >= EXECUTION_ACQUIRE_MAX_ATTEMPTS) {
-          this.plugin
-            .getLogger('dispatcher')
-            .warn(`acquiring execution reached max retry attempts, will retry on next dispatch`);
-          break;
-        }
-      }
+          return shouldRetry;
+        },
+        {
+          logger: this.plugin.getLogger('dispatcher'),
+          conflictMessage: `acquiring execution conflicted with another worker, retrying`,
+          maxAttemptsMessage: `acquiring execution reached max retry attempts, will retry on next dispatch`,
+        },
+      );
     } catch (error) {
       this.plugin.getLogger('dispatcher').error(`fetching execution from db failed: ${error.message}`, { error });
     }
     return fetched;
+  }
+
+  private async acquireWithRetry(
+    acquire: () => Promise<boolean>,
+    options: {
+      logger: AcquireRetryLogger;
+      conflictMessage: string;
+      maxAttemptsMessage: string;
+    },
+  ) {
+    for (let attempt = 1; attempt <= EXECUTION_ACQUIRE_MAX_ATTEMPTS; attempt++) {
+      let shouldRetry = false;
+      try {
+        shouldRetry = await acquire();
+      } catch (error) {
+        if (!this.isConcurrentAcquireError(error)) {
+          throw error;
+        }
+        shouldRetry = true;
+        options.logger.warn(options.conflictMessage, { error });
+      }
+      if (!shouldRetry) {
+        break;
+      }
+      if (attempt >= EXECUTION_ACQUIRE_MAX_ATTEMPTS) {
+        options.logger.warn(options.maxAttemptsMessage);
+        break;
+      }
+    }
   }
 
   private getExecutionLockKey(executionId: number | string) {
@@ -558,7 +568,7 @@ export default class Dispatcher {
     const code = databaseError.parent?.code || databaseError.original?.code;
     const errno = databaseError.parent?.errno || databaseError.original?.errno;
 
-    return code === '40001' || code === 'ER_LOCK_DEADLOCK' || errno === 1205 || errno === 1213;
+    return code === '40001' || code === '40P01' || code === 'ER_LOCK_DEADLOCK' || errno === 1205 || errno === 1213;
   }
 
   private async process(

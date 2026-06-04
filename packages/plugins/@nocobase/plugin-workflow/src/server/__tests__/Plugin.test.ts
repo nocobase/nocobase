@@ -320,6 +320,16 @@ describe('workflow > Plugin', () => {
       expect(e1.status).toBe(EXECUTION_STATUS.QUEUEING);
     });
 
+    it('should treat postgres deadlock as concurrent acquire error', () => {
+      type ConcurrentAcquireDispatcher = {
+        isConcurrentAcquireError(error: unknown): boolean;
+      };
+      const dispatcher = (plugin as unknown as { dispatcher: ConcurrentAcquireDispatcher }).dispatcher;
+      const error = Object.assign(new Error('deadlock detected'), { parent: { code: '40P01' } });
+
+      expect(dispatcher.isConcurrentAcquireError(error)).toBe(true);
+    });
+
     it.skipIf(process.env['DB_DIALECT'] === 'sqlite')(
       'should acquire queueing execution only once under concurrent dispatch',
       async () => {
