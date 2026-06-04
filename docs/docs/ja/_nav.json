@@ -1,26 +1,26 @@
 [
   {
-    "text": "スタート",
-    "link": "/get-started/how-nocobase-works"
+    "text": "开始",
+    "link": "/quickstart/how-nocobase-works"
   },
   {
     "text": "AI",
     "link": "/ai/"
   },
   {
-    "text": "チュートリアル",
+    "text": "教程",
     "link": "/tutorials/v2/"
   },
   {
-    "text": "マニュアル",
+    "text": "手册",
     "link": "/guide/"
   },
   {
-    "text": "開発",
+    "text": "开发",
     "link": "/development/"
   },
   {
-    "text": "プラグイン",
+    "text": "插件",
     "link": "/plugins"
   },
   {
@@ -28,7 +28,7 @@
     "link": "/api"
   },
   {
-    "text": "ホーム",
-    "link": "https://www.nocobase.com/ja/"
+    "text": "首页",
+    "link": "https://www.nocobase.com/cn/"
   }
 ]
