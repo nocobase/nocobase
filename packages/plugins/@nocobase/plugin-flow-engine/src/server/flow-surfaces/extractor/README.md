@@ -25,6 +25,17 @@ Generated snapshots are stored under `storage/flow-surfaces-capabilities/<plugin
 storage location is a cache for discovery evidence. It is not a plugin API, and publishing a snapshot file is not enough
 to make a capability writable.
 
+## CLI Output
+
+Use `yarn nocobase flow-surfaces extract-capabilities --plugin <package>` for one plugin, or `--all-enabled` to inspect
+enabled plugins. `--all-enabled` keeps processing after a plugin fails and reports a failing exit code at the end if any
+plugin failed.
+
+`--json` prints the machine-readable summary used by CI. Each result includes `ok`, `plugin`, optional `snapshotPath`,
+`eventCount`, `candidateCount`, `warningCount`, and optional `errors`. `--dry-run` skips snapshot writes and prints only
+the summary. `--fail-on-warning` turns extractor warnings into a failing result for CI without changing the read-only
+snapshot contract.
+
 ## What Can Be Discovered
 
 The first extractor layer supports deterministic evidence:

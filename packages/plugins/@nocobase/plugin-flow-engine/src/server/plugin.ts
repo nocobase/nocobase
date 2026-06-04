@@ -9,6 +9,7 @@
 
 import { SequelizeCollectionManager } from '@nocobase/data-source-manager';
 import type { ResourcerContext } from '@nocobase/resourcer';
+import { Application } from '@nocobase/server';
 import { parseLiquidContext, transformSQL } from '@nocobase/utils';
 import { FlowSurfaceCapabilityProviderRegistry } from './flow-surfaces/capability-provider';
 import { registerFlowSurfacesResource } from './flow-surfaces';
@@ -17,6 +18,7 @@ import {
   loadFlowSurfaceAutoSnapshotsFromDirectory,
   type FlowSurfaceAutoSnapshot,
 } from './flow-surfaces/extractor';
+import { registerFlowSurfaceExtractorCommand } from './flow-surfaces/extractor/cli';
 import PluginUISchemaStorageServer from './server';
 import { JSONValue } from './template/resolver';
 import { resolveVariablesBatch, resolveVariablesTemplate } from './variables/resolve';
@@ -24,6 +26,10 @@ import { resolveVariablesBatch, resolveVariablesTemplate } from './variables/res
 export class PluginFlowEngineServer extends PluginUISchemaStorageServer {
   readonly flowSurfaceCapabilityProviders = new FlowSurfaceCapabilityProviderRegistry();
   flowSurfaceAutoSnapshots: readonly FlowSurfaceAutoSnapshot[] = [];
+
+  static async staticImport() {
+    Application.addCommand(registerFlowSurfaceExtractorCommand);
+  }
 
   async afterAdd() {}
 

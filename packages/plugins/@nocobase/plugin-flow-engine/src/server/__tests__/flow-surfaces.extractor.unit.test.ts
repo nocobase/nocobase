@@ -25,11 +25,16 @@ import {
   createFlowSurfaceMockClientPluginContext,
   createFlowSurfaceMockModelClass,
   deriveFlowSurfaceAutoCapabilityCandidates,
+  extractFlowSurfacePluginCapabilities,
+  formatFlowSurfaceExtractorCliSummary,
   getFlowSurfaceAutoSnapshotFileName,
   isFlowSurfaceExtractorAssetImport,
   loadFlowSurfaceAutoSnapshotsFromDirectory,
+  registerFlowSurfaceExtractorCommand,
   resolveFlowSurfacePluginEntry,
   resolveFlowSurfaceExtractorModuleShim,
+  runFlowSurfaceExtractorCommand,
+  runFlowSurfaceExtractorCli,
   runWithFlowSurfaceExtractorGuards,
   writeFlowSurfaceAutoSnapshot,
 } from '../flow-surfaces/extractor';
@@ -3426,6 +3431,583 @@ describe('flowSurfaces extractor scaffold', () => {
         }),
       ]),
     );
+  });
+
+  it('should write snapshots and include result metadata for CLI extraction', async () => {
+    const tempRoot = await realpath(tmpdir());
+    const outDir = await mkdtemp(join(tempRoot, 'flow-surfaces-extractor-cli-write-'));
+    try {
+      const summary = await runFlowSurfaceExtractorCli(
+        [
+          {
+            plugin: '@example/plugin-cli',
+          },
+        ],
+        {
+          outDir,
+          extractPlugin: async (target) => {
+            const snapshot = buildFlowSurfaceAutoSnapshot({
+              plugin: target.plugin,
+              generatedAt: '2026-06-04T00:00:00.000Z',
+              sourceHash: 'source-hash',
+              extractorVersion: 'test',
+              events: [
+                {
+                  type: 'model.registered',
+                  modelUse: 'CliBlockModel',
+                  source: 'src/client-v2/index.ts',
+                  evidenceSource: 'ast',
+                  confidence: 'medium',
+                },
+                {
+                  type: 'menu.itemRegistered',
+                  labelText: 'CLI block',
+                  modelUse: 'CliBlockModel',
+                  slot: 'blocks',
+                  createModelOptionsStatus: 'static',
+                  source: 'src/client-v2/index.ts',
+                  evidenceSource: 'ast',
+                  confidence: 'medium',
+                },
+              ],
+            });
+            return {
+              snapshot,
+              eventCount: 2,
+              candidateCount: deriveFlowSurfaceAutoCapabilityCandidates(snapshot).length,
+              warningCount: snapshot.warnings.length,
+            };
+          },
+        },
+      );
+
+      expect(summary).toMatchObject({
+        ok: true,
+        dryRun: false,
+        exitCode: 0,
+        results: [
+          {
+            ok: true,
+            plugin: '@example/plugin-cli',
+            eventCount: 2,
+            candidateCount: 1,
+            warningCount: 0,
+          },
+        ],
+      });
+      expect(summary.results[0].snapshotPath).toBe(
+        join(await realpath(outDir), getFlowSurfaceAutoSnapshotFileName('@example/plugin-cli')),
+      );
+      expect(JSON.parse(await readFile(summary.results[0].snapshotPath || '', 'utf8'))).toMatchObject({
+        plugin: '@example/plugin-cli',
+        models: [expect.objectContaining({ modelUse: 'CliBlockModel' })],
+      });
+    } finally {
+      await rm(outDir, { recursive: true, force: true });
+    }
+  });
+
+  it('should skip snapshot writes in dry-run CLI mode', async () => {
+    const tempRoot = await realpath(tmpdir());
+    const outDir = await mkdtemp(join(tempRoot, 'flow-surfaces-extractor-cli-dry-'));
+    try {
+      const summary = await runFlowSurfaceExtractorCli(
+        [
+          {
+            plugin: '@example/plugin-dry-run',
+          },
+        ],
+        {
+          dryRun: true,
+          outDir,
+          extractPlugin: async (target) => ({
+            snapshot: buildFlowSurfaceAutoSnapshot({
+              plugin: target.plugin,
+              generatedAt: '2026-06-04T00:00:00.000Z',
+              sourceHash: 'source-hash',
+              extractorVersion: 'test',
+              events: [],
+            }),
+            eventCount: 0,
+            candidateCount: 0,
+            warningCount: 0,
+          }),
+        },
+      );
+
+      expect(summary.results[0]).not.toHaveProperty('snapshotPath');
+      expect(summary).toMatchObject({
+        ok: true,
+        dryRun: true,
+        exitCode: 0,
+      });
+      expect(await readdir(outDir)).toEqual([]);
+    } finally {
+      await rm(outDir, { recursive: true, force: true });
+    }
+  });
+
+  it('should preserve extraction metadata and explain snapshot write failures in CLI output', async () => {
+    const tempRoot = await realpath(tmpdir());
+    const tempDir = await mkdtemp(join(tempRoot, 'flow-surfaces-extractor-cli-write-fail-'));
+    const blockedOutDir = join(tempDir, 'not-a-directory');
+    try {
+      await writeFile(blockedOutDir, 'not a directory\n', 'utf8');
+
+      const summary = await runFlowSurfaceExtractorCli(
+        [
+          {
+            plugin: '@example/plugin-write-fail',
+          },
+        ],
+        {
+          outDir: blockedOutDir,
+          extractPlugin: async (target) => {
+            const snapshot = buildFlowSurfaceAutoSnapshot({
+              plugin: target.plugin,
+              generatedAt: '2026-06-04T00:00:00.000Z',
+              sourceHash: 'source-hash',
+              extractorVersion: 'test',
+              events: [
+                {
+                  type: 'model.registered',
+                  modelUse: 'WriteFailureBlockModel',
+                  source: 'src/client-v2/index.ts',
+                  evidenceSource: 'ast',
+                  confidence: 'medium',
+                },
+                {
+                  type: 'menu.itemRegistered',
+                  labelText: 'Write failure block',
+                  modelUse: 'WriteFailureBlockModel',
+                  slot: 'blocks',
+                  createModelOptionsStatus: 'static',
+                  source: 'src/client-v2/index.ts',
+                  evidenceSource: 'ast',
+                  confidence: 'medium',
+                },
+              ],
+            });
+            return {
+              snapshot,
+              eventCount: 2,
+              candidateCount: deriveFlowSurfaceAutoCapabilityCandidates(snapshot).length,
+              warningCount: snapshot.warnings.length,
+            };
+          },
+        },
+      );
+      const textOutput = formatFlowSurfaceExtractorCliSummary(summary);
+      const [writeError] = summary.results[0].errors || [];
+
+      expect(summary).toMatchObject({
+        ok: false,
+        exitCode: 1,
+        results: [
+          {
+            ok: false,
+            plugin: '@example/plugin-write-fail',
+            eventCount: 2,
+            candidateCount: 1,
+            warningCount: 0,
+          },
+        ],
+      });
+      expect(summary.results[0]).not.toHaveProperty('snapshotPath');
+      expect(writeError?.message).toBeTruthy();
+      expect(textOutput).toContain(`${writeError?.code}: ${writeError?.message.replace(/\s+/g, ' ').trim()}`);
+    } finally {
+      await rm(tempDir, { recursive: true, force: true });
+    }
+  });
+
+  it('should fail CLI summaries on warnings when requested', async () => {
+    const summary = await runFlowSurfaceExtractorCli(
+      [
+        {
+          plugin: '@example/plugin-warning',
+        },
+      ],
+      {
+        dryRun: true,
+        failOnWarning: true,
+        extractPlugin: async (target) => {
+          const snapshot = buildFlowSurfaceAutoSnapshot({
+            plugin: target.plugin,
+            generatedAt: '2026-06-04T00:00:00.000Z',
+            sourceHash: 'source-hash',
+            extractorVersion: 'test',
+            events: [],
+            warnings: [
+              {
+                code: 'extractor-runtime-error',
+                message: 'Runtime extraction failed; AST fallback used.',
+              },
+            ],
+          });
+          return {
+            snapshot,
+            eventCount: 0,
+            candidateCount: 0,
+            warningCount: snapshot.warnings.length,
+          };
+        },
+      },
+    );
+    const parsedJson = JSON.parse(formatFlowSurfaceExtractorCliSummary(summary, { json: true }));
+
+    expect(summary).toMatchObject({
+      ok: false,
+      exitCode: 1,
+      results: [
+        {
+          ok: false,
+          plugin: '@example/plugin-warning',
+          warningCount: 1,
+          errors: [
+            {
+              code: 'extractor-warning',
+              message: 'Extractor produced 1 warning(s).',
+            },
+          ],
+        },
+      ],
+    });
+    expect(parsedJson.results[0].plugin).toBe('@example/plugin-warning');
+  });
+
+  it('should continue CLI batches after one plugin fails', async () => {
+    const visited: string[] = [];
+    const summary = await runFlowSurfaceExtractorCli(
+      [{ plugin: '@example/plugin-ok-a' }, { plugin: '@example/plugin-broken' }, { plugin: '@example/plugin-ok-b' }],
+      {
+        dryRun: true,
+        extractPlugin: async (target) => {
+          visited.push(target.plugin);
+          if (target.plugin === '@example/plugin-broken') {
+            throw Object.assign(new Error('Fixture extractor failed.'), {
+              code: 'fixture-extractor-error',
+            });
+          }
+          return {
+            snapshot: buildFlowSurfaceAutoSnapshot({
+              plugin: target.plugin,
+              generatedAt: '2026-06-04T00:00:00.000Z',
+              sourceHash: 'source-hash',
+              extractorVersion: 'test',
+              events: [],
+            }),
+            eventCount: 0,
+            candidateCount: 0,
+            warningCount: 0,
+          };
+        },
+      },
+    );
+
+    expect(visited).toEqual(['@example/plugin-ok-a', '@example/plugin-broken', '@example/plugin-ok-b']);
+    expect(summary).toMatchObject({
+      ok: false,
+      exitCode: 1,
+      results: [
+        { ok: true, plugin: '@example/plugin-ok-a' },
+        {
+          ok: false,
+          plugin: '@example/plugin-broken',
+          errors: [
+            {
+              code: 'fixture-extractor-error',
+              message: 'Fixture extractor failed.',
+            },
+          ],
+        },
+        { ok: true, plugin: '@example/plugin-ok-b' },
+      ],
+    });
+  });
+
+  it('should resolve all enabled plugin CLI targets and continue after failures', async () => {
+    const findEnabledPlugins = vi.fn(async () => [
+      { packageName: '@example/plugin-ok-a' },
+      {
+        get: (field: string) => (field === 'packageName' ? '@example/plugin-broken' : undefined),
+      },
+      { packageName: '@example/plugin-ok-a' },
+      { packageName: '  ' },
+    ]);
+    const app = {
+      loaded: false,
+      load: vi.fn(async () => undefined),
+      pm: {
+        repository: {
+          find: findEnabledPlugins,
+        },
+      },
+    } as unknown as Parameters<typeof runFlowSurfaceExtractorCommand>[0];
+    const visited: string[] = [];
+
+    const summary = await runFlowSurfaceExtractorCommand(
+      app,
+      {
+        allEnabled: true,
+        dryRun: true,
+      },
+      {
+        extractPlugin: async (target) => {
+          visited.push(target.plugin);
+          if (target.plugin === '@example/plugin-broken') {
+            throw Object.assign(new Error('Enabled plugin extraction failed.'), {
+              code: 'enabled-plugin-extractor-error',
+            });
+          }
+          const snapshot = buildFlowSurfaceAutoSnapshot({
+            plugin: target.plugin,
+            generatedAt: '2026-06-04T00:00:00.000Z',
+            sourceHash: 'source-hash',
+            extractorVersion: 'test',
+            events: [],
+          });
+          return {
+            snapshot,
+            eventCount: 0,
+            candidateCount: 0,
+            warningCount: 0,
+          };
+        },
+      },
+    );
+
+    expect(app.load).toHaveBeenCalledTimes(1);
+    expect(findEnabledPlugins).toHaveBeenCalledWith({
+      fields: ['packageName'],
+      filter: {
+        enabled: true,
+      },
+    });
+    expect(visited).toEqual(['@example/plugin-ok-a', '@example/plugin-broken']);
+    expect(summary).toMatchObject({
+      ok: false,
+      dryRun: true,
+      exitCode: 1,
+      results: [
+        { ok: true, plugin: '@example/plugin-ok-a' },
+        {
+          ok: false,
+          plugin: '@example/plugin-broken',
+          errors: [
+            {
+              code: 'enabled-plugin-extractor-error',
+              message: 'Enabled plugin extraction failed.',
+            },
+          ],
+        },
+      ],
+    });
+  });
+
+  it('should keep single-plugin CLI extraction independent from app preload', async () => {
+    const app = {
+      loaded: false,
+      load: vi.fn(async () => {
+        throw new Error('single plugin extraction should not load the app');
+      }),
+    } as unknown as Parameters<typeof runFlowSurfaceExtractorCommand>[0];
+
+    const summary = await runFlowSurfaceExtractorCommand(
+      app,
+      {
+        plugin: '@nocobase/plugin-gantt',
+        dryRun: true,
+        json: true,
+      },
+      {
+        extractPlugin: async (target) => {
+          const snapshot = buildFlowSurfaceAutoSnapshot({
+            plugin: target.plugin,
+            generatedAt: '2026-06-04T00:00:00.000Z',
+            sourceHash: 'source-hash',
+            extractorVersion: 'test',
+            events: [],
+          });
+          return {
+            snapshot,
+            eventCount: 0,
+            candidateCount: 0,
+            warningCount: 0,
+          };
+        },
+      },
+    );
+    const parsedJson = JSON.parse(formatFlowSurfaceExtractorCliSummary(summary, { json: true }));
+
+    expect(app.load).not.toHaveBeenCalled();
+    expect(parsedJson).toMatchObject({
+      ok: true,
+      dryRun: true,
+      exitCode: 0,
+      results: [
+        {
+          ok: true,
+          plugin: '@nocobase/plugin-gantt',
+        },
+      ],
+    });
+  });
+
+  it('should keep all-enabled JSON output parseable when loading the app emits stdout', async () => {
+    const originalWrite = process.stdout.write;
+    let stdout = '';
+    process.stdout.write = ((...args: Parameters<typeof process.stdout.write>) => {
+      const [chunk] = args;
+      if (typeof chunk === 'string' || Buffer.isBuffer(chunk)) {
+        stdout += chunk.toString();
+      }
+      const maybeCallback = args.find((arg): arg is (error?: Error | null) => void => typeof arg === 'function');
+      maybeCallback?.();
+      return true;
+    }) as typeof process.stdout.write;
+
+    try {
+      const app = {
+        loaded: false,
+        load: vi.fn(async () => {
+          process.stdout.write('bootstrap noise before json\n');
+        }),
+        pm: {
+          repository: {
+            find: vi.fn(async () => [{ packageName: '@example/plugin-json-a' }]),
+          },
+        },
+      } as unknown as Parameters<typeof runFlowSurfaceExtractorCommand>[0];
+
+      const summary = await runFlowSurfaceExtractorCommand(
+        app,
+        {
+          allEnabled: true,
+          dryRun: true,
+          json: true,
+        },
+        {
+          extractPlugin: async (target) => {
+            const snapshot = buildFlowSurfaceAutoSnapshot({
+              plugin: target.plugin,
+              generatedAt: '2026-06-04T00:00:00.000Z',
+              sourceHash: 'source-hash',
+              extractorVersion: 'test',
+              events: [],
+            });
+            return {
+              snapshot,
+              eventCount: 0,
+              candidateCount: 0,
+              warningCount: 0,
+            };
+          },
+        },
+      );
+      process.stdout.write(formatFlowSurfaceExtractorCliSummary(summary, { json: true }));
+
+      expect(app.load).toHaveBeenCalledTimes(1);
+      expect(stdout).not.toContain('bootstrap noise before json');
+      expect(JSON.parse(stdout)).toMatchObject({
+        ok: true,
+        dryRun: true,
+        exitCode: 0,
+        results: [
+          {
+            ok: true,
+            plugin: '@example/plugin-json-a',
+          },
+        ],
+      });
+    } finally {
+      process.stdout.write = originalWrite;
+    }
+  });
+
+  it('should register the extractor CLI command without unconditional preload', () => {
+    const extractCommand = {
+      action: vi.fn(() => extractCommand),
+      option: vi.fn(() => extractCommand),
+      preload: vi.fn(() => extractCommand),
+    };
+    const flowSurfacesCommand = {
+      command: vi.fn(() => extractCommand),
+    };
+    const app = {
+      command: vi.fn(() => flowSurfacesCommand),
+      findCommand: vi.fn(() => flowSurfacesCommand),
+    } as unknown as Parameters<typeof registerFlowSurfaceExtractorCommand>[0];
+
+    registerFlowSurfaceExtractorCommand(app);
+
+    expect(app.findCommand).toHaveBeenCalledWith('flow-surfaces');
+    expect(app.command).not.toHaveBeenCalled();
+    expect(flowSurfacesCommand.command).toHaveBeenCalledWith('extract-capabilities');
+    expect(extractCommand.preload).not.toHaveBeenCalled();
+    expect(extractCommand.option).toHaveBeenCalledWith('--all-enabled', 'extract every enabled plugin package');
+    expect(extractCommand.action).toHaveBeenCalled();
+  });
+
+  it('should extract client-v2 AST facts for CLI plugin targets', async () => {
+    const tempRoot = await realpath(tmpdir());
+    const packageRoot = await mkdtemp(join(tempRoot, 'flow-surfaces-extractor-cli-target-'));
+    const entry = join(packageRoot, 'src/client-v2/index.ts');
+    try {
+      await mkdir(join(packageRoot, 'src/client-v2'), { recursive: true });
+      await writeFile(
+        join(packageRoot, 'package.json'),
+        JSON.stringify(
+          {
+            name: '@example/plugin-cli-target',
+            version: '1.2.3',
+          },
+          null,
+          2,
+        ),
+        'utf8',
+      );
+      await writeFile(
+        entry,
+        `
+          class CliBlockModel {}
+          flowEngine.registerModels({ CliBlockModel });
+          CliBlockModel.define({
+            label: 'CLI block',
+            createModelOptions: {
+              use: 'CliBlockModel',
+            },
+          });
+        `,
+        'utf8',
+      );
+
+      const extraction = await extractFlowSurfacePluginCapabilities(
+        {
+          plugin: '@example/plugin-cli-target',
+          packageRoot,
+        },
+        {
+          generatedAt: '2026-06-04T00:00:00.000Z',
+          extractorVersion: 'test',
+        },
+      );
+
+      expect(extraction).toMatchObject({
+        eventCount: 2,
+        candidateCount: 1,
+        warningCount: 0,
+        snapshot: {
+          plugin: '@example/plugin-cli-target',
+          pluginVersion: '1.2.3',
+          resolvedEntry: entry,
+          models: [expect.objectContaining({ modelUse: 'CliBlockModel' })],
+          menuItems: [expect.objectContaining({ modelUse: 'CliBlockModel', labelText: 'CLI block' })],
+        },
+      });
+    } finally {
+      await rm(packageRoot, { recursive: true, force: true });
+    }
   });
 
   it('should write snapshots only under the selected output directory', async () => {
