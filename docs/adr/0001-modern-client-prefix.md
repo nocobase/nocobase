@@ -52,9 +52,30 @@ Tests: fixtures build paths from the runtime helper (env/window with `studio` fa
 
 There are two very different operations, and they cost very differently:
 
-1. **Change the prefix for a deployment (runtime, no rebuild).** Set `APP_MODERN_CLIENT_PREFIX=/admin/` and restart. nginx, the node gateway, and the browser all read it at runtime; the prefix detaches from the fixed `dist/client/studio` directory by design. This is the common case and the whole point of this ADR — nothing below applies.
+1. **Change the prefix for a deployment (runtime, no rebuild).** Set `APP_MODERN_CLIENT_PREFIX=/admin/` and restart. nginx, the node gateway, and the browser all read it at runtime; the prefix detaches from the fixed `dist/client/studio` directory by design. This is the common case and the whole point of this ADR — nothing below applies. See "Changing the prefix in Docker" below for the operator steps.
 
 2. **Change the baked-in default itself (code change + rebuild).** Only needed when you want to rename the default value or the on-disk build directory (e.g. `studio` → `console`, so artifacts land in `dist/client/console`). This is rare and is what the checklist below is for.
+
+## Changing the prefix in Docker (runtime, no image rebuild)
+
+The published image needs no rebuild to change the prefix. The entrypoint
+(`docker/nocobase/docker-entrypoint.sh`) runs `yarn nocobase create-nginx-conf` on **every
+container start**, which regenerates `storage/nocobase.conf` from the current environment, and
+then starts both nginx and the node server — all three go through the CLI bootstrap (`initEnv`)
+and read the same `process.env`. So:
+
+1. Set `APP_MODERN_CLIENT_PREFIX=/admin/` via the container environment — `environment:` in
+   docker-compose, `docker run --env`, or the mounted `/app/nocobase/.env`. Process-level env
+   wins over the `.env` file (`dotenv.config()` does not overwrite an existing `process.env`).
+2. Restart the container (`docker compose restart` / `docker restart <name>`). A restart is
+   required — the nginx conf is generated at entrypoint time, not hot-reloaded.
+
+On restart: nginx serves the modern client under `/admin/` while its `alias` still points at the
+fixed `dist/client/studio/assets` baked into the image; the gateway rewrites the served HTML and
+injects `window.__nocobase_modern_client_prefix__`; dynamic chunks resolve via
+`__webpack_public_path__`. No image rebuild, no front-end rebuild, no change to the on-disk
+`dist/client/studio` directory. The image deliberately does not bake `APP_MODERN_CLIENT_PREFIX`
+(or `APP_PUBLIC_PATH`) as a Dockerfile `ENV`, so the runtime value is never shadowed.
 
 ## Changing the baked-in default (rare; requires a rebuild)
 
