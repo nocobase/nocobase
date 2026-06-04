@@ -49,6 +49,7 @@ export interface RoleCollectionRecord {
 export interface RoleResourceAction {
   name: string;
   fields?: string[];
+  scopeId?: string | number | null;
   scope?: unknown;
 }
 

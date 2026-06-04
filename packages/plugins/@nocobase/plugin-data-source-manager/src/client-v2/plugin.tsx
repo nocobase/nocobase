@@ -8,7 +8,7 @@
  */
 
 import { Application, Plugin, type CollectionTemplateField } from '@nocobase/client-v2';
-import { PluginAclClientV2 } from '@nocobase/plugin-acl/client-v2';
+import PluginAclClientV2 from '@nocobase/plugin-acl/client-v2';
 import React, { ComponentType } from 'react';
 import { FieldInterfaceConfigureOptions } from './field-interfaces';
 import { DATA_SOURCE_MANAGER_SETTINGS_KEY } from './locale';
@@ -257,7 +257,8 @@ export class PluginDataSourceManagerClientV2 extends Plugin<any, Application> {
     this.registerBuiltInCollectionPresetFields();
     this.registerBuiltInCollectionTemplates();
 
-    this.app.pm.get(PluginAclClientV2).settingsUI.addPermissionsTab({
+    const aclPlugin = this.app.pm.get(PluginAclClientV2) as PluginAclClientV2 | undefined;
+    aclPlugin?.settingsUI.addPermissionsTab({
       key: 'dataSource',
       label: this.t('Data sources'),
       sort: 15,

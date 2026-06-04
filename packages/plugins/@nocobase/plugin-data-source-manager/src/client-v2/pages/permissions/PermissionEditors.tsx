@@ -33,18 +33,21 @@ function toStrategyValue(scopes: Record<string, string>) {
   return Object.entries(scopes).map(([name, scope]) => (scope === 'all' ? name : `${name}:${scope}`));
 }
 
-function normalizeActions(value?: RoleResourceAction[]) {
+function isEmptyScopeRecord(scope: unknown) {
+  return Boolean(scope && typeof scope === 'object' && !Object.keys(scope as object).length);
+}
+
+export function normalizeActions(value?: RoleResourceAction[]) {
   const map: Record<string, RoleResourceAction> = {};
   value?.forEach?.((action) => {
     if (!action?.name) {
       return;
     }
+    const appendedScope = isEmptyScopeRecord(action.scope) ? undefined : action.scope;
+    const scope = appendedScope ?? (action.scopeId == null ? undefined : { id: action.scopeId });
     map[action.name] = {
       ...action,
-      scope:
-        action.scope && typeof action.scope === 'object' && !Object.keys(action.scope as object).length
-          ? null
-          : action.scope,
+      scope,
     };
   });
   return map;
@@ -53,8 +56,7 @@ function normalizeActions(value?: RoleResourceAction[]) {
 function toActionValue(map: Record<string, RoleResourceAction>) {
   return Object.values(map).map((item) => ({
     ...item,
-    scope:
-      item.scope && typeof item.scope === 'object' && !Object.keys(item.scope as object).length ? null : item.scope,
+    scope: isEmptyScopeRecord(item.scope) ? null : item.scope,
   }));
 }
 

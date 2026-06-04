@@ -68,6 +68,68 @@ const nestPath = (path: string, leaf: unknown): Record<string, unknown> => {
   return result as Record<string, unknown>;
 };
 
+const decompileConditions = (value: unknown, path: string[] = []): CollectionFilterItemValue[] => {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return path.length ? [{ path: path.join('.'), operator: '$eq', value }] : [];
+  }
+
+  const entries = Object.entries(value as Record<string, unknown>);
+  const operatorEntries = entries.filter(([key]) => key.startsWith('$'));
+  if (operatorEntries.length) {
+    if (!path.length) {
+      return [];
+    }
+    return operatorEntries.map(([operator, operatorValue]) => ({
+      path: path.join('.'),
+      operator,
+      value: operatorValue,
+    }));
+  }
+
+  return entries.flatMap(([fieldName, nextValue]) => decompileConditions(nextValue, [...path, fieldName]));
+};
+
+const getGroupLogic = (record: Record<string, unknown>): FilterGroupValue['logic'] | undefined => {
+  if (Array.isArray(record.$or)) {
+    return '$or';
+  }
+  if (Array.isArray(record.$and)) {
+    return '$and';
+  }
+  return undefined;
+};
+
+const decompileFilterItem = (item: unknown): FilterGroupItem[] => {
+  if (!item || typeof item !== 'object' || Array.isArray(item)) {
+    return [];
+  }
+  const record = item as Record<string, unknown>;
+  if (getGroupLogic(record)) {
+    const group = decompileFilterGroup(record);
+    return group ? [group] : [];
+  }
+  return decompileConditions(record);
+};
+
+export function decompileFilterGroup(filter: CompiledFilter): FilterGroupValue | undefined {
+  if (!filter || typeof filter !== 'object' || Array.isArray(filter)) {
+    return undefined;
+  }
+
+  const record = filter as Record<string, unknown>;
+  const logic = getGroupLogic(record);
+  if (!logic) {
+    const items = decompileConditions(record);
+    return items.length ? { logic: '$and', items } : undefined;
+  }
+  const sourceItems = record[logic] as unknown[];
+  const items = sourceItems
+    .flatMap((item) => decompileFilterItem(item))
+    .filter((item): item is FilterGroupItem => Boolean(item));
+
+  return items.length ? { logic, items } : undefined;
+}
+
 /**
  * Compile a reactive filter group into the `{ $and: [{ path: { op: val } }] }` envelope accepted by NocoBase's resource `list` filter param. Returns `undefined` when the group is empty so callers can drop the param.
  *
@@ -100,6 +162,8 @@ export type FilterApplyAction = 'submit' | 'reset';
 export interface UseFilterActionPropsArgs extends UseFilterOptionsArgs {
   /** Collection whose fields populate the filter row's field picker. */
   collection: Collection | undefined;
+  /** Previously compiled filter param used to seed the editable filter group. */
+  initialValue?: CompiledFilter;
   /**
    * Called when the user submits or resets the filter popover. Receives the compiled filter param (`undefined` when cleared) and which footer button triggered the call. Typical implementation: `(filter, action) => { listRequest.run(filter); if (action === 'submit') closePopover(); }`.
    */
@@ -152,12 +216,12 @@ export interface UseFilterActionPropsResult {
  * ```
  */
 export function useFilterActionProps(args: UseFilterActionPropsArgs): UseFilterActionPropsResult {
-  const { collection, onApply, filterableFieldNames, nonfilterableFieldNames, noIgnore, t } = args;
+  const { collection, initialValue, onApply, filterableFieldNames, nonfilterableFieldNames, noIgnore, t } = args;
 
   // Held in a ref so the group object identity is stable for the lifetime of the host component — `<FilterContent>` mutates this object directly (push/splice on `items`, swap `logic`), and a fresh observable on every render would reset that internal state.
   const valueRef = useRef<FilterGroupValue>();
   if (!valueRef.current) {
-    valueRef.current = observable(createEmptyGroup()) as FilterGroupValue;
+    valueRef.current = observable(decompileFilterGroup(initialValue) || createEmptyGroup()) as FilterGroupValue;
   }
   const value = valueRef.current;
 

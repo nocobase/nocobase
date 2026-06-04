@@ -7,14 +7,14 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { CollectionFilter, DrawerFormLayout, Table, type CompiledFilter } from '@nocobase/client-v2';
+import { CollectionFilterPanel, DrawerFormLayout, Table, type CollectionFilterPanelRef } from '@nocobase/client-v2';
 import type { Collection } from '@nocobase/flow-engine';
 import { useFlowContext } from '@nocobase/flow-engine';
 import { PlusOutlined } from '@ant-design/icons';
 import { useMemoizedFn, useRequest } from 'ahooks';
 import { App, Button, Form, Input, Select, Space, theme, Tooltip } from 'antd';
 import type { ColumnsType, TablePaginationConfig } from 'antd/es/table';
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import { compileLegacyTemplate, compileLegacyTemplateText } from '../../utils/compileLegacyTemplate';
 import { destroyScopeRecord, saveScopeRecord } from './permissionRequests';
 import type { ScopeRecord } from './types';
@@ -46,6 +46,10 @@ function isReadonlyScope(record?: ScopeRecord) {
   return record?.key === 'all' || record?.key === 'own';
 }
 
+function getScopeRecord(value: unknown) {
+  return value && typeof value === 'object' ? (value as Partial<ScopeRecord>) : undefined;
+}
+
 interface ScopeFormProps {
   collection: Collection | undefined;
   dataSourceKey: string;
@@ -56,10 +60,9 @@ interface ScopeFormProps {
 }
 
 function ScopeForm(props: ScopeFormProps) {
-  const { token } = theme.useToken();
   const ctx = useFlowContext();
   const [form] = Form.useForm();
-  const [scope, setScope] = useState<CompiledFilter>(props.initialValues?.scope);
+  const filterPanelRef = useRef<CollectionFilterPanelRef>(null);
   const resource = useMemo(
     () => ctx.api.resource(`dataSources/${props.dataSourceKey}/rolesResourcesScopes`),
     [ctx.api, props.dataSourceKey],
@@ -71,7 +74,7 @@ function ScopeForm(props: ScopeFormProps) {
       id: props.initialValues?.id,
       resourceName: props.resourceName,
       values,
-      scope,
+      scope: filterPanelRef.current?.getFilter(),
     });
     props.onSubmitted();
   }
@@ -92,15 +95,13 @@ function ScopeForm(props: ScopeFormProps) {
           <Input />
         </Form.Item>
         <Form.Item label={props.t('Data scope')}>
-          <Space direction="vertical" size={token.marginXS}>
-            <CollectionFilter
-              collection={props.collection}
-              t={props.t}
-              noIgnore
-              onChange={setScope}
-              buttonText={scope ? props.t('Edit') : props.t('Configure')}
-            />
-          </Space>
+          <CollectionFilterPanel
+            ref={filterPanelRef}
+            collection={props.collection}
+            initialValue={props.initialValues?.scope}
+            t={props.t}
+            noIgnore
+          />
         </Form.Item>
       </Form>
     </DrawerFormLayout>
@@ -133,6 +134,7 @@ function ScopePicker(props: ScopePickerProps) {
       const response = await resource.list({
         page,
         pageSize,
+        fields: ['id', 'key', 'name', 'resourceName', 'scope'],
         filter: {
           $or: [{ resourceName: props.resourceName }, { resourceName: null }],
         },
@@ -303,11 +305,29 @@ export interface ScopeSelectProps {
 export function ScopeSelect(props: ScopeSelectProps) {
   const { token } = theme.useToken();
   const ctx = useFlowContext();
-  const selectedName =
-    props.value && typeof props.value === 'object'
-      ? compileLegacyTemplateText((props.value as ScopeRecord).name, props.t, '')
-      : undefined;
+  const selectedRecordFromValue = getScopeRecord(props.value);
   const selectedKey = getScopeValueKey(props.value);
+  const resource = useMemo(
+    () => ctx.api.resource(`dataSources/${props.dataSourceKey}/rolesResourcesScopes`),
+    [ctx.api, props.dataSourceKey],
+  );
+  const selectedRecordRequest = useRequest(
+    async () => {
+      if (selectedKey == null || selectedRecordFromValue?.name) {
+        return selectedRecordFromValue;
+      }
+      const response = await resource.get({
+        filterByTk: selectedKey,
+      });
+      return response?.data?.data as ScopeRecord | undefined;
+    },
+    {
+      refreshDeps: [selectedKey, props.dataSourceKey],
+      ready: selectedKey != null,
+    },
+  );
+  const selectedRecord = selectedRecordFromValue?.name ? selectedRecordFromValue : selectedRecordRequest.data;
+  const selectedName = selectedRecord?.name ? compileLegacyTemplateText(selectedRecord.name, props.t, '') : undefined;
   const selectedValue =
     selectedKey == null
       ? undefined
@@ -320,7 +340,7 @@ export function ScopeSelect(props: ScopeSelectProps) {
     ctx.viewer.drawer({
       width: token.screenLG,
       closable: true,
-      content: ({ close }) => <ScopePicker {...props} onClose={close} />,
+      content: ({ close }) => <ScopePicker {...props} value={selectedRecord || props.value} onClose={close} />,
     });
   });
 
