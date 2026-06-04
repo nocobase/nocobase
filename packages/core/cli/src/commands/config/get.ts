@@ -15,7 +15,6 @@ export default class ConfigGet extends Command {
   static override examples = [
     '<%= config.bin %> <%= command.id %> locale',
     '<%= config.bin %> <%= command.id %> update.policy',
-    '<%= config.bin %> <%= command.id %> license.pkg-url',
     '<%= config.bin %> <%= command.id %> docker.network',
     '<%= config.bin %> <%= command.id %> docker.container-prefix',
     '<%= config.bin %> <%= command.id %> bin.docker',

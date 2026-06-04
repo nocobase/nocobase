@@ -13,12 +13,10 @@ import { clearLegacyStartupUpdatePolicyForCurrentInstall } from '../../lib/start
 
 export default class ConfigSet extends Command {
   static override summary = 'Set a CLI configuration value';
-  static override description =
-    'Set a supported CLI configuration key. Supported keys: locale, update.policy, license.pkg-url, docker.network, docker.container-prefix, bin.docker, bin.git, bin.yarn.';
+  static override description = 'Set a CLI configuration value for a supported configuration key.';
   static override examples = [
     '<%= config.bin %> <%= command.id %> locale zh-CN',
     '<%= config.bin %> <%= command.id %> update.policy prompt',
-    '<%= config.bin %> <%= command.id %> license.pkg-url https://pkg.nocobase.com/',
     '<%= config.bin %> <%= command.id %> docker.network nocobase',
     '<%= config.bin %> <%= command.id %> docker.container-prefix nb',
     '<%= config.bin %> <%= command.id %> bin.docker /usr/local/bin/docker',
