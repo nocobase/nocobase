@@ -288,17 +288,21 @@ nb app stop --env app1 --with-db
 - Docker envs remove the saved app container when stopped.
 - `--with-db` only affects CLI-managed built-in databases. External databases are not touched.
 
-Destroy the env's managed local resources:
+Remove the saved env config while keeping storage data and local app files:
 
 ```bash
-nb app destroy --env app1
-nb app destroy --env app1 --force
+nb env remove app1 --force
 ```
 
-- `nb app destroy` removes managed runtime resources, storage data, and the saved CLI env config.
-- For downloaded npm/Git envs, `nb app destroy` also removes the saved local app files. Custom local app directories are kept.
-- In interactive terminals, `nb app destroy` requires a strong confirmation prompt. In non-interactive mode, re-run with `--env <name> --force`.
-- `nb app down` is deprecated. Use `nb app stop --with-db` for runtime cleanup, or `nb app destroy` for destructive cleanup.
+Completely remove the env and its CLI-managed local resources on this machine:
+
+```bash
+nb env remove app1 --purge --force
+```
+
+- `nb env remove` stops CLI-managed runtime resources on local and Docker envs, then removes the saved CLI env config.
+- `--purge` also removes storage data and, when applicable, downloaded local app files managed by the CLI.
+- `nb app down` and `nb app destroy` are deprecated hidden compatibility commands. Use `nb app stop --with-db` for runtime cleanup, or `nb env remove <name> --purge` for destructive cleanup.
 
 ## Environment Management
 

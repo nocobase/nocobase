@@ -123,9 +123,8 @@ async function confirmDestroy(
 }
 
 export default class AppDestroy extends Command {
-  static override hidden = false;
-  static override description =
-    'Destroy the selected env by removing managed runtime resources, storage data, and the saved CLI env config.';
+  static override hidden = true;
+  static override description = 'Deprecated compatibility alias for `nb env remove <name> --purge`.';
 
   static override examples = [
     '<%= config.bin %> <%= command.id %> --env app1',

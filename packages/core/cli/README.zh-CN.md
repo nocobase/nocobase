@@ -248,17 +248,21 @@ nb app stop --env app1 --with-db
 - Docker env 停止时会移除已保存的 app container。
 - `--with-db` 只会影响 CLI 托管的内置数据库，external db 不会被处理。
 
-销毁该 env 的本地托管资源：
+移除已保存的 env 配置，但先保留 storage 和本地 app 文件：
 
 ```bash
-nb app destroy --env app1
-nb app destroy --env app1 --force
+nb env remove app1 --force
 ```
 
-- `nb app destroy` 会删除托管的运行时资源、storage 数据以及已保存的 CLI env 配置。
-- 对于通过 npm/Git 下载的 env，`nb app destroy` 还会删除已保存的本地 app 文件。自定义的本地源码目录会被保留。
-- 在交互终端中，`nb app destroy` 需要强确认；在非交互模式下，需要显式传入 `--env <name> --force`。
-- `nb app down` 已废弃。运行态清理请使用 `nb app stop --with-db`，彻底销毁请使用 `nb app destroy`。
+连同该 env 在本机上的 CLI 托管资源一起彻底清理：
+
+```bash
+nb env remove app1 --purge --force
+```
+
+- `nb env remove` 会先停止 local 和 Docker env 的 CLI 托管运行态，再移除已保存的 CLI env 配置。
+- `--purge` 还会删除 storage 数据，以及适用时由 CLI 下载管理的本地 app 文件。
+- `nb app down` 和 `nb app destroy` 现在都只是隐藏的兼容命令。运行态清理请使用 `nb app stop --with-db`，彻底清理请使用 `nb env remove <name> --purge`。
 
 ## Env 管理
 
