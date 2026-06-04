@@ -23,7 +23,7 @@ const SIZE_FACTOR = 5;
 const MIN_SIZE_TO_CHECK = 8000;
 const MIN_CN_SIZE = 500;
 // 暂不参与膨胀检测的语言；显式 --lang=<code> 仍可强制检查。
-const SKIP_LANGS = new Set(['ar']);
+const SKIP_LANGS = new Set(['ar', 'ru']);
 
 function parseArgs(argv) {
   const args = { positional: [] };
