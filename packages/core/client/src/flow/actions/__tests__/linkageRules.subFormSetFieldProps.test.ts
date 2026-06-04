@@ -9,9 +9,14 @@
 
 import React from 'react';
 import { fireEvent, render, screen } from '@testing-library/react';
-import { FlowSettingsContextProvider } from '@nocobase/flow-engine';
+import { FlowEngine, FlowModel, FlowSettingsContextProvider } from '@nocobase/flow-engine';
 import { describe, expect, it, vi } from 'vitest';
-import { fieldLinkageRules, linkageSetFieldProps, subFormLinkageSetFieldProps } from '../linkageRules';
+import {
+  fieldLinkageRules,
+  linkageSetFieldProps,
+  subFormFieldLinkageRules,
+  subFormLinkageSetFieldProps,
+} from '../linkageRules';
 
 const createSubFormFieldModel = ({
   uid,
@@ -334,6 +339,110 @@ describe('subFormLinkageSetFieldProps action', () => {
 
     expect(row0CollectedModel.hidden).toBe(false);
     expect(row1CollectedModel.hidden).toBe(true);
+  });
+
+  it('should clear the current row value when a subform list field is hidden without reserving value', async () => {
+    const setFormValues = vi.fn(async () => undefined);
+    const form = {
+      getFieldValue: vi.fn((path: Array<string | number>) => {
+        if (JSON.stringify(path) === JSON.stringify(['items', 0, 'a'])) {
+          return 'row value';
+        }
+        return undefined;
+      }),
+      setFieldValue: vi.fn(),
+    };
+    const engine = new FlowEngine();
+
+    const rowGridFork = new FlowModel({ uid: 'row-grid-fork', flowEngine: engine }) as any;
+    rowGridFork.hidden = false;
+    rowGridFork.context.defineProperty('fieldKey', { value: ['items:0'] });
+    rowGridFork.context.defineProperty('fieldIndex', { value: ['items:0'] });
+    rowGridFork.context.defineProperty('form', { value: form });
+    rowGridFork.context.defineProperty('setFormValues', { value: setFormValues });
+    rowGridFork.context.defineProperty('app', {
+      value: {
+        jsonLogic: {
+          apply: () => true,
+        },
+      },
+    });
+    rowGridFork.getAction = vi.fn((name: string) => {
+      if (name === 'subFormLinkageSetFieldProps') {
+        return subFormLinkageSetFieldProps;
+      }
+    });
+
+    const targetFieldFork: any = {
+      uid: 'field-a',
+      isFork: true,
+      hidden: false,
+      props: {},
+      context: {
+        fieldIndex: ['items:0'],
+      },
+      getStepParams: vi.fn((flowKey: string, stepKey: string) => {
+        if (flowKey === 'fieldSettings' && stepKey === 'init') {
+          return { fieldPath: 'a' };
+        }
+      }),
+      setProps(key: any, value?: any) {
+        if (typeof key === 'string') {
+          this.props[key] = value;
+        } else {
+          this.props = { ...this.props, ...key };
+        }
+      },
+    };
+
+    const formItemModel: any = {
+      uid: 'field-a',
+      getFork: vi.fn((key: string) => (key === 'items:0:field-a' ? targetFieldFork : undefined)),
+    };
+
+    engine.getModel = vi.fn((uid: string) => (uid === 'field-a' ? formItemModel : undefined)) as any;
+
+    await subFormFieldLinkageRules.handler(
+      {
+        model: {
+          hidden: false,
+          subModels: {
+            grid: {
+              forks: [rowGridFork],
+            },
+          },
+        },
+        flowKey: 'eventSettings',
+      } as any,
+      {
+        value: [
+          {
+            key: 'rule-1',
+            enable: true,
+            condition: { logic: '$and', items: [] },
+            actions: [
+              {
+                name: 'subFormLinkageSetFieldProps',
+                params: {
+                  value: {
+                    fields: ['field-a'],
+                    state: 'hidden',
+                  },
+                },
+              },
+            ],
+          },
+        ],
+      },
+    );
+
+    expect(form.getFieldValue).toHaveBeenCalledWith(['items', 0, 'a']);
+    expect(targetFieldFork.hidden).toBe(true);
+    expect(setFormValues).toHaveBeenCalledWith(
+      [{ path: ['items', 0, 'a'], value: undefined }],
+      expect.objectContaining({ source: 'linkage' }),
+    );
+    expect(form.setFieldValue).not.toHaveBeenCalled();
   });
 });
 

@@ -1936,6 +1936,23 @@ const commonLinkageRulesHandler = async (ctx: FlowContext, params: any) => {
 
     return out;
   };
+  const getModelTargetPathForHiddenClear = (model: any): string | Array<string | number> | null => {
+    const fieldPathArray = normalizeNamePathForKey(model?.context?.fieldPathArray);
+    const targetPath = getModelTargetPathForPatch(model);
+    if (fieldPathArray) {
+      const targetPathLastString = targetPath
+        ? ([...parsePathString(targetPath)].reverse().find((seg) => typeof seg === 'string') as string | undefined)
+        : undefined;
+      const fieldPathArrayLastString = [...fieldPathArray].reverse().find((seg) => typeof seg === 'string');
+      if (!targetPathLastString || targetPathLastString === fieldPathArrayLastString) {
+        return fieldPathArray;
+      }
+    }
+
+    if (!targetPath) return null;
+
+    return resolveIndexedRelativePath(targetPath, model?.context?.fieldIndex) || targetPath;
+  };
   const getModelTargetPathKeys = (model: any): Set<string> => {
     const keys = new Set<string>();
     const fieldPathArray = normalizeNamePathForKey(model?.context?.fieldPathArray);
@@ -2102,7 +2119,7 @@ const commonLinkageRulesHandler = async (ctx: FlowContext, params: any) => {
       Object.prototype.hasOwnProperty.call(patchProps, 'hiddenModel') &&
       patchProps.hiddenModel === true
     ) {
-      const targetPath = getModelTargetPathForPatch(model);
+      const targetPath = getModelTargetPathForHiddenClear(model);
       if (!targetPath) {
         console.warn('[linkageRules] Skip clearing hidden field value due to missing target path', {
           flowKey: ctx.flowKey,
