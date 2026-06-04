@@ -1713,6 +1713,48 @@ describe('flowSurfaces capabilities projection', () => {
     expect(serialized).not.toContain('GanttBlockModel');
   });
 
+  it('should keep auto snapshot details read-only when verifiedAuto is downgraded to manifestOnly', async () => {
+    const response = await buildFlowSurfaceDescribeCapabilityResponse(
+      {
+        publicType: 'pluginGantt.gantt',
+        expand: ['item.warnings'],
+      },
+      {
+        enabledPackages: new Set(['@nocobase/plugin-gantt']),
+        autoSnapshots: [createGanttAutoSnapshot()],
+        admissionReports: [createVerifiedAutoAdmissionReport()],
+        capabilityPolicyConfig: {
+          writePolicy: {
+            mode: 'manifestOnly',
+            allowedOwners: ['@nocobase/plugin-gantt'],
+            allowedPublicTypes: ['pluginGantt.gantt'],
+          },
+        },
+        catalog: createCatalogRecorder().catalog,
+        generatedAt: '2026-06-04T00:00:00.000Z',
+      },
+    );
+
+    expect(response.data).toMatchObject({
+      publicType: 'pluginGantt.gantt',
+      origin: 'autoSnapshot',
+      supportLevel: 'readback-only',
+      readiness: 'discovered',
+      availability: expect.objectContaining({
+        create: expect.objectContaining({
+          supported: false,
+          reasonCode: 'manifest-required',
+          reasonSource: 'registry',
+        }),
+      }),
+      warnings: expect.arrayContaining([
+        expect.objectContaining({
+          code: 'auto-discovered-readonly',
+        }),
+      ]),
+    });
+  });
+
   it('should keep verifiedAuto auto snapshots read-only when admission evidence is stale', async () => {
     const response = await buildFlowSurfaceCapabilitiesResponse(
       {
