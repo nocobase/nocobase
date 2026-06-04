@@ -43,6 +43,7 @@ type EffectiveSchema = {
 };
 
 const baseStyle = { minWidth: 200 } as const;
+const fallbackInputComponents = new Set(['Input', 'Input.URL', 'NanoIDInput']);
 
 /** Resolve operator-level schema → field uiSchema → fallback Input. */
 const resolveSchema = (field?: FilterOption, operator?: FilterOperator): EffectiveSchema => {
@@ -200,7 +201,7 @@ export const FilterValueInput: React.FC<FilterValueInputProps> = (props) => {
         return <Component {...customComponentProps} />;
       }
 
-      if (typeof componentName === 'string') {
+      if (typeof componentName === 'string' && !fallbackInputComponents.has(componentName)) {
         const Component = app?.getComponent?.(componentName);
         if (Component) {
           return <Component {...customComponentProps} />;

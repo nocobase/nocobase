@@ -103,4 +103,38 @@ describe('defaultOperator action', () => {
     expect(includesOperator.label).toBe('plugin contains');
     expect(includesOperator.schema?.['x-component']).toBe('MultipleKeywordsInput');
   });
+
+  it('keeps field interface operators in sync with later group additions', () => {
+    const app = createMockClient();
+    const groupName = 'defaultOperatorReviewString';
+
+    class ReviewInputFieldInterface extends InputFieldInterface {
+      name = 'reviewInput';
+      filterable = {
+        operators: groupName,
+      };
+    }
+
+    app.registerFieldFilterOperatorGroup(groupName, [{ label: 'equals', value: '$eq' }]);
+    app.addFieldInterfaces([ReviewInputFieldInterface]);
+    app.addFieldInterfaceOperator('reviewInput', {
+      label: 'plugin in',
+      value: '$in',
+      schema: { 'x-component': 'MultipleKeywordsInput' },
+    });
+    app.addFieldInterfaceOperator('reviewInput', {
+      label: 'plugin not in',
+      value: '$notIn',
+      schema: { 'x-component': 'MultipleKeywordsInput' },
+    });
+
+    app.addFieldFilterOperatorsToGroup(groupName, [{ label: 'future operator', value: '$future' }]);
+
+    const fieldInterface = app.dataSourceManager.collectionFieldInterfaceManager.getFieldInterface('reviewInput');
+    const operators = fieldInterface.filterable.operators as OperatorOption[];
+    expect(fieldInterface.filterable.operatorGroup).toBe(groupName);
+    expect(operators.find((item) => item.value === '$future')).toBeTruthy();
+    expect(operators.find((item) => item.value === '$in')?.schema?.['x-component']).toBe('MultipleKeywordsInput');
+    expect(operators.find((item) => item.value === '$notIn')?.schema?.['x-component']).toBe('MultipleKeywordsInput');
+  });
 });
