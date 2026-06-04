@@ -85,7 +85,7 @@ async load() {
 ```tsx
 // In component: page navigation
 const ctx = useFlowContext();
-ctx.router.navigate('/hello'); // -> /v2/hello
+ctx.router.navigate('/hello'); // -> /v/hello
 ```
 
 ## Common Capabilities Provided by Context

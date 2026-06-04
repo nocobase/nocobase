@@ -9,7 +9,7 @@
 
 import React from 'react';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { FlowEngine, FlowEngineProvider } from '@nocobase/flow-engine';
 import { observer } from '@nocobase/flow-engine';
 import { MemoryRouter } from 'react-router-dom';
@@ -45,6 +45,9 @@ describe('AdminLayoutModel menu items', () => {
   let modalConfirmMock: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
+    // Fixtures mount the modern client under the `v2` segment; tell the
+    // runtime-prefix helper so v2-runtime detection matches.
+    (globalThis.window as any).__nocobase_modern_client_prefix__ = 'v2';
     engine = new FlowEngine();
     modalConfirmMock = vi.fn().mockResolvedValue(true);
     engine.registerModels({
@@ -102,6 +105,10 @@ describe('AdminLayoutModel menu items', () => {
     });
     navigateMock.mockReset();
     vi.spyOn(window, 'open').mockImplementation(() => null);
+  });
+
+  afterEach(() => {
+    delete (globalThis.window as any).__nocobase_modern_client_prefix__;
   });
 
   const createRoute = (options?: Partial<import('../../../../flow-compat').NocoBaseDesktopRoute>) => ({
