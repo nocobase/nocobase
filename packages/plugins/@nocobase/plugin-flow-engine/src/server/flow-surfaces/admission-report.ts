@@ -66,7 +66,7 @@ export type ValidateFlowSurfaceCapabilityAdmissionRuntimeEvidenceInput = {
 };
 
 export type FlowSurfaceAdmissionRuntimeValidationFailedCheck = {
-  key: FlowSurfaceAdmissionCheckKey | 'readiness' | 'approvedAt' | 'reportIntegrity';
+  key: FlowSurfaceAdmissionCheckKey | 'readiness' | 'approvedAt' | 'reportIntegrity' | 'admissionRecord';
   reasonCode?: FlowSurfaceReasonCode;
   message?: string;
 };
@@ -76,6 +76,27 @@ export type FlowSurfaceAdmissionRuntimeValidationResult = {
   readiness: FlowSurfaceCapabilityReadiness;
   reasonCode?: FlowSurfaceReasonCode;
   failedChecks: FlowSurfaceAdmissionRuntimeValidationFailedCheck[];
+};
+
+export type FlowSurfaceCapabilityAdmissionRuntimeEvidenceTarget = Pick<
+  FlowSurfaceCapabilityAdmissionRecord,
+  'kind' | 'publicType' | 'ownerPlugin'
+> & {
+  capabilityId?: string;
+};
+
+export type ResolveFlowSurfaceCapabilityAdmissionRuntimeEvidenceInput = {
+  reports: readonly FlowSurfaceCapabilityAdmissionReport[];
+  capability: FlowSurfaceCapabilityAdmissionRuntimeEvidenceTarget;
+  expectedIntegrity?: FlowSurfaceCapabilityAdmissionIntegrity;
+};
+
+export type FlowSurfaceAdmissionRuntimeEvidenceResolution = FlowSurfaceAdmissionRuntimeValidationResult & {
+  capabilityId?: string;
+  reportPlugin?: string;
+  reportGeneratedAt?: string;
+  recordUpdatedAt?: string;
+  recordApprovedAt?: string;
 };
 
 type BuildFlowSurfaceCapabilityAdmissionReportInput = {
@@ -255,6 +276,39 @@ export function validateFlowSurfaceCapabilityAdmissionRuntimeEvidence(
   };
 }
 
+export function resolveFlowSurfaceCapabilityAdmissionRuntimeEvidence(
+  input: ResolveFlowSurfaceCapabilityAdmissionRuntimeEvidenceInput,
+): FlowSurfaceAdmissionRuntimeEvidenceResolution {
+  const candidate = findLatestFlowSurfaceCapabilityAdmissionRecord(input.reports, input.capability);
+  if (!candidate) {
+    return {
+      ok: false,
+      readiness: 'blocked',
+      reasonCode: 'contract-not-verified',
+      failedChecks: [
+        {
+          key: 'admissionRecord',
+          reasonCode: 'contract-not-verified',
+          message: 'No matching admission report record was found for this capability.',
+        },
+      ],
+    };
+  }
+
+  const validation = validateFlowSurfaceCapabilityAdmissionRuntimeEvidence({
+    record: candidate.record,
+    expectedIntegrity: input.expectedIntegrity,
+  });
+  return {
+    ...validation,
+    capabilityId: candidate.record.capabilityId,
+    reportPlugin: candidate.report.plugin,
+    reportGeneratedAt: candidate.report.generatedAt,
+    recordUpdatedAt: candidate.record.updatedAt,
+    ...(candidate.record.approvedAt ? { recordApprovedAt: candidate.record.approvedAt } : {}),
+  };
+}
+
 export function isFlowSurfaceCapabilityAdmissionReport(value: unknown): value is FlowSurfaceCapabilityAdmissionReport {
   if (!isPlainRecord(value)) {
     return false;
@@ -374,6 +428,59 @@ function getFlowSurfaceAdmissionCheckFailures(
       },
     ];
   });
+}
+
+type FlowSurfaceAdmissionRuntimeEvidenceCandidate = {
+  report: FlowSurfaceCapabilityAdmissionReport;
+  record: FlowSurfaceCapabilityAdmissionRecord;
+};
+
+function findLatestFlowSurfaceCapabilityAdmissionRecord(
+  reports: readonly FlowSurfaceCapabilityAdmissionReport[],
+  capability: FlowSurfaceCapabilityAdmissionRuntimeEvidenceTarget,
+): FlowSurfaceAdmissionRuntimeEvidenceCandidate | undefined {
+  return reports
+    .flatMap((report) =>
+      report.records
+        .filter((record) => matchesFlowSurfaceCapabilityAdmissionRecord(report, record, capability))
+        .map((record) => ({ report, record })),
+    )
+    .sort(compareFlowSurfaceAdmissionRuntimeEvidenceCandidates)[0];
+}
+
+function matchesFlowSurfaceCapabilityAdmissionRecord(
+  report: FlowSurfaceCapabilityAdmissionReport,
+  record: FlowSurfaceCapabilityAdmissionRecord,
+  capability: FlowSurfaceCapabilityAdmissionRuntimeEvidenceTarget,
+) {
+  if (report.plugin !== record.ownerPlugin) {
+    return false;
+  }
+  if (record.kind !== capability.kind || record.publicType !== capability.publicType) {
+    return false;
+  }
+  if (record.ownerPlugin !== capability.ownerPlugin) {
+    return false;
+  }
+  return !capability.capabilityId || record.capabilityId === capability.capabilityId;
+}
+
+function compareFlowSurfaceAdmissionRuntimeEvidenceCandidates(
+  left: FlowSurfaceAdmissionRuntimeEvidenceCandidate,
+  right: FlowSurfaceAdmissionRuntimeEvidenceCandidate,
+) {
+  return getFlowSurfaceAdmissionRuntimeEvidenceSortKey(right).localeCompare(
+    getFlowSurfaceAdmissionRuntimeEvidenceSortKey(left),
+  );
+}
+
+function getFlowSurfaceAdmissionRuntimeEvidenceSortKey(input: FlowSurfaceAdmissionRuntimeEvidenceCandidate) {
+  return [
+    input.report.generatedAt,
+    input.record.approvedAt || '',
+    input.record.updatedAt,
+    input.record.capabilityId,
+  ].join('\0');
 }
 
 function isFlowSurfaceAdmissionChecks(value: unknown): value is FlowSurfaceCapabilityAdmissionRecord['checks'] {

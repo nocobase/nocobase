@@ -18,6 +18,7 @@ import {
   getFlowSurfaceCapabilityAdmissionReportStorageDir,
   isFlowSurfaceCapabilityAdmissionReport,
   loadFlowSurfaceCapabilityAdmissionReportsFromDirectory,
+  resolveFlowSurfaceCapabilityAdmissionRuntimeEvidence,
   validateFlowSurfaceCapabilityAdmissionRuntimeEvidence,
   writeFlowSurfaceCapabilityAdmissionReport,
   type FlowSurfaceAdmissionCheck,
@@ -413,5 +414,187 @@ describe('flowSurfaces capability admission reports', () => {
         },
       ],
     });
+  });
+
+  it('should resolve matching admission runtime evidence from reports', () => {
+    const report = buildFlowSurfaceCapabilityAdmissionReport({
+      plugin: '@nocobase/plugin-gantt',
+      generatedAt: '2026-06-04T02:00:00.000Z',
+      records: [
+        createAdmissionRecord({
+          capabilityId: '@nocobase/plugin-gantt:autoSnapshot:block:pluginGantt.gantt',
+          publicType: 'pluginGantt.gantt',
+          readiness: 'createEnabled',
+          approvedAt: '2026-06-04T02:30:00.000Z',
+          updatedAt: '2026-06-04T02:20:00.000Z',
+        }),
+      ],
+    });
+
+    expect(
+      resolveFlowSurfaceCapabilityAdmissionRuntimeEvidence({
+        reports: [report],
+        capability: {
+          capabilityId: '@nocobase/plugin-gantt:autoSnapshot:block:pluginGantt.gantt',
+          kind: 'block',
+          publicType: 'pluginGantt.gantt',
+          ownerPlugin: '@nocobase/plugin-gantt',
+        },
+        expectedIntegrity: {
+          capabilityVersion: '1.0.0',
+          manifestHash: 'manifest-hash',
+          snapshotHash: 'snapshot-hash',
+          dryRunFixtureHash: 'fixture-hash',
+        },
+      }),
+    ).toEqual({
+      ok: true,
+      readiness: 'createEnabled',
+      capabilityId: '@nocobase/plugin-gantt:autoSnapshot:block:pluginGantt.gantt',
+      reportPlugin: '@nocobase/plugin-gantt',
+      reportGeneratedAt: '2026-06-04T02:00:00.000Z',
+      recordUpdatedAt: '2026-06-04T02:20:00.000Z',
+      recordApprovedAt: '2026-06-04T02:30:00.000Z',
+      failedChecks: [],
+    });
+  });
+
+  it('should report missing admission runtime evidence without leaking records', () => {
+    const result = resolveFlowSurfaceCapabilityAdmissionRuntimeEvidence({
+      reports: [
+        buildFlowSurfaceCapabilityAdmissionReport({
+          plugin: '@nocobase/plugin-other',
+          generatedAt: '2026-06-04T02:00:00.000Z',
+          records: [
+            createAdmissionRecord({
+              ownerPlugin: '@nocobase/plugin-gantt',
+              publicType: 'pluginGantt.gantt',
+              readiness: 'createEnabled',
+              approvedAt: '2026-06-04T02:30:00.000Z',
+            }),
+          ],
+        }),
+      ],
+      capability: {
+        kind: 'block',
+        publicType: 'pluginGantt.gantt',
+        ownerPlugin: '@nocobase/plugin-gantt',
+      },
+    });
+
+    expect(result).toEqual({
+      ok: false,
+      readiness: 'blocked',
+      reasonCode: 'contract-not-verified',
+      failedChecks: [
+        {
+          key: 'admissionRecord',
+          reasonCode: 'contract-not-verified',
+          message: 'No matching admission report record was found for this capability.',
+        },
+      ],
+    });
+    expect(JSON.stringify(result)).not.toContain('@nocobase/plugin-other');
+  });
+
+  it('should require the requested admission capability id when provided', () => {
+    const report = buildFlowSurfaceCapabilityAdmissionReport({
+      plugin: '@nocobase/plugin-gantt',
+      generatedAt: '2026-06-04T02:00:00.000Z',
+      records: [
+        createAdmissionRecord({
+          capabilityId: '@nocobase/plugin-gantt:autoSnapshot:block:other',
+          publicType: 'pluginGantt.gantt',
+          readiness: 'createEnabled',
+          approvedAt: '2026-06-04T02:30:00.000Z',
+        }),
+      ],
+    });
+
+    expect(
+      resolveFlowSurfaceCapabilityAdmissionRuntimeEvidence({
+        reports: [report],
+        capability: {
+          capabilityId: '@nocobase/plugin-gantt:autoSnapshot:block:pluginGantt.gantt',
+          kind: 'block',
+          publicType: 'pluginGantt.gantt',
+          ownerPlugin: '@nocobase/plugin-gantt',
+        },
+      }),
+    ).toEqual({
+      ok: false,
+      readiness: 'blocked',
+      reasonCode: 'contract-not-verified',
+      failedChecks: [
+        {
+          key: 'admissionRecord',
+          reasonCode: 'contract-not-verified',
+          message: 'No matching admission report record was found for this capability.',
+        },
+      ],
+    });
+  });
+
+  it('should resolve the latest matching admission record before validation', () => {
+    const olderValidReport = buildFlowSurfaceCapabilityAdmissionReport({
+      plugin: '@nocobase/plugin-gantt',
+      generatedAt: '2026-06-04T01:00:00.000Z',
+      records: [
+        createAdmissionRecord({
+          publicType: 'pluginGantt.gantt',
+          readiness: 'createEnabled',
+          approvedAt: '2026-06-04T01:30:00.000Z',
+        }),
+      ],
+    });
+    const latestFailedReport = buildFlowSurfaceCapabilityAdmissionReport({
+      plugin: '@nocobase/plugin-gantt',
+      generatedAt: '2026-06-04T03:00:00.000Z',
+      records: [
+        createAdmissionRecord({
+          publicType: 'pluginGantt.gantt',
+          readiness: 'createEnabled',
+          approvedAt: '2026-06-04T03:30:00.000Z',
+          checks: createChecks({
+            readbackParity: {
+              ok: false,
+              reasonCode: 'readback-parity-failed',
+              message: 'Latest readback parity failed.',
+              evidence: {
+                internalNodeUse: 'GanttBlockModel',
+              },
+            },
+          }),
+        }),
+      ],
+    });
+
+    const result = resolveFlowSurfaceCapabilityAdmissionRuntimeEvidence({
+      reports: [olderValidReport, latestFailedReport],
+      capability: {
+        kind: 'block',
+        publicType: 'pluginGantt.gantt',
+        ownerPlugin: '@nocobase/plugin-gantt',
+      },
+    });
+
+    expect(result).toEqual({
+      ok: false,
+      readiness: 'blocked',
+      reasonCode: 'readback-parity-failed',
+      capabilityId: 'plugin:%40nocobase%2Fplugin-gantt#blocks.gantt',
+      reportPlugin: '@nocobase/plugin-gantt',
+      reportGeneratedAt: '2026-06-04T03:00:00.000Z',
+      recordUpdatedAt: '2026-06-04T00:00:00.000Z',
+      recordApprovedAt: '2026-06-04T03:30:00.000Z',
+      failedChecks: [
+        {
+          key: 'readbackParity',
+          reasonCode: 'readback-parity-failed',
+          message: 'Latest readback parity failed.',
+        },
+      ],
+    });
+    expect(JSON.stringify(result)).not.toContain('GanttBlockModel');
   });
 });
