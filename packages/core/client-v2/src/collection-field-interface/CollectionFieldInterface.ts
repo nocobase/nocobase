@@ -181,11 +181,20 @@ export abstract class CollectionFieldInterface {
   }
 
   addOperator(operatorOption: FieldFilterOperator) {
+    const previousOperators = Array.isArray(this.filterable?.operators) ? this.filterable.operators : [];
     normalizeFilterableOperators(this.filterable);
     const operators = [...resolveFilterOperators(this.filterable?.operators)];
+    previousOperators.forEach((operator) => {
+      if (!operators.find((item) => item.value === operator.value)) {
+        operators.push(operator);
+      }
+    });
     set(this, 'filterable.operators', operators);
+    delete this.filterable?.operatorGroup;
 
-    if (operators.find((item) => item.value === operatorOption.value)) {
+    const existingIndex = operators.findIndex((item) => item.value === operatorOption.value);
+    if (existingIndex !== -1) {
+      operators[existingIndex] = operatorOption;
       return;
     }
 

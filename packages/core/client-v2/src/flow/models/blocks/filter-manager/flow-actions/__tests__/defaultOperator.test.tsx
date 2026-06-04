@@ -9,6 +9,7 @@
 
 import { describe, it, expect, beforeEach } from 'vitest';
 import { FlowEngine, FlowModel } from '@nocobase/flow-engine';
+import { createMockClient, InputFieldInterface } from '@nocobase/client-v2';
 import { defaultOperator } from '../defaultOperator';
 
 function createModel() {
@@ -16,6 +17,12 @@ function createModel() {
   const model = new FlowModel({ uid: 'm-default-operator', flowEngine: engine });
   return model;
 }
+
+type OperatorOption = {
+  value: string;
+  label?: unknown;
+  schema?: Record<string, unknown>;
+};
 
 describe('defaultOperator action', () => {
   beforeEach(() => {
@@ -54,5 +61,46 @@ describe('defaultOperator action', () => {
     const options2 = ui2?.props?.options || [];
     expect(options2.find((o: any) => o.value === '$a')).toBeTruthy();
     expect(options2.find((o: any) => o.value === '$b')).toBeTruthy();
+  });
+
+  it('resolves default operator options from field interfaces when collection field metadata is absent', () => {
+    const app = createMockClient();
+    app.addFieldInterfaces([InputFieldInterface]);
+    app.addFieldInterfaceOperator('input', {
+      label: 'plugin in',
+      value: '$in',
+      schema: { 'x-component': 'MultipleKeywordsInput' },
+    });
+    app.addFieldInterfaceOperator('input', {
+      label: 'plugin not in',
+      value: '$notIn',
+      schema: { 'x-component': 'MultipleKeywordsInput' },
+    });
+
+    const model = new FlowModel({ uid: 'm-default-operator-interface', flowEngine: app.flowEngine });
+    model.context.defineProperty('filterField', {
+      value: { name: 'name', title: 'Name', interface: 'input', type: 'string' },
+    });
+
+    const ui = defaultOperator.uiMode?.({ model } as any);
+    const options = (ui?.props?.options || []) as OperatorOption[];
+    expect(options.find((item) => item.value === '$in')?.schema?.['x-component']).toBe('MultipleKeywordsInput');
+    expect(options.find((item) => item.value === '$notIn')?.schema?.['x-component']).toBe('MultipleKeywordsInput');
+  });
+
+  it('uses the later field interface operator config when values are duplicated', () => {
+    const app = createMockClient();
+    app.addFieldInterfaces([InputFieldInterface]);
+    app.addFieldInterfaceOperator('input', {
+      label: 'plugin contains',
+      value: '$includes',
+      schema: { 'x-component': 'MultipleKeywordsInput' },
+    });
+
+    const inputInterface = app.dataSourceManager.collectionFieldInterfaceManager.getFieldInterface('input');
+    const operators = inputInterface.filterable.operators as OperatorOption[];
+    const includesOperator = operators.find((item) => item.value === '$includes');
+    expect(includesOperator.label).toBe('plugin contains');
+    expect(includesOperator.schema?.['x-component']).toBe('MultipleKeywordsInput');
   });
 });

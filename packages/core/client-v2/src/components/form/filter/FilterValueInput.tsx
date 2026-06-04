@@ -13,6 +13,10 @@ import type { FilterOperator, FilterOption } from '../../../flow/components/filt
 import { PasswordInput } from '../PasswordInput';
 import { DateFilterDynamicComponent } from './DateFilterDynamicComponent';
 
+type ComponentRegistryApp = {
+  getComponent?: (name: string) => React.ComponentType<any> | undefined;
+};
+
 export interface FilterValueInputProps {
   /** The currently selected leaf field option from the field picker. */
   field?: FilterOption;
@@ -26,12 +30,14 @@ export interface FilterValueInputProps {
   t?: (key: string) => string;
   /** Optional placeholder for the fallback `Input`. */
   placeholder?: string;
+  /** Optional v2 app registry used to resolve plugin-provided operator components. */
+  app?: ComponentRegistryApp;
 }
 
 const identity = (s: string) => s;
 
 type EffectiveSchema = {
-  'x-component'?: string;
+  'x-component'?: string | React.ComponentType<any>;
   'x-component-props'?: Record<string, any>;
   enum?: Array<{ value: any; label: string }> | any[];
 };
@@ -54,7 +60,7 @@ const resolveSchema = (field?: FilterOption, operator?: FilterOperator): Effecti
  * Interface-aware value renderer for filter rows. Returns `null` for `noValue` operators (`$empty`, `$notEmpty`). Otherwise dispatches the effective `x-component` (operator schema > field uiSchema > Input) to a small registry of antd controls.
  */
 export const FilterValueInput: React.FC<FilterValueInputProps> = (props) => {
-  const { field, operator, value, onChange, t = identity, placeholder } = props;
+  const { field, operator, value, onChange, t = identity, placeholder, app } = props;
 
   if (operator?.noValue) {
     return null;
@@ -64,6 +70,12 @@ export const FilterValueInput: React.FC<FilterValueInputProps> = (props) => {
   const componentName = schema['x-component'];
   const componentProps = schema['x-component-props'] || {};
   const enumOptions = (schema as any).enum || (field?.schema as any)?.enum;
+  const customComponentProps = {
+    value,
+    onChange,
+    ...componentProps,
+    style: { ...baseStyle, ...(componentProps.style || {}) },
+  };
 
   switch (componentName) {
     case 'DateFilterDynamicComponent':
@@ -183,6 +195,18 @@ export const FilterValueInput: React.FC<FilterValueInputProps> = (props) => {
     case 'Input.URL':
     case 'NanoIDInput':
     default:
+      if (typeof componentName === 'function') {
+        const Component = componentName;
+        return <Component {...customComponentProps} />;
+      }
+
+      if (typeof componentName === 'string') {
+        const Component = app?.getComponent?.(componentName);
+        if (Component) {
+          return <Component {...customComponentProps} />;
+        }
+      }
+
       return (
         <Input
           value={value}

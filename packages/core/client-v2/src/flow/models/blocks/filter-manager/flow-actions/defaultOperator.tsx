@@ -8,6 +8,12 @@
  */
 
 import { defineAction, tExpr, FlowModel } from '@nocobase/flow-engine';
+import {
+  resolveFilterOperators,
+  type FieldFilterable,
+  type FieldFilterOperator,
+  type FieldFilterOperatorList,
+} from '../../../../../collection-manager/filter-operators';
 import { operators } from '../../../../../flow-compat';
 import { FilterFormFieldModel } from '../../filter-form/fields';
 
@@ -37,12 +43,55 @@ export const defaultOperator: any = defineAction<FilterFormFieldModel>({
 
 function getOperatorOptions(model: FlowModel) {
   const meta = model.context.collectionField || model.context.filterField;
-  const operatorList =
-    model.context.collectionField?.filterable?.operators || operators[model.context.filterField.type];
-  return (operatorList || [])
+  return getOperatorList(model)
     .filter((op) => !op.visible || op.visible(meta))
     .map((op) => ({
       ...op,
       label: model.translate(op.label),
     }));
+}
+
+function getOperatorList(model: FlowModel) {
+  const collectionField = model.context.collectionField;
+  const collectionFieldOperators = getFilterableOperators(collectionField?.filterable);
+  if (collectionFieldOperators) {
+    return collectionFieldOperators;
+  }
+
+  const fieldInterfaceOperators = getFieldInterfaceOperators(model, collectionField || model.context.filterField);
+  if (fieldInterfaceOperators.length > 0) {
+    return fieldInterfaceOperators;
+  }
+
+  const filterFieldType = model.context.filterField?.type;
+  if (!filterFieldType) {
+    return [];
+  }
+
+  return ((operators as Record<string, FieldFilterOperator[]>)[filterFieldType] || []) as FieldFilterOperator[];
+}
+
+function getFilterableOperators(filterable?: FieldFilterable): FieldFilterOperator[] | undefined {
+  if (!filterable) {
+    return;
+  }
+
+  if (Array.isArray(filterable.operators) || typeof filterable.operators === 'string') {
+    return resolveFilterOperators(filterable.operators as FieldFilterOperatorList);
+  }
+
+  if (typeof filterable.operatorGroup === 'string') {
+    return resolveFilterOperators(filterable.operatorGroup);
+  }
+}
+
+function getFieldInterfaceOperators(model: FlowModel, field?: Record<string, unknown>) {
+  const interfaceName = typeof field?.interface === 'string' ? field.interface : undefined;
+  if (!interfaceName) {
+    return [];
+  }
+
+  const dataSourceManager = model.context.dataSourceManager || model.flowEngine?.context?.dataSourceManager;
+  const fieldInterface = dataSourceManager?.collectionFieldInterfaceManager?.getFieldInterface?.(interfaceName);
+  return getFilterableOperators(fieldInterface?.filterable) || [];
 }
