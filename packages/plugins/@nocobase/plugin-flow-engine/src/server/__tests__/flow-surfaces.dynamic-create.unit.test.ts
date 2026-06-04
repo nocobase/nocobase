@@ -318,6 +318,71 @@ describe('flowSurfaces dynamic capability create dry-run', () => {
     expect(JSON.stringify(response.publicPayload)).not.toContain('stepParams');
   });
 
+  it('should expose validateCapabilityCreate as a public dry-run without internal node details', async () => {
+    const service = new FlowSurfacesService({
+      flowSurfaceCapabilityProviders: createProviderRegistry([createDryRunProvider()]),
+    } as unknown as ConstructorParameters<typeof FlowSurfacesService>[0]);
+    const enabledPackages = new Set(['@nocobase/plugin-dry-run']);
+
+    const response = await service.validateCapabilityCreate(
+      {
+        publicType: 'dryRun',
+        initParams: {
+          collectionName: 'tasks',
+        },
+        settings: {
+          pageSize: 20,
+        },
+      },
+      {
+        enabledPackages,
+      },
+    );
+
+    expect(response).toMatchObject({
+      ok: true,
+      capability: {
+        publicType: 'dryRun',
+      },
+      normalizedPublicPayload: {
+        publicType: 'dryRun',
+        initParams: {
+          collectionName: 'tasks',
+        },
+        settings: {
+          pageSize: 20,
+        },
+      },
+      dryRunNode: {
+        publicType: 'dryRun',
+      },
+    });
+    expect(response).not.toHaveProperty('node');
+    expect(response.capability).not.toHaveProperty('identity');
+    expect(JSON.stringify(response)).not.toContain('TableBlockModel');
+    expect(JSON.stringify(response)).not.toContain('stepParams');
+
+    await expect(
+      service.validateCapabilityCreate(
+        {
+          publicType: 'dryRun',
+          initParams: {
+            collectionName: 'tasks',
+          },
+          settings: {
+            pageSize: 20,
+          },
+          stepParams: {
+            hidden: true,
+          },
+        } as unknown as Parameters<FlowSurfacesService['validateCapabilityCreate']>[0],
+        {
+          enabledPackages,
+        },
+      ),
+    ).rejects.toBeInstanceOf(FlowSurfaceAggregateError);
+  });
+
   it('should resolve recipe-only capabilities without calling provider resolveCreate', async () => {
     const response = await resolveDynamicCapabilityCreate({
       publicType: 'dryRun',

@@ -429,6 +429,21 @@ export type FlowSurfaceDynamicCapabilityCreateResponse = {
   warnings: FlowSurfaceCapabilityWarning[];
 };
 
+export type FlowSurfaceValidateCapabilityCreateValues = Omit<
+  FlowSurfaceDynamicCapabilityCreateValues,
+  'allowUnavailable' | 'rawPublicPayload'
+>;
+
+export type FlowSurfaceValidateCapabilityCreateResponse = {
+  ok: true;
+  capability: FlowSurfacePublicCapabilityItem;
+  normalizedPublicPayload: Record<string, unknown>;
+  dryRunNode: {
+    publicType: string;
+  };
+  warnings: FlowSurfaceCapabilityWarning[];
+};
+
 export type FlowSurfaceReadTarget = {
   locator: FlowSurfaceReadLocator;
   uid: string;

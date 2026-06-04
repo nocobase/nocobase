@@ -470,6 +470,8 @@ import type {
   FlowSurfaceResourceBindingOption,
   FlowSurfaceResourceBindingKey,
   FlowSurfaceSemanticResourceInput,
+  FlowSurfaceValidateCapabilityCreateResponse,
+  FlowSurfaceValidateCapabilityCreateValues,
   FlowSurfaceWriteTarget,
 } from './types';
 import type { FlowSurfaceContextResponse, FlowSurfaceContextVarInfo } from './types';
@@ -2138,17 +2140,29 @@ export class FlowSurfacesService {
   }
 
   async validateCapabilityCreate(
-    input: FlowSurfaceDynamicCapabilityCreateValues,
+    input: FlowSurfaceValidateCapabilityCreateValues,
     options: { transaction?: unknown; enabledPackages?: ReadonlySet<string> } = {},
-  ): Promise<FlowSurfaceDynamicCapabilityCreateResponse> {
+  ): Promise<FlowSurfaceValidateCapabilityCreateResponse> {
     const enabledPackages = await this.resolveEnabledPluginPackages(options);
-    return resolveDynamicCapabilityCreate({
+    const response = await resolveDynamicCapabilityCreate({
       ...input,
       actionName: 'validateCapabilityCreate',
       allowUnavailable: true,
       enabledPackages,
       providerRegistry: this.capabilityProviderRegistry,
+      rawPublicPayload: input,
     });
+    const capability = { ...response.capability };
+    delete capability.identity;
+    return {
+      ok: true,
+      capability,
+      normalizedPublicPayload: response.publicPayload,
+      dryRunNode: {
+        publicType: response.capability.publicType,
+      },
+      warnings: response.warnings,
+    };
   }
 
   private async collectDynamicBlockCapabilities(enabledPackages: ReadonlySet<string>) {

@@ -522,7 +522,7 @@ function buildReactionCapabilitySchema(
 }
 
 const FLOW_SURFACES_READ_ACL_NOTE =
-  'Read actions (`get` / `describeSurface` / `capabilities` / `describeCapability` / `catalog` / `context` / `getReactionMeta` / `getEventFlowMeta` / `listTemplates` / `getTemplate`) are open to `loggedIn` by default. Write actions still require the `ui.flowSurfaces` snippet.';
+  'Read actions (`get` / `describeSurface` / `capabilities` / `describeCapability` / `validateCapabilityCreate` / `catalog` / `context` / `getReactionMeta` / `getEventFlowMeta` / `listTemplates` / `getTemplate`) are open to `loggedIn` by default. Write actions still require the `ui.flowSurfaces` snippet.';
 
 const templateActionDocs = createFlowSurfaceTemplateActionDocs({
   tag: FLOW_SURFACES_TAG,
@@ -556,6 +556,15 @@ const actionDocs: Record<string, any> = {
     ),
     requestBody: requestBody('FlowSurfaceDescribeCapabilityRequest'),
     responses: responses('FlowSurfaceDescribeCapabilityResponse'),
+  },
+  validateCapabilityCreate: {
+    tags: [FLOW_SURFACES_TAG],
+    summary: 'Dry-run validate a dynamic capability create payload',
+    description: valuesCompatibilityNote(
+      `Validates a provider/manifest-backed dynamic capability create payload using only public \`publicType\`, \`initParams\`, and \`settings\`. The action does not persist FlowModel nodes and does not return internal \`use\`, \`modelUse\`, \`stepParams\`, \`props\`, \`decoratorProps\`, \`flowRegistry\`, \`createModelOptions\`, \`defaultNode\`, or \`lens\`. Validation failures are returned through public-path errors such as \`initParams.collectionName\` or \`settings.pageSize\`; callers must not infer internal payload shape from errors. This dry-run is optional for dynamic/plugin authoring and does not replace target-scoped \`catalog\` write confirmation. ${FLOW_SURFACES_READ_ACL_NOTE}`,
+    ),
+    requestBody: requestBody('FlowSurfaceValidateCapabilityCreateRequest'),
+    responses: responses('FlowSurfaceValidateCapabilityCreateResponse'),
   },
   catalog: {
     tags: [FLOW_SURFACES_TAG],
@@ -2618,6 +2627,62 @@ const schemas = {
           },
         },
         additionalProperties: false,
+      },
+    },
+    additionalProperties: false,
+  },
+  FlowSurfaceValidateCapabilityCreateRequest: {
+    type: 'object',
+    description:
+      'Public dry-run payload for a provider/manifest dynamic capability. Internal FlowModel keys are forbidden.',
+    required: ['publicType'],
+    properties: {
+      kind: {
+        type: 'string',
+        enum: ['block'],
+        description: 'Current slice only supports block capabilities.',
+      },
+      publicType: {
+        type: 'string',
+      },
+      ownerPlugin: {
+        type: 'string',
+      },
+      target: ref('FlowSurfaceWriteTarget'),
+      initParams: ANY_OBJECT_SCHEMA,
+      settings: ANY_OBJECT_SCHEMA,
+    },
+    additionalProperties: false,
+  },
+  FlowSurfaceValidateCapabilityCreateResponse: {
+    type: 'object',
+    required: ['ok', 'capability', 'normalizedPublicPayload', 'dryRunNode', 'warnings'],
+    properties: {
+      ok: {
+        type: 'boolean',
+        enum: [true],
+      },
+      capability: ref('FlowSurfacePublicCapabilityItem'),
+      normalizedPublicPayload: {
+        type: 'object',
+        description: 'Normalized public payload used for the dry-run. It contains public fields only.',
+        additionalProperties: true,
+      },
+      dryRunNode: {
+        type: 'object',
+        description:
+          'Public dry-run node summary. It intentionally excludes internal `use`, `modelUse`, `stepParams`, `props`, `decoratorProps`, `flowRegistry`, `createModelOptions`, `defaultNode`, and `lens`.',
+        required: ['publicType'],
+        properties: {
+          publicType: {
+            type: 'string',
+          },
+        },
+        additionalProperties: false,
+      },
+      warnings: {
+        type: 'array',
+        items: ref('FlowSurfaceCapabilityWarning'),
       },
     },
     additionalProperties: false,

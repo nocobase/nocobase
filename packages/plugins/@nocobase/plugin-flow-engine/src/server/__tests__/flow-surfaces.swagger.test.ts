@@ -149,6 +149,8 @@ describe('flowSurfaces swagger', () => {
       'FlowSurfaceCapabilitiesResponse',
       'FlowSurfaceDescribeCapabilityRequest',
       'FlowSurfaceDescribeCapabilityResponse',
+      'FlowSurfaceValidateCapabilityCreateRequest',
+      'FlowSurfaceValidateCapabilityCreateResponse',
       'FlowSurfaceCatalogItem',
       'FlowSurfaceNodeContract',
       'FlowSurfaceDomainContract',
@@ -375,6 +377,17 @@ describe('flowSurfaces swagger', () => {
     expect(schemas.FlowSurfaceDescribeCapabilityResponse.properties.data.$ref).toBe(
       '#/components/schemas/FlowSurfacePublicCapabilityItem',
     );
+    expect(schemas.FlowSurfaceValidateCapabilityCreateRequest.required).toEqual(['publicType']);
+    expect(schemas.FlowSurfaceValidateCapabilityCreateRequest.properties.kind.enum).toEqual(['block']);
+    expect(schemas.FlowSurfaceValidateCapabilityCreateRequest.properties.target.$ref).toBe(
+      '#/components/schemas/FlowSurfaceWriteTarget',
+    );
+    expect(schemas.FlowSurfaceValidateCapabilityCreateRequest.properties.stepParams).toBeUndefined();
+    expect(schemas.FlowSurfaceValidateCapabilityCreateResponse.properties.dryRunNode.required).toEqual(['publicType']);
+    expect(schemas.FlowSurfaceValidateCapabilityCreateResponse.properties.dryRunNode.properties.use).toBeUndefined();
+    expect(
+      schemas.FlowSurfaceValidateCapabilityCreateResponse.properties.dryRunNode.properties.modelUse,
+    ).toBeUndefined();
     expect(schemas.FlowSurfaceSetFieldValueRulesRequest.properties.target.description).toContain(
       'outer form block uid',
     );
@@ -838,6 +851,12 @@ describe('flowSurfaces swagger', () => {
     expect(swaggerDocument.paths['/flowSurfaces:describeCapability'].post.description).toContain(
       '`implementation.modelUse`',
     );
+    const validateCapabilityCreatePath = swaggerDocument.paths['/flowSurfaces:validateCapabilityCreate'].post;
+    expect(validateCapabilityCreatePath.description).toContain('does not persist FlowModel nodes');
+    expect(validateCapabilityCreatePath.description).toContain('does not return internal `use`');
+    expect(validateCapabilityCreatePath.description).toContain('public-path errors');
+    expect(validateCapabilityCreatePath.description).toContain('target-scoped `catalog` write confirmation');
+    expect(validateCapabilityCreatePath.description).toContain('`loggedIn`');
     const describeRequest =
       swaggerDocument.paths['/flowSurfaces:describeSurface'].post.requestBody.content['application/json'];
     expect(describeRequest.example?.locator?.pageSchemaUid).toBe('employees-page-schema');
@@ -2046,6 +2065,7 @@ describe('flowSurfaces swagger', () => {
     for (const actionName of [
       'catalog',
       'capabilities',
+      'validateCapabilityCreate',
       'context',
       'listTemplates',
       'getTemplate',
