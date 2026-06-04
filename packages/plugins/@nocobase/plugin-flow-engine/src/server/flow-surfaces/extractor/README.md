@@ -34,7 +34,9 @@ plugin failed.
 `--json` prints the machine-readable summary used by CI. Each result includes `ok`, `plugin`, optional `snapshotPath`,
 `eventCount`, `candidateCount`, `warningCount`, and optional `errors`. `--dry-run` skips snapshot writes and prints only
 the summary. `--fail-on-warning` turns extractor warnings into a failing result for CI without changing the read-only
-snapshot contract. Model loaders are recorded by key only; the CLI does not execute loader functions.
+snapshot contract. Model loaders are recorded by key only by default. `--resolve-loaders` opts into guarded execution of
+eligible no-import loader functions so the extractor can record models they register; guarded APIs and async loaders
+produce warnings, while import-dependent source files remain AST-only and are not executed.
 
 ## What Can Be Discovered
 

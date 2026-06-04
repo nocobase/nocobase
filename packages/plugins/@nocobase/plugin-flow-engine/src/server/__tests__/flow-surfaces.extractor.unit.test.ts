@@ -4467,6 +4467,71 @@ describe('flowSurfaces extractor scaffold', () => {
     await expect(runWithFlowSurfaceExtractorGuards(explicitLoader.source)).resolves.toBe('loader-executed');
   });
 
+  it('should continue resolving later loader functions after a guarded loader fails', async () => {
+    const tempRoot = await realpath(tmpdir());
+    const packageRoot = await mkdtemp(join(tempRoot, 'flow-surfaces-extractor-mixed-loader-'));
+    const entry = join(packageRoot, 'src/client-v2/index.ts');
+    try {
+      await mkdir(join(packageRoot, 'src/client-v2'), { recursive: true });
+      await writeFile(join(packageRoot, 'package.json'), '{"name":"@example/plugin-mixed-loader"}\n', 'utf8');
+      await writeFile(
+        entry,
+        `
+          const loaders = {
+            GuardedLoaderModel: {
+              loader() {
+                return fetch('/blocked-loader');
+              },
+            },
+            LaterLoaderModel: {
+              loader() {
+                class LaterResolvedBlockModel {}
+
+                flowEngine.registerModels({
+                  LaterResolvedBlockModel,
+                });
+              },
+            },
+          };
+
+          flowEngine.registerModelLoaders(loaders);
+        `,
+        'utf8',
+      );
+
+      const extraction = await extractFlowSurfacePluginCapabilities(
+        {
+          plugin: '@example/plugin-mixed-loader',
+          packageRoot,
+        },
+        {
+          generatedAt: FLOW_SURFACE_EXTRACTOR_TEST_DATE,
+          extractorVersion: 'test',
+          resolveLoaders: true,
+        },
+      );
+
+      expect(extraction).toMatchObject({
+        eventCount: 5,
+        warningCount: 1,
+        snapshot: {
+          models: expect.arrayContaining([
+            expect.objectContaining({
+              modelUse: 'LaterResolvedBlockModel',
+            }),
+          ]),
+          warnings: [
+            expect.objectContaining({
+              message: expect.stringContaining('fetch'),
+            }),
+          ],
+        },
+      });
+    } finally {
+      await rm(packageRoot, { recursive: true, force: true });
+    }
+  });
+
   it('should write snapshots only under the selected output directory', async () => {
     const tempRoot = await realpath(tmpdir());
     const outDir = await mkdtemp(join(tempRoot, 'flow-surfaces-extractor-'));

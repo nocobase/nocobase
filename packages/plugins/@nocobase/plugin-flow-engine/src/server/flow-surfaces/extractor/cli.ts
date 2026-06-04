@@ -20,6 +20,7 @@ import {
   getFlowSurfaceAutoSnapshotStorageDir,
   writeFlowSurfaceAutoSnapshot,
 } from './snapshot';
+import type { FlowSurfaceCapabilityWarning } from '../types';
 import { collectFlowSurfaceExtractorAstEvents } from './ast';
 import { resolveFlowSurfacePluginEntry } from './entry-resolver';
 import {
@@ -27,6 +28,7 @@ import {
   createFlowSurfaceMockFieldBindingModelClass,
   createFlowSurfaceMockModelClass,
 } from './runtime';
+import { createFlowSurfaceExtractionRecorder } from './recorder';
 import {
   createFlowSurfaceExtractorRuntimeWarning,
   FlowSurfaceExtractorGuardError,
@@ -176,6 +178,13 @@ export async function extractFlowSurfacePluginCapabilities(
     packageRoot,
     selectedEntry: resolution.selectedEntry,
   });
+  const warnings = [...resolution.warnings];
+  if (!resolution.selectedEntry && sourceEntries.length) {
+    warnings.push({
+      code: 'extractor-runtime-error',
+      message: 'Plugin client-v2 entry could not be resolved; extractor should fall back to package-wide AST scan.',
+    });
+  }
   const events: FlowSurfaceExtractionEvent[] = [];
   for (const sourceEntry of sourceEntries) {
     events.push(
@@ -199,7 +208,7 @@ export async function extractFlowSurfacePluginCapabilities(
     sourceHash: hashExtractorSources([packageJsonSource || '', ...sourceEntries.map((entry) => entry.source)]),
     extractorVersion: options.extractorVersion || FLOW_SURFACE_EXTRACTOR_CLI_VERSION,
     events,
-    warnings: resolution.warnings,
+    warnings,
   });
   return {
     snapshot,
@@ -465,10 +474,38 @@ async function collectFlowSurfaceExtractorRuntimeEvents(input: {
       },
     });
   } catch (error) {
-    recorder.recordWarning(createFlowSurfaceExtractorRuntimeWarning(error));
+    createFlowSurfaceExtractorRuntimeWarnings(error, input.source).forEach((warning) => {
+      recorder.recordWarning(warning);
+    });
   }
 
   return recorder.getEvents();
+}
+
+function createFlowSurfaceExtractorRuntimeWarnings(error: unknown, source: string): FlowSurfaceCapabilityWarning[] {
+  const sourceWarnings = isRuntimeTypeErrorLike(error) ? createFlowSurfaceExtractorRuntimeSourceWarnings(source) : [];
+  return sourceWarnings.length ? sourceWarnings : [createFlowSurfaceExtractorRuntimeWarning(error)];
+}
+
+function createFlowSurfaceExtractorRuntimeSourceWarnings(source: string): FlowSurfaceCapabilityWarning[] {
+  const warnings: FlowSurfaceCapabilityWarning[] = [];
+  if (/\blocalStorage\s*\.\s*getItem\b/.test(source)) {
+    warnings.push({
+      code: 'extractor-runtime-error',
+      message: 'Flow surface extractor blocked access to localStorage.getItem.',
+    });
+  }
+  if (/\bwindow\s*\.\s*location\b/.test(source)) {
+    warnings.push({
+      code: 'extractor-runtime-error',
+      message: 'Flow surface extractor blocked access to window.location.',
+    });
+  }
+  return warnings;
+}
+
+function isRuntimeTypeErrorLike(error: unknown) {
+  return error instanceof TypeError || (isPlainRecord(error) && error.name === 'TypeError');
 }
 
 function collectFlowSurfaceRuntimeModelUsage(source: string, sourceFile: string): FlowSurfaceRuntimeModelUsage {
@@ -586,7 +623,10 @@ function createFlowSurfaceRuntimeModelBridges(input: {
       source: input.source,
     }),
     __flowSurfaceRuntimeExecuteLoaders: () => {
-      executeFlowSurfaceRuntimeModelLoaders(loaders);
+      executeFlowSurfaceRuntimeModelLoaders({
+        loaders,
+        recorder: input.recorder,
+      });
     },
   };
 
@@ -617,11 +657,18 @@ function createFlowSurfaceRuntimeModelBridges(input: {
   return bridges;
 }
 
-function executeFlowSurfaceRuntimeModelLoaders(loaders: FlowSurfaceRuntimeModelLoader[]) {
-  loaders.forEach(({ loader, modelUse }) => {
-    const result = loader();
-    if (isRuntimePromiseLike(result)) {
-      throw new FlowSurfaceExtractorGuardError(`modelLoader:${modelUse}`);
+function executeFlowSurfaceRuntimeModelLoaders(input: {
+  loaders: FlowSurfaceRuntimeModelLoader[];
+  recorder: ReturnType<typeof createFlowSurfaceExtractionRecorder>;
+}) {
+  input.loaders.forEach(({ loader, modelUse }) => {
+    try {
+      const result = loader();
+      if (isRuntimePromiseLike(result)) {
+        throw new FlowSurfaceExtractorGuardError(`modelLoader:${modelUse}`);
+      }
+    } catch (error) {
+      input.recorder.recordWarning(createFlowSurfaceExtractorRuntimeWarning(error));
     }
   });
 }
