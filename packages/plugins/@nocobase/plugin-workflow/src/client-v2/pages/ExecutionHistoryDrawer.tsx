@@ -7,19 +7,26 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { DeleteOutlined, FilterOutlined, ReloadOutlined } from '@ant-design/icons';
-import { Table } from '@nocobase/client-v2';
-import { useFlowContext } from '@nocobase/flow-engine';
+import { DeleteOutlined, ReloadOutlined } from '@ant-design/icons';
+import { CollectionFilter, ExtendCollectionsProvider, Table } from '@nocobase/client-v2';
+import { useFlowContext, useFlowEngine } from '@nocobase/flow-engine';
 import { useMemoizedFn, useRequest } from 'ahooks';
-import { App, Button, Flex, Popover, Select, Space, Tooltip, Typography, theme } from 'antd';
+import { App, Button, Flex, Space, Tooltip, Typography, theme } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import dayjs from 'dayjs';
 import React, { useMemo, useState } from 'react';
+import executionCollection from '../../common/collections/executions';
 import { EXECUTION_STATUS, EXECUTION_STATUS_OPTIONS } from '../../common/executionStatus';
 import { ExecutionStatusTag } from '../components/ExecutionStatusTag';
 import { useT, useWorkflowTranslation } from '../locale';
 
 const EXECUTION_PAGE_SIZE = 20;
+
+// Mirror v1's `nonfilterable: ['workflow']` on its execution `Filter.Action`.
+// Dropping the `workflow` association also keeps the filter field picker from
+// resolving the `workflows` target collection, which isn't published to the v2
+// data source.
+const EXECUTIONS_NONFILTERABLE_FIELD_NAMES = ['workflow'];
 
 type ExecutionRecord = {
   id: number | string;
@@ -41,24 +48,35 @@ function normalizeListResponse(response: any) {
   return { records, total: meta.count || meta.total || records.length };
 }
 
-export function ExecutionHistoryDrawer({ workflowKey }: { workflowKey: string | number }) {
+function ExecutionHistoryDrawerInner({ workflowKey }: { workflowKey: string | number }) {
   const { t } = useWorkflowTranslation();
   const compile = useT();
   const ctx = useFlowContext();
+  const engine = useFlowEngine();
   const { token } = theme.useToken();
   const { modal, message } = App.useApp();
   const resource = ctx.api.resource('executions');
+  const filterCollection = useMemo(
+    () => engine.context.dataSourceManager?.getDataSource?.('main')?.getCollection?.('executions'),
+    [engine],
+  );
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(EXECUTION_PAGE_SIZE);
-  const [statusFilter, setStatusFilter] = useState<number[]>([]);
+  const [filterPayload, setFilterPayload] = useState<Record<string, any> | undefined>(undefined);
   const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
+
+  const handleFilterChange = useMemoizedFn((filter: Record<string, unknown> | undefined) => {
+    setFilterPayload(filter);
+    setPage(1);
+  });
 
   const { data, loading, refresh } = useRequest(
     async () => {
-      const filter: Record<string, any> = { key: workflowKey };
-      if (statusFilter.length) {
-        filter.status = { $in: statusFilter };
-      }
+      // The `{ key: workflowKey }` scope is mandatory; the user-built filter is
+      // ANDed onto it so it can never widen the result set past this workflow.
+      const filter: Record<string, any> = filterPayload
+        ? { $and: [{ key: workflowKey }, filterPayload] }
+        : { key: workflowKey };
       const response = await resource.list({
         page,
         pageSize,
@@ -68,7 +86,7 @@ export function ExecutionHistoryDrawer({ workflowKey }: { workflowKey: string | 
       });
       return normalizeListResponse(response);
     },
-    { refreshDeps: [page, pageSize, statusFilter, workflowKey] },
+    { refreshDeps: [page, pageSize, filterPayload, workflowKey] },
   );
 
   const handlePaginationChange = useMemoizedFn((nextPage: number, nextPageSize: number) => {
@@ -119,11 +137,6 @@ export function ExecutionHistoryDrawer({ workflowKey }: { workflowKey: string | 
     });
   });
 
-  const statusOptions = useMemo(
-    () => EXECUTION_STATUS_OPTIONS.map((option) => ({ value: option.value, label: compile(option.label) })),
-    [compile],
-  );
-
   const columns = useMemo<ColumnsType<ExecutionRecord>>(
     () => [
       { title: t('ID'), dataIndex: 'id' },
@@ -157,7 +170,7 @@ export function ExecutionHistoryDrawer({ workflowKey }: { workflowKey: string | 
         title: t('Actions'),
         width: 160,
         render: (_, record) => (
-          <Space split="|">
+          <Space size="middle" wrap={false} style={{ whiteSpace: 'nowrap' }}>
             <Tooltip title={t('Available in the classic UI for now')}>
               <Typography.Link disabled>{t('View')}</Typography.Link>
             </Tooltip>
@@ -175,26 +188,12 @@ export function ExecutionHistoryDrawer({ workflowKey }: { workflowKey: string | 
   return (
     <div>
       <Flex justify="space-between" align="center" style={{ marginBottom: token.margin }}>
-        <Popover
-          trigger="click"
-          content={
-            <Select
-              mode="multiple"
-              allowClear
-              style={{ minWidth: token.sizeXXL * 4 }}
-              placeholder={t('Status')}
-              value={statusFilter}
-              options={statusOptions}
-              optionFilterProp="label"
-              onChange={(value) => {
-                setStatusFilter(value);
-                setPage(1);
-              }}
-            />
-          }
-        >
-          <Button icon={<FilterOutlined />}>{t('Filter')}</Button>
-        </Popover>
+        <CollectionFilter
+          collection={filterCollection}
+          nonfilterableFieldNames={EXECUTIONS_NONFILTERABLE_FIELD_NAMES}
+          onChange={handleFilterChange}
+          t={compile}
+        />
         <Space>
           <Button icon={<ReloadOutlined />} onClick={() => refresh()}>
             {t('Refresh')}
@@ -220,6 +219,38 @@ export function ExecutionHistoryDrawer({ workflowKey }: { workflowKey: string | 
         pagination={{ current: page, pageSize, total: data?.total || 0, onChange: handlePaginationChange }}
       />
     </div>
+  );
+}
+
+export function ExecutionHistoryDrawer({ workflowKey }: { workflowKey: string | number }) {
+  const compile = useT();
+  // The shared `executions` collection is `schema-only`, so it isn't published
+  // to the v2 data source — register a client-only copy so `CollectionFilter`
+  // can resolve its fields. Its `status` field carries the v1 Formily template
+  // `enum: '{{ExecutionStatusOptions}}'`, which the v2 filter value renderer
+  // can't compile; replace it with the resolved `{ label, value }` options up
+  // front so the Status condition renders as a Select (matching v1).
+  const collections = useMemo(() => {
+    const statusOptions = EXECUTION_STATUS_OPTIONS.map((option) => ({
+      value: option.value,
+      label: compile(option.label),
+    }));
+    return [
+      {
+        ...executionCollection,
+        fields: executionCollection.fields.map((field) =>
+          field?.name === 'status' && field.uiSchema
+            ? { ...field, uiSchema: { ...field.uiSchema, enum: statusOptions } }
+            : field,
+        ),
+      },
+    ];
+  }, [compile]);
+
+  return (
+    <ExtendCollectionsProvider collections={collections}>
+      <ExecutionHistoryDrawerInner workflowKey={workflowKey} />
+    </ExtendCollectionsProvider>
   );
 }
 

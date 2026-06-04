@@ -33,6 +33,8 @@ vi.mock('@nocobase/client-v2', () => ({
   DEFAULT_PAGE_SIZE: 20,
   Plugin: class Plugin {},
   SortableCategoryTabs: () => null,
+  CollectionFilter: () => null,
+  ExtendCollectionsProvider: ({ children }: any) => <>{children}</>,
   DrawerFormLayout: ({ children, onSubmit }: any) => (
     <div>
       {children}

@@ -173,6 +173,7 @@
   "Otherwise": "否则",
   "Output": "流程输出",
   "Output value": "结果值",
+  "Parent execution ID": "父执行 ID",
   "Pending": "待处理",
   "Please add at least one condition": "请添加至少一个条件",
   "Please select collection first": "请先选择数据表",
@@ -248,6 +249,7 @@
   "Triggered according to preset time conditions. Suitable for one-time or periodic tasks, such as sending notifications and cleaning data on a schedule.": "按预设的时间条件定时触发。适用于一次性或周期性的任务，如定时发送通知、清理数据等。",
   "Triggered at": "触发时间",
   "Triggered but still waiting in queue to execute.": "已触发但仍在队列中等待执行。",
+  "Triggered manually": "手动触发",
   "Triggered only if one of the selected fields changes. If unselected, it means that it will be triggered when any field changes. When record is added, any field is considered to have been changed.": "只有被选中的某个字段发生变动时才会触发。如果不选择，则表示任何字段变动时都会触发。新增数据时，任意字段都被认为发生变动。",
   "Triggered when data changes in the collection, such as after adding, updating, or deleting a record. Unlike \"Post-action event\", Collection event listens for data changes rather than HTTP requests. Unless you understand the exact meaning, it is recommended to use \"Post-action event\".": "当数据表中的数据发生变化时触发，比如新增、更新或删除一条数据后。与“操作后事件”不同，数据表事件监听数据变动而不是 HTTP 请求，除非你明白确切含义，否则推荐使用“操作后事件”。",
   "True": "真",
@@ -264,6 +266,7 @@
   "Use transaction": "启用事务",
   "Variable key of node": "节点变量标识",
   "Version": "版本",
+  "Version ID": "版本 ID",
   "View result": "查看结果",
   "Weeks": "周",
   "When no condition matches": "未满足任何条件时",
@@ -293,6 +296,5 @@
   "Confirm paste": "确认粘贴",
   "This action will remove invalid variable references, otherwise the workflow cannot run correctly.": "该操作将移除无效的变量引用，否则工作流将无法正确执行。",
   "Failed to paste node": "粘贴节点失败",
-  "Search by title": "按标题搜索",
   "Available in the classic UI for now": "暂时仅在旧版界面中可用"
 }

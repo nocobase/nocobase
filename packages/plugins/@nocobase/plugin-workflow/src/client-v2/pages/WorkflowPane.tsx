@@ -7,18 +7,31 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { DeleteOutlined, FilterOutlined, PlusOutlined, ReloadOutlined, SyncOutlined } from '@ant-design/icons';
-import { DEFAULT_PAGE_SIZE, DialogFormLayout, Table } from '@nocobase/client-v2';
+import { DeleteOutlined, PlusOutlined, ReloadOutlined, SyncOutlined } from '@ant-design/icons';
+import {
+  CollectionFilter,
+  type CompiledFilter,
+  DEFAULT_PAGE_SIZE,
+  DialogFormLayout,
+  ExtendCollectionsProvider,
+  Table,
+} from '@nocobase/client-v2';
 import { useFlowContext } from '@nocobase/flow-engine';
 import { useMemoizedFn, useRequest } from 'ahooks';
-import { App, Button, Card, Flex, Form, Input, Popover, Space, Switch, Tag, Tooltip, Typography, theme } from 'antd';
+import { App, Button, Card, Flex, Form, Input, Space, Switch, Tag, Tooltip, Typography, theme } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import React, { useMemo, useState } from 'react';
+import workflowCollection from '../../common/collections/workflows';
 import { useT, useWorkflowTranslation } from '../locale';
 import PluginWorkflowClientV2 from '../plugin';
 import { ExecutionHistoryDrawer } from './ExecutionHistoryDrawer';
 import { ALL_CATEGORY_KEY, WorkflowCategoryTabs, WorkflowCategory } from './WorkflowCategoryTabs';
 import { WorkflowFormDrawer, WorkflowRecord } from './WorkflowFormDrawer';
+
+// Mirror v1's `nonfilterable: ['id', 'description', 'categories']` on the
+// workflows `Filter.Action`. The remaining filterable fields are Name, Status
+// (enabled), Trigger type, Mode (sync), and Created by.
+const WORKFLOWS_NONFILTERABLE_FIELD_NAMES = ['id', 'description', 'categories'];
 
 function normalizeListResponse(response: any) {
   const body = response?.data;
@@ -105,7 +118,7 @@ function DuplicateWorkflowForm({
   );
 }
 
-export default function WorkflowPane() {
+function WorkflowPaneInner() {
   const { t } = useWorkflowTranslation();
   const compile = useT();
   const ctx = useFlowContext();
@@ -113,12 +126,21 @@ export default function WorkflowPane() {
   const { modal, message } = App.useApp();
   const resource = ctx.api.resource('workflows');
   const plugin = ctx.app.pm.get(PluginWorkflowClientV2);
+  const filterCollection = useMemo(
+    () => ctx.dataSourceManager?.getDataSource?.('main')?.getCollection?.('workflows'),
+    [ctx],
+  );
 
   const [activeCategory, setActiveCategory] = useState<string>(ALL_CATEGORY_KEY);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
   const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
-  const [titleSearch, setTitleSearch] = useState('');
+  const [filterPayload, setFilterPayload] = useState<Record<string, any> | undefined>(undefined);
+
+  const handleFilterChange = useMemoizedFn((filter: CompiledFilter) => {
+    setFilterPayload(filter);
+    setPage(1);
+  });
 
   const { data: categoryData, refresh: refreshCategories } = useRequest(async () => {
     const response = await ctx.api.resource('workflowCategories').list({ paginate: false, sort: ['sort'] });
@@ -132,13 +154,14 @@ export default function WorkflowPane() {
 
   const { data, loading, refresh } = useRequest(
     async () => {
-      const filter: Record<string, any> = { current: true };
+      // `{ current: true }` (latest version only) and the active-category scope
+      // are mandatory; the user-built filter is ANDed onto them so it can only
+      // narrow, never widen, the list.
+      const scope: Record<string, any> = { current: true };
       if (activeCategory !== ALL_CATEGORY_KEY) {
-        filter['categories.id'] = activeCategory;
+        scope['categories.id'] = activeCategory;
       }
-      if (titleSearch) {
-        filter.title = { $includes: titleSearch };
-      }
+      const filter = filterPayload ? { $and: [scope, filterPayload] } : scope;
       const response = await resource.list({
         page,
         pageSize,
@@ -149,7 +172,7 @@ export default function WorkflowPane() {
       });
       return normalizeListResponse(response);
     },
-    { refreshDeps: [page, pageSize, activeCategory, titleSearch] },
+    { refreshDeps: [page, pageSize, activeCategory, filterPayload] },
   );
 
   const handlePaginationChange = useMemoizedFn((nextPage: number, nextPageSize: number) => {
@@ -293,22 +316,12 @@ export default function WorkflowPane() {
         refreshCategories={refreshCategories}
       />
       <Flex justify="space-between" align="center" style={{ marginBottom: token.margin }}>
-        <Popover
-          trigger="click"
-          content={
-            <Input.Search
-              allowClear
-              defaultValue={titleSearch}
-              placeholder={t('Search by title')}
-              onSearch={(value) => {
-                setTitleSearch(value);
-                setPage(1);
-              }}
-            />
-          }
-        >
-          <Button icon={<FilterOutlined />}>{t('Filter')}</Button>
-        </Popover>
+        <CollectionFilter
+          collection={filterCollection}
+          nonfilterableFieldNames={WORKFLOWS_NONFILTERABLE_FIELD_NAMES}
+          onChange={handleFilterChange}
+          t={compile}
+        />
         <Space>
           <Button icon={<ReloadOutlined />} onClick={() => refresh()}>
             {t('Refresh')}
@@ -341,5 +354,38 @@ export default function WorkflowPane() {
         pagination={{ current: page, pageSize, total: data?.total || 0, onChange: handlePaginationChange }}
       />
     </Card>
+  );
+}
+
+export default function WorkflowPane() {
+  const compile = useT();
+  const ctx = useFlowContext();
+  const plugin = ctx.app.pm.get(PluginWorkflowClientV2);
+  // The shared `workflows` collection is `schema-only`, so it isn't published to
+  // the v2 data source — register a client-only copy so `CollectionFilter` can
+  // resolve its fields. Its `type` field carries the v1 Formily template
+  // `enum: '{{useTriggersOptions()}}'`, which the v2 filter value renderer can't
+  // compile; replace it with the registered trigger options up front so the
+  // Trigger type condition renders as a Select (matching v1).
+  const collections = useMemo(() => {
+    const triggerOptions = Array.from(plugin.triggers.getEntities())
+      .map(([value, opt]) => ({ value, label: opt?.title ? compile(opt.title) : String(value) }))
+      .sort((a, b) => String(a.label).localeCompare(String(b.label)));
+    return [
+      {
+        ...workflowCollection,
+        fields: workflowCollection.fields.map((field) =>
+          field?.name === 'type' && field.uiSchema
+            ? { ...field, uiSchema: { ...field.uiSchema, enum: triggerOptions } }
+            : field,
+        ),
+      },
+    ];
+  }, [plugin, compile]);
+
+  return (
+    <ExtendCollectionsProvider collections={collections}>
+      <WorkflowPaneInner />
+    </ExtendCollectionsProvider>
   );
 }

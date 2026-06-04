@@ -169,6 +169,7 @@
   "Otherwise": "Otherwise",
   "Output": "Output",
   "Output value": "Output value",
+  "Parent execution ID": "Parent execution ID",
   "Pending": "Pending",
   "Please add at least one condition": "Please add at least one condition",
   "Please select collection first": "Please select collection first",
@@ -240,6 +241,7 @@
   "Triggered according to preset time conditions. Suitable for one-time or periodic tasks, such as sending notifications and cleaning data on a schedule.": "Triggered according to preset time conditions. Suitable for one-time or periodic tasks, such as sending notifications and cleaning data on a schedule.",
   "Triggered at": "Triggered at",
   "Triggered but still waiting in queue to execute.": "Triggered but still waiting in queue to execute.",
+  "Triggered manually": "Triggered manually",
   "Triggered only if one of the selected fields changes. If unselected, it means that it will be triggered when any field changes. When record is added, any field is considered to have been changed.": "Triggered only if one of the selected fields changes. If unselected, it means that it will be triggered when any field changes. When record is added, any field is considered to have been changed.",
   "Triggered when data changes in the collection, such as after adding, updating, or deleting a record. Unlike \"Post-action event\", Collection event listens for data changes rather than HTTP requests. Unless you understand the exact meaning, it is recommended to use \"Post-action event\".": "Triggered when data changes in the collection, such as after adding, updating, or deleting a record. Unlike \"Post-action event\", Collection event listens for data changes rather than HTTP requests. Unless you understand the exact meaning, it is recommended to use \"Post-action event\".",
   "True": "True",
@@ -256,6 +258,7 @@
   "Use transaction": "Use transaction",
   "Variable key of node": "Variable key of node",
   "Version": "Version",
+  "Version ID": "Version ID",
   "View result": "View result",
   "Weeks": "Weeks",
   "When no condition matches": "When no condition matches",
@@ -285,6 +288,5 @@
   "Confirm paste": "Confirm paste",
   "This action will remove invalid variable references, otherwise the workflow cannot run correctly.": "This action will remove invalid variable references, otherwise the workflow cannot run correctly.",
   "Failed to paste node": "Failed to paste node",
-  "Search by title": "Search by title",
   "Available in the classic UI for now": "Available in the classic UI for now"
 }
