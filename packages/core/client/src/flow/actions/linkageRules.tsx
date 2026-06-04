@@ -1812,7 +1812,6 @@ const commonLinkageRulesHandler = async (ctx: FlowContext, params: any) => {
       });
       return;
     }
-    const resolvedPathKey = namePathToPathKey(resolvedPath);
     const whenEmpty = !!(patch as any)?.whenEmpty;
     const value = (patch as any)?.value;
     try {
@@ -1829,10 +1828,7 @@ const commonLinkageRulesHandler = async (ctx: FlowContext, params: any) => {
           return;
         }
       }
-      const hasPendingDifferentValue = directValuePatches.some(
-        (item) => namePathToPathKey(item.path) === resolvedPathKey && !_.isEqual(item.value, value),
-      );
-      if (_.isEqual(current, value) && !hasPendingDifferentValue) {
+      if (_.isEqual(current, value)) {
         return;
       }
     } catch {
@@ -1844,6 +1840,16 @@ const commonLinkageRulesHandler = async (ctx: FlowContext, params: any) => {
       value,
       ...(whenEmpty ? { whenEmpty: true } : {}),
     });
+  };
+  const removePendingFormValuePatches = (path: any) => {
+    const resolvedPath = resolveNamePathForPatch(path);
+    if (!resolvedPath) return;
+    const resolvedPathKey = namePathToPathKey(resolvedPath);
+    for (let i = directValuePatches.length - 1; i >= 0; i--) {
+      if (namePathToPathKey(directValuePatches[i].path) === resolvedPathKey) {
+        directValuePatches.splice(i, 1);
+      }
+    }
   };
 
   const getModelTargetPathForPatch = (model: any): string | null => {
@@ -2147,6 +2153,7 @@ const commonLinkageRulesHandler = async (ctx: FlowContext, params: any) => {
           targetUid: model?.uid,
         });
       } else {
+        removePendingFormValuePatches(targetPath);
         addFormValuePatch({ path: targetPath, value: undefined });
       }
     }

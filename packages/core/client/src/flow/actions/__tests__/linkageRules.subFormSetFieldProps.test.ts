@@ -829,13 +829,7 @@ describe('linkageSetFieldProps action', () => {
 
     expect(fieldModel.hidden).toBe(true);
     expect(formValues.name).toBeUndefined();
-    expect(setFormValues).toHaveBeenCalledWith(
-      [
-        { path: ['name'], value: 'assigned' },
-        { path: ['name'], value: undefined },
-      ],
-      expect.objectContaining({ source: 'linkage' }),
-    );
+    expect(setFormValues).not.toHaveBeenCalled();
     expect(form.setFieldValue).not.toHaveBeenCalled();
   });
 
