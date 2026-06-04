@@ -30,6 +30,9 @@ server {
     client_max_body_size 0;
     access_log /var/log/nginx/nocobase.log apm;
 
+    include /etc/nginx/mime.types;
+    types { application/javascript mjs; }
+
     gzip on;
     gzip_types text/plain text/css application/json application/javascript text/xml application/xml application/xml+rss text/javascript;
 
@@ -88,7 +91,7 @@ server {
     }
 
     location {{v2PublicPath}}assets/ {
-        alias {{cwd}}/node_modules/@nocobase/app/dist/client/v2/assets/;
+        alias {{cwd}}/node_modules/@nocobase/app/dist/client/v/assets/;
         expires 365d;
         add_header Cache-Control "public";
         access_log off;

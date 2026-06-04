@@ -15,7 +15,7 @@ Registrasi route biasanya dilakukan dalam method `load()` plugin, lihat [Plugin]
 
 :::warning Perhatian
 
-Plugin NocoBase v2, route yang didaftarkan secara default akan memiliki prefix `/v2`, perlu menyertakan prefix ini saat diakses.
+Plugin NocoBase v2, route yang didaftarkan secara default akan memiliki prefix `/v`, perlu menyertakan prefix ini saat diakses.
 
 :::
 
@@ -25,9 +25,9 @@ NocoBase telah mendaftarkan route default berikut:
 
 | Nama           | Path                  | Component                | Penjelasan           |
 | -------------- | --------------------- | ------------------- | -------------- |
-| admin          | /v2/admin/\*          | AdminLayout         | Halaman admin   |
-| admin.page     | /v2/admin/:name       | AdminDynamicPage    | Halaman yang dibuat dinamis |
-| admin.settings | /v2/admin/settings/\* | AdminSettingsLayout | Halaman konfigurasi plugin   |
+| admin          | /v/admin/\*          | AdminLayout         | Halaman admin   |
+| admin.page     | /v/admin/:name       | AdminDynamicPage    | Halaman yang dibuat dinamis |
+| admin.settings | /v/admin/settings/\* | AdminSettingsLayout | Halaman konfigurasi plugin   |
 
 ## Route Halaman
 
@@ -55,7 +55,7 @@ class MyPlugin extends Plugin {
   async load() {
     this.router.add('hello', {
       path: '/hello',
-      // Loading sesuai kebutuhan, modul ini dimuat saat mengakses /v2/hello
+      // Loading sesuai kebutuhan, modul ini dimuat saat mengakses /v/hello
       componentLoader: () => import('./pages/HelloPage'),
     });
   }
@@ -103,12 +103,12 @@ class MyPlugin extends Plugin {
 
     // Child route, menggunakan componentLoader untuk loading sesuai kebutuhan
     this.router.add('root.home', {
-      path: '/', // -> /v2/
+      path: '/', // -> /v/
       componentLoader: () => import('./pages/HomePage'),
     });
 
     this.router.add('root.about', {
-      path: '/about', // -> /v2/about
+      path: '/about', // -> /v/about
       componentLoader: () => import('./pages/AboutPage'),
     });
   }
@@ -121,7 +121,7 @@ Path route mendukung parameter dinamis:
 
 ```tsx
 this.router.add('root.user', {
-  path: '/user/:id', // -> /v2/user/:id
+  path: '/user/:id', // -> /v/user/:id
   componentLoader: () => import('./pages/UserPage'),
 });
 ```
@@ -176,7 +176,7 @@ export class HelloPlugin extends Plugin<any, Application> {
 }
 ```
 
-Setelah didaftarkan, path akses adalah `/admin/settings/hello`. Saat hanya ada satu halaman di bawah menu, tab bar atas akan otomatis tersembunyi.
+Setelah didaftarkan, path akses adalah `/v/admin/settings/hello`. Saat hanya ada satu halaman di bawah menu, tab bar atas akan otomatis tersembunyi.
 
 ### Halaman Pengaturan Multi-Tab
 
@@ -194,7 +194,7 @@ class HelloPlugin extends Plugin<any, Application> {
       icon: 'ApiOutlined',
     });
 
-    // Tab 1: Pengaturan Dasar (key adalah 'index', di-map ke /admin/settings/hello)
+    // Tab 1: Pengaturan Dasar (key adalah 'index', di-map ke /v/admin/settings/hello)
     this.pluginSettingsManager.addPageTabItem({
       menuKey: 'hello',
       key: 'index',
@@ -202,7 +202,7 @@ class HelloPlugin extends Plugin<any, Application> {
       componentLoader: () => import('./settings/GeneralPage'),
     });
 
-    // Tab 2: Pengaturan Lanjutan (di-map ke /admin/settings/hello/advanced)
+    // Tab 2: Pengaturan Lanjutan (di-map ke /v/admin/settings/hello/advanced)
     this.pluginSettingsManager.addPageTabItem({
       menuKey: 'hello',
       key: 'advanced',

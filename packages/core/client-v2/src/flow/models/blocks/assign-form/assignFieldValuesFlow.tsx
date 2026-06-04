@@ -15,7 +15,7 @@ import {
   useFlowEngine,
   useFlowSettingsContext,
 } from '@nocobase/flow-engine';
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect } from 'react';
 import { CollectionActionModel } from '../../base/CollectionActionModel';
 import { RecordActionModel } from '../../base/RecordActionModel';
 import { AssignFormModel } from './AssignFormModel';
@@ -38,6 +38,9 @@ type AssignFieldValuesModel = {
   uid: string;
   assignFormUid?: string;
   context?: AssignFieldValuesContext;
+  subModels?: {
+    assignForm?: AssignFormModel;
+  };
   getStepParams?: (flowKey: string, stepKey: string) => { assignedValues?: AssignedValues } | undefined;
   setStepParams?: (flowKey: string, stepKey: string, params: { assignedValues: AssignedValues }) => void;
 };
@@ -60,6 +63,81 @@ function getResourceInit(ctx: AssignFieldValuesContext): { dataSourceKey: string
   const dsKey = collection?.dataSourceKey;
   const collName = collection?.name;
   return dsKey && collName ? { dataSourceKey: dsKey, collectionName: collName } : undefined;
+}
+
+function resolveInitFromFlowSettings(
+  blockModel: unknown,
+  actionContext: AssignFieldValuesContext | undefined,
+): { dataSourceKey: string; collectionName: string } | undefined {
+  const maybeBlockCollection = (blockModel as { collection?: { dataSourceKey?: string; name?: string } } | undefined)
+    ?.collection;
+  const collection = maybeBlockCollection || getContextCollection(actionContext);
+  const dsKey = collection?.dataSourceKey;
+  const collName = collection?.name;
+  return dsKey && collName ? { dataSourceKey: dsKey, collectionName: collName } : undefined;
+}
+
+function isValidResourceInit(init: unknown): init is {
+  dataSourceKey: string;
+  collectionName: string;
+} {
+  if (!init || typeof init !== 'object') return false;
+  const obj = init as { dataSourceKey?: unknown; collectionName?: unknown };
+  return (
+    typeof obj.dataSourceKey === 'string' &&
+    !!obj.dataSourceKey &&
+    typeof obj.collectionName === 'string' &&
+    !!obj.collectionName
+  );
+}
+
+type LocalCacheContext = {
+  _observableCache?: Record<string, unknown>;
+  _cache?: Record<string, unknown>;
+  _pending?: Record<string, unknown>;
+};
+
+function toLocalCacheContext(context: unknown): LocalCacheContext | undefined {
+  return context && typeof context === 'object' ? (context as LocalCacheContext) : undefined;
+}
+
+function clearOwnContextCache(context: unknown, key: string) {
+  const localContext = toLocalCacheContext(context);
+  if (!localContext) {
+    return;
+  }
+  delete localContext._observableCache?.[key];
+  delete localContext._cache?.[key];
+  delete localContext._pending?.[key];
+}
+
+function clearResourceContextCache(model: { context?: unknown } | undefined) {
+  clearOwnContextCache(model?.context, 'dataSource');
+  clearOwnContextCache(model?.context, 'collection');
+  clearOwnContextCache(model?.context, 'resource');
+  clearOwnContextCache(model?.context, 'association');
+}
+
+function resolveAssignFormModel(ctx: {
+  model: AssignFieldValuesModel;
+  engine: {
+    getModel?: (uid: string, fromRoot?: boolean) => AssignFormModel | undefined;
+    findModelByParentId?: (parentId: string, subKey: string) => AssignFormModel | undefined | null;
+  };
+}) {
+  if (ctx.model.assignFormUid) {
+    const form = ctx.engine.getModel?.(ctx.model.assignFormUid, true);
+    if (form) {
+      return form;
+    }
+  }
+
+  const localForm = ctx.model.subModels?.assignForm;
+  if (localForm) {
+    return localForm;
+  }
+
+  return ctx.engine.findModelByParentId?.(ctx.model.uid, 'assignForm') || undefined;
 }
 
 export function createAssignFormSubModelOptions(ctx: AssignFieldValuesContext) {
@@ -114,21 +192,52 @@ function AssignFieldsEditor(props: { settingsFlowKey: string; clearRecordContext
   const { model, blockModel } = useFlowSettingsContext();
   const action = model as AssignFieldValuesModel;
   const engine = useFlowEngine();
-  const initializedRef = useRef(false);
   const [formModel, setFormModel] = React.useState<AssignFormModel | null>(null);
 
   useEffect(() => {
     let cancelled = false;
     const loadAssignForm = async () => {
+      const init = resolveInitFromFlowSettings(blockModel, action?.context);
       const loaded = (await engine.loadOrCreateModel(
-        {
-          parentId: action.uid,
-          subKey: 'assignForm',
-          use: 'AssignFormModel',
-        },
+        init
+          ? {
+              parentId: action.uid,
+              subKey: 'assignForm',
+              use: 'AssignFormModel',
+              stepParams: { resourceSettings: { init } },
+            }
+          : {
+              parentId: action.uid,
+              subKey: 'assignForm',
+              use: 'AssignFormModel',
+            },
         { skipSave: !model.context.flowSettingsEnabled },
       )) as AssignFormModel;
       if (cancelled) return;
+
+      if (isValidResourceInit(init)) {
+        const existingInit = loaded.getStepParams?.('resourceSettings', 'init');
+        // Ensure `resourceSettings.init` is available before first render to avoid cached undefined `collection`
+        if (
+          !isValidResourceInit(existingInit) ||
+          existingInit.dataSourceKey !== init.dataSourceKey ||
+          existingInit.collectionName !== init.collectionName
+        ) {
+          loaded.setStepParams?.('resourceSettings', 'init', init);
+        }
+        clearResourceContextCache(loaded);
+        clearResourceContextCache(loaded.subModels?.grid);
+      }
+
+      const prev = action.getStepParams?.(props.settingsFlowKey, ASSIGN_FIELD_VALUES_STEP_KEY) || {};
+      loaded.setInitialAssignedValues(prev?.assignedValues || {});
+
+      const isBulkCollectionAction = model instanceof CollectionActionModel && !(model instanceof RecordActionModel);
+      const isBulk = props.clearRecordContext || isBulkCollectionAction;
+      if (isBulk && loaded.context?.defineProperty) {
+        loaded.context.defineProperty('record', { get: () => undefined, cache: false });
+      }
+
       setFormModel(loaded);
       action.assignFormUid = loaded?.uid || action.assignFormUid;
     };
@@ -136,31 +245,15 @@ function AssignFieldsEditor(props: { settingsFlowKey: string; clearRecordContext
     return () => {
       cancelled = true;
     };
-  }, [action, engine, model.context.flowSettingsEnabled]);
-
-  useEffect(() => {
-    if (initializedRef.current) return;
-    if (!formModel) return;
-
-    const prev = action.getStepParams?.(props.settingsFlowKey, ASSIGN_FIELD_VALUES_STEP_KEY) || {};
-    const coll = blockModel?.collection || getContextCollection(action?.context);
-    const dsKey = coll?.dataSourceKey;
-    const collName = coll?.name;
-    if (dsKey && collName) {
-      formModel.setStepParams('resourceSettings', 'init', {
-        dataSourceKey: dsKey,
-        collectionName: collName,
-      });
-    }
-    formModel.setInitialAssignedValues(prev?.assignedValues || {});
-
-    const isBulk =
-      props.clearRecordContext || (action instanceof CollectionActionModel && !(action instanceof RecordActionModel));
-    if (isBulk && formModel.context?.defineProperty) {
-      formModel.context.defineProperty('record', { get: () => undefined, cache: false });
-    }
-    initializedRef.current = true;
-  }, [action, blockModel?.collection, formModel, props.clearRecordContext, props.settingsFlowKey]);
+  }, [
+    action,
+    blockModel,
+    engine,
+    model,
+    model.context.flowSettingsEnabled,
+    props.clearRecordContext,
+    props.settingsFlowKey,
+  ]);
 
   return formModel ? <FlowModelRenderer model={formModel} showFlowSettings={false} /> : null;
 }
@@ -187,14 +280,23 @@ export function createAssignFieldValuesStep(options: AssignFieldValuesStepOption
         },
       };
     },
-    async beforeParamsSave(ctx: {
-      model: AssignFieldValuesModel;
-      engine: {
-        getModel?: (uid: string, fromRoot?: boolean) => AssignFormModel | undefined;
-      };
-    }) {
-      const form = ctx.model.assignFormUid ? ctx.engine.getModel?.(ctx.model.assignFormUid, true) : undefined;
-      if (!form) return;
+    async beforeParamsSave(
+      ctx: {
+        model: AssignFieldValuesModel;
+        engine: {
+          getModel?: (uid: string, fromRoot?: boolean) => AssignFormModel | undefined;
+          findModelByParentId?: (parentId: string, subKey: string) => AssignFormModel | undefined | null;
+        };
+      },
+      params?: { assignedValues?: AssignedValues },
+      previousParams?: { assignedValues?: AssignedValues },
+    ) {
+      const form = resolveAssignFormModel(ctx);
+      if (!form) {
+        const assignedValues = params?.assignedValues || previousParams?.assignedValues || {};
+        ctx.model.setStepParams?.(options.settingsFlowKey, ASSIGN_FIELD_VALUES_STEP_KEY, { assignedValues });
+        return;
+      }
       if (options.validateBeforeSave) {
         await form.form?.validateFields?.();
       }

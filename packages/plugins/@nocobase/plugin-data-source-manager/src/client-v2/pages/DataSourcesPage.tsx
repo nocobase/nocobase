@@ -15,7 +15,7 @@ import { App, Button, Card, Dropdown, Empty, Space, Switch, Tag } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import React, { useCallback, useMemo, useState } from 'react';
 import { DataSourceForm } from '../components/DataSourceForm';
-import { NAMESPACE, useT } from '../locale';
+import { DATA_SOURCE_MANAGER_SETTINGS_KEY, useT } from '../locale';
 import { PluginDataSourceManagerClientV2 } from '../plugin';
 import { removeDataSourcesFromRuntime, syncDataSourcesToRuntime } from '../runtime';
 import { compileLegacyTemplate } from '../utils/compileLegacyTemplate';
@@ -111,8 +111,8 @@ export default function DataSourcesPage() {
   const openCollections = useCallback(
     (record: DataSourceRecord) => {
       const path = ctx.app.pluginSettingsManager
-        .getRoutePath(`${NAMESPACE}.collections/:dataSourceKey`)
-        .replace(':dataSourceKey', encodeURIComponent(record.key));
+        .getRoutePath(`${DATA_SOURCE_MANAGER_SETTINGS_KEY}.:name/collections`)
+        .replace(':name', encodeURIComponent(record.key));
 
       ctx.router.navigate(path);
     },
@@ -158,13 +158,17 @@ export default function DataSourcesPage() {
           value === 'main' ? t('Main') : compileLegacyTemplate(plugin.getType(value)?.label || value || '-', t),
       },
       { title: t('Status'), dataIndex: 'status', render: (value: string) => statusTag(t, value) },
-      { title: t('Enabled'), dataIndex: 'enabled', render: (value: boolean) => <Switch checked={value} disabled /> },
+      {
+        title: t('Enabled'),
+        dataIndex: 'enabled',
+        render: (value: boolean) => <Switch checked={value} disabled size="small" />,
+      },
       {
         title: t('Actions'),
-        width: 220,
+        width: 260,
         render: (_, record) => (
-          <Space>
-            <a onClick={() => openCollections(record)}>{t('View')}</a>
+          <Space size={12} wrap>
+            <a onClick={() => openCollections(record)}>{t('Configure')}</a>
             {record.key !== 'main' ? (
               <a onClick={() => openForm('edit', record.type || '', record)}>{t('Edit')}</a>
             ) : null}

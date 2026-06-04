@@ -8,14 +8,15 @@
  */
 
 import { FlowRunJSContext } from '../../flowContext';
+import { createElementPropertyDoc, createZhCNElementPropertyDoc } from './elementDoc';
 
 export class JSItemRunJSContext extends FlowRunJSContext {}
 
 JSItemRunJSContext.define({
   label: 'JSItem RunJS context',
   properties: {
-    element: `ElementProxy instance providing a safe DOM container for form item rendering.
-      Supports innerHTML, append, and other DOM manipulation methods.`,
+    element: createElementPropertyDoc(`ElementProxy instance providing a safe DOM container for form item rendering.
+      Supports innerHTML, append, and other DOM manipulation methods.`),
     resource: `Current resource instance (read-only).
       Provides access to the data resource associated with the current form context.`,
     record: `Current record data object (read-only).
@@ -36,7 +37,7 @@ JSItemRunJSContext.define(
   {
     label: 'JS 表单项 RunJS 上下文',
     properties: {
-      element: 'ElementProxy，表单项渲染容器，支持 innerHTML/append 等 DOM 操作',
+      element: createZhCNElementPropertyDoc('ElementProxy，表单项渲染容器，支持 innerHTML/append 等 DOM 操作'),
       resource: '当前资源（只读）',
       record: '当前记录（只读）',
       formValues: {

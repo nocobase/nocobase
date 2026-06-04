@@ -10,14 +10,7 @@
 import { Application, Plugin, type CollectionTemplateField } from '@nocobase/client-v2';
 import React, { ComponentType } from 'react';
 import { FieldInterfaceConfigureOptions } from './field-interfaces';
-import { NAMESPACE } from './locale';
-import {
-  normalizeSqlCollectionSubmitValues,
-  SqlFieldsConfigureItem,
-  SqlPreviewConfigureItem,
-  SqlSourceCollectionsConfigureItem,
-  SqlStatementConfigureItem,
-} from './pages/components/SqlCollectionConfigure';
+import { DATA_SOURCE_MANAGER_SETTINGS_KEY } from './locale';
 import {
   normalizeViewCollectionSubmitValues,
   ViewDatabaseConfigureItem,
@@ -34,12 +27,48 @@ export interface DataSourceSettingsFormProps {
   loadCollections: (key: string) => Promise<any>;
 }
 
+export interface DataSourceCollectionActionProps {
+  dataSourceKey: string;
+  record?: Record<string, any>;
+  selectedRowKeys?: React.Key[];
+  onSubmitted?: () => void;
+  children?: React.ReactNode;
+  isBulk?: boolean;
+}
+
+export interface DataSourceFieldInterfaceFilterOptions {
+  groups?: string[];
+  include?: string[];
+  exclude?: string[];
+}
+
+export interface DataSourceFieldInterfaceReadOnlyContext {
+  collection: Record<string, unknown>;
+  field: Record<string, unknown>;
+  fieldInterface?: {
+    name?: string;
+    group?: string;
+    isAssociation?: boolean;
+  };
+}
+
 export interface DataSourceTypeOptions {
   name?: string;
   label?: React.ReactNode;
   defaultValues?: Record<string, any>;
+  createFieldInterfaces?:
+    | DataSourceFieldInterfaceFilterOptions
+    | ((context: { collection: Record<string, any> }) => DataSourceFieldInterfaceFilterOptions | undefined);
   disableAddFields?: boolean;
+  disableConfigureFields?: boolean;
   disableTestConnection?: boolean;
+  AddCollection?: ComponentType<DataSourceCollectionActionProps>;
+  EditCollection?: ComponentType<DataSourceCollectionActionProps>;
+  DeleteCollection?: ComponentType<DataSourceCollectionActionProps>;
+  allowCollectionCreate?: boolean;
+  allowCollectionDeletion?: boolean;
+  isFieldInterfaceReadOnly?: (context: DataSourceFieldInterfaceReadOnlyContext) => boolean | undefined;
+  normalizeValues?: (values: Record<string, any>) => Record<string, any>;
   SettingsForm?: ComponentType<DataSourceSettingsFormProps>;
 }
 
@@ -67,6 +96,17 @@ export interface CollectionTemplateFormProps {
 
 export interface CollectionTemplateConfigureItemProps extends CollectionTemplateFormProps {
   item: CollectionTemplateConfigureItem;
+}
+
+export interface CollectionTemplateSyncFieldsProps {
+  collection: Record<string, any>;
+  dataSourceKey: string;
+  onSubmitted: () => void;
+}
+
+export interface CollectionTemplateSyncFieldsOptions {
+  Component?: ComponentType<CollectionTemplateSyncFieldsProps>;
+  visible?: boolean | ((props: { collection: Record<string, any>; dataSourceKey: string }) => boolean);
 }
 
 export interface CollectionTemplateConfigureItem {
@@ -98,6 +138,7 @@ export interface CollectionTemplateOptions {
   configure?: {
     items?: CollectionTemplateConfigureItem[];
     Form?: ComponentType<CollectionTemplateFormProps>;
+    syncFields?: CollectionTemplateSyncFieldsOptions;
     transformSubmitValues?: (values: Record<string, any>) => Record<string, any> | void;
   };
   fieldInterfaces?: {
@@ -230,7 +271,7 @@ export class PluginDataSourceManagerClientV2 extends Plugin<any, Application> {
     });
 
     this.pluginSettingsManager.addMenuItem({
-      key: NAMESPACE,
+      key: DATA_SOURCE_MANAGER_SETTINGS_KEY,
       title: this.t('Data sources'),
       icon: 'ClusterOutlined',
       isPinned: true,
@@ -240,8 +281,8 @@ export class PluginDataSourceManagerClientV2 extends Plugin<any, Application> {
     });
 
     this.pluginSettingsManager.addPageTabItem({
-      menuKey: NAMESPACE,
-      key: 'index',
+      menuKey: DATA_SOURCE_MANAGER_SETTINGS_KEY,
+      key: 'list',
       title: this.t('Data sources'),
       componentLoader: () => import('./pages/DataSourcesPage'),
       sort: 1,
@@ -249,21 +290,12 @@ export class PluginDataSourceManagerClientV2 extends Plugin<any, Application> {
     });
 
     this.pluginSettingsManager.addPageTabItem({
-      menuKey: NAMESPACE,
-      key: 'collections',
-      title: this.t('Collections'),
-      componentLoader: () => import('./pages/DataSourceCollectionsPage'),
-      sort: 2,
-      aclSnippet: 'pm.data-source-manager',
-    });
-
-    this.pluginSettingsManager.addPageTabItem({
-      menuKey: NAMESPACE,
-      key: 'collections/:dataSourceKey',
+      menuKey: DATA_SOURCE_MANAGER_SETTINGS_KEY,
+      key: ':name/collections',
       title: this.t('Collections'),
       componentLoader: () => import('./pages/DataSourceCollectionsPage'),
       hidden: true,
-      sort: 3,
+      sort: 2,
       aclSnippet: 'pm.data-source-manager',
     });
   }
@@ -428,130 +460,6 @@ export class PluginDataSourceManagerClientV2 extends Plugin<any, Application> {
           template: 'general',
         },
         fields: [],
-      },
-    });
-
-    this.registerCollectionTemplate({
-      name: 'tree',
-      title: '{{t("Tree collection")}}',
-      order: 30,
-      color: 'blue',
-      collection: {
-        options: {
-          template: 'tree',
-          tree: 'adjacencyList',
-        },
-        fields: [
-          {
-            interface: 'integer',
-            name: 'parentId',
-            type: 'bigInt',
-            title: '{{t("Parent ID")}}',
-            isForeignKey: true,
-            uiSchema: {
-              'x-read-pretty': true,
-            },
-          },
-          {
-            interface: 'm2o',
-            type: 'belongsTo',
-            name: 'parent',
-            title: '{{t("Parent")}}',
-            foreignKey: 'parentId',
-            treeParent: true,
-            onDelete: 'CASCADE',
-            componentProps: {
-              multiple: false,
-              fieldNames: {
-                label: 'id',
-                value: 'id',
-              },
-            },
-          },
-          {
-            interface: 'o2m',
-            type: 'hasMany',
-            name: 'children',
-            title: '{{t("Children")}}',
-            foreignKey: 'parentId',
-            treeChildren: true,
-            onDelete: 'CASCADE',
-            componentProps: {
-              multiple: true,
-              fieldNames: {
-                label: 'id',
-                value: 'id',
-              },
-            },
-          },
-        ],
-      },
-      presetFields: {
-        disabledIncludes: ['id'],
-      },
-      configure: {
-        transformSubmitValues(values) {
-          if (!Array.isArray(values.fields)) {
-            return;
-          }
-          values.fields = values.fields.map((field) => {
-            if (!field.target && ['belongsToMany', 'belongsTo', 'hasMany', 'hasOne'].includes(field.type)) {
-              return { ...field, target: values.name };
-            }
-            return field;
-          });
-
-          const primaryKey = values.fields.find((field) => field.primaryKey);
-          const parentId = values.fields.find((field) => field.name === 'parentId' && field.isForeignKey);
-          if (primaryKey && parentId) {
-            const parentIdTitle = parentId.uiSchema?.title;
-            parentId.interface = primaryKey.interface;
-            parentId.type = primaryKey.type;
-            parentId.uiSchema = structuredClone(primaryKey.uiSchema || {});
-            parentId.uiSchema.title = parentIdTitle;
-            parentId.autoFill = false;
-          }
-        },
-      },
-    });
-
-    this.registerCollectionTemplate({
-      name: 'sql',
-      title: '{{t("SQL collection")}}',
-      order: 40,
-      color: 'yellow',
-      divider: true,
-      collection: {
-        options: {
-          template: 'sql',
-        },
-        fields: [],
-      },
-      capabilities: {
-        recordUniqueKey: true,
-      },
-      configure: {
-        items: [
-          {
-            name: 'sql',
-            Component: SqlStatementConfigureItem,
-            required: true,
-          },
-          {
-            name: 'sources',
-            Component: SqlSourceCollectionsConfigureItem,
-          },
-          {
-            name: 'fields',
-            Component: SqlFieldsConfigureItem,
-            required: true,
-          },
-          {
-            name: 'preview',
-            Component: SqlPreviewConfigureItem,
-          },
-        ],
-        transformSubmitValues: normalizeSqlCollectionSubmitValues,
       },
     });
 

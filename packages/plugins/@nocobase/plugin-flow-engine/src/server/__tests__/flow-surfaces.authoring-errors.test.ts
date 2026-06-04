@@ -844,6 +844,13 @@ describe('flowSurfaces backend authoring aggregate errors', () => {
     );
     errors.forEach((error: any) => {
       expect(error.message).toContain('settings.code');
+      expect(error.details).toEqual(
+        expect.objectContaining({
+          requiredBlockType: 'jsBlock',
+          fixStrategy: 'repair_same_block_type',
+          agentInstruction: expect.stringContaining('fix every listed error'),
+        }),
+      );
     });
   });
 
@@ -961,6 +968,7 @@ describe('flowSurfaces backend authoring aggregate errors', () => {
         'render-unreachable-render-call',
         'blocked-global-stop',
         'ctx-root-mismatch-stop',
+        'unknown-global-stop',
       ]),
     );
     errors.forEach((error: any) => {
@@ -972,7 +980,7 @@ describe('flowSurfaces backend authoring aggregate errors', () => {
           suggestedAction: expect.any(String),
           skipForbidden: true,
           mustRetry: true,
-          agentInstruction: expect.any(String),
+          agentInstruction: expect.stringContaining('fix every listed error'),
           line: expect.any(Number),
           column: expect.any(Number),
         }),
@@ -2588,6 +2596,128 @@ describe('flowSurfaces backend authoring aggregate errors', () => {
     );
   });
 
+  it('should reject builder chart assets that count relation subfields', async () => {
+    const employerGroupsCollection = {
+      dataSourceKey: 'main',
+      name: 'employer_groups',
+      getFields: () => [
+        {
+          name: 'title',
+          type: 'string',
+          interface: 'input',
+        },
+      ],
+      getField: (name: string) =>
+        name === 'title'
+          ? {
+              name: 'title',
+              type: 'string',
+              interface: 'input',
+            }
+          : null,
+    };
+    const claimsCollection = {
+      dataSourceKey: 'main',
+      name: 'claims',
+      getField: (name: string) => {
+        if (name === 'id') {
+          return {
+            name: 'id',
+            type: 'bigInt',
+            interface: 'id',
+          };
+        }
+        if (name === 'employer_group') {
+          return {
+            name: 'employer_group',
+            type: 'belongsTo',
+            interface: 'm2o',
+            target: 'employer_groups',
+            targetCollection: employerGroupsCollection,
+            isAssociationField: () => true,
+          };
+        }
+        return null;
+      },
+    };
+
+    const errors = await collectFlowSurfaceAuthoringErrors(
+      'applyBlueprint',
+      {
+        mode: 'create',
+        navigation: {
+          item: {
+            title: 'Invalid relation count chart',
+          },
+        },
+        assets: {
+          charts: {
+            employerGroupChart: {
+              query: {
+                mode: 'builder',
+                resource: {
+                  dataSourceKey: 'main',
+                  collectionName: 'claims',
+                },
+                measures: [{ field: 'employer_group.title', aggregation: 'count', alias: 'claimCount' }],
+                dimensions: [{ field: 'employer_group.title' }],
+              },
+              visual: {
+                mode: 'basic',
+                type: 'bar',
+                mappings: {
+                  x: 'employer_group.title',
+                  y: 'claimCount',
+                },
+              },
+            },
+          },
+        },
+        tabs: [
+          {
+            title: 'Overview',
+            blocks: [
+              {
+                key: 'employerGroupChart',
+                type: 'chart',
+                chart: 'employerGroupChart',
+              },
+            ],
+          },
+        ],
+      },
+      {
+        getCollection: (_dataSourceKey, collectionName) =>
+          collectionName === 'claims'
+            ? claimsCollection
+            : collectionName === 'employer_groups'
+              ? employerGroupsCollection
+              : null,
+      },
+    );
+
+    expect(errors).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          path: '$.assets.charts.employerGroupChart.query.measures[0].field',
+          ruleId: 'chart-builder-query-count-measure-relation-subfield',
+          message: expect.stringContaining("counts relation subfield 'employer_group.title'"),
+          details: expect.objectContaining({
+            fieldPath: 'employer_group.title',
+            suggestedMeasure: {
+              field: 'id',
+              aggregation: 'count',
+              alias: 'claimCount',
+            },
+            suggestedDimension: {
+              field: 'employer_group.title',
+            },
+          }),
+        }),
+      ]),
+    );
+  });
+
   it('should validate configure popup and hidden popup RunJS recursively', async () => {
     const errors = await collectFlowSurfaceAuthoringErrors(
       'configure',
@@ -2652,6 +2782,39 @@ describe('flowSurfaces backend authoring aggregate errors', () => {
         modelUse: 'JSBlockModel',
       }),
     ).toEqual([]);
+
+    const collectionRefreshRequestErrors = inspectRunJsAuthoringCode({
+      code: "ctx.render(null);\nawait ctx.api.request({ url: 'collection:refresh' });",
+      path: '$.collectionRefreshRequest.code',
+      modelUse: 'JSBlockModel',
+    });
+    expect(collectionRefreshRequestErrors).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          ruleId: 'runjs-resource-action-invalid',
+          details: expect.objectContaining({
+            actionName: 'refresh',
+            endpoint: 'collection:refresh',
+            repairClass: 'resource-runtime-contract-stop',
+          }),
+        }),
+      ]),
+    );
+
+    const namedCollectionRefreshRequestErrors = inspectRunJsAuthoringCode(
+      {
+        code: "ctx.render(null);\nawait ctx.api.request({ url: '/api/tasks:refresh' });",
+        path: '$.namedCollectionRefreshRequest.code',
+        modelUse: 'JSBlockModel',
+      },
+      {
+        getCollection: (_dataSourceKey, collectionName) =>
+          collectionName === 'tasks' ? { name: collectionName } : null,
+      },
+    );
+    expect(namedCollectionRefreshRequestErrors.map((error: any) => error.ruleId)).toContain(
+      'runjs-resource-action-invalid',
+    );
 
     const collectionRequestErrors = inspectRunJsAuthoringCode({
       code: "ctx.render(null);\nawait ctx.request({ url: 'tasks:list', method: 'get' });",
@@ -2765,6 +2928,13 @@ describe('flowSurfaces backend authoring aggregate errors', () => {
     });
     expect(ordinaryRunjsLabelCallErrors.map((error: any) => error.ruleId)).toContain('runjs-nested-runjs-forbidden');
 
+    const collectionRefreshRunjsErrors = inspectRunJsAuthoringCode({
+      code: "ctx.render(null);\nawait ctx.runjs('collection:refresh', {});",
+      path: '$.collectionRefreshRunjs.code',
+      modelUse: 'JSBlockModel',
+    });
+    expect(collectionRefreshRunjsErrors.map((error: any) => error.ruleId)).toContain('runjs-resource-action-invalid');
+
     const invalidApiResourceErrors = inspectRunJsAuthoringCode({
       code: "ctx.render(null);\nawait ctx.api.resource.list({ resource: 'tasks', pageSize: 1 });",
       path: '$.invalidApiResource.code',
@@ -2781,6 +2951,21 @@ describe('flowSurfaces backend authoring aggregate errors', () => {
           }),
         }),
       ]),
+    );
+
+    const invalidApiResourceRefreshErrors = inspectRunJsAuthoringCode(
+      {
+        code: "ctx.render(null);\nawait ctx.api.resource('tasks', 'refresh');\nawait ctx.api.resource('tasks').refresh();",
+        path: '$.invalidApiResourceRefresh.code',
+        modelUse: 'JSBlockModel',
+      },
+      {
+        getCollection: (_dataSourceKey, collectionName) =>
+          collectionName === 'tasks' ? { name: collectionName } : null,
+      },
+    );
+    expect(invalidApiResourceRefreshErrors.map((error: any) => error.ruleId)).toContain(
+      'runjs-resource-action-invalid',
     );
 
     const opencodeActionResourceErrors = inspectRunJsAuthoringCode({
@@ -5616,6 +5801,7 @@ ctx.render(React.createElement(DashboardKPIs));
           'const React = ctx.libs.React;',
           'const { ReactDOM, antdIcons } = ctx.libs;',
           'const custom = ctx.libs.customLib;',
+          "const libName = 'customLib';",
           'const dynamic = ctx.libs[libName];',
           'ctx.render(React.createElement("div", null, Boolean(ReactDOM || antdIcons || custom || dynamic)));',
         ].join('\n'),
@@ -6881,13 +7067,24 @@ ctx.render(React.createElement(DashboardKPIs));
       ]),
     );
 
-    expect(
-      inspectRunJsAuthoringCode({
-        code: "class Local { static { var run = ctx.runjs; } }\nawait run('return 1;');",
-        path: '$.staticBlockVarRunjsAliasDoesNotLeak.code',
-        modelUse: 'JSActionModel',
-      }),
-    ).toEqual([]);
+    const staticBlockVarRunjsAliasErrors = inspectRunJsAuthoringCode({
+      code: "class Local { static { var run = ctx.runjs; } }\nawait run('return 1;');",
+      path: '$.staticBlockVarRunjsAliasDoesNotLeak.code',
+      modelUse: 'JSActionModel',
+    });
+    expect(staticBlockVarRunjsAliasErrors).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          ruleId: 'runjs-global-unknown',
+          details: expect.objectContaining({
+            global: 'run',
+          }),
+        }),
+      ]),
+    );
+    expect(staticBlockVarRunjsAliasErrors.map((error: any) => error.ruleId)).not.toContain(
+      'runjs-nested-runjs-forbidden',
+    );
 
     expect(
       inspectRunJsAuthoringCode({
@@ -6950,19 +7147,30 @@ ctx.render(React.createElement(DashboardKPIs));
       ]),
     );
 
-    expect(
-      inspectRunJsAuthoringCode({
-        code: [
-          'class Local { static {',
-          "  function wrap() { var resource = ctx.makeResource('MultiRecordResource'); }",
-          '  resource.list();',
-          '} }',
-          "ctx.message.success('Done');",
-        ].join('\n'),
-        path: '$.staticBlockNestedFunctionVarResourceAliasDoesNotLeak.code',
-        modelUse: 'JSActionModel',
-      }),
-    ).toEqual([]);
+    const staticBlockNestedFunctionVarResourceAliasErrors = inspectRunJsAuthoringCode({
+      code: [
+        'class Local { static {',
+        "  function wrap() { var resource = ctx.makeResource('MultiRecordResource'); }",
+        '  resource.list();',
+        '} }',
+        "ctx.message.success('Done');",
+      ].join('\n'),
+      path: '$.staticBlockNestedFunctionVarResourceAliasDoesNotLeak.code',
+      modelUse: 'JSActionModel',
+    });
+    expect(staticBlockNestedFunctionVarResourceAliasErrors).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          ruleId: 'runjs-global-unknown',
+          details: expect.objectContaining({
+            global: 'resource',
+          }),
+        }),
+      ]),
+    );
+    expect(staticBlockNestedFunctionVarResourceAliasErrors.map((error: any) => error.ruleId)).not.toContain(
+      'runjs-resource-method-unknown',
+    );
 
     expect(
       inspectRunJsAuthoringCode({
@@ -6976,31 +7184,53 @@ ctx.render(React.createElement(DashboardKPIs));
       }),
     ).toEqual([]);
 
-    expect(
-      inspectRunJsAuthoringCode({
-        code: [
-          'class Local { static {',
-          '  function wrap() { var Card = ctx.libs.antd.Card; }',
-          '  Card({ bordered: false });',
-          '} }',
-          'ctx.render(null);',
-        ].join('\n'),
-        path: '$.staticBlockNestedFunctionVarReactAliasDoesNotLeak.code',
-        modelUse: 'JSBlockModel',
-      }),
-    ).toEqual([]);
+    const staticBlockNestedFunctionVarReactAliasErrors = inspectRunJsAuthoringCode({
+      code: [
+        'class Local { static {',
+        '  function wrap() { var Card = ctx.libs.antd.Card; }',
+        '  Card({ bordered: false });',
+        '} }',
+        'ctx.render(null);',
+      ].join('\n'),
+      path: '$.staticBlockNestedFunctionVarReactAliasDoesNotLeak.code',
+      modelUse: 'JSBlockModel',
+    });
+    expect(staticBlockNestedFunctionVarReactAliasErrors).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          ruleId: 'runjs-global-unknown',
+          details: expect.objectContaining({
+            global: 'Card',
+          }),
+        }),
+      ]),
+    );
+    expect(staticBlockNestedFunctionVarReactAliasErrors.map((error: any) => error.ruleId)).not.toContain(
+      'runjs-ctx-libs-member-unknown',
+    );
 
-    expect(
-      inspectRunJsAuthoringCode({
-        code: [
-          'class Local { static { var Card = ctx.libs.antd.Card; } }',
-          'Card({ bordered: false });',
-          'ctx.render(null);',
-        ].join('\n'),
-        path: '$.staticBlockVarReactAliasDoesNotLeak.code',
-        modelUse: 'JSBlockModel',
-      }),
-    ).toEqual([]);
+    const staticBlockVarReactAliasErrors = inspectRunJsAuthoringCode({
+      code: [
+        'class Local { static { var Card = ctx.libs.antd.Card; } }',
+        'Card({ bordered: false });',
+        'ctx.render(null);',
+      ].join('\n'),
+      path: '$.staticBlockVarReactAliasDoesNotLeak.code',
+      modelUse: 'JSBlockModel',
+    });
+    expect(staticBlockVarReactAliasErrors).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          ruleId: 'runjs-global-unknown',
+          details: expect.objectContaining({
+            global: 'Card',
+          }),
+        }),
+      ]),
+    );
+    expect(staticBlockVarReactAliasErrors.map((error: any) => error.ruleId)).not.toContain(
+      'runjs-ctx-libs-member-unknown',
+    );
 
     expect(
       inspectRunJsAuthoringCode({
@@ -7319,9 +7549,20 @@ ctx.render(React.createElement(DashboardKPIs));
     });
 
     expect(response.status).toBe(400);
+    expect(response.body).toEqual(
+      expect.objectContaining({
+        errorCount: response.body.errors.length,
+        details: expect.objectContaining({
+          mustFixAllErrorsBeforeRetry: true,
+          retryPolicy: 'fix_all_errors_before_retry_same_write',
+          agentInstruction: expect.stringContaining('Fix every listed error'),
+        }),
+      }),
+    );
     const issue = response.body?.errors?.find((error: any) => error.ruleId === 'runjs-render-required');
     expect(issue).toEqual(
       expect.objectContaining({
+        index: expect.any(Number),
         type: 'bad_request',
         code: 'FLOW_SURFACE_AUTHORING_VALIDATION_ERROR',
         status: 400,
@@ -8084,7 +8325,276 @@ ctx.render(React.createElement(DashboardKPIs));
       });
       expect(error.message).toContain('Add collection field names');
       expect(error.message).toContain('defaults.collections.*.fieldGroups');
+      expect(error.details).toEqual(
+        expect.objectContaining({
+          repairHint: expect.stringContaining('Add direct visible collection fields'),
+          agentInstruction: expect.stringContaining('fix every listed error'),
+        }),
+      );
     }
+  });
+
+  it('should reject table dataScope field maps before applyBlueprint writes', async () => {
+    const errors = await collectFlowSurfaceAuthoringErrors(
+      'applyBlueprint',
+      {
+        mode: 'create',
+        tabs: [
+          {
+            title: 'Overview',
+            blocks: [
+              {
+                key: 'employeeTableWithInvalidDataScope',
+                type: 'table',
+                collection: 'employees',
+                settings: {
+                  dataScope: {
+                    nickname: {
+                      $eq: 'Ada',
+                    },
+                  },
+                },
+                fields: ['nickname', 'email'],
+              },
+            ],
+          },
+        ],
+      },
+      {
+        getCollection: (_dataSourceKey, collectionName) => context.db.getCollection(collectionName),
+      },
+    );
+
+    const dataScopeError = errors.find((error: any) => error.ruleId === 'dataScope-filter-group-invalid-shape');
+    expect(dataScopeError).toMatchObject({
+      path: '$.tabs[0].blocks[0].settings.dataScope',
+      ruleId: 'dataScope-filter-group-invalid-shape',
+    });
+    expect(dataScopeError?.message).toContain('expects FilterGroup');
+    expect(dataScopeError?.details?.repairHint).toContain('logic/items');
+  });
+
+  it('should accept table dataScope FilterGroup authoring', async () => {
+    const errors = await collectFlowSurfaceAuthoringErrors(
+      'applyBlueprint',
+      {
+        mode: 'create',
+        tabs: [
+          {
+            title: 'Overview',
+            blocks: [
+              {
+                key: 'employeeTableWithValidDataScope',
+                type: 'table',
+                collection: 'employees',
+                settings: {
+                  dataScope: {
+                    logic: '$and',
+                    items: [
+                      {
+                        path: 'nickname',
+                        operator: '$eq',
+                        value: 'Ada',
+                      },
+                    ],
+                  },
+                },
+                fields: ['nickname', 'email'],
+              },
+            ],
+          },
+        ],
+      },
+      {
+        getCollection: (_dataSourceKey, collectionName) => context.db.getCollection(collectionName),
+      },
+    );
+
+    expect(errors.map((error: any) => error.ruleId)).not.toContain('dataScope-filter-group-invalid-shape');
+  });
+
+  it.each([
+    ['undefined', undefined],
+    ['null', null],
+    ['empty object', {}],
+  ])('should accept table dataScope %s authoring', async (_label, dataScope) => {
+    const errors = await collectFlowSurfaceAuthoringErrors(
+      'applyBlueprint',
+      {
+        mode: 'create',
+        tabs: [
+          {
+            title: 'Overview',
+            blocks: [
+              {
+                key: `employeeTableWithAllowedDataScope${_label.replace(/\W/g, '')}`,
+                type: 'table',
+                collection: 'employees',
+                settings: {
+                  dataScope,
+                },
+                fields: ['nickname', 'email'],
+              },
+            ],
+          },
+        ],
+      },
+      {
+        getCollection: (_dataSourceKey, collectionName) => context.db.getCollection(collectionName),
+      },
+    );
+
+    expect(errors.map((error: any) => error.ruleId)).not.toContain('dataScope-filter-group-invalid-shape');
+  });
+
+  it('should reject implicit relation fields when no safe titleField can be resolved before applyBlueprint writes', async () => {
+    const errors = await collectFlowSurfaceAuthoringErrors(
+      'applyBlueprint',
+      {
+        mode: 'create',
+        tabs: [
+          {
+            title: 'Overview',
+            blocks: [
+              {
+                key: 'relationTitleFieldTable',
+                type: 'table',
+                collection: GENERATED_POPUP_RELATION_OVERRIDE_SOURCE_COLLECTION,
+                fields: [GENERATED_POPUP_RELATION_OVERRIDE_FIELD],
+              },
+            ],
+          },
+        ],
+      },
+      {
+        getCollection: (_dataSourceKey, collectionName) => context.db.getCollection(collectionName),
+      },
+    );
+
+    const relationTitleFieldError = errors.find(
+      (error: any) => error.path === '$.tabs[0].blocks[0].fields[0].titleField',
+    );
+    expect(relationTitleFieldError).toMatchObject({
+      ruleId: 'relation-titleField-unreadable',
+      details: {
+        fieldPath: GENERATED_POPUP_RELATION_OVERRIDE_FIELD,
+        titleField: 'id',
+      },
+    });
+    expect(relationTitleFieldError?.details?.repairHint).toContain('"titleField"');
+  });
+
+  it('should reject implicit relation fieldGroups when no safe titleField can be resolved before applyBlueprint writes', async () => {
+    const errors = await collectFlowSurfaceAuthoringErrors(
+      'applyBlueprint',
+      {
+        mode: 'create',
+        tabs: [
+          {
+            title: 'Overview',
+            blocks: [
+              {
+                key: 'relationTitleFieldDetails',
+                type: 'details',
+                collection: GENERATED_POPUP_RELATION_OVERRIDE_SOURCE_COLLECTION,
+                fieldGroups: [
+                  {
+                    title: 'Main',
+                    fields: [
+                      GENERATED_POPUP_RELATION_OVERRIDE_FIELD,
+                      GENERATED_POPUP_RELATION_OVERRIDE_FIELDS[0],
+                      GENERATED_POPUP_RELATION_OVERRIDE_FIELDS[1],
+                    ],
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+      {
+        getCollection: (_dataSourceKey, collectionName) => context.db.getCollection(collectionName),
+      },
+    );
+
+    const relationTitleFieldError = errors.find(
+      (error: any) => error.path === '$.tabs[0].blocks[0].fieldGroups[0].fields[0].titleField',
+    );
+    expect(relationTitleFieldError).toMatchObject({
+      ruleId: 'relation-titleField-unreadable',
+      details: {
+        fieldPath: GENERATED_POPUP_RELATION_OVERRIDE_FIELD,
+        titleField: 'id',
+      },
+    });
+    expect(relationTitleFieldError?.details?.repairHint).toContain('"titleField"');
+  });
+
+  it('should allow strict registered attachment display bindings without implicit titleField before applyBlueprint writes', async () => {
+    const errors = await collectFlowSurfaceAuthoringErrors(
+      'applyBlueprint',
+      {
+        mode: 'create',
+        tabs: [
+          {
+            title: 'Overview',
+            blocks: [
+              {
+                key: 'attachmentPreviewTable',
+                type: 'table',
+                collection: 'employees',
+                fields: ['nickname', 'status', 'email', 'fujian'],
+              },
+              {
+                key: 'attachmentPreviewDetails',
+                type: 'details',
+                collection: 'employees',
+                fieldGroups: [
+                  {
+                    title: 'Main',
+                    fields: ['nickname', 'status', 'email', 'fujian'],
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+      {
+        enabledPackages: new Set(['@nocobase/plugin-file-manager']),
+        getCollection: (_dataSourceKey, collectionName) => context.db.getCollection(collectionName),
+      },
+    );
+
+    expect(errors.filter((error: any) => String(error.ruleId).startsWith('relation-titleField'))).toEqual([]);
+  });
+
+  it('should not apply blueprint-only implicit relation titleField validation to compose', async () => {
+    const errors = await collectFlowSurfaceAuthoringErrors(
+      'compose',
+      {
+        target: {
+          uid: 'missing-target-never-resolved',
+        },
+        blocks: [
+          {
+            key: 'composeRelationTitleFieldTable',
+            type: 'table',
+            collection: GENERATED_POPUP_RELATION_OVERRIDE_SOURCE_COLLECTION,
+            fields: [
+              GENERATED_POPUP_RELATION_OVERRIDE_FIELD,
+              GENERATED_POPUP_RELATION_OVERRIDE_FIELDS[0],
+              GENERATED_POPUP_RELATION_OVERRIDE_FIELDS[1],
+            ],
+          },
+        ],
+      },
+      {
+        getCollection: (_dataSourceKey, collectionName) => context.db.getCollection(collectionName),
+      },
+    );
+
+    expect(errors.filter((error: any) => String(error.ruleId).startsWith('relation-titleField'))).toEqual([]);
   });
 
   it('should reject visible data blocks without valid business fields before compose writes', async () => {
@@ -11332,6 +11842,21 @@ ctx.render(React.createElement(DashboardKPIs));
     });
 
     expect(response.status).toBe(400);
+    expect(response.body).toEqual(
+      expect.objectContaining({
+        errorCount: response.body.errors.length,
+        details: expect.objectContaining({
+          mustFixAllErrorsBeforeRetry: true,
+          retryPolicy: 'fix_all_errors_before_retry_same_write',
+          agentInstruction: expect.stringContaining('Fix every listed error'),
+          requiredBlockPolicy: expect.objectContaining({
+            requiredBlockTypes: expect.arrayContaining(['chart']),
+            fixStrategy: 'repair_same_block_type',
+            doNotReplaceOrDrop: true,
+          }),
+        }),
+      }),
+    );
     expect(response.body?.errors?.map((error: any) => error.ruleId)).toEqual(
       expect.arrayContaining([
         'chart-asset-invalid',
@@ -11346,6 +11871,19 @@ ctx.render(React.createElement(DashboardKPIs));
     );
     expect(response.body.errors.map((error: any) => error.ruleId)).not.toContain(
       'public-data-surface-default-filter-required',
+    );
+    const chartIssue = response.body.errors.find(
+      (error: any) => error.ruleId === 'chart-block-asset-reference-required',
+    );
+    expect(chartIssue).toEqual(
+      expect.objectContaining({
+        index: expect.any(Number),
+        details: expect.objectContaining({
+          requiredBlockType: 'chart',
+          fixStrategy: 'repair_same_block_type',
+          agentInstruction: expect.stringContaining('Repair it as chart'),
+        }),
+      }),
     );
   });
 

@@ -86,6 +86,14 @@ function getAssignFormTempFieldRefreshKey(originField: AssignFormTempOriginField
   ].join('|');
 }
 
+function normalizeAssignFormInputValue(value: unknown) {
+  if (!value || typeof value !== 'object' || !('target' in value)) {
+    return value;
+  }
+  const target = (value as { target?: { value?: unknown } }).target;
+  return target && 'value' in target ? target.value : value;
+}
+
 /**
  * 使用 FormItemModel 的“表单项”包装，内部渲染 VariableInput，并将“常量”映射到临时字段模型。
  */
@@ -230,7 +238,6 @@ export class AssignFormItemModel extends FormItemModel {
         fm?.setProps?.({
           disabled: false,
           readPretty: false,
-          pattern: 'editable',
           updateAssociation: false,
           multiple: multi,
         });
@@ -260,9 +267,12 @@ export class AssignFormItemModel extends FormItemModel {
           if (fm) {
             fm.setProps?.({
               value: inputProps?.value,
-              onChange: (...args: any[]) => {
-                const next = args && args.length ? args[0] : undefined;
-                inputProps?.onChange?.(next);
+              onChange: (...args: unknown[]) => {
+                const nextArg = args && args.length ? args[0] : undefined;
+                const nextValue = normalizeAssignFormInputValue(nextArg);
+                fm.setProps?.({ value: nextValue });
+                this.assignValue = nextValue;
+                inputProps?.onChange?.(nextValue);
               },
             });
           }

@@ -336,6 +336,78 @@ describe('flowSurfaces backend authoring applyBlueprint compiler', () => {
     });
   });
 
+  it('should include supported chart types and jsBlock guidance for unsupported chart asset visual types', async () => {
+    const response = await rootAgent.resource('flowSurfaces').applyBlueprint({
+      values: {
+        mode: 'create',
+        navigation: {
+          item: {
+            title: 'Authoring unsupported chart type blueprint',
+          },
+        },
+        page: {
+          title: 'Authoring unsupported chart type blueprint',
+        },
+        assets: {
+          charts: {
+            statusChart: {
+              query: {
+                mode: 'builder',
+                resource: {
+                  dataSourceKey: 'main',
+                  collectionName: 'employees',
+                },
+                measures: [
+                  {
+                    field: 'id',
+                    aggregation: 'count',
+                    alias: 'employeeCount',
+                  },
+                ],
+              },
+              visual: {
+                mode: 'basic',
+                type: 'stat',
+                mappings: {
+                  y: 'employeeCount',
+                },
+              },
+            },
+          },
+        },
+        tabs: [
+          {
+            title: 'Overview',
+            blocks: [
+              {
+                key: 'statusChart',
+                type: 'chart',
+                title: 'Status chart',
+                chart: 'statusChart',
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(response.status).toBe(400);
+    const chartError = response.body?.errors?.find((error: any) => error.ruleId === 'chart-visual-type-unsupported');
+    expect(chartError).toMatchObject({
+      path: '$.assets.charts.statusChart.visual.type',
+      details: expect.objectContaining({
+        type: 'stat',
+        supportedVisualTypes: ['line', 'area', 'bar', 'barHorizontal', 'pie', 'doughnut', 'funnel', 'scatter'],
+        alternativeBlockType: 'jsBlock',
+      }),
+    });
+    expect(chartError?.message).toContain('Supported basic chart visual types');
+    expect(chartError?.message).toContain('jsBlock');
+    expect(chartError?.message).not.toContain('Do not change this block type');
+    expect(chartError?.details?.repairHint).not.toContain('Do not change this block type');
+    expect(chartError?.details?.forbiddenFallbacks).not.toContain('jsBlock');
+  });
+
   it('should strip single-scope non-template data block titles before persisting', async () => {
     const executeRes = await rootAgent.resource('flowSurfaces').applyBlueprint({
       values: {
@@ -522,12 +594,21 @@ describe('flowSurfaces backend authoring applyBlueprint compiler', () => {
     );
     expect(jsBlockError?.details?.repairHint).toContain('settings.code');
     expect(jsBlockError?.details?.repairHint).toContain('Do not change this block type');
+    expect(jsBlockError?.details?.requiredBlockType).toBe('jsBlock');
+    expect(jsBlockError?.details?.fixStrategy).toBe('repair_same_block_type');
+    expect(jsBlockError?.details?.repairExample?.inlineBlock?.type).toBe('jsBlock');
+    expect(jsBlockError?.details?.forbiddenFallbacks).toEqual(
+      expect.arrayContaining(['table', 'list', 'defer jsBlock']),
+    );
     expect(jsBlockError?.message).toContain('jsBlock payload shape problem');
     expect(jsBlockError?.message).toContain('Do not change this block type');
     expect(topLevelCodeError?.details?.repairHint).toContain('settings.code');
     expect(topLevelCodeError?.details?.repairHint).toContain('Do not change this block type');
     expect(chartError?.details?.repairHint).toContain('assets.charts');
     expect(chartError?.details?.repairHint).toContain('Do not change this block type');
+    expect(chartError?.details?.requiredBlockType).toBe('chart');
+    expect(chartError?.details?.fixStrategy).toBe('repair_same_block_type');
+    expect(chartError?.details?.repairExample?.block).toEqual({ type: 'chart', chart: 'chartKey' });
     expect(chartError?.details?.repairHint).toContain('do not drop or defer the chart');
     expect(chartError?.details?.repairHint).toContain('KPI');
     expect(chartError?.details?.repairSteps).toEqual(
@@ -580,6 +661,9 @@ describe('flowSurfaces backend authoring applyBlueprint compiler', () => {
     );
     expect(scriptError?.details?.repairHint).toContain('assets.scripts');
     expect(scriptError?.details?.repairHint).toContain('Do not change this block type');
+    expect(scriptError?.details?.requiredBlockType).toBe('jsBlock');
+    expect(scriptError?.details?.fixStrategy).toBe('repair_same_block_type');
+    expect(scriptError?.details?.repairExample?.assetBlock?.block?.type).toBe('jsBlock');
   });
 
   it('should include repair hints on invalid chart SQL output mappings', async () => {

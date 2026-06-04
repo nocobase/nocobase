@@ -7,8 +7,13 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { FlowEngine } from '@nocobase/flow-engine';
+import { renderHook } from '@testing-library/react';
+import { ConfigProvider, theme } from 'antd';
+import React from 'react';
 import { buildCalendarSlotFormData } from '../actions/CalendarPopupModels';
 import { CalendarBlockModel } from '../CalendarBlockModel';
+import { PluginCalendarClient } from '../../plugin';
 
 describe('calendarPopupModels', () => {
   it('should expose preset field settings before creating a calendar block', () => {
@@ -154,6 +159,126 @@ describe('calendarPopupModels', () => {
       end: undefined,
       colorFieldName: undefined,
     });
+  });
+
+  it('should persist the color field selection before saving settings', () => {
+    const flow: any = (CalendarBlockModel as any).globalFlowRegistry.getFlow('calendarSettings');
+    const step = flow?.steps?.colorField;
+    const model = Object.create(CalendarBlockModel.prototype) as CalendarBlockModel;
+
+    Object.defineProperty(model, 'props', {
+      value: {
+        fieldNames: {
+          title: 'name',
+          start: 'startsAt',
+          end: 'endsAt',
+        },
+      },
+      writable: true,
+      configurable: true,
+    });
+    (model as any).setProps = function setProps(next: Record<string, unknown>) {
+      this.props = {
+        ...(this.props || {}),
+        ...next,
+      };
+    };
+
+    step.beforeParamsSave({ model } as any, { colorFieldName: 'status' });
+
+    expect(model.props.fieldNames).toEqual({
+      title: 'name',
+      start: 'startsAt',
+      end: 'endsAt',
+      colorFieldName: 'status',
+    });
+  });
+
+  it('should append associated title and color field paths when creating the resource', () => {
+    const flowEngine = new FlowEngine();
+    flowEngine.registerModels({ CalendarBlockModel });
+    flowEngine.dataSourceManager.getDataSource('main').addCollection({
+      name: 'calendar_events',
+      filterTargetKey: 'id',
+      fields: [
+        { name: 'id', type: 'integer', interface: 'integer' },
+        { name: 'startsAt', type: 'datetime', interface: 'datetime' },
+        { name: 'endsAt', type: 'datetime', interface: 'datetime' },
+        { name: 'owner', type: 'belongsTo', interface: 'm2o', target: 'users' },
+        { name: 'status', type: 'belongsTo', interface: 'm2o', target: 'statuses' },
+      ],
+    });
+
+    const model = flowEngine.createModel<CalendarBlockModel>({
+      use: 'CalendarBlockModel',
+      props: {
+        fieldNames: {
+          title: ['owner', 'nickname'],
+          start: 'startsAt',
+          end: 'endsAt',
+          colorFieldName: ['status', 'color'],
+        },
+      },
+      stepParams: {
+        resourceSettings: {
+          init: {
+            dataSourceKey: 'main',
+            collectionName: 'calendar_events',
+          },
+        },
+      },
+    });
+
+    expect(model.resource.getAppends()).toEqual(['owner', 'status']);
+  });
+
+  it('should resolve default color field background colors to concrete color values', () => {
+    const plugin = new PluginCalendarClient({} as any, {} as any);
+    const wrapper = ({ children }: { children: React.ReactNode }) =>
+      React.createElement(ConfigProvider, { theme: { token: { blue: '#123456' } } }, children);
+    const { result } = renderHook(
+      () => {
+        const { token } = theme.useToken();
+        const selectColor = plugin.getColorFieldInterface('select').useGetColor(
+          {
+            interface: 'select',
+            uiSchema: {
+              enum: [
+                { label: 'Todo', value: 'todo', color: 'blue' },
+                { label: 'Done', value: 'done', color: '#52c41a' },
+                { label: 'Other', value: 'other', color: 'default' },
+              ],
+            },
+          },
+          { token },
+        );
+        const colorFieldColor = plugin.getColorFieldInterface('color').useGetColor(
+          {
+            interface: 'color',
+          },
+          { token },
+        );
+
+        return {
+          colorFieldColor,
+          selectColor,
+          token,
+        };
+      },
+      { wrapper },
+    );
+
+    expect(result.current.selectColor.getFontColor('todo')).toBe(result.current.token.blue7);
+    expect(result.current.selectColor.getBackgroundColor('todo')).toBe(result.current.token.blue1);
+    expect(result.current.selectColor.getBorderColor?.('todo')).toBe(result.current.token.blue3);
+    expect(result.current.selectColor.getFontColor('done')).toBe(result.current.token.colorTextLightSolid);
+    expect(result.current.selectColor.getBackgroundColor('done')).toBe('#52c41a');
+    expect(result.current.selectColor.getBorderColor?.('done')).toBe('transparent');
+    expect(result.current.selectColor.getFontColor('other')).toBeNull();
+    expect(result.current.selectColor.getBackgroundColor('other')).toBeNull();
+    expect(result.current.selectColor.getBorderColor?.('other')).toBeNull();
+    expect(result.current.colorFieldColor.getFontColor({ hex: '#fa541c' })).toBeNull();
+    expect(result.current.colorFieldColor.getBackgroundColor({ hex: '#fa541c' })).toBe('#fa541c');
   });
 
   it('should hide quick create popup settings when quick create is disabled', () => {

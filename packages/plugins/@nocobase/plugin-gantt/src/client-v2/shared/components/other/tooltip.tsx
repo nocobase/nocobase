@@ -15,6 +15,83 @@ import { BarTask } from '../../types/bar-task';
 import { Task } from '../../types/public-types';
 import useStyles from './style';
 
+type TooltipPosition = {
+  left: number;
+  top: number;
+};
+
+type GetTooltipPositionOptions = {
+  task: BarTask;
+  arrowIndent: number;
+  rtl: boolean;
+  svgContainerHeight: number;
+  svgContainerWidth: number;
+  headerHeight: number;
+  scrollX: number;
+  scrollY: number;
+  tooltipHeight: number;
+  tooltipWidth: number;
+};
+
+const clamp = (value: number, min: number, max: number) => {
+  if (max < min) {
+    return min;
+  }
+  return Math.min(Math.max(value, min), max);
+};
+
+export const getTooltipPosition = ({
+  task,
+  arrowIndent,
+  rtl,
+  svgContainerHeight,
+  svgContainerWidth,
+  headerHeight,
+  scrollX,
+  scrollY,
+  tooltipHeight,
+  tooltipWidth,
+}: GetTooltipPositionOptions): TooltipPosition => {
+  const gap = Math.max(8, arrowIndent);
+  const minLeft = 0;
+  const maxLeft = Math.max(0, svgContainerWidth - tooltipWidth);
+  const minTop = headerHeight;
+  const maxTop = Math.max(minTop, svgContainerHeight - tooltipHeight);
+  const barLeft = Math.min(task.x1, task.x2) - scrollX;
+  const barRight = Math.max(task.x1, task.x2) - scrollX;
+  const barTop = task.y - scrollY + headerHeight;
+  const barBottom = barTop + task.height;
+  const barCenterX = (barLeft + barRight) / 2;
+  const barCenterY = barTop + task.height / 2;
+
+  const centeredLeft = clamp(barCenterX - tooltipWidth / 2, minLeft, maxLeft);
+  const aboveTop = barTop - tooltipHeight - gap;
+  if (aboveTop >= minTop) {
+    return { left: centeredLeft, top: aboveTop };
+  }
+
+  const belowTop = barBottom + gap;
+  if (belowTop + tooltipHeight <= svgContainerHeight) {
+    return { left: centeredLeft, top: belowTop };
+  }
+
+  const centeredTop = clamp(barCenterY - tooltipHeight / 2, minTop, maxTop);
+  const preferredSideLeft = rtl ? barLeft - gap - tooltipWidth : barRight + gap;
+  if (preferredSideLeft >= minLeft && preferredSideLeft <= maxLeft) {
+    return { left: preferredSideLeft, top: centeredTop };
+  }
+
+  const fallbackSideLeft = rtl ? barRight + gap : barLeft - gap - tooltipWidth;
+  if (fallbackSideLeft >= minLeft && fallbackSideLeft <= maxLeft) {
+    return { left: fallbackSideLeft, top: centeredTop };
+  }
+
+  return {
+    left: centeredLeft,
+    top: clamp(barBottom + gap, minTop, maxTop),
+  };
+};
+
 export type TooltipProps = {
   task: BarTask;
   arrowIndent: number;
@@ -25,7 +102,6 @@ export type TooltipProps = {
   headerHeight: number;
   scrollX: number;
   scrollY: number;
-  rowHeight: number;
   fontSize: string;
   fontFamily: string;
   TooltipContent: React.FC<{
@@ -36,7 +112,6 @@ export type TooltipProps = {
 };
 export const Tooltip: React.FC<TooltipProps> = ({
   task,
-  rowHeight,
   rtl,
   svgContainerHeight,
   svgContainerWidth,
@@ -50,65 +125,37 @@ export const Tooltip: React.FC<TooltipProps> = ({
 }) => {
   const { styles } = useStyles();
   const tooltipRef = useRef<HTMLDivElement | null>(null);
-  const [relatedY, setRelatedY] = useState(0);
-  const [relatedX, setRelatedX] = useState(0);
+  const [position, setPosition] = useState<TooltipPosition | null>(null);
+
   useEffect(() => {
     if (tooltipRef.current) {
-      const tooltipHeight = tooltipRef.current.offsetHeight * 1.1;
-      const tooltipWidth = tooltipRef.current.offsetWidth * 1.1;
-
-      let newRelatedY = task.index * rowHeight - scrollY + headerHeight;
-      let newRelatedX: number;
-      if (rtl) {
-        newRelatedX = task.x1 - arrowIndent * 1.5 - tooltipWidth - scrollX;
-        if (newRelatedX < 0) {
-          newRelatedX = task.x2 + arrowIndent * 1.5 - scrollX;
-        }
-        const tooltipLeftmostPoint = tooltipWidth + newRelatedX;
-        if (tooltipLeftmostPoint > svgContainerWidth) {
-          newRelatedX = svgContainerWidth - tooltipWidth;
-          newRelatedY += rowHeight;
-        }
-      } else {
-        newRelatedX = task.x2 + arrowIndent * 1.5 - scrollX;
-        const tooltipLeftmostPoint = tooltipWidth + newRelatedX;
-        if (tooltipLeftmostPoint > svgContainerWidth) {
-          newRelatedX = task.x1 - arrowIndent * 1.5 - scrollX - tooltipWidth;
-        }
-        if (newRelatedX < 0) {
-          newRelatedX = svgContainerWidth - tooltipWidth;
-          newRelatedY += rowHeight;
-        }
-      }
-
-      const tooltipLowerPoint = tooltipHeight + newRelatedY - scrollY;
-      if (tooltipLowerPoint > svgContainerHeight - scrollY) {
-        newRelatedY = svgContainerHeight - tooltipHeight;
-      }
-      setRelatedY(newRelatedY);
-      setRelatedX(newRelatedX);
+      const tooltipHeight = tooltipRef.current.offsetHeight;
+      const tooltipWidth = tooltipRef.current.offsetWidth;
+      setPosition(
+        getTooltipPosition({
+          task,
+          arrowIndent,
+          rtl,
+          svgContainerHeight,
+          svgContainerWidth,
+          headerHeight,
+          scrollX,
+          scrollY,
+          tooltipHeight,
+          tooltipWidth,
+        }),
+      );
     }
-  }, [
-    tooltipRef,
-    task,
-    arrowIndent,
-    scrollX,
-    scrollY,
-    headerHeight,
-    rowHeight,
-    svgContainerHeight,
-    svgContainerWidth,
-    rtl,
-  ]);
+  }, [tooltipRef, task, arrowIndent, scrollX, scrollY, headerHeight, svgContainerHeight, svgContainerWidth, rtl]);
 
   return (
     <div
       ref={tooltipRef}
       className={cx(
-        relatedX ? styles.tooltipDetailsContainer : styles.tooltipDetailsContainerHidden,
+        position ? styles.tooltipDetailsContainer : styles.tooltipDetailsContainerHidden,
         styles.nbGridOther,
       )}
-      style={{ left: relatedX, top: relatedY }}
+      style={position ? { left: position.left, top: position.top } : undefined}
     >
       <TooltipContent task={task} fontSize={fontSize} fontFamily={fontFamily} />
     </div>

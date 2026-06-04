@@ -15,6 +15,7 @@ import {
   type FlowSurfaceApplyBlueprintPopupDefaultsMetadata,
 } from './blueprint/defaults';
 import {
+  FlowSurfaceAggregateError,
   isFlowSurfaceAggregateError,
   isFlowSurfaceError,
   normalizeFlowSurfaceError,
@@ -677,14 +678,14 @@ export function hasLegacyLocatorFields(input: any, options: { allowRootUid?: boo
 }
 
 export function rethrowInlineConfigurationError(error: any, prefix: string): never {
-  const childMessages = isFlowSurfaceAggregateError(error)
-    ? error.errors.map((item) => item.message).filter(Boolean)
-    : [];
-  const message = `${prefix}: ${[error?.message || String(error), ...childMessages].join('; ')}`;
+  if (isFlowSurfaceAggregateError(error)) {
+    throw new FlowSurfaceAggregateError(error.errors, `${prefix}: ${error.message}`);
+  }
+  const message = `${prefix}: ${error?.message || String(error)}`;
   if (isFlowSurfaceError(error)) {
     const normalized = normalizeFlowSurfaceError(error);
     if (normalized.type === 'bad_request') {
-      throwBadRequest(message, normalized.code);
+      throwBadRequest(message, normalized.code, normalized.options);
     }
     if (normalized.type === 'conflict') {
       throwConflict(message, normalized.code);
@@ -701,10 +702,9 @@ export function toFlowSurfaceBatchItemError(error: any) {
   if (isFlowSurfaceAggregateError(error)) {
     return {
       code: error.code,
-      message: error.message,
       status: error.status,
       type: error.type,
-      errors: error.errors,
+      ...error.toResponseBody(),
     };
   }
   const normalized = normalizeFlowSurfaceError(error);

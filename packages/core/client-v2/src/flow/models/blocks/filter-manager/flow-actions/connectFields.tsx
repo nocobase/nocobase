@@ -40,7 +40,20 @@ export const connectFields = defineAction({
 });
 
 // 构建级联选项数据结构
-const buildCascaderOptions = (ctx, fields: any[], prefix = '', selectedPaths: string[] = [], labelPrefix = '') => {
+const MAX_ASSOCIATION_FIELD_DEPTH = 2;
+
+const isAssociationField = (field: any) => {
+  return Boolean(field?.target || field?.targetCollection);
+};
+
+const buildCascaderOptions = (
+  ctx,
+  fields: any[],
+  prefix = '',
+  selectedPaths: string[] = [],
+  labelPrefix = '',
+  associationDepth = 0,
+) => {
   const selectedPathsArray = selectedPaths.filter(Boolean);
 
   return fields
@@ -48,7 +61,13 @@ const buildCascaderOptions = (ctx, fields: any[], prefix = '', selectedPaths: st
       const currentPath = prefix ? `${prefix}.${field.name}` : field.name;
       const label = field.title || field.name;
       const fullLabel = labelPrefix ? `${labelPrefix} / ${label}` : label;
-      const isLeaf = !field.target;
+      const isAssociation = isAssociationField(field);
+      const nextAssociationDepth = associationDepth + (isAssociation ? 1 : 0);
+      if (isAssociation && nextAssociationDepth > MAX_ASSOCIATION_FIELD_DEPTH) {
+        return null;
+      }
+
+      const isLeaf = !isAssociation;
 
       const option: any = {
         label,
@@ -59,6 +78,7 @@ const buildCascaderOptions = (ctx, fields: any[], prefix = '', selectedPaths: st
           field,
           fullPath: currentPath,
           fullLabel,
+          associationDepth: nextAssociationDepth,
         },
       };
 
@@ -68,18 +88,33 @@ const buildCascaderOptions = (ctx, fields: any[], prefix = '', selectedPaths: st
 
       if (shouldLoadChildren) {
         if (field.filterable?.children?.length) {
-          option.children = buildCascaderOptions(ctx, field.filterable.children, currentPath, selectedPaths, fullLabel);
+          option.children = buildCascaderOptions(
+            ctx,
+            field.filterable.children,
+            currentPath,
+            selectedPaths,
+            fullLabel,
+            nextAssociationDepth,
+          );
         } else {
           const targetCollection = field.targetCollection;
           if (targetCollection) {
             const targetFields = targetCollection.getFields?.() || [];
-            option.children = buildCascaderOptions(ctx, targetFields, currentPath, selectedPaths, fullLabel);
+            option.children = buildCascaderOptions(
+              ctx,
+              targetFields,
+              currentPath,
+              selectedPaths,
+              fullLabel,
+              nextAssociationDepth,
+            );
           }
         }
       }
 
       return option;
     })
+    .filter(Boolean)
     .sort((a, b) => {
       // isLeaf 为 true 的节点排在前面
       if (a.isLeaf && !b.isLeaf) return -1;
@@ -259,7 +294,7 @@ function ConnectFields(
           <li>{ctx.t('Available "target blocks" are all data blocks on the current page')}</li>
           <li>
             {ctx.t(
-              'Support filtering multiple blocks simultaneously, support deep selection of relationship fields (e.g.: User/Department/Name)',
+              'Support filtering multiple blocks simultaneously, support selection of relationship fields up to two levels (e.g.: User/Department/Name)',
             )}
           </li>
         </ul>
@@ -469,7 +504,14 @@ function CascaderWrapper(
       return;
     }
 
-    target.children = buildCascaderOptions(ctx, childFields, fullPath, [], meta.fullLabel || target.label);
+    target.children = buildCascaderOptions(
+      ctx,
+      childFields,
+      fullPath,
+      [],
+      meta.fullLabel || target.label,
+      meta.associationDepth || 0,
+    );
     setOptions((prev) => [...prev]);
   };
 
