@@ -9,21 +9,23 @@
 
 import React from 'react';
 import { useT } from '../../locale';
-import { Avatar, Popover } from 'antd';
+import { Avatar, Popover, theme } from 'antd';
 import {
   useChatMessagesStore,
   useAIConfigRepository,
   useChatBoxStore,
   useChatBoxActions,
-  ProfileCard,
+  AIEmployeeProfileCard,
   avatars,
-} from '@nocobase/plugin-ai/client';
-import type { EditorRef } from '@nocobase/client';
+  type ChatEditorRef,
+  type Task,
+} from '@nocobase/plugin-ai/client-v2';
 import { observer } from '@nocobase/flow-engine';
 import type { FlowSettingsContext } from '@nocobase/flow-engine';
 
 export const DaraButton: React.FC<{ ctx: FlowSettingsContext<any> }> = observer(({ ctx }) => {
   const t = useT();
+  const { token } = theme.useToken();
   const aiConfigRepository = useAIConfigRepository();
   const aiEmployees = aiConfigRepository.aiEmployees;
   const aiEmployee = aiEmployees?.find((e) => e.username === 'dara');
@@ -36,55 +38,58 @@ export const DaraButton: React.FC<{ ctx: FlowSettingsContext<any> }> = observer(
 
   const uid = ctx.model.uid;
 
-  const panelRef: EditorRef = {
-    read() {
-      const values = ctx.getStepFormValues('chartSettings', 'configure') || {};
-      const { query, chart } = values || {};
-      const payload = {
-        uid,
-        query: {
-          mode: query?.mode,
-          sql: query?.sql,
-          sqlDatasource: query?.sqlDatasource,
-        },
-        chart: {
-          option: {
-            mode: chart?.option?.mode,
-            raw: chart?.option?.raw,
+  const panelRef = React.useMemo<ChatEditorRef>(
+    () => ({
+      read() {
+        const values = ctx.getStepFormValues('chartSettings', 'configure') || {};
+        const { query, chart } = values || {};
+        const payload = {
+          uid,
+          query: {
+            mode: query?.mode,
+            sql: query?.sql,
+            sqlDatasource: query?.sqlDatasource,
           },
-          events: {
-            mode: chart?.events?.mode,
-            raw: chart?.events?.raw,
+          chart: {
+            option: {
+              mode: chart?.option?.mode,
+              raw: chart?.option?.raw,
+            },
+            events: {
+              mode: chart?.events?.mode,
+              raw: chart?.events?.raw,
+            },
           },
-        },
-      };
-      return JSON.stringify(payload, null, 2);
-    },
-    write(text: string) {
-      try {
-        const content = (text || '').trim();
-        const isSql =
-          /\bselect\b|\bwith\b|\binsert\b|\bupdate\b|\bdelete\b|\bfrom\b|\bwhere\b|\bgroup\s+by\b|\border\s+by\b/i.test(
-            content,
-          ) && !/return\s*\{/.test(content);
-        const isEvents = /chart\.(on|off)\s*\(|ctx\.\w+\s*\(/.test(content) && !/\breturn\s*\{/.test(content);
+        };
+        return JSON.stringify(payload, null, 2);
+      },
+      write(text: string) {
+        try {
+          const content = (text || '').trim();
+          const isSql =
+            /\bselect\b|\bwith\b|\binsert\b|\bupdate\b|\bdelete\b|\bfrom\b|\bwhere\b|\bgroup\s+by\b|\border\s+by\b/i.test(
+              content,
+            ) && !/return\s*\{/.test(content);
+          const isEvents = /chart\.(on|off)\s*\(|ctx\.\w+\s*\(/.test(content) && !/\breturn\s*\{/.test(content);
 
-        if (isSql) {
-          // 从注释中提取数据源
-          const dsMatch = content.match(/^--\s*dataSource:\s*(\S+)/i);
-          const dataSource = dsMatch ? dsMatch[1] : undefined;
-          return ctx.writeSql(content, dataSource);
+          if (isSql) {
+            // 从注释中提取数据源
+            const dsMatch = content.match(/^--\s*dataSource:\s*(\S+)/i);
+            const dataSource = dsMatch ? dsMatch[1] : undefined;
+            return ctx.writeSql(content, dataSource);
+          }
+          if (isEvents) return ctx.writeChartEvents(content);
+          return ctx.writeChartConfig(content);
+        } catch (e) {
+          console.error('DaraButton panelRef.write error:', e);
         }
-        if (isEvents) return ctx.writeChartEvents(content);
-        return ctx.writeChartConfig(content);
-      } catch (e) {
-        console.error('DaraButton panelRef.write error:', e);
-      }
-    },
-    buttonGroupHeight: 0,
-    snippetEntries: [],
-    logs: [],
-  };
+      },
+      buttonGroupHeight: 0,
+      snippetEntries: [],
+      logs: [],
+    }),
+    [ctx, uid],
+  );
 
   React.useEffect(() => {
     aiConfigRepository.getAIEmployees();
@@ -94,12 +99,14 @@ export const DaraButton: React.FC<{ ctx: FlowSettingsContext<any> }> = observer(
     setEditorRef(uid, panelRef);
     setCurrentEditorRefUid(uid);
     return () => setEditorRef(uid, null);
-  }, [uid, setEditorRef, setCurrentEditorRefUid]);
+  }, [uid, panelRef, setEditorRef, setCurrentEditorRefUid]);
 
   const systemPrompt =
     'If you are not in SQL/Custom mode, first call the tool viz.switchModes; after editing SQL, if you need field samples, call the tool viz.runQuery. Use query.sqlDatasource as the current data source key when executing SQL. Do not render chart previews directly in the chat window.';
 
-  const TaskTemplate = (prototype: Partial<any>) => {
+  type TaskPrototype = Partial<Task> & { user?: string };
+
+  const TaskTemplate = (prototype: TaskPrototype): Task => {
     const { message, user, ...rest } = prototype;
     return {
       message: {
@@ -154,12 +161,28 @@ export const DaraButton: React.FC<{ ctx: FlowSettingsContext<any> }> = observer(
   if (!aiEmployee) return null;
 
   return (
-    <Popover content={<ProfileCard aiEmployee={aiEmployee} tasks={tasks as any} />}>
+    <Popover
+      content={
+        <AIEmployeeProfileCard
+          aiEmployee={aiEmployee}
+          tasks={tasks}
+          onTaskClick={(task) => {
+            triggerTask({
+              aiEmployee,
+              tasks: [task],
+            });
+          }}
+        />
+      }
+    >
       <Avatar
         src={avatars(aiEmployee.avatar)}
         size={32}
         shape="circle"
-        style={{ cursor: 'pointer', border: '1px solid #eee' }}
+        style={{
+          cursor: 'pointer',
+          border: `${token.lineWidth}px ${token.lineType} ${token.colorBorderSecondary}`,
+        }}
         onClick={onClick}
       />
     </Popover>
