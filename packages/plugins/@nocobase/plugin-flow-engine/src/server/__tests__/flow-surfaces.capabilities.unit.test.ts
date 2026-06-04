@@ -1208,6 +1208,7 @@ describe('flowSurfaces capabilities projection', () => {
                 ownerPlugin: '@nocobase/plugin-gantt',
                 readiness: 'createEnabled',
                 updatedAt: '2026-06-04T00:00:00.000Z',
+                approvedAt: '2026-06-04T00:00:00.000Z',
                 checks: createDiagnosticsAdmissionChecks(),
               },
             ],
@@ -1229,6 +1230,73 @@ describe('flowSurfaces capabilities projection', () => {
         ],
       }),
     ]);
+  });
+
+  it('should downgrade create-enabled admission diagnostics when runtime evidence is not trusted', async () => {
+    const { service } = createDiagnosticsService({
+      pluginOptions: {
+        flowSurfaceCapabilities: {
+          diagnosticsEnabled: true,
+        },
+      },
+    });
+
+    const response = await service.diagnoseCapabilities(
+      {},
+      {
+        enabledPackages: new Set(['@nocobase/plugin-flow-engine']),
+        admissionReports: [
+          {
+            version: 1,
+            plugin: '@nocobase/plugin-gantt',
+            generatedAt: '2026-06-04T00:00:00.000Z',
+            records: [
+              {
+                capabilityId: '@nocobase/plugin-gantt:canary:block:gantt',
+                kind: 'block',
+                publicType: 'gantt',
+                ownerPlugin: '@nocobase/plugin-gantt',
+                capabilityVersion: '1.0.0',
+                manifestHash: 'manifest-hash',
+                snapshotHash: 'snapshot-hash',
+                dryRunFixtureHash: 'fixture-hash',
+                readiness: 'createEnabled',
+                updatedAt: '2026-06-04T00:00:00.000Z',
+                checks: createDiagnosticsAdmissionChecks({
+                  dryRunCreate: {
+                    ok: false,
+                    reasonCode: 'dry-run-failed',
+                    message: 'Dry-run failed.',
+                    evidence: {
+                      internalModelUse: 'InternalEvidenceModel',
+                    },
+                  },
+                }),
+              },
+            ],
+          },
+        ],
+      },
+    );
+
+    expect(response.data.admissionRecords).toEqual([
+      expect.objectContaining({
+        capabilityId: '@nocobase/plugin-gantt:canary:block:gantt',
+        readiness: 'blocked',
+        failedChecks: expect.arrayContaining([
+          expect.objectContaining({
+            key: 'approvedAt',
+            reasonCode: 'contract-not-verified',
+          }),
+          expect.objectContaining({
+            key: 'dryRunCreate',
+            reasonCode: 'dry-run-failed',
+            message: 'Dry-run failed.',
+          }),
+        ]),
+      }),
+    ]);
+    expect(JSON.stringify(response)).not.toContain('InternalEvidenceModel');
   });
 
   it('should gate capability diagnostics by config or administrator role', async () => {

@@ -40,6 +40,7 @@ import {
 import {
   getFlowSurfaceCapabilityAdmissionReportStorageDir,
   loadFlowSurfaceCapabilityAdmissionReportsFromDirectory,
+  validateFlowSurfaceCapabilityAdmissionRuntimeEvidence,
   type FlowSurfaceCapabilityAdmissionReport,
   type FlowSurfaceCapabilityAdmissionRecord,
 } from './admission-report';
@@ -1326,12 +1327,6 @@ type FlowSurfaceCapabilityDiagnosticsOptions = {
 
 const FLOW_SURFACE_DIAGNOSTICS_ADMIN_ROLES = new Set(['admin', 'root']);
 const FLOW_SURFACE_DIAGNOSTIC_AVAILABILITY_KEYS = ['render', 'readback', 'create', 'configure'] as const;
-const FLOW_SURFACE_ADMISSION_CREATE_ENABLED_REQUIRED_FIELDS = [
-  'capabilityVersion',
-  'manifestHash',
-  'snapshotHash',
-  'dryRunFixtureHash',
-] as const;
 
 function normalizeFlowSurfaceCapabilityDiagnosticsValues(
   input: FlowSurfaceCapabilityDiagnosticsValues = {},
@@ -1425,7 +1420,10 @@ function toFlowSurfaceAdmissionDiagnosticsRecord(
   report: FlowSurfaceCapabilityAdmissionReport,
   record: FlowSurfaceCapabilityAdmissionRecord,
 ): FlowSurfaceCapabilityDiagnosticsAdmissionRecord {
-  const reportIntegrityFailures = getFlowSurfaceAdmissionReportIntegrityFailures(record);
+  const runtimeValidation =
+    record.readiness === 'createEnabled'
+      ? validateFlowSurfaceCapabilityAdmissionRuntimeEvidence({ record })
+      : undefined;
   return {
     reportPlugin: report.plugin,
     reportGeneratedAt: report.generatedAt,
@@ -1433,45 +1431,27 @@ function toFlowSurfaceAdmissionDiagnosticsRecord(
     kind: record.kind,
     publicType: record.publicType,
     ownerPlugin: record.ownerPlugin,
-    readiness: reportIntegrityFailures.length ? 'blocked' : record.readiness,
+    readiness: runtimeValidation?.readiness || record.readiness,
     updatedAt: record.updatedAt,
     ...(record.approvedAt ? { approvedAt: record.approvedAt } : {}),
-    failedChecks: [
-      ...Object.entries(record.checks).flatMap(([key, check]) =>
-        check.ok
-          ? []
-          : [
-              {
-                key,
-                ...(check.reasonCode ? { reasonCode: check.reasonCode } : {}),
-                ...(check.message ? { message: check.message } : {}),
-              },
-            ],
-      ),
-      ...reportIntegrityFailures,
-    ],
+    failedChecks: runtimeValidation?.failedChecks || getFlowSurfaceAdmissionDiagnosticsFailedChecks(record),
   };
 }
 
-function getFlowSurfaceAdmissionReportIntegrityFailures(
+function getFlowSurfaceAdmissionDiagnosticsFailedChecks(
   record: FlowSurfaceCapabilityAdmissionRecord,
 ): FlowSurfaceCapabilityDiagnosticsAdmissionRecord['failedChecks'] {
-  if (record.readiness !== 'createEnabled') {
-    return [];
-  }
-  const missingFields = FLOW_SURFACE_ADMISSION_CREATE_ENABLED_REQUIRED_FIELDS.filter((field) => !record[field]);
-  if (!missingFields.length) {
-    return [];
-  }
-  return [
-    {
-      key: 'reportIntegrity',
-      reasonCode: 'snapshot-stale',
-      message: `Admission report createEnabled record is missing required integrity fields: ${missingFields.join(
-        ', ',
-      )}.`,
-    },
-  ];
+  return Object.entries(record.checks).flatMap(([key, check]) =>
+    check.ok
+      ? []
+      : [
+          {
+            key,
+            ...(check.reasonCode ? { reasonCode: check.reasonCode } : {}),
+            ...(check.message ? { message: check.message } : {}),
+          },
+        ],
+  );
 }
 
 export class FlowSurfacesService {
