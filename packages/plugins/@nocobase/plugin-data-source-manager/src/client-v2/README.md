@@ -80,6 +80,10 @@ export class PluginMyDataSourceClientV2 extends Plugin {
 - `SettingsForm`：当前数据源类型自己的配置表单，使用原生 Ant Design `Form.Item`。字段值会和基础字段一起提交给 `dataSources:create/update`。
 - `disableTestConnection`：隐藏 “Test Connection” 按钮。
 - `disableAddFields`：给后续管理逻辑识别是否允许添加字段。
+- `disableConfigureFields`：统一禁用 `Configure fields` 中的字段变更动作。启用后只展示字段列表，隐藏新增、编辑、删除，禁止快速修改字段显示名、切换 Interface 和修改 title field。
+- `createFieldInterfaces`：限制该数据源在 “Add field” 中可创建的字段 Interface，避免外部数据源暴露不支持的字段类型。
+- `normalizeValues`：提交、连接测试前统一整理表单值，适合处理端口数字化、SSL 结构兼容、空值清理等数据源特有逻辑。
+- `isFieldInterfaceReadOnly`：可选扩展点，用于让数据源控制某个字段的 `Field interface` 是否只读。没有特殊规则时不需要实现。
 
 `SettingsForm` 接收的 props：
 
@@ -87,6 +91,110 @@ export class PluginMyDataSourceClientV2 extends Plugin {
 - `type`：当前注册的 `DataSourceTypeOptions`。
 - `initialValues`：编辑时的初始数据，创建时包含 `defaultValues`、`type`、自动生成的 `key`。
 - `loadCollections(key)`：调用 `dataSources:readTables` 读取外部库表，通常用于选择需要纳入管理的数据表。
+
+### 数据源表单约定
+
+`DataSourceForm` 统一负责基础字段、提交、连接测试、错误提示和抽屉关闭。数据源插件的 `SettingsForm` 只负责渲染本类型的配置项，不需要自己调用 `dataSources:create/update`。
+
+提交和连接测试前会先执行通用归一化：
+
+- `options.port` 如果是纯数字字符串，会转成数字。
+- `options.ssl.sslMode === 'disable'` 时，只保留 `{ sslMode: 'disable' }`，和 v1 参数结构保持一致。
+- `collections` 支持字符串数组，也支持 `{ name, selected }` 数组；提交前会过滤未选中的项并转换成表名数组。
+- 最后执行当前数据源类型的 `normalizeValues(values)`。
+
+连接测试失败、接口返回 `errors/messages/error/message` 时，会统一用 `notification.error` 弹出；提交成功后会调用 `onSubmitted()` 并关闭抽屉。
+
+如果配置项需要支持 “Variables and secrets”，优先使用 client-v2 提供的 `EnvVariableInput`，保持和 v1 外部数据源表单一致的变量输入体验：
+
+```tsx
+import { EnvVariableInput } from '@nocobase/client-v2';
+
+<Form.Item name={['options', 'password']} label={t('Password')} rules={[{ required: true }]}>
+  <EnvVariableInput password />
+</Form.Item>;
+```
+
+### 限制外部数据源可创建字段
+
+外部数据源通常不应该直接暴露主数据源的全部字段类型。可以在注册数据源类型时通过 `createFieldInterfaces` 控制 “Add field” 下拉中可选的 Interface：
+
+```tsx
+dataSourceManagerPlugin.registerType('external-postgres', {
+  createFieldInterfaces: {
+    groups: ['basic', 'choices', 'datetime', 'media'],
+    exclude: ['password', 'sequence', 'chinaRegion'],
+  },
+});
+```
+
+也可以根据 collection 动态返回：
+
+```tsx
+dataSourceManagerPlugin.registerType('external-postgres', {
+  createFieldInterfaces({ collection }) {
+    if (collection.view) {
+      return { include: ['m2o'] };
+    }
+    return {
+      groups: ['basic', 'choices', 'datetime', 'media'],
+    };
+  },
+});
+```
+
+`createFieldInterfaces` 只影响创建字段入口；已有字段列表中的 Interface 识别和编辑仍会走字段 Interface 注册信息、模板限制和字段本身的类型兼容规则。
+
+### 只读展示 Configure fields
+
+如果某个外部数据源的表和字段完全由远端 schema 同步，不允许用户在 NocoBase 中变更字段配置，可以使用 `disableConfigureFields`：
+
+```tsx
+dataSourceManagerPlugin.registerType('external-postgres', {
+  disableConfigureFields: true,
+});
+```
+
+启用后，`Configure fields` 只保留字段展示和同步入口：
+
+- 隐藏 `Add field` 和批量 `Delete`。
+- 隐藏每行 `Edit` / `Delete` 操作。
+- `Field display name` 以文本展示，不触发快速编辑保存。
+- `Field interface` 以标签展示，不允许切换。
+- `Title field` 只读展示，不允许切换。
+- 不显示表格行选择框。
+
+如果只想限制新增字段，但仍允许编辑已有字段，继续使用 `disableAddFields`。
+
+### 字段 Interface 只读规则
+
+`Configure fields` 中的 `Field interface` 列默认会对以下字段只读显示：
+
+- `record.source` 存在的字段，通常来自同步或视图字段。
+- 字段 Interface 注册信息标记了 `isAssociation` 的关系字段。
+- 字段 Interface 属于 `systemInfo` 分组的系统信息字段。
+- 通过 `registerCollectionPresetField()` 注册的预置字段，例如 ID、创建时间、创建人、更新时间、更新人等。
+
+如果某个数据源有额外规则，可以实现 `isFieldInterfaceReadOnly()`：
+
+```tsx
+dataSourceManagerPlugin.registerType('external-postgres', {
+  isFieldInterfaceReadOnly({ field }) {
+    if (field.fromExternalSchema) {
+      return true;
+    }
+    return undefined;
+  },
+});
+```
+
+返回值语义：
+
+- `true`：强制只读，只显示标签。
+- `false`：强制可编辑，跳过默认只读规则。
+- `undefined`：不干预，继续走默认规则。
+
+这个扩展点只用于数据源确实有额外只读策略的场景；普通外部数据源通常只需要配置 `createFieldInterfaces`。
 
 客户端注册只负责管理页 UI 和运行时同步。完整外部数据源还需要服务端提供对应的 data source 类型、连接测试、读取表、加载 collections 等能力。
 

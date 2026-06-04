@@ -1006,7 +1006,7 @@ export class GridModel<T extends { subModels: { items: FlowModel[] } } = Default
           <Space
             ref={this.gridContainerRef}
             direction={'vertical'}
-            style={{ width: '100%', marginBottom: this.props.rowGap }}
+            style={{ width: '100%', marginBottom: this.props.rowGap, display: 'flex' }}
             size={this.props.rowGap}
           >
             <DndProvider

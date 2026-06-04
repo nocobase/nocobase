@@ -22,7 +22,7 @@ export class OpenAIResponsesProvider extends LLMProvider {
   }
 
   createModel() {
-    const { baseURL, apiKey } = this.serviceOptions || {};
+    const { apiKey } = this.serviceOptions || {};
     const { responseFormat, structuredOutput } = this.modelOptions || {};
     const { schema } = structuredOutput || {};
     const responseFormatOptions = {
@@ -41,7 +41,7 @@ export class OpenAIResponsesProvider extends LLMProvider {
         },
       },
       configuration: {
-        baseURL: baseURL || this.baseURL,
+        baseURL: this.getResolvedBaseURL(),
       },
       verbose: false,
       useResponsesApi: true,

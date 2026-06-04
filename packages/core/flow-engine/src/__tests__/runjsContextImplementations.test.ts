@@ -27,7 +27,10 @@ describe('Specific RunJSContext implementations', () => {
       const ctx: any = { model: { constructor: { name: 'JSColumnModel' } } };
       const doc = getRunJSDocFor(ctx as any, { version: 'v1' });
       expect(doc?.properties?.element).toBeTruthy();
-      expect(doc?.properties?.element).toContain('ElementProxy');
+      const elementDoc: any = doc?.properties?.element;
+      expect(elementDoc?.detail).toContain('ElementProxy');
+      expect(elementDoc?.properties?.setAttribute).toBeTruthy();
+      expect(elementDoc?.properties?.querySelector).toBeTruthy();
     });
 
     it('should have record property in doc', () => {
@@ -68,7 +71,9 @@ describe('Specific RunJSContext implementations', () => {
       (ctx as any).defineProperty('api', { value: { auth: { locale: 'zh-CN' } } });
       const doc = getRunJSDocFor(ctx as any, { version: 'v1' });
       expect(doc?.label).toMatch(/JS 列/);
-      expect(doc?.properties?.element).toContain('表格单元格');
+      const elementDoc: any = doc?.properties?.element;
+      expect(elementDoc?.description).toContain('表格单元格');
+      expect(elementDoc?.properties?.addEventListener).toBeTruthy();
     });
 
     it('should create instance successfully', () => {
@@ -162,6 +167,7 @@ describe('Specific RunJSContext implementations', () => {
       const ctx: any = { model: { constructor: { name: 'JSRecordActionModel' } } };
       const doc = getRunJSDocFor(ctx as any, { version: 'v1' });
       expect(doc?.properties?.record).toBeTruthy();
+      expect(doc?.properties?.element).toBeUndefined();
     });
 
     it('should have filterByTk property', () => {
@@ -184,6 +190,7 @@ describe('Specific RunJSContext implementations', () => {
       const ctx: any = { model: { constructor: { name: 'JSCollectionActionModel' } } };
       const doc = getRunJSDocFor(ctx as any, { version: 'v1' });
       expect(doc?.properties?.resource).toBeTruthy();
+      expect(doc?.properties?.element).toBeUndefined();
     });
 
     it('should support zh-CN locale', () => {

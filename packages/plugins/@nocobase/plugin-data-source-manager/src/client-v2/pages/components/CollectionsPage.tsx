@@ -1054,23 +1054,25 @@ function CollectionCreateDrawer(props: {
 }
 
 function CollectionEditDrawer(props: {
+  dataSourceKey: string;
   collection: Record<string, any>;
   categories: CollectionCategoryRecord[];
   onSubmitted: () => void;
 }) {
-  const { categories, collection, onSubmitted } = props;
+  const { categories, collection, dataSourceKey, onSubmitted } = props;
   const t = useT();
   const ctx = useFlowContext();
   const plugin = ctx.app.pm.get(PluginDataSourceManagerClientV2);
   const [form] = Form.useForm();
   const [submitting, setSubmitting] = useState(false);
+  const isMainDataSource = dataSourceKey === 'main';
   const template = useMemo(
     () => plugin.getCollectionTemplate(collection.template || 'general'),
     [collection.template, plugin],
   );
   const collectionRequest = useRequest(async () => {
     const response = await ctx.api.request({
-      url: 'dataSources/main/collections:list',
+      url: `dataSources/${dataSourceKey}/collections:list`,
       params: {
         paginate: false,
         sort: ['sort'],
@@ -1081,7 +1083,7 @@ function CollectionEditDrawer(props: {
   });
   const fieldsRequest = useRequest(async () => {
     const response = await ctx.api.request({
-      url: getCollectionFieldActionUrl('main', collection.name, 'list'),
+      url: getCollectionFieldActionUrl(dataSourceKey, collection.name, 'list'),
       params: {},
     });
     return normalizeArrayResponse(response) as Array<Record<string, any>>;
@@ -1153,15 +1155,30 @@ function CollectionEditDrawer(props: {
     } else {
       delete submitValues.name;
     }
+    if (!isMainDataSource) {
+      delete submitValues.category;
+      delete submitValues.inherits;
+    }
     submitValues = template?.configure?.transformSubmitValues?.(submitValues) || submitValues;
     setSubmitting(true);
     try {
-      await ctx.api.resource(collection.template === 'sql' ? 'sqlCollection' : 'collections').update({
-        filterByTk: collection.name,
-        values: submitValues,
-      });
+      if (isMainDataSource) {
+        await ctx.api.resource(collection.template === 'sql' ? 'sqlCollection' : 'collections').update({
+          filterByTk: collection.name,
+          values: submitValues,
+        });
+      } else {
+        await ctx.api.request({
+          url: `dataSources/${dataSourceKey}/collections:update`,
+          method: 'post',
+          params: {
+            filterByTk: collection.name,
+          },
+          data: submitValues,
+        });
+      }
       onSubmitted();
-      ctx.dataSourceManager.getDataSource('main')?.reload();
+      ctx.dataSourceManager.getDataSource(dataSourceKey)?.reload();
     } finally {
       setSubmitting(false);
     }
@@ -1171,10 +1188,60 @@ function CollectionEditDrawer(props: {
     collection.template,
     ctx.api,
     ctx.dataSourceManager,
+    dataSourceKey,
     form,
+    isMainDataSource,
     onSubmitted,
     template,
   ]);
+
+  if (!isMainDataSource) {
+    return (
+      <DrawerFormLayout
+        title={t('Edit collection')}
+        submitting={submitting}
+        submitText={t('Submit')}
+        cancelText={t('Cancel')}
+        onSubmit={handleSubmit}
+      >
+        <Form form={form} layout="vertical" initialValues={initialValues}>
+          <Form.Item name="title" label={t('Collection display name')} rules={[{ required: true }]}>
+            <Input />
+          </Form.Item>
+          <Form.Item
+            name="name"
+            label={t('Collection name')}
+            extra={t(
+              'Randomly generated and can be modified. Support letters, numbers and underscores, must start with an letter.',
+            )}
+          >
+            <Input disabled />
+          </Form.Item>
+          <Form.Item name="description" label={t('Description')}>
+            <Input.TextArea autoSize={{ minRows: 3, maxRows: 8 }} />
+          </Form.Item>
+          <Form.Item
+            name="simplePaginate"
+            valuePropName="checked"
+            extra={t(
+              'Skip getting the total number of table records during paging to speed up loading. It is recommended to enable this option for data tables with a large amount of data',
+            )}
+          >
+            <Checkbox>{t('Use simple pagination mode')}</Checkbox>
+          </Form.Item>
+          <Form.Item
+            name="filterTargetKey"
+            label={t('Record unique key')}
+            extra={t(
+              'If a collection lacks a primary key, you must configure a unique record key to locate row records within a block, failure to configure this will prevent the creation of data blocks for the collection.',
+            )}
+          >
+            <Select mode="multiple" options={filterTargetKeyOptions} loading={fieldsRequest.loading} allowClear />
+          </Form.Item>
+        </Form>
+      </DrawerFormLayout>
+    );
+  }
 
   const TemplateConfigureForm = template?.configure?.Form || template?.ConfigureForm;
 
@@ -1200,19 +1267,23 @@ function CollectionEditDrawer(props: {
         >
           <Input disabled />
         </Form.Item>
-        <Form.Item name="inherits" label={t('Inherits')}>
-          <Select mode="multiple" options={collectionOptions} loading={collectionRequest.loading} allowClear />
-        </Form.Item>
-        <Form.Item name="category" label={t('Categories')}>
-          <Select
-            mode="multiple"
-            options={categories.map((category) => ({
-              value: String(category.id),
-              label: compileLegacyTemplate(category.name || category.id, t),
-            }))}
-            allowClear
-          />
-        </Form.Item>
+        {isMainDataSource ? (
+          <>
+            <Form.Item name="inherits" label={t('Inherits')}>
+              <Select mode="multiple" options={collectionOptions} loading={collectionRequest.loading} allowClear />
+            </Form.Item>
+            <Form.Item name="category" label={t('Categories')}>
+              <Select
+                mode="multiple"
+                options={categories.map((category) => ({
+                  value: String(category.id),
+                  label: compileLegacyTemplate(category.name || category.id, t),
+                }))}
+                allowClear
+              />
+            </Form.Item>
+          </>
+        ) : null}
         <Form.Item name="description" label={t('Description')}>
           <Input.TextArea autoSize={{ minRows: 3, maxRows: 8 }} />
         </Form.Item>
@@ -1266,7 +1337,22 @@ function CollectionsPage(props: CollectionsPageProps) {
   const [selectedTableKeys, setSelectedTableKeys] = useState<string[]>([]);
   const [selectedTransferKeys, setSelectedTransferKeys] = useState<string[]>([]);
   const [tableSearchValue, setTableSearchValue] = useState('');
+  const [refreshing, setRefreshing] = useState(false);
   const isMainDataSource = props.dataSourceKey === 'main';
+  const dataSource = ctx.dataSourceManager.getDataSource(props.dataSourceKey);
+  const dataSourceType = plugin.getType(dataSource?.options?.type);
+  const AddCollection = dataSourceType?.AddCollection;
+  const EditCollection = dataSourceType?.EditCollection;
+  const DeleteCollection = dataSourceType?.DeleteCollection;
+  const configureFieldsDisabled = Boolean(dataSourceType?.disableConfigureFields);
+  const allowDefaultCollectionEdit = !configureFieldsDisabled;
+  const allowCustomCollectionEdit = Boolean(!isMainDataSource && !configureFieldsDisabled && EditCollection);
+  const allowCustomCollectionCreate = Boolean(
+    !isMainDataSource && !configureFieldsDisabled && dataSourceType?.allowCollectionCreate && AddCollection,
+  );
+  const allowCustomCollectionDeletion = Boolean(
+    !isMainDataSource && !configureFieldsDisabled && dataSourceType?.allowCollectionDeletion && DeleteCollection,
+  );
   const collectionTemplates = useMemo(() => plugin.getCollectionTemplates(), [plugin]);
   const categoryRequest = useRequest(
     async () => {
@@ -1445,6 +1531,7 @@ function CollectionsPage(props: CollectionsPageProps) {
         closable: true,
         content: () => (
           <CollectionEditDrawer
+            dataSourceKey={props.dataSourceKey}
             collection={record}
             categories={categories}
             onSubmitted={() => {
@@ -1455,7 +1542,7 @@ function CollectionsPage(props: CollectionsPageProps) {
         ),
       });
     },
-    [categories, ctx.viewer, request],
+    [categories, ctx.viewer, props.dataSourceKey, request],
   );
 
   const handleDeleteCollections = useCallback(
@@ -1511,6 +1598,36 @@ function CollectionsPage(props: CollectionsPageProps) {
     },
     [ctx.api, ctx.dataSourceManager, isMainDataSource, message, request, t],
   );
+
+  const handleRefresh = useCallback(async () => {
+    if (isMainDataSource) {
+      request.refresh();
+      return;
+    }
+
+    setRefreshing(true);
+    try {
+      const clientStatus = dataSource?.status || 'loaded';
+      const response = await ctx.api.request({
+        url: `dataSources:refresh?filterByTk=${encodeURIComponent(
+          props.dataSourceKey,
+        )}&clientStatus=${encodeURIComponent(clientStatus)}`,
+        method: 'post',
+      });
+      const status = response?.data?.data?.status || response?.data?.status;
+      if (status === 'reloading') {
+        message.warning(t('Data source synchronization in progress'));
+      } else if (status === 'loaded') {
+        message.success(t('Data source synchronization successful'));
+        request.refresh();
+      }
+      await ctx.dataSourceManager.getDataSource(props.dataSourceKey)?.reload();
+    } catch (error) {
+      message.error(t('Data source synchronization failed'));
+    } finally {
+      setRefreshing(false);
+    }
+  }, [ctx.api, ctx.dataSourceManager, dataSource?.status, isMainDataSource, message, props.dataSourceKey, request, t]);
 
   const handleSyncFromDatabase = useCallback(() => {
     modal.confirm({
@@ -1660,23 +1777,66 @@ function CollectionsPage(props: CollectionsPageProps) {
       { title: t('Description'), dataIndex: 'description', ellipsis: true },
       {
         title: t('Actions'),
-        width: isMainDataSource ? 220 : 140,
+        width:
+          isMainDataSource || allowDefaultCollectionEdit || allowCustomCollectionEdit || allowCustomCollectionDeletion
+            ? 260
+            : 140,
         render: (_, record) => (
-          <Space>
+          <Space size={16}>
             <a onClick={() => openFields(record)}>{t('Configure fields')}</a>
             {isMainDataSource ? (
               <>
                 <a onClick={() => openEditCollectionDrawer(record)}>{t('Edit')}</a>
                 <a onClick={() => handleDeleteCollections(record.name)}>{t('Delete')}</a>
               </>
-            ) : null}
+            ) : (
+              <>
+                {allowCustomCollectionEdit && EditCollection ? (
+                  <EditCollection
+                    dataSourceKey={props.dataSourceKey}
+                    record={record}
+                    onSubmitted={() => {
+                      setSelectedRowKeys([]);
+                      request.refresh();
+                    }}
+                  />
+                ) : allowDefaultCollectionEdit ? (
+                  <a onClick={() => openEditCollectionDrawer(record)}>{t('Edit')}</a>
+                ) : null}
+                {allowCustomCollectionDeletion && DeleteCollection ? (
+                  <DeleteCollection
+                    dataSourceKey={props.dataSourceKey}
+                    record={record}
+                    onSubmitted={() => {
+                      setSelectedRowKeys([]);
+                      request.refresh();
+                    }}
+                  />
+                ) : null}
+              </>
+            )}
           </Space>
         ),
       },
     );
 
     return nextColumns;
-  }, [activeCategoryKey, handleDeleteCollections, isMainDataSource, openEditCollectionDrawer, openFields, plugin, t]);
+  }, [
+    EditCollection,
+    DeleteCollection,
+    activeCategoryKey,
+    allowCustomCollectionEdit,
+    allowDefaultCollectionEdit,
+    allowCustomCollectionDeletion,
+    handleDeleteCollections,
+    isMainDataSource,
+    openEditCollectionDrawer,
+    openFields,
+    plugin,
+    props.dataSourceKey,
+    request,
+    t,
+  ]);
 
   return (
     <Card title={compileLegacyTemplate(props.title, t)} variant="borderless">
@@ -1702,7 +1862,7 @@ function CollectionsPage(props: CollectionsPageProps) {
           onReset={handleResetFilter}
         />
         <Space>
-          <Button icon={<ReloadOutlined />} onClick={() => request.refresh()}>
+          <Button icon={<ReloadOutlined />} loading={refreshing} onClick={handleRefresh}>
             {t('Refresh')}
           </Button>
           {isMainDataSource ? (
@@ -1765,7 +1925,32 @@ function CollectionsPage(props: CollectionsPageProps) {
                 </Button>
               </Dropdown>
             </>
-          ) : null}
+          ) : (
+            <>
+              {allowCustomCollectionDeletion && DeleteCollection ? (
+                <DeleteCollection
+                  dataSourceKey={props.dataSourceKey}
+                  selectedRowKeys={selectedRowKeys}
+                  isBulk
+                  onSubmitted={() => {
+                    setSelectedRowKeys([]);
+                    request.refresh();
+                  }}
+                >
+                  {t('Delete')}
+                </DeleteCollection>
+              ) : null}
+              {allowCustomCollectionCreate && AddCollection ? (
+                <AddCollection
+                  dataSourceKey={props.dataSourceKey}
+                  onSubmitted={() => {
+                    setSelectedRowKeys([]);
+                    request.refresh();
+                  }}
+                />
+              ) : null}
+            </>
+          )}
         </Space>
       </Flex>
       <Table<Record<string, any>>
@@ -1776,7 +1961,7 @@ function CollectionsPage(props: CollectionsPageProps) {
         dataSource={request.data?.records || []}
         columns={columns}
         rowSelection={
-          isMainDataSource
+          isMainDataSource || allowCustomCollectionDeletion
             ? {
                 selectedRowKeys,
                 onChange: (keys) => setSelectedRowKeys(keys),

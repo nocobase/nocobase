@@ -34,6 +34,8 @@ import { waitForFixtureCollectionsReady } from './flow-surfaces.fixture-ready';
 describe('flowSurfaces catalog + compose contract', () => {
   const DEFAULT_COLLECTION_BLOCK_ACTION_USES = new Set([
     'FilterActionModel',
+    'CalendarNavActionModel',
+    'CalendarViewSelectActionModel',
     'RefreshActionModel',
     'AddNewActionModel',
   ]);
@@ -1906,6 +1908,13 @@ describe('flowSurfaces catalog + compose contract', () => {
     expect(calendarReadback.tree.stepParams?.cardSettings?.blockHeight).toMatchObject({
       heightMode: 'fullHeight',
     });
+    expect(_.castArray(calendarReadback.tree.subModels?.actions || []).map((item: any) => item?.use)).toEqual([
+      'FilterActionModel',
+      'CalendarNavActionModel',
+      'CalendarViewSelectActionModel',
+      'RefreshActionModel',
+      'AddNewActionModel',
+    ]);
 
     const quickCreateAction = calendarReadback.tree.subModels?.quickCreateAction;
     const eventViewAction = calendarReadback.tree.subModels?.eventViewAction;
@@ -2572,8 +2581,16 @@ describe('flowSurfaces catalog + compose contract', () => {
       },
     });
     expect(composeRes.status, readErrorMessage(composeRes)).toBe(200);
-    const calendarUid = getData(composeRes)?.blocks?.[0]?.uid;
+    const calendarBlock = getData(composeRes)?.blocks?.[0];
+    const calendarUid = calendarBlock?.uid;
     expect(calendarUid).toBeTruthy();
+    expect(calendarBlock?.actions?.map((item: any) => item.type)).toEqual([
+      'filter',
+      'turnPages',
+      'selectView',
+      'refresh',
+      'addNew',
+    ]);
 
     const readback = await getSurface(rootAgent, {
       uid: calendarUid,
@@ -7408,6 +7425,13 @@ describe('flowSurfaces catalog + compose contract', () => {
     expect(calendarReadback.tree.stepParams?.cardSettings?.blockHeight).toMatchObject({
       heightMode: 'fullHeight',
     });
+    expect(_.castArray(calendarReadback.tree.subModels?.actions || []).map((item: any) => item?.use)).toEqual([
+      'FilterActionModel',
+      'CalendarNavActionModel',
+      'CalendarViewSelectActionModel',
+      'RefreshActionModel',
+      'AddNewActionModel',
+    ]);
     const tableReadback = await getSurface(rootAgent, {
       uid: tableUid,
     });

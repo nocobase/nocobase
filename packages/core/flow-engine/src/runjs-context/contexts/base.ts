@@ -13,7 +13,42 @@ export function defineBaseContextMeta() {
   FlowRunJSContext.define({
     label: 'RunJS base',
     properties: {
-      logger: 'Pino logger instance for structured logging. Example: `ctx.logger.info({ foo: 1 }, "message")`',
+      logger: {
+        description: 'Pino logger instance for structured logging. Example: `ctx.logger.info({ foo: 1 }, "message")`',
+        detail: 'Logger',
+        properties: {
+          info: {
+            type: 'function',
+            description: 'Write an info-level log.',
+            detail: '(...args: any[]) => void',
+            completion: { insertText: `ctx.logger.info({ foo: 1 }, 'message')` },
+          },
+          warn: {
+            type: 'function',
+            description: 'Write a warn-level log.',
+            detail: '(...args: any[]) => void',
+            completion: { insertText: `ctx.logger.warn({ foo: 1 }, 'message')` },
+          },
+          error: {
+            type: 'function',
+            description: 'Write an error-level log.',
+            detail: '(...args: any[]) => void',
+            completion: { insertText: `ctx.logger.error({ err }, 'message')` },
+          },
+          debug: {
+            type: 'function',
+            description: 'Write a debug-level log.',
+            detail: '(...args: any[]) => void',
+            completion: { insertText: `ctx.logger.debug({ foo: 1 }, 'message')` },
+          },
+          child: {
+            type: 'function',
+            description: 'Create a child logger with bindings.',
+            detail: '(bindings: object) => Logger',
+            completion: { insertText: `ctx.logger.child({ module: 'runjs' })` },
+          },
+        },
+      },
       message: {
         description: 'Ant Design global message API for displaying temporary messages.',
         detail: 'MessageInstance',
@@ -241,12 +276,18 @@ export function defineBaseContextMeta() {
           popover: {
             description: 'Open a popover view. Parameters: (props: PopoverProps) => any',
             detail: '(props) => any',
-            completion: { insertText: 'await ctx.viewer.popover({ target: ctx.element?.__el, content: <div /> })' },
+            completion: {
+              insertText: 'await ctx.viewer.popover({ target: ctx.element?.__el, content: <div /> })',
+              requires: ['element'],
+            },
           },
           embed: {
             description: 'Open an embed view. Parameters: (props: ViewProps & TargetProps) => any',
             detail: '(props) => any',
-            completion: { insertText: 'await ctx.viewer.embed({ target: document.body, content: <div /> })' },
+            completion: {
+              insertText: 'await ctx.viewer.embed({ target: ctx.element?.__el, content: <div /> })',
+              requires: ['element'],
+            },
           },
         },
       },
@@ -293,16 +334,165 @@ export function defineBaseContextMeta() {
           language: 'Current active language code.',
         },
       },
+      sql: {
+        description: 'SQL helper (FlowSQLRepository).',
+        detail: 'FlowSQLRepository',
+        properties: {
+          run: {
+            type: 'function',
+            description: 'Run ad-hoc SQL with optional bind/result options.',
+            detail: '(sql: string, options?: SQLRunOptions) => Promise<any>',
+            completion: { insertText: `await ctx.sql.run('SELECT 1', { type: 'selectRows' })` },
+          },
+          save: {
+            type: 'function',
+            description: 'Save a SQL template.',
+            detail: '(data: { uid: string; sql: string; dataSourceKey?: string }) => Promise<void>',
+            completion: { insertText: `await ctx.sql.save({ uid: 'sql-uid', sql: 'SELECT 1' })` },
+          },
+          runById: {
+            type: 'function',
+            description: 'Run a saved SQL template by uid.',
+            detail: '(uid: string, options?: SQLRunOptions) => Promise<any>',
+            completion: { insertText: `await ctx.sql.runById('sql-uid', { type: 'selectRows' })` },
+          },
+          destroy: {
+            type: 'function',
+            description: 'Delete a saved SQL template by uid.',
+            detail: '(uid: string) => Promise<void>',
+            completion: { insertText: `await ctx.sql.destroy('sql-uid')` },
+          },
+        },
+      },
       libs: {
         properties: {
-          React: 'React namespace (same as ctx.React).',
-          ReactDOM: 'ReactDOM client API (same as ctx.ReactDOM).',
-          antd: 'Ant Design component library (same as ctx.antd).',
-          dayjs: 'dayjs date-time utility library.',
+          React: {
+            description: 'React namespace (same as ctx.React).',
+            properties: {
+              createElement: {
+                type: 'function',
+                description: 'Create a React element.',
+                detail: 'React.createElement',
+                completion: { insertText: `ctx.libs.React.createElement('div', null, 'Hello')` },
+              },
+              useState: {
+                type: 'function',
+                description: 'React state hook.',
+                detail: 'React.useState',
+                completion: { insertText: 'ctx.libs.React.useState(initialValue)' },
+              },
+              useEffect: {
+                type: 'function',
+                description: 'React effect hook.',
+                detail: 'React.useEffect',
+                completion: { insertText: 'ctx.libs.React.useEffect(() => {}, [])' },
+              },
+              useMemo: {
+                type: 'function',
+                description: 'React memo hook.',
+                detail: 'React.useMemo',
+                completion: { insertText: 'ctx.libs.React.useMemo(() => value, [])' },
+              },
+              useCallback: {
+                type: 'function',
+                description: 'React callback hook.',
+                detail: 'React.useCallback',
+                completion: { insertText: 'ctx.libs.React.useCallback(() => {}, [])' },
+              },
+            },
+          },
+          ReactDOM: {
+            description: 'ReactDOM client API (same as ctx.ReactDOM).',
+            properties: {
+              createRoot: {
+                type: 'function',
+                description: 'Create a React root.',
+                detail: 'ReactDOM.createRoot',
+                completion: { insertText: 'ctx.libs.ReactDOM.createRoot(ctx.element.__el)', requires: ['element'] },
+              },
+            },
+          },
+          antd: {
+            description: 'Ant Design component library (same as ctx.antd).',
+            properties: {
+              Button: 'Ant Design Button component.',
+              Table: 'Ant Design Table component.',
+              Form: 'Ant Design Form component.',
+              Input: 'Ant Design Input component.',
+              Select: 'Ant Design Select component.',
+              Modal: 'Ant Design Modal API/component.',
+            },
+          },
+          dayjs: {
+            type: 'function',
+            description: 'dayjs date-time utility library.',
+            detail: 'dayjs',
+            completion: { insertText: 'ctx.libs.dayjs()' },
+          },
           antdIcons: 'Ant Design icons library. Example: `ctx.libs.antdIcons.PlusOutlined`.',
-          lodash: 'Lodash utility library. Example: `ctx.libs.lodash.get(obj, "a.b")`.',
-          formula: 'Formula.js library (spreadsheet-like functions). Example: `ctx.libs.formula.SUM(1, 2, 3)`.',
-          math: 'mathjs library. Example: `ctx.libs.math.evaluate("2 + 3")`.',
+          lodash: {
+            description: 'Lodash utility library. Example: `ctx.libs.lodash.get(obj, "a.b")`.',
+            properties: {
+              get: {
+                type: 'function',
+                description: 'Read a nested value by path.',
+                detail: 'lodash.get',
+                completion: { insertText: `ctx.libs.lodash.get(obj, 'a.b')` },
+              },
+              set: {
+                type: 'function',
+                description: 'Set a nested value by path.',
+                detail: 'lodash.set',
+                completion: { insertText: `ctx.libs.lodash.set(obj, 'a.b', value)` },
+              },
+              debounce: {
+                type: 'function',
+                description: 'Create a debounced function.',
+                detail: 'lodash.debounce',
+                completion: { insertText: 'ctx.libs.lodash.debounce(() => {}, 300)' },
+              },
+              cloneDeep: {
+                type: 'function',
+                description: 'Deep clone a value.',
+                detail: 'lodash.cloneDeep',
+                completion: { insertText: 'ctx.libs.lodash.cloneDeep(value)' },
+              },
+            },
+          },
+          formula: {
+            description: 'Formula.js library (spreadsheet-like functions). Example: `ctx.libs.formula.SUM(1, 2, 3)`.',
+            properties: {
+              SUM: {
+                type: 'function',
+                description: 'Sum values.',
+                detail: 'formula.SUM',
+                completion: { insertText: 'ctx.libs.formula.SUM(1, 2, 3)' },
+              },
+              AVERAGE: {
+                type: 'function',
+                description: 'Average values.',
+                detail: 'formula.AVERAGE',
+                completion: { insertText: 'ctx.libs.formula.AVERAGE(1, 2, 3)' },
+              },
+            },
+          },
+          math: {
+            description: 'mathjs library. Example: `ctx.libs.math.evaluate("2 + 3")`.',
+            properties: {
+              evaluate: {
+                type: 'function',
+                description: 'Evaluate a math expression.',
+                detail: 'math.evaluate',
+                completion: { insertText: `ctx.libs.math.evaluate('2 + 3')` },
+              },
+              round: {
+                type: 'function',
+                description: 'Round a number.',
+                detail: 'math.round',
+                completion: { insertText: 'ctx.libs.math.round(value, 2)' },
+              },
+            },
+          },
         },
       },
     },
@@ -333,7 +523,13 @@ export function defineBaseContextMeta() {
         returns: { type: 'FlowModel | undefined' },
         examples: ["const model = ctx.getModel('block-uid-xxx');"],
       },
-      t: 'Internationalization function for translating text. Parameters: (key: string, variables?: object) => string. Example: `ctx.t("Hello {{name}}", { name: "World" })`',
+      t: {
+        description:
+          'Internationalization function for translating text. Parameters: (key: string, variables?: object) => string.',
+        detail: '(key: string, variables?: object) => string',
+        completion: { insertText: `ctx.t('Hello')` },
+        examples: [`ctx.t("Hello {{name}}", { name: "World" })`],
+      },
       initResource: {
         description:
           'Initialize ctx.resource as a FlowResource instance by class name. Common values: "MultiRecordResource", "SingleRecordResource", "SQLResource".',
@@ -354,12 +550,35 @@ export function defineBaseContextMeta() {
         detail: 'ReactDOM Root',
         completion: {
           insertText: `ctx.render(<div />)`,
+          requires: ['element'],
         },
       },
-      requireAsync:
-        'Load UMD/AMD/global scripts or CSS asynchronously from URL. Accepts shorthand like "echarts@5/dist/echarts.min.js" (resolved via ESM CDN with ?raw) or full URLs, and returns a Promise of the loaded library.',
-      importAsync:
-        'Dynamically import ESM modules or CSS by URL. Accepts shorthand like "vue@3.4.0" or "dayjs@1/plugin/relativeTime.js" (resolved via configured ESM CDN) or full URLs, and returns a Promise of the module namespace.',
+      requireAsync: {
+        description:
+          'Load UMD/AMD/global scripts or CSS asynchronously from URL. Accepts shorthand like "echarts@5/dist/echarts.min.js" (resolved via ESM CDN with ?raw) or full URLs, and returns a Promise of the loaded library.',
+        detail: '(url: string) => Promise<any>',
+        completion: { insertText: `const lib = await ctx.requireAsync('https://cdn.example.com/lib.umd.js')` },
+      },
+      importAsync: {
+        description:
+          'Dynamically import ESM modules or CSS by URL. Accepts shorthand like "vue@3.4.0" or "dayjs@1/plugin/relativeTime.js" (resolved via configured ESM CDN) or full URLs, and returns a Promise of the module namespace.',
+        detail: '(url: string) => Promise<any>',
+        completion: { insertText: `const mod = await ctx.importAsync('lodash-es')` },
+      },
+      resolveJsonTemplate: {
+        description: 'Resolve a JSON template containing {{ }} variable expressions.',
+        detail: '(template: any) => Promise<any>',
+        params: [
+          {
+            name: 'template',
+            type: 'any',
+            description: 'JSON-compatible value containing {{ ctx.* }} expressions.',
+          },
+        ],
+        returns: { type: 'Promise<any>' },
+        completion: { insertText: `await ctx.resolveJsonTemplate({ value: '{{ctx.record.id}}' })` },
+        examples: ["const data = await ctx.resolveJsonTemplate({ id: '{{ctx.record.id}}' });"],
+      },
       getVar: {
         description: 'Resolve a ctx expression value by path string (expression starts with "ctx.").',
         detail: '(path: string) => Promise<any>',
@@ -447,7 +666,42 @@ export function defineBaseContextMeta() {
     {
       label: 'RunJS 基础',
       properties: {
-        logger: 'Pino 日志实例（结构化日志）。示例：`ctx.logger.info({ foo: 1 }, "message")`',
+        logger: {
+          description: 'Pino 日志实例（结构化日志）。示例：`ctx.logger.info({ foo: 1 }, "message")`',
+          detail: 'Logger',
+          properties: {
+            info: {
+              type: 'function',
+              description: '写入 info 级别日志。',
+              detail: '(...args: any[]) => void',
+              completion: { insertText: `ctx.logger.info({ foo: 1 }, 'message')` },
+            },
+            warn: {
+              type: 'function',
+              description: '写入 warn 级别日志。',
+              detail: '(...args: any[]) => void',
+              completion: { insertText: `ctx.logger.warn({ foo: 1 }, 'message')` },
+            },
+            error: {
+              type: 'function',
+              description: '写入 error 级别日志。',
+              detail: '(...args: any[]) => void',
+              completion: { insertText: `ctx.logger.error({ err }, 'message')` },
+            },
+            debug: {
+              type: 'function',
+              description: '写入 debug 级别日志。',
+              detail: '(...args: any[]) => void',
+              completion: { insertText: `ctx.logger.debug({ foo: 1 }, 'message')` },
+            },
+            child: {
+              type: 'function',
+              description: '创建带绑定字段的子 logger。',
+              detail: '(bindings: object) => Logger',
+              completion: { insertText: `ctx.logger.child({ module: 'runjs' })` },
+            },
+          },
+        },
         message: {
           description: 'Ant Design 全局消息 API，用于显示临时提示。',
           detail: 'MessageInstance',
@@ -670,12 +924,18 @@ export function defineBaseContextMeta() {
             popover: {
               description: '打开气泡卡片视图。参数：(props: PopoverProps) => any',
               detail: '(props) => any',
-              completion: { insertText: 'await ctx.viewer.popover({ target: ctx.element?.__el, content: <div /> })' },
+              completion: {
+                insertText: 'await ctx.viewer.popover({ target: ctx.element?.__el, content: <div /> })',
+                requires: ['element'],
+              },
             },
             embed: {
               description: '打开内嵌视图。参数：(props: ViewProps & TargetProps) => any',
               detail: '(props) => any',
-              completion: { insertText: 'await ctx.viewer.embed({ target: document.body, content: <div /> })' },
+              completion: {
+                insertText: 'await ctx.viewer.embed({ target: ctx.element?.__el, content: <div /> })',
+                requires: ['element'],
+              },
             },
           },
         },
@@ -713,6 +973,36 @@ export function defineBaseContextMeta() {
             language: '当前激活的语言代码',
           },
         },
+        sql: {
+          description: 'SQL 执行助手（FlowSQLRepository）。',
+          detail: 'FlowSQLRepository',
+          properties: {
+            run: {
+              type: 'function',
+              description: '执行临时 SQL，可传绑定参数与结果类型。',
+              detail: '(sql: string, options?: SQLRunOptions) => Promise<any>',
+              completion: { insertText: `await ctx.sql.run('SELECT 1', { type: 'selectRows' })` },
+            },
+            save: {
+              type: 'function',
+              description: '保存 SQL 模板。',
+              detail: '(data: { uid: string; sql: string; dataSourceKey?: string }) => Promise<void>',
+              completion: { insertText: `await ctx.sql.save({ uid: 'sql-uid', sql: 'SELECT 1' })` },
+            },
+            runById: {
+              type: 'function',
+              description: '按 uid 执行已保存 SQL 模板。',
+              detail: '(uid: string, options?: SQLRunOptions) => Promise<any>',
+              completion: { insertText: `await ctx.sql.runById('sql-uid', { type: 'selectRows' })` },
+            },
+            destroy: {
+              type: 'function',
+              description: '按 uid 删除已保存 SQL 模板。',
+              detail: '(uid: string) => Promise<void>',
+              completion: { insertText: `await ctx.sql.destroy('sql-uid')` },
+            },
+          },
+        },
         dayjs: {
           type: 'function',
           description: 'dayjs 日期时间工具库（可调用）。',
@@ -728,14 +1018,133 @@ export function defineBaseContextMeta() {
             '第三方/通用库的统一命名空间，包含 React、ReactDOM、Ant Design、dayjs、icons 等，并可扩展更多工具库（如 lodash、formula、math）。后续新增库会优先挂在此处。',
           detail: '通用库命名空间',
           properties: {
-            React: 'React 命名空间（等价于 ctx.React）。',
-            ReactDOM: 'ReactDOM 客户端 API（等价于 ctx.ReactDOM）。',
-            antd: 'Ant Design 组件库（等价于 ctx.antd）。',
-            dayjs: 'dayjs 日期时间工具库。',
+            React: {
+              description: 'React 命名空间（等价于 ctx.React）。',
+              properties: {
+                createElement: {
+                  type: 'function',
+                  description: '创建 React 元素。',
+                  detail: 'React.createElement',
+                  completion: { insertText: `ctx.libs.React.createElement('div', null, 'Hello')` },
+                },
+                useState: {
+                  type: 'function',
+                  description: 'React state hook。',
+                  detail: 'React.useState',
+                  completion: { insertText: 'ctx.libs.React.useState(initialValue)' },
+                },
+                useEffect: {
+                  type: 'function',
+                  description: 'React effect hook。',
+                  detail: 'React.useEffect',
+                  completion: { insertText: 'ctx.libs.React.useEffect(() => {}, [])' },
+                },
+                useMemo: {
+                  type: 'function',
+                  description: 'React memo hook。',
+                  detail: 'React.useMemo',
+                  completion: { insertText: 'ctx.libs.React.useMemo(() => value, [])' },
+                },
+                useCallback: {
+                  type: 'function',
+                  description: 'React callback hook。',
+                  detail: 'React.useCallback',
+                  completion: { insertText: 'ctx.libs.React.useCallback(() => {}, [])' },
+                },
+              },
+            },
+            ReactDOM: {
+              description: 'ReactDOM 客户端 API（等价于 ctx.ReactDOM）。',
+              properties: {
+                createRoot: {
+                  type: 'function',
+                  description: '创建 React 根。',
+                  detail: 'ReactDOM.createRoot',
+                  completion: { insertText: 'ctx.libs.ReactDOM.createRoot(ctx.element.__el)', requires: ['element'] },
+                },
+              },
+            },
+            antd: {
+              description: 'Ant Design 组件库（等价于 ctx.antd）。',
+              properties: {
+                Button: 'Ant Design Button 组件。',
+                Table: 'Ant Design Table 组件。',
+                Form: 'Ant Design Form 组件。',
+                Input: 'Ant Design Input 组件。',
+                Select: 'Ant Design Select 组件。',
+                Modal: 'Ant Design Modal API/组件。',
+              },
+            },
+            dayjs: {
+              type: 'function',
+              description: 'dayjs 日期时间工具库。',
+              detail: 'dayjs',
+              completion: { insertText: 'ctx.libs.dayjs()' },
+            },
             antdIcons: 'Ant Design 图标库。 例如：`ctx.libs.antdIcons.PlusOutlined`。',
-            lodash: 'Lodash 工具库。示例：`ctx.libs.lodash.get(obj, "a.b")`。',
-            formula: 'Formula.js 公式库（类表格函数）。示例：`ctx.libs.formula.SUM(1, 2, 3)`。',
-            math: 'mathjs 数学库。示例：`ctx.libs.math.evaluate("2 + 3")`。',
+            lodash: {
+              description: 'Lodash 工具库。示例：`ctx.libs.lodash.get(obj, "a.b")`。',
+              properties: {
+                get: {
+                  type: 'function',
+                  description: '按路径读取嵌套值。',
+                  detail: 'lodash.get',
+                  completion: { insertText: `ctx.libs.lodash.get(obj, 'a.b')` },
+                },
+                set: {
+                  type: 'function',
+                  description: '按路径设置嵌套值。',
+                  detail: 'lodash.set',
+                  completion: { insertText: `ctx.libs.lodash.set(obj, 'a.b', value)` },
+                },
+                debounce: {
+                  type: 'function',
+                  description: '创建防抖函数。',
+                  detail: 'lodash.debounce',
+                  completion: { insertText: 'ctx.libs.lodash.debounce(() => {}, 300)' },
+                },
+                cloneDeep: {
+                  type: 'function',
+                  description: '深拷贝值。',
+                  detail: 'lodash.cloneDeep',
+                  completion: { insertText: 'ctx.libs.lodash.cloneDeep(value)' },
+                },
+              },
+            },
+            formula: {
+              description: 'Formula.js 公式库（类表格函数）。示例：`ctx.libs.formula.SUM(1, 2, 3)`。',
+              properties: {
+                SUM: {
+                  type: 'function',
+                  description: '求和。',
+                  detail: 'formula.SUM',
+                  completion: { insertText: 'ctx.libs.formula.SUM(1, 2, 3)' },
+                },
+                AVERAGE: {
+                  type: 'function',
+                  description: '求平均值。',
+                  detail: 'formula.AVERAGE',
+                  completion: { insertText: 'ctx.libs.formula.AVERAGE(1, 2, 3)' },
+                },
+              },
+            },
+            math: {
+              description: 'mathjs 数学库。示例：`ctx.libs.math.evaluate("2 + 3")`。',
+              properties: {
+                evaluate: {
+                  type: 'function',
+                  description: '计算数学表达式。',
+                  detail: 'math.evaluate',
+                  completion: { insertText: `ctx.libs.math.evaluate('2 + 3')` },
+                },
+                round: {
+                  type: 'function',
+                  description: '四舍五入。',
+                  detail: 'math.round',
+                  completion: { insertText: 'ctx.libs.math.round(value, 2)' },
+                },
+              },
+            },
           },
         },
       },
@@ -765,7 +1174,12 @@ export function defineBaseContextMeta() {
           returns: { type: 'FlowModel | undefined' },
           examples: ["const model = ctx.getModel('block-uid-xxx');"],
         },
-        t: '国际化函数，用于翻译文案。参数：(key: string, variables?: object) => string。示例：`ctx.t("你好 {{name}}", { name: "世界" })`',
+        t: {
+          description: '国际化函数，用于翻译文案。参数：(key: string, variables?: object) => string。',
+          detail: '(key: string, variables?: object) => string',
+          completion: { insertText: `ctx.t('你好')` },
+          examples: [`ctx.t("你好 {{name}}", { name: "世界" })`],
+        },
         initResource: {
           description:
             '初始化当前上下文的资源：若尚未存在 ctx.resource，则按资源类名创建并绑定；若已存在则直接复用。常用值："MultiRecordResource"、"SingleRecordResource"、"SQLResource"。',
@@ -786,12 +1200,21 @@ export function defineBaseContextMeta() {
           detail: 'ReactDOM Root',
           completion: {
             insertText: `ctx.render(<div />)`,
+            requires: ['element'],
           },
         },
-        requireAsync:
-          '按 URL 异步加载 UMD/AMD 或挂到全局的脚本，也可加载 CSS。支持简写路径（如 "echarts@5/dist/echarts.min.js"，会经由 ESM CDN 加 ?raw 获取原始文件）和完整 URL，返回加载后的库对象或样式注入结果。',
-        importAsync:
-          '按 URL 动态加载 ESM 模块或 CSS。支持简写（如 "vue@3.4.0"、"dayjs@1/plugin/relativeTime.js"，会按配置拼接 ESM CDN 前缀）和完整 URL，返回模块命名空间或样式注入结果。',
+        requireAsync: {
+          description:
+            '按 URL 异步加载 UMD/AMD 或挂到全局的脚本，也可加载 CSS。支持简写路径（如 "echarts@5/dist/echarts.min.js"，会经由 ESM CDN 加 ?raw 获取原始文件）和完整 URL，返回加载后的库对象或样式注入结果。',
+          detail: '(url: string) => Promise<any>',
+          completion: { insertText: `const lib = await ctx.requireAsync('https://cdn.example.com/lib.umd.js')` },
+        },
+        importAsync: {
+          description:
+            '按 URL 动态加载 ESM 模块或 CSS。支持简写（如 "vue@3.4.0"、"dayjs@1/plugin/relativeTime.js"，会按配置拼接 ESM CDN 前缀）和完整 URL，返回模块命名空间或样式注入结果。',
+          detail: '(url: string) => Promise<any>',
+          completion: { insertText: `const mod = await ctx.importAsync('lodash-es')` },
+        },
         getVar: {
           description: '通过表达式路径字符串获取 ctx 的运行时值（以 "ctx." 开头）。',
           detail: '(path: string) => Promise<any>',
@@ -843,7 +1266,20 @@ export function defineBaseContextMeta() {
           returns: { type: 'Promise<Record<string, any>>' },
           examples: ['const envs = await ctx.getEnvInfos();'],
         },
-        resolveJsonTemplate: '解析含 {{ }} 变量表达式的 JSON 模板。参数：(template: any, context?: object) => any',
+        resolveJsonTemplate: {
+          description: '解析含 {{ }} 变量表达式的 JSON 模板。',
+          detail: '(template: any) => Promise<any>',
+          params: [
+            {
+              name: 'template',
+              type: 'any',
+              description: '包含 {{ ctx.* }} 表达式的 JSON 兼容值。',
+            },
+          ],
+          returns: { type: 'Promise<any>' },
+          completion: { insertText: `await ctx.resolveJsonTemplate({ value: '{{ctx.record.id}}' })` },
+          examples: ["const data = await ctx.resolveJsonTemplate({ id: '{{ctx.record.id}}' });"],
+        },
         runAction: {
           description:
             '对当前资源执行数据动作。参数：(actionName: string, params: object) => Promise<any>。示例：`await ctx.runAction("create", { values: { name: "test" } })`',

@@ -82,6 +82,8 @@ const FLOW_SURFACE_DEFAULT_BLOCK_ACTIONS: Readonly<
   ],
   calendar: [
     { type: 'filter', scope: 'actions' },
+    { type: 'turnPages', scope: 'actions' },
+    { type: 'selectView', scope: 'actions' },
     { type: 'refresh', scope: 'actions' },
     {
       type: 'addNew',

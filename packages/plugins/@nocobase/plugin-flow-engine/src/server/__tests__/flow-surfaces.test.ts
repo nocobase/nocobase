@@ -8146,7 +8146,7 @@ describe('flowSurfaces resource', () => {
         changes: {
           label: 'Nickname JS',
           version: '1.0.1',
-          code: "ctx.render(record.nickname?.toUpperCase?.() || '');",
+          code: "ctx.render(ctx.record?.nickname?.toUpperCase?.() || '');",
         },
       },
     });
@@ -8190,7 +8190,7 @@ describe('flowSurfaces resource', () => {
           width: 280,
           fixed: 'left',
           version: '1.0.1',
-          code: 'ctx.render(record.nickname);',
+          code: 'ctx.render(ctx.record?.nickname);',
         },
       },
     });
@@ -8206,7 +8206,7 @@ describe('flowSurfaces resource', () => {
           showLabel: true,
           labelWidth: 120,
           version: '1.0.1',
-          code: 'ctx.render(record.nickname);',
+          code: 'ctx.render(ctx.record?.nickname);',
         },
       },
     });
@@ -8238,7 +8238,7 @@ describe('flowSurfaces resource', () => {
     });
     expect(jsFieldReadback.tree.stepParams?.jsSettings?.runJs).toMatchObject({
       version: '1.0.1',
-      code: "ctx.render(record.nickname?.toUpperCase?.() || '');",
+      code: "ctx.render(ctx.record?.nickname?.toUpperCase?.() || '');",
     });
     expect(jsActionReadback.tree.stepParams?.clickSettings?.runJs).toMatchObject({
       version: '1.0.1',
@@ -8267,7 +8267,7 @@ describe('flowSurfaces resource', () => {
     });
     expect(jsColumnReadback.tree.stepParams?.jsSettings?.runJs).toMatchObject({
       version: '1.0.1',
-      code: 'ctx.render(record.nickname);',
+      code: 'ctx.render(ctx.record?.nickname);',
     });
     expect(jsItemReadback.tree.props).toMatchObject({
       label: 'JS item',
@@ -8278,7 +8278,7 @@ describe('flowSurfaces resource', () => {
     });
     expect(jsItemReadback.tree.stepParams?.jsSettings?.runJs).toMatchObject({
       version: '1.0.1',
-      code: 'ctx.render(record.nickname);',
+      code: 'ctx.render(ctx.record?.nickname);',
     });
   });
 
@@ -11055,10 +11055,10 @@ describe('flowSurfaces resource', () => {
     expect(invalidConfigureFilter.status).toBe(400);
     expect(readErrorMessage(invalidConfigureFilter)).toContain('stepParams.tableSettings.dataScope.filter');
     expect(readErrorMessage(invalidConfigureFilter)).toContain('FilterGroup');
-    expect(readErrorMessage(invalidConfigureFilter)).toContain('logic and items');
+    expect(readErrorMessage(invalidConfigureFilter)).toContain('does not support: foo');
 
     const invalidFilters = [
-      { case: 'missing-logic-items', filter: { foo: 'bar' }, reason: 'logic and items' },
+      { case: 'missing-logic-items', filter: { foo: 'bar' }, reason: 'does not support: foo' },
       { case: 'missing-items', filter: { logic: '$and' }, reason: 'logic and items' },
       { case: 'items-not-array', filter: { logic: '$and', items: {} }, reason: 'items must be an array' },
       { case: 'invalid-logic', filter: { logic: '$xx', items: [] }, reason: "logic must be '$and' or '$or'" },
