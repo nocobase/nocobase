@@ -40,6 +40,7 @@ import { resolveOperatorComponent } from '../internal/utils/operatorSchemaHelper
 import { InputFieldModel } from '../models/fields/InputFieldModel';
 import { normalizeFilterValueByOperator } from '../models/blocks/filter-form/valueNormalization';
 import { FieldAssignExactDatePicker, type ExactDatePickerMode } from './FieldAssignExactDatePicker';
+import { limitAssociationMetaTree } from './filter/metaTreeAssociationDepth';
 
 const DATE_FIELD_INTERFACES = new Set(['date', 'datetime', 'datetimeNoTz', 'createdAt', 'updatedAt', 'unixTimestamp']);
 
@@ -340,6 +341,7 @@ interface Props {
    * 默认 false，保持历史行为。
    */
   enableDateVariableAsConstant?: boolean;
+  maxAssociationFieldDepth?: number;
 }
 
 type ResolvedFieldContext = {
@@ -718,6 +720,7 @@ export const FieldAssignValueInput: React.FC<Props> = ({
   preferFormItemFieldModel,
   associationFieldNamesOverride,
   enableDateVariableAsConstant = false,
+  maxAssociationFieldDepth = 2,
 }) => {
   const flowCtx = useFlowContext<FlowModelContext>();
   const normalizeEventValue = React.useCallback((eventOrValue: unknown) => {
@@ -859,7 +862,7 @@ export const FieldAssignValueInput: React.FC<Props> = ({
       fieldName,
       collectionField: nested.collectionField || null,
     };
-  }, [flowCtx.model, itemModel, resolveNestedAssociationField, targetPath]);
+  }, [flowCtx, itemModel, resolveNestedAssociationField, targetPath]);
 
   const { collection, dataSource, blockModel, fieldPath, fieldName, collectionField: cf } = resolved;
   const itemCollectionField = (resolved?.itemModel as any)?.context?.collectionField;
@@ -1232,7 +1235,7 @@ export const FieldAssignValueInput: React.FC<Props> = ({
       );
     };
     return C;
-  }, [placeholder, tempRoot, coerceEmptyValueForRenderer, normalizeEventValue]);
+  }, [placeholder, tempRoot, coerceEmptyValueForRenderer, normalizeEventValue, operator]);
 
   const DateVariableConstantEditor = React.useMemo(() => {
     const C: React.FC<any> = (inputProps) => {
@@ -1408,6 +1411,7 @@ export const FieldAssignValueInput: React.FC<Props> = ({
       const extra = extraMetaTreeRef.current;
       const extraTree = Array.isArray(extra) ? extra : [];
       const mergedBase = mergeItemMetaTreeForAssignValue(base as MetaTreeNode[], extraTree as MetaTreeNode[]);
+      const limitedBase = limitAssociationMetaTree(mergedBase, { maxAssociationDepth: maxAssociationFieldDepth });
       return [
         {
           title: tExpr('Constant'),
@@ -1418,10 +1422,10 @@ export const FieldAssignValueInput: React.FC<Props> = ({
         },
         { title: tExpr('Null'), name: 'null', type: 'object', paths: ['null'], render: NullComponent },
         { title: tExpr('RunJS'), name: 'runjs', type: 'object', paths: ['runjs'], render: RunJSComponent },
-        ...mergedBase,
+        ...limitedBase,
       ];
     };
-  }, [flowCtx, ConstantEditor, NullComponent, RunJSComponent]);
+  }, [flowCtx, ConstantEditor, NullComponent, RunJSComponent, maxAssociationFieldDepth]);
 
   const displayValue = React.useMemo(() => {
     if (!useDateVariableConstant) {

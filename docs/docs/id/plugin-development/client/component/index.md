@@ -118,7 +118,7 @@ const msg = ctx.t('Save success', { ns: '@my-project/plugin-hello' });
 Melakukan navigasi halaman melalui `ctx.router.navigate()`:
 
 ```tsx
-ctx.router.navigate('/some-page'); // -> /v2/some-page
+ctx.router.navigate('/some-page'); // -> /v/some-page
 ```
 
 Mendapatkan parameter route saat ini:

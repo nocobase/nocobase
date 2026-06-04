@@ -23,6 +23,15 @@ type WorkflowPluginLike = {
 };
 
 export class CustomActionTriggerPlugin extends Plugin {
+  private registerWorkbenchActionGroups = async () => {
+    await this.flowEngine.getModelClassAsync('ActionPanelGroupActionModel');
+    registerTriggerWorkflowActionGroups(this.flowEngine);
+  };
+
+  async beforeLoad() {
+    this.app.eventBus.addEventListener('plugin:block-workbench:loaded', this.registerWorkbenchActionGroups);
+  }
+
   async load() {
     this.flowEngine.registerModels({
       FormTriggerWorkflowActionModel,
@@ -30,16 +39,10 @@ export class CustomActionTriggerPlugin extends Plugin {
       CollectionTriggerWorkflowActionModel,
       WorkbenchTriggerWorkflowActionModel,
     });
-
     const workflow = this.app.pm.get('workflow') as WorkflowPluginLike | undefined;
     workflow?.registerTrigger?.(EVENT_TYPE, CustomActionTrigger);
 
-    const registerActionGroups = () => {
-      registerTriggerWorkflowActionGroups(this.flowEngine);
-    };
-
-    registerActionGroups();
-    this.app.eventBus.addEventListener('plugin:block-workbench:loaded', registerActionGroups);
+    registerTriggerWorkflowActionGroups(this.flowEngine);
   }
 }
 

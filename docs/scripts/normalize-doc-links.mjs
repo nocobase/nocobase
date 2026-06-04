@@ -20,7 +20,7 @@ const removeMarker = Symbol('remove');
 
 // 暂不维护的语言；显式 --langs ar 仍可强制检查（用于查现状）。
 // 与 docs/scripts/ 下其他对齐脚本保持一致。
-const SKIP_LANGS = new Set(['ar']);
+const SKIP_LANGS = new Set(['ar', 'ru']);
 
 const options = parseArgs(process.argv.slice(2));
 

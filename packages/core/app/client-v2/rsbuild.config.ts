@@ -21,8 +21,23 @@ const __dirname = path.dirname(__filename);
 
 generateV2Plugins();
 
+// Fixed on-disk build-output directory name for the modern (v2) client. A
+// sibling copy of this default lives in packages/core/cli-v1/src/util.js
+// (DEFAULT_MODERN_CLIENT_PREFIX) and packages/core/server/src/gateway (utils.ts
+// MODERN_CLIENT_DIST_DIR). Keep them in sync. See docs/adr/0001-modern-client-prefix.md.
+const MODERN_CLIENT_DIST_DIR = 'v';
+
+// Normalize APP_MODERN_CLIENT_PREFIX (accepts `v`, `/v`, `/v/`)
+// to a bare segment, falling back to the fixed dist dir name.
+function normalizeModernClientPrefix(value: string | undefined) {
+  const segment = String(value || '')
+    .trim()
+    .replace(/^\/+|\/+$/g, '');
+  return segment || MODERN_CLIENT_DIST_DIR;
+}
+
 function ensurePublicPath(value: string) {
-  let normalized = value || '/v2/';
+  let normalized = value || `/${MODERN_CLIENT_DIST_DIR}/`;
   if (!normalized.startsWith('/')) {
     normalized = `/${normalized}`;
   }
@@ -37,10 +52,13 @@ function toNumber(value: string | undefined, fallback: number) {
   return Number.isFinite(parsed) ? parsed : fallback;
 }
 
-function createRuntimeHeadScript(v2PublicPath: string, isBuild: boolean) {
+function createRuntimeHeadScript(v2PublicPath: string, isBuild: boolean, modernClientPrefix: string) {
   if (!isBuild) {
     return [
       `window['__nocobase_public_path__'] = window['__nocobase_public_path__'] || ${JSON.stringify(v2PublicPath)};`,
+      `window['__nocobase_modern_client_prefix__'] = window['__nocobase_modern_client_prefix__'] || ${JSON.stringify(
+        modernClientPrefix,
+      )};`,
       `window['__nocobase_app_dev__'] = window['__nocobase_app_dev__'] || ${JSON.stringify(
         process.env.NOCOBASE_APP_DEV === 'true',
       )};`,
@@ -55,6 +73,9 @@ function createRuntimeHeadScript(v2PublicPath: string, isBuild: boolean) {
 
   return [
     `window['__nocobase_public_path__'] = window['__nocobase_public_path__'] || ${JSON.stringify(v2PublicPath)};`,
+    `window['__nocobase_modern_client_prefix__'] = window['__nocobase_modern_client_prefix__'] || ${JSON.stringify(
+      modernClientPrefix,
+    )};`,
     `window['__nocobase_api_base_url__'] = window['__nocobase_api_base_url__'] || ${JSON.stringify(
       process.env.API_BASE_URL || process.env.API_BASE_PATH || '',
     )};`,
@@ -104,7 +125,13 @@ export default defineConfig(({ command }) => {
   const apiBasePath = ensurePublicPath(process.env.API_BASE_PATH || '/api/');
   const localStorageBasePath = ensurePublicPath(`${appPublicPath.replace(/\/$/, '')}/storage/uploads/`);
   const staticBasePath = ensurePublicPath(`${appPublicPath.replace(/\/$/, '')}/static/`);
-  const v2PublicPath = ensurePublicPath(`${appPublicPath.replace(/\/$/, '')}/v2/`);
+  const modernClientPrefix = normalizeModernClientPrefix(process.env.APP_MODERN_CLIENT_PREFIX);
+  // Build bakes the FIXED dist-dir segment (`/v/`) as a sentinel that the
+  // server rewrites to the runtime prefix per request. Dev serves under the
+  // actual runtime prefix so URLs line up with the v1 dev proxy.
+  const modernClientDistPath = ensurePublicPath(`${appPublicPath.replace(/\/$/, '')}/${MODERN_CLIENT_DIST_DIR}/`);
+  const modernClientPublicPath = ensurePublicPath(`${appPublicPath.replace(/\/$/, '')}/${modernClientPrefix}/`);
+  const v2PublicPath = isBuild ? modernClientDistPath : modernClientPublicPath;
   const wsBasePath = ensurePublicPath(process.env.WS_PATH || '/ws/');
   const hmrPath = `${v2PublicPath.replace(/\/$/, '')}/__rspack_hmr`;
   const v2Port = toNumber(process.env.APP_V2_PORT, 13002);
@@ -151,7 +178,11 @@ export default defineConfig(({ command }) => {
         },
         {
           tag: 'script',
-          children: createRuntimeHeadScript(v2PublicPath, isBuild),
+          children: createRuntimeHeadScript(
+            v2PublicPath,
+            isBuild,
+            isBuild ? MODERN_CLIENT_DIST_DIR : modernClientPrefix,
+          ),
           head: true,
           append: false,
         },
@@ -169,7 +200,7 @@ export default defineConfig(({ command }) => {
     output: {
       target: 'web',
       distPath: {
-        root: path.resolve(__dirname, '../dist/client/v2'),
+        root: path.resolve(__dirname, `../dist/client/${MODERN_CLIENT_DIST_DIR}`),
         js: 'assets',
         jsAsync: 'assets',
         css: 'assets',
