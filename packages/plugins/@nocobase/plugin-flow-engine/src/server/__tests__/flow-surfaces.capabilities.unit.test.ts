@@ -2465,6 +2465,66 @@ describe('flowSurfaces capabilities projection', () => {
     });
   });
 
+  it('should keep verifiedAuto auto snapshot admission out of target-scoped discovery', async () => {
+    const autoSnapshot = createGanttAutoSnapshot();
+    const admissionReports = [createVerifiedAutoAdmissionReport()];
+    const capabilityPolicyConfig = {
+      writePolicy: {
+        mode: 'verifiedAuto' as const,
+        allowedOwners: ['@nocobase/plugin-gantt'],
+        allowedPublicTypes: ['pluginGantt.gantt'],
+      },
+    };
+    const response = await buildFlowSurfaceCapabilitiesResponse(
+      {
+        query: 'gantt',
+        target: {
+          uid: 'target-1',
+        },
+      },
+      {
+        enabledPackages: new Set(['@nocobase/plugin-gantt']),
+        autoSnapshots: [autoSnapshot],
+        admissionReports,
+        capabilityPolicyConfig,
+        catalog: createCatalogRecorder().catalog,
+        generatedAt: '2026-06-04T00:00:00.000Z',
+      },
+    );
+
+    expect(response.meta.targetHintUsed).toBe(true);
+    expect(response.data).toEqual([]);
+
+    let caught: unknown;
+    try {
+      await buildFlowSurfaceDescribeCapabilityResponse(
+        {
+          publicType: 'pluginGantt.gantt',
+          target: {
+            uid: 'target-1',
+          },
+        },
+        {
+          enabledPackages: new Set(['@nocobase/plugin-gantt']),
+          autoSnapshots: [autoSnapshot],
+          admissionReports,
+          capabilityPolicyConfig,
+          catalog: createCatalogRecorder().catalog,
+          generatedAt: '2026-06-04T00:00:00.000Z',
+        },
+      );
+    } catch (error) {
+      caught = error;
+    }
+
+    expect(caught).toBeInstanceOf(FlowSurfaceBadRequestError);
+    expect((caught as FlowSurfaceBadRequestError).options.details).toMatchObject({
+      reasonCode: 'unsupported',
+      reasonSource: 'registry',
+      publicType: 'pluginGantt.gantt',
+    });
+  });
+
   it('should expose auto snapshots through service capabilities and describeCapability', async () => {
     const { service } = createAutoSnapshotService([createGanttAutoSnapshot()]);
     const enabledPackages = new Set(['@nocobase/plugin-gantt']);
