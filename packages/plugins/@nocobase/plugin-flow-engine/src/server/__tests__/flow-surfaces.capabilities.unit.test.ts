@@ -668,6 +668,22 @@ describe('flowSurfaces capabilities projection', () => {
     };
   }
 
+  function createDiagnosticsAdmissionChecks(
+    overrides: Partial<FlowSurfaceCapabilityAdmissionReport['records'][number]['checks']> = {},
+  ): FlowSurfaceCapabilityAdmissionReport['records'][number]['checks'] {
+    return {
+      discovered: { ok: true },
+      publicTypeStable: { ok: true },
+      contractDeclared: { ok: true },
+      targetCatalogVerified: { ok: true },
+      dryRunCreate: { ok: true },
+      readbackParity: { ok: true },
+      unsafePayloadBlocked: { ok: true },
+      testsPresent: { ok: true },
+      ...overrides,
+    };
+  }
+
   function createDiagnosticsAdmissionReport(): FlowSurfaceCapabilityAdmissionReport {
     return {
       version: 1,
@@ -681,10 +697,7 @@ describe('flowSurfaces capabilities projection', () => {
           ownerPlugin: '@nocobase/plugin-gantt',
           readiness: 'blocked',
           updatedAt: '2026-06-04T00:00:00.000Z',
-          checks: {
-            discovered: { ok: true },
-            publicTypeStable: { ok: true },
-            contractDeclared: { ok: true },
+          checks: createDiagnosticsAdmissionChecks({
             targetCatalogVerified: { ok: false, reasonCode: 'target-required', message: 'Target catalog missing.' },
             dryRunCreate: {
               ok: false,
@@ -697,7 +710,7 @@ describe('flowSurfaces capabilities projection', () => {
             readbackParity: { ok: false, reasonCode: 'readback-parity-failed' },
             unsafePayloadBlocked: { ok: false, reasonCode: 'unsafe-auto-discovery' },
             testsPresent: { ok: false, reasonCode: 'unsupported' },
-          },
+          }),
         },
       ],
     };
@@ -1167,6 +1180,55 @@ describe('flowSurfaces capabilities projection', () => {
     ]);
     expect(JSON.stringify(response)).not.toContain('InternalEvidenceModel');
     expect(JSON.stringify(response)).not.toContain('TableAlternativeBlockModel');
+  });
+
+  it('should downgrade create-enabled admission diagnostics when integrity fields are missing', async () => {
+    const { service } = createDiagnosticsService({
+      pluginOptions: {
+        flowSurfaceCapabilities: {
+          diagnosticsEnabled: true,
+        },
+      },
+    });
+
+    const response = await service.diagnoseCapabilities(
+      {},
+      {
+        enabledPackages: new Set(['@nocobase/plugin-flow-engine']),
+        admissionReports: [
+          {
+            version: 1,
+            plugin: '@nocobase/plugin-gantt',
+            generatedAt: '2026-06-04T00:00:00.000Z',
+            records: [
+              {
+                capabilityId: '@nocobase/plugin-gantt:canary:block:gantt',
+                kind: 'block',
+                publicType: 'gantt',
+                ownerPlugin: '@nocobase/plugin-gantt',
+                readiness: 'createEnabled',
+                updatedAt: '2026-06-04T00:00:00.000Z',
+                checks: createDiagnosticsAdmissionChecks(),
+              },
+            ],
+          },
+        ],
+      },
+    );
+
+    expect(response.data.admissionRecords).toEqual([
+      expect.objectContaining({
+        capabilityId: '@nocobase/plugin-gantt:canary:block:gantt',
+        readiness: 'blocked',
+        failedChecks: [
+          expect.objectContaining({
+            key: 'reportIntegrity',
+            reasonCode: 'snapshot-stale',
+            message: expect.stringContaining('snapshotHash'),
+          }),
+        ],
+      }),
+    ]);
   });
 
   it('should gate capability diagnostics by config or administrator role', async () => {

@@ -570,7 +570,7 @@ const actionDocs: Record<string, any> = {
     tags: [FLOW_SURFACES_TAG],
     summary: 'Read Flow Surface capability diagnostics',
     description: valuesCompatibilityNote(
-      `Returns public-safe registry diagnostics for dynamic capability discovery, including registry source counts, publicType conflicts, provider-error summaries, stale snapshot summaries, and admission readiness records. The action is available only when diagnostics are enabled by server config/non-production defaults or to administrator roles. It does not return internal \`modelUse\`, sourceRefs, full internal nodes, provider evidence payloads, or user business data; \`includeImplementation\` is forbidden. ${FLOW_SURFACES_READ_ACL_NOTE}`,
+      `Returns public-safe registry diagnostics for dynamic capability discovery, including registry source counts, publicType conflicts, provider-error summaries, stale snapshot summaries, and admission readiness records. Stale or incomplete create-enabled admission reports are downgraded in diagnostics and do not enable writes. The action is available only when diagnostics are enabled by server config/non-production defaults or to administrator roles. It does not return internal \`modelUse\`, sourceRefs, full internal nodes, provider evidence payloads, or user business data; \`includeImplementation\` is forbidden. ${FLOW_SURFACES_READ_ACL_NOTE}`,
     ),
     requestBody: requestBody('FlowSurfaceCapabilityDiagnosticsRequest'),
     responses: responses('FlowSurfaceCapabilityDiagnosticsResponse'),

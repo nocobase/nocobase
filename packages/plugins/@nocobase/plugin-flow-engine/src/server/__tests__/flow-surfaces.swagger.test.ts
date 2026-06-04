@@ -2074,6 +2074,7 @@ describe('flowSurfaces swagger', () => {
     expect(diagnosticsPath.description).toContain('includeImplementation` is forbidden');
     expect(diagnosticsPath.description).toContain('does not return internal `modelUse`');
     expect(diagnosticsPath.description).toContain('administrator roles');
+    expect(diagnosticsPath.description).toContain('Stale or incomplete create-enabled admission reports');
     expect(schemas.FlowSurfaceCapabilityDiagnosticsResponse.required).toEqual(['data', 'meta']);
     expect(
       schemas.FlowSurfaceCapabilityDiagnosticsResponse.properties.meta.properties.implementationIncluded.enum,
