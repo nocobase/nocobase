@@ -33,6 +33,7 @@ import { resolveDynamicCapabilityCreate } from './capability-resolver';
 import {
   collectNormalizedProviderCapabilities,
   collectProviderCatalogItems,
+  collectVerifiedAutoSnapshotCatalogItems,
   filterProviderCatalogItemsForCatalog,
   type FlowSurfaceCapabilityRegistryLike,
   type FlowSurfaceCollectedProviderCapability,
@@ -2220,6 +2221,7 @@ export class FlowSurfacesService {
         .map((item) => this.buildCatalogBlockItem(item, popupProfile));
       const providerBlocks = await this.buildProviderBlockCatalogItems({
         builtInBlocks,
+        hasTarget: !!target,
         popupProfile,
         enabledPackages,
       });
@@ -2468,6 +2470,7 @@ export class FlowSurfacesService {
 
   private async buildProviderBlockCatalogItems(input: {
     builtInBlocks: FlowSurfaceCatalogItem[];
+    hasTarget: boolean;
     popupProfile: FlowSurfacePopupBlockProfile | null;
     enabledPackages: ReadonlySet<string>;
   }) {
@@ -2476,10 +2479,35 @@ export class FlowSurfacesService {
     }
     return filterProviderCatalogItemsForCatalog({
       existingItems: input.builtInBlocks,
-      providerItems: await this.buildProviderCatalogItems({
-        kind: 'block',
-        enabledPackages: input.enabledPackages,
-      }),
+      providerItems: [
+        ...(await this.buildProviderCatalogItems({
+          kind: 'block',
+          enabledPackages: input.enabledPackages,
+        })),
+        ...(await this.buildVerifiedAutoSnapshotBlockCatalogItems({
+          hasTarget: input.hasTarget,
+          enabledPackages: input.enabledPackages,
+        })),
+      ],
+    });
+  }
+
+  private async buildVerifiedAutoSnapshotBlockCatalogItems(input: {
+    hasTarget: boolean;
+    enabledPackages: ReadonlySet<string>;
+  }) {
+    if (!input.hasTarget) {
+      return [];
+    }
+    const capabilityPolicyConfig = readFlowSurfaceCapabilityPolicyConfigFromPluginOptions(this.plugin.options);
+    if (capabilityPolicyConfig.writePolicy.mode !== 'verifiedAuto') {
+      return [];
+    }
+    return collectVerifiedAutoSnapshotCatalogItems({
+      autoSnapshots: this.autoSnapshots,
+      enabledPackages: input.enabledPackages,
+      admissionReports: await this.loadVerifiedAutoAdmissionReports(capabilityPolicyConfig),
+      capabilityPolicyConfig,
     });
   }
 

@@ -14,6 +14,7 @@ import {
 import { FlowSurfacesService } from '../flow-surfaces/service';
 import {
   collectProviderCatalogItems,
+  collectVerifiedAutoSnapshotCatalogItems,
   filterProviderCatalogItemsForCatalog,
 } from '../flow-surfaces/capability-registry';
 import {
@@ -2969,6 +2970,192 @@ describe('flowSurfaces capabilities projection', () => {
       },
       requiredInitParams: ['collectionName'],
     });
+  });
+
+  it('should project verifiedAuto auto snapshots into target-scoped catalog only after trusted admission', async () => {
+    const autoSnapshot = createGanttAutoSnapshot();
+    const items = collectVerifiedAutoSnapshotCatalogItems({
+      autoSnapshots: [autoSnapshot],
+      enabledPackages: new Set(['@nocobase/plugin-gantt']),
+      admissionReports: [createVerifiedAutoAdmissionReport()],
+      capabilityPolicyConfig: {
+        writePolicy: {
+          mode: 'verifiedAuto',
+          allowedOwners: ['@nocobase/plugin-gantt'],
+          allowedPublicTypes: ['pluginGantt.gantt'],
+        },
+      },
+    });
+
+    expect(items).toEqual([
+      expect.objectContaining({
+        key: 'pluginGantt.gantt',
+        label: 'Gantt',
+        use: 'pluginGantt.gantt',
+        kind: 'block',
+        publicType: 'pluginGantt.gantt',
+        ownerPlugin: '@nocobase/plugin-gantt',
+        origin: 'autoSnapshot',
+        supportLevel: 'create-only',
+        createSupported: true,
+        availability: expect.objectContaining({
+          create: expect.objectContaining({
+            supported: true,
+          }),
+          configure: expect.objectContaining({
+            supported: false,
+            reasonCode: 'contract-not-verified',
+            reasonSource: 'registry',
+          }),
+        }),
+      }),
+    ]);
+    expect(items[0].warnings || []).not.toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          code: 'auto-discovered-readonly',
+        }),
+      ]),
+    );
+    const serialized = JSON.stringify(items);
+    expect(serialized).not.toContain('GanttBlockModel');
+    expect(serialized).not.toContain('snapshot-source-hash');
+    expect(serialized).not.toContain('manifest-hash');
+    expect(serialized).not.toContain('fixture-hash');
+  });
+
+  it('should keep verifiedAuto auto snapshots out of catalog without strict gates', async () => {
+    const autoSnapshot = createGanttAutoSnapshot();
+    const enabledPackages = new Set(['@nocobase/plugin-gantt']);
+    const verifiedAutoPolicy = {
+      writePolicy: {
+        mode: 'verifiedAuto' as const,
+        allowedOwners: ['@nocobase/plugin-gantt'],
+        allowedPublicTypes: ['pluginGantt.gantt'],
+      },
+    };
+
+    expect(
+      collectVerifiedAutoSnapshotCatalogItems({
+        autoSnapshots: [autoSnapshot],
+        enabledPackages,
+        admissionReports: [createVerifiedAutoAdmissionReport()],
+        capabilityPolicyConfig: {
+          writePolicy: {
+            mode: 'verifiedAuto',
+          },
+        },
+      }),
+    ).toEqual([]);
+    expect(
+      collectVerifiedAutoSnapshotCatalogItems({
+        autoSnapshots: [autoSnapshot],
+        enabledPackages,
+        admissionReports: [createVerifiedAutoAdmissionReport()],
+        capabilityPolicyConfig: {
+          writePolicy: {
+            mode: 'manifestOnly',
+            allowedOwners: ['@nocobase/plugin-gantt'],
+            allowedPublicTypes: ['pluginGantt.gantt'],
+          },
+        },
+      }),
+    ).toEqual([]);
+    expect(
+      collectVerifiedAutoSnapshotCatalogItems({
+        autoSnapshots: [autoSnapshot],
+        enabledPackages,
+        admissionReports: [createVerifiedAutoAdmissionReport()],
+        capabilityPolicyConfig: {
+          writePolicy: {
+            mode: 'verifiedAuto',
+            allowedOwners: ['@nocobase/plugin-other'],
+            allowedPublicTypes: ['pluginGantt.gantt'],
+          },
+        },
+      }),
+    ).toEqual([]);
+    expect(
+      collectVerifiedAutoSnapshotCatalogItems({
+        autoSnapshots: [autoSnapshot],
+        enabledPackages,
+        admissionReports: [
+          createVerifiedAutoAdmissionReport({
+            snapshotHash: 'older-snapshot-hash',
+          }),
+        ],
+        capabilityPolicyConfig: verifiedAutoPolicy,
+      }),
+    ).toEqual([]);
+    expect(
+      collectVerifiedAutoSnapshotCatalogItems({
+        autoSnapshots: [autoSnapshot],
+        enabledPackages: new Set<string>(),
+        admissionReports: [createVerifiedAutoAdmissionReport()],
+        capabilityPolicyConfig: verifiedAutoPolicy,
+      }),
+    ).toEqual([]);
+  });
+
+  it('should expose verifiedAuto auto snapshot catalog items through target-scoped capability projection', async () => {
+    const autoSnapshot = createGanttAutoSnapshot();
+    const catalogItems = collectVerifiedAutoSnapshotCatalogItems({
+      autoSnapshots: [autoSnapshot],
+      enabledPackages: new Set(['@nocobase/plugin-gantt']),
+      admissionReports: [createVerifiedAutoAdmissionReport()],
+      capabilityPolicyConfig: {
+        writePolicy: {
+          mode: 'verifiedAuto',
+          allowedOwners: ['@nocobase/plugin-gantt'],
+          allowedPublicTypes: ['pluginGantt.gantt'],
+        },
+      },
+    });
+    const response = await buildFlowSurfaceCapabilitiesResponse(
+      {
+        query: 'gantt',
+        target: {
+          uid: 'target-1',
+        },
+      },
+      {
+        enabledPackages: new Set(['@nocobase/plugin-gantt']),
+        autoSnapshots: [autoSnapshot],
+        admissionReports: [createVerifiedAutoAdmissionReport()],
+        capabilityPolicyConfig: {
+          writePolicy: {
+            mode: 'verifiedAuto',
+            allowedOwners: ['@nocobase/plugin-gantt'],
+            allowedPublicTypes: ['pluginGantt.gantt'],
+          },
+        },
+        catalog: async (values) => ({
+          target: null,
+          scenario: {
+            surfaceKind: 'global' as const,
+          },
+          selectedSections: values.sections || [],
+          blocks: catalogItems,
+        }),
+        generatedAt: '2026-06-04T00:00:00.000Z',
+      },
+    );
+
+    expect(response.meta.targetHintUsed).toBe(true);
+    expect(response.data).toEqual([
+      expect.objectContaining({
+        publicType: 'pluginGantt.gantt',
+        origin: 'autoSnapshot',
+        supportLevel: 'create-only',
+        readiness: 'createEnabled',
+        availability: expect.objectContaining({
+          create: expect.objectContaining({
+            supported: true,
+          }),
+        }),
+      }),
+    ]);
+    expect(JSON.stringify(response.data)).not.toContain('GanttBlockModel');
   });
 
   it('should drop provider catalog items that conflict with existing public catalog types', async () => {

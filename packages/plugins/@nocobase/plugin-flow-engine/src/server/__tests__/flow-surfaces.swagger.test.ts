@@ -2038,6 +2038,8 @@ describe('flowSurfaces swagger', () => {
       'Legacy raw node contracts are returned only when callers explicitly request',
     );
     expect(catalogPath.description).toContain('not write authorization');
+    expect(catalogPath.description).toContain('strict allowlist');
+    expect(catalogPath.description).toContain('create actions still revalidate before persisting');
     expect(catalogPath.description).toContain('When `sections` is omitted');
     expect(catalogPath.description).toContain('`selectedSections` in the response as the final authoritative result');
     expect(catalogPath.description).toContain('`loggedIn`');
@@ -2046,7 +2048,8 @@ describe('flowSurfaces swagger', () => {
     expect(capabilitiesPath.description).toContain('target-scoped `catalog`');
     expect(capabilitiesPath.description).toContain('`verifiedAuto`');
     expect(capabilitiesPath.description).toContain('trusted admission evidence');
-    expect(capabilitiesPath.description).toContain('still is not localized write authorization');
+    expect(capabilitiesPath.description).toContain('target-scoped `catalog` may expose');
+    expect(capabilitiesPath.description).toContain('Write actions still revalidate');
     expect(capabilitiesPath.description).toContain('only supports concrete `targetUid` / `uid` lookup');
     expect(capabilitiesPath.description).toContain('`debugImplementation` expand is forbidden');
     expect(capabilitiesPath.description).toContain('`loggedIn`');

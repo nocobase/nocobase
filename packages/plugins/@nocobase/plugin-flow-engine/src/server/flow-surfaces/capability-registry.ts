@@ -10,8 +10,17 @@
 import { normalizeFlowSurfaceCapabilityManifestItem } from './capability-manifest';
 import { resolveFlowSurfaceCapabilityReadiness } from './capability-readiness';
 import { callFlowSurfaceProvider } from './capability-provider-executor';
+import { resolveFlowSurfaceCapabilityAdmissionRuntimeEvidence } from './admission-report';
+import {
+  applyFlowSurfaceCapabilityWritePolicy,
+  normalizeFlowSurfaceCapabilityPolicyConfig,
+  resolveFlowSurfaceVerifiedAutoAdmissionDecision,
+  type FlowSurfaceCapabilityPolicyConfig,
+  type NormalizedFlowSurfaceCapabilityPolicyConfig,
+  type FlowSurfaceVerifiedAutoAdmissionDecision,
+} from './capability-policy';
 import { deriveFlowSurfaceAutoCapabilityCandidates } from './extractor/snapshot';
-import type { FlowSurfaceCapabilityAdmissionIntegrity } from './admission-report';
+import type { FlowSurfaceCapabilityAdmissionIntegrity, FlowSurfaceCapabilityAdmissionReport } from './admission-report';
 import type { NormalizedFlowSurfaceProviderCapability } from './capability-manifest';
 import type { FlowSurfaceCapabilityProviderRegistry } from './capability-provider';
 import type { FlowSurfaceAutoSnapshot } from './extractor/types';
@@ -59,6 +68,11 @@ type FlowSurfaceProviderRegistryProjectionOptions = {
 type FlowSurfaceAutoSnapshotProjectionOptions = {
   autoSnapshots?: readonly FlowSurfaceAutoSnapshot[];
   enabledPackages: ReadonlySet<string>;
+};
+
+type FlowSurfaceVerifiedAutoCatalogProjectionOptions = FlowSurfaceAutoSnapshotProjectionOptions & {
+  admissionReports?: readonly FlowSurfaceCapabilityAdmissionReport[];
+  capabilityPolicyConfig?: FlowSurfaceCapabilityPolicyConfig | NormalizedFlowSurfaceCapabilityPolicyConfig | null;
 };
 
 export type FlowSurfaceCollectedProviderCapability = NormalizedFlowSurfaceProviderCapability & {
@@ -201,6 +215,34 @@ export function collectAutoSnapshotPublicCapabilities(
   });
 }
 
+export function collectVerifiedAutoSnapshotCatalogItems(
+  options: FlowSurfaceVerifiedAutoCatalogProjectionOptions,
+): FlowSurfaceCatalogItem[] {
+  const capabilityPolicyConfig = normalizeFlowSurfaceCapabilityPolicyConfig(options.capabilityPolicyConfig);
+  if (
+    capabilityPolicyConfig.writePolicy.mode !== 'verifiedAuto' ||
+    !hasStrictVerifiedAutoCatalogAllowlists(capabilityPolicyConfig) ||
+    !options.admissionReports?.length
+  ) {
+    return [];
+  }
+  return collectAutoSnapshotPublicCapabilities(options)
+    .map((item) => applyFlowSurfaceCapabilityWritePolicy(item, capabilityPolicyConfig))
+    .map((item) =>
+      applyVerifiedAutoAdmissionCatalogProjection(item, {
+        capabilityPolicyConfig,
+        admissionReports: options.admissionReports,
+      }),
+    )
+    .filter((item): item is FlowSurfacePublicCapabilityItem => !!item && item.kind === 'block')
+    .filter((item) => item.availability.create.supported)
+    .map((item) => toVerifiedAutoSnapshotCatalogItem(item));
+}
+
+function hasStrictVerifiedAutoCatalogAllowlists(config: NormalizedFlowSurfaceCapabilityPolicyConfig) {
+  return !!config.writePolicy.allowedOwners?.length && !!config.writePolicy.allowedPublicTypes?.length;
+}
+
 export async function collectProviderCatalogItems(
   options: FlowSurfaceProviderRegistryProjectionOptions,
 ): Promise<FlowSurfaceCatalogItem[]> {
@@ -248,6 +290,101 @@ export async function collectNormalizedProviderCapabilities(
     results.push(...batchResults.flat());
   }
   return results;
+}
+
+function applyVerifiedAutoAdmissionCatalogProjection(
+  item: FlowSurfacePublicCapabilityItem,
+  options: {
+    capabilityPolicyConfig: NormalizedFlowSurfaceCapabilityPolicyConfig;
+    admissionReports?: readonly FlowSurfaceCapabilityAdmissionReport[];
+  },
+): FlowSurfacePublicCapabilityItem | null {
+  if (item.origin !== 'autoSnapshot') {
+    return null;
+  }
+  const capabilityId = getFlowSurfacePublicCapabilityAdmissionCapabilityId(item);
+  const evidence = resolveFlowSurfaceCapabilityAdmissionRuntimeEvidence({
+    reports: options.admissionReports || [],
+    capability: {
+      kind: item.kind,
+      publicType: item.publicType,
+      ownerPlugin: item.ownerPlugin,
+      ...(capabilityId ? { capabilityId } : {}),
+    },
+    expectedIntegrity: getFlowSurfacePublicCapabilityAdmissionIntegrity(item),
+  });
+  const decision = resolveFlowSurfaceVerifiedAutoAdmissionDecision({
+    item,
+    config: options.capabilityPolicyConfig,
+    admissionEvidence: evidence,
+  });
+  if (!decision.ok) {
+    return null;
+  }
+  return enableVerifiedAutoCatalogCreate(item, decision);
+}
+
+function enableVerifiedAutoCatalogCreate(
+  item: FlowSurfacePublicCapabilityItem,
+  decision: FlowSurfaceVerifiedAutoAdmissionDecision,
+): FlowSurfacePublicCapabilityItem {
+  const availability: FlowSurfaceCapabilityAvailability = {
+    ...item.availability,
+    create: {
+      supported: true,
+      ...(typeof item.availability.create.acceptsInitParams === 'boolean'
+        ? { acceptsInitParams: item.availability.create.acceptsInitParams }
+        : {}),
+      ...(typeof item.availability.create.acceptsSettings === 'boolean'
+        ? { acceptsSettings: item.availability.create.acceptsSettings }
+        : {}),
+    },
+  };
+  const warnings = (item.warnings || []).filter((warning) => warning.code !== 'auto-discovered-readonly');
+  const projected: FlowSurfacePublicCapabilityItem = {
+    ...item,
+    availability,
+    supportLevel: resolveSupportLevel(availability),
+    readiness: decision.readiness,
+  };
+  if (warnings.length) {
+    projected.warnings = warnings;
+  } else {
+    delete projected.warnings;
+  }
+  return copyAutoCapabilityProjectionMetadata(projected, item);
+}
+
+function copyAutoCapabilityProjectionMetadata(
+  target: FlowSurfacePublicCapabilityItem,
+  source: FlowSurfacePublicCapabilityItem,
+) {
+  return setFlowSurfacePublicCapabilityAdmissionIntegrity(
+    setFlowSurfacePublicCapabilityAdmissionCapabilityId(
+      setFlowSurfacePublicCapabilityModelUse(target, getFlowSurfacePublicCapabilityModelUses(source)),
+      getFlowSurfacePublicCapabilityAdmissionCapabilityId(source),
+    ),
+    getFlowSurfacePublicCapabilityAdmissionIntegrity(source),
+  );
+}
+
+function toVerifiedAutoSnapshotCatalogItem(item: FlowSurfacePublicCapabilityItem): FlowSurfaceCatalogItem {
+  return {
+    key: item.publicType,
+    label: item.label,
+    use: item.publicType,
+    kind: 'block',
+    publicType: item.publicType,
+    semantic: item.semantic,
+    ownerPlugin: item.ownerPlugin,
+    origin: item.origin,
+    supportLevel: item.supportLevel,
+    confidence: item.confidence,
+    availability: item.availability,
+    createSupported: item.availability.create.supported,
+    ...(item.warnings?.length ? { warnings: item.warnings } : {}),
+    ...(item.identity ? { identity: item.identity } : {}),
+  };
 }
 
 async function collectOneProviderCapabilities(
@@ -495,4 +632,20 @@ function toCapabilityKind(kind: FlowSurfaceCatalogItem['kind']): FlowSurfaceCapa
     default:
       return 'block';
   }
+}
+
+function resolveSupportLevel(availability: FlowSurfaceCapabilityAvailability) {
+  if (availability.create.supported && availability.configure.supported) {
+    return 'create-and-configure' as const;
+  }
+  if (availability.create.supported) {
+    return availability.create.acceptsSettings ? ('create-with-settings' as const) : ('create-only' as const);
+  }
+  if (availability.configure.supported) {
+    return 'configure-only' as const;
+  }
+  if (availability.readback.supported) {
+    return 'readback-only' as const;
+  }
+  return 'render-only' as const;
 }
