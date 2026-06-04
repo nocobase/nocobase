@@ -2853,6 +2853,215 @@ describe('flowSurfaces extractor scaffold', () => {
     ]);
   });
 
+  it('should derive auto candidates from block, action, field binding, and diagnostic evidence', () => {
+    const recorder = createFlowSurfaceExtractionRecorder();
+    recorder.recordMenuItem({
+      menuKey: 'simple',
+      label: 'Simple block',
+      modelUse: 'SimpleBlockModel',
+      slot: 'blocks',
+      createModelOptionsStatus: 'static',
+      source: 'runtime',
+      confidence: 'medium',
+    });
+    recorder.recordMenuItem({
+      menuKey: 'download',
+      label: 'Download',
+      modelUse: 'DownloadButtonModel',
+      slot: 'recordActions',
+      createModelOptionsStatus: 'static',
+      source: 'runtime',
+      confidence: 'medium',
+    });
+    recorder.recordFlow({
+      modelUse: 'ToolbarActionGroupModel',
+      flowKey: 'toolbarActions',
+      title: 'Toolbar actions',
+      staticStatus: 'static',
+      source: 'runtime',
+      confidence: 'medium',
+    });
+    recorder.recordFieldBinding({
+      fieldInterface: 'email',
+      modelUse: 'EmailFieldModel',
+      role: 'editable',
+      source: 'runtime',
+      confidence: 'high',
+    });
+    recorder.recordModel({
+      modelUse: 'LonelyBlockModel',
+      source: 'runtime',
+      confidence: 'medium',
+    });
+    const snapshot = buildFlowSurfaceAutoSnapshot({
+      plugin: '@nocobase/plugin-demo',
+      generatedAt: '2026-06-04T00:00:00.000Z',
+      sourceHash: 'source-hash',
+      extractorVersion: 'test',
+      events: recorder.getEvents(),
+    });
+
+    expect(deriveFlowSurfaceAutoCapabilityCandidates(snapshot)).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          kind: 'block',
+          modelUse: 'SimpleBlockModel',
+          publicType: 'pluginDemo.simple',
+          evidence: [
+            {
+              type: 'menuItem',
+              ref: 'simple',
+            },
+          ],
+        }),
+        expect.objectContaining({
+          kind: 'action',
+          modelUse: 'DownloadButtonModel',
+          publicType: 'pluginDemo.downloadButton',
+          evidence: [
+            {
+              type: 'menuItem',
+              ref: 'download',
+            },
+          ],
+        }),
+        expect.objectContaining({
+          kind: 'action',
+          modelUse: 'ToolbarActionGroupModel',
+          publicType: 'pluginDemo.toolbarActionGroup',
+          evidence: [
+            {
+              type: 'flow',
+              ref: 'toolbarActions',
+            },
+          ],
+        }),
+        expect.objectContaining({
+          kind: 'fieldBinding',
+          modelUse: 'EmailFieldModel',
+          publicType: 'pluginDemo.email',
+          confidence: 'high',
+          evidence: [
+            {
+              type: 'fieldBinding',
+              ref: 'email',
+            },
+          ],
+        }),
+        expect.objectContaining({
+          kind: 'block',
+          modelUse: 'LonelyBlockModel',
+          confidence: 'low',
+          evidence: [
+            {
+              type: 'model',
+              ref: 'LonelyBlockModel',
+            },
+          ],
+        }),
+      ]),
+    );
+  });
+
+  it('should require static placement evidence before raising auto candidate confidence', () => {
+    const recorder = createFlowSurfaceExtractionRecorder();
+    recorder.recordModel({
+      modelUse: 'HighBlockModel',
+      source: 'runtime',
+      confidence: 'medium',
+    });
+    recorder.recordMenuItem({
+      menuKey: 'high',
+      modelUse: 'HighBlockModel',
+      slot: 'blocks',
+      createModelOptionsStatus: 'static',
+      source: 'runtime',
+      confidence: 'medium',
+    });
+    recorder.recordModel({
+      modelUse: 'MediumBlockModel',
+      source: 'runtime',
+      confidence: 'medium',
+    });
+    recorder.recordMenuItem({
+      menuKey: 'medium',
+      modelUse: 'MediumBlockModel',
+      slot: 'blocks',
+      createModelOptionsStatus: 'static',
+      source: 'runtime',
+      confidence: 'medium',
+    });
+    recorder.recordModel({
+      modelUse: 'DynamicBlockModel',
+      source: 'runtime',
+      confidence: 'medium',
+    });
+    recorder.recordMenuItem({
+      menuKey: 'dynamic',
+      modelUse: 'DynamicBlockModel',
+      slot: 'blocks',
+      createModelOptionsStatus: 'dynamic',
+      source: 'runtime',
+      confidence: 'medium',
+    });
+    recorder.recordFlow({
+      modelUse: 'DynamicBlockModel',
+      flowKey: 'dynamicSettings',
+      staticStatus: 'dynamic',
+      source: 'runtime',
+      confidence: 'medium',
+    });
+    recorder.recordModel({
+      modelUse: 'LowBlockModel',
+      source: 'runtime',
+      confidence: 'medium',
+    });
+    const astEvents = collectFlowSurfaceExtractorAstEvents({
+      sourceFile: 'packages/plugins/@nocobase/plugin-demo/src/client-v2/plugin.tsx',
+      source: `
+        this.flowEngine.registerModels({ HighBlockModel, DynamicBlockModel });
+      `,
+    });
+    const snapshot = buildFlowSurfaceAutoSnapshot({
+      plugin: '@nocobase/plugin-demo',
+      generatedAt: '2026-06-04T00:00:00.000Z',
+      sourceHash: 'source-hash',
+      extractorVersion: 'test',
+      events: [...recorder.getEvents(), ...astEvents],
+    });
+
+    expect(deriveFlowSurfaceAutoCapabilityCandidates(snapshot)).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          modelUse: 'HighBlockModel',
+          confidence: 'high',
+        }),
+        expect.objectContaining({
+          modelUse: 'MediumBlockModel',
+          confidence: 'medium',
+        }),
+        expect.objectContaining({
+          modelUse: 'DynamicBlockModel',
+          confidence: 'low',
+          evidence: expect.arrayContaining([
+            {
+              type: 'menuItem',
+              ref: 'dynamic',
+            },
+            {
+              type: 'flow',
+              ref: 'dynamicSettings',
+            },
+          ]),
+        }),
+        expect.objectContaining({
+          modelUse: 'LowBlockModel',
+          confidence: 'low',
+        }),
+      ]),
+    );
+  });
+
   it('should classify action-group models as actions and suppress unknown model diagnostics', () => {
     const recorder = createFlowSurfaceExtractionRecorder();
     recorder.recordModelLoader({
@@ -2878,6 +3087,20 @@ describe('flowSurfaces extractor scaffold', () => {
         kind: 'action',
         publicType: 'pluginGantt.ganttCollectionActionGroup',
         modelUse: 'GanttCollectionActionGroupModel',
+        confidence: 'low',
+        evidence: [
+          {
+            type: 'model',
+            ref: 'GanttCollectionActionGroupModel',
+          },
+        ],
+        warnings: [
+          {
+            code: 'auto-discovered-readonly',
+            message:
+              'Auto snapshot discovery is read-only until a manifest or provider declares an authoring contract.',
+          },
+        ],
       },
     ]);
   });
@@ -2959,6 +3182,7 @@ describe('flowSurfaces extractor scaffold', () => {
       menuKey: 'gantt',
       modelUse: 'GanttBlockModel',
       slot: 'blocks',
+      createModelOptionsStatus: 'static',
       source: sourceFile,
       confidence: 'medium',
     });

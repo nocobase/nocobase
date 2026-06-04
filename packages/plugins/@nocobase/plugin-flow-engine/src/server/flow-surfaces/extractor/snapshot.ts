@@ -800,11 +800,13 @@ function resolveCandidateConfidence(input: {
       .map((sourceRef) => sourceRef.evidenceSource)
       .filter(Boolean),
   );
-  const hasPlacementEvidence = input.menuItems.length > 0 || input.flows.length > 0;
-  if (sourceTypes.has('runtime') && sourceTypes.has('ast') && hasPlacementEvidence) {
+  const hasStaticPlacementEvidence =
+    input.menuItems.some((item) => item.createModelOptionsStatus === 'static') ||
+    input.flows.some((flow) => flow.staticStatus === 'static');
+  if (sourceTypes.has('runtime') && sourceTypes.has('ast') && hasStaticPlacementEvidence) {
     return 'high';
   }
-  if (hasPlacementEvidence) {
+  if (hasStaticPlacementEvidence) {
     return 'medium';
   }
   return 'low';
