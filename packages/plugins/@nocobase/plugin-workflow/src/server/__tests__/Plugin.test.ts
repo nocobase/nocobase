@@ -286,6 +286,40 @@ describe('workflow > Plugin', () => {
       },
     );
 
+    it('should not acquire pending execution when acquire transaction fails', async () => {
+      const w1 = await WorkflowModel.create({
+        enabled: true,
+        type: 'asyncTrigger',
+      });
+
+      const e1 = await w1.createExecution({
+        key: w1.key,
+        context: {},
+        dispatched: false,
+        status: EXECUTION_STATUS.QUEUEING,
+      });
+
+      type PendingDispatcher = {
+        acquirePendingExecution(execution: ExecutionModel): Promise<ExecutionModel | null>;
+      };
+      const dispatcher = (plugin as unknown as { dispatcher: PendingDispatcher }).dispatcher;
+      const transaction = db.sequelize.transaction;
+      db.sequelize.transaction = (async () => {
+        throw new Error('simulated transaction failure');
+      }) as typeof db.sequelize.transaction;
+
+      try {
+        const acquired = await dispatcher.acquirePendingExecution(e1);
+        expect(acquired).toBeNull();
+      } finally {
+        db.sequelize.transaction = transaction;
+      }
+
+      await e1.reload();
+      expect(e1.dispatched).toBe(false);
+      expect(e1.status).toBe(EXECUTION_STATUS.QUEUEING);
+    });
+
     it.skipIf(process.env['DB_DIALECT'] === 'sqlite')(
       'should acquire queueing execution only once under concurrent dispatch',
       async () => {

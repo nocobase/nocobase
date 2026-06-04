@@ -20,7 +20,6 @@ import type PluginWorkflowServer from './Plugin';
 import { WORKER_JOB_WORKFLOW_PROCESS } from './Plugin';
 
 const EXECUTION_ACQUIRE_MAX_ATTEMPTS = 5;
-const EXECUTION_ACQUIRE_RETRY_DELAY_MS = 50;
 
 type Pending = {
   execution: ExecutionModel;
@@ -453,7 +452,6 @@ export default class Dispatcher {
           logger.warn(`acquiring pending execution (${execution.id}) reached max retry attempts`);
           break;
         }
-        await new Promise((resolve) => setTimeout(resolve, EXECUTION_ACQUIRE_RETRY_DELAY_MS * attempt));
       }
     } catch (error) {
       fetched = null;
@@ -534,7 +532,6 @@ export default class Dispatcher {
             .warn(`acquiring execution reached max retry attempts, will retry on next dispatch`);
           break;
         }
-        await new Promise((resolve) => setTimeout(resolve, EXECUTION_ACQUIRE_RETRY_DELAY_MS * attempt));
       }
     } catch (error) {
       this.plugin.getLogger('dispatcher').error(`fetching execution from db failed: ${error.message}`, { error });
