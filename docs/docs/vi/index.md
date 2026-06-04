@@ -1,75 +1,75 @@
 ---
 pageType: home
 pageName: home
-title: "NocoBase 文档"
-description: "NocoBase 开源无代码/低代码平台文档：快速上手、数据源、界面搭建、AI 员工、工作流、用户权限、认证验证、插件开发。"
-keywords: "NocoBase,无代码,低代码,文档,开源"
+title: "Tài liệu NocoBase"
+description: "Tài liệu nền tảng no-code/low-code mã nguồn mở NocoBase: bắt đầu nhanh, nguồn dữ liệu, xây dựng giao diện, AI Employee, Workflow, quyền người dùng, xác thực, phát triển Plugin."
+keywords: "NocoBase,no-code,low-code,tài liệu,mã nguồn mở"
 hero:
-  name: NocoBase 文档
-  text: 快速学习和掌握 NocoBase
-  # tagline: 了解如何上手并实现 NocoBase
+  name: Tài liệu NocoBase
+  text: Học và làm chủ NocoBase một cách nhanh chóng
+  # tagline: Tìm hiểu cách bắt đầu và triển khai NocoBase
   actions:
     - theme: brand
-      text: 快速上手
+      text: Bắt đầu nhanh
       link: /quickstart/how-nocobase-works
     - theme: alt
       text: GitHub
       link: https://github.com/nocobase/nocobase
 
 features:
-  - title: 开始
-    details: 传统方式上手 NocoBase——安装、配置、逐步探索。
+  - title: Bắt đầu
+    details: Cách thức truyền thống để bắt đầu với NocoBase — cài đặt, cấu hình, khám phá từng bước.
     items:
-      - title: NocoBase 使用入门
-        details: 了解 NocoBase 的核心概念和基本操作。
+      - title: Nhập môn sử dụng NocoBase
+        details: Tìm hiểu các khái niệm cốt lõi và thao tác cơ bản của NocoBase.
         link: /quickstart/how-nocobase-works
-      - title: 使用 CLI 安装应用
-        details: 通过 NocoBase CLI 安装和管理应用。
+      - title: Cài đặt ứng dụng bằng CLI
+        details: Cài đặt và quản lý ứng dụng bằng NocoBase CLI.
         link: /quickstart/installation/cli
-      - title: 教程
-        details: 从零开始，跟着教程一步步搭建真实项目。
+      - title: Hướng dẫn
+        details: Bắt đầu từ con số không, làm theo các hướng dẫn từng bước để xây dựng dự án thực tế.
         link: /tutorials/v2/
 
   - title: AI
-    details: AI 驱动的全新上手方式——用自然语言完成搭建、使用和开发。
+    details: Cách thức bắt đầu hoàn toàn mới được hỗ trợ bởi AI — sử dụng ngôn ngữ tự nhiên để xây dựng, sử dụng và phát triển.
     items:
-      - title: 快速开始
-        details: 安装 NocoBase CLI 以及配置 AI Skills，并连接 AI Agent，为 AI 搭建、使用和开发 NocoBase 做好准备。
+      - title: Bắt đầu nhanh
+        details: Cài đặt NocoBase CLI và cấu hình AI Skills, kết nối AI Agent, chuẩn bị sẵn sàng để AI xây dựng, sử dụng và phát triển NocoBase.
         link: /ai/quick-start
-      - title: AI 搭建
-        details: 用 AI 从零搭建 NocoBase 应用，覆盖数据建模、界面配置、工作流到发布管理的全流程。
+      - title: AI xây dựng
+        details: Sử dụng AI để xây dựng ứng dụng NocoBase từ con số không, bao quát toàn bộ quy trình từ mô hình hóa dữ liệu, cấu hình giao diện, Workflow đến quản lý phát hành.
         link: /ai-builder
-      - title: AI 员工
-        details: 与 AI 员工并肩协作，让他们参与系统搭建、数据分析、翻译、决策等业务场景。
+      - title: AI Employee
+        details: Cộng tác cùng AI Employee, để họ tham gia vào các tình huống nghiệp vụ như xây dựng hệ thống, phân tích dữ liệu, dịch thuật, ra quyết định.
         link: /ai-employees
-      - title: AI 开发插件
-        details: 用 AI 辅助 NocoBase 插件开发，覆盖从脚手架、组件代码到业务逻辑的全流程。
+      - title: AI phát triển Plugin
+        details: Sử dụng AI để hỗ trợ phát triển Plugin NocoBase, bao quát toàn bộ quy trình từ scaffold, mã component đến logic nghiệp vụ.
         link: /ai-dev
-      - title: 更多...
-        details: 查看更多 AI 能力。
+      - title: Xem thêm...
+        details: Xem thêm các năng lực AI khác.
         link: /ai
 
-  - title: 进阶
-    details: 深入理解 NocoBase 核心概念，掌握开发配置的核心能力。
+  - title: Nâng cao
+    details: Tìm hiểu sâu các khái niệm cốt lõi của NocoBase, làm chủ năng lực cốt lõi của phát triển và cấu hình.
     items:
-      - title: 更多...
-        details: 查看更多功能模块的使用。
+      - title: Xem thêm...
+        details: Xem thêm cách sử dụng các module chức năng.
         link: /guide
 
-  - title: 开发
-    details: 为 NocoBase 开发者提供丰富的扩展与集成能力。
+  - title: Phát triển
+    details: Cung cấp cho các nhà phát triển NocoBase nhiều năng lực mở rộng và tích hợp phong phú.
     items:
-      - title: 更多...
-        details: 查看更多插件开发教程。
+      - title: Xem thêm...
+        details: Xem thêm các hướng dẫn phát triển Plugin.
         link: /development
 
-  - title: 解决方案
-    details: 基于 NocoBase 构建的行业解决方案模板。
+  - title: Giải pháp
+    details: Các template giải pháp ngành được xây dựng dựa trên NocoBase.
     items:
-      - title: 工单方案
-        details: AI 驱动的智能工单管理平台，支持多渠道接入、SLA 管理、知识库等。
+      - title: Giải pháp Ticket
+        details: Nền tảng quản lý ticket thông minh được hỗ trợ bởi AI, hỗ trợ tiếp nhận đa kênh, quản lý SLA, kho tri thức, v.v.
         link: /solution/ticket-system/
-      - title: CRM（预览版）
-        details: 无代码、灵活的客户关系管理基座，涵盖客户、线索、商机、订单等功能。
+      - title: CRM (Phiên bản xem trước)
+        details: Nền tảng quản lý quan hệ khách hàng linh hoạt, no-code, bao gồm các chức năng khách hàng, lead, cơ hội, đơn hàng, v.v.
         link: /solution/crm/
 ---

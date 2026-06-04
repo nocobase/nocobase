@@ -1,75 +1,75 @@
 ---
 pageType: home
 pageName: home
-title: "NocoBase 文档"
-description: "NocoBase 开源无代码/低代码平台文档：快速上手、数据源、界面搭建、AI 员工、工作流、用户权限、认证验证、插件开发。"
-keywords: "NocoBase,无代码,低代码,文档,开源"
+title: "Документация NocoBase"
+description: "Документация открытой no-code/low-code платформы NocoBase: быстрый старт, источники данных, конструктор интерфейсов, AI-сотрудники, workflow, права пользователей, аутентификация и проверка, разработка плагинов."
+keywords: "NocoBase,no-code,low-code,документация,open-source"
 hero:
-  name: NocoBase 文档
-  text: 快速学习和掌握 NocoBase
-  # tagline: 了解如何上手并实现 NocoBase
+  name: Документация NocoBase
+  text: Быстро освойте NocoBase
+  # tagline: Узнайте, как начать работу и внедрить NocoBase
   actions:
     - theme: brand
-      text: 快速上手
+      text: Быстрый старт
       link: /quickstart/how-nocobase-works
     - theme: alt
       text: GitHub
       link: https://github.com/nocobase/nocobase
 
 features:
-  - title: 开始
-    details: 传统方式上手 NocoBase——安装、配置、逐步探索。
+  - title: Начало работы
+    details: Классический способ начать работу с NocoBase — установка, настройка и пошаговое изучение.
     items:
-      - title: NocoBase 使用入门
-        details: 了解 NocoBase 的核心概念和基本操作。
+      - title: Начало работы с NocoBase
+        details: Ознакомьтесь с основными концепциями и базовыми операциями NocoBase.
         link: /quickstart/how-nocobase-works
-      - title: 使用 CLI 安装应用
-        details: 通过 NocoBase CLI 安装和管理应用。
+      - title: Установка приложения через CLI
+        details: Устанавливайте приложения и управляйте ими с помощью NocoBase CLI.
         link: /quickstart/installation/cli
-      - title: 教程
-        details: 从零开始，跟着教程一步步搭建真实项目。
+      - title: Учебные пособия
+        details: Начните с нуля и следуйте учебным пособиям, чтобы шаг за шагом построить реальный проект.
         link: /tutorials/v2/
 
   - title: AI
-    details: AI 驱动的全新上手方式——用自然语言完成搭建、使用和开发。
+    details: Новый способ начала работы на основе ИИ — создание, использование и разработка на естественном языке.
     items:
-      - title: 快速开始
-        details: 安装 NocoBase CLI 以及配置 AI Skills，并连接 AI Agent，为 AI 搭建、使用和开发 NocoBase 做好准备。
+      - title: Быстрый старт
+        details: Установите NocoBase CLI, настройте AI Skills и подключите AI Agent, чтобы подготовить ИИ к созданию, использованию и разработке NocoBase.
         link: /ai/quick-start
-      - title: AI 搭建
-        details: 用 AI 从零搭建 NocoBase 应用，覆盖数据建模、界面配置、工作流到发布管理的全流程。
+      - title: AI Builder
+        details: Создавайте приложения NocoBase с нуля с помощью ИИ, охватывая весь процесс от моделирования данных, настройки интерфейса, workflow до управления публикацией.
         link: /ai-builder
-      - title: AI 员工
-        details: 与 AI 员工并肩协作，让他们参与系统搭建、数据分析、翻译、决策等业务场景。
+      - title: AI-сотрудники
+        details: Работайте вместе с AI-сотрудниками и позвольте им участвовать в бизнес-сценариях, таких как создание систем, анализ данных, перевод и принятие решений.
         link: /ai-employees
-      - title: AI 开发插件
-        details: 用 AI 辅助 NocoBase 插件开发，覆盖从脚手架、组件代码到业务逻辑的全流程。
+      - title: Разработка плагинов с ИИ
+        details: Используйте ИИ для помощи в разработке плагинов NocoBase, охватывая весь процесс от scaffold, кода компонентов до бизнес-логики.
         link: /ai-dev
-      - title: 更多...
-        details: 查看更多 AI 能力。
+      - title: Подробнее...
+        details: Изучите больше возможностей ИИ.
         link: /ai
 
-  - title: 进阶
-    details: 深入理解 NocoBase 核心概念，掌握开发配置的核心能力。
+  - title: Продвинутые темы
+    details: Глубоко изучите основные концепции NocoBase и освойте ключевые возможности по настройке и разработке.
     items:
-      - title: 更多...
-        details: 查看更多功能模块的使用。
+      - title: Подробнее...
+        details: Изучите использование других функциональных модулей.
         link: /guide
 
-  - title: 开发
-    details: 为 NocoBase 开发者提供丰富的扩展与集成能力。
+  - title: Разработка
+    details: Предоставляет разработчикам NocoBase широкие возможности для расширения и интеграции.
     items:
-      - title: 更多...
-        details: 查看更多插件开发教程。
+      - title: Подробнее...
+        details: Изучите больше руководств по разработке плагинов.
         link: /development
 
-  - title: 解决方案
-    details: 基于 NocoBase 构建的行业解决方案模板。
+  - title: Решения
+    details: Отраслевые шаблоны решений на базе NocoBase.
     items:
-      - title: 工单方案
-        details: AI 驱动的智能工单管理平台，支持多渠道接入、SLA 管理、知识库等。
+      - title: Решение для тикетов
+        details: Интеллектуальная платформа тикетов на базе ИИ с поддержкой многоканального доступа, управления SLA, базы знаний и многого другого.
         link: /solution/ticket-system/
-      - title: CRM（预览版）
-        details: 无代码、灵活的客户关系管理基座，涵盖客户、线索、商机、订单等功能。
+      - title: "CRM (Предпросмотр)"
+        details: "No-code, гибкая платформа управления взаимоотношениями с клиентами: клиенты, лиды, возможности, заказы и многое другое."
         link: /solution/crm/
 ---

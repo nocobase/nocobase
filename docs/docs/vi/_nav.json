@@ -1,6 +1,6 @@
 [
   {
-    "text": "开始",
+    "text": "Bắt đầu",
     "link": "/quickstart/how-nocobase-works"
   },
   {
@@ -8,19 +8,19 @@
     "link": "/ai/"
   },
   {
-    "text": "教程",
+    "text": "Hướng dẫn",
     "link": "/tutorials/v2/"
   },
   {
-    "text": "手册",
+    "text": "Sổ tay",
     "link": "/guide/"
   },
   {
-    "text": "开发",
+    "text": "Phát triển",
     "link": "/development/"
   },
   {
-    "text": "插件",
+    "text": "Plugin",
     "link": "/plugins"
   },
   {
@@ -28,7 +28,7 @@
     "link": "/api"
   },
   {
-    "text": "首页",
-    "link": "https://www.nocobase.com/cn/"
+    "text": "Trang chủ",
+    "link": "https://www.nocobase.com/"
   }
 ]

@@ -1,6 +1,6 @@
 [
   {
-    "text": "开始",
+    "text": "Начало",
     "link": "/quickstart/how-nocobase-works"
   },
   {
@@ -8,19 +8,19 @@
     "link": "/ai/"
   },
   {
-    "text": "教程",
+    "text": "Учебники",
     "link": "/tutorials/v2/"
   },
   {
-    "text": "手册",
+    "text": "Руководство",
     "link": "/guide/"
   },
   {
-    "text": "开发",
+    "text": "Разработка",
     "link": "/development/"
   },
   {
-    "text": "插件",
+    "text": "Плагины",
     "link": "/plugins"
   },
   {
@@ -28,7 +28,7 @@
     "link": "/api"
   },
   {
-    "text": "首页",
-    "link": "https://www.nocobase.com/cn/"
+    "text": "Главная",
+    "link": "https://www.nocobase.com/ru/"
   }
 ]

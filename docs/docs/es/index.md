@@ -1,75 +1,75 @@
 ---
 pageType: home
 pageName: home
-title: "NocoBase 文档"
-description: "NocoBase 开源无代码/低代码平台文档：快速上手、数据源、界面搭建、AI 员工、工作流、用户权限、认证验证、插件开发。"
-keywords: "NocoBase,无代码,低代码,文档,开源"
+title: "Documentación de NocoBase"
+description: "Documentación de la plataforma no-code/low-code de código abierto NocoBase: inicio rápido, fuentes de datos, construcción de interfaces, Empleados de IA, flujos de trabajo, permisos de usuario, autenticación y verificación, desarrollo de plugins."
+keywords: "NocoBase,no-code,low-code,documentación,código abierto"
 hero:
-  name: NocoBase 文档
-  text: 快速学习和掌握 NocoBase
-  # tagline: 了解如何上手并实现 NocoBase
+  name: Documentación de NocoBase
+  text: Aprenda y domine NocoBase rápidamente
+  # tagline: Aprenda cómo iniciarse e implementar NocoBase
   actions:
     - theme: brand
-      text: 快速上手
+      text: Inicio rápido
       link: /quickstart/how-nocobase-works
     - theme: alt
       text: GitHub
       link: https://github.com/nocobase/nocobase
 
 features:
-  - title: 开始
-    details: 传统方式上手 NocoBase——安装、配置、逐步探索。
+  - title: Empezar
+    details: Forma tradicional de empezar con NocoBase — instalación, configuración y exploración paso a paso.
     items:
-      - title: NocoBase 使用入门
-        details: 了解 NocoBase 的核心概念和基本操作。
+      - title: Introducción a NocoBase
+        details: Comprenda los conceptos clave y las operaciones básicas de NocoBase.
         link: /quickstart/how-nocobase-works
-      - title: 使用 CLI 安装应用
-        details: 通过 NocoBase CLI 安装和管理应用。
+      - title: Instalar aplicaciones con CLI
+        details: Instale y gestione aplicaciones con NocoBase CLI.
         link: /quickstart/installation/cli
-      - title: 教程
-        details: 从零开始，跟着教程一步步搭建真实项目。
+      - title: Tutoriales
+        details: Empiece desde cero y siga los tutoriales para construir un proyecto real paso a paso.
         link: /tutorials/v2/
 
   - title: AI
-    details: AI 驱动的全新上手方式——用自然语言完成搭建、使用和开发。
+    details: Una nueva forma de empezar impulsada por IA — complete la construcción, el uso y el desarrollo en lenguaje natural.
     items:
-      - title: 快速开始
-        details: 安装 NocoBase CLI 以及配置 AI Skills，并连接 AI Agent，为 AI 搭建、使用和开发 NocoBase 做好准备。
+      - title: Inicio rápido
+        details: Instale NocoBase CLI, configure AI Skills y conecte un AI Agent para preparar a la IA para construir, usar y desarrollar NocoBase.
         link: /ai/quick-start
-      - title: AI 搭建
-        details: 用 AI 从零搭建 NocoBase 应用，覆盖数据建模、界面配置、工作流到发布管理的全流程。
+      - title: Constructor de IA
+        details: Construya aplicaciones de NocoBase desde cero con IA, cubriendo todo el flujo desde el modelado de datos, la configuración de la interfaz, los flujos de trabajo hasta la gestión de publicación.
         link: /ai-builder
-      - title: AI 员工
-        details: 与 AI 员工并肩协作，让他们参与系统搭建、数据分析、翻译、决策等业务场景。
+      - title: Empleados de IA
+        details: Colabore con Empleados de IA y permítales participar en escenarios de negocio como la construcción de sistemas, análisis de datos, traducción y toma de decisiones.
         link: /ai-employees
-      - title: AI 开发插件
-        details: 用 AI 辅助 NocoBase 插件开发，覆盖从脚手架、组件代码到业务逻辑的全流程。
+      - title: Desarrollo de Plugins con IA
+        details: Use IA para asistir el desarrollo de Plugins de NocoBase, cubriendo todo el flujo desde el scaffold, el código de componentes hasta la lógica de negocio.
         link: /ai-dev
-      - title: 更多...
-        details: 查看更多 AI 能力。
+      - title: Más...
+        details: Explore más capacidades de IA.
         link: /ai
 
-  - title: 进阶
-    details: 深入理解 NocoBase 核心概念，掌握开发配置的核心能力。
+  - title: Avanzado
+    details: Profundice en los conceptos clave de NocoBase y domine las capacidades esenciales de configuración y desarrollo.
     items:
-      - title: 更多...
-        details: 查看更多功能模块的使用。
+      - title: Más...
+        details: Explore el uso de más módulos funcionales.
         link: /guide
 
-  - title: 开发
-    details: 为 NocoBase 开发者提供丰富的扩展与集成能力。
+  - title: Desarrollo
+    details: Ofrece amplias capacidades de extensión e integración para los desarrolladores de NocoBase.
     items:
-      - title: 更多...
-        details: 查看更多插件开发教程。
+      - title: Más...
+        details: Explore más tutoriales sobre el desarrollo de Plugins.
         link: /development
 
-  - title: 解决方案
-    details: 基于 NocoBase 构建的行业解决方案模板。
+  - title: Soluciones
+    details: Plantillas de soluciones industriales construidas sobre NocoBase.
     items:
-      - title: 工单方案
-        details: AI 驱动的智能工单管理平台，支持多渠道接入、SLA 管理、知识库等。
+      - title: Solución de tickets
+        details: Plataforma inteligente de gestión de tickets impulsada por IA con soporte para acceso multicanal, gestión SLA, base de conocimientos y más.
         link: /solution/ticket-system/
-      - title: CRM（预览版）
-        details: 无代码、灵活的客户关系管理基座，涵盖客户、线索、商机、订单等功能。
+      - title: CRM (Vista previa)
+        details: Plataforma flexible y no-code de gestión de relaciones con clientes, que cubre clientes, leads, oportunidades, pedidos y más.
         link: /solution/crm/
 ---
