@@ -15,7 +15,9 @@ import { Transactionable } from '@nocobase/database';
 
 export interface CreateTaskOptions extends Transactionable {
   useQueue?: boolean | QueueMessageOptions;
-  context?: any;
+  context?: object & {
+    reqId?: string;
+  };
 }
 
 export interface AsyncTasksManager {
@@ -27,7 +29,7 @@ export interface AsyncTasksManager {
   cancelTask(taskId: TaskId): Promise<void>;
   getTaskStatus(taskId: TaskId): Promise<TaskStatus>;
   getTask(taskId: TaskId): ITask | undefined;
-  runTask(task: ITask): Promise<void>;
+  runTask(task: ITask, reqId?: string): Promise<void>;
 }
 
 export class CancelError extends Error {
