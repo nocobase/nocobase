@@ -61,6 +61,10 @@ describe('data source with acl', () => {
       async load(): Promise<void> {
         this.collectionManager.defineCollection({
           name: 'posts',
+          title: 'Posts',
+          uiSchema: {
+            title: 'Visible posts',
+          },
           fields: [
             {
               type: 'string',
@@ -161,6 +165,25 @@ describe('data source with acl', () => {
         ],
       },
     });
+  });
+
+  it('should filter role data source collections by visible collection title', async () => {
+    const adminUser = await app.db.getRepository('users').create({
+      values: {
+        roles: ['admin'],
+      },
+    });
+
+    const adminAgent: any = await app.agent().login(adminUser);
+    const response = await adminAgent.resource('roles.dataSourcesCollections', 'admin').list({
+      filter: {
+        dataSourceKey: 'mockInstance1',
+        $and: [{ title: { $includes: 'Visible' } }],
+      },
+    });
+
+    expect(response.status).toBe(200);
+    expect(response.body.rows.map((item) => item.name)).toEqual(['posts']);
   });
 
   it('should set main data source strategy', async () => {
