@@ -13,6 +13,12 @@ if [ ! -f "/app/nocobase/package.json" ]; then
 fi
 
 cd /app/nocobase && yarn nocobase postinstall
+case "${NOCOBASE_EXTRACT_CLIENT_ASSETS:-false}" in
+  1|true|TRUE|yes|YES)
+    echo 'NOCOBASE_EXTRACT_CLIENT_ASSETS is enabled; extracting client assets...'
+    cd /app/nocobase && yarn nocobase client:extract
+    ;;
+esac
 cd /app/nocobase && yarn nocobase db:auth
 cd /app/nocobase && yarn nocobase create-nginx-conf
 cd /app/nocobase && yarn nocobase generate-instance-id

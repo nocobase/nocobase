@@ -29,7 +29,7 @@ import {
   recreateSavedDockerApp,
 } from '../../lib/app-managed-resources.js';
 import { run } from '../../lib/run-npm.js';
-import { announceTargetEnv, failTask, printInfo, startTask, succeedTask } from '../../lib/ui.js';
+import { announceTargetEnv, failTask, printInfo, printWarning, startTask, succeedTask } from '../../lib/ui.js';
 
 function shouldPrintStartSuccess(): boolean {
   return process.env.NB_SKIP_APP_START_SUCCESS_LOG !== '1';
@@ -112,6 +112,14 @@ function formatLocalReadyFailure(
     `NocoBase did not become ready for "${envName}".`,
     `The CLI started ${sourceLabel}, but the app did not pass its health check in time.`,
     `Check the startup logs, database connection, and local env settings, then try again.${portHint}`,
+    `Details: ${message}`,
+  ].join('\n');
+}
+
+function formatLocalClientExtractWarning(envName: string, message: string): string {
+  return [
+    `Client assets were not extracted for "${envName}".`,
+    'NocoBase will keep starting, but versioned client files for CDN or external distribution may be stale or missing.',
     `Details: ${message}`,
   ].join('\n');
 }
@@ -368,6 +376,19 @@ export default class AppStart extends Command {
       });
     } catch (error: unknown) {
       this.error(error instanceof Error ? error.message : String(error));
+    }
+
+    try {
+      startTask(`Extracting client assets for "${runtime.envName}"...`);
+      await runLocalNocoBaseCommand(runtime, ['client:extract'], {
+        env: managedAppLifecycleEnvVars(),
+        stdio: commandStdio,
+      });
+      succeedTask(`Client assets are ready for "${runtime.envName}".`);
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : String(error);
+      failTask(`Failed to extract client assets for "${runtime.envName}".`);
+      printWarning(formatLocalClientExtractWarning(runtime.envName, message));
     }
 
     if (flags.daemon === false) {
