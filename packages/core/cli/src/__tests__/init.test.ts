@@ -1141,7 +1141,7 @@ test('nb init warns and continues when skills sync times out', async () => {
     authType: 'oauth',
     ...(options.values ?? {}),
   }));
-  mocks.installNocoBaseSkills.mockRejectedValue(new Error('skills list timed out after 5000ms'));
+  mocks.installNocoBaseSkills.mockRejectedValue(new Error('skills list timed out after 15000ms'));
 
   const runCommand = vi.fn(async () => undefined);
   const command = Object.assign(Object.create(Init.prototype), {
