@@ -46,9 +46,11 @@ type FlowSurfaceGuardedGlobalSpec = {
 const FLOW_SURFACE_EXTRACTOR_THROWER_KEY = '__flowSurfaceExtractorThrow';
 const FLOW_SURFACE_EXTRACTOR_BRIDGE_KEY = '__flowSurfaceExtractorBridge';
 const FLOW_SURFACE_EXTRACTOR_ASSERT_SYNC_KEY = '__flowSurfaceExtractorAssertSync';
-const FLOW_SURFACE_EXTRACTOR_NOOP_BRIDGE_RETURN = Object.freeze({
-  __flowSurfaceExtractorNoopBridgeReturn: true,
-});
+type FlowSurfaceExtractorNoopBridgeReturn = ((...args: unknown[]) => undefined) & {
+  readonly [key: string]: FlowSurfaceExtractorNoopBridgeReturn;
+};
+
+const FLOW_SURFACE_EXTRACTOR_NOOP_BRIDGE_RETURN = createHostNoopBridgeReturn();
 
 const FLOW_SURFACE_GUARDED_GLOBALS: FlowSurfaceGuardedGlobalSpec[] = [
   { key: 'fetch', kind: 'function' },
@@ -628,6 +630,47 @@ function createVmNoopFactoryDeclaration(identifier: string) {
     });
     return proxy;
   };`;
+}
+
+function createHostNoopBridgeReturn(): FlowSurfaceExtractorNoopBridgeReturn {
+  const target = function flowSurfaceExtractorNoopBridgeReturn() {
+    return undefined;
+  } as FlowSurfaceExtractorNoopBridgeReturn;
+
+  Object.defineProperty(target, '__flowSurfaceExtractorNoopBridgeReturn', {
+    configurable: false,
+    enumerable: false,
+    value: true,
+  });
+
+  const proxy = new Proxy(target, {
+    apply() {
+      return undefined;
+    },
+    construct() {
+      return proxy;
+    },
+    get(_target, property) {
+      if (property === '__flowSurfaceExtractorNoopBridgeReturn') {
+        return true;
+      }
+      if (property === 'then') {
+        return undefined;
+      }
+      if (property === Symbol.toPrimitive || property === 'toString' || property === 'valueOf') {
+        return () => '';
+      }
+      return proxy;
+    },
+    has() {
+      return false;
+    },
+    set() {
+      return true;
+    },
+  });
+
+  return proxy;
 }
 
 function toVmBridgeReturnValue(value: unknown, noopReturnToken: string) {

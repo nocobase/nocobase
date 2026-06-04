@@ -22,6 +22,7 @@ type FlowSurfaceUnknownFlowDefinition = {
   title?: unknown;
   sort?: unknown;
   steps?: unknown;
+  [key: string]: unknown;
 };
 
 type FlowSurfaceUnknownModelDefinition = {
@@ -29,29 +30,162 @@ type FlowSurfaceUnknownModelDefinition = {
   title?: unknown;
   group?: unknown;
   createModelOptions?: unknown;
+  [key: string]: unknown;
+};
+
+type FlowSurfaceMockApiClient = {
+  storage: FlowSurfaceMockApiStorage;
+  storagePrefix: string;
+  createStorage(storageType: unknown): FlowSurfaceMockApiStorage;
+  request(options: unknown): Promise<{
+    data: {
+      data: never[];
+    };
+  }>;
+  resource(resourceName: unknown): FlowSurfaceMockApiResource;
+  auth: {
+    locale: string;
+    getLocale(): string;
+    setAuthenticator(authenticator: unknown): void;
+    setLocale(locale: unknown): void;
+    setRole(role: unknown): void;
+    setToken(token: unknown): void;
+  };
+  axios: {
+    interceptors: {
+      request: FlowSurfaceMockAxiosInterceptor;
+      response: FlowSurfaceMockAxiosInterceptor;
+    };
+  };
+};
+
+type FlowSurfaceMockApiStorage = {
+  getItem(key: unknown): null;
+  removeItem(key: unknown): void;
+  setItem(key: unknown, value: unknown): void;
+};
+
+type FlowSurfaceMockAxiosInterceptor = {
+  handlers: unknown[];
+  use(fulfilled: unknown, rejected?: unknown): number;
+  eject(id: unknown): void;
+};
+
+type FlowSurfaceMockApiResource = {
+  clearCache(): Promise<void>;
+  restart(): Promise<void>;
+};
+
+type FlowSurfaceMockRouter = {
+  router: {
+    state: {
+      location: {
+        pathname: string;
+      };
+    };
+  };
+  add(routeName: unknown, options: unknown): void;
+  isSkippedAuthCheckRoute(pathname: unknown): boolean;
+  navigate(path: unknown, options?: unknown): void;
+};
+
+type FlowSurfaceMockLayoutManager = {
+  registerLayout(layout: unknown): void;
+  getLayout(routeName: unknown): undefined;
+  listLayouts(): never[];
+};
+
+type FlowSurfaceMockJsonLogic = {
+  addOperation(name: unknown, operation: unknown): void;
+};
+
+export type FlowSurfaceMockFlowContext = {
+  app?: FlowSurfaceMockClientApp;
+  api: FlowSurfaceMockApiClient;
+  dataSourceManager: FlowSurfaceMockDataSourceManager;
+  systemSettings: {
+    load(): Promise<Record<string, never>>;
+  };
+  defineProperty(property: unknown, descriptor: unknown): void;
+};
+
+export type FlowSurfaceMockCollectionFieldInterfaceManager = {
+  registerFieldInterfaceConfigure(options: unknown): void;
+  registerFieldValidationConfigure(item: unknown): void;
+  registerFieldValidationConfigureGroup(name: unknown, items?: unknown[]): void;
+  addFieldValidationConfiguresToGroup(name: unknown, items?: unknown[]): void;
+};
+
+export type FlowSurfaceMockDataSourceManager = {
+  collectionFieldInterfaceManager: FlowSurfaceMockCollectionFieldInterfaceManager;
+  registerLoader(name: unknown, loader: unknown): void;
+  addFieldInterfaces(fieldInterfaces: unknown[]): void;
+  addFieldInterfaceGroups(groups: unknown): void;
+  addFieldInterfaceComponentOption(fieldName: unknown, componentOption: unknown): void;
+  addFieldInterfaceOperator(name: unknown, operatorOption: unknown): void;
+  registerFieldFilterOperator(operator: unknown): void;
+  registerFieldFilterOperatorGroup(name: unknown, operators?: unknown[]): void;
+  addFieldFilterOperatorsToGroup(name: unknown, operators?: unknown[]): void;
+};
+
+export type FlowSurfaceMockPluginManager = {
+  get(pluginName: unknown): ReturnType<typeof createFlowSurfaceExtractorNoopBridgeReturn>;
+};
+
+export type FlowSurfaceMockPluginSettingsManager = {
+  addMenuItem(item: unknown): void;
+  addPageTabItem(item: unknown): void;
+  has(key: unknown): boolean;
 };
 
 export type FlowSurfaceMockFlowEngine = {
+  context: FlowSurfaceMockFlowContext;
   registerModels(models: Record<string, unknown>): void;
   registerModelLoaders(loaders: Record<string, unknown>): void;
   registerActions(actions: Record<string, unknown>): void;
   registerFlow(flow: FlowSurfaceUnknownFlowDefinition): void;
   registerFlow(key: string, flow: FlowSurfaceUnknownFlowDefinition): void;
+  flowSettings: {
+    registerComponents(components: Record<string, unknown>): void;
+  };
 };
 
 export type FlowSurfaceMockClientApp = {
   flowEngine: FlowSurfaceMockFlowEngine;
+  context: FlowSurfaceMockFlowContext;
+  apiClient: FlowSurfaceMockApiClient;
+  dataSourceManager: FlowSurfaceMockDataSourceManager;
+  pluginManager: FlowSurfaceMockPluginManager;
+  pluginSettingsManager: FlowSurfaceMockPluginSettingsManager;
+  layoutManager: FlowSurfaceMockLayoutManager;
+  jsonLogic: FlowSurfaceMockJsonLogic;
+  schemaInitializerManager: ReturnType<typeof createFlowSurfaceExtractorNoopBridgeReturn>;
+  schemaSettingsManager: ReturnType<typeof createFlowSurfaceExtractorNoopBridgeReturn>;
+  aiManager: ReturnType<typeof createFlowSurfaceExtractorNoopBridgeReturn>;
+  providers: unknown[];
+  router: FlowSurfaceMockRouter;
+  addComponents(components: Record<string, unknown>): void;
+  addFieldInterfaces(fieldInterfaces: unknown[]): void;
+  addFieldInterfaceGroups(groups: unknown): void;
+  addFieldInterfaceComponentOption(fieldName: unknown, componentOption: unknown): void;
+  addFieldInterfaceOperator(name: unknown, operatorOption: unknown): void;
+  registerFieldFilterOperator(operator: unknown): void;
+  registerFieldFilterOperatorGroup(name: unknown, operators?: unknown[]): void;
+  addFieldFilterOperatorsToGroup(name: unknown, operators?: unknown[]): void;
+  registerFieldValidationConfigure(item: unknown): void;
+  registerFieldValidationConfigureGroup(name: unknown, items?: unknown[]): void;
+  addFieldValidationConfiguresToGroup(name: unknown, items?: unknown[]): void;
+  getPublicPath(): string;
+  use(provider: unknown): void;
   eventBus: {
     addEventListener(eventName: unknown, listener: unknown): void;
     removeEventListener(eventName: unknown, listener: unknown): void;
   };
   i18n: {
     addResources(lang: string, namespace: string, resource: unknown): void;
-    t(key: string): string;
+    t(key: unknown, options?: unknown): string;
   };
-  pm: {
-    get(pluginName: unknown): ReturnType<typeof createFlowSurfaceExtractorNoopBridgeReturn>;
-  };
+  pm: FlowSurfaceMockPluginManager;
 };
 
 export type FlowSurfaceMockClientPluginContext = {
@@ -67,7 +201,14 @@ export function createFlowSurfaceMockFlowEngine(input: {
   source?: string;
 }): FlowSurfaceMockFlowEngine {
   const source = input.source || 'runtime';
+  const apiClient = createFlowSurfaceMockApiClient();
+  const dataSourceManager = createFlowSurfaceMockDataSourceManager();
+  const context = createFlowSurfaceMockFlowContext({
+    apiClient,
+    dataSourceManager,
+  });
   return {
+    context,
     registerModels: (models) => {
       input.recorder.recordModels(models, source, 'high', 'runtime');
     },
@@ -76,6 +217,11 @@ export function createFlowSurfaceMockFlowEngine(input: {
     },
     registerActions() {
       // Action registration is intentionally ignored by the extractor runtime.
+    },
+    flowSettings: {
+      registerComponents() {
+        // Flow setting component registration is intentionally ignored by the extractor runtime.
+      },
     },
     registerFlow: (keyOrDefinition, flowDefinition) => {
       const flow = normalizeFlowRegistration(keyOrDefinition, flowDefinition);
@@ -101,34 +247,292 @@ export function createFlowSurfaceMockClientPluginContext(input: {
     recorder: input.recorder,
     source: input.source,
   });
-  return {
-    app: {
-      flowEngine,
-      eventBus: {
-        addEventListener() {
-          // Event listener registration is intentionally ignored by the extractor runtime.
-        },
-        removeEventListener() {
-          // Event listener removal is intentionally ignored by the extractor runtime.
-        },
+  const pluginManager = createFlowSurfaceMockPluginManager();
+  const app: FlowSurfaceMockClientApp = {
+    flowEngine,
+    context: flowEngine.context,
+    apiClient: flowEngine.context.api,
+    dataSourceManager: flowEngine.context.dataSourceManager,
+    pluginManager,
+    pluginSettingsManager: createFlowSurfaceMockPluginSettingsManager(),
+    layoutManager: createFlowSurfaceMockLayoutManager(),
+    jsonLogic: createFlowSurfaceMockJsonLogic(),
+    schemaInitializerManager: createFlowSurfaceExtractorNoopBridgeReturn(),
+    schemaSettingsManager: createFlowSurfaceExtractorNoopBridgeReturn(),
+    aiManager: createFlowSurfaceExtractorNoopBridgeReturn(),
+    providers: [],
+    router: createFlowSurfaceMockRouter(),
+    addComponents() {
+      // Component registration is intentionally ignored by the extractor runtime.
+    },
+    addFieldInterfaces(fieldInterfaces) {
+      this.dataSourceManager.addFieldInterfaces(fieldInterfaces);
+    },
+    addFieldInterfaceGroups(groups) {
+      this.dataSourceManager.addFieldInterfaceGroups(groups);
+    },
+    addFieldInterfaceComponentOption(fieldName, componentOption) {
+      this.dataSourceManager.addFieldInterfaceComponentOption(fieldName, componentOption);
+    },
+    addFieldInterfaceOperator(name, operatorOption) {
+      this.dataSourceManager.addFieldInterfaceOperator(name, operatorOption);
+    },
+    registerFieldFilterOperator(operator) {
+      this.dataSourceManager.registerFieldFilterOperator(operator);
+    },
+    registerFieldFilterOperatorGroup(name, operators) {
+      this.dataSourceManager.registerFieldFilterOperatorGroup(name, operators);
+    },
+    addFieldFilterOperatorsToGroup(name, operators) {
+      this.dataSourceManager.addFieldFilterOperatorsToGroup(name, operators);
+    },
+    registerFieldValidationConfigure(item) {
+      this.dataSourceManager.collectionFieldInterfaceManager.registerFieldValidationConfigure(item);
+    },
+    registerFieldValidationConfigureGroup(name, items) {
+      this.dataSourceManager.collectionFieldInterfaceManager.registerFieldValidationConfigureGroup(name, items);
+    },
+    addFieldValidationConfiguresToGroup(name, items) {
+      this.dataSourceManager.collectionFieldInterfaceManager.addFieldValidationConfiguresToGroup(name, items);
+    },
+    getPublicPath() {
+      return '';
+    },
+    use() {
+      // App provider/component installation is intentionally ignored by the extractor runtime.
+    },
+    eventBus: {
+      addEventListener() {
+        // Event listener registration is intentionally ignored by the extractor runtime.
       },
-      i18n: {
-        addResources() {
-          // Locale registration is intentionally ignored by the extractor runtime.
-        },
-        t(key) {
-          return key;
-        },
-      },
-      pm: {
-        get() {
-          return createFlowSurfaceExtractorNoopBridgeReturn();
-        },
+      removeEventListener() {
+        // Event listener removal is intentionally ignored by the extractor runtime.
       },
     },
+    i18n: {
+      addResources() {
+        // Locale registration is intentionally ignored by the extractor runtime.
+      },
+      t(key) {
+        return typeof key === 'string' ? key : '';
+      },
+    },
+    pm: pluginManager,
+  };
+  flowEngine.context.app = app;
+  return {
+    app,
     flowEngine,
     options: {
       packageName: input.packageName,
+    },
+  };
+}
+
+function createFlowSurfaceMockApiClient(): FlowSurfaceMockApiClient {
+  const storage = createFlowSurfaceMockApiStorage();
+  return {
+    storage,
+    storagePrefix: '',
+    createStorage() {
+      return createFlowSurfaceMockApiStorage();
+    },
+    async request() {
+      return {
+        data: {
+          data: [],
+        },
+      };
+    },
+    resource() {
+      return {
+        async clearCache() {
+          // Resource cache clearing is intentionally ignored by the extractor runtime.
+        },
+        async restart() {
+          // App restart requests are intentionally ignored by the extractor runtime.
+        },
+      };
+    },
+    auth: {
+      locale: '',
+      getLocale() {
+        return '';
+      },
+      setAuthenticator() {
+        // Auth state mutation is intentionally ignored by the extractor runtime.
+      },
+      setLocale() {
+        // Auth state mutation is intentionally ignored by the extractor runtime.
+      },
+      setRole() {
+        // Auth state mutation is intentionally ignored by the extractor runtime.
+      },
+      setToken() {
+        // Auth state mutation is intentionally ignored by the extractor runtime.
+      },
+    },
+    axios: {
+      interceptors: {
+        request: createFlowSurfaceMockAxiosInterceptor(),
+        response: createFlowSurfaceMockAxiosInterceptor(),
+      },
+    },
+  };
+}
+
+function createFlowSurfaceMockApiStorage(): FlowSurfaceMockApiStorage {
+  return {
+    getItem() {
+      return null;
+    },
+    removeItem() {
+      // API client storage mutation is intentionally ignored by the extractor runtime.
+    },
+    setItem() {
+      // API client storage mutation is intentionally ignored by the extractor runtime.
+    },
+  };
+}
+
+function createFlowSurfaceMockAxiosInterceptor(): FlowSurfaceMockAxiosInterceptor {
+  return {
+    handlers: [],
+    use(fulfilled, rejected) {
+      this.handlers.push({
+        fulfilled,
+        rejected,
+      });
+      return this.handlers.length - 1;
+    },
+    eject() {
+      // HTTP interceptor removal is intentionally ignored by the extractor runtime.
+    },
+  };
+}
+
+function createFlowSurfaceMockFlowContext(input: {
+  apiClient: FlowSurfaceMockApiClient;
+  dataSourceManager: FlowSurfaceMockDataSourceManager;
+}): FlowSurfaceMockFlowContext {
+  return {
+    api: input.apiClient,
+    dataSourceManager: input.dataSourceManager,
+    systemSettings: {
+      async load() {
+        return {};
+      },
+    },
+    defineProperty() {
+      // Flow context property registration is intentionally ignored by the extractor runtime.
+    },
+  };
+}
+
+function createFlowSurfaceMockDataSourceManager(): FlowSurfaceMockDataSourceManager {
+  return {
+    collectionFieldInterfaceManager: {
+      registerFieldInterfaceConfigure() {
+        // Field interface configuration is intentionally ignored by the extractor runtime.
+      },
+      registerFieldValidationConfigure() {
+        // Field validation configuration is intentionally ignored by the extractor runtime.
+      },
+      registerFieldValidationConfigureGroup() {
+        // Field validation configuration is intentionally ignored by the extractor runtime.
+      },
+      addFieldValidationConfiguresToGroup() {
+        // Field validation configuration is intentionally ignored by the extractor runtime.
+      },
+    },
+    registerLoader() {
+      // Data source loader registration is intentionally ignored by the extractor runtime.
+    },
+    addFieldInterfaces() {
+      // Field interface registration is intentionally ignored by the extractor runtime.
+    },
+    addFieldInterfaceGroups() {
+      // Field interface group registration is intentionally ignored by the extractor runtime.
+    },
+    addFieldInterfaceComponentOption() {
+      // Field interface component option registration is intentionally ignored by the extractor runtime.
+    },
+    addFieldInterfaceOperator() {
+      // Field interface operator registration is intentionally ignored by the extractor runtime.
+    },
+    registerFieldFilterOperator() {
+      // Field filter operator registration is intentionally ignored by the extractor runtime.
+    },
+    registerFieldFilterOperatorGroup() {
+      // Field filter operator group registration is intentionally ignored by the extractor runtime.
+    },
+    addFieldFilterOperatorsToGroup() {
+      // Field filter operator group mutation is intentionally ignored by the extractor runtime.
+    },
+  };
+}
+
+function createFlowSurfaceMockPluginManager(): FlowSurfaceMockPluginManager {
+  return {
+    get() {
+      return createFlowSurfaceExtractorNoopBridgeReturn();
+    },
+  };
+}
+
+function createFlowSurfaceMockPluginSettingsManager(): FlowSurfaceMockPluginSettingsManager {
+  return {
+    addMenuItem() {
+      // Plugin settings menu registration is intentionally ignored by the extractor runtime.
+    },
+    addPageTabItem() {
+      // Plugin settings page registration is intentionally ignored by the extractor runtime.
+    },
+    has() {
+      return false;
+    },
+  };
+}
+
+function createFlowSurfaceMockRouter(): FlowSurfaceMockRouter {
+  return {
+    router: {
+      state: {
+        location: {
+          pathname: '/',
+        },
+      },
+    },
+    add() {
+      // Route registration is intentionally ignored by the extractor runtime.
+    },
+    isSkippedAuthCheckRoute() {
+      return false;
+    },
+    navigate() {
+      // Navigation is intentionally ignored by the extractor runtime.
+    },
+  };
+}
+
+function createFlowSurfaceMockLayoutManager(): FlowSurfaceMockLayoutManager {
+  return {
+    registerLayout() {
+      // Layout registration is intentionally ignored by the extractor runtime.
+    },
+    getLayout() {
+      return undefined;
+    },
+    listLayouts() {
+      return [];
+    },
+  };
+}
+
+function createFlowSurfaceMockJsonLogic(): FlowSurfaceMockJsonLogic {
+  return {
+    addOperation() {
+      // JSON logic extension registration is intentionally ignored by the extractor runtime.
     },
   };
 }
@@ -213,6 +617,17 @@ export function createFlowSurfaceMockFieldBindingModelClass(input: {
           confidence: 'medium',
         });
       });
+    }
+
+    static getDefaultBindingByField() {
+      return {
+        modelName: normalizeString(this.name) || 'FlowSurfaceExtractorFieldBindingModel',
+        defaultProps: {},
+      };
+    }
+
+    static getBindingsByField() {
+      return [this.getDefaultBindingByField()];
     }
   };
 }

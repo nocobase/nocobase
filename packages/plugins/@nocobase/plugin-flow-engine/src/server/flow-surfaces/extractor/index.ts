@@ -10,6 +10,7 @@
 export * from './ast';
 export * from './entry-resolver';
 export * from './guards';
+export * from './module-shims';
 export * from './recorder';
 export * from './runtime';
 export * from './snapshot';

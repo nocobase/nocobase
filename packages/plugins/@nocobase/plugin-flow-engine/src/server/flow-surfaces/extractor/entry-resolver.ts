@@ -26,10 +26,10 @@ type FlowSurfacePluginEntryCandidate = {
 };
 
 const SOURCE_ENTRY_CANDIDATES = [
-  'src/client-v2/index.ts',
-  'src/client-v2/index.tsx',
   'src/client-v2/plugin.ts',
   'src/client-v2/plugin.tsx',
+  'src/client-v2/index.ts',
+  'src/client-v2/index.tsx',
 ];
 const DIST_ENTRY_CANDIDATES = ['dist/client-v2/index.js'];
 const PACKAGE_JSON_CLIENT_V2_FIELDS = ['client-v2', 'clientV2', 'client-v2-entry', 'clientV2Entry'];

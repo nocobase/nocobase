@@ -8,14 +8,17 @@
  */
 
 import { rmSync, symlinkSync } from 'fs';
-import { link, mkdir, mkdtemp, readFile, realpath, rm, symlink, writeFile } from 'fs/promises';
+import { link, mkdir, mkdtemp, readFile, readdir, realpath, rm, symlink, writeFile } from 'fs/promises';
 import { tmpdir } from 'os';
-import { join } from 'path';
+import { join, relative } from 'path';
+import * as ts from 'typescript';
 import { describe, expect, it, vi } from 'vitest';
 import {
   buildAutoNamespacedPublicType,
   buildFlowSurfaceAutoSnapshot,
   collectFlowSurfaceExtractorAstEvents,
+  createFlowSurfaceExtractorAssetStub,
+  createFlowSurfaceExtractorModuleShims,
   createFlowSurfaceExtractionRecorder,
   createFlowSurfaceExtractorRuntimeWarning,
   createFlowSurfaceMockFieldBindingModelClass,
@@ -23,8 +26,10 @@ import {
   createFlowSurfaceMockModelClass,
   deriveFlowSurfaceAutoCapabilityCandidates,
   getFlowSurfaceAutoSnapshotFileName,
+  isFlowSurfaceExtractorAssetImport,
   loadFlowSurfaceAutoSnapshotsFromDirectory,
   resolveFlowSurfacePluginEntry,
+  resolveFlowSurfaceExtractorModuleShim,
   runWithFlowSurfaceExtractorGuards,
   writeFlowSurfaceAutoSnapshot,
 } from '../flow-surfaces/extractor';
@@ -427,6 +432,11 @@ describe('flowSurfaces extractor scaffold', () => {
             throw new Error('action should not execute');
           },
         });
+        app.flowEngine.flowSettings.registerComponents({
+          BulkEditFieldSelector() {
+            throw new Error('component should not render');
+          },
+        });
         app.pm.get('workflow')?.registerTrigger?.('event', function Trigger() {});
         const workflow = app.pm.get('workflow');
         workflow.registerInstruction('event', function Instruction() {});
@@ -448,6 +458,9 @@ describe('flowSurfaces extractor scaffold', () => {
               addEventListener: context.app.eventBus.addEventListener,
             },
             flowEngine: {
+              flowSettings: {
+                registerComponents: context.app.flowEngine.flowSettings.registerComponents,
+              },
               registerActions: context.app.flowEngine.registerActions,
               registerModels: context.app.flowEngine.registerModels,
             },
@@ -465,6 +478,626 @@ describe('flowSurfaces extractor scaffold', () => {
         modelUse: 'BulkEditActionModel',
       }),
     ]);
+  });
+
+  it('should expose inert module shims for client-v2 and flow-engine imports', () => {
+    const recorder = createFlowSurfaceExtractionRecorder();
+    const shims = createFlowSurfaceExtractorModuleShims({
+      packageName: '@nocobase/plugin-demo',
+      recorder,
+      source: 'src/client-v2/plugin.tsx',
+    });
+    const clientV2Shim = shims['@nocobase/client-v2'];
+    const flowEngineShim = shims['@nocobase/flow-engine'];
+    class DemoBlockModel extends clientV2Shim.FlowModel {}
+    class DemoSequenceFieldInterface extends clientV2Shim.CollectionFieldInterface {
+      name = 'sequence';
+    }
+    class DemoUserCenterActionItemModel extends clientV2Shim.UserCenterActionItemModel {}
+    class DemoUserCenterSelectItemModel extends clientV2Shim.UserCenterSelectItemModel {}
+
+    expect(resolveFlowSurfaceExtractorModuleShim('@nocobase/client-v2', shims)).toBe(clientV2Shim);
+    expect(resolveFlowSurfaceExtractorModuleShim('@nocobase/flow-engine', shims)).toBe(flowEngineShim);
+    expect(resolveFlowSurfaceExtractorModuleShim('@nocobase/client', shims)).toBeUndefined();
+    expect(clientV2Shim.AddSubModelButton.name).toBe('AddSubModelButton');
+    expect(clientV2Shim.AddSubModelButton()).toBeNull();
+    expect(clientV2Shim.ACLRolesCheckProvider.name).toBe('ACLRolesCheckProvider');
+    expect(clientV2Shim.ACLRolesCheckProvider()).toBeNull();
+    expect(clientV2Shim.DialogFormLayout.name).toBe('DialogFormLayout');
+    expect(clientV2Shim.DialogFormLayout()).toBeNull();
+    expect(new DemoSequenceFieldInterface()).toMatchObject({
+      name: 'sequence',
+    });
+    expect(clientV2Shim.getCurrentV2RedirectPath()).toBe('');
+    expect(clientV2Shim.languageCodes).toEqual({});
+    expect(clientV2Shim.useApp().flowEngine).toBe(clientV2Shim.useFlowEngine());
+    expect(flowEngineShim.useFlowEngine()).toBe(clientV2Shim.useFlowEngine());
+    expect(flowEngineShim.useFlowContext()).toBe(clientV2Shim.useFlowEngine().context);
+    expect(flowEngineShim.useFlowSettingsContext().model).toBeTruthy();
+    expect(flowEngineShim.useFlowStep()).toBeTruthy();
+    expect(flowEngineShim.FlowSettingsContextProvider.name).toBe('FlowSettingsContextProvider');
+    expect(flowEngineShim.FlowSettingsContextProvider()).toBeNull();
+    expect(flowEngineShim.tExpr('Demo title')).toBe('Demo title');
+    expect(flowEngineShim.observer(DemoBlockModel)).toBe(DemoBlockModel);
+
+    const plugin = new clientV2Shim.Plugin();
+    plugin.app.use(clientV2Shim.ACLRolesCheckProvider);
+    plugin.app.providers.unshift([clientV2Shim.ACLRolesCheckProvider, {}]);
+    expect(plugin.context).toBe(plugin.app.context);
+    expect(plugin.flowEngine).toBe(plugin.app.flowEngine);
+    expect(plugin.engine).toBe(plugin.app.flowEngine);
+    expect(plugin.pm).toBe(plugin.app.pm);
+    expect(plugin.pluginManager).toBe(plugin.app.pluginManager);
+    expect(plugin.pluginSettingsManager).toBe(plugin.app.pluginSettingsManager);
+    expect(plugin.dataSourceManager).toBe(plugin.app.dataSourceManager);
+    expect(plugin.schemaInitializerManager).toBe(plugin.app.schemaInitializerManager);
+    expect(plugin.schemaSettingsManager).toBe(plugin.app.schemaSettingsManager);
+    expect(plugin.ai).toBe(plugin.app.aiManager);
+    plugin.router.add('auth.signin', {
+      path: '/signin',
+    });
+    plugin.flowEngine.flowSettings.registerComponents({
+      DemoSelector() {
+        return null;
+      },
+    });
+    plugin.flowEngine.registerModels({
+      DemoBlockModel,
+      DemoUserCenterActionItemModel,
+      DemoUserCenterSelectItemModel,
+    });
+    plugin.flowEngine.registerModelLoaders({
+      DemoActionModel: {
+        loader() {
+          throw new Error('loader should not execute');
+        },
+      },
+    });
+    DemoBlockModel.define({
+      label: 'Demo block',
+      createModelOptions: {
+        use: 'DemoBlockModel',
+      },
+    });
+    DemoBlockModel.registerFlow('demoFlow', {
+      title: 'Demo flow',
+      steps: {},
+    });
+    clientV2Shim.DisplayTextFieldModel.registerFlow('textCopySettings', {
+      title: 'Display Field settings',
+      steps: {},
+    });
+    DemoBlockModel.bindModelToInterface('DemoFieldModel', 'demoField');
+    flowEngineShim.EditableItemModel.bindModelToInterface('InputFieldModel', ['sequence']);
+    flowEngineShim.DisplayItemModel.bindModelToInterface('DisplayTextFieldModel', ['sequence']);
+    flowEngineShim.FilterableItemModel.bindModelToInterface('InputFieldModel', ['sequence']);
+
+    expect(plugin.options.packageName).toBe('@nocobase/plugin-demo');
+    expect(
+      new clientV2Shim.Plugin({ packageName: '@nocobase/plugin-real-shape' }, plugin.app).options.packageName,
+    ).toBe('@nocobase/plugin-real-shape');
+    expect(recorder.getEvents()).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          type: 'model.registered',
+          modelUse: 'DemoBlockModel',
+        }),
+        expect.objectContaining({
+          type: 'model.registered',
+          modelUse: 'DemoUserCenterActionItemModel',
+        }),
+        expect.objectContaining({
+          type: 'model.registered',
+          modelUse: 'DemoUserCenterSelectItemModel',
+        }),
+        expect.objectContaining({
+          type: 'model.loaderRegistered',
+          modelUse: 'DemoActionModel',
+        }),
+        expect.objectContaining({
+          type: 'menu.itemRegistered',
+          modelUse: 'DemoBlockModel',
+          label: 'Demo block',
+          createModelOptionsStatus: 'static',
+        }),
+        expect.objectContaining({
+          type: 'model.flowRegistered',
+          modelUse: 'DemoBlockModel',
+          flowKey: 'demoFlow',
+          title: 'Demo flow',
+        }),
+        expect.objectContaining({
+          type: 'model.flowRegistered',
+          modelUse: 'DisplayTextFieldModel',
+          flowKey: 'textCopySettings',
+          title: 'Display Field settings',
+        }),
+        expect.objectContaining({
+          type: 'field.bindingRegistered',
+          modelUse: 'DemoFieldModel',
+          fieldInterface: 'demoField',
+          role: 'wrapper',
+        }),
+        expect.objectContaining({
+          type: 'field.bindingRegistered',
+          modelUse: 'InputFieldModel',
+          fieldInterface: 'sequence',
+          role: 'editable',
+        }),
+        expect.objectContaining({
+          type: 'field.bindingRegistered',
+          modelUse: 'DisplayTextFieldModel',
+          fieldInterface: 'sequence',
+          role: 'display',
+        }),
+        expect.objectContaining({
+          type: 'field.bindingRegistered',
+          modelUse: 'InputFieldModel',
+          fieldInterface: 'sequence',
+          role: 'filterable',
+        }),
+      ]),
+    );
+  });
+
+  it('should expose repo-observed module-chain symbols through module shims', () => {
+    const recorder = createFlowSurfaceExtractionRecorder();
+    const shims = createFlowSurfaceExtractorModuleShims({
+      packageName: '@nocobase/plugin-kanban',
+      recorder,
+    });
+    const clientV2Shim = shims['@nocobase/client-v2'];
+    const flowEngineShim = shims['@nocobase/flow-engine'];
+    class KanbanBlockResource extends flowEngineShim.MultiRecordResource {}
+
+    function KanbanGroupingSelector() {
+      flowEngineShim.useFlowStep();
+      flowEngineShim.useFlowSettingsContext();
+      return null;
+    }
+
+    function KanbanGroupOptionsTable() {
+      flowEngineShim.useFlowContext();
+      flowEngineShim.useFlowSettingsContext();
+      return new KanbanBlockResource();
+    }
+
+    function VerificationDialog() {
+      const app = clientV2Shim.useApp();
+      app.pm.get('verification')?.verificationManager?.getVerification?.('sms');
+      flowEngineShim.useFlowContext();
+      return clientV2Shim.DialogFormLayout();
+    }
+
+    expect(flowEngineShim.observer(KanbanGroupingSelector)).toBe(KanbanGroupingSelector);
+    expect(KanbanGroupOptionsTable()).toBeInstanceOf(KanbanBlockResource);
+    expect(VerificationDialog()).toBeNull();
+    expect(recorder.getEvents()).toEqual([]);
+  });
+
+  it('should cover real bulk-edit entry-chain imports through module shims', async () => {
+    const recorder = createFlowSurfaceExtractionRecorder();
+    const shims = createFlowSurfaceExtractorModuleShims({
+      packageName: '@nocobase/plugin-action-bulk-edit',
+      recorder,
+      source: 'src/client-v2/index.tsx',
+    });
+    const clientV2Shim = shims['@nocobase/client-v2'];
+    const flowEngineShim = shims['@nocobase/flow-engine'];
+    const bulkEditTitleField = flowEngineShim.defineAction({
+      ...clientV2Shim.titleField,
+      name: 'bulkEditTitleField',
+    });
+    const bulkEditFieldComponent = flowEngineShim.defineAction({
+      title: flowEngineShim.tExpr('Field component'),
+      name: 'bulkEditFieldComponent',
+    });
+
+    class BulkEditDataBlockModel extends clientV2Shim.DataBlockModel {}
+
+    BulkEditDataBlockModel.define({
+      hide: true,
+      label: flowEngineShim.tExpr('Data blocks'),
+      async children(context: unknown) {
+        return flowEngineShim.buildSubModelItems(clientV2Shim.DataBlockModel)(context);
+      },
+    });
+
+    class BulkEditBlockModel extends clientV2Shim.BlockModel {}
+
+    BulkEditBlockModel.define({
+      hide: true,
+      label: flowEngineShim.tExpr('Data blocks'),
+      async children(context: unknown) {
+        return flowEngineShim.buildSubModelItems(clientV2Shim.BlockModel)(context);
+      },
+    });
+
+    class BulkEditFormGridModel extends clientV2Shim.FormGridModel {}
+    class BulkEditFieldModel extends clientV2Shim.RecordSelectFieldModel {}
+    class BulkEditFormItemModel extends clientV2Shim.FormItemModel {}
+    class BulkEditFormSubmitActionModel extends clientV2Shim.FormSubmitActionModel {}
+    class BulkEditChildPageTabModel extends clientV2Shim.ChildPageTabModel {}
+
+    BulkEditFieldModel.registerFlow({
+      key: 'fieldSettings',
+      title: flowEngineShim.tExpr('Field settings'),
+      steps: {
+        fieldComponent: bulkEditFieldComponent,
+      },
+    });
+
+    class PluginActionBulkEditClient extends clientV2Shim.Plugin {
+      async load() {
+        this.app.flowEngine.registerActions({
+          bulkEditFieldComponent,
+          bulkEditTitleField,
+        });
+        this.app.flowEngine.registerModels({
+          BulkEditBlockModel,
+          BulkEditChildPageTabModel,
+          BulkEditDataBlockModel,
+          BulkEditFieldModel,
+          BulkEditFormGridModel,
+          BulkEditFormItemModel,
+          BulkEditFormSubmitActionModel,
+        });
+      }
+    }
+
+    await new PluginActionBulkEditClient().load();
+
+    expect(new flowEngineShim.DefaultStructure()).toBeTruthy();
+    expect(flowEngineShim.buildSubModelItems(clientV2Shim.DataBlockModel)({})).toEqual([
+      {
+        useModel: 'DataBlockModel',
+      },
+    ]);
+    expect(flowEngineShim.buildSubModelItems(clientV2Shim.BlockModel)({})).toEqual([
+      {
+        useModel: 'BlockModel',
+      },
+    ]);
+    expect(recorder.getEvents()).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          type: 'menu.itemRegistered',
+          modelUse: 'BulkEditDataBlockModel',
+          label: 'Data blocks',
+        }),
+        expect.objectContaining({
+          type: 'menu.itemRegistered',
+          modelUse: 'BulkEditBlockModel',
+          label: 'Data blocks',
+        }),
+        expect.objectContaining({
+          type: 'model.flowRegistered',
+          modelUse: 'BulkEditFieldModel',
+          flowKey: 'fieldSettings',
+          title: 'Field settings',
+        }),
+        expect.objectContaining({
+          type: 'model.registered',
+          modelUse: 'BulkEditDataBlockModel',
+        }),
+        expect.objectContaining({
+          type: 'model.registered',
+          modelUse: 'BulkEditFormGridModel',
+        }),
+      ]),
+    );
+  });
+
+  it('should tolerate common client-v2 plugin preload helpers through module shims', async () => {
+    const recorder = createFlowSurfaceExtractionRecorder();
+    const shims = createFlowSurfaceExtractorModuleShims({
+      packageName: '@nocobase/plugin-api-keys',
+      recorder,
+    });
+    const { Plugin } = shims['@nocobase/client-v2'];
+
+    class DemoSettingsPlugin extends Plugin {
+      async load() {
+        this.app.addComponents({
+          DemoComponent() {
+            throw new Error('component should not render');
+          },
+        });
+        this.app.addFieldInterfaces([
+          {
+            name: 'demo',
+          },
+        ]);
+        this.app.pm.get('calendar')?.registerTitleFieldInterface?.('demo');
+        this.app.providers.unshift([() => null, {}]);
+        this.app.router.add('auth.signin', {
+          path: '/signin',
+        });
+        this.app.router.isSkippedAuthCheckRoute('/signin');
+        this.app.router.navigate('/signin');
+        this.app.apiClient.auth.getLocale();
+        this.app.apiClient.auth.setLocale('en-US');
+        this.app.apiClient.auth.setToken('token');
+        this.app.apiClient.auth.setRole('admin');
+        this.app.apiClient.auth.setAuthenticator('basic');
+        this.app.apiClient.axios.interceptors.response.handlers.unshift({
+          fulfilled(response: unknown) {
+            return response;
+          },
+          rejected(error: unknown) {
+            return error;
+          },
+        });
+        this.app.apiClient.axios.interceptors.response.use(
+          (response: unknown) => response,
+          (error: unknown) => error,
+        );
+        this.t('API keys');
+        this.pluginSettingsManager.addMenuItem({
+          key: 'api-keys',
+          title: this.t('API keys'),
+        });
+        this.pluginSettingsManager.addPageTabItem({
+          menuKey: 'api-keys',
+          key: 'index',
+          componentLoader() {
+            throw new Error('component loader should not execute');
+          },
+        });
+        this.pluginSettingsManager.has('api-keys');
+        await this.context.systemSettings.load();
+        await this.context.api.resource('app').clearCache();
+      }
+    }
+
+    await expect(new DemoSettingsPlugin().load()).resolves.toBeUndefined();
+    expect(recorder.getEvents()).toEqual([]);
+  });
+
+  it('should tolerate repo-observed client-v2 beforeLoad and load hook surfaces', async () => {
+    const recorder = createFlowSurfaceExtractionRecorder();
+    const shims = createFlowSurfaceExtractorModuleShims({
+      packageName: '@nocobase/plugin-repo-hooks',
+      recorder,
+      source: 'src/client-v2/plugin.tsx',
+    });
+    const { Plugin } = shims['@nocobase/client-v2'];
+    let dataSourceLoaderExecuted = false;
+    let flowContextGetterExecuted = false;
+    let interceptorExecuted = false;
+    let jsonLogicOperationExecuted = false;
+
+    class DemoNotificationEmailPlugin extends Plugin {
+      async beforeLoad() {
+        const manager = this.pm.get(function PluginNotificationManagerClientV2() {});
+        if (manager) {
+          manager.registerChannelType({
+            type: 'email',
+            title: this.t('Email'),
+            components: {
+              ChannelConfigFormLoader() {
+                throw new Error('component loader should not execute');
+              },
+            },
+            meta: {
+              creatable: true,
+              editable: true,
+              deletable: true,
+            },
+          });
+        }
+      }
+    }
+
+    class DemoDataSourceManagerPlugin extends Plugin {
+      async load() {
+        this.dataSourceManager.registerLoader('*', async () => {
+          dataSourceLoaderExecuted = true;
+          return {};
+        });
+        this.dataSourceManager.collectionFieldInterfaceManager.registerFieldInterfaceConfigure({
+          name: 'formula',
+        });
+      }
+    }
+
+    class DemoPublicFormsPlugin extends Plugin {
+      async load() {
+        this.app.flowEngine.registerModelLoaders({
+          PublicFormsSettingsLayoutModel: {
+            loader() {
+              throw new Error('settings layout loader should not execute');
+            },
+          },
+          PublicFormLayoutModel: {
+            loader() {
+              throw new Error('public form layout loader should not execute');
+            },
+          },
+        });
+        this.app.layoutManager.registerLayout({
+          routeName: 'admin.settings.public-forms',
+          routePath: '/admin/settings/public-forms',
+          uid: 'public_forms_settings_layout',
+          layoutModelClass: 'PublicFormsSettingsLayoutModel',
+        });
+        this.app.layoutManager.registerLayout({
+          routeName: 'public-forms',
+          routePath: '/public-forms',
+          uid: 'public_form_layout',
+          layoutModelClass: 'PublicFormLayoutModel',
+          authCheck: false,
+        });
+      }
+    }
+
+    class DemoTwoFactorAuthenticationPlugin extends Plugin {
+      async load() {
+        const requestInterceptor = this.app.apiClient.axios.interceptors.request.use((config: { headers: object }) => {
+          interceptorExecuted = true;
+          config.headers = {
+            ...config.headers,
+            'x-2fa-token': 'token',
+          };
+          return config;
+        });
+        this.app.apiClient.axios.interceptors.request.eject(requestInterceptor);
+        this.app.apiClient.axios.interceptors.response.use((response: { data?: unknown }) => {
+          interceptorExecuted = true;
+          return response;
+        });
+      }
+    }
+
+    class DemoEmbedPlugin extends Plugin {
+      async beforeLoad() {
+        this.app.apiClient.storagePrefix = 'EMBED_';
+        this.app.apiClient.storage = this.app.apiClient.createStorage('sessionStorage');
+        this.app.apiClient.storage.setItem('embed-token', 'token');
+        this.app.apiClient.storage.removeItem('embed-token');
+        this.app.apiClient.auth.setToken('token');
+      }
+    }
+
+    class DemoFieldEncryptionPlugin extends Plugin {
+      async load() {
+        this.app.jsonLogic.addOperation('$encryptionEq', () => {
+          jsonLogicOperationExecuted = true;
+          return true;
+        });
+      }
+    }
+
+    class DemoEnvironmentVariablesPlugin extends Plugin {
+      async load() {
+        this.flowEngine.context.defineProperty('$env', {
+          get() {
+            flowContextGetterExecuted = true;
+            return {};
+          },
+          meta: {
+            type: 'object',
+            title: this.t('Variables and secrets'),
+            properties() {
+              flowContextGetterExecuted = true;
+              return {};
+            },
+          },
+        });
+      }
+    }
+
+    class DemoFormulaPlugin extends Plugin {
+      async load() {
+        this.app.registerFieldFilterOperatorGroup('formulaDate', [
+          {
+            name: 'today',
+          },
+        ]);
+        this.flowEngine.context.defineProperty('fieldFormula', {
+          get() {
+            flowContextGetterExecuted = true;
+            return {};
+          },
+        });
+        this.flowEngine.registerModelLoaders({
+          FormulaFieldModel: {
+            loader() {
+              throw new Error('model loader should not execute');
+            },
+          },
+        });
+      }
+    }
+
+    await expect(new DemoNotificationEmailPlugin().beforeLoad()).resolves.toBeUndefined();
+    await expect(new DemoDataSourceManagerPlugin().load()).resolves.toBeUndefined();
+    await expect(new DemoPublicFormsPlugin().load()).resolves.toBeUndefined();
+    await expect(new DemoTwoFactorAuthenticationPlugin().load()).resolves.toBeUndefined();
+    await expect(new DemoEmbedPlugin().beforeLoad()).resolves.toBeUndefined();
+    await expect(new DemoFieldEncryptionPlugin().load()).resolves.toBeUndefined();
+    await expect(new DemoEnvironmentVariablesPlugin().load()).resolves.toBeUndefined();
+    await expect(new DemoFormulaPlugin().load()).resolves.toBeUndefined();
+
+    expect(dataSourceLoaderExecuted).toBe(false);
+    expect(flowContextGetterExecuted).toBe(false);
+    expect(interceptorExecuted).toBe(false);
+    expect(jsonLogicOperationExecuted).toBe(false);
+    expect(new DemoEmbedPlugin().app.apiClient.storage.getItem('embed-token')).toBeNull();
+    expect(recorder.getEvents()).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          type: 'model.loaderRegistered',
+          modelUse: 'PublicFormsSettingsLayoutModel',
+        }),
+        expect.objectContaining({
+          type: 'model.loaderRegistered',
+          modelUse: 'PublicFormLayoutModel',
+        }),
+        expect.objectContaining({
+          type: 'model.loaderRegistered',
+          modelUse: 'FormulaFieldModel',
+        }),
+      ]),
+    );
+  });
+
+  it('should classify style and media asset imports as inert extractor stubs', () => {
+    expect(isFlowSurfaceExtractorAssetImport('./style.css')).toBe(true);
+    expect(isFlowSurfaceExtractorAssetImport('./theme.less?inline')).toBe(true);
+    expect(isFlowSurfaceExtractorAssetImport('./panel.scss#hash')).toBe(true);
+    expect(isFlowSurfaceExtractorAssetImport('./logo.svg')).toBe(true);
+    expect(isFlowSurfaceExtractorAssetImport('./icon.png?url')).toBe(true);
+    expect(isFlowSurfaceExtractorAssetImport('./plugin')).toBe(false);
+
+    expect(createFlowSurfaceExtractorAssetStub('./style.css')).toEqual({});
+    expect(createFlowSurfaceExtractorAssetStub('./theme.less?inline')).toEqual({});
+    expect(createFlowSurfaceExtractorAssetStub('./panel.scss#hash')).toEqual({});
+    expect(createFlowSurfaceExtractorAssetStub('./logo.svg')).toBe('flow-surface-asset:svg');
+    expect(createFlowSurfaceExtractorAssetStub('./icon.png?url')).toBe('flow-surface-asset:png');
+    expect(createFlowSurfaceExtractorAssetStub('./plugin')).toBeUndefined();
+  });
+
+  it('should keep module shims aligned with repo-observed client-v2 value imports', async () => {
+    const sourceFiles = await collectRepoClientV2SourceFiles([
+      join(process.cwd(), 'packages/core'),
+      join(process.cwd(), 'packages/plugins'),
+      join(process.cwd(), 'packages/pro-plugins'),
+    ]);
+    const observed = await collectRepoShimmedImports(sourceFiles);
+    const shims = createFlowSurfaceExtractorModuleShims({
+      packageName: '@nocobase/plugin-drift-check',
+      recorder: createFlowSurfaceExtractionRecorder(),
+    });
+    const missingShimExports = [...observed.entries()].flatMap(([specifier, importMap]) => {
+      const shimKeys = new Set(Object.keys(shims[specifier]));
+      return [...importMap.entries()].flatMap(([importName, files]) => {
+        if (importName === '*' || importName === 'default' || shimKeys.has(importName)) {
+          return [];
+        }
+        const examples = [...files]
+          .slice(0, 3)
+          .map((file) => relative(process.cwd(), file))
+          .join(', ');
+        return [`${specifier}:${importName} (${examples})`];
+      });
+    });
+    const uncoveredAssetImports = [...observed.assetImports.entries()].flatMap(([specifier, files]) => {
+      if (
+        isFlowSurfaceExtractorAssetImport(specifier) &&
+        createFlowSurfaceExtractorAssetStub(specifier) !== undefined
+      ) {
+        return [];
+      }
+      const examples = [...files]
+        .slice(0, 3)
+        .map((file) => relative(process.cwd(), file))
+        .join(', ');
+      return [`${specifier} (${examples})`];
+    });
+
+    expect(missingShimExports).toEqual([]);
+    expect(uncoveredAssetImports).toEqual([]);
   });
 
   it('should keep ordinary bridge object returns out of the VM', async () => {
@@ -2654,6 +3287,33 @@ describe('flowSurfaces extractor scaffold', () => {
     }
   });
 
+  it('should prefer plugin source entries before client-v2 index barrels', async () => {
+    const tempRoot = await realpath(tmpdir());
+    const packageRoot = await mkdtemp(join(tempRoot, 'flow-surfaces-entry-plugin-first-'));
+    const pluginEntry = join(packageRoot, 'src/client-v2/plugin.tsx');
+    const indexEntry = join(packageRoot, 'src/client-v2/index.tsx');
+    try {
+      await mkdir(join(packageRoot, 'src/client-v2'), { recursive: true });
+      await writeFile(join(packageRoot, 'package.json'), '{"name":"@nocobase/plugin-auth"}\n', 'utf8');
+      await writeFile(pluginEntry, 'export default class PluginAuthClient {}\n', 'utf8');
+      await writeFile(indexEntry, "export { default } from './plugin'; export * from './pages/AuthLayout';\n", 'utf8');
+
+      const resolution = await resolveFlowSurfacePluginEntry({
+        packageRoot,
+      });
+
+      expect(resolution).toMatchObject({
+        plugin: '@nocobase/plugin-auth',
+        sourceEntry: pluginEntry,
+        selectedEntry: pluginEntry,
+        mode: 'source',
+        warnings: [],
+      });
+    } finally {
+      await rm(packageRoot, { recursive: true, force: true });
+    }
+  });
+
   it('should keep source entry preference by default in production mode', async () => {
     const tempRoot = await realpath(tmpdir());
     const packageRoot = await mkdtemp(join(tempRoot, 'flow-surfaces-entry-production-'));
@@ -3030,3 +3690,127 @@ describe('flowSurfaces extractor scaffold', () => {
     expect(buildAutoNamespacedPublicType('@example/plugin-map', 'PointFieldModel')).toBe('examplePluginMap.point');
   });
 });
+
+type RepoShimmedSpecifier = '@nocobase/client-v2' | '@nocobase/flow-engine';
+
+type RepoObservedShimmedImports = Map<RepoShimmedSpecifier, Map<string, Set<string>>> & {
+  assetImports: Map<string, Set<string>>;
+};
+
+const REPO_SHIMMED_SPECIFIERS: RepoShimmedSpecifier[] = ['@nocobase/client-v2', '@nocobase/flow-engine'];
+
+async function collectRepoClientV2SourceFiles(roots: string[]) {
+  const files: string[] = [];
+  await Promise.all(
+    roots.map(async (root) => {
+      await collectRepoClientV2SourceFilesFromDirectory(root, files);
+    }),
+  );
+  return files.sort();
+}
+
+async function collectRepoClientV2SourceFilesFromDirectory(directory: string, files: string[]) {
+  let entries: Awaited<ReturnType<typeof readdir>>;
+  try {
+    entries = await readdir(directory, {
+      withFileTypes: true,
+    });
+  } catch {
+    return;
+  }
+
+  await Promise.all(
+    entries.map(async (entry) => {
+      const fullPath = join(directory, entry.name);
+      if (entry.isDirectory()) {
+        if (entry.name === 'dist' || entry.name === 'lib' || entry.name === 'node_modules') {
+          return;
+        }
+        await collectRepoClientV2SourceFilesFromDirectory(fullPath, files);
+        return;
+      }
+      if (/[/\\]src[/\\]client-v2[/\\].+\.(?:ts|tsx)$/.test(fullPath) && !fullPath.endsWith('.d.ts')) {
+        files.push(fullPath);
+      }
+    }),
+  );
+}
+
+async function collectRepoShimmedImports(files: string[]): Promise<RepoObservedShimmedImports> {
+  const observed = new Map<RepoShimmedSpecifier, Map<string, Set<string>>>() as RepoObservedShimmedImports;
+  REPO_SHIMMED_SPECIFIERS.forEach((specifier) => {
+    observed.set(specifier, new Map());
+  });
+  observed.assetImports = new Map();
+
+  await Promise.all(
+    files.map(async (file) => {
+      const source = await readFile(file, 'utf8');
+      const sourceFile = ts.createSourceFile(
+        file,
+        source,
+        ts.ScriptTarget.Latest,
+        true,
+        file.endsWith('.tsx') ? ts.ScriptKind.TSX : ts.ScriptKind.TS,
+      );
+      sourceFile.statements.forEach((statement) => {
+        if (!ts.isImportDeclaration(statement) || !ts.isStringLiteral(statement.moduleSpecifier)) {
+          return;
+        }
+        const specifier = statement.moduleSpecifier.text;
+        const importMap = isRepoShimmedSpecifier(specifier) ? observed.get(specifier) : undefined;
+        if (importMap) {
+          collectRepoShimmedImportClause(importMap, statement.importClause, file);
+        }
+        if (isRepoAssetImportSpecifier(specifier)) {
+          addRepoObservedImport(observed.assetImports, specifier, file);
+        }
+      });
+    }),
+  );
+
+  return observed;
+}
+
+function collectRepoShimmedImportClause(
+  importMap: Map<string, Set<string>>,
+  importClause: ts.ImportClause | undefined,
+  file: string,
+) {
+  if (!importClause || importClause.isTypeOnly) {
+    return;
+  }
+  if (importClause.name) {
+    addRepoObservedImport(importMap, 'default', file);
+  }
+  const namedBindings = importClause.namedBindings;
+  if (!namedBindings) {
+    return;
+  }
+  if (ts.isNamespaceImport(namedBindings)) {
+    addRepoObservedImport(importMap, '*', file);
+    return;
+  }
+  namedBindings.elements.forEach((element) => {
+    if (!element.isTypeOnly) {
+      addRepoObservedImport(importMap, (element.propertyName || element.name).text, file);
+    }
+  });
+}
+
+function addRepoObservedImport(importMap: Map<string, Set<string>>, importName: string, file: string) {
+  const files = importMap.get(importName);
+  if (files) {
+    files.add(file);
+    return;
+  }
+  importMap.set(importName, new Set([file]));
+}
+
+function isRepoShimmedSpecifier(specifier: string): specifier is RepoShimmedSpecifier {
+  return REPO_SHIMMED_SPECIFIERS.includes(specifier as RepoShimmedSpecifier);
+}
+
+function isRepoAssetImportSpecifier(specifier: string) {
+  return /\.(?:css|less|scss|svg|png)(?:[?#].*)?$/i.test(specifier);
+}
