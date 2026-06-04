@@ -8,16 +8,19 @@
  */
 
 import { BaseLayoutModel, ChildPageModel, RootPageModel } from '@nocobase/client-v2';
+import { NocoBaseDesktopRouteType, type NocoBaseDesktopRoute } from '@nocobase/client-v2/flow-compat';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   createMobileAddBlockMenuItems,
   createFakeMobileDesktopRoutes,
   createMobileHomeAddMenuItems,
   createMobileHomeMenuItems,
+  createMobileHomeTabItemsFromDesktopRoutes,
   createMobileHomeTabItems,
   FLOW_SETTINGS_PREFERENCE_CHANGE_EVENT,
   FLOW_SETTINGS_PREFERENCE_STORAGE_KEY,
   MobileLayoutModel,
+  normalizeAccessibleDesktopRoutesToMobileRoutes,
   readMobileFlowSettingsPreference,
   writeMobileFlowSettingsPreference,
 } from '../models/MobileLayoutModel';
@@ -57,6 +60,60 @@ describe('plugin-ui-layout mobile models', () => {
       ['notifications', 't:Notifications'],
       ['settings', 't:Settings'],
     ]);
+  });
+
+  it('should derive mobile tab bar items from accessible desktop routes', () => {
+    const t = (key: string) => `route:${key}`;
+    const accessibleRoutes: NocoBaseDesktopRoute[] = [
+      {
+        id: 3,
+        type: NocoBaseDesktopRouteType.group,
+        title: 'Settings',
+        sort: 30,
+        children: [
+          {
+            id: 31,
+            type: NocoBaseDesktopRouteType.flowPage,
+            title: 'Profile',
+            sort: 10,
+          },
+          {
+            id: 32,
+            type: NocoBaseDesktopRouteType.link,
+            title: 'Hidden child',
+            hidden: true,
+            sort: 20,
+          },
+        ],
+      },
+      {
+        id: 1,
+        type: NocoBaseDesktopRouteType.flowPage,
+        title: 'Home',
+        icon: 'HomeOutlined',
+        schemaUid: 'home-page',
+        sort: 10,
+      },
+      {
+        id: 2,
+        type: NocoBaseDesktopRouteType.flowPage,
+        title: 'Hidden',
+        hideInMenu: true,
+        sort: 20,
+      },
+    ];
+
+    const mobileRoutes = normalizeAccessibleDesktopRoutesToMobileRoutes(accessibleRoutes, t);
+
+    expect(createMobileHomeTabItemsFromDesktopRoutes(mobileRoutes).map((item) => [item.key, item.label])).toEqual([
+      ['home-page', 'route:Home'],
+      ['id-3', 'route:Settings'],
+    ]);
+    expect(
+      createMobileHomeTabItemsFromDesktopRoutes(mobileRoutes.find((route) => route.key === 'id-3')?.children || []).map(
+        (item) => item.key,
+      ),
+    ).toEqual(['id-31']);
   });
 
   it('should provide mobile tab add menu items', () => {

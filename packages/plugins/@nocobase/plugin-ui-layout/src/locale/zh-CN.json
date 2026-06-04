@@ -65,6 +65,7 @@
   "UID": "UID",
   "UI Editor": "UI 配置",
   "UI layout": "UI 布局",
+  "Untitled": "未设置标题",
   "Updated successfully": "更新成功",
   "View": "查看",
   "When disabled, this layout will not be registered or accessible.": "关闭后，该布局不会注册到前端路由，也无法访问。",

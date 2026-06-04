@@ -26,22 +26,26 @@ import {
 } from '@ant-design/icons';
 import { css } from '@emotion/css';
 import { BaseLayoutModel } from '@nocobase/client-v2';
-import { Icon, IconPicker } from '@nocobase/client-v2/flow-compat';
+import { Icon, IconPicker, NocoBaseDesktopRouteType, type NocoBaseDesktopRoute } from '@nocobase/client-v2/flow-compat';
 import { observer } from '@nocobase/flow-engine';
+import { uid } from '@nocobase/utils/client';
 import { App, Dropdown, Form, Grid, Input, type MenuProps, Modal, Popover, QRCode, theme, Tooltip } from 'antd';
 import React, { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useOutlet } from 'react-router-dom';
 import { NAMESPACE } from '../../constants';
 import { MobileRootPageModel } from './MobilePageModels';
 
+type MobileHomeAddMenuKey = 'page' | 'link';
+
 type FakeMobileDesktopRoute = {
   key: string;
   schemaUid: string;
-  type: 'page' | 'link';
+  type: NocoBaseDesktopRouteType | MobileHomeAddMenuKey;
   label: string;
   description?: string;
   icon: ReactNode;
   sort: number;
+  hidden?: boolean;
   hideInMenu?: boolean;
   children?: FakeMobileDesktopRoute[];
 };
@@ -53,7 +57,6 @@ type MobileHomeTabItem = {
   active?: boolean;
 };
 
-type MobileHomeAddMenuKey = 'page' | 'link';
 type MobileHomeAddMenuItem = {
   key: MobileHomeAddMenuKey;
   label: string;
@@ -150,7 +153,66 @@ class MobileHomeRootPagePreviewModel extends MobileRootPageModel {
 }
 
 function getVisibleDesktopRoutes(routes: FakeMobileDesktopRoute[]) {
-  return [...routes].filter((route) => !route.hideInMenu).sort((a, b) => a.sort - b.sort);
+  return [...routes].filter((route) => !route.hidden && !route.hideInMenu).sort((a, b) => a.sort - b.sort);
+}
+
+function getAccessibleDesktopRouteKey(route: NocoBaseDesktopRoute, indexPath: number[]) {
+  const stableKey =
+    route.schemaUid ||
+    route.menuSchemaUid ||
+    route.pageSchemaUid ||
+    (typeof route.id === 'number' ? `id-${route.id}` : undefined);
+
+  return stableKey || `route-${indexPath.join('-')}`;
+}
+
+function getAccessibleDesktopRouteTitle(route: NocoBaseDesktopRoute, t: Translate) {
+  if (route.title) {
+    return t(route.title);
+  }
+
+  return route.schemaUid || route.pageSchemaUid || route.menuSchemaUid || t('Untitled');
+}
+
+function getAccessibleDesktopRouteIcon(route: NocoBaseDesktopRoute) {
+  if (route.icon) {
+    return <Icon type={route.icon} />;
+  }
+
+  if (route.type === NocoBaseDesktopRouteType.link) {
+    return <LinkOutlined />;
+  }
+
+  if (route.type === NocoBaseDesktopRouteType.group) {
+    return <AppstoreOutlined />;
+  }
+
+  return <FileTextOutlined />;
+}
+
+export function normalizeAccessibleDesktopRoutesToMobileRoutes(
+  routes: NocoBaseDesktopRoute[],
+  t: Translate,
+  parentIndexPath: number[] = [],
+): FakeMobileDesktopRoute[] {
+  return routes.map((route, index) => {
+    const indexPath = [...parentIndexPath, index];
+    const key = getAccessibleDesktopRouteKey(route, indexPath);
+    const children = normalizeAccessibleDesktopRoutesToMobileRoutes(route.children || [], t, indexPath);
+
+    return {
+      key,
+      schemaUid: route.schemaUid || route.pageSchemaUid || route.menuSchemaUid || key,
+      type: route.type || NocoBaseDesktopRouteType.flowPage,
+      label: getAccessibleDesktopRouteTitle(route, t),
+      description: route.tooltip && route.tooltip !== route.title ? t(route.tooltip) : undefined,
+      icon: getAccessibleDesktopRouteIcon(route),
+      sort: typeof route.sort === 'number' ? route.sort : index,
+      hidden: route.hidden,
+      hideInMenu: route.hideInMenu,
+      children,
+    };
+  });
 }
 
 export function createFakeMobileDesktopRoutes(t: Translate): FakeMobileDesktopRoute[] {
@@ -317,32 +379,58 @@ function getMobileTabConfigurationTitle(type: MobileHomeAddMenuKey, t: Translate
   return type === 'page' ? t('Add page') : t('Add link');
 }
 
-function getMobileTabDefaultIcon(type: MobileHomeAddMenuKey) {
-  return type === 'page' ? <FileTextOutlined /> : <LinkOutlined />;
-}
-
 function getFirstFormValidationMessage(error: unknown) {
   const firstError = (error as FormValidationError).errorFields?.[0]?.errors?.[0];
   return typeof firstError === 'string' ? firstError : undefined;
 }
 
-function createRuntimeMobileDesktopRoute(
+function createMobileDesktopRouteCreationValues(
   type: MobileHomeAddMenuKey,
-  index: number,
-  t: Translate,
   values: MobileTabConfigurationValues = {},
-): FakeMobileDesktopRoute {
-  const defaultLabel = type === 'page' ? t('Page') : t('Link');
+): { route: NocoBaseDesktopRoute; activeRouteKey: string } {
   const title = values.title?.trim();
   const icon = values.icon?.trim();
 
+  if (type === 'link') {
+    const schemaUid = uid();
+
+    return {
+      route: {
+        type: NocoBaseDesktopRouteType.link,
+        title,
+        icon,
+        schemaUid,
+        options: {
+          openInNewWindow: true,
+        },
+      },
+      activeRouteKey: schemaUid,
+    };
+  }
+
+  const pageSchemaUid = uid();
+  const menuSchemaUid = uid();
+  const tabSchemaUid = uid();
+  const tabSchemaName = uid();
+
   return {
-    key: `${type}-${index}`,
-    schemaUid: `mobile-route-${type}-${index}`,
-    type,
-    label: title || (index === 1 ? defaultLabel : `${defaultLabel} ${index}`),
-    icon: icon ? <Icon type={icon} /> : getMobileTabDefaultIcon(type),
-    sort: 100 + index,
+    route: {
+      type: NocoBaseDesktopRouteType.flowPage,
+      title,
+      icon,
+      schemaUid: pageSchemaUid,
+      menuSchemaUid,
+      enableTabs: false,
+      children: [
+        {
+          type: NocoBaseDesktopRouteType.tabs,
+          schemaUid: tabSchemaUid,
+          tabSchemaName,
+          hidden: true,
+        },
+      ],
+    },
+    activeRouteKey: pageSchemaUid,
   };
 }
 
@@ -684,21 +772,26 @@ const MobileHomePlaceholder = observer((props: { designModeEnabled: boolean; mod
   const [addTabForm] = Form.useForm<MobileTabConfigurationValues>();
   const customToken = token as typeof token & MobileLayoutThemeToken;
   const colorSettings = customToken.colorSettings || 'var(--colorSettings, #F18B62)';
-  const [runtimeDesktopRoutes, setRuntimeDesktopRoutes] = useState<FakeMobileDesktopRoute[]>([]);
+  const [accessibleDesktopRoutes, setAccessibleDesktopRoutes] = useState<NocoBaseDesktopRoute[]>(
+    () => model.flowEngine.context.routeRepository?.listAccessible?.() || [],
+  );
   const [addTabDropdownOpen, setAddTabDropdownOpen] = useState(false);
   const [configuringTabType, setConfiguringTabType] = useState<MobileHomeAddMenuKey | null>(null);
   const t = useCallback(
     (key: string) => model.flowEngine.context.t(key, { ns: [NAMESPACE, 'client'] }),
     [model.flowEngine.context],
   );
-  const fakeDesktopRoutes = useMemo(() => createFakeMobileDesktopRoutes(t), [t]);
+  const routeTitleT = useCallback(
+    (key: string) => model.flowEngine.context.t(key, { ns: ['lm-desktop-routes', NAMESPACE, 'client'] }),
+    [model.flowEngine.context],
+  );
   const addMenuItems = useMemo(() => createMobileHomeAddMenuItems(t), [t]);
   const addBlockMenuGroups = useMemo(() => createMobileAddBlockMenuItems(t), [t]);
   const desktopRoutes = useMemo(
-    () => [...fakeDesktopRoutes, ...runtimeDesktopRoutes],
-    [fakeDesktopRoutes, runtimeDesktopRoutes],
+    () => normalizeAccessibleDesktopRoutesToMobileRoutes(accessibleDesktopRoutes, routeTitleT),
+    [accessibleDesktopRoutes, routeTitleT],
   );
-  const [activeRouteKey, setActiveRouteKey] = useState(() => getVisibleDesktopRoutes(fakeDesktopRoutes)[0]?.key);
+  const [activeRouteKey, setActiveRouteKey] = useState<string | undefined>();
   const activeRoute = useMemo(() => {
     const visibleRoutes = getVisibleDesktopRoutes(desktopRoutes);
     return visibleRoutes.find((route) => route.key === activeRouteKey) || visibleRoutes[0];
@@ -708,7 +801,7 @@ const MobileHomePlaceholder = observer((props: { designModeEnabled: boolean; mod
     () => createMobileHomeTabItemsFromDesktopRoutes(desktopRoutes, activeRoute?.key),
     [activeRoute?.key, desktopRoutes],
   );
-  const tabBarColumnCount = tabItems.length + (designModeEnabled ? 1 : 0);
+  const tabBarColumnCount = Math.max(1, tabItems.length + (designModeEnabled ? 1 : 0));
   const dropdownMenuItems = useMemo<MenuProps['items']>(
     () =>
       addMenuItems.map((item) => ({
@@ -751,19 +844,27 @@ const MobileHomePlaceholder = observer((props: { designModeEnabled: boolean; mod
 
     try {
       const values = await addTabForm.validateFields();
-      const index = runtimeDesktopRoutes.filter((item) => item.type === configuringTabType).length + 1;
-      const route = createRuntimeMobileDesktopRoute(configuringTabType, index, t, values);
-      setRuntimeDesktopRoutes([...runtimeDesktopRoutes, route]);
-      setActiveRouteKey(route.key);
+      const routeRepository = model.flowEngine.context.routeRepository;
+      const creationValues = createMobileDesktopRouteCreationValues(configuringTabType, values);
+
+      if (!routeRepository?.createRoute) {
+        throw new Error('Route repository is unavailable.');
+      }
+
+      await routeRepository.createRoute(creationValues.route);
+      setActiveRouteKey(creationValues.activeRouteKey);
       setConfiguringTabType(null);
       addTabForm.resetFields();
     } catch (error) {
       const validationMessage = getFirstFormValidationMessage(error);
       if (validationMessage) {
         message.error(validationMessage);
+        return;
       }
+
+      console.error('[NocoBase] plugin-ui-layout failed to create mobile tab route.', error);
     }
-  }, [addTabForm, configuringTabType, message, runtimeDesktopRoutes, t]);
+  }, [addTabForm, configuringTabType, message, model.flowEngine.context.routeRepository]);
   const addTabModalTitle = useMemo(
     () => (configuringTabType ? getMobileTabConfigurationTitle(configuringTabType, t) : undefined),
     [configuringTabType, t],
@@ -774,6 +875,24 @@ const MobileHomePlaceholder = observer((props: { designModeEnabled: boolean; mod
       setAddTabDropdownOpen(false);
     }
   }, [designModeEnabled]);
+
+  useEffect(() => {
+    const routeRepository = model.flowEngine.context.routeRepository;
+    const syncAccessibleRoutes = () => {
+      setAccessibleDesktopRoutes(routeRepository?.listAccessible?.() || []);
+    };
+
+    syncAccessibleRoutes();
+
+    routeRepository?.subscribe(syncAccessibleRoutes);
+    routeRepository?.ensureAccessibleLoaded?.().catch((error) => {
+      console.error('[NocoBase] plugin-ui-layout failed to initialize accessible routes.', error);
+    });
+
+    return () => {
+      routeRepository?.unsubscribe(syncAccessibleRoutes);
+    };
+  }, [model.flowEngine]);
 
   const rootPageModel = useMemo(() => {
     const pageModel = new MobileHomeRootPagePreviewModel({
