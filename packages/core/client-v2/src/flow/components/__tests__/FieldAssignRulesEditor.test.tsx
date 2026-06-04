@@ -108,6 +108,54 @@ describe('FieldAssignRulesEditor', () => {
     };
   };
 
+  const createAssociationFixtureWithoutIsAssociationField = () => {
+    const profileCollection = {
+      titleField: 'name',
+      filterTargetKey: 'id',
+      getField: (name: string) => {
+        if (name === 'name') {
+          return { name: 'name', title: 'Name', interface: 'input' };
+        }
+        if (name === 'nickname') {
+          return { name: 'nickname', title: 'Nickname', interface: 'input' };
+        }
+        return null;
+      },
+      getFields: () => [
+        {
+          name: 'name',
+          title: 'Name',
+          interface: 'input',
+        },
+        {
+          name: 'nickname',
+          title: 'Nickname',
+          interface: 'input',
+        },
+      ],
+    };
+
+    const profileField: any = {
+      name: 'profile',
+      title: 'Profile',
+      type: 'belongsTo',
+      interface: 'm2o',
+      target: 'profiles',
+      targetKey: 'id',
+      targetCollection: profileCollection,
+    };
+
+    const rootCollection = {
+      getField: (name: string) => (name === 'profile' ? profileField : null),
+      getFields: () => [profileField],
+    };
+
+    return {
+      profileCollection,
+      rootCollection,
+    };
+  };
+
   const openAdvancedPanel = async () => {
     await userEvent.click(screen.getByRole('button', { name: /Advanced/i }));
     await screen.findByText('Title field');
@@ -172,6 +220,68 @@ describe('FieldAssignRulesEditor', () => {
           targetPath: 'profile',
         }),
       );
+    });
+  });
+
+  it('recognizes lightweight association fields without isAssociationField()', async () => {
+    const { rootCollection } = createAssociationFixtureWithoutIsAssociationField();
+    const value: FieldAssignRuleItem[] = [
+      {
+        key: 'rule-profile',
+        enable: true,
+        targetPath: 'profile',
+        mode: 'assign',
+      },
+    ];
+
+    const { container } = render(
+      wrap(
+        <FieldAssignRulesEditor
+          t={t}
+          fieldOptions={[]}
+          rootCollection={rootCollection}
+          value={value}
+          showCondition={false}
+          isTitleFieldCandidate={() => true}
+        />,
+      ),
+    );
+
+    await waitFor(() => {
+      const input = container.querySelector('[data-testid="mock-value-input"]');
+      expect(input?.getAttribute('data-assoc-label')).toBe('name');
+      expect(input?.getAttribute('data-assoc-value')).toBe('id');
+    });
+  });
+
+  it('resolves nested labels and item meta tree through lightweight association fields', async () => {
+    const { rootCollection } = createAssociationFixtureWithoutIsAssociationField();
+    const value: FieldAssignRuleItem[] = [
+      {
+        key: 'rule-profile-nickname',
+        enable: true,
+        targetPath: 'profile.nickname',
+        mode: 'assign',
+      },
+    ];
+
+    const { container } = render(
+      wrap(
+        <FieldAssignRulesEditor
+          t={t}
+          fieldOptions={[]}
+          rootCollection={rootCollection}
+          value={value}
+          showCondition={false}
+          isTitleFieldCandidate={() => true}
+        />,
+      ),
+    );
+
+    await waitFor(() => {
+      expect(container.textContent).toContain('Profile / Nickname');
+      const input = container.querySelector('[data-testid="mock-value-input"]');
+      expect(input?.getAttribute('data-extra')).toBe('yes');
     });
   });
 
@@ -785,7 +895,8 @@ describe('FieldAssignRulesEditor', () => {
     expect(merged.map((node) => node.name)).toEqual(['formValues', 'item', 'user']);
     expect(merged.filter((node) => node.name === 'item')).toHaveLength(1);
 
-    const itemNode = merged.find((node) => node.name === 'item')!;
+    const itemNode = merged.find((node) => node.name === 'item');
+    expect(itemNode).toBeTruthy();
     const parent = (itemNode.children as MetaTreeNode[]).find((node) => node.name === 'parentItem');
     expect(parent).toBeTruthy();
 
