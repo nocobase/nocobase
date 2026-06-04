@@ -343,6 +343,7 @@ describe('flowSurfaces dynamic capability create dry-run', () => {
       ok: true,
       capability: {
         publicType: 'dryRun',
+        readiness: 'contractDeclared',
       },
       normalizedPublicPayload: {
         publicType: 'dryRun',
