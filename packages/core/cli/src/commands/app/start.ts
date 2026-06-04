@@ -87,16 +87,12 @@ function formatLocalReadyFailure(
 export default class AppStart extends Command {
   static override hidden = false;
   static override description =
-    'Start NocoBase for the selected env. Local npm/git installs run the app command, and Docker installs recreate the saved app container.';
+    'Start NocoBase for the selected env. Local npm/git installs prepare and run the app by default, and Docker installs recreate the saved app container.';
   static override examples = [
     '<%= config.bin %> <%= command.id %>',
     '<%= config.bin %> <%= command.id %> --env local',
-    '<%= config.bin %> <%= command.id %> --env local --quickstart',
-    '<%= config.bin %> <%= command.id %> --env local --port 12000',
     '<%= config.bin %> <%= command.id %> --env local --daemon',
     '<%= config.bin %> <%= command.id %> --env local --no-daemon',
-    '<%= config.bin %> <%= command.id %> --env local --instances 2',
-    '<%= config.bin %> <%= command.id %> --env local --launch-mode pm2',
     '<%= config.bin %> <%= command.id %> --env local --verbose',
     '<%= config.bin %> <%= command.id %> --env local-docker',
   ];
@@ -111,11 +107,12 @@ export default class AppStart extends Command {
       description: 'Confirm using --env when it targets a different env than the current env',
       default: false,
     }),
-    quickstart: Flags.boolean({ description: 'Quickstart the application', required: false }),
-    port: Flags.string({
-      description: 'Port (overrides appPort from env config when set)',
-      char: 'p',
+    quickstart: Flags.boolean({
+      hidden: true,
+      description: 'Quickstart the application',
       required: false,
+      default: true,
+      allowNo: true,
     }),
     daemon: Flags.boolean({
       description: 'Run the application as a daemon (default: true; use --no-daemon to stay in the foreground)',
@@ -124,8 +121,6 @@ export default class AppStart extends Command {
       default: true,
       allowNo: true,
     }),
-    instances: Flags.integer({ description: 'Number of instances to run', char: 'i', required: false }),
-    'launch-mode': Flags.string({ description: 'Launch Mode', required: false, options: ['pm2', 'node'] }),
     verbose: Flags.boolean({
       description: 'Show raw startup output from the underlying local or Docker command',
       default: false,
@@ -134,6 +129,7 @@ export default class AppStart extends Command {
 
   public async run(): Promise<void> {
     const { flags } = await this.parse(AppStart);
+    const quickstart = flags.quickstart ?? true;
     const requestedEnv = flags.env?.trim() || undefined;
     if (requestedEnv && hasExplicitEnvSelection(this.argv)) {
       const confirmed = await ensureCrossEnvConfirmed({
@@ -176,12 +172,9 @@ export default class AppStart extends Command {
     announceTargetEnv(runtime.envName);
 
     if (runtime.kind === 'docker') {
-      const unsupportedFlags = [
-        flags.port ? '--port' : undefined,
-        daemonFlagWasProvided ? (flags.daemon ? '--daemon' : '--no-daemon') : undefined,
-        flags.instances !== undefined ? '--instances' : undefined,
-        flags['launch-mode'] ? '--launch-mode' : undefined,
-      ].filter(Boolean);
+      const unsupportedFlags = [daemonFlagWasProvided ? (flags.daemon ? '--daemon' : '--no-daemon') : undefined].filter(
+        Boolean,
+      );
 
       if (unsupportedFlags.length > 0) {
         this.error(
@@ -252,12 +245,10 @@ export default class AppStart extends Command {
 
     const npmArgs = ['start'];
 
-    if (flags.quickstart) {
+    if (quickstart) {
       npmArgs.push('--quickstart');
     }
-    if (flags.port) {
-      npmArgs.push('--port', flags.port);
-    } else if (
+    if (
       runtime.env.appPort !== undefined &&
       runtime.env.appPort !== null &&
       String(runtime.env.appPort).trim() !== ''
@@ -267,18 +258,11 @@ export default class AppStart extends Command {
     if (flags.daemon !== false) {
       npmArgs.push('--daemon');
     }
-    if (flags.instances !== undefined) {
-      npmArgs.push('--instances', flags.instances.toString());
-    }
-    if (flags['launch-mode']) {
-      npmArgs.push('--launch-mode', flags['launch-mode']);
-    }
 
     const effectivePort =
-      flags.port ||
-      (runtime.env.appPort !== undefined && runtime.env.appPort !== null
+      runtime.env.appPort !== undefined && runtime.env.appPort !== null
         ? String(runtime.env.appPort).trim()
-        : undefined);
+        : undefined;
     const appUrl = formatAppUrl(effectivePort);
     const apiBaseUrl = resolveManagedAppApiBaseUrl(runtime, {
       portOverride: effectivePort,

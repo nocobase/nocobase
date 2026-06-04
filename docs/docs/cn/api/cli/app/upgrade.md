@@ -6,7 +6,7 @@ keywords: "nb app upgrade,NocoBase CLI,升级,更新,Docker 镜像"
 
 # nb app upgrade
 
-升级指定 NocoBase 应用。CLI 会先停止当前应用，默认重新下载并替换已保存的源码或镜像，然后同步商业插件、快速启动应用，并在最后刷新 env runtime。Docker env 的启动阶段会按已保存配置重建应用容器。
+升级指定 NocoBase 应用。CLI 会先停止当前应用，默认重新下载并替换已保存的源码或镜像，然后同步商业插件、重新启动应用，并在最后刷新 env runtime。Docker env 的启动阶段会按已保存配置重建应用容器。
 
 ## 用法
 
@@ -50,7 +50,7 @@ nb app upgrade --env local-docker --skip-download
 1. `nb app stop`
 2. `nb source download --replace`
 3. `nb license plugins sync --skip-if-no-license`
-4. `nb app start --quickstart`
+4. `nb app start`
 5. 在需要时保存新的 `downloadVersion`
 6. `nb env update`
 

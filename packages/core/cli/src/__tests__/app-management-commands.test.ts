@@ -414,8 +414,6 @@ test('start enables daemon by default for npm/git envs', async () => {
     flags: {
       env: 'local',
       quickstart: true,
-      instances: 2,
-      'launch-mode': 'pm2',
     },
   });
 
@@ -442,15 +440,47 @@ test('start enables daemon by default for npm/git envs', async () => {
     '--port',
     '13000',
     '--daemon',
-    '--instances',
-    '2',
-    '--launch-mode',
-    'pm2',
   ]);
   expect(mocks.runLocalNocoBaseCommand.mock.calls[1]?.[2]).toEqual({
     env: MANAGED_APP_PRODUCTION_ENV,
     stdio: 'ignore',
   });
+});
+
+test('start keeps quickstart enabled by default as a hidden compatibility flag', async () => {
+  const { default: Start } = await import('../commands/app/start.js');
+
+  expect(Start.flags.quickstart.hidden).toBe(true);
+  expect(Start.flags.quickstart.default).toBe(true);
+  expect(Start.flags.quickstart.allowNo).toBe(true);
+  expect('port' in Start.flags).toBe(false);
+  expect('instances' in Start.flags).toBe(false);
+  expect('launch-mode' in Start.flags).toBe(false);
+});
+
+test('start allows opting out of quickstart explicitly', async () => {
+  const { default: Start } = await import('../commands/app/start.js');
+  mocks.resolveManagedAppRuntime.mockResolvedValue({
+    kind: 'local',
+    envName: 'local',
+    source: 'npm',
+    projectRoot: '/tmp/nocobase',
+    env: {
+      appPort: 13000,
+      envVars: { APP_PORT: '13000' },
+    },
+  });
+
+  const command = createCommandHarness({
+    flags: {
+      env: 'local',
+      quickstart: false,
+    },
+  });
+
+  await Start.prototype.run.call(command);
+
+  expect(mocks.runLocalNocoBaseCommand.mock.calls[1]?.[1]).toEqual(['start', '--port', '13000', '--daemon']);
 });
 
 test('start explains when the requested env does not exist', async () => {
@@ -565,7 +595,7 @@ test('start supports --no-daemon for npm/git envs', async () => {
     env: MANAGED_APP_PRODUCTION_ENV,
     stdio: 'ignore',
   });
-  expect(mocks.runLocalNocoBaseCommand.mock.calls[1]?.[1]).toEqual(['start', '--port', '13000']);
+  expect(mocks.runLocalNocoBaseCommand.mock.calls[1]?.[1]).toEqual(['start', '--quickstart', '--port', '13000']);
   expect(mocks.runLocalNocoBaseCommand.mock.calls[1]?.[2]).toEqual({
     env: MANAGED_APP_PRODUCTION_ENV,
     stdio: 'ignore',
@@ -703,7 +733,13 @@ test('start restores the built-in database before launching the app', async () =
   expect(mocks.announceTargetEnv).toHaveBeenCalledWith('local');
   expect(mocks.startDockerContainer.mock.calls[0]).toEqual(['nb-demo-local-postgres', { stdio: 'ignore' }]);
   expect(mocks.runLocalNocoBaseCommand.mock.calls[0]?.[1]).toEqual(['postinstall']);
-  expect(mocks.runLocalNocoBaseCommand.mock.calls[1]?.[1]).toEqual(['start', '--port', '13000', '--daemon']);
+  expect(mocks.runLocalNocoBaseCommand.mock.calls[1]?.[1]).toEqual([
+    'start',
+    '--quickstart',
+    '--port',
+    '13000',
+    '--daemon',
+  ]);
 });
 
 test('start restores the built-in database with docker.container-prefix instead of workspaceName', async () => {
@@ -746,7 +782,13 @@ test('start restores the built-in database with docker.container-prefix instead 
   expect(mocks.announceTargetEnv).toHaveBeenCalledWith('app528');
   expect(mocks.startDockerContainer.mock.calls[0]).toEqual(['nb-team-app528-postgres', { stdio: 'ignore' }]);
   expect(mocks.runLocalNocoBaseCommand.mock.calls[0]?.[1]).toEqual(['postinstall']);
-  expect(mocks.runLocalNocoBaseCommand.mock.calls[1]?.[1]).toEqual(['start', '--port', '13000', '--daemon']);
+  expect(mocks.runLocalNocoBaseCommand.mock.calls[1]?.[1]).toEqual([
+    'start',
+    '--quickstart',
+    '--port',
+    '13000',
+    '--daemon',
+  ]);
 });
 
 test('start restores saved npm/git source files before launching when the app root is missing', async () => {
@@ -1362,7 +1404,7 @@ test('stop allows explicit cross-env execution in non-interactive mode when --ye
   ]);
 });
 
-test('restart runs stop before start and forwards startup flags', async () => {
+test('restart runs stop before start and forwards supported startup flags', async () => {
   const { default: Restart } = await import('../commands/app/restart.js');
   mocks.resolveManagedAppRuntime.mockResolvedValue({
     kind: 'local',
@@ -1380,10 +1422,7 @@ test('restart runs stop before start and forwards startup flags', async () => {
       flags: {
         env: 'local',
         quickstart: true,
-        port: '14000',
         daemon: false,
-        instances: 2,
-        'launch-mode': 'pm2',
         verbose: true,
       },
     },
@@ -1395,22 +1434,48 @@ test('restart runs stop before start and forwards startup flags', async () => {
 
   expect(runCommand.mock.calls).toEqual([
     ['app:stop', ['--env', 'local', '--verbose']],
-    [
-      'app:start',
-      [
-        '--env',
-        'local',
-        '--verbose',
-        '--quickstart',
-        '--port',
-        '14000',
-        '--no-daemon',
-        '--instances',
-        '2',
-        '--launch-mode',
-        'pm2',
-      ],
-    ],
+    ['app:start', ['--env', 'local', '--verbose', '--quickstart', '--no-daemon']],
+  ]);
+});
+
+test('restart keeps quickstart enabled by default as a hidden compatibility flag', async () => {
+  const { default: Restart } = await import('../commands/app/restart.js');
+
+  expect(Restart.flags.quickstart.hidden).toBe(true);
+  expect(Restart.flags.quickstart.default).toBe(true);
+  expect(Restart.flags.quickstart.allowNo).toBe(true);
+  expect('port' in Restart.flags).toBe(false);
+  expect('instances' in Restart.flags).toBe(false);
+  expect('launch-mode' in Restart.flags).toBe(false);
+});
+
+test('restart forwards quickstart by default for local envs', async () => {
+  const { default: Restart } = await import('../commands/app/restart.js');
+  mocks.resolveManagedAppRuntime.mockResolvedValue({
+    kind: 'local',
+    envName: 'local',
+    source: 'npm',
+    projectRoot: '/tmp/nocobase',
+    env: {
+      appPort: 13000,
+      envVars: { APP_PORT: '13000' },
+    },
+  });
+  const runCommand = vi.fn(async () => undefined);
+  const command = createCommandHarness(
+    {
+      flags: {
+        env: 'local',
+      },
+    },
+    runCommand,
+  );
+
+  await Restart.prototype.run.call(command);
+
+  expect(runCommand.mock.calls).toEqual([
+    ['app:stop', ['--env', 'local']],
+    ['app:start', ['--env', 'local', '--quickstart']],
   ]);
 });
 
@@ -1432,6 +1497,7 @@ test('restart does not forward default daemon flag unless the user provides it',
       flags: {
         env: 'docker-local',
         daemon: true,
+        quickstart: false,
       },
     },
     runCommand,
@@ -3627,7 +3693,9 @@ test('down --all routes to app destroy and maps legacy confirmation flags to for
   await Down.prototype.run.call(command);
 
   expect(runCommand.mock.calls).toEqual([['app:destroy', ['--env', 'docker-local', '--verbose', '--force']]]);
-  expect(mocks.printWarning).toHaveBeenCalledWith('`nb app down --all` is deprecated. Use `nb app destroy` instead.');
+  expect(mocks.printWarning).toHaveBeenCalledWith(
+    '`nb app down --all` is deprecated. Use `nb env remove <name> --purge` instead.',
+  );
 });
 
 test('down stays available as a hidden compatibility alias', async () => {
@@ -3635,6 +3703,13 @@ test('down stays available as a hidden compatibility alias', async () => {
 
   expect(Down.hidden).toBe(true);
   expect(Down.description).toBeDefined();
+});
+
+test('destroy stays available as a hidden compatibility alias', async () => {
+  const { default: Destroy } = await import('../commands/app/destroy.js');
+
+  expect(Destroy.hidden).toBe(true);
+  expect(Destroy.description).toContain('nb env remove <name> --purge');
 });
 
 test('upgrade refreshes local npm envs, then restarts them with quickstart', async () => {

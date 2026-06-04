@@ -6,7 +6,7 @@ keywords: "nb app upgrade,NocoBase CLI,actualización,actualizar,imagen Docker"
 
 # nb app upgrade
 
-Actualiza la aplicación NocoBase indicada. La CLI detiene primero la aplicación actual, reemplaza por defecto el código fuente o la imagen guardados, sincroniza los plugins comerciales, vuelve a iniciar la aplicación con quickstart y al final actualiza el runtime del env. Los env de Docker vuelven a crear el contenedor de la aplicación a partir de la configuración guardada del env durante el arranque.
+Actualiza la aplicación NocoBase indicada. La CLI detiene primero la aplicación actual, reemplaza por defecto el código fuente o la imagen guardados, sincroniza los plugins comerciales, vuelve a iniciar la aplicación y al final actualiza el runtime del env. Los env de Docker vuelven a crear el contenedor de la aplicación a partir de la configuración guardada del env durante el arranque.
 
 ## Uso
 
@@ -48,7 +48,7 @@ De forma predeterminada, `nb app upgrade` ejecuta estos pasos:
 1. `nb app stop`
 2. `nb source download --replace`
 3. `nb license plugins sync --skip-if-no-license`
-4. `nb app start --quickstart`
+4. `nb app start`
 5. Guarda la nueva `downloadVersion` cuando haga falta
 6. `nb env update`
 

@@ -41,16 +41,12 @@ function formatDockerRestartFailure(envName: string, message: string): string {
 export default class AppRestart extends Command {
   static override hidden = false;
   static override description =
-    'Restart NocoBase for the selected env. Local npm/git installs stop and start the app again, and Docker installs recreate the saved app container so saved env changes can take effect.';
+    'Restart NocoBase for the selected env. Local npm/git installs stop and prepare the app again by default, and Docker installs recreate the saved app container so saved env changes can take effect.';
   static override examples = [
     '<%= config.bin %> <%= command.id %>',
     '<%= config.bin %> <%= command.id %> --env local',
-    '<%= config.bin %> <%= command.id %> --env local --quickstart',
-    '<%= config.bin %> <%= command.id %> --env local --port 12000',
     '<%= config.bin %> <%= command.id %> --env local --daemon',
     '<%= config.bin %> <%= command.id %> --env local --no-daemon',
-    '<%= config.bin %> <%= command.id %> --env local --instances 2',
-    '<%= config.bin %> <%= command.id %> --env local --launch-mode pm2',
     '<%= config.bin %> <%= command.id %> --env local --verbose',
     '<%= config.bin %> <%= command.id %> --env local-docker',
   ];
@@ -65,11 +61,12 @@ export default class AppRestart extends Command {
       description: 'Confirm using --env when it targets a different env than the current env',
       default: false,
     }),
-    quickstart: Flags.boolean({ description: 'Quickstart the application after stopping it', required: false }),
-    port: Flags.string({
-      description: 'Port (overrides appPort from env config when set)',
-      char: 'p',
+    quickstart: Flags.boolean({
+      hidden: true,
+      description: 'Quickstart the application after stopping it',
       required: false,
+      default: true,
+      allowNo: true,
     }),
     daemon: Flags.boolean({
       description:
@@ -79,12 +76,6 @@ export default class AppRestart extends Command {
       default: true,
       allowNo: true,
     }),
-    instances: Flags.integer({
-      description: 'Number of instances to run after stopping it',
-      char: 'i',
-      required: false,
-    }),
-    'launch-mode': Flags.string({ description: 'Launch Mode', required: false, options: ['pm2', 'node'] }),
     verbose: Flags.boolean({
       description: 'Show raw shutdown/startup output from the underlying local or Docker command',
       default: false,
@@ -93,6 +84,7 @@ export default class AppRestart extends Command {
 
   public async run(): Promise<void> {
     const { flags } = await this.parse(AppRestart);
+    const quickstart = flags.quickstart ?? true;
     const requestedEnv = flags.env?.trim() || undefined;
     const explicitEnvSelection = Boolean(requestedEnv && hasExplicitEnvSelection(this.argv));
     if (explicitEnvSelection) {
@@ -176,15 +168,12 @@ export default class AppRestart extends Command {
     await this.config.runCommand('app:stop', stopArgv);
 
     const startArgv = [...stopArgv];
-    if (flags.quickstart) {
+    if (quickstart) {
       startArgv.push('--quickstart');
     }
-    pushFlag(startArgv, '--port', flags.port);
     if (daemonFlagWasProvided) {
       startArgv.push(flags.daemon === false ? '--no-daemon' : '--daemon');
     }
-    pushFlag(startArgv, '--instances', flags.instances);
-    pushFlag(startArgv, '--launch-mode', flags['launch-mode']);
 
     await this.config.runCommand('app:start', startArgv);
   }

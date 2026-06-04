@@ -6,7 +6,7 @@ keywords: "nb app upgrade,NocoBase CLI,Nâng cấp,Cập nhật,Docker image"
 
 # nb app upgrade
 
-Nâng cấp ứng dụng NocoBase được chọn. CLI sẽ dừng ứng dụng hiện tại trước, mặc định thay source code hoặc image đã lưu, đồng bộ plugin thương mại, khởi động lại ứng dụng bằng quickstart và làm mới runtime của env ở bước cuối. Env Docker sẽ tạo lại container ứng dụng từ cấu hình env đã lưu trong lúc khởi động.
+Nâng cấp ứng dụng NocoBase được chọn. CLI sẽ dừng ứng dụng hiện tại trước, mặc định thay source code hoặc image đã lưu, đồng bộ plugin thương mại, khởi động lại ứng dụng và làm mới runtime của env ở bước cuối. Env Docker sẽ tạo lại container ứng dụng từ cấu hình env đã lưu trong lúc khởi động.
 
 ## Cách dùng
 
@@ -48,7 +48,7 @@ Theo mặc định, `nb app upgrade` sẽ chạy các bước sau:
 1. `nb app stop`
 2. `nb source download --replace`
 3. `nb license plugins sync --skip-if-no-license`
-4. `nb app start --quickstart`
+4. `nb app start`
 5. Lưu `downloadVersion` mới khi cần
 6. `nb env update`
 
