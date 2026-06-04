@@ -2172,10 +2172,12 @@ export class FlowSurfacesService {
   }
 
   private async collectDynamicBlockCapabilities(enabledPackages: ReadonlySet<string>) {
+    const capabilityPolicyConfig = readFlowSurfaceCapabilityPolicyConfigFromPluginOptions(this.plugin.options);
     return (
       await collectNormalizedProviderCapabilities({
         providerRegistry: this.capabilityProviderRegistry,
         enabledPackages,
+        providerTimeoutMs: capabilityPolicyConfig.providerTimeoutMs,
       })
     ).filter((item) => item.publicItem.kind === 'block');
   }
@@ -2208,9 +2210,11 @@ export class FlowSurfacesService {
     kind: 'block' | 'action' | 'field';
     enabledPackages: ReadonlySet<string>;
   }) {
+    const capabilityPolicyConfig = readFlowSurfaceCapabilityPolicyConfigFromPluginOptions(this.plugin.options);
     const items = await collectProviderCatalogItems({
       providerRegistry: this.capabilityProviderRegistry,
       enabledPackages: input.enabledPackages,
+      providerTimeoutMs: capabilityPolicyConfig.providerTimeoutMs,
     });
     return items.filter((item) => item.kind === input.kind);
   }
@@ -9205,6 +9209,7 @@ export class FlowSurfacesService {
       rawPublicPayload: input.values,
       enabledPackages: input.enabledPackages,
       providerRegistry: this.capabilityProviderRegistry,
+      providerTimeoutMs: readFlowSurfaceCapabilityPolicyConfigFromPluginOptions(this.plugin.options).providerTimeoutMs,
       actionName,
     });
     const tree = assignClientKeysToUids(_.cloneDeep(dynamicCreate.node), {});

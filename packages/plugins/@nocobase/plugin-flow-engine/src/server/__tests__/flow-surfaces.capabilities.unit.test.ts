@@ -28,11 +28,25 @@ import type {
   FlowSurfaceCapabilityKind,
   FlowSurfaceCapabilityManifestItem,
   FlowSurfaceCapabilityWarning,
+  FlowSurfaceCatalogItem,
   FlowSurfaceCatalogResponse,
   FlowSurfaceCatalogValues,
 } from '../flow-surfaces/types';
 
 describe('flowSurfaces capabilities projection', () => {
+  type ProviderCatalogItemsService = {
+    buildProviderCatalogItems(input: {
+      kind: 'block' | 'action' | 'field';
+      enabledPackages: ReadonlySet<string>;
+    }): Promise<FlowSurfaceCatalogItem[]>;
+  };
+  type DynamicBlockCapabilityService = {
+    resolveDynamicBlockCapability(
+      publicType: string,
+      enabledPackages: ReadonlySet<string>,
+    ): Promise<{ publicItem: { publicType: string } } | null>;
+  };
+
   function createProviderRegistry(providers: FlowSurfaceCapabilitiesProvider[]) {
     return {
       listProviders: () => providers,
@@ -980,6 +994,52 @@ describe('flowSurfaces capabilities projection', () => {
       extractorSnapshotDir: 'storage/custom-flow-surfaces',
       diagnosticsEnabled: false,
     });
+  });
+
+  it('should apply provider timeout config when building service provider catalog items', async () => {
+    const hangingProvider: FlowSurfaceCapabilitiesProvider = {
+      ownerPlugin: '@nocobase/plugin-hanging',
+      getCapabilities: () => new Promise<FlowSurfaceCapabilityManifestItem[]>((_resolve) => undefined),
+    };
+    const service = new FlowSurfacesService({
+      options: {
+        flowSurfaceCapabilities: {
+          providerTimeoutMs: 5,
+        },
+      },
+      flowSurfaceCapabilityProviders: createProviderRegistry([hangingProvider, createGanttProvider()]),
+    } as unknown as ConstructorParameters<typeof FlowSurfacesService>[0]);
+    const accessor = service as unknown as ProviderCatalogItemsService;
+
+    const items = await accessor.buildProviderCatalogItems({
+      kind: 'block',
+      enabledPackages: new Set(['@nocobase/plugin-hanging', '@nocobase/plugin-gantt']),
+    });
+
+    expect(items.map((item) => item.publicType)).toEqual(['gantt']);
+  });
+
+  it('should apply provider timeout config when resolving service dynamic block capabilities', async () => {
+    const hangingProvider: FlowSurfaceCapabilitiesProvider = {
+      ownerPlugin: '@nocobase/plugin-hanging',
+      getCapabilities: () => new Promise<FlowSurfaceCapabilityManifestItem[]>((_resolve) => undefined),
+    };
+    const service = new FlowSurfacesService({
+      options: {
+        flowSurfaceCapabilities: {
+          providerTimeoutMs: 5,
+        },
+      },
+      flowSurfaceCapabilityProviders: createProviderRegistry([hangingProvider, createGanttProvider()]),
+    } as unknown as ConstructorParameters<typeof FlowSurfacesService>[0]);
+    const accessor = service as unknown as DynamicBlockCapabilityService;
+
+    const capability = await accessor.resolveDynamicBlockCapability(
+      'gantt',
+      new Set(['@nocobase/plugin-hanging', '@nocobase/plugin-gantt']),
+    );
+
+    expect(capability?.publicItem.publicType).toBe('gantt');
   });
 
   it('should project provider capabilities as read-only when policy is discoveryOnly', async () => {
