@@ -1414,6 +1414,51 @@ describe('flowSurfaces capabilities projection', () => {
     ]);
   });
 
+  it('should keep provider capability details readable but read-only under discoveryOnly', async () => {
+    const response = await buildFlowSurfaceDescribeCapabilityResponse(
+      {
+        publicType: 'gantt',
+        expand: ['item.settings'],
+      },
+      {
+        enabledPackages: new Set(['@nocobase/plugin-gantt']),
+        providerRegistry: createProviderRegistry([createGanttProvider()]),
+        capabilityPolicyConfig: {
+          writePolicy: {
+            mode: 'discoveryOnly',
+          },
+        },
+        catalog: createCatalogRecorder().catalog,
+        generatedAt: '2026-06-04T00:00:00.000Z',
+      },
+    );
+
+    expect(response.data).toMatchObject({
+      publicType: 'gantt',
+      origin: 'canaryOverlay',
+      supportLevel: 'readback-only',
+      readiness: 'blocked',
+      availability: expect.objectContaining({
+        create: expect.objectContaining({
+          supported: false,
+          reasonCode: 'contract-not-verified',
+          reasonSource: 'registry',
+        }),
+      }),
+      initParamsSchema: {
+        required: ['collectionName'],
+      },
+      settingsSchema: {
+        properties: {
+          startField: {
+            type: 'string',
+          },
+        },
+      },
+    });
+    expect(JSON.stringify(response.data)).not.toContain('GanttBlockModel');
+  });
+
   it('should let manifestOnly owner allowlists roll back one plugin capability writes', async () => {
     const response = await buildFlowSurfaceCapabilitiesResponse(
       {
