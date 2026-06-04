@@ -250,6 +250,43 @@ describe('workflow > Plugin', () => {
 
   describe('dispatcher', () => {
     it.skipIf(process.env['DB_DIALECT'] === 'sqlite')(
+      'should acquire pending execution only once under concurrent dispatch',
+      async () => {
+        const w1 = await WorkflowModel.create({
+          enabled: true,
+          type: 'asyncTrigger',
+        });
+
+        const e1 = await w1.createExecution({
+          key: w1.key,
+          context: {},
+          dispatched: false,
+          status: EXECUTION_STATUS.QUEUEING,
+        });
+        const sameExecution = (await db.getRepository('executions').findOne({
+          filterByTk: e1.id,
+        })) as ExecutionModel;
+
+        type PendingDispatcher = {
+          acquirePendingExecution(execution: ExecutionModel): Promise<ExecutionModel | null>;
+        };
+        const dispatcher = (plugin as unknown as { dispatcher: PendingDispatcher }).dispatcher;
+
+        const acquired = await Promise.all([
+          dispatcher.acquirePendingExecution(e1),
+          dispatcher.acquirePendingExecution(sameExecution),
+        ]);
+
+        const acquiredExecutions = acquired.filter((execution): execution is ExecutionModel => Boolean(execution));
+        expect(acquiredExecutions.map((execution) => execution.id)).toEqual([e1.id]);
+
+        await e1.reload();
+        expect(e1.dispatched).toBe(true);
+        expect(e1.status).toBe(EXECUTION_STATUS.STARTED);
+      },
+    );
+
+    it.skipIf(process.env['DB_DIALECT'] === 'sqlite')(
       'should acquire queueing execution only once under concurrent dispatch',
       async () => {
         const w1 = await WorkflowModel.create({

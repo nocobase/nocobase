@@ -19,8 +19,8 @@ import type { ExecutionModel, JobModel, WorkflowModel } from './types';
 import type PluginWorkflowServer from './Plugin';
 import { WORKER_JOB_WORKFLOW_PROCESS } from './Plugin';
 
-const QUEUEING_EXECUTION_ACQUIRE_MAX_ATTEMPTS = 5;
-const QUEUEING_EXECUTION_ACQUIRE_RETRY_DELAY_MS = 50;
+const EXECUTION_ACQUIRE_MAX_ATTEMPTS = 5;
+const EXECUTION_ACQUIRE_RETRY_DELAY_MS = 50;
 
 type Pending = {
   execution: ExecutionModel;
@@ -414,27 +414,49 @@ export default class Dispatcher {
     const logger = this.plugin.getLogger(execution.workflowId);
     const isolationLevel =
       this.plugin.db.options.dialect === 'sqlite' ? [][0] : Transaction.ISOLATION_LEVELS.REPEATABLE_READ;
-    let fetched: ExecutionModel | null = execution;
+    let fetched: ExecutionModel | null = null;
     try {
-      await this.plugin.db.sequelize.transaction({ isolationLevel }, async (transaction) => {
-        const ExecutionModelClass = this.plugin.db.getModel('executions');
-        const [affected] = await ExecutionModelClass.update(
-          { dispatched: true, status: EXECUTION_STATUS.STARTED },
-          {
-            where: {
-              id: execution.id,
-              dispatched: false,
-            },
-            transaction,
-          },
-        );
-        if (!affected) {
-          fetched = null;
-          return;
+      for (let attempt = 1; !fetched && attempt <= EXECUTION_ACQUIRE_MAX_ATTEMPTS; attempt++) {
+        let shouldRetry = false;
+        try {
+          await this.plugin.db.sequelize.transaction({ isolationLevel }, async (transaction) => {
+            const ExecutionModelClass = this.plugin.db.getModel('executions');
+            const [affected] = await ExecutionModelClass.update(
+              { dispatched: true, status: EXECUTION_STATUS.STARTED },
+              {
+                where: {
+                  id: execution.id,
+                  dispatched: false,
+                },
+                transaction,
+              },
+            );
+            if (!affected) {
+              return;
+            }
+            await execution.reload({ transaction });
+            fetched = execution;
+          });
+        } catch (error) {
+          if (!this.isConcurrentAcquireError(error)) {
+            throw error;
+          }
+          shouldRetry = true;
+          logger.warn(`acquiring pending execution (${execution.id}) conflicted with another worker, retrying`, {
+            error,
+          });
         }
-        await execution.reload({ transaction });
-      });
+        if (!shouldRetry) {
+          break;
+        }
+        if (attempt >= EXECUTION_ACQUIRE_MAX_ATTEMPTS) {
+          logger.warn(`acquiring pending execution (${execution.id}) reached max retry attempts`);
+          break;
+        }
+        await new Promise((resolve) => setTimeout(resolve, EXECUTION_ACQUIRE_RETRY_DELAY_MS * attempt));
+      }
     } catch (error) {
+      fetched = null;
       logger.error(`acquiring pending execution failed: ${error.message}`, { error });
     }
     return fetched;
@@ -445,7 +467,7 @@ export default class Dispatcher {
       this.plugin.db.options.dialect === 'sqlite' ? [][0] : Transaction.ISOLATION_LEVELS.REPEATABLE_READ;
     let fetched: ExecutionModel | null = null;
     try {
-      for (let attempt = 1; !fetched && attempt <= QUEUEING_EXECUTION_ACQUIRE_MAX_ATTEMPTS; attempt++) {
+      for (let attempt = 1; !fetched && attempt <= EXECUTION_ACQUIRE_MAX_ATTEMPTS; attempt++) {
         let shouldRetry = false;
         try {
           await this.plugin.db.sequelize.transaction(
@@ -506,13 +528,13 @@ export default class Dispatcher {
         if (!shouldRetry) {
           break;
         }
-        if (attempt >= QUEUEING_EXECUTION_ACQUIRE_MAX_ATTEMPTS) {
+        if (attempt >= EXECUTION_ACQUIRE_MAX_ATTEMPTS) {
           this.plugin
             .getLogger('dispatcher')
             .warn(`acquiring execution reached max retry attempts, will retry on next dispatch`);
           break;
         }
-        await new Promise((resolve) => setTimeout(resolve, QUEUEING_EXECUTION_ACQUIRE_RETRY_DELAY_MS * attempt));
+        await new Promise((resolve) => setTimeout(resolve, EXECUTION_ACQUIRE_RETRY_DELAY_MS * attempt));
       }
     } catch (error) {
       this.plugin.getLogger('dispatcher').error(`fetching execution from db failed: ${error.message}`, { error });
