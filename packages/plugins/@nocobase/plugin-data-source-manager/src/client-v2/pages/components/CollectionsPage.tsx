@@ -69,7 +69,7 @@ import {
   type CollectionTemplateOptions,
   PluginDataSourceManagerClientV2,
 } from '../../plugin';
-import { compileLegacyTemplate } from '../../utils/compileLegacyTemplate';
+import { compileLegacyTemplate, preferLegacyTemplateTitle } from '../../utils/compileLegacyTemplate';
 import { getCollectionFieldActionUrl } from './collectionFieldApi';
 import FieldsPage from './FieldsPage';
 
@@ -552,7 +552,7 @@ function getPresetFieldName(field: CollectionPresetFieldOptions) {
   return field.name || field.value.name;
 }
 
-function getPresetFieldRows(
+export function getPresetFieldRows(
   presetFields: CollectionPresetFieldOptions[],
   fieldInterfaceManager?: { getFieldInterface?: (name: string) => { title?: React.ReactNode } | undefined },
 ): PresetFieldRow[] {
@@ -560,10 +560,13 @@ function getPresetFieldRows(
     const fieldInterface = field.value.interface
       ? fieldInterfaceManager?.getFieldInterface?.(field.value.interface)
       : undefined;
+    const templateTitle = field.value.uiSchema?.title || fieldInterface?.title;
+    const fieldTitle = field.field || field.value.uiSchema?.title || field.value.name;
+    const interfaceLabel = field.interfaceLabel || fieldInterface?.title || field.value.interface || field.value.type;
     return {
       name: getPresetFieldName(field),
-      field: field.field || field.value.uiSchema?.title || field.value.name,
-      interfaceLabel: field.interfaceLabel || fieldInterface?.title || field.value.interface || field.value.type,
+      field: preferLegacyTemplateTitle(fieldTitle, templateTitle),
+      interfaceLabel: preferLegacyTemplateTitle(interfaceLabel, fieldInterface?.title),
       description: field.description,
     };
   });
