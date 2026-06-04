@@ -1665,6 +1665,54 @@ describe('flowSurfaces capabilities projection', () => {
     expect(JSON.stringify(response.data[0])).not.toContain('GanttBlockModel');
   });
 
+  it('should project verifiedAuto admission through describeCapability without leaking evidence', async () => {
+    const response = await buildFlowSurfaceDescribeCapabilityResponse(
+      {
+        publicType: 'pluginGantt.gantt',
+        expand: ['item.warnings'],
+      },
+      {
+        enabledPackages: new Set(['@nocobase/plugin-gantt']),
+        autoSnapshots: [createGanttAutoSnapshot()],
+        admissionReports: [createVerifiedAutoAdmissionReport()],
+        capabilityPolicyConfig: {
+          writePolicy: {
+            mode: 'verifiedAuto',
+            allowedOwners: ['@nocobase/plugin-gantt'],
+            allowedPublicTypes: ['pluginGantt.gantt'],
+          },
+        },
+        catalog: createCatalogRecorder().catalog,
+        generatedAt: '2026-06-04T00:00:00.000Z',
+      },
+    );
+
+    expect(response.meta.targetHintUsed).toBe(false);
+    expect(response.data).toMatchObject({
+      publicType: 'pluginGantt.gantt',
+      origin: 'autoSnapshot',
+      supportLevel: 'create-only',
+      readiness: 'createEnabled',
+      availability: expect.objectContaining({
+        create: expect.objectContaining({
+          supported: true,
+        }),
+      }),
+    });
+    expect(response.data.warnings || []).not.toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          code: 'auto-discovered-readonly',
+        }),
+      ]),
+    );
+    const serialized = JSON.stringify(response.data);
+    expect(serialized).not.toContain('snapshot-source-hash');
+    expect(serialized).not.toContain('manifest-hash');
+    expect(serialized).not.toContain('fixture-hash');
+    expect(serialized).not.toContain('GanttBlockModel');
+  });
+
   it('should keep verifiedAuto auto snapshots read-only when admission evidence is stale', async () => {
     const response = await buildFlowSurfaceCapabilitiesResponse(
       {
