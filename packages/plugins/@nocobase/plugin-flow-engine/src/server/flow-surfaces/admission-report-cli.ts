@@ -1,0 +1,592 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
+import type { Application, Plugin } from '@nocobase/server';
+import { PluginManager } from '@nocobase/server';
+import {
+  buildFlowSurfaceCapabilityAdmissionReport,
+  getFlowSurfaceCapabilityAdmissionReportStorageDir,
+  isFlowSurfaceCapabilityAdmissionReport,
+  writeFlowSurfaceCapabilityAdmissionReport,
+  type FlowSurfaceAdmissionCheck,
+  type FlowSurfaceCapabilityAdmissionRecord,
+  type FlowSurfaceCapabilityAdmissionReport,
+} from './admission-report';
+import { FlowSurfacesService } from './service';
+import type {
+  FlowSurfaceCapabilitiesResponse,
+  FlowSurfaceCapabilityReadiness,
+  FlowSurfacePublicCapabilityItem,
+  FlowSurfaceReasonCode,
+} from './types';
+
+export type FlowSurfaceCapabilityAdmissionCliTarget = {
+  plugin: string;
+  publicType?: string;
+};
+
+export type FlowSurfaceCapabilityAdmissionCliOptions = {
+  app?: Application;
+  dryRun?: boolean;
+  enabledPackages?: ReadonlySet<string>;
+  generatedAt?: string;
+  outDir?: string;
+  verifyCapability?: FlowSurfaceCapabilityAdmissionCliVerifier;
+};
+
+export type FlowSurfaceCapabilityAdmissionCliVerifier = (
+  target: FlowSurfaceCapabilityAdmissionCliTarget,
+  options: FlowSurfaceCapabilityAdmissionCliVerifierOptions,
+) => Promise<FlowSurfaceCapabilityAdmissionReport>;
+
+export type FlowSurfaceCapabilityAdmissionCliVerifierOptions = {
+  app?: Application;
+  enabledPackages?: ReadonlySet<string>;
+  generatedAt?: string;
+};
+
+export type FlowSurfaceCapabilityAdmissionCliResult = {
+  ok: boolean;
+  plugin: string;
+  publicType?: string;
+  reportPath?: string;
+  recordCount: number;
+  readinessCounts: Partial<Record<FlowSurfaceCapabilityReadiness, number>>;
+  errors?: FlowSurfaceCapabilityAdmissionCliError[];
+};
+
+export type FlowSurfaceCapabilityAdmissionCliSummary = {
+  ok: boolean;
+  dryRun: boolean;
+  results: FlowSurfaceCapabilityAdmissionCliResult[];
+  exitCode: 0 | 1;
+};
+
+export type FlowSurfaceCapabilityAdmissionCliError = {
+  code: string;
+  message: string;
+};
+
+type FlowSurfaceCapabilityAdmissionCliCommandOptions = {
+  plugin?: string;
+  publicType?: string;
+  allEnabled?: boolean;
+  dryRun?: boolean;
+  json?: boolean;
+  out?: string;
+};
+
+type BuildFlowSurfaceCapabilityAdmissionReportFromCapabilitiesInput = {
+  plugin: string;
+  generatedAt?: string;
+  capabilities: FlowSurfaceCapabilitiesResponse;
+};
+
+const FLOW_SURFACE_CAPABILITY_ADMISSION_READINESS: FlowSurfaceCapabilityReadiness[] = [
+  'discovered',
+  'readbackVerified',
+  'contractDeclared',
+  'createDryRunPassed',
+  'createEnabled',
+  'blocked',
+];
+
+export async function runFlowSurfaceCapabilityAdmissionCli(
+  targets: FlowSurfaceCapabilityAdmissionCliTarget[],
+  options: FlowSurfaceCapabilityAdmissionCliOptions = {},
+): Promise<FlowSurfaceCapabilityAdmissionCliSummary> {
+  const verifyCapability = options.verifyCapability || verifyFlowSurfaceCapabilityAdmission;
+  const results: FlowSurfaceCapabilityAdmissionCliResult[] = [];
+
+  for (const target of targets) {
+    let report: FlowSurfaceCapabilityAdmissionReport;
+    try {
+      report = await verifyCapability(target, {
+        app: options.app,
+        enabledPackages: options.enabledPackages,
+        generatedAt: options.generatedAt,
+      });
+      assertFlowSurfaceCapabilityAdmissionReportMatchesTarget(report, target);
+    } catch (error) {
+      results.push({
+        ok: false,
+        plugin: target.plugin,
+        ...(target.publicType ? { publicType: target.publicType } : {}),
+        recordCount: 0,
+        readinessCounts: {},
+        errors: [toFlowSurfaceCapabilityAdmissionCliError(error)],
+      });
+      continue;
+    }
+
+    const errors: FlowSurfaceCapabilityAdmissionCliError[] = [];
+    let reportPath: string | undefined;
+    if (!options.dryRun) {
+      try {
+        reportPath = await writeFlowSurfaceCapabilityAdmissionReport({
+          report,
+          outDir: options.outDir || getFlowSurfaceCapabilityAdmissionReportStorageDir(),
+        });
+      } catch (error) {
+        errors.push(toFlowSurfaceCapabilityAdmissionCliError(error));
+      }
+    }
+
+    results.push({
+      ok: errors.length === 0,
+      plugin: report.plugin || target.plugin,
+      ...(target.publicType ? { publicType: target.publicType } : {}),
+      ...(reportPath ? { reportPath } : {}),
+      recordCount: report.records.length,
+      readinessCounts: countAdmissionRecordReadiness(report.records),
+      ...(errors.length ? { errors } : {}),
+    });
+  }
+
+  const ok = results.every((result) => result.ok);
+  return {
+    ok,
+    dryRun: !!options.dryRun,
+    results,
+    exitCode: ok ? 0 : 1,
+  };
+}
+
+export async function verifyFlowSurfaceCapabilityAdmission(
+  target: FlowSurfaceCapabilityAdmissionCliTarget,
+  options: FlowSurfaceCapabilityAdmissionCliVerifierOptions = {},
+): Promise<FlowSurfaceCapabilityAdmissionReport> {
+  if (!options.app) {
+    throw createFlowSurfaceCapabilityAdmissionCliError(
+      'admission-app-required',
+      'Flow surface capability admission verification requires a loaded application.',
+    );
+  }
+
+  const service = new FlowSurfacesService(getFlowEnginePlugin(options.app));
+  const capabilities = await service.capabilities(
+    {
+      ownerPlugins: [target.plugin],
+      ...(target.publicType ? { publicTypes: [target.publicType] } : {}),
+      includeUnavailable: true,
+      includeWarnings: true,
+      expand: ['item.identity', 'item.warnings'],
+    },
+    {
+      enabledPackages: options.enabledPackages,
+    },
+  );
+
+  if (target.publicType && !capabilities.data.length) {
+    throw createFlowSurfaceCapabilityAdmissionCliError(
+      'flow-surface-capability-not-found',
+      `No public flow surface capability matched '${target.publicType}' for plugin '${target.plugin}'.`,
+    );
+  }
+
+  const report = buildFlowSurfaceCapabilityAdmissionReportFromCapabilities({
+    plugin: target.plugin,
+    generatedAt: options.generatedAt,
+    capabilities,
+  });
+  if (target.publicType && !report.records.length) {
+    throw createFlowSurfaceCapabilityAdmissionCliError(
+      'flow-surface-capability-not-found',
+      `No public flow surface capability matched '${target.publicType}' for plugin '${target.plugin}'.`,
+    );
+  }
+  return report;
+}
+
+export function buildFlowSurfaceCapabilityAdmissionReportFromCapabilities(
+  input: BuildFlowSurfaceCapabilityAdmissionReportFromCapabilitiesInput,
+) {
+  return buildFlowSurfaceCapabilityAdmissionReport({
+    plugin: input.plugin,
+    generatedAt: input.generatedAt,
+    records: input.capabilities.data
+      .filter((item) => item.ownerPlugin === input.plugin)
+      .map((item) => buildAdmissionRecordFromCapability(item, input.generatedAt)),
+  });
+}
+
+export function formatFlowSurfaceCapabilityAdmissionCliSummary(
+  summary: FlowSurfaceCapabilityAdmissionCliSummary,
+  options = { json: false },
+) {
+  if (options.json) {
+    return `${JSON.stringify(summary, null, 2)}\n`;
+  }
+
+  const lines = ['Flow surface capability admission verification'];
+  for (const result of summary.results) {
+    const status = result.ok ? 'ok' : 'failed';
+    const publicType = result.publicType ? ` publicType=${result.publicType}` : '';
+    const report = result.reportPath ? ` report=${result.reportPath}` : '';
+    const readiness = formatAdmissionReadinessCounts(result.readinessCounts);
+    const errors = result.errors?.length ? ` errors=${result.errors.map(formatCliError).join('; ')}` : '';
+    lines.push(
+      `- ${result.plugin}: ${status}${publicType} records=${result.recordCount} readiness=${readiness}${report}${errors}`,
+    );
+  }
+  lines.push(`status=${summary.ok ? 'ok' : 'failed'} dryRun=${summary.dryRun ? 'true' : 'false'}`);
+  return `${lines.join('\n')}\n`;
+}
+
+export function registerFlowSurfaceCapabilityAdmissionCommand(app: Application) {
+  const command = (app.findCommand('flow-surfaces') || app.command('flow-surfaces')) as ReturnType<
+    Application['command']
+  >;
+  command
+    .command('verify-capability')
+    .option('--plugin <packageName>', 'verify one plugin package')
+    .option('--public-type <type>', 'verify one public capability type')
+    .option('--all-enabled', 'verify every enabled plugin package')
+    .option('--out <dir>', 'admission report output directory')
+    .option('--json', 'print a machine-readable summary')
+    .option('--dry-run', 'do not write admission report files')
+    .action(async (options: FlowSurfaceCapabilityAdmissionCliCommandOptions) => {
+      const summary = await runFlowSurfaceCapabilityAdmissionCommand(app, options);
+      process.stdout.write(formatFlowSurfaceCapabilityAdmissionCliSummary(summary, { json: !!options.json }));
+      process.exitCode = summary.exitCode;
+    });
+}
+
+export async function runFlowSurfaceCapabilityAdmissionCommand(
+  app: Application,
+  options: FlowSurfaceCapabilityAdmissionCliCommandOptions,
+  runtimeOptions: Pick<FlowSurfaceCapabilityAdmissionCliOptions, 'generatedAt' | 'verifyCapability'> = {},
+): Promise<FlowSurfaceCapabilityAdmissionCliSummary> {
+  try {
+    const normalizedOptions = normalizeFlowSurfaceCapabilityAdmissionCliCommandOptions(options);
+    assertFlowSurfaceCapabilityAdmissionCliCommandOptions(normalizedOptions);
+    const enabledPackages = await resolveFlowSurfaceAdmissionEnabledPluginPackages(app, {
+      suppressStdout: !!normalizedOptions.json,
+    });
+    const targets = await resolveFlowSurfaceCapabilityAdmissionCliTargets(normalizedOptions, enabledPackages);
+    return await runFlowSurfaceCapabilityAdmissionCli(targets, {
+      app,
+      dryRun: !!normalizedOptions.dryRun,
+      enabledPackages,
+      generatedAt: runtimeOptions.generatedAt,
+      outDir: normalizedOptions.out,
+      verifyCapability: runtimeOptions.verifyCapability,
+    });
+  } catch (error) {
+    return {
+      ok: false,
+      dryRun: !!options.dryRun,
+      results: [
+        {
+          ok: false,
+          plugin: options.plugin || (options.allEnabled ? '--all-enabled' : 'unknown'),
+          ...(options.publicType ? { publicType: options.publicType } : {}),
+          recordCount: 0,
+          readinessCounts: {},
+          errors: [toFlowSurfaceCapabilityAdmissionCliError(error)],
+        },
+      ],
+      exitCode: 1,
+    };
+  }
+}
+
+function buildAdmissionRecordFromCapability(
+  item: FlowSurfacePublicCapabilityItem,
+  generatedAt: string | undefined,
+): FlowSurfaceCapabilityAdmissionRecord {
+  const checks = buildAdmissionChecksFromCapability(item);
+  const readiness = resolveAdmissionReportReadiness(item);
+  return {
+    capabilityId: item.identity?.capabilityId || [item.ownerPlugin, item.kind, item.publicType].join(':'),
+    kind: item.kind,
+    publicType: item.publicType,
+    ownerPlugin: item.ownerPlugin,
+    ...(item.identity?.capabilityVersion ? { capabilityVersion: item.identity.capabilityVersion } : {}),
+    readiness,
+    checks,
+    updatedAt: generatedAt || new Date().toISOString(),
+  };
+}
+
+function buildAdmissionChecksFromCapability(
+  item: FlowSurfacePublicCapabilityItem,
+): FlowSurfaceCapabilityAdmissionRecord['checks'] {
+  const publicTypeStable =
+    item.publicTypeMeta.source !== 'autoNamespaced' || item.origin !== 'autoSnapshot'
+      ? passedAdmissionCheck()
+      : failedAdmissionCheck(
+          'manifest-required',
+          'Auto snapshot publicType requires a manifest or provider contract before admission.',
+        );
+  const contractDeclared =
+    item.availability.create.supported || item.readiness === 'contractDeclared'
+      ? passedAdmissionCheck()
+      : failedAdmissionCheck(
+          getBlockingReasonCode(item, 'missing-create-contract'),
+          'Capability has not declared a public create contract.',
+        );
+
+  return {
+    discovered: item.readiness === 'blocked' ? failedBlockingAdmissionCheck(item) : passedAdmissionCheck(),
+    publicTypeStable,
+    contractDeclared,
+    targetCatalogVerified: failedAdmissionCheck(
+      'target-required',
+      'Target-scoped catalog verification has not run for this admission report.',
+    ),
+    dryRunCreate: failedAdmissionCheck(
+      'contract-not-verified',
+      'Public create dry-run has not run for this admission report.',
+    ),
+    readbackParity: failedAdmissionCheck(
+      'contract-not-verified',
+      'Create/readback parity verification has not run for this admission report.',
+    ),
+    unsafePayloadBlocked: failedAdmissionCheck(
+      'contract-not-verified',
+      'Unsafe public payload rejection has not run for this admission report.',
+    ),
+    testsPresent: failedAdmissionCheck(
+      'contract-not-verified',
+      'Admission tests have not been recorded for this capability.',
+    ),
+  };
+}
+
+function resolveAdmissionReportReadiness(item: FlowSurfacePublicCapabilityItem): FlowSurfaceCapabilityReadiness {
+  if (item.readiness === 'blocked') {
+    return 'blocked';
+  }
+  if (item.readiness === 'readbackVerified') {
+    return 'readbackVerified';
+  }
+  if (item.readiness === 'discovered') {
+    return 'discovered';
+  }
+  return 'contractDeclared';
+}
+
+function passedAdmissionCheck(): FlowSurfaceAdmissionCheck {
+  return {
+    ok: true,
+  };
+}
+
+function failedBlockingAdmissionCheck(item: FlowSurfacePublicCapabilityItem): FlowSurfaceAdmissionCheck {
+  return failedAdmissionCheck(getBlockingReasonCode(item, 'unsupported'), 'Capability is blocked in public discovery.');
+}
+
+function failedAdmissionCheck(
+  reasonCode: FlowSurfaceReasonCode,
+  message: string,
+  evidence?: Record<string, unknown>,
+): FlowSurfaceAdmissionCheck {
+  return {
+    ok: false,
+    reasonCode,
+    message,
+    ...(evidence ? { evidence } : {}),
+  };
+}
+
+function getBlockingReasonCode(
+  item: FlowSurfacePublicCapabilityItem,
+  fallback: FlowSurfaceReasonCode,
+): FlowSurfaceReasonCode {
+  return (
+    item.availability.create.reasonCode ||
+    item.availability.render.reasonCode ||
+    item.availability.readback.reasonCode ||
+    fallback
+  );
+}
+
+async function resolveFlowSurfaceCapabilityAdmissionCliTargets(
+  options: FlowSurfaceCapabilityAdmissionCliCommandOptions,
+  enabledPackages: ReadonlySet<string>,
+): Promise<FlowSurfaceCapabilityAdmissionCliTarget[]> {
+  if (options.allEnabled) {
+    return Array.from(enabledPackages)
+      .sort((left, right) => left.localeCompare(right))
+      .map((plugin) => ({
+        plugin,
+        ...(options.publicType ? { publicType: options.publicType } : {}),
+      }));
+  }
+
+  const parsed = await PluginManager.parseName(options.plugin as string);
+  return [
+    {
+      plugin: parsed.packageName,
+      ...(options.publicType ? { publicType: options.publicType } : {}),
+    },
+  ];
+}
+
+function normalizeFlowSurfaceCapabilityAdmissionCliCommandOptions(
+  options: FlowSurfaceCapabilityAdmissionCliCommandOptions,
+): FlowSurfaceCapabilityAdmissionCliCommandOptions {
+  return {
+    ...options,
+    plugin: normalizeStringOption(options.plugin),
+    publicType: normalizeStringOption(options.publicType),
+  };
+}
+
+function assertFlowSurfaceCapabilityAdmissionCliCommandOptions(
+  options: FlowSurfaceCapabilityAdmissionCliCommandOptions,
+) {
+  if (options.plugin && options.allEnabled) {
+    throw new Error('Use either --plugin or --all-enabled, not both.');
+  }
+  if (!options.plugin && !options.allEnabled) {
+    throw new Error('Either --plugin or --all-enabled is required.');
+  }
+}
+
+function assertFlowSurfaceCapabilityAdmissionReportMatchesTarget(
+  report: FlowSurfaceCapabilityAdmissionReport,
+  target: FlowSurfaceCapabilityAdmissionCliTarget,
+) {
+  if (!isFlowSurfaceCapabilityAdmissionReport(report)) {
+    throw createFlowSurfaceCapabilityAdmissionCliError(
+      'admission-report-malformed',
+      'Flow surface capability admission verifier returned a malformed report.',
+    );
+  }
+  if (report.plugin !== target.plugin) {
+    throw createFlowSurfaceCapabilityAdmissionCliError(
+      'admission-report-plugin-mismatch',
+      'Flow surface capability admission verifier returned a report for a different plugin.',
+    );
+  }
+}
+
+async function resolveFlowSurfaceAdmissionEnabledPluginPackages(
+  app: Application,
+  options: { suppressStdout?: boolean } = {},
+) {
+  await ensureFlowSurfaceAdmissionAppLoaded(app, options);
+  const records = await app.pm.repository.find({
+    fields: ['packageName'],
+    filter: {
+      enabled: true,
+    },
+  });
+  return new Set(records.map(getPackageNameFromEnabledRecord).filter(isNonEmptyString));
+}
+
+async function ensureFlowSurfaceAdmissionAppLoaded(app: Application, options: { suppressStdout?: boolean } = {}) {
+  if (app.loaded) {
+    return;
+  }
+  if (options.suppressStdout) {
+    await runWithSuppressedStdout(() => app.load());
+    return;
+  }
+  await app.load();
+}
+
+async function runWithSuppressedStdout<T>(task: () => Promise<T>) {
+  const originalWrite = process.stdout.write;
+  process.stdout.write = ((...args: Parameters<typeof process.stdout.write>) => {
+    const maybeCallback = args.find((arg): arg is (error?: Error | null) => void => typeof arg === 'function');
+    maybeCallback?.();
+    return true;
+  }) as typeof process.stdout.write;
+  try {
+    return await task();
+  } finally {
+    process.stdout.write = originalWrite;
+  }
+}
+
+function getFlowEnginePlugin(app: Application): Plugin {
+  const plugin = app.pm.get('flow-engine') as Plugin | undefined;
+  if (!plugin) {
+    throw createFlowSurfaceCapabilityAdmissionCliError(
+      'flow-engine-plugin-not-loaded',
+      'The flow-engine plugin must be loaded before capability admission verification.',
+    );
+  }
+  return plugin;
+}
+
+function getPackageNameFromEnabledRecord(record: unknown) {
+  if (!isPlainRecord(record)) {
+    return undefined;
+  }
+  if (typeof record.packageName === 'string') {
+    return normalizeStringOption(record.packageName);
+  }
+  const getValue = record.get;
+  if (typeof getValue === 'function') {
+    const packageName = getValue.call(record, 'packageName');
+    return normalizeStringOption(packageName);
+  }
+  return undefined;
+}
+
+function normalizeStringOption(value: unknown) {
+  if (typeof value !== 'string') {
+    return undefined;
+  }
+  const trimmed = value.trim();
+  return trimmed || undefined;
+}
+
+function countAdmissionRecordReadiness(records: FlowSurfaceCapabilityAdmissionRecord[]) {
+  return records.reduce<Partial<Record<FlowSurfaceCapabilityReadiness, number>>>((counts, record) => {
+    counts[record.readiness] = (counts[record.readiness] || 0) + 1;
+    return counts;
+  }, {});
+}
+
+function formatAdmissionReadinessCounts(counts: Partial<Record<FlowSurfaceCapabilityReadiness, number>>) {
+  const parts = FLOW_SURFACE_CAPABILITY_ADMISSION_READINESS.flatMap((readiness) => {
+    const count = counts[readiness];
+    return count ? [`${readiness}:${count}`] : [];
+  });
+  return parts.length ? parts.join(',') : 'none';
+}
+
+function toFlowSurfaceCapabilityAdmissionCliError(error: unknown): FlowSurfaceCapabilityAdmissionCliError {
+  if (isPlainRecord(error)) {
+    const code = typeof error.code === 'string' ? error.code : 'admission-runtime-error';
+    const message =
+      typeof error.message === 'string' ? error.message : 'Flow surface capability admission verification failed.';
+    return {
+      code,
+      message,
+    };
+  }
+  return {
+    code: 'admission-runtime-error',
+    message: 'Flow surface capability admission verification failed.',
+  };
+}
+
+function createFlowSurfaceCapabilityAdmissionCliError(code: string, message: string) {
+  return Object.assign(new Error(message), {
+    code,
+  });
+}
+
+function formatCliError(error: FlowSurfaceCapabilityAdmissionCliError) {
+  return `${error.code}: ${error.message.replace(/\s+/g, ' ').trim()}`;
+}
+
+function isNonEmptyString(value: unknown): value is string {
+  return typeof value === 'string' && value.length > 0;
+}
+
+function isPlainRecord(value: unknown): value is Record<string, unknown> {
+  return !!value && typeof value === 'object' && !Array.isArray(value);
+}

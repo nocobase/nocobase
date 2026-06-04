@@ -18,6 +18,7 @@ import {
   loadFlowSurfaceAutoSnapshotsFromDirectory,
   type FlowSurfaceAutoSnapshot,
 } from './flow-surfaces/extractor';
+import { registerFlowSurfaceCapabilityAdmissionCommand } from './flow-surfaces/admission-report-cli';
 import { registerFlowSurfaceExtractorCommand } from './flow-surfaces/extractor/cli';
 import PluginUISchemaStorageServer from './server';
 import { JSONValue } from './template/resolver';
@@ -29,6 +30,7 @@ export class PluginFlowEngineServer extends PluginUISchemaStorageServer {
 
   static async staticImport() {
     Application.addCommand(registerFlowSurfaceExtractorCommand);
+    Application.addCommand(registerFlowSurfaceCapabilityAdmissionCommand);
   }
 
   async afterAdd() {}
