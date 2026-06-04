@@ -27,6 +27,7 @@ import _ from 'lodash';
 import { NumberPicker } from '@formily/antd-v5';
 import { enumToOptions, normalizeSelectRenderValue, UiSchemaEnumItem } from '../../internal/utils/enumOptionsUtils';
 import { resolveOperatorComponent } from '../../internal/utils/operatorSchemaHelper';
+import { limitAssociationMetaTree } from './metaTreeAssociationDepth';
 
 const { DateFilterDynamicComponent: DateFilterDynamicComponentLazy } = lazy(
   () => import('../../models/blocks/filter-form/fields/date-time/components/DateFilterDynamicComponent'),
@@ -85,6 +86,14 @@ export interface VariableFilterItemProps {
    */
   rightMetaTree?: MetaTreeNode[] | (() => MetaTreeNode[] | Promise<MetaTreeNode[]>);
   ignoreFieldNames?: string[];
+  maxAssociationFieldDepth?: number;
+}
+
+function limitMetaTreeIfNeeded(nodes: MetaTreeNode[], maxAssociationFieldDepth?: number) {
+  if (typeof maxAssociationFieldDepth !== 'number') {
+    return nodes;
+  }
+  return limitAssociationMetaTree(nodes, { maxAssociationDepth: maxAssociationFieldDepth });
 }
 
 function createStaticInputRenderer(
@@ -260,7 +269,7 @@ function normalizeRightValueInput(input: unknown) {
  * 上下文筛选项组件
  */
 export const VariableFilterItem: React.FC<VariableFilterItemProps> = observer(
-  ({ value, model, rightAsVariable, rightMetaTree, ignoreFieldNames }) => {
+  ({ value, model, rightAsVariable, rightMetaTree, ignoreFieldNames, maxAssociationFieldDepth }) => {
     // 使用 View 上下文，确保可访问 ctx.view 的异步子树
     const ctx = useFlowViewContext();
     const t = model.translate;
@@ -539,13 +548,22 @@ export const VariableFilterItem: React.FC<VariableFilterItemProps> = observer(
         const nodes: MetaTreeNode[] = Array.isArray(raw)
           ? (raw as MetaTreeNode[])
           : await (raw as () => Promise<MetaTreeNode[]>)();
-        return [
-          { title: t('Constant'), name: 'constant', type: 'string', paths: ['constant'], render: staticInputRenderer },
-          { title: t('Null'), name: 'null', type: 'object', paths: ['null'], render: NullComponent },
-          ...nodes,
-        ];
+        return limitMetaTreeIfNeeded(
+          [
+            {
+              title: t('Constant'),
+              name: 'constant',
+              type: 'string',
+              paths: ['constant'],
+              render: staticInputRenderer,
+            },
+            { title: t('Null'), name: 'null', type: 'object', paths: ['null'], render: NullComponent },
+            ...nodes,
+          ],
+          maxAssociationFieldDepth,
+        );
       };
-    }, [rightMetaTree, ctx, staticInputRenderer, NullComponent, t]);
+    }, [rightMetaTree, ctx, staticInputRenderer, NullComponent, t, maxAssociationFieldDepth]);
 
     // 当启用右侧变量输入时，构造 VariableInput 的 converters：
     // - 变量模式：返回 null 让 VariableInput 渲染 VariableTag
@@ -629,9 +647,9 @@ export const VariableFilterItem: React.FC<VariableFilterItemProps> = observer(
         for (const n of nodes) {
           out.push(await enhanceNode(n));
         }
-        return out;
+        return limitMetaTreeIfNeeded(out, maxAssociationFieldDepth);
       };
-    }, [getFieldInterface, model]);
+    }, [getFieldInterface, model, maxAssociationFieldDepth]);
 
     return (
       <Space wrap style={{ width: '100%' }}>

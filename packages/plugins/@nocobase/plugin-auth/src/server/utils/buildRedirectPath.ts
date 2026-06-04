@@ -23,8 +23,8 @@ export interface BuildRedirectPathOptions {
   /**
    * The raw redirect the client supplied. May be:
    *  - v1 basename-relative (`/admin/abc`), needs full prefix prepended.
-   *  - v2 root-relative (`/nocobase/v2/admin/abc` or
-   *    `/nocobase/v2/apps/<id>/admin/abc`), already absolute under the
+   *  - modern-client root-relative (`/nocobase/v/admin/abc` or
+   *    `/nocobase/v/apps/<id>/admin/abc`), already absolute under the
    *    document root; must NOT be touched.
    *  - missing — falls back to `/admin`.
    */
@@ -37,15 +37,15 @@ export interface BuildRedirectPathOptions {
  *
  * v1 clients emit `redirect` as a basename-relative path (`/admin/abc`)
  * and the server is expected to prepend `APP_PUBLIC_PATH` + the legacy
- * sub-app segment. v2 clients emit `redirect` as an already-root-relative
- * path that includes `APP_PUBLIC_PATH` and (for sub-apps) the
- * `/v2/apps/<id>` segment — so any further prepending produces nonsense
- * URLs like `/nocobase/apps/<id>/nocobase/v2/apps/<id>/admin/…`.
+ * sub-app segment. Modern (v2) clients emit `redirect` as an already-root-
+ * relative path that includes `APP_PUBLIC_PATH` and (for sub-apps) the
+ * `/<modern-prefix>/apps/<id>` segment — so any further prepending produces
+ * nonsense URLs like `/nocobase/apps/<id>/nocobase/v/apps/<id>/admin/…`.
  *
- * Detection rule: a target is v2-shaped iff it starts with
+ * Detection rule: a target is modern-shaped iff it starts with
  * `appPublicPath + '/'`. The sub-app segment is irrelevant to detection
- * because v2 always prefixes with `appPublicPath` regardless of sub-app
- * (`/<APP_PUBLIC_PATH>/v2/...` or `/<APP_PUBLIC_PATH>/v2/apps/<id>/...`).
+ * because modern clients always prefix with `appPublicPath` regardless of
+ * sub-app (`/<APP_PUBLIC_PATH>/v/...` or `/<…>/v/apps/<id>/...`).
  *
  * Single export shared by all auth-related SSO plugins (CAS, SAML, …).
  */
@@ -62,4 +62,43 @@ export function buildRedirectPath({ appPublicPath, subAppSegment, target }: Buil
   }
 
   return `${normalizedAppPublicPath}${normalizedSubAppSegment}${resolvedTarget}`;
+}
+
+/**
+ * The runtime URL segment under which the modern (v2) client is served,
+ * read from `APP_MODERN_CLIENT_PREFIX` (default `v`). Returns a bare
+ * segment without surrounding slashes.
+ */
+export function getModernClientPrefix(): string {
+  return (
+    String(process.env.APP_MODERN_CLIENT_PREFIX || '')
+      .trim()
+      .replace(/^\/+|\/+$/g, '') || 'v'
+  );
+}
+
+export interface ResolveSigninPrefixOptions {
+  /** `process.env.APP_PUBLIC_PATH`, with or without trailing slash. */
+  appPublicPath?: string | null;
+  /** The raw redirect target supplied by the client (RelayState / state / query). */
+  redirect?: string | null;
+  /** Legacy (v1) sub-app segment, e.g. `/apps/<name>` or empty. */
+  subAppSegment?: string | null;
+}
+
+/**
+ * On SSO failure the user must land back on the signin page of the *same*
+ * shell they started from (legacy v1 vs modern v2). Modern-client URLs always
+ * carry the `<APP_PUBLIC_PATH>/<modern-prefix>/` segment in the redirect;
+ * legacy URLs never do. Returns the signin prefix to prepend to `/signin`.
+ *
+ * Shared by all SSO plugins (SAML, OIDC, CAS).
+ */
+export function resolveSigninPrefix({ appPublicPath, redirect, subAppSegment }: ResolveSigninPrefixOptions): string {
+  const normalizedAppPublicPath = (appPublicPath || '').replace(/\/+$/, '');
+  const modernSegment = `/${getModernClientPrefix()}`;
+  const modernMarker = `${normalizedAppPublicPath}${modernSegment}`;
+  const isModernOrigin =
+    typeof redirect === 'string' && (redirect === modernMarker || redirect.startsWith(`${modernMarker}/`));
+  return `${normalizedAppPublicPath}${isModernOrigin ? modernSegment : ''}${subAppSegment || ''}`;
 }

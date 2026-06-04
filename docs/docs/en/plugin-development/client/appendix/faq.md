@@ -38,11 +38,11 @@ If client code changes don't hot reload, try refreshing the browser first.
 
 ### Registered page route is not accessible
 
-NocoBase v2 routes automatically add a `/v2` prefix. For example, if you registered `path: '/hello'`, the actual URL is `/v2/hello`:
+NocoBase v2 routes automatically add a `/v` prefix. For example, if you registered `path: '/hello'`, the actual URL is `/v/hello`:
 
 ```ts
 this.router.add('hello', {
-  path: '/hello', // actual URL -> /v2/hello
+  path: '/hello', // actual URL -> /v/hello
   componentLoader: () => import('./pages/HelloPage'),
 });
 ```
@@ -285,7 +285,7 @@ NocoBase's build system maintains an [external list](../../dependency-management
 ## Related Links
 
 - [Plugin](../plugin) — Plugin entry and lifecycle
-- [Router](../router) — Route registration and the `/v2` prefix
+- [Router](../router) — Route registration and the `/v` prefix
 - [FlowEngine Overview](../flow-engine/index.md) — FlowModel basics
 - [FlowEngine - Block Extension](../flow-engine/block) — BlockModel, TableBlockModel, filterCollection
 - [FlowEngine - Field Extension](../flow-engine/field) — FieldModel, bindModelToInterface
