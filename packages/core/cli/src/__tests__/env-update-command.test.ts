@@ -67,6 +67,12 @@ beforeEach(() => {
   vi.clearAllMocks();
 });
 
+test('env update keeps env-file hidden from the public flag list', async () => {
+  const { default: EnvUpdate } = await import('../commands/env/update.js');
+
+  expect(EnvUpdate.flags['env-file'].hidden).toBe(true);
+});
+
 test('env update refreshes runtime when no config flags are provided', async () => {
   const { default: EnvUpdate } = await import('../commands/env/update.js');
   mocks.getCurrentEnvName.mockResolvedValue('local');

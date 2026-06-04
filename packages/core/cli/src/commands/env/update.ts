@@ -301,6 +301,7 @@ export default class EnvUpdate extends Command {
       description: 'Saved storage path for this env',
     }),
     'env-file': Flags.string({
+      hidden: true,
       description: 'Saved Docker --env-file path for this env',
     }),
     'app-port': Flags.string({

@@ -74,7 +74,7 @@ export interface EnvConfigEntry {
   appPath?: string;
   appRootPath?: string;
   storagePath?: string;
-  /** Optional Docker --env-file path. Defaults to <envName>/.env for Docker envs when present on disk. */
+  /** Optional internal env file path. Defaults to <app-path>/.env, or <envName>/.env for legacy Docker-only layouts. */
   envFile?: string;
   /** Application HTTP port (APP_PORT). */
   appPort?: number | string;
