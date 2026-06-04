@@ -31,6 +31,7 @@ export default class PluginImport extends Command {
     '<%= config.bin %> <%= command.id %> @nocobase/plugin-acl@beta',
     '<%= config.bin %> <%= command.id %> @nocobase/plugin-acl@beta --npm-registry=https://registry.npmjs.org',
     '<%= config.bin %> <%= command.id %> --env app1 ./plugin-auth-cas-1.4.0.tgz',
+    '<%= config.bin %> <%= command.id %> --storage-path ./storage ./plugin-auth-cas-1.4.0.tgz',
   ];
 
   static override flags = {
@@ -43,6 +44,9 @@ export default class PluginImport extends Command {
       description: 'Confirm using --env when it targets a different env than the current env',
       default: false,
     }),
+    'storage-path': Flags.string({
+      description: 'Override the env storage root path. Imported plugins are written into <storage-path>/plugins',
+    }),
     'npm-registry': Flags.string({
       description: 'npm registry to use when the import source is an npm package spec.',
     }),
@@ -51,6 +55,7 @@ export default class PluginImport extends Command {
   public async run(): Promise<void> {
     const { args, flags } = await this.parse(PluginImport);
     const requestedEnv = flags.env?.trim() || undefined;
+    const storagePathOverride = flags['storage-path']?.trim() || undefined;
     const explicitEnvSelection = Boolean(requestedEnv && hasExplicitEnvSelection(this.argv));
     if (explicitEnvSelection) {
       const confirmed = await ensureCrossEnvConfirmed({
@@ -68,12 +73,13 @@ export default class PluginImport extends Command {
       this.error('Pass a plugin archive path, URL, or npm package spec.');
     }
 
-    const runtime = await resolveManagedAppRuntime(requestedEnv);
-    if (!runtime) {
+    const shouldResolveTargetEnv = Boolean(requestedEnv || !storagePathOverride);
+    const runtime = await resolveManagedAppRuntime(shouldResolveTargetEnv ? requestedEnv : undefined);
+    if (shouldResolveTargetEnv && !runtime) {
       this.error(formatMissingManagedAppEnvMessage(requestedEnv));
     }
 
-    if (runtime.kind === 'http') {
+    if (runtime && shouldResolveTargetEnv && runtime.kind === 'http') {
       this.error(
         [
           `Can't import plugins for "${runtime.envName}" yet.`,
@@ -83,7 +89,7 @@ export default class PluginImport extends Command {
       );
     }
 
-    if (runtime.kind === 'ssh') {
+    if (runtime && shouldResolveTargetEnv && runtime.kind === 'ssh') {
       this.error(
         [
           `Can't import plugins for "${runtime.envName}" yet.`,
@@ -93,12 +99,16 @@ export default class PluginImport extends Command {
       );
     }
 
-    announceTargetEnv(runtime.envName);
+    if (runtime && shouldResolveTargetEnv) {
+      announceTargetEnv(runtime.envName);
+    }
 
+    const runtimeForDefaults = runtime && runtime.kind !== 'http' && runtime.kind !== 'ssh' ? runtime : undefined;
     const npmRegistry =
-      flags['npm-registry']?.trim() || String(runtime.env.config.npmRegistry ?? '').trim() || undefined;
+      flags['npm-registry']?.trim() || String(runtimeForDefaults?.env.config.npmRegistry ?? '').trim() || undefined;
+    const storagePath = storagePathOverride || runtimeForDefaults?.env.storagePath;
     const result = await importPluginSource(archiveSource, {
-      storagePath: runtime.env.storagePath,
+      storagePath,
       npmRegistry,
     });
     const label = result.action === 'updated' ? 'Updated' : 'Imported';
@@ -106,6 +116,10 @@ export default class PluginImport extends Command {
 
     this.log(`${label} ${result.packageName}${versionSuffix} into ${result.outputDir}`);
     this.log(`Plugin storage path: ${result.storagePluginsPath}`);
-    this.log(`Restart the app before enabling or using the plugin: \`nb app restart --env ${runtime.envName}\`.`);
+    if (runtime && shouldResolveTargetEnv) {
+      this.log(`Restart the app before enabling or using the plugin: \`nb app restart --env ${runtime.envName}\`.`);
+    } else {
+      this.log('Restart the app that uses this plugin storage path before enabling or using the plugin.');
+    }
   }
 }

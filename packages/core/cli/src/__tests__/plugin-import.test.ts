@@ -419,6 +419,156 @@ test('nb plugin import uses --npm-registry when importing an npm package spec', 
   });
 });
 
+test('nb plugin import uses --storage-path to override the selected env storage path', async () => {
+  await withTempCliHome(async () => {
+    vi.stubEnv('NB_SKIP_TARGET_ENV_LOG', '1');
+    vi.resetModules();
+
+    const envStoragePath = path.join(os.tmpdir(), `nocobase-cli-plugin-import-env-storage-${Date.now()}`);
+    const customStoragePath = path.join(os.tmpdir(), `nocobase-cli-plugin-import-custom-storage-${Date.now()}`);
+    const importPluginSourceMock = vi.fn(
+      async (_source: string, _options: { storagePath?: string; npmRegistry?: string }) => {
+        return {
+          action: 'installed' as const,
+          packageName: '@nocobase/plugin-acl',
+          packageVersion: '2.1.0-beta.3',
+          outputDir: path.join(customStoragePath, 'plugins', '@nocobase', 'plugin-acl'),
+          source: '@nocobase/plugin-acl@beta',
+          sourceType: 'npm' as const,
+          storagePluginsPath: path.join(customStoragePath, 'plugins'),
+        };
+      },
+    );
+    vi.doMock('../lib/plugin-import.js', async () => {
+      const actual = await vi.importActual<typeof import('../lib/plugin-import.js')>('../lib/plugin-import.js');
+      return {
+        ...actual,
+        importPluginSource: importPluginSourceMock,
+      };
+    });
+
+    try {
+      const { default: PluginImport } = await import('../commands/plugin/import.js');
+      await saveAuthConfig(
+        {
+          lastEnv: 'local-env',
+          envs: {
+            'local-env': {
+              source: 'git',
+              appRootPath: './apps/local-env',
+              storagePath: envStoragePath,
+            },
+          },
+        },
+        { scope: 'global' },
+      );
+
+      const command = Object.assign(Object.create(PluginImport.prototype), {
+        parse: vi.fn(async () => ({
+          args: {
+            archive: '@nocobase/plugin-acl@beta',
+          },
+          flags: {
+            'storage-path': ` ${customStoragePath} `,
+          },
+        })),
+        log: vi.fn(),
+        error: vi.fn((message: string) => {
+          throw new Error(message);
+        }),
+        argv: [],
+      });
+
+      await PluginImport.prototype.run.call(command);
+
+      expect(importPluginSourceMock).toHaveBeenCalledWith('@nocobase/plugin-acl@beta', {
+        storagePath: customStoragePath,
+        npmRegistry: undefined,
+      });
+      expect(command.log).toHaveBeenCalledWith(`Plugin storage path: ${path.join(customStoragePath, 'plugins')}`);
+    } finally {
+      vi.unmock('../lib/plugin-import.js');
+      vi.resetModules();
+      await fsp.rm(envStoragePath, { recursive: true, force: true });
+      await fsp.rm(customStoragePath, { recursive: true, force: true });
+    }
+  });
+});
+
+test('nb plugin import allows --storage-path without selecting a local env', async () => {
+  await withTempCliHome(async () => {
+    vi.stubEnv('NB_SKIP_TARGET_ENV_LOG', '1');
+    vi.resetModules();
+
+    const customStoragePath = path.join(os.tmpdir(), `nocobase-cli-plugin-import-storage-only-${Date.now()}`);
+    const importPluginSourceMock = vi.fn(
+      async (_source: string, _options: { storagePath?: string; npmRegistry?: string }) => {
+        return {
+          action: 'installed' as const,
+          packageName: '@nocobase/plugin-acl',
+          packageVersion: '2.1.0-beta.3',
+          outputDir: path.join(customStoragePath, 'plugins', '@nocobase', 'plugin-acl'),
+          source: '@nocobase/plugin-acl@beta',
+          sourceType: 'npm' as const,
+          storagePluginsPath: path.join(customStoragePath, 'plugins'),
+        };
+      },
+    );
+    vi.doMock('../lib/plugin-import.js', async () => {
+      const actual = await vi.importActual<typeof import('../lib/plugin-import.js')>('../lib/plugin-import.js');
+      return {
+        ...actual,
+        importPluginSource: importPluginSourceMock,
+      };
+    });
+
+    try {
+      const { default: PluginImport } = await import('../commands/plugin/import.js');
+      await saveAuthConfig(
+        {
+          lastEnv: 'remote-env',
+          envs: {
+            'remote-env': {
+              baseUrl: 'https://demo.example.com/api',
+            },
+          },
+        },
+        { scope: 'global' },
+      );
+
+      const command = Object.assign(Object.create(PluginImport.prototype), {
+        parse: vi.fn(async () => ({
+          args: {
+            archive: '@nocobase/plugin-acl@beta',
+          },
+          flags: {
+            'storage-path': customStoragePath,
+          },
+        })),
+        log: vi.fn(),
+        error: vi.fn((message: string) => {
+          throw new Error(message);
+        }),
+        argv: [],
+      });
+
+      await PluginImport.prototype.run.call(command);
+
+      expect(importPluginSourceMock).toHaveBeenCalledWith('@nocobase/plugin-acl@beta', {
+        storagePath: customStoragePath,
+        npmRegistry: undefined,
+      });
+      expect(command.log).toHaveBeenCalledWith(
+        'Restart the app that uses this plugin storage path before enabling or using the plugin.',
+      );
+    } finally {
+      vi.unmock('../lib/plugin-import.js');
+      vi.resetModules();
+      await fsp.rm(customStoragePath, { recursive: true, force: true });
+    }
+  });
+});
+
 test('nb plugin import tells the user to restart after updating an existing plugin', async () => {
   await withTempCliHome(async () => {
     vi.stubEnv('NB_SKIP_TARGET_ENV_LOG', '1');
