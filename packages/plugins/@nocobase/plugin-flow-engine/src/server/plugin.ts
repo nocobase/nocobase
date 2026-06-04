@@ -12,12 +12,9 @@ import type { ResourcerContext } from '@nocobase/resourcer';
 import { Application } from '@nocobase/server';
 import { parseLiquidContext, transformSQL } from '@nocobase/utils';
 import { FlowSurfaceCapabilityProviderRegistry } from './flow-surfaces/capability-provider';
+import { readFlowSurfaceCapabilityPolicyConfigFromPluginOptions } from './flow-surfaces/capability-policy';
 import { registerFlowSurfacesResource } from './flow-surfaces';
-import {
-  getFlowSurfaceAutoSnapshotStorageDir,
-  loadFlowSurfaceAutoSnapshotsFromDirectory,
-  type FlowSurfaceAutoSnapshot,
-} from './flow-surfaces/extractor';
+import { loadFlowSurfaceAutoSnapshotsFromDirectory, type FlowSurfaceAutoSnapshot } from './flow-surfaces/extractor';
 import { registerFlowSurfaceCapabilityAdmissionCommand } from './flow-surfaces/admission-report-cli';
 import { registerFlowSurfaceExtractorCommand } from './flow-surfaces/extractor/cli';
 import PluginUISchemaStorageServer from './server';
@@ -50,8 +47,9 @@ export class PluginFlowEngineServer extends PluginUISchemaStorageServer {
 
   async load() {
     await super.load();
+    const capabilityPolicyConfig = readFlowSurfaceCapabilityPolicyConfigFromPluginOptions(this.options);
     this.flowSurfaceAutoSnapshots = await loadFlowSurfaceAutoSnapshotsFromDirectory({
-      dir: getFlowSurfaceAutoSnapshotStorageDir(),
+      dir: capabilityPolicyConfig.extractorSnapshotDir,
     });
     registerFlowSurfacesResource(this);
     this.app.auditManager.registerAction('flowSql:save');

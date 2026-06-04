@@ -28,6 +28,7 @@ import {
   resolveSupportedBlockCatalogItem,
 } from './catalog';
 import { buildFlowSurfaceCapabilitiesResponse, buildFlowSurfaceDescribeCapabilityResponse } from './capabilities';
+import { readFlowSurfaceCapabilityPolicyConfigFromPluginOptions } from './capability-policy';
 import { resolveDynamicCapabilityCreate } from './capability-resolver';
 import {
   collectNormalizedProviderCapabilities,
@@ -2110,10 +2111,12 @@ export class FlowSurfacesService {
     options: { transaction?: unknown; enabledPackages?: ReadonlySet<string> } = {},
   ): Promise<FlowSurfaceCapabilitiesResponse> {
     const enabledPackages = await this.resolveEnabledPluginPackages(options);
+    const capabilityPolicyConfig = readFlowSurfaceCapabilityPolicyConfigFromPluginOptions(this.plugin.options);
     return buildFlowSurfaceCapabilitiesResponse(input, {
       enabledPackages,
       providerRegistry: this.capabilityProviderRegistry,
       autoSnapshots: this.autoSnapshots,
+      capabilityPolicyConfig,
       catalog: (values) =>
         this.catalog(values, {
           transaction: options.transaction,
@@ -2127,10 +2130,12 @@ export class FlowSurfacesService {
     options: { transaction?: unknown; enabledPackages?: ReadonlySet<string> } = {},
   ): Promise<FlowSurfaceDescribeCapabilityResponse> {
     const enabledPackages = await this.resolveEnabledPluginPackages(options);
+    const capabilityPolicyConfig = readFlowSurfaceCapabilityPolicyConfigFromPluginOptions(this.plugin.options);
     return buildFlowSurfaceDescribeCapabilityResponse(input, {
       enabledPackages,
       providerRegistry: this.capabilityProviderRegistry,
       autoSnapshots: this.autoSnapshots,
+      capabilityPolicyConfig,
       catalog: (values) =>
         this.catalog(values, {
           transaction: options.transaction,
@@ -2150,6 +2155,7 @@ export class FlowSurfacesService {
       allowUnavailable: true,
       enabledPackages,
       providerRegistry: this.capabilityProviderRegistry,
+      providerTimeoutMs: readFlowSurfaceCapabilityPolicyConfigFromPluginOptions(this.plugin.options).providerTimeoutMs,
       rawPublicPayload: input,
     });
     const capability = { ...response.capability };

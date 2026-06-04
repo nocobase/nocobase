@@ -9,6 +9,12 @@
 
 import _ from 'lodash';
 import {
+  applyFlowSurfaceCapabilityWritePolicy,
+  normalizeFlowSurfaceCapabilityPolicyConfig,
+  type FlowSurfaceCapabilityPolicyConfig,
+  type NormalizedFlowSurfaceCapabilityPolicyConfig,
+} from './capability-policy';
+import {
   collectAutoSnapshotPublicCapabilities,
   collectProviderPublicCapabilities,
   getFlowSurfacePublicCapabilityModelUses,
@@ -89,6 +95,7 @@ type BuildFlowSurfaceCapabilitiesOptions = {
   enabledPackages: ReadonlySet<string>;
   providerRegistry?: FlowSurfaceCapabilityRegistryLike;
   autoSnapshots?: readonly FlowSurfaceAutoSnapshot[];
+  capabilityPolicyConfig?: FlowSurfaceCapabilityPolicyConfig | NormalizedFlowSurfaceCapabilityPolicyConfig;
   catalog: (values: FlowSurfaceCatalogValues) => Promise<FlowSurfaceCatalogResponse>;
   generatedAt?: string;
   includeCatalogSettingsSchema?: boolean;
@@ -116,12 +123,14 @@ export async function buildFlowSurfaceCapabilitiesResponse(
   const request = normalizeCapabilitiesRequest(input, {
     includeCatalogSettingsSchema: options.includeCatalogSettingsSchema === true,
   });
+  const capabilityPolicyConfig = normalizeFlowSurfaceCapabilityPolicyConfig(options.capabilityPolicyConfig);
   const catalog = await options.catalog(request.catalogValues);
   const providerItems = request.targetHintUsed
     ? []
     : await collectProviderPublicCapabilities({
         providerRegistry: options.providerRegistry,
         enabledPackages: options.enabledPackages,
+        providerTimeoutMs: capabilityPolicyConfig.providerTimeoutMs,
       });
   const autoSnapshotItems = request.targetHintUsed
     ? []
@@ -136,9 +145,9 @@ export async function buildFlowSurfaceCapabilitiesResponse(
     ...providerItems.map((item) => projectProviderCapabilityItem(item, request)),
     ...autoSnapshotItems.map((item) => projectProviderCapabilityItem(item, request)),
   ].filter((item): item is FlowSurfacePublicCapabilityItem => !!item);
-  const data = arbitratePublicTypeConflicts(dedupeCapabilityItems(projectedItems)).filter((item) =>
-    filterCapabilityItem(item, request),
-  );
+  const data = arbitratePublicTypeConflicts(dedupeCapabilityItems(projectedItems))
+    .map((item) => applyFlowSurfaceCapabilityWritePolicy(item, capabilityPolicyConfig))
+    .filter((item) => filterCapabilityItem(item, request));
   const limitedData = typeof request.limit === 'number' ? data.slice(0, request.limit) : data;
 
   return {

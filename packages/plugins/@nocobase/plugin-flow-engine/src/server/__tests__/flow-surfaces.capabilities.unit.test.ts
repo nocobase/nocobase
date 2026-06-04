@@ -16,6 +16,10 @@ import {
   collectProviderCatalogItems,
   filterProviderCatalogItemsForCatalog,
 } from '../flow-surfaces/capability-registry';
+import {
+  normalizeFlowSurfaceCapabilityPolicyConfig,
+  readFlowSurfaceCapabilityPolicyConfigFromPluginOptions,
+} from '../flow-surfaces/capability-policy';
 import { FlowSurfaceBadRequestError } from '../flow-surfaces/errors';
 import { buildFlowSurfaceAutoSnapshot } from '../flow-surfaces/extractor';
 import type {
@@ -941,6 +945,199 @@ describe('flowSurfaces capabilities projection', () => {
     expect(response.data[0]).not.toHaveProperty('configureOptions');
     expect(response.data[0]).not.toHaveProperty('warnings');
     expect(response.meta.registrySources).toEqual([{ origin: 'canaryOverlay', count: 1 }]);
+  });
+
+  it('should normalize conservative capability policy defaults', () => {
+    const config = normalizeFlowSurfaceCapabilityPolicyConfig();
+
+    expect(config.writePolicy.mode).toBe('manifestOnly');
+    expect(config.providerTimeoutMs).toBe(3000);
+    expect(config.extractorSnapshotDir).toContain('flow-surfaces-capabilities');
+    expect(typeof config.diagnosticsEnabled).toBe('boolean');
+  });
+
+  it('should read capability policy config from plugin options', () => {
+    const config = readFlowSurfaceCapabilityPolicyConfigFromPluginOptions({
+      flowSurfaceCapabilities: {
+        writePolicy: {
+          mode: 'discoveryOnly',
+          allowedOwners: [' @nocobase/plugin-gantt ', '@nocobase/plugin-gantt'],
+          allowedPublicTypes: ['gantt', ''],
+        },
+        providerTimeoutMs: 5000,
+        extractorSnapshotDir: 'storage/custom-flow-surfaces',
+        diagnosticsEnabled: false,
+      },
+    });
+
+    expect(config).toMatchObject({
+      writePolicy: {
+        mode: 'discoveryOnly',
+        allowedOwners: ['@nocobase/plugin-gantt'],
+        allowedPublicTypes: ['gantt'],
+      },
+      providerTimeoutMs: 5000,
+      extractorSnapshotDir: 'storage/custom-flow-surfaces',
+      diagnosticsEnabled: false,
+    });
+  });
+
+  it('should project provider capabilities as read-only when policy is discoveryOnly', async () => {
+    const response = await buildFlowSurfaceCapabilitiesResponse(
+      {
+        query: 'gantt',
+      },
+      {
+        enabledPackages: new Set(['@nocobase/plugin-gantt']),
+        providerRegistry: createProviderRegistry([createGanttProvider()]),
+        capabilityPolicyConfig: {
+          writePolicy: {
+            mode: 'discoveryOnly',
+          },
+        },
+        catalog: createCatalogRecorder().catalog,
+        generatedAt: '2026-06-04T00:00:00.000Z',
+      },
+    );
+
+    expect(response.data).toEqual([
+      expect.objectContaining({
+        publicType: 'gantt',
+        origin: 'canaryOverlay',
+        supportLevel: 'readback-only',
+        readiness: 'blocked',
+        availability: expect.objectContaining({
+          create: expect.objectContaining({
+            supported: false,
+            reasonCode: 'contract-not-verified',
+            reasonSource: 'registry',
+          }),
+          configure: expect.objectContaining({
+            supported: false,
+            reasonCode: 'contract-not-verified',
+            reasonSource: 'registry',
+          }),
+        }),
+      }),
+    ]);
+  });
+
+  it('should let manifestOnly owner allowlists roll back one plugin capability writes', async () => {
+    const response = await buildFlowSurfaceCapabilitiesResponse(
+      {
+        query: 'gantt',
+      },
+      {
+        enabledPackages: new Set(['@nocobase/plugin-gantt']),
+        providerRegistry: createProviderRegistry([createGanttProvider()]),
+        capabilityPolicyConfig: {
+          writePolicy: {
+            mode: 'manifestOnly',
+            allowedOwners: ['@nocobase/plugin-other'],
+          },
+        },
+        catalog: createCatalogRecorder().catalog,
+        generatedAt: '2026-06-04T00:00:00.000Z',
+      },
+    );
+
+    expect(response.data).toEqual([
+      expect.objectContaining({
+        publicType: 'gantt',
+        ownerPlugin: '@nocobase/plugin-gantt',
+        supportLevel: 'readback-only',
+        readiness: 'blocked',
+        availability: expect.objectContaining({
+          create: expect.objectContaining({
+            supported: false,
+            reasonCode: 'contract-not-verified',
+            reasonSource: 'registry',
+          }),
+        }),
+      }),
+    ]);
+  });
+
+  it('should let manifestOnly publicType allowlists roll back one capability writes', async () => {
+    const response = await buildFlowSurfaceCapabilitiesResponse(
+      {
+        query: 'gantt',
+      },
+      {
+        enabledPackages: new Set(['@nocobase/plugin-gantt']),
+        providerRegistry: createProviderRegistry([createGanttProvider()]),
+        capabilityPolicyConfig: {
+          writePolicy: {
+            mode: 'manifestOnly',
+            allowedPublicTypes: ['calendar'],
+          },
+        },
+        catalog: createCatalogRecorder().catalog,
+        generatedAt: '2026-06-04T00:00:00.000Z',
+      },
+    );
+
+    expect(response.data).toEqual([
+      expect.objectContaining({
+        publicType: 'gantt',
+        supportLevel: 'readback-only',
+        readiness: 'blocked',
+        availability: expect.objectContaining({
+          create: expect.objectContaining({
+            supported: false,
+            reasonCode: 'contract-not-verified',
+            reasonSource: 'registry',
+          }),
+          configure: expect.objectContaining({
+            supported: false,
+            reasonCode: 'contract-not-verified',
+            reasonSource: 'registry',
+          }),
+        }),
+      }),
+    ]);
+  });
+
+  it('should keep auto snapshots read-only under verifiedAuto until admission evidence exists', async () => {
+    const response = await buildFlowSurfaceCapabilitiesResponse(
+      {
+        query: 'gantt',
+      },
+      {
+        enabledPackages: new Set(['@nocobase/plugin-gantt']),
+        autoSnapshots: [createGanttAutoSnapshot()],
+        capabilityPolicyConfig: {
+          writePolicy: {
+            mode: 'verifiedAuto',
+            allowedOwners: ['@nocobase/plugin-gantt'],
+            allowedPublicTypes: ['pluginGantt.gantt'],
+          },
+        },
+        catalog: createCatalogRecorder().catalog,
+        generatedAt: '2026-06-04T00:00:00.000Z',
+      },
+    );
+
+    expect(response.data).toEqual([
+      expect.objectContaining({
+        publicType: 'pluginGantt.gantt',
+        origin: 'autoSnapshot',
+        supportLevel: 'readback-only',
+        readiness: 'discovered',
+        availability: expect.objectContaining({
+          create: expect.objectContaining({
+            supported: false,
+            reasonCode: 'contract-not-verified',
+            reasonSource: 'registry',
+          }),
+          configure: expect.objectContaining({
+            supported: false,
+            reasonCode: 'contract-not-verified',
+            reasonSource: 'registry',
+          }),
+        }),
+      }),
+    ]);
   });
 
   it('should expose auto snapshot capabilities as read-only discovery', async () => {
