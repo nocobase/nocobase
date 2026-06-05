@@ -17,9 +17,9 @@ import {
   useApp,
 } from '@nocobase/client-v2';
 import { useFlowContext, type CollectionOptions } from '@nocobase/flow-engine';
-import { App, Button, Card, Flex, Form, Input, Space, theme, Tooltip, Typography } from 'antd';
+import { App, Button, Card, Flex, Form, Input, Popover, Space, theme, Tooltip, Typography } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useT } from '../locale';
 import { parseResourceListResponse } from '../utils/templateCompatibility';
 
@@ -55,6 +55,18 @@ type EditFormValues = {
 const FLOW_MODEL_TEMPLATES_COLLECTION_NAME = 'flowModelTemplates';
 const MIDDLE_DRAWER_WIDTH = '50%';
 const TEMPLATE_TABLE_SCROLL_X = 1380;
+const TEMPLATE_TEXT_STYLE: React.CSSProperties = {
+  display: 'inline-block',
+  maxWidth: '100%',
+  overflow: 'hidden',
+  textOverflow: 'ellipsis',
+  verticalAlign: 'bottom',
+  whiteSpace: 'nowrap',
+};
+const TEMPLATE_TEXT_POPOVER_CONTENT_STYLE: React.CSSProperties = {
+  whiteSpace: 'pre-wrap',
+  wordBreak: 'break-word',
+};
 
 const FLOW_MODEL_TEMPLATE_FILTER_FIELD_NAMES = [
   'name',
@@ -243,13 +255,46 @@ const getErrorMessage = (error: unknown, fallback: string) => {
 
 const TemplateText: React.FC<{ value: unknown }> = ({ value }) => {
   const text = toDisplayText(value);
+  const { token } = theme.useToken();
+  const textRef = useRef<HTMLSpanElement>(null);
+  const [open, setOpen] = useState(false);
+
+  useEffect(() => {
+    setOpen(false);
+  }, [text]);
+
+  const isOverflow = useCallback(() => {
+    const element = textRef.current;
+    return !!element && element.scrollWidth > element.clientWidth;
+  }, []);
+
+  const handleOpenChange = useCallback(
+    (nextOpen: boolean) => {
+      if (!nextOpen) {
+        setOpen(false);
+        return;
+      }
+      setOpen(isOverflow());
+    },
+    [isOverflow],
+  );
+
   if (!text) return null;
+  const textNode = (
+    <span ref={textRef} style={TEMPLATE_TEXT_STYLE}>
+      {text}
+    </span>
+  );
+
   return (
-    <Tooltip title={text}>
-      <Typography.Text ellipsis style={{ display: 'block', maxWidth: '100%' }}>
-        {text}
-      </Typography.Text>
-    </Tooltip>
+    <Popover
+      content={<Typography.Text style={TEMPLATE_TEXT_POPOVER_CONTENT_STYLE}>{text}</Typography.Text>}
+      open={open}
+      onOpenChange={handleOpenChange}
+      styles={{ body: { maxHeight: token.screenSM, maxWidth: token.screenSM, overflow: 'auto' } }}
+    >
+      {textNode}
+    </Popover>
   );
 };
 
@@ -421,28 +466,28 @@ const FlowModelTemplatesPageContent: React.FC<{ templateType: TemplateType }> = 
         title: t('Template name'),
         dataIndex: 'name',
         width: 300,
-        ellipsis: true,
+        ellipsis: { showTitle: false },
         render: (value) => <TemplateText value={value} />,
       },
       {
         title: t('Template description'),
         dataIndex: 'description',
         width: 420,
-        ellipsis: true,
+        ellipsis: { showTitle: false },
         render: (value) => <TemplateText value={value} />,
       },
       {
         title: t('Data source'),
         dataIndex: 'dataSourceKey',
         width: 160,
-        ellipsis: true,
+        ellipsis: { showTitle: false },
         render: (value) => <TemplateText value={value} />,
       },
       {
         title: t('Collection'),
         dataIndex: 'collectionName',
         width: 180,
-        ellipsis: true,
+        ellipsis: { showTitle: false },
         render: (value) => <TemplateText value={value} />,
       },
       {
