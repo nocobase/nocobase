@@ -28,7 +28,10 @@ import {
   resolveSupportedBlockCatalogItem,
 } from './catalog';
 import { buildFlowSurfaceCapabilitiesResponse, buildFlowSurfaceDescribeCapabilityResponse } from './capabilities';
-import { readFlowSurfaceCapabilityPolicyConfigFromPluginOptions } from './capability-policy';
+import {
+  applyFlowSurfaceCapabilityWritePolicy,
+  readFlowSurfaceCapabilityPolicyConfigFromPluginOptions,
+} from './capability-policy';
 import { resolveDynamicCapabilityCreate } from './capability-resolver';
 import {
   collectAutoSnapshotPublicCapabilities,
@@ -2578,9 +2581,11 @@ export class FlowSurfacesService {
     }).find((item) => item.kind === 'block' && item.publicType === normalizedType)?.ownerPlugin;
   }
 
-  private async assertAutoSnapshotDynamicBlockCatalogConfirmed(input: {
+  private async assertDynamicBlockCatalogConfirmed(input: {
     actionName: FlowSurfaceDynamicCapabilityCreateActionName;
     publicType: string;
+    ownerPlugin: string;
+    origin?: FlowSurfaceCatalogItem['origin'];
     target: FlowSurfaceWriteTarget;
     transaction?: unknown;
     enabledPackages: ReadonlySet<string>;
@@ -2595,12 +2600,14 @@ export class FlowSurfacesService {
         enabledPackages: input.enabledPackages,
       },
     );
-    const ownerPlugin = this.getAutoSnapshotDynamicBlockOwnerPlugin(input.publicType, input.enabledPackages);
     const confirmed = (catalog.blocks || []).some((item) => {
-      if (item.kind !== 'block' || item.origin !== 'autoSnapshot' || item.publicType !== input.publicType) {
+      if (item.kind !== 'block' || item.publicType !== input.publicType) {
         return false;
       }
-      if (!ownerPlugin || item.ownerPlugin !== ownerPlugin) {
+      if (input.origin && item.origin !== input.origin) {
+        return false;
+      }
+      if (!input.ownerPlugin || item.ownerPlugin !== input.ownerPlugin) {
         return false;
       }
       if (item.createSupported === false || item.availability?.create.supported === false) {
@@ -2622,6 +2629,20 @@ export class FlowSurfacesService {
         },
       },
     );
+  }
+
+  private async assertAutoSnapshotDynamicBlockCatalogConfirmed(input: {
+    actionName: FlowSurfaceDynamicCapabilityCreateActionName;
+    publicType: string;
+    target: FlowSurfaceWriteTarget;
+    transaction?: unknown;
+    enabledPackages: ReadonlySet<string>;
+  }) {
+    await this.assertDynamicBlockCatalogConfirmed({
+      ...input,
+      ownerPlugin: this.getAutoSnapshotDynamicBlockOwnerPlugin(input.publicType, input.enabledPackages) || '',
+      origin: 'autoSnapshot',
+    });
   }
 
   private async buildProviderCatalogItems(input: {
@@ -9693,6 +9714,21 @@ export class FlowSurfacesService {
                   ? (input.semanticResource.value as Record<string, unknown>)
                   : undefined),
             });
+        const capabilityPolicyConfig = readFlowSurfaceCapabilityPolicyConfigFromPluginOptions(this.plugin.options);
+        const policyProjectedCapability = applyFlowSurfaceCapabilityWritePolicy(
+          capability.publicItem,
+          capabilityPolicyConfig,
+        );
+        if (policyProjectedCapability.availability.create.supported) {
+          await this.assertDynamicBlockCatalogConfirmed({
+            actionName,
+            publicType: policyProjectedCapability.publicType,
+            ownerPlugin: policyProjectedCapability.ownerPlugin,
+            target: input.target,
+            transaction: input.options.transaction,
+            enabledPackages: input.enabledPackages,
+          });
+        }
         dynamicCreate = await resolveDynamicCapabilityCreate({
           publicType,
           target: input.target,
@@ -9701,8 +9737,8 @@ export class FlowSurfacesService {
           rawPublicPayload: input.values,
           enabledPackages: input.enabledPackages,
           providerRegistry: this.capabilityProviderRegistry,
-          providerTimeoutMs: readFlowSurfaceCapabilityPolicyConfigFromPluginOptions(this.plugin.options)
-            .providerTimeoutMs,
+          providerTimeoutMs: capabilityPolicyConfig.providerTimeoutMs,
+          capabilityPolicyConfig,
           actionName,
         });
       }
