@@ -13,6 +13,7 @@ import { getApp, sleep } from '@nocobase/plugin-workflow-test';
 
 import Plugin, { Processor } from '..';
 import { EXECUTION_STATUS } from '../constants';
+import type { ExecutionModel } from '../types';
 
 describe('workflow > Plugin', () => {
   let app: MockServer;
@@ -248,6 +249,121 @@ describe('workflow > Plugin', () => {
   });
 
   describe('dispatcher', () => {
+    it.skipIf(process.env['DB_DIALECT'] === 'sqlite')(
+      'should acquire pending execution only once under concurrent dispatch',
+      async () => {
+        const w1 = await WorkflowModel.create({
+          enabled: true,
+          type: 'asyncTrigger',
+        });
+
+        const e1 = await w1.createExecution({
+          key: w1.key,
+          context: {},
+          dispatched: false,
+          status: EXECUTION_STATUS.QUEUEING,
+        });
+        const sameExecution = (await db.getRepository('executions').findOne({
+          filterByTk: e1.id,
+        })) as ExecutionModel;
+
+        type PendingDispatcher = {
+          acquirePendingExecution(execution: ExecutionModel): Promise<ExecutionModel | null>;
+        };
+        const dispatcher = (plugin as unknown as { dispatcher: PendingDispatcher }).dispatcher;
+
+        const acquired = await Promise.all([
+          dispatcher.acquirePendingExecution(e1),
+          dispatcher.acquirePendingExecution(sameExecution),
+        ]);
+
+        const acquiredExecutions = acquired.filter((execution): execution is ExecutionModel => Boolean(execution));
+        expect(acquiredExecutions.map((execution) => execution.id)).toEqual([e1.id]);
+
+        await e1.reload();
+        expect(e1.dispatched).toBe(true);
+        expect(e1.status).toBe(EXECUTION_STATUS.STARTED);
+      },
+    );
+
+    it('should not acquire pending execution when acquire transaction fails', async () => {
+      const w1 = await WorkflowModel.create({
+        enabled: true,
+        type: 'asyncTrigger',
+      });
+
+      const e1 = await w1.createExecution({
+        key: w1.key,
+        context: {},
+        dispatched: false,
+        status: EXECUTION_STATUS.QUEUEING,
+      });
+
+      type PendingDispatcher = {
+        acquirePendingExecution(execution: ExecutionModel): Promise<ExecutionModel | null>;
+      };
+      const dispatcher = (plugin as unknown as { dispatcher: PendingDispatcher }).dispatcher;
+      const transaction = db.sequelize.transaction;
+      db.sequelize.transaction = (async () => {
+        throw new Error('simulated transaction failure');
+      }) as typeof db.sequelize.transaction;
+
+      try {
+        const acquired = await dispatcher.acquirePendingExecution(e1);
+        expect(acquired).toBeNull();
+      } finally {
+        db.sequelize.transaction = transaction;
+      }
+
+      await e1.reload();
+      expect(e1.dispatched).toBe(false);
+      expect(e1.status).toBe(EXECUTION_STATUS.QUEUEING);
+    });
+
+    it('should treat postgres deadlock as concurrent acquire error', () => {
+      type ConcurrentAcquireDispatcher = {
+        isConcurrentAcquireError(error: unknown): boolean;
+      };
+      const dispatcher = (plugin as unknown as { dispatcher: ConcurrentAcquireDispatcher }).dispatcher;
+      const error = Object.assign(new Error('deadlock detected'), { parent: { code: '40P01' } });
+
+      expect(dispatcher.isConcurrentAcquireError(error)).toBe(true);
+    });
+
+    it.skipIf(process.env['DB_DIALECT'] === 'sqlite')(
+      'should acquire queueing execution only once under concurrent dispatch',
+      async () => {
+        const w1 = await WorkflowModel.create({
+          enabled: true,
+          type: 'asyncTrigger',
+        });
+
+        const e1 = await w1.createExecution({
+          key: w1.key,
+          context: {},
+          dispatched: false,
+          status: EXECUTION_STATUS.QUEUEING,
+        });
+
+        type QueueingDispatcher = {
+          acquireQueueingExecution(): Promise<ExecutionModel | null>;
+        };
+        const dispatcher = (plugin as unknown as { dispatcher: QueueingDispatcher }).dispatcher;
+
+        const acquired = await Promise.all([
+          dispatcher.acquireQueueingExecution(),
+          dispatcher.acquireQueueingExecution(),
+        ]);
+
+        const acquiredExecutions = acquired.filter((execution): execution is ExecutionModel => Boolean(execution));
+        expect(acquiredExecutions.map((execution) => execution.id)).toEqual([e1.id]);
+
+        await e1.reload();
+        expect(e1.dispatched).toBe(true);
+        expect(e1.status).toBe(EXECUTION_STATUS.STARTED);
+      },
+    );
+
     it('multiple triggers in same event', async () => {
       const w1 = await WorkflowModel.create({
         enabled: true,
