@@ -1934,6 +1934,9 @@ describe('flowSurfaces dynamic capability create dry-run', () => {
         upsertModel(payload: Record<string, unknown>, options?: Record<string, unknown>): Promise<string>;
       };
     };
+    type DynamicReadbackProjector = {
+      projectDynamicBlockReadbackTypes<T>(node: T, options: { enabledPackages: ReadonlySet<string> }): Promise<T>;
+    };
     vi.spyOn(service as unknown as RepositoryGetterHarness, 'repository', 'get').mockReturnValue({
       upsertModel: async (payload) => {
         persistedPayloads.push(payload);
@@ -1986,6 +1989,16 @@ describe('flowSurfaces dynamic capability create dry-run', () => {
         },
       },
     });
+    const projectedReadbackPayload = await (
+      service as unknown as DynamicReadbackProjector
+    ).projectDynamicBlockReadbackTypes(persistedPayloads[0], {
+      enabledPackages,
+    });
+    expect(projectedReadbackPayload).toMatchObject({
+      use: 'GanttBlockModel',
+      type: 'pluginGantt.gantt',
+    });
+    expect(projectedReadbackPayload).not.toHaveProperty('identity');
     expect(auditLog).toHaveBeenCalledWith(
       'flowSurfaces capability audit',
       expect.objectContaining({
