@@ -124,7 +124,9 @@ export function applyFlowSurfaceCapabilityWritePolicy(
   }
 
   if (normalized.writePolicy.mode === 'discoveryOnly') {
-    return blockFlowSurfaceCapabilityWrites(item, 'contract-not-verified');
+    return blockFlowSurfaceCapabilityWrites(item, 'contract-not-verified', {
+      readiness: 'blocked',
+    });
   }
 
   if (!matchesFlowSurfaceCapabilityWritePolicyAllowlist(item, normalized.writePolicy)) {
@@ -251,6 +253,7 @@ function matchesFlowSurfaceCapabilityWritePolicyAllowlist(
 function blockFlowSurfaceCapabilityWrites(
   item: FlowSurfacePublicCapabilityItem,
   reasonCode: FlowSurfaceReasonCode,
+  options: { readiness?: FlowSurfaceCapabilityReadiness } = {},
 ): FlowSurfacePublicCapabilityItem {
   const availability = {
     ...item.availability,
@@ -264,7 +267,7 @@ function blockFlowSurfaceCapabilityWrites(
           ...item,
           availability,
           supportLevel: resolveFlowSurfaceSupportLevel(availability),
-          readiness: resolveFlowSurfacePolicyReadiness(item, availability),
+          readiness: options.readiness || resolveFlowSurfacePolicyReadiness(item, availability),
         },
         getFlowSurfacePublicCapabilityModelUses(item),
       ),

@@ -1491,6 +1491,11 @@ describe('flowSurfaces capabilities projection', () => {
             reasonCode: 'contract-not-verified',
             reasonSource: 'registry',
           }),
+          configure: expect.objectContaining({
+            supported: false,
+            reasonCode: 'contract-not-verified',
+            reasonSource: 'registry',
+          }),
         }),
       }),
     ]);
@@ -1879,6 +1884,44 @@ describe('flowSurfaces capabilities projection', () => {
           create: expect.objectContaining({
             supported: false,
             reasonCode: 'manifest-required',
+            reasonSource: 'registry',
+          }),
+        }),
+      }),
+    ]);
+  });
+
+  it('should keep admitted auto snapshots read-only under discoveryOnly policy', async () => {
+    const response = await buildFlowSurfaceCapabilitiesResponse(
+      {
+        query: 'gantt',
+      },
+      {
+        enabledPackages: new Set(['@nocobase/plugin-gantt']),
+        autoSnapshots: [createGanttAutoSnapshot()],
+        admissionReports: [createVerifiedAutoAdmissionReport()],
+        capabilityPolicyConfig: {
+          writePolicy: {
+            mode: 'discoveryOnly',
+            allowedOwners: ['@nocobase/plugin-gantt'],
+            allowedPublicTypes: ['pluginGantt.gantt'],
+          },
+        },
+        catalog: createCatalogRecorder().catalog,
+        generatedAt: '2026-06-04T00:00:00.000Z',
+      },
+    );
+
+    expect(response.data).toEqual([
+      expect.objectContaining({
+        publicType: 'pluginGantt.gantt',
+        origin: 'autoSnapshot',
+        supportLevel: 'readback-only',
+        readiness: 'blocked',
+        availability: expect.objectContaining({
+          create: expect.objectContaining({
+            supported: false,
+            reasonCode: 'contract-not-verified',
             reasonSource: 'registry',
           }),
         }),
