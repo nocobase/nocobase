@@ -178,6 +178,52 @@ describe('flowSurfaces capability admission report CLI', () => {
     }
   });
 
+  it('should reject verifier reports that do not match the requested public type', async () => {
+    const summary = await runFlowSurfaceCapabilityAdmissionCli(
+      [
+        {
+          plugin: '@example/plugin-cli',
+          publicType: 'gantt',
+        },
+      ],
+      {
+        dryRun: true,
+        generatedAt,
+        verifyCapability: async (target, options) =>
+          buildFlowSurfaceCapabilityAdmissionReport({
+            plugin: target.plugin,
+            generatedAt: options.generatedAt,
+            records: [
+              createAdmissionRecord({
+                ownerPlugin: target.plugin,
+                publicType: 'calendar',
+              }),
+            ],
+          }),
+      },
+    );
+
+    expect(summary).toMatchObject({
+      ok: false,
+      dryRun: true,
+      exitCode: 1,
+      results: [
+        {
+          ok: false,
+          plugin: '@example/plugin-cli',
+          publicType: 'gantt',
+          recordCount: 0,
+          errors: [
+            {
+              code: 'admission-report-public-type-mismatch',
+              message: 'Flow surface capability admission verifier returned records for a different public type.',
+            },
+          ],
+        },
+      ],
+    });
+  });
+
   it('should keep service-backed admission reports conservative before dry-run and parity evidence', () => {
     const report = buildFlowSurfaceCapabilityAdmissionReportFromCapabilities({
       plugin: '@example/plugin-cli',

@@ -529,6 +529,15 @@ function assertFlowSurfaceCapabilityAdmissionReportMatchesTarget(
       'Flow surface capability admission verifier returned a report for a different plugin.',
     );
   }
+  if (
+    target.publicType &&
+    (!report.records.length || report.records.some((record) => record.publicType !== target.publicType))
+  ) {
+    throw createFlowSurfaceCapabilityAdmissionCliError(
+      'admission-report-public-type-mismatch',
+      'Flow surface capability admission verifier returned records for a different public type.',
+    );
+  }
 }
 
 async function resolveFlowSurfaceAdmissionEnabledPluginPackages(
