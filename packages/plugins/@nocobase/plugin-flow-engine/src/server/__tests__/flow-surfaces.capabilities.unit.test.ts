@@ -332,6 +332,37 @@ describe('flowSurfaces capabilities projection', () => {
     });
   }
 
+  function createCalendarAutoSnapshot() {
+    return buildFlowSurfaceAutoSnapshot({
+      plugin: '@nocobase/plugin-calendar',
+      pluginVersion: '1.0.0',
+      generatedAt: '2026-06-04T00:00:00.000Z',
+      sourceHash: 'calendar-source-hash',
+      extractorVersion: 'test',
+      events: [
+        {
+          type: 'model.registered',
+          modelUse: 'CalendarBlockModel',
+          className: 'CalendarBlockModel',
+          source: 'packages/plugins/@nocobase/plugin-calendar/src/client-v2/plugin.tsx',
+          evidenceSource: 'runtime',
+          confidence: 'high',
+        },
+        {
+          type: 'menu.itemRegistered',
+          menuKey: 'calendar',
+          label: 'Calendar',
+          modelUse: 'CalendarBlockModel',
+          slot: 'blocks',
+          createModelOptionsStatus: 'static',
+          source: 'packages/plugins/@nocobase/plugin-calendar/src/client-v2/models/CalendarBlockModel.tsx',
+          evidenceSource: 'ast',
+          confidence: 'medium',
+        },
+      ],
+    });
+  }
+
   function createSnapshotStaleWarning(message = 'Snapshot was generated before the current plugin build.') {
     return {
       code: 'snapshot-stale' as const,
@@ -744,6 +775,30 @@ describe('flowSurfaces capabilities projection', () => {
           updatedAt: '2026-06-04T00:00:00.000Z',
           approvedAt: '2026-06-04T00:00:00.000Z',
           checks: createDiagnosticsAdmissionChecks(options.checks),
+        },
+      ],
+    };
+  }
+
+  function createCalendarVerifiedAutoAdmissionReport(): FlowSurfaceCapabilityAdmissionReport {
+    return {
+      version: 1,
+      plugin: '@nocobase/plugin-calendar',
+      generatedAt: '2026-06-04T00:00:00.000Z',
+      records: [
+        {
+          capabilityId: '@nocobase/plugin-calendar:autoSnapshot:block:pluginCalendar.calendar',
+          kind: 'block',
+          publicType: 'pluginCalendar.calendar',
+          ownerPlugin: '@nocobase/plugin-calendar',
+          capabilityVersion: '1.0.0',
+          manifestHash: 'manifest-hash',
+          snapshotHash: 'v1:calendar-source-hash',
+          dryRunFixtureHash: 'fixture-hash',
+          readiness: 'createEnabled',
+          updatedAt: '2026-06-04T00:00:00.000Z',
+          approvedAt: '2026-06-04T00:00:00.000Z',
+          checks: createDiagnosticsAdmissionChecks(),
         },
       ],
     };
@@ -3247,6 +3302,83 @@ describe('flowSurfaces capabilities projection', () => {
         enabledPackages: new Set<string>(),
         admissionReports: [createVerifiedAutoAdmissionReport()],
         capabilityPolicyConfig: verifiedAutoPolicy,
+      }),
+    ).toEqual([]);
+  });
+
+  it('should keep non-Gantt auto snapshots read-only even with verifiedAuto admission evidence', async () => {
+    const autoSnapshot = createCalendarAutoSnapshot();
+    const admissionReports = [createCalendarVerifiedAutoAdmissionReport()];
+    const capabilityPolicyConfig = {
+      writePolicy: {
+        mode: 'verifiedAuto' as const,
+        allowedOwners: ['@nocobase/plugin-calendar'],
+        allowedPublicTypes: ['pluginCalendar.calendar'],
+      },
+    };
+    const enabledPackages = new Set(['@nocobase/plugin-calendar']);
+
+    expect(
+      collectVerifiedAutoSnapshotCatalogItems({
+        autoSnapshots: [autoSnapshot],
+        enabledPackages,
+        admissionReports,
+        capabilityPolicyConfig,
+      }),
+    ).toEqual([]);
+
+    const response = await buildFlowSurfaceCapabilitiesResponse(
+      {
+        query: 'calendar',
+        includeUnavailable: true,
+      },
+      {
+        enabledPackages,
+        autoSnapshots: [autoSnapshot],
+        admissionReports,
+        capabilityPolicyConfig,
+        catalog: createCatalogRecorder().catalog,
+        generatedAt: '2026-06-04T00:00:00.000Z',
+      },
+    );
+
+    expect(response.data).toEqual([
+      expect.objectContaining({
+        publicType: 'pluginCalendar.calendar',
+        ownerPlugin: '@nocobase/plugin-calendar',
+        origin: 'autoSnapshot',
+        supportLevel: 'readback-only',
+        readiness: 'discovered',
+        availability: expect.objectContaining({
+          create: expect.objectContaining({
+            supported: false,
+            reasonCode: 'contract-not-verified',
+            reasonSource: 'registry',
+          }),
+        }),
+      }),
+    ]);
+    expect(JSON.stringify(response.data)).not.toContain('CalendarBlockModel');
+    expect(JSON.stringify(response.data)).not.toContain('calendar-source-hash');
+  });
+
+  it('should require the admitted Gantt hidden model before verifiedAuto catalog projection', () => {
+    const autoSnapshot = createGanttAutoSnapshot({
+      modelUse: 'GanttModel',
+    });
+
+    expect(
+      collectVerifiedAutoSnapshotCatalogItems({
+        autoSnapshots: [autoSnapshot],
+        enabledPackages: new Set(['@nocobase/plugin-gantt']),
+        admissionReports: [createVerifiedAutoAdmissionReport()],
+        capabilityPolicyConfig: {
+          writePolicy: {
+            mode: 'verifiedAuto',
+            allowedOwners: ['@nocobase/plugin-gantt'],
+            allowedPublicTypes: ['pluginGantt.gantt'],
+          },
+        },
       }),
     ).toEqual([]);
   });

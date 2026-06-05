@@ -164,6 +164,14 @@ export function resolveFlowSurfaceVerifiedAutoAdmissionDecision(
     );
   }
 
+  if (!isFixtureScopedVerifiedAutoAdmissionCapability(input.item)) {
+    return buildBlockedVerifiedAutoAdmissionDecision(
+      input.item.readiness,
+      'contract-not-verified',
+      'Verified auto admission is limited to the admitted Gantt block capability in this slice.',
+    );
+  }
+
   if (!matchesFlowSurfaceCapabilityWritePolicyAllowlist(input.item, normalized.writePolicy)) {
     return buildBlockedVerifiedAutoAdmissionDecision(
       input.item.readiness,
@@ -219,6 +227,15 @@ export function resolveFlowSurfaceVerifiedAutoAdmissionDecision(
     readiness: 'createEnabled',
     failedChecks: [],
   };
+}
+
+function isFixtureScopedVerifiedAutoAdmissionCapability(item: FlowSurfacePublicCapabilityItem) {
+  return (
+    item.kind === 'block' &&
+    item.ownerPlugin === '@nocobase/plugin-gantt' &&
+    item.publicType === 'pluginGantt.gantt' &&
+    getFlowSurfacePublicCapabilityModelUses(item).includes('GanttBlockModel')
+  );
 }
 
 function normalizeFlowSurfaceCapabilityWritePolicy(input: unknown): NormalizedFlowSurfaceCapabilityWritePolicy {

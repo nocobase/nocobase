@@ -20,6 +20,7 @@ import {
 import {
   collectAutoSnapshotPublicCapabilities,
   collectProviderPublicCapabilities,
+  getFlowSurfaceCatalogCapabilityModelUses,
   getFlowSurfacePublicCapabilityAdmissionCapabilityId,
   getFlowSurfacePublicCapabilityAdmissionIntegrity,
   getFlowSurfacePublicCapabilityModelUses,
@@ -1055,7 +1056,8 @@ function projectCatalogCapabilityItem(
   if (!request.expand.has('item.semantic')) {
     capability.semantic = toLightCapabilitySemantic(semantic);
   }
-  return setFlowSurfacePublicCapabilityModelUse(capability, item.use);
+  const catalogModelUses = getFlowSurfaceCatalogCapabilityModelUses(item);
+  return setFlowSurfacePublicCapabilityModelUse(capability, catalogModelUses.length ? catalogModelUses : item.use);
 }
 
 function sanitizeCatalogCapabilitySchema(schema: FlowSurfaceCatalogItem['settingsSchema']) {

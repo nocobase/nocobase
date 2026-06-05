@@ -56,6 +56,7 @@ const capabilityAdmissionIntegrity = new WeakMap<
   FlowSurfaceCapabilityAdmissionIntegrity
 >();
 const capabilityAdmissionCapabilityIds = new WeakMap<FlowSurfacePublicCapabilityItem, string>();
+const catalogItemCapabilityModelUses = new WeakMap<FlowSurfaceCatalogItem, string[]>();
 
 export type FlowSurfaceCapabilityRegistryLike = Pick<FlowSurfaceCapabilityProviderRegistry, 'listProviders'>;
 
@@ -95,11 +96,7 @@ export function setFlowSurfacePublicCapabilityModelUse<T extends FlowSurfacePubl
   item: T,
   modelUse?: string | readonly string[],
 ): T {
-  const normalized = Array.from(
-    new Set(
-      (Array.isArray(modelUse) ? modelUse : [modelUse]).map((value) => String(value || '').trim()).filter(Boolean),
-    ),
-  );
+  const normalized = normalizeCapabilityModelUses(modelUse);
   if (normalized.length) {
     capabilityModelUses.set(item, normalized);
   }
@@ -108,6 +105,21 @@ export function setFlowSurfacePublicCapabilityModelUse<T extends FlowSurfacePubl
 
 export function getFlowSurfacePublicCapabilityModelUses(item: FlowSurfacePublicCapabilityItem) {
   return capabilityModelUses.get(item) || [];
+}
+
+export function setFlowSurfaceCatalogCapabilityModelUse<T extends FlowSurfaceCatalogItem>(
+  item: T,
+  modelUse?: string | readonly string[],
+): T {
+  const normalized = normalizeCapabilityModelUses(modelUse);
+  if (normalized.length) {
+    catalogItemCapabilityModelUses.set(item, normalized);
+  }
+  return item;
+}
+
+export function getFlowSurfaceCatalogCapabilityModelUses(item: FlowSurfaceCatalogItem) {
+  return catalogItemCapabilityModelUses.get(item) || [];
 }
 
 export function setFlowSurfacePublicCapabilityAdmissionIntegrity<T extends FlowSurfacePublicCapabilityItem>(
@@ -370,22 +382,33 @@ function copyAutoCapabilityProjectionMetadata(
 }
 
 function toVerifiedAutoSnapshotCatalogItem(item: FlowSurfacePublicCapabilityItem): FlowSurfaceCatalogItem {
-  return {
-    key: item.publicType,
-    label: item.label,
-    use: item.publicType,
-    kind: 'block',
-    publicType: item.publicType,
-    semantic: item.semantic,
-    ownerPlugin: item.ownerPlugin,
-    origin: item.origin,
-    supportLevel: item.supportLevel,
-    confidence: item.confidence,
-    availability: item.availability,
-    createSupported: item.availability.create.supported,
-    ...(item.warnings?.length ? { warnings: item.warnings } : {}),
-    ...(item.identity ? { identity: item.identity } : {}),
-  };
+  return setFlowSurfaceCatalogCapabilityModelUse(
+    {
+      key: item.publicType,
+      label: item.label,
+      use: item.publicType,
+      kind: 'block',
+      publicType: item.publicType,
+      semantic: item.semantic,
+      ownerPlugin: item.ownerPlugin,
+      origin: item.origin,
+      supportLevel: item.supportLevel,
+      confidence: item.confidence,
+      availability: item.availability,
+      createSupported: item.availability.create.supported,
+      ...(item.warnings?.length ? { warnings: item.warnings } : {}),
+      ...(item.identity ? { identity: item.identity } : {}),
+    },
+    getFlowSurfacePublicCapabilityModelUses(item),
+  );
+}
+
+function normalizeCapabilityModelUses(modelUse?: string | readonly string[]) {
+  return Array.from(
+    new Set(
+      (Array.isArray(modelUse) ? modelUse : [modelUse]).map((value) => String(value || '').trim()).filter(Boolean),
+    ),
+  );
 }
 
 async function collectOneProviderCapabilities(
