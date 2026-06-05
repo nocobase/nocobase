@@ -2202,6 +2202,7 @@ describe('flowSurfaces dynamic capability create dry-run', () => {
               },
               implementation: {
                 modelUse: 'GanttBlockModel',
+                legacyModelUses: ['LegacyGanttBlockModel'],
               },
               availability: {
                 create: {
@@ -2230,6 +2231,10 @@ describe('flowSurfaces dynamic capability create dry-run', () => {
             use: 'GanttBlockModel',
           },
           {
+            uid: 'legacy-gantt-1',
+            use: 'LegacyGanttBlockModel',
+          },
+          {
             uid: 'table-1',
             use: 'TableBlockModel',
           },
@@ -2245,7 +2250,11 @@ describe('flowSurfaces dynamic capability create dry-run', () => {
       use: 'GanttBlockModel',
       type: 'gantt',
     });
-    expect(projected.subModels.items[1]).toEqual({
+    expect(projected.subModels.items[1]).toMatchObject({
+      use: 'LegacyGanttBlockModel',
+      type: 'gantt',
+    });
+    expect(projected.subModels.items[2]).toEqual({
       uid: 'table-1',
       use: 'TableBlockModel',
     });
