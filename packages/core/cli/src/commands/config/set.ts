@@ -21,6 +21,8 @@ export default class ConfigSet extends Command {
     '<%= config.bin %> <%= command.id %> docker.container-prefix nb',
     '<%= config.bin %> <%= command.id %> bin.docker /usr/local/bin/docker',
     '<%= config.bin %> <%= command.id %> bin.git /usr/bin/git',
+    '<%= config.bin %> <%= command.id %> bin.nginx /usr/sbin/nginx',
+    '<%= config.bin %> <%= command.id %> proxy.provider nginx',
     '<%= config.bin %> <%= command.id %> bin.yarn yarn',
   ];
 

@@ -36,6 +36,10 @@ const MISSING_COMMAND_SPECS = {
     displayName: 'Git',
     configKey: 'bin.git',
   },
+  nginx: {
+    displayName: 'Nginx',
+    configKey: 'bin.nginx',
+  },
   yarn: {
     displayName: 'Yarn',
     configKey: 'bin.yarn',

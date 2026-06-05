@@ -214,6 +214,86 @@ test('nb config set/get/delete supports binary override keys', async () => {
   });
 });
 
+test('nb config set/get/delete supports bin.nginx and proxy.provider', async () => {
+  await withTempCliHome(async () => {
+    const { default: ConfigSet } = await import('../commands/config/set.js');
+    const { default: ConfigGet } = await import('../commands/config/get.js');
+    const { default: ConfigDelete } = await import('../commands/config/delete.js');
+
+    const setNginxCommand = Object.assign(Object.create(ConfigSet.prototype), {
+      parse: vi.fn(async () => ({
+        args: {
+          key: 'bin.nginx',
+          value: '/usr/sbin/nginx',
+        },
+      })),
+      log: vi.fn(),
+    });
+    await ConfigSet.prototype.run.call(setNginxCommand);
+    expect(setNginxCommand.log).toHaveBeenCalledWith('bin.nginx=/usr/sbin/nginx');
+
+    const setProviderCommand = Object.assign(Object.create(ConfigSet.prototype), {
+      parse: vi.fn(async () => ({
+        args: {
+          key: 'proxy.provider',
+          value: 'nginx',
+        },
+      })),
+      log: vi.fn(),
+    });
+    await ConfigSet.prototype.run.call(setProviderCommand);
+    expect(setProviderCommand.log).toHaveBeenCalledWith('proxy.provider=nginx');
+
+    const getNginxCommand = Object.assign(Object.create(ConfigGet.prototype), {
+      parse: vi.fn(async () => ({
+        args: {
+          key: 'bin.nginx',
+        },
+      })),
+      log: vi.fn(),
+    });
+    await ConfigGet.prototype.run.call(getNginxCommand);
+    expect(getNginxCommand.log).toHaveBeenCalledWith('/usr/sbin/nginx');
+
+    const getProviderCommand = Object.assign(Object.create(ConfigGet.prototype), {
+      parse: vi.fn(async () => ({
+        args: {
+          key: 'proxy.provider',
+        },
+      })),
+      log: vi.fn(),
+    });
+    await ConfigGet.prototype.run.call(getProviderCommand);
+    expect(getProviderCommand.log).toHaveBeenCalledWith('nginx');
+
+    const deleteNginxCommand = Object.assign(Object.create(ConfigDelete.prototype), {
+      parse: vi.fn(async () => ({
+        args: {
+          key: 'bin.nginx',
+        },
+      })),
+      log: vi.fn(),
+    });
+    await ConfigDelete.prototype.run.call(deleteNginxCommand);
+    expect(deleteNginxCommand.log).toHaveBeenCalledWith('Deleted bin.nginx');
+
+    const deleteProviderCommand = Object.assign(Object.create(ConfigDelete.prototype), {
+      parse: vi.fn(async () => ({
+        args: {
+          key: 'proxy.provider',
+        },
+      })),
+      log: vi.fn(),
+    });
+    await ConfigDelete.prototype.run.call(deleteProviderCommand);
+    expect(deleteProviderCommand.log).toHaveBeenCalledWith('Deleted proxy.provider');
+
+    const config = await loadAuthConfig({ scope: 'global' });
+    expect(config.settings?.bin?.nginx).toBe(undefined);
+    expect(config.settings?.proxy?.provider).toBe(undefined);
+  });
+});
+
 test('nb config list prints only explicit settings', async () => {
   await withTempCliHome(async () => {
     const { default: ConfigSet } = await import('../commands/config/set.js');

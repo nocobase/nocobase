@@ -120,14 +120,24 @@
       "messages": {
         "generating": "Generating proxy config for env \"{{envName}}\"...",
         "printed": "Printed proxy config for env \"{{envName}}\".",
-        "saved": "Saved proxy config for env \"{{envName}}\" at {{outputPath}}.",
-        "failed": "Failed to generate proxy config for env \"{{envName}}\"."
+        "saved": "Saved generated proxy config for env \"{{envName}}\" at {{outputPath}}.",
+        "savedWithAppEntryCreated": "Saved generated proxy config for env \"{{envName}}\" at {{outputPath}}, and created editable app entry config at {{appConfigPath}}.",
+        "savedWithAppEntryMigrated": "Saved generated proxy config for env \"{{envName}}\" at {{outputPath}}, and migrated the app entry config at {{appConfigPath}}.",
+        "failed": "Failed to generate proxy config for env \"{{envName}}\".",
+        "installingProvider": "Installing the shared proxy config into {{provider}}...",
+        "providerInstalled": "Installed the shared proxy config into the {{provider}} main config at {{configPath}}.",
+        "providerAlreadyInstalled": "The shared proxy config is already installed in the {{provider}} main config at {{configPath}}.",
+        "installProviderFailed": "Failed to install the shared proxy config into {{provider}}.",
+        "reloadingProvider": "Validating and reloading {{provider}}...",
+        "providerReloaded": "Validated and reloaded {{provider}}.",
+        "reloadProviderFailed": "Failed to validate and reload {{provider}}."
       },
       "errors": {
         "httpEnvUnsupported": "Can't generate a proxy config for \"{{envName}}\" from this machine because the env only has an API connection.",
         "sshEnvUnsupported": "Can't generate a proxy config for \"{{envName}}\" yet because SSH envs are not implemented.",
         "missingAppPort": "Missing appPort for env \"{{envName}}\". Save or update the app port before generating proxy config.",
-        "missingVersion": "Couldn't determine the app version for env \"{{envName}}\". Run `nb env update {{envName}}` and try again."
+        "missingVersion": "Couldn't determine the app version for env \"{{envName}}\". Run `nb env update {{envName}}` and try again.",
+        "appEntryMissingInclude": "The editable app entry config at {{appConfigPath}} does not include {{generatedConfigPath}}. Add `include {{generatedConfigPath}};` inside the server block, or replace the legacy managed routes in app.conf and rerun the command."
       }
     },
     "shared": {

@@ -189,6 +189,15 @@ test('run reports a friendly error when Yarn is missing', async () => {
   );
 });
 
+test('run reports a friendly error when Nginx is missing', async () => {
+  spawnMock.mockReturnValue(erroredChild(Object.assign(new Error('spawn nginx ENOENT'), { code: 'ENOENT' })));
+
+  const { run } = await import('../lib/run-npm.js');
+  await expect(run('nginx', ['-t'], { stdio: 'ignore', errorName: 'nginx -t' })).rejects.toThrow(
+    "Couldn't run `nginx -t` because the Nginx executable could not be found. Install Nginx or update `nb config set bin.nginx <path>` and try again.",
+  );
+});
+
 test('commandOutputViaFile reports a friendly error when Docker is missing', async () => {
   spawnMock.mockReturnValue(erroredChild(Object.assign(new Error('spawn docker ENOENT'), { code: 'ENOENT' })));
 

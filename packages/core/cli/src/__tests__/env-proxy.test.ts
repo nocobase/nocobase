@@ -12,9 +12,14 @@ import os from 'node:os';
 import path from 'node:path';
 import { afterEach, expect, test } from 'vitest';
 import type { ManagedAppRuntime } from '../lib/app-runtime.js';
+import { setCliConfigValue } from '../lib/cli-config.js';
 import {
+  buildEnvProxyAppConfig,
   buildEnvProxyConfig,
   buildEnvProxyMainConfig,
+  parseNginxConfPathFromVersionOutput,
+  resolveEnvProxyAppOutputPath,
+  resolveEnvProxyProvider,
   resolveEnvProxyMainOutputPath,
   resolveEnvProxyOutputPath,
 } from '../lib/env-proxy.ts';
@@ -75,6 +80,7 @@ test('buildEnvProxyConfig reads local env file settings and maps /dist/ to stora
   expect(result.pluginStaticsPath).toBe('/console/static/plugins/');
   expect(result.distClientRoot).toBe(path.join(storagePath, 'dist-client'));
   expect(result.content).not.toContain('map $http_upgrade $connection_upgrade');
+  expect(result.content).not.toContain('server {');
   expect(result.content).toContain('location ^~ /console/api/');
   expect(result.content).toContain('location ^~ /console/dist/');
   expect(result.content).toContain(`alias ${path.join(storagePath, 'dist-client')}/;`);
@@ -115,15 +121,30 @@ test('buildEnvProxyConfig falls back to docker defaults when no env file exists'
   expect(result.runtimeVersion).toBe('next-full');
 });
 
-test('resolveEnvProxyOutputPath defaults to ~/.nocobase/proxy/<env>/app.conf', async () => {
+test('resolveEnvProxyOutputPath defaults to ~/.nocobase/proxy/<env>/generated.conf', async () => {
   const root = await createTempRoot('nocobase-cli-env-proxy-output-');
   process.env.NB_CLI_ROOT = root;
 
-  expect(resolveEnvProxyOutputPath('staging')).toBe(path.join(root, '.nocobase', 'proxy', 'staging', 'app.conf'));
+  expect(resolveEnvProxyOutputPath('staging')).toBe(path.join(root, '.nocobase', 'proxy', 'staging', 'generated.conf'));
+  expect(resolveEnvProxyAppOutputPath('staging')).toBe(path.join(root, '.nocobase', 'proxy', 'staging', 'app.conf'));
   expect(resolveEnvProxyMainOutputPath()).toBe(path.join(root, '.nocobase', 'proxy', 'nginx.conf'));
-  expect(resolveEnvProxyOutputPath('staging', { output: './custom/app.conf' })).toBe(
-    path.resolve(process.cwd(), './custom/app.conf'),
+  expect(resolveEnvProxyOutputPath('staging', { output: './custom/generated.conf' })).toBe(
+    path.resolve(process.cwd(), './custom/generated.conf'),
   );
+});
+
+test('buildEnvProxyAppConfig creates an editable entry that includes the generated config by absolute path', () => {
+  const generatedConfigPath = '/tmp/nocobase/proxy/demo/generated.conf';
+
+  expect(buildEnvProxyAppConfig(generatedConfigPath)).toBe(`server {
+    listen 80;
+    server_name _;
+    client_max_body_size 0;
+
+    # Keep this include so \`nb env proxy\` can refresh managed routes.
+    include ${generatedConfigPath};
+}
+`);
 });
 
 test('buildEnvProxyMainConfig includes shared nginx directives and wildcard app.conf include', async () => {
@@ -135,4 +156,23 @@ test('buildEnvProxyMainConfig includes shared nginx directives and wildcard app.
   expect(content).toContain('map $http_upgrade $connection_upgrade');
   expect(content).toContain('gzip on;');
   expect(content).toContain(`include ${path.join(root, '.nocobase', 'proxy', '*', 'app.conf')};`);
+});
+
+test('resolveEnvProxyProvider falls back to the configured or default provider', async () => {
+  const root = await createTempRoot('nocobase-cli-env-proxy-provider-');
+  process.env.NB_CLI_ROOT = root;
+
+  expect(await resolveEnvProxyProvider(undefined)).toBe('nginx');
+
+  await setCliConfigValue('proxy.provider', 'nginx', { scope: 'global' });
+  expect(await resolveEnvProxyProvider(undefined)).toBe('nginx');
+  expect(await resolveEnvProxyProvider('nginx')).toBe('nginx');
+});
+
+test('parseNginxConfPathFromVersionOutput extracts the configured nginx.conf path', async () => {
+  expect(
+    parseNginxConfPathFromVersionOutput(
+      'nginx version: nginx/1.27.5\nconfigure arguments: --prefix=/opt/homebrew --conf-path=/opt/homebrew/etc/nginx/nginx.conf --pid-path=/tmp/nginx.pid',
+    ),
+  ).toBe('/opt/homebrew/etc/nginx/nginx.conf');
 });

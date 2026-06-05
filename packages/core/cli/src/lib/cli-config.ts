@@ -17,6 +17,10 @@ export const DEFAULT_DOCKER_NETWORK = 'nocobase';
 export const DEFAULT_DOCKER_CONTAINER_PREFIX = 'nb';
 export const DEFAULT_DOCKER_BIN = 'docker';
 export const DEFAULT_GIT_BIN = 'git';
+export const DEFAULT_NGINX_BIN = 'nginx';
+export const PROXY_PROVIDER_OPTIONS = ['nginx'] as const;
+export type ProxyProvider = (typeof PROXY_PROVIDER_OPTIONS)[number];
+export const DEFAULT_PROXY_PROVIDER: ProxyProvider = 'nginx';
 export const DEFAULT_YARN_BIN = 'yarn';
 export const CLI_UPDATE_POLICY_OPTIONS = ['prompt', 'auto', 'off'] as const;
 export type CliUpdatePolicy = (typeof CLI_UPDATE_POLICY_OPTIONS)[number];
@@ -30,6 +34,8 @@ export const SUPPORTED_CLI_CONFIG_KEYS = [
   'docker.container-prefix',
   'bin.docker',
   'bin.git',
+  'bin.nginx',
+  'proxy.provider',
   'bin.yarn',
 ] as const;
 
@@ -68,6 +74,15 @@ export function normalizeCliUpdatePolicy(value: unknown): CliUpdatePolicy | unde
   return (CLI_UPDATE_POLICY_OPTIONS as readonly string[]).includes(normalized) ? (normalized as CliUpdatePolicy) : undefined;
 }
 
+export function normalizeProxyProvider(value: unknown): ProxyProvider | undefined {
+  const normalized = trimValue(value);
+  if (!normalized) {
+    return undefined;
+  }
+
+  return (PROXY_PROVIDER_OPTIONS as readonly string[]).includes(normalized) ? (normalized as ProxyProvider) : undefined;
+}
+
 function cloneSettings(config: AuthConfig): NonNullable<AuthConfig['settings']> {
   return {
     ...(config.settings?.locale ? { locale: trimValue(config.settings.locale) } : {}),
@@ -75,6 +90,7 @@ function cloneSettings(config: AuthConfig): NonNullable<AuthConfig['settings']> 
     license: config.settings?.license ? { ...config.settings.license } : undefined,
     docker: config.settings?.docker ? { ...config.settings.docker } : undefined,
     bin: config.settings?.bin ? { ...config.settings.bin } : undefined,
+    proxy: config.settings?.proxy ? { ...config.settings.proxy } : undefined,
   };
 }
 
@@ -99,8 +115,13 @@ function pruneSettings(config: AuthConfig): void {
   }
 
   const bin = config.settings?.bin;
-  if (bin && !trimValue(bin.docker) && !trimValue(bin.git) && !trimValue(bin.yarn)) {
+  if (bin && !trimValue(bin.docker) && !trimValue(bin.git) && !trimValue(bin.nginx) && !trimValue(bin.yarn)) {
     delete config.settings?.bin;
+  }
+
+  const proxy = config.settings?.proxy;
+  if (proxy && !normalizeProxyProvider(proxy.provider)) {
+    delete config.settings?.proxy;
   }
 
   if (
@@ -109,7 +130,8 @@ function pruneSettings(config: AuthConfig): void {
     !config.settings.update &&
     !config.settings.license &&
     !config.settings.docker &&
-    !config.settings.bin
+    !config.settings.bin &&
+    !config.settings.proxy
   ) {
     delete config.settings;
   }
@@ -131,6 +153,10 @@ export function getExplicitCliConfigValue(config: AuthConfig, key: SupportedCliC
       return trimValue(config.settings?.bin?.docker);
     case 'bin.git':
       return trimValue(config.settings?.bin?.git);
+    case 'bin.nginx':
+      return trimValue(config.settings?.bin?.nginx);
+    case 'proxy.provider':
+      return normalizeProxyProvider(config.settings?.proxy?.provider);
     case 'bin.yarn':
       return trimValue(config.settings?.bin?.yarn);
   }
@@ -157,6 +183,10 @@ export function getEffectiveCliConfigValue(config: AuthConfig, key: SupportedCli
       return DEFAULT_DOCKER_BIN;
     case 'bin.git':
       return DEFAULT_GIT_BIN;
+    case 'bin.nginx':
+      return DEFAULT_NGINX_BIN;
+    case 'proxy.provider':
+      return explicit ?? DEFAULT_PROXY_PROVIDER;
     case 'bin.yarn':
       return DEFAULT_YARN_BIN;
   }
@@ -188,6 +218,15 @@ export function normalizeCliConfigValue(key: SupportedCliConfigKey, value: strin
     }
 
     return policy;
+  }
+
+  if (key === 'proxy.provider') {
+    const provider = normalizeProxyProvider(normalized);
+    if (!provider) {
+      throw new Error(`Config key "${key}" must be one of: ${PROXY_PROVIDER_OPTIONS.join(', ')}`);
+    }
+
+    return provider;
   }
 
   return normalized;
@@ -268,6 +307,18 @@ export async function setCliConfigValue(
         git: normalized,
       };
       break;
+    case 'bin.nginx':
+      config.settings.bin = {
+        ...(config.settings.bin ?? {}),
+        nginx: normalized,
+      };
+      break;
+    case 'proxy.provider':
+      config.settings.proxy = {
+        ...(config.settings.proxy ?? {}),
+        provider: normalized as ProxyProvider,
+      };
+      break;
     case 'bin.yarn':
       config.settings.bin = {
         ...(config.settings.bin ?? {}),
@@ -328,6 +379,16 @@ export async function deleteCliConfigValue(
         delete config.settings.bin.git;
       }
       break;
+    case 'bin.nginx':
+      if (config.settings.bin) {
+        delete config.settings.bin.nginx;
+      }
+      break;
+    case 'proxy.provider':
+      if (config.settings.proxy) {
+        delete config.settings.proxy.provider;
+      }
+      break;
     case 'bin.yarn':
       if (config.settings.bin) {
         delete config.settings.bin.yarn;
@@ -355,6 +416,7 @@ export async function resolveLicensePkgUrlFromConfig(options: CliConfigOptions =
 const CONFIGURABLE_COMMAND_KEYS = {
   docker: 'bin.docker',
   git: 'bin.git',
+  nginx: 'bin.nginx',
   yarn: 'bin.yarn',
 } as const;
 

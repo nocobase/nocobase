@@ -130,7 +130,11 @@ export interface AuthConfig {
     bin?: {
       docker?: string;
       git?: string;
+      nginx?: string;
       yarn?: string;
+    };
+    proxy?: {
+      provider?: 'nginx';
     };
   };
   lastEnv?: string;
@@ -264,12 +268,20 @@ function normalizeAuthConfig(config: AuthConfig & { dockerResourcePrefix?: strin
             },
           }
         : {}),
-      ...(settings.bin?.docker || settings.bin?.git || settings.bin?.yarn
+      ...(settings.bin?.docker || settings.bin?.git || settings.bin?.nginx || settings.bin?.yarn
         ? {
             bin: {
               ...(settings.bin?.docker ? { docker: normalizeOptionalString(settings.bin.docker) } : {}),
               ...(settings.bin?.git ? { git: normalizeOptionalString(settings.bin.git) } : {}),
+              ...(settings.bin?.nginx ? { nginx: normalizeOptionalString(settings.bin.nginx) } : {}),
               ...(settings.bin?.yarn ? { yarn: normalizeOptionalString(settings.bin.yarn) } : {}),
+            },
+          }
+        : {}),
+      ...(settings.proxy?.provider === 'nginx'
+        ? {
+            proxy: {
+              provider: 'nginx',
             },
           }
         : {}),
