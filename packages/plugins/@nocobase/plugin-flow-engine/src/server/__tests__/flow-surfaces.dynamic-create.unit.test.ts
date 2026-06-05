@@ -851,6 +851,36 @@ describe('flowSurfaces dynamic capability create dry-run', () => {
     });
   });
 
+  it('should block provider dynamic create under discoveryOnly policy', async () => {
+    await expect(
+      resolveDynamicCapabilityCreate({
+        publicType: 'dryRun',
+        initParams: {
+          collectionName: 'tasks',
+        },
+        settings: {
+          pageSize: 20,
+        },
+        enabledPackages: new Set(['@nocobase/plugin-dry-run']),
+        providerRegistry: createProviderRegistry([createDryRunProvider()]),
+        capabilityPolicyConfig: {
+          writePolicy: {
+            mode: 'discoveryOnly',
+          },
+        },
+      }),
+    ).rejects.toMatchObject({
+      message: `flowSurfaces dynamic create capability 'dryRun' is not enabled for writes`,
+      options: {
+        details: {
+          reasonCode: 'contract-not-verified',
+          reasonSource: 'registry',
+          publicType: 'dryRun',
+        },
+      },
+    });
+  });
+
   it('should require explicit verified auto allowlists before create validation reaches resolver contract', async () => {
     const autoSnapshot = createGanttAutoSnapshot();
 

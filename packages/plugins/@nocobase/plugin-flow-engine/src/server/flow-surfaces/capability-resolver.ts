@@ -203,31 +203,39 @@ export async function resolveDynamicCapabilityCreate(
     }
     throwUnsupportedDynamicCreate(publicType);
   }
-  const resolveCreate = providerCapability.provider.resolveCreate;
-  if (!resolveCreate && !providerCapability.createRecipe) {
-    throwMissingCreateContract(publicType);
-  }
-  if (!input.allowUnavailable && !providerCapability.publicItem.availability.create.supported) {
+  const policyProjectedProviderCapability = {
+    ...providerCapability,
+    publicItem: applyFlowSurfaceCapabilityWritePolicy(providerCapability.publicItem, input.capabilityPolicyConfig),
+  };
+  const resolveCreate = policyProjectedProviderCapability.provider.resolveCreate;
+  if (!input.allowUnavailable && !policyProjectedProviderCapability.publicItem.availability.create.supported) {
     throw new FlowSurfaceBadRequestError(
       `flowSurfaces dynamic create capability '${publicType}' is not enabled for writes`,
       undefined,
       {
         details: {
-          reasonCode: providerCapability.publicItem.availability.create.reasonCode || 'unsupported',
-          reasonSource: providerCapability.publicItem.availability.create.reasonSource || 'registry',
+          reasonCode: policyProjectedProviderCapability.publicItem.availability.create.reasonCode || 'unsupported',
+          reasonSource: policyProjectedProviderCapability.publicItem.availability.create.reasonSource || 'registry',
           publicType,
         },
       },
     );
   }
+  if (!resolveCreate && !policyProjectedProviderCapability.createRecipe) {
+    throwMissingCreateContract(publicType);
+  }
 
   const validationErrors = [
     ...validateJsonObjectSchema(
-      providerCapability.publicItem.initParamsSchema,
+      policyProjectedProviderCapability.publicItem.initParamsSchema,
       publicInput.initParams || {},
       'initParams',
     ),
-    ...validateJsonObjectSchema(providerCapability.publicItem.settingsSchema, publicInput.settings || {}, 'settings'),
+    ...validateJsonObjectSchema(
+      policyProjectedProviderCapability.publicItem.settingsSchema,
+      publicInput.settings || {},
+      'settings',
+    ),
   ];
   if (validationErrors.length) {
     throwCapabilityValidationErrors(validationErrors);
@@ -239,16 +247,16 @@ export async function resolveDynamicCapabilityCreate(
     ...(input.target ? { target: input.target } : {}),
   };
   const runtimeCapability = {
-    publicItem: providerCapability.publicItem,
-    implementation: providerCapability.implementation,
+    publicItem: policyProjectedProviderCapability.publicItem,
+    implementation: policyProjectedProviderCapability.implementation,
   };
 
-  const validateSettings = providerCapability.provider.validateSettings;
+  const validateSettings = policyProjectedProviderCapability.provider.validateSettings;
   if (validateSettings) {
     const validation = await callFlowSurfaceProvider({
-      provider: providerCapability.provider,
+      provider: policyProjectedProviderCapability.provider,
       method: 'validateSettings',
-      capabilityId: providerCapability.publicItem.identity?.capabilityId,
+      capabilityId: policyProjectedProviderCapability.publicItem.identity?.capabilityId,
       timeoutMs: input.providerTimeoutMs,
       run: () => validateSettings(runtimeCapability, publicInput, ctx),
     });
@@ -264,17 +272,17 @@ export async function resolveDynamicCapabilityCreate(
     if (!validation.value.ok) {
       throwCapabilityValidationErrors(
         normalizeProviderValidationErrors(validation.value.errors, {
-          initParamsSchema: providerCapability.publicItem.initParamsSchema,
-          settingsSchema: providerCapability.publicItem.settingsSchema,
+          initParamsSchema: policyProjectedProviderCapability.publicItem.initParamsSchema,
+          settingsSchema: policyProjectedProviderCapability.publicItem.settingsSchema,
         }),
       );
     }
   }
 
   let createdNode: FlowSurfaceNodeSpec;
-  if (providerCapability.createRecipe) {
+  if (policyProjectedProviderCapability.createRecipe) {
     createdNode = resolveJsonCreateRecipe({
-      recipe: providerCapability.createRecipe,
+      recipe: policyProjectedProviderCapability.createRecipe,
       publicInput,
     });
   } else {
@@ -283,9 +291,9 @@ export async function resolveDynamicCapabilityCreate(
       throwMissingCreateContract(publicType);
     }
     const created = await callFlowSurfaceProvider({
-      provider: providerCapability.provider,
+      provider: policyProjectedProviderCapability.provider,
       method: 'resolveCreate',
-      capabilityId: providerCapability.publicItem.identity?.capabilityId,
+      capabilityId: policyProjectedProviderCapability.publicItem.identity?.capabilityId,
       timeoutMs: input.providerTimeoutMs,
       run: () => providerResolveCreate(runtimeCapability, publicInput, ctx),
     });
@@ -319,10 +327,10 @@ export async function resolveDynamicCapabilityCreate(
   }
 
   return {
-    capability: providerCapability.publicItem,
+    capability: policyProjectedProviderCapability.publicItem,
     publicPayload,
     node: createdNode,
-    warnings: providerCapability.publicItem.warnings || [],
+    warnings: policyProjectedProviderCapability.publicItem.warnings || [],
   };
 }
 
