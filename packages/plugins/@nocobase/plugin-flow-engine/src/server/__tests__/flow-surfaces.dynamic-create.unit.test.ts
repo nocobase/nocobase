@@ -206,7 +206,7 @@ describe('flowSurfaces dynamic capability create dry-run', () => {
           ownerPlugin: '@nocobase/plugin-gantt',
           capabilityVersion: '1.0.0',
           manifestHash: 'manifest-hash',
-          snapshotHash: 'snapshot-source-hash',
+          snapshotHash: 'v1:snapshot-source-hash',
           dryRunFixtureHash: 'fixture-hash',
           readiness: 'createEnabled',
           updatedAt: '2026-06-04T00:00:00.000Z',
@@ -1099,6 +1099,57 @@ describe('flowSurfaces dynamic capability create dry-run', () => {
     expect(JSON.stringify(error)).not.toContain('GanttBlockModel');
     expect(JSON.stringify(error)).not.toContain('stepParams');
     expect(JSON.stringify(error)).not.toContain('older-snapshot-hash');
+  });
+
+  it('should keep legacy snapshot hash admission evidence from enabling create', async () => {
+    const autoSnapshot = createGanttAutoSnapshot();
+    const currentAdmissionReport = createVerifiedAutoAdmissionReport();
+    const legacySnapshotHashAdmissionReport: FlowSurfaceCapabilityAdmissionReport = {
+      ...currentAdmissionReport,
+      records: currentAdmissionReport.records.map((record) => ({
+        ...record,
+        snapshotHash: 'snapshot-source-hash',
+      })),
+    };
+    const verifiedAutoPolicy = {
+      writePolicy: {
+        mode: 'verifiedAuto' as const,
+        allowedOwners: ['@nocobase/plugin-gantt'],
+        allowedPublicTypes: ['pluginGantt.gantt'],
+      },
+    };
+
+    let error: unknown;
+    try {
+      await resolveDynamicCapabilityCreate({
+        publicType: 'pluginGantt.gantt',
+        initParams: {
+          collectionName: 'tasks',
+        },
+        settings: {},
+        enabledPackages: new Set(['@nocobase/plugin-gantt']),
+        providerRegistry: createProviderRegistry([]),
+        autoSnapshots: [autoSnapshot],
+        admissionReports: [legacySnapshotHashAdmissionReport],
+        capabilityPolicyConfig: verifiedAutoPolicy,
+      });
+    } catch (caught) {
+      error = caught;
+    }
+
+    expect(error).toMatchObject({
+      message: `flowSurfaces dynamic create capability 'pluginGantt.gantt' is not enabled for writes`,
+      options: {
+        details: {
+          reasonCode: 'snapshot-stale',
+          reasonSource: 'registry',
+          publicType: 'pluginGantt.gantt',
+        },
+      },
+    });
+    expect(JSON.stringify(error)).not.toContain('GanttBlockModel');
+    expect(JSON.stringify(error)).not.toContain('stepParams');
+    expect(JSON.stringify(error)).not.toContain('snapshot-source-hash');
   });
 
   it('should persist catalog-confirmed verified auto snapshot addBlock candidates through the gated mapping', async () => {

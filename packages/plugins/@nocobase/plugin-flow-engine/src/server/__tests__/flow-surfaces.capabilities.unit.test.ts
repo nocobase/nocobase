@@ -738,7 +738,7 @@ describe('flowSurfaces capabilities projection', () => {
           ownerPlugin: '@nocobase/plugin-gantt',
           capabilityVersion: '1.0.0',
           manifestHash: 'manifest-hash',
-          snapshotHash: options.snapshotHash || 'snapshot-source-hash',
+          snapshotHash: options.snapshotHash || 'v1:snapshot-source-hash',
           dryRunFixtureHash: 'fixture-hash',
           readiness: 'createEnabled',
           updatedAt: '2026-06-04T00:00:00.000Z',

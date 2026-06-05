@@ -464,7 +464,7 @@ function buildAutoSnapshotAdmissionIntegrity(
 ): FlowSurfaceCapabilityAdmissionIntegrity | undefined {
   const integrity: FlowSurfaceCapabilityAdmissionIntegrity = {};
   const capabilityVersion = normalizeString(snapshot.pluginVersion);
-  const snapshotHash = normalizeString(snapshot.sourceHash);
+  const snapshotHash = buildAutoSnapshotAdmissionSnapshotHash(snapshot);
   if (capabilityVersion) {
     integrity.capabilityVersion = capabilityVersion;
   }
@@ -472,6 +472,14 @@ function buildAutoSnapshotAdmissionIntegrity(
     integrity.snapshotHash = snapshotHash;
   }
   return Object.keys(integrity).length ? integrity : undefined;
+}
+
+function buildAutoSnapshotAdmissionSnapshotHash(snapshot: FlowSurfaceAutoSnapshot) {
+  const sourceHash = normalizeString(snapshot.sourceHash);
+  if (!sourceHash) {
+    return undefined;
+  }
+  return `v${snapshot.version}:${sourceHash}`;
 }
 
 function normalizeFlowSurfaceCapabilityAdmissionIntegrity(
