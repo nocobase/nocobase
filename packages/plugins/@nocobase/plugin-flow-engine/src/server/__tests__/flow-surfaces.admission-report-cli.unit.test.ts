@@ -25,6 +25,7 @@ import {
   runFlowSurfaceCapabilityAdmissionCommand,
   verifyFlowSurfaceCapabilityAdmission,
 } from '../flow-surfaces/admission-report-cli';
+import { setFlowSurfacePublicCapabilityAdmissionIntegrity } from '../flow-surfaces/capability-registry';
 import { FlowSurfacesService } from '../flow-surfaces/service';
 import type { FlowSurfaceCapabilitiesResponse, FlowSurfacePublicCapabilityItem } from '../flow-surfaces/types';
 
@@ -207,6 +208,80 @@ describe('flowSurfaces capability admission report CLI', () => {
         unsafePayloadBlocked: {
           ok: false,
           reasonCode: 'contract-not-verified',
+        },
+      },
+    });
+  });
+
+  it('should preserve stale auto snapshot evidence in conservative service-backed reports', () => {
+    const staleAutoCapability = setFlowSurfacePublicCapabilityAdmissionIntegrity(
+      createCapabilityItem({
+        origin: 'autoSnapshot',
+        publicType: 'pluginGantt.gantt',
+        publicTypeMeta: {
+          value: 'pluginGantt.gantt',
+          source: 'autoNamespaced',
+        },
+        ownerPlugin: '@nocobase/plugin-gantt',
+        availability: {
+          render: {
+            supported: false,
+            reasonCode: 'snapshot-stale',
+            reasonSource: 'registry',
+          },
+          readback: {
+            supported: true,
+          },
+          create: {
+            supported: false,
+            reasonCode: 'manifest-required',
+            reasonSource: 'registry',
+          },
+          configure: {
+            supported: false,
+            reasonCode: 'manifest-required',
+            reasonSource: 'registry',
+          },
+        },
+        supportLevel: 'readback-only',
+        readiness: 'blocked',
+        identity: {
+          capabilityId: '@nocobase/plugin-gantt:autoSnapshot:block:pluginGantt.gantt',
+          capabilityVersion: '1.2.3',
+        },
+        warnings: [
+          {
+            code: 'snapshot-stale',
+            message: 'Auto snapshot version is incompatible with the current extractor.',
+          },
+        ],
+      }),
+      {
+        capabilityVersion: '1.2.3',
+        snapshotHash: 'v1:stale-source-hash',
+      },
+    );
+    const report = buildFlowSurfaceCapabilityAdmissionReportFromCapabilities({
+      plugin: '@nocobase/plugin-gantt',
+      generatedAt,
+      capabilities: createCapabilitiesResponse([staleAutoCapability]),
+    });
+
+    expect(report.records).toHaveLength(1);
+    expect(report.records[0]).toMatchObject({
+      ownerPlugin: '@nocobase/plugin-gantt',
+      publicType: 'pluginGantt.gantt',
+      capabilityVersion: '1.2.3',
+      snapshotHash: 'v1:stale-source-hash',
+      readiness: 'blocked',
+      checks: {
+        discovered: {
+          ok: false,
+          reasonCode: 'snapshot-stale',
+        },
+        contractDeclared: {
+          ok: false,
+          reasonCode: 'snapshot-stale',
         },
       },
     });

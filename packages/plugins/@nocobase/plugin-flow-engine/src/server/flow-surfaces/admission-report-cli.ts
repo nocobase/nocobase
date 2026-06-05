@@ -14,10 +14,12 @@ import {
   getFlowSurfaceCapabilityAdmissionReportStorageDir,
   isFlowSurfaceCapabilityAdmissionReport,
   writeFlowSurfaceCapabilityAdmissionReport,
+  type FlowSurfaceCapabilityAdmissionIntegrity,
   type FlowSurfaceAdmissionCheck,
   type FlowSurfaceCapabilityAdmissionRecord,
   type FlowSurfaceCapabilityAdmissionReport,
 } from './admission-report';
+import { getFlowSurfacePublicCapabilityAdmissionIntegrity } from './capability-registry';
 import { FlowSurfacesService } from './service';
 import type {
   FlowSurfaceCapabilitiesResponse,
@@ -96,6 +98,20 @@ const FLOW_SURFACE_CAPABILITY_ADMISSION_READINESS: FlowSurfaceCapabilityReadines
   'createEnabled',
   'blocked',
 ];
+const FLOW_SURFACE_CAPABILITY_ADMISSION_BLOCKING_REASON_CODES = new Set<FlowSurfaceReasonCode>([
+  'plugin-disabled',
+  'public-type-conflict',
+  'provider-error',
+  'dry-run-failed',
+  'readback-parity-failed',
+  'snapshot-stale',
+  'extractor-runtime-error',
+  'contract-not-verified',
+  'unsafe-auto-discovery',
+  'permission-denied',
+  'license-required',
+  'dependency-missing',
+]);
 
 export async function runFlowSurfaceCapabilityAdmissionCli(
   targets: FlowSurfaceCapabilityAdmissionCliTarget[],
@@ -303,15 +319,23 @@ function buildAdmissionRecordFromCapability(
 ): FlowSurfaceCapabilityAdmissionRecord {
   const checks = buildAdmissionChecksFromCapability(item);
   const readiness = resolveAdmissionReportReadiness(item);
+  const integrity = buildAdmissionRecordIntegrity(item);
   return {
     capabilityId: item.identity?.capabilityId || [item.ownerPlugin, item.kind, item.publicType].join(':'),
     kind: item.kind,
     publicType: item.publicType,
     ownerPlugin: item.ownerPlugin,
-    ...(item.identity?.capabilityVersion ? { capabilityVersion: item.identity.capabilityVersion } : {}),
+    ...integrity,
     readiness,
     checks,
     updatedAt: generatedAt || new Date().toISOString(),
+  };
+}
+
+function buildAdmissionRecordIntegrity(item: FlowSurfacePublicCapabilityItem): FlowSurfaceCapabilityAdmissionIntegrity {
+  return {
+    ...(getFlowSurfacePublicCapabilityAdmissionIntegrity(item) || {}),
+    ...(item.identity?.capabilityVersion ? { capabilityVersion: item.identity.capabilityVersion } : {}),
   };
 }
 
@@ -400,12 +424,33 @@ function getBlockingReasonCode(
   item: FlowSurfacePublicCapabilityItem,
   fallback: FlowSurfaceReasonCode,
 ): FlowSurfaceReasonCode {
+  if (item.readiness === 'blocked') {
+    const blockingReasonCode = getAdmissionBlockingReasonCode(item);
+    if (blockingReasonCode) {
+      return blockingReasonCode;
+    }
+  }
   return (
     item.availability.create.reasonCode ||
     item.availability.render.reasonCode ||
     item.availability.readback.reasonCode ||
     fallback
   );
+}
+
+function getAdmissionBlockingReasonCode(item: FlowSurfacePublicCapabilityItem): FlowSurfaceReasonCode | undefined {
+  return [
+    item.availability.render.reasonCode,
+    item.availability.create.reasonCode,
+    item.availability.readback.reasonCode,
+    item.availability.configure.reasonCode,
+  ].find(isAdmissionBlockingReasonCode);
+}
+
+function isAdmissionBlockingReasonCode(
+  reasonCode: FlowSurfaceReasonCode | undefined,
+): reasonCode is FlowSurfaceReasonCode {
+  return !!reasonCode && FLOW_SURFACE_CAPABILITY_ADMISSION_BLOCKING_REASON_CODES.has(reasonCode);
 }
 
 async function resolveFlowSurfaceCapabilityAdmissionCliTargets(
