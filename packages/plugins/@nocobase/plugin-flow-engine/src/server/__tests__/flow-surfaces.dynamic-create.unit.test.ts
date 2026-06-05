@@ -804,6 +804,34 @@ describe('flowSurfaces dynamic capability create dry-run', () => {
     expect(JSON.stringify(dryRunResponse)).not.toContain('stepParams');
   });
 
+  it('should keep plugin-qualified provider aliases discovery-only for create', async () => {
+    const provider = createDryRunProvider({
+      acceptedAliases: ['@nocobase/plugin-dry-run:dryRun'],
+    });
+
+    await expect(
+      resolveDynamicCapabilityCreate({
+        publicType: '@nocobase/plugin-dry-run:dryRun',
+        initParams: {
+          collectionName: 'tasks',
+        },
+        settings: {
+          pageSize: 20,
+        },
+        enabledPackages: new Set(['@nocobase/plugin-dry-run']),
+        providerRegistry: createProviderRegistry([provider]),
+      }),
+    ).rejects.toMatchObject({
+      options: {
+        details: {
+          reasonCode: 'unsupported',
+          reasonSource: 'registry',
+          publicType: '@nocobase/plugin-dry-run:dryRun',
+        },
+      },
+    });
+  });
+
   it('should validate verified auto snapshot Gantt public payload before mapping', async () => {
     const autoSnapshot = createGanttAutoSnapshot();
     const verifiedAutoPolicy = {

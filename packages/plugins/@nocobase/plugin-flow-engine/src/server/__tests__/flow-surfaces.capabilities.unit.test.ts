@@ -2141,8 +2141,8 @@ describe('flowSurfaces capabilities projection', () => {
         publicTypeMeta: expect.objectContaining({
           value: 'gantt',
           source: 'canary',
-          acceptedAliases: ['ganttBlock', '@nocobase/plugin-gantt:gantt'],
-          searchAliases: expect.arrayContaining(['Shadow timeline']),
+          acceptedAliases: ['ganttBlock'],
+          searchAliases: expect.arrayContaining(['@nocobase/plugin-gantt:gantt', 'Shadow timeline']),
         }),
         semantic: {
           title: 'Gantt',
@@ -2867,7 +2867,8 @@ describe('flowSurfaces capabilities projection', () => {
         publicType: 'gantt',
         publicTypeMeta: expect.objectContaining({
           source: 'canary',
-          acceptedAliases: ['ganttBlock', '@nocobase/plugin-gantt:gantt'],
+          acceptedAliases: ['ganttBlock'],
+          searchAliases: expect.arrayContaining(['@nocobase/plugin-gantt:gantt']),
         }),
       }),
     ]);
@@ -3520,7 +3521,8 @@ describe('flowSurfaces capabilities projection', () => {
         publicType: 'gantt',
         publicTypeMeta: expect.objectContaining({
           source: 'canary',
-          acceptedAliases: ['ganttBlock', '@nocobase/plugin-gantt:gantt'],
+          acceptedAliases: ['ganttBlock'],
+          searchAliases: expect.arrayContaining(['@nocobase/plugin-gantt:gantt']),
         }),
       }),
     ]);
@@ -3639,6 +3641,43 @@ describe('flowSurfaces capabilities projection', () => {
     });
     expect(JSON.stringify(response.data)).not.toContain('GanttBlockModel');
     expect(JSON.stringify(response.data)).not.toContain('stepParams');
+  });
+
+  it('should keep plugin-qualified provider aliases discovery-only for describe', async () => {
+    const response = await buildFlowSurfaceCapabilitiesResponse(
+      {
+        query: '@nocobase/plugin-gantt:gantt',
+      },
+      {
+        enabledPackages: new Set(['@nocobase/plugin-gantt']),
+        providerRegistry: createProviderRegistry([createGanttProvider()]),
+        catalog: createCatalogRecorder().catalog,
+        generatedAt: '2026-06-03T00:00:00.000Z',
+      },
+    );
+    expect(response.data.map((item) => item.publicType)).toEqual(['gantt']);
+
+    await expect(
+      buildFlowSurfaceDescribeCapabilityResponse(
+        {
+          publicType: '@nocobase/plugin-gantt:gantt',
+        },
+        {
+          enabledPackages: new Set(['@nocobase/plugin-gantt']),
+          providerRegistry: createProviderRegistry([createGanttProvider()]),
+          catalog: createCatalogRecorder().catalog,
+          generatedAt: '2026-06-03T00:00:00.000Z',
+        },
+      ),
+    ).rejects.toMatchObject({
+      options: {
+        details: {
+          reasonCode: 'unsupported',
+          reasonSource: 'registry',
+          publicType: '@nocobase/plugin-gantt:gantt',
+        },
+      },
+    });
   });
 
   it('should describe catalog-backed settings schema only when settings are expanded', async () => {

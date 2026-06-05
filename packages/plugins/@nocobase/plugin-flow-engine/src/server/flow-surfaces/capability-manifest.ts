@@ -129,8 +129,9 @@ export function normalizeFlowSurfaceCapabilityManifestItem(input: {
   const publicType = declaredPublicType || buildNamespacedPublicType(ownerPlugin, id);
   const label = sanitizePublicText(input.item.label, 'label', warnings) || publicType;
   const semantic = sanitizeSemantic(input.item.semantic, warnings, label);
-  const acceptedAliases = sanitizePublicAliasList(input.item.acceptedAliases || [], warnings);
-  const searchAliases = sanitizePublicAliasList([...acceptedAliases, id, publicType], warnings);
+  const declaredAliases = sanitizePublicAliasList(input.item.acceptedAliases || [], warnings);
+  const acceptedAliases = declaredAliases.filter((alias) => !isPluginQualifiedPublicTypeAlias(alias));
+  const searchAliases = sanitizePublicAliasList([...declaredAliases, id, publicType], warnings);
   const initParamsSchema = sanitizePublicSchema(input.item.initParamsSchema, 'init params schema', warnings);
   const settingsSchema = sanitizePublicSchema(input.item.settingsSchema, 'settings schema', warnings);
   const configureOptions = sanitizePublicSchema(input.item.configureOptions, 'configure options', warnings);
@@ -259,6 +260,10 @@ function sanitizePublicAliasList(values: unknown[], warnings: FlowSurfaceCapabil
     aliases.push(normalized);
   });
   return Array.from(new Set(aliases));
+}
+
+function isPluginQualifiedPublicTypeAlias(value: string) {
+  return /^@[^:\s]+\/plugin-[^:\s]+:[^:\s]+$/.test(value);
 }
 
 function sanitizePublicStringList(values: unknown[], label: string, warnings: FlowSurfaceCapabilityWarning[]) {
