@@ -1105,6 +1105,69 @@ describe('flowSurfaces dynamic capability create dry-run', () => {
     });
   });
 
+  it('should log validate capability failures without internal details', async () => {
+    const auditLog = vi.fn();
+    const autoSnapshot = createGanttAutoSnapshot();
+    const service = new FlowSurfacesService({
+      app: {
+        logger: {
+          info: auditLog,
+        },
+      },
+      options: {
+        flowSurfaceCapabilities: {
+          writePolicy: {
+            mode: 'manifestOnly',
+            allowedOwners: ['@nocobase/plugin-gantt'],
+            allowedPublicTypes: ['pluginGantt.gantt'],
+          },
+        },
+      },
+      flowSurfaceAutoSnapshots: [autoSnapshot],
+      flowSurfaceCapabilityAdmissionReports: [createVerifiedAutoAdmissionReport()],
+      flowSurfaceCapabilityProviders: createProviderRegistry([]),
+    } as unknown as ConstructorParameters<typeof FlowSurfacesService>[0]);
+
+    await expect(
+      service.validateCapabilityCreate(
+        {
+          kind: 'block',
+          ownerPlugin: '@nocobase/plugin-gantt',
+          publicType: 'pluginGantt.gantt',
+          initParams: {
+            collectionName: 'tasks',
+          },
+          settings: {},
+        },
+        {
+          enabledPackages: new Set(['@nocobase/plugin-gantt']),
+        },
+      ),
+    ).rejects.toMatchObject({
+      options: {
+        details: {
+          reasonCode: 'manifest-required',
+        },
+      },
+    });
+
+    expect(auditLog).toHaveBeenCalledWith(
+      'flowSurfaces capability audit',
+      expect.objectContaining({
+        actionName: 'validateCapabilityCreate',
+        event: 'capability.validate.failed',
+        kind: 'block',
+        ownerPlugin: '@nocobase/plugin-gantt',
+        publicType: 'pluginGantt.gantt',
+        reasonCode: 'manifest-required',
+      }),
+    );
+    const serializedLog = JSON.stringify(auditLog.mock.calls);
+    expect(serializedLog).not.toContain('GanttBlockModel');
+    expect(serializedLog).not.toContain('stepParams');
+    expect(serializedLog).not.toContain('snapshot-source-hash');
+  });
+
   it('should block provider dynamic create under discoveryOnly policy', async () => {
     await expect(
       resolveDynamicCapabilityCreate({

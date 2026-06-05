@@ -1328,6 +1328,8 @@ type FlowSurfaceCapabilityDiagnosticsOptions = {
   admissionReports?: readonly FlowSurfaceCapabilityAdmissionReport[];
 };
 
+type FlowSurfaceCapabilityAuditEvent = 'capability.validate.failed';
+
 const FLOW_SURFACE_DIAGNOSTICS_ADMIN_ROLES = new Set(['admin', 'root']);
 const FLOW_SURFACE_DIAGNOSTIC_AVAILABILITY_KEYS = ['render', 'readback', 'create', 'configure'] as const;
 
@@ -1377,6 +1379,23 @@ function getFlowSurfaceCapabilityAvailabilityReasonCode(
   return FLOW_SURFACE_DIAGNOSTIC_AVAILABILITY_KEYS.find((key) => item.availability[key].reasonCode === reasonCode)
     ? reasonCode
     : undefined;
+}
+
+function getFlowSurfaceCapabilityAuditReasonCode(error: unknown) {
+  if (!isFlowSurfaceError(error)) {
+    return undefined;
+  }
+  const reasonCode = error.options.details?.reasonCode;
+  return typeof reasonCode === 'string' ? reasonCode : undefined;
+}
+
+function getFlowSurfaceCapabilityAuditTargetUid(target: unknown) {
+  if (!target || typeof target !== 'object') {
+    return undefined;
+  }
+  const targetRecord = target as Record<string, unknown>;
+  const targetUid = targetRecord.uid || targetRecord.targetUid;
+  return typeof targetUid === 'string' && targetUid.trim() ? targetUid.trim() : undefined;
 }
 
 function getFlowSurfaceCapabilityWarningMessage(
@@ -1459,6 +1478,31 @@ function getFlowSurfaceAdmissionDiagnosticsFailedChecks(
 
 export class FlowSurfacesService {
   constructor(private readonly plugin: Plugin) {}
+
+  private logCapabilityAuditEvent(
+    event: FlowSurfaceCapabilityAuditEvent,
+    input: {
+      actionName: FlowSurfaceDynamicCapabilityCreateActionName;
+      kind?: FlowSurfaceValidateCapabilityCreateValues['kind'];
+      ownerPlugin?: string;
+      publicType?: string;
+      reasonCode?: string;
+      targetUid?: string;
+    },
+  ) {
+    this.plugin.app?.logger?.info?.(
+      'flowSurfaces capability audit',
+      buildDefinedPayload({
+        event,
+        actionName: input.actionName,
+        kind: input.kind || 'block',
+        ownerPlugin: input.ownerPlugin,
+        publicType: input.publicType,
+        reasonCode: input.reasonCode,
+        targetUid: input.targetUid,
+      }),
+    );
+  }
 
   private get capabilityProviderRegistry(): FlowSurfaceCapabilityRegistryLike | undefined {
     return (this.plugin as Plugin & { flowSurfaceCapabilityProviders?: FlowSurfaceCapabilityRegistryLike })
@@ -2337,18 +2381,31 @@ export class FlowSurfacesService {
     const enabledPackages = await this.resolveEnabledPluginPackages(options);
     const capabilityPolicyConfig = readFlowSurfaceCapabilityPolicyConfigFromPluginOptions(this.plugin.options);
     const admissionReports = await this.loadVerifiedAutoAdmissionReports(capabilityPolicyConfig);
-    const response = await resolveDynamicCapabilityCreate({
-      ...input,
-      actionName: 'validateCapabilityCreate',
-      allowUnavailable: true,
-      enabledPackages,
-      providerRegistry: this.capabilityProviderRegistry,
-      providerTimeoutMs: capabilityPolicyConfig.providerTimeoutMs,
-      autoSnapshots: this.autoSnapshots,
-      admissionReports,
-      capabilityPolicyConfig,
-      rawPublicPayload: input,
-    });
+    let response: FlowSurfaceDynamicCapabilityCreateResponse;
+    try {
+      response = await resolveDynamicCapabilityCreate({
+        ...input,
+        actionName: 'validateCapabilityCreate',
+        allowUnavailable: true,
+        enabledPackages,
+        providerRegistry: this.capabilityProviderRegistry,
+        providerTimeoutMs: capabilityPolicyConfig.providerTimeoutMs,
+        autoSnapshots: this.autoSnapshots,
+        admissionReports,
+        capabilityPolicyConfig,
+        rawPublicPayload: input,
+      });
+    } catch (error) {
+      this.logCapabilityAuditEvent('capability.validate.failed', {
+        actionName: 'validateCapabilityCreate',
+        kind: input.kind,
+        ownerPlugin: input.ownerPlugin,
+        publicType: input.publicType,
+        reasonCode: getFlowSurfaceCapabilityAuditReasonCode(error),
+        targetUid: getFlowSurfaceCapabilityAuditTargetUid(input.target),
+      });
+      throw error;
+    }
     const capability = { ...response.capability };
     delete capability.identity;
     return {
