@@ -1503,6 +1503,38 @@ test('stop enables raw shutdown output when --verbose is set', async () => {
   });
 });
 
+test('stop falls back to a workspace pm2 kill when the saved local source path is missing', async () => {
+  const { default: Stop } = await import('../commands/app/stop.js');
+  const runtime = {
+    kind: 'local',
+    envName: 'local',
+    source: 'npm',
+    projectRoot: '/tmp/missing-source',
+    env: {
+      envVars: {},
+    },
+  };
+  mocks.resolveManagedAppRuntime.mockResolvedValue(runtime);
+  mocks.runLocalNocoBaseCommand.mockRejectedValue(new Error('The specified --cwd does not exist: /tmp/missing-source'));
+  mocks.resolveProjectCwd.mockReturnValue('/tmp/cli-project');
+
+  const command = createCommandHarness({
+    flags: {
+      env: 'local',
+    },
+  });
+
+  await Stop.prototype.run.call(command);
+
+  expect(mocks.runLocalNocoBaseCommand.mock.calls).toEqual([
+    [runtime, ['pm2', 'kill'], { env: MANAGED_APP_PRODUCTION_ENV, stdio: 'ignore' }],
+  ]);
+  expect(mocks.runNocoBaseCommand.mock.calls).toEqual([
+    [['pm2', 'kill'], { cwd: '/tmp/cli-project', env: MANAGED_APP_PRODUCTION_ENV, stdio: 'ignore' }],
+  ]);
+  expect(mocks.succeedTask.mock.calls).toEqual([['NocoBase has stopped for "local".']]);
+});
+
 test('stop shows product-style local failure guidance', async () => {
   const { default: Stop } = await import('../commands/app/stop.js');
   mocks.resolveManagedAppRuntime.mockResolvedValue({
