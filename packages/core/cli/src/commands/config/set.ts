@@ -20,9 +20,13 @@ export default class ConfigSet extends Command {
     '<%= config.bin %> <%= command.id %> docker.network nocobase',
     '<%= config.bin %> <%= command.id %> docker.container-prefix nb',
     '<%= config.bin %> <%= command.id %> bin.docker /usr/local/bin/docker',
+    '<%= config.bin %> <%= command.id %> bin.caddy /usr/bin/caddy',
     '<%= config.bin %> <%= command.id %> bin.git /usr/bin/git',
     '<%= config.bin %> <%= command.id %> bin.nginx /usr/sbin/nginx',
     '<%= config.bin %> <%= command.id %> proxy.provider nginx',
+    '<%= config.bin %> <%= command.id %> proxy.provider caddy',
+    '<%= config.bin %> <%= command.id %> proxy.nb-cli-root /workspace',
+    '<%= config.bin %> <%= command.id %> proxy.upstream-host host.docker.internal',
     '<%= config.bin %> <%= command.id %> bin.yarn yarn',
   ];
 

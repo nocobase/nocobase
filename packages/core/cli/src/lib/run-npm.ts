@@ -32,6 +32,10 @@ const MISSING_COMMAND_SPECS = {
     displayName: 'Docker',
     configKey: 'bin.docker',
   },
+  caddy: {
+    displayName: 'Caddy',
+    configKey: 'bin.caddy',
+  },
   git: {
     displayName: 'Git',
     configKey: 'bin.git',

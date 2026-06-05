@@ -129,12 +129,15 @@ export interface AuthConfig {
     };
     bin?: {
       docker?: string;
+      caddy?: string;
       git?: string;
       nginx?: string;
       yarn?: string;
     };
     proxy?: {
-      provider?: 'nginx';
+      provider?: 'nginx' | 'caddy';
+      nbCliRoot?: string;
+      upstreamHost?: string;
     };
   };
   lastEnv?: string;
@@ -268,20 +271,35 @@ function normalizeAuthConfig(config: AuthConfig & { dockerResourcePrefix?: strin
             },
           }
         : {}),
-      ...(settings.bin?.docker || settings.bin?.git || settings.bin?.nginx || settings.bin?.yarn
+      ...(settings.bin?.docker || settings.bin?.caddy || settings.bin?.git || settings.bin?.nginx || settings.bin?.yarn
         ? {
             bin: {
               ...(settings.bin?.docker ? { docker: normalizeOptionalString(settings.bin.docker) } : {}),
+              ...(settings.bin?.caddy ? { caddy: normalizeOptionalString(settings.bin.caddy) } : {}),
               ...(settings.bin?.git ? { git: normalizeOptionalString(settings.bin.git) } : {}),
               ...(settings.bin?.nginx ? { nginx: normalizeOptionalString(settings.bin.nginx) } : {}),
               ...(settings.bin?.yarn ? { yarn: normalizeOptionalString(settings.bin.yarn) } : {}),
             },
           }
         : {}),
-      ...(settings.proxy?.provider === 'nginx'
+      ...(settings.proxy?.provider === 'nginx' ||
+      settings.proxy?.provider === 'caddy' ||
+      settings.proxy?.nbCliRoot ||
+      settings.proxy?.upstreamHost ||
+      (settings.proxy as { host?: unknown } | undefined)?.host
         ? {
             proxy: {
-              provider: 'nginx',
+              ...(settings.proxy?.provider === 'nginx' || settings.proxy?.provider === 'caddy'
+                ? { provider: settings.proxy.provider }
+                : {}),
+              ...(settings.proxy?.nbCliRoot ? { nbCliRoot: normalizeOptionalString(settings.proxy.nbCliRoot) } : {}),
+              ...(settings.proxy?.upstreamHost || (settings.proxy as { host?: unknown } | undefined)?.host
+                ? {
+                    upstreamHost: normalizeOptionalString(
+                      settings.proxy?.upstreamHost ?? (settings.proxy as { host?: unknown }).host,
+                    ),
+                  }
+                : {}),
             },
           }
         : {}),

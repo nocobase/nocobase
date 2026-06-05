@@ -18,9 +18,12 @@ export default class ConfigGet extends Command {
     '<%= config.bin %> <%= command.id %> docker.network',
     '<%= config.bin %> <%= command.id %> docker.container-prefix',
     '<%= config.bin %> <%= command.id %> bin.docker',
+    '<%= config.bin %> <%= command.id %> bin.caddy',
     '<%= config.bin %> <%= command.id %> bin.git',
     '<%= config.bin %> <%= command.id %> bin.nginx',
     '<%= config.bin %> <%= command.id %> proxy.provider',
+    '<%= config.bin %> <%= command.id %> proxy.nb-cli-root',
+    '<%= config.bin %> <%= command.id %> proxy.upstream-host',
     '<%= config.bin %> <%= command.id %> bin.yarn',
   ];
 

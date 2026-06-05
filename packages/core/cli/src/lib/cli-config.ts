@@ -9,18 +9,20 @@
 
 import type { AuthConfig, AuthStoreOptions } from './auth-store.js';
 import { loadExactAuthConfig, saveAuthConfig } from './auth-store.js';
-import { resolveDefaultConfigScope } from './cli-home.js';
+import { resolveCliHomeRoot, resolveDefaultConfigScope } from './cli-home.js';
 import { CLI_LOCALE_FLAG_OPTIONS, normalizeCliLocale, resolveCliLocale } from './cli-locale.js';
 
 export const DEFAULT_LICENSE_PKG_URL = 'https://pkg.nocobase.com/';
 export const DEFAULT_DOCKER_NETWORK = 'nocobase';
 export const DEFAULT_DOCKER_CONTAINER_PREFIX = 'nb';
 export const DEFAULT_DOCKER_BIN = 'docker';
+export const DEFAULT_CADDY_BIN = 'caddy';
 export const DEFAULT_GIT_BIN = 'git';
 export const DEFAULT_NGINX_BIN = 'nginx';
-export const PROXY_PROVIDER_OPTIONS = ['nginx'] as const;
+export const PROXY_PROVIDER_OPTIONS = ['nginx', 'caddy'] as const;
 export type ProxyProvider = (typeof PROXY_PROVIDER_OPTIONS)[number];
 export const DEFAULT_PROXY_PROVIDER: ProxyProvider = 'nginx';
+export const DEFAULT_PROXY_HOST = '127.0.0.1';
 export const DEFAULT_YARN_BIN = 'yarn';
 export const CLI_UPDATE_POLICY_OPTIONS = ['prompt', 'auto', 'off'] as const;
 export type CliUpdatePolicy = (typeof CLI_UPDATE_POLICY_OPTIONS)[number];
@@ -33,9 +35,12 @@ export const SUPPORTED_CLI_CONFIG_KEYS = [
   'docker.network',
   'docker.container-prefix',
   'bin.docker',
+  'bin.caddy',
   'bin.git',
   'bin.nginx',
   'proxy.provider',
+  'proxy.nb-cli-root',
+  'proxy.upstream-host',
   'bin.yarn',
 ] as const;
 
@@ -115,12 +120,19 @@ function pruneSettings(config: AuthConfig): void {
   }
 
   const bin = config.settings?.bin;
-  if (bin && !trimValue(bin.docker) && !trimValue(bin.git) && !trimValue(bin.nginx) && !trimValue(bin.yarn)) {
+  if (
+    bin &&
+    !trimValue(bin.docker) &&
+    !trimValue(bin.caddy) &&
+    !trimValue(bin.git) &&
+    !trimValue(bin.nginx) &&
+    !trimValue(bin.yarn)
+  ) {
     delete config.settings?.bin;
   }
 
   const proxy = config.settings?.proxy;
-  if (proxy && !normalizeProxyProvider(proxy.provider)) {
+  if (proxy && !normalizeProxyProvider(proxy.provider) && !trimValue(proxy.nbCliRoot) && !trimValue(proxy.upstreamHost)) {
     delete config.settings?.proxy;
   }
 
@@ -151,12 +163,18 @@ export function getExplicitCliConfigValue(config: AuthConfig, key: SupportedCliC
       return trimValue(config.settings?.docker?.containerPrefix);
     case 'bin.docker':
       return trimValue(config.settings?.bin?.docker);
+    case 'bin.caddy':
+      return trimValue(config.settings?.bin?.caddy);
     case 'bin.git':
       return trimValue(config.settings?.bin?.git);
     case 'bin.nginx':
       return trimValue(config.settings?.bin?.nginx);
     case 'proxy.provider':
       return normalizeProxyProvider(config.settings?.proxy?.provider);
+    case 'proxy.nb-cli-root':
+      return trimValue(config.settings?.proxy?.nbCliRoot);
+    case 'proxy.upstream-host':
+      return trimValue(config.settings?.proxy?.upstreamHost);
     case 'bin.yarn':
       return trimValue(config.settings?.bin?.yarn);
   }
@@ -181,12 +199,18 @@ export function getEffectiveCliConfigValue(config: AuthConfig, key: SupportedCli
       return trimValue(config.name) || DEFAULT_DOCKER_CONTAINER_PREFIX;
     case 'bin.docker':
       return DEFAULT_DOCKER_BIN;
+    case 'bin.caddy':
+      return DEFAULT_CADDY_BIN;
     case 'bin.git':
       return DEFAULT_GIT_BIN;
     case 'bin.nginx':
       return DEFAULT_NGINX_BIN;
     case 'proxy.provider':
       return explicit ?? DEFAULT_PROXY_PROVIDER;
+    case 'proxy.nb-cli-root':
+      return explicit ?? resolveCliHomeRoot();
+    case 'proxy.upstream-host':
+      return explicit ?? DEFAULT_PROXY_HOST;
     case 'bin.yarn':
       return DEFAULT_YARN_BIN;
   }
@@ -301,6 +325,12 @@ export async function setCliConfigValue(
         docker: normalized,
       };
       break;
+    case 'bin.caddy':
+      config.settings.bin = {
+        ...(config.settings.bin ?? {}),
+        caddy: normalized,
+      };
+      break;
     case 'bin.git':
       config.settings.bin = {
         ...(config.settings.bin ?? {}),
@@ -317,6 +347,18 @@ export async function setCliConfigValue(
       config.settings.proxy = {
         ...(config.settings.proxy ?? {}),
         provider: normalized as ProxyProvider,
+      };
+      break;
+    case 'proxy.nb-cli-root':
+      config.settings.proxy = {
+        ...(config.settings.proxy ?? {}),
+        nbCliRoot: normalized,
+      };
+      break;
+    case 'proxy.upstream-host':
+      config.settings.proxy = {
+        ...(config.settings.proxy ?? {}),
+        upstreamHost: normalized,
       };
       break;
     case 'bin.yarn':
@@ -374,6 +416,11 @@ export async function deleteCliConfigValue(
         delete config.settings.bin.docker;
       }
       break;
+    case 'bin.caddy':
+      if (config.settings.bin) {
+        delete config.settings.bin.caddy;
+      }
+      break;
     case 'bin.git':
       if (config.settings.bin) {
         delete config.settings.bin.git;
@@ -387,6 +434,16 @@ export async function deleteCliConfigValue(
     case 'proxy.provider':
       if (config.settings.proxy) {
         delete config.settings.proxy.provider;
+      }
+      break;
+    case 'proxy.nb-cli-root':
+      if (config.settings.proxy) {
+        delete config.settings.proxy.nbCliRoot;
+      }
+      break;
+    case 'proxy.upstream-host':
+      if (config.settings.proxy) {
+        delete config.settings.proxy.upstreamHost;
       }
       break;
     case 'bin.yarn':
@@ -415,6 +472,7 @@ export async function resolveLicensePkgUrlFromConfig(options: CliConfigOptions =
 
 const CONFIGURABLE_COMMAND_KEYS = {
   docker: 'bin.docker',
+  caddy: 'bin.caddy',
   git: 'bin.git',
   nginx: 'bin.nginx',
   yarn: 'bin.yarn',

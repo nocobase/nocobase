@@ -135,9 +135,10 @@
       "errors": {
         "httpEnvUnsupported": "Can't generate a proxy config for \"{{envName}}\" from this machine because the env only has an API connection.",
         "sshEnvUnsupported": "Can't generate a proxy config for \"{{envName}}\" yet because SSH envs are not implemented.",
+        "invalidProxyPort": "Invalid proxy entry port \"{{port}}\". Use an integer between 1 and 65535.",
         "missingAppPort": "Missing appPort for env \"{{envName}}\". Save or update the app port before generating proxy config.",
         "missingVersion": "Couldn't determine the app version for env \"{{envName}}\". Run `nb env update {{envName}}` and try again.",
-        "appEntryMissingInclude": "The editable app entry config at {{appConfigPath}} does not include {{generatedConfigPath}}. Add `include {{generatedConfigPath}};` inside the server block, or replace the legacy managed routes in app.conf and rerun the command."
+        "appEntryMissingInclude": "The editable app entry config at {{appConfigPath}} does not reference {{generatedConfigPath}}. Add the managed generated-config reference back into the editable app entry, or replace the legacy managed routes and rerun the command."
       }
     },
     "shared": {

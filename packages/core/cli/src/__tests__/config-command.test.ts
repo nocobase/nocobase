@@ -214,11 +214,23 @@ test('nb config set/get/delete supports binary override keys', async () => {
   });
 });
 
-test('nb config set/get/delete supports bin.nginx and proxy.provider', async () => {
+test('nb config set/get/delete supports caddy/nginx binaries and proxy provider settings', async () => {
   await withTempCliHome(async () => {
     const { default: ConfigSet } = await import('../commands/config/set.js');
     const { default: ConfigGet } = await import('../commands/config/get.js');
     const { default: ConfigDelete } = await import('../commands/config/delete.js');
+
+    const setCaddyCommand = Object.assign(Object.create(ConfigSet.prototype), {
+      parse: vi.fn(async () => ({
+        args: {
+          key: 'bin.caddy',
+          value: '/usr/bin/caddy',
+        },
+      })),
+      log: vi.fn(),
+    });
+    await ConfigSet.prototype.run.call(setCaddyCommand);
+    expect(setCaddyCommand.log).toHaveBeenCalledWith('bin.caddy=/usr/bin/caddy');
 
     const setNginxCommand = Object.assign(Object.create(ConfigSet.prototype), {
       parse: vi.fn(async () => ({
@@ -236,13 +248,48 @@ test('nb config set/get/delete supports bin.nginx and proxy.provider', async () 
       parse: vi.fn(async () => ({
         args: {
           key: 'proxy.provider',
-          value: 'nginx',
+          value: 'caddy',
         },
       })),
       log: vi.fn(),
     });
     await ConfigSet.prototype.run.call(setProviderCommand);
-    expect(setProviderCommand.log).toHaveBeenCalledWith('proxy.provider=nginx');
+    expect(setProviderCommand.log).toHaveBeenCalledWith('proxy.provider=caddy');
+
+    const setProxyRootCommand = Object.assign(Object.create(ConfigSet.prototype), {
+      parse: vi.fn(async () => ({
+        args: {
+          key: 'proxy.nb-cli-root',
+          value: '/workspace',
+        },
+      })),
+      log: vi.fn(),
+    });
+    await ConfigSet.prototype.run.call(setProxyRootCommand);
+    expect(setProxyRootCommand.log).toHaveBeenCalledWith('proxy.nb-cli-root=/workspace');
+
+    const setProxyHostCommand = Object.assign(Object.create(ConfigSet.prototype), {
+      parse: vi.fn(async () => ({
+        args: {
+          key: 'proxy.upstream-host',
+          value: 'host.docker.internal',
+        },
+      })),
+      log: vi.fn(),
+    });
+    await ConfigSet.prototype.run.call(setProxyHostCommand);
+    expect(setProxyHostCommand.log).toHaveBeenCalledWith('proxy.upstream-host=host.docker.internal');
+
+    const getCaddyCommand = Object.assign(Object.create(ConfigGet.prototype), {
+      parse: vi.fn(async () => ({
+        args: {
+          key: 'bin.caddy',
+        },
+      })),
+      log: vi.fn(),
+    });
+    await ConfigGet.prototype.run.call(getCaddyCommand);
+    expect(getCaddyCommand.log).toHaveBeenCalledWith('/usr/bin/caddy');
 
     const getNginxCommand = Object.assign(Object.create(ConfigGet.prototype), {
       parse: vi.fn(async () => ({
@@ -264,7 +311,40 @@ test('nb config set/get/delete supports bin.nginx and proxy.provider', async () 
       log: vi.fn(),
     });
     await ConfigGet.prototype.run.call(getProviderCommand);
-    expect(getProviderCommand.log).toHaveBeenCalledWith('nginx');
+    expect(getProviderCommand.log).toHaveBeenCalledWith('caddy');
+
+    const getProxyRootCommand = Object.assign(Object.create(ConfigGet.prototype), {
+      parse: vi.fn(async () => ({
+        args: {
+          key: 'proxy.nb-cli-root',
+        },
+      })),
+      log: vi.fn(),
+    });
+    await ConfigGet.prototype.run.call(getProxyRootCommand);
+    expect(getProxyRootCommand.log).toHaveBeenCalledWith('/workspace');
+
+    const getProxyHostCommand = Object.assign(Object.create(ConfigGet.prototype), {
+      parse: vi.fn(async () => ({
+        args: {
+          key: 'proxy.upstream-host',
+        },
+      })),
+      log: vi.fn(),
+    });
+    await ConfigGet.prototype.run.call(getProxyHostCommand);
+    expect(getProxyHostCommand.log).toHaveBeenCalledWith('host.docker.internal');
+
+    const deleteCaddyCommand = Object.assign(Object.create(ConfigDelete.prototype), {
+      parse: vi.fn(async () => ({
+        args: {
+          key: 'bin.caddy',
+        },
+      })),
+      log: vi.fn(),
+    });
+    await ConfigDelete.prototype.run.call(deleteCaddyCommand);
+    expect(deleteCaddyCommand.log).toHaveBeenCalledWith('Deleted bin.caddy');
 
     const deleteNginxCommand = Object.assign(Object.create(ConfigDelete.prototype), {
       parse: vi.fn(async () => ({
@@ -288,9 +368,34 @@ test('nb config set/get/delete supports bin.nginx and proxy.provider', async () 
     await ConfigDelete.prototype.run.call(deleteProviderCommand);
     expect(deleteProviderCommand.log).toHaveBeenCalledWith('Deleted proxy.provider');
 
+    const deleteProxyRootCommand = Object.assign(Object.create(ConfigDelete.prototype), {
+      parse: vi.fn(async () => ({
+        args: {
+          key: 'proxy.nb-cli-root',
+        },
+      })),
+      log: vi.fn(),
+    });
+    await ConfigDelete.prototype.run.call(deleteProxyRootCommand);
+    expect(deleteProxyRootCommand.log).toHaveBeenCalledWith('Deleted proxy.nb-cli-root');
+
+    const deleteProxyHostCommand = Object.assign(Object.create(ConfigDelete.prototype), {
+      parse: vi.fn(async () => ({
+        args: {
+          key: 'proxy.upstream-host',
+        },
+      })),
+      log: vi.fn(),
+    });
+    await ConfigDelete.prototype.run.call(deleteProxyHostCommand);
+    expect(deleteProxyHostCommand.log).toHaveBeenCalledWith('Deleted proxy.upstream-host');
+
     const config = await loadAuthConfig({ scope: 'global' });
+    expect(config.settings?.bin?.caddy).toBe(undefined);
     expect(config.settings?.bin?.nginx).toBe(undefined);
     expect(config.settings?.proxy?.provider).toBe(undefined);
+    expect(config.settings?.proxy?.nbCliRoot).toBe(undefined);
+    expect(config.settings?.proxy?.upstreamHost).toBe(undefined);
   });
 });
 

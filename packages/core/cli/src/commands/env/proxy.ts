@@ -13,9 +13,12 @@ import { Args, Command, Flags } from '@oclif/core';
 import { formatMissingManagedAppEnvMessage, resolveManagedAppRuntime } from '../../lib/app-runtime.js';
 import { resolveDefaultConfigScope } from '../../lib/cli-home.js';
 import { translateCli } from '../../lib/cli-locale.js';
-import { PROXY_PROVIDER_OPTIONS } from '../../lib/cli-config.js';
+import { PROXY_PROVIDER_OPTIONS, type ProxyProvider } from '../../lib/cli-config.js';
 import {
+  applyEnvProxyAppEntryOptions,
   appConfigIncludesGeneratedConfig,
+  appConfigHasManagedGeneratedConfigBlock,
+  buildManagedAppEntryGeneratedConfigBlock,
   buildEnvProxyAppConfig,
   buildEnvProxyConfig,
   buildLegacyEnvProxyConfig,
@@ -23,21 +26,87 @@ import {
   installEnvProxyProvider,
   isLegacyEnvProxyAppConfig,
   reloadEnvProxyProvider,
+  replaceManagedAppEntryGeneratedConfigBlock,
   resolveEnvProxyAppOutputPath,
   resolveEnvProxyProvider,
   resolveEnvProxyMainOutputPath,
   resolveEnvProxyOutputPath,
+  resolveLegacyNginxEnvProxyAppOutputPath,
+  resolveLegacyNginxEnvProxyOutputPath,
+  mapProxyPathFromCliRoot,
+  type EnvProxyAppEntryOptions,
 } from '../../lib/env-proxy.js';
 import { announceTargetEnv, failTask, startTask, succeedTask } from '../../lib/ui.js';
 
+async function readOptionalTextFile(filePath: string): Promise<string | undefined> {
+  try {
+    return await readFile(filePath, 'utf8');
+  } catch (error: unknown) {
+    const code = error && typeof error === 'object' && 'code' in error ? (error as { code?: unknown }).code : undefined;
+    if (code === 'ENOENT') {
+      return undefined;
+    }
+    throw error;
+  }
+}
+
+function buildEditableAppEntryReferenceLine(provider: ProxyProvider, generatedConfigPath: string): string {
+  if (provider === 'caddy') {
+    return `import ./${path.basename(generatedConfigPath)}`;
+  }
+
+  return `include ${generatedConfigPath};`;
+}
+
+function replaceEditableAppEntryReferenceWithManagedBlock(
+  content: string,
+  provider: ProxyProvider,
+  currentGeneratedConfigPath: string,
+  nextGeneratedConfigPath: string,
+): string {
+  const currentReferenceLine = buildEditableAppEntryReferenceLine(provider, currentGeneratedConfigPath);
+  const nextBlock = buildManagedAppEntryGeneratedConfigBlock(provider, nextGeneratedConfigPath);
+  const escapedComment =
+    provider === 'caddy'
+      ? '# Keep this import so `nb env proxy` can refresh managed routes.'
+      : '# Keep this include so `nb env proxy` can refresh managed routes.';
+  const escapedCommentPattern = escapedComment.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const escapedLinePattern = currentReferenceLine.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const legacyBlockPattern = new RegExp(
+    `[ \\t]*${escapedCommentPattern}\\n[ \\t]*${escapedLinePattern.replace(/;$/, ';?')}`,
+    'm',
+  );
+
+  if (legacyBlockPattern.test(content)) {
+    return content.replace(legacyBlockPattern, nextBlock);
+  }
+
+  return content.replace(currentReferenceLine, nextBlock);
+}
+
+function normalizeProxyListenPort(value?: string): string | undefined {
+  const normalized = value?.trim() || undefined;
+  if (!normalized || !/^\d+$/.test(normalized)) {
+    return undefined;
+  }
+
+  const port = Number(normalized);
+  if (!Number.isInteger(port) || port < 1 || port > 65535) {
+    return undefined;
+  }
+
+  return normalized;
+}
+
 export default class EnvProxy extends Command {
-  static override summary = 'Generate an nginx proxy config for one managed env';
+  static override summary = 'Generate a proxy config for one managed env';
 
   static override examples = [
     '<%= config.bin %> <%= command.id %>',
     '<%= config.bin %> <%= command.id %> app1',
     '<%= config.bin %> <%= command.id %> app1 --output ./generated.conf',
     '<%= config.bin %> <%= command.id %> app1 --provider nginx --install --reload',
+    '<%= config.bin %> <%= command.id %> app1 --provider caddy --install --reload',
     '<%= config.bin %> <%= command.id %> app1 --print',
   ];
 
@@ -59,11 +128,17 @@ export default class EnvProxy extends Command {
     }),
     output: Flags.string({
       char: 'o',
-      description: 'Output file path. Defaults to ~/.nocobase/proxy/<env>/generated.conf',
+      description: 'Output file path. Defaults to ~/.nocobase/proxy/<provider>/<env>/generated.<ext>',
     }),
     provider: Flags.string({
       description: 'Proxy provider to render and operate on',
       options: [...PROXY_PROVIDER_OPTIONS],
+    }),
+    host: Flags.string({
+      description: 'Host exposed by the proxy entry config, such as example.com or localhost',
+    }),
+    port: Flags.string({
+      description: 'Port exposed by the proxy entry config, not the upstream NocoBase app port',
     }),
     install: Flags.boolean({
       description: 'Install the rendered provider config into the provider main config when supported',
@@ -85,6 +160,8 @@ export default class EnvProxy extends Command {
     const envNameArg = args.name?.trim() || undefined;
     const envNameFlag = flags.env?.trim() || undefined;
     const requestedProvider = flags.provider?.trim() || undefined;
+    const requestedHost = flags.host?.trim() || undefined;
+    const requestedPort = flags.port?.trim() || undefined;
 
     if (envNameArg && envNameFlag && envNameArg !== envNameFlag) {
       this.error(
@@ -99,6 +176,23 @@ export default class EnvProxy extends Command {
     if (flags.output && (flags.install || flags.reload)) {
       this.error('`--output` cannot be combined with `--install` or `--reload` in the current implementation.');
     }
+
+    if (requestedPort && !normalizeProxyListenPort(requestedPort)) {
+      this.error(
+        translateCli(
+          'commands.envProxy.errors.invalidProxyPort',
+          { port: requestedPort },
+          {
+            fallback: `Invalid proxy entry port "${requestedPort}". Use an integer between 1 and 65535.`,
+          },
+        ),
+      );
+    }
+
+    const appEntryOptions: EnvProxyAppEntryOptions = {
+      host: requestedHost,
+      port: normalizeProxyListenPort(requestedPort),
+    };
 
     const requestedEnv = envNameArg || envNameFlag;
     const runtime = await resolveManagedAppRuntime(requestedEnv);
@@ -187,13 +281,13 @@ export default class EnvProxy extends Command {
         },
         {
           fallback:
-            `The editable app entry config at ${appConfigPath} does not include ${generatedConfigPath}. ` +
-            `Add \`include ${generatedConfigPath};\` inside the server block, or replace the legacy managed routes in app.conf and rerun the command.`,
+            `The editable app entry config at ${appConfigPath} does not reference ${generatedConfigPath}. ` +
+            `Add the managed generated-config reference back into the editable app entry, or replace the legacy managed routes and rerun the command.`,
         },
       );
 
     try {
-      const result = await buildEnvProxyConfig(runtime);
+      const result = await buildEnvProxyConfig(runtime, { provider, scope });
       if (flags.print) {
         process.stdout.write(result.content);
         succeedTask(
@@ -210,8 +304,10 @@ export default class EnvProxy extends Command {
 
       const outputPath = resolveEnvProxyOutputPath(runtime.envName, {
         output: flags.output,
+        provider,
         scope,
       });
+      const renderedOutputPath = await mapProxyPathFromCliRoot(outputPath, { scope });
       await mkdir(path.dirname(outputPath), { recursive: true });
       await writeFile(outputPath, result.content, 'utf8');
 
@@ -221,38 +317,95 @@ export default class EnvProxy extends Command {
       let sharedOutputPath: string | undefined;
       if (shouldWriteSharedConfig) {
         appConfigPath = resolveEnvProxyAppOutputPath(runtime.envName, {
+          provider,
           scope,
         });
-        const appConfigContent = await readFile(appConfigPath, 'utf8').catch((error: NodeJS.ErrnoException) => {
-          if (error.code === 'ENOENT') {
-            return undefined;
-          }
-          throw error;
-        });
-        const nextAppConfigContent = buildEnvProxyAppConfig(outputPath);
+        const legacyAppConfigPath =
+          provider === 'nginx'
+            ? resolveLegacyNginxEnvProxyAppOutputPath(runtime.envName, {
+                scope,
+              })
+            : undefined;
+        const appConfigContent =
+          (await readOptionalTextFile(appConfigPath)) ??
+          (legacyAppConfigPath ? await readOptionalTextFile(legacyAppConfigPath) : undefined);
+        const nextAppConfigContent = buildEnvProxyAppConfig(provider, renderedOutputPath, appEntryOptions);
+        const legacyOutputPath =
+          provider === 'nginx'
+            ? resolveLegacyNginxEnvProxyOutputPath(runtime.envName, {
+                scope,
+              })
+            : undefined;
+        const legacyRenderedOutputPath = legacyOutputPath
+          ? await mapProxyPathFromCliRoot(legacyOutputPath, {
+              scope,
+            })
+          : undefined;
 
         if (!appConfigContent) {
           await writeFile(appConfigPath, nextAppConfigContent, 'utf8');
           appConfigStatus = 'created';
-        } else if (appConfigIncludesGeneratedConfig(appConfigContent, outputPath)) {
-          appConfigStatus = 'existing';
-        } else {
-          const legacyConfig = await buildLegacyEnvProxyConfig(runtime);
-          if (!isLegacyEnvProxyAppConfig(appConfigContent, legacyConfig.content)) {
-            throw new Error(appEntryMissingIncludeMessage(appConfigPath, outputPath));
+        } else if (appConfigHasManagedGeneratedConfigBlock(appConfigContent)) {
+          const nextContent = applyEnvProxyAppEntryOptions(
+            replaceManagedAppEntryGeneratedConfigBlock(appConfigContent, provider, renderedOutputPath),
+            provider,
+            appEntryOptions,
+          );
+          if (nextContent !== appConfigContent) {
+            await writeFile(appConfigPath, nextContent, 'utf8');
+            appConfigStatus = 'migrated';
+          } else {
+            appConfigStatus = 'existing';
           }
+        } else {
+          const candidateGeneratedPaths = [outputPath, legacyOutputPath, legacyRenderedOutputPath].filter(
+            (value): value is string => Boolean(value && value !== renderedOutputPath),
+          );
+          if (appConfigIncludesGeneratedConfig(appConfigContent, renderedOutputPath, provider)) {
+            candidateGeneratedPaths.unshift(renderedOutputPath);
+          }
+          const matchedGeneratedPath = candidateGeneratedPaths.find((generatedConfigPath) =>
+            appConfigIncludesGeneratedConfig(appConfigContent, generatedConfigPath, provider),
+          );
 
-          await writeFile(appConfigPath, nextAppConfigContent, 'utf8');
-          appConfigStatus = 'migrated';
+          if (matchedGeneratedPath) {
+            await writeFile(
+              appConfigPath,
+              applyEnvProxyAppEntryOptions(
+                replaceEditableAppEntryReferenceWithManagedBlock(
+                  appConfigContent,
+                  provider,
+                  matchedGeneratedPath,
+                  renderedOutputPath,
+                ),
+                provider,
+                appEntryOptions,
+              ),
+              'utf8',
+            );
+            appConfigStatus = 'migrated';
+          } else if (provider === 'nginx') {
+            const legacyConfig = await buildLegacyEnvProxyConfig(runtime, { provider, scope });
+            if (!isLegacyEnvProxyAppConfig(appConfigContent, legacyConfig.content)) {
+              throw new Error(appEntryMissingIncludeMessage(appConfigPath, renderedOutputPath));
+            }
+
+            await writeFile(appConfigPath, nextAppConfigContent, 'utf8');
+            appConfigStatus = 'migrated';
+          } else {
+            throw new Error(appEntryMissingIncludeMessage(appConfigPath, renderedOutputPath));
+          }
         }
 
         sharedOutputPath = resolveEnvProxyMainOutputPath({
+          provider,
           scope,
         });
         await mkdir(path.dirname(sharedOutputPath), { recursive: true });
         await writeFile(
           sharedOutputPath,
-          buildEnvProxyMainConfig({
+          await buildEnvProxyMainConfig({
+            provider,
             scope,
           }),
           'utf8',

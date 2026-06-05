@@ -135,9 +135,10 @@
       "errors": {
         "httpEnvUnsupported": "无法在当前机器上为 \"{{envName}}\" 生成代理配置，因为这个 env 只有 API 连接。",
         "sshEnvUnsupported": "暂时无法为 \"{{envName}}\" 生成代理配置，因为 SSH env 还没有实现。",
+        "invalidProxyPort": "代理入口端口 \"{{port}}\" 无效。请使用 1 到 65535 之间的整数。",
         "missingAppPort": "env \"{{envName}}\" 缺少 appPort。请先保存或更新应用端口后再生成代理配置。",
         "missingVersion": "无法确定 env \"{{envName}}\" 的应用版本。请先运行 `nb env update {{envName}}`，然后再试一次。",
-        "appEntryMissingInclude": "可编辑入口配置 {{appConfigPath}} 没有包含 {{generatedConfigPath}}。请在 server 块中添加 `include {{generatedConfigPath}};`，或先替换 app.conf 中旧的托管路由后再重新执行该命令。"
+        "appEntryMissingInclude": "可编辑入口配置 {{appConfigPath}} 没有引用 {{generatedConfigPath}}。请把托管的 generated 配置引用补回入口配置中，或先替换旧的托管路由后再重新执行该命令。"
       }
     },
     "shared": {
