@@ -225,8 +225,10 @@ describe('flowSurfaces dynamic capability create dry-run', () => {
       resolveCreate?: FlowSurfaceCapabilitiesProvider['resolveCreate'];
       withoutResolveCreate?: boolean;
       acceptedAliases?: string[];
+      modelUse?: string;
     } = {},
   ): FlowSurfaceCapabilitiesProvider {
+    const modelUse = input.modelUse || 'TableBlockModel';
     return {
       ownerPlugin: '@nocobase/plugin-dry-run',
       getCapabilities: () => [
@@ -240,7 +242,7 @@ describe('flowSurfaces dynamic capability create dry-run', () => {
             title: 'Dry run',
           },
           implementation: {
-            modelUse: 'TableBlockModel',
+            modelUse,
           },
           availability: {
             create: {
@@ -285,7 +287,7 @@ describe('flowSurfaces dynamic capability create dry-run', () => {
             resolveCreate:
               input.resolveCreate ||
               ((_capability, publicInput) => ({
-                use: 'TableBlockModel',
+                use: modelUse,
                 stepParams: {
                   resourceSettings: {
                     init: {
@@ -837,6 +839,85 @@ describe('flowSurfaces dynamic capability create dry-run', () => {
     });
     expect(JSON.stringify(dryRunResponse)).not.toContain('TableBlockModel');
     expect(JSON.stringify(dryRunResponse)).not.toContain('stepParams');
+  });
+
+  it('should persist provider alias writes and read back canonical public type', async () => {
+    const providerModelUse = 'AliasDryRunBlockModel';
+    const provider = createDryRunProvider({
+      acceptedAliases: ['legacyDryRun'],
+      modelUse: providerModelUse,
+      resolveCreate: () => ({
+        use: providerModelUse,
+      }),
+    });
+    const enabledPackages = new Set(['@nocobase/plugin-dry-run']);
+    const service = new FlowSurfacesService({
+      flowSurfaceCapabilityProviders: createProviderRegistry([provider]),
+    } as unknown as ConstructorParameters<typeof FlowSurfacesService>[0]);
+    const harness = service as unknown as DynamicBlockWriteGateHarness & {
+      projectDynamicBlockReadbackTypes<T>(node: T, options: { enabledPackages: ReadonlySet<string> }): Promise<T>;
+    };
+    const persistedPayloads: Record<string, unknown>[] = [];
+    vi.spyOn(service as unknown as RepositoryGetterHarness, 'repository', 'get').mockReturnValue({
+      upsertModel: async (payload) => {
+        persistedPayloads.push(payload);
+        return 'created-alias-dry-run';
+      },
+    } as unknown as RepositoryGetterHarness['repository']);
+
+    const result = await harness.tryAddDynamicBlock({
+      values: {
+        type: 'legacyDryRun',
+        initParams: {
+          collectionName: 'tasks',
+        },
+        settings: {
+          pageSize: 20,
+        },
+      },
+      options: {
+        deferAutoLayout: true,
+        dynamicCapabilityActionName: 'addBlock',
+      },
+      enabledPackages,
+      blockType: 'legacyDryRun',
+      target: {
+        uid: 'target-grid',
+      },
+      parentUid: 'parent-grid',
+      subKey: 'items',
+      subType: 'array',
+      popupProfile: null,
+    });
+
+    expect(result).toMatchObject({
+      uid: 'created-alias-dry-run',
+      parentUid: 'parent-grid',
+      subKey: 'items',
+    });
+    expect(persistedPayloads).toEqual([
+      expect.objectContaining({
+        parentId: 'parent-grid',
+        subKey: 'items',
+        subType: 'array',
+        use: providerModelUse,
+      }),
+    ]);
+
+    const projected = await harness.projectDynamicBlockReadbackTypes(
+      {
+        uid: 'created-alias-dry-run',
+        use: providerModelUse,
+      },
+      {
+        enabledPackages,
+      },
+    );
+    expect(projected).toMatchObject({
+      uid: 'created-alias-dry-run',
+      use: providerModelUse,
+      type: 'dryRun',
+    });
   });
 
   it('should keep plugin-qualified provider aliases discovery-only for create', async () => {
