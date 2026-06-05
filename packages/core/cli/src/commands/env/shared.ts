@@ -14,6 +14,7 @@ import {
   type ManagedAppRuntime,
 } from '../../lib/app-runtime.js';
 import { executeRawApiRequest } from '../../lib/api-client.js';
+import { buildLocalAppUrl } from '../../lib/app-public-path.js';
 import type { AuthStoreOptions } from '../../lib/auth-store.js';
 
 export type RuntimeStatus = 'running' | 'stopped' | 'missing' | 'http' | 'ssh' | 'external' | '-';
@@ -73,7 +74,7 @@ export function appUrl(runtime: ManagedAppRuntime): string {
 
   const port = String(runtime.env.config.appPort ?? '').trim();
   if (port) {
-    return `http://127.0.0.1:${port}/`;
+    return buildLocalAppUrl(port, runtime.env.config?.appPublicPath) ?? '';
   }
 
   return '';

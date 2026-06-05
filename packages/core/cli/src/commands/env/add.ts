@@ -54,6 +54,7 @@ type EnvAddParsedFlags = {
   'app-path'?: string;
   'app-root-path'?: string;
   'storage-path'?: string;
+  'app-public-path'?: string;
   'env-file'?: string;
   'app-port'?: string;
   'app-key'?: string;
@@ -241,6 +242,10 @@ export default class EnvAdd extends Command {
       hidden: true,
       deprecated: true,
       description: 'Storage path saved with this env',
+    }),
+    'app-public-path': Flags.string({
+      hidden: true,
+      description: 'Application public path saved with this env',
     }),
     'env-file': Flags.string({
       hidden: true,

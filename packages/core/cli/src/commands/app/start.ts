@@ -8,12 +8,14 @@
  */
 
 import { Command, Flags } from '@oclif/core';
+import { buildDefaultCdnBaseUrl, readDistClientActiveVersion } from '../../lib/app-public-path.js';
 import { ensureCrossEnvConfirmed, hasExplicitEnvSelection } from '../../lib/env-guard.js';
 import {
   formatMissingManagedAppEnvMessage,
   managedAppLifecycleEnvVars,
   resolveManagedAppRuntime,
   runLocalNocoBaseCommand,
+  type ManagedAppRuntime,
 } from '../../lib/app-runtime.js';
 import {
   AppHealthCheckError,
@@ -28,6 +30,7 @@ import {
   ensureSavedLocalSource,
   recreateSavedDockerApp,
 } from '../../lib/app-managed-resources.js';
+import { readManagedRuntimeEnvValues } from '../../lib/managed-env-file.js';
 import { run } from '../../lib/run-npm.js';
 import { announceTargetEnv, failTask, printInfo, printWarning, startTask, succeedTask } from '../../lib/ui.js';
 
@@ -122,6 +125,35 @@ function formatLocalClientExtractWarning(envName: string, message: string): stri
     'NocoBase will keep starting, but versioned client files for CDN or external distribution may be stale or missing.',
     `Details: ${message}`,
   ].join('\n');
+}
+
+async function resolveDefaultLocalCdnBaseUrl(
+  runtime: Extract<ManagedAppRuntime, { kind: 'local' }>,
+): Promise<string | undefined> {
+  let envValues: Record<string, string> = {};
+
+  if (runtime.env.config && typeof runtime.env.config === 'object') {
+    ({ envValues } = await readManagedRuntimeEnvValues(runtime));
+  }
+
+  const explicitProcessCdnBaseUrl = String(process.env.CDN_BASE_URL ?? '').trim();
+  const explicitEnvFileCdnBaseUrl = String(envValues.CDN_BASE_URL ?? '').trim();
+
+  if (explicitProcessCdnBaseUrl || explicitEnvFileCdnBaseUrl) {
+    return undefined;
+  }
+
+  const storagePath = String(runtime.env.storagePath ?? runtime.env.config?.storagePath ?? '').trim();
+  if (!storagePath) {
+    return undefined;
+  }
+
+  const activeVersion = await readDistClientActiveVersion(storagePath);
+  if (!activeVersion) {
+    return undefined;
+  }
+
+  return buildDefaultCdnBaseUrl(runtime.env.config?.appPublicPath || envValues.APP_PUBLIC_PATH, activeVersion);
 }
 
 export default class AppStart extends Command {
@@ -262,6 +294,7 @@ export default class AppStart extends Command {
 
       const appUrl = formatAppUrl(
         runtime.env.appPort === undefined || runtime.env.appPort === null ? undefined : String(runtime.env.appPort),
+        runtime.env.config?.appPublicPath,
       );
       const apiBaseUrl = resolveManagedAppApiBaseUrl(runtime);
       startTask(`Recreating the Docker app container for "${runtime.envName}"...`);
@@ -329,10 +362,11 @@ export default class AppStart extends Command {
       runtime.env.appPort !== undefined && runtime.env.appPort !== null
         ? String(runtime.env.appPort).trim()
         : undefined;
-    const appUrl = formatAppUrl(effectivePort);
+    const appUrl = formatAppUrl(effectivePort, runtime.env.config?.appPublicPath);
     const apiBaseUrl = resolveManagedAppApiBaseUrl(runtime, {
       portOverride: effectivePort,
     });
+    let defaultCdnBaseUrl: string | undefined;
 
     if (await isAppReady(apiBaseUrl, { requestTimeoutMs: 1_500 })) {
       if (flags.daemon === false) {
@@ -385,6 +419,7 @@ export default class AppStart extends Command {
         stdio: commandStdio,
       });
       succeedTask(`Client assets are ready for "${runtime.envName}".`);
+      defaultCdnBaseUrl = await resolveDefaultLocalCdnBaseUrl(runtime);
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : String(error);
       failTask(`Failed to extract client assets for "${runtime.envName}".`);
@@ -402,8 +437,14 @@ export default class AppStart extends Command {
     }
 
     try {
+      const startEnv = defaultCdnBaseUrl
+        ? {
+            ...managedAppLifecycleEnvVars(),
+            CDN_BASE_URL: defaultCdnBaseUrl,
+          }
+        : managedAppLifecycleEnvVars();
       await runLocalNocoBaseCommand(runtime, npmArgs, {
-        env: managedAppLifecycleEnvVars(),
+        env: startEnv,
         stdio: commandStdio,
       });
       if (flags.daemon !== false) {

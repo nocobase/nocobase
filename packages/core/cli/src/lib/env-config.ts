@@ -8,6 +8,7 @@
  */
 
 import type { EnvConfigEntry } from './auth-store.js';
+import { resolveAppPublicPath } from './app-public-path.js';
 
 const STRING_ENV_CONFIG_KEYS = [
   'source',
@@ -19,6 +20,7 @@ const STRING_ENV_CONFIG_KEYS = [
   'appPath',
   'appRootPath',
   'storagePath',
+  'appPublicPath',
   'envFile',
   'appPort',
   'appKey',
@@ -92,7 +94,7 @@ export function buildStoredEnvConfig(input: StoredEnvConfigInput): StoredEnvConf
   for (const key of STRING_ENV_CONFIG_KEYS) {
     const value = trimConfigValue(input[key]);
     if (value) {
-      envConfig[key] = value;
+      envConfig[key] = key === 'appPublicPath' ? resolveAppPublicPath(value) : value;
     }
   }
 

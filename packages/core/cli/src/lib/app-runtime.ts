@@ -10,13 +10,13 @@
 import path from 'node:path';
 import { resolveEnvKind, type Env } from './auth-store.js';
 import { getEnv, loadAuthConfig } from './auth-store.js';
-import { resolveConfiguredEnvPath } from './cli-home.js';
 import {
   DEFAULT_DOCKER_CONTAINER_PREFIX,
   DEFAULT_DOCKER_NETWORK,
   getEffectiveCliConfigValue,
 } from './cli-config.js';
 import { resolveConfiguredAppPath } from './env-paths.js';
+import { resolveManagedLocalEnvFilePath } from './managed-env-file.js';
 import { commandOutput, commandSucceeds, run, runNocoBaseCommand } from './run-npm.js';
 import { buildRuntimeEnvVars } from './runtime-env-vars.js';
 
@@ -191,24 +191,6 @@ export function managedAppLifecycleEnvVars(): Record<string, string> {
   };
 }
 
-function resolveManagedLocalAppEnvPath(runtime: Extract<ManagedAppRuntime, { kind: 'local' }>): string {
-  const explicitEnvFile = String(runtime.env.config.envFile ?? '').trim();
-  if (explicitEnvFile) {
-    return resolveConfiguredEnvPath(explicitEnvFile) ?? explicitEnvFile;
-  }
-
-  const configuredAppPath = resolveConfiguredAppPath(runtime.env.config);
-  if (configuredAppPath) {
-    return path.join(configuredAppPath, '.env');
-  }
-
-  if (path.basename(runtime.projectRoot) === 'source') {
-    return path.resolve(runtime.projectRoot, '..', '.env');
-  }
-
-  return path.join(runtime.projectRoot, '.env');
-}
-
 export async function runLocalNocoBaseCommand(
   runtime: Extract<ManagedAppRuntime, { kind: 'local' }>,
   args: string[],
@@ -220,7 +202,7 @@ export async function runLocalNocoBaseCommand(
   },
 ): Promise<void> {
   const envVars = await buildRuntimeEnvVars(runtime);
-  const appEnvPath = resolveManagedLocalAppEnvPath(runtime);
+  const appEnvPath = resolveManagedLocalEnvFilePath(runtime);
   await runNocoBaseCommand(args, {
     cwd: runtime.projectRoot,
     env: {

@@ -368,6 +368,7 @@ Prompt modes:
     lang: installLikeOnly(Install.appPrompts.lang),
     appPath: installLikeOnly(Install.appPrompts.appPath),
     appPort: installLikeOnly(Install.appPrompts.appPort),
+    appPublicPath: installLikeOnly(Install.appPrompts.appPublicPath),
     skipDownload: installNewOnly({
       type: 'boolean',
       message: initText('prompts.skipDownload.message'),
@@ -554,6 +555,7 @@ Prompt modes:
               'app-root-path'?: string;
               'app-port'?: string;
               'storage-path'?: string;
+              'app-public-path'?: string;
               'root-username'?: string;
               'root-email'?: string;
               'root-password'?: string;
@@ -606,6 +608,7 @@ Prompt modes:
         'app-root-path'?: string;
         'app-port'?: string;
         'storage-path'?: string;
+        'app-public-path'?: string;
         'root-username'?: string;
         'root-email'?: string;
         'root-password'?: string;
@@ -682,6 +685,7 @@ Prompt modes:
       normalizedFlags as {
         'app-port'?: string;
         'db-port'?: string;
+        'app-public-path'?: string;
         yes?: boolean;
       },
       presetValues,
@@ -936,6 +940,7 @@ Prompt modes:
     'app-root-path'?: string;
     'app-port'?: string;
     'storage-path'?: string;
+    'app-public-path'?: string;
     'root-username'?: string;
     'root-email'?: string;
     'root-password'?: string;
@@ -1014,6 +1019,9 @@ Prompt modes:
     }
     if (flags['storage-path'] !== undefined && String(flags['storage-path']).trim() !== '') {
       preset.storagePath = String(flags['storage-path']).trim();
+    }
+    if (flags['app-public-path'] !== undefined && String(flags['app-public-path']).trim() !== '') {
+      preset.appPublicPath = String(flags['app-public-path']).trim();
     }
     if (flags['root-username'] !== undefined) {
       preset.rootUsername = String(flags['root-username'] ?? '').trim();
@@ -1378,6 +1386,11 @@ Prompt modes:
     const storagePath = String(results.storagePath ?? '').trim();
     if (storagePath && (!appPath || !areConfiguredPathsEquivalent(storagePath, deriveConfiguredStoragePath(appPath)))) {
       argv.push('--storage-path', storagePath);
+    }
+
+    const appPublicPath = String(results.appPublicPath ?? '').trim();
+    if (appPublicPath) {
+      argv.push('--app-public-path', appPublicPath);
     }
 
     if (flags.force) {

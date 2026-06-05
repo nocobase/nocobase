@@ -9,6 +9,7 @@
 
 import { mkdir, readdir } from 'node:fs/promises';
 import type { ManagedAppRuntime } from './app-runtime.js';
+import { resolveAppPublicPath } from './app-public-path.js';
 import {
   dockerContainerExists,
   managedAppLifecycleEnvVars,
@@ -149,6 +150,7 @@ export async function buildSavedDockerRunArgs(
       ? ''
       : trimValue(runtime.env.appPort);
   const appKey = trimValue(config.appKey);
+  const appPublicPath = trimValue(config.appPublicPath);
   const timeZone = trimValue(config.timezone) || Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
   const builtinDbConnection = config.builtinDb ? deriveBuiltinDbConnection(runtime) : undefined;
   const dbDialect = builtinDbConnection?.dbDialect || trimValue(config.dbDialect);
@@ -248,6 +250,7 @@ export async function buildSavedDockerRunArgs(
     '-v',
     `${storagePath}:${DOCKER_APP_STORAGE_DESTINATION}`,
   );
+  pushOptionalEnvArg(args, 'APP_PUBLIC_PATH', appPublicPath ? resolveAppPublicPath(appPublicPath) : undefined);
   pushOptionalEnvArg(args, 'DB_SCHEMA', dbSchema || undefined);
   pushOptionalEnvArg(args, 'DB_TABLE_PREFIX', dbTablePrefix || undefined);
   pushOptionalEnvArg(args, 'DB_UNDERSCORED', dbUnderscored);

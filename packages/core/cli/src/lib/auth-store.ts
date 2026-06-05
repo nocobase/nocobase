@@ -10,6 +10,7 @@
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import type { CliHomeScope } from './cli-home.js';
+import { resolveAppPublicPath } from './app-public-path.js';
 import { resolveCliHomeDir, resolveConfiguredEnvPath, resolveEnvRelativePath } from './cli-home.js';
 import { normalizeCliLocale } from './cli-locale.js';
 import {
@@ -74,6 +75,8 @@ export interface EnvConfigEntry {
   appPath?: string;
   appRootPath?: string;
   storagePath?: string;
+  /** Application public path (APP_PUBLIC_PATH). */
+  appPublicPath?: string;
   /** Optional internal env file path. Defaults to <app-path>/.env, or <envName>/.env for legacy Docker-only layouts. */
   envFile?: string;
   /** Application HTTP port (APP_PORT). */
@@ -237,6 +240,7 @@ function normalizeEnvConfigEntry(entry: EnvConfigEntry | undefined): EnvConfigEn
     ...rest,
     ...(normalizedKind ? { kind: normalizedKind } : {}),
     ...(apiBaseUrl !== undefined ? { apiBaseUrl } : {}),
+    ...(normalizeOptionalString(entry.appPublicPath) ? { appPublicPath: resolveAppPublicPath(entry.appPublicPath) } : {}),
   };
 }
 
@@ -439,6 +443,7 @@ export class Env {
       out[key] = String(value);
     };
     put('APP_PORT', this.appPort);
+    put('APP_PUBLIC_PATH', this.config.appPublicPath ? resolveAppPublicPath(this.config.appPublicPath) : undefined);
     put('APP_KEY', this.config.appKey);
     put('TZ', this.config.timezone);
     put('DB_DIALECT', this.config.dbDialect);

@@ -116,6 +116,20 @@
         }
       }
     },
+    "envProxy": {
+      "messages": {
+        "generating": "Generating proxy config for env \"{{envName}}\"...",
+        "printed": "Printed proxy config for env \"{{envName}}\".",
+        "saved": "Saved proxy config for env \"{{envName}}\" at {{outputPath}}.",
+        "failed": "Failed to generate proxy config for env \"{{envName}}\"."
+      },
+      "errors": {
+        "httpEnvUnsupported": "Can't generate a proxy config for \"{{envName}}\" from this machine because the env only has an API connection.",
+        "sshEnvUnsupported": "Can't generate a proxy config for \"{{envName}}\" yet because SSH envs are not implemented.",
+        "missingAppPort": "Missing appPort for env \"{{envName}}\". Save or update the app port before generating proxy config.",
+        "missingVersion": "Couldn't determine the app version for env \"{{envName}}\". Run `nb env update {{envName}}` and try again."
+      }
+    },
     "shared": {
       "missingCommand": "Couldn't run `{{action}}` because the {{displayName}} executable could not be found. Install {{displayName}} or update `nb config set {{configKey}} <path>` and try again.",
       "targetEnv": "Using env \"{{envName}}\".",

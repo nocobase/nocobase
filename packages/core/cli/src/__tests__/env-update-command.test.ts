@@ -141,6 +141,35 @@ test('env update saves config without refreshing runtime for saved app settings'
   );
 });
 
+test('env update normalizes app-public-path in saved env config', async () => {
+  const { default: EnvUpdate } = await import('../commands/env/update.js');
+  mocks.getEnv.mockResolvedValue(createEnv());
+  mocks.replaceEnvConfig.mockResolvedValue(undefined);
+
+  const command = Object.assign(Object.create(EnvUpdate.prototype), {
+    parse: vi.fn(async () => ({
+      args: { name: 'local' },
+      flags: {
+        verbose: false,
+        'app-public-path': 'console',
+      },
+    })),
+    error: (message: string) => {
+      throw new Error(message);
+    },
+  });
+
+  await EnvUpdate.prototype.run.call(command);
+
+  expect(mocks.replaceEnvConfig).toHaveBeenCalledWith(
+    'local',
+    expect.objectContaining({
+      appPublicPath: '/console/',
+    }),
+    { scope: 'global' },
+  );
+});
+
 test('env update refreshes runtime after saving a new api base url', async () => {
   const { default: EnvUpdate } = await import('../commands/env/update.js');
   mocks.getEnv.mockResolvedValue(createEnv());

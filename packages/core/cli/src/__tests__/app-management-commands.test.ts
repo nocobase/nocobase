@@ -59,6 +59,8 @@ const mocks = vi.hoisted(() => ({
   waitForAppReady: vi.fn(),
   resolveManagedAppApiBaseUrl: vi.fn(),
   formatAppUrl: vi.fn(),
+  readManagedRuntimeEnvValues: vi.fn(),
+  readDistClientActiveVersion: vi.fn(),
   removeEnv: vi.fn(),
   upsertEnv: vi.fn(),
   startTask: vi.fn(),
@@ -153,6 +155,22 @@ vi.mock('../lib/app-health.js', () => ({
   resolveManagedAppApiBaseUrl: mocks.resolveManagedAppApiBaseUrl,
   formatAppUrl: mocks.formatAppUrl,
 }));
+
+vi.mock('../lib/managed-env-file.js', async () => {
+  const actual = await vi.importActual<typeof import('../lib/managed-env-file.js')>('../lib/managed-env-file.js');
+  return {
+    ...actual,
+    readManagedRuntimeEnvValues: mocks.readManagedRuntimeEnvValues,
+  };
+});
+
+vi.mock('../lib/app-public-path.js', async () => {
+  const actual = await vi.importActual<typeof import('../lib/app-public-path.js')>('../lib/app-public-path.js');
+  return {
+    ...actual,
+    readDistClientActiveVersion: mocks.readDistClientActiveVersion,
+  };
+});
 
 vi.mock('../lib/ui.js', () => ({
   startTask: mocks.startTask,
@@ -266,12 +284,26 @@ beforeEach(() => {
   mocks.waitForAppReady.mockResolvedValue(undefined);
   mocks.resolveManagedAppApiBaseUrl.mockImplementation((runtime: any, options?: { portOverride?: string }) => {
     const port = options?.portOverride ?? runtime?.env?.appPort;
-    return port ? `http://127.0.0.1:${port}/api` : undefined;
+    const publicPath = String(runtime?.env?.config?.appPublicPath ?? '')
+      .trim()
+      .replace(/\/+$/, '');
+    return port ? `http://127.0.0.1:${port}${publicPath}/api` : undefined;
   });
-  mocks.formatAppUrl.mockImplementation((port?: string) => {
+  mocks.formatAppUrl.mockImplementation((port?: string, appPublicPath?: string) => {
     const value = String(port ?? '').trim();
-    return value ? `http://127.0.0.1:${value}` : undefined;
+    const publicPath = String(appPublicPath ?? '')
+      .trim()
+      .replace(/\/+$/, '');
+    if (!value) {
+      return undefined;
+    }
+    return publicPath ? `http://127.0.0.1:${value}${publicPath}/` : `http://127.0.0.1:${value}`;
   });
+  mocks.readManagedRuntimeEnvValues.mockResolvedValue({
+    envFilePath: undefined,
+    envValues: {},
+  });
+  mocks.readDistClientActiveVersion.mockResolvedValue(undefined);
   mocks.resolveProjectCwd.mockImplementation((cwd?: string) => cwd ?? process.cwd());
   mocks.findAvailableTcpPort.mockResolvedValue('5544');
   mocks.validateAvailableTcpPort.mockResolvedValue(undefined);
@@ -735,6 +767,45 @@ test('start waits for the local app health check in daemon mode', async () => {
   ]);
 });
 
+test('start injects a default CDN_BASE_URL from dist-client active-version when not explicitly configured', async () => {
+  const { default: Start } = await import('../commands/app/start.js');
+  mocks.resolveManagedAppRuntime.mockResolvedValue({
+    kind: 'local',
+    envName: 'local',
+    source: 'npm',
+    projectRoot: '/tmp/nocobase',
+    env: {
+      appPort: 13000,
+      storagePath: '/tmp/nocobase/storage',
+      envVars: { APP_PORT: '13000' },
+      config: {
+        appPublicPath: '/console/',
+      },
+    },
+  });
+  mocks.readManagedRuntimeEnvValues.mockResolvedValue({
+    envFilePath: '/tmp/nocobase/.env',
+    envValues: {},
+  });
+  mocks.readDistClientActiveVersion.mockResolvedValue('2.1.0-beta.44');
+
+  const command = createCommandHarness({
+    flags: {
+      env: 'local',
+    },
+  });
+
+  await Start.prototype.run.call(command);
+
+  expect(mocks.runLocalNocoBaseCommand.mock.calls[2]?.[2]).toEqual({
+    env: {
+      ...MANAGED_APP_PRODUCTION_ENV,
+      CDN_BASE_URL: '/console/dist/2.1.0-beta.44/',
+    },
+    stdio: 'ignore',
+  });
+});
+
 test('start restores the built-in database before launching the app', async () => {
   const { default: Start } = await import('../commands/app/start.js');
   mocks.resolveManagedAppRuntime.mockResolvedValue({
@@ -1103,6 +1174,7 @@ test('start recreates docker app containers through docker run', async () => {
         dockerRegistry: 'nocobase/nocobase',
         downloadVersion: 'next',
         storagePath: './docker-local/storage',
+        appPublicPath: '/console/',
       },
       appPort: 13000,
     },
@@ -1166,6 +1238,8 @@ test('start recreates docker app containers through docker run', async () => {
       '-v',
       `${path.resolve(resolveCliHomeRoot(), './docker-local/storage')}:/app/nocobase/storage`,
       '-e',
+      'APP_PUBLIC_PATH=/console/',
+      '-e',
       'DB_SCHEMA=test',
       '-e',
       'DB_TABLE_PREFIX=nb_',
@@ -1179,13 +1253,13 @@ test('start recreates docker app containers through docker run', async () => {
     },
   ]);
   expect(mocks.succeedTask.mock.calls).toContainEqual([
-    'NocoBase is running for "docker-local" at http://127.0.0.1:13000.',
+    'NocoBase is running for "docker-local" at http://127.0.0.1:13000/console/.',
   ]);
   expect(mocks.waitForAppReady.mock.calls).toEqual([
     [
       {
         envName: 'docker-local',
-        apiBaseUrl: 'http://127.0.0.1:13000/api',
+        apiBaseUrl: 'http://127.0.0.1:13000/console/api',
         containerName: 'nb-demo-docker-local-app',
         logHint: 'You can inspect startup logs with `nb app logs --env docker-local`.',
         verbose: true,

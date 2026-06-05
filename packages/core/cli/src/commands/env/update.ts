@@ -29,6 +29,7 @@ const UPDATE_STRING_FLAGS = [
   'app-path',
   'app-root-path',
   'storage-path',
+  'app-public-path',
   'env-file',
   'app-port',
   'app-key',
@@ -66,6 +67,7 @@ const APP_RESTART_FIELDS = new Set<string>([
   'app-path',
   'app-root-path',
   'storage-path',
+  'app-public-path',
   'env-file',
   'app-port',
   'app-key',
@@ -110,6 +112,7 @@ type EnvUpdateParsedFlags = {
   'app-path'?: string;
   'app-root-path'?: string;
   'storage-path'?: string;
+  'app-public-path'?: string;
   'env-file'?: string;
   'app-port'?: string;
   'app-key'?: string;
@@ -299,6 +302,9 @@ export default class EnvUpdate extends Command {
     }),
     'storage-path': Flags.string({
       description: 'Saved storage path for this env',
+    }),
+    'app-public-path': Flags.string({
+      description: 'Saved application public path for this env',
     }),
     'env-file': Flags.string({
       hidden: true,

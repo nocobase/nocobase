@@ -58,6 +58,14 @@ server {
         }
     }
 
+    location ^~ {{distPath}} {
+        alias {{cwd}}/storage/dist-client/;
+        expires 365d;
+        add_header Cache-Control "public";
+        access_log off;
+        autoindex off;
+    }
+
     location {{publicPath}}static/plugins/ {
         alias {{cwd}}/node_modules/;
         expires 365d;

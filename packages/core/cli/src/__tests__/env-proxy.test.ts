@@ -1,0 +1,120 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
+import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
+import os from 'node:os';
+import path from 'node:path';
+import { afterEach, expect, test } from 'vitest';
+import type { ManagedAppRuntime } from '../lib/app-runtime.js';
+import { buildEnvProxyConfig, resolveEnvProxyOutputPath } from '../lib/env-proxy.ts';
+
+const createdRoots: string[] = [];
+
+afterEach(async () => {
+  for (const dir of createdRoots.splice(0)) {
+    await rm(dir, { recursive: true, force: true });
+  }
+  delete process.env.NB_CLI_ROOT;
+});
+
+async function createTempRoot(prefix: string) {
+  const root = await mkdtemp(path.join(os.tmpdir(), prefix));
+  createdRoots.push(root);
+  return root;
+}
+
+test('buildEnvProxyConfig reads local env file settings and maps /dist/ to storage/dist-client', async () => {
+  const root = await createTempRoot('nocobase-cli-env-proxy-local-');
+  const appPath = path.join(root, 'app');
+  const projectRoot = path.join(appPath, 'source');
+  const storagePath = path.join(root, 'storage');
+  await mkdir(projectRoot, { recursive: true });
+  await mkdir(storagePath, { recursive: true });
+  await writeFile(
+    path.join(appPath, '.env'),
+    ['APP_PUBLIC_PATH=/console/', 'APP_MODERN_CLIENT_PREFIX=admin', 'API_BASE_PATH=/api/', 'WS_PATH=/ws'].join('\n'),
+  );
+
+  const runtime = {
+    kind: 'local',
+    envName: 'demo',
+    source: 'npm',
+    projectRoot,
+    env: {
+      config: {
+        appPath,
+        storagePath,
+        appPort: '13000',
+      },
+      appPort: '13000',
+      storagePath,
+      runtime: {
+        version: '2.1.0-beta.44',
+      },
+    },
+  } as unknown as Extract<ManagedAppRuntime, { kind: 'local' }>;
+
+  const result = await buildEnvProxyConfig(runtime);
+
+  expect(result.envFilePath).toBe(path.join(appPath, '.env'));
+  expect(result.apiBasePath).toBe('/console/api/');
+  expect(result.wsPath).toBe('/console/ws');
+  expect(result.distPath).toBe('/console/dist/');
+  expect(result.v2PublicPath).toBe('/console/admin/');
+  expect(result.pluginStaticsPath).toBe('/console/static/plugins/');
+  expect(result.distClientRoot).toBe(path.join(storagePath, 'dist-client'));
+  expect(result.content).toContain('location ^~ /console/api/');
+  expect(result.content).toContain('location ^~ /console/dist/');
+  expect(result.content).toContain(`alias ${path.join(storagePath, 'dist-client')}/;`);
+});
+
+test('buildEnvProxyConfig falls back to docker defaults when no env file exists', async () => {
+  const root = await createTempRoot('nocobase-cli-env-proxy-docker-');
+  const storagePath = path.join(root, 'storage');
+  await mkdir(storagePath, { recursive: true });
+  process.env.NB_CLI_ROOT = root;
+
+  const runtime = {
+    kind: 'docker',
+    envName: 'docker-demo',
+    source: 'docker',
+    workspaceName: 'demo-network',
+    dockerNetworkName: 'demo-network',
+    dockerContainerPrefix: 'demo',
+    containerName: 'demo-app',
+    env: {
+      config: {
+        storagePath,
+        appPort: '13080',
+        downloadVersion: 'next-full',
+      },
+      appPort: '13080',
+      storagePath,
+      runtime: undefined,
+    },
+  } as unknown as Extract<ManagedAppRuntime, { kind: 'docker' }>;
+
+  const result = await buildEnvProxyConfig(runtime);
+
+  expect(result.envFilePath).toBe(undefined);
+  expect(result.apiBasePath).toBe('/api/');
+  expect(result.wsPath).toBe('/ws');
+  expect(result.v2PublicPath).toBe('/v/');
+  expect(result.runtimeVersion).toBe('next-full');
+});
+
+test('resolveEnvProxyOutputPath defaults to ~/.nocobase/proxy/<env>/app.conf', async () => {
+  const root = await createTempRoot('nocobase-cli-env-proxy-output-');
+  process.env.NB_CLI_ROOT = root;
+
+  expect(resolveEnvProxyOutputPath('staging')).toBe(path.join(root, '.nocobase', 'proxy', 'staging', 'app.conf'));
+  expect(resolveEnvProxyOutputPath('staging', { output: './custom/app.conf' })).toBe(
+    path.resolve(process.cwd(), './custom/app.conf'),
+  );
+});

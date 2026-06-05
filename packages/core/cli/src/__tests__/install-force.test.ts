@@ -506,6 +506,61 @@ test('startLocalApp warns when client extraction fails but still starts the app'
   expect(mocks.runNocoBaseCommand.mock.calls[3]?.[0]).toEqual(['start', '--quickstart', '--daemon']);
 });
 
+test('startLocalApp forwards APP_PUBLIC_PATH into the local runtime env when configured', async () => {
+  const projectRoot = await useTempStorageDir();
+  const storagePath = await useTempStorageDir();
+  const command = Object.create(Install.prototype);
+  mocks.runNocoBaseCommand.mockResolvedValue(undefined);
+
+  await (
+    Install.prototype as unknown as {
+      startLocalApp: (params: {
+        envName: string;
+        source: 'npm' | 'git';
+        projectRoot: string;
+        appResults: Record<string, unknown>;
+        dbResults: Record<string, unknown>;
+        rootResults: Record<string, unknown>;
+      }) => Promise<unknown>;
+    }
+  ).startLocalApp.call(command, {
+    envName: 'demo',
+    source: 'npm',
+    projectRoot,
+    appResults: {
+      appPort: '14000',
+      storagePath,
+      appPublicPath: '/console/',
+      lang: 'en-US',
+    },
+    dbResults: {
+      dbDialect: 'postgres',
+      dbHost: '127.0.0.1',
+      dbPort: '5432',
+      dbDatabase: 'nocobase',
+      dbUser: 'nocobase',
+      dbPassword: 'nocobase',
+    },
+    rootResults: {
+      rootUsername: 'nocobase',
+      rootEmail: 'admin@nocobase.com',
+      rootPassword: 'admin123',
+      rootNickname: 'Super Admin',
+    },
+  });
+
+  expect(mocks.runNocoBaseCommand.mock.calls[0]?.[1]).toMatchObject({
+    env: expect.objectContaining({
+      APP_PUBLIC_PATH: '/console/',
+    }),
+  });
+  expect(mocks.runNocoBaseCommand.mock.calls[3]?.[1]).toMatchObject({
+    env: expect.objectContaining({
+      APP_PUBLIC_PATH: '/console/',
+    }),
+  });
+});
+
 test('installDockerApp removes the existing app container before docker run when --force is enabled', async () => {
   const storagePath = await useTempStorageDir();
   const command = Object.assign(Object.create(Install.prototype), {

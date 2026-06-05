@@ -8,6 +8,7 @@
  */
 
 import type { ManagedAppRuntime } from './app-runtime.js';
+import { buildLocalApiBaseUrl, buildLocalAppUrl } from './app-public-path.js';
 import { startDockerLogFollower } from './docker-log-stream.js';
 import { printInfo } from './ui.js';
 
@@ -68,9 +69,8 @@ async function requestAppHealthCheck(params: {
 
 export class AppHealthCheckError extends Error {}
 
-export function formatAppUrl(port?: string): string | undefined {
-  const value = trimValue(port);
-  return value ? `http://127.0.0.1:${value}` : undefined;
+export function formatAppUrl(port?: string, appPublicPath?: string): string | undefined {
+  return buildLocalAppUrl(port, appPublicPath);
 }
 
 export function resolveManagedAppApiBaseUrl(
@@ -79,7 +79,7 @@ export function resolveManagedAppApiBaseUrl(
 ): string | undefined {
   const override = trimValue(options?.portOverride);
   if (override) {
-    return `http://127.0.0.1:${override}/api`;
+    return buildLocalApiBaseUrl(override, runtime.env.config?.appPublicPath);
   }
 
   const baseUrl = trimValue(runtime.env.baseUrl);
@@ -91,7 +91,7 @@ export function resolveManagedAppApiBaseUrl(
     runtime.env.appPort === undefined || runtime.env.appPort === null
       ? ''
       : trimValue(runtime.env.appPort);
-  return appPort ? `http://127.0.0.1:${appPort}/api` : undefined;
+  return buildLocalApiBaseUrl(appPort, runtime.env.config?.appPublicPath);
 }
 
 export async function isAppReady(

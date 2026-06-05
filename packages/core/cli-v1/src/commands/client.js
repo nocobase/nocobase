@@ -8,7 +8,6 @@
  */
 
 const chalk = require('chalk');
-const { Command } = require('commander');
 const fs = require('fs-extra');
 const { resolve } = require('path');
 const { discoverPluginPackages } = require('@nocobase/utils/plugin-package');
@@ -21,14 +20,14 @@ const { storagePathJoin } = require('../util');
  */
 async function copyMainClient(source, target) {
   if (!(await fs.exists(source))) {
-    console.log(chalk.yellow(`Source directory does not exist: ${source}`));
-    return;
+    console.warn(chalk.yellow(`Source directory does not exist: ${source}`));
+    return false;
   }
   // 确保目标目录存在且为空
   await fs.ensureDir(target);
   await fs.emptyDir(target);
   await fs.copy(source, target, { recursive: true });
-  console.log(chalk.green(`Copied main client files from ${source} to ${target}`));
+  return true;
 }
 
 /**
@@ -37,6 +36,7 @@ async function copyMainClient(source, target) {
  * @param {string} target - 目标目录
  */
 async function copyPluginClients(plugins, target) {
+  let copiedCount = 0;
   for (const plugin of plugins) {
     for (const lane of ['client', 'client-v2']) {
       const pluginDistClient = resolve(plugin.resolvedPath, `dist/${lane}`);
@@ -44,10 +44,23 @@ async function copyPluginClients(plugins, target) {
         const pluginTarget = resolve(target, 'static/plugins', plugin.packageName, 'dist', lane);
         await fs.mkdir(resolve(pluginTarget, '..'), { recursive: true });
         await fs.copy(pluginDistClient, pluginTarget, { recursive: true });
-        console.log(chalk.green(`Copied ${plugin.packageName} ${lane} files`));
+        copiedCount++;
       }
     }
   }
+  return copiedCount;
+}
+
+async function writeActiveVersion(version) {
+  const distClientRoot = storagePathJoin('dist-client');
+  const activeVersionFile = resolve(distClientRoot, 'active-version');
+  const tempFile = resolve(distClientRoot, `.active-version.${process.pid}.${Date.now()}.tmp`);
+
+  await fs.ensureDir(distClientRoot);
+  await fs.writeFile(tempFile, `${version}\n`, 'utf8');
+  await fs.move(tempFile, activeVersionFile, { overwrite: true });
+
+  return activeVersionFile;
 }
 
 /**
@@ -103,16 +116,38 @@ async function uploadDirectoryToOSS(client, localDir, ossPrefix = '') {
 module.exports = (cli) => {
   cli
     .command('client:extract')
+    .option('--json', 'Output machine-readable JSON')
     .allowUnknownOption()
-    .action(async () => {
+    .action(async function () {
+      const json = this.opts().json === true;
       const version = require('../../package.json').version;
       const target = storagePathJoin('dist-client', version);
       const mainClientSource = resolve(process.cwd(), 'node_modules/@nocobase/app/dist/client');
       const plugins = await discoverPluginPackages({
         nodeModulesPath: resolve(process.cwd(), 'node_modules'),
       });
-      await copyMainClient(mainClientSource, target);
-      await copyPluginClients(plugins, target);
+      const copiedMainClient = await copyMainClient(mainClientSource, target);
+      const copiedPluginBundles = await copyPluginClients(plugins, target);
+      const activeVersionFile = await writeActiveVersion(version);
+
+      if (json) {
+        process.stdout.write(
+          JSON.stringify({
+            version,
+            target,
+            activeVersionFile,
+          }),
+        );
+        return;
+      }
+
+      console.log(
+        chalk.green(
+          `Extracted client assets ${version} to ${target} (main client: ${
+            copiedMainClient ? 'yes' : 'no'
+          }, plugin bundles: ${copiedPluginBundles}).`,
+        ),
+      );
     });
 
   cli

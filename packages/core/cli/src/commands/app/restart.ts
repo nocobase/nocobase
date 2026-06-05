@@ -220,6 +220,7 @@ export default class AppRestart extends Command {
 
       const appUrl = formatAppUrl(
         runtime.env.appPort === undefined || runtime.env.appPort === null ? undefined : String(runtime.env.appPort),
+        runtime.env.config?.appPublicPath,
       );
       await waitForAppReady({
         envName: runtime.envName,

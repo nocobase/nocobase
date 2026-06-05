@@ -13,6 +13,7 @@ import crypto from 'node:crypto';
 import { access, mkdir } from 'node:fs/promises';
 import path from 'node:path';
 import { exit, stdin as stdinStream, stdout as stdoutStream } from 'node:process';
+import { appendAppPublicPath } from '../lib/app-public-path.js';
 import {
   type PromptCatalogValues,
   type PromptInitialValues,
@@ -385,6 +386,7 @@ type InstallParsedFlags = {
   'app-root-path'?: string;
   'app-port'?: string;
   'storage-path'?: string;
+  'app-public-path'?: string;
   'root-username'?: string;
   'root-email'?: string;
   'root-password'?: string;
@@ -585,6 +587,9 @@ export default class Install extends Command {
       deprecated: true,
       description: 'Legacy storage directory for uploads and managed database data',
     }),
+    'app-public-path': Flags.string({
+      description: 'Public path for the local app, for example / or /console/',
+    }),
     'root-username': Flags.string({
       description: 'Initial admin username for the installed app',
       required: false,
@@ -684,6 +689,11 @@ export default class Install extends Command {
         message: installText('prompts.appPort.message'),
         placeholder: installText('prompts.appPort.placeholder'),
         validate: Install.validateAppPort,
+      },
+      appPublicPath: {
+        type: 'text',
+        message: '',
+        hidden: () => true,
       },
     };
   }
@@ -962,6 +972,13 @@ export default class Install extends Command {
       }
     }
 
+    if (flags['app-public-path'] !== undefined) {
+      const v = String(flags['app-public-path'] ?? '').trim();
+      if (v) {
+        preset.appPublicPath = v;
+      }
+    }
+
     if (flags['root-username'] !== undefined) {
       preset.rootUsername = String(flags['root-username'] ?? '').trim();
     }
@@ -1061,6 +1078,7 @@ export default class Install extends Command {
       'appRootPath',
       'appPort',
       'storagePath',
+      'appPublicPath',
     ]);
   }
 
@@ -1361,6 +1379,7 @@ export default class Install extends Command {
     const appRootPath = Install.toOptionalPromptString(config.appRootPath);
     const appPort = Install.toOptionalPromptString(config.appPort);
     const storagePath = Install.toOptionalPromptString(config.storagePath);
+    const appPublicPath = Install.toOptionalPromptString(config.appPublicPath);
     const downloadVersion = Install.toOptionalPromptString(config.downloadVersion);
     const dockerRegistry = Install.toOptionalPromptString(config.dockerRegistry);
     const dockerPlatform = Install.toOptionalPromptString(config.dockerPlatform);
@@ -1388,6 +1407,7 @@ export default class Install extends Command {
       ...(appRootPath ? { appRootPath } : {}),
       ...(appPort ? { appPort } : {}),
       ...(storagePath ? { storagePath } : {}),
+      ...(appPublicPath ? { appPublicPath } : {}),
     };
 
     const downloadPreset: PromptInitialValues = {
@@ -2242,6 +2262,7 @@ export default class Install extends Command {
     const dbUnderscored = optionalEnvBoolean(params.dbResults.dbUnderscored);
     const extractClientAssets = Install.toOptionalPromptString(process.env.NOCOBASE_EXTRACT_CLIENT_ASSETS);
     const appKey = Install.resolveManagedAppKey(params.appResults.appKey);
+    const appPublicPath = Install.toOptionalPromptString(params.appResults.appPublicPath);
     const timeZone = Install.resolveManagedTimeZone(params.appResults.timeZone);
     const containerName = Install.buildDockerAppContainerName(
       params.envName,
@@ -2297,6 +2318,7 @@ export default class Install extends Command {
       '-v',
       `${storagePath}:/app/nocobase/storage`,
     );
+    pushOptionalEnvArg(args, 'APP_PUBLIC_PATH', appPublicPath);
     pushOptionalEnvArg(args, 'DB_SCHEMA', dbSchema);
     pushOptionalEnvArg(args, 'DB_TABLE_PREFIX', dbTablePrefix);
     pushOptionalEnvArg(args, 'DB_UNDERSCORED', dbUnderscored);
@@ -2600,6 +2622,7 @@ export default class Install extends Command {
         rootResults: params.rootResults,
       }),
     };
+    setOptionalEnvVar(env, 'APP_PUBLIC_PATH', Install.toOptionalPromptString(params.appResults.appPublicPath));
     setOptionalEnvVar(env, 'DB_SCHEMA', optionalEnvString(params.dbResults.dbSchema));
     setOptionalEnvVar(env, 'DB_TABLE_PREFIX', optionalEnvString(params.dbResults.dbTablePrefix));
     setOptionalEnvVar(env, 'DB_UNDERSCORED', optionalEnvBoolean(params.dbResults.dbUnderscored));
@@ -2680,8 +2703,12 @@ export default class Install extends Command {
     envAddResults: Record<string, PromptValue>;
   }): string {
     const appPort = String(params.appResults.appPort ?? DEFAULT_INSTALL_APP_PORT).trim() || DEFAULT_INSTALL_APP_PORT;
+    const appPublicPath = String(params.appResults.appPublicPath ?? '').trim();
 
-    return String(params.envAddResults.apiBaseUrl ?? '').trim() || `http://127.0.0.1:${appPort}/api`;
+    return (
+      String(params.envAddResults.apiBaseUrl ?? '').trim() ||
+      `http://127.0.0.1:${appPort}${appendAppPublicPath(appPublicPath, 'api', { trailingSlash: false })}`
+    );
   }
 
   private static buildHealthCheckUrl(apiBaseUrl: string): string {
@@ -2862,6 +2889,7 @@ export default class Install extends Command {
     const appPath = resolveConfiguredAppPathValue(params.appResults);
     const appRootPath = Install.toOptionalPromptString(params.appResults.appRootPath);
     const storagePath = Install.toOptionalPromptString(params.appResults.storagePath);
+    const appPublicPath = Install.toOptionalPromptString(params.appResults.appPublicPath);
     const derivedAppRootPath = appPath ? deriveConfiguredSourcePath(appPath) : undefined;
     const derivedStoragePath = appPath ? deriveConfiguredStoragePath(appPath) : undefined;
     const appPort = String(params.appResults.appPort ?? DEFAULT_INSTALL_APP_PORT).trim() || DEFAULT_INSTALL_APP_PORT;
@@ -2891,6 +2919,7 @@ export default class Install extends Command {
       ...(appRootPath && !areConfiguredPathsEquivalent(appRootPath, derivedAppRootPath) ? { appRootPath } : {}),
       appPort,
       ...(storagePath && !areConfiguredPathsEquivalent(storagePath, derivedStoragePath) ? { storagePath } : {}),
+      ...(appPublicPath ? { appPublicPath } : {}),
       ...(envFile ? { envFile } : {}),
       appKey: params.appResults.appKey,
       timezone: params.appResults.timeZone,
@@ -3021,7 +3050,11 @@ export default class Install extends Command {
     };
     const resolvedEnvAddAuthType = String(envAddPreset.authType ?? '').trim();
     const envAddInitialValues: PromptInitialValues = {
-      apiBaseUrl: `http://127.0.0.1:${appResults.appPort ?? DEFAULT_INSTALL_APP_PORT}/api`,
+      apiBaseUrl: `http://127.0.0.1:${appResults.appPort ?? DEFAULT_INSTALL_APP_PORT}${appendAppPublicPath(
+        String(appResults.appPublicPath ?? ''),
+        'api',
+        { trailingSlash: false },
+      )}`,
       ...envAddResumePreset,
       ...(!parsed['skip-auth'] && resolvedEnvAddAuthType === 'basic'
         ? {
