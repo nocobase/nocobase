@@ -23,7 +23,7 @@ import { deriveFlowSurfaceAutoCapabilityCandidates } from './extractor/snapshot'
 import type { FlowSurfaceCapabilityAdmissionIntegrity, FlowSurfaceCapabilityAdmissionReport } from './admission-report';
 import type { NormalizedFlowSurfaceProviderCapability } from './capability-manifest';
 import type { FlowSurfaceCapabilityProviderRegistry } from './capability-provider';
-import type { FlowSurfaceAutoSnapshot } from './extractor/types';
+import { FLOW_SURFACE_AUTO_SNAPSHOT_VERSION, type FlowSurfaceAutoSnapshot } from './extractor/types';
 import type {
   FlowSurfaceCapabilitiesProvider,
   FlowSurfaceCapabilityAvailability,
@@ -160,6 +160,7 @@ export function collectAutoSnapshotPublicCapabilities(
         const warnings = [
           ...(candidate.warnings || []),
           ...(snapshot.warnings || []),
+          ...buildAutoSnapshotVersionWarnings(snapshot),
           {
             code: 'auto-discovered-readonly' as const,
             message:
@@ -472,6 +473,18 @@ function buildAutoSnapshotAdmissionIntegrity(
     integrity.snapshotHash = snapshotHash;
   }
   return Object.keys(integrity).length ? integrity : undefined;
+}
+
+function buildAutoSnapshotVersionWarnings(snapshot: FlowSurfaceAutoSnapshot): FlowSurfaceCapabilityWarning[] {
+  if (snapshot.version === FLOW_SURFACE_AUTO_SNAPSHOT_VERSION) {
+    return [];
+  }
+  return [
+    {
+      code: 'snapshot-stale',
+      message: `Auto snapshot version is incompatible with current version ${FLOW_SURFACE_AUTO_SNAPSHOT_VERSION}.`,
+    },
+  ];
 }
 
 function buildAutoSnapshotAdmissionSnapshotHash(snapshot: FlowSurfaceAutoSnapshot) {

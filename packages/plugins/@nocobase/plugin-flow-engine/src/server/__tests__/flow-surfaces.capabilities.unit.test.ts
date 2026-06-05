@@ -3226,6 +3226,23 @@ describe('flowSurfaces capabilities projection', () => {
     ).toEqual([]);
     expect(
       collectVerifiedAutoSnapshotCatalogItems({
+        autoSnapshots: [
+          {
+            ...autoSnapshot,
+            version: 999,
+          } as unknown as ReturnType<typeof createGanttAutoSnapshot>,
+        ],
+        enabledPackages,
+        admissionReports: [
+          createVerifiedAutoAdmissionReport({
+            snapshotHash: 'v999:snapshot-source-hash',
+          }),
+        ],
+        capabilityPolicyConfig: verifiedAutoPolicy,
+      }),
+    ).toEqual([]);
+    expect(
+      collectVerifiedAutoSnapshotCatalogItems({
         autoSnapshots: [autoSnapshot],
         enabledPackages: new Set<string>(),
         admissionReports: [createVerifiedAutoAdmissionReport()],

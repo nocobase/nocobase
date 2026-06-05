@@ -1332,6 +1332,59 @@ describe('flowSurfaces dynamic capability create dry-run', () => {
     expect(JSON.stringify(error)).not.toContain('snapshot-source-hash');
   });
 
+  it('should keep incompatible auto snapshot versions from enabling verifiedAuto create', async () => {
+    const incompatibleAutoSnapshot = {
+      ...createGanttAutoSnapshot(),
+      version: 999,
+    } as unknown as ReturnType<typeof createGanttAutoSnapshot>;
+    const incompatibleAdmissionReport: FlowSurfaceCapabilityAdmissionReport = {
+      ...createVerifiedAutoAdmissionReport(),
+      records: createVerifiedAutoAdmissionReport().records.map((record) => ({
+        ...record,
+        snapshotHash: 'v999:snapshot-source-hash',
+      })),
+    };
+    const verifiedAutoPolicy = {
+      writePolicy: {
+        mode: 'verifiedAuto' as const,
+        allowedOwners: ['@nocobase/plugin-gantt'],
+        allowedPublicTypes: ['pluginGantt.gantt'],
+      },
+    };
+
+    let error: unknown;
+    try {
+      await resolveDynamicCapabilityCreate({
+        publicType: 'pluginGantt.gantt',
+        initParams: {
+          collectionName: 'tasks',
+        },
+        settings: {},
+        enabledPackages: new Set(['@nocobase/plugin-gantt']),
+        providerRegistry: createProviderRegistry([]),
+        autoSnapshots: [incompatibleAutoSnapshot],
+        admissionReports: [incompatibleAdmissionReport],
+        capabilityPolicyConfig: verifiedAutoPolicy,
+      });
+    } catch (caught) {
+      error = caught;
+    }
+
+    expect(error).toMatchObject({
+      message: `flowSurfaces dynamic create capability 'pluginGantt.gantt' is not enabled for writes`,
+      options: {
+        details: {
+          reasonCode: 'snapshot-stale',
+          reasonSource: 'registry',
+          publicType: 'pluginGantt.gantt',
+        },
+      },
+    });
+    expect(JSON.stringify(error)).not.toContain('GanttBlockModel');
+    expect(JSON.stringify(error)).not.toContain('stepParams');
+    expect(JSON.stringify(error)).not.toContain('snapshot-source-hash');
+  });
+
   it('should persist catalog-confirmed verified auto snapshot addBlock candidates through the gated mapping', async () => {
     const auditLog = vi.fn();
     const autoSnapshot = createGanttAutoSnapshot();
