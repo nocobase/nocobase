@@ -65,6 +65,20 @@ const AVAILABILITY_REASON_SOURCES = new Set<NonNullable<FlowSurfaceAvailabilityS
   'catalog',
   'builder',
 ]);
+const BLOCKING_WRITE_REASON_CODES = new Set<FlowSurfaceReasonCode>([
+  'plugin-disabled',
+  'public-type-conflict',
+  'provider-error',
+  'dry-run-failed',
+  'readback-parity-failed',
+  'snapshot-stale',
+  'extractor-runtime-error',
+  'contract-not-verified',
+  'unsafe-auto-discovery',
+  'permission-denied',
+  'license-required',
+  'dependency-missing',
+]);
 const INTERNAL_PUBLIC_PAYLOAD_KEYS = new Set([
   'capabilityId',
   'modelUse',
@@ -506,10 +520,12 @@ function normalizeWriteAvailabilityState(
   unsupportedDefaults: Pick<FlowSurfaceAvailabilityState, 'reasonCode' | 'reasonSource'>,
 ): FlowSurfaceAvailabilityState {
   const normalized = normalizeAvailabilityState(state, supported);
+  const effectiveSupported =
+    supported && !(normalized.reasonCode && BLOCKING_WRITE_REASON_CODES.has(normalized.reasonCode));
   return {
     ...normalized,
-    supported,
-    ...(supported
+    supported: effectiveSupported,
+    ...(effectiveSupported
       ? {}
       : {
           reasonCode: normalized.reasonCode || unsupportedDefaults.reasonCode,

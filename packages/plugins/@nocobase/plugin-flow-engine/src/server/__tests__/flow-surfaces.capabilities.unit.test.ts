@@ -3283,6 +3283,73 @@ describe('flowSurfaces capabilities projection', () => {
     ).resolves.toEqual([]);
   });
 
+  it('should keep provider catalog items with failed dry-run readiness out of catalog projection', async () => {
+    const dryRunFailedProvider: FlowSurfaceCapabilitiesProvider = {
+      ownerPlugin: '@nocobase/plugin-dry-run-failed',
+      getCapabilities: () => [
+        {
+          id: 'blocks.failedDryRun',
+          kind: 'block',
+          publicType: 'failedDryRun',
+          label: 'Failed dry run',
+          semantic: {
+            title: 'Failed dry run',
+          },
+          implementation: {
+            modelUse: 'FailedDryRunBlockModel',
+          },
+          availability: {
+            create: {
+              supported: true,
+              reasonCode: 'dry-run-failed',
+              reasonSource: 'provider',
+            },
+          },
+        },
+      ],
+      resolveCreate: () => ({
+        use: 'FailedDryRunBlockModel',
+      }),
+    };
+    const providerRegistry = createProviderRegistry([dryRunFailedProvider]);
+    const enabledPackages = new Set(['@nocobase/plugin-dry-run-failed']);
+
+    const response = await buildFlowSurfaceCapabilitiesResponse(
+      {
+        publicTypes: ['failedDryRun'],
+        includeUnavailable: true,
+      },
+      {
+        enabledPackages,
+        providerRegistry,
+        catalog: createCatalogRecorder().catalog,
+        generatedAt: '2026-06-05T00:00:00.000Z',
+      },
+    );
+
+    expect(response.data).toEqual([
+      expect.objectContaining({
+        publicType: 'failedDryRun',
+        availability: expect.objectContaining({
+          create: expect.objectContaining({
+            supported: false,
+            reasonCode: 'dry-run-failed',
+            reasonSource: 'provider',
+          }),
+        }),
+        readiness: 'blocked',
+        supportLevel: 'readback-only',
+      }),
+    ]);
+    expect(JSON.stringify(response.data)).not.toContain('FailedDryRunBlockModel');
+    await expect(
+      collectProviderCatalogItems({
+        providerRegistry,
+        enabledPackages,
+      }),
+    ).resolves.toEqual([]);
+  });
+
   it('should allowlist provider availability metadata', async () => {
     const unsafeAvailability = {
       render: {
