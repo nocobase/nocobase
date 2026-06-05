@@ -2960,6 +2960,88 @@ describe('flowSurfaces capabilities projection', () => {
     });
   });
 
+  it('should expose deprecated replacement metadata only through identity expand', async () => {
+    const deprecatedProvider: FlowSurfaceCapabilitiesProvider = {
+      ownerPlugin: '@nocobase/plugin-gantt',
+      getCapabilities: () => [
+        {
+          id: 'blocks.legacyGantt',
+          capabilityVersion: '1.0.0',
+          kind: 'block',
+          publicType: 'legacyGantt',
+          acceptedAliases: ['oldGantt'],
+          deprecated: true,
+          replacedBy: {
+            kind: 'block',
+            publicType: 'gantt',
+            ownerPlugin: '@nocobase/plugin-gantt',
+          },
+          label: 'Legacy Gantt',
+          semantic: {
+            title: 'Legacy Gantt',
+          },
+          implementation: {
+            modelUse: 'LegacyGanttBlockModel',
+          },
+          availability: {
+            create: {
+              supported: true,
+            },
+          },
+        },
+      ],
+      resolveCreate: () => ({
+        use: 'LegacyGanttBlockModel',
+      }),
+    };
+
+    const defaultResponse = await buildFlowSurfaceCapabilitiesResponse(
+      {
+        publicTypes: ['legacyGantt'],
+      },
+      {
+        enabledPackages: new Set(['@nocobase/plugin-gantt']),
+        providerRegistry: createProviderRegistry([deprecatedProvider]),
+        catalog: createCatalogRecorder().catalog,
+        generatedAt: '2026-06-03T00:00:00.000Z',
+      },
+    );
+    expect(defaultResponse.data[0]).not.toHaveProperty('identity');
+
+    const expandedResponse = await buildFlowSurfaceCapabilitiesResponse(
+      {
+        publicTypes: ['oldGantt'],
+        expand: ['item.identity'],
+      },
+      {
+        enabledPackages: new Set(['@nocobase/plugin-gantt']),
+        providerRegistry: createProviderRegistry([deprecatedProvider]),
+        catalog: createCatalogRecorder().catalog,
+        generatedAt: '2026-06-03T00:00:00.000Z',
+      },
+    );
+
+    expect(expandedResponse.data).toEqual([
+      expect.objectContaining({
+        publicType: 'legacyGantt',
+        publicTypeMeta: expect.objectContaining({
+          acceptedAliases: ['oldGantt'],
+        }),
+        identity: {
+          capabilityId: 'plugin:%40nocobase%2Fplugin-gantt#blocks.legacyGantt',
+          capabilityVersion: '1.0.0',
+          deprecated: true,
+          replacedBy: {
+            kind: 'block',
+            publicType: 'gantt',
+            ownerPlugin: '@nocobase/plugin-gantt',
+          },
+        },
+      }),
+    ]);
+    expect(JSON.stringify(expandedResponse.data)).not.toContain('LegacyGanttBlockModel');
+  });
+
   it('should project provider catalog items for global catalog composition', async () => {
     const items = await collectProviderCatalogItems({
       providerRegistry: createProviderRegistry([createGanttProvider()]),
