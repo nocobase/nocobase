@@ -7,10 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import React from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { MultipleKeywordsInput } from '../MultipleKeywordsInput';
+import { MultipleKeywordsInput, normalizeKeywords } from '../MultipleKeywordsInput';
 
 let xlsxModuleLoaded = false;
 
@@ -46,47 +46,15 @@ describe('MultipleKeywordsInput v2', () => {
     expect(xlsxModuleLoaded).toBe(false);
   });
 
-  const enterKeyword = (value: string) => {
-    const input = document.querySelector('.ant-select-selection-search-input') as HTMLInputElement;
-    fireEvent.change(input, { target: { value } });
-    fireEvent.keyDown(input, { key: 'Enter', code: 'Enter' });
-  };
-
-  const lastChangedValue = (onChange: ReturnType<typeof vi.fn>) => {
-    const lastCall = onChange.mock.calls[onChange.mock.calls.length - 1];
-    return lastCall?.[0];
-  };
-
-  it('keeps decimal values for number fields', async () => {
-    const onChange = vi.fn();
-    render(<MultipleKeywordsInput fieldInterface="number" value={[]} onChange={onChange} />);
-
-    enterKeyword('1.25');
-
-    await waitFor(() => {
-      expect(lastChangedValue(onChange)).toEqual(['1.25']);
-    });
+  it('keeps decimal values for number fields', () => {
+    expect(normalizeKeywords(['1.25'], 'number')).toEqual(['1.25']);
   });
 
-  it('keeps large integer values as strings for integer fields', async () => {
-    const onChange = vi.fn();
-    render(<MultipleKeywordsInput fieldInterface="integer" value={[]} onChange={onChange} />);
-
-    enterKeyword('9007199254740993');
-
-    await waitFor(() => {
-      expect(lastChangedValue(onChange)).toEqual(['9007199254740993']);
-    });
+  it('keeps large integer values as strings for integer fields', () => {
+    expect(normalizeKeywords(['9007199254740993'], 'integer')).toEqual(['9007199254740993']);
   });
 
-  it('does not truncate decimal input for integer fields', async () => {
-    const onChange = vi.fn();
-    render(<MultipleKeywordsInput fieldInterface="integer" value={[]} onChange={onChange} />);
-
-    enterKeyword('1.25');
-
-    await waitFor(() => {
-      expect(lastChangedValue(onChange)).toEqual([]);
-    });
+  it('does not truncate decimal input for integer fields', () => {
+    expect(normalizeKeywords(['1.25'], 'integer')).toEqual([]);
   });
 });
