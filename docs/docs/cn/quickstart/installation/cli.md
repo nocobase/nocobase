@@ -114,10 +114,11 @@ nb env info app1
 nb env info app1 --json
 ```
 
-如果你想继续做安装后的日常操作，可以按下面这个索引往下看：
+如果你想继续做安装后的后续操作，可以按下面这个索引往下看：
 
 | 我想要…… | 去哪里看 |
 | --- | --- |
+| 如果你准备把这个 env 正式对外开放，给它接上生产环境反向代理。 | [Nginx](../production/reverse-proxy/nginx.md) / [Caddy](../production/reverse-proxy/caddy.md)。 |
 | 确认 env 是否保存成功、查看当前用了哪个 env、在多个 env 之间切换。 | [`nb env`](../../api/cli/env/index.md)、[多环境管理](../operations/multi-environment.md)。 |
 | 启动、停止、重启应用，查看日志，或者继续升级应用。 | [`nb app`](../../api/cli/app/index.md)、[管理应用](../operations/manage-app.md)。 |
 | 检查数据库连接、查看内置数据库状态，或者排查数据库容器问题。 | [`nb db`](../../api/cli/db/index.md)。 |
@@ -142,6 +143,7 @@ nb plugin list
 
 - [`nb init` 命令参考](../../api/cli/init.md)
 - [`nb env info` 命令参考](../../api/cli/env/info.md)
+- [生产环境反向代理：Nginx](../production/reverse-proxy/nginx.md) / [Caddy](../production/reverse-proxy/caddy.md)
 - [从旧方式迁移到 CLI](./migration.md)
 - [多环境管理](../operations/multi-environment.md)
 - [管理应用](../operations/manage-app.md)
