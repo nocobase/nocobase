@@ -2093,6 +2093,14 @@ describe('flowSurfaces capabilities projection', () => {
         enabledPackages: new Set(['@nocobase/plugin-gantt']),
         providerRegistry: createProviderRegistry([createAutoNamespacedGanttProvider()]),
         autoSnapshots: [createGanttAutoSnapshot()],
+        admissionReports: [createVerifiedAutoAdmissionReport()],
+        capabilityPolicyConfig: {
+          writePolicy: {
+            mode: 'verifiedAuto',
+            allowedOwners: ['@nocobase/plugin-gantt'],
+            allowedPublicTypes: ['pluginGantt.gantt'],
+          },
+        },
         catalog: createCatalogRecorder().catalog,
         generatedAt: '2026-06-04T00:00:00.000Z',
       },
@@ -2104,6 +2112,8 @@ describe('flowSurfaces capabilities projection', () => {
         ownerPlugin: '@nocobase/plugin-gantt',
         origin: 'canaryOverlay',
         label: 'Gantt provider',
+        readiness: 'contractDeclared',
+        supportLevel: 'create-only',
         availability: expect.objectContaining({
           create: expect.objectContaining({
             supported: true,
@@ -2111,6 +2121,7 @@ describe('flowSurfaces capabilities projection', () => {
         }),
       }),
     ]);
+    expect(response.data[0].readiness).not.toBe('createEnabled');
   });
 
   it('should merge fresh auto snapshot aliases into higher-priority provider capabilities', async () => {
