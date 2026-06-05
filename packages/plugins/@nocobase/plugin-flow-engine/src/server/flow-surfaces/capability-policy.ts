@@ -12,9 +12,11 @@ import { resolveFlowSurfaceCapabilityReadiness } from './capability-readiness';
 import {
   getFlowSurfacePublicCapabilityAdmissionCapabilityId,
   getFlowSurfacePublicCapabilityAdmissionIntegrity,
+  getFlowSurfacePublicCapabilityInferredAuthoring,
   getFlowSurfacePublicCapabilityModelUses,
   setFlowSurfacePublicCapabilityAdmissionCapabilityId,
   setFlowSurfacePublicCapabilityAdmissionIntegrity,
+  setFlowSurfacePublicCapabilityInferredAuthoring,
   setFlowSurfacePublicCapabilityModelUse,
 } from './capability-registry';
 import type {
@@ -29,7 +31,7 @@ import type {
   FlowSurfaceSupportLevel,
 } from './types';
 
-export type FlowSurfaceCapabilityWritePolicyMode = 'discoveryOnly' | 'manifestOnly' | 'verifiedAuto';
+export type FlowSurfaceCapabilityWritePolicyMode = 'discoveryOnly' | 'manifestOnly' | 'verifiedAuto' | 'jsonInferred';
 
 export type FlowSurfaceCapabilityWritePolicy = {
   mode?: FlowSurfaceCapabilityWritePolicyMode;
@@ -76,6 +78,7 @@ const FLOW_SURFACE_CAPABILITY_WRITE_POLICY_MODES = new Set<FlowSurfaceCapability
   'discoveryOnly',
   'manifestOnly',
   'verifiedAuto',
+  'jsonInferred',
 ]);
 
 export function normalizeFlowSurfaceCapabilityPolicyConfig(
@@ -134,6 +137,9 @@ export function applyFlowSurfaceCapabilityWritePolicy(
   }
 
   if (item.origin === 'autoSnapshot') {
+    if (normalized.writePolicy.mode === 'jsonInferred') {
+      return item;
+    }
     const reasonCode = normalized.writePolicy.mode === 'verifiedAuto' ? 'contract-not-verified' : 'manifest-required';
     return blockFlowSurfaceCapabilityWrites(item, reasonCode);
   }
@@ -246,7 +252,7 @@ function normalizeFlowSurfaceCapabilityWritePolicy(input: unknown): NormalizedFl
     typeof policy.mode === 'string' &&
     FLOW_SURFACE_CAPABILITY_WRITE_POLICY_MODES.has(policy.mode as FlowSurfaceCapabilityWritePolicyMode)
       ? (policy.mode as FlowSurfaceCapabilityWritePolicyMode)
-      : 'manifestOnly';
+      : 'jsonInferred';
   return {
     mode,
     ...(allowedOwners.length ? { allowedOwners } : {}),
@@ -277,20 +283,23 @@ function blockFlowSurfaceCapabilityWrites(
     create: blockAvailabilityState(item.availability.create, reasonCode),
     configure: blockAvailabilityState(item.availability.configure, reasonCode),
   };
-  return setFlowSurfacePublicCapabilityAdmissionIntegrity(
-    setFlowSurfacePublicCapabilityAdmissionCapabilityId(
-      setFlowSurfacePublicCapabilityModelUse(
-        {
-          ...item,
-          availability,
-          supportLevel: resolveFlowSurfaceSupportLevel(availability),
-          readiness: options.readiness || resolveFlowSurfacePolicyReadiness(item, availability),
-        },
-        getFlowSurfacePublicCapabilityModelUses(item),
+  return setFlowSurfacePublicCapabilityInferredAuthoring(
+    setFlowSurfacePublicCapabilityAdmissionIntegrity(
+      setFlowSurfacePublicCapabilityAdmissionCapabilityId(
+        setFlowSurfacePublicCapabilityModelUse(
+          {
+            ...item,
+            availability,
+            supportLevel: resolveFlowSurfaceSupportLevel(availability),
+            readiness: options.readiness || resolveFlowSurfacePolicyReadiness(item, availability),
+          },
+          getFlowSurfacePublicCapabilityModelUses(item),
+        ),
+        getFlowSurfacePublicCapabilityAdmissionCapabilityId(item),
       ),
-      getFlowSurfacePublicCapabilityAdmissionCapabilityId(item),
+      getFlowSurfacePublicCapabilityAdmissionIntegrity(item),
     ),
-    getFlowSurfacePublicCapabilityAdmissionIntegrity(item),
+    getFlowSurfacePublicCapabilityInferredAuthoring(item),
   );
 }
 

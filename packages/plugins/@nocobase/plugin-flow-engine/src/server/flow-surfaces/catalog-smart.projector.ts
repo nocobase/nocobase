@@ -28,6 +28,7 @@ const LIGHT_CATALOG_ITEM_KEYS = [
   'use',
   'kind',
   'publicType',
+  'acceptedAliases',
   'semantic',
   'ownerPlugin',
   'origin',

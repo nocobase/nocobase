@@ -14,6 +14,7 @@ import { resolveDynamicCapabilityCreate } from '../flow-surfaces/capability-reso
 import { FlowSurfaceAggregateError, FlowSurfaceBadRequestError } from '../flow-surfaces/errors';
 import { buildFlowSurfaceAutoSnapshot } from '../flow-surfaces/extractor';
 import { FlowSurfacesService } from '../flow-surfaces/service';
+import { normalizeComposeFieldSpec } from '../flow-surfaces/service-utils';
 import type { FlowSurfaceCapabilityAdmissionReport } from '../flow-surfaces/admission-report';
 import type {
   FlowSurfaceCapabilitiesProvider,
@@ -64,6 +65,24 @@ describe('flowSurfaces dynamic capability create dry-run', () => {
     ): Promise<{ publicItem: { publicType: string } } | null>;
   };
 
+  type JsonInferredCatalogHarness = {
+    buildJsonInferredAutoSnapshotBlockCatalogItems(input: {
+      hasTarget: boolean;
+      resolved: unknown;
+      scenario: Record<string, unknown>;
+      selectedSections: string[];
+      enabledPackages: ReadonlySet<string>;
+    }): Promise<FlowSurfaceCatalogItem[]>;
+  };
+
+  type LocatorGetterHarness = {
+    readonly locator: {
+      resolve(target: FlowSurfaceWriteTarget, options?: Record<string, unknown>): Promise<Record<string, unknown>>;
+      findParentUid?(uid: string, transaction?: unknown): Promise<string>;
+      resolveCollectionContext?(uid: string, transaction?: unknown): Promise<Record<string, unknown>>;
+    };
+  };
+
   type DynamicDispatchHarness = {
     dispatchOp(
       op: {
@@ -101,14 +120,35 @@ describe('flowSurfaces dynamic capability create dry-run', () => {
 
   type SurfaceContextGetterHarness = {
     readonly surfaceContext: {
+      filterBlocksByTarget(node?: unknown, resolved?: unknown): FlowSurfaceCatalogItem[];
       resolveBlockParent(target: FlowSurfaceWriteTarget, transaction?: unknown): Promise<{ parentUid: string }>;
+      resolveFieldContainer(uid: string, transaction?: unknown): Promise<unknown>;
+      resolveActionContainer(
+        target: FlowSurfaceWriteTarget,
+        transaction?: unknown,
+      ): Promise<{
+        parentUid: string;
+        subKey: string;
+        subType: string;
+        ownerUse: string;
+        ownerUid?: string;
+      }>;
+      collectFilterFormTargets?(uid: string, transaction?: unknown): Promise<unknown[]>;
     };
   };
 
   type RepositoryGetterHarness = {
     readonly repository: {
       findModelById(uid: string, options?: Record<string, unknown>): Promise<unknown>;
+      upsertModel?(payload: Record<string, unknown>, options?: Record<string, unknown>): Promise<string>;
     };
+  };
+
+  type AddActionPrivateHarness = {
+    assertApprovalActionSingleton(parentUid: string, actionUse: string, transaction?: unknown): Promise<void>;
+    syncFlowTemplateUsagesForNodeTree(rootUid: string, transaction?: unknown): Promise<void>;
+    syncApprovalRuntimeConfigForNode(uid: string, transaction?: unknown): Promise<void>;
+    collectComposeActionKeys(actionUid: string, transaction?: unknown): Promise<Record<string, unknown>>;
   };
 
   type ApplyBlueprintPrivateHarness = {
@@ -133,14 +173,51 @@ describe('flowSurfaces dynamic capability create dry-run', () => {
     compose(values: Record<string, unknown>, options?: Record<string, unknown>): Promise<Record<string, unknown>>;
   };
 
+  type CollectionGetterHarness = {
+    getCollection(dataSourceKey: string, collectionName: string): unknown;
+  };
+
+  type FieldCatalogPrivateHarness = {
+    buildFieldCatalog(
+      target: FlowSurfaceWriteTarget,
+      options?: Record<string, unknown>,
+    ): Promise<FlowSurfaceCatalogItem[]>;
+  };
+
+  type DynamicReadbackProjector = {
+    projectDynamicBlockReadbackTypes<T>(
+      node: T,
+      options: { enabledPackages: ReadonlySet<string>; transaction?: unknown },
+    ): Promise<T>;
+  };
+
   function createProviderRegistry(providers: FlowSurfaceCapabilitiesProvider[]) {
     return {
       listProviders: () => providers,
     };
   }
 
-  function createGanttAutoSnapshot() {
-    return buildFlowSurfaceAutoSnapshot({
+  function createGanttAutoSnapshot(options: { inferredAuthoring?: boolean } = {}) {
+    const ganttAllowedActionModelUses = [
+      'GanttExpandCollapseActionModel',
+      'GanttTodayActionModel',
+      'FilterActionModel',
+      'AddNewActionModel',
+      'PopupCollectionActionModel',
+      'BulkDeleteActionModel',
+      'LinkActionModel',
+      'RefreshActionModel',
+      'BulkEditActionModel',
+      'BulkUpdateActionModel',
+      'ExportActionModel',
+      'ImportActionModel',
+      'CollectionTriggerWorkflowActionModel',
+      'CustomRequestActionModel',
+      'AIEmployeeActionModel',
+      'JSItemActionModel',
+      'JSCollectionActionModel',
+    ];
+    const snapshot = buildFlowSurfaceAutoSnapshot({
       plugin: '@nocobase/plugin-gantt',
       pluginVersion: '1.0.0',
       generatedAt: '2026-06-04T00:00:00.000Z',
@@ -161,11 +238,43 @@ describe('flowSurfaces dynamic capability create dry-run', () => {
           label: 'Gantt',
           modelUse: 'GanttBlockModel',
           slot: 'blocks',
-          createModelOptionsStatus: 'static',
+          createModelOptionsStatus: options.inferredAuthoring ? 'static' : 'dynamic',
+          ...(options.inferredAuthoring
+            ? {
+                createModelOptionsUse: 'GanttBlockModel',
+                createModelOptionsSubModels: {
+                  actions: [],
+                  columns: ['TableActionsColumnModel'],
+                },
+              }
+            : {}),
           source: 'packages/plugins/@nocobase/plugin-gantt/src/client-v2/models/GanttBlockModel.tsx',
           evidenceSource: 'ast',
           confidence: 'medium',
         },
+        ...(options.inferredAuthoring
+          ? [
+              {
+                type: 'model.registered' as const,
+                modelUse: 'GanttCollectionActionGroupModel',
+                className: 'GanttCollectionActionGroupModel',
+                source: 'packages/plugins/@nocobase/plugin-gantt/src/client-v2/models/actions/GanttActionModels.tsx',
+                evidenceSource: 'ast' as const,
+                confidence: 'medium' as const,
+              },
+              ...ganttAllowedActionModelUses.map((actionModelUse, index) => ({
+                type: 'menu.itemRegistered' as const,
+                menuKey: `allowed-action-${String(index).padStart(2, '0')}`,
+                modelUse: actionModelUse,
+                slot: 'actions',
+                createModelOptionsStatus: 'static' as const,
+                createModelOptionsUse: actionModelUse,
+                source: 'packages/plugins/@nocobase/plugin-gantt/src/client-v2/models/actions/GanttActionModels.tsx',
+                evidenceSource: 'ast' as const,
+                confidence: 'medium' as const,
+              })),
+            ]
+          : []),
         {
           type: 'model.flowRegistered',
           modelUse: 'GanttBlockModel',
@@ -178,6 +287,10 @@ describe('flowSurfaces dynamic capability create dry-run', () => {
         },
       ],
     });
+    if (!options.inferredAuthoring) {
+      delete snapshot.inferredAuthoring;
+    }
+    return snapshot;
   }
 
   function createAdmissionChecks(): FlowSurfaceCapabilityAdmissionReport['records'][number]['checks'] {
@@ -615,8 +728,8 @@ describe('flowSurfaces dynamic capability create dry-run', () => {
     expect(repositoryGetter).not.toHaveBeenCalled();
   });
 
-  it('should map a verified auto snapshot Gantt payload into a guarded internal node', async () => {
-    const autoSnapshot = createGanttAutoSnapshot();
+  it('should map a verified auto snapshot Gantt payload into a guarded internal node when inferred authoring coexists', async () => {
+    const autoSnapshot = createGanttAutoSnapshot({ inferredAuthoring: true });
     const verifiedAutoPolicy = {
       writePolicy: {
         mode: 'verifiedAuto' as const,
@@ -644,7 +757,7 @@ describe('flowSurfaces dynamic capability create dry-run', () => {
         generatedAt: '2026-06-04T00:00:00.000Z',
       },
     );
-    expect(discovery.data).toEqual([
+    expect(discovery.data.find((item) => item.publicType === 'pluginGantt.gantt')).toEqual(
       expect.objectContaining({
         publicType: 'pluginGantt.gantt',
         origin: 'autoSnapshot',
@@ -655,7 +768,7 @@ describe('flowSurfaces dynamic capability create dry-run', () => {
           }),
         }),
       }),
-    ]);
+    );
 
     const directResponse = await resolveDynamicCapabilityCreate({
       publicType: 'pluginGantt.gantt',
@@ -736,6 +849,7 @@ describe('flowSurfaces dynamic capability create dry-run', () => {
       },
       {
         enabledPackages: new Set(['@nocobase/plugin-gantt']),
+        autoCompleteDefaultPopup: false,
       },
     );
 
@@ -765,6 +879,2172 @@ describe('flowSurfaces dynamic capability create dry-run', () => {
     expect(dryRunResponse.capability).not.toHaveProperty('identity');
     expect(JSON.stringify(dryRunResponse)).not.toContain('GanttBlockModel');
     expect(JSON.stringify(dryRunResponse)).not.toContain('stepParams');
+  });
+
+  it('should resolve JSON inferred Gantt snapshots into guarded internal create nodes without providers', async () => {
+    const autoSnapshot = createGanttAutoSnapshot({ inferredAuthoring: true });
+
+    await expect(
+      resolveDynamicCapabilityCreate({
+        publicType: 'gantt',
+        initParams: {
+          collectionName: 'tasks',
+        },
+        settings: {},
+        enabledPackages: new Set(['@nocobase/plugin-gantt']),
+        providerRegistry: createProviderRegistry([]),
+        autoSnapshots: [autoSnapshot],
+      }),
+    ).rejects.toMatchObject({
+      errors: [
+        expect.objectContaining({
+          path: 'settings.titleField',
+          ruleId: 'required',
+        }),
+        expect.objectContaining({
+          path: 'settings.startField',
+          ruleId: 'required',
+        }),
+        expect.objectContaining({
+          path: 'settings.endField',
+          ruleId: 'required',
+        }),
+      ],
+    });
+
+    const directResponse = await resolveDynamicCapabilityCreate({
+      publicType: 'pluginGantt.gantt',
+      initParams: {
+        collectionName: 'tasks',
+        dataSourceKey: 'main',
+      },
+      settings: {
+        titleField: 'title',
+        startField: 'startAt',
+        endField: 'endAt',
+        progressField: 'progress',
+        colorField: 'status',
+        timeScale: 'week',
+        pageSize: 50,
+        showRowNumbers: true,
+        treeTable: false,
+        showTable: true,
+        tableWidth: 320,
+        enableDragToReschedule: true,
+      },
+      enabledPackages: new Set(['@nocobase/plugin-gantt']),
+      providerRegistry: createProviderRegistry([]),
+      autoSnapshots: [autoSnapshot],
+    });
+
+    expect(directResponse.capability).toMatchObject({
+      publicType: 'gantt',
+      ownerPlugin: '@nocobase/plugin-gantt',
+      origin: 'autoSnapshot',
+      readiness: 'createEnabled',
+      availability: {
+        create: {
+          supported: true,
+          acceptsInitParams: true,
+          acceptsSettings: true,
+        },
+      },
+    });
+    expect(directResponse.publicPayload).toMatchObject({
+      publicType: 'gantt',
+      initParams: {
+        collectionName: 'tasks',
+        dataSourceKey: 'main',
+      },
+      settings: {
+        titleField: 'title',
+        startField: 'startAt',
+        endField: 'endAt',
+      },
+    });
+    expect(directResponse.node).toMatchObject({
+      use: 'GanttBlockModel',
+      props: {
+        fieldNames: {
+          title: 'title',
+          start: 'startAt',
+          end: 'endAt',
+          progress: 'progress',
+          color: 'status',
+          range: 'week',
+        },
+      },
+      stepParams: {
+        resourceSettings: {
+          init: {
+            collectionName: 'tasks',
+            dataSourceKey: 'main',
+          },
+        },
+      },
+      subModels: {
+        actions: [],
+        columns: [
+          {
+            use: 'TableActionsColumnModel',
+          },
+        ],
+      },
+    });
+    expect(JSON.stringify(directResponse.publicPayload)).not.toContain('GanttBlockModel');
+    expect(JSON.stringify(directResponse.publicPayload)).not.toContain('TableActionsColumnModel');
+    expect(JSON.stringify(directResponse.publicPayload)).not.toContain('stepParams');
+
+    const mismatchedRecipeSnapshot = createGanttAutoSnapshot({ inferredAuthoring: true });
+    const [mismatchedCapability] = mismatchedRecipeSnapshot.inferredAuthoring?.capabilities || [];
+    if (!mismatchedCapability?.createRecipe) {
+      throw new Error('Expected Gantt inferred authoring create recipe');
+    }
+    mismatchedCapability.createRecipe.nodeTemplate.use = 'TableBlockModel';
+
+    await expect(
+      resolveDynamicCapabilityCreate({
+        publicType: 'gantt',
+        initParams: {
+          collectionName: 'tasks',
+        },
+        settings: {
+          titleField: 'title',
+          startField: 'startAt',
+          endField: 'endAt',
+        },
+        enabledPackages: new Set(['@nocobase/plugin-gantt']),
+        providerRegistry: createProviderRegistry([]),
+        autoSnapshots: [mismatchedRecipeSnapshot],
+      }),
+    ).rejects.toMatchObject({
+      errors: [
+        expect.objectContaining({
+          path: 'settings',
+          ruleId: 'contract-guard-failed',
+        }),
+      ],
+    });
+
+    await expect(
+      resolveDynamicCapabilityCreate({
+        publicType: 'gantt',
+        initParams: {
+          collectionName: 'tasks',
+        },
+        settings: {
+          titleField: 'title',
+          startField: 'startAt',
+          endField: 'endAt',
+          modelUse: 'GanttBlockModel',
+        },
+        rawPublicPayload: {
+          publicType: 'gantt',
+          settings: {
+            titleField: 'title',
+            startField: 'startAt',
+            endField: 'endAt',
+            modelUse: 'GanttBlockModel',
+          },
+        },
+        enabledPackages: new Set(['@nocobase/plugin-gantt']),
+        providerRegistry: createProviderRegistry([]),
+        autoSnapshots: [autoSnapshot],
+      }),
+    ).rejects.toMatchObject({
+      errors: [
+        expect.objectContaining({
+          path: 'payload',
+          ruleId: 'unsupported',
+        }),
+      ],
+    });
+  });
+
+  it('should allow validate-only JSON inferred dry-runs below high confidence without enabling writes', async () => {
+    const autoSnapshot = createGanttAutoSnapshot({ inferredAuthoring: true });
+    const [capability] = autoSnapshot.inferredAuthoring?.capabilities || [];
+    if (!capability) {
+      throw new Error('Expected Gantt inferred authoring capability');
+    }
+    capability.confidence.write = 'medium';
+    const input = {
+      publicType: 'gantt',
+      initParams: {
+        collectionName: 'tasks',
+      },
+      settings: {
+        titleField: 'title',
+        startField: 'startAt',
+        endField: 'endAt',
+      },
+      enabledPackages: new Set(['@nocobase/plugin-gantt']),
+      providerRegistry: createProviderRegistry([]),
+      autoSnapshots: [autoSnapshot],
+    };
+
+    await expect(resolveDynamicCapabilityCreate(input)).rejects.toMatchObject({
+      message: `flowSurfaces dynamic create capability 'gantt' is not enabled for writes`,
+      options: {
+        details: expect.objectContaining({
+          publicType: 'gantt',
+          reasonCode: 'contract-not-verified',
+        }),
+      },
+    });
+
+    const service = new FlowSurfacesService({
+      flowSurfaceAutoSnapshots: [autoSnapshot],
+      flowSurfaceCapabilityProviders: createProviderRegistry([]),
+    } as unknown as ConstructorParameters<typeof FlowSurfacesService>[0]);
+    const harness = service as unknown as DynamicBlockWriteGateHarness;
+    harness.catalog = async () => ({
+      blocks: [],
+    });
+    const dryRunFromService = await service.validateCapabilityCreate(
+      {
+        publicType: 'gantt',
+        initParams: input.initParams,
+        settings: input.settings,
+      },
+      {
+        enabledPackages: input.enabledPackages,
+      },
+    );
+    expect(dryRunFromService.capability.availability.create).toMatchObject({
+      supported: false,
+      reasonCode: 'contract-not-verified',
+    });
+
+    await expect(
+      harness.tryAddDynamicBlock({
+        values: {
+          target: {
+            uid: 'target-grid',
+          },
+          type: 'gantt',
+          initParams: input.initParams,
+          settings: input.settings,
+        },
+        options: {
+          deferAutoLayout: true,
+          dynamicCapabilityActionName: 'addBlock',
+        },
+        enabledPackages: input.enabledPackages,
+        blockType: 'gantt',
+        target: {
+          uid: 'target-grid',
+        },
+        parentUid: 'parent-grid',
+        subKey: 'items',
+        subType: 'array',
+        popupProfile: null,
+      }),
+    ).rejects.toMatchObject({
+      message: `flowSurfaces addBlock dynamic block 'gantt' is not confirmed by target-scoped catalog`,
+      options: {
+        details: expect.objectContaining({
+          reasonCode: 'contract-not-verified',
+        }),
+      },
+    });
+
+    const dryRun = await resolveDynamicCapabilityCreate({
+      ...input,
+      allowUnavailable: true,
+      actionName: 'validateCapabilityCreate',
+    });
+
+    expect(dryRun.capability).toMatchObject({
+      publicType: 'gantt',
+      origin: 'autoSnapshot',
+      readiness: 'discovered',
+      availability: {
+        create: {
+          supported: false,
+          reasonCode: 'contract-not-verified',
+        },
+      },
+    });
+    expect(dryRun.node).toMatchObject({
+      use: 'GanttBlockModel',
+      props: {
+        fieldNames: {
+          title: 'title',
+          start: 'startAt',
+          end: 'endAt',
+        },
+      },
+    });
+    expect(JSON.stringify(dryRun.publicPayload)).not.toContain('GanttBlockModel');
+    expect(JSON.stringify(dryRun.publicPayload)).not.toContain('stepParams');
+  });
+
+  it('should gate JSON inferred catalog projection by target placement', async () => {
+    const autoSnapshot = createGanttAutoSnapshot({ inferredAuthoring: true });
+    const service = new FlowSurfacesService({
+      flowSurfaceAutoSnapshots: [autoSnapshot],
+    } as unknown as ConstructorParameters<typeof FlowSurfacesService>[0]);
+    const harness = service as unknown as JsonInferredCatalogHarness;
+    const enabledPackages = new Set(['@nocobase/plugin-gantt']);
+
+    await expect(
+      harness.buildJsonInferredAutoSnapshotBlockCatalogItems({
+        hasTarget: true,
+        resolved: {
+          uid: 'target-grid',
+          kind: 'grid',
+          target: {
+            uid: 'target-grid',
+          },
+          pageRoute: {
+            type: 'page',
+          },
+        },
+        scenario: {
+          surfaceKind: 'grid',
+        },
+        selectedSections: ['blocks'],
+        enabledPackages,
+      }),
+    ).resolves.toEqual([
+      expect.objectContaining({
+        publicType: 'gantt',
+        createSupported: true,
+      }),
+    ]);
+
+    await expect(
+      harness.buildJsonInferredAutoSnapshotBlockCatalogItems({
+        hasTarget: true,
+        resolved: {
+          uid: 'target-grid',
+          kind: 'grid',
+        },
+        scenario: {
+          surfaceKind: 'grid',
+        },
+        selectedSections: ['actions'],
+        enabledPackages,
+      }),
+    ).resolves.toEqual([]);
+
+    await expect(
+      harness.buildJsonInferredAutoSnapshotBlockCatalogItems({
+        hasTarget: true,
+        resolved: {
+          uid: 'target-field',
+          kind: 'block',
+        },
+        scenario: {
+          surfaceKind: 'block',
+          fieldContainer: {
+            kind: 'form',
+          },
+        },
+        selectedSections: ['blocks'],
+        enabledPackages,
+      }),
+    ).resolves.toEqual([]);
+  });
+
+  it('should persist catalog-confirmed JSON inferred Gantt addBlock candidates through the gated mapping', async () => {
+    const autoSnapshot = createGanttAutoSnapshot({ inferredAuthoring: true });
+    const service = new FlowSurfacesService({
+      flowSurfaceAutoSnapshots: [autoSnapshot],
+      flowSurfaceCapabilityProviders: createProviderRegistry([]),
+    } as unknown as ConstructorParameters<typeof FlowSurfacesService>[0]);
+    const harness = service as unknown as DynamicBlockWriteGateHarness;
+    const enabledPackages = new Set(['@nocobase/plugin-gantt']);
+    const dynamicBlockTypes = await harness.resolveDynamicBlockTypes(enabledPackages);
+    const persistedPayloads: Record<string, unknown>[] = [];
+
+    expect(dynamicBlockTypes.has('gantt')).toBe(true);
+    expect(dynamicBlockTypes.has('pluginGantt.gantt')).toBe(true);
+    harness.catalog = async () => ({
+      blocks: [
+        {
+          key: 'gantt',
+          label: 'Gantt',
+          use: 'gantt',
+          kind: 'block',
+          publicType: 'gantt',
+          ownerPlugin: '@nocobase/plugin-gantt',
+          origin: 'autoSnapshot',
+          createSupported: true,
+          availability: {
+            create: {
+              supported: true,
+            },
+          },
+        },
+      ],
+    });
+    vi.spyOn(service as unknown as RepositoryGetterHarness, 'repository', 'get').mockReturnValue({
+      upsertModel: async (payload) => {
+        persistedPayloads.push(payload);
+        return 'created-gantt-block';
+      },
+      findModelById: async () => ({
+        uid: 'created-gantt-block',
+        ...(persistedPayloads[0] || {}),
+      }),
+    });
+
+    const result = await harness.tryAddDynamicBlock({
+      values: {
+        target: {
+          uid: 'target-grid',
+        },
+        type: 'pluginGantt.gantt',
+        initParams: {
+          collectionName: 'tasks',
+        },
+        settings: {
+          titleField: 'title',
+          startField: 'startAt',
+          endField: 'endAt',
+        },
+      },
+      options: {
+        deferAutoLayout: true,
+        dynamicCapabilityActionName: 'addBlock',
+      },
+      enabledPackages,
+      blockType: 'pluginGantt.gantt',
+      target: {
+        uid: 'target-grid',
+      },
+      parentUid: 'parent-grid',
+      subKey: 'items',
+      subType: 'array',
+      popupProfile: null,
+    });
+
+    expect(result).toMatchObject({
+      uid: 'created-gantt-block',
+      parentUid: 'parent-grid',
+      subKey: 'items',
+    });
+    expect(persistedPayloads).toHaveLength(1);
+    expect(persistedPayloads[0]).toMatchObject({
+      parentId: 'parent-grid',
+      subKey: 'items',
+      subType: 'array',
+      use: 'GanttBlockModel',
+      props: {
+        fieldNames: {
+          title: 'title',
+          start: 'startAt',
+          end: 'endAt',
+        },
+      },
+      subModels: {
+        actions: [],
+        columns: [
+          {
+            use: 'TableActionsColumnModel',
+          },
+        ],
+      },
+    });
+  });
+
+  it('should expose Gantt child actions from JSON inferred child surfaces without server providers', async () => {
+    const autoSnapshot = createGanttAutoSnapshot({ inferredAuthoring: true });
+    const service = new FlowSurfacesService({
+      flowSurfaceAutoSnapshots: [autoSnapshot],
+      flowSurfaceCapabilityProviders: createProviderRegistry([]),
+    } as unknown as ConstructorParameters<typeof FlowSurfacesService>[0]);
+    const ganttNode = {
+      uid: 'gantt-block',
+      use: 'GanttBlockModel',
+      props: {
+        treeTable: true,
+      },
+      stepParams: {
+        resourceSettings: {
+          init: {
+            dataSourceKey: 'main',
+            collectionName: 'tasks',
+          },
+        },
+      },
+      subModels: {
+        actions: [],
+      },
+    };
+
+    vi.spyOn(service as unknown as LocatorGetterHarness, 'locator', 'get').mockReturnValue({
+      resolve: async () => ({
+        uid: 'gantt-block',
+        kind: 'block',
+        target: {
+          uid: 'gantt-block',
+        },
+        node: ganttNode,
+      }),
+      findParentUid: async () => '',
+    });
+    vi.spyOn(service as unknown as RepositoryGetterHarness, 'repository', 'get').mockReturnValue({
+      findModelById: async () => ganttNode,
+    });
+    vi.spyOn(service as unknown as CollectionGetterHarness, 'getCollection').mockReturnValue({
+      template: 'tree',
+    });
+
+    const catalog = await service.catalog(
+      {
+        target: {
+          uid: 'gantt-block',
+        },
+        sections: ['actions'],
+      },
+      {
+        enabledPackages: new Set(['@nocobase/plugin-gantt']),
+        autoCompleteDefaultPopup: false,
+      },
+    );
+
+    expect(catalog.actions).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          publicType: 'ganttTodayAction',
+          ownerPlugin: '@nocobase/plugin-gantt',
+          origin: 'autoSnapshot',
+          createSupported: true,
+        }),
+        expect.objectContaining({
+          publicType: 'ganttExpandCollapseAction',
+          ownerPlugin: '@nocobase/plugin-gantt',
+          origin: 'autoSnapshot',
+          createSupported: true,
+        }),
+        expect.objectContaining({
+          publicType: 'filter',
+          ownerPlugin: '@nocobase/plugin-gantt',
+          origin: 'autoSnapshot',
+        }),
+        expect.objectContaining({
+          publicType: 'addNew',
+          ownerPlugin: '@nocobase/plugin-gantt',
+          origin: 'autoSnapshot',
+        }),
+      ]),
+    );
+    const serialized = JSON.stringify(catalog.actions);
+    expect(serialized).not.toContain('GanttTodayActionModel');
+    expect(serialized).not.toContain('GanttExpandCollapseActionModel');
+  });
+
+  it('should add existing collection fields through JSON inferred Gantt column surfaces without server providers', async () => {
+    const autoSnapshot = createGanttAutoSnapshot({ inferredAuthoring: true });
+    const service = new FlowSurfacesService({
+      flowSurfaceAutoSnapshots: [autoSnapshot],
+      flowSurfaceCapabilityProviders: createProviderRegistry([]),
+    } as unknown as ConstructorParameters<typeof FlowSurfacesService>[0]);
+    const enabledPackages = new Set(['@nocobase/plugin-gantt']);
+    const persistedPayloads: Record<string, unknown>[] = [];
+    const persistedNodesByUid = new Map<string, Record<string, unknown>>();
+    const titleField = {
+      name: 'title',
+      type: 'string',
+      interface: 'input',
+      title: 'Title',
+      uiSchema: {
+        title: 'Title',
+        type: 'string',
+      },
+      getComponentProps: () => ({}),
+      isAssociationField: () => false,
+    };
+    const projectField = {
+      name: 'project',
+      type: 'belongsTo',
+      interface: 'm2o',
+      target: 'projects',
+      title: 'Project',
+      getComponentProps: () => ({}),
+      isAssociationField: () => true,
+    };
+    const tasksCollection = {
+      name: 'tasks',
+      dataSourceKey: 'main',
+      filterTargetKey: 'id',
+      getFields: () => [titleField, projectField],
+      getField: (name: string) => {
+        if (name === 'title') {
+          return titleField;
+        }
+        if (name === 'project') {
+          return projectField;
+        }
+        return undefined;
+      },
+    };
+    const ganttNode = {
+      uid: 'gantt-block',
+      use: 'GanttBlockModel',
+      stepParams: {
+        resourceSettings: {
+          init: {
+            dataSourceKey: 'main',
+            collectionName: 'tasks',
+          },
+        },
+      },
+      subModels: {
+        actions: [],
+        columns: [],
+      },
+    };
+
+    vi.spyOn(service as unknown as SurfaceContextGetterHarness, 'surfaceContext', 'get').mockReturnValue({
+      filterBlocksByTarget: () => [],
+      resolveBlockParent: async () => ({
+        parentUid: 'gantt-block',
+      }),
+      resolveFieldContainer: async () => {
+        throw new FlowSurfaceBadRequestError(`flowSurfaces addField target 'GanttBlockModel' is not a field container`);
+      },
+      resolveActionContainer: async () => {
+        throw new FlowSurfaceBadRequestError(
+          `flowSurfaces addAction target 'GanttBlockModel' is not an action surface`,
+        );
+      },
+      collectFilterFormTargets: async () => [],
+    });
+    vi.spyOn(service as unknown as LocatorGetterHarness, 'locator', 'get').mockReturnValue({
+      resolve: async () => ({
+        uid: 'gantt-block',
+        kind: 'block',
+        target: {
+          uid: 'gantt-block',
+        },
+        node: ganttNode,
+      }),
+      findParentUid: async () => '',
+      resolveCollectionContext: async () => ({
+        resourceInit: {
+          dataSourceKey: 'main',
+          collectionName: 'tasks',
+        },
+      }),
+    });
+    vi.spyOn(service as unknown as RepositoryGetterHarness, 'repository', 'get').mockReturnValue({
+      findModelById: async (uid) => persistedNodesByUid.get(String(uid)) || ganttNode,
+      upsertModel: async (payload) => {
+        persistedPayloads.push(payload);
+        if (payload.uid) {
+          persistedNodesByUid.set(String(payload.uid), payload);
+        }
+        const fieldNode = (payload.subModels as Record<string, unknown> | undefined)?.field as
+          | Record<string, unknown>
+          | undefined;
+        if (fieldNode && typeof fieldNode === 'object' && !Array.isArray(fieldNode) && fieldNode.uid) {
+          persistedNodesByUid.set(String(fieldNode.uid), fieldNode as Record<string, unknown>);
+        }
+        return String(payload.uid || 'created-gantt-column');
+      },
+    });
+    vi.spyOn(service as unknown as CollectionGetterHarness, 'getCollection').mockReturnValue(tasksCollection);
+    const fieldCatalogHarness = service as unknown as FieldCatalogPrivateHarness;
+
+    const catalog = await service.catalog(
+      {
+        target: {
+          uid: 'gantt-block',
+        },
+        sections: ['fields'],
+      },
+      {
+        enabledPackages,
+      },
+    );
+
+    expect(catalog.fields).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          key: 'title',
+          kind: 'field',
+          publicType: expect.any(String),
+          ownerPlugin: '@nocobase/plugin-gantt',
+          origin: 'autoSnapshot',
+          supportLevel: 'create-only',
+          availability: expect.objectContaining({
+            create: expect.objectContaining({
+              supported: true,
+              acceptsSettings: false,
+            }),
+            configure: expect.objectContaining({
+              supported: false,
+              reasonCode: 'contract-not-verified',
+            }),
+          }),
+        }),
+      ]),
+    );
+    const serializedFieldCatalog = JSON.stringify(catalog.fields || []);
+    expect(serializedFieldCatalog).not.toContain('jsColumn');
+    expect(serializedFieldCatalog).not.toContain('"renderer":"js"');
+    expect(serializedFieldCatalog).not.toContain('configureOptions');
+    expect(serializedFieldCatalog).not.toContain('settingsSchema');
+
+    const result = await service.addField(
+      {
+        target: {
+          uid: 'gantt-block',
+        },
+        fieldPath: 'title',
+      },
+      {
+        enabledPackages,
+      },
+    );
+
+    expect(result).toMatchObject({
+      parentUid: 'gantt-block',
+      subKey: 'columns',
+      fieldPath: 'title',
+    });
+    expect(persistedPayloads).toHaveLength(1);
+    expect(persistedPayloads[0]).toMatchObject({
+      parentId: 'gantt-block',
+      subKey: 'columns',
+      subType: 'array',
+      use: 'TableColumnModel',
+      stepParams: {
+        fieldSettings: {
+          init: {
+            dataSourceKey: 'main',
+            collectionName: 'tasks',
+            fieldPath: 'title',
+          },
+        },
+      },
+    });
+
+    vi.spyOn(fieldCatalogHarness, 'buildFieldCatalog').mockResolvedValueOnce([]);
+    await expect(
+      service.addField(
+        {
+          target: {
+            uid: 'gantt-block',
+          },
+          fieldPath: 'title',
+        },
+        {
+          enabledPackages,
+        },
+      ),
+    ).rejects.toMatchObject({
+      message: "flowSurfaces addField JSON inferred field 'title' is not confirmed by target-scoped catalog",
+      options: {
+        details: {
+          reasonCode: 'contract-not-verified',
+          reasonSource: 'catalog',
+          fieldPath: 'title',
+        },
+      },
+    });
+    expect(persistedPayloads).toHaveLength(1);
+
+    vi.spyOn(fieldCatalogHarness, 'buildFieldCatalog').mockResolvedValueOnce([]);
+    await expect(
+      service.addField(
+        {
+          target: {
+            uid: 'gantt-block',
+          },
+          fieldPath: 'project',
+          __autoPopupForRelationField: true,
+          __flowSurfaceApplyBlueprintPopupDefaults: {
+            source: 'compose',
+          },
+        },
+        {
+          enabledPackages,
+          allowJsonInferredFieldAutoPopupMetadata: true,
+        },
+      ),
+    ).rejects.toMatchObject({
+      options: {
+        details: {
+          reasonCode: 'contract-not-verified',
+          reasonSource: 'catalog',
+          fieldPath: 'project',
+        },
+      },
+    });
+    expect(persistedPayloads).toHaveLength(1);
+
+    const internalStringFieldResult = await service.addField(
+      {
+        target: {
+          uid: 'gantt-block',
+        },
+        fieldPath: 'project',
+        __autoPopupForRelationField: true,
+        __flowSurfaceApplyBlueprintPopupDefaults: {
+          source: 'compose',
+        },
+      },
+      {
+        enabledPackages,
+        allowJsonInferredFieldAutoPopupMetadata: true,
+      },
+    );
+
+    expect(internalStringFieldResult).toMatchObject({
+      parentUid: 'gantt-block',
+      subKey: 'columns',
+      fieldPath: 'project',
+    });
+    expect(persistedPayloads).toHaveLength(2);
+    expect(persistedPayloads[1]).toMatchObject({
+      parentId: 'gantt-block',
+      subKey: 'columns',
+      subType: 'array',
+      use: 'TableColumnModel',
+      stepParams: {
+        fieldSettings: {
+          init: {
+            dataSourceKey: 'main',
+            collectionName: 'tasks',
+            fieldPath: 'project',
+          },
+        },
+      },
+    });
+    const serializedInternalStringFieldPayload = JSON.stringify(persistedPayloads[1]);
+    expect(serializedInternalStringFieldPayload).not.toContain('__autoPopupForRelationField');
+    expect(serializedInternalStringFieldPayload).not.toContain('__flowSurfaceApplyBlueprintPopupDefaults');
+    expect(serializedInternalStringFieldPayload).not.toContain('popup');
+
+    await expect(
+      service.addField(
+        {
+          target: {
+            uid: 'gantt-block',
+          },
+          type: 'jsColumn',
+        },
+        {
+          enabledPackages,
+        },
+      ),
+    ).rejects.toMatchObject({
+      message: 'flowSurfaces addField JSON inferred field surfaces only support existing collection field creates',
+      options: {
+        details: {
+          reasonCode: 'contract-not-verified',
+          reasonSource: 'registry',
+          forbiddenKeys: ['type'],
+        },
+      },
+    });
+    await expect(
+      service.addField(
+        {
+          target: {
+            uid: 'gantt-block',
+          },
+          fieldPath: 'title',
+          renderer: 'js',
+        },
+        {
+          enabledPackages,
+        },
+      ),
+    ).rejects.toMatchObject({
+      options: {
+        details: {
+          forbiddenKeys: ['renderer'],
+        },
+      },
+    });
+    await expect(
+      service.addField(
+        {
+          target: {
+            uid: 'gantt-block',
+          },
+          collectionName: 'otherTasks',
+          fieldPath: 'title',
+        },
+        {
+          enabledPackages,
+        },
+      ),
+    ).rejects.toMatchObject({
+      options: {
+        details: {
+          forbiddenKeys: ['collectionName'],
+        },
+      },
+    });
+    await expect(
+      service.addField(
+        {
+          target: {
+            uid: 'gantt-block',
+          },
+          associationPathName: 'project',
+          fieldPath: 'name',
+        },
+        {
+          enabledPackages,
+        },
+      ),
+    ).rejects.toMatchObject({
+      options: {
+        details: {
+          forbiddenKeys: ['associationPathName'],
+        },
+      },
+    });
+    await expect(
+      service.addField(
+        {
+          target: {
+            uid: 'gantt-block',
+          },
+          fieldPath: 'project.name',
+        },
+        {
+          enabledPackages,
+        },
+      ),
+    ).rejects.toMatchObject({
+      options: {
+        details: {
+          invalidFieldPath: 'project.name',
+        },
+      },
+    });
+    await expect(
+      service.addField(
+        {
+          target: {
+            uid: 'gantt-block',
+          },
+          fieldPath: 'project',
+          __autoPopupForRelationField: true,
+        },
+        {
+          enabledPackages,
+        },
+      ),
+    ).rejects.toMatchObject({
+      options: {
+        details: {
+          forbiddenKeys: ['__autoPopupForRelationField'],
+        },
+      },
+    });
+    await expect(
+      service.addField(
+        {
+          target: {
+            uid: 'gantt-block',
+          },
+          fieldPath: 'project',
+          __flowSurfaceApplyBlueprintPopupDefaults: {
+            source: 'compose',
+          },
+        },
+        {
+          enabledPackages,
+        },
+      ),
+    ).rejects.toMatchObject({
+      options: {
+        details: {
+          forbiddenKeys: ['__flowSurfaceApplyBlueprintPopupDefaults'],
+        },
+      },
+    });
+    expect(persistedPayloads).toHaveLength(2);
+  });
+
+  it('should reject public compose field objects that include internal popup metadata', () => {
+    expect(() =>
+      normalizeComposeFieldSpec(
+        {
+          key: 'project',
+          fieldPath: 'project',
+          __autoPopupForRelationField: true,
+        },
+        0,
+      ),
+    ).toThrow('flowSurfaces compose field #1 does not accept internal field metadata: __autoPopupForRelationField');
+    expect(() =>
+      normalizeComposeFieldSpec(
+        {
+          key: 'project',
+          fieldPath: 'project',
+          __flowSurfaceApplyBlueprintPopupDefaults: {
+            source: 'compose',
+          },
+        },
+        0,
+      ),
+    ).toThrow(
+      'flowSurfaces compose field #1 does not accept internal field metadata: __flowSurfaceApplyBlueprintPopupDefaults',
+    );
+  });
+
+  it('should reject JSON inferred Gantt field writes when readback binding drifts', async () => {
+    const service = new FlowSurfacesService({
+      flowSurfaceAutoSnapshots: [createGanttAutoSnapshot({ inferredAuthoring: true })],
+      flowSurfaceCapabilityProviders: createProviderRegistry([]),
+    } as unknown as ConstructorParameters<typeof FlowSurfacesService>[0]);
+    const enabledPackages = new Set(['@nocobase/plugin-gantt']);
+    const titleField = {
+      name: 'title',
+      type: 'string',
+      interface: 'input',
+      title: 'Title',
+      getComponentProps: () => ({}),
+      isAssociationField: () => false,
+    };
+    const ganttNode = {
+      uid: 'gantt-block',
+      use: 'GanttBlockModel',
+      stepParams: {
+        resourceSettings: {
+          init: {
+            dataSourceKey: 'main',
+            collectionName: 'tasks',
+          },
+        },
+      },
+      subModels: {
+        actions: [],
+        columns: [],
+      },
+    };
+    const persistedNodesByUid = new Map<string, Record<string, unknown>>();
+
+    vi.spyOn(service as unknown as SurfaceContextGetterHarness, 'surfaceContext', 'get').mockReturnValue({
+      filterBlocksByTarget: () => [],
+      resolveBlockParent: async () => ({
+        parentUid: 'gantt-block',
+      }),
+      resolveFieldContainer: async () => {
+        throw new FlowSurfaceBadRequestError(`flowSurfaces addField target 'GanttBlockModel' is not a field container`);
+      },
+      resolveActionContainer: async () => {
+        throw new FlowSurfaceBadRequestError(
+          `flowSurfaces addAction target 'GanttBlockModel' is not an action surface`,
+        );
+      },
+      collectFilterFormTargets: async () => [],
+    });
+    vi.spyOn(service as unknown as LocatorGetterHarness, 'locator', 'get').mockReturnValue({
+      resolve: async () => ({
+        uid: 'gantt-block',
+        kind: 'block',
+        target: {
+          uid: 'gantt-block',
+        },
+        node: ganttNode,
+      }),
+      findParentUid: async () => '',
+      resolveCollectionContext: async () => ({
+        resourceInit: {
+          dataSourceKey: 'main',
+          collectionName: 'tasks',
+        },
+      }),
+    });
+    vi.spyOn(service as unknown as RepositoryGetterHarness, 'repository', 'get').mockReturnValue({
+      findModelById: async (uid) => persistedNodesByUid.get(String(uid)) || ganttNode,
+      upsertModel: async (payload) => {
+        if (payload.uid) {
+          persistedNodesByUid.set(String(payload.uid), payload);
+        }
+        const fieldNode = (payload.subModels as Record<string, unknown> | undefined)?.field as
+          | Record<string, unknown>
+          | undefined;
+        if (fieldNode?.uid) {
+          const driftedFieldNode = JSON.parse(JSON.stringify(fieldNode)) as Record<string, unknown>;
+          (
+            ((driftedFieldNode.stepParams as Record<string, unknown>).fieldSettings as Record<string, unknown>)
+              .init as Record<string, unknown>
+          ).fieldPath = 'startAt';
+          persistedNodesByUid.set(String(fieldNode.uid), driftedFieldNode);
+        }
+        return String(payload.uid || 'created-gantt-column');
+      },
+    });
+    vi.spyOn(service as unknown as CollectionGetterHarness, 'getCollection').mockReturnValue({
+      name: 'tasks',
+      dataSourceKey: 'main',
+      filterTargetKey: 'id',
+      getFields: () => [titleField],
+      getField: (name: string) => (name === 'title' ? titleField : undefined),
+    });
+
+    await expect(
+      service.addField(
+        {
+          target: {
+            uid: 'gantt-block',
+          },
+          fieldPath: 'title',
+        },
+        {
+          enabledPackages,
+        },
+      ),
+    ).rejects.toMatchObject({
+      message: 'flowSurfaces addField JSON inferred field failed readback parity guard',
+      options: {
+        details: {
+          reasonCode: 'readback-parity-failed',
+          reasonSource: 'builder',
+        },
+      },
+    });
+  });
+
+  it('should keep JSON inferred Gantt field surfaces closed without enabled plugin, json policy, or columns surface', async () => {
+    const createService = (input: {
+      enabledPackages: ReadonlySet<string>;
+      writePolicyMode?: 'manifestOnly';
+      hasColumns: boolean;
+    }) => {
+      const service = new FlowSurfacesService({
+        options: input.writePolicyMode
+          ? {
+              flowSurfaceCapabilities: {
+                writePolicy: {
+                  mode: input.writePolicyMode,
+                },
+              },
+            }
+          : undefined,
+        flowSurfaceAutoSnapshots: [createGanttAutoSnapshot({ inferredAuthoring: true })],
+        flowSurfaceCapabilityProviders: createProviderRegistry([]),
+      } as unknown as ConstructorParameters<typeof FlowSurfacesService>[0]);
+      const persistedPayloads: Record<string, unknown>[] = [];
+      const titleField = {
+        name: 'title',
+        type: 'string',
+        interface: 'input',
+        title: 'Title',
+        getComponentProps: () => ({}),
+        isAssociationField: () => false,
+      };
+      const ganttNode = {
+        uid: 'gantt-block',
+        use: 'GanttBlockModel',
+        stepParams: {
+          resourceSettings: {
+            init: {
+              dataSourceKey: 'main',
+              collectionName: 'tasks',
+            },
+          },
+        },
+        subModels: input.hasColumns
+          ? {
+              actions: [],
+              columns: [],
+            }
+          : {
+              actions: [],
+            },
+      };
+      vi.spyOn(service as unknown as SurfaceContextGetterHarness, 'surfaceContext', 'get').mockReturnValue({
+        filterBlocksByTarget: () => [],
+        resolveBlockParent: async () => ({
+          parentUid: 'gantt-block',
+        }),
+        resolveFieldContainer: async () => {
+          throw new FlowSurfaceBadRequestError(
+            `flowSurfaces addField target 'GanttBlockModel' is not a field container`,
+          );
+        },
+        resolveActionContainer: async () => {
+          throw new FlowSurfaceBadRequestError(
+            `flowSurfaces addAction target 'GanttBlockModel' is not an action surface`,
+          );
+        },
+        collectFilterFormTargets: async () => [],
+      });
+      vi.spyOn(service as unknown as LocatorGetterHarness, 'locator', 'get').mockReturnValue({
+        resolve: async () => ({
+          uid: 'gantt-block',
+          kind: 'block',
+          target: {
+            uid: 'gantt-block',
+          },
+          node: ganttNode,
+        }),
+        findParentUid: async () => '',
+        resolveCollectionContext: async () => ({
+          resourceInit: {
+            dataSourceKey: 'main',
+            collectionName: 'tasks',
+          },
+        }),
+      });
+      vi.spyOn(service as unknown as RepositoryGetterHarness, 'repository', 'get').mockReturnValue({
+        findModelById: async () => ganttNode,
+        upsertModel: async (payload) => {
+          persistedPayloads.push(payload);
+          return String(payload.uid || 'created-gantt-column');
+        },
+      });
+      vi.spyOn(service as unknown as CollectionGetterHarness, 'getCollection').mockReturnValue({
+        name: 'tasks',
+        dataSourceKey: 'main',
+        filterTargetKey: 'id',
+        getFields: () => [titleField],
+        getField: (name: string) => (name === 'title' ? titleField : undefined),
+      });
+      return {
+        service,
+        persistedPayloads,
+        enabledPackages: input.enabledPackages,
+      };
+    };
+
+    for (const scenario of [
+      {
+        enabledPackages: new Set<string>(),
+        hasColumns: true,
+      },
+      {
+        enabledPackages: new Set(['@nocobase/plugin-gantt']),
+        writePolicyMode: 'manifestOnly' as const,
+        hasColumns: true,
+      },
+      {
+        enabledPackages: new Set(['@nocobase/plugin-gantt']),
+        hasColumns: false,
+      },
+    ]) {
+      const { service, persistedPayloads, enabledPackages } = createService(scenario);
+      const catalog = await service.catalog(
+        {
+          target: {
+            uid: 'gantt-block',
+          },
+          sections: ['fields'],
+        },
+        {
+          enabledPackages,
+        },
+      );
+
+      expect(catalog.fields || []).toEqual([]);
+      await expect(
+        service.addField(
+          {
+            target: {
+              uid: 'gantt-block',
+            },
+            fieldPath: 'title',
+          },
+          {
+            enabledPackages,
+          },
+        ),
+      ).rejects.toBeInstanceOf(FlowSurfaceBadRequestError);
+      expect(persistedPayloads).toHaveLength(0);
+    }
+  });
+
+  it('should require a writable Gantt action child surface and action conditions before exposing JSON inferred actions', async () => {
+    const autoSnapshot = createGanttAutoSnapshot({ inferredAuthoring: true });
+    const service = new FlowSurfacesService({
+      flowSurfaceAutoSnapshots: [autoSnapshot],
+      flowSurfaceCapabilityProviders: createProviderRegistry([]),
+    } as unknown as ConstructorParameters<typeof FlowSurfacesService>[0]);
+    const ganttNode = {
+      uid: 'gantt-block',
+      use: 'GanttBlockModel',
+      stepParams: {
+        resourceSettings: {
+          init: {
+            dataSourceKey: 'main',
+            collectionName: 'tasks',
+          },
+        },
+      },
+      subModels: {
+        actions: [],
+      },
+    };
+    vi.spyOn(service as unknown as LocatorGetterHarness, 'locator', 'get').mockReturnValue({
+      resolve: async () => ({
+        uid: 'gantt-block',
+        kind: 'block',
+        target: {
+          uid: 'gantt-block',
+        },
+        node: ganttNode,
+      }),
+      findParentUid: async () => '',
+    });
+    vi.spyOn(service as unknown as RepositoryGetterHarness, 'repository', 'get').mockReturnValue({
+      findModelById: async () => ganttNode,
+    });
+    vi.spyOn(service as unknown as CollectionGetterHarness, 'getCollection').mockReturnValue({
+      template: 'tree',
+    });
+
+    const catalog = await service.catalog(
+      {
+        target: {
+          uid: 'gantt-block',
+        },
+        sections: ['actions'],
+      },
+      {
+        enabledPackages: new Set(['@nocobase/plugin-gantt']),
+      },
+    );
+
+    expect(catalog.actions).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          publicType: 'ganttTodayAction',
+        }),
+      ]),
+    );
+    expect(catalog.actions || []).not.toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          publicType: 'ganttExpandCollapseAction',
+        }),
+      ]),
+    );
+
+    delete (ganttNode as { subModels?: unknown }).subModels;
+    const noMaterializedSurfaceCatalog = await service.catalog(
+      {
+        target: {
+          uid: 'gantt-block',
+        },
+        sections: ['actions'],
+      },
+      {
+        enabledPackages: new Set(['@nocobase/plugin-gantt']),
+      },
+    );
+    expect(noMaterializedSurfaceCatalog.actions).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          publicType: 'ganttTodayAction',
+          ownerPlugin: '@nocobase/plugin-gantt',
+        }),
+      ]),
+    );
+    expect(noMaterializedSurfaceCatalog.actions || []).not.toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          publicType: 'ganttExpandCollapseAction',
+        }),
+      ]),
+    );
+  });
+
+  it('should expose and write the first JSON inferred Gantt action after empty action surfaces round trip', async () => {
+    const autoSnapshot = createGanttAutoSnapshot({ inferredAuthoring: true });
+    const service = new FlowSurfacesService({
+      flowSurfaceAutoSnapshots: [autoSnapshot],
+      flowSurfaceCapabilityProviders: createProviderRegistry([]),
+    } as unknown as ConstructorParameters<typeof FlowSurfacesService>[0]);
+    const enabledPackages = new Set(['@nocobase/plugin-gantt']);
+    const persistedPayloads: Record<string, unknown>[] = [];
+    let ownerNode: Record<string, unknown> = {
+      uid: 'gantt-block',
+      use: 'GanttBlockModel',
+      stepParams: {
+        resourceSettings: {
+          init: {
+            dataSourceKey: 'main',
+            collectionName: 'tasks',
+          },
+        },
+      },
+    };
+    const persistedByUid = new Map<string, Record<string, unknown>>([['gantt-block', ownerNode]]);
+
+    vi.spyOn(service as unknown as SurfaceContextGetterHarness, 'surfaceContext', 'get').mockReturnValue({
+      filterBlocksByTarget: () => [],
+      resolveBlockParent: async () => ({
+        parentUid: 'gantt-block',
+      }),
+      resolveFieldContainer: async () => {
+        throw new FlowSurfaceBadRequestError(`flowSurfaces addField target 'GanttBlockModel' is not a field container`);
+      },
+      resolveActionContainer: async () => {
+        throw new FlowSurfaceBadRequestError(
+          `flowSurfaces addAction target 'GanttBlockModel' is not an action surface`,
+        );
+      },
+      collectFilterFormTargets: async () => [],
+    });
+    vi.spyOn(service as unknown as LocatorGetterHarness, 'locator', 'get').mockReturnValue({
+      resolve: async () => ({
+        uid: 'gantt-block',
+        kind: 'block',
+        target: {
+          uid: 'gantt-block',
+        },
+        node: ownerNode,
+      }),
+      findParentUid: async () => '',
+      resolveCollectionContext: async () => ({
+        resourceInit: {
+          dataSourceKey: 'main',
+          collectionName: 'tasks',
+        },
+      }),
+    });
+    vi.spyOn(service as unknown as RepositoryGetterHarness, 'repository', 'get').mockReturnValue({
+      findModelById: async (uid) => persistedByUid.get(uid) || null,
+      upsertModel: async (payload) => {
+        persistedPayloads.push(payload);
+        const actionNode = {
+          uid: 'created-today-action',
+          ...payload,
+        };
+        persistedByUid.set('created-today-action', actionNode);
+        ownerNode = {
+          ...ownerNode,
+          subModels: {
+            actions: [actionNode],
+          },
+        };
+        persistedByUid.set('gantt-block', ownerNode);
+        return 'created-today-action';
+      },
+    });
+    vi.spyOn(service as unknown as CollectionGetterHarness, 'getCollection').mockReturnValue({
+      template: 'collection',
+    });
+    vi.spyOn(service as unknown as AddActionPrivateHarness, 'assertApprovalActionSingleton').mockResolvedValue(
+      undefined,
+    );
+    vi.spyOn(service as unknown as AddActionPrivateHarness, 'syncFlowTemplateUsagesForNodeTree').mockResolvedValue(
+      undefined,
+    );
+    vi.spyOn(service as unknown as AddActionPrivateHarness, 'syncApprovalRuntimeConfigForNode').mockResolvedValue(
+      undefined,
+    );
+    vi.spyOn(service as unknown as AddActionPrivateHarness, 'collectComposeActionKeys').mockResolvedValue({});
+
+    const catalog = await service.catalog(
+      {
+        target: {
+          uid: 'gantt-block',
+        },
+        sections: ['actions'],
+      },
+      {
+        enabledPackages,
+      },
+    );
+
+    expect(ownerNode).not.toHaveProperty('subModels');
+    expect(catalog.actions).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          publicType: 'ganttTodayAction',
+          ownerPlugin: '@nocobase/plugin-gantt',
+          origin: 'autoSnapshot',
+          createSupported: true,
+        }),
+      ]),
+    );
+
+    const result = await service.addAction(
+      {
+        target: {
+          uid: 'gantt-block',
+        },
+        type: 'ganttTodayAction',
+      },
+      {
+        enabledPackages,
+      },
+    );
+
+    expect(result).toMatchObject({
+      uid: 'created-today-action',
+      parentUid: 'gantt-block',
+      subKey: 'actions',
+      scope: 'block',
+    });
+    expect(persistedPayloads).toEqual([
+      expect.objectContaining({
+        parentId: 'gantt-block',
+        subKey: 'actions',
+        subType: 'array',
+        use: 'GanttTodayActionModel',
+      }),
+    ]);
+  });
+
+  it('should persist JSON inferred Gantt child actions through addAction without server providers', async () => {
+    const autoSnapshot = createGanttAutoSnapshot({ inferredAuthoring: true });
+    const service = new FlowSurfacesService({
+      flowSurfaceAutoSnapshots: [autoSnapshot],
+      flowSurfaceCapabilityProviders: createProviderRegistry([]),
+    } as unknown as ConstructorParameters<typeof FlowSurfacesService>[0]);
+    const persistedPayloads: Record<string, unknown>[] = [];
+    const persistedByUid = new Map<string, Record<string, unknown>>();
+    const ganttNode = {
+      uid: 'gantt-block',
+      use: 'GanttBlockModel',
+      subModels: {
+        actions: [],
+      },
+    };
+
+    vi.spyOn(service as unknown as SurfaceContextGetterHarness, 'surfaceContext', 'get').mockReturnValue({
+      filterBlocksByTarget: () => [],
+      resolveBlockParent: async () => ({
+        parentUid: 'gantt-block',
+      }),
+      resolveFieldContainer: async () => null,
+      resolveActionContainer: async () => ({
+        parentUid: 'gantt-actions',
+        subKey: 'actions',
+        subType: 'array',
+        ownerUse: 'GanttBlockModel',
+        ownerUid: 'gantt-block',
+      }),
+      collectFilterFormTargets: async () => [],
+    });
+    vi.spyOn(service as unknown as LocatorGetterHarness, 'locator', 'get').mockReturnValue({
+      resolve: async () => ({
+        uid: 'gantt-block',
+        kind: 'block',
+        target: {
+          uid: 'gantt-block',
+        },
+        node: ganttNode,
+      }),
+      findParentUid: async () => '',
+      resolveCollectionContext: async () => ({
+        resourceInit: {
+          dataSourceKey: 'main',
+          collectionName: 'tasks',
+        },
+      }),
+    });
+    vi.spyOn(service as unknown as RepositoryGetterHarness, 'repository', 'get').mockReturnValue({
+      findModelById: async (uid) => persistedByUid.get(uid) || ganttNode,
+      upsertModel: async (payload) => {
+        const uid =
+          payload.use === 'AddNewActionModel'
+            ? 'created-add-new-action'
+            : payload.use === 'GanttTodayActionModel'
+              ? 'created-today-action'
+              : 'created-action';
+        persistedPayloads.push(payload);
+        persistedByUid.set(uid, {
+          uid,
+          ...payload,
+        });
+        return uid;
+      },
+    });
+    vi.spyOn(service as unknown as AddActionPrivateHarness, 'assertApprovalActionSingleton').mockResolvedValue(
+      undefined,
+    );
+    vi.spyOn(service as unknown as AddActionPrivateHarness, 'syncFlowTemplateUsagesForNodeTree').mockResolvedValue(
+      undefined,
+    );
+    vi.spyOn(service as unknown as AddActionPrivateHarness, 'syncApprovalRuntimeConfigForNode').mockResolvedValue(
+      undefined,
+    );
+    vi.spyOn(service as unknown as AddActionPrivateHarness, 'collectComposeActionKeys').mockResolvedValue({});
+    vi.spyOn(service as unknown as CollectionGetterHarness, 'getCollection').mockReturnValue({
+      template: 'tree',
+    });
+
+    const result = await service.addAction(
+      {
+        target: {
+          uid: 'gantt-block',
+        },
+        type: 'ganttTodayAction',
+      },
+      {
+        enabledPackages: new Set(['@nocobase/plugin-gantt']),
+        autoCompleteDefaultPopup: false,
+      },
+    );
+
+    expect(result).toEqual({
+      uid: 'created-today-action',
+      parentUid: 'gantt-actions',
+      subKey: 'actions',
+      scope: 'block',
+    });
+    expect(persistedPayloads).toEqual([
+      expect.objectContaining({
+        parentId: 'gantt-actions',
+        subKey: 'actions',
+        subType: 'array',
+        use: 'GanttTodayActionModel',
+      }),
+    ]);
+    const todayReadback = await (service as unknown as DynamicReadbackProjector).projectDynamicBlockReadbackTypes(
+      {
+        ...ganttNode,
+        subModels: {
+          actions: [persistedByUid.get('created-today-action')],
+        },
+      },
+      {
+        enabledPackages: new Set(['@nocobase/plugin-gantt']),
+      },
+    );
+    expect((todayReadback as { subModels: { actions: Array<Record<string, unknown>> } }).subModels.actions[0]).toEqual(
+      expect.objectContaining({
+        type: 'ganttTodayAction',
+      }),
+    );
+    const customRequestReadback = await (
+      service as unknown as DynamicReadbackProjector
+    ).projectDynamicBlockReadbackTypes(
+      {
+        ...ganttNode,
+        subModels: {
+          actions: [
+            {
+              uid: 'custom-request-action',
+              use: 'CustomRequestActionModel',
+            },
+          ],
+        },
+      },
+      {
+        enabledPackages: new Set(['@nocobase/plugin-gantt']),
+      },
+    );
+    expect(
+      (customRequestReadback as { subModels: { actions: Array<Record<string, unknown>> } }).subModels.actions[0],
+    ).toEqual(
+      expect.objectContaining({
+        uid: 'custom-request-action',
+        use: 'CustomRequestActionModel',
+      }),
+    );
+    expect(
+      (customRequestReadback as { subModels: { actions: Array<Record<string, unknown>> } }).subModels.actions[0],
+    ).not.toHaveProperty('type');
+    const nonTreeExpandReadback = await (
+      service as unknown as DynamicReadbackProjector
+    ).projectDynamicBlockReadbackTypes(
+      {
+        uid: 'gantt-non-tree-block',
+        use: 'GanttBlockModel',
+        props: {
+          treeTable: false,
+        },
+        stepParams: {
+          resourceSettings: {
+            init: {
+              dataSourceKey: 'main',
+              collectionName: 'tasks',
+            },
+          },
+          tableSettings: {
+            treeTable: {
+              treeTable: false,
+            },
+          },
+        },
+        subModels: {
+          actions: [
+            {
+              uid: 'expand-collapse-action',
+              use: 'GanttExpandCollapseActionModel',
+            },
+          ],
+        },
+      },
+      {
+        enabledPackages: new Set(['@nocobase/plugin-gantt']),
+      },
+    );
+    expect(
+      (nonTreeExpandReadback as { subModels: { actions: Array<Record<string, unknown>> } }).subModels.actions[0],
+    ).not.toHaveProperty('type');
+    const treeExpandReadback = await (service as unknown as DynamicReadbackProjector).projectDynamicBlockReadbackTypes(
+      {
+        uid: 'gantt-tree-block',
+        use: 'GanttBlockModel',
+        props: {
+          treeTable: true,
+        },
+        stepParams: {
+          resourceSettings: {
+            init: {
+              dataSourceKey: 'main',
+              collectionName: 'tasks',
+            },
+          },
+          tableSettings: {
+            treeTable: {
+              treeTable: true,
+            },
+          },
+        },
+        subModels: {
+          actions: [
+            {
+              uid: 'expand-collapse-action',
+              use: 'GanttExpandCollapseActionModel',
+            },
+          ],
+        },
+      },
+      {
+        enabledPackages: new Set(['@nocobase/plugin-gantt']),
+      },
+    );
+    expect(
+      (treeExpandReadback as { subModels: { actions: Array<Record<string, unknown>> } }).subModels.actions[0],
+    ).toEqual(
+      expect.objectContaining({
+        type: 'ganttExpandCollapseAction',
+      }),
+    );
+
+    const addNewResult = await service.addAction(
+      {
+        target: {
+          uid: 'gantt-block',
+        },
+        type: 'addNew',
+      },
+      {
+        enabledPackages: new Set(['@nocobase/plugin-gantt']),
+        autoCompleteDefaultPopup: false,
+      },
+    );
+
+    expect(addNewResult).toEqual({
+      uid: 'created-add-new-action',
+      parentUid: 'gantt-actions',
+      subKey: 'actions',
+      scope: 'block',
+    });
+    expect(persistedPayloads[1]).toMatchObject({
+      parentId: 'gantt-actions',
+      subKey: 'actions',
+      subType: 'array',
+      use: 'AddNewActionModel',
+      props: {
+        type: 'primary',
+        title: '{{t("Add new")}}',
+        icon: 'PlusOutlined',
+      },
+      stepParams: {
+        popupSettings: {
+          openView: {
+            mode: 'drawer',
+            size: 'medium',
+            pageModelClass: 'ChildPageModel',
+            dataSourceKey: 'main',
+            collectionName: 'tasks',
+          },
+        },
+      },
+    });
+
+    await expect(
+      service.addAction(
+        {
+          target: {
+            uid: 'gantt-block',
+          },
+          type: 'ganttTodayAction',
+          settings: {},
+        },
+        {
+          enabledPackages: new Set(['@nocobase/plugin-gantt']),
+        },
+      ),
+    ).rejects.toMatchObject({
+      options: {
+        details: expect.objectContaining({
+          reasonCode: 'contract-not-verified',
+          publicType: 'ganttTodayAction',
+        }),
+      },
+    });
+
+    await expect(
+      service.addAction(
+        {
+          target: {
+            uid: 'gantt-block',
+          },
+          type: 'ganttTodayAction',
+        },
+        {
+          enabledPackages: new Set<string>(),
+        },
+      ),
+    ).rejects.toBeInstanceOf(FlowSurfaceBadRequestError);
+  });
+
+  it('should reject JSON inferred Gantt child actions when standard builder defaults drift on readback', async () => {
+    const autoSnapshot = createGanttAutoSnapshot({ inferredAuthoring: true });
+    const service = new FlowSurfacesService({
+      flowSurfaceAutoSnapshots: [autoSnapshot],
+      flowSurfaceCapabilityProviders: createProviderRegistry([]),
+    } as unknown as ConstructorParameters<typeof FlowSurfacesService>[0]);
+    const persistedByUid = new Map<string, Record<string, unknown>>();
+    const ganttNode = {
+      uid: 'gantt-block',
+      use: 'GanttBlockModel',
+      subModels: {
+        actions: [],
+      },
+    };
+
+    vi.spyOn(service as unknown as SurfaceContextGetterHarness, 'surfaceContext', 'get').mockReturnValue({
+      filterBlocksByTarget: () => [],
+      resolveBlockParent: async () => ({
+        parentUid: 'gantt-block',
+        subKey: 'actions',
+        subType: 'array',
+      }),
+      resolveActionContainer: async () => ({
+        ownerUid: 'gantt-block',
+        ownerUse: 'GanttBlockModel',
+        parentUid: 'gantt-actions',
+        subKey: 'actions',
+        subType: 'array',
+      }),
+      resolveFieldContainer: async () => null,
+      collectFilterFormTargets: async () => [],
+    });
+    vi.spyOn(service as unknown as LocatorGetterHarness, 'locator', 'get').mockReturnValue({
+      resolve: async () => ({
+        uid: 'gantt-block',
+        kind: 'block',
+        target: {
+          uid: 'gantt-block',
+        },
+        node: ganttNode,
+      }),
+      findParentUid: async () => '',
+      resolveCollectionContext: async () => ({
+        resourceInit: {
+          dataSourceKey: 'main',
+          collectionName: 'tasks',
+        },
+      }),
+    });
+    vi.spyOn(service as unknown as RepositoryGetterHarness, 'repository', 'get').mockReturnValue({
+      findModelById: async (uid) => persistedByUid.get(uid) || ganttNode,
+      upsertModel: async (payload) => {
+        persistedByUid.set('created-add-new-action', {
+          uid: 'created-add-new-action',
+          ...payload,
+          stepParams: {},
+        });
+        return 'created-add-new-action';
+      },
+    });
+    vi.spyOn(service as unknown as AddActionPrivateHarness, 'assertApprovalActionSingleton').mockResolvedValue(
+      undefined,
+    );
+
+    await expect(
+      service.addAction(
+        {
+          target: {
+            uid: 'gantt-block',
+          },
+          type: 'addNew',
+        },
+        {
+          enabledPackages: new Set(['@nocobase/plugin-gantt']),
+          autoCompleteDefaultPopup: false,
+        },
+      ),
+    ).rejects.toMatchObject({
+      options: {
+        details: expect.objectContaining({
+          reasonCode: 'readback-parity-failed',
+          reasonSource: 'builder',
+          publicType: 'addNew',
+        }),
+      },
+    });
+  });
+
+  it('should reject JSON inferred addBlock writes when readback parity fails', async () => {
+    const autoSnapshot = createGanttAutoSnapshot({ inferredAuthoring: true });
+    const service = new FlowSurfacesService({
+      flowSurfaceAutoSnapshots: [autoSnapshot],
+      flowSurfaceCapabilityProviders: createProviderRegistry([]),
+    } as unknown as ConstructorParameters<typeof FlowSurfacesService>[0]);
+    const harness = service as unknown as DynamicBlockWriteGateHarness;
+    const enabledPackages = new Set(['@nocobase/plugin-gantt']);
+
+    harness.catalog = async () => ({
+      blocks: [
+        {
+          key: 'gantt',
+          label: 'Gantt',
+          use: 'gantt',
+          kind: 'block',
+          publicType: 'gantt',
+          ownerPlugin: '@nocobase/plugin-gantt',
+          origin: 'autoSnapshot',
+          createSupported: true,
+          availability: {
+            create: {
+              supported: true,
+            },
+          },
+        },
+      ],
+    });
+    vi.spyOn(service as unknown as RepositoryGetterHarness, 'repository', 'get').mockReturnValue({
+      upsertModel: async () => 'created-gantt-block',
+      findModelById: async () => ({
+        uid: 'created-gantt-block',
+        use: 'TableBlockModel',
+      }),
+    });
+
+    await expect(
+      harness.tryAddDynamicBlock({
+        values: {
+          target: {
+            uid: 'target-grid',
+          },
+          type: 'gantt',
+          initParams: {
+            collectionName: 'tasks',
+          },
+          settings: {
+            titleField: 'title',
+            startField: 'startAt',
+            endField: 'endAt',
+          },
+        },
+        options: {
+          deferAutoLayout: true,
+          dynamicCapabilityActionName: 'addBlock',
+        },
+        enabledPackages,
+        blockType: 'gantt',
+        target: {
+          uid: 'target-grid',
+        },
+        parentUid: 'parent-grid',
+        subKey: 'items',
+        subType: 'array',
+        popupProfile: null,
+      }),
+    ).rejects.toMatchObject({
+      message: `flowSurfaces addBlock dynamic block 'gantt' failed readback parity guard`,
+      options: {
+        details: expect.objectContaining({
+          reasonCode: 'readback-parity-failed',
+          reasonSource: 'builder',
+        }),
+      },
+    });
+  });
+
+  it('should reject JSON inferred Gantt addBlock writes when public settings or default subtrees drift on readback', async () => {
+    const autoSnapshot = createGanttAutoSnapshot({ inferredAuthoring: true });
+    const service = new FlowSurfacesService({
+      flowSurfaceAutoSnapshots: [autoSnapshot],
+      flowSurfaceCapabilityProviders: createProviderRegistry([]),
+    } as unknown as ConstructorParameters<typeof FlowSurfacesService>[0]);
+    const harness = service as unknown as DynamicBlockWriteGateHarness;
+    const enabledPackages = new Set(['@nocobase/plugin-gantt']);
+    let persistedPayload: Record<string, unknown> = {};
+
+    harness.catalog = async () => ({
+      blocks: [
+        {
+          key: 'gantt',
+          label: 'Gantt',
+          use: 'gantt',
+          kind: 'block',
+          publicType: 'gantt',
+          ownerPlugin: '@nocobase/plugin-gantt',
+          origin: 'autoSnapshot',
+          createSupported: true,
+          availability: {
+            create: {
+              supported: true,
+            },
+          },
+        },
+      ],
+    });
+    vi.spyOn(service as unknown as RepositoryGetterHarness, 'repository', 'get').mockReturnValue({
+      upsertModel: async (payload) => {
+        persistedPayload = payload;
+        return 'created-gantt-block';
+      },
+      findModelById: async () => ({
+        uid: 'created-gantt-block',
+        ...persistedPayload,
+        props: {
+          ...((persistedPayload.props as Record<string, unknown>) || {}),
+          showTable: false,
+        },
+        subModels: {
+          ...((persistedPayload.subModels as Record<string, unknown>) || {}),
+          columns: [],
+        },
+      }),
+    });
+
+    await expect(
+      harness.tryAddDynamicBlock({
+        values: {
+          target: {
+            uid: 'target-grid',
+          },
+          type: 'gantt',
+          initParams: {
+            collectionName: 'tasks',
+          },
+          settings: {
+            titleField: 'title',
+            startField: 'startAt',
+            endField: 'endAt',
+            pageSize: 50,
+            showRowNumbers: true,
+            showTable: true,
+            tableWidth: 320,
+            enableDragToReschedule: true,
+          },
+        },
+        options: {
+          deferAutoLayout: true,
+          dynamicCapabilityActionName: 'addBlock',
+        },
+        enabledPackages,
+        blockType: 'gantt',
+        target: {
+          uid: 'target-grid',
+        },
+        parentUid: 'parent-grid',
+        subKey: 'items',
+        subType: 'array',
+        popupProfile: null,
+      }),
+    ).rejects.toMatchObject({
+      message: `flowSurfaces addBlock dynamic block 'gantt' failed readback parity guard`,
+      options: {
+        details: expect.objectContaining({
+          reasonCode: 'readback-parity-failed',
+          reasonSource: 'builder',
+        }),
+      },
+    });
+  });
+
+  it('should reject JSON inferred Gantt addBlock writes when the actions child surface is missing on readback', async () => {
+    const autoSnapshot = createGanttAutoSnapshot({ inferredAuthoring: true });
+    const service = new FlowSurfacesService({
+      flowSurfaceAutoSnapshots: [autoSnapshot],
+      flowSurfaceCapabilityProviders: createProviderRegistry([]),
+    } as unknown as ConstructorParameters<typeof FlowSurfacesService>[0]);
+    const harness = service as unknown as DynamicBlockWriteGateHarness;
+    const enabledPackages = new Set(['@nocobase/plugin-gantt']);
+    let persistedPayload: Record<string, unknown> = {};
+
+    harness.catalog = async () => ({
+      blocks: [
+        {
+          key: 'gantt',
+          label: 'Gantt',
+          use: 'gantt',
+          kind: 'block',
+          publicType: 'gantt',
+          ownerPlugin: '@nocobase/plugin-gantt',
+          origin: 'autoSnapshot',
+          createSupported: true,
+          availability: {
+            create: {
+              supported: true,
+            },
+          },
+        },
+      ],
+    });
+    vi.spyOn(service as unknown as RepositoryGetterHarness, 'repository', 'get').mockReturnValue({
+      upsertModel: async (payload) => {
+        persistedPayload = payload;
+        return 'created-gantt-block';
+      },
+      findModelById: async () => {
+        const subModels = (persistedPayload.subModels as Record<string, unknown>) || {};
+        return {
+          uid: 'created-gantt-block',
+          ...persistedPayload,
+          subModels: {
+            columns: subModels.columns,
+          },
+        };
+      },
+    });
+
+    await expect(
+      harness.tryAddDynamicBlock({
+        values: {
+          target: {
+            uid: 'target-grid',
+          },
+          type: 'gantt',
+          initParams: {
+            collectionName: 'tasks',
+          },
+          settings: {
+            titleField: 'title',
+            startField: 'startAt',
+            endField: 'endAt',
+          },
+        },
+        options: {
+          deferAutoLayout: true,
+          dynamicCapabilityActionName: 'addBlock',
+        },
+        enabledPackages,
+        blockType: 'gantt',
+        target: {
+          uid: 'target-grid',
+        },
+        parentUid: 'parent-grid',
+        subKey: 'items',
+        subType: 'array',
+        popupProfile: null,
+      }),
+    ).rejects.toMatchObject({
+      message: `flowSurfaces addBlock dynamic block 'gantt' failed readback parity guard`,
+      options: {
+        details: expect.objectContaining({
+          reasonCode: 'readback-parity-failed',
+          reasonSource: 'builder',
+        }),
+      },
+    });
   });
 
   it('should accept provider publicType aliases while returning canonical payload', async () => {
@@ -1877,9 +4157,9 @@ describe('flowSurfaces dynamic capability create dry-run', () => {
     expect(JSON.stringify(error)).not.toContain('snapshot-source-hash');
   });
 
-  it('should persist catalog-confirmed verified auto snapshot addBlock candidates through the gated mapping', async () => {
+  it('should persist catalog-confirmed verified auto snapshot addBlock candidates when inferred authoring coexists', async () => {
     const auditLog = vi.fn();
-    const autoSnapshot = createGanttAutoSnapshot();
+    const autoSnapshot = createGanttAutoSnapshot({ inferredAuthoring: true });
     const verifiedAutoPolicy = {
       writePolicy: {
         mode: 'verifiedAuto' as const,
@@ -1906,6 +4186,7 @@ describe('flowSurfaces dynamic capability create dry-run', () => {
     const persistedPayloads: Record<string, unknown>[] = [];
 
     expect(dynamicBlockTypes.has('pluginGantt.gantt')).toBe(true);
+    expect(dynamicBlockTypes.has('gantt')).toBe(true);
     harness.catalog = async (input, options) => {
       expect(input).toMatchObject({
         target: {
@@ -1932,6 +4213,7 @@ describe('flowSurfaces dynamic capability create dry-run', () => {
     type RepositoryGetterHarness = {
       readonly repository: {
         upsertModel(payload: Record<string, unknown>, options?: Record<string, unknown>): Promise<string>;
+        findModelById(uid: string, options?: Record<string, unknown>): Promise<Record<string, unknown>>;
       };
     };
     type DynamicReadbackProjector = {
@@ -1942,6 +4224,10 @@ describe('flowSurfaces dynamic capability create dry-run', () => {
         persistedPayloads.push(payload);
         return 'created-gantt-block';
       },
+      findModelById: async () => ({
+        uid: 'created-gantt-block',
+        ...(persistedPayloads[0] || {}),
+      }),
     });
 
     const result = await harness.tryAddDynamicBlock({
@@ -2735,6 +5021,32 @@ describe('flowSurfaces dynamic capability create dry-run', () => {
         rawPublicPayload: {
           stepParams: {
             hidden: true,
+          },
+        },
+        enabledPackages: new Set(['@nocobase/plugin-dry-run']),
+        providerRegistry: createProviderRegistry([
+          createDryRunProvider({
+            validateSettings,
+            resolveCreate,
+          }),
+        ]),
+      }),
+    ).rejects.toBeInstanceOf(FlowSurfaceAggregateError);
+    expect(validateSettings).not.toHaveBeenCalled();
+    expect(resolveCreate).not.toHaveBeenCalled();
+
+    await expect(
+      resolveDynamicCapabilityCreate({
+        publicType: 'dryRun',
+        initParams: {
+          collectionName: 'tasks',
+        },
+        settings: {
+          pageSize: 20,
+        },
+        rawPublicPayload: {
+          resourceInit: {
+            collectionName: 'tasks',
           },
         },
         enabledPackages: new Set(['@nocobase/plugin-dry-run']),

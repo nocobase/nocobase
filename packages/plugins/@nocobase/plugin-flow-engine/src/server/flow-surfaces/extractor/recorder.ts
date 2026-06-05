@@ -11,6 +11,7 @@ import type { FlowSurfaceCapabilityConfidence, FlowSurfaceCapabilityWarning } fr
 import { types as nodeUtilTypes } from 'util';
 import { parseFlowSurfaceTranslationExpressionLabel } from './labels';
 import type {
+  FlowSurfaceCreateModelOptionsSubModels,
   FlowSurfaceExtractionEvent,
   FlowSurfaceExtractorCreateModelOptionsStatus,
   FlowSurfaceExtractorEvidenceSource,
@@ -51,6 +52,8 @@ type FlowSurfaceMenuItemRecordInput = FlowSurfaceExtractorLabelFields & {
   modelUse?: string;
   slot?: string;
   createModelOptionsStatus?: FlowSurfaceExtractorCreateModelOptionsStatus;
+  createModelOptionsUse?: string;
+  createModelOptionsSubModels?: FlowSurfaceCreateModelOptionsSubModels;
   source?: string;
   evidenceSource?: FlowSurfaceExtractorEvidenceSource;
   confidence?: FlowSurfaceCapabilityConfidence;
@@ -173,6 +176,10 @@ export class FlowSurfaceExtractionRecorder {
       ...(input.modelUse ? { modelUse: input.modelUse } : {}),
       ...(input.slot ? { slot: input.slot } : {}),
       createModelOptionsStatus: input.createModelOptionsStatus || 'unresolved',
+      ...(input.createModelOptionsUse ? { createModelOptionsUse: input.createModelOptionsUse } : {}),
+      ...(hasCreateModelOptionsSubModels(input.createModelOptionsSubModels)
+        ? { createModelOptionsSubModels: input.createModelOptionsSubModels }
+        : {}),
       source: input.source || 'runtime',
       evidenceSource: input.evidenceSource || 'runtime',
       confidence: input.confidence || 'medium',
@@ -266,6 +273,16 @@ function getLoaderName(value: unknown) {
   }
   const loader = getOwnDataPropertyValue(value, 'loader');
   return getFunctionName(loader);
+}
+
+function hasCreateModelOptionsSubModels(value: unknown): value is FlowSurfaceCreateModelOptionsSubModels {
+  return (
+    !!value &&
+    typeof value === 'object' &&
+    !Array.isArray(value) &&
+    Object.keys(value).length > 0 &&
+    Object.values(value).every((items) => Array.isArray(items))
+  );
 }
 
 function getOwnDescriptorEntries(value: Record<string, unknown>): FlowSurfaceOwnDescriptorEntry[] {

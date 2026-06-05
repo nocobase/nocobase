@@ -2846,6 +2846,8 @@ const NODE_CONTRACT_ENTRIES: Array<[string, FlowSurfaceNodeContract]> = [
   ['FilterFormResetActionModel', SIMPLE_ACTION_CONTRACT],
   ['FilterFormCollapseActionModel', FILTER_FORM_COLLAPSE_ACTION_CONTRACT],
   ['CalendarTodayActionModel', SIMPLE_ACTION_CONTRACT],
+  ['GanttTodayActionModel', SIMPLE_ACTION_CONTRACT],
+  ['GanttExpandCollapseActionModel', SIMPLE_ACTION_CONTRACT],
   ['CalendarNavActionModel', CALENDAR_READONLY_ACTION_CONTRACT],
   ['CalendarTitleActionModel', CALENDAR_READONLY_ACTION_CONTRACT],
   ['CalendarViewSelectActionModel', CALENDAR_READONLY_ACTION_CONTRACT],

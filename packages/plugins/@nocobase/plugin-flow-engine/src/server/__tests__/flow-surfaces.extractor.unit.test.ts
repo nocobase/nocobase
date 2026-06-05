@@ -40,6 +40,7 @@ import {
 } from '../flow-surfaces/extractor';
 import { collectAutoSnapshotPublicCapabilities } from '../flow-surfaces/capability-registry';
 import { FlowSurfaceExtractorGuardError } from '../flow-surfaces/extractor/guards';
+import type { FlowSurfaceExtractionEvent } from '../flow-surfaces/extractor/types';
 
 const FLOW_SURFACE_EXTRACTOR_TEST_DATE = '2026-06-04T00:00:00.000Z';
 const FLOW_SURFACE_EXTRACTOR_FIXTURES_ROOT = join(__dirname, 'flow-surfaces-extractor-fixtures');
@@ -2185,7 +2186,7 @@ describe('flowSurfaces extractor scaffold', () => {
           flowKey: 'demoSettings',
           title: 'Demo settings',
           sort: 30,
-          staticStatus: 'dynamic',
+          staticStatus: 'static',
         }),
       ]),
     );
@@ -2231,7 +2232,7 @@ describe('flowSurfaces extractor scaffold', () => {
             flowKey: 'popupSettings',
             title: 'Popup settings',
             sort: 300,
-            staticStatus: 'dynamic',
+            staticStatus: 'static',
           }),
         ]),
       );
@@ -2366,7 +2367,7 @@ describe('flowSurfaces extractor scaffold', () => {
     ]);
   });
 
-  it('should mark non-literal AST flow and create option expressions as dynamic', () => {
+  it('should mark non-literal AST flow expressions dynamic while accepting translation-only create options', () => {
     const events = collectFlowSurfaceExtractorAstEvents({
       sourceFile: 'packages/plugins/@nocobase/plugin-gantt/src/client-v2/models/GanttBlockModel.settings.tsx',
       source: `
@@ -2402,7 +2403,8 @@ describe('flowSurfaces extractor scaffold', () => {
         expect.objectContaining({
           type: 'menu.itemRegistered',
           modelUse: 'GanttBlockModel',
-          createModelOptionsStatus: 'dynamic',
+          createModelOptionsStatus: 'static',
+          createModelOptionsUse: 'GanttBlockModel',
         }),
       ]),
     );
@@ -2411,6 +2413,11 @@ describe('flowSurfaces extractor scaffold', () => {
   it('should recover action placement evidence from subModelBaseClass and dynamic items menus', () => {
     const events = collectFlowSurfaceExtractorAstEvents({
       source: `
+        const ALLOWED_GANTT_COLLECTION_ACTIONS = [
+          'GanttTodayActionModel',
+          'FilterActionModel',
+        ];
+
         export function GanttMenu() {
           return (
             <AddSubModelButton
@@ -2448,6 +2455,20 @@ describe('flowSurfaces extractor scaffold', () => {
           menuKey: 'table-column-add-actions',
           slot: 'actions',
           createModelOptionsStatus: 'dynamic',
+        }),
+        expect.objectContaining({
+          type: 'menu.itemRegistered',
+          menuKey: 'allowed-action-00-gantt-today',
+          modelUse: 'GanttTodayActionModel',
+          slot: 'actions',
+          createModelOptionsStatus: 'static',
+        }),
+        expect.objectContaining({
+          type: 'menu.itemRegistered',
+          menuKey: 'allowed-action-01-filter',
+          modelUse: 'FilterActionModel',
+          slot: 'actions',
+          createModelOptionsStatus: 'static',
         }),
       ]),
     );
@@ -2980,8 +3001,49 @@ describe('flowSurfaces extractor scaffold', () => {
       modelUse: 'GanttBlockModel',
       slot: 'blocks',
       createModelOptionsStatus: 'static',
+      createModelOptionsUse: 'GanttBlockModel',
+      createModelOptionsSubModels: {
+        actions: [],
+        columns: ['TableActionsColumnModel'],
+      },
       source: 'runtime',
       confidence: 'medium',
+    });
+    runtimeRecorder.recordModel({
+      modelUse: 'GanttCollectionActionGroupModel',
+      className: 'GanttCollectionActionGroupModel',
+      source: 'runtime',
+      confidence: 'medium',
+    });
+    const ganttAllowedActionModelUses = [
+      'GanttExpandCollapseActionModel',
+      'GanttTodayActionModel',
+      'FilterActionModel',
+      'AddNewActionModel',
+      'PopupCollectionActionModel',
+      'BulkDeleteActionModel',
+      'LinkActionModel',
+      'RefreshActionModel',
+      'BulkEditActionModel',
+      'BulkUpdateActionModel',
+      'ExportActionModel',
+      'ImportActionModel',
+      'CollectionTriggerWorkflowActionModel',
+      'CustomRequestActionModel',
+      'AIEmployeeActionModel',
+      'JSItemActionModel',
+      'JSCollectionActionModel',
+    ];
+    ganttAllowedActionModelUses.forEach((actionModelUse, index) => {
+      runtimeRecorder.recordMenuItem({
+        menuKey: `allowed-action-${String(index).padStart(2, '0')}`,
+        modelUse: actionModelUse,
+        slot: 'actions',
+        createModelOptionsStatus: 'static',
+        createModelOptionsUse: actionModelUse,
+        source: 'runtime',
+        confidence: 'medium',
+      });
     });
 
     const astEvents = collectFlowSurfaceExtractorAstEvents({
@@ -3004,12 +3066,18 @@ describe('flowSurfaces extractor scaffold', () => {
     });
     const candidates = deriveFlowSurfaceAutoCapabilityCandidates(snapshot);
 
-    expect(snapshot.models).toMatchObject([
-      {
-        modelUse: 'GanttBlockModel',
-        confidence: 'high',
-      },
-    ]);
+    expect(snapshot.models).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          modelUse: 'GanttBlockModel',
+          confidence: 'high',
+        }),
+        expect.objectContaining({
+          modelUse: 'GanttCollectionActionGroupModel',
+          confidence: 'medium',
+        }),
+      ]),
+    );
     expect(snapshot.flows).toMatchObject([
       {
         modelUse: 'GanttBlockModel',
@@ -3017,20 +3085,300 @@ describe('flowSurfaces extractor scaffold', () => {
         staticStatus: 'static',
       },
     ]);
-    expect(candidates).toMatchObject([
-      {
+    expect(snapshot.inferredAuthoring?.capabilities).toEqual([
+      expect.objectContaining({
         kind: 'block',
-        publicType: 'pluginGantt.gantt',
+        publicType: 'gantt',
+        acceptedAliases: expect.arrayContaining(['pluginGantt.gantt', 'ganttBlock']),
         ownerPlugin: '@nocobase/plugin-gantt',
-        origin: 'autoSnapshot',
-        confidence: 'high',
-        warnings: [
-          {
-            code: 'auto-discovered-readonly',
-          },
-        ],
-      },
+        modelUse: 'GanttBlockModel',
+        confidence: {
+          discovery: 'high',
+          placement: 'high',
+          tree: 'high',
+          settings: 'high',
+          write: 'high',
+        },
+        createRecipe: expect.objectContaining({
+          nodeTemplate: expect.objectContaining({
+            use: 'GanttBlockModel',
+            subModels: {
+              actions: [],
+              columns: [
+                expect.objectContaining({
+                  use: 'TableActionsColumnModel',
+                }),
+              ],
+            },
+          }),
+        }),
+        childSurfaces: expect.arrayContaining([
+          expect.objectContaining({
+            subModelKey: 'actions',
+            kind: 'action',
+          }),
+          expect.objectContaining({
+            subModelKey: 'columns',
+            kind: 'fieldComponent',
+            allowedChildren: ['TableColumnModel'],
+          }),
+        ]),
+        allowedChildren: expect.arrayContaining([
+          expect.objectContaining({
+            modelUse: 'GanttTodayActionModel',
+          }),
+          expect.objectContaining({
+            modelUse: 'GanttExpandCollapseActionModel',
+          }),
+          expect.objectContaining({
+            modelUse: 'FilterActionModel',
+          }),
+          expect.objectContaining({
+            modelUse: 'AddNewActionModel',
+          }),
+          expect.objectContaining({
+            modelUse: 'PopupCollectionActionModel',
+          }),
+          expect.objectContaining({
+            modelUse: 'RefreshActionModel',
+          }),
+        ]),
+      }),
     ]);
+    expect(snapshot.inferredAuthoring?.capabilities[0].childSurfaces?.[0].allowedChildren).toEqual(
+      ganttAllowedActionModelUses,
+    );
+    expect(
+      snapshot.inferredAuthoring?.capabilities[0].allowedChildren
+        ?.filter((item) => item.kind === 'action')
+        .map((item) => item.modelUse),
+    ).toEqual(ganttAllowedActionModelUses);
+    expect(snapshot.inferredAuthoring?.capabilities[0].allowedChildren).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          kind: 'fieldComponent',
+          modelUse: 'TableColumnModel',
+          builderContainerUse: 'TableBlockModel',
+        }),
+      ]),
+    );
+    expect(candidates).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          kind: 'block',
+          publicType: 'pluginGantt.gantt',
+          ownerPlugin: '@nocobase/plugin-gantt',
+          origin: 'autoSnapshot',
+          confidence: 'high',
+          warnings: expect.arrayContaining([
+            expect.objectContaining({
+              code: 'auto-discovered-readonly',
+            }),
+          ]),
+        }),
+        expect.objectContaining({
+          kind: 'action',
+          publicType: 'pluginGantt.filter',
+          modelUse: 'FilterActionModel',
+          ownerPlugin: '@nocobase/plugin-gantt',
+          origin: 'autoSnapshot',
+          confidence: 'medium',
+          warnings: expect.arrayContaining([
+            expect.objectContaining({
+              code: 'auto-discovered-readonly',
+            }),
+          ]),
+        }),
+      ]),
+    );
+  });
+
+  it('should require static Gantt createModelOptions use before inferred authoring is generated', () => {
+    const baseEvents: FlowSurfaceExtractionEvent[] = [
+      {
+        type: 'model.registered',
+        modelUse: 'GanttBlockModel',
+        className: 'GanttBlockModel',
+        source: 'packages/plugins/@nocobase/plugin-gantt/src/client-v2/plugin.tsx',
+        evidenceSource: 'runtime',
+        confidence: 'high',
+      },
+      {
+        type: 'model.flowRegistered',
+        modelUse: 'GanttBlockModel',
+        flowKey: 'ganttSettings',
+        title: 'Gantt settings',
+        staticStatus: 'static',
+        source: 'packages/plugins/@nocobase/plugin-gantt/src/client-v2/models/GanttBlockModel.settings.tsx',
+        evidenceSource: 'ast',
+        confidence: 'medium',
+      },
+    ];
+    const ganttAllowedActionModelUses = [
+      'GanttExpandCollapseActionModel',
+      'GanttTodayActionModel',
+      'FilterActionModel',
+      'AddNewActionModel',
+      'PopupCollectionActionModel',
+      'RefreshActionModel',
+    ];
+    const fullEvidenceEvents: FlowSurfaceExtractionEvent[] = [
+      {
+        type: 'model.registered',
+        modelUse: 'GanttCollectionActionGroupModel',
+        className: 'GanttCollectionActionGroupModel',
+        source: 'packages/plugins/@nocobase/plugin-gantt/src/client-v2/models/actions/GanttActionModels.tsx',
+        evidenceSource: 'ast',
+        confidence: 'medium',
+      },
+      ...ganttAllowedActionModelUses.map((actionModelUse, index) => ({
+        type: 'menu.itemRegistered' as const,
+        menuKey: `allowed-action-${String(index).padStart(2, '0')}`,
+        modelUse: actionModelUse,
+        slot: 'actions',
+        createModelOptionsStatus: 'static' as const,
+        createModelOptionsUse: actionModelUse,
+        source: 'packages/plugins/@nocobase/plugin-gantt/src/client-v2/models/actions/GanttActionModels.tsx',
+        evidenceSource: 'ast' as const,
+        confidence: 'medium' as const,
+      })),
+    ];
+    const buildSnapshot = (menuEvent: FlowSurfaceExtractionEvent, extraEvents: FlowSurfaceExtractionEvent[] = []) =>
+      buildFlowSurfaceAutoSnapshot({
+        plugin: '@nocobase/plugin-gantt',
+        generatedAt: '2026-06-04T00:00:00.000Z',
+        sourceHash: 'source-hash',
+        extractorVersion: 'test',
+        events: [...baseEvents, menuEvent, ...extraEvents],
+      });
+
+    expect(
+      buildSnapshot({
+        type: 'menu.itemRegistered',
+        menuKey: 'gantt',
+        label: 'Gantt',
+        modelUse: 'GanttBlockModel',
+        slot: 'blocks',
+        createModelOptionsStatus: 'dynamic',
+        createModelOptionsUse: 'GanttBlockModel',
+        source: 'packages/plugins/@nocobase/plugin-gantt/src/client-v2/models/GanttBlockModel.settings.tsx',
+        evidenceSource: 'ast',
+        confidence: 'medium',
+      }).inferredAuthoring,
+    ).toBeUndefined();
+    expect(
+      buildSnapshot({
+        type: 'menu.itemRegistered',
+        menuKey: 'gantt',
+        label: 'Gantt',
+        modelUse: 'GanttBlockModel',
+        slot: 'blocks',
+        createModelOptionsStatus: 'static',
+        source: 'packages/plugins/@nocobase/plugin-gantt/src/client-v2/models/GanttBlockModel.settings.tsx',
+        evidenceSource: 'ast',
+        confidence: 'medium',
+      }).inferredAuthoring,
+    ).toBeUndefined();
+    expect(
+      buildSnapshot({
+        type: 'menu.itemRegistered',
+        menuKey: 'gantt',
+        label: 'Gantt',
+        modelUse: 'GanttBlockModel',
+        slot: 'blocks',
+        createModelOptionsStatus: 'static',
+        createModelOptionsUse: 'TableBlockModel',
+        source: 'packages/plugins/@nocobase/plugin-gantt/src/client-v2/models/GanttBlockModel.settings.tsx',
+        evidenceSource: 'ast',
+        confidence: 'medium',
+      }).inferredAuthoring,
+    ).toBeUndefined();
+    expect(
+      buildSnapshot({
+        type: 'menu.itemRegistered',
+        menuKey: 'gantt',
+        label: 'Gantt',
+        modelUse: 'GanttBlockModel',
+        slot: 'blocks',
+        createModelOptionsStatus: 'static',
+        createModelOptionsUse: 'GanttBlockModel',
+        source: 'packages/plugins/@nocobase/plugin-gantt/src/client-v2/models/GanttBlockModel.settings.tsx',
+        evidenceSource: 'ast',
+        confidence: 'medium',
+      }).inferredAuthoring?.capabilities[0],
+    ).toMatchObject({
+      publicType: 'gantt',
+      confidence: {
+        tree: 'medium',
+        write: 'medium',
+      },
+      warnings: [
+        expect.objectContaining({
+          code: 'contract-not-verified',
+        }),
+      ],
+    });
+    expect(
+      buildSnapshot(
+        {
+          type: 'menu.itemRegistered',
+          menuKey: 'gantt',
+          label: 'Gantt',
+          modelUse: 'GanttBlockModel',
+          slot: 'blocks',
+          createModelOptionsStatus: 'static',
+          createModelOptionsUse: 'GanttBlockModel',
+          createModelOptionsSubModels: {
+            actions: [],
+            columns: ['TableActionsColumnModel'],
+          },
+          source: 'packages/plugins/@nocobase/plugin-gantt/src/client-v2/models/GanttBlockModel.settings.tsx',
+          evidenceSource: 'ast',
+          confidence: 'medium',
+        },
+        fullEvidenceEvents,
+      ).inferredAuthoring?.capabilities[0],
+    ).toMatchObject({
+      publicType: 'gantt',
+      confidence: {
+        tree: 'high',
+        write: 'high',
+      },
+    });
+    expect(
+      buildSnapshot(
+        {
+          type: 'menu.itemRegistered',
+          menuKey: 'gantt',
+          label: 'Gantt',
+          modelUse: 'GanttBlockModel',
+          slot: 'blocks',
+          createModelOptionsStatus: 'static',
+          createModelOptionsUse: 'GanttBlockModel',
+          createModelOptionsSubModels: {
+            actions: [],
+            columns: ['TableActionsColumnModel'],
+          },
+          source: 'packages/plugins/@nocobase/plugin-gantt/src/client-v2/models/GanttBlockModel.settings.tsx',
+          evidenceSource: 'ast',
+          confidence: 'medium',
+        },
+        fullEvidenceEvents.filter(
+          (event) => event.type !== 'menu.itemRegistered' || event.modelUse !== 'RefreshActionModel',
+        ),
+      ).inferredAuthoring?.capabilities[0],
+    ).toMatchObject({
+      publicType: 'gantt',
+      confidence: {
+        tree: 'medium',
+        write: 'medium',
+      },
+      warnings: [
+        expect.objectContaining({
+          code: 'contract-not-verified',
+        }),
+      ],
+    });
   });
 
   it('should derive auto candidates from block, action, field binding, and diagnostic evidence', () => {
@@ -4234,7 +4582,7 @@ describe('flowSurfaces extractor scaffold', () => {
     }
   });
 
-  it('should extract the real Gantt client-v2 snapshot as read-only AST discovery', async () => {
+  it('should extract the real Gantt client-v2 snapshot as JSON inferred authoring discovery', async () => {
     const globalObject = globalThis as typeof globalThis & Record<TemporaryFlowSurfaceBrowserGlobalKey, unknown>;
     const originalDescriptors = new Map<TemporaryFlowSurfaceBrowserGlobalKey, PropertyDescriptor | undefined>();
     const accessedGlobals: string[] = [];
@@ -4279,11 +4627,30 @@ describe('flowSurfaces extractor scaffold', () => {
       );
       const { snapshot } = extraction;
       const modelUses = snapshot.models.map((model) => model.modelUse);
+      const ganttAllowedActionModelUses = [
+        'GanttExpandCollapseActionModel',
+        'GanttTodayActionModel',
+        'FilterActionModel',
+        'AddNewActionModel',
+        'PopupCollectionActionModel',
+        'BulkDeleteActionModel',
+        'LinkActionModel',
+        'RefreshActionModel',
+        'BulkEditActionModel',
+        'BulkUpdateActionModel',
+        'ExportActionModel',
+        'ImportActionModel',
+        'CollectionTriggerWorkflowActionModel',
+        'CustomRequestActionModel',
+        'AIEmployeeActionModel',
+        'JSItemActionModel',
+        'JSCollectionActionModel',
+      ];
       const publicCapabilities = collectAutoSnapshotPublicCapabilities({
         autoSnapshots: [snapshot],
         enabledPackages: new Set(['@nocobase/plugin-gantt']),
       });
-      const ganttCapability = publicCapabilities.find((item) => item.publicType === 'pluginGantt.gantt');
+      const ganttCapability = publicCapabilities.find((item) => item.publicType === 'gantt');
 
       expect(accessedGlobals).toEqual([]);
       expect(extraction.warningCount).toBe(0);
@@ -4314,22 +4681,60 @@ describe('flowSurfaces extractor scaffold', () => {
           }),
         ]),
       );
+      expect(snapshot.inferredAuthoring?.capabilities).toEqual([
+        expect.objectContaining({
+          publicType: 'gantt',
+          modelUse: 'GanttBlockModel',
+          confidence: expect.objectContaining({
+            tree: 'high',
+            write: 'high',
+          }),
+          createRecipe: expect.objectContaining({
+            nodeTemplate: expect.objectContaining({
+              use: 'GanttBlockModel',
+            }),
+          }),
+        }),
+      ]);
+      expect(
+        snapshot.menuItems
+          .filter((item) => item.slot === 'actions' && item.createModelOptionsStatus === 'static')
+          .map((item) => item.modelUse),
+      ).toEqual(ganttAllowedActionModelUses);
+      expect(snapshot.inferredAuthoring?.capabilities[0].childSurfaces).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            kind: 'action',
+            subModelKey: 'actions',
+            allowedChildren: ganttAllowedActionModelUses,
+          }),
+          expect.objectContaining({
+            kind: 'fieldComponent',
+            subModelKey: 'columns',
+            allowedChildren: ['TableColumnModel'],
+          }),
+        ]),
+      );
       expect(ganttCapability).toMatchObject({
         kind: 'block',
-        publicType: 'pluginGantt.gantt',
+        publicType: 'gantt',
         origin: 'autoSnapshot',
+        supportLevel: 'create-with-settings',
+        readiness: 'createEnabled',
         availability: {
           create: {
-            supported: false,
-            reasonCode: 'manifest-required',
+            supported: true,
+            acceptsInitParams: true,
+            acceptsSettings: true,
           },
           configure: {
             supported: false,
-            reasonCode: 'manifest-required',
+            reasonCode: 'contract-not-verified',
           },
         },
       });
       expect(JSON.stringify(ganttCapability)).not.toContain('GanttBlockModel');
+      expect(JSON.stringify(ganttCapability)).not.toContain('TableActionsColumnModel');
     } finally {
       keys.forEach((key) => {
         const originalDescriptor = originalDescriptors.get(key);

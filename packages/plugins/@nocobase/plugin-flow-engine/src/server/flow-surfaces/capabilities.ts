@@ -23,9 +23,11 @@ import {
   getFlowSurfaceCatalogCapabilityModelUses,
   getFlowSurfacePublicCapabilityAdmissionCapabilityId,
   getFlowSurfacePublicCapabilityAdmissionIntegrity,
+  getFlowSurfacePublicCapabilityInferredAuthoring,
   getFlowSurfacePublicCapabilityModelUses,
   setFlowSurfacePublicCapabilityAdmissionCapabilityId,
   setFlowSurfacePublicCapabilityAdmissionIntegrity,
+  setFlowSurfacePublicCapabilityInferredAuthoring,
   setFlowSurfacePublicCapabilityModelUse,
   type FlowSurfaceCapabilityRegistryLike,
 } from './capability-registry';
@@ -95,7 +97,32 @@ const INTERNAL_PUBLIC_PAYLOAD_KEYS = new Set([
   'decoratorProps',
   'stepParams',
   'flowRegistry',
+  'resourceInit',
+  'resourceSettings',
+  'tableSettings',
+  'cardSettings',
+  'buttonSettings',
+  'formModelSettings',
+  'eventSettings',
+  'pageSettings',
+  'pageTabSettings',
+  'ganttSettings',
+  'formSettings',
+  'detailsSettings',
+  'calendarSettings',
+  'treeSettings',
+  'kanbanSettings',
+  'listSettings',
+  'gridCardSettings',
+  'markdownBlockSettings',
+  'iframeBlockSettings',
+  'chartSettings',
+  'commentsSettings',
+  'recordHistorySettings',
+  'tableColumnSettings',
   'createModelOptions',
+  'subModels',
+  'nodeTemplate',
   'defaultNode',
   'lens',
   'implementation',
@@ -185,12 +212,12 @@ export async function buildFlowSurfaceDescribeCapabilityResponse(
 ): Promise<FlowSurfaceDescribeCapabilityResponse> {
   const request = normalizeDescribeCapabilityRequest(input);
   const response = await buildDescribeCapabilityListResponse(request, options, request.target);
-  let data = response.data.find((item) => matchesDescribeCapabilityRequest(item, request));
+  let data = findBestDescribeCapabilityMatch(response.data, request);
   if (!data && request.target) {
     const globalResponse = await buildDescribeCapabilityListResponse(request, options, undefined, {
       includeAutoSnapshots: false,
     });
-    data = globalResponse.data.find((item) => matchesDescribeCapabilityRequest(item, request));
+    data = findBestDescribeCapabilityMatch(globalResponse.data, request);
   }
   if (!data || shouldHideUnavailableCapability(data, request.includeUnavailable)) {
     throw new FlowSurfaceBadRequestError(
@@ -240,6 +267,40 @@ function buildDescribeCapabilityListResponse(
       includeCatalogSettingsSchema: request.expand?.includes('item.settings') === true,
     },
   );
+}
+
+function findBestDescribeCapabilityMatch(
+  items: FlowSurfacePublicCapabilityItem[],
+  request: NormalizedDescribeCapabilityRequest,
+) {
+  const matches = items.filter((item) => matchesDescribeCapabilityRequest(item, request));
+  if (!matches.length) {
+    return undefined;
+  }
+  if (request.publicType) {
+    return [...matches].sort((left, right) => {
+      const leftScore = getDescribeCapabilityMatchPriority(left, request.publicType);
+      const rightScore = getDescribeCapabilityMatchPriority(right, request.publicType);
+      return rightScore - leftScore;
+    })[0];
+  }
+  return matches[0];
+}
+
+function getDescribeCapabilityMatchPriority(item: FlowSurfacePublicCapabilityItem, requestedPublicType: string) {
+  const exactBonus = item.publicType === requestedPublicType ? 5 : 0;
+  const originPriority =
+    item.origin === 'builtInStatic'
+      ? 50
+      : item.origin === 'officialManifest' ||
+          item.origin === 'pluginManifest' ||
+          item.origin === 'provider' ||
+          item.origin === 'canaryOverlay'
+        ? 40
+        : getFlowSurfacePublicCapabilityInferredAuthoring(item)
+          ? 30
+          : 10;
+  return originPriority + exactBonus;
 }
 
 function matchesDescribeCapabilityRequest(
@@ -295,13 +356,7 @@ function projectProviderCapabilityItem(
   if (request.includeWarnings && warnings?.length) {
     projected.warnings = warnings;
   }
-  return setFlowSurfacePublicCapabilityAdmissionIntegrity(
-    setFlowSurfacePublicCapabilityAdmissionCapabilityId(
-      setFlowSurfacePublicCapabilityModelUse(projected, getFlowSurfacePublicCapabilityModelUses(item)),
-      getFlowSurfacePublicCapabilityAdmissionCapabilityId(item),
-    ),
-    getFlowSurfacePublicCapabilityAdmissionIntegrity(item),
-  );
+  return copyProjectedCapabilityMetadata(projected, item);
 }
 
 function applyVerifiedAutoAdmissionProjection(
@@ -421,12 +476,15 @@ function copyProjectedCapabilityMetadata(
   target: FlowSurfacePublicCapabilityItem,
   source: FlowSurfacePublicCapabilityItem,
 ): FlowSurfacePublicCapabilityItem {
-  return setFlowSurfacePublicCapabilityAdmissionIntegrity(
-    setFlowSurfacePublicCapabilityAdmissionCapabilityId(
-      setFlowSurfacePublicCapabilityModelUse(target, getFlowSurfacePublicCapabilityModelUses(source)),
-      getFlowSurfacePublicCapabilityAdmissionCapabilityId(source),
+  return setFlowSurfacePublicCapabilityInferredAuthoring(
+    setFlowSurfacePublicCapabilityAdmissionIntegrity(
+      setFlowSurfacePublicCapabilityAdmissionCapabilityId(
+        setFlowSurfacePublicCapabilityModelUse(target, getFlowSurfacePublicCapabilityModelUses(source)),
+        getFlowSurfacePublicCapabilityAdmissionCapabilityId(source),
+      ),
+      getFlowSurfacePublicCapabilityAdmissionIntegrity(source),
     ),
-    getFlowSurfacePublicCapabilityAdmissionIntegrity(source),
+    getFlowSurfacePublicCapabilityInferredAuthoring(source),
   );
 }
 
@@ -991,10 +1049,14 @@ function projectCatalogCapabilityItem(
   if (!publicType) {
     return null;
   }
+  const acceptedAliases = sanitizeCatalogCapabilityAliases(item.acceptedAliases);
   const ownerPlugin = item.ownerPlugin || DEFAULT_OWNER_PLUGIN;
   const semantic = sanitizeCatalogCapabilitySemantic(item, publicType);
   const settingsSchema = request.includeCatalogSettingsSchema
     ? sanitizeCatalogCapabilitySchema(item.settingsSchema)
+    : undefined;
+  const configureOptions = request.expand.has('item.settings')
+    ? sanitizeCatalogCapabilitySchema(item.configureOptions)
     : undefined;
   const availability =
     item.availability ||
@@ -1022,7 +1084,8 @@ function projectCatalogCapabilityItem(
     publicTypeMeta: {
       value: publicType,
       source: 'builtIn',
-      searchAliases: Array.from(new Set(resolveCatalogCapabilitySearchAliases(item, publicType))),
+      searchAliases: Array.from(new Set(resolveCatalogCapabilitySearchAliases(item, publicType, acceptedAliases))),
+      ...(acceptedAliases.length ? { acceptedAliases } : {}),
     },
     label: item.label,
     ownerPlugin,
@@ -1048,7 +1111,7 @@ function projectCatalogCapabilityItem(
     ...(request.expand.has('item.settings')
       ? {
           ...(settingsSchema ? { settingsSchema } : {}),
-          ...(item.configureOptions ? { configureOptions: item.configureOptions } : {}),
+          ...(configureOptions ? { configureOptions } : {}),
         }
       : {}),
     ...(request.includeWarnings && warnings.length ? { warnings } : {}),
@@ -1127,11 +1190,25 @@ function toLightCapabilitySemantic(semantic: FlowSurfacePublicCapabilityItem['se
   };
 }
 
-function resolveCatalogCapabilitySearchAliases(item: FlowSurfaceCatalogItem, publicType: string) {
+function resolveCatalogCapabilitySearchAliases(
+  item: FlowSurfaceCatalogItem,
+  publicType: string,
+  acceptedAliases: string[],
+) {
   if (item.kind === 'field') {
-    return [item.key, item.type, item.publicType, publicType].filter(Boolean) as string[];
+    return [item.key, item.type, item.publicType, publicType, ...acceptedAliases].filter(Boolean) as string[];
   }
-  return [item.key, item.type, publicType].filter(Boolean) as string[];
+  return [item.key, item.type, publicType, ...acceptedAliases].filter(Boolean) as string[];
+}
+
+function sanitizeCatalogCapabilityAliases(values: FlowSurfaceCatalogItem['acceptedAliases']) {
+  return Array.from(
+    new Set(
+      (values || [])
+        .map((value) => String(value || '').trim())
+        .filter((value) => value && !containsUnsafePublicFragment(value)),
+    ),
+  );
 }
 
 function resolvePlacementSlots(

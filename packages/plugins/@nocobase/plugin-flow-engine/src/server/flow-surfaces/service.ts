@@ -35,12 +35,15 @@ import {
 import { resolveDynamicCapabilityCreate } from './capability-resolver';
 import {
   collectAutoSnapshotPublicCapabilities,
+  collectJsonInferredAutoSnapshotCatalogItems,
   collectNormalizedProviderCapabilities,
   collectProviderCatalogItems,
   collectVerifiedAutoSnapshotCatalogItems,
   filterProviderCatalogItemsForCatalog,
   getFlowSurfacePublicCapabilityAdmissionIntegrity,
+  getFlowSurfacePublicCapabilityInferredAuthoring,
   getFlowSurfacePublicCapabilityModelUses,
+  setFlowSurfaceCatalogCapabilityModelUse,
   type FlowSurfaceCapabilityRegistryLike,
   type FlowSurfaceCollectedProviderCapability,
 } from './capability-registry';
@@ -173,7 +176,7 @@ import { FlowSurfaceRouteSync } from './route-sync';
 import { FlowSurfaceContextResolver } from './surface-context';
 import { buildFlowSurfaceContextResponse, isBareFlowContextPath } from './context';
 import type { FlowSurfaceContextSemantic } from './context';
-import type { FlowSurfaceAutoSnapshot } from './extractor/types';
+import type { FlowSurfaceAutoAllowedChild, FlowSurfaceAutoSnapshot } from './extractor/types';
 import {
   normalizeFlowSurfaceEventFlow,
   normalizeFlowSurfaceEventFlowRegistry,
@@ -481,6 +484,7 @@ import type {
   FlowSurfaceMutateValues,
   FlowSurfaceNodeDomain,
   FlowSurfaceNodeSpec,
+  FlowSurfacePlacementSummary,
   FlowSurfacePlanSelector,
   FlowSurfacePlanStep,
   FlowSurfacePublicCapabilityItem,
@@ -674,6 +678,7 @@ type FlowSurfaceRuntimeOptions = {
   popupTemplateTreeCache?: FlowSurfacePopupTemplateTreeCache;
   skipGeneratedLayoutSingleColumnErrors?: boolean;
   dynamicCapabilityActionName?: FlowSurfaceDynamicCapabilityCreateActionName;
+  allowJsonInferredFieldAutoPopupMetadata?: boolean;
 };
 
 const FORM_BLOCK_USES = new Set(['FormBlockModel', 'CreateFormModel', 'EditFormModel', ...APPROVAL_FORM_BLOCK_USES]);
@@ -850,6 +855,7 @@ const POPUP_ACTION_USES = new Set([
   'AddChildActionModel',
   'MailSendActionModel',
 ]);
+const JSON_INFERRED_INTERNAL_ACTION_BUILDER_USES = new Set(['GanttExpandCollapseActionModel', 'GanttTodayActionModel']);
 
 function withJsPopupGuidance(message: string, value?: string) {
   const normalizedValue = String(value || '').trim();
@@ -1097,6 +1103,17 @@ type FlowSurfaceAddFieldResult = {
   popupPageUid?: string;
   popupTabUid?: string;
   popupGridUid?: string;
+};
+
+type FlowSurfaceResolvedFieldContainer = {
+  ownerUid: string;
+  ownerUse: string;
+  parentUid: string;
+  subKey: string;
+  subType: string;
+  wrapperUse: string;
+  jsonInferred?: boolean;
+  ownerPlugin?: string;
 };
 
 type FlowSurfaceFieldMenuCandidate = {
@@ -2371,6 +2388,7 @@ export class FlowSurfacesService {
       popupProfile,
       requestedSections,
       transaction: options.transaction,
+      enabledPackages,
     });
 
     const response: FlowSurfaceCatalogResponse = {
@@ -2391,6 +2409,9 @@ export class FlowSurfacesService {
         builtInBlocks,
         hasTarget: !!target,
         popupProfile,
+        resolved,
+        scenario: catalogAnalysis.scenario,
+        selectedSections: catalogAnalysis.selectedSections,
         enabledPackages,
       });
       response.blocks = [
@@ -2419,9 +2440,15 @@ export class FlowSurfacesService {
         : getAvailableActionCatalogItems(undefined, undefined, enabledPackages).filter(
             (item) => item.scope !== 'record',
           );
-      response.actions = this.filterCatalogActionsForExistingApprovalSingletons(node, availableActions).map((item) =>
-        this.projectCatalogItem(item, expandFlags),
-      );
+      const jsonInferredActions = this.buildJsonInferredAutoSnapshotActionCatalogItems({
+        ownerUse: String(node?.use || '').trim(),
+        targetNode: node,
+        enabledPackages,
+      });
+      response.actions = this.dedupeCatalogActionItems([
+        ...this.filterCatalogActionsForExistingApprovalSingletons(node, availableActions),
+        ...jsonInferredActions,
+      ]).map((item) => this.projectCatalogItem(item, expandFlags));
     }
 
     if (catalogAnalysis.selectedSections.includes('recordActions')) {
@@ -2461,6 +2488,7 @@ export class FlowSurfacesService {
           transaction: options.transaction,
           enabledPackages,
         }),
+      includeCatalogSettingsSchema: input?.expand?.includes('item.settings') === true,
     });
   }
 
@@ -2507,6 +2535,17 @@ export class FlowSurfacesService {
         capabilityPolicyConfig,
         rawPublicPayload: input,
       });
+      if (input.target && response.capability.kind === 'block' && response.capability.availability.create.supported) {
+        await this.assertDynamicBlockCatalogConfirmed({
+          actionName: 'validateCapabilityCreate',
+          publicType: response.capability.publicType,
+          ownerPlugin: response.capability.ownerPlugin,
+          origin: response.capability.origin,
+          target: input.target,
+          transaction: options.transaction,
+          enabledPackages,
+        });
+      }
     } catch (error) {
       this.logCapabilityAuditEvent('capability.validate.failed', {
         actionName: 'validateCapabilityCreate',
@@ -2632,7 +2671,10 @@ export class FlowSurfacesService {
           enabledPackages,
         })
           .filter((item) => item.kind === 'block')
-          .map((item) => String(item.publicType || '').trim()),
+          .flatMap((item) => [
+            String(item.publicType || '').trim(),
+            ...(item.publicTypeMeta.acceptedAliases || []).map((alias) => String(alias || '').trim()),
+          ]),
       ].filter((publicType) => publicType && !STATIC_BLOCK_PUBLIC_TYPES.has(publicType)),
     );
   }
@@ -2659,25 +2701,34 @@ export class FlowSurfacesService {
   }
 
   private hasAutoSnapshotDynamicBlockCapability(publicType: string, enabledPackages: ReadonlySet<string>) {
-    const normalizedType = String(publicType || '').trim();
-    if (!normalizedType || STATIC_BLOCK_PUBLIC_TYPES.has(normalizedType)) {
-      return false;
-    }
-    return collectAutoSnapshotPublicCapabilities({
-      autoSnapshots: this.autoSnapshots,
-      enabledPackages,
-    }).some((item) => item.kind === 'block' && item.publicType === normalizedType);
+    return !!this.resolveAutoSnapshotDynamicBlockCapability(publicType, enabledPackages);
   }
 
   private getAutoSnapshotDynamicBlockOwnerPlugin(publicType: string, enabledPackages: ReadonlySet<string>) {
+    return this.resolveAutoSnapshotDynamicBlockCapability(publicType, enabledPackages)?.ownerPlugin;
+  }
+
+  private resolveAutoSnapshotDynamicBlockCapability(publicType: string, enabledPackages: ReadonlySet<string>) {
     const normalizedType = String(publicType || '').trim();
     if (!normalizedType || STATIC_BLOCK_PUBLIC_TYPES.has(normalizedType)) {
       return undefined;
     }
-    return collectAutoSnapshotPublicCapabilities({
+    const capabilities = collectAutoSnapshotPublicCapabilities({
       autoSnapshots: this.autoSnapshots,
       enabledPackages,
-    }).find((item) => item.kind === 'block' && item.publicType === normalizedType)?.ownerPlugin;
+    }).filter((item) => item.kind === 'block');
+    const capabilityPolicyConfig = readFlowSurfaceCapabilityPolicyConfigFromPluginOptions(this.plugin.options);
+    if (capabilityPolicyConfig.writePolicy.mode !== 'jsonInferred') {
+      const exactCapability = capabilities.find((item) => item.publicType === normalizedType);
+      if (exactCapability) {
+        return exactCapability;
+      }
+    }
+    return capabilities.find(
+      (item) =>
+        item.publicType === normalizedType ||
+        (item.publicTypeMeta.acceptedAliases || []).some((alias) => alias === normalizedType),
+    );
   }
 
   private async assertDynamicBlockCatalogConfirmed(input: {
@@ -2737,11 +2788,435 @@ export class FlowSurfacesService {
     transaction?: unknown;
     enabledPackages: ReadonlySet<string>;
   }) {
+    const capability = this.resolveAutoSnapshotDynamicBlockCapability(input.publicType, input.enabledPackages);
     await this.assertDynamicBlockCatalogConfirmed({
       ...input,
-      ownerPlugin: this.getAutoSnapshotDynamicBlockOwnerPlugin(input.publicType, input.enabledPackages) || '',
+      publicType: capability?.publicType || input.publicType,
+      ownerPlugin: capability?.ownerPlugin || '',
       origin: 'autoSnapshot',
     });
+  }
+
+  private async assertJsonInferredActionCatalogConfirmed(input: {
+    publicType: string;
+    ownerPlugin: string;
+    origin?: FlowSurfaceCatalogItem['origin'];
+    target: FlowSurfaceWriteTarget;
+    transaction?: unknown;
+    enabledPackages: ReadonlySet<string>;
+  }) {
+    const catalog = await this.catalog(
+      {
+        target: input.target,
+        sections: ['actions'],
+      },
+      {
+        transaction: input.transaction,
+        enabledPackages: input.enabledPackages,
+      },
+    );
+    const confirmed = (catalog.actions || []).some((item) => {
+      if (item.kind !== 'action' || item.publicType !== input.publicType) {
+        return false;
+      }
+      if (input.origin && item.origin !== input.origin) {
+        return false;
+      }
+      if (!input.ownerPlugin || item.ownerPlugin !== input.ownerPlugin) {
+        return false;
+      }
+      if (item.createSupported === false || item.availability?.create.supported === false) {
+        return false;
+      }
+      return item.createSupported === true || item.availability?.create.supported === true;
+    });
+    if (confirmed) {
+      return;
+    }
+    throw new FlowSurfaceBadRequestError(
+      `flowSurfaces addAction JSON inferred action '${input.publicType}' is not confirmed by target-scoped catalog`,
+      undefined,
+      {
+        details: {
+          reasonCode: 'contract-not-verified',
+          reasonSource: 'catalog',
+          publicType: input.publicType,
+        },
+      },
+    );
+  }
+
+  private async assertJsonInferredFieldCatalogConfirmed(input: {
+    fieldPath: string;
+    publicType: string;
+    ownerPlugin: string;
+    origin?: FlowSurfaceCatalogItem['origin'];
+    wrapperUse: string;
+    fieldUse: string;
+    target: FlowSurfaceWriteTarget;
+    transaction?: unknown;
+    enabledPackages: ReadonlySet<string>;
+  }) {
+    const fieldCatalog = await this.buildFieldCatalog(input.target, {
+      transaction: input.transaction,
+      enabledPackages: input.enabledPackages,
+    });
+    const confirmed = fieldCatalog.some((item) => {
+      if (item.kind !== 'field' || item.key !== input.fieldPath || item.publicType !== input.publicType) {
+        return false;
+      }
+      if (input.origin && item.origin !== input.origin) {
+        return false;
+      }
+      if (!input.ownerPlugin || item.ownerPlugin !== input.ownerPlugin) {
+        return false;
+      }
+      if (item.wrapperUse !== input.wrapperUse || item.fieldUse !== input.fieldUse) {
+        return false;
+      }
+      if (item.createSupported === false || item.availability?.create.supported === false) {
+        return false;
+      }
+      return item.createSupported === true || item.availability?.create.supported === true;
+    });
+    if (confirmed) {
+      return;
+    }
+    throw new FlowSurfaceBadRequestError(
+      `flowSurfaces addField JSON inferred field '${input.fieldPath}' is not confirmed by target-scoped catalog`,
+      undefined,
+      {
+        details: {
+          reasonCode: 'contract-not-verified',
+          reasonSource: 'catalog',
+          fieldPath: input.fieldPath,
+          publicType: input.publicType,
+        },
+      },
+    );
+  }
+
+  private async resolveAddFieldContainer(
+    uid: string,
+    options: {
+      transaction?: unknown;
+      enabledPackages: ReadonlySet<string>;
+      allowJsonInferred?: boolean;
+    },
+  ): Promise<FlowSurfaceResolvedFieldContainer> {
+    let builtInError: unknown;
+    const builtInContainer = await this.surfaceContext
+      .resolveFieldContainer(uid, options.transaction)
+      .catch((error) => {
+        builtInError = error;
+        return null;
+      });
+    if (builtInContainer) {
+      return builtInContainer as FlowSurfaceResolvedFieldContainer;
+    }
+
+    if (options.allowJsonInferred !== false) {
+      const jsonInferredContainer = await this.resolveJsonInferredFieldContainer(uid, options);
+      if (jsonInferredContainer) {
+        return jsonInferredContainer;
+      }
+    }
+
+    if (builtInError) {
+      throw builtInError;
+    }
+    throwBadRequest(`flowSurfaces addField target '${uid}' is not a field container`);
+  }
+
+  private async resolveJsonInferredFieldContainer(
+    uid: string,
+    options: {
+      transaction?: unknown;
+      enabledPackages: ReadonlySet<string>;
+    },
+  ): Promise<FlowSurfaceResolvedFieldContainer | null> {
+    const normalizedUid = String(uid || '').trim();
+    if (!normalizedUid) {
+      return null;
+    }
+    const capabilityPolicyConfig = readFlowSurfaceCapabilityPolicyConfigFromPluginOptions(this.plugin.options);
+    if (capabilityPolicyConfig.writePolicy.mode !== 'jsonInferred') {
+      return null;
+    }
+    const targetNode = (await this.repository
+      .findModelById(normalizedUid, {
+        transaction: options.transaction,
+        includeAsyncNode: true,
+      })
+      .catch(() => null)) as Record<string, unknown> | null;
+    const ownerUse = String(targetNode?.use || '').trim();
+    if (!targetNode || !ownerUse) {
+      return null;
+    }
+
+    const matched = this.collectJsonInferredAutoSnapshotFieldChildren({
+      ownerUse,
+      targetNode,
+      enabledPackages: options.enabledPackages,
+      capabilityPolicyConfig,
+    })[0];
+    if (!matched) {
+      return null;
+    }
+
+    return {
+      ownerUid: String(targetNode.uid || normalizedUid),
+      ownerUse: matched.child.builderContainerUse || ownerUse,
+      parentUid: String(targetNode.uid || normalizedUid),
+      subKey: matched.surface.subModelKey,
+      subType: 'array',
+      wrapperUse: matched.child.modelUse,
+      jsonInferred: true,
+      ownerPlugin: matched.parent.ownerPlugin,
+    };
+  }
+
+  private collectJsonInferredAutoSnapshotFieldChildren(input: {
+    ownerUse: string;
+    targetNode?: unknown;
+    enabledPackages: ReadonlySet<string>;
+    capabilityPolicyConfig: ReturnType<typeof readFlowSurfaceCapabilityPolicyConfigFromPluginOptions>;
+  }) {
+    return collectAutoSnapshotPublicCapabilities({
+      autoSnapshots: this.autoSnapshots,
+      enabledPackages: input.enabledPackages,
+    })
+      .map((item) => applyFlowSurfaceCapabilityWritePolicy(item, input.capabilityPolicyConfig))
+      .flatMap((parent) => {
+        const inferredAuthoring = getFlowSurfacePublicCapabilityInferredAuthoring(parent);
+        if (
+          parent.kind !== 'block' ||
+          parent.origin !== 'autoSnapshot' ||
+          !parent.availability.create.supported ||
+          !inferredAuthoring
+        ) {
+          return [];
+        }
+        const fieldSurfaces = (inferredAuthoring.childSurfaces || []).filter(
+          (surface) => surface.kind === 'fieldComponent' && surface.parentModelUse === input.ownerUse,
+        );
+        if (
+          !fieldSurfaces.length ||
+          !fieldSurfaces.some((surface) => this.hasJsonInferredFieldChildSurface(input.targetNode, surface.subModelKey))
+        ) {
+          return [];
+        }
+        const allowedModelUsesBySurface = new Map(
+          fieldSurfaces.map((surface) => [surface.subModelKey, new Set(surface.allowedChildren || [])]),
+        );
+        return fieldSurfaces.flatMap((surface) =>
+          (inferredAuthoring.allowedChildren || []).flatMap((child) => {
+            const modelUse = String(child.modelUse || '').trim();
+            if (child.kind !== 'fieldComponent' || !modelUse) {
+              return [];
+            }
+            const allowedModelUses = allowedModelUsesBySurface.get(surface.subModelKey);
+            if (allowedModelUses?.size && !allowedModelUses.has(modelUse)) {
+              return [];
+            }
+            if (!this.isJsonInferredFieldModelUseWritable(modelUse, input.enabledPackages, child.builderContainerUse)) {
+              return [];
+            }
+            return [
+              {
+                parent,
+                surface,
+                child: {
+                  ...child,
+                  modelUse,
+                },
+              },
+            ];
+          }),
+        );
+      });
+  }
+
+  private hasJsonInferredFieldChildSurface(node: unknown, subModelKey: string) {
+    const current = node as Record<string, unknown> | null;
+    const subModels = current?.subModels;
+    if (!_.isPlainObject(subModels)) {
+      return false;
+    }
+    if (!Object.prototype.hasOwnProperty.call(subModels, subModelKey)) {
+      return false;
+    }
+    return Array.isArray((subModels as Record<string, unknown>)[subModelKey]);
+  }
+
+  private isJsonInferredFieldModelUseWritable(
+    modelUse: string,
+    enabledPackages: ReadonlySet<string>,
+    builderContainerUse?: string,
+  ) {
+    const containerUse = String(builderContainerUse || '').trim();
+    if (!containerUse) {
+      return false;
+    }
+    try {
+      const capability = resolveSupportedFieldCapability({
+        containerUse,
+        requestedWrapperUse: modelUse,
+        allowUnresolvedFieldUse: true,
+        enabledPackages,
+      });
+      return capability.wrapperUse === modelUse;
+    } catch {
+      return false;
+    }
+  }
+
+  private assertJsonInferredFieldCreatePayload(input: {
+    values: Record<string, unknown>;
+    inlineSettings?: Record<string, unknown>;
+    inlinePopup?: Record<string, unknown>;
+  }) {
+    const forbiddenKeys = [
+      'dataSourceKey',
+      'collectionName',
+      'associationPathName',
+      'type',
+      'renderer',
+      'fieldType',
+      'fields',
+      'titleField',
+      'openMode',
+      'popupSize',
+      'pageSize',
+      'showIndex',
+      'settings',
+      'popup',
+      '__autoPopupForRelationField',
+      FLOW_SURFACE_APPLY_BLUEPRINT_POPUP_DEFAULTS_KEY,
+    ].filter((key) => hasOwnDefined(input.values || {}, key));
+    const fieldPath = String(input.values?.fieldPath || '').trim();
+    if (!forbiddenKeys.length && !fieldPath.includes('.') && !input.inlineSettings && !input.inlinePopup) {
+      return;
+    }
+    const invalidFieldPath = fieldPath.includes('.') ? fieldPath : undefined;
+    throw new FlowSurfaceBadRequestError(
+      `flowSurfaces addField JSON inferred field surfaces only support existing collection field creates`,
+      undefined,
+      {
+        details: {
+          reasonCode: 'contract-not-verified',
+          reasonSource: 'registry',
+          forbiddenKeys,
+          ...(invalidFieldPath ? { invalidFieldPath } : {}),
+        },
+      },
+    );
+  }
+
+  private stripJsonInferredFieldAutoPopupMetadata<T extends Record<string, any>>(values: T): T {
+    if (!_.isPlainObject(values)) {
+      return values;
+    }
+    const hasAutoPopupMetadata =
+      Object.prototype.hasOwnProperty.call(values, '__autoPopupForRelationField') ||
+      Object.prototype.hasOwnProperty.call(values, FLOW_SURFACE_APPLY_BLUEPRINT_POPUP_DEFAULTS_KEY);
+    if (!hasAutoPopupMetadata) {
+      return values;
+    }
+    const nextValues = { ...values };
+    delete nextValues.__autoPopupForRelationField;
+    delete nextValues[FLOW_SURFACE_APPLY_BLUEPRINT_POPUP_DEFAULTS_KEY];
+    return nextValues as T;
+  }
+
+  private async assertJsonInferredFieldReadbackParity(input: {
+    result: FlowSurfaceAddFieldResult;
+    expectedWrapperUse: string;
+    expectedFieldUse: string;
+    expectedBinding: {
+      dataSourceKey: string;
+      collectionName: string;
+      fieldPath: string;
+      associationPathName?: string;
+    };
+    transaction?: any;
+  }) {
+    const wrapperNode = input.result.wrapperUid
+      ? await this.repository
+          .findModelById(input.result.wrapperUid, {
+            transaction: input.transaction,
+            includeAsyncNode: true,
+          })
+          .catch(() => null)
+      : null;
+    const fieldNode = input.result.fieldUid
+      ? await this.repository
+          .findModelById(input.result.fieldUid, {
+            transaction: input.transaction,
+            includeAsyncNode: true,
+          })
+          .catch(() => null)
+      : null;
+    if (
+      wrapperNode?.use === input.expectedWrapperUse &&
+      fieldNode?.use === input.expectedFieldUse &&
+      this.isJsonInferredFieldBindingReadbackMatch(wrapperNode, input.expectedBinding) &&
+      this.isJsonInferredFieldBindingReadbackMatch(fieldNode, input.expectedBinding) &&
+      !this.hasJsonInferredFieldReadbackPopupDrift(wrapperNode) &&
+      !this.hasJsonInferredFieldReadbackPopupDrift(fieldNode)
+    ) {
+      return;
+    }
+    throwBadRequest(`flowSurfaces addField JSON inferred field failed readback parity guard`, {
+      details: {
+        reasonCode: 'readback-parity-failed',
+        reasonSource: 'builder',
+      },
+    });
+  }
+
+  private isJsonInferredFieldBindingReadbackMatch(
+    node: unknown,
+    expectedBinding: {
+      dataSourceKey: string;
+      collectionName: string;
+      fieldPath: string;
+      associationPathName?: string;
+    },
+  ) {
+    const init = _.get(node, ['stepParams', 'fieldSettings', 'init']) || {};
+    return _.isEqual(
+      _.pickBy(
+        {
+          dataSourceKey: String((init as Record<string, unknown>).dataSourceKey || '').trim() || 'main',
+          collectionName: String((init as Record<string, unknown>).collectionName || '').trim(),
+          fieldPath: String((init as Record<string, unknown>).fieldPath || '').trim(),
+          associationPathName: String((init as Record<string, unknown>).associationPathName || '').trim() || undefined,
+        },
+        (value) => !_.isUndefined(value),
+      ),
+      _.pickBy(
+        {
+          dataSourceKey: expectedBinding.dataSourceKey,
+          collectionName: expectedBinding.collectionName,
+          fieldPath: expectedBinding.fieldPath,
+          associationPathName: expectedBinding.associationPathName,
+        },
+        (value) => !_.isUndefined(value),
+      ),
+    );
+  }
+
+  private hasJsonInferredFieldReadbackPopupDrift(node: unknown) {
+    if (!_.isPlainObject(node)) {
+      return true;
+    }
+    const serialized = JSON.stringify(node);
+    return (
+      _.isPlainObject(this.resolvePopupHostOpenView(node)) ||
+      serialized.includes('__autoPopupForRelationField') ||
+      serialized.includes(FLOW_SURFACE_APPLY_BLUEPRINT_POPUP_DEFAULTS_KEY)
+    );
   }
 
   private async buildProviderCatalogItems(input: {
@@ -2761,6 +3236,9 @@ export class FlowSurfacesService {
     builtInBlocks: FlowSurfaceCatalogItem[];
     hasTarget: boolean;
     popupProfile: FlowSurfacePopupBlockProfile | null;
+    resolved: FlowSurfaceResolvedTarget | null;
+    scenario: FlowSurfaceCatalogScenario;
+    selectedSections: FlowSurfaceCatalogSection[];
     enabledPackages: ReadonlySet<string>;
   }) {
     if (input.popupProfile?.isPopupSurface) {
@@ -2773,11 +3251,396 @@ export class FlowSurfacesService {
           kind: 'block',
           enabledPackages: input.enabledPackages,
         })),
+        ...(await this.buildJsonInferredAutoSnapshotBlockCatalogItems({
+          hasTarget: input.hasTarget,
+          resolved: input.resolved,
+          scenario: input.scenario,
+          selectedSections: input.selectedSections,
+          enabledPackages: input.enabledPackages,
+        })),
         ...(await this.buildVerifiedAutoSnapshotBlockCatalogItems({
           hasTarget: input.hasTarget,
           enabledPackages: input.enabledPackages,
         })),
       ],
+    });
+  }
+
+  private async buildJsonInferredAutoSnapshotBlockCatalogItems(input: {
+    hasTarget: boolean;
+    resolved: FlowSurfaceResolvedTarget | null;
+    scenario: FlowSurfaceCatalogScenario;
+    selectedSections: FlowSurfaceCatalogSection[];
+    enabledPackages: ReadonlySet<string>;
+  }) {
+    if (!input.hasTarget) {
+      return [];
+    }
+    const capabilityPolicyConfig = readFlowSurfaceCapabilityPolicyConfigFromPluginOptions(this.plugin.options);
+    if (capabilityPolicyConfig.writePolicy.mode !== 'jsonInferred') {
+      return [];
+    }
+    return collectJsonInferredAutoSnapshotCatalogItems({
+      autoSnapshots: this.autoSnapshots,
+      enabledPackages: input.enabledPackages,
+      capabilityPolicyConfig,
+      placementFilter: (item) =>
+        this.isJsonInferredBlockPlacementConfirmed({
+          item,
+          resolved: input.resolved,
+          scenario: input.scenario,
+          selectedSections: input.selectedSections,
+        }),
+    });
+  }
+
+  private isJsonInferredBlockPlacementConfirmed(input: {
+    item: FlowSurfacePublicCapabilityItem;
+    resolved: FlowSurfaceResolvedTarget | null;
+    scenario: FlowSurfaceCatalogScenario;
+    selectedSections: FlowSurfaceCatalogSection[];
+  }) {
+    const placement = input.item.placement;
+    if (!placement || !input.selectedSections.includes('blocks')) {
+      return false;
+    }
+    if (placement.slots?.length && !placement.slots.includes('blocks')) {
+      return false;
+    }
+    if (!this.isJsonInferredPlacementSceneConfirmed(placement, input.scenario, input.resolved)) {
+      return false;
+    }
+    if (placement.collectionRequired && !this.hasJsonInferredCollectionInitParam(input.item)) {
+      return false;
+    }
+    return true;
+  }
+
+  private isJsonInferredPlacementSceneConfirmed(
+    placement: FlowSurfacePlacementSummary,
+    scenario: FlowSurfaceCatalogScenario,
+    resolved: FlowSurfaceResolvedTarget | null,
+  ) {
+    if (!placement.scenes?.length) {
+      return true;
+    }
+    const targetScenes = new Set<string>();
+    if (scenario.popup) {
+      targetScenes.add('popup');
+    } else {
+      if (scenario.surfaceKind === 'page') {
+        targetScenes.add('page');
+      }
+      if (scenario.surfaceKind === 'tab') {
+        targetScenes.add('tab');
+      }
+      if (scenario.surfaceKind === 'grid') {
+        targetScenes.add(resolved?.tabRoute ? 'tab' : 'page');
+        if (resolved?.pageRoute) {
+          targetScenes.add('page');
+        }
+      }
+      if (scenario.fieldContainer?.kind === 'form' || scenario.fieldContainer?.kind === 'filter-form') {
+        targetScenes.add('form');
+      }
+      if (scenario.fieldContainer?.kind === 'details') {
+        targetScenes.add('details');
+      }
+      if (scenario.fieldContainer?.kind === 'table') {
+        targetScenes.add('table');
+      }
+      if (scenario.actionContainer) {
+        targetScenes.add(scenario.actionContainer.scope === 'record' ? 'record' : 'actionPanel');
+      }
+    }
+    return placement.scenes.some((scene) => targetScenes.has(scene));
+  }
+
+  private hasJsonInferredCollectionInitParam(item: FlowSurfacePublicCapabilityItem) {
+    return Array.isArray(item.initParamsSchema?.required) && item.initParamsSchema.required.includes('collectionName');
+  }
+
+  private buildJsonInferredAutoSnapshotActionCatalogItems(input: {
+    ownerUse: string;
+    targetNode?: unknown;
+    enabledPackages: ReadonlySet<string>;
+  }) {
+    const ownerUse = String(input.ownerUse || '').trim();
+    if (!ownerUse) {
+      return [];
+    }
+    const capabilityPolicyConfig = readFlowSurfaceCapabilityPolicyConfigFromPluginOptions(this.plugin.options);
+    if (capabilityPolicyConfig.writePolicy.mode !== 'jsonInferred') {
+      return [];
+    }
+
+    return this.collectJsonInferredAutoSnapshotActionChildren({
+      ownerUse,
+      targetNode: input.targetNode,
+      enabledPackages: input.enabledPackages,
+      capabilityPolicyConfig,
+    }).map(({ child, parent }) => {
+      const publicType = String(child.publicType || '').trim();
+      const modelUse = String(child.modelUse || '').trim();
+      const label = String(child.label || publicType).trim() || publicType;
+      return setFlowSurfaceCatalogCapabilityModelUse(
+        {
+          key: publicType,
+          label,
+          use: publicType,
+          kind: 'action' as const,
+          publicType,
+          semantic: {
+            title: label,
+            aliases: [publicType],
+          },
+          ownerPlugin: parent.ownerPlugin,
+          origin: parent.origin,
+          supportLevel: 'create-only' as const,
+          confidence: parent.confidence,
+          availability: {
+            render: { supported: true },
+            readback: { supported: true },
+            create: {
+              supported: true,
+            },
+            configure: {
+              supported: false,
+              reasonCode: 'contract-not-verified' as const,
+              reasonSource: 'registry' as const,
+            },
+          },
+          scope: 'block' as const,
+          scene: 'collection',
+          createSupported: true,
+          ...(child.builderContainerUse ? { builderContainerUse: child.builderContainerUse } : {}),
+        },
+        modelUse,
+      );
+    });
+  }
+
+  private collectJsonInferredAutoSnapshotActionChildren(input: {
+    ownerUse: string;
+    targetNode?: unknown;
+    enabledPackages: ReadonlySet<string>;
+    capabilityPolicyConfig: ReturnType<typeof readFlowSurfaceCapabilityPolicyConfigFromPluginOptions>;
+  }) {
+    return collectAutoSnapshotPublicCapabilities({
+      autoSnapshots: this.autoSnapshots,
+      enabledPackages: input.enabledPackages,
+    })
+      .map((item) => applyFlowSurfaceCapabilityWritePolicy(item, input.capabilityPolicyConfig))
+      .flatMap((parent) => {
+        const inferredAuthoring = getFlowSurfacePublicCapabilityInferredAuthoring(parent);
+        if (
+          parent.kind !== 'block' ||
+          parent.origin !== 'autoSnapshot' ||
+          !parent.availability.create.supported ||
+          !inferredAuthoring
+        ) {
+          return [];
+        }
+        const actionSurfaces = (inferredAuthoring.childSurfaces || []).filter(
+          (surface) =>
+            surface.kind === 'action' && surface.parentModelUse === input.ownerUse && surface.subModelKey === 'actions',
+        );
+        if (!actionSurfaces.length) {
+          return [];
+        }
+        const allowedModelUses = new Set(actionSurfaces.flatMap((surface) => surface.allowedChildren || []));
+        return actionSurfaces.flatMap((surface) =>
+          (inferredAuthoring.allowedChildren || []).flatMap((child) => {
+            const modelUse = String(child.modelUse || '').trim();
+            const publicType = String(child.publicType || '').trim();
+            if (child.kind !== 'action' || !modelUse || !publicType) {
+              return [];
+            }
+            if (allowedModelUses.size && !allowedModelUses.has(modelUse)) {
+              return [];
+            }
+            if (
+              !this.isJsonInferredActionModelUseWritable(modelUse, input.enabledPackages, child.builderContainerUse)
+            ) {
+              return [];
+            }
+            if (!this.areJsonInferredAllowedChildConditionsSatisfied(child, input.targetNode)) {
+              return [];
+            }
+            return [
+              {
+                parent,
+                surface,
+                child: {
+                  ...child,
+                  modelUse,
+                  publicType,
+                },
+              },
+            ];
+          }),
+        );
+      });
+  }
+
+  private async resolveAddActionContainer(
+    target: FlowSurfaceWriteTarget,
+    options: {
+      transaction?: unknown;
+      enabledPackages: ReadonlySet<string>;
+    },
+  ) {
+    let builtInError: unknown;
+    const builtInContainer = await this.surfaceContext
+      .resolveActionContainer(target, options.transaction)
+      .catch((error) => {
+        builtInError = error;
+        return null;
+      });
+    if (builtInContainer) {
+      return builtInContainer;
+    }
+    const jsonInferredContainer = await this.resolveJsonInferredActionContainer(target, options);
+    if (jsonInferredContainer) {
+      return jsonInferredContainer;
+    }
+    if (builtInError) {
+      throw builtInError;
+    }
+    throwBadRequest(`flowSurfaces addAction target '${target.uid}' is not an action container`);
+  }
+
+  private async resolveJsonInferredActionContainer(
+    target: FlowSurfaceWriteTarget,
+    options: {
+      transaction?: unknown;
+      enabledPackages: ReadonlySet<string>;
+    },
+  ) {
+    const capabilityPolicyConfig = readFlowSurfaceCapabilityPolicyConfigFromPluginOptions(this.plugin.options);
+    if (capabilityPolicyConfig.writePolicy.mode !== 'jsonInferred') {
+      return null;
+    }
+    const resolved = await this.locator.resolve(target, { transaction: options.transaction }).catch(() => null);
+    const targetNode =
+      resolved?.node ||
+      (resolved?.uid
+        ? await this.repository
+            .findModelById(resolved.uid, {
+              transaction: options.transaction,
+              includeAsyncNode: true,
+            })
+            .catch(() => null)
+        : null);
+    const ownerUse = String((targetNode as Record<string, unknown> | null)?.use || '').trim();
+    const ownerUid = String((targetNode as Record<string, unknown> | null)?.uid || resolved?.uid || target.uid).trim();
+    if (!targetNode || !ownerUse || !ownerUid) {
+      return null;
+    }
+    const matched = this.collectJsonInferredAutoSnapshotActionChildren({
+      ownerUse,
+      targetNode,
+      enabledPackages: options.enabledPackages,
+      capabilityPolicyConfig,
+    })[0];
+    if (!matched) {
+      return null;
+    }
+    return {
+      parentUid: ownerUid,
+      subKey: matched.surface.subModelKey,
+      subType: 'array',
+      ownerUid,
+      ownerUse,
+    };
+  }
+
+  private isJsonInferredActionModelUseWritable(
+    modelUse: string,
+    enabledPackages: ReadonlySet<string>,
+    builderContainerUse?: string,
+  ) {
+    if (JSON_INFERRED_INTERNAL_ACTION_BUILDER_USES.has(modelUse)) {
+      return true;
+    }
+    const containerUse = String(builderContainerUse || '').trim();
+    if (!containerUse) {
+      return false;
+    }
+    return !!this.tryResolveActionCatalogItem(
+      {
+        use: modelUse,
+        containerUse,
+      },
+      {
+        context: 'jsonInferredAction',
+        enabledPackages,
+        requireCreateSupported: true,
+      },
+    );
+  }
+
+  private hasJsonInferredActionChildSurface(node: unknown, subModelKey: string) {
+    const current = node as Record<string, unknown> | null;
+    const subModels = current?.subModels;
+    if (!_.isPlainObject(subModels)) {
+      return false;
+    }
+    if (!Object.prototype.hasOwnProperty.call(subModels, subModelKey)) {
+      return false;
+    }
+    return Array.isArray((subModels as Record<string, unknown>)[subModelKey]);
+  }
+
+  private areJsonInferredAllowedChildConditionsSatisfied(child: FlowSurfaceAutoAllowedChild, targetNode: unknown) {
+    const conditions = child.conditions || [];
+    if (!conditions.length) {
+      return true;
+    }
+    return conditions.every((condition) => this.isJsonInferredAllowedChildConditionSatisfied(condition, targetNode));
+  }
+
+  private isJsonInferredAllowedChildConditionSatisfied(condition: string, targetNode: unknown) {
+    if (condition === 'treeTableEnabled') {
+      return this.isGanttTreeTableEnabled(targetNode);
+    }
+    if (condition === 'treeCollection') {
+      return this.isGanttTreeCollection(targetNode);
+    }
+    return false;
+  }
+
+  private isGanttTreeTableEnabled(targetNode: unknown) {
+    const node = targetNode as Record<string, any> | null;
+    return (
+      node?.props?.treeTable === true ||
+      node?.treeTable === true ||
+      node?.stepParams?.tableSettings?.treeTable?.treeTable === true
+    );
+  }
+
+  private isGanttTreeCollection(targetNode: unknown) {
+    const node = targetNode as Record<string, any> | null;
+    const init = node?.stepParams?.resourceSettings?.init || {};
+    const collectionName = String(init.collectionName || '').trim();
+    if (!collectionName) {
+      return false;
+    }
+    const collection = this.getCollection(String(init.dataSourceKey || 'main'), collectionName);
+    return collection?.template === 'tree' || collection?.options?.template === 'tree' || collection?.tree === true;
+  }
+
+  private dedupeCatalogActionItems(items: FlowSurfaceCatalogItem[]) {
+    const seen = new Set<string>();
+    return items.filter((item) => {
+      const publicType = String(item.publicType || item.type || item.key || '').trim();
+      const use = String(item.use || '').trim();
+      const key = [publicType, use].join(':');
+      if (!key.trim() || seen.has(key)) {
+        return false;
+      }
+      seen.add(key);
+      return true;
     });
   }
 
@@ -2807,6 +3670,7 @@ export class FlowSurfacesService {
     popupProfile: FlowSurfacePopupBlockProfile | null;
     requestedSections?: FlowSurfaceCatalogSection[];
     transaction?: any;
+    enabledPackages?: ReadonlySet<string>;
   }): Promise<{
     scenario: FlowSurfaceCatalogScenario;
     selectedSections: FlowSurfaceCatalogSection[];
@@ -2817,7 +3681,11 @@ export class FlowSurfacesService {
     const resolvedUid = input.resolved?.uid;
     const fieldContainer =
       input.target && resolvedUid
-        ? await this.surfaceContext.resolveFieldContainer(resolvedUid, input.transaction).catch(() => null)
+        ? await this.resolveAddFieldContainer(resolvedUid, {
+            transaction: input.transaction,
+            enabledPackages: input.enabledPackages || new Set<string>(),
+            allowJsonInferred: true,
+          }).catch(() => null)
         : null;
     const actionContainer = input.target
       ? await this.surfaceContext.resolveActionContainer(input.target, input.transaction).catch(() => null)
@@ -4812,10 +5680,15 @@ export class FlowSurfacesService {
         publicTypeByUse.set(normalizedUse, publicType);
       });
     });
-    collectAutoSnapshotPublicCapabilities({
+    const capabilityPolicyConfig = readFlowSurfaceCapabilityPolicyConfigFromPluginOptions(this.plugin.options);
+    const autoSnapshotCapabilities = collectAutoSnapshotPublicCapabilities({
       autoSnapshots: this.autoSnapshots,
       enabledPackages,
-    }).forEach((capability) => {
+    });
+    this.sortAutoSnapshotReadbackCapabilities(
+      autoSnapshotCapabilities,
+      capabilityPolicyConfig.writePolicy.mode,
+    ).forEach((capability) => {
       if (capability.kind !== 'block' || !capability.availability.readback.supported) {
         return;
       }
@@ -4831,30 +5704,148 @@ export class FlowSurfacesService {
         publicTypeByUse.set(normalizedUse, publicType);
       });
     });
-
-    if (!publicTypeByUse.size) {
+    if (!publicTypeByUse.size && !autoSnapshotCapabilities.length) {
       return node;
     }
 
-    const visit = (current: unknown): unknown => {
+    const visit = (current: unknown, parent?: Record<string, unknown>, subModelKey?: string): unknown => {
       if (!current || typeof current !== 'object') {
         return current;
       }
       const currentNode = current as Record<string, unknown>;
-      const publicType = publicTypeByUse.get(String(currentNode.use || '').trim());
+      const publicType =
+        publicTypeByUse.get(String(currentNode.use || '').trim()) ||
+        this.resolveJsonInferredActionReadbackPublicTypeForNode({
+          actionNode: currentNode,
+          ownerNode: parent,
+          subModelKey,
+          capabilities: autoSnapshotCapabilities,
+          capabilityPolicyConfig,
+          enabledPackages,
+        });
       if (publicType && !String(currentNode.type || '').trim()) {
         currentNode.type = publicType;
       }
       const subModels = currentNode.subModels;
       if (subModels && typeof subModels === 'object') {
-        for (const value of Object.values(subModels as Record<string, unknown>)) {
-          _.castArray(value).forEach((child) => visit(child));
+        for (const [childSubModelKey, value] of Object.entries(subModels as Record<string, unknown>)) {
+          _.castArray(value).forEach((child) => visit(child, currentNode, childSubModelKey));
         }
       }
       return current;
     };
 
     return visit(node) as T;
+  }
+
+  private resolveJsonInferredActionReadbackPublicTypeForNode(input: {
+    actionNode: Record<string, unknown>;
+    ownerNode?: Record<string, unknown>;
+    subModelKey?: string;
+    capabilities: FlowSurfacePublicCapabilityItem[];
+    capabilityPolicyConfig: ReturnType<typeof readFlowSurfaceCapabilityPolicyConfigFromPluginOptions>;
+    enabledPackages: ReadonlySet<string>;
+  }) {
+    const modelUse = String(input.actionNode.use || '').trim();
+    const ownerUse = String(input.ownerNode?.use || '').trim();
+    const subModelKey = String(input.subModelKey || '').trim();
+    if (!modelUse || !ownerUse || !subModelKey) {
+      return null;
+    }
+    for (const capability of input.capabilities) {
+      const policyProjectedCapability = applyFlowSurfaceCapabilityWritePolicy(capability, input.capabilityPolicyConfig);
+      if (
+        policyProjectedCapability.kind !== 'block' ||
+        policyProjectedCapability.origin !== 'autoSnapshot' ||
+        !policyProjectedCapability.availability.readback.supported ||
+        !policyProjectedCapability.availability.create.supported
+      ) {
+        continue;
+      }
+      const inferredAuthoring = getFlowSurfacePublicCapabilityInferredAuthoring(policyProjectedCapability);
+      if (!inferredAuthoring) {
+        continue;
+      }
+      const actionSurfaces = (inferredAuthoring.childSurfaces || []).filter(
+        (surface) =>
+          surface.kind === 'action' && surface.parentModelUse === ownerUse && surface.subModelKey === subModelKey,
+      );
+      if (
+        !actionSurfaces.length ||
+        !actionSurfaces.some((surface) => this.hasJsonInferredActionChildSurface(input.ownerNode, surface.subModelKey))
+      ) {
+        continue;
+      }
+      const allowedModelUses = new Set(actionSurfaces.flatMap((surface) => surface.allowedChildren || []));
+      for (const child of inferredAuthoring.allowedChildren || []) {
+        if (child.kind !== 'action' || String(child.modelUse || '').trim() !== modelUse) {
+          continue;
+        }
+        if (allowedModelUses.size && !allowedModelUses.has(modelUse)) {
+          continue;
+        }
+        if (!this.isJsonInferredActionModelUseWritable(modelUse, input.enabledPackages, child.builderContainerUse)) {
+          continue;
+        }
+        if (!this.areJsonInferredAllowedChildConditionsSatisfied(child, input.ownerNode)) {
+          continue;
+        }
+        const publicType = this.resolveJsonInferredActionReadbackPublicType(child, input.enabledPackages);
+        if (publicType) {
+          return publicType;
+        }
+      }
+    }
+    return null;
+  }
+
+  private resolveJsonInferredActionReadbackPublicType(
+    child: FlowSurfaceAutoAllowedChild,
+    enabledPackages: ReadonlySet<string>,
+  ) {
+    const modelUse = String(child.modelUse || '').trim();
+    if (!modelUse) {
+      return null;
+    }
+    if (JSON_INFERRED_INTERNAL_ACTION_BUILDER_USES.has(modelUse)) {
+      return String(child.publicType || '').trim() || null;
+    }
+    const builderContainerUse = String(child.builderContainerUse || '').trim();
+    if (!builderContainerUse) {
+      return null;
+    }
+    const catalogItem = this.tryResolveActionCatalogItem(
+      {
+        use: modelUse,
+        containerUse: builderContainerUse,
+      },
+      {
+        context: 'jsonInferredActionReadback',
+        enabledPackages,
+        requireCreateSupported: true,
+      },
+    );
+    if (!catalogItem || catalogItem.use !== modelUse) {
+      return null;
+    }
+    return String(catalogItem.publicType || catalogItem.key || '').trim() || null;
+  }
+
+  private sortAutoSnapshotReadbackCapabilities(
+    capabilities: FlowSurfacePublicCapabilityItem[],
+    writePolicyMode: ReturnType<typeof readFlowSurfaceCapabilityPolicyConfigFromPluginOptions>['writePolicy']['mode'],
+  ) {
+    if (writePolicyMode === 'jsonInferred') {
+      return capabilities;
+    }
+    return [...capabilities].sort((left, right) => {
+      const leftIsInferred = !!getFlowSurfacePublicCapabilityInferredAuthoring(left);
+      const rightIsInferred = !!getFlowSurfacePublicCapabilityInferredAuthoring(right);
+      if (leftIsInferred === rightIsInferred) {
+        return 0;
+      }
+      return leftIsInferred ? 1 : -1;
+    });
   }
 
   private async buildSurfaceReadPayload(
@@ -6071,6 +7062,7 @@ export class FlowSurfacesService {
         popupTemplateTreeCache,
         skipGeneratedLayoutSingleColumnErrors: true,
         dynamicCapabilityActionName: 'applyBlueprint',
+        allowJsonInferredFieldAutoPopupMetadata: true,
       }),
       options,
     );
@@ -8290,6 +9282,7 @@ export class FlowSurfacesService {
         this.addField(payload, {
           ...runtimeOptions,
           popupTemplateAliasSession,
+          allowJsonInferredFieldAutoPopupMetadata: true,
         }),
       applyFieldSettings: async (actionName, fieldResult, settings) =>
         this.applyInlineFieldSettings(actionName, fieldResult, settings, runtimeOptions),
@@ -9484,7 +10477,12 @@ export class FlowSurfacesService {
     });
     const target = await this.prepareWriteTarget('addField', values?.target, values, options);
     const resolvedTarget = await this.locator.resolve(target, options);
-    const container = await this.surfaceContext.resolveFieldContainer(resolvedTarget.uid, options.transaction);
+    const enabledPackages = await this.resolveEnabledPluginPackages(options);
+    const container = await this.resolveAddFieldContainer(resolvedTarget.uid, {
+      transaction: options.transaction,
+      enabledPackages,
+      allowJsonInferred: true,
+    });
     const result = await this.applyTemplateFieldsToBlock(
       'addField',
       container.ownerUid,
@@ -9881,6 +10879,16 @@ export class FlowSurfacesService {
       },
       { transaction: input.options.transaction },
     );
+    if (dynamicCreate.capability.origin === 'autoSnapshot') {
+      await this.assertDynamicCapabilityReadbackParity({
+        actionName,
+        createdUid: created,
+        expectedNode: tree,
+        publicType: dynamicCreate.capability.publicType,
+        transaction: input.options.transaction,
+        enabledPackages: input.enabledPackages,
+      });
+    }
     const result = this.buildBlockCreateResult(
       { ...tree, uid: created },
       input.parentUid,
@@ -9900,6 +10908,120 @@ export class FlowSurfacesService {
       durationMs: getFlowSurfaceCapabilityAuditDurationMs(auditStartedAt),
     });
     return result;
+  }
+
+  private async assertDynamicCapabilityReadbackParity(input: {
+    actionName: FlowSurfaceDynamicCapabilityCreateActionName;
+    createdUid: string;
+    expectedNode: FlowSurfaceNodeSpec;
+    publicType: string;
+    transaction?: any;
+    enabledPackages: ReadonlySet<string>;
+  }) {
+    const persistedNode = await this.repository
+      .findModelById(input.createdUid, {
+        transaction: input.transaction,
+        includeAsyncNode: true,
+      })
+      .catch(() => null);
+    const readbackNode = await this.projectDynamicBlockReadbackTypes(
+      this.stripInternalSurfaceMetaFromNodeTree(_.cloneDeep(persistedNode)),
+      {
+        transaction: input.transaction,
+        enabledPackages: input.enabledPackages,
+      },
+    );
+    const expectedUse = String(input.expectedNode.use || '').trim();
+    const actualUse = String((readbackNode as Record<string, unknown> | null)?.use || '').trim();
+    const actualPublicType = String((readbackNode as Record<string, unknown> | null)?.type || '').trim();
+    const fieldNamesMatch = _.isEqual(
+      _.get(readbackNode, ['props', 'fieldNames']),
+      _.get(input.expectedNode, ['props', 'fieldNames']),
+    );
+    const resourceInitMatch = _.isEqual(
+      _.get(readbackNode, ['stepParams', 'resourceSettings', 'init']),
+      _.get(input.expectedNode, ['stepParams', 'resourceSettings', 'init']),
+    );
+    const contractSpecificParity =
+      expectedUse === 'GanttBlockModel'
+        ? this.isGanttJsonInferredReadbackParityMatch(readbackNode, input.expectedNode)
+        : true;
+    if (
+      actualUse === expectedUse &&
+      actualPublicType === input.publicType &&
+      fieldNamesMatch &&
+      resourceInitMatch &&
+      contractSpecificParity
+    ) {
+      return;
+    }
+
+    throwBadRequest(
+      `flowSurfaces ${input.actionName} dynamic block '${input.publicType}' failed readback parity guard`,
+      {
+        details: {
+          reasonCode: 'readback-parity-failed',
+          reasonSource: 'builder',
+          publicType: input.publicType,
+        },
+      },
+    );
+  }
+
+  private isGanttJsonInferredReadbackParityMatch(readbackNode: unknown, expectedNode: FlowSurfaceNodeSpec) {
+    const parityPaths: Array<Array<string | number>> = [
+      ['props', 'showTable'],
+      ['props', 'treeTable'],
+      ['props', 'tableWidth'],
+      ['props', 'enableDragToReschedule'],
+      ['stepParams', 'tableSettings', 'pageSize', 'pageSize'],
+      ['stepParams', 'tableSettings', 'showRowNumbers', 'showIndex'],
+      ['stepParams', 'tableSettings', 'treeTable', 'treeTable'],
+      ['stepParams', 'ganttSettings', 'fields'],
+      ['stepParams', 'ganttSettings', 'processField', 'progress'],
+      ['stepParams', 'ganttSettings', 'colorField', 'color'],
+      ['stepParams', 'ganttSettings', 'showTable', 'showTable'],
+      ['stepParams', 'ganttSettings', 'tableWidth', 'tableWidth'],
+      ['stepParams', 'ganttSettings', 'enableDragToReschedule', 'enableDragToReschedule'],
+    ];
+    const pathValuesMatch = parityPaths.every((path) =>
+      _.isEqual(_.get(readbackNode, path), _.get(expectedNode, path)),
+    );
+    if (!pathValuesMatch) {
+      return false;
+    }
+    const readbackSubModels = _.get(readbackNode, ['subModels']);
+    const expectedSubModels = _.get(expectedNode, ['subModels']);
+    if (
+      _.isPlainObject(expectedSubModels) &&
+      Object.prototype.hasOwnProperty.call(expectedSubModels, 'actions') &&
+      (!_.isPlainObject(readbackSubModels) || !Object.prototype.hasOwnProperty.call(readbackSubModels, 'actions'))
+    ) {
+      return false;
+    }
+    const readbackActions = _.castArray(_.get(readbackNode, ['subModels', 'actions']) || []);
+    const expectedActions = _.castArray(_.get(expectedNode, ['subModels', 'actions']) || []);
+    if (
+      !_.isEqual(
+        readbackActions.map((item: any) => item?.use),
+        expectedActions.map((item: any) => item?.use),
+      )
+    ) {
+      return false;
+    }
+    const readbackColumns = _.castArray(_.get(readbackNode, ['subModels', 'columns']) || []);
+    const expectedColumns = _.castArray(_.get(expectedNode, ['subModels', 'columns']) || []);
+    if (
+      !_.isEqual(
+        readbackColumns.map((item: any) => item?.use),
+        expectedColumns.map((item: any) => item?.use),
+      )
+    ) {
+      return false;
+    }
+    return expectedColumns.every((expectedColumn: any, index) =>
+      _.isEqual(readbackColumns[index]?.props || {}, expectedColumn?.props || {}),
+    );
   }
 
   async addBlock(
@@ -10318,6 +11440,7 @@ export class FlowSurfacesService {
             transaction: options.transaction,
             enabledPackages,
             popupTemplateTreeCache: options.popupTemplateTreeCache,
+            allowJsonInferredFieldAutoPopupMetadata: true,
           },
         );
         if (fieldSpec.settings && Object.keys(fieldSpec.settings).length) {
@@ -10420,6 +11543,7 @@ export class FlowSurfacesService {
       enabledPackages?: ReadonlySet<string>;
       popupTemplateAliasSession?: FlowSurfacePopupTemplateAliasSession;
       popupTemplateTreeCache?: FlowSurfacePopupTemplateTreeCache;
+      allowJsonInferredFieldAutoPopupMetadata?: boolean;
     } = {},
   ): Promise<FlowSurfaceAddFieldResult> {
     const templateRef = !_.isUndefined(values?.template)
@@ -10447,14 +11571,28 @@ export class FlowSurfacesService {
     let inlinePopup = this.normalizeInlinePopup('addField', values.popup);
     this.assertInlinePopupTemplateAliasesSupported('addField', inlinePopup, options.popupTemplateAliasSession);
     const resolvedTarget = await this.locator.resolve(target, options);
-    const container = await this.surfaceContext.resolveFieldContainer(resolvedTarget.uid, options.transaction);
     const enabledPackages = await this.resolveEnabledPluginPackages(options);
+    const container = await this.resolveAddFieldContainer(resolvedTarget.uid, {
+      transaction: options.transaction,
+      enabledPackages,
+      allowJsonInferred: true,
+    });
+    if (container.jsonInferred && options.allowJsonInferredFieldAutoPopupMetadata === true) {
+      values = this.stripJsonInferredFieldAutoPopupMetadata(values);
+    }
     const isFilterFormItem = container.wrapperUse === 'FilterFormItemModel';
     const isApprovalFormTarget = isApprovalFormContainerUse(container.ownerUse);
     const requestedLegacyFieldUse = resolveRequestedFieldUseAlias(values);
     let requestedFieldUse = resolveRequestedFieldUse(values);
     const requestedStandaloneType =
       typeof values.type === 'string' && values.type.trim().length ? values.type.trim() : undefined;
+    if (container.jsonInferred) {
+      this.assertJsonInferredFieldCreatePayload({
+        values,
+        inlineSettings,
+        inlinePopup,
+      });
+    }
     const fieldCapability = resolveSupportedFieldCapability({
       containerUse: container.ownerUse,
       requestedWrapperUse: requestedStandaloneType ? undefined : container.wrapperUse,
@@ -10695,6 +11833,22 @@ export class FlowSurfacesService {
         }
       }
     }
+    if (container.jsonInferred) {
+      await this.assertJsonInferredFieldCatalogConfirmed({
+        target,
+        fieldPath: normalizedFieldBinding.fieldPath,
+        publicType: this.resolveFieldCatalogPublicType({
+          field: capabilityField,
+          fieldUse: boundFieldCapability.fieldUse,
+        }),
+        ownerPlugin: container.ownerPlugin || '',
+        origin: 'autoSnapshot',
+        wrapperUse: boundFieldCapability.wrapperUse,
+        fieldUse: boundFieldCapability.fieldUse,
+        transaction: options.transaction,
+        enabledPackages,
+      });
+    }
     if (inlinePopup && !this.isPopupFieldHostUse(boundFieldCapability.fieldUse)) {
       throwBadRequest(
         withJsPopupGuidance(
@@ -10864,6 +12018,15 @@ export class FlowSurfacesService {
       ...options,
       enabledPackages,
     });
+    if (container.jsonInferred) {
+      await this.assertJsonInferredFieldReadbackParity({
+        result,
+        expectedWrapperUse: boundFieldCapability.wrapperUse,
+        expectedFieldUse: boundFieldCapability.fieldUse,
+        expectedBinding: normalizedFieldBinding,
+        transaction: options.transaction,
+      });
+    }
     await this.persistCreatedKeysForAction('addField', values, result, options.transaction);
     return result;
   }
@@ -10886,21 +12049,55 @@ export class FlowSurfacesService {
     const inlinePopup = this.normalizeInlinePopup('addAction', values.popup);
     this.assertInlinePopupTemplateAliasesSupported('addAction', inlinePopup, options.popupTemplateAliasSession);
     const enabledPackages = await this.resolveEnabledPluginPackages(options);
-    const container = await this.surfaceContext.resolveActionContainer(target, options.transaction);
+    const container = await this.resolveAddActionContainer(target, {
+      transaction: options.transaction,
+      enabledPackages,
+    });
     if (getActionContainerScope(container.ownerUse) === 'record') {
       throwBadRequest(
         `flowSurfaces addAction target '${container.ownerUse}' is a record action surface, use addRecordAction`,
       );
     }
-    const actionCatalogItem = this.resolveAddActionCatalogItem(
+    const jsonInferredActionOwnerNode = await this.loadJsonInferredActionOwnerNode(
+      container.ownerUid,
+      options.transaction,
+    );
+    const jsonInferredActionCatalogItem = this.resolveJsonInferredAddActionCatalogItem(
       {
         type: values.type,
         use: values.use,
         containerUse: container.ownerUse,
+        targetNode: jsonInferredActionOwnerNode,
       },
       enabledPackages,
     );
+    const actionCatalogItem =
+      jsonInferredActionCatalogItem ||
+      this.resolveAddActionCatalogItem(
+        {
+          type: values.type,
+          use: values.use,
+          containerUse: container.ownerUse,
+        },
+        enabledPackages,
+      );
     const resolvedScope = actionCatalogItem.scope;
+    if (jsonInferredActionCatalogItem) {
+      this.assertJsonInferredActionCreatePayload({
+        publicType: jsonInferredActionCatalogItem.publicType || jsonInferredActionCatalogItem.key,
+        values,
+        inlineSettings,
+        inlinePopup,
+      });
+      await this.assertJsonInferredActionCatalogConfirmed({
+        publicType: jsonInferredActionCatalogItem.publicType || jsonInferredActionCatalogItem.key,
+        ownerPlugin: jsonInferredActionCatalogItem.ownerPlugin,
+        origin: jsonInferredActionCatalogItem.origin,
+        target,
+        transaction: options.transaction,
+        enabledPackages,
+      });
+    }
     if (!resolvedScope) {
       throwInternalError(
         `flowSurfaces addAction '${actionCatalogItem.use}' is missing a resolved action scope`,
@@ -10919,7 +12116,7 @@ export class FlowSurfacesService {
     assertRequestedActionScope({
       requestedScope: undefined,
       resolvedScope,
-      containerUse: container.ownerUse,
+      containerUse: jsonInferredActionCatalogItem ? undefined : container.ownerUse,
       context: 'addAction',
     });
     const reusableAction = await this.resolveReusableSingletonAction({
@@ -10974,15 +12171,25 @@ export class FlowSurfacesService {
         options.transaction,
       );
     }
-    const action = buildActionTree({
-      use: actionCatalogItem.use,
-      containerUse: container.ownerUse,
-      resourceInit: values.resourceInit || resourceContext?.resourceInit,
-      props: actionSettingsPayload.props,
-      decoratorProps: values.decoratorProps,
-      stepParams: actionSettingsPayload.stepParams,
-      flowRegistry: this.normalizeEventFlowRegistry('addAction', values.flowRegistry),
-    });
+    const action = jsonInferredActionCatalogItem
+      ? this.buildJsonInferredActionTree({
+          catalogItem: actionCatalogItem,
+          containerUse: container.ownerUse,
+          resourceInit: resourceContext?.resourceInit,
+          props: actionSettingsPayload.props,
+          decoratorProps: values.decoratorProps,
+          stepParams: actionSettingsPayload.stepParams,
+          flowRegistry: this.normalizeEventFlowRegistry('addAction', values.flowRegistry),
+        })
+      : buildActionTree({
+          use: actionCatalogItem.use,
+          containerUse: container.ownerUse,
+          resourceInit: values.resourceInit || resourceContext?.resourceInit,
+          props: actionSettingsPayload.props,
+          decoratorProps: values.decoratorProps,
+          stepParams: actionSettingsPayload.stepParams,
+          flowRegistry: this.normalizeEventFlowRegistry('addAction', values.flowRegistry),
+        });
     this.contractGuard.validateNodeTreeAgainstContract(action);
     const created = await this.repository.upsertModel(
       {
@@ -10993,6 +12200,18 @@ export class FlowSurfacesService {
       },
       { transaction: options.transaction },
     );
+    if (jsonInferredActionCatalogItem) {
+      await this.assertJsonInferredActionReadbackParity({
+        createdUid: created,
+        ownerUid: container.ownerUid,
+        subModelKey: container.subKey,
+        expectedNode: action,
+        expectedUse: actionCatalogItem.use,
+        publicType: jsonInferredActionCatalogItem.publicType || jsonInferredActionCatalogItem.key,
+        enabledPackages,
+        transaction: options.transaction,
+      });
+    }
     if (!this.isAIEmployeeActionUse(actionCatalogItem.use)) {
       await this.applyInlineNodeSettings('addAction', created, inlineSettings, options);
     }
@@ -17984,6 +19203,7 @@ export class FlowSurfacesService {
       popupTemplateAliasSession: runtimeOptions.popupTemplateAliasSession,
       popupTemplateTreeCache: runtimeOptions.popupTemplateTreeCache,
       dynamicCapabilityActionName: runtimeOptions.dynamicCapabilityActionName,
+      allowJsonInferredFieldAutoPopupMetadata: runtimeOptions.allowJsonInferredFieldAutoPopupMetadata,
     };
     let result: any;
     switch (op.type) {
@@ -18555,6 +19775,197 @@ export class FlowSurfacesService {
       context: 'addAction',
       enabledPackages,
       requireCreateSupported: true,
+    });
+  }
+
+  private resolveJsonInferredAddActionCatalogItem(
+    input: { type?: string; use?: string; containerUse: string; targetNode?: unknown },
+    enabledPackages?: ReadonlySet<string>,
+  ): FlowSurfaceCatalogItem | null {
+    const requestedPublicType = String(input.type || input.use || '').trim();
+    if (!requestedPublicType) {
+      return null;
+    }
+    const capabilityPolicyConfig = readFlowSurfaceCapabilityPolicyConfigFromPluginOptions(this.plugin.options);
+    if (capabilityPolicyConfig.writePolicy.mode !== 'jsonInferred') {
+      return null;
+    }
+    const candidates = this.collectJsonInferredAutoSnapshotActionChildren({
+      ownerUse: String(input.containerUse || '').trim(),
+      targetNode: input.targetNode,
+      enabledPackages: enabledPackages || new Set<string>(),
+      capabilityPolicyConfig,
+    });
+    const matched = candidates.find(({ child }) => child.publicType === requestedPublicType);
+    if (!matched) {
+      return null;
+    }
+    const label = String(matched.child.label || matched.child.publicType).trim() || matched.child.publicType;
+    return {
+      key: matched.child.publicType,
+      label,
+      use: matched.child.modelUse,
+      kind: 'action',
+      publicType: matched.child.publicType,
+      semantic: {
+        title: label,
+        aliases: [matched.child.publicType],
+      },
+      ownerPlugin: matched.parent.ownerPlugin,
+      origin: matched.parent.origin,
+      supportLevel: 'create-only',
+      confidence: matched.parent.confidence,
+      availability: {
+        render: { supported: true },
+        readback: { supported: true },
+        create: {
+          supported: true,
+        },
+        configure: {
+          supported: false,
+          reasonCode: 'contract-not-verified',
+          reasonSource: 'registry',
+        },
+      },
+      scope: 'block',
+      scene: 'collection',
+      createSupported: true,
+      ...(matched.child.builderContainerUse ? { builderContainerUse: matched.child.builderContainerUse } : {}),
+    };
+  }
+
+  private async loadJsonInferredActionOwnerNode(ownerUid?: string, transaction?: any) {
+    const normalizedOwnerUid = String(ownerUid || '').trim();
+    if (!normalizedOwnerUid) {
+      return null;
+    }
+    return this.repository
+      .findModelById(normalizedOwnerUid, {
+        transaction,
+        includeAsyncNode: true,
+      })
+      .catch(() => null);
+  }
+
+  private assertJsonInferredActionCreatePayload(input: {
+    publicType: string;
+    values: Record<string, any>;
+    inlineSettings?: Record<string, any>;
+    inlinePopup?: Record<string, any>;
+  }) {
+    const forbiddenKeys = [
+      'props',
+      'decoratorProps',
+      'stepParams',
+      'flowRegistry',
+      'resourceInit',
+      'settings',
+      'popup',
+    ].filter((key) => hasOwnDefined(input.values || {}, key));
+    if (!forbiddenKeys.length && !input.inlineSettings && !input.inlinePopup) {
+      return;
+    }
+    throw new FlowSurfaceBadRequestError(
+      `flowSurfaces addAction JSON inferred action '${input.publicType}' only supports zero-config creates`,
+      undefined,
+      {
+        details: {
+          reasonCode: 'contract-not-verified',
+          reasonSource: 'registry',
+          publicType: input.publicType,
+          forbiddenKeys,
+        },
+      },
+    );
+  }
+
+  private async assertJsonInferredActionReadbackParity(input: {
+    createdUid: string;
+    ownerUid?: string;
+    subModelKey?: string;
+    expectedNode: FlowSurfaceNodeSpec;
+    expectedUse: string;
+    publicType: string;
+    enabledPackages: ReadonlySet<string>;
+    transaction?: any;
+  }) {
+    const persistedNode = await this.repository
+      .findModelById(input.createdUid, {
+        transaction: input.transaction,
+        includeAsyncNode: true,
+      })
+      .catch(() => null);
+    const actualUse = String((persistedNode as Record<string, unknown> | null)?.use || '').trim();
+    const ownerNode = input.ownerUid
+      ? ((await this.repository
+          .findModelById(input.ownerUid, {
+            transaction: input.transaction,
+            includeAsyncNode: true,
+          })
+          .catch(() => null)) as Record<string, unknown> | null)
+      : null;
+    const capabilityPolicyConfig = readFlowSurfaceCapabilityPolicyConfigFromPluginOptions(this.plugin.options);
+    const projectedPublicType = this.resolveJsonInferredActionReadbackPublicTypeForNode({
+      actionNode: (persistedNode || {}) as Record<string, unknown>,
+      ownerNode: ownerNode || undefined,
+      subModelKey: input.subModelKey,
+      capabilities: collectAutoSnapshotPublicCapabilities({
+        autoSnapshots: this.autoSnapshots,
+        enabledPackages: input.enabledPackages,
+      }),
+      capabilityPolicyConfig,
+      enabledPackages: input.enabledPackages,
+    });
+    if (
+      actualUse === input.expectedUse &&
+      projectedPublicType === input.publicType &&
+      this.isJsonInferredActionReadbackParityMatch(persistedNode, input.expectedNode)
+    ) {
+      return;
+    }
+    throwBadRequest(`flowSurfaces addAction JSON inferred action '${input.publicType}' failed readback parity guard`, {
+      details: {
+        reasonCode: 'readback-parity-failed',
+        reasonSource: 'builder',
+        publicType: input.publicType,
+      },
+    });
+  }
+
+  private isJsonInferredActionReadbackParityMatch(readbackNode: unknown, expectedNode: FlowSurfaceNodeSpec) {
+    const readback = readbackNode as Record<string, unknown> | null;
+    const expected = expectedNode as Record<string, unknown>;
+    return ['props', 'decoratorProps', 'stepParams', 'flowRegistry', 'subModels'].every((key) =>
+      _.isEqual(readback?.[key], expected[key]),
+    );
+  }
+
+  private buildJsonInferredActionTree(input: {
+    catalogItem: FlowSurfaceCatalogItem;
+    containerUse?: string;
+    resourceInit?: Record<string, any>;
+    props?: Record<string, any>;
+    decoratorProps?: Record<string, any>;
+    stepParams?: Record<string, any>;
+    flowRegistry?: Record<string, any>;
+  }) {
+    if (JSON_INFERRED_INTERNAL_ACTION_BUILDER_USES.has(input.catalogItem.use)) {
+      return buildDefinedPayload({
+        use: input.catalogItem.use,
+        props: _.cloneDeep(input.props || {}),
+        decoratorProps: _.cloneDeep(input.decoratorProps || {}),
+        stepParams: _.cloneDeep(input.stepParams || {}),
+        flowRegistry: _.cloneDeep(input.flowRegistry || {}),
+      });
+    }
+    return buildActionTree({
+      use: input.catalogItem.use,
+      containerUse: input.catalogItem.builderContainerUse,
+      resourceInit: input.resourceInit,
+      props: input.props,
+      decoratorProps: input.decoratorProps,
+      stepParams: input.stepParams,
+      flowRegistry: input.flowRegistry,
     });
   }
 
@@ -24878,11 +26289,26 @@ export class FlowSurfacesService {
     } = {},
   ): Promise<FlowSurfaceCatalogProjectableItem[]> {
     const resolved = await this.locator.resolve(target, { transaction: options.transaction });
-    const container = await this.surfaceContext
-      .resolveFieldContainer(resolved.uid, options.transaction)
-      .catch(() => null);
+    const container = await this.resolveAddFieldContainer(resolved.uid, {
+      transaction: options.transaction,
+      enabledPackages: options.enabledPackages || new Set<string>(),
+      allowJsonInferred: true,
+    }).catch(() => null);
     if (!container) {
       return [];
+    }
+    if (container.jsonInferred) {
+      const resourceContext = await this.locator.resolveCollectionContext(container.ownerUid, options.transaction);
+      if (!resourceContext?.resourceInit) {
+        return [];
+      }
+      return this.buildJsonInferredFieldCatalogEntriesForResource({
+        ownerUse: container.ownerUse,
+        ownerPlugin: container.ownerPlugin,
+        wrapperUse: container.wrapperUse,
+        resourceInit: resourceContext.resourceInit,
+        enabledPackages: options.enabledPackages,
+      });
     }
     if (container.wrapperUse === 'FilterFormItemModel') {
       const targets = await this.surfaceContext.collectFilterFormTargets(container.ownerUid, options.transaction);
@@ -25430,6 +26856,87 @@ export class FlowSurfacesService {
     }
 
     return this.buildLegacyFieldCatalogEntriesForResource(input);
+  }
+
+  private buildJsonInferredFieldCatalogEntriesForResource(input: {
+    ownerUse: string;
+    ownerPlugin?: string;
+    wrapperUse: string;
+    resourceInit: Record<string, any>;
+    enabledPackages?: ReadonlySet<string>;
+  }): FlowSurfaceCatalogProjectableItem[] {
+    const collection = this.getCollection(input.resourceInit.dataSourceKey, input.resourceInit.collectionName);
+    const ownerPlugin = input.ownerPlugin || 'autoSnapshot';
+    return getCollectionFields(collection).flatMap((field) => {
+      const fieldName = getFieldName(field);
+      if (!fieldName || !getFieldInterface(field)) {
+        return [];
+      }
+      try {
+        const capabilityField = this.resolvePreferredFieldForCapability({
+          containerUse: input.ownerUse,
+          dataSourceKey: input.resourceInit.dataSourceKey,
+          field,
+        });
+        const fieldCapability = resolveSupportedFieldCapability({
+          containerUse: input.ownerUse,
+          field: capabilityField,
+          requestedWrapperUse: input.wrapperUse,
+          enabledPackages: input.enabledPackages,
+          dataSourceKey: input.resourceInit.dataSourceKey,
+          getCollection: (dataSourceKey, collectionName) => this.getCollection(dataSourceKey, collectionName),
+        });
+        if (fieldCapability.wrapperUse !== input.wrapperUse || !fieldCapability.fieldUse) {
+          return [];
+        }
+        const publicType = this.resolveFieldCatalogPublicType({
+          field,
+          fieldUse: fieldCapability.fieldUse,
+        });
+        const availability: FlowSurfaceCapabilityAvailability = {
+          render: { supported: true },
+          readback: { supported: true },
+          create: {
+            supported: true,
+            acceptsInitParams: true,
+            acceptsSettings: false,
+          },
+          configure: {
+            supported: false,
+            reasonCode: 'contract-not-verified',
+            reasonSource: 'registry',
+          },
+        };
+        return [
+          {
+            key: fieldName,
+            label: getFieldTitle(field),
+            kind: 'field' as const,
+            use: input.wrapperUse,
+            publicType,
+            fieldUse: fieldCapability.fieldUse,
+            wrapperUse: input.wrapperUse,
+            requiredInitParams: ['fieldPath'],
+            ownerPlugin,
+            origin: 'autoSnapshot' as const,
+            supportLevel: 'create-only' as const,
+            confidence: 'high' as const,
+            availability,
+            createSupported: true,
+            identity: {
+              capabilityId: [
+                'autoSnapshot',
+                'fieldComponent',
+                encodeURIComponent(ownerPlugin),
+                encodeURIComponent(publicType || fieldName),
+              ].join(':'),
+            },
+          },
+        ];
+      } catch {
+        return [];
+      }
+    });
   }
 
   private buildLegacyFieldCatalogEntriesForResource(input: {

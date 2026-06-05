@@ -44,10 +44,16 @@ export function resolveFlowSurfaceCapabilityReadiness(
   }
 
   if (item.origin === 'autoSnapshot') {
-    return item.availability.render.supported === false &&
+    if (
+      item.availability.render.supported === false &&
       isBlockingRenderReasonCode(item.availability.render.reasonCode)
-      ? 'blocked'
-      : 'discovered';
+    ) {
+      return 'blocked';
+    }
+    if (item.availability.create.supported) {
+      return 'createEnabled';
+    }
+    return 'discovered';
   }
 
   if (item.availability.render.supported === false && isBlockingRenderReasonCode(item.availability.render.reasonCode)) {

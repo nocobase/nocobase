@@ -407,6 +407,19 @@ export type NormalizedComposeFieldSpec = {
   [FLOW_SURFACE_APPLY_BLUEPRINT_POPUP_DEFAULTS_KEY]?: FlowSurfaceApplyBlueprintPopupDefaultsMetadata;
 };
 
+function assertNoInternalComposeFieldMetadata(input: Record<string, any> | undefined, context: string) {
+  if (!_.isPlainObject(input)) {
+    return;
+  }
+  const forbidden = ['__autoPopupForRelationField', FLOW_SURFACE_APPLY_BLUEPRINT_POPUP_DEFAULTS_KEY].filter((key) =>
+    Object.prototype.hasOwnProperty.call(input, key),
+  );
+  if (!forbidden.length) {
+    return;
+  }
+  throwBadRequest(`${context} does not accept internal field metadata: ${forbidden.join(', ')}`);
+}
+
 export function normalizeComposeFieldSpec(input: any, index: number): NormalizedComposeFieldSpec {
   if (typeof input === 'string') {
     const fieldPath = String(input || '').trim();
@@ -427,6 +440,8 @@ export function normalizeComposeFieldSpec(input: any, index: number): Normalized
   }
   assertNoInternalFieldKeys(input, `flowSurfaces compose field #${index + 1}`);
   assertNoInternalFieldKeys(input.settings, `flowSurfaces compose field #${index + 1}.settings`);
+  assertNoInternalComposeFieldMetadata(input, `flowSurfaces compose field #${index + 1}`);
+  assertNoInternalComposeFieldMetadata(input.settings, `flowSurfaces compose field #${index + 1}.settings`);
   const semanticType = String(input.type || '').trim() || undefined;
   const fieldPath = String(input.fieldPath || '').trim();
   const renderer = typeof input.renderer === 'undefined' ? undefined : String(input.renderer || '').trim();

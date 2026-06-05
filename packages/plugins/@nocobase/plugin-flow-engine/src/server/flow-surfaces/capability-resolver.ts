@@ -13,6 +13,7 @@ import {
   collectNormalizedProviderCapabilities,
   getFlowSurfacePublicCapabilityAdmissionCapabilityId,
   getFlowSurfacePublicCapabilityAdmissionIntegrity,
+  getFlowSurfacePublicCapabilityInferredAuthoring,
   getFlowSurfacePublicCapabilityModelUses,
   type FlowSurfaceCapabilityRegistryLike,
 } from './capability-registry';
@@ -55,6 +56,7 @@ const DYNAMIC_FORBIDDEN_PUBLIC_KEYS = new Set([
   'decoratorProps',
   'stepParams',
   'flowRegistry',
+  'resourceInit',
   'createModelOptions',
   'defaultNode',
   'lens',
@@ -113,9 +115,27 @@ type VerifiedAutoSnapshotDynamicCreateResolution =
       capability: FlowSurfaceDynamicAutoSnapshotCreateCapability;
     };
 
+type JsonInferredAutoSnapshotDynamicCreateResolution =
+  | {
+      status: 'not-found';
+    }
+  | {
+      status: 'blocked';
+      reasonCode: FlowSurfaceReasonCode;
+    }
+  | {
+      status: 'verified';
+      capability: FlowSurfaceDynamicJsonInferredSnapshotCreateCapability;
+    };
+
 type FlowSurfaceDynamicAutoSnapshotCreateCapability = {
   publicItem: ReturnType<typeof collectAutoSnapshotPublicCapabilities>[number];
   modelUse: string;
+};
+
+type FlowSurfaceDynamicJsonInferredSnapshotCreateCapability = {
+  publicItem: ReturnType<typeof collectAutoSnapshotPublicCapabilities>[number];
+  inferredAuthoring: NonNullable<ReturnType<typeof getFlowSurfacePublicCapabilityInferredAuthoring>>;
 };
 
 const PROVIDER_VALIDATION_ERROR_CODES = new Set<FlowSurfaceCapabilityValidationError['code']>([
@@ -178,6 +198,27 @@ export async function resolveDynamicCapabilityCreate(
   });
 
   if (!providerCapability) {
+    const jsonInferredAutoSnapshot = resolveJsonInferredAutoSnapshotDynamicCreateCapability({
+      kind,
+      publicType,
+      ownerPlugin: input.ownerPlugin,
+      enabledPackages: input.enabledPackages,
+      autoSnapshots: input.autoSnapshots,
+      capabilityPolicyConfig: input.capabilityPolicyConfig,
+      allowUnavailable: input.allowUnavailable === true,
+    });
+    if (jsonInferredAutoSnapshot.status === 'verified') {
+      return resolveJsonInferredAutoSnapshotDynamicCreate({
+        capability: jsonInferredAutoSnapshot.capability,
+        publicInput,
+        target: input.target,
+        actionName: input.actionName || 'validateCapabilityCreate',
+      });
+    }
+    if (jsonInferredAutoSnapshot.status === 'blocked') {
+      throwDynamicCreateNotEnabled(publicType, jsonInferredAutoSnapshot.reasonCode);
+    }
+
     const verifiedAutoSnapshot = resolveVerifiedAutoSnapshotDynamicCreateCapability({
       kind,
       publicType,
@@ -362,6 +403,142 @@ function matchesDynamicCapabilityPublicType(item: FlowSurfacePublicCapabilityIte
     return true;
   }
   return (item.publicTypeMeta.acceptedAliases || []).some((alias) => alias === normalizedType);
+}
+
+function resolveJsonInferredAutoSnapshotDynamicCreateCapability(input: {
+  kind: 'block';
+  publicType: string;
+  ownerPlugin?: string;
+  enabledPackages: ReadonlySet<string>;
+  autoSnapshots?: readonly FlowSurfaceAutoSnapshot[];
+  capabilityPolicyConfig?: FlowSurfaceCapabilityPolicyConfig | NormalizedFlowSurfaceCapabilityPolicyConfig | null;
+  allowUnavailable?: boolean;
+}): JsonInferredAutoSnapshotDynamicCreateResolution {
+  const candidates = collectAutoSnapshotPublicCapabilities({
+    autoSnapshots: input.autoSnapshots,
+    enabledPackages: input.enabledPackages,
+  }).filter((capability) => {
+    if (capability.kind !== input.kind) {
+      return false;
+    }
+    return input.ownerPlugin ? capability.ownerPlugin === input.ownerPlugin : true;
+  });
+  const capabilityPolicyConfig = normalizeFlowSurfaceCapabilityPolicyConfig(input.capabilityPolicyConfig);
+  const exactItem =
+    capabilityPolicyConfig.writePolicy.mode === 'jsonInferred'
+      ? undefined
+      : candidates.find((capability) => capability.publicType === input.publicType);
+  if (exactItem && !getFlowSurfacePublicCapabilityInferredAuthoring(exactItem)) {
+    return {
+      status: 'not-found',
+    };
+  }
+  const item =
+    exactItem ||
+    candidates.find(
+      (capability) =>
+        !!getFlowSurfacePublicCapabilityInferredAuthoring(capability) &&
+        matchesDynamicCapabilityPublicType(capability, input.publicType),
+    );
+  if (!item) {
+    return {
+      status: 'not-found',
+    };
+  }
+
+  const policyProjectedItem = applyFlowSurfaceCapabilityWritePolicy(item, input.capabilityPolicyConfig);
+  const inferredAuthoring = getFlowSurfacePublicCapabilityInferredAuthoring(policyProjectedItem);
+  if (!inferredAuthoring) {
+    return {
+      status: 'not-found',
+    };
+  }
+  if (!input.allowUnavailable && !policyProjectedItem.availability.create.supported) {
+    return {
+      status: 'blocked',
+      reasonCode: policyProjectedItem.availability.create.reasonCode || 'contract-not-verified',
+    };
+  }
+  if (!inferredAuthoring.createRecipe) {
+    return {
+      status: 'blocked',
+      reasonCode: 'missing-create-contract',
+    };
+  }
+
+  return {
+    status: 'verified',
+    capability: {
+      publicItem: policyProjectedItem,
+      inferredAuthoring,
+    },
+  };
+}
+
+function resolveJsonInferredAutoSnapshotDynamicCreate(input: {
+  capability: FlowSurfaceDynamicJsonInferredSnapshotCreateCapability;
+  publicInput: FlowSurfaceDynamicCapabilityPublicInput;
+  target?: ResolveDynamicCapabilityCreateOptions['target'];
+  actionName: FlowSurfaceDynamicCapabilityCreateActionName;
+}): FlowSurfaceDynamicCapabilityCreateResponse {
+  const publicItem = input.capability.publicItem;
+  const createRecipe = input.capability.inferredAuthoring.createRecipe;
+  if (!createRecipe) {
+    throwMissingCreateContract(publicItem.publicType);
+  }
+  const validationErrors = [
+    ...validateJsonObjectSchema(publicItem.initParamsSchema, input.publicInput.initParams || {}, 'initParams'),
+    ...validateJsonObjectSchema(publicItem.settingsSchema, input.publicInput.settings || {}, 'settings'),
+  ];
+  if (validationErrors.length) {
+    throwCapabilityValidationErrors(validationErrors);
+  }
+
+  const publicPayload = buildDynamicCapabilityPublicPayload({
+    publicType: publicItem.publicType,
+    target: input.target,
+    publicInput: input.publicInput,
+  });
+  assertPublicPayloadDoesNotContainInternalKeys(publicPayload);
+  const node = resolveJsonCreateRecipe({
+    recipe: createRecipe,
+    publicInput: input.publicInput,
+  });
+  try {
+    assertJsonInferredCreatedNodeUse(publicItem.publicType, input.capability.inferredAuthoring.modelUse, node);
+    validateFlowSurfacePayloadShape(input.actionName, node, 'node');
+    new FlowSurfaceContractGuard().validateNodeTreeAgainstContract(node);
+  } catch (error) {
+    const message = sanitizeProviderPublicMessage(
+      error instanceof Error ? error.message : '',
+      'generated node failed contract guard',
+    );
+    throwCapabilityValidationErrors([
+      {
+        path: 'settings',
+        code: 'contract-guard-failed',
+        message,
+      },
+    ]);
+  }
+
+  return {
+    capability: publicItem,
+    publicPayload,
+    node,
+    warnings: publicItem.warnings || [],
+  };
+}
+
+function assertJsonInferredCreatedNodeUse(publicType: string, expectedModelUse: string, node: FlowSurfaceNodeSpec) {
+  const expectedUse = normalizeRequiredString(expectedModelUse);
+  const actualUse = normalizeRequiredString(node?.use);
+  if (expectedUse && actualUse === expectedUse) {
+    return;
+  }
+  throw new Error(
+    `json inferred capability '${publicType}' generated incompatible node use '${actualUse || 'unknown'}'`,
+  );
 }
 
 function resolveVerifiedAutoSnapshotDynamicCreateCapability(input: {

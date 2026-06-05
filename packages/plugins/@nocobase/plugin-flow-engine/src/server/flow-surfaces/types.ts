@@ -585,6 +585,7 @@ export type FlowSurfaceCatalogItem = {
   use: string;
   kind: 'page' | 'tab' | 'block' | 'field' | 'action';
   publicType?: string;
+  acceptedAliases?: string[];
   semantic?: FlowSurfaceCapabilitySemantic;
   ownerPlugin?: string;
   origin?: FlowSurfaceCapabilityOriginSource;
@@ -612,6 +613,7 @@ export type FlowSurfaceCatalogItem = {
   associationPathName?: string;
   defaultTargetUid?: string;
   targetBlockUid?: string;
+  builderContainerUse?: string;
 };
 
 export type FlowSurfaceCatalogSection = 'blocks' | 'fields' | 'actions' | 'recordActions' | 'node';

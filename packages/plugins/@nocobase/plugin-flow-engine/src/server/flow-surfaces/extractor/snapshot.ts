@@ -13,6 +13,7 @@ import { lstat, mkdir, open, readdir, realpath, rename, unlink, writeFile } from
 import { basename, parse, resolve, sep } from 'path';
 import { storagePathJoin } from '@nocobase/utils';
 import _ from 'lodash';
+import { inferFlowSurfaceAutoSnapshotAuthoring } from './inferred-authoring';
 import type {
   FlowSurfaceCapabilityConfidence,
   FlowSurfaceCapabilityKind,
@@ -21,8 +22,14 @@ import type {
 import {
   FLOW_SURFACE_AUTO_SNAPSHOT_VERSION,
   type FlowSurfaceAutoCapabilityCandidate,
+  type FlowSurfaceAutoAllowedChild,
+  type FlowSurfaceAutoChildSurface,
   type FlowSurfaceAutoFieldBinding,
   type FlowSurfaceAutoFlow,
+  type FlowSurfaceAutoInferredAuthoring,
+  type FlowSurfaceAutoInferredAuthoringCapability,
+  type FlowSurfaceAutoInferredAuthoringConfidence,
+  type FlowSurfaceAutoInferredAuthoringEvidence,
   type FlowSurfaceAutoMenuItem,
   type FlowSurfaceAutoModel,
   type FlowSurfaceAutoSnapshot,
@@ -72,7 +79,7 @@ const CONFIDENCE_RANK: Record<FlowSurfaceCapabilityConfidence, number> = {
 };
 
 export function buildFlowSurfaceAutoSnapshot(input: BuildFlowSurfaceAutoSnapshotInput): FlowSurfaceAutoSnapshot {
-  return {
+  const snapshot: FlowSurfaceAutoSnapshot = {
     version: FLOW_SURFACE_AUTO_SNAPSHOT_VERSION,
     plugin: input.plugin,
     ...(input.pluginVersion ? { pluginVersion: input.pluginVersion } : {}),
@@ -90,6 +97,11 @@ export function buildFlowSurfaceAutoSnapshot(input: BuildFlowSurfaceAutoSnapshot
       ...input.events.flatMap((event) => (event.type === 'warning' ? [event.warning] : [])),
     ]),
   };
+  const inferredAuthoring = inferFlowSurfaceAutoSnapshotAuthoring(snapshot);
+  if (inferredAuthoring) {
+    snapshot.inferredAuthoring = inferredAuthoring;
+  }
+  return snapshot;
 }
 
 export function deriveFlowSurfaceAutoCapabilityCandidates(
@@ -439,7 +451,76 @@ function isFlowSurfaceAutoSnapshot(value: unknown): value is FlowSurfaceAutoSnap
     isArrayOf(value.menuItems, isFlowSurfaceAutoMenuItem) &&
     isArrayOf(value.fieldBindings, isFlowSurfaceAutoFieldBinding) &&
     isArrayOf(value.flows, isFlowSurfaceAutoFlow) &&
+    (typeof value.inferredAuthoring === 'undefined' || isFlowSurfaceAutoInferredAuthoring(value.inferredAuthoring)) &&
     isArrayOf(value.warnings, isFlowSurfaceCapabilityWarning)
+  );
+}
+
+function isFlowSurfaceAutoInferredAuthoring(value: unknown): value is FlowSurfaceAutoInferredAuthoring {
+  return isPlainRecord(value) && isArrayOf(value.capabilities, isFlowSurfaceAutoInferredAuthoringCapability);
+}
+
+function isFlowSurfaceAutoInferredAuthoringCapability(
+  value: unknown,
+): value is FlowSurfaceAutoInferredAuthoringCapability {
+  return (
+    isPlainRecord(value) &&
+    isFlowSurfaceAutoCapabilityKind(value.kind) &&
+    typeof value.publicType === 'string' &&
+    (typeof value.acceptedAliases === 'undefined' || isArrayOf(value.acceptedAliases, isString)) &&
+    typeof value.ownerPlugin === 'string' &&
+    typeof value.modelUse === 'string' &&
+    typeof value.label === 'string' &&
+    (typeof value.placement === 'undefined' || isJsonSafePlainValue(value.placement)) &&
+    isFlowSurfaceAutoInferredAuthoringConfidence(value.confidence) &&
+    (typeof value.initParamsSchema === 'undefined' || isJsonSafePlainValue(value.initParamsSchema)) &&
+    (typeof value.settingsSchema === 'undefined' || isJsonSafePlainValue(value.settingsSchema)) &&
+    (typeof value.configureOptions === 'undefined' || isJsonSafePlainValue(value.configureOptions)) &&
+    (typeof value.createRecipe === 'undefined' || isJsonSafePlainValue(value.createRecipe)) &&
+    (typeof value.childSurfaces === 'undefined' || isArrayOf(value.childSurfaces, isFlowSurfaceAutoChildSurface)) &&
+    (typeof value.allowedChildren === 'undefined' || isArrayOf(value.allowedChildren, isFlowSurfaceAutoAllowedChild)) &&
+    isArrayOf(value.evidence, isFlowSurfaceAutoInferredAuthoringEvidence) &&
+    (typeof value.warnings === 'undefined' || isArrayOf(value.warnings, isFlowSurfaceCapabilityWarning))
+  );
+}
+
+function isFlowSurfaceAutoInferredAuthoringConfidence(
+  value: unknown,
+): value is FlowSurfaceAutoInferredAuthoringConfidence {
+  return (
+    isPlainRecord(value) &&
+    isFlowSurfaceCapabilityConfidence(value.discovery) &&
+    isFlowSurfaceCapabilityConfidence(value.placement) &&
+    isFlowSurfaceCapabilityConfidence(value.tree) &&
+    isFlowSurfaceCapabilityConfidence(value.settings) &&
+    isFlowSurfaceCapabilityConfidence(value.write)
+  );
+}
+
+function isFlowSurfaceAutoInferredAuthoringEvidence(value: unknown): value is FlowSurfaceAutoInferredAuthoringEvidence {
+  return (
+    isPlainRecord(value) && isFlowSurfaceAutoInferredAuthoringEvidenceType(value.type) && typeof value.ref === 'string'
+  );
+}
+
+function isFlowSurfaceAutoChildSurface(value: unknown): value is FlowSurfaceAutoChildSurface {
+  return (
+    isPlainRecord(value) &&
+    typeof value.key === 'string' &&
+    typeof value.parentModelUse === 'string' &&
+    typeof value.subModelKey === 'string' &&
+    isFlowSurfaceAutoChildSurfaceKind(value.kind) &&
+    (typeof value.allowedChildren === 'undefined' || isArrayOf(value.allowedChildren, isString))
+  );
+}
+
+function isFlowSurfaceAutoAllowedChild(value: unknown): value is FlowSurfaceAutoAllowedChild {
+  return (
+    isPlainRecord(value) &&
+    isFlowSurfaceAutoChildSurfaceKind(value.kind) &&
+    typeof value.modelUse === 'string' &&
+    hasOptionalStringFields(value, ['publicType', 'label']) &&
+    (typeof value.conditions === 'undefined' || isArrayOf(value.conditions, isString))
   );
 }
 
@@ -464,8 +545,11 @@ function isFlowSurfaceAutoMenuItem(value: unknown): value is FlowSurfaceAutoMenu
       'menuKey',
       'modelUse',
       'slot',
+      'createModelOptionsUse',
     ]) &&
     isFlowSurfaceExtractorCreateModelOptionsStatus(value.createModelOptionsStatus) &&
+    (typeof value.createModelOptionsSubModels === 'undefined' ||
+      isFlowSurfaceCreateModelOptionsSubModels(value.createModelOptionsSubModels)) &&
     isArrayOf(value.sourceRefs, isFlowSurfaceAutoSourceRef) &&
     isFlowSurfaceCapabilityConfidence(value.confidence)
   );
@@ -509,6 +593,34 @@ function isFlowSurfaceCapabilityConfidence(value: unknown): value is FlowSurface
   return value === 'low' || value === 'medium' || value === 'high';
 }
 
+function isFlowSurfaceAutoCapabilityKind(value: unknown): value is FlowSurfaceCapabilityKind {
+  return (
+    value === 'block' ||
+    value === 'action' ||
+    value === 'fieldComponent' ||
+    value === 'fieldBinding' ||
+    value === 'fieldInterface'
+  );
+}
+
+function isFlowSurfaceAutoInferredAuthoringEvidenceType(
+  value: unknown,
+): value is FlowSurfaceAutoInferredAuthoringEvidence['type'] {
+  return (
+    value === 'model' ||
+    value === 'menuItem' ||
+    value === 'flow' ||
+    value === 'fieldBinding' ||
+    value === 'ast' ||
+    value === 'runtimeMock' ||
+    value === 'coreTemplate'
+  );
+}
+
+function isFlowSurfaceAutoChildSurfaceKind(value: unknown): value is FlowSurfaceAutoChildSurface['kind'] {
+  return value === 'block' || value === 'action' || value === 'fieldComponent';
+}
+
 function isFlowSurfaceExtractorEvidenceSource(value: unknown): value is FlowSurfaceExtractorEvidenceSource {
   return value === 'runtime' || value === 'ast';
 }
@@ -546,12 +658,56 @@ function isPlainRecord(value: unknown): value is Record<string, unknown> {
   return _.isPlainObject(value);
 }
 
+function isString(value: unknown): value is string {
+  return typeof value === 'string';
+}
+
+function isFlowSurfaceCreateModelOptionsSubModels(
+  value: unknown,
+): value is FlowSurfaceAutoMenuItem['createModelOptionsSubModels'] {
+  return isPlainRecord(value) && Object.values(value).every((items) => isArrayOf(items, isString));
+}
+
+function hasCreateModelOptionsSubModels(
+  value: unknown,
+): value is FlowSurfaceAutoMenuItem['createModelOptionsSubModels'] {
+  return isFlowSurfaceCreateModelOptionsSubModels(value) && Object.keys(value).length > 0;
+}
+
 function isArrayOf<T>(value: unknown, guard: (item: unknown) => item is T): value is T[] {
   return Array.isArray(value) && value.every(guard);
 }
 
 function hasOptionalStringFields(value: Record<string, unknown>, fields: readonly string[]) {
   return fields.every((field) => typeof value[field] === 'undefined' || typeof value[field] === 'string');
+}
+
+function isJsonSafePlainValue(value: unknown, seen: WeakSet<object> = new WeakSet()): boolean {
+  if (
+    typeof value === 'undefined' ||
+    typeof value === 'function' ||
+    typeof value === 'symbol' ||
+    typeof value === 'bigint'
+  ) {
+    return false;
+  }
+  if (value === null || typeof value === 'string' || typeof value === 'boolean') {
+    return true;
+  }
+  if (typeof value === 'number') {
+    return Number.isFinite(value);
+  }
+  if (Array.isArray(value)) {
+    return value.every((item) => isJsonSafePlainValue(item, seen));
+  }
+  if (!isPlainRecord(value)) {
+    return false;
+  }
+  if (seen.has(value)) {
+    return false;
+  }
+  seen.add(value);
+  return Object.entries(value).every(([key, item]) => key.length > 0 && isJsonSafePlainValue(item, seen));
 }
 
 function isNodeError(error: unknown): error is NodeJS.ErrnoException {
@@ -604,6 +760,10 @@ function collectAutoMenuItems(events: FlowSurfaceExtractionEvent[]): FlowSurface
         ...(event.modelUse ? { modelUse: event.modelUse } : {}),
         ...(event.slot ? { slot: event.slot } : {}),
         createModelOptionsStatus: event.createModelOptionsStatus,
+        ...(event.createModelOptionsUse ? { createModelOptionsUse: event.createModelOptionsUse } : {}),
+        ...(hasCreateModelOptionsSubModels(event.createModelOptionsSubModels)
+          ? { createModelOptionsSubModels: event.createModelOptionsSubModels }
+          : {}),
         sourceRefs: [sourceRef],
         confidence: event.confidence,
       });
@@ -614,6 +774,14 @@ function collectAutoMenuItems(events: FlowSurfaceExtractionEvent[]): FlowSurface
     existing.createModelOptionsStatus = mergeCreateModelOptionsStatus(
       existing.createModelOptionsStatus,
       event.createModelOptionsStatus,
+    );
+    existing.createModelOptionsUse = mergeCreateModelOptionsUse(
+      existing.createModelOptionsUse,
+      event.createModelOptionsUse,
+    );
+    existing.createModelOptionsSubModels = mergeCreateModelOptionsSubModels(
+      existing.createModelOptionsSubModels,
+      event.createModelOptionsSubModels,
     );
     mergeLabelFields(existing, event);
   });
@@ -945,6 +1113,36 @@ function mergeCreateModelOptionsStatus(
     return 'static';
   }
   return 'unresolved';
+}
+
+function mergeCreateModelOptionsUse(left: string | undefined, right: string | undefined) {
+  if (!left) {
+    return right;
+  }
+  if (!right || right === left) {
+    return left;
+  }
+  return undefined;
+}
+
+function mergeCreateModelOptionsSubModels(
+  left: FlowSurfaceAutoMenuItem['createModelOptionsSubModels'],
+  right: FlowSurfaceAutoMenuItem['createModelOptionsSubModels'],
+) {
+  if (!hasCreateModelOptionsSubModels(left)) {
+    return hasCreateModelOptionsSubModels(right) ? right : undefined;
+  }
+  if (!hasCreateModelOptionsSubModels(right)) {
+    return left;
+  }
+  const merged: NonNullable<FlowSurfaceAutoMenuItem['createModelOptionsSubModels']> = {};
+  Array.from(new Set([...Object.keys(left), ...Object.keys(right)])).forEach((key) => {
+    const values = Array.from(new Set([...(left[key] || []), ...(right[key] || [])]));
+    if (values.length) {
+      merged[key] = values;
+    }
+  });
+  return hasCreateModelOptionsSubModels(merged) ? merged : undefined;
 }
 
 function mergeStaticStatus(left: FlowSurfaceAutoFlow['staticStatus'], right: FlowSurfaceAutoFlow['staticStatus']) {

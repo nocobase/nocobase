@@ -565,6 +565,8 @@ export function createFlowSurfaceMockModelClass(input: {
     }
 
     static define(definition: FlowSurfaceUnknownModelDefinition) {
+      const createModelOptions = getOwnDataPropertyValue(definition, 'createModelOptions');
+      const createModelOptionsUse = normalizeString(getOwnDataPropertyValue(createModelOptions, 'use'));
       const labelFields = firstLabelFields(
         normalizeLabel(getOwnDataPropertyValue(definition, 'label')),
         normalizeLabel(getOwnDataPropertyValue(definition, 'title')),
@@ -573,9 +575,9 @@ export function createFlowSurfaceMockModelClass(input: {
         ...labelFields,
         modelUse: input.modelUse,
         slot: inferSlotFromModelUse(input.modelUse),
-        createModelOptionsStatus: getCreateModelOptionsStatus(
-          getOwnDataPropertyValue(definition, 'createModelOptions'),
-        ),
+        createModelOptionsStatus: getCreateModelOptionsStatus(createModelOptions),
+        ...(createModelOptionsUse ? { createModelOptionsUse } : {}),
+        ...normalizeCreateModelOptionsSubModels(createModelOptions),
         source,
         evidenceSource: 'runtime',
         confidence: 'medium',
@@ -757,6 +759,25 @@ function normalizeStringList(value: unknown): string[] {
   }
   const normalized = normalizeString(value);
   return normalized ? [normalized] : [];
+}
+
+function normalizeCreateModelOptionsSubModels(createModelOptions: unknown) {
+  const subModels = getOwnDataPropertyValue(createModelOptions, 'subModels');
+  if (!subModels || typeof subModels !== 'object' || isProxy(subModels)) {
+    return {};
+  }
+  const createModelOptionsSubModels: Record<string, string[]> = {};
+  Object.entries(Object.getOwnPropertyDescriptors(subModels)).forEach(([subModelKey, descriptor]) => {
+    if (!('value' in descriptor) || !Array.isArray(descriptor.value)) {
+      return;
+    }
+    const uses = descriptor.value.flatMap((item) => {
+      const use = normalizeString(getOwnDataPropertyValue(item, 'use'));
+      return use ? [use] : [];
+    });
+    createModelOptionsSubModels[subModelKey] = uses;
+  });
+  return Object.keys(createModelOptionsSubModels).length ? { createModelOptionsSubModels } : {};
 }
 
 function inferSlotFromModelUse(modelUse: string) {

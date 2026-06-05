@@ -8,9 +8,13 @@
  */
 
 import type {
+  FlowSurfaceConfigureOptions,
   FlowSurfaceCapabilityConfidence,
   FlowSurfaceCapabilityKind,
   FlowSurfaceCapabilityWarning,
+  FlowSurfaceJsonCreateRecipe,
+  FlowSurfaceJsonSchema,
+  FlowSurfacePlacementSummary,
 } from '../types';
 
 export const FLOW_SURFACE_AUTO_SNAPSHOT_VERSION = 1;
@@ -20,6 +24,8 @@ export type FlowSurfaceExtractorEvidenceSource = 'runtime' | 'ast';
 export type FlowSurfaceExtractorFlowStaticStatus = 'static' | 'dynamic' | 'unresolved';
 
 export type FlowSurfaceExtractorCreateModelOptionsStatus = 'static' | 'dynamic' | 'unresolved';
+
+export type FlowSurfaceCreateModelOptionsSubModels = Record<string, string[]>;
 
 export type FlowSurfaceExtractorLabelFields = {
   label?: string;
@@ -70,6 +76,8 @@ export type FlowSurfaceMenuItemRegisteredEvent = FlowSurfaceExtractorLabelFields
   modelUse?: string;
   slot?: string;
   createModelOptionsStatus: FlowSurfaceExtractorCreateModelOptionsStatus;
+  createModelOptionsUse?: string;
+  createModelOptionsSubModels?: FlowSurfaceCreateModelOptionsSubModels;
   source: string;
   evidenceSource: FlowSurfaceExtractorEvidenceSource;
   confidence: FlowSurfaceCapabilityConfidence;
@@ -113,6 +121,8 @@ export type FlowSurfaceAutoMenuItem = FlowSurfaceExtractorLabelFields & {
   modelUse?: string;
   slot?: string;
   createModelOptionsStatus: FlowSurfaceExtractorCreateModelOptionsStatus;
+  createModelOptionsUse?: string;
+  createModelOptionsSubModels?: FlowSurfaceCreateModelOptionsSubModels;
   sourceRefs: FlowSurfaceAutoSourceRef[];
   confidence: FlowSurfaceCapabilityConfidence;
 };
@@ -135,6 +145,59 @@ export type FlowSurfaceAutoFlow = {
   confidence: FlowSurfaceCapabilityConfidence;
 };
 
+export type FlowSurfaceAutoInferredAuthoringConfidence = {
+  discovery: FlowSurfaceCapabilityConfidence;
+  placement: FlowSurfaceCapabilityConfidence;
+  tree: FlowSurfaceCapabilityConfidence;
+  settings: FlowSurfaceCapabilityConfidence;
+  write: FlowSurfaceCapabilityConfidence;
+};
+
+export type FlowSurfaceAutoInferredAuthoringEvidence = {
+  type: 'model' | 'menuItem' | 'flow' | 'fieldBinding' | 'ast' | 'runtimeMock' | 'coreTemplate';
+  ref: string;
+};
+
+export type FlowSurfaceAutoChildSurface = {
+  key: string;
+  parentModelUse: string;
+  subModelKey: string;
+  kind: 'block' | 'action' | 'fieldComponent';
+  allowedChildren?: string[];
+};
+
+export type FlowSurfaceAutoAllowedChild = {
+  kind: 'block' | 'action' | 'fieldComponent';
+  modelUse: string;
+  publicType?: string;
+  label?: string;
+  conditions?: string[];
+  builderContainerUse?: string;
+};
+
+export type FlowSurfaceAutoInferredAuthoringCapability = {
+  kind: FlowSurfaceCapabilityKind;
+  publicType: string;
+  acceptedAliases?: string[];
+  ownerPlugin: string;
+  modelUse: string;
+  label: string;
+  placement?: FlowSurfacePlacementSummary;
+  confidence: FlowSurfaceAutoInferredAuthoringConfidence;
+  initParamsSchema?: FlowSurfaceJsonSchema;
+  settingsSchema?: FlowSurfaceJsonSchema;
+  configureOptions?: FlowSurfaceConfigureOptions;
+  createRecipe?: FlowSurfaceJsonCreateRecipe;
+  childSurfaces?: FlowSurfaceAutoChildSurface[];
+  allowedChildren?: FlowSurfaceAutoAllowedChild[];
+  evidence: FlowSurfaceAutoInferredAuthoringEvidence[];
+  warnings?: FlowSurfaceCapabilityWarning[];
+};
+
+export type FlowSurfaceAutoInferredAuthoring = {
+  capabilities: FlowSurfaceAutoInferredAuthoringCapability[];
+};
+
 export type FlowSurfaceAutoSnapshot = {
   version: typeof FLOW_SURFACE_AUTO_SNAPSHOT_VERSION;
   plugin: string;
@@ -148,6 +211,7 @@ export type FlowSurfaceAutoSnapshot = {
   menuItems: FlowSurfaceAutoMenuItem[];
   fieldBindings: FlowSurfaceAutoFieldBinding[];
   flows: FlowSurfaceAutoFlow[];
+  inferredAuthoring?: FlowSurfaceAutoInferredAuthoring;
   warnings: FlowSurfaceCapabilityWarning[];
 };
 

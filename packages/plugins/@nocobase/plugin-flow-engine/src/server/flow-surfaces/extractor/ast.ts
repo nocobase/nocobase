@@ -41,6 +41,7 @@ const SLOT_BY_MODEL_USE = new Map<string, string>([
   ['FilterFormItemModel', 'fields'],
   ['FilterFormCustomItemModel', 'fields'],
 ]);
+const STATIC_TRANSLATION_HELPER_NAMES = new Set(['tExpr']);
 
 export type FlowSurfaceAstExtractionInput = {
   source: string;
@@ -97,6 +98,9 @@ export function collectFlowSurfaceExtractorAstEvents(
     }
     if (ts.isJsxOpeningElement(node) || ts.isJsxSelfClosingElement(node)) {
       inspectJsxElement(node, recorder, context.source);
+    }
+    if (ts.isVariableStatement(node)) {
+      inspectVariableStatement(node, recorder, context.source);
     }
     ts.forEachChild(node, visit);
   }
@@ -172,6 +176,7 @@ function inspectJsxElement(
       modelUse: item.modelUse || attributes.modelUse,
       slot,
       createModelOptionsStatus: item.createModelOptionsStatus,
+      ...(item.createModelOptionsUse ? { createModelOptionsUse: item.createModelOptionsUse } : {}),
       source,
       evidenceSource: 'ast',
       confidence: item.modelUse || attributes.modelUse ? 'medium' : 'low',
@@ -190,6 +195,30 @@ function inspectJsxElement(
     source,
     evidenceSource: 'ast',
     confidence: attributes.modelUse ? 'medium' : 'low',
+  });
+}
+
+function inspectVariableStatement(
+  node: ts.VariableStatement,
+  recorder: ReturnType<typeof createFlowSurfaceExtractionRecorder>,
+  source: string,
+) {
+  node.declarationList.declarations.forEach((declaration) => {
+    if (!ts.isIdentifier(declaration.name) || !/^ALLOWED_.+_ACTIONS$/.test(declaration.name.text)) {
+      return;
+    }
+    getStaticStringList(declaration.initializer).forEach((modelUse, index) => {
+      recorder.recordMenuItem({
+        menuKey: toStaticActionMenuKey(modelUse, index),
+        modelUse,
+        slot: 'actions',
+        createModelOptionsStatus: 'static',
+        createModelOptionsUse: modelUse,
+        source,
+        evidenceSource: 'ast',
+        confidence: 'medium',
+      });
+    });
   });
 }
 
@@ -272,6 +301,8 @@ function collectModelDefinition(
     return;
   }
   const createModelOptions = getObjectPropertyValue(definition, 'createModelOptions');
+  const createModelOptionsObject = getObjectLiteral(createModelOptions);
+  const createModelOptionsUse = getStaticString(getObjectPropertyValue(createModelOptionsObject, 'use'));
   const labelFields = firstLabelFields(
     getStaticLabel(getObjectPropertyValue(definition, 'label')),
     getStaticLabel(getObjectPropertyValue(definition, 'title')),
@@ -281,6 +312,8 @@ function collectModelDefinition(
     modelUse,
     slot: inferSlotFromModelUse(modelUse),
     createModelOptionsStatus: getCreateModelOptionsStaticStatus(createModelOptions),
+    ...(createModelOptionsUse ? { createModelOptionsUse } : {}),
+    ...getCreateModelOptionsSubModels(createModelOptionsObject),
     source,
     evidenceSource: 'ast',
     confidence: 'medium',
@@ -836,6 +869,41 @@ function getStaticStringList(node: ts.Node | undefined): string[] {
   });
 }
 
+function getCreateModelOptionsSubModels(createModelOptionsObject: ts.ObjectLiteralExpression | undefined) {
+  const subModels = getObjectLiteral(getObjectPropertyValue(createModelOptionsObject, 'subModels'));
+  if (!subModels) {
+    return {};
+  }
+  const createModelOptionsSubModels: Record<string, string[]> = {};
+  subModels.properties.forEach((property) => {
+    if (!ts.isPropertyAssignment(property)) {
+      return;
+    }
+    const subModelKey = getPropertyNameText(property.name);
+    const items = property.initializer;
+    if (!subModelKey || !ts.isArrayLiteralExpression(items)) {
+      return;
+    }
+    createModelOptionsSubModels[subModelKey] = items.elements.flatMap((element) => {
+      if (!ts.isObjectLiteralExpression(element)) {
+        return [];
+      }
+      const use = getStaticString(getObjectPropertyValue(element, 'use'));
+      return use ? [use] : [];
+    });
+  });
+  return Object.keys(createModelOptionsSubModels).length ? { createModelOptionsSubModels } : {};
+}
+
+function toStaticActionMenuKey(modelUse: string, index: number) {
+  const normalized = modelUse
+    .replace(/Model$/, '')
+    .replace(/Action$/, '')
+    .replace(/([a-z])([A-Z])/g, '$1-$2')
+    .toLowerCase();
+  return `allowed-action-${String(index).padStart(2, '0')}-${normalized}`;
+}
+
 function getStaticStatusFromNode(node: ts.Node): FlowSurfaceExtractorFlowStaticStatus {
   return isSerializableLiteralNode(node) ? 'static' : 'dynamic';
 }
@@ -870,6 +938,9 @@ function isSerializableLiteralNode(node: ts.Node | undefined): boolean {
   if (ts.isArrayLiteralExpression(node)) {
     return node.elements.every((element) => !ts.isSpreadElement(element) && isSerializableLiteralNode(element));
   }
+  if (ts.isCallExpression(node) && isStaticTranslationHelperCall(node)) {
+    return node.arguments.every((argument) => isSerializableLiteralNode(argument));
+  }
   if (ts.isObjectLiteralExpression(node)) {
     return node.properties.every((property) => {
       if (!ts.isPropertyAssignment(property)) {
@@ -882,6 +953,10 @@ function isSerializableLiteralNode(node: ts.Node | undefined): boolean {
     });
   }
   return false;
+}
+
+function isStaticTranslationHelperCall(node: ts.CallExpression) {
+  return STATIC_TRANSLATION_HELPER_NAMES.has(getExpressionName(node.expression) || '');
 }
 
 function isStaticPropertyName(name: ts.PropertyName) {
@@ -1002,11 +1077,14 @@ function getStaticJsxItemTree(item: ts.Node | undefined): Array<{
   labelFields: FlowSurfaceExtractorLabelFields;
   modelUse?: string;
   createModelOptionsStatus: ReturnType<typeof getCreateModelOptionsStaticStatus>;
+  createModelOptionsUse?: string;
 }> {
   if (!item || !ts.isObjectLiteralExpression(item)) {
     return [];
   }
   const createModelOptions = getObjectPropertyValue(item, 'createModelOptions');
+  const createModelOptionsObject = getObjectLiteral(createModelOptions);
+  const createModelOptionsUse = getStaticString(getObjectPropertyValue(createModelOptionsObject, 'use'));
   const children = getStaticJsxItemChildren(item);
   return [
     {
@@ -1015,8 +1093,9 @@ function getStaticJsxItemTree(item: ts.Node | undefined): Array<{
       modelUse:
         getStaticString(getObjectPropertyValue(item, 'modelUse')) ||
         getStaticString(getObjectPropertyValue(item, 'useModel')) ||
-        getStaticString(getObjectPropertyValue(getObjectLiteral(createModelOptions), 'use')),
+        createModelOptionsUse,
       createModelOptionsStatus: getCreateModelOptionsStaticStatus(createModelOptions),
+      ...(createModelOptionsUse ? { createModelOptionsUse } : {}),
     },
     ...children,
   ];
