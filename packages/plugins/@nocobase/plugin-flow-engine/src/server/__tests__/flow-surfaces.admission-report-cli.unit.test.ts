@@ -289,6 +289,49 @@ describe('flowSurfaces capability admission report CLI', () => {
     });
   });
 
+  it('should reject verifier reports that belong to another plugin', async () => {
+    const summary = await runFlowSurfaceCapabilityAdmissionCli(
+      [
+        {
+          plugin: '@example/plugin-cli',
+        },
+      ],
+      {
+        dryRun: true,
+        generatedAt,
+        verifyCapability: async (_target, options) =>
+          buildFlowSurfaceCapabilityAdmissionReport({
+            plugin: '@example/plugin-other',
+            generatedAt: options.generatedAt,
+            records: [
+              createAdmissionRecord({
+                ownerPlugin: '@example/plugin-other',
+              }),
+            ],
+          }),
+      },
+    );
+
+    expect(summary).toMatchObject({
+      ok: false,
+      dryRun: true,
+      exitCode: 1,
+      results: [
+        {
+          ok: false,
+          plugin: '@example/plugin-cli',
+          recordCount: 0,
+          errors: [
+            {
+              code: 'admission-report-plugin-mismatch',
+              message: 'Flow surface capability admission verifier returned a report for a different plugin.',
+            },
+          ],
+        },
+      ],
+    });
+  });
+
   it('should reject verifier reports whose records belong to another owner plugin', async () => {
     const summary = await runFlowSurfaceCapabilityAdmissionCli(
       [
