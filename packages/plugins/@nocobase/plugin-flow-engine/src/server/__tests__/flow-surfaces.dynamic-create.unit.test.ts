@@ -104,6 +104,28 @@ describe('flowSurfaces dynamic capability create dry-run', () => {
     };
   };
 
+  type ApplyBlueprintPrivateHarness = {
+    applyBlueprintWithTransaction(
+      values: Record<string, unknown>,
+      options?: {
+        transaction?: unknown;
+        currentRoles?: readonly string[];
+        skipAuthoringValidation?: boolean;
+      },
+      createdKanbanSortFields?: Array<Record<string, unknown>>,
+      resultOptions?: {
+        readSurface: false;
+      },
+    ): Promise<unknown>;
+    ensureSurfaceTableDefaultActionIntegrity(target: unknown, options?: Record<string, unknown>): Promise<void>;
+  };
+
+  type ApplyBlueprintActionHarness = {
+    createMenu(values: Record<string, unknown>, options?: Record<string, unknown>): Promise<Record<string, unknown>>;
+    createPage(values: Record<string, unknown>, options?: Record<string, unknown>): Promise<Record<string, unknown>>;
+    compose(values: Record<string, unknown>, options?: Record<string, unknown>): Promise<Record<string, unknown>>;
+  };
+
   function createProviderRegistry(providers: FlowSurfaceCapabilitiesProvider[]) {
     return {
       listProviders: () => providers,
@@ -1234,6 +1256,110 @@ describe('flowSurfaces dynamic capability create dry-run', () => {
         },
       }),
       expect.any(Object),
+    );
+  });
+
+  it('should route verified auto applyBlueprint blocks through compose with applyBlueprint context', async () => {
+    const service = new FlowSurfacesService({
+      flowSurfaceAutoSnapshots: [createGanttAutoSnapshot()],
+      flowSurfaceCapabilityAdmissionReports: [createVerifiedAutoAdmissionReport()],
+      flowSurfaceCapabilityProviders: createProviderRegistry([]),
+    } as unknown as ConstructorParameters<typeof FlowSurfacesService>[0]);
+    const enabledPackages = new Set(['@nocobase/plugin-gantt']);
+    const privateHarness = service as unknown as ApplyBlueprintPrivateHarness;
+    const actionHarness = service as unknown as ApplyBlueprintActionHarness;
+    vi.spyOn(service as unknown as EnabledPackagesHarness, 'resolveEnabledPluginPackages').mockResolvedValue(
+      enabledPackages,
+    );
+    vi.spyOn(privateHarness, 'ensureSurfaceTableDefaultActionIntegrity').mockResolvedValue(undefined);
+    vi.spyOn(actionHarness, 'createMenu').mockResolvedValue({
+      routeId: 'menu-route-1',
+    });
+    vi.spyOn(actionHarness, 'createPage').mockResolvedValue({
+      pageSchemaUid: 'page-schema-1',
+      tabSchemaUid: 'tab-schema-1',
+    });
+    const compose = vi.spyOn(actionHarness, 'compose').mockResolvedValue({
+      target: {
+        uid: 'tab-schema-1',
+      },
+      mode: 'append',
+      blocks: [
+        {
+          key: 'main.plannedGantt',
+          type: 'pluginGantt.gantt',
+          uid: 'blueprint-gantt-block',
+        },
+      ],
+    });
+
+    const result = await privateHarness.applyBlueprintWithTransaction(
+      {
+        mode: 'create',
+        tabs: [
+          {
+            key: 'main',
+            blocks: [
+              {
+                key: 'plannedGantt',
+                type: 'pluginGantt.gantt',
+                initParams: {
+                  collectionName: 'tasks',
+                },
+                settings: {},
+              },
+            ],
+          },
+        ],
+      },
+      {
+        transaction: 'tx-apply-blueprint',
+        currentRoles: ['root'],
+        skipAuthoringValidation: true,
+      },
+      [],
+      {
+        readSurface: false,
+      },
+    );
+
+    expect(result).toMatchObject({
+      version: '1',
+      mode: 'create',
+      pageLocator: {
+        pageSchemaUid: 'page-schema-1',
+      },
+    });
+    expect(compose).toHaveBeenCalledTimes(1);
+    expect(compose).toHaveBeenCalledWith(
+      expect.objectContaining({
+        target: {
+          uid: 'tab-schema-1',
+        },
+        mode: 'append',
+        blocks: expect.arrayContaining([
+          expect.objectContaining({
+            type: 'pluginGantt.gantt',
+            initParams: {
+              collectionName: 'tasks',
+            },
+          }),
+        ]),
+      }),
+      expect.objectContaining({
+        transaction: 'tx-apply-blueprint',
+        currentRoles: ['root'],
+        dynamicCapabilityActionName: 'applyBlueprint',
+      }),
+    );
+    expect(privateHarness.ensureSurfaceTableDefaultActionIntegrity).toHaveBeenCalledWith(
+      {
+        pageSchemaUid: 'page-schema-1',
+      },
+      expect.objectContaining({
+        transaction: 'tx-apply-blueprint',
+        enabledPackages,
+      }),
     );
   });
 
