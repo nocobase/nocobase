@@ -157,13 +157,12 @@ export async function resolveDynamicCapabilityCreate(
   if (input.rawPublicPayload) {
     assertPublicPayloadDoesNotContainInternalKeys(input.rawPublicPayload);
   }
-  const publicPayload = {
+  const requestedPublicPayload = buildDynamicCapabilityPublicPayload({
     publicType,
-    ...(input.target ? { target: input.target } : {}),
-    ...(publicInput.initParams ? { initParams: publicInput.initParams } : {}),
-    ...(publicInput.settings ? { settings: publicInput.settings } : {}),
-  };
-  assertPublicPayloadDoesNotContainInternalKeys(publicPayload);
+    target: input.target,
+    publicInput,
+  });
+  assertPublicPayloadDoesNotContainInternalKeys(requestedPublicPayload);
 
   const providerCapability = (
     await collectNormalizedProviderCapabilities({
@@ -172,7 +171,7 @@ export async function resolveDynamicCapabilityCreate(
       providerTimeoutMs: input.providerTimeoutMs,
     })
   ).find((item) => {
-    if (item.publicItem.kind !== kind || item.publicItem.publicType !== publicType) {
+    if (item.publicItem.kind !== kind || !matchesDynamicCapabilityPublicType(item.publicItem, publicType)) {
       return false;
     }
     return input.ownerPlugin ? item.publicItem.ownerPlugin === input.ownerPlugin : true;
@@ -193,7 +192,7 @@ export async function resolveDynamicCapabilityCreate(
         capability: verifiedAutoSnapshot.capability,
         publicType,
         publicInput,
-        publicPayload,
+        publicPayload: requestedPublicPayload,
         actionName: input.actionName || 'validateCapabilityCreate',
       });
       return autoCreateResponse;
@@ -207,22 +206,29 @@ export async function resolveDynamicCapabilityCreate(
     ...providerCapability,
     publicItem: applyFlowSurfaceCapabilityWritePolicy(providerCapability.publicItem, input.capabilityPolicyConfig),
   };
+  const canonicalPublicType = policyProjectedProviderCapability.publicItem.publicType;
+  const publicPayload = buildDynamicCapabilityPublicPayload({
+    publicType: canonicalPublicType,
+    target: input.target,
+    publicInput,
+  });
+  assertPublicPayloadDoesNotContainInternalKeys(publicPayload);
   const resolveCreate = policyProjectedProviderCapability.provider.resolveCreate;
   if (!input.allowUnavailable && !policyProjectedProviderCapability.publicItem.availability.create.supported) {
     throw new FlowSurfaceBadRequestError(
-      `flowSurfaces dynamic create capability '${publicType}' is not enabled for writes`,
+      `flowSurfaces dynamic create capability '${canonicalPublicType}' is not enabled for writes`,
       undefined,
       {
         details: {
           reasonCode: policyProjectedProviderCapability.publicItem.availability.create.reasonCode || 'unsupported',
           reasonSource: policyProjectedProviderCapability.publicItem.availability.create.reasonSource || 'registry',
-          publicType,
+          publicType: canonicalPublicType,
         },
       },
     );
   }
   if (!resolveCreate && !policyProjectedProviderCapability.createRecipe) {
-    throwMissingCreateContract(publicType);
+    throwMissingCreateContract(canonicalPublicType);
   }
 
   const validationErrors = [
@@ -288,7 +294,7 @@ export async function resolveDynamicCapabilityCreate(
   } else {
     const providerResolveCreate = resolveCreate;
     if (!providerResolveCreate) {
-      throwMissingCreateContract(publicType);
+      throwMissingCreateContract(canonicalPublicType);
     }
     const created = await callFlowSurfaceProvider({
       provider: policyProjectedProviderCapability.provider,
@@ -332,6 +338,30 @@ export async function resolveDynamicCapabilityCreate(
     node: createdNode,
     warnings: policyProjectedProviderCapability.publicItem.warnings || [],
   };
+}
+
+function buildDynamicCapabilityPublicPayload(input: {
+  publicType: string;
+  target?: ResolveDynamicCapabilityCreateOptions['target'];
+  publicInput: FlowSurfaceDynamicCapabilityPublicInput;
+}) {
+  return {
+    publicType: input.publicType,
+    ...(input.target ? { target: input.target } : {}),
+    ...(input.publicInput.initParams ? { initParams: input.publicInput.initParams } : {}),
+    ...(input.publicInput.settings ? { settings: input.publicInput.settings } : {}),
+  };
+}
+
+function matchesDynamicCapabilityPublicType(item: FlowSurfacePublicCapabilityItem, publicType: string) {
+  const normalizedType = normalizeRequiredString(publicType);
+  if (!normalizedType) {
+    return false;
+  }
+  if (item.publicType === normalizedType) {
+    return true;
+  }
+  return (item.publicTypeMeta.acceptedAliases || []).some((alias) => alias === normalizedType);
 }
 
 function resolveVerifiedAutoSnapshotDynamicCreateCapability(input: {

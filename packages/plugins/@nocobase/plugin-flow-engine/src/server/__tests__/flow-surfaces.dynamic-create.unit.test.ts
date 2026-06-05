@@ -57,6 +57,13 @@ describe('flowSurfaces dynamic capability create dry-run', () => {
     tryAddDynamicBlock(input: TryAddDynamicBlockInput): Promise<unknown>;
   };
 
+  type DynamicBlockCapabilityHarness = {
+    resolveDynamicBlockCapability(
+      publicType: string,
+      enabledPackages: ReadonlySet<string>,
+    ): Promise<{ publicItem: { publicType: string } } | null>;
+  };
+
   type DynamicDispatchHarness = {
     dispatchOp(
       op: {
@@ -217,6 +224,7 @@ describe('flowSurfaces dynamic capability create dry-run', () => {
       validateSettings?: FlowSurfaceCapabilitiesProvider['validateSettings'];
       resolveCreate?: FlowSurfaceCapabilitiesProvider['resolveCreate'];
       withoutResolveCreate?: boolean;
+      acceptedAliases?: string[];
     } = {},
   ): FlowSurfaceCapabilitiesProvider {
     return {
@@ -226,6 +234,7 @@ describe('flowSurfaces dynamic capability create dry-run', () => {
           id: 'blocks.dryRun',
           kind: 'block',
           publicType: 'dryRun',
+          ...(input.acceptedAliases ? { acceptedAliases: input.acceptedAliases } : {}),
           label: 'Dry run',
           semantic: {
             title: 'Dry run',
@@ -718,6 +727,80 @@ describe('flowSurfaces dynamic capability create dry-run', () => {
     });
     expect(dryRunResponse.capability).not.toHaveProperty('identity');
     expect(JSON.stringify(dryRunResponse)).not.toContain('GanttBlockModel');
+    expect(JSON.stringify(dryRunResponse)).not.toContain('stepParams');
+  });
+
+  it('should accept provider publicType aliases while returning canonical payload', async () => {
+    const provider = createDryRunProvider({
+      acceptedAliases: ['legacyDryRun'],
+    });
+    const enabledPackages = new Set(['@nocobase/plugin-dry-run']);
+    const service = new FlowSurfacesService({
+      flowSurfaceCapabilityProviders: createProviderRegistry([provider]),
+    } as unknown as ConstructorParameters<typeof FlowSurfacesService>[0]);
+    const harness = service as unknown as DynamicBlockWriteGateHarness & DynamicBlockCapabilityHarness;
+
+    const dynamicBlockTypes = await harness.resolveDynamicBlockTypes(enabledPackages);
+    expect(dynamicBlockTypes.has('legacyDryRun')).toBe(true);
+    const resolvedAliasCapability = await harness.resolveDynamicBlockCapability('legacyDryRun', enabledPackages);
+    expect(resolvedAliasCapability?.publicItem.publicType).toBe('dryRun');
+
+    const directResponse = await resolveDynamicCapabilityCreate({
+      publicType: 'legacyDryRun',
+      initParams: {
+        collectionName: 'tasks',
+      },
+      settings: {
+        pageSize: 20,
+      },
+      enabledPackages,
+      providerRegistry: createProviderRegistry([provider]),
+    });
+    expect(directResponse.capability.publicType).toBe('dryRun');
+    expect(directResponse.publicPayload).toMatchObject({
+      publicType: 'dryRun',
+      initParams: {
+        collectionName: 'tasks',
+      },
+      settings: {
+        pageSize: 20,
+      },
+    });
+
+    const dryRunResponse = await service.validateCapabilityCreate(
+      {
+        publicType: 'legacyDryRun',
+        initParams: {
+          collectionName: 'tasks',
+        },
+        settings: {
+          pageSize: 20,
+        },
+      },
+      {
+        enabledPackages,
+      },
+    );
+
+    expect(dryRunResponse).toMatchObject({
+      ok: true,
+      capability: {
+        publicType: 'dryRun',
+      },
+      normalizedPublicPayload: {
+        publicType: 'dryRun',
+        initParams: {
+          collectionName: 'tasks',
+        },
+        settings: {
+          pageSize: 20,
+        },
+      },
+      dryRunNode: {
+        publicType: 'dryRun',
+      },
+    });
+    expect(JSON.stringify(dryRunResponse)).not.toContain('TableBlockModel');
     expect(JSON.stringify(dryRunResponse)).not.toContain('stepParams');
   });
 

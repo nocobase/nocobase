@@ -2453,7 +2453,10 @@ export class FlowSurfacesService {
     const capabilities = await this.collectDynamicBlockCapabilities(enabledPackages);
     return new Set(
       [
-        ...capabilities.map((item) => String(item.publicItem.publicType || '').trim()),
+        ...capabilities.flatMap((item) => [
+          String(item.publicItem.publicType || '').trim(),
+          ...(item.publicItem.publicTypeMeta.acceptedAliases || []).map((alias) => String(alias || '').trim()),
+        ]),
         ...collectAutoSnapshotPublicCapabilities({
           autoSnapshots: this.autoSnapshots,
           enabledPackages,
@@ -2476,7 +2479,13 @@ export class FlowSurfacesService {
       return null;
     }
     const capabilities = await this.collectDynamicBlockCapabilities(enabledPackages);
-    return capabilities.find((item) => item.publicItem.publicType === normalizedType) || null;
+    return (
+      capabilities.find(
+        (item) =>
+          item.publicItem.publicType === normalizedType ||
+          (item.publicItem.publicTypeMeta.acceptedAliases || []).some((alias) => alias === normalizedType),
+      ) || null
+    );
   }
 
   private hasAutoSnapshotDynamicBlockCapability(publicType: string, enabledPackages: ReadonlySet<string>) {
