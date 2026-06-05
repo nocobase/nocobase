@@ -1401,6 +1401,10 @@ function getFlowSurfaceCapabilityAuditTargetUid(target: unknown) {
   return typeof targetUid === 'string' && targetUid.trim() ? targetUid.trim() : undefined;
 }
 
+function getFlowSurfaceCapabilityAuditDurationMs(startedAt: number) {
+  return Math.max(0, Date.now() - startedAt);
+}
+
 function getFlowSurfaceCapabilityWarningMessage(
   item: FlowSurfacePublicCapabilityItem,
   warningCode: NonNullable<FlowSurfacePublicCapabilityItem['warnings']>[number]['code'],
@@ -1491,6 +1495,7 @@ export class FlowSurfacesService {
       publicType?: string;
       reasonCode?: string;
       targetUid?: string;
+      durationMs?: number;
     },
   ) {
     this.plugin.app?.logger?.info?.(
@@ -1503,6 +1508,7 @@ export class FlowSurfacesService {
         publicType: input.publicType,
         reasonCode: input.reasonCode,
         targetUid: input.targetUid,
+        durationMs: input.durationMs,
       }),
     );
   }
@@ -2381,6 +2387,7 @@ export class FlowSurfacesService {
     input: FlowSurfaceValidateCapabilityCreateValues,
     options: { transaction?: unknown; enabledPackages?: ReadonlySet<string> } = {},
   ): Promise<FlowSurfaceValidateCapabilityCreateResponse> {
+    const auditStartedAt = Date.now();
     const enabledPackages = await this.resolveEnabledPluginPackages(options);
     const capabilityPolicyConfig = readFlowSurfaceCapabilityPolicyConfigFromPluginOptions(this.plugin.options);
     const admissionReports = await this.loadVerifiedAutoAdmissionReports(capabilityPolicyConfig);
@@ -2406,6 +2413,7 @@ export class FlowSurfacesService {
         publicType: input.publicType,
         reasonCode: getFlowSurfaceCapabilityAuditReasonCode(error),
         targetUid: getFlowSurfaceCapabilityAuditTargetUid(input.target),
+        durationMs: getFlowSurfaceCapabilityAuditDurationMs(auditStartedAt),
       });
       throw error;
     }
@@ -9622,6 +9630,7 @@ export class FlowSurfacesService {
       return null;
     }
     const actionName = input.options.dynamicCapabilityActionName || 'addBlock';
+    const auditStartedAt = Date.now();
     const capability = await this.resolveDynamicBlockCapability(publicType, input.enabledPackages);
     let dynamicCreate: Awaited<ReturnType<typeof resolveDynamicCapabilityCreate>> | null = null;
     try {
@@ -9700,6 +9709,7 @@ export class FlowSurfacesService {
         publicType: capability?.publicItem.publicType || publicType,
         reasonCode: getFlowSurfaceCapabilityAuditReasonCode(error),
         targetUid: getFlowSurfaceCapabilityAuditTargetUid(input.target),
+        durationMs: getFlowSurfaceCapabilityAuditDurationMs(auditStartedAt),
       });
       throw error;
     }
@@ -9744,6 +9754,7 @@ export class FlowSurfacesService {
       ownerPlugin: dynamicCreate.capability.ownerPlugin,
       publicType: dynamicCreate.capability.publicType,
       targetUid: getFlowSurfaceCapabilityAuditTargetUid(input.target),
+      durationMs: getFlowSurfaceCapabilityAuditDurationMs(auditStartedAt),
     });
     return result;
   }

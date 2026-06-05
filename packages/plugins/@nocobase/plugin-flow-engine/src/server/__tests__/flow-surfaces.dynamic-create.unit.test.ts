@@ -1160,6 +1160,7 @@ describe('flowSurfaces dynamic capability create dry-run', () => {
         ownerPlugin: '@nocobase/plugin-gantt',
         publicType: 'pluginGantt.gantt',
         reasonCode: 'manifest-required',
+        durationMs: expect.any(Number),
       }),
     );
     const serializedLog = JSON.stringify(auditLog.mock.calls);
@@ -1448,6 +1449,7 @@ describe('flowSurfaces dynamic capability create dry-run', () => {
         ownerPlugin: '@nocobase/plugin-gantt',
         publicType: 'pluginGantt.gantt',
         targetUid: 'target-grid',
+        durationMs: expect.any(Number),
       }),
     );
     const serializedLog = JSON.stringify(auditLog.mock.calls);
@@ -1530,6 +1532,7 @@ describe('flowSurfaces dynamic capability create dry-run', () => {
         publicType: 'pluginGantt.gantt',
         reasonCode: 'contract-not-verified',
         targetUid: 'target-grid',
+        durationMs: expect.any(Number),
       }),
     );
     const serializedLog = JSON.stringify(auditLog.mock.calls);
