@@ -228,6 +228,44 @@ describe('variables resolver (no HTTP)', () => {
     expect(out.whole).toEqual({ name: 'safe' });
   });
 
+  it('resolves plain then data fields on exposed data values', async () => {
+    const ctx = new ServerBaseContext();
+    ctx.defineProperty('payload', { value: { name: 'safe', then: 'visible' } });
+
+    const out = await resolveJsonTemplate(
+      {
+        name: '{{ ctx.payload.name }}',
+        thenValue: '{{ ctx.payload.then }}',
+        whole: '{{ ctx.payload }}',
+      } as any,
+      ctx,
+    );
+
+    expect(out.name).toBe('safe');
+    expect(out.thenValue).toBe('visible');
+    expect(out.whole).toEqual({ name: 'safe', then: 'visible' });
+  });
+
+  it('does not expose function-valued then fields on exposed data values', async () => {
+    const ctx = new ServerBaseContext();
+    const then = vi.fn(() => undefined);
+    ctx.defineProperty('payload', { value: { name: 'safe', then } });
+
+    const out = await resolveJsonTemplate(
+      {
+        name: '{{ ctx.payload.name }}',
+        thenValue: '{{ ctx.payload.then }}',
+        whole: '{{ ctx.payload }}',
+      } as any,
+      ctx,
+    );
+
+    expect(then).not.toHaveBeenCalled();
+    expect(out.name).toBe('safe');
+    expect(out.thenValue).toBe('{{ ctx.payload.then }}');
+    expect(out.whole).toEqual({ name: 'safe' });
+  });
+
   it('does not expose or invoke accessor properties from data values', async () => {
     const ctx = new ServerBaseContext();
     const secretGetter = vi.fn(() => 'secret');

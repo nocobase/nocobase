@@ -21,7 +21,7 @@ type SandboxContextSource = {
 
 type SandboxProxyKind = 'context' | 'data' | 'function';
 
-const BLOCKED_SANDBOX_KEYS = new Set(['__proto__', 'prototype', 'constructor', 'then']);
+const BLOCKED_SANDBOX_KEYS = new Set(['__proto__', 'prototype', 'constructor']);
 const sandboxProxyCache = new WeakMap<object, unknown>();
 const sandboxProxyMeta = new WeakMap<object, { kind: SandboxProxyKind; source: unknown }>();
 const EMPTY_SANDBOX_CONTEXT: SandboxContextSource = {
@@ -84,6 +84,14 @@ function isTrustedPromise(value: unknown): value is Promise<unknown> {
 
 function isBlockedSandboxKey(key: PropertyKey) {
   return typeof key === 'string' && BLOCKED_SANDBOX_KEYS.has(key);
+}
+
+function getSandboxDataDescriptor(source: object, key: PropertyKey) {
+  if (isBlockedSandboxKey(key) || typeof key === 'symbol') return undefined;
+  const descriptor = Reflect.getOwnPropertyDescriptor(source, key);
+  if (!descriptor || !('value' in descriptor)) return undefined;
+  if (key === 'then' && typeof descriptor.value === 'function') return undefined;
+  return descriptor;
 }
 
 function isSandboxContextSource(value: unknown): value is SandboxContextSource {
@@ -180,23 +188,19 @@ function createSandboxDataProxy(source: Record<PropertyKey, unknown>) {
   const target = Array.isArray(source) ? new Array(source.length) : Object.create(null);
   return new Proxy(target, {
     get: (_target, key) => {
-      if (isBlockedSandboxKey(key)) return undefined;
-      if (typeof key === 'symbol') return undefined;
-      const descriptor = Reflect.getOwnPropertyDescriptor(source, key);
-      if (!descriptor || !('value' in descriptor)) return undefined;
+      const descriptor = getSandboxDataDescriptor(source, key);
+      if (!descriptor) return undefined;
       const value = descriptor.value;
       return typeof value === 'function' ? wrapSandboxValue(value.bind(source)) : wrapSandboxValue(value);
     },
     has: (_target, key) => {
       if (isBlockedSandboxKey(key) || typeof key !== 'string') return false;
-      const descriptor = Reflect.getOwnPropertyDescriptor(source, key);
-      return !!descriptor && 'value' in descriptor;
+      return !!getSandboxDataDescriptor(source, key);
     },
     ownKeys: () => {
       const keys = Reflect.ownKeys(source).filter((key) => {
         if (typeof key !== 'string' || isBlockedSandboxKey(key)) return false;
-        const descriptor = Reflect.getOwnPropertyDescriptor(source, key);
-        return !!descriptor && 'value' in descriptor;
+        return !!getSandboxDataDescriptor(source, key);
       });
       if (Array.isArray(source) && !keys.includes('length')) keys.push('length');
       return keys;
@@ -206,8 +210,8 @@ function createSandboxDataProxy(source: Record<PropertyKey, unknown>) {
       if (Array.isArray(source) && key === 'length') {
         return Reflect.getOwnPropertyDescriptor(proxyTarget, key);
       }
-      const descriptor = Reflect.getOwnPropertyDescriptor(source, key);
-      if (!descriptor || !('value' in descriptor)) return undefined;
+      const descriptor = getSandboxDataDescriptor(source, key);
+      if (!descriptor) return undefined;
       return {
         configurable: true,
         enumerable: descriptor.enumerable,
@@ -262,8 +266,8 @@ async function unwrapSandboxValue(value: unknown, seen = new WeakMap<object, unk
   seen.set(source, out);
   for (const key of Object.keys(source as Record<string, unknown>)) {
     if (BLOCKED_SANDBOX_KEYS.has(key)) continue;
-    const descriptor = Reflect.getOwnPropertyDescriptor(source, key);
-    if (!descriptor || !('value' in descriptor)) continue;
+    const descriptor = getSandboxDataDescriptor(source, key);
+    if (!descriptor) continue;
     out[key] = await unwrapSandboxValue(descriptor.value, seen);
   }
   return out;
@@ -297,8 +301,8 @@ async function getSandboxProperty(value: unknown, key: string) {
   }
 
   if (!isObjectLike(source)) return undefined;
-  const descriptor = Reflect.getOwnPropertyDescriptor(source, key);
-  if (!descriptor || !('value' in descriptor)) return undefined;
+  const descriptor = getSandboxDataDescriptor(source, key);
+  if (!descriptor) return undefined;
   const current = descriptor.value;
   return typeof current === 'function' ? wrapSandboxValue(current.bind(source)) : wrapSandboxValue(current);
 }
