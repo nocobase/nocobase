@@ -84,6 +84,26 @@ describe('flowSurfaces dynamic capability create dry-run', () => {
     transaction<T>(callback: (transaction: unknown) => Promise<T>): Promise<T>;
   };
 
+  type ComposePrivateHarness = {
+    buildTargetAuthoringContext(input: {
+      target: FlowSurfaceWriteTarget;
+      transaction?: unknown;
+    }): Promise<Record<string, unknown>>;
+    findApprovalSurfaceRootForNode(uid: string, transaction?: unknown): Promise<unknown>;
+  };
+
+  type SurfaceContextGetterHarness = {
+    readonly surfaceContext: {
+      resolveBlockParent(target: FlowSurfaceWriteTarget, transaction?: unknown): Promise<{ parentUid: string }>;
+    };
+  };
+
+  type RepositoryGetterHarness = {
+    readonly repository: {
+      findModelById(uid: string, options?: Record<string, unknown>): Promise<unknown>;
+    };
+  };
+
   function createProviderRegistry(providers: FlowSurfaceCapabilitiesProvider[]) {
     return {
       listProviders: () => providers,
@@ -1122,6 +1142,98 @@ describe('flowSurfaces dynamic capability create dry-run', () => {
         skipAuthoringValidation: true,
         dynamicCapabilityActionName: 'addBlocks',
       }),
+    );
+  });
+
+  it('should route verified auto compose blocks through the dynamic addBlock gate context', async () => {
+    const service = new FlowSurfacesService({
+      flowSurfaceAutoSnapshots: [createGanttAutoSnapshot()],
+      flowSurfaceCapabilityAdmissionReports: [createVerifiedAutoAdmissionReport()],
+      flowSurfaceCapabilityProviders: createProviderRegistry([]),
+    } as unknown as ConstructorParameters<typeof FlowSurfacesService>[0]);
+    const enabledPackages = new Set(['@nocobase/plugin-gantt']);
+    vi.spyOn(service as unknown as EnabledPackagesHarness, 'resolveEnabledPluginPackages').mockResolvedValue(
+      enabledPackages,
+    );
+    vi.spyOn(service as unknown as ComposePrivateHarness, 'buildTargetAuthoringContext').mockResolvedValue({});
+    vi.spyOn(service as unknown as ComposePrivateHarness, 'findApprovalSurfaceRootForNode').mockResolvedValue(null);
+    vi.spyOn(service as unknown as SurfaceContextGetterHarness, 'surfaceContext', 'get').mockReturnValue({
+      resolveBlockParent: async () => ({
+        parentUid: 'grid-1',
+      }),
+    });
+    vi.spyOn(service as unknown as RepositoryGetterHarness, 'repository', 'get').mockReturnValue({
+      findModelById: async (uid) => ({
+        uid,
+        subModels: {
+          items: uid === 'grid-1' ? [{ uid: 'compose-gantt-block' }] : [],
+        },
+      }),
+    });
+    const addBlock = vi.spyOn(service, 'addBlock').mockResolvedValue({
+      uid: 'compose-gantt-block',
+      parentUid: 'grid-1',
+      subKey: 'items',
+    } as unknown as Awaited<ReturnType<FlowSurfacesService['addBlock']>>);
+    const setLayout = vi.spyOn(service, 'setLayout').mockResolvedValue({ ok: true });
+
+    const result = await service.compose({
+      target: {
+        uid: 'target-tab',
+      },
+      blocks: [
+        {
+          key: 'plannedGantt',
+          type: 'pluginGantt.gantt',
+          initParams: {
+            collectionName: 'tasks',
+          },
+          settings: {},
+        },
+      ],
+    });
+
+    expect(result).toMatchObject({
+      target: {
+        uid: 'grid-1',
+      },
+      mode: 'append',
+      blocks: [
+        {
+          key: 'plannedGantt',
+          type: 'pluginGantt.gantt',
+          uid: 'compose-gantt-block',
+        },
+      ],
+    });
+    expect(addBlock).toHaveBeenCalledTimes(1);
+    expect(addBlock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        target: {
+          uid: 'grid-1',
+        },
+        key: 'plannedGantt',
+        type: 'pluginGantt.gantt',
+        initParams: {
+          collectionName: 'tasks',
+        },
+        settings: {},
+      }),
+      expect.objectContaining({
+        enabledPackages,
+        deferAutoLayout: true,
+        skipDefaultBlockActions: true,
+        skipAuthoringValidation: true,
+        dynamicCapabilityActionName: 'compose',
+      }),
+    );
+    expect(setLayout).toHaveBeenCalledWith(
+      expect.objectContaining({
+        target: {
+          uid: 'grid-1',
+        },
+      }),
+      expect.any(Object),
     );
   });
 
