@@ -2155,6 +2155,44 @@ describe('flowSurfaces dynamic capability create dry-run', () => {
     });
   });
 
+  it('should keep dry-run override from bypassing missing provider create contracts', async () => {
+    const provider = createDryRunProvider({
+      withoutResolveCreate: true,
+    });
+
+    let error: unknown;
+    try {
+      await resolveDynamicCapabilityCreate({
+        publicType: 'dryRun',
+        initParams: {
+          collectionName: 'tasks',
+        },
+        settings: {
+          pageSize: 20,
+        },
+        allowUnavailable: true,
+        enabledPackages: new Set(['@nocobase/plugin-dry-run']),
+        providerRegistry: createProviderRegistry([provider]),
+      });
+    } catch (caught) {
+      error = caught;
+    }
+
+    expect(error).toBeInstanceOf(FlowSurfaceBadRequestError);
+    expect(error).toMatchObject({
+      message: `flowSurfaces dynamic create capability 'dryRun' does not declare a create resolver`,
+      options: {
+        details: {
+          reasonCode: 'missing-create-contract',
+          reasonSource: 'registry',
+          publicType: 'dryRun',
+        },
+      },
+    });
+    expect(JSON.stringify(error)).not.toContain('TableBlockModel');
+    expect(JSON.stringify(error)).not.toContain('stepParams');
+  });
+
   it('should reject provider-created nodes that fail the contract guard', async () => {
     await expect(
       resolveDynamicCapabilityCreate({
