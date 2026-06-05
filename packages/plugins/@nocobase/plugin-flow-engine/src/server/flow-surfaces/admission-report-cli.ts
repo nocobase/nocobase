@@ -342,6 +342,12 @@ function buildAdmissionRecordIntegrity(item: FlowSurfacePublicCapabilityItem): F
 function buildAdmissionChecksFromCapability(
   item: FlowSurfacePublicCapabilityItem,
 ): FlowSurfaceCapabilityAdmissionRecord['checks'] {
+  const unsafePayloadBlocked = hasUnsafeSemanticWarning(item)
+    ? failedAdmissionCheck('unsafe-auto-discovery', 'Capability semantic payload must be cleaned before admission.')
+    : failedAdmissionCheck(
+        'contract-not-verified',
+        'Unsafe public payload rejection has not run for this admission report.',
+      );
   const publicTypeStable =
     item.publicTypeMeta.source !== 'autoNamespaced' || item.origin !== 'autoSnapshot'
       ? passedAdmissionCheck()
@@ -373,10 +379,7 @@ function buildAdmissionChecksFromCapability(
       'contract-not-verified',
       'Create/readback parity verification has not run for this admission report.',
     ),
-    unsafePayloadBlocked: failedAdmissionCheck(
-      'contract-not-verified',
-      'Unsafe public payload rejection has not run for this admission report.',
-    ),
+    unsafePayloadBlocked,
     testsPresent: failedAdmissionCheck(
       'contract-not-verified',
       'Admission tests have not been recorded for this capability.',
@@ -425,6 +428,10 @@ function getBlockingReasonCode(
   fallback: FlowSurfaceReasonCode,
 ): FlowSurfaceReasonCode {
   if (item.readiness === 'blocked') {
+    const warningReasonCode = getAdmissionBlockingWarningReasonCode(item);
+    if (warningReasonCode) {
+      return warningReasonCode;
+    }
     const blockingReasonCode = getAdmissionBlockingReasonCode(item);
     if (blockingReasonCode) {
       return blockingReasonCode;
@@ -436,6 +443,16 @@ function getBlockingReasonCode(
     item.availability.readback.reasonCode ||
     fallback
   );
+}
+
+function getAdmissionBlockingWarningReasonCode(
+  item: FlowSurfacePublicCapabilityItem,
+): FlowSurfaceReasonCode | undefined {
+  return hasUnsafeSemanticWarning(item) ? 'unsafe-auto-discovery' : undefined;
+}
+
+function hasUnsafeSemanticWarning(item: FlowSurfacePublicCapabilityItem) {
+  return item.warnings?.some((warning) => warning.code === 'unsafe-semantic-text') === true;
 }
 
 function getAdmissionBlockingReasonCode(item: FlowSurfacePublicCapabilityItem): FlowSurfaceReasonCode | undefined {

@@ -287,6 +287,44 @@ describe('flowSurfaces capability admission report CLI', () => {
     });
   });
 
+  it('should surface unsafe semantic admission blockers in conservative service-backed reports', () => {
+    const report = buildFlowSurfaceCapabilityAdmissionReportFromCapabilities({
+      plugin: '@example/plugin-cli',
+      generatedAt,
+      capabilities: createCapabilitiesResponse([
+        createCapabilityItem({
+          readiness: 'blocked',
+          warnings: [
+            {
+              code: 'unsafe-semantic-text',
+              message: 'Capability semantic example was dropped because it contained internal payload keys.',
+            },
+          ],
+        }),
+      ]),
+    });
+
+    expect(report.records).toHaveLength(1);
+    expect(report.records[0]).toMatchObject({
+      publicType: 'gantt',
+      readiness: 'blocked',
+      checks: {
+        discovered: {
+          ok: false,
+          reasonCode: 'unsafe-auto-discovery',
+        },
+        contractDeclared: {
+          ok: true,
+        },
+        unsafePayloadBlocked: {
+          ok: false,
+          reasonCode: 'unsafe-auto-discovery',
+        },
+      },
+    });
+    expect(JSON.stringify(report)).not.toContain('internal payload keys');
+  });
+
   it('should verify capabilities through the loaded flow-engine service', async () => {
     const enabledPackages = new Set(['@example/plugin-cli']);
     const capabilities = createCapabilitiesResponse([createCapabilityItem({ readiness: 'createEnabled' })]);
