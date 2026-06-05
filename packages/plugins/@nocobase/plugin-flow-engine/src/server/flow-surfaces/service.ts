@@ -2489,6 +2489,45 @@ export class FlowSurfacesService {
     }).some((item) => item.kind === 'block' && item.publicType === normalizedType);
   }
 
+  private async assertAutoSnapshotDynamicBlockCatalogConfirmed(input: {
+    actionName: FlowSurfaceDynamicCapabilityCreateActionName;
+    publicType: string;
+    target: FlowSurfaceWriteTarget;
+    transaction?: unknown;
+    enabledPackages: ReadonlySet<string>;
+  }) {
+    const catalog = await this.catalog(
+      {
+        target: input.target,
+        sections: ['blocks'],
+      },
+      {
+        transaction: input.transaction,
+        enabledPackages: input.enabledPackages,
+      },
+    );
+    const confirmed = (catalog.blocks || []).some((item) => {
+      if (item.kind !== 'block' || item.origin !== 'autoSnapshot' || item.publicType !== input.publicType) {
+        return false;
+      }
+      return item.createSupported === true || item.availability?.create.supported === true;
+    });
+    if (confirmed) {
+      return;
+    }
+    throw new FlowSurfaceBadRequestError(
+      `flowSurfaces ${input.actionName} dynamic block '${input.publicType}' is not confirmed by target-scoped catalog`,
+      undefined,
+      {
+        details: {
+          reasonCode: 'contract-not-verified',
+          reasonSource: 'catalog',
+          publicType: input.publicType,
+        },
+      },
+    );
+  }
+
   private async buildProviderCatalogItems(input: {
     kind: 'block' | 'action' | 'field';
     enabledPackages: ReadonlySet<string>;
@@ -9487,6 +9526,13 @@ export class FlowSurfacesService {
     if (!capability) {
       if (this.hasAutoSnapshotDynamicBlockCapability(publicType, input.enabledPackages)) {
         const capabilityPolicyConfig = readFlowSurfaceCapabilityPolicyConfigFromPluginOptions(this.plugin.options);
+        await this.assertAutoSnapshotDynamicBlockCatalogConfirmed({
+          actionName,
+          publicType,
+          target: input.target,
+          transaction: input.options.transaction,
+          enabledPackages: input.enabledPackages,
+        });
         await resolveDynamicCapabilityCreate({
           publicType,
           target: input.target,
