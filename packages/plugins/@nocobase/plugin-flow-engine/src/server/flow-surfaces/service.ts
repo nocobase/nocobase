@@ -2599,6 +2599,9 @@ export class FlowSurfacesService {
       if (item.kind !== 'block' || item.origin !== 'autoSnapshot' || item.publicType !== input.publicType) {
         return false;
       }
+      if (item.createSupported === false || item.availability?.create.supported === false) {
+        return false;
+      }
       return item.createSupported === true || item.availability?.create.supported === true;
     });
     if (confirmed) {
