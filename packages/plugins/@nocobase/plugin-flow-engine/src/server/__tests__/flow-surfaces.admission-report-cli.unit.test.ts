@@ -14,6 +14,7 @@ import { describe, expect, it, vi } from 'vitest';
 import {
   buildFlowSurfaceCapabilityAdmissionReport,
   getFlowSurfaceCapabilityAdmissionReportFileName,
+  writeFlowSurfaceCapabilityAdmissionReport,
   type FlowSurfaceAdmissionCheck,
   type FlowSurfaceCapabilityAdmissionRecord,
 } from '../flow-surfaces/admission-report';
@@ -173,6 +174,69 @@ describe('flowSurfaces capability admission report CLI', () => {
       expect(JSON.parse(await readFile(summary.results[0].reportPath || '', 'utf8'))).toMatchObject({
         plugin: '@example/plugin-cli',
         records: [expect.objectContaining({ readiness: 'createEnabled' })],
+      });
+    } finally {
+      await rm(outDir, { recursive: true, force: true });
+    }
+  });
+
+  it('should merge public type report writes with existing plugin records', async () => {
+    const tempRoot = await realpath(tmpdir());
+    const outDir = await mkdtemp(join(tempRoot, 'flow-surfaces-admission-cli-merge-'));
+    try {
+      await writeFlowSurfaceCapabilityAdmissionReport({
+        outDir,
+        report: buildFlowSurfaceCapabilityAdmissionReport({
+          plugin: '@example/plugin-cli',
+          generatedAt: '2026-06-03T00:00:00.000Z',
+          records: [
+            createAdmissionRecord({
+              publicType: 'calendar',
+            }),
+          ],
+        }),
+      });
+
+      const summary = await runFlowSurfaceCapabilityAdmissionCli(
+        [
+          {
+            plugin: '@example/plugin-cli',
+            publicType: 'gantt',
+          },
+        ],
+        {
+          generatedAt,
+          outDir,
+          verifyCapability: async (target, options) =>
+            buildFlowSurfaceCapabilityAdmissionReport({
+              plugin: target.plugin,
+              generatedAt: options.generatedAt,
+              records: [
+                createAdmissionRecord({ ownerPlugin: target.plugin, publicType: target.publicType || 'gantt' }),
+              ],
+            }),
+        },
+      );
+
+      expect(summary).toMatchObject({
+        ok: true,
+        dryRun: false,
+        exitCode: 0,
+        results: [
+          {
+            ok: true,
+            plugin: '@example/plugin-cli',
+            publicType: 'gantt',
+            recordCount: 1,
+          },
+        ],
+      });
+      expect(JSON.parse(await readFile(summary.results[0].reportPath || '', 'utf8'))).toMatchObject({
+        plugin: '@example/plugin-cli',
+        records: [
+          expect.objectContaining({ publicType: 'calendar' }),
+          expect.objectContaining({ publicType: 'gantt' }),
+        ],
       });
     } finally {
       await rm(outDir, { recursive: true, force: true });

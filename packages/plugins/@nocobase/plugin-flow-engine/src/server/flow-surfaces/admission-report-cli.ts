@@ -13,6 +13,7 @@ import {
   buildFlowSurfaceCapabilityAdmissionReport,
   getFlowSurfaceCapabilityAdmissionReportStorageDir,
   isFlowSurfaceCapabilityAdmissionReport,
+  loadFlowSurfaceCapabilityAdmissionReportsFromDirectory,
   writeFlowSurfaceCapabilityAdmissionReport,
   type FlowSurfaceCapabilityAdmissionIntegrity,
   type FlowSurfaceAdmissionCheck,
@@ -147,9 +148,15 @@ export async function runFlowSurfaceCapabilityAdmissionCli(
     let reportPath: string | undefined;
     if (!options.dryRun) {
       try {
-        reportPath = await writeFlowSurfaceCapabilityAdmissionReport({
+        const outDir = options.outDir || getFlowSurfaceCapabilityAdmissionReportStorageDir();
+        const reportForWrite = await mergeFlowSurfaceCapabilityAdmissionReportForWrite({
           report,
-          outDir: options.outDir || getFlowSurfaceCapabilityAdmissionReportStorageDir(),
+          target,
+          outDir,
+        });
+        reportPath = await writeFlowSurfaceCapabilityAdmissionReport({
+          report: reportForWrite,
+          outDir,
         });
       } catch (error) {
         errors.push(toFlowSurfaceCapabilityAdmissionCliError(error));
@@ -224,6 +231,38 @@ export async function verifyFlowSurfaceCapabilityAdmission(
     capabilities,
   });
   return report;
+}
+
+async function mergeFlowSurfaceCapabilityAdmissionReportForWrite(input: {
+  report: FlowSurfaceCapabilityAdmissionReport;
+  target: FlowSurfaceCapabilityAdmissionCliTarget;
+  outDir: string;
+}): Promise<FlowSurfaceCapabilityAdmissionReport> {
+  if (!input.target.publicType) {
+    return input.report;
+  }
+
+  const existingReport = (
+    await loadFlowSurfaceCapabilityAdmissionReportsFromDirectory({
+      dir: input.outDir,
+    })
+  ).find((report) => report.plugin === input.report.plugin);
+  if (!existingReport) {
+    return input.report;
+  }
+
+  const retainedRecords = existingReport.records.filter(
+    (record) => record.ownerPlugin === input.report.plugin && record.publicType !== input.target.publicType,
+  );
+  if (!retainedRecords.length) {
+    return input.report;
+  }
+
+  return buildFlowSurfaceCapabilityAdmissionReport({
+    plugin: input.report.plugin,
+    generatedAt: input.report.generatedAt,
+    records: [...retainedRecords, ...input.report.records],
+  });
 }
 
 async function describeFlowSurfaceCapabilityForAdmission(
