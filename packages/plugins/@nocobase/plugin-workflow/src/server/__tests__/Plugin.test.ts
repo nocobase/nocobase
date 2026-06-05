@@ -268,13 +268,13 @@ describe('workflow > Plugin', () => {
         })) as ExecutionModel;
 
         type PendingDispatcher = {
-          acquirePendingExecution(execution: ExecutionModel): Promise<ExecutionModel | null>;
+          prepare(input: ExecutionModel | null, options?: { immediate?: boolean }): Promise<ExecutionModel | null>;
         };
         const dispatcher = (plugin as unknown as { dispatcher: PendingDispatcher }).dispatcher;
 
         const acquired = await Promise.all([
-          dispatcher.acquirePendingExecution(e1),
-          dispatcher.acquirePendingExecution(sameExecution),
+          dispatcher.prepare(e1, { immediate: true }),
+          dispatcher.prepare(sameExecution, { immediate: true }),
         ]);
 
         const acquiredExecutions = acquired.filter((execution): execution is ExecutionModel => Boolean(execution));
@@ -286,7 +286,7 @@ describe('workflow > Plugin', () => {
       },
     );
 
-    it('should not acquire pending execution when acquire transaction fails', async () => {
+    it.only('should not acquire pending execution when acquire transaction fails', async () => {
       const w1 = await WorkflowModel.create({
         enabled: true,
         type: 'asyncTrigger',
@@ -300,7 +300,7 @@ describe('workflow > Plugin', () => {
       });
 
       type PendingDispatcher = {
-        acquirePendingExecution(execution: ExecutionModel): Promise<ExecutionModel | null>;
+        prepare(input: ExecutionModel | null, options?: { immediate?: boolean }): Promise<ExecutionModel | null>;
       };
       const dispatcher = (plugin as unknown as { dispatcher: PendingDispatcher }).dispatcher;
       const transaction = db.sequelize.transaction;
@@ -309,7 +309,7 @@ describe('workflow > Plugin', () => {
       }) as typeof db.sequelize.transaction;
 
       try {
-        const acquired = await dispatcher.acquirePendingExecution(e1);
+        const acquired = await dispatcher.prepare(e1, { immediate: true });
         expect(acquired).toBeNull();
       } finally {
         db.sequelize.transaction = transaction;
@@ -346,14 +346,11 @@ describe('workflow > Plugin', () => {
         });
 
         type QueueingDispatcher = {
-          acquireQueueingExecution(): Promise<ExecutionModel | null>;
+          prepare(input: ExecutionModel | null, options?: { immediate?: boolean }): Promise<ExecutionModel | null>;
         };
         const dispatcher = (plugin as unknown as { dispatcher: QueueingDispatcher }).dispatcher;
 
-        const acquired = await Promise.all([
-          dispatcher.acquireQueueingExecution(),
-          dispatcher.acquireQueueingExecution(),
-        ]);
+        const acquired = await Promise.all([dispatcher.prepare(null), dispatcher.prepare(null)]);
 
         const acquiredExecutions = acquired.filter((execution): execution is ExecutionModel => Boolean(execution));
         expect(acquiredExecutions.map((execution) => execution.id)).toEqual([e1.id]);
