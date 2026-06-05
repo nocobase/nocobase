@@ -1328,7 +1328,10 @@ type FlowSurfaceCapabilityDiagnosticsOptions = {
   admissionReports?: readonly FlowSurfaceCapabilityAdmissionReport[];
 };
 
-type FlowSurfaceCapabilityAuditEvent = 'capability.validate.failed' | 'capability.create.blocked';
+type FlowSurfaceCapabilityAuditEvent =
+  | 'capability.validate.failed'
+  | 'capability.create.blocked'
+  | 'capability.create.succeeded';
 
 const FLOW_SURFACE_DIAGNOSTICS_ADMIN_ROLES = new Set(['admin', 'root']);
 const FLOW_SURFACE_DIAGNOSTIC_AVAILABILITY_KEYS = ['render', 'readback', 'create', 'configure'] as const;
@@ -9735,6 +9738,13 @@ export class FlowSurfacesService {
       await this.appendAddedBlockLayout(input.parentUid, created, initialGrid, input.options);
     }
     await this.persistCreatedKeysForAction('addBlock', input.values, result, input.options.transaction);
+    this.logCapabilityAuditEvent('capability.create.succeeded', {
+      actionName,
+      kind: dynamicCreate.capability.kind,
+      ownerPlugin: dynamicCreate.capability.ownerPlugin,
+      publicType: dynamicCreate.capability.publicType,
+      targetUid: getFlowSurfaceCapabilityAuditTargetUid(input.target),
+    });
     return result;
   }
 

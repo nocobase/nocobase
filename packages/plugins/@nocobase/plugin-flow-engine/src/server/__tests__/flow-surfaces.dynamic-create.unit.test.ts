@@ -1332,6 +1332,7 @@ describe('flowSurfaces dynamic capability create dry-run', () => {
   });
 
   it('should persist catalog-confirmed verified auto snapshot addBlock candidates through the gated mapping', async () => {
+    const auditLog = vi.fn();
     const autoSnapshot = createGanttAutoSnapshot();
     const verifiedAutoPolicy = {
       writePolicy: {
@@ -1341,6 +1342,11 @@ describe('flowSurfaces dynamic capability create dry-run', () => {
       },
     };
     const service = new FlowSurfacesService({
+      app: {
+        logger: {
+          info: auditLog,
+        },
+      },
       options: {
         flowSurfaceCapabilities: verifiedAutoPolicy,
       },
@@ -1433,6 +1439,21 @@ describe('flowSurfaces dynamic capability create dry-run', () => {
         },
       },
     });
+    expect(auditLog).toHaveBeenCalledWith(
+      'flowSurfaces capability audit',
+      expect.objectContaining({
+        actionName: 'addBlock',
+        event: 'capability.create.succeeded',
+        kind: 'block',
+        ownerPlugin: '@nocobase/plugin-gantt',
+        publicType: 'pluginGantt.gantt',
+        targetUid: 'target-grid',
+      }),
+    );
+    const serializedLog = JSON.stringify(auditLog.mock.calls);
+    expect(serializedLog).not.toContain('GanttBlockModel');
+    expect(serializedLog).not.toContain('stepParams');
+    expect(serializedLog).not.toContain('snapshot-source-hash');
   });
 
   it('should log blocked addBlock auto snapshot candidates without internal details', async () => {
