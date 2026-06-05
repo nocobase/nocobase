@@ -1061,7 +1061,7 @@ describe('ReferenceBlockModel', () => {
 
         const target = (referenceBlockModel as any)._targetModel as FlowModel | undefined;
         if (!target) {
-          throw new Error('target model should exist');
+          throw new Error('Expected reference target model to be resolved');
         }
         expect(referenceBlockModel.props).toBe(target.props);
 
@@ -1096,7 +1096,7 @@ describe('ReferenceBlockModel', () => {
 
         const target = (referenceBlockModel as any)._targetModel as FlowModel | undefined;
         if (!target) {
-          throw new Error('target model should exist');
+          throw new Error('Expected reference target model to be resolved');
         }
 
         referenceBlockModel.setProps({ summary: 'y' as any });
@@ -1196,7 +1196,7 @@ describe('ReferenceBlockModel', () => {
 
         const target = (referenceBlockModel as any)._targetModel as FlowModel | undefined;
         if (!target) {
-          throw new Error('target model should exist');
+          throw new Error('Expected reference target model to be resolved');
         }
 
         await target.dispatchEvent('rowClick', { record: { id: 1 } });

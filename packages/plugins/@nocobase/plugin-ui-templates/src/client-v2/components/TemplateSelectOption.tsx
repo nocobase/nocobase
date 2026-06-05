@@ -8,13 +8,9 @@
  */
 
 import React from 'react';
-import { Tooltip, Typography } from 'antd';
+import { theme, Tooltip, Typography } from 'antd';
 
-const NAME_MAX_WIDTH = 480;
-const OPTION_MAX_WIDTH = 520;
-const TOOLTIP_MAX_WIDTH = 400;
-
-export function renderTemplateSelectLabel(name: React.ReactNode, maxWidth = NAME_MAX_WIDTH) {
+export function renderTemplateSelectLabel(name: React.ReactNode, maxWidth: React.CSSProperties['maxWidth'] = '100%') {
   return (
     <span
       style={{
@@ -42,7 +38,8 @@ export type TemplateSelectOptionRenderArg = {
   data?: TemplateSelectOptionData;
 };
 
-export function renderTemplateSelectOption(option: TemplateSelectOptionRenderArg) {
+const TemplateSelectOptionContent: React.FC<{ option: TemplateSelectOptionRenderArg }> = ({ option }) => {
+  const { token } = theme.useToken();
   const desc = option?.data?.description;
   const disabledReason = option?.data?.disabledReason;
   const isDisabled = !!disabledReason;
@@ -53,10 +50,9 @@ export function renderTemplateSelectOption(option: TemplateSelectOptionRenderArg
       style={{
         display: 'flex',
         flexDirection: 'column',
-        gap: 4,
-        padding: '4px 0',
-        maxWidth: OPTION_MAX_WIDTH,
-        opacity: isDisabled ? 0.5 : 1,
+        gap: token.marginXXS,
+        paddingBlock: token.paddingXXS,
+        maxWidth: '100%',
         width: '100%',
         cursor: isDisabled ? 'not-allowed' : 'pointer',
       }}
@@ -64,7 +60,7 @@ export function renderTemplateSelectOption(option: TemplateSelectOptionRenderArg
       <Typography.Text
         strong
         style={{
-          maxWidth: NAME_MAX_WIDTH,
+          maxWidth: '100%',
           overflow: 'hidden',
           textOverflow: 'ellipsis',
           whiteSpace: 'nowrap',
@@ -76,8 +72,8 @@ export function renderTemplateSelectOption(option: TemplateSelectOptionRenderArg
         <Typography.Text
           type="secondary"
           style={{
-            fontSize: 12,
-            lineHeight: 1.4,
+            fontSize: token.fontSizeSM,
+            lineHeight: token.lineHeightSM,
             whiteSpace: 'normal',
             wordBreak: 'break-word',
           }}
@@ -90,17 +86,15 @@ export function renderTemplateSelectOption(option: TemplateSelectOptionRenderArg
 
   if (isDisabled && disabledReason) {
     return (
-      <Tooltip
-        title={disabledReason}
-        placement="right"
-        zIndex={9999}
-        overlayStyle={{ maxWidth: TOOLTIP_MAX_WIDTH }}
-        mouseEnterDelay={0.1}
-      >
+      <Tooltip title={disabledReason} placement="right">
         <div style={{ width: '100%' }}>{content}</div>
       </Tooltip>
     );
   }
 
   return content;
+};
+
+export function renderTemplateSelectOption(option: TemplateSelectOptionRenderArg) {
+  return <TemplateSelectOptionContent option={option} />;
 }

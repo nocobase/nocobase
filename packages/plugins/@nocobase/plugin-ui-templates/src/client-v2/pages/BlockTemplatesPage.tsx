@@ -7,4 +7,4 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export * from '../client-v2/openViewActionExtensions';
+export { BlockTemplatesPage as default } from '../components/FlowModelTemplatesPage';
