@@ -913,6 +913,56 @@ describe('flowSurfaces dynamic capability create dry-run', () => {
     });
   });
 
+  it('should keep stale verified auto admission evidence from enabling create', async () => {
+    const autoSnapshot = createGanttAutoSnapshot();
+    const staleAdmissionReport: FlowSurfaceCapabilityAdmissionReport = {
+      ...createVerifiedAutoAdmissionReport(),
+      records: createVerifiedAutoAdmissionReport().records.map((record) => ({
+        ...record,
+        snapshotHash: 'older-snapshot-hash',
+      })),
+    };
+    const verifiedAutoPolicy = {
+      writePolicy: {
+        mode: 'verifiedAuto' as const,
+        allowedOwners: ['@nocobase/plugin-gantt'],
+        allowedPublicTypes: ['pluginGantt.gantt'],
+      },
+    };
+
+    let error: unknown;
+    try {
+      await resolveDynamicCapabilityCreate({
+        publicType: 'pluginGantt.gantt',
+        initParams: {
+          collectionName: 'tasks',
+        },
+        settings: {},
+        enabledPackages: new Set(['@nocobase/plugin-gantt']),
+        providerRegistry: createProviderRegistry([]),
+        autoSnapshots: [autoSnapshot],
+        admissionReports: [staleAdmissionReport],
+        capabilityPolicyConfig: verifiedAutoPolicy,
+      });
+    } catch (caught) {
+      error = caught;
+    }
+
+    expect(error).toMatchObject({
+      message: `flowSurfaces dynamic create capability 'pluginGantt.gantt' is not enabled for writes`,
+      options: {
+        details: {
+          reasonCode: 'snapshot-stale',
+          reasonSource: 'registry',
+          publicType: 'pluginGantt.gantt',
+        },
+      },
+    });
+    expect(JSON.stringify(error)).not.toContain('GanttBlockModel');
+    expect(JSON.stringify(error)).not.toContain('stepParams');
+    expect(JSON.stringify(error)).not.toContain('older-snapshot-hash');
+  });
+
   it('should persist catalog-confirmed verified auto snapshot addBlock candidates through the gated mapping', async () => {
     const autoSnapshot = createGanttAutoSnapshot();
     const verifiedAutoPolicy = {
