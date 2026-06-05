@@ -773,8 +773,9 @@ describe('flowSurfaces dynamic capability create dry-run', () => {
       ],
     });
 
-    await expect(
-      resolveDynamicCapabilityCreate({
+    let internalSettingsError: unknown;
+    try {
+      await resolveDynamicCapabilityCreate({
         publicType: 'pluginGantt.gantt',
         initParams: {
           collectionName: 'tasks',
@@ -787,18 +788,28 @@ describe('flowSurfaces dynamic capability create dry-run', () => {
         autoSnapshots: [autoSnapshot],
         admissionReports: [createVerifiedAutoAdmissionReport()],
         capabilityPolicyConfig: verifiedAutoPolicy,
-      }),
-    ).rejects.toMatchObject({
+      });
+    } catch (caught) {
+      internalSettingsError = caught;
+    }
+
+    expect(internalSettingsError).toBeInstanceOf(FlowSurfaceAggregateError);
+    expect(internalSettingsError).toMatchObject({
       errors: [
         expect.objectContaining({
-          path: 'settings.ganttSettings',
+          path: 'payload',
           ruleId: 'unsupported',
+          message: 'public payload contains unsupported dynamic capability create fields',
         }),
       ],
     });
+    expect(JSON.stringify(internalSettingsError)).not.toContain('ganttSettings');
+    expect(JSON.stringify(internalSettingsError)).not.toContain('GanttBlockModel');
+    expect(JSON.stringify(internalSettingsError)).not.toContain('stepParams');
 
-    await expect(
-      resolveDynamicCapabilityCreate({
+    let internalRawPayloadError: unknown;
+    try {
+      await resolveDynamicCapabilityCreate({
         publicType: 'pluginGantt.gantt',
         initParams: {
           collectionName: 'tasks',
@@ -813,8 +824,24 @@ describe('flowSurfaces dynamic capability create dry-run', () => {
         autoSnapshots: [autoSnapshot],
         admissionReports: [createVerifiedAutoAdmissionReport()],
         capabilityPolicyConfig: verifiedAutoPolicy,
-      }),
-    ).rejects.toBeInstanceOf(FlowSurfaceAggregateError);
+      });
+    } catch (caught) {
+      internalRawPayloadError = caught;
+    }
+
+    expect(internalRawPayloadError).toBeInstanceOf(FlowSurfaceAggregateError);
+    expect(internalRawPayloadError).toMatchObject({
+      errors: [
+        expect.objectContaining({
+          path: 'payload',
+          ruleId: 'unsupported',
+          message: 'public payload contains unsupported dynamic capability create fields',
+        }),
+      ],
+    });
+    expect(JSON.stringify(internalRawPayloadError)).not.toContain('modelUse');
+    expect(JSON.stringify(internalRawPayloadError)).not.toContain('GanttBlockModel');
+    expect(JSON.stringify(internalRawPayloadError)).not.toContain('stepParams');
   });
 
   it('should keep verified auto dynamic create validation blocked under manifestOnly policy', async () => {

@@ -644,7 +644,7 @@ function normalizeOptionalObject(value: unknown, path: string) {
 }
 
 function assertPublicPayloadDoesNotContainInternalKeys(payload: Record<string, unknown>) {
-  const errors: FlowSurfaceCapabilityValidationError[] = [];
+  let hasInternalKey = false;
   const visit = (value: unknown, path: string) => {
     if (Array.isArray(value)) {
       value.forEach((item, index) => visit(item, `${path}[${index}]`));
@@ -656,18 +656,20 @@ function assertPublicPayloadDoesNotContainInternalKeys(payload: Record<string, u
     Object.entries(value as Record<string, unknown>).forEach(([key, child]) => {
       const childPath = path ? `${path}.${key}` : key;
       if (DYNAMIC_INTERNAL_PROVIDER_TOKENS.has(key)) {
-        errors.push({
-          path: childPath,
-          code: 'unsupported',
-          message: `public payload key '${childPath}' is not supported for dynamic capability create`,
-        });
+        hasInternalKey = true;
       }
       visit(child, childPath);
     });
   };
   visit(payload, '');
-  if (errors.length) {
-    throwCapabilityValidationErrors(errors);
+  if (hasInternalKey) {
+    throwCapabilityValidationErrors([
+      {
+        path: 'payload',
+        code: 'unsupported',
+        message: 'public payload contains unsupported dynamic capability create fields',
+      },
+    ]);
   }
 }
 
