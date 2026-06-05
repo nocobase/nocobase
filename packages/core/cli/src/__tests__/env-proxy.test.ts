@@ -12,7 +12,12 @@ import os from 'node:os';
 import path from 'node:path';
 import { afterEach, expect, test } from 'vitest';
 import type { ManagedAppRuntime } from '../lib/app-runtime.js';
-import { buildEnvProxyConfig, resolveEnvProxyOutputPath } from '../lib/env-proxy.ts';
+import {
+  buildEnvProxyConfig,
+  buildEnvProxyMainConfig,
+  resolveEnvProxyMainOutputPath,
+  resolveEnvProxyOutputPath,
+} from '../lib/env-proxy.ts';
 
 const createdRoots: string[] = [];
 
@@ -69,6 +74,7 @@ test('buildEnvProxyConfig reads local env file settings and maps /dist/ to stora
   expect(result.v2PublicPath).toBe('/console/admin/');
   expect(result.pluginStaticsPath).toBe('/console/static/plugins/');
   expect(result.distClientRoot).toBe(path.join(storagePath, 'dist-client'));
+  expect(result.content).not.toContain('map $http_upgrade $connection_upgrade');
   expect(result.content).toContain('location ^~ /console/api/');
   expect(result.content).toContain('location ^~ /console/dist/');
   expect(result.content).toContain(`alias ${path.join(storagePath, 'dist-client')}/;`);
@@ -114,7 +120,19 @@ test('resolveEnvProxyOutputPath defaults to ~/.nocobase/proxy/<env>/app.conf', a
   process.env.NB_CLI_ROOT = root;
 
   expect(resolveEnvProxyOutputPath('staging')).toBe(path.join(root, '.nocobase', 'proxy', 'staging', 'app.conf'));
+  expect(resolveEnvProxyMainOutputPath()).toBe(path.join(root, '.nocobase', 'proxy', 'nginx.conf'));
   expect(resolveEnvProxyOutputPath('staging', { output: './custom/app.conf' })).toBe(
     path.resolve(process.cwd(), './custom/app.conf'),
   );
+});
+
+test('buildEnvProxyMainConfig includes shared nginx directives and wildcard app.conf include', async () => {
+  const root = await createTempRoot('nocobase-cli-env-proxy-main-');
+  process.env.NB_CLI_ROOT = root;
+
+  const content = buildEnvProxyMainConfig();
+
+  expect(content).toContain('map $http_upgrade $connection_upgrade');
+  expect(content).toContain('gzip on;');
+  expect(content).toContain(`include ${path.join(root, '.nocobase', 'proxy', '*', 'app.conf')};`);
 });

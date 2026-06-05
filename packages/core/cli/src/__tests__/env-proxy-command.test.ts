@@ -79,7 +79,11 @@ test('env proxy writes the generated config to the default proxy path', async ()
   await EnvProxy.prototype.run.call(command);
 
   const outputPath = path.join(tempRoot, '.nocobase', 'proxy', 'demo', 'app.conf');
+  const sharedOutputPath = path.join(tempRoot, '.nocobase', 'proxy', 'nginx.conf');
   await expect(readFile(outputPath, 'utf8')).resolves.toBe('server {}\n');
+  await expect(readFile(sharedOutputPath, 'utf8')).resolves.toContain(
+    `include ${path.join(tempRoot, '.nocobase', 'proxy', '*', 'app.conf')};`,
+  );
   expect(mocks.announceTargetEnv).toHaveBeenCalledWith('demo');
   expect(mocks.succeedTask).toHaveBeenCalledTimes(1);
 });

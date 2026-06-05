@@ -13,7 +13,12 @@ import { Args, Command, Flags } from '@oclif/core';
 import { formatMissingManagedAppEnvMessage, resolveManagedAppRuntime } from '../../lib/app-runtime.js';
 import { resolveDefaultConfigScope } from '../../lib/cli-home.js';
 import { translateCli } from '../../lib/cli-locale.js';
-import { buildEnvProxyConfig, resolveEnvProxyOutputPath } from '../../lib/env-proxy.js';
+import {
+  buildEnvProxyConfig,
+  buildEnvProxyMainConfig,
+  resolveEnvProxyMainOutputPath,
+  resolveEnvProxyOutputPath,
+} from '../../lib/env-proxy.js';
 import { announceTargetEnv, failTask, startTask, succeedTask } from '../../lib/ui.js';
 
 export default class EnvProxy extends Command {
@@ -127,12 +132,30 @@ export default class EnvProxy extends Command {
       await mkdir(path.dirname(outputPath), { recursive: true });
       await writeFile(outputPath, result.content, 'utf8');
 
+      const shouldWriteSharedConfig = !flags.output;
+      let sharedOutputPath: string | undefined;
+      if (shouldWriteSharedConfig) {
+        sharedOutputPath = resolveEnvProxyMainOutputPath({
+          scope: resolveDefaultConfigScope(),
+        });
+        await mkdir(path.dirname(sharedOutputPath), { recursive: true });
+        await writeFile(
+          sharedOutputPath,
+          buildEnvProxyMainConfig({
+            scope: resolveDefaultConfigScope(),
+          }),
+          'utf8',
+        );
+      }
+
       succeedTask(
         translateCli(
           'commands.envProxy.messages.saved',
-          { envName: runtime.envName, outputPath },
+          { envName: runtime.envName, outputPath, sharedOutputPath },
           {
-            fallback: `Saved proxy config for env "${runtime.envName}" at ${outputPath}.`,
+            fallback: sharedOutputPath
+              ? `Saved proxy config for env "${runtime.envName}" at ${outputPath}, and updated shared nginx config at ${sharedOutputPath}.`
+              : `Saved proxy config for env "${runtime.envName}" at ${outputPath}.`,
           },
         ),
       );

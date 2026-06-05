@@ -192,7 +192,7 @@ function buildOtherLocation(appPublicPath: string, v2PublicPath: string, modernC
     }`;
 }
 
-function renderEnvProxyTemplate(context: {
+function renderEnvProxyAppTemplate(context: {
   appPublicPath: string;
   apiBasePath: string;
   apiPort: string;
@@ -207,31 +207,10 @@ function renderEnvProxyTemplate(context: {
   const proxyPassBlock = buildProxyPassBlock(context.apiPort);
   const wsProxyPassTarget = `http://127.0.0.1:${context.apiPort}${context.wsPath}`;
 
-  return `map $http_upgrade $connection_upgrade {
-    default upgrade;
-    ""      close;
-}
-
-map $http_x_forwarded_proto $upstream_x_forwarded_proto {
-    default $http_x_forwarded_proto;
-    ""      $scheme;
-}
-
-map $http_host $final_host {
-    default $http_host;
-    ""      $host;
-}
-
-server {
+  return `server {
     listen 80;
     server_name _;
     client_max_body_size 0;
-
-    include /etc/nginx/mime.types;
-    types { application/javascript mjs; }
-
-    gzip on;
-    gzip_types text/plain text/css application/json application/javascript text/xml application/xml application/xml+rss text/javascript;
 
     location ~* ^${context.appPublicPath}storage/uploads/(.*\\.(?:htm|html|svg|svgz|xhtml|pdf))$ {
         alias ${context.uploadsPath}/$1;
@@ -295,6 +274,31 @@ server {
 `;
 }
 
+function renderEnvProxyMainTemplate(appConfigIncludePath: string): string {
+  return `map $http_upgrade $connection_upgrade {
+    default upgrade;
+    ""      close;
+}
+
+map $http_x_forwarded_proto $upstream_x_forwarded_proto {
+    default $http_x_forwarded_proto;
+    ""      $scheme;
+}
+
+map $http_host $final_host {
+    default $http_host;
+    ""      $host;
+}
+
+types { application/javascript mjs; }
+
+gzip on;
+gzip_types text/plain text/css application/json application/javascript text/xml application/xml application/xml+rss text/javascript;
+
+include ${appConfigIncludePath};
+`;
+}
+
 export async function buildEnvProxyConfig(
   runtime: Extract<ManagedAppRuntime, { kind: 'local' | 'docker' }>,
 ): Promise<EnvProxyRenderResult> {
@@ -327,7 +331,7 @@ export async function buildEnvProxyConfig(
     distClientRoot,
     runtimeVersion,
     apiPort,
-    content: renderEnvProxyTemplate({
+    content: renderEnvProxyAppTemplate({
       appPublicPath: settings.appPublicPath,
       apiBasePath: settings.apiBasePath,
       apiPort,
@@ -342,6 +346,10 @@ export async function buildEnvProxyConfig(
   };
 }
 
+export function resolveEnvProxyRootDir(options?: { scope?: CliHomeScope }): string {
+  return path.join(resolveCliHomeDir(options?.scope), 'proxy');
+}
+
 export function resolveEnvProxyOutputPath(
   envName: string,
   options?: {
@@ -354,5 +362,14 @@ export function resolveEnvProxyOutputPath(
     return path.resolve(process.cwd(), explicitOutput);
   }
 
-  return path.join(resolveCliHomeDir(options?.scope), 'proxy', envName, 'app.conf');
+  return path.join(resolveEnvProxyRootDir(options), envName, 'app.conf');
+}
+
+export function resolveEnvProxyMainOutputPath(options?: { scope?: CliHomeScope }): string {
+  return path.join(resolveEnvProxyRootDir(options), 'nginx.conf');
+}
+
+export function buildEnvProxyMainConfig(options?: { scope?: CliHomeScope }): string {
+  const appConfigIncludePath = path.join(resolveEnvProxyRootDir(options), '*', 'app.conf');
+  return renderEnvProxyMainTemplate(appConfigIncludePath);
 }
