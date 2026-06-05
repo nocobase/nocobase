@@ -2544,6 +2544,48 @@ describe('flowSurfaces dynamic capability create dry-run', () => {
     });
   });
 
+  it('should keep verified auto snapshot readback under manifestOnly downgrade', async () => {
+    const manifestOnlyPolicy = {
+      writePolicy: {
+        mode: 'manifestOnly' as const,
+        allowedOwners: ['@nocobase/plugin-gantt'],
+        allowedPublicTypes: ['pluginGantt.gantt'],
+      },
+    };
+    const service = new FlowSurfacesService({
+      options: {
+        flowSurfaceCapabilities: manifestOnlyPolicy,
+      },
+      flowSurfaceAutoSnapshots: [createGanttAutoSnapshot()],
+      flowSurfaceCapabilityAdmissionReports: [createVerifiedAutoAdmissionReport()],
+      flowSurfaceCapabilityProviders: createProviderRegistry([]),
+    } as unknown as ConstructorParameters<typeof FlowSurfacesService>[0]);
+    type DynamicReadbackProjector = {
+      projectDynamicBlockReadbackTypes<T>(node: T, options: { enabledPackages: ReadonlySet<string> }): Promise<T>;
+    };
+    const tree = {
+      uid: 'root',
+      use: 'GridModel',
+      subModels: {
+        items: [
+          {
+            uid: 'gantt-1',
+            use: 'GanttBlockModel',
+          },
+        ],
+      },
+    };
+
+    const projected = await (service as unknown as DynamicReadbackProjector).projectDynamicBlockReadbackTypes(tree, {
+      enabledPackages: new Set(['@nocobase/plugin-gantt']),
+    });
+
+    expect(projected.subModels.items[0]).toMatchObject({
+      use: 'GanttBlockModel',
+      type: 'pluginGantt.gantt',
+    });
+  });
+
   it('should keep provider-backed block catalog items out of popup-scoped raw projection', async () => {
     const service = new FlowSurfacesService({
       flowSurfaceCapabilityProviders: createProviderRegistry([createDryRunProvider()]),
