@@ -95,6 +95,13 @@ describe('ReferenceBlockModel', () => {
   let store: Record<string, any>;
   let lastSavedSnapshot: Record<string, any>;
   let hostCollection: { name: string };
+  let mockRepository: {
+    findOne: ReturnType<typeof vi.fn>;
+    save: ReturnType<typeof vi.fn>;
+    destroy: ReturnType<typeof vi.fn>;
+    move: ReturnType<typeof vi.fn>;
+    duplicate: ReturnType<typeof vi.fn>;
+  };
 
   beforeEach(() => {
     vi.spyOn(ReferenceBlockModel.prototype as any, 'rerender').mockResolvedValue(undefined);
@@ -140,7 +147,7 @@ describe('ReferenceBlockModel', () => {
     scopedEngine.context.defineProperty('api', { value: engine.context.api });
 
     const clone = (obj: any) => JSON.parse(JSON.stringify(obj));
-    const mockRepository = {
+    mockRepository = {
       findOne: vi.fn(async (query) => {
         const data = store[query.uid];
         return data ? clone(data) : null;
@@ -709,6 +716,38 @@ describe('ReferenceBlockModel', () => {
             templateUid: 'tpl-1',
           }),
         ).rejects.toThrow('STOP');
+      },
+      TEST_TIMEOUT,
+    );
+
+    it(
+      'copy mode moves duplicated persisted block before the old reference block',
+      async () => {
+        store['reference-block-uid'] = {
+          uid: 'reference-block-uid',
+          use: 'ReferenceBlockModel',
+          parentId: 'grid-uid',
+          subKey: 'items',
+          subType: 'array',
+        };
+        referenceBlockModel = engine.createModel({
+          uid: 'reference-block-uid',
+          use: 'ReferenceBlockModel',
+          parentId: 'grid-uid',
+          subKey: 'items',
+          subType: 'array',
+        }) as ReferenceBlockModel;
+        gridModel.addSubModel('items', referenceBlockModel);
+
+        const flow: any = (ReferenceBlockModel as any).globalFlowRegistry.getFlow('referenceSettings');
+        const step: any = flow?.steps?.target;
+
+        await step.beforeParamsSave({ engine, model: referenceBlockModel, exit: vi.fn() } as any, {
+          targetUid: 'target-block-uid',
+          mode: 'copy',
+        });
+
+        expect(mockRepository.move).toHaveBeenCalledWith('target-block-uid-copy', 'reference-block-uid', 'before');
       },
       TEST_TIMEOUT,
     );
