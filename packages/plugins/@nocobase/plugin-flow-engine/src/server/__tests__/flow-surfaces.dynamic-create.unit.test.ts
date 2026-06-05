@@ -500,7 +500,7 @@ describe('flowSurfaces dynamic capability create dry-run', () => {
     ).rejects.toBeInstanceOf(FlowSurfaceAggregateError);
   });
 
-  it('should revalidate verified auto snapshots before failing closed without a create resolver', async () => {
+  it('should map a verified auto snapshot Gantt payload into a guarded internal node', async () => {
     const autoSnapshot = createGanttAutoSnapshot();
     const verifiedAutoPolicy = {
       writePolicy: {
@@ -542,6 +542,66 @@ describe('flowSurfaces dynamic capability create dry-run', () => {
       }),
     ]);
 
+    const directResponse = await resolveDynamicCapabilityCreate({
+      publicType: 'pluginGantt.gantt',
+      initParams: {
+        collectionName: 'tasks',
+        dataSourceKey: 'main',
+      },
+      settings: {},
+      enabledPackages: new Set(['@nocobase/plugin-gantt']),
+      providerRegistry: createProviderRegistry([]),
+      autoSnapshots: [autoSnapshot],
+      admissionReports: [createVerifiedAutoAdmissionReport()],
+      capabilityPolicyConfig: verifiedAutoPolicy,
+    });
+
+    expect(directResponse.capability).toMatchObject({
+      publicType: 'pluginGantt.gantt',
+      ownerPlugin: '@nocobase/plugin-gantt',
+      origin: 'autoSnapshot',
+      readiness: 'createEnabled',
+      availability: {
+        create: {
+          supported: true,
+          acceptsInitParams: true,
+          acceptsSettings: false,
+        },
+      },
+      initParamsSchema: {
+        required: ['collectionName'],
+        properties: {
+          collectionName: {
+            type: 'string',
+          },
+          dataSourceKey: {
+            type: 'string',
+          },
+        },
+      },
+    });
+    expect(directResponse.publicPayload).toMatchObject({
+      publicType: 'pluginGantt.gantt',
+      initParams: {
+        collectionName: 'tasks',
+        dataSourceKey: 'main',
+      },
+      settings: {},
+    });
+    expect(directResponse.node).toMatchObject({
+      use: 'GanttBlockModel',
+      stepParams: {
+        resourceSettings: {
+          init: {
+            collectionName: 'tasks',
+            dataSourceKey: 'main',
+          },
+        },
+      },
+    });
+    expect(JSON.stringify(directResponse.publicPayload)).not.toContain('GanttBlockModel');
+    expect(JSON.stringify(directResponse.publicPayload)).not.toContain('stepParams');
+
     const service = new FlowSurfacesService({
       options: {
         flowSurfaceCapabilities: verifiedAutoPolicy,
@@ -551,29 +611,141 @@ describe('flowSurfaces dynamic capability create dry-run', () => {
       flowSurfaceCapabilityProviders: createProviderRegistry([]),
     } as unknown as ConstructorParameters<typeof FlowSurfacesService>[0]);
 
-    await expect(
-      service.validateCapabilityCreate(
-        {
-          publicType: 'pluginGantt.gantt',
-          initParams: {
-            collectionName: 'tasks',
+    const dryRunResponse = await service.validateCapabilityCreate(
+      {
+        publicType: 'pluginGantt.gantt',
+        initParams: {
+          collectionName: 'tasks',
+        },
+        settings: {},
+      },
+      {
+        enabledPackages: new Set(['@nocobase/plugin-gantt']),
+      },
+    );
+
+    expect(dryRunResponse).toMatchObject({
+      ok: true,
+      capability: {
+        publicType: 'pluginGantt.gantt',
+        ownerPlugin: '@nocobase/plugin-gantt',
+        readiness: 'createEnabled',
+        availability: {
+          create: {
+            supported: true,
           },
-          settings: {},
-        },
-        {
-          enabledPackages: new Set(['@nocobase/plugin-gantt']),
-        },
-      ),
-    ).rejects.toMatchObject({
-      message: `flowSurfaces dynamic create capability 'pluginGantt.gantt' does not declare a create resolver`,
-      options: {
-        details: {
-          reasonCode: 'missing-create-contract',
-          reasonSource: 'registry',
-          publicType: 'pluginGantt.gantt',
         },
       },
+      normalizedPublicPayload: {
+        publicType: 'pluginGantt.gantt',
+        initParams: {
+          collectionName: 'tasks',
+        },
+        settings: {},
+      },
+      dryRunNode: {
+        publicType: 'pluginGantt.gantt',
+      },
     });
+    expect(dryRunResponse.capability).not.toHaveProperty('identity');
+    expect(JSON.stringify(dryRunResponse)).not.toContain('GanttBlockModel');
+    expect(JSON.stringify(dryRunResponse)).not.toContain('stepParams');
+  });
+
+  it('should validate verified auto snapshot Gantt public payload before mapping', async () => {
+    const autoSnapshot = createGanttAutoSnapshot();
+    const verifiedAutoPolicy = {
+      writePolicy: {
+        mode: 'verifiedAuto' as const,
+        allowedOwners: ['@nocobase/plugin-gantt'],
+        allowedPublicTypes: ['pluginGantt.gantt'],
+      },
+    };
+
+    await expect(
+      resolveDynamicCapabilityCreate({
+        publicType: 'pluginGantt.gantt',
+        initParams: {},
+        settings: {},
+        enabledPackages: new Set(['@nocobase/plugin-gantt']),
+        providerRegistry: createProviderRegistry([]),
+        autoSnapshots: [autoSnapshot],
+        admissionReports: [createVerifiedAutoAdmissionReport()],
+        capabilityPolicyConfig: verifiedAutoPolicy,
+      }),
+    ).rejects.toMatchObject({
+      errors: [
+        expect.objectContaining({
+          path: 'initParams.collectionName',
+          ruleId: 'required',
+        }),
+      ],
+    });
+
+    await expect(
+      resolveDynamicCapabilityCreate({
+        publicType: 'pluginGantt.gantt',
+        initParams: {
+          collectionName: '   ',
+        },
+        settings: {},
+        enabledPackages: new Set(['@nocobase/plugin-gantt']),
+        providerRegistry: createProviderRegistry([]),
+        autoSnapshots: [autoSnapshot],
+        admissionReports: [createVerifiedAutoAdmissionReport()],
+        capabilityPolicyConfig: verifiedAutoPolicy,
+      }),
+    ).rejects.toMatchObject({
+      errors: [
+        expect.objectContaining({
+          path: 'initParams.collectionName',
+          ruleId: 'required',
+        }),
+      ],
+    });
+
+    await expect(
+      resolveDynamicCapabilityCreate({
+        publicType: 'pluginGantt.gantt',
+        initParams: {
+          collectionName: 'tasks',
+        },
+        settings: {
+          ganttSettings: {},
+        },
+        enabledPackages: new Set(['@nocobase/plugin-gantt']),
+        providerRegistry: createProviderRegistry([]),
+        autoSnapshots: [autoSnapshot],
+        admissionReports: [createVerifiedAutoAdmissionReport()],
+        capabilityPolicyConfig: verifiedAutoPolicy,
+      }),
+    ).rejects.toMatchObject({
+      errors: [
+        expect.objectContaining({
+          path: 'settings.ganttSettings',
+          ruleId: 'unsupported',
+        }),
+      ],
+    });
+
+    await expect(
+      resolveDynamicCapabilityCreate({
+        publicType: 'pluginGantt.gantt',
+        initParams: {
+          collectionName: 'tasks',
+        },
+        settings: {},
+        rawPublicPayload: {
+          publicType: 'pluginGantt.gantt',
+          modelUse: 'GanttBlockModel',
+        },
+        enabledPackages: new Set(['@nocobase/plugin-gantt']),
+        providerRegistry: createProviderRegistry([]),
+        autoSnapshots: [autoSnapshot],
+        admissionReports: [createVerifiedAutoAdmissionReport()],
+        capabilityPolicyConfig: verifiedAutoPolicy,
+      }),
+    ).rejects.toBeInstanceOf(FlowSurfaceAggregateError);
   });
 
   it('should keep verified auto dynamic create validation blocked under manifestOnly policy', async () => {
@@ -642,7 +814,7 @@ describe('flowSurfaces dynamic capability create dry-run', () => {
     });
   });
 
-  it('should route target-scoped addBlock auto snapshot candidates through verified auto create gate', async () => {
+  it('should persist catalog-confirmed verified auto snapshot addBlock candidates through the gated mapping', async () => {
     const autoSnapshot = createGanttAutoSnapshot();
     const verifiedAutoPolicy = {
       writePolicy: {
@@ -662,6 +834,7 @@ describe('flowSurfaces dynamic capability create dry-run', () => {
     const harness = service as unknown as DynamicBlockWriteGateHarness;
     const enabledPackages = new Set(['@nocobase/plugin-gantt']);
     const dynamicBlockTypes = await harness.resolveDynamicBlockTypes(enabledPackages);
+    const persistedPayloads: Record<string, unknown>[] = [];
 
     expect(dynamicBlockTypes.has('pluginGantt.gantt')).toBe(true);
     harness.catalog = async (input, options) => {
@@ -686,39 +859,60 @@ describe('flowSurfaces dynamic capability create dry-run', () => {
         ],
       };
     };
+    type RepositoryGetterHarness = {
+      readonly repository: {
+        upsertModel(payload: Record<string, unknown>, options?: Record<string, unknown>): Promise<string>;
+      };
+    };
+    vi.spyOn(service as unknown as RepositoryGetterHarness, 'repository', 'get').mockReturnValue({
+      upsertModel: async (payload) => {
+        persistedPayloads.push(payload);
+        return 'created-gantt-block';
+      },
+    });
 
-    await expect(
-      harness.tryAddDynamicBlock({
-        values: {
-          target: {
-            uid: 'target-grid',
-          },
-          type: 'pluginGantt.gantt',
-          initParams: {
-            collectionName: 'tasks',
-          },
-          settings: {},
-        },
-        options: {
-          dynamicCapabilityActionName: 'addBlock',
-        },
-        enabledPackages,
-        blockType: 'pluginGantt.gantt',
+    const result = await harness.tryAddDynamicBlock({
+      values: {
         target: {
           uid: 'target-grid',
         },
-        parentUid: 'parent-grid',
-        subKey: 'items',
-        subType: 'array',
-        popupProfile: null,
-      }),
-    ).rejects.toMatchObject({
-      message: `flowSurfaces dynamic create capability 'pluginGantt.gantt' does not declare a create resolver`,
+        type: 'pluginGantt.gantt',
+        initParams: {
+          collectionName: 'tasks',
+        },
+        settings: {},
+      },
       options: {
-        details: {
-          reasonCode: 'missing-create-contract',
-          reasonSource: 'registry',
-          publicType: 'pluginGantt.gantt',
+        deferAutoLayout: true,
+        dynamicCapabilityActionName: 'addBlock',
+      },
+      enabledPackages,
+      blockType: 'pluginGantt.gantt',
+      target: {
+        uid: 'target-grid',
+      },
+      parentUid: 'parent-grid',
+      subKey: 'items',
+      subType: 'array',
+      popupProfile: null,
+    });
+
+    expect(result).toMatchObject({
+      uid: 'created-gantt-block',
+      parentUid: 'parent-grid',
+      subKey: 'items',
+    });
+    expect(persistedPayloads).toHaveLength(1);
+    expect(persistedPayloads[0]).toMatchObject({
+      parentId: 'parent-grid',
+      subKey: 'items',
+      subType: 'array',
+      use: 'GanttBlockModel',
+      stepParams: {
+        resourceSettings: {
+          init: {
+            collectionName: 'tasks',
+          },
         },
       },
     });

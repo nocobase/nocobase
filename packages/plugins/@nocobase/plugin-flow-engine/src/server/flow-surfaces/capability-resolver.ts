@@ -13,6 +13,7 @@ import {
   collectNormalizedProviderCapabilities,
   getFlowSurfacePublicCapabilityAdmissionCapabilityId,
   getFlowSurfacePublicCapabilityAdmissionIntegrity,
+  getFlowSurfacePublicCapabilityModelUses,
   type FlowSurfaceCapabilityRegistryLike,
 } from './capability-registry';
 import {
@@ -31,6 +32,7 @@ import { resolveJsonCreateRecipe } from './capability-recipe';
 import { FlowSurfaceContractGuard } from './contract-guard';
 import { FlowSurfaceBadRequestError, FlowSurfaceAggregateError, type FlowSurfaceErrorItemInput } from './errors';
 import { validateFlowSurfacePayloadShape } from './payload-shape';
+import { buildDefinedPayload } from './service-utils';
 import type { FlowSurfaceAutoSnapshot } from './extractor/types';
 import type {
   FlowSurfaceCapabilityValidationError,
@@ -41,6 +43,7 @@ import type {
   FlowSurfaceJsonSchema,
   FlowSurfaceNodeSpec,
   FlowSurfaceProviderCreateContext,
+  FlowSurfacePublicCapabilityItem,
   FlowSurfaceReasonCode,
 } from './types';
 
@@ -107,7 +110,13 @@ type VerifiedAutoSnapshotDynamicCreateResolution =
     }
   | {
       status: 'verified';
+      capability: FlowSurfaceDynamicAutoSnapshotCreateCapability;
     };
+
+type FlowSurfaceDynamicAutoSnapshotCreateCapability = {
+  publicItem: ReturnType<typeof collectAutoSnapshotPublicCapabilities>[number];
+  modelUse: string;
+};
 
 const PROVIDER_VALIDATION_ERROR_CODES = new Set<FlowSurfaceCapabilityValidationError['code']>([
   'required',
@@ -180,7 +189,14 @@ export async function resolveDynamicCapabilityCreate(
       capabilityPolicyConfig: input.capabilityPolicyConfig,
     });
     if (verifiedAutoSnapshot.status === 'verified') {
-      throwMissingCreateContract(publicType);
+      const autoCreateResponse = resolveVerifiedAutoSnapshotDynamicCreate({
+        capability: verifiedAutoSnapshot.capability,
+        publicType,
+        publicInput,
+        publicPayload,
+        actionName: input.actionName || 'validateCapabilityCreate',
+      });
+      return autoCreateResponse;
     }
     if (verifiedAutoSnapshot.status === 'blocked') {
       throwDynamicCreateNotEnabled(publicType, verifiedAutoSnapshot.reasonCode);
@@ -364,13 +380,197 @@ function resolveVerifiedAutoSnapshotDynamicCreateCapability(input: {
       reasonCode: 'contract-not-verified',
     };
   }
+  const modelUse = resolveVerifiedAutoSnapshotDynamicCreateModelUse(item);
+  if (!modelUse) {
+    return {
+      status: 'blocked',
+      reasonCode: 'missing-create-contract',
+    };
+  }
   return {
     status: 'verified',
+    capability: {
+      publicItem: enableVerifiedAutoSnapshotDynamicCreateItem(policyProjectedItem),
+      modelUse,
+    },
   };
 }
 
 function hasStrictVerifiedAutoDynamicCreateAllowlists(config: NormalizedFlowSurfaceCapabilityPolicyConfig) {
   return !!config.writePolicy.allowedOwners?.length && !!config.writePolicy.allowedPublicTypes?.length;
+}
+
+function resolveVerifiedAutoSnapshotDynamicCreateModelUse(
+  item: FlowSurfaceDynamicAutoSnapshotCreateCapability['publicItem'],
+) {
+  if (
+    item.kind === 'block' &&
+    item.ownerPlugin === '@nocobase/plugin-gantt' &&
+    item.publicType === 'pluginGantt.gantt'
+  ) {
+    const modelUses = getVerifiedAutoSnapshotCapabilityModelUses(item);
+    return modelUses.includes('GanttBlockModel') ? 'GanttBlockModel' : '';
+  }
+  return '';
+}
+
+function resolveVerifiedAutoSnapshotDynamicCreate(input: {
+  capability: FlowSurfaceDynamicAutoSnapshotCreateCapability;
+  publicType: string;
+  publicInput: FlowSurfaceDynamicCapabilityPublicInput;
+  publicPayload: Record<string, unknown>;
+  actionName: FlowSurfaceDynamicCapabilityCreateActionName;
+}): FlowSurfaceDynamicCapabilityCreateResponse {
+  const schemas = getVerifiedAutoSnapshotDynamicCreatePublicSchemas(input.capability);
+  if (!schemas) {
+    throwMissingCreateContract(input.publicType);
+  }
+  const validationErrors = [
+    ...validateJsonObjectSchema(schemas.initParamsSchema, input.publicInput.initParams || {}, 'initParams'),
+    ...validateJsonObjectSchema(schemas.settingsSchema, input.publicInput.settings || {}, 'settings'),
+    ...validateVerifiedAutoSnapshotDynamicCreatePublicValues(input.publicInput),
+  ];
+  if (validationErrors.length) {
+    throwCapabilityValidationErrors(validationErrors);
+  }
+  const node = buildVerifiedAutoSnapshotDynamicCreateNode({
+    modelUse: input.capability.modelUse,
+    publicInput: input.publicInput,
+  });
+  try {
+    validateFlowSurfacePayloadShape(input.actionName, node, 'node');
+    new FlowSurfaceContractGuard().validateNodeTreeAgainstContract(node);
+  } catch (error) {
+    const message = sanitizeProviderPublicMessage(
+      error instanceof Error ? error.message : '',
+      'generated node failed contract guard',
+    );
+    throwCapabilityValidationErrors([
+      {
+        path: 'settings',
+        code: 'contract-guard-failed',
+        message,
+      },
+    ]);
+  }
+  return {
+    capability: input.capability.publicItem,
+    publicPayload: input.publicPayload,
+    node,
+    warnings: input.capability.publicItem.warnings || [],
+  };
+}
+
+function getVerifiedAutoSnapshotDynamicCreatePublicSchemas(capability: FlowSurfaceDynamicAutoSnapshotCreateCapability) {
+  if (
+    capability.publicItem.kind !== 'block' ||
+    capability.publicItem.ownerPlugin !== '@nocobase/plugin-gantt' ||
+    capability.publicItem.publicType !== 'pluginGantt.gantt' ||
+    capability.modelUse !== 'GanttBlockModel'
+  ) {
+    return null;
+  }
+  return {
+    initParamsSchema: getVerifiedAutoSnapshotGanttInitParamsSchema(),
+    settingsSchema: getVerifiedAutoSnapshotEmptySettingsSchema(),
+  };
+}
+
+function validateVerifiedAutoSnapshotDynamicCreatePublicValues(
+  publicInput: FlowSurfaceDynamicCapabilityPublicInput,
+): FlowSurfaceCapabilityValidationError[] {
+  if (
+    Object.prototype.hasOwnProperty.call(publicInput.initParams || {}, 'collectionName') &&
+    !normalizeRequiredString(publicInput.initParams?.collectionName)
+  ) {
+    return [
+      {
+        path: 'initParams.collectionName',
+        code: 'required',
+        message: 'initParams.collectionName is required',
+      },
+    ];
+  }
+  return [];
+}
+
+function enableVerifiedAutoSnapshotDynamicCreateItem(
+  item: FlowSurfacePublicCapabilityItem,
+): FlowSurfacePublicCapabilityItem {
+  const availability = {
+    ...item.availability,
+    create: {
+      supported: true,
+      acceptsInitParams: true,
+      acceptsSettings: false,
+    },
+  };
+  const warnings = (item.warnings || []).filter((warning) => warning.code !== 'auto-discovered-readonly');
+  const projected: FlowSurfacePublicCapabilityItem = {
+    ...item,
+    availability,
+    supportLevel: 'create-only',
+    readiness: 'createEnabled',
+    initParamsSchema: getVerifiedAutoSnapshotGanttInitParamsSchema(),
+    settingsSchema: getVerifiedAutoSnapshotEmptySettingsSchema(),
+  };
+  if (warnings.length) {
+    projected.warnings = warnings;
+  } else {
+    delete projected.warnings;
+  }
+  return projected;
+}
+
+function getVerifiedAutoSnapshotGanttInitParamsSchema(): FlowSurfaceJsonSchema {
+  return {
+    type: 'object',
+    additionalProperties: false,
+    required: ['collectionName'],
+    properties: {
+      collectionName: {
+        type: 'string',
+      },
+      dataSourceKey: {
+        type: 'string',
+      },
+    },
+  };
+}
+
+function getVerifiedAutoSnapshotEmptySettingsSchema(): FlowSurfaceJsonSchema {
+  return {
+    type: 'object',
+    additionalProperties: false,
+    properties: {},
+  };
+}
+
+function buildVerifiedAutoSnapshotDynamicCreateNode(input: {
+  modelUse: string;
+  publicInput: FlowSurfaceDynamicCapabilityPublicInput;
+}): FlowSurfaceNodeSpec {
+  const collectionName = normalizeRequiredString(input.publicInput.initParams?.collectionName);
+  const dataSourceKey = normalizeRequiredString(input.publicInput.initParams?.dataSourceKey) || undefined;
+  return {
+    use: input.modelUse,
+    stepParams: {
+      resourceSettings: {
+        init: buildDefinedPayload({
+          dataSourceKey,
+          collectionName,
+        }),
+      },
+    },
+  };
+}
+
+function getVerifiedAutoSnapshotCapabilityModelUses(
+  item: FlowSurfaceDynamicAutoSnapshotCreateCapability['publicItem'],
+) {
+  return getFlowSurfacePublicCapabilityModelUses(item)
+    .map((value) => String(value || '').trim())
+    .filter(Boolean);
 }
 
 function throwUnsupportedDynamicCreate(publicType: string): never {
