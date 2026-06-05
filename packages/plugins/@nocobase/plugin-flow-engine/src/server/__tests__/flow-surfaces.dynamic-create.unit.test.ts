@@ -578,6 +578,41 @@ describe('flowSurfaces dynamic capability create dry-run', () => {
     ).rejects.toBeInstanceOf(FlowSurfaceAggregateError);
   });
 
+  it('should validate capability create without touching the flow model repository', async () => {
+    const service = new FlowSurfacesService({
+      flowSurfaceCapabilityProviders: createProviderRegistry([createDryRunProvider()]),
+    } as unknown as ConstructorParameters<typeof FlowSurfacesService>[0]);
+    const enabledPackages = new Set(['@nocobase/plugin-dry-run']);
+    const repositoryGetter = vi
+      .spyOn(service as unknown as RepositoryGetterHarness, 'repository', 'get')
+      .mockImplementation(() => {
+        throw new Error('validateCapabilityCreate must not access the flow model repository');
+      });
+
+    const response = await service.validateCapabilityCreate(
+      {
+        publicType: 'dryRun',
+        initParams: {
+          collectionName: 'tasks',
+        },
+        settings: {
+          pageSize: 20,
+        },
+      },
+      {
+        enabledPackages,
+      },
+    );
+
+    expect(response).toMatchObject({
+      ok: true,
+      dryRunNode: {
+        publicType: 'dryRun',
+      },
+    });
+    expect(repositoryGetter).not.toHaveBeenCalled();
+  });
+
   it('should map a verified auto snapshot Gantt payload into a guarded internal node', async () => {
     const autoSnapshot = createGanttAutoSnapshot();
     const verifiedAutoPolicy = {
