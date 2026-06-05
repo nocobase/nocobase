@@ -449,39 +449,50 @@ export default class Dispatcher {
     // conflicts (merged from main) so distributed workers neither duplicate nor lose
     // executions under high concurrency.
     let result: ExecutionModel | null = null;
-    await this.acquireWithRetry(
-      async () => {
-        const tx = await this.plugin.db.sequelize.transaction({
-          isolationLevel:
-            this.plugin.db.options.dialect === 'sqlite' ? undefined : Transaction.ISOLATION_LEVELS.REPEATABLE_READ,
-        });
-        try {
-          const { execution, shouldRetry } = await this.acquireExecution(input, options, tx);
-          await tx.commit();
-          result = execution;
-          return shouldRetry;
-        } catch (error) {
-          await tx.rollback();
-          if (this.isConcurrentAcquireError(error)) {
-            throw error;
+    // NOTE: acquireWithRetry rethrows non-concurrent errors (e.g. failing to open the
+    // transaction itself). Catch them here and return null so a failed acquire neither
+    // throws to the dispatch loop (which would leave `executing` stuck) nor mutates the
+    // execution state.
+    try {
+      await this.acquireWithRetry(
+        async () => {
+          const tx = await this.plugin.db.sequelize.transaction({
+            isolationLevel:
+              this.plugin.db.options.dialect === 'sqlite' ? undefined : Transaction.ISOLATION_LEVELS.REPEATABLE_READ,
+          });
+          try {
+            const { execution, shouldRetry } = await this.acquireExecution(input, options, tx);
+            await tx.commit();
+            result = execution;
+            return shouldRetry;
+          } catch (error) {
+            await tx.rollback();
+            if (this.isConcurrentAcquireError(error)) {
+              throw error;
+            }
+            if (error instanceof Error) {
+              logger.error(`entering execution failed: ${error.message}`, { error });
+            }
+            result = null;
+            return false;
           }
-          if (error instanceof Error) {
-            logger.error(`entering execution failed: ${error.message}`, { error });
-          }
-          result = null;
-          return false;
-        }
-      },
-      {
-        logger,
-        conflictMessage: input
-          ? `acquiring pending execution (${input.id}) conflicted with another worker, retrying`
-          : `acquiring execution conflicted with another worker, retrying`,
-        maxAttemptsMessage: input
-          ? `acquiring pending execution (${input.id}) reached max retry attempts`
-          : `acquiring execution reached max retry attempts, will retry on next dispatch`,
-      },
-    );
+        },
+        {
+          logger,
+          conflictMessage: input
+            ? `acquiring pending execution (${input.id}) conflicted with another worker, retrying`
+            : `acquiring execution conflicted with another worker, retrying`,
+          maxAttemptsMessage: input
+            ? `acquiring pending execution (${input.id}) reached max retry attempts`
+            : `acquiring execution reached max retry attempts, will retry on next dispatch`,
+        },
+      );
+    } catch (error) {
+      if (error instanceof Error) {
+        logger.error(`acquiring execution failed: ${error.message}`, { error });
+      }
+      return null;
+    }
     return result;
   }
 
