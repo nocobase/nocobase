@@ -251,7 +251,7 @@ function matchesDescribeCapabilityRequest(
   if (request.kind && item.kind !== request.kind) {
     return false;
   }
-  if (request.publicType && item.publicType !== request.publicType) {
+  if (request.publicType && !matchesCapabilityPublicType(item, request.publicType)) {
     return false;
   }
   if (request.ownerPlugin && item.ownerPlugin !== request.ownerPlugin) {
@@ -1151,7 +1151,7 @@ function filterCapabilityItem(item: FlowSurfacePublicCapabilityItem, request: No
   if (shouldHideUnavailableCapability(item, request.includeUnavailable)) {
     return false;
   }
-  if (request.publicTypes.size && !request.publicTypes.has(item.publicType)) {
+  if (request.publicTypes.size && !matchesCapabilityPublicTypeSet(item, request.publicTypes)) {
     return false;
   }
   if (request.ownerPlugins.size && !request.ownerPlugins.has(item.ownerPlugin)) {
@@ -1176,6 +1176,20 @@ function filterCapabilityItem(item: FlowSurfacePublicCapabilityItem, request: No
     .join('\n')
     .toLowerCase();
   return haystack.includes(request.query);
+}
+
+function matchesCapabilityPublicType(item: FlowSurfacePublicCapabilityItem, publicType: string) {
+  if (item.publicType === publicType) {
+    return true;
+  }
+  return (item.publicTypeMeta.acceptedAliases || []).some((alias) => alias === publicType);
+}
+
+function matchesCapabilityPublicTypeSet(item: FlowSurfacePublicCapabilityItem, publicTypes: ReadonlySet<string>) {
+  if (publicTypes.has(item.publicType)) {
+    return true;
+  }
+  return (item.publicTypeMeta.acceptedAliases || []).some((alias) => publicTypes.has(alias));
 }
 
 function shouldHideUnavailableCapability(item: FlowSurfacePublicCapabilityItem, includeUnavailable: boolean) {

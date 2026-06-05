@@ -3607,6 +3607,40 @@ describe('flowSurfaces capabilities projection', () => {
     expect(JSON.stringify(response.data)).not.toContain('createRecipe');
   });
 
+  it('should describe provider capabilities by accepted publicType alias with canonical output', async () => {
+    const response = await buildFlowSurfaceDescribeCapabilityResponse(
+      {
+        publicType: 'ganttBlock',
+        expand: ['item.settings'],
+      },
+      {
+        enabledPackages: new Set(['@nocobase/plugin-gantt']),
+        providerRegistry: createProviderRegistry([createGanttProvider()]),
+        catalog: createCatalogRecorder().catalog,
+        generatedAt: '2026-06-03T00:00:00.000Z',
+      },
+    );
+
+    expect(response.data).toMatchObject({
+      publicType: 'gantt',
+      publicTypeMeta: expect.objectContaining({
+        acceptedAliases: expect.arrayContaining(['ganttBlock']),
+      }),
+      initParamsSchema: {
+        required: ['collectionName'],
+      },
+      settingsSchema: {
+        properties: {
+          startField: {
+            type: 'string',
+          },
+        },
+      },
+    });
+    expect(JSON.stringify(response.data)).not.toContain('GanttBlockModel');
+    expect(JSON.stringify(response.data)).not.toContain('stepParams');
+  });
+
   it('should describe catalog-backed settings schema only when settings are expanded', async () => {
     const withoutSettings = await buildFlowSurfaceDescribeCapabilityResponse(
       {
