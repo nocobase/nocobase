@@ -17708,6 +17708,7 @@ export class FlowSurfacesService {
       currentRoles: runtimeOptions.currentRoles,
       popupTemplateAliasSession: runtimeOptions.popupTemplateAliasSession,
       popupTemplateTreeCache: runtimeOptions.popupTemplateTreeCache,
+      dynamicCapabilityActionName: runtimeOptions.dynamicCapabilityActionName,
     };
     let result: any;
     switch (op.type) {

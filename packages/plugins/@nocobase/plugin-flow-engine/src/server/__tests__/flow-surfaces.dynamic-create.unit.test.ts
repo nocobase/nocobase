@@ -57,6 +57,22 @@ describe('flowSurfaces dynamic capability create dry-run', () => {
     tryAddDynamicBlock(input: TryAddDynamicBlockInput): Promise<unknown>;
   };
 
+  type DynamicDispatchHarness = {
+    dispatchOp(
+      op: {
+        type: 'addBlock';
+      },
+      resolvedValues: Record<string, unknown>,
+      ctx: {
+        transaction?: unknown;
+        clientKeyToUid: Record<string, unknown>;
+      },
+      runtimeOptions?: {
+        dynamicCapabilityActionName?: FlowSurfaceDynamicCapabilityCreateActionName;
+      },
+    ): Promise<unknown>;
+  };
+
   function createProviderRegistry(providers: FlowSurfaceCapabilitiesProvider[]) {
     return {
       listProviders: () => providers,
@@ -975,6 +991,52 @@ describe('flowSurfaces dynamic capability create dry-run', () => {
           publicType: 'pluginGantt.gantt',
         },
       },
+    });
+  });
+
+  it('should preserve applyBlueprint action context for planned dynamic addBlock writes', async () => {
+    const service = new FlowSurfacesService({} as unknown as ConstructorParameters<typeof FlowSurfacesService>[0]);
+    const harness = service as unknown as DynamicDispatchHarness;
+    const clientKeyToUid: Record<string, unknown> = {};
+    const addBlock = vi.spyOn(service, 'addBlock').mockResolvedValue({
+      uid: 'created-gantt-block',
+      parentUid: 'parent-grid',
+      subKey: 'items',
+    } as unknown as Awaited<ReturnType<FlowSurfacesService['addBlock']>>);
+
+    await harness.dispatchOp(
+      {
+        type: 'addBlock',
+      },
+      {
+        target: {
+          uid: 'target-grid',
+        },
+        type: 'pluginGantt.gantt',
+        clientKey: 'plannedGantt',
+      },
+      {
+        transaction: 'tx-1',
+        clientKeyToUid,
+      },
+      {
+        dynamicCapabilityActionName: 'applyBlueprint',
+      },
+    );
+
+    expect(addBlock).toHaveBeenCalledTimes(1);
+    expect(addBlock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: 'pluginGantt.gantt',
+        clientKey: 'plannedGantt',
+      }),
+      expect.objectContaining({
+        transaction: 'tx-1',
+        dynamicCapabilityActionName: 'applyBlueprint',
+      }),
+    );
+    expect(clientKeyToUid).toMatchObject({
+      plannedGantt: 'created-gantt-block',
     });
   });
 
