@@ -18,7 +18,7 @@ nb config delete <key>
 
 | Paramètre | Type   | Description                                                                                                                                       |
 | --------- | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `<key>`   | string | Nom de l’élément de configuration : `locale`, `update.policy`, `docker.network`, `docker.container-prefix`, `bin.docker`, `bin.git` ou `bin.yarn` |
+| `<key>` | string | Nom de l’élément de configuration. Consultez [`nb config`](./index.md) pour les valeurs prises en charge |
 
 ## Exemples
 
@@ -27,6 +27,10 @@ nb config delete locale
 nb config delete update.policy
 nb config delete docker.network
 nb config delete docker.container-prefix
+nb config delete proxy.provider
+nb config delete proxy.nb-cli-root
+nb config delete proxy.upstream-host
+nb config delete bin.nginx
 nb config delete bin.git
 ```
 

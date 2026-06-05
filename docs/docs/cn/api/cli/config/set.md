@@ -6,7 +6,7 @@ keywords: "nb config set,NocoBase CLI,设置配置"
 
 # nb config set
 
-设置 CLI 配置项。当前支持的配置项为 `locale`、`update.policy`、`docker.network`、`docker.container-prefix`、`bin.docker`、`bin.git` 和 `bin.yarn`。
+设置 CLI 配置项。支持的配置项见 [`nb config`](./index.md)。
 
 ## 用法
 
@@ -18,7 +18,7 @@ nb config set <key> <value>
 
 | 参数 | 类型 | 说明 |
 | --- | --- | --- |
-| `<key>` | string | 配置项名称：`locale`、`update.policy`、`docker.network`、`docker.container-prefix`、`bin.docker`、`bin.git` 或 `bin.yarn` |
+| `<key>` | string | 配置项名称；支持的值见 [`nb config`](./index.md) |
 | `<value>` | string | 配置值，不能为空 |
 
 ## 示例
@@ -26,16 +26,24 @@ nb config set <key> <value>
 ```bash
 nb config set locale zh-CN
 nb config set update.policy auto
+nb config set license.pkg-url https://pkg.nocobase.com/
 nb config set docker.network nocobase
 nb config set docker.container-prefix nb
 nb config set bin.docker /usr/local/bin/docker
+nb config set bin.caddy /opt/homebrew/bin/caddy
 nb config set bin.git /usr/bin/git
+nb config set bin.nginx /usr/sbin/nginx
+nb config set proxy.provider caddy
+nb config set proxy.nb-cli-root /workspace
+nb config set proxy.upstream-host host.docker.internal
 nb config set bin.yarn yarn
 ```
 
 ## 说明
 
 `update.policy` 支持 `prompt`、`auto` 和 `off`，默认值为 `prompt`。
+
+`proxy.provider` 支持 `nginx` 和 `caddy`。
 
 ## 相关命令
 

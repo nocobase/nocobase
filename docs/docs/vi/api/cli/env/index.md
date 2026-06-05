@@ -1,7 +1,7 @@
 ---
 title: 'nb env'
-description: 'Tài liệu tham khảo lệnh nb env: quản lý env của NocoBase CLI, bao gồm thêm, xem current env, kiểm tra trạng thái, chuyển đổi, cập nhật, xác thực và xóa.'
-keywords: 'nb env,NocoBase CLI,quản lý môi trường,env,current env,xác thực,OpenAPI'
+description: 'Tài liệu tham khảo lệnh nb env: quản lý env của NocoBase CLI, bao gồm thêm, xem current env, kiểm tra trạng thái, chuyển đổi, cập nhật, tạo cấu hình proxy, xác thực và xóa.'
+keywords: 'nb env,NocoBase CLI,quản lý môi trường,env,current env,proxy,xác thực,OpenAPI'
 ---
 
 # nb env
@@ -29,6 +29,7 @@ nb env <command>
 | [`nb env list`](./list.md)       | Liệt kê các env đã cấu hình                                             |
 | [`nb env status`](./status.md)   | Xem trạng thái của env hiện tại, một env chỉ định hoặc tất cả env       |
 | [`nb env info`](./info.md)       | Xem thông tin chi tiết của một env                                      |
+| [`nb env proxy`](./proxy.md)   | Tạo cấu hình proxy Nginx hoặc Caddy cho một env được quản lý                                                    |
 | [`nb env remove`](./remove.md)   | Xóa cấu hình env sau khi dừng runtime được quản lý                      |
 | [`nb env auth`](./auth.md)       | Thực hiện đăng nhập OAuth cho env đã lưu                                |
 | [`nb env use`](./use.md)         | Chuyển env hiện tại                                                     |
@@ -41,6 +42,7 @@ nb env current
 nb env list
 nb env status
 nb env info app1
+nb env proxy app1
 nb env update app1
 nb env use app1
 nb env auth app1

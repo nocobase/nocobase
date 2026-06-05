@@ -18,7 +18,7 @@ nb config delete <key>
 
 | Tham số | Kiểu   | Mô tả                                                                                                                             |
 | ------- | ------ | --------------------------------------------------------------------------------------------------------------------------------- |
-| `<key>` | string | Tên mục cấu hình: `locale`, `update.policy`, `docker.network`, `docker.container-prefix`, `bin.docker`, `bin.git` hoặc `bin.yarn` |
+| `<key>` | string | Tên mục cấu hình. Xem [`nb config`](./index.md) để biết các giá trị được hỗ trợ |
 
 ## Ví dụ
 
@@ -27,6 +27,10 @@ nb config delete locale
 nb config delete update.policy
 nb config delete docker.network
 nb config delete docker.container-prefix
+nb config delete proxy.provider
+nb config delete proxy.nb-cli-root
+nb config delete proxy.upstream-host
+nb config delete bin.nginx
 nb config delete bin.git
 ```
 

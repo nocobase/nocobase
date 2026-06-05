@@ -18,7 +18,7 @@ nb config delete <key>
 
 | Parameter | Tipe   | Deskripsi                                                                                                                               |
 | --------- | ------ | --------------------------------------------------------------------------------------------------------------------------------------- |
-| `<key>`   | string | Nama item konfigurasi: `locale`, `update.policy`, `docker.network`, `docker.container-prefix`, `bin.docker`, `bin.git`, atau `bin.yarn` |
+| `<key>` | string | Nama item konfigurasi. Lihat [`nb config`](./index.md) untuk nilai yang didukung |
 
 ## Contoh
 
@@ -27,6 +27,10 @@ nb config delete locale
 nb config delete update.policy
 nb config delete docker.network
 nb config delete docker.container-prefix
+nb config delete proxy.provider
+nb config delete proxy.nb-cli-root
+nb config delete proxy.upstream-host
+nb config delete bin.nginx
 nb config delete bin.git
 ```
 

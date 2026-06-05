@@ -18,15 +18,20 @@ nb config get <key>
 
 | Parâmetro | Tipo   | Descrição                                                                                                                                   |
 | --------- | ------ | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| `<key>`   | string | Nome do item de configuração: `locale`, `update.policy`, `docker.network`, `docker.container-prefix`, `bin.docker`, `bin.git` ou `bin.yarn` |
+| `<key>` | string | Nome do item de configuração. Consulte [`nb config`](./index.md) para ver os valores suportados |
 
 ## Exemplos
 
 ```bash
 nb config get locale
 nb config get update.policy
+nb config get license.pkg-url
 nb config get docker.network
 nb config get docker.container-prefix
+nb config get proxy.provider
+nb config get proxy.nb-cli-root
+nb config get proxy.upstream-host
+nb config get bin.nginx
 nb config get bin.git
 ```
 

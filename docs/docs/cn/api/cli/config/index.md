@@ -6,15 +6,12 @@ keywords: "nb config,NocoBase CLI,配置,默认配置"
 
 # nb config
 
-管理 CLI 默认配置。当前支持的配置项包括：
+管理 CLI 默认配置。当前支持的配置项大致分成这几类：
 
-- `locale`
-- `update.policy`
-- `docker.network`
-- `docker.container-prefix`
-- `bin.docker`
-- `bin.git`
-- `bin.yarn`
+- CLI 自身：`locale`、`update.policy`、`license.pkg-url`
+- Docker 运行：`docker.network`、`docker.container-prefix`
+- 外部可执行文件：`bin.docker`、`bin.caddy`、`bin.git`、`bin.nginx`、`bin.yarn`
+- 代理生成：`proxy.provider`、`proxy.nb-cli-root`、`proxy.upstream-host`
 
 ## 常用配置项
 
@@ -22,11 +19,17 @@ keywords: "nb config,NocoBase CLI,配置,默认配置"
 | --- | --- | --- |
 | `locale` | 按 CLI 当前规则解析 | 覆盖 CLI 使用的语言 |
 | `update.policy` | `prompt` | 启动时更新策略：`prompt`、`auto` 或 `off` |
+| `license.pkg-url` | `https://pkg.nocobase.com/` | 覆盖商业扩展包下载地址 |
 | `docker.network` | `nocobase` | CLI 管理的 Docker 应用默认网络 |
 | `docker.container-prefix` | `nb` | CLI 管理的 Docker 容器默认前缀 |
 | `bin.docker` | `docker` | 覆盖 Docker 可执行文件路径 |
+| `bin.caddy` | `caddy` | 覆盖 Caddy 可执行文件路径 |
 | `bin.git` | `git` | 覆盖 Git 可执行文件路径 |
+| `bin.nginx` | `nginx` | 覆盖 Nginx 可执行文件路径 |
 | `bin.yarn` | `yarn` | 覆盖 Yarn 可执行文件路径 |
+| `proxy.provider` | `nginx` | `nb env proxy` 默认使用的代理 provider |
+| `proxy.nb-cli-root` | CLI root（通常是当前用户 Home 目录） | 把 `.nocobase` 路径映射到代理进程实际看到的根目录 |
+| `proxy.upstream-host` | `127.0.0.1` | 代理回源到 NocoBase 应用时使用的主机地址 |
 
 ## 用法
 
@@ -49,8 +52,12 @@ nb config <command>
 nb config list
 nb config get update.policy
 nb config set update.policy auto
+nb config get proxy.provider
+nb config set proxy.provider caddy
+nb config set proxy.upstream-host host.docker.internal
 nb config get docker.network
 nb config set docker.network nocobase
+nb config set bin.nginx /usr/sbin/nginx
 nb config set bin.git /usr/bin/git
 nb config delete docker.container-prefix
 ```

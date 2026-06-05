@@ -1,7 +1,7 @@
 ---
 title: 'nb env'
-description: 'nb env command reference: manage NocoBase CLI envs, including adding, viewing the current env, checking status, switching, updating, authenticating, and removing.'
-keywords: 'nb env,NocoBase CLI,environment management,env,current env,authentication,OpenAPI'
+description: 'nb env command reference: manage NocoBase CLI envs, including adding, viewing the current env, checking status, switching, updating, generating proxy configs, authenticating, and removing.'
+keywords: 'nb env,NocoBase CLI,environment management,env,current env,proxy,authentication,OpenAPI'
 ---
 
 # nb env
@@ -29,6 +29,7 @@ nb env <command>
 | [`nb env list`](./list.md)       | List configured envs                                                               |
 | [`nb env status`](./status.md)   | View the status of the current env, a specified env, or all envs                   |
 | [`nb env info`](./info.md)       | View detailed information for a single env                                         |
+| [`nb env proxy`](./proxy.md)   | Generate an Nginx or Caddy proxy config for one managed env                 |
 | [`nb env remove`](./remove.md)   | Remove the env configuration after stopping the managed runtime                    |
 | [`nb env auth`](./auth.md)       | Perform OAuth login for a saved env                                                |
 | [`nb env use`](./use.md)         | Switch the current env                                                             |
@@ -41,6 +42,7 @@ nb env current
 nb env list
 nb env status
 nb env info app1
+nb env proxy app1
 nb env update app1
 nb env use app1
 nb env auth app1

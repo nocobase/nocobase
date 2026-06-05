@@ -18,15 +18,20 @@ nb config get <key>
 
 | Параметр | Тип    | Описание                                                                                                                                   |
 | -------- | ------ | ------------------------------------------------------------------------------------------------------------------------------------------ |
-| `<key>`  | string | Имя параметра конфигурации: `locale`, `update.policy`, `docker.network`, `docker.container-prefix`, `bin.docker`, `bin.git` или `bin.yarn` |
+| `<key>` | string | Имя параметра конфигурации. Поддерживаемые значения смотрите в [`nb config`](./index.md) |
 
 ## Примеры
 
 ```bash
 nb config get locale
 nb config get update.policy
+nb config get license.pkg-url
 nb config get docker.network
 nb config get docker.container-prefix
+nb config get proxy.provider
+nb config get proxy.nb-cli-root
+nb config get proxy.upstream-host
+nb config get bin.nginx
 nb config get bin.git
 ```
 

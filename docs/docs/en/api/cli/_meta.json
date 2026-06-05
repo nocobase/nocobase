@@ -204,6 +204,11 @@
       },
       {
         "type": "custom-link",
+        "label": "nb env proxy",
+        "link": "/api/cli/env/proxy"
+      },
+      {
+        "type": "custom-link",
         "label": "nb env remove",
         "link": "/api/cli/env/remove"
       },

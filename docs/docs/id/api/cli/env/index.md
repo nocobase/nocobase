@@ -1,7 +1,7 @@
 ---
 title: 'nb env'
-description: 'Referensi perintah nb env: kelola env NocoBase CLI, termasuk menambah, melihat current env, memeriksa status, beralih, memperbarui, mengautentikasi, dan menghapus.'
-keywords: 'nb env,NocoBase CLI,pengelolaan lingkungan,env,current env,autentikasi,OpenAPI'
+description: 'Referensi perintah nb env: kelola env NocoBase CLI, termasuk menambah, melihat current env, memeriksa status, beralih, memperbarui, menghasilkan konfigurasi proxy, mengautentikasi, dan menghapus.'
+keywords: 'nb env,NocoBase CLI,pengelolaan lingkungan,env,current env,proxy,autentikasi,OpenAPI'
 ---
 
 # nb env
@@ -29,6 +29,7 @@ nb env <command>
 | [`nb env list`](./list.md)       | Menampilkan daftar env yang sudah dikonfigurasi                                                                 |
 | [`nb env status`](./status.md)   | Melihat status env saat ini, env tertentu, atau semua env                                                       |
 | [`nb env info`](./info.md)       | Melihat informasi terperinci untuk satu env                                                                     |
+| [`nb env proxy`](./proxy.md)   | Menghasilkan konfigurasi proxy Nginx atau Caddy untuk satu env yang dikelola                                     |
 | [`nb env remove`](./remove.md)   | Menghapus konfigurasi env setelah menghentikan runtime yang dikelola                                            |
 | [`nb env auth`](./auth.md)       | Menjalankan login OAuth untuk env yang tersimpan                                                                |
 | [`nb env use`](./use.md)         | Beralih env saat ini                                                                                            |
@@ -41,6 +42,7 @@ nb env current
 nb env list
 nb env status
 nb env info app1
+nb env proxy app1
 nb env update app1
 nb env use app1
 nb env auth app1

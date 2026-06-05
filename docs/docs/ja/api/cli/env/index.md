@@ -1,7 +1,7 @@
 ---
 title: 'nb env'
-description: 'nb env コマンドリファレンス: NocoBase CLI の env を管理します。追加、current env の確認、状態確認、切り替え、更新、認証、削除に対応します。'
-keywords: 'nb env,NocoBase CLI,環境管理,env,current env,認証,OpenAPI'
+description: 'nb env コマンドリファレンス: NocoBase CLI の env を管理します。追加、current env の確認、状態確認、切り替え、更新、プロキシ設定の生成、認証、削除に対応します。'
+keywords: 'nb env,NocoBase CLI,環境管理,env,current env,proxy,認証,OpenAPI'
 ---
 
 # nb env
@@ -29,6 +29,7 @@ nb env <command>
 | [`nb env list`](./list.md)       | 設定済みの env を一覧表示します                                     |
 | [`nb env status`](./status.md)   | 現在の env、指定した env、またはすべての env の状態を表示します     |
 | [`nb env info`](./info.md)       | 単一の env の詳細情報を表示します                                   |
+| [`nb env proxy`](./proxy.md)   | 管理対象 env 向けの Nginx または Caddy のプロキシ設定を生成します                         |
 | [`nb env remove`](./remove.md)   | 管理対象のランタイムを停止した後で env 設定を削除します             |
 | [`nb env auth`](./auth.md)       | 保存済み env に対して OAuth ログインを実行します                    |
 | [`nb env use`](./use.md)         | 現在の env を切り替えます                                           |
@@ -41,6 +42,7 @@ nb env current
 nb env list
 nb env status
 nb env info app1
+nb env proxy app1
 nb env update app1
 nb env use app1
 nb env auth app1

@@ -6,7 +6,7 @@ keywords: 'nb config set,NocoBase CLI,definir configuração'
 
 # nb config set
 
-Define um item de configuração da CLI. Os itens de configuração atualmente suportados são `locale`, `update.policy`, `docker.network`, `docker.container-prefix`, `bin.docker`, `bin.git` e `bin.yarn`.
+Define um item de configuração da CLI. Consulte [`nb config`](./index.md) para ver as chaves de configuração suportadas.
 
 ## Uso
 
@@ -18,7 +18,7 @@ nb config set <key> <value>
 
 | Parâmetro | Tipo   | Descrição                                                                                                                                   |
 | --------- | ------ | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| `<key>`   | string | Nome do item de configuração: `locale`, `update.policy`, `docker.network`, `docker.container-prefix`, `bin.docker`, `bin.git` ou `bin.yarn` |
+| `<key>` | string | Nome do item de configuração. Consulte [`nb config`](./index.md) para ver os valores suportados |
 | `<value>` | string | Valor da configuração, não pode estar vazio                                                                                                 |
 
 ## Exemplos
@@ -26,16 +26,24 @@ nb config set <key> <value>
 ```bash
 nb config set locale zh-CN
 nb config set update.policy auto
+nb config set license.pkg-url https://pkg.nocobase.com/
 nb config set docker.network nocobase
 nb config set docker.container-prefix nb
 nb config set bin.docker /usr/local/bin/docker
+nb config set bin.caddy /opt/homebrew/bin/caddy
 nb config set bin.git /usr/bin/git
+nb config set bin.nginx /usr/sbin/nginx
+nb config set proxy.provider caddy
+nb config set proxy.nb-cli-root /workspace
+nb config set proxy.upstream-host host.docker.internal
 nb config set bin.yarn yarn
 ```
 
 ## Observações
 
 `update.policy` suporta `prompt`, `auto` e `off`, e o valor padrão é `prompt`.
+
+`proxy.provider` suporta `nginx` e `caddy`.
 
 ## Comandos relacionados
 

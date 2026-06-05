@@ -1,7 +1,7 @@
 ---
 title: 'nb env'
-description: 'Referencia del comando nb env: gestiona los env de NocoBase CLI, incluyendo agregar, ver el current env, comprobar el estado, cambiar, actualizar, autenticar y eliminar.'
-keywords: 'nb env,NocoBase CLI,gestión de entornos,env,current env,autenticación,OpenAPI'
+description: 'Referencia del comando nb env: gestiona los env de NocoBase CLI, incluyendo agregar, ver el current env, comprobar el estado, cambiar, actualizar, generar configuraciones de proxy, autenticar y eliminar.'
+keywords: 'nb env,NocoBase CLI,gestión de entornos,env,current env,proxy,autenticación,OpenAPI'
 ---
 
 # nb env
@@ -29,6 +29,7 @@ nb env <command>
 | [`nb env list`](./list.md)       | Lista los env configurados                                                                                             |
 | [`nb env status`](./status.md)   | Ver el estado del env actual, de un env especificado o de todos los env                                                |
 | [`nb env info`](./info.md)       | Ver la información detallada de un solo env                                                                            |
+| [`nb env proxy`](./proxy.md)   | Genera una configuración de proxy Nginx o Caddy para un env gestionado                                          |
 | [`nb env remove`](./remove.md)   | Elimina la configuración del env después de detener el runtime gestionado                                              |
 | [`nb env auth`](./auth.md)       | Ejecuta el inicio de sesión OAuth para un env guardado                                                                 |
 | [`nb env use`](./use.md)         | Cambia el env actual                                                                                                   |
@@ -41,6 +42,7 @@ nb env current
 nb env list
 nb env status
 nb env info app1
+nb env proxy app1
 nb env update app1
 nb env use app1
 nb env auth app1

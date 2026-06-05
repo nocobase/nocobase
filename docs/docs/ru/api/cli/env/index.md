@@ -1,7 +1,7 @@
 ---
 title: 'nb env'
-description: 'Справка по команде nb env: управление env в NocoBase CLI, включая добавление, просмотр current env, проверку состояния, переключение, обновление, аутентификацию и удаление.'
-keywords: 'nb env,NocoBase CLI,управление окружением,env,current env,аутентификация,OpenAPI'
+description: 'Справка по команде nb env: управление env в NocoBase CLI, включая добавление, просмотр current env, проверку состояния, переключение, обновление, генерацию прокси-конфигураций, аутентификацию и удаление.'
+keywords: 'nb env,NocoBase CLI,управление окружением,env,current env,proxy,аутентификация,OpenAPI'
 ---
 
 # nb env
@@ -29,6 +29,7 @@ nb env <command>
 | [`nb env list`](./list.md)       | Вывести список настроенных env                                                                                   |
 | [`nb env status`](./status.md)   | Показать состояние текущего env, указанного env или всех env                                                     |
 | [`nb env info`](./info.md)       | Показать подробную информацию об одном env                                                                       |
+| [`nb env proxy`](./proxy.md)   | Генерирует конфигурацию прокси Nginx или Caddy для управляемого env                                             |
 | [`nb env remove`](./remove.md)   | Удаляет конфигурацию env после остановки управляемого runtime                                                    |
 | [`nb env auth`](./auth.md)       | Выполняет вход OAuth для сохранённого env                                                                        |
 | [`nb env use`](./use.md)         | Переключает текущий env                                                                                          |
@@ -41,6 +42,7 @@ nb env current
 nb env list
 nb env status
 nb env info app1
+nb env proxy app1
 nb env update app1
 nb env use app1
 nb env auth app1
