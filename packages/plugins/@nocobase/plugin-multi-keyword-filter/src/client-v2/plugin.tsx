@@ -7,48 +7,16 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { LinkOutlined, QuestionCircleOutlined } from '@ant-design/icons';
 import { Application, Plugin } from '@nocobase/client-v2';
-import { Tooltip } from 'antd';
-import React from 'react';
 import { interceptor } from '../shared/interceptor';
-import { useT } from './locale';
+import { tExpr } from './locale';
 import { MultipleKeywordsInput } from './MultipleKeywordsInput';
 
 const fieldInterfaces = ['input', 'phone', 'email', 'uuid', 'sequence', 'integer', 'number', 'percent', 'nanoid'];
 
-const OperatorLabel: React.FC<{ type: 'in' | 'notIn' }> = ({ type }) => {
-  const t = useT();
-  const isSimplifiedChinese = t('equalsAny') === '等于任意一个';
-  const label = type === 'in' ? t('equalsAny') : t('notEqualsAny');
-
-  return (
-    <div>
-      {label}{' '}
-      <Tooltip
-        title={
-          <div>
-            {t('providedByPlugin', { pluginName: t('pluginName') })}{' '}
-            <a
-              href={`https://${isSimplifiedChinese ? 'docs-cn' : 'docs'}.nocobase.com/handbook/multi-keyword-filter`}
-              target="_blank"
-              rel="noopener noreferrer"
-              aria-label={t('pluginName')}
-            >
-              <LinkOutlined />
-            </a>
-          </div>
-        }
-      >
-        <QuestionCircleOutlined />
-      </Tooltip>
-    </div>
-  );
-};
-
 function createMultipleKeywordsOperator(fieldInterface: string, type: 'in' | 'notIn') {
   return {
-    label: React.createElement(OperatorLabel, { type }),
+    label: tExpr(type === 'in' ? 'equalsAny' : 'notEqualsAny'),
     value: type === 'in' ? '$in' : '$notIn',
     schema: {
       'x-component': 'MultipleKeywordsInput',

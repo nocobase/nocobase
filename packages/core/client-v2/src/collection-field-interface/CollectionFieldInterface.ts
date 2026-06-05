@@ -14,6 +14,7 @@ import type { ComponentType, ReactNode } from 'react';
 
 import {
   normalizeFilterableOperators,
+  resolveFilterOperators,
   type FieldFilterable,
   type FieldFilterOperator,
 } from '../collection-manager/filter-operators';
@@ -180,22 +181,14 @@ export abstract class CollectionFieldInterface {
   }
 
   addOperator(operatorOption: FieldFilterOperator) {
-    if (!this.filterable) {
-      set(this, 'filterable', {});
-    }
-
-    const operatorOverrides = Array.isArray(this.filterable.operatorOverrides)
-      ? [...this.filterable.operatorOverrides]
-      : [];
-
-    const existingIndex = operatorOverrides.findIndex((item) => item.value === operatorOption.value);
-    if (existingIndex !== -1) {
-      operatorOverrides[existingIndex] = operatorOption;
-    } else {
-      operatorOverrides.push(operatorOption);
-    }
-
-    set(this, 'filterable.operatorOverrides', operatorOverrides);
     normalizeFilterableOperators(this.filterable);
+    const operators = [...resolveFilterOperators(this.filterable?.operators)];
+    set(this, 'filterable.operators', operators);
+
+    if (operators.find((item) => item.value === operatorOption.value)) {
+      return;
+    }
+
+    operators.push(operatorOption);
   }
 }
