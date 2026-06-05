@@ -36,6 +36,7 @@ import {
   collectProviderCatalogItems,
   collectVerifiedAutoSnapshotCatalogItems,
   filterProviderCatalogItemsForCatalog,
+  getFlowSurfacePublicCapabilityModelUses,
   type FlowSurfaceCapabilityRegistryLike,
   type FlowSurfaceCollectedProviderCapability,
 } from './capability-registry';
@@ -4591,6 +4592,25 @@ export class FlowSurfacesService {
       [capability.implementation.modelUse, ...(capability.implementation.legacyModelUses || [])].forEach((modelUse) => {
         const normalizedUse = String(modelUse || '').trim();
         if (!normalizedUse || BLOCK_KEY_BY_USE.has(normalizedUse)) {
+          return;
+        }
+        publicTypeByUse.set(normalizedUse, publicType);
+      });
+    });
+    collectAutoSnapshotPublicCapabilities({
+      autoSnapshots: this.autoSnapshots,
+      enabledPackages,
+    }).forEach((capability) => {
+      if (capability.kind !== 'block' || !capability.availability.readback.supported) {
+        return;
+      }
+      const publicType = String(capability.publicType || '').trim();
+      if (!publicType) {
+        return;
+      }
+      getFlowSurfacePublicCapabilityModelUses(capability).forEach((modelUse) => {
+        const normalizedUse = String(modelUse || '').trim();
+        if (!normalizedUse || BLOCK_KEY_BY_USE.has(normalizedUse) || publicTypeByUse.has(normalizedUse)) {
           return;
         }
         publicTypeByUse.set(normalizedUse, publicType);

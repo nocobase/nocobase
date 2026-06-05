@@ -2061,6 +2061,57 @@ describe('flowSurfaces dynamic capability create dry-run', () => {
     });
   });
 
+  it('should annotate verified auto snapshot readback nodes with canonical public type', async () => {
+    const verifiedAutoPolicy = {
+      writePolicy: {
+        mode: 'verifiedAuto' as const,
+        allowedOwners: ['@nocobase/plugin-gantt'],
+        allowedPublicTypes: ['pluginGantt.gantt'],
+      },
+    };
+    const service = new FlowSurfacesService({
+      options: {
+        flowSurfaceCapabilities: verifiedAutoPolicy,
+      },
+      flowSurfaceAutoSnapshots: [createGanttAutoSnapshot()],
+      flowSurfaceCapabilityAdmissionReports: [createVerifiedAutoAdmissionReport()],
+      flowSurfaceCapabilityProviders: createProviderRegistry([]),
+    } as unknown as ConstructorParameters<typeof FlowSurfacesService>[0]);
+    type DynamicReadbackProjector = {
+      projectDynamicBlockReadbackTypes<T>(node: T, options: { enabledPackages: ReadonlySet<string> }): Promise<T>;
+    };
+    const tree = {
+      uid: 'root',
+      use: 'GridModel',
+      subModels: {
+        items: [
+          {
+            uid: 'gantt-1',
+            use: 'GanttBlockModel',
+          },
+          {
+            uid: 'table-1',
+            use: 'TableBlockModel',
+          },
+        ],
+      },
+    };
+
+    const projected = await (service as unknown as DynamicReadbackProjector).projectDynamicBlockReadbackTypes(tree, {
+      enabledPackages: new Set(['@nocobase/plugin-gantt']),
+    });
+
+    expect(projected.subModels.items[0]).toMatchObject({
+      use: 'GanttBlockModel',
+      type: 'pluginGantt.gantt',
+    });
+    expect(projected.subModels.items[0]).not.toHaveProperty('identity');
+    expect(projected.subModels.items[1]).toEqual({
+      uid: 'table-1',
+      use: 'TableBlockModel',
+    });
+  });
+
   it('should keep provider-backed block catalog items out of popup-scoped raw projection', async () => {
     const service = new FlowSurfacesService({
       flowSurfaceCapabilityProviders: createProviderRegistry([createDryRunProvider()]),
