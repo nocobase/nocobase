@@ -243,6 +243,75 @@ describe('flowSurfaces capability admission report CLI', () => {
     }
   });
 
+  it('should drop foreign owner records when merging one public type report write', async () => {
+    const tempRoot = await realpath(tmpdir());
+    const outDir = await mkdtemp(join(tempRoot, 'flow-surfaces-admission-cli-merge-owner-'));
+    try {
+      await writeFlowSurfaceCapabilityAdmissionReport({
+        outDir,
+        report: buildFlowSurfaceCapabilityAdmissionReport({
+          plugin: '@example/plugin-cli',
+          generatedAt: '2026-06-03T00:00:00.000Z',
+          records: [
+            createAdmissionRecord({
+              publicType: 'calendar',
+            }),
+            createAdmissionRecord({
+              ownerPlugin: '@example/plugin-other',
+              publicType: 'foreign.block',
+            }),
+          ],
+        }),
+      });
+
+      const summary = await runFlowSurfaceCapabilityAdmissionCli(
+        [
+          {
+            plugin: '@example/plugin-cli',
+            publicType: 'gantt',
+          },
+        ],
+        {
+          generatedAt,
+          outDir,
+          verifyCapability: async (target, options) =>
+            buildFlowSurfaceCapabilityAdmissionReport({
+              plugin: target.plugin,
+              generatedAt: options.generatedAt,
+              records: [
+                createAdmissionRecord({ ownerPlugin: target.plugin, publicType: target.publicType || 'gantt' }),
+              ],
+            }),
+        },
+      );
+
+      expect(summary).toMatchObject({
+        ok: true,
+        dryRun: false,
+        exitCode: 0,
+        results: [
+          {
+            ok: true,
+            plugin: '@example/plugin-cli',
+            publicType: 'gantt',
+            recordCount: 1,
+          },
+        ],
+      });
+      const reportContent = await readFile(summary.results[0].reportPath || '', 'utf8');
+      expect(JSON.parse(reportContent)).toMatchObject({
+        plugin: '@example/plugin-cli',
+        records: [
+          expect.objectContaining({ ownerPlugin: '@example/plugin-cli', publicType: 'calendar' }),
+          expect.objectContaining({ ownerPlugin: '@example/plugin-cli', publicType: 'gantt' }),
+        ],
+      });
+      expect(reportContent).not.toContain('@example/plugin-other');
+    } finally {
+      await rm(outDir, { recursive: true, force: true });
+    }
+  });
+
   it('should reject verifier reports that do not match the requested public type', async () => {
     const summary = await runFlowSurfaceCapabilityAdmissionCli(
       [
