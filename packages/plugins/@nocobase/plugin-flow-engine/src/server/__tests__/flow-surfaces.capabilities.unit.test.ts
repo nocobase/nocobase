@@ -1320,6 +1320,50 @@ describe('flowSurfaces capabilities projection', () => {
     ]);
   });
 
+  it('should downgrade create-enabled admission diagnostics when current capability integrity does not match', async () => {
+    const { service } = createDiagnosticsService({
+      autoSnapshots: [createGanttAutoSnapshot()],
+      pluginOptions: {
+        flowSurfaceCapabilities: {
+          diagnosticsEnabled: true,
+        },
+      },
+    });
+
+    const response = await service.diagnoseCapabilities(
+      {},
+      {
+        enabledPackages: new Set(['@nocobase/plugin-gantt']),
+        admissionReports: [
+          createVerifiedAutoAdmissionReport({
+            snapshotHash: 'older-snapshot-hash',
+          }),
+        ],
+      },
+    );
+
+    expect(response.data.admissionRecords).toEqual([
+      expect.objectContaining({
+        capabilityId: '@nocobase/plugin-gantt:autoSnapshot:block:pluginGantt.gantt',
+        publicType: 'pluginGantt.gantt',
+        ownerPlugin: '@nocobase/plugin-gantt',
+        readiness: 'blocked',
+        failedChecks: [
+          expect.objectContaining({
+            key: 'reportIntegrity',
+            reasonCode: 'snapshot-stale',
+            message: expect.stringContaining('snapshotHash'),
+          }),
+        ],
+      }),
+    ]);
+    const serialized = JSON.stringify(response);
+    expect(serialized).not.toContain('older-snapshot-hash');
+    expect(serialized).not.toContain('snapshot-source-hash');
+    expect(serialized).not.toContain('GanttBlockModel');
+    expect(serialized).not.toContain('fixture-hash');
+  });
+
   it('should downgrade create-enabled admission diagnostics when runtime evidence is not trusted', async () => {
     const { service } = createDiagnosticsService({
       pluginOptions: {

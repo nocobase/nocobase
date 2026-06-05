@@ -39,6 +39,7 @@ import {
   collectProviderCatalogItems,
   collectVerifiedAutoSnapshotCatalogItems,
   filterProviderCatalogItemsForCatalog,
+  getFlowSurfacePublicCapabilityAdmissionIntegrity,
   getFlowSurfacePublicCapabilityModelUses,
   type FlowSurfaceCapabilityRegistryLike,
   type FlowSurfaceCollectedProviderCapability,
@@ -47,6 +48,7 @@ import {
   getFlowSurfaceCapabilityAdmissionReportStorageDir,
   loadFlowSurfaceCapabilityAdmissionReportsFromDirectory,
   validateFlowSurfaceCapabilityAdmissionRuntimeEvidence,
+  type FlowSurfaceCapabilityAdmissionIntegrity,
   type FlowSurfaceCapabilityAdmissionReport,
   type FlowSurfaceCapabilityAdmissionRecord,
 } from './admission-report';
@@ -1434,12 +1436,20 @@ function toFlowSurfaceCapabilityDiagnosticsRef(
 function buildFlowSurfaceAdmissionDiagnostics(
   reports: readonly FlowSurfaceCapabilityAdmissionReport[],
   filters: { ownerPlugin?: string; publicType?: string },
+  capabilities: readonly FlowSurfacePublicCapabilityItem[],
 ): FlowSurfaceCapabilityDiagnosticsAdmissionRecord[] {
+  const expectedIntegrityLookup = buildFlowSurfaceAdmissionDiagnosticsIntegrityLookup(capabilities);
   return reports
     .flatMap((report) =>
       report.records
         .filter((record) => matchesFlowSurfaceDiagnosticsFilters(filters, record))
-        .map((record) => toFlowSurfaceAdmissionDiagnosticsRecord(report, record)),
+        .map((record) =>
+          toFlowSurfaceAdmissionDiagnosticsRecord(
+            report,
+            record,
+            resolveFlowSurfaceAdmissionDiagnosticsExpectedIntegrity(record, expectedIntegrityLookup),
+          ),
+        ),
     )
     .sort((left, right) =>
       [left.kind, left.ownerPlugin, left.publicType, left.capabilityId]
@@ -1451,10 +1461,11 @@ function buildFlowSurfaceAdmissionDiagnostics(
 function toFlowSurfaceAdmissionDiagnosticsRecord(
   report: FlowSurfaceCapabilityAdmissionReport,
   record: FlowSurfaceCapabilityAdmissionRecord,
+  expectedIntegrity?: FlowSurfaceCapabilityAdmissionIntegrity,
 ): FlowSurfaceCapabilityDiagnosticsAdmissionRecord {
   const runtimeValidation =
     record.readiness === 'createEnabled'
-      ? validateFlowSurfaceCapabilityAdmissionRuntimeEvidence({ record })
+      ? validateFlowSurfaceCapabilityAdmissionRuntimeEvidence({ record, expectedIntegrity })
       : undefined;
   return {
     reportPlugin: report.plugin,
@@ -1484,6 +1495,73 @@ function getFlowSurfaceAdmissionDiagnosticsFailedChecks(
           },
         ],
   );
+}
+
+type FlowSurfaceAdmissionDiagnosticsIntegrityLookup = Map<string, FlowSurfaceCapabilityAdmissionIntegrity>;
+
+function buildFlowSurfaceAdmissionDiagnosticsIntegrityLookup(
+  capabilities: readonly FlowSurfacePublicCapabilityItem[],
+): FlowSurfaceAdmissionDiagnosticsIntegrityLookup {
+  const lookup: FlowSurfaceAdmissionDiagnosticsIntegrityLookup = new Map();
+  for (const item of capabilities) {
+    const integrity = getFlowSurfacePublicCapabilityAdmissionIntegrity(item);
+    if (!integrity) {
+      continue;
+    }
+    const capabilityId = item.identity?.capabilityId;
+    if (capabilityId) {
+      lookup.set(
+        getFlowSurfaceAdmissionDiagnosticsIntegrityLookupKey({
+          kind: item.kind,
+          ownerPlugin: item.ownerPlugin,
+          publicType: item.publicType,
+          capabilityId,
+        }),
+        integrity,
+      );
+    }
+    lookup.set(
+      getFlowSurfaceAdmissionDiagnosticsIntegrityLookupKey({
+        kind: item.kind,
+        ownerPlugin: item.ownerPlugin,
+        publicType: item.publicType,
+      }),
+      integrity,
+    );
+  }
+  return lookup;
+}
+
+function resolveFlowSurfaceAdmissionDiagnosticsExpectedIntegrity(
+  record: FlowSurfaceCapabilityAdmissionRecord,
+  lookup: FlowSurfaceAdmissionDiagnosticsIntegrityLookup,
+) {
+  return (
+    lookup.get(
+      getFlowSurfaceAdmissionDiagnosticsIntegrityLookupKey({
+        kind: record.kind,
+        ownerPlugin: record.ownerPlugin,
+        publicType: record.publicType,
+        capabilityId: record.capabilityId,
+      }),
+    ) ||
+    lookup.get(
+      getFlowSurfaceAdmissionDiagnosticsIntegrityLookupKey({
+        kind: record.kind,
+        ownerPlugin: record.ownerPlugin,
+        publicType: record.publicType,
+      }),
+    )
+  );
+}
+
+function getFlowSurfaceAdmissionDiagnosticsIntegrityLookupKey(input: {
+  kind: string;
+  ownerPlugin: string;
+  publicType: string;
+  capabilityId?: string;
+}) {
+  return [input.kind, input.ownerPlugin, input.publicType, input.capabilityId || ''].join('\u0000');
 }
 
 export class FlowSurfacesService {
@@ -2497,7 +2575,7 @@ export class FlowSurfacesService {
         publicTypeConflicts,
         providerErrors,
         staleSnapshots,
-        admissionRecords: buildFlowSurfaceAdmissionDiagnostics(reports, values),
+        admissionRecords: buildFlowSurfaceAdmissionDiagnostics(reports, values, capabilities.data),
       },
       meta: {
         version: 1,
