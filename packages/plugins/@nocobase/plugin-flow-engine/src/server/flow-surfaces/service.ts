@@ -2595,8 +2595,12 @@ export class FlowSurfacesService {
         enabledPackages: input.enabledPackages,
       },
     );
+    const ownerPlugin = this.getAutoSnapshotDynamicBlockOwnerPlugin(input.publicType, input.enabledPackages);
     const confirmed = (catalog.blocks || []).some((item) => {
       if (item.kind !== 'block' || item.origin !== 'autoSnapshot' || item.publicType !== input.publicType) {
+        return false;
+      }
+      if (!ownerPlugin || item.ownerPlugin !== ownerPlugin) {
         return false;
       }
       if (item.createSupported === false || item.availability?.create.supported === false) {

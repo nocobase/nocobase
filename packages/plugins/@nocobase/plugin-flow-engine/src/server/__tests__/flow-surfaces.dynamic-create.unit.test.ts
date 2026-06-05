@@ -1482,6 +1482,7 @@ describe('flowSurfaces dynamic capability create dry-run', () => {
             use: 'pluginGantt.gantt',
             kind: 'block',
             publicType: 'pluginGantt.gantt',
+            ownerPlugin: '@nocobase/plugin-gantt',
             origin: 'autoSnapshot',
             createSupported: true,
           },
@@ -1678,6 +1679,103 @@ describe('flowSurfaces dynamic capability create dry-run', () => {
         targetUid: 'target-grid',
       }),
     );
+  });
+
+  it('should reject target catalog items whose owner does not match the auto snapshot capability', async () => {
+    const autoSnapshot = createGanttAutoSnapshot();
+    const verifiedAutoPolicy = {
+      writePolicy: {
+        mode: 'verifiedAuto' as const,
+        allowedOwners: ['@nocobase/plugin-gantt'],
+        allowedPublicTypes: ['pluginGantt.gantt'],
+      },
+    };
+    const service = new FlowSurfacesService({
+      options: {
+        flowSurfaceCapabilities: verifiedAutoPolicy,
+      },
+      flowSurfaceAutoSnapshots: [autoSnapshot],
+      flowSurfaceCapabilityAdmissionReports: [createVerifiedAutoAdmissionReport()],
+      flowSurfaceCapabilityProviders: createProviderRegistry([]),
+    } as unknown as ConstructorParameters<typeof FlowSurfacesService>[0]);
+    const harness = service as unknown as DynamicBlockWriteGateHarness;
+    const enabledPackages = new Set(['@nocobase/plugin-gantt']);
+    harness.catalog = async () => ({
+      blocks: [
+        {
+          key: 'pluginGantt.gantt',
+          label: 'Gantt',
+          use: 'pluginGantt.gantt',
+          kind: 'block',
+          publicType: 'pluginGantt.gantt',
+          ownerPlugin: '@nocobase/plugin-other',
+          origin: 'autoSnapshot',
+          createSupported: true,
+          availability: {
+            render: {
+              supported: true,
+            },
+            readback: {
+              supported: true,
+            },
+            create: {
+              supported: true,
+            },
+            configure: {
+              supported: false,
+              reasonCode: 'contract-not-verified',
+              reasonSource: 'registry',
+            },
+          },
+        },
+      ],
+    });
+    type RepositoryCreateHarness = {
+      readonly repository: {
+        upsertModel(payload: Record<string, unknown>, options?: Record<string, unknown>): Promise<string>;
+      };
+    };
+    const upsertModel = vi.fn(async () => 'created-gantt-block');
+    vi.spyOn(service as unknown as RepositoryCreateHarness, 'repository', 'get').mockReturnValue({
+      upsertModel,
+    });
+
+    await expect(
+      harness.tryAddDynamicBlock({
+        values: {
+          target: {
+            uid: 'target-grid',
+          },
+          type: 'pluginGantt.gantt',
+          initParams: {
+            collectionName: 'tasks',
+          },
+          settings: {},
+        },
+        options: {
+          dynamicCapabilityActionName: 'addBlock',
+        },
+        enabledPackages,
+        blockType: 'pluginGantt.gantt',
+        target: {
+          uid: 'target-grid',
+        },
+        parentUid: 'parent-grid',
+        subKey: 'items',
+        subType: 'array',
+        popupProfile: null,
+      }),
+    ).rejects.toMatchObject({
+      message: `flowSurfaces addBlock dynamic block 'pluginGantt.gantt' is not confirmed by target-scoped catalog`,
+      options: {
+        details: {
+          reasonCode: 'contract-not-verified',
+          reasonSource: 'catalog',
+          publicType: 'pluginGantt.gantt',
+        },
+      },
+    });
+    expect(upsertModel).not.toHaveBeenCalled();
   });
 
   it('should log blocked addBlock auto snapshot candidates without internal details', async () => {
