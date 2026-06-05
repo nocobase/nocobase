@@ -465,7 +465,7 @@ describe('flowSurfaces dynamic capability create dry-run', () => {
     ).rejects.toBeInstanceOf(FlowSurfaceAggregateError);
   });
 
-  it('should keep validateCapabilityCreate fail-closed for verified auto snapshots', async () => {
+  it('should revalidate verified auto snapshots before failing closed without a create resolver', async () => {
     const autoSnapshot = createGanttAutoSnapshot();
     const verifiedAutoPolicy = {
       writePolicy: {
@@ -512,6 +512,7 @@ describe('flowSurfaces dynamic capability create dry-run', () => {
         flowSurfaceCapabilities: verifiedAutoPolicy,
       },
       flowSurfaceAutoSnapshots: [autoSnapshot],
+      flowSurfaceCapabilityAdmissionReports: [createVerifiedAutoAdmissionReport()],
       flowSurfaceCapabilityProviders: createProviderRegistry([]),
     } as unknown as ConstructorParameters<typeof FlowSurfacesService>[0]);
 
@@ -529,10 +530,76 @@ describe('flowSurfaces dynamic capability create dry-run', () => {
         },
       ),
     ).rejects.toMatchObject({
-      message: `flowSurfaces dynamic create capability 'pluginGantt.gantt' is not supported`,
+      message: `flowSurfaces dynamic create capability 'pluginGantt.gantt' does not declare a create resolver`,
       options: {
         details: {
-          reasonCode: 'unsupported',
+          reasonCode: 'missing-create-contract',
+          reasonSource: 'registry',
+          publicType: 'pluginGantt.gantt',
+        },
+      },
+    });
+  });
+
+  it('should keep verified auto dynamic create validation blocked under manifestOnly policy', async () => {
+    const autoSnapshot = createGanttAutoSnapshot();
+
+    await expect(
+      resolveDynamicCapabilityCreate({
+        publicType: 'pluginGantt.gantt',
+        initParams: {
+          collectionName: 'tasks',
+        },
+        settings: {},
+        enabledPackages: new Set(['@nocobase/plugin-gantt']),
+        providerRegistry: createProviderRegistry([]),
+        autoSnapshots: [autoSnapshot],
+        admissionReports: [createVerifiedAutoAdmissionReport()],
+        capabilityPolicyConfig: {
+          writePolicy: {
+            mode: 'manifestOnly',
+            allowedOwners: ['@nocobase/plugin-gantt'],
+            allowedPublicTypes: ['pluginGantt.gantt'],
+          },
+        },
+      }),
+    ).rejects.toMatchObject({
+      message: `flowSurfaces dynamic create capability 'pluginGantt.gantt' is not enabled for writes`,
+      options: {
+        details: {
+          reasonCode: 'manifest-required',
+          reasonSource: 'registry',
+          publicType: 'pluginGantt.gantt',
+        },
+      },
+    });
+  });
+
+  it('should require explicit verified auto allowlists before create validation reaches resolver contract', async () => {
+    const autoSnapshot = createGanttAutoSnapshot();
+
+    await expect(
+      resolveDynamicCapabilityCreate({
+        publicType: 'pluginGantt.gantt',
+        initParams: {
+          collectionName: 'tasks',
+        },
+        settings: {},
+        enabledPackages: new Set(['@nocobase/plugin-gantt']),
+        providerRegistry: createProviderRegistry([]),
+        autoSnapshots: [autoSnapshot],
+        admissionReports: [createVerifiedAutoAdmissionReport()],
+        capabilityPolicyConfig: {
+          writePolicy: {
+            mode: 'verifiedAuto',
+          },
+        },
+      }),
+    ).rejects.toMatchObject({
+      message: `flowSurfaces dynamic create capability 'pluginGantt.gantt' is not enabled for writes`,
+      options: {
+        details: {
+          reasonCode: 'contract-not-verified',
           reasonSource: 'registry',
           publicType: 'pluginGantt.gantt',
         },

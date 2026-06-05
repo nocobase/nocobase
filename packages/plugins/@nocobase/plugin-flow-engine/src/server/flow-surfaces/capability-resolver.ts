@@ -8,12 +8,30 @@
  */
 
 import _ from 'lodash';
-import { collectNormalizedProviderCapabilities, type FlowSurfaceCapabilityRegistryLike } from './capability-registry';
+import {
+  collectAutoSnapshotPublicCapabilities,
+  collectNormalizedProviderCapabilities,
+  getFlowSurfacePublicCapabilityAdmissionCapabilityId,
+  getFlowSurfacePublicCapabilityAdmissionIntegrity,
+  type FlowSurfaceCapabilityRegistryLike,
+} from './capability-registry';
+import {
+  resolveFlowSurfaceCapabilityAdmissionRuntimeEvidence,
+  type FlowSurfaceCapabilityAdmissionReport,
+} from './admission-report';
+import {
+  applyFlowSurfaceCapabilityWritePolicy,
+  normalizeFlowSurfaceCapabilityPolicyConfig,
+  resolveFlowSurfaceVerifiedAutoAdmissionDecision,
+  type FlowSurfaceCapabilityPolicyConfig,
+  type NormalizedFlowSurfaceCapabilityPolicyConfig,
+} from './capability-policy';
 import { callFlowSurfaceProvider } from './capability-provider-executor';
 import { resolveJsonCreateRecipe } from './capability-recipe';
 import { FlowSurfaceContractGuard } from './contract-guard';
 import { FlowSurfaceBadRequestError, FlowSurfaceAggregateError, type FlowSurfaceErrorItemInput } from './errors';
 import { validateFlowSurfacePayloadShape } from './payload-shape';
+import type { FlowSurfaceAutoSnapshot } from './extractor/types';
 import type {
   FlowSurfaceCapabilityValidationError,
   FlowSurfaceDynamicCapabilityCreateActionName,
@@ -23,6 +41,7 @@ import type {
   FlowSurfaceJsonSchema,
   FlowSurfaceNodeSpec,
   FlowSurfaceProviderCreateContext,
+  FlowSurfaceReasonCode,
 } from './types';
 
 const DYNAMIC_FORBIDDEN_PUBLIC_KEYS = new Set([
@@ -73,7 +92,22 @@ type ResolveDynamicCapabilityCreateOptions = FlowSurfaceDynamicCapabilityCreateV
   providerRegistry?: FlowSurfaceCapabilityRegistryLike;
   providerTimeoutMs?: number;
   actionName?: FlowSurfaceDynamicCapabilityCreateActionName;
+  autoSnapshots?: readonly FlowSurfaceAutoSnapshot[];
+  admissionReports?: readonly FlowSurfaceCapabilityAdmissionReport[];
+  capabilityPolicyConfig?: FlowSurfaceCapabilityPolicyConfig | NormalizedFlowSurfaceCapabilityPolicyConfig | null;
 };
+
+type VerifiedAutoSnapshotDynamicCreateResolution =
+  | {
+      status: 'not-found';
+    }
+  | {
+      status: 'blocked';
+      reasonCode: FlowSurfaceReasonCode;
+    }
+  | {
+      status: 'verified';
+    };
 
 const PROVIDER_VALIDATION_ERROR_CODES = new Set<FlowSurfaceCapabilityValidationError['code']>([
   'required',
@@ -136,31 +170,26 @@ export async function resolveDynamicCapabilityCreate(
   });
 
   if (!providerCapability) {
-    throw new FlowSurfaceBadRequestError(
-      `flowSurfaces dynamic create capability '${publicType}' is not supported`,
-      undefined,
-      {
-        details: {
-          reasonCode: 'unsupported',
-          reasonSource: 'registry',
-          publicType,
-        },
-      },
-    );
+    const verifiedAutoSnapshot = resolveVerifiedAutoSnapshotDynamicCreateCapability({
+      kind,
+      publicType,
+      ownerPlugin: input.ownerPlugin,
+      enabledPackages: input.enabledPackages,
+      autoSnapshots: input.autoSnapshots,
+      admissionReports: input.admissionReports,
+      capabilityPolicyConfig: input.capabilityPolicyConfig,
+    });
+    if (verifiedAutoSnapshot.status === 'verified') {
+      throwMissingCreateContract(publicType);
+    }
+    if (verifiedAutoSnapshot.status === 'blocked') {
+      throwDynamicCreateNotEnabled(publicType, verifiedAutoSnapshot.reasonCode);
+    }
+    throwUnsupportedDynamicCreate(publicType);
   }
   const resolveCreate = providerCapability.provider.resolveCreate;
   if (!resolveCreate && !providerCapability.createRecipe) {
-    throw new FlowSurfaceBadRequestError(
-      `flowSurfaces dynamic create capability '${publicType}' does not declare a create resolver`,
-      undefined,
-      {
-        details: {
-          reasonCode: 'missing-create-contract',
-          reasonSource: 'registry',
-          publicType,
-        },
-      },
-    );
+    throwMissingCreateContract(publicType);
   }
   if (!input.allowUnavailable && !providerCapability.publicItem.availability.create.supported) {
     throw new FlowSurfaceBadRequestError(
@@ -235,17 +264,7 @@ export async function resolveDynamicCapabilityCreate(
   } else {
     const providerResolveCreate = resolveCreate;
     if (!providerResolveCreate) {
-      throw new FlowSurfaceBadRequestError(
-        `flowSurfaces dynamic create capability '${publicType}' does not declare a create resolver`,
-        undefined,
-        {
-          details: {
-            reasonCode: 'missing-create-contract',
-            reasonSource: 'registry',
-            publicType,
-          },
-        },
-      );
+      throwMissingCreateContract(publicType);
     }
     const created = await callFlowSurfaceProvider({
       provider: providerCapability.provider,
@@ -289,6 +308,111 @@ export async function resolveDynamicCapabilityCreate(
     node: createdNode,
     warnings: providerCapability.publicItem.warnings || [],
   };
+}
+
+function resolveVerifiedAutoSnapshotDynamicCreateCapability(input: {
+  kind: 'block';
+  publicType: string;
+  ownerPlugin?: string;
+  enabledPackages: ReadonlySet<string>;
+  autoSnapshots?: readonly FlowSurfaceAutoSnapshot[];
+  admissionReports?: readonly FlowSurfaceCapabilityAdmissionReport[];
+  capabilityPolicyConfig?: FlowSurfaceCapabilityPolicyConfig | NormalizedFlowSurfaceCapabilityPolicyConfig | null;
+}): VerifiedAutoSnapshotDynamicCreateResolution {
+  const item = collectAutoSnapshotPublicCapabilities({
+    autoSnapshots: input.autoSnapshots,
+    enabledPackages: input.enabledPackages,
+  }).find((capability) => {
+    if (capability.kind !== input.kind || capability.publicType !== input.publicType) {
+      return false;
+    }
+    return input.ownerPlugin ? capability.ownerPlugin === input.ownerPlugin : true;
+  });
+  if (!item) {
+    return {
+      status: 'not-found',
+    };
+  }
+
+  const capabilityPolicyConfig = normalizeFlowSurfaceCapabilityPolicyConfig(input.capabilityPolicyConfig);
+  const policyProjectedItem = applyFlowSurfaceCapabilityWritePolicy(item, capabilityPolicyConfig);
+  const capabilityId = getFlowSurfacePublicCapabilityAdmissionCapabilityId(policyProjectedItem);
+  const admissionEvidence = resolveFlowSurfaceCapabilityAdmissionRuntimeEvidence({
+    reports: input.admissionReports || [],
+    capability: {
+      kind: policyProjectedItem.kind,
+      publicType: policyProjectedItem.publicType,
+      ownerPlugin: policyProjectedItem.ownerPlugin,
+      ...(capabilityId ? { capabilityId } : {}),
+    },
+    expectedIntegrity: getFlowSurfacePublicCapabilityAdmissionIntegrity(policyProjectedItem),
+  });
+  const admissionDecision = resolveFlowSurfaceVerifiedAutoAdmissionDecision({
+    item: policyProjectedItem,
+    config: capabilityPolicyConfig,
+    admissionEvidence,
+  });
+  if (!admissionDecision.ok) {
+    return {
+      status: 'blocked',
+      reasonCode: admissionDecision.reasonCode || 'contract-not-verified',
+    };
+  }
+  if (!hasStrictVerifiedAutoDynamicCreateAllowlists(capabilityPolicyConfig)) {
+    return {
+      status: 'blocked',
+      reasonCode: 'contract-not-verified',
+    };
+  }
+  return {
+    status: 'verified',
+  };
+}
+
+function hasStrictVerifiedAutoDynamicCreateAllowlists(config: NormalizedFlowSurfaceCapabilityPolicyConfig) {
+  return !!config.writePolicy.allowedOwners?.length && !!config.writePolicy.allowedPublicTypes?.length;
+}
+
+function throwUnsupportedDynamicCreate(publicType: string): never {
+  throw new FlowSurfaceBadRequestError(
+    `flowSurfaces dynamic create capability '${publicType}' is not supported`,
+    undefined,
+    {
+      details: {
+        reasonCode: 'unsupported',
+        reasonSource: 'registry',
+        publicType,
+      },
+    },
+  );
+}
+
+function throwMissingCreateContract(publicType: string): never {
+  throw new FlowSurfaceBadRequestError(
+    `flowSurfaces dynamic create capability '${publicType}' does not declare a create resolver`,
+    undefined,
+    {
+      details: {
+        reasonCode: 'missing-create-contract',
+        reasonSource: 'registry',
+        publicType,
+      },
+    },
+  );
+}
+
+function throwDynamicCreateNotEnabled(publicType: string, reasonCode: FlowSurfaceReasonCode): never {
+  throw new FlowSurfaceBadRequestError(
+    `flowSurfaces dynamic create capability '${publicType}' is not enabled for writes`,
+    undefined,
+    {
+      details: {
+        reasonCode,
+        reasonSource: 'registry',
+        publicType,
+      },
+    },
+  );
 }
 
 function normalizeRequiredString(value: unknown) {

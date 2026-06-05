@@ -1470,6 +1470,14 @@ export class FlowSurfacesService {
     );
   }
 
+  private get configuredAdmissionReports(): readonly FlowSurfaceCapabilityAdmissionReport[] | undefined {
+    return (
+      this.plugin as Plugin & {
+        flowSurfaceCapabilityAdmissionReports?: readonly FlowSurfaceCapabilityAdmissionReport[];
+      }
+    ).flowSurfaceCapabilityAdmissionReports;
+  }
+
   get db() {
     return this.plugin.db;
   }
@@ -1711,6 +1719,9 @@ export class FlowSurfacesService {
   ) {
     if (capabilityPolicyConfig.writePolicy.mode !== 'verifiedAuto') {
       return undefined;
+    }
+    if (this.configuredAdmissionReports) {
+      return this.configuredAdmissionReports;
     }
     return loadFlowSurfaceCapabilityAdmissionReportsFromDirectory({
       dir: getFlowSurfaceCapabilityAdmissionReportStorageDir(),
@@ -2322,13 +2333,18 @@ export class FlowSurfacesService {
     options: { transaction?: unknown; enabledPackages?: ReadonlySet<string> } = {},
   ): Promise<FlowSurfaceValidateCapabilityCreateResponse> {
     const enabledPackages = await this.resolveEnabledPluginPackages(options);
+    const capabilityPolicyConfig = readFlowSurfaceCapabilityPolicyConfigFromPluginOptions(this.plugin.options);
+    const admissionReports = await this.loadVerifiedAutoAdmissionReports(capabilityPolicyConfig);
     const response = await resolveDynamicCapabilityCreate({
       ...input,
       actionName: 'validateCapabilityCreate',
       allowUnavailable: true,
       enabledPackages,
       providerRegistry: this.capabilityProviderRegistry,
-      providerTimeoutMs: readFlowSurfaceCapabilityPolicyConfigFromPluginOptions(this.plugin.options).providerTimeoutMs,
+      providerTimeoutMs: capabilityPolicyConfig.providerTimeoutMs,
+      autoSnapshots: this.autoSnapshots,
+      admissionReports,
+      capabilityPolicyConfig,
       rawPublicPayload: input,
     });
     const capability = { ...response.capability };
