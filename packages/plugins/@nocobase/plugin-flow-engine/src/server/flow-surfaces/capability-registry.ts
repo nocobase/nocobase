@@ -247,7 +247,7 @@ export async function collectProviderCatalogItems(
   options: FlowSurfaceProviderRegistryProjectionOptions,
 ): Promise<FlowSurfaceCatalogItem[]> {
   const normalized = await collectNormalizedProviderCapabilities(options);
-  return normalized.map((item) => item.catalogItem);
+  return normalized.filter((item) => item.catalogItem.createSupported).map((item) => item.catalogItem);
 }
 
 export function filterProviderCatalogItemsForCatalog(input: {

@@ -3251,6 +3251,38 @@ describe('flowSurfaces capabilities projection', () => {
     });
   });
 
+  it('should keep provider catalog items without create contracts out of catalog projection', async () => {
+    const optimisticProvider: FlowSurfaceCapabilitiesProvider = {
+      ownerPlugin: '@nocobase/plugin-optimistic',
+      getCapabilities: () => [
+        {
+          id: 'blocks.optimistic',
+          kind: 'block',
+          publicType: 'optimistic',
+          label: 'Optimistic',
+          semantic: {
+            title: 'Optimistic',
+          },
+          implementation: {
+            modelUse: 'OptimisticBlockModel',
+          },
+          availability: {
+            create: {
+              supported: true,
+            },
+          },
+        },
+      ],
+    };
+
+    await expect(
+      collectProviderCatalogItems({
+        providerRegistry: createProviderRegistry([optimisticProvider]),
+        enabledPackages: new Set(['@nocobase/plugin-optimistic']),
+      }),
+    ).resolves.toEqual([]);
+  });
+
   it('should allowlist provider availability metadata', async () => {
     const unsafeAvailability = {
       render: {
