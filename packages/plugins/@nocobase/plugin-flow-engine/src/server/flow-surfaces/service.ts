@@ -1463,10 +1463,15 @@ function toFlowSurfaceAdmissionDiagnosticsRecord(
   record: FlowSurfaceCapabilityAdmissionRecord,
   expectedIntegrity?: FlowSurfaceCapabilityAdmissionIntegrity,
 ): FlowSurfaceCapabilityDiagnosticsAdmissionRecord {
+  const reportOwnershipFailures = getFlowSurfaceAdmissionDiagnosticsReportOwnershipFailures(report, record);
   const runtimeValidation =
     record.readiness === 'createEnabled'
       ? validateFlowSurfaceCapabilityAdmissionRuntimeEvidence({ record, expectedIntegrity })
       : undefined;
+  const failedChecks = [
+    ...reportOwnershipFailures,
+    ...(runtimeValidation?.failedChecks || getFlowSurfaceAdmissionDiagnosticsFailedChecks(record)),
+  ];
   return {
     reportPlugin: report.plugin,
     reportGeneratedAt: report.generatedAt,
@@ -1474,11 +1479,27 @@ function toFlowSurfaceAdmissionDiagnosticsRecord(
     kind: record.kind,
     publicType: record.publicType,
     ownerPlugin: record.ownerPlugin,
-    readiness: runtimeValidation?.readiness || record.readiness,
+    readiness: reportOwnershipFailures.length ? 'blocked' : runtimeValidation?.readiness || record.readiness,
     updatedAt: record.updatedAt,
     ...(record.approvedAt ? { approvedAt: record.approvedAt } : {}),
-    failedChecks: runtimeValidation?.failedChecks || getFlowSurfaceAdmissionDiagnosticsFailedChecks(record),
+    failedChecks,
   };
+}
+
+function getFlowSurfaceAdmissionDiagnosticsReportOwnershipFailures(
+  report: FlowSurfaceCapabilityAdmissionReport,
+  record: FlowSurfaceCapabilityAdmissionRecord,
+): FlowSurfaceCapabilityDiagnosticsAdmissionRecord['failedChecks'] {
+  if (record.readiness !== 'createEnabled' || report.plugin === record.ownerPlugin) {
+    return [];
+  }
+  return [
+    {
+      key: 'admissionRecord',
+      reasonCode: 'contract-not-verified',
+      message: 'Admission report plugin must match record ownerPlugin before create-enabled evidence can be trusted.',
+    },
+  ];
 }
 
 function getFlowSurfaceAdmissionDiagnosticsFailedChecks(
