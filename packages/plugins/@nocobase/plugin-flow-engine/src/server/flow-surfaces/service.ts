@@ -31,6 +31,7 @@ import { buildFlowSurfaceCapabilitiesResponse, buildFlowSurfaceDescribeCapabilit
 import { readFlowSurfaceCapabilityPolicyConfigFromPluginOptions } from './capability-policy';
 import { resolveDynamicCapabilityCreate } from './capability-resolver';
 import {
+  collectAutoSnapshotPublicCapabilities,
   collectNormalizedProviderCapabilities,
   collectProviderCatalogItems,
   collectVerifiedAutoSnapshotCatalogItems,
@@ -2450,9 +2451,15 @@ export class FlowSurfacesService {
   private async resolveDynamicBlockTypes(enabledPackages: ReadonlySet<string>) {
     const capabilities = await this.collectDynamicBlockCapabilities(enabledPackages);
     return new Set(
-      capabilities
-        .map((item) => String(item.publicItem.publicType || '').trim())
-        .filter((publicType) => publicType && !STATIC_BLOCK_PUBLIC_TYPES.has(publicType)),
+      [
+        ...capabilities.map((item) => String(item.publicItem.publicType || '').trim()),
+        ...collectAutoSnapshotPublicCapabilities({
+          autoSnapshots: this.autoSnapshots,
+          enabledPackages,
+        })
+          .filter((item) => item.kind === 'block')
+          .map((item) => String(item.publicType || '').trim()),
+      ].filter((publicType) => publicType && !STATIC_BLOCK_PUBLIC_TYPES.has(publicType)),
     );
   }
 
@@ -2469,6 +2476,17 @@ export class FlowSurfacesService {
     }
     const capabilities = await this.collectDynamicBlockCapabilities(enabledPackages);
     return capabilities.find((item) => item.publicItem.publicType === normalizedType) || null;
+  }
+
+  private hasAutoSnapshotDynamicBlockCapability(publicType: string, enabledPackages: ReadonlySet<string>) {
+    const normalizedType = String(publicType || '').trim();
+    if (!normalizedType || STATIC_BLOCK_PUBLIC_TYPES.has(normalizedType)) {
+      return false;
+    }
+    return collectAutoSnapshotPublicCapabilities({
+      autoSnapshots: this.autoSnapshots,
+      enabledPackages,
+    }).some((item) => item.kind === 'block' && item.publicType === normalizedType);
   }
 
   private async buildProviderCatalogItems(input: {
@@ -9467,6 +9485,23 @@ export class FlowSurfacesService {
     const actionName = input.options.dynamicCapabilityActionName || 'addBlock';
     const capability = await this.resolveDynamicBlockCapability(publicType, input.enabledPackages);
     if (!capability) {
+      if (this.hasAutoSnapshotDynamicBlockCapability(publicType, input.enabledPackages)) {
+        const capabilityPolicyConfig = readFlowSurfaceCapabilityPolicyConfigFromPluginOptions(this.plugin.options);
+        await resolveDynamicCapabilityCreate({
+          publicType,
+          target: input.target,
+          initParams:
+            this.normalizeDynamicCapabilityPublicObject(actionName, 'initParams', input.values.initParams) || {},
+          settings: this.normalizeDynamicCapabilityPublicObject(actionName, 'settings', input.values.settings) || {},
+          rawPublicPayload: input.values,
+          enabledPackages: input.enabledPackages,
+          providerTimeoutMs: capabilityPolicyConfig.providerTimeoutMs,
+          autoSnapshots: this.autoSnapshots,
+          admissionReports: await this.loadVerifiedAutoAdmissionReports(capabilityPolicyConfig),
+          capabilityPolicyConfig,
+          actionName,
+        });
+      }
       return null;
     }
     const explicitInitParams = this.normalizeDynamicCapabilityPublicObject(

@@ -18,10 +18,33 @@ import type { FlowSurfaceCapabilityAdmissionReport } from '../flow-surfaces/admi
 import type {
   FlowSurfaceCapabilitiesProvider,
   FlowSurfaceCatalogItem,
+  FlowSurfaceDynamicCapabilityCreateActionName,
   FlowSurfaceJsonCreateRecipe,
+  FlowSurfaceWriteTarget,
 } from '../flow-surfaces/types';
 
 describe('flowSurfaces dynamic capability create dry-run', () => {
+  type TryAddDynamicBlockInput = {
+    values: Record<string, unknown>;
+    options: {
+      transaction?: unknown;
+      deferAutoLayout?: boolean;
+      dynamicCapabilityActionName?: FlowSurfaceDynamicCapabilityCreateActionName;
+    };
+    enabledPackages: ReadonlySet<string>;
+    blockType: string;
+    target: FlowSurfaceWriteTarget;
+    parentUid: string;
+    subKey: string;
+    subType: string;
+    popupProfile: null;
+  };
+
+  type DynamicBlockWriteGateHarness = {
+    resolveDynamicBlockTypes(enabledPackages: ReadonlySet<string>): Promise<Set<string>>;
+    tryAddDynamicBlock(input: TryAddDynamicBlockInput): Promise<unknown>;
+  };
+
   function createProviderRegistry(providers: FlowSurfaceCapabilitiesProvider[]) {
     return {
       listProviders: () => providers,
@@ -605,6 +628,98 @@ describe('flowSurfaces dynamic capability create dry-run', () => {
         },
       },
     });
+  });
+
+  it('should route target-scoped addBlock auto snapshot candidates through verified auto create gate', async () => {
+    const autoSnapshot = createGanttAutoSnapshot();
+    const verifiedAutoPolicy = {
+      writePolicy: {
+        mode: 'verifiedAuto' as const,
+        allowedOwners: ['@nocobase/plugin-gantt'],
+        allowedPublicTypes: ['pluginGantt.gantt'],
+      },
+    };
+    const service = new FlowSurfacesService({
+      options: {
+        flowSurfaceCapabilities: verifiedAutoPolicy,
+      },
+      flowSurfaceAutoSnapshots: [autoSnapshot],
+      flowSurfaceCapabilityAdmissionReports: [createVerifiedAutoAdmissionReport()],
+      flowSurfaceCapabilityProviders: createProviderRegistry([]),
+    } as unknown as ConstructorParameters<typeof FlowSurfacesService>[0]);
+    const harness = service as unknown as DynamicBlockWriteGateHarness;
+    const enabledPackages = new Set(['@nocobase/plugin-gantt']);
+    const dynamicBlockTypes = await harness.resolveDynamicBlockTypes(enabledPackages);
+
+    expect(dynamicBlockTypes.has('pluginGantt.gantt')).toBe(true);
+
+    await expect(
+      harness.tryAddDynamicBlock({
+        values: {
+          target: {
+            uid: 'target-grid',
+          },
+          type: 'pluginGantt.gantt',
+          initParams: {
+            collectionName: 'tasks',
+          },
+          settings: {},
+        },
+        options: {
+          dynamicCapabilityActionName: 'addBlock',
+        },
+        enabledPackages,
+        blockType: 'pluginGantt.gantt',
+        target: {
+          uid: 'target-grid',
+        },
+        parentUid: 'parent-grid',
+        subKey: 'items',
+        subType: 'array',
+        popupProfile: null,
+      }),
+    ).rejects.toMatchObject({
+      message: `flowSurfaces dynamic create capability 'pluginGantt.gantt' does not declare a create resolver`,
+      options: {
+        details: {
+          reasonCode: 'missing-create-contract',
+          reasonSource: 'registry',
+          publicType: 'pluginGantt.gantt',
+        },
+      },
+    });
+  });
+
+  it('should leave ordinary unknown addBlock types on the existing catalog fallback path', async () => {
+    const service = new FlowSurfacesService({
+      options: {},
+      flowSurfaceAutoSnapshots: [createGanttAutoSnapshot()],
+      flowSurfaceCapabilityProviders: createProviderRegistry([]),
+    } as unknown as ConstructorParameters<typeof FlowSurfacesService>[0]);
+    const harness = service as unknown as DynamicBlockWriteGateHarness;
+
+    await expect(
+      harness.tryAddDynamicBlock({
+        values: {
+          target: {
+            uid: 'target-grid',
+          },
+          type: 'unknownTimeline',
+        },
+        options: {
+          dynamicCapabilityActionName: 'addBlock',
+        },
+        enabledPackages: new Set(['@nocobase/plugin-gantt']),
+        blockType: 'unknownTimeline',
+        target: {
+          uid: 'target-grid',
+        },
+        parentUid: 'parent-grid',
+        subKey: 'items',
+        subType: 'array',
+        popupProfile: null,
+      }),
+    ).resolves.toBeNull();
   });
 
   it('should resolve recipe-only capabilities without calling provider resolveCreate', async () => {
