@@ -3362,6 +3362,71 @@ describe('flowSurfaces dynamic capability create dry-run', () => {
     });
   });
 
+  it('should not annotate dynamic provider readback nodes when the owner plugin is disabled', async () => {
+    const service = new FlowSurfacesService({
+      flowSurfaceCapabilityProviders: createProviderRegistry([
+        {
+          ownerPlugin: '@nocobase/plugin-gantt',
+          getCapabilities: () => [
+            {
+              id: 'blocks.gantt',
+              kind: 'block',
+              publicType: 'gantt',
+              label: 'Gantt',
+              semantic: {
+                title: 'Gantt',
+              },
+              implementation: {
+                modelUse: 'GanttBlockModel',
+                legacyModelUses: ['LegacyGanttBlockModel'],
+              },
+              availability: {
+                create: {
+                  supported: true,
+                },
+              },
+            },
+          ],
+          resolveCreate: () => ({
+            use: 'GanttBlockModel',
+          }),
+        },
+      ]),
+    } as unknown as ConstructorParameters<typeof FlowSurfacesService>[0]);
+    type DynamicReadbackProjector = {
+      projectDynamicBlockReadbackTypes<T>(node: T, options: { enabledPackages: ReadonlySet<string> }): Promise<T>;
+    };
+    const tree = {
+      uid: 'root',
+      use: 'GridModel',
+      subModels: {
+        items: [
+          {
+            uid: 'gantt-1',
+            use: 'GanttBlockModel',
+          },
+          {
+            uid: 'legacy-gantt-1',
+            use: 'LegacyGanttBlockModel',
+          },
+        ],
+      },
+    };
+
+    const projected = await (service as unknown as DynamicReadbackProjector).projectDynamicBlockReadbackTypes(tree, {
+      enabledPackages: new Set<string>(),
+    });
+
+    expect(projected.subModels.items[0]).toEqual({
+      uid: 'gantt-1',
+      use: 'GanttBlockModel',
+    });
+    expect(projected.subModels.items[1]).toEqual({
+      uid: 'legacy-gantt-1',
+      use: 'LegacyGanttBlockModel',
+    });
+  });
+
   it('should annotate verified auto snapshot readback nodes with canonical public type', async () => {
     const verifiedAutoPolicy = {
       writePolicy: {
