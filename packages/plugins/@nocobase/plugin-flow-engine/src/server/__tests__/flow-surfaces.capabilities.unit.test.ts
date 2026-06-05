@@ -1156,6 +1156,27 @@ describe('flowSurfaces capabilities projection', () => {
     });
   });
 
+  it('should read legacy capability write policy options conservatively', () => {
+    const config = readFlowSurfaceCapabilityPolicyConfigFromPluginOptions({
+      flowSurfaceCapabilityPolicy: {
+        mode: 'verifiedAuto',
+        allowedOwners: [' @nocobase/plugin-gantt ', '@nocobase/plugin-gantt'],
+        allowedPublicTypes: ['pluginGantt.gantt', 'pluginGantt.gantt', ''],
+      },
+    });
+
+    expect(config).toMatchObject({
+      writePolicy: {
+        mode: 'verifiedAuto',
+        allowedOwners: ['@nocobase/plugin-gantt'],
+        allowedPublicTypes: ['pluginGantt.gantt'],
+      },
+      providerTimeoutMs: 3000,
+    });
+    expect(config.extractorSnapshotDir).toContain('flow-surfaces-capabilities');
+    expect(typeof config.diagnosticsEnabled).toBe('boolean');
+  });
+
   it('should apply provider timeout config when building service provider catalog items', async () => {
     const hangingProvider: FlowSurfaceCapabilitiesProvider = {
       ownerPlugin: '@nocobase/plugin-hanging',
