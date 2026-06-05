@@ -73,6 +73,17 @@ describe('flowSurfaces dynamic capability create dry-run', () => {
     ): Promise<unknown>;
   };
 
+  type EnabledPackagesHarness = {
+    resolveEnabledPluginPackages(options?: {
+      transaction?: unknown;
+      enabledPackages?: ReadonlySet<string>;
+    }): Promise<ReadonlySet<string>>;
+  };
+
+  type TransactionHarness = {
+    transaction<T>(callback: (transaction: unknown) => Promise<T>): Promise<T>;
+  };
+
   function createProviderRegistry(providers: FlowSurfaceCapabilitiesProvider[]) {
     return {
       listProviders: () => providers,
@@ -1038,6 +1049,80 @@ describe('flowSurfaces dynamic capability create dry-run', () => {
     expect(clientKeyToUid).toMatchObject({
       plannedGantt: 'created-gantt-block',
     });
+  });
+
+  it('should route verified auto addBlocks items through the dynamic addBlock gate context', async () => {
+    const service = new FlowSurfacesService({
+      flowSurfaceAutoSnapshots: [createGanttAutoSnapshot()],
+      flowSurfaceCapabilityAdmissionReports: [createVerifiedAutoAdmissionReport()],
+      flowSurfaceCapabilityProviders: createProviderRegistry([]),
+    } as unknown as ConstructorParameters<typeof FlowSurfacesService>[0]);
+    const harness = service as unknown as DynamicBlockWriteGateHarness;
+    const enabledPackages = new Set(['@nocobase/plugin-gantt']);
+    vi.spyOn(service as unknown as EnabledPackagesHarness, 'resolveEnabledPluginPackages').mockResolvedValue(
+      enabledPackages,
+    );
+    vi.spyOn(service as unknown as TransactionHarness, 'transaction').mockImplementation((async (callback) =>
+      callback('tx-add-blocks')) as TransactionHarness['transaction']);
+    const addBlock = vi.spyOn(service, 'addBlock').mockResolvedValue({
+      uid: 'batch-gantt-block',
+      parentUid: 'target-grid',
+      subKey: 'items',
+    } as unknown as Awaited<ReturnType<FlowSurfacesService['addBlock']>>);
+    const dynamicBlockTypes = await harness.resolveDynamicBlockTypes(enabledPackages);
+
+    expect(dynamicBlockTypes.has('pluginGantt.gantt')).toBe(true);
+
+    const result = await service.addBlocks({
+      target: {
+        uid: 'target-grid',
+      },
+      blocks: [
+        {
+          key: 'plannedGantt',
+          type: 'pluginGantt.gantt',
+          initParams: {
+            collectionName: 'tasks',
+          },
+          settings: {},
+        },
+      ],
+    });
+
+    expect(result).toMatchObject({
+      successCount: 1,
+      errorCount: 0,
+      blocks: [
+        {
+          index: 0,
+          key: 'plannedGantt',
+          ok: true,
+          result: {
+            uid: 'batch-gantt-block',
+          },
+        },
+      ],
+    });
+    expect(addBlock).toHaveBeenCalledTimes(1);
+    expect(addBlock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        target: {
+          uid: 'target-grid',
+        },
+        key: 'plannedGantt',
+        type: 'pluginGantt.gantt',
+        initParams: {
+          collectionName: 'tasks',
+        },
+        settings: {},
+      }),
+      expect.objectContaining({
+        transaction: 'tx-add-blocks',
+        enabledPackages,
+        skipAuthoringValidation: true,
+        dynamicCapabilityActionName: 'addBlocks',
+      }),
+    );
   });
 
   it('should leave ordinary unknown addBlock types on the existing catalog fallback path', async () => {
