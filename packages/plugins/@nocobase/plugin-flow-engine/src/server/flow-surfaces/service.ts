@@ -1328,7 +1328,7 @@ type FlowSurfaceCapabilityDiagnosticsOptions = {
   admissionReports?: readonly FlowSurfaceCapabilityAdmissionReport[];
 };
 
-type FlowSurfaceCapabilityAuditEvent = 'capability.validate.failed';
+type FlowSurfaceCapabilityAuditEvent = 'capability.validate.failed' | 'capability.create.blocked';
 
 const FLOW_SURFACE_DIAGNOSTICS_ADMIN_ROLES = new Set(['admin', 'root']);
 const FLOW_SURFACE_DIAGNOSTIC_AVAILABILITY_KEYS = ['render', 'readback', 'create', 'configure'] as const;
@@ -2554,6 +2554,17 @@ export class FlowSurfacesService {
       autoSnapshots: this.autoSnapshots,
       enabledPackages,
     }).some((item) => item.kind === 'block' && item.publicType === normalizedType);
+  }
+
+  private getAutoSnapshotDynamicBlockOwnerPlugin(publicType: string, enabledPackages: ReadonlySet<string>) {
+    const normalizedType = String(publicType || '').trim();
+    if (!normalizedType || STATIC_BLOCK_PUBLIC_TYPES.has(normalizedType)) {
+      return undefined;
+    }
+    return collectAutoSnapshotPublicCapabilities({
+      autoSnapshots: this.autoSnapshots,
+      enabledPackages,
+    }).find((item) => item.kind === 'block' && item.publicType === normalizedType)?.ownerPlugin;
   }
 
   private async assertAutoSnapshotDynamicBlockCatalogConfirmed(input: {
@@ -9610,70 +9621,84 @@ export class FlowSurfacesService {
     const actionName = input.options.dynamicCapabilityActionName || 'addBlock';
     const capability = await this.resolveDynamicBlockCapability(publicType, input.enabledPackages);
     let dynamicCreate: Awaited<ReturnType<typeof resolveDynamicCapabilityCreate>> | null = null;
-    if (!capability) {
-      if (this.hasAutoSnapshotDynamicBlockCapability(publicType, input.enabledPackages)) {
-        const capabilityPolicyConfig = readFlowSurfaceCapabilityPolicyConfigFromPluginOptions(this.plugin.options);
-        await this.assertAutoSnapshotDynamicBlockCatalogConfirmed({
+    try {
+      if (!capability) {
+        if (this.hasAutoSnapshotDynamicBlockCapability(publicType, input.enabledPackages)) {
+          const capabilityPolicyConfig = readFlowSurfaceCapabilityPolicyConfigFromPluginOptions(this.plugin.options);
+          await this.assertAutoSnapshotDynamicBlockCatalogConfirmed({
+            actionName,
+            publicType,
+            target: input.target,
+            transaction: input.options.transaction,
+            enabledPackages: input.enabledPackages,
+          });
+          dynamicCreate = await resolveDynamicCapabilityCreate({
+            publicType,
+            target: input.target,
+            initParams:
+              this.normalizeDynamicCapabilityPublicObject(actionName, 'initParams', input.values.initParams) || {},
+            settings: this.normalizeDynamicCapabilityPublicObject(actionName, 'settings', input.values.settings) || {},
+            rawPublicPayload: input.values,
+            enabledPackages: input.enabledPackages,
+            providerTimeoutMs: capabilityPolicyConfig.providerTimeoutMs,
+            autoSnapshots: this.autoSnapshots,
+            admissionReports: await this.loadVerifiedAutoAdmissionReports(capabilityPolicyConfig),
+            capabilityPolicyConfig,
+            actionName,
+          });
+        }
+        if (!dynamicCreate) {
+          return null;
+        }
+      } else {
+        const explicitInitParams = this.normalizeDynamicCapabilityPublicObject(
           actionName,
-          publicType,
-          target: input.target,
-          transaction: input.options.transaction,
-          enabledPackages: input.enabledPackages,
-        });
+          'initParams',
+          input.values.initParams,
+        );
+        if (explicitInitParams && (input.semanticResource || input.rawResourceInit)) {
+          throwBadRequest(
+            `flowSurfaces ${actionName} dynamic block '${publicType}' does not allow initParams with resource`,
+          );
+        }
+        const resolvedResourceInit = explicitInitParams
+          ? undefined
+          : await this.resolvePopupCollectionBlockResourceInit({
+              actionName,
+              blockUse: capability.implementation.modelUse,
+              popupProfile: input.popupProfile,
+              semanticResource: input.semanticResource?.kind === 'semantic' ? input.semanticResource.value : undefined,
+              resourceInit:
+                input.rawResourceInit ||
+                (input.semanticResource?.kind === 'raw'
+                  ? (input.semanticResource.value as Record<string, unknown>)
+                  : undefined),
+            });
         dynamicCreate = await resolveDynamicCapabilityCreate({
           publicType,
           target: input.target,
-          initParams:
-            this.normalizeDynamicCapabilityPublicObject(actionName, 'initParams', input.values.initParams) || {},
+          initParams: explicitInitParams || resolvedResourceInit || {},
           settings: this.normalizeDynamicCapabilityPublicObject(actionName, 'settings', input.values.settings) || {},
           rawPublicPayload: input.values,
           enabledPackages: input.enabledPackages,
-          providerTimeoutMs: capabilityPolicyConfig.providerTimeoutMs,
-          autoSnapshots: this.autoSnapshots,
-          admissionReports: await this.loadVerifiedAutoAdmissionReports(capabilityPolicyConfig),
-          capabilityPolicyConfig,
+          providerRegistry: this.capabilityProviderRegistry,
+          providerTimeoutMs: readFlowSurfaceCapabilityPolicyConfigFromPluginOptions(this.plugin.options)
+            .providerTimeoutMs,
           actionName,
         });
       }
-      if (!dynamicCreate) {
-        return null;
-      }
-    } else {
-      const explicitInitParams = this.normalizeDynamicCapabilityPublicObject(
+    } catch (error) {
+      this.logCapabilityAuditEvent('capability.create.blocked', {
         actionName,
-        'initParams',
-        input.values.initParams,
-      );
-      if (explicitInitParams && (input.semanticResource || input.rawResourceInit)) {
-        throwBadRequest(
-          `flowSurfaces ${actionName} dynamic block '${publicType}' does not allow initParams with resource`,
-        );
-      }
-      const resolvedResourceInit = explicitInitParams
-        ? undefined
-        : await this.resolvePopupCollectionBlockResourceInit({
-            actionName,
-            blockUse: capability.implementation.modelUse,
-            popupProfile: input.popupProfile,
-            semanticResource: input.semanticResource?.kind === 'semantic' ? input.semanticResource.value : undefined,
-            resourceInit:
-              input.rawResourceInit ||
-              (input.semanticResource?.kind === 'raw'
-                ? (input.semanticResource.value as Record<string, any>)
-                : undefined),
-          });
-      dynamicCreate = await resolveDynamicCapabilityCreate({
-        publicType,
-        target: input.target,
-        initParams: explicitInitParams || resolvedResourceInit || {},
-        settings: this.normalizeDynamicCapabilityPublicObject(actionName, 'settings', input.values.settings) || {},
-        rawPublicPayload: input.values,
-        enabledPackages: input.enabledPackages,
-        providerRegistry: this.capabilityProviderRegistry,
-        providerTimeoutMs: readFlowSurfaceCapabilityPolicyConfigFromPluginOptions(this.plugin.options)
-          .providerTimeoutMs,
-        actionName,
+        kind: 'block',
+        ownerPlugin:
+          capability?.publicItem.ownerPlugin ||
+          this.getAutoSnapshotDynamicBlockOwnerPlugin(publicType, input.enabledPackages),
+        publicType: capability?.publicItem.publicType || publicType,
+        reasonCode: getFlowSurfaceCapabilityAuditReasonCode(error),
+        targetUid: getFlowSurfaceCapabilityAuditTargetUid(input.target),
       });
+      throw error;
     }
     const tree = assignClientKeysToUids(_.cloneDeep(dynamicCreate.node), {});
     if (capability) {
