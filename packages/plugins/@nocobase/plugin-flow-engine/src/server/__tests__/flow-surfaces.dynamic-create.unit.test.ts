@@ -3437,6 +3437,67 @@ describe('flowSurfaces dynamic capability create dry-run', () => {
     });
   });
 
+  it('should not annotate provider readback nodes when readback is unsupported', async () => {
+    const service = new FlowSurfacesService({
+      flowSurfaceCapabilityProviders: createProviderRegistry([
+        {
+          ownerPlugin: '@nocobase/plugin-no-readback',
+          getCapabilities: () => [
+            {
+              id: 'blocks.noReadback',
+              kind: 'block',
+              publicType: 'noReadback',
+              label: 'No readback',
+              semantic: {
+                title: 'No readback',
+              },
+              implementation: {
+                modelUse: 'NoReadbackBlockModel',
+              },
+              availability: {
+                readback: {
+                  supported: false,
+                  reasonCode: 'readback-unsupported',
+                  reasonSource: 'registry',
+                },
+                create: {
+                  supported: true,
+                },
+              },
+            },
+          ],
+          resolveCreate: () => ({
+            use: 'NoReadbackBlockModel',
+          }),
+        },
+      ]),
+    } as unknown as ConstructorParameters<typeof FlowSurfacesService>[0]);
+    type DynamicReadbackProjector = {
+      projectDynamicBlockReadbackTypes<T>(node: T, options: { enabledPackages: ReadonlySet<string> }): Promise<T>;
+    };
+    const tree = {
+      uid: 'root',
+      use: 'GridModel',
+      subModels: {
+        items: [
+          {
+            uid: 'no-readback-1',
+            use: 'NoReadbackBlockModel',
+          },
+        ],
+      },
+    };
+
+    const projected = await (service as unknown as DynamicReadbackProjector).projectDynamicBlockReadbackTypes(tree, {
+      enabledPackages: new Set(['@nocobase/plugin-no-readback']),
+    });
+
+    expect(projected.subModels.items[0]).toEqual({
+      uid: 'no-readback-1',
+      use: 'NoReadbackBlockModel',
+    });
+  });
+
   it('should annotate verified auto snapshot readback nodes with canonical public type', async () => {
     const verifiedAutoPolicy = {
       writePolicy: {
