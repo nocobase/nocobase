@@ -9,7 +9,7 @@
 
 import React from 'react';
 import { Button, Space } from 'antd';
-import { BlockModel, CommonItemModel, FilterFormBlockModel, FormBlockModel } from '@nocobase/client';
+import { BlockModel, CommonItemModel, FilterFormBlockModel, FormBlockModel } from '@nocobase/client-v2';
 import {
   FlowModel,
   FlowContext,
@@ -18,7 +18,6 @@ import {
   FlowExitException,
   isInheritedFrom,
   type ModelConstructor,
-  tExpr,
 } from '@nocobase/flow-engine';
 import { NAMESPACE, tStr } from '../locale';
 import { renderTemplateSelectLabel, renderTemplateSelectOption } from '../components/TemplateSelectOption';
@@ -440,7 +439,7 @@ SubModelTemplateImporterModel.define({
 
 SubModelTemplateImporterModel.registerFlow({
   key: FLOW_KEY,
-  title: tExpr('Field template'),
+  title: tStr('Field template'),
   manual: true,
   sort: -999,
   steps: {
@@ -478,7 +477,6 @@ SubModelTemplateImporterModel.registerFlow({
               disabled: disableSelect,
               optionLabelProp: 'label',
               dropdownMatchSelectWidth: true,
-              dropdownStyle: { maxWidth: 560 },
               getPopupContainer: () => document.body,
               optionRender: renderTemplateSelectOption,
             },
@@ -516,7 +514,6 @@ SubModelTemplateImporterModel.registerFlow({
               type: 'info',
               showIcon: false,
               message: tStr('Reference mode description'),
-              style: { marginTop: -8 },
             },
             'x-reactions': {
               dependencies: ['mode'],
@@ -532,7 +529,6 @@ SubModelTemplateImporterModel.registerFlow({
               type: 'info',
               showIcon: false,
               message: tStr('Duplicate mode description'),
-              style: { marginTop: -8 },
             },
             'x-reactions': {
               dependencies: ['mode'],
@@ -674,11 +670,10 @@ SubModelTemplateImporterModel.registerFlow({
                 title:
                   (ctx as FlowContext).t?.('Field template', { ns: [NAMESPACE, 'client'], nsMode: 'fallback' }) ||
                   'Field template',
-                width: 520,
                 destroyOnClose: true,
                 content: (currentDialog: any) => (
                   <>
-                    <div style={{ marginBottom: 16 }}>{message}</div>
+                    <p>{message}</p>
                     <currentDialog.Footer>
                       <Space align="end">
                         <Button

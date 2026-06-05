@@ -7,4 +7,5 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export * from '../client-v2/openViewActionExtensions';
+export { default } from './plugin';
+export * from './models';
