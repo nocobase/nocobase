@@ -1024,6 +1024,98 @@ describe('flowSurfaces dynamic capability create dry-run', () => {
     expect(upsertModel).not.toHaveBeenCalled();
   });
 
+  it('should reject provider writes confirmed only by a non-block catalog item', async () => {
+    const provider = createDryRunProvider();
+    const enabledPackages = new Set(['@nocobase/plugin-dry-run']);
+    const service = new FlowSurfacesService({
+      flowSurfaceCapabilityProviders: createProviderRegistry([provider]),
+    } as unknown as ConstructorParameters<typeof FlowSurfacesService>[0]);
+    const harness = service as unknown as DynamicBlockWriteGateHarness;
+    harness.catalog = async (input, options) => {
+      expect(input).toMatchObject({
+        target: {
+          uid: 'target-grid',
+        },
+        sections: ['blocks'],
+      });
+      expect(options.enabledPackages).toBe(enabledPackages);
+      return {
+        blocks: [
+          {
+            key: 'dryRun',
+            label: 'Dry run',
+            use: 'dryRun',
+            kind: 'action',
+            publicType: 'dryRun',
+            ownerPlugin: '@nocobase/plugin-dry-run',
+            origin: 'provider',
+            createSupported: true,
+            availability: {
+              render: {
+                supported: true,
+              },
+              readback: {
+                supported: true,
+              },
+              create: {
+                supported: true,
+              },
+              configure: {
+                supported: false,
+              },
+            },
+          },
+        ],
+      };
+    };
+    type RepositoryCreateHarness = {
+      readonly repository: {
+        upsertModel(payload: Record<string, unknown>, options?: Record<string, unknown>): Promise<string>;
+      };
+    };
+    const upsertModel = vi.fn(async () => 'created-dry-run');
+    vi.spyOn(service as unknown as RepositoryCreateHarness, 'repository', 'get').mockReturnValue({
+      upsertModel,
+    });
+
+    await expect(
+      harness.tryAddDynamicBlock({
+        values: {
+          type: 'dryRun',
+          initParams: {
+            collectionName: 'tasks',
+          },
+          settings: {
+            pageSize: 20,
+          },
+        },
+        options: {
+          deferAutoLayout: true,
+          dynamicCapabilityActionName: 'addBlock',
+        },
+        enabledPackages,
+        blockType: 'dryRun',
+        target: {
+          uid: 'target-grid',
+        },
+        parentUid: 'parent-grid',
+        subKey: 'items',
+        subType: 'array',
+        popupProfile: null,
+      }),
+    ).rejects.toMatchObject({
+      message: `flowSurfaces addBlock dynamic block 'dryRun' is not confirmed by target-scoped catalog`,
+      options: {
+        details: {
+          reasonCode: 'contract-not-verified',
+          reasonSource: 'catalog',
+          publicType: 'dryRun',
+        },
+      },
+    });
+    expect(upsertModel).not.toHaveBeenCalled();
+  });
+
   it('should reject provider writes confirmed only by an auto snapshot catalog item', async () => {
     const provider = createDryRunProvider();
     const enabledPackages = new Set(['@nocobase/plugin-dry-run']);
