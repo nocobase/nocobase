@@ -1,0 +1,17 @@
+[
+  {
+    "type": "custom-link",
+    "label": "基本的な使い方",
+    "link": "/template-print/syntax/basic-usage"
+  },
+  {
+    "type": "custom-link",
+    "label": "ループ処理",
+    "link": "/template-print/syntax/loops"
+  },
+  {
+    "type": "dir",
+    "name": "formatters",
+    "label": "フォーマットツール"
+  }
+]

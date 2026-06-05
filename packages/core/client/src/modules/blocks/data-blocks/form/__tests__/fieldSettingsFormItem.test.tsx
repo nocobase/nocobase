@@ -8,7 +8,7 @@
  */
 
 import { useFieldSchema } from '@formily/react';
-import { observer } from '@formily/reactive-react';
+import { observer } from '@nocobase/flow-engine';
 import {
   checkFieldTitle,
   checkSettings,

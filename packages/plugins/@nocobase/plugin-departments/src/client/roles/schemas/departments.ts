@@ -19,6 +19,7 @@
 import { uid } from '@formily/shared';
 
 export const getDepartmentsSchema = () => ({
+  name: 'roleDepartments',
   type: 'void',
   properties: {
     actions: {

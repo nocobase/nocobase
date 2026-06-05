@@ -1,0 +1,22 @@
+{
+  "Associations to use": "Asosiasi untuk digunakan",
+  "Collection": "Koleksi",
+  "Create record action": "Tindakan buat catatan",
+  "Event triggers when submitted a workflow bound form action.": "Peristiwa memicu ketika tindakan formulir terikat alur kerja diajukan.",
+  "Form data model": "Model data formulir",
+  "Form event": "Peristiwa formulir",
+  "Global mode, triggered after the completion of the following actions": "Mode global, dipicu setelah selesainya tindakan berikut",
+  "Local mode, triggered after the completion of actions bound to this workflow": "Mode lokal, dipicu setelah selesainya tindakan yang terikat pada alur kerja ini",
+  "Post-action event": "Peristiwa pasca-tindakan",
+  "Role of user acted": "Peran pengguna yang bertindak",
+  "Role of user submitted form": "Peran pengguna yang mengirimkan formulir",
+  "Select actions": "Pilih tindakan",
+  "The collection to which the triggered data belongs.": "Koleksi tempat data yang dipicu berada.",
+  "Trigger data": "Data pemicu",
+  "Trigger mode": "Mode pemicu",
+  "Triggered after the completion of a request initiated through an action button or API, such as after adding or updating data. Suitable for data processing, sending notifications, etc., after actions are completed.": "Dipicu setelah selesainya permintaan yang dimulai melalui tombol tindakan atau API, seperti setelah menambahkan atau memperbarui data. Cocok untuk pemrosesan data, pengiriman notifikasi, dll., setelah tindakan selesai.",
+  "Update record action": "Tindakan perbarui catatan",
+  "Use a collection to match form data.": "Gunakan koleksi untuk mencocokkan data formulir.",
+  "User acted": "Pengguna yang bertindak",
+  "User submitted form": "Formulir yang dikirim pengguna"
+}

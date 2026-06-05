@@ -1,0 +1,110 @@
+:::tip Avis de traduction IA
+Cette documentation a été traduite automatiquement par IA.
+:::
+
+
+# Installation depuis les sources Git
+
+:::tip Prérequis
+
+- Git, Node.js 20+ et Yarn 1.22.x sont installés.
+- Une base de données requise est configurée et en cours d'exécution : MySQL 8.0.17+, MariaDB 10.9+ ou PostgreSQL 10+ (au choix).
+
+:::
+
+## 1. Téléchargez NocoBase sur votre machine locale
+
+Choisissez une version de NocoBase ([Comparaison des versions](../quickstart.md)) et exécutez la commande correspondante.
+
+<Tabs>
+<Tab label="dernière version">
+
+```bash
+git clone https://github.com/nocobase/nocobase.git -b main --depth=1 my-nocobase
+```
+
+</Tab>
+<Tab label="version Beta">
+
+```bash
+git clone https://github.com/nocobase/nocobase.git -b next --depth=1 my-nocobase
+```
+
+</Tab>
+<Tab label="version Alpha">
+
+```bash
+git clone https://github.com/nocobase/nocobase.git -b develop --depth=1 my-nocobase
+```
+
+</Tab>
+</Tabs>
+
+## 2. Changez de répertoire
+
+```bash
+cd my-nocobase
+```
+
+## 3. Installez les dépendances
+
+📢 Cette étape peut prendre plus de dix minutes, en fonction de votre environnement réseau, de la configuration de votre système et d'autres facteurs.
+
+```bash
+yarn install --frozen-lockfile
+```
+
+## 4. Configurez les variables d'environnement
+
+Les variables d'environnement requises par NocoBase sont stockées dans le fichier `.env` à la racine du répertoire. Modifiez ces variables en fonction de votre situation.
+
+```bash
+TZ=Asia/Shanghai
+APP_KEY=your-secret-key
+DB_HOST=localhost
+DB_PORT=5432
+DB_DATABASE=postgres
+DB_USER=nocobase
+DB_PASSWORD=nocobase
+```
+
+:::warning Description des variables d'environnement
+
+- `TZ` est utilisée pour définir le fuseau horaire de l'application. Par défaut, elle utilise le fuseau horaire du système d'exploitation.
+- `APP_KEY` est la clé secrète de l'application, utilisée pour générer les tokens utilisateur, etc. (Si `APP_KEY` est modifiée, les anciens tokens deviendront invalides). Il peut s'agir de n'importe quelle chaîne de caractères aléatoire. Veuillez la modifier pour utiliser votre propre clé secrète et assurez-vous qu'elle n'est pas divulguée.
+- `DB_*` sont des variables liées à la base de données. Si vous n'utilisez pas le service de base de données par défaut de l'exemple, veuillez les modifier en fonction de votre situation.
+
+:::
+
+## 5. Installez NocoBase
+
+```bash
+yarn nocobase install --lang=fr-FR
+```
+
+## 6. Démarrez NocoBase
+
+**Environnement de développement**
+
+```bash
+yarn dev
+```
+
+**Environnement de production (non recommandé)**
+
+Il n'est pas recommandé de déployer directement depuis les sources dans un environnement de production. Pour un déploiement en production, veuillez consulter [Déploiement en production](../deployment/production.md).
+
+```bash
+yarn build
+yarn start
+```
+
+## 7. Connectez-vous à NocoBase
+
+Ouvrez [http://localhost:13000](http://localhost:13000) dans votre navigateur. Les identifiants initiaux sont `admin@nocobase.com` pour le compte et `admin123` pour le mot de passe.
+
+:::warning Avertissement de sécurité du compte
+
+Après votre première connexion, veuillez modifier rapidement le mot de passe par défaut pour garantir la sécurité du système.
+
+:::

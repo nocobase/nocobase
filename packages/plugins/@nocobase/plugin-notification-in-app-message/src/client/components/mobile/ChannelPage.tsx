@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { observer } from '@formily/reactive-react';
+import { observer } from '@nocobase/flow-engine';
 import { css, useCurrentUserContext } from '@nocobase/client';
 import {
   MobilePageContentContainer,

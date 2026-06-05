@@ -10,6 +10,7 @@
 import { BelongsToManyRepository, Database } from '@nocobase/database';
 import { AppSupervisor } from '@nocobase/server';
 import { createMockServer, isPg, MockServer } from '@nocobase/test';
+import PluginMultiAppManagerServer from '@nocobase/plugin-multi-app-manager';
 import * as process from 'process';
 
 describe.runIf(isPg())('enable plugin', () => {
@@ -17,6 +18,8 @@ describe.runIf(isPg())('enable plugin', () => {
   let mainApp: MockServer;
 
   beforeEach(async () => {
+    PluginMultiAppManagerServer.staticImport();
+
     const app = await createMockServer({
       acl: false,
       plugins: ['nocobase'],
@@ -50,6 +53,7 @@ describe.runIf(isPg())('collection sync after main', () => {
   let mainApp: MockServer;
 
   beforeEach(async () => {
+    PluginMultiAppManagerServer.staticImport();
     const app = await createMockServer({
       acl: false,
       plugins: ['nocobase'],
@@ -113,6 +117,7 @@ describe.runIf(isPg())('collection sync', () => {
   let mainApp: MockServer;
 
   beforeEach(async () => {
+    PluginMultiAppManagerServer.staticImport();
     const app = await createMockServer({
       acl: false,
       plugins: ['nocobase'],

@@ -7,11 +7,11 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { ACL } from '@nocobase/acl';
+import { ACL, NoPermissionError, checkFilterParams, createUserProvider, parseJsonTemplate } from '@nocobase/acl';
 import { Context, Next } from '@nocobase/actions';
 
 export async function checkAssociationOperate(ctx: Context, next: Next) {
-  const { actionName, resourceName } = ctx.action;
+  const { actionName, resourceName, sourceId } = ctx.action;
   if (!(resourceName.includes('.') && ['add', 'set', 'remove', 'toggle'].includes(actionName))) {
     return next();
   }
@@ -35,6 +35,35 @@ export async function checkAssociationOperate(ctx: Context, next: Next) {
   const params = result.params || ctx.acl.fixedParamsManager.getParams(resourceName, actionName);
   if (params.whitelist && !params.whitelist?.includes(association)) {
     ctx.throw(403, 'No permissions');
+  }
+  if (params.filter) {
+    try {
+      const timezone =
+        ctx.request?.get?.('x-timezone') ?? ctx.request?.header?.['x-timezone'] ?? ctx.req?.headers?.['x-timezone'];
+      const collection = ctx.database?.getCollection?.(resource);
+      checkFilterParams(collection, params.filter);
+      const parsedFilter = await parseJsonTemplate(params.filter, {
+        state: ctx.state,
+        timezone: timezone as string,
+        userProvider: createUserProvider({
+          db: ctx.db,
+          currentUser: ctx.state?.currentUser,
+        }),
+      });
+      const repo = ctx.database.getRepository(resource);
+      const record = await repo.findOne({
+        filterByTk: sourceId,
+        filter: parsedFilter ?? params.filter,
+      });
+      if (!record) {
+        ctx.throw(403, 'No permissions');
+      }
+    } catch (e) {
+      if (e instanceof NoPermissionError) {
+        ctx.throw(403, 'No permissions');
+      }
+      throw e;
+    }
   }
   ctx.permission = {
     ...ctx.permission,

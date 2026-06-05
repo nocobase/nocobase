@@ -56,7 +56,7 @@ import WorkflowPlugin, {
 import { NAMESPACE, useLang } from '../locale';
 import { FormBlockProvider } from './instruction/FormBlockProvider';
 import { ManualFormType, manualFormTypes } from './instruction/SchemaConfig';
-import { TaskStatusOptionsMap, TASK_STATUS } from '../common/constants';
+import { TaskStatusOptionsMap, TASK_STATUS, TASK_TYPE_MANUAL } from '../common/constants';
 import { useMobilePage } from '@nocobase/plugin-mobile/client';
 
 function TaskStatusColumn(props) {
@@ -361,7 +361,7 @@ function FlowContextProvider(props) {
 
   const upstreams = useAvailableUpstreams(flowContext?.nodes.find((item) => item.id === node.id));
   const nodeComponents = upstreams.reduce(
-    (components, { type }) => Object.assign(components, workflowPlugin.instructions.get(type).components),
+    (components, { type }) => Object.assign(components, workflowPlugin.instructions.get(type)?.components),
     {},
   );
 
@@ -503,7 +503,7 @@ function Decorator(props) {
   const blockProps = {
     collection: 'workflowManualTasks',
     resource: 'workflowManualTasks',
-    action: 'list',
+    action: 'listMine',
     params: {
       pageSize: 20,
       sort: ['-createdAt'],
@@ -730,6 +730,7 @@ function TodoExtraActions(props) {
 }
 
 export const manualTodo = {
+  key: TASK_TYPE_MANUAL,
   title: `{{t("My manual tasks", { ns: "${NAMESPACE}" })}}`,
   collection: 'workflowManualTasks',
   action: 'listMine',

@@ -1,0 +1,191 @@
+---
+pkg: '@nocobase/plugin-backups'
+---
+
+# Backups Manager
+
+## Introduction
+
+The NocoBase backup manager plugin provides features for fully backing up of the NocoBase database and user uploaded files, including backup's scheduling, downloading, deleting, and restoring operation.
+
+:::warning
+The Backup Manager plugin is included in the Professional and Enterprise editions. For Community and Standard edition users, you can directly back up the database; see details at: [`How to Backup and Restore NocoBase`](https://www.nocobase.com/en/blog/nocobase-backup-restore)
+:::
+
+## Install Database Client
+
+The Backup Manager depends on the client for the corresponding database. Before use, please visit the official website to download the client that matches your database version:
+
+- MySQL: https://dev.mysql.com/downloads/
+- PostgreSQL: https://www.postgresql.org/download/
+
+For Docker versions, you can directly write a script in the `./storage/scripts` directory
+
+```bash
+mkdir ./storage/scripts
+cd ./storage/scripts
+vim install-database-client.sh
+```
+
+The content of `install-database-client.sh` is as follows:
+
+<Tabs>
+
+<Tab label="PostgreSQL" name="PostgreSQL">
+
+```bash
+#!/bin/bash
+
+# Check if pg_dump is installed
+if [ ! -f /usr/bin/pg_dump ]; then
+    echo "pg_dump is not installed, starting PostgreSQL client installation..."
+
+    # Install necessary tools and clean cache
+    apt-get update && apt-get install -y --no-install-recommends wget gnupg \
+      && rm -rf /var/lib/apt/lists/*
+
+    # Configure PostgreSQL source
+    echo "deb [signed-by=/usr/share/keyrings/pgdg.asc] https://apt.postgresql.org/pub/repos/apt bookworm-pgdg main" > /etc/apt/sources.list.d/pgdg.list
+    wget --quiet -O /usr/share/keyrings/pgdg.asc https://apt.postgresql.org/pub/repos/apt/ACCC4CF8.asc
+
+    # Install PostgreSQL client
+    apt-get update && apt-get install -y --no-install-recommends postgresql-client-16 \
+      && rm -rf /var/lib/apt/lists/*
+
+    echo "PostgreSQL client installation completed."
+else
+    echo "pg_dump is already installed, skipping PostgreSQL client installation."
+fi
+```
+
+</Tab>
+<Tab label="MySQL/MariaDB" name="MySQL/MariaDB">
+
+```bash
+#!/bin/bash
+
+if [ ! -f /usr/bin/mysql ]; then
+    echo "MySQL client is not installed, starting MySQL client installation..."
+    echo "Updating package list and installing necessary tools..."
+    apt-get update && apt-get install -y --no-install-recommends wget gnupg \
+        && rm -rf /var/lib/apt/lists/*
+
+    wget --no-check-certificate https://downloads.mysql.com/archives/get/p/23/file/mysql-community-client-core_8.0.39-1debian12_amd64.deb && \
+        dpkg -x mysql-community-client-core_8.0.39-1debian12_amd64.deb /tmp/mysql-client && \
+        cp /tmp/mysql-client/usr/bin/mysqldump /usr/bin/ && \
+        cp /tmp/mysql-client/usr/bin/mysql /usr/bin/
+
+    echo "MySQL client installation completed."
+else
+    echo "MySQL client is already installed, skipping installation."
+fi
+```
+
+</Tab>
+
+</Tabs>
+
+Then restart the app container
+
+```bash
+docker compose restart app
+# View logs
+docker compose logs app
+```
+
+Check the database client version number, which must match the database server version number
+
+<Tabs>
+<Tab label="PostgreSQL" name="PostgreSQL">
+
+```bash
+docker compose exec app bash -c "pg_dump -V"
+```
+
+</Tab>
+<Tab label="MySQL/MariaDB" name="MySQL/MariaDB">
+
+```bash
+docker compose exec app bash -c "mysql -V"
+```
+</Tab>
+</Tabs>
+
+## Usage Instructions
+
+
+![](https://static-docs.nocobase.com/202510302154966.png)
+
+
+### Create New Backup
+
+Click the "New backup" button to create a new backup based on the backup configuration and display the backup status in the backup list.
+
+
+![](https://static-docs.nocobase.com/202510302154912.png)
+
+
+### Restore Backup
+
+Supports restoring backups from the backup list or uploading local backup files to restore backups.
+Restore operations are not allowed in the following scenarios:
+
+- When the current NocoBase version is lower than the NocoBase version in the backup file.
+- When the current NocoBase database is inconsistent with the following configurations in the backup file:
+  - dialect
+  - underscored
+  - table prefix
+  - schema
+- When the `Tolerant mode` is not enabled, and the database version when creating the backup is higher than the current application database version.
+
+> **Restore is a full database operation. It is recommended to back up the current database before restoring a backup.**
+
+#### Restore from the backup list
+
+Click the "Restore" button of the backup item in the backup list, enter the backup file encryption password in the pop-up window, and click "Confirm" to restore the backup.
+
+> Leave password empty for unencrypted backup.
+
+> If you need to restore the backup to a lower version of the database, you need to enable the tolerant mode.
+
+
+![](https://static-docs.nocobase.com/202510302156882.png)
+
+
+#### Restore from local backup file
+
+Click the `Restore from local backup` button, select the local backup file in the pop-up window, enter the backup file encryption password, and click "Confirm" to restore the backup.
+
+> Leave password empty for unencrypted backup.
+
+> If you need to restore the backup to a lower version of the database, you need to enable the tolerant mode.
+
+
+![](https://static-docs.nocobase.com/202510302155602.png)
+
+
+#### Download Backup File
+
+Click the `Download` button of the backup item in the backup list to download the backup file.
+
+#### Delete Backup
+
+Click the `Delete` button of the backup item in the backup list to delete the backup file.
+
+## Backup Settings
+
+Switch to the "Settings" tab, modify the backup settings, and click `Save` to take effect.
+
+
+![](https://static-docs.nocobase.com/202510302156326.png)
+
+
+### Backup Settings Description
+
+- `Automatic backup`: After enabling `Run automatic backup on the cron schedule`, you can set automatic backups at specified times.
+- `Maximum number of backups`: Set the maximum number of locally saved backup files. After exceeding the number, the earliest backup files will be automatically deleted.
+- `Sync backup to cloud storage`: Set the cloud storage where the backup files are automatically uploaded after a successful backup.
+- `Backup local storage files`: Whether to include files uploaded by users to the server's local storage (storage/uploads) in the backup.
+- `Restore password`: If a restore password is set, it must be entered when restoring the backup.
+
+> **Please keep the restore password safe. Forgetting the password will make it impossible to restore the backup file.**

@@ -25,4 +25,14 @@ describe('allow manager', () => {
     expect(await allowManager.isAllowed('users', 'fake-method', {})).toBeFalsy();
     expect(await allowManager.isAllowed('users', 'other-method', {})).toBeFalsy();
   });
+
+  it('should allow star action', async () => {
+    const allowManager = new AllowManager(acl);
+
+    allowManager.allow('users', '*', 'public');
+
+    expect(await allowManager.isPublic('users', 'download', {})).toBeTruthy();
+    expect(await allowManager.isPublic('users', 'fake-method', {})).toBeTruthy();
+    expect(await allowManager.isPublic('users', 'other-method', {})).toBeTruthy();
+  });
 });

@@ -1,0 +1,83 @@
+[
+  {
+    "type": "section-header",
+    "label": "文件管理器"
+  },
+  {
+    "type": "custom-link",
+    "label": "概述",
+    "link": "/file-manager/index"
+  },
+  {
+    "type": "custom-link",
+    "label": "存储引擎",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "概述",
+        "link": "/file-manager/storage/index"
+      },
+      {
+        "type": "custom-link",
+        "label": "本地存储",
+        "link": "/file-manager/storage/local"
+      },
+      {
+        "type": "custom-link",
+        "label": "AWS S3",
+        "link": "/file-manager/storage/amazon-s3"
+      },
+      {
+        "type": "custom-link",
+        "label": "阿里云 OSS",
+        "link": "/file-manager/storage/aliyun-oss"
+      },
+      {
+        "type": "custom-link",
+        "label": "腾讯云 COS",
+        "link": "/file-manager/storage/tencent-cos"
+      },
+      {
+        "type": "custom-link",
+        "label": "S3 Pro",
+        "link": "/file-manager/storage/s3-pro"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "文件表",
+    "link": "/file-manager/file-collection"
+  },
+  {
+    "type": "custom-link",
+    "label": "附件字段",
+    "link": "/file-manager/field-attachment"
+  },
+  {
+    "type": "custom-link",
+    "label": "文件预览",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "概述",
+        "link": "/file-manager/file-preview/index"
+      },
+      {
+        "type": "custom-link",
+        "label": "Office 文件预览",
+        "link": "/file-manager/file-preview/ms-office"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "HTTP API",
+    "link": "/file-manager/http-api"
+  },
+  {
+    "type": "custom-link",
+    "label": "扩展开发",
+    "link": "/file-manager/development/index"
+  }
+]

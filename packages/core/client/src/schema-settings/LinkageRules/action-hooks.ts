@@ -23,7 +23,7 @@ export const useLinkageCollectionFieldOptions = (collectionName: string, readPre
     { label: t('Disabled'), value: ActionType.ReadOnly, selected: false, schema: {} },
     { label: t('Easy reading'), value: ActionType.ReadPretty, selected: false, schema: {} },
     { label: t('Hidden'), value: ActionType.None, selected: false, schema: {} },
-    { label: t('Hidden(reserved value)'), value: ActionType.Hidden, selected: false, schema: {} },
+    { label: t('Hidden (reserved value)'), value: ActionType.Hidden, selected: false, schema: {} },
     { label: t('Required'), value: ActionType.Required, selected: false, schema: {} },
     { label: t('Not required'), value: ActionType.InRequired, selected: false, schema: {} },
     { label: t('Value'), value: ActionType.Value, selected: false, schema: {} },

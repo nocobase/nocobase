@@ -25,6 +25,7 @@ import * as nocobaseEvaluators from '@nocobase/evaluators/client';
 import * as nocobaseSDK from '@nocobase/sdk';
 import * as nocobaseClientUtils from '@nocobase/utils/client';
 import { dayjs } from '@nocobase/utils/client';
+import * as nocobaseFlowEngine from '@nocobase/flow-engine';
 import * as ahooks from 'ahooks';
 import * as antd from 'antd';
 import * as antdStyle from 'antd-style';
@@ -84,6 +85,7 @@ export function defineGlobalDeps(requirejs: RequireJS) {
   requirejs.define('@nocobase/evaluators', () => nocobaseEvaluators);
   requirejs.define('@nocobase/evaluators/client', () => nocobaseEvaluators);
   requirejs.define('@nocobase/sdk', () => nocobaseSDK);
+  requirejs.define('@nocobase/flow-engine', () => nocobaseFlowEngine);
 
   requirejs.define('@dnd-kit/core', () => dndKitCore);
   requirejs.define('@dnd-kit/sortable', () => dndKitSortable);

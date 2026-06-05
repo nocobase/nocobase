@@ -7,7 +7,15 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Filter, InheritedCollection, JoiValidationError, UniqueConstraintError } from '@nocobase/database';
+import {
+  Collection,
+  extractTypeFromDefinition,
+  fieldTypeMap,
+  Filter,
+  InheritedCollection,
+  JoiValidationError,
+  UniqueConstraintError,
+} from '@nocobase/database';
 import PluginErrorHandler from '@nocobase/plugin-error-handler';
 import { Plugin } from '@nocobase/server';
 import lodash from 'lodash';
@@ -28,6 +36,9 @@ import { beforeDestoryField } from './hooks/beforeDestoryField';
 import { CollectionModel, FieldModel } from './models';
 import collectionActions from './resourcers/collections';
 import viewResourcer from './resourcers/views';
+import mainDataSourceResource from './resourcers/main-data-source';
+import { ColumnsDescription } from 'sequelize';
+import { PRESET_FIELDS_INTERFACES } from './constants';
 import { Schema } from '@formily/json-schema';
 import _ from 'lodash';
 
@@ -95,7 +106,11 @@ export class PluginDataSourceMainServer extends Plugin {
     this.app.db.on('collections.beforeCreate', beforeCreateForViewCollection(this.db));
 
     this.app.db.on('collections.beforeCreate', async (model: CollectionModel, options) => {
-      if (this.app.db.getCollection(model.get('name')) && model.get('from') !== 'db2cm' && !model.get('isThrough')) {
+      if (
+        this.app.db.getCollection(model.get('name')) &&
+        !['db2cm', 'dbsync'].includes(model.get('from')) &&
+        !model.get('isThrough')
+      ) {
         throw new Error(`Collection named ${model.get('name')} already exists`);
       }
     });
@@ -428,7 +443,7 @@ export class PluginDataSourceMainServer extends Plugin {
 
     this.app.acl.registerSnippet({
       name: `pm.data-source-manager.data-source-main`,
-      actions: ['collections:*', 'collections.fields:*', 'collectionCategories:*'],
+      actions: ['collections:*', 'collections.fields:*', 'collectionCategories:*', 'mainDataSource:*'],
     });
 
     this.app.acl.registerSnippet({
@@ -470,63 +485,97 @@ export class PluginDataSourceMainServer extends Plugin {
       }
       await next();
     });
+    this.app.resourceManager.define(viewResourcer);
+    this.app.resourceManager.registerActionHandlers(collectionActions);
+    this.app.resourceManager.define(mainDataSourceResource);
 
-    this.app.resource(viewResourcer);
-    this.app.actions(collectionActions);
+    const handleFieldSource = ({
+      fields,
+      isRawValue,
+      rawFields,
+    }: {
+      fields: (FieldModel | Record<string, any>)[] | Record<string, FieldModel>;
+      isRawValue?: boolean;
+      rawFields?: ColumnsDescription;
+    }) => {
+      lodash.castArray(fields).forEach((field, index) => {
+        const source = isRawValue ? field.source : field.get('source');
+        if (!source) {
+          return;
+        }
 
-    const handleFieldSource = (fields) => {
-      for (const field of lodash.castArray(fields)) {
-        if (field.get('source')) {
-          const [collectionSource, fieldSource] = field.get('source').split('.');
-          // find original field
-          const collectionField = this.app.db.getCollection(collectionSource)?.getField(fieldSource);
+        const [collectionSource, fieldSource] = source.split('.');
+        const collectionField = this.app.db.getCollection(collectionSource)?.getField(fieldSource);
 
-          if (!collectionField) {
-            continue;
+        if (!collectionField) {
+          return;
+        }
+
+        const newOptions: any = {};
+
+        // 原始字段 options
+        lodash.merge(newOptions, lodash.omit(collectionField.options, 'name'));
+
+        const currentValues = isRawValue ? field : field.get();
+
+        lodash.mergeWith(newOptions, currentValues, (objValue, srcValue) => {
+          if (srcValue === null) {
+            return objValue;
           }
+        });
 
-          const newOptions = {};
-
-          // write original field options
-          lodash.merge(newOptions, lodash.omit(collectionField.options, 'name'));
-
-          // merge with current field options
-          lodash.mergeWith(newOptions, field.get(), (objValue, srcValue) => {
-            if (srcValue === null) {
-              return objValue;
-            }
-          });
-
-          // set final options
+        if (isRawValue) {
+          fields[index] = {
+            ...field,
+            ...newOptions,
+          };
+        } else {
           field.set('options', newOptions);
         }
-      }
+        const fieldTypes = fieldTypeMap[this.db.options.dialect];
+        if (rawFields && fieldTypes) {
+          const rawField = rawFields[field.get('name')];
+          if (rawField && !PRESET_FIELDS_INTERFACES.includes(field.get('interface'))) {
+            const mappedType = extractTypeFromDefinition(rawField.type);
+            const possibleTypes = fieldTypes[mappedType];
+            field.set('possibleTypes', possibleTypes);
+          }
+        }
+      });
     };
 
     this.app.resourceManager.use(async function handleFieldSourceMiddleware(ctx, next) {
       await next();
 
       // handle collections:list
-      if (
-        ctx.action.resourceName === 'collections' &&
-        ctx.action.actionName == 'list' &&
-        ctx.action.params?.paginate == 'false'
-      ) {
+      if (ctx.action.resourceName === 'collections' && ctx.action.actionName == 'listMeta') {
         for (const collection of ctx.body) {
-          if (collection.get('view')) {
+          if (collection.view === true) {
             const fields = collection.fields;
-            handleFieldSource(fields);
+            handleFieldSource({ fields, isRawValue: true });
           }
         }
       }
 
       //handle collections:fields:list
       if (ctx.action.resourceName == 'collections.fields' && ctx.action.actionName == 'list') {
-        handleFieldSource(ctx.action.params?.paginate == 'false' ? ctx.body : ctx.body.rows);
+        const collectionName = ctx.action.sourceId;
+        const collection: Collection = ctx.db.getCollection(collectionName);
+        let rawFields: ColumnsDescription = {};
+        if (collection) {
+          try {
+            rawFields = await ctx.app.db.queryInterface.sequelizeQueryInterface.describeTable(
+              collection.getTableNameWithSchema(),
+            );
+          } catch (err) {
+            // ignore
+          }
+        }
+        handleFieldSource({ fields: ctx.action.params?.paginate == 'false' ? ctx.body : ctx.body.rows, rawFields });
       }
 
       if (ctx.action.resourceName == 'collections.fields' && ctx.action.actionName == 'get') {
-        handleFieldSource(ctx.body);
+        handleFieldSource({ fields: ctx.body });
       }
     });
 

@@ -1,6 +1,8 @@
 {
-    "Title field": "Titelveld",
-    "Time scale": "Tijdschaal",
-    "Start date field": "Begindatumveld",
-    "Progress field": "Voortgangsveld"
+  "Enable drag to reschedule": "Enable drag to reschedule",
+  "End date field": "End date field",
+  "Progress field": "Voortgangsveld",
+  "Start date field": "Begindatumveld",
+  "Time scale": "Tijdschaal",
+  "Title field": "Titelveld"
 }

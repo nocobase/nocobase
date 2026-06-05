@@ -103,6 +103,14 @@ export default {
       await next();
     },
     update: async (ctx: Context, next: Next) => {
+      const { sql } = ctx.action.params.values || {};
+      if (sql) {
+        try {
+          checkSQL(sql);
+        } catch (e) {
+          ctx.throw(400, ctx.t(e.message));
+        }
+      }
       const transaction = await ctx.app.db.sequelize.transaction();
       try {
         const { upRes } = await updateCollection(ctx, transaction);

@@ -19,6 +19,7 @@ import { TriggerScheduleConfig } from './TriggerScheduleConfig';
 import { ScheduleModes } from './ScheduleModes';
 import { WorkflowVariableWrapper } from '../../variable';
 import { TriggerCollectionRecordSelect } from '../../components/TriggerCollectionRecordSelect';
+import { SubModelItem } from '@nocobase/flow-engine';
 
 function useVariables(config, opts) {
   const [dataSourceName, collection] = parseCollectionName(config.collection);
@@ -105,6 +106,56 @@ export default class extends Trigger {
       Component: CollectionBlockInitializer,
       collection: config.collection,
       dataPath: '$context.data',
+    };
+  }
+
+  /**
+   * 2.0
+   */
+  getCreateModelMenuItem({ config }): SubModelItem | null {
+    // 无上下文数据源时，不提供触发器数据入口
+    if (!config?.collection) {
+      return null;
+    }
+    return {
+      key: 'triggerData',
+      label: `{{t("Trigger data", { ns: "${NAMESPACE}" })}}`,
+      useModel: 'NodeDetailsModel',
+      createModelOptions: {
+        use: 'NodeDetailsModel',
+        stepParams: {
+          resourceSettings: {
+            init: {
+              dataSourceKey: 'main',
+              collectionName: config.collection,
+              dataPath: '$context.data',
+            },
+          },
+          cardSettings: {
+            titleDescription: {
+              title: `{{t("Trigger data", { ns: "${NAMESPACE}" })}}`,
+            },
+          },
+        },
+        subModels: {
+          grid: {
+            use: 'NodeDetailsGridModel',
+            subType: 'object',
+          },
+        },
+      },
+    };
+  }
+
+  useTempAssociationSource(config, workflow) {
+    if (!config?.collection || !workflow?.id) {
+      return null;
+    }
+    return {
+      collection: config.collection,
+      nodeId: workflow.id,
+      nodeKey: 'workflow',
+      nodeType: 'workflow' as const,
     };
   }
 }

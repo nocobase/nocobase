@@ -20,9 +20,12 @@ export class ContextField extends Field {
 
   listener = async (instances: Model[], options) => {
     instances = Array.isArray(instances) ? instances : [instances];
-    const { name, dataIndex } = this.options;
+    const { name, dataIndex, applyIfUndefined } = this.options;
     const { context } = options;
     for (const instance of instances) {
+      if (applyIfUndefined && instance.get(name) !== undefined) {
+        continue;
+      }
       instance.set(name, lodash.get(context, dataIndex));
       instance.changed(name, true);
     }
@@ -54,4 +57,10 @@ export interface ContextFieldOptions extends BaseColumnFieldOptions {
   dataIndex: string;
   dataType?: string;
   createOnly?: boolean;
+  /**
+   * applyIfUndefined:
+   * When true, the context value will be applied
+   * only if the field value is `undefined`.
+   */
+  applyIfUndefined?: boolean;
 }

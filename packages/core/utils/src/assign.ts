@@ -100,7 +100,6 @@ mergeStrategies.set('union', (x, y) => {
 
 mergeStrategies.set('intersect', (x, y) =>
   (() => {
-    console.log('intersect inputs:', x, y);
     if (typeof x === 'string') {
       x = x.split(',');
     }

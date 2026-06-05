@@ -22,14 +22,14 @@ import { enableLink, fieldComponent, titleField } from './fieldSettings';
 export const UserDepartmentsFieldSettings = new SchemaSettings({
   name: 'fieldSettings:component:UserDepartmentsField',
   items: [
-    {
-      ...fieldComponent,
-    },
-    {
-      ...titleField,
-    },
-    {
-      ...enableLink,
-    },
+    // {
+    //   ...fieldComponent,
+    // },
+    // {
+    //   ...titleField,
+    // },
+    // {
+    //   ...enableLink,
+    // },
   ],
 });

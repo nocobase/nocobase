@@ -1,0 +1,105 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Пользователи",
+    "link": "/users-permissions/user"
+  },
+  {
+    "type": "custom-link",
+    "label": "Роли и права доступа",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Настройка ролей",
+        "link": "/users-permissions/acl/role"
+      },
+      {
+        "type": "custom-link",
+        "label": "Настройка прав доступа",
+        "link": "/users-permissions/acl/permissions"
+      },
+      {
+        "type": "custom-link",
+        "label": "Применение в UI",
+        "link": "/users-permissions/acl/ui"
+      },
+      {
+        "type": "custom-link",
+        "label": "Объединение ролей",
+        "link": "/users-permissions/acl/union"
+      },
+      {
+        "type": "dir",
+        "label": "Руководство для разработчиков",
+        "collapsed": true,
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "Расширение панели настройки прав",
+            "link": "/users-permissions/acl/dev/permission-tab"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Отделы",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Управление отделами",
+        "link": "/users-permissions/departments"
+      },
+      {
+        "type": "custom-link",
+        "label": "Управление ролями отделов",
+        "link": "/users-permissions/departments/role"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Синхронизация данных пользователей",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Управление синхронизацией",
+        "link": "/users-permissions/sync/"
+      },
+      {
+        "type": "custom-link",
+        "label": "Источники данных",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "WeChat Work",
+            "link": "/users-permissions/sync/sources/wecom"
+          },
+          {
+            "type": "custom-link",
+            "label": "HTTP API",
+            "link": "/users-permissions/sync/sources/api"
+          }
+        ]
+      },
+      {
+        "type": "dir",
+        "label": "Руководство для разработчиков",
+        "collapsed": true,
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "Расширение источников данных для синхронизации",
+            "link": "/users-permissions/sync/dev/source"
+          },
+          {
+            "type": "custom-link",
+            "label": "Расширение целевых ресурсов для синхронизации",
+            "link": "/users-permissions/sync/dev/resource"
+          }
+        ]
+      }
+    ]
+  }
+]

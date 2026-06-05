@@ -34,6 +34,7 @@ export interface PluginSettingOptions {
   aclSnippet?: string;
   link?: string;
   isTopLevel?: boolean;
+  isPinned?: boolean;
   [index: string]: any;
 }
 

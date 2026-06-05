@@ -32,6 +32,18 @@ export default {
       allowNull: false,
     },
     {
+      type: 'bigInt',
+      name: 'workflowId',
+      interface: 'id',
+      uiSchema: {
+        type: 'number',
+        title: `{{t("Version ID", { ns: "${NAMESPACE}" })}}`,
+        'x-component': 'InputNumber',
+        'x-component-props': {},
+        'x-read-pretty': true,
+      },
+    },
+    {
       type: 'belongsTo',
       name: 'workflow',
       target: 'workflows',

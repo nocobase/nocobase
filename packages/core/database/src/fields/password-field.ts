@@ -24,30 +24,33 @@ export interface PasswordFieldOptions extends BaseColumnFieldOptions {
   randomBytesSize?: number;
 }
 
+type PasswordValue = string | number;
+
 export class PasswordField extends Field {
   get dataType() {
     return DataTypes.STRING;
   }
 
-  async verify(password: string, hash: string) {
-    password = password || '';
+  async verify(password: PasswordValue, hash: string) {
+    const passwordString = password === null || password === undefined ? '' : String(password);
     hash = hash || '';
     const { length = 64, randomBytesSize = 8 } = this.options;
     return new Promise((resolve, reject) => {
       const salt = hash.substring(0, randomBytesSize * 2);
       const key = hash.substring(randomBytesSize * 2);
-      crypto.scrypt(password, salt, length / 2 - randomBytesSize, (err, derivedKey) => {
+      crypto.scrypt(passwordString, salt, length / 2 - randomBytesSize, (err, derivedKey) => {
         if (err) reject(err);
         resolve(key == derivedKey.toString('hex'));
       });
     });
   }
 
-  async hash(password: string) {
+  async hash(password: PasswordValue) {
+    const passwordString = String(password);
     const { length = 64, randomBytesSize = 8 } = this.options;
     return new Promise((resolve, reject) => {
       const salt = crypto.randomBytes(randomBytesSize).toString('hex');
-      crypto.scrypt(password, salt, length / 2 - randomBytesSize, (err, derivedKey) => {
+      crypto.scrypt(passwordString, salt, length / 2 - randomBytesSize, (err, derivedKey) => {
         if (err) reject(err);
         resolve(salt + derivedKey.toString('hex'));
       });
@@ -56,18 +59,20 @@ export class PasswordField extends Field {
 
   init() {
     const { name } = this.options;
+    const fieldName = name as string;
     this.listener = async (instances: Model[]) => {
       instances = Array.isArray(instances) ? instances : [instances];
       for (const instance of instances) {
-        if (!instance.changed(name as any)) {
+        if (!instance.changed(fieldName)) {
           continue;
         }
-        const value = instance.get(name) as string;
-        if (value) {
-          const hash = await this.hash(value);
-          instance.set(name, hash);
+        const value = instance.get(fieldName);
+        if (value !== null && value !== undefined && value !== '') {
+          const password = typeof value === 'number' ? value : String(value);
+          const hash = await this.hash(password);
+          instance.set(fieldName, hash);
         } else {
-          instance.set(name, instance.previous(name));
+          instance.set(fieldName, instance.previous(fieldName));
         }
       }
     };

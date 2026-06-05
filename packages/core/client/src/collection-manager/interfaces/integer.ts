@@ -23,6 +23,7 @@ export class IntegerFieldInterface extends CollectionFieldInterface {
   group = 'basic';
   order = 6;
   title = '{{t("Integer")}}';
+  primaryKeyDescription = '{{t("Primary key, unique identifier, self growth")}}';
   sortable = true;
   default = {
     type: 'bigInt',
@@ -36,7 +37,7 @@ export class IntegerFieldInterface extends CollectionFieldInterface {
       'x-validator': 'integer',
     },
   };
-  availableTypes = ['bigInt', 'integer', 'sort'];
+  availableTypes = ['bigInt', 'integer', 'sort', 'snowflakeId'];
   hasDefaultValue = true;
   validationType = 'number';
   excludeValidationOptions = ['precision'];

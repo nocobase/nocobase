@@ -28,7 +28,7 @@ import { useAvailableUpstreams, useNodeContext, useUpstreamScopes } from './node
 export type VariableOption = {
   key?: string;
   value?: string;
-  label?: string;
+  label?: string | React.ReactNode;
   children?: VariableOption[] | null;
   [key: string]: any;
 };
@@ -285,10 +285,14 @@ function getNormalizedFields(collectionName, { compile, collectionManager }) {
       if (foreignKeyFieldIndex > -1) {
         const foreignKeyField = foreignKeyFields[foreignKeyFieldIndex];
         result.splice(i, 0, {
-          ...field,
           ...foreignKeyField,
+          target: field.target,
+          targetKey: field.targetKey,
+          interface: foreignKeyField.interface ?? field.interface,
+          isForeignKey: true,
           uiSchema: {
             ...field.uiSchema,
+            ...foreignKeyField.uiSchema,
             title: foreignKeyField.uiSchema?.title ? compile(foreignKeyField.uiSchema?.title) : foreignKeyField.name,
           },
         });

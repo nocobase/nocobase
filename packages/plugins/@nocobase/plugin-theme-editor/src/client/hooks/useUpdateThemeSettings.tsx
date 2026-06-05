@@ -32,6 +32,7 @@ export function useUpdateThemeSettings() {
             },
           },
         });
+        window.location.reload();
       } catch (err) {
         console.log(error);
         error(err);

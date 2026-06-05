@@ -24,3 +24,10 @@ export function joinCollectionName(dataSourceName: string, collectionName: strin
 
   return `${dataSourceName}:${collectionName}`;
 }
+
+const NUMERIC_FIELD_TYPES = new Set(['integer', 'bigInt', 'float', 'double', 'decimal']);
+
+export function isNumericField(field?: { options?: { type?: string } }) {
+  const fieldType = field?.options?.type;
+  return typeof fieldType === 'string' && NUMERIC_FIELD_TYPES.has(fieldType);
+}

@@ -9,7 +9,7 @@
 
 import { createMockServer, MockServer } from '@nocobase/test';
 import { TemplateCreator } from '../services/template-creator';
-import XLSX from 'xlsx';
+import * as XLSX from 'xlsx';
 
 describe('download template', () => {
   let app: MockServer;

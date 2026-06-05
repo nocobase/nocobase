@@ -120,6 +120,10 @@ export class PluginMobileClient extends Plugin {
     this.addScopes();
     this.addPermissionsSettingsUI();
 
+    if (this.options?.options?.deprecated) {
+      return;
+    }
+
     this.app.pluginSettingsManager.add('mobile', {
       title: generatePluginTranslationTemplate('Mobile (deprecated)'),
       icon: 'MobileOutlined',
@@ -270,6 +274,7 @@ export class PluginMobileClient extends Plugin {
         label: t('Mobile routes', {
           ns: pkg.name,
         }),
+        sort: 25,
         children: (
           <TabLayout>
             <MobileAllRoutesProvider active={activeKey === 'mobile-menu'}>

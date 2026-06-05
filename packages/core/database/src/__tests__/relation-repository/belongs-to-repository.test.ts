@@ -141,4 +141,45 @@ describe('belongs to repository', () => {
     await p1.reload();
     expect(p1.userId).toEqual(user3.id);
   });
+
+  test('should find belongsTo target by source filterTargetKey', async () => {
+    const Account = db.collection({
+      name: 'accounts',
+      fields: [
+        { type: 'string', name: 'name' },
+        { type: 'hasMany', name: 'articles' },
+      ],
+    });
+
+    const Article = db.collection({
+      name: 'articles',
+      filterTargetKey: 'slug',
+      fields: [
+        { type: 'string', name: 'slug', unique: true },
+        {
+          type: 'belongsTo',
+          name: 'account',
+        },
+      ],
+    });
+
+    await db.sync();
+
+    await Account.repository.create({
+      values: {
+        name: 'u1',
+        articles: [
+          {
+            slug: 'a-1',
+          },
+        ],
+      },
+    });
+
+    const ArticleAccountRepository = db.getRepository<BelongsToRepository>('articles.account', 'a-1');
+    const account = await ArticleAccountRepository.findOne();
+
+    expect(account).not.toBeNull();
+    expect(account.get('name')).toBe('u1');
+  });
 });

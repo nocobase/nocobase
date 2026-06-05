@@ -52,6 +52,7 @@ import { dateFnsLocalizer } from 'react-big-calendar';
 import { format, parse, startOfWeek, getDay } from 'date-fns';
 import enUS from 'date-fns/locale/en-US';
 import zhCN from 'date-fns/locale/zh-CN';
+import ru from 'date-fns/locale/ru';
 
 interface Event {
   id: string;
@@ -295,31 +296,59 @@ export const Calendar: any = withDynamicSchemaProps(
       const locales = {
         'zh-CN': zhCN,
         'en-US': enUS,
+        'ru-RU': ru,
       };
       const locale = apiClient.auth.locale || 'en-US';
       const formats = useMemo(() => {
         return {
           monthHeaderFormat: (date, culture, local) =>
-            local.format(date, locale === 'zh-CN' ? 'yyyy年M月' : 'MMM yyyy', locales[locale]),
-          dayHeaderFormat: (date, culture, local) => {
-            return local.format(date, props.locale === 'zh-CN' ? 'eee, M/d' : 'EEE, MMM d', locales[locale]);
-          },
+            local.format(
+              date,
+              culture === 'zh-CN' ? 'yyyy年M月' : culture === 'ru-RU' ? 'LLLL yyyy' : 'MMM yyyy',
+              culture,
+            ),
+          // dayHeaderFormat: (date, culture, local) => {
+          //   return local.format(date, culture === 'zh-CN' ? 'eee, M/d' : culture === 'ru-RU' ? 'EEE, d MMM' : 'EEE, MMM d', culture);
+          // },
           agendaDateFormat: (date, culture, local) => {
-            return local.format(date, props.locale === 'zh-CN' ? 'M月d日' : 'M-dd', locales[locale]);
+            // return local.format(date, culture === 'zh-CN' ? 'M月d日' : culture === 'ru-RU' ? 'd MMM' : 'M-dd', culture);
+            return local.format(
+              date,
+              culture === 'zh-CN' ? 'yyyy年M月' : culture === 'ru-RU' ? 'LLLL yyyy' : 'MMM yyyy',
+              culture,
+            );
           },
+          dayHeaderFormat: (date, culture, local) => {
+            return local.format(
+              date,
+              culture === 'zh-CN' ? 'eee, M/d' : culture === 'ru-RU' ? 'EEE, d MMM' : 'EEE, MMM d',
+              culture,
+            );
+          },
+          // agendaDateFormat: (date, culture, local) => {
+          //   return local.format(date, culture === 'zh-CN' ? 'M月d日' : culture === 'ru-RU' ? 'd MMM' : 'M-dd', culture);
+          // },
 
           dayRangeHeaderFormat: ({ start, end }, culture, local) => {
             if (start.getMonth() === end.getMonth()) {
-              return local.format(start, locale === 'zh-CN' ? 'yyyy年M月' : 'MMM yyyy', locale);
+              return local.format(
+                start,
+                culture === 'zh-CN' ? 'yyyy年M月' : culture === 'ru-RU' ? 'LLLL yyyy' : 'MMM yyyy',
+                culture,
+              );
             }
-            return `${local.format(start, locale === 'zh-CN' ? 'yyyy年M月' : 'MMM yyyy', locale)} - ${local.format(
+            return `${local.format(
+              start,
+              culture === 'zh-CN' ? 'yyyy年M月' : culture === 'ru-RU' ? 'LLLL yyyy' : 'MMM yyyy',
+              culture,
+            )} - ${local.format(
               end,
-              locale === 'zh-CN' ? 'yyyy年M月' : 'MMM yyyy',
-              locale,
+              culture === 'zh-CN' ? 'yyyy年M月' : culture === 'ru-RU' ? 'LLLL yyyy' : 'MMM yyyy',
+              culture,
             )}`;
           },
           weekdayFormat: (date, culture, local) => {
-            return local.format(date, 'eee', locale);
+            return local.format(date, 'EEE', culture);
           },
         };
       }, [locale, view]);
@@ -503,6 +532,7 @@ export const Calendar: any = withDynamicSchemaProps(
               //   },
               // }}
               components={components}
+              culture={locale}
               localizer={localizer}
               tooltipAccessor={(val) => {
                 return val.rawTitle ? val.rawTitle : '';

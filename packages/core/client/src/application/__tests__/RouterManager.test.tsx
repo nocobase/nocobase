@@ -40,7 +40,7 @@ describe('Router', () => {
       };
       router.add('test', route1);
       expect(router.getRoutesTree()).toHaveLength(1);
-      expect(router.getRoutesTree()).toEqual([route1]);
+      expect(router.getRoutesTree()).toEqual([{ ...route1, handle: { path: '/' }, id: 'test', children: undefined }]);
 
       const route2: RouteType = {
         path: '/test2',
@@ -52,11 +52,11 @@ describe('Router', () => {
       expect(router.getRoutesTree()).toHaveLength(2);
       expect(router.getRoutesTree()).toMatchObject([route1, route2]);
       expect(router.getRoutes()).toEqual({
-        test: route1,
-        test2: route2,
+        test: { ...route1, id: 'test', handle: { path: '/' } },
+        test2: { ...route2, id: 'test2', handle: { path: '/test2' } },
       });
-      expect(router.get('test')).toEqual(route1);
-      expect(router.get('test2')).toEqual(route2);
+      expect(router.get('test')).toEqual({ ...route1, id: 'test', handle: { path: '/' } });
+      expect(router.get('test2')).toEqual({ ...route2, id: 'test2', handle: { path: '/test2' } });
       expect(router.has('test')).toBeTruthy();
     });
 
@@ -82,7 +82,21 @@ describe('Router', () => {
 
       router.add('test', route1);
       router.add('test.test2', route2);
-      expect(router.getRoutesTree()).toEqual([{ ...route1, children: [route2] }]);
+      expect(router.getRoutesTree()).toEqual([
+        {
+          ...route1,
+          id: 'test',
+          handle: { path: '/' },
+          children: [
+            {
+              ...route2,
+              id: 'test.test2',
+              handle: { path: '/test2' },
+              children: undefined,
+            },
+          ],
+        },
+      ]);
     });
 
     it('nested route with empty parent', () => {
@@ -102,7 +116,27 @@ describe('Router', () => {
       router.add('test', route1);
       router.add('test.empty.test2', route2);
       router.add('test.empty2.empty3.test3', route3);
-      expect(router.getRoutesTree()).toEqual([{ ...route1, children: [route2, route3] }]);
+      expect(router.getRoutesTree()).toEqual([
+        {
+          ...route1,
+          id: 'test',
+          handle: { path: '/' },
+          children: [
+            {
+              ...route2,
+              id: 'test.empty.test2',
+              handle: { path: '/test2' },
+              children: undefined,
+            },
+            {
+              ...route3,
+              id: 'test.empty2.empty3.test3',
+              handle: { path: '/test3' },
+              children: undefined,
+            },
+          ],
+        },
+      ]);
     });
 
     it('Component', () => {
@@ -112,7 +146,15 @@ describe('Router', () => {
         Component: Hello,
       };
       router.add('test', route);
-      expect(router.getRoutesTree()).toEqual([{ path: '/', element: <Hello />, children: undefined }]);
+      expect(router.getRoutesTree()).toEqual([
+        {
+          path: '/',
+          element: <Hello />,
+          id: 'test',
+          handle: { path: '/' },
+          children: undefined,
+        },
+      ]);
     });
 
     it('Component is string', () => {
@@ -130,7 +172,15 @@ describe('Router', () => {
         Component: 'Hello',
       };
       router.add('test', route);
-      expect(router.getRoutesTree()).toEqual([{ path: '/', element: <Hello />, children: undefined }]);
+      expect(router.getRoutesTree()).toEqual([
+        {
+          path: '/',
+          element: <Hello />,
+          id: 'test',
+          handle: { path: '/' },
+          children: undefined,
+        },
+      ]);
     });
 
     it('add skipAuthCheck route', () => {
@@ -178,7 +228,14 @@ describe('Router', () => {
         element: <div />,
       };
       router.add('test', route1);
-      expect(router.getRoutesTree()).toEqual([route1]);
+      expect(router.getRoutesTree()).toEqual([
+        {
+          ...route1,
+          id: 'test',
+          handle: { path: '/' },
+          children: undefined,
+        },
+      ]);
       router.remove('test');
       expect(router.getRoutesTree()).toEqual([]);
     });
@@ -214,7 +271,9 @@ describe('Router', () => {
       expect(screen.getByText('HomeComponent')).toBeInTheDocument();
 
       await userEvent.click(screen.getByText('About'));
-      expect(screen.getByText('AboutComponent')).toBeInTheDocument();
+      await waitFor(() => {
+        expect(screen.getByText('AboutComponent')).toBeInTheDocument();
+      });
     });
 
     it('basename and type', async () => {

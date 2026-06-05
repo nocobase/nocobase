@@ -23,6 +23,7 @@ import {
   SchemaSettingsLinkageRules,
   LinkageRuleCategory,
   FlagProvider,
+  VariableScope,
 } from '@nocobase/client';
 import { Select, Tooltip } from 'antd';
 import React from 'react';
@@ -310,6 +311,13 @@ const commonOptions: any = {
               },
             },
           } as ISchema,
+          ModalContextProvider: (modalProps) => {
+            return (
+              <VariableScope scopeId={fieldSchema?.['x-uid']} type="iframeBlock">
+                {modalProps.children}
+              </VariableScope>
+            );
+          },
           onSubmit: submitHandler,
           noRecord: true,
           width: 600,

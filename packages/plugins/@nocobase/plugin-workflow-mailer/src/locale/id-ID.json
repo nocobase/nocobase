@@ -1,0 +1,20 @@
+{
+  "Add email address": "Tambah alamat email",
+  "BCC": "BCC",
+  "CC": "CC",
+  "Content": "Konten",
+  "Content type": "Tipe konten",
+  "From": "Dari",
+  "Ignore failed sending and continue workflow": "Abaikan pengiriman yang gagal dan lanjutkan alur kerja",
+  "In most cases, if using port 465, set it to true; otherwise, set it to false.": "In most cases, if using port 465, set it to true; otherwise, set it to false.",
+  "Mailer": "Mailer",
+  "Password": "Kata sandi",
+  "Plain text": "Teks biasa",
+  "Port": "Port",
+  "SMTP host": "Host Layanan",
+  "Secure": "Aman",
+  "Send email. You can use the variables in the upstream nodes as receivers, subject and content of the email.": "Kirim email dengan memanggil layanan SMTP. Anda dapat menggunakan variabel di node hulu sebagai penerima, subjek, dan konten email.",
+  "Subject": "Subjek",
+  "To": "Kepada",
+  "User": "Pengguna"
+}

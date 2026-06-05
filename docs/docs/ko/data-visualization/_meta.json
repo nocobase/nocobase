@@ -1,0 +1,74 @@
+[
+  {
+    "type": "custom-link",
+    "label": "개요",
+    "link": "/data-visualization/index"
+  },
+  {
+    "type": "custom-link",
+    "label": "빠른 시작",
+    "link": "/data-visualization/quick-start"
+  },
+  {
+    "type": "custom-link",
+    "label": "기능 소개",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "데이터 조회",
+        "link": "/data-visualization/guide/data-query"
+      },
+      {
+        "type": "custom-link",
+        "label": "차트 옵션",
+        "link": "/data-visualization/guide/chart-options"
+      },
+      {
+        "type": "custom-link",
+        "label": "미리보기 & 저장",
+        "link": "/data-visualization/guide/preview-and-save"
+      },
+      {
+        "type": "custom-link",
+        "label": "컨텍스트 환경 변수 사용",
+        "link": "/data-visualization/guide/context-variables"
+      },
+      {
+        "type": "custom-link",
+        "label": "페이지 필터 & 연동",
+        "link": "/data-visualization/guide/filters-and-linkage"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "고급",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "SQL 모드로 데이터 조회",
+        "link": "/data-visualization/guide/sql-data-query"
+      },
+      {
+        "type": "custom-link",
+        "label": "사용자 정의 차트 구성",
+        "link": "/data-visualization/guide/custom-chart-options"
+      },
+      {
+        "type": "custom-link",
+        "label": "사용자 정의 상호작용 이벤트",
+        "link": "/data-visualization/guide/chart-events"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "자주 묻는 질문",
+    "link": "/data-visualization/faq"
+  },
+  {
+    "type": "custom-link",
+    "label": "모범 사례",
+    "link": "/data-visualization/best-practices"
+  }
+]

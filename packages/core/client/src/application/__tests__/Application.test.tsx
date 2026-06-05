@@ -14,7 +14,6 @@ import React, { Component } from 'react';
 import { Link, Outlet } from 'react-router-dom';
 import { describe } from 'vitest';
 import { CollectionFieldInterface } from '../../data-source';
-import { OpenModeProvider } from '../../modules/popup/OpenModeProvider';
 import { Application } from '../Application';
 import { Plugin } from '../Plugin';
 import { useApp } from '../hooks';
@@ -28,7 +27,7 @@ describe('Application', () => {
   });
 
   const router: any = { type: 'memory', initialEntries: ['/'] };
-  const initialProvidersLength = 7;
+  const initialProvidersLength = 10;
   it('basic', () => {
     const options = { router };
     const app = new Application(options);
@@ -239,7 +238,6 @@ describe('Application', () => {
     it('initial', () => {
       const app = new Application({ router, providers: [Hello, [World, { name: 'aaa' }]] });
       expect(app.providers.slice(initialProvidersLength)).toEqual([
-        [OpenModeProvider, undefined],
         [Hello, undefined],
         [World, { name: 'aaa' }],
       ]);
@@ -249,7 +247,6 @@ describe('Application', () => {
       const app = new Application({ router, providers: [Hello] });
       app.addProviders([[World, { name: 'aaa' }], Foo]);
       expect(app.providers.slice(initialProvidersLength)).toEqual([
-        [OpenModeProvider, undefined],
         [Hello, undefined],
         [World, { name: 'aaa' }],
         [Foo, undefined],
@@ -260,7 +257,6 @@ describe('Application', () => {
       const app = new Application({ router, providers: [Hello] });
       app.addProvider(World, { name: 'aaa' });
       expect(app.providers.slice(initialProvidersLength)).toEqual([
-        [OpenModeProvider, undefined],
         [Hello, undefined],
         [World, { name: 'aaa' }],
       ]);
@@ -270,7 +266,6 @@ describe('Application', () => {
       const app = new Application({ router, providers: [Hello] });
       app.use(World, { name: 'aaa' });
       expect(app.providers.slice(initialProvidersLength)).toEqual([
-        [OpenModeProvider, undefined],
         [Hello, undefined],
         [World, { name: 'aaa' }],
       ]);
@@ -346,7 +341,9 @@ describe('Application', () => {
         expect(screen.getByText('HomeComponent')).toBeInTheDocument();
       });
       await userEvent.click(screen.getByText('About'));
-      expect(screen.getByText('AboutComponent')).toBeInTheDocument();
+      await waitFor(() => {
+        expect(screen.getByText('AboutComponent')).toBeInTheDocument();
+      });
     });
 
     it('Root with children', async () => {
@@ -445,7 +442,6 @@ describe('Application', () => {
       };
       const Foo = () => {
         throw new Error('error');
-        return null;
       };
       app.use(Foo);
       app.addComponents({

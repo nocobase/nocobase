@@ -12,9 +12,13 @@ import { Plugin } from '@nocobase/client';
 import { lazy } from '@nocobase/client';
 const { Localization } = lazy(() => import('./Localization'), 'Localization');
 import { NAMESPACE } from './locale';
+import { MissingKeyHandler } from './i18n-missing-handler';
 
 export class PluginLocalizationClient extends Plugin {
   async load() {
+    const missingKeyHandler = new MissingKeyHandler(this.engine.context);
+    missingKeyHandler.register();
+
     this.app.pluginSettingsManager.add(NAMESPACE, {
       title: `{{t("Localization", { ns: "${NAMESPACE}" })}}`,
       icon: 'GlobalOutlined',

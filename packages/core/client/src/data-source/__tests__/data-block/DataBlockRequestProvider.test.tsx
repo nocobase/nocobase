@@ -7,9 +7,40 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import React from 'react';
+import { render, sleep } from '@nocobase/test/client';
+import { DataBlockContext } from '../../data-block/DataBlockProvider';
 import { requestParentRecordData } from '../../data-block/DataBlockRequestProvider';
+import { BlockRequestContextProvider } from '../../data-block/DataBlockRequestProvider';
+
+const { mockKeepAliveState, mockLocationSearch } = vi.hoisted(() => ({
+  mockKeepAliveState: { active: true },
+  mockLocationSearch: vi.fn(() => ''),
+}));
+
+vi.mock('../../../route-switch/antd/admin-layout/KeepAlive', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../../route-switch/antd/admin-layout/KeepAlive')>();
+  return {
+    ...actual,
+    useKeepAlive: () => mockKeepAliveState,
+  };
+});
+
+vi.mock('../../../application/CustomRouterContextProvider', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../../application/CustomRouterContextProvider')>();
+  return {
+    ...actual,
+    useLocationSearch: () => mockLocationSearch(),
+  };
+});
 
 describe('requestParentRecordData', () => {
+  beforeEach(() => {
+    mockKeepAliveState.active = true;
+    mockLocationSearch.mockReset();
+    mockLocationSearch.mockReturnValue('');
+  });
+
   it('should return parent record data if parentRecord is provided', async () => {
     const parentRecord = { id: 1, name: 'John Doe' };
     const result = await requestParentRecordData({ parentRecord });
@@ -57,5 +88,72 @@ describe('requestParentRecordData', () => {
       url: 'Collection:get?filter[filterKey]=1',
       headers,
     });
+  });
+});
+
+describe('BlockRequestContextProvider', () => {
+  beforeEach(() => {
+    mockKeepAliveState.active = true;
+    mockLocationSearch.mockReset();
+    mockLocationSearch.mockReturnValue('');
+  });
+
+  it('should skip keep-alive refresh when search params changed before page restore', async () => {
+    const refresh = vi.fn();
+    const recordRequest = {
+      refresh,
+      data: null,
+      loading: false,
+    } as any;
+
+    const App = () => (
+      <DataBlockContext.Provider value={{ dn: null, props: {} as any }}>
+        <BlockRequestContextProvider recordRequest={recordRequest}>
+          <div>content</div>
+        </BlockRequestContextProvider>
+      </DataBlockContext.Provider>
+    );
+
+    const { rerender } = render(<App />);
+
+    mockKeepAliveState.active = false;
+    rerender(<App />);
+
+    mockLocationSearch.mockReturnValue('?f=1');
+    mockKeepAliveState.active = true;
+    rerender(<App />);
+
+    await sleep(50);
+
+    expect(refresh).not.toHaveBeenCalled();
+  });
+
+  it('should refresh when restoring keep-alive page with unchanged search params', async () => {
+    const refresh = vi.fn();
+    const recordRequest = {
+      refresh,
+      data: null,
+      loading: false,
+    } as any;
+
+    const App = () => (
+      <DataBlockContext.Provider value={{ dn: null, props: {} as any }}>
+        <BlockRequestContextProvider recordRequest={recordRequest}>
+          <div>content</div>
+        </BlockRequestContextProvider>
+      </DataBlockContext.Provider>
+    );
+
+    const { rerender } = render(<App />);
+
+    mockKeepAliveState.active = false;
+    rerender(<App />);
+
+    mockKeepAliveState.active = true;
+    rerender(<App />);
+
+    await sleep(50);
+
+    expect(refresh).toHaveBeenCalledTimes(1);
   });
 });

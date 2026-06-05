@@ -1,0 +1,6 @@
+{
+  "Validation error": "{{field}} érvényességi hiba",
+  "notNull Violation": "{{field}} nem lehet null",
+  "notNull violation": "{{field}} nem lehet null",
+  "unique violation": "{{field}} már létezik"
+}

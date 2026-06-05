@@ -421,7 +421,7 @@ export class OBOFieldInterface extends CollectionFieldInterface {
       },
     },
   };
-  availableTypes = ['hasOne'];
+  availableTypes = ['belongsTo'];
   schemaInitialize(schema: ISchema, { field, block, readPretty, action, targetCollection }) {
     // schema['type'] = 'object';
     if (['Table', 'Kanban'].includes(block)) {

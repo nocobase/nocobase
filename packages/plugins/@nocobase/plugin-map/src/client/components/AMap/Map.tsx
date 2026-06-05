@@ -12,13 +12,14 @@ import '@amap/amap-jsapi-types';
 import { SyncOutlined } from '@ant-design/icons';
 import { useFieldSchema } from '@formily/react';
 import { css, useApp, useCollection_deprecated, useNavigateNoUpdate } from '@nocobase/client';
+import { useFlowEngine } from '@nocobase/flow-engine';
 import { useMemoizedFn } from 'ahooks';
 import { Alert, App, Button, Spin } from 'antd';
 import React, { useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
-import { useMapConfiguration } from '../../hooks';
+import { useMapConfiguration, useMapConfig } from '../../hooks';
 import { useMapTranslation } from '../../locale';
 import { MapEditorType } from '../../types';
-import { useMapHeight } from '../hook';
+import { normalizeErrorMessage, runIdleTask } from '../../utils';
 import { Search } from './Search';
 export interface AMapComponentProps {
   value?: any;
@@ -34,6 +35,7 @@ export interface AMapComponentProps {
   style?: React.CSSProperties;
   overlayCommonOptions?: AMap.PolylineOptions & AMap.PolygonOptions;
   block?: boolean;
+  height?: number;
 }
 
 const methodMapping = {
@@ -89,9 +91,10 @@ export interface AMapForwardedRefProps {
   errMessage?: string;
 }
 
+//1.0
 export const AMapComponent = React.forwardRef<AMapForwardedRefProps, AMapComponentProps>((props, ref) => {
   const { accessKey, securityJsCode } = useMapConfiguration(props.mapType) || {};
-  const { value, onChange, block = false, readonly, disabled = block, zoom = 13, overlayCommonOptions } = props;
+  const { value, onChange, block = false, readonly, disabled = block, zoom = 13, overlayCommonOptions, height } = props;
   const { t } = useMapTranslation();
   const fieldSchema = useFieldSchema();
   const aMap = useRef<any>();
@@ -99,6 +102,7 @@ export const AMapComponent = React.forwardRef<AMapForwardedRefProps, AMapCompone
   const mouseTool = useRef<any>();
   const [needUpdateFlag, forceUpdate] = useState([]);
   const [errMessage, setErrMessage] = useState('');
+  const defaultErrorMessage = 'Something went wrong, please refresh the page and try again';
   const { getField } = useCollection_deprecated();
   const type = useMemo<MapEditorType>(() => {
     if (props.type) return props.type;
@@ -111,7 +115,6 @@ export const AMapComponent = React.forwardRef<AMapForwardedRefProps, AMapCompone
   const navigate = useNavigateNoUpdate();
   const id = useRef(`nocobase-map-${type || ''}-${Date.now().toString(32)}`);
   const { modal } = App.useApp();
-  const height = useMapHeight();
   const [commonOptions] = useState<AMap.PolylineOptions & AMap.PolygonOptions>({
     strokeWeight: 5,
     strokeColor: '#4e9bff',
@@ -337,8 +340,8 @@ export const AMapComponent = React.forwardRef<AMapForwardedRefProps, AMapCompone
     (window as any).define = undefined;
 
     if (window.AMap) {
-      try {
-        requestIdleCallback(() => {
+      runIdleTask(() => {
+        try {
           map.current = new AMap.Map(id.current, {
             resizeEnable: true,
             zoom,
@@ -346,11 +349,13 @@ export const AMapComponent = React.forwardRef<AMapForwardedRefProps, AMapCompone
           aMap.current = AMap;
           setErrMessage('');
           forceUpdate([]);
-        });
-        return;
-      } catch (err) {
-        setErrMessage(err);
-      }
+        } catch (err) {
+          setErrMessage(normalizeErrorMessage(err, defaultErrorMessage));
+        } finally {
+          (window as any).define = _define;
+        }
+      });
+      return;
     }
 
     AMapLoader.load({
@@ -360,25 +365,31 @@ export const AMapComponent = React.forwardRef<AMapForwardedRefProps, AMapCompone
     })
       .then((amap) => {
         (window as any).define = _define;
-        return requestIdleCallback(() => {
-          map.current = new amap.Map(id.current, {
-            resizeEnable: true,
-            zoom,
-          } as AMap.MapOptions);
-          aMap.current = amap;
-          setErrMessage('');
-          forceUpdate([]);
+        return runIdleTask(() => {
+          try {
+            map.current = new amap.Map(id.current, {
+              resizeEnable: true,
+              zoom,
+            } as AMap.MapOptions);
+            aMap.current = amap;
+            setErrMessage('');
+            forceUpdate([]);
+          } catch (err) {
+            setErrMessage(normalizeErrorMessage(err, defaultErrorMessage));
+          }
         });
       })
       .catch((err) => {
-        if (typeof err === 'string') {
-          if (err.includes('多个不一致的 key')) {
-            setErrMessage(t('The AccessKey is incorrect, please check it'));
-          } else {
-            setErrMessage(err);
-          }
-        } else if (err?.type === 'error') {
-          setErrMessage('Something went wrong, please refresh the page and try again');
+        (window as any).define = _define;
+        const errorMessage = normalizeErrorMessage(err, defaultErrorMessage);
+        if (errorMessage.includes('多个不一致的 key')) {
+          setErrMessage(t('The AccessKey is incorrect, please check it'));
+          return;
+        }
+        if (err && typeof err === 'object' && 'type' in err && err.type === 'error') {
+          setErrMessage(defaultErrorMessage);
+        } else {
+          setErrMessage(errorMessage);
         }
       });
 
@@ -413,7 +424,10 @@ export const AMapComponent = React.forwardRef<AMapForwardedRefProps, AMapCompone
     return (
       <Alert
         action={
-          <Button type="primary" onClick={() => navigate(app.pluginSettingsManager.getRoutePath('map'))}>
+          <Button
+            type="primary"
+            onClick={() => navigate(app.pluginSettingsManager?.getRoutePath('map') || '/admin/settings/map')}
+          >
             {t('Go to the configuration page')}
           </Button>
         }

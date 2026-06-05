@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { observer } from '@formily/react';
+import { observer } from '@nocobase/flow-engine';
 import { Select } from 'antd';
 import React, { useContext } from 'react';
 import { CalendarToolbarContext } from './context';

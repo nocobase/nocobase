@@ -620,4 +620,63 @@ describe('Eager loading tree', () => {
     expect(u1.get('posts')[0].get('tags')[0].get('tagCategory')).toBeDefined();
     expect(u1.get('posts')[0].get('tags')[0].get('tagCategory').get('name')).toBe('c1');
   });
+
+  it('should use bind parameters when loading parent recursively with string primary keys', async () => {
+    const payload = `root') UNION ALL SELECT 'pwned', NULL WHERE ('1'='1`;
+    const Tree = db.collection({
+      name: 'categories',
+      tree: 'adjacency-list',
+      fields: [
+        { type: 'string', name: 'id', primaryKey: true },
+        { type: 'string', name: 'name' },
+        {
+          type: 'belongsTo',
+          name: 'parent',
+          treeParent: true,
+          target: 'categories',
+          foreignKey: 'parentId',
+          targetKey: 'id',
+        },
+        {
+          type: 'hasMany',
+          name: 'children',
+          treeChildren: true,
+          target: 'categories',
+          foreignKey: 'parentId',
+          sourceKey: 'id',
+        },
+      ],
+    });
+
+    await db.sync();
+
+    await Tree.repository.create({
+      values: [
+        { id: 'root', name: 'root' },
+        { id: payload, name: 'payload' },
+        { id: 'child', name: 'child', parentId: payload },
+      ],
+    });
+
+    const querySpy = vi.spyOn(db.sequelize, 'query');
+
+    const child = await Tree.repository.findOne({
+      where: { id: 'child' },
+      appends: ['parent(recursively=true)'],
+    });
+
+    expect(child.parent.id).toBe(payload);
+
+    const recursiveQueryCall = querySpy.mock.calls.find(
+      ([sql]) => typeof sql === 'string' && sql.includes('WITH RECURSIVE cte'),
+    );
+
+    expect(recursiveQueryCall).toBeDefined();
+    expect(recursiveQueryCall[0]).toContain('IN ($1)');
+    expect(recursiveQueryCall[0]).not.toContain(payload);
+    expect(recursiveQueryCall[1]).toMatchObject({
+      bind: [payload],
+      type: 'SELECT',
+    });
+  });
 });

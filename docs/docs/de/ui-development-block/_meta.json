@@ -1,0 +1,18 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Schnellstart",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Einführung",
+        "link": "/ui-development-block"
+      },
+      {
+        "type": "custom-link",
+        "label": "Block-Plugin schreiben",
+        "link": "/ui-development-block/write-a-block-plugin"
+      }
+    ]
+  }
+]

@@ -46,7 +46,15 @@ export default {
     },
     {
       type: 'json',
+      name: 'meta',
+    },
+    {
+      type: 'json',
       name: 'result',
+    },
+    {
+      type: 'json',
+      name: 'meta',
     },
   ],
 };

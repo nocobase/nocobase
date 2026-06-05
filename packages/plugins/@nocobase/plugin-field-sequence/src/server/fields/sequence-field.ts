@@ -44,7 +44,7 @@ export interface Pattern {
     instance: Model,
     value: string,
     options,
-    transactionable: Transactionable,
+    transactionable: Transactionable & { overwrite?: boolean },
   ): Promise<void>;
 }
 
@@ -235,7 +235,7 @@ sequencePatterns.register('integer', {
     await lastSeq.save({ transaction });
   },
 
-  async update(instance, value, options, { transaction }) {
+  async update(instance, value, options, { transaction, overwrite }) {
     const recordTime = <Date>instance.get('createdAt') ?? new Date();
     const { digits = 1, start = 0, base = 10, cycle, key } = options;
     const SeqRepo = this.database.getRepository('sequences');
@@ -261,6 +261,15 @@ sequencePatterns.register('integer', {
       });
     }
     if (lastSeq.get('current') == null) {
+      return lastSeq.update(
+        {
+          current,
+          lastGeneratedAt: recordTime,
+        },
+        { transaction },
+      );
+    }
+    if (overwrite === true) {
       return lastSeq.update(
         {
           current,

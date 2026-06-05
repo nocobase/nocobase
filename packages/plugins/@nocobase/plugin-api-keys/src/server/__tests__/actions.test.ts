@@ -24,7 +24,7 @@ describe('actions', () => {
 
   let user;
   let testUser;
-  let role;
+  const role = { name: 'admin' };
   let testRole;
   let createData;
   const expiresIn = 60 * 60 * 24;
@@ -50,7 +50,7 @@ describe('actions', () => {
     testUser = await userRepo.create({
       values: {
         nickname: 'test',
-        roles: user.roles,
+        roles: ['admin', 'member'],
       },
     });
     const roleRepo = await app.db.getRepository('roles');
@@ -60,11 +60,6 @@ describe('actions', () => {
       },
     });
 
-    role = await (app.db.getRepository('users.roles', user.id) as unknown as Repository).findOne({
-      where: {
-        default: true,
-      },
-    });
     createData = {
       values: {
         name: 'TEST',

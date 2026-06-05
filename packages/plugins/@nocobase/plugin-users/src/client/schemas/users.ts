@@ -431,6 +431,7 @@ export const usersSettingsSchema: ISchema = {
 };
 
 export const getRoleUsersSchema = (): ISchema => ({
+  name: 'roleUsers',
   type: 'void',
   properties: {
     actions: {

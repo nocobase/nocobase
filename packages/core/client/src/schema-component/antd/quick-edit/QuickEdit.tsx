@@ -12,10 +12,11 @@ import { css } from '@emotion/css';
 import { IFormItemProps } from '@formily/antd-v5';
 import { Field, createForm } from '@formily/core';
 import { FormContext, RecursionField, observer, useField, useFieldSchema } from '@formily/react';
-import React, { useEffect, useMemo, useRef } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import { useCollectionManager_deprecated } from '../../../collection-manager';
 import { useCollection } from '../../../data-source/collection/CollectionProvider';
 import { useToken } from '../../../style';
+import { useNiceDropdownMaxHeight } from '../../../common/useNiceDropdownHeight';
 import { FormItem } from '../form-item';
 import { StablePopover } from '../popover';
 
@@ -48,6 +49,8 @@ export const Editable = observer(
         }),
       [field.value, fieldSchema['x-component-props']],
     );
+    const [visible, setVisible] = useState(false);
+    const popupMaxHeight = useNiceDropdownMaxHeight([visible]);
     const getContainer = () => {
       return containerRef.current;
     };
@@ -64,7 +67,14 @@ export const Editable = observer(
       <FormItem {...props} labelStyle={{ display: 'none' }}>
         <StablePopover
           content={
-            <div style={{ width: '100%', height: '100%', minWidth: 500 }}>
+            <div
+              style={{
+                width: '100%',
+                minWidth: 500,
+                maxHeight: popupMaxHeight,
+                overflow: 'auto',
+              }}
+            >
               <div ref={containerRef}>{modifiedChildren}</div>
             </div>
           }
@@ -77,6 +87,7 @@ export const Editable = observer(
             }
           `}
           onOpenChange={(open) => {
+            setVisible(open);
             if (open) {
               field.validate();
             }

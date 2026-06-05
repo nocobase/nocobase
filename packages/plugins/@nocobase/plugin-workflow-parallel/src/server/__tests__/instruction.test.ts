@@ -369,7 +369,8 @@ describe('workflow > instructions > parallel', () => {
       expect(j1s.find((item) => item.nodeId === n2.id).status).toBe(JOB_STATUS.RESOLVED);
       expect(j1s.find((item) => item.nodeId === n3.id).status).toBe(JOB_STATUS.PENDING);
 
-      await sleep(300);
+      // Wait longer to ensure the asyncResume timer (500ms) completes and workflow fully finishes
+      await sleep(500);
 
       const [e2] = await workflow.getExecutions();
       expect(e2.status).toBe(EXECUTION_STATUS.RESOLVED);

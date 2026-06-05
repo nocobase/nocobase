@@ -403,9 +403,14 @@ export const GraphDrawPage = React.memo(() => {
   const updatePositionAction = async (data, isbatch = false) => {
     if (!selectedCollections) {
       if (isbatch) {
-        await api.resource('graphPositions').update({
-          values: data,
-        });
+        await Promise.all(
+          data.map(({ id, collectionName, x, y }) =>
+            api.resource('graphPositions').update({
+              filterByTk: id,
+              values: { collectionName, x, y },
+            }),
+          ),
+        );
       } else {
         await api.resource('graphPositions').update({
           filter: { collectionName: data.collectionName },

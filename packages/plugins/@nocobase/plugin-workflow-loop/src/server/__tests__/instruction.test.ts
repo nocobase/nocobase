@@ -977,6 +977,48 @@ describe('workflow > instructions > loop', () => {
       expect(e1jobs.length).toBe(7);
     });
 
+    it('loop exits when condition branch fails under break mode', async () => {
+      const loop = await workflow.createNode({
+        type: 'loop',
+        config: {
+          target: 3,
+          exit: EXIT.BREAK,
+        },
+      });
+
+      const condition = await workflow.createNode({
+        type: 'condition',
+        branchIndex: 0,
+        upstreamId: loop.id,
+      });
+
+      const failed = await workflow.createNode({
+        type: 'error',
+        branchIndex: 1,
+        upstreamId: condition.id,
+      });
+
+      const downstream = await workflow.createNode({
+        type: 'echo',
+        upstreamId: loop.id,
+      });
+
+      await loop.setDownstream(downstream);
+
+      await PostRepo.create({ values: { title: 't1' } });
+
+      const [execution] = await workflow.getExecutions();
+      expect(execution.status).toEqual(EXECUTION_STATUS.RESOLVED);
+      const jobs = await execution.getJobs({ order: [['id', 'ASC']] });
+      const loopJob = jobs.find((job) => job.nodeId === loop.id);
+      expect(loopJob?.status).toBe(JOB_STATUS.RESOLVED);
+      expect(loopJob?.result).toMatchObject({ looped: 1, done: 0, broken: true });
+      const failedJob = jobs.find((job) => job.nodeId === failed.id);
+      expect(failedJob?.status).toBe(JOB_STATUS.ERROR);
+      const downstreamJob = jobs.find((job) => job.nodeId === downstream.id);
+      expect(downstreamJob?.status).toBe(JOB_STATUS.RESOLVED);
+    });
+
     it('condition contains loop (target as 0)', async () => {
       const n1 = await workflow.createNode({
         type: 'condition',

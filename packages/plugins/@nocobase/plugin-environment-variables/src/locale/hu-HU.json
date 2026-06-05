@@ -1,0 +1,16 @@
+{
+  "Add variable": "Változó hozzáadása",
+  "Bulk import": "Tömeges importálás",
+  "Delete variable": "Változó törlése",
+  "Encrypted": "Titkosított",
+  "Environment": "Környezet",
+  "Name": "Név",
+  "Plain text": "Egyszerű szöveg",
+  "Restart now": "Újraindítás most",
+  "Secrets": "Titkok",
+  "Type": "Típus",
+  "Value": "Érték",
+  "Variables": "Változók",
+  "Variables and secrets": "Változók és titkok",
+  "Variables and secrets have been updated. A restart is required for the changes to take effect.": "A változók és titkok frissítve lettek. A változások életbe lépéséhez újraindítás szükséges."
+}

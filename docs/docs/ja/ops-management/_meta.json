@@ -1,0 +1,28 @@
+[
+  {
+    "type": "custom-link",
+    "label": "リリース管理",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "概要",
+        "link": "/ops-management/release-management"
+      },
+      {
+        "type": "custom-link",
+        "label": "変数とシークレット",
+        "link": "/ops-management/variables-and-secrets"
+      },
+      {
+        "type": "custom-link",
+        "label": "バックアップ管理",
+        "link": "/ops-management/backup-manager"
+      },
+      {
+        "type": "custom-link",
+        "label": "移行管理",
+        "link": "/ops-management/migration-manager"
+      }
+    ]
+  }
+]

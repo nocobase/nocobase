@@ -1,0 +1,36 @@
+[
+  {
+    "type": "section-header",
+    "label": "Cluster-Modus"
+  },
+  {
+    "type": "custom-link",
+    "label": "Überblick",
+    "link": "/cluster-mode/index"
+  },
+  {
+    "type": "custom-link",
+    "label": "Vorbereitung",
+    "link": "/cluster-mode/preparations"
+  },
+  {
+    "type": "custom-link",
+    "label": "Kubernetes-Deployment",
+    "link": "/cluster-mode/kubernetes"
+  },
+  {
+    "type": "custom-link",
+    "label": "Betriebsabläufe",
+    "link": "/cluster-mode/operations"
+  },
+  {
+    "type": "custom-link",
+    "label": "Service-Trennung",
+    "link": "/cluster-mode/services-splitting"
+  },
+  {
+    "type": "custom-link",
+    "label": "Entwicklerreferenz",
+    "link": "/cluster-mode/development"
+  }
+]

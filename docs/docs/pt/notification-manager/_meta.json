@@ -1,0 +1,44 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Visão Geral",
+    "link": "/notification-manager"
+  },
+  {
+    "type": "custom-link",
+    "label": "Canal de notificação",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Mensagem interna",
+        "link": "/notification-manager/notification-in-app-message"
+      },
+      {
+        "type": "custom-link",
+        "label": "E-mail",
+        "link": "/notification-manager/notification-email"
+      },
+      {
+        "type": "custom-link",
+        "label": "WeCom",
+        "link": "/notification-manager/wecom"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Guia de Desenvolvimento",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Estender tipo de canal de notificação",
+        "link": "/notification-manager/development/extension"
+      },
+      {
+        "type": "custom-link",
+        "label": "Estender API de notificação",
+        "link": "/notification-manager/development/api"
+      }
+    ]
+  }
+]

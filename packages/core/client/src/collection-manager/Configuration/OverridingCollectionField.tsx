@@ -108,7 +108,7 @@ const getIsOverriding = (currentCollection, currentFields, record) => {
   const targetField = currentFields.find((v) => {
     return v.name === record.name;
   });
-  return targetField.collectionName === currentCollection;
+  return targetField?.collectionName === currentCollection;
 };
 export const OverridingFieldAction = (props) => {
   const { scope, getContainer, item: record, parentItem: parentRecord, children, currentCollection } = props;

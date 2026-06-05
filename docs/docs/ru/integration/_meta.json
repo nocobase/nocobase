@@ -1,0 +1,70 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Обзор",
+    "link": "/integration/"
+  },
+  {
+    "type": "custom-link",
+    "label": "API",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Ключи API",
+        "link": "/integration/api-keys/"
+      },
+      {
+        "type": "custom-link",
+        "label": "Документация API",
+        "link": "/integration/api-doc/"
+      },
+      {
+        "type": "custom-link",
+        "label": "Сценарии использования",
+        "link": "/integration/api-keys/usage"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "SSO",
+    "link": "/integration/sso/"
+  },
+  {
+    "type": "custom-link",
+    "label": "Рабочие процессы",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Webhook",
+        "link": "/integration/workflow-webhook/"
+      },
+      {
+        "type": "custom-link",
+        "label": "HTTP-запрос",
+        "link": "/integration/workflow-http-request/"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Внешние источники данных",
+    "link": "/data-sources/"
+  },
+  {
+    "type": "custom-link",
+    "label": "Встраиваемый контент",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Блок Iframe",
+        "link": "/integration/block-iframe/"
+      },
+      {
+        "type": "custom-link",
+        "label": "Встраивание",
+        "link": "/integration/embed/"
+      }
+    ]
+  }
+]

@@ -35,7 +35,7 @@ import {
 import { NAMESPACE } from '../../common/constants';
 // import NotificationFieldset from '../NotificationFieldset';
 // import { SchemaConfig, SchemaConfigButton } from './SchemaConfig';
-import { SchemaConfig, SchemaConfigButton } from './SchemaConfig';
+import { SchemaConfig, SchemaConfigButton, CCInterfaceConfig, CCTaskCardConfigButton } from './SchemaConfig';
 
 export default class extends Instruction {
   title = `{{t("CC", { ns: "${NAMESPACE}" })}}`;
@@ -101,11 +101,21 @@ export default class extends Instruction {
         },
       },
     },
+    // V1: User interface (旧版，仅在已有配置时显示)
     ccDetail: {
       type: 'void',
       title: `{{t("User interface", { ns: "${NAMESPACE}" })}}`,
       'x-decorator': 'FormItem',
       'x-component': 'SchemaConfigButton',
+      'x-reactions': [
+        {
+          fulfill: {
+            state: {
+              visible: `{{!!$form.disabled && !!$form.values.ccDetail}}`,
+            },
+          },
+        },
+      ],
       properties: {
         ccDetail: {
           type: 'void',
@@ -113,6 +123,29 @@ export default class extends Instruction {
         },
       },
       required: true,
+    },
+    // V2: User interface (新版 FlowModel)
+    ccUid: {
+      type: 'void',
+      title: `{{t("User interface", { ns: "${NAMESPACE}" })}}`,
+      'x-decorator': 'FormItem',
+      'x-component': 'CCInterfaceConfig',
+      'x-reactions': [
+        {
+          fulfill: {
+            state: {
+              visible: `{{!$form.values.ccDetail || !$form.disabled}}`,
+            },
+          },
+        },
+      ],
+    },
+    // V2: Task card (新版 FlowModel)
+    taskCardUid: {
+      type: 'void',
+      title: `{{t("Task card", { ns: "${NAMESPACE}" })}}`,
+      'x-decorator': 'FormItem',
+      'x-component': 'CCTaskCardConfigButton',
     },
     title: {
       type: 'string',
@@ -128,9 +161,7 @@ export default class extends Instruction {
     },
   };
   createDefaultConfig() {
-    return {
-      ccDetail: uid(),
-    };
+    return {};
   }
   scope = {
     useNodeContext,
@@ -141,6 +172,8 @@ export default class extends Instruction {
     UsersAddition,
     SchemaConfigButton,
     SchemaConfig,
+    CCInterfaceConfig,
+    CCTaskCardConfigButton,
     WorkflowVariableTextArea,
   };
 }

@@ -1,4 +1,4 @@
-FROM node:20-bookworm-slim as builder
+FROM node:22-bookworm-slim as builder
 
 ARG CNA_VERSION
 
@@ -6,7 +6,7 @@ WORKDIR /app
 
 RUN cd /app \
   && yarn config set network-timeout 600000 -g \
-  && npx -y create-nocobase-app@${CNA_VERSION} my-nocobase-app --skip-dev-dependencies -a -e APP_ENV=production \
+  && npx -y create-nocobase-app@${CNA_VERSION} my-nocobase-app --empty-key --skip-dev-dependencies -a -e APP_ENV=production \
   && cd /app/my-nocobase-app \
   && yarn install --production \
   && rm -rf yarn.lock \
@@ -18,7 +18,7 @@ RUN cd /app \
   && rm -rf nocobase.tar.gz \
   && tar -zcf ./nocobase.tar.gz -C /app/my-nocobase-app .
 
-FROM node:20-bookworm-slim
+FROM node:22-bookworm-slim
 
 # COPY ./sources.list /etc/apt/sources.list
 RUN ARCH= && dpkgArch="$(dpkg --print-architecture)" \

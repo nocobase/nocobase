@@ -1,0 +1,23 @@
+{
+  "Account": "Аккаунт",
+  "Add email address": "Добавить email адрес",
+  "BCC": "BCC (Скрытая копия)",
+  "CC": "CC (Копия)",
+  "Configure": "Настроить",
+  "Content": "Содержимое",
+  "Content type": "Тип содержимого",
+  "Email": "Email",
+  "From": "От",
+  "Host": "Хост",
+  "In most cases, if using port 465, set it to true; otherwise, set it to false.": "In most cases, if using port 465, set it to true; otherwise, set it to false.",
+  "Password": "Пароль",
+  "Plain text": "Простой текст",
+  "Port": "Порт",
+  "SMTP mail": "SMTP почта",
+  "SMTP server host": "Хост SMTP сервера",
+  "Secure": "Безопасное соединение",
+  "Subject": "Тема",
+  "The email address that will be used as the sender": "Email адрес, который будет использоваться как отправитель",
+  "To": "Кому",
+  "Transport": "Транспорт"
+}

@@ -90,4 +90,50 @@ describe('field defaultValue', () => {
     const item = await app.agent().resource('test1').get();
     expect(item.body.data.field1).toBeNull();
   });
+
+  it('should replace object defaultValue instead of merge', async () => {
+    await app
+      .agent()
+      .resource('collections.fields', 'test1')
+      .create({
+        values: {
+          name: 'field2',
+          type: 'json',
+          defaultValue: {
+            keep: true,
+            nested: {
+              a: 1,
+            },
+          },
+        },
+      });
+
+    await app
+      .agent()
+      .resource('collections.fields', 'test1')
+      .update({
+        filterByTk: 'field2',
+        values: {
+          type: 'json',
+          defaultValue: {
+            nested: {
+              b: 2,
+            },
+          },
+        },
+      });
+
+    const field = await app.db.getRepository('fields').findOne({
+      filter: {
+        collectionName: 'test1',
+        name: 'field2',
+      },
+    });
+
+    expect(field.get('defaultValue')).toEqual({
+      nested: {
+        b: 2,
+      },
+    });
+  });
 });

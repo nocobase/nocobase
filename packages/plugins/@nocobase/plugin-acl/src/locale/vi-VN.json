@@ -1,0 +1,22 @@
+{
+  "Allow roles union": "Allow roles union",
+  "Allow users to use role union, which means they can use permissions from all their roles simultaneously, or switch between individual roles.": "Allow users to use role union, which means they can use permissions from all their roles simultaneously, or switch between individual roles.",
+  "Data sources": "Data sources",
+  "Desktop menu": "Desktop menu",
+  "Do not use role union. Users need to switch between their roles individually.": "Do not use role union. Users need to switch between their roles individually.",
+  "Force users to use only role union. They cannot switch between individual roles.": "Force users to use only role union. They cannot switch between individual roles.",
+  "Full permissions": "Full permissions",
+  "General": "Tổng quát",
+  "Independent roles": "Independent roles",
+  "New role": "New role",
+  "Permissions": "Quyền",
+  "Please select role mode": "Please select role mode",
+  "Plugin settings": "Plugin settings",
+  "Role mode": "Role mode",
+  "Role mode doc": "https://docs.nocobase.com/handbook/acl/manual",
+  "Roles & Permissions": "Roles & Permissions",
+  "Roles union only": "Roles union only",
+  "Saved successfully": "Saved successfully",
+  "The current user has no roles. Please try another account.": "The current user has no roles. Please try another account.",
+  "The user role does not exist. Please try signing in again": "The user role does not exist. Please try signing in again"
+}

@@ -13,6 +13,7 @@ import { RobotOutlined } from '@ant-design/icons';
 import { tval } from '@nocobase/utils/client';
 import { namespace } from '../../../locale';
 import { Settings } from './ModelSettings';
+import { Chat } from '../../../llm-providers/components/Chat';
 
 export class LLMInstruction extends Instruction {
   title = 'LLM';
@@ -47,9 +48,14 @@ export class LLMInstruction extends Instruction {
       type: 'void',
       'x-component': 'Settings',
     },
+    chat: {
+      type: 'void',
+      'x-component': 'Chat',
+    },
   };
   components = {
     Settings,
+    Chat,
   };
 
   isAvailable({ engine, workflow }) {

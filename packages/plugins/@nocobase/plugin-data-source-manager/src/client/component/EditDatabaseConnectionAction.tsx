@@ -26,7 +26,7 @@ import { useTranslation } from 'react-i18next';
 import { useForm, useField } from '@formily/react';
 import PluginDatabaseConnectionsClient from '../';
 import { NAMESPACE } from '../locale';
-import { addDatasourceCollections, useLoadCollections } from '../hooks';
+import { useLoadCollections } from '../hooks';
 import { CollectionsTableField } from './CollectionsTableField';
 
 export const EditDatabaseConnectionAction = () => {
@@ -52,18 +52,17 @@ export const EditDatabaseConnectionAction = () => {
         await form.submit();
         field.data = field.data || {};
         field.data.loading = true;
+        const collections: { name: string; selected: boolean }[] = form.values.collections || [];
         try {
-          await resource.update({ filterByTk, values: _.omit(form.values, 'collections') });
-          const toBeAddedCollections = form.values.collections || [];
-          if (!form.values.addAllCollections) {
-            await addDatasourceCollections(api, filterByTk, {
-              collections: toBeAddedCollections,
-              dbOptions: form.values.options,
-            });
-          }
-          delete form.values.collections;
+          await resource.update({
+            filterByTk,
+            values: {
+              ...form.values,
+              collections: collections.filter((c) => c.selected).map((c) => c.name),
+            },
+          });
           ctx.setVisible(false);
-          dm.getDataSource(filterByTk).setOptions(form.values);
+          dm.getDataSource(filterByTk).setOptions(_.omit(form.values, 'collections'));
           dm.getDataSource(filterByTk).reload();
           await form.reset();
           refresh();

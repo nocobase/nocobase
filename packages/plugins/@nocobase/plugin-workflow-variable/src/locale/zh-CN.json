@@ -1,0 +1,9 @@
+{
+  "Assign value to a variable, for later use.": "赋值一个变量，以备在后续节点中使用。",
+  "Assign value to an existing variable": "赋值至已有变量",
+  "Declare a new variable": "声明新变量",
+  "Mode": "模式",
+  "Properties mapping": "属性映射",
+  "Value": "值",
+  "Variable": "变量"
+}

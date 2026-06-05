@@ -19,7 +19,7 @@
 import { Cache } from '@nocobase/cache';
 import { InstallOptions, Plugin } from '@nocobase/server';
 import { aggregateSearch, removeOwner, setOwner } from './actions/departments';
-import { listExcludeDept, setMainDepartment } from './actions/users';
+import { listExcludeDept } from './actions/users';
 import { departmentsField, mainDepartmentField } from './collections/users';
 import {
   destroyDepartmentCheck,
@@ -27,12 +27,14 @@ import {
   setDepartmentOwners,
   setMainDepartment as setMainDepartmentMiddleware,
   updateDepartmentIsLeaf,
+  setDepartmentsInfo,
 } from './middlewares';
-import { setDepartmentsInfo } from './middlewares/set-departments-roles';
 import { DepartmentModel } from './models/department';
 import { DepartmentDataSyncResource } from './department-data-sync-resource';
 import PluginUserDataSyncServer from '@nocobase/plugin-user-data-sync';
 import { DataSource } from '@nocobase/data-source-manager';
+import PluginErrorHandler from '@nocobase/plugin-error-handler';
+import { syncUserMainDepartment } from './sync-user-main-department';
 
 export class PluginDepartmentsServer extends Plugin {
   afterAdd() {}
@@ -50,15 +52,16 @@ export class PluginDepartmentsServer extends Plugin {
   }
 
   async load() {
+    this.registerErrorHandler();
+
     this.app.resourceManager.registerActionHandlers({
       'users:listExcludeDept': listExcludeDept,
-      'users:setMainDepartment': setMainDepartment,
       'departments:aggregateSearch': aggregateSearch,
       'departments:setOwner': setOwner,
       'departments:removeOwner': removeOwner,
     });
 
-    this.app.acl.allow('users', ['setMainDepartment', 'listExcludeDept'], 'loggedIn');
+    this.app.acl.allow('users', ['listExcludeDept'], 'loggedIn');
     this.app.acl.registerSnippet({
       name: `pm.${this.name}`,
       actions: [
@@ -66,7 +69,6 @@ export class PluginDepartmentsServer extends Plugin {
         'roles:list',
         'users:list',
         'users:listExcludeDept',
-        'users:setMainDepartment',
         'users.departments:*',
         'roles.departments:*',
         'departments.members:*',
@@ -93,14 +95,53 @@ export class PluginDepartmentsServer extends Plugin {
     this.app.resourceManager.use(setMainDepartmentMiddleware);
 
     // Delete cache when the departments of a user changed
-    this.app.db.on('departmentsUsers.afterSave', async (model) => {
+    this.app.db.on('departmentsUsers.afterSave', async (model, options) => {
       const cache = this.app.cache as Cache;
+      await syncUserMainDepartment(this.app.db, model.get('userId'), options?.transaction);
       await cache.del(`departments:${model.get('userId')}`);
     });
-    this.app.db.on('departmentsUsers.afterDestroy', async (model) => {
+    this.app.db.on('departmentsUsers.afterDestroy', async (model, options) => {
       const cache = this.app.cache as Cache;
+      await syncUserMainDepartment(this.app.db, model.get('userId'), options?.transaction);
       await cache.del(`departments:${model.get('userId')}`);
     });
+
+    this.app.db.on('users.afterSaveWithAssociations', async (model, options) => {
+      await syncUserMainDepartment(this.app.db, model.get('id'), options?.transaction);
+    });
+
+    this.app.db.on('users.beforeSave', async (model, options) => {
+      const submittedDepartments = options?.values?.departments;
+      const mainDepartmentId = model.get('mainDepartmentId');
+      if (!mainDepartmentId) {
+        return;
+      }
+      const userId = model.get('id');
+      const transaction = options?.transaction;
+      if (userId) {
+        const userDepartment = await this.app.db.getRepository('departmentsUsers').findOne({
+          filter: {
+            userId: userId,
+            departmentId: mainDepartmentId,
+          },
+          transaction,
+        });
+        if (userDepartment) {
+          return;
+        }
+      }
+      if (Array.isArray(submittedDepartments)) {
+        const included = submittedDepartments.some((d) => {
+          const id = typeof d === 'object' ? d && (d.id ?? d) : d;
+          return `${id}` === `${mainDepartmentId}`;
+        });
+        if (included) {
+          return;
+        }
+      }
+      throw new Error(`Invalid main department, it must be one of the user's departments`);
+    });
+
     this.app.on('beforeSignOut', ({ userId }) => {
       this.app.cache.del(`departments:${userId}`);
     });
@@ -151,6 +192,22 @@ export class PluginDepartmentsServer extends Plugin {
   async afterDisable() {}
 
   async remove() {}
+
+  registerErrorHandler() {
+    const errorHandlerPlugin = this.app.pm.get<PluginErrorHandler>('error-handler');
+    errorHandlerPlugin.errorHandler.register(
+      (err) => {
+        return err.message === "Invalid main department, it must be one of the user's departments";
+      },
+      (err, ctx) => {
+        // 翻译错误消息
+        return ctx.throw(
+          400,
+          ctx.i18n.t("Invalid main department, it must be one of the user's departments", { ns: 'departments' }),
+        );
+      },
+    );
+  }
 }
 
 export default PluginDepartmentsServer;

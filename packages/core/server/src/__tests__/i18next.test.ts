@@ -26,6 +26,7 @@ describe('i18next', () => {
       acl: false,
       dataWrapping: false,
       registerActions: false,
+      skipSupervisor: true,
     });
     app.i18n.addResources('zh-CN', 'translation', {
       hello: '你好',

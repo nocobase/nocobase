@@ -1,0 +1,210 @@
+:::tip KI-Übersetzungshinweis
+Diese Dokumentation wurde automatisch von KI übersetzt.
+:::
+
+
+pkg: '@nocobase/plugin-backups'
+---
+
+# Sicherungsverwaltung
+
+## Einführung
+
+Das NocoBase Sicherungsmanager-Plugin bietet Funktionen für die vollständige Sicherung der NocoBase-Datenbank und der von Benutzern hochgeladenen Dateien, einschließlich geplanter Sicherungen, des Herunterladens, Löschens und Wiederherstellens von Sicherungen.
+
+:::warning
+Das Sicherungsmanager-Plugin ist in den Professional- und Enterprise-Editionen enthalten. Benutzer der Community- und Standard-Edition können die Datenbank direkt sichern; Details finden Sie unter: [`NocoBase sichern und wiederherstellen`](https://www.nocobase.com/cn/blog/nocobase-backup-restore)
+:::
+
+## Datenbank-Client installieren
+
+Der Sicherungsmanager benötigt den Client für die entsprechende Datenbank. Bevor Sie ihn verwenden, laden Sie bitte den Client, der Ihrer Datenbankversion entspricht, von der offiziellen Website herunter:
+
+- MySQL: https://dev.mysql.com/downloads/
+- PostgreSQL: https://www.postgresql.org/download/
+
+Für Docker-Versionen können Sie direkt im Verzeichnis `./storage/scripts` ein Skript erstellen:
+
+```bash
+mkdir ./storage/scripts
+cd ./storage/scripts
+vim install-database-client.sh
+```
+
+Der Inhalt von `install-database-client.sh` ist wie folgt:
+
+<Tabs>
+
+<Tab label="PostgreSQL" name="PostgreSQL">
+
+```bash
+#!/bin/bash
+
+# Check if pg_dump is installed
+if [ ! -f /usr/bin/pg_dump ]; then
+    echo "pg_dump is not installed, starting PostgreSQL client installation..."
+
+    # Configure Aliyun mirrors
+    tee /etc/apt/sources.list > /dev/null <<EOF
+deb http://mirrors.aliyun.com/debian/ bookworm main contrib non-free
+deb-src http://mirrors.aliyun.com/debian/ bookworm main contrib non-free
+deb http://mirrors.aliyun.com/debian-security/ bookworm-security main contrib non-free
+deb-src http://mirrors.aliyun.com/debian-security/ bookworm-security main contrib non-free
+deb http://mirrors.aliyun.com/debian/ bookworm-updates main contrib non-free
+deb-src http://mirrors.aliyun.com/debian/ bookworm-updates main contrib non-free
+deb http://mirrors.aliyun.com/debian/ bookworm-backports main contrib non-free
+deb-src http://mirrors.aliyun.com/debian/ bookworm-backports main contrib non-free
+EOF
+
+    # Install necessary tools and clean cache
+    rm -rf /etc/apt/sources.list.d/debian.sources && apt-get update && apt-get install -y --no-install-recommends wget gnupg \
+      && rm -rf /var/lib/apt/lists/*
+
+    # Configure PostgreSQL source
+    echo "deb [signed-by=/usr/share/keyrings/pgdg.asc] http://mirrors.aliyun.com/postgresql/repos/apt bookworm-pgdg main" > /etc/apt/sources.list.d/pgdg.list
+    wget --quiet -O /usr/share/keyrings/pgdg.asc http://mirrors.aliyun.com/postgresql/repos/apt/ACCC4CF8.asc
+
+    # Install PostgreSQL client
+    apt-get update && apt-get install -y --no-install-recommends postgresql-client-16 \
+      && rm -rf /var/lib/apt/lists/*
+
+    echo "PostgreSQL client installation completed."
+else
+    echo "pg_dump is already installed, skipping PostgreSQL client installation."
+fi
+```
+
+</Tab>
+<Tab label="MySQL/MariaDB" name="MySQL/MariaDB">
+
+```bash
+#!/bin/bash
+
+if [ ! -f /usr/bin/mysql ]; then
+    echo "MySQL client is not installed, starting MySQL client installation..."
+
+    tee /etc/apt/sources.list > /dev/null <<EOF
+deb http://mirrors.aliyun.com/debian/ bookworm main contrib non-free
+deb-src http://mirrors.aliyun.com/debian/ bookworm main contrib non-free
+deb http://mirrors.aliyun.com/debian-security/ bookworm-security main contrib non-free
+deb-src http://mirrors.aliyun.com/debian-security/ bookworm-security main contrib non-free
+deb http://mirrors.aliyun.com/debian/ bookworm-updates main contrib non-free
+deb-src http://mirrors.aliyun.com/debian/ bookworm-updates main contrib non-free
+deb http://mirrors.aliyun.com/debian/ bookworm-backports main contrib non-free
+deb-src http://mirrors.aliyun.com/debian/ bookworm-backports main contrib non-free
+EOF
+
+    echo "Updating package list and installing necessary tools..."
+    rm -rf /etc/apt/sources.list.d/debian.sources && apt-get update && apt-get install -y --no-install-recommends wget gnupg \
+        && rm -rf /var/lib/apt/lists/*
+
+    wget --no-check-certificate https://downloads.mysql.com/archives/get/p/23/file/mysql-community-client-core_8.0.39-1debian12_amd64.deb && \
+        dpkg -x mysql-community-client-core_8.0.39-1debian12_amd64.deb /tmp/mysql-client && \
+        cp /tmp/mysql-client/usr/bin/mysqldump /usr/bin/ && \
+        cp /tmp/mysql-client/usr/bin/mysql /usr/bin/
+
+    echo "MySQL client installation completed."
+else
+    echo "MySQL client is already installed, skipping installation."
+fi
+```
+
+</Tab>
+
+</Tabs>
+
+Starten Sie anschließend den App-Container neu:
+
+```bash
+docker compose restart app
+# Protokolle anzeigen
+docker compose logs app
+```
+
+Überprüfen Sie die Versionsnummer des Datenbank-Clients; diese muss mit der Versionsnummer des Datenbankservers übereinstimmen.
+
+<Tabs>
+<Tab label="PostgreSQL" name="PostgreSQL">
+
+```bash
+docker compose exec app bash -c "pg_dump -V"
+```
+
+</Tab>
+<Tab label="MySQL/MariaDB" name="MySQL/MariaDB">
+
+```bash
+docker compose exec app bash -c "mysql -V"
+```
+
+</Tab>
+</Tabs>
+
+## Anwendungshinweise
+
+![](https://static-docs.nocobase.com/202510302154966.png)
+
+### Neue Sicherung erstellen
+
+Klicken Sie auf die Schaltfläche „Neue Sicherung erstellen“, um eine neue Sicherung basierend auf der Sicherungskonfiguration zu erstellen und den Sicherungsstatus in der Sicherungsliste anzuzeigen.
+
+![](https://static-docs.nocobase.com/202510302154912.png)
+
+### Sicherung wiederherstellen
+
+Es wird unterstützt, Sicherungen aus der Sicherungsliste wiederherzustellen oder lokale Sicherungsdateien hochzuladen, um Sicherungen wiederherzustellen.
+Wiederherstellungsvorgänge sind in den folgenden Szenarien nicht zulässig:
+
+- Wenn die aktuelle NocoBase-Version niedriger ist als die NocoBase-Version in der Sicherungsdatei.
+- Wenn die aktuelle NocoBase-Datenbank mit den folgenden Konfigurationen in der Sicherungsdatei nicht übereinstimmt:
+  - `dialect` (Datenbanktyp)
+  - `underscored` (Feldkonfiguration)
+  - `table prefix` (Tabellenpräfix)
+  - `schema` (Tabellenstruktur)
+- Wenn der `Tolerante Modus` nicht aktiviert ist und die Datenbankversion zum Zeitpunkt der Sicherung höher war als die aktuelle Anwendungsdatenbankversion.
+
+> **Sicherungs- und Wiederherstellungsvorgänge sind vollständige Datenbankoperationen. Es wird empfohlen, die aktuelle Datenbank vor einer Wiederherstellung zu sichern.**
+
+#### Aus der Sicherungsliste wiederherstellen
+
+Klicken Sie in der Sicherungsliste auf die Schaltfläche `Wiederherstellen` des Sicherungseintrags, geben Sie im Pop-up-Fenster das Verschlüsselungspasswort der Sicherungsdatei ein und klicken Sie auf „Bestätigen“, um die Sicherung wiederherzustellen.
+
+> Für unverschlüsselte Sicherungsdateien ist kein Passwort erforderlich.
+
+> Wenn Sie die Sicherung in einer älteren Datenbankversion wiederherstellen müssen, aktivieren Sie den toleranten Modus.
+
+![](https://static-docs.nocobase.com/202510302156882.png)
+
+#### Aus lokaler Sicherungsdatei wiederherstellen
+
+Klicken Sie auf die Schaltfläche `Aus lokaler Sicherung wiederherstellen`, wählen Sie im Pop-up-Fenster die lokale Sicherungsdatei aus, geben Sie das Verschlüsselungspasswort der Sicherungsdatei ein und klicken Sie auf „Bestätigen“, um die Sicherung wiederherzustellen.
+
+> Für unverschlüsselte Sicherungsdateien ist kein Passwort erforderlich.
+
+> Wenn Sie die Sicherung in einer älteren Datenbankversion wiederherstellen müssen, aktivieren Sie den toleranten Modus.
+
+![](https://static-docs.nocobase.com/202510302155602.png)
+
+#### Sicherungsdatei herunterladen
+
+Klicken Sie in der Sicherungsliste auf die Schaltfläche `Herunterladen` des Sicherungseintrags, um die Sicherungsdatei herunterzuladen.
+
+#### Sicherung löschen
+
+Klicken Sie in der Sicherungsliste auf die Schaltfläche `Löschen` des Sicherungseintrags, um die Sicherungsdatei zu löschen.
+
+## Sicherungseinstellungen
+
+Wechseln Sie zur Registerkarte `Einstellungen`, ändern Sie die Sicherungseinstellungen und klicken Sie auf `Speichern`, um die Änderungen zu übernehmen.
+
+![](https://static-docs.nocobase.com/202510302156326.png)
+
+### Beschreibung der Sicherungseinstellungen
+
+- `Automatische Sicherung`: Nachdem Sie `Automatische Sicherung nach Cron-Zeitplan ausführen` aktiviert haben, können Sie automatische Sicherungen zu bestimmten Zeiten einrichten.
+- `Maximale Anzahl Sicherungen`: Legen Sie die maximale Anzahl lokal gespeicherter Sicherungsdateien fest. Nach Überschreiten dieser Anzahl werden die ältesten lokalen Sicherungsdateien automatisch gelöscht.
+- `Sicherung in Cloud-Speicher synchronisieren`: Konfigurieren Sie den Cloud-Speicher, in den die Sicherungsdateien nach erfolgreicher Sicherung automatisch hochgeladen werden.
+- `Lokale Speicherdateien sichern`: Gibt an, ob von Benutzern in den lokalen Speicher des Servers (storage/uploads) hochgeladene Dateien in die Sicherung aufgenommen werden sollen.
+- `Wiederherstellungspasswort`: Wenn ein Wiederherstellungspasswort festgelegt wurde, muss dieses bei der Wiederherstellung der Sicherung eingegeben werden.
+
+> **Bitte bewahren Sie das Wiederherstellungspasswort sicher auf. Wenn Sie das Passwort vergessen, können Sie die Sicherungsdatei nicht wiederherstellen.**

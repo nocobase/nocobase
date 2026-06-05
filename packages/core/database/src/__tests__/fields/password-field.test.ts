@@ -61,4 +61,25 @@ describe('password field', () => {
     const user = await User.model.findOne({ where: { name: 'zhangsan' } });
     expect(await pwd.verify('123456', user.password)).toBeTruthy();
   });
+
+  it('should hash numeric password values', async () => {
+    const User = db.collection({
+      name: 'users',
+      fields: [
+        { type: 'string', name: 'name' },
+        { type: 'password', name: 'password' },
+      ],
+    });
+    await db.sync();
+
+    const user = await User.repository.create({
+      values: {
+        name: 'zhangsan',
+        password: 123456,
+      },
+    });
+
+    const pwd = User.getField<PasswordField>('password');
+    expect(await pwd.verify('123456', user.password)).toBeTruthy();
+  });
 });

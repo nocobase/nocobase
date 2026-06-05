@@ -34,7 +34,8 @@ export const useTableBlockProps = () => {
   const tableElementRef = useTableElementRef();
   const onPaginationChange = useCallback(() => {
     if (tableElementRef?.current) {
-      tableElementRef.current.parentElement?.scrollIntoView({ block: 'start' });
+      // TODO: 需要解决表格全高时，切换表格分页后，滚动条消失的问题
+      // tableElementRef.current.parentElement?.scrollIntoView({ block: 'start' });
     }
   }, [tableElementRef]);
   const pagination = useMemo(

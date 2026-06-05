@@ -1,0 +1,48 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Guía de seguridad",
+    "link": "/security/guide"
+  },
+  {
+    "type": "custom-link",
+    "label": "Política de tokens",
+    "link": "/security/token-policy/"
+  },
+  {
+    "type": "custom-link",
+    "label": "Política de contraseñas",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Política de contraseñas",
+        "link": "/security/password-policy/"
+      },
+      {
+        "type": "custom-link",
+        "label": "Bloqueo de usuarios",
+        "link": "/security/password-policy/lockout"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Restricción de IP",
+    "link": "/security/ip-restriction/"
+  },
+  {
+    "type": "custom-link",
+    "label": "Registro de auditoría",
+    "link": "/security/audit-logger/"
+  },
+  {
+    "type": "custom-link",
+    "label": "Autenticación de dos factores (2FA)",
+    "link": "/auth-verification/2fa/"
+  },
+  {
+    "type": "custom-link",
+    "label": "Cifrado de campos",
+    "link": "/data-sources/field-encryption"
+  }
+]

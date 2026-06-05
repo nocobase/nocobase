@@ -11,6 +11,8 @@ import { NAMESPACE } from '../constants';
 
 export default {
   name: 'workflowCcTasks',
+  filterTargetKey: 'id',
+  simplePaginate: true,
   dumpRules: {
     group: 'log',
   },
@@ -58,6 +60,10 @@ export default {
       type: 'belongsTo',
       name: 'node',
       target: 'flow_nodes',
+      uiSchema: {
+        type: 'object',
+        title: `{{t("CC node", { ns: "${NAMESPACE}" })}}`,
+      },
     },
     {
       type: 'belongsTo',
@@ -120,7 +126,7 @@ export default {
       interface: 'createdAt',
       uiSchema: {
         type: 'datetime',
-        title: '{{t("Created at")}}',
+        title: `{{t("Created at", { ns: "${NAMESPACE}" })}}`,
         'x-component': 'DatePicker',
         'x-component-props': {
           showTime: true,
@@ -133,7 +139,7 @@ export default {
       interface: 'updatedAt',
       uiSchema: {
         type: 'datetime',
-        title: '{{t("Updated at")}}',
+        title: `{{t("Updated at", { ns: "${NAMESPACE}" })}}`,
         'x-component': 'DatePicker',
         'x-component-props': {
           showTime: true,

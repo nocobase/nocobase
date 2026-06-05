@@ -1,0 +1,14 @@
+{
+  "AddStep": "Tambah langkah",
+  "Delete": "Hapus",
+  "Edit step title": "Edit judul langkah",
+  "Next": "Berikutnya",
+  "Previous": "Sebelumnya",
+  "Step": "Langkah",
+  "Step title": "Judul langkah",
+  "StepsForm": "Formulir multi-langkah",
+  "StepsForm(Add new)": "Formulir multi-langkah (Tambah baru)",
+  "StepsForm(Edit)": "Formulir multi-langkah (Edit)",
+  "The last step cannot be deleted": "Langkah terakhir tidak dapat dihapus",
+  "Whether to delete this step": "Apakah akan menghapus langkah ini?"
+}

@@ -9,7 +9,7 @@
 
 import React from 'react';
 import { Tabs, ConfigProvider } from 'antd';
-import { observer } from '@formily/reactive-react';
+import { observer } from '@nocobase/flow-engine';
 import { fetchChannels, channelStatusFilterObs, ChannelStatus } from '../observables';
 import { useLocalTranslation } from '../../locale';
 

@@ -7,7 +7,6 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Schema } from '@formily/react';
 import { uid } from '@formily/shared';
 import lodash from 'lodash';
 import { SelectedField } from './configure';
@@ -112,10 +111,22 @@ export const removeUnparsableFilter = (filter: any) => {
       const newLogic = filter.map((condition) => removeUnparsableFilter(condition)).filter(Boolean);
       return newLogic.length > 0 ? newLogic : null;
     } else {
-      const newLogic = {};
-      for (const key in filter) {
-        const value = removeUnparsableFilter(filter[key]);
-        if (value !== null && value !== undefined && !(typeof value === 'object' && Object.keys(value).length === 0)) {
+      const newLogic: any = {};
+      for (const [key, rawVal] of Object.entries(filter)) {
+        // 跳过无效键：空字符串或仅空白
+        if (typeof key === 'string' && key.trim().length === 0) {
+          continue;
+        }
+        const value = removeUnparsableFilter(rawVal);
+        // 丢弃空值/空对象/空数组
+        if (
+          value !== null &&
+          value !== undefined &&
+          !(
+            typeof value === 'object' &&
+            ((Array.isArray(value) && value.length === 0) || Object.keys(value).length === 0)
+          )
+        ) {
           newLogic[key] = value;
         }
       }
@@ -160,4 +171,16 @@ export const getFormulaInterface = (type: string) => {
     date: 'datetime',
     string: 'input',
   }[type];
+};
+
+export const isEmptyFilterObject = (filter: any) => {
+  if (!filter) return true;
+  if (Array.isArray(filter)) return filter.length === 0;
+  if (typeof filter === 'object') {
+    const keys = Object.keys(filter);
+    if (keys.length === 0) return true;
+    if (Array.isArray((filter as any).$and) && (filter as any).$and.length === 0) return true;
+    if (Array.isArray((filter as any).$or) && (filter as any).$or.length === 0) return true;
+  }
+  return false;
 };

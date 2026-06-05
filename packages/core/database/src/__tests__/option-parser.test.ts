@@ -9,6 +9,7 @@
 
 import { Collection, createMockDatabase, Database } from '@nocobase/database';
 import { OptionsParser } from '../options-parser';
+import qs from 'qs';
 
 describe('option parser', () => {
   let db: Database;
@@ -152,6 +153,72 @@ describe('option parser', () => {
       expect(include[0].association).toEqual('posts');
       expect(include[0].association);
       expect(include[0].options.recursively).toBeTruthy();
+    });
+
+    it('should ignore invalid entries when appends comes from query parser object', () => {
+      const options: any = {
+        appends: {
+          0: 'posts',
+          1: null,
+          2: { foo: 'bar' },
+          3: 'posts.comments',
+        },
+      };
+
+      const parser = new OptionsParser(options, {
+        collection: User,
+      });
+
+      const params = parser.toSequelizeParams();
+      expect(params.include).toHaveLength(1);
+      expect(params.include?.[0]?.association).toEqual('posts');
+      expect(params.include?.[0]?.include?.[0]?.association).toEqual('comments');
+    });
+
+    it('should handle real query strings that contain more than 20 appends', () => {
+      const appendValues = [
+        'posts',
+        'posts.title',
+        'posts.user',
+        'posts.user.name',
+        'posts.user.age',
+        'posts.user.posts',
+        'posts.user.posts.title',
+        'posts.user.posts.comments',
+        'posts.user.posts.comments.content',
+        'posts.user.posts.comments.posts',
+        'posts.user.posts.comments.posts.user',
+        'posts.user.posts.tags',
+        'posts.user.posts.tags.name',
+        'posts.comments',
+        'posts.comments.content',
+        'posts.comments.posts',
+        'posts.comments.posts.user',
+        'posts.comments.posts.comments',
+        'posts.comments.posts.tags',
+        'posts.comments.posts.tags.name',
+        'posts.tags',
+        'posts.tags.name',
+      ];
+      const query = appendValues.map((value) => `appends[]=${encodeURIComponent(value)}`).join('&');
+
+      const options: any = {
+        appends: qs.parse(query).appends,
+      };
+
+      const parser = new OptionsParser(options, {
+        collection: User,
+      });
+
+      const params = parser.toSequelizeParams();
+      const postsInclude = params.include?.find((item) => item.association === 'posts');
+      expect(postsInclude).toBeTruthy();
+      const nestedUser = postsInclude?.include?.find((item) => item.association === 'user');
+      const nestedComments = postsInclude?.include?.find((item) => item.association === 'comments');
+      const nestedTags = postsInclude?.include?.find((item) => item.association === 'tags');
+      expect(nestedUser).toBeTruthy();
+      expect(nestedComments).toBeTruthy();
+      expect(nestedTags).toBeTruthy();
     });
 
     it('should handle field with association', () => {

@@ -218,6 +218,58 @@ describe('sort field', () => {
       expect(r5.get('sort')).toBe(1);
     });
 
+    it('should use bind parameters when initializing scoped sort values', async () => {
+      const payload = `group') OR 1=1 --`;
+      const Test = db.collection({
+        name: 'tests',
+        fields: [
+          {
+            type: 'string',
+            name: 'name',
+          },
+          {
+            type: 'string',
+            name: 'group',
+          },
+        ],
+      });
+
+      await db.sync();
+      await Test.repository.create({
+        values: [
+          {
+            group: payload,
+            name: 'r1',
+          },
+          {
+            group: payload,
+            name: 'r2',
+          },
+        ],
+      });
+
+      const querySpy = vi.spyOn(db.sequelize, 'query');
+
+      Test.setField('sort', { type: 'sort', scopeKey: 'group' });
+
+      await db.sync();
+
+      const sortInitQueryCall = querySpy.mock.calls.find(
+        ([sql, options]) =>
+          typeof sql === 'string' &&
+          sql.includes('ROW_NUMBER() OVER') &&
+          Array.isArray(options?.bind) &&
+          options.bind.includes(payload),
+      );
+
+      expect(sortInitQueryCall).toBeDefined();
+      expect(sortInitQueryCall[0]).toContain('IN ($1)');
+      expect(sortInitQueryCall[0]).not.toContain(payload);
+      expect(sortInitQueryCall[1]).toMatchObject({
+        bind: [payload],
+      });
+    });
+
     it('should init sorted value by createdAt when primaryKey not exists', async () => {
       const Test = db.collection({
         autoGenId: false,

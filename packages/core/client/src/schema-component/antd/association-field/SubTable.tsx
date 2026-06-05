@@ -40,6 +40,7 @@ import { SubFormProvider, useAssociationFieldContext, useFieldNames } from './ho
 import { useTableSelectorProps } from './InternalPicker';
 import { Table } from './Table';
 import { getLabelFormatValue, useLabelUiSchema } from './util';
+import { useUpdate } from 'ahooks';
 
 const subTableContainer = css`
   .ant-table-footer {
@@ -109,6 +110,7 @@ export const SubTable: any = observer(
     const recordV2 = useCollectionRecord();
     const collection = useCollection();
     const { allowSelectExistingRecord, allowAddnew, allowDisassociation, enableIndexColumn } = field.componentProps;
+    const refresh = useUpdate();
 
     useSubTableSpecialCase({ rootField: field, rootSchema: schema });
 
@@ -220,6 +222,7 @@ export const SubTable: any = observer(
           // 计算总页数，并跳转到最后一页
           const totalPages = Math.ceil(field.value.length / (field.componentProps?.pageSize || 10));
           setCurrentPage(totalPages);
+          refresh(); // 修复添加新增按钮不刷新子表格的问题
           return field.onInput(field.value);
         },
       };

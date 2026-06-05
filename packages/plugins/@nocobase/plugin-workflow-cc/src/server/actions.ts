@@ -8,6 +8,13 @@
  */
 
 import actions, { Context } from '@nocobase/actions';
+import { appendTempAssociationFields } from './tempAssociationFields';
+
+const mergeAppends = (appends: string[] | undefined, required: string[]) => {
+  const result = new Set([...(appends || [])]);
+  required.forEach((item) => result.add(item));
+  return Array.from(result);
+};
 
 const workflowCcTasks = {
   async get(context: Context, next) {
@@ -24,8 +31,10 @@ const workflowCcTasks = {
       filter: {
         userId: context.state.currentUser.id,
       },
+      appends: mergeAppends(context.action.params?.appends, ['node', 'workflow', 'workflow.nodes']),
     });
-    return actions.list(context, next);
+    await actions.list(context, next);
+    await appendTempAssociationFields(context);
   },
 
   async read(context: Context, next) {

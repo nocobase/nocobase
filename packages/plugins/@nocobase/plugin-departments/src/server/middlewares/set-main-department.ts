@@ -17,85 +17,46 @@
  */
 
 import { Context, Next } from '@nocobase/actions';
+import { syncUserMainDepartment } from '../sync-user-main-department';
+
+const normalizeIds = (values: any[] = []) =>
+  values
+    .map((value) => (typeof value === 'object' && value ? value.id ?? value : value))
+    .filter((value) => value !== null && value !== undefined);
+
+const syncUsersMainDepartment = async (ctx: Context, userIds: any[]) => {
+  const uniqUserIds = [...new Set(normalizeIds(userIds))];
+  for (const userId of uniqUserIds) {
+    await syncUserMainDepartment(ctx.db, userId, ctx.transaction);
+  }
+};
 
 export const setMainDepartment = async (ctx: Context, next: Next) => {
-  await next();
-  const { associatedName, resourceName, associatedIndex, actionName, values } = ctx.action.params;
-  if (associatedName === 'departments' && resourceName === 'members' && values?.length) {
-    const throughRepo = ctx.db.getRepository('departmentsUsers');
-    const usersHasMain = await throughRepo.find({
-      filter: {
-        userId: {
-          $in: values,
-        },
-        isMain: true,
-      },
-    });
-    const userIdsHasMain = usersHasMain.map((item) => item.userId);
-    if (actionName === 'add' || actionName === 'set') {
-      await throughRepo.update({
-        filter: {
-          userId: {
-            $in: values.filter((id) => !userIdsHasMain.includes(id)),
-          },
-          departmentId: associatedIndex,
-        },
-        values: {
-          isMain: true,
-        },
-      });
-      return;
-    }
+  const { associatedName, resourceName, associatedIndex, actionName, values, filterByTk } = ctx.action.params;
+  let affectedDepartmentMemberUserIds: any[] = [];
 
-    if (actionName === 'remove') {
-      const userIdsHasNoMain = values.filter((id) => !userIdsHasMain.includes(id));
-      for (const userId of userIdsHasNoMain) {
-        const firstDept = await throughRepo.findOne({
-          filter: {
-            userId,
-          },
-        });
-        if (firstDept) {
-          await throughRepo.update({
-            filter: {
-              userId,
-              departmentId: firstDept.departmentId,
-            },
-            values: {
-              isMain: true,
-            },
-          });
-        }
-      }
-    }
+  if (associatedName === 'departments' && resourceName === 'members' && actionName === 'set') {
+    const throughRepo = ctx.db.getRepository('departmentsUsers');
+    const currentMembers = await throughRepo.find({
+      fields: ['userId'],
+      filter: { departmentId: associatedIndex },
+      transaction: ctx.transaction,
+    });
+    affectedDepartmentMemberUserIds = currentMembers.map((member: any) => member.get?.('userId') ?? member.userId);
   }
 
+  await next();
+
+  // When operating from department side: departments.members
+  if (associatedName === 'departments' && resourceName === 'members' && ['add', 'remove', 'set'].includes(actionName)) {
+    const affectedUserIds =
+      actionName === 'set' ? [...affectedDepartmentMemberUserIds, ...(values || [])] : values || [];
+    await syncUsersMainDepartment(ctx, affectedUserIds);
+    return;
+  }
+
+  // When operating from user side: users.departments
   if (associatedName === 'users' && resourceName === 'departments' && ['add', 'remove', 'set'].includes(actionName)) {
-    const throughRepo = ctx.db.getRepository('departmentsUsers');
-    const hasMain = await throughRepo.findOne({
-      filter: {
-        userId: associatedIndex,
-        isMain: true,
-      },
-    });
-    if (hasMain) {
-      return;
-    }
-    const firstDept = await throughRepo.findOne({
-      filter: {
-        userId: associatedIndex,
-      },
-    });
-    if (firstDept) {
-      await throughRepo.update({
-        filter: {
-          userId: associatedIndex,
-          departmentId: firstDept.departmentId,
-        },
-        values: {
-          isMain: true,
-        },
-      });
-    }
+    await syncUsersMainDepartment(ctx, [associatedIndex ?? filterByTk]);
   }
 };

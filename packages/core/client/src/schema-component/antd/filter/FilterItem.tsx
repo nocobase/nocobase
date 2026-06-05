@@ -9,7 +9,7 @@
 
 import { CloseCircleOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
-import { observer } from '@formily/react';
+import { observer } from '@nocobase/flow-engine';
 import { sortTree } from '@nocobase/utils/client';
 import { Cascader, Select, Space } from 'antd';
 import React, { useCallback, useContext, useMemo, useState } from 'react';

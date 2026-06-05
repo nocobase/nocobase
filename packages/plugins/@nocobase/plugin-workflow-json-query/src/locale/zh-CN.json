@@ -1,14 +1,13 @@
 {
-  "JSON calculation": "JSON 计算",
-  "Transforming or calculating values from complex JSON data.": "从复杂的 JSON 对象中转换或计算值。",
-  "Query engine": "解析引擎",
-  "Data source": "数据来源",
-  "Query expression": "查询表达式",
-  "Properties mapping": "属性映射",
-  "If the type of query result is object or array of object, could map the properties which to be accessed in subsequent nodes.":
-    "如果查询结果的类型是对象或对象数组，则可以映射后续节点中要访问的属性。",
-  "Property key": "属性键名",
+  "Add property": "添加属性",
   "Alias": "别名",
+  "Data source": "数据来源",
   "Display label": "展示名称",
-  "Add property": "添加属性"
+  "If the type of query result is object or array of object, could map the properties which to be accessed in subsequent nodes.": "如果查询结果的类型是对象或对象数组，则可以映射后续节点中要访问的属性。",
+  "JSON calculation": "JSON 计算",
+  "Properties mapping": "属性映射",
+  "Property key": "属性键名",
+  "Query engine": "解析引擎",
+  "Query expression": "查询表达式",
+  "Transforming or calculating values from complex JSON data.": "从复杂的 JSON 对象中转换或计算值。"
 }

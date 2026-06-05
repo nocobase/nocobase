@@ -71,8 +71,20 @@ vi.mock('../../collection-manager', async () => {
               target: 'test',
             };
           }
+          if (path === 'staff.belongsToField') {
+            return {
+              type: 'belongsTo',
+              target: 'test',
+            };
+          }
         },
-        getCollection: () => {
+        getCollection: (collectionName?: string) => {
+          if (collectionName === 'staff') {
+            return {
+              filterTargetKey: ['uuid'],
+              getPrimaryKey: () => 'id',
+            };
+          }
           return {
             getPrimaryKey: () => 'id',
           };
@@ -182,6 +194,18 @@ mockRequest.onGet('/someBelongsToField/0/belongsToField:get').reply(() => {
       data: {
         id: 0,
         name: '$some.belongsToField.belongsToField',
+      },
+    },
+  ];
+});
+
+mockRequest.onGet('/staff/staff-uuid-001/belongsToField:get').reply(() => {
+  return [
+    200,
+    {
+      data: {
+        id: 2,
+        name: '$staff.belongsToField',
       },
     },
   ];
@@ -973,6 +997,29 @@ describe('useVariables', () => {
         type: 'belongsTo',
         target: 'test',
       });
+    });
+  });
+
+  it('uses source collection filterTargetKey when lazy loading belongsTo variables', async () => {
+    const { result } = renderHook(() => useVariables(), {
+      wrapper: Providers,
+    });
+
+    await waitFor(async () => {
+      result.current.registerVariable({
+        name: '$staff',
+        ctx: {
+          id: 1,
+          uuid: 'staff-uuid-001',
+        },
+        collectionName: 'staff',
+      });
+    });
+
+    await waitFor(async () => {
+      expect(await result.current.parseVariable('{{ $staff.belongsToField.name }}').then(({ value }) => value)).toBe(
+        '$staff.belongsToField',
+      );
     });
   });
 

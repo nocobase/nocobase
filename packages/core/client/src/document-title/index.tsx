@@ -11,6 +11,7 @@ import React, { createContext, useCallback, useContext, useEffect, useMemo } fro
 import { useTranslation } from 'react-i18next';
 import { Plugin } from '../application/Plugin';
 import { useSystemSettings } from '../system-settings';
+import { useFlowEngineContext } from '@nocobase/flow-engine';
 
 interface DocumentTitleContextProps {
   getTitle: () => string;
@@ -25,9 +26,17 @@ DocumentTitleContext.displayName = 'DocumentTitleContext';
 
 export const DocumentTitleProvider: React.FC<{ addonBefore?: string; addonAfter?: string }> = React.memo((props) => {
   const { addonBefore, addonAfter } = props;
-  const { t } = useTranslation();
-  const { t: routeT } = useTranslation('lm-desktop-routes');
-  const { t: titleT } = useTranslation('lm-collections');
+  const ctx = useFlowEngineContext();
+  // const { t } = useTranslation();
+  // const { t: routeT } = useTranslation('lm-desktop-routes');
+  // const { t: titleT } = useTranslation('lm-collections');
+  const t = ctx.t.bind(ctx);
+  const routeT = (key: string) => {
+    return ctx.t(key, { ns: 'lm-desktop-routes' });
+  };
+  const titleT = (key: string) => {
+    return ctx.t(key, { ns: 'lm-collections' });
+  };
   const titleRef = React.useRef('');
 
   const getTitle = useCallback(() => titleRef.current, []);

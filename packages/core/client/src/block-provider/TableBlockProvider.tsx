@@ -17,6 +17,7 @@ import { SchemaComponentOptions } from '../schema-component';
 import { TableElementRefContext } from '../schema-component/antd/table-v2/Table';
 import { BlockProvider, useBlockRequestContext } from './BlockProvider';
 import { useBlockHeightProps } from './hooks';
+import { TableUidContext } from './TableUidContext';
 /**
  * @internal
  */
@@ -231,13 +232,15 @@ export const TableBlockProvider = withDynamicSchemaProps((props) => {
   }
 
   return (
-    <SchemaComponentOptions scope={{ treeTable }}>
-      <FormContext.Provider value={form}>
-        <BlockProvider name={props.name || 'table'} {...props} params={params} runWhenParamsChanged>
-          <InternalTableBlockProvider {...props} childrenColumnName={childrenColumnName} params={params} />
-        </BlockProvider>
-      </FormContext.Provider>
-    </SchemaComponentOptions>
+    <TableUidContext.Provider value={fieldSchema['x-uid']}>
+      <SchemaComponentOptions scope={{ treeTable }}>
+        <FormContext.Provider value={form}>
+          <BlockProvider name={props.name || 'table'} {...props} params={params} runWhenParamsChanged>
+            <InternalTableBlockProvider {...props} childrenColumnName={childrenColumnName} params={params} />
+          </BlockProvider>
+        </FormContext.Provider>
+      </SchemaComponentOptions>
+    </TableUidContext.Provider>
   );
 });
 

@@ -19,6 +19,7 @@ const mockServer = (options?: ApplicationOptions) => {
       dialect: 'sqlite',
       storage: ':memory:',
     },
+    skipSupervisor: true,
     ...options,
   });
 };

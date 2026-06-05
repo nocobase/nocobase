@@ -1,0 +1,210 @@
+:::tip
+이 문서는 AI로 번역되었습니다. 부정확한 내용이 있을 경우 [영어 버전](/en)을 참조하세요
+:::
+
+
+pkg: '@nocobase/plugin-backups'
+---
+
+# 백업 관리
+
+## 소개
+
+NocoBase 백업 관리자 플러그인은 NocoBase 데이터베이스와 사용자가 업로드한 파일에 대한 전체 백업, 예약 백업, 백업 다운로드, 삭제 및 복원 등의 기능을 제공합니다.
+
+:::warning
+백업 관리자 플러그인은 전문 에디션 및 기업 에디션에 포함되어 있습니다. 커뮤니티 에디션 및 표준 에디션 사용자의 경우, 데이터베이스를 직접 백업할 수 있습니다. 자세한 내용은 다음을 참조하십시오: [`NocoBase 백업 및 복원 방법`](https://www.nocobase.com/cn/blog/nocobase-backup-restore)
+:::
+
+## 데이터베이스 클라이언트 설치
+
+백업 관리자는 해당 데이터베이스의 클라이언트에 의존합니다. 사용 전에 공식 웹사이트에서 사용 중인 데이터베이스 버전에 맞는 클라이언트를 다운로드해 주십시오.
+
+- MySQL: https://dev.mysql.com/downloads/
+- PostgreSQL: https://www.postgresql.org/download/
+
+Docker 버전의 경우, `./storage/scripts` 디렉터리에 직접 스크립트를 작성할 수 있습니다.
+
+```bash
+mkdir ./storage/scripts
+cd ./storage/scripts
+vim install-database-client.sh
+```
+
+`install-database-client.sh` 파일의 내용은 다음과 같습니다:
+
+<Tabs>
+
+<Tab label="PostgreSQL" name="PostgreSQL">
+
+```bash
+#!/bin/bash
+
+# Check if pg_dump is installed
+if [ ! -f /usr/bin/pg_dump ]; then
+    echo "pg_dump is not installed, starting PostgreSQL client installation..."
+
+    # Configure Aliyun mirrors
+    tee /etc/apt/sources.list > /dev/null <<EOF
+deb http://mirrors.aliyun.com/debian/ bookworm main contrib non-free
+deb-src http://mirrors.aliyun.com/debian/ bookworm main contrib non-free
+deb http://mirrors.aliyun.com/debian-security/ bookworm-security main contrib non-free
+deb-src http://mirrors.aliyun.com/debian-security/ bookworm-security main contrib non-free
+deb http://mirrors.aliyun.com/debian/ bookworm-updates main contrib non-free
+deb-src http://mirrors.aliyun.com/debian/ bookworm-updates main contrib non-free
+deb http://mirrors.aliyun.com/debian/ bookworm-backports main contrib non-free
+deb-src http://mirrors.aliyun.com/debian/ bookworm-backports main contrib non-free
+EOF
+
+    # Install necessary tools and clean cache
+    rm -rf /etc/apt/sources.list.d/debian.sources && apt-get update && apt-get install -y --no-install-recommends wget gnupg \
+      && rm -rf /var/lib/apt/lists/*
+
+    # Configure PostgreSQL source
+    echo "deb [signed-by=/usr/share/keyrings/pgdg.asc] http://mirrors.aliyun.com/postgresql/repos/apt bookworm-pgdg main" > /etc/apt/sources.list.d/pgdg.list
+    wget --quiet -O /usr/share/keyrings/pgdg.asc http://mirrors.aliyun.com/postgresql/repos/apt/ACCC4CF8.asc
+
+    # Install PostgreSQL client
+    apt-get update && apt-get install -y --no-install-recommends postgresql-client-16 \
+      && rm -rf /var/lib/apt/lists/*
+
+    echo "PostgreSQL client installation completed."
+else
+    echo "pg_dump is already installed, skipping PostgreSQL client installation."
+fi
+```
+
+</Tab>
+<Tab label="MySQL/MariaDB" name="MySQL/MariaDB">
+
+```bash
+#!/bin/bash
+
+if [ ! -f /usr/bin/mysql ]; then
+    echo "MySQL client is not installed, starting MySQL client installation..."
+
+    tee /etc/apt/sources.list > /dev/null <<EOF
+deb http://mirrors.aliyun.com/debian/ bookworm main contrib non-free
+deb-src http://mirrors.aliyun.com/debian/ bookworm main contrib non-free
+deb http://mirrors.aliyun.com/debian-security/ bookworm-security main contrib non-free
+deb-src http://mirrors.aliyun.com/debian-security/ bookworm-security main contrib non-free
+deb http://mirrors.aliyun.com/debian/ bookworm-updates main contrib non-free
+deb-src http://mirrors.aliyun.com/debian/ bookworm-updates main contrib non-free
+deb http://mirrors.aliyun.com/debian/ bookworm-backports main contrib non-free
+deb-src http://mirrors.aliyun.com/debian/ bookworm-backports main contrib non-free
+EOF
+
+    echo "Updating package list and installing necessary tools..."
+    rm -rf /etc/apt/sources.list.d/debian.sources && apt-get update && apt-get install -y --no-install-recommends wget gnupg \
+        && rm -rf /var/lib/apt/lists/*
+
+    wget --no-check-certificate https://downloads.mysql.com/archives/get/p/23/file/mysql-community-client-core_8.0.39-1debian12_amd64.deb && \
+        dpkg -x mysql-community-client-core_8.0.39-1debian12_amd64.deb /tmp/mysql-client && \
+        cp /tmp/mysql-client/usr/bin/mysqldump /usr/bin/ && \
+        cp /tmp/mysql-client/usr/bin/mysql /usr/bin/
+
+    echo "MySQL client installation completed."
+else
+    echo "MySQL client is already installed, skipping installation."
+fi
+```
+
+</Tab>
+
+</Tabs>
+
+그런 다음 app 컨테이너를 재시작합니다.
+
+```bash
+docker compose restart app
+# 로그 확인
+docker compose logs app
+```
+
+데이터베이스 클라이언트 버전 번호를 확인하십시오. 이 번호는 데이터베이스 서버 버전 번호와 일치해야 합니다.
+
+<Tabs>
+<Tab label="PostgreSQL" name="PostgreSQL">
+
+```bash
+docker compose exec app bash -c "pg_dump -V"
+```
+
+</Tab>
+<Tab label="MySQL/MariaDB" name="MySQL/MariaDB">
+
+```bash
+docker compose exec app bash -c "mysql -V"
+```
+
+</Tab>
+</Tabs>
+
+## 사용 방법
+
+![](https://static-docs.nocobase.com/202510302154966.png)
+
+### 새 백업 생성
+
+"새 백업" 버튼을 클릭하면 백업 설정에 따라 새 백업을 생성하고, 백업 목록에서 백업 상태를 확인할 수 있습니다.
+
+![](https://static-docs.nocobase.com/202510302154912.png)
+
+### 백업 복원
+
+백업 목록에서 백업을 복원하거나 로컬 백업 파일을 업로드하여 백업을 복원하는 것을 지원합니다.
+다음 시나리오에서는 복원 작업을 수행할 수 없습니다:
+
+- 현재 NocoBase 버전이 백업 파일에 있는 NocoBase 버전보다 낮은 경우.
+- 현재 NocoBase 데이터베이스가 백업 파일의 다음 설정과 일치하지 않는 경우:
+  - dialect (데이터베이스 유형)
+  - underscored (필드 설정)
+  - table prefix (테이블 접두사)
+  - schema (테이블 구조)
+- `허용 모드`가 활성화되지 않았고, 백업 생성 시의 데이터베이스 버전이 현재 애플리케이션 데이터베이스 버전보다 높은 경우.
+
+> **백업 복원은 데이터베이스 전체 작업입니다. 백업을 복원하기 전에 현재 데이터베이스를 먼저 백업하는 것을 권장합니다.**
+
+#### 백업 목록에서 복원
+
+백업 목록에서 백업 항목의 `복원` 버튼을 클릭하고, 팝업 창에 백업 파일 암호화 비밀번호를 입력한 다음, "확인"을 클릭하여 백업을 복원합니다.
+
+> 암호화되지 않은 백업 파일은 비밀번호를 입력할 필요가 없습니다.
+
+> 백업 파일을 하위 버전 데이터베이스로 복원해야 하는 경우, 허용 모드를 활성화해야 합니다.
+
+![](https://static-docs.nocobase.com/202510302156882.png)
+
+#### 로컬 백업 파일로 복원
+
+`로컬 백업에서 복원` 버튼을 클릭하고, 팝업 창에서 로컬 백업 파일을 선택한 다음, 백업 파일 암호화 비밀번호를 입력하고 "확인"을 클릭하여 백업을 복원합니다.
+
+> 암호화되지 않은 백업 파일은 비밀번호를 입력할 필요가 없습니다.
+
+> 백업 파일을 하위 버전 데이터베이스로 복원해야 하는 경우, 허용 모드를 활성화해야 합니다.
+
+![](https://static-docs.nocobase.com/202510302155602.png)
+
+#### 백업 파일 다운로드
+
+백업 목록에서 백업 항목의 `다운로드` 버튼을 클릭하면 백업 파일을 다운로드할 수 있습니다.
+
+#### 백업 삭제
+
+백업 목록에서 백업 항목의 `삭제` 버튼을 클릭하면 백업 파일을 삭제할 수 있습니다.
+
+## 백업 설정
+
+`설정` 탭으로 이동하여 백업 설정을 수정한 후, "저장"을 클릭하면 적용됩니다.
+
+![](https://static-docs.nocobase.com/202510302156326.png)
+
+### 백업 설정 설명
+
+- `자동 백업`: `Cron 스케줄에 따라 자동 백업 실행`을 활성화한 후, 지정된 시간에 자동 백업을 설정할 수 있습니다.
+- `최대 백업 수`: 로컬에 저장할 백업 파일의 최대 개수를 설정합니다. 이 개수를 초과하면 가장 오래된 로컬 백업 파일이 자동으로 삭제됩니다.
+- `백업 파일을 클라우드 스토리지에 동기화`: 백업 파일이 성공적으로 백업된 후 자동으로 업로드될 클라우드 스토리지를 설정합니다.
+- `로컬 스토리지 파일 백업`: 사용자가 서버의 로컬 스토리지(storage/uploads)에 업로드한 파일을 백업에 포함할지 여부를 설정합니다.
+- `복원 비밀번호`: 복원 비밀번호를 설정한 경우, 백업을 복원할 때 해당 비밀번호를 입력해야 합니다.
+
+> **복원 비밀번호를 안전하게 보관해 주십시오. 비밀번호를 잊어버리면 백업 파일을 복원할 수 없습니다.**

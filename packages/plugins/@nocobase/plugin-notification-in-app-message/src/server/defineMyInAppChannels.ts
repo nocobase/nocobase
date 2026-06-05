@@ -12,6 +12,35 @@ import { Op, Sequelize } from 'sequelize';
 import { ChannelsCollectionDefinition as ChannelsDefinition } from '@nocobase/plugin-notification-manager';
 import { InAppMessagesDefinition as MessagesDefinition } from '../types';
 
+function parseLatestMsgReceiveTimestampLt(filter: unknown) {
+  const latestMsgReceiveTimestamp =
+    typeof filter === 'object' && filter !== null
+      ? (filter as { latestMsgReceiveTimestamp?: unknown }).latestMsgReceiveTimestamp
+      : null;
+  if (
+    typeof latestMsgReceiveTimestamp !== 'object' ||
+    latestMsgReceiveTimestamp === null ||
+    !Object.prototype.hasOwnProperty.call(latestMsgReceiveTimestamp, '$lt')
+  ) {
+    return null;
+  }
+
+  const value = (latestMsgReceiveTimestamp as { $lt?: unknown }).$lt;
+  if (typeof value === 'string' && value.trim() === '') {
+    throw new Error('Invalid latest message receive timestamp filter');
+  }
+  if (typeof value !== 'number' && typeof value !== 'string') {
+    throw new Error('Invalid latest message receive timestamp filter');
+  }
+
+  const timestamp = Number(value);
+  if (!Number.isFinite(timestamp)) {
+    throw new Error('Invalid latest message receive timestamp filter');
+  }
+
+  return timestamp;
+}
+
 export default function defineMyInAppChannels(app: Application) {
   app.resourceManager.define({
     name: 'myInAppChannels',
@@ -19,6 +48,12 @@ export default function defineMyInAppChannels(app: Application) {
       list: {
         handler: async (ctx) => {
           const { filter = {}, limit = 30 } = ctx.action?.params ?? {};
+          let latestMsgReceiveTimestampLt: number | null;
+          try {
+            latestMsgReceiveTimestampLt = parseLatestMsgReceiveTimestampLt(filter);
+          } catch (error) {
+            return ctx.throw(400, (error as Error).message);
+          }
           const messagesCollection = app.db.getCollection(MessagesDefinition.name);
           const messagesTableName = messagesCollection.getRealTableName(true);
           const channelsCollection = app.db.getCollection(ChannelsDefinition.name);
@@ -59,10 +94,12 @@ export default function defineMyInAppChannels(app: Application) {
                                 ORDER BY messages.${messagesFieldName.receiveTimestamp} DESC
                                 LIMIT 1
                             )`;
-          const latestMsgReceiveTSFilter = filter?.latestMsgReceiveTimestamp?.$lt
-            ? Sequelize.literal(`${latestMsgReceiveTimestampSQL} < ${filter.latestMsgReceiveTimestamp.$lt}`)
-            : null;
+          const latestMsgReceiveTSFilter =
+            latestMsgReceiveTimestampLt !== null
+              ? Sequelize.where(Sequelize.literal(latestMsgReceiveTimestampSQL), Op.lt, latestMsgReceiveTimestampLt)
+              : null;
           const channelIdFilter = filter?.id ? { id: filter.id } : null;
+          const channelNameFilter = filter?.name ? { name: filter.name } : null;
           const statusMap = {
             all: 'read|unread',
             unread: 'unread',
@@ -87,21 +124,22 @@ export default function defineMyInAppChannels(app: Application) {
           try {
             const channelsRes = channelsRepo.find({
               limit,
-              attributes: {
-                include: [
-                  [
-                    Sequelize.literal(`(
+              attributes: [
+                'name',
+                'title',
+                [
+                  Sequelize.literal(`(
                                 SELECT COUNT(*)
                                 FROM ${messagesTableName} AS messages
                                 WHERE
                                     messages.${messagesFieldName.channelName} = ${channelsTableAliasName}.${channelsFieldName.name}
                                     AND messages.${messagesFieldName.userId} = ${userId}
                             )`),
-                    'totalMsgCnt',
-                  ],
-                  [Sequelize.literal(`'${userId}'`), 'userId'],
-                  [
-                    Sequelize.literal(`(
+                  'totalMsgCnt',
+                ],
+                [Sequelize.literal(`'${userId}'`), 'userId'],
+                [
+                  Sequelize.literal(`(
                                 SELECT COUNT(*)
                                 FROM ${messagesTableName} AS messages
                                 WHERE
@@ -109,11 +147,11 @@ export default function defineMyInAppChannels(app: Application) {
                                     AND messages.${messagesFieldName.status} = 'unread'
                                     AND messages.${messagesFieldName.userId} = ${userId}
                             )`),
-                    'unreadMsgCnt',
-                  ],
-                  [Sequelize.literal(latestMsgReceiveTimestampSQL), 'latestMsgReceiveTimestamp'],
-                  [
-                    Sequelize.literal(`(
+                  'unreadMsgCnt',
+                ],
+                [Sequelize.literal(latestMsgReceiveTimestampSQL), 'latestMsgReceiveTimestamp'],
+                [
+                  Sequelize.literal(`(
                       SELECT messages.${messagesFieldName.title}
                               FROM ${messagesTableName} AS messages
                               WHERE
@@ -122,13 +160,18 @@ export default function defineMyInAppChannels(app: Application) {
                               ORDER BY messages.${messagesFieldName.receiveTimestamp} DESC
                               LIMIT 1
                   )`),
-                    'latestMsgTitle',
-                  ],
+                  'latestMsgTitle',
                 ],
-              },
+              ],
               //@ts-ignore
               where: {
-                [Op.and]: [userFilter, latestMsgReceiveTSFilter, channelIdFilter, channelStatusFilter].filter(Boolean),
+                [Op.and]: [
+                  userFilter,
+                  latestMsgReceiveTSFilter,
+                  channelIdFilter,
+                  channelNameFilter,
+                  channelStatusFilter,
+                ].filter(Boolean),
               },
               sort: ['-latestMsgReceiveTimestamp'],
             });
@@ -136,7 +179,7 @@ export default function defineMyInAppChannels(app: Application) {
             const countRes = channelsRepo.count({
               //@ts-ignore
               where: {
-                [Op.and]: [userFilter, channelStatusFilter].filter(Boolean),
+                [Op.and]: [userFilter, channelNameFilter, channelStatusFilter].filter(Boolean),
               },
             });
             const [channels, count] = await Promise.all([channelsRes, countRes]);

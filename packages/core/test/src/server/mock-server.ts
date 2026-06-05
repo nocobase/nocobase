@@ -12,7 +12,8 @@ import { Application, ApplicationOptions, AppSupervisor, Gateway, PluginManager 
 import { uid } from '@nocobase/utils';
 import jwt from 'jsonwebtoken';
 import qs from 'qs';
-import supertest, { SuperAgentTest } from 'supertest';
+import supertest from 'supertest';
+import { SuperAgent, SuperAgentRequest } from 'superagent';
 import { MemoryPubSubAdapter } from './memory-pub-sub-adapter';
 import { MockDataSource } from './mock-data-source';
 import path from 'path';
@@ -73,7 +74,7 @@ interface Resource {
   [name: string]: (params?: ActionParams) => Promise<supertest.Response>;
 }
 
-export interface ExtendedAgent extends SuperAgentTest {
+export interface ExtendedAgent extends SuperAgent<SuperAgentRequest> {
   login: (user: any, roleName?: string) => Promise<ExtendedAgent>;
   loginUsingId: (userId: number, roleName?: string) => Promise<ExtendedAgent>;
   resource: (name: string, resourceOf?: any) => Resource;
@@ -124,7 +125,7 @@ export class MockServer extends Application {
   agent(callback?): ExtendedAgent {
     const agent = supertest.agent(callback || this.callback());
     const prefix = this.resourcer.options.prefix;
-    const authManager = this.authManager;
+    const authManager = this.authManager as any;
     const proxy = new Proxy(agent, {
       get(target, method: string, receiver) {
         if (['login', 'loginUsingId'].includes(method)) {
@@ -142,7 +143,7 @@ export class MockServer extends Application {
                     roleName,
                     signInTime: Date.now(),
                   },
-                  process.env.APP_KEY,
+                  authManager.jwt.secret(),
                   {
                     jwtid: tokenInfo.jti,
                     expiresIn,
@@ -223,7 +224,7 @@ export class MockServer extends Application {
   }
 }
 
-export function mockServer(options: ApplicationOptions = {}) {
+export function mockServer(options: MockServerOptions = {}) {
   if (typeof TextEncoder === 'undefined') {
     global.TextEncoder = require('util').TextEncoder;
   }
@@ -279,6 +280,7 @@ export async function startMockServer(options: ApplicationOptions = {}) {
 type BeforeInstallFn = (app) => Promise<void>;
 
 export type MockServerOptions = ApplicationOptions & {
+  acl?: boolean;
   version?: string;
   beforeInstall?: BeforeInstallFn;
   skipInstall?: boolean;

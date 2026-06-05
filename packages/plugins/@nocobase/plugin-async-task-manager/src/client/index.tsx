@@ -14,6 +14,7 @@ import { AsyncTaskManagerProvider } from './AsyncTaskManagerProvider';
 type TaskOrigin = {
   Result?: React.ComponentType<any>;
   ResultButton?: React.ComponentType<any>;
+  namespace?: string;
 };
 
 export class PluginAsyncTaskManagerClient extends Plugin {

@@ -29,9 +29,15 @@ export abstract class Formatter {
     timezone?: string,
   ): Fn | Literal;
 
-  getTimezoneByOffset(offset: string) {
-    if (!/^[+-]\d{1,2}:\d{2}$/.test(offset)) {
+  getTimezoneByOffset(offset?: string) {
+    if (!offset) {
+      return;
+    }
+    if (moment.tz.zone(offset)) {
       return offset;
+    }
+    if (!/^[+-]\d{1,2}:\d{2}$/.test(offset)) {
+      return;
     }
     const offsetMinutes = moment.duration(offset).asMinutes();
     return moment.tz.names().find((timezone) => {

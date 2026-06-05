@@ -1,0 +1,14 @@
+{
+  "AddStep": "添加步骤",
+  "Delete": "删除",
+  "Edit step title": "编辑步骤标题",
+  "Next": "下一步",
+  "Previous": "上一步",
+  "Step": "步骤",
+  "Step title": "步骤标题",
+  "StepsForm": "分步表单",
+  "StepsForm(Add new)": "分步表单（添加）",
+  "StepsForm(Edit)": "分步表单（编辑）",
+  "The last step cannot be deleted": "最后一个步骤不可以删除",
+  "Whether to delete this step": "是否删除这个步骤？"
+}

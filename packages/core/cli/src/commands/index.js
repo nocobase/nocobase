@@ -38,6 +38,7 @@ module.exports = (cli) => {
   require('./pkg')(cli);
   require('./instance-id')(cli);
   require('./view-license-key')(cli);
+  require('./client')(cli);
   if (isPackageValid('@umijs/utils')) {
     require('./create-plugin')(cli);
   }

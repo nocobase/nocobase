@@ -1,0 +1,18 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Быстрый старт",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Введение",
+        "link": "/ui-development-block"
+      },
+      {
+        "type": "custom-link",
+        "label": "Создание плагина блока",
+        "link": "/ui-development-block/write-a-block-plugin"
+      }
+    ]
+  }
+]

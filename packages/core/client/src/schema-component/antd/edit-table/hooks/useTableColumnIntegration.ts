@@ -7,9 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { useMemo, useState, useEffect } from 'react';
-import { useFieldSchema } from '@formily/react';
-import { useColumnSettings, ColumnSettings } from './useColumnSettings';
+import { useContext, useEffect, useMemo, useState } from 'react';
+import { TableUidContext } from '../../../../block-provider/TableUidContext';
+import { ColumnSettings, useColumnSettings } from './useColumnSettings';
 
 export interface TableColumnProps {
   key: string;
@@ -28,11 +28,9 @@ export interface TableColumnProps {
  * @param enable - Whether to enable integration logic; if false, returns originalColumns directly
  */
 export const useTableColumnIntegration = (originalColumns: TableColumnProps[], enable = true) => {
-  const fieldSchema = useFieldSchema();
+  const tableUid = useContext(TableUidContext);
 
-  // Get table ID for localStorage
-  const tableId = fieldSchema?.['x-uid'] || 'default';
-  const { getSettings } = useColumnSettings(tableId);
+  const { getSettings } = useColumnSettings(tableUid);
 
   // Add refresh trigger to force re-reading localStorage
   const [refreshTrigger, setRefreshTrigger] = useState(0);
@@ -43,7 +41,7 @@ export const useTableColumnIntegration = (originalColumns: TableColumnProps[], e
       const { key, tableId: eventTableId } = event.detail;
 
       // Only refresh if this is the target table
-      if (key.includes(tableId) || eventTableId === tableId) {
+      if (key.includes(tableUid) || eventTableId === tableUid) {
         setRefreshTrigger((prev) => prev + 1);
       }
     };
@@ -53,7 +51,7 @@ export const useTableColumnIntegration = (originalColumns: TableColumnProps[], e
     return () => {
       window.removeEventListener('nocobase-table-settings-changed', handleCustomStorageChange as EventListener);
     };
-  }, [tableId]);
+  }, [tableUid]);
 
   // Get saved column settings
   const savedColumnSettings = useMemo(() => {

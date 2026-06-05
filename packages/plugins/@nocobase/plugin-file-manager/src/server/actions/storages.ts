@@ -44,3 +44,45 @@ export async function getBasicInfo(context, next) {
 
   next();
 }
+
+export async function check(context, next) {
+  const { fileCollectionName, storageName: storage_name } = context.action.params;
+  let storage;
+
+  const fileCollection = context.db.getCollection(fileCollectionName || 'attachments');
+  const storageName = storage_name || fileCollection?.options?.storage;
+  if (storageName) {
+    storage = await context.db.getRepository('storages').findOne({
+      where: {
+        name: storageName,
+      },
+    });
+  } else {
+    storage = await context.db.getRepository('storages').findOne({
+      where: {
+        default: true,
+      },
+    });
+  }
+
+  if (!storage) {
+    context.throw(400, context.t('Storage configuration not found. Please configure a storage provider first.'));
+  }
+
+  const isSupportToUploadFiles = !!fileCollection;
+
+  const storageInfo = {
+    id: storage.id,
+    title: storage.title,
+    name: storage.name,
+    type: storage.type,
+    rules: storage.rules,
+  };
+
+  context.body = {
+    isSupportToUploadFiles: !!isSupportToUploadFiles,
+    storage: storageInfo,
+  };
+
+  await next();
+}

@@ -19,7 +19,7 @@ export function ExecutionContextProvider({ children, workflow, execution, nodes 
   const workflowPlugin = usePlugin(PluginWorkflowClient);
 
   if (!workflow?.type) {
-    return <Result status="warning" title={lang('Workflow is not exists')} />;
+    return <Result status="warning" title={lang('Workflow of execution is not existed')} />;
   }
 
   const trigger = workflowPlugin.triggers.get(workflow.type);

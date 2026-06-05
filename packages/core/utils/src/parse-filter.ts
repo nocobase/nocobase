@@ -104,6 +104,15 @@ function isDate(input) {
   return input instanceof Date || Object.prototype.toString.call(input) === '[object Date]';
 }
 
+function isDateFieldWithoutTimezone(field) {
+  return (
+    field?.type === 'dateOnly' ||
+    field?.type === 'datetimeNoTz' ||
+    field?.constructor.name === 'DateOnlyField' ||
+    field?.constructor.name === 'DatetimeNoTzField'
+  );
+}
+
 const dateValueWrapper = (value: any, timezone?: string) => {
   if (!value) {
     return null;
@@ -187,7 +196,7 @@ export const parseFilter = async (filter: any, opts: ParseFilterOptions = {}) =>
       if (isDateOperator(operator)) {
         const field = getField?.(path);
 
-        if (field?.constructor.name === 'DateOnlyField' || field?.constructor.name === 'DatetimeNoTzField') {
+        if (isDateFieldWithoutTimezone(field)) {
           if (value.type) {
             return getDayRangeByParams({ ...value, timezone: field?.timezone || timezone });
           }

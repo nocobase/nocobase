@@ -86,8 +86,13 @@ export const TableColumnDecorator = (props) => {
 
   if (isInSubTable) {
     const path = field.path?.splice(field.path?.length - 1, 1);
-    const realField = field.form.query(`${path.concat(`*.` + fieldSchema.name)}`).take() as Field;
-    required = typeof realField?.required === 'boolean' ? realField.required : fieldSchema?.required;
+    const realField = field.form.query(`${path.concat(`*.` + fieldSchema.name)}`).take() as Field & {
+      schema?: {
+        required?: boolean;
+      };
+    };
+    // 子表格列头的星号只表示 schema 配置态的必填，不应跟随联动规则的运行时 required 校验态变化。
+    required = typeof realField?.schema?.required === 'boolean' ? realField.schema.required : fieldSchema?.required;
   }
 
   useEffect(() => {

@@ -151,6 +151,7 @@ export class Collection<
   isThrough?: boolean;
   fields: Map<string, any> = new Map<string, any>();
   model: ModelStatic<Model>;
+
   repository: Repository<TModelAttributes, TCreationAttributes>;
 
   constructor(options: CollectionOptions, context: CollectionContext) {
@@ -177,6 +178,10 @@ export class Collection<
 
     this.setRepository(options.repository);
     this.setSortable(options.sortable);
+  }
+
+  get underscored() {
+    return this.options.underscored;
   }
 
   get filterTargetKey(): string | string[] {
@@ -211,6 +216,10 @@ export class Collection<
 
   get titleField() {
     return (this.options.titleField as string) || this.model.primaryKeyAttribute;
+  }
+
+  get titleFieldInstance() {
+    return this.getField(this.titleField);
   }
 
   get db() {
@@ -293,7 +302,7 @@ export class Collection<
   tableName() {
     const { name, tableName } = this.options;
     const tName = tableName || name;
-    return this.options.underscored ? snakeCase(tName) : tName;
+    return this.underscored ? snakeCase(tName) : tName;
   }
 
   /**
@@ -398,6 +407,10 @@ export class Collection<
 
     if (!autoGenId) {
       this.model.removeAttribute('id');
+
+      // the auto add `id` attribute let autoIncrementAttribute = 'id', if remove `id` attribute should set autoIncrementAttribute to null
+      // @ts-ignore
+      this.model.autoIncrementAttribute = null;
     }
 
     // @ts-ignore
@@ -443,7 +456,7 @@ export class Collection<
   }
 
   checkFieldType(name: string, options: FieldOptions) {
-    if (!this.options.underscored) {
+    if (!this.underscored) {
       return;
     }
 
@@ -622,7 +635,7 @@ export class Collection<
     if (this.model.options.timestamps !== false) {
       // timestamps 相关字段不删除
       let timestampsFields = ['createdAt', 'updatedAt', 'deletedAt'];
-      if (this.db.options.underscored) {
+      if (this.underscored) {
         timestampsFields = timestampsFields.map((fieldName) => snakeCase(fieldName));
       }
       if (timestampsFields.includes(field.columnName())) {
@@ -1036,6 +1049,7 @@ export class Collection<
       modelName: name,
       sequelize: this.context.database.sequelize,
       tableName: this.tableName(),
+      underscored: this.underscored,
     };
 
     return attr;

@@ -41,7 +41,7 @@ export function useTargetCollectionField(schema?) {
   const fieldSchema = schema || targetSchema;
   const providedCollection = useCollection_deprecated();
   const { getCollection, getCollectionField } = useCollectionManager_deprecated();
-  const paths = (fieldSchema.name as string).split('.');
+  const paths = (fieldSchema?.name as string)?.split('.') || [];
   let collection: any = providedCollection;
   for (let i = 0; i < paths.length - 1; i++) {
     const field = collection.getField(paths[i]);
@@ -100,7 +100,7 @@ export function Result(props) {
   const { evaluate } = (evaluators as Registry<Evaluator>).get(engine);
   const formBlockContext = useFormBlockContext();
   const field: any = useField();
-  const path: any = field.path.entire;
+  const path: any = field?.path?.entire;
   const fieldPath = path?.replace(`.${fieldSchema.name}`, '');
 
   useEffect(() => {

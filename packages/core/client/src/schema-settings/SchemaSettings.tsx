@@ -198,16 +198,17 @@ const InternalSchemaSettingsDropdown: React.FC<SchemaSettingsProps> = React.memo
 
   const handleMouseEnter = () => {
     setOpenDropdown(true);
+    setVisible(true);
   };
 
   // 从这里截断，可以保证每次显示时都是最新状态的菜单列表
-  if (!openDropdown) {
-    return (
-      <div onMouseEnter={handleMouseEnter} data-testid={props['data-testid']}>
-        {typeof title === 'string' ? <span>{title}</span> : title}
-      </div>
-    );
-  }
+  // if (!openDropdown) {
+  //   return (
+  //     <div onMouseEnter={handleMouseEnter} data-testid={props['data-testid']}>
+  //       {typeof title === 'string' ? <span>{title}</span> : title}
+  //     </div>
+  //   );
+  // }
 
   const items = getMenuItems(() => props.children);
 
@@ -512,6 +513,15 @@ export interface SchemaSettingsRemoveProps {
   removeParentsIfNoChildren?: boolean;
   breakRemoveOn?: ISchema | ((s: ISchema) => boolean);
 }
+
+export const getSchemaSettingsDialogZIndex = (parentZIndex: number) => {
+  return Math.max(getZIndex('modal', parentZIndex + 10, 0), ICON_POPUP_Z_INDEX + 200);
+};
+
+export const getSchemaSettingsConfirmZIndex = (parentZIndex: number) => {
+  return Math.max(getZIndex('modal', parentZIndex, 1), 1000);
+};
+
 export const SchemaSettingsRemove: FC<SchemaSettingsRemoveProps> = (props) => {
   const { disabled, confirm, title, removeParentsIfNoChildren, breakRemoveOn } = props;
   const { dn, template } = useSchemaSettings();
@@ -524,6 +534,8 @@ export const SchemaSettingsRemove: FC<SchemaSettingsRemoveProps> = (props) => {
   const { modal } = App.useApp();
   const { removeActiveFieldName } = useFormActiveFields() || {};
   const { removeDataBlock } = useFilterBlock();
+  const parentZIndex = useZIndexContext();
+  const confirmZIndex = getSchemaSettingsConfirmZIndex(parentZIndex);
 
   return (
     <SchemaSettingsItem
@@ -534,6 +546,7 @@ export const SchemaSettingsRemove: FC<SchemaSettingsRemoveProps> = (props) => {
         modal.confirm({
           title: title ? compile(title) : t('Delete block'),
           content: t('Are you sure you want to delete it?'),
+          zIndex: confirmZIndex,
           ...confirm,
           async onOk() {
             const options = {
@@ -700,7 +713,7 @@ export const SchemaSettingsActionModalItem: FC<SchemaSettingsActionModalItemProp
   const upLevelActiveFields = useFormActiveFields();
   const parentZIndex = useZIndexContext();
 
-  const zIndex = getZIndex('modal', parentZIndex + 10, 0);
+  const zIndex = Math.max(getZIndex('modal', parentZIndex + 10, 0), ICON_POPUP_Z_INDEX + 200);
 
   const form = useMemo(
     () =>
@@ -859,6 +872,8 @@ export const SchemaSettingsModalItem: FC<SchemaSettingsModalItemProps> = (props)
   const allDataBlocks = useContext(AllDataBlocksContext);
   const schemaComponentContextValue = useContext(SchemaComponentContext);
   const variableScopeContext = useContext(VariableScopeContext);
+  const parentZIndex = useZIndexContext();
+  const zIndex = getSchemaSettingsDialogZIndex(parentZIndex);
 
   // 解决变量`当前对象`值在弹窗中丢失的问题
   const { formValue: subFormValue, collection: subFormCollection, parent } = useSubFormValue();
@@ -879,7 +894,13 @@ export const SchemaSettingsModalItem: FC<SchemaSettingsModalItemProps> = (props)
         const values = asyncGetInitialValues ? await asyncGetInitialValues() : initialValues;
         const schema = _.isFunction(props.schema) ? props.schema() : props.schema;
         FormDialog(
-          { title: schema.title || title, width, rootClassName: dialogRootClassName },
+          {
+            title: schema.title || title,
+            width,
+            rootClassName: dialogRootClassName,
+            getContainer: () => document.body,
+            zIndex,
+          },
           () => {
             return (
               <VariableScopeContext.Provider value={variableScopeContext}>
@@ -940,7 +961,7 @@ export const SchemaSettingsModalItem: FC<SchemaSettingsModalItemProps> = (props)
                                                       <APIClientProvider apiClient={apiClient}>
                                                         <ConfigProvider locale={locale}>
                                                           {/* 防止按钮的配置弹窗的图标弹窗被遮挡 */}
-                                                          <zIndexContext.Provider value={ICON_POPUP_Z_INDEX}>
+                                                          <zIndexContext.Provider value={zIndex}>
                                                             <SchemaComponent
                                                               components={components}
                                                               scope={scope}

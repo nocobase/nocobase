@@ -24,9 +24,12 @@ import { FormDialog, ICON_POPUP_Z_INDEX, withSearchParams, zIndexContext } from 
 import { antTableCell } from '../../../acl/style';
 import {
   CurrentTabUidContext,
+  LocationSearchContext,
+  SearchParamsContext,
   useCurrentSearchParams,
   useCurrentTabUid,
   useLocationNoUpdate,
+  useLocationSearch,
   useNavigateNoUpdate,
   useRouterBasename,
 } from '../../../application/CustomRouterContextProvider';
@@ -42,6 +45,7 @@ import {
   useCurrentRoute,
   useMobileLayout,
 } from '../../../route-switch/antd/admin-layout';
+import { shouldDisplayRouteBadge } from '../../../route-switch/antd/admin-layout/badge';
 import { NocoBaseDesktopRoute } from '../../../route-switch/antd/admin-layout/convertRoutesToSchema';
 import { KeepAlive, useKeepAlive } from '../../../route-switch/antd/admin-layout/KeepAlive';
 import { useGetAriaLabelOfSchemaInitializer } from '../../../schema-initializer/hooks/useGetAriaLabelOfSchemaInitializer';
@@ -51,6 +55,7 @@ import { SortableItem } from '../../common/sortable-item';
 import { RemoteSchemaComponent, SchemaComponent, SchemaComponentOptions } from '../../core';
 import { useCompile, useDesignable } from '../../hooks';
 import { useToken } from '../__builtins__';
+import { useFlowEngineContext } from '@nocobase/flow-engine';
 import { ErrorFallback } from '../error-fallback';
 import { useMenuDragEnd, useNocoBaseRoutes } from '../menu/Menu';
 import { AllDataBlocksProvider } from './AllDataBlocksProvider';
@@ -114,11 +119,32 @@ const InternalPage = React.memo((props: PageProps) => {
   );
 });
 
+export const useKeepAliveLocationSearch = () => {
+  const { active } = useKeepAlive();
+  const locationSearch = useLocationSearch();
+  const locationSearchRef = useRef(locationSearch);
+
+  // 缓存页失活后保留自己的查询串，避免被其他页面的 URL 参数污染。
+  if (active) {
+    locationSearchRef.current = locationSearch;
+  }
+
+  return active ? locationSearch : locationSearchRef.current;
+};
+
 export const Page = React.memo((props: PageProps) => {
   const { hashId, componentCls } = useStyles();
   const { active: pageActive } = useKeepAlive();
   const currentTabUid = useCurrentTabUid();
+  const locationSearch = useKeepAliveLocationSearch();
   const tabUidRef = useRef(currentTabUid);
+  const engineCtx = useFlowEngineContext();
+  const searchParams = useMemo(() => new URLSearchParams(locationSearch), [locationSearch]);
+  useEffect(() => {
+    if (pageActive && engineCtx?.pageInfo) {
+      engineCtx.pageInfo.version = 'v1';
+    }
+  }, [pageActive, engineCtx]);
 
   if (pageActive) {
     tabUidRef.current = currentTabUid;
@@ -127,10 +153,14 @@ export const Page = React.memo((props: PageProps) => {
   return (
     <AllDataBlocksProvider>
       <div className={`${componentCls} ${hashId} ${antTableCell}`}>
-        {/* Avoid passing values down to improve rendering performance */}
-        <CurrentTabUidContext.Provider value={''}>
-          <InternalPage currentTabUid={tabUidRef.current} className={props.className} />
-        </CurrentTabUidContext.Provider>
+        <LocationSearchContext.Provider value={locationSearch}>
+          <SearchParamsContext.Provider value={searchParams}>
+            {/* Avoid passing values down to improve rendering performance */}
+            <CurrentTabUidContext.Provider value={''}>
+              <InternalPage currentTabUid={tabUidRef.current} className={props.className} />
+            </CurrentTabUidContext.Provider>
+          </SearchParamsContext.Provider>
+        </LocationSearchContext.Provider>
       </div>
     </AllDataBlocksProvider>
   );
@@ -241,7 +271,7 @@ const PageContent = memo((props: PageContentProps) => {
 const TabBadge: FC<{ tabRoute: NocoBaseDesktopRoute; style?: React.CSSProperties }> = (props) => {
   const badgeCount = useEvaluatedExpression(props.tabRoute.options?.badge?.count);
 
-  if (badgeCount == null) return null;
+  if (!shouldDisplayRouteBadge(badgeCount, props.tabRoute.options?.badge?.showZero)) return null;
 
   return (
     <Badge

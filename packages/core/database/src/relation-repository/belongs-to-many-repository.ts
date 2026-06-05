@@ -139,6 +139,7 @@ export class BelongsToManyRepository extends MultipleRelationRepository {
           [Op.in]: ids,
         },
       },
+      individualHooks: true,
       transaction,
     });
 

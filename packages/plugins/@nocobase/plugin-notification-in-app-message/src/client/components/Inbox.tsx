@@ -16,7 +16,7 @@
  * For more information, please rwefer to: https://www.nocobase.com/agreement.
  */
 
-import { observer } from '@formily/reactive-react';
+import { observer } from '@nocobase/flow-engine';
 import { Icon, useApp, useCurrentUserContext, useMobileLayout } from '@nocobase/client';
 import { MobilePopup } from '@nocobase/plugin-mobile/client';
 import { Badge, Button, ConfigProvider, Drawer, notification, theme, Tooltip } from 'antd';
@@ -93,6 +93,10 @@ const InnerInbox = (props) => {
   const currUserId = ctx.data?.data?.id;
 
   const onMessageCreated = useCallback(({ detail }: CustomEvent) => {
+    messageMapObs.value[detail.id] = detail;
+    fetchChannels({ filter: { name: detail.channelName, status: 'all' } });
+    updateUnreadMsgsCount();
+
     notification.info({
       message: (
         <div
@@ -130,7 +134,6 @@ const InnerInbox = (props) => {
   }, [currUserId]);
   const onIconClick = useCallback(() => {
     inboxVisible.value = true;
-    fetchChannels({});
   }, []);
 
   useEffect(() => {
@@ -141,7 +144,7 @@ const InnerInbox = (props) => {
       app.eventBus.removeEventListener('ws:message:in-app-message:created', onMessageCreated);
       app.eventBus.removeEventListener('ws:message:in-app-message:updated', onMessageUpdated);
     };
-  }, [app.eventBus, onMessageUpdated]);
+  }, [app.eventBus, onMessageCreated, onMessageUpdated]);
 
   return (
     <ConfigProvider

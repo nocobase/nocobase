@@ -1,0 +1,9 @@
+{
+  "API request and response logs": "API kérés és válasz naplók",
+  "Application, database, plugins and other system logs, the error level logs will be sent to": "Alkalmazás, adatbázis, bővítmények és egyéb rendszernaplók, a hibaüzenetek elküldésre kerülnek ide",
+  "Download": "Letöltés",
+  "Download logs": "Naplók letöltése",
+  "Logger": "Naplózó",
+  "SQL execution logs, printed by Sequelize when the db logging is enabled": "SQL végrehajtási naplók, amelyeket a Sequelize ír ki, amikor az adatbázis naplózás engedélyezve van",
+  "Search": "Keresés"
+}

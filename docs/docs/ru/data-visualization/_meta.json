@@ -1,0 +1,74 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Обзор",
+    "link": "/data-visualization/index"
+  },
+  {
+    "type": "custom-link",
+    "label": "Быстрый старт",
+    "link": "/data-visualization/quick-start"
+  },
+  {
+    "type": "custom-link",
+    "label": "Обзор функций",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Запрос данных",
+        "link": "/data-visualization/guide/data-query"
+      },
+      {
+        "type": "custom-link",
+        "label": "Опции диаграммы",
+        "link": "/data-visualization/guide/chart-options"
+      },
+      {
+        "type": "custom-link",
+        "label": "Предпросмотр и сохранение",
+        "link": "/data-visualization/guide/preview-and-save"
+      },
+      {
+        "type": "custom-link",
+        "label": "Использование переменных окружения контекста",
+        "link": "/data-visualization/guide/context-variables"
+      },
+      {
+        "type": "custom-link",
+        "label": "Фильтры страницы и взаимодействие",
+        "link": "/data-visualization/guide/filters-and-linkage"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Продвинутый уровень",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Запрос данных в режиме SQL",
+        "link": "/data-visualization/guide/sql-data-query"
+      },
+      {
+        "type": "custom-link",
+        "label": "Пользовательская настройка диаграмм",
+        "link": "/data-visualization/guide/custom-chart-options"
+      },
+      {
+        "type": "custom-link",
+        "label": "Пользовательские события взаимодействия",
+        "link": "/data-visualization/guide/chart-events"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Часто задаваемые вопросы",
+    "link": "/data-visualization/faq"
+  },
+  {
+    "type": "custom-link",
+    "label": "Лучшие практики",
+    "link": "/data-visualization/best-practices"
+  }
+]

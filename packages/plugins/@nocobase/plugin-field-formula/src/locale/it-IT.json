@@ -1,8 +1,9 @@
 {
-  "Formula": "Formula",
   "Calculation engine": "Motore di calcolo",
+  "Compute a value based on the other fields": "Compute a value based on the other fields",
+  "Configure and store the results of calculations between multiple field values in the same record, supporting both Math.js and Excel formula functions.": "Configura e memorizza i risultati dei calcoli tra più valori dei campi nello stesso record, supportando sia funzioni delle formule Math.js che quelli Excel.",
   "Expression": "Espressione",
   "Expression syntax error": "Errore sintassi espressione",
-  "Syntax references": "Riferimenti sintassi",
-  "Configure and store the results of calculations between multiple field values in the same record, supporting both Math.js and Excel formula functions.": "Configura e memorizza i risultati dei calcoli tra più valori dei campi nello stesso record, supportando sia funzioni delle formule Math.js che quelli Excel."
+  "Formula": "Formula",
+  "Syntax references": "Riferimenti sintassi"
 }

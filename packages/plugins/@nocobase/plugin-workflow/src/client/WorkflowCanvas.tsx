@@ -28,6 +28,7 @@ import {
   useResourceContext,
   useCompile,
   css,
+  useRequest,
 } from '@nocobase/client';
 import { dayjs } from '@nocobase/utils/client';
 
@@ -38,7 +39,7 @@ import { CurrentWorkflowContext, FlowContext, useFlowContext } from './FlowConte
 import { lang, NAMESPACE } from './locale';
 import { executionSchema } from './schemas/executions';
 import useStyles from './style';
-import { linkNodes, getWorkflowDetailPath } from './utils';
+import { linkNodes, getWorkflowDetailPath, getWorkflowExecutionsPath } from './utils';
 import { Fieldset } from './components/Fieldset';
 import { useRefreshActionProps } from './hooks/useRefreshActionProps';
 import { useTrigger } from './triggers';
@@ -47,6 +48,9 @@ import { HideVariableContext } from './variable';
 import { useWorkflowAnyExecuted, useWorkflowExecuted } from './hooks';
 import { AddNodeContextProvider } from './AddNodeContext';
 import { RemoveNodeContextProvider } from './RemoveNodeContext';
+import { NodeDragContextProvider } from './NodeDragContext';
+import { NodeClipboardContextProvider } from './NodeClipboardContext';
+import { useResourceFilterActionProps } from './hooks/useResourceFilterActionProps';
 
 function ExecutionResourceProvider({ request, filter = {}, ...others }) {
   const { workflow } = useFlowContext();
@@ -74,7 +78,7 @@ function ExecutedStatusMessage({ data, option }) {
     <Trans ns={NAMESPACE} values={{ statusText }}>
       {'Workflow executed, the result status is '}
       <Tag color={option.color}>{'{{statusText}}'}</Tag>
-      <Link to={`/admin/workflow/executions/${data.id}`}>View the execution</Link>
+      <Link to={getWorkflowExecutionsPath(data.id)}>View the execution</Link>
     </Trans>
   );
 }
@@ -98,25 +102,32 @@ function useExecuteConfirmAction() {
   const navigate = useNavigateNoUpdate();
   const { message: messageApi } = App.useApp();
   const executed = useWorkflowExecuted();
+  const [loading, setLoading] = useState(false);
   return {
+    loading,
     async run() {
-      const { autoRevision, ...values } = form.values;
-      // Not executed, could choose to create new version (by default)
-      // Executed, stay in current version, and refresh
-      await form.submit();
-      const {
-        data: { data },
-      } = await resource.execute({
-        filterByTk: workflow.id,
-        values,
-        ...(!executed && autoRevision ? { autoRevision: 1 } : {}),
-      });
-      form.reset();
-      ctx.setFormValueChanged(false);
-      ctx.setVisible(false);
-      messageApi?.open(getExecutedStatusMessage(data.execution));
-      if (data.newVersionId) {
-        navigate(`/admin/workflow/workflows/${data.newVersionId}`);
+      setLoading(true);
+      try {
+        const { autoRevision, ...values } = form.values;
+        // Not executed, could choose to create new version (by default)
+        // Executed, stay in current version, and refresh
+        await form.submit();
+        const {
+          data: { data },
+        } = await resource.execute({
+          filterByTk: workflow.id,
+          values,
+          ...(!executed && autoRevision ? { autoRevision: 1 } : {}),
+        });
+        form.reset();
+        ctx.setFormValueChanged(false);
+        ctx.setVisible(false);
+        messageApi?.open(getExecutedStatusMessage(data.execution));
+        if (data.newVersionId) {
+          navigate(getWorkflowDetailPath(data.newVersionId));
+        }
+      } finally {
+        setLoading(false);
       }
     },
   };
@@ -250,15 +261,15 @@ function ExecuteActionButton() {
 }
 
 function WorkflowMenu() {
-  const { workflow, revisions } = useFlowContext();
+  const { workflow, revisions = [] } = useFlowContext();
   const [historyVisible, setHistoryVisible] = useState(false);
   const navigate = useNavigate();
   const { t } = useTranslation();
   const { modal } = App.useApp();
   const app = useApp();
   const { resource } = useResourceContext();
+  const { refresh } = useResourceActionContext();
   const { message } = App.useApp();
-  const executed = useWorkflowExecuted();
   const allExecuted = useWorkflowAnyExecuted();
 
   const onRevision = useCallback(async () => {
@@ -272,7 +283,7 @@ function WorkflowMenu() {
     });
     message.success(t('Operation succeeded'));
 
-    navigate(`/admin/workflow/workflows/${revision.id}`);
+    navigate(getWorkflowDetailPath(revision.id));
   }, [resource, workflow.id, workflow.key, message, t, navigate]);
 
   const onDelete = useCallback(async () => {
@@ -290,11 +301,30 @@ function WorkflowMenu() {
         });
         message.success(t('Operation succeeded'));
 
-        navigate(
-          workflow.current
-            ? app.pluginSettingsManager.getRoutePath('workflow')
-            : getWorkflowDetailPath(revisions.find((item) => item.current)?.id),
-        );
+        const workflowHomepage = app.pluginSettingsManager.getRoutePath('workflow');
+        if (workflow.current) {
+          return navigate(workflowHomepage);
+        }
+
+        if (revisions.length) {
+          navigate(getWorkflowDetailPath(revisions.find((item) => item.current)?.id));
+        }
+        const res = await resource.list({
+          filter: {
+            key: workflow.key,
+            current: true,
+          },
+          fields: ['id'],
+          pageSize: 1,
+        });
+        if (res.status !== 200) {
+          return;
+        }
+        const [current] = res.data.data;
+        if (!current) {
+          return navigate(workflowHomepage);
+        }
+        return navigate(getWorkflowDetailPath(current.id));
       },
     });
   }, [workflow, modal, t, resource, message, navigate, app.pluginSettingsManager, revisions]);
@@ -302,6 +332,9 @@ function WorkflowMenu() {
   const onMenuCommand = useCallback(
     ({ key }) => {
       switch (key) {
+        case 'refresh':
+          refresh();
+          return;
         case 'history':
           setHistoryVisible(true);
           return;
@@ -313,7 +346,7 @@ function WorkflowMenu() {
           break;
       }
     },
-    [onDelete, onRevision],
+    [onDelete, onRevision, refresh],
   );
 
   return (
@@ -328,6 +361,12 @@ function WorkflowMenu() {
             },
             {
               type: 'divider',
+            },
+            {
+              role: 'button',
+              'aria-label': 'refresh',
+              key: 'refresh',
+              label: t('Refresh'),
             },
             {
               role: 'button',
@@ -362,11 +401,91 @@ function WorkflowMenu() {
           }}
           scope={{
             useRefreshActionProps,
+            useResourceFilterActionProps,
             ExecutionStatusOptions,
           }}
         />
       </ActionContextProvider>
     </>
+  );
+}
+
+function RevisionsDropdown() {
+  const { styles } = useStyles();
+  const navigate = useNavigate();
+  const { workflow } = useFlowContext();
+  const onSwitchVersion = useCallback(
+    ({ key }) => {
+      if (key != workflow.id) {
+        navigate(getWorkflowDetailPath(key));
+      }
+    },
+    [workflow.id, navigate],
+  );
+
+  const { data, run } = useRequest<any>(
+    {
+      resource: 'workflows',
+      action: 'list',
+      params: {
+        filter: { key: workflow.key },
+        fields: ['id', 'createdAt', 'current', 'enabled', 'versionStats.executed'],
+        sort: '-id',
+      },
+    },
+    {
+      refreshDeps: [workflow.id],
+      manual: true,
+    },
+  );
+
+  const loadRevisions = useCallback(
+    (visible) => {
+      if (visible) {
+        run();
+      }
+    },
+    [run],
+  );
+
+  const revisions = data?.data ?? [];
+
+  return (
+    <Dropdown
+      className="workflow-versions"
+      trigger={['click']}
+      onOpenChange={loadRevisions}
+      menu={{
+        onClick: onSwitchVersion,
+        defaultSelectedKeys: [`${workflow.id}`],
+        className: cx(styles.dropdownClass, styles.workflowVersionDropdownClass),
+        items: revisions
+          .sort((a, b) => b.id - a.id)
+          .map((item, index) => ({
+            role: 'button',
+            'aria-label': `version-${index}`,
+            key: `${item.id}`,
+            icon: item.current ? <RightOutlined /> : null,
+            className: cx({
+              executed: item.versionStats.executed > 0,
+              unexecuted: item.versionStats.executed == 0,
+              enabled: item.enabled,
+            }),
+            label: (
+              <>
+                <strong>{`#${item.id}`}</strong>
+                <time>{dayjs(item.createdAt).fromNow()}</time>
+              </>
+            ),
+          })),
+      }}
+    >
+      <Button type="text" aria-label="version">
+        <label>{lang('Version')}</label>
+        <span>{workflow?.id ? `#${workflow.id}` : null}</span>
+        <DownOutlined />
+      </Button>
+    </Dropdown>
   );
 }
 
@@ -376,11 +495,10 @@ export function WorkflowCanvas() {
   const { data, refresh, loading } = useResourceActionContext();
   const { resource } = useResourceContext();
   const { setTitle } = useDocumentTitle();
-  const { styles } = useStyles();
   const [enabled, setEnabled] = useState(data?.data?.enabled ?? false);
   const [switchLoading, setSwitchLoading] = useState(false);
 
-  const { nodes = [], revisions = [], ...workflow } = data?.data ?? {};
+  const { nodes = [], ...workflow } = data?.data ?? {};
   linkNodes(nodes);
 
   useEffect(() => {
@@ -388,15 +506,6 @@ export function WorkflowCanvas() {
     setTitle?.(`${lang('Workflow')}${title ? `: ${title}` : ''}`);
     setEnabled(enabled);
   }, [data?.data, setTitle]);
-
-  const onSwitchVersion = useCallback(
-    ({ key }) => {
-      if (key != workflow.id) {
-        navigate(getWorkflowDetailPath(key));
-      }
-    },
-    [workflow.id, navigate],
-  );
 
   const onToggle = useCallback(
     async (value) => {
@@ -432,7 +541,6 @@ export function WorkflowCanvas() {
     <FlowContext.Provider
       value={{
         workflow,
-        revisions,
         nodes,
         refresh,
       }}
@@ -459,40 +567,7 @@ export function WorkflowCanvas() {
         </header>
         <aside>
           <ExecuteActionButton />
-          <Dropdown
-            className="workflow-versions"
-            trigger={['click']}
-            menu={{
-              onClick: onSwitchVersion,
-              defaultSelectedKeys: [`${workflow.id}`],
-              className: cx(styles.dropdownClass, styles.workflowVersionDropdownClass),
-              items: revisions
-                .sort((a, b) => b.id - a.id)
-                .map((item, index) => ({
-                  role: 'button',
-                  'aria-label': `version-${index}`,
-                  key: `${item.id}`,
-                  icon: item.current ? <RightOutlined /> : null,
-                  className: cx({
-                    executed: item.versionStats.executed > 0,
-                    unexecuted: item.versionStats.executed == 0,
-                    enabled: item.enabled,
-                  }),
-                  label: (
-                    <>
-                      <strong>{`#${item.id}`}</strong>
-                      <time>{dayjs(item.createdAt).fromNow()}</time>
-                    </>
-                  ),
-                })),
-            }}
-          >
-            <Button type="text" aria-label="version">
-              <label>{lang('Version')}</label>
-              <span>{workflow?.id ? `#${workflow.id}` : null}</span>
-              <DownOutlined />
-            </Button>
-          </Dropdown>
+          <RevisionsDropdown />
           <Switch
             checked={enabled}
             onChange={onToggle}
@@ -505,7 +580,11 @@ export function WorkflowCanvas() {
       </div>
       <AddNodeContextProvider>
         <RemoveNodeContextProvider>
-          <CanvasContent entry={entry} />
+          <NodeDragContextProvider>
+            <NodeClipboardContextProvider>
+              <CanvasContent entry={entry} />
+            </NodeClipboardContextProvider>
+          </NodeDragContextProvider>
         </RemoveNodeContextProvider>
       </AddNodeContextProvider>
     </FlowContext.Provider>

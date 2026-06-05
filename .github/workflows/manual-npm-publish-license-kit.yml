@@ -83,7 +83,7 @@ jobs:
               sudo apt-get update
               sudo apt-get install gcc-riscv64-linux-gnu -y
             build: yarn build --target riscv64gc-unknown-linux-gnu
-    name: stable - ${{ matrix.settings.target }} - node@20
+    name: stable - ${{ matrix.settings.target }} - node@22
     runs-on: ${{ matrix.settings.host }}
     steps:
       - uses: actions/create-github-app-token@v1
@@ -104,7 +104,7 @@ jobs:
         uses: actions/setup-node@v4
         if: ${{ !matrix.settings.docker }}
         with:
-          node-version: 20
+          node-version: 22
           cache: yarn
       - name: Install
         uses: dtolnay/rust-toolchain@stable
@@ -140,7 +140,7 @@ jobs:
         uses: actions/setup-node@v4
         if: matrix.settings.target == 'i686-pc-windows-msvc'
         with:
-          node-version: 20
+          node-version: 22
           cache: yarn
           architecture: x86
       - name: Install OpenSSL dev
@@ -197,8 +197,10 @@ jobs:
           environment_variables: 'DEBUG RUSTUP_IO_THREADS'
           shell: bash
           run: |
-            sudo pkg install -y -f curl node libnghttp2 npm openssl
+            sudo pkg install -y -f curl node libnghttp2 npm openssl ca_root_nss
             sudo npm install -g yarn --ignore-scripts
+            export SSL_CERT_FILE=/usr/local/share/certs/ca-root-nss.crt
+            export RUSTUP_INIT_SKIP_PATH_CHECK=yes
             curl https://sh.rustup.rs -sSf --output rustup.sh
             sh rustup.sh -y --profile minimal --default-toolchain beta
             source "$HOME/.cargo/env"
@@ -213,7 +215,7 @@ jobs:
             whoami
             env
             freebsd-version
-            yarn install
+            yarn install --frozen-lockfile
             yarn build
             rm -rf node_modules
             rm -rf target
@@ -238,7 +240,7 @@ jobs:
             target: x86_64-pc-windows-msvc
         node:
           - '18'
-          - '20'
+          - '22'
     runs-on: ${{ matrix.settings.host }}
     steps:
       - uses: actions/create-github-app-token@v1
@@ -282,7 +284,7 @@ jobs:
       matrix:
         node:
           - '18'
-          - '20'
+          - '22'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/create-github-app-token@v1
@@ -325,7 +327,7 @@ jobs:
       matrix:
         node:
           - '18'
-          - '20'
+          - '22'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/create-github-app-token@v1
@@ -370,7 +372,7 @@ jobs:
       matrix:
         node:
           - '18'
-          - '20'
+          - '22'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/create-github-app-token@v1
@@ -469,7 +471,7 @@ jobs:
       matrix:
         node:
           - '18'
-          - '20'
+          - '22'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/create-github-app-token@v1
@@ -535,7 +537,7 @@ jobs:
       - name: Setup node
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: yarn
       - name: Install dependencies
         run: yarn install
@@ -587,7 +589,7 @@ jobs:
       - name: Setup node
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: yarn
       - name: Install dependencies
         run: yarn install

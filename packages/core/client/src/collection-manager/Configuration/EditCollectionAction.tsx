@@ -51,6 +51,9 @@ const getSchema = (schema: IField, record: any, compile, getContainer): ISchema 
       [uid()]: {
         type: 'void',
         'x-component': 'Action.Drawer',
+        'x-component-props': {
+          getContainer: getContainer,
+        },
         'x-decorator': 'Form',
         'x-decorator-props': {
           useValues: '{{ useValuesFromRecord }}',
@@ -103,7 +106,7 @@ export const useValuesFromRecord = (options) => {
       Promise.resolve({
         data: {
           ...omit(cloneDeep(record), ['__parent', '__collectionName']),
-          category: record?.category.map((v) => v.id),
+          category: record?.category?.map((v) => v.id),
         },
       }),
     {

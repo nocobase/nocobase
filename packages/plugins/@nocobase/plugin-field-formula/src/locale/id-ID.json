@@ -1,0 +1,9 @@
+{
+  "Calculation engine": "Mesin perhitungan",
+  "Compute a value based on the other fields": "Hitung nilai berdasarkan bidang lain",
+  "Configure and store the results of calculations between multiple field values in the same record, supporting both Math.js and Excel formula functions.": "Konfigurasi dan simpan hasil perhitungan antara beberapa nilai bidang dalam catatan yang sama, mendukung fungsi Math.js dan rumus Excel.",
+  "Expression": "Ekspresi",
+  "Expression syntax error": "Kesalahan sintaks ekspresi",
+  "Formula": "Rumus",
+  "Syntax references": "Referensi sintaks"
+}

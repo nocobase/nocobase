@@ -9,8 +9,8 @@
 
 import { lazy, Plugin } from '@nocobase/client';
 import PluginACLClient from '@nocobase/plugin-acl/client';
-import { uid } from '@nocobase/utils/client';
-import React from 'react';
+import { uid, Registry } from '@nocobase/utils/client';
+import React, { ComponentType } from 'react';
 // import { DatabaseConnectionProvider } from './DatabaseConnectionProvider';
 const { DatabaseConnectionProvider } = lazy(() => import('./DatabaseConnectionProvider'), 'DatabaseConnectionProvider');
 
@@ -39,8 +39,26 @@ const { CollectionMainProvider } = lazy(
   'CollectionMainProvider',
 );
 
+class ExtensionManager {
+  constructor(protected plugin: PluginDataSourceManagerClient) {}
+  componentRegistry = new Registry<{ order?: number; component: ComponentType }[]>();
+
+  registerManagerAction({ order, component }: { order?: number; component: ComponentType }) {
+    const registerName = 'managerAction';
+    if (!this.componentRegistry.get(registerName)) {
+      this.componentRegistry.register(registerName, []);
+    }
+    this.componentRegistry.get(registerName).push({ order: order ?? 0, component });
+  }
+
+  getManagerActions() {
+    return this.componentRegistry.get('managerAction') ?? [];
+  }
+}
+
 export class PluginDataSourceManagerClient extends Plugin {
   types = new Map();
+  extensionManager = new ExtensionManager(this);
 
   extendedTabs = {};
 
@@ -71,6 +89,8 @@ export class PluginDataSourceManagerClient extends Plugin {
     this.app.pluginSettingsManager.add(NAMESPACE, {
       title: `{{t("Data sources", { ns: "${NAMESPACE}" })}}`,
       icon: 'ClusterOutlined',
+      isPinned: true,
+      sort: 100,
       showTabs: false,
       aclSnippet: 'pm.data-source-manager*',
     });

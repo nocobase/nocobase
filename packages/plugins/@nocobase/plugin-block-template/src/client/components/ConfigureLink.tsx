@@ -15,9 +15,9 @@ export const ConfigureLink = () => {
   const value = useFilterByTk();
   const recordData = useCollectionRecordData();
   const t = useT();
-  let to = `/admin/settings/block-templates/inherited/${value}`;
+  let to = `/admin/settings/ui-templates/inherited-v1/${value}`;
   if (recordData.type === 'Mobile') {
-    to = `/m/block-templates/inherited/${recordData.key}/${recordData.uid}`;
+    to = `/m/ui-templates/inherited-v1/${recordData.key}/${recordData.uid}`;
   }
 
   return <Link to={to}>{t('Configure')}</Link>;

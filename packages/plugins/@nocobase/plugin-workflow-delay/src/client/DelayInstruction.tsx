@@ -11,7 +11,7 @@ import React from 'react';
 import { Space } from 'antd';
 import { HourglassOutlined } from '@ant-design/icons';
 
-import { Instruction, JOB_STATUS, WorkflowVariableInput } from '@nocobase/plugin-workflow/client';
+import { Instruction, JOB_STATUS, NodeAvailableContext, WorkflowVariableInput } from '@nocobase/plugin-workflow/client';
 
 import { NAMESPACE } from '../locale';
 
@@ -83,7 +83,7 @@ export default class extends Instruction {
     WorkflowVariableInput,
     Space,
   };
-  isAvailable({ engine, workflow, upstream, branchIndex }) {
+  isAvailable({ engine, workflow, upstream, branchIndex }: NodeAvailableContext) {
     return !engine.isWorkflowSync(workflow);
   }
 }

@@ -49,8 +49,9 @@ import { HasOneRepository } from './relation-repository/hasone-repository';
 import { RelationRepository } from './relation-repository/relation-repository';
 import { updateAssociations, updateModelByValues } from './update-associations';
 import { UpdateGuard } from './update-guard';
-import { valuesToFilter } from './utils/filter-utils';
 import { processIncludes } from './utils';
+import { valuesToFilter } from './utils/filter-utils';
+import { AssociationNotFoundError } from './errors/association-not-found-error';
 
 const debug = require('debug')('noco-database');
 
@@ -66,7 +67,7 @@ export interface FilterAble {
 
 export type BaseTargetKey = string | number;
 export type MultiTargetKey = Record<string, BaseTargetKey>;
-export type TargetKey = BaseTargetKey | MultiTargetKey;
+export type TargetKey = BaseTargetKey | MultiTargetKey | MultiTargetKey[];
 
 export type TK = TargetKey | TargetKey[];
 
@@ -115,7 +116,7 @@ export type CountOptions = Omit<SequelizeCountOptions, 'distinct' | 'where' | 'i
   } & FilterByTk;
 
 export interface FilterByTk {
-  filterByTk?: TargetKey;
+  filterByTk?: TK;
   targetCollection?: string;
 }
 
@@ -288,13 +289,15 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
       };
     }
 
+    const hasInclude = Array.isArray(options['include']) && options['include'].length > 0;
     const queryOptions: any = {
       ...options,
-      distinct: Boolean(this.collection.model.primaryKeyAttribute) && !this.collection.isMultiFilterTargetKey(),
     };
 
-    if (Array.isArray(queryOptions.include) && queryOptions.include.length > 0) {
+    if (hasInclude) {
       queryOptions.include = processIncludes(queryOptions.include, this.collection.model);
+      queryOptions.distinct =
+        Boolean(this.collection.model.primaryKeyAttribute) && !this.collection.isMultiFilterTargetKey();
     } else {
       delete queryOptions.include;
     }
@@ -945,6 +948,11 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
     });
 
     const params = parser.toSequelizeParams({ parseSort: _.isBoolean(options?.parseSort) ? options.parseSort : true });
+
+    if (parser.associationNotFoundWarnings.length > 0) {
+      this.database.logger.warn(parser.associationNotFoundWarnings.join('; '));
+    }
+
     debug('sequelize query params %o', params);
 
     if (options.where && params.where) {

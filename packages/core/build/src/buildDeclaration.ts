@@ -7,37 +7,82 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import gulp from 'gulp';
-import gulpTs from 'gulp-typescript';
+import fg from 'fast-glob';
 import path from 'path';
+import ts from 'typescript';
+
 import { ROOT_PATH } from './constant';
 
-export const buildDeclaration = (cwd: string, targetDir: string) => {
-  return new Promise((resolve, reject) => {
-    const srcPath = path.join(cwd, 'src');
-    const targetPath = path.join(cwd, targetDir);
+const INCLUDE_PATTERNS = ['**/*.{ts,tsx}'];
+const EXCLUDE_PATTERNS = [
+  '**/fixtures{,/**}',
+  '**/demos{,/**}',
+  '**/__test__{,/**}',
+  '**/__tests__{,/**}',
+  '**/__benchmarks__{,/**}',
+  '**/__e2e__{,/**}',
+  '**/*.mdx',
+  '**/*.md',
+  '**/*.+(test|e2e|spec).+(js|jsx|ts|tsx)',
+  '**/tsconfig{,.*}.json',
+  '.umi{,-production,-test}{,/**}',
+];
 
-    const tsConfig = gulpTs.createProject(path.join(ROOT_PATH, 'tsconfig.json'));
-    delete tsConfig.config.compilerOptions.paths;
-    const patterns = [
-      path.join(srcPath, '**/*.{ts,tsx}'),
-      `!${path.join(srcPath, '**/fixtures{,/**}')}`,
-      `!${path.join(srcPath, '**/demos{,/**}')}`,
-      `!${path.join(srcPath, '**/__test__{,/**}')}`,
-      `!${path.join(srcPath, '**/__tests__{,/**}')}`,
-      `!${path.join(srcPath, '**/__benchmarks__{,/**}')}`,
-      `!${path.join(srcPath, '**/__e2e__{,/**}')}`,
-      `!${path.join(srcPath, '**/*.mdx')}`,
-      `!${path.join(srcPath, '**/*.md')}`,
-      `!${path.join(srcPath, '**/*.+(test|e2e|spec).+(js|jsx|ts|tsx)')}`,
-      `!${path.join(srcPath, '**/tsconfig{,.*}.json')}`,
-      `!${path.join(srcPath, '.umi{,-production,-test}{,/**}')}`,
-    ];
-    gulp
-      .src(patterns, { base: srcPath, allowEmpty: true })
-      .pipe(gulpTs(tsConfig.config.compilerOptions))
-      .dts.pipe(gulp.dest(targetPath))
-      .on('end', resolve)
-      .on('error', reject);
+const diagnosticHost: ts.FormatDiagnosticsHost = {
+  getCurrentDirectory: () => process.cwd(),
+  getCanonicalFileName: (fileName) => (ts.sys.useCaseSensitiveFileNames ? fileName : fileName.toLowerCase()),
+  getNewLine: () => ts.sys.newLine,
+};
+
+function loadCompilerOptions(): ts.CompilerOptions {
+  const configPath = path.join(ROOT_PATH, 'tsconfig.json');
+  const configFile = ts.readConfigFile(configPath, ts.sys.readFile);
+  if (configFile.error) {
+    throw new Error(ts.formatDiagnosticsWithColorAndContext([configFile.error], diagnosticHost));
+  }
+  const parsedConfig = ts.parseJsonConfigFileContent(
+    configFile.config,
+    ts.sys,
+    path.dirname(configPath),
+    undefined,
+    configPath,
+  );
+  const options: ts.CompilerOptions = {
+    ...parsedConfig.options,
+  };
+  delete options.paths;
+  return options;
+}
+
+export const buildDeclaration = async (cwd: string, targetDir: string) => {
+  const srcPath = path.join(cwd, 'src');
+  const targetPath = path.join(cwd, targetDir);
+  const files = await fg(INCLUDE_PATTERNS, {
+    cwd: srcPath,
+    ignore: EXCLUDE_PATTERNS,
+    absolute: true,
+    dot: true,
   });
+
+  if (!files.length) {
+    return;
+  }
+
+  const compilerOptions = {
+    ...loadCompilerOptions(),
+    declaration: true,
+    emitDeclarationOnly: true,
+    declarationDir: targetPath,
+    outDir: targetPath,
+    rootDir: srcPath,
+  } satisfies ts.CompilerOptions;
+
+  const program = ts.createProgram(files, compilerOptions);
+  const emitResult = program.emit(undefined, undefined, undefined, true);
+  const diagnostics = ts.getPreEmitDiagnostics(program).concat(emitResult.diagnostics);
+
+  if (diagnostics.length) {
+    const details = ts.formatDiagnosticsWithColorAndContext(diagnostics, diagnosticHost);
+    throw new Error(`Failed to build declarations for ${cwd} \n${details}`);
+  }
 };

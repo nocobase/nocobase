@@ -30,10 +30,12 @@ import { Instruction, InstructionInterface } from './instructions';
 import CalculationInstruction from './instructions/CalculationInstruction';
 import ConditionInstruction from './instructions/ConditionInstruction';
 import EndInstruction from './instructions/EndInstruction';
+import OutputInstruction from './instructions/OutputInstruction';
 import CreateInstruction from './instructions/CreateInstruction';
 import DestroyInstruction from './instructions/DestroyInstruction';
 import QueryInstruction from './instructions/QueryInstruction';
 import UpdateInstruction from './instructions/UpdateInstruction';
+import MultiConditionsInstruction from './instructions/MultiConditionsInstruction';
 
 import type { ExecutionModel, WorkflowModel } from './types';
 import WorkflowRepository from './repositories/WorkflowRepository';
@@ -180,20 +182,18 @@ export default class PluginWorkflowServer extends Plugin {
   };
 
   private onBeforeStop = async () => {
-    this.dispatcher.setReady(false);
+    if (this.checker) {
+      clearInterval(this.checker);
+    }
 
-    this.app.eventQueue.unsubscribe(this.channelPendingExecution);
+    await this.dispatcher.beforeStop();
 
     this.app.logger.info(`stopping workflow plugin before app (${this.app.name}) shutdown...`);
     for (const workflow of this.enabledCache.values()) {
       this.toggle(workflow, false, { silent: true });
     }
 
-    await this.dispatcher.beforeStop();
-
-    if (this.checker) {
-      clearInterval(this.checker);
-    }
+    this.app.eventQueue.unsubscribe(this.channelPendingExecution);
 
     this.loggerCache.clear();
   };
@@ -294,7 +294,9 @@ export default class PluginWorkflowServer extends Plugin {
   private initInstructions<T extends Instruction>(more: { [key: string]: T | { new (p: Plugin): T } } = {}) {
     this.registerInstruction('calculation', CalculationInstruction);
     this.registerInstruction('condition', ConditionInstruction);
+    this.registerInstruction('multi-conditions', MultiConditionsInstruction);
     this.registerInstruction('end', EndInstruction);
+    this.registerInstruction('output', OutputInstruction);
     this.registerInstruction('create', CreateInstruction);
     this.registerInstruction('destroy', DestroyInstruction);
     this.registerInstruction('query', QueryInstruction);
@@ -316,6 +318,7 @@ export default class PluginWorkflowServer extends Plugin {
     });
     this.snowflake = new Snowflake({
       custom_epoch: pluginRecord?.createdAt.getTime(),
+      instance_id: this.app.instanceId,
     });
   }
 
@@ -329,6 +332,9 @@ export default class PluginWorkflowServer extends Plugin {
     this.initTriggers(options.triggers);
     this.initInstructions(options.instructions);
     initFunctions(this, options.functions);
+    this.functions.register('instanceId', () => this.app.instanceId);
+    this.functions.register('epoch', () => 1605024000);
+    this.functions.register('genSnowflakeId', () => this.app.snowflakeIdGenerator.generate());
 
     this.loggerCache = new LRUCache({
       max: 20,
@@ -347,10 +353,12 @@ export default class PluginWorkflowServer extends Plugin {
     });
 
     this.meter = this.app.telemetry.metric.getMeter();
-    const counter = this.meter.createObservableGauge('workflow.events.counter');
-    counter.addCallback((result) => {
-      result.observe(this.dispatcher.getEventsCount());
-    });
+    if (this.meter) {
+      const counter = this.meter.createObservableGauge('workflow.events.counter');
+      counter.addCallback((result) => {
+        result.observe(this.dispatcher.getEventsCount());
+      });
+    }
 
     this.app.acl.registerSnippet({
       name: `pm.${this.name}.workflows`,
@@ -363,6 +371,9 @@ export default class PluginWorkflowServer extends Plugin {
         'executions:destroy',
         'flow_nodes:update',
         'flow_nodes:destroy',
+        'flow_nodes:destroyBranch',
+        'flow_nodes:duplicate',
+        'flow_nodes:move',
         'flow_nodes:test',
         'jobs:get',
         'workflowCategories:*',
@@ -448,8 +459,15 @@ export default class PluginWorkflowServer extends Plugin {
     return this.dispatcher.trigger(workflow, context, options);
   }
 
-  public async run(pending: Parameters<Dispatcher['run']>[0]): Promise<void> {
-    return this.dispatcher.run(pending);
+  public async run(
+    pending: Parameters<Dispatcher['run']>[0],
+    options?: Parameters<Dispatcher['run']>[1],
+  ): Promise<void> {
+    return this.dispatcher.run(pending, options);
+  }
+
+  public dispatch() {
+    return this.dispatcher.dispatch();
   }
 
   public async resume(job) {

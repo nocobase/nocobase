@@ -9,6 +9,7 @@
 
 import { DownOutlined, PlusOutlined } from '@ant-design/icons';
 import { uid } from '@formily/shared';
+import { useForm, useField } from '@formily/react';
 import {
   ActionContext,
   SchemaComponent,
@@ -17,6 +18,7 @@ import {
   usePlugin,
   useResourceContext,
   useActionContext,
+  useResourceActionContext,
 } from '@nocobase/client';
 import { Button, Dropdown, Empty } from 'antd';
 import React, { useState } from 'react';
@@ -25,6 +27,39 @@ import PluginDatabaseConnectionsClient from '../';
 import { useLoadCollections, useTestConnectionAction } from '../hooks';
 import { NAMESPACE } from '../locale';
 import { CollectionsTableField } from './CollectionsTableField';
+
+const useCreateAction = (actionCallback?: (values: any) => void) => {
+  const form = useForm();
+  const field = useField();
+  const ctx = useActionContext();
+  const { refresh } = useResourceActionContext();
+  const { resource } = useResourceContext();
+  return {
+    async run() {
+      try {
+        await form.submit();
+        field.data = field.data || {};
+        field.data.loading = true;
+        const collections: { name: string; selected: boolean }[] = form.values.collections || [];
+        const res = await resource.create({
+          values: {
+            ...form.values,
+            collections: collections.filter((c) => c.selected).map((c) => c.name),
+          },
+        });
+        ctx.setVisible(false);
+        actionCallback?.(res?.data?.data);
+        await form.reset();
+        field.data.loading = false;
+        refresh();
+      } catch (error) {
+        if (field.data) {
+          field.data.loading = false;
+        }
+      }
+    },
+  };
+};
 
 export const CreateDatabaseConnectAction = () => {
   const [schema, setSchema] = useState({});
@@ -108,7 +143,7 @@ export const CreateDatabaseConnectAction = () => {
                             'x-component': 'Action',
                             'x-component-props': {
                               type: 'primary',
-                              useAction: '{{ cm.useCreateAction }}',
+                              useAction: '{{ useCreateAction }}',
                               actionCallback: '{{ dataSourceCreateCallback }}',
                             },
                           },
@@ -170,6 +205,7 @@ export const CreateDatabaseConnectAction = () => {
             useTestConnectionAction,
             dialect,
             useDialectDataSource,
+            useCreateAction,
           }}
           schema={schema}
         />

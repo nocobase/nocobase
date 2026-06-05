@@ -1096,7 +1096,7 @@ describe('workflow > triggers > collection', () => {
 
       const p1 = await PostRepo.create({ values: { title: 't1' } });
 
-      await sleep(500);
+      await sleep(1000);
 
       const posts = await PostRepo.find();
       expect(posts.length).toBe(4);

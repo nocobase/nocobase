@@ -9,7 +9,7 @@
 
 import { uid } from '@formily/shared';
 import { Divider, Empty, Input, MenuProps } from 'antd';
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useCompile } from '../../../';
 

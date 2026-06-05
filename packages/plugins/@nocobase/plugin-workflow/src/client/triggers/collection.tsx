@@ -16,6 +16,7 @@ import { getCollectionFieldOptions, useGetDataSourceCollectionManager } from '..
 import { useWorkflowAnyExecuted } from '../hooks';
 import { Trigger } from '.';
 import { TriggerCollectionRecordSelect } from '../components/TriggerCollectionRecordSelect';
+import { SubModelItem } from '@nocobase/flow-engine';
 
 const COLLECTION_TRIGGER_MODE = {
   CREATED: 1,
@@ -130,7 +131,7 @@ export default class extends Trigger {
     changed: {
       type: 'array',
       title: `{{t("Changed fields", { ns: "${NAMESPACE}" })}}`,
-      description: `{{t("Triggered only if one of the selected fields changes. If unselected, it means that it will be triggered when any field changes. When record is added or deleted, any field is considered to have been changed.", { ns: "${NAMESPACE}" })}}`,
+      description: `{{t("Triggered only if one of the selected fields changes. If unselected, it means that it will be triggered when any field changes. When record is added, any field is considered to have been changed.", { ns: "${NAMESPACE}" })}}`,
       'x-decorator': 'FormItem',
       'x-component': 'FieldsSelect',
       'x-component-props': {
@@ -221,6 +222,52 @@ export default class extends Trigger {
       Component: CollectionBlockInitializer,
       collection: config.collection,
       dataPath: '$context.data',
+    };
+  }
+
+  /**
+   * 2.0
+   */
+  getCreateModelMenuItem({ config }): SubModelItem {
+    return {
+      key: 'triggerData',
+      label: `{{t("Trigger data", { ns: "${NAMESPACE}" })}}`,
+      useModel: 'NodeDetailsModel',
+      createModelOptions: {
+        use: 'NodeDetailsModel',
+        stepParams: {
+          resourceSettings: {
+            init: {
+              dataSourceKey: 'main',
+              collectionName: config.collection,
+              dataPath: '$context.data',
+            },
+          },
+          cardSettings: {
+            titleDescription: {
+              title: `{{t("Trigger data", { ns: "${NAMESPACE}" })}}`,
+            },
+          },
+        },
+        subModels: {
+          grid: {
+            use: 'NodeDetailsGridModel',
+            subType: 'object',
+          },
+        },
+      },
+    };
+  }
+
+  useTempAssociationSource(config, workflow) {
+    if (!config?.collection || !workflow?.id) {
+      return null;
+    }
+    return {
+      collection: config.collection,
+      nodeId: workflow.id,
+      nodeKey: 'workflow',
+      nodeType: 'workflow' as const,
     };
   }
 }

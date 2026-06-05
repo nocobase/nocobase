@@ -55,6 +55,8 @@ export const compactDark: Omit<ThemeItem, 'id'> = {
     algorithm: ['compactAlgorithm', 'darkAlgorithm'],
     token: {
       fontSize: 16,
+      colorBgHeader: '#000000',
+      colorPrimaryHeader: '#000000',
     },
   },
   optional: true,

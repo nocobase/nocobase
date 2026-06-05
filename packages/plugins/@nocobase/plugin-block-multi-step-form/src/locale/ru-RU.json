@@ -1,0 +1,14 @@
+{
+  "AddStep": "Добавить шаг",
+  "Delete": "Удалить",
+  "Edit step title": "Редактировать заголовок шага",
+  "Next": "Далее",
+  "Previous": "Назад",
+  "Step": "Шаг",
+  "Step title": "Заголовок шага",
+  "StepsForm": "Многошаговая форма",
+  "StepsForm(Add new)": "Многошаговая форма (Добавить новую)",
+  "StepsForm(Edit)": "Многошаговая форма (Редактировать)",
+  "The last step cannot be deleted": "Последний шаг нельзя удалить",
+  "Whether to delete this step": "Удалить этот шаг?"
+}

@@ -41,5 +41,6 @@ export class PluginACLClient extends Plugin {
   }
 }
 
+export { RoleResourceCollectionContext } from './permissions/RolesResourcesActions';
 export { RolesManagerContext } from './RolesManagerProvider';
 export default PluginACLClient;

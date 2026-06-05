@@ -120,21 +120,29 @@ export class SortField extends Field {
       const sortColumnName = queryInterface.quoteIdentifier(this.collection.model.rawAttributes[this.name].field);
 
       let sql: string;
+      let bind: any[] | undefined;
 
       const whereClause =
         scopeKey && scopeValue
           ? (() => {
               const filteredScopeValue = scopeValue.filter((v) => v !== null);
-              if (filteredScopeValue.length === 0) {
+              const clauses: string[] = [];
+
+              if (filteredScopeValue.length > 0) {
+                bind = filteredScopeValue;
+                const placeholders = filteredScopeValue.map((_, index) => `$${index + 1}`).join(', ');
+                clauses.push(`${queryInterface.quoteIdentifier(scopeKey)} IN (${placeholders})`);
+              }
+
+              if (scopeValue.includes(null)) {
+                clauses.push(`${queryInterface.quoteIdentifier(scopeKey)} IS NULL`);
+              }
+
+              if (clauses.length === 0) {
                 return '';
               }
-              const initialClause = `
-  WHERE ${queryInterface.quoteIdentifier(scopeKey)} IN (${filteredScopeValue.map((v) => `'${v}'`).join(', ')})`;
-
-              const nullCheck = scopeValue.includes(null)
-                ? ` OR ${queryInterface.quoteIdentifier(scopeKey)} IS NULL`
-                : '';
-              return initialClause + nullCheck;
+              return `
+  WHERE ${clauses.join(' OR ')}`;
             })()
           : '';
 
@@ -180,6 +188,7 @@ export class SortField extends Field {
   `;
       }
       await this.collection.db.sequelize.query(sql, {
+        bind,
         transaction,
       });
     };
@@ -187,7 +196,13 @@ export class SortField extends Field {
     const scopeKey = this.options.scopeKey;
 
     if (scopeKey) {
-      const scopeKeyColumn = this.collection.model.rawAttributes[scopeKey].field;
+      const scopeKeyAttribute = this.collection.model.rawAttributes[scopeKey];
+
+      if (!scopeKeyAttribute || !scopeKeyAttribute.field) {
+        return;
+      }
+
+      const scopeKeyColumn = scopeKeyAttribute.field;
 
       const groups = await this.collection.model.findAll({
         attributes: [[Sequelize.fn('DISTINCT', Sequelize.col(scopeKeyColumn)), scopeKey]],

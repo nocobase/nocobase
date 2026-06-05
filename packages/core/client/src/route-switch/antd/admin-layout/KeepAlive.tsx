@@ -157,50 +157,54 @@ interface KeepAliveProps {
   children: (uid: string) => React.ReactNode;
 }
 
+const MINIMUM_CACHED_PAGES = 5;
+const MAXIMUM_CACHED_PAGES = 15;
+
 // Evaluate device performance to determine maximum number of cached pages
-// Range: minimum 5, maximum 20
+// Range: minimum 5, maximum 10
 const getMaxPageCount = () => {
   // If keep-alive is enabled in e2e environment, it makes locator selection difficult. So we disable keep-alive in e2e environment
-  if (process.env.__E2E__) {
-    return 1;
-  }
+  // if (process.env.__E2E__) {
+  //   return 1;
+  // }
 
-  const baseCount = 5;
-  let performanceScore = baseCount;
+  const baseCount = MINIMUM_CACHED_PAGES;
 
   try {
-    // Try using deviceMemory
+    // 1. Try using deviceMemory (Chrome/Edge)
     const memory = (navigator as any).deviceMemory;
     if (memory) {
-      return Math.min(Math.max(baseCount, memory * 3), 20);
+      return Math.min(Math.max(baseCount, memory * 3), MAXIMUM_CACHED_PAGES);
     }
 
-    // Try using performance.memory
-    const perfMemory = (performance as any).memory;
-    if (perfMemory?.jsHeapSizeLimit) {
-      // jsHeapSizeLimit is in bytes
-      const memoryGB = perfMemory.jsHeapSizeLimit / (1024 * 1024 * 1024);
-      return Math.min(Math.max(baseCount, Math.floor(memoryGB * 3)), 20);
+    // 2. Try using hardwareConcurrency (Safari/Firefox/Chrome)
+    const cores = navigator.hardwareConcurrency;
+    if (cores) {
+      return cores >= 8 ? MAXIMUM_CACHED_PAGES : cores >= 4 ? 7 : baseCount;
     }
 
-    // Fallback: Use performance.now() to test execution speed
+    // 3. Fallback: Use performance.now() to test execution speed
     const start = performance.now();
-    for (let i = 0; i < 1000000; i++) {
-      // Simple performance test
+    let result = 0;
+    // Reduce loop count but increase complexity to prevent JIT optimization (Dead Code Elimination)
+    for (let i = 0; i < 500000; i++) {
+      result += Math.sqrt(i);
     }
+    // Prevent result from being optimized away
+    if (result < 0) {
+      console.log(result);
+    }
+
     const duration = performance.now() - start;
 
     // Adjust page count based on execution time
-    if (duration < 3) {
-      performanceScore = 20; // Very good performance
-    } else if (duration < 5) {
-      performanceScore = 10; // Average performance
-    } else if (duration < 10) {
-      performanceScore = 5;
+    if (duration < 5) {
+      return MAXIMUM_CACHED_PAGES; // Very good performance
+    } else if (duration < 15) {
+      return 10; // Average performance
     }
-    // Use baseCount for poor performance
 
-    return performanceScore;
+    return baseCount;
   } catch (e) {
     // Return base count if any error occurs
     return baseCount;
@@ -208,6 +212,8 @@ const getMaxPageCount = () => {
 };
 
 const MAX_RENDERED_PAGE_COUNT = getMaxPageCount();
+
+console.log(`[NocoBase] Maximum cached pages set to: ${MAX_RENDERED_PAGE_COUNT}`);
 
 /**
  * Implements a Vue-like KeepAlive effect

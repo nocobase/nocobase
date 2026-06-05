@@ -1,0 +1,18 @@
+[
+  {
+    "type": "custom-link",
+    "label": "빠른 시작",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "소개",
+        "link": "/ui-development-action"
+      },
+      {
+        "type": "custom-link",
+        "label": "액션 플러그인 작성",
+        "link": "/ui-development-action/write-an-action-plugin"
+      }
+    ]
+  }
+]

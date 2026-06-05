@@ -1,10 +1,15 @@
 {
-  "Parallel branch": "Rama paralela",
   "Add branch": "Añadir rama",
   "All succeeded": "Todo correcto",
+  "Always continue after all branches end, regardless of success or failure.": "Always continue after all branches end, regardless of success or failure.",
   "Any succeeded": "Cualquiera con éxito",
   "Any succeeded or failed": "Cualquiera tuvo éxito o falló",
   "Continue after all branches succeeded": "Continuar después que todas las ramas han tenido éxito",
   "Continue after any branch succeeded": "Continuar después que cualquier rama tenga éxito",
-  "Continue after any branch succeeded, or exit after any branch failed": "Continuar después de que cualquier rama tenga éxito, o salir después de que cualquier rama falle"
+  "Continue after any branch succeeded, or exit after any branch failed": "Continuar después de que cualquier rama tenga éxito, o salir después de que cualquier rama falle",
+  "Continue after any branch succeeded, or exit after any branch failed.": "Continue after any branch succeeded, or exit after any branch failed.",
+  "Mode": "Mode",
+  "Parallel branch": "Rama paralela",
+  "Run all branches (ignore failures)": "Run all branches (ignore failures)",
+  "Run multiple branch processes in parallel.": "Run multiple branch processes in parallel."
 }

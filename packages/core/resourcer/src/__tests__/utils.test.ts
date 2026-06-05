@@ -29,6 +29,13 @@ describe('utils', () => {
         sort: '-col',
       });
     });
+
+    it('normalizes indexed filterByTk objects to arrays when exceeding arrayLimit', () => {
+      const query = Array.from({ length: 120 }, (_, i) => `filterByTk[${i}]=${i + 1}`).join('&');
+      const result = parseQuery(query);
+
+      expect(result.filterByTk).toEqual(Array.from({ length: 120 }, (_, i) => String(i + 1)));
+    });
   });
 
   describe('parseFields', () => {

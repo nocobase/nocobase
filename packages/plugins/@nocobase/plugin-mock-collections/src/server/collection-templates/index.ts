@@ -193,13 +193,13 @@ export default {
               label: 'Math.js',
               tooltip:
                 "{{t('Math.js comes with a large set of built-in functions and constants, and offers an integrated solution to work with different data types')}}",
-              link: 'https://mathjs.org/',
+              link: 'MATHJS_DOC_URL',
             },
             {
               value: 'formula.js',
               label: 'Formula.js',
               tooltip: '{{t("Formula.js supports most Microsoft Excel formula functions.")}}',
-              link: 'https://docs.nocobase.com/handbook/calculation-engines/formula',
+              link: 'FORMULAJS_DOC_URL',
             },
           ],
           default: 'formula.js',

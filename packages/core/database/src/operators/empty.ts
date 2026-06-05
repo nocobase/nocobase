@@ -38,7 +38,7 @@ const findFilterFieldType = (ctx) => {
     model = modelAssociation.target;
   }
 
-  const collection = db.modelCollection.get(model);
+  const collection = db.getCollection(model.name);
 
   return collection.getField(fieldName);
 };

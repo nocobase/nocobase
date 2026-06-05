@@ -1,12 +1,13 @@
 {
   "Aggregate": "Aggregieren",
-  "Counting, summing, finding maximum, minimum, and average values for multiple records of a collection or associated data of a record.":
-    "Zählen, Summieren, Finden von Maximum, Minimum und Durchschnittswerten für mehrere Datensätze einer Sammlung oder verknüpfte Daten eines Datensatzes.",
   "Aggregator function": "Aggregatorfunktion",
-  "Target type": "Zieltyp",
-  "Data of collection": "Daten der Sammlung",
+  "Counting, summing, finding maximum, minimum, and average values for multiple records of a collection or associated data of a record.": "Zählen, Summieren, Finden von Maximum, Minimum und Durchschnittswerten für mehrere Datensätze einer Sammlung oder verknüpfte Daten eines Datensatzes.",
   "Data of associated collection": "Daten der verknüpften Sammlung",
-  "Field to aggregate": "Zu aggregierendes Feld",
+  "Data of collection": "Daten der Sammlung",
   "Distinct": "Eindeutig",
-  "Query result": "Abfrageergebnis"
+  "Field to aggregate": "Zu aggregierendes Feld",
+  "Number of decimal places for query result.": "Number of decimal places for query result.",
+  "Query result": "Abfrageergebnis",
+  "Result precision": "Result precision",
+  "Target type": "Zieltyp"
 }

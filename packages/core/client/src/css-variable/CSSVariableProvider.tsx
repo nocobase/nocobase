@@ -28,7 +28,8 @@ export const CSSVariableProvider = ({ children }) => {
     document.body.style.setProperty('--nb-designer-offset', `${token.marginXS}px`);
     document.body.style.setProperty('--nb-header-height', `${token.sizeXXL - 2}px`);
     document.body.style.setProperty('--nb-box-bg', token.colorBgLayout);
-    document.body.style.setProperty('--nb-box-bg', token.colorBgLayout);
+    document.body.style.setProperty('--colorBgLayout', token.colorBgLayout);
+    document.body.style.setProperty('--colorBgContainer', token.colorBgContainer);
     document.body.style.setProperty('--controlHeightLG', `${token.controlHeightLG}px`);
     document.body.style.setProperty('--paddingContentVerticalSM', `${token.paddingContentVerticalSM}px`);
     document.body.style.setProperty('--marginSM', `${token.marginSM}px`);

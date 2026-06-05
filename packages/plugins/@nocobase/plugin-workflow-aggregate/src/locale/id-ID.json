@@ -1,0 +1,13 @@
+{
+  "Aggregate": "Agregat",
+  "Aggregator function": "Fungsi agregator",
+  "Counting, summing, finding maximum, minimum, and average values for multiple records of a collection or associated data of a record.": "Menghitung, menjumlahkan, mencari nilai maksimum, minimum, dan rata-rata untuk beberapa catatan koleksi atau data terkait dari sebuah catatan.",
+  "Data of associated collection": "Data koleksi terkait",
+  "Data of collection": "Data koleksi",
+  "Distinct": "Berbeda",
+  "Field to aggregate": "Bidang untuk agregat",
+  "Number of decimal places for query result.": "Jumlah tempat desimal untuk hasil kueri.",
+  "Query result": "Hasil kueri",
+  "Result precision": "Presisi hasil",
+  "Target type": "Tipe target"
+}

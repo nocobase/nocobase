@@ -11,8 +11,10 @@ import { AppSupervisor, Plugin, PluginManager } from '@nocobase/server';
 import { createMockServer } from '@nocobase/test';
 import { uid } from '@nocobase/utils';
 import { vi } from 'vitest';
+import { PluginMultiAppManagerServer } from '../server';
 
 describe('test with start', () => {
+  PluginMultiAppManagerServer.staticImport();
   it('should load subApp on create', async () => {
     const loadFn = vi.fn();
     const installFn = vi.fn();

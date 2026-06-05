@@ -1,0 +1,23 @@
+{
+  "Account": "Account",
+  "Add email address": "Add email address",
+  "BCC": "BCC",
+  "CC": "CC",
+  "Configure": "Configure",
+  "Content": "Content",
+  "Content type": "Content type",
+  "Email": "Email",
+  "From": "From",
+  "Host": "Host",
+  "In most cases, if using port 465, set it to true; otherwise, set it to false.": "In most cases, if using port 465, set it to true; otherwise, set it to false.",
+  "Password": "Mật khẩu",
+  "Plain text": "Plain text",
+  "Port": "Port",
+  "SMTP mail": "SMTP mail",
+  "SMTP server host": "SMTP server host",
+  "Secure": "Secure",
+  "Subject": "Subject",
+  "The email address that will be used as the sender": "The email address that will be used as the sender",
+  "To": "To",
+  "Transport": "Transport"
+}

@@ -17,8 +17,8 @@
  */
 
 import React, { useContext, useEffect } from 'react';
-import { Tree, Dropdown, App, Empty } from 'antd';
-import { MoreOutlined } from '@ant-design/icons';
+import { Tree, Dropdown, App, Empty, theme } from 'antd';
+import { ApartmentOutlined, MoreOutlined } from '@ant-design/icons';
 import { useAPIClient, useResourceActionContext } from '@nocobase/client';
 import { useDepartmentTranslation } from '../locale';
 import { editDepartmentSchema, newSubDepartmentSchema } from './schemas/departments';
@@ -39,6 +39,7 @@ type DepartmentTreeProps = {
 export const DepartmentTree: React.FC & {
   Item: React.FC<DepartmentTreeProps>;
 } = () => {
+  const { token } = theme.useToken();
   const { data, loading } = useResourceActionContext();
   const { department, setDepartment, setUser } = useContext(ResourcesContext);
   const { treeData, nodeMap, loadData, loadedKeys, setLoadedKeys, initData, expandedKeys, setExpandedKeys } =
@@ -83,8 +84,29 @@ export const DepartmentTree: React.FC & {
       className={css`
         height: 65vh;
         overflow: auto;
+        .ant-tree-treenode {
+          width: 100%;
+          padding: 2px 0;
+        }
+        .ant-tree-switcher {
+          line-height: 32px;
+        }
+        .ant-tree-switcher::before {
+          height: 32px;
+        }
         .ant-tree-node-content-wrapper {
+          flex: 1;
+          min-width: 0;
+          height: 32px;
+          line-height: 32px;
           overflow: hidden;
+          padding-inline: 8px;
+        }
+        .ant-tree-title {
+          display: block;
+        }
+        .ant-tree-node-selected {
+          background-color: ${token.colorPrimaryBg};
         }
       `}
     >
@@ -151,8 +173,22 @@ DepartmentTree.Item = function DepartmentTreeItem({ node, setVisible, setDrawer 
     }
   };
   return (
-    <div style={{ display: 'flex', justifyContent: 'space-between', overflow: 'hidden' }}>
-      <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{node.title}</div>
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', overflow: 'hidden' }}>
+      <div
+        style={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          flex: '1 1 0',
+          minWidth: 0,
+          overflow: 'hidden',
+          paddingRight: 8,
+        }}
+      >
+        <ApartmentOutlined style={{ marginRight: 10, flex: '0 0 auto' }} />
+        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={node.title}>
+          {node.title}
+        </span>
+      </div>
       <Dropdown
         menu={{
           items: [
@@ -172,7 +208,7 @@ DepartmentTree.Item = function DepartmentTreeItem({ node, setVisible, setDrawer 
           onClick: handleClick,
         }}
       >
-        <div style={{ marginLeft: '15px' }}>
+        <div style={{ display: 'inline-flex', alignItems: 'center', marginLeft: 8 }}>
           <MoreOutlined />
         </div>
       </Dropdown>

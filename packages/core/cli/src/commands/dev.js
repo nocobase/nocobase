@@ -21,6 +21,15 @@ function sleep(ms = 1000) {
   });
 }
 
+async function buildBundleStatusHtml() {
+  const data = await fs.promises.readFile(path.resolve(__dirname, '../../templates/bundle-status.html'), 'utf-8');
+  await fs.promises.writeFile(
+    path.resolve(process.cwd(), 'node_modules/@umijs/preset-umi/assets/bundle-status.html'),
+    data,
+    'utf-8',
+  );
+}
+
 /**
  *
  * @param {Command} cli
@@ -37,6 +46,7 @@ module.exports = (cli) => {
     .allowUnknownOption()
     .action(async (opts) => {
       checkDBDialect();
+      await buildBundleStatusHtml();
       let subprocess;
       const runDevClient = () => {
         console.log('starting client', 1 * clientPort);

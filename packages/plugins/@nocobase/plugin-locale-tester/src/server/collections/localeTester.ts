@@ -11,6 +11,7 @@ import { defineCollection } from '@nocobase/database';
 
 export default defineCollection({
   name: 'localeTester',
+  migrationRules: ['schema-only', 'overwrite'],
   autoGenId: true,
   fields: [
     {

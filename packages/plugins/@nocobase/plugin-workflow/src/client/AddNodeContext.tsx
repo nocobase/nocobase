@@ -28,9 +28,11 @@ import { useFlowContext } from './FlowContext';
 import { lang, NAMESPACE } from './locale';
 import { RadioWithTooltip } from './components';
 import { uid } from '@nocobase/utils/client';
-import { Button, Dropdown, Menu } from 'antd';
-import { PlusOutlined } from '@ant-design/icons';
+import { Button, Dropdown, Menu, Tooltip } from 'antd';
+import { SnippetsOutlined, PlusOutlined } from '@ant-design/icons';
 import { MenuItemGroupType } from 'antd/es/menu/interface';
+import { useNodeDragContext } from './NodeDragContext';
+import { useNodeClipboardContext } from './NodeClipboardContext';
 
 interface AddButtonProps {
   upstream;
@@ -44,13 +46,18 @@ export function AddButton(props: AddButtonProps) {
   const { styles } = useStyles();
   const addNodeContext = useAddNodeContext();
   const executed = useWorkflowExecuted();
+
   const onOpen = useCallback(
-    () => addNodeContext.onMenuOpen({ upstream, branchIndex }),
+    () => addNodeContext?.onMenuOpen?.({ upstream, branchIndex }),
     [addNodeContext, upstream, branchIndex],
   );
 
-  if (!workflow) {
-    return null;
+  if (!workflow || !addNodeContext) {
+    return (
+      <div className={cx(styles.addButtonClass, 'workflow-add-node-button')}>
+        <span className="ant-btn-placeholder" />
+      </div>
+    );
   }
 
   return (
@@ -75,6 +82,90 @@ export function AddButton(props: AddButtonProps) {
       )}
     </div>
   );
+}
+
+function AddNodeDropZone(props: AddButtonProps) {
+  const { upstream, branchIndex = null } = props;
+  const { styles } = useStyles();
+  const dragContext = useNodeDragContext();
+  const target = useMemo(() => ({ upstream, branchIndex }), [upstream, branchIndex]);
+  const impact = dragContext?.getDropImpact?.(target);
+  const status = impact?.status ?? 'disabled';
+  const disabled = status === 'disabled';
+  const registerDropZone = dragContext?.registerDropZone;
+  const getDropKey = dragContext?.getDropKey;
+  const dropKey = getDropKey?.(target);
+  const isActive = Boolean(dropKey && dragContext?.activeDropKey === dropKey);
+  const zoneRef = React.useRef<HTMLDivElement | null>(null);
+
+  React.useEffect(() => {
+    if (!registerDropZone || !zoneRef.current || disabled) {
+      return;
+    }
+    return registerDropZone(target, zoneRef.current);
+  }, [registerDropZone, disabled, target]);
+
+  return (
+    <div className={cx(styles.addButtonClass, 'workflow-add-node-button')}>
+      <div
+        role="button"
+        aria-label={props['aria-label'] || 'drop-zone'}
+        ref={zoneRef}
+        className={cx(styles.dropZoneClass, {
+          'drop-safe': status === 'safe',
+          'drop-warning': status === 'warning',
+          'drop-active': isActive,
+          'drop-disabled': disabled,
+        })}
+      />
+    </div>
+  );
+}
+
+function AddNodePasteZone(props: AddButtonProps) {
+  const { upstream, branchIndex = null } = props;
+  const { styles } = useStyles();
+  const clipboard = useNodeClipboardContext();
+  const target = useMemo(() => ({ upstream, branchIndex }), [upstream, branchIndex]);
+  const impact = clipboard?.getPasteImpact?.(target);
+  const status = impact?.status ?? 'disabled';
+  const disabled = status === 'disabled';
+
+  const onClick = useCallback(() => {
+    if (!disabled) {
+      clipboard?.pasteNode?.(target);
+    }
+  }, [clipboard, disabled, target]);
+
+  return (
+    <div className={cx(styles.addButtonClass, 'workflow-add-node-button')}>
+      <Button
+        aria-label={props['aria-label'] || 'paste-zone'}
+        shape="circle"
+        icon={<SnippetsOutlined />}
+        size="small"
+        disabled={disabled}
+        onClick={onClick}
+        className={cx(styles.pasteButtonClass, {
+          'paste-safe': status === 'safe',
+          'paste-warning': status === 'warning',
+        })}
+      />
+    </div>
+  );
+}
+
+export function AddNodeSlot(props: AddButtonProps) {
+  const dragContext = useNodeDragContext();
+  const clipboard = useNodeClipboardContext();
+  const executed = useWorkflowExecuted();
+  if (dragContext?.dragging) {
+    return <AddNodeDropZone {...props} />;
+  }
+  if (clipboard?.clipboard && !executed) {
+    return <AddNodePasteZone {...props} />;
+  }
+  return <AddButton {...props} />;
 }
 
 function useAddNodeSubmitAction() {
@@ -246,21 +337,29 @@ function NodeMenu() {
   const groups = useMemo(() => {
     return groupOptions
       .map((group): MenuItemGroupType => {
-        const groupInstructions = instructionList.filter(
-          (item) =>
-            item.group === group.key && (item.isAvailable ? item.isAvailable({ engine, workflow, ...anchor }) : true),
-        );
+        const groupInstructions = instructionList.filter((item) => item.group === group.key);
 
         return {
           ...group,
           type: 'group',
-          children: groupInstructions.map((item) => ({
-            role: 'button',
-            'aria-label': item.type,
-            key: item.type,
-            label: compile(item.title),
-            icon: item.icon,
-          })),
+          children: groupInstructions.map((item) => {
+            const disabled = item.isAvailable ? !item.isAvailable({ engine, workflow, ...anchor }) : false;
+            const title = compile(item.title);
+            return {
+              role: 'button',
+              'aria-label': item.type,
+              key: item.type,
+              label: disabled ? (
+                <Tooltip title={lang('This type of node can not be used in current type of workflow or execute mode.')}>
+                  {title}
+                </Tooltip>
+              ) : (
+                title
+              ),
+              icon: item.icon,
+              disabled,
+            };
+          }),
         };
       })
       .filter((group) => group.children.length);
@@ -272,7 +371,7 @@ function NodeMenu() {
       await onCreate({ type, ...anchor });
       onMenuCancel();
     },
-    [anchor, onCreate],
+    [anchor, onCreate, onMenuCancel],
   );
 
   return (

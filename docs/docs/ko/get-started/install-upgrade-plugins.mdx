@@ -1,0 +1,111 @@
+:::tip
+이 문서는 AI로 번역되었습니다. 부정확한 내용이 있을 경우 [영어 버전](/en)을 참조하세요
+:::
+
+
+# 플러그인 설치 및 업그레이드
+
+## 내장 플러그인
+
+NocoBase 내장 플러그인은 코어 버전과 함께 자동으로 업데이트되므로, 별도로 수동 작업이 필요하지 않습니다.
+
+## 상용 플러그인
+
+상용 플러그인 설치 및 업그레이드 방법은 NocoBase Service에 로그인하여 사용 설명서를 참고해 주세요.
+
+## 서드파티 플러그인
+
+### 온라인 플러그인 설치
+
+![20251103102344](https://static-docs.nocobase.com/20251103102344.png)
+
+:::warning 주의
+
+NocoBase는 인터페이스를 통해 온라인 플러그인 설치를 지원하지만, 현재 사용 경험이 좋지 않습니다. 그 이유는 다음과 같습니다.
+
+- Node.js 프로세스 실행 메커니즘의 제한으로 인해, 플러그인을 설치하거나 업데이트한 후에는 프로세스를 중지하고 `upgrade` 명령을 실행해야 변경 사항이 적용됩니다.
+- 다중 애플리케이션 환경에서 온라인 설치는 여러 하위 애플리케이션의 플러그인 동기화 문제를 동시에 처리하기 어렵습니다.
+- 플러그인 일괄 업데이트를 지원하지 않습니다.
+- 온라인으로 플러그인을 설치하거나 업데이트할 경우 애플리케이션 프로세스가 비정상적으로 종료될 수 있습니다.
+
+따라서 플러그인 설치 및 업그레이드에는 명령줄 또는 수동 업로드 방식을 사용하는 것을 권장합니다. CI/CD 워크플로우와 통합하여 명령줄 방식으로 플러그인을 다운로드, 압축 해제 및 업그레이드하면, 각 업데이트 배포의 일관성과 안정성을 확보할 수 있습니다.
+
+:::
+
+### 명령줄을 이용한 플러그인 설치
+
+```bash
+yarn pm pull https://github.com/nocobase/plugin-auth-cas/releases/download/v1.4.0/plugin-auth-cas-1.4.0.tgz
+yarn pm pull /your/path/plugin-auth-cas-1.4.0.tgz
+```
+
+만약 애플리케이션에 해당 플러그인이 이미 설치되어 있고 업그레이드가 필요한 경우, 다음 명령을 실행해 주세요.
+
+```bash
+yarn nocobase upgrade --skip-code-update
+```
+
+### 수동 업로드 및 압축 해제
+
+먼저 플러그인 패키지를 로컬에 다운로드한 다음, 수동으로 `./storage/plugins` 디렉터리에 업로드하고 압축을 해제해 주세요. 해당 플러그인이 이미 활성화되어 있다면, 업로드 및 압축 해제 완료 후 다음 명령을 실행하여 플러그인 업그레이드를 완료합니다.
+
+> ⚠️ **주의**: 캐시 문제를 방지하려면, 명령 실행 전에 NocoBase 애플리케이션이 중지되었는지 확인해 주세요.
+
+```bash
+yarn nocobase upgrade --skip-code-update
+```
+
+### 올바른 플러그인 압축 해제 방법
+
+다음 예시는 플러그인 패키지를 지정된 디렉터리에 올바르게 압축 해제하는 방법을 보여줍니다.
+
+```bash
+mkdir -p /my-nocobase/storage/plugins/@nocobase/plugin-auth-cas && \
+  tar -xvzf /downloads/plugin-auth-cas-1.4.0.tgz \
+  -C /my-nocobase/storage/plugins/@nocobase/plugin-auth-cas \
+  --strip-components=1
+```
+
+이 명령은 플러그인을 지정된 디렉터리에 압축 해제하며, 불필요한 `package` 디렉터리 계층을 생성하지 않습니다.
+
+```bash
+/my-nocobase/storage/plugins/@nocobase/plugin-auth-cas
+```
+
+### 올바른 디렉터리 구조 예시
+
+```bash
+./plugin-auth-cas/dist/server/migrations/20240425200816-change-locale-module.js
+./plugin-auth-cas/dist/server/auth.js
+./plugin-auth-cas/client.js
+./plugin-auth-cas/dist/constants.js
+./plugin-auth-cas/dist/externalVersion.js
+./plugin-auth-cas/dist/client/index.js
+./plugin-auth-cas/dist/index.js
+./plugin-auth-cas/dist/server/index.js
+./plugin-auth-cas/dist/server/actions/login.js
+./plugin-auth-cas/dist/server/plugin.js
+./plugin-auth-cas/server.js
+./plugin-auth-cas/dist/server/actions/service.js
+./plugin-auth-cas/dist/locale/en-US.json
+./plugin-auth-cas/dist/locale/ko_KR.json
+./plugin-auth-cas/package.json
+./plugin-auth-cas/dist/locale/zh-CN.json
+./plugin-auth-cas/README.md
+./plugin-auth-cas/README.zh-CN.md
+./plugin-auth-cas/dist/server/migrations/20240425200816-change-locale-module.d.ts
+./plugin-auth-cas/dist/server/auth.d.ts
+./plugin-auth-cas/client.d.ts
+./plugin-auth-cas/dist/constants.d.ts
+./plugin-auth-cas/dist/client/index.d.ts
+./plugin-auth-cas/dist/client/locale/index.d.ts
+./plugin-auth-cas/dist/index.d.ts
+./plugin-auth-cas/dist/server/index.d.ts
+./plugin-auth-cas/dist/server/actions/login.d.ts
+./plugin-auth-cas/dist/client/Options.d.ts
+./plugin-auth-cas/dist/server/plugin.d.ts
+./plugin-auth-cas/server.d.ts
+./plugin-auth-cas/dist/server/actions/service.d.ts
+./plugin-auth-cas/dist/client/SigninPage.d.ts
+./plugin-auth-cas/LICENSE.txt
+```

@@ -10,7 +10,7 @@
 import React, { useCallback, useState, useMemo, useEffect, useRef } from 'react';
 import { Button, Table, Checkbox, Input, message, Tooltip } from 'antd';
 import { ReloadOutlined, QuestionCircleOutlined, ClearOutlined } from '@ant-design/icons';
-import { observer } from '@formily/react';
+import { observer } from '@nocobase/flow-engine';
 import { useAPIClient } from '@nocobase/client';
 
 const CollectionsTable = observer((tableProps: any) => {
@@ -153,15 +153,15 @@ const CollectionsTable = observer((tableProps: any) => {
 
     setLoading(true);
     try {
-      const params: any = {
-        isFirst: from === 'create',
-        dbOptions: { ...options, type: formValues.type || 'mysql' },
-      };
-
-      const response = await api.request({
-        url: `dataSources/${key}/collections:all`,
-        method: 'get',
-        params,
+      const response = await api.resource('dataSources').readTables({
+        values: {
+          dataSourceKey: key,
+          ...(from === 'create'
+            ? {
+                dbOptions: { ...options, type: formValues.type || 'mysql' },
+              }
+            : {}),
+        },
       });
       const { data } = response?.data || {};
       const allCollectionsData = data || [];

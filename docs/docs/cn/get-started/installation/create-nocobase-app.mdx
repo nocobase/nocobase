@@ -1,0 +1,236 @@
+---
+title: "create-nocobase-app 安装"
+description: "NocoBase 快速上手：create-nocobase-app 安装"
+keywords: "create,nocobase,app,NocoBase"
+---
+
+# create-nocobase-app 安装
+
+:::tip 前提条件
+
+- 安装了 Node.js 20+、Yarn 1.22.x
+- 配置并启动了所需数据库 MySQL 8.0.17+、MariaDB 10.9+、PostgreSQL 10+ 任选其一
+- 由于国内网络环境的原因，建议你更换国内镜像（非必须）
+
+```bash
+$ yarn config set disable-self-update-check true
+$ yarn config set registry https://registry.npmmirror.com/
+```
+
+:::
+
+## 1. 创建 NocoBase 项目
+
+选择 NocoBase 版本（[版本对比](../quickstart.md)）和数据库类型，执行相应的命令。
+
+<Tabs>
+
+<Tab label="Latest 版本">
+
+<Tabs>
+<Tab label="PostgreSQL">
+
+```bash
+yarn create nocobase-app my-nocobase-app -d postgres \
+   -e DB_HOST=localhost \
+   -e DB_PORT=5432 \
+   -e DB_DATABASE=nocobase \
+   -e DB_USER=nocobase \
+   -e DB_PASSWORD=nocobase \
+   -e TZ=Asia/Shanghai
+```
+
+</Tab>
+
+<Tab label="MySQL">
+
+```bash
+yarn create nocobase-app my-nocobase-app -d mysql \
+   -e DB_HOST=localhost \
+   -e DB_PORT=3306 \
+   -e DB_DATABASE=nocobase \
+   -e DB_USER=nocobase \
+   -e DB_PASSWORD=nocobase \
+   -e TZ=Asia/Shanghai
+```
+
+</Tab>
+
+<Tab label="MariaDB">
+
+```bash
+yarn create nocobase-app my-nocobase-app -d mariadb \
+   -e DB_HOST=localhost \
+   -e DB_PORT=3306 \
+   -e DB_DATABASE=nocobase \
+   -e DB_USER=nocobase \
+   -e DB_PASSWORD=nocobase \
+   -e TZ=Asia/Shanghai
+```
+
+</Tab>
+</Tabs>
+
+</Tab>
+
+<Tab label="Beta 版本">
+
+<Tabs>
+<Tab label="PostgreSQL">
+
+```bash
+npx create-nocobase-app@beta my-nocobase-app -d postgres \
+   -e DB_HOST=localhost \
+   -e DB_PORT=5432 \
+   -e DB_DATABASE=nocobase \
+   -e DB_USER=nocobase \
+   -e DB_PASSWORD=nocobase \
+   -e TZ=Asia/Shanghai
+```
+
+</Tab>
+
+<Tab label="MySQL">
+
+```bash
+npx create-nocobase-app@beta my-nocobase-app -d mysql \
+   -e DB_HOST=localhost \
+   -e DB_PORT=3306 \
+   -e DB_DATABASE=nocobase \
+   -e DB_USER=nocobase \
+   -e DB_PASSWORD=nocobase \
+   -e TZ=Asia/Shanghai
+```
+
+</Tab>
+
+<Tab label="MariaDB">
+
+```bash
+npx create-nocobase-app@beta my-nocobase-app -d mariadb \
+   -e DB_HOST=localhost \
+   -e DB_PORT=3306 \
+   -e DB_DATABASE=nocobase \
+   -e DB_USER=nocobase \
+   -e DB_PASSWORD=nocobase \
+   -e TZ=Asia/Shanghai
+```
+
+</Tab>
+</Tabs>
+
+</Tab>
+
+<Tab label="Alpha 版本">
+
+<Tabs>
+<Tab label="PostgreSQL">
+
+```bash
+npx create-nocobase-app@alpha my-nocobase-app -d postgres \
+   -e DB_HOST=localhost \
+   -e DB_PORT=5432 \
+   -e DB_DATABASE=nocobase \
+   -e DB_USER=nocobase \
+   -e DB_PASSWORD=nocobase \
+   -e TZ=Asia/Shanghai
+```
+
+</Tab>
+
+<Tab label="MySQL">
+
+```bash
+npx create-nocobase-app@alpha my-nocobase-app -d mysql \
+   -e DB_HOST=localhost \
+   -e DB_PORT=3306 \
+   -e DB_DATABASE=nocobase \
+   -e DB_USER=nocobase \
+   -e DB_PASSWORD=nocobase \
+   -e TZ=Asia/Shanghai
+```
+
+</Tab>
+
+<Tab label="MariaDB">
+
+```bash
+npx create-nocobase-app@alpha my-nocobase-app -d mariadb \
+   -e DB_HOST=localhost \
+   -e DB_PORT=3306 \
+   -e DB_DATABASE=nocobase \
+   -e DB_USER=nocobase \
+   -e DB_PASSWORD=nocobase \
+   -e TZ=Asia/Shanghai
+```
+
+</Tab>
+</Tabs>
+
+</Tab>
+
+</Tabs>
+
+:::warning 环境变量说明
+
+- `TZ` 用于设置应用的时区，默认为操作系统时区
+- `APP_KEY` 是应用的密钥，用于生成用户 token 等（如果 APP_KEY 修改了，旧的 token 也会随之失效）。它可以是任意随机字符串。**请修改为自己的秘钥，并确保不对外泄露**
+- `DB_*` 为数据库相关配置，请根据实际情况修改为你的数据库连接信息
+
+:::
+
+## 2. 切换目录
+
+```bash
+cd my-nocobase-app
+```
+
+## 3. 安装依赖
+
+📢 由于网络环境、系统配置等因素影响，这一步可能需要十几分钟时间。
+
+```bash
+yarn install
+```
+
+:::tip 生产环境提示
+
+生产环境部署时，为了减少体积，可以只安装必要的依赖：
+
+```bash
+yarn install --production
+```
+
+:::
+
+## 4. 安装 NocoBase
+
+```bash
+yarn nocobase install --lang=zh-CN
+```
+
+安装过程会自动创建数据库表结构和初始化数据。
+
+## 5. 启动 NocoBase
+
+**开发环境**
+
+```bash
+yarn dev
+```
+
+**生产环境**
+
+```bash
+yarn start
+```
+
+## 6. 登录 NocoBase
+
+使用浏览器打开 [http://localhost:13000](http://localhost:13000)，初始化账号和密码是 `admin@nocobase.com` 和 `admin123`。
+
+:::warning 账号安全提示
+
+首次登录后，请及时修改默认密码以确保系统安全。
+
+:::

@@ -13,7 +13,7 @@ import WorkflowPlugin from '@nocobase/plugin-workflow/client';
 import Manual from './instruction';
 
 import { NAMESPACE } from '../locale';
-import { WorkflowManualProvider } from './WorkflowManualProvider';
+import { todoCollection, WorkflowManualProvider } from './WorkflowManualProvider';
 import { manualTodo, WorkflowTodo } from './WorkflowTodo';
 import {
   addActionButton,
@@ -59,6 +59,8 @@ export default class extends Plugin {
       Component: 'WorkflowTodo.Initializer',
       icon: 'CheckSquareOutlined',
     });
+
+    workflow.registerCollectionsToDataSource([todoCollection]);
   }
 
   addComponents() {

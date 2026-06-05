@@ -1,9 +1,9 @@
 {
-  "Logger": "ログ",
-  "Search": "検索",
-  "Download": "ダウンロード",
-  "Download logs": "ログをダウンロード",
   "API request and response logs": "API リクエストとレスポンスのログ",
   "Application, database, plugins and other system logs, the error level logs will be sent to": "アプリケーション、データベース、プラグイン、およびその他のシステムログ、エラーレベルのログは次に送信されます",
-  "SQL execution logs, printed by Sequelize when the db logging is enabled": "SQL 実行ログ、データベースログが有効な場合、Sequelize が出力する SQL 実行ログ"
+  "Download": "ダウンロード",
+  "Download logs": "ログをダウンロード",
+  "Logger": "ログ",
+  "SQL execution logs, printed by Sequelize when the db logging is enabled": "SQL 実行ログ、データベースログが有効な場合、Sequelize が出力する SQL 実行ログ",
+  "Search": "検索"
 }

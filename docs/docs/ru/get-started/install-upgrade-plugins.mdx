@@ -1,0 +1,110 @@
+:::tip Уведомление о переводе ИИ
+Эта документация была автоматически переведена ИИ.
+:::
+
+
+# Установка и обновление плагинов
+
+## Встроенные плагины
+
+Встроенные плагины NocoBase обновляются автоматически вместе с ядром системы и не требуют ручного вмешательства.
+
+## Коммерческие плагины
+
+Пожалуйста, войдите в NocoBase Service и ознакомьтесь с документацией, чтобы узнать, как устанавливать и обновлять коммерческие плагины.
+
+## Сторонние плагины
+
+### Установка плагинов онлайн
+
+![20251103102344](https://static-docs.nocobase.com/20251103102344.png)
+
+:::warning Внимание
+
+NocoBase поддерживает онлайн-установку плагинов через пользовательский интерфейс, но текущий опыт использования не идеален. Причины этого включают:
+
+- Из-за ограничений механизма работы процессов Node.js, после установки или обновления плагинов необходимо остановить процесс, а затем выполнить команду `upgrade`, чтобы изменения вступили в силу.
+- В сценариях с несколькими приложениями онлайн-установка затрудняет одновременную синхронизацию плагинов для нескольких дочерних приложений.
+- Не поддерживается пакетное обновление плагинов.
+- Онлайн-установка или обновление плагинов может легко привести к аварийному завершению процесса приложения.
+
+Поэтому рекомендуется использовать командную строку или ручную загрузку для установки и обновления плагинов. Мы советуем интегрировать этот процесс с CI/CD рабочими процессами, используя командную строку для загрузки, распаковки и обновления плагинов, что обеспечит согласованность и надежность каждого развертывания обновления.
+
+:::
+
+### Установка плагинов через командную строку
+
+```bash
+yarn pm pull https://github.com/nocobase/plugin-auth-cas/releases/download/v1.4.0/plugin-auth-cas-1.4.0.tgz
+yarn pm pull /your/path/plugin-auth-cas-1.4.0.tgz
+```
+
+Если плагин уже установлен и требует обновления, выполните следующую команду:
+
+```bash
+yarn nocobase upgrade --skip-code-update
+```
+
+### Ручная загрузка и распаковка
+
+Сначала загрузите пакет плагина на свой локальный компьютер, затем вручную загрузите и распакуйте его в директорию `./storage/plugins`. Если плагин уже включен, выполните следующую команду после загрузки и распаковки, чтобы завершить обновление плагина.
+
+> ⚠️ **Внимание**: Во избежание проблем с кэшем, пожалуйста, убедитесь, что приложение NocoBase остановлено перед выполнением.
+
+```bash
+yarn nocobase upgrade --skip-code-update
+```
+
+### Правильный способ распаковки плагина
+
+Следующий пример демонстрирует, как правильно распаковать пакет плагина в указанную директорию:
+
+```bash
+mkdir -p /my-nocobase/storage/plugins/@nocobase/plugin-auth-cas && \
+  tar -xvzf /downloads/plugin-auth-cas-1.4.0.tgz \
+  -C /my-nocobase/storage/plugins/@nocobase/plugin-auth-cas \
+  --strip-components=1
+```
+
+Эта команда распакует плагин в указанную директорию, не создавая при этом лишнего уровня каталога `package`.
+
+```bash
+/my-nocobase/storage/plugins/@nocobase/plugin-auth-cas
+```
+
+### Пример правильной структуры директорий
+
+```bash
+./plugin-auth-cas/dist/server/migrations/20240425200816-change-locale-module.js
+./plugin-auth-cas/dist/server/auth.js
+./plugin-auth-cas/client.js
+./plugin-auth-cas/dist/constants.js
+./plugin-auth-cas/dist/externalVersion.js
+./plugin-auth-cas/dist/client/index.js
+./plugin-auth-cas/dist/index.js
+./plugin-auth-cas/dist/server/index.js
+./plugin-auth-cas/dist/server/actions/login.js
+./plugin-auth-cas/dist/server/plugin.js
+./plugin-auth-cas/server.js
+./plugin-auth-cas/dist/server/actions/service.js
+./plugin-auth-cas/dist/locale/en-US.json
+./plugin-auth-cas/dist/locale/ko_KR.json
+./plugin-auth-cas/package.json
+./plugin-auth-cas/dist/locale/zh-CN.json
+./plugin-auth-cas/README.md
+./plugin-auth-cas/README.zh-CN.md
+./plugin-auth-cas/dist/server/migrations/20240425200816-change-locale-module.d.ts
+./plugin-auth-cas/dist/server/auth.d.ts
+./plugin-auth-cas/client.d.ts
+./plugin-auth-cas/dist/constants.d.ts
+./plugin-auth-cas/dist/client/index.d.ts
+./plugin-auth-cas/dist/client/locale/index.d.ts
+./plugin-auth-cas/dist/index.d.ts
+./plugin-auth-cas/dist/server/index.d.ts
+./plugin-auth-cas/dist/server/actions/login.d.ts
+./plugin-auth-cas/dist/client/Options.d.ts
+./plugin-auth-cas/dist/server/plugin.d.ts
+./plugin-auth-cas/server.d.ts
+./plugin-auth-cas/dist/server/actions/service.d.ts
+./plugin-auth-cas/dist/client/SigninPage.d.ts
+./plugin-auth-cas/LICENSE.txt

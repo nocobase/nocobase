@@ -217,6 +217,7 @@ export const EditFieldAction = (props) => {
             disabledJSONB: true,
             scopeKeyOptions,
             createMainOnly: false,
+            primaryKeyOnly: false,
             ...scope,
           }}
         />

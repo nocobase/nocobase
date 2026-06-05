@@ -1,0 +1,211 @@
+:::tip Aviso de traducción por IA
+Esta documentación ha sido traducida automáticamente por IA.
+:::
+
+
+```yaml
+pkg: '@nocobase/plugin-backups'
+---
+
+# Gestión de Copias de Seguridad
+
+## Introducción
+
+El plugin de gestión de copias de seguridad de NocoBase ofrece funcionalidades completas para la copia de seguridad de la base de datos de NocoBase y los archivos subidos por los usuarios, incluyendo la programación, descarga, eliminación y restauración de las copias de seguridad.
+
+:::warning
+El plugin de Gestión de Copias de Seguridad está incluido en las ediciones Profesional y Empresarial. Los usuarios de las ediciones Comunitaria y Estándar pueden realizar copias de seguridad de la base de datos directamente; para más detalles, consulte: [`Cómo hacer copias de seguridad y restaurar NocoBase`](https://www.nocobase.com/cn/blog/nocobase-backup-restore)
+:::
+
+## Instalar Cliente de Base de Datos
+
+El gestor de copias de seguridad depende del cliente de la base de datos correspondiente. Antes de usarlo, por favor, visite el sitio web oficial para descargar el cliente que coincida con la versión de su base de datos:
+
+- MySQL: https://dev.mysql.com/downloads/
+- PostgreSQL: https://www.postgresql.org/download/
+
+Para las versiones de Docker, puede escribir un script directamente en el directorio `./storage/scripts`:
+
+```bash
+mkdir ./storage/scripts
+cd ./storage/scripts
+vim install-database-client.sh
+```
+
+El contenido de `install-database-client.sh` es el siguiente:
+
+<Tabs>
+
+<Tab label="PostgreSQL" name="PostgreSQL">
+
+```bash
+#!/bin/bash
+
+# Check if pg_dump is installed
+if [ ! -f /usr/bin/pg_dump ]; then
+    echo "pg_dump is not installed, starting PostgreSQL client installation..."
+
+    # Configure Aliyun mirrors
+    tee /etc/apt/sources.list > /dev/null <<EOF
+deb http://mirrors.aliyun.com/debian/ bookworm main contrib non-free
+deb-src http://mirrors.aliyun.com/debian/ bookworm main contrib non-free
+deb http://mirrors.aliyun.com/debian-security/ bookworm-security main contrib non-free
+deb-src http://mirrors.aliyun.com/debian-security/ bookworm-security main contrib non-free
+deb http://mirrors.aliyun.com/debian/ bookworm-updates main contrib non-free
+deb-src http://mirrors.aliyun.com/debian/ bookworm-updates main contrib non-free
+deb http://mirrors.aliyun.com/debian/ bookworm-backports main contrib non-free
+deb-src http://mirrors.aliyun.com/debian/ bookworm-backports main contrib non-free
+EOF
+
+    # Install necessary tools and clean cache
+    rm -rf /etc/apt/sources.list.d/debian.sources && apt-get update && apt-get install -y --no-install-recommends wget gnupg \
+      && rm -rf /var/lib/apt/lists/*
+
+    # Configure PostgreSQL source
+    echo "deb [signed-by=/usr/share/keyrings/pgdg.asc] http://mirrors.aliyun.com/postgresql/repos/apt bookworm-pgdg main" > /etc/apt/sources.list.d/pgdg.list
+    wget --quiet -O /usr/share/keyrings/pgdg.asc http://mirrors.aliyun.com/postgresql/repos/apt/ACCC4CF8.asc
+
+    # Install PostgreSQL client
+    apt-get update && apt-get install -y --no-install-recommends postgresql-client-16 \
+      && rm -rf /var/lib/apt/lists/*
+
+    echo "PostgreSQL client installation completed."
+else
+    echo "pg_dump is already installed, skipping PostgreSQL client installation."
+fi
+```
+
+</Tab>
+<Tab label="MySQL/MariaDB" name="MySQL/MariaDB">
+
+```bash
+#!/bin/bash
+
+if [ ! -f /usr/bin/mysql ]; then
+    echo "MySQL client is not installed, starting MySQL client installation..."
+
+    tee /etc/apt/sources.list > /dev/null <<EOF
+deb http://mirrors.aliyun.com/debian/ bookworm main contrib non-free
+deb-src http://mirrors.aliyun.com/debian/ bookworm main contrib non-free
+deb http://mirrors.aliyun.com/debian-security/ bookworm-security main contrib non-free
+deb-src http://mirrors.aliyun.com/debian-security/ bookworm-security main contrib non-free
+deb http://mirrors.aliyun.com/debian/ bookworm-updates main contrib non-free
+deb-src http://mirrors.aliyun.com/debian/ bookworm-updates main contrib non-free
+deb http://mirrors.aliyun.com/debian/ bookworm-backports main contrib non-free
+deb-src http://mirrors.aliyun.com/debian/ bookworm-backports main contrib non-free
+EOF
+
+    echo "Updating package list and installing necessary tools..."
+    rm -rf /etc/apt/sources.list.d/debian.sources && apt-get update && apt-get install -y --no-install-recommends wget gnupg \
+        && rm -rf /var/lib/apt/lists/*
+
+    wget --no-check-certificate https://downloads.mysql.com/archives/get/p/23/file/mysql-community-client-core_8.0.39-1debian12_amd64.deb && \
+        dpkg -x mysql-community-client-core_8.0.39-1debian12_amd64.deb /tmp/mysql-client && \
+        cp /tmp/mysql-client/usr/bin/mysqldump /usr/bin/ && \
+        cp /tmp/mysql-client/usr/bin/mysql /usr/bin/
+
+    echo "MySQL client installation completed."
+else
+    echo "MySQL client is already installed, skipping installation."
+fi
+```
+
+</Tab>
+
+</Tabs>
+
+Luego, reinicie el contenedor de la aplicación:
+
+```bash
+docker compose restart app
+# Ver registros
+docker compose logs app
+```
+
+Verifique el número de versión del cliente de la base de datos, que debe coincidir con el número de versión del servidor de la base de datos:
+
+<Tabs>
+<Tab label="PostgreSQL" name="PostgreSQL">
+
+```bash
+docker compose exec app bash -c "pg_dump -V"
+```
+
+</Tab>
+<Tab label="MySQL/MariaDB" name="MySQL/MariaDB">
+
+```bash
+docker compose exec app bash -c "mysql -V"
+```
+
+</Tab>
+</Tabs>
+
+## Instrucciones de Uso
+
+![](https://static-docs.nocobase.com/202510302154966.png)
+
+### Crear Nueva Copia de Seguridad
+
+Haga clic en el botón "Nueva copia de seguridad" para crear una nueva copia de seguridad según la configuración establecida y ver su estado en la lista de copias de seguridad.
+
+![](https://static-docs.nocobase.com/202510302154912.png)
+
+### Restaurar Copia de Seguridad
+
+Permite restaurar copias de seguridad desde la lista de copias de seguridad o subiendo archivos de copia de seguridad locales.
+Las operaciones de restauración no están permitidas en los siguientes escenarios:
+
+- Cuando la versión actual de NocoBase es inferior a la versión de NocoBase del archivo de copia de seguridad.
+- Cuando la base de datos actual de NocoBase es inconsistente con las siguientes configuraciones del archivo de copia de seguridad:
+  - tipo de base de datos (dialect)
+  - configuración de campos (underscored)
+  - prefijo de tabla (table prefix)
+  - esquema de tabla (schema)
+- Cuando el `modo tolerante` no está activado y la versión de la base de datos al crear la copia de seguridad es superior a la versión de la base de datos de la aplicación actual.
+
+> **La restauración es una operación completa de la base de datos. Se recomienda hacer una copia de seguridad de la base de datos actual antes de realizar una restauración.**
+
+#### Restaurar desde la lista de copias de seguridad
+
+Haga clic en el botón `Restaurar` del elemento de copia de seguridad en la lista, introduzca la contraseña de cifrado del archivo de copia de seguridad en la ventana emergente y haga clic en "Confirmar" para restaurar la copia de seguridad.
+
+> Para archivos de copia de seguridad no cifrados, no es necesario introducir una contraseña.
+
+> Si necesita restaurar el archivo de copia de seguridad a una versión anterior de la base de datos, deberá activar el modo tolerante.
+
+![](https://static-docs.nocobase.com/202510302156882.png)
+
+#### Restaurar desde un archivo de copia de seguridad local
+
+Haga clic en el botón `Restaurar desde copia de seguridad local`, seleccione el archivo de copia de seguridad local en la ventana emergente, introduzca la contraseña de cifrado del archivo de copia de seguridad y haga clic en "Confirmar" para restaurar la copia de seguridad.
+
+> Para archivos de copia de seguridad no cifrados, no es necesario introducir una contraseña.
+
+> Si necesita restaurar el archivo de copia de seguridad a una versión anterior de la base de datos, deberá activar el modo tolerante.
+
+![](https://static-docs.nocobase.com/202510302155602.png)
+
+#### Descargar Archivo de Copia de Seguridad
+
+Haga clic en el botón `Descargar` del elemento de copia de seguridad en la lista para descargar el archivo.
+
+#### Eliminar Copia de Seguridad
+
+Haga clic en el botón `Eliminar` del elemento de copia de seguridad en la lista para eliminar el archivo.
+
+## Configuración de Copias de Seguridad
+
+Cambie a la pestaña `Configuración`, modifique los ajustes de copia de seguridad y haga clic en `Guardar` para que surtan efecto.
+
+![](https://static-docs.nocobase.com/202510302156326.png)
+
+### Descripción de la Configuración de Copias de Seguridad
+
+- `Copia de seguridad automática`: Después de activar `Ejecutar copia de seguridad automática según la programación Cron`, puede configurar copias de seguridad automáticas en momentos específicos.
+- `Número máximo de copias de seguridad`: Establezca el número máximo de archivos de copia de seguridad guardados localmente. Una vez superado este número, los archivos de copia de seguridad locales más antiguos se eliminarán automáticamente.
+- `Sincronizar copia de seguridad con almacenamiento en la nube`: Configure el almacenamiento en la nube al que se subirán automáticamente los archivos de copia de seguridad una vez que se hayan realizado correctamente.
+- `Archivos de copia de seguridad del almacenamiento local`: Indica si se deben incluir en la copia de seguridad los archivos subidos por los usuarios al almacenamiento local del servidor (storage/uploads).
+- `Contraseña de restauración`: Si se establece una contraseña de restauración, deberá introducirla al restaurar la copia de seguridad.
+
+> **Guarde la contraseña de restauración de forma segura. Si la olvida, no podrá restaurar el archivo de copia de seguridad.**

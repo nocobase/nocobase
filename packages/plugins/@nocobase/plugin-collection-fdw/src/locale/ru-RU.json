@@ -1,0 +1,18 @@
+{
+  "Connect to foreign data": "Подключиться к внешним данным",
+  "Connection successful": "Connection successful",
+  "Connection successful'": "Подключение успешно",
+  "Create database server": "Создать сервер базы данных",
+  "Database": "База данных",
+  "Database server": "Сервер базы данных",
+  "Display name": "Отображаемое имя",
+  "Edit database server": "Редактировать сервер базы данных",
+  "Host": "Хост",
+  "Password": "Пароль",
+  "Port": "Порт",
+  "Remote table": "Удаленная таблица",
+  "Server name": "Имя сервера",
+  "Sync from remote table": "Синхронизировать с удаленной таблицы",
+  "Test Connection": "Проверить соединение",
+  "Username": "Имя пользователя"
+}

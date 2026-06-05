@@ -14,6 +14,7 @@ import { Typography } from 'antd';
 import _ from 'lodash';
 import React, { FC, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
+import { registerTextCopyDisplayField } from './textCopyDisplayField';
 
 // Define namespace for i18n
 const NAMESPACE = 'text-copy';
@@ -64,6 +65,8 @@ const TextCopyButton: FC = observer(
 
 class PluginTextCopy extends Plugin {
   async load() {
+    registerTextCopyDisplayField();
+
     const copyButton = <TextCopyButton />;
 
     this.app.addScopes({

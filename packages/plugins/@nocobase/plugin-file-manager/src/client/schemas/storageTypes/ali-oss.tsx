@@ -60,7 +60,7 @@ export default {
           default: 600_000,
         },
         thumbnailRule: {
-          title: 'Thumbnail rule',
+          title: `{{t("File pre-process parameters", { ns: "${NAMESPACE}" })}}`,
           type: 'string',
           'x-decorator': 'FormItem',
           'x-component': 'TextAreaWithGlobalScope',
@@ -72,9 +72,11 @@ export default {
       },
     },
     path: common.path,
+    renameMode: common.renameMode,
     rules: common.rules,
     default: common.default,
     paranoid: common.paranoid,
+    settings: common.settings,
   },
   thumbnailRuleLink: 'https://help.aliyun.com/zh/oss/user-guide/resize-images-4',
 };

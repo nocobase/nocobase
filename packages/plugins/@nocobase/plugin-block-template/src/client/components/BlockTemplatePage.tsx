@@ -49,7 +49,7 @@ export const BlockTemplatePage = () => {
         <Breadcrumb
           items={[
             {
-              title: <Link to={`/admin/settings/block-templates`}>{t('Block template')}</Link>,
+              title: <Link to={`/admin/settings/ui-templates/inherited-v1`}>{t('Block template')}</Link>,
             },
             {
               title: title,

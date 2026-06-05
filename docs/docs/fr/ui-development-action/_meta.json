@@ -1,0 +1,18 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Démarrage rapide",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Introduction",
+        "link": "/ui-development-action"
+      },
+      {
+        "type": "custom-link",
+        "label": "Créer un plugin d'action",
+        "link": "/ui-development-action/write-an-action-plugin"
+      }
+    ]
+  }
+]

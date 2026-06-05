@@ -87,6 +87,7 @@ export class CollectionManager {
     if (!path) return undefined;
 
     if (typeof path === 'object') {
+      path.disableTranslation = true;
       return this.getCollectionInstance(path) as Mixins & Collection;
     }
 
@@ -190,6 +191,10 @@ export class CollectionManager {
           `[@nocobase/client]: CollectionManager.getFilterByTK() field "${collectionOrAssociation}" is invalid`,
         );
         return;
+      }
+      const targetCollection = this.getCollection(field.target);
+      if (targetCollection) {
+        return buildFilterByTk(targetCollection.getFilterTargetKey(), collectionRecordOrAssociationRecord);
       }
       if (field.targetKey) {
         return collectionRecordOrAssociationRecord[field.targetKey];

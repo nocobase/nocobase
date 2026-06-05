@@ -1,0 +1,48 @@
+[
+  {
+    "type": "custom-link",
+    "label": "セキュリティガイド",
+    "link": "/security/guide"
+  },
+  {
+    "type": "custom-link",
+    "label": "トークンポリシー",
+    "link": "/security/token-policy/"
+  },
+  {
+    "type": "custom-link",
+    "label": "パスワードポリシー",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "パスワードポリシー",
+        "link": "/security/password-policy/"
+      },
+      {
+        "type": "custom-link",
+        "label": "ユーザーロックアウト",
+        "link": "/security/password-policy/lockout"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "IP制限",
+    "link": "/security/ip-restriction/"
+  },
+  {
+    "type": "custom-link",
+    "label": "監査ログ",
+    "link": "/security/audit-logger/"
+  },
+  {
+    "type": "custom-link",
+    "label": "二要素認証 (2FA)",
+    "link": "/auth-verification/2fa/"
+  },
+  {
+    "type": "custom-link",
+    "label": "フィールド暗号化",
+    "link": "/data-sources/field-encryption"
+  }
+]

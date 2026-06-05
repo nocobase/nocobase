@@ -1,0 +1,16 @@
+{
+  "Add variable": "Add variable",
+  "Bulk import": "Bulk import",
+  "Delete variable": "Delete variable",
+  "Encrypted": "Encrypted",
+  "Environment": "Environment",
+  "Name": "Tên",
+  "Plain text": "Plain text",
+  "Restart now": "Restart now",
+  "Secrets": "Secrets",
+  "Type": "Loại",
+  "Value": "Giá trị",
+  "Variables": "Variables",
+  "Variables and secrets": "Variables and secrets",
+  "Variables and secrets have been updated. A restart is required for the changes to take effect.": "Variables and secrets have been updated. A restart is required for the changes to take effect."
+}

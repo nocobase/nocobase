@@ -36,7 +36,6 @@ import {
   useResourceActionContext,
 } from '@nocobase/client';
 import { useForm, useField } from '@formily/react';
-import { DepartmentOwnersField } from './DepartmentOwnersField';
 
 export const DepartmentTreeContext = createContext({} as ReturnType<typeof useDepartmentManager>);
 
@@ -125,7 +124,7 @@ export const Department: React.FC = () => {
             style={{
               textAlign: 'left',
               marginBottom: '5px',
-              background: department ? '' : token.colorBgTextHover,
+              background: department ? '' : token.colorPrimaryBg,
             }}
             onClick={() => {
               setDepartment(null);
@@ -140,7 +139,7 @@ export const Department: React.FC = () => {
         <DepartmentTree />
         <ActionContextProvider value={{ visible, setVisible }}>
           <RecordProvider record={drawer.node || {}}>
-            <SchemaComponent scope={{ t }} components={{ DepartmentOwnersField }} schema={drawer.schema || {}} />
+            <SchemaComponent scope={{ t }} schema={drawer.schema || {}} />
           </RecordProvider>
         </ActionContextProvider>
       </DepartmentTreeContext.Provider>

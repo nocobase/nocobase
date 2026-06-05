@@ -1,0 +1,90 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Visión general",
+    "link": "/email-manager/"
+  },
+  {
+    "type": "custom-link",
+    "label": "Configuración de administrador",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Proceso de configuración",
+        "link": "/email-manager/configuration/guide"
+      },
+      {
+        "type": "custom-link",
+        "label": "Configuración de Gmail",
+        "link": "/email-manager/configuration/gmail"
+      },
+      {
+        "type": "custom-link",
+        "label": "Configuración de correo de Microsoft",
+        "link": "/email-manager/configuration/outlook"
+      },
+      {
+        "type": "custom-link",
+        "label": "Preguntas frecuentes",
+        "link": "/email-manager/configuration/faq"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Introducción a las características",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Centro de correo",
+        "link": "/email-manager/usage/guide"
+      },
+      {
+        "type": "custom-link",
+        "label": "Bloque de correo",
+        "link": "/email-manager/usage/configuration"
+      },
+      {
+        "type": "custom-link",
+        "label": "Firma de correo",
+        "link": "/email-manager/usage/signature"
+      },
+      {
+        "type": "custom-link",
+        "label": "Plantilla de correo",
+        "link": "/email-manager/usage/template"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Avanzado",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Nota de correo",
+        "link": "/email-manager/advanced/note"
+      },
+      {
+        "type": "custom-link",
+        "label": "Tareas de correo",
+        "link": "/email-manager/advanced/todo"
+      },
+      {
+        "type": "custom-link",
+        "label": "Etiqueta de correo",
+        "link": "/email-manager/advanced/label"
+      },
+      {
+        "type": "custom-link",
+        "label": "Envío masivo",
+        "link": "/email-manager/advanced/batch-send"
+      },
+      {
+        "type": "custom-link",
+        "label": "Autoguardado de borradores",
+        "link": "/email-manager/advanced/auto-save-draft"
+      }
+    ]
+  }
+]

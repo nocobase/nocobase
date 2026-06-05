@@ -154,6 +154,19 @@ export class FileCollectionTemplate extends CollectionTemplate {
     ],
   };
   presetFieldsDisabled = true;
+  events = {
+    filterPrimaryKeyCandidate(field) {
+      return field.name !== 'input';
+    },
+    initPrimaryKeyFiledInterface(properties) {
+      if (properties.autoFill) {
+        properties.autoFill['x-disabled'] = true;
+      }
+      if (properties.autoIncrement) {
+        properties.autoIncrement['x-disabled'] = true;
+      }
+    },
+  };
   configurableProperties = {
     ...getConfigurableProperties('title', 'name'),
     inherits: {

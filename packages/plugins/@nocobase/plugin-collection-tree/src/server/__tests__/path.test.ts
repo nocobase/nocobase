@@ -8,13 +8,13 @@
  */
 
 import { MockServer } from '@nocobase/test';
-import { Database } from '@nocobase/database';
+import { Collection, Database } from '@nocobase/database';
 import { createApp } from './prepare';
 
 describe('tree path test', () => {
   let app: MockServer;
   let agent;
-  let treeCollection;
+  let treeCollection: Collection;
   let name;
   let nodePkColumnName;
   let values;
@@ -658,5 +658,22 @@ describe('tree path test', () => {
       },
     });
     expect(fakePath.get('path')).toBe('/1/21');
+  });
+
+  it('should update paths after bulk create', async () => {
+    const data = await treeCollection.model.bulkCreate([{ name: 'b1' }, { name: 'b2' }]);
+    const b1 = data[0];
+    const b2 = data[1];
+    const tks = [b1.get(treeCollection.filterTargetKey as string), b2.get(treeCollection.filterTargetKey as string)];
+    const paths = await db.getRepository(name).find({
+      filter: {
+        [nodePkColumnName]: {
+          $in: tks,
+        },
+      },
+    });
+    expect(paths.length).toBe(2);
+    expect(paths[0].get('path')).toBe('/1');
+    expect(paths[1].get('path')).toBe('/2');
   });
 });

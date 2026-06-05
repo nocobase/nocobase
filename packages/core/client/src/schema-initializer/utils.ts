@@ -728,7 +728,7 @@ export const useCustomFormItemInitializerFields = (options?: any) => {
   const remove = useRemoveGridFormItem();
   return currentFields
     ?.filter((field) => {
-      return !field.inherit && field?.interface && field.interface !== 'snapshot' && field.type !== 'sequence';
+      return !field.inherit && field?.interface && field.interface !== 'snapshot';
     })
     ?.map((field) => {
       const interfaceConfig = getInterface(field.interface);
@@ -1931,7 +1931,7 @@ function useAssociationFields({
   ]);
 }
 
-const isInTemplateSettingPage = () => window.location.pathname.includes('/block-templates/inherited');
+const isInTemplateSettingPage = () => window.location.pathname.includes('/ui-templates/inherited-v1');
 
 const initializerMenusGenerators = new Map<
   string,

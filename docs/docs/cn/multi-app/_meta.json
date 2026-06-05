@@ -1,0 +1,28 @@
+[
+  {
+    "type": "custom-link",
+    "label": "多应用",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "概述",
+        "link": "/multi-app/multi-app"
+      },
+      {
+        "type": "custom-link",
+        "label": "共享内存模式",
+        "link": "/multi-app/multi-app/local"
+      },
+      {
+        "type": "custom-link",
+        "label": "多环境模式",
+        "link": "/multi-app/multi-app/remote"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "多空间",
+    "link": "/multi-app/multi-space"
+  }
+]

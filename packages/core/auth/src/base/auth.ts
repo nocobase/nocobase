@@ -162,7 +162,7 @@ export class BaseAuth extends Auth {
       tokenStatus = 'expired';
     }
 
-    if (tokenStatus === 'valid' && user.passwordChangeTz && iat * 1000 < user.passwordChangeTz) {
+    if (user.passwordChangeTz && iat * 1000 < user.passwordChangeTz) {
       this.ctx.throw(401, {
         message: this.ctx.t('User password changed, please signin again.', { ns: localeNamespace }),
         code: AuthErrorCode.INVALID_TOKEN,

@@ -1,0 +1,9 @@
+{
+  "Calculation engine": "Calculation engine",
+  "Compute a value based on the other fields": "Compute a value based on the other fields",
+  "Configure and store the results of calculations between multiple field values in the same record, supporting both Math.js and Excel formula functions.": "Configure and store the results of calculations between multiple field values in the same record, supporting both Math.js and Excel formula functions.",
+  "Expression": "Biểu thức",
+  "Expression syntax error": "Expression syntax error",
+  "Formula": "Công thức",
+  "Syntax references": "Syntax references"
+}

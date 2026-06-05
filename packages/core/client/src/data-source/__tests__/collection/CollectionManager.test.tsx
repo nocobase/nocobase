@@ -311,6 +311,44 @@ describe('CollectionManager', () => {
         expect(result2).toBe('rolesName');
       });
 
+      it('should use target collection filterTargetKey for associations', () => {
+        const app = new Application({
+          dataSourceManager: {
+            collections: [
+              {
+                name: 'staff',
+                filterTargetKey: 'uuid',
+                fields: [
+                  { name: 'id', type: 'integer', interface: 'number', primaryKey: true },
+                  { name: 'uuid', type: 'string', interface: 'input' },
+                ],
+              },
+              {
+                name: 'orgs',
+                filterTargetKey: 'id',
+                fields: [
+                  { name: 'id', type: 'integer', interface: 'number', primaryKey: true },
+                  {
+                    name: 'staffs',
+                    type: 'belongsToMany',
+                    interface: 'm2m',
+                    target: 'staff',
+                    targetKey: 'id',
+                    sourceKey: 'id',
+                    foreignKey: 'orgId',
+                    otherKey: 'staffId',
+                  },
+                ],
+              },
+            ] as any,
+          },
+        });
+        const cm = app.getCollectionManager();
+
+        const result = cm.getFilterByTK('orgs.staffs', { id: 1, uuid: 'staff-uuid-001' });
+        expect(result).toBe('staff-uuid-001');
+      });
+
       it('should return undefined when collectionOrAssociation is not provided', () => {
         const result = collectionManager.getFilterByTK('', { id: 1 });
         expect(result).toBeUndefined();

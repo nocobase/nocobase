@@ -50,5 +50,5 @@ export async function importModule(m: string) {
   }
 
   const r = (await import(m)).default;
-  return r.__esModule ? r.default : r;
+  return r?.__esModule ? r.default : r;
 }

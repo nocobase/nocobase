@@ -1,8 +1,10 @@
 {
   "Delay": "Délai",
+  "Delay a period of time and then continue or exit the process. Can be used to set wait or timeout times in parallel branches.": "Delay a period of time and then continue or exit the process. Can be used to set wait or timeout times in parallel branches.",
   "Duration": "Durée",
   "End status": "Statut de fin",
+  "Fail and exit": "Échouer et quitter",
   "Select status": "Sélectionner un statut",
   "Succeed and continue": "Réussir et continuer",
-  "Fail and exit": "Échouer et quitter"
+  "Unit": "Unit"
 }

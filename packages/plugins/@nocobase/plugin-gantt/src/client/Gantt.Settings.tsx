@@ -13,6 +13,7 @@ import {
   SchemaSettingsBlockTitleItem,
   SchemaSettingsDataScope,
   SchemaSettingsSelectItem,
+  SchemaSettingsSwitchItem,
   SchemaSettingsTemplate,
   removeNullCondition,
   setDataLoadingModeSettingsItem,
@@ -28,6 +29,29 @@ import {
 import { useTranslation } from 'react-i18next';
 import { useGanttBlockContext } from './GanttBlockProvider';
 import { useGanttTranslation, useOptions } from './utils';
+
+const useEnableDragToRescheduleProps = () => {
+  const { t } = useGanttTranslation();
+  const fieldSchema = useFieldSchema();
+  const field = useField();
+  const { dn } = useDesignable();
+
+  return {
+    title: t('Enable drag to reschedule'),
+    checked: field.decoratorProps?.enableDragToReschedule !== false,
+    onChange: (enableDragToReschedule) => {
+      field.decoratorProps.enableDragToReschedule = enableDragToReschedule;
+      fieldSchema['x-decorator-props']['enableDragToReschedule'] = enableDragToReschedule;
+      dn.emit('patch', {
+        schema: {
+          ['x-uid']: fieldSchema['x-uid'],
+          'x-decorator-props': field.decoratorProps,
+        },
+      });
+      dn.refresh();
+    },
+  };
+};
 
 /**
  * @deprecated
@@ -222,6 +246,11 @@ export const oldGanttSettings = new SchemaSettings({
           },
         };
       },
+    },
+    {
+      name: 'enableDragToReschedule',
+      Component: SchemaSettingsSwitchItem,
+      useComponentProps: useEnableDragToRescheduleProps,
     },
     {
       name: 'dataScope',
@@ -476,6 +505,11 @@ export const ganttSettings = new SchemaSettings({
           },
         };
       },
+    },
+    {
+      name: 'enableDragToReschedule',
+      Component: SchemaSettingsSwitchItem,
+      useComponentProps: useEnableDragToRescheduleProps,
     },
     {
       name: 'dataScope',

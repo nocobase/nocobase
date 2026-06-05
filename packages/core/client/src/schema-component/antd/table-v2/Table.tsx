@@ -179,14 +179,14 @@ const useTableColumns = (
   const { designable } = useDesignable();
   const { exists, render } = useSchemaInitializerRender(schema['x-initializer'], schema['x-initializer-props']);
 
-  const columnsSchemas = useMemo(() => {
-    return schema.reduceProperties((buf, s) => {
-      if (isColumnComponent(s) && schemaInWhitelist(Object.values(s.properties || {}).pop())) {
-        return buf.concat([s]);
-      }
-      return buf;
-    }, []);
-  }, [schema, schemaInWhitelist]);
+  // 列配置（隐藏/删除/顺序）在设计器中会对同一个 schema 对象做原地变更，
+  // 这里不能仅依赖引用级 memo，否则会出现配置已保存但界面不立即更新。
+  const columnsSchemas = schema.reduceProperties((buf, s) => {
+    if (isColumnComponent(s) && schemaInWhitelist(Object.values(s.properties || {}).pop())) {
+      return buf.concat([s]);
+    }
+    return buf;
+  }, []);
   const { current, pageSize } = paginationProps;
   const { isPopupVisibleControlledByURL } = usePopupSettings();
   const { refresh } = useRefreshTableColumns();
@@ -563,7 +563,7 @@ const rowSelectCheckboxWrapperClass = css`
   position: relative;
   display: flex;
   align-items: center;
-  justify-content: space-evenly;
+  justify-content: flex-start;
   padding-right: 8px;
   .nb-table-index {
     opacity: 0;
@@ -590,7 +590,8 @@ const rowSelectCheckboxContentClass = css`
   position: relative;
   display: flex;
   align-items: center;
-  justify-content: space-evenly;
+  justify-content: flex-start;
+  gap: 0;
 `;
 
 const rowSelectCheckboxCheckedClassHover = css`
@@ -1189,7 +1190,7 @@ export const Table: any = withDynamicSchemaProps(
       const scroll = useMemo(() => {
         return {
           x: 'max-content',
-          y: tableHeight,
+          y: dataSource?.length === 0 ? undefined : tableHeight, // 当数据为空且设置了 y 轴高度时，表格头会缩到一起。为了解决这个问题，在数据为空时，y 轴高度需要设置为 undefined
         };
       }, [tableHeight, dataSource]);
 

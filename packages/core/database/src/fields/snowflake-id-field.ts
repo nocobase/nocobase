@@ -38,11 +38,19 @@ export class SnowflakeIdField extends Field {
   }
 
   init() {
-    const { name } = this.options;
+    const { name, autoFill } = this.options;
 
-    this.listener = (instance: Model) => this.setId(name, instance);
+    this.listener = (instance: Model) => {
+      if (autoFill === false) {
+        return;
+      }
+      this.setId(name, instance);
+    };
 
     this.bulkListener = async (instances: Model[]) => {
+      if (autoFill === false) {
+        return;
+      }
       for (const instance of instances) {
         this.setId(name, instance);
       }

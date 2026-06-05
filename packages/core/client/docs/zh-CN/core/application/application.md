@@ -410,7 +410,7 @@ app.registerVariable({
     },
     visible: true
   }),
-  useCtx: () => ({ id: 1, name: 'admin' })
+  useCtx: () => useMemo(() => ({ id: 1, name: 'admin' }), []),
 });
 
 // 支持异步上下文的变量
@@ -420,12 +420,14 @@ app.registerVariable({
     option: {
       value: 'dynamicData',
       label: '动态数据',
-    }
+    },
   }),
-  useCtx: () => async ({ variableName }) => {
-    const data = await fetchSomeData(variableName);
-    return data;
-  }
+  useCtx: () => {
+    return useCallback(async ({ variableName }) => {
+      const data = await fetchSomeData(variableName);
+      return data;
+    }, []);
+  },
 });
 
 // 支持嵌套选项的变量
@@ -447,7 +449,7 @@ app.registerVariable({
       ]
     }
   }),
-  useCtx: () => ({ theme: 'dark', language: 'zh-CN' })
+  useCtx: () => useMemo(() => ({ theme: 'dark', language: 'zh-CN' }), []),
 });
 ```
 

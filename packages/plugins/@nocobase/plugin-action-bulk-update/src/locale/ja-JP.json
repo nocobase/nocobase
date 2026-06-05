@@ -1,6 +1,7 @@
 {
-  "Bulk update": "一括更新",
   "After successful bulk update": "一括更新が完了しました",
-  "Please select the records to be updated": "更新するレコードを選択してください",
-  "Entire collection": "全コレクション"
+  "Bulk update": "一括更新",
+  "Bulk update action settings": "Bulk update action settings",
+  "Entire collection": "全コレクション",
+  "Please select the records to be updated": "更新するレコードを選択してください"
 }

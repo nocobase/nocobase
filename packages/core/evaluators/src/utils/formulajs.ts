@@ -9,20 +9,56 @@
 
 import * as functions from '@formulajs/formulajs';
 import { round } from 'mathjs';
+import 'ses';
 
-import { evaluate } from '.';
+import { evaluate, Scope } from '.';
 
-const fnNames = Object.keys(functions).filter((key) => key !== 'default');
-const fns = fnNames.map((key) => functions[key]);
+const FUNCTION_NAMES = Object.keys(functions).filter((key) => key !== 'default');
 
-export default evaluate.bind(function (expression: string, scope = {}) {
-  const fn = new Function(...fnNames, ...Object.keys(scope), `return ${expression}`);
-  const result = fn(...fns, ...Object.values(scope));
-  if (typeof result === 'number') {
-    if (Number.isNaN(result) || !Number.isFinite(result)) {
-      return null;
-    }
-    return round(result, 9);
+export interface FormulaEvaluatorOptions {
+  blockedIdentifiers?: string[];
+}
+
+function buildEndowments(scope: Scope, blockedIdentifiers: string[] = []) {
+  const endowments: Record<string, any> = Object.create(null);
+  for (const key of FUNCTION_NAMES) {
+    endowments[key] = functions[key];
   }
-  return result;
-}, {});
+  if (scope && typeof scope === 'object') {
+    for (const [key, value] of Object.entries(scope)) {
+      endowments[key] = value;
+    }
+  }
+  for (const key of blockedIdentifiers) {
+    endowments[key] = undefined;
+  }
+  return endowments;
+}
+
+function runInSandbox(expression: string, scope: Scope, options: InternalEvaluatorOptions) {
+  const compartment = new Compartment(buildEndowments(scope, options.blockedIdentifiers));
+  return compartment.evaluate(expression);
+}
+
+interface InternalEvaluatorOptions {
+  blockedIdentifiers: string[];
+}
+
+export function createFormulaEvaluator(options: FormulaEvaluatorOptions = {}) {
+  const mergedOptions: InternalEvaluatorOptions = {
+    blockedIdentifiers: options.blockedIdentifiers,
+  };
+
+  return evaluate.bind(function (expression: string, scope: Scope = {}) {
+    const result = runInSandbox(expression, scope, mergedOptions);
+    if (typeof result === 'number') {
+      if (Number.isNaN(result) || !Number.isFinite(result)) {
+        return null;
+      }
+      return round(result, 9);
+    }
+    return result;
+  }, {});
+}
+
+export default createFormulaEvaluator();

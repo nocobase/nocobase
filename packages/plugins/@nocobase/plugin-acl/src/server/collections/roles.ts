@@ -19,6 +19,7 @@ export default defineCollection({
   autoGenId: false,
   model: 'RoleModel',
   filterTargetKey: 'name',
+  titleField: 'title',
   // targetKey: 'name',
   sortable: true,
   fields: [

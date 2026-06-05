@@ -1,15 +1,15 @@
 {
   "name": "@nocobase/cli",
-  "version": "1.9.9",
+  "version": "2.0.60",
   "description": "",
-  "license": "AGPL-3.0",
+  "license": "Apache-2.0",
   "main": "./src/index.js",
   "bin": {
     "nocobase": "./bin/index.js"
   },
   "dependencies": {
-    "@nocobase/app": "1.9.9",
-    "@nocobase/license-kit": "^0.2.17",
+    "@nocobase/app": "2.0.60",
+    "@nocobase/license-kit": "^0.3.8",
     "@types/fs-extra": "^11.0.1",
     "@umijs/utils": "3.5.20",
     "chalk": "^4.1.1",
@@ -22,12 +22,12 @@
     "p-all": "3.0.0",
     "pm2": "^6.0.5",
     "portfinder": "^1.0.28",
-    "tar": "^7.4.3",
+    "tar": "^7.5.15",
     "tree-kill": "^1.2.2",
     "tsx": "^4.19.0"
   },
   "devDependencies": {
-    "@nocobase/devtools": "1.9.9"
+    "@nocobase/devtools": "2.0.60"
   },
   "repository": {
     "type": "git",

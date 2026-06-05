@@ -1,12 +1,14 @@
 {
-  "Parallel branch": "分岐",
-  "Run multiple branch processes in parallel.": "複数の分岐プロセスを並行して実行",
   "Add branch": "分岐を追加",
   "All succeeded": "すべて成功",
+  "Always continue after all branches end, regardless of success or failure.": "Always continue after all branches end, regardless of success or failure.",
   "Any succeeded": "いずれかが成功",
   "Any succeeded or failed": "いずれかが成功または失敗",
   "Continue after all branches succeeded": "すべての分岐が成功した後に続行",
   "Continue after any branch succeeded": "いずれかの分岐が成功した後に続行",
   "Continue after any branch succeeded, or exit after any branch failed.": "いずれかの分岐が成功した後に続行、または失敗したら終了",
-  "Mode": "モード"
+  "Mode": "モード",
+  "Parallel branch": "分岐",
+  "Run all branches (ignore failures)": "Run all branches (ignore failures)",
+  "Run multiple branch processes in parallel.": "複数の分岐プロセスを並行して実行"
 }

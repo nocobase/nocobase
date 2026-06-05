@@ -64,6 +64,7 @@ export interface CustomToken extends AliasToken {
   borderRadiusBlock: number;
 
   siderWidth: number;
+  globalStyle?: string;
 }
 
 export interface ThemeConfig extends _ThemeConfig {

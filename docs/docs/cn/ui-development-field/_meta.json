@@ -1,0 +1,18 @@
+[
+  {
+    "type": "custom-link",
+    "label": "快速入门",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "介绍",
+        "link": "/ui-development-field"
+      },
+      {
+        "type": "custom-link",
+        "label": "编写一个字段插件",
+        "link": "/ui-development-field/write-a-field-plugin"
+      }
+    ]
+  }
+]

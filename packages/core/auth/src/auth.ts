@@ -77,7 +77,7 @@ export abstract class Auth implements IAuth {
     }
     const { resourceName, actionName } = this.ctx.action;
     const acl = this.ctx.dataSource.acl;
-    const isPublic = await acl.allowManager.isAllowed(resourceName, actionName, this.ctx);
+    const isPublic = await acl.allowManager.isPublic(resourceName, actionName, this.ctx);
     return isPublic;
   }
 

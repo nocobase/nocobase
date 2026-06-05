@@ -20,7 +20,7 @@ export const ShowTipWhenNoPages: FC = ({ children }) => {
   const { designable } = useDesignable();
   const { routeList } = useMobileRoutes();
   const { t } = usePluginTranslation();
-  const isInBlockTemplateSettingsPage = window.location.pathname?.includes('/m/block-templates/inherited/');
+  const isInBlockTemplateSettingsPage = window.location.pathname?.includes('/m/ui-templates/inherited-v1/');
 
   if (!isInBlockTemplateSettingsPage && (!designable || isMobile) && _.isEmpty(routeList)) {
     return (

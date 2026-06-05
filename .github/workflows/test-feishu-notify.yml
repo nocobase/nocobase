@@ -1,0 +1,46 @@
+name: Test Feishu Notification
+
+on:
+  workflow_dispatch:
+    inputs:
+      title:
+        description: 'Card title'
+        required: true
+        default: 'NocoBase 版本 v0.0.0-test Release 结果通知'
+      status:
+        description: 'Build status'
+        required: true
+        type: choice
+        options:
+          - success
+          - failure
+        default: 'success'
+      content:
+        description: 'Card body content in lark_md format (leave empty for default)'
+        required: false
+        default: ''
+      build_time:
+        description: 'Build time (leave empty for current time)'
+        required: false
+        default: ''
+      workflow_url:
+        description: 'Workflow URL (leave empty for current run URL)'
+        required: false
+        default: ''
+
+jobs:
+  test-notify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Send Feishu notification
+        shell: bash
+        env:
+          WEBHOOK_URL: ${{ secrets.RELEASE_RESULT_FEISHU_WEBHOOK_URL }}
+          TITLE: ${{ inputs.title }}
+          STATUS: ${{ inputs.status }}
+          CONTENT: ${{ inputs.content }}
+          BUILD_TIME: ${{ inputs.build_time }}
+          WORKFLOW_URL: ${{ inputs.workflow_url || format('{0}/{1}/actions/runs/{2}', github.server_url, github.repository, github.run_id) }}
+        run: bash scripts/feishu-notify.sh

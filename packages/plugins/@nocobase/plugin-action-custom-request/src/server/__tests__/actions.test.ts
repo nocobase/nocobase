@@ -177,4 +177,76 @@ describe('actions', () => {
       expect(expect.arrayContaining(params.c)).toMatchObject([user.id, user.id, user.id]);
     });
   });
+
+  describe('SSRF protection via SERVER_REQUEST_WHITELIST', () => {
+    const ENV_KEY = 'SERVER_REQUEST_WHITELIST';
+    let savedEnv: string | undefined;
+
+    beforeAll(async () => {
+      await repo.create({
+        values: {
+          key: 'ssrf-relative',
+          options: {
+            url: '/customRequests:test',
+            method: 'GET',
+          },
+        },
+      });
+      await repo.create({
+        values: {
+          key: 'ssrf-external',
+          options: {
+            url: 'http://169.254.169.254/latest/meta-data/',
+            method: 'GET',
+          },
+        },
+      });
+    });
+
+    beforeEach(() => {
+      savedEnv = process.env[ENV_KEY];
+    });
+
+    afterEach(() => {
+      if (savedEnv === undefined) {
+        delete process.env[ENV_KEY];
+      } else {
+        process.env[ENV_KEY] = savedEnv;
+      }
+    });
+
+    test('no whitelist: relative URL (same-server call) is allowed', async () => {
+      delete process.env[ENV_KEY];
+      const res = await resource.send({ filterByTk: 'ssrf-relative' });
+      expect(res.status).toBe(200);
+    });
+
+    test('whitelist set: relative URL (same-server call) is still allowed', async () => {
+      process.env[ENV_KEY] = 'api.example.com';
+      const res = await resource.send({ filterByTk: 'ssrf-relative' });
+      expect(res.status).toBe(200);
+    });
+
+    test('whitelist set: external absolute URL to unlisted host is blocked', async () => {
+      process.env[ENV_KEY] = 'api.example.com';
+      const res = await resource.send({ filterByTk: 'ssrf-external' });
+      // checkUrlAgainstWhitelist throws, which becomes a 500
+      expect(res.status).toBeGreaterThanOrEqual(400);
+    });
+
+    test('no whitelist: non-http scheme is always blocked', async () => {
+      delete process.env[ENV_KEY];
+      await repo.create({
+        values: {
+          key: 'ssrf-file-scheme',
+          options: {
+            url: 'file:///etc/passwd',
+            method: 'GET',
+          },
+        },
+      });
+      const res = await resource.send({ filterByTk: 'ssrf-file-scheme' });
+      expect(res.status).toBeGreaterThanOrEqual(400);
+    });
+  });
 });

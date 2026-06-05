@@ -1,17 +1,17 @@
 {
-  "Graph Collection": "グラフ化データテーブル",
+  "All Fields": "すべて",
+  "All relationships": "すべての関係",
+  "Association Fields": "関連フィールド",
+  "Associations Fields": "関係フィールド",
+  "Auto layout": "自動レイアウト",
+  "Choices fields": "選択フィールド",
   "Collection List": "データテーブルリスト",
-  "Full Screen": "フルスクリーン",
   "Collection Search": "表フィルタ",
   "Create Collection": "データテーブルの作成",
-  "All Fields": "すべて",
-  "Association Fields": "関連フィールド",
-  "Choices fields": "選択フィールド",
-  "All relationships": "すべての関係",
   "Entity relationship only": "エンティティ関係",
-  "Inheritance relationship only": "継承関係",
+  "Full Screen": "フルスクリーン",
+  "Graph Collection": "グラフ化データテーブル",
   "Graphical interface": "グラフィカルインターフェース",
-  "Selection": "せんたく",
-  "Auto layout": "自動レイアウト",
-  "Associations Fields": "関係フィールド"
+  "Inheritance relationship only": "継承関係",
+  "Selection": "せんたく"
 }

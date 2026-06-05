@@ -28,6 +28,7 @@ import { appends, collection, filter, pagination, sort } from '../schemas/collec
 import { WorkflowVariableInput, getCollectionFieldOptions, useGetDataSourceCollectionManager } from '../variable';
 import { Instruction, useNodeSavedConfig } from '.';
 import { RadioWithTooltip } from '../components';
+import { SubModelItem } from '@nocobase/flow-engine';
 
 function useVariables({ key: name, title, config }, options) {
   const [dataSourceName, collection] = parseCollectionName(config.collection);
@@ -183,6 +184,54 @@ export default class extends Instruction {
       Component: CollectionBlockInitializer,
       collection: node.config.collection,
       dataPath: `$jobsMapByNodeKey.${node.key}`,
+    };
+  }
+  /**
+   * 2.0
+   */
+  getCreateModelMenuItem({ node }): SubModelItem {
+    if (!node.config.collection || node.config.multiple) {
+      return null;
+    }
+
+    return {
+      key: node.title ?? `#${node.id}`,
+      label: node.title ?? `#${node.id}`,
+      useModel: 'NodeDetailsModel',
+      createModelOptions: {
+        use: 'NodeDetailsModel',
+        stepParams: {
+          resourceSettings: {
+            init: {
+              dataSourceKey: 'main',
+              collectionName: node.config.collection,
+              dataPath: `$jobsMapByNodeKey.${node.key}`,
+            },
+          },
+          cardSettings: {
+            titleDescription: {
+              title: `{{t("Query record", { ns: "${NAMESPACE}" })}}`,
+            },
+          },
+        },
+        subModels: {
+          grid: {
+            use: 'NodeDetailsGridModel',
+            subType: 'object',
+          },
+        },
+      },
+    };
+  }
+  useTempAssociationSource(node) {
+    if (!node?.config?.collection || node?.config?.multiple) {
+      return null;
+    }
+    return {
+      collection: node.config.collection,
+      nodeId: node.id,
+      nodeKey: node.key,
+      nodeType: 'node' as const,
     };
   }
 }

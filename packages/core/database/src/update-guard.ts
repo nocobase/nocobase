@@ -53,7 +53,9 @@ export class UpdateGuard {
 
   setAssociationKeysToBeUpdate(associationKeysToBeUpdate: AssociationKeysToBeUpdate) {
     if (this.action == 'create') {
-      this.associationKeysToBeUpdate = Object.keys(this.model.associations);
+      this.associationKeysToBeUpdate = associationKeysToBeUpdate?.length
+        ? associationKeysToBeUpdate
+        : Object.keys(this.model.associations);
     } else {
       this.associationKeysToBeUpdate = associationKeysToBeUpdate;
     }

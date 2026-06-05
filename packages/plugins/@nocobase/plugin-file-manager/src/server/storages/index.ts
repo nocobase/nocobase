@@ -20,14 +20,17 @@ export interface StorageModel {
   type: string;
   name: string;
   baseUrl: string;
+  renameMode?: string;
   options: Record<string, any>;
   rules?: Record<string, any>;
   path?: string;
   default?: boolean;
   paranoid?: boolean;
+  settings?: Record<string, any>;
 }
 
 export interface AttachmentModel {
+  id?: number;
   title: string;
   filename: string;
   mimetype?: string;
@@ -44,6 +47,14 @@ export abstract class StorageType {
   constructor(public storage: StorageModel) {}
   abstract make(): StorageEngine;
   abstract delete(records: AttachmentModel[]): [number, AttachmentModel[]] | Promise<[number, AttachmentModel[]]>;
+
+  async exists(record: AttachmentModel): Promise<boolean> {
+    throw new Error(`Storage type "${this.storage.type}" does not support object existence checks`);
+  }
+
+  async copy(source: AttachmentModel, target: AttachmentModel): Promise<void> {
+    throw new Error(`Storage type "${this.storage.type}" does not support object copy`);
+  }
 
   getFileKey(record: AttachmentModel) {
     return getFileKey(record);
@@ -88,10 +99,15 @@ export abstract class StorageType {
     return urlJoin(keys);
   }
 
-  async getFileStream(file: AttachmentModel): Promise<{ stream: Readable; contentType?: string }> {
+  async getFileStream(
+    file: AttachmentModel,
+    options?: GetFileStreamOptions,
+  ): Promise<{ stream: Readable; contentType?: string }> {
     try {
       const fileURL = await this.getFileURL(file);
       const requestOptions: AxiosRequestConfig = {
+        ...this.storage.settings?.requestOptions,
+        ...(options?.requestOptions ?? {}),
         responseType: 'stream',
         validateStatus: (status) => status === 200,
         timeout: 30000, // 30 seconds timeout
@@ -110,3 +126,7 @@ export abstract class StorageType {
 }
 
 export type StorageClassType = { new (storage: StorageModel): StorageType } & typeof StorageType;
+
+export type GetFileStreamOptions = {
+  requestOptions?: any;
+};

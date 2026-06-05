@@ -17,7 +17,7 @@ const defaultRequestWhitelist = [
   'header.x-locale',
   'header.x-authenticator',
   'header.x-data-source',
-  'referer',
+  'header.referer',
 ];
 const defaultResponseWhitelist = ['status'];
 const defaultActionBlackList = [
@@ -53,6 +53,8 @@ export const requestLogger = (appName: string, requestLogger: Logger, options?: 
       app: appName,
       reqId,
     });
+    ctx.res.setHeader('X-Request-Id', reqId);
+
     let error: Error;
     try {
       await next();
@@ -82,8 +84,6 @@ export const requestLogger = (appName: string, requestLogger: Logger, options?: 
         requestLogger.info(info);
       }
     }
-
-    ctx.res.setHeader('X-Request-Id', reqId);
 
     if (error) {
       throw error;

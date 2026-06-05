@@ -11,38 +11,40 @@ import Database from '@nocobase/database';
 import { EXECUTION_STATUS, JOB_STATUS } from '@nocobase/plugin-workflow';
 import { getApp, sleep } from '@nocobase/plugin-workflow-test';
 import { MockServer } from '@nocobase/test';
+import Plugin from '../Plugin';
 
 // NOTE: skipped because time is not stable on github ci, but should work in local
 describe('workflow > instructions > manual', () => {
   let app: MockServer;
-  let agent;
+  let rootAgent;
   let userAgents;
   let db: Database;
   let PostRepo;
   let CommentRepo;
   let WorkflowModel;
   let workflow;
-  let UserModel;
+  let UserRepo;
   let users;
   let UserJobModel;
 
   beforeEach(async () => {
     app = await getApp({
-      plugins: ['users', 'auth', 'workflow-manual'],
+      plugins: ['workflow-manual'],
     });
     // await app.getPlugin('auth').install();
-    agent = app.agent();
     db = app.db;
     WorkflowModel = db.getCollection('workflows').model;
     PostRepo = db.getCollection('posts').repository;
     CommentRepo = db.getCollection('comments').repository;
-    UserModel = db.getCollection('users').model;
+    UserRepo = db.getRepository('users');
     UserJobModel = db.getModel('workflowManualTasks');
 
-    users = await UserModel.bulkCreate([
-      { id: 2, nickname: 'a' },
-      { id: 3, nickname: 'b' },
-    ]);
+    users = await UserRepo.create({
+      values: [
+        { id: 2, nickname: 'a' },
+        { id: 3, nickname: 'b' },
+      ],
+    });
 
     userAgents = await Promise.all(users.map((user) => app.agent().login(user)));
 
@@ -457,6 +459,11 @@ describe('workflow > instructions > manual', () => {
       const [j2] = await e2.getJobs({ order: [['createdAt', 'ASC']] });
       expect(j2.status).toBe(JOB_STATUS.PENDING);
       expect(j2.result).toMatchObject({
+        f1: { number: 1 },
+        f2: { number: 2 },
+      });
+      const savedTask = await UserJobModel.findByPk(pendingJobs[0].get('id'));
+      expect(savedTask.result).toMatchObject({
         f1: { number: 1 },
         f2: { number: 2 },
       });

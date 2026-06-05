@@ -26,7 +26,7 @@ import useStyle from './style';
 const locales = ['en_US', 'fr_FR', 'pt_BR', 'ja_JP', 'ko_KR', 'ru_RU', 'sv_SE', 'zh_CN', 'zh_TW'];
 
 export const Edit = withDynamicSchemaProps((props) => {
-  const { disabled, onChange, value, fileCollection, toolbar } = props;
+  const { disabled, onChange, value, fileCollection, toolbar, editMode = 'ir' } = props;
 
   const [editorReady, setEditorReady] = useState(false);
   const vdRef = useRef<Vditor>();
@@ -66,13 +66,29 @@ export const Edit = withDynamicSchemaProps((props) => {
       undoDelay: 0,
       preview: { math: { engine: 'KaTeX' } },
       toolbar: toolbarConfig,
-      fullscreen: { index: 1200 },
+      fullscreen: {
+        index: 1200,
+      },
       cdn,
       minHeight: 200,
+      mode: editMode,
       after: () => {
         vdRef.current = vditor;
         setEditorReady(true); // Notify that the editor is ready
+
+        // Save scroll positions before setting initial value to prevent unwanted autoscroll
+        // This is especially important when adding empty fields or fields without '\n' at the end
+        const savedScrollX = window.scrollX || window.pageXOffset;
+        const savedScrollY = window.scrollY || window.pageYOffset;
+
         vditor.setValue(value ?? '');
+
+        // Restore scroll position to prevent autoscroll during initialization
+        // This fixes the issue where fields without '\n' at the end cause unwanted scrolling
+        requestAnimationFrame(() => {
+          window.scrollTo(savedScrollX, savedScrollY);
+        });
+
         if (disabled) {
           vditor.disabled();
         } else {
@@ -143,25 +159,67 @@ export const Edit = withDynamicSchemaProps((props) => {
         },
       },
     });
+    const editorEl = containerRef.current;
+    if (!editorEl) return;
+
+    const observer = new MutationObserver(() => {
+      const isFullscreen = editorEl.classList.contains('vditor--fullscreen');
+
+      // 只选当前编辑器内部的元素，避免影响其它编辑器
+      const resetEls = editorEl.querySelectorAll('.vditor-reset');
+      const toolbarEls = editorEl.querySelectorAll('.vditor-toolbar');
+
+      resetEls.forEach((el) => {
+        (el as HTMLElement).style.padding = isFullscreen ? '10px 200px' : '';
+      });
+
+      toolbarEls.forEach((el) => {
+        (el as HTMLElement).style.paddingLeft = isFullscreen ? '200px' : '';
+      });
+    });
+
+    observer.observe(editorEl, {
+      attributes: true,
+      attributeFilter: ['class'],
+    });
 
     return () => {
       vdRef.current?.destroy();
       vdRef.current = undefined;
+      observer.disconnect();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [toolbar?.join(',')]);
+  }, [toolbar?.join(','), editMode]);
 
   useEffect(() => {
     if (editorReady && vdRef.current) {
       const editor = vdRef.current;
       if (value !== editor.getValue()) {
+        // Save scroll positions before setting value to prevent unwanted autoscroll
+        // This fixes the issue where fields without '\n' at the end cause unwanted scrolling
+        const savedScrollX = window.scrollX || window.pageXOffset;
+        const savedScrollY = window.scrollY || window.pageYOffset;
+
         editor.setValue(value ?? '');
         // editor.focus();
 
+        // Query for preArea after setValue as DOM may have been updated by vditor
         const preArea = containerRef.current?.querySelector(
           'div.vditor-content > div.vditor-ir > pre',
         ) as HTMLPreElement;
-        if (preArea) {
+
+        // Check if the editor is currently focused
+        // Only set cursor position if user is actively editing to avoid unwanted scroll
+        const vditorContent = containerRef.current?.querySelector('.vditor-content');
+        const isEditorFocused =
+          preArea &&
+          (document.activeElement === preArea ||
+            preArea.contains(document.activeElement) ||
+            (document.activeElement as HTMLElement)?.closest?.('.vditor-content') === vditorContent);
+
+        if (preArea && isEditorFocused) {
+          // User is actively editing - set cursor position at the end
+          // We don't prevent scroll here as the user is actively interacting with the field
           const range = document.createRange();
           const selection = window.getSelection();
           if (selection) {
@@ -170,6 +228,16 @@ export const Edit = withDynamicSchemaProps((props) => {
             selection.removeAllRanges();
             selection.addRange(range);
           }
+        }
+        // If editor is not focused, don't set selection to avoid unwanted autoscroll
+
+        // Restore scroll position if field was not focused to prevent autoscroll
+        // This is crucial for fields without '\n' at the end which may trigger scroll
+        if (!isEditorFocused) {
+          // Use requestAnimationFrame to ensure DOM updates are complete before restoring scroll
+          requestAnimationFrame(() => {
+            window.scrollTo(savedScrollX, savedScrollY);
+          });
         }
       }
     }

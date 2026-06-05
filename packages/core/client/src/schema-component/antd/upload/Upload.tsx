@@ -38,6 +38,7 @@ import { useProps } from '../../hooks/useProps';
 import {
   FILE_SIZE_LIMIT_DEFAULT,
   attachmentFileTypes,
+  getFileDownloadName,
   getThumbnailPlaceholderURL,
   matchMimetype,
   normalizeFile,
@@ -96,7 +97,7 @@ attachmentFileTypes.add({
       (e) => {
         e.preventDefault();
         const file = list[index];
-        saveAs(file.url, `${file.title}${file.extname}`);
+        saveAs(file.url, getFileDownloadName(file));
       },
       [index, list],
     );
@@ -185,7 +186,7 @@ attachmentFileTypes.add({
   },
 });
 
-const iframePreviewSupportedTypes = ['application/pdf', 'audio/*', 'image/*', 'video/*', 'text/plain'];
+const iframePreviewSupportedTypes = ['audio/*', 'image/*', 'video/*', 'text/plain'];
 
 function IframePreviewer({ index, list, onSwitchIndex }) {
   const { t } = useTranslation();
@@ -203,9 +204,9 @@ function IframePreviewer({ index, list, onSwitchIndex }) {
     (e) => {
       e.preventDefault();
       e.stopPropagation();
-      saveAs(url, `${file.title}${file.extname}`);
+      saveAs(url, getFileDownloadName(file));
     },
-    [file.extname, file.title, url],
+    [file, url],
   );
   const onClose = useCallback(() => {
     onSwitchIndex(null);
@@ -356,7 +357,7 @@ function AttachmentListItem(props) {
     propsOnDelete?.(file);
   }, [file, propsOnDelete]);
   const onDownload = useCallback(() => {
-    saveAs(file.url, `${file.title}${file.extname}`);
+    saveAs(file.url, getFileDownloadName(file));
   }, [file]);
   const { ThumbnailPreviewer = DefaultThumbnailPreviewer } = attachmentFileTypes.getTypeByFile(file) ?? {};
   const item = [
@@ -450,7 +451,12 @@ export function AttachmentList(props) {
   const onDelete = useCallback(
     (file) => {
       if (multiple) {
-        onChange(value.filter((item) => item.id !== file.id));
+        const result = value.filter((item) => item.id !== file.id);
+        if (result.length === 0) {
+          onChange(null);
+        } else {
+          onChange(result);
+        }
       } else {
         onChange(null);
       }

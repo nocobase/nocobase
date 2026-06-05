@@ -78,7 +78,7 @@ const formatData = (
   return tasks;
 };
 const InternalGanttBlockProvider = (props) => {
-  const { fieldNames, timeRange, resource } = props;
+  const { fieldNames, timeRange, resource, enableDragToReschedule } = props;
   const field = useField();
   const { service } = useBlockRequestContext();
   // if (service.loading) {
@@ -92,6 +92,7 @@ const InternalGanttBlockProvider = (props) => {
         resource,
         fieldNames,
         timeRange,
+        enableDragToReschedule: enableDragToReschedule !== false,
       }}
     >
       {props.children}
@@ -180,6 +181,7 @@ export const useGanttBlockProps = () => {
   return {
     fieldNames: ctx.fieldNames,
     timeRange: ctx.timeRange,
+    enableDragToReschedule: ctx.enableDragToReschedule,
     onExpanderClick,
     expandAndCollapseAll,
     tasks,

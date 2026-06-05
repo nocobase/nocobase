@@ -32,7 +32,7 @@ const findSchema = (schema: Schema, key: string, action: string) => {
 };
 
 const initExportSettings = (fields) => {
-  const exportSettings = fields?.filter((f) => !f.children).map((f) => ({ dataIndex: [f.name] }));
+  const exportSettings = fields?.filter((f) => !f.children && !f.disabled).map((f) => ({ dataIndex: [f.name] }));
   return exportSettings;
 };
 

@@ -19,6 +19,7 @@ import WorkflowPlugin, {
   EventOptions,
   Trigger,
   WorkflowModel,
+  getWorkflowExecutionLogMeta,
   toJSON,
 } from '@nocobase/plugin-workflow';
 import { joinCollectionName, parseCollectionName } from '@nocobase/data-source-manager';
@@ -42,7 +43,7 @@ export default class extends Trigger {
 
     const self = this;
 
-    async function triggerWorkflowActionMiddleware(context: Context, next: Next) {
+    workflow.app.dataSourceManager.use(async function triggerWorkflowActionMiddleware(context: Context, next: Next) {
       await next();
 
       const { actionName } = context.action;
@@ -52,9 +53,7 @@ export default class extends Trigger {
       }
 
       return self.collectionTriggerAction(context);
-    }
-
-    workflow.app.dataSourceManager.use(triggerWorkflowActionMiddleware);
+    });
 
     workflow.app.pm.get(PluginErrorHandler).errorHandler.register(
       (err) => err instanceof RequestOnActionTriggerError || err.name === 'RequestOnActionTriggerError',
@@ -89,12 +88,14 @@ export default class extends Trigger {
     const dataSourceHeader = context.get('x-data-source') || 'main';
     const dataSource = context.app.dataSourceManager.dataSources.get(dataSourceHeader);
     if (!dataSource) {
+      context.logger.warn(`[Workflow post-action]: data source "${dataSourceHeader}" not found`);
       return;
     }
 
     const collection = dataSource.collectionManager.getCollection(resourceName);
 
     if (!collection) {
+      context.logger.warn(`[Workflow post-action]: collection "${resourceName}" not found`);
       return;
     }
 
@@ -170,9 +171,15 @@ export default class extends Trigger {
             if (collectionName !== model.collection.name) {
               continue;
             }
+            const filterByTk = model.collection.isMultiFilterTargetKey()
+              ? pick(
+                  payload.get(),
+                  model.collection.filterTargetKey.sort((a, b) => a.localeCompare(b)),
+                )
+              : payload.get(model.collection.filterTargetKey);
             if (appends.length) {
               payload = await model.collection.repository.findOne({
-                filterByTk: payload.get(model.collection.filterTargetKey),
+                filterByTk,
                 appends,
               });
             }
@@ -180,6 +187,9 @@ export default class extends Trigger {
           (workflow.sync ? syncGroup : asyncGroup).push([workflow, { data: toJSON(payload), ...userInfo }]);
         }
       } else {
+        context.logger.warn(
+          '[Workflow post-action]: post-action to trigger on workflow resource is deprecated, and will be removed in 2.0',
+        );
         const { filterTargetKey, repository } = (<Application>context.app).dataSourceManager.dataSources
           .get(dataSourceName)
           .collectionManager.getCollection(collectionName);
@@ -195,12 +205,32 @@ export default class extends Trigger {
       }
     }
 
-    for (const event of syncGroup) {
-      const processor = await this.workflow.trigger(event[0], event[1], { httpContext: context });
+    for (const [index, event] of syncGroup.entries()) {
+      const workflow = event[0];
+      const remainingSyncWorkflows = syncGroup.length - index - 1;
+      const syncLogMeta = {
+        workflowId: workflow.id,
+        workflowKey: workflow.key,
+        workflowTitle: workflow.title,
+        resourceName,
+        actionName,
+        currentSyncOrder: index + 1,
+        totalSyncWorkflows: syncGroup.length,
+        remainingSyncWorkflows,
+        pendingAsyncWorkflows: asyncGroup.length,
+      };
+
+      context.logger.debug('[Workflow post-action]: executing sync workflow', syncLogMeta);
+
+      const processor = await this.workflow.trigger(workflow, event[1], { httpContext: context });
 
       // NOTE: workflow trigger failed
       if (!processor) {
-        return context.throw(500);
+        context.logger.error(
+          '[Workflow post-action]: sync workflow trigger failed before execution created',
+          syncLogMeta,
+        );
+        return context.throw(500, 'Workflow on your action failed, please contact the administrator');
       }
 
       const { lastSavedJob, nodesMap } = processor;
@@ -208,22 +238,42 @@ export default class extends Trigger {
       // NOTE: passthrough
       if (processor.execution.status === EXECUTION_STATUS.RESOLVED) {
         if (lastNode?.type === 'end') {
+          context.logger.debug('[Workflow post-action]: sync workflow ended request chain on end node', {
+            ...syncLogMeta,
+            ...getWorkflowExecutionLogMeta(workflow, processor),
+          });
           return;
         }
+        context.logger.debug('[Workflow post-action]: sync workflow finished successfully', {
+          ...syncLogMeta,
+          ...getWorkflowExecutionLogMeta(workflow, processor),
+        });
         continue;
       }
       // NOTE: intercept
       if (processor.execution.status < EXECUTION_STATUS.STARTED) {
         if (lastNode?.type !== 'end') {
+          context.logger.error('[Workflow post-action]: sync workflow failed', {
+            ...syncLogMeta,
+            ...getWorkflowExecutionLogMeta(workflow, processor),
+          });
           return context.throw(500, 'Workflow on your action failed, please contact the administrator');
         }
 
+        context.logger.warn('[Workflow post-action]: sync workflow intercepted request on end node', {
+          ...syncLogMeta,
+          ...getWorkflowExecutionLogMeta(workflow, processor),
+        });
         const err = new RequestOnActionTriggerError('Request failed');
         err.status = 400;
         err.messages = context.state.messages;
         return context.throw(err.status, err);
       }
       // NOTE: should not be pending
+      context.logger.error('[Workflow post-action]: sync workflow is still pending after trigger', {
+        ...syncLogMeta,
+        ...getWorkflowExecutionLogMeta(workflow, processor),
+      });
       return context.throw(500, 'Workflow on your action hangs, please contact the administrator');
     }
 

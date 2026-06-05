@@ -9,7 +9,7 @@
 
 import React from 'react';
 import { withDynamicSchemaProps } from '@nocobase/client';
-import { observer } from '@formily/react';
+import { observer } from '@nocobase/flow-engine';
 import { useChannelTypeMap } from '../../../../hooks';
 export const ContentConfigForm = withDynamicSchemaProps(
   observer<{ variableOptions: any; channelType: string }>(

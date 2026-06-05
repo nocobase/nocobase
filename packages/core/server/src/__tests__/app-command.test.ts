@@ -15,6 +15,7 @@ const mockServer = (options?: ApplicationOptions) => {
   return new Application({
     database: mockDatabase(),
     acl: false,
+    skipSupervisor: true,
     ...options,
   });
 };

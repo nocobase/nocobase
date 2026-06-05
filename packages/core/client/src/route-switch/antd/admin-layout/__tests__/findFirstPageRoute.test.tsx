@@ -59,6 +59,21 @@ describe('findFirstPageRoute', () => {
     expect(result).toEqual(routes[0]);
   });
 
+  // 测试：flowPage 类型路由
+  it('should treat flowPage as a valid page route', () => {
+    const routes: NocoBaseDesktopRoute[] = [
+      {
+        id: 1,
+        schemaUid: 'flow1',
+        type: NocoBaseDesktopRouteType.flowPage,
+        title: 'Flow 1',
+      },
+    ];
+
+    const result = findFirstPageRoute(routes);
+    expect(result).toEqual(routes[0]);
+  });
+
   // 测试：不同类型的路由混合
   it('should find the first page route among mixed route types', () => {
     const routes: NocoBaseDesktopRoute[] = [
@@ -187,6 +202,57 @@ describe('findFirstPageRoute', () => {
 
     const result = findFirstPageRoute(routes);
     expect(result).toEqual(routes[1].children[0]);
+  });
+
+  // 测试：嵌套 flowPage
+  it('should find flowPage inside nested groups', () => {
+    const routes: NocoBaseDesktopRoute[] = [
+      {
+        id: 1,
+        type: NocoBaseDesktopRouteType.group,
+        title: 'Group 1',
+        children: [
+          {
+            id: 11,
+            type: NocoBaseDesktopRouteType.group,
+            title: 'Group 1-1',
+            children: [
+              {
+                id: 111,
+                schemaUid: 'flow1',
+                type: NocoBaseDesktopRouteType.flowPage,
+                title: 'Flow 1',
+              },
+            ],
+          },
+        ],
+      },
+    ];
+
+    const result = findFirstPageRoute(routes);
+    expect(result).toEqual(routes[0].children[0].children[0]);
+  });
+
+  // 测试：忽略隐藏的 flowPage
+  it('should skip hidden flowPage routes', () => {
+    const routes: NocoBaseDesktopRoute[] = [
+      {
+        id: 1,
+        schemaUid: 'flow1',
+        type: NocoBaseDesktopRouteType.flowPage,
+        title: 'Flow 1',
+        hideInMenu: true,
+      },
+      {
+        id: 2,
+        schemaUid: 'page1',
+        type: NocoBaseDesktopRouteType.page,
+        title: 'Page 1',
+      },
+    ];
+
+    const result = findFirstPageRoute(routes);
+    expect(result).toEqual(routes[1]);
   });
 
   // 测试：空组
