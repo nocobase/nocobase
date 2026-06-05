@@ -1107,6 +1107,84 @@ describe('flowSurfaces dynamic capability create dry-run', () => {
     expect(upsertModel).not.toHaveBeenCalled();
   });
 
+  it('should keep provider block writes read-only under discoveryOnly policy before catalog confirmation', async () => {
+    const provider = createDryRunProvider();
+    const enabledPackages = new Set(['@nocobase/plugin-dry-run']);
+    const service = new FlowSurfacesService({
+      options: {
+        flowSurfaceCapabilities: {
+          writePolicy: {
+            mode: 'discoveryOnly' as const,
+          },
+        },
+      },
+      flowSurfaceCapabilityProviders: createProviderRegistry([provider]),
+    } as unknown as ConstructorParameters<typeof FlowSurfacesService>[0]);
+    const harness = service as unknown as DynamicBlockWriteGateHarness;
+    const catalog = vi.fn(async () => ({
+      blocks: [
+        {
+          key: 'dryRun',
+          label: 'Dry run',
+          use: 'dryRun',
+          kind: 'block',
+          publicType: 'dryRun',
+          ownerPlugin: '@nocobase/plugin-dry-run',
+          origin: 'provider',
+          createSupported: true,
+        },
+      ],
+    }));
+    harness.catalog = catalog;
+    type RepositoryCreateHarness = {
+      readonly repository: {
+        upsertModel(payload: Record<string, unknown>, options?: Record<string, unknown>): Promise<string>;
+      };
+    };
+    const upsertModel = vi.fn(async () => 'created-dry-run');
+    vi.spyOn(service as unknown as RepositoryCreateHarness, 'repository', 'get').mockReturnValue({
+      upsertModel,
+    });
+
+    await expect(
+      harness.tryAddDynamicBlock({
+        values: {
+          type: 'dryRun',
+          initParams: {
+            collectionName: 'tasks',
+          },
+          settings: {
+            pageSize: 20,
+          },
+        },
+        options: {
+          deferAutoLayout: true,
+          dynamicCapabilityActionName: 'addBlock',
+        },
+        enabledPackages,
+        blockType: 'dryRun',
+        target: {
+          uid: 'target-grid',
+        },
+        parentUid: 'parent-grid',
+        subKey: 'items',
+        subType: 'array',
+        popupProfile: null,
+      }),
+    ).rejects.toMatchObject({
+      message: `flowSurfaces dynamic create capability 'dryRun' is not enabled for writes`,
+      options: {
+        details: {
+          reasonCode: 'contract-not-verified',
+          reasonSource: 'registry',
+          publicType: 'dryRun',
+        },
+      },
+    });
+    expect(catalog).not.toHaveBeenCalled();
+    expect(upsertModel).not.toHaveBeenCalled();
+  });
+
   it('should keep plugin-qualified provider aliases discovery-only for create', async () => {
     const provider = createDryRunProvider({
       acceptedAliases: ['@nocobase/plugin-dry-run:dryRun'],
