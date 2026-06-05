@@ -11,7 +11,7 @@ import { NAMESPACE } from '../constants';
 
 export default {
   name: 'workflowCcTasks',
-  tags: 'business',
+  dataCategory: 'business',
   filterTargetKey: 'id',
   simplePaginate: true,
   dumpRules: {

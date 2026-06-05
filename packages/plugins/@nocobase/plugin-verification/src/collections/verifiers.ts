@@ -9,7 +9,7 @@
 
 export default {
   name: 'verifiers',
-  tags: 'system',
+  dataCategory: 'system',
   autoGenId: false,
   fields: [
     {

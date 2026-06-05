@@ -15,7 +15,7 @@ export default {
   },
   migrationRules: ['schema-only'],
   name: 'executions',
-  tags: 'business',
+  dataCategory: 'business',
   shared: true,
   fields: [
     {

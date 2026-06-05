@@ -13,7 +13,7 @@ export default {
   },
   migrationRules: ['schema-only'],
   name: 'jobs',
-  tags: 'business',
+  dataCategory: 'business',
   shared: true,
   autoGenId: false,
   fields: [

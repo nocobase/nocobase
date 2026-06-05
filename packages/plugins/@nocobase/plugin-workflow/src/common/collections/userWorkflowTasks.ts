@@ -13,7 +13,7 @@ export default {
   },
   migrationRules: ['schema-only'],
   name: 'userWorkflowTasks',
-  tags: 'business',
+  dataCategory: 'business',
   shared: true,
   fields: [
     {

@@ -11,7 +11,7 @@ export default {
   dumpRules: 'required',
   migrationRules: ['overwrite', 'schema-only'],
   name: 'flow_nodes',
-  tags: 'system',
+  dataCategory: 'system',
   shared: true,
   fields: [
     {

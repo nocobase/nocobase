@@ -12,7 +12,7 @@ import { InAppMessagesDefinition, ChannelsDefinition } from './index';
 
 export const messageCollection: CollectionOptions = {
   name: InAppMessagesDefinition.name,
-  tags: 'business',
+  dataCategory: 'business',
   title: 'in-app messages',
   migrationRules: ['schema-only'],
   fields: [
