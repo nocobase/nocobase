@@ -34,7 +34,7 @@ function isNumberKeyword(value: string) {
   return /^[+-]?(?:\d+\.?\d*|\.\d+)(?:e[+-]?\d+)?$/i.test(value);
 }
 
-function normalizeKeywords(values: KeywordValue[], fieldInterface: string) {
+export function normalizeKeywords(values: KeywordValue[], fieldInterface: string) {
   if (fieldInterface === 'integer') {
     return values.map(toKeywordText).filter(isIntegerKeyword);
   }
