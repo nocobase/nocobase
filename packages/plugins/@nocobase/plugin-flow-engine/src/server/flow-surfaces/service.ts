@@ -9724,6 +9724,7 @@ export class FlowSurfacesService {
             actionName,
             publicType: policyProjectedCapability.publicType,
             ownerPlugin: policyProjectedCapability.ownerPlugin,
+            origin: policyProjectedCapability.origin,
             target: input.target,
             transaction: input.options.transaction,
             enabledPackages: input.enabledPackages,
