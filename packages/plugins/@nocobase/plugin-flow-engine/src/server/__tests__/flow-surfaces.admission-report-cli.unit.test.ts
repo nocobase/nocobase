@@ -26,6 +26,7 @@ import {
   verifyFlowSurfaceCapabilityAdmission,
 } from '../flow-surfaces/admission-report-cli';
 import { setFlowSurfacePublicCapabilityAdmissionIntegrity } from '../flow-surfaces/capability-registry';
+import { FlowSurfaceBadRequestError } from '../flow-surfaces/errors';
 import { FlowSurfacesService } from '../flow-surfaces/service';
 import type { FlowSurfaceCapabilitiesResponse, FlowSurfacePublicCapabilityItem } from '../flow-surfaces/types';
 
@@ -414,10 +415,20 @@ describe('flowSurfaces capability admission report CLI', () => {
     expect(JSON.stringify(report)).not.toContain('internal payload keys');
   });
 
-  it('should verify capabilities through the loaded flow-engine service', async () => {
+  it('should verify one public type through describeCapability on the loaded flow-engine service', async () => {
     const enabledPackages = new Set(['@example/plugin-cli']);
-    const capabilities = createCapabilitiesResponse([createCapabilityItem({ readiness: 'createEnabled' })]);
-    const capabilitiesSpy = vi.spyOn(FlowSurfacesService.prototype, 'capabilities').mockResolvedValue(capabilities);
+    const capability = createCapabilityItem({ readiness: 'createEnabled' });
+    const capabilitiesSpy = vi
+      .spyOn(FlowSurfacesService.prototype, 'capabilities')
+      .mockResolvedValue(createCapabilitiesResponse([capability]));
+    const describeCapabilitySpy = vi.spyOn(FlowSurfacesService.prototype, 'describeCapability').mockResolvedValue({
+      data: capability,
+      meta: {
+        version: 1,
+        generatedAt,
+        targetHintUsed: false,
+      },
+    });
     const app = {
       pm: {
         get: vi.fn(() => ({})),
@@ -438,10 +449,10 @@ describe('flowSurfaces capability admission report CLI', () => {
       );
 
       expect(app.pm.get).toHaveBeenCalledWith('flow-engine');
-      expect(capabilitiesSpy).toHaveBeenCalledWith(
+      expect(describeCapabilitySpy).toHaveBeenCalledWith(
         {
-          ownerPlugins: ['@example/plugin-cli'],
-          publicTypes: ['gantt'],
+          ownerPlugin: '@example/plugin-cli',
+          publicType: 'gantt',
           includeUnavailable: true,
           includeWarnings: true,
           expand: ['item.identity', 'item.settings', 'item.warnings'],
@@ -450,12 +461,89 @@ describe('flowSurfaces capability admission report CLI', () => {
           enabledPackages,
         },
       );
+      expect(capabilitiesSpy).not.toHaveBeenCalled();
       expect(report.records[0]).toMatchObject({
         publicType: 'gantt',
         readiness: 'contractDeclared',
       });
     } finally {
       capabilitiesSpy.mockRestore();
+      describeCapabilitySpy.mockRestore();
+    }
+  });
+
+  it('should preserve the admission not-found error for missing public type details', async () => {
+    const enabledPackages = new Set(['@example/plugin-cli']);
+    const capabilitiesSpy = vi
+      .spyOn(FlowSurfacesService.prototype, 'capabilities')
+      .mockResolvedValue(createCapabilitiesResponse([]));
+    const describeCapabilitySpy = vi.spyOn(FlowSurfacesService.prototype, 'describeCapability').mockRejectedValue(
+      new FlowSurfaceBadRequestError(`flowSurfaces describeCapability did not find a matching capability`, undefined, {
+        details: {
+          reasonCode: 'unsupported',
+          reasonSource: 'registry',
+          publicType: 'missing',
+          ownerPlugin: '@example/plugin-cli',
+        },
+      }),
+    );
+    const app = {
+      pm: {
+        get: vi.fn(() => ({})),
+      },
+    } as unknown as Parameters<typeof runFlowSurfaceCapabilityAdmissionCommand>[0];
+
+    try {
+      const summary = await runFlowSurfaceCapabilityAdmissionCli(
+        [
+          {
+            plugin: '@example/plugin-cli',
+            publicType: 'missing',
+          },
+        ],
+        {
+          app,
+          dryRun: true,
+          enabledPackages,
+          generatedAt,
+        },
+      );
+
+      expect(summary).toMatchObject({
+        ok: false,
+        dryRun: true,
+        exitCode: 1,
+        results: [
+          {
+            ok: false,
+            plugin: '@example/plugin-cli',
+            publicType: 'missing',
+            recordCount: 0,
+            errors: [
+              {
+                code: 'flow-surface-capability-not-found',
+                message: "No public flow surface capability matched 'missing' for plugin '@example/plugin-cli'.",
+              },
+            ],
+          },
+        ],
+      });
+      expect(describeCapabilitySpy).toHaveBeenCalledWith(
+        {
+          ownerPlugin: '@example/plugin-cli',
+          publicType: 'missing',
+          includeUnavailable: true,
+          includeWarnings: true,
+          expand: ['item.identity', 'item.settings', 'item.warnings'],
+        },
+        {
+          enabledPackages,
+        },
+      );
+      expect(capabilitiesSpy).not.toHaveBeenCalled();
+    } finally {
+      capabilitiesSpy.mockRestore();
+      describeCapabilitySpy.mockRestore();
     }
   });
 

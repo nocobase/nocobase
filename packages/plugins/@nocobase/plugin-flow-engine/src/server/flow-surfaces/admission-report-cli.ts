@@ -20,10 +20,12 @@ import {
   type FlowSurfaceCapabilityAdmissionReport,
 } from './admission-report';
 import { getFlowSurfacePublicCapabilityAdmissionIntegrity } from './capability-registry';
+import { isFlowSurfaceError } from './errors';
 import { FlowSurfacesService } from './service';
 import type {
   FlowSurfaceCapabilitiesResponse,
   FlowSurfaceCapabilityReadiness,
+  FlowSurfaceDescribeCapabilityResponse,
   FlowSurfacePublicCapabilityItem,
   FlowSurfaceReasonCode,
 } from './types';
@@ -186,10 +188,27 @@ export async function verifyFlowSurfaceCapabilityAdmission(
   }
 
   const service = new FlowSurfacesService(getFlowEnginePlugin(options.app));
+  if (target.publicType) {
+    const capability = await describeFlowSurfaceCapabilityForAdmission(service, target, options);
+    return buildFlowSurfaceCapabilityAdmissionReportFromCapabilities({
+      plugin: target.plugin,
+      generatedAt: options.generatedAt,
+      capabilities: {
+        data: [capability.data],
+        meta: {
+          version: 1,
+          generatedAt: capability.meta.generatedAt,
+          enabledPlugins: [target.plugin],
+          registrySources: [],
+          targetHintUsed: capability.meta.targetHintUsed,
+        },
+      },
+    });
+  }
+
   const capabilities = await service.capabilities(
     {
       ownerPlugins: [target.plugin],
-      ...(target.publicType ? { publicTypes: [target.publicType] } : {}),
       includeUnavailable: true,
       includeWarnings: true,
       expand: ['item.identity', 'item.settings', 'item.warnings'],
@@ -199,25 +218,41 @@ export async function verifyFlowSurfaceCapabilityAdmission(
     },
   );
 
-  if (target.publicType && !capabilities.data.length) {
-    throw createFlowSurfaceCapabilityAdmissionCliError(
-      'flow-surface-capability-not-found',
-      `No public flow surface capability matched '${target.publicType}' for plugin '${target.plugin}'.`,
-    );
-  }
-
   const report = buildFlowSurfaceCapabilityAdmissionReportFromCapabilities({
     plugin: target.plugin,
     generatedAt: options.generatedAt,
     capabilities,
   });
-  if (target.publicType && !report.records.length) {
-    throw createFlowSurfaceCapabilityAdmissionCliError(
-      'flow-surface-capability-not-found',
-      `No public flow surface capability matched '${target.publicType}' for plugin '${target.plugin}'.`,
-    );
-  }
   return report;
+}
+
+async function describeFlowSurfaceCapabilityForAdmission(
+  service: FlowSurfacesService,
+  target: FlowSurfaceCapabilityAdmissionCliTarget & { publicType: string },
+  options: FlowSurfaceCapabilityAdmissionCliVerifierOptions,
+): Promise<FlowSurfaceDescribeCapabilityResponse> {
+  try {
+    return await service.describeCapability(
+      {
+        ownerPlugin: target.plugin,
+        publicType: target.publicType,
+        includeUnavailable: true,
+        includeWarnings: true,
+        expand: ['item.identity', 'item.settings', 'item.warnings'],
+      },
+      {
+        enabledPackages: options.enabledPackages,
+      },
+    );
+  } catch (error) {
+    if (isFlowSurfaceCapabilityNotFoundError(error)) {
+      throw createFlowSurfaceCapabilityAdmissionCliError(
+        'flow-surface-capability-not-found',
+        `No public flow surface capability matched '${target.publicType}' for plugin '${target.plugin}'.`,
+      );
+    }
+    throw error;
+  }
 }
 
 export function buildFlowSurfaceCapabilityAdmissionReportFromCapabilities(
@@ -654,6 +689,10 @@ function createFlowSurfaceCapabilityAdmissionCliError(code: string, message: str
   return Object.assign(new Error(message), {
     code,
   });
+}
+
+function isFlowSurfaceCapabilityNotFoundError(error: unknown) {
+  return isFlowSurfaceError(error) && error.options.details?.reasonCode === 'unsupported';
 }
 
 function formatCliError(error: FlowSurfaceCapabilityAdmissionCliError) {
