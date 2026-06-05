@@ -243,6 +243,81 @@ describe('flowSurfaces capability admission report CLI', () => {
     }
   });
 
+  it('should replace existing target public type records when merging one report write', async () => {
+    const tempRoot = await realpath(tmpdir());
+    const outDir = await mkdtemp(join(tempRoot, 'flow-surfaces-admission-cli-merge-replace-'));
+    try {
+      await writeFlowSurfaceCapabilityAdmissionReport({
+        outDir,
+        report: buildFlowSurfaceCapabilityAdmissionReport({
+          plugin: '@example/plugin-cli',
+          generatedAt: '2026-06-03T00:00:00.000Z',
+          records: [
+            createAdmissionRecord({
+              publicType: 'calendar',
+            }),
+            createAdmissionRecord({
+              publicType: 'gantt',
+              capabilityVersion: '0.9.0',
+            }),
+          ],
+        }),
+      });
+
+      const summary = await runFlowSurfaceCapabilityAdmissionCli(
+        [
+          {
+            plugin: '@example/plugin-cli',
+            publicType: 'gantt',
+          },
+        ],
+        {
+          generatedAt,
+          outDir,
+          verifyCapability: async (target, options) =>
+            buildFlowSurfaceCapabilityAdmissionReport({
+              plugin: target.plugin,
+              generatedAt: options.generatedAt,
+              records: [
+                createAdmissionRecord({ ownerPlugin: target.plugin, publicType: target.publicType || 'gantt' }),
+              ],
+            }),
+        },
+      );
+
+      expect(summary).toMatchObject({
+        ok: true,
+        dryRun: false,
+        exitCode: 0,
+        results: [
+          {
+            ok: true,
+            plugin: '@example/plugin-cli',
+            publicType: 'gantt',
+            recordCount: 1,
+          },
+        ],
+      });
+      const reportContent = await readFile(summary.results[0].reportPath || '', 'utf8');
+      const report = JSON.parse(reportContent) as {
+        records: Array<{
+          capabilityVersion?: string;
+          publicType?: string;
+          readiness?: string;
+        }>;
+      };
+      const ganttRecords = report.records.filter((record) => record.publicType === 'gantt');
+      expect(report.records).toEqual([
+        expect.objectContaining({ publicType: 'calendar' }),
+        expect.objectContaining({ capabilityVersion: '1.0.0', publicType: 'gantt', readiness: 'createEnabled' }),
+      ]);
+      expect(ganttRecords).toHaveLength(1);
+      expect(reportContent).not.toContain('0.9.0');
+    } finally {
+      await rm(outDir, { recursive: true, force: true });
+    }
+  });
+
   it('should drop foreign owner records when merging one public type report write', async () => {
     const tempRoot = await realpath(tmpdir());
     const outDir = await mkdtemp(join(tempRoot, 'flow-surfaces-admission-cli-merge-owner-'));
