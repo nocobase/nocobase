@@ -22,6 +22,7 @@ import {
   readFlowSurfaceCapabilityPolicyConfigFromPluginOptions,
   resolveFlowSurfaceVerifiedAutoAdmissionDecision,
 } from '../flow-surfaces/capability-policy';
+import { FlowSurfaceCapabilityProviderRegistry } from '../flow-surfaces/capability-provider';
 import type { FlowSurfaceCapabilityAdmissionReport } from '../flow-surfaces/admission-report';
 import { FlowSurfaceBadRequestError, FlowSurfaceForbiddenError } from '../flow-surfaces/errors';
 import { buildFlowSurfaceAutoSnapshot } from '../flow-surfaces/extractor';
@@ -55,6 +56,43 @@ describe('flowSurfaces capabilities projection', () => {
       listProviders: () => providers,
     };
   }
+
+  it('should normalize and replace capability providers by owner plugin', () => {
+    const registry = new FlowSurfaceCapabilityProviderRegistry();
+    const firstGetCapabilities = () => [];
+    const replacementGetCapabilities = () => [];
+
+    registry.registerProvider({
+      ownerPlugin: ' @nocobase/plugin-dry-run ',
+      getCapabilities: firstGetCapabilities,
+    });
+    expect(registry.getVersion()).toBe('1');
+    expect(registry.listProviders()).toEqual([
+      expect.objectContaining({
+        ownerPlugin: '@nocobase/plugin-dry-run',
+        getCapabilities: firstGetCapabilities,
+      }),
+    ]);
+
+    registry.registerProvider({
+      ownerPlugin: '@nocobase/plugin-dry-run',
+      getCapabilities: replacementGetCapabilities,
+    });
+    expect(registry.getVersion()).toBe('2');
+    expect(registry.listProviders()).toEqual([
+      expect.objectContaining({
+        ownerPlugin: '@nocobase/plugin-dry-run',
+        getCapabilities: replacementGetCapabilities,
+      }),
+    ]);
+
+    registry.unregisterProvider(' @nocobase/plugin-dry-run ');
+    expect(registry.getVersion()).toBe('3');
+    expect(registry.listProviders()).toEqual([]);
+
+    registry.unregisterProvider('@nocobase/plugin-dry-run');
+    expect(registry.getVersion()).toBe('3');
+  });
 
   function createGanttProvider(): FlowSurfaceCapabilitiesProvider {
     return {
