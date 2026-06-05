@@ -192,7 +192,7 @@ export async function verifyFlowSurfaceCapabilityAdmission(
       ...(target.publicType ? { publicTypes: [target.publicType] } : {}),
       includeUnavailable: true,
       includeWarnings: true,
-      expand: ['item.identity', 'item.warnings'],
+      expand: ['item.identity', 'item.settings', 'item.warnings'],
     },
     {
       enabledPackages: options.enabledPackages,

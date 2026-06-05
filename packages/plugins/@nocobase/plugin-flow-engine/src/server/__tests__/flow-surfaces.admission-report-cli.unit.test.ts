@@ -444,7 +444,7 @@ describe('flowSurfaces capability admission report CLI', () => {
           publicTypes: ['gantt'],
           includeUnavailable: true,
           includeWarnings: true,
-          expand: ['item.identity', 'item.warnings'],
+          expand: ['item.identity', 'item.settings', 'item.warnings'],
         },
         {
           enabledPackages,
