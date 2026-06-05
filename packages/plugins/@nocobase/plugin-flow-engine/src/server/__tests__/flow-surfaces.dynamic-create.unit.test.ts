@@ -3337,6 +3337,11 @@ describe('flowSurfaces dynamic capability create dry-run', () => {
             use: 'LegacyGanttBlockModel',
           },
           {
+            uid: 'already-public-gantt-1',
+            use: 'GanttBlockModel',
+            type: 'customGantt',
+          },
+          {
             uid: 'table-1',
             use: 'TableBlockModel',
           },
@@ -3357,6 +3362,11 @@ describe('flowSurfaces dynamic capability create dry-run', () => {
       type: 'gantt',
     });
     expect(projected.subModels.items[2]).toEqual({
+      uid: 'already-public-gantt-1',
+      use: 'GanttBlockModel',
+      type: 'customGantt',
+    });
+    expect(projected.subModels.items[3]).toEqual({
       uid: 'table-1',
       use: 'TableBlockModel',
     });
