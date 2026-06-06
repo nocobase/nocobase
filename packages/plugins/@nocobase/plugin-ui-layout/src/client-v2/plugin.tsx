@@ -19,6 +19,9 @@ export class PluginUiLayoutClientV2 extends Plugin<Record<string, never>, Applic
       MobileLayoutModel: {
         loader: () => import('./models/MobileLayoutModel'),
       },
+      MobileLayoutMenuItemModel: {
+        loader: () => import('./models/MobileMenuModels'),
+      },
       MobileRootPageModel: {
         loader: () => import('./models/MobilePageModels'),
       },

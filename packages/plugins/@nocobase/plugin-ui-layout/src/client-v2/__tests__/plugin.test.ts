@@ -65,6 +65,9 @@ describe('PluginUiLayoutClientV2', () => {
       MobileLayoutModel: {
         loader: expect.any(Function),
       },
+      MobileLayoutMenuItemModel: {
+        loader: expect.any(Function),
+      },
       MobileRootPageModel: {
         loader: expect.any(Function),
       },
