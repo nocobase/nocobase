@@ -34,10 +34,84 @@ import {
 import { collectMobileTabRoutes, getMobilePagePath, MobileLayoutMenuItemModel } from '../models/MobileMenuModels';
 import { MobileChildPageModel, MobileRootPageModel } from '../models/MobilePageModels';
 
+type MobileRouteRepositoryForTest = {
+  listAccessible: () => NocoBaseDesktopRoute[];
+  subscribe?: (subscriber: () => void) => void;
+  unsubscribe?: (subscriber: () => void) => void;
+  ensureAccessibleLoaded?: () => Promise<NocoBaseDesktopRoute[]>;
+};
+
 describe('plugin-ui-layout mobile models', () => {
   beforeEach(() => {
     window.localStorage.removeItem(FLOW_SETTINGS_PREFERENCE_STORAGE_KEY);
   });
+
+  function renderMobileLayoutWithRouteRepository(routeRepository: MobileRouteRepositoryForTest) {
+    const engine = new FlowEngine();
+
+    engine.registerModels({
+      MobileLayoutModel,
+      MobileLayoutMenuItemModel,
+    });
+    engine.context.defineProperty('t', {
+      value: (key: string) => key,
+    });
+    engine.context.defineProperty('themeToken', {
+      value: {
+        borderRadiusLG: 8,
+      },
+    });
+    engine.context.defineProperty('routeRepository', {
+      value: routeRepository,
+    });
+    engine.context.defineProperty('app', {
+      value: {
+        router: {
+          getBasename: () => '',
+        },
+      },
+    });
+
+    const model = engine.createModel<MobileLayoutModel>({
+      uid: 'mobile-layout-model-render-test',
+      use: 'MobileLayoutModel',
+      props: {
+        layout: {
+          routeName: 'mobile',
+          routePath: '/v/mobile',
+          uid: 'mobile-layout-model-render-test',
+        },
+      },
+    });
+
+    render(
+      React.createElement(
+        FlowEngineProvider,
+        { engine },
+        React.createElement(
+          AntdApp,
+          null,
+          React.createElement(
+            MemoryRouter,
+            { initialEntries: ['/v/mobile'] },
+            React.createElement(
+              Routes,
+              null,
+              React.createElement(Route, {
+                path: '/v/mobile/*',
+                element: model.render(),
+              }),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    return {
+      engine,
+      model,
+    };
+  }
 
   it('should extend the standard layout and page models', () => {
     expect(MobileLayoutModel.prototype).toBeInstanceOf(BaseLayoutModel);
@@ -502,6 +576,63 @@ describe('plugin-ui-layout mobile models', () => {
     });
   });
 
+  it('should render an explicit empty state when no mobile routes are accessible', async () => {
+    const subscribers = new Set<() => void>();
+    const routeRepository: MobileRouteRepositoryForTest = {
+      listAccessible: () => [],
+      subscribe: (subscriber) => {
+        subscribers.add(subscriber);
+      },
+      unsubscribe: (subscriber) => {
+        subscribers.delete(subscriber);
+      },
+      ensureAccessibleLoaded: vi.fn(async () => []),
+    };
+
+    renderMobileLayoutWithRouteRepository(routeRepository);
+
+    await waitFor(() => {
+      expect(screen.getByText('No mobile pages yet')).toBeInTheDocument();
+      expect(screen.getByText('Mobile')).toBeInTheDocument();
+    });
+    expect(document.querySelectorAll('.nb-ui-layout-mobile-home-tabbar-item')).toHaveLength(0);
+  });
+
+  it('should render an error state when accessible routes fail to load', async () => {
+    const routeError = new Error('request failed');
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const routeRepository: MobileRouteRepositoryForTest = {
+      listAccessible: () => [],
+      ensureAccessibleLoaded: vi.fn(async () => {
+        throw routeError;
+      }),
+    };
+
+    try {
+      renderMobileLayoutWithRouteRepository(routeRepository);
+
+      await waitFor(() => {
+        expect(routeRepository.ensureAccessibleLoaded).toHaveBeenCalled();
+      });
+      await waitFor(() => {
+        expect(consoleError).toHaveBeenCalledWith(
+          '[NocoBase] plugin-ui-layout failed to initialize accessible routes.',
+          routeError,
+        );
+      });
+      await waitFor(() => {
+        expect(screen.getByText('Failed to load mobile pages')).toBeInTheDocument();
+        expect(screen.getByText('Mobile')).toBeInTheDocument();
+      });
+      expect(consoleError).toHaveBeenCalledWith(
+        '[NocoBase] plugin-ui-layout failed to initialize accessible routes.',
+        routeError,
+      );
+    } finally {
+      consoleError.mockRestore();
+    }
+  });
+
   it('should keep hidden mobile menu item models for design mode rendering', () => {
     const engine = new FlowEngine();
     engine.registerModels({
@@ -672,6 +803,74 @@ describe('plugin-ui-layout mobile models', () => {
 
     expect(model.getMobileViewStackDepth()).toBe(2);
     expect(model.shouldShowMobileTabBar()).toBe(false);
+  });
+
+  it('should fall back to the first accessible flow page when the current route is inaccessible', () => {
+    const engine = new FlowEngine();
+    engine.registerModels({
+      MobileLayoutModel,
+      MobileLayoutMenuItemModel,
+    });
+    const model = engine.createModel<MobileLayoutModel>({
+      uid: 'mobile-layout-model-permission-fallback',
+      use: 'MobileLayoutModel',
+      props: {
+        layout: {
+          routeName: 'mobile',
+          routePath: '/v/mobile',
+          uid: 'mobile-layout-model-permission-fallback',
+        },
+      },
+    });
+
+    model.syncMenuRoutes([
+      {
+        id: 1,
+        type: NocoBaseDesktopRouteType.link,
+        title: 'Docs',
+        schemaUid: 'docs-link',
+        sort: 10,
+        options: {
+          href: '/docs',
+        },
+      },
+      {
+        id: 2,
+        type: NocoBaseDesktopRouteType.flowPage,
+        title: 'Home',
+        schemaUid: 'home-page',
+        sort: 20,
+      },
+      {
+        id: 3,
+        type: NocoBaseDesktopRouteType.flowPage,
+        title: 'Reports',
+        schemaUid: 'reports-page',
+        sort: 30,
+      },
+    ]);
+    model.currentLayoutRoute = {
+      type: 'page',
+      pathname: '/v/mobile/removed-page',
+      basePathname: '/v/mobile',
+      relativePath: 'removed-page',
+      pageUid: 'removed-page',
+      viewStack: [{ viewUid: 'removed-page' }],
+    };
+
+    expect(
+      model
+        .toMobileTabNodes({
+          activeKey: model.getActiveMobileTabKey(),
+          basePathname: '/v/mobile',
+          t: (key) => key,
+        })
+        .map((item) => [item.key, !!item.active]),
+    ).toEqual([
+      ['docs-link', false],
+      ['home-page', true],
+      ['reports-page', false],
+    ]);
   });
 
   it('should provide mobile tab add menu items', () => {

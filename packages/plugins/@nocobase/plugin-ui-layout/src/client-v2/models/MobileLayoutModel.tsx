@@ -37,7 +37,21 @@ import {
   type FlowModel,
 } from '@nocobase/flow-engine';
 import { uid } from '@nocobase/utils/client';
-import { App, Dropdown, Form, Grid, Input, type MenuProps, Modal, Popover, QRCode, theme, Tooltip } from 'antd';
+import {
+  Alert,
+  App,
+  Dropdown,
+  Empty,
+  Form,
+  Grid,
+  Input,
+  type MenuProps,
+  Modal,
+  Popover,
+  QRCode,
+  theme,
+  Tooltip,
+} from 'antd';
 import React, { type ReactNode, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useOutlet } from 'react-router-dom';
 import { NAMESPACE } from '../../constants';
@@ -50,7 +64,7 @@ import {
   resolveMobileMenuDragMoveOptionsFromEvent,
   toMobileRouterNavigationPath,
 } from './MobileMenuModels';
-import { MobileRootPageModel } from './MobilePageModels';
+import { MobilePageSurface } from './mobileComponents';
 
 type MobileHomeAddMenuKey = 'page' | 'link';
 
@@ -113,6 +127,7 @@ type MobileLayoutThemeToken = {
   colorSettings?: string;
   colorTextHeaderMenu?: string;
 };
+type MobileRoutesLoadState = 'ready' | 'error';
 
 const MOBILE_PREVIEW_SIZE: MobilePreviewSize = {
   width: 390,
@@ -163,22 +178,6 @@ export function writeMobileFlowSettingsPreference(enabled: boolean) {
     );
   } catch (error) {
     console.error('[NocoBase] plugin-ui-layout failed to write flow settings preference.', error);
-  }
-}
-
-class MobileHomeRootPagePreviewModel extends MobileRootPageModel {
-  content: ReactNode = null;
-
-  onMount() {
-    // Preview-only model: reuse MobileRootPageModel.render() without binding real route/view lifecycle.
-  }
-
-  protected onUnmount() {
-    // Preview-only model: no lifecycle resources are registered.
-  }
-
-  renderFirstTab() {
-    return this.content;
   }
 }
 
@@ -791,10 +790,18 @@ const MobileDesktopModeHeader = observer(
 function MobileHomeRouteGrid(props: {
   addBlockMenuItems: MenuProps['items'];
   designModeEnabled: boolean;
+  hasTabItems: boolean;
+  loadState: MobileRoutesLoadState;
   routes: FakeMobileDesktopRoute[];
   t: Translate;
 }) {
-  const { addBlockMenuItems, designModeEnabled, routes, t } = props;
+  const { addBlockMenuItems, designModeEnabled, hasTabItems, loadState, routes, t } = props;
+  const status =
+    loadState === 'error' ? (
+      <Alert type="error" showIcon message={t('Failed to load mobile pages')} />
+    ) : !hasTabItems ? (
+      <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={t('No mobile pages yet')} />
+    ) : null;
 
   return (
     <div className="nb-ui-layout-mobile-home-content">
@@ -813,6 +820,7 @@ function MobileHomeRouteGrid(props: {
           </Dropdown>
         </div>
       ) : null}
+      {status ? <div className="nb-ui-layout-mobile-home-status">{status}</div> : null}
       <div className="nb-ui-layout-mobile-home-menu" aria-label={t('Mobile menu')}>
         {routes.map((route) => (
           <button key={route.key} type="button" className="nb-ui-layout-mobile-home-menu-item">
@@ -900,6 +908,7 @@ const MobileHomePlaceholder = observer(
     const [accessibleDesktopRoutes, setAccessibleDesktopRoutes] = useState<NocoBaseDesktopRoute[]>(
       () => model.flowEngine.context.routeRepository?.listAccessible?.() || [],
     );
+    const [routesLoadState, setRoutesLoadState] = useState<MobileRoutesLoadState>('ready');
     const [addTabDropdownOpen, setAddTabDropdownOpen] = useState(false);
     const [configuringTabType, setConfiguringTabType] = useState<MobileHomeAddMenuKey | null>(null);
     const [menuRouteVersion, setMenuRouteVersion] = useState(0);
@@ -930,7 +939,11 @@ const MobileHomePlaceholder = observer(
       });
     }, [menuRouteRefreshVersion, menuRouteVersion, model, resolvedActiveRouteKey, routeTitleT]);
     const activeRoute = useMemo(
-      () => tabItems.find((route) => route.key === resolvedActiveRouteKey) || tabItems[0],
+      () =>
+        tabItems.find((route) => route.key === resolvedActiveRouteKey) ||
+        tabItems.find((route) => route.active) ||
+        tabItems.find((route) => route.type === NocoBaseDesktopRouteType.flowPage) ||
+        tabItems[0],
       [resolvedActiveRouteKey, tabItems],
     );
     const menuItems = useMemo(
@@ -1014,21 +1027,47 @@ const MobileHomePlaceholder = observer(
 
     useEffect(() => {
       const routeRepository = model.flowEngine.context.routeRepository;
+      let disposed = false;
       const syncAccessibleRoutes = () => {
         setAccessibleDesktopRoutes(routeRepository?.listAccessible?.() || []);
       };
 
       syncAccessibleRoutes();
 
-      routeRepository?.subscribe(syncAccessibleRoutes);
-      routeRepository?.ensureAccessibleLoaded?.().catch((error) => {
+      routeRepository?.subscribe?.(syncAccessibleRoutes);
+      if (!routeRepository?.ensureAccessibleLoaded) {
+        setRoutesLoadState('ready');
+        return () => {
+          routeRepository?.unsubscribe?.(syncAccessibleRoutes);
+        };
+      }
+
+      const handleRouteLoadError = (error: unknown) => {
         console.error('[NocoBase] plugin-ui-layout failed to initialize accessible routes.', error);
-      });
+        syncAccessibleRoutes();
+        setRoutesLoadState('error');
+      };
+      const loadAccessibleRoutes = async () => {
+        try {
+          await routeRepository.ensureAccessibleLoaded();
+          if (disposed) {
+            return;
+          }
+
+          syncAccessibleRoutes();
+          setRoutesLoadState('ready');
+        } catch (error) {
+          handleRouteLoadError(error);
+        }
+      };
+
+      loadAccessibleRoutes();
 
       return () => {
-        routeRepository?.unsubscribe(syncAccessibleRoutes);
+        disposed = true;
+        routeRepository?.unsubscribe?.(syncAccessibleRoutes);
       };
-    }, [model.flowEngine]);
+    }, [model]);
 
     useLayoutEffect(() => {
       model.syncMenuRoutes(accessibleDesktopRoutes, { includeHidden: designModeEnabled });
@@ -1051,6 +1090,33 @@ const MobileHomePlaceholder = observer(
         setActiveRouteKey(tabItems[0].key);
       }
     }, [activeRouteKey, activeRouteKeyFromLayout, tabItems]);
+
+    useEffect(() => {
+      if (
+        !activeRouteKeyFromLayout ||
+        !tabItems.length ||
+        tabItems.some((item) => item.key === activeRouteKeyFromLayout)
+      ) {
+        return;
+      }
+
+      const fallbackRoute = tabItems.find((item) => item.type === NocoBaseDesktopRouteType.flowPage && item.path);
+      if (!fallbackRoute?.path) {
+        return;
+      }
+
+      const basename =
+        model.flowEngine.context.app?.router?.getBasename?.() ||
+        model.flowEngine.context.app?.router?.basename ||
+        model.flowEngine.context.router?.basename;
+      navigate(toMobileRouterNavigationPath(fallbackRoute.path, basename), { replace: true });
+    }, [
+      activeRouteKeyFromLayout,
+      model.flowEngine.context.app?.router,
+      model.flowEngine.context.router?.basename,
+      navigate,
+      tabItems,
+    ]);
 
     const handleMobileMenuDragEnd = useCallback(
       (event: DragEndEvent) => {
@@ -1100,34 +1166,19 @@ const MobileHomePlaceholder = observer(
       [model.flowEngine.context.app?.router, model.flowEngine.context.router?.basename, navigate],
     );
 
-    const rootPageModel = useMemo(() => {
-      const pageModel = new MobileHomeRootPagePreviewModel({
-        flowEngine: model.flowEngine,
-        props: {
-          displayTitle: true,
-          enableTabs: false,
-          title: t('Mobile'),
-        },
-        uid: `${model.uid}-fake-mobile-root-page`,
-        use: 'MobileRootPageModel',
-      } as never);
-
-      pageModel.context.defineProperty('currentRoute', {
-        get: () => ({
-          enableTabs: false,
-          id: 'fake-mobile-root-page-route',
-        }),
-      });
-
-      return pageModel;
-    }, [model.flowEngine, model.uid, t]);
-    rootPageModel.content = (
-      <MobileHomeRouteGrid
-        addBlockMenuItems={addBlockMenuItems}
-        designModeEnabled={designModeEnabled}
-        routes={menuItems}
-        t={t}
-      />
+    const rootPageContent = (
+      <MobilePageSurface title={t('Mobile')} displayTitle>
+        <div className="nb-ui-layout-mobile-body">
+          <MobileHomeRouteGrid
+            addBlockMenuItems={addBlockMenuItems}
+            designModeEnabled={designModeEnabled}
+            hasTabItems={tabItems.length > 0}
+            loadState={routesLoadState}
+            routes={menuItems}
+            t={t}
+          />
+        </div>
+      </MobilePageSurface>
     );
     const className = useMemo(
       () => css`
@@ -1151,6 +1202,10 @@ const MobileHomePlaceholder = observer(
           display: grid;
           grid-template-columns: repeat(2, minmax(0, 1fr));
           gap: ${token.marginSM}px;
+        }
+
+        .nb-ui-layout-mobile-home-status {
+          padding: ${token.paddingSM}px 0;
         }
 
         .nb-ui-layout-mobile-home-add-block {
@@ -1360,7 +1415,7 @@ const MobileHomePlaceholder = observer(
 
     return (
       <div className={className}>
-        {outlet || rootPageModel.render()}
+        {outlet || rootPageContent}
         <DndProvider onDragEnd={handleMobileMenuDragEnd}>
           <nav className="nb-ui-layout-mobile-home-tabbar" aria-label={t('Mobile tab bar')} hidden={!showMobileTabBar}>
             {tabItems.map((item) => {
@@ -1509,7 +1564,7 @@ export class MobileLayoutModel extends BaseLayoutModel<MobileLayoutMenuStructure
   toMobileTabNodes(options: MobileTabNodeOptions) {
     const basePathname = options.basePathname || this.getMobileBasePathname();
 
-    return (this.subModels.menuItems || [])
+    const nodes = (this.subModels.menuItems || [])
       .map((item) =>
         typeof item.toMobileTabNode === 'function'
           ? item.toMobileTabNode({
@@ -1519,6 +1574,20 @@ export class MobileLayoutModel extends BaseLayoutModel<MobileLayoutMenuStructure
           : null,
       )
       .filter((item): item is MobileTabNode => !!item);
+
+    if (!nodes.length || nodes.some((item) => item.active)) {
+      return nodes;
+    }
+
+    const fallbackFlowPage = nodes.find((item) => item.type === NocoBaseDesktopRouteType.flowPage);
+    if (!fallbackFlowPage) {
+      return nodes;
+    }
+
+    return nodes.map((item) => ({
+      ...item,
+      active: item.key === fallbackFlowPage.key,
+    }));
   }
 
   render() {
