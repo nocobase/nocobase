@@ -7,23 +7,33 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, readdir, rm, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { afterEach, expect, test } from 'vitest';
 import type { ManagedAppRuntime } from '../lib/app-runtime.js';
 import { setCliConfigValue } from '../lib/cli-config.js';
 import {
+  appConfigHasManagedNginxBlock,
   buildEnvProxyAppConfig,
+  buildEnvProxyCaddyBundle,
   buildEnvProxyConfig,
   buildEnvProxyMainConfig,
+  buildEnvProxyNginxBundle,
+  extractManagedNginxConfigBlock,
   mapProxyPathFromCliRoot,
   parseNginxConfPathFromVersionOutput,
-  resolveProxyNbCliRoot,
+  replaceManagedNginxConfigBlock,
   resolveEnvProxyAppOutputPath,
-  resolveEnvProxyProvider,
+  resolveEnvProxyCaddyIndexOutputPath,
+  resolveEnvProxyCaddyPublicOutputDir,
+  resolveEnvProxyEntryDir,
   resolveEnvProxyMainOutputPath,
-  resolveEnvProxyOutputPath,
+  resolveEnvProxyNginxIndexOutputPath,
+  resolveEnvProxyNginxPublicOutputDir,
+  resolveEnvProxyNginxSnippetsOutputDir,
+  resolveProxyNbCliRoot,
+  syncEnvProxyNginxSnippets,
 } from '../lib/env-proxy.ts';
 
 const createdRoots: string[] = [];
@@ -41,99 +51,71 @@ async function createTempRoot(prefix: string) {
   return root;
 }
 
-test('buildEnvProxyConfig reads local env file settings and maps /dist/ to storage/dist-client', async () => {
-  const root = await createTempRoot('nocobase-cli-env-proxy-local-');
+async function createLocalRuntime(
+  root: string,
+  options?: {
+    appPublicPath?: string;
+    modernClientPrefix?: string;
+    sourceV1PublicPath?: string;
+    sourceV2PublicPath?: string;
+    cdnBaseUrl?: string;
+  },
+): Promise<Extract<ManagedAppRuntime, { kind: 'local' }>> {
+  const version = '2.1.0-beta.44';
   const appPath = path.join(root, 'app');
-  const projectRoot = path.join(appPath, 'source');
-  const storagePath = path.join(root, 'storage');
-  await mkdir(projectRoot, { recursive: true });
-  await mkdir(storagePath, { recursive: true });
-  await writeFile(
-    path.join(appPath, '.env'),
-    ['APP_PUBLIC_PATH=/console/', 'APP_MODERN_CLIENT_PREFIX=admin', 'API_BASE_PATH=/api/', 'WS_PATH=/ws'].join('\n'),
-  );
-
-  const runtime = {
-    kind: 'local',
-    envName: 'demo',
-    source: 'npm',
-    projectRoot,
-    env: {
-      config: {
-        appPath,
-        storagePath,
-        appPort: '13000',
-      },
-      appPort: '13000',
-      storagePath,
-      runtime: {
-        version: '2.1.0-beta.44',
-      },
-    },
-  } as unknown as Extract<ManagedAppRuntime, { kind: 'local' }>;
-
-  const result = await buildEnvProxyConfig(runtime);
-
-  expect(result.envFilePath).toBe(path.join(appPath, '.env'));
-  expect(result.apiBasePath).toBe('/console/api/');
-  expect(result.wsPath).toBe('/console/ws');
-  expect(result.distPath).toBe('/console/dist/');
-  expect(result.v2PublicPath).toBe('/console/admin/');
-  expect(result.pluginStaticsPath).toBe('/console/static/plugins/');
-  expect(result.distClientRoot).toBe(path.join(storagePath, 'dist-client'));
-  expect(result.content).not.toContain('map $http_upgrade $connection_upgrade');
-  expect(result.content).not.toContain('server {');
-  expect(result.content).toContain('location ^~ /console/api/');
-  expect(result.content).toContain('location ^~ /console/dist/');
-  expect(result.content).toContain(`alias ${path.join(storagePath, 'dist-client')}/;`);
-});
-
-test('buildEnvProxyConfig falls back to docker defaults when no env file exists', async () => {
-  const root = await createTempRoot('nocobase-cli-env-proxy-docker-');
-  const storagePath = path.join(root, 'storage');
-  await mkdir(storagePath, { recursive: true });
-  process.env.NB_CLI_ROOT = root;
-
-  const runtime = {
-    kind: 'docker',
-    envName: 'docker-demo',
-    source: 'docker',
-    workspaceName: 'demo-network',
-    dockerNetworkName: 'demo-network',
-    dockerContainerPrefix: 'demo',
-    containerName: 'demo-app',
-    env: {
-      config: {
-        storagePath,
-        appPort: '13080',
-        downloadVersion: 'next-full',
-      },
-      appPort: '13080',
-      storagePath,
-      runtime: undefined,
-    },
-  } as unknown as Extract<ManagedAppRuntime, { kind: 'docker' }>;
-
-  const result = await buildEnvProxyConfig(runtime);
-
-  expect(result.envFilePath).toBe(undefined);
-  expect(result.apiBasePath).toBe('/api/');
-  expect(result.wsPath).toBe('/ws');
-  expect(result.v2PublicPath).toBe('/v/');
-  expect(result.runtimeVersion).toBe('next-full');
-});
-
-test('buildEnvProxyConfig maps rendered filesystem paths through proxy.nb-cli-root', async () => {
-  const root = await createTempRoot('nocobase-cli-env-proxy-runtime-root-');
-  const appPath = path.join(root, 'app14353');
   const projectRoot = path.join(appPath, 'source');
   const storagePath = path.join(appPath, 'storage');
-  process.env.NB_CLI_ROOT = root;
-  await mkdir(projectRoot, { recursive: true });
-  await mkdir(storagePath, { recursive: true });
-  await setCliConfigValue('proxy.nb-cli-root', '/workspace', { scope: 'global' });
+  const distRoot = path.join(storagePath, 'dist-client');
+  const versionRoot = path.join(distRoot, version);
+  const sourceV1PublicPath = options?.sourceV1PublicPath ?? options?.appPublicPath ?? '/';
+  const sourceV2PublicPath = options?.sourceV2PublicPath ?? '/v/';
+  const appPublicPath = options?.appPublicPath ?? '/';
+  const modernClientPrefix = options?.modernClientPrefix ?? 'v';
+  const envLines = [
+    `APP_PUBLIC_PATH=${appPublicPath}`,
+    `APP_MODERN_CLIENT_PREFIX=${modernClientPrefix}`,
+    'API_BASE_PATH=/api/',
+    'WS_PATH=/ws',
+    ...(options?.cdnBaseUrl ? [`CDN_BASE_URL=${options.cdnBaseUrl}`] : []),
+  ];
 
-  const runtime = {
+  await mkdir(projectRoot, { recursive: true });
+  await mkdir(path.join(versionRoot, 'v'), { recursive: true });
+  await writeFile(path.join(appPath, '.env'), envLines.join('\n'));
+  await writeFile(path.join(distRoot, 'active-version'), version);
+  await writeFile(
+    path.join(versionRoot, 'index.html'),
+    [
+      '<!doctype html>',
+      '<html><head>',
+      `<script>window['__webpack_public_path__'] = '${sourceV1PublicPath}';`,
+      `window['__nocobase_public_path__'] = '${sourceV1PublicPath}';`,
+      `window['__nocobase_api_base_url__'] = '${
+        sourceV1PublicPath === '/' ? '/api/' : `${sourceV1PublicPath.replace(/\/$/, '')}/api/`
+      }';</script>`,
+      `<script src="${sourceV1PublicPath}browser-checker.js?v=1"></script>`,
+      `<script type="module" src="${sourceV1PublicPath}assets/runtime.js"></script>`,
+      `<link rel="stylesheet" href="${sourceV1PublicPath}assets/index.css">`,
+      '</head><body></body></html>',
+    ].join(''),
+  );
+  await writeFile(
+    path.join(versionRoot, 'v', 'index.html'),
+    [
+      '<!doctype html>',
+      '<html><head>',
+      `<script>window['__nocobase_public_path__'] = window['__nocobase_public_path__'] || "${sourceV2PublicPath}";`,
+      `window['__nocobase_api_base_url__'] = window['__nocobase_api_base_url__'] || "${
+        sourceV1PublicPath === '/' ? '/api/' : `${sourceV1PublicPath.replace(/\/$/, '')}/api/`
+      }";</script>`,
+      `<script src="${sourceV2PublicPath}browser-checker.js?v=1"></script>`,
+      `<script type="module" src="${sourceV2PublicPath}assets/runtime.js"></script>`,
+      `<link rel="stylesheet" href="${sourceV2PublicPath}assets/index.css">`,
+      '</head><body></body></html>',
+    ].join(''),
+  );
+
+  return {
     kind: 'local',
     envName: 'demo',
     source: 'npm',
@@ -147,99 +129,218 @@ test('buildEnvProxyConfig maps rendered filesystem paths through proxy.nb-cli-ro
       appPort: '13000',
       storagePath,
       runtime: {
-        version: '2.1.0-beta.44',
+        version,
       },
     },
   } as unknown as Extract<ManagedAppRuntime, { kind: 'local' }>;
+}
 
-  const result = await buildEnvProxyConfig(runtime, { scope: 'global' });
+test('buildEnvProxyNginxBundle renders app.conf and index HTML with CDN-prefixed assets', async () => {
+  const root = await createTempRoot('nocobase-cli-env-proxy-nginx-bundle-');
+  process.env.NB_CLI_ROOT = root;
+  await setCliConfigValue('proxy.nb-cli-root', '/workspace', { scope: 'global' });
+  const runtime = await createLocalRuntime(root, {
+    appPublicPath: '/console/',
+    modernClientPrefix: 'admin',
+    sourceV1PublicPath: '/nocobase/',
+    sourceV2PublicPath: '/v/',
+  });
+
+  const bundle = await buildEnvProxyNginxBundle(runtime, { scope: 'global' });
 
   expect(await resolveProxyNbCliRoot({ scope: 'global' })).toBe('/workspace');
-  expect(result.distClientRoot).toBe('/workspace/app14353/storage/dist-client');
-  expect(result.uploadsPath).toBe('/workspace/app14353/storage/uploads');
-  expect(result.content).toContain('alias /workspace/app14353/storage/dist-client/;');
-  expect(result.content).toContain('alias /workspace/app14353/storage/uploads/;');
-  expect(
-    await mapProxyPathFromCliRoot(path.join(root, '.nocobase', 'proxy', 'nginx', 'demo', 'generated.conf'), {
-      scope: 'global',
-    }),
-  ).toBe('/workspace/.nocobase/proxy/nginx/demo/generated.conf');
+  expect(bundle.entryDir).toBe(path.join(root, '.nocobase', 'proxy', 'nginx', 'demo'));
+  expect(bundle.publicDir).toBe(path.join(root, '.nocobase', 'proxy', 'nginx', 'demo', 'public'));
+  expect(bundle.appConfigPath).toBe(path.join(root, '.nocobase', 'proxy', 'nginx', 'demo', 'app.conf'));
+  expect(bundle.indexV1Path).toBe(path.join(root, '.nocobase', 'proxy', 'nginx', 'demo', 'public', 'index-v1.html'));
+  expect(bundle.indexV2Path).toBe(path.join(root, '.nocobase', 'proxy', 'nginx', 'demo', 'public', 'index-v2.html'));
+  expect(bundle.cdnBaseUrl).toBe('/console/dist/2.1.0-beta.44/');
+  expect(bundle.v2PublicPath).toBe('/console/admin/');
+  expect(bundle.appConfigContent).toContain('# BEGIN NocoBase managed config');
+  expect(bundle.appConfigContent).toContain('location / {');
+  expect(bundle.appConfigContent).toContain('return 302 /console$uri$is_args$args;');
+  expect(bundle.appConfigContent).toContain('location ^~ /console/admin/ {');
+  expect(bundle.appConfigContent).toContain('alias /workspace/.nocobase/proxy/nginx/demo/public/;');
+  expect(bundle.appConfigContent).toContain('try_files $uri /index-v2.html =404;');
+  expect(bundle.appConfigContent).toContain('location ^~ /console/ {');
+  expect(bundle.appConfigContent).toContain('try_files $uri /index-v1.html =404;');
+  expect(bundle.appConfigContent.indexOf('location = /console/admin {')).toBeGreaterThan(
+    bundle.appConfigContent.indexOf('location = /console/ws {'),
+  );
+  expect(bundle.appConfigContent.indexOf('location ^~ /console/admin/ {')).toBeGreaterThan(
+    bundle.appConfigContent.indexOf('location = /console/admin {'),
+  );
+  expect(bundle.appConfigContent.indexOf('location / {')).toBeGreaterThan(
+    bundle.appConfigContent.indexOf('location ^~ /console/ {'),
+  );
+  expect(bundle.mainConfigContent).toContain('include /workspace/.nocobase/proxy/nginx/snippets/log-format-http.conf;');
+  expect(bundle.mainConfigContent).toContain('include /workspace/.nocobase/proxy/nginx/snippets/maps-http.conf;');
+  expect(bundle.mainConfigContent).toContain('include /workspace/.nocobase/proxy/nginx/*/app.conf;');
+  expect(bundle.indexV1Content).toContain(`window['__webpack_public_path__'] = "/console/dist/2.1.0-beta.44/";`);
+  expect(bundle.indexV1Content).toContain(`window['__nocobase_public_path__'] = "/console/";`);
+  expect(bundle.indexV1Content).toContain('src="/console/dist/2.1.0-beta.44/browser-checker.js?v=1"');
+  expect(bundle.indexV1Content).toContain('src="/console/dist/2.1.0-beta.44/assets/runtime.js"');
+  expect(bundle.indexV2Content).toContain(`window['__nocobase_public_path__'] = "/console/admin/";`);
+  expect(bundle.indexV2Content).toContain(`window['__nocobase_modern_client_prefix__'] = "admin";`);
+  expect(bundle.indexV2Content).toContain('src="/console/dist/2.1.0-beta.44/v/browser-checker.js?v=1"');
+  expect(bundle.indexV2Content).toContain('src="/console/dist/2.1.0-beta.44/v/assets/runtime.js"');
 });
 
-test('buildEnvProxyConfig uses proxy.upstream-host for proxy_pass targets', async () => {
-  const root = await createTempRoot('nocobase-cli-env-proxy-host-');
-  const appPath = path.join(root, 'app');
-  const projectRoot = path.join(appPath, 'source');
-  const storagePath = path.join(root, 'storage');
+test('buildEnvProxyNginxBundle omits the root redirect block for root-mounted apps', async () => {
+  const root = await createTempRoot('nocobase-cli-env-proxy-nginx-root-');
   process.env.NB_CLI_ROOT = root;
-  await mkdir(projectRoot, { recursive: true });
-  await mkdir(storagePath, { recursive: true });
-  await setCliConfigValue('proxy.upstream-host', 'host.docker.internal', { scope: 'global' });
+  const runtime = await createLocalRuntime(root);
 
-  const runtime = {
-    kind: 'local',
-    envName: 'demo',
-    source: 'npm',
-    projectRoot,
-    env: {
-      config: {
-        appPath,
-        storagePath,
-        appPort: '13000',
-      },
-      appPort: '13000',
-      storagePath,
-      runtime: {
-        version: '2.1.0-beta.44',
-      },
-    },
-  } as unknown as Extract<ManagedAppRuntime, { kind: 'local' }>;
+  const bundle = await buildEnvProxyNginxBundle(runtime);
 
-  const result = await buildEnvProxyConfig(runtime, { scope: 'global' });
-
-  expect(result.content).toContain('proxy_pass http://host.docker.internal:13000;');
-  expect(result.content).toContain('proxy_pass http://host.docker.internal:13000/ws;');
+  expect(bundle.appConfigContent).toContain('location ^~ / {');
+  expect(bundle.appConfigContent).toContain('location ^~ /v/ {');
+  expect(bundle.appConfigContent).toContain('try_files $uri /index-v1.html =404;');
+  expect(bundle.appConfigContent).not.toContain('return 302 /$is_args$args;');
 });
 
-test('resolveEnvProxyOutputPath defaults to ~/.nocobase/proxy/<env>/generated.conf', async () => {
-  const root = await createTempRoot('nocobase-cli-env-proxy-output-');
+test('buildEnvProxyNginxBundle prefers CDN_BASE_URL from the managed env file', async () => {
+  const root = await createTempRoot('nocobase-cli-env-proxy-nginx-cdn-');
+  process.env.NB_CLI_ROOT = root;
+  const runtime = await createLocalRuntime(root, {
+    appPublicPath: '/console/',
+    cdnBaseUrl: 'https://cdn.example.com/ui/',
+    sourceV1PublicPath: '/nocobase/',
+    sourceV2PublicPath: '/v/',
+  });
+
+  const bundle = await buildEnvProxyNginxBundle(runtime);
+
+  expect(bundle.cdnBaseUrl).toBe('https://cdn.example.com/ui/');
+  expect(bundle.indexV1Content).toContain('src="https://cdn.example.com/ui/browser-checker.js?v=1"');
+  expect(bundle.indexV2Content).toContain('src="https://cdn.example.com/ui/v/browser-checker.js?v=1"');
+});
+
+test('buildEnvProxyNginxBundle prefers saved CDN_BASE_URL over the managed env file', async () => {
+  const root = await createTempRoot('nocobase-cli-env-proxy-nginx-saved-cdn-');
+  process.env.NB_CLI_ROOT = root;
+  const runtime = await createLocalRuntime(root, {
+    appPublicPath: '/console/',
+    cdnBaseUrl: 'https://cdn-from-env-file.example.com/ui/',
+    sourceV1PublicPath: '/nocobase/',
+    sourceV2PublicPath: '/v/',
+  });
+  runtime.env.envVars = {
+    ...runtime.env.envVars,
+    CDN_BASE_URL: 'https://cdn-from-config.example.com/ui/',
+  };
+  runtime.env.config = {
+    ...runtime.env.config,
+    cdnBaseUrl: 'https://cdn-from-config.example.com/ui/',
+  };
+
+  const bundle = await buildEnvProxyNginxBundle(runtime);
+
+  expect(bundle.cdnBaseUrl).toBe('https://cdn-from-config.example.com/ui/');
+  expect(bundle.indexV1Content).toContain('src="https://cdn-from-config.example.com/ui/browser-checker.js?v=1"');
+  expect(bundle.indexV2Content).toContain('src="https://cdn-from-config.example.com/ui/v/browser-checker.js?v=1"');
+});
+
+test('syncEnvProxyNginxSnippets copies nginx snippets into the provider snippets directory', async () => {
+  const root = await createTempRoot('nocobase-cli-env-proxy-nginx-snippets-');
   process.env.NB_CLI_ROOT = root;
 
-  expect(resolveEnvProxyOutputPath('staging')).toBe(
-    path.join(root, '.nocobase', 'proxy', 'nginx', 'staging', 'generated.conf'),
-  );
-  expect(resolveEnvProxyAppOutputPath('staging')).toBe(
-    path.join(root, '.nocobase', 'proxy', 'nginx', 'staging', 'app.conf'),
-  );
-  expect(resolveEnvProxyMainOutputPath()).toBe(path.join(root, '.nocobase', 'proxy', 'nginx', 'nocobase.conf'));
-  expect(resolveEnvProxyOutputPath('staging', { provider: 'caddy' })).toBe(
-    path.join(root, '.nocobase', 'proxy', 'caddy', 'staging', 'generated.caddy'),
-  );
-  expect(resolveEnvProxyAppOutputPath('staging', { provider: 'caddy' })).toBe(
-    path.join(root, '.nocobase', 'proxy', 'caddy', 'staging', 'app.caddy'),
-  );
-  expect(resolveEnvProxyMainOutputPath({ provider: 'caddy' })).toBe(
-    path.join(root, '.nocobase', 'proxy', 'caddy', 'nocobase.caddy'),
-  );
-  expect(resolveEnvProxyOutputPath('staging', { output: './custom/generated.conf' })).toBe(
-    path.resolve(process.cwd(), './custom/generated.conf'),
+  const outputDir = await syncEnvProxyNginxSnippets();
+  const entries = (await readdir(outputDir)).sort();
+
+  expect(outputDir).toBe(path.join(root, '.nocobase', 'proxy', 'nginx', 'snippets'));
+  expect(entries).toEqual(
+    expect.arrayContaining([
+      'dist-location.conf',
+      'gzip.conf',
+      'log-format-http.conf',
+      'maps-http.conf',
+      'mime-types.conf',
+      'proxy-location.conf',
+      'spa-location.conf',
+      'uploads-location.conf',
+    ]),
   );
 });
 
-test('buildEnvProxyAppConfig creates an editable entry that includes the generated config by absolute path', () => {
-  const generatedConfigPath = '/tmp/nocobase/proxy/demo/generated.conf';
+test('replaceManagedNginxConfigBlock preserves user-edited content outside the managed block', async () => {
+  const root = await createTempRoot('nocobase-cli-env-proxy-nginx-managed-block-');
+  process.env.NB_CLI_ROOT = root;
+  const runtime = await createLocalRuntime(root, {
+    appPublicPath: '/console/',
+  });
+  const bundle = await buildEnvProxyNginxBundle(runtime);
+  const managedBlock = extractManagedNginxConfigBlock(bundle.appConfigContent);
 
-  expect(buildEnvProxyAppConfig('nginx', generatedConfigPath)).toBe(`server {
-    listen 80;
-    server_name _;
-    client_max_body_size 0;
+  const appConfig = `server {\n    listen 8080;\n    server_name demo.local;\n\n    # BEGIN NocoBase managed config\n    old content\n    # END NocoBase managed config\n\n    add_header X-Demo true;\n}\n`;
+  const replaced = replaceManagedNginxConfigBlock(appConfig, managedBlock ?? '');
 
-    # BEGIN NocoBase generated routes
-    # Keep this include so \`nb env proxy\` can refresh managed routes.
-    include ${generatedConfigPath};
-    # END NocoBase generated routes
-}
-`);
+  expect(appConfigHasManagedNginxBlock(replaced)).toBe(true);
+  expect(replaced).toContain('listen 8080;');
+  expect(replaced).toContain('server_name demo.local;');
+  expect(replaced).toContain('add_header X-Demo true;');
+  expect(replaced).toContain('location ^~ /console/api/ {');
+  expect(replaced).not.toContain('old content');
+});
+
+test('buildEnvProxyConfig renders a Caddy route config when provider is caddy', async () => {
+  const root = await createTempRoot('nocobase-cli-env-proxy-caddy-');
+  const runtime = await createLocalRuntime(root);
+
+  const result = await buildEnvProxyConfig(runtime, { provider: 'caddy' });
+
+  expect(result.content).toContain('route {');
+  expect(result.content).toContain('encode zstd gzip');
+  expect(result.content).toContain('handle_path /dist/*');
+  expect(result.content).toContain('try_files {path} /index-v1.html');
+  expect(result.content).toContain('file_server');
+  expect(result.content).toContain('reverse_proxy 127.0.0.1:13000');
+});
+
+test('buildEnvProxyConfig renders explicit Caddy redirects when app public path is not root', async () => {
+  const root = await createTempRoot('nocobase-cli-env-proxy-caddy-public-path-');
+  const runtime = await createLocalRuntime(root, {
+    appPublicPath: '/nocobase/',
+  });
+
+  const result = await buildEnvProxyConfig(runtime, { provider: 'caddy' });
+
+  expect(result.content).toContain('redir * /nocobase/ 302');
+  expect(result.content).toContain('redir * /nocobase/v/ 302');
+  expect(result.content).toContain('redir * /nocobase{uri} 302');
+});
+
+test('buildEnvProxyCaddyBundle renders app.caddy, generated.caddy, and index HTML files', async () => {
+  const root = await createTempRoot('nocobase-cli-env-proxy-caddy-bundle-');
+  process.env.NB_CLI_ROOT = root;
+  await setCliConfigValue('proxy.nb-cli-root', '/workspace', { scope: 'global' });
+  const runtime = await createLocalRuntime(root, {
+    appPublicPath: '/console/',
+    modernClientPrefix: 'admin',
+    sourceV1PublicPath: '/nocobase/',
+    sourceV2PublicPath: '/v/',
+  });
+
+  const bundle = await buildEnvProxyCaddyBundle(runtime, { scope: 'global' });
+
+  expect(bundle.entryDir).toBe(path.join(root, '.nocobase', 'proxy', 'caddy', 'demo'));
+  expect(bundle.publicDir).toBe(path.join(root, '.nocobase', 'proxy', 'caddy', 'demo', 'public'));
+  expect(bundle.appConfigPath).toBe(path.join(root, '.nocobase', 'proxy', 'caddy', 'demo', 'app.caddy'));
+  expect(bundle.generatedConfigPath).toBe(path.join(root, '.nocobase', 'proxy', 'caddy', 'demo', 'generated.caddy'));
+  expect(bundle.indexV1Path).toBe(path.join(root, '.nocobase', 'proxy', 'caddy', 'demo', 'public', 'index-v1.html'));
+  expect(bundle.indexV2Path).toBe(path.join(root, '.nocobase', 'proxy', 'caddy', 'demo', 'public', 'index-v2.html'));
+  expect(bundle.appConfigContent).toContain('import ./generated.caddy');
+  expect(bundle.generatedConfigContent).toContain('handle_path /console/admin/* {');
+  expect(bundle.generatedConfigContent).toContain('try_files {path} /index-v2.html');
+  expect(bundle.generatedConfigContent).toContain('root * /workspace/.nocobase/proxy/caddy/demo/public');
+  expect(bundle.mainConfigContent).toContain('import /workspace/.nocobase/proxy/caddy/*/app.caddy');
+  expect(bundle.indexV1Content).toContain(`window['__webpack_public_path__'] = "/console/dist/2.1.0-beta.44/";`);
+  expect(bundle.indexV1Content).toContain(`window['__nocobase_public_path__'] = "/console/";`);
+  expect(bundle.indexV2Content).toContain(`window['__nocobase_public_path__'] = "/console/admin/";`);
+  expect(bundle.indexV2Content).toContain(`window['__nocobase_modern_client_prefix__'] = "admin";`);
+});
+
+test('buildEnvProxyAppConfig creates an editable Caddy app entry with a managed import block', () => {
   expect(buildEnvProxyAppConfig('caddy', '/tmp/nocobase/proxy/demo/generated.caddy')).toBe(`:80 {
     # BEGIN NocoBase generated routes
     # Keep this import so \`nb env proxy\` can refresh managed routes.
@@ -247,19 +348,6 @@ test('buildEnvProxyAppConfig creates an editable entry that includes the generat
     # END NocoBase generated routes
 }
 `);
-  expect(buildEnvProxyAppConfig('nginx', generatedConfigPath, { host: 'a.local.nocobase.com', port: '8080' })).toBe(
-    `server {
-    listen 8080;
-    server_name a.local.nocobase.com;
-    client_max_body_size 0;
-
-    # BEGIN NocoBase generated routes
-    # Keep this include so \`nb env proxy\` can refresh managed routes.
-    include ${generatedConfigPath};
-    # END NocoBase generated routes
-}
-`,
-  );
   expect(
     buildEnvProxyAppConfig('caddy', '/tmp/nocobase/proxy/demo/generated.caddy', {
       host: 'a.local.nocobase.com',
@@ -272,139 +360,76 @@ test('buildEnvProxyAppConfig creates an editable entry that includes the generat
     # END NocoBase generated routes
 }
 `);
-  expect(
-    buildEnvProxyAppConfig('caddy', '/tmp/nocobase/proxy/demo/generated.caddy', {
-      host: 'a.local.nocobase.com',
-    }),
-  ).toBe(`a.local.nocobase.com {
-    # BEGIN NocoBase generated routes
-    # Keep this import so \`nb env proxy\` can refresh managed routes.
-    import ./generated.caddy
-    # END NocoBase generated routes
-}
-`);
 });
 
-test('buildEnvProxyMainConfig includes shared nginx directives and wildcard app.conf include', async () => {
+test('buildEnvProxyMainConfig renders nginx includes from asset templates', async () => {
   const root = await createTempRoot('nocobase-cli-env-proxy-main-');
-  process.env.NB_CLI_ROOT = root;
-
-  const content = await buildEnvProxyMainConfig();
-
-  expect(content).toContain('map $http_upgrade $connection_upgrade');
-  expect(content).toContain('gzip on;');
-  expect(content).toContain(`include ${path.join(root, '.nocobase', 'proxy', 'nginx', '*', 'app.conf')};`);
-});
-
-test('buildEnvProxyMainConfig maps wildcard app.conf include through proxy.nb-cli-root', async () => {
-  const root = await createTempRoot('nocobase-cli-env-proxy-main-runtime-root-');
   process.env.NB_CLI_ROOT = root;
   await setCliConfigValue('proxy.nb-cli-root', '/workspace', { scope: 'global' });
 
-  const content = await buildEnvProxyMainConfig();
+  const content = await buildEnvProxyMainConfig({ scope: 'global' });
 
+  expect(content).toContain('include /workspace/.nocobase/proxy/nginx/snippets/log-format-http.conf;');
+  expect(content).toContain('include /workspace/.nocobase/proxy/nginx/snippets/maps-http.conf;');
   expect(content).toContain('include /workspace/.nocobase/proxy/nginx/*/app.conf;');
 });
 
 test('buildEnvProxyMainConfig creates a provider-local Caddy import file', async () => {
   const root = await createTempRoot('nocobase-cli-env-proxy-caddy-main-');
   process.env.NB_CLI_ROOT = root;
-  const content = await buildEnvProxyMainConfig({ provider: 'caddy' });
+  await setCliConfigValue('proxy.nb-cli-root', '/workspace', { scope: 'global' });
 
-  expect(content).toContain(`import ${path.join(root, '.nocobase', 'proxy', 'caddy', '*', 'app.caddy')}`);
+  const content = await buildEnvProxyMainConfig({ provider: 'caddy', scope: 'global' });
+
+  expect(content).toContain('import /workspace/.nocobase/proxy/caddy/*/app.caddy');
   expect(content).not.toContain('include ');
 });
 
-test('buildEnvProxyMainConfig maps the Caddy app import through proxy.nb-cli-root', async () => {
-  const root = await createTempRoot('nocobase-cli-env-proxy-caddy-main-runtime-root-');
+test('env proxy path helpers resolve the nginx entry, shared config, snippets, and index files', async () => {
+  const root = await createTempRoot('nocobase-cli-env-proxy-paths-');
   process.env.NB_CLI_ROOT = root;
   await setCliConfigValue('proxy.nb-cli-root', '/workspace', { scope: 'global' });
 
-  const content = await buildEnvProxyMainConfig({ provider: 'caddy' });
-
-  expect(content).toContain('import /workspace/.nocobase/proxy/caddy/*/app.caddy');
+  expect(resolveEnvProxyEntryDir('staging')).toBe(path.join(root, '.nocobase', 'proxy', 'nginx', 'staging'));
+  expect(resolveEnvProxyAppOutputPath('staging')).toBe(
+    path.join(root, '.nocobase', 'proxy', 'nginx', 'staging', 'app.conf'),
+  );
+  expect(resolveEnvProxyMainOutputPath()).toBe(path.join(root, '.nocobase', 'proxy', 'nginx', 'nocobase.conf'));
+  expect(resolveEnvProxyNginxSnippetsOutputDir()).toBe(path.join(root, '.nocobase', 'proxy', 'nginx', 'snippets'));
+  expect(resolveEnvProxyNginxPublicOutputDir('staging')).toBe(
+    path.join(root, '.nocobase', 'proxy', 'nginx', 'staging', 'public'),
+  );
+  expect(resolveEnvProxyNginxIndexOutputPath('staging', 'v1')).toBe(
+    path.join(root, '.nocobase', 'proxy', 'nginx', 'staging', 'public', 'index-v1.html'),
+  );
+  expect(await mapProxyPathFromCliRoot(resolveEnvProxyAppOutputPath('staging'), { scope: 'global' })).toBe(
+    '/workspace/.nocobase/proxy/nginx/staging/app.conf',
+  );
 });
 
-test('buildEnvProxyConfig renders a Caddy route config when provider is caddy', async () => {
-  const root = await createTempRoot('nocobase-cli-env-proxy-caddy-');
-  const appPath = path.join(root, 'app');
-  const projectRoot = path.join(appPath, 'source');
-  const storagePath = path.join(root, 'storage');
-  await mkdir(projectRoot, { recursive: true });
-  await mkdir(storagePath, { recursive: true });
-
-  const runtime = {
-    kind: 'local',
-    envName: 'demo',
-    source: 'npm',
-    projectRoot,
-    env: {
-      config: {
-        appPath,
-        storagePath,
-        appPort: '13000',
-      },
-      appPort: '13000',
-      storagePath,
-      runtime: {
-        version: '2.1.0-beta.44',
-      },
-    },
-  } as unknown as Extract<ManagedAppRuntime, { kind: 'local' }>;
-
-  const result = await buildEnvProxyConfig(runtime, { provider: 'caddy' });
-
-  expect(result.content).toContain('route {');
-  expect(result.content).toContain('encode zstd gzip');
-  expect(result.content).toContain('handle_path /dist/*');
-  expect(result.content).toContain('reverse_proxy 127.0.0.1:13000');
-});
-
-test('buildEnvProxyConfig renders explicit Caddy redir targets when app public path is not root', async () => {
-  const root = await createTempRoot('nocobase-cli-env-proxy-caddy-public-path-');
-  const appPath = path.join(root, 'app');
-  const projectRoot = path.join(appPath, 'source');
-  const storagePath = path.join(root, 'storage');
-  await mkdir(projectRoot, { recursive: true });
-  await mkdir(storagePath, { recursive: true });
-
-  const runtime = {
-    kind: 'local',
-    envName: 'demo',
-    source: 'npm',
-    projectRoot,
-    env: {
-      config: {
-        appPath,
-        appPublicPath: '/nocobase/',
-        storagePath,
-        appPort: '13000',
-      },
-      appPort: '13000',
-      storagePath,
-      runtime: {
-        version: '2.1.0-beta.44',
-      },
-    },
-  } as unknown as Extract<ManagedAppRuntime, { kind: 'local' }>;
-
-  const result = await buildEnvProxyConfig(runtime, { provider: 'caddy' });
-
-  expect(result.content).toContain('redir * /nocobase/ 302');
-  expect(result.content).toContain('redir * /nocobase/v/ 302');
-  expect(result.content).toContain('redir * /nocobase{uri} 302');
-});
-
-test('resolveEnvProxyProvider falls back to the configured or default provider', async () => {
-  const root = await createTempRoot('nocobase-cli-env-proxy-provider-');
+test('env proxy path helpers resolve the caddy entry, shared config, and index files', async () => {
+  const root = await createTempRoot('nocobase-cli-env-proxy-caddy-paths-');
   process.env.NB_CLI_ROOT = root;
+  await setCliConfigValue('proxy.nb-cli-root', '/workspace', { scope: 'global' });
 
-  expect(await resolveEnvProxyProvider(undefined)).toBe('nginx');
-
-  await setCliConfigValue('proxy.provider', 'caddy', { scope: 'global' });
-  expect(await resolveEnvProxyProvider(undefined)).toBe('caddy');
-  expect(await resolveEnvProxyProvider('nginx')).toBe('nginx');
-  expect(await resolveEnvProxyProvider('caddy')).toBe('caddy');
+  expect(resolveEnvProxyEntryDir('staging', { provider: 'caddy' })).toBe(
+    path.join(root, '.nocobase', 'proxy', 'caddy', 'staging'),
+  );
+  expect(resolveEnvProxyAppOutputPath('staging', { provider: 'caddy' })).toBe(
+    path.join(root, '.nocobase', 'proxy', 'caddy', 'staging', 'app.caddy'),
+  );
+  expect(resolveEnvProxyMainOutputPath({ provider: 'caddy' })).toBe(
+    path.join(root, '.nocobase', 'proxy', 'caddy', 'nocobase.caddy'),
+  );
+  expect(resolveEnvProxyCaddyPublicOutputDir('staging')).toBe(
+    path.join(root, '.nocobase', 'proxy', 'caddy', 'staging', 'public'),
+  );
+  expect(resolveEnvProxyCaddyIndexOutputPath('staging', 'v1')).toBe(
+    path.join(root, '.nocobase', 'proxy', 'caddy', 'staging', 'public', 'index-v1.html'),
+  );
+  expect(
+    await mapProxyPathFromCliRoot(resolveEnvProxyAppOutputPath('staging', { provider: 'caddy' }), { scope: 'global' }),
+  ).toBe('/workspace/.nocobase/proxy/caddy/staging/app.caddy');
 });
 
 test('parseNginxConfPathFromVersionOutput extracts the configured nginx.conf path', async () => {

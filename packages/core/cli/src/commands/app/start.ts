@@ -137,9 +137,10 @@ async function resolveDefaultLocalCdnBaseUrl(
   }
 
   const explicitProcessCdnBaseUrl = String(process.env.CDN_BASE_URL ?? '').trim();
+  const explicitSavedCdnBaseUrl = String(runtime.env.envVars.CDN_BASE_URL ?? '').trim();
   const explicitEnvFileCdnBaseUrl = String(envValues.CDN_BASE_URL ?? '').trim();
 
-  if (explicitProcessCdnBaseUrl || explicitEnvFileCdnBaseUrl) {
+  if (explicitProcessCdnBaseUrl || explicitSavedCdnBaseUrl || explicitEnvFileCdnBaseUrl) {
     return undefined;
   }
 

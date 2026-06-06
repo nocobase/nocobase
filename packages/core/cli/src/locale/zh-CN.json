@@ -123,6 +123,11 @@
         "saved": "已将 env \"{{envName}}\" 的生成代理配置保存到 {{outputPath}}。",
         "savedWithAppEntryCreated": "已将 env \"{{envName}}\" 的生成代理配置保存到 {{outputPath}}，并创建可编辑的入口配置 {{appConfigPath}}。",
         "savedWithAppEntryMigrated": "已将 env \"{{envName}}\" 的生成代理配置保存到 {{outputPath}}，并将入口配置迁移为 {{appConfigPath}}。",
+        "savedNginxBundleCreated": "已将 env \"{{envName}}\" 的 nginx 代理文件保存到 {{entryDir}}，并创建可编辑的入口配置 {{appConfigPath}}。",
+        "savedNginxBundleUpdated": "已将 env \"{{envName}}\" 的 nginx 代理文件保存到 {{entryDir}}，并刷新可编辑的入口配置 {{appConfigPath}}。",
+        "savedCaddyBundleCreated": "已将 env \"{{envName}}\" 的 caddy 代理文件保存到 {{entryDir}}，并创建可编辑的入口配置 {{appConfigPath}}。",
+        "savedCaddyBundleMigrated": "已将 env \"{{envName}}\" 的 caddy 代理文件保存到 {{entryDir}}，并将入口配置迁移为 {{appConfigPath}}。",
+        "savedCaddyBundleUpdated": "已将 env \"{{envName}}\" 的 caddy 代理文件保存到 {{entryDir}}，并刷新可编辑的入口配置 {{appConfigPath}}。",
         "failed": "为 env \"{{envName}}\" 生成代理配置失败。",
         "installingProvider": "正在将共享代理配置安装到 {{provider}}...",
         "providerInstalled": "已将共享代理配置安装到 {{provider}} 主配置 {{configPath}}。",
@@ -138,7 +143,10 @@
         "invalidProxyPort": "代理入口端口 \"{{port}}\" 无效。请使用 1 到 65535 之间的整数。",
         "missingAppPort": "env \"{{envName}}\" 缺少 appPort。请先保存或更新应用端口后再生成代理配置。",
         "missingVersion": "无法确定 env \"{{envName}}\" 的应用版本。请先运行 `nb env update {{envName}}`，然后再试一次。",
-        "appEntryMissingInclude": "可编辑入口配置 {{appConfigPath}} 没有引用 {{generatedConfigPath}}。请把托管的 generated 配置引用补回入口配置中，或先替换旧的托管路由后再重新执行该命令。"
+        "appEntryMissingInclude": "可编辑入口配置 {{appConfigPath}} 没有引用 {{generatedConfigPath}}。请把托管的 generated 配置引用补回入口配置中，然后重新执行该命令。",
+        "nginxOutputUnsupported": "nginx provider 不支持 `--output`。它会把 `app.conf`、`public/index-v1.html`、`public/index-v2.html` 和 `nocobase.conf` 写入 `~/.nocobase/proxy/nginx/<env>/`。",
+        "caddyOutputUnsupported": "caddy provider 不支持 `--output`。它会把 `app.caddy`、`generated.caddy`、`public/index-v1.html`、`public/index-v2.html` 和 `nocobase.caddy` 写入 `~/.nocobase/proxy/caddy/<env>/`。",
+        "nginxAppEntryMissingManagedBlock": "可编辑的 nginx 入口配置 {{appConfigPath}} 不包含 NocoBase 的托管区块。请恢复这个托管区块，或删除该文件后重新执行 `nb env proxy`。"
       }
     },
     "shared": {

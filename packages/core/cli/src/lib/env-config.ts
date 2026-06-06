@@ -21,6 +21,7 @@ const STRING_ENV_CONFIG_KEYS = [
   'appRootPath',
   'storagePath',
   'appPublicPath',
+  'cdnBaseUrl',
   'envFile',
   'appPort',
   'appKey',

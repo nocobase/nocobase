@@ -123,6 +123,11 @@
         "saved": "Saved generated proxy config for env \"{{envName}}\" at {{outputPath}}.",
         "savedWithAppEntryCreated": "Saved generated proxy config for env \"{{envName}}\" at {{outputPath}}, and created editable app entry config at {{appConfigPath}}.",
         "savedWithAppEntryMigrated": "Saved generated proxy config for env \"{{envName}}\" at {{outputPath}}, and migrated the app entry config at {{appConfigPath}}.",
+        "savedNginxBundleCreated": "Saved nginx proxy files for env \"{{envName}}\" under {{entryDir}}, and created editable app entry config at {{appConfigPath}}.",
+        "savedNginxBundleUpdated": "Saved nginx proxy files for env \"{{envName}}\" under {{entryDir}}, and refreshed editable app entry config at {{appConfigPath}}.",
+        "savedCaddyBundleCreated": "Saved caddy proxy files for env \"{{envName}}\" under {{entryDir}}, and created editable app entry config at {{appConfigPath}}.",
+        "savedCaddyBundleMigrated": "Saved caddy proxy files for env \"{{envName}}\" under {{entryDir}}, and migrated the app entry config at {{appConfigPath}}.",
+        "savedCaddyBundleUpdated": "Saved caddy proxy files for env \"{{envName}}\" under {{entryDir}}, and refreshed editable app entry config at {{appConfigPath}}.",
         "failed": "Failed to generate proxy config for env \"{{envName}}\".",
         "installingProvider": "Installing the shared proxy config into {{provider}}...",
         "providerInstalled": "Installed the shared proxy config into the {{provider}} main config at {{configPath}}.",
@@ -138,7 +143,10 @@
         "invalidProxyPort": "Invalid proxy entry port \"{{port}}\". Use an integer between 1 and 65535.",
         "missingAppPort": "Missing appPort for env \"{{envName}}\". Save or update the app port before generating proxy config.",
         "missingVersion": "Couldn't determine the app version for env \"{{envName}}\". Run `nb env update {{envName}}` and try again.",
-        "appEntryMissingInclude": "The editable app entry config at {{appConfigPath}} does not reference {{generatedConfigPath}}. Add the managed generated-config reference back into the editable app entry, or replace the legacy managed routes and rerun the command."
+        "appEntryMissingInclude": "The editable app entry config at {{appConfigPath}} does not reference {{generatedConfigPath}}. Add the managed generated-config reference back into the editable app entry and rerun the command.",
+        "nginxOutputUnsupported": "The nginx provider does not support `--output`. It writes `app.conf`, `public/index-v1.html`, `public/index-v2.html`, and `nocobase.conf` into `~/.nocobase/proxy/nginx/<env>/`.",
+        "caddyOutputUnsupported": "The caddy provider does not support `--output`. It writes `app.caddy`, `generated.caddy`, `public/index-v1.html`, `public/index-v2.html`, and `nocobase.caddy` into `~/.nocobase/proxy/caddy/<env>/`.",
+        "nginxAppEntryMissingManagedBlock": "The editable nginx app entry config at {{appConfigPath}} does not contain the NocoBase managed block. Restore the managed block or delete the file and rerun `nb env proxy`."
       }
     },
     "shared": {

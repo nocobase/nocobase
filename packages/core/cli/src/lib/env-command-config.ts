@@ -18,6 +18,7 @@ export const ENV_STRING_CONFIG_FLAG_MAP = {
   'app-root-path': 'appRootPath',
   'storage-path': 'storagePath',
   'app-public-path': 'appPublicPath',
+  'cdn-base-url': 'cdnBaseUrl',
   'env-file': 'envFile',
   'app-port': 'appPort',
   'app-key': 'appKey',

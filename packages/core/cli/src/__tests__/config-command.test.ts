@@ -214,7 +214,7 @@ test('nb config set/get/delete supports binary override keys', async () => {
   });
 });
 
-test('nb config set/get/delete supports caddy/nginx binaries and proxy provider settings', async () => {
+test('nb config set/get/delete supports caddy/nginx binaries and proxy path settings', async () => {
   await withTempCliHome(async () => {
     const { default: ConfigSet } = await import('../commands/config/set.js');
     const { default: ConfigGet } = await import('../commands/config/get.js');
@@ -243,18 +243,6 @@ test('nb config set/get/delete supports caddy/nginx binaries and proxy provider 
     });
     await ConfigSet.prototype.run.call(setNginxCommand);
     expect(setNginxCommand.log).toHaveBeenCalledWith('bin.nginx=/usr/sbin/nginx');
-
-    const setProviderCommand = Object.assign(Object.create(ConfigSet.prototype), {
-      parse: vi.fn(async () => ({
-        args: {
-          key: 'proxy.provider',
-          value: 'caddy',
-        },
-      })),
-      log: vi.fn(),
-    });
-    await ConfigSet.prototype.run.call(setProviderCommand);
-    expect(setProviderCommand.log).toHaveBeenCalledWith('proxy.provider=caddy');
 
     const setProxyRootCommand = Object.assign(Object.create(ConfigSet.prototype), {
       parse: vi.fn(async () => ({
@@ -302,17 +290,6 @@ test('nb config set/get/delete supports caddy/nginx binaries and proxy provider 
     await ConfigGet.prototype.run.call(getNginxCommand);
     expect(getNginxCommand.log).toHaveBeenCalledWith('/usr/sbin/nginx');
 
-    const getProviderCommand = Object.assign(Object.create(ConfigGet.prototype), {
-      parse: vi.fn(async () => ({
-        args: {
-          key: 'proxy.provider',
-        },
-      })),
-      log: vi.fn(),
-    });
-    await ConfigGet.prototype.run.call(getProviderCommand);
-    expect(getProviderCommand.log).toHaveBeenCalledWith('caddy');
-
     const getProxyRootCommand = Object.assign(Object.create(ConfigGet.prototype), {
       parse: vi.fn(async () => ({
         args: {
@@ -357,17 +334,6 @@ test('nb config set/get/delete supports caddy/nginx binaries and proxy provider 
     await ConfigDelete.prototype.run.call(deleteNginxCommand);
     expect(deleteNginxCommand.log).toHaveBeenCalledWith('Deleted bin.nginx');
 
-    const deleteProviderCommand = Object.assign(Object.create(ConfigDelete.prototype), {
-      parse: vi.fn(async () => ({
-        args: {
-          key: 'proxy.provider',
-        },
-      })),
-      log: vi.fn(),
-    });
-    await ConfigDelete.prototype.run.call(deleteProviderCommand);
-    expect(deleteProviderCommand.log).toHaveBeenCalledWith('Deleted proxy.provider');
-
     const deleteProxyRootCommand = Object.assign(Object.create(ConfigDelete.prototype), {
       parse: vi.fn(async () => ({
         args: {
@@ -393,7 +359,6 @@ test('nb config set/get/delete supports caddy/nginx binaries and proxy provider 
     const config = await loadAuthConfig({ scope: 'global' });
     expect(config.settings?.bin?.caddy).toBe(undefined);
     expect(config.settings?.bin?.nginx).toBe(undefined);
-    expect(config.settings?.proxy?.provider).toBe(undefined);
     expect(config.settings?.proxy?.nbCliRoot).toBe(undefined);
     expect(config.settings?.proxy?.upstreamHost).toBe(undefined);
   });
@@ -422,5 +387,24 @@ test('nb config list prints only explicit settings', async () => {
     await ConfigList.prototype.run.call(listCommand);
     expect(String(listCommand.log.mock.calls[0]?.[0] ?? '')).toContain('license.pkg-url');
     expect(String(listCommand.log.mock.calls[0]?.[0] ?? '')).toContain('https://pkg.example.com/');
+  });
+});
+
+test('nb config rejects the removed proxy.provider key', async () => {
+  await withTempCliHome(async () => {
+    const { default: ConfigSet } = await import('../commands/config/set.js');
+
+    const command = Object.assign(Object.create(ConfigSet.prototype), {
+      parse: vi.fn(async () => ({
+        args: {
+          key: 'proxy.provider',
+          value: 'nginx',
+        },
+      })),
+    });
+
+    await expect(ConfigSet.prototype.run.call(command)).rejects.toThrow(
+      'Unsupported config key "proxy.provider".',
+    );
   });
 });

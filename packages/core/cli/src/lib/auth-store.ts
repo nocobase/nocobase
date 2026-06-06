@@ -77,6 +77,8 @@ export interface EnvConfigEntry {
   storagePath?: string;
   /** Application public path (APP_PUBLIC_PATH). */
   appPublicPath?: string;
+  /** Client asset CDN base URL (CDN_BASE_URL). */
+  cdnBaseUrl?: string;
   /** Optional internal env file path. Defaults to <app-path>/.env, or <envName>/.env for legacy Docker-only layouts. */
   envFile?: string;
   /** Application HTTP port (APP_PORT). */
@@ -135,7 +137,6 @@ export interface AuthConfig {
       yarn?: string;
     };
     proxy?: {
-      provider?: 'nginx' | 'caddy';
       nbCliRoot?: string;
       upstreamHost?: string;
     };
@@ -282,16 +283,11 @@ function normalizeAuthConfig(config: AuthConfig & { dockerResourcePrefix?: strin
             },
           }
         : {}),
-      ...(settings.proxy?.provider === 'nginx' ||
-      settings.proxy?.provider === 'caddy' ||
-      settings.proxy?.nbCliRoot ||
+      ...(settings.proxy?.nbCliRoot ||
       settings.proxy?.upstreamHost ||
       (settings.proxy as { host?: unknown } | undefined)?.host
         ? {
             proxy: {
-              ...(settings.proxy?.provider === 'nginx' || settings.proxy?.provider === 'caddy'
-                ? { provider: settings.proxy.provider }
-                : {}),
               ...(settings.proxy?.nbCliRoot ? { nbCliRoot: normalizeOptionalString(settings.proxy.nbCliRoot) } : {}),
               ...(settings.proxy?.upstreamHost || (settings.proxy as { host?: unknown } | undefined)?.host
                 ? {
@@ -474,6 +470,7 @@ export class Env {
     };
     put('APP_PORT', this.appPort);
     put('APP_PUBLIC_PATH', this.config.appPublicPath ? resolveAppPublicPath(this.config.appPublicPath) : undefined);
+    put('CDN_BASE_URL', this.config.cdnBaseUrl);
     put('APP_KEY', this.config.appKey);
     put('TZ', this.config.timezone);
     put('DB_DIALECT', this.config.dbDialect);

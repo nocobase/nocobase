@@ -38,7 +38,6 @@ export const SUPPORTED_CLI_CONFIG_KEYS = [
   'bin.caddy',
   'bin.git',
   'bin.nginx',
-  'proxy.provider',
   'proxy.nb-cli-root',
   'proxy.upstream-host',
   'bin.yarn',
@@ -132,7 +131,7 @@ function pruneSettings(config: AuthConfig): void {
   }
 
   const proxy = config.settings?.proxy;
-  if (proxy && !normalizeProxyProvider(proxy.provider) && !trimValue(proxy.nbCliRoot) && !trimValue(proxy.upstreamHost)) {
+  if (proxy && !trimValue(proxy.nbCliRoot) && !trimValue(proxy.upstreamHost)) {
     delete config.settings?.proxy;
   }
 
@@ -169,8 +168,6 @@ export function getExplicitCliConfigValue(config: AuthConfig, key: SupportedCliC
       return trimValue(config.settings?.bin?.git);
     case 'bin.nginx':
       return trimValue(config.settings?.bin?.nginx);
-    case 'proxy.provider':
-      return normalizeProxyProvider(config.settings?.proxy?.provider);
     case 'proxy.nb-cli-root':
       return trimValue(config.settings?.proxy?.nbCliRoot);
     case 'proxy.upstream-host':
@@ -205,8 +202,6 @@ export function getEffectiveCliConfigValue(config: AuthConfig, key: SupportedCli
       return DEFAULT_GIT_BIN;
     case 'bin.nginx':
       return DEFAULT_NGINX_BIN;
-    case 'proxy.provider':
-      return explicit ?? DEFAULT_PROXY_PROVIDER;
     case 'proxy.nb-cli-root':
       return explicit ?? resolveCliHomeRoot();
     case 'proxy.upstream-host':
@@ -242,15 +237,6 @@ export function normalizeCliConfigValue(key: SupportedCliConfigKey, value: strin
     }
 
     return policy;
-  }
-
-  if (key === 'proxy.provider') {
-    const provider = normalizeProxyProvider(normalized);
-    if (!provider) {
-      throw new Error(`Config key "${key}" must be one of: ${PROXY_PROVIDER_OPTIONS.join(', ')}`);
-    }
-
-    return provider;
   }
 
   return normalized;
@@ -343,12 +329,6 @@ export async function setCliConfigValue(
         nginx: normalized,
       };
       break;
-    case 'proxy.provider':
-      config.settings.proxy = {
-        ...(config.settings.proxy ?? {}),
-        provider: normalized as ProxyProvider,
-      };
-      break;
     case 'proxy.nb-cli-root':
       config.settings.proxy = {
         ...(config.settings.proxy ?? {}),
@@ -429,11 +409,6 @@ export async function deleteCliConfigValue(
     case 'bin.nginx':
       if (config.settings.bin) {
         delete config.settings.bin.nginx;
-      }
-      break;
-    case 'proxy.provider':
-      if (config.settings.proxy) {
-        delete config.settings.proxy.provider;
       }
       break;
     case 'proxy.nb-cli-root':

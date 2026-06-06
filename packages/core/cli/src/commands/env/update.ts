@@ -30,6 +30,7 @@ const UPDATE_STRING_FLAGS = [
   'app-root-path',
   'storage-path',
   'app-public-path',
+  'cdn-base-url',
   'env-file',
   'app-port',
   'app-key',
@@ -113,6 +114,7 @@ type EnvUpdateParsedFlags = {
   'app-root-path'?: string;
   'storage-path'?: string;
   'app-public-path'?: string;
+  'cdn-base-url'?: string;
   'env-file'?: string;
   'app-port'?: string;
   'app-key'?: string;
@@ -230,6 +232,7 @@ export default class EnvUpdate extends Command {
     '<%= config.bin %> <%= command.id %> prod',
     '<%= config.bin %> <%= command.id %> prod --api-base-url http://localhost:13000/api --access-token <token>',
     '<%= config.bin %> <%= command.id %> local --app-port 13080 --timezone Asia/Shanghai',
+    '<%= config.bin %> <%= command.id %> local --cdn-base-url https://cdn.example.com/nocobase/',
     '<%= config.bin %> <%= command.id %> local --unset git-url --unset npm-registry',
   ];
 
@@ -298,13 +301,18 @@ export default class EnvUpdate extends Command {
       description: 'Saved app path for this env',
     }),
     'app-root-path': Flags.string({
+      hidden: true,
       description: 'Saved application root path for this env',
     }),
     'storage-path': Flags.string({
+      hidden: true,
       description: 'Saved storage path for this env',
     }),
     'app-public-path': Flags.string({
       description: 'Saved application public path for this env',
+    }),
+    'cdn-base-url': Flags.string({
+      description: 'Saved client asset CDN base URL (CDN_BASE_URL) for this env',
     }),
     'env-file': Flags.string({
       hidden: true,

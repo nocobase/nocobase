@@ -71,6 +71,8 @@ test('env update keeps env-file hidden from the public flag list', async () => {
   const { default: EnvUpdate } = await import('../commands/env/update.js');
 
   expect(EnvUpdate.flags['env-file'].hidden).toBe(true);
+  expect(EnvUpdate.flags['app-root-path'].hidden).toBe(true);
+  expect(EnvUpdate.flags['storage-path'].hidden).toBe(true);
 });
 
 test('env update refreshes runtime when no config flags are provided', async () => {
@@ -168,6 +170,36 @@ test('env update normalizes app-public-path in saved env config', async () => {
     }),
     { scope: 'global' },
   );
+});
+
+test('env update saves cdn-base-url in saved env config', async () => {
+  const { default: EnvUpdate } = await import('../commands/env/update.js');
+  mocks.getEnv.mockResolvedValue(createEnv());
+  mocks.replaceEnvConfig.mockResolvedValue(undefined);
+
+  const command = Object.assign(Object.create(EnvUpdate.prototype), {
+    parse: vi.fn(async () => ({
+      args: { name: 'local' },
+      flags: {
+        verbose: false,
+        'cdn-base-url': 'https://cdn.example.com/ui/',
+      },
+    })),
+    error: (message: string) => {
+      throw new Error(message);
+    },
+  });
+
+  await EnvUpdate.prototype.run.call(command);
+
+  expect(mocks.replaceEnvConfig).toHaveBeenCalledWith(
+    'local',
+    expect.objectContaining({
+      cdnBaseUrl: 'https://cdn.example.com/ui/',
+    }),
+    { scope: 'global' },
+  );
+  expect(mocks.updateEnvRuntime).not.toHaveBeenCalled();
 });
 
 test('env update refreshes runtime after saving a new api base url', async () => {

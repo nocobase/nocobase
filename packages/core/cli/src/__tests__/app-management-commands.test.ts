@@ -806,6 +806,46 @@ test('start injects a default CDN_BASE_URL from dist-client active-version when 
   });
 });
 
+test('start does not inject a default CDN_BASE_URL when the env already saves one', async () => {
+  const { default: Start } = await import('../commands/app/start.js');
+  mocks.resolveManagedAppRuntime.mockResolvedValue({
+    kind: 'local',
+    envName: 'local',
+    source: 'npm',
+    projectRoot: '/tmp/nocobase',
+    env: {
+      appPort: 13000,
+      storagePath: '/tmp/nocobase/storage',
+      envVars: {
+        APP_PORT: '13000',
+        CDN_BASE_URL: 'https://cdn.example.com/ui/',
+      },
+      config: {
+        appPublicPath: '/console/',
+        cdnBaseUrl: 'https://cdn.example.com/ui/',
+      },
+    },
+  });
+  mocks.readManagedRuntimeEnvValues.mockResolvedValue({
+    envFilePath: '/tmp/nocobase/.env',
+    envValues: {},
+  });
+  mocks.readDistClientActiveVersion.mockResolvedValue('2.1.0-beta.44');
+
+  const command = createCommandHarness({
+    flags: {
+      env: 'local',
+    },
+  });
+
+  await Start.prototype.run.call(command);
+
+  expect(mocks.runLocalNocoBaseCommand.mock.calls[2]?.[2]).toEqual({
+    env: MANAGED_APP_PRODUCTION_ENV,
+    stdio: 'ignore',
+  });
+});
+
 test('start restores the built-in database before launching the app', async () => {
   const { default: Start } = await import('../commands/app/start.js');
   mocks.resolveManagedAppRuntime.mockResolvedValue({

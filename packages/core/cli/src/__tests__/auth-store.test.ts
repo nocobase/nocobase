@@ -292,18 +292,15 @@ test('cli config stores explicit binary overrides under settings', async () => {
   });
 });
 
-test('cli config stores the explicit proxy provider under settings', async () => {
+test('cli config stores explicit proxy path settings under settings', async () => {
   await withTempCliHome(async () => {
-    const provider = await setCliConfigValue('proxy.provider', 'caddy', { scope: 'global' });
     const nbCliRoot = await setCliConfigValue('proxy.nb-cli-root', '/workspace', { scope: 'global' });
     const host = await setCliConfigValue('proxy.upstream-host', 'host.docker.internal', { scope: 'global' });
     const config = await loadAuthConfig({ scope: 'global' });
 
-    expect(provider).toBe('caddy');
     expect(nbCliRoot).toBe('/workspace');
     expect(host).toBe('host.docker.internal');
     expect(config.settings?.proxy).toEqual({
-      provider: 'caddy',
       nbCliRoot: '/workspace',
       upstreamHost: 'host.docker.internal',
     });
@@ -349,7 +346,6 @@ test('cli config list and delete only affect explicit settings', async () => {
     await setCliConfigValue('docker.network', 'nocobase-team', { scope: 'global' });
     await setCliConfigValue('bin.docker', '/usr/local/bin/docker', { scope: 'global' });
     await setCliConfigValue('bin.caddy', '/usr/bin/caddy', { scope: 'global' });
-    await setCliConfigValue('proxy.provider', 'caddy', { scope: 'global' });
     await setCliConfigValue('proxy.nb-cli-root', '/workspace', { scope: 'global' });
     await setCliConfigValue('proxy.upstream-host', 'host.docker.internal', { scope: 'global' });
 
@@ -359,7 +355,6 @@ test('cli config list and delete only affect explicit settings', async () => {
       'docker.network': 'nocobase-team',
       'bin.docker': '/usr/local/bin/docker',
       'bin.caddy': '/usr/bin/caddy',
-      'proxy.provider': 'caddy',
       'proxy.nb-cli-root': '/workspace',
       'proxy.upstream-host': 'host.docker.internal',
     });
@@ -369,7 +364,6 @@ test('cli config list and delete only affect explicit settings', async () => {
     expect(await deleteCliConfigValue('docker.network', { scope: 'global' })).toBe(true);
     expect(await deleteCliConfigValue('bin.docker', { scope: 'global' })).toBe(true);
     expect(await deleteCliConfigValue('bin.caddy', { scope: 'global' })).toBe(true);
-    expect(await deleteCliConfigValue('proxy.provider', { scope: 'global' })).toBe(true);
     expect(await deleteCliConfigValue('proxy.nb-cli-root', { scope: 'global' })).toBe(true);
     expect(await deleteCliConfigValue('proxy.upstream-host', { scope: 'global' })).toBe(true);
     expect(await listExplicitCliConfigValues({ scope: 'global' })).toEqual({
@@ -388,9 +382,8 @@ test('cli config returns default binary names when bin overrides are not configu
   });
 });
 
-test('cli config returns nginx as the default proxy provider', async () => {
+test('cli config returns default proxy path settings', async () => {
   await withTempCliHome(async () => {
-    expect(await getCliConfigValue('proxy.provider', { scope: 'global' })).toBe('nginx');
     expect(await getCliConfigValue('proxy.nb-cli-root', { scope: 'global' })).toBe(resolveCliHomeRoot());
     expect(await getCliConfigValue('proxy.upstream-host', { scope: 'global' })).toBe('127.0.0.1');
   });

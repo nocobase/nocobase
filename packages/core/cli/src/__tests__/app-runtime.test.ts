@@ -188,6 +188,7 @@ test('resolveManagedAppRuntime exposes saved db schema env vars for local envs',
             source: 'git',
             appRootPath: './apps/local-env',
             storagePath: './storage/local-env',
+            cdnBaseUrl: 'https://cdn.example.com/ui/',
             dbSchema: 'test',
             dbTablePrefix: 'nb_',
             dbUnderscored: true,
@@ -199,6 +200,7 @@ test('resolveManagedAppRuntime exposes saved db schema env vars for local envs',
 
     const runtime = await resolveManagedAppRuntime('local-env');
     expect(runtime?.kind).toBe('local');
+    expect(runtime?.env.envVars.CDN_BASE_URL).toBe('https://cdn.example.com/ui/');
     expect(runtime?.env.envVars.DB_SCHEMA).toBe('test');
     expect(runtime?.env.envVars.DB_TABLE_PREFIX).toBe('nb_');
     expect(runtime?.env.envVars.DB_UNDERSCORED).toBe('true');
