@@ -8,7 +8,7 @@
  */
 
 import { MockServer } from '@nocobase/test';
-import Database from '@nocobase/database';
+import Database, { Transaction } from '@nocobase/database';
 import { getApp, sleep } from '@nocobase/plugin-workflow-test';
 
 import Plugin, { Processor } from '..';
@@ -31,6 +31,38 @@ describe('workflow > Plugin', () => {
   });
 
   afterEach(() => app.destroy());
+
+  describe('useDataSourceTransaction', () => {
+    it('create should reuse the incoming same-datasource transaction', async () => {
+      const sourceTransaction = await db.sequelize.transaction();
+      try {
+        const transaction = await plugin.useDataSourceTransaction('main', sourceTransaction, true);
+
+        expect(transaction).toBe(sourceTransaction);
+      } finally {
+        await sourceTransaction.rollback();
+      }
+    });
+
+    it.skipIf(process.env['DB_DIALECT'] === 'sqlite')(
+      'create with null transaction should open a transaction isolated from the incoming same-datasource transaction',
+      async () => {
+        const sourceTransaction = await db.sequelize.transaction();
+        let historyTransaction: Transaction | undefined;
+        try {
+          historyTransaction = await plugin.useDataSourceTransaction('main', null, true);
+
+          expect(historyTransaction).toBeDefined();
+          expect(historyTransaction).not.toBe(sourceTransaction);
+        } finally {
+          if (historyTransaction) {
+            await historyTransaction.rollback();
+          }
+          await sourceTransaction.rollback();
+        }
+      },
+    );
+  });
 
   describe('create', () => {
     it('create with enabled', async () => {
@@ -286,7 +318,7 @@ describe('workflow > Plugin', () => {
       },
     );
 
-    it.only('should not acquire pending execution when acquire transaction fails', async () => {
+    it('should not acquire pending execution when acquire transaction fails', async () => {
       const w1 = await WorkflowModel.create({
         enabled: true,
         type: 'asyncTrigger',
@@ -754,6 +786,39 @@ describe('workflow > Plugin', () => {
       expect(processor.execution.id).toBe(executions[0].id);
       expect(processor.execution.status).toBe(executions[0].status);
     });
+
+    it.skipIf(process.env['DB_DIALECT'] === 'sqlite')(
+      'history should persist after the source transaction rolls back',
+      async () => {
+        const w1 = await WorkflowModel.create({
+          enabled: true,
+          type: 'syncTrigger',
+        });
+
+        await w1.createNode({
+          type: 'echo',
+        });
+
+        const transaction = await db.sequelize.transaction();
+        try {
+          await plugin.trigger(w1, {}, { transaction });
+          await transaction.rollback();
+        } catch (error) {
+          await transaction.rollback();
+          throw error;
+        }
+
+        const executions = await w1.getExecutions();
+        expect(executions.length).toBe(1);
+        expect(executions[0].status).toBe(EXECUTION_STATUS.RESOLVED);
+
+        const jobs = await executions[0].getJobs();
+        expect(jobs.length).toBe(1);
+
+        const stats = await w1.getStats();
+        expect(Number(stats.executed)).toBe(1);
+      },
+    );
   });
 
   describe('stats', () => {
