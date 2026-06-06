@@ -26,7 +26,13 @@ import type { DragEndEvent } from '@dnd-kit/core';
 import { define, observable } from '@formily/reactive';
 import { css } from '@emotion/css';
 import { BaseLayoutModel } from '@nocobase/client-v2';
-import { Icon, IconPicker, NocoBaseDesktopRouteType, type NocoBaseDesktopRoute } from '@nocobase/client-v2/flow-compat';
+import {
+  Icon,
+  IconPicker,
+  NocoBaseDesktopRouteType,
+  type NocoBaseDesktopRoute,
+  zIndexContext,
+} from '@nocobase/client-v2/flow-compat';
 import {
   DndProvider,
   DragHandler,
@@ -112,6 +118,17 @@ type MobileTabConfigurationValues = {
   icon?: string;
   href?: string;
 };
+
+const MobileAddTabIconPicker = React.forwardRef<HTMLDivElement, React.ComponentProps<typeof IconPicker>>(
+  (props, ref) => (
+    <div ref={ref}>
+      <IconPicker {...props} />
+    </div>
+  ),
+);
+
+MobileAddTabIconPicker.displayName = 'MobileAddTabIconPicker';
+
 type FormValidationError = {
   errorFields?: Array<{
     errors?: unknown[];
@@ -905,6 +922,7 @@ const MobileHomePlaceholder = observer(
     const [addTabForm] = Form.useForm<MobileTabConfigurationValues>();
     const customToken = token as typeof token & MobileLayoutThemeToken;
     const colorSettings = customToken.colorSettings || 'var(--colorSettings, #F18B62)';
+    const addTabModalZIndex = token.zIndexPopupBase;
     const [accessibleDesktopRoutes, setAccessibleDesktopRoutes] = useState<NocoBaseDesktopRoute[]>(
       () => model.flowEngine.context.routeRepository?.listAccessible?.() || [],
     );
@@ -1460,51 +1478,54 @@ const MobileHomePlaceholder = observer(
           open={!!configuringTabType}
           okText={t('Submit')}
           cancelText={t('Cancel')}
+          zIndex={addTabModalZIndex}
           onOk={handleAddTabModalSubmit}
           onCancel={handleAddTabModalCancel}
         >
-          <Form<MobileTabConfigurationValues> form={addTabForm} layout="vertical" requiredMark={false}>
-            <Form.Item
-              name="title"
-              label={t('Title')}
-              rules={[
-                {
-                  required: true,
-                  whitespace: true,
-                  message: t('Title field is required'),
-                },
-              ]}
-            >
-              <Input autoFocus />
-            </Form.Item>
-            {configuringTabType === 'link' ? (
+          <zIndexContext.Provider value={addTabModalZIndex}>
+            <Form<MobileTabConfigurationValues> form={addTabForm} layout="vertical" requiredMark={false}>
               <Form.Item
-                name="href"
-                label={t('URL')}
+                name="title"
+                label={t('Title')}
                 rules={[
                   {
                     required: true,
                     whitespace: true,
-                    message: t('URL field is required'),
+                    message: t('Title field is required'),
                   },
                 ]}
               >
-                <Input />
+                <Input autoFocus />
               </Form.Item>
-            ) : null}
-            <Form.Item
-              name="icon"
-              label={t('Icon')}
-              rules={[
-                {
-                  required: true,
-                  message: t('Icon field is required'),
-                },
-              ]}
-            >
-              <IconPicker />
-            </Form.Item>
-          </Form>
+              {configuringTabType === 'link' ? (
+                <Form.Item
+                  name="href"
+                  label={t('URL')}
+                  rules={[
+                    {
+                      required: true,
+                      whitespace: true,
+                      message: t('URL field is required'),
+                    },
+                  ]}
+                >
+                  <Input />
+                </Form.Item>
+              ) : null}
+              <Form.Item
+                name="icon"
+                label={t('Icon')}
+                rules={[
+                  {
+                    required: true,
+                    message: t('Icon field is required'),
+                  },
+                ]}
+              >
+                <MobileAddTabIconPicker />
+              </Form.Item>
+            </Form>
+          </zIndexContext.Provider>
         </Modal>
       </div>
     );

@@ -959,6 +959,47 @@ describe('plugin-ui-layout mobile models', () => {
     });
   });
 
+  it('should render the add tab icon picker above the mobile tab modal', async () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    window.localStorage.setItem(FLOW_SETTINGS_PREFERENCE_STORAGE_KEY, '1');
+
+    try {
+      renderMobileLayoutWithRouteRepository({
+        listAccessible: () => [
+          {
+            id: 1,
+            type: NocoBaseDesktopRouteType.flowPage,
+            title: 'Home',
+            schemaUid: 'home-page',
+          },
+        ],
+      });
+
+      await waitFor(() => {
+        expect(screen.getByRole('button', { name: /Home/ })).toBeInTheDocument();
+      });
+
+      fireEvent.click(screen.getByRole('button', { name: 'Add mobile tab' }));
+      fireEvent.click(await screen.findByText('Page'));
+      expect(await screen.findByText('Add page')).toBeInTheDocument();
+
+      fireEvent.click(screen.getByRole('button', { name: 'Select icon' }));
+
+      await waitFor(() => {
+        const popover = document.querySelector('.ant-popover') as HTMLElement | null;
+
+        expect(popover).toBeInTheDocument();
+        expect(Number(popover?.style.zIndex)).toBeGreaterThan(1000);
+      });
+      expect(
+        consoleError.mock.calls.some((call) => call.join(' ').includes('Function components cannot be given refs')),
+      ).toBe(false);
+    } finally {
+      consoleError.mockRestore();
+    }
+  });
+
   it('should create persisted route values for mobile pages and links', () => {
     const pageValues = createMobileDesktopRouteCreationValues('page', {
       icon: 'HomeOutlined',
