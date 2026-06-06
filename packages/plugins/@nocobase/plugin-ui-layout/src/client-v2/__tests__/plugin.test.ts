@@ -44,6 +44,7 @@ describe('PluginUiLayoutClientV2', () => {
       },
       flowEngine: {
         registerModelLoaders: vi.fn(),
+        registerActions: vi.fn(),
       },
     };
     const plugin = new PluginUiLayoutClientV2({} as Record<string, never>, app as unknown as Application);
@@ -74,6 +75,12 @@ describe('PluginUiLayoutClientV2', () => {
       MobileChildPageModel: {
         loader: expect.any(Function),
       },
+    });
+    expect(app.flowEngine.registerActions).toHaveBeenCalledWith({
+      openView: expect.objectContaining({
+        name: 'openView',
+        handler: expect.any(Function),
+      }),
     });
     expect(app.apiClient.request).toHaveBeenCalledWith({
       url: 'uiLayouts:list',

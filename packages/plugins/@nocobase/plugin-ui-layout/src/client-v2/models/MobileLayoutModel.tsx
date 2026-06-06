@@ -25,7 +25,7 @@ import {
 import type { DragEndEvent } from '@dnd-kit/core';
 import { define, observable } from '@formily/reactive';
 import { css } from '@emotion/css';
-import { BaseLayoutModel } from '@nocobase/client-v2';
+import { BaseLayoutModel, BaseLayoutRouteCoordinator, type RouteModel, type RoutePageMeta } from '@nocobase/client-v2';
 import {
   Icon,
   IconPicker,
@@ -165,6 +165,27 @@ export const MOBILE_TAB_FLOW_SETTINGS_OPTIONS = {
   showDynamicFlowsEditor: false,
   toolbarPosition: 'inside',
 } as const;
+
+function setMobileRootPageModel(routeModel: RouteModel, rootPageModelClass?: string) {
+  const openViewParams = routeModel.getStepParams('popupSettings', 'openView') || {};
+
+  routeModel.setStepParams('popupSettings', 'openView', {
+    mode: 'embed',
+    preventClose: true,
+    ...openViewParams,
+    pageModelClass: rootPageModelClass || 'MobileRootPageModel',
+  });
+}
+
+class MobileLayoutRouteCoordinator extends BaseLayoutRouteCoordinator {
+  registerPage(pageUid: string, meta: RoutePageMeta) {
+    const routeModel = super.registerPage(pageUid, meta);
+
+    setMobileRootPageModel(routeModel, this.layout?.rootPageModelClass);
+
+    return routeModel;
+  }
+}
 
 export function readMobileFlowSettingsPreference() {
   if (typeof window === 'undefined') {
@@ -1229,6 +1250,15 @@ const MobileHomePlaceholder = observer(
           min-height: 0;
         }
 
+        .nb-ui-layout-mobile-page-slot > div > div > [data-has-float-menu],
+        .nb-ui-layout-mobile-page-slot > div > div > [data-has-float-menu] > div {
+          flex: 1 1 0;
+          min-height: 0;
+          height: 100%;
+          display: flex;
+          flex-direction: column;
+        }
+
         .nb-ui-layout-mobile-page-slot .nb-ui-layout-mobile-surface {
           position: absolute;
           inset: 0;
@@ -1574,16 +1604,14 @@ export class MobileLayoutModel extends BaseLayoutModel<MobileLayoutMenuStructure
     this.refreshMenuRouteTree();
   }
 
+  protected createRouteCoordinator() {
+    return new MobileLayoutRouteCoordinator(this.flowEngine, this.getRouteCoordinatorOptions());
+  }
+
   registerRoutePage(pageUid: string, meta: Parameters<BaseLayoutModel['registerRoutePage']>[1]) {
     const routeModel = super.registerRoutePage(pageUid, meta);
-    const openViewParams = routeModel.getStepParams('popupSettings', 'openView') || {};
 
-    routeModel.setStepParams('popupSettings', 'openView', {
-      mode: 'embed',
-      preventClose: true,
-      ...openViewParams,
-      pageModelClass: this.layout.rootPageModelClass || 'MobileRootPageModel',
-    });
+    setMobileRootPageModel(routeModel, this.layout.rootPageModelClass);
 
     return routeModel;
   }

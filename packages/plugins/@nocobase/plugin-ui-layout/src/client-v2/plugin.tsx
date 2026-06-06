@@ -10,6 +10,8 @@
 import type { Application } from '@nocobase/client-v2';
 import { Plugin } from '@nocobase/client-v2';
 import { registerUiLayoutsFromApi } from './layoutRegistration';
+import { mobileOpenView } from './mobileOpenViewAction';
+import { registerMobilePageModelResolution } from './mobilePageModelResolution';
 
 export class PluginUiLayoutClientV2 extends Plugin<Record<string, never>, Application> {
   async load() {
@@ -29,6 +31,10 @@ export class PluginUiLayoutClientV2 extends Plugin<Record<string, never>, Applic
         loader: () => import('./models/MobilePageModels'),
       },
     });
+    this.app.flowEngine.registerActions({
+      openView: mobileOpenView,
+    });
+    registerMobilePageModelResolution();
 
     this.pluginSettingsManager.addMenuItem({
       key: 'ui-layout',

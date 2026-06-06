@@ -11,7 +11,7 @@ import { BaseLayoutModel, ChildPageModel, RootPageModel, RouteModel } from '@noc
 import { NocoBaseDesktopRouteType, type NocoBaseDesktopRoute } from '@nocobase/client-v2/flow-compat';
 import { App as AntdApp } from 'antd';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { FlowEngine, FlowEngineProvider } from '@nocobase/flow-engine';
+import { createViewScopedEngine, FlowEngine, FlowEngineProvider } from '@nocobase/flow-engine';
 import React from 'react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -33,6 +33,7 @@ import {
 } from '../models/MobileLayoutModel';
 import { collectMobileTabRoutes, getMobilePagePath, MobileLayoutMenuItemModel } from '../models/MobileMenuModels';
 import { MobileChildPageModel, MobileRootPageModel } from '../models/MobilePageModels';
+import { registerMobilePageModelResolution } from '../mobilePageModelResolution';
 
 type MobileRouteRepositoryForTest = {
   listAccessible: () => NocoBaseDesktopRoute[];
@@ -51,6 +52,8 @@ describe('plugin-ui-layout mobile models', () => {
     routeRepository: MobileRouteRepositoryForTest,
     options: {
       beforeRender?: (model: MobileLayoutModel) => void;
+      initialEntries?: string[];
+      outletElement?: React.ReactNode;
     } = {},
   ) {
     const engine = new FlowEngine();
@@ -100,14 +103,26 @@ describe('plugin-ui-layout mobile models', () => {
           null,
           React.createElement(
             MemoryRouter,
-            { initialEntries: ['/v/mobile'] },
+            { initialEntries: options.initialEntries || ['/v/mobile'] },
             React.createElement(
               Routes,
               null,
-              React.createElement(Route, {
-                path: '/v/mobile/*',
-                element: model.render(),
-              }),
+              options.outletElement
+                ? React.createElement(
+                    Route,
+                    {
+                      path: '/v/mobile',
+                      element: model.render(),
+                    },
+                    React.createElement(Route, {
+                      path: ':name',
+                      element: options.outletElement,
+                    }),
+                  )
+                : React.createElement(Route, {
+                    path: '/v/mobile/*',
+                    element: model.render(),
+                  }),
             ),
           ),
         ),
@@ -124,6 +139,238 @@ describe('plugin-ui-layout mobile models', () => {
     expect(MobileLayoutModel.prototype).toBeInstanceOf(BaseLayoutModel);
     expect(MobileRootPageModel.prototype).toBeInstanceOf(RootPageModel);
     expect(MobileChildPageModel.prototype).toBeInstanceOf(ChildPageModel);
+  });
+
+  it('should resolve persisted root and child pages to mobile page models inside mobile layouts', () => {
+    registerMobilePageModelResolution();
+
+    const engine = new FlowEngine();
+    engine.registerModels({
+      RootPageModel,
+      ChildPageModel,
+      MobileRootPageModel,
+      MobileChildPageModel,
+      RouteModel,
+    });
+    const routeModel = engine.createModel<RouteModel>({
+      uid: 'mobile-route-parent',
+      use: 'RouteModel',
+    });
+    routeModel.context.defineProperty('isMobileLayout', {
+      value: true,
+    });
+
+    const rootPage = engine.createModel({
+      uid: 'persisted-root-page',
+      parentId: routeModel.uid,
+      subKey: 'page',
+      subType: 'object',
+      use: 'RootPageModel',
+    });
+    const childPage = engine.createModel({
+      uid: 'persisted-child-page',
+      parentId: routeModel.uid,
+      subKey: 'page',
+      subType: 'object',
+      use: 'ChildPageModel',
+    });
+
+    expect(rootPage).toBeInstanceOf(MobileRootPageModel);
+    expect(childPage.constructor).toBe(MobileChildPageModel);
+  });
+
+  it('should keep persisted page models unchanged outside mobile layouts', () => {
+    registerMobilePageModelResolution();
+
+    const engine = new FlowEngine();
+    engine.registerModels({
+      RootPageModel,
+      ChildPageModel,
+      MobileRootPageModel,
+      MobileChildPageModel,
+      RouteModel,
+    });
+    const routeModel = engine.createModel<RouteModel>({
+      uid: 'desktop-route-parent',
+      use: 'RouteModel',
+    });
+
+    const rootPage = engine.createModel({
+      uid: 'desktop-root-page',
+      parentId: routeModel.uid,
+      subKey: 'page',
+      subType: 'object',
+      use: 'RootPageModel',
+    });
+    const childPage = engine.createModel({
+      uid: 'desktop-child-page',
+      parentId: routeModel.uid,
+      subKey: 'page',
+      subType: 'object',
+      use: 'ChildPageModel',
+    });
+
+    expect(rootPage).toBeInstanceOf(RootPageModel);
+    expect(rootPage).not.toBeInstanceOf(MobileRootPageModel);
+    expect(childPage).toBeInstanceOf(ChildPageModel);
+    expect(childPage).not.toBeInstanceOf(MobileChildPageModel);
+  });
+
+  it('should resolve persisted child pages to mobile page models from mobile view input args', () => {
+    registerMobilePageModelResolution();
+
+    const engine = new FlowEngine();
+    engine.registerModels({
+      ChildPageModel,
+      MobileChildPageModel,
+    });
+    const actionModel = engine.createModel({
+      uid: 'mobile-view-action-parent',
+      use: 'FlowModel',
+    });
+    actionModel.context.defineProperty('view', {
+      value: {
+        inputArgs: {
+          isMobileLayout: true,
+        },
+      },
+    });
+
+    const childPage = engine.createModel({
+      uid: 'mobile-view-child-page',
+      parentId: actionModel.uid,
+      subKey: 'page',
+      subType: 'object',
+      use: 'ChildPageModel',
+    });
+
+    expect(childPage.constructor).toBe(MobileChildPageModel);
+  });
+
+  it('should resolve persisted child pages from mobile page model class input args', () => {
+    registerMobilePageModelResolution();
+
+    const engine = new FlowEngine();
+    engine.registerModels({
+      ChildPageModel,
+      MobileChildPageModel,
+    });
+    engine.context.defineProperty('view', {
+      value: {
+        inputArgs: {
+          pageModelClass: 'MobileChildPageModel',
+        },
+      },
+    });
+    const actionModel = engine.createModel({
+      uid: 'mobile-page-model-class-parent',
+      use: 'FlowModel',
+    });
+
+    const childPage = engine.createModel({
+      uid: 'mobile-page-model-class-child-page',
+      parentId: actionModel.uid,
+      subKey: 'page',
+      subType: 'object',
+      use: 'ChildPageModel',
+    });
+
+    expect(childPage.constructor).toBe(MobileChildPageModel);
+  });
+
+  it('should resolve persisted child pages to mobile page models from the current layout definition', () => {
+    registerMobilePageModelResolution();
+
+    const engine = new FlowEngine();
+    engine.registerModels({
+      ChildPageModel,
+      MobileChildPageModel,
+    });
+    const actionModel = engine.createModel({
+      uid: 'mobile-layout-action-parent',
+      use: 'FlowModel',
+    });
+    actionModel.context.defineProperty('layout', {
+      value: {
+        layoutModelClass: 'MobileLayoutModel',
+        childPageModelClass: 'MobileChildPageModel',
+      },
+    });
+
+    const childPage = engine.createModel({
+      uid: 'mobile-layout-child-page',
+      parentId: actionModel.uid,
+      subKey: 'page',
+      subType: 'object',
+      use: 'ChildPageModel',
+    });
+
+    expect(childPage.constructor).toBe(MobileChildPageModel);
+  });
+
+  it('should resolve persisted child pages from a mobile parent in the view engine stack', () => {
+    registerMobilePageModelResolution();
+
+    const rootEngine = new FlowEngine();
+    rootEngine.registerModels({
+      ChildPageModel,
+      MobileChildPageModel,
+      RouteModel,
+    });
+    const actionParent = rootEngine.createModel<RouteModel>({
+      uid: 'mobile-stacked-action-parent',
+      use: 'RouteModel',
+    });
+    actionParent.context.defineProperty('layout', {
+      value: {
+        layoutModelClass: 'MobileLayoutModel',
+        childPageModelClass: 'MobileChildPageModel',
+      },
+    });
+
+    const rootViewEngine = createViewScopedEngine(rootEngine);
+    const childViewEngine = createViewScopedEngine(rootViewEngine);
+
+    const childPage = childViewEngine.createModel({
+      uid: 'mobile-stacked-child-page',
+      parentId: actionParent.uid,
+      subKey: 'page',
+      subType: 'object',
+      use: 'ChildPageModel',
+    });
+
+    expect(childPage.constructor).toBe(MobileChildPageModel);
+  });
+
+  it('should resolve persisted mobile child pages before the mobile class is registered', () => {
+    registerMobilePageModelResolution();
+
+    const engine = new FlowEngine();
+    engine.registerModels({
+      ChildPageModel,
+      RouteModel,
+    });
+    const actionParent = engine.createModel<RouteModel>({
+      uid: 'mobile-unregistered-child-parent',
+      use: 'RouteModel',
+    });
+    actionParent.context.defineProperty('layout', {
+      value: {
+        layoutModelClass: 'MobileLayoutModel',
+        childPageModelClass: 'MobileChildPageModel',
+      },
+    });
+
+    const childPage = engine.createModel({
+      uid: 'mobile-unregistered-child-page',
+      parentId: actionParent.uid,
+      subKey: 'page',
+      subType: 'object',
+      use: 'ChildPageModel',
+    });
+
+    expect(engine.getModelClass('MobileChildPageModel')).toBeUndefined();
+    expect(childPage).toBeInstanceOf(MobileChildPageModel);
   });
 
   it('should provide temporary mobile home menu data', () => {
@@ -856,6 +1103,60 @@ describe('plugin-ui-layout mobile models', () => {
     expect(pageSurface).toBeInTheDocument();
   });
 
+  it('should stretch flow settings wrappers inside the mobile page content slot', async () => {
+    renderMobileLayoutWithRouteRepository({
+      listAccessible: () => [
+        {
+          id: 1,
+          type: NocoBaseDesktopRouteType.flowPage,
+          title: 'Home',
+          schemaUid: 'home-page',
+        },
+      ],
+    });
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /Home/ })).toBeInTheDocument();
+    });
+
+    const styleText = Array.from(document.querySelectorAll('style'))
+      .map((style) => style.textContent || '')
+      .join('\n');
+    expect(styleText).toMatch(/\.nb-ui-layout-mobile-page-slot\s*>\s*div\s*>\s*div\s*>\s*\[data-has-float-menu\]/);
+  });
+
+  it('should keep the layout content route host inside mobile page routes', async () => {
+    renderMobileLayoutWithRouteRepository(
+      {
+        listAccessible: () => [
+          {
+            id: 1,
+            type: NocoBaseDesktopRouteType.flowPage,
+            title: 'Home',
+            schemaUid: 'home-page',
+          },
+        ],
+      },
+      {
+        initialEntries: ['/v/mobile/home-page'],
+        outletElement: React.createElement('div', { 'data-testid': 'layout-content-route-host' }, 'Route host'),
+        beforeRender: (model) => {
+          model.syncLayoutRoute({
+            layoutRouteName: 'mobile',
+            pathname: '/v/mobile/home-page',
+            layoutBasePathname: '/v/mobile',
+          });
+        },
+      },
+    );
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /Home/ })).toBeInTheDocument();
+    });
+
+    expect(screen.getByTestId('layout-content-route-host')).toBeInTheDocument();
+  });
+
   it('should register mobile route pages with the mobile root page model', () => {
     const engine = new FlowEngine();
     engine.registerModels({
@@ -888,6 +1189,53 @@ describe('plugin-ui-layout mobile models', () => {
       preventClose: true,
       pageModelClass: 'MobileRootPageModel',
     });
+  });
+
+  it('should set the mobile root page model before the active route opens', () => {
+    const dispatchSnapshots: Array<string | undefined> = [];
+    const dispatchEvent = vi.spyOn(RouteModel.prototype, 'dispatchEvent').mockImplementation(function (
+      this: RouteModel,
+      eventName: string,
+    ) {
+      if (eventName === 'click') {
+        dispatchSnapshots.push(this.getStepParams('popupSettings', 'openView')?.pageModelClass as string | undefined);
+      }
+
+      return Promise.resolve([]);
+    });
+    const engine = new FlowEngine();
+    engine.registerModels({
+      MobileLayoutModel,
+      RouteModel,
+    });
+    const model = engine.createModel<MobileLayoutModel>({
+      uid: 'mobile-layout-model-active-route-page',
+      use: 'MobileLayoutModel',
+      props: {
+        layout: {
+          routeName: 'mobile',
+          routePath: '/v/mobile',
+          uid: 'mobile-layout-model-active-route-page',
+          layoutModelClass: 'MobileLayoutModel',
+          rootPageModelClass: 'MobileRootPageModel',
+          childPageModelClass: 'MobileChildPageModel',
+          authCheck: true,
+        },
+      },
+    });
+
+    model.syncLayoutRoute({
+      layoutRouteName: 'mobile',
+      pathname: '/v/mobile/home-page',
+      layoutBasePathname: '/v/mobile',
+    });
+    model.registerRoutePage('home-page', {
+      active: true,
+      layoutContentElement: document.createElement('div'),
+    });
+
+    expect(dispatchSnapshots).toEqual(['MobileRootPageModel']);
+    dispatchEvent.mockRestore();
   });
 
   it('should hide the mobile tab bar when the current pathname has a child view before route state catches up', () => {
