@@ -1075,6 +1075,10 @@ const MobileHomePlaceholder = observer(
       const routeRepository = model.flowEngine.context.routeRepository;
       let disposed = false;
       const syncAccessibleRoutes = () => {
+        if (disposed) {
+          return;
+        }
+
         setAccessibleDesktopRoutes(routeRepository?.listAccessible?.() || []);
       };
 
@@ -1089,6 +1093,10 @@ const MobileHomePlaceholder = observer(
       }
 
       const handleRouteLoadError = (error: unknown) => {
+        if (disposed) {
+          return;
+        }
+
         console.error('[NocoBase] plugin-ui-layout failed to initialize accessible routes.', error);
         syncAccessibleRoutes();
         setRoutesLoadState('error');
@@ -1158,7 +1166,6 @@ const MobileHomePlaceholder = observer(
         return;
       }
 
-      setActiveRouteKey(fallbackRoute.key);
       navigate(toMobileRouterNavigationPath(fallbackRoute.path, basename), { replace: true });
     }, [
       activeRouteKeyFromLayout,

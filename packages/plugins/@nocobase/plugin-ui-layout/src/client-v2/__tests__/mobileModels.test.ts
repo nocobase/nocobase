@@ -94,7 +94,7 @@ describe('plugin-ui-layout mobile models', () => {
     });
     options.beforeRender?.(model);
 
-    render(
+    const renderResult = render(
       React.createElement(
         FlowEngineProvider,
         { engine },
@@ -132,6 +132,7 @@ describe('plugin-ui-layout mobile models', () => {
     return {
       engine,
       model,
+      ...renderResult,
     };
   }
 
@@ -879,6 +880,39 @@ describe('plugin-ui-layout mobile models', () => {
         expect(screen.getByText('Mobile')).toBeInTheDocument();
       });
       expect(consoleError).toHaveBeenCalledWith(
+        '[NocoBase] plugin-ui-layout failed to initialize accessible routes.',
+        routeError,
+      );
+    } finally {
+      consoleError.mockRestore();
+    }
+  });
+
+  it('should ignore accessible route load failures after the mobile layout unmounts', async () => {
+    const routeError = new Error('request failed after unmount');
+    let rejectRoutes: ((error: Error) => void) | undefined;
+    const routeLoadPromise = new Promise<NocoBaseDesktopRoute[]>((_resolve, reject) => {
+      rejectRoutes = reject;
+    });
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const listAccessible = vi.fn(() => []);
+    const routeRepository: MobileRouteRepositoryForTest = {
+      listAccessible,
+      ensureAccessibleLoaded: vi.fn(() => routeLoadPromise),
+    };
+
+    try {
+      const { unmount } = renderMobileLayoutWithRouteRepository(routeRepository);
+
+      const callCountBeforeUnmount = listAccessible.mock.calls.length;
+      expect(callCountBeforeUnmount).toBeGreaterThan(0);
+      unmount();
+      rejectRoutes?.(routeError);
+      await routeLoadPromise.catch(() => undefined);
+      await Promise.resolve();
+
+      expect(listAccessible).toHaveBeenCalledTimes(callCountBeforeUnmount);
+      expect(consoleError).not.toHaveBeenCalledWith(
         '[NocoBase] plugin-ui-layout failed to initialize accessible routes.',
         routeError,
       );
