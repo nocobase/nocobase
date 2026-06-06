@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { BaseLayoutModel, ChildPageModel, RootPageModel } from '@nocobase/client-v2';
+import { BaseLayoutModel, ChildPageModel, RootPageModel, RouteModel } from '@nocobase/client-v2';
 import { NocoBaseDesktopRouteType, type NocoBaseDesktopRoute } from '@nocobase/client-v2/flow-compat';
 import { App as AntdApp } from 'antd';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
@@ -854,6 +854,40 @@ describe('plugin-ui-layout mobile models', () => {
     const pageSlot = document.querySelector('.nb-ui-layout-mobile-page-slot');
     const pageSurface = pageSlot?.querySelector('.nb-ui-layout-mobile-surface');
     expect(pageSurface).toBeInTheDocument();
+  });
+
+  it('should register mobile route pages with the mobile root page model', () => {
+    const engine = new FlowEngine();
+    engine.registerModels({
+      MobileLayoutModel,
+      RouteModel,
+    });
+    const model = engine.createModel<MobileLayoutModel>({
+      uid: 'mobile-layout-model-route-page',
+      use: 'MobileLayoutModel',
+      props: {
+        layout: {
+          routeName: 'mobile',
+          routePath: '/v/mobile',
+          uid: 'mobile-layout-model-route-page',
+          layoutModelClass: 'MobileLayoutModel',
+          rootPageModelClass: 'MobileRootPageModel',
+          childPageModelClass: 'MobileChildPageModel',
+          authCheck: true,
+        },
+      },
+    });
+
+    const routeModel = model.registerRoutePage('home-page', {
+      active: true,
+      layoutContentElement: document.createElement('div'),
+    });
+
+    expect(routeModel.getStepParams('popupSettings', 'openView')).toMatchObject({
+      mode: 'embed',
+      preventClose: true,
+      pageModelClass: 'MobileRootPageModel',
+    });
   });
 
   it('should hide the mobile tab bar when the current pathname has a child view before route state catches up', () => {

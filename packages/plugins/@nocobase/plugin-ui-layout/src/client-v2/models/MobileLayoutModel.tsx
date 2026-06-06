@@ -1574,6 +1574,20 @@ export class MobileLayoutModel extends BaseLayoutModel<MobileLayoutMenuStructure
     this.refreshMenuRouteTree();
   }
 
+  registerRoutePage(pageUid: string, meta: Parameters<BaseLayoutModel['registerRoutePage']>[1]) {
+    const routeModel = super.registerRoutePage(pageUid, meta);
+    const openViewParams = routeModel.getStepParams('popupSettings', 'openView') || {};
+
+    routeModel.setStepParams('popupSettings', 'openView', {
+      mode: 'embed',
+      preventClose: true,
+      ...openViewParams,
+      pageModelClass: this.layout.rootPageModelClass || 'MobileRootPageModel',
+    });
+
+    return routeModel;
+  }
+
   getMobileBasePathname() {
     return this.currentLayoutRoute?.basePathname || this.layout.routePath || '/mobile';
   }
