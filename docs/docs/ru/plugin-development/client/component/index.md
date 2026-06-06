@@ -118,7 +118,7 @@ const msg = ctx.t('Save success', { ns: '@my-project/plugin-hello' });
 Через `ctx.router.navigate()` выполняется переход между страницами:
 
 ```tsx
-ctx.router.navigate('/some-page'); // -> /v2/some-page
+ctx.router.navigate('/some-page'); // -> /v/some-page
 ```
 
 Получение параметров текущего маршрута:

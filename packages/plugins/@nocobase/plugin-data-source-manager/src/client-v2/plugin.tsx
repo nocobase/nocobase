@@ -60,7 +60,7 @@ export interface DataSourceTypeOptions {
     | DataSourceFieldInterfaceFilterOptions
     | ((context: { collection: Record<string, any> }) => DataSourceFieldInterfaceFilterOptions | undefined);
   disableAddFields?: boolean;
-  disableConfigureFieldsActions?: boolean;
+  disableConfigureFields?: boolean;
   disableTestConnection?: boolean;
   AddCollection?: ComponentType<DataSourceCollectionActionProps>;
   EditCollection?: ComponentType<DataSourceCollectionActionProps>;

@@ -38,11 +38,11 @@ Se você alterou código do cliente mas não houve hot reload, primeiro tente at
 
 ### Rota de página registrada não acessível
 
-As rotas no NocoBase v2 recebem o prefixo `/v2` por padrão. Por exemplo, se você registrou `path: '/hello'`, o endereço de acesso real é `/v2/hello`:
+As rotas no NocoBase v2 recebem o prefixo `/v` por padrão. Por exemplo, se você registrou `path: '/hello'`, o endereço de acesso real é `/v/hello`:
 
 ```ts
 this.router.add('hello', {
-  path: '/hello', // 实际访问 -> /v2/hello
+  path: '/hello', // 实际访问 -> /v/hello
   componentLoader: () => import('./pages/HelloPage'),
 });
 ```
@@ -285,7 +285,7 @@ O sistema de build do NocoBase mantém uma [lista external](../../dependency-man
 ## Links relacionados
 
 - [Plugin](../plugin) — entrada do plugin e ciclo de vida
-- [Router de rotas](../router) — registro de rotas e prefixo `/v2`
+- [Router de rotas](../router) — registro de rotas e prefixo `/v`
 - [Visão geral do FlowEngine](../flow-engine/index.md) — uso básico do FlowModel
 - [FlowEngine → Extensão de blocos](../flow-engine/block) — BlockModel, TableBlockModel, filterCollection
 - [FlowEngine → Extensão de campos](../flow-engine/field) — FieldModel, bindModelToInterface

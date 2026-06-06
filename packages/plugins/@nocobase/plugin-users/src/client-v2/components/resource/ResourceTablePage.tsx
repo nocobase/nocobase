@@ -8,6 +8,7 @@
  */
 
 import { ReloadOutlined } from '@ant-design/icons';
+import { css, cx } from '@emotion/css';
 import type { Collection } from '@nocobase/flow-engine';
 import { useMemoizedFn, useRequest } from 'ahooks';
 import { Button, Space, theme } from 'antd';
@@ -47,6 +48,7 @@ export interface ResourceTablePageProps<RecordType extends object = Record<strin
   showRefresh?: boolean;
   padding?: boolean;
   defaultPageSize?: number;
+  fillHeight?: boolean;
   tableProps?: Omit<
     TableProps<RecordType>,
     'columns' | 'dataSource' | 'loading' | 'onChange' | 'pagination' | 'rowKey'
@@ -75,6 +77,43 @@ export function ResourceTablePage<RecordType extends object = Record<string, unk
   const { data, loading, refresh, refreshAsync } = useRequest(service, {
     refreshDeps: [filter, page, pageSize],
   });
+  const tableClassName = useMemo(
+    () => css`
+      flex: 1;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+
+      .ant-spin-nested-loading,
+      .ant-spin-container,
+      .ant-table,
+      .ant-table-container {
+        min-height: 0;
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+      }
+
+      .ant-table-content {
+        flex: 1;
+        min-height: 0;
+      }
+
+      .ant-table-body {
+        flex: 1;
+        min-height: 0;
+      }
+
+      .ant-table-thead > tr > th {
+        white-space: nowrap;
+      }
+
+      .ant-pagination {
+        flex: 0 0 auto;
+      }
+    `,
+    [],
+  );
 
   const pagination = useMemo<TablePaginationConfig>(
     () => ({
@@ -100,6 +139,7 @@ export function ResourceTablePage<RecordType extends object = Record<string, unk
   );
 
   const toolbarContent = typeof props.toolbar === 'function' ? props.toolbar(toolbarArgs) : props.toolbar;
+  const { className: tablePropClassName, scroll: tablePropScroll, ...restTableProps } = props.tableProps ?? {};
   const filterButton = props.collection ? (
     <CollectionFilter
       collection={props.collection}
@@ -117,10 +157,18 @@ export function ResourceTablePage<RecordType extends object = Record<string, unk
     );
 
   return (
-    <div style={props.padding === false ? undefined : { padding: token.paddingLG }}>
+    <div
+      style={{
+        ...(props.padding === false ? undefined : { padding: token.paddingLG }),
+        ...(props.fillHeight
+          ? { height: '100%', minHeight: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden' }
+          : undefined),
+      }}
+    >
       {props.toolbarLayout === 'split' ? (
         <div
           style={{
+            flex: props.fillHeight ? '0 0 auto' : undefined,
             display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'center',
@@ -136,19 +184,21 @@ export function ResourceTablePage<RecordType extends object = Record<string, unk
           </Space>
         </div>
       ) : (
-        <Space style={{ marginBottom: token.marginSM }} wrap>
+        <Space style={{ flex: props.fillHeight ? '0 0 auto' : undefined, marginBottom: token.marginSM }} wrap>
           {toolbarContent}
           {refreshButton}
           {filterButton}
         </Space>
       )}
       <Table<RecordType>
-        {...props.tableProps}
+        {...restTableProps}
         rowKey={props.rowKey}
         loading={loading}
         dataSource={data?.data ?? []}
         columns={props.columns}
         pagination={pagination}
+        scroll={props.fillHeight ? { x: 'max-content', y: '100%', ...tablePropScroll } : tablePropScroll}
+        className={cx(props.fillHeight && tableClassName, tablePropClassName)}
       />
     </div>
   );

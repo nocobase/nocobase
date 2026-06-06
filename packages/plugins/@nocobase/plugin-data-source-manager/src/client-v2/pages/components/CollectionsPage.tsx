@@ -69,7 +69,7 @@ import {
   type CollectionTemplateOptions,
   PluginDataSourceManagerClientV2,
 } from '../../plugin';
-import { compileLegacyTemplate } from '../../utils/compileLegacyTemplate';
+import { compileLegacyTemplate, preferLegacyTemplateTitle } from '../../utils/compileLegacyTemplate';
 import { getCollectionFieldActionUrl } from './collectionFieldApi';
 import FieldsPage from './FieldsPage';
 
@@ -552,7 +552,7 @@ function getPresetFieldName(field: CollectionPresetFieldOptions) {
   return field.name || field.value.name;
 }
 
-function getPresetFieldRows(
+export function getPresetFieldRows(
   presetFields: CollectionPresetFieldOptions[],
   fieldInterfaceManager?: { getFieldInterface?: (name: string) => { title?: React.ReactNode } | undefined },
 ): PresetFieldRow[] {
@@ -560,10 +560,13 @@ function getPresetFieldRows(
     const fieldInterface = field.value.interface
       ? fieldInterfaceManager?.getFieldInterface?.(field.value.interface)
       : undefined;
+    const templateTitle = field.value.uiSchema?.title || fieldInterface?.title;
+    const fieldTitle = field.field || field.value.uiSchema?.title || field.value.name;
+    const interfaceLabel = field.interfaceLabel || fieldInterface?.title || field.value.interface || field.value.type;
     return {
       name: getPresetFieldName(field),
-      field: field.field || field.value.uiSchema?.title || field.value.name,
-      interfaceLabel: field.interfaceLabel || fieldInterface?.title || field.value.interface || field.value.type,
+      field: preferLegacyTemplateTitle(fieldTitle, templateTitle),
+      interfaceLabel: preferLegacyTemplateTitle(interfaceLabel, fieldInterface?.title),
       description: field.description,
     };
   });
@@ -1195,6 +1198,54 @@ function CollectionEditDrawer(props: {
     template,
   ]);
 
+  if (!isMainDataSource) {
+    return (
+      <DrawerFormLayout
+        title={t('Edit collection')}
+        submitting={submitting}
+        submitText={t('Submit')}
+        cancelText={t('Cancel')}
+        onSubmit={handleSubmit}
+      >
+        <Form form={form} layout="vertical" initialValues={initialValues}>
+          <Form.Item name="title" label={t('Collection display name')} rules={[{ required: true }]}>
+            <Input />
+          </Form.Item>
+          <Form.Item
+            name="name"
+            label={t('Collection name')}
+            extra={t(
+              'Randomly generated and can be modified. Support letters, numbers and underscores, must start with an letter.',
+            )}
+          >
+            <Input disabled />
+          </Form.Item>
+          <Form.Item name="description" label={t('Description')}>
+            <Input.TextArea autoSize={{ minRows: 3, maxRows: 8 }} />
+          </Form.Item>
+          <Form.Item
+            name="simplePaginate"
+            valuePropName="checked"
+            extra={t(
+              'Skip getting the total number of table records during paging to speed up loading. It is recommended to enable this option for data tables with a large amount of data',
+            )}
+          >
+            <Checkbox>{t('Use simple pagination mode')}</Checkbox>
+          </Form.Item>
+          <Form.Item
+            name="filterTargetKey"
+            label={t('Record unique key')}
+            extra={t(
+              'If a collection lacks a primary key, you must configure a unique record key to locate row records within a block, failure to configure this will prevent the creation of data blocks for the collection.',
+            )}
+          >
+            <Select mode="multiple" options={filterTargetKeyOptions} loading={fieldsRequest.loading} allowClear />
+          </Form.Item>
+        </Form>
+      </DrawerFormLayout>
+    );
+  }
+
   const TemplateConfigureForm = template?.configure?.Form || template?.ConfigureForm;
 
   return (
@@ -1296,14 +1347,14 @@ function CollectionsPage(props: CollectionsPageProps) {
   const AddCollection = dataSourceType?.AddCollection;
   const EditCollection = dataSourceType?.EditCollection;
   const DeleteCollection = dataSourceType?.DeleteCollection;
-  const configureFieldsActionsDisabled = Boolean(dataSourceType?.disableConfigureFieldsActions);
-  const allowDefaultCollectionEdit = !configureFieldsActionsDisabled;
-  const allowCustomCollectionEdit = Boolean(!isMainDataSource && !configureFieldsActionsDisabled && EditCollection);
+  const configureFieldsDisabled = Boolean(dataSourceType?.disableConfigureFields);
+  const allowDefaultCollectionEdit = !configureFieldsDisabled;
+  const allowCustomCollectionEdit = Boolean(!isMainDataSource && !configureFieldsDisabled && EditCollection);
   const allowCustomCollectionCreate = Boolean(
-    !isMainDataSource && !configureFieldsActionsDisabled && dataSourceType?.allowCollectionCreate && AddCollection,
+    !isMainDataSource && !configureFieldsDisabled && dataSourceType?.allowCollectionCreate && AddCollection,
   );
   const allowCustomCollectionDeletion = Boolean(
-    !isMainDataSource && !configureFieldsActionsDisabled && dataSourceType?.allowCollectionDeletion && DeleteCollection,
+    !isMainDataSource && !configureFieldsDisabled && dataSourceType?.allowCollectionDeletion && DeleteCollection,
   );
   const collectionTemplates = useMemo(() => plugin.getCollectionTemplates(), [plugin]);
   const categoryRequest = useRequest(
@@ -1559,13 +1610,12 @@ function CollectionsPage(props: CollectionsPageProps) {
 
     setRefreshing(true);
     try {
+      const clientStatus = dataSource?.status || 'loaded';
       const response = await ctx.api.request({
-        url: 'dataSources:refresh',
+        url: `dataSources:refresh?filterByTk=${encodeURIComponent(
+          props.dataSourceKey,
+        )}&clientStatus=${encodeURIComponent(clientStatus)}`,
         method: 'post',
-        params: {
-          filterByTk: props.dataSourceKey,
-          clientStatus: dataSource?.status || 'loaded',
-        },
       });
       const status = response?.data?.data?.status || response?.data?.status;
       if (status === 'reloading') {

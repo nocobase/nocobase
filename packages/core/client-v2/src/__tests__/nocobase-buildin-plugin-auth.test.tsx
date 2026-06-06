@@ -26,6 +26,10 @@ describe('nocobase buildin plugin auth redirect', () => {
   const originalLocation = globalThis.window.location;
 
   beforeEach(() => {
+    // These fixtures mount the modern client under the `v2` segment; tell the
+    // runtime-prefix helper so v2-runtime detection matches (server injects it
+    // in production).
+    (globalThis.window as any).__nocobase_modern_client_prefix__ = 'v2';
     Object.defineProperty(globalThis.window, 'matchMedia', {
       configurable: true,
       value: vi.fn().mockImplementation((query: string) => ({
@@ -42,6 +46,7 @@ describe('nocobase buildin plugin auth redirect', () => {
   });
 
   afterEach(() => {
+    delete (globalThis.window as any).__nocobase_modern_client_prefix__;
     Object.defineProperty(globalThis.window, 'location', {
       configurable: true,
       value: originalLocation,

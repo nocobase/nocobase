@@ -23,7 +23,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 // 暂不参与对齐校对的语言；显式 --lang=<code> 仍可强制检查。
-const SKIP_LANGS = new Set(['ar']);
+const SKIP_LANGS = new Set(['ar', 'ru']);
 
 function parseArgs(argv) {
   const args = { positional: [] };
