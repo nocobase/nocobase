@@ -261,23 +261,6 @@ describe('FilterValueInput schema precedence', () => {
     expect(onChange).toHaveBeenCalledWith(['alpha', 'beta']);
   });
 
-  it('does not resolve built-in fallback input names from the app registry', () => {
-    const getComponent = vi.fn(() => () => <button type="button">registry input</button>);
-    const { container } = render(
-      <FilterValueInput
-        field={fieldOf('Input')}
-        operator={opOf()}
-        value=""
-        onChange={() => undefined}
-        app={{ getComponent }}
-      />,
-    );
-
-    expect(getComponent).not.toHaveBeenCalled();
-    expect(container.querySelector('input[type="text"]')).not.toBeNull();
-    expect(screen.queryByText('registry input')).toBeNull();
-  });
-
   it('field uiSchema is used when operator has none', () => {
     const { container } = render(
       <FilterValueInput

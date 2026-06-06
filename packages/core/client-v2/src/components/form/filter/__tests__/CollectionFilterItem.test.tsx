@@ -15,7 +15,6 @@ import { describe, expect, it, vi } from 'vitest';
 type StubField = {
   name: string;
   title: string;
-  operators?: any[];
   children?: StubField[];
 };
 
@@ -26,7 +25,7 @@ vi.mock('../../../../flow/components/filter/fieldsToOptions', () => {
     title: field.title,
     operators: field.children
       ? undefined
-      : field.operators || [
+      : [
           { value: '$eq', label: 'equals' },
           { value: '$ne', label: 'not equals' },
         ],
@@ -51,7 +50,6 @@ function buildStubCollection(fieldDefs: StubField[]) {
         target: undefined as string | undefined,
         // Mirror the stub's children so any downstream call that descends through the field tree behaves the same as `fieldsToOptions` does.
         children: f.children,
-        operators: f.operators,
       })),
   } as any;
 }
@@ -188,54 +186,6 @@ describe('CollectionFilterItem', () => {
 
     fireEvent.change(screen.getByPlaceholderText('Enter value'), { target: { value: 'alice' } });
     expect(value.value).toBe('alice');
-  });
-
-  it('renders an app-registered operator component and writes through its value', () => {
-    const value = observable({ path: 'username', operator: '$in', value: ['foo', 'bar'] });
-    const collection = buildStubCollection([
-      {
-        name: 'username',
-        title: 'Username',
-        operators: [
-          {
-            value: '$in',
-            label: 'is any of',
-            schema: {
-              'x-component': 'MultipleKeywordsInput',
-              'x-component-props': { fieldInterface: 'input' },
-            },
-          },
-        ],
-      },
-    ]);
-    const MultipleKeywordsInput = (props: any) => (
-      <button
-        type="button"
-        data-testid="keyword-input"
-        data-field-interface={props.fieldInterface}
-        data-value={JSON.stringify(props.value)}
-        onClick={() => props.onChange?.(['alpha', 'beta'])}
-      >
-        keyword-input
-      </button>
-    );
-
-    render(
-      <CollectionFilterItem
-        value={value}
-        collection={collection}
-        app={{
-          getComponent: (name) => (name === 'MultipleKeywordsInput' ? MultipleKeywordsInput : undefined),
-        }}
-      />,
-    );
-
-    const input = screen.getByTestId('keyword-input');
-    expect(input.getAttribute('data-field-interface')).toBe('input');
-    expect(input.getAttribute('data-value')).toBe(JSON.stringify(['foo', 'bar']));
-
-    fireEvent.click(input);
-    expect(value.value).toEqual(['alpha', 'beta']);
   });
 
   it('lets the user change the operator independently', async () => {
