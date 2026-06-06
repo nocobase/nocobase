@@ -33,6 +33,7 @@ import {
   Droppable,
   FlowModelRenderer,
   observer,
+  parsePathnameToViewParams,
   type FlowModel,
 } from '@nocobase/flow-engine';
 import { uid } from '@nocobase/utils/client';
@@ -662,9 +663,7 @@ const MobileLayoutComponent = observer((props: { model: MobileLayoutModel }) => 
           <div
             ref={handleViewportChange}
             className="nb-ui-layout-mobile-viewport"
-            data-nb-mobile-view-stack-depth={
-              model.currentLayoutRoute?.type === 'page' ? model.currentLayoutRoute.viewStack.length : 0
-            }
+            data-nb-mobile-view-stack-depth={model.getMobileViewStackDepth()}
           >
             <MobileHomePlaceholder designModeEnabled={preferredFlowSettingsEnabled} model={model} outlet={outlet} />
           </div>
@@ -1485,8 +1484,26 @@ export class MobileLayoutModel extends BaseLayoutModel<MobileLayoutMenuStructure
     return this.currentLayoutRoute?.type === 'page' ? this.currentLayoutRoute.pageUid : fallbackActiveKey;
   }
 
+  getMobileViewStackDepth() {
+    const routeStateDepth = this.currentLayoutRoute?.type === 'page' ? this.currentLayoutRoute.viewStack.length : 0;
+    const route = this.flowEngine.context.route as { pathname?: string } | undefined;
+    const pathname = route?.pathname;
+    const basePathname =
+      this.currentLayoutRoute?.type === 'page' ? this.currentLayoutRoute.basePathname : this.getMobileBasePathname();
+
+    if (!pathname || !basePathname) {
+      return routeStateDepth;
+    }
+
+    try {
+      return Math.max(routeStateDepth, parsePathnameToViewParams(pathname, { basePath: basePathname }).length);
+    } catch {
+      return routeStateDepth;
+    }
+  }
+
   shouldShowMobileTabBar() {
-    return this.currentLayoutRoute?.type !== 'page' || this.currentLayoutRoute.viewStack.length <= 1;
+    return this.getMobileViewStackDepth() <= 1;
   }
 
   toMobileTabNodes(options: MobileTabNodeOptions) {

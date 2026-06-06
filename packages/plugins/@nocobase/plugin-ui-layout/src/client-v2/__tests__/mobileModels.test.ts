@@ -647,6 +647,33 @@ describe('plugin-ui-layout mobile models', () => {
     expect(model.getActiveMobileTabKey('fallback-page')).toBe('home-page');
   });
 
+  it('should hide the mobile tab bar when the current pathname has a child view before route state catches up', () => {
+    const engine = new FlowEngine();
+    engine.registerModels({
+      MobileLayoutModel,
+    });
+    engine.context.defineProperty('route', {
+      value: {
+        pathname: '/v/mobile/home-page/view/detail-page',
+      },
+    });
+    const model = engine.createModel<MobileLayoutModel>({
+      uid: 'mobile-layout-model-route-pathname',
+      use: 'MobileLayoutModel',
+    });
+    model.currentLayoutRoute = {
+      type: 'page',
+      pathname: '/v/mobile/home-page',
+      basePathname: '/v/mobile',
+      relativePath: 'home-page',
+      pageUid: 'home-page',
+      viewStack: [{ viewUid: 'home-page' }],
+    };
+
+    expect(model.getMobileViewStackDepth()).toBe(2);
+    expect(model.shouldShowMobileTabBar()).toBe(false);
+  });
+
   it('should provide mobile tab add menu items', () => {
     const t = (key: string) => `t:${key}`;
 
