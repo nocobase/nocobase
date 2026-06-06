@@ -23,6 +23,7 @@ export type FieldFilterOperatorList<TMeta = unknown> = FieldFilterOperator<TMeta
 export type FieldFilterable<TMeta = unknown> = {
   operators?: FieldFilterOperatorList<TMeta>;
   operatorGroup?: string;
+  operatorOverrides?: FieldFilterOperator<TMeta>[];
   children?: unknown[];
   nested?: boolean;
   [key: string]: unknown;
@@ -120,14 +121,18 @@ export function normalizeFilterableOperators<TMeta = unknown>(filterable?: Field
     return filterable;
   }
 
+  const operatorOverrides = Array.isArray(filterable.operatorOverrides) ? filterable.operatorOverrides : [];
+
   if (filterable.operatorGroup) {
-    filterable.operators = resolveFilterOperators(filterable.operatorGroup);
+    filterable.operators = mergeOperatorOverrides(resolveFilterOperators(filterable.operatorGroup), operatorOverrides);
   }
 
   const rawOperators = (filterable as { operators?: unknown }).operators;
   if (typeof rawOperators === 'string') {
     filterable.operatorGroup = rawOperators;
-    filterable.operators = resolveFilterOperators(rawOperators);
+    filterable.operators = mergeOperatorOverrides(resolveFilterOperators(rawOperators), operatorOverrides);
+  } else if (Array.isArray(rawOperators)) {
+    filterable.operators = mergeOperatorOverrides(rawOperators, operatorOverrides);
   }
 
   if (Array.isArray(filterable.children)) {
@@ -139,6 +144,26 @@ export function normalizeFilterableOperators<TMeta = unknown>(filterable?: Field
   }
 
   return filterable;
+}
+
+function mergeOperatorOverrides<TMeta = unknown>(
+  operators: FieldFilterOperator<TMeta>[] = [],
+  operatorOverrides: FieldFilterOperator<TMeta>[] = [],
+) {
+  if (operatorOverrides.length === 0) {
+    return operators;
+  }
+
+  const result = [...operators];
+  operatorOverrides.forEach((operatorOverride) => {
+    const existingIndex = result.findIndex((item) => item.value === operatorOverride.value);
+    if (existingIndex === -1) {
+      result.push(operatorOverride);
+    } else {
+      result[existingIndex] = operatorOverride;
+    }
+  });
+  return result;
 }
 
 export function createFilterable<TPreset extends FieldFilterOperatorGroupName>(
