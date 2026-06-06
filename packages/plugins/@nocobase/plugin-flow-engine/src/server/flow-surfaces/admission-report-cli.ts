@@ -195,8 +195,9 @@ export async function verifyFlowSurfaceCapabilityAdmission(
   }
 
   const service = new FlowSurfacesService(getFlowEnginePlugin(options.app));
-  if (target.publicType) {
-    const capability = await describeFlowSurfaceCapabilityForAdmission(service, target, options);
+  const publicType = target.publicType;
+  if (publicType) {
+    const capability = await describeFlowSurfaceCapabilityForAdmission(service, { ...target, publicType }, options);
     return buildFlowSurfaceCapabilityAdmissionReportFromCapabilities({
       plugin: target.plugin,
       generatedAt: options.generatedAt,
@@ -623,7 +624,7 @@ function assertFlowSurfaceCapabilityAdmissionReportMatchesTarget(
 async function resolveFlowSurfaceAdmissionEnabledPluginPackages(
   app: Application,
   options: { suppressStdout?: boolean } = {},
-) {
+): Promise<ReadonlySet<string>> {
   await ensureFlowSurfaceAdmissionAppLoaded(app, options);
   const records = await app.pm.repository.find({
     fields: ['packageName'],
@@ -631,7 +632,8 @@ async function resolveFlowSurfaceAdmissionEnabledPluginPackages(
       enabled: true,
     },
   });
-  return new Set(records.map(getPackageNameFromEnabledRecord).filter(isNonEmptyString));
+  const packageNames = records.map(getPackageNameFromEnabledRecord).filter(isNonEmptyString);
+  return new Set<string>(packageNames);
 }
 
 async function ensureFlowSurfaceAdmissionAppLoaded(app: Application, options: { suppressStdout?: boolean } = {}) {

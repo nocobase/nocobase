@@ -702,10 +702,9 @@ function mergeAutoSnapshotDiagnostics(
           ].filter((value): value is string => typeof value === 'string' && value.length > 0),
     ),
   );
-  const supplementalWarnings =
-    winner.origin === 'autoSnapshot'
-      ? supplemental.warnings || []
-      : (supplemental.warnings || []).filter((warning) => warning.code !== 'auto-discovered-readonly');
+  const supplementalWarnings = (supplemental.warnings || []).filter(
+    (warning) => warning.code !== 'auto-discovered-readonly',
+  );
   const warnings = dedupeCapabilityWarnings([...(winner.warnings || []), ...supplementalWarnings]);
   return setFlowSurfacePublicCapabilityModelUse(
     {

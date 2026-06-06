@@ -708,15 +708,19 @@ function toVmLiteral(value: unknown, label: string, seen: WeakSet<object> = new 
   if (typeof value === 'bigint' || typeof value === 'symbol') {
     return 'undefined';
   }
-  if (isHostProxy(value)) {
-    return `createBlockedProxy(${JSON.stringify(label)})`;
-  }
-  if (seen.has(value)) {
+  if (!value || typeof value !== 'object') {
     return 'undefined';
   }
-  seen.add(value);
-  if (Array.isArray(value)) {
-    const descriptors = getHostDataDescriptors(value);
+  const objectValue = value;
+  if (isHostProxy(objectValue)) {
+    return `createBlockedProxy(${JSON.stringify(label)})`;
+  }
+  if (seen.has(objectValue)) {
+    return 'undefined';
+  }
+  seen.add(objectValue);
+  if (Array.isArray(objectValue)) {
+    const descriptors = getHostDataDescriptors(objectValue);
     if (!descriptors) {
       return `createBlockedProxy(${JSON.stringify(label)})`;
     }
@@ -731,12 +735,12 @@ function toVmLiteral(value: unknown, label: string, seen: WeakSet<object> = new 
     }
     return `[${items.join(',')}]`;
   }
-  const descriptors = getHostDataDescriptors(value);
+  const descriptors = getHostDataDescriptors(objectValue);
   if (!descriptors) {
     return `createBlockedProxy(${JSON.stringify(label)})`;
   }
   const definitions = Object.entries(descriptors)
-    .filter(([, descriptor]) => 'value' in descriptor)
+    .filter((entry): entry is [string, PropertyDescriptor & { value: unknown }] => hasDescriptorValue(entry[1]))
     .map(([key, descriptor]) => {
       return `Object.defineProperty(result, ${JSON.stringify(key)}, {
         configurable: true,
@@ -768,6 +772,10 @@ function getHostDataDescriptors(value: object) {
   } catch {
     return undefined;
   }
+}
+
+function hasDescriptorValue(descriptor: unknown): descriptor is PropertyDescriptor & { value: unknown } {
+  return !!descriptor && typeof descriptor === 'object' && 'value' in descriptor;
 }
 
 function isHostProxy(value: unknown): value is object | Function {

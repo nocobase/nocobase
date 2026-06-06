@@ -371,12 +371,14 @@ function resolveBlockedVerifiedAutoAdmissionReasonCode(item: FlowSurfacePublicCa
 }
 
 function isNormalizedPolicyConfig(value: unknown): value is NormalizedFlowSurfaceCapabilityPolicyConfig {
+  const providerTimeoutMs = isPlainRecord(value) ? value.providerTimeoutMs : undefined;
   return (
     isPlainRecord(value) &&
     isPlainRecord(value.writePolicy) &&
     FLOW_SURFACE_CAPABILITY_WRITE_POLICY_MODES.has(value.writePolicy.mode as FlowSurfaceCapabilityWritePolicyMode) &&
-    Number.isInteger(value.providerTimeoutMs) &&
-    value.providerTimeoutMs > 0 &&
+    typeof providerTimeoutMs === 'number' &&
+    Number.isInteger(providerTimeoutMs) &&
+    providerTimeoutMs > 0 &&
     typeof value.extractorSnapshotDir === 'string' &&
     typeof value.diagnosticsEnabled === 'boolean'
   );

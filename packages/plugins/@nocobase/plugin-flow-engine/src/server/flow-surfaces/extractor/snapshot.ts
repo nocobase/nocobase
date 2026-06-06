@@ -510,6 +510,7 @@ function isFlowSurfaceAutoChildSurface(value: unknown): value is FlowSurfaceAuto
     typeof value.parentModelUse === 'string' &&
     typeof value.subModelKey === 'string' &&
     isFlowSurfaceAutoChildSurfaceKind(value.kind) &&
+    (typeof value.emptyWhenMissing === 'undefined' || typeof value.emptyWhenMissing === 'boolean') &&
     (typeof value.allowedChildren === 'undefined' || isArrayOf(value.allowedChildren, isString))
   );
 }

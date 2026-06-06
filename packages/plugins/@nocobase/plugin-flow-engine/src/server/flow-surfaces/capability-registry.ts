@@ -219,13 +219,13 @@ export function collectAutoSnapshotPublicCapabilities(
 
 function collectRawAutoSnapshotPublicCapabilities(snapshot: FlowSurfaceAutoSnapshot, ownerPlugin: string) {
   return deriveFlowSurfaceAutoCapabilityCandidates(snapshot)
-    .map((candidate) => {
+    .map((candidate): FlowSurfacePublicCapabilityItem | undefined => {
       if (!AUTO_SNAPSHOT_PUBLIC_CAPABILITY_KINDS.has(candidate.kind)) {
-        return null;
+        return undefined;
       }
       const publicType = normalizeSafeAutoSnapshotPublicType(candidate.publicType);
       if (!publicType) {
-        return null;
+        return undefined;
       }
       const warnings = [
         ...(candidate.warnings || []),

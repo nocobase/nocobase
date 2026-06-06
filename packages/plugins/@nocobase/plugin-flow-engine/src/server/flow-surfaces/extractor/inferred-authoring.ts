@@ -7,7 +7,12 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import type { FlowSurfaceAutoInferredAuthoring, FlowSurfaceAutoMenuItem, FlowSurfaceAutoSnapshot } from './types';
+import type {
+  FlowSurfaceAutoInferredAuthoring,
+  FlowSurfaceAutoInferredAuthoringCapability,
+  FlowSurfaceAutoMenuItem,
+  FlowSurfaceAutoSnapshot,
+} from './types';
 
 const GANTT_OWNER_PLUGIN = '@nocobase/plugin-gantt';
 const GANTT_BLOCK_MODEL_USE = 'GanttBlockModel';
@@ -47,7 +52,9 @@ export function inferFlowSurfaceAutoSnapshotAuthoring(
   return capabilities.length ? { capabilities } : undefined;
 }
 
-function inferGanttAuthoringCapability(snapshot: FlowSurfaceAutoSnapshot) {
+function inferGanttAuthoringCapability(
+  snapshot: FlowSurfaceAutoSnapshot,
+): FlowSurfaceAutoInferredAuthoringCapability | undefined {
   if (snapshot.plugin !== GANTT_OWNER_PLUGIN) {
     return undefined;
   }
@@ -337,6 +344,7 @@ function inferGanttAuthoringCapability(snapshot: FlowSurfaceAutoSnapshot) {
         parentModelUse: GANTT_BLOCK_MODEL_USE,
         subModelKey: 'actions',
         kind: 'action' as const,
+        emptyWhenMissing: true,
         allowedChildren: allowedActionModelUses,
       },
       {

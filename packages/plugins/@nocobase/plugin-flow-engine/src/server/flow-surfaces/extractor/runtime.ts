@@ -39,7 +39,7 @@ type FlowSurfaceMockApiClient = {
   createStorage(storageType: unknown): FlowSurfaceMockApiStorage;
   request(options: unknown): Promise<{
     data: {
-      data: never[];
+      data: unknown[];
     };
   }>;
   resource(resourceName: unknown): FlowSurfaceMockApiResource;
@@ -92,7 +92,7 @@ type FlowSurfaceMockRouter = {
 type FlowSurfaceMockLayoutManager = {
   registerLayout(layout: unknown): void;
   getLayout(routeName: unknown): undefined;
-  listLayouts(): never[];
+  listLayouts(): unknown[];
 };
 
 type FlowSurfaceMockJsonLogic = {
@@ -143,8 +143,10 @@ export type FlowSurfaceMockFlowEngine = {
   registerModels(models: Record<string, unknown>): void;
   registerModelLoaders(loaders: Record<string, unknown>): void;
   registerActions(actions: Record<string, unknown>): void;
-  registerFlow(flow: FlowSurfaceUnknownFlowDefinition): void;
-  registerFlow(key: string, flow: FlowSurfaceUnknownFlowDefinition): void;
+  registerFlow(
+    keyOrDefinition: string | FlowSurfaceUnknownFlowDefinition,
+    flow?: FlowSurfaceUnknownFlowDefinition,
+  ): void;
   flowSettings: {
     registerComponents(components: Record<string, unknown>): void;
   };

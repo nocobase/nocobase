@@ -11,6 +11,8 @@ import { SequelizeCollectionManager } from '@nocobase/data-source-manager';
 import type { ResourcerContext } from '@nocobase/resourcer';
 import { Application } from '@nocobase/server';
 import { parseLiquidContext, transformSQL } from '@nocobase/utils';
+import { lstat, readdir } from 'fs/promises';
+import { basename, resolve } from 'path';
 import { FlowSurfaceCapabilityProviderRegistry } from './flow-surfaces/capability-provider';
 import { readFlowSurfaceCapabilityPolicyConfigFromPluginOptions } from './flow-surfaces/capability-policy';
 import { registerFlowSurfacesResource } from './flow-surfaces';
@@ -21,9 +23,20 @@ import PluginUISchemaStorageServer from './server';
 import { JSONValue } from './template/resolver';
 import { resolveVariablesBatch, resolveVariablesTemplate } from './variables/resolve';
 
+function isNodeErrnoException(error: unknown): error is NodeJS.ErrnoException {
+  return Boolean(error) && typeof error === 'object' && 'code' in error;
+}
+
+function isFlowSurfaceAutoSnapshotJsonFileName(fileName: string) {
+  return fileName === basename(fileName) && fileName.toLowerCase().endsWith('.json');
+}
+
 export class PluginFlowEngineServer extends PluginUISchemaStorageServer {
   readonly flowSurfaceCapabilityProviders = new FlowSurfaceCapabilityProviderRegistry();
   flowSurfaceAutoSnapshots: readonly FlowSurfaceAutoSnapshot[] = [];
+  private flowSurfaceAutoSnapshotRefreshPromise?: Promise<readonly FlowSurfaceAutoSnapshot[]>;
+  private flowSurfaceAutoSnapshotRefreshCacheKey?: string;
+  private flowSurfaceAutoSnapshotCacheKey?: string;
 
   static async staticImport() {
     Application.addCommand(registerFlowSurfaceExtractorCommand);
@@ -48,9 +61,7 @@ export class PluginFlowEngineServer extends PluginUISchemaStorageServer {
   async load() {
     await super.load();
     const capabilityPolicyConfig = readFlowSurfaceCapabilityPolicyConfigFromPluginOptions(this.options);
-    this.flowSurfaceAutoSnapshots = await loadFlowSurfaceAutoSnapshotsFromDirectory({
-      dir: capabilityPolicyConfig.extractorSnapshotDir,
-    });
+    await this.refreshFlowSurfaceAutoSnapshots(capabilityPolicyConfig.extractorSnapshotDir, { force: true });
     registerFlowSurfacesResource(this);
     this.app.auditManager.registerAction('flowSql:save');
     this.app.auditManager.registerAction('flowModels:save');
@@ -155,6 +166,85 @@ export class PluginFlowEngineServer extends PluginUISchemaStorageServer {
         await next();
       },
     });
+  }
+
+  async refreshFlowSurfaceAutoSnapshots(
+    snapshotDir?: string,
+    options: {
+      force?: boolean;
+    } = {},
+  ): Promise<readonly FlowSurfaceAutoSnapshot[]> {
+    const capabilityPolicyConfig = readFlowSurfaceCapabilityPolicyConfigFromPluginOptions(this.options);
+    const dir = snapshotDir || capabilityPolicyConfig.extractorSnapshotDir;
+    const cacheKey = await this.getFlowSurfaceAutoSnapshotCacheKey(dir);
+    if (!options.force && this.flowSurfaceAutoSnapshotCacheKey === cacheKey) {
+      return this.flowSurfaceAutoSnapshots;
+    }
+    if (this.flowSurfaceAutoSnapshotRefreshPromise) {
+      if (this.flowSurfaceAutoSnapshotRefreshCacheKey === cacheKey) {
+        return this.flowSurfaceAutoSnapshotRefreshPromise;
+      }
+      await this.flowSurfaceAutoSnapshotRefreshPromise;
+      return this.refreshFlowSurfaceAutoSnapshots(snapshotDir, options);
+    }
+    const refreshPromise = this.loadFlowSurfaceAutoSnapshotsFromStorage(dir)
+      .then((snapshots) => {
+        this.flowSurfaceAutoSnapshots = snapshots;
+        this.flowSurfaceAutoSnapshotCacheKey = cacheKey;
+        return snapshots;
+      })
+      .finally(() => {
+        if (this.flowSurfaceAutoSnapshotRefreshPromise === refreshPromise) {
+          this.flowSurfaceAutoSnapshotRefreshPromise = undefined;
+          this.flowSurfaceAutoSnapshotRefreshCacheKey = undefined;
+        }
+      });
+    this.flowSurfaceAutoSnapshotRefreshPromise = refreshPromise;
+    this.flowSurfaceAutoSnapshotRefreshCacheKey = cacheKey;
+    return refreshPromise;
+  }
+
+  protected loadFlowSurfaceAutoSnapshotsFromStorage(dir: string) {
+    return loadFlowSurfaceAutoSnapshotsFromDirectory({ dir });
+  }
+
+  protected async getFlowSurfaceAutoSnapshotCacheKey(snapshotDir: string) {
+    const dir = resolve(snapshotDir);
+    try {
+      const stats = await lstat(dir);
+      if (!stats.isDirectory() || stats.isSymbolicLink()) {
+        return `${dir}:invalid:${stats.mtimeMs}`;
+      }
+      const fileNames = await readdir(dir);
+      const files: string[] = [];
+      for (const fileName of fileNames.sort((left, right) => left.localeCompare(right))) {
+        if (!isFlowSurfaceAutoSnapshotJsonFileName(fileName)) {
+          continue;
+        }
+        try {
+          const fileStats = await lstat(resolve(dir, fileName));
+          files.push(
+            [
+              fileName,
+              fileStats.isFile() && !fileStats.isSymbolicLink() ? 'file' : 'ignored',
+              fileStats.dev,
+              fileStats.ino,
+              fileStats.size,
+              fileStats.mtimeMs,
+              fileStats.ctimeMs,
+            ].join(':'),
+          );
+        } catch (error) {
+          files.push(`${fileName}:missing:${error instanceof Error ? error.message : String(error)}`);
+        }
+      }
+      return `${dir}:${stats.dev}:${stats.ino}:${stats.mtimeMs}:${files.join('|')}`;
+    } catch (error) {
+      if (isNodeErrnoException(error) && error.code === 'ENOENT') {
+        return `${dir}:missing`;
+      }
+      return `${dir}:unknown`;
+    }
   }
 
   async install() {}

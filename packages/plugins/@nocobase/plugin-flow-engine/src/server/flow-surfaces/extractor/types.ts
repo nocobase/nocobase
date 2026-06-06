@@ -164,6 +164,7 @@ export type FlowSurfaceAutoChildSurface = {
   subModelKey: string;
   kind: 'block' | 'action' | 'fieldComponent';
   allowedChildren?: string[];
+  emptyWhenMissing?: boolean;
 };
 
 export type FlowSurfaceAutoAllowedChild = {

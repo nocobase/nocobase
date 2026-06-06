@@ -106,6 +106,10 @@ describe('flowSurfaces dynamic capability create dry-run', () => {
     }): Promise<ReadonlySet<string>>;
   };
 
+  type AutoSnapshotRefreshHarness = {
+    refreshAutoSnapshotsFromStorage(config: unknown): Promise<readonly unknown[]>;
+  };
+
   type TransactionHarness = {
     transaction<T>(callback: (transaction: unknown) => Promise<T>): Promise<T>;
   };
@@ -1248,7 +1252,7 @@ describe('flowSurfaces dynamic capability create dry-run', () => {
     ).resolves.toEqual([]);
   });
 
-  it('should persist catalog-confirmed JSON inferred Gantt addBlock candidates through the gated mapping', async () => {
+  it('should persist catalog-confirmed JSON inferred Gantt addBlock candidates from public resource input', async () => {
     const autoSnapshot = createGanttAutoSnapshot({ inferredAuthoring: true });
     const service = new FlowSurfacesService({
       flowSurfaceAutoSnapshots: [autoSnapshot],
@@ -1285,10 +1289,20 @@ describe('flowSurfaces dynamic capability create dry-run', () => {
         persistedPayloads.push(payload);
         return 'created-gantt-block';
       },
-      findModelById: async () => ({
-        uid: 'created-gantt-block',
-        ...(persistedPayloads[0] || {}),
-      }),
+      findModelById: async () => {
+        const persisted = (persistedPayloads[0] || {}) as Record<string, unknown>;
+        const { subModels, ...rest } = persisted;
+        const materializedSubModels = Object.fromEntries(
+          Object.entries((subModels as Record<string, unknown>) || {}).filter(
+            ([, value]) => !Array.isArray(value) || value.length > 0,
+          ),
+        );
+        return {
+          uid: 'created-gantt-block',
+          ...rest,
+          ...(Object.keys(materializedSubModels).length ? { subModels: materializedSubModels } : {}),
+        };
+      },
     });
 
     const result = await harness.tryAddDynamicBlock({
@@ -1297,7 +1311,7 @@ describe('flowSurfaces dynamic capability create dry-run', () => {
           uid: 'target-grid',
         },
         type: 'pluginGantt.gantt',
-        initParams: {
+        resource: {
           collectionName: 'tasks',
         },
         settings: {
@@ -1319,6 +1333,12 @@ describe('flowSurfaces dynamic capability create dry-run', () => {
       subKey: 'items',
       subType: 'array',
       popupProfile: null,
+      semanticResource: {
+        kind: 'raw',
+        value: {
+          collectionName: 'tasks',
+        },
+      },
     });
 
     expect(result).toMatchObject({
@@ -1339,6 +1359,14 @@ describe('flowSurfaces dynamic capability create dry-run', () => {
           end: 'endAt',
         },
       },
+      stepParams: {
+        resourceSettings: {
+          init: {
+            dataSourceKey: 'main',
+            collectionName: 'tasks',
+          },
+        },
+      },
       subModels: {
         actions: [],
         columns: [
@@ -1348,6 +1376,40 @@ describe('flowSurfaces dynamic capability create dry-run', () => {
         ],
       },
     });
+  });
+
+  it('should refresh auto snapshots before direct addBlock resolves dynamic block types', async () => {
+    const service = new FlowSurfacesService({
+      options: {},
+      flowSurfaceAutoSnapshots: [],
+      flowSurfaceCapabilityProviders: createProviderRegistry([]),
+    } as unknown as ConstructorParameters<typeof FlowSurfacesService>[0]);
+    const refresh = vi
+      .spyOn(service as unknown as AutoSnapshotRefreshHarness, 'refreshAutoSnapshotsFromStorage')
+      .mockResolvedValue([]);
+    vi.spyOn(service as unknown as EnabledPackagesHarness, 'resolveEnabledPluginPackages').mockResolvedValue(
+      new Set(['@nocobase/plugin-gantt']),
+    );
+    const resolveDynamicBlockTypes = vi
+      .spyOn(service as unknown as DynamicBlockWriteGateHarness, 'resolveDynamicBlockTypes')
+      .mockRejectedValue(new Error('stop after dynamic type resolution'));
+
+    await expect(
+      service.addBlock({
+        target: {
+          uid: 'target-grid',
+        },
+        type: 'pluginGantt.gantt',
+        resource: {
+          collectionName: 'tasks',
+        },
+        settings: {},
+      }),
+    ).rejects.toThrow('stop after dynamic type resolution');
+
+    expect(refresh).toHaveBeenCalledTimes(1);
+    expect(resolveDynamicBlockTypes).toHaveBeenCalledTimes(1);
+    expect(refresh.mock.invocationCallOrder[0]).toBeLessThan(resolveDynamicBlockTypes.mock.invocationCallOrder[0]);
   });
 
   it('should expose Gantt child actions from JSON inferred child surfaces without server providers', async () => {
@@ -2960,7 +3022,7 @@ describe('flowSurfaces dynamic capability create dry-run', () => {
     });
   });
 
-  it('should reject JSON inferred Gantt addBlock writes when the actions child surface is missing on readback', async () => {
+  it('should accept JSON inferred Gantt addBlock writes when empty action surfaces are omitted on readback', async () => {
     const autoSnapshot = createGanttAutoSnapshot({ inferredAuthoring: true });
     const service = new FlowSurfacesService({
       flowSurfaceAutoSnapshots: [autoSnapshot],
@@ -3036,14 +3098,10 @@ describe('flowSurfaces dynamic capability create dry-run', () => {
         subType: 'array',
         popupProfile: null,
       }),
-    ).rejects.toMatchObject({
-      message: `flowSurfaces addBlock dynamic block 'gantt' failed readback parity guard`,
-      options: {
-        details: expect.objectContaining({
-          reasonCode: 'readback-parity-failed',
-          reasonSource: 'builder',
-        }),
-      },
+    ).resolves.toMatchObject({
+      uid: 'created-gantt-block',
+      parentUid: 'parent-grid',
+      subKey: 'items',
     });
   });
 
@@ -4676,7 +4734,7 @@ describe('flowSurfaces dynamic capability create dry-run', () => {
         {
           key: 'plannedGantt',
           type: 'pluginGantt.gantt',
-          initParams: {
+          resource: {
             collectionName: 'tasks',
           },
           settings: {},
@@ -4706,7 +4764,7 @@ describe('flowSurfaces dynamic capability create dry-run', () => {
         },
         key: 'plannedGantt',
         type: 'pluginGantt.gantt',
-        initParams: {
+        resource: {
           collectionName: 'tasks',
         },
         settings: {},
@@ -4856,7 +4914,7 @@ describe('flowSurfaces dynamic capability create dry-run', () => {
               {
                 key: 'plannedGantt',
                 type: 'pluginGantt.gantt',
-                initParams: {
+                resource: {
                   collectionName: 'tasks',
                 },
                 settings: {},
@@ -4893,9 +4951,10 @@ describe('flowSurfaces dynamic capability create dry-run', () => {
         blocks: expect.arrayContaining([
           expect.objectContaining({
             type: 'pluginGantt.gantt',
-            initParams: {
+            resource: expect.objectContaining({
+              dataSourceKey: 'main',
               collectionName: 'tasks',
-            },
+            }),
           }),
         ]),
       }),

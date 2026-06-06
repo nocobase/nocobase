@@ -414,13 +414,14 @@ function collectNamedImports(sourceFile: ts.SourceFile) {
     ) {
       return;
     }
+    const moduleSpecifier = statement.moduleSpecifier;
     const namedBindings = statement.importClause.namedBindings;
     if (!namedBindings || !ts.isNamedImports(namedBindings)) {
       return;
     }
     namedBindings.elements.forEach((element) => {
       imports.set(element.name.text, {
-        specifier: statement.moduleSpecifier.text,
+        specifier: moduleSpecifier.text,
         importedName: element.propertyName?.text || element.name.text,
       });
     });
@@ -659,7 +660,10 @@ function isExistingFile(filePath: string) {
 }
 
 function hasExportModifier(node: ts.Node) {
-  return !!ts.getModifiers(node)?.some((modifier) => modifier.kind === ts.SyntaxKind.ExportKeyword);
+  return (
+    ts.canHaveModifiers(node) &&
+    !!ts.getModifiers(node)?.some((modifier) => modifier.kind === ts.SyntaxKind.ExportKeyword)
+  );
 }
 
 function isModelExportName(name: string) {
@@ -993,7 +997,7 @@ function getJsxAttributes(node: ts.JsxOpeningElement | ts.JsxSelfClosingElement)
     if (!ts.isJsxAttribute(property)) {
       return;
     }
-    const name = property.name.text;
+    const name = ts.isIdentifier(property.name) ? property.name.text : property.name.getText();
     attributes[name] = getJsxAttributeString(property.initializer);
     if (name === 'title') {
       titleLabel = getJsxAttributeLabel(property.initializer);
@@ -1222,7 +1226,11 @@ function getModelClassNamesFromExpression(node: ts.Expression): string[] {
       return getModelClassNamesFromExpression(element);
     });
   }
-  if (ts.isCallExpression(node) && getExpressionName(node.expression) === 'filter') {
+  if (
+    ts.isCallExpression(node) &&
+    ts.isPropertyAccessExpression(node.expression) &&
+    getExpressionName(node.expression) === 'filter'
+  ) {
     return getModelClassNamesFromExpression(node.expression.expression);
   }
   const modelClassName = getModelClassNameFromExpression(node);
