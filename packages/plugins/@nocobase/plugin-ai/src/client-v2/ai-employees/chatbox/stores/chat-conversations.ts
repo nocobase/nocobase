@@ -10,6 +10,7 @@
 import { create } from 'zustand';
 import type { Conversation } from '../../types';
 import { createSelectors } from './create-selectors';
+import { getOrCreateGlobalStore } from './global-store';
 
 interface ChatConversationsState {
   currentConversation?: string;
@@ -29,26 +30,28 @@ interface ChatConversationsActions {
   setUnreadCount: (unreadCount: number | ((prev: number) => number)) => void;
 }
 
-const store = create<ChatConversationsState & ChatConversationsActions>((set) => ({
-  currentConversation: undefined,
-  conversations: [],
-  keyword: '',
-  webSearch: false,
-  conversationSegmented: 'conversations',
-  unreadCount: 0,
+const store = getOrCreateGlobalStore('@nocobase/plugin-ai/chat-conversations-store', () =>
+  create<ChatConversationsState & ChatConversationsActions>((set) => ({
+    currentConversation: undefined,
+    conversations: [],
+    keyword: '',
+    webSearch: false,
+    conversationSegmented: 'conversations',
+    unreadCount: 0,
 
-  setCurrentConversation: (id) => set({ currentConversation: id }),
-  setKeyword: (keyword) => set({ keyword }),
-  setConversations: (conversations) =>
-    set((state) => ({
-      conversations: typeof conversations === 'function' ? conversations(state.conversations) : conversations,
-    })),
-  setWebSearch: (webSearch) => set({ webSearch }),
-  setConversationSegmented: (conversationSegmented) => set({ conversationSegmented }),
-  setUnreadCount: (unreadCount) =>
-    set((state) => ({
-      unreadCount: typeof unreadCount === 'function' ? unreadCount(state.unreadCount) : unreadCount,
-    })),
-}));
+    setCurrentConversation: (id) => set({ currentConversation: id }),
+    setKeyword: (keyword) => set({ keyword }),
+    setConversations: (conversations) =>
+      set((state) => ({
+        conversations: typeof conversations === 'function' ? conversations(state.conversations) : conversations,
+      })),
+    setWebSearch: (webSearch) => set({ webSearch }),
+    setConversationSegmented: (conversationSegmented) => set({ conversationSegmented }),
+    setUnreadCount: (unreadCount) =>
+      set((state) => ({
+        unreadCount: typeof unreadCount === 'function' ? unreadCount(state.unreadCount) : unreadCount,
+      })),
+  })),
+);
 
 export const useChatConversationsStore = createSelectors(store);
