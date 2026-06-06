@@ -75,7 +75,12 @@ export class FilterActionModel extends ActionModel {
                 value={this.props.filterValue || this.props.defaultFilterValue}
                 ctx={this.context}
                 FilterItem={(props) => (
-                  <VariableFilterItem {...props} model={this} ignoreFieldNames={this.getIgnoreFieldNames()} />
+                  <VariableFilterItem
+                    {...props}
+                    model={this}
+                    ignoreFieldNames={this.getIgnoreFieldNames()}
+                    maxAssociationFieldDepth={2}
+                  />
                 )}
               />
               <div style={{ height: 150 }}></div>
@@ -94,7 +99,12 @@ export class FilterActionModel extends ActionModel {
             value={this.props.filterValue || this.props.defaultFilterValue}
             ctx={this.context}
             FilterItem={(props) => (
-              <VariableFilterItem {...props} model={this} ignoreFieldNames={this.getIgnoreFieldNames()} />
+              <VariableFilterItem
+                {...props}
+                model={this}
+                ignoreFieldNames={this.getIgnoreFieldNames()}
+                maxAssociationFieldDepth={2}
+              />
             )}
           />
         }
@@ -187,7 +197,9 @@ FilterActionModel.registerFlow({
             return (
               <FilterGroup
                 value={props.value || {}}
-                FilterItem={(props) => <VariableFilterItem {...props} model={modelInstance} />}
+                FilterItem={(props) => (
+                  <VariableFilterItem {...props} model={modelInstance} maxAssociationFieldDepth={2} />
+                )}
               />
             );
           },

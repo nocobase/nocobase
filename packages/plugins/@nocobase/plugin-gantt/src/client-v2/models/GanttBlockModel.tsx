@@ -163,6 +163,13 @@ export class GanttBlockModel extends TableBlockModel {
     );
   }
 
+  shouldScrollToTodayOnFirstRender() {
+    return (
+      (this.props?.scrollToTodayOnFirstRender ??
+        this.getStepParams('ganttSettings', 'scrollToTodayOnFirstRender')?.scrollToTodayOnFirstRender) === true
+    );
+  }
+
   getTreeChildrenFieldName() {
     return (
       this.getCollectionFields().find((field: any) => field?.treeChildren || field?.options?.treeChildren)?.name ||

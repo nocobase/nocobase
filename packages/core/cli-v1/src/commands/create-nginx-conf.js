@@ -8,7 +8,7 @@
  */
 
 const { resolve, posix } = require('path');
-const { storagePathJoin, resolvePublicPath, resolveV2PublicPath } = require('../util');
+const { storagePathJoin, resolvePublicPath, resolveV2PublicPath, normalizeModernClientPrefix } = require('../util');
 const { Command } = require('commander');
 const { readFileSync, writeFileSync } = require('fs');
 
@@ -21,17 +21,20 @@ module.exports = (cli) => {
     const rawAppPublicPath = process.env.APP_PUBLIC_PATH || '/';
     const appPublicPath = resolvePublicPath(rawAppPublicPath);
     const v2PublicPath = resolveV2PublicPath(rawAppPublicPath);
+    const modernClientPrefix = normalizeModernClientPrefix(process.env.APP_MODERN_CLIENT_PREFIX);
     const appPublicPathWithoutTrailingSlash = appPublicPath.replace(/\/$/, '');
     const v2PublicPathWithoutTrailingSlash = v2PublicPath.replace(/\/$/, '');
     const file = resolve(__dirname, '../../nocobase.conf.tpl');
     const data = readFileSync(file, 'utf-8');
     let otherLocation = '';
     if (appPublicPath !== '/') {
-      otherLocation = `location = /v2 {
+      // When the app is mounted under a sub-path, redirect the root-level
+      // `/<prefix>` and `/<prefix>/` to the real (sub-path-prefixed) location.
+      otherLocation = `location = /${modernClientPrefix} {
         return 302 ${v2PublicPath}$is_args$args;
     }
 
-    location /v2/ {
+    location /${modernClientPrefix}/ {
         return 302 ${appPublicPathWithoutTrailingSlash}$uri$is_args$args;
     }
 

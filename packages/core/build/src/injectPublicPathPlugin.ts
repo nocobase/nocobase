@@ -28,15 +28,17 @@ if (!publicPath) {
   }
 }
 if (!publicPath) {
+  var modernPrefix = window['__nocobase_modern_client_prefix__'] || 'v';
+  modernPrefix = String(modernPrefix).replace(/^\\/+|\\/+$/g, '') || 'v';
+  var marker = '/' + modernPrefix + '/';
   publicPath = window['__nocobase_public_path__'] || '';
   if (!publicPath && window.location && window.location.pathname) {
-    var marker = '/v2/';
     var pathname = window.location.pathname || '/';
     var index = pathname.indexOf(marker);
     publicPath = index >= 0 ? pathname.slice(0, index + 1) : '/';
   }
   if (publicPath) {
-    publicPath = publicPath.replace(/\\/v2\\/?$/, '/');
+    publicPath = publicPath.replace(new RegExp('/' + modernPrefix + '/?$'), '/');
   }
   if (!publicPath) {
     publicPath = '/';

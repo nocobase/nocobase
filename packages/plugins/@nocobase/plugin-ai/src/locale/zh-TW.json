@@ -107,6 +107,7 @@
   "KnowledgeBase": "Knowledge Base",
   "LLM service": "LLM service",
   "LLM services": "LLM services",
+  "LLM service test failed. Please check the service configuration.": "LLM 服務測試失敗，請檢查服務設定。",
   "Label for task selection buttons when multiple tasks exist": "Label for task selection buttons when multiple tasks exist",
   "Limit": "Limit",
   "Max completion tokens description": "An upper bound for the number of tokens that can be generated for a completion, including visible output tokens and reasoning tokens.",

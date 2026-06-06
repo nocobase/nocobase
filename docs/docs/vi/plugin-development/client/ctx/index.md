@@ -85,7 +85,7 @@ async load() {
 ```tsx
 // Trong component: điều hướng trang
 const ctx = useFlowContext();
-ctx.router.navigate('/hello'); // -> /v2/hello
+ctx.router.navigate('/hello'); // -> /v/hello
 ```
 
 ## Các năng lực phổ biến mà context cung cấp

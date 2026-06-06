@@ -8,7 +8,7 @@
  */
 
 import React from 'react';
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { render, screen, waitFor } from '@testing-library/react';
 import { FlowContextProvider, FlowEngine, FlowEngineProvider, type FlowModel } from '@nocobase/flow-engine';
@@ -32,6 +32,13 @@ describe('FlowRoute', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     hookState.refresh = vi.fn();
+    // Fixtures mount the modern client under the `v2` segment; tell the
+    // runtime-prefix helper so v2-runtime detection matches.
+    (globalThis.window as any).__nocobase_modern_client_prefix__ = 'v2';
+  });
+
+  afterEach(() => {
+    delete (globalThis.window as any).__nocobase_modern_client_prefix__;
   });
 
   it('should bridge page lifecycle to admin-layout-model', async () => {
