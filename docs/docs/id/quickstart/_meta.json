@@ -1,69 +1,64 @@
 [
   {
     "type": "custom-link",
-    "label": "开始前",
+    "label": "Sebelum mulai",
     "items": [
       {
         "type": "custom-link",
-        "label": "NocoBase 如何工作",
+        "label": "Cara kerja NocoBase",
         "link": "/get-started/how-nocobase-works"
       },
       {
         "type": "custom-link",
-        "label": "系统要求",
+        "label": "Persyaratan sistem",
         "link": "/get-started/system-requirements"
       }
     ]
   },
   {
     "type": "custom-link",
-    "label": "应用的安装",
+    "label": "Instal NocoBase",
     "items": [
       {
         "type": "custom-link",
-        "label": "使用 CLI 安装（推荐）",
+        "label": "Instal dengan CLI (Direkomendasikan)",
         "link": "/quickstart/installation/cli"
       },
       {
         "type": "custom-link",
-        "label": "从旧方式迁移到 CLI",
+        "label": "Migrasi dari metode lama ke CLI",
         "link": "/quickstart/installation/migration"
       },
       {
         "type": "custom-link",
-        "label": "通过 Docker Compose 安装",
+        "label": "Instal dengan Docker Compose",
         "link": "/quickstart/installation/docker-compose"
       },
       {
         "type": "custom-link",
-        "label": "内网安装",
+        "label": "Instalasi air-gapped",
         "link": "/quickstart/installation/airgap"
       },
       {
         "type": "custom-link",
-        "label": "应用环境变量",
+        "label": "Variabel lingkungan aplikasi",
         "link": "/quickstart/installation/env"
-      }
-    ]
-  },
-  {
-    "type": "custom-link",
-    "label": "插件的安装",
-    "items": [
+      },
       {
         "type": "custom-link",
-        "label": "第三方插件安装",
+        "label": "Plugin pihak ketiga",
         "link": "/quickstart/plugins/third-party"
       }
     ]
   },
   {
     "type": "custom-link",
-    "label": "生产环境部署",
+    "label": "Deployment produksi",
     "items": [
       {
         "type": "custom-link",
-        "label": "反向代理",
+        "label": "Reverse proxy",
+        "link": "/quickstart/production/reverse-proxy",
         "items": [
           {
             "type": "custom-link",
@@ -81,28 +76,28 @@
   },
   {
     "type": "custom-link",
-    "label": "运维与发布",
+    "label": "Operasi dan rilis",
     "items": [
       {
         "type": "custom-link",
-        "label": "管理应用",
+        "label": "Kelola aplikasi",
         "link": "/quickstart/operations/manage-app"
       },
       {
         "type": "custom-link",
-        "label": "多环境管理",
+        "label": "Pengelolaan multi-lingkungan",
         "link": "/quickstart/operations/multi-environment"
       },
       {
         "type": "custom-link",
-        "label": "备份还原",
+        "label": "Backup dan restore",
         "link": "/quickstart/operations/backup-restore"
       }
     ]
   },
   {
     "type": "custom-link",
-    "label": "开始（旧版）",
+    "label": "Mulai (lama)",
     "proxy": false,
     "link": "/get-started/how-nocobase-works"
   }

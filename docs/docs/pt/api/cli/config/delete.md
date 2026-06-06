@@ -6,7 +6,7 @@ keywords: 'nb config delete,NocoBase CLI,excluir configuração'
 
 # nb config delete
 
-Exclui um item de configuração da CLI definido explicitamente. Após a exclusão, esse item de configuração volta ao valor padrão.
+Exclui um item de configuração da CLI definido explicitamente. Após a exclusão, esse item volta ao valor padrão.
 
 ## Uso
 
@@ -16,8 +16,8 @@ nb config delete <key>
 
 ## Parâmetros
 
-| Parâmetro | Tipo   | Descrição                                                                                                                                   |
-| --------- | ------ | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| Parâmetro | Tipo | Descrição |
+| --- | --- | --- |
 | `<key>` | string | Nome do item de configuração. Consulte [`nb config`](./index.md) para ver os valores suportados |
 
 ## Exemplos
@@ -27,7 +27,6 @@ nb config delete locale
 nb config delete update.policy
 nb config delete docker.network
 nb config delete docker.container-prefix
-nb config delete proxy.provider
 nb config delete proxy.nb-cli-root
 nb config delete proxy.upstream-host
 nb config delete bin.nginx

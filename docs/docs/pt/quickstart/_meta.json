@@ -1,69 +1,64 @@
 [
   {
     "type": "custom-link",
-    "label": "开始前",
+    "label": "Antes de começar",
     "items": [
       {
         "type": "custom-link",
-        "label": "NocoBase 如何工作",
+        "label": "Como o NocoBase funciona",
         "link": "/get-started/how-nocobase-works"
       },
       {
         "type": "custom-link",
-        "label": "系统要求",
+        "label": "Requisitos do sistema",
         "link": "/get-started/system-requirements"
       }
     ]
   },
   {
     "type": "custom-link",
-    "label": "应用的安装",
+    "label": "Instalar o NocoBase",
     "items": [
       {
         "type": "custom-link",
-        "label": "使用 CLI 安装（推荐）",
+        "label": "Instalar com CLI (Recomendado)",
         "link": "/quickstart/installation/cli"
       },
       {
         "type": "custom-link",
-        "label": "从旧方式迁移到 CLI",
+        "label": "Migrar do método antigo para a CLI",
         "link": "/quickstart/installation/migration"
       },
       {
         "type": "custom-link",
-        "label": "通过 Docker Compose 安装",
+        "label": "Instalar com Docker Compose",
         "link": "/quickstart/installation/docker-compose"
       },
       {
         "type": "custom-link",
-        "label": "内网安装",
+        "label": "Instalação air-gapped",
         "link": "/quickstart/installation/airgap"
       },
       {
         "type": "custom-link",
-        "label": "应用环境变量",
+        "label": "Variáveis de ambiente do app",
         "link": "/quickstart/installation/env"
-      }
-    ]
-  },
-  {
-    "type": "custom-link",
-    "label": "插件的安装",
-    "items": [
+      },
       {
         "type": "custom-link",
-        "label": "第三方插件安装",
+        "label": "Plugins de terceiros",
         "link": "/quickstart/plugins/third-party"
       }
     ]
   },
   {
     "type": "custom-link",
-    "label": "生产环境部署",
+    "label": "Deploy em produção",
     "items": [
       {
         "type": "custom-link",
-        "label": "反向代理",
+        "label": "Proxy reverso",
+        "link": "/quickstart/production/reverse-proxy",
         "items": [
           {
             "type": "custom-link",
@@ -81,28 +76,28 @@
   },
   {
     "type": "custom-link",
-    "label": "运维与发布",
+    "label": "Operações e releases",
     "items": [
       {
         "type": "custom-link",
-        "label": "管理应用",
+        "label": "Gerenciar app",
         "link": "/quickstart/operations/manage-app"
       },
       {
         "type": "custom-link",
-        "label": "多环境管理",
+        "label": "Gerenciamento multiambiente",
         "link": "/quickstart/operations/multi-environment"
       },
       {
         "type": "custom-link",
-        "label": "备份还原",
+        "label": "Backup e restauração",
         "link": "/quickstart/operations/backup-restore"
       }
     ]
   },
   {
     "type": "custom-link",
-    "label": "开始（旧版）",
+    "label": "Primeiros passos (legado)",
     "proxy": false,
     "link": "/get-started/how-nocobase-works"
   }

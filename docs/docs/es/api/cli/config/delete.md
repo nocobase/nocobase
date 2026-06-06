@@ -27,7 +27,6 @@ nb config delete locale
 nb config delete update.policy
 nb config delete docker.network
 nb config delete docker.container-prefix
-nb config delete proxy.provider
 nb config delete proxy.nb-cli-root
 nb config delete proxy.upstream-host
 nb config delete bin.nginx

@@ -33,7 +33,6 @@ nb config set bin.docker /usr/local/bin/docker
 nb config set bin.caddy /opt/homebrew/bin/caddy
 nb config set bin.git /usr/bin/git
 nb config set bin.nginx /usr/sbin/nginx
-nb config set proxy.provider caddy
 nb config set proxy.nb-cli-root /workspace
 nb config set proxy.upstream-host host.docker.internal
 nb config set bin.yarn yarn
@@ -43,7 +42,6 @@ nb config set bin.yarn yarn
 
 `update.policy` admite `prompt`, `auto` y `off`, y el valor predeterminado es `prompt`.
 
-`proxy.provider` admite `nginx` y `caddy`.
 
 ## Comandos relacionados
 

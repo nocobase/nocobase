@@ -11,7 +11,7 @@ keywords: "nb config,NocoBase CLI,配置,默认配置"
 - CLI 自身：`locale`、`update.policy`、`license.pkg-url`
 - Docker 运行：`docker.network`、`docker.container-prefix`
 - 外部可执行文件：`bin.docker`、`bin.caddy`、`bin.git`、`bin.nginx`、`bin.yarn`
-- 代理生成：`proxy.provider`、`proxy.nb-cli-root`、`proxy.upstream-host`
+- 代理生成：`proxy.nb-cli-root`、`proxy.upstream-host`
 
 ## 常用配置项
 
@@ -27,7 +27,6 @@ keywords: "nb config,NocoBase CLI,配置,默认配置"
 | `bin.git` | `git` | 覆盖 Git 可执行文件路径 |
 | `bin.nginx` | `nginx` | 覆盖 Nginx 可执行文件路径 |
 | `bin.yarn` | `yarn` | 覆盖 Yarn 可执行文件路径 |
-| `proxy.provider` | `nginx` | `nb env proxy` 默认使用的代理 provider |
 | `proxy.nb-cli-root` | CLI root（通常是当前用户 Home 目录） | 把 `.nocobase` 路径映射到代理进程实际看到的根目录 |
 | `proxy.upstream-host` | `127.0.0.1` | 代理回源到 NocoBase 应用时使用的主机地址 |
 
@@ -52,8 +51,8 @@ nb config <command>
 nb config list
 nb config get update.policy
 nb config set update.policy auto
-nb config get proxy.provider
-nb config set proxy.provider caddy
+nb config get proxy.nb-cli-root
+nb config set proxy.nb-cli-root /workspace
 nb config set proxy.upstream-host host.docker.internal
 nb config get docker.network
 nb config set docker.network nocobase

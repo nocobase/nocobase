@@ -6,21 +6,12 @@ keywords: 'nb config,NocoBase CLI,konfigurasi,konfigurasi default'
 
 # nb config
 
-Kelola konfigurasi default CLI. Item konfigurasi yang saat ini didukung meliputi:
+Kelola konfigurasi default CLI. Item konfigurasi saat ini terutama dibagi ke dalam kelompok berikut:
 
-- `locale`
-- `update.policy`
-- `license.pkg-url`
-- `docker.network`
-- `docker.container-prefix`
-- `bin.docker`
-- `bin.caddy`
-- `bin.git`
-- `bin.nginx`
-- `bin.yarn`
-- `proxy.provider`
-- `proxy.nb-cli-root`
-- `proxy.upstream-host`
+- CLI itu sendiri: `locale`, `update.policy`, `license.pkg-url`
+- Runtime Docker: `docker.network`, `docker.container-prefix`
+- Executable eksternal: `bin.docker`, `bin.caddy`, `bin.git`, `bin.nginx`, `bin.yarn`
+- Pembuatan proxy: `proxy.nb-cli-root`, `proxy.upstream-host`
 
 ## Item konfigurasi umum
 
@@ -36,7 +27,6 @@ Kelola konfigurasi default CLI. Item konfigurasi yang saat ini didukung meliputi
 | `bin.git` | `git` | Mengganti path executable Git |
 | `bin.nginx` | `nginx` | Mengganti path executable Nginx |
 | `bin.yarn` | `yarn` | Mengganti path executable Yarn |
-| `proxy.provider` | `nginx` | Provider proxy default yang digunakan oleh `nb env proxy` |
 | `proxy.nb-cli-root` | Root CLI, biasanya direktori home pengguna saat ini | Memetakan path `.nocobase` ke root path yang terlihat oleh proses proxy |
 | `proxy.upstream-host` | `127.0.0.1` | Host yang digunakan proxy saat meneruskan trafik kembali ke aplikasi NocoBase |
 
@@ -61,8 +51,8 @@ nb config <command>
 nb config list
 nb config get update.policy
 nb config set update.policy auto
-nb config get proxy.provider
-nb config set proxy.provider caddy
+nb config get proxy.nb-cli-root
+nb config set proxy.nb-cli-root /workspace
 nb config set proxy.upstream-host host.docker.internal
 nb config get docker.network
 nb config set docker.network nocobase

@@ -6,7 +6,7 @@ keywords: "nb env update,NocoBase CLI,env 配置,认证,数据库,源码"
 
 # nb env update
 
-`nb env update` 用来更新一个已保存 env 的配置。你可以用它调整 API 地址、认证方式、源码来源、本地应用路径、端口、数据库参数等。更新完成后，CLI 会根据变更自动处理后续事宜。
+`nb env update` 用来更新一个已保存 env 的配置。你可以用它调整 API 地址、认证方式、源码来源、本地应用路径、公开访问路径、端口、数据库参数等。更新完成后，CLI 会根据变更自动处理后续事宜。
 
 如果你不带配置参数，CLI 也会按当前 env 状态做一次重新同步。
 
@@ -51,7 +51,9 @@ nb env update [name] [flags]
 | 参数 | 类型 | 说明 |
 | --- | --- | --- |
 | `--app-path` | string | 应用目录。现在默认推荐优先用这个参数管理本地目录。 |
+| `--app-public-path` | string | 应用公开访问路径（`APP_PUBLIC_PATH`），比如 `/` 或 `/nocobase/`。 |
 | `--app-port` | string | 应用 HTTP 端口。 |
+| `--cdn-base-url` | string | 客户端静态资源 CDN 基地址（`CDN_BASE_URL`）。 |
 | `--app-key` | string | 应用密钥（`APP_KEY`）。 |
 | `--timezone` | string | 应用时区（`TZ`）。 |
 
@@ -88,6 +90,7 @@ nb env update [name] [flags]
 - 更新完成后，CLI 会根据这次变更自动处理需要的后续同步
 - 其他参数只会更新已保存的 env 配置，不会自动重启应用，也不会自动替换本地源码或 Docker 镜像
 - 修改 `app-path`、`app-port`、`timezone`、`db-*` 这类配置后，CLI 通常会提示你后续执行 `nb app restart --env <name>`；如果变更涉及 CLI 托管的内置数据库，则会提示使用 `nb app restart --env <name> --with-db`
+- 修改 `app-port`、`app-public-path`、`cdn-base-url` 这类会影响反向代理渲染结果的配置后，如果你已经在用 `nb env proxy nginx` 或 `nb env proxy caddy`，通常还要重新执行对应的 proxy 子命令
 - 更新 `source`、`download-version`、`docker-registry`、`git-url`、`npm-registry` 这类源码设置时，只会改保存值。现有本地源码、依赖和镜像不会自动替换
 - `--access-token` 不能和 `--auth-type basic` 或 `--auth-type oauth` 一起使用
 - 同一个字段不能同时用 `--unset` 和显式赋值。比如不能同时写 `--unset git-url` 和 `--git-url ...`
@@ -116,6 +119,12 @@ nb env update local --source git --git-url git@github.com:nocobase/nocobase.git 
 
 # 调整应用端口和时区，稍后再重启应用
 nb env update local --app-port 13080 --timezone Asia/Shanghai
+
+# 调整应用公开访问路径，改完后通常还要重新生成 proxy
+nb env update local --app-public-path /nocobase/
+
+# 保存客户端静态资源的 CDN 基地址
+nb env update local --cdn-base-url https://cdn.example.com/nocobase/
 
 # 清空已保存的字段
 nb env update local --unset git-url --unset username

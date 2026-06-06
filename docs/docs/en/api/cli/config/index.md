@@ -6,21 +6,12 @@ keywords: 'nb config,NocoBase CLI,configuration,default configuration'
 
 # nb config
 
-Manage the default CLI configuration. The currently supported configuration items include:
+Manage the default CLI configuration. The current configuration items mainly fall into these groups:
 
-- `locale`
-- `update.policy`
-- `license.pkg-url`
-- `docker.network`
-- `docker.container-prefix`
-- `bin.docker`
-- `bin.caddy`
-- `bin.git`
-- `bin.nginx`
-- `bin.yarn`
-- `proxy.provider`
-- `proxy.nb-cli-root`
-- `proxy.upstream-host`
+- CLI itself: `locale`, `update.policy`, `license.pkg-url`
+- Docker runtime: `docker.network`, `docker.container-prefix`
+- External executables: `bin.docker`, `bin.caddy`, `bin.git`, `bin.nginx`, `bin.yarn`
+- Proxy generation: `proxy.nb-cli-root`, `proxy.upstream-host`
 
 ## Common configuration items
 
@@ -36,7 +27,6 @@ Manage the default CLI configuration. The currently supported configuration item
 | `bin.git` | `git` | Override the Git executable path |
 | `bin.nginx` | `nginx` | Override the Nginx executable path |
 | `bin.yarn` | `yarn` | Override the Yarn executable path |
-| `proxy.provider` | `nginx` | Default proxy provider used by `nb env proxy` |
 | `proxy.nb-cli-root` | CLI root, usually the current user's home directory | Map the `.nocobase` path to the root path visible to the proxy process |
 | `proxy.upstream-host` | `127.0.0.1` | Host used when the proxy forwards traffic back to the NocoBase app |
 
@@ -61,8 +51,8 @@ nb config <command>
 nb config list
 nb config get update.policy
 nb config set update.policy auto
-nb config get proxy.provider
-nb config set proxy.provider caddy
+nb config get proxy.nb-cli-root
+nb config set proxy.nb-cli-root /workspace
 nb config set proxy.upstream-host host.docker.internal
 nb config get docker.network
 nb config set docker.network nocobase

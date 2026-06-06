@@ -16,8 +16,8 @@ nb config get <key>
 
 ## Parâmetros
 
-| Parâmetro | Tipo   | Descrição                                                                                                                                   |
-| --------- | ------ | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| Parâmetro | Tipo | Descrição |
+| --- | --- | --- |
 | `<key>` | string | Nome do item de configuração. Consulte [`nb config`](./index.md) para ver os valores suportados |
 
 ## Exemplos
@@ -28,7 +28,6 @@ nb config get update.policy
 nb config get license.pkg-url
 nb config get docker.network
 nb config get docker.container-prefix
-nb config get proxy.provider
 nb config get proxy.nb-cli-root
 nb config get proxy.upstream-host
 nb config get bin.nginx

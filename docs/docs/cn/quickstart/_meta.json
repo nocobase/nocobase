@@ -58,6 +58,7 @@
       {
         "type": "custom-link",
         "label": "反向代理",
+        "link": "/quickstart/production/reverse-proxy",
         "items": [
           {
             "type": "custom-link",

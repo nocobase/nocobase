@@ -6,21 +6,12 @@ keywords: 'nb config,NocoBase CLI,configuração,configuração padrão'
 
 # nb config
 
-Gerencie a configuração padrão da CLI. Os itens de configuração atualmente suportados incluem:
+Gerencie a configuração padrão da CLI. Os itens atuais se dividem principalmente nestes grupos:
 
-- `locale`
-- `update.policy`
-- `license.pkg-url`
-- `docker.network`
-- `docker.container-prefix`
-- `bin.docker`
-- `bin.caddy`
-- `bin.git`
-- `bin.nginx`
-- `bin.yarn`
-- `proxy.provider`
-- `proxy.nb-cli-root`
-- `proxy.upstream-host`
+- A própria CLI: `locale`, `update.policy`, `license.pkg-url`
+- Runtime Docker: `docker.network`, `docker.container-prefix`
+- Executáveis externos: `bin.docker`, `bin.caddy`, `bin.git`, `bin.nginx`, `bin.yarn`
+- Geração de proxy: `proxy.nb-cli-root`, `proxy.upstream-host`
 
 ## Itens de configuração comuns
 
@@ -36,7 +27,6 @@ Gerencie a configuração padrão da CLI. Os itens de configuração atualmente 
 | `bin.git` | `git` | Sobrescreve o caminho do executável do Git |
 | `bin.nginx` | `nginx` | Sobrescreve o caminho do executável do Nginx |
 | `bin.yarn` | `yarn` | Sobrescreve o caminho do executável do Yarn |
-| `proxy.provider` | `nginx` | Provedor de proxy padrão usado por `nb env proxy` |
 | `proxy.nb-cli-root` | Raiz da CLI, normalmente o diretório home do usuário atual | Mapeia o caminho `.nocobase` para a raiz visível ao processo do proxy |
 | `proxy.upstream-host` | `127.0.0.1` | Host usado pelo proxy ao encaminhar o tráfego de volta para o aplicativo NocoBase |
 
@@ -50,10 +40,10 @@ nb config <command>
 
 | Comando | Descrição |
 | --- | --- |
-| [`nb config get`](./get.md)       | Lê o valor efetivo de um item de configuração                  |
-| [`nb config set`](./set.md)       | Define um item de configuração                                 |
-| [`nb config delete`](./delete.md) | Exclui um item de configuração definido explicitamente         |
-| [`nb config list`](./list.md)     | Lista os itens de configuração explicitamente definidos        |
+| [`nb config get`](./get.md) | Lê o valor efetivo de um item de configuração |
+| [`nb config set`](./set.md) | Define um item de configuração |
+| [`nb config delete`](./delete.md) | Exclui um item de configuração definido explicitamente |
+| [`nb config list`](./list.md) | Lista os itens de configuração explicitamente definidos |
 
 ## Exemplos
 
@@ -61,8 +51,8 @@ nb config <command>
 nb config list
 nb config get update.policy
 nb config set update.policy auto
-nb config get proxy.provider
-nb config set proxy.provider caddy
+nb config get proxy.nb-cli-root
+nb config set proxy.nb-cli-root /workspace
 nb config set proxy.upstream-host host.docker.internal
 nb config get docker.network
 nb config set docker.network nocobase

@@ -205,7 +205,19 @@
       {
         "type": "custom-link",
         "label": "nb env proxy",
-        "link": "/api/cli/env/proxy"
+        "link": "/api/cli/env/proxy",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "nb env proxy nginx",
+            "link": "/api/cli/env/proxy/nginx"
+          },
+          {
+            "type": "custom-link",
+            "label": "nb env proxy caddy",
+            "link": "/api/cli/env/proxy/caddy"
+          }
+        ]
       },
       {
         "type": "custom-link",

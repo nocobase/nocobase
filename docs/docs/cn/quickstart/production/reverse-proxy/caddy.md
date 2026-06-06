@@ -2,7 +2,7 @@
 
 如果你已经有域名，并且希望尽快把 HTTPS 一起配好，Caddy 通常是最省心的选择。比起自己维护 Nginx 证书配置，Caddy 更像是“把入口层先跑通”的默认捷径。
 
-不过在 NocoBase CLI 里，反向代理的默认 provider 仍然是 `nginx`。所以如果你准备用 Caddy，要么在命令里显式带上 `--provider caddy`，要么先把默认 provider 改掉。
+不过在当前的命令树里，真正执行 Caddy 生成的是 `nb env proxy caddy`。`nb env proxy` 本身只是 topic，不负责真正生成配置。
 
 ## 什么时候更适合用 Caddy
 
@@ -21,20 +21,19 @@
 最直接的写法是：
 
 ```bash
-nb env proxy demo --provider caddy --host demo.example.com
+nb env proxy caddy --env demo --host demo.example.com
 ```
 
-如果你接下来都打算用 Caddy，可以先把 provider 默认值切过去：
+如果你已经切到了当前 env，也可以省略 `--env`：
 
 ```bash
-nb config set proxy.provider caddy
-nb env proxy demo --host demo.example.com
+nb env proxy caddy --host demo.example.com
 ```
 
 如果你还想指定入口端口，也可以一起写：
 
 ```bash
-nb env proxy demo --provider caddy --host demo.example.com --port 8080
+nb env proxy caddy --env demo --host demo.example.com --port 8080
 ```
 
 这里的 `--host` 很重要。Caddy 会根据站点地址判断是否接管 HTTPS。正式环境里，默认尽量传一个已经解析到当前服务器的域名。
@@ -45,7 +44,7 @@ nb env proxy demo --provider caddy --host demo.example.com --port 8080
 
 | 文件 | 作用 |
 | --- | --- |
-| `generated.caddy` | CLI 托管的实际反向代理配置，每次执行 `nb env proxy` 都会覆盖 |
+| `generated.caddy` | CLI 托管的实际反向代理配置，每次执行 `nb env proxy caddy` 都会覆盖 |
 | `app.caddy` | 可编辑的站点入口文件，你可以在这里补站点级别配置 |
 | `~/.nocobase/proxy/caddy/nocobase.caddy` | 共享主配置，用来统一导入所有 env 的 `app.caddy` |
 
@@ -57,7 +56,7 @@ nb env proxy demo --provider caddy --host demo.example.com --port 8080
 
 :::warning 注意
 
-如果你要补 Caddy 站点级别的配置，比如额外 header、认证、限速或压缩策略，改 `app.caddy` 就行。`generated.caddy` 会在下次执行 `nb env proxy` 时被覆盖。
+如果你要补 Caddy 站点级别的配置，比如额外 header、认证、限速或压缩策略，改 `app.caddy` 就行。`generated.caddy` 会在下次执行 `nb env proxy caddy` 时被覆盖。
 
 :::
 
@@ -66,7 +65,7 @@ nb env proxy demo --provider caddy --host demo.example.com --port 8080
 如果你希望 CLI 直接把共享配置安装到 Caddy 主配置里，并立即校验后重载，可以这样写：
 
 ```bash
-nb env proxy demo --provider caddy --host demo.example.com --install --reload
+nb env proxy caddy --env demo --host demo.example.com --install --reload
 ```
 
 这两个参数的分工是：
@@ -88,16 +87,22 @@ nb config set bin.caddy /usr/bin/caddy
 
 ```bash
 nb config set proxy.nb-cli-root /workspace
-nb env proxy demo --provider caddy --install --reload
+nb env proxy caddy --env demo --install --reload
 ```
 
 如果你只是想先预览生成结果，可以用：
 
 ```bash
-nb env proxy demo --provider caddy --print
+nb env proxy caddy --env demo --print
 ```
 
-更完整的参数说明见 [`nb env proxy`](../../../api/cli/env/proxy.md)。
+如果你想把自动生成的路由片段写到一个自定义文件，也可以用：
+
+```bash
+nb env proxy caddy --env demo --output ./generated.caddy
+```
+
+更完整的参数说明见 [`nb env proxy caddy`](../../../api/cli/env/proxy/caddy.md)。
 
 ## 手写配置：不通过 CLI 时怎么做
 
@@ -127,7 +132,7 @@ your-domain.com {
 
 不过正式环境里，还是建议尽快换成带域名的站点地址。这样 Caddy 才能把 HTTPS 也一并接管起来。
 
-如果你的应用不是直接挂在 `/`，而是要放到某个子路径下，那么手写 Caddy 配置时还要同时确认 `APP_PUBLIC_PATH`、`WS_PATH` 这类应用变量。这种场景更推荐回到 `nb env proxy`，让 CLI 生成配置。
+如果你的应用不是直接挂在 `/`，而是要放到某个子路径下，那么手写 Caddy 配置时还要同时确认 `APP_PUBLIC_PATH`、`WS_PATH` 这类应用变量。这种场景更推荐回到 `nb env proxy caddy`，让 CLI 生成配置。
 
 ## 检查并重载配置
 
@@ -142,14 +147,14 @@ systemctl reload caddy
 
 ## 常见说明
 
-- `nb env proxy` 只适用于 CLI 托管且当前机器可访问运行态的 env，也就是 `local` 或 `docker`
+- `nb env proxy caddy` 只适用于 CLI 托管且当前机器可访问运行态的 env，也就是 `local` 或 `docker`
 - 如果命令提示 env 缺少 `appPort`，先执行 `nb env update <name> --app-port <port>`
 - `--output` 和 `--print` 适合做预览或自定义集成，不过这两种写法不会额外创建 `app.caddy` 和共享主配置
 - 如果你已经有能正常解析到服务器的域名，Caddy 往往是最快拿到 HTTPS 的方式
 
 ## 相关链接
 
-- [`nb env proxy`](../../../api/cli/env/proxy.md)
+- [`nb env proxy caddy`](../../../api/cli/env/proxy/caddy.md)
 - [使用 CLI 安装（推荐）](../../installation/cli.md)
 - [通过 Docker Compose 安装](../../installation/docker-compose.md)
 - [应用环境变量](../../installation/env.md)

@@ -51,7 +51,9 @@ nb env update [name] [flags]
 | Option       | Type   | Description                                                                                          |
 | ------------ | ------ | ---------------------------------------------------------------------------------------------------- |
 | `--app-path` | string | Application directory. This is now the recommended option for managing local directories by default. |
+| `--app-public-path` | string | Public application path (`APP_PUBLIC_PATH`), such as `/` or `/nocobase/`. |
 | `--app-port` | string | Application HTTP port.                                                                               |
+| `--cdn-base-url` | string | Client asset CDN base URL (`CDN_BASE_URL`). |
 | `--app-key`  | string | Application secret key (`APP_KEY`).                                                                  |
 | `--timezone` | string | Application time zone (`TZ`).                                                                        |
 
@@ -88,6 +90,7 @@ If you only want the CLI to re-sync according to the latest state of the current
 - After the update is complete, the CLI will automatically handle any required follow-up synchronization based on the changes made this time
 - Other options only update the saved env configuration; they do not automatically restart the application or automatically replace local source code or Docker images
 - After modifying settings such as `app-path`, `app-port`, `timezone`, or `db-*`, the CLI will usually prompt you to run `nb app restart --env <name>` afterward; if the change involves the built-in database managed by the CLI, it will prompt you to use `nb app restart --env <name> --with-db`
+- After modifying settings such as `app-port`, `app-public-path`, or `cdn-base-url` that affect reverse-proxy rendering, rerun `nb env proxy nginx` or `nb env proxy caddy` if you already use a generated proxy config
 - When updating source settings such as `source`, `download-version`, `docker-registry`, `git-url`, or `npm-registry`, only the saved values are changed. Existing local source code, dependencies, and images are not automatically replaced
 - `--access-token` cannot be used together with `--auth-type basic` or `--auth-type oauth`
 - The same field cannot be used with both `--unset` and an explicit value at the same time. For example, you cannot write both `--unset git-url` and `--git-url ...`
@@ -116,6 +119,12 @@ nb env update local --source git --git-url git@github.com:nocobase/nocobase.git 
 
 # Adjust the application port and time zone, then restart the application later
 nb env update local --app-port 13080 --timezone Asia/Shanghai
+
+# Adjust the public application path. After that, you usually also need to regenerate the proxy config
+nb env update local --app-public-path /nocobase/
+
+# Save a CDN base URL for versioned client assets
+nb env update local --cdn-base-url https://cdn.example.com/nocobase/
 
 # Clear saved fields
 nb env update local --unset git-url --unset username
