@@ -7,4 +7,6 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export * from '../client-v2/openViewActionExtensions';
+export * from './ReferenceBlockModel';
+export * from './ReferenceFormGridModel';
+export * from './SubModelTemplateImporterModel';
