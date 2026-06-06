@@ -1019,7 +1019,9 @@ const MobileHomePlaceholder = observer(
         }
 
         await routeRepository.createRoute(creationValues.route);
-        setActiveRouteKey(creationValues.activeRouteKey);
+        if (configuringTabType === 'page') {
+          setActiveRouteKey(creationValues.activeRouteKey);
+        }
         setConfiguringTabType(null);
         addTabForm.resetFields();
       } catch (error) {

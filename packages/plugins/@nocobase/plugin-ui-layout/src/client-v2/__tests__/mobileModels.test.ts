@@ -39,6 +39,7 @@ type MobileRouteRepositoryForTest = {
   subscribe?: (subscriber: () => void) => void;
   unsubscribe?: (subscriber: () => void) => void;
   ensureAccessibleLoaded?: () => Promise<NocoBaseDesktopRoute[]>;
+  createRoute?: (route: NocoBaseDesktopRoute) => Promise<unknown>;
 };
 
 describe('plugin-ui-layout mobile models', () => {
@@ -998,6 +999,76 @@ describe('plugin-ui-layout mobile models', () => {
     } finally {
       consoleError.mockRestore();
     }
+  });
+
+  it('should create a link tab without changing the current flow page active state', async () => {
+    const listeners = new Set<() => void>();
+    let routes: NocoBaseDesktopRoute[] = [
+      {
+        id: 1,
+        type: NocoBaseDesktopRouteType.flowPage,
+        title: 'Home',
+        schemaUid: 'home-page',
+      },
+    ];
+    const createRoute = vi.fn(async (route: NocoBaseDesktopRoute) => {
+      routes = [
+        ...routes,
+        {
+          id: 2,
+          ...route,
+        },
+      ];
+      listeners.forEach((listener) => listener());
+    });
+
+    window.localStorage.setItem(FLOW_SETTINGS_PREFERENCE_STORAGE_KEY, '1');
+
+    renderMobileLayoutWithRouteRepository({
+      createRoute,
+      listAccessible: () => routes,
+      subscribe: (listener) => {
+        listeners.add(listener);
+      },
+      unsubscribe: (listener) => {
+        listeners.delete(listener);
+      },
+    });
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /Home/ })).toHaveAttribute('aria-current', 'page');
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Add mobile tab' }));
+    fireEvent.click(await screen.findByText('Link'));
+    expect(await screen.findByText('Add link')).toBeInTheDocument();
+
+    fireEvent.change(screen.getByLabelText('Title'), { target: { value: 'Docs' } });
+    fireEvent.change(screen.getByLabelText('URL'), { target: { value: 'https://docs.example.com' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Select icon' }));
+    await screen.findByPlaceholderText('Search');
+    fireEvent.change(screen.getByPlaceholderText('Search'), { target: { value: 'link' } });
+    fireEvent.click(await screen.findByTitle('link'));
+    fireEvent.click(screen.getByRole('button', { name: 'Submit' }));
+
+    await waitFor(() => {
+      expect(createRoute).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: NocoBaseDesktopRouteType.link,
+          title: 'Docs',
+          icon: expect.stringMatching(/link/i),
+          options: expect.objectContaining({
+            href: 'https://docs.example.com',
+            openInNewWindow: true,
+          }),
+        }),
+      );
+    });
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /Docs/ })).toBeInTheDocument();
+    });
+    expect(screen.getByRole('button', { name: /Home/ })).toHaveAttribute('aria-current', 'page');
+    expect(screen.getByRole('button', { name: /Docs/ })).not.toHaveAttribute('aria-current');
   });
 
   it('should create persisted route values for mobile pages and links', () => {
