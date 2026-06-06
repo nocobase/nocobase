@@ -31,7 +31,12 @@ import {
   readMobileFlowSettingsPreference,
   writeMobileFlowSettingsPreference,
 } from '../models/MobileLayoutModel';
-import { collectMobileTabRoutes, getMobilePagePath, MobileLayoutMenuItemModel } from '../models/MobileMenuModels';
+import {
+  collectMobileTabRoutes,
+  getMobilePagePath,
+  MobileLayoutMenuItemModel,
+  MobileMenuSettingsIconPicker,
+} from '../models/MobileMenuModels';
 import { MobileChildPageModel, MobileRootPageModel } from '../models/MobilePageModels';
 import { registerMobilePageModelResolution } from '../mobilePageModelResolution';
 
@@ -1473,6 +1478,61 @@ describe('plugin-ui-layout mobile models', () => {
     expect(Object.keys(mobileMenuSettings?.steps || {})).not.toEqual(
       expect.arrayContaining(['editTooltip', 'moveTo', 'insertBefore', 'insertAfter']),
     );
+  });
+
+  it('should use the mobile menu icon picker for menu edit settings', async () => {
+    const mobileMenuSettings = MobileLayoutMenuItemModel.globalFlowRegistry.getFlow('mobileMenuSettings');
+    const uiSchema = await mobileMenuSettings?.steps?.edit?.uiSchema?.({
+      t: (key: string) => key,
+      model: {
+        getRoute: () => ({
+          type: NocoBaseDesktopRouteType.flowPage,
+        }),
+      },
+    } as any);
+
+    expect(uiSchema?.icon?.['x-component']).toBe('MobileMenuSettingsIconPicker');
+  });
+
+  it('should render the menu edit icon picker above the settings dialog', async () => {
+    render(React.createElement(MobileMenuSettingsIconPicker));
+
+    fireEvent.click(screen.getByRole('button', { name: 'Select icon' }));
+
+    await waitFor(() => {
+      const popover = document.querySelector('.ant-popover') as HTMLElement | null;
+
+      expect(popover).toBeInTheDocument();
+      expect(Number(popover?.style.zIndex)).toBeGreaterThan(5000);
+    });
+  });
+
+  it('should not persist mobile menu item runtime props when saving settings', async () => {
+    const engine = new FlowEngine();
+    const saveModel = vi.spyOn(engine, 'saveModel').mockResolvedValue(undefined as never);
+    const model = engine.createModel<MobileLayoutMenuItemModel>({
+      uid: 'mobile-menu-item-save-settings',
+      use: MobileLayoutMenuItemModel,
+      props: {
+        dom: React.createElement('button', { type: 'button' }, 'Home'),
+        item: {
+          route: {
+            id: 1,
+          },
+        },
+        route: {
+          id: 1,
+          title: 'Home',
+          schemaUid: 'home-page',
+          type: NocoBaseDesktopRouteType.flowPage,
+        },
+      },
+    });
+
+    await model.saveStepParams();
+    await model.save();
+
+    expect(saveModel.mock.calls.length).toBe(0);
   });
 
   it('should keep the default mobile tab toolbar inside the hovered item', () => {

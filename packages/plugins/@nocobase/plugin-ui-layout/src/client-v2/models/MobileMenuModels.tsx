@@ -20,6 +20,7 @@ import {
   isMobileTabRoute,
   type MobileRouteTitleTranslator,
 } from './MobileMenuUtils';
+export { MobileMenuSettingsIconPicker } from './MobileMenuComponents';
 
 export { collectMobileTabRoutes, getMobilePagePath, toMobileRouterNavigationPath } from './MobileMenuUtils';
 
@@ -94,7 +95,7 @@ function getMobileMenuEditUiSchema(
     icon: {
       title: t('Icon'),
       'x-decorator': 'FormItem',
-      'x-component': 'IconPicker',
+      'x-component': 'MobileMenuSettingsIconPicker',
     },
   };
 
@@ -287,6 +288,14 @@ export class MobileLayoutMenuItemModel extends FlowModel {
 
     await this.deleteMenuRoute();
     return this.remove();
+  }
+
+  async saveStepParams() {
+    return true;
+  }
+
+  async save() {
+    return true;
   }
 
   toMobileTabNode(options: MobileTabNodeOptions): MobileTabNode | null {

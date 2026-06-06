@@ -45,6 +45,9 @@ describe('PluginUiLayoutClientV2', () => {
       flowEngine: {
         registerModelLoaders: vi.fn(),
         registerActions: vi.fn(),
+        flowSettings: {
+          registerComponents: vi.fn(),
+        },
       },
     };
     const plugin = new PluginUiLayoutClientV2({} as Record<string, never>, app as unknown as Application);
@@ -82,6 +85,8 @@ describe('PluginUiLayoutClientV2', () => {
         handler: expect.any(Function),
       }),
     });
+    const registeredFlowSettingsComponents = app.flowEngine.flowSettings.registerComponents.mock.calls[0]?.[0];
+    expect(registeredFlowSettingsComponents?.MobileMenuSettingsIconPicker).toBeDefined();
     expect(app.apiClient.request).toHaveBeenCalledWith({
       url: 'uiLayouts:list',
       method: 'get',
