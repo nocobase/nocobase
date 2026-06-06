@@ -32,10 +32,7 @@ export default class extends Instruction {
 
     try {
       processor.logger.info(`notification (#${node.id}) queued for delivery.`);
-      const result = await notificationServer.send({
-        ...sendParams,
-        transaction: processor.mainTransaction,
-      });
+      const result = await notificationServer.send(sendParams);
       return {
         status: result.status === 'success' || ignoreFail ? JOB_STATUS.RESOLVED : JOB_STATUS.FAILED,
         result,
