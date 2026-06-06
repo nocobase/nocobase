@@ -710,7 +710,7 @@ describe('plugin-ui-layout mobile models', () => {
               Routes,
               null,
               React.createElement(Route, {
-                path: '/v/mobile',
+                path: '/v/mobile/*',
                 element: model.render(),
               }),
             ),
@@ -814,7 +814,7 @@ describe('plugin-ui-layout mobile models', () => {
               Routes,
               null,
               React.createElement(Route, {
-                path: '/v/mobile',
+                path: '/v/mobile/*',
                 element: model.render(),
               }),
             ),
@@ -1155,6 +1155,37 @@ describe('plugin-ui-layout mobile models', () => {
     });
 
     expect(screen.getByTestId('layout-content-route-host')).toBeInTheDocument();
+  });
+
+  it('should restore the default mobile page route from the layout root path', async () => {
+    renderMobileLayoutWithRouteRepository(
+      {
+        listAccessible: () => [
+          {
+            id: 1,
+            type: NocoBaseDesktopRouteType.flowPage,
+            title: 'Home',
+            schemaUid: 'home-page',
+          },
+          {
+            id: 2,
+            type: NocoBaseDesktopRouteType.flowPage,
+            title: 'Reports',
+            schemaUid: 'reports-page',
+          },
+        ],
+      },
+      {
+        initialEntries: ['/v/mobile'],
+        outletElement: React.createElement('div', { 'data-testid': 'default-route-content' }, 'Default route content'),
+      },
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId('default-route-content')).toBeInTheDocument();
+    });
+    expect(screen.getByRole('button', { name: /Home/ })).toHaveAttribute('aria-current', 'page');
+    expect(screen.queryByText('Mobile')).not.toBeInTheDocument();
   });
 
   it('should register mobile route pages with the mobile root page model', () => {

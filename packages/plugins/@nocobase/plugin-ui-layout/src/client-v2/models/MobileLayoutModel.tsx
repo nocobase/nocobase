@@ -59,7 +59,7 @@ import {
   Tooltip,
 } from 'antd';
 import React, { type ReactNode, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { useNavigate, useOutlet } from 'react-router-dom';
+import { useLocation, useNavigate, useOutlet } from 'react-router-dom';
 import { NAMESPACE } from '../../constants';
 import {
   collectMobileTabRoutes,
@@ -926,12 +926,19 @@ function isAbsoluteUrl(value: string) {
   return /^[a-z][a-z\d+\-.]*:\/\//i.test(value) || value.startsWith('//');
 }
 
+function normalizeMobileLocationPath(pathname: string) {
+  const normalized = `/${pathname.replace(/^\/+/, '').replace(/\/+$/, '')}`;
+
+  return normalized === '/' ? '/' : normalized;
+}
+
 const MobileHomePlaceholder = observer(
   (props: { designModeEnabled: boolean; model: MobileLayoutModel; outlet?: ReactNode }) => {
     const { designModeEnabled, model, outlet } = props;
     const { token } = theme.useToken();
     const { message } = App.useApp();
     const navigate = useNavigate();
+    const location = useLocation();
     const [addTabForm] = Form.useForm<MobileTabConfigurationValues>();
     const customToken = token as typeof token & MobileLayoutThemeToken;
     const colorSettings = customToken.colorSettings || 'var(--colorSettings, #F18B62)';
@@ -1129,6 +1136,39 @@ const MobileHomePlaceholder = observer(
         setActiveRouteKey(tabItems[0].key);
       }
     }, [activeRouteKey, activeRouteKeyFromLayout, tabItems]);
+
+    useEffect(() => {
+      if (activeRouteKeyFromLayout || !tabItems.length) {
+        return;
+      }
+
+      const basename =
+        model.flowEngine.context.app?.router?.getBasename?.() ||
+        model.flowEngine.context.app?.router?.basename ||
+        model.flowEngine.context.router?.basename;
+      const mobileLayoutRootPath = toMobileRouterNavigationPath(model.getMobileBasePathname(), basename);
+      const currentPath = normalizeMobileLocationPath(location.pathname);
+
+      if (currentPath !== normalizeMobileLocationPath(mobileLayoutRootPath)) {
+        return;
+      }
+
+      const fallbackRoute = tabItems.find((item) => item.type === NocoBaseDesktopRouteType.flowPage && item.path);
+      if (!fallbackRoute?.path) {
+        return;
+      }
+
+      setActiveRouteKey(fallbackRoute.key);
+      navigate(toMobileRouterNavigationPath(fallbackRoute.path, basename), { replace: true });
+    }, [
+      activeRouteKeyFromLayout,
+      location.pathname,
+      model,
+      model.flowEngine.context.app?.router,
+      model.flowEngine.context.router?.basename,
+      navigate,
+      tabItems,
+    ]);
 
     useEffect(() => {
       if (
