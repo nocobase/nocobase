@@ -143,6 +143,29 @@ describe('DatabaseAdapter', () => {
       expect(command).toContain(`-T '"dataSourcesCollections"'`);
     });
 
+    it('backup function should qualify included and excluded tables with configured schema', async () => {
+      const mockedExec = cp.exec as unknown as Mock;
+      mockedExec.mockClear();
+      mockedExec.mockImplementation((_command, _options, callback) => {
+        callback(null, { stdout: 'done' });
+      });
+      const adapter = getDBAdapter({
+        ...dbOpts,
+        schema: 'test_version_control',
+      });
+      const dir = os.tmpdir();
+      await adapter.backup({
+        dir,
+        includeTables: ['applicationPlugins', 'public.rolesUsers'],
+        excludeTables: ['dataSourcesCollections'],
+      });
+      const command = mockedExec.mock.lastCall[0];
+      expect(command).toContain(`-t '"test_version_control"."applicationPlugins"'`);
+      expect(command).toContain(`-t '"public"."rolesUsers"'`);
+      expect(command).toContain(`-T '"test_version_control"."dataSourcesCollections"'`);
+      expect(command).toContain(`--schema=test_version_control`);
+    });
+
     it('restore function', async () => {
       const mockedExec = cp.exec as unknown as Mock;
       mockedExec.mockImplementation((_command, _options, callback) => {

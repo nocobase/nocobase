@@ -62,6 +62,14 @@ const escapeStringLiteral = (value: string) => String(value).replace(/'/g, "''")
 const quotePgIdentifier = (value: string) => `"${String(value).replace(/"/g, '""')}"`;
 const quoteShellArg = (value: string) => `'${String(value).replace(/'/g, "'\\''")}'`;
 const quotePgTablePattern = (table: string) => quoteShellArg(String(table).split('.').map(quotePgIdentifier).join('.'));
+const qualifyPgTablePattern = (table: string, schema?: string) => {
+  const tablePattern = String(table);
+  if (!schema || tablePattern.includes('.')) {
+    return tablePattern;
+  }
+
+  return `${schema}.${tablePattern}`;
+};
 
 abstract class BaseDBAdapter implements DBAdapter {
   constructor(public dbOpts: DatabaseOptions) {}
@@ -397,11 +405,15 @@ class PostgresAdapter extends BaseDBAdapter {
     const schemaOption = backupSchema ? `--schema=${backupSchema}` : '';
     const includeOption =
       Array.isArray(includeTables) && includeTables.length
-        ? includeTables.map((table) => `-t ${quotePgTablePattern(table)}`).join(' ')
+        ? includeTables
+            .map((table) => `-t ${quotePgTablePattern(qualifyPgTablePattern(table, backupSchema))}`)
+            .join(' ')
         : '';
     const excludeOption =
       Array.isArray(excludeTables) && excludeTables.length
-        ? excludeTables.map((table) => `-T ${quotePgTablePattern(table)}`).join(' ')
+        ? excludeTables
+            .map((table) => `-T ${quotePgTablePattern(qualifyPgTablePattern(table, backupSchema))}`)
+            .join(' ')
         : '';
     // set the password in the environment variable, so we don't need to pass it in the command
     const command = `${this.#backupCmd} ${includeOption} ${excludeOption} -U ${username} -h ${host} ${
