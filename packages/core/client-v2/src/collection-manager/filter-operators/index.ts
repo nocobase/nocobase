@@ -133,6 +133,8 @@ export function normalizeFilterableOperators<TMeta = unknown>(filterable?: Field
     filterable.operators = mergeOperatorOverrides(resolveFilterOperators(rawOperators), operatorOverrides);
   } else if (Array.isArray(rawOperators)) {
     filterable.operators = mergeOperatorOverrides(rawOperators, operatorOverrides);
+  } else if (operatorOverrides.length > 0) {
+    filterable.operators = [...operatorOverrides];
   }
 
   if (Array.isArray(filterable.children)) {

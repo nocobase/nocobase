@@ -10,7 +10,7 @@
 import { render, screen } from '@testing-library/react';
 import React from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { MultipleKeywordsInput, normalizeKeywords } from '../MultipleKeywordsInput';
+import { MultipleKeywordsInput } from '../MultipleKeywordsInput';
 
 let xlsxModuleLoaded = false;
 
@@ -44,17 +44,5 @@ describe('MultipleKeywordsInput v2', () => {
     expect(screen.getByText('keywordsInputPlaceholder')).toBeTruthy();
     expect(screen.getByRole('button')).toBeTruthy();
     expect(xlsxModuleLoaded).toBe(false);
-  });
-
-  it('keeps decimal values for number fields', () => {
-    expect(normalizeKeywords(['1.25'], 'number')).toEqual(['1.25']);
-  });
-
-  it('keeps large integer values as strings for integer fields', () => {
-    expect(normalizeKeywords(['9007199254740993'], 'integer')).toEqual(['9007199254740993']);
-  });
-
-  it('does not truncate decimal input for integer fields', () => {
-    expect(normalizeKeywords(['1.25'], 'integer')).toEqual([]);
   });
 });

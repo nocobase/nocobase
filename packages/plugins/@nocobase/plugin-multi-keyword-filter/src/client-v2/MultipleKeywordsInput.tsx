@@ -10,48 +10,15 @@
 import { UploadOutlined } from '@ant-design/icons';
 import { Alert, Button, message, Modal, Select, Space, Tooltip, Typography } from 'antd';
 import React, { FC, useRef, useState } from 'react';
+import { normalizeKeywords, type KeywordValue } from '../shared/normalizeKeywords';
 import { useT } from './locale';
 
 const tokenSeparator = '\n';
 
-type KeywordValue = string | number;
 type ExcelRow = Record<string, unknown>;
 type XlsxModule = typeof import('xlsx');
 
-function trimKeyword(value: KeywordValue) {
-  return typeof value === 'string' ? value.trim() : value;
-}
-
-function toKeywordText(value: KeywordValue) {
-  return String(trimKeyword(value));
-}
-
-function isIntegerKeyword(value: string) {
-  return /^[+-]?\d+$/.test(value);
-}
-
-function isNumberKeyword(value: string) {
-  return /^[+-]?(?:\d+\.?\d*|\.\d+)(?:e[+-]?\d+)?$/i.test(value);
-}
-
-export function normalizeKeywords(values: KeywordValue[], fieldInterface: string) {
-  if (fieldInterface === 'integer') {
-    return values.map(toKeywordText).filter(isIntegerKeyword);
-  }
-
-  if (fieldInterface === 'number') {
-    return values.map(toKeywordText).filter(isNumberKeyword);
-  }
-
-  if (fieldInterface === 'percent') {
-    return values
-      .map(trimKeyword)
-      .map((item) => parseFloat(String(item)))
-      .filter((item) => !Number.isNaN(item));
-  }
-
-  return values.map(trimKeyword).filter((item) => item !== '');
-}
+export { normalizeKeywords };
 
 export const MultipleKeywordsInput: FC<{
   fieldInterface: string;

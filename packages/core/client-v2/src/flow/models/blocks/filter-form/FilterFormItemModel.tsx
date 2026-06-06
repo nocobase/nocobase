@@ -22,7 +22,12 @@ import { CollectionBlockModel, FieldModel } from '../../base';
 import { RecordSelectFieldModel } from '../../fields/AssociationFieldModel/RecordSelectFieldModel';
 import { normalizeAssociationFieldNames } from '../../fields/AssociationFieldModel/recordSelectShared';
 import { FilterManager } from '../filter-manager';
-import { getAllDataModels, getDefaultOperator, isFilterValueEmpty } from '../filter-manager/utils';
+import {
+  getAllDataModels,
+  getDefaultOperator,
+  getFilterFormOperatorMeta,
+  isFilterValueEmpty,
+} from '../filter-manager/utils';
 import { FilterFormFieldModel } from './fields';
 import { normalizeFilterValueByOperator } from './valueNormalization';
 
@@ -449,15 +454,7 @@ export class FilterFormItemModel extends FilterableItemModel<{
 
   private getCurrentOperatorMeta() {
     const operator = getDefaultOperator(this);
-    if (!operator) return null;
-
-    const operatorList = this.collectionField?.filterable?.operators;
-
-    if (!Array.isArray(operatorList)) {
-      return null;
-    }
-
-    return operatorList.find((op) => op.value === operator) || null;
+    return getFilterFormOperatorMeta(this, operator);
   }
 
   onInit(options: any) {

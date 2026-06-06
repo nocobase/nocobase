@@ -7,16 +7,48 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { LinkOutlined, QuestionCircleOutlined } from '@ant-design/icons';
 import { Application, Plugin } from '@nocobase/client-v2';
+import { Tooltip } from 'antd';
+import React from 'react';
 import { interceptor } from '../shared/interceptor';
-import { tExpr } from './locale';
+import { useT } from './locale';
 import { MultipleKeywordsInput } from './MultipleKeywordsInput';
 
-const fieldInterfaces = ['input', 'phone', 'email', 'uuid', 'sequence', 'integer', 'number', 'percent', 'nanoid'];
+const fieldInterfaces = ['input', 'phone', 'email', 'uuid', 'sequence', 'integer', 'number', 'id', 'percent', 'nanoid'];
+
+function MultipleKeywordsOperatorLabel({ type }: { type: 'in' | 'notIn' }) {
+  const t = useT();
+  const isSimplifiedChinese = t('equalsAny') === '等于任意一个';
+  const label = type === 'in' ? t('equalsAny') : t('notEqualsAny');
+  const docsHost = isSimplifiedChinese ? 'docs-cn' : 'docs';
+
+  return (
+    <div>
+      {label}{' '}
+      <Tooltip
+        title={
+          <div>
+            {t('providedByPlugin', { pluginName: t('pluginName') })}{' '}
+            <a
+              href={`https://${docsHost}.nocobase.com/handbook/multi-keyword-filter`}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <LinkOutlined />
+            </a>
+          </div>
+        }
+      >
+        <QuestionCircleOutlined />
+      </Tooltip>
+    </div>
+  );
+}
 
 function createMultipleKeywordsOperator(fieldInterface: string, type: 'in' | 'notIn') {
   return {
-    label: tExpr(type === 'in' ? 'equalsAny' : 'notEqualsAny'),
+    label: <MultipleKeywordsOperatorLabel type={type} />,
     value: type === 'in' ? '$in' : '$notIn',
     schema: {
       'x-component': 'MultipleKeywordsInput',

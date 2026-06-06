@@ -8,6 +8,9 @@
  */
 
 import { Application, InputFieldInterface } from '@nocobase/client-v2';
+import { FlowEngineProvider } from '@nocobase/flow-engine';
+import { render } from '@testing-library/react';
+import React from 'react';
 import { describe, expect, it, vi } from 'vitest';
 import { MultipleKeywordsInput } from '../MultipleKeywordsInput';
 import PluginFilterOperatorMultipleKeywordsClient from '../plugin';
@@ -29,6 +32,14 @@ describe('PluginFilterOperatorMultipleKeywordsClient v2', () => {
 
     expect(addComponents).toHaveBeenCalledWith({ MultipleKeywordsInput });
     expect(app.getComponent('MultipleKeywordsInput')).toBe(MultipleKeywordsInput);
+    const inputInOperator = addFieldInterfaceOperator.mock.calls.find(
+      ([interfaceName, operator]) => interfaceName === 'input' && operator.value === '$in',
+    )?.[1];
+    expect(React.isValidElement(inputInOperator?.label)).toBe(true);
+    const { container } = render(
+      <FlowEngineProvider engine={app.flowEngine}>{inputInOperator?.label}</FlowEngineProvider>,
+    );
+    expect(container.querySelector('.anticon-question-circle')).toBeTruthy();
     expect(addFieldInterfaceOperator).toHaveBeenCalledWith(
       'input',
       expect.objectContaining({
@@ -49,6 +60,30 @@ describe('PluginFilterOperatorMultipleKeywordsClient v2', () => {
           'x-component': 'MultipleKeywordsInput',
           'x-component-props': {
             fieldInterface: 'input',
+          },
+        },
+      }),
+    );
+    expect(addFieldInterfaceOperator).toHaveBeenCalledWith(
+      'id',
+      expect.objectContaining({
+        value: '$in',
+        schema: {
+          'x-component': 'MultipleKeywordsInput',
+          'x-component-props': {
+            fieldInterface: 'id',
+          },
+        },
+      }),
+    );
+    expect(addFieldInterfaceOperator).toHaveBeenCalledWith(
+      'id',
+      expect.objectContaining({
+        value: '$notIn',
+        schema: {
+          'x-component': 'MultipleKeywordsInput',
+          'x-component-props': {
+            fieldInterface: 'id',
           },
         },
       }),
