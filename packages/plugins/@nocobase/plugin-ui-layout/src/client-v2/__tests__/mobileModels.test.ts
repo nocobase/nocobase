@@ -10,7 +10,7 @@
 import { BaseLayoutModel, ChildPageModel, RootPageModel } from '@nocobase/client-v2';
 import { NocoBaseDesktopRouteType, type NocoBaseDesktopRoute } from '@nocobase/client-v2/flow-compat';
 import { App as AntdApp } from 'antd';
-import { render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { FlowEngine, FlowEngineProvider } from '@nocobase/flow-engine';
 import React from 'react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
@@ -871,6 +871,51 @@ describe('plugin-ui-layout mobile models', () => {
       ['home-page', true],
       ['reports-page', false],
     ]);
+  });
+
+  it('should keep the current flow page active when a link tab opens in a new window', async () => {
+    const openWindow = vi.spyOn(window, 'open').mockImplementation(() => null);
+    const routes: NocoBaseDesktopRoute[] = [
+      {
+        id: 1,
+        type: NocoBaseDesktopRouteType.flowPage,
+        title: 'Home',
+        schemaUid: 'home-page',
+        sort: 1,
+      },
+      {
+        id: 2,
+        type: NocoBaseDesktopRouteType.link,
+        title: 'Docs',
+        schemaUid: 'docs-link',
+        sort: 2,
+        options: {
+          href: 'https://docs.example.com',
+        },
+      },
+    ];
+    const routeRepository: MobileRouteRepositoryForTest = {
+      listAccessible: () => routes,
+      ensureAccessibleLoaded: vi.fn(async () => routes),
+    };
+
+    try {
+      renderMobileLayoutWithRouteRepository(routeRepository);
+
+      await waitFor(() => {
+        expect(screen.getByRole('button', { name: /Home/ })).toHaveAttribute('aria-current', 'page');
+      });
+
+      fireEvent.click(screen.getByRole('button', { name: /Docs/ }));
+
+      await waitFor(() => {
+        expect(openWindow).toHaveBeenCalledWith('https://docs.example.com', '_blank', 'noopener,noreferrer');
+      });
+      expect(screen.getByRole('button', { name: /Home/ })).toHaveAttribute('aria-current', 'page');
+      expect(screen.getByRole('button', { name: /Docs/ })).not.toHaveAttribute('aria-current');
+    } finally {
+      openWindow.mockRestore();
+    }
   });
 
   it('should provide mobile tab add menu items', () => {

@@ -1136,9 +1136,8 @@ const MobileHomePlaceholder = observer(
     );
     const handleTabClick = useCallback(
       (item: MobileTabNode) => {
-        setActiveRouteKey(item.key);
-
         if (item.path) {
+          setActiveRouteKey(item.key);
           const basename =
             model.flowEngine.context.app?.router?.getBasename?.() ||
             model.flowEngine.context.app?.router?.basename ||
