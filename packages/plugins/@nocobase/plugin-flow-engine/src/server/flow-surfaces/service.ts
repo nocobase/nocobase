@@ -11061,6 +11061,7 @@ export class FlowSurfacesService {
 
   private isGanttJsonInferredReadbackParityMatch(readbackNode: unknown, expectedNode: FlowSurfaceNodeSpec) {
     const parityPaths: Array<Array<string | number>> = [
+      ['props', 'eventPopupSettings'],
       ['props', 'showTable'],
       ['props', 'treeTable'],
       ['props', 'tableWidth'],
@@ -11101,6 +11102,22 @@ export class FlowSurfacesService {
     ) {
       return false;
     }
+    if (
+      !expectedActions.every((expectedAction: any, index) =>
+        this.isGanttJsonInferredActionReadbackParityMatch(readbackActions[index], expectedAction),
+      )
+    ) {
+      return false;
+    }
+    const expectedEventViewAction = _.get(expectedNode, ['subModels', 'eventViewAction']);
+    if (!_.isUndefined(expectedEventViewAction)) {
+      const readbackEventViewAction = _.get(readbackNode, ['subModels', 'eventViewAction']);
+      if (
+        !this.isGanttJsonInferredEventViewActionReadbackParityMatch(readbackEventViewAction, expectedEventViewAction)
+      ) {
+        return false;
+      }
+    }
     const readbackColumns = _.castArray(_.get(readbackNode, ['subModels', 'columns']) || []);
     const expectedColumns = _.castArray(_.get(expectedNode, ['subModels', 'columns']) || []);
     if (
@@ -11113,6 +11130,43 @@ export class FlowSurfacesService {
     }
     return expectedColumns.every((expectedColumn: any, index) =>
       _.isEqual(readbackColumns[index]?.props || {}, expectedColumn?.props || {}),
+    );
+  }
+
+  private isGanttJsonInferredActionReadbackParityMatch(readbackAction: unknown, expectedAction: unknown) {
+    if (
+      !_.isEqual(
+        this.normalizeGanttActionParityObject(_.get(readbackAction, ['props'])),
+        this.normalizeGanttActionParityObject(_.get(expectedAction, ['props'])),
+      ) ||
+      !_.isEqual(
+        this.normalizeGanttActionParityObject(_.get(readbackAction, ['stepParams', 'buttonSettings', 'general'])),
+        this.normalizeGanttActionParityObject(_.get(expectedAction, ['stepParams', 'buttonSettings', 'general'])),
+      )
+    ) {
+      return false;
+    }
+    const expectedUse = String((expectedAction as Record<string, unknown> | null)?.use || '').trim();
+    const parityPathsByUse: Record<string, Array<Array<string | number>>> = {
+      AddNewActionModel: [['stepParams', 'popupSettings', 'openView']],
+      BulkDeleteActionModel: [['stepParams', 'deleteSettings', 'confirm']],
+    };
+    const parityPaths = parityPathsByUse[expectedUse] || [];
+    return parityPaths.every((path) => _.isEqual(_.get(readbackAction, path), _.get(expectedAction, path)));
+  }
+
+  private normalizeGanttActionParityObject(value: unknown) {
+    return _.isPlainObject(value) ? value : {};
+  }
+
+  private isGanttJsonInferredEventViewActionReadbackParityMatch(readbackAction: unknown, expectedAction: unknown) {
+    return (
+      String((readbackAction as Record<string, unknown> | null)?.use || '').trim() ===
+        String((expectedAction as Record<string, unknown> | null)?.use || '').trim() &&
+      _.isEqual(
+        _.get(readbackAction, ['stepParams', 'popupSettings', 'openView']),
+        _.get(expectedAction, ['stepParams', 'popupSettings', 'openView']),
+      )
     );
   }
 

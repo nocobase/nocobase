@@ -17,6 +17,7 @@ import type {
 const GANTT_OWNER_PLUGIN = '@nocobase/plugin-gantt';
 const GANTT_BLOCK_MODEL_USE = 'GanttBlockModel';
 const GANTT_ACTION_GROUP_MODEL_USE = 'GanttCollectionActionGroupModel';
+const GANTT_EVENT_VIEW_ACTION_MODEL_USE = 'GanttEventViewActionModel';
 const GANTT_TIME_SCALE_VALUES = ['hour', 'quarterDay', 'halfDay', 'day', 'week', 'month', 'year', 'quarterYear'];
 const GANTT_REQUIRED_ACTION_MODEL_USES = [
   'GanttExpandCollapseActionModel',
@@ -66,6 +67,7 @@ function inferGanttAuthoringCapability(
   }
   const createModelOptions = getStaticGanttCreateModelOptions(snapshot);
   const allowedActionModelUses = getGanttAllowedActionModelUses(snapshot);
+  const hasEventViewActionEvidence = hasGanttEventViewActionEvidence(snapshot);
   const hasActionSurfaceEvidence = hasGanttActionSurfaceEvidence(snapshot, allowedActionModelUses);
   const hasDefaultTreeEvidence = hasStaticGanttDefaultTreeEvidence(createModelOptions);
   const confidence = hasActionSurfaceEvidence && hasDefaultTreeEvidence ? 'high' : 'medium';
@@ -354,6 +356,17 @@ function inferGanttAuthoringCapability(
         kind: 'fieldComponent' as const,
         allowedChildren: ['TableColumnModel'],
       },
+      ...(hasEventViewActionEvidence
+        ? [
+            {
+              key: 'gantt.eventViewAction',
+              parentModelUse: GANTT_BLOCK_MODEL_USE,
+              subModelKey: 'eventViewAction',
+              kind: 'action' as const,
+              allowedChildren: [GANTT_EVENT_VIEW_ACTION_MODEL_USE],
+            },
+          ]
+        : []),
     ],
     allowedChildren: [
       ...allowedActionModelUses.map((modelUse) => ({
@@ -373,6 +386,17 @@ function inferGanttAuthoringCapability(
         label: 'Collection field',
         builderContainerUse: 'TableBlockModel',
       },
+      ...(hasEventViewActionEvidence
+        ? [
+            {
+              kind: 'action' as const,
+              modelUse: GANTT_EVENT_VIEW_ACTION_MODEL_USE,
+              publicType: 'view',
+              label: 'View',
+              conditions: ['recordPopup'],
+            },
+          ]
+        : []),
     ],
     evidence: [
       {
@@ -415,6 +439,10 @@ function hasGanttActionSurfaceEvidence(snapshot: FlowSurfaceAutoSnapshot, allowe
     modelUses.has(GANTT_ACTION_GROUP_MODEL_USE) &&
     GANTT_REQUIRED_ACTION_MODEL_USES.every((modelUse) => allowedActionModelUses.includes(modelUse))
   );
+}
+
+function hasGanttEventViewActionEvidence(snapshot: FlowSurfaceAutoSnapshot) {
+  return snapshot.models.some((model) => model.modelUse === GANTT_EVENT_VIEW_ACTION_MODEL_USE);
 }
 
 function hasStaticGanttDefaultTreeEvidence(createModelOptions: FlowSurfaceAutoMenuItem | undefined) {

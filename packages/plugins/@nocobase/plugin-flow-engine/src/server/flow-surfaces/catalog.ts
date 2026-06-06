@@ -1018,7 +1018,7 @@ TABLE_BLOCK_CONTRACT.domains.stepParams = groupedDomain({
 
 const GANTT_BLOCK_CONTRACT = createContract({
   editableDomains: ['props', 'decoratorProps', 'stepParams', 'flowRegistry'],
-  props: ['fieldNames', 'showTable', 'tableWidth', 'enableDragToReschedule', 'treeTable'],
+  props: ['fieldNames', 'showTable', 'tableWidth', 'enableDragToReschedule', 'treeTable', 'eventPopupSettings'],
   stepParams: ['resourceSettings', 'ganttSettings', 'tableSettings'],
   flowRegistry: true,
   eventCapabilities: {
@@ -2827,6 +2827,7 @@ const NODE_CONTRACT_ENTRIES: Array<[string, FlowSurfaceNodeContract]> = [
   ['PopupCollectionActionModel', POPUP_ACTION_CONTRACT],
   ['CalendarQuickCreateActionModel', CALENDAR_POPUP_ACTION_CONTRACT],
   ['CalendarEventViewActionModel', CALENDAR_POPUP_ACTION_CONTRACT],
+  ['GanttEventViewActionModel', CALENDAR_POPUP_ACTION_CONTRACT],
   ['KanbanQuickCreateActionModel', KANBAN_POPUP_ACTION_CONTRACT],
   ['KanbanCardViewActionModel', KANBAN_POPUP_ACTION_CONTRACT],
   ['AddChildActionModel', POPUP_ACTION_CONTRACT],

@@ -151,6 +151,15 @@ const PROVIDER_VALIDATION_ERROR_CODES = new Set<FlowSurfaceCapabilityValidationE
   'contract-guard-failed',
   'unsupported',
 ]);
+const GANTT_OWNER_PLUGIN = '@nocobase/plugin-gantt';
+const GANTT_BLOCK_MODEL_USE = 'GanttBlockModel';
+const GANTT_EVENT_VIEW_ACTION_MODEL_USE = 'GanttEventViewActionModel';
+
+type FlowSurfaceGanttDefaultActionSpec = {
+  use: string;
+  props?: Record<string, unknown>;
+  stepParams?: Record<string, unknown>;
+};
 
 export async function resolveDynamicCapabilityCreate(
   input: ResolveDynamicCapabilityCreateOptions,
@@ -504,6 +513,12 @@ function resolveJsonInferredAutoSnapshotDynamicCreate(input: {
     recipe: createRecipe,
     publicInput: input.publicInput,
   });
+  enhanceJsonInferredCreatedNode({
+    publicItem,
+    inferredAuthoring: input.capability.inferredAuthoring,
+    publicInput: input.publicInput,
+    node,
+  });
   try {
     assertJsonInferredCreatedNodeUse(publicItem.publicType, input.capability.inferredAuthoring.modelUse, node);
     validateFlowSurfacePayloadShape(input.actionName, node, 'node');
@@ -527,6 +542,200 @@ function resolveJsonInferredAutoSnapshotDynamicCreate(input: {
     publicPayload,
     node,
     warnings: publicItem.warnings || [],
+  };
+}
+
+function enhanceJsonInferredCreatedNode(input: {
+  publicItem: FlowSurfacePublicCapabilityItem;
+  inferredAuthoring: FlowSurfaceDynamicJsonInferredSnapshotCreateCapability['inferredAuthoring'];
+  publicInput: FlowSurfaceDynamicCapabilityPublicInput;
+  node: FlowSurfaceNodeSpec;
+}) {
+  if (
+    input.publicItem.ownerPlugin !== GANTT_OWNER_PLUGIN ||
+    input.inferredAuthoring.modelUse !== GANTT_BLOCK_MODEL_USE ||
+    normalizeRequiredString(input.node?.use) !== GANTT_BLOCK_MODEL_USE
+  ) {
+    return;
+  }
+  enhanceGanttJsonInferredCreatedNode(input.node, input.publicInput, {
+    eventViewActionSupported: isGanttEventViewActionSupported(input.inferredAuthoring),
+  });
+}
+
+function enhanceGanttJsonInferredCreatedNode(
+  node: FlowSurfaceNodeSpec,
+  publicInput: FlowSurfaceDynamicCapabilityPublicInput,
+  options: { eventViewActionSupported: boolean },
+) {
+  const initParams = publicInput.initParams || {};
+  const dataSourceKey = normalizeRequiredString(initParams.dataSourceKey) || 'main';
+  const collectionName = normalizeRequiredString(initParams.collectionName);
+  const subModels = ensureNodeSubModels(node);
+  const actions = ensureArraySubModel(subModels, 'actions');
+  const openView = buildGanttDefaultOpenView({
+    dataSourceKey,
+    collectionName,
+  });
+
+  [
+    buildGanttFilterAction(),
+    buildGanttTodayAction(),
+    buildGanttRefreshAction(),
+    buildGanttAddNewAction(openView),
+    buildGanttBulkDeleteAction(),
+  ].forEach((action) => ensureActionModel(actions, action));
+
+  if (options.eventViewActionSupported && !_.isPlainObject(subModels.eventViewAction)) {
+    subModels.eventViewAction = {
+      use: GANTT_EVENT_VIEW_ACTION_MODEL_USE,
+      stepParams: {
+        popupSettings: {
+          openView: _.cloneDeep(openView),
+        },
+      },
+    };
+  }
+  if (options.eventViewActionSupported) {
+    _.set(node, ['props', 'eventPopupSettings'], _.cloneDeep(openView));
+  }
+}
+
+function isGanttEventViewActionSupported(
+  inferredAuthoring: FlowSurfaceDynamicJsonInferredSnapshotCreateCapability['inferredAuthoring'],
+) {
+  return (
+    (inferredAuthoring.childSurfaces || []).some(
+      (surface) =>
+        surface.subModelKey === 'eventViewAction' &&
+        (surface.allowedChildren || []).includes(GANTT_EVENT_VIEW_ACTION_MODEL_USE),
+    ) ||
+    (inferredAuthoring.allowedChildren || []).some(
+      (child) => child.kind === 'action' && child.modelUse === GANTT_EVENT_VIEW_ACTION_MODEL_USE,
+    )
+  );
+}
+
+function ensureNodeSubModels(node: FlowSurfaceNodeSpec) {
+  const nodeRecord = node as FlowSurfaceNodeSpec & { subModels?: Record<string, unknown> };
+  if (!_.isPlainObject(nodeRecord.subModels)) {
+    nodeRecord.subModels = {};
+  }
+  return nodeRecord.subModels as Record<string, unknown>;
+}
+
+function ensureArraySubModel(subModels: Record<string, unknown>, key: string) {
+  if (!Array.isArray(subModels[key])) {
+    subModels[key] = [];
+  }
+  return subModels[key] as Record<string, unknown>[];
+}
+
+function ensureActionModel(actions: Record<string, unknown>[], spec: FlowSurfaceGanttDefaultActionSpec) {
+  if (actions.some((action) => normalizeRequiredString(action?.use) === spec.use)) {
+    return;
+  }
+  actions.push({
+    use: spec.use,
+    ...(spec.props ? { props: _.cloneDeep(spec.props) } : {}),
+    ...(spec.stepParams ? { stepParams: _.cloneDeep(spec.stepParams) } : {}),
+  });
+}
+
+function buildGanttDefaultOpenView(input: { dataSourceKey: string; collectionName: string }) {
+  return buildDefinedPayload({
+    mode: 'drawer',
+    size: 'medium',
+    pageModelClass: 'ChildPageModel',
+    dataSourceKey: input.dataSourceKey,
+    collectionName: input.collectionName || undefined,
+  });
+}
+
+function buildGanttButtonSettings(props: Record<string, unknown>) {
+  const general = _.pick(props, ['title', 'tooltip', 'icon', 'type', 'danger', 'color']);
+  return {
+    buttonSettings: {
+      general: _.cloneDeep(general),
+    },
+  };
+}
+
+function buildGanttFilterAction(): FlowSurfaceGanttDefaultActionSpec {
+  const props = {
+    title: '{{t("Filter")}}',
+    icon: 'FilterOutlined',
+  };
+  return {
+    use: 'FilterActionModel',
+    props,
+    stepParams: buildGanttButtonSettings(props),
+  };
+}
+
+function buildGanttTodayAction(): FlowSurfaceGanttDefaultActionSpec {
+  const props = {
+    type: 'default',
+    title: '{{t("Today")}}',
+    icon: 'AimOutlined',
+  };
+  return {
+    use: 'GanttTodayActionModel',
+    props,
+    stepParams: buildGanttButtonSettings(props),
+  };
+}
+
+function buildGanttRefreshAction(): FlowSurfaceGanttDefaultActionSpec {
+  const props = {
+    title: '{{t("Refresh")}}',
+    icon: 'ReloadOutlined',
+  };
+  return {
+    use: 'RefreshActionModel',
+    props,
+    stepParams: buildGanttButtonSettings(props),
+  };
+}
+
+function buildGanttAddNewAction(openView: Record<string, unknown>): FlowSurfaceGanttDefaultActionSpec {
+  const props = {
+    type: 'primary',
+    title: '{{t("Add new")}}',
+    icon: 'PlusOutlined',
+  };
+  return {
+    use: 'AddNewActionModel',
+    props,
+    stepParams: {
+      ...buildGanttButtonSettings(props),
+      popupSettings: {
+        openView: _.cloneDeep(openView),
+      },
+    },
+  };
+}
+
+function buildGanttBulkDeleteAction(): FlowSurfaceGanttDefaultActionSpec {
+  const props = {
+    title: '',
+    tooltip: '{{t("Delete")}}',
+    icon: 'DeleteOutlined',
+    position: 'right',
+  };
+  return {
+    use: 'BulkDeleteActionModel',
+    props,
+    stepParams: {
+      ...buildGanttButtonSettings(props),
+      deleteSettings: {
+        confirm: {
+          enable: true,
+          title: '{{t("Delete record")}}',
+          content: '{{t("Are you sure you want to delete it?")}}',
+        },
+      },
+    },
   };
 }
 

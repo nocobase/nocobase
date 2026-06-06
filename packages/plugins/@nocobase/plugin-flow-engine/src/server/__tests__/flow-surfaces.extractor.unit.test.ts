@@ -4713,6 +4713,20 @@ describe('flowSurfaces extractor scaffold', () => {
             subModelKey: 'columns',
             allowedChildren: ['TableColumnModel'],
           }),
+          expect.objectContaining({
+            kind: 'action',
+            subModelKey: 'eventViewAction',
+            allowedChildren: ['GanttEventViewActionModel'],
+          }),
+        ]),
+      );
+      expect(snapshot.inferredAuthoring?.capabilities[0].allowedChildren).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            kind: 'action',
+            modelUse: 'GanttEventViewActionModel',
+            publicType: 'view',
+          }),
         ]),
       );
       expect(ganttCapability).toMatchObject({

@@ -9,10 +9,10 @@
 
 import { SequelizeCollectionManager } from '@nocobase/data-source-manager';
 import type { ResourcerContext } from '@nocobase/resourcer';
-import { Application } from '@nocobase/server';
+import { Application, getPackageDir } from '@nocobase/server';
 import { parseLiquidContext, transformSQL } from '@nocobase/utils';
 import { lstat, readdir } from 'fs/promises';
-import { basename, resolve } from 'path';
+import { basename, join, resolve } from 'path';
 import { FlowSurfaceCapabilityProviderRegistry } from './flow-surfaces/capability-provider';
 import { readFlowSurfaceCapabilityPolicyConfigFromPluginOptions } from './flow-surfaces/capability-policy';
 import { registerFlowSurfacesResource } from './flow-surfaces';
@@ -29,6 +29,20 @@ function isNodeErrnoException(error: unknown): error is NodeJS.ErrnoException {
 
 function isFlowSurfaceAutoSnapshotJsonFileName(fileName: string) {
   return fileName === basename(fileName) && fileName.toLowerCase().endsWith('.json');
+}
+
+function getFlowSurfacePackagedAutoSnapshotDir(packageRoot: string) {
+  return join(packageRoot, 'dist', 'flow-surfaces-capabilities');
+}
+
+function dedupeFlowSurfaceAutoSnapshots(
+  snapshots: readonly FlowSurfaceAutoSnapshot[],
+): readonly FlowSurfaceAutoSnapshot[] {
+  const byPlugin = new Map<string, FlowSurfaceAutoSnapshot>();
+  for (const snapshot of snapshots) {
+    byPlugin.set(snapshot.plugin, snapshot);
+  }
+  return Array.from(byPlugin.values()).sort((left, right) => left.plugin.localeCompare(right.plugin));
 }
 
 export class PluginFlowEngineServer extends PluginUISchemaStorageServer {
@@ -204,11 +218,77 @@ export class PluginFlowEngineServer extends PluginUISchemaStorageServer {
     return refreshPromise;
   }
 
-  protected loadFlowSurfaceAutoSnapshotsFromStorage(dir: string) {
-    return loadFlowSurfaceAutoSnapshotsFromDirectory({ dir });
+  protected async loadFlowSurfaceAutoSnapshotsFromStorage(dir: string) {
+    const packagedSnapshots = await this.loadFlowSurfacePackagedAutoSnapshots();
+    const storageSnapshots = await loadFlowSurfaceAutoSnapshotsFromDirectory({ dir });
+    return dedupeFlowSurfaceAutoSnapshots([...packagedSnapshots, ...storageSnapshots]);
+  }
+
+  protected async loadFlowSurfacePackagedAutoSnapshots() {
+    const dirs = await this.getFlowSurfacePackagedAutoSnapshotDirs();
+    const snapshots: FlowSurfaceAutoSnapshot[] = [];
+    for (const dir of dirs) {
+      snapshots.push(...(await loadFlowSurfaceAutoSnapshotsFromDirectory({ dir })));
+    }
+    return snapshots;
+  }
+
+  protected async getFlowSurfacePackagedAutoSnapshotDirs() {
+    const packageNames = await this.resolveEnabledPluginPackageNamesForAutoSnapshots();
+    const dirs: string[] = [];
+    for (const packageName of packageNames) {
+      const packageRoot = this.resolveFlowSurfaceAutoSnapshotPackageRoot(packageName);
+      if (packageRoot) {
+        dirs.push(getFlowSurfacePackagedAutoSnapshotDir(packageRoot));
+      }
+    }
+    return Array.from(new Set(dirs)).sort((left, right) => left.localeCompare(right));
+  }
+
+  protected async resolveEnabledPluginPackageNamesForAutoSnapshots() {
+    try {
+      const records = await this.app?.pm?.repository?.find?.({
+        fields: ['packageName'],
+        filter: {
+          enabled: true,
+        },
+      });
+      if (!Array.isArray(records)) {
+        return [];
+      }
+      return Array.from(
+        new Set(
+          records.map((record) => String(record?.packageName || '').trim()).filter((packageName) => !!packageName),
+        ),
+      ).sort((left, right) => left.localeCompare(right));
+    } catch (error) {
+      this.app?.logger?.warn?.(
+        'flowSurfaces packaged auto snapshot discovery failed',
+        error instanceof Error ? { error: error.message } : { error: String(error) },
+      );
+      return [];
+    }
+  }
+
+  protected resolveFlowSurfaceAutoSnapshotPackageRoot(packageName: string) {
+    try {
+      return getPackageDir(packageName);
+    } catch {
+      return undefined;
+    }
   }
 
   protected async getFlowSurfaceAutoSnapshotCacheKey(snapshotDir: string) {
+    const storageCacheKey = await this.getFlowSurfaceAutoSnapshotDirectoryCacheKey(snapshotDir);
+    const packagedDirs = await this.getFlowSurfacePackagedAutoSnapshotDirs();
+    const packagedCacheKeys: string[] = [];
+    for (const dir of packagedDirs) {
+      packagedCacheKeys.push(await this.getFlowSurfaceAutoSnapshotDirectoryCacheKey(dir));
+    }
+    return [`storage:${storageCacheKey}`, `packaged:${packagedCacheKeys.join('|')}`].join(';');
+  }
+
+  protected async getFlowSurfaceAutoSnapshotDirectoryCacheKey(snapshotDir: string) {
     const dir = resolve(snapshotDir);
     try {
       const stats = await lstat(dir);

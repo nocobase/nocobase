@@ -201,7 +201,7 @@ describe('flowSurfaces dynamic capability create dry-run', () => {
     };
   }
 
-  function createGanttAutoSnapshot(options: { inferredAuthoring?: boolean } = {}) {
+  function createGanttAutoSnapshot(options: { inferredAuthoring?: boolean; eventViewActionEvidence?: boolean } = {}) {
     const ganttAllowedActionModelUses = [
       'GanttExpandCollapseActionModel',
       'GanttTodayActionModel',
@@ -266,6 +266,18 @@ describe('flowSurfaces dynamic capability create dry-run', () => {
                 evidenceSource: 'ast' as const,
                 confidence: 'medium' as const,
               },
+              ...(options.eventViewActionEvidence === false
+                ? []
+                : [
+                    {
+                      type: 'model.loaderRegistered' as const,
+                      modelUse: 'GanttEventViewActionModel',
+                      loaderName: 'GanttEventViewActionModel',
+                      source: 'packages/plugins/@nocobase/plugin-gantt/src/client-v2/plugin.tsx',
+                      evidenceSource: 'ast' as const,
+                      confidence: 'medium' as const,
+                    },
+                  ]),
               ...ganttAllowedActionModelUses.map((actionModelUse, index) => ({
                 type: 'menu.itemRegistered' as const,
                 menuKey: `allowed-action-${String(index).padStart(2, '0')}`,
@@ -977,6 +989,10 @@ describe('flowSurfaces dynamic capability create dry-run', () => {
           color: 'status',
           range: 'week',
         },
+        eventPopupSettings: {
+          dataSourceKey: 'main',
+          collectionName: 'tasks',
+        },
       },
       stepParams: {
         resourceSettings: {
@@ -987,17 +1003,102 @@ describe('flowSurfaces dynamic capability create dry-run', () => {
         },
       },
       subModels: {
-        actions: [],
+        actions: [
+          {
+            use: 'FilterActionModel',
+          },
+          {
+            use: 'GanttTodayActionModel',
+          },
+          {
+            use: 'RefreshActionModel',
+          },
+          {
+            use: 'AddNewActionModel',
+            stepParams: {
+              popupSettings: {
+                openView: {
+                  dataSourceKey: 'main',
+                  collectionName: 'tasks',
+                },
+              },
+            },
+          },
+          {
+            use: 'BulkDeleteActionModel',
+            stepParams: {
+              deleteSettings: {
+                confirm: {
+                  enable: true,
+                },
+              },
+            },
+          },
+        ],
         columns: [
           {
             use: 'TableActionsColumnModel',
           },
         ],
+        eventViewAction: {
+          use: 'GanttEventViewActionModel',
+          stepParams: {
+            popupSettings: {
+              openView: {
+                dataSourceKey: 'main',
+                collectionName: 'tasks',
+              },
+            },
+          },
+        },
       },
     });
     expect(JSON.stringify(directResponse.publicPayload)).not.toContain('GanttBlockModel');
     expect(JSON.stringify(directResponse.publicPayload)).not.toContain('TableActionsColumnModel');
     expect(JSON.stringify(directResponse.publicPayload)).not.toContain('stepParams');
+
+    const legacySnapshotWithoutEventViewAction = createGanttAutoSnapshot({
+      inferredAuthoring: true,
+      eventViewActionEvidence: false,
+    });
+    const legacyResponse = await resolveDynamicCapabilityCreate({
+      publicType: 'gantt',
+      initParams: {
+        collectionName: 'tasks',
+        dataSourceKey: 'main',
+      },
+      settings: {
+        titleField: 'title',
+        startField: 'startAt',
+        endField: 'endAt',
+      },
+      enabledPackages: new Set(['@nocobase/plugin-gantt']),
+      providerRegistry: createProviderRegistry([]),
+      autoSnapshots: [legacySnapshotWithoutEventViewAction],
+    });
+    expect((legacyResponse.node.props as Record<string, unknown>)?.eventPopupSettings).toBeUndefined();
+    expect((legacyResponse.node.subModels as Record<string, unknown>)?.eventViewAction).toBeUndefined();
+    expect(legacyResponse.node).toMatchObject({
+      subModels: {
+        actions: [
+          {
+            use: 'FilterActionModel',
+          },
+          {
+            use: 'GanttTodayActionModel',
+          },
+          {
+            use: 'RefreshActionModel',
+          },
+          {
+            use: 'AddNewActionModel',
+          },
+          {
+            use: 'BulkDeleteActionModel',
+          },
+        ],
+      },
+    });
 
     const mismatchedRecipeSnapshot = createGanttAutoSnapshot({ inferredAuthoring: true });
     const [mismatchedCapability] = mismatchedRecipeSnapshot.inferredAuthoring?.capabilities || [];
@@ -1368,12 +1469,39 @@ describe('flowSurfaces dynamic capability create dry-run', () => {
         },
       },
       subModels: {
-        actions: [],
+        actions: [
+          {
+            use: 'FilterActionModel',
+          },
+          {
+            use: 'GanttTodayActionModel',
+          },
+          {
+            use: 'RefreshActionModel',
+          },
+          {
+            use: 'AddNewActionModel',
+            stepParams: {
+              popupSettings: {
+                openView: {
+                  dataSourceKey: 'main',
+                  collectionName: 'tasks',
+                },
+              },
+            },
+          },
+          {
+            use: 'BulkDeleteActionModel',
+          },
+        ],
         columns: [
           {
             use: 'TableActionsColumnModel',
           },
         ],
+        eventViewAction: {
+          use: 'GanttEventViewActionModel',
+        },
       },
     });
   });
@@ -3022,7 +3150,107 @@ describe('flowSurfaces dynamic capability create dry-run', () => {
     });
   });
 
-  it('should accept JSON inferred Gantt addBlock writes when empty action surfaces are omitted on readback', async () => {
+  it('should reject JSON inferred Gantt addBlock writes when default action props drift on readback', async () => {
+    const autoSnapshot = createGanttAutoSnapshot({ inferredAuthoring: true });
+    const service = new FlowSurfacesService({
+      flowSurfaceAutoSnapshots: [autoSnapshot],
+      flowSurfaceCapabilityProviders: createProviderRegistry([]),
+    } as unknown as ConstructorParameters<typeof FlowSurfacesService>[0]);
+    const harness = service as unknown as DynamicBlockWriteGateHarness;
+    const enabledPackages = new Set(['@nocobase/plugin-gantt']);
+    let persistedPayload: Record<string, unknown> = {};
+
+    harness.catalog = async () => ({
+      blocks: [
+        {
+          key: 'gantt',
+          label: 'Gantt',
+          use: 'gantt',
+          kind: 'block',
+          publicType: 'gantt',
+          ownerPlugin: '@nocobase/plugin-gantt',
+          origin: 'autoSnapshot',
+          createSupported: true,
+          availability: {
+            create: {
+              supported: true,
+            },
+          },
+        },
+      ],
+    });
+    vi.spyOn(service as unknown as RepositoryGetterHarness, 'repository', 'get').mockReturnValue({
+      upsertModel: async (payload) => {
+        persistedPayload = payload;
+        return 'created-gantt-block';
+      },
+      findModelById: async () => {
+        const subModels = (persistedPayload.subModels as Record<string, unknown>) || {};
+        const actions = ((subModels.actions as Record<string, unknown>[]) || []).map((action, index) => {
+          if (index !== 0) {
+            return action;
+          }
+          return {
+            ...action,
+            props: {
+              ...((action.props as Record<string, unknown>) || {}),
+              title: 'Changed filter',
+            },
+          };
+        });
+        return {
+          uid: 'created-gantt-block',
+          ...persistedPayload,
+          subModels: {
+            ...subModels,
+            actions,
+          },
+        };
+      },
+    });
+
+    await expect(
+      harness.tryAddDynamicBlock({
+        values: {
+          target: {
+            uid: 'target-grid',
+          },
+          type: 'gantt',
+          initParams: {
+            collectionName: 'tasks',
+          },
+          settings: {
+            titleField: 'title',
+            startField: 'startAt',
+            endField: 'endAt',
+          },
+        },
+        options: {
+          deferAutoLayout: true,
+          dynamicCapabilityActionName: 'addBlock',
+        },
+        enabledPackages,
+        blockType: 'gantt',
+        target: {
+          uid: 'target-grid',
+        },
+        parentUid: 'parent-grid',
+        subKey: 'items',
+        subType: 'array',
+        popupProfile: null,
+      }),
+    ).rejects.toMatchObject({
+      message: `flowSurfaces addBlock dynamic block 'gantt' failed readback parity guard`,
+      options: {
+        details: expect.objectContaining({
+          reasonCode: 'readback-parity-failed',
+          reasonSource: 'builder',
+        }),
+      },
+    });
+  });
+
+  it('should reject JSON inferred Gantt addBlock writes when default actions are omitted on readback', async () => {
     const autoSnapshot = createGanttAutoSnapshot({ inferredAuthoring: true });
     const service = new FlowSurfacesService({
       flowSurfaceAutoSnapshots: [autoSnapshot],
@@ -3098,10 +3326,14 @@ describe('flowSurfaces dynamic capability create dry-run', () => {
         subType: 'array',
         popupProfile: null,
       }),
-    ).resolves.toMatchObject({
-      uid: 'created-gantt-block',
-      parentUid: 'parent-grid',
-      subKey: 'items',
+    ).rejects.toMatchObject({
+      message: `flowSurfaces addBlock dynamic block 'gantt' failed readback parity guard`,
+      options: {
+        details: expect.objectContaining({
+          reasonCode: 'readback-parity-failed',
+          reasonSource: 'builder',
+        }),
+      },
     });
   });
 
