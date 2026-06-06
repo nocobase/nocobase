@@ -13,19 +13,36 @@ import { MobileBackButton, MobilePageSurface } from './mobileComponents';
 
 type RouteWithTabs = {
   id?: string | number | null;
+  menuSchemaUid?: string | null;
+  pageSchemaUid?: string | null;
+  schemaUid?: string | null;
   enableTabs?: boolean;
 };
 
+function routeMatchesRootPage(model: RootPageModel, currentRoute?: RouteWithTabs) {
+  if (!currentRoute) {
+    return false;
+  }
+
+  const routeId = model.props.routeId;
+  if (routeId != null && currentRoute.id != null) {
+    return String(currentRoute.id) === String(routeId);
+  }
+
+  const pageUid = model.parentId;
+  if (!pageUid) {
+    return false;
+  }
+
+  return [currentRoute.schemaUid, currentRoute.pageSchemaUid, currentRoute.menuSchemaUid].some(
+    (routeUid) => routeUid != null && String(routeUid) === String(pageUid),
+  );
+}
+
 function resolveRootEnableTabs(model: RootPageModel) {
   const currentRoute = model.context.currentRoute as RouteWithTabs | undefined;
-  const routeId = model.props.routeId;
 
-  if (
-    routeId != null &&
-    currentRoute?.id != null &&
-    String(currentRoute.id) === String(routeId) &&
-    typeof currentRoute.enableTabs === 'boolean'
-  ) {
+  if (typeof currentRoute?.enableTabs === 'boolean' && routeMatchesRootPage(model, currentRoute)) {
     return currentRoute.enableTabs;
   }
 

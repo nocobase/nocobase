@@ -47,7 +47,12 @@ describe('plugin-ui-layout mobile models', () => {
     window.localStorage.removeItem(FLOW_SETTINGS_PREFERENCE_STORAGE_KEY);
   });
 
-  function renderMobileLayoutWithRouteRepository(routeRepository: MobileRouteRepositoryForTest) {
+  function renderMobileLayoutWithRouteRepository(
+    routeRepository: MobileRouteRepositoryForTest,
+    options: {
+      beforeRender?: (model: MobileLayoutModel) => void;
+    } = {},
+  ) {
     const engine = new FlowEngine();
 
     engine.registerModels({
@@ -84,6 +89,7 @@ describe('plugin-ui-layout mobile models', () => {
         },
       },
     });
+    options.beforeRender?.(model);
 
     render(
       React.createElement(
@@ -779,6 +785,77 @@ describe('plugin-ui-layout mobile models', () => {
     expect(model.getActiveMobileTabKey('fallback-page')).toBe('home-page');
   });
 
+  it('should reserve a mobile page content slot before the tab bar', async () => {
+    renderMobileLayoutWithRouteRepository({
+      listAccessible: () => [
+        {
+          id: 1,
+          type: NocoBaseDesktopRouteType.flowPage,
+          title: 'Home',
+          schemaUid: 'home-page',
+        },
+      ],
+    });
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /Home/ })).toBeInTheDocument();
+    });
+
+    const shell = document.querySelector('.nb-ui-layout-mobile-viewport > div');
+    expect(shell?.children[0]).toHaveClass('nb-ui-layout-mobile-page-slot');
+    expect(shell?.children[1]).toHaveClass('nb-ui-layout-mobile-home-tabbar');
+  });
+
+  it('should use the mobile page content slot as the layout content element', async () => {
+    let setLayoutContentElement: ReturnType<typeof vi.spyOn>;
+    renderMobileLayoutWithRouteRepository(
+      {
+        listAccessible: () => [
+          {
+            id: 1,
+            type: NocoBaseDesktopRouteType.flowPage,
+            title: 'Home',
+            schemaUid: 'home-page',
+          },
+        ],
+      },
+      {
+        beforeRender: (model) => {
+          setLayoutContentElement = vi.spyOn(model, 'setLayoutContentElement');
+        },
+      },
+    );
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /Home/ })).toBeInTheDocument();
+    });
+
+    expect(setLayoutContentElement).toBeDefined();
+    const contentElementCalls = setLayoutContentElement?.mock.calls.filter((call) => call[0]) ?? [];
+    expect(contentElementCalls.at(-1)?.[0]).toHaveClass('nb-ui-layout-mobile-page-slot');
+  });
+
+  it('should expose the mobile page surface inside the page content slot', async () => {
+    renderMobileLayoutWithRouteRepository({
+      listAccessible: () => [
+        {
+          id: 1,
+          type: NocoBaseDesktopRouteType.flowPage,
+          title: 'Home',
+          schemaUid: 'home-page',
+        },
+      ],
+    });
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /Home/ })).toBeInTheDocument();
+    });
+
+    const pageSlot = document.querySelector('.nb-ui-layout-mobile-page-slot');
+    const pageSurface = pageSlot?.querySelector('.nb-ui-layout-mobile-surface');
+    expect(pageSurface).toBeInTheDocument();
+  });
+
   it('should hide the mobile tab bar when the current pathname has a child view before route state catches up', () => {
     const engine = new FlowEngine();
     engine.registerModels({
@@ -1125,6 +1202,53 @@ describe('plugin-ui-layout mobile models', () => {
 
     expect(new MobileRootPageModel({ flowEngine } as never).tabBarExtraContent.right).toBeNull();
     expect(new MobileChildPageModel({ flowEngine } as never).tabBarExtraContent.right).toBeNull();
+  });
+
+  it('should render mobile root page tabs from the current desktop route before route id is synced', () => {
+    const flowEngine = new FlowEngine();
+    flowEngine.registerModels({
+      MobileRootPageModel,
+    });
+    flowEngine.context.defineProperty('currentRoute', {
+      value: {
+        id: 1,
+        schemaUid: 'home-page',
+        enableTabs: true,
+      },
+    });
+    flowEngine.context.defineProperty('view', {
+      value: {
+        inputArgs: {},
+      },
+    });
+    flowEngine.context.defineProperty('pageActive', {
+      value: {
+        value: true,
+      },
+    });
+
+    const model = flowEngine.createModel<MobileRootPageModel>({
+      uid: 'home-page-model',
+      parentId: 'home-page',
+      use: 'MobileRootPageModel',
+      props: {
+        enableTabs: false,
+        title: 'Home',
+      },
+    });
+    const renderTabs = vi
+      .spyOn(model, 'renderTabs')
+      .mockReturnValue(React.createElement('div', { 'data-testid': 'desktop-tabs' }));
+    const renderFirstTab = vi
+      .spyOn(model, 'renderFirstTab')
+      .mockReturnValue(React.createElement('div', { 'data-testid': 'first-tab' }));
+
+    render(React.createElement(FlowEngineProvider, { engine: flowEngine }, model.render()));
+
+    expect(screen.getByTestId('desktop-tabs')).toBeInTheDocument();
+    expect(screen.queryByTestId('first-tab')).not.toBeInTheDocument();
+    expect(renderTabs).toHaveBeenCalledTimes(1);
+    expect(renderFirstTab).not.toHaveBeenCalled();
   });
 
   it('should persist mobile UI editor preference to localStorage', () => {

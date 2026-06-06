@@ -586,13 +586,6 @@ const MobileLayoutComponent = observer((props: { model: MobileLayoutModel }) => 
       token.paddingXL,
     ],
   );
-  const handleViewportChange = useCallback(
-    (element: HTMLDivElement | null) => {
-      model.setLayoutContentElement(element);
-    },
-    [model],
-  );
-
   useEffect(() => {
     model.setIsMobileLayout(true);
     return () => {
@@ -677,7 +670,6 @@ const MobileLayoutComponent = observer((props: { model: MobileLayoutModel }) => 
       <div className="nb-ui-layout-mobile-preview">
         <div className="nb-ui-layout-mobile-frame">
           <div
-            ref={handleViewportChange}
             className="nb-ui-layout-mobile-viewport"
             data-nb-mobile-view-stack-depth={model.getMobileViewStackDepth()}
           >
@@ -1038,6 +1030,12 @@ const MobileHomePlaceholder = observer(
       () => (configuringTabType ? getMobileTabConfigurationTitle(configuringTabType, t) : undefined),
       [configuringTabType, t],
     );
+    const handlePageSlotChange = useCallback(
+      (element: HTMLDivElement | null) => {
+        model.setLayoutContentElement(element);
+      },
+      [model],
+    );
 
     useEffect(() => {
       if (!designModeEnabled) {
@@ -1215,6 +1213,27 @@ const MobileHomePlaceholder = observer(
           display: flex;
           flex-direction: column;
           gap: ${token.marginSM}px;
+        }
+
+        .nb-ui-layout-mobile-page-slot {
+          position: relative;
+          flex: 1 1 0;
+          min-height: 0;
+          display: flex;
+          flex-direction: column;
+          overflow: hidden;
+        }
+
+        .nb-ui-layout-mobile-page-slot > * {
+          flex: 1 1 0;
+          min-height: 0;
+        }
+
+        .nb-ui-layout-mobile-page-slot .nb-ui-layout-mobile-surface {
+          position: absolute;
+          inset: 0;
+          width: 100%;
+          height: 100%;
         }
 
         .nb-ui-layout-mobile-home-menu {
@@ -1434,7 +1453,9 @@ const MobileHomePlaceholder = observer(
 
     return (
       <div className={className}>
-        {outlet || rootPageContent}
+        <div ref={handlePageSlotChange} className="nb-ui-layout-mobile-page-slot">
+          {outlet || rootPageContent}
+        </div>
         <DndProvider onDragEnd={handleMobileMenuDragEnd}>
           <nav className="nb-ui-layout-mobile-home-tabbar" aria-label={t('Mobile tab bar')} hidden={!showMobileTabBar}>
             {tabItems.map((item) => {

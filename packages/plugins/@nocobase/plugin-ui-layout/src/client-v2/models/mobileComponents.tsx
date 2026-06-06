@@ -214,9 +214,10 @@ export function MobilePageSurface(props: {
 }) {
   const { title, displayTitle, children, className } = props;
   const pageClassName = useMobilePageClassName();
+  const pageSurfaceClassName = `nb-ui-layout-mobile-surface ${pageClassName}${className ? ` ${className}` : ''}`;
 
   return (
-    <div className={`${pageClassName}${className ? ` ${className}` : ''}`}>
+    <div className={pageSurfaceClassName}>
       {displayTitle ? (
         <div className="nb-ui-layout-mobile-titlebar">
           <div className="nb-ui-layout-mobile-title">{title}</div>
