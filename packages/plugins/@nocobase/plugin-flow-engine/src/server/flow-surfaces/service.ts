@@ -682,6 +682,7 @@ type FlowSurfaceRuntimeOptions = {
   popupTemplateTreeCache?: FlowSurfacePopupTemplateTreeCache;
   skipGeneratedLayoutSingleColumnErrors?: boolean;
   dynamicCapabilityActionName?: FlowSurfaceDynamicCapabilityCreateActionName;
+  allowInternalComposeFieldMetadata?: boolean;
   allowJsonInferredFieldAutoPopupMetadata?: boolean;
 };
 
@@ -6106,6 +6107,7 @@ export class FlowSurfacesService {
       popupTemplateTreeCache?: FlowSurfacePopupTemplateTreeCache;
       skipGeneratedLayoutSingleColumnErrors?: boolean;
       dynamicCapabilityActionName?: FlowSurfaceDynamicCapabilityCreateActionName;
+      allowInternalComposeFieldMetadata?: boolean;
     } = {},
   ) {
     const actionOptions = {
@@ -6115,6 +6117,7 @@ export class FlowSurfacesService {
       popupTemplateTreeCache: options.popupTemplateTreeCache,
       skipGeneratedLayoutSingleColumnErrors: options.skipGeneratedLayoutSingleColumnErrors === true,
       dynamicCapabilityActionName: options.dynamicCapabilityActionName,
+      allowInternalComposeFieldMetadata: options.allowInternalComposeFieldMetadata === true,
     };
     switch (action) {
       case 'compose':
@@ -7137,6 +7140,7 @@ export class FlowSurfacesService {
         popupTemplateTreeCache,
         skipGeneratedLayoutSingleColumnErrors: true,
         dynamicCapabilityActionName: 'applyBlueprint',
+        allowInternalComposeFieldMetadata: true,
         allowJsonInferredFieldAutoPopupMetadata: true,
       }),
       options,
@@ -9209,6 +9213,7 @@ export class FlowSurfacesService {
       popupTemplateTreeCache?: FlowSurfacePopupTemplateTreeCache;
       skipGeneratedLayoutSingleColumnErrors?: boolean;
       dynamicCapabilityActionName?: FlowSurfaceDynamicCapabilityCreateActionName;
+      allowInternalComposeFieldMetadata?: boolean;
     } = {},
   ) {
     await this.refreshAutoSnapshotsFromStorage(
@@ -9248,6 +9253,9 @@ export class FlowSurfacesService {
         collectionName: authoringContext.currentCollectionName,
       },
       dynamicBlockTypes,
+      {
+        allowInternalFieldMetadata: options.allowInternalComposeFieldMetadata === true,
+      },
     );
     this.validateComposePopupTemplateAliases(normalizedBlocks, popupTemplateAliasSession);
     const blockParent = await this.surfaceContext.resolveBlockParent(target, options.transaction);
@@ -16818,7 +16826,10 @@ export class FlowSurfacesService {
     const generatedPopupName = this.resolveGeneratedDefaultActionPopupName(actionNode, popup, popupProfile);
     await this.compose(
       this.buildDefaultActionPopupComposeValues(actionNode, popupProfile, popup, options.enabledPackages),
-      options,
+      {
+        ...options,
+        allowInternalComposeFieldMetadata: true,
+      },
     );
 
     const popupState = await this.resolveDefaultActionPopupSurfaceState(actionNode.uid, options.transaction);
@@ -19362,6 +19373,7 @@ export class FlowSurfacesService {
       popupTemplateAliasSession: runtimeOptions.popupTemplateAliasSession,
       popupTemplateTreeCache: runtimeOptions.popupTemplateTreeCache,
       dynamicCapabilityActionName: runtimeOptions.dynamicCapabilityActionName,
+      allowInternalComposeFieldMetadata: runtimeOptions.allowInternalComposeFieldMetadata,
       allowJsonInferredFieldAutoPopupMetadata: runtimeOptions.allowJsonInferredFieldAutoPopupMetadata,
     };
     let result: any;
@@ -21299,7 +21311,12 @@ export class FlowSurfacesService {
     );
   }
 
-  private normalizeComposeFieldGroups(input: any, blockType: string, context: string) {
+  private normalizeComposeFieldGroups(
+    input: any,
+    blockType: string,
+    context: string,
+    options: { allowInternalFieldMetadata?: boolean } = {},
+  ) {
     if (!COMPOSE_FIELD_GROUP_BLOCK_TYPES.has(blockType)) {
       throwBadRequest(`${context} fieldGroups is only supported on createForm, editForm or details`);
     }
@@ -21338,7 +21355,11 @@ export class FlowSurfacesService {
           },
           groupIndex * 1000,
         ),
-        ...rawFields.map((field, fieldIndex) => normalizeComposeFieldSpec(field, groupIndex * 1000 + fieldIndex + 1)),
+        ...rawFields.map((field, fieldIndex) =>
+          normalizeComposeFieldSpec(field, groupIndex * 1000 + fieldIndex + 1, {
+            allowInternalMetadata: options.allowInternalFieldMetadata === true,
+          }),
+        ),
       ];
     });
   }
@@ -21570,6 +21591,7 @@ export class FlowSurfacesService {
       collectionName?: string;
     },
     dynamicBlockTypes?: ReadonlySet<string>,
+    options: { allowInternalFieldMetadata?: boolean } = {},
   ) {
     if (!_.isPlainObject(input)) {
       throwBadRequest(`flowSurfaces compose block #${index + 1} must be an object`);
@@ -21769,8 +21791,14 @@ export class FlowSurfacesService {
     }
     const fields = (
       hasFieldGroups
-        ? this.normalizeComposeFieldGroups(input.fieldGroups, type, `flowSurfaces compose block #${index + 1}`)
-        : _.castArray(input.fields || []).map((field, fieldIndex) => normalizeComposeFieldSpec(field, fieldIndex))
+        ? this.normalizeComposeFieldGroups(input.fieldGroups, type, `flowSurfaces compose block #${index + 1}`, {
+            allowInternalFieldMetadata: options.allowInternalFieldMetadata === true,
+          })
+        : _.castArray(input.fields || []).map((field, fieldIndex) =>
+            normalizeComposeFieldSpec(field, fieldIndex, {
+              allowInternalMetadata: options.allowInternalFieldMetadata === true,
+            }),
+          )
     ).map((field) => this.attachComposeFieldPopupDefaults(field, popupDefaultsMetadata));
     assertFlowSurfaceComposeUniqueKeys(fields, `flowSurfaces compose block #${index + 1} fields`);
     assertFlowSurfaceComposeUniqueKeys(actions, `flowSurfaces compose block #${index + 1} actions`);
@@ -21864,6 +21892,7 @@ export class FlowSurfacesService {
       collectionName?: string;
     },
     dynamicBlockTypes?: ReadonlySet<string>,
+    options: { allowInternalFieldMetadata?: boolean } = {},
   ) {
     const rawBlocks = _.castArray(input || []);
     const preserveSingleScopeDataBlockTitle = countFlowSurfaceNonTemplateTitleCleanupDataBlocks(rawBlocks) > 1;
@@ -21876,6 +21905,9 @@ export class FlowSurfacesService {
         popupDefaultsMetadata,
         resourceFallback,
         dynamicBlockTypes,
+        {
+          allowInternalFieldMetadata: options.allowInternalFieldMetadata === true,
+        },
       ),
     );
     assertFlowSurfaceComposeUniqueKeys(normalizedBlocks, 'flowSurfaces compose blocks');

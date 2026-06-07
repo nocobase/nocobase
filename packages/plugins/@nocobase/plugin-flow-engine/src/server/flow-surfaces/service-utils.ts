@@ -407,6 +407,10 @@ export type NormalizedComposeFieldSpec = {
   [FLOW_SURFACE_APPLY_BLUEPRINT_POPUP_DEFAULTS_KEY]?: FlowSurfaceApplyBlueprintPopupDefaultsMetadata;
 };
 
+export type NormalizeComposeFieldSpecOptions = {
+  allowInternalMetadata?: boolean;
+};
+
 function assertNoInternalComposeFieldMetadata(input: Record<string, any> | undefined, context: string) {
   if (!_.isPlainObject(input)) {
     return;
@@ -420,7 +424,11 @@ function assertNoInternalComposeFieldMetadata(input: Record<string, any> | undef
   throwBadRequest(`${context} does not accept internal field metadata: ${forbidden.join(', ')}`);
 }
 
-export function normalizeComposeFieldSpec(input: any, index: number): NormalizedComposeFieldSpec {
+export function normalizeComposeFieldSpec(
+  input: any,
+  index: number,
+  options: NormalizeComposeFieldSpecOptions = {},
+): NormalizedComposeFieldSpec {
   if (typeof input === 'string') {
     const fieldPath = String(input || '').trim();
     if (!fieldPath) {
@@ -440,7 +448,9 @@ export function normalizeComposeFieldSpec(input: any, index: number): Normalized
   }
   assertNoInternalFieldKeys(input, `flowSurfaces compose field #${index + 1}`);
   assertNoInternalFieldKeys(input.settings, `flowSurfaces compose field #${index + 1}.settings`);
-  assertNoInternalComposeFieldMetadata(input, `flowSurfaces compose field #${index + 1}`);
+  if (options.allowInternalMetadata !== true) {
+    assertNoInternalComposeFieldMetadata(input, `flowSurfaces compose field #${index + 1}`);
+  }
   assertNoInternalComposeFieldMetadata(input.settings, `flowSurfaces compose field #${index + 1}.settings`);
   const semanticType = String(input.type || '').trim() || undefined;
   const fieldPath = String(input.fieldPath || '').trim();
