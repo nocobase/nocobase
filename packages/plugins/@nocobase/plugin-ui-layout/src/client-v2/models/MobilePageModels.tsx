@@ -70,7 +70,7 @@ function renderMobileAddTabButton(model: RootPageModel | ChildPageModel) {
         items={[
           {
             key: 'blank',
-            label: model.context.t('Blank tab'),
+            label,
             createModelOptions: model.createPageTabModelOptions,
           },
         ]}

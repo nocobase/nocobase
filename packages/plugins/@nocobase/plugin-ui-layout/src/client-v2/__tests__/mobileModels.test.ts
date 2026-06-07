@@ -1961,6 +1961,32 @@ describe('plugin-ui-layout mobile models', () => {
     expect(childTabsElement.props.tabBarExtraContent.right).toBeTruthy();
   });
 
+  it('should show mobile page tab add menu items', async () => {
+    const flowEngine = new FlowEngine();
+    flowEngine.context.defineProperty('t', {
+      value: (key: string) => key,
+    });
+    flowEngine.context.defineProperty('themeToken', {
+      value: {
+        paddingLG: 16,
+      },
+    });
+    await flowEngine.flowSettings.forceEnable();
+    const rootPageModel = new MobileRootPageModel({ flowEngine } as never);
+
+    render(
+      React.createElement(
+        FlowEngineProvider,
+        { engine: flowEngine },
+        React.createElement(AntdApp, null, rootPageModel.renderTabs()),
+      ),
+    );
+
+    fireEvent.mouseEnter(screen.getByRole('button', { name: 'Add tab' }));
+
+    expect(await screen.findByText('Add tab')).toBeInTheDocument();
+  });
+
   it('should render mobile root page tabs from the current desktop route before route id is synced', () => {
     const flowEngine = new FlowEngine();
     flowEngine.registerModels({
