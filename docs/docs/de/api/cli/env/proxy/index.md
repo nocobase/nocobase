@@ -1,12 +1,12 @@
 ---
 title: 'nb env proxy'
-description: 'Referenz zum Thema nb env proxy: Hier findest du die Unterbefehle für Nginx und Caddy.'
+description: 'Referenz zur Befehlsgruppe nb env proxy: Hier kannst du die Unterbefehle für Nginx und Caddy ansehen und auswählen.'
 keywords: 'nb env proxy,NocoBase CLI,nginx,caddy,reverse proxy,Proxy-Konfiguration'
 ---
 
 # nb env proxy
 
-In der NocoBase CLI ist `nb env proxy` jetzt ein Thema. Der Befehl erzeugt selbst keine Konfiguration mehr. Er dient vor allem dazu, die Provider-Unterbefehle für Nginx und Caddy zu finden.
+In der NocoBase CLI ist `nb env proxy` der Einstieg für alle Reverse-Proxy-bezogenen Befehle. Er dient vor allem dazu, die Provider-Unterbefehle für Nginx und Caddy zu finden und auszuwählen.
 
 Wenn deine App bereits als von der CLI verwaltetes env gespeichert wurde und dieses env den Typ `local` oder `docker` hat, reicht es normalerweise aus, einen der Provider-Unterbefehle direkt zu verwenden.
 
@@ -27,7 +27,7 @@ nb env proxy
 ## Hinweise
 
 - `nb env proxy` hat keine eigenen Flags
-- `nb env proxy nginx` und `nb env proxy caddy` sind die Befehle, die tatsächlich Konfigurationen erzeugen
+- Verwende `nb env proxy nginx` oder `nb env proxy caddy`, wenn du Konfigurationen erzeugen möchtest
 - Beide Unterbefehle funktionieren nur für verwaltete envs, deren Runtime von der aktuellen Maschine aus erreichbar ist, also `local` oder `docker`
 - Wenn du Einstellungen wie `app-port` oder `app-public-path` mit `nb env update` änderst, musst du den passenden Proxy-Unterbefehl danach in der Regel erneut ausführen
 - Diese Befehlsgruppe funktioniert derzeit nicht für envs mit ausschließlich entfernter API-Verbindung oder für SSH-envs
@@ -35,7 +35,7 @@ nb env proxy
 ## Beispiele
 
 ```bash
-# Themenhilfe anzeigen
+# Hilfe zur Befehlsgruppe anzeigen
 nb env proxy
 
 # Nginx-Konfiguration für ein env erzeugen

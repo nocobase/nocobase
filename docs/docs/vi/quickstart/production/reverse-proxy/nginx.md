@@ -1,10 +1,10 @@
 # Nginx
 
-如果你的 NocoBase 应用已经能通过 `http://127.0.0.1:13000` 正常访问，下一步通常就是在前面加一层 Nginx。这样做主要有两个好处：对外只暴露标准的 `80/443` 端口，同时也更方便后续接 HTTPS、证书和缓存策略。
+Nếu ứng dụng NocoBase của bạn đã có thể truy cập bình thường qua `http://127.0.0.1:13000`, bước tiếp theo thường là đặt thêm một lớp Nginx phía trước. Cách này thường có hai lợi ích trực tiếp: bên ngoài chỉ cần mở các cổng chuẩn `80/443`, đồng thời cũng thuận tiện hơn khi bổ sung HTTPS, chứng chỉ và chính sách cache về sau.
 
-## 最小可用配置
+## Cấu hình tối thiểu có thể chạy
 
-先在服务器上创建一个配置文件，比如 `/etc/nginx/conf.d/nocobase.conf`：
+Trước tiên, hãy tạo một tệp cấu hình trên máy chủ, ví dụ `/etc/nginx/conf.d/nocobase.conf`:
 
 ```nginx
 server {
@@ -26,39 +26,39 @@ server {
 }
 ```
 
-其中：
+Trong đó:
 
-- `server_name` 改成你的域名
-- `127.0.0.1:13000` 改成 NocoBase 实际监听的地址
-- `client_max_body_size` 可以按你的上传需求继续调大
+- đổi `server_name` thành tên miền của bạn
+- đổi `127.0.0.1:13000` thành địa chỉ thực tế mà NocoBase đang lắng nghe
+- bạn có thể tăng `client_max_body_size` thêm tùy theo nhu cầu upload
 
-## 检查并重载配置
+## Kiểm tra và nạp lại cấu hình
 
 ```bash
 nginx -t
 systemctl reload nginx
 ```
 
-如果你不是用 `systemd` 管理 Nginx，也可以按你的运行方式执行重载命令。
+Nếu bạn không quản lý Nginx bằng `systemd`, hãy dùng quy trình reload riêng của bạn.
 
-## 配完之后怎么访问
+## Truy cập sau khi cấu hình xong
 
-如果 DNS 已经指向这台服务器，那么访问：
+Nếu DNS đã trỏ về máy chủ này, hãy truy cập:
 
 ```text
 http://your-domain.com
 ```
 
-就会由 Nginx 转发到 NocoBase。
+Lúc này Nginx sẽ chuyển tiếp yêu cầu tới NocoBase.
 
-## HTTPS 怎么办
+## Còn HTTPS thì sao
 
-如果你还需要 HTTPS，通常有两种常见做法：
+Nếu bạn cũng cần HTTPS, thông thường có hai cách phổ biến:
 
-- 继续在 Nginx 上配置证书
-- 直接改用 [Caddy](./caddy.md)，让它自动申请和续期证书
+- tiếp tục cấu hình chứng chỉ ngay trên Nginx
+- chuyển hẳn sang [Caddy](./caddy.md) để Caddy tự động xin và gia hạn chứng chỉ
 
-## 下一步去哪里看
+## Xem tiếp ở đâu
 
-- 如果你的应用还没跑起来，先看 [通过 Docker Compose 安装](../../installation/docker-compose.md)
-- 如果你还要确认端口或密钥，继续看 [应用环境变量](../../installation/env.md)
+- Nếu ứng dụng của bạn vẫn chưa chạy, hãy xem [Cài đặt bằng Docker Compose](../../installation/docker-compose.md) trước
+- Nếu bạn vẫn cần kiểm tra cổng hoặc khóa, hãy xem tiếp [Biến môi trường của ứng dụng](../../installation/env.md)

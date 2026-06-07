@@ -2,7 +2,7 @@
 
 If you already have a domain and want to get HTTPS running quickly, Caddy is usually the easiest choice. Compared with maintaining Nginx certificate config yourself, Caddy is more like the shortcut path for getting the entry layer online first.
 
-In the current command tree, the command that actually generates Caddy config is `nb env proxy caddy`. `nb env proxy` itself is only a topic and does not generate files.
+The default recommendation is to run `nb env proxy caddy` directly.
 
 ## When Caddy is usually the better fit
 

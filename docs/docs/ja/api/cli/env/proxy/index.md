@@ -1,12 +1,12 @@
 ---
 title: 'nb env proxy'
-description: 'nb env proxy トピックのリファレンスです。Nginx と Caddy のサブコマンドを確認できます。'
+description: 'nb env proxy コマンドグループのリファレンスです。Nginx と Caddy のサブコマンドを確認して選べます。'
 keywords: 'nb env proxy,NocoBase CLI,nginx,caddy,reverse proxy,プロキシ設定'
 ---
 
 # nb env proxy
 
-NocoBase CLI では、`nb env proxy` は今はトピックです。このコマンド自体では設定を生成しません。主な役割は、Nginx と Caddy の provider サブコマンドを見つけることです。
+NocoBase CLI では、`nb env proxy` は reverse proxy 関連コマンドの入口です。主な役割は、Nginx と Caddy の provider サブコマンドを見つけて選ぶことです。
 
 アプリがすでに CLI 管理 env として保存されていて、その env が `local` または `docker` であれば、通常は provider サブコマンドのどちらかをそのまま使えば十分です。
 
@@ -27,7 +27,7 @@ nb env proxy
 ## 注意点
 
 - `nb env proxy` 自体には専用のフラグはありません
-- 実際に設定を生成するのは `nb env proxy nginx` と `nb env proxy caddy` です
+- 設定を生成したい場合は `nb env proxy nginx` または `nb env proxy caddy` を使います
 - どちらのサブコマンドも、現在のマシンから runtime に到達できる管理対象 env、つまり `local` または `docker` に対してのみ動作します
 - `nb env update` で `app-port` や `app-public-path` のような設定を変更した場合は、そのあとで対応する proxy サブコマンドを通常もう一度実行する必要があります
 - このコマンドグループは、リモート API 接続だけの env や SSH env では現在使えません
@@ -35,7 +35,7 @@ nb env proxy
 ## 例
 
 ```bash
-# トピックのヘルプを表示
+# コマンドグループのヘルプを表示
 nb env proxy
 
 # 1 つの env に対して Nginx 設定を生成

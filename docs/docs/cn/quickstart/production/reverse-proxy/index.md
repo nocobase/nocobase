@@ -11,7 +11,7 @@ keywords: "NocoBase,nb env proxy nginx,nb env proxy caddy,反向代理,Nginx,Cad
 - `nb env proxy nginx`
 - `nb env proxy caddy`
 
-`nb env proxy` 现在只是一个 topic，用来查看这两个子命令的帮助信息。只要你的应用已经保存成 CLI env，并且属于 `local` 或 `docker`，通常来说直接让 CLI 生成配置就够了。这样 WebSocket、子路径、SPA 回退页和后续更新这些容易漏掉的细节都由 CLI 维护，你只需要决定入口层继续用 Nginx 还是 Caddy。
+只要你的应用已经保存成 CLI env，并且属于 `local` 或 `docker`，通常来说直接让 CLI 生成配置就够了。这样 WebSocket、子路径、SPA 回退页和后续更新这些容易漏掉的细节都由 CLI 维护，你只需要决定入口层继续用 Nginx 还是 Caddy。
 
 如果你的应用不是 CLI 托管的，或者你明确要完全手写代理配置，再去看各 provider 页里的手写配置部分就行。
 

@@ -1,10 +1,10 @@
 # Caddy
 
-如果你已经有域名，并且希望尽快把 HTTPS 也一起配好，Caddy 会更省心。大部分场景里，一份很短的 `Caddyfile` 就够了。
+Si vous avez déjà un nom de domaine et que vous voulez mettre HTTPS en place rapidement, Caddy est généralement l'option la plus simple. Dans la plupart des cas, un `Caddyfile` très court suffit.
 
-## 最小可用配置
+## Configuration minimale
 
-编辑 `/etc/caddy/Caddyfile`：
+Modifiez `/etc/caddy/Caddyfile` :
 
 ```text
 your-domain.com {
@@ -13,25 +13,25 @@ your-domain.com {
 }
 ```
 
-其中：
+Ici :
 
-- `your-domain.com` 改成你的域名
-- `127.0.0.1:13000` 改成 NocoBase 实际监听的地址
+- remplacez `your-domain.com` par votre nom de domaine
+- remplacez `127.0.0.1:13000` par l'adresse réelle sur laquelle NocoBase écoute
 
-如果域名已经正确解析到当前服务器，Caddy 通常会自动处理 HTTPS 证书的申请和续期。
+Si votre domaine pointe déjà correctement vers ce serveur, Caddy gère généralement automatiquement l'émission et le renouvellement des certificats HTTPS.
 
-## 检查并重载配置
+## Vérifier et recharger la configuration
 
 ```bash
 caddy validate --config /etc/caddy/Caddyfile
 systemctl reload caddy
 ```
 
-如果你不是用 `systemd` 管理 Caddy，也可以改用你自己的启动和重载方式。
+Si vous ne gérez pas Caddy avec `systemd`, utilisez votre propre méthode de démarrage et de rechargement.
 
-## 只想先走 HTTP
+## Si vous voulez commencer en HTTP seulement
 
-如果你暂时还没有域名，也可以先监听一个端口做验证：
+Si vous n'avez pas encore de nom de domaine, vous pouvez aussi écouter d'abord sur un port pour valider le fonctionnement :
 
 ```shell
 :80 {
@@ -39,15 +39,15 @@ systemctl reload caddy
 }
 ```
 
-不过正式环境里，还是建议尽快换成带域名的配置。
+Pour un vrai environnement de production, il reste préférable de passer dès que possible à une configuration avec nom de domaine.
 
-## 什么时候更适合用 Caddy
+## Quand Caddy est généralement plus adapté
 
-- 你希望更快接入 HTTPS
-- 你不想自己维护太多反向代理配置
-- 你目前只需要一个简单稳定的入口层
+- vous voulez activer HTTPS plus rapidement
+- vous ne voulez pas maintenir trop de détails de proxy inverse vous-même
+- vous avez pour l'instant seulement besoin d'une couche d'entrée simple et stable
 
-## 下一步去哪里看
+## Où aller ensuite
 
-- 如果你的应用还没跑起来，先看 [通过 Docker Compose 安装](../../installation/docker-compose.md)
-- 如果你还要确认端口或密钥，继续看 [应用环境变量](../../installation/env.md)
+- Si votre application ne tourne pas encore, consultez d'abord [Installer avec Docker Compose](../../installation/docker-compose.md)
+- Si vous devez encore vérifier les ports ou les clés, continuez avec [Variables d'environnement de l'application](../../installation/env.md)

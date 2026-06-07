@@ -2,7 +2,7 @@
 
 如果你已经有域名，并且希望尽快把 HTTPS 一起配好，Caddy 通常是最省心的选择。比起自己维护 Nginx 证书配置，Caddy 更像是“把入口层先跑通”的默认捷径。
 
-不过在当前的命令树里，真正执行 Caddy 生成的是 `nb env proxy caddy`。`nb env proxy` 本身只是 topic，不负责真正生成配置。
+默认直接执行 `nb env proxy caddy` 就行。
 
 ## 什么时候更适合用 Caddy
 

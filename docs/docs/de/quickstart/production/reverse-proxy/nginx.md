@@ -1,10 +1,10 @@
 # Nginx
 
-如果你的 NocoBase 应用已经能通过 `http://127.0.0.1:13000` 正常访问，下一步通常就是在前面加一层 Nginx。这样做主要有两个好处：对外只暴露标准的 `80/443` 端口，同时也更方便后续接 HTTPS、证书和缓存策略。
+Wenn deine NocoBase-App bereits über `http://127.0.0.1:13000` erreichbar ist, besteht der nächste Schritt normalerweise darin, davor noch eine Nginx-Schicht zu setzen. Das bringt meist zwei direkte Vorteile: Nach außen gibst du nur die Standardports `80/443` frei, und später lassen sich HTTPS, Zertifikate und Caching einfacher ergänzen.
 
-## 最小可用配置
+## Minimale lauffähige Konfiguration
 
-先在服务器上创建一个配置文件，比如 `/etc/nginx/conf.d/nocobase.conf`：
+Lege auf dem Server zuerst eine Konfigurationsdatei an, zum Beispiel `/etc/nginx/conf.d/nocobase.conf`:
 
 ```nginx
 server {
@@ -26,39 +26,39 @@ server {
 }
 ```
 
-其中：
+Dabei gilt:
 
-- `server_name` 改成你的域名
-- `127.0.0.1:13000` 改成 NocoBase 实际监听的地址
-- `client_max_body_size` 可以按你的上传需求继续调大
+- Ersetze `server_name` durch deine Domain
+- Ersetze `127.0.0.1:13000` durch die tatsächliche Adresse, auf der NocoBase lauscht
+- `client_max_body_size` kannst du je nach Upload-Bedarf weiter erhöhen
 
-## 检查并重载配置
+## Konfiguration prüfen und neu laden
 
 ```bash
 nginx -t
 systemctl reload nginx
 ```
 
-如果你不是用 `systemd` 管理 Nginx，也可以按你的运行方式执行重载命令。
+Wenn du Nginx nicht mit `systemd` verwaltest, verwende stattdessen deinen eigenen Reload-Workflow.
 
-## 配完之后怎么访问
+## Wie du danach darauf zugreifst
 
-如果 DNS 已经指向这台服务器，那么访问：
+Wenn DNS bereits auf diesen Server zeigt, rufe Folgendes auf:
 
 ```text
 http://your-domain.com
 ```
 
-就会由 Nginx 转发到 NocoBase。
+Dann leitet Nginx die Anfrage an NocoBase weiter.
 
-## HTTPS 怎么办
+## Was ist mit HTTPS
 
-如果你还需要 HTTPS，通常有两种常见做法：
+Wenn du zusätzlich HTTPS brauchst, gibt es normalerweise zwei gängige Wege:
 
-- 继续在 Nginx 上配置证书
-- 直接改用 [Caddy](./caddy.md)，让它自动申请和续期证书
+- Du konfigurierst die Zertifikate weiter direkt in Nginx
+- Du wechselst direkt zu [Caddy](./caddy.md), damit Zertifikate automatisch beantragt und erneuert werden
 
-## 下一步去哪里看
+## Wohin du als Nächstes gehen kannst
 
-- 如果你的应用还没跑起来，先看 [通过 Docker Compose 安装](../../installation/docker-compose.md)
-- 如果你还要确认端口或密钥，继续看 [应用环境变量](../../installation/env.md)
+- Wenn deine App noch nicht läuft, lies zuerst [Installation mit Docker Compose](../../installation/docker-compose.md)
+- Wenn du noch Ports oder Schlüssel prüfen musst, lies weiter unter [App-Umgebungsvariablen](../../installation/env.md)

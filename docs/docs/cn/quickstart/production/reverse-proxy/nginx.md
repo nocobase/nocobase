@@ -16,7 +16,7 @@
 
 ## 默认做法：让 CLI 生成 Nginx 配置
 
-如果你的应用是通过 NocoBase CLI 安装、接管或保存成了一个 `local` / `docker` env，默认直接执行 `nb env proxy nginx` 就行。`nb env proxy` 本身只是 topic，不负责真正生成配置。CLI 会同时维护可编辑入口文件、SPA 回退页、共享主配置和共享 snippets，比手写更不容易漏掉 WebSocket、子路径和后续更新。
+如果你的应用是通过 NocoBase CLI 安装、接管或保存成了一个 `local` / `docker` env，默认直接执行 `nb env proxy nginx` 就行。CLI 会同时维护可编辑入口文件、SPA 回退页、共享主配置和共享 snippets，比手写更不容易漏掉 WebSocket、子路径和后续更新。
 
 先为指定 env 生成配置：
 

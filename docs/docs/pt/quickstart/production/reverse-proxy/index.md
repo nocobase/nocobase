@@ -5,7 +5,7 @@ No NocoBase CLI, há duas entradas recomendadas para colocar um proxy reverso na
 - `nb env proxy nginx`
 - `nb env proxy caddy`
 
-`nb env proxy` agora é apenas um tópico usado para ver a ajuda desses subcomandos. Se o app já foi salvo como um env da CLI e o tipo do env é `local` ou `docker`, normalmente basta deixar a CLI gerar a configuração.
+Se o app já foi salvo como um env da CLI e o tipo do env é `local` ou `docker`, normalmente basta deixar a CLI gerar a configuração.
 
 ## Qual página abrir primeiro
 

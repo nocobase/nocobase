@@ -1,12 +1,12 @@
 ---
 title: "nb env proxy"
-description: "nb env proxy topic 参考：查看 Nginx 和 Caddy 代理子命令。"
+description: "nb env proxy 命令组参考：查看和选择 Nginx、Caddy 代理子命令。"
 keywords: "nb env proxy,NocoBase CLI,nginx,caddy,reverse proxy,代理配置"
 ---
 
 # nb env proxy
 
-在 NocoBase CLI 中，`nb env proxy` 现在是一个 topic。它本身不直接生成配置，主要用来查看 Nginx 和 Caddy 两个 provider 子命令的帮助信息。
+在 NocoBase CLI 中，`nb env proxy` 是反向代理相关命令的统一入口，主要用来查看和选择 Nginx、Caddy 两个 provider 子命令。
 
 如果你已经把应用保存成 CLI 托管 env，并且这个 env 属于 `local` 或 `docker`，通常来说直接选一个 provider 子命令就够了。
 
@@ -27,7 +27,7 @@ nb env proxy
 ## 说明
 
 - `nb env proxy` 自己没有独立的 flags
-- 真正执行生成配置的是 `nb env proxy nginx` 和 `nb env proxy caddy`
+- 实际生成配置时，使用 `nb env proxy nginx` 或 `nb env proxy caddy`
 - 这两个子命令都只适用于当前机器上可访问运行态的托管 env，也就是 `local` 或 `docker`
 - 如果你用 `nb env update` 修改了 `app-port`、`app-public-path` 这类会影响入口路径、资源地址或回源结果的配置，改完后通常还要重新执行对应的 proxy 子命令
 - 如果一个 env 只有远程 API 连接，或者是 SSH env，那么这组命令暂时不能用
@@ -35,7 +35,7 @@ nb env proxy
 ## 示例
 
 ```bash
-# 查看 topic 帮助
+# 查看命令组帮助
 nb env proxy
 
 # 为指定 env 生成 Nginx 配置

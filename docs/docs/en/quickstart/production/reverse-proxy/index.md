@@ -11,7 +11,7 @@ In NocoBase CLI, there are two recommended entry points for putting a reverse pr
 - `nb env proxy nginx`
 - `nb env proxy caddy`
 
-`nb env proxy` is now only a topic that shows help for these two subcommands. As long as your app has already been saved as a CLI env and the env type is `local` or `docker`, letting the CLI generate the config is usually enough. That way, the CLI keeps tricky details such as WebSocket handling, subpaths, SPA fallback pages, and later updates in sync. You only need to decide whether the entry layer should keep using Nginx or move to Caddy.
+As long as your app has already been saved as a CLI env and the env type is `local` or `docker`, letting the CLI generate the config is usually enough. That way, the CLI keeps tricky details such as WebSocket handling, subpaths, SPA fallback pages, and later updates in sync. You only need to decide whether the entry layer should keep using Nginx or move to Caddy.
 
 If your app is not managed by the CLI, or if you explicitly want to handwrite the full proxy config, go straight to the handwritten-config section in the provider pages.
 

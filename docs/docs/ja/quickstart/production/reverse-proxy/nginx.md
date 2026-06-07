@@ -1,10 +1,10 @@
 # Nginx
 
-如果你的 NocoBase 应用已经能通过 `http://127.0.0.1:13000` 正常访问，下一步通常就是在前面加一层 Nginx。这样做主要有两个好处：对外只暴露标准的 `80/443` 端口，同时也更方便后续接 HTTPS、证书和缓存策略。
+NocoBase アプリがすでに `http://127.0.0.1:13000` で正常にアクセスできるなら、次の一歩はその前段に Nginx を置くことです。こうしておくと主に 2 つの利点があります。外向けには標準の `80/443` ポートだけを公開すればよくなり、そのあとで HTTPS、証明書、キャッシュ戦略も追加しやすくなります。
 
-## 最小可用配置
+## 最小構成
 
-先在服务器上创建一个配置文件，比如 `/etc/nginx/conf.d/nocobase.conf`：
+まずはサーバー上に設定ファイルを作成します。たとえば `/etc/nginx/conf.d/nocobase.conf` です。
 
 ```nginx
 server {
@@ -26,39 +26,39 @@ server {
 }
 ```
 
-其中：
+ここでのポイントは次のとおりです。
 
-- `server_name` 改成你的域名
-- `127.0.0.1:13000` 改成 NocoBase 实际监听的地址
-- `client_max_body_size` 可以按你的上传需求继续调大
+- `server_name` は自分のドメインに置き換えます
+- `127.0.0.1:13000` は NocoBase が実際に待ち受けているアドレスに置き換えます
+- `client_max_body_size` はアップロード要件に合わせてさらに大きくできます
 
-## 检查并重载配置
+## 設定を検証して再読み込みする
 
 ```bash
 nginx -t
 systemctl reload nginx
 ```
 
-如果你不是用 `systemd` 管理 Nginx，也可以按你的运行方式执行重载命令。
+Nginx を `systemd` で管理していない場合は、自分の運用方法に合わせた再読み込み手順を使ってください。
 
-## 配完之后怎么访问
+## 設定後のアクセス方法
 
-如果 DNS 已经指向这台服务器，那么访问：
+DNS がすでにこのサーバーを向いているなら、次へアクセスします。
 
 ```text
 http://your-domain.com
 ```
 
-就会由 Nginx 转发到 NocoBase。
+これで Nginx が NocoBase へ転送します。
 
-## HTTPS 怎么办
+## HTTPS はどうするか
 
-如果你还需要 HTTPS，通常有两种常见做法：
+HTTPS も必要であれば、通常は次の 2 つのやり方があります。
 
-- 继续在 Nginx 上配置证书
-- 直接改用 [Caddy](./caddy.md)，让它自动申请和续期证书
+- 引き続き Nginx 側で証明書を設定する
+- そのまま [Caddy](./caddy.md) に切り替えて、証明書の取得と更新を自動化する
 
-## 下一步去哪里看
+## 次に見るページ
 
-- 如果你的应用还没跑起来，先看 [通过 Docker Compose 安装](../../installation/docker-compose.md)
-- 如果你还要确认端口或密钥，继续看 [应用环境变量](../../installation/env.md)
+- アプリがまだ起動していないなら、まず [Docker Compose でインストール](../../installation/docker-compose.md) を見てください
+- ポートやキーを確認したいなら、続けて [アプリ環境変数](../../installation/env.md) を見てください

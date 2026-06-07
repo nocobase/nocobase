@@ -11,7 +11,7 @@ Trong NocoBase CLI, có hai điểm bắt đầu được khuyến nghị để 
 - `nb env proxy nginx`
 - `nb env proxy caddy`
 
-`nb env proxy` hiện chỉ còn là một chủ đề để xem trợ giúp cho hai lệnh con này. Miễn là ứng dụng của bạn đã được lưu thành CLI env và loại env là `local` hoặc `docker`, thông thường chỉ cần để CLI sinh cấu hình là đủ. Cách này giúp CLI đồng bộ các chi tiết dễ rối như xử lý WebSocket, subpath, trang fallback cho SPA và các lần cập nhật về sau. Bạn chỉ cần quyết định lớp entry nên tiếp tục dùng Nginx hay chuyển sang Caddy.
+Miễn là ứng dụng của bạn đã được lưu thành CLI env và loại env là `local` hoặc `docker`, thông thường chỉ cần để CLI sinh cấu hình là đủ. Cách này giúp CLI đồng bộ các chi tiết dễ rối như xử lý WebSocket, subpath, trang fallback cho SPA và các lần cập nhật về sau. Bạn chỉ cần quyết định lớp entry nên tiếp tục dùng Nginx hay chuyển sang Caddy.
 
 Nếu ứng dụng của bạn không được CLI quản lý, hoặc nếu bạn thật sự muốn tự viết toàn bộ cấu hình proxy, hãy đi thẳng tới phần cấu hình viết tay trong các trang provider.
 

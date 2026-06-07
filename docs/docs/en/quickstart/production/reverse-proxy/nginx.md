@@ -16,7 +16,7 @@ Once those two things are clear, the next step is usually straightforward:
 
 ## Default path: let the CLI generate the Nginx config
 
-If your app was installed, adopted, or saved through NocoBase CLI as a `local` or `docker` env, the default recommendation is to run `nb env proxy nginx`. `nb env proxy` itself is only a topic and does not generate configs. The CLI maintains the editable entry file, SPA fallback pages, shared main config, and shared snippets together, which makes it much less likely to miss WebSocket handling, subpaths, or later updates.
+If your app was installed, adopted, or saved through NocoBase CLI as a `local` or `docker` env, the default recommendation is to run `nb env proxy nginx`. The CLI maintains the editable entry file, SPA fallback pages, shared main config, and shared snippets together, which makes it much less likely to miss WebSocket handling, subpaths, or later updates.
 
 Start by generating a config for a specific env:
 

@@ -1,10 +1,10 @@
 # Caddy
 
-如果你已经有域名，并且希望尽快把 HTTPS 也一起配好，Caddy 会更省心。大部分场景里，一份很短的 `Caddyfile` 就够了。
+Nếu bạn đã có tên miền và muốn cấu hình luôn HTTPS càng sớm càng tốt, Caddy thường là lựa chọn nhẹ đầu hơn. Trong phần lớn trường hợp, chỉ cần một `Caddyfile` ngắn là đủ.
 
-## 最小可用配置
+## Cấu hình tối thiểu có thể chạy
 
-编辑 `/etc/caddy/Caddyfile`：
+Hãy chỉnh sửa `/etc/caddy/Caddyfile`:
 
 ```text
 your-domain.com {
@@ -13,25 +13,25 @@ your-domain.com {
 }
 ```
 
-其中：
+Trong đó:
 
-- `your-domain.com` 改成你的域名
-- `127.0.0.1:13000` 改成 NocoBase 实际监听的地址
+- đổi `your-domain.com` thành tên miền của bạn
+- đổi `127.0.0.1:13000` thành địa chỉ thực tế mà NocoBase đang lắng nghe
 
-如果域名已经正确解析到当前服务器，Caddy 通常会自动处理 HTTPS 证书的申请和续期。
+Nếu tên miền đã trỏ đúng về máy chủ hiện tại, Caddy thường sẽ tự động xử lý việc xin và gia hạn chứng chỉ HTTPS.
 
-## 检查并重载配置
+## Kiểm tra và nạp lại cấu hình
 
 ```bash
 caddy validate --config /etc/caddy/Caddyfile
 systemctl reload caddy
 ```
 
-如果你不是用 `systemd` 管理 Caddy，也可以改用你自己的启动和重载方式。
+Nếu bạn không quản lý Caddy bằng `systemd`, hãy dùng quy trình khởi động và reload riêng của bạn.
 
-## 只想先走 HTTP
+## Nếu trước mắt chỉ muốn chạy HTTP
 
-如果你暂时还没有域名，也可以先监听一个端口做验证：
+Nếu bạn chưa có tên miền, bạn cũng có thể tạm thời lắng nghe một cổng để kiểm tra trước:
 
 ```shell
 :80 {
@@ -39,15 +39,15 @@ systemctl reload caddy
 }
 ```
 
-不过正式环境里，还是建议尽快换成带域名的配置。
+Tuy vậy, trong production thực tế, bạn vẫn nên sớm chuyển sang cấu hình có tên miền.
 
-## 什么时候更适合用 Caddy
+## Khi nào Caddy phù hợp hơn
 
-- 你希望更快接入 HTTPS
-- 你不想自己维护太多反向代理配置
-- 你目前只需要一个简单稳定的入口层
+- bạn muốn bật HTTPS nhanh hơn
+- bạn không muốn tự duy trì quá nhiều cấu hình reverse proxy
+- hiện tại bạn chỉ cần một lớp entry đơn giản và ổn định
 
-## 下一步去哪里看
+## Xem tiếp ở đâu
 
-- 如果你的应用还没跑起来，先看 [通过 Docker Compose 安装](../../installation/docker-compose.md)
-- 如果你还要确认端口或密钥，继续看 [应用环境变量](../../installation/env.md)
+- Nếu ứng dụng của bạn vẫn chưa chạy, hãy xem [Cài đặt bằng Docker Compose](../../installation/docker-compose.md) trước
+- Nếu bạn vẫn cần kiểm tra cổng hoặc khóa, hãy xem tiếp [Biến môi trường của ứng dụng](../../installation/env.md)

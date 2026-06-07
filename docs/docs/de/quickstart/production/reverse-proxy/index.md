@@ -11,7 +11,7 @@ In der NocoBase CLI gibt es zwei empfohlene Einstiege, um einer Produktions-App 
 - `nb env proxy nginx`
 - `nb env proxy caddy`
 
-`nb env proxy` ist jetzt nur noch ein Thema, das Hilfe zu diesen beiden Unterbefehlen zeigt. Solange deine App bereits als CLI-env gespeichert ist und der Env-Typ `local` oder `docker` lautet, reicht es normalerweise aus, die Konfiguration von der CLI erzeugen zu lassen. So hält die CLI Details wie WebSocket-Behandlung, Subpfade, SPA-Fallback-Seiten und spätere Änderungen synchron. Du musst nur entscheiden, ob die Einstiegsschicht weiter Nginx nutzen oder auf Caddy wechseln soll.
+Solange deine App bereits als CLI-env gespeichert ist und der Env-Typ `local` oder `docker` lautet, reicht es normalerweise aus, die Konfiguration von der CLI erzeugen zu lassen. So hält die CLI Details wie WebSocket-Behandlung, Subpfade, SPA-Fallback-Seiten und spätere Änderungen synchron. Du musst nur entscheiden, ob die Einstiegsschicht weiter Nginx nutzen oder auf Caddy wechseln soll.
 
 Wenn deine App nicht von der CLI verwaltet wird oder du die komplette Proxy-Konfiguration bewusst selbst schreiben möchtest, geh direkt zum Abschnitt für handgeschriebene Konfiguration in den Provider-Seiten.
 

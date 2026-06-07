@@ -54,6 +54,7 @@
   {
     "type": "custom-link",
     "label": "生产环境部署",
+    "link": "/quickstart/production",
     "items": [
       {
         "type": "custom-link",
