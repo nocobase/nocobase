@@ -59,6 +59,14 @@ nb config set default-api-host <server-ip>
 
 如果是在服务器上部署，这两个值通常都应该改成当前服务器可访问的 IP，而不是继续使用默认的本机地址。
 
+:::warning 这只是安装向导或临时访问方式，不是生产环境推荐入口
+
+把 `default-ui-host` / `default-api-host` 设成服务器 IP，主要是为了让你能从远程浏览器打开 `nb init --ui`，或者在安装完成后临时验证服务是否可访问。
+
+这不代表生产环境应该长期使用 `IP + port` 对外提供服务。正式部署时，仍然推荐使用域名，并通过 Nginx 或 Caddy 这类反向代理统一接入，再启用 HTTPS。
+
+:::
+
 ## 安装 NocoBase
 
 ### 方式一：通过 UI 向导安装
@@ -105,6 +113,12 @@ nb init --yes --env app1
 
 `--env` 是 CLI 里的环境名。通常来说，安装完成后你接下来做的事都围绕这个 env 展开。
 
+通常建议先确认这 3 件事：
+
+1. env 是否已经创建并保存成功
+2. 应用是否可以正常启动、日志是否正常
+3. 如果准备正式对外开放，是否已经规划好生产环境入口，而不是继续直接使用 `IP + port`
+
 ### 安装目录
 
 如果你刚用 `nb init --env app1` 新装了一个本地应用，可以通过 `nb env info app1 --field app.appPath` 查看完整路径。
@@ -126,6 +140,24 @@ nb init --yes --env app1
 
 更完整的说明见 [`nb init` 命令参考](../../api/cli/init.md)。
 
+### 生产环境部署提醒
+
+如果你现在只是刚装完，想先验证安装结果，那么用 `IP + port` 打开页面通常没有问题。
+
+但如果这个 env 接下来要正式对外提供服务，需要特别注意：
+
+- `nb init --ui` 本身只是安装向导的临时页面，用来完成安装或初始化，不是应用正式对外服务入口
+- 通过 `nb init` 安装完成后，应用当前暴露出来的 `IP + port` 更适合调试阶段、验证阶段或内网临时访问
+- 生产环境不建议直接把 NocoBase 应用端口暴露给公网长期使用
+- 正式对外访问时，推荐使用域名，并通过 Nginx 或 Caddy 反向代理到 NocoBase
+- 生产环境应优先启用 HTTPS，而不是长期使用裸露的 `http://IP:port`
+
+也就是说，`default-ui-host` 和 `default-api-host` 只是为了让安装向导和默认地址生成更方便，并不代表最终生产环境的访问入口。
+
+如果这个 env 准备正式上线，建议把“接入反向代理并启用 HTTPS”视为安装完成后的下一步，而不是可选优化项。
+
+如果你现在就准备继续做正式部署，建议先从 [生产环境部署](../production/index.md) 开始，再按需要继续看 [Nginx](../production/reverse-proxy/nginx.md) 或 [Caddy](../production/reverse-proxy/caddy.md) 的反向代理配置。
+
 ### 日常操作
 
 你可以先确认这个 env 是否已经保存成功：
@@ -142,7 +174,7 @@ nb env info app1 --json
 
 | 我想要…… | 去哪里看 |
 | --- | --- |
-| 如果你准备把这个 env 正式对外开放，给它接上生产环境反向代理。 | [Nginx](../production/reverse-proxy/nginx.md) / [Caddy](../production/reverse-proxy/caddy.md)。 |
+| 如果你准备把这个 env 正式对外开放，给它接上生产环境反向代理，并使用域名和 HTTPS 暴露服务。 | [Nginx](../production/reverse-proxy/nginx.md) / [Caddy](../production/reverse-proxy/caddy.md)。 |
 | 确认 env 是否保存成功、查看当前用了哪个 env、在多个 env 之间切换。 | [`nb env`](../../api/cli/env/index.md)、[多环境管理](../operations/multi-environment.md)。 |
 | 启动、停止、重启应用，查看日志，或者继续升级应用。 | [`nb app`](../../api/cli/app/index.md)、[管理应用](../operations/manage-app.md)。 |
 | 检查数据库连接、查看内置数据库状态，或者排查数据库容器问题。 | [`nb db`](../../api/cli/db/index.md)。 |

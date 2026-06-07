@@ -4,7 +4,7 @@ NocoBase 2.1.0 之后，官方提供了基于 CLI 的安装和管理方式。你
 
 ## 安装 NocoBase CLI
 
-如果你已经装过，可以跳过这一步。
+仅在第一次安装 CLI 时执行。
 
 先全局安装 CLI：
 
@@ -12,6 +12,16 @@ NocoBase 2.1.0 之后，官方提供了基于 CLI 的安装和管理方式。你
 npm install -g @nocobase/cli@beta
 nb --version
 ```
+
+:::tip 建议先开启 session mode
+
+如果你会同时开多个终端、多个 shell，或者要让 AI Agent 和你自己并行操作，默认推荐先执行一次 [`nb session setup`](../../api/cli/session/setup.md)。这样每个会话都能维护自己的 `current env`，不容易互相影响。
+
+```bash
+nb session setup
+```
+
+:::
 
 如果你打算长期用中文界面，通常来说先把 locale 设好就够了：
 
@@ -31,13 +41,29 @@ nb config set update.policy auto
 nb config set update.policy off
 ```
 
-:::tip 建议先开启 session mode
-
-如果你会同时开多个终端、多个 shell，或者要让 AI Agent 和你自己并行操作，默认推荐先执行一次 [`nb session setup`](../../api/cli/session/setup.md)。这样每个会话都能维护自己的 `current env`，不容易互相影响。
+如果你准备把 NocoBase 部署到服务器上，并且希望从远程浏览器打开 `nb init --ui` 向导，建议先把 CLI 的默认 host 改成当前服务器 IP：
 
 ```bash
-nb session setup
+nb config set default-ui-host <server-ip>
+nb config set default-api-host <server-ip>
 ```
+
+将 `<server-ip>` 替换为当前服务器对你可访问的实际 IP。
+
+`nb config` 是 CLI 的全局配置。通常只需要设置一次，后续再次运行 `nb init --ui` 时会自动沿用这些默认值，不需要每次重复配置。
+
+通常来说：
+
+- `default-ui-host` 用于 `nb init --ui` 启动向导页面时的默认监听地址
+- `default-api-host` 用于新安装时默认生成的 API 地址
+
+如果是在服务器上部署，这两个值通常都应该改成当前服务器可访问的 IP，而不是继续使用默认的本机地址。
+
+:::warning 这只是安装向导或临时访问方式，不是生产环境推荐入口
+
+把 `default-ui-host` / `default-api-host` 设成服务器 IP，主要是为了让你能从远程浏览器打开 `nb init --ui`，或者在安装完成后临时验证服务是否可访问。
+
+这不代表生产环境应该长期使用 `IP + port` 对外提供服务。正式部署时，仍然推荐使用域名，并通过 Nginx 或 Caddy 这类反向代理统一接入，再启用 HTTPS。
 
 :::
 
@@ -49,6 +75,12 @@ nb session setup
 
 ```bash
 nb init --ui
+```
+
+如果你想给向导页面指定一个固定端口，可以直接加上 `--ui-port`，例如：
+
+```bash
+nb init --ui --ui-port 3000
 ```
 
 ![nb init UI 向导](https://static-docs.nocobase.com/2026-06-03-20-54-01.png)
@@ -81,6 +113,12 @@ nb init --yes --env app1
 
 `--env` 是 CLI 里的环境名。通常来说，安装完成后你接下来做的事都围绕这个 env 展开。
 
+通常建议先确认这 3 件事：
+
+1. env 是否已经创建并保存成功
+2. 应用是否可以正常启动、日志是否正常
+3. 如果准备正式对外开放，是否已经规划好生产环境入口，而不是继续直接使用 `IP + port`
+
 ### 安装目录
 
 如果你刚用 `nb init --env app1` 新装了一个本地应用，可以通过 `nb env info app1 --field app.appPath` 查看完整路径。
@@ -102,6 +140,24 @@ nb init --yes --env app1
 
 更完整的说明见 [`nb init` 命令参考](../../api/cli/init.md)。
 
+### 生产环境部署提醒
+
+如果你现在只是刚装完，想先验证安装结果，那么用 `IP + port` 打开页面通常没有问题。
+
+但如果这个 env 接下来要正式对外提供服务，需要特别注意：
+
+- `nb init --ui` 本身只是安装向导的临时页面，用来完成安装或初始化，不是应用正式对外服务入口
+- 通过 `nb init` 安装完成后，应用当前暴露出来的 `IP + port` 更适合调试阶段、验证阶段或内网临时访问
+- 生产环境不建议直接把 NocoBase 应用端口暴露给公网长期使用
+- 正式对外访问时，推荐使用域名，并通过 Nginx 或 Caddy 反向代理到 NocoBase
+- 生产环境应优先启用 HTTPS，而不是长期使用裸露的 `http://IP:port`
+
+也就是说，`default-ui-host` 和 `default-api-host` 只是为了让安装向导和默认地址生成更方便，并不代表最终生产环境的访问入口。
+
+如果这个 env 准备正式上线，建议把“接入反向代理并启用 HTTPS”视为安装完成后的下一步，而不是可选优化项。
+
+如果你现在就准备继续做正式部署，建议先从 [生产环境部署](../production/index.md) 开始，再按需要继续看 [Nginx](../production/reverse-proxy/nginx.md) 或 [Caddy](../production/reverse-proxy/caddy.md) 的反向代理配置。
+
 ### 日常操作
 
 你可以先确认这个 env 是否已经保存成功：
@@ -114,10 +170,11 @@ nb env info app1
 nb env info app1 --json
 ```
 
-如果你想继续做安装后的日常操作，可以按下面这个索引往下看：
+如果你想继续做安装后的后续操作，可以按下面这个索引往下看：
 
 | 我想要…… | 去哪里看 |
 | --- | --- |
+| 如果你准备把这个 env 正式对外开放，给它接上生产环境反向代理，并使用域名和 HTTPS 暴露服务。 | [Nginx](../production/reverse-proxy/nginx.md) / [Caddy](../production/reverse-proxy/caddy.md)。 |
 | 确认 env 是否保存成功、查看当前用了哪个 env、在多个 env 之间切换。 | [`nb env`](../../api/cli/env/index.md)、[多环境管理](../operations/multi-environment.md)。 |
 | 启动、停止、重启应用，查看日志，或者继续升级应用。 | [`nb app`](../../api/cli/app/index.md)、[管理应用](../operations/manage-app.md)。 |
 | 检查数据库连接、查看内置数据库状态，或者排查数据库容器问题。 | [`nb db`](../../api/cli/db/index.md)。 |
@@ -142,6 +199,7 @@ nb plugin list
 
 - [`nb init` 命令参考](../../api/cli/init.md)
 - [`nb env info` 命令参考](../../api/cli/env/info.md)
+- [生产环境反向代理：Nginx](../production/reverse-proxy/nginx.md) / [Caddy](../production/reverse-proxy/caddy.md)
 - [从旧方式迁移到 CLI](./migration.md)
 - [多环境管理](../operations/multi-environment.md)
 - [管理应用](../operations/manage-app.md)
