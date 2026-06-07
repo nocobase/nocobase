@@ -59,6 +59,10 @@ function renderMobileBody(children: React.ReactNode) {
   return <div className="nb-ui-layout-mobile-body">{children}</div>;
 }
 
+function renderMobileRootTabLeftSpacer() {
+  return <span aria-hidden="true" className="nb-ui-layout-mobile-page-tab-left-spacer" />;
+}
+
 function renderMobileAddTabButton(model: RootPageModel | ChildPageModel) {
   const label = model.context.t('Add tab');
 
@@ -85,6 +89,7 @@ function renderMobileAddTabButton(model: RootPageModel | ChildPageModel) {
 
 export class MobileRootPageModel extends RootPageModel {
   tabBarExtraContent = {
+    left: renderMobileRootTabLeftSpacer(),
     right: renderMobileAddTabButton(this),
   };
 

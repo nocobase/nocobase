@@ -117,6 +117,12 @@ export function useMobilePageClassName() {
         align-items: center;
       }
 
+      .nb-ui-layout-mobile-page-tab-left-spacer {
+        display: inline-block;
+        width: ${token.paddingXS}px;
+        height: 1px;
+      }
+
       .nb-ui-layout-mobile-tabs .ant-tabs-tab {
         height: 40px;
         margin: 0;
@@ -139,6 +145,19 @@ export function useMobilePageClassName() {
         display: inline-flex;
         align-items: center;
         height: 40px;
+      }
+
+      .nb-ui-layout-mobile-tabs .ant-tabs-ink-bar {
+        background: transparent;
+      }
+
+      .nb-ui-layout-mobile-tabs .ant-tabs-ink-bar::after {
+        position: absolute;
+        inset-block-end: 0;
+        inset-inline: ${token.paddingXS}px;
+        height: 2px;
+        background: ${token.colorPrimary};
+        content: '';
       }
 
       .nb-ui-layout-mobile-page-tab-add-wrapper {
