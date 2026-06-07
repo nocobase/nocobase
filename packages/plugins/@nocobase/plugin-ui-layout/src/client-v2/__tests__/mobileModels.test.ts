@@ -157,6 +157,12 @@ describe('plugin-ui-layout mobile models', () => {
     } as unknown as FlowSettingsContext<MobileLayoutMenuItemModel>;
   }
 
+  function getDocumentStyleText() {
+    return Array.from(document.querySelectorAll('style'))
+      .map((style) => style.textContent || '')
+      .join('\n');
+  }
+
   it('should extend the standard layout and page models', () => {
     expect(MobileLayoutModel.prototype).toBeInstanceOf(BaseLayoutModel);
     expect(MobileRootPageModel.prototype).toBeInstanceOf(RootPageModel);
@@ -1156,6 +1162,31 @@ describe('plugin-ui-layout mobile models', () => {
     const pageSlot = document.querySelector('.nb-ui-layout-mobile-page-slot');
     const pageSurface = pageSlot?.querySelector('.nb-ui-layout-mobile-surface');
     expect(pageSurface).toBeInTheDocument();
+  });
+
+  it('should use compact padding for mobile page and child page content', async () => {
+    renderMobileLayoutWithRouteRepository({
+      listAccessible: () => [
+        {
+          id: 1,
+          type: NocoBaseDesktopRouteType.flowPage,
+          title: 'Home',
+          schemaUid: 'home-page',
+        },
+      ],
+    });
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /Home/ })).toBeInTheDocument();
+    });
+
+    const styleText = getDocumentStyleText();
+
+    expect(styleText).toMatch(/\.nb-ui-layout-mobile-body\s*\{[^}]*padding:\s*4px/);
+    expect(styleText).toMatch(/\.nb-ui-layout-mobile-tabs\s+\.ant-tabs-tabpane\s*\{[^}]*padding:\s*4px/);
+    expect(styleText).toMatch(
+      /\.nb-ui-layout-mobile-viewport\[data-nb-mobile-view-stack-depth=["']1["']\]\s+\.nb-ui-layout-mobile-body[^}]*padding-bottom:\s*calc\(4px\s*\+\s*var\(--nb-mobile-tabbar-height\)/,
+    );
   });
 
   it('should stretch flow settings wrappers inside the mobile page content slot', async () => {

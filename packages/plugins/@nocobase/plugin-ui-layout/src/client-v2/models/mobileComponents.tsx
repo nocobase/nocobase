@@ -80,7 +80,7 @@ export function useMobilePageClassName() {
         overflow: auto;
         -webkit-overflow-scrolling: touch;
         background: ${token.colorBgLayout};
-        padding: ${token.paddingXS}px;
+        padding: ${token.paddingXXS}px;
       }
 
       .nb-ui-layout-mobile-tabs {
@@ -158,7 +158,7 @@ export function useMobilePageClassName() {
       .nb-ui-layout-mobile-tabs .ant-tabs-tabpane {
         overflow: auto;
         -webkit-overflow-scrolling: touch;
-        padding: ${token.paddingXS}px;
+        padding: ${token.paddingXXS}px;
       }
 
       .nb-ui-layout-mobile-back-button,
@@ -200,8 +200,8 @@ export function useMobilePageClassName() {
       token.fontWeightStrong,
       token.lineHeightLG,
       token.marginXS,
+      token.paddingXXS,
       token.paddingSM,
-      token.paddingXS,
     ],
   );
 }
