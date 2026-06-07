@@ -17,6 +17,7 @@ import {
   buildOauthCompletionHtml,
   buildOauthErrorHtml,
   buildOauthRedirectHtml,
+  getOauthLoopbackRedirectUri,
   getOauthMetadataUrl,
   getOauthResource,
   isOauthAccessTokenExpired,
@@ -62,6 +63,7 @@ test('OAuth helpers derive metadata and resource URLs from base URL', () => {
   );
   expect(getOauthResource('http://localhost:13000/api/')).toBe('http://localhost:13000/api/');
   expect(getOauthResource('https://demo.example.com/custom/api')).toBe('https://demo.example.com/custom/api/');
+  expect(getOauthLoopbackRedirectUri(62461)).toBe('http://127.0.0.1:62461/callback');
 });
 
 test('buildOauthRedirectHtml escapes OAuth URLs for HTML and script contexts', () => {
