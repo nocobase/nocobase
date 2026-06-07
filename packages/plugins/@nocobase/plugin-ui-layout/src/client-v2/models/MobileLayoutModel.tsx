@@ -1456,7 +1456,6 @@ const MobileHomePlaceholder = observer(
 
         .nb-ui-layout-mobile-home-tabbar-item[aria-current='page'] {
           color: ${token.colorPrimary};
-          background: color-mix(in srgb, ${colorSettings} 10%, transparent);
         }
 
         .nb-ui-layout-mobile-home-tabbar-add {

@@ -1227,6 +1227,33 @@ describe('plugin-ui-layout mobile models', () => {
     expect(screen.queryByText('Mobile')).not.toBeInTheDocument();
   });
 
+  it('should not render a selected mobile tab background', async () => {
+    renderMobileLayoutWithRouteRepository({
+      listAccessible: () => [
+        {
+          id: 1,
+          type: NocoBaseDesktopRouteType.flowPage,
+          title: 'Home',
+          schemaUid: 'home-page',
+        },
+      ],
+    });
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /Home/ })).toHaveAttribute('aria-current', 'page');
+    });
+
+    const styleText = Array.from(document.querySelectorAll('style'))
+      .map((style) => style.textContent || '')
+      .join('\n');
+    const activeTabRule = styleText.match(
+      /\.nb-ui-layout-mobile-home-tabbar-item\[aria-current=["']page["']\]\s*\{[^}]+\}/,
+    )?.[0];
+
+    expect(activeTabRule).toContain('color:');
+    expect(activeTabRule).not.toContain('background:');
+  });
+
   it('should register mobile route pages with the mobile root page model', () => {
     const engine = new FlowEngine();
     engine.registerModels({
