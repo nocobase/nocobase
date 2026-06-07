@@ -219,6 +219,66 @@ describe('plugin-ui-layout route permissions', () => {
     });
     expect(resource.messageSuccess).toHaveBeenCalledWith('Saved successfully');
   });
+
+  it('should keep current layout permission state when stale requests finish later', async () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const resource = createConcurrentPermissionTabResources();
+    const user = userEvent.setup();
+
+    try {
+      flowMocks.context = resource.context;
+
+      render(
+        <LayoutAwareDesktopRoutesPermissionsTab
+          activeKey="menu"
+          activeRole={{ name: 'layout-member', title: 'Layout member' }}
+          onRoleChange={vi.fn()}
+        />,
+      );
+
+      expect(await screen.findByText('Admin route')).toBeInTheDocument();
+
+      await selectLayout('Mobile layout');
+
+      const mobileCheckbox = await screen.findByRole('checkbox', { name: 'Allow access to Mobile route' });
+
+      expect(mobileCheckbox).not.toBeChecked();
+
+      await act(async () => {
+        await user.click(mobileCheckbox);
+      });
+
+      await waitFor(() => {
+        expect(resource.roleRoutesAdd).toHaveBeenCalledWith({ values: [2] });
+      });
+      expect(resource.roleRoutesList).toHaveBeenLastCalledWith(
+        expect.objectContaining({
+          filter: expect.objectContaining({
+            'uiLayouts.uid': 'mobile-layout',
+          }),
+        }),
+      );
+
+      await act(async () => {
+        resource.adminRoleRoutes.resolve({
+          data: {
+            data: [
+              {
+                id: 1,
+                title: 'Admin route',
+              },
+            ],
+          },
+        });
+        await Promise.resolve();
+      });
+
+      expect(screen.getByRole('checkbox', { name: 'Allow access to Mobile route' })).toBeChecked();
+      expect(consoleError).not.toHaveBeenCalled();
+    } finally {
+      consoleError.mockRestore();
+    }
+  });
 });
 
 async function selectLayout(label: string) {
@@ -338,6 +398,121 @@ function createPermissionTabResources() {
           }
           if (name === 'roles') {
             return rolesResource;
+          }
+          throw new Error(`Unexpected resource: ${name}`);
+        }),
+      },
+      message: {
+        success: flowMessageSuccess,
+      },
+    },
+  };
+}
+
+function createDeferred<T>() {
+  let resolvePromise!: (value: T) => void;
+  const promise = new Promise<T>((resolve) => {
+    resolvePromise = resolve;
+  });
+
+  return {
+    promise,
+    resolve: resolvePromise,
+  };
+}
+
+function createConcurrentPermissionTabResources() {
+  const adminRoleRoutes = createDeferred<ResourceResponse>();
+  const mobileSelectedIds = new Set<number>();
+  const uiLayoutsList = vi.fn(async () => ({
+    data: {
+      data: [
+        {
+          uid: DEFAULT_ADMIN_UI_LAYOUT.uid,
+          title: 'Desktop layout',
+          layoutType: 'desktop',
+        },
+        {
+          uid: 'mobile-layout',
+          title: 'Mobile layout',
+          layoutType: 'mobile',
+        },
+      ],
+    },
+  }));
+  const desktopRoutesList = vi.fn(async (params?: Record<string, unknown>) => {
+    const layoutUid = getLayoutUidFromFilter(params?.filter as Record<string, unknown> | undefined);
+
+    return {
+      data: {
+        data:
+          layoutUid === 'mobile-layout'
+            ? [
+                {
+                  id: 2,
+                  title: 'Mobile route',
+                },
+              ]
+            : [
+                {
+                  id: 1,
+                  title: 'Admin route',
+                },
+              ],
+      },
+    };
+  });
+  const roleRoutesList = vi.fn(async (params?: Record<string, unknown>) => {
+    const layoutUid = getLayoutUidFromFilter(params?.filter as Record<string, unknown> | undefined);
+
+    if (layoutUid === DEFAULT_ADMIN_UI_LAYOUT.uid) {
+      return adminRoleRoutes.promise;
+    }
+
+    return {
+      data: {
+        data: Array.from(mobileSelectedIds).map((id) => ({
+          id,
+          title: 'Mobile route',
+        })),
+      },
+    };
+  });
+  const roleRoutesResource = {
+    list: roleRoutesList,
+    add: vi.fn(async ({ values }: { values: number[] }) => {
+      values.forEach((id) => mobileSelectedIds.add(id));
+    }),
+    remove: vi.fn(async ({ values }: { values: number[] }) => {
+      values.forEach((id) => mobileSelectedIds.delete(id));
+    }),
+  };
+  const flowMessageSuccess = vi.fn();
+
+  return {
+    adminRoleRoutes,
+    roleRoutesAdd: roleRoutesResource.add,
+    roleRoutesList,
+    context: {
+      api: {
+        resource: vi.fn((name: string) => {
+          if (name === 'uiLayouts') {
+            return {
+              list: uiLayoutsList,
+            };
+          }
+          if (name === 'desktopRoutes') {
+            return {
+              list: desktopRoutesList,
+            };
+          }
+          if (name === 'roles.desktopRoutes') {
+            return roleRoutesResource;
+          }
+          if (name === 'roles') {
+            return {
+              update: vi.fn(),
+            };
           }
           throw new Error(`Unexpected resource: ${name}`);
         }),
