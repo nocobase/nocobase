@@ -3053,6 +3053,58 @@ describe('plugin-ui-layout mobile models', () => {
     expect(screen.getByRole('button', { name: /Docs/ })).not.toHaveAttribute('aria-current');
   });
 
+  it('should create page tabs with the current mobile UI layout on child routes', async () => {
+    const createRoute = vi.fn(async () => {});
+
+    window.localStorage.setItem(FLOW_SETTINGS_PREFERENCE_STORAGE_KEY, '1');
+
+    renderMobileLayoutWithRouteRepository({
+      createRoute,
+      listAccessible: () => [
+        {
+          id: 1,
+          type: NocoBaseDesktopRouteType.flowPage,
+          title: 'Home',
+          schemaUid: 'home-page',
+        },
+      ],
+    });
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /Home/ })).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Add mobile tab' }));
+    fireEvent.click(await screen.findByText('Page'));
+    expect(await screen.findByText('Add page')).toBeInTheDocument();
+
+    fireEvent.change(screen.getByLabelText('Title'), { target: { value: 'Mobile page' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Select icon' }));
+    await screen.findByPlaceholderText('Search');
+    fireEvent.change(screen.getByPlaceholderText('Search'), { target: { value: 'home' } });
+    fireEvent.click(await screen.findByTitle('home'));
+    fireEvent.click(screen.getByRole('button', { name: 'Submit' }));
+
+    await waitFor(() => {
+      expect(createRoute).toHaveBeenCalledWith(
+        expect.objectContaining({
+          title: 'Mobile page',
+          uiLayouts: ['mobile-layout-model-render-test'],
+          children: [
+            expect.objectContaining({
+              type: NocoBaseDesktopRouteType.tabs,
+              hidden: true,
+              uiLayouts: ['mobile-layout-model-render-test'],
+            }),
+          ],
+        }),
+        {
+          refreshAfterMutation: false,
+        },
+      );
+    });
+  });
+
   it('should create persisted route values for mobile pages and links', () => {
     const pageValues = createMobileDesktopRouteCreationValues('page', {
       icon: 'HomeOutlined',

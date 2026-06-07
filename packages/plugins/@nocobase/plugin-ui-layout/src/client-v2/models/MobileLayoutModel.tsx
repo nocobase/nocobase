@@ -102,8 +102,9 @@ type MobileHomeAddMenuItem = {
   icon: ReactNode;
 };
 
-type MobileDesktopRouteCreateValues = NocoBaseDesktopRoute & {
+type MobileDesktopRouteCreateValues = Omit<NocoBaseDesktopRoute, 'children'> & {
   uiLayouts?: string[];
+  children?: MobileDesktopRouteCreateValues[];
 };
 type MobileTabSettingsMenuKey = 'edit' | 'linkageRules' | 'copyUid' | 'delete';
 type MobileTabSettingsMenuItem = {
@@ -538,9 +539,29 @@ function getMobileLayoutUid(model: MobileLayoutModel) {
   return typeof layoutUid === 'string' && layoutUid.trim() ? layoutUid : undefined;
 }
 
+function mergeUiLayouts(uiLayouts: string[] | undefined, layoutUid: string) {
+  if (uiLayouts?.includes(layoutUid)) {
+    return uiLayouts;
+  }
+
+  return [...(uiLayouts || []), layoutUid];
+}
+
+function withUiLayoutUid(route: MobileDesktopRouteCreateValues, layoutUid: string): MobileDesktopRouteCreateValues {
+  const children = Array.isArray(route.children)
+    ? route.children.map((childRoute) => withUiLayoutUid(childRoute, layoutUid))
+    : undefined;
+
+  return {
+    ...route,
+    uiLayouts: mergeUiLayouts(route.uiLayouts, layoutUid),
+    ...(children ? { children } : {}),
+  };
+}
+
 function withCurrentUiLayout(route: NocoBaseDesktopRoute, model: MobileLayoutModel): MobileDesktopRouteCreateValues {
   const layoutUid = getMobileLayoutUid(model);
-  return layoutUid ? { ...route, uiLayouts: [layoutUid] } : route;
+  return layoutUid ? withUiLayoutUid(route, layoutUid) : route;
 }
 
 function useIsDesktopPreview(screenMD: number) {
