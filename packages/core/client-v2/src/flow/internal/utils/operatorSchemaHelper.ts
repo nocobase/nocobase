@@ -25,14 +25,12 @@ type ComponentRegistry = {
 type OperatorComponentFieldModel = {
   props?: Record<string, unknown>;
   render?: () => ReactNode;
-  setupReactiveRender?: () => void;
-  _reactiveWrapperCache?: unknown;
   __originalRender?: () => ReactNode;
 };
 
 type OperatorComponentRenderOptions = {
   app?: ComponentRegistry;
-  fieldModel: OperatorComponentFieldModel;
+  fieldModel: unknown;
   operator: string;
   operators?: OperatorMeta[];
   propsPriority?: 'field' | 'operator';
@@ -43,13 +41,21 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return !!value && typeof value === 'object' && !Array.isArray(value);
 }
 
-function getStyle(value: unknown): CSSProperties | undefined {
+export function pickOperatorStyle(value: unknown): CSSProperties | undefined {
   return isRecord(value) ? (value as CSSProperties) : undefined;
 }
 
-function rewrapReactiveRender(fieldModel: OperatorComponentFieldModel) {
-  fieldModel._reactiveWrapperCache = undefined;
-  fieldModel.setupReactiveRender?.();
+function getFieldModel(fieldModel: unknown) {
+  return fieldModel as OperatorComponentFieldModel & {
+    _reactiveWrapperCache?: unknown;
+    setupReactiveRender?: () => void;
+  };
+}
+
+function rewrapReactiveRender(fieldModel: unknown) {
+  const mutableFieldModel = getFieldModel(fieldModel);
+  mutableFieldModel._reactiveWrapperCache = undefined;
+  mutableFieldModel.setupReactiveRender?.();
 }
 
 /**
@@ -76,13 +82,14 @@ export function resolveOperatorComponent(
   return { Comp, props };
 }
 
-export function restoreOperatorComponentRender(fieldModel?: OperatorComponentFieldModel) {
-  if (!fieldModel || typeof fieldModel.__originalRender !== 'function') {
+export function restoreOperatorComponentRender(fieldModel?: unknown) {
+  const mutableFieldModel = getFieldModel(fieldModel);
+  if (!mutableFieldModel || typeof mutableFieldModel.__originalRender !== 'function') {
     return false;
   }
 
-  fieldModel.render = fieldModel.__originalRender;
-  rewrapReactiveRender(fieldModel);
+  mutableFieldModel.render = mutableFieldModel.__originalRender;
+  rewrapReactiveRender(mutableFieldModel);
   return true;
 }
 
@@ -94,22 +101,23 @@ export function applyOperatorComponentRender({
   propsPriority = 'field',
   style,
 }: OperatorComponentRenderOptions) {
+  const mutableFieldModel = getFieldModel(fieldModel);
   const resolved = resolveOperatorComponent(app, operator, operators);
   if (!resolved) {
-    restoreOperatorComponentRender(fieldModel);
+    restoreOperatorComponentRender(mutableFieldModel);
     return false;
   }
 
-  if (!fieldModel.__originalRender && typeof fieldModel.render === 'function') {
-    fieldModel.__originalRender = fieldModel.render;
+  if (!mutableFieldModel.__originalRender && typeof mutableFieldModel.render === 'function') {
+    mutableFieldModel.__originalRender = mutableFieldModel.render;
   }
 
   const { Comp, props: operatorProps } = resolved;
-  const operatorStyle = getStyle(operatorProps.style);
+  const operatorStyle = pickOperatorStyle(operatorProps.style);
 
-  fieldModel.render = () => {
-    const fieldProps = fieldModel.props || {};
-    const fieldStyle = getStyle(fieldProps.style);
+  mutableFieldModel.render = () => {
+    const fieldProps = mutableFieldModel.props || {};
+    const fieldStyle = pickOperatorStyle(fieldProps.style);
     const componentProps =
       propsPriority === 'operator' ? { ...fieldProps, ...operatorProps } : { ...operatorProps, ...fieldProps };
     const componentStyle =
@@ -124,6 +132,6 @@ export function applyOperatorComponentRender({
     });
   };
 
-  rewrapReactiveRender(fieldModel);
+  rewrapReactiveRender(mutableFieldModel);
   return true;
 }

@@ -58,6 +58,10 @@ const getTargetFilterableFields = (field: any, collection?: Collection, model?: 
 
 const MAX_ASSOCIATION_DEPTH = 2;
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return !!value && typeof value === 'object' && !Array.isArray(value);
+}
+
 const normalizeAssociationDefaultFilterValue = (value: any, fieldModel: any) => {
   const collectionField = fieldModel?.context?.collectionField;
   if (!collectionField?.isAssociationField?.()) {
@@ -527,7 +531,8 @@ export class FilterFormItemModel extends FilterableItemModel<{
     rawValue = this.normalizeAssociationFilterValue(rawValue, fieldModel);
     const operatorMeta = this.getCurrentOperatorMeta();
     if (operatorMeta?.noValue) {
-      const options = operatorMeta?.schema?.['x-component-props']?.options;
+      const componentProps = operatorMeta?.schema?.['x-component-props'];
+      const options = isRecord(componentProps) ? componentProps.options : undefined;
       if (Array.isArray(options)) {
         return rawValue;
       }

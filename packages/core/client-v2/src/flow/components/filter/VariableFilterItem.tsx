@@ -26,7 +26,7 @@ import {
 import _ from 'lodash';
 import { NumberPicker } from '@formily/antd-v5';
 import { enumToOptions, normalizeSelectRenderValue, UiSchemaEnumItem } from '../../internal/utils/enumOptionsUtils';
-import { resolveOperatorComponent } from '../../internal/utils/operatorSchemaHelper';
+import { pickOperatorStyle as pickStyle, resolveOperatorComponent } from '../../internal/utils/operatorSchemaHelper';
 import { limitAssociationMetaTree } from './metaTreeAssociationDepth';
 
 const { DateFilterDynamicComponent: DateFilterDynamicComponentLazy } = lazy(
@@ -495,14 +495,15 @@ export const VariableFilterItem: React.FC<VariableFilterItemProps> = observer(
       if (resolved && supportKeyword) {
         const { Comp, props: xProps } = resolved;
         const nextProps = { ...xProps };
-        if ((!nextProps?.options || nextProps?.options.length === 0) && enumOptions?.length) {
+        const options = Array.isArray(nextProps.options) ? nextProps.options : undefined;
+        if ((!options || options.length === 0) && enumOptions?.length) {
           nextProps.options = enumOptions;
         }
         const style = {
           flex: '1 1 40%',
           minWidth: 160,
           maxWidth: '100%',
-          ...(nextProps?.style || {}),
+          ...pickStyle(nextProps.style),
         };
         const normalized =
           Array.isArray(rightValue) && rightValue.every((v) => typeof v === 'string' || typeof v === 'number')
@@ -517,7 +518,7 @@ export const VariableFilterItem: React.FC<VariableFilterItemProps> = observer(
           <div style={style}>
             <Comp
               {...nextProps}
-              style={{ width: '100%', ...(nextProps?.style || {}) }}
+              style={{ width: '100%', ...pickStyle(nextProps.style) }}
               value={normalized}
               onChange={(vals: any) => setRightValue(vals)}
             />

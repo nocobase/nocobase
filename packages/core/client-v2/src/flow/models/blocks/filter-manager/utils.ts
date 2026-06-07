@@ -16,7 +16,7 @@ import {
 import { operators } from '../../../../flow-compat';
 import { BlockGridModel, CollectionBlockModel } from '../../base';
 
-type FilterFormFieldMeta = Record<string, unknown> & {
+type FilterFormFieldMeta = {
   filterable?: FieldFilterable<unknown> | false;
   interface?: string;
   type?: string;
@@ -49,7 +49,7 @@ function getDataSourceManager(model: FlowModel) {
   if (contextManager) {
     return contextManager as Record<string, unknown>;
   }
-  return model.flowEngine?.context?.dataSourceManager as Record<string, unknown> | undefined;
+  return model.flowEngine?.context?.dataSourceManager as unknown as Record<string, unknown> | undefined;
 }
 
 function cloneFilterable(filterable: FieldFilterable<unknown>): FieldFilterable<unknown> {
