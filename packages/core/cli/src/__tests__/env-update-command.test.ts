@@ -21,6 +21,7 @@ const mocks = vi.hoisted(() => ({
   failTask: vi.fn(),
   printInfo: vi.fn(),
   printVerbose: vi.fn(),
+  printWarningBlock: vi.fn(),
 }));
 
 vi.mock('../lib/auth-store.js', () => ({
@@ -41,6 +42,7 @@ vi.mock('../lib/ui.js', () => ({
   failTask: mocks.failTask,
   printInfo: mocks.printInfo,
   printVerbose: mocks.printVerbose,
+  printWarningBlock: mocks.printWarningBlock,
 }));
 
 function createEnv(overrides: Record<string, any> = {}) {
@@ -323,9 +325,7 @@ test('env update keeps saved config changes when runtime refresh fails', async (
     },
   });
 
-  await expect(EnvUpdate.prototype.run.call(command)).rejects.toThrow(
-    'Saved env config for "local", but failed to refresh the runtime.',
-  );
+  await EnvUpdate.prototype.run.call(command);
   expect(mocks.replaceEnvConfig).toHaveBeenCalledWith(
     'local',
     expect.objectContaining({
@@ -333,5 +333,8 @@ test('env update keeps saved config changes when runtime refresh fails', async (
       accessToken: 'new-token',
     }),
     { scope: 'global' },
+  );
+  expect(mocks.printWarningBlock).toHaveBeenCalledWith(
+    'Saved env config for "local", but failed to refresh the runtime.\nboom',
   );
 });

@@ -15,7 +15,7 @@ import { updateEnvRuntime } from '../../lib/bootstrap.js';
 import { resolveDefaultConfigScope } from '../../lib/cli-home.js';
 import { ENV_BOOLEAN_CONFIG_FLAG_MAP, ENV_STRING_CONFIG_FLAG_MAP } from '../../lib/env-command-config.js';
 import { buildStoredEnvConfig, type StoredEnvConfigInput } from '../../lib/env-config.js';
-import { failTask, printInfo, printVerbose, setVerboseMode, startTask, stopTask, succeedTask } from '../../lib/ui.js';
+import { failTask, printInfo, printVerbose, printWarningBlock, setVerboseMode, startTask, stopTask, succeedTask } from '../../lib/ui.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -536,7 +536,8 @@ export default class EnvUpdate extends Command {
     } catch (error) {
       this.printConfigUpdateHints(envName, new Set([...providedFields, ...unsetFields]), nextConfig);
       const message = error instanceof Error ? error.message : String(error);
-      throw new Error(`Saved env config for "${envName}", but failed to refresh the runtime.\n${message}`);
+      printWarningBlock(`Saved env config for "${envName}", but failed to refresh the runtime.\n${message}`);
+      return;
     }
 
     printVerbose(`Updated env "${envName}" config and refreshed the runtime.`);
