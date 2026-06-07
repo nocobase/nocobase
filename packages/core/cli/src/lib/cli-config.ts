@@ -24,6 +24,8 @@ export type ProxyProvider = (typeof PROXY_PROVIDER_OPTIONS)[number];
 export const DEFAULT_PROXY_PROVIDER: ProxyProvider = 'nginx';
 export const DEFAULT_PROXY_HOST = '127.0.0.1';
 export const DEFAULT_YARN_BIN = 'yarn';
+export const DEFAULT_LOG_RETENTION_DAYS = 14;
+export const DEFAULT_LOG_ENABLED = true;
 export const CLI_UPDATE_POLICY_OPTIONS = ['prompt', 'auto', 'off'] as const;
 export type CliUpdatePolicy = (typeof CLI_UPDATE_POLICY_OPTIONS)[number];
 export const DEFAULT_UPDATE_POLICY: CliUpdatePolicy = 'prompt';
@@ -43,6 +45,8 @@ export const SUPPORTED_CLI_CONFIG_KEYS = [
   'proxy.nb-cli-root',
   'proxy.upstream-host',
   'bin.yarn',
+  'log.enabled',
+  'log.retention-days',
 ] as const;
 
 export type SupportedCliConfigKey = (typeof SUPPORTED_CLI_CONFIG_KEYS)[number];
@@ -98,6 +102,7 @@ function cloneSettings(config: AuthConfig): NonNullable<AuthConfig['settings']> 
     docker: config.settings?.docker ? { ...config.settings.docker } : undefined,
     bin: config.settings?.bin ? { ...config.settings.bin } : undefined,
     proxy: config.settings?.proxy ? { ...config.settings.proxy } : undefined,
+    log: config.settings?.log ? { ...config.settings.log } : undefined,
   };
 }
 
@@ -143,6 +148,11 @@ function pruneSettings(config: AuthConfig): void {
     delete config.settings?.proxy;
   }
 
+  const log = config.settings?.log;
+  if (log && typeof log.enabled !== 'boolean' && (!Number.isInteger(log.retentionDays) || log.retentionDays < 0)) {
+    delete config.settings?.log;
+  }
+
   if (
     config.settings &&
     !config.settings.locale &&
@@ -151,7 +161,8 @@ function pruneSettings(config: AuthConfig): void {
     !config.settings.license &&
     !config.settings.docker &&
     !config.settings.bin &&
-    !config.settings.proxy
+    !config.settings.proxy &&
+    !config.settings.log
   ) {
     delete config.settings;
   }
@@ -187,6 +198,12 @@ export function getExplicitCliConfigValue(config: AuthConfig, key: SupportedCliC
       return trimValue(config.settings?.proxy?.upstreamHost);
     case 'bin.yarn':
       return trimValue(config.settings?.bin?.yarn);
+    case 'log.enabled':
+      return typeof config.settings?.log?.enabled === 'boolean' ? String(config.settings?.log?.enabled) : undefined;
+    case 'log.retention-days':
+      return Number.isInteger(config.settings?.log?.retentionDays)
+        ? String(config.settings?.log?.retentionDays)
+        : undefined;
   }
 }
 
@@ -225,6 +242,10 @@ export function getEffectiveCliConfigValue(config: AuthConfig, key: SupportedCli
       return explicit ?? DEFAULT_PROXY_HOST;
     case 'bin.yarn':
       return DEFAULT_YARN_BIN;
+    case 'log.enabled':
+      return explicit ?? String(DEFAULT_LOG_ENABLED);
+    case 'log.retention-days':
+      return explicit ?? String(DEFAULT_LOG_RETENTION_DAYS);
   }
 }
 
@@ -254,6 +275,23 @@ export function normalizeCliConfigValue(key: SupportedCliConfigKey, value: strin
     }
 
     return policy;
+  }
+
+  if (key === 'log.retention-days') {
+    const retentionDays = Number.parseInt(normalized, 10);
+    if (!Number.isInteger(retentionDays) || retentionDays < 0) {
+      throw new Error(`Config key "${key}" must be a non-negative integer.`);
+    }
+
+    return String(retentionDays);
+  }
+
+  if (key === 'log.enabled') {
+    if (normalized !== 'true' && normalized !== 'false') {
+      throw new Error(`Config key "${key}" must be either "true" or "false".`);
+    }
+
+    return normalized;
   }
 
   return normalized;
@@ -376,6 +414,18 @@ export async function setCliConfigValue(
         yarn: normalized,
       };
       break;
+    case 'log.enabled':
+      config.settings.log = {
+        ...(config.settings.log ?? {}),
+        enabled: normalized === 'true',
+      };
+      break;
+    case 'log.retention-days':
+      config.settings.log = {
+        ...(config.settings.log ?? {}),
+        retentionDays: Number.parseInt(normalized, 10),
+      };
+      break;
   }
 
   pruneSettings(config);
@@ -463,6 +513,16 @@ export async function deleteCliConfigValue(
     case 'bin.yarn':
       if (config.settings.bin) {
         delete config.settings.bin.yarn;
+      }
+      break;
+    case 'log.enabled':
+      if (config.settings.log) {
+        delete config.settings.log.enabled;
+      }
+      break;
+    case 'log.retention-days':
+      if (config.settings.log) {
+        delete config.settings.log.retentionDays;
       }
       break;
   }

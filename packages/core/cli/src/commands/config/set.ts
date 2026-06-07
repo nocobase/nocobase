@@ -26,6 +26,8 @@ export default class ConfigSet extends Command {
     '<%= config.bin %> <%= command.id %> proxy.nb-cli-root /workspace',
     '<%= config.bin %> <%= command.id %> proxy.upstream-host host.docker.internal',
     '<%= config.bin %> <%= command.id %> bin.yarn yarn',
+    '<%= config.bin %> <%= command.id %> log.enabled false',
+    '<%= config.bin %> <%= command.id %> log.retention-days 14',
   ];
 
   static override args = {

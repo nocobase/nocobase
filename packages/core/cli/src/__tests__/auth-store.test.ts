@@ -307,6 +307,30 @@ test('cli config stores explicit proxy path settings under settings', async () =
   });
 });
 
+test('cli config stores explicit log retention settings under settings', async () => {
+  await withTempCliHome(async () => {
+    const retentionDays = await setCliConfigValue('log.retention-days', '21', { scope: 'global' });
+    const config = await loadAuthConfig({ scope: 'global' });
+
+    expect(retentionDays).toBe('21');
+    expect(config.settings?.log).toEqual({
+      retentionDays: 21,
+    });
+  });
+});
+
+test('cli config stores explicit log enabled settings under settings', async () => {
+  await withTempCliHome(async () => {
+    const enabled = await setCliConfigValue('log.enabled', 'false', { scope: 'global' });
+    const config = await loadAuthConfig({ scope: 'global' });
+
+    expect(enabled).toBe('false');
+    expect(config.settings?.log).toEqual({
+      enabled: false,
+    });
+  });
+});
+
 test('loadAuthConfig maps the legacy dockerResourcePrefix field to workspace name', async () => {
   await withTempCliHome(async () => {
     await saveAuthConfig(
@@ -348,6 +372,8 @@ test('cli config list and delete only affect explicit settings', async () => {
     await setCliConfigValue('bin.caddy', '/usr/bin/caddy', { scope: 'global' });
     await setCliConfigValue('proxy.nb-cli-root', '/workspace', { scope: 'global' });
     await setCliConfigValue('proxy.upstream-host', 'host.docker.internal', { scope: 'global' });
+    await setCliConfigValue('log.enabled', 'false', { scope: 'global' });
+    await setCliConfigValue('log.retention-days', '30', { scope: 'global' });
 
     expect(await listExplicitCliConfigValues({ scope: 'global' })).toEqual({
       locale: 'zh-CN',
@@ -357,6 +383,8 @@ test('cli config list and delete only affect explicit settings', async () => {
       'bin.caddy': '/usr/bin/caddy',
       'proxy.nb-cli-root': '/workspace',
       'proxy.upstream-host': 'host.docker.internal',
+      'log.enabled': 'false',
+      'log.retention-days': '30',
     });
 
     expect(await deleteCliConfigValue('locale', { scope: 'global' })).toBe(true);
@@ -366,6 +394,8 @@ test('cli config list and delete only affect explicit settings', async () => {
     expect(await deleteCliConfigValue('bin.caddy', { scope: 'global' })).toBe(true);
     expect(await deleteCliConfigValue('proxy.nb-cli-root', { scope: 'global' })).toBe(true);
     expect(await deleteCliConfigValue('proxy.upstream-host', { scope: 'global' })).toBe(true);
+    expect(await deleteCliConfigValue('log.enabled', { scope: 'global' })).toBe(true);
+    expect(await deleteCliConfigValue('log.retention-days', { scope: 'global' })).toBe(true);
     expect(await listExplicitCliConfigValues({ scope: 'global' })).toEqual({
       'license.pkg-url': 'https://pkg.example.com/',
     });
@@ -386,6 +416,18 @@ test('cli config returns default proxy path settings', async () => {
   await withTempCliHome(async () => {
     expect(await getCliConfigValue('proxy.nb-cli-root', { scope: 'global' })).toBe(resolveCliHomeRoot());
     expect(await getCliConfigValue('proxy.upstream-host', { scope: 'global' })).toBe('127.0.0.1');
+  });
+});
+
+test('cli config returns default log retention days', async () => {
+  await withTempCliHome(async () => {
+    expect(await getCliConfigValue('log.retention-days', { scope: 'global' })).toBe('14');
+  });
+});
+
+test('cli config returns default log enabled state', async () => {
+  await withTempCliHome(async () => {
+    expect(await getCliConfigValue('log.enabled', { scope: 'global' })).toBe('true');
   });
 });
 

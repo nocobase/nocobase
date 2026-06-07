@@ -67,6 +67,10 @@ type RunProcessOptions = CommandProcessOptions & {
   onStderr?: (chunk: string) => void;
 };
 
+function shouldTeeInheritedOutput(options?: RunProcessOptions): boolean {
+  return options?.stdio === 'inherit' && Boolean(String(process.env.NB_CLI_ACTIVE_LOG_FILE ?? '').trim());
+}
+
 function createMissingCommandError(name: string, label: string, error: unknown): Error | undefined {
   const code =
     error && typeof error === 'object' && 'code' in error ? String((error as { code?: unknown }).code) : undefined;
@@ -151,9 +155,10 @@ export async function run(name: string, args: string[], options?: RunProcessOpti
   const cwd = resolveCwd(options?.cwd);
   const label = options?.errorName ?? name;
   const command = await resolveCommandName(name);
+  const stdio = shouldTeeInheritedOutput(options) ? ['inherit', 'pipe', 'pipe'] : (options?.stdio ?? 'inherit');
   return await new Promise((resolve, reject) => {
     const child = spawn(command, [...args], {
-      stdio: options?.stdio ?? 'inherit',
+      stdio,
       cwd,
       env: {
         ...process.env,
@@ -161,19 +166,21 @@ export async function run(name: string, args: string[], options?: RunProcessOpti
       },
       windowsHide: process.platform === 'win32',
     });
-    if (options?.stdio === 'pipe') {
+    if (options?.stdio === 'pipe' || shouldTeeInheritedOutput(options)) {
       child.stdout?.setEncoding('utf8');
       child.stderr?.setEncoding('utf8');
-      if (options.onStdout) {
-        child.stdout?.on('data', (chunk) => {
-          options.onStdout?.(String(chunk));
-        });
-      }
-      if (options.onStderr) {
-        child.stderr?.on('data', (chunk) => {
-          options.onStderr?.(String(chunk));
-        });
-      }
+      child.stdout?.on('data', (chunk) => {
+        if (shouldTeeInheritedOutput(options)) {
+          process.stdout.write(chunk);
+        }
+        options.onStdout?.(String(chunk));
+      });
+      child.stderr?.on('data', (chunk) => {
+        if (shouldTeeInheritedOutput(options)) {
+          process.stderr.write(chunk);
+        }
+        options.onStderr?.(String(chunk));
+      });
     }
     const cleanupSignalForwarding = forwardSignalsToChild(child);
     const timeoutController = attachProcessTimeout(child, options?.timeoutMs);

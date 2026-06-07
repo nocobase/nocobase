@@ -143,6 +143,10 @@ export interface AuthConfig {
       nbCliRoot?: string;
       upstreamHost?: string;
     };
+    log?: {
+      enabled?: boolean;
+      retentionDays?: number;
+    };
     init?: {
       defaultUiHost?: string;
       defaultApiHost?: string;
@@ -265,6 +269,11 @@ function normalizeAuthConfig(config: AuthConfig & { dockerResourcePrefix?: strin
   const defaultUiHost = normalizeOptionalString(settings.init?.defaultUiHost);
   const defaultApiHost = normalizeOptionalString(settings.init?.defaultApiHost);
   const updatePolicy = normalizeOptionalCliUpdatePolicy(settings.update?.policy);
+  const logRetentionDays =
+    typeof settings.log?.retentionDays === 'number' && Number.isInteger(settings.log.retentionDays)
+      ? settings.log.retentionDays
+      : undefined;
+  const logEnabled = typeof settings.log?.enabled === 'boolean' ? settings.log.enabled : undefined;
   return {
     name: config.name || config.dockerResourcePrefix,
     settings: {
@@ -313,6 +322,14 @@ function normalizeAuthConfig(config: AuthConfig & { dockerResourcePrefix?: strin
                     ),
                   }
                 : {}),
+            },
+          }
+        : {}),
+      ...(logEnabled !== undefined || logRetentionDays !== undefined
+        ? {
+            log: {
+              ...(logEnabled !== undefined ? { enabled: logEnabled } : {}),
+              ...(logRetentionDays !== undefined ? { retentionDays: logRetentionDays } : {}),
             },
           }
         : {}),

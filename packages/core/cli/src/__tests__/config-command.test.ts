@@ -294,6 +294,96 @@ test('nb config set/get/delete supports binary override keys', async () => {
   });
 });
 
+test('nb config set/get/delete supports log.retention-days', async () => {
+  await withTempCliHome(async () => {
+    const { default: ConfigSet } = await import('../commands/config/set.js');
+    const { default: ConfigGet } = await import('../commands/config/get.js');
+    const { default: ConfigDelete } = await import('../commands/config/delete.js');
+
+    const setCommand = Object.assign(Object.create(ConfigSet.prototype), {
+      parse: vi.fn(async () => ({
+        args: {
+          key: 'log.retention-days',
+          value: '21',
+        },
+      })),
+      log: vi.fn(),
+    });
+    await ConfigSet.prototype.run.call(setCommand);
+    expect(setCommand.log).toHaveBeenCalledWith('log.retention-days=21');
+
+    const getCommand = Object.assign(Object.create(ConfigGet.prototype), {
+      parse: vi.fn(async () => ({
+        args: {
+          key: 'log.retention-days',
+        },
+      })),
+      log: vi.fn(),
+    });
+    await ConfigGet.prototype.run.call(getCommand);
+    expect(getCommand.log).toHaveBeenCalledWith('21');
+
+    const deleteCommand = Object.assign(Object.create(ConfigDelete.prototype), {
+      parse: vi.fn(async () => ({
+        args: {
+          key: 'log.retention-days',
+        },
+      })),
+      log: vi.fn(),
+    });
+    await ConfigDelete.prototype.run.call(deleteCommand);
+    expect(deleteCommand.log).toHaveBeenCalledWith('Deleted log.retention-days');
+
+    const config = await loadAuthConfig({ scope: 'global' });
+    expect(config.settings?.log?.retentionDays).toBe(undefined);
+  });
+});
+
+test('nb config set/get/delete supports log.enabled', async () => {
+  await withTempCliHome(async () => {
+    const { default: ConfigSet } = await import('../commands/config/set.js');
+    const { default: ConfigGet } = await import('../commands/config/get.js');
+    const { default: ConfigDelete } = await import('../commands/config/delete.js');
+
+    const setCommand = Object.assign(Object.create(ConfigSet.prototype), {
+      parse: vi.fn(async () => ({
+        args: {
+          key: 'log.enabled',
+          value: 'false',
+        },
+      })),
+      log: vi.fn(),
+    });
+    await ConfigSet.prototype.run.call(setCommand);
+    expect(setCommand.log).toHaveBeenCalledWith('log.enabled=false');
+
+    const getCommand = Object.assign(Object.create(ConfigGet.prototype), {
+      parse: vi.fn(async () => ({
+        args: {
+          key: 'log.enabled',
+        },
+      })),
+      log: vi.fn(),
+    });
+    await ConfigGet.prototype.run.call(getCommand);
+    expect(getCommand.log).toHaveBeenCalledWith('false');
+
+    const deleteCommand = Object.assign(Object.create(ConfigDelete.prototype), {
+      parse: vi.fn(async () => ({
+        args: {
+          key: 'log.enabled',
+        },
+      })),
+      log: vi.fn(),
+    });
+    await ConfigDelete.prototype.run.call(deleteCommand);
+    expect(deleteCommand.log).toHaveBeenCalledWith('Deleted log.enabled');
+
+    const config = await loadAuthConfig({ scope: 'global' });
+    expect(config.settings?.log?.enabled).toBe(undefined);
+  });
+});
+
 test('nb config set/get/delete supports caddy/nginx binaries and proxy path settings', async () => {
   await withTempCliHome(async () => {
     const { default: ConfigSet } = await import('../commands/config/set.js');
@@ -483,8 +573,6 @@ test('nb config rejects the removed proxy.provider key', async () => {
       })),
     });
 
-    await expect(ConfigSet.prototype.run.call(command)).rejects.toThrow(
-      'Unsupported config key "proxy.provider".',
-    );
+    await expect(ConfigSet.prototype.run.call(command)).rejects.toThrow('Unsupported config key "proxy.provider".');
   });
 });

@@ -25,6 +25,8 @@ export default class ConfigDelete extends Command {
     '<%= config.bin %> <%= command.id %> proxy.nb-cli-root',
     '<%= config.bin %> <%= command.id %> proxy.upstream-host',
     '<%= config.bin %> <%= command.id %> bin.yarn',
+    '<%= config.bin %> <%= command.id %> log.enabled',
+    '<%= config.bin %> <%= command.id %> log.retention-days',
   ];
 
   static override args = {
