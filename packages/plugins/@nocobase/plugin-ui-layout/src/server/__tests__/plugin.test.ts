@@ -627,6 +627,142 @@ describe('plugin-ui-layout server', () => {
     expect(mobileTitles).not.toContain('DATA-ROLE-LAYOUT-MOBILE-DENIED');
   });
 
+  it('should apply layout filtering to getAccessible route lookup', async () => {
+    app = await createMockServer({
+      registerActions: true,
+      acl: true,
+      plugins: [
+        'error-handler',
+        'users',
+        'auth',
+        'client',
+        'field-sort',
+        'acl',
+        'ui-schema-storage',
+        'system-settings',
+        'data-source-main',
+        'data-source-manager',
+        'ui-layout',
+      ],
+    });
+
+    const adminLayout = await app.db.getRepository('uiLayouts').findOne({
+      filter: {
+        uid: DEFAULT_ADMIN_UI_LAYOUT.uid,
+      },
+    });
+    if (!adminLayout) {
+      throw new Error('Default AdminLayout ui layout should exist.');
+    }
+    const mobileLayout = await app.db.getRepository('uiLayouts').create({
+      values: {
+        uid: 'mobile-layout-get-accessible-test',
+        title: 'Mobile getAccessible test',
+        layoutType: 'mobile',
+        routeName: 'mobile-get-accessible-test',
+        routePath: '/v/mobile-get-accessible-test',
+        authCheck: true,
+        enabled: true,
+      },
+    });
+    const role = await app.db.getRepository('roles').create({
+      values: {
+        name: 'layout-get-accessible-member',
+      },
+    });
+    const adminRoute = await app.db.getRepository('desktopRoutes').create({
+      values: {
+        type: 'flowPage',
+        title: 'DATA-GET-ACCESSIBLE-ADMIN',
+        schemaUid: 'layout-get-accessible-admin',
+        hidden: false,
+        sort: 10,
+      },
+    });
+    const mobileRoute = await app.db.getRepository('desktopRoutes').create({
+      values: {
+        type: 'flowPage',
+        title: 'DATA-GET-ACCESSIBLE-MOBILE',
+        schemaUid: 'layout-get-accessible-mobile',
+        hidden: false,
+        sort: 20,
+      },
+    });
+    const mobileDeniedRoute = await app.db.getRepository('desktopRoutes').create({
+      values: {
+        type: 'flowPage',
+        title: 'DATA-GET-ACCESSIBLE-MOBILE-DENIED',
+        schemaUid: 'layout-get-accessible-mobile-denied',
+        hidden: false,
+        sort: 30,
+      },
+    });
+
+    await app.db.getRepository('desktopRoutes.uiLayouts', adminRoute.get('id')).set({
+      tk: [adminLayout.get('uid')],
+    });
+    await app.db.getRepository('desktopRoutes.uiLayouts', mobileRoute.get('id')).set({
+      tk: [mobileLayout.get('uid')],
+    });
+    await app.db.getRepository('desktopRoutes.uiLayouts', mobileDeniedRoute.get('id')).set({
+      tk: [mobileLayout.get('uid')],
+    });
+    await app.db.getRepository('desktopRoutes.roles', adminRoute.get('id')).add({
+      tk: [role.get('name')],
+    });
+    await app.db.getRepository('desktopRoutes.roles', mobileRoute.get('id')).add({
+      tk: [role.get('name')],
+    });
+
+    const rootUser = await app.db.getRepository('users').findOne({
+      filter: {
+        'roles.name': 'root',
+      },
+    });
+    const memberUser = await app.db.getRepository('users').create({
+      values: {
+        roles: [role.get('name')],
+      },
+    });
+    const rootAgent = await app.agent().login(rootUser);
+    const memberAgent = await app.agent().login(memberUser);
+
+    const [rootAdminResponse, rootMobileResponse, rootInvalidResponse, memberMobileResponse, memberDeniedResponse] =
+      await Promise.all([
+        rootAgent.get('/desktopRoutes:getAccessible').query({
+          filterByTk: adminRoute.get('id'),
+          layout: DEFAULT_ADMIN_UI_LAYOUT.uid,
+        }),
+        rootAgent.get('/desktopRoutes:getAccessible').query({
+          filterByTk: mobileRoute.get('id'),
+          layout: mobileLayout.get('uid'),
+        }),
+        rootAgent.get('/desktopRoutes:getAccessible').query({
+          filterByTk: adminRoute.get('id'),
+          layout: 'missing-get-accessible-layout',
+        }),
+        memberAgent.get('/desktopRoutes:getAccessible').query({
+          filterByTk: mobileRoute.get('id'),
+          layout: mobileLayout.get('uid'),
+        }),
+        memberAgent.get('/desktopRoutes:getAccessible').query({
+          filterByTk: mobileDeniedRoute.get('id'),
+          layout: mobileLayout.get('uid'),
+        }),
+      ]);
+
+    expect(rootAdminResponse.status).toBe(200);
+    expect(rootMobileResponse.status).toBe(200);
+    expect([200, 204]).toContain(rootInvalidResponse.status);
+    expect(memberMobileResponse.status).toBe(200);
+    expect([200, 204]).toContain(memberDeniedResponse.status);
+    expect(rootAdminResponse.body.data.title).toBe('DATA-GET-ACCESSIBLE-ADMIN');
+    expect(rootMobileResponse.body.data.title).toBe('DATA-GET-ACCESSIBLE-MOBILE');
+    expect(rootInvalidResponse.body.data ?? null).toBeNull();
+    expect(memberMobileResponse.body.data.title).toBe('DATA-GET-ACCESSIBLE-MOBILE');
+    expect(memberDeniedResponse.body.data ?? null).toBeNull();
+  });
+
   it('should persist role route permissions independently per layout', async () => {
     app = await createMockServer({
       registerActions: true,

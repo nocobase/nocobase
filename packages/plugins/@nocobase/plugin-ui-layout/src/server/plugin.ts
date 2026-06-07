@@ -104,6 +104,50 @@ function removeNestedRootRoutes(routes: unknown) {
   });
 }
 
+function getCurrentRoles(ctx: ResourcerContext) {
+  const currentRoles = ctx.state.currentRoles;
+  if (!Array.isArray(currentRoles)) {
+    return [];
+  }
+
+  return currentRoles.filter((role): role is string => typeof role === 'string');
+}
+
+async function getAccessibleDesktopRouteIds(ctx: ResourcerContext) {
+  const currentRoles = getCurrentRoles(ctx);
+  if (currentRoles.includes('root')) {
+    return;
+  }
+
+  const roles = await ctx.db.getRepository('roles').find({
+    filterByTk: currentRoles,
+    appends: ['desktopRoutes'],
+  });
+  const routeIds = new Set<string>();
+
+  for (const role of roles) {
+    const routes = role.get('desktopRoutes');
+    if (Array.isArray(routes)) {
+      collectRouteIds(routes, routeIds);
+    }
+  }
+
+  return routeIds;
+}
+
+function removeInaccessibleRoute(route: unknown, allowedRouteIds: Set<string> | undefined) {
+  if (!route || !allowedRouteIds) {
+    return route;
+  }
+
+  const id = getRouteValue(route, 'id');
+  if (id === null || id === undefined || !allowedRouteIds.has(String(id))) {
+    return null;
+  }
+
+  return route;
+}
+
 async function addDesktopRouteLayoutFilter(ctx: ResourcerContext, next: () => Promise<void>) {
   ctx.action?.mergeParams({
     filter: await getDesktopRouteLayoutFilter(ctx),
@@ -114,6 +158,23 @@ async function addDesktopRouteLayoutFilter(ctx: ResourcerContext, next: () => Pr
   ctx.body = removeNestedRootRoutes(ctx.body);
 }
 
+async function addDesktopRouteGetLayoutFilter(ctx: ResourcerContext, next: () => Promise<void>) {
+  ctx.action?.mergeParams({
+    filter: await getDesktopRouteLayoutFilter(ctx),
+  });
+
+  await next();
+
+  const route = removeInaccessibleRoute(ctx.body, await getAccessibleDesktopRouteIds(ctx));
+  if (route === null) {
+    ctx.status = 204;
+    ctx.body = undefined;
+    return;
+  }
+
+  ctx.body = route;
+}
+
 export class PluginUiLayoutServer extends Plugin {
   async afterAdd() {}
 
@@ -121,6 +182,7 @@ export class PluginUiLayoutServer extends Plugin {
 
   async load() {
     this.app.resourceManager.registerPreActionHandler('desktopRoutes:listAccessible', addDesktopRouteLayoutFilter);
+    this.app.resourceManager.registerPreActionHandler('desktopRoutes:getAccessible', addDesktopRouteGetLayoutFilter);
   }
 
   async install() {
