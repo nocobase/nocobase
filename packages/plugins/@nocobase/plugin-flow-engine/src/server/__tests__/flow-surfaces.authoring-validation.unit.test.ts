@@ -45,6 +45,25 @@ describe('flowSurfaces authoring validation unit', () => {
     ],
   });
 
+  const createVisibleFieldValidationContext = () => {
+    const fields = ['nickname', 'status', 'email', 'phone', 'title', 'department', 'role', 'location'].map((name) => ({
+      name,
+      interface: 'input',
+      type: 'string',
+    }));
+    const fieldsByName = new Map(fields.map((field) => [field.name, field]));
+    const collection = {
+      name: 'employees',
+      getField: (fieldName: string) => fieldsByName.get(fieldName),
+      getFields: () => fields,
+      fields: fieldsByName,
+    };
+    return {
+      getCollection: (_dataSourceKey: string, collectionName: string) =>
+        collectionName === 'employees' ? collection : null,
+    };
+  };
+
   it('should front-load aggregate authoring repair instructions for agents', () => {
     const error = new FlowSurfaceAggregateError([
       {
@@ -84,6 +103,185 @@ describe('flowSurfaces authoring validation unit', () => {
         ],
       }),
     );
+  });
+
+  it('should allow JS field entries without changing action-only visible field errors', async () => {
+    const context = createVisibleFieldValidationContext();
+    const applyBlueprintErrors = await collectFlowSurfaceAuthoringErrors(
+      'applyBlueprint',
+      {
+        mode: 'create',
+        tabs: [
+          {
+            title: 'Overview',
+            blocks: [
+              {
+                type: 'table',
+                collection: 'employees',
+                fields: [
+                  {
+                    key: 'summary',
+                    type: 'jsColumn',
+                    settings: {
+                      code: `ctx.render('Summary');`,
+                    },
+                  },
+                ],
+              },
+              {
+                type: 'table',
+                collection: 'employees',
+                fields: [
+                  {
+                    key: 'statusJs',
+                    field: 'status',
+                    renderer: 'js',
+                    settings: {
+                      code: `ctx.render(ctx.value || 'No status');`,
+                    },
+                  },
+                ],
+              },
+              {
+                type: 'createForm',
+                collection: 'employees',
+                fields: [
+                  {
+                    key: 'preview',
+                    type: 'jsItem',
+                    settings: {
+                      code: `ctx.render('Preview');`,
+                    },
+                  },
+                ],
+              },
+              {
+                type: 'table',
+                collection: 'employees',
+                actions: [
+                  {
+                    type: 'jsItem',
+                    settings: {
+                      code: `ctx.render('Action');`,
+                    },
+                  },
+                ],
+              },
+              {
+                type: 'table',
+                collection: 'employees',
+                fields: [
+                  {
+                    key: 'wrongTableItem',
+                    type: 'jsItem',
+                    settings: {
+                      code: `ctx.render('Wrong table item');`,
+                    },
+                  },
+                ],
+              },
+              {
+                type: 'createForm',
+                collection: 'employees',
+                fields: [
+                  {
+                    key: 'wrongFormColumn',
+                    type: 'jsColumn',
+                    settings: {
+                      code: `ctx.render('Wrong form column');`,
+                    },
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+      context,
+    );
+    const applyBlueprintVisibleFieldErrors = applyBlueprintErrors.filter(
+      (error: any) => error.ruleId === 'data-block-visible-fields-required',
+    );
+
+    expect(applyBlueprintVisibleFieldErrors).toHaveLength(3);
+    for (const error of applyBlueprintVisibleFieldErrors) {
+      expect(error.message).toContain('Add collection field names');
+      expect(error.message).toContain('defaults.collections.*.fieldGroups');
+      expect(error.message).not.toContain('JS');
+    }
+    expect(applyBlueprintErrors.map((error: any) => error.ruleId)).not.toContain('data-block-visible-fields-minimum');
+
+    const composeErrors = await collectFlowSurfaceAuthoringErrors(
+      'compose',
+      {
+        blocks: [
+          {
+            type: 'table',
+            collection: 'employees',
+            fields: [
+              {
+                key: 'summary',
+                type: 'jsColumn',
+                settings: {
+                  code: `ctx.render('Summary');`,
+                },
+              },
+            ],
+          },
+        ],
+      },
+      context,
+    );
+    expect(composeErrors.map((error: any) => error.ruleId)).not.toContain('data-block-visible-fields-required');
+    expect(composeErrors.map((error: any) => error.ruleId)).not.toContain('data-block-visible-fields-minimum');
+
+    const addBlockErrors = await collectFlowSurfaceAuthoringErrors(
+      'addBlock',
+      {
+        type: 'table',
+        resource: {
+          collectionName: 'employees',
+        },
+        fields: [
+          {
+            key: 'summary',
+            type: 'jsColumn',
+            settings: {
+              code: `ctx.render('Summary');`,
+            },
+          },
+        ],
+      },
+      context,
+    );
+    expect(addBlockErrors.map((error: any) => error.ruleId)).not.toContain('data-block-visible-fields-required');
+    expect(addBlockErrors.map((error: any) => error.ruleId)).not.toContain('data-block-visible-fields-minimum');
+
+    const addBlocksErrors = await collectFlowSurfaceAuthoringErrors(
+      'addBlocks',
+      {
+        blocks: [
+          {
+            type: 'table',
+            resource: {
+              collectionName: 'employees',
+            },
+            fields: [
+              {
+                key: 'summary',
+                type: 'jsColumn',
+                settings: {
+                  code: `ctx.render('Summary');`,
+                },
+              },
+            ],
+          },
+        ],
+      },
+      context,
+    );
+    expect(addBlocksErrors.map((error: any) => error.ruleId)).not.toContain('data-block-visible-fields-required');
+    expect(addBlocksErrors.map((error: any) => error.ruleId)).not.toContain('data-block-visible-fields-minimum');
   });
 
   it('should preserve aggregate authoring repair instructions through inline and batch wrappers', () => {
