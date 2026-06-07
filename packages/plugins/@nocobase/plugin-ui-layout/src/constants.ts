@@ -13,6 +13,7 @@ export const UI_LAYOUT_TYPE_DESKTOP = 'desktop';
 export const UI_LAYOUT_TYPE_MOBILE = 'mobile';
 
 export const DEFAULT_ADMIN_UI_LAYOUT = {
+  title: 'Desktop layout',
   uid: 'admin-layout-model',
   layoutType: UI_LAYOUT_TYPE_DESKTOP,
   routeName: 'admin',

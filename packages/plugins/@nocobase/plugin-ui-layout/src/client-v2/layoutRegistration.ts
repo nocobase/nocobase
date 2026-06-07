@@ -12,6 +12,7 @@ import { DEFAULT_ADMIN_UI_LAYOUT, UI_LAYOUT_TYPE_DESKTOP, UI_LAYOUT_TYPE_MOBILE 
 
 export type UiLayoutRuntimeRecord = {
   uid: string;
+  title?: string;
   layoutType: string;
   routeName: string;
   routePath: string;

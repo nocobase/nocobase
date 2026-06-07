@@ -30,6 +30,7 @@ type UiLayoutType = string;
 
 export type UiLayoutRecord = {
   id: UiLayoutPrimaryKey;
+  title: string;
   uid: string;
   layoutType: UiLayoutType;
   routeName: string;
@@ -39,6 +40,7 @@ export type UiLayoutRecord = {
 };
 
 export type UiLayoutFormValues = {
+  title: string;
   uid: string;
   layoutType: UiLayoutType;
   routeName: string;
@@ -106,8 +108,10 @@ export function isUiLayoutRoutePathFormatValid(routePath?: string) {
 
 export function completeUiLayoutFormValues(values: UiLayoutFormDraftValues): UiLayoutFormValues {
   const routePath = values.routePath.trim();
+  const title = values.title.trim();
   return {
     ...values,
+    title,
     routePath,
     routeName: getRouteNameFromRoutePath(routePath),
   };
@@ -115,6 +119,7 @@ export function completeUiLayoutFormValues(values: UiLayoutFormDraftValues): UiL
 
 function toUiLayoutFormValues(record: UiLayoutRecord, overrides: Partial<UiLayoutFormValues> = {}): UiLayoutFormValues {
   return {
+    title: record.title,
     uid: record.uid,
     layoutType: record.layoutType,
     routeName: record.routeName,
@@ -338,6 +343,7 @@ const UiLayoutsPage: React.FC = () => {
 
   const columns = useMemo<ColumnsType<UiLayoutRecord>>(
     () => [
+      { title: t('Title'), dataIndex: 'title', ellipsis: true },
       { title: t('UID'), dataIndex: 'uid', ellipsis: true },
       {
         title: t('Layout type'),
@@ -446,6 +452,7 @@ function UiLayoutForm(props: { layoutType: UiLayoutType; record?: UiLayoutRecord
     () =>
       record
         ? {
+            title: record.title,
             uid: record.uid,
             layoutType: record.layoutType,
             routePath: record.routePath,
@@ -500,6 +507,13 @@ function UiLayoutForm(props: { layoutType: UiLayoutType; record?: UiLayoutRecord
               label: t(item.label),
             }))}
           />
+        </Form.Item>
+        <Form.Item
+          name="title"
+          label={t('Title')}
+          rules={[{ required: true, whitespace: true, message: t('Title field is required') }]}
+        >
+          <Input />
         </Form.Item>
         <Form.Item name="uid" label={t('UID')} rules={[{ required: true, message: t('The field value is required') }]}>
           <Input />

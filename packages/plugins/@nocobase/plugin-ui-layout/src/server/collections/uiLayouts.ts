@@ -31,6 +31,12 @@ export default defineCollection({
       allowNull: false,
     },
     {
+      name: 'title',
+      type: 'string',
+      defaultValue: 'Untitled',
+      allowNull: false,
+    },
+    {
       name: 'layoutType',
       type: 'string',
       defaultValue: 'desktop',

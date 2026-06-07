@@ -26,6 +26,7 @@ import {
 } from '../pages/UiLayoutsPage';
 
 const formValues: UiLayoutFormValues = {
+  title: 'Operations layout',
   uid: 'desktop-layout',
   layoutType: 'desktop',
   routeName: 'adminDesktop',
@@ -161,6 +162,7 @@ describe('plugin-ui-layout form values', () => {
   it('should complete submit values with the derived route name', () => {
     expect(
       completeUiLayoutFormValues({
+        title: ' Mobile workspace ',
         uid: 'mobile-layout',
         layoutType: 'mobile',
         routePath: ' /mobile ',
@@ -168,6 +170,7 @@ describe('plugin-ui-layout form values', () => {
         enabled: true,
       }),
     ).toEqual({
+      title: 'Mobile workspace',
       uid: 'mobile-layout',
       layoutType: 'mobile',
       routeName: 'mobile',

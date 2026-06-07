@@ -13,6 +13,7 @@ import { registerUiLayoutsFromApi } from './layoutRegistration';
 import { mobileOpenView } from './mobileOpenViewAction';
 import { registerMobilePageModelResolution } from './mobilePageModelResolution';
 import { MobileMenuSettingsIconPicker } from './models/MobileMenuComponents';
+import { registerLayoutAwareDesktopRoutesPermissionsTab } from './permissions/layoutAwareDesktopRoutesPermissions';
 
 export class PluginUiLayoutClientV2 extends Plugin<Record<string, never>, Application> {
   async load() {
@@ -52,6 +53,8 @@ export class PluginUiLayoutClientV2 extends Plugin<Record<string, never>, Applic
       title,
       componentLoader: () => import('./pages/UiLayoutsPage'),
     });
+
+    registerLayoutAwareDesktopRoutesPermissionsTab(this.app, (key) => this.t(key));
 
     await registerUiLayoutsFromApi(this.app);
   }

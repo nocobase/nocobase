@@ -39,6 +39,7 @@ describe('plugin-ui-layout server', () => {
     });
 
     expect(record?.get('layoutType')).toBe(DEFAULT_ADMIN_UI_LAYOUT.layoutType);
+    expect(record?.get('title')).toBe('Desktop layout');
     expect(record?.get('routeName')).toBe(DEFAULT_ADMIN_UI_LAYOUT.routeName);
     expect(record?.get('routePath')).toBe(DEFAULT_ADMIN_UI_LAYOUT.routePath);
     expect(record?.get('authCheck')).toBe(DEFAULT_ADMIN_UI_LAYOUT.authCheck);
@@ -71,6 +72,7 @@ describe('plugin-ui-layout server', () => {
     const mobileLayout = await app.db.getRepository('uiLayouts').create({
       values: {
         uid: 'mobile-layout-model-test',
+        title: 'Mobile layout relation test',
         layoutType: 'mobile',
         routeName: 'mobile',
         routePath: '/v/mobile',
@@ -156,6 +158,7 @@ describe('plugin-ui-layout server', () => {
     const mobileLayout = await app.db.getRepository('uiLayouts').create({
       values: {
         uid: 'mobile-layout-default-test',
+        title: 'Mobile default test',
         layoutType: 'mobile',
         routeName: 'mobile-default-test',
         routePath: '/v/mobile-default-test',
@@ -251,6 +254,7 @@ describe('plugin-ui-layout server', () => {
     const mobileLayout = await app.db.getRepository('uiLayouts').create({
       values: {
         uid: 'mobile-layout-root-filter-test',
+        title: 'Mobile root filter test',
         layoutType: 'mobile',
         routeName: 'mobile-root-filter-test',
         routePath: '/v/mobile-root-filter-test',
@@ -401,6 +405,7 @@ describe('plugin-ui-layout server', () => {
     const mobileLayout = await app.db.getRepository('uiLayouts').create({
       values: {
         uid: 'mobile-layout-role-filter-test',
+        title: 'Mobile role filter test',
         layoutType: 'mobile',
         routeName: 'mobile-role-filter-test',
         routePath: '/v/mobile-role-filter-test',
@@ -482,5 +487,140 @@ describe('plugin-ui-layout server', () => {
     expect(adminTitles).not.toContain('DATA-ROLE-LAYOUT-MOBILE-DENIED');
     expect(mobileTitles).not.toContain('DATA-ROLE-LAYOUT-ADMIN-ALLOWED');
     expect(mobileTitles).not.toContain('DATA-ROLE-LAYOUT-MOBILE-DENIED');
+  });
+
+  it('should persist role route permissions independently per layout', async () => {
+    app = await createMockServer({
+      registerActions: true,
+      acl: true,
+      plugins: [
+        'error-handler',
+        'users',
+        'auth',
+        'client',
+        'field-sort',
+        'acl',
+        'ui-schema-storage',
+        'system-settings',
+        'data-source-main',
+        'data-source-manager',
+        'ui-layout',
+      ],
+    });
+
+    const adminLayout = await app.db.getRepository('uiLayouts').findOne({
+      filter: {
+        uid: DEFAULT_ADMIN_UI_LAYOUT.uid,
+      },
+    });
+    if (!adminLayout) {
+      throw new Error('Default AdminLayout ui layout should exist.');
+    }
+    const mobileLayout = await app.db.getRepository('uiLayouts').create({
+      values: {
+        uid: 'mobile-layout-role-permission-test',
+        title: 'Mobile role permission test',
+        layoutType: 'mobile',
+        routeName: 'mobile-role-permission-test',
+        routePath: '/v/mobile-role-permission-test',
+        authCheck: true,
+        enabled: true,
+      },
+    });
+    const role = await app.db.getRepository('roles').create({
+      values: {
+        name: 'layout-role-permission-member',
+      },
+    });
+    const adminRoute = await app.db.getRepository('desktopRoutes').create({
+      values: {
+        type: 'flowPage',
+        title: 'DATA-ROLE-PERMISSION-ADMIN-A',
+        schemaUid: 'layout-role-permission-admin-a',
+        hidden: false,
+        sort: 10,
+      },
+    });
+    const mobileRoute = await app.db.getRepository('desktopRoutes').create({
+      values: {
+        type: 'flowPage',
+        title: 'DATA-ROLE-PERMISSION-MOBILE-B',
+        schemaUid: 'layout-role-permission-mobile-b',
+        hidden: false,
+        sort: 20,
+      },
+    });
+
+    await app.db.getRepository('desktopRoutes.uiLayouts', adminRoute.get('id')).set({
+      tk: [adminLayout.get('uid')],
+    });
+    await app.db.getRepository('desktopRoutes.uiLayouts', mobileRoute.get('id')).set({
+      tk: [mobileLayout.get('uid')],
+    });
+
+    const rootUser = await app.db.getRepository('users').findOne({
+      filter: {
+        'roles.name': 'root',
+      },
+    });
+    const agent = await app.agent().login(rootUser);
+
+    await agent.resource('roles.desktopRoutes', role.get('name')).add({
+      values: [adminRoute.get('id')],
+    });
+    await agent.resource('roles.desktopRoutes', role.get('name')).add({
+      values: [mobileRoute.get('id')],
+    });
+
+    const persistedRole = await app.db.getRepository('roles').findOne({
+      filterByTk: role.get('name'),
+      appends: ['desktopRoutes'],
+    });
+    const persistedRouteTitles = persistedRole
+      ?.get('desktopRoutes')
+      .map((route) => route.get('title'))
+      .sort();
+    const adminRoutesResponse = await agent.resource('roles.desktopRoutes', role.get('name')).list({
+      paginate: false,
+      filter: {
+        hidden: { $ne: true },
+        $or: [{ 'uiLayouts.uid': DEFAULT_ADMIN_UI_LAYOUT.uid }, { 'uiLayouts.id.$notExists': true }],
+      },
+    });
+    const mobileRoutesResponse = await agent.resource('roles.desktopRoutes', role.get('name')).list({
+      paginate: false,
+      filter: {
+        hidden: { $ne: true },
+        'uiLayouts.uid': mobileLayout.get('uid'),
+      },
+    });
+
+    expect(persistedRouteTitles).toEqual(['DATA-ROLE-PERMISSION-ADMIN-A', 'DATA-ROLE-PERMISSION-MOBILE-B']);
+    expect(adminRoutesResponse.body.data.map((route) => route.title)).toEqual(['DATA-ROLE-PERMISSION-ADMIN-A']);
+    expect(mobileRoutesResponse.body.data.map((route) => route.title)).toEqual(['DATA-ROLE-PERMISSION-MOBILE-B']);
+
+    await agent.resource('roles.desktopRoutes', role.get('name')).remove({
+      values: [mobileRoute.get('id')],
+    });
+
+    const adminRoutesAfterMobileRemoveResponse = await agent.resource('roles.desktopRoutes', role.get('name')).list({
+      paginate: false,
+      filter: {
+        hidden: { $ne: true },
+        $or: [{ 'uiLayouts.uid': DEFAULT_ADMIN_UI_LAYOUT.uid }, { 'uiLayouts.id.$notExists': true }],
+      },
+    });
+    const mobileRoutesAfterMobileRemoveResponse = await agent.resource('roles.desktopRoutes', role.get('name')).list({
+      paginate: false,
+      filter: {
+        hidden: { $ne: true },
+        'uiLayouts.uid': mobileLayout.get('uid'),
+      },
+    });
+
+    expect(adminRoutesAfterMobileRemoveResponse.body.data.map((route) => route.title)).toEqual([
+      'DATA-ROLE-PERMISSION-ADMIN-A',
+    ]);
+    expect(mobileRoutesAfterMobileRemoveResponse.body.data).toEqual([]);
   });
 });
