@@ -7,7 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { PlusOutlined } from '@ant-design/icons';
 import { ChildPageModel, RootPageModel } from '@nocobase/client-v2';
+import { AddSubModelButton, FlowSettingsButton } from '@nocobase/flow-engine';
 import React from 'react';
 import { MobileBackButton, MobilePageSurface } from './mobileComponents';
 
@@ -57,7 +59,35 @@ function renderMobileBody(children: React.ReactNode) {
   return <div className="nb-ui-layout-mobile-body">{children}</div>;
 }
 
+function renderMobileAddTabButton(model: RootPageModel | ChildPageModel) {
+  const label = model.context.t('Add tab');
+
+  return (
+    <span className="nb-ui-layout-mobile-page-tab-add-wrapper">
+      <AddSubModelButton
+        model={model}
+        subModelKey={'tabs'}
+        items={[
+          {
+            key: 'blank',
+            label: model.context.t('Blank tab'),
+            createModelOptions: model.createPageTabModelOptions,
+          },
+        ]}
+      >
+        <FlowSettingsButton aria-label={label} className="nb-ui-layout-mobile-page-tab-add" icon={<PlusOutlined />}>
+          {null}
+        </FlowSettingsButton>
+      </AddSubModelButton>
+    </span>
+  );
+}
+
 export class MobileRootPageModel extends RootPageModel {
+  tabBarExtraContent = {
+    right: renderMobileAddTabButton(this),
+  };
+
   render() {
     const displayTitle = !!this.props.displayTitle && !!this.props.title;
     const enableTabs = resolveRootEnableTabs(this);
@@ -73,6 +103,7 @@ export class MobileRootPageModel extends RootPageModel {
 export class MobileChildPageModel extends ChildPageModel {
   tabBarExtraContent = {
     left: <MobileBackButton />,
+    right: renderMobileAddTabButton(this),
   };
 
   renderBackButtonWhenTabsDisabled() {

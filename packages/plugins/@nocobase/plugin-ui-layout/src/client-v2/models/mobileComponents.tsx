@@ -118,13 +118,13 @@ export function useMobilePageClassName() {
       }
 
       .nb-ui-layout-mobile-tabs .ant-tabs-tab {
-        height: 48px;
+        height: 40px;
         margin: 0;
-        padding: 0 ${token.paddingSM}px;
+        padding: 0 ${token.paddingXS}px;
       }
 
       .nb-ui-layout-mobile-tabs .ant-tabs-tab + .ant-tabs-tab {
-        margin-left: ${token.marginXS}px;
+        margin-left: ${token.marginXXS}px;
       }
 
       .nb-ui-layout-mobile-tabs .ant-tabs-tab-btn {
@@ -132,13 +132,29 @@ export function useMobilePageClassName() {
         overflow: hidden;
         white-space: nowrap;
         text-overflow: ellipsis;
-        font-size: ${token.fontSizeLG}px;
+        font-size: ${token.fontSize}px;
       }
 
       .nb-ui-layout-mobile-tabs .ant-tabs-extra-content {
         display: inline-flex;
         align-items: center;
-        height: 48px;
+        height: 40px;
+      }
+
+      .nb-ui-layout-mobile-page-tab-add-wrapper {
+        display: inline-flex;
+        align-items: center;
+        margin-inline-end: ${token.paddingXS}px;
+      }
+
+      .nb-ui-layout-mobile-page-tab-add {
+        width: 32px;
+        min-width: 32px;
+        height: 32px;
+        padding: 0;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
       }
 
       .nb-ui-layout-mobile-tabs .ant-tabs-content-holder {
@@ -162,9 +178,9 @@ export function useMobilePageClassName() {
 
       .nb-ui-layout-mobile-back-button,
       .nb-ui-layout-mobile-back-spacer {
-        width: 44px;
-        height: 44px;
-        min-width: 44px;
+        width: 40px;
+        height: 40px;
+        min-width: 40px;
         border: 0;
         padding: 0;
         display: inline-flex;
@@ -177,7 +193,7 @@ export function useMobilePageClassName() {
 
       .nb-ui-layout-mobile-back-button {
         cursor: pointer;
-        font-size: 28px;
+        font-size: 22px;
       }
 
       .nb-ui-layout-mobile-back-button:hover,
@@ -195,11 +211,12 @@ export function useMobilePageClassName() {
       token.colorBorderSecondary,
       token.colorPrimary,
       token.colorText,
+      token.fontSize,
       token.fontSizeLG,
       token.fontWeightStrong,
       token.lineHeightLG,
-      token.marginXS,
-      token.paddingSM,
+      token.marginXXS,
+      token.paddingXS,
     ],
   );
 }

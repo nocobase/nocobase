@@ -1212,6 +1212,42 @@ describe('plugin-ui-layout mobile models', () => {
     expect(titlebarRule).not.toMatch(/border-bottom:/);
   });
 
+  it('should render compact mobile page tabs', async () => {
+    renderMobileLayoutWithRouteRepository({
+      listAccessible: () => [
+        {
+          id: 1,
+          type: NocoBaseDesktopRouteType.flowPage,
+          title: 'Home',
+          schemaUid: 'home-page',
+        },
+      ],
+    });
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /Home/ })).toBeInTheDocument();
+    });
+
+    const styleText = getDocumentStyleText();
+    const tabRule = styleText.match(/\.nb-ui-layout-mobile-tabs\s+\.ant-tabs-tab\s*\{[^}]+\}/)?.[0];
+    const tabButtonRule = styleText.match(/\.nb-ui-layout-mobile-tabs\s+\.ant-tabs-tab-btn\s*\{[^}]+\}/)?.[0];
+    const extraRule = styleText.match(/\.nb-ui-layout-mobile-tabs\s+\.ant-tabs-extra-content\s*\{[^}]+\}/)?.[0];
+    const backRule = styleText.match(
+      /[^{}]*nb-ui-layout-mobile-back-button[^{}]*nb-ui-layout-mobile-back-spacer\s*\{[^}]+\}/,
+    )?.[0];
+    const addTabRule = styleText.match(/\.nb-ui-layout-mobile-page-tab-add\s*\{[^}]+\}/)?.[0];
+
+    expect(tabRule).toMatch(/height:\s*40px/);
+    expect(tabRule).toMatch(/padding:\s*0 8px/);
+    expect(tabButtonRule).toMatch(/font-size:\s*14px/);
+    expect(extraRule).toMatch(/height:\s*40px/);
+    expect(backRule).toMatch(/width:\s*40px/);
+    expect(backRule).toMatch(/height:\s*40px/);
+    expect(addTabRule).toMatch(/width:\s*32px/);
+    expect(addTabRule).toMatch(/height:\s*32px/);
+    expect(addTabRule).toMatch(/padding:\s*0/);
+  });
+
   it('should stretch flow settings wrappers inside the mobile page content slot', async () => {
     renderMobileLayoutWithRouteRepository({
       listAccessible: () => [
@@ -1891,7 +1927,7 @@ describe('plugin-ui-layout mobile models', () => {
     ]);
   });
 
-  it('should keep default page tab add buttons in mobile tabs', () => {
+  it('should render mobile page tab add buttons as icon-only controls', () => {
     const flowEngine = new FlowEngine();
     flowEngine.context.defineProperty('t', {
       value: (key: string) => key,
@@ -1905,10 +1941,22 @@ describe('plugin-ui-layout mobile models', () => {
     const childPageModel = new MobileChildPageModel({ flowEngine } as never);
     const rootTabsElement = (rootPageModel.renderTabs() as React.ReactElement).props.children;
     const childTabsElement = (childPageModel.renderTabs() as React.ReactElement).props.children;
+    const rootAddTabWrapper = rootPageModel.tabBarExtraContent.right as React.ReactElement;
+    const childAddTabWrapper = childPageModel.tabBarExtraContent.right as React.ReactElement;
+    const rootAddTabButton = (rootAddTabWrapper.props.children as React.ReactElement).props
+      .children as React.ReactElement;
+    const childAddTabButton = (childAddTabWrapper.props.children as React.ReactElement).props
+      .children as React.ReactElement;
 
-    expect(rootPageModel.tabBarExtraContent.right).toBeUndefined();
     expect(childPageModel.tabBarExtraContent.left).toBeTruthy();
-    expect(childPageModel.tabBarExtraContent.right).toBeUndefined();
+    expect(rootAddTabWrapper.props.className).toBe('nb-ui-layout-mobile-page-tab-add-wrapper');
+    expect(childAddTabWrapper.props.className).toBe('nb-ui-layout-mobile-page-tab-add-wrapper');
+    expect(rootAddTabButton.props.className).toBe('nb-ui-layout-mobile-page-tab-add');
+    expect(childAddTabButton.props.className).toBe('nb-ui-layout-mobile-page-tab-add');
+    expect(rootAddTabButton.props['aria-label']).toBe('Add tab');
+    expect(childAddTabButton.props['aria-label']).toBe('Add tab');
+    expect(rootAddTabButton.props.children).toBeNull();
+    expect(childAddTabButton.props.children).toBeNull();
     expect(rootTabsElement.props.tabBarExtraContent.right).toBeTruthy();
     expect(childTabsElement.props.tabBarExtraContent.right).toBeTruthy();
   });
