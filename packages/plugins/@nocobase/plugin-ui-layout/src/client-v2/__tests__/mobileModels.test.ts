@@ -1189,6 +1189,29 @@ describe('plugin-ui-layout mobile models', () => {
     );
   });
 
+  it('should not render a divider between mobile titlebar and tabs', async () => {
+    renderMobileLayoutWithRouteRepository({
+      listAccessible: () => [
+        {
+          id: 1,
+          type: NocoBaseDesktopRouteType.flowPage,
+          title: 'Home',
+          schemaUid: 'home-page',
+        },
+      ],
+    });
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /Home/ })).toBeInTheDocument();
+    });
+
+    const styleText = getDocumentStyleText();
+    const titlebarRule = styleText.match(/\.nb-ui-layout-mobile-titlebar\s*\{[^}]+\}/)?.[0];
+
+    expect(titlebarRule).toBeTruthy();
+    expect(titlebarRule).not.toMatch(/border-bottom:/);
+  });
+
   it('should stretch flow settings wrappers inside the mobile page content slot', async () => {
     renderMobileLayoutWithRouteRepository({
       listAccessible: () => [

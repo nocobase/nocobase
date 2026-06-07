@@ -58,7 +58,6 @@ export function useMobilePageClassName() {
         min-height: 48px;
         padding-top: env(safe-area-inset-top);
         background: ${token.colorBgContainer};
-        border-bottom: 1px solid ${token.colorBorderSecondary};
       }
 
       .nb-ui-layout-mobile-title {
