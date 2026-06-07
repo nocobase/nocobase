@@ -4,7 +4,7 @@ NocoBase 2.1.0 之后，官方提供了基于 CLI 的安装和管理方式。你
 
 ## 安装 NocoBase CLI
 
-如果你已经装过，可以跳过这一步。
+仅在第一次安装 CLI 时执行。
 
 先全局安装 CLI：
 
@@ -12,6 +12,16 @@ NocoBase 2.1.0 之后，官方提供了基于 CLI 的安装和管理方式。你
 npm install -g @nocobase/cli@beta
 nb --version
 ```
+
+:::tip 建议先开启 session mode
+
+如果你会同时开多个终端、多个 shell，或者要让 AI Agent 和你自己并行操作，默认推荐先执行一次 [`nb session setup`](../../api/cli/session/setup.md)。这样每个会话都能维护自己的 `current env`，不容易互相影响。
+
+```bash
+nb session setup
+```
+
+:::
 
 如果你打算长期用中文界面，通常来说先把 locale 设好就够了：
 
@@ -31,15 +41,23 @@ nb config set update.policy auto
 nb config set update.policy off
 ```
 
-:::tip 建议先开启 session mode
-
-如果你会同时开多个终端、多个 shell，或者要让 AI Agent 和你自己并行操作，默认推荐先执行一次 [`nb session setup`](../../api/cli/session/setup.md)。这样每个会话都能维护自己的 `current env`，不容易互相影响。
+如果你准备把 NocoBase 部署到服务器上，并且希望从远程浏览器打开 `nb init --ui` 向导，建议先把 CLI 的默认 host 改成当前服务器 IP：
 
 ```bash
-nb session setup
+nb config set default-ui-host <server-ip>
+nb config set default-api-host <server-ip>
 ```
 
-:::
+将 `<server-ip>` 替换为当前服务器对你可访问的实际 IP。
+
+`nb config` 是 CLI 的全局配置。通常只需要设置一次，后续再次运行 `nb init --ui` 时会自动沿用这些默认值，不需要每次重复配置。
+
+通常来说：
+
+- `default-ui-host` 用于 `nb init --ui` 启动向导页面时的默认监听地址
+- `default-api-host` 用于新安装时默认生成的 API 地址
+
+如果是在服务器上部署，这两个值通常都应该改成当前服务器可访问的 IP，而不是继续使用默认的本机地址。
 
 ## 安装 NocoBase
 
@@ -49,6 +67,12 @@ nb session setup
 
 ```bash
 nb init --ui
+```
+
+如果你想给向导页面指定一个固定端口，可以直接加上 `--ui-port`，例如：
+
+```bash
+nb init --ui --ui-port 3000
 ```
 
 ![nb init UI 向导](https://static-docs.nocobase.com/2026-06-03-20-54-01.png)

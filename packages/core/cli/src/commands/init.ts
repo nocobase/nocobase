@@ -223,13 +223,13 @@ const installConnectionAuthTypePrompt: SelectPromptBlock = installConnectionOnly
 
 const installConnectionUsernamePrompt: TextPromptBlock = installConnectionOnly({
   ...(Install.rootUserPrompts.rootUsername as TextPromptBlock),
-  hidden: (values) => values.installAuthType !== 'basic' || values.skipAuth === true,
+  hidden: (values) => values.installAuthType === 'basic' || values.skipAuth === true,
   initialValue: (values) => normalizeConnectionString(values.rootUsername),
 }) as TextPromptBlock;
 
 const installConnectionPasswordPrompt: PasswordPromptBlock = installConnectionOnly({
   ...(Install.rootUserPrompts.rootPassword as PasswordPromptBlock),
-  hidden: (values) => values.installAuthType !== 'basic' || values.skipAuth === true,
+  hidden: (values) => values.installAuthType === 'basic' || values.skipAuth === true,
   initialValue: (values) => String(values.rootPassword ?? ''),
 }) as PasswordPromptBlock;
 

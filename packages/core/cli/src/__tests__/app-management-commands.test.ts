@@ -471,7 +471,7 @@ test('start enables daemon by default for npm/git envs', async () => {
   expect(mocks.succeedTask.mock.calls).toEqual([
     ['Local postinstall finished for "local".'],
     ['Client assets are ready for "local".'],
-    ['NocoBase is running for "local" at http://127.0.0.1:13000.'],
+    ['NocoBase is running for "local" at http://127.0.0.1:13000/.'],
   ]);
   expect(mocks.runLocalNocoBaseCommand.mock.calls.length).toBe(3);
   expect(mocks.runLocalNocoBaseCommand.mock.calls[0]?.[0]?.envName).toBe('local');
@@ -496,6 +496,34 @@ test('start enables daemon by default for npm/git envs', async () => {
     env: MANAGED_APP_PRODUCTION_ENV,
     stdio: 'ignore',
   });
+});
+
+test('start prints the resolved public app url for local envs', async () => {
+  const { default: Start } = await import('../commands/app/start.js');
+  mocks.resolveManagedAppApiBaseUrl.mockImplementation(() => 'http://192.168.1.10:13000/api');
+  mocks.resolveManagedAppRuntime.mockResolvedValue({
+    kind: 'local',
+    envName: 'local',
+    source: 'npm',
+    projectRoot: '/tmp/nocobase',
+    env: {
+      appPort: 13000,
+      envVars: { APP_PORT: '13000' },
+    },
+  });
+
+  const command = createCommandHarness({
+    flags: {
+      env: 'local',
+      quickstart: true,
+    },
+  });
+
+  await Start.prototype.run.call(command);
+
+  expect(mocks.succeedTask.mock.calls).toContainEqual([
+    'NocoBase is running for "local" at http://192.168.1.10:13000/.',
+  ]);
 });
 
 test('start keeps quickstart enabled by default as a hidden compatibility flag', async () => {
@@ -579,7 +607,7 @@ test('start reports when the local app is already running', async () => {
   await Start.prototype.run.call(command);
 
   expect(mocks.succeedTask.mock.calls).toEqual([
-    ['NocoBase is already running for "local" at http://127.0.0.1:13000.'],
+    ['NocoBase is already running for "local" at http://127.0.0.1:13000/.'],
   ]);
   expect(runCommand).not.toHaveBeenCalled();
   expect(mocks.runLocalNocoBaseCommand.mock.calls.length).toBe(0);
@@ -647,7 +675,7 @@ test('start supports --no-daemon for npm/git envs', async () => {
   await Start.prototype.run.call(command);
 
   expect(mocks.printInfo.mock.calls).toEqual([
-    ['Starting NocoBase for "local" in the foreground at http://127.0.0.1:13000. Press Ctrl+C to stop.'],
+    ['Starting NocoBase for "local" in the foreground at http://127.0.0.1:13000/. Press Ctrl+C to stop.'],
   ]);
   expect(mocks.startTask.mock.calls).toEqual([
     ['Running local postinstall for "local"...'],
@@ -701,7 +729,7 @@ test('start foreground mode explains how to restart when the local app is alread
 
   expect(mocks.printInfo.mock.calls).toEqual([
     [
-      'NocoBase is already running for "local" at http://127.0.0.1:13000. Use `nb app stop --env local` before starting it again in the foreground.',
+      'NocoBase is already running for "local" at http://127.0.0.1:13000/. Use `nb app stop --env local` before starting it again in the foreground.',
     ],
   ]);
   expect(mocks.runLocalNocoBaseCommand.mock.calls.length).toBe(0);
@@ -1112,7 +1140,7 @@ test('start warns when client extraction fails but still launches the app', asyn
   ]);
   expect(mocks.succeedTask.mock.calls).toEqual([
     ['Local postinstall finished for "local".'],
-    ['NocoBase is running for "local" at http://127.0.0.1:13000.'],
+    ['NocoBase is running for "local" at http://127.0.0.1:13000/.'],
   ]);
   expect(mocks.failTask.mock.calls).toEqual([['Failed to extract client assets for "local".']]);
   expect(mocks.printWarning.mock.calls).toEqual([
@@ -1184,6 +1212,42 @@ test('start recreates docker envs without treating the default daemon flag as ex
       containerName: 'nb-demo-docker-local-app',
       logHint: 'You can inspect startup logs with `nb app logs --env docker-local`.',
     });
+  } finally {
+    recreateSavedDockerApp.mockRestore();
+  }
+});
+
+test('start prints the resolved public app url for docker envs', async () => {
+  const appManagedResources = await import('../lib/app-managed-resources.js');
+  const recreateSavedDockerApp = vi.spyOn(appManagedResources, 'recreateSavedDockerApp').mockResolvedValue(undefined);
+  const { default: Start } = await import('../commands/app/start.js');
+  mocks.resolveManagedAppApiBaseUrl.mockImplementation(() => 'http://192.168.1.10:13000/console/api');
+  mocks.resolveManagedAppRuntime.mockResolvedValue({
+    kind: 'docker',
+    envName: 'docker-local',
+    source: 'docker',
+    containerName: 'nb-demo-docker-local-app',
+    workspaceName: 'nb-demo',
+    env: {
+      appPort: 13000,
+      config: {
+        appPublicPath: '/console/',
+      },
+    },
+  });
+
+  const command = createCommandHarness({
+    flags: {
+      env: 'docker-local',
+    },
+  });
+
+  try {
+    await Start.prototype.run.call(command);
+
+    expect(mocks.succeedTask.mock.calls).toContainEqual([
+      'NocoBase is running for "docker-local" at http://192.168.1.10:13000/console/.',
+    ]);
   } finally {
     recreateSavedDockerApp.mockRestore();
   }

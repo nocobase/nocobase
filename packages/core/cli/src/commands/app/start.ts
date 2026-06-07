@@ -30,6 +30,7 @@ import {
   ensureSavedLocalSource,
   recreateSavedDockerApp,
 } from '../../lib/app-managed-resources.js';
+import { resolveAppUrlFromApiBaseUrl } from '../env/shared.js';
 import { readManagedRuntimeEnvValues } from '../../lib/managed-env-file.js';
 import { run } from '../../lib/run-npm.js';
 import { announceTargetEnv, failTask, printInfo, printWarning, startTask, succeedTask } from '../../lib/ui.js';
@@ -125,6 +126,15 @@ function formatLocalClientExtractWarning(envName: string, message: string): stri
     'NocoBase will keep starting, but versioned client files for CDN or external distribution may be stale or missing.',
     `Details: ${message}`,
   ].join('\n');
+}
+
+function resolveDisplayAppUrl(apiBaseUrl: string | undefined, port?: string, appPublicPath?: string): string | undefined {
+  const resolvedFromApiBaseUrl = resolveAppUrlFromApiBaseUrl(apiBaseUrl);
+  if (resolvedFromApiBaseUrl) {
+    return resolvedFromApiBaseUrl;
+  }
+
+  return formatAppUrl(port, appPublicPath);
 }
 
 async function resolveDefaultLocalCdnBaseUrl(
@@ -293,11 +303,12 @@ export default class AppStart extends Command {
         onFailTask: failTask,
       });
 
-      const appUrl = formatAppUrl(
+      const apiBaseUrl = resolveManagedAppApiBaseUrl(runtime);
+      const appUrl = resolveDisplayAppUrl(
+        apiBaseUrl,
         runtime.env.appPort === undefined || runtime.env.appPort === null ? undefined : String(runtime.env.appPort),
         runtime.env.config?.appPublicPath,
       );
-      const apiBaseUrl = resolveManagedAppApiBaseUrl(runtime);
       startTask(`Recreating the Docker app container for "${runtime.envName}"...`);
       try {
         await run('docker', ['rm', '-f', runtime.containerName], {
@@ -363,10 +374,10 @@ export default class AppStart extends Command {
       runtime.env.appPort !== undefined && runtime.env.appPort !== null
         ? String(runtime.env.appPort).trim()
         : undefined;
-    const appUrl = formatAppUrl(effectivePort, runtime.env.config?.appPublicPath);
     const apiBaseUrl = resolveManagedAppApiBaseUrl(runtime, {
       portOverride: effectivePort,
     });
+    const appUrl = resolveDisplayAppUrl(apiBaseUrl, effectivePort, runtime.env.config?.appPublicPath);
     let defaultCdnBaseUrl: string | undefined;
 
     if (await isAppReady(apiBaseUrl, { requestTimeoutMs: 1_500 })) {

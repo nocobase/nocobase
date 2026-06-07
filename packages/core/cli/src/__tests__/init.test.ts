@@ -615,6 +615,71 @@ test('nb init uses the final connection step values for a new app flow', async (
   expect(installArgv).toContain('secret-token');
 });
 
+test('nb init hides duplicate basic auth fields in the final connection step for a new app flow', async () => {
+  const { default: Init } = await import('../commands/init.js');
+
+  mocks.runPromptCatalogWebUI.mockResolvedValue({
+    appName: 'demoapp',
+    hasNocobase: 'no',
+    lang: 'en-US',
+    appRootPath: './apps/demoapp',
+    appPort: '13080',
+    storagePath: './storage/demoapp',
+    source: 'git',
+    version: 'beta',
+    gitUrl: 'https://github.com/nocobase/nocobase.git',
+    outputDir: './apps/demoapp',
+    builtinDb: true,
+    dbDialect: 'postgres',
+    rootUsername: 'admin',
+    rootEmail: 'admin@nocobase.com',
+    rootPassword: 'admin123',
+    rootNickname: 'Admin',
+    installApiBaseUrl: 'https://demo.example.com/api',
+    installAuthType: 'basic',
+  });
+  mocks.inspectSkillsStatus.mockResolvedValue({ installed: false });
+  mocks.installNocoBaseSkills.mockResolvedValue({ action: 'installed', status: {} });
+  mocks.runPromptCatalog.mockImplementation(async (_catalog, options) => options.values ?? {});
+
+  const runCommand = vi.fn(async () => undefined);
+  const command = Object.assign(Object.create(Init.prototype), {
+    parse: vi.fn(async () => ({
+      flags: {
+        ui: true,
+        yes: false,
+        'ui-host': '127.0.0.1',
+        'ui-port': 0,
+      },
+    })),
+    config: { runCommand },
+    log: mocks.log,
+    error: mocks.error,
+    exit: (code?: number) => {
+      throw new Error(`unexpected exit: ${code ?? 'unknown'}`);
+    },
+  });
+
+  await Init.prototype.run.call(command);
+
+  const webUiOptions = mocks.runPromptCatalogWebUI.mock.calls[0]?.[0];
+  const finalCatalog = webUiOptions?.stages[6]?.catalog as Record<string, { hidden?: (values: Record<string, unknown>) => boolean }>;
+  expect(finalCatalog.installUsername.hidden?.({ installAuthType: 'basic', skipAuth: false })).toBe(true);
+  expect(finalCatalog.installPassword.hidden?.({ installAuthType: 'basic', skipAuth: false })).toBe(true);
+  expect(mocks.upsertEnv.mock.calls[0]?.[1]).toMatchObject({
+    apiBaseUrl: 'https://demo.example.com/api',
+    authType: 'basic',
+    authUsername: 'admin',
+  });
+  const installArgv = runCommand.mock.calls.find(([name]) => name === 'install')?.[1] as string[];
+  expect(installArgv).toContain('--auth-type');
+  expect(installArgv).toContain('basic');
+  expect(installArgv).toContain('--root-username');
+  expect(installArgv).toContain('admin');
+  expect(installArgv).toContain('--root-password');
+  expect(installArgv).toContain('admin123');
+});
+
 test('nb init keeps prompted dbUnderscored when preset values still contain false', async () => {
   const { default: Init } = await import('../commands/init.js');
 

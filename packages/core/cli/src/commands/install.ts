@@ -56,6 +56,7 @@ import {
 } from '../lib/env-paths.js';
 import Download, { DownloadParsedFlags, defaultDockerRegistryForLang, type DownloadCommandResult } from './download.js';
 import EnvAdd from './env/add.ts';
+import { resolveAppUrlFromApiBaseUrl } from './env/shared.ts';
 
 const DEFAULT_INSTALL_ENV_NAME = 'local';
 const DEFAULT_INSTALL_LANG = 'en-US';
@@ -101,6 +102,10 @@ function buildInstallApiBaseUrl(
   const appPort = String(appResults.appPort ?? DEFAULT_INSTALL_APP_PORT).trim() || DEFAULT_INSTALL_APP_PORT;
   const appPublicPath = String(appResults.appPublicPath ?? '').trim();
   return `http://${defaultApiHost}:${appPort}${appendAppPublicPath(appPublicPath, 'api', { trailingSlash: false })}`;
+}
+
+function formatInstallDisplayUrl(apiBaseUrl: string): string {
+  return resolveAppUrlFromApiBaseUrl(apiBaseUrl) || apiBaseUrl.replace(/\/api\/?$/, '');
 }
 const APP_HEALTH_CHECK_INTERVAL_MS = 2_000;
 const APP_HEALTH_CHECK_TIMEOUT_MS = 600_000;
@@ -3119,6 +3124,7 @@ export default class Install extends Command {
     const parsed = {
       ...(flags as unknown as InstallParsedFlags & DownloadParsedFlags),
     } as InstallParsedFlags & DownloadParsedFlags;
+    const defaultApiHost = await resolveDefaultApiHost();
     if (parsed['skip-auth'] && (parsed['access-token'] !== undefined || parsed.token !== undefined)) {
       this.error('--skip-auth cannot be used with --access-token or --token.');
     }
@@ -3264,13 +3270,19 @@ export default class Install extends Command {
         Install.resolveApiBaseUrl({
           appResults,
           envAddResults,
+          defaultApiHost,
         }),
         {
           containerName: dockerAppPlan?.containerName,
           verbose: parsed.verbose,
         },
       );
-      printInfo(`NocoBase is ready at http://127.0.0.1:${dockerAppPlan?.appPort ?? localAppPlan?.appPort}`);
+      const displayApiBaseUrl = Install.resolveApiBaseUrl({
+        appResults,
+        envAddResults,
+        defaultApiHost,
+      });
+      printInfo(`NocoBase is ready at ${formatInstallDisplayUrl(displayApiBaseUrl)}`);
     }
 
     if (dockerAppPlan || localAppPlan || builtinDbPlan) {
