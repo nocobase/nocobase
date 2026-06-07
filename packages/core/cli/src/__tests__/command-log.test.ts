@@ -94,7 +94,12 @@ test('command log initialization cleans up dated directories older than configur
   oldDate.setUTCDate(oldDate.getUTCDate() - 20);
   const keepDate = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
   keepDate.setUTCDate(keepDate.getUTCDate() - 13);
-  const formatDateDir = (date: Date) => date.toISOString().slice(0, 10);
+  const formatDateDir = (date: Date) => {
+    const year = String(date.getFullYear());
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
   const oldDirName = formatDateDir(oldDate);
   const keepDirName = formatDateDir(keepDate);
   process.env.NB_CLI_LOG_DIR = logRoot;

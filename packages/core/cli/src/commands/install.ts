@@ -1406,6 +1406,7 @@ export default class Install extends Command {
     const appPort = Install.toOptionalPromptString(config.appPort);
     const storagePath = Install.toOptionalPromptString(config.storagePath);
     const appPublicPath = Install.toOptionalPromptString(config.appPublicPath);
+    const apiBaseUrl = Install.toOptionalPromptString(config.apiBaseUrl);
     const downloadVersion = Install.toOptionalPromptString(config.downloadVersion);
     const dockerRegistry = Install.toOptionalPromptString(config.dockerRegistry);
     const dockerPlatform = Install.toOptionalPromptString(config.dockerPlatform);
@@ -1475,6 +1476,9 @@ export default class Install extends Command {
     };
 
     const envAddPreset: PromptInitialValues = {};
+    if (apiBaseUrl) {
+      envAddPreset.apiBaseUrl = apiBaseUrl;
+    }
     if (savedAuthType === 'token') {
       envAddPreset.authType = 'token';
       if (Install.toOptionalPromptString(auth.accessToken)) {
