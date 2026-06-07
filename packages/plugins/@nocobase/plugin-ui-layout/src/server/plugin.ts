@@ -36,6 +36,47 @@ function getDesktopRouteLayoutFilter(layoutUid: string) {
   };
 }
 
+function getRouteValue(route: unknown, key: string) {
+  if (!route || typeof route !== 'object') {
+    return;
+  }
+
+  const maybeModel = route as { get?: (field: string) => unknown };
+  if (typeof maybeModel.get === 'function') {
+    return maybeModel.get(key);
+  }
+
+  return (route as Record<string, unknown>)[key];
+}
+
+function collectRouteIds(routes: unknown[], ids: Set<string>) {
+  for (const route of routes) {
+    const id = getRouteValue(route, 'id');
+    if (id !== null && id !== undefined) {
+      ids.add(String(id));
+    }
+
+    const children = getRouteValue(route, 'children');
+    if (Array.isArray(children)) {
+      collectRouteIds(children, ids);
+    }
+  }
+}
+
+function removeNestedRootRoutes(routes: unknown) {
+  if (!Array.isArray(routes)) {
+    return routes;
+  }
+
+  const routeIds = new Set<string>();
+  collectRouteIds(routes, routeIds);
+
+  return routes.filter((route) => {
+    const parentId = getRouteValue(route, 'parentId');
+    return parentId === null || parentId === undefined || !routeIds.has(String(parentId));
+  });
+}
+
 async function addDesktopRouteLayoutFilter(ctx: ResourcerContext, next: () => Promise<void>) {
   const layoutUid = normalizeLayoutUid(ctx.action?.params.layout);
 
@@ -44,6 +85,8 @@ async function addDesktopRouteLayoutFilter(ctx: ResourcerContext, next: () => Pr
   });
 
   await next();
+
+  ctx.body = removeNestedRootRoutes(ctx.body);
 }
 
 export class PluginUiLayoutServer extends Plugin {

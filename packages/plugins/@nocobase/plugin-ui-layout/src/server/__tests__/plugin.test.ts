@@ -220,4 +220,154 @@ describe('plugin-ui-layout server', () => {
     expect(routeTitleSets[0]).toEqual(expect.arrayContaining([unassignedRoute.get('title'), adminRoute.get('title')]));
     expect(routeTitleSets[0]).not.toContain(mobileRoute.get('title'));
   });
+
+  it('should filter root routes by layout while preserving tree sort and caller filters', async () => {
+    app = await createMockServer({
+      registerActions: true,
+      acl: true,
+      plugins: [
+        'error-handler',
+        'users',
+        'auth',
+        'client',
+        'field-sort',
+        'acl',
+        'ui-schema-storage',
+        'system-settings',
+        'data-source-main',
+        'data-source-manager',
+        'ui-layout',
+      ],
+    });
+
+    const adminLayout = await app.db.getRepository('uiLayouts').findOne({
+      filter: {
+        uid: DEFAULT_ADMIN_UI_LAYOUT.uid,
+      },
+    });
+    if (!adminLayout) {
+      throw new Error('Default AdminLayout ui layout should exist.');
+    }
+    const mobileLayout = await app.db.getRepository('uiLayouts').create({
+      values: {
+        uid: 'mobile-layout-root-filter-test',
+        layoutType: 'mobile',
+        routeName: 'mobile-root-filter-test',
+        routePath: '/v/mobile-root-filter-test',
+        authCheck: true,
+        enabled: true,
+      },
+    });
+
+    const mobileOnlyRoute = await app.db.getRepository('desktopRoutes').create({
+      values: {
+        type: 'flowPage',
+        title: 'DATA-ROUTE-MOBILE-ONLY',
+        schemaUid: 'layout-root-filter-mobile-only',
+        hidden: false,
+        sort: 10,
+      },
+    });
+    const adminOnlyRoute = await app.db.getRepository('desktopRoutes').create({
+      values: {
+        type: 'flowPage',
+        title: 'DATA-ROUTE-ADMIN-ONLY',
+        schemaUid: 'layout-root-filter-admin-only',
+        hidden: false,
+        sort: 20,
+      },
+    });
+    const sharedRoute = await app.db.getRepository('desktopRoutes').create({
+      values: {
+        type: 'flowPage',
+        title: 'DATA-ROUTE-SHARED',
+        schemaUid: 'layout-root-filter-shared',
+        hidden: false,
+        sort: 30,
+      },
+    });
+    const hiddenSharedRoute = await app.db.getRepository('desktopRoutes').create({
+      values: {
+        type: 'flowPage',
+        title: 'DATA-ROUTE-SHARED-HIDDEN',
+        schemaUid: 'layout-root-filter-shared-hidden',
+        hidden: true,
+        sort: 40,
+      },
+    });
+    const sharedChildRoute = await app.db.getRepository('desktopRoutes').create({
+      values: {
+        type: 'tabs',
+        title: 'DATA-ROUTE-SHARED-CHILD',
+        parentId: sharedRoute.get('id'),
+        hidden: false,
+        sort: 1,
+      },
+    });
+
+    await app.db.getRepository('desktopRoutes.uiLayouts', mobileOnlyRoute.get('id')).set({
+      tk: [mobileLayout.get('uid')],
+    });
+    await app.db.getRepository('desktopRoutes.uiLayouts', adminOnlyRoute.get('id')).set({
+      tk: [adminLayout.get('uid')],
+    });
+    await app.db.getRepository('desktopRoutes.uiLayouts', sharedRoute.get('id')).set({
+      tk: [adminLayout.get('uid'), mobileLayout.get('uid')],
+    });
+    await app.db.getRepository('desktopRoutes.uiLayouts', hiddenSharedRoute.get('id')).set({
+      tk: [adminLayout.get('uid'), mobileLayout.get('uid')],
+    });
+    await app.db.getRepository('desktopRoutes.uiLayouts', sharedChildRoute.get('id')).set({
+      tk: [adminLayout.get('uid'), mobileLayout.get('uid')],
+    });
+
+    const rootUser = await app.db.getRepository('users').findOne({
+      filter: {
+        'roles.name': 'root',
+      },
+    });
+    const agent = await app.agent().login(rootUser);
+    const visibleFilter = {
+      hidden: false,
+      id: [adminOnlyRoute.get('id'), mobileOnlyRoute.get('id'), sharedRoute.get('id'), hiddenSharedRoute.get('id')],
+    };
+
+    const [adminResponse, mobileResponse] = await Promise.all([
+      agent.get('/desktopRoutes:listAccessible').query({
+        layout: DEFAULT_ADMIN_UI_LAYOUT.uid,
+        filter: visibleFilter,
+      }),
+      agent.get('/desktopRoutes:listAccessible').query({
+        layout: mobileLayout.get('uid'),
+        filter: visibleFilter,
+      }),
+    ]);
+    const [adminTreeResponse, mobileTreeResponse] = await Promise.all([
+      agent.get('/desktopRoutes:listAccessible').query({
+        layout: DEFAULT_ADMIN_UI_LAYOUT.uid,
+      }),
+      agent.get('/desktopRoutes:listAccessible').query({
+        layout: mobileLayout.get('uid'),
+      }),
+    ]);
+    const adminTitles = adminResponse.body.data.map((route) => route.title);
+    const mobileTitles = mobileResponse.body.data.map((route) => route.title);
+    const adminTreeTitles = adminTreeResponse.body.data.map((route) => route.title);
+    const mobileTreeTitles = mobileTreeResponse.body.data.map((route) => route.title);
+
+    expect(adminResponse.status).toBe(200);
+    expect(mobileResponse.status).toBe(200);
+    expect(adminTreeResponse.status).toBe(200);
+    expect(mobileTreeResponse.status).toBe(200);
+    expect(adminTitles).toEqual(['DATA-ROUTE-ADMIN-ONLY', 'DATA-ROUTE-SHARED']);
+    expect(mobileTitles).toEqual(['DATA-ROUTE-MOBILE-ONLY', 'DATA-ROUTE-SHARED']);
+    expect(adminTitles).not.toContain('DATA-ROUTE-MOBILE-ONLY');
+    expect(mobileTitles).not.toContain('DATA-ROUTE-ADMIN-ONLY');
+    expect(adminTitles).not.toContain('DATA-ROUTE-SHARED-HIDDEN');
+    expect(mobileTitles).not.toContain('DATA-ROUTE-SHARED-HIDDEN');
+    expect(adminTreeTitles).toEqual(['DATA-ROUTE-ADMIN-ONLY', 'DATA-ROUTE-SHARED', 'DATA-ROUTE-SHARED-HIDDEN']);
+    expect(mobileTreeTitles).toEqual(['DATA-ROUTE-MOBILE-ONLY', 'DATA-ROUTE-SHARED', 'DATA-ROUTE-SHARED-HIDDEN']);
+    expect(adminTreeTitles).not.toContain('DATA-ROUTE-SHARED-CHILD');
+    expect(mobileTreeTitles).not.toContain('DATA-ROUTE-SHARED-CHILD');
+  });
 });
