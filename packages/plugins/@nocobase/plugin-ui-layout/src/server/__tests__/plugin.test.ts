@@ -173,6 +173,23 @@ describe('plugin-ui-layout server', () => {
     expect(savedRoute?.get('roles').map((item) => item.get('name'))).toContain('layout-relation-role');
     expect(savedRoute?.get('children').map((item) => item.get('title'))).toContain('layout relation child');
     expect(savedRoute?.get('parent').get('title')).toBe('layout relation parent');
+
+    const createdRoute = await app.db.getRepository('desktopRoutes').create({
+      values: {
+        type: 'link',
+        title: 'layout relation create payload',
+        schemaUid: 'layout-relation-create-payload',
+        uiLayouts: [mobileLayout.get('uid')],
+      },
+    });
+    const createdRouteWithLayout = await app.db.getRepository('desktopRoutes').findOne({
+      filterByTk: createdRoute.get('id'),
+      appends: ['uiLayouts'],
+    });
+
+    expect(createdRouteWithLayout?.get('uiLayouts').map((layout) => layout.get('uid'))).toEqual([
+      mobileLayout.get('uid'),
+    ]);
   });
 
   it('should default listAccessible layout filtering to AdminLayout', async () => {

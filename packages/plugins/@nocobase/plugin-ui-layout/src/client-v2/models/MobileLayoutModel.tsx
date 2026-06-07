@@ -101,6 +101,10 @@ type MobileHomeAddMenuItem = {
   label: string;
   icon: ReactNode;
 };
+
+type MobileDesktopRouteCreateValues = NocoBaseDesktopRoute & {
+  uiLayouts?: string[];
+};
 type MobileTabSettingsMenuKey = 'edit' | 'linkageRules' | 'copyUid' | 'delete';
 type MobileTabSettingsMenuItem = {
   key: MobileTabSettingsMenuKey;
@@ -527,6 +531,16 @@ export function createMobileDesktopRouteCreationValues(
     },
     activeRouteKey: pageSchemaUid,
   };
+}
+
+function getMobileLayoutUid(model: MobileLayoutModel) {
+  const layoutUid = model.layout?.uid;
+  return typeof layoutUid === 'string' && layoutUid.trim() ? layoutUid : undefined;
+}
+
+function withCurrentUiLayout(route: NocoBaseDesktopRoute, model: MobileLayoutModel): MobileDesktopRouteCreateValues {
+  const layoutUid = getMobileLayoutUid(model);
+  return layoutUid ? { ...route, uiLayouts: [layoutUid] } : route;
 }
 
 function useIsDesktopPreview(screenMD: number) {
@@ -1097,7 +1111,9 @@ const MobileHomePlaceholder = observer(
           throw new Error('Route repository is unavailable.');
         }
 
-        await routeRepository.createRoute(creationValues.route, { refreshAfterMutation: false });
+        await routeRepository.createRoute(withCurrentUiLayout(creationValues.route, model), {
+          refreshAfterMutation: false,
+        });
         await refreshMobileLayoutAccessibleRoutes(model, routeRepository);
         if (configuringTabType === 'page') {
           setActiveRouteKey(creationValues.activeRouteKey);

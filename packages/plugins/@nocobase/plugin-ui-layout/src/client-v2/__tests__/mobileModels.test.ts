@@ -2948,7 +2948,7 @@ describe('plugin-ui-layout mobile models', () => {
 
   it('should create a link tab without changing the current flow page active state', async () => {
     const listeners = new Set<() => void>();
-    let routes: NocoBaseDesktopRoute[] = [
+    const initialRoutes: NocoBaseDesktopRoute[] = [
       {
         id: 1,
         type: NocoBaseDesktopRouteType.flowPage,
@@ -2956,29 +2956,53 @@ describe('plugin-ui-layout mobile models', () => {
         schemaUid: 'home-page',
       },
     ];
-    const createRoute = vi.fn(async (route: NocoBaseDesktopRoute) => {
-      routes = [
-        ...routes,
-        {
-          id: 2,
-          ...route,
+    const routesAfterCreate: NocoBaseDesktopRoute[] = [
+      ...initialRoutes,
+      {
+        id: 2,
+        type: NocoBaseDesktopRouteType.link,
+        title: 'Docs',
+        schemaUid: 'docs-link',
+        icon: 'LinkOutlined',
+        options: {
+          href: 'https://docs.example.com',
+          openInNewWindow: true,
         },
-      ];
+      },
+    ];
+    let cachedRoutes = initialRoutes;
+    let created = false;
+    const createRoute = vi.fn(async () => {
+      created = true;
+    });
+    const api = {
+      request: vi.fn(async () => ({
+        data: {
+          data: created ? routesAfterCreate : initialRoutes,
+        },
+      })),
+    };
+    const setRoutes = vi.fn((routes: NocoBaseDesktopRoute[]) => {
+      cachedRoutes = routes;
       listeners.forEach((listener) => listener());
     });
 
     window.localStorage.setItem(FLOW_SETTINGS_PREFERENCE_STORAGE_KEY, '1');
 
-    renderMobileLayoutWithRouteRepository({
-      createRoute,
-      listAccessible: () => routes,
-      subscribe: (listener) => {
-        listeners.add(listener);
+    renderMobileLayoutWithRouteRepository(
+      {
+        createRoute,
+        listAccessible: () => cachedRoutes,
+        setRoutes,
+        subscribe: (listener) => {
+          listeners.add(listener);
+        },
+        unsubscribe: (listener) => {
+          listeners.delete(listener);
+        },
       },
-      unsubscribe: (listener) => {
-        listeners.delete(listener);
-      },
-    });
+      { api },
+    );
 
     await waitFor(() => {
       expect(screen.getByRole('button', { name: /Home/ })).toHaveAttribute('aria-current', 'page');
@@ -3002,14 +3026,26 @@ describe('plugin-ui-layout mobile models', () => {
           type: NocoBaseDesktopRouteType.link,
           title: 'Docs',
           icon: expect.stringMatching(/link/i),
+          uiLayouts: ['mobile-layout-model-render-test'],
           options: expect.objectContaining({
             href: 'https://docs.example.com',
             openInNewWindow: true,
           }),
         }),
-        { refreshAfterMutation: false },
+        {
+          refreshAfterMutation: false,
+        },
       );
     });
+    expect(api.request).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        url: '/desktopRoutes:listAccessible',
+        params: expect.objectContaining({
+          layout: 'mobile-layout-model-render-test',
+        }),
+      }),
+    );
+    expect(setRoutes).toHaveBeenLastCalledWith(routesAfterCreate);
     await waitFor(() => {
       expect(screen.getByRole('button', { name: /Docs/ })).toBeInTheDocument();
     });
