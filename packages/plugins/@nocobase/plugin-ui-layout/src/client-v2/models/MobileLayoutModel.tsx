@@ -902,6 +902,10 @@ function isMobileMenuItemModelLike(model: FlowModel): model is MobileMenuItemMod
   return typeof (model as MobileMenuItemModelLike).getRoute === 'function';
 }
 
+async function rerenderMobileMenuItems(model: { subModels: MobileLayoutMenuStructure['subModels'] }) {
+  await Promise.all((model.subModels.menuItems || []).map((item) => item.rerender()));
+}
+
 function normalizeRenderableMobileTabItems(tabItems: MobileTabNode[], designModeEnabled: boolean) {
   const renderableTabItems = designModeEnabled ? tabItems : tabItems.filter((item) => !item.model.hidden);
 
@@ -1166,6 +1170,15 @@ const MobileHomePlaceholder = observer(
     useLayoutEffect(() => {
       model.syncMenuRoutes(accessibleDesktopRoutes, { includeHidden: designModeEnabled });
       setMenuRouteVersion((version) => version + 1);
+      const rerenderMenuItems = async () => {
+        try {
+          await rerenderMobileMenuItems(model);
+        } catch (error) {
+          console.error('[NocoBase] plugin-ui-layout failed to rerender mobile menu linkage rules.', error);
+        }
+      };
+
+      rerenderMenuItems();
     }, [accessibleDesktopRoutes, designModeEnabled, model]);
 
     useEffect(() => {

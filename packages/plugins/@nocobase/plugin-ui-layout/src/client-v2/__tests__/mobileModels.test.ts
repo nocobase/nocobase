@@ -1030,6 +1030,119 @@ describe('plugin-ui-layout mobile models', () => {
     });
   });
 
+  it('should rerun mobile menu linkage rules when design mode is toggled repeatedly', async () => {
+    let matchesLinkageRule = true;
+    const routes: NocoBaseDesktopRoute[] = [
+      {
+        id: 1,
+        type: NocoBaseDesktopRouteType.flowPage,
+        title: 'Home',
+        schemaUid: 'home-page',
+        sort: 10,
+      },
+      {
+        id: 2,
+        type: NocoBaseDesktopRouteType.flowPage,
+        title: 'Conditionally hidden',
+        schemaUid: 'conditionally-hidden-page',
+        sort: 20,
+        options: {
+          hasPersistedMenuInstanceFlow: true,
+        },
+      },
+    ];
+    const hiddenMenuModelUid = getMobileMenuItemUid('mobile-layout-model-render-test', routes[1], 1);
+
+    renderMobileLayoutWithRouteRepository(
+      {
+        listAccessible: () => routes,
+        ensureAccessibleLoaded: vi.fn(async () => routes),
+      },
+      {
+        beforeRender: (model) => {
+          model.flowEngine.context.app.jsonLogic.apply = () => matchesLinkageRule;
+          model.flowEngine.setModelRepository({
+            findOne: vi.fn(async ({ uid }: { uid: string }) =>
+              uid === hiddenMenuModelUid
+                ? {
+                    uid,
+                    use: 'MobileLayoutMenuItemModel',
+                    stepParams: {
+                      mobileMenuSettings: {
+                        linkageRules: {
+                          value: [
+                            {
+                              key: 'r1',
+                              title: 'Conditionally hide mobile tab',
+                              enable: true,
+                              condition: {
+                                logic: '$and',
+                                items: [{ path: 'visible', operator: '$eq', value: true }],
+                              },
+                              actions: [
+                                {
+                                  key: 'a1',
+                                  name: 'linkageSetMenuItemProps',
+                                  params: { value: 'hidden' },
+                                },
+                              ],
+                            },
+                          ],
+                        },
+                      },
+                    },
+                  }
+                : null,
+            ),
+          } as never);
+        },
+      },
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText('Home')).toBeInTheDocument();
+      expect(screen.queryByText('Conditionally hidden')).not.toBeInTheDocument();
+      expect(document.querySelectorAll('.nb-ui-layout-mobile-home-tabbar-item-shell')).toHaveLength(1);
+    });
+
+    await act(async () => {
+      writeMobileFlowSettingsPreference(true);
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText('Conditionally hidden')).toBeInTheDocument();
+      expect(document.querySelectorAll('[data-nb-hidden-mobile-tab="true"]')).toHaveLength(1);
+    });
+
+    await act(async () => {
+      writeMobileFlowSettingsPreference(false);
+    });
+
+    await waitFor(() => {
+      expect(screen.queryByText('Conditionally hidden')).not.toBeInTheDocument();
+      expect(document.querySelectorAll('.nb-ui-layout-mobile-home-tabbar-item-shell')).toHaveLength(1);
+    });
+
+    matchesLinkageRule = false;
+    await act(async () => {
+      writeMobileFlowSettingsPreference(true);
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText('Conditionally hidden')).toBeInTheDocument();
+      expect(document.querySelectorAll('[data-nb-hidden-mobile-tab="true"]')).toHaveLength(0);
+    });
+
+    await act(async () => {
+      writeMobileFlowSettingsPreference(false);
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText('Conditionally hidden')).toBeInTheDocument();
+      expect(document.querySelectorAll('.nb-ui-layout-mobile-home-tabbar-item-shell')).toHaveLength(2);
+    });
+  });
+
   it('should keep linkage-hidden mobile tabs hidden after route-hidden is cleared', async () => {
     window.localStorage.setItem(FLOW_SETTINGS_PREFERENCE_STORAGE_KEY, '1');
 
