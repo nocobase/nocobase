@@ -18,13 +18,16 @@ import {
   type PromptBlock,
   type PromptCatalogValues,
   type PromptInitialValues,
+  type PasswordPromptBlock,
   type PromptValue,
   type PromptsCatalog,
+  type SelectPromptBlock,
   type TextPromptBlock,
   runPromptCatalog,
 } from '../lib/prompt-catalog.ts';
 import { applyCliLocale, localeText, translateCli } from '../lib/cli-locale.ts';
 import { resolveDefaultConfigScope } from '../lib/cli-home.js';
+import { resolveDefaultApiHost, resolveDefaultUiHost } from '../lib/cli-config.js';
 import {
   areConfiguredPathsEquivalent,
   deriveConfiguredSourcePath,
@@ -112,6 +115,10 @@ function installNewOnly(def: PromptBlock): PromptBlock {
   return withExtraHidden(def, (values) => !isInstallNewSetupMode(values));
 }
 
+function installConnectionOnly(def: PromptBlock): PromptBlock {
+  return withExtraHidden(def, (values) => !isInstallNewSetupMode(values));
+}
+
 function installLikeDownloadExecutionOnly(def: PromptBlock): PromptBlock {
   return withExtraHidden(def, (values) => !isInstallLikeSetupMode(values) || values.skipDownload === true);
 }
@@ -187,6 +194,49 @@ function resolveManagedAppKey(value: unknown): string {
 function resolveManagedTimeZone(value: unknown): string {
   return optionalInitString(value) ?? (Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC');
 }
+
+function normalizeConnectionString(value: unknown): string {
+  return String(value ?? '').trim();
+}
+
+function deriveInstallConnectionApiBaseUrl(
+  values: PromptCatalogValues | Record<string, unknown>,
+  defaultApiHost = '127.0.0.1',
+): string {
+  const appPort = normalizeConnectionString(values.appPort);
+  return appPort ? `http://${defaultApiHost}:${appPort}/api` : DEFAULT_INIT_API_BASE_URL;
+}
+
+function createInstallConnectionApiBaseUrlPrompt(defaultApiHost: string): TextPromptBlock {
+  return installConnectionOnly({
+  type: 'text',
+  message: initText('prompts.apiBaseUrl.message'),
+  placeholder: initText('prompts.apiBaseUrl.placeholder'),
+  required: true,
+    initialValue: (values) => deriveInstallConnectionApiBaseUrl(values, defaultApiHost),
+  }) as TextPromptBlock;
+}
+
+const installConnectionAuthTypePrompt: SelectPromptBlock = installConnectionOnly({
+  ...(EnvAdd.prompts.authType as SelectPromptBlock),
+}) as SelectPromptBlock;
+
+const installConnectionUsernamePrompt: TextPromptBlock = installConnectionOnly({
+  ...(Install.rootUserPrompts.rootUsername as TextPromptBlock),
+  hidden: (values) => values.installAuthType !== 'basic' || values.skipAuth === true,
+  initialValue: (values) => normalizeConnectionString(values.rootUsername),
+}) as TextPromptBlock;
+
+const installConnectionPasswordPrompt: PasswordPromptBlock = installConnectionOnly({
+  ...(Install.rootUserPrompts.rootPassword as PasswordPromptBlock),
+  hidden: (values) => values.installAuthType !== 'basic' || values.skipAuth === true,
+  initialValue: (values) => String(values.rootPassword ?? ''),
+}) as PasswordPromptBlock;
+
+const installConnectionAccessTokenPrompt: TextPromptBlock = installConnectionOnly({
+  ...(EnvAdd.prompts.accessToken as TextPromptBlock),
+  hidden: (values) => values.installAuthType !== 'token' || values.skipAuth === true,
+}) as TextPromptBlock;
 
 function shouldAllowExistingInitEnv(): boolean {
   return argvHasToken(process.argv.slice(2), ['--force', '-f']);
@@ -428,11 +478,19 @@ Prompt modes:
     rootEmail: installNewOnly(Install.rootUserPrompts.rootEmail),
     rootPassword: installNewOnly(Install.rootUserPrompts.rootPassword),
     rootNickname: installNewOnly(Install.rootUserPrompts.rootNickname),
+    installAuthType: installConnectionAuthTypePrompt,
+    installUsername: installConnectionUsernamePrompt,
+    installPassword: installConnectionPasswordPrompt,
+    installAccessToken: installConnectionAccessTokenPrompt,
   };
 
-  private buildPromptCatalog(flags: { 'skip-auth'?: boolean }): PromptsCatalog {
+  private buildPromptCatalog(
+    flags: { 'skip-auth'?: boolean },
+    options: { defaultApiHost: string },
+  ): PromptsCatalog {
     const prompts: PromptsCatalog = {
       ...Init.prompts,
+      installApiBaseUrl: createInstallConnectionApiBaseUrlPrompt(options.defaultApiHost),
     };
 
     if (flags['skip-auth']) {
@@ -448,10 +506,25 @@ Prompt modes:
         ...EnvAdd.prompts.password,
         hidden: () => true,
       };
+      const installAccessTokenPrompt: TextPromptBlock = {
+        ...installConnectionAccessTokenPrompt,
+        hidden: () => true,
+      };
+      const installUsernamePrompt: TextPromptBlock = {
+        ...installConnectionUsernamePrompt,
+        hidden: () => true,
+      };
+      const installPasswordPrompt: PasswordPromptBlock = {
+        ...installConnectionPasswordPrompt,
+        hidden: () => true,
+      };
 
       prompts.username = remoteConnectionOnly(usernamePrompt);
       prompts.password = remoteConnectionOnly(passwordPrompt);
       prompts.accessToken = remoteConnectionOnly(accessTokenPrompt);
+      prompts.installUsername = installUsernamePrompt;
+      prompts.installPassword = installPasswordPrompt;
+      prompts.installAccessToken = installAccessTokenPrompt;
     }
 
     return prompts;
@@ -691,7 +764,9 @@ Prompt modes:
       },
       presetValues,
     );
-    const promptCatalog = this.buildPromptCatalog(normalizedFlags);
+    const defaultUiHost = await resolveDefaultUiHost();
+    const defaultApiHost = await resolveDefaultApiHost();
+    const promptCatalog = this.buildPromptCatalog(normalizedFlags, { defaultApiHost });
     if (useBrowserUi) {
       presetValues = await runPromptCatalogWebUI({
         stages: Init.buildWebUiStages(promptCatalog),
@@ -699,7 +774,7 @@ Prompt modes:
           ...dynamicInitialValues,
           ...presetValues,
         },
-        host: normalizedFlags['ui-host']?.trim() || '127.0.0.1',
+        host: normalizedFlags['ui-host']?.trim() || defaultUiHost,
         port: normalizedFlags['ui-port'] ?? 0,
         pageTitle: initText('webUi.pageTitle'),
         documentHeading: initText('webUi.documentHeading'),
@@ -737,15 +812,22 @@ Prompt modes:
     });
     const normalizedResults = this.normalizeInitResults({
       ...pickKeys(presetValues, [
+        'defaultApiHost',
         'authType',
         'accessToken',
         'dbSchema',
         'dbTablePrefix',
         'dbUnderscored',
+        'installApiBaseUrl',
+        'installAuthType',
+        'installAccessToken',
+        'installUsername',
+        'installPassword',
         'skipAuth',
         'username',
         'password',
       ]),
+      defaultApiHost,
       ...results,
     });
     const setupMode = resolveInitSetupMode(normalizedResults);
@@ -923,6 +1005,17 @@ Prompt modes:
           rootNickname: c.rootNickname,
         } satisfies PromptsCatalog,
       },
+      {
+        sectionTitle: initText('webUi.connectExistingApp.title'),
+        sectionDescription: initText('webUi.connectExistingApp.description'),
+        catalog: {
+          installApiBaseUrl: c.installApiBaseUrl,
+          installAuthType: c.installAuthType,
+          installUsername: c.installUsername,
+          installPassword: c.installPassword,
+          installAccessToken: c.installAccessToken,
+        } satisfies PromptsCatalog,
+      },
     ];
   }
 
@@ -987,11 +1080,16 @@ Prompt modes:
     if (apiBaseUrl) {
       preset.setupMode ??= 'connect-remote';
       preset.apiBaseUrl = apiBaseUrl;
+      preset.installApiBaseUrl = apiBaseUrl;
     } else if (flags['default-api-base-url'] !== undefined && String(flags['default-api-base-url']).trim() !== '') {
-      preset.apiBaseUrl = String(flags['default-api-base-url']).trim();
+      const defaultApiBaseUrl = String(flags['default-api-base-url']).trim();
+      preset.apiBaseUrl = defaultApiBaseUrl;
+      preset.installApiBaseUrl = defaultApiBaseUrl;
     }
     if (flags['auth-type'] !== undefined && String(flags['auth-type']).trim() !== '') {
-      preset.authType = String(flags['auth-type']).trim();
+      const authType = String(flags['auth-type']).trim();
+      preset.authType = authType;
+      preset.installAuthType = authType;
     }
     if (flags['skip-auth']) {
       preset.skipAuth = true;
@@ -999,12 +1097,17 @@ Prompt modes:
     const accessToken = String(flags['access-token'] ?? flags.token ?? '');
     if (flags['access-token'] !== undefined || flags.token !== undefined) {
       preset.accessToken = accessToken;
+      preset.installAccessToken = accessToken;
     }
     if (flags.username !== undefined) {
-      preset.username = String(flags.username ?? '').trim();
+      const username = String(flags.username ?? '').trim();
+      preset.username = username;
+      preset.installUsername = username;
     }
     if (flags.password !== undefined) {
-      preset.password = String(flags.password ?? '');
+      const password = String(flags.password ?? '');
+      preset.password = password;
+      preset.installPassword = password;
     }
     if (flags.lang !== undefined && String(flags.lang).trim() !== '') {
       preset.lang = String(flags.lang).trim();
@@ -1700,6 +1803,22 @@ Prompt modes:
   ): Record<string, string | number | boolean> {
     const normalized = { ...results };
     const setupMode = resolveInitSetupMode(normalized);
+    const defaultApiHost = normalizeConnectionString(normalized.defaultApiHost) || '127.0.0.1';
+    if (setupMode === 'install-new') {
+      normalized.apiBaseUrl =
+        normalizeConnectionString(normalized.installApiBaseUrl) ||
+        deriveInstallConnectionApiBaseUrl(normalized, defaultApiHost);
+      normalized.authType = normalizeConnectionString(normalized.installAuthType) || 'oauth';
+      normalized.username =
+        normalized.authType === 'basic'
+          ? normalizeConnectionString(normalized.installUsername) || normalizeConnectionString(normalized.rootUsername)
+          : normalizeConnectionString(normalized.installUsername);
+      normalized.password =
+        normalized.authType === 'basic'
+          ? String(normalized.installPassword ?? '') || String(normalized.rootPassword ?? '')
+          : String(normalized.installPassword ?? '');
+      normalized.accessToken = String(normalized.installAccessToken ?? '');
+    }
     normalized.setupMode = setupMode;
     applyLegacyHasNocobaseAlias(normalized as Record<string, unknown>);
     if (setupMode === 'manage-local') {
@@ -1709,6 +1828,12 @@ Prompt modes:
       delete normalized.rootPassword;
       delete normalized.rootNickname;
     }
+    delete normalized.installApiBaseUrl;
+    delete normalized.installAuthType;
+    delete normalized.installUsername;
+    delete normalized.installPassword;
+    delete normalized.installAccessToken;
+    delete normalized.defaultApiHost;
     return normalized;
   }
 }

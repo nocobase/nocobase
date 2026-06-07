@@ -8,6 +8,7 @@
  */
 
 import { beforeEach, test, vi, expect } from 'vitest';
+import { deleteCliConfigValue } from '../lib/cli-config.js';
 
 const mocks = vi.hoisted(() => ({
   runPromptCatalog: vi.fn(),
@@ -21,7 +22,7 @@ const mocks = vi.hoisted(() => ({
   printWarning: vi.fn(),
 }));
 
-beforeEach(() => {
+beforeEach(async () => {
   vi.clearAllMocks();
   mocks.getEnv.mockReset();
   mocks.getEnv.mockResolvedValue(undefined);
@@ -32,6 +33,7 @@ beforeEach(() => {
   mocks.validateExternalDbConfig.mockResolvedValue(undefined);
   mocks.validateMysqlLowerCaseTableNamesCompatibility.mockReset();
   mocks.validateMysqlLowerCaseTableNamesCompatibility.mockResolvedValue(undefined);
+  await deleteCliConfigValue('default-api-host');
 });
 
 vi.mock('../lib/prompt-catalog.ts', async (importOriginal) => {

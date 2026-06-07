@@ -30,6 +30,8 @@ export const DEFAULT_UPDATE_POLICY: CliUpdatePolicy = 'prompt';
 
 export const SUPPORTED_CLI_CONFIG_KEYS = [
   'locale',
+  'default-ui-host',
+  'default-api-host',
   'update.policy',
   'license.pkg-url',
   'docker.network',
@@ -90,6 +92,7 @@ export function normalizeProxyProvider(value: unknown): ProxyProvider | undefine
 function cloneSettings(config: AuthConfig): NonNullable<AuthConfig['settings']> {
   return {
     ...(config.settings?.locale ? { locale: trimValue(config.settings.locale) } : {}),
+    init: config.settings?.init ? { ...config.settings.init } : undefined,
     update: config.settings?.update ? { ...config.settings.update } : undefined,
     license: config.settings?.license ? { ...config.settings.license } : undefined,
     docker: config.settings?.docker ? { ...config.settings.docker } : undefined,
@@ -101,6 +104,11 @@ function cloneSettings(config: AuthConfig): NonNullable<AuthConfig['settings']> 
 function pruneSettings(config: AuthConfig): void {
   if (config.settings && !trimValue(config.settings.locale)) {
     delete config.settings.locale;
+  }
+
+  const init = config.settings?.init;
+  if (init && !trimValue(init.defaultUiHost) && !trimValue(init.defaultApiHost)) {
+    delete config.settings?.init;
   }
 
   const update = config.settings?.update;
@@ -138,6 +146,7 @@ function pruneSettings(config: AuthConfig): void {
   if (
     config.settings &&
     !config.settings.locale &&
+    !config.settings.init &&
     !config.settings.update &&
     !config.settings.license &&
     !config.settings.docker &&
@@ -152,6 +161,10 @@ export function getExplicitCliConfigValue(config: AuthConfig, key: SupportedCliC
   switch (key) {
     case 'locale':
       return trimValue(config.settings?.locale);
+    case 'default-ui-host':
+      return trimValue(config.settings?.init?.defaultUiHost);
+    case 'default-api-host':
+      return trimValue(config.settings?.init?.defaultApiHost);
     case 'update.policy':
       return normalizeCliUpdatePolicy(config.settings?.update?.policy);
     case 'license.pkg-url':
@@ -186,6 +199,10 @@ export function getEffectiveCliConfigValue(config: AuthConfig, key: SupportedCli
   switch (key) {
     case 'locale':
       return resolveCliLocale(undefined, { configuredLocale: trimValue(config.settings?.locale) });
+    case 'default-ui-host':
+      return '127.0.0.1';
+    case 'default-api-host':
+      return '127.0.0.1';
     case 'update.policy':
       return explicit ?? DEFAULT_UPDATE_POLICY;
     case 'license.pkg-url':
@@ -281,6 +298,18 @@ export async function setCliConfigValue(
     case 'locale':
       config.settings.locale = normalized;
       break;
+    case 'default-ui-host':
+      config.settings.init = {
+        ...(config.settings.init ?? {}),
+        defaultUiHost: normalized,
+      };
+      break;
+    case 'default-api-host':
+      config.settings.init = {
+        ...(config.settings.init ?? {}),
+        defaultApiHost: normalized,
+      };
+      break;
     case 'update.policy':
       config.settings.update = {
         ...(config.settings.update ?? {}),
@@ -371,6 +400,16 @@ export async function deleteCliConfigValue(
     case 'locale':
       delete config.settings.locale;
       break;
+    case 'default-ui-host':
+      if (config.settings.init) {
+        delete config.settings.init.defaultUiHost;
+      }
+      break;
+    case 'default-api-host':
+      if (config.settings.init) {
+        delete config.settings.init.defaultApiHost;
+      }
+      break;
     case 'update.policy':
       if (config.settings.update) {
         delete config.settings.update.policy;
@@ -435,6 +474,14 @@ export async function deleteCliConfigValue(
 
 export async function resolveDockerNetworkName(options: CliConfigOptions = {}): Promise<string> {
   return await getCliConfigValue('docker.network', options);
+}
+
+export async function resolveDefaultUiHost(options: CliConfigOptions = {}): Promise<string> {
+  return await getCliConfigValue('default-ui-host', options);
+}
+
+export async function resolveDefaultApiHost(options: CliConfigOptions = {}): Promise<string> {
+  return await getCliConfigValue('default-api-host', options);
 }
 
 export async function resolveDockerContainerPrefix(options: CliConfigOptions = {}): Promise<string> {

@@ -31,7 +31,7 @@ import {
   resolveEnvRelativePath,
 } from '../lib/cli-home.js';
 import { defaultDockerContainerPrefix, defaultDockerNetworkName } from '../lib/app-runtime.js';
-import { resolveDockerContainerPrefix, resolveDockerNetworkName } from '../lib/cli-config.js';
+import { resolveDefaultApiHost, resolveDockerContainerPrefix, resolveDockerNetworkName } from '../lib/cli-config.js';
 import { DEFAULT_DOCKER_VERSION, resolveDockerImageRef } from '../lib/docker-image.ts';
 import {
   findAvailableTcpPort,
@@ -87,10 +87,20 @@ const DEFAULT_INSTALL_ROOT_USERNAME = 'nocobase';
 const DEFAULT_INSTALL_ROOT_EMAIL = 'admin@nocobase.com';
 const DEFAULT_INSTALL_ROOT_PASSWORD = 'admin123';
 const DEFAULT_INSTALL_ROOT_NICKNAME = 'Super Admin';
+const DEFAULT_INSTALL_API_HOST = '127.0.0.1';
 
 function toOptionalPromptString(value: unknown): string | undefined {
   const text = String(value ?? '').trim();
   return text || undefined;
+}
+
+function buildInstallApiBaseUrl(
+  appResults: Record<string, PromptValue>,
+  defaultApiHost = DEFAULT_INSTALL_API_HOST,
+): string {
+  const appPort = String(appResults.appPort ?? DEFAULT_INSTALL_APP_PORT).trim() || DEFAULT_INSTALL_APP_PORT;
+  const appPublicPath = String(appResults.appPublicPath ?? '').trim();
+  return `http://${defaultApiHost}:${appPort}${appendAppPublicPath(appPublicPath, 'api', { trailingSlash: false })}`;
 }
 const APP_HEALTH_CHECK_INTERVAL_MS = 2_000;
 const APP_HEALTH_CHECK_TIMEOUT_MS = 600_000;
@@ -2701,13 +2711,11 @@ export default class Install extends Command {
   private static resolveApiBaseUrl(params: {
     appResults: Record<string, PromptValue>;
     envAddResults: Record<string, PromptValue>;
+    defaultApiHost?: string;
   }): string {
-    const appPort = String(params.appResults.appPort ?? DEFAULT_INSTALL_APP_PORT).trim() || DEFAULT_INSTALL_APP_PORT;
-    const appPublicPath = String(params.appResults.appPublicPath ?? '').trim();
-
     return (
       String(params.envAddResults.apiBaseUrl ?? '').trim() ||
-      `http://127.0.0.1:${appPort}${appendAppPublicPath(appPublicPath, 'api', { trailingSlash: false })}`
+      buildInstallApiBaseUrl(params.appResults, params.defaultApiHost)
     );
   }
 
@@ -2840,7 +2848,10 @@ export default class Install extends Command {
     rootResults: Record<string, PromptValue>;
     envAddResults: Record<string, PromptValue>;
   }): Promise<void> {
-    await upsertEnv(params.envName, Install.buildSavedEnvConfig(params), { scope: resolveDefaultConfigScope() });
+    const defaultApiHost = await resolveDefaultApiHost();
+    await upsertEnv(params.envName, Install.buildSavedEnvConfig(params, { defaultApiHost }), {
+      scope: resolveDefaultConfigScope(),
+    });
     await setCurrentEnv(params.envName, { scope: resolveDefaultConfigScope() });
   }
 
@@ -2878,14 +2889,19 @@ export default class Install extends Command {
     await this.config.runCommand('env:update', [params.envName]);
   }
 
-  private static buildSavedEnvConfig(params: {
-    envName: string;
-    appResults: Record<string, PromptValue>;
-    downloadResults: Record<string, PromptValue>;
-    dbResults: Record<string, PromptValue>;
-    rootResults: Record<string, PromptValue>;
-    envAddResults: Record<string, PromptValue>;
-  }): StoredEnvConfig {
+  private static buildSavedEnvConfig(
+    params: {
+      envName: string;
+      appResults: Record<string, PromptValue>;
+      downloadResults: Record<string, PromptValue>;
+      dbResults: Record<string, PromptValue>;
+      rootResults: Record<string, PromptValue>;
+      envAddResults: Record<string, PromptValue>;
+    },
+    options: {
+      defaultApiHost?: string;
+    } = {},
+  ): StoredEnvConfig {
     const appPath = resolveConfiguredAppPathValue(params.appResults);
     const appRootPath = Install.toOptionalPromptString(params.appResults.appRootPath);
     const storagePath = Install.toOptionalPromptString(params.appResults.storagePath);
@@ -2897,6 +2913,7 @@ export default class Install extends Command {
     const apiBaseUrl = Install.resolveApiBaseUrl({
       appResults: params.appResults,
       envAddResults: params.envAddResults,
+      defaultApiHost: options.defaultApiHost,
     });
     const authType = String(params.envAddResults.authType ?? 'oauth').trim() || 'oauth';
     const authUsername =
@@ -2946,6 +2963,7 @@ export default class Install extends Command {
     yes: boolean,
   ): Promise<InstallPromptResults> {
     const commandArgv = this.argv ?? process.argv.slice(2);
+    const defaultApiHost = await resolveDefaultApiHost();
     const resumePreset = await this.resolveResumePresetValues(parsed, yes);
     const envPreset = {
       ...(resumePreset?.envPreset ?? {}),
@@ -3050,11 +3068,7 @@ export default class Install extends Command {
     };
     const resolvedEnvAddAuthType = String(envAddPreset.authType ?? '').trim();
     const envAddInitialValues: PromptInitialValues = {
-      apiBaseUrl: `http://127.0.0.1:${appResults.appPort ?? DEFAULT_INSTALL_APP_PORT}${appendAppPublicPath(
-        String(appResults.appPublicPath ?? ''),
-        'api',
-        { trailingSlash: false },
-      )}`,
+      apiBaseUrl: buildInstallApiBaseUrl(appResults, defaultApiHost),
       ...envAddResumePreset,
       ...(!parsed['skip-auth'] && resolvedEnvAddAuthType === 'basic'
         ? {

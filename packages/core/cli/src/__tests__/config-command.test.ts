@@ -124,6 +124,86 @@ test('nb config set/get/delete supports locale', async () => {
   });
 });
 
+test('nb config set/get/delete supports default ui/api host values', async () => {
+  await withTempCliHome(async () => {
+    const { default: ConfigSet } = await import('../commands/config/set.js');
+    const { default: ConfigGet } = await import('../commands/config/get.js');
+    const { default: ConfigDelete } = await import('../commands/config/delete.js');
+
+    const setUiHostCommand = Object.assign(Object.create(ConfigSet.prototype), {
+      parse: vi.fn(async () => ({
+        args: {
+          key: 'default-ui-host',
+          value: '0.0.0.0',
+        },
+      })),
+      log: vi.fn(),
+    });
+    await ConfigSet.prototype.run.call(setUiHostCommand);
+    expect(setUiHostCommand.log).toHaveBeenCalledWith('default-ui-host=0.0.0.0');
+
+    const setApiHostCommand = Object.assign(Object.create(ConfigSet.prototype), {
+      parse: vi.fn(async () => ({
+        args: {
+          key: 'default-api-host',
+          value: '192.168.1.10',
+        },
+      })),
+      log: vi.fn(),
+    });
+    await ConfigSet.prototype.run.call(setApiHostCommand);
+    expect(setApiHostCommand.log).toHaveBeenCalledWith('default-api-host=192.168.1.10');
+
+    const getUiHostCommand = Object.assign(Object.create(ConfigGet.prototype), {
+      parse: vi.fn(async () => ({
+        args: {
+          key: 'default-ui-host',
+        },
+      })),
+      log: vi.fn(),
+    });
+    await ConfigGet.prototype.run.call(getUiHostCommand);
+    expect(getUiHostCommand.log).toHaveBeenCalledWith('0.0.0.0');
+
+    const getApiHostCommand = Object.assign(Object.create(ConfigGet.prototype), {
+      parse: vi.fn(async () => ({
+        args: {
+          key: 'default-api-host',
+        },
+      })),
+      log: vi.fn(),
+    });
+    await ConfigGet.prototype.run.call(getApiHostCommand);
+    expect(getApiHostCommand.log).toHaveBeenCalledWith('192.168.1.10');
+
+    const deleteUiHostCommand = Object.assign(Object.create(ConfigDelete.prototype), {
+      parse: vi.fn(async () => ({
+        args: {
+          key: 'default-ui-host',
+        },
+      })),
+      log: vi.fn(),
+    });
+    await ConfigDelete.prototype.run.call(deleteUiHostCommand);
+    expect(deleteUiHostCommand.log).toHaveBeenCalledWith('Deleted default-ui-host');
+
+    const deleteApiHostCommand = Object.assign(Object.create(ConfigDelete.prototype), {
+      parse: vi.fn(async () => ({
+        args: {
+          key: 'default-api-host',
+        },
+      })),
+      log: vi.fn(),
+    });
+    await ConfigDelete.prototype.run.call(deleteApiHostCommand);
+    expect(deleteApiHostCommand.log).toHaveBeenCalledWith('Deleted default-api-host');
+
+    const config = await loadAuthConfig({ scope: 'global' });
+    expect(config.settings?.init?.defaultUiHost).toBe(undefined);
+    expect(config.settings?.init?.defaultApiHost).toBe(undefined);
+  });
+});
+
 test('nb config set/get/delete supports update.policy', async () => {
   await withTempCliHome(async () => {
     const { default: ConfigSet } = await import('../commands/config/set.js');

@@ -193,6 +193,36 @@ test('runPromptCatalogWebUI resolves after submit even when the browser keeps a 
   }
 });
 
+test('buildWebFormValuesFromCatalog resolves function defaults for password fields', async () => {
+  const { buildWebFormValuesFromCatalog } = await import('../lib/prompt-web-ui.js');
+
+  const values = buildWebFormValuesFromCatalog({
+    rootPassword: {
+      type: 'password',
+      message: 'Root password',
+      required: true,
+    },
+    authType: {
+      type: 'select',
+      message: 'Authentication type',
+      options: ['basic', 'oauth'],
+      initialValue: 'basic',
+      required: true,
+    },
+    installPassword: {
+      type: 'password',
+      message: 'Install password',
+      required: true,
+      hidden: (currentValues) => currentValues.authType !== 'basic',
+      initialValue: (currentValues) => String(currentValues.rootPassword ?? ''),
+    },
+  }, {
+    rootPassword: 'admin123',
+  });
+
+  expect(values.installPassword).toBe('admin123');
+});
+
 test('web UI renders a password visibility toggle next to the validation suffix for password fields', async () => {
   const { runPromptCatalogWebUI } = await import('../lib/prompt-web-ui.js');
 

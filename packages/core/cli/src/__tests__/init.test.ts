@@ -8,6 +8,9 @@
  */
 
 import { afterEach, beforeEach, test, vi, expect } from 'vitest';
+import { mkdtemp, rm } from 'node:fs/promises';
+import os from 'node:os';
+import path from 'node:path';
 
 const ANSI_SGR_REGEX = new RegExp(String.raw`\u001B\[[0-9;]*m`, 'g');
 
@@ -212,6 +215,11 @@ test('nb init continues from the browser UI result and runs env:add for an exist
     dbTablePrefix: expect.any(Object),
     dbUnderscored: expect.any(Object),
   });
+  expect(webUiOptions?.stages[6]?.catalog).toMatchObject({
+    installApiBaseUrl: expect.any(Object),
+    installAuthType: expect.any(Object),
+    installPassword: expect.any(Object),
+  });
   expect(mocks.runPromptCatalog.mock.calls.length).toBe(1);
   expect(mocks.runPromptCatalog.mock.calls[0]?.[1]?.values).toEqual({
     appName: 'staging',
@@ -239,6 +247,78 @@ test('nb init continues from the browser UI result and runs env:add for an exist
       ],
     ],
   ]);
+});
+
+test('nb init uses configured default ui/api hosts', async () => {
+  const previous = process.env.NB_CLI_ROOT;
+  const tempHome = await mkdtemp(path.join(os.tmpdir(), 'nocobase-init-config-'));
+  const tempWorkspace = await mkdtemp(path.join(os.tmpdir(), 'nocobase-init-config-cwd-'));
+  const cwdSpy = vi.spyOn(process, 'cwd').mockReturnValue(tempWorkspace);
+
+  try {
+    process.env.NB_CLI_ROOT = tempHome;
+    const { setCliConfigValue } = await import('../lib/cli-config.js');
+    await setCliConfigValue('default-ui-host', '0.0.0.0');
+    await setCliConfigValue('default-api-host', '192.168.1.10');
+
+    const { default: Init } = await import('../commands/init.js');
+
+    mocks.runPromptCatalogWebUI.mockResolvedValue({
+      appName: 'demoapp',
+      hasNocobase: 'no',
+      lang: 'en-US',
+      appRootPath: './apps/demoapp',
+      appPort: '13080',
+      storagePath: './storage/demoapp',
+      source: 'git',
+      version: 'beta',
+      gitUrl: 'https://github.com/nocobase/nocobase.git',
+      outputDir: './apps/demoapp',
+      builtinDb: true,
+      dbDialect: 'postgres',
+      rootUsername: 'admin',
+      rootEmail: 'admin@nocobase.com',
+      rootPassword: 'admin123',
+      rootNickname: 'Admin',
+    });
+    mocks.inspectSkillsStatus.mockResolvedValue({ installed: false });
+    mocks.installNocoBaseSkills.mockResolvedValue({ action: 'installed', status: {} });
+    mocks.runPromptCatalog.mockImplementation(async (_catalog, options) => options.values ?? {});
+
+    const runCommand = vi.fn(async () => undefined);
+    const command = Object.assign(Object.create(Init.prototype), {
+      parse: vi.fn(async () => ({
+        flags: {
+          ui: true,
+          yes: false,
+          'ui-port': 0,
+        },
+      })),
+      config: { runCommand },
+      log: mocks.log,
+      error: mocks.error,
+      exit: (code?: number) => {
+        throw new Error(`unexpected exit: ${code ?? 'unknown'}`);
+      },
+    });
+
+    await Init.prototype.run.call(command);
+
+    const webUiOptions = mocks.runPromptCatalogWebUI.mock.calls.at(-1)?.[0];
+    expect(webUiOptions?.host).toBe('0.0.0.0');
+    expect(mocks.upsertEnv.mock.calls.at(-1)?.[1]).toMatchObject({
+      apiBaseUrl: 'http://192.168.1.10:13080/api',
+    });
+  } finally {
+    cwdSpy.mockRestore();
+    if (previous === undefined) {
+      delete process.env.NB_CLI_ROOT;
+    } else {
+      process.env.NB_CLI_ROOT = previous;
+    }
+    await rm(tempHome, { recursive: true, force: true });
+    await rm(tempWorkspace, { recursive: true, force: true });
+  }
 });
 
 test('nb init shows a concise fallback message when the setup browser cannot be opened automatically', async () => {
@@ -421,6 +501,8 @@ test('nb init forwards download options to nb install for a new app flow', async
         '--skip-save-env-log',
         '--env',
         'demoapp',
+        '--auth-type',
+        'oauth',
         '--lang',
         'en-US',
         '--app-root-path',
@@ -471,6 +553,66 @@ test('nb init forwards download options to nb install for a new app flow', async
       ],
     ],
   ]);
+});
+
+test('nb init uses the final connection step values for a new app flow', async () => {
+  const { default: Init } = await import('../commands/init.js');
+
+  mocks.runPromptCatalogWebUI.mockResolvedValue({
+    appName: 'demoapp',
+    hasNocobase: 'no',
+    lang: 'en-US',
+    appRootPath: './apps/demoapp',
+    appPort: '13080',
+    storagePath: './storage/demoapp',
+    source: 'git',
+    version: 'beta',
+    gitUrl: 'https://github.com/nocobase/nocobase.git',
+    outputDir: './apps/demoapp',
+    builtinDb: true,
+    dbDialect: 'postgres',
+    rootUsername: 'admin',
+    rootEmail: 'admin@nocobase.com',
+    rootPassword: 'admin123',
+    rootNickname: 'Admin',
+    installApiBaseUrl: 'https://demo.example.com/api',
+    installAuthType: 'token',
+    installAccessToken: 'secret-token',
+  });
+  mocks.inspectSkillsStatus.mockResolvedValue({ installed: false });
+  mocks.installNocoBaseSkills.mockResolvedValue({ action: 'installed', status: {} });
+  mocks.runPromptCatalog.mockImplementation(async (_catalog, options) => options.values ?? {});
+
+  const runCommand = vi.fn(async () => undefined);
+  const command = Object.assign(Object.create(Init.prototype), {
+    parse: vi.fn(async () => ({
+      flags: {
+        ui: true,
+        yes: false,
+        'ui-host': '127.0.0.1',
+        'ui-port': 0,
+      },
+    })),
+    config: { runCommand },
+    log: mocks.log,
+    error: mocks.error,
+    exit: (code?: number) => {
+      throw new Error(`unexpected exit: ${code ?? 'unknown'}`);
+    },
+  });
+
+  await Init.prototype.run.call(command);
+
+  expect(mocks.upsertEnv.mock.calls[0]?.[1]).toMatchObject({
+    apiBaseUrl: 'https://demo.example.com/api',
+    authType: 'token',
+    accessToken: 'secret-token',
+  });
+  const installArgv = runCommand.mock.calls.find(([name]) => name === 'install')?.[1] as string[];
+  expect(installArgv).toContain('--auth-type');
+  expect(installArgv).toContain('token');
+  expect(installArgv).toContain('--access-token');
+  expect(installArgv).toContain('secret-token');
 });
 
 test('nb init keeps prompted dbUnderscored when preset values still contain false', async () => {
@@ -1413,6 +1555,8 @@ test('nb init --force allows reconfiguring an existing global env and warns befo
       '--skip-save-env-log',
       '--env',
       'local5',
+      '--auth-type',
+      'oauth',
       '--lang',
       'en-US',
       '--app-root-path',

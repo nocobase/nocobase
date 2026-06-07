@@ -12,17 +12,19 @@ import path from 'node:path';
 import { afterEach, beforeEach, test, expect, vi } from 'vitest';
 import Install from '../commands/install.js';
 import EnvAdd from '../commands/env/add.js';
+import { deleteCliConfigValue } from '../lib/cli-config.js';
 import { resolveCliHomeRoot, resolveEnvRelativePath } from '../lib/cli-home.js';
 
 const originalNbLocale = process.env.NB_LOCALE;
 const originalExtractClientAssets = process.env.NOCOBASE_EXTRACT_CLIENT_ASSETS;
 
-beforeEach(() => {
+beforeEach(async () => {
   process.env.NB_LOCALE = 'en-US';
   delete process.env.NOCOBASE_EXTRACT_CLIENT_ASSETS;
+  await deleteCliConfigValue('default-api-host');
 });
 
-afterEach(() => {
+afterEach(async () => {
   if (originalNbLocale === undefined) {
     delete process.env.NB_LOCALE;
   } else {
@@ -30,9 +32,10 @@ afterEach(() => {
   }
   if (originalExtractClientAssets === undefined) {
     delete process.env.NOCOBASE_EXTRACT_CLIENT_ASSETS;
-    return;
+  } else {
+    process.env.NOCOBASE_EXTRACT_CLIENT_ASSETS = originalExtractClientAssets;
   }
-  process.env.NOCOBASE_EXTRACT_CLIENT_ASSETS = originalExtractClientAssets;
+  await deleteCliConfigValue('default-api-host');
 });
 
 type InstallStatics = {
@@ -63,7 +66,7 @@ type InstallStatics = {
     dbResults: Record<string, unknown>;
     rootResults: Record<string, unknown>;
     envAddResults: Record<string, unknown>;
-  }) => Record<string, unknown>;
+  }, options?: { defaultApiHost?: string }) => Record<string, unknown>;
   resolveAvailableDefaultPort: (defaultPort: string) => Promise<string>;
   buildAppPromptInitialValues: (params: {
     envName?: string;
@@ -176,6 +179,57 @@ test('install reuses env add prompts without online apiBaseUrl validation', asyn
   expect(envAddCatalog.apiBaseUrl).toBeDefined();
   expect(envAddCatalog.apiBaseUrl).not.toBe(EnvAdd.prompts.apiBaseUrl);
   expect(envAddCatalog.apiBaseUrl.validate).toBe(undefined);
+});
+
+test('install uses configured default-api-host for the connection step apiBaseUrl default', async () => {
+  const command = Object.create(Install.prototype) as Install & {
+    resolveResumePresetValues: typeof Install.prototype.resolveResumePresetValues;
+  };
+
+  vi.spyOn(command as any, 'resolveResumePresetValues').mockResolvedValue(undefined);
+
+  const { setCliConfigValue } = await import('../lib/cli-config.js');
+  await setCliConfigValue('default-api-host', '192.168.1.10');
+
+  const runPromptCatalogMock = vi
+    .fn()
+    .mockResolvedValueOnce({ env: 'app7593' })
+    .mockResolvedValueOnce({
+      appRootPath: './app7593/source/',
+      appPort: '13000',
+      storagePath: './app7593/storage/',
+    })
+    .mockResolvedValueOnce({})
+    .mockResolvedValueOnce({
+      dbDialect: 'postgres',
+      builtinDb: true,
+    })
+    .mockResolvedValueOnce({
+      rootUsername: 'nocobase',
+      rootEmail: 'admin@nocobase.com',
+      rootPassword: 'nocobase',
+      rootNickname: 'NocoBase',
+    })
+    .mockResolvedValueOnce({
+      name: 'app7593',
+      apiBaseUrl: 'http://192.168.1.10:13000/api',
+      authType: 'oauth',
+    });
+
+  const promptCatalogModule = await import('../lib/prompt-catalog.js');
+  const runPromptCatalogSpy = vi
+    .spyOn(promptCatalogModule, 'runPromptCatalog')
+    .mockImplementation(runPromptCatalogMock as any);
+
+  try {
+    await (Install.prototype as any).collectPromptResults.call(command, { resume: false }, true);
+  } finally {
+    runPromptCatalogSpy.mockRestore();
+    await deleteCliConfigValue('default-api-host');
+  }
+
+  const envAddOptions = runPromptCatalogMock.mock.calls[5]?.[1];
+  expect(envAddOptions.initialValues.apiBaseUrl).toBe('http://192.168.1.10:13000/api');
 });
 
 test('install hides the deferred accessToken prompt when --skip-auth is used with token auth', async () => {
@@ -835,6 +889,30 @@ test('install saved env config records when an env uses an external database', (
   expect(envConfig.builtinDb).toBe(false);
   expect(envConfig.builtinDbImage).toBe(undefined);
   expect(envConfig.apiBaseUrl).toBe('http://127.0.0.1:13081/api');
+});
+
+test('install saved env config falls back to configured default api host when apiBaseUrl is empty', () => {
+  const installStatics = Install as unknown as InstallStatics;
+  const envConfig = installStatics.buildSavedEnvConfig(
+    {
+      envName: 'external',
+      appResults: {
+        appPort: '13081',
+        storagePath: './storage/external',
+      },
+      downloadResults: {},
+      dbResults: {},
+      rootResults: {},
+      envAddResults: {
+        authType: 'oauth',
+      },
+    },
+    {
+      defaultApiHost: '192.168.1.10',
+    },
+  );
+
+  expect(envConfig.apiBaseUrl).toBe('http://192.168.1.10:13081/api');
 });
 
 test('install saved env config normalizes equivalent absolute legacy paths to appPath', () => {

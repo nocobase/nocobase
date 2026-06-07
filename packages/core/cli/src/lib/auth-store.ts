@@ -143,6 +143,10 @@ export interface AuthConfig {
       nbCliRoot?: string;
       upstreamHost?: string;
     };
+    init?: {
+      defaultUiHost?: string;
+      defaultApiHost?: string;
+    };
   };
   lastEnv?: string;
   envs: Record<string, EnvConfigEntry>;
@@ -258,11 +262,21 @@ function normalizeEnvConfigEntry(entry: EnvConfigEntry | undefined): EnvConfigEn
 function normalizeAuthConfig(config: AuthConfig & { dockerResourcePrefix?: string }): AuthConfig {
   const settings = config.settings ?? {};
   const locale = normalizeOptionalCliLocale(settings.locale);
+  const defaultUiHost = normalizeOptionalString(settings.init?.defaultUiHost);
+  const defaultApiHost = normalizeOptionalString(settings.init?.defaultApiHost);
   const updatePolicy = normalizeOptionalCliUpdatePolicy(settings.update?.policy);
   return {
     name: config.name || config.dockerResourcePrefix,
     settings: {
       ...(locale ? { locale } : {}),
+      ...(defaultUiHost || defaultApiHost
+        ? {
+            init: {
+              ...(defaultUiHost ? { defaultUiHost } : {}),
+              ...(defaultApiHost ? { defaultApiHost } : {}),
+            },
+          }
+        : {}),
       ...(updatePolicy ? { update: { policy: updatePolicy } } : {}),
       ...(settings.license?.pkgUrl ? { license: { pkgUrl: normalizeOptionalString(settings.license.pkgUrl) } } : {}),
       ...(settings.docker?.network || settings.docker?.containerPrefix
