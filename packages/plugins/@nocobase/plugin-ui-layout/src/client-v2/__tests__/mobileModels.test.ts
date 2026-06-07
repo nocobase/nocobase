@@ -11,7 +11,12 @@ import { BaseLayoutModel, ChildPageModel, RootPageModel, RouteModel } from '@noc
 import { NocoBaseDesktopRouteType, type NocoBaseDesktopRoute } from '@nocobase/client-v2/flow-compat';
 import { App as AntdApp } from 'antd';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { createViewScopedEngine, FlowEngine, FlowEngineProvider } from '@nocobase/flow-engine';
+import {
+  createViewScopedEngine,
+  FlowEngine,
+  FlowEngineProvider,
+  type FlowSettingsContext,
+} from '@nocobase/flow-engine';
 import React from 'react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -139,6 +144,17 @@ describe('plugin-ui-layout mobile models', () => {
       model,
       ...renderResult,
     };
+  }
+
+  function createMobileMenuSettingsContext(
+    route: NocoBaseDesktopRoute,
+  ): FlowSettingsContext<MobileLayoutMenuItemModel> {
+    return {
+      t: (key: string) => key,
+      model: {
+        getRoute: () => route,
+      },
+    } as unknown as FlowSettingsContext<MobileLayoutMenuItemModel>;
   }
 
   it('should extend the standard layout and page models', () => {
@@ -1538,16 +1554,47 @@ describe('plugin-ui-layout mobile models', () => {
 
   it('should use the mobile menu icon picker for menu edit settings', async () => {
     const mobileMenuSettings = MobileLayoutMenuItemModel.globalFlowRegistry.getFlow('mobileMenuSettings');
-    const uiSchema = await mobileMenuSettings?.steps?.edit?.uiSchema?.({
-      t: (key: string) => key,
-      model: {
-        getRoute: () => ({
-          type: NocoBaseDesktopRouteType.flowPage,
-        }),
-      },
-    } as any);
+    const uiSchema = await mobileMenuSettings?.steps?.edit?.uiSchema?.(
+      createMobileMenuSettingsContext({
+        type: NocoBaseDesktopRouteType.flowPage,
+      }),
+    );
 
     expect(uiSchema?.icon?.['x-component']).toBe('MobileMenuSettingsIconPicker');
+  });
+
+  it('should mark mobile menu edit fields as required', async () => {
+    const mobileMenuSettings = MobileLayoutMenuItemModel.globalFlowRegistry.getFlow('mobileMenuSettings');
+    const flowPageUiSchema = await mobileMenuSettings?.steps?.edit?.uiSchema?.(
+      createMobileMenuSettingsContext({
+        type: NocoBaseDesktopRouteType.flowPage,
+      }),
+    );
+    const linkUiSchema = await mobileMenuSettings?.steps?.edit?.uiSchema?.(
+      createMobileMenuSettingsContext({
+        type: NocoBaseDesktopRouteType.link,
+      }),
+    );
+
+    expect(flowPageUiSchema).toMatchObject({
+      title: {
+        required: true,
+      },
+      icon: {
+        required: true,
+      },
+    });
+    expect(linkUiSchema).toMatchObject({
+      title: {
+        required: true,
+      },
+      icon: {
+        required: true,
+      },
+      href: {
+        required: true,
+      },
+    });
   });
 
   it('should render the menu edit icon picker above the settings dialog', async () => {
@@ -1639,6 +1686,36 @@ describe('plugin-ui-layout mobile models', () => {
     } finally {
       consoleError.mockRestore();
     }
+  });
+
+  it('should show required markers for add link tab fields', async () => {
+    window.localStorage.setItem(FLOW_SETTINGS_PREFERENCE_STORAGE_KEY, '1');
+
+    renderMobileLayoutWithRouteRepository({
+      listAccessible: () => [
+        {
+          id: 1,
+          type: NocoBaseDesktopRouteType.flowPage,
+          title: 'Home',
+          schemaUid: 'home-page',
+        },
+      ],
+    });
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /Home/ })).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Add mobile tab' }));
+    fireEvent.click(await screen.findByText('Link'));
+    expect(await screen.findByText('Add link')).toBeInTheDocument();
+
+    const requiredLabels = Array.from(
+      document.querySelectorAll('.ant-modal .ant-form-item-label > label.ant-form-item-required'),
+    ).map((label) => label.textContent?.trim());
+
+    expect(document.querySelector('.ant-modal .ant-form')).not.toHaveClass('ant-form-hide-required-mark');
+    expect(requiredLabels).toEqual(expect.arrayContaining(['Title', 'URL', 'Icon']));
   });
 
   it('should create a link tab without changing the current flow page active state', async () => {

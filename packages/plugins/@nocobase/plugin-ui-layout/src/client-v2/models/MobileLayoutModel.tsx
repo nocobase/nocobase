@@ -1592,7 +1592,7 @@ const MobileHomePlaceholder = observer(
           onCancel={handleAddTabModalCancel}
         >
           <zIndexContext.Provider value={addTabModalZIndex}>
-            <Form<MobileTabConfigurationValues> form={addTabForm} layout="vertical" requiredMark={false}>
+            <Form<MobileTabConfigurationValues> form={addTabForm} layout="vertical">
               <Form.Item
                 name="title"
                 label={t('Title')}

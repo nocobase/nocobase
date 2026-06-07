@@ -94,6 +94,7 @@ function getMobileMenuEditUiSchema(
     },
     icon: {
       title: t('Icon'),
+      required: true,
       'x-decorator': 'FormItem',
       'x-component': 'MobileMenuSettingsIconPicker',
     },
