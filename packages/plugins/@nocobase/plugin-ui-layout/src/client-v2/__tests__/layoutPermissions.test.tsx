@@ -279,6 +279,64 @@ describe('plugin-ui-layout route permissions', () => {
       consoleError.mockRestore();
     }
   });
+
+  it('should keep layout permission requests bounded and scoped while switching and saving', async () => {
+    const resource = createCountingPermissionTabResources();
+    const user = userEvent.setup();
+    flowMocks.context = resource.context;
+
+    const { rerender } = render(
+      <LayoutAwareDesktopRoutesPermissionsTab
+        activeKey="menu"
+        activeRole={{ name: 'layout-member', title: 'Layout member' }}
+        onRoleChange={vi.fn()}
+      />,
+    );
+
+    expect(await screen.findByText('Admin route')).toBeInTheDocument();
+
+    await selectLayout('Mobile layout');
+
+    expect(await screen.findByText('Mobile route')).toBeInTheDocument();
+    expect(screen.queryByText('Admin route')).not.toBeInTheDocument();
+
+    rerender(
+      <LayoutAwareDesktopRoutesPermissionsTab
+        activeKey="menu"
+        activeRole={{ name: 'layout-auditor', title: 'Layout auditor' }}
+        onRoleChange={vi.fn()}
+      />,
+    );
+
+    const mobileCheckbox = await screen.findByRole('checkbox', { name: 'Allow access to Mobile route' });
+
+    await act(async () => {
+      await user.click(mobileCheckbox);
+    });
+
+    await waitFor(() => {
+      expect(resource.roleRoutesAdd).toHaveBeenCalledWith('layout-auditor', { values: [2] });
+    });
+
+    const desktopRouteLayouts = resource.desktopRoutesList.mock.calls.map((call) =>
+      getLayoutUidFromFilter(call[0]?.filter as Record<string, unknown> | undefined),
+    );
+    const roleRouteRequests = resource.roleRoutesList.mock.calls.map(([roleName, params]) => ({
+      roleName,
+      layoutUid: getLayoutUidFromFilter(params?.filter as Record<string, unknown> | undefined),
+    }));
+
+    expect(desktopRouteLayouts).toEqual([DEFAULT_ADMIN_UI_LAYOUT.uid, 'mobile-layout']);
+    expect(roleRouteRequests).toEqual([
+      { roleName: 'layout-member', layoutUid: DEFAULT_ADMIN_UI_LAYOUT.uid },
+      { roleName: 'layout-member', layoutUid: 'mobile-layout' },
+      { roleName: 'layout-auditor', layoutUid: 'mobile-layout' },
+      { roleName: 'layout-auditor', layoutUid: 'mobile-layout' },
+    ]);
+    expect(resource.roleRoutesAdd).toHaveBeenCalledTimes(1);
+    expect(resource.roleRoutesRemove).not.toHaveBeenCalled();
+    expect(resource.messageSuccess).toHaveBeenCalledTimes(1);
+  });
 });
 
 async function selectLayout(label: string) {
@@ -508,6 +566,126 @@ function createConcurrentPermissionTabResources() {
           }
           if (name === 'roles.desktopRoutes') {
             return roleRoutesResource;
+          }
+          if (name === 'roles') {
+            return {
+              update: vi.fn(),
+            };
+          }
+          throw new Error(`Unexpected resource: ${name}`);
+        }),
+      },
+      message: {
+        success: flowMessageSuccess,
+      },
+    },
+  };
+}
+
+function createCountingPermissionTabResources() {
+  const selectedRouteIdsByRoleAndLayout = new Map<string, Set<number>>([
+    [`layout-member:${DEFAULT_ADMIN_UI_LAYOUT.uid}`, new Set([1])],
+  ]);
+  const uiLayoutsList = vi.fn(async () => ({
+    data: {
+      data: [
+        {
+          uid: DEFAULT_ADMIN_UI_LAYOUT.uid,
+          title: 'Desktop layout',
+          layoutType: 'desktop',
+        },
+        {
+          uid: 'mobile-layout',
+          title: 'Mobile layout',
+          layoutType: 'mobile',
+        },
+      ],
+    },
+  }));
+  const desktopRoutesList = vi.fn(async (params?: Record<string, unknown>) => {
+    const layoutUid = getLayoutUidFromFilter(params?.filter as Record<string, unknown> | undefined);
+
+    return {
+      data: {
+        data:
+          layoutUid === 'mobile-layout'
+            ? [
+                {
+                  id: 2,
+                  title: 'Mobile route',
+                },
+              ]
+            : [
+                {
+                  id: 1,
+                  title: 'Admin route',
+                },
+              ],
+      },
+    };
+  });
+  const getSelectedRouteIds = (roleName: string, layoutUid: string) => {
+    const key = `${roleName}:${layoutUid}`;
+    let routeIds = selectedRouteIdsByRoleAndLayout.get(key);
+
+    if (!routeIds) {
+      routeIds = new Set<number>();
+      selectedRouteIdsByRoleAndLayout.set(key, routeIds);
+    }
+
+    return routeIds;
+  };
+  const roleRoutesList = vi.fn(async (roleName: string, params?: Record<string, unknown>) => {
+    const layoutUid =
+      getLayoutUidFromFilter(params?.filter as Record<string, unknown> | undefined) || DEFAULT_ADMIN_UI_LAYOUT.uid;
+    const selectedRouteIds = getSelectedRouteIds(roleName, layoutUid);
+
+    return {
+      data: {
+        data: Array.from(selectedRouteIds).map((id) => ({
+          id,
+          title: id === 2 ? 'Mobile route' : 'Admin route',
+        })),
+      },
+    };
+  });
+  const roleRoutesAdd = vi.fn(async (roleName: string, params: { values: number[] }) => {
+    const selectedRouteIds = getSelectedRouteIds(roleName, 'mobile-layout');
+
+    params.values.forEach((id) => selectedRouteIds.add(id));
+  });
+  const roleRoutesRemove = vi.fn(async (roleName: string, params: { values: number[] }) => {
+    const selectedRouteIds = getSelectedRouteIds(roleName, 'mobile-layout');
+
+    params.values.forEach((id) => selectedRouteIds.delete(id));
+  });
+  const flowMessageSuccess = vi.fn();
+
+  return {
+    desktopRoutesList,
+    messageSuccess: flowMessageSuccess,
+    roleRoutesAdd,
+    roleRoutesList,
+    roleRoutesRemove,
+    context: {
+      api: {
+        resource: vi.fn((name: string, roleName?: string) => {
+          if (name === 'uiLayouts') {
+            return {
+              list: uiLayoutsList,
+            };
+          }
+          if (name === 'desktopRoutes') {
+            return {
+              list: desktopRoutesList,
+            };
+          }
+          if (name === 'roles.desktopRoutes') {
+            return {
+              list: (params?: Record<string, unknown>) => roleRoutesList(roleName || '', params),
+              add: (params: { values: number[] }) => roleRoutesAdd(roleName || '', params),
+              remove: (params: { values: number[] }) => roleRoutesRemove(roleName || '', params),
+            };
           }
           if (name === 'roles') {
             return {
