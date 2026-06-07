@@ -1969,6 +1969,60 @@ describe('plugin-ui-layout mobile models', () => {
     expect(childTabsElement.props.tabBarExtraContent.right).toBeTruthy();
   });
 
+  it('should render mobile child page titles with the back button in the titlebar', () => {
+    const flowEngine = new FlowEngine();
+    const close = vi.fn();
+
+    flowEngine.registerModels({
+      MobileChildPageModel,
+    });
+    flowEngine.context.defineProperty('t', {
+      value: (key: string) => key,
+    });
+    flowEngine.context.defineProperty('themeToken', {
+      value: {
+        paddingLG: 16,
+      },
+    });
+    flowEngine.context.defineProperty('view', {
+      value: {
+        type: 'embed',
+        close,
+        inputArgs: {},
+        navigation: {
+          viewParams: {},
+        },
+      },
+    });
+
+    const childPageModel = flowEngine.createModel<MobileChildPageModel>({
+      uid: 'mobile-child-page-title-test',
+      use: 'MobileChildPageModel',
+      props: {
+        displayTitle: true,
+        enableTabs: true,
+        title: 'Details',
+      },
+    });
+
+    const { container } = render(
+      React.createElement(
+        FlowEngineProvider,
+        { engine: flowEngine },
+        React.createElement(AntdApp, null, childPageModel.render()),
+      ),
+    );
+
+    const titlebar = container.querySelector('.nb-ui-layout-mobile-titlebar');
+
+    expect(titlebar).toBeInTheDocument();
+    expect(titlebar?.querySelector('.nb-ui-layout-mobile-title')).toHaveTextContent('Details');
+    expect(titlebar?.querySelector('.nb-ui-layout-mobile-back-button')).toBeInTheDocument();
+    expect(
+      container.querySelector('.nb-ui-layout-mobile-tabs .nb-ui-layout-mobile-back-button'),
+    ).not.toBeInTheDocument();
+  });
+
   it('should show mobile page tab add menu items', async () => {
     const flowEngine = new FlowEngine();
     flowEngine.context.defineProperty('t', {

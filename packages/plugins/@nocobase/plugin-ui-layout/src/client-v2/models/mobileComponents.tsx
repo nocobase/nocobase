@@ -60,6 +60,14 @@ export function useMobilePageClassName() {
         background: ${token.colorBgContainer};
       }
 
+      .nb-ui-layout-mobile-titlebar-left {
+        grid-column: 1;
+        min-width: 0;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+      }
+
       .nb-ui-layout-mobile-title {
         grid-column: 2;
         min-width: 0;
@@ -243,10 +251,11 @@ export function useMobilePageClassName() {
 export function MobilePageSurface(props: {
   title?: ReactNode;
   displayTitle?: boolean;
+  titlebarLeft?: ReactNode;
   children: ReactNode;
   className?: string;
 }) {
-  const { title, displayTitle, children, className } = props;
+  const { title, displayTitle, titlebarLeft, children, className } = props;
   const pageClassName = useMobilePageClassName();
   const pageSurfaceClassName = `nb-ui-layout-mobile-surface ${pageClassName}${className ? ` ${className}` : ''}`;
 
@@ -254,6 +263,7 @@ export function MobilePageSurface(props: {
     <div className={pageSurfaceClassName}>
       {displayTitle ? (
         <div className="nb-ui-layout-mobile-titlebar">
+          {titlebarLeft ? <div className="nb-ui-layout-mobile-titlebar-left">{titlebarLeft}</div> : null}
           <div className="nb-ui-layout-mobile-title">{title}</div>
         </div>
       ) : null}

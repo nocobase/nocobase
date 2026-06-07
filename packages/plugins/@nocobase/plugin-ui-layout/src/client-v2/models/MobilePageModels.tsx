@@ -59,7 +59,7 @@ function renderMobileBody(children: React.ReactNode) {
   return <div className="nb-ui-layout-mobile-body">{children}</div>;
 }
 
-function renderMobileRootTabLeftSpacer() {
+function renderMobilePageTabLeftSpacer() {
   return <span aria-hidden="true" className="nb-ui-layout-mobile-page-tab-left-spacer" />;
 }
 
@@ -89,7 +89,7 @@ function renderMobileAddTabButton(model: RootPageModel | ChildPageModel) {
 
 export class MobileRootPageModel extends RootPageModel {
   tabBarExtraContent = {
-    left: renderMobileRootTabLeftSpacer(),
+    left: renderMobilePageTabLeftSpacer(),
     right: renderMobileAddTabButton(this),
   };
 
@@ -111,6 +111,17 @@ export class MobileChildPageModel extends ChildPageModel {
     right: renderMobileAddTabButton(this),
   };
 
+  private renderTabsWithTitlebarBackButton(displayTitle: boolean) {
+    const leftExtraContent = this.tabBarExtraContent.left;
+
+    this.tabBarExtraContent.left = displayTitle ? renderMobilePageTabLeftSpacer() : <MobileBackButton />;
+    try {
+      return this.renderTabs();
+    } finally {
+      this.tabBarExtraContent.left = leftExtraContent;
+    }
+  }
+
   renderBackButtonWhenTabsDisabled() {
     if (this.context?.view?.type !== 'embed') {
       return null;
@@ -124,13 +135,19 @@ export class MobileChildPageModel extends ChildPageModel {
   }
 
   render() {
+    const displayTitle = !!this.props.displayTitle && !!this.props.title;
+
     return (
-      <MobilePageSurface>
+      <MobilePageSurface
+        title={this.props.title}
+        displayTitle={displayTitle}
+        titlebarLeft={displayTitle ? <MobileBackButton /> : null}
+      >
         {this.props.enableTabs ? (
-          renderMobileTabs(this.renderTabs())
+          renderMobileTabs(this.renderTabsWithTitlebarBackButton(displayTitle))
         ) : (
           <>
-            {this.renderBackButtonWhenTabsDisabled()}
+            {displayTitle ? null : this.renderBackButtonWhenTabsDisabled()}
             {renderMobileBody(this.renderFirstTab())}
           </>
         )}
