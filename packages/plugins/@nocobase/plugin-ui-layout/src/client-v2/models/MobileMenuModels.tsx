@@ -8,7 +8,13 @@
  */
 
 import { NocoBaseDesktopRouteType, type NocoBaseDesktopRoute } from '@nocobase/client-v2/flow-compat';
-import { FlowModel, type FlowSettingsContext } from '@nocobase/flow-engine';
+import {
+  FlowModel,
+  replaceFlowRegistry,
+  type FlowRegistryData,
+  type FlowSettingsContext,
+  type StepParams,
+} from '@nocobase/flow-engine';
 import React, { type ReactNode } from 'react';
 import {
   collectMobileTabRoutes,
@@ -61,7 +67,12 @@ type MobileMenuModelLike = FlowModel & {
 };
 
 type MobileRouteRepository = {
-  updateRoute?: (filterByTk: string | number, values: Partial<NocoBaseDesktopRoute>) => Promise<unknown>;
+  updateRoute?: (
+    filterByTk: string | number,
+    values: Partial<Omit<NocoBaseDesktopRoute, 'options'>> & {
+      options?: NocoBaseDesktopRoute['options'] | null;
+    },
+  ) => Promise<unknown>;
   deleteRoute?: (filterByTk: string | number) => Promise<unknown>;
 };
 
@@ -71,6 +82,21 @@ type MobileMenuEditParams = {
   href?: string;
   openInNewWindow?: boolean;
 };
+
+type PersistedMobileMenuModelData = {
+  uid?: string;
+  stepParams?: StepParams;
+  flowRegistry?: FlowRegistryData;
+};
+
+function omitMobileMenuRuntimeProps(props: Record<string, unknown> = {}) {
+  const persistableProps = { ...props };
+  delete persistableProps.dom;
+  delete persistableProps.item;
+  delete persistableProps.route;
+  delete persistableProps.parentRoute;
+  return persistableProps;
+}
 
 function getMobileMenuEditDefaultParams(route: NocoBaseDesktopRoute | undefined): MobileMenuEditParams {
   return {
@@ -217,13 +243,22 @@ export function resolveMobileMenuDragMoveOptionsFromEvent(
 export class MobileLayoutMenuItemModel extends FlowModel {
   private route?: NocoBaseDesktopRoute;
   private parentRoute?: NocoBaseDesktopRoute;
+  private persistedStateHydrated = false;
+  private persistedStateHydrating?: Promise<void>;
+  private initialPersistedInstanceFlowCount = 0;
 
   onInit(options: Parameters<FlowModel['onInit']>[0]) {
+    this.initialPersistedInstanceFlowCount = Object.keys(
+      ((options as { flowRegistry?: FlowRegistryData }).flowRegistry || {}) as FlowRegistryData,
+    ).length;
     super.onInit(options);
     this.syncFromRoute(
       this.props.route as NocoBaseDesktopRoute,
       this.props.parentRoute as NocoBaseDesktopRoute | undefined,
     );
+    if (this.shouldHydratePersistedState()) {
+      this.hydratePersistedState();
+    }
   }
 
   syncFromRoute(route: NocoBaseDesktopRoute, parentRoute?: NocoBaseDesktopRoute) {
@@ -244,13 +279,157 @@ export class MobileLayoutMenuItemModel extends FlowModel {
     return this.parentRoute || (this.props.parentRoute as NocoBaseDesktopRoute | undefined);
   }
 
-  getRouteRepository() {
+  private shouldHydratePersistedState() {
+    if (this.context.flowSettingsEnabled) {
+      return true;
+    }
+
+    return this.hasPersistedMenuInstanceFlowFlag();
+  }
+
+  private hasPersistedMenuInstanceFlowFlag(route = this.getRoute()) {
+    return route?.options?.hasPersistedMenuInstanceFlow === true;
+  }
+
+  private getCurrentPersistedInstanceFlowCount() {
+    return this.flowRegistry.getFlows().size;
+  }
+
+  private hasPersistableMenuLinkageRules() {
+    const params = this.getStepParams('mobileMenuSettings', 'linkageRules') as { value?: unknown[] } | undefined;
+    return Array.isArray(params?.value) && params.value.length > 0;
+  }
+
+  private hasCurrentPersistedMenuState() {
+    return this.getCurrentPersistedInstanceFlowCount() > 0 || this.hasPersistableMenuLinkageRules();
+  }
+
+  private getRouteRepository() {
     const repository = this.flowEngine.context.routeRepository as MobileRouteRepository | undefined;
     if (!repository) {
       throw new Error('[NocoBase] plugin-ui-layout route repository is unavailable.');
     }
 
     return repository;
+  }
+
+  private buildRouteOptionsWithPersistedFlowFlag(hasPersistedMenuInstanceFlow: boolean) {
+    const route = this.getRoute();
+    const nextOptions = {
+      ...(route?.options || {}),
+    };
+
+    if (hasPersistedMenuInstanceFlow) {
+      nextOptions.hasPersistedMenuInstanceFlow = true;
+    } else {
+      delete nextOptions.hasPersistedMenuInstanceFlow;
+    }
+
+    return Object.keys(nextOptions).length > 0 ? nextOptions : undefined;
+  }
+
+  private shouldDestroyPersistedStateOnDelete() {
+    return (
+      this.hasPersistedMenuInstanceFlowFlag() ||
+      this.hasCurrentPersistedMenuState() ||
+      this.hasPersistableInstanceFlows()
+    );
+  }
+
+  private async syncPersistedFlowRouteFlag() {
+    const route = this.getRoute();
+    if (route?.id == null) {
+      return;
+    }
+
+    const hasPersistedMenuInstanceFlow = this.hasCurrentPersistedMenuState();
+    if (this.hasPersistedMenuInstanceFlowFlag(route) === hasPersistedMenuInstanceFlow) {
+      return;
+    }
+
+    const options = this.buildRouteOptionsWithPersistedFlowFlag(hasPersistedMenuInstanceFlow);
+    const routeRepository = this.getRouteRepository();
+    if (!routeRepository.updateRoute) {
+      throw new Error('[NocoBase] plugin-ui-layout route repository updateRoute is unavailable.');
+    }
+
+    await routeRepository.updateRoute(route.id, { options: options || null });
+    this.syncFromRoute(
+      {
+        ...route,
+        options,
+      },
+      this.getParentRoute(),
+    );
+  }
+
+  private async destroyPersistedState() {
+    await this.flowEngine.modelRepository?.destroy?.(this.uid);
+  }
+
+  private async hydratePersistedState() {
+    if (this.persistedStateHydrated) {
+      return;
+    }
+
+    if (this.persistedStateHydrating) {
+      return await this.persistedStateHydrating;
+    }
+
+    this.persistedStateHydrating = (async () => {
+      let shouldRerenderAfterHydrate = false;
+      const repository = this.flowEngine.modelRepository;
+      if (!repository?.findOne) {
+        return;
+      }
+
+      const data = (await repository.findOne({ uid: this.uid })) as PersistedMobileMenuModelData | null;
+      if (!data?.uid) {
+        return;
+      }
+
+      if (data.stepParams && typeof data.stepParams === 'object') {
+        this.setStepParams(data.stepParams);
+        shouldRerenderAfterHydrate = this.hasPersistableMenuLinkageRules();
+      }
+
+      if (data.flowRegistry && typeof data.flowRegistry === 'object') {
+        replaceFlowRegistry(this.flowRegistry, data.flowRegistry);
+
+        const hasBeforeRenderFlow = Object.values(data.flowRegistry).some((flow) => {
+          if (!flow || typeof flow !== 'object' || (flow as { manual?: boolean }).manual === true) {
+            return false;
+          }
+          const event = (flow as { on?: string | { eventName?: string } }).on;
+          if (!event) {
+            return true;
+          }
+          return typeof event === 'string' ? event === 'beforeRender' : event.eventName === 'beforeRender';
+        });
+
+        shouldRerenderAfterHydrate = shouldRerenderAfterHydrate || hasBeforeRenderFlow;
+      }
+
+      if (shouldRerenderAfterHydrate) {
+        this.rerender();
+      }
+    })().finally(() => {
+      this.persistedStateHydrated = true;
+      this.persistedStateHydrating = undefined;
+    });
+
+    return await this.persistedStateHydrating;
+  }
+
+  private hasPersistableInstanceFlows() {
+    const currentFlowCount = this.flowRegistry.getFlows().size;
+    return currentFlowCount > 0 || this.initialPersistedInstanceFlowCount > 0;
+  }
+
+  serialize(): ReturnType<FlowModel['serialize']> {
+    const data = super.serialize();
+    data.props = omitMobileMenuRuntimeProps(data.props);
+    return data;
   }
 
   async updateMenuRoute(values: Partial<NocoBaseDesktopRoute>) {
@@ -264,7 +443,22 @@ export class MobileLayoutMenuItemModel extends FlowModel {
       throw new Error('[NocoBase] plugin-ui-layout route repository updateRoute is unavailable.');
     }
 
-    await routeRepository.updateRoute(route.id, values);
+    const nextValues = { ...values };
+    if (values.options && this.hasPersistedMenuInstanceFlowFlag(route)) {
+      nextValues.options = {
+        ...values.options,
+        hasPersistedMenuInstanceFlow: true,
+      };
+    }
+
+    await routeRepository.updateRoute(route.id, nextValues);
+    this.syncFromRoute(
+      {
+        ...route,
+        ...nextValues,
+      },
+      this.getParentRoute(),
+    );
   }
 
   async deleteMenuRoute() {
@@ -278,7 +472,11 @@ export class MobileLayoutMenuItemModel extends FlowModel {
       throw new Error('[NocoBase] plugin-ui-layout route repository deleteRoute is unavailable.');
     }
 
+    const shouldDestroyPersistedState = this.shouldDestroyPersistedStateOnDelete();
     await routeRepository.deleteRoute(route.id);
+    if (shouldDestroyPersistedState) {
+      await this.destroyPersistedState();
+    }
   }
 
   async destroy(): Promise<boolean> {
@@ -292,10 +490,32 @@ export class MobileLayoutMenuItemModel extends FlowModel {
   }
 
   async saveStepParams() {
+    const hasCurrentPersistedMenuState = this.hasCurrentPersistedMenuState();
+
+    if (hasCurrentPersistedMenuState) {
+      await super.saveStepParams();
+    } else if (this.hasPersistedMenuInstanceFlowFlag()) {
+      await this.destroyPersistedState();
+    } else if (this.hasPersistableInstanceFlows()) {
+      await super.saveStepParams();
+    }
+
+    await this.syncPersistedFlowRouteFlag();
     return true;
   }
 
   async save() {
+    const hasCurrentPersistedMenuState = this.hasCurrentPersistedMenuState();
+
+    if (hasCurrentPersistedMenuState) {
+      await super.save();
+    } else if (this.hasPersistedMenuInstanceFlowFlag()) {
+      await this.destroyPersistedState();
+    } else if (this.hasPersistableInstanceFlows()) {
+      await super.save();
+    }
+
+    await this.syncPersistedFlowRouteFlag();
     return true;
   }
 

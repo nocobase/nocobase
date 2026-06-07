@@ -52,6 +52,12 @@ type MobileRouteRepositoryForTest = {
   unsubscribe?: (subscriber: () => void) => void;
   ensureAccessibleLoaded?: () => Promise<NocoBaseDesktopRoute[]>;
   createRoute?: (route: NocoBaseDesktopRoute) => Promise<unknown>;
+  updateRoute?: (
+    filterByTk: string | number,
+    values: Partial<Omit<NocoBaseDesktopRoute, 'options'>> & {
+      options?: NocoBaseDesktopRoute['options'] | null;
+    },
+  ) => Promise<unknown>;
 };
 
 describe('plugin-ui-layout mobile models', () => {
@@ -1756,6 +1762,255 @@ describe('plugin-ui-layout mobile models', () => {
     await model.save();
 
     expect(saveModel.mock.calls.length).toBe(0);
+  });
+
+  it('should persist mobile menu linkage rules through flowModels and route flag', async () => {
+    const engine = new FlowEngine();
+    const saveModel = vi.spyOn(engine, 'saveModel').mockResolvedValue(undefined as never);
+    const updateRoute = vi.fn().mockResolvedValue(undefined);
+    engine.context.defineProperty('routeRepository', {
+      value: {
+        updateRoute,
+      },
+    });
+    const route: NocoBaseDesktopRoute = {
+      id: 1,
+      title: 'Home',
+      schemaUid: 'home-page',
+      type: NocoBaseDesktopRouteType.flowPage,
+    };
+    const model = engine.createModel<MobileLayoutMenuItemModel>({
+      uid: 'mobile-menu-item-linkage-persist',
+      use: MobileLayoutMenuItemModel,
+      props: {
+        route,
+      },
+    });
+
+    model.setStepParams('mobileMenuSettings', 'linkageRules', {
+      value: [
+        {
+          key: 'r1',
+          title: 'Hide menu item',
+          enable: true,
+          condition: { logic: '$and', items: [] },
+          actions: [],
+        },
+      ],
+    });
+
+    await model.saveStepParams();
+
+    expect(saveModel).toHaveBeenCalledWith(model, { onlyStepParams: true });
+    expect(updateRoute).toHaveBeenCalledWith(1, {
+      options: {
+        hasPersistedMenuInstanceFlow: true,
+      },
+    });
+  });
+
+  it('should save mobile menu linkage rules without serializing runtime route props', async () => {
+    type SerializedMobileMenuModel = {
+      props?: Record<string, unknown>;
+      stepParams?: {
+        mobileMenuSettings?: {
+          linkageRules?: {
+            value?: Array<{ key?: string }>;
+          };
+        };
+      };
+    };
+    const save = vi.fn(async (targetModel: { serialize: () => SerializedMobileMenuModel }) => {
+      const data = targetModel.serialize();
+
+      expect(data.props?.dom).toBeUndefined();
+      expect(data.props?.item).toBeUndefined();
+      expect(data.props?.route).toBeUndefined();
+      expect(data.props?.parentRoute).toBeUndefined();
+      expect(data.stepParams?.mobileMenuSettings?.linkageRules?.value).toEqual([
+        expect.objectContaining({ key: 'r1' }),
+      ]);
+      expect(() => JSON.stringify(data)).not.toThrow();
+      return data;
+    });
+    const updateRoute = vi.fn().mockResolvedValue(undefined);
+    const engine = new FlowEngine();
+    engine.setModelRepository({ save } as never);
+    engine.context.defineProperty('routeRepository', {
+      value: {
+        updateRoute,
+      },
+    });
+    const route: NocoBaseDesktopRoute = {
+      id: 1,
+      title: 'Home',
+      schemaUid: 'home-page',
+      type: NocoBaseDesktopRouteType.flowPage,
+    };
+    const model = engine.createModel<MobileLayoutMenuItemModel>({
+      uid: 'mobile-menu-item-linkage-runtime-props',
+      use: MobileLayoutMenuItemModel,
+      props: {
+        route,
+        parentRoute: {
+          id: 99,
+          type: NocoBaseDesktopRouteType.group,
+        },
+      },
+    });
+
+    model.setProps({
+      dom: React.createElement('button', { type: 'button' }, 'Home'),
+      item: {
+        key: 'home',
+        label: 'Home',
+      },
+    });
+    model.setStepParams('mobileMenuSettings', 'linkageRules', {
+      value: [
+        {
+          key: 'r1',
+          title: 'Hide menu item',
+          enable: true,
+          condition: { logic: '$and', items: [] },
+          actions: [],
+        },
+      ],
+    });
+
+    await model.saveStepParams();
+
+    expect(save).toHaveBeenCalledWith(model, { onlyStepParams: true });
+    expect(updateRoute).toHaveBeenCalledWith(1, {
+      options: {
+        hasPersistedMenuInstanceFlow: true,
+      },
+    });
+  });
+
+  it('should clear persisted mobile menu linkage rules and route flag', async () => {
+    const engine = new FlowEngine();
+    const saveModel = vi.spyOn(engine, 'saveModel').mockResolvedValue(undefined as never);
+    const destroy = vi.fn().mockResolvedValue(true);
+    const updateRoute = vi.fn().mockResolvedValue(undefined);
+    engine.setModelRepository({ destroy } as never);
+    engine.context.defineProperty('routeRepository', {
+      value: {
+        updateRoute,
+      },
+    });
+    const model = engine.createModel<MobileLayoutMenuItemModel>({
+      uid: 'mobile-menu-item-linkage-clear',
+      use: MobileLayoutMenuItemModel,
+      props: {
+        route: {
+          id: 1,
+          title: 'Home',
+          schemaUid: 'home-page',
+          type: NocoBaseDesktopRouteType.flowPage,
+          options: {
+            hasPersistedMenuInstanceFlow: true,
+          },
+        },
+      },
+    });
+
+    model.setStepParams('mobileMenuSettings', 'linkageRules', { value: [] });
+    await model.saveStepParams();
+
+    expect(saveModel).not.toHaveBeenCalled();
+    expect(destroy).toHaveBeenCalledWith('mobile-menu-item-linkage-clear');
+    expect(updateRoute).toHaveBeenCalledWith(1, {
+      options: null,
+    });
+    expect(model.getRoute()?.options).toBeUndefined();
+  });
+
+  it('should delete persisted mobile menu state when deleting a mobile tab route', async () => {
+    const engine = new FlowEngine();
+    const destroy = vi.fn().mockResolvedValue(true);
+    const deleteRoute = vi.fn().mockResolvedValue(undefined);
+    engine.setModelRepository({ destroy } as never);
+    engine.context.defineProperty('routeRepository', {
+      value: {
+        deleteRoute,
+      },
+    });
+    const model = engine.createModel<MobileLayoutMenuItemModel>({
+      uid: 'mobile-menu-item-linkage-delete',
+      use: MobileLayoutMenuItemModel,
+      props: {
+        route: {
+          id: 1,
+          title: 'Home',
+          schemaUid: 'home-page',
+          type: NocoBaseDesktopRouteType.flowPage,
+          options: {
+            hasPersistedMenuInstanceFlow: true,
+          },
+        },
+      },
+    });
+
+    await model.deleteMenuRoute();
+
+    expect(deleteRoute).toHaveBeenCalledWith(1);
+    expect(destroy).toHaveBeenCalledWith('mobile-menu-item-linkage-delete');
+  });
+
+  it('should restore mobile menu linkage rules after hydrate', async () => {
+    const engine = new FlowEngine();
+    engine.context.defineProperty('flowSettingsEnabled', {
+      value: false,
+    });
+    engine.setModelRepository({
+      findOne: vi.fn().mockResolvedValue({
+        uid: 'mobile-menu-item-linkage-hydrate',
+        use: 'MobileLayoutMenuItemModel',
+        stepParams: {
+          mobileMenuSettings: {
+            linkageRules: {
+              value: [
+                {
+                  key: 'r1',
+                  title: 'Persisted mobile linkage',
+                  enable: true,
+                  condition: { logic: '$and', items: [] },
+                  actions: [],
+                },
+              ],
+            },
+          },
+        },
+      }),
+    } as never);
+    const rerenderSpy = vi.spyOn(MobileLayoutMenuItemModel.prototype, 'rerender').mockResolvedValue(undefined as never);
+    try {
+      const model = engine.createModel<MobileLayoutMenuItemModel>({
+        uid: 'mobile-menu-item-linkage-hydrate',
+        use: MobileLayoutMenuItemModel,
+        props: {
+          route: {
+            id: 1,
+            title: 'Home',
+            schemaUid: 'home-page',
+            type: NocoBaseDesktopRouteType.flowPage,
+            options: {
+              hasPersistedMenuInstanceFlow: true,
+            },
+          },
+        },
+      });
+
+      await waitFor(() => {
+        expect(model.getStepParams('mobileMenuSettings', 'linkageRules')).toMatchObject({
+          value: [{ key: 'r1' }],
+        });
+      });
+      expect(rerenderSpy).toHaveBeenCalledTimes(1);
+    } finally {
+      rerenderSpy.mockRestore();
+    }
   });
 
   it('should keep the default mobile tab toolbar inside the hovered item', () => {
