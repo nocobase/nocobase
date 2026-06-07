@@ -29,7 +29,7 @@ import {
   UiSchemaEnumItem,
 } from '../../internal/utils/enumOptionsUtils';
 import { mergeItemMetaTreeForAssignValue } from '../FieldAssignValueInput';
-import { resolveOperatorComponent } from '../../internal/utils/operatorSchemaHelper';
+import { pickOperatorStyle as pickStyle, resolveOperatorComponent } from '../../internal/utils/operatorSchemaHelper';
 import { limitAssociationMetaTree } from './metaTreeAssociationDepth';
 
 const { DateFilterDynamicComponent: DateFilterDynamicComponentLazy } = lazy(
@@ -354,7 +354,8 @@ export const LinkageFilterItem: React.FC<LinkageFilterItemProps> = observer((pro
     return (inputProps: { value?: any; onChange?: (v: any) => void } & Record<string, any>) => {
       const { value: inputValue, onChange, ...rest } = inputProps || {};
       const nextProps = { ...componentProps };
-      if ((!nextProps?.options || nextProps?.options.length === 0) && enumOptions.length > 0) {
+      const options = Array.isArray(nextProps.options) ? nextProps.options : undefined;
+      if ((!options || options.length === 0) && enumOptions.length > 0) {
         nextProps.options = enumOptions;
       }
       const normalizedValue = Array.isArray(inputValue)
@@ -372,7 +373,7 @@ export const LinkageFilterItem: React.FC<LinkageFilterItemProps> = observer((pro
           {...rest}
           value={normalizedValue}
           onChange={onChange}
-          style={{ width: 200, ...(nextProps?.style || {}), ...(rest?.style || {}) }}
+          style={{ width: 200, ...pickStyle(nextProps.style), ...pickStyle(rest?.style) }}
         />
       );
 

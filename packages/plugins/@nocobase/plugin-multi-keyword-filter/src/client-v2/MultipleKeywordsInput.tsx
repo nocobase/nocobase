@@ -7,14 +7,16 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { UploadOutlined } from '@ant-design/icons';
 import { Alert, Button, message, Modal, Select, Space, Tooltip, Typography } from 'antd';
 import React, { FC, useRef, useState } from 'react';
-import { useT } from './locale';
-import { UploadOutlined } from '@ant-design/icons';
-import { useField } from '@formily/react';
 import { normalizeKeywords, type KeywordValue } from '../shared/normalizeKeywords';
+import { useT } from './locale';
 
 const tokenSeparator = '\n';
+
+type ExcelRow = Record<string, unknown>;
+type XlsxModule = typeof import('xlsx');
 
 export { normalizeKeywords };
 
@@ -30,14 +32,8 @@ export const MultipleKeywordsInput: FC<{
   const [columnModal, setColumnModal] = useState(false);
   const [columns, setColumns] = useState<string[]>([]);
   const [selectedColumns, setSelectedColumns] = useState<string[]>([]);
-  const [excelData, setExcelData] = useState<any[]>([]);
+  const [excelData, setExcelData] = useState<ExcelRow[]>([]);
   const t = useT();
-  const field = useField<any>();
-
-  // remove validator to prevent error
-  if (field?.validator) {
-    field.validator = null;
-  }
 
   const emitChange = (values: KeywordValue[], option?: unknown) => {
     props.onChange?.(normalizeKeywords(values, fieldInterface), option);
@@ -53,54 +49,48 @@ export const MultipleKeywordsInput: FC<{
 
   const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (file) {
-      try {
-        setImportLoading(true);
-        const XLSX = await import('xlsx');
+    if (!file) {
+      return;
+    }
 
-        // Read Excel file
-        const data = await readExcel(file, XLSX);
-        if (data.length === 0) {
-          message.error(t('excelFileEmpty'));
-          setImportLoading(false);
-          return;
-        }
-
-        // Extract all column names
-        const extractedColumns = Object.keys(data[0]);
-        setColumns(extractedColumns);
-        setExcelData(data);
-
-        // If there is only one column, import directly
-        if (extractedColumns.length === 1) {
-          const keywords = extractKeywordsFromColumn(data, extractedColumns[0]);
-          handleImportKeywords(keywords);
-        } else {
-          // If there are multiple columns, open selection dialog
-          setColumnModal(true);
-        }
-      } catch (error) {
-        console.error(t('errorParsingExcel'), error);
-        message.error(t('failedToParseExcel'));
-      } finally {
-        setImportLoading(false);
-        // Clear file input to enable trigger of change event when selecting the same file again
-        event.target.value = '';
+    try {
+      setImportLoading(true);
+      const XLSX = await import('xlsx');
+      const data = await readExcel(file, XLSX);
+      if (data.length === 0) {
+        message.error(t('excelFileEmpty'));
+        return;
       }
+
+      const extractedColumns = Object.keys(data[0]);
+      setColumns(extractedColumns);
+      setExcelData(data);
+
+      if (extractedColumns.length === 1) {
+        const keywords = extractKeywordsFromColumn(data, extractedColumns[0]);
+        handleImportKeywords(keywords);
+      } else {
+        setColumnModal(true);
+      }
+    } catch (error) {
+      console.error(t('errorParsingExcel'), error);
+      message.error(t('failedToParseExcel'));
+    } finally {
+      setImportLoading(false);
+      event.target.value = '';
     }
   };
 
-  // Read Excel file content
-  const readExcel = (file: File, XLSX: typeof import('xlsx')): Promise<any[]> => {
+  const readExcel = (file: File, XLSX: XlsxModule): Promise<ExcelRow[]> => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
-      reader.onload = (e) => {
+      reader.onload = (event) => {
         try {
-          const data = e.target?.result;
+          const data = event.target?.result;
           const workbook = XLSX.read(data, { type: 'array' });
           const firstSheetName = workbook.SheetNames[0];
           const worksheet = workbook.Sheets[firstSheetName];
-          const jsonData = XLSX.utils.sheet_to_json(worksheet, { defval: '' });
+          const jsonData = XLSX.utils.sheet_to_json<ExcelRow>(worksheet, { defval: '' });
           resolve(jsonData);
         } catch (error) {
           reject(error);
@@ -111,23 +101,21 @@ export const MultipleKeywordsInput: FC<{
     });
   };
 
-  // Extract keywords from specified column
-  const extractKeywordsFromColumn = (data: any[], columnName: string): string => {
+  const extractKeywordsFromColumn = (data: ExcelRow[], columnName: string): string => {
     return data
       .map((row) => row[columnName])
       .filter((value) => value !== undefined && value !== null && value !== '')
       .join(tokenSeparator);
   };
 
-  // Extract keywords from multiple columns
-  const extractKeywordsFromColumns = (data: any[], columnNames: string[]): string => {
+  const extractKeywordsFromColumns = (data: ExcelRow[], columnNames: string[]): string => {
     const keywordSet = new Set<string>();
 
     data.forEach((row) => {
       columnNames.forEach((column) => {
         const value = row[column];
         if (value !== undefined && value !== null && value !== '') {
-          keywordSet.add(value.toString());
+          keywordSet.add(String(value));
         }
       });
     });
@@ -135,7 +123,6 @@ export const MultipleKeywordsInput: FC<{
     return Array.from(keywordSet).join(tokenSeparator);
   };
 
-  // Handle importing keywords into the input field
   const handleImportKeywords = (keywords: string) => {
     if (!keywords) {
       message.warning(t('noValidKeywords'));
@@ -147,7 +134,6 @@ export const MultipleKeywordsInput: FC<{
     message.success(t('importSuccess', { count: keywordArray.length }));
   };
 
-  // Handle column selection confirmation
   const handleColumnSelectConfirm = () => {
     if (selectedColumns.length === 0) {
       message.warning(t('selectAtLeastOneColumn'));
@@ -177,15 +163,8 @@ export const MultipleKeywordsInput: FC<{
           <Button onClick={handleImportButtonClick} loading={importLoading} icon={<UploadOutlined />} />
         </Tooltip>
       </Space.Compact>
-      <input
-        type="file"
-        ref={fileInputRef}
-        style={{ display: 'none' }}
-        accept=".xlsx,.xls"
-        onChange={handleFileChange}
-      />
+      <input type="file" ref={fileInputRef} hidden accept=".xlsx,.xls" onChange={handleFileChange} />
 
-      {/* Column selection dialog */}
       <Modal
         title={t('selectExcelColumns')}
         open={columnModal}
@@ -196,10 +175,9 @@ export const MultipleKeywordsInput: FC<{
       >
         <Alert
           type="info"
-          style={{ marginBottom: '10px', whiteSpace: 'pre-line', padding: '4px 8px' }}
           description={
             <Typography>
-              <ul style={{ marginBottom: 0 }}>
+              <ul>
                 {t('tips')
                   .split('\n')
                   .map((item) => (
@@ -212,16 +190,10 @@ export const MultipleKeywordsInput: FC<{
         <Select
           mode="multiple"
           value={selectedColumns}
-          onChange={(values) => setSelectedColumns(values)}
-          style={{ width: '100%' }}
+          onChange={(values: string[]) => setSelectedColumns(values)}
           placeholder={t('selectColumnsPlaceholder')}
-        >
-          {columns.map((column) => (
-            <Select.Option key={column} value={column}>
-              {column}
-            </Select.Option>
-          ))}
-        </Select>
+          options={columns.map((column) => ({ label: column, value: column }))}
+        />
       </Modal>
     </>
   );

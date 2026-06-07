@@ -222,6 +222,45 @@ describe('FilterValueInput schema precedence', () => {
     expect(document.querySelector('.ant-select')).not.toBeNull();
   });
 
+  it('operator schema can render an app-registered custom component', () => {
+    const onChange = vi.fn();
+    const CustomFilterInput = (props: any) => (
+      <button
+        type="button"
+        data-testid="custom-filter-input"
+        data-field-interface={props.fieldInterface}
+        data-value={JSON.stringify(props.value)}
+        onClick={() => props.onChange?.(['alpha', 'beta'])}
+      >
+        custom-filter-input
+      </button>
+    );
+
+    render(
+      <FilterValueInput
+        operator={opOf({
+          value: '$in',
+          schema: {
+            'x-component': 'MultipleKeywordsInput',
+            'x-component-props': { fieldInterface: 'input' },
+          },
+        })}
+        value={['foo', 'bar']}
+        onChange={onChange}
+        app={{
+          getComponent: (name) => (name === 'MultipleKeywordsInput' ? CustomFilterInput : undefined),
+        }}
+      />,
+    );
+
+    const input = screen.getByTestId('custom-filter-input');
+    expect(input.getAttribute('data-field-interface')).toBe('input');
+    expect(input.getAttribute('data-value')).toBe(JSON.stringify(['foo', 'bar']));
+
+    fireEvent.click(input);
+    expect(onChange).toHaveBeenCalledWith(['alpha', 'beta']);
+  });
+
   it('field uiSchema is used when operator has none', () => {
     const { container } = render(
       <FilterValueInput

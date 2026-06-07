@@ -7,4 +7,4 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export { interceptor } from '../shared/interceptor';
+export { default } from './plugin';
