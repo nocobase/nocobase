@@ -75,6 +75,15 @@ type MobileRouteRepositoryForTest = {
 };
 
 describe('plugin-ui-layout mobile models', () => {
+  it('should not import unpublished client-v2 subpaths in mobile model sources', () => {
+    const mobileModelSources = import.meta.glob('../models/*.{ts,tsx}', {
+      as: 'raw',
+      eager: true,
+    }) as Record<string, string>;
+
+    expect(Object.values(mobileModelSources).join('\n')).not.toContain('@nocobase/client-v2/flow-compat');
+  });
+
   beforeEach(() => {
     window.localStorage.removeItem(FLOW_SETTINGS_PREFERENCE_STORAGE_KEY);
   });

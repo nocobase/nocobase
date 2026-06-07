@@ -7,7 +7,6 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { NocoBaseDesktopRouteType, type NocoBaseDesktopRoute } from '@nocobase/client-v2/flow-compat';
 import {
   FlowModel,
   replaceFlowRegistry,
@@ -16,6 +15,7 @@ import {
   type StepParams,
 } from '@nocobase/flow-engine';
 import React, { type ReactNode } from 'react';
+import { NocoBaseDesktopRouteType, type NocoBaseDesktopRoute } from './mobileFlowCompat';
 import {
   collectMobileTabRoutes,
   getMobileMenuItemUid,

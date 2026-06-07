@@ -8,8 +8,8 @@
  */
 
 import { FileTextOutlined, LinkOutlined } from '@ant-design/icons';
-import { Icon, NocoBaseDesktopRouteType, type NocoBaseDesktopRoute } from '@nocobase/client-v2/flow-compat';
 import React from 'react';
+import { Icon, NocoBaseDesktopRouteType, type NocoBaseDesktopRoute } from './mobileFlowCompat';
 
 export type MobileRouteTitleTranslator = (key: string) => string;
 export type MobileTabRouteCollectOptions = {

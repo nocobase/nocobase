@@ -27,13 +27,6 @@ import { define, observable } from '@formily/reactive';
 import { css } from '@emotion/css';
 import { BaseLayoutModel, BaseLayoutRouteCoordinator, type RouteModel, type RoutePageMeta } from '@nocobase/client-v2';
 import {
-  Icon,
-  IconPicker,
-  NocoBaseDesktopRouteType,
-  type NocoBaseDesktopRoute,
-  zIndexContext,
-} from '@nocobase/client-v2/flow-compat';
-import {
   DndProvider,
   DragHandler,
   Droppable,
@@ -63,6 +56,13 @@ import React, { type ReactNode, useCallback, useEffect, useLayoutEffect, useMemo
 import { useLocation, useNavigate, useOutlet } from 'react-router-dom';
 import { NAMESPACE } from '../../constants';
 import { refreshMobileLayoutAccessibleRoutes } from '../mobileRouteRepository';
+import {
+  Icon,
+  IconPicker,
+  NocoBaseDesktopRouteType,
+  type NocoBaseDesktopRoute,
+  zIndexContext,
+} from './mobileFlowCompat';
 import {
   collectMobileTabRoutes,
   type MobileLayoutMenuStructure,
