@@ -44,6 +44,9 @@ export interface OauthAuthConfig {
 export type EnvKind = 'local' | 'http' | 'docker' | 'ssh';
 
 export interface EnvConfigEntry {
+  autostart?: {
+    enabled?: boolean;
+  };
   kind?: EnvKind;
   apiBaseUrl?: string;
   authType?: 'basic' | 'token' | 'oauth';
