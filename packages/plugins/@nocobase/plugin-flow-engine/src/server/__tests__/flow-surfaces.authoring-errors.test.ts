@@ -8802,7 +8802,10 @@ ctx.render(React.createElement(DashboardKPIs));
           {
             key: 'composeJsColumnOnlyTable',
             type: 'table',
-            collection: 'employees',
+            resource: {
+              dataSourceKey: 'main',
+              collectionName: 'employees',
+            },
             fields: [
               {
                 key: 'employeeStatus',
