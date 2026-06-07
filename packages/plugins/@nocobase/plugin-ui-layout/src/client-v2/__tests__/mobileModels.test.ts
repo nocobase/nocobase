@@ -1868,11 +1868,26 @@ describe('plugin-ui-layout mobile models', () => {
     ]);
   });
 
-  it('should suppress default page tab add buttons in mobile headers', () => {
-    const flowEngine = { getModel: () => null };
+  it('should keep default page tab add buttons in mobile tabs', () => {
+    const flowEngine = new FlowEngine();
+    flowEngine.context.defineProperty('t', {
+      value: (key: string) => key,
+    });
+    flowEngine.context.defineProperty('themeToken', {
+      value: {
+        paddingLG: 16,
+      },
+    });
+    const rootPageModel = new MobileRootPageModel({ flowEngine } as never);
+    const childPageModel = new MobileChildPageModel({ flowEngine } as never);
+    const rootTabsElement = (rootPageModel.renderTabs() as React.ReactElement).props.children;
+    const childTabsElement = (childPageModel.renderTabs() as React.ReactElement).props.children;
 
-    expect(new MobileRootPageModel({ flowEngine } as never).tabBarExtraContent.right).toBeNull();
-    expect(new MobileChildPageModel({ flowEngine } as never).tabBarExtraContent.right).toBeNull();
+    expect(rootPageModel.tabBarExtraContent.right).toBeUndefined();
+    expect(childPageModel.tabBarExtraContent.left).toBeTruthy();
+    expect(childPageModel.tabBarExtraContent.right).toBeUndefined();
+    expect(rootTabsElement.props.tabBarExtraContent.right).toBeTruthy();
+    expect(childTabsElement.props.tabBarExtraContent.right).toBeTruthy();
   });
 
   it('should render mobile root page tabs from the current desktop route before route id is synced', () => {

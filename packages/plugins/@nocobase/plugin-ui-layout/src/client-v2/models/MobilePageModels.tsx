@@ -58,10 +58,6 @@ function renderMobileBody(children: React.ReactNode) {
 }
 
 export class MobileRootPageModel extends RootPageModel {
-  tabBarExtraContent = {
-    right: null,
-  };
-
   render() {
     const displayTitle = !!this.props.displayTitle && !!this.props.title;
     const enableTabs = resolveRootEnableTabs(this);
@@ -77,7 +73,6 @@ export class MobileRootPageModel extends RootPageModel {
 export class MobileChildPageModel extends ChildPageModel {
   tabBarExtraContent = {
     left: <MobileBackButton />,
-    right: null,
   };
 
   renderBackButtonWhenTabsDisabled() {
