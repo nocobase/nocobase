@@ -19,7 +19,7 @@
 import fs from 'node:fs';
 import fsp from 'node:fs/promises';
 import os from 'node:os';
-import type { ChildProcess } from 'node:child_process';
+import type { ChildProcess, StdioOptions } from 'node:child_process';
 import path from 'node:path';
 import spawn from 'cross-spawn';
 import { translateCli } from './cli-locale.js';
@@ -155,7 +155,9 @@ export async function run(name: string, args: string[], options?: RunProcessOpti
   const cwd = resolveCwd(options?.cwd);
   const label = options?.errorName ?? name;
   const command = await resolveCommandName(name);
-  const stdio = shouldTeeInheritedOutput(options) ? ['inherit', 'pipe', 'pipe'] : (options?.stdio ?? 'inherit');
+  const stdio: StdioOptions = shouldTeeInheritedOutput(options)
+    ? ['inherit', 'pipe', 'pipe']
+    : (options?.stdio ?? 'inherit');
   return await new Promise((resolve, reject) => {
     const child = spawn(command, [...args], {
       stdio,

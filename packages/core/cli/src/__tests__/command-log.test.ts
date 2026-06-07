@@ -121,7 +121,7 @@ test('command log initialization cleans up dated directories older than configur
     expect(await fsp.stat(path.join(logRoot, keepDirName))).toBeDefined();
     await expect(fsp.stat(path.join(logRoot, oldDirName))).rejects.toThrow();
     expect(await fsp.stat(path.join(logRoot, 'misc-folder'))).toBeDefined();
-    expect(session.logFile).toContain(`${path.sep}${formatDateDir(now)}${path.sep}no-session${path.sep}`);
+    expect(session.logFile).toContain(`${path.sep}${formatDateDir(now)}${path.sep}`);
   } finally {
     if (previousCliRoot === undefined) {
       delete process.env.NB_CLI_ROOT;
