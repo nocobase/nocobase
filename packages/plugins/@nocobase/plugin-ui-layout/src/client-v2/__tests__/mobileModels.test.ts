@@ -1164,7 +1164,7 @@ describe('plugin-ui-layout mobile models', () => {
     expect(pageSurface).toBeInTheDocument();
   });
 
-  it('should use compact padding for mobile page and child page content', async () => {
+  it('should remove page shell padding from mobile page and child page content', async () => {
     renderMobileLayoutWithRouteRepository({
       listAccessible: () => [
         {
@@ -1182,10 +1182,10 @@ describe('plugin-ui-layout mobile models', () => {
 
     const styleText = getDocumentStyleText();
 
-    expect(styleText).toMatch(/\.nb-ui-layout-mobile-body\s*\{[^}]*padding:\s*4px/);
-    expect(styleText).toMatch(/\.nb-ui-layout-mobile-tabs\s+\.ant-tabs-tabpane\s*\{[^}]*padding:\s*4px/);
-    expect(styleText).toMatch(
-      /\.nb-ui-layout-mobile-viewport\[data-nb-mobile-view-stack-depth=["']1["']\]\s+\.nb-ui-layout-mobile-body[^}]*padding-bottom:\s*calc\(4px\s*\+\s*var\(--nb-mobile-tabbar-height\)/,
+    expect(styleText).toMatch(/\.nb-ui-layout-mobile-body\s*\{[^}]*padding:\s*0/);
+    expect(styleText).toMatch(/\.nb-ui-layout-mobile-tabs\s+\.ant-tabs-tabpane\s*\{[^}]*padding:\s*0/);
+    expect(styleText).not.toMatch(
+      /\.nb-ui-layout-mobile-viewport\[data-nb-mobile-view-stack-depth=["']1["']\]\s+\.nb-ui-layout-mobile-body[^}]*padding-bottom:\s*calc\(/,
     );
   });
 

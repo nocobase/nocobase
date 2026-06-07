@@ -591,11 +591,6 @@ const MobileLayoutComponent = observer((props: { model: MobileLayoutModel }) => 
         --nb-header-height: 0px;
         --nb-mobile-tabbar-height: 57px;
       }
-
-      .nb-ui-layout-mobile-viewport[data-nb-mobile-view-stack-depth='1'] .nb-ui-layout-mobile-body,
-      .nb-ui-layout-mobile-viewport[data-nb-mobile-view-stack-depth='1'] .nb-ui-layout-mobile-tabs .ant-tabs-tabpane {
-        padding-bottom: calc(${token.paddingXXS}px + var(--nb-mobile-tabbar-height) + env(safe-area-inset-bottom));
-      }
     `,
     [
       isDesktopPreview,
@@ -605,7 +600,6 @@ const MobileLayoutComponent = observer((props: { model: MobileLayoutModel }) => 
       token.colorBgContainer,
       token.colorBgLayout,
       token.colorBorderSecondary,
-      token.paddingXXS,
       token.paddingXL,
     ],
   );
