@@ -541,19 +541,23 @@ export class CollectionBlockModel<T = DefaultStructure> extends DataBlockModel<T
 
   protected defaultBlockTitle() {
     const blockLabel = this.translate(this.constructor['meta']?.label || this.constructor.name);
-    const dsName = this.dataSource?.displayName || this.dataSource?.key;
+    const params = this.getResourceSettingsInitParams();
+    const dataSource = this.dataSource;
+    const collection = this.collection;
+    const dsName = dataSource?.displayName || dataSource?.key || params?.dataSourceKey;
     const dsCount = this.context?.dataSourceManager?.getDataSources?.().length || 0;
-    const colTitle = this.collection?.title;
-    if (this.association) {
+    const colTitle = collection?.title || collection?.name || params?.collectionName || '';
+    const association = dataSource ? this.association : undefined;
+    if (association) {
       const resourceName = this.resource.getResourceName();
-      const sourceCollection = this.dataSource.getCollection(resourceName.split('.')[0]);
+      const sourceCollection = dataSource.getCollection(resourceName.split('.')[0]);
       return createDefaultCollectionBlockTitle({
         blockLabel,
         dsName,
         dsCount,
         collectionTitle: colTitle,
-        sourceCollectionTitle: sourceCollection.title,
-        associationTitle: this.association.title,
+        sourceCollectionTitle: sourceCollection?.title,
+        associationTitle: association.title,
       });
     }
     return createDefaultCollectionBlockTitle({ blockLabel, dsName, dsCount, collectionTitle: colTitle });

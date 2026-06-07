@@ -1390,6 +1390,8 @@
   "The current user only has the UI configuration permission, but don't have \"{{actionName}}\" permission for collection \"{{name}}\"": "当前用户只有 UI 配置权限，但没有数据表 \"{{name}}\"的 \"{{actionName}}\"权限。",
   "The current user only has the UI configuration permission, but don't have \"{{actionName}}\" permission for field \"{{name}}\"": "当前用户只有 UI 配置权限，但没有字段 \"{{name}}\"的 \"{{actionName}}\"权限。",
   "The current user only has the UI configuration permission, but don't have view permission for collection \"{{name}}\"": "当前用户只有 UI 配置权限，但没有数据表 \"{{name}}\" 查看权限。",
+  "The data source \"{{name}}\" used by this block is disabled or unavailable. Enable the data source to display this block.": "该区块使用的数据源“{{name}}”已禁用或不可用。启用该数据源后才能显示此区块。",
+  "The data source used by this block is disabled or unavailable. Enable the data source to display this block.": "该区块使用的数据源已禁用或不可用。启用该数据源后才能显示此区块。",
   "The deletion was successful.": "删除成功",
   "The field has been deleted": "字段已删除",
   "The field value cannot be greater than ": "数值不能大于",
