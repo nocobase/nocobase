@@ -324,7 +324,16 @@ export default function LayoutAwareDesktopRoutesPermissionsTab(props: Permission
             {t('Allow access')}
           </Checkbox>
         ),
-        render: (_, item) => <Checkbox checked={selectedIds.includes(item.id)} onChange={() => toggleItem(item)} />,
+        render: (_, item) => {
+          const routeTitle = translateTitle(item.title, t);
+          return (
+            <Checkbox
+              aria-label={t('Allow access to {{route}}', { route: routeTitle })}
+              checked={selectedIds.includes(item.id)}
+              onChange={() => toggleItem(item)}
+            />
+          );
+        },
       },
     ],
     [allIds.length, selectedIds, setAll, t, toggleItem],

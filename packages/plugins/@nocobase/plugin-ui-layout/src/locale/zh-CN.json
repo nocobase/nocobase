@@ -11,6 +11,7 @@
   "Are you sure you want to delete it?": "确定要删除吗？",
   "Are you sure you want to delete this item? This action cannot be undone.": "确定要删除此项吗？此操作不可撤销。",
   "Are you sure you want to delete the selected UI layouts?": "确定要删除选中的 UI 布局吗？",
+  "Allow access to {{route}}": "允许访问 {{route}}",
   "Auth check": "认证校验",
   "Back": "返回",
   "Cancel": "取消",

@@ -7,7 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import React from 'react';
 import { DEFAULT_ADMIN_UI_LAYOUT } from '../../constants';
 import LayoutAwareDesktopRoutesPermissionsTab, {
@@ -186,6 +187,38 @@ describe('plugin-ui-layout route permissions', () => {
       consoleError.mockRestore();
     }
   });
+
+  it('should expose labeled permission controls for keyboard access', async () => {
+    const resource = createPermissionTabResources();
+    const user = userEvent.setup();
+    flowMocks.context = resource.context;
+
+    render(
+      <LayoutAwareDesktopRoutesPermissionsTab
+        activeKey="menu"
+        activeRole={{ name: 'layout-member', title: 'Layout member' }}
+        onRoleChange={vi.fn()}
+      />,
+    );
+
+    expect(await screen.findByRole('combobox', { name: 'Layout' })).toBeInTheDocument();
+    expect(
+      screen.getByRole('checkbox', { name: 'New routes are allowed to be accessed by default' }),
+    ).toBeInTheDocument();
+
+    const routeCheckbox = await screen.findByRole('checkbox', { name: 'Allow access to Admin route' });
+    routeCheckbox.focus();
+    expect(routeCheckbox).toHaveFocus();
+
+    await act(async () => {
+      await user.keyboard('[Space]');
+    });
+
+    await waitFor(() => {
+      expect(resource.roleRoutesRemove).toHaveBeenCalledWith({ values: [1] });
+    });
+    expect(resource.messageSuccess).toHaveBeenCalledWith('Saved successfully');
+  });
 });
 
 async function selectLayout(label: string) {
@@ -268,8 +301,8 @@ function createPermissionTabResources() {
   });
   const roleRoutesResource = {
     list: roleRoutesList,
-    add: vi.fn(),
-    remove: vi.fn(),
+    add: vi.fn(async () => undefined),
+    remove: vi.fn(async () => undefined),
   };
   const rolesResource = {
     update: vi.fn(async () => ({
@@ -281,9 +314,12 @@ function createPermissionTabResources() {
       },
     })),
   };
+  const flowMessageSuccess = vi.fn();
 
   return {
     desktopRoutesList,
+    messageSuccess: flowMessageSuccess,
+    roleRoutesRemove: roleRoutesResource.remove,
     context: {
       api: {
         resource: vi.fn((name: string) => {
@@ -307,7 +343,7 @@ function createPermissionTabResources() {
         }),
       },
       message: {
-        success: vi.fn(),
+        success: flowMessageSuccess,
       },
     },
   };
