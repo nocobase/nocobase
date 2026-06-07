@@ -54,6 +54,7 @@
   {
     "type": "custom-link",
     "label": "Deployment produksi",
+    "link": "/quickstart/production",
     "items": [
       {
         "type": "custom-link",

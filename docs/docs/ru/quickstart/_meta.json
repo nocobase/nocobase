@@ -60,10 +60,12 @@
   {
     "type": "custom-link",
     "label": "生产环境部署",
+    "link": "/quickstart/production",
     "items": [
       {
         "type": "custom-link",
         "label": "反向代理",
+        "link": "/quickstart/production/reverse-proxy",
         "items": [
           {
             "type": "custom-link",
