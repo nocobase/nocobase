@@ -60,6 +60,7 @@ describe('TableBlockModel mobile settings buttons', () => {
     expect(actionButton.props['aria-label']).toBe('Actions');
     expect(fieldsButton.props.children).toBeNull();
     expect(fieldsButton.props['aria-label']).toBe('Fields');
+    expect(addColumn?.width).toBeUndefined();
   });
 
   it('keeps table actions and fields settings labels outside mobile layouts', () => {
@@ -72,5 +73,6 @@ describe('TableBlockModel mobile settings buttons', () => {
 
     expect(actionButton.props.children).toBe('Actions');
     expect(fieldsButton.props.children).toBe('Fields');
+    expect(addColumn?.width).toBe(100);
   });
 });

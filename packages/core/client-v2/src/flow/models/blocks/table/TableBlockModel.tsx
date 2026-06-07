@@ -275,7 +275,7 @@ export class TableBlockModel extends CollectionBlockModel<TableBlockModelStructu
       cols.push({
         key: 'addColumn',
         fixed: 'right',
-        width: 100,
+        ...(this.context.isMobileLayout ? {} : { width: 100 }),
         title: <AddFieldColumn model={this} />,
       } as any);
     }
