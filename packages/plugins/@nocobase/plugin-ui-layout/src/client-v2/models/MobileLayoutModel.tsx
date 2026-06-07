@@ -38,6 +38,7 @@ import {
   DragHandler,
   Droppable,
   FlowModelRenderer,
+  GLOBAL_EMBED_CONTAINER_ID,
   observer,
   parsePathnameToViewParams,
   type FlowModel,
@@ -557,9 +558,19 @@ const MobileLayoutComponent = observer((props: { model: MobileLayoutModel }) => 
       overflow: hidden;
       background: ${isDesktopPreview ? token.colorBgLayout : token.colorBgContainer};
 
+      .nb-ui-layout-mobile-workspace {
+        flex: 1 1 0;
+        width: 100%;
+        min-height: 0;
+        display: ${isDesktopPreview ? 'flex' : 'block'};
+        overflow: hidden;
+        background: ${isDesktopPreview ? token.colorBgLayout : token.colorBgContainer};
+      }
+
       .nb-ui-layout-mobile-preview {
         flex: 1 1 0;
         width: 100%;
+        min-width: 0;
         min-height: 0;
         display: ${isDesktopPreview ? 'flex' : 'block'};
         align-items: center;
@@ -590,6 +601,18 @@ const MobileLayoutComponent = observer((props: { model: MobileLayoutModel }) => 
         background: ${token.colorBgLayout};
         --nb-header-height: 0px;
         --nb-mobile-tabbar-height: 57px;
+      }
+
+      .nb-ui-layout-mobile-embed-container {
+        display: ${isDesktopPreview ? 'block' : 'none'};
+        flex: 0 0 auto;
+        width: fit-content;
+        height: 100%;
+        min-width: 0;
+        position: relative;
+        overflow: hidden;
+        background: ${token.colorBgContainer};
+        box-shadow: ${isDesktopPreview ? `inset 1px 0 0 ${token.colorBorderSecondary}` : 'none'};
       }
     `,
     [
@@ -684,15 +707,22 @@ const MobileLayoutComponent = observer((props: { model: MobileLayoutModel }) => 
           onPreviewSizeChange={setPreviewSize}
         />
       ) : null}
-      <div className="nb-ui-layout-mobile-preview">
-        <div className="nb-ui-layout-mobile-frame">
-          <div
-            className="nb-ui-layout-mobile-viewport"
-            data-nb-mobile-view-stack-depth={model.getMobileViewStackDepth()}
-          >
-            <MobileHomePlaceholder designModeEnabled={preferredFlowSettingsEnabled} model={model} outlet={outlet} />
+      <div className="nb-ui-layout-mobile-workspace">
+        <div className="nb-ui-layout-mobile-preview">
+          <div className="nb-ui-layout-mobile-frame">
+            <div
+              className="nb-ui-layout-mobile-viewport"
+              data-nb-mobile-view-stack-depth={model.getMobileViewStackDepth()}
+            >
+              <MobileHomePlaceholder designModeEnabled={preferredFlowSettingsEnabled} model={model} outlet={outlet} />
+            </div>
           </div>
         </div>
+        <div
+          id={GLOBAL_EMBED_CONTAINER_ID}
+          className="nb-ui-layout-mobile-embed-container"
+          hidden={!isDesktopPreview}
+        ></div>
       </div>
     </div>
   );

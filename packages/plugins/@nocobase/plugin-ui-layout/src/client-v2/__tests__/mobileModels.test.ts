@@ -15,6 +15,7 @@ import {
   createViewScopedEngine,
   FlowEngine,
   FlowEngineProvider,
+  GLOBAL_EMBED_CONTAINER_ID,
   type FlowSettingsContext,
 } from '@nocobase/flow-engine';
 import React from 'react';
@@ -1112,6 +1113,29 @@ describe('plugin-ui-layout mobile models', () => {
     const shell = document.querySelector('.nb-ui-layout-mobile-viewport > div');
     expect(shell?.children[0]).toHaveClass('nb-ui-layout-mobile-page-slot');
     expect(shell?.children[1]).toHaveClass('nb-ui-layout-mobile-home-tabbar');
+  });
+
+  it('should render an embed settings container beside the mobile preview', async () => {
+    renderMobileLayoutWithRouteRepository({
+      listAccessible: () => [
+        {
+          id: 1,
+          type: NocoBaseDesktopRouteType.flowPage,
+          title: 'Home',
+          schemaUid: 'home-page',
+        },
+      ],
+    });
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /Home/ })).toBeInTheDocument();
+    });
+
+    const embedContainer = document.querySelector(`#${GLOBAL_EMBED_CONTAINER_ID}`);
+
+    expect(embedContainer).toHaveClass('nb-ui-layout-mobile-embed-container');
+    expect(embedContainer?.previousElementSibling).toHaveClass('nb-ui-layout-mobile-preview');
+    expect(embedContainer?.parentElement).toHaveClass('nb-ui-layout-mobile-workspace');
   });
 
   it('should use the mobile page content slot as the layout content element', async () => {
