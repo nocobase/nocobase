@@ -11,7 +11,7 @@ hero:
   actions:
     - theme: brand
       text: Mulai Cepat
-      link: /quickstart/how-nocobase-works
+      link: /get-started/how-nocobase-works
     - theme: alt
       text: GitHub
       link: https://github.com/nocobase/nocobase
@@ -22,10 +22,10 @@ features:
     items:
       - title: Memulai NocoBase
         details: Pahami konsep inti dan operasi dasar NocoBase.
-        link: /quickstart/how-nocobase-works
-      - title: Instal aplikasi dengan CLI
-        details: Instal dan kelola aplikasi dengan NocoBase CLI.
-        link: /quickstart/installation/cli
+        link: /get-started/how-nocobase-works
+      - title: Instal aplikasi
+        details: Instal dan kelola aplikasi dengan cepat.
+        link: /get-started/installation/docker
       - title: Tutorial
         details: Mulai dari nol, ikuti tutorial untuk membangun proyek nyata langkah demi langkah.
         link: /tutorials/v2/

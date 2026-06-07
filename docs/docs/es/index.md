@@ -23,9 +23,9 @@ features:
       - title: Introducción a NocoBase
         details: Comprenda los conceptos clave y las operaciones básicas de NocoBase.
         link: /quickstart/how-nocobase-works
-      - title: Instalar aplicaciones con CLI
-        details: Instale y gestione aplicaciones con NocoBase CLI.
-        link: /quickstart/installation/cli
+      - title: Instalar aplicaciones
+        details: Instale y gestione aplicaciones rápidamente.
+        link: /get-started/installation/docker
       - title: Tutoriales
         details: Empiece desde cero y siga los tutoriales para construir un proyecto real paso a paso.
         link: /tutorials/v2/

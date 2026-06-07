@@ -11,7 +11,7 @@ hero:
   actions:
     - theme: brand
       text: 快速上手
-      link: /quickstart/how-nocobase-works
+      link: /get-started/how-nocobase-works
     - theme: alt
       text: GitHub
       link: https://github.com/nocobase/nocobase
@@ -22,10 +22,10 @@ features:
     items:
       - title: NocoBase 使用入门
         details: 了解 NocoBase 的核心概念和基本操作。
-        link: /quickstart/how-nocobase-works
-      - title: 使用 CLI 安装应用
-        details: 通过 NocoBase CLI 安装和管理应用。
-        link: /quickstart/installation/cli
+        link: /get-started/how-nocobase-works
+      - title: 安装应用
+        details: 快速安装和管理应用。
+        link: /get-started/installation/docker
       - title: 教程
         details: 从零开始，跟着教程一步步搭建真实项目。
         link: /tutorials/v2/
