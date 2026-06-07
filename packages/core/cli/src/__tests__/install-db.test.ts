@@ -59,14 +59,17 @@ type InstallStatics = {
     timeZone: string;
     args: string[];
   }>;
-  buildSavedEnvConfig: (params: {
-    envName: string;
-    appResults: Record<string, unknown>;
-    downloadResults: Record<string, unknown>;
-    dbResults: Record<string, unknown>;
-    rootResults: Record<string, unknown>;
-    envAddResults: Record<string, unknown>;
-  }, options?: { defaultApiHost?: string }) => Record<string, unknown>;
+  buildSavedEnvConfig: (
+    params: {
+      envName: string;
+      appResults: Record<string, unknown>;
+      downloadResults: Record<string, unknown>;
+      dbResults: Record<string, unknown>;
+      rootResults: Record<string, unknown>;
+      envAddResults: Record<string, unknown>;
+    },
+    options?: { defaultApiHost?: string },
+  ) => Record<string, unknown>;
   resolveAvailableDefaultPort: (defaultPort: string) => Promise<string>;
   buildAppPromptInitialValues: (params: {
     envName?: string;
@@ -712,8 +715,7 @@ test('docker app plan wires app, db, network, port, and image settings', async (
   expect(plan.args.includes('DB_UNDERSCORED=true')).toBe(true);
 });
 
-test('docker app plan forwards NOCOBASE_EXTRACT_CLIENT_ASSETS when enabled', async () => {
-  process.env.NOCOBASE_EXTRACT_CLIENT_ASSETS = 'true';
+test('docker app plan enables NOCOBASE_EXTRACT_CLIENT_ASSETS by default', async () => {
   const installStatics = Install as unknown as InstallStatics;
   const plan = await installStatics.buildDockerAppPlan({
     envName: 'demo',
@@ -746,6 +748,42 @@ test('docker app plan forwards NOCOBASE_EXTRACT_CLIENT_ASSETS when enabled', asy
   });
 
   expect(plan.args.includes('NOCOBASE_EXTRACT_CLIENT_ASSETS=true')).toBe(true);
+});
+
+test('docker app plan forwards NOCOBASE_EXTRACT_CLIENT_ASSETS when explicitly disabled', async () => {
+  process.env.NOCOBASE_EXTRACT_CLIENT_ASSETS = 'false';
+  const installStatics = Install as unknown as InstallStatics;
+  const plan = await installStatics.buildDockerAppPlan({
+    envName: 'demo',
+    workspaceName: 'nb-demo',
+    networkName: 'nb-demo',
+    appResults: {
+      appPort: '13000',
+      storagePath: './storage/demo',
+      lang: 'zh-CN',
+    },
+    downloadResults: {
+      source: 'docker',
+      version: 'develop',
+      dockerRegistry: 'registry.cn-shanghai.aliyuncs.com/nocobase/nocobase',
+    },
+    dbResults: {
+      dbDialect: 'postgres',
+      dbHost: 'nb-demo-demo-postgres',
+      dbPort: '5432',
+      dbDatabase: 'nocobase',
+      dbUser: 'nocobase',
+      dbPassword: 'nocobase',
+    },
+    rootResults: {
+      rootUsername: 'nocobase',
+      rootEmail: 'admin@nocobase.com',
+      rootPassword: 'admin123',
+      rootNickname: 'Super Admin',
+    },
+  });
+
+  expect(plan.args.includes('NOCOBASE_EXTRACT_CLIENT_ASSETS=false')).toBe(true);
 });
 
 test('install saved env config forwards endpoint, auth, app, storage, and db settings', () => {

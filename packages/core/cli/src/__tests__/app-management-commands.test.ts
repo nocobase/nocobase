@@ -1349,6 +1349,8 @@ test('start recreates docker app containers through docker run', async () => {
       'DB_TABLE_PREFIX=nb_',
       '-e',
       'DB_UNDERSCORED=true',
+      '-e',
+      'NOCOBASE_EXTRACT_CLIENT_ASSETS=true',
       'nocobase/nocobase:next-full',
     ],
     {
@@ -1372,9 +1374,8 @@ test('start recreates docker app containers through docker run', async () => {
   ]);
 });
 
-test('start forwards NOCOBASE_EXTRACT_CLIENT_ASSETS to docker envs when enabled', async () => {
+test('start enables NOCOBASE_EXTRACT_CLIENT_ASSETS for docker envs by default', async () => {
   const { default: Start } = await import('../commands/app/start.js');
-  process.env.NOCOBASE_EXTRACT_CLIENT_ASSETS = 'true';
   mocks.resolveManagedAppRuntime.mockResolvedValue({
     kind: 'docker',
     envName: 'docker-local',
@@ -1418,6 +1419,55 @@ test('start forwards NOCOBASE_EXTRACT_CLIENT_ASSETS to docker envs when enabled'
       stdio: 'inherit',
     },
   ]);
+});
+
+test('start lets docker envs disable NOCOBASE_EXTRACT_CLIENT_ASSETS explicitly', async () => {
+  const { default: Start } = await import('../commands/app/start.js');
+  process.env.NOCOBASE_EXTRACT_CLIENT_ASSETS = 'false';
+  mocks.resolveManagedAppRuntime.mockResolvedValue({
+    kind: 'docker',
+    envName: 'docker-local',
+    source: 'docker',
+    containerName: 'nb-demo-docker-local-app',
+    workspaceName: 'nb-demo',
+    env: {
+      config: {
+        builtinDb: false,
+        appKey: 'app-key-123',
+        timezone: 'Asia/Shanghai',
+        dbDialect: 'postgres',
+        dbHost: 'nb-demo-docker-local-postgres',
+        dbPort: '5432',
+        dbDatabase: 'nocobase',
+        dbUser: 'nocobase',
+        dbPassword: 'nocobase',
+        dockerRegistry: 'nocobase/nocobase',
+        downloadVersion: 'next',
+        storagePath: './docker-local/storage',
+      },
+      appPort: 13000,
+    },
+  });
+  mocks.commandSucceeds.mockResolvedValueOnce(true);
+
+  const command = createCommandHarness({
+    flags: {
+      env: 'docker-local',
+      verbose: true,
+    },
+  });
+
+  await Start.prototype.run.call(command);
+
+  expect(
+    mocks.run.mock.calls.some(
+      ([name, args]) =>
+        name === 'docker' &&
+        Array.isArray(args) &&
+        args.includes('NOCOBASE_EXTRACT_CLIENT_ASSETS=false') &&
+        args.includes('nocobase/nocobase:next-full'),
+    ),
+  ).toBe(true);
 });
 
 test('start rejects local-only flags for docker envs', async () => {
@@ -3965,7 +4015,9 @@ test('destroy removes the configured appPath root for local app-path envs', asyn
     [path.resolve(resolveCliHomeRoot(), '.nocobase/proxy/local-app-path'), { recursive: true, force: true }],
     [path.resolve('/tmp/local-app/storage'), { recursive: true, force: true }],
   ]);
-  expect(mocks.printInfo.mock.calls).toContainEqual(['External database resources for "local-app-path" were left untouched.']);
+  expect(mocks.printInfo.mock.calls).toContainEqual([
+    'External database resources for "local-app-path" were left untouched.',
+  ]);
   expect(mocks.removeEnv.mock.calls).toEqual([['local-app-path']]);
 });
 

@@ -352,6 +352,17 @@ function optionalEnvBoolean(value: unknown): boolean | undefined {
   return Boolean(value);
 }
 
+function resolveExtractClientAssetsDefaultEnabled(value: unknown): boolean {
+  const text = String(value ?? '')
+    .trim()
+    .toLowerCase();
+  if (!text) {
+    return true;
+  }
+
+  return !['0', 'false', 'no', 'off'].includes(text);
+}
+
 function pushOptionalEnvArg(args: string[], key: string, value: string | boolean | undefined): void {
   if (typeof value === 'string') {
     if (!value) {
@@ -2275,7 +2286,7 @@ export default class Install extends Command {
     const dbSchema = optionalEnvString(params.dbResults.dbSchema);
     const dbTablePrefix = optionalEnvString(params.dbResults.dbTablePrefix);
     const dbUnderscored = optionalEnvBoolean(params.dbResults.dbUnderscored);
-    const extractClientAssets = Install.toOptionalPromptString(process.env.NOCOBASE_EXTRACT_CLIENT_ASSETS);
+    const extractClientAssets = resolveExtractClientAssetsDefaultEnabled(process.env.NOCOBASE_EXTRACT_CLIENT_ASSETS);
     const appKey = Install.resolveManagedAppKey(params.appResults.appKey);
     const appPublicPath = Install.toOptionalPromptString(params.appResults.appPublicPath);
     const timeZone = Install.resolveManagedTimeZone(params.appResults.timeZone);
