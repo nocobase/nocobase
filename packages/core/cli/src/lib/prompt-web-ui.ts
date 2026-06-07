@@ -18,6 +18,7 @@ import {
 } from './cli-locale.ts';
 import {
   isPromptBlockSkipped,
+  type PasswordPromptBlock,
   type PromptBlock,
   type PromptCatalogValues,
   type PromptInitialValues,
@@ -61,10 +62,7 @@ function resolveTextDefault(def: TextPromptBlock, out: PromptCatalogValues): str
   return String(iv ?? '');
 }
 
-function resolvePasswordDefault(
-  def: Extract<PromptBlock, { type: 'password' }>,
-  out: PromptCatalogValues,
-): string {
+function resolvePasswordDefault(def: PasswordPromptBlock, out: PromptCatalogValues): string {
   const iv = def.initialValue;
   if (typeof iv === 'function') {
     return String(iv(out) ?? '');

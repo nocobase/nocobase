@@ -62,7 +62,7 @@ const INIT_ENV_ADD_FLAG_NAMES = [
 
 const initText = (key: string, values?: Record<string, unknown>) => localeText(`commands.init.${key}`, values);
 
-function withExtraHidden(def: PromptBlock, extraHidden: (values: PromptCatalogValues) => boolean): PromptBlock {
+function withExtraHidden<T extends PromptBlock>(def: T, extraHidden: (values: PromptCatalogValues) => boolean): T {
   if (def.type === 'run') {
     return def;
   }
@@ -70,7 +70,7 @@ function withExtraHidden(def: PromptBlock, extraHidden: (values: PromptCatalogVa
   return {
     ...def,
     hidden: (values) => extraHidden(values) || (def.hidden?.(values) ?? false),
-  };
+  } as T;
 }
 
 function normalizeInitSetupMode(value: unknown): InitSetupMode {
@@ -103,23 +103,23 @@ function isInstallLikeSetupMode(values: PromptCatalogValues | Record<string, unk
   return !isRemoteSetupMode(values);
 }
 
-function remoteConnectionOnly(def: PromptBlock): PromptBlock {
+function remoteConnectionOnly<T extends PromptBlock>(def: T): T {
   return withExtraHidden(def, (values) => !isRemoteSetupMode(values));
 }
 
-function installLikeOnly(def: PromptBlock): PromptBlock {
+function installLikeOnly<T extends PromptBlock>(def: T): T {
   return withExtraHidden(def, (values) => !isInstallLikeSetupMode(values));
 }
 
-function installNewOnly(def: PromptBlock): PromptBlock {
+function installNewOnly<T extends PromptBlock>(def: T): T {
   return withExtraHidden(def, (values) => !isInstallNewSetupMode(values));
 }
 
-function installConnectionOnly(def: PromptBlock): PromptBlock {
+function installConnectionOnly<T extends PromptBlock>(def: T): T {
   return withExtraHidden(def, (values) => !isInstallNewSetupMode(values));
 }
 
-function installLikeDownloadExecutionOnly(def: PromptBlock): PromptBlock {
+function installLikeDownloadExecutionOnly<T extends PromptBlock>(def: T): T {
   return withExtraHidden(def, (values) => !isInstallLikeSetupMode(values) || values.skipDownload === true);
 }
 

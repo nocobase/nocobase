@@ -99,7 +99,7 @@ export type PasswordPromptBlock = {
   message: LocalizedText;
   hidden?: PromptHiddenPredicate;
   mask?: boolean | string;
-  initialValue?: string;
+  initialValue?: string | ((values: PromptCatalogValues) => string);
   yesInitialValue?: string;
   required?: boolean;
   validate?: PromptFieldValidateFn;
@@ -265,6 +265,7 @@ export function mergedPassword(
   def: PasswordPromptBlock,
   iv: PromptInitialValues,
   useYesInitial: boolean,
+  valuesSoFar: PromptCatalogValues = {},
 ): string | undefined {
   if (hasIvKey(iv, key)) {
     return String(iv[key] ?? '');
@@ -272,7 +273,8 @@ export function mergedPassword(
   if (useYesInitial && def.yesInitialValue !== undefined) {
     return def.yesInitialValue;
   }
-  return def.initialValue;
+  const initialValue = def.initialValue;
+  return typeof initialValue === 'function' ? initialValue(valuesSoFar) : initialValue;
 }
 
 export function isBlankText(value: string): boolean {
