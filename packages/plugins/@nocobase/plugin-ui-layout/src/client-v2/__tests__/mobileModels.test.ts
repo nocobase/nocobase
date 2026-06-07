@@ -3138,6 +3138,30 @@ describe('plugin-ui-layout mobile models', () => {
     expect(childTabsElement.props.tabBarExtraContent.right).toBeTruthy();
   });
 
+  it('should persist page tabs with the current mobile UI layout', () => {
+    const flowEngine = new FlowEngine();
+    flowEngine.context.defineProperty('layout', {
+      value: {
+        uid: 'mobile-layout-model-tab-test',
+      },
+    });
+    const rootPageModel = new MobileRootPageModel({ flowEngine } as never);
+    const childPageModel = new MobileChildPageModel({ flowEngine } as never);
+    const rootTabOptions = rootPageModel.createPageTabModelOptions();
+    const childTabOptions = childPageModel.createPageTabModelOptions();
+
+    expect(rootTabOptions.props?.route).toEqual(
+      expect.objectContaining({
+        uiLayouts: ['mobile-layout-model-tab-test'],
+      }),
+    );
+    expect(childTabOptions.props?.route).toEqual(
+      expect.objectContaining({
+        uiLayouts: ['mobile-layout-model-tab-test'],
+      }),
+    );
+  });
+
   it('should render mobile child page titles with the back button in the titlebar', () => {
     const flowEngine = new FlowEngine();
     const close = vi.fn();
