@@ -1292,6 +1292,113 @@ describe('plugin-ui-layout mobile models', () => {
     }
   });
 
+  it('should reapply mobile menu linkage rules after the UI editor enable state is synced', async () => {
+    const restoreBreakpoint = mockDesktopBreakpoint();
+
+    try {
+      let resolvePreload: (() => void) | undefined;
+      const routes: NocoBaseDesktopRoute[] = [
+        {
+          id: 1,
+          type: NocoBaseDesktopRouteType.flowPage,
+          title: 'Home',
+          schemaUid: 'home-page',
+          sort: 10,
+        },
+        {
+          id: 2,
+          type: NocoBaseDesktopRouteType.flowPage,
+          title: 'Runtime hidden after enable',
+          schemaUid: 'runtime-hidden-after-enable-page',
+          sort: 20,
+          options: {
+            hasPersistedMenuInstanceFlow: true,
+          },
+        },
+      ];
+      const hiddenMenuModelUid = getMobileMenuItemUid('mobile-layout-model-render-test', routes[1], 1);
+      const { engine } = renderMobileLayoutWithRouteRepository(
+        {
+          listAccessible: () => routes,
+          ensureAccessibleLoaded: vi.fn(async () => routes),
+        },
+        {
+          beforeRender: (model) => {
+            model.flowEngine.preloadModelLoaders = vi.fn(
+              () =>
+                new Promise<void>((resolve) => {
+                  resolvePreload = resolve;
+                }),
+            );
+            model.flowEngine.context.app.jsonLogic.apply = () => !model.flowEngine.context.flowSettingsEnabled;
+            model.flowEngine.setModelRepository({
+              findOne: vi.fn(async ({ uid }: { uid: string }) =>
+                uid === hiddenMenuModelUid
+                  ? {
+                      uid,
+                      use: 'MobileLayoutMenuItemModel',
+                      stepParams: {
+                        mobileMenuSettings: {
+                          linkageRules: {
+                            value: [
+                              {
+                                key: 'r1',
+                                title: 'Hide mobile tab outside UI editor',
+                                enable: true,
+                                condition: {
+                                  logic: '$and',
+                                  items: [{ path: 'designable', operator: '$eq', value: false }],
+                                },
+                                actions: [
+                                  {
+                                    key: 'a1',
+                                    name: 'linkageSetMenuItemProps',
+                                    params: { value: 'hidden' },
+                                  },
+                                ],
+                              },
+                            ],
+                          },
+                        },
+                      },
+                    }
+                  : null,
+              ),
+            } as never);
+          },
+        },
+      );
+
+      await waitFor(() => {
+        expect(screen.getByText('Home')).toBeInTheDocument();
+        expect(screen.queryByText('Runtime hidden after enable')).not.toBeInTheDocument();
+      });
+
+      await act(async () => {
+        fireEvent.click(screen.getByTestId('ui-editor-button'));
+      });
+
+      await waitFor(() => {
+        expect(resolvePreload).toBeDefined();
+        expect(screen.getByTestId('ui-editor-button')).toHaveAttribute('aria-pressed', 'true');
+      });
+
+      await act(async () => {
+        resolvePreload?.();
+        await Promise.resolve();
+      });
+
+      await waitFor(() => {
+        expect(engine.context.flowSettingsEnabled).toBe(true);
+        expect(screen.getByText('Runtime hidden after enable')).toBeInTheDocument();
+        expect(document.querySelectorAll('[data-nb-hidden-mobile-tab="true"]')).toHaveLength(0);
+        expect(document.querySelectorAll('.nb-ui-layout-mobile-home-tabbar-item-shell')).toHaveLength(2);
+      });
+    } finally {
+      restoreBreakpoint();
+    }
+  });
+
   it('should keep linkage-hidden mobile tabs hidden after route-hidden is cleared', async () => {
     window.localStorage.setItem(FLOW_SETTINGS_PREFERENCE_STORAGE_KEY, '1');
 

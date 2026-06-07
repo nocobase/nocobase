@@ -546,6 +546,7 @@ const MobileLayoutComponent = observer((props: { model: MobileLayoutModel }) => 
   const [preferredFlowSettingsEnabled, setPreferredFlowSettingsEnabled] = useState(() =>
     readMobileFlowSettingsPreference(),
   );
+  const [flowSettingsSyncVersion, setFlowSettingsSyncVersion] = useState(0);
   const flowSettingsSyncRef = useRef(0);
   const desiredFlowSettingsEnabledRef = useRef(false);
   const className = useMemo(
@@ -677,6 +678,9 @@ const MobileLayoutComponent = observer((props: { model: MobileLayoutModel }) => 
         if (syncId !== flowSettingsSyncRef.current) {
           await applyFlowSettingsState(desiredFlowSettingsEnabledRef.current);
         }
+        if (syncId === flowSettingsSyncRef.current) {
+          setFlowSettingsSyncVersion((version) => version + 1);
+        }
       } catch (error) {
         console.error('[NocoBase] plugin-ui-layout failed to sync flow settings preference.', error);
       }
@@ -714,7 +718,12 @@ const MobileLayoutComponent = observer((props: { model: MobileLayoutModel }) => 
               className="nb-ui-layout-mobile-viewport"
               data-nb-mobile-view-stack-depth={model.getMobileViewStackDepth()}
             >
-              <MobileHomePlaceholder designModeEnabled={preferredFlowSettingsEnabled} model={model} outlet={outlet} />
+              <MobileHomePlaceholder
+                designModeEnabled={preferredFlowSettingsEnabled}
+                flowSettingsSyncVersion={flowSettingsSyncVersion}
+                model={model}
+                outlet={outlet}
+              />
             </div>
           </div>
         </div>
@@ -979,8 +988,13 @@ function normalizeMobileLocationPath(pathname: string) {
 }
 
 const MobileHomePlaceholder = observer(
-  (props: { designModeEnabled: boolean; model: MobileLayoutModel; outlet?: ReactNode }) => {
-    const { designModeEnabled, model, outlet } = props;
+  (props: {
+    designModeEnabled: boolean;
+    flowSettingsSyncVersion: number;
+    model: MobileLayoutModel;
+    outlet?: ReactNode;
+  }) => {
+    const { designModeEnabled, flowSettingsSyncVersion, model, outlet } = props;
     const { token } = theme.useToken();
     const { message } = App.useApp();
     const navigate = useNavigate();
@@ -1179,7 +1193,7 @@ const MobileHomePlaceholder = observer(
       };
 
       rerenderMenuItems();
-    }, [accessibleDesktopRoutes, designModeEnabled, model]);
+    }, [accessibleDesktopRoutes, designModeEnabled, flowSettingsSyncVersion, model]);
 
     useEffect(() => {
       if (!tabItems.length) {
