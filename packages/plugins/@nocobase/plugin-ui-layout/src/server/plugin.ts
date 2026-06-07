@@ -12,7 +12,13 @@ import type { ResourcerContext } from '@nocobase/resourcer';
 import { DEFAULT_ADMIN_UI_LAYOUT } from '../constants';
 import { ensureDefaultUiLayout } from './ensureDefaultUiLayout';
 
-function normalizeLayoutUid(layout: unknown) {
+const EMPTY_DESKTOP_ROUTE_FILTER = {
+  id: {
+    $eq: null,
+  },
+};
+
+function getRequestedLayoutUid(layout: unknown) {
   const uid = Array.isArray(layout) ? layout[0] : layout;
 
   if (typeof uid === 'string' && uid.trim()) {
@@ -22,7 +28,7 @@ function normalizeLayoutUid(layout: unknown) {
   return DEFAULT_ADMIN_UI_LAYOUT.uid;
 }
 
-function getDesktopRouteLayoutFilter(layoutUid: string) {
+function getDesktopRouteLayoutFilterByUid(layoutUid: string) {
   const currentLayoutFilter = {
     'uiLayouts.uid': layoutUid,
   };
@@ -34,6 +40,27 @@ function getDesktopRouteLayoutFilter(layoutUid: string) {
   return {
     $or: [currentLayoutFilter, { 'uiLayouts.id.$notExists': true }],
   };
+}
+
+async function getDesktopRouteLayoutFilter(ctx: ResourcerContext) {
+  const layoutUid = getRequestedLayoutUid(ctx.action?.params.layout);
+
+  if (layoutUid === DEFAULT_ADMIN_UI_LAYOUT.uid) {
+    return getDesktopRouteLayoutFilterByUid(layoutUid);
+  }
+
+  const uiLayout = await ctx.db.getRepository('uiLayouts').findOne({
+    filter: {
+      uid: layoutUid,
+      enabled: true,
+    },
+  });
+
+  if (!uiLayout) {
+    return EMPTY_DESKTOP_ROUTE_FILTER;
+  }
+
+  return getDesktopRouteLayoutFilterByUid(layoutUid);
 }
 
 function getRouteValue(route: unknown, key: string) {
@@ -78,10 +105,8 @@ function removeNestedRootRoutes(routes: unknown) {
 }
 
 async function addDesktopRouteLayoutFilter(ctx: ResourcerContext, next: () => Promise<void>) {
-  const layoutUid = normalizeLayoutUid(ctx.action?.params.layout);
-
   ctx.action?.mergeParams({
-    filter: getDesktopRouteLayoutFilter(layoutUid),
+    filter: await getDesktopRouteLayoutFilter(ctx),
   });
 
   await next();

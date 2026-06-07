@@ -224,6 +224,97 @@ describe('plugin-ui-layout server', () => {
     expect(routeTitleSets[0]).not.toContain(mobileRoute.get('title'));
   });
 
+  it('should not fallback to AdminLayout for missing or disabled layouts', async () => {
+    app = await createMockServer({
+      registerActions: true,
+      acl: true,
+      plugins: [
+        'error-handler',
+        'users',
+        'auth',
+        'client',
+        'field-sort',
+        'acl',
+        'ui-schema-storage',
+        'system-settings',
+        'data-source-main',
+        'data-source-manager',
+        'ui-layout',
+      ],
+    });
+
+    const adminLayout = await app.db.getRepository('uiLayouts').findOne({
+      filter: {
+        uid: DEFAULT_ADMIN_UI_LAYOUT.uid,
+      },
+    });
+    if (!adminLayout) {
+      throw new Error('Default AdminLayout ui layout should exist.');
+    }
+    const disabledLayout = await app.db.getRepository('uiLayouts').create({
+      values: {
+        uid: 'disabled-layout-route-filter-test',
+        title: 'Disabled layout route filter test',
+        layoutType: 'mobile',
+        routeName: 'disabled-layout-route-filter-test',
+        routePath: '/v/disabled-layout-route-filter-test',
+        authCheck: true,
+        enabled: false,
+      },
+    });
+
+    const unassignedRoute = await app.db.getRepository('desktopRoutes').create({
+      values: {
+        type: 'flowPage',
+        title: 'DATA-INVALID-LAYOUT-UNASSIGNED',
+        schemaUid: 'invalid-layout-unassigned',
+      },
+    });
+    const adminRoute = await app.db.getRepository('desktopRoutes').create({
+      values: {
+        type: 'flowPage',
+        title: 'DATA-INVALID-LAYOUT-ADMIN',
+        schemaUid: 'invalid-layout-admin',
+      },
+    });
+    const disabledRoute = await app.db.getRepository('desktopRoutes').create({
+      values: {
+        type: 'flowPage',
+        title: 'DATA-INVALID-LAYOUT-DISABLED',
+        schemaUid: 'invalid-layout-disabled',
+      },
+    });
+
+    await app.db.getRepository('desktopRoutes.uiLayouts', adminRoute.get('id')).set({
+      tk: [adminLayout.get('uid')],
+    });
+    await app.db.getRepository('desktopRoutes.uiLayouts', disabledRoute.get('id')).set({
+      tk: [disabledLayout.get('uid')],
+    });
+
+    const rootUser = await app.db.getRepository('users').findOne({
+      filter: {
+        'roles.name': 'root',
+      },
+    });
+    const agent = await app.agent().login(rootUser);
+
+    const [defaultResponse, missingResponse, disabledResponse] = await Promise.all([
+      agent.get('/desktopRoutes:listAccessible'),
+      agent.get('/desktopRoutes:listAccessible').query({ layout: 'missing-layout-route-filter-test' }),
+      agent.get('/desktopRoutes:listAccessible').query({ layout: disabledLayout.get('uid') }),
+    ]);
+    const defaultTitles = defaultResponse.body.data.map((route) => route.title);
+
+    expect(defaultResponse.status).toBe(200);
+    expect(missingResponse.status).toBe(200);
+    expect(disabledResponse.status).toBe(200);
+    expect(defaultTitles).toEqual(expect.arrayContaining([unassignedRoute.get('title'), adminRoute.get('title')]));
+    expect(defaultTitles).not.toContain(disabledRoute.get('title'));
+    expect(missingResponse.body.data).toEqual([]);
+    expect(disabledResponse.body.data).toEqual([]);
+  });
+
   it('should filter root routes by layout while preserving tree sort and caller filters', async () => {
     app = await createMockServer({
       registerActions: true,
