@@ -89,6 +89,14 @@ type PersistedMobileMenuModelData = {
   flowRegistry?: FlowRegistryData;
 };
 
+type MobileMenuLinkageOriginalProps = Record<string, unknown> & {
+  hiddenModel?: boolean;
+  hiddenText?: unknown;
+  disabled?: unknown;
+  required?: unknown;
+  hidden?: unknown;
+};
+
 function omitMobileMenuRuntimeProps(props: Record<string, unknown> = {}) {
   const persistableProps = { ...props };
   delete persistableProps.dom;
@@ -243,6 +251,8 @@ export function resolveMobileMenuDragMoveOptionsFromEvent(
 export class MobileLayoutMenuItemModel extends FlowModel {
   private route?: NocoBaseDesktopRoute;
   private parentRoute?: NocoBaseDesktopRoute;
+  private routeHidden = false;
+  private linkageHidden = false;
   private persistedStateHydrated = false;
   private persistedStateHydrating?: Promise<void>;
   private initialPersistedInstanceFlowCount = 0;
@@ -261,14 +271,49 @@ export class MobileLayoutMenuItemModel extends FlowModel {
     }
   }
 
+  private applyHiddenState() {
+    super.setHidden(this.routeHidden || this.linkageHidden);
+  }
+
+  private ensureLinkageOriginalProps() {
+    const model = this as unknown as { __originalProps?: MobileMenuLinkageOriginalProps };
+    if (model.__originalProps) {
+      return;
+    }
+
+    model.__originalProps = {
+      hiddenModel: this.linkageHidden,
+      hiddenText: undefined,
+      disabled: undefined,
+      required: undefined,
+      hidden: undefined,
+      ...this.props,
+    };
+  }
+
+  onDispatchEventStart(...args: Parameters<FlowModel['onDispatchEventStart']>) {
+    const [eventName] = args;
+    if (eventName === 'beforeRender' && this.hasPersistableMenuLinkageRules()) {
+      this.ensureLinkageOriginalProps();
+    }
+
+    return super.onDispatchEventStart(...args);
+  }
+
   syncFromRoute(route: NocoBaseDesktopRoute, parentRoute?: NocoBaseDesktopRoute) {
     this.route = route;
     this.parentRoute = parentRoute;
-    this.setHidden(!!route?.hidden || !!route?.hideInMenu);
+    this.routeHidden = !!route?.hidden || !!route?.hideInMenu;
+    this.applyHiddenState();
     this.setProps({
       route,
       parentRoute,
     });
+  }
+
+  setHidden(value: boolean) {
+    this.linkageHidden = !!value;
+    this.applyHiddenState();
   }
 
   getRoute() {

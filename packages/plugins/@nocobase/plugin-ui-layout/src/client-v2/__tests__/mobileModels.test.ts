@@ -7,7 +7,14 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { BaseLayoutModel, ChildPageModel, RootPageModel, RouteModel } from '@nocobase/client-v2';
+import {
+  BaseLayoutModel,
+  ChildPageModel,
+  linkageSetMenuItemProps,
+  menuLinkageRules,
+  RootPageModel,
+  RouteModel,
+} from '@nocobase/client-v2';
 import { NocoBaseDesktopRouteType, type NocoBaseDesktopRoute } from '@nocobase/client-v2/flow-compat';
 import { App as AntdApp } from 'antd';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
@@ -43,6 +50,7 @@ import {
   MobileLayoutMenuItemModel,
   MobileMenuSettingsIconPicker,
 } from '../models/MobileMenuModels';
+import { getMobileMenuItemUid } from '../models/MobileMenuUtils';
 import { MobileChildPageModel, MobileRootPageModel } from '../models/MobilePageModels';
 import { registerMobilePageModelResolution } from '../mobilePageModelResolution';
 
@@ -79,6 +87,10 @@ describe('plugin-ui-layout mobile models', () => {
       MobileLayoutModel,
       MobileLayoutMenuItemModel,
     });
+    engine.registerActions({
+      menuLinkageRules,
+      linkageSetMenuItemProps,
+    });
     engine.context.defineProperty('t', {
       value: (key: string) => key,
     });
@@ -94,6 +106,9 @@ describe('plugin-ui-layout mobile models', () => {
       value: {
         router: {
           getBasename: () => '',
+        },
+        jsonLogic: {
+          apply: () => true,
         },
       },
     });
@@ -905,6 +920,340 @@ describe('plugin-ui-layout mobile models', () => {
     await waitFor(() => {
       expect(screen.queryByText('Hidden by linkage')).not.toBeInTheDocument();
       expect(document.querySelectorAll('.nb-ui-layout-mobile-home-tabbar-item-shell')).toHaveLength(1);
+    });
+  });
+
+  it('should keep mobile menu linkage hidden state during repeated design mode toggles', async () => {
+    const routes: NocoBaseDesktopRoute[] = [
+      {
+        id: 1,
+        type: NocoBaseDesktopRouteType.flowPage,
+        title: 'Home',
+        schemaUid: 'home-page',
+        sort: 10,
+      },
+      {
+        id: 2,
+        type: NocoBaseDesktopRouteType.flowPage,
+        title: 'Hidden by linkage',
+        schemaUid: 'hidden-by-linkage-page',
+        sort: 20,
+        options: {
+          hasPersistedMenuInstanceFlow: true,
+        },
+      },
+    ];
+    const hiddenMenuModelUid = getMobileMenuItemUid('mobile-layout-model-render-test', routes[1], 1);
+
+    renderMobileLayoutWithRouteRepository(
+      {
+        listAccessible: () => routes,
+        ensureAccessibleLoaded: vi.fn(async () => routes),
+      },
+      {
+        beforeRender: (model) => {
+          model.flowEngine.setModelRepository({
+            findOne: vi.fn(async ({ uid }: { uid: string }) =>
+              uid === hiddenMenuModelUid
+                ? {
+                    uid,
+                    use: 'MobileLayoutMenuItemModel',
+                    stepParams: {
+                      mobileMenuSettings: {
+                        linkageRules: {
+                          value: [
+                            {
+                              key: 'r1',
+                              title: 'Hide mobile tab',
+                              enable: true,
+                              condition: { logic: '$and', items: [] },
+                              actions: [
+                                {
+                                  key: 'a1',
+                                  name: 'linkageSetMenuItemProps',
+                                  params: { value: 'hidden' },
+                                },
+                              ],
+                            },
+                          ],
+                        },
+                      },
+                    },
+                  }
+                : null,
+            ),
+          } as never);
+        },
+      },
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText('Home')).toBeInTheDocument();
+      expect(screen.queryByText('Hidden by linkage')).not.toBeInTheDocument();
+      expect(document.querySelectorAll('.nb-ui-layout-mobile-home-tabbar-item-shell')).toHaveLength(1);
+    });
+
+    await act(async () => {
+      writeMobileFlowSettingsPreference(true);
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText('Hidden by linkage')).toBeInTheDocument();
+      expect(document.querySelectorAll('[data-nb-hidden-mobile-tab="true"]')).toHaveLength(1);
+    });
+
+    await act(async () => {
+      writeMobileFlowSettingsPreference(false);
+    });
+
+    await waitFor(() => {
+      expect(screen.queryByText('Hidden by linkage')).not.toBeInTheDocument();
+      expect(document.querySelectorAll('.nb-ui-layout-mobile-home-tabbar-item-shell')).toHaveLength(1);
+    });
+
+    await act(async () => {
+      writeMobileFlowSettingsPreference(true);
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText('Hidden by linkage')).toBeInTheDocument();
+      expect(document.querySelectorAll('[data-nb-hidden-mobile-tab="true"]')).toHaveLength(1);
+    });
+
+    await act(async () => {
+      writeMobileFlowSettingsPreference(false);
+    });
+
+    await waitFor(() => {
+      expect(screen.queryByText('Hidden by linkage')).not.toBeInTheDocument();
+      expect(document.querySelectorAll('.nb-ui-layout-mobile-home-tabbar-item-shell')).toHaveLength(1);
+    });
+  });
+
+  it('should keep linkage-hidden mobile tabs hidden after route-hidden is cleared', async () => {
+    window.localStorage.setItem(FLOW_SETTINGS_PREFERENCE_STORAGE_KEY, '1');
+
+    const subscribers = new Set<() => void>();
+    const hiddenRoute: NocoBaseDesktopRoute = {
+      id: 2,
+      type: NocoBaseDesktopRouteType.flowPage,
+      title: 'Route hidden with linkage',
+      schemaUid: 'route-hidden-linkage-page',
+      hidden: true,
+      sort: 20,
+      options: {
+        hasPersistedMenuInstanceFlow: true,
+      },
+    };
+    let routes: NocoBaseDesktopRoute[] = [
+      {
+        id: 1,
+        type: NocoBaseDesktopRouteType.flowPage,
+        title: 'Home',
+        schemaUid: 'home-page',
+        sort: 10,
+      },
+      hiddenRoute,
+    ];
+    const hiddenMenuModelUid = getMobileMenuItemUid('mobile-layout-model-render-test', hiddenRoute, 1);
+
+    renderMobileLayoutWithRouteRepository(
+      {
+        listAccessible: () => routes,
+        subscribe: (subscriber) => {
+          subscribers.add(subscriber);
+        },
+        unsubscribe: (subscriber) => {
+          subscribers.delete(subscriber);
+        },
+        ensureAccessibleLoaded: vi.fn(async () => routes),
+      },
+      {
+        beforeRender: (model) => {
+          model.flowEngine.setModelRepository({
+            findOne: vi.fn(async ({ uid }: { uid: string }) =>
+              uid === hiddenMenuModelUid
+                ? {
+                    uid,
+                    use: 'MobileLayoutMenuItemModel',
+                    stepParams: {
+                      mobileMenuSettings: {
+                        linkageRules: {
+                          value: [
+                            {
+                              key: 'r1',
+                              title: 'Hide mobile tab',
+                              enable: true,
+                              condition: { logic: '$and', items: [] },
+                              actions: [
+                                {
+                                  key: 'a1',
+                                  name: 'linkageSetMenuItemProps',
+                                  params: { value: 'hidden' },
+                                },
+                              ],
+                            },
+                          ],
+                        },
+                      },
+                    },
+                  }
+                : null,
+            ),
+          } as never);
+        },
+      },
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText('Route hidden with linkage')).toBeInTheDocument();
+      expect(document.querySelectorAll('[data-nb-hidden-mobile-tab="true"]')).toHaveLength(1);
+    });
+
+    routes = [
+      routes[0],
+      {
+        ...hiddenRoute,
+        hidden: false,
+      },
+    ];
+    act(() => {
+      subscribers.forEach((subscriber) => subscriber());
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText('Route hidden with linkage')).toBeInTheDocument();
+      expect(document.querySelectorAll('[data-nb-hidden-mobile-tab="true"]')).toHaveLength(1);
+    });
+
+    await act(async () => {
+      writeMobileFlowSettingsPreference(false);
+    });
+
+    await waitFor(() => {
+      expect(screen.queryByText('Route hidden with linkage')).not.toBeInTheDocument();
+      expect(document.querySelectorAll('.nb-ui-layout-mobile-home-tabbar-item-shell')).toHaveLength(1);
+    });
+  });
+
+  it('should restore linkage-visible mobile tabs after route-hidden is cleared', async () => {
+    window.localStorage.setItem(FLOW_SETTINGS_PREFERENCE_STORAGE_KEY, '1');
+
+    const subscribers = new Set<() => void>();
+    let matchesLinkageRule = true;
+    const hiddenRoute: NocoBaseDesktopRoute = {
+      id: 2,
+      type: NocoBaseDesktopRouteType.flowPage,
+      title: 'Route hidden then visible',
+      schemaUid: 'route-hidden-visible-page',
+      hidden: true,
+      sort: 20,
+      options: {
+        hasPersistedMenuInstanceFlow: true,
+      },
+    };
+    let routes: NocoBaseDesktopRoute[] = [
+      {
+        id: 1,
+        type: NocoBaseDesktopRouteType.flowPage,
+        title: 'Home',
+        schemaUid: 'home-page',
+        sort: 10,
+      },
+      hiddenRoute,
+    ];
+    const hiddenMenuModelUid = getMobileMenuItemUid('mobile-layout-model-render-test', hiddenRoute, 1);
+    const { model } = renderMobileLayoutWithRouteRepository(
+      {
+        listAccessible: () => routes,
+        subscribe: (subscriber) => {
+          subscribers.add(subscriber);
+        },
+        unsubscribe: (subscriber) => {
+          subscribers.delete(subscriber);
+        },
+        ensureAccessibleLoaded: vi.fn(async () => routes),
+      },
+      {
+        beforeRender: (layoutModel) => {
+          layoutModel.flowEngine.context.app.jsonLogic.apply = () => matchesLinkageRule;
+          layoutModel.flowEngine.setModelRepository({
+            findOne: vi.fn(async ({ uid }: { uid: string }) =>
+              uid === hiddenMenuModelUid
+                ? {
+                    uid,
+                    use: 'MobileLayoutMenuItemModel',
+                    stepParams: {
+                      mobileMenuSettings: {
+                        linkageRules: {
+                          value: [
+                            {
+                              key: 'r1',
+                              title: 'Conditionally hide mobile tab',
+                              enable: true,
+                              condition: {
+                                logic: '$and',
+                                items: [{ path: 'visible', operator: '$eq', value: true }],
+                              },
+                              actions: [
+                                {
+                                  key: 'a1',
+                                  name: 'linkageSetMenuItemProps',
+                                  params: { value: 'hidden' },
+                                },
+                              ],
+                            },
+                          ],
+                        },
+                      },
+                    },
+                  }
+                : null,
+            ),
+          } as never);
+        },
+      },
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText('Route hidden then visible')).toBeInTheDocument();
+      expect(document.querySelectorAll('[data-nb-hidden-mobile-tab="true"]')).toHaveLength(1);
+    });
+
+    routes = [
+      routes[0],
+      {
+        ...hiddenRoute,
+        hidden: false,
+      },
+    ];
+    act(() => {
+      subscribers.forEach((subscriber) => subscriber());
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText('Route hidden then visible')).toBeInTheDocument();
+      expect(document.querySelectorAll('[data-nb-hidden-mobile-tab="true"]')).toHaveLength(1);
+    });
+
+    matchesLinkageRule = false;
+    const linkedModel = model.subModels.menuItems?.find((item) => item.uid === hiddenMenuModelUid);
+    await act(async () => {
+      await linkedModel?.rerender();
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText('Route hidden then visible')).toBeInTheDocument();
+      expect(document.querySelectorAll('[data-nb-hidden-mobile-tab="true"]')).toHaveLength(0);
+    });
+
+    await act(async () => {
+      writeMobileFlowSettingsPreference(false);
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText('Route hidden then visible')).toBeInTheDocument();
+      expect(document.querySelectorAll('.nb-ui-layout-mobile-home-tabbar-item-shell')).toHaveLength(2);
     });
   });
 
