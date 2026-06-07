@@ -48,6 +48,11 @@ interface DesktopRoutePayload {
   data?: DesktopRouteRecord[];
 }
 
+interface DesktopRouteRequestResult {
+  layoutUid: string;
+  data: DesktopRouteRecord[];
+}
+
 interface DesktopRouteRecord {
   id: number;
   title?: string;
@@ -196,18 +201,35 @@ export default function LayoutAwareDesktopRoutesPermissionsTab(props: Permission
         paginate: false,
         filter: routeFilter,
       });
-      return toDesktopRoutePayload(response?.data).data ?? [];
+      return {
+        layoutUid: selectedLayoutUid,
+        data: toDesktopRoutePayload(response?.data).data ?? [],
+      };
     },
     {
       ready: active,
-      refreshDeps: [active, routeFilter],
+      refreshDeps: [active, routeFilter, selectedLayoutUid],
     },
   );
 
-  const routeItems = useMemo(() => toRouteItems(routeService.data), [routeService.data]);
+  const selectedLayoutLabel = useMemo(() => {
+    const selectedLayout = layoutService.data?.find((layout) => layout.uid === selectedLayoutUid);
+    return selectedLayout ? getLayoutLabel(selectedLayout, t) : selectedLayoutUid;
+  }, [layoutService.data, selectedLayoutUid, t]);
+  const routeData = useMemo(() => {
+    const data = routeService.data as DesktopRouteRequestResult | undefined;
+    if (routeService.error || data?.layoutUid !== selectedLayoutUid) {
+      return [];
+    }
+    return data.data;
+  }, [routeService.data, routeService.error, selectedLayoutUid]);
+  const routeItems = useMemo(() => toRouteItems(routeData), [routeData]);
   const flatItems = useMemo(() => flattenItems(routeItems), [routeItems]);
   const allIds = useMemo(() => getAllChildrenIds(routeItems), [routeItems]);
   const itemById = useMemo(() => new Map(flatItems.map((item) => [item.id, item])), [flatItems]);
+  const emptyText = routeService.error
+    ? t('Failed to load routes for {{layout}}', { layout: selectedLayoutLabel })
+    : t('No routes in {{layout}}', { layout: selectedLayoutLabel });
 
   const roleRoutesService = useRequest(
     async () => {
@@ -353,6 +375,7 @@ export default function LayoutAwareDesktopRoutesPermissionsTab(props: Permission
         expandable={{ defaultExpandAllRows: false }}
         columns={columns}
         dataSource={routeItems}
+        locale={{ emptyText }}
       />
     </div>
   );
