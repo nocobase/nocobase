@@ -119,7 +119,7 @@ export function useMobilePageClassName() {
 
       .nb-ui-layout-mobile-page-tab-left-spacer {
         display: inline-block;
-        width: ${token.paddingXS}px;
+        width: ${token.paddingXS + token.marginXXS}px;
         height: 1px;
       }
 

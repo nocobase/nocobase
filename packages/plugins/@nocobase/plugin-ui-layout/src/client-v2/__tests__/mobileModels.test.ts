@@ -1251,7 +1251,7 @@ describe('plugin-ui-layout mobile models', () => {
     expect(addTabRule).toMatch(/padding:\s*0/);
     expect(inkBarRule).toMatch(/background:\s*transparent/);
     expect(inkBarAfterRule).toMatch(/inset-inline:\s*8px/);
-    expect(leftSpacerRule).toMatch(/width:\s*8px/);
+    expect(leftSpacerRule).toMatch(/width:\s*12px/);
   });
 
   it('should stretch flow settings wrappers inside the mobile page content slot', async () => {
