@@ -10,7 +10,7 @@
 import { BaseLayoutModel, ChildPageModel, RootPageModel, RouteModel } from '@nocobase/client-v2';
 import { NocoBaseDesktopRouteType, type NocoBaseDesktopRoute } from '@nocobase/client-v2/flow-compat';
 import { App as AntdApp } from 'antd';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import {
   createViewScopedEngine,
   FlowEngine,
@@ -862,6 +862,49 @@ describe('plugin-ui-layout mobile models', () => {
       expect(screen.getByText('Home')).toBeInTheDocument();
       expect(screen.getByText('Hidden')).toBeInTheDocument();
       expect(document.querySelectorAll('[data-nb-hidden-mobile-tab="true"]')).toHaveLength(1);
+    });
+  });
+
+  it('should remove linked hidden mobile tab items without reserving tab bar space outside design mode', async () => {
+    const routes: NocoBaseDesktopRoute[] = [
+      {
+        id: 1,
+        type: NocoBaseDesktopRouteType.flowPage,
+        title: 'Home',
+        schemaUid: 'home-page',
+        sort: 10,
+      },
+      {
+        id: 2,
+        type: NocoBaseDesktopRouteType.flowPage,
+        title: 'Hidden by linkage',
+        schemaUid: 'hidden-by-linkage-page',
+        sort: 20,
+      },
+    ];
+    const { model } = renderMobileLayoutWithRouteRepository({
+      listAccessible: () => routes,
+      ensureAccessibleLoaded: vi.fn(async () => routes),
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText('Home')).toBeInTheDocument();
+      expect(screen.getByText('Hidden by linkage')).toBeInTheDocument();
+      expect(document.querySelectorAll('.nb-ui-layout-mobile-home-tabbar-item-shell')).toHaveLength(2);
+    });
+
+    const linkedHiddenModel = model.subModels.menuItems?.find(
+      (item) => item.getRoute()?.schemaUid === 'hidden-by-linkage-page',
+    );
+    expect(linkedHiddenModel).toBeDefined();
+
+    act(() => {
+      linkedHiddenModel?.setHidden(true);
+    });
+
+    await waitFor(() => {
+      expect(screen.queryByText('Hidden by linkage')).not.toBeInTheDocument();
+      expect(document.querySelectorAll('.nb-ui-layout-mobile-home-tabbar-item-shell')).toHaveLength(1);
     });
   });
 

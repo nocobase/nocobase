@@ -902,6 +902,22 @@ function isMobileMenuItemModelLike(model: FlowModel): model is MobileMenuItemMod
   return typeof (model as MobileMenuItemModelLike).getRoute === 'function';
 }
 
+function normalizeRenderableMobileTabItems(tabItems: MobileTabNode[], designModeEnabled: boolean) {
+  const renderableTabItems = designModeEnabled ? tabItems : tabItems.filter((item) => !item.model.hidden);
+
+  if (!renderableTabItems.length || renderableTabItems.some((item) => item.active)) {
+    return renderableTabItems;
+  }
+
+  const fallbackItem =
+    renderableTabItems.find((item) => item.type === NocoBaseDesktopRouteType.flowPage) || renderableTabItems[0];
+
+  return renderableTabItems.map((item) => ({
+    ...item,
+    active: item.key === fallbackItem.key,
+  }));
+}
+
 const MobileTabDragToolbarButton = observer((props: { model: FlowModel }) => {
   const route = isMobileMenuItemModelLike(props.model) ? props.model.getRoute?.() : undefined;
   if (!route?.id) {
@@ -1002,19 +1018,17 @@ const MobileHomePlaceholder = observer(
         t: routeTitleT,
       });
     }, [menuRouteRefreshVersion, menuRouteVersion, model, resolvedActiveRouteKey, routeTitleT]);
-    const activeRoute = useMemo(
-      () =>
-        tabItems.find((route) => route.key === resolvedActiveRouteKey) ||
-        tabItems.find((route) => route.active) ||
-        tabItems.find((route) => route.type === NocoBaseDesktopRouteType.flowPage) ||
-        tabItems[0],
-      [resolvedActiveRouteKey, tabItems],
-    );
+    const renderableTabItems = normalizeRenderableMobileTabItems(tabItems, designModeEnabled);
+    const activeRoute =
+      renderableTabItems.find((route) => route.key === resolvedActiveRouteKey) ||
+      renderableTabItems.find((route) => route.active) ||
+      renderableTabItems.find((route) => route.type === NocoBaseDesktopRouteType.flowPage) ||
+      renderableTabItems[0];
     const menuItems = useMemo(
       () => normalizeAccessibleDesktopRoutesToMobileRoutes(activeRoute?.route.children || [], routeTitleT),
       [activeRoute?.route.children, routeTitleT],
     );
-    const tabBarColumnCount = Math.max(1, tabItems.length + (designModeEnabled ? 1 : 0));
+    const tabBarColumnCount = Math.max(1, renderableTabItems.length + (designModeEnabled ? 1 : 0));
     const dropdownMenuItems = useMemo<MenuProps['items']>(
       () =>
         addMenuItems.map((item) => ({
@@ -1568,7 +1582,7 @@ const MobileHomePlaceholder = observer(
         </div>
         <DndProvider onDragEnd={handleMobileMenuDragEnd}>
           <nav className="nb-ui-layout-mobile-home-tabbar" aria-label={t('Mobile tab bar')} hidden={!showMobileTabBar}>
-            {tabItems.map((item) => {
+            {renderableTabItems.map((item) => {
               const dom = (
                 <button
                   type="button"
