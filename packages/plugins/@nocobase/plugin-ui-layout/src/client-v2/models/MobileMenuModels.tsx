@@ -26,9 +26,12 @@ import {
   isMobileTabRoute,
   type MobileRouteTitleTranslator,
 } from './MobileMenuUtils';
+import { refreshMobileLayoutAccessibleRoutes } from '../mobileRouteRepository';
 export { MobileMenuSettingsIconPicker } from './MobileMenuComponents';
 
 export { collectMobileTabRoutes, getMobilePagePath, toMobileRouterNavigationPath } from './MobileMenuUtils';
+
+type MobileLayoutRouteRefreshModel = Parameters<typeof refreshMobileLayoutAccessibleRoutes>[0];
 
 export type MobileTabNode = {
   key: string;
@@ -76,8 +79,16 @@ type MobileRouteRepository = {
     values: Partial<Omit<NocoBaseDesktopRoute, 'options'>> & {
       options?: NocoBaseDesktopRoute['options'] | null;
     },
+    options?: {
+      refreshAfterMutation?: boolean;
+    },
   ) => Promise<unknown>;
-  deleteRoute?: (filterByTk: string | number) => Promise<unknown>;
+  deleteRoute?: (
+    filterByTk: string | number,
+    options?: {
+      refreshAfterMutation?: boolean;
+    },
+  ) => Promise<unknown>;
 };
 
 type MobileMenuEditParams = {
@@ -410,7 +421,8 @@ export class MobileLayoutMenuItemModel extends FlowModel {
       throw new Error('[NocoBase] plugin-ui-layout route repository updateRoute is unavailable.');
     }
 
-    await routeRepository.updateRoute(route.id, { options: options || null });
+    await routeRepository.updateRoute(route.id, { options: options || null }, { refreshAfterMutation: false });
+    await refreshMobileLayoutAccessibleRoutes(this.parent as MobileLayoutRouteRefreshModel, routeRepository);
     this.syncFromRoute(
       {
         ...route,
@@ -508,7 +520,8 @@ export class MobileLayoutMenuItemModel extends FlowModel {
       };
     }
 
-    await routeRepository.updateRoute(route.id, nextValues);
+    await routeRepository.updateRoute(route.id, nextValues, { refreshAfterMutation: false });
+    await refreshMobileLayoutAccessibleRoutes(this.parent as MobileLayoutRouteRefreshModel, routeRepository);
     this.syncFromRoute(
       {
         ...route,
@@ -530,7 +543,8 @@ export class MobileLayoutMenuItemModel extends FlowModel {
     }
 
     const shouldDestroyPersistedState = this.shouldDestroyPersistedStateOnDelete();
-    await routeRepository.deleteRoute(route.id);
+    await routeRepository.deleteRoute(route.id, { refreshAfterMutation: false });
+    await refreshMobileLayoutAccessibleRoutes(this.parent as MobileLayoutRouteRefreshModel, routeRepository);
     if (shouldDestroyPersistedState) {
       await this.destroyPersistedState();
     }

@@ -62,6 +62,7 @@ import {
 import React, { type ReactNode, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate, useOutlet } from 'react-router-dom';
 import { NAMESPACE } from '../../constants';
+import { refreshMobileLayoutAccessibleRoutes } from '../mobileRouteRepository';
 import {
   collectMobileTabRoutes,
   type MobileLayoutMenuStructure,
@@ -1096,7 +1097,8 @@ const MobileHomePlaceholder = observer(
           throw new Error('Route repository is unavailable.');
         }
 
-        await routeRepository.createRoute(creationValues.route);
+        await routeRepository.createRoute(creationValues.route, { refreshAfterMutation: false });
+        await refreshMobileLayoutAccessibleRoutes(model, routeRepository);
         if (configuringTabType === 'page') {
           setActiveRouteKey(creationValues.activeRouteKey);
         }
@@ -1111,7 +1113,7 @@ const MobileHomePlaceholder = observer(
 
         console.error('[NocoBase] plugin-ui-layout failed to create mobile tab route.', error);
       }
-    }, [addTabForm, configuringTabType, message, model.flowEngine.context.routeRepository]);
+    }, [addTabForm, configuringTabType, message, model]);
     const addTabModalTitle = useMemo(
       () => (configuringTabType ? getMobileTabConfigurationTitle(configuringTabType, t) : undefined),
       [configuringTabType, t],
@@ -1143,7 +1145,7 @@ const MobileHomePlaceholder = observer(
       syncAccessibleRoutes();
 
       routeRepository?.subscribe?.(syncAccessibleRoutes);
-      if (!routeRepository?.ensureAccessibleLoaded) {
+      if (!routeRepository) {
         setRoutesLoadState('ready');
         return () => {
           routeRepository?.unsubscribe?.(syncAccessibleRoutes);
@@ -1161,7 +1163,7 @@ const MobileHomePlaceholder = observer(
       };
       const loadAccessibleRoutes = async () => {
         try {
-          await routeRepository.ensureAccessibleLoaded();
+          await refreshMobileLayoutAccessibleRoutes(model, routeRepository);
           if (disposed) {
             return;
           }
@@ -1279,13 +1281,19 @@ const MobileHomePlaceholder = observer(
           return;
         }
 
-        const movePromise = model.flowEngine.context.routeRepository?.moveRoute?.(moveOptions);
-
-        movePromise?.catch((error) => {
-          console.error('[NocoBase] plugin-ui-layout failed to move mobile tab route.', error);
+        const routeRepository = model.flowEngine.context.routeRepository;
+        const movePromise = routeRepository?.moveRoute?.({
+          ...moveOptions,
+          refreshAfterMove: false,
         });
+
+        movePromise
+          ?.then(() => refreshMobileLayoutAccessibleRoutes(model, routeRepository))
+          .catch((error) => {
+            console.error('[NocoBase] plugin-ui-layout failed to move mobile tab route.', error);
+          });
       },
-      [model.flowEngine],
+      [model],
     );
     const handleTabClick = useCallback(
       (item: MobileTabNode) => {

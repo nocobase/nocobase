@@ -56,10 +56,16 @@ import { registerMobilePageModelResolution } from '../mobilePageModelResolution'
 
 type MobileRouteRepositoryForTest = {
   listAccessible: () => NocoBaseDesktopRoute[];
+  setRoutes?: (routes: NocoBaseDesktopRoute[]) => void;
   subscribe?: (subscriber: () => void) => void;
   unsubscribe?: (subscriber: () => void) => void;
   ensureAccessibleLoaded?: () => Promise<NocoBaseDesktopRoute[]>;
-  createRoute?: (route: NocoBaseDesktopRoute) => Promise<unknown>;
+  createRoute?: (
+    route: NocoBaseDesktopRoute,
+    options?: {
+      refreshAfterMutation?: boolean;
+    },
+  ) => Promise<unknown>;
   updateRoute?: (
     filterByTk: string | number,
     values: Partial<Omit<NocoBaseDesktopRoute, 'options'>> & {
@@ -77,6 +83,9 @@ describe('plugin-ui-layout mobile models', () => {
     routeRepository: MobileRouteRepositoryForTest,
     options: {
       beforeRender?: (model: MobileLayoutModel) => void;
+      api?: {
+        request: (options: Record<string, unknown>) => Promise<{ data?: { data?: NocoBaseDesktopRoute[] } }>;
+      };
       initialEntries?: string[];
       outletElement?: React.ReactNode;
     } = {},
@@ -97,6 +106,11 @@ describe('plugin-ui-layout mobile models', () => {
     engine.context.defineProperty('themeToken', {
       value: {
         borderRadiusLG: 8,
+      },
+    });
+    engine.context.defineProperty('api', {
+      value: options.api || {
+        request: vi.fn(async () => ({ data: { data: [] } })),
       },
     });
     engine.context.defineProperty('routeRepository', {
@@ -934,6 +948,69 @@ describe('plugin-ui-layout mobile models', () => {
       expect(screen.getByText('Hidden')).toBeInTheDocument();
       expect(document.querySelectorAll('[data-nb-hidden-mobile-tab="true"]')).toHaveLength(1);
     });
+  });
+
+  it('should load mobile routes with the current layout uid instead of reusing the existing route cache', async () => {
+    const subscribers = new Set<() => void>();
+    const adminRoutes: NocoBaseDesktopRoute[] = [
+      {
+        id: 1,
+        type: NocoBaseDesktopRouteType.flowPage,
+        title: 'Admin only',
+        schemaUid: 'admin-only-page',
+        sort: 10,
+      },
+    ];
+    const mobileRoutes: NocoBaseDesktopRoute[] = [
+      {
+        id: 2,
+        type: NocoBaseDesktopRouteType.flowPage,
+        title: 'Mobile only',
+        schemaUid: 'mobile-only-page',
+        sort: 10,
+      },
+    ];
+    let cachedRoutes = adminRoutes;
+    const api = {
+      request: vi.fn(async () => ({
+        data: {
+          data: mobileRoutes,
+        },
+      })),
+    };
+    const routeRepository: MobileRouteRepositoryForTest = {
+      listAccessible: vi.fn(() => cachedRoutes),
+      setRoutes: vi.fn((routes) => {
+        cachedRoutes = routes;
+        subscribers.forEach((subscriber) => subscriber());
+      }),
+      subscribe: (subscriber) => {
+        subscribers.add(subscriber);
+      },
+      unsubscribe: (subscriber) => {
+        subscribers.delete(subscriber);
+      },
+    };
+
+    renderMobileLayoutWithRouteRepository(routeRepository, { api });
+
+    await waitFor(() => {
+      expect(api.request).toHaveBeenCalledWith(
+        expect.objectContaining({
+          url: '/desktopRoutes:listAccessible',
+          params: expect.objectContaining({
+            layout: 'mobile-layout-model-render-test',
+            sort: 'sort',
+            tree: true,
+          }),
+        }),
+      );
+    });
+    await waitFor(() => {
+      expect(screen.getByText('Mobile only')).toBeInTheDocument();
+    });
+    expect(screen.queryByText('Admin only')).not.toBeInTheDocument();
+    expect(routeRepository.setRoutes).toHaveBeenCalledWith(mobileRoutes);
   });
 
   it('should remove linked hidden mobile tab items without reserving tab bar space outside design mode', async () => {
@@ -1785,7 +1862,7 @@ describe('plugin-ui-layout mobile models', () => {
 
     await model.subModels.menuItems?.[0].destroy();
 
-    expect(deleteRoute).toHaveBeenCalledWith(10);
+    expect(deleteRoute).toHaveBeenCalledWith(10, { refreshAfterMutation: false });
   });
 
   it('should create mobile menu item models without preloading the item model loader', () => {
@@ -2563,11 +2640,15 @@ describe('plugin-ui-layout mobile models', () => {
     await model.saveStepParams();
 
     expect(saveModel).toHaveBeenCalledWith(model, { onlyStepParams: true });
-    expect(updateRoute).toHaveBeenCalledWith(1, {
-      options: {
-        hasPersistedMenuInstanceFlow: true,
+    expect(updateRoute).toHaveBeenCalledWith(
+      1,
+      {
+        options: {
+          hasPersistedMenuInstanceFlow: true,
+        },
       },
-    });
+      { refreshAfterMutation: false },
+    );
   });
 
   it('should save mobile menu linkage rules without serializing runtime route props', async () => {
@@ -2642,11 +2723,15 @@ describe('plugin-ui-layout mobile models', () => {
     await model.saveStepParams();
 
     expect(save).toHaveBeenCalledWith(model, { onlyStepParams: true });
-    expect(updateRoute).toHaveBeenCalledWith(1, {
-      options: {
-        hasPersistedMenuInstanceFlow: true,
+    expect(updateRoute).toHaveBeenCalledWith(
+      1,
+      {
+        options: {
+          hasPersistedMenuInstanceFlow: true,
+        },
       },
-    });
+      { refreshAfterMutation: false },
+    );
   });
 
   it('should clear persisted mobile menu linkage rules and route flag', async () => {
@@ -2681,9 +2766,7 @@ describe('plugin-ui-layout mobile models', () => {
 
     expect(saveModel).not.toHaveBeenCalled();
     expect(destroy).toHaveBeenCalledWith('mobile-menu-item-linkage-clear');
-    expect(updateRoute).toHaveBeenCalledWith(1, {
-      options: null,
-    });
+    expect(updateRoute).toHaveBeenCalledWith(1, { options: null }, { refreshAfterMutation: false });
     expect(model.getRoute()?.options).toBeUndefined();
   });
 
@@ -2715,7 +2798,7 @@ describe('plugin-ui-layout mobile models', () => {
 
     await model.deleteMenuRoute();
 
-    expect(deleteRoute).toHaveBeenCalledWith(1);
+    expect(deleteRoute).toHaveBeenCalledWith(1, { refreshAfterMutation: false });
     expect(destroy).toHaveBeenCalledWith('mobile-menu-item-linkage-delete');
   });
 
@@ -2915,6 +2998,7 @@ describe('plugin-ui-layout mobile models', () => {
             openInNewWindow: true,
           }),
         }),
+        { refreshAfterMutation: false },
       );
     });
     await waitFor(() => {
