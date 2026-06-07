@@ -327,6 +327,28 @@ describe('variables resolver (no HTTP)', () => {
     expect(out.length).toBe(2);
   });
 
+  it('supports own data properties on primitive tail values without exposing prototype members', async () => {
+    const ctx = new ServerBaseContext();
+    ctx.defineProperty('user', { value: { name: 'Alice' } });
+
+    const out = await resolveJsonTemplate(
+      {
+        length: '{{ ctx.user.name.length }}',
+        computedLength: '{{ ctx.user.name.length + 1 }}',
+        index: '{{ ctx.user.name[0] }}',
+        prototypeMethod: '{{ ctx.user.name.toString() }}',
+        constructorValue: '{{ ctx.user.name.constructor }}',
+      } as any,
+      ctx,
+    );
+
+    expect(out.length).toBe(5);
+    expect(out.computedLength).toBe(6);
+    expect(out.index).toBe('A');
+    expect(out.prototypeMethod).toBe('{{ ctx.user.name.toString() }}');
+    expect(out.constructorValue).toBe('{{ ctx.user.name.constructor }}');
+  });
+
   it('passes the top-level sandbox proxy to delegated getters', async () => {
     const parent = new ServerBaseContext();
     parent.defineProperty('x', {

@@ -94,6 +94,11 @@ function getSandboxDataDescriptor(source: object, key: PropertyKey) {
   return descriptor;
 }
 
+function getPrimitiveDataDescriptor(source: unknown, key: string) {
+  if (source == null || isObjectLike(source)) return undefined;
+  return getSandboxDataDescriptor(Object(source), key);
+}
+
 function isSandboxContextSource(value: unknown): value is SandboxContextSource {
   return value === EMPTY_SANDBOX_CONTEXT || value instanceof ServerBaseContext;
 }
@@ -300,7 +305,11 @@ async function getSandboxProperty(value: unknown, key: string) {
     return key === 'length' || key === 'name' ? Reflect.get(source, key) : undefined;
   }
 
-  if (!isObjectLike(source)) return undefined;
+  if (!isObjectLike(source)) {
+    const descriptor = getPrimitiveDataDescriptor(source, key);
+    if (!descriptor || typeof descriptor.value === 'function') return undefined;
+    return wrapSandboxValue(descriptor.value);
+  }
   const descriptor = getSandboxDataDescriptor(source, key);
   if (!descriptor) return undefined;
   const current = descriptor.value;
