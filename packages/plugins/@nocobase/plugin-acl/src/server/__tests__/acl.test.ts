@@ -914,5 +914,3 @@ describe('acl', () => {
     expect(app.acl.getStrategyResources()).not.toContain('posts');
   });
 });
-
-// test
