@@ -102,8 +102,7 @@ export const DaraButton: React.FC<{ ctx: FlowSettingsContext<any> }> = observer(
   }, [uid, panelRef, setEditorRef, setCurrentEditorRefUid]);
 
   const systemPrompt =
-    'If you are not in SQL/Custom mode, first call the tool viz.switchModes; after editing SQL, if you need field samples, call the tool viz.runQuery. Use query.sqlDatasource as the current data source key when executing SQL. Do not render chart previews directly in the chat window.';
-
+    'If you are not in SQL/Custom mode, first call the tool switchModes; after editing SQL, if you need field samples, call the tool runQuery. Use query.sqlDatasource as the current data source key when executing SQL. Do not render chart previews directly in the chat window.';
   type TaskPrototype = Partial<Task> & { user?: string };
 
   const TaskTemplate = (prototype: TaskPrototype): Task => {
