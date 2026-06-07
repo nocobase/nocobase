@@ -8,8 +8,8 @@
  */
 
 import { defineAction, tExpr, FlowModel } from '@nocobase/flow-engine';
-import { operators } from '../../../../../flow-compat';
 import { FilterFormFieldModel } from '../../filter-form/fields';
+import { getFilterFormOperatorList } from '../utils';
 
 export const defaultOperator: any = defineAction<FilterFormFieldModel>({
   name: 'defaultOperator',
@@ -37,12 +37,10 @@ export const defaultOperator: any = defineAction<FilterFormFieldModel>({
 
 function getOperatorOptions(model: FlowModel) {
   const meta = model.context.collectionField || model.context.filterField;
-  const operatorList =
-    model.context.collectionField?.filterable?.operators || operators[model.context.filterField.type];
-  return (operatorList || [])
+  return getFilterFormOperatorList(model)
     .filter((op) => !op.visible || op.visible(meta))
     .map((op) => ({
       ...op,
-      label: model.translate(op.label),
+      label: typeof op.label === 'string' ? model.translate(op.label) : op.label,
     }));
 }
