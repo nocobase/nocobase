@@ -26,6 +26,7 @@ import { PluginManagerRepository } from './plugin-manager-repository';
 import { PluginData } from './types';
 import {
   checkAndGetCompatible,
+  assertSafePluginPackageName,
   copyTempPackageToStorageAndLinkToNodeModules,
   downloadAndUnzipToTempDir,
   getNpmInfo,
@@ -220,6 +221,7 @@ export class PluginManager {
   static parsedNames = {};
 
   static async parseName(nameOrPkg: string) {
+    assertSafePluginPackageName(nameOrPkg);
     if (this.parsedNames[nameOrPkg]) {
       return this.parsedNames[nameOrPkg];
     }

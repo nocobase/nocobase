@@ -9,12 +9,13 @@
 
 import { Cache } from '@nocobase/cache';
 import { uid } from '@nocobase/utils';
+import crypto from 'crypto';
 import fs from 'fs';
 import fse from 'fs-extra';
 import path from 'path';
 import Application from '../../application';
 import PluginManager from '../plugin-manager';
-import crypto from 'crypto';
+import { assertSafePluginPackageName } from '../utils';
 
 import packageJson from '../../../package.json';
 
@@ -145,6 +146,13 @@ export default {
         ctx.throw(400, 'plugin name invalid');
       }
       const keys = Array.isArray(filterByTk) ? filterByTk : [filterByTk];
+      for (const key of keys) {
+        try {
+          assertSafePluginPackageName(key);
+        } catch (error) {
+          ctx.throw(400, 'plugin name invalid');
+        }
+      }
       app.runAsCLI(['pm', 'enable', ...keys], { from: 'user' });
       ctx.body = filterByTk;
       await next();
