@@ -50,9 +50,7 @@ export function renderReferenceTargetPlaceholder(
   if (state === 'unconfigured') {
     return (
       <Card>
-        <div style={{ padding: 24 }}>
-          <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={tClient(model, 'Please configure target block')} />
-        </div>
+        <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={tClient(model, 'Please configure target block')} />
       </Card>
     );
   }
@@ -60,18 +58,14 @@ export function renderReferenceTargetPlaceholder(
   if (state === 'resolving') {
     return (
       <Card>
-        <div style={{ padding: 24 }}>
-          <Skeleton active title={false} paragraph={{ rows: 3 }} />
-        </div>
+        <Skeleton active title={false} paragraph={{ rows: 3 }} />
       </Card>
     );
   }
 
   return (
     <Card>
-      <div style={{ padding: 24 }}>
-        <Result status="error" subTitle={tClient(model, 'Target block is invalid')} />
-      </div>
+      <Result status="error" subTitle={tClient(model, 'Target block is invalid')} />
     </Card>
   );
 }

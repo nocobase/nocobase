@@ -455,6 +455,22 @@ export function registerGanttBlockModelSettings(GanttBlockModel: any) {
           getGanttModel(ctx).setProps('enableDragToReschedule', params.enableDragToReschedule !== false);
         },
       },
+      scrollToTodayOnFirstRender: {
+        title: tExpr('Scroll to today on first display'),
+        uiMode: { type: 'switch', key: 'scrollToTodayOnFirstRender' },
+        defaultParams(ctx) {
+          const model = getGanttModel(ctx);
+          return {
+            scrollToTodayOnFirstRender: model.shouldScrollToTodayOnFirstRender(),
+          };
+        },
+        handler(ctx, params) {
+          getGanttModel(ctx).setProps('scrollToTodayOnFirstRender', params.scrollToTodayOnFirstRender === true);
+        },
+        beforeParamsSave(ctx, params) {
+          getGanttModel(ctx).setProps('scrollToTodayOnFirstRender', params.scrollToTodayOnFirstRender === true);
+        },
+      },
       eventPopupSettings: {
         use: 'openView',
         title: tExpr('Event popup settings'),
@@ -491,6 +507,7 @@ export function registerGanttBlockModelSettings(GanttBlockModel: any) {
       use: 'GanttBlockModel',
       props: {
         enableDragToReschedule: true,
+        scrollToTodayOnFirstRender: false,
         showTable: true,
       },
       subModels: {

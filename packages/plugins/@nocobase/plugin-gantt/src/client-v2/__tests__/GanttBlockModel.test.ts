@@ -97,6 +97,7 @@ describe('PluginGanttClient model discovery', () => {
         Day: '天',
         Hour: '小时',
         'Event popup settings': '任务弹窗设置',
+        'Scroll to today on first display': '默认定位到今天',
         'Show table': '表格显示',
         'Table width': '表格宽度',
         Today: '今天',
@@ -109,6 +110,7 @@ describe('PluginGanttClient model discovery', () => {
         Day: '天',
         Hour: '小时',
         'Event popup settings': '任务弹窗设置',
+        'Scroll to today on first display': '默认定位到今天',
         'Show table': '表格显示',
         'Table width': '表格宽度',
         Today: '今天',
@@ -485,6 +487,47 @@ describe('GanttBlockModel settings', () => {
     expect(model.getTableWidth()).toBe(360);
 
     expect(step?.hideInSettings?.({ model: { props: { showTable: false } } } as any)).toBe(true);
+  });
+
+  test('keeps initial scroll to today disabled by default and persists the setting', () => {
+    const flowEngine = new FlowEngine();
+    flowEngine.registerModels({ GanttBlockModel });
+
+    const model = flowEngine.createModel<GanttBlockModel>({
+      use: 'GanttBlockModel',
+    });
+    const step = model.getFlow('ganttSettings')?.steps?.scrollToTodayOnFirstRender;
+
+    const defaultParams =
+      typeof step?.defaultParams === 'function' ? step.defaultParams({ model } as any) : step?.defaultParams;
+    expect(defaultParams).toEqual({ scrollToTodayOnFirstRender: false });
+    expect(model.shouldScrollToTodayOnFirstRender()).toBe(false);
+
+    step?.handler?.({ model } as any, { scrollToTodayOnFirstRender: true });
+    expect(model.props?.scrollToTodayOnFirstRender).toBe(true);
+    expect(model.shouldScrollToTodayOnFirstRender()).toBe(true);
+
+    step?.beforeParamsSave?.({ model } as any, { scrollToTodayOnFirstRender: false });
+    expect(model.props?.scrollToTodayOnFirstRender).toBe(false);
+    expect(model.shouldScrollToTodayOnFirstRender()).toBe(false);
+  });
+
+  test('reads the initial scroll to today setting from stored step params', () => {
+    const flowEngine = new FlowEngine();
+    flowEngine.registerModels({ GanttBlockModel });
+
+    const model = flowEngine.createModel<GanttBlockModel>({
+      use: 'GanttBlockModel',
+      stepParams: {
+        ganttSettings: {
+          scrollToTodayOnFirstRender: {
+            scrollToTodayOnFirstRender: true,
+          },
+        },
+      },
+    });
+
+    expect(model.shouldScrollToTodayOnFirstRender()).toBe(true);
   });
 
   test('translates time scale options at settings render time', () => {

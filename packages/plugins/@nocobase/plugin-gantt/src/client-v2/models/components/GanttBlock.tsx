@@ -105,6 +105,7 @@ export const GanttBlock = observer(
     const [failedTask, setFailedTask] = useState<BarTask | null>(null);
     const [scrollY, setScrollY] = useState(0);
     const syncingScrollRef = useRef(false);
+    const scrolledToTodayOnFirstRenderRef = useRef(false);
     const scrollYRef = useRef(0);
     const scrollXRef = useRef(-1);
     const setScrollYValue = useCallback((nextScrollY: number) => {
@@ -164,6 +165,7 @@ export const GanttBlock = observer(
     const fieldNamesProp = model.props?.fieldNames;
     const dragEnabled = model.props?.enableDragToReschedule;
     const showTable = model.props?.showTable !== false;
+    const scrollToTodayOnFirstRender = model.shouldScrollToTodayOnFirstRender();
     const showRowNumbers = model.shouldShowRowNumbers();
     const tableColumns = model.getColumns().filter((column: any) => column?.key !== 'empty');
     const showActionsTable = showTable && tableColumns.length > 0;
@@ -455,6 +457,16 @@ export const GanttBlock = observer(
     ]);
 
     useEffect(() => {
+      if (!scrollToTodayOnFirstRender || scrolledToTodayOnFirstRenderRef.current || loading) {
+        return;
+      }
+
+      if (scrollToDate(new Date())) {
+        scrolledToTodayOnFirstRenderRef.current = true;
+      }
+    }, [dateSetup.viewMode, loading, scrollToDate, scrollToTodayOnFirstRender]);
+
+    useEffect(() => {
       if (
         viewMode === dateSetup.viewMode &&
         ((viewDate && !currentViewDate) || (viewDate && currentViewDate?.valueOf() !== viewDate.valueOf()))
@@ -721,9 +733,9 @@ export const GanttBlock = observer(
     const handleSelectedTask = (taskId: string) => {
       setSelectedTask(displayBarTasks.find((t) => t.id === taskId));
     };
-    const handleTaskClick = (task: Task) => {
+    const handleTaskClick = async (task: Task) => {
       handleSelectedTask(task.id);
-      void model.openEvent((task as any).record);
+      await model.openEvent((task as any).record);
     };
 
     const commitChangedTask = (task: Task) => {
