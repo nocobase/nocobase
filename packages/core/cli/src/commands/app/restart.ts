@@ -16,6 +16,7 @@ import {
 } from '../../lib/app-runtime.js';
 import { formatAppUrl, resolveManagedAppApiBaseUrl, waitForAppReady } from '../../lib/app-health.js';
 import { recreateSavedDockerApp } from '../../lib/app-managed-resources.js';
+import { resolveAppUrlFromApiBaseUrl } from '../env/shared.js';
 import { run } from '../../lib/run-npm.js';
 import { announceTargetEnv, failTask, startTask, succeedTask } from '../../lib/ui.js';
 
@@ -68,6 +69,15 @@ function formatDockerRestartFailure(envName: string, message: string): string {
     'Check the saved Docker image, envFile, container settings, and database connection, then try again.',
     `Details: ${message}`,
   ].join('\n');
+}
+
+function resolveDisplayAppUrl(apiBaseUrl: string | undefined, port?: string, appPublicPath?: string): string | undefined {
+  const resolvedFromApiBaseUrl = resolveAppUrlFromApiBaseUrl(apiBaseUrl);
+  if (resolvedFromApiBaseUrl) {
+    return resolvedFromApiBaseUrl;
+  }
+
+  return formatAppUrl(port, appPublicPath);
 }
 
 export default class AppRestart extends Command {
@@ -218,13 +228,15 @@ export default class AppRestart extends Command {
         this.error(formatDockerRestartFailure(runtime.envName, message));
       }
 
-      const appUrl = formatAppUrl(
+      const apiBaseUrl = resolveManagedAppApiBaseUrl(runtime);
+      const appUrl = resolveDisplayAppUrl(
+        apiBaseUrl,
         runtime.env.appPort === undefined || runtime.env.appPort === null ? undefined : String(runtime.env.appPort),
         runtime.env.config?.appPublicPath,
       );
       await waitForAppReady({
         envName: runtime.envName,
-        apiBaseUrl: resolveManagedAppApiBaseUrl(runtime),
+        apiBaseUrl,
         containerName: runtime.containerName,
         logHint: `You can inspect startup logs with \`nb app logs --env ${runtime.envName}\`.`,
         ...(flags.verbose ? { verbose: true } : {}),

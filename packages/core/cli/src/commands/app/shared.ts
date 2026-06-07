@@ -12,6 +12,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { buildDockerDbContainerName, type ManagedAppRuntime } from '../../lib/app-runtime.js';
 import { resolveConfiguredEnvPath } from '../../lib/cli-home.js';
+import { resolveConfiguredAppPath } from '../../lib/env-paths.js';
 import { commandOutput, run } from '../../lib/run-npm.js';
 
 type CommandStdio = 'inherit' | 'pipe' | 'ignore';
@@ -143,9 +144,9 @@ export function managedDockerNetworkName(
 }
 
 export function resolveManagedLocalAppPath(runtime: Extract<ManagedAppRuntime, { kind: 'local' }>): string | undefined {
-  return runtime.projectRoot || resolveConfiguredPath(runtime.env.config.appRootPath);
+  return resolveConfiguredAppPath(runtime.env.config) || runtime.projectRoot || resolveConfiguredPath(runtime.env.config.appRootPath);
 }
 
 export function shouldRemoveManagedLocalAppFiles(runtime: Extract<ManagedAppRuntime, { kind: 'local' }>): boolean {
-  return runtime.source === 'npm' || runtime.source === 'git';
+  return runtime.source === 'npm' || runtime.source === 'git' || runtime.source === 'local';
 }
