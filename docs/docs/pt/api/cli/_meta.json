@@ -68,6 +68,34 @@
     "items": [
       {
         "type": "custom-link",
+        "label": "nb app autostart",
+        "link": "/api/cli/app/autostart/",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "nb app autostart enable",
+            "link": "/api/cli/app/autostart/enable"
+          },
+          {
+            "type": "custom-link",
+            "label": "nb app autostart disable",
+            "link": "/api/cli/app/autostart/disable"
+          },
+          {
+            "type": "custom-link",
+            "label": "nb app autostart list",
+            "link": "/api/cli/app/autostart/list"
+          },
+          {
+            "type": "custom-link",
+            "label": "nb app autostart run",
+            "link": "/api/cli/app/autostart/run"
+          }
+        ],
+        "collapsed": true
+      },
+      {
+        "type": "custom-link",
         "label": "nb app logs",
         "link": "/api/cli/app/logs"
       },

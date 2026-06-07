@@ -21,6 +21,7 @@ nb app <command>
 | [`nb app start`](./start.md)     | アプリケーションを起動する、または Docker コンテナを再作成する                 |
 | [`nb app stop`](./stop.md)       | アプリケーションを停止する、または Docker コンテナをクリーンアップする         |
 | [`nb app restart`](./restart.md) | まず停止してからアプリケーションを起動する                                     |
+| [`nb app autostart`](./autostart/index.md) | 自動起動マークを管理し、有効な env をまとめて起動する |
 | [`nb app logs`](./logs.md)       | アプリケーションログを表示する                                                 |
 | [`nb app upgrade`](./upgrade.md) | アプリケーションを停止し、ソースコードまたはイメージを置き換えてから再起動する |
 
@@ -29,6 +30,8 @@ nb app <command>
 ```bash
 nb app start --env app1
 nb app restart --env app1
+nb app autostart enable --env app1 --yes
+nb app autostart run
 nb app logs --env app1
 nb app upgrade --env app1 --skip-download
 nb app stop --env app1 --with-db

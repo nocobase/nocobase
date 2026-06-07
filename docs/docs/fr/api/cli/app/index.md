@@ -21,6 +21,7 @@ nb app <command>
 | [`nb app start`](./start.md)     | Démarre l'application ou recrée le conteneur Docker                         |
 | [`nb app stop`](./stop.md)       | Arrête l'application ou nettoie le conteneur Docker                         |
 | [`nb app restart`](./restart.md) | Arrête d'abord l'application, puis la redémarre                             |
+| [`nb app autostart`](./autostart/index.md) | Gère les marqueurs de démarrage automatique et démarre tous les envs activés |
 | [`nb app logs`](./logs.md)       | Affiche les journaux de l'application                                       |
 | [`nb app upgrade`](./upgrade.md) | Arrête l'application, remplace le code source ou l'image, puis la redémarre |
 
@@ -29,6 +30,8 @@ nb app <command>
 ```bash
 nb app start --env app1
 nb app restart --env app1
+nb app autostart enable --env app1 --yes
+nb app autostart run
 nb app logs --env app1
 nb app upgrade --env app1 --skip-download
 nb app stop --env app1 --with-db

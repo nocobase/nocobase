@@ -21,6 +21,7 @@ nb app <command>
 | [`nb app start`](./start.md)     | Memulai aplikasi atau membuat ulang kontainer Docker                             |
 | [`nb app stop`](./stop.md)       | Menghentikan aplikasi atau membersihkan kontainer Docker                         |
 | [`nb app restart`](./restart.md) | Menghentikan aplikasi terlebih dahulu lalu memulainya kembali                    |
+| [`nb app autostart`](./autostart/index.md) | Mengelola tanda autostart dan menjalankan semua env yang diaktifkan |
 | [`nb app logs`](./logs.md)       | Melihat log aplikasi                                                             |
 | [`nb app upgrade`](./upgrade.md) | Menghentikan aplikasi, mengganti kode sumber atau image, lalu memulainya kembali |
 
@@ -29,6 +30,8 @@ nb app <command>
 ```bash
 nb app start --env app1
 nb app restart --env app1
+nb app autostart enable --env app1 --yes
+nb app autostart run
 nb app logs --env app1
 nb app upgrade --env app1 --skip-download
 nb app stop --env app1 --with-db

@@ -21,6 +21,7 @@ nb app <command>
 | [`nb app start`](./start.md)     | Khởi động ứng dụng hoặc tạo lại container Docker              |
 | [`nb app stop`](./stop.md)       | Dừng ứng dụng hoặc dọn dẹp container Docker                   |
 | [`nb app restart`](./restart.md) | Dừng trước rồi khởi động lại ứng dụng                         |
+| [`nb app autostart`](./autostart/index.md) | Quản lý cờ tự khởi động và khởi chạy tất cả env đã bật |
 | [`nb app logs`](./logs.md)       | Xem nhật ký ứng dụng                                          |
 | [`nb app upgrade`](./upgrade.md) | Dừng ứng dụng, thay thế mã nguồn hoặc image rồi khởi động lại |
 
@@ -29,6 +30,8 @@ nb app <command>
 ```bash
 nb app start --env app1
 nb app restart --env app1
+nb app autostart enable --env app1 --yes
+nb app autostart run
 nb app logs --env app1
 nb app upgrade --env app1 --skip-download
 nb app stop --env app1 --with-db
