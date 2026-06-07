@@ -2693,7 +2693,7 @@ describe('plugin-ui-layout mobile models', () => {
       const popover = document.querySelector('.ant-popover') as HTMLElement | null;
 
       expect(popover).toBeInTheDocument();
-      expect(Number(popover?.style.zIndex)).toBeGreaterThan(5000);
+      expect(Number(popover?.style.zIndex)).toBeGreaterThan(6000);
     });
   });
 

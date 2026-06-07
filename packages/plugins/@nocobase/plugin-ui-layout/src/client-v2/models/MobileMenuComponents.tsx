@@ -11,13 +11,13 @@ import { theme } from 'antd';
 import React from 'react';
 import { IconPicker, zIndexContext } from './mobileFlowCompat';
 
-// FlowSettings dialogs mount at z-index 5000, so the nested icon popover must sit above them.
-const MOBILE_MENU_SETTINGS_OVERLAY_Z_INDEX = 5000;
+// FlowSettings dialogs can sit above normal popups, so nested icon popovers need an extra local layer.
+const MOBILE_MENU_SETTINGS_OVERLAY_Z_INDEX_OFFSET = 5000;
 
 export const MobileMenuSettingsIconPicker = React.forwardRef<HTMLDivElement, React.ComponentProps<typeof IconPicker>>(
   (props, ref) => {
     const { token } = theme.useToken();
-    const popoverBaseZIndex = Math.max(token.zIndexPopupBase || 1000, MOBILE_MENU_SETTINGS_OVERLAY_Z_INDEX);
+    const popoverBaseZIndex = (token.zIndexPopupBase || 1000) + MOBILE_MENU_SETTINGS_OVERLAY_Z_INDEX_OFFSET;
 
     return (
       <div ref={ref}>
