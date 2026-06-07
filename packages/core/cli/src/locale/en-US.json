@@ -96,10 +96,10 @@
           "placeholder": "https://demo.example.com/api or https://demo.example.com/api/__app/<subapp>"
         },
         "authType": {
-          "message": "How would you like to sign in?",
-          "basicLabel": "Basic login (username + password)",
+          "message": "Which authentication method would you like to use?",
+          "basicLabel": "Basic authentication (username + password)",
           "basicHint": "uses your credentials to fetch a token after save",
-          "oauthLabel": "OAuth (browser login)",
+          "oauthLabel": "OAuth (browser authentication)",
           "oauthHint": "runs nb env auth after save",
           "tokenLabel": "API token / API key"
         },
@@ -436,8 +436,8 @@
           "description": "Choose whether to install a new app, manage a local app, or connect a remote app."
         },
         "connectExistingApp": {
-          "title": "Remote connection",
-          "description": "Save your remote app connection."
+          "title": "Connection & authentication",
+          "description": "Enter the app access URL and choose an authentication method."
         },
         "createNewApp": {
           "title": "App environment",

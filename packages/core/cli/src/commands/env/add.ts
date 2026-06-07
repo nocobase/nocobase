@@ -346,16 +346,16 @@ export default class EnvAdd extends Command {
       message: envAddText('prompts.authType.message'),
       options: [
         {
-          value: 'basic',
-          label: envAddText('prompts.authType.basicLabel'),
-          hint: envAddText('prompts.authType.basicHint'),
-        },
-        {
           value: 'oauth',
           label: envAddText('prompts.authType.oauthLabel'),
           hint: envAddText('prompts.authType.oauthHint'),
         },
         { value: 'token', label: envAddText('prompts.authType.tokenLabel') },
+        {
+          value: 'basic',
+          label: envAddText('prompts.authType.basicLabel'),
+          hint: envAddText('prompts.authType.basicHint'),
+        },
       ],
       initialValue: 'oauth',
       required: true,

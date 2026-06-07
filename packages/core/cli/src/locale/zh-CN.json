@@ -96,10 +96,10 @@
           "placeholder": "https://demo.example.com/api 或 https://demo.example.com/api/__app/<subapp>"
         },
         "authType": {
-          "message": "你想使用哪种登录方式？",
-          "basicLabel": "Basic 登录（用户名 + 密码）",
+          "message": "你想使用哪种认证方式？",
+          "basicLabel": "Basic 认证（用户名 + 密码）",
           "basicHint": "保存后会用用户名和密码换取 Token",
-          "oauthLabel": "OAuth（浏览器登录）",
+          "oauthLabel": "OAuth（浏览器认证）",
           "oauthHint": "保存后会自动执行 nb env auth",
           "tokenLabel": "API Token / API Key"
         },
@@ -436,8 +436,8 @@
           "description": "选择新安装、本机接管，或远程连接。"
         },
         "connectExistingApp": {
-          "title": "远程连接",
-          "description": "保存远程应用连接。"
+          "title": "连接与认证",
+          "description": "填写应用访问地址并选择认证方式。"
         },
         "createNewApp": {
           "title": "应用环境信息",
