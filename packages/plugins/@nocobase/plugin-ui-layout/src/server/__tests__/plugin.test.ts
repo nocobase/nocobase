@@ -370,4 +370,117 @@ describe('plugin-ui-layout server', () => {
     expect(adminTreeTitles).not.toContain('DATA-ROUTE-SHARED-CHILD');
     expect(mobileTreeTitles).not.toContain('DATA-ROUTE-SHARED-CHILD');
   });
+
+  it('should enforce role permissions and layout filtering together for non-root users', async () => {
+    app = await createMockServer({
+      registerActions: true,
+      acl: true,
+      plugins: [
+        'error-handler',
+        'users',
+        'auth',
+        'client',
+        'field-sort',
+        'acl',
+        'ui-schema-storage',
+        'system-settings',
+        'data-source-main',
+        'data-source-manager',
+        'ui-layout',
+      ],
+    });
+
+    const adminLayout = await app.db.getRepository('uiLayouts').findOne({
+      filter: {
+        uid: DEFAULT_ADMIN_UI_LAYOUT.uid,
+      },
+    });
+    if (!adminLayout) {
+      throw new Error('Default AdminLayout ui layout should exist.');
+    }
+    const mobileLayout = await app.db.getRepository('uiLayouts').create({
+      values: {
+        uid: 'mobile-layout-role-filter-test',
+        layoutType: 'mobile',
+        routeName: 'mobile-role-filter-test',
+        routePath: '/v/mobile-role-filter-test',
+        authCheck: true,
+        enabled: true,
+      },
+    });
+    const role = await app.db.getRepository('roles').create({
+      values: {
+        name: 'layout-role-filter-member',
+      },
+    });
+
+    const adminAllowedRoute = await app.db.getRepository('desktopRoutes').create({
+      values: {
+        type: 'flowPage',
+        title: 'DATA-ROLE-LAYOUT-ADMIN-ALLOWED',
+        schemaUid: 'layout-role-filter-admin-allowed',
+        hidden: false,
+        sort: 10,
+      },
+    });
+    const mobileAllowedRoute = await app.db.getRepository('desktopRoutes').create({
+      values: {
+        type: 'flowPage',
+        title: 'DATA-ROLE-LAYOUT-MOBILE-ALLOWED',
+        schemaUid: 'layout-role-filter-mobile-allowed',
+        hidden: false,
+        sort: 20,
+      },
+    });
+    const mobileDeniedRoute = await app.db.getRepository('desktopRoutes').create({
+      values: {
+        type: 'flowPage',
+        title: 'DATA-ROLE-LAYOUT-MOBILE-DENIED',
+        schemaUid: 'layout-role-filter-mobile-denied',
+        hidden: false,
+        sort: 30,
+      },
+    });
+
+    await app.db.getRepository('desktopRoutes.uiLayouts', adminAllowedRoute.get('id')).set({
+      tk: [adminLayout.get('uid')],
+    });
+    await app.db.getRepository('desktopRoutes.uiLayouts', mobileAllowedRoute.get('id')).set({
+      tk: [mobileLayout.get('uid')],
+    });
+    await app.db.getRepository('desktopRoutes.uiLayouts', mobileDeniedRoute.get('id')).set({
+      tk: [mobileLayout.get('uid')],
+    });
+    await app.db.getRepository('desktopRoutes.roles', adminAllowedRoute.get('id')).add({
+      tk: [role.get('name')],
+    });
+    await app.db.getRepository('desktopRoutes.roles', mobileAllowedRoute.get('id')).add({
+      tk: [role.get('name')],
+    });
+
+    const memberUser = await app.db.getRepository('users').create({
+      values: {
+        roles: [role.get('name')],
+      },
+    });
+    const agent = await app.agent().login(memberUser);
+
+    const adminResponse = await agent.get('/desktopRoutes:listAccessible').query({
+      layout: DEFAULT_ADMIN_UI_LAYOUT.uid,
+    });
+    const mobileResponse = await agent.get('/desktopRoutes:listAccessible').query({
+      layout: mobileLayout.get('uid'),
+    });
+    const adminTitles = adminResponse.body.data.map((route) => route.title);
+    const mobileTitles = mobileResponse.body.data.map((route) => route.title);
+
+    expect(adminResponse.status).toBe(200);
+    expect(mobileResponse.status).toBe(200);
+    expect(adminTitles).toEqual(['DATA-ROLE-LAYOUT-ADMIN-ALLOWED']);
+    expect(mobileTitles).toEqual(['DATA-ROLE-LAYOUT-MOBILE-ALLOWED']);
+    expect(adminTitles).not.toContain('DATA-ROLE-LAYOUT-MOBILE-ALLOWED');
+    expect(adminTitles).not.toContain('DATA-ROLE-LAYOUT-MOBILE-DENIED');
+    expect(mobileTitles).not.toContain('DATA-ROLE-LAYOUT-ADMIN-ALLOWED');
+    expect(mobileTitles).not.toContain('DATA-ROLE-LAYOUT-MOBILE-DENIED');
+  });
 });
