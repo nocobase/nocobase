@@ -193,12 +193,13 @@ test('nb init continues from the browser UI result and runs env:add for an exist
         hint: { key: 'commands.init.prompts.setupMode.installNewHint' },
       }),
       expect.objectContaining({
-        value: 'manage-local',
-        hint: { key: 'commands.init.prompts.setupMode.manageLocalHint' },
-      }),
-      expect.objectContaining({
         value: 'connect-remote',
         hint: { key: 'commands.init.prompts.setupMode.connectRemoteHint' },
+      }),
+      expect.objectContaining({
+        value: 'manage-local',
+        hint: { key: 'commands.init.prompts.setupMode.manageLocalHint' },
+        disabled: true,
       }),
     ],
   });

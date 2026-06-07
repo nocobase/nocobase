@@ -340,14 +340,15 @@ Prompt modes:
           hint: initText('prompts.setupMode.installNewHint'),
         },
         {
-          value: 'manage-local',
-          label: initText('prompts.setupMode.manageLocalLabel'),
-          hint: initText('prompts.setupMode.manageLocalHint'),
-        },
-        {
           value: 'connect-remote',
           label: initText('prompts.setupMode.connectRemoteLabel'),
           hint: initText('prompts.setupMode.connectRemoteHint'),
+        },
+        {
+          value: 'manage-local',
+          label: initText('prompts.setupMode.manageLocalLabel'),
+          hint: initText('prompts.setupMode.manageLocalHint'),
+          disabled: true,
         },
       ],
       initialValue: 'install-new',
