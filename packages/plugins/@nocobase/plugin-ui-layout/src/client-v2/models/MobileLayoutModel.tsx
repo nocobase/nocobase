@@ -55,7 +55,11 @@ import {
 import React, { type ReactNode, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate, useOutlet } from 'react-router-dom';
 import { NAMESPACE } from '../../constants';
-import { refreshMobileLayoutAccessibleRoutes } from '../mobileRouteRepository';
+import {
+  ensureMobileLayoutAccessibleRoutes,
+  installMobileLayoutRouteRepository,
+  refreshMobileLayoutAccessibleRoutes,
+} from '../mobileRouteRepository';
 import {
   Icon,
   IconPicker,
@@ -670,6 +674,10 @@ const MobileLayoutComponent = observer((props: { model: MobileLayoutModel }) => 
     };
   }, [model]);
 
+  useLayoutEffect(() => {
+    return installMobileLayoutRouteRepository(model);
+  }, [model]);
+
   useEffect(() => {
     if (typeof window === 'undefined') {
       return;
@@ -1200,7 +1208,7 @@ const MobileHomePlaceholder = observer(
       };
       const loadAccessibleRoutes = async () => {
         try {
-          await refreshMobileLayoutAccessibleRoutes(model, routeRepository);
+          await ensureMobileLayoutAccessibleRoutes(model, routeRepository);
           if (disposed) {
             return;
           }

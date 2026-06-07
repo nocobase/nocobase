@@ -59,6 +59,8 @@ type MobileRouteRepositoryForTest = {
   setRoutes?: (routes: NocoBaseDesktopRoute[]) => void;
   subscribe?: (subscriber: () => void) => void;
   unsubscribe?: (subscriber: () => void) => void;
+  isAccessibleLoaded?: () => boolean;
+  refreshAccessible?: () => Promise<NocoBaseDesktopRoute[]>;
   ensureAccessibleLoaded?: () => Promise<NocoBaseDesktopRoute[]>;
   createRoute?: (
     route: NocoBaseDesktopRoute,
@@ -1020,6 +1022,118 @@ describe('plugin-ui-layout mobile models', () => {
     });
     expect(screen.queryByText('Admin only')).not.toBeInTheDocument();
     expect(routeRepository.setRoutes).toHaveBeenCalledWith(mobileRoutes);
+  });
+
+  it('should load mobile routes once when a child route also ensures accessible routes', async () => {
+    const subscribers = new Set<() => void>();
+    const adminRoutes: NocoBaseDesktopRoute[] = [
+      {
+        id: 1,
+        type: NocoBaseDesktopRouteType.flowPage,
+        title: 'Admin only',
+        schemaUid: 'admin-only-page',
+        sort: 10,
+      },
+    ];
+    const mobileRoutes: NocoBaseDesktopRoute[] = [
+      {
+        id: 2,
+        type: NocoBaseDesktopRouteType.flowPage,
+        title: 'Mobile only',
+        schemaUid: 'mobile-only-page',
+        sort: 10,
+      },
+    ];
+    const updatedMobileRoutes: NocoBaseDesktopRoute[] = [
+      {
+        id: 3,
+        type: NocoBaseDesktopRouteType.flowPage,
+        title: 'Updated mobile only',
+        schemaUid: 'updated-mobile-only-page',
+        sort: 10,
+      },
+    ];
+    let cachedRoutes: NocoBaseDesktopRoute[] = [];
+    let accessibleLoaded = false;
+    const api = {
+      request: vi.fn(async (options: { params?: { layout?: string } }) => ({
+        data: {
+          data: options.params?.layout ? mobileRoutes : adminRoutes,
+        },
+      })),
+    };
+    const routeRepository: MobileRouteRepositoryForTest = {
+      listAccessible: vi.fn(() => cachedRoutes),
+      setRoutes: vi.fn((routes) => {
+        cachedRoutes = routes;
+        accessibleLoaded = true;
+        subscribers.forEach((subscriber) => subscriber());
+      }),
+      isAccessibleLoaded: vi.fn(() => accessibleLoaded),
+      refreshAccessible: vi.fn(async () => {
+        const response = await api.request({
+          params: {
+            tree: true,
+            sort: 'sort',
+          },
+        });
+        const routes = response.data.data;
+        routeRepository.setRoutes?.(routes);
+        return routes;
+      }),
+      ensureAccessibleLoaded: vi.fn(async () => {
+        if (accessibleLoaded) {
+          return cachedRoutes;
+        }
+
+        return routeRepository.refreshAccessible?.() || [];
+      }),
+      subscribe: (subscriber) => {
+        subscribers.add(subscriber);
+      },
+      unsubscribe: (subscriber) => {
+        subscribers.delete(subscriber);
+      },
+    };
+    const originalRefreshAccessible = routeRepository.refreshAccessible;
+    const ChildRouteGuard = () => {
+      React.useEffect(() => {
+        routeRepository.ensureAccessibleLoaded?.();
+      }, []);
+
+      return React.createElement('div', null, 'Child route guard');
+    };
+
+    renderMobileLayoutWithRouteRepository(routeRepository, {
+      api,
+      initialEntries: ['/v/mobile/mobile-page'],
+      outletElement: React.createElement(ChildRouteGuard),
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText('Mobile only')).toBeInTheDocument();
+    });
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(api.request).toHaveBeenCalledTimes(1);
+    expect(api.request).toHaveBeenCalledWith(
+      expect.objectContaining({
+        params: expect.objectContaining({
+          layout: 'mobile-layout-model-render-test',
+        }),
+      }),
+    );
+    expect(originalRefreshAccessible).not.toHaveBeenCalled();
+
+    await act(async () => {
+      routeRepository.setRoutes?.(updatedMobileRoutes);
+    });
+
+    await expect(routeRepository.ensureAccessibleLoaded?.()).resolves.toBe(updatedMobileRoutes);
+    expect(api.request).toHaveBeenCalledTimes(1);
   });
 
   it('should remove linked hidden mobile tab items without reserving tab bar space outside design mode', async () => {

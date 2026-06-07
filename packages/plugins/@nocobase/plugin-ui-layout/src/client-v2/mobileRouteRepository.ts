@@ -20,6 +20,8 @@ type MobileLayoutApiClient = {
 type MobileLayoutRouteRepository = {
   listAccessible?: () => NocoBaseDesktopRoute[];
   setRoutes?: (routes: NocoBaseDesktopRoute[]) => void;
+  isAccessibleLoaded?: () => boolean;
+  refreshAccessible?: () => Promise<NocoBaseDesktopRoute[]>;
   ensureAccessibleLoaded?: () => Promise<NocoBaseDesktopRoute[]>;
 };
 
@@ -35,6 +37,18 @@ type MobileLayoutRouteModel = {
   };
 };
 
+type MobileLayoutRouteRepositoryState = {
+  refs: number;
+  layoutUid: string;
+  loadedLayoutUid?: string;
+  loadingPromise?: Promise<NocoBaseDesktopRoute[]>;
+  requestId: number;
+  originalEnsureAccessibleLoaded?: MobileLayoutRouteRepository['ensureAccessibleLoaded'];
+  originalRefreshAccessible?: MobileLayoutRouteRepository['refreshAccessible'];
+};
+
+const mobileLayoutRouteRepositoryStates = new WeakMap<MobileLayoutRouteRepository, MobileLayoutRouteRepositoryState>();
+
 function getMobileLayoutUid(model: MobileLayoutRouteModel) {
   const uid = model.layout?.uid;
   return typeof uid === 'string' && uid.trim() ? uid : undefined;
@@ -44,24 +58,15 @@ function normalizeRoutes(routes: unknown): NocoBaseDesktopRoute[] {
   return Array.isArray(routes) ? routes : [];
 }
 
-export async function refreshMobileLayoutAccessibleRoutes(
+async function requestMobileLayoutAccessibleRoutes(
   model?: MobileLayoutRouteModel,
   routeRepository = model?.flowEngine.context.routeRepository,
+  requestId?: number,
 ) {
   const layoutUid = model ? getMobileLayoutUid(model) : undefined;
-  const fallbackRoutes = normalizeRoutes(routeRepository?.listAccessible?.());
-
-  if (!routeRepository || !layoutUid) {
-    return fallbackRoutes;
-  }
-
-  const api = model.flowEngine.context.api;
-  if (!api?.request || !routeRepository.setRoutes) {
-    if (routeRepository.ensureAccessibleLoaded) {
-      return routeRepository.ensureAccessibleLoaded();
-    }
-
-    return fallbackRoutes;
+  const api = model?.flowEngine.context.api;
+  if (!routeRepository || !layoutUid || !api?.request || !routeRepository.setRoutes) {
+    return getFallbackAccessibleRoutes(routeRepository);
   }
 
   const response = await api.request({
@@ -73,8 +78,145 @@ export async function refreshMobileLayoutAccessibleRoutes(
     },
   });
   const routes = normalizeRoutes(response?.data?.data);
+  const state = mobileLayoutRouteRepositoryStates.get(routeRepository);
 
-  routeRepository.setRoutes(routes);
+  if (!state || requestId === undefined || state.requestId === requestId) {
+    routeRepository.setRoutes(routes);
+    if (state?.layoutUid === layoutUid) {
+      state.loadedLayoutUid = layoutUid;
+    }
+  }
 
   return routes;
+}
+
+function canRequestMobileLayoutRoutes(
+  model: MobileLayoutRouteModel | undefined,
+  routeRepository: MobileLayoutRouteRepository | undefined,
+) {
+  const layoutUid = model ? getMobileLayoutUid(model) : undefined;
+  const api = model?.flowEngine.context.api;
+
+  return !!routeRepository && !!layoutUid && !!api?.request && !!routeRepository.setRoutes;
+}
+
+function getFallbackAccessibleRoutes(routeRepository: MobileLayoutRouteRepository | undefined) {
+  return normalizeRoutes(routeRepository?.listAccessible?.());
+}
+
+function startMobileLayoutRouteRequest(
+  model: MobileLayoutRouteModel,
+  routeRepository: MobileLayoutRouteRepository,
+  options: { force?: boolean } = {},
+) {
+  const state = mobileLayoutRouteRepositoryStates.get(routeRepository);
+  if (state?.loadingPromise && !options.force) {
+    return state.loadingPromise;
+  }
+
+  const requestId = state ? state.requestId + 1 : undefined;
+  if (state) {
+    state.requestId = requestId as number;
+  }
+  const requestPromise = requestMobileLayoutAccessibleRoutes(model, routeRepository, requestId);
+  if (state) {
+    const loadingPromise = requestPromise.finally(() => {
+      if (state.loadingPromise === loadingPromise) {
+        state.loadingPromise = undefined;
+      }
+    });
+    state.loadingPromise = loadingPromise;
+    return state.loadingPromise;
+  }
+
+  return requestPromise;
+}
+
+export async function ensureMobileLayoutAccessibleRoutes(
+  model?: MobileLayoutRouteModel,
+  routeRepository = model?.flowEngine.context.routeRepository,
+) {
+  if (!routeRepository || !model || !canRequestMobileLayoutRoutes(model, routeRepository)) {
+    if (routeRepository?.ensureAccessibleLoaded) {
+      return routeRepository.ensureAccessibleLoaded();
+    }
+
+    return getFallbackAccessibleRoutes(routeRepository);
+  }
+
+  const layoutUid = getMobileLayoutUid(model);
+  const state = mobileLayoutRouteRepositoryStates.get(routeRepository);
+  if (
+    layoutUid &&
+    state?.loadedLayoutUid === layoutUid &&
+    routeRepository.isAccessibleLoaded?.() &&
+    !state.loadingPromise
+  ) {
+    return getFallbackAccessibleRoutes(routeRepository);
+  }
+
+  return startMobileLayoutRouteRequest(model, routeRepository);
+}
+
+export async function refreshMobileLayoutAccessibleRoutes(
+  model?: MobileLayoutRouteModel,
+  routeRepository = model?.flowEngine.context.routeRepository,
+) {
+  if (!routeRepository || !model || !canRequestMobileLayoutRoutes(model, routeRepository)) {
+    if (routeRepository?.ensureAccessibleLoaded) {
+      return routeRepository.ensureAccessibleLoaded();
+    }
+
+    return getFallbackAccessibleRoutes(routeRepository);
+  }
+
+  return startMobileLayoutRouteRequest(model, routeRepository, { force: true });
+}
+
+export function installMobileLayoutRouteRepository(
+  model?: MobileLayoutRouteModel,
+  routeRepository = model?.flowEngine.context.routeRepository,
+) {
+  const layoutUid = model ? getMobileLayoutUid(model) : undefined;
+  if (!routeRepository || !model || !layoutUid || !canRequestMobileLayoutRoutes(model, routeRepository)) {
+    return () => {};
+  }
+
+  const existingState = mobileLayoutRouteRepositoryStates.get(routeRepository);
+  if (existingState) {
+    existingState.refs += 1;
+    existingState.layoutUid = layoutUid;
+    return () => {
+      existingState.refs -= 1;
+      if (existingState.refs > 0) {
+        return;
+      }
+
+      routeRepository.ensureAccessibleLoaded = existingState.originalEnsureAccessibleLoaded;
+      routeRepository.refreshAccessible = existingState.originalRefreshAccessible;
+      mobileLayoutRouteRepositoryStates.delete(routeRepository);
+    };
+  }
+
+  const state: MobileLayoutRouteRepositoryState = {
+    refs: 1,
+    layoutUid,
+    requestId: 0,
+    originalEnsureAccessibleLoaded: routeRepository.ensureAccessibleLoaded,
+    originalRefreshAccessible: routeRepository.refreshAccessible,
+  };
+  mobileLayoutRouteRepositoryStates.set(routeRepository, state);
+  routeRepository.ensureAccessibleLoaded = () => ensureMobileLayoutAccessibleRoutes(model, routeRepository);
+  routeRepository.refreshAccessible = () => refreshMobileLayoutAccessibleRoutes(model, routeRepository);
+
+  return () => {
+    state.refs -= 1;
+    if (state.refs > 0) {
+      return;
+    }
+
+    routeRepository.ensureAccessibleLoaded = state.originalEnsureAccessibleLoaded;
+    routeRepository.refreshAccessible = state.originalRefreshAccessible;
+    mobileLayoutRouteRepositoryStates.delete(routeRepository);
+  };
 }
