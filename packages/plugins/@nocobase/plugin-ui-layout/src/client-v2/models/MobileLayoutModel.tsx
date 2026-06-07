@@ -156,6 +156,8 @@ const PAD_PREVIEW_SIZE: MobilePreviewSize = {
   height: 667,
 };
 
+const MOBILE_TABBAR_ITEM_MIN_WIDTH = 72;
+
 // Keep the desktop preview header in sync with the v2 AdminLayout UI Editor preference.
 export const FLOW_SETTINGS_PREFERENCE_STORAGE_KEY = 'NOCOBASE_V2_FLOW_SETTINGS_ENABLED';
 export const FLOW_SETTINGS_PREFERENCE_CHANGE_EVENT = 'nocobase:v2:flow-settings-preference-change';
@@ -1414,16 +1416,24 @@ const MobileHomePlaceholder = observer(
           position: relative;
           z-index: 8;
           display: grid;
-          grid-template-columns: repeat(${tabBarColumnCount}, minmax(0, 1fr));
+          grid-template-columns: repeat(${tabBarColumnCount}, minmax(${MOBILE_TABBAR_ITEM_MIN_WIDTH}px, 1fr));
           padding: ${token.paddingXXS}px ${token.paddingXS}px calc(${token.paddingXXS}px + env(safe-area-inset-bottom));
           background: ${token.colorBgContainer};
           border-top: 1px solid ${token.colorBorderSecondary};
-          overflow: visible;
+          overflow-x: auto;
+          overflow-y: hidden;
+          overscroll-behavior-x: contain;
+          scrollbar-width: none;
+          -webkit-overflow-scrolling: touch;
+        }
+
+        .nb-ui-layout-mobile-home-tabbar::-webkit-scrollbar {
+          display: none;
         }
 
         .nb-ui-layout-mobile-home-tabbar-item-shell {
           position: relative;
-          min-width: 0;
+          min-width: ${MOBILE_TABBAR_ITEM_MIN_WIDTH}px;
           height: 56px;
           display: flex;
           align-items: stretch;

@@ -1254,6 +1254,35 @@ describe('plugin-ui-layout mobile models', () => {
     expect(activeTabRule).not.toContain('background:');
   });
 
+  it('should keep mobile tabs scrollable instead of squeezing them', async () => {
+    renderMobileLayoutWithRouteRepository({
+      listAccessible: () =>
+        Array.from({ length: 10 }, (_, index) => ({
+          id: index + 1,
+          type: NocoBaseDesktopRouteType.flowPage,
+          title: `Page ${index + 1}`,
+          schemaUid: `page-${index + 1}`,
+          sort: index + 1,
+        })),
+    });
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /Page 10/ })).toBeInTheDocument();
+    });
+
+    const styleText = Array.from(document.querySelectorAll('style'))
+      .map((style) => style.textContent || '')
+      .join('\n');
+    const tabbarRule = (styleText.match(/\.nb-ui-layout-mobile-home-tabbar\s*\{[^}]+\}/g) || []).find((rule) =>
+      /grid-template-columns:\s*repeat\(10/.test(rule),
+    );
+    const itemShellRule = styleText.match(/\.nb-ui-layout-mobile-home-tabbar-item-shell\s*\{[^}]+\}/)?.[0];
+
+    expect(tabbarRule).toMatch(/grid-template-columns:\s*repeat\(10,\s*minmax\(72px,\s*1fr\)\)/);
+    expect(tabbarRule).toMatch(/overflow-x:\s*auto/);
+    expect(itemShellRule).toMatch(/min-width:\s*72px/);
+  });
+
   it('should register mobile route pages with the mobile root page model', () => {
     const engine = new FlowEngine();
     engine.registerModels({
