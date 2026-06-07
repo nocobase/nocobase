@@ -66,6 +66,10 @@ type MobileMenuModelLike = FlowModel & {
   toMobileTabNode?: (options: MobileTabNodeOptions) => MobileTabNode | null;
 };
 
+type MobileMenuRouteTreeRefresher = {
+  refreshMenuRouteTree?: () => void;
+};
+
 type MobileRouteRepository = {
   updateRoute?: (
     filterByTk: string | number,
@@ -257,6 +261,10 @@ export class MobileLayoutMenuItemModel extends FlowModel {
   private persistedStateHydrating?: Promise<void>;
   private initialPersistedInstanceFlowCount = 0;
 
+  private refreshParentMenuRouteTree() {
+    (this.parent as unknown as MobileMenuRouteTreeRefresher | undefined)?.refreshMenuRouteTree?.();
+  }
+
   onInit(options: Parameters<FlowModel['onInit']>[0]) {
     this.initialPersistedInstanceFlowCount = Object.keys(
       ((options as { flowRegistry?: FlowRegistryData }).flowRegistry || {}) as FlowRegistryData,
@@ -312,8 +320,12 @@ export class MobileLayoutMenuItemModel extends FlowModel {
   }
 
   setHidden(value: boolean) {
+    const previous = this.hidden;
     this.linkageHidden = !!value;
     this.applyHiddenState();
+    if (previous !== this.hidden) {
+      this.refreshParentMenuRouteTree();
+    }
   }
 
   getRoute() {

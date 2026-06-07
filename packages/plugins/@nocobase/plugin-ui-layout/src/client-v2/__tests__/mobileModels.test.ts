@@ -185,6 +185,31 @@ describe('plugin-ui-layout mobile models', () => {
       .join('\n');
   }
 
+  function mockDesktopBreakpoint() {
+    const originalMatchMedia = window.matchMedia;
+
+    Object.defineProperty(window, 'matchMedia', {
+      configurable: true,
+      value: vi.fn().mockImplementation((query: string) => ({
+        matches: query.includes('min-width'),
+        media: query,
+        onchange: null,
+        addListener: vi.fn(),
+        removeListener: vi.fn(),
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+        dispatchEvent: vi.fn(),
+      })),
+    });
+
+    return () => {
+      Object.defineProperty(window, 'matchMedia', {
+        configurable: true,
+        value: originalMatchMedia,
+      });
+    };
+  }
+
   it('should extend the standard layout and page models', () => {
     expect(MobileLayoutModel.prototype).toBeInstanceOf(BaseLayoutModel);
     expect(MobileRootPageModel.prototype).toBeInstanceOf(RootPageModel);
@@ -651,6 +676,37 @@ describe('plugin-ui-layout mobile models', () => {
       ['home-page', 'route:Home', '/v/mobile/home-page', true],
       ['docs-link', 'route:Docs', undefined, false],
     ]);
+  });
+
+  it('should refresh the mobile menu route tree when linkage hidden state changes', () => {
+    const engine = new FlowEngine();
+    engine.registerModels({
+      MobileLayoutModel,
+      MobileLayoutMenuItemModel,
+    });
+    engine.context.defineProperty('t', {
+      value: (key: string) => key,
+    });
+
+    const model = engine.createModel<MobileLayoutModel>({
+      uid: 'mobile-layout-model-hidden-refresh',
+      use: 'MobileLayoutModel',
+    });
+    model.syncMenuRoutes([
+      {
+        id: 1,
+        type: NocoBaseDesktopRouteType.flowPage,
+        title: 'Home',
+        schemaUid: 'home-page',
+        sort: 10,
+      },
+    ]);
+    const menuItem = model.subModels.menuItems?.[0];
+    const refreshVersion = model.menuRouteRefreshVersion;
+
+    menuItem?.setHidden(true);
+
+    expect(model.menuRouteRefreshVersion).toBe(refreshVersion + 1);
   });
 
   it('should render mobile tab items after accessible routes are loaded asynchronously', async () => {
@@ -1141,6 +1197,99 @@ describe('plugin-ui-layout mobile models', () => {
       expect(screen.getByText('Conditionally hidden')).toBeInTheDocument();
       expect(document.querySelectorAll('.nb-ui-layout-mobile-home-tabbar-item-shell')).toHaveLength(2);
     });
+  });
+
+  it('should apply mobile menu linkage rules after the UI editor toggle state is synced', async () => {
+    const restoreBreakpoint = mockDesktopBreakpoint();
+    window.localStorage.setItem(FLOW_SETTINGS_PREFERENCE_STORAGE_KEY, '1');
+
+    try {
+      const routes: NocoBaseDesktopRoute[] = [
+        {
+          id: 1,
+          type: NocoBaseDesktopRouteType.flowPage,
+          title: 'Home',
+          schemaUid: 'home-page',
+          sort: 10,
+        },
+        {
+          id: 2,
+          type: NocoBaseDesktopRouteType.flowPage,
+          title: 'Runtime hidden',
+          schemaUid: 'runtime-hidden-page',
+          sort: 20,
+          options: {
+            hasPersistedMenuInstanceFlow: true,
+          },
+        },
+      ];
+      const hiddenMenuModelUid = getMobileMenuItemUid('mobile-layout-model-render-test', routes[1], 1);
+      const { engine } = renderMobileLayoutWithRouteRepository(
+        {
+          listAccessible: () => routes,
+          ensureAccessibleLoaded: vi.fn(async () => routes),
+        },
+        {
+          beforeRender: (model) => {
+            model.flowEngine.context.app.jsonLogic.apply = () => !model.flowEngine.context.flowSettingsEnabled;
+            model.flowEngine.setModelRepository({
+              findOne: vi.fn(async ({ uid }: { uid: string }) =>
+                uid === hiddenMenuModelUid
+                  ? {
+                      uid,
+                      use: 'MobileLayoutMenuItemModel',
+                      stepParams: {
+                        mobileMenuSettings: {
+                          linkageRules: {
+                            value: [
+                              {
+                                key: 'r1',
+                                title: 'Hide mobile tab outside UI editor',
+                                enable: true,
+                                condition: {
+                                  logic: '$and',
+                                  items: [{ path: 'designable', operator: '$eq', value: false }],
+                                },
+                                actions: [
+                                  {
+                                    key: 'a1',
+                                    name: 'linkageSetMenuItemProps',
+                                    params: { value: 'hidden' },
+                                  },
+                                ],
+                              },
+                            ],
+                          },
+                        },
+                      },
+                    }
+                  : null,
+              ),
+            } as never);
+          },
+        },
+      );
+
+      await waitFor(() => {
+        expect(engine.context.flowSettingsEnabled).toBe(true);
+        expect(screen.getByText('Runtime hidden')).toBeInTheDocument();
+      });
+
+      await act(async () => {
+        fireEvent.click(screen.getByTestId('ui-editor-button'));
+      });
+
+      await waitFor(() => {
+        expect(engine.context.flowSettingsEnabled).toBe(false);
+      });
+
+      await waitFor(() => {
+        expect(screen.queryByText('Runtime hidden')).not.toBeInTheDocument();
+        expect(document.querySelectorAll('.nb-ui-layout-mobile-home-tabbar-item-shell')).toHaveLength(1);
+      });
+    } finally {
+      restoreBreakpoint();
+    }
   });
 
   it('should keep linkage-hidden mobile tabs hidden after route-hidden is cleared', async () => {
