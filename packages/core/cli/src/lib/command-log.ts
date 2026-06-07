@@ -83,6 +83,14 @@ function sanitizeFileNameSegment(value: string): string {
   return normalized || 'command';
 }
 
+function resolveSessionDirName(sessionId?: string): string {
+  const trimmed = String(sessionId ?? '').trim();
+  if (!trimmed) {
+    return 'no-session';
+  }
+  return sanitizeFileNameSegment(trimmed);
+}
+
 export function stripAnsi(value: string): string {
   return value.replace(ANSI_ESCAPE_PATTERN, '');
 }
@@ -279,7 +287,8 @@ export async function initCommandLogSession(options: {
   const { dayKey, timestampKey } = formatDateParts(startedAt);
   const commandId = getCommandLogCommandId(options.argv);
   const fileStem = `${timestampKey}-${commandId}-${options.pid ?? process.pid}`;
-  const logDir = path.join(rootDir, dayKey);
+  const sessionDirName = resolveSessionDirName(options.sessionId);
+  const logDir = path.join(rootDir, dayKey, sessionDirName);
   const logFile = path.join(logDir, `${fileStem}.log`);
   const metaFile = path.join(logDir, `${fileStem}.meta.json`);
   const meta: CommandLogMeta = {

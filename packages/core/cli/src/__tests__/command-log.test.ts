@@ -69,6 +69,8 @@ test('command log session writes log and meta files and captures stdout/stderr',
       endedAt: new Date('2026-06-07T15:15:02.500Z'),
     });
 
+    expect(session.logFile).toContain(`${path.sep}2026-06-07${path.sep}nb-session-1${path.sep}`);
+    expect(session.metaFile).toContain(`${path.sep}2026-06-07${path.sep}nb-session-1${path.sep}`);
     const logContent = await fsp.readFile(session.logFile, 'utf8');
     const metaContent = JSON.parse(await fsp.readFile(session.metaFile, 'utf8'));
 
@@ -113,9 +115,13 @@ test('command log initialization cleans up dated directories older than configur
     });
 
     expect(session).toBeDefined();
+    if (!session) {
+      throw new Error('expected command log session to be created');
+    }
     expect(await fsp.stat(path.join(logRoot, keepDirName))).toBeDefined();
     await expect(fsp.stat(path.join(logRoot, oldDirName))).rejects.toThrow();
     expect(await fsp.stat(path.join(logRoot, 'misc-folder'))).toBeDefined();
+    expect(session.logFile).toContain(`${path.sep}${formatDateDir(now)}${path.sep}no-session${path.sep}`);
   } finally {
     if (previousCliRoot === undefined) {
       delete process.env.NB_CLI_ROOT;
