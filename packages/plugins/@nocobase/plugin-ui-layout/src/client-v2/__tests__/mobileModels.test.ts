@@ -3455,6 +3455,80 @@ describe('plugin-ui-layout mobile models', () => {
     expect(renderFirstTab).not.toHaveBeenCalled();
   });
 
+  it('should show mobile root page tabs immediately after saving enable tabs', async () => {
+    const flowEngine = new FlowEngine();
+    flowEngine.registerModels({
+      MobileRootPageModel,
+    });
+    vi.spyOn(flowEngine, 'saveModel').mockResolvedValue(undefined as never);
+    const currentRoute = {
+      id: 'route-123',
+      schemaUid: 'home-page',
+      enableTabs: false,
+    };
+    const request = vi.fn().mockResolvedValue({ data: { success: true } });
+    const refreshDesktopRoutes = vi.fn().mockResolvedValue(undefined);
+
+    flowEngine.context.defineProperty('api', {
+      value: {
+        request,
+      },
+    });
+    flowEngine.context.defineProperty('refreshDesktopRoutes', {
+      value: refreshDesktopRoutes,
+    });
+    flowEngine.context.defineProperty('currentRoute', {
+      value: currentRoute,
+    });
+    flowEngine.context.defineProperty('view', {
+      value: {
+        inputArgs: {},
+      },
+    });
+    flowEngine.context.defineProperty('pageActive', {
+      value: {
+        value: true,
+      },
+    });
+
+    const model = flowEngine.createModel<MobileRootPageModel>({
+      uid: 'home-page-model-save-tabs',
+      parentId: 'home-page',
+      use: 'MobileRootPageModel',
+      props: {
+        routeId: 'route-123',
+        enableTabs: false,
+        title: 'Home',
+      },
+    });
+    vi.spyOn(model, 'renderTabs').mockReturnValue(React.createElement('div', { 'data-testid': 'desktop-tabs' }));
+    vi.spyOn(model, 'renderFirstTab').mockReturnValue(React.createElement('div', { 'data-testid': 'first-tab' }));
+
+    render(React.createElement(FlowEngineProvider, { engine: flowEngine }, model.render()));
+
+    expect(screen.getByTestId('first-tab')).toBeInTheDocument();
+    expect(screen.queryByTestId('desktop-tabs')).not.toBeInTheDocument();
+
+    act(() => {
+      model.setProps('enableTabs', true);
+      model.setStepParams('pageSettings', 'general', {
+        enableTabs: true,
+      });
+    });
+
+    expect(screen.getByTestId('first-tab')).toBeInTheDocument();
+    expect(screen.queryByTestId('desktop-tabs')).not.toBeInTheDocument();
+
+    await act(async () => {
+      await model.saveStepParams();
+    });
+
+    expect(currentRoute.enableTabs).toBe(true);
+    expect(model.props.enableTabs).toBe(true);
+    expect(screen.getByTestId('desktop-tabs')).toBeInTheDocument();
+    expect(screen.queryByTestId('first-tab')).not.toBeInTheDocument();
+  });
+
   it('should persist mobile UI editor preference to localStorage', () => {
     const listener = vi.fn();
     window.addEventListener(FLOW_SETTINGS_PREFERENCE_CHANGE_EVENT, listener);

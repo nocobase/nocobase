@@ -91,6 +91,27 @@ function resolveRootEnableTabs(model: RootPageModel) {
   return !!model.props.enableTabs;
 }
 
+function getPendingRootEnableTabs(model: RootPageModel) {
+  const enableTabs = model.stepParams.pageSettings?.general?.enableTabs;
+
+  return typeof enableTabs === 'boolean' ? enableTabs : undefined;
+}
+
+function syncRootEnableTabsAfterSave(model: RootPageModel) {
+  const enableTabs = getPendingRootEnableTabs(model);
+
+  if (typeof enableTabs !== 'boolean') {
+    return;
+  }
+
+  const currentRoute = model.context.currentRoute as RouteWithTabs | undefined;
+
+  if (routeMatchesRootPage(model, currentRoute)) {
+    currentRoute.enableTabs = enableTabs;
+  }
+  model.setProps({ ...model.props, enableTabs });
+}
+
 function renderMobileTabs(children: React.ReactNode) {
   return <div className="nb-ui-layout-mobile-tabs">{children}</div>;
 }
@@ -136,6 +157,11 @@ export class MobileRootPageModel extends RootPageModel {
     left: renderMobilePageTabLeftSpacer(),
     right: renderMobileAddTabButton(this),
   };
+
+  async saveStepParams() {
+    await super.saveStepParams();
+    syncRootEnableTabsAfterSave(this);
+  }
 
   render() {
     const displayTitle = !!this.props.displayTitle && !!this.props.title;
