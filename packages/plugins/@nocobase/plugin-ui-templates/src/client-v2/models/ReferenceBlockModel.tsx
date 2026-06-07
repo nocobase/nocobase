@@ -18,7 +18,7 @@ import {
   type FlowModel,
 } from '@nocobase/flow-engine';
 import { tStr, NAMESPACE } from '../locale';
-import { BlockModel } from '@nocobase/client';
+import { BlockModel } from '@nocobase/client-v2';
 import { renderTemplateSelectLabel, renderTemplateSelectOption } from '../components/TemplateSelectOption';
 import {
   TEMPLATE_LIST_PAGE_SIZE,
@@ -756,7 +756,6 @@ ReferenceBlockModel.registerFlow({
               disabled: disableSelect,
               optionLabelProp: 'label',
               dropdownMatchSelectWidth: true,
-              dropdownStyle: { maxWidth: 560 },
               getPopupContainer: () => document.body,
               optionRender: renderTemplateSelectOption,
             },
@@ -807,7 +806,6 @@ ReferenceBlockModel.registerFlow({
               type: 'info',
               showIcon: false,
               message: tStr('Reference mode description'),
-              style: { marginTop: -8 },
             },
             'x-reactions': {
               dependencies: ['mode'],
@@ -823,7 +821,6 @@ ReferenceBlockModel.registerFlow({
               type: 'info',
               showIcon: false,
               message: tStr('Duplicate mode description'),
-              style: { marginTop: -8 },
             },
             'x-reactions': {
               dependencies: ['mode'],
@@ -1153,9 +1150,9 @@ ReferenceBlockModel.registerFlow({
           (newModel as any).isNew = false;
           // 5b) 已持久化场景：若为数组子模型，则在服务端相对移动保持原位置；随后销毁旧实例
           if (subType === 'array' && engine.modelRepository) {
-            const targetExists = await (engine.modelRepository as any).findOne({ uid: oldModel.uid });
-            if (targetExists && typeof (engine.modelRepository as any).move === 'function') {
-              await (engine.modelRepository as any).move(newModel.uid, oldModel.uid, 'before');
+            const targetExists = await engine.modelRepository.findOne({ uid: oldModel.uid });
+            if (targetExists && typeof engine.modelRepository.move === 'function') {
+              await engine.modelRepository.move(newModel.uid, oldModel.uid, 'before');
             }
           }
           await engine.destroyModel(oldModel.uid);

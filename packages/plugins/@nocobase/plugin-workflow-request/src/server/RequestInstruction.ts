@@ -11,7 +11,15 @@ import Joi from 'joi';
 import { AxiosRequestConfig } from 'axios';
 import { trim } from 'lodash';
 
-import { Processor, Instruction, JOB_STATUS, FlowNodeModel, IJob, JobModel } from '@nocobase/plugin-workflow';
+import {
+  Processor,
+  Instruction,
+  JOB_STATUS,
+  FlowNodeModel,
+  IJob,
+  JobModel,
+  EXECUTION_STATUS,
+} from '@nocobase/plugin-workflow';
 import PluginFileManagerServer, { AttachmentModel } from '@nocobase/plugin-file-manager';
 import { Application } from '@nocobase/server';
 import { Readable } from 'stream';
@@ -39,6 +47,21 @@ interface MultipartFileField {
   valueType: 'file';
   name: string;
   file: AttachmentModel | AttachmentModel[];
+}
+
+interface RequestError extends Error {
+  isAxiosError?: boolean;
+  response?: {
+    status: number;
+    statusText?: string;
+    data?: unknown;
+  };
+  request?: unknown;
+  code?: string;
+}
+
+function toRequestError(error: unknown): RequestError {
+  return error instanceof Error ? (error as RequestError) : new Error(String(error));
 }
 
 function getContentTypeTransformer(mimeType: string, app: Application) {
@@ -276,43 +299,58 @@ export default class extends Instruction {
     });
 
     await processor.exit();
+    const abortHandle = processor.createBackgroundAbortHandle();
 
     const jobDone: IJob = { status: JOB_STATUS.PENDING };
-    try {
-      processor.logger.info(`request (#${node.id}) sent to "${config.url}", waiting for response...`);
-      const response = await request(config, this.workflow.app, options?.signal);
-      processor.logger.info(`request (#${node.id}) response success, status: ${response.status}`);
-      jobDone.status = JOB_STATUS.RESOLVED;
-      jobDone.result = responseSuccess(response, config.onlyData);
-    } catch (error: any) {
-      if (error.isAxiosError) {
-        if (error.response) {
-          processor.logger.info(`request (#${node.id}) failed with response, status: ${error.response.status}`);
-        } else if (error.request) {
-          processor.logger.error(`request (#${node.id}) failed without response: ${error.message}`);
+    const settleRequest = async () => {
+      try {
+        processor.logger.info(`request (#${node.id}) sent to "${config.url}", waiting for response...`);
+        const response = await request(config, this.workflow.app, abortHandle.signal);
+        processor.logger.info(`request (#${node.id}) response success, status: ${response.status}`);
+        jobDone.status = JOB_STATUS.RESOLVED;
+        jobDone.result = responseSuccess(response, config.onlyData);
+      } catch (caught) {
+        const error = toRequestError(caught);
+        if (error.isAxiosError) {
+          if (error.response) {
+            processor.logger.info(`request (#${node.id}) failed with response, status: ${error.response.status}`);
+          } else if (error.request) {
+            processor.logger.error(`request (#${node.id}) failed without response: ${error.message}`);
+          } else {
+            processor.logger.error(`request (#${node.id}) initiation failed: ${error.message}`);
+          }
         } else {
-          processor.logger.error(`request (#${node.id}) initiation failed: ${error.message}`);
+          processor.logger.error(`request (#${node.id}) failed unexpectedly: ${error.message}`);
         }
-      } else {
-        processor.logger.error(`request (#${node.id}) failed unexpectedly: ${error.message}`);
+        logFailureDebug(processor.logger, error);
+        jobDone.status = abortHandle.signal.aborted ? JOB_STATUS.ABORTED : failureStatus(config, error);
+        jobDone.result = responseFailure(error);
+      } finally {
+        abortHandle.dispose();
+        // At this point, the job is guaranteed to be in the database.
+        const job = await this.workflow.app.db.getRepository('jobs').findOne({
+          filterByTk: id,
+        });
+        const execution = await job.getExecution();
+        const aborted = await this.workflow.abortExecutionIfExpired(execution);
+        if (!aborted) {
+          await execution.reload();
+          await job.reload();
+        }
+        if (!aborted && execution.status === EXECUTION_STATUS.STARTED && job.status === JOB_STATUS.PENDING) {
+          job.set(jobDone);
+          job.execution = execution;
+          this.workflow.resume(job);
+        } else {
+          processor.logger.warn(`request (#${node.id}) result discarded because execution (${execution.id}) is ended`);
+        }
       }
-      logFailureDebug(processor.logger, error);
-      jobDone.status = failureStatus(config, error);
-      jobDone.result = responseFailure(error);
-    } finally {
-      // At this point, the job is guaranteed to be in the database.
-      const job = await this.workflow.app.db.getRepository('jobs').findOne({
-        filterByTk: id,
-      });
-      const execution = await job.getExecution();
-      if (!execution.status) {
-        job.set(jobDone);
-        job.execution = execution;
-        this.workflow.resume(job);
-      } else {
-        processor.logger.warn(`request (#${node.id}) result discarded because execution (${execution.id}) is ended`);
-      }
-    }
+    };
+
+    settleRequest().catch((caught) => {
+      const error = toRequestError(caught);
+      processor.logger.error(`request (#${node.id}) async settling failed: ${error.message}`, { error });
+    });
   }
 
   async resume(node: FlowNodeModel, job: JobModel, processor: Processor) {
