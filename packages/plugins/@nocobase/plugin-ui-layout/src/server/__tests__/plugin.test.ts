@@ -9,6 +9,7 @@
 
 import { createMockServer, type MockServer } from '@nocobase/test';
 import { DEFAULT_ADMIN_UI_LAYOUT } from '../../constants';
+import { ensureDefaultUiLayout } from '../ensureDefaultUiLayout';
 import type { PluginUiLayoutServer } from '../plugin';
 
 describe('plugin-ui-layout server', () => {
@@ -44,6 +45,52 @@ describe('plugin-ui-layout server', () => {
     expect(record?.get('routePath')).toBe(DEFAULT_ADMIN_UI_LAYOUT.routePath);
     expect(record?.get('authCheck')).toBe(DEFAULT_ADMIN_UI_LAYOUT.authCheck);
     expect(record?.get('enabled')).toBe(DEFAULT_ADMIN_UI_LAYOUT.enabled);
+  });
+
+  it('should backfill generated ui layout titles', async () => {
+    app = await createMockServer({
+      plugins: ['ui-layout'],
+    });
+    await app.db.sync();
+
+    const repository = app.db.getRepository('uiLayouts');
+    const adminLayout = await repository.findOne({
+      filter: {
+        uid: DEFAULT_ADMIN_UI_LAYOUT.uid,
+      },
+    });
+    if (!adminLayout) {
+      throw new Error('Default AdminLayout ui layout should exist.');
+    }
+    const mobileLayout = await repository.create({
+      values: {
+        uid: 'mobile-generated-title-test',
+        title: 'Untitled',
+        layoutType: 'mobile',
+        routeName: 'mobile-generated-title-test',
+        routePath: '/v/mobile-generated-title-test',
+        authCheck: true,
+        enabled: true,
+      },
+    });
+    await repository.update({
+      filterByTk: adminLayout.get('id'),
+      values: {
+        title: 'Untitled',
+      },
+    });
+
+    await ensureDefaultUiLayout(app.db);
+
+    const updatedAdminLayout = await repository.findOne({
+      filterByTk: adminLayout.get('id'),
+    });
+    const updatedMobileLayout = await repository.findOne({
+      filterByTk: mobileLayout.get('id'),
+    });
+
+    expect(updatedAdminLayout?.get('title')).toBe(DEFAULT_ADMIN_UI_LAYOUT.title);
+    expect(updatedMobileLayout?.get('title')).toBe('Mobile layout');
   });
 
   it('should associate desktop routes with ui layouts by uid without breaking existing relations', async () => {

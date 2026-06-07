@@ -10,6 +10,8 @@
 import type { Database, Repository } from '@nocobase/database';
 import { DEFAULT_ADMIN_UI_LAYOUT, UI_LAYOUT_TYPE_DESKTOP, UI_LAYOUT_TYPE_MOBILE } from '../constants';
 
+const GENERATED_DEFAULT_TITLE = 'Untitled';
+
 type UiLayoutRecord = Partial<typeof DEFAULT_ADMIN_UI_LAYOUT> & {
   id: number | string;
   uid: string;
@@ -30,10 +32,14 @@ function getFallbackTitle(record: UiLayoutRecord) {
   return record.routeName || record.uid;
 }
 
+function shouldBackfillTitle(title: unknown) {
+  return !title || title === GENERATED_DEFAULT_TITLE;
+}
+
 async function ensureUiLayoutTitles(repository: Repository<UiLayoutRecord>) {
   const records = await repository.find({});
   for (const record of records) {
-    if (record.get('title')) {
+    if (!shouldBackfillTitle(record.get('title'))) {
       continue;
     }
 
@@ -66,7 +72,7 @@ export async function ensureDefaultUiLayout(db: Database) {
   if (!existed.get('layoutType')) {
     values.layoutType = DEFAULT_ADMIN_UI_LAYOUT.layoutType;
   }
-  if (!existed.get('title')) {
+  if (shouldBackfillTitle(existed.get('title'))) {
     values.title = DEFAULT_ADMIN_UI_LAYOUT.title;
   }
 
