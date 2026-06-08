@@ -175,6 +175,11 @@ export const MOBILE_TAB_FLOW_SETTINGS_OPTIONS = {
   toolbarPosition: 'inside',
 } as const;
 
+type MobileFlowSettingsPreferenceSnapshot = {
+  enabled: boolean;
+  hasStoredPreference: boolean;
+};
+
 function setMobileRootPageModel(routeModel: RouteModel, rootPageModelClass?: string) {
   const openViewParams = routeModel.getStepParams('popupSettings', 'openView') || {};
 
@@ -196,17 +201,32 @@ class MobileLayoutRouteCoordinator extends BaseLayoutRouteCoordinator {
   }
 }
 
-export function readMobileFlowSettingsPreference() {
+function readMobileFlowSettingsPreferenceSnapshot(): MobileFlowSettingsPreferenceSnapshot {
   if (typeof window === 'undefined') {
-    return false;
+    return {
+      enabled: false,
+      hasStoredPreference: false,
+    };
   }
 
   try {
-    return window.localStorage.getItem(FLOW_SETTINGS_PREFERENCE_STORAGE_KEY) === '1';
+    const storedValue = window.localStorage.getItem(FLOW_SETTINGS_PREFERENCE_STORAGE_KEY);
+
+    return {
+      enabled: storedValue === '1',
+      hasStoredPreference: storedValue === '1' || storedValue === '0',
+    };
   } catch (error) {
     console.error('[NocoBase] plugin-ui-layout failed to read flow settings preference.', error);
-    return false;
+    return {
+      enabled: false,
+      hasStoredPreference: false,
+    };
   }
+}
+
+export function readMobileFlowSettingsPreference() {
+  return readMobileFlowSettingsPreferenceSnapshot().enabled;
 }
 
 export function writeMobileFlowSettingsPreference(enabled: boolean) {
@@ -230,6 +250,24 @@ export function writeMobileFlowSettingsPreference(enabled: boolean) {
 
 function getVisibleDesktopRoutes(routes: FakeMobileDesktopRoute[]) {
   return [...routes].filter((route) => !route.hidden && !route.hideInMenu).sort((a, b) => a.sort - b.sort);
+}
+
+function hasVisibleMobileTabRoutes(routes: NocoBaseDesktopRoute[]) {
+  return collectMobileTabRoutes(Array.isArray(routes) ? routes : []).length > 0;
+}
+
+function isMobileRouteRepositoryMenuEmpty(model: MobileLayoutModel) {
+  const routeRepository = model.flowEngine.context.routeRepository;
+  if (!routeRepository?.listAccessible) {
+    return false;
+  }
+
+  const routes = routeRepository.listAccessible() || [];
+  if (!routes.length && routeRepository.isAccessibleLoaded?.() === false) {
+    return false;
+  }
+
+  return !hasVisibleMobileTabRoutes(routes);
 }
 
 function getAccessibleDesktopRouteKey(route: NocoBaseDesktopRoute, indexPath: number[]) {
@@ -549,12 +587,16 @@ const MobileLayoutComponent = observer((props: { model: MobileLayoutModel }) => 
   const { token } = theme.useToken();
   const isDesktopPreview = useIsDesktopPreview(token.screenMD);
   const [previewSize, setPreviewSize] = useState<MobilePreviewSize>(MOBILE_PREVIEW_SIZE);
-  const [preferredFlowSettingsEnabled, setPreferredFlowSettingsEnabled] = useState(() =>
-    readMobileFlowSettingsPreference(),
+  const [flowSettingsPreference, setFlowSettingsPreference] = useState(() =>
+    readMobileFlowSettingsPreferenceSnapshot(),
   );
+  const [isMobileMenuEmpty, setIsMobileMenuEmpty] = useState(() => isMobileRouteRepositoryMenuEmpty(model));
   const [flowSettingsSyncVersion, setFlowSettingsSyncVersion] = useState(0);
   const flowSettingsSyncRef = useRef(0);
   const desiredFlowSettingsEnabledRef = useRef(false);
+  const preferredFlowSettingsEnabled = flowSettingsPreference.hasStoredPreference
+    ? flowSettingsPreference.enabled
+    : isMobileMenuEmpty;
   const className = useMemo(
     () => css`
       width: 100%;
@@ -645,12 +687,26 @@ const MobileLayoutComponent = observer((props: { model: MobileLayoutModel }) => 
   }, [model]);
 
   useEffect(() => {
+    const routeRepository = model.flowEngine.context.routeRepository;
+    const syncMobileMenuEmptyState = () => {
+      setIsMobileMenuEmpty(isMobileRouteRepositoryMenuEmpty(model));
+    };
+
+    syncMobileMenuEmptyState();
+    routeRepository?.subscribe?.(syncMobileMenuEmptyState);
+
+    return () => {
+      routeRepository?.unsubscribe?.(syncMobileMenuEmptyState);
+    };
+  }, [model]);
+
+  useEffect(() => {
     if (typeof window === 'undefined') {
       return;
     }
 
     const syncPreferredFlowSettings = () => {
-      setPreferredFlowSettingsEnabled(readMobileFlowSettingsPreference());
+      setFlowSettingsPreference(readMobileFlowSettingsPreferenceSnapshot());
     };
 
     const handleStorage = (event: StorageEvent) => {
@@ -706,7 +762,10 @@ const MobileLayoutComponent = observer((props: { model: MobileLayoutModel }) => 
   }, [model.flowEngine.flowSettings, preferredFlowSettingsEnabled]);
 
   const handleFlowSettingsPreferenceChange = useCallback((enabled: boolean) => {
-    setPreferredFlowSettingsEnabled(enabled);
+    setFlowSettingsPreference({
+      enabled,
+      hasStoredPreference: true,
+    });
     writeMobileFlowSettingsPreference(enabled);
   }, []);
 
@@ -880,7 +939,7 @@ function MobileHomeRouteGrid(props: {
 
   return (
     <div className="nb-ui-layout-mobile-home-content">
-      {designModeEnabled ? (
+      {designModeEnabled && hasTabItems ? (
         <div className="nb-ui-layout-mobile-home-add-block">
           <Dropdown menu={{ items: addBlockMenuItems }} placement="bottomLeft" trigger={['hover', 'click']}>
             <button
@@ -989,6 +1048,41 @@ const MobileTabBarItemRenderer = observer(
 
 function isAbsoluteUrl(value: string) {
   return /^[a-z][a-z\d+\-.]*:\/\//i.test(value) || value.startsWith('//');
+}
+
+function normalizeMobileRouterBasename(basename?: string) {
+  if (!basename || basename === '/') {
+    return '';
+  }
+
+  return `/${basename.replace(/^\/+/, '').replace(/\/+$/, '')}`;
+}
+
+function isStandaloneDocumentUrl(url: string) {
+  return /^[a-z][a-z\d+\-.]*:/i.test(url) || url.startsWith('//') || url.startsWith('#') || url.startsWith('?');
+}
+
+function toMobileDocumentUrlWithRouterBasename(url: string, basename?: string) {
+  if (!url || isStandaloneDocumentUrl(url)) {
+    return url;
+  }
+
+  const normalizedBasename = normalizeMobileRouterBasename(basename);
+  if (!normalizedBasename) {
+    return url;
+  }
+
+  const rootRelativeUrl = url.startsWith('/') ? url : `/${url}`;
+  if (
+    rootRelativeUrl === normalizedBasename ||
+    rootRelativeUrl.startsWith(`${normalizedBasename}/`) ||
+    rootRelativeUrl.startsWith(`${normalizedBasename}?`) ||
+    rootRelativeUrl.startsWith(`${normalizedBasename}#`)
+  ) {
+    return rootRelativeUrl;
+  }
+
+  return `${normalizedBasename}${rootRelativeUrl}`;
 }
 
 function normalizeMobileLocationPath(pathname: string) {
@@ -1332,7 +1426,11 @@ const MobileHomePlaceholder = observer(
           return;
         }
 
-        window.open(item.href, '_blank', 'noopener,noreferrer');
+        const basename =
+          model.flowEngine.context.app?.router?.getBasename?.() ||
+          model.flowEngine.context.app?.router?.basename ||
+          model.flowEngine.context.router?.basename;
+        window.open(toMobileDocumentUrlWithRouterBasename(item.href, basename), '_blank', 'noopener,noreferrer');
       },
       [model.flowEngine.context.app?.router, model.flowEngine.context.router?.basename, navigate],
     );

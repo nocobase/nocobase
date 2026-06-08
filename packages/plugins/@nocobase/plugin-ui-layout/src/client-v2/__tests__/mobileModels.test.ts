@@ -99,6 +99,7 @@ describe('plugin-ui-layout mobile models', () => {
       };
       initialEntries?: string[];
       outletElement?: React.ReactNode;
+      routerBasename?: string;
     } = {},
   ) {
     const engine = new FlowEngine();
@@ -130,7 +131,7 @@ describe('plugin-ui-layout mobile models', () => {
     engine.context.defineProperty('app', {
       value: {
         router: {
-          getBasename: () => '',
+          getBasename: () => options.routerBasename || '',
         },
         jsonLogic: {
           apply: () => true,
@@ -1886,6 +1887,49 @@ describe('plugin-ui-layout mobile models', () => {
     expect(document.querySelectorAll('.nb-ui-layout-mobile-home-tabbar-item')).toHaveLength(0);
   });
 
+  it('should enable the UI editor by default when the mobile menu is empty and no preference is stored', async () => {
+    const restoreBreakpoint = mockDesktopBreakpoint();
+    const routeRepository: MobileRouteRepositoryForTest = {
+      listAccessible: () => [],
+      ensureAccessibleLoaded: vi.fn(async () => []),
+    };
+
+    try {
+      renderMobileLayoutWithRouteRepository(routeRepository);
+
+      await waitFor(() => {
+        expect(screen.getByText('No mobile pages yet')).toBeInTheDocument();
+        expect(screen.getByTestId('ui-editor-button')).toHaveAttribute('aria-pressed', 'true');
+      });
+      expect(screen.getByRole('button', { name: 'Add mobile tab' })).toBeInTheDocument();
+      expect(screen.queryByText('Add block')).not.toBeInTheDocument();
+    } finally {
+      restoreBreakpoint();
+    }
+  });
+
+  it('should keep the UI editor disabled for an empty mobile menu when the preference was disabled', async () => {
+    const restoreBreakpoint = mockDesktopBreakpoint();
+    window.localStorage.setItem(FLOW_SETTINGS_PREFERENCE_STORAGE_KEY, '0');
+    const routeRepository: MobileRouteRepositoryForTest = {
+      listAccessible: () => [],
+      ensureAccessibleLoaded: vi.fn(async () => []),
+    };
+
+    try {
+      renderMobileLayoutWithRouteRepository(routeRepository);
+
+      await waitFor(() => {
+        expect(screen.getByText('No mobile pages yet')).toBeInTheDocument();
+        expect(screen.getByTestId('ui-editor-button')).toHaveAttribute('aria-pressed', 'false');
+      });
+      expect(screen.queryByRole('button', { name: 'Add mobile tab' })).not.toBeInTheDocument();
+      expect(screen.queryByText('Add block')).not.toBeInTheDocument();
+    } finally {
+      restoreBreakpoint();
+    }
+  });
+
   it('should render an error state when accessible routes fail to load', async () => {
     const routeError = new Error('request failed');
     const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
@@ -2650,6 +2694,49 @@ describe('plugin-ui-layout mobile models', () => {
       });
       expect(screen.getByRole('button', { name: /Home/ })).toHaveAttribute('aria-current', 'page');
       expect(screen.getByRole('button', { name: /Docs/ })).not.toHaveAttribute('aria-current');
+    } finally {
+      openWindow.mockRestore();
+    }
+  });
+
+  it('should include router basename when opening internal mobile links in a new window', async () => {
+    const openWindow = vi.spyOn(window, 'open').mockImplementation(() => null);
+    const routes: NocoBaseDesktopRoute[] = [
+      {
+        id: 1,
+        type: NocoBaseDesktopRouteType.flowPage,
+        title: 'Home',
+        schemaUid: 'home-page',
+        sort: 1,
+      },
+      {
+        id: 2,
+        type: NocoBaseDesktopRouteType.link,
+        title: 'Link',
+        schemaUid: 'internal-link',
+        sort: 2,
+        options: {
+          href: '/mobile/wxc8k79dysq',
+        },
+      },
+    ];
+    const routeRepository: MobileRouteRepositoryForTest = {
+      listAccessible: () => routes,
+      ensureAccessibleLoaded: vi.fn(async () => routes),
+    };
+
+    try {
+      renderMobileLayoutWithRouteRepository(routeRepository, { routerBasename: '/v' });
+
+      await waitFor(() => {
+        expect(screen.getByRole('button', { name: /Home/ })).toHaveAttribute('aria-current', 'page');
+      });
+
+      fireEvent.click(screen.getByRole('button', { name: /Link/ }));
+
+      await waitFor(() => {
+        expect(openWindow).toHaveBeenCalledWith('/v/mobile/wxc8k79dysq', '_blank', 'noopener,noreferrer');
+      });
     } finally {
       openWindow.mockRestore();
     }
