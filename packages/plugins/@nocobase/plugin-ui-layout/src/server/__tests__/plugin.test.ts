@@ -573,7 +573,7 @@ describe('plugin-ui-layout server', () => {
     expect(childRoute?.get('uiLayouts').map((layout) => layout.get('uid'))).toEqual([mobileLayout.get('uid')]);
   });
 
-  it('should default listAccessible layout filtering to AdminLayout', async () => {
+  it('should require an explicit valid layout for listAccessible route lookup', async () => {
     app = await createMockServer({
       registerActions: true,
       acl: true,
@@ -648,28 +648,21 @@ describe('plugin-ui-layout server', () => {
     });
     const agent = await app.agent().login(rootUser);
 
-    const responses = await Promise.all([
+    const [omittedResponse, emptyResponse, adminResponse] = await Promise.all([
       agent.get('/desktopRoutes:listAccessible'),
       agent.get('/desktopRoutes:listAccessible').query({ layout: '' }),
       agent.get('/desktopRoutes:listAccessible').query({ layout: DEFAULT_ADMIN_UI_LAYOUT.uid }),
     ]);
-    const routeIdSets = responses.map((response) => response.body.data.map((route) => String(route.id)).sort());
-    const routeTitleSets = responses.map((response) => response.body.data.map((route) => route.title).sort());
+    const adminRouteTitles = adminResponse.body.data.map((route) => route.title).sort();
 
-    expect(responses.map((response) => response.status)).toEqual([200, 200, 200]);
-    expect(routeIdSets[0]).toEqual(routeIdSets[1]);
-    expect(routeIdSets[0]).toEqual(routeIdSets[2]);
-    expect(routeIdSets[0]).toEqual(
-      expect.arrayContaining([String(unassignedRoute.get('id')), String(adminRoute.get('id'))]),
-    );
-    expect(routeIdSets[0]).not.toContain(String(mobileRoute.get('id')));
-    expect(routeTitleSets[0]).toEqual(routeTitleSets[1]);
-    expect(routeTitleSets[0]).toEqual(routeTitleSets[2]);
-    expect(routeTitleSets[0]).toEqual(expect.arrayContaining([unassignedRoute.get('title'), adminRoute.get('title')]));
-    expect(routeTitleSets[0]).not.toContain(mobileRoute.get('title'));
+    expect([omittedResponse.status, emptyResponse.status, adminResponse.status]).toEqual([200, 200, 200]);
+    expect(omittedResponse.body.data).toEqual([]);
+    expect(emptyResponse.body.data).toEqual([]);
+    expect(adminRouteTitles).toEqual(expect.arrayContaining([unassignedRoute.get('title'), adminRoute.get('title')]));
+    expect(adminRouteTitles).not.toContain(mobileRoute.get('title'));
   });
 
-  it('should not fallback to AdminLayout for missing or disabled layouts', async () => {
+  it('should not fallback to AdminLayout for invalid runtime layouts', async () => {
     app = await createMockServer({
       registerActions: true,
       acl: true,
@@ -707,6 +700,22 @@ describe('plugin-ui-layout server', () => {
         enabled: false,
       },
     });
+    const deletedLayout = await app.db.getRepository('uiLayouts').create({
+      values: {
+        uid: 'deleted-layout-route-filter-test',
+        title: 'Deleted layout route filter test',
+        layoutType: 'mobile',
+        routeName: 'deleted-layout-route-filter-test',
+        routePath: '/v/deleted-layout-route-filter-test',
+        authCheck: true,
+        enabled: true,
+      },
+    });
+    const role = await app.db.getRepository('roles').create({
+      values: {
+        name: 'layout-invalid-runtime-member',
+      },
+    });
 
     const unassignedRoute = await app.db.getRepository('desktopRoutes').create({
       values: {
@@ -729,6 +738,13 @@ describe('plugin-ui-layout server', () => {
         schemaUid: 'invalid-layout-disabled',
       },
     });
+    const deletedRoute = await app.db.getRepository('desktopRoutes').create({
+      values: {
+        type: 'flowPage',
+        title: 'DATA-INVALID-LAYOUT-DELETED',
+        schemaUid: 'invalid-layout-deleted',
+      },
+    });
 
     await app.db.getRepository('desktopRoutes.uiLayouts', adminRoute.get('id')).set({
       tk: [adminLayout.get('uid')],
@@ -736,28 +752,136 @@ describe('plugin-ui-layout server', () => {
     await app.db.getRepository('desktopRoutes.uiLayouts', disabledRoute.get('id')).set({
       tk: [disabledLayout.get('uid')],
     });
+    await app.db.getRepository('desktopRoutes.uiLayouts', deletedRoute.get('id')).set({
+      tk: [deletedLayout.get('uid')],
+    });
+    await app.db.getRepository('desktopRoutes.roles', adminRoute.get('id')).add({
+      tk: [role.get('name')],
+    });
+    await deletedLayout.destroy();
 
     const rootUser = await app.db.getRepository('users').findOne({
       filter: {
         'roles.name': 'root',
       },
     });
-    const agent = await app.agent().login(rootUser);
+    const memberUser = await app.db.getRepository('users').create({
+      values: {
+        roles: [role.get('name')],
+      },
+    });
+    const rootAgent = await app.agent().login(rootUser);
+    const memberAgent = await app.agent().login(memberUser);
 
-    const [defaultResponse, missingResponse, disabledResponse] = await Promise.all([
-      agent.get('/desktopRoutes:listAccessible'),
-      agent.get('/desktopRoutes:listAccessible').query({ layout: 'missing-layout-route-filter-test' }),
-      agent.get('/desktopRoutes:listAccessible').query({ layout: disabledLayout.get('uid') }),
+    const [
+      rootAdminResponse,
+      rootOmittedResponse,
+      rootEmptyResponse,
+      rootMissingResponse,
+      rootDisabledResponse,
+      rootDeletedResponse,
+      memberAdminResponse,
+      memberOmittedResponse,
+      memberEmptyResponse,
+      memberMissingResponse,
+      memberDisabledResponse,
+      memberDeletedResponse,
+      rootAdminGetResponse,
+      rootOmittedGetResponse,
+      rootEmptyGetResponse,
+      rootMissingGetResponse,
+      rootDisabledGetResponse,
+      rootDeletedGetResponse,
+      memberAdminGetResponse,
+      memberOmittedGetResponse,
+      memberEmptyGetResponse,
+      memberMissingGetResponse,
+      memberDisabledGetResponse,
+      memberDeletedGetResponse,
+    ] = await Promise.all([
+      rootAgent.get('/desktopRoutes:listAccessible').query({ layout: DEFAULT_ADMIN_UI_LAYOUT.uid }),
+      rootAgent.get('/desktopRoutes:listAccessible'),
+      rootAgent.get('/desktopRoutes:listAccessible').query({ layout: '' }),
+      rootAgent.get('/desktopRoutes:listAccessible').query({ layout: 'missing-layout-route-filter-test' }),
+      rootAgent.get('/desktopRoutes:listAccessible').query({ layout: disabledLayout.get('uid') }),
+      rootAgent.get('/desktopRoutes:listAccessible').query({ layout: deletedLayout.get('uid') }),
+      memberAgent.get('/desktopRoutes:listAccessible').query({ layout: DEFAULT_ADMIN_UI_LAYOUT.uid }),
+      memberAgent.get('/desktopRoutes:listAccessible'),
+      memberAgent.get('/desktopRoutes:listAccessible').query({ layout: '' }),
+      memberAgent.get('/desktopRoutes:listAccessible').query({ layout: 'missing-layout-route-filter-test' }),
+      memberAgent.get('/desktopRoutes:listAccessible').query({ layout: disabledLayout.get('uid') }),
+      memberAgent.get('/desktopRoutes:listAccessible').query({ layout: deletedLayout.get('uid') }),
+      rootAgent.get('/desktopRoutes:getAccessible').query({
+        filterByTk: adminRoute.get('id'),
+        layout: DEFAULT_ADMIN_UI_LAYOUT.uid,
+      }),
+      rootAgent.get('/desktopRoutes:getAccessible').query({ filterByTk: adminRoute.get('id') }),
+      rootAgent.get('/desktopRoutes:getAccessible').query({ filterByTk: adminRoute.get('id'), layout: '' }),
+      rootAgent
+        .get('/desktopRoutes:getAccessible')
+        .query({ filterByTk: adminRoute.get('id'), layout: 'missing-layout-route-filter-test' }),
+      rootAgent
+        .get('/desktopRoutes:getAccessible')
+        .query({ filterByTk: disabledRoute.get('id'), layout: disabledLayout.get('uid') }),
+      rootAgent
+        .get('/desktopRoutes:getAccessible')
+        .query({ filterByTk: deletedRoute.get('id'), layout: deletedLayout.get('uid') }),
+      memberAgent.get('/desktopRoutes:getAccessible').query({
+        filterByTk: adminRoute.get('id'),
+        layout: DEFAULT_ADMIN_UI_LAYOUT.uid,
+      }),
+      memberAgent.get('/desktopRoutes:getAccessible').query({ filterByTk: adminRoute.get('id') }),
+      memberAgent.get('/desktopRoutes:getAccessible').query({ filterByTk: adminRoute.get('id'), layout: '' }),
+      memberAgent
+        .get('/desktopRoutes:getAccessible')
+        .query({ filterByTk: adminRoute.get('id'), layout: 'missing-layout-route-filter-test' }),
+      memberAgent
+        .get('/desktopRoutes:getAccessible')
+        .query({ filterByTk: disabledRoute.get('id'), layout: disabledLayout.get('uid') }),
+      memberAgent
+        .get('/desktopRoutes:getAccessible')
+        .query({ filterByTk: deletedRoute.get('id'), layout: deletedLayout.get('uid') }),
     ]);
-    const defaultTitles = defaultResponse.body.data.map((route) => route.title);
+    const rootAdminTitles = rootAdminResponse.body.data.map((route) => route.title);
+    const memberAdminTitles = memberAdminResponse.body.data.map((route) => route.title);
+    const invalidListResponses = [
+      rootOmittedResponse,
+      rootEmptyResponse,
+      rootMissingResponse,
+      rootDisabledResponse,
+      rootDeletedResponse,
+      memberOmittedResponse,
+      memberEmptyResponse,
+      memberMissingResponse,
+      memberDisabledResponse,
+      memberDeletedResponse,
+    ];
+    const invalidGetResponses = [
+      rootOmittedGetResponse,
+      rootEmptyGetResponse,
+      rootMissingGetResponse,
+      rootDisabledGetResponse,
+      rootDeletedGetResponse,
+      memberOmittedGetResponse,
+      memberEmptyGetResponse,
+      memberMissingGetResponse,
+      memberDisabledGetResponse,
+      memberDeletedGetResponse,
+    ];
 
-    expect(defaultResponse.status).toBe(200);
-    expect(missingResponse.status).toBe(200);
-    expect(disabledResponse.status).toBe(200);
-    expect(defaultTitles).toEqual(expect.arrayContaining([unassignedRoute.get('title'), adminRoute.get('title')]));
-    expect(defaultTitles).not.toContain(disabledRoute.get('title'));
-    expect(missingResponse.body.data).toEqual([]);
-    expect(disabledResponse.body.data).toEqual([]);
+    expect([rootAdminResponse.status, memberAdminResponse.status]).toEqual([200, 200]);
+    expect(rootAdminTitles).toEqual(expect.arrayContaining([unassignedRoute.get('title'), adminRoute.get('title')]));
+    expect(rootAdminTitles).not.toEqual(
+      expect.arrayContaining([disabledRoute.get('title'), deletedRoute.get('title')]),
+    );
+    expect(memberAdminTitles).toEqual([adminRoute.get('title')]);
+    expect(rootAdminGetResponse.status).toBe(200);
+    expect(memberAdminGetResponse.status).toBe(200);
+    expect(rootAdminGetResponse.body.data.title).toBe(adminRoute.get('title'));
+    expect(memberAdminGetResponse.body.data.title).toBe(adminRoute.get('title'));
+    expect(invalidListResponses.map((response) => response.status)).toEqual(Array(10).fill(200));
+    expect(invalidListResponses.map((response) => response.body.data)).toEqual(Array(10).fill([]));
+    expect(invalidGetResponses.map((response) => response.body.data ?? null)).toEqual(Array(10).fill(null));
   });
 
   it('should filter root routes by layout while preserving tree sort and caller filters', async () => {

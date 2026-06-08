@@ -52,13 +52,15 @@ type DesktopRouteLike = Record<string, unknown> & {
 type UiLayoutRuntimeField = (typeof UI_LAYOUT_RUNTIME_FIELDS)[number];
 
 function getRequestedLayoutUid(layout: unknown) {
+  return getExplicitRequestedLayoutUid(layout) ?? DEFAULT_ADMIN_UI_LAYOUT.uid;
+}
+
+function getExplicitRequestedLayoutUid(layout: unknown) {
   const uid = Array.isArray(layout) ? layout[0] : layout;
 
   if (typeof uid === 'string' && uid.trim()) {
     return uid;
   }
-
-  return DEFAULT_ADMIN_UI_LAYOUT.uid;
 }
 
 function getDesktopRouteLayoutFilterByUid(layoutUid: string) {
@@ -120,10 +122,9 @@ function withDesktopRouteUiLayout(value: unknown, layoutUid: string): unknown {
 }
 
 async function getDesktopRouteLayoutFilter(ctx: ResourcerContext) {
-  const layoutUid = getRequestedLayoutUid(ctx.action?.params.layout);
-
-  if (layoutUid === DEFAULT_ADMIN_UI_LAYOUT.uid) {
-    return getDesktopRouteLayoutFilterByUid(layoutUid);
+  const layoutUid = getExplicitRequestedLayoutUid(ctx.action?.params.layout);
+  if (!layoutUid) {
+    return EMPTY_DESKTOP_ROUTE_FILTER;
   }
 
   const uiLayout = await ctx.db.getRepository('uiLayouts').findOne({
