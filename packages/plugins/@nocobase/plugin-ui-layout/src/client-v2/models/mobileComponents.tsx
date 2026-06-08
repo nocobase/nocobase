@@ -214,18 +214,24 @@ export function useMobilePageClassName() {
         align-items: center;
         justify-content: center;
         background: transparent;
-        color: ${token.colorText};
+        color: ${token.colorTextSecondary};
         line-height: 1;
       }
 
       .nb-ui-layout-mobile-back-button {
         cursor: pointer;
-        font-size: 22px;
+        border-radius: ${token.borderRadiusLG}px;
+        font-size: 20px;
       }
 
       .nb-ui-layout-mobile-back-button:hover,
       .nb-ui-layout-mobile-back-button:focus-visible {
-        color: ${token.colorPrimary};
+        color: ${token.colorText};
+        background: ${token.colorFillTertiary};
+      }
+
+      .nb-ui-layout-mobile-back-button:active {
+        color: ${token.colorText};
       }
 
       .nb-block-grid {
@@ -236,8 +242,11 @@ export function useMobilePageClassName() {
       token.colorBgContainer,
       token.colorBgLayout,
       token.colorBorderSecondary,
+      token.colorFillTertiary,
       token.colorPrimary,
       token.colorText,
+      token.colorTextSecondary,
+      token.borderRadiusLG,
       token.fontSize,
       token.fontSizeLG,
       token.fontWeightStrong,

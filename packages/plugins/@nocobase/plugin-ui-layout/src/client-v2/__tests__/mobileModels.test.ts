@@ -2226,6 +2226,11 @@ describe('plugin-ui-layout mobile models', () => {
     const backRule = styleText.match(
       /[^{}]*nb-ui-layout-mobile-back-button[^{}]*nb-ui-layout-mobile-back-spacer\s*\{[^}]+\}/,
     )?.[0];
+    const backButtonRule = styleText.match(/\.nb-ui-layout-mobile-back-button\s*\{[^}]+\}/)?.[0];
+    const backHoverRule = styleText.match(
+      /[^{}]*nb-ui-layout-mobile-back-button:hover[^{}]*nb-ui-layout-mobile-back-button:focus-visible\s*\{[^}]+\}/,
+    )?.[0];
+    const backActiveRule = styleText.match(/[^{}]*nb-ui-layout-mobile-back-button:active\s*\{[^}]+\}/)?.[0];
     const addTabRule = styleText.match(/\.nb-ui-layout-mobile-page-tab-add\s*\{[^}]+\}/)?.[0];
     const inkBarRule = styleText.match(/\.nb-ui-layout-mobile-tabs\s+\.ant-tabs-ink-bar\s*\{[^}]+\}/)?.[0];
     const inkBarAfterRule = styleText.match(/\.nb-ui-layout-mobile-tabs\s+\.ant-tabs-ink-bar::after\s*\{[^}]+\}/)?.[0];
@@ -2237,6 +2242,11 @@ describe('plugin-ui-layout mobile models', () => {
     expect(extraRule).toMatch(/height:\s*40px/);
     expect(backRule).toMatch(/width:\s*40px/);
     expect(backRule).toMatch(/height:\s*40px/);
+    expect(backRule).toMatch(/color:\s*rgba\(0,\s*0,\s*0,\s*0\.65\)/);
+    expect(backButtonRule).toMatch(/font-size:\s*20px/);
+    expect(backHoverRule).toMatch(/color:\s*rgba\(0,\s*0,\s*0,\s*0\.88\)/);
+    expect(backHoverRule).toMatch(/background:\s*rgba\(0,\s*0,\s*0,\s*0\.04\)/);
+    expect(backActiveRule).toMatch(/color:\s*rgba\(0,\s*0,\s*0,\s*0\.88\)/);
     expect(addTabRule).toMatch(/width:\s*32px/);
     expect(addTabRule).toMatch(/height:\s*32px/);
     expect(addTabRule).toMatch(/padding:\s*0/);
