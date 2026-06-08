@@ -223,6 +223,20 @@ test('buildWebFormValuesFromCatalog resolves function defaults for password fiel
   expect(values.installPassword).toBe('admin123');
 });
 
+test('buildWebFormValuesFromCatalog resolves text defaults for app public path fields', async () => {
+  const { buildWebFormValuesFromCatalog } = await import('../lib/prompt-web-ui.js');
+
+  const values = buildWebFormValuesFromCatalog({
+    appPublicPath: {
+      type: 'text',
+      message: 'App public path',
+      initialValue: '/',
+    },
+  });
+
+  expect(values.appPublicPath).toBe('/');
+});
+
 test('web UI renders a password visibility toggle next to the validation suffix for password fields', async () => {
   const { runPromptCatalogWebUI } = await import('../lib/prompt-web-ui.js');
 

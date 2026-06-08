@@ -35,6 +35,7 @@ import { resolveDefaultApiHost, resolveDockerContainerPrefix, resolveDockerNetwo
 import { DEFAULT_DOCKER_VERSION, resolveDockerImageRef } from '../lib/docker-image.ts';
 import {
   findAvailableTcpPort,
+  validateAppPublicPath,
   validateAvailableTcpPort,
   validateTcpPort,
   validateEnvKey,
@@ -718,8 +719,11 @@ export default class Install extends Command {
       },
       appPublicPath: {
         type: 'text',
-        message: '',
-        hidden: () => true,
+        message: installText('prompts.appPublicPath.message'),
+        placeholder: installText('prompts.appPublicPath.placeholder'),
+        initialValue: '/',
+        yesInitialValue: '/',
+        validate: validateAppPublicPath,
       },
     };
   }

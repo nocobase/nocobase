@@ -207,6 +207,7 @@ test('nb init continues from the browser UI result and runs env:add for an exist
     ],
   });
   expect(webUiOptions?.stages[2]?.catalog).toMatchObject({
+    appPublicPath: expect.any(Object),
     skipDownload: expect.any(Object),
   });
   expect(webUiOptions?.stages[4]?.catalog).toMatchObject({
@@ -218,7 +219,7 @@ test('nb init continues from the browser UI result and runs env:add for an exist
   expect(webUiOptions?.stages[6]?.catalog).toMatchObject({
     installApiBaseUrl: expect.any(Object),
     installAuthType: expect.any(Object),
-    installPassword: expect.any(Object),
+    installAccessToken: expect.any(Object),
   });
   expect(mocks.runPromptCatalog.mock.calls.length).toBe(1);
   expect(mocks.runPromptCatalog.mock.calls[0]?.[1]?.values).toEqual({
@@ -409,6 +410,7 @@ test('nb init forwards download options to nb install for a new app flow', async
     lang: 'en-US',
     appRootPath: './apps/demoapp',
     appPort: '13080',
+    appPublicPath: '/console/',
     storagePath: './storage/demoapp',
     source: 'git',
     version: 'beta',
@@ -476,6 +478,7 @@ test('nb init forwards download options to nb install for a new app flow', async
     appRootPath: './apps/demoapp',
     storagePath: './storage/demoapp',
     appPort: '13080',
+    appPublicPath: '/console/',
     builtinDb: true,
     dbDialect: 'postgres',
     builtinDbImage: 'registry.example.com/postgres:16',
@@ -511,6 +514,8 @@ test('nb init forwards download options to nb install for a new app flow', async
         '13080',
         '--storage-path',
         './storage/demoapp',
+        '--app-public-path',
+        '/console/',
         '--source',
         'git',
         '--version',
@@ -615,7 +620,7 @@ test('nb init uses the final connection step values for a new app flow', async (
   expect(installArgv).toContain('secret-token');
 });
 
-test('nb init hides duplicate basic auth fields in the final connection step for a new app flow', async () => {
+test('nb init does not expose duplicate username/password fields in the final connection step for a new app flow', async () => {
   const { default: Init } = await import('../commands/init.js');
 
   mocks.runPromptCatalogWebUI.mockResolvedValue({
@@ -663,9 +668,9 @@ test('nb init hides duplicate basic auth fields in the final connection step for
   await Init.prototype.run.call(command);
 
   const webUiOptions = mocks.runPromptCatalogWebUI.mock.calls[0]?.[0];
-  const finalCatalog = webUiOptions?.stages[6]?.catalog as Record<string, { hidden?: (values: Record<string, unknown>) => boolean }>;
-  expect(finalCatalog.installUsername.hidden?.({ installAuthType: 'basic', skipAuth: false })).toBe(true);
-  expect(finalCatalog.installPassword.hidden?.({ installAuthType: 'basic', skipAuth: false })).toBe(true);
+  const finalCatalog = webUiOptions?.stages[6]?.catalog as Record<string, unknown>;
+  expect(finalCatalog.installUsername).toBe(undefined);
+  expect(finalCatalog.installPassword).toBe(undefined);
   expect(mocks.upsertEnv.mock.calls[0]?.[1]).toMatchObject({
     apiBaseUrl: 'https://demo.example.com/api',
     authType: 'basic',

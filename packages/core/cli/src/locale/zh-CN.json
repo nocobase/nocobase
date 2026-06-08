@@ -63,6 +63,9 @@
     "envKey": {
       "invalid": "仅支持字母和数字。"
     },
+    "appPublicPath": {
+      "invalid": "请输入 /，或类似 /nocobase/、/foo-bar/baz_2/ 这样的路径。每个路径段仅支持字母、数字、中划线和下划线。"
+    },
     "tcpPort": {
       "invalid": "请输入 1 到 65535 之间的有效 TCP 端口，例如 {{example}}。",
       "allocateFailed": "分配可用 TCP 端口失败。",
@@ -325,6 +328,10 @@
         "appPort": {
           "message": "应用要使用哪个端口？",
           "placeholder": "13000"
+        },
+        "appPublicPath": {
+          "message": "应用的子路径是什么？（例如 /nocobase/）",
+          "placeholder": "/ 或 /nocobase/"
         },
         "storagePath": {
           "message": "上传文件和本地存储目录要放到哪里？",

@@ -223,13 +223,13 @@ const installConnectionAuthTypePrompt: SelectPromptBlock = installConnectionOnly
 
 const installConnectionUsernamePrompt: TextPromptBlock = installConnectionOnly({
   ...(Install.rootUserPrompts.rootUsername as TextPromptBlock),
-  hidden: (values) => values.installAuthType === 'basic' || values.skipAuth === true,
+  hidden: () => true,
   initialValue: (values) => normalizeConnectionString(values.rootUsername),
 }) as TextPromptBlock;
 
 const installConnectionPasswordPrompt: PasswordPromptBlock = installConnectionOnly({
   ...(Install.rootUserPrompts.rootPassword as PasswordPromptBlock),
-  hidden: (values) => values.installAuthType === 'basic' || values.skipAuth === true,
+  hidden: () => true,
   initialValue: (values) => String(values.rootPassword ?? ''),
 }) as PasswordPromptBlock;
 
@@ -956,6 +956,7 @@ Prompt modes:
           lang: c.lang,
           appPath: c.appPath,
           appPort: c.appPort,
+          appPublicPath: c.appPublicPath,
           skipDownload: c.skipDownload,
         } satisfies PromptsCatalog,
       },
@@ -1011,8 +1012,6 @@ Prompt modes:
         catalog: {
           installApiBaseUrl: c.installApiBaseUrl,
           installAuthType: c.installAuthType,
-          installUsername: c.installUsername,
-          installPassword: c.installPassword,
           installAccessToken: c.installAccessToken,
         } satisfies PromptsCatalog,
       },
@@ -1275,6 +1274,7 @@ Prompt modes:
     const envName = String(results.appName ?? DEFAULT_INIT_APP_NAME).trim() || DEFAULT_INIT_APP_NAME;
     const existingEnv = await getEnv(envName, { scope: resolveDefaultConfigScope() });
     const appPort = String(results.appPort ?? '').trim();
+    const appPublicPath = String(results.appPublicPath ?? '').trim();
     const source = String(results.source ?? '').trim();
     const version = resolveInitDownloadVersion(results);
     const dockerRegistry = String(results.dockerRegistry ?? '').trim();
@@ -1341,6 +1341,7 @@ Prompt modes:
         ...(appRootPath && !areConfiguredPathsEquivalent(appRootPath, derivedAppRootPath) ? { appRootPath } : {}),
         ...(storagePath && !areConfiguredPathsEquivalent(storagePath, derivedStoragePath) ? { storagePath } : {}),
         ...(appPort ? { appPort } : {}),
+        ...(appPublicPath ? { appPublicPath } : {}),
         ...(appKey ? { appKey } : {}),
         ...(timeZone ? { timezone: timeZone } : {}),
         ...(!skipDownload && results.devDependencies !== undefined
