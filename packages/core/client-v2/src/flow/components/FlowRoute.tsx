@@ -28,6 +28,12 @@ type FlowRouteGuardState = {
 
 export type LegacyPageBehavior = 'redirect' | 'notFound' | 'bridge';
 
+type FlowRouteLayoutContext = {
+  authCheck?: boolean;
+  routeName?: string;
+  uid?: string;
+};
+
 export type FlowRouteProps = {
   pageUid?: string;
   active?: boolean;
@@ -38,7 +44,7 @@ export type FlowRouteProps = {
 const getDefaultAdminLayoutModel = (flowEngine: FlowEngine) =>
   getAdminLayoutModel<AdminLayoutModel>(flowEngine, { required: true });
 
-const getDefaultLayoutModel = (flowEngine: FlowEngine, contextLayout?: any) => {
+const getDefaultLayoutModel = (flowEngine: FlowEngine, contextLayout?: FlowRouteLayoutContext) => {
   const layout = contextLayout || flowEngine.context.layout;
 
   if (layout?.uid) {
@@ -48,7 +54,10 @@ const getDefaultLayoutModel = (flowEngine: FlowEngine, contextLayout?: any) => {
   return getDefaultAdminLayoutModel(flowEngine);
 };
 
-const getDefaultLegacyPageBehavior = (flowEngine: FlowEngine, contextLayout?: any): LegacyPageBehavior => {
+const getDefaultLegacyPageBehavior = (
+  flowEngine: FlowEngine,
+  contextLayout?: FlowRouteLayoutContext,
+): LegacyPageBehavior => {
   const layout = contextLayout || flowEngine.context.layout;
 
   if (layout?.routeName && layout.routeName !== 'admin') {
@@ -57,6 +66,8 @@ const getDefaultLegacyPageBehavior = (flowEngine: FlowEngine, contextLayout?: an
 
   return 'redirect';
 };
+
+const shouldRequireAccessibleRoute = (contextLayout?: FlowRouteLayoutContext) => contextLayout?.authCheck !== false;
 
 const hasFlowModel = async (flowEngine: FlowEngine, pageUid: string) => {
   if (flowEngine.getModel(pageUid)) {
@@ -149,7 +160,7 @@ const BridgeFlowRoute = ({
  */
 const FlowRoute = (props: FlowRouteProps = {}) => {
   const flowEngine = useFlowEngine();
-  const flowContext = useFlowContext<any>();
+  const flowContext = useFlowContext<{ layout?: FlowRouteLayoutContext }>();
   const contextLayout = flowContext?.layout;
   const getLayoutModel = useMemo(
     () => props.getLayoutModel || ((engine: FlowEngine) => getDefaultLayoutModel(engine, contextLayout)),
@@ -196,6 +207,11 @@ const FlowRoute = (props: FlowRouteProps = {}) => {
       }
 
       const route = skipRouteRepositoryCheck ? undefined : routeRepository?.getRouteBySchemaUid?.(pageUid);
+      if (!route && !skipRouteRepositoryCheck && shouldRequireAccessibleRoute(contextLayout)) {
+        setGuardState({ pending: false, allowBridge: false, notFound: true });
+        return;
+      }
+
       if (!route && legacyPageBehavior === 'notFound') {
         const flowModelExists = await hasFlowModel(flowEngine, pageUid);
         if (active && requestId === requestIdRef.current) {
@@ -250,7 +266,7 @@ const FlowRoute = (props: FlowRouteProps = {}) => {
     return () => {
       active = false;
     };
-  }, [app, flowEngine, legacyPageBehavior, pageUid, routeRepository, skipRouteRepositoryCheck]);
+  }, [app, contextLayout, flowEngine, legacyPageBehavior, pageUid, routeRepository, skipRouteRepositoryCheck]);
 
   const content = useMemo(() => {
     if (guardState.pending) {
