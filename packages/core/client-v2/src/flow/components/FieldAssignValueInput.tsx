@@ -36,7 +36,7 @@ import {
   isToManyAssociationField,
 } from '../internal/utils/modelUtils';
 import { RunJSValueEditor } from './RunJSValueEditor';
-import { resolveOperatorComponent } from '../internal/utils/operatorSchemaHelper';
+import { pickOperatorStyle as pickStyle, resolveOperatorComponent } from '../internal/utils/operatorSchemaHelper';
 import { InputFieldModel } from '../models/fields/InputFieldModel';
 import { normalizeFilterValueByOperator } from '../models/blocks/filter-form/valueNormalization';
 import { FieldAssignExactDatePicker, type ExactDatePickerMode } from './FieldAssignExactDatePicker';
@@ -353,14 +353,6 @@ type ResolvedFieldContext = {
   fieldName: string | null;
   collectionField: CollectionField | null;
 };
-
-function isPlainObject(value: unknown): value is Record<string, unknown> {
-  return !!value && typeof value === 'object' && !Array.isArray(value);
-}
-
-function pickStyle(value: unknown): React.CSSProperties | undefined {
-  return isPlainObject(value) ? (value as React.CSSProperties) : undefined;
-}
 
 function withFullWidthStyle(style?: React.CSSProperties): React.CSSProperties {
   return { ...style, width: '100%', minWidth: 0 };
@@ -1175,7 +1167,11 @@ export const FieldAssignValueInput: React.FC<Props> = ({
         <Comp
           {...fieldModel.props}
           {...xProps}
-          style={{ width: '100%', ...(fieldModel.props as any)?.style, ...xProps?.style }}
+          style={{
+            width: '100%',
+            ...pickStyle((fieldModel.props as Record<string, unknown>)?.style),
+            ...pickStyle(xProps?.style),
+          }}
         />
       );
       rewrapReactiveRender(fieldModel);

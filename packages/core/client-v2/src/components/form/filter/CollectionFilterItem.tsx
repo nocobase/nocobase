@@ -8,7 +8,7 @@
  */
 
 import { css } from '@emotion/css';
-import { Collection, observer } from '@nocobase/flow-engine';
+import { Collection, observer, useFlowEngine } from '@nocobase/flow-engine';
 import { Cascader, Select, Space } from 'antd';
 import React, { FC, useMemo } from 'react';
 import { FilterOption, useFilterOptions } from '../../../flow/components/filter/useFilterOptions';
@@ -56,6 +56,8 @@ export interface CollectionFilterItemProps {
   noIgnore?: boolean;
   /** Translator; defaults to identity so callers can omit it. */
   t?: (key: string) => string;
+  /** Optional v2 app registry used to resolve plugin-provided operator components. */
+  app?: { getComponent?: (name: string) => React.ComponentType<any> | undefined };
 }
 
 const identity = (s: string) => s;
@@ -94,6 +96,8 @@ export const CollectionFilterItem: FC<CollectionFilterItemProps> = observer(
   (props) => {
     const { collection, filterableFieldNames, nonfilterableFieldNames, noIgnore = false, t = identity } = props;
     const { path: leftValue, operator, value: rightValue } = props.value;
+    const flowEngine = useFlowEngine({ throwError: false }) as any;
+    const app = props.app || flowEngine?.context?.app;
 
     const options = useFilterOptions(collection, { filterableFieldNames, nonfilterableFieldNames, noIgnore, t });
 
@@ -160,6 +164,7 @@ export const CollectionFilterItem: FC<CollectionFilterItemProps> = observer(
           onChange={handleValueChange}
           placeholder={t('Enter value')}
           t={t}
+          app={app}
         />
       </Space>
     );
@@ -172,7 +177,10 @@ export const CollectionFilterItem: FC<CollectionFilterItemProps> = observer(
  */
 export function createCollectionFilterItem(
   collection: Collection,
-  bound?: Pick<CollectionFilterItemProps, 'filterableFieldNames' | 'nonfilterableFieldNames' | 'noIgnore' | 't'>,
+  bound?: Pick<
+    CollectionFilterItemProps,
+    'filterableFieldNames' | 'nonfilterableFieldNames' | 'noIgnore' | 't' | 'app'
+  >,
 ) {
   const Component: FC<{ value: CollectionFilterItemValue }> = (props) => (
     <CollectionFilterItem {...bound} value={props.value} collection={collection} />
