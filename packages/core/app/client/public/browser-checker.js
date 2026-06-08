@@ -21,7 +21,7 @@ const basename = normalizePublicPath(window['__nocobase_public_path__'] || '/');
 const currentPath = ensureLeadingSlash(String(window.location.pathname || '/').trim() || '/').replace(/\/{2,}/g, '/');
 const basenameWithoutTrailingSlash = basename === '/' ? '/' : basename.replace(/\/+$/, '');
 
-if (currentPath === basenameWithoutTrailingSlash) {
+if (basename !== '/' && currentPath === basenameWithoutTrailingSlash) {
   const newUrl = `${window.location.origin}${basename}${window.location.search}${window.location.hash}`;
   window.location.replace(newUrl);
 } else if (basename !== '/' && !currentPath.startsWith(basename)) {

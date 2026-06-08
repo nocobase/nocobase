@@ -7,7 +7,6 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { fileURLToPath } from 'node:url';
 import { Command, Flags } from '@oclif/core';
 import { getCurrentEnvName } from '../../lib/auth-store.js';
 import { ensureCrossEnvConfirmed, hasExplicitEnvSelection } from '../../lib/env-guard.js';
@@ -18,7 +17,6 @@ import {
   runLocalNocoBaseCommand,
   type ManagedAppRuntime,
 } from '../../lib/app-runtime.js';
-import { resolveProjectCwd, runNocoBaseCommand } from '../../lib/run-npm.js';
 import { announceTargetEnv, failTask, isInteractiveTerminal, printInfo, startTask, succeedTask } from '../../lib/ui.js';
 import { builtinDbContainerName, removeDockerContainerIfExists } from './shared.js';
 
@@ -38,8 +36,9 @@ function formatStopCrossEnvConfirmationRequiredMessage(currentEnv: string, reque
   ].join('\n');
 }
 
-function isMissingManagedLocalProjectError(message: string): boolean {
+function shouldIgnoreLocalStopError(message: string): boolean {
   return (
+    message.includes('spawn nocobase-v1 ENOENT') ||
     message.includes('The specified --cwd does not exist:') ||
     message.includes('The specified --cwd is not a directory:') ||
     message.includes("Couldn't find a NocoBase source project from --cwd:")
@@ -60,17 +59,10 @@ async function stopLocalRuntimeWithFallback(
     return;
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : String(error);
-    if (!isMissingManagedLocalProjectError(message)) {
+    if (!shouldIgnoreLocalStopError(message)) {
       throw error;
     }
   }
-
-  const cliProjectCwd = resolveProjectCwd(fileURLToPath(new URL('.', import.meta.url)));
-  await runNocoBaseCommand(['pm2', 'kill'], {
-    cwd: cliProjectCwd,
-    env,
-    stdio: options.stdio,
-  });
 }
 
 export default class AppStop extends Command {

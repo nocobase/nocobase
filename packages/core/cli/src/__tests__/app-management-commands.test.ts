@@ -84,6 +84,7 @@ const mocks = vi.hoisted(() => ({
   runNocoBaseCommand: vi.fn(),
   commandSucceeds: vi.fn(),
   commandOutput: vi.fn(),
+  ensureDockerDaemonRunning: vi.fn(),
   resolveProjectCwd: vi.fn((cwd?: string) => cwd ?? process.cwd()),
   findAvailableTcpPort: vi.fn(),
   validateAvailableTcpPort: vi.fn(),
@@ -196,6 +197,7 @@ vi.mock('../lib/run-npm.js', () => ({
   runNocoBaseCommand: mocks.runNocoBaseCommand,
   commandSucceeds: mocks.commandSucceeds,
   commandOutput: mocks.commandOutput,
+  ensureDockerDaemonRunning: mocks.ensureDockerDaemonRunning,
   resolveProjectCwd: mocks.resolveProjectCwd,
 }));
 
@@ -250,6 +252,7 @@ vi.mock('../lib/db-connection-check.ts', async (importOriginal) => {
 
 beforeEach(() => {
   delete process.env.NOCOBASE_EXTRACT_CLIENT_ASSETS;
+  delete process.env.CDN_BASE_URL;
   mocks.formatMissingManagedAppEnvMessage.mockImplementation((envName?: string) =>
     envName
       ? [
@@ -280,6 +283,7 @@ beforeEach(() => {
   mocks.runNocoBaseCommand.mockResolvedValue(undefined);
   mocks.commandSucceeds.mockResolvedValue(true);
   mocks.commandOutput.mockResolvedValue('');
+  mocks.ensureDockerDaemonRunning.mockResolvedValue(undefined);
   mocks.isAppReady.mockResolvedValue(false);
   mocks.waitForAppReady.mockResolvedValue(undefined);
   mocks.resolveManagedAppApiBaseUrl.mockImplementation((runtime: any, options?: { portOverride?: string }) => {
@@ -1657,7 +1661,7 @@ test('stop enables raw shutdown output when --verbose is set', async () => {
   });
 });
 
-test('stop falls back to a workspace pm2 kill when the saved local source path is missing', async () => {
+test('stop ignores missing nocobase-v1 during local shutdown', async () => {
   const { default: Stop } = await import('../commands/app/stop.js');
   const runtime = {
     kind: 'local',
@@ -1669,8 +1673,7 @@ test('stop falls back to a workspace pm2 kill when the saved local source path i
     },
   };
   mocks.resolveManagedAppRuntime.mockResolvedValue(runtime);
-  mocks.runLocalNocoBaseCommand.mockRejectedValue(new Error('The specified --cwd does not exist: /tmp/missing-source'));
-  mocks.resolveProjectCwd.mockReturnValue('/tmp/cli-project');
+  mocks.runLocalNocoBaseCommand.mockRejectedValue(new Error('spawn nocobase-v1 ENOENT'));
 
   const command = createCommandHarness({
     flags: {
@@ -1683,8 +1686,35 @@ test('stop falls back to a workspace pm2 kill when the saved local source path i
   expect(mocks.runLocalNocoBaseCommand.mock.calls).toEqual([
     [runtime, ['pm2', 'kill'], { env: MANAGED_APP_PRODUCTION_ENV, stdio: 'ignore' }],
   ]);
-  expect(mocks.runNocoBaseCommand.mock.calls).toEqual([
-    [['pm2', 'kill'], { cwd: '/tmp/cli-project', env: MANAGED_APP_PRODUCTION_ENV, stdio: 'ignore' }],
+  expect(mocks.succeedTask.mock.calls).toEqual([['NocoBase has stopped for "local".']]);
+});
+
+test('stop ignores missing saved source paths during local shutdown', async () => {
+  const { default: Stop } = await import('../commands/app/stop.js');
+  const runtime = {
+    kind: 'local',
+    envName: 'local',
+    source: 'npm',
+    projectRoot: '/tmp/missing-source',
+    env: {
+      envVars: {},
+    },
+  };
+  mocks.resolveManagedAppRuntime.mockResolvedValue(runtime);
+  mocks.runLocalNocoBaseCommand.mockRejectedValue(
+    new Error("Couldn't find a NocoBase source project from --cwd: /tmp/missing-source"),
+  );
+
+  const command = createCommandHarness({
+    flags: {
+      env: 'local',
+    },
+  });
+
+  await Stop.prototype.run.call(command);
+
+  expect(mocks.runLocalNocoBaseCommand.mock.calls).toEqual([
+    [runtime, ['pm2', 'kill'], { env: MANAGED_APP_PRODUCTION_ENV, stdio: 'ignore' }],
   ]);
   expect(mocks.succeedTask.mock.calls).toEqual([['NocoBase has stopped for "local".']]);
 });

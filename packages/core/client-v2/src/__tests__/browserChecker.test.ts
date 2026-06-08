@@ -100,4 +100,13 @@ describe.each(browserCheckerCases)('$label', ({ scriptPath }) => {
 
     expect(replace).not.toHaveBeenCalled();
   });
+
+  it('does not redirect the root path when the normalized basename is also root', () => {
+    const replace = executeBrowserChecker(scriptPath, {
+      pathname: '/',
+      publicPath: '/',
+    });
+
+    expect(replace).not.toHaveBeenCalled();
+  });
 });
