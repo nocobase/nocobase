@@ -19,7 +19,8 @@ export class InputFieldModel extends FieldModel {
     if (this.props.enableScan) {
       return <ScanInput {...this.props} />;
     }
-    return <Input {...this.props} />;
+    const { enableScan, disableManualInput, ...inputProps } = this.props;
+    return <Input {...inputProps} />;
   }
 }
 
@@ -67,9 +68,14 @@ InputFieldModel.registerFlow({
       title: tExpr('Disable manual input'),
       uiMode: { type: 'switch', key: 'disableManualInput' },
       hideInSettings(ctx) {
-        return (
-          !ctx.model.props.enableScan || ctx.model.getProps().pattern === 'readPretty' || ctx.model.getProps().disabled
-        );
+        const enableScanParams = ctx.model.getStepParams?.('scanInputSettings', 'enableScan') as
+          | { enableScan?: boolean }
+          | undefined;
+        const enableScan = Object.prototype.hasOwnProperty.call(enableScanParams || {}, 'enableScan')
+          ? !!enableScanParams?.enableScan
+          : !!ctx.model.props.enableScan;
+
+        return !enableScan || ctx.model.getProps().pattern === 'readPretty' || !!ctx.model.getProps().disabled;
       },
       defaultParams(ctx) {
         return {
@@ -78,7 +84,7 @@ InputFieldModel.registerFlow({
       },
       handler(ctx, params) {
         ctx.model.setProps({
-          disableManualInput: !!params.disableManualInput,
+          disableManualInput: !!ctx.model.props.enableScan && !!params.disableManualInput,
         });
       },
     },

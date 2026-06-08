@@ -49,7 +49,7 @@ describe('ScanInput', () => {
     const input = screen.getByRole('textbox');
     const button = screen.getByRole('button', { name: 'Scan to input' });
 
-    expect(button).toHaveAttribute('tabindex', '-1');
+    expect(button).not.toHaveAttribute('tabindex', '-1');
     fireEvent.pointerDown(button);
 
     act(() => {
@@ -58,6 +58,50 @@ describe('ScanInput', () => {
 
     expect(handleFocus).not.toHaveBeenCalled();
     expect(screen.getByText('mock scan result')).toBeInTheDocument();
+  });
+
+  it('opens scanner from the button click path', () => {
+    render(<ScanInput value="" onChange={() => undefined} />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Scan to input' }));
+
+    expect(screen.getByText('mock scan result')).toBeInTheDocument();
+  });
+
+  it('uses the mobile native scan bridge when available', () => {
+    const testWindow = window as Window & {
+      JsBridge?: {
+        invoke: (params: { action: 'scan' }, callback: (data: { url: string }) => void) => void;
+      };
+    };
+    const originalJsBridge = testWindow.JsBridge;
+    const handleChange = vi.fn();
+    const invoke = vi.fn((params: { action: 'scan' }, callback: (data: { url: string }) => void) => {
+      callback({ url: 'BRIDGE-CODE' });
+    });
+    testWindow.JsBridge = { invoke };
+
+    try {
+      render(<ScanInput value="" onChange={handleChange} />);
+      fireEvent.click(screen.getByRole('button', { name: 'Scan to input' }));
+
+      expect(invoke).toHaveBeenCalledWith({ action: 'scan' }, expect.any(Function));
+      expect(handleChange).toHaveBeenCalledWith('BRIDGE-CODE');
+      expect(screen.queryByText('mock scan result')).not.toBeInTheDocument();
+    } finally {
+      testWindow.JsBridge = originalJsBridge;
+    }
+  });
+
+  it('does not call preventDefault from touchstart', () => {
+    render(<ScanInput value="" onChange={() => undefined} />);
+
+    const event = new Event('touchstart', { bubbles: true, cancelable: true });
+    const preventDefault = vi.spyOn(event, 'preventDefault');
+
+    screen.getByRole('button', { name: 'Scan to input' }).dispatchEvent(event);
+
+    expect(preventDefault).not.toHaveBeenCalled();
   });
 
   it('keeps scan available when manual input is disabled', () => {

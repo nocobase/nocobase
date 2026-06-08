@@ -10,7 +10,7 @@
 import { render, waitFor } from '@testing-library/react';
 import React, { useCallback } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { DEFAULT_CODE_FORMATS, useCodeScanner } from '../useCodeScanner';
+import { DEFAULT_CODE_FORMATS, getCodeScanBoxSize, useCodeScanner } from '../useCodeScanner';
 
 type MockScannerInstance = {
   clear: ReturnType<typeof vi.fn>;
@@ -66,12 +66,13 @@ vi.mock('html5-qrcode', () => ({
   },
 }));
 
-function ScannerHost() {
+function ScannerHost({ scanBoxSize }: { scanBoxSize?: { width: number; height: number } } = {}) {
   const handleScanSuccess = useCallback(() => undefined, []);
 
   useCodeScanner({
     elementId: 'scanner',
     enabled: true,
+    scanBoxSize,
     onScanSuccess: handleScanSuccess,
   });
 
@@ -93,5 +94,30 @@ describe('useCodeScanner', () => {
       verbose: false,
     });
     expect(DEFAULT_CODE_FORMATS).toEqual(expect.arrayContaining([0, 5, 9, 14]));
+  });
+
+  it('uses the visible scan box as the camera scan region', async () => {
+    render(<ScannerHost />);
+
+    await waitFor(() => expect(mocks.start).toHaveBeenCalled());
+
+    const config = mocks.start.mock.calls[0]?.[1] as
+      | { qrbox?: (width: number, height: number) => { width: number; height: number } }
+      | undefined;
+
+    expect(config?.qrbox?.(390, 844)).toEqual({ width: 319, height: 240 });
+    expect(getCodeScanBoxSize(390, 844)).toEqual({ width: 319, height: 240 });
+  });
+
+  it('can use the visible viewport scan box when the camera video is wider than the viewport', async () => {
+    render(<ScannerHost scanBoxSize={{ width: 319, height: 240 }} />);
+
+    await waitFor(() => expect(mocks.start).toHaveBeenCalled());
+
+    const config = mocks.start.mock.calls[0]?.[1] as
+      | { qrbox?: (width: number, height: number) => { width: number; height: number } }
+      | undefined;
+
+    expect(config?.qrbox?.(1200, 844)).toEqual({ width: 319, height: 240 });
   });
 });

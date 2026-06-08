@@ -23,6 +23,19 @@ export type ScanInputProps = Omit<InputProps, 'onChange'> & {
   onChange?: (value: string | React.ChangeEvent<HTMLInputElement>) => void;
 };
 
+type JsBridgeScanResult = string | { url?: string; text?: string; value?: string };
+
+type JsBridge = {
+  invoke?: (params: { action: 'scan' }, callback: (data: JsBridgeScanResult) => void) => void;
+};
+
+function getJsBridgeScanText(data: JsBridgeScanResult) {
+  if (typeof data === 'string') {
+    return data;
+  }
+  return data.url || data.text || data.value || '';
+}
+
 export function ScanInput({
   value,
   onChange,
@@ -56,10 +69,21 @@ export function ScanInput({
     }
     suppressInputFocusRef.current = true;
     inputRef.current?.blur();
+    const releaseInputFocusSuppression = () => {
+      window.setTimeout(() => {
+        suppressInputFocusRef.current = false;
+      }, 300);
+    };
+    const jsBridge = (window as Window & { JsBridge?: JsBridge }).JsBridge;
+    if (jsBridge?.invoke) {
+      jsBridge.invoke({ action: 'scan' }, (data) => {
+        handleScanSuccess(getJsBridgeScanText(data));
+      });
+      releaseInputFocusSuppression();
+      return;
+    }
     setScanVisible(true);
-    window.setTimeout(() => {
-      suppressInputFocusRef.current = false;
-    }, 300);
+    releaseInputFocusSuppression();
   };
 
   const handleInputFocus = (event: React.FocusEvent<HTMLInputElement>) => {
@@ -77,15 +101,10 @@ export function ScanInput({
     openScanner();
   };
 
-  const handleScanButtonTouchStartCapture = (event: React.TouchEvent<HTMLElement>) => {
-    event.preventDefault();
-    event.stopPropagation();
-    openScanner();
-  };
-
   const handleScanButtonClick = (event: React.MouseEvent<HTMLElement>) => {
     event.preventDefault();
     event.stopPropagation();
+    openScanner();
   };
 
   const scanButton = (
@@ -96,11 +115,9 @@ export function ScanInput({
         htmlType="button"
         icon={<ScanOutlined />}
         size="small"
-        tabIndex={-1}
         type="text"
         onClick={handleScanButtonClick}
         onPointerDownCapture={handleScanButtonPointerDownCapture}
-        onTouchStartCapture={handleScanButtonTouchStartCapture}
       />
     </Tooltip>
   );

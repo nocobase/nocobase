@@ -20,6 +20,7 @@ type UseCodeScannerOptions = {
   enabled: boolean;
   elementId: string;
   formatsToSupport?: CodeFormatsToSupport;
+  scanBoxSize?: ScannerSize;
   onScannerSizeChanged?: (size: ScannerSize) => void;
   onScanSuccess: (text: string) => void;
   onScanFailure?: () => void;
@@ -40,6 +41,13 @@ export const DEFAULT_CODE_FORMATS: CodeFormatsToSupport = [
   Html5QrcodeSupportedFormats.PDF_417,
 ];
 
+export function getCodeScanBoxSize(width: number, height: number) {
+  return {
+    width: Math.floor(Math.min(width * 0.82, 520)),
+    height: Math.floor(Math.min(height * 0.32, 240)),
+  };
+}
+
 async function stopScanner(scanner?: Html5Qrcode, options: { clear?: boolean } = {}) {
   if (!scanner) {
     return;
@@ -58,6 +66,7 @@ export function useCodeScanner({
   enabled,
   elementId,
   formatsToSupport,
+  scanBoxSize,
   onScannerSizeChanged,
   onScanSuccess,
   onScanFailure,
@@ -72,7 +81,7 @@ export function useCodeScanner({
           fps: 10,
           qrbox(width, height) {
             onScannerSizeChanged?.({ width, height });
-            return { width, height };
+            return scanBoxSize ?? getCodeScanBoxSize(width, height);
           },
         },
         (decodedText) => {
@@ -81,7 +90,7 @@ export function useCodeScanner({
         undefined,
       );
     },
-    [onScanSuccess, onScannerSizeChanged],
+    [onScanSuccess, onScannerSizeChanged, scanBoxSize],
   );
 
   const startScanFile = useCallback(

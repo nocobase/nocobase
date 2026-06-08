@@ -16,7 +16,7 @@ import ReactDOM from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import { ScanBox } from './ScanBox';
 import type { CodeFormatsToSupport } from './types';
-import { useCodeScanner } from './useCodeScanner';
+import { getCodeScanBoxSize, useCodeScanner } from './useCodeScanner';
 
 type CodeScannerProps = {
   visible: boolean;
@@ -32,16 +32,18 @@ function CodeScannerContent({ visible, formatsToSupport, onClose, onScanSuccess 
   const { token } = theme.useToken();
   const inputId = useId().replace(/:/g, '');
   const scannerElementId = `code-scanner-${inputId}`;
-  const containerRef = useRef<HTMLDivElement>(null);
   const imgUploaderRef = useRef<HTMLInputElement>(null);
   const [cameraAvailable, setCameraAvailable] = useState(false);
-  const [originVideoSize, setOriginVideoSize] = useState({ width: 0, height: 0 });
 
   const viewport = useMemo(() => {
     const width = Math.max(document.documentElement.clientWidth || 0, window.innerWidth || 0);
     const height = Math.max(document.documentElement.clientHeight || 0, window.innerHeight || 0);
     return { width, height };
   }, []);
+  const scanBoxSize = useMemo(
+    () => getCodeScanBoxSize(viewport.width, viewport.height),
+    [viewport.height, viewport.width],
+  );
 
   const showScanFailure = useCallback(() => {
     message.error(t('Code recognition failed, please scan again'));
@@ -59,7 +61,7 @@ function CodeScannerContent({ visible, formatsToSupport, onClose, onScanSuccess 
     enabled: visible && cameraAvailable,
     elementId: scannerElementId,
     formatsToSupport,
-    onScannerSizeChanged: setOriginVideoSize,
+    scanBoxSize,
     onScanSuccess: handleScanSuccess,
     onScanFailure: showScanFailure,
   });
@@ -99,26 +101,6 @@ function CodeScannerContent({ visible, formatsToSupport, onClose, onScanSuccess 
     };
   }, [onClose, t, visible]);
 
-  useEffect(() => {
-    if (!visible || !originVideoSize.width || !originVideoSize.height) {
-      return;
-    }
-
-    const video = containerRef.current?.querySelector('video');
-    if (!video) {
-      return;
-    }
-
-    const zoomRatio = viewport.height / originVideoSize.height;
-    const zoomedWidth = Math.floor(zoomRatio * originVideoSize.width);
-    video.style.height = `${viewport.height}px`;
-    video.style.width = `${zoomedWidth}px`;
-    if (containerRef.current) {
-      containerRef.current.style.left = `${(viewport.width - zoomedWidth) / 2}px`;
-      containerRef.current.style.position = 'absolute';
-    }
-  }, [originVideoSize, viewport.height, viewport.width, visible]);
-
   if (!visible) {
     return null;
   }
@@ -142,15 +124,30 @@ function CodeScannerContent({ visible, formatsToSupport, onClose, onScanSuccess 
     event.target.value = '';
   };
 
-  const scanBoxWidth = Math.floor(Math.min(viewport.width * 0.82, 520));
-  const scanBoxHeight = Math.floor(Math.min(viewport.height * 0.32, 240));
-
   const rootClass = css`
     position: fixed;
     inset: 0;
     z-index: ${token.zIndexPopupBase + 1000};
     overflow: hidden;
     background: ${token.colorBgMask};
+  `;
+  const scannerWrapperClass = css`
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+  `;
+  const scannerClass = css`
+    width: 100%;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    video {
+      width: auto !important;
+      height: 100% !important;
+      max-width: none !important;
+    }
   `;
   const closeButtonClass = css`
     position: absolute;
@@ -172,16 +169,18 @@ function CodeScannerContent({ visible, formatsToSupport, onClose, onScanSuccess 
 
   return (
     <div className={rootClass}>
-      <div ref={containerRef} id={scannerElementId} style={{ position: 'absolute' }} />
+      <div className={scannerWrapperClass}>
+        <div id={scannerElementId} className={scannerClass} />
+      </div>
       {cameraAvailable && (
         <>
           <ScanBox
             style={{
               position: 'fixed',
-              top: `${(viewport.height - scanBoxHeight) / 2}px`,
-              left: `${(viewport.width - scanBoxWidth) / 2}px`,
-              width: `${scanBoxWidth}px`,
-              height: `${scanBoxHeight}px`,
+              top: `${(viewport.height - scanBoxSize.height) / 2}px`,
+              left: `${(viewport.width - scanBoxSize.width) / 2}px`,
+              width: `${scanBoxSize.width}px`,
+              height: `${scanBoxSize.height}px`,
             }}
           />
           <Button
