@@ -38,11 +38,11 @@ Jika kode client diubah tetapi tidak hot update, coba refresh browser dulu.
 
 ### Route halaman yang didaftarkan tidak dapat diakses
 
-Route NocoBase v2 secara default akan memiliki prefix `/v2`. Misalnya Anda mendaftarkan `path: '/hello'`, alamat akses sebenarnya adalah `/v2/hello`:
+Route NocoBase v2 secara default akan memiliki prefix `/v`. Misalnya Anda mendaftarkan `path: '/hello'`, alamat akses sebenarnya adalah `/v/hello`:
 
 ```ts
 this.router.add('hello', {
-  path: '/hello', // Akses sebenarnya -> /v2/hello
+  path: '/hello', // Akses sebenarnya -> /v/hello
   componentLoader: () => import('./pages/HelloPage'),
 });
 ```
@@ -285,7 +285,7 @@ Sistem build NocoBase memiliki [daftar external](../../dependency-management), p
 ## Tautan Terkait
 
 - [Plugin](../plugin) — Entry dan siklus hidup plugin
-- [Router](../router) — Registrasi route dan prefix `/v2`
+- [Router](../router) — Registrasi route dan prefix `/v`
 - [Ikhtisar FlowEngine](../flow-engine/index.md) — Penggunaan dasar FlowModel
 - [FlowEngine → Ekstensi Block](../flow-engine/block) — BlockModel, TableBlockModel, filterCollection
 - [FlowEngine → Ekstensi Field](../flow-engine/field) — FieldModel, bindModelToInterface

@@ -12,6 +12,12 @@ import { ResourcerContext } from '@nocobase/resourcer';
 
 type Getter<T = any> = (ctx: ServerBaseContext) => T | Promise<T>;
 
+const BLOCKED_SANDBOX_KEYS = new Set(['__proto__', 'prototype', 'constructor', 'then']);
+
+function isBlockedSandboxKey(key: string) {
+  return BLOCKED_SANDBOX_KEYS.has(key);
+}
+
 export interface PropertyOptions {
   /** 固定值，优先级高于 get */
   value?: any;
@@ -98,6 +104,38 @@ export class ServerBaseContext {
   /** 清空所有委托 */
   clearDelegates() {
     this._delegates = [];
+  }
+
+  getSandboxKeys(): string[] {
+    const keys = new Set<string>();
+    for (const key of Object.keys(this._props)) {
+      if (!isBlockedSandboxKey(key)) keys.add(key);
+    }
+    for (const key of Object.keys(this._methods)) {
+      if (!isBlockedSandboxKey(key)) keys.add(key);
+    }
+    for (const d of this._delegates) {
+      for (const key of d.getSandboxKeys()) {
+        if (!isBlockedSandboxKey(key)) keys.add(key);
+      }
+    }
+    return Array.from(keys);
+  }
+
+  getSandboxValue(key: string, current: ServerBaseContext = this.createProxy()): any {
+    if (isBlockedSandboxKey(key)) return undefined;
+    if (Object.prototype.hasOwnProperty.call(this._props, key)) {
+      return this._getOwn(key, current);
+    }
+    if (Object.prototype.hasOwnProperty.call(this._methods, key)) {
+      const fn = this._methods[key];
+      return typeof fn === 'function' ? fn.bind(this) : fn;
+    }
+    for (const d of this._delegates) {
+      if (!d.getSandboxKeys().includes(key)) continue;
+      return d.getSandboxValue(key, current);
+    }
+    return undefined;
   }
 
   /** 创建并返回代理对象（同一实例下保持稳定引用） */

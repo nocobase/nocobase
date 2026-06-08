@@ -241,10 +241,10 @@ describe('openViewActionExtensions (popup template)', () => {
 
     await enhanced.beforeParamsSave(ctx, params, {});
     expect(params.uid).toBe('popup-1');
-    expect(params.popupTemplateHasFilterByTk).toBe(false);
-    expect(params.popupTemplateHasSourceId).toBe(false);
     expect('filterByTk' in params).toBe(false);
     expect('sourceId' in params).toBe(false);
+    expect(params.popupTemplateHasFilterByTk).toBeUndefined();
+    expect(params.popupTemplateHasSourceId).toBeUndefined();
   });
 
   it('omits template filterByTk for record-only popup action models when saving template references', async () => {
@@ -323,8 +323,8 @@ describe('openViewActionExtensions (popup template)', () => {
 
       await enhanced.beforeParamsSave(ctx, params, {});
       expect(params.uid).toBe('popup-1');
-      expect(params.popupTemplateHasFilterByTk).toBe(true);
       expect('filterByTk' in params).toBe(false);
+      expect(params.popupTemplateHasFilterByTk).toBeUndefined();
       expect(baseBefore.mock.calls[0][1]?.filterByTk).toBeUndefined();
     }
   });
@@ -386,8 +386,8 @@ describe('openViewActionExtensions (popup template)', () => {
 
     await enhanced.beforeParamsSave(ctx, params, {});
     expect(params.uid).toBe('popup-1');
-    expect(params.popupTemplateHasFilterByTk).toBe(true);
     expect(params.filterByTk).toBe('{{ ctx.record.id }}');
+    expect(params.popupTemplateHasFilterByTk).toBeUndefined();
     expect(baseBefore.mock.calls[0][1]?.filterByTk).toBe('{{ ctx.record.id }}');
   });
 
@@ -448,8 +448,8 @@ describe('openViewActionExtensions (popup template)', () => {
 
     await enhanced.beforeParamsSave(ctx, params, {});
     expect(params.uid).toBe('popup-1');
-    expect(params.popupTemplateHasFilterByTk).toBe(true);
     expect(params.filterByTk).toBe('{{ ctx.record.code }}');
+    expect(params.popupTemplateHasFilterByTk).toBeUndefined();
     expect(baseBefore.mock.calls[0][1]?.filterByTk).toBe('{{ ctx.record.code }}');
   });
 
@@ -1529,8 +1529,8 @@ describe('openViewActionExtensions (popup template)', () => {
     await expect(enhanced.beforeParamsSave(ctx, params, {})).resolves.toBeUndefined();
     expect(params.uid).toBe('popup-1');
     expect(params.collectionName).toBe('roles');
-    expect(params.popupTemplateHasFilterByTk).toBe(true);
     expect('filterByTk' in params).toBe(false);
+    expect(params.popupTemplateHasFilterByTk).toBeUndefined();
   });
 
   it('uses action params to resolve target collection for relation popups', async () => {
