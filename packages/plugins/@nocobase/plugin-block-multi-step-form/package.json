@@ -16,6 +16,7 @@
     "@nocobase/test": "2.x"
   },
   "nocobase": {
+    "deprecated": true,
     "supportedVersions": [
       "1.x"
     ],

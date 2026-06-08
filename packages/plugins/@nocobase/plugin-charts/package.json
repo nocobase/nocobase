@@ -9,6 +9,13 @@
   "description.zh-CN": "已废弃插件，请使用数据可视化插件代替。",
   "version": "2.1.0-alpha.47",
   "main": "./dist/server/index.js",
+  "nocobase": {
+    "deprecated": true,
+    "supportedVersions": [
+      "1.x"
+    ],
+    "editionLevel": 0
+  },
   "license": "Apache-2.0",
   "devDependencies": {
     "@ant-design/icons": "5.x",

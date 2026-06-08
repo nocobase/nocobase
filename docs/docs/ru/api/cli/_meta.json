@@ -233,7 +233,7 @@
       {
         "type": "custom-link",
         "label": "nb env proxy",
-        "link": "/api/cli/env/proxy"
+        "link": "/api/cli/env/proxy/"
       },
       {
         "type": "custom-link",
