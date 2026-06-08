@@ -137,7 +137,7 @@ describe('plugin-ui-layout route permissions', () => {
     expect(addPermissionsTab).toHaveBeenCalledWith(
       expect.objectContaining({
         key: 'menu',
-        label: 'Desktop routes',
+        label: 'Menu permissions',
         sort: 20,
       }),
     );
@@ -201,7 +201,8 @@ describe('plugin-ui-layout route permissions', () => {
       />,
     );
 
-    expect(await screen.findByRole('combobox', { name: 'Layout' })).toBeInTheDocument();
+    expect(await screen.findByRole('combobox', { name: 'UI layout' })).toBeInTheDocument();
+    expect(screen.getByText('UI layout')).toBeInTheDocument();
     expect(
       screen.getByRole('checkbox', { name: 'New routes are allowed to be accessed by default' }),
     ).toBeInTheDocument();
@@ -340,7 +341,7 @@ describe('plugin-ui-layout route permissions', () => {
 });
 
 async function selectLayout(label: string) {
-  fireEvent.mouseDown(screen.getByRole('combobox', { name: 'Layout' }));
+  fireEvent.mouseDown(screen.getByRole('combobox', { name: 'UI layout' }));
   fireEvent.click(await screen.findByText(label));
 }
 

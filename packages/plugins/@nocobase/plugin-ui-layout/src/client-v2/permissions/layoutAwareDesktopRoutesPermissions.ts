@@ -111,7 +111,7 @@ export function registerLayoutAwareDesktopRoutesPermissionsTab(app: Application,
 
   aclPlugin.settingsUI.addPermissionsTab({
     key: 'menu',
-    label: String(t('Desktop routes')),
+    label: String(t('Menu permissions')),
     sort: 20,
     componentLoader: () => import('./LayoutAwareDesktopRoutesPermissionsTab'),
   });

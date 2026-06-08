@@ -353,9 +353,9 @@ export default function LayoutAwareDesktopRoutesPermissionsTab(props: Permission
       }}
     >
       <Space align="center" wrap>
-        <Typography.Text strong>{t('Route permissions')}</Typography.Text>
+        <Typography.Text strong>{t('UI layout')}</Typography.Text>
         <Select
-          aria-label={t('Layout')}
+          aria-label={t('UI layout')}
           value={selectedLayoutUid}
           loading={layoutService.loading}
           style={{ minWidth: 180 }}
