@@ -41,6 +41,14 @@ type DesktopRouteCreateValue = Record<string, unknown> & {
   uiLayouts?: unknown;
 };
 
+type DesktopRouteLike = Record<string, unknown> & {
+  get?: (field: string) => unknown;
+  setDataValue?: (field: string, value: unknown) => void;
+  _options?: {
+    includeNames?: string[];
+  };
+};
+
 type UiLayoutRuntimeField = (typeof UI_LAYOUT_RUNTIME_FIELDS)[number];
 
 function getRequestedLayoutUid(layout: unknown) {
@@ -137,7 +145,7 @@ function getRouteValue(route: unknown, key: string) {
     return;
   }
 
-  const maybeModel = route as { get?: (field: string) => unknown };
+  const maybeModel = route as DesktopRouteLike;
   if (typeof maybeModel.get === 'function') {
     return maybeModel.get(key);
   }
@@ -145,11 +153,47 @@ function getRouteValue(route: unknown, key: string) {
   return (route as Record<string, unknown>)[key];
 }
 
+function getRouteId(route: unknown) {
+  const id = getRouteValue(route, 'id');
+  return id === null || id === undefined ? undefined : String(id);
+}
+
+function getRouteParentId(route: unknown) {
+  const parentId = getRouteValue(route, 'parentId');
+  return parentId === null || parentId === undefined ? undefined : String(parentId);
+}
+
+function setRouteChildren(route: unknown, children: unknown[] | undefined) {
+  if (!route || typeof route !== 'object') {
+    return;
+  }
+
+  const maybeModel = route as DesktopRouteLike;
+  if (typeof maybeModel.setDataValue === 'function') {
+    maybeModel.setDataValue('children', children);
+  } else {
+    maybeModel.children = children;
+  }
+
+  if (!maybeModel._options) {
+    return;
+  }
+
+  if (!maybeModel._options.includeNames) {
+    maybeModel._options.includeNames = ['children'];
+    return;
+  }
+
+  if (!maybeModel._options.includeNames.includes('children')) {
+    maybeModel._options.includeNames.push('children');
+  }
+}
+
 function collectRouteIds(routes: unknown[], ids: Set<string>) {
   for (const route of routes) {
-    const id = getRouteValue(route, 'id');
-    if (id !== null && id !== undefined) {
-      ids.add(String(id));
+    const id = getRouteId(route);
+    if (id) {
+      ids.add(id);
     }
 
     const children = getRouteValue(route, 'children');
@@ -168,8 +212,8 @@ function removeNestedRootRoutes(routes: unknown) {
   collectRouteIds(routes, routeIds);
 
   return routes.filter((route) => {
-    const parentId = getRouteValue(route, 'parentId');
-    return parentId === null || parentId === undefined || !routeIds.has(String(parentId));
+    const parentId = getRouteParentId(route);
+    return !parentId || !routeIds.has(parentId);
   });
 }
 
@@ -227,22 +271,104 @@ function removeInaccessibleRoute(route: unknown, allowedRouteIds: Set<string> | 
     return route;
   }
 
-  const id = getRouteValue(route, 'id');
-  if (id === null || id === undefined || !allowedRouteIds.has(String(id))) {
+  const id = getRouteId(route);
+  if (!id || !allowedRouteIds.has(id)) {
     return null;
   }
 
   return route;
 }
 
+function buildAccessibleRouteTreeWithAncestors(routes: unknown[], accessibleRouteIds: Set<string>) {
+  const routeById = new Map<string, unknown>();
+  const childrenByParentId = new Map<string, unknown[]>();
+  const roots: unknown[] = [];
+
+  for (const route of routes) {
+    const id = getRouteId(route);
+    if (!id) {
+      continue;
+    }
+
+    setRouteChildren(route, undefined);
+    routeById.set(id, route);
+  }
+
+  for (const route of routes) {
+    const id = getRouteId(route);
+    if (!id || !routeById.has(id)) {
+      continue;
+    }
+
+    const parentId = getRouteParentId(route);
+    if (!parentId || !routeById.has(parentId)) {
+      roots.push(route);
+      continue;
+    }
+
+    const children = childrenByParentId.get(parentId) ?? [];
+    children.push(route);
+    childrenByParentId.set(parentId, children);
+  }
+
+  const visitRoute = (route: unknown, visitingRouteIds: Set<string>): unknown | undefined => {
+    const id = getRouteId(route);
+    if (!id || visitingRouteIds.has(id)) {
+      return undefined;
+    }
+
+    visitingRouteIds.add(id);
+    const children = childrenByParentId.get(id) ?? [];
+    const visibleChildren = children
+      .map((child) => visitRoute(child, visitingRouteIds))
+      .filter((child): child is unknown => child !== undefined);
+    visitingRouteIds.delete(id);
+
+    if (!accessibleRouteIds.has(id) && visibleChildren.length === 0) {
+      return undefined;
+    }
+
+    setRouteChildren(route, visibleChildren.length > 0 ? visibleChildren : undefined);
+    return route;
+  };
+
+  return roots
+    .map((route) => visitRoute(route, new Set<string>()))
+    .filter((route): route is unknown => route !== undefined);
+}
+
+async function includeRouteAncestorsForListAccessible(
+  ctx: ResourcerContext,
+  routes: unknown,
+  layoutFilter: Record<string, unknown>,
+) {
+  if (!Array.isArray(routes) || getCurrentRoles(ctx).includes('root')) {
+    return routes;
+  }
+
+  const accessibleRouteIds = new Set<string>();
+  collectRouteIds(routes, accessibleRouteIds);
+  if (accessibleRouteIds.size === 0) {
+    return routes;
+  }
+
+  const layoutRoutes = await ctx.db.getRepository('desktopRoutes').find({
+    sort: 'sort',
+    filter: layoutFilter,
+  });
+
+  return buildAccessibleRouteTreeWithAncestors(layoutRoutes, accessibleRouteIds);
+}
+
 async function addDesktopRouteLayoutFilter(ctx: ResourcerContext, next: () => Promise<void>) {
+  const layoutFilter = await getDesktopRouteLayoutFilter(ctx);
   ctx.action?.mergeParams({
-    filter: await getDesktopRouteLayoutFilter(ctx),
+    filter: layoutFilter,
   });
 
   await next();
 
-  ctx.body = removeNestedRootRoutes(ctx.body);
+  ctx.body = removeNestedRootRoutes(await includeRouteAncestorsForListAccessible(ctx, ctx.body, layoutFilter));
 }
 
 async function addDesktopRouteGetLayoutFilter(ctx: ResourcerContext, next: () => Promise<void>) {

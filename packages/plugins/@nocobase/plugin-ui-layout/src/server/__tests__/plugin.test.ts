@@ -1025,6 +1025,211 @@ describe('plugin-ui-layout server', () => {
     expect(mobileTitles).not.toContain('DATA-ROLE-LAYOUT-MOBILE-DENIED');
   });
 
+  it('should include parent routes only as navigation ancestors for layout-scoped child access', async () => {
+    app = await createMockServer({
+      registerActions: true,
+      acl: true,
+      plugins: [
+        'error-handler',
+        'users',
+        'auth',
+        'client',
+        'field-sort',
+        'acl',
+        'ui-schema-storage',
+        'system-settings',
+        'data-source-main',
+        'data-source-manager',
+        'ui-layout',
+      ],
+    });
+
+    const adminLayout = await app.db.getRepository('uiLayouts').findOne({
+      filter: {
+        uid: DEFAULT_ADMIN_UI_LAYOUT.uid,
+      },
+    });
+    if (!adminLayout) {
+      throw new Error('Default AdminLayout ui layout should exist.');
+    }
+    const mobileLayout = await app.db.getRepository('uiLayouts').create({
+      values: {
+        uid: 'mobile-layout-tree-permission-test',
+        title: 'Mobile tree permission test',
+        layoutType: 'mobile',
+        routeName: 'mobile-tree-permission-test',
+        routePath: '/v/mobile-tree-permission-test',
+        authCheck: true,
+        enabled: true,
+      },
+    });
+    const role = await app.db.getRepository('roles').create({
+      values: {
+        name: 'layout-tree-permission-member',
+      },
+    });
+    const mobileParentRoute = await app.db.getRepository('desktopRoutes').create({
+      values: {
+        type: 'flowPage',
+        title: 'DATA-TREE-MOBILE-PARENT',
+        schemaUid: 'layout-tree-mobile-parent',
+        hidden: false,
+        sort: 10,
+      },
+    });
+    const mobileChildRoute = await app.db.getRepository('desktopRoutes').create({
+      values: {
+        type: 'flowPage',
+        title: 'DATA-TREE-MOBILE-CHILD',
+        schemaUid: 'layout-tree-mobile-child',
+        parentId: mobileParentRoute.get('id'),
+        hidden: false,
+        sort: 1,
+      },
+    });
+    const mobileHiddenTabRoute = await app.db.getRepository('desktopRoutes').create({
+      values: {
+        type: 'tabs',
+        title: 'DATA-TREE-MOBILE-HIDDEN-TAB',
+        parentId: mobileChildRoute.get('id'),
+        hidden: true,
+        sort: 1,
+      },
+    });
+    const adminParentRoute = await app.db.getRepository('desktopRoutes').create({
+      values: {
+        type: 'flowPage',
+        title: 'DATA-TREE-ADMIN-PARENT',
+        schemaUid: 'layout-tree-admin-parent',
+        hidden: false,
+        sort: 20,
+      },
+    });
+    const adminChildRoute = await app.db.getRepository('desktopRoutes').create({
+      values: {
+        type: 'flowPage',
+        title: 'DATA-TREE-ADMIN-CHILD',
+        schemaUid: 'layout-tree-admin-child',
+        parentId: adminParentRoute.get('id'),
+        hidden: false,
+        sort: 1,
+      },
+    });
+    const adminHiddenTabRoute = await app.db.getRepository('desktopRoutes').create({
+      values: {
+        type: 'tabs',
+        title: 'DATA-TREE-ADMIN-HIDDEN-TAB',
+        parentId: adminChildRoute.get('id'),
+        hidden: true,
+        sort: 1,
+      },
+    });
+
+    await app.db.getRepository('desktopRoutes.uiLayouts', mobileParentRoute.get('id')).set({
+      tk: [mobileLayout.get('uid')],
+    });
+    await app.db.getRepository('desktopRoutes.uiLayouts', mobileChildRoute.get('id')).set({
+      tk: [mobileLayout.get('uid')],
+    });
+    await app.db.getRepository('desktopRoutes.uiLayouts', mobileHiddenTabRoute.get('id')).set({
+      tk: [mobileLayout.get('uid')],
+    });
+    await app.db.getRepository('desktopRoutes.uiLayouts', adminParentRoute.get('id')).set({
+      tk: [adminLayout.get('uid')],
+    });
+    await app.db.getRepository('desktopRoutes.uiLayouts', adminChildRoute.get('id')).set({
+      tk: [adminLayout.get('uid')],
+    });
+    await app.db.getRepository('desktopRoutes.uiLayouts', adminHiddenTabRoute.get('id')).set({
+      tk: [adminLayout.get('uid')],
+    });
+
+    const rootUser = await app.db.getRepository('users').findOne({
+      filter: {
+        'roles.name': 'root',
+      },
+    });
+    const memberUser = await app.db.getRepository('users').create({
+      values: {
+        roles: [role.get('name')],
+      },
+    });
+    const rootAgent = await app.agent().login(rootUser);
+    const agent = await app.agent().login(memberUser);
+
+    await rootAgent.resource('roles.desktopRoutes', role.get('name')).add({
+      values: [mobileChildRoute.get('id')],
+    });
+
+    const [
+      mobileListResponse,
+      adminListResponse,
+      mobileParentGetResponse,
+      mobileChildGetResponse,
+      mobileHiddenTabGetResponse,
+    ] = await Promise.all([
+      agent.get('/desktopRoutes:listAccessible').query({
+        layout: mobileLayout.get('uid'),
+      }),
+      agent.get('/desktopRoutes:listAccessible').query({
+        layout: DEFAULT_ADMIN_UI_LAYOUT.uid,
+      }),
+      agent.get('/desktopRoutes:getAccessible').query({
+        filterByTk: mobileParentRoute.get('id'),
+        layout: mobileLayout.get('uid'),
+      }),
+      agent.get('/desktopRoutes:getAccessible').query({
+        filterByTk: mobileChildRoute.get('id'),
+        layout: mobileLayout.get('uid'),
+      }),
+      agent.get('/desktopRoutes:getAccessible').query({
+        filterByTk: mobileHiddenTabRoute.get('id'),
+        layout: mobileLayout.get('uid'),
+      }),
+    ]);
+
+    expect(mobileListResponse.status).toBe(200);
+    expect(adminListResponse.status).toBe(200);
+    expect([200, 204]).toContain(mobileParentGetResponse.status);
+    expect(mobileChildGetResponse.status).toBe(200);
+    expect(mobileHiddenTabGetResponse.status).toBe(200);
+    expect(mobileListResponse.body.data).toHaveLength(1);
+    expect(mobileListResponse.body.data[0].title).toBe('DATA-TREE-MOBILE-PARENT');
+    expect(mobileListResponse.body.data[0].children.map((route) => route.title)).toEqual(['DATA-TREE-MOBILE-CHILD']);
+    expect(mobileListResponse.body.data[0].children[0].children.map((route) => route.title)).toEqual([
+      'DATA-TREE-MOBILE-HIDDEN-TAB',
+    ]);
+    expect(adminListResponse.body.data).toEqual([]);
+    expect(mobileParentGetResponse.body.data ?? null).toBeNull();
+    expect(mobileChildGetResponse.body.data.title).toBe('DATA-TREE-MOBILE-CHILD');
+    expect(mobileHiddenTabGetResponse.body.data.title).toBe('DATA-TREE-MOBILE-HIDDEN-TAB');
+
+    await rootAgent.resource('roles.desktopRoutes', role.get('name')).remove({
+      values: [mobileChildRoute.get('id')],
+    });
+
+    const [mobileListAfterRemoveResponse, adminListAfterRemoveResponse, mobileHiddenTabAfterRemoveResponse] =
+      await Promise.all([
+        agent.get('/desktopRoutes:listAccessible').query({
+          layout: mobileLayout.get('uid'),
+        }),
+        agent.get('/desktopRoutes:listAccessible').query({
+          layout: DEFAULT_ADMIN_UI_LAYOUT.uid,
+        }),
+        agent.get('/desktopRoutes:getAccessible').query({
+          filterByTk: mobileHiddenTabRoute.get('id'),
+          layout: mobileLayout.get('uid'),
+        }),
+      ]);
+
+    expect(mobileListAfterRemoveResponse.status).toBe(200);
+    expect(adminListAfterRemoveResponse.status).toBe(200);
+    expect([200, 204]).toContain(mobileHiddenTabAfterRemoveResponse.status);
+    expect(mobileListAfterRemoveResponse.body.data).toEqual([]);
+    expect(adminListAfterRemoveResponse.body.data).toEqual([]);
+    expect(mobileHiddenTabAfterRemoveResponse.body.data ?? null).toBeNull();
+  });
+
   it('should apply layout filtering to getAccessible route lookup', async () => {
     app = await createMockServer({
       registerActions: true,
