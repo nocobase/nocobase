@@ -77,12 +77,8 @@ export function toUiLayoutRegisterOptions(record: UiLayoutRuntimeRecord): Layout
 
 export async function fetchUiLayouts(apiClient: UiLayoutRegistrationApp['apiClient']) {
   const response = await apiClient.request<UiLayoutListBody>({
-    url: 'uiLayouts:list',
+    url: 'uiLayouts:listAccessible',
     method: 'get',
-    params: {
-      paginate: false,
-      sort: ['id'],
-    },
     skipNotify: true,
   });
   const records = response?.data?.data;

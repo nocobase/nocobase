@@ -18,10 +18,30 @@ const EMPTY_DESKTOP_ROUTE_FILTER = {
   },
 };
 
+const UI_LAYOUT_RUNTIME_FIELDS = [
+  'uid',
+  'title',
+  'layoutType',
+  'routeName',
+  'routePath',
+  'authCheck',
+  'enabled',
+] as const;
+
+const UI_LAYOUT_MANAGEMENT_ACTIONS = [
+  'uiLayouts:list',
+  'uiLayouts:get',
+  'uiLayouts:create',
+  'uiLayouts:update',
+  'uiLayouts:destroy',
+];
+
 type DesktopRouteCreateValue = Record<string, unknown> & {
   children?: unknown;
   uiLayouts?: unknown;
 };
+
+type UiLayoutRuntimeField = (typeof UI_LAYOUT_RUNTIME_FIELDS)[number];
 
 function getRequestedLayoutUid(layout: unknown) {
   const uid = Array.isArray(layout) ? layout[0] : layout;
@@ -242,12 +262,40 @@ async function addDesktopRouteGetLayoutFilter(ctx: ResourcerContext, next: () =>
   ctx.body = route;
 }
 
+function pickUiLayoutRuntimeFields(record: { get: (field: string) => unknown }) {
+  const result = {} as Record<UiLayoutRuntimeField, unknown>;
+  for (const field of UI_LAYOUT_RUNTIME_FIELDS) {
+    result[field] = record.get(field);
+  }
+  return result;
+}
+
+async function listAccessibleUiLayouts(ctx: ResourcerContext, next: () => Promise<void>) {
+  const records = await ctx.db.getRepository('uiLayouts').find({
+    filter: {
+      enabled: true,
+    },
+    fields: [...UI_LAYOUT_RUNTIME_FIELDS],
+    sort: ['id'],
+  });
+
+  ctx.body = records.map((record) => pickUiLayoutRuntimeFields(record));
+  await next();
+}
+
 export class PluginUiLayoutServer extends Plugin {
   async afterAdd() {}
 
   async beforeLoad() {}
 
   async load() {
+    this.app.acl.registerSnippet({
+      name: 'pm.ui-layout',
+      actions: UI_LAYOUT_MANAGEMENT_ACTIONS,
+    });
+    this.app.acl.allow('uiLayouts', 'listAccessible', 'loggedIn');
+
+    this.app.resourceManager.registerActionHandler('uiLayouts:listAccessible', listAccessibleUiLayouts);
     this.app.resourceManager.registerPreActionHandler('desktopRoutes:create', addDesktopRouteCreateLayout);
     this.app.resourceManager.registerPreActionHandler('desktopRoutes:listAccessible', addDesktopRouteLayoutFilter);
     this.app.resourceManager.registerPreActionHandler('desktopRoutes:getAccessible', addDesktopRouteGetLayoutFilter);

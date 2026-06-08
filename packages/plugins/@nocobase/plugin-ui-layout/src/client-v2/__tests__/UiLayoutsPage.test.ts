@@ -7,9 +7,12 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { describe, expect, it, vi } from 'vitest';
+import { App as AntdApp } from 'antd';
+import { cleanup, render, waitFor } from '@testing-library/react';
+import React from 'react';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { DEFAULT_ADMIN_UI_LAYOUT } from '../../constants';
-import {
+import UiLayoutsPage, {
   completeUiLayoutFormValues,
   createUiLayout,
   deleteUiLayouts,
@@ -24,6 +27,35 @@ import {
   updateUiLayoutEnabled,
   updateUiLayout,
 } from '../pages/UiLayoutsPage';
+
+const flowContext = vi.hoisted(() => ({
+  current: undefined as
+    | {
+        api: {
+          request: ReturnType<typeof vi.fn>;
+          resource: ReturnType<typeof vi.fn>;
+        };
+        app: Record<string, unknown>;
+        viewer: {
+          drawer: ReturnType<typeof vi.fn>;
+        };
+      }
+    | undefined,
+}));
+
+vi.mock('@nocobase/flow-engine', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@nocobase/flow-engine')>();
+  return {
+    ...actual,
+    randomId: () => 'random-id',
+    useFlowEngine: () => ({
+      context: {
+        t: (key: string) => key,
+      },
+    }),
+    useFlowContext: () => flowContext.current,
+  };
+});
 
 const formValues: UiLayoutFormValues = {
   title: 'Operations layout',
@@ -48,6 +80,11 @@ function makeResource(overrides: Partial<UiLayoutResource> = {}): UiLayoutResour
     ...overrides,
   };
 }
+
+afterEach(() => {
+  cleanup();
+  flowContext.current = undefined;
+});
 
 describe('plugin-ui-layout submit pipeline', () => {
   it('should fire resource.create with the form values', async () => {
@@ -143,6 +180,40 @@ describe('plugin-ui-layout submit pipeline', () => {
 
     await expect(deleteUiLayouts({ resource, filterByTk: 1, onDeleted })).rejects.toThrow(/delete failed/);
     expect(onDeleted).not.toHaveBeenCalled();
+  });
+});
+
+describe('plugin-ui-layout settings page', () => {
+  it('should keep using uiLayouts:list as the management list API', async () => {
+    const request = vi.fn().mockResolvedValue({
+      data: {
+        data: [],
+      },
+    });
+    flowContext.current = {
+      api: {
+        request,
+        resource: vi.fn(() => makeResource()),
+      },
+      app: {},
+      viewer: {
+        drawer: vi.fn(),
+      },
+    };
+
+    render(React.createElement(AntdApp, null, React.createElement(UiLayoutsPage)));
+
+    await waitFor(() => {
+      expect(request).toHaveBeenCalledWith({
+        url: 'uiLayouts:list',
+        method: 'get',
+        params: {
+          pageSize: 20,
+          sort: ['id'],
+        },
+        skipNotify: true,
+      });
+    });
   });
 });
 

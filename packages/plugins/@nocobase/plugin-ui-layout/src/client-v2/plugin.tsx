@@ -45,12 +45,14 @@ export class PluginUiLayoutClientV2 extends Plugin<Record<string, never>, Applic
       key: 'ui-layout',
       title,
       icon: 'LayoutOutlined',
+      aclSnippet: 'pm.ui-layout',
     });
 
     this.pluginSettingsManager.addPageTabItem({
       menuKey: 'ui-layout',
       key: 'index',
       title,
+      aclSnippet: 'pm.ui-layout',
       componentLoader: () => import('./pages/UiLayoutsPage'),
     });
 

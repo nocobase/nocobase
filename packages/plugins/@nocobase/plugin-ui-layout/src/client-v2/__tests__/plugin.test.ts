@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import type { Application } from '@nocobase/client-v2';
+import { createMockClient, type Application } from '@nocobase/client-v2';
 import { describe, expect, it, vi } from 'vitest';
 import { UI_LAYOUT_TYPE_DESKTOP } from '../../constants';
 
@@ -58,13 +58,21 @@ describe('PluginUiLayoutClientV2', () => {
       key: 'ui-layout',
       title: 'UI layout',
       icon: 'LayoutOutlined',
+      aclSnippet: 'pm.ui-layout',
     });
     expect(app.pluginSettingsManager.addPageTabItem).toHaveBeenCalledWith({
       menuKey: 'ui-layout',
       key: 'index',
       title: 'UI layout',
+      aclSnippet: 'pm.ui-layout',
       componentLoader: expect.any(Function),
     });
+    const settingsApp = createMockClient();
+    settingsApp.pluginSettingsManager.addMenuItem(app.pluginSettingsManager.addMenuItem.mock.calls[0][0]);
+    settingsApp.pluginSettingsManager.addPageTabItem(app.pluginSettingsManager.addPageTabItem.mock.calls[0][0]);
+    settingsApp.pluginSettingsManager.setAclSnippets(['pm.*', '!pm.ui-layout']);
+    expect(settingsApp.pluginSettingsManager.get('ui-layout')).toBeNull();
+    expect(settingsApp.pluginSettingsManager.get('ui-layout.index')).toBeNull();
     expect(app.flowEngine.registerModelLoaders).toHaveBeenCalledWith({
       MobileLayoutModel: {
         loader: expect.any(Function),
@@ -88,12 +96,8 @@ describe('PluginUiLayoutClientV2', () => {
     const registeredFlowSettingsComponents = app.flowEngine.flowSettings.registerComponents.mock.calls[0]?.[0];
     expect(registeredFlowSettingsComponents?.MobileMenuSettingsIconPicker).toBeDefined();
     expect(app.apiClient.request).toHaveBeenCalledWith({
-      url: 'uiLayouts:list',
+      url: 'uiLayouts:listAccessible',
       method: 'get',
-      params: {
-        paginate: false,
-        sort: ['id'],
-      },
       skipNotify: true,
     });
     expect(app.layoutManager.registerLayout).toHaveBeenCalledWith({

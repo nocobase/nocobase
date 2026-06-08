@@ -12,6 +12,36 @@ import { DEFAULT_ADMIN_UI_LAYOUT } from '../../constants';
 import { ensureDefaultUiLayout } from '../ensureDefaultUiLayout';
 import type { PluginUiLayoutServer } from '../plugin';
 
+const UI_LAYOUT_MANAGEMENT_ACTIONS = [
+  'uiLayouts:list',
+  'uiLayouts:get',
+  'uiLayouts:create',
+  'uiLayouts:update',
+  'uiLayouts:destroy',
+];
+
+const UI_LAYOUT_RUNTIME_FIELDS = ['uid', 'title', 'layoutType', 'routeName', 'routePath', 'authCheck', 'enabled'];
+
+async function createUiLayoutMockServer() {
+  return createMockServer({
+    registerActions: true,
+    acl: true,
+    plugins: [
+      'error-handler',
+      'users',
+      'auth',
+      'client',
+      'field-sort',
+      'acl',
+      'ui-schema-storage',
+      'system-settings',
+      'data-source-main',
+      'data-source-manager',
+      'ui-layout',
+    ],
+  });
+}
+
 describe('plugin-ui-layout server', () => {
   let app: MockServer | undefined;
 
@@ -91,6 +121,227 @@ describe('plugin-ui-layout server', () => {
 
     expect(updatedAdminLayout?.get('title')).toBe(DEFAULT_ADMIN_UI_LAYOUT.title);
     expect(updatedMobileLayout?.get('title')).toBe('Mobile layout');
+  });
+
+  it('should expose uiLayouts:listAccessible to logged-in users only', async () => {
+    app = await createUiLayoutMockServer();
+
+    const role = await app.db.getRepository('roles').create({
+      values: {
+        name: 'runtime-layout-reader',
+      },
+    });
+    const user = await app.db.getRepository('users').create({
+      values: {
+        roles: [role.get('name')],
+      },
+    });
+    const agent = await app.agent().login(user);
+
+    const [guestResponse, userResponse] = await Promise.all([
+      app.agent().get('/uiLayouts:listAccessible'),
+      agent.get('/uiLayouts:listAccessible'),
+    ]);
+
+    expect(guestResponse.status).toBe(401);
+    expect(userResponse.status).toBe(200);
+  });
+
+  it('should return only enabled uiLayouts with runtime fields in id ascending order', async () => {
+    app = await createUiLayoutMockServer();
+
+    const repository = app.db.getRepository('uiLayouts');
+    await repository.destroy({
+      truncate: true,
+    });
+    await repository.create({
+      values: {
+        uid: 'runtime-layout-enabled-a',
+        title: 'Runtime layout A',
+        layoutType: 'desktop',
+        routeName: 'runtimeLayoutA',
+        routePath: '/runtime-layout-a',
+        authCheck: true,
+        enabled: true,
+      },
+    });
+    await repository.create({
+      values: {
+        uid: 'runtime-layout-disabled',
+        title: 'Runtime layout disabled',
+        layoutType: 'mobile',
+        routeName: 'runtimeLayoutDisabled',
+        routePath: '/runtime-layout-disabled',
+        authCheck: true,
+        enabled: false,
+      },
+    });
+    await repository.create({
+      values: {
+        uid: 'runtime-layout-enabled-b',
+        title: 'Runtime layout B',
+        layoutType: 'mobile',
+        routeName: 'runtimeLayoutB',
+        routePath: '/runtime-layout-b',
+        authCheck: false,
+        enabled: true,
+      },
+    });
+    const role = await app.db.getRepository('roles').create({
+      values: {
+        name: 'runtime-layout-fields-reader',
+      },
+    });
+    const user = await app.db.getRepository('users').create({
+      values: {
+        roles: [role.get('name')],
+      },
+    });
+    const agent = await app.agent().login(user);
+
+    const response = await agent.get('/uiLayouts:listAccessible').query({
+      filter: {
+        enabled: false,
+      },
+      fields: ['id', 'uid'],
+      appends: ['desktopRoutes'],
+      pageSize: 1,
+      sort: ['-id'],
+    });
+
+    expect(response.status).toBe(200);
+    expect(response.body.data.map((layout) => layout.uid)).toEqual([
+      'runtime-layout-enabled-a',
+      'runtime-layout-enabled-b',
+    ]);
+    expect(response.body.data).toHaveLength(2);
+    expect(response.body.data.every((layout) => layout.enabled === true)).toBe(true);
+    expect(Object.keys(response.body.data[0]).sort()).toEqual([...UI_LAYOUT_RUNTIME_FIELDS].sort());
+  });
+
+  it('should register the pm.ui-layout ACL snippet with management actions only', async () => {
+    app = await createUiLayoutMockServer();
+
+    const snippet = app.acl.snippetManager.snippets.get('pm.ui-layout');
+
+    expect(snippet).toBeDefined();
+    expect(snippet?.actions.sort()).toEqual([...UI_LAYOUT_MANAGEMENT_ACTIONS].sort());
+    expect(snippet?.actions).not.toContain('uiLayouts:listAccessible');
+  });
+
+  it('should keep uiLayouts management actions behind plugin configuration snippets', async () => {
+    app = await createUiLayoutMockServer();
+
+    const repository = app.db.getRepository('uiLayouts');
+    const deniedLayout = await repository.create({
+      values: {
+        uid: 'management-denied-layout',
+        title: 'Management denied layout',
+        layoutType: 'mobile',
+        routeName: 'managementDeniedLayout',
+        routePath: '/management-denied-layout',
+        authCheck: true,
+        enabled: true,
+      },
+    });
+    await app.db.getRepository('roles').create({
+      values: {
+        name: 'ui-layout-no-snippet',
+      },
+    });
+    await app.db.getRepository('roles').create({
+      values: {
+        name: 'ui-layout-pm-all',
+        snippets: ['pm.*'],
+      },
+    });
+    await app.db.getRepository('roles').create({
+      values: {
+        name: 'ui-layout-negated',
+        snippets: ['pm.*', '!pm.ui-layout'],
+      },
+    });
+    const noSnippetUser = await app.db.getRepository('users').create({
+      values: {
+        roles: ['ui-layout-no-snippet'],
+      },
+    });
+    const pmAllUser = await app.db.getRepository('users').create({
+      values: {
+        roles: ['ui-layout-pm-all'],
+      },
+    });
+    const negatedUser = await app.db.getRepository('users').create({
+      values: {
+        roles: ['ui-layout-negated'],
+      },
+    });
+    const noSnippetAgent = await app.agent().login(noSnippetUser);
+    const pmAllAgent = await app.agent().login(pmAllUser);
+    const negatedAgent = await app.agent().login(negatedUser);
+
+    expect((await noSnippetAgent.resource('uiLayouts').list()).status).toBe(403);
+
+    const createResponse = await pmAllAgent.resource('uiLayouts').create({
+      values: {
+        uid: 'management-allowed-layout',
+        title: 'Management allowed layout',
+        layoutType: 'mobile',
+        routeName: 'managementAllowedLayout',
+        routePath: '/management-allowed-layout',
+        authCheck: true,
+        enabled: true,
+      },
+    });
+    expect(createResponse.status).toBe(200);
+    const createdLayoutId = createResponse.body.data.id;
+    const managementResponses = [
+      await pmAllAgent.resource('uiLayouts').list(),
+      await pmAllAgent.resource('uiLayouts').get({
+        filterByTk: createdLayoutId,
+      }),
+      createResponse,
+      await pmAllAgent.resource('uiLayouts').update({
+        filterByTk: createdLayoutId,
+        values: {
+          title: 'Management allowed layout updated',
+        },
+      }),
+      await pmAllAgent.resource('uiLayouts').destroy({
+        filterByTk: createdLayoutId,
+      }),
+    ];
+
+    expect(managementResponses.map((response) => response.status)).toEqual([200, 200, 200, 200, 200]);
+
+    const negatedResponses = await Promise.all([
+      negatedAgent.resource('uiLayouts').list(),
+      negatedAgent.resource('uiLayouts').get({
+        filterByTk: deniedLayout.get('id'),
+      }),
+      negatedAgent.resource('uiLayouts').create({
+        values: {
+          uid: 'management-negated-layout',
+          title: 'Management negated layout',
+          layoutType: 'mobile',
+          routeName: 'managementNegatedLayout',
+          routePath: '/management-negated-layout',
+          authCheck: true,
+          enabled: true,
+        },
+      }),
+      negatedAgent.resource('uiLayouts').update({
+        filterByTk: deniedLayout.get('id'),
+        values: {
+          title: 'Management denied layout updated',
+        },
+      }),
+      negatedAgent.resource('uiLayouts').destroy({
+        filterByTk: deniedLayout.get('id'),
+      }),
+    ]);
+
+    expect(negatedResponses.map((response) => response.status)).toEqual([403, 403, 403, 403, 403]);
   });
 
   it('should associate desktop routes with ui layouts by uid without breaking existing relations', async () => {
