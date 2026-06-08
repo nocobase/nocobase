@@ -60,6 +60,28 @@ function toActionValue(map: Record<string, RoleResourceAction>) {
   }));
 }
 
+function createActionWithDefaultFields(actionName: string, collectionFields: CollectionFieldRecord[]) {
+  return {
+    name: actionName,
+    fields: collectionFields.map((field) => field.name),
+  };
+}
+
+export function applyActionScope(
+  actionMap: Record<string, RoleResourceAction>,
+  actionName: string,
+  scope: unknown,
+  collectionFields: CollectionFieldRecord[],
+) {
+  return {
+    ...actionMap,
+    [actionName]: {
+      ...(actionMap[actionName] || createActionWithDefaultFields(actionName, collectionFields)),
+      scope,
+    },
+  };
+}
+
 function actionTypeTag(t: TFunction, onNewRecord?: boolean) {
   return onNewRecord ? (
     <Tag color="green">{t('Action on new records')}</Tag>
@@ -228,12 +250,7 @@ export function RoleResourceActionsEditor(props: RoleResourceActionsEditorProps)
   });
 
   const setScope = useMemoizedFn((actionName: string, scope: unknown) => {
-    const next = { ...actionMap };
-    next[actionName] = {
-      ...(next[actionName] || { name: actionName }),
-      scope,
-    };
-    emitChange(next);
+    emitChange(applyActionScope(actionMap, actionName, scope, collectionFields));
   });
 
   const actionRows = useMemo(

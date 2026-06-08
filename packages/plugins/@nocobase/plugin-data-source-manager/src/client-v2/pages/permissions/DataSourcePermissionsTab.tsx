@@ -10,7 +10,6 @@
 import { css, cx } from '@emotion/css';
 import {
   CollectionFilter,
-  DEFAULT_PAGE_SIZE,
   DrawerFormLayout,
   ExtendCollectionsProvider,
   Table,
@@ -22,16 +21,19 @@ import type { PermissionTabProps } from '@nocobase/plugin-acl/client-v2';
 import { useMemoizedFn, useRequest } from 'ahooks';
 import { Alert, App, Empty, Form, Radio, Tabs, Tag, Typography, theme } from 'antd';
 import type { ColumnsType, TablePaginationConfig } from 'antd/es/table';
-import React, { useMemo, useState } from 'react';
+import React, { lazy, Suspense, useMemo, useRef, useState } from 'react';
 import { compileLegacyTemplate } from '../../utils/compileLegacyTemplate';
 import { StrategyActionsEditor, RoleResourceActionsEditor } from './PermissionEditors';
 import { saveRoleResourcePermissions, updateGeneralActionPermissions } from './permissionRequests';
 import { ScopeSelect } from './ScopeSelect';
-import type { AvailableAction, DataSourceRecord, RoleCollectionRecord, RoleResourceAction } from './types';
+import type { AvailableAction, DataSourceRecord, RoleCollectionRecord } from './types';
 import { NAMESPACE } from '../../locale';
+import PluginDataSourceManagerClientV2 from '../../plugin';
+import type { ComponentLoader, DataSourcePermissionTabProps } from '../../registries';
 
 const ROLE_COLLECTIONS_FILTER_COLLECTION_NAME = 'dataSourcePermissionCollectionsFilter';
 const COLLECTION_ACTION_PERMISSION_PAGE_SIZE = 20;
+const DATA_SOURCE_PERMISSION_PAGE_SIZE = 50;
 
 const ROLE_COLLECTIONS_FILTER_COLLECTION: CollectionOptions = {
   name: ROLE_COLLECTIONS_FILTER_COLLECTION_NAME,
@@ -110,6 +112,23 @@ function getCollection(ctx: ReturnType<typeof useFlowContext>, dataSourceKey: st
   return ctx.dataSourceManager.getDataSource(dataSourceKey)?.getCollection(collectionName) as Collection | undefined;
 }
 
+function getStableLazyComponent<Props>(
+  cache: Map<
+    string,
+    { loader: ComponentLoader<Props>; Component: React.LazyExoticComponent<React.ComponentType<Props>> }
+  >,
+  key: string,
+  loader: ComponentLoader<Props>,
+) {
+  const cached = cache.get(key);
+  if (cached?.loader === loader) {
+    return cached.Component;
+  }
+  const Component = lazy(loader);
+  cache.set(key, { loader, Component });
+  return Component;
+}
+
 interface GeneralActionPermissionsProps {
   activeRole: PermissionTabProps['activeRole'];
   availableActions: AvailableAction[];
@@ -118,6 +137,7 @@ interface GeneralActionPermissionsProps {
 }
 
 function GeneralActionPermissions(props: GeneralActionPermissionsProps) {
+  const { token } = theme.useToken();
   const ctx = useFlowContext();
   const { message } = App.useApp();
   const [actions, setActions] = useState<string[]>([]);
@@ -164,6 +184,11 @@ function GeneralActionPermissions(props: GeneralActionPermissionsProps) {
         width: 100%;
       `}
     >
+      <Typography.Paragraph type="secondary" style={{ marginBottom: token.marginSM }}>
+        {props.t(
+          'All collections use general action permissions by default; permission configured individually will override the default one.',
+        )}
+      </Typography.Paragraph>
       <StrategyActionsEditor
         value={actions}
         onChange={handleChange}
@@ -462,36 +487,91 @@ interface DataSourcePermissionDrawerProps {
 }
 
 function DataSourcePermissionDrawer(props: DataSourcePermissionDrawerProps) {
+  const { activeRole, availableActions, dataSource, t } = props;
+  const ctx = useFlowContext();
+  const permissionTabComponentCache = useRef(
+    new Map<
+      string,
+      {
+        loader: ComponentLoader<DataSourcePermissionTabProps>;
+        Component: React.LazyExoticComponent<React.ComponentType<DataSourcePermissionTabProps>>;
+      }
+    >(),
+  );
+  const plugin = ctx.app.pm.get(PluginDataSourceManagerClientV2) as PluginDataSourceManagerClientV2 | undefined;
+  const tabProps = useMemo<DataSourcePermissionTabProps>(
+    () => ({
+      activeRole,
+      availableActions,
+      dataSource,
+      t,
+    }),
+    [activeRole, availableActions, dataSource, t],
+  );
+  const extraTabs = useMemo(
+    () =>
+      plugin?.getPermissionTabs(tabProps).map((item) => ({
+        key: item.key,
+        label: item.label,
+        sort: item.sort ?? 100,
+        Component: getStableLazyComponent(permissionTabComponentCache.current, item.key, item.componentLoader),
+      })) || [],
+    [plugin, tabProps],
+  );
+  const tabItems = useMemo(() => {
+    const items = new Map<
+      string,
+      {
+        key: string;
+        label: React.ReactNode;
+        sort: number;
+        children: React.ReactNode;
+      }
+    >();
+    [
+      {
+        key: 'general',
+        label: t('General action permissions'),
+        sort: 10,
+        children: (
+          <GeneralActionPermissions
+            activeRole={activeRole}
+            availableActions={availableActions}
+            dataSource={dataSource}
+            t={t}
+          />
+        ),
+      },
+      {
+        key: 'actions',
+        label: t('Action permissions'),
+        sort: 20,
+        children: (
+          <CollectionActionPermissions
+            activeRole={activeRole}
+            availableActions={availableActions}
+            dataSource={dataSource}
+            t={t}
+          />
+        ),
+      },
+      ...extraTabs.map(({ Component, ...item }) => ({
+        ...item,
+        children: (
+          <Suspense fallback={null}>
+            <Component {...tabProps} />
+          </Suspense>
+        ),
+      })),
+    ].forEach((item) => {
+      items.set(item.key, item);
+    });
+    return Array.from(items.values()).sort((a, b) => a.sort - b.sort);
+  }, [activeRole, availableActions, dataSource, extraTabs, t, tabProps]);
+
   return (
-    <DrawerFormLayout title={props.t('Configure permission')} footer={<></>}>
-      <Tabs
-        items={[
-          {
-            key: 'general',
-            label: props.t('General action permissions'),
-            children: (
-              <GeneralActionPermissions
-                activeRole={props.activeRole}
-                availableActions={props.availableActions}
-                dataSource={props.dataSource}
-                t={props.t}
-              />
-            ),
-          },
-          {
-            key: 'actions',
-            label: props.t('Action permissions'),
-            children: (
-              <CollectionActionPermissions
-                activeRole={props.activeRole}
-                availableActions={props.availableActions}
-                dataSource={props.dataSource}
-                t={props.t}
-              />
-            ),
-          },
-        ]}
-      />
+    <DrawerFormLayout title={t('Configure permission')} footer={<></>}>
+      <Tabs items={tabItems} />
     </DrawerFormLayout>
   );
 }
@@ -505,7 +585,7 @@ export default function DataSourcePermissionsTab(props: PermissionTabProps) {
   );
   const tableFillClassName = useTableFillClassName();
   const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
+  const [pageSize, setPageSize] = useState(DATA_SOURCE_PERMISSION_PAGE_SIZE);
 
   const availableActionsRequest = useRequest(async () => {
     const response = await ctx.api.resource('availableActions').list();

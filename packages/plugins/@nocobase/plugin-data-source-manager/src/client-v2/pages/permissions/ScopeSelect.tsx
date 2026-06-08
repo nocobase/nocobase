@@ -11,6 +11,7 @@ import { CollectionFilterPanel, DrawerFormLayout, Table, type CollectionFilterPa
 import type { Collection } from '@nocobase/flow-engine';
 import { useFlowContext } from '@nocobase/flow-engine';
 import { PlusOutlined } from '@ant-design/icons';
+import { css } from '@emotion/css';
 import { useMemoizedFn, useRequest } from 'ahooks';
 import { App, Button, Form, Input, Select, Space, theme, Tooltip } from 'antd';
 import type { ColumnsType, TablePaginationConfig } from 'antd/es/table';
@@ -22,6 +23,7 @@ import type { ScopeRecord } from './types';
 type TFunction = (key: string, options?: Record<string, unknown>) => string;
 
 const DATA_SCOPE_PAGE_SIZE = 20;
+const DATA_SCOPE_DRAWER_WIDTH = '50%';
 
 function normalizeListResponse(response: any) {
   const payload = response?.data?.data;
@@ -44,6 +46,68 @@ function getScopeValueKey(value: unknown) {
 
 function isReadonlyScope(record?: ScopeRecord) {
   return record?.key === 'all' || record?.key === 'own';
+}
+
+function useDrawerTableLayoutStyles() {
+  const { token } = theme.useToken();
+  const contentClassName = useMemo(
+    () => css`
+      height: 100%;
+      flex: 1;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    `,
+    [],
+  );
+  const toolbarClassName = useMemo(
+    () => css`
+      flex: 0 0 auto;
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      gap: ${token.marginSM}px;
+      flex-wrap: wrap;
+      margin-bottom: ${token.marginSM}px;
+    `,
+    [token.marginSM],
+  );
+  const tableClassName = useMemo(
+    () => css`
+      flex: 1;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+
+      .ant-spin-nested-loading,
+      .ant-spin-container,
+      .ant-table,
+      .ant-table-container {
+        min-height: 0;
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+      }
+
+      .ant-table-content,
+      .ant-table-body {
+        flex: 1;
+        min-height: 0;
+      }
+
+      .ant-table-thead > tr > th {
+        white-space: nowrap;
+      }
+
+      .ant-pagination {
+        flex: 0 0 auto;
+      }
+    `,
+    [],
+  );
+
+  return { contentClassName, tableClassName, toolbarClassName };
 }
 
 function getScopeRecord(value: unknown) {
@@ -152,10 +216,11 @@ function ScopePicker(props: ScopePickerProps) {
     (props.value && typeof props.value === 'object' && String(getScopeValueKey(props.value)) === String(selectedRowKey)
       ? (props.value as ScopeRecord)
       : undefined);
+  const { contentClassName, tableClassName, toolbarClassName } = useDrawerTableLayoutStyles();
 
   const openScopeForm = useMemoizedFn((record?: ScopeRecord) => {
     ctx.viewer.drawer({
-      width: token.screenMD,
+      width: DATA_SCOPE_DRAWER_WIDTH,
       closable: true,
       content: () => (
         <ScopeForm
@@ -268,8 +333,8 @@ function ScopePicker(props: ScopePickerProps) {
         </Space>
       }
     >
-      <Space direction="vertical" size={token.margin} style={{ width: '100%' }}>
-        <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+      <div className={contentClassName}>
+        <div className={toolbarClassName}>
           <Button type="primary" icon={<PlusOutlined />} onClick={() => openScopeForm()}>
             {props.t('Add new')}
           </Button>
@@ -281,14 +346,15 @@ function ScopePicker(props: ScopePickerProps) {
           dataSource={records}
           columns={columns}
           pagination={pagination}
-          scroll={{ x: 'max-content' }}
+          scroll={{ x: 'max-content', y: '100%' }}
+          className={tableClassName}
           rowSelection={{
             type: 'radio',
             selectedRowKeys: selectedRowKey == null ? [] : [selectedRowKey],
             onChange: (keys) => setSelectedRowKey(keys[0]),
           }}
         />
-      </Space>
+      </div>
     </DrawerFormLayout>
   );
 }
@@ -338,8 +404,15 @@ export function ScopeSelect(props: ScopeSelectProps) {
 
   const openPicker = useMemoizedFn(() => {
     ctx.viewer.drawer({
-      width: token.screenLG,
+      width: DATA_SCOPE_DRAWER_WIDTH,
       closable: true,
+      styles: {
+        body: {
+          display: 'flex',
+          flexDirection: 'column',
+          overflow: 'hidden',
+        },
+      },
       content: ({ close }) => <ScopePicker {...props} value={selectedRecord || props.value} onClose={close} />,
     });
   });
