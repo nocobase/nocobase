@@ -183,7 +183,7 @@ describe('data source with acl', () => {
     });
 
     expect(response.status).toBe(200);
-    expect(response.body.rows.map((item) => item.name)).toEqual(['posts']);
+    expect(response.body.data.map((item) => item.name)).toEqual(['posts']);
   });
 
   it('should set main data source strategy', async () => {
