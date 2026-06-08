@@ -23,6 +23,7 @@ import { TokenController } from './token-controller';
 
 export class PluginAuthServer extends Plugin {
   cache: Cache;
+  storer: Storer;
 
   afterAdd() {
     this.app.on('afterLoad', async () => {
@@ -65,6 +66,7 @@ export class PluginAuthServer extends Plugin {
       cache: this.cache,
       authManager: this.app.authManager,
     });
+    this.storer = storer;
     this.app.authManager.setStorer(storer);
 
     if (!this.app.authManager.jwt.blacklist) {

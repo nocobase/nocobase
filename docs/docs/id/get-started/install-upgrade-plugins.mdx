@@ -1,47 +1,47 @@
 ---
-title: "Instalasi dan Upgrade Plugin"
-description: "Mulai cepat NocoBase: Instalasi dan upgrade Plugin"
-keywords: "install,upgrade,plugins,NocoBase"
+title: 'Menginstal dan meningkatkan plugin'
+description: 'Mulai cepat NocoBase: menginstal dan meningkatkan plugin'
+keywords: 'install,upgrade,plugins,NocoBase'
 ---
 
-# Instalasi dan Upgrade Plugin
+# Menginstal dan meningkatkan plugin
 
-## Plugin Bawaan
+## Plugin bawaan
 
-Plugin bawaan NocoBase akan diperbarui secara otomatis bersama dengan versi kernel, tidak perlu operasi manual.
+Plugin bawaan NocoBase akan diperbarui secara otomatis mengikuti versi inti, tanpa perlu tindakan manual.
 
-## Plugin Komersial
+## Plugin komersial
 
-Untuk metode instalasi dan upgrade detail, silakan lihat: [Panduan Aktivasi Plugin Komersial](https://www.nocobase.com/cn/blog/nocobase-commercial-license-activation-guide)
+Untuk metode aktivasi dan peningkatan yang lebih rinci, silakan lihat: [Aktivasi dan peningkatan plugin komersial](../api/cli/license/index.md)
 
-## Plugin Pihak Ketiga
+## Plugin pihak ketiga
 
-### Instalasi Plugin Melalui Command Line
+### Menginstal plugin melalui baris perintah
 
 ```bash
 yarn pm pull https://github.com/nocobase/plugin-auth-cas/releases/download/v1.4.0/plugin-auth-cas-1.4.0.tgz
 yarn pm pull /your/path/plugin-auth-cas-1.4.0.tgz
 ```
 
-Jika aplikasi sudah menginstal Plugin tersebut dan perlu di-upgrade, jalankan:
+Jika aplikasi sudah menginstal plugin ini dan perlu ditingkatkan, jalankan:
 
 ```bash
 yarn nocobase upgrade --skip-code-update
 ```
 
-### Upload dan Ekstrak Manual
+### Unggah dan ekstrak secara manual
 
-Pertama-tama download paket Plugin ke lokal, kemudian upload dan ekstrak secara manual ke direktori `./storage/plugins`. Jika Plugin tersebut sudah aktif, setelah upload dan ekstraksi selesai, jalankan perintah berikut untuk menyelesaikan upgrade Plugin.
+Silakan unduh paket plugin ke lokal terlebih dahulu, lalu unggah dan ekstrak secara manual ke direktori `./storage/plugins`. Jika plugin ini sudah diaktifkan, jalankan perintah berikut setelah unggah dan ekstraksi selesai untuk menyelesaikan peningkatan plugin.
 
-> ⚠️ **Perhatian**: Untuk menghindari masalah cache, pastikan aplikasi NocoBase sudah berhenti berjalan sebelum menjalankan perintah.
+> ⚠️ **Catatan**: Untuk menghindari masalah cache, pastikan aplikasi NocoBase sudah dihentikan sebelum menjalankan.
 
 ```bash
 yarn nocobase upgrade --skip-code-update
 ```
 
-### Cara Ekstraksi Plugin yang Benar
+### Cara yang benar untuk mengekstrak plugin
 
-Contoh berikut menunjukkan cara mengekstrak paket Plugin dengan benar ke direktori yang ditentukan:
+Contoh berikut menunjukkan cara mengekstrak paket plugin dengan benar ke direktori yang ditentukan:
 
 ```bash
 mkdir -p /my-nocobase/storage/plugins/@nocobase/plugin-auth-cas && \
@@ -50,13 +50,13 @@ mkdir -p /my-nocobase/storage/plugins/@nocobase/plugin-auth-cas && \
   --strip-components=1
 ```
 
-Perintah ini akan mengekstrak Plugin ke direktori yang ditentukan tanpa menghasilkan level direktori `package` yang berlebihan.
+Perintah ini akan mengekstrak plugin ke direktori yang ditentukan tanpa membuat lapisan direktori `package` tambahan.
 
 ```bash
 /my-nocobase/storage/plugins/@nocobase/plugin-auth-cas
 ```
 
-### Contoh Struktur Direktori yang Benar
+### Contoh struktur direktori yang benar
 
 ```bash
 ./plugin-auth-cas/dist/server/migrations/20240425200816-change-locale-module.js

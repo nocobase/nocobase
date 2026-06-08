@@ -17,6 +17,11 @@ import { resolveCurrentUser } from './utils';
 export class PluginIdpOauthServer extends Plugin {
   service: IdpOauthService;
 
+  constructor(...args: ConstructorParameters<typeof Plugin>) {
+    super(...args);
+    this.service = new IdpOauthService(this.app);
+  }
+
   private registerDefaultApiResource() {
     this.service.registerResourceServer('api', {
       path: '/',
@@ -29,12 +34,15 @@ export class PluginIdpOauthServer extends Plugin {
   }
 
   async load() {
-    const bridgeTokenCache = await this.app.cacheManager.createCache({
-      name: 'idp-oauth-token',
-      prefix: 'idp-oauth:token',
-      store: 'memory',
+    this.app.on('auth:signOut', async ({ ctx }) => {
+      try {
+        await this.service.destroyProviderSession(ctx);
+      } catch (error) {
+        ctx.logger?.warn?.('failed to destroy idp-oauth provider session', {
+          error: error instanceof Error ? error.message : String(error),
+        });
+      }
     });
-    this.service = new IdpOauthService(this.app, bridgeTokenCache);
     this.registerDefaultApiResource();
     const paths = createIdpOauthPaths();
 

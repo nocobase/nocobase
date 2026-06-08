@@ -62,6 +62,10 @@ export function getDefaultOauthScope() {
   return DEFAULT_OAUTH_SCOPE;
 }
 
+export function getOauthLoopbackRedirectUri(port: number) {
+  return `http://${LOOPBACK_HOST}:${port}/callback`;
+}
+
 function formatApiAuthError(prefix: string, data: any, fallbackStatus?: number) {
   if (typeof data === 'string' && data.trim()) {
     return `${prefix}: ${data}`;
@@ -810,7 +814,7 @@ async function createLoopbackServer(state: string) {
       }
 
       resolve({
-        redirectUri: `http://${LOOPBACK_HOST}:${address.port}/callback`,
+        redirectUri: getOauthLoopbackRedirectUri(address.port),
         waitForCode,
         close,
       });

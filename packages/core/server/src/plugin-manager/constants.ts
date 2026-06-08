@@ -10,9 +10,7 @@
 export const APP_NAME = 'nocobase';
 export const DEFAULT_PLUGIN_STORAGE_PATH = 'storage/plugins';
 export const DEFAULT_PLUGIN_PATH = 'packages/plugins/';
-export const pluginPrefix = (
-  process.env.PLUGIN_PACKAGE_PREFIX || '@nocobase/plugin-,@nocobase/preset-,@nocobase/plugin-pro-'
-).split(',');
+export const pluginPrefix = (process.env.PLUGIN_PACKAGE_PREFIX || '@nocobase/plugin-,@nocobase/preset-').split(',');
 export const requireRegex = /require\s*\(['"`](.*?)['"`]\)/g;
 export const importRegex = /^import(?:['"\s]*([\w*${}\s,]+)from\s*)?['"\s]['"\s](.*[@\w_-]+)['"\s].*/gm;
 export const EXTERNAL = [

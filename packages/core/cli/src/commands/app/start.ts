@@ -8,11 +8,14 @@
  */
 
 import { Command, Flags } from '@oclif/core';
+import { buildDefaultCdnBaseUrl, readDistClientActiveVersion } from '../../lib/app-public-path.js';
 import { ensureCrossEnvConfirmed, hasExplicitEnvSelection } from '../../lib/env-guard.js';
 import {
   formatMissingManagedAppEnvMessage,
+  managedAppLifecycleEnvVars,
   resolveManagedAppRuntime,
   runLocalNocoBaseCommand,
+  type ManagedAppRuntime,
 } from '../../lib/app-runtime.js';
 import {
   AppHealthCheckError,
@@ -27,8 +30,10 @@ import {
   ensureSavedLocalSource,
   recreateSavedDockerApp,
 } from '../../lib/app-managed-resources.js';
+import { resolveAppUrlFromApiBaseUrl } from '../env/shared.js';
+import { readManagedRuntimeEnvValues } from '../../lib/managed-env-file.js';
 import { run } from '../../lib/run-npm.js';
-import { announceTargetEnv, failTask, printInfo, startTask, succeedTask } from '../../lib/ui.js';
+import { announceTargetEnv, failTask, printInfo, printWarning, startTask, succeedTask } from '../../lib/ui.js';
 
 function shouldPrintStartSuccess(): boolean {
   return process.env.NB_SKIP_APP_START_SUCCESS_LOG !== '1';
@@ -36,6 +41,38 @@ function shouldPrintStartSuccess(): boolean {
 
 function argvHasToken(argv: string[], tokens: string[]): boolean {
   return tokens.some((token) => argv.includes(token));
+}
+
+function buildLicenseSyncArgv(
+  envName: string,
+  options: {
+    explicitEnvSelection: boolean;
+    yes: boolean;
+    verbose: boolean;
+  },
+): string[] {
+  const argv = ['--env', envName, '--skip-if-no-license'];
+  if (options.yes || options.explicitEnvSelection) {
+    argv.push('--yes');
+  }
+  if (options.verbose) {
+    argv.push('--verbose');
+  }
+  return argv;
+}
+
+async function runWithSuppressedTargetEnvLog<T>(task: () => Promise<T>): Promise<T> {
+  const previousTargetEnv = process.env.NB_SKIP_TARGET_ENV_LOG;
+  process.env.NB_SKIP_TARGET_ENV_LOG = '1';
+  try {
+    return await task();
+  } finally {
+    if (previousTargetEnv === undefined) {
+      delete process.env.NB_SKIP_TARGET_ENV_LOG;
+    } else {
+      process.env.NB_SKIP_TARGET_ENV_LOG = previousTargetEnv;
+    }
+  }
 }
 
 function formatDockerStartFailure(envName: string, message: string): string {
@@ -83,19 +120,62 @@ function formatLocalReadyFailure(
   ].join('\n');
 }
 
+function formatLocalClientExtractWarning(envName: string, message: string): string {
+  return [
+    `Client assets were not extracted for "${envName}".`,
+    'NocoBase will keep starting, but versioned client files for CDN or external distribution may be stale or missing.',
+    `Details: ${message}`,
+  ].join('\n');
+}
+
+function resolveDisplayAppUrl(apiBaseUrl: string | undefined, port?: string, appPublicPath?: string): string | undefined {
+  const resolvedFromApiBaseUrl = resolveAppUrlFromApiBaseUrl(apiBaseUrl);
+  if (resolvedFromApiBaseUrl) {
+    return resolvedFromApiBaseUrl;
+  }
+
+  return formatAppUrl(port, appPublicPath);
+}
+
+async function resolveDefaultLocalCdnBaseUrl(
+  runtime: Extract<ManagedAppRuntime, { kind: 'local' }>,
+): Promise<string | undefined> {
+  let envValues: Record<string, string> = {};
+
+  if (runtime.env.config && typeof runtime.env.config === 'object') {
+    ({ envValues } = await readManagedRuntimeEnvValues(runtime));
+  }
+
+  const explicitProcessCdnBaseUrl = String(process.env.CDN_BASE_URL ?? '').trim();
+  const explicitSavedCdnBaseUrl = String(runtime.env.envVars.CDN_BASE_URL ?? '').trim();
+  const explicitEnvFileCdnBaseUrl = String(envValues.CDN_BASE_URL ?? '').trim();
+
+  if (explicitProcessCdnBaseUrl || explicitSavedCdnBaseUrl || explicitEnvFileCdnBaseUrl) {
+    return undefined;
+  }
+
+  const storagePath = String(runtime.env.storagePath ?? runtime.env.config?.storagePath ?? '').trim();
+  if (!storagePath) {
+    return undefined;
+  }
+
+  const activeVersion = await readDistClientActiveVersion(storagePath);
+  if (!activeVersion) {
+    return undefined;
+  }
+
+  return buildDefaultCdnBaseUrl(runtime.env.config?.appPublicPath || envValues.APP_PUBLIC_PATH, activeVersion);
+}
+
 export default class AppStart extends Command {
   static override hidden = false;
   static override description =
-    'Start NocoBase for the selected env. Local npm/git installs run the app command, and Docker installs recreate the saved app container.';
+    'Start NocoBase for the selected env. When applicable, the CLI synchronizes licensed commercial plugins first, then prepares and starts the app or recreates the saved Docker container.';
   static override examples = [
     '<%= config.bin %> <%= command.id %>',
     '<%= config.bin %> <%= command.id %> --env local',
-    '<%= config.bin %> <%= command.id %> --env local --quickstart',
-    '<%= config.bin %> <%= command.id %> --env local --port 12000',
     '<%= config.bin %> <%= command.id %> --env local --daemon',
     '<%= config.bin %> <%= command.id %> --env local --no-daemon',
-    '<%= config.bin %> <%= command.id %> --env local --instances 2',
-    '<%= config.bin %> <%= command.id %> --env local --launch-mode pm2',
     '<%= config.bin %> <%= command.id %> --env local --verbose',
     '<%= config.bin %> <%= command.id %> --env local-docker',
   ];
@@ -110,11 +190,19 @@ export default class AppStart extends Command {
       description: 'Confirm using --env when it targets a different env than the current env',
       default: false,
     }),
-    quickstart: Flags.boolean({ description: 'Quickstart the application', required: false }),
-    port: Flags.string({
-      description: 'Port (overrides appPort from env config when set)',
-      char: 'p',
+    quickstart: Flags.boolean({
+      hidden: true,
+      description: 'Quickstart the application',
       required: false,
+      default: true,
+      allowNo: true,
+    }),
+    'sync-licensed-plugins': Flags.boolean({
+      hidden: true,
+      description: 'Synchronize licensed commercial plugins before starting the application',
+      required: false,
+      default: true,
+      allowNo: true,
     }),
     daemon: Flags.boolean({
       description: 'Run the application as a daemon (default: true; use --no-daemon to stay in the foreground)',
@@ -123,8 +211,6 @@ export default class AppStart extends Command {
       default: true,
       allowNo: true,
     }),
-    instances: Flags.integer({ description: 'Number of instances to run', char: 'i', required: false }),
-    'launch-mode': Flags.string({ description: 'Launch Mode', required: false, options: ['pm2', 'node'] }),
     verbose: Flags.boolean({
       description: 'Show raw startup output from the underlying local or Docker command',
       default: false,
@@ -133,8 +219,11 @@ export default class AppStart extends Command {
 
   public async run(): Promise<void> {
     const { flags } = await this.parse(AppStart);
+    const quickstart = flags.quickstart ?? true;
     const requestedEnv = flags.env?.trim() || undefined;
-    if (requestedEnv && hasExplicitEnvSelection(this.argv)) {
+    const explicitEnvSelection = Boolean(requestedEnv && hasExplicitEnvSelection(this.argv));
+    const shouldSyncLicensedPlugins = flags['sync-licensed-plugins'] ?? true;
+    if (explicitEnvSelection) {
       const confirmed = await ensureCrossEnvConfirmed({
         command: this,
         requestedEnv,
@@ -147,6 +236,7 @@ export default class AppStart extends Command {
 
     const daemonFlagWasProvided = argvHasToken(this.argv, ['--daemon', '--no-daemon']);
     const runtime = await resolveManagedAppRuntime(requestedEnv);
+    const runCommand = this.config.runCommand.bind(this.config) as (id: string, argv?: string[]) => Promise<unknown>;
     const commandStdio = flags.verbose ? 'inherit' : 'ignore';
     if (!runtime) {
       this.error(formatMissingManagedAppEnvMessage(requestedEnv));
@@ -175,12 +265,9 @@ export default class AppStart extends Command {
     announceTargetEnv(runtime.envName);
 
     if (runtime.kind === 'docker') {
-      const unsupportedFlags = [
-        flags.port ? '--port' : undefined,
-        daemonFlagWasProvided ? (flags.daemon ? '--daemon' : '--no-daemon') : undefined,
-        flags.instances !== undefined ? '--instances' : undefined,
-        flags['launch-mode'] ? '--launch-mode' : undefined,
-      ].filter(Boolean);
+      const unsupportedFlags = [daemonFlagWasProvided ? (flags.daemon ? '--daemon' : '--no-daemon') : undefined].filter(
+        Boolean,
+      );
 
       if (unsupportedFlags.length > 0) {
         this.error(
@@ -192,6 +279,23 @@ export default class AppStart extends Command {
         );
       }
 
+      if (shouldSyncLicensedPlugins) {
+        try {
+          await runWithSuppressedTargetEnvLog(async () => {
+            await runCommand(
+              'license:plugins:sync',
+              buildLicenseSyncArgv(runtime.envName, {
+                explicitEnvSelection,
+                yes: flags.yes,
+                verbose: flags.verbose,
+              }),
+            );
+          });
+        } catch (error: unknown) {
+          this.error(error instanceof Error ? error.message : String(error));
+        }
+      }
+
       await ensureBuiltinDbReady(runtime, {
         verbose: flags.verbose,
         onStartTask: startTask,
@@ -199,10 +303,12 @@ export default class AppStart extends Command {
         onFailTask: failTask,
       });
 
-      const appUrl = formatAppUrl(
-        runtime.env.appPort === undefined || runtime.env.appPort === null ? undefined : String(runtime.env.appPort),
-      );
       const apiBaseUrl = resolveManagedAppApiBaseUrl(runtime);
+      const appUrl = resolveDisplayAppUrl(
+        apiBaseUrl,
+        runtime.env.appPort === undefined || runtime.env.appPort === null ? undefined : String(runtime.env.appPort),
+        runtime.env.config?.appPublicPath,
+      );
       startTask(`Recreating the Docker app container for "${runtime.envName}"...`);
       try {
         await run('docker', ['rm', '-f', runtime.containerName], {
@@ -239,7 +345,6 @@ export default class AppStart extends Command {
     });
 
     if (runtime.source === 'npm' || runtime.source === 'git') {
-      const runCommand = this.config.runCommand.bind(this.config) as (id: string, argv?: string[]) => Promise<unknown>;
       const downloadableRuntime = runtime as typeof runtime & { source: 'npm' | 'git' };
       await ensureSavedLocalSource(downloadableRuntime, runCommand, {
         verbose: flags.verbose,
@@ -251,12 +356,10 @@ export default class AppStart extends Command {
 
     const npmArgs = ['start'];
 
-    if (flags.quickstart) {
+    if (quickstart) {
       npmArgs.push('--quickstart');
     }
-    if (flags.port) {
-      npmArgs.push('--port', flags.port);
-    } else if (
+    if (
       runtime.env.appPort !== undefined &&
       runtime.env.appPort !== null &&
       String(runtime.env.appPort).trim() !== ''
@@ -266,22 +369,16 @@ export default class AppStart extends Command {
     if (flags.daemon !== false) {
       npmArgs.push('--daemon');
     }
-    if (flags.instances !== undefined) {
-      npmArgs.push('--instances', flags.instances.toString());
-    }
-    if (flags['launch-mode']) {
-      npmArgs.push('--launch-mode', flags['launch-mode']);
-    }
 
     const effectivePort =
-      flags.port ||
-      (runtime.env.appPort !== undefined && runtime.env.appPort !== null
+      runtime.env.appPort !== undefined && runtime.env.appPort !== null
         ? String(runtime.env.appPort).trim()
-        : undefined);
-    const appUrl = formatAppUrl(effectivePort);
+        : undefined;
     const apiBaseUrl = resolveManagedAppApiBaseUrl(runtime, {
       portOverride: effectivePort,
     });
+    const appUrl = resolveDisplayAppUrl(apiBaseUrl, effectivePort, runtime.env.config?.appPublicPath);
+    let defaultCdnBaseUrl: string | undefined;
 
     if (await isAppReady(apiBaseUrl, { requestTimeoutMs: 1_500 })) {
       if (flags.daemon === false) {
@@ -298,8 +395,26 @@ export default class AppStart extends Command {
       return;
     }
 
+    if (shouldSyncLicensedPlugins) {
+      try {
+        await runWithSuppressedTargetEnvLog(async () => {
+          await runCommand(
+            'license:plugins:sync',
+            buildLicenseSyncArgv(runtime.envName, {
+              explicitEnvSelection,
+              yes: flags.yes,
+              verbose: flags.verbose,
+            }),
+          );
+        });
+      } catch (error: unknown) {
+        this.error(error instanceof Error ? error.message : String(error));
+      }
+    }
+
     try {
       await ensureLocalPostinstall(runtime, {
+        env: managedAppLifecycleEnvVars(),
         verbose: flags.verbose,
         onStartTask: startTask,
         onSucceedTask: succeedTask,
@@ -307,6 +422,20 @@ export default class AppStart extends Command {
       });
     } catch (error: unknown) {
       this.error(error instanceof Error ? error.message : String(error));
+    }
+
+    try {
+      startTask(`Extracting client assets for "${runtime.envName}"...`);
+      await runLocalNocoBaseCommand(runtime, ['client:extract'], {
+        env: managedAppLifecycleEnvVars(),
+        stdio: commandStdio,
+      });
+      succeedTask(`Client assets are ready for "${runtime.envName}".`);
+      defaultCdnBaseUrl = await resolveDefaultLocalCdnBaseUrl(runtime);
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : String(error);
+      failTask(`Failed to extract client assets for "${runtime.envName}".`);
+      printWarning(formatLocalClientExtractWarning(runtime.envName, message));
     }
 
     if (flags.daemon === false) {
@@ -320,7 +449,14 @@ export default class AppStart extends Command {
     }
 
     try {
+      const startEnv = defaultCdnBaseUrl
+        ? {
+            ...managedAppLifecycleEnvVars(),
+            CDN_BASE_URL: defaultCdnBaseUrl,
+          }
+        : managedAppLifecycleEnvVars();
       await runLocalNocoBaseCommand(runtime, npmArgs, {
+        env: startEnv,
         stdio: commandStdio,
       });
       if (flags.daemon !== false) {

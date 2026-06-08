@@ -450,6 +450,21 @@ export class Gateway extends EventEmitter {
       });
     }
 
+    if (pathname.startsWith(APP_PUBLIC_PATH + 'dist/')) {
+      if (handleApp !== 'main') {
+        const isProxy = await this.proxyRequestToSubApp(supervisor, handleApp, req, res);
+        if (isProxy) {
+          return;
+        }
+      }
+      req.url = req.url.substring(APP_PUBLIC_PATH.length + 'dist'.length);
+      await compress(req, res);
+      return handler(req, res, {
+        public: storagePathJoin('dist-client'),
+        directoryListing: false,
+      });
+    }
+
     // pathname example: /static/plugins/@nocobase/plugins-acl/README.md
     // protect server files
     if (pathname.startsWith(PLUGIN_STATICS_PATH) && !pathname.includes('/server/')) {

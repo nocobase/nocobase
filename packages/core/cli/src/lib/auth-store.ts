@@ -10,8 +10,15 @@
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import type { CliHomeScope } from './cli-home.js';
+import { resolveAppPublicPath } from './app-public-path.js';
 import { resolveCliHomeDir, resolveConfiguredEnvPath, resolveEnvRelativePath } from './cli-home.js';
 import { normalizeCliLocale } from './cli-locale.js';
+import {
+  inferConfiguredAppPathFromLegacyConfig,
+  resolveConfiguredAppPath,
+  resolveConfiguredSourcePath,
+  resolveConfiguredStoragePath,
+} from './env-paths.js';
 import {
   cleanupCurrentSessionAfterEnvRemoval,
   resolveEffectiveCurrentEnv,
@@ -37,6 +44,9 @@ export interface OauthAuthConfig {
 export type EnvKind = 'local' | 'http' | 'docker' | 'ssh';
 
 export interface EnvConfigEntry {
+  autostart?: {
+    enabled?: boolean;
+  };
   kind?: EnvKind;
   apiBaseUrl?: string;
   authType?: 'basic' | 'token' | 'oauth';
@@ -65,9 +75,14 @@ export interface EnvConfigEntry {
   build?: boolean;
   /** Whether download emitted declaration files during build. */
   buildDts?: boolean;
+  appPath?: string;
   appRootPath?: string;
   storagePath?: string;
-  /** Optional Docker --env-file path. Defaults to <envName>/.env for Docker envs when present on disk. */
+  /** Application public path (APP_PUBLIC_PATH). */
+  appPublicPath?: string;
+  /** Client asset CDN base URL (CDN_BASE_URL). */
+  cdnBaseUrl?: string;
+  /** Optional internal env file path. Defaults to <app-path>/.env, or <envName>/.env for legacy Docker-only layouts. */
   envFile?: string;
   /** Application HTTP port (APP_PORT). */
   appPort?: number | string;
@@ -119,8 +134,22 @@ export interface AuthConfig {
     };
     bin?: {
       docker?: string;
+      caddy?: string;
       git?: string;
+      nginx?: string;
       yarn?: string;
+    };
+    proxy?: {
+      nbCliRoot?: string;
+      upstreamHost?: string;
+    };
+    log?: {
+      enabled?: boolean;
+      retentionDays?: number;
+    };
+    init?: {
+      defaultUiHost?: string;
+      defaultApiHost?: string;
     };
   };
   lastEnv?: string;
@@ -201,7 +230,7 @@ export function resolveEnvKind(config?: Partial<EnvConfigEntry>): EnvKind | unde
     return 'local';
   }
 
-  if (String(config.appRootPath ?? '').trim()) {
+  if (String(config.appPath ?? '').trim() || String(config.appRootPath ?? '').trim()) {
     return 'local';
   }
 
@@ -230,17 +259,33 @@ function normalizeEnvConfigEntry(entry: EnvConfigEntry | undefined): EnvConfigEn
     ...rest,
     ...(normalizedKind ? { kind: normalizedKind } : {}),
     ...(apiBaseUrl !== undefined ? { apiBaseUrl } : {}),
+    ...(normalizeOptionalString(entry.appPublicPath) ? { appPublicPath: resolveAppPublicPath(entry.appPublicPath) } : {}),
   };
 }
 
 function normalizeAuthConfig(config: AuthConfig & { dockerResourcePrefix?: string }): AuthConfig {
   const settings = config.settings ?? {};
   const locale = normalizeOptionalCliLocale(settings.locale);
+  const defaultUiHost = normalizeOptionalString(settings.init?.defaultUiHost);
+  const defaultApiHost = normalizeOptionalString(settings.init?.defaultApiHost);
   const updatePolicy = normalizeOptionalCliUpdatePolicy(settings.update?.policy);
+  const logRetentionDays =
+    typeof settings.log?.retentionDays === 'number' && Number.isInteger(settings.log.retentionDays)
+      ? settings.log.retentionDays
+      : undefined;
+  const logEnabled = typeof settings.log?.enabled === 'boolean' ? settings.log.enabled : undefined;
   return {
     name: config.name || config.dockerResourcePrefix,
     settings: {
       ...(locale ? { locale } : {}),
+      ...(defaultUiHost || defaultApiHost
+        ? {
+            init: {
+              ...(defaultUiHost ? { defaultUiHost } : {}),
+              ...(defaultApiHost ? { defaultApiHost } : {}),
+            },
+          }
+        : {}),
       ...(updatePolicy ? { update: { policy: updatePolicy } } : {}),
       ...(settings.license?.pkgUrl ? { license: { pkgUrl: normalizeOptionalString(settings.license.pkgUrl) } } : {}),
       ...(settings.docker?.network || settings.docker?.containerPrefix
@@ -253,12 +298,38 @@ function normalizeAuthConfig(config: AuthConfig & { dockerResourcePrefix?: strin
             },
           }
         : {}),
-      ...(settings.bin?.docker || settings.bin?.git || settings.bin?.yarn
+      ...(settings.bin?.docker || settings.bin?.caddy || settings.bin?.git || settings.bin?.nginx || settings.bin?.yarn
         ? {
             bin: {
               ...(settings.bin?.docker ? { docker: normalizeOptionalString(settings.bin.docker) } : {}),
+              ...(settings.bin?.caddy ? { caddy: normalizeOptionalString(settings.bin.caddy) } : {}),
               ...(settings.bin?.git ? { git: normalizeOptionalString(settings.bin.git) } : {}),
+              ...(settings.bin?.nginx ? { nginx: normalizeOptionalString(settings.bin.nginx) } : {}),
               ...(settings.bin?.yarn ? { yarn: normalizeOptionalString(settings.bin.yarn) } : {}),
+            },
+          }
+        : {}),
+      ...(settings.proxy?.nbCliRoot ||
+      settings.proxy?.upstreamHost ||
+      (settings.proxy as { host?: unknown } | undefined)?.host
+        ? {
+            proxy: {
+              ...(settings.proxy?.nbCliRoot ? { nbCliRoot: normalizeOptionalString(settings.proxy.nbCliRoot) } : {}),
+              ...(settings.proxy?.upstreamHost || (settings.proxy as { host?: unknown } | undefined)?.host
+                ? {
+                    upstreamHost: normalizeOptionalString(
+                      settings.proxy?.upstreamHost ?? (settings.proxy as { host?: unknown }).host,
+                    ),
+                  }
+                : {}),
+            },
+          }
+        : {}),
+      ...(logEnabled !== undefined || logRetentionDays !== undefined
+        ? {
+            log: {
+              ...(logEnabled !== undefined ? { enabled: logEnabled } : {}),
+              ...(logRetentionDays !== undefined ? { retentionDays: logRetentionDays } : {}),
             },
           }
         : {}),
@@ -374,7 +445,31 @@ export class Env {
         return configuredPath;
       }
     }
-    return resolveConfiguredEnvPath(this.config.appRootPath) ?? resolveEnvRelativePath('.');
+    const legacyPath = resolveConfiguredEnvPath(this.config.appRootPath);
+    if (legacyPath) {
+      return legacyPath;
+    }
+    return this.kind === 'local' ? this.sourcePath : resolveEnvRelativePath('.');
+  }
+
+  get appPath() {
+    if (this.kind === 'ssh') {
+      const configuredPath = String(this.config.appPath ?? inferConfiguredAppPathFromLegacyConfig(this.config) ?? '').trim();
+      if (configuredPath) {
+        return configuredPath;
+      }
+    }
+    return resolveConfiguredAppPath(this.config) ?? resolveEnvRelativePath('.');
+  }
+
+  get sourcePath() {
+    if (this.kind === 'ssh') {
+      const configuredPath = String(this.config.appRootPath ?? '').trim();
+      if (configuredPath) {
+        return configuredPath;
+      }
+    }
+    return resolveConfiguredSourcePath(this.config) ?? path.join(this.appPath, 'source');
   }
 
   get storagePath() {
@@ -384,7 +479,13 @@ export class Env {
         return configuredPath;
       }
     }
-    return resolveConfiguredEnvPath(this.config.storagePath) ?? resolveEnvRelativePath('.');
+    const resolvedStoragePath = resolveConfiguredStoragePath(this.config);
+    if (resolvedStoragePath) {
+      return resolvedStoragePath;
+    }
+    return this.kind === 'local' || this.kind === 'docker'
+      ? path.join(this.appPath, 'storage')
+      : resolveEnvRelativePath('.');
   }
 
   get appPort() {
@@ -402,6 +503,8 @@ export class Env {
       out[key] = String(value);
     };
     put('APP_PORT', this.appPort);
+    put('APP_PUBLIC_PATH', this.config.appPublicPath ? resolveAppPublicPath(this.config.appPublicPath) : undefined);
+    put('CDN_BASE_URL', this.config.cdnBaseUrl);
     put('APP_KEY', this.config.appKey);
     put('TZ', this.config.timezone);
     put('DB_DIALECT', this.config.dbDialect);
@@ -582,6 +685,59 @@ export async function updateEnvConnection(
   );
 }
 
+export async function replaceEnvConfig(
+  envName: string,
+  config: Record<string, any>,
+  options: AuthStoreOptions = {},
+) {
+  await writeEnv(
+    envName,
+    (previous) => {
+      if (!previous) {
+        throw new Error(`Env "${envName}" is not configured`);
+      }
+
+      const {
+        apiBaseUrl: _apiBaseUrl,
+        baseUrl: _baseUrl,
+        apibaseUrl: _legacyApiBaseUrl,
+        accessToken,
+        authType,
+        authUsername,
+        ...rest
+      } = config;
+      const nextApiBaseUrl = readEnvApiBaseUrl(config);
+      const previousApiBaseUrl = readEnvApiBaseUrl(previous);
+      const baseUrlChanged = previousApiBaseUrl !== nextApiBaseUrl;
+      const previousAuthType = resolveConfiguredAuthType(previous);
+      const nextAuthType = normalizeConfiguredAuthType(authType) ?? (accessToken ? 'token' : undefined);
+      const nextAuthUsername = nextAuthType === 'basic' ? normalizeOptionalString(authUsername) : undefined;
+      const nextAuth = accessToken
+        ? ({
+            type: 'token',
+            accessToken,
+          } satisfies TokenAuthConfig)
+        : nextAuthType === 'oauth' && !baseUrlChanged && previous?.auth?.type === 'oauth'
+          ? previous.auth
+          : undefined;
+      const authChanged = !areAuthConfigsEquivalent(previous?.auth, nextAuth);
+      const authTypeChanged = previousAuthType !== nextAuthType;
+      const authUsernameChanged = previous?.authUsername !== nextAuthUsername;
+
+      return {
+        ...rest,
+        ...(nextApiBaseUrl !== undefined ? { apiBaseUrl: nextApiBaseUrl } : {}),
+        ...(nextAuthType ? { authType: nextAuthType } : {}),
+        ...(nextAuthUsername ? { authUsername: nextAuthUsername } : {}),
+        ...(nextAuth ? { auth: nextAuth } : {}),
+        runtime:
+          baseUrlChanged || authChanged || authTypeChanged || authUsernameChanged ? undefined : previous?.runtime,
+      };
+    },
+    options,
+  );
+}
+
 export async function setEnvOauthSession(
   envName: string,
   auth: OauthAuthConfig,
@@ -611,6 +767,29 @@ export async function setEnvRuntime(
     runtime,
   };
   await saveAuthConfig(config, options);
+}
+
+export async function clearEnvRootSetup(
+  envName: string,
+  options: AuthStoreOptions = {},
+): Promise<boolean> {
+  const config = await loadExactAuthConfig(options);
+  const current = config.envs[envName];
+  if (!current) {
+    return false;
+  }
+
+  const {
+    rootUsername: _rootUsername,
+    rootEmail: _rootEmail,
+    rootPassword: _rootPassword,
+    rootNickname: _rootNickname,
+    ...rest
+  } = current;
+
+  config.envs[envName] = rest;
+  await saveAuthConfig(config, options);
+  return true;
 }
 
 export async function removeEnv(envName: string, options: AuthStoreOptions = {}) {

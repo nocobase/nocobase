@@ -16,6 +16,8 @@ import Install from '../commands/install.js';
 import { resolveConfiguredEnvPath } from '../lib/cli-home.js';
 import { findAvailableTcpPort } from '../lib/prompt-validators.js';
 
+const originalExtractClientAssets = process.env.NOCOBASE_EXTRACT_CLIENT_ASSETS;
+
 const mocks = vi.hoisted(() => ({
   run: vi.fn(),
   runNocoBaseCommand: vi.fn(),
@@ -44,6 +46,11 @@ afterEach(async () => {
   mocks.runNocoBaseCommand.mockReset();
   mocks.printInfo.mockReset();
   mocks.printWarning.mockReset();
+  if (originalExtractClientAssets === undefined) {
+    delete process.env.NOCOBASE_EXTRACT_CLIENT_ASSETS;
+  } else {
+    process.env.NOCOBASE_EXTRACT_CLIENT_ASSETS = originalExtractClientAssets;
+  }
   await Promise.all(tempDirs.splice(0).map((dir) => fsp.rm(dir, { recursive: true, force: true })));
 });
 
@@ -58,10 +65,7 @@ test('startBuiltinDb removes the existing db container before docker run when --
   const dbPort = await findAvailableTcpPort();
   const command = Object.assign(Object.create(Install.prototype), {
     ensureDockerNetwork: vi.fn(async () => undefined),
-    dockerContainerExists: vi
-      .fn()
-      .mockResolvedValueOnce(true)
-      .mockResolvedValueOnce(false),
+    dockerContainerExists: vi.fn().mockResolvedValueOnce(true).mockResolvedValueOnce(false),
   });
 
   const plan = await (
@@ -94,16 +98,8 @@ test('startBuiltinDb removes the existing db container before docker run when --
   });
 
   expect(mocks.run.mock.calls).toEqual([
-    [
-      'docker',
-      ['rm', '-f', plan.containerName],
-      { errorName: 'docker rm', stdio: 'ignore' },
-    ],
-    [
-      'docker',
-      plan.args,
-      { errorName: 'docker run', stdio: 'ignore' },
-    ],
+    ['docker', ['rm', '-f', plan.containerName], { errorName: 'docker rm', stdio: 'ignore' }],
+    ['docker', plan.args, { errorName: 'docker run', stdio: 'ignore' }],
   ]);
 });
 
@@ -155,10 +151,7 @@ test('startBuiltinDb reuses an existing db container without rechecking its publ
 
     expect(plan.containerName).toContain('demo-postgres');
     expect(mocks.run.mock.calls.length).toBe(0);
-    expect(mocks.printInfo.mock.calls).toEqual([
-      ['Using built-in postgres database.'],
-      ['Postgres database ready.'],
-    ]);
+    expect(mocks.printInfo.mock.calls).toEqual([['Using built-in postgres database.'], ['Postgres database ready.']]);
   } finally {
     await new Promise<void>((resolve, reject) => {
       server.close((error) => (error ? reject(error) : resolve()));
@@ -314,6 +307,60 @@ test('startLocalApp starts npm/git apps with quickstart daemon mode and install 
       },
     ],
     [
+      ['postinstall'],
+      {
+        cwd: projectRoot,
+        env: {
+          STORAGE_PATH: storagePath,
+          APP_PORT: '14000',
+          APP_KEY: plan.appKey,
+          TZ: plan.timeZone,
+          DB_DIALECT: 'postgres',
+          DB_HOST: '127.0.0.1',
+          DB_PORT: '5432',
+          DB_DATABASE: 'nocobase',
+          DB_USER: 'nocobase',
+          DB_PASSWORD: 'nocobase',
+          DB_SCHEMA: 'test',
+          DB_TABLE_PREFIX: 'nb_',
+          DB_UNDERSCORED: 'true',
+          INIT_APP_LANG: 'en-US',
+          INIT_ROOT_USERNAME: 'nocobase',
+          INIT_ROOT_EMAIL: 'admin@nocobase.com',
+          INIT_ROOT_PASSWORD: 'admin123',
+          INIT_ROOT_NICKNAME: 'Super Admin',
+        },
+        stdio: 'ignore',
+      },
+    ],
+    [
+      ['client:extract'],
+      {
+        cwd: projectRoot,
+        env: {
+          STORAGE_PATH: storagePath,
+          APP_PORT: '14000',
+          APP_KEY: plan.appKey,
+          TZ: plan.timeZone,
+          DB_DIALECT: 'postgres',
+          DB_HOST: '127.0.0.1',
+          DB_PORT: '5432',
+          DB_DATABASE: 'nocobase',
+          DB_USER: 'nocobase',
+          DB_PASSWORD: 'nocobase',
+          DB_SCHEMA: 'test',
+          DB_TABLE_PREFIX: 'nb_',
+          DB_UNDERSCORED: 'true',
+          INIT_APP_LANG: 'en-US',
+          INIT_ROOT_USERNAME: 'nocobase',
+          INIT_ROOT_EMAIL: 'admin@nocobase.com',
+          INIT_ROOT_PASSWORD: 'admin123',
+          INIT_ROOT_NICKNAME: 'Super Admin',
+        },
+        stdio: 'ignore',
+      },
+    ],
+    [
       ['start', '--quickstart', '--daemon'],
       {
         cwd: projectRoot,
@@ -396,16 +443,129 @@ test('startLocalApp forwards stdio inherit in verbose mode', async () => {
 
   expect(mocks.runNocoBaseCommand.mock.calls[0]?.[1]?.stdio).toBe('inherit');
   expect(mocks.runNocoBaseCommand.mock.calls[1]?.[1]?.stdio).toBe('inherit');
+  expect(mocks.runNocoBaseCommand.mock.calls[2]?.[1]?.stdio).toBe('inherit');
+  expect(mocks.runNocoBaseCommand.mock.calls[3]?.[1]?.stdio).toBe('inherit');
+});
+
+test('startLocalApp warns when client extraction fails but still starts the app', async () => {
+  const projectRoot = await useTempStorageDir();
+  const storagePath = await useTempStorageDir();
+  const command = Object.create(Install.prototype);
+  mocks.runNocoBaseCommand
+    .mockResolvedValueOnce(undefined)
+    .mockResolvedValueOnce(undefined)
+    .mockRejectedValueOnce(new Error('extract failed'))
+    .mockResolvedValueOnce(undefined);
+
+  await (
+    Install.prototype as unknown as {
+      startLocalApp: (params: {
+        envName: string;
+        source: 'npm' | 'git';
+        projectRoot: string;
+        appResults: Record<string, unknown>;
+        dbResults: Record<string, unknown>;
+        rootResults: Record<string, unknown>;
+      }) => Promise<unknown>;
+    }
+  ).startLocalApp.call(command, {
+    envName: 'demo',
+    source: 'npm',
+    projectRoot,
+    appResults: {
+      appPort: '14000',
+      storagePath,
+      lang: 'en-US',
+    },
+    dbResults: {
+      dbDialect: 'postgres',
+      dbHost: '127.0.0.1',
+      dbPort: '5432',
+      dbDatabase: 'nocobase',
+      dbUser: 'nocobase',
+      dbPassword: 'nocobase',
+    },
+    rootResults: {
+      rootUsername: 'nocobase',
+      rootEmail: 'admin@nocobase.com',
+      rootPassword: 'admin123',
+      rootNickname: 'Super Admin',
+    },
+  });
+
+  expect(mocks.printWarning.mock.calls).toEqual([
+    [
+      'Client assets were not extracted for "demo".\n' +
+        'NocoBase will keep starting, but versioned client files for CDN or external distribution may be stale or missing.\n' +
+        'Details: extract failed',
+    ],
+  ]);
+  expect(mocks.runNocoBaseCommand.mock.calls[0]?.[0]).toEqual(['pm2', 'kill']);
+  expect(mocks.runNocoBaseCommand.mock.calls[1]?.[0]).toEqual(['postinstall']);
+  expect(mocks.runNocoBaseCommand.mock.calls[2]?.[0]).toEqual(['client:extract']);
+  expect(mocks.runNocoBaseCommand.mock.calls[3]?.[0]).toEqual(['start', '--quickstart', '--daemon']);
+});
+
+test('startLocalApp forwards APP_PUBLIC_PATH into the local runtime env when configured', async () => {
+  const projectRoot = await useTempStorageDir();
+  const storagePath = await useTempStorageDir();
+  const command = Object.create(Install.prototype);
+  mocks.runNocoBaseCommand.mockResolvedValue(undefined);
+
+  await (
+    Install.prototype as unknown as {
+      startLocalApp: (params: {
+        envName: string;
+        source: 'npm' | 'git';
+        projectRoot: string;
+        appResults: Record<string, unknown>;
+        dbResults: Record<string, unknown>;
+        rootResults: Record<string, unknown>;
+      }) => Promise<unknown>;
+    }
+  ).startLocalApp.call(command, {
+    envName: 'demo',
+    source: 'npm',
+    projectRoot,
+    appResults: {
+      appPort: '14000',
+      storagePath,
+      appPublicPath: '/console/',
+      lang: 'en-US',
+    },
+    dbResults: {
+      dbDialect: 'postgres',
+      dbHost: '127.0.0.1',
+      dbPort: '5432',
+      dbDatabase: 'nocobase',
+      dbUser: 'nocobase',
+      dbPassword: 'nocobase',
+    },
+    rootResults: {
+      rootUsername: 'nocobase',
+      rootEmail: 'admin@nocobase.com',
+      rootPassword: 'admin123',
+      rootNickname: 'Super Admin',
+    },
+  });
+
+  expect(mocks.runNocoBaseCommand.mock.calls[0]?.[1]).toMatchObject({
+    env: expect.objectContaining({
+      APP_PUBLIC_PATH: '/console/',
+    }),
+  });
+  expect(mocks.runNocoBaseCommand.mock.calls[3]?.[1]).toMatchObject({
+    env: expect.objectContaining({
+      APP_PUBLIC_PATH: '/console/',
+    }),
+  });
 });
 
 test('installDockerApp removes the existing app container before docker run when --force is enabled', async () => {
   const storagePath = await useTempStorageDir();
   const command = Object.assign(Object.create(Install.prototype), {
     ensureDockerNetwork: vi.fn(async () => undefined),
-    dockerContainerExists: vi
-      .fn()
-      .mockResolvedValueOnce(true)
-      .mockResolvedValueOnce(false),
+    dockerContainerExists: vi.fn().mockResolvedValueOnce(true).mockResolvedValueOnce(false),
   });
 
   const plan = await (
@@ -450,16 +610,8 @@ test('installDockerApp removes the existing app container before docker run when
   });
 
   expect(mocks.run.mock.calls).toEqual([
-    [
-      'docker',
-      ['rm', '-f', plan.containerName],
-      { errorName: 'docker rm', stdio: 'ignore' },
-    ],
-    [
-      'docker',
-      plan.args,
-      { errorName: 'docker run', stdio: 'ignore' },
-    ],
+    ['docker', ['rm', '-f', plan.containerName], { errorName: 'docker rm', stdio: 'ignore' }],
+    ['docker', plan.args, { errorName: 'docker run', stdio: 'ignore' }],
   ]);
 });
 
@@ -501,13 +653,7 @@ test('startBuiltinDb forwards command stdio to docker run', async () => {
     commandStdio: 'inherit',
   });
 
-  expect(mocks.run.mock.calls).toEqual([
-    [
-      'docker',
-      plan.args,
-      { errorName: 'docker run', stdio: 'inherit' },
-    ],
-  ]);
+  expect(mocks.run.mock.calls).toEqual([['docker', plan.args, { errorName: 'docker run', stdio: 'inherit' }]]);
 });
 
 test('downloadManagedSource delegates docker downloads through nb source download', async () => {

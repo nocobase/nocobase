@@ -9,28 +9,44 @@
 
 import type { AuthConfig, AuthStoreOptions } from './auth-store.js';
 import { loadExactAuthConfig, saveAuthConfig } from './auth-store.js';
-import { resolveDefaultConfigScope } from './cli-home.js';
+import { resolveCliHomeRoot, resolveDefaultConfigScope } from './cli-home.js';
 import { CLI_LOCALE_FLAG_OPTIONS, normalizeCliLocale, resolveCliLocale } from './cli-locale.js';
 
 export const DEFAULT_LICENSE_PKG_URL = 'https://pkg.nocobase.com/';
 export const DEFAULT_DOCKER_NETWORK = 'nocobase';
 export const DEFAULT_DOCKER_CONTAINER_PREFIX = 'nb';
 export const DEFAULT_DOCKER_BIN = 'docker';
+export const DEFAULT_CADDY_BIN = 'caddy';
 export const DEFAULT_GIT_BIN = 'git';
+export const DEFAULT_NGINX_BIN = 'nginx';
+export const PROXY_PROVIDER_OPTIONS = ['nginx', 'caddy'] as const;
+export type ProxyProvider = (typeof PROXY_PROVIDER_OPTIONS)[number];
+export const DEFAULT_PROXY_PROVIDER: ProxyProvider = 'nginx';
+export const DEFAULT_PROXY_HOST = '127.0.0.1';
 export const DEFAULT_YARN_BIN = 'yarn';
+export const DEFAULT_LOG_RETENTION_DAYS = 14;
+export const DEFAULT_LOG_ENABLED = true;
 export const CLI_UPDATE_POLICY_OPTIONS = ['prompt', 'auto', 'off'] as const;
 export type CliUpdatePolicy = (typeof CLI_UPDATE_POLICY_OPTIONS)[number];
 export const DEFAULT_UPDATE_POLICY: CliUpdatePolicy = 'prompt';
 
 export const SUPPORTED_CLI_CONFIG_KEYS = [
   'locale',
+  'default-ui-host',
+  'default-api-host',
   'update.policy',
   'license.pkg-url',
   'docker.network',
   'docker.container-prefix',
   'bin.docker',
+  'bin.caddy',
   'bin.git',
+  'bin.nginx',
+  'proxy.nb-cli-root',
+  'proxy.upstream-host',
   'bin.yarn',
+  'log.enabled',
+  'log.retention-days',
 ] as const;
 
 export type SupportedCliConfigKey = (typeof SUPPORTED_CLI_CONFIG_KEYS)[number];
@@ -68,19 +84,36 @@ export function normalizeCliUpdatePolicy(value: unknown): CliUpdatePolicy | unde
   return (CLI_UPDATE_POLICY_OPTIONS as readonly string[]).includes(normalized) ? (normalized as CliUpdatePolicy) : undefined;
 }
 
+export function normalizeProxyProvider(value: unknown): ProxyProvider | undefined {
+  const normalized = trimValue(value);
+  if (!normalized) {
+    return undefined;
+  }
+
+  return (PROXY_PROVIDER_OPTIONS as readonly string[]).includes(normalized) ? (normalized as ProxyProvider) : undefined;
+}
+
 function cloneSettings(config: AuthConfig): NonNullable<AuthConfig['settings']> {
   return {
     ...(config.settings?.locale ? { locale: trimValue(config.settings.locale) } : {}),
+    init: config.settings?.init ? { ...config.settings.init } : undefined,
     update: config.settings?.update ? { ...config.settings.update } : undefined,
     license: config.settings?.license ? { ...config.settings.license } : undefined,
     docker: config.settings?.docker ? { ...config.settings.docker } : undefined,
     bin: config.settings?.bin ? { ...config.settings.bin } : undefined,
+    proxy: config.settings?.proxy ? { ...config.settings.proxy } : undefined,
+    log: config.settings?.log ? { ...config.settings.log } : undefined,
   };
 }
 
 function pruneSettings(config: AuthConfig): void {
   if (config.settings && !trimValue(config.settings.locale)) {
     delete config.settings.locale;
+  }
+
+  const init = config.settings?.init;
+  if (init && !trimValue(init.defaultUiHost) && !trimValue(init.defaultApiHost)) {
+    delete config.settings?.init;
   }
 
   const update = config.settings?.update;
@@ -99,17 +132,37 @@ function pruneSettings(config: AuthConfig): void {
   }
 
   const bin = config.settings?.bin;
-  if (bin && !trimValue(bin.docker) && !trimValue(bin.git) && !trimValue(bin.yarn)) {
+  if (
+    bin &&
+    !trimValue(bin.docker) &&
+    !trimValue(bin.caddy) &&
+    !trimValue(bin.git) &&
+    !trimValue(bin.nginx) &&
+    !trimValue(bin.yarn)
+  ) {
     delete config.settings?.bin;
+  }
+
+  const proxy = config.settings?.proxy;
+  if (proxy && !trimValue(proxy.nbCliRoot) && !trimValue(proxy.upstreamHost)) {
+    delete config.settings?.proxy;
+  }
+
+  const log = config.settings?.log;
+  if (log && typeof log.enabled !== 'boolean' && (!Number.isInteger(log.retentionDays) || log.retentionDays < 0)) {
+    delete config.settings?.log;
   }
 
   if (
     config.settings &&
     !config.settings.locale &&
+    !config.settings.init &&
     !config.settings.update &&
     !config.settings.license &&
     !config.settings.docker &&
-    !config.settings.bin
+    !config.settings.bin &&
+    !config.settings.proxy &&
+    !config.settings.log
   ) {
     delete config.settings;
   }
@@ -119,6 +172,10 @@ export function getExplicitCliConfigValue(config: AuthConfig, key: SupportedCliC
   switch (key) {
     case 'locale':
       return trimValue(config.settings?.locale);
+    case 'default-ui-host':
+      return trimValue(config.settings?.init?.defaultUiHost);
+    case 'default-api-host':
+      return trimValue(config.settings?.init?.defaultApiHost);
     case 'update.policy':
       return normalizeCliUpdatePolicy(config.settings?.update?.policy);
     case 'license.pkg-url':
@@ -129,10 +186,24 @@ export function getExplicitCliConfigValue(config: AuthConfig, key: SupportedCliC
       return trimValue(config.settings?.docker?.containerPrefix);
     case 'bin.docker':
       return trimValue(config.settings?.bin?.docker);
+    case 'bin.caddy':
+      return trimValue(config.settings?.bin?.caddy);
     case 'bin.git':
       return trimValue(config.settings?.bin?.git);
+    case 'bin.nginx':
+      return trimValue(config.settings?.bin?.nginx);
+    case 'proxy.nb-cli-root':
+      return trimValue(config.settings?.proxy?.nbCliRoot);
+    case 'proxy.upstream-host':
+      return trimValue(config.settings?.proxy?.upstreamHost);
     case 'bin.yarn':
       return trimValue(config.settings?.bin?.yarn);
+    case 'log.enabled':
+      return typeof config.settings?.log?.enabled === 'boolean' ? String(config.settings?.log?.enabled) : undefined;
+    case 'log.retention-days':
+      return Number.isInteger(config.settings?.log?.retentionDays)
+        ? String(config.settings?.log?.retentionDays)
+        : undefined;
   }
 }
 
@@ -145,6 +216,10 @@ export function getEffectiveCliConfigValue(config: AuthConfig, key: SupportedCli
   switch (key) {
     case 'locale':
       return resolveCliLocale(undefined, { configuredLocale: trimValue(config.settings?.locale) });
+    case 'default-ui-host':
+      return '127.0.0.1';
+    case 'default-api-host':
+      return '127.0.0.1';
     case 'update.policy':
       return explicit ?? DEFAULT_UPDATE_POLICY;
     case 'license.pkg-url':
@@ -155,10 +230,22 @@ export function getEffectiveCliConfigValue(config: AuthConfig, key: SupportedCli
       return trimValue(config.name) || DEFAULT_DOCKER_CONTAINER_PREFIX;
     case 'bin.docker':
       return DEFAULT_DOCKER_BIN;
+    case 'bin.caddy':
+      return DEFAULT_CADDY_BIN;
     case 'bin.git':
       return DEFAULT_GIT_BIN;
+    case 'bin.nginx':
+      return DEFAULT_NGINX_BIN;
+    case 'proxy.nb-cli-root':
+      return explicit ?? resolveCliHomeRoot();
+    case 'proxy.upstream-host':
+      return explicit ?? DEFAULT_PROXY_HOST;
     case 'bin.yarn':
       return DEFAULT_YARN_BIN;
+    case 'log.enabled':
+      return explicit ?? String(DEFAULT_LOG_ENABLED);
+    case 'log.retention-days':
+      return explicit ?? String(DEFAULT_LOG_RETENTION_DAYS);
   }
 }
 
@@ -188,6 +275,23 @@ export function normalizeCliConfigValue(key: SupportedCliConfigKey, value: strin
     }
 
     return policy;
+  }
+
+  if (key === 'log.retention-days') {
+    const retentionDays = Number.parseInt(normalized, 10);
+    if (!Number.isInteger(retentionDays) || retentionDays < 0) {
+      throw new Error(`Config key "${key}" must be a non-negative integer.`);
+    }
+
+    return String(retentionDays);
+  }
+
+  if (key === 'log.enabled') {
+    if (normalized !== 'true' && normalized !== 'false') {
+      throw new Error(`Config key "${key}" must be either "true" or "false".`);
+    }
+
+    return normalized;
   }
 
   return normalized;
@@ -232,6 +336,18 @@ export async function setCliConfigValue(
     case 'locale':
       config.settings.locale = normalized;
       break;
+    case 'default-ui-host':
+      config.settings.init = {
+        ...(config.settings.init ?? {}),
+        defaultUiHost: normalized,
+      };
+      break;
+    case 'default-api-host':
+      config.settings.init = {
+        ...(config.settings.init ?? {}),
+        defaultApiHost: normalized,
+      };
+      break;
     case 'update.policy':
       config.settings.update = {
         ...(config.settings.update ?? {}),
@@ -262,16 +378,52 @@ export async function setCliConfigValue(
         docker: normalized,
       };
       break;
+    case 'bin.caddy':
+      config.settings.bin = {
+        ...(config.settings.bin ?? {}),
+        caddy: normalized,
+      };
+      break;
     case 'bin.git':
       config.settings.bin = {
         ...(config.settings.bin ?? {}),
         git: normalized,
       };
       break;
+    case 'bin.nginx':
+      config.settings.bin = {
+        ...(config.settings.bin ?? {}),
+        nginx: normalized,
+      };
+      break;
+    case 'proxy.nb-cli-root':
+      config.settings.proxy = {
+        ...(config.settings.proxy ?? {}),
+        nbCliRoot: normalized,
+      };
+      break;
+    case 'proxy.upstream-host':
+      config.settings.proxy = {
+        ...(config.settings.proxy ?? {}),
+        upstreamHost: normalized,
+      };
+      break;
     case 'bin.yarn':
       config.settings.bin = {
         ...(config.settings.bin ?? {}),
         yarn: normalized,
+      };
+      break;
+    case 'log.enabled':
+      config.settings.log = {
+        ...(config.settings.log ?? {}),
+        enabled: normalized === 'true',
+      };
+      break;
+    case 'log.retention-days':
+      config.settings.log = {
+        ...(config.settings.log ?? {}),
+        retentionDays: Number.parseInt(normalized, 10),
       };
       break;
   }
@@ -298,6 +450,16 @@ export async function deleteCliConfigValue(
     case 'locale':
       delete config.settings.locale;
       break;
+    case 'default-ui-host':
+      if (config.settings.init) {
+        delete config.settings.init.defaultUiHost;
+      }
+      break;
+    case 'default-api-host':
+      if (config.settings.init) {
+        delete config.settings.init.defaultApiHost;
+      }
+      break;
     case 'update.policy':
       if (config.settings.update) {
         delete config.settings.update.policy;
@@ -323,14 +485,44 @@ export async function deleteCliConfigValue(
         delete config.settings.bin.docker;
       }
       break;
+    case 'bin.caddy':
+      if (config.settings.bin) {
+        delete config.settings.bin.caddy;
+      }
+      break;
     case 'bin.git':
       if (config.settings.bin) {
         delete config.settings.bin.git;
       }
       break;
+    case 'bin.nginx':
+      if (config.settings.bin) {
+        delete config.settings.bin.nginx;
+      }
+      break;
+    case 'proxy.nb-cli-root':
+      if (config.settings.proxy) {
+        delete config.settings.proxy.nbCliRoot;
+      }
+      break;
+    case 'proxy.upstream-host':
+      if (config.settings.proxy) {
+        delete config.settings.proxy.upstreamHost;
+      }
+      break;
     case 'bin.yarn':
       if (config.settings.bin) {
         delete config.settings.bin.yarn;
+      }
+      break;
+    case 'log.enabled':
+      if (config.settings.log) {
+        delete config.settings.log.enabled;
+      }
+      break;
+    case 'log.retention-days':
+      if (config.settings.log) {
+        delete config.settings.log.retentionDays;
       }
       break;
   }
@@ -344,6 +536,14 @@ export async function resolveDockerNetworkName(options: CliConfigOptions = {}): 
   return await getCliConfigValue('docker.network', options);
 }
 
+export async function resolveDefaultUiHost(options: CliConfigOptions = {}): Promise<string> {
+  return await getCliConfigValue('default-ui-host', options);
+}
+
+export async function resolveDefaultApiHost(options: CliConfigOptions = {}): Promise<string> {
+  return await getCliConfigValue('default-api-host', options);
+}
+
 export async function resolveDockerContainerPrefix(options: CliConfigOptions = {}): Promise<string> {
   return await getCliConfigValue('docker.container-prefix', options);
 }
@@ -354,7 +554,9 @@ export async function resolveLicensePkgUrlFromConfig(options: CliConfigOptions =
 
 const CONFIGURABLE_COMMAND_KEYS = {
   docker: 'bin.docker',
+  caddy: 'bin.caddy',
   git: 'bin.git',
+  nginx: 'bin.nginx',
   yarn: 'bin.yarn',
 } as const;
 

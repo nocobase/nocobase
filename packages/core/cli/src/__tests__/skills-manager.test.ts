@@ -137,7 +137,7 @@ test('isNpmRegistryUnavailable returns true for npm registry network failures', 
       new Error('skills add exited with code 1: fetch failed while downloading package metadata'),
     ),
   ).toBe(true);
-  expect(isNpmRegistryUnavailable(new Error('skills list timed out after 5000ms'))).toBe(true);
+  expect(isNpmRegistryUnavailable(new Error('skills list timed out after 15000ms'))).toBe(true);
 });
 
 test('isNpmRegistryUnavailable returns false for local package validation failures', () => {
@@ -191,7 +191,7 @@ test('inspectSkillsStatus reports installed nocobase skills from managed state',
     expect(commandOutputFn.mock.calls[0]?.[2]).toEqual(
       expect.objectContaining({
         errorName: 'skills list',
-        timeoutMs: 5000,
+        timeoutMs: 15000,
       }),
     );
     expect(commandOutputFn.mock.calls[1]?.[2]).toEqual(

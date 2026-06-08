@@ -1,6 +1,11 @@
 [
   {
     "type": "dir",
+    "name": "all-in-one",
+    "label": "Hệ thống quản lý kinh doanh tích hợp"
+  },
+  {
+    "type": "dir",
     "name": "ticket-system",
     "label": "Ticket"
   },

@@ -8,7 +8,6 @@ Esta página registra o conteúdo das atualizações de cada versão da soluçã
 
 **Arquivos de backup**:
 - [nocobase_crm_v2_backup_260406.nbdata](https://static-docs.nocobase.com/nocobase_crm_v2_backup_260406.nbdata)
-- [nocobase_crm_v2_sql_260406.zip](https://static-docs.nocobase.com/nocobase_crm_v2_sql_260406.zip)
 
 **Conteúdo da atualização**:
 - Correção do problema de exibição incorreta do Summary nas tabelas
@@ -24,7 +23,6 @@ Esta página registra o conteúdo das atualizações de cada versão da soluçã
 
 **Arquivos de backup**:
 - [nocobase_crm_v2_backup_260327.nbdata](https://static-docs.nocobase.com/nocobase_crm_v2_backup_260327.nbdata)
-- [nocobase_crm_v2_sql_260327.zip](https://static-docs.nocobase.com/nocobase_crm_v2_sql_260327.zip)
 
 **Conteúdo da atualização**:
 
@@ -52,7 +50,6 @@ Esta página registra o conteúdo das atualizações de cada versão da soluçã
 
 **Arquivos de backup**:
 - nocobase_crm_v2_backup_260223.nbdata
-- nocobase_crm_v2_sql_260223.zip
 
 **Conteúdo da atualização**:
 - Primeira versão do CRM 2.0
