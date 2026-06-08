@@ -14,39 +14,13 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useT } from '../locale';
 import type { DataSourceTypeOptions } from '../plugin';
 import { compileLegacyTemplateText } from '../utils/compileLegacyTemplate';
+import { getErrorMessage, getResponseErrorMessage } from '../utils/error';
 
 export interface DataSourceFormProps {
   mode: 'create' | 'edit';
   type: DataSourceTypeOptions;
   initialValues?: Record<string, any>;
   onSubmitted: (record?: Record<string, any>) => void;
-}
-
-function getErrorMessage(error: unknown) {
-  if (typeof error === 'string') {
-    return error;
-  }
-  const responseData = (error as any)?.response?.data;
-  return (
-    (error as any)?.errorFields?.[0]?.errors?.[0] ||
-    responseData?.errors?.[0]?.message ||
-    responseData?.messages?.[0]?.message ||
-    responseData?.messages?.[0] ||
-    responseData?.error?.message ||
-    responseData?.message ||
-    (error as any)?.message
-  );
-}
-
-function getResponseErrorMessage(response: unknown) {
-  const data = (response as any)?.data;
-  return (
-    data?.errors?.[0]?.message ||
-    data?.messages?.[0]?.message ||
-    data?.messages?.[0] ||
-    data?.error?.message ||
-    data?.message
-  );
 }
 
 export function DataSourceForm(props: DataSourceFormProps) {
@@ -122,7 +96,7 @@ export function DataSourceForm(props: DataSourceFormProps) {
       }
       message.success(t('Connection successful'));
     } catch (error) {
-      const errorMessage = getErrorMessage(error) || t('Connection failed');
+      const errorMessage = getErrorMessage(error, t('Connection failed'));
       (notification || staticNotification).error({
         message: t('Test Connection'),
         description: errorMessage,
@@ -145,7 +119,7 @@ export function DataSourceForm(props: DataSourceFormProps) {
       await props.onSubmitted(response?.data?.data || values);
       await view.close();
     } catch (error) {
-      const errorMessage = getErrorMessage(error) || t('Submit failed');
+      const errorMessage = getErrorMessage(error, t('Submit failed'));
       (notification || staticNotification).error({
         message: t('Submit failed'),
         description: errorMessage,
