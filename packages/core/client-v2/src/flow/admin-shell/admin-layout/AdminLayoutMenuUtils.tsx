@@ -251,6 +251,41 @@ export const resolveAdminLayoutMenuLink = async (options: {
   return appendQueryStringToUrl(String(resolvedHref ?? href ?? ''), qs.stringify(query));
 };
 
+function normalizeRouterBasename(basename?: string) {
+  if (!basename || basename === '/') {
+    return '';
+  }
+
+  return `/${basename.replace(/^\/+/, '').replace(/\/+$/, '')}`;
+}
+
+function isStandaloneDocumentUrl(url: string) {
+  return /^[a-z][a-z\d+\-.]*:/i.test(url) || url.startsWith('//') || url.startsWith('#') || url.startsWith('?');
+}
+
+function toDocumentUrlWithRouterBasename(url: string, basename?: string) {
+  if (!url || isStandaloneDocumentUrl(url)) {
+    return url;
+  }
+
+  const normalizedBasename = normalizeRouterBasename(basename);
+  if (!normalizedBasename) {
+    return url;
+  }
+
+  const rootRelativeUrl = url.startsWith('/') ? url : `/${url}`;
+  if (
+    rootRelativeUrl === normalizedBasename ||
+    rootRelativeUrl.startsWith(`${normalizedBasename}/`) ||
+    rootRelativeUrl.startsWith(`${normalizedBasename}?`) ||
+    rootRelativeUrl.startsWith(`${normalizedBasename}#`)
+  ) {
+    return rootRelativeUrl;
+  }
+
+  return `${normalizedBasename}${rootRelativeUrl}`;
+}
+
 export const openAdminLayoutMenuLink = async (options: {
   context: FlowModel['context'];
   href: string;
@@ -275,7 +310,7 @@ export const openAdminLayoutMenuLink = async (options: {
       if (isMobile) {
         closeMobileMenu();
       }
-      window.open(url, '_blank', 'noopener,noreferrer');
+      window.open(toDocumentUrlWithRouterBasename(url, basenameOfCurrentRouter), '_blank', 'noopener,noreferrer');
       return;
     }
 
@@ -291,7 +326,7 @@ export const openAdminLayoutMenuLink = async (options: {
     if (isMobile) {
       closeMobileMenu();
     }
-    window.open(href, '_blank', 'noopener,noreferrer');
+    window.open(toDocumentUrlWithRouterBasename(href, basenameOfCurrentRouter), '_blank', 'noopener,noreferrer');
   }
 };
 

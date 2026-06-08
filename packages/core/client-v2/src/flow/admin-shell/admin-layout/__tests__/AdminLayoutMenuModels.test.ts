@@ -2266,6 +2266,21 @@ describe('AdminLayoutModel menu items', () => {
     );
   });
 
+  it('should include router basename when opening same-origin links in a new window', async () => {
+    await openAdminLayoutMenuLink({
+      context: engine.context as any,
+      href: '/admin2/page',
+      params: [{ name: 'from', value: 'admin' }],
+      openInNewWindow: true,
+      isMobile: false,
+      closeMobileMenu: vi.fn(),
+      navigate: navigateMock,
+      basenameOfCurrentRouter: '/v',
+    });
+
+    expect(window.open).toHaveBeenCalledWith('/v/admin2/page?from=admin', '_blank', 'noopener,noreferrer');
+  });
+
   it('should resolve sibling move options for non-group drag target', () => {
     const activeModel = engine.createModel<AdminLayoutMenuItemModel>({
       uid: 'drag-source-page',
