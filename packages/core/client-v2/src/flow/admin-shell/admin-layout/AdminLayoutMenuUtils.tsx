@@ -38,7 +38,11 @@ import {
   VariableScope,
   withTooltipComponent,
 } from './AdminLayoutCompat';
-import { toRouterNavigationPath } from './resolveAdminRouteRuntimeTarget';
+import {
+  type AdminLayoutRoutePathLike,
+  joinAdminLayoutRoutePath,
+  toRouterNavigationPath,
+} from './resolveAdminRouteRuntimeTarget';
 
 export type AdminLayoutMenuRenderType = 'item' | 'group';
 
@@ -122,8 +126,30 @@ type AdminLayoutMenuItemsParent = FlowModel & {
  * @param identity 节点身份
  * @returns 唯一占位路径
  */
-export const getAdminLayoutMenuVirtualPath = (type: 'link' | 'designer', identity: string | number) => {
-  return `/admin/__admin_layout__/${type}/${encodeURIComponent(String(identity))}`;
+export const getAdminLayoutMenuVirtualPath = (
+  type: 'link' | 'designer',
+  identity: string | number,
+  layout?: AdminLayoutRoutePathLike | null,
+) => {
+  return joinAdminLayoutRoutePath(layout, `__admin_layout__/${type}/${encodeURIComponent(String(identity))}`);
+};
+
+const getLayoutRoutePathFromModel = (model: FlowModel): AdminLayoutRoutePathLike | undefined => {
+  const contextLayout = model.context.layout as AdminLayoutRoutePathLike | undefined;
+  if (contextLayout?.routePath) {
+    return contextLayout;
+  }
+
+  let current: FlowModel | undefined = model;
+  while (current) {
+    const propsLayout = current.props?.layout as AdminLayoutRoutePathLike | undefined;
+    if (propsLayout?.routePath) {
+      return propsLayout;
+    }
+    current = current.parent as FlowModel | undefined;
+  }
+
+  return undefined;
 };
 
 const menuItemStyle = { display: 'flex', alignItems: 'center', justifyContent: 'space-between' };
@@ -551,7 +577,7 @@ const GroupItem: FC<{ item: AdminLayoutMenuNode; options?: AdminLayoutMenuRender
         },
       });
     },
-    [closeMobileMenu, item, item._navigationMode, navigate, props.options?.isMobile, runtimePath, spaRuntimePath],
+    [closeMobileMenu, item, navigate, props.options?.isMobile, runtimePath, spaRuntimePath],
   );
 
   const landingEntryAriaLabel = ariaLabel ? `${ariaLabel}-landing-entry` : 'group-landing-entry';
@@ -699,7 +725,7 @@ const MenuItem: FC<{ item: AdminLayoutMenuNode; options?: AdminLayoutMenuRenderO
         },
       });
     },
-    [props.options?.isMobile, closeMobileMenu, isDocumentNavigation, item, navigate, runtimePath, spaRuntimePath],
+    [props.options?.isMobile, closeMobileMenu, isDocumentNavigation, navigate, runtimePath, spaRuntimePath],
   );
 
   if (item._route?.type === NocoBaseDesktopRouteType.link) {
@@ -876,14 +902,16 @@ export function getAdminLayoutMenuInitializerButton(
   testId: string,
   launcherModel: FlowModel,
   parentRoute?: NocoBaseDesktopRoute,
+  layout?: AdminLayoutRoutePathLike | null,
 ): AdminLayoutMenuNode {
   const identity =
     parentRoute?.id ?? parentRoute?.schemaUid ?? parentRoute?.menuSchemaUid ?? parentRoute?.title ?? launcherModel.uid;
+  const menuLayout = layout || getLayoutRoutePathFromModel(launcherModel);
 
   return {
     key: 'x-designer-button',
     name: <MenuDesignerButton testId={testId} launcherModel={launcherModel} parentRoute={parentRoute} />,
-    path: getAdminLayoutMenuVirtualPath('designer', identity),
+    path: getAdminLayoutMenuVirtualPath('designer', identity, menuLayout),
     disabled: true,
     _route: {},
     _parentRoute: parentRoute,

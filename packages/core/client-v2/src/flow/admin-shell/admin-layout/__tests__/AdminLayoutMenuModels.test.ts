@@ -318,6 +318,50 @@ describe('AdminLayoutModel menu items', () => {
     expect(route.children[1]._model).toBe(adminLayoutModel.subModels.menuItems?.[1]);
   });
 
+  it('should generate ProLayout route tree under a custom admin layout route path', () => {
+    const adminLayoutModel = engine.createModel<AdminLayoutModel>({
+      uid: 'admin2-layout-model',
+      use: AdminLayoutModel,
+      props: {
+        layout: {
+          routeName: 'admin2',
+          routePath: '/admin2',
+          uid: 'admin2-layout-model',
+          layoutModelClass: 'AdminLayoutModel',
+        },
+      },
+    });
+
+    adminLayoutModel.syncMenuRoutes([
+      {
+        id: 1,
+        title: 'Group',
+        type: NocoBaseDesktopRouteType.group,
+        children: [
+          {
+            id: 11,
+            title: 'Page 1',
+            schemaUid: 'page-1',
+            type: NocoBaseDesktopRouteType.flowPage,
+          },
+        ],
+      },
+    ]);
+
+    const route = adminLayoutModel.toProLayoutRoute({
+      designable: false,
+      isMobile: false,
+      t: (title) => title,
+    });
+
+    expect(route.children[0].path).toBe('/admin2/1');
+    expect(route.children[0].redirect).toBe('/admin2/page-1');
+    expect(route.children[0]._runtimePath).toBe('/apps/demo/v2/admin2/page-1');
+    expect(route.children[0].routes?.[0].path).toBe('/admin2/page-1');
+    expect(route.children[0].routes?.[0].redirect).toBe('/admin2/page-1');
+    expect(route.children[0].routes?.[0]._runtimePath).toBe('/apps/demo/v2/admin2/page-1');
+  });
+
   it('should filter legacy page menu routes but keep empty groups in v2 admin layout', () => {
     const adminLayoutModel = engine.createModel<AdminLayoutModel>({
       uid: 'admin-layout-model',

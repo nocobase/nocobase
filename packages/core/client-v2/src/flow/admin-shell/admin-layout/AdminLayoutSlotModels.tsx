@@ -16,10 +16,16 @@ import { useTranslation } from 'react-i18next';
 import { Outlet, useLocation, useMatches, useParams } from 'react-router-dom';
 import { KeepAlive } from '../../../components/KeepAlive';
 import { getLayoutContentRouteNames } from '../../../layout-manager/utils';
-import { isV2AdminRuntime, isV2MenuRoute } from './resolveAdminRouteRuntimeTarget';
+import {
+  getAdminLayoutRoutePath,
+  isV2AdminRuntime,
+  isV2MenuRoute,
+  type AdminLayoutRoutePathLike,
+} from './resolveAdminRouteRuntimeTarget';
 
 type AdminLayoutContentProps = {
   onContentElementChange?: (element: HTMLDivElement | null) => void;
+  layout?: AdminLayoutRoutePathLike | null;
 };
 
 const layoutContentClass = css`
@@ -66,7 +72,7 @@ function isDvhSupported() {
   return testEl.style.height === '1dvh';
 }
 
-const ShowTipWhenNoPages = observer(() => {
+const ShowTipWhenNoPages = observer((props: { layout?: AdminLayoutRoutePathLike | null }) => {
   const flowEngine = useFlowEngine();
   const { token } = antdTheme.useToken();
   const { t } = useTranslation();
@@ -76,8 +82,13 @@ const ShowTipWhenNoPages = observer(() => {
     ? allAccessRoutes.filter((route) => isV2MenuRoute(route))
     : allAccessRoutes;
   const designable = !!flowEngine.context.flowSettingsEnabled;
+  const layoutRoutePath = getAdminLayoutRoutePath(props.layout);
 
-  if (visibleRoutes.length === 0 && !designable && ['/admin', '/admin/'].includes(location.pathname)) {
+  if (
+    visibleRoutes.length === 0 &&
+    !designable &&
+    (location.pathname === layoutRoutePath || location.pathname === `${layoutRoutePath}/`)
+  ) {
     return (
       <Result
         icon={<HighlightOutlined style={{ fontSize: '8em', color: token.colorText }} />}
@@ -95,7 +106,7 @@ const ShowTipWhenNoPages = observer(() => {
  *
  * 内容区不再依赖独立 FlowModel，而是通过回调把挂载目标同步给 root model。
  */
-export const AdminLayoutContent: FC<AdminLayoutContentProps> = ({ onContentElementChange }) => {
+export const AdminLayoutContent: FC<AdminLayoutContentProps> = ({ onContentElementChange, layout }) => {
   const style = useMemo(() => (isDvhSupported() ? mobileHeight : undefined), []);
   const params = useParams();
   const matches = useMatches();
@@ -118,7 +129,7 @@ export const AdminLayoutContent: FC<AdminLayoutContentProps> = ({ onContentEleme
     >
       <div style={pageContentStyle}>
         {shouldKeepAlive && pageUid ? <KeepAlive uid={pageUid}>{() => <Outlet />}</KeepAlive> : <Outlet />}
-        <ShowTipWhenNoPages />
+        <ShowTipWhenNoPages layout={layout} />
       </div>
     </div>
   );

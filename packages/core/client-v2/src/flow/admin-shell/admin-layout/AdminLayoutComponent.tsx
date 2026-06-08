@@ -42,6 +42,7 @@ import {
   FLOW_SETTINGS_PREFERENCE_STORAGE_KEY,
   readFlowSettingsPreference,
 } from './flowSettingsPreference';
+import { joinAdminLayoutRoutePath, type AdminLayoutRoutePathLike } from './resolveAdminRouteRuntimeTarget';
 
 const className1 = css`
   height: var(--nb-header-height);
@@ -313,25 +314,37 @@ const DesignerButtonMenuItem: FC<{ item: AdminLayoutMenuNode; fallbackParentRout
   );
 };
 
-const matchesRoutePath = (route: NocoBaseDesktopRoute | undefined, pathname: string): boolean => {
+const matchesRoutePath = (
+  route: NocoBaseDesktopRoute | undefined,
+  pathname: string,
+  layout?: AdminLayoutRoutePathLike | null,
+): boolean => {
   if (!route) {
     return false;
   }
 
   const candidates = [
-    route.id != null ? `/admin/${route.id}` : null,
-    route.schemaUid ? `/admin/${route.schemaUid}` : null,
+    route.id != null ? joinAdminLayoutRoutePath(layout, route.id) : null,
+    route.schemaUid ? joinAdminLayoutRoutePath(layout, route.schemaUid) : null,
   ].filter(Boolean) as string[];
 
   if (candidates.some((candidate) => pathname === candidate || pathname.startsWith(`${candidate}/`))) {
     return true;
   }
 
-  return Array.isArray(route.children) ? route.children.some((child) => matchesRoutePath(child, pathname)) : false;
+  return Array.isArray(route.children)
+    ? route.children.some((child) => matchesRoutePath(child, pathname, layout))
+    : false;
 };
 
-const findSelectedTopGroupRoute = (routes: NocoBaseDesktopRoute[], pathname: string) => {
-  return routes.find((route) => route.type === NocoBaseDesktopRouteType.group && matchesRoutePath(route, pathname));
+const findSelectedTopGroupRoute = (
+  routes: NocoBaseDesktopRoute[],
+  pathname: string,
+  layout?: AdminLayoutRoutePathLike | null,
+) => {
+  return routes.find(
+    (route) => route.type === NocoBaseDesktopRouteType.group && matchesRoutePath(route, pathname, layout),
+  );
 };
 
 const renderMenuNodeWithModel = (
@@ -375,6 +388,11 @@ export const AdminLayoutComponent = observer((props: any) => {
   const { token } = antdTheme.useToken();
   const customToken = token as CustomToken;
   const isMobileLayout = !!adminLayoutModel?.isMobileLayout;
+  const adminLayoutRoutePath = adminLayoutModel?.layout?.routePath;
+  const adminLayoutRoutePathLike = useMemo<AdminLayoutRoutePathLike | undefined>(
+    () => (adminLayoutRoutePath ? { routePath: adminLayoutRoutePath } : undefined),
+    [adminLayoutRoutePath],
+  );
   const menuRouteRefreshVersion = adminLayoutModel?.menuRouteRefreshVersion || 0;
   const isMobileSider = isMobileLayout;
   const [collapsed, setCollapsed] = useState(isMobileSider);
@@ -401,8 +419,8 @@ export const AdminLayoutComponent = observer((props: any) => {
     [adminLayoutModel],
   );
   const selectedTopGroupRoute = useMemo(
-    () => findSelectedTopGroupRoute(allAccessRoutes, location.pathname),
-    [allAccessRoutes, location.pathname],
+    () => findSelectedTopGroupRoute(allAccessRoutes, location.pathname, adminLayoutRoutePathLike),
+    [adminLayoutRoutePathLike, allAccessRoutes, location.pathname],
   );
 
   const handleMenuDragEnd = useCallback(
@@ -669,7 +687,10 @@ export const AdminLayoutComponent = observer((props: any) => {
                     <SetIsMobileLayout isMobile={isMobile} model={adminLayoutModel}>
                       <ConfigProvider theme={isMobile ? mobileTheme : theme}>
                         <GlobalStyle />
-                        <AdminLayoutContent onContentElementChange={handleLayoutContentElementChange} />
+                        <AdminLayoutContent
+                          layout={adminLayoutModel?.layout}
+                          onContentElementChange={handleLayoutContentElementChange}
+                        />
                       </ConfigProvider>
                     </SetIsMobileLayout>
                   );
