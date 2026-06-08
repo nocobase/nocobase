@@ -18,42 +18,17 @@ import { useWorkflowExecuted } from './hooks';
 import { lang } from './locale';
 import useStyles from './style';
 import { collectUpstreams, extractDependencyKeys, stripVariableReferences } from './nodeVariableUtils';
+// The pure drop-impact graph walks now live in client-v2 and are shared by both
+// canvases (ADR-0003). Re-exported here so existing v1 import sites (and the v1
+// golden-baseline test) are unchanged.
+import { collectDownstreams, collectBranchSubtree } from '../client-v2/canvas/dropImpact';
+
+export { collectDownstreams, collectBranchSubtree } from '../client-v2/canvas/dropImpact';
 
 const NodeDragContext = createContext<any>(null);
 
 export function useNodeDragContext() {
   return useContext(NodeDragContext);
-}
-
-function collectDownstreams(start, branchChildrenMap: Map<number, any[]>, visited = new Set<number>()): Set<number> {
-  const result = new Set<number>();
-  const stack = start ? [start] : [];
-  while (stack.length) {
-    const head = stack.pop();
-    for (let node = head; node; node = node.downstream) {
-      if (!node || visited.has(node.id)) {
-        break;
-      }
-      visited.add(node.id);
-      result.add(node.id);
-      const branches = branchChildrenMap.get(node.id) ?? [];
-      branches.forEach((branch) => stack.push(branch));
-    }
-  }
-  return result;
-}
-
-function collectBranchSubtree(root, branchChildrenMap: Map<number, any[]>): Set<number> {
-  const result = new Set<number>();
-  if (!root) {
-    return result;
-  }
-  result.add(root.id);
-  const branchHeads = branchChildrenMap.get(root.id) ?? [];
-  branchHeads.forEach((branch) => {
-    collectDownstreams(branch, branchChildrenMap, result);
-  });
-  return result;
 }
 
 function isInteractiveTarget(target: EventTarget | null): boolean {
