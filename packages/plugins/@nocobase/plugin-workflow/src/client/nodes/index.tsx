@@ -20,7 +20,6 @@ import {
   ActionContextProvider,
   FormProvider,
   SchemaComponent,
-  SchemaInitializerItemType,
   Variable,
   css,
   cx,
@@ -41,83 +40,30 @@ import { JobStatusOptionsMap } from '../constants';
 import { useGetAriaLabelOfAddButton, useWorkflowExecuted } from '../hooks';
 import { lang } from '../locale';
 import useStyles from '../style';
-import { UseVariableOptions, VariableOption, WorkflowVariableInput } from '../variable';
+import { WorkflowVariableInput } from '../variable';
 import { useRemoveNodeContext } from '../RemoveNodeContext';
 import { useNodeDragContext } from '../NodeDragContext';
 import { useNodeClipboardContext } from '../NodeClipboardContext';
-import { SubModelItem } from '@nocobase/flow-engine';
 
-export type NodeAvailableContext = {
-  engine: WorkflowPlugin;
-  workflow: object;
-  upstream: object;
-  branchIndex: number;
-  syncOnly?: boolean;
-};
+// The Instruction base class + its pure logic hooks + NodeContext now live in
+// client-v2 and are shared by both canvases (ADR-0002/0003). Re-exported here so
+// the ~16 node files that `extends Instruction` from this barrel are unchanged.
+import {
+  Instruction,
+  NodeContext,
+  useNodeContext,
+  useAvailableUpstreams,
+  useUpstreamScopes,
+} from '../../client-v2/canvas/Instruction';
 
-type Config = Record<string, any>;
-
-type Options = { label: string; value: any }[];
-
-export abstract class Instruction {
-  title: string;
-  type: string;
-  group: string;
-  description?: string;
-  icon?: JSX.Element;
-  async?: boolean;
-  /**
-   * @deprecated migrate to `presetFieldset` instead
-   */
-  options?: { label: string; value: any; key: string }[];
-  fieldset: Record<string, ISchema>;
-  /**
-   * @experimental
-   */
-  presetFieldset?: Record<string, ISchema>;
-  /**
-   * To presentation if the instruction is creating a branch
-   * @experimental
-   */
-  branching?: boolean | Options | ((config: Config) => boolean | Options);
-  /**
-   * @experimental
-   */
-  view?: ISchema;
-  scope?: Record<string, any>;
-  components?: Record<string, any>;
-  Component?(props): JSX.Element;
-  /**
-   * @experimental
-   */
-  createDefaultConfig?(): Config {
-    return {};
-  }
-  useVariables?(node, options?: UseVariableOptions): VariableOption;
-  useScopeVariables?(node, options?): VariableOption[];
-  useInitializers?(node): SchemaInitializerItemType | null;
-  /**
-   * @experimental
-   */
-  isAvailable?(ctx: NodeAvailableContext): boolean;
-  end?: boolean | ((node) => boolean);
-  testable?: boolean;
-  /**
-   * 2.0
-   */
-  getCreateModelMenuItem?({ node, workflow }): SubModelItem | null;
-  /**
-   * @experimental
-   */
-  useTempAssociationSource?(node): TempAssociationSource | null;
-}
-
-export type TempAssociationSource = {
-  collection: string;
-  nodeId: string | number;
-  nodeKey: string;
-  nodeType: 'workflow' | 'node';
-};
+export {
+  Instruction,
+  NodeContext,
+  useNodeContext,
+  useAvailableUpstreams,
+  useUpstreamScopes,
+} from '../../client-v2/canvas/Instruction';
+export type { NodeAvailableContext, TempAssociationSource } from '../../client-v2/canvas/Instruction';
 
 function useUpdateAction() {
   const form = useForm();
@@ -155,47 +101,9 @@ export async function updateNodeConfig({ api, nodeId, config, resourceName = 'fl
   });
 }
 
-export const NodeContext = React.createContext<any>({});
-
-export function useNodeContext() {
-  return useContext(NodeContext);
-}
-
 export function useNodeSavedConfig(keys = []) {
   const node = useNodeContext();
   return keys.some((key) => get(node.config, key) != null);
-}
-
-/**
- * @experimental
- */
-export function useAvailableUpstreams(node, filter?) {
-  const stack: any[] = [];
-  if (!node) {
-    return [];
-  }
-  for (let current = node.upstream; current; current = current.upstream) {
-    if (typeof filter !== 'function' || filter(current)) {
-      stack.push(current);
-    }
-  }
-
-  return stack;
-}
-
-/**
- * @experimental
- */
-export function useUpstreamScopes(node) {
-  const stack: any[] = [];
-
-  for (let current = node; current; current = current.upstream) {
-    if (current.upstream && current.branchIndex != null) {
-      stack.push(current.upstream);
-    }
-  }
-
-  return stack;
 }
 
 export function Node({ data }) {
