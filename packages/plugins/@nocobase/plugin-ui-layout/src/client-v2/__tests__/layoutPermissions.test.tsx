@@ -137,7 +137,7 @@ describe('plugin-ui-layout route permissions', () => {
     expect(addPermissionsTab).toHaveBeenCalledWith(
       expect.objectContaining({
         key: 'menu',
-        label: 'Menu permissions',
+        label: 'Layout permissions',
         sort: 20,
       }),
     );
