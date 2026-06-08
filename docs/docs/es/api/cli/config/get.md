@@ -1,12 +1,12 @@
 ---
-title: "nb config get"
-description: "Referencia del comando nb config get: obtener el valor efectivo de una clave de configuración del CLI."
-keywords: "nb config get,NocoBase CLI,configuration"
+title: 'nb config get'
+description: 'Referencia del comando nb config get: lee el valor efectivo de un elemento de configuración de la CLI.'
+keywords: 'nb config get,NocoBase CLI,leer configuración'
 ---
 
 # nb config get
 
-Obtiene el valor efectivo de una clave de configuración del CLI. Si no existe un valor configurado explícitamente, se devuelve el valor predeterminado.
+Lee el valor efectivo del elemento de configuración de la CLI especificado. Si no se ha establecido explícitamente, devuelve el valor predeterminado.
 
 ## Uso
 
@@ -16,9 +16,9 @@ nb config get <key>
 
 ## Parámetros
 
-| Parámetro | Tipo | Descripción |
-| --- | --- | --- |
-| `<key>` | string | Clave de configuración: `locale`, `update.policy`, `license.pkg-url`, `docker.network`, `docker.container-prefix`, `bin.docker`, `bin.git` o `bin.yarn` |
+| Parámetro | Tipo   | Descripción                                                                                                                                        |
+| --------- | ------ | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `<key>` | string | Nombre del elemento de configuración. Consulta [`nb config`](./index.md) para ver los valores admitidos |
 
 ## Ejemplos
 
@@ -28,6 +28,9 @@ nb config get update.policy
 nb config get license.pkg-url
 nb config get docker.network
 nb config get docker.container-prefix
+nb config get proxy.nb-cli-root
+nb config get proxy.upstream-host
+nb config get bin.nginx
 nb config get bin.git
 ```
 

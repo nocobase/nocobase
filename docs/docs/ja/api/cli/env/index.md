@@ -1,56 +1,60 @@
 ---
-title: "nb env"
-description: "nb env コマンドリファレンス：NocoBase CLI env の管理。追加、現在の env の確認、状態確認、切り替え、認証、削除を行います。"
-keywords: "nb env,NocoBase CLI,環境管理,env,現在の env,認証,OpenAPI"
+title: 'nb env'
+description: 'nb env コマンドリファレンス: NocoBase CLI の env を管理します。追加、current env の確認、状態確認、切り替え、更新、プロキシ設定の生成、認証、削除に対応します。'
+keywords: 'nb env,NocoBase CLI,環境管理,env,current env,proxy,認証,OpenAPI'
 ---
 
 # nb env
 
-保存済みの NocoBase CLI env を管理します。env には API アドレス、認証情報、ローカルアプリケーションパス、データベース設定、ランタイムコマンドキャッシュが保存されます。
+保存済みの NocoBase CLI env を管理します。env には、API アドレス、認証情報、ローカルアプリのパス、データベース設定などの接続情報やローカル実行情報が保存されます。
 
-現在のモデルでは、CLI は 2 つの概念を分けています。
+このバージョンから、CLI では 2 つの概念を分けています。
 
-- `current env`: アクティブなシェルまたはエージェントランタイムで使用される env。利用可能な場合は `NB_SESSION_ID` で分離されます
-- `last env`: グローバルで最後に使用された env。session mode が有効でない場合のフォールバックとして使われます
+- `current env`：現在の shell または agent runtime で使用中の env。可能な限り `NB_SESSION_ID` によって分離されます
+- `last env`：グローバルで最後に使用した env。session mode がない場合のフォールバック値として使われます
 
 ## 使い方
 
-
+```bash
 nb env <command>
+```
 
 ## サブコマンド
 
-| コマンド | 説明 |
-| --- | --- |
-| [`nb env add`](./add.md) | NocoBase API エンドポイントを保存し、その env に切り替えます |
-| [`nb env current`](./current.md) | 現在有効な env を表示します |
-| [`nb env update`](./update.md) | アプリケーションから OpenAPI Schema とランタイムコマンドキャッシュを更新します |
-| [`nb env list`](./list.md) | 設定済みの env を一覧表示します |
-| [`nb env status`](./status.md) | 現在の env、1 つの env、またはすべての env の状態を表示します |
-| [`nb env info`](./info.md) | 単一の env の詳細情報を表示します |
-| [`nb env remove`](./remove.md) | env 設定を削除します |
-| [`nb env auth`](./auth.md) | 保存済みの env に対して OAuth ログインを実行します |
-| [`nb env use`](./use.md) | 現在の env を切り替えます |
+| コマンド                         | 説明                                                                |
+| -------------------------------- | ------------------------------------------------------------------- |
+| [`nb env add`](./add.md)         | NocoBase API endpoint を保存し、この env に切り替えます             |
+| [`nb env current`](./current.md) | 現在有効な env を表示します                                         |
+| [`nb env update`](./update.md)   | 保存済み env の設定を更新し、必要に応じて後続の同期を自動処理します |
+| [`nb env list`](./list.md)       | 設定済みの env を一覧表示します                                     |
+| [`nb env status`](./status.md)   | 現在の env、指定した env、またはすべての env の状態を表示します     |
+| [`nb env info`](./info.md)       | 単一の env の詳細情報を表示します                                   |
+| [`nb env proxy`](./proxy.md)   | 管理対象 env 向けの Nginx または Caddy のプロキシ設定を生成します                         |
+| [`nb env remove`](./remove.md)   | 管理対象のランタイムを停止した後で env 設定を削除します             |
+| [`nb env auth`](./auth.md)       | 保存済み env に対して OAuth ログインを実行します                    |
+| [`nb env use`](./use.md)         | 現在の env を切り替えます                                           |
 
-## 使用例
+## 例
 
-
+```bash
 nb env add app1 --api-base-url http://localhost:13000/api
 nb env current
 nb env list
 nb env status
 nb env info app1
+nb env proxy app1
 nb env update app1
 nb env use app1
 nb env auth app1
+```
 
-## Session mode
+## session mode
 
-Session mode を既定で推奨します。これにより、異なるターミナル、シェル、エージェントランタイム間で `current env` が分離され、並行作業が互いに影響しにくくなります。
+デフォルトでは session mode を有効にすることを推奨します。これにより、異なる端末、異なる shell、または異なる agent runtime における `current env` を互いに分離でき、並行しても相互に影響しません。
 
-session mode が有効でない場合、`nb env use` はグローバルな `last env` を更新し、分離されていない他のセッションにも影響することがあります。
+session mode が有効でない場合、`nb env use` はグローバルな `last env` を更新し、session 分離のない他のセッションにも影響します。
 
-[`nb session setup`](../session/setup.md) で有効化できます。
+有効化の方法は [`nb session setup`](../session/setup.md) を参照してください。
 
 ## 関連コマンド
 

@@ -17,15 +17,27 @@ interface CrossRef {
   aliasRoute: string;
 }
 
-type SidebarNode = SidebarItem | SidebarGroup | SidebarSectionHeader | SidebarDivider;
+type SidebarNode =
+  | SidebarItem
+  | SidebarGroup
+  | SidebarSectionHeader
+  | SidebarDivider;
 
 // ── 递归收集所有叶子 link（用于跨模块检测）────────────────────────────
+
+function shouldProxyLink(obj: Record<string, unknown>): boolean {
+  return obj.proxy !== false;
+}
 
 function collectLeafLinks(entries: unknown[]): string[] {
   const links: string[] = [];
   for (const entry of entries) {
     const obj = entry as Record<string, unknown>;
-    if (typeof obj?.link === 'string' && !Array.isArray(obj.items)) {
+    if (
+      typeof obj?.link === 'string' &&
+      !Array.isArray(obj.items) &&
+      shouldProxyLink(obj)
+    ) {
       links.push(obj.link as string);
     }
     if (Array.isArray(obj?.items)) {
@@ -74,7 +86,13 @@ function resolveEntries(
       if (Array.isArray(obj.items)) {
         result.push({
           text: (obj.label as string) || '',
-          items: resolveEntries(root, relDir, obj.items as unknown[], crossRefs, topDir),
+          items: resolveEntries(
+            root,
+            relDir,
+            obj.items as unknown[],
+            crossRefs,
+            topDir,
+          ),
           collapsible: true,
           collapsed: obj.collapsed !== false,
         });
@@ -86,14 +104,17 @@ function resolveEntries(
 
     // divider
     if (type === 'divider') {
-      const divider: SidebarDivider = { dividerType: obj.dashed ? 'dashed' : 'solid' };
+      const divider: SidebarDivider = {
+        dividerType: obj.dashed ? 'dashed' : 'solid',
+      };
       result.push(divider);
       continue;
     }
 
     // type: "file" 或 { type: "file", name: "xxx" }
     if (type === 'file' && typeof obj.name === 'string') {
-      const route = obj.name === 'index' ? relDir || '/' : relDir + '/' + obj.name;
+      const route =
+        obj.name === 'index' ? relDir || '/' : relDir + '/' + obj.name;
       const label = typeof obj.label === 'string' ? obj.label : obj.name;
       result.push({ text: label, link: route });
       continue;
@@ -128,15 +149,26 @@ function resolveEntries(
     }
 
     // custom-link / dir 带 items → 显式分组
-    if ((type === 'custom-link' || type === 'dir') && Array.isArray(obj.items)) {
+    if (
+      (type === 'custom-link' || type === 'dir') &&
+      Array.isArray(obj.items)
+    ) {
       const group: SidebarGroup = {
         text: (obj.label as string) || '',
-        items: resolveEntries(root, relDir, obj.items as unknown[], crossRefs, topDir),
+        items: resolveEntries(
+          root,
+          relDir,
+          obj.items as unknown[],
+          crossRefs,
+          topDir,
+        ),
         collapsible: obj.collapsible !== false,
         collapsed: obj.collapsed === true,
       };
       if (typeof obj.link === 'string') {
-        group.link = rewriteIfCrossRef(obj.link as string, crossRefs, topDir);
+        group.link = shouldProxyLink(obj)
+          ? rewriteIfCrossRef(obj.link as string, crossRefs, topDir)
+          : (obj.link as string);
       }
       result.push(group);
       continue;
@@ -146,7 +178,9 @@ function resolveEntries(
     if (type === 'custom-link' && typeof obj.link === 'string') {
       result.push({
         text: (obj.label as string) || '',
-        link: rewriteIfCrossRef(obj.link as string, crossRefs, topDir),
+        link: shouldProxyLink(obj)
+          ? rewriteIfCrossRef(obj.link as string, crossRefs, topDir)
+          : (obj.link as string),
       });
       continue;
     }
@@ -178,12 +212,14 @@ function autoDiscoverFiles(root: string, relDir: string): SidebarNode[] {
   if (!fs.existsSync(absDir)) return [];
 
   const items: SidebarNode[] = [];
-  for (const entry of fs.readdirSync(absDir, { withFileTypes: true }).sort((a, b) => {
-    // index 文件排最前
-    if (a.name.startsWith('index.')) return -1;
-    if (b.name.startsWith('index.')) return 1;
-    return a.name.localeCompare(b.name);
-  })) {
+  for (const entry of fs
+    .readdirSync(absDir, { withFileTypes: true })
+    .sort((a, b) => {
+      // index 文件排最前
+      if (a.name.startsWith('index.')) return -1;
+      if (b.name.startsWith('index.')) return 1;
+      return a.name.localeCompare(b.name);
+    })) {
     if (entry.name.startsWith('.') || entry.name.startsWith('_')) continue;
     if (entry.isFile() && /\.(md|mdx)$/.test(entry.name)) {
       const name = entry.name.replace(/\.(md|mdx)$/, '');
@@ -201,7 +237,7 @@ function rewriteIfCrossRef(
   topDir: string,
 ): string {
   const ref = crossRefs.find(
-    r => r.sourceDir === topDir && r.targetLink === link,
+    (r) => r.sourceDir === topDir && r.targetLink === link,
   );
   if (!ref) return link;
   const hashIndex = link.indexOf('#');
@@ -250,11 +286,16 @@ export function pluginCrossRefSidebar(): RspressPlugin {
         if (!Array.isArray(meta) || meta.length === 0) continue;
 
         for (const link of collectLeafLinks(meta)) {
-          if (link.startsWith('http://') || link.startsWith('https://')) continue;
+          if (link.startsWith('http://') || link.startsWith('https://'))
+            continue;
           const linkPath = link.split('#')[0];
           if (linkPath !== topDir && !linkPath.startsWith(topDir + '/')) {
             // 避免重复
-            if (!crossRefs.some(r => r.sourceDir === topDir && r.targetLink === link)) {
+            if (
+              !crossRefs.some(
+                (r) => r.sourceDir === topDir && r.targetLink === link,
+              )
+            ) {
               crossRefs.push({
                 sourceDir: topDir,
                 targetLink: link,
@@ -273,12 +314,16 @@ export function pluginCrossRefSidebar(): RspressPlugin {
       if (crossRefs.length === 0) return config;
 
       // 2. 为所有顶层目录生成 sidebar（设置后 _meta.json 不再生效）
-      const sidebar: Sidebar =
-        (config.themeConfig?.sidebar as Sidebar) || {};
+      const sidebar: Sidebar = (config.themeConfig?.sidebar as Sidebar) || {};
 
       for (const entry of fs.readdirSync(root, { withFileTypes: true })) {
         if (!entry.isDirectory()) continue;
-        if (entry.name.startsWith('.') || entry.name === 'node_modules' || entry.name === 'public') continue;
+        if (
+          entry.name.startsWith('.') ||
+          entry.name === 'node_modules' ||
+          entry.name === 'public'
+        )
+          continue;
 
         const relDir = '/' + entry.name;
         const metaFile = path.join(root, entry.name, '_meta.json');
@@ -292,9 +337,10 @@ export function pluginCrossRefSidebar(): RspressPlugin {
           entries = [];
         }
 
-        const items = entries.length > 0
-          ? resolveEntries(root, relDir, entries, crossRefs, relDir)
-          : autoDiscoverFiles(root, relDir);
+        const items =
+          entries.length > 0
+            ? resolveEntries(root, relDir, entries, crossRefs, relDir)
+            : autoDiscoverFiles(root, relDir);
 
         // Rspress 默认 sidebar key 不带尾斜杠（如 '/plugin-development'）。
         // 若未来 Rspress 启用 trailingSlash，需改为 sidebar[relDir + '/']。
@@ -307,9 +353,7 @@ export function pluginCrossRefSidebar(): RspressPlugin {
       // 3. 同步 _nav.json
       const navFile = path.join(root, '_nav.json');
       if (!config.themeConfig.nav && fs.existsSync(navFile)) {
-        config.themeConfig.nav = JSON.parse(
-          fs.readFileSync(navFile, 'utf-8'),
-        );
+        config.themeConfig.nav = JSON.parse(fs.readFileSync(navFile, 'utf-8'));
       }
 
       return config;
@@ -322,7 +366,13 @@ export function pluginCrossRefSidebar(): RspressPlugin {
       // 按语言隔离临时目录，避免并行构建（CI 中多语言同时跑）共用同名文件 cross-ref-N.md
       // 导致后写覆盖先写，使虚拟路由的源内容串到错误的语言。
       const lang = process.env.DOCS_LANG || 'en';
-      const tempDir = path.join(process.cwd(), 'node_modules', '.rspress', 'cross-ref', lang);
+      const tempDir = path.join(
+        process.cwd(),
+        'node_modules',
+        '.rspress',
+        'cross-ref',
+        lang,
+      );
       fs.mkdirSync(tempDir, { recursive: true });
 
       return crossRefs
@@ -334,7 +384,12 @@ export function pluginCrossRefSidebar(): RspressPlugin {
           const rawContent = fs.readFileSync(filepath, 'utf-8');
           // 源文件里的相对链接是相对源目录的，拷到临时目录后会失效——按源目录改写成
           // 相对 lang 根的绝对路径，让 rspress 在 alias route 上也能解析。
-          const srcRelDir = '/' + path.relative(root, path.dirname(filepath)).split(path.sep).join('/');
+          const srcRelDir =
+            '/' +
+            path
+              .relative(root, path.dirname(filepath))
+              .split(path.sep)
+              .join('/');
           const content = rewriteRelativeMarkdownLinks(rawContent, srcRelDir);
           // 写成 .md 而不是让 Rspress 默认写成 .mdx，避免 MDX 严格模式导致 HTML 注释报错
           const tempFile = path.join(tempDir, `cross-ref-${index}.md`);
@@ -350,21 +405,25 @@ export function pluginCrossRefSidebar(): RspressPlugin {
 
 // ── 工具函数 ──────────────────────────────────────────────────────────
 
-
-
 /** 把 markdown 里的相对链接（./xxx、../xxx）按源目录改写成相对 lang 根的绝对路径。
  *  跳过图片（!\[...\]）、外链、锚点链接和已经是绝对路径的目标。 */
-function rewriteRelativeMarkdownLinks(content: string, srcRelDir: string): string {
-  return content.replace(/(!?)(\[[^\]\n]*\])\(([^)\s]+)(\s+"[^"]*")?\)/g, (match, bang, label, target, title) => {
-    if (bang) return match;
-    if (!target.startsWith('./') && !target.startsWith('../')) return match;
-    const hashIdx = target.search(/[#?]/);
-    const base = hashIdx >= 0 ? target.slice(0, hashIdx) : target;
-    const suffix = hashIdx >= 0 ? target.slice(hashIdx) : '';
-    const resolved = path.posix.normalize(path.posix.join(srcRelDir, base));
-    const absolute = resolved.startsWith('/') ? resolved : '/' + resolved;
-    return `${label}(${absolute}${suffix}${title || ''})`;
-  });
+function rewriteRelativeMarkdownLinks(
+  content: string,
+  srcRelDir: string,
+): string {
+  return content.replace(
+    /(!?)(\[[^\]\n]*\])\(([^)\s]+)(\s+"[^"]*")?\)/g,
+    (match, bang, label, target, title) => {
+      if (bang) return match;
+      if (!target.startsWith('./') && !target.startsWith('../')) return match;
+      const hashIdx = target.search(/[#?]/);
+      const base = hashIdx >= 0 ? target.slice(0, hashIdx) : target;
+      const suffix = hashIdx >= 0 ? target.slice(hashIdx) : '';
+      const resolved = path.posix.normalize(path.posix.join(srcRelDir, base));
+      const absolute = resolved.startsWith('/') ? resolved : '/' + resolved;
+      return `${label}(${absolute}${suffix}${title || ''})`;
+    },
+  );
 }
 
 function resolveSourceFile(root: string, link: string): string | null {
@@ -383,7 +442,12 @@ function findAllMetaJson(dir: string): string[] {
   const results: string[] = [];
   for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
     const full = path.join(dir, entry.name);
-    if (entry.isDirectory() && entry.name !== 'node_modules' && entry.name !== 'public' && !entry.name.startsWith('.')) {
+    if (
+      entry.isDirectory() &&
+      entry.name !== 'node_modules' &&
+      entry.name !== 'public' &&
+      !entry.name.startsWith('.')
+    ) {
       results.push(...findAllMetaJson(full));
     } else if (entry.name === '_meta.json') {
       results.push(full);

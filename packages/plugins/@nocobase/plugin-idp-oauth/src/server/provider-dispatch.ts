@@ -61,6 +61,16 @@ function assertRegistrationRedirectUris(ctx: DispatchContext, pathname: string) 
   }
 
   const body = getRequestBody(ctx);
+  const clientId = body?.client_id;
+  if (typeof clientId === 'string' && clientId.startsWith('app:')) {
+    ctx.status = 400;
+    ctx.body = {
+      error: 'invalid_client_metadata',
+      error_description: 'client_id prefix app: is reserved',
+    };
+    return false;
+  }
+
   const redirectUris = body?.redirect_uris;
   if (
     !Array.isArray(redirectUris) ||
@@ -342,5 +352,7 @@ export async function dispatchCurrentRequestToProvider(
   apiBasePath: string,
 ) {
   const provider = await service.ensureProviderForContext(ctx);
-  return dispatchToProvider(ctx, provider, getProviderInternalPath(ctx.path, apiBasePath), service);
+  return service.runWithProviderContext(ctx, () =>
+    dispatchToProvider(ctx, provider, getProviderInternalPath(ctx.path, apiBasePath), service),
+  );
 }

@@ -27,6 +27,8 @@ import type {
   AppCommandAdapter,
   AppModel,
   BootstrapLock,
+  AppCondition,
+  GetAppsByConditionOptions,
 } from './types';
 import { getErrorLevel } from '../errors/handler';
 import { ConditionalRegistry, Predicate } from './condition-registry';
@@ -72,6 +74,7 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
   private processAdapterName: string;
   private commandAdapterName: string;
   private appDbCreator = new ConditionalRegistry<AppDbCreatorOptions, void>();
+  private appConditions = new Map<string, AppCondition>();
   public appOptionsFactory: AppOptionsFactory = appOptionsFactory;
 
   private environmentHeartbeatInterval = 2 * 60 * 1000;
@@ -516,6 +519,35 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
     return this.discoveryAdapter.getAppModel(appName);
   }
 
+  registerAppCondition(name: string, condition: AppCondition) {
+    this.appConditions.set(name, condition);
+  }
+
+  unregisterAppCondition(name: string) {
+    this.appConditions.delete(name);
+  }
+
+  getAppCondition(name: string) {
+    return this.appConditions.get(name);
+  }
+
+  getAppConditions() {
+    return Array.from(this.appConditions.entries());
+  }
+
+  async getAppsByCondition(conditionName: string, options: GetAppsByConditionOptions = {}) {
+    const condition = this.getAppCondition(conditionName);
+    if (!condition || typeof this.discoveryAdapter.getAppsByCondition !== 'function') {
+      return [];
+    }
+    return this.discoveryAdapter.getAppsByCondition(conditionName, condition, {
+      ...options,
+      environmentName: options.allEnvironments
+        ? options.environmentName
+        : options.environmentName ?? this.environmentName,
+    });
+  }
+
   async removeAppModel(appName: string) {
     if (typeof this.discoveryAdapter.removeAppModel !== 'function') {
       return;
@@ -530,25 +562,18 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
     return this.discoveryAdapter.getAppNameByCName(cname);
   }
 
-  async addAutoStartApps(environmentName: string, appNames: string[]) {
-    if (typeof this.discoveryAdapter.addAutoStartApps !== 'function') {
+  async addAppsToCondition(conditionName: string, environmentName: string, appNames: string[]) {
+    if (typeof this.discoveryAdapter.addAppsToCondition !== 'function') {
       return;
     }
-    return this.discoveryAdapter.addAutoStartApps(environmentName, appNames);
+    return this.discoveryAdapter.addAppsToCondition(conditionName, environmentName, appNames);
   }
 
-  async getAutoStartApps() {
-    if (typeof this.discoveryAdapter.getAutoStartApps === 'function') {
-      return this.discoveryAdapter.getAutoStartApps(this.environmentName);
-    }
-    return [];
-  }
-
-  async removeAutoStartApps(environmentName: string, appNames: string[]) {
-    if (typeof this.discoveryAdapter.addAutoStartApps !== 'function') {
+  async removeAppsFromCondition(conditionName: string, environmentName: string, appNames: string[]) {
+    if (typeof this.discoveryAdapter.removeAppsFromCondition !== 'function') {
       return;
     }
-    return this.discoveryAdapter.removeAutoStartApps(environmentName, appNames);
+    return this.discoveryAdapter.removeAppsFromCondition(conditionName, environmentName, appNames);
   }
 
   addApp(app: Application) {
@@ -591,6 +616,10 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
 
   async upgradeApp(appName: string, context?: { requestId: string }) {
     await this.processAdapter.upgradeApp(appName, context);
+  }
+
+  async dispatchAppEvent(appName: string, event: string, payload?: any, context?: { requestId: string }) {
+    return this.processAdapter.dispatchAppEvent?.(appName, event, payload, context);
   }
 
   /**
@@ -849,6 +878,8 @@ export type {
   AppOptionsFactory,
   AppModel,
   AppModelOptions,
+  AppCondition,
+  GetAppsByConditionOptions,
   BootstrapLock,
 } from './types';
 export { MainOnlyAdapter } from './main-only-adapter';

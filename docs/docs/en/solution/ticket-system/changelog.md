@@ -8,7 +8,6 @@ This page documents the update history for the Ticketing System solution. New en
 
 **Backup files**:
 - [nocobase_tickets_v2_backup_260324.nbdata](https://static-docs.nocobase.com/nocobase_tickets_v2_backup_260324.nbdata)
-- [nocobase_tickets_v2_sql_260324.zip](https://static-docs.nocobase.com/nocobase_tickets_v2_sql_260324.zip)
 
 **Changes**:
 - Fixed error "SLA Config not found" when marking a ticket as completed
@@ -21,7 +20,6 @@ This page documents the update history for the Ticketing System solution. New en
 
 **Backup files**:
 - nocobase_tts_v2_backup_260302.nbdata
-- nocobase_tts_v2_sql_260302.zip
 
 **Changes**:
 - Initial release of Ticketing System v2

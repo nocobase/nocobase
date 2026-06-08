@@ -1,7 +1,7 @@
 ---
 title: "nb plugin"
-description: "Tài liệu lệnh nb plugin: quản lý plugin của env NocoBase đã chọn."
-keywords: "nb plugin,NocoBase CLI,Quản lý plugin,enable,disable,list"
+description: "Tài liệu lệnh nb plugin: quản lý plugin của env NocoBase đã chọn và nhập plugin đã đóng gói vào storage/plugins."
+keywords: "nb plugin,NocoBase CLI,Quản lý plugin,enable,disable,list,import"
 ---
 
 # nb plugin
@@ -18,6 +18,7 @@ nb plugin <command>
 
 | Lệnh | Mô tả |
 | --- | --- |
+| [`nb plugin import`](./import.md) | Nhập gói plugin đã đóng gói hoặc gói npm |
 | [`nb plugin list`](./list.md) | Liệt kê các plugin đã cài |
 | [`nb plugin enable`](./enable.md) | Bật một hoặc nhiều plugin |
 | [`nb plugin disable`](./disable.md) | Tắt một hoặc nhiều plugin |
@@ -25,6 +26,7 @@ nb plugin <command>
 ## Ví dụ
 
 ```bash
+nb plugin import ./plugin-auth-cas-1.4.0.tgz --storage-path ./storage
 nb plugin list -e local
 nb plugin enable @nocobase/plugin-sample
 nb plugin disable -e local @nocobase/plugin-sample

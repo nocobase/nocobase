@@ -1,16 +1,18 @@
 ---
-title: "nb env remove"
-description: "nb env remove command reference: remove a selected NocoBase CLI env config."
-keywords: "nb env remove,NocoBase CLI,delete environment,remove config"
+title: 'nb env remove'
+description: 'nb env remove command reference: stop managed runtimes before removing env configuration, or fully clean up locally managed resources when needed.'
+keywords: 'nb env remove,NocoBase CLI,delete environment,remove configuration,purge'
 ---
 
 # nb env remove
 
-Remove a configured env. This command only removes the saved CLI env config and does not clean local app directories, containers, or storage data; use [`nb app down`](../app/down.md) when you need to clean local runtime resources.
+Remove a configured env. For local/docker envs, this command first stops the CLI-managed application runtime and built-in database runtime on the current machine, then removes the saved CLI env configuration. For http/ssh envs, this command only removes the saved CLI env configuration.
 
-If the removed env is also the current env, the CLI automatically selects a new current env from the remaining envs. If no envs remain, the current env is cleared.
+If the removed env is the current env, the CLI automatically selects a new current env from the remaining envs; if no envs are available, the current env is cleared.
 
-By default, the command asks for confirmation. To skip confirmation, pass `--yes`. In non-interactive mode, `--yes` is required before the env can be removed.
+By default, the command requires confirmation. In non-interactive mode, you must explicitly pass `--force` to execute it.
+
+To clean up CLI-managed resources on the current machine as thoroughly as possible, pass `--purge`. For local/docker envs, `--purge` also cleans up managed runtime resources, storage data, and downloaded local app files when applicable; for http/ssh envs, `--purge` does not affect external services and only removes the saved CLI env configuration.
 
 ## Usage
 
@@ -20,21 +22,23 @@ nb env remove <name> [flags]
 
 ## Parameters
 
-| Parameter | Type | Description |
-| --- | --- | --- |
-| `<name>` | string | Configured environment name to remove |
-| `--yes`, `-y` | boolean | Skip confirmation and remove the saved CLI env config |
-| `--verbose` | boolean | Show detailed progress |
+| Parameter       | Type    | Description                                                                                                                                                                                        |
+| --------------- | ------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `<name>`        | string  | Name of the configured environment to remove                                                                                                                                                       |
+| `--force`, `-f` | boolean | Skip confirmation for the current remove mode; required in non-interactive mode                                                                                                                    |
+| `--purge`       | boolean | Additionally clean up CLI-managed resources, storage data, and downloaded local app files on the current machine when applicable; for remote API envs, only the saved env configuration is removed |
+| `--verbose`     | boolean | Show detailed progress                                                                                                                                                                             |
 
 ## Examples
 
 ```bash
 nb env remove staging
-nb env remove staging --yes
+nb env remove staging --force
+nb env remove staging --purge --force
 ```
 
-## Related Commands
+## Related commands
 
-- [`nb app down`](../app/down.md)
+- [`nb app stop`](../app/stop.md)
 - [`nb env current`](./current.md)
 - [`nb env list`](./list.md)

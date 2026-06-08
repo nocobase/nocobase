@@ -72,10 +72,24 @@ export type AppModelOptions = {
 
 export type AppModel = {
   name: string;
+  title?: string;
+  icon?: string;
   cname?: string;
+  sort?: number;
+  pinned?: boolean;
   environment?: string;
   environments?: string[];
   options: AppModelOptions;
+};
+
+export type AppCondition = {
+  filter?: Record<string, any>;
+  match?: (appModel: AppModel) => boolean;
+};
+
+export type GetAppsByConditionOptions = {
+  environmentName?: string;
+  allEnvironments?: boolean;
 };
 
 export type ProcessCommand = {
@@ -126,9 +140,13 @@ export interface AppDiscoveryAdapter {
   loadAppModels?(mainApp: Application): Promise<void>;
   getAppsStatuses?(appNames?: string[]): Promise<AppStatusesResult> | AppStatusesResult;
 
-  addAutoStartApps?(environmentName: string, appName: string[]): Promise<void>;
-  getAutoStartApps?(environmentName: string): Promise<string[]>;
-  removeAutoStartApps?(environmentName: string, appNames: string[]): Promise<void>;
+  getAppsByCondition?(
+    conditionName: string,
+    condition: AppCondition,
+    options?: GetAppsByConditionOptions,
+  ): Promise<string[]>;
+  addAppsToCondition?(conditionName: string, environmentName: string, appNames: string[]): Promise<void>;
+  removeAppsFromCondition?(conditionName: string, environmentName: string, appNames: string[]): Promise<void>;
   addAppModel?(appModel: AppModel): Promise<void>;
   getAppModel?(appName: string): Promise<AppModel>;
   removeAppModel?(appName: string): Promise<void>;
@@ -176,6 +194,7 @@ export interface AppProcessAdapter {
   stopApp?(appName: string, context?: { requestId: string }): Promise<void>;
   removeApp?(appName: string, context?: { requestId: string }): Promise<void>;
   upgradeApp?(appName: string, context?: { requestId: string }): Promise<void>;
+  dispatchAppEvent?(appName: string, event: string, payload?: any, context?: { requestId: string }): Promise<void>;
   // remove all apps in supervisor
   removeAllApps?(): Promise<void>;
 

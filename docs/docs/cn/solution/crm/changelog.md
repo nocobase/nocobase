@@ -8,7 +8,6 @@
 
 **备份文件**：
 - [nocobase_crm_v2_backup_260406.nbdata](https://static-docs.nocobase.com/nocobase_crm_v2_backup_260406.nbdata)
-- [nocobase_crm_v2_sql_260406.zip](https://static-docs.nocobase.com/nocobase_crm_v2_sql_260406.zip)
 
 **更新内容**：
 - 修复表格 Summary 汇总显示异常的问题
@@ -24,7 +23,6 @@
 
 **备份文件**：
 - [nocobase_crm_v2_backup_260327.nbdata](https://static-docs.nocobase.com/nocobase_crm_v2_backup_260327.nbdata)
-- [nocobase_crm_v2_sql_260327.zip](https://static-docs.nocobase.com/nocobase_crm_v2_sql_260327.zip)
 
 **更新内容**：
 
@@ -52,7 +50,6 @@
 
 **备份文件**：
 - nocobase_crm_v2_backup_260223.nbdata
-- nocobase_crm_v2_sql_260223.zip
 
 **更新内容**：
 - CRM 2.0 首次发布

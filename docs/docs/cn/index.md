@@ -23,9 +23,9 @@ features:
       - title: NocoBase 使用入门
         details: 了解 NocoBase 的核心概念和基本操作。
         link: /get-started/how-nocobase-works
-      - title: 安装与升级插件
-        details: 了解如何添加、管理和更新插件，扩展系统能力。
-        link: /get-started/install-upgrade-plugins
+      - title: 安装应用
+        details: 快速安装和管理应用。
+        link: /get-started/installation/docker
       - title: 教程
         details: 从零开始，跟着教程一步步搭建真实项目。
         link: /tutorials/v2/
