@@ -120,14 +120,15 @@ services:
           memory: 128M
 
   # ============================================================
-  # NocoBase 应用
+  # NocoBase 应用（基于本地源码构建，不使用远程镜像）
   # ============================================================
   app:
     build:
-      context: .
-      dockerfile: Dockerfile
+      context: ../..
+      dockerfile: docker/deploy/Dockerfile
       args:
         NODE_ENV: production
+        COMMIT_HASH: latest
     image: nocobase/nocobase:local
     container_name: nocobase-app
     restart: unless-stopped
@@ -177,46 +178,29 @@ services:
           memory: 512M
 
   # ============================================================
-  # Nginx 反向代理（可选）
+  # Nginx 反向代理（从 Docker 仓库拉取官方镜像）
   # ============================================================
   nginx:
-    image: node:22-bookworm-slim
+    image: nginx:alpine
     container_name: nocobase-nginx
     restart: unless-stopped
     networks:
       - nocobase
-    command: >
-      bash -c "
-      apt-get update && apt-get install -y nginx &&
-      rm -rf /var/lib/apt/lists/* &&
-      cp /etc/nginx/sites-available/default /etc/nginx/sites-available/default.bak &&
-      cat > /etc/nginx/sites-available/default <<'NGINX'
-      upstream nocobase {
-          server app:80;
-      }
-      server {
-          listen 80;
-          server_name _;
-          client_max_body_size 100M;
-
-          location / {
-              proxy_pass http://nocobase;
-              proxy_set_header Host \$$host;
-              proxy_set_header X-Real-IP \$$remote_addr;
-              proxy_set_header X-Forwarded-For \$$proxy_add_x_forwarded_for;
-              proxy_set_header X-Forwarded-Proto \$$scheme;
-              proxy_http_version 1.1;
-              proxy_set_header Upgrade \$$http_upgrade;
-              proxy_set_header Connection 'upgrade';
-          }
-      }
-      NGINX
-      nginx -g 'daemon off;'"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+      - ./storage/uploads:/var/www/nocobase/storage/uploads:ro
     ports:
       - "${NGINX_PORT:-80}:80"
+      - "${NGINX_SSL_PORT:-443}:443"
     depends_on:
       app:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:80/ || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
     deploy:
       resources:
         limits:
