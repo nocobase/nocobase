@@ -23,9 +23,9 @@ features:
       - title: Introducción a NocoBase
         details: Comprenda los conceptos clave y las operaciones básicas de NocoBase.
         link: /get-started/how-nocobase-works
-      - title: Instalar y Actualizar Plugins
-        details: Aprenda a añadir, gestionar y actualizar Plugins para ampliar las capacidades del sistema.
-        link: /get-started/install-upgrade-plugins
+      - title: Instalar aplicaciones
+        details: Instale y gestione aplicaciones rápidamente.
+        link: /get-started/installation/docker
       - title: Tutoriales
         details: Empiece desde cero y siga los tutoriales para construir un proyecto real paso a paso.
         link: /tutorials/v2/

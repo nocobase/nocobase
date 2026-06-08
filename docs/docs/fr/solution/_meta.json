@@ -1,6 +1,11 @@
 [
   {
     "type": "dir",
+    "name": "all-in-one",
+    "label": "Système de gestion tout-en-un"
+  },
+  {
+    "type": "dir",
     "name": "ticket-system",
     "label": "Gestion des tickets"
   },

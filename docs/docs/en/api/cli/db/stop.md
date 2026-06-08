@@ -1,12 +1,12 @@
 ---
-title: "nb db stop"
-description: "nb db stop command reference: stop the built-in database container for a selected env."
-keywords: "nb db stop,NocoBase CLI,stop database,Docker"
+title: 'nb db stop'
+description: 'nb db stop command reference: Stop the built-in database container for the specified env.'
+keywords: 'nb db stop,NocoBase CLI,stop database,Docker'
 ---
 
 # nb db stop
 
-Stop the built-in database container for a selected env. This command only applies to envs created with a CLI-managed built-in database.
+Stop the built-in database container for the specified env. This command only applies to envs with CLI-managed built-in databases enabled.
 
 ## Usage
 
@@ -14,12 +14,12 @@ Stop the built-in database container for a selected env. This command only appli
 nb db stop [flags]
 ```
 
-## Parameters
+## Options
 
-| Parameter | Type | Description |
-| --- | --- | --- |
-| `--env`, `-e` | string | CLI env name whose built-in database should stop; uses the current env if omitted |
-| `--verbose` | boolean | Show underlying Docker command output |
+| Option        | Type    | Description                                                                                    |
+| ------------- | ------- | ---------------------------------------------------------------------------------------------- |
+| `--env`, `-e` | string  | Name of the CLI env whose built-in database should be stopped; uses the current env if omitted |
+| `--verbose`   | boolean | Show the underlying Docker command output                                                      |
 
 ## Examples
 
@@ -29,8 +29,7 @@ nb db stop --env app1
 nb db stop --env app1 --verbose
 ```
 
-## Related Commands
+## Related commands
 
 - [`nb db start`](./start.md)
 - [`nb app stop`](../app/stop.md)
-- [`nb app down`](../app/down.md)

@@ -63,6 +63,9 @@
     "envKey": {
       "invalid": "仅支持字母和数字。"
     },
+    "appPublicPath": {
+      "invalid": "请输入 /，或类似 /nocobase/、/foo-bar/baz_2/ 这样的路径。每个路径段仅支持字母、数字、中划线和下划线。"
+    },
     "tcpPort": {
       "invalid": "请输入 1 到 65535 之间的有效 TCP 端口，例如 {{example}}。",
       "allocateFailed": "分配可用 TCP 端口失败。",
@@ -96,10 +99,10 @@
           "placeholder": "https://demo.example.com/api 或 https://demo.example.com/api/__app/<subapp>"
         },
         "authType": {
-          "message": "你想使用哪种登录方式？",
-          "basicLabel": "Basic 登录（用户名 + 密码）",
+          "message": "你想使用哪种认证方式？",
+          "basicLabel": "Basic 认证（用户名 + 密码）",
           "basicHint": "保存后会用用户名和密码换取 Token",
-          "oauthLabel": "OAuth（浏览器登录）",
+          "oauthLabel": "OAuth（浏览器认证）",
           "oauthHint": "保存后会自动执行 nb env auth",
           "tokenLabel": "API Token / API Key"
         },
@@ -116,8 +119,91 @@
         }
       }
     },
+    "envProxy": {
+      "messages": {
+        "generating": "正在为 env \"{{envName}}\" 生成代理配置...",
+        "printed": "已输出 env \"{{envName}}\" 的代理配置。",
+        "saved": "已将 env \"{{envName}}\" 的生成代理配置保存到 {{outputPath}}。",
+        "savedWithAppEntryCreated": "已将 env \"{{envName}}\" 的生成代理配置保存到 {{outputPath}}，并创建可编辑的入口配置 {{appConfigPath}}。",
+        "savedWithAppEntryMigrated": "已将 env \"{{envName}}\" 的生成代理配置保存到 {{outputPath}}，并将入口配置迁移为 {{appConfigPath}}。",
+        "savedNginxBundleCreated": "已将 env \"{{envName}}\" 的 nginx 代理文件保存到 {{entryDir}}，并创建可编辑的入口配置 {{appConfigPath}}。",
+        "savedNginxBundleUpdated": "已将 env \"{{envName}}\" 的 nginx 代理文件保存到 {{entryDir}}，并刷新可编辑的入口配置 {{appConfigPath}}。",
+        "savedCaddyBundleCreated": "已将 env \"{{envName}}\" 的 caddy 代理文件保存到 {{entryDir}}，并创建可编辑的入口配置 {{appConfigPath}}。",
+        "savedCaddyBundleMigrated": "已将 env \"{{envName}}\" 的 caddy 代理文件保存到 {{entryDir}}，并将入口配置迁移为 {{appConfigPath}}。",
+        "savedCaddyBundleUpdated": "已将 env \"{{envName}}\" 的 caddy 代理文件保存到 {{entryDir}}，并刷新可编辑的入口配置 {{appConfigPath}}。",
+        "failed": "为 env \"{{envName}}\" 生成代理配置失败。",
+        "installingProvider": "正在将共享代理配置安装到 {{provider}}...",
+        "providerInstalled": "已将共享代理配置安装到 {{provider}} 主配置 {{configPath}}。",
+        "providerAlreadyInstalled": "共享代理配置已存在于 {{provider}} 主配置 {{configPath}} 中。",
+        "installProviderFailed": "将共享代理配置安装到 {{provider}} 失败。",
+        "reloadingProvider": "正在校验并重载 {{provider}}...",
+        "providerReloaded": "已校验并重载 {{provider}}。",
+        "reloadProviderFailed": "校验并重载 {{provider}} 失败。"
+      },
+      "errors": {
+        "httpEnvUnsupported": "无法在当前机器上为 \"{{envName}}\" 生成代理配置，因为这个 env 只有 API 连接。",
+        "sshEnvUnsupported": "暂时无法为 \"{{envName}}\" 生成代理配置，因为 SSH env 还没有实现。",
+        "invalidProxyPort": "代理入口端口 \"{{port}}\" 无效。请使用 1 到 65535 之间的整数。",
+        "missingAppPort": "env \"{{envName}}\" 缺少 appPort。请先保存或更新应用端口后再生成代理配置。",
+        "missingVersion": "无法确定 env \"{{envName}}\" 的应用版本。请先运行 `nb env update {{envName}}`，然后再试一次。",
+        "appEntryMissingInclude": "可编辑入口配置 {{appConfigPath}} 没有引用 {{generatedConfigPath}}。请把托管的 generated 配置引用补回入口配置中，然后重新执行该命令。",
+        "nginxOutputUnsupported": "nginx provider 不支持 `--output`。它会把 `app.conf`、`public/index-v1.html`、`public/index-v2.html` 和 `nocobase.conf` 写入 `~/.nocobase/proxy/nginx/<env>/`。",
+        "caddyOutputUnsupported": "caddy provider 不支持 `--output`。它会把 `app.caddy`、`generated.caddy`、`public/index-v1.html`、`public/index-v2.html` 和 `nocobase.caddy` 写入 `~/.nocobase/proxy/caddy/<env>/`。",
+        "nginxAppEntryMissingManagedBlock": "可编辑的 nginx 入口配置 {{appConfigPath}} 不包含 NocoBase 的托管区块。请恢复这个托管区块，或删除该文件后重新执行 `nb env proxy`。"
+      }
+    },
     "shared": {
-      "missingCommand": "无法执行 `{{action}}`，因为找不到 {{displayName}} 可执行文件。请先安装 {{displayName}}，或更新 `nb config set {{configKey}} <path>` 后重试。"
+      "missingCommand": "无法执行 `{{action}}`，因为找不到 {{displayName}} 可执行文件。请先安装 {{displayName}}，或更新 `nb config set {{configKey}} <path>` 后重试。",
+      "dockerDaemonUnavailable": "无法执行 `{{action}}`，因为 Docker 已安装，但 Docker daemon 尚未运行。请先启动 Docker Desktop 或 Docker daemon 服务，然后重试。详情：{{details}}",
+      "targetEnv": "正在使用 env \"{{envName}}\"。",
+      "crossEnv": {
+        "prompt": "当前 env 是 \"{{currentEnv}}\"，但该命令通过 --env 指向了 \"{{requestedEnv}}\"。要在不切换当前 env 的情况下继续吗？",
+        "refusal": "拒绝对 env \"{{requestedEnv}}\" 执行该命令，因为当前 env 是 \"{{currentEnv}}\"，且当前 agent 会话无法进行交互确认。\n\n出于安全考虑，agent 不会自动切换 env，也不会替你自动补上 --yes。\n\n如果要继续：\n- 请先自行执行 `nb env use {{requestedEnv}}`，然后重新运行该命令，或\n- 使用相同命令并追加 `--env {{requestedEnv}} --yes`，以确认这是一次性的跨 env 操作。"
+      }
+    },
+    "license": {
+      "activate": {
+        "interactive": {
+          "notice": {
+            "hostnameLabel": "❯ 主机名",
+            "instanceIdLabel": "❯ 实例 ID",
+            "copyHintWithHostname": "校验或激活 license key 时，请复制这个主机名和实例 ID。",
+            "copyHintWithoutHostname": "校验或激活 license key 时，请复制这个实例 ID。"
+          },
+          "prompts": {
+            "provideMethod": {
+              "message": "你想通过哪种方式提供 license key？",
+              "keyOption": "直接粘贴 license key",
+              "fileOption": "从文件读取 key"
+            },
+            "key": {
+              "message": "License Key",
+              "transformer": "已输入 {{count}} 个字符",
+              "required": "必须提供 license key。"
+            },
+            "keyFile": {
+              "message": "license key 文件路径",
+              "required": "必须提供 license key 文件路径。"
+            }
+          }
+        },
+        "errors": {
+          "provideKeyOrKeyFile": "请通过 --key 或 --key-file 继续。",
+          "emptyInput": "license key 输入为空。",
+          "activationFailed": "为 env \"{{envName}}\" 激活 license 失败：{{reason}}。",
+          "reasons": {
+            "keyStatus": "license key 状态为 {{status}}",
+            "envMismatch": "license key 与当前实例环境不匹配",
+            "domainMismatch": "license key 与当前应用域名不匹配",
+            "licenseStatus": "license 状态为 {{status}}",
+            "validationFailed": "license 校验失败"
+          }
+        },
+        "messages": {
+          "activated": "已为 env \"{{envName}}\" 激活 license。",
+          "savedLicenseKey": "license key 已保存到 {{licenseKeyPath}}"
+        }
+      }
     },
     "download": {
       "failures": {
@@ -234,15 +320,19 @@
           "placeholder": "local"
         },
         "lang": {
-          "message": "你想使用哪种语言？"
+          "message": "你希望应用使用哪种语言？"
         },
-        "appRootPath": {
-          "message": "应用代码要放到哪里？",
-          "placeholder": "./<env>/source/"
+        "appPath": {
+          "message": "应用要放到哪里？（相对路径基于 {{root}}）",
+          "placeholder": "./<env>/"
         },
         "appPort": {
           "message": "应用要使用哪个端口？",
           "placeholder": "13000"
+        },
+        "appPublicPath": {
+          "message": "应用的子路径是什么？（例如 /nocobase/）",
+          "placeholder": "/ 或 /nocobase/"
         },
         "storagePath": {
           "message": "上传文件和本地存储目录要放到哪里？",
@@ -325,10 +415,14 @@
           "message": "这个环境要使用什么 `--env` 标识？",
           "placeholder": "local"
         },
-        "hasNocobase": {
-          "message": "你是否已经有一个 NocoBase 应用？",
-          "noLabel": "还没有 NocoBase 应用",
-          "yesLabel": "已经有 NocoBase 应用"
+        "setupMode": {
+          "message": "你想用哪种方式配置这个环境？",
+          "installNewLabel": "新安装",
+          "installNewHint": "从零安装一个新的应用，适合首次部署、试用或新建本地开发环境。",
+          "manageLocalLabel": "本机接管",
+          "manageLocalHint": "将本机已有应用纳入 nb 管理，后续可统一执行安装、升级和启动等操作。接管过程中会重新下载应用代码或镜像并升级应用，storage 会在需要时自动创建。",
+          "connectRemoteLabel": "远程连接",
+          "connectRemoteHint": "只保存远程应用的连接信息，不在本机安装或接管应用。"
         },
         "installSkills": {
           "message": "是否安装 NocoBase AI coding skills（nocobase/skills）？"
@@ -344,22 +438,22 @@
       "webUi": {
         "pageTitle": "配置供 Coding Agents 使用的 NocoBase",
         "documentHeading": "配置供 Coding Agents 使用的 NocoBase",
-        "documentHint": "连接已有的 NocoBase 应用，或安装一个新的应用，让 Coding Agents 可以在当前工作区中访问和操作 NocoBase。",
+        "documentHint": "安装一个新的应用、接管本机已有应用，或连接远程应用，让 Coding Agents 可以在当前工作区中访问和操作 NocoBase。",
         "gettingStarted": {
           "title": "开始设置",
-          "description": "选择连接已有应用，或安装一个新应用。"
+          "description": "选择新安装、本机接管，或远程连接。"
         },
         "connectExistingApp": {
-          "title": "连接已有应用",
-          "description": "保存现有应用连接。"
+          "title": "连接与认证",
+          "description": "填写应用访问地址并选择认证方式。"
         },
         "createNewApp": {
-          "title": "安装新应用",
-          "description": "设置应用基础信息和安装选项。"
+          "title": "应用环境信息",
+          "description": "设置应用的基础信息、存储位置和运行端口。"
         },
         "downloadAppFiles": {
-          "title": "下载应用文件",
-          "description": "选择获取应用文件的方式。"
+          "title": "应用来源和版本",
+          "description": "选择应用的获取方式，以及要使用的来源和版本。"
         },
         "configureDatabase": {
           "title": "配置数据库",

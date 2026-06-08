@@ -61,6 +61,7 @@ type PasswordOptions = {
   message: string;
   mask?: boolean | string;
   validate?: (value: string) => boolean | string | Promise<string | boolean>;
+  transformer?: (value: string) => string;
   theme?: PartialDeep<Theme>;
 };
 
@@ -179,7 +180,7 @@ export const input = createPrompt<string, InputOptions>((config, done) => {
       rl.write(config.default);
       setValue(config.default);
     }
-  }, []);
+  }, [config.default]);
 
   useKeypress(async (key, rl) => {
     if (status !== 'idle') return;
@@ -334,12 +335,11 @@ export const password = createPrompt<string, PasswordOptions>((config, done) => 
 
   const message = theme.style.message(config.message, status);
   const maskChar = resolveMaskChar(config.mask);
+  const transformedValue = value ? config.transformer?.(value) : undefined;
   const displayValue =
     status === 'done'
-      ? theme.style.answer(maskChar.repeat(value.length))
-      : maskChar
-        ? maskChar.repeat(value.length)
-        : '';
+      ? theme.style.answer(transformedValue ?? maskChar.repeat(value.length))
+      : transformedValue ?? (maskChar ? maskChar.repeat(value.length) : '');
 
   const headerLine = [prefix, message].filter(Boolean).join(' ');
   const inputLine = buildInputLine(displayValue);

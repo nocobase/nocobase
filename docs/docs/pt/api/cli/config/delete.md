@@ -1,12 +1,12 @@
 ---
-title: "nb config delete"
-description: "Referência do comando nb config delete: excluir uma configuração explícita do CLI."
-keywords: "nb config delete,NocoBase CLI,configuration"
+title: 'nb config delete'
+description: 'Referência do comando nb config delete: exclui um item de configuração da CLI definido explicitamente.'
+keywords: 'nb config delete,NocoBase CLI,excluir configuração'
 ---
 
 # nb config delete
 
-Exclui uma configuração explícita do CLI. Depois disso, o CLI volta a usar o valor padrão dessa chave.
+Exclui um item de configuração da CLI definido explicitamente. Após a exclusão, esse item volta ao valor padrão.
 
 ## Uso
 
@@ -18,16 +18,18 @@ nb config delete <key>
 
 | Parâmetro | Tipo | Descrição |
 | --- | --- | --- |
-| `<key>` | string | Chave de configuração: `locale`, `update.policy`, `license.pkg-url`, `docker.network`, `docker.container-prefix`, `bin.docker`, `bin.git` ou `bin.yarn` |
+| `<key>` | string | Nome do item de configuração. Consulte [`nb config`](./index.md) para ver os valores suportados |
 
 ## Exemplos
 
 ```bash
 nb config delete locale
 nb config delete update.policy
-nb config delete license.pkg-url
 nb config delete docker.network
 nb config delete docker.container-prefix
+nb config delete proxy.nb-cli-root
+nb config delete proxy.upstream-host
+nb config delete bin.nginx
 nb config delete bin.git
 ```
 

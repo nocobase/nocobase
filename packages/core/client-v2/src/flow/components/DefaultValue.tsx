@@ -31,7 +31,7 @@ import { FieldModel } from '../models';
 import { RecordSelectFieldModel } from '../models/fields/AssociationFieldModel';
 import { InputFieldModel } from '../models/fields/InputFieldModel';
 import { ensureOptionsFromUiSchemaEnumIfAbsent } from '../internal/utils/enumOptionsUtils';
-import { resolveOperatorComponent } from '../internal/utils/operatorSchemaHelper';
+import { pickOperatorStyle as pickStyle, resolveOperatorComponent } from '../internal/utils/operatorSchemaHelper';
 import { RunJSValueEditor } from './RunJSValueEditor';
 import { buildDynamicNamePath } from '../models/blocks/form/dynamicNamePath';
 
@@ -592,7 +592,7 @@ export const DefaultValue = connect((props: Props) => {
             }
           }
         }
-      }, [inputProps, value]);
+      }, [inputProps]);
       return (
         <div style={{ flexGrow: 1 }}>
           <FlowModelRenderer model={tempRoot} showFlowSettings={false} />
@@ -600,11 +600,13 @@ export const DefaultValue = connect((props: Props) => {
       );
     };
     return ConstantValueEditor;
-  }, [tempRoot]);
+  }, [tempRoot, value]);
+
+  const modelOperator = (model as { operator?: string })?.operator;
 
   // 文本类多关键词：根据已注册的 operator schema 渲染（用于默认值配置）
   React.useEffect(() => {
-    const operator = (model as any)?.operator;
+    const operator = modelOperator;
     const fieldModel = tempRoot?.subModels?.fields?.[0];
     if (!operator || !fieldModel) return;
     const originalRender = fieldModel['__originalRender'] || fieldModel.render;
@@ -622,17 +624,21 @@ export const DefaultValue = connect((props: Props) => {
         <Comp
           {...fieldModel.props}
           {...xProps}
-          style={{ width: '100%', ...(fieldModel.props as any)?.style, ...xProps?.style }}
+          style={{
+            width: '100%',
+            ...pickStyle((fieldModel.props as Record<string, unknown>)?.style),
+            ...pickStyle(xProps?.style),
+          }}
         />
       );
     } else if (typeof originalRender === 'function') {
       fieldModel.render = originalRender;
     }
-  }, [model, tempRoot, (model as any)?.operator]);
+  }, [model, tempRoot, modelOperator]);
 
   // 根据操作符 schema 的 x-component-props 补全临时字段的输入属性（如多选）
   React.useEffect(() => {
-    const operator = (model as any)?.operator;
+    const operator = modelOperator;
     const fieldModel = tempRoot?.subModels?.fields?.[0];
     if (!fieldModel || !operator) return;
     const ops = model.collectionField?.filterable?.operators || [];
@@ -641,7 +647,7 @@ export const DefaultValue = connect((props: Props) => {
     if (xComponentProps) {
       fieldModel.setProps(xComponentProps);
     }
-  }, [model, tempRoot, (model as any)?.operator]);
+  }, [model, tempRoot, modelOperator]);
 
   const NullComponent = useMemo(() => {
     function NullValuePlaceholder() {

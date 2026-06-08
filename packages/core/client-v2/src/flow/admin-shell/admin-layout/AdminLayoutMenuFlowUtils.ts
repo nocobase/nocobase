@@ -25,6 +25,7 @@ const buildLinkSettingSchema = (t: (title: any) => any) => ({
     'x-decorator': 'FormItem',
     'x-component': 'FlowSettingsVariableTextArea',
     'x-component-props': {
+      placeholder: t('https://www.example.com'),
       rows: 1,
       maxRows: 1,
     },

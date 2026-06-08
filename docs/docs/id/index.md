@@ -23,9 +23,9 @@ features:
       - title: Memulai NocoBase
         details: Pahami konsep inti dan operasi dasar NocoBase.
         link: /get-started/how-nocobase-works
-      - title: Instalasi & Upgrade Plugin
-        details: Pelajari cara menambahkan, mengelola, dan memperbarui Plugin untuk memperluas kemampuan sistem.
-        link: /get-started/install-upgrade-plugins
+      - title: Instal aplikasi
+        details: Instal dan kelola aplikasi dengan cepat.
+        link: /get-started/installation/docker
       - title: Tutorial
         details: Mulai dari nol, ikuti tutorial untuk membangun proyek nyata langkah demi langkah.
         link: /tutorials/v2/

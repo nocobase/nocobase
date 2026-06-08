@@ -221,3 +221,5 @@ test('executeApiRequest writes binary responses to --output', async () => {
     await fs.unlink(outputPath).catch(() => undefined);
   }
 });
+
+// test

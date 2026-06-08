@@ -1,6 +1,11 @@
 [
   {
     "type": "dir",
+    "name": "all-in-one",
+    "label": "一体化业务管理系统"
+  },
+  {
+    "type": "dir",
     "name": "ticket-system",
     "label": "工单"
   },

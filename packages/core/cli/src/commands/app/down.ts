@@ -12,7 +12,8 @@ import { printWarning } from '../../lib/ui.js';
 
 export default class AppDown extends Command {
   static override hidden = true;
-  static override description = 'Deprecated compatibility alias for `nb app stop --with-db` and `nb app destroy`.';
+  static override description =
+    'Deprecated compatibility alias for `nb app stop --with-db` and `nb env remove <name> --purge`.';
 
   static override examples = [
     '<%= config.bin %> <%= command.id %> --env app1',
@@ -58,7 +59,7 @@ export default class AppDown extends Command {
     }
 
     if (flags.all) {
-      printWarning('`nb app down --all` is deprecated. Use `nb app destroy` instead.');
+      printWarning('`nb app down --all` is deprecated. Use `nb env remove <name> --purge` instead.');
       if (flags.force || flags.yes) {
         argv.push('--force');
       }

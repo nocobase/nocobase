@@ -21,6 +21,7 @@ export type NumericTokenPolicyConfig = {
 export type TokenInfo = {
   jti: string;
   userId: number;
+  authenticator?: string;
   issuedTime: EpochTimeStamp;
   signInTime: EpochTimeStamp;
   renewed: boolean;
@@ -31,6 +32,6 @@ export interface ITokenControlService {
   getConfig(): Promise<NumericTokenPolicyConfig>;
   setConfig(config: TokenPolicyConfig): Promise<any>;
   renew(jti: string): Promise<{ jti: string; issuedTime: EpochTimeStamp }>;
-  add({ userId }: { userId: number }): Promise<TokenInfo>;
+  add({ userId, authenticator }: { userId: number; authenticator?: string }): Promise<TokenInfo>;
   removeSessionExpiredTokens(userId: number): Promise<any>;
 }
