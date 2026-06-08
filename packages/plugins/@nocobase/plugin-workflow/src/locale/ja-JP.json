@@ -271,5 +271,14 @@
   "Impacted dependent node variables": "現在のノード変数を参照するノード",
   "Keep variable references": "変数参照を保持する",
   "Keeping variable references requires manual adjustment, otherwise workflow may fail.": "変数参照を保持する場合は手動調整が必要です。調整しないとワークフローが失敗する可能性があります。",
-  "Failed to update node variables": "ノード変数の更新に失敗しました"
+  "Failed to update node variables": "ノード変数の更新に失敗しました",
+  "Unsupported node": "Unsupported node",
+  "This node type is not available in the new canvas yet.": "This node type is not available in the new canvas yet.",
+  "This node's configuration has not been migrated to the new canvas yet.": "This node's configuration has not been migrated to the new canvas yet.",
+  "Node title": "Node title",
+  "Failed to add node": "Failed to add node",
+  "Failed to delete node": "Failed to delete node",
+  "Failed to save node": "Failed to save node",
+  "Failed to run": "Failed to run",
+  "Copied node": "Copied node"
 }

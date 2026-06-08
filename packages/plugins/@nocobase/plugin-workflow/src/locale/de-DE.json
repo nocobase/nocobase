@@ -268,5 +268,14 @@
   "Impacted dependent node variables": "Knoten, die Variablen des aktuellen Knotens referenzieren",
   "Keep variable references": "Variablenreferenzen beibehalten",
   "Keeping variable references requires manual adjustment, otherwise workflow may fail.": "Das Beibehalten von Variablenreferenzen erfordert eine manuelle Anpassung, andernfalls kann der Workflow fehlschlagen.",
-  "Failed to update node variables": "Aktualisierung der Knotenvariablen fehlgeschlagen"
+  "Failed to update node variables": "Aktualisierung der Knotenvariablen fehlgeschlagen",
+  "Unsupported node": "Unsupported node",
+  "This node type is not available in the new canvas yet.": "This node type is not available in the new canvas yet.",
+  "This node's configuration has not been migrated to the new canvas yet.": "This node's configuration has not been migrated to the new canvas yet.",
+  "Node title": "Node title",
+  "Failed to add node": "Failed to add node",
+  "Failed to delete node": "Failed to delete node",
+  "Failed to save node": "Failed to save node",
+  "Failed to run": "Failed to run",
+  "Copied node": "Copied node"
 }

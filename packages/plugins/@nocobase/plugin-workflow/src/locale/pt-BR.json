@@ -268,5 +268,14 @@
   "Impacted dependent node variables": "Nós que referenciam as variáveis do nó atual",
   "Keep variable references": "Manter referências de variáveis",
   "Keeping variable references requires manual adjustment, otherwise workflow may fail.": "Manter referências de variáveis exige ajuste manual, caso contrário o workflow pode falhar.",
-  "Failed to update node variables": "Falha ao atualizar as variáveis do nó"
+  "Failed to update node variables": "Falha ao atualizar as variáveis do nó",
+  "Unsupported node": "Unsupported node",
+  "This node type is not available in the new canvas yet.": "This node type is not available in the new canvas yet.",
+  "This node's configuration has not been migrated to the new canvas yet.": "This node's configuration has not been migrated to the new canvas yet.",
+  "Node title": "Node title",
+  "Failed to add node": "Failed to add node",
+  "Failed to delete node": "Failed to delete node",
+  "Failed to save node": "Failed to save node",
+  "Failed to run": "Failed to run",
+  "Copied node": "Copied node"
 }

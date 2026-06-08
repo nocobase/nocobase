@@ -289,5 +289,14 @@
   "Impacted dependent node variables": "현재 노드 변수를 참조하는 노드",
   "Keep variable references": "변수 참조 유지",
   "Keeping variable references requires manual adjustment, otherwise workflow may fail.": "변수 참조를 유지하려면 수동으로 조정해야 하며, 그렇지 않으면 워크플로가 실패할 수 있습니다.",
-  "Failed to update node variables": "노드 변수 업데이트에 실패했습니다"
+  "Failed to update node variables": "노드 변수 업데이트에 실패했습니다",
+  "Unsupported node": "Unsupported node",
+  "This node type is not available in the new canvas yet.": "This node type is not available in the new canvas yet.",
+  "This node's configuration has not been migrated to the new canvas yet.": "This node's configuration has not been migrated to the new canvas yet.",
+  "Node title": "Node title",
+  "Failed to add node": "Failed to add node",
+  "Failed to delete node": "Failed to delete node",
+  "Failed to save node": "Failed to save node",
+  "Failed to run": "Failed to run",
+  "Copied node": "Copied node"
 }

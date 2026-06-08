@@ -269,5 +269,14 @@
   "Impacted dependent node variables": "Node yang merujuk variabel node saat ini",
   "Keep variable references": "Pertahankan referensi variabel",
   "Keeping variable references requires manual adjustment, otherwise workflow may fail.": "Mempertahankan referensi variabel memerlukan penyesuaian manual, jika tidak alur kerja dapat gagal.",
-  "Failed to update node variables": "Gagal memperbarui variabel node"
+  "Failed to update node variables": "Gagal memperbarui variabel node",
+  "Unsupported node": "Unsupported node",
+  "This node type is not available in the new canvas yet.": "This node type is not available in the new canvas yet.",
+  "This node's configuration has not been migrated to the new canvas yet.": "This node's configuration has not been migrated to the new canvas yet.",
+  "Node title": "Node title",
+  "Failed to add node": "Failed to add node",
+  "Failed to delete node": "Failed to delete node",
+  "Failed to save node": "Failed to save node",
+  "Failed to run": "Failed to run",
+  "Copied node": "Copied node"
 }

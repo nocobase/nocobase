@@ -268,5 +268,14 @@
   "Impacted dependent node variables": "引用目前節點變數的節點",
   "Keep variable references": "保留變數引用",
   "Keeping variable references requires manual adjustment, otherwise workflow may fail.": "已保留變數引用，請手動調整，否則工作流執行可能出錯。",
-  "Failed to update node variables": "更新節點變數失敗"
+  "Failed to update node variables": "更新節點變數失敗",
+  "Unsupported node": "Unsupported node",
+  "This node type is not available in the new canvas yet.": "This node type is not available in the new canvas yet.",
+  "This node's configuration has not been migrated to the new canvas yet.": "This node's configuration has not been migrated to the new canvas yet.",
+  "Node title": "Node title",
+  "Failed to add node": "Failed to add node",
+  "Failed to delete node": "Failed to delete node",
+  "Failed to save node": "Failed to save node",
+  "Failed to run": "Failed to run",
+  "Copied node": "Copied node"
 }

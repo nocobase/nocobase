@@ -268,5 +268,14 @@
   "Impacted dependent node variables": "Nodes die naar variabelen van de huidige node verwijzen",
   "Keep variable references": "Variabelverwijzingen behouden",
   "Keeping variable references requires manual adjustment, otherwise workflow may fail.": "Het behouden van variabelverwijzingen vereist handmatige aanpassing, anders kan de workflow falen.",
-  "Failed to update node variables": "Bijwerken van knooppuntvariabelen mislukt"
+  "Failed to update node variables": "Bijwerken van knooppuntvariabelen mislukt",
+  "Unsupported node": "Unsupported node",
+  "This node type is not available in the new canvas yet.": "This node type is not available in the new canvas yet.",
+  "This node's configuration has not been migrated to the new canvas yet.": "This node's configuration has not been migrated to the new canvas yet.",
+  "Node title": "Node title",
+  "Failed to add node": "Failed to add node",
+  "Failed to delete node": "Failed to delete node",
+  "Failed to save node": "Failed to save node",
+  "Failed to run": "Failed to run",
+  "Copied node": "Copied node"
 }
