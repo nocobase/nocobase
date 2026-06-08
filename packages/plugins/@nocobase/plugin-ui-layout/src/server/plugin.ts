@@ -603,6 +603,69 @@ async function grantDefaultAccessToNewUiLayout(db: Database, uiLayout: Model, op
   });
 }
 
+async function grantDefaultMenuAccessToNewDesktopRoute(
+  db: Database,
+  desktopRoute: Model,
+  options?: DatabaseHookOptions,
+) {
+  const desktopRouteId = desktopRoute.get('id');
+  if (desktopRouteId === null || desktopRouteId === undefined) {
+    return;
+  }
+  if (
+    !db.getCollection('roles') ||
+    !db.getCollection('desktopRoutes') ||
+    !db.getCollection('rolesUiLayoutDesktopRoutes')
+  ) {
+    return;
+  }
+
+  const route = await db.getRepository('desktopRoutes').findOne({
+    filterByTk: desktopRouteId,
+    appends: ['uiLayouts'],
+    transaction: options?.transaction,
+  });
+  const uiLayouts = route?.get('uiLayouts');
+  if (!Array.isArray(uiLayouts) || uiLayouts.length === 0) {
+    return;
+  }
+  const uiLayoutUids = Array.from(
+    new Set(
+      uiLayouts
+        .map((uiLayout) => uiLayout.get('uid'))
+        .filter((uiLayoutUid): uiLayoutUid is string => typeof uiLayoutUid === 'string' && !!uiLayoutUid),
+    ),
+  );
+  if (!uiLayoutUids.length) {
+    return;
+  }
+
+  const roles = await db.getRepository('roles').find({
+    fields: ['name'],
+    filter: {
+      allowNewMenu: true,
+    },
+    transaction: options?.transaction,
+  });
+  const roleNames = roles
+    .map((role) => role.get('name'))
+    .filter((roleName): roleName is string => typeof roleName === 'string' && !!roleName);
+  if (!roleNames.length) {
+    return;
+  }
+
+  await db.getRepository('rolesUiLayoutDesktopRoutes').createMany({
+    records: roleNames.flatMap((roleName) =>
+      uiLayoutUids.map((uiLayoutUid) => ({
+        roleName,
+        uiLayoutUid,
+        desktopRouteId,
+      })),
+    ),
+    transaction: options?.transaction,
+  });
+}
+
 export class PluginUiLayoutServer extends Plugin {
   async afterAdd() {}
 
@@ -622,6 +685,12 @@ export class PluginUiLayoutServer extends Plugin {
     this.app.db.on('uiLayouts.afterCreate', async (uiLayout: Model, options?: DatabaseHookOptions) => {
       await grantDefaultAccessToNewUiLayout(this.app.db, uiLayout, options);
     });
+    this.app.db.on(
+      'desktopRoutes.afterCreateWithAssociations',
+      async (desktopRoute: Model, options?: DatabaseHookOptions) => {
+        await grantDefaultMenuAccessToNewDesktopRoute(this.app.db, desktopRoute, options);
+      },
+    );
   }
 
   async install() {
