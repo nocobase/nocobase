@@ -24,6 +24,7 @@ import {
 interface Role {
   name: string;
   title: string;
+  allowNewUiLayout?: boolean;
   allowNewMenu?: boolean;
 }
 
@@ -275,6 +276,20 @@ export default function LayoutAwareDesktopRoutesPermissionsTab(props: Permission
     ctx.message.success(t('Saved successfully'));
   });
 
+  const updateRoleDefaults = useMemoizedFn(
+    async (values: Pick<Role, 'allowNewMenu'> | Pick<Role, 'allowNewUiLayout'>) => {
+      if (!role) {
+        return;
+      }
+      const response = await ctx.api.resource('roles').update({
+        filterByTk: role.name,
+        values,
+      });
+      props.onRoleChange((response?.data?.data as Role | undefined) ?? { ...role, ...values });
+      ctx.message.success(t('Saved successfully'));
+    },
+  );
+
   const setAll = useMemoizedFn(async () => {
     const nextIds = selectedIds.length === allIds.length ? [] : allIds;
     await applyPermissionChanges(nextIds);
@@ -364,15 +379,17 @@ export default function LayoutAwareDesktopRoutesPermissionsTab(props: Permission
         />
       </Space>
       <Checkbox
+        checked={!!role.allowNewUiLayout}
+        onChange={(event) => {
+          updateRoleDefaults({ allowNewUiLayout: event.target.checked });
+        }}
+      >
+        {t('New layouts are allowed to be accessed by default')}
+      </Checkbox>
+      <Checkbox
         checked={!!role.allowNewMenu}
-        onChange={async (event) => {
-          const allowNewMenu = event.target.checked;
-          const response = await ctx.api.resource('roles').update({
-            filterByTk: role.name,
-            values: { allowNewMenu },
-          });
-          props.onRoleChange((response?.data?.data as Role | undefined) ?? { ...role, allowNewMenu });
-          ctx.message.success(t('Saved successfully'));
+        onChange={(event) => {
+          updateRoleDefaults({ allowNewMenu: event.target.checked });
         }}
       >
         {t('New routes are allowed to be accessed by default')}

@@ -192,20 +192,45 @@ describe('plugin-ui-layout route permissions', () => {
     const resource = createPermissionTabResources();
     const user = userEvent.setup();
     flowMocks.context = resource.context;
+    const onRoleChange = vi.fn();
 
     render(
       <LayoutAwareDesktopRoutesPermissionsTab
         activeKey="menu"
-        activeRole={{ name: 'layout-member', title: 'Layout member' }}
-        onRoleChange={vi.fn()}
+        activeRole={{ name: 'layout-member', title: 'Layout member', allowNewUiLayout: false }}
+        onRoleChange={onRoleChange}
       />,
     );
 
     expect(await screen.findByRole('combobox', { name: 'UI layout' })).toBeInTheDocument();
     expect(screen.getByText('UI layout')).toBeInTheDocument();
-    expect(
-      screen.getByRole('checkbox', { name: 'New routes are allowed to be accessed by default' }),
-    ).toBeInTheDocument();
+    const allowNewLayoutCheckbox = screen.getByRole('checkbox', {
+      name: 'New layouts are allowed to be accessed by default',
+    });
+    const allowNewRouteCheckbox = screen.getByRole('checkbox', {
+      name: 'New routes are allowed to be accessed by default',
+    });
+
+    expect(allowNewLayoutCheckbox.compareDocumentPosition(allowNewRouteCheckbox)).toBe(
+      Node.DOCUMENT_POSITION_FOLLOWING,
+    );
+
+    await act(async () => {
+      await user.click(allowNewLayoutCheckbox);
+    });
+
+    await waitFor(() => {
+      expect(resource.rolesUpdate).toHaveBeenCalledWith({
+        filterByTk: 'layout-member',
+        values: { allowNewUiLayout: true },
+      });
+    });
+    expect(onRoleChange).toHaveBeenCalledWith(
+      expect.objectContaining({
+        name: 'layout-member',
+        allowNewUiLayout: true,
+      }),
+    );
 
     const routeCheckbox = await screen.findByRole('checkbox', { name: 'Allow access to Admin route' });
     routeCheckbox.focus();
@@ -423,21 +448,24 @@ function createPermissionTabResources() {
     add: vi.fn(async () => undefined),
     remove: vi.fn(async () => undefined),
   };
-  const rolesResource = {
-    update: vi.fn(async () => ({
+  const rolesUpdate = vi.fn(async ({ values }: { values: Record<string, unknown> }) => ({
+    data: {
       data: {
-        data: {
-          name: 'layout-member',
-          title: 'Layout member',
-        },
+        name: 'layout-member',
+        title: 'Layout member',
+        ...values,
       },
-    })),
+    },
+  }));
+  const rolesResource = {
+    update: rolesUpdate,
   };
   const flowMessageSuccess = vi.fn();
 
   return {
     desktopRoutesList,
     messageSuccess: flowMessageSuccess,
+    rolesUpdate,
     roleRoutesRemove: roleRoutesResource.remove,
     context: {
       api: {

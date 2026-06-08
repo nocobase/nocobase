@@ -154,6 +154,32 @@ describe('plugin-ui-layout server', () => {
     expect(updatedMobileLayout?.get('title')).toBe('Mobile layout');
   });
 
+  it('should persist the role-level default ui layout access flag', async () => {
+    app = await createUiLayoutMockServer();
+
+    expect(app.db.getCollection('roles').getField('allowNewUiLayout')).toBeDefined();
+
+    await app.db.getRepository('roles').create({
+      values: {
+        name: 'layout-default-access-role',
+        allowNewUiLayout: false,
+      },
+    });
+
+    await app.db.getRepository('roles').update({
+      filterByTk: 'layout-default-access-role',
+      values: {
+        allowNewUiLayout: true,
+      },
+    });
+
+    const role = await app.db.getRepository('roles').findOne({
+      filterByTk: 'layout-default-access-role',
+    });
+
+    expect(role?.get('allowNewUiLayout')).toBe(true);
+  });
+
   it('should expose uiLayouts:listAccessible to logged-in users only', async () => {
     app = await createUiLayoutMockServer();
 

@@ -60,6 +60,7 @@
   "Menu permissions": "Menu permissions",
   "Menu linkage rules": "Menu linkage rules",
   "Must start with /. For example: /admin.": "Must start with /. For example: /admin.",
+  "New layouts are allowed to be accessed by default": "New layouts are allowed to be accessed by default",
   "New routes are allowed to be accessed by default": "New routes are allowed to be accessed by default",
   "No": "No",
   "No mobile pages yet": "No mobile pages yet",
