@@ -13,6 +13,14 @@ export interface UpdateResource {
   update: (params: Record<string, unknown>) => Promise<unknown>;
 }
 
+export interface GetResource {
+  get: (params: Record<string, unknown>) => Promise<unknown>;
+}
+
+export interface ListResource {
+  list: (params: Record<string, unknown>) => Promise<unknown>;
+}
+
 export interface CreateUpdateResource extends UpdateResource {
   create: (params: Record<string, unknown>) => Promise<unknown>;
 }

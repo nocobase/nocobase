@@ -17,19 +17,24 @@ import {
 } from '@nocobase/client-v2';
 import type { Collection, CollectionOptions } from '@nocobase/flow-engine';
 import { useFlowContext, useFlowEngine } from '@nocobase/flow-engine';
-import type { PermissionTabProps } from '@nocobase/plugin-acl/client-v2';
 import { useMemoizedFn, useRequest } from 'ahooks';
 import { Alert, App, Empty, Form, Radio, Tabs, Tag, Typography, theme } from 'antd';
 import type { ColumnsType, TablePaginationConfig } from 'antd/es/table';
 import React, { lazy, Suspense, useMemo, useRef, useState } from 'react';
 import { compileLegacyTemplate } from '../../utils/compileLegacyTemplate';
 import { StrategyActionsEditor, RoleResourceActionsEditor } from './PermissionEditors';
-import { saveRoleResourcePermissions, updateGeneralActionPermissions } from './permissionRequests';
+import {
+  saveRoleResourcePermissions,
+  updateGeneralActionPermissions,
+  type CreateUpdateResource,
+  type GetResource,
+  type UpdateResource,
+} from './permissionRequests';
 import { ScopeSelect } from './ScopeSelect';
 import type { AvailableAction, DataSourceRecord, RoleCollectionRecord } from './types';
 import { NAMESPACE } from '../../locale';
 import PluginDataSourceManagerClientV2 from '../../plugin';
-import type { ComponentLoader, DataSourcePermissionTabProps } from '../../registries';
+import type { ComponentLoader, DataSourcePermissionRole, DataSourcePermissionTabProps } from '../../registries';
 
 const ROLE_COLLECTIONS_FILTER_COLLECTION_NAME = 'dataSourcePermissionCollectionsFilter';
 const COLLECTION_ACTION_PERMISSION_PAGE_SIZE = 20;
@@ -108,8 +113,21 @@ function useTableFillClassName() {
   );
 }
 
-function getCollection(ctx: ReturnType<typeof useFlowContext>, dataSourceKey: string, collectionName: string) {
-  return ctx.dataSourceManager.getDataSource(dataSourceKey)?.getCollection(collectionName) as Collection | undefined;
+interface FlowContextWithDataSources {
+  dataSourceManager: {
+    getDataSource: (dataSourceKey: string) => { getCollection: (collectionName: string) => unknown } | undefined;
+  };
+}
+
+function getCollection(ctx: unknown, dataSourceKey: string, collectionName: string) {
+  const flowContext = ctx as FlowContextWithDataSources;
+  return flowContext.dataSourceManager.getDataSource(dataSourceKey)?.getCollection(collectionName) as
+    | Collection
+    | undefined;
+}
+
+function getResponseData<T>(response: unknown) {
+  return (response as { data?: { data?: T } } | undefined)?.data?.data;
 }
 
 function getStableLazyComponent<Props>(
@@ -130,7 +148,7 @@ function getStableLazyComponent<Props>(
 }
 
 interface GeneralActionPermissionsProps {
-  activeRole: PermissionTabProps['activeRole'];
+  activeRole?: DataSourcePermissionRole | null;
   availableActions: AvailableAction[];
   dataSource: DataSourceRecord;
   t: (key: string, options?: Record<string, unknown>) => string;
@@ -142,7 +160,7 @@ function GeneralActionPermissions(props: GeneralActionPermissionsProps) {
   const { message } = App.useApp();
   const [actions, setActions] = useState<string[]>([]);
   const resource = useMemo(
-    () => ctx.api.resource(`dataSources/${props.dataSource.key}/roles`),
+    () => ctx.api.resource(`dataSources/${props.dataSource.key}/roles`) as unknown as UpdateResource & GetResource,
     [ctx.api, props.dataSource.key],
   );
 
@@ -154,7 +172,8 @@ function GeneralActionPermissions(props: GeneralActionPermissionsProps) {
       const response = await resource.get({
         filterByTk: props.activeRole.name,
       });
-      const nextActions = response?.data?.data?.strategy?.actions || [];
+      const roleRecord = getResponseData<{ strategy?: { actions?: string[] } }>(response);
+      const nextActions = roleRecord?.strategy?.actions || [];
       setActions(nextActions);
       return nextActions;
     },
@@ -200,7 +219,7 @@ function GeneralActionPermissions(props: GeneralActionPermissionsProps) {
 }
 
 interface ResourcePermissionFormProps {
-  activeRole: PermissionTabProps['activeRole'];
+  activeRole?: DataSourcePermissionRole | null;
   availableActions: AvailableAction[];
   collection: RoleCollectionRecord;
   dataSource: DataSourceRecord;
@@ -215,7 +234,9 @@ function ResourcePermissionForm(props: ResourcePermissionFormProps) {
   const usingActionsConfig = Form.useWatch('usingActionsConfig', form);
   const collection = getCollection(ctx, props.dataSource.key, props.collection.name);
   const resource = useMemo(
-    () => ctx.api.resource('roles.dataSourceResources', props.activeRole?.name),
+    () =>
+      ctx.api.resource('roles.dataSourceResources', props.activeRole?.name) as unknown as CreateUpdateResource &
+        GetResource,
     [ctx.api, props.activeRole?.name],
   );
 
@@ -239,7 +260,7 @@ function ResourcePermissionForm(props: ResourcePermissionFormProps) {
         },
         appends: ['actions', 'actions.scope'],
       });
-      const values = response?.data?.data || {
+      const values = getResponseData<Record<string, unknown>>(response) || {
         usingActionsConfig: props.collection.usingConfig === 'resourceAction',
         actions: [],
       };
@@ -312,7 +333,7 @@ function ResourcePermissionForm(props: ResourcePermissionFormProps) {
 }
 
 interface CollectionActionPermissionsProps {
-  activeRole: PermissionTabProps['activeRole'];
+  activeRole?: DataSourcePermissionRole | null;
   availableActions: AvailableAction[];
   dataSource: DataSourceRecord;
   t: (key: string, options?: Record<string, unknown>) => string;
@@ -480,7 +501,7 @@ function CollectionActionPermissions(props: CollectionActionPermissionsProps) {
 }
 
 interface DataSourcePermissionDrawerProps {
-  activeRole: PermissionTabProps['activeRole'];
+  activeRole?: DataSourcePermissionRole | null;
   availableActions: AvailableAction[];
   dataSource: DataSourceRecord;
   t: (key: string, options?: Record<string, unknown>) => string;
@@ -576,7 +597,11 @@ function DataSourcePermissionDrawer(props: DataSourcePermissionDrawerProps) {
   );
 }
 
-export default function DataSourcePermissionsTab(props: PermissionTabProps) {
+interface DataSourcePermissionsTabProps {
+  activeRole?: DataSourcePermissionRole | null;
+}
+
+export default function DataSourcePermissionsTab(props: DataSourcePermissionsTabProps) {
   const { token } = theme.useToken();
   const ctx = useFlowContext();
   const engine = useFlowEngine();

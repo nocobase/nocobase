@@ -8,7 +8,6 @@
  */
 
 import { Application, Plugin, type CollectionTemplateField } from '@nocobase/client-v2';
-import PluginAclClientV2 from '@nocobase/plugin-acl/client-v2';
 import React, { ComponentType } from 'react';
 import { FieldInterfaceConfigureOptions } from './field-interfaces';
 import { DATA_SOURCE_MANAGER_SETTINGS_KEY } from './locale';
@@ -25,6 +24,17 @@ import {
   type DataSourcePermissionTabProps,
 } from './registries';
 import { syncDataSourcesToRuntime } from './runtime';
+
+interface PluginAclClientV2Compat {
+  settingsUI: {
+    addPermissionsTab: (options: {
+      key: string;
+      label: React.ReactNode;
+      sort?: number;
+      componentLoader: () => Promise<unknown>;
+    }) => void;
+  };
+}
 
 export interface DataSourceSettingsFormProps {
   mode: 'create' | 'edit';
@@ -263,10 +273,10 @@ export class PluginDataSourceManagerClientV2 extends Plugin<any, Application> {
     this.registerBuiltInCollectionPresetFields();
     this.registerBuiltInCollectionTemplates();
 
-    const aclPlugin = this.app.pm.get(PluginAclClientV2) as PluginAclClientV2 | undefined;
+    const aclPlugin = this.app.pm.get('@nocobase/plugin-acl') as PluginAclClientV2Compat | undefined;
     aclPlugin?.settingsUI.addPermissionsTab({
       key: 'dataSource',
-      label: this.t('Data sources'),
+      label: String(this.t('Data sources')),
       sort: 15,
       componentLoader: () => import('./pages/permissions/DataSourcePermissionsTab'),
     });

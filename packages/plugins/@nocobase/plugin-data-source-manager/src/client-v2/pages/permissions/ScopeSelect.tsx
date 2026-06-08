@@ -17,7 +17,13 @@ import { App, Button, Form, Input, Select, Space, theme, Tooltip } from 'antd';
 import type { ColumnsType, TablePaginationConfig } from 'antd/es/table';
 import React, { useMemo, useRef, useState } from 'react';
 import { compileLegacyTemplate, compileLegacyTemplateText } from '../../utils/compileLegacyTemplate';
-import { destroyScopeRecord, saveScopeRecord } from './permissionRequests';
+import {
+  destroyScopeRecord,
+  saveScopeRecord,
+  type CreateUpdateResource,
+  type DestroyResource,
+  type ListResource,
+} from './permissionRequests';
 import type { ScopeRecord } from './types';
 
 type TFunction = (key: string, options?: Record<string, unknown>) => string;
@@ -128,7 +134,8 @@ function ScopeForm(props: ScopeFormProps) {
   const [form] = Form.useForm();
   const filterPanelRef = useRef<CollectionFilterPanelRef>(null);
   const resource = useMemo(
-    () => ctx.api.resource(`dataSources/${props.dataSourceKey}/rolesResourcesScopes`),
+    () =>
+      ctx.api.resource(`dataSources/${props.dataSourceKey}/rolesResourcesScopes`) as unknown as CreateUpdateResource,
     [ctx.api, props.dataSourceKey],
   );
 
@@ -190,9 +197,11 @@ function ScopePicker(props: ScopePickerProps) {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(DATA_SCOPE_PAGE_SIZE);
   const resource = useMemo(
-    () => ctx.api.resource(`dataSources/${props.dataSourceKey}/rolesResourcesScopes`),
+    () =>
+      ctx.api.resource(`dataSources/${props.dataSourceKey}/rolesResourcesScopes`) as unknown as CreateUpdateResource &
+        DestroyResource,
     [ctx.api, props.dataSourceKey],
-  );
+  ) as CreateUpdateResource & DestroyResource & ListResource;
   const request = useRequest(
     async () => {
       const response = await resource.list({

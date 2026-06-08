@@ -7,14 +7,18 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import type { PermissionTabProps } from '@nocobase/plugin-acl/client-v2';
 import type { ComponentType, ReactNode } from 'react';
 import type { AvailableAction, DataSourceRecord } from './pages/permissions/types';
 
 export type DataSourcePermissionT = (key: string, options?: Record<string, unknown>) => string;
 
+export interface DataSourcePermissionRole {
+  name: string;
+  title?: string;
+}
+
 export interface DataSourcePermissionTabProps {
-  activeRole: PermissionTabProps['activeRole'];
+  activeRole?: DataSourcePermissionRole | null;
   availableActions: AvailableAction[];
   dataSource: DataSourceRecord;
   t: DataSourcePermissionT;

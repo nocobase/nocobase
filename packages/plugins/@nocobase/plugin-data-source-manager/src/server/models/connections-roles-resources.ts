@@ -7,6 +7,55 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { RoleResourceModel } from '@nocobase/plugin-acl';
+import { ACL, ACLResource, ACLRole } from '@nocobase/acl';
+import { Model } from '@nocobase/database';
+import { DataSourcesRolesResourcesActionModel } from './connections-roles-resources-action';
 
-export class DataSourcesRolesResourcesModel extends RoleResourceModel {}
+interface ActionsAssociation {
+  getActions: (options: { transaction?: unknown }) => Promise<DataSourcesRolesResourcesActionModel[]>;
+}
+
+export class DataSourcesRolesResourcesModel extends Model {
+  async revoke(options: { role: ACLRole; resourceName: string }) {
+    const { role, resourceName } = options;
+    role.revokeResource(resourceName);
+  }
+
+  async writeToACL(options: { acl: ACL; transaction?: unknown }) {
+    const { acl, transaction } = options;
+    const resourceName = this.get('name') as string;
+    const roleName = this.get('roleName') as string;
+    const role = acl.getRole(roleName);
+
+    if (!role) {
+      console.log(`${roleName} role does not exist`);
+      return;
+    }
+
+    await this.revoke({ role, resourceName });
+
+    if (this.get('usingActionsConfig') === false) {
+      return;
+    }
+
+    const resource = new ACLResource({
+      role,
+      name: resourceName,
+    });
+
+    role.resources.set(resourceName, resource);
+
+    const actions = await (this as unknown as ActionsAssociation).getActions({
+      transaction,
+    });
+
+    for (const action of actions) {
+      await action.writeToACL({
+        acl,
+        role,
+        resourceName,
+        transaction,
+      });
+    }
+  }
+}
