@@ -10,7 +10,7 @@
 import { Table } from '@nocobase/client-v2';
 import { useFlowContext } from '@nocobase/flow-engine';
 import { useMemoizedFn, useRequest } from 'ahooks';
-import { Checkbox, Select, Space, Typography, theme } from 'antd';
+import { Button, Checkbox, Drawer, Space, Switch, Typography, theme } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { uniq } from 'lodash';
 import React, { useEffect, useMemo, useState } from 'react';
@@ -39,6 +39,7 @@ interface UiLayoutRecord {
   title?: string;
   routeName?: string;
   layoutType?: string;
+  enabled?: boolean;
 }
 
 interface UiLayoutPayload {
@@ -47,6 +48,14 @@ interface UiLayoutPayload {
 
 interface DesktopRoutePayload {
   data?: DesktopRouteRecord[];
+}
+
+interface RoleUiLayoutPayload {
+  data?: RoleUiLayoutRecord[];
+}
+
+interface RoleUiLayoutDesktopRoutePayload {
+  data?: RoleUiLayoutDesktopRouteRecord[];
 }
 
 interface DesktopRouteRequestResult {
@@ -69,6 +78,30 @@ interface RoutePermissionRecord {
   children?: RoutePermissionRecord[];
 }
 
+interface RoleUiLayoutRecord {
+  roleName?: string;
+  uiLayoutUid?: string;
+}
+
+interface RoleUiLayoutDesktopRouteRecord {
+  desktopRouteId?: number | string;
+  uiLayoutUid?: string;
+}
+
+interface LayoutMenuStats {
+  selected: number;
+  total: number;
+}
+
+interface LayoutSummaryRecord {
+  uid: string;
+  layout: UiLayoutRecord;
+  label: string;
+  typeLabel: string;
+  accessible: boolean;
+  menuStats: LayoutMenuStats;
+}
+
 interface ResourceResponse {
   data?: unknown;
 }
@@ -81,6 +114,13 @@ interface RoleDesktopRoutesResource extends ListResource {
   add: (params: { values: number[] }) => Promise<unknown>;
   remove: (params: { values: number[] }) => Promise<unknown>;
 }
+
+interface RoleUiLayoutsResource extends ListResource {
+  create: (params: { values: { roleName: string; uiLayoutUid: string } }) => Promise<unknown>;
+  destroy: (params: { filter: { roleName: string; uiLayoutUid: string } }) => Promise<unknown>;
+}
+
+type RoleUiLayoutDesktopRoutesResource = ListResource;
 
 function toUiLayoutPayload(responseData: unknown): UiLayoutPayload {
   if (!responseData || typeof responseData !== 'object') {
@@ -97,6 +137,26 @@ function toDesktopRoutePayload(responseData: unknown): DesktopRoutePayload {
     return {};
   }
   const payload = responseData as DesktopRoutePayload;
+  return {
+    data: Array.isArray(payload.data) ? payload.data : [],
+  };
+}
+
+function toRoleUiLayoutPayload(responseData: unknown): RoleUiLayoutPayload {
+  if (!responseData || typeof responseData !== 'object') {
+    return {};
+  }
+  const payload = responseData as RoleUiLayoutPayload;
+  return {
+    data: Array.isArray(payload.data) ? payload.data : [],
+  };
+}
+
+function toRoleUiLayoutDesktopRoutePayload(responseData: unknown): RoleUiLayoutDesktopRoutePayload {
+  if (!responseData || typeof responseData !== 'object') {
+    return {};
+  }
+  const payload = responseData as RoleUiLayoutDesktopRoutePayload;
   return {
     data: Array.isArray(payload.data) ? payload.data : [],
   };
@@ -128,6 +188,16 @@ function flattenItems(items: RoutePermissionRecord[]): RoutePermissionRecord[] {
   return items.flatMap((item) => [item, ...flattenItems(item.children ?? [])]);
 }
 
+function toRouteId(value: unknown) {
+  if (typeof value === 'number') {
+    return value;
+  }
+  if (typeof value === 'string' && value.trim()) {
+    const id = Number(value);
+    return Number.isNaN(id) ? undefined : id;
+  }
+}
+
 function translateTitle(title: unknown, t: (key: string, options?: Record<string, unknown>) => string) {
   if (typeof title !== 'string') {
     return t('Unnamed');
@@ -149,10 +219,26 @@ export function getLayoutLabel(layout: UiLayoutRecord, t: (key: string, options?
   return layout.routeName || layout.uid;
 }
 
-function getDefaultLayoutUid(layouts: UiLayoutRecord[]) {
-  return layouts.some((layout) => layout.uid === DEFAULT_ADMIN_UI_LAYOUT.uid)
+function getEnabledLayouts(layouts: UiLayoutRecord[] | undefined) {
+  return (layouts ?? []).filter((layout) => layout.enabled !== false);
+}
+
+function getDefaultLayoutUid(layouts: UiLayoutRecord[] | undefined) {
+  const enabledLayouts = getEnabledLayouts(layouts);
+
+  return enabledLayouts.some((layout) => layout.uid === DEFAULT_ADMIN_UI_LAYOUT.uid)
     ? DEFAULT_ADMIN_UI_LAYOUT.uid
-    : layouts[0]?.uid || DEFAULT_ADMIN_UI_LAYOUT.uid;
+    : enabledLayouts[0]?.uid || DEFAULT_ADMIN_UI_LAYOUT.uid;
+}
+
+function getLayoutTypeLabel(layout: UiLayoutRecord, t: (key: string, options?: Record<string, unknown>) => string) {
+  if (layout.layoutType === 'mobile') {
+    return t('Mobile');
+  }
+  if (layout.layoutType === 'desktop') {
+    return t('Desktop');
+  }
+  return layout.layoutType || t('Unknown');
 }
 
 export default function LayoutAwareDesktopRoutesPermissionsTab(props: PermissionTabProps) {
@@ -161,11 +247,21 @@ export default function LayoutAwareDesktopRoutesPermissionsTab(props: Permission
   const { token } = theme.useToken();
   const role = props.activeRole;
   const active = props.activeKey === 'menu';
-  const [selectedLayoutUid, setSelectedLayoutUid] = useState<string>(DEFAULT_ADMIN_UI_LAYOUT.uid);
+  const [selectedLayoutUid, setSelectedLayoutUid] = useState<string | null>(null);
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
-  const routeFilter = useMemo(() => createDesktopRouteLayoutPermissionFilter(selectedLayoutUid), [selectedLayoutUid]);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const activeLayoutUid = selectedLayoutUid || DEFAULT_ADMIN_UI_LAYOUT.uid;
+  const routeFilter = useMemo(() => createDesktopRouteLayoutPermissionFilter(activeLayoutUid), [activeLayoutUid]);
   const uiLayoutsResource = useMemo(() => ctx.api.resource('uiLayouts') as unknown as ListResource, [ctx.api]);
   const desktopRoutesResource = useMemo(() => ctx.api.resource('desktopRoutes') as unknown as ListResource, [ctx.api]);
+  const roleUiLayoutsResource = useMemo(
+    () => ctx.api.resource('rolesUiLayouts') as unknown as RoleUiLayoutsResource,
+    [ctx.api],
+  );
+  const roleUiLayoutDesktopRoutesResource = useMemo(
+    () => ctx.api.resource('rolesUiLayoutDesktopRoutes') as unknown as RoleUiLayoutDesktopRoutesResource,
+    [ctx.api],
+  );
   const roleRoutesResource = useMemo(
     () => (role ? (ctx.api.resource('roles.desktopRoutes', role.name) as unknown as RoleDesktopRoutesResource) : null),
     [ctx.api, role],
@@ -187,12 +283,14 @@ export default function LayoutAwareDesktopRoutesPermissionsTab(props: Permission
       refreshDeps: [active],
       onSuccess(layouts) {
         const nextLayoutUid = getDefaultLayoutUid(layouts);
-        if (!layouts.some((layout) => layout.uid === selectedLayoutUid)) {
+        if (!selectedLayoutUid || !getEnabledLayouts(layouts).some((layout) => layout.uid === selectedLayoutUid)) {
           setSelectedLayoutUid(nextLayoutUid);
         }
       },
     },
   );
+  const enabledLayouts = useMemo(() => getEnabledLayouts(layoutService.data), [layoutService.data]);
+  const layoutUidKey = useMemo(() => enabledLayouts.map((layout) => layout.uid).join(','), [enabledLayouts]);
 
   const routeService = useRequest(
     async () => {
@@ -203,27 +301,27 @@ export default function LayoutAwareDesktopRoutesPermissionsTab(props: Permission
         filter: routeFilter,
       });
       return {
-        layoutUid: selectedLayoutUid,
+        layoutUid: activeLayoutUid,
         data: toDesktopRoutePayload(response?.data).data ?? [],
       };
     },
     {
-      ready: active,
-      refreshDeps: [active, routeFilter, selectedLayoutUid],
+      ready: active && drawerOpen,
+      refreshDeps: [active, drawerOpen, routeFilter, activeLayoutUid],
     },
   );
 
   const selectedLayoutLabel = useMemo(() => {
-    const selectedLayout = layoutService.data?.find((layout) => layout.uid === selectedLayoutUid);
-    return selectedLayout ? getLayoutLabel(selectedLayout, t) : selectedLayoutUid;
-  }, [layoutService.data, selectedLayoutUid, t]);
+    const selectedLayout = enabledLayouts.find((layout) => layout.uid === activeLayoutUid);
+    return selectedLayout ? getLayoutLabel(selectedLayout, t) : activeLayoutUid;
+  }, [activeLayoutUid, enabledLayouts, t]);
   const routeData = useMemo(() => {
     const data = routeService.data as DesktopRouteRequestResult | undefined;
-    if (routeService.error || data?.layoutUid !== selectedLayoutUid) {
+    if (routeService.error || data?.layoutUid !== activeLayoutUid) {
       return [];
     }
     return data.data;
-  }, [routeService.data, routeService.error, selectedLayoutUid]);
+  }, [activeLayoutUid, routeService.data, routeService.error]);
   const routeItems = useMemo(() => toRouteItems(routeData), [routeData]);
   const flatItems = useMemo(() => flattenItems(routeItems), [routeItems]);
   const allIds = useMemo(() => getAllChildrenIds(routeItems), [routeItems]);
@@ -244,8 +342,8 @@ export default function LayoutAwareDesktopRoutesPermissionsTab(props: Permission
       return toDesktopRoutePayload(response?.data).data?.map((item) => item.id) ?? [];
     },
     {
-      ready: active && !!roleRoutesResource,
-      refreshDeps: [role?.name, active, routeFilter],
+      ready: active && drawerOpen && !!roleRoutesResource,
+      refreshDeps: [role?.name, active, drawerOpen, routeFilter],
       onSuccess(data) {
         setSelectedIds(data);
       },
@@ -254,7 +352,80 @@ export default function LayoutAwareDesktopRoutesPermissionsTab(props: Permission
 
   useEffect(() => {
     setSelectedIds([]);
-  }, [role?.name, selectedLayoutUid]);
+  }, [activeLayoutUid, role?.name]);
+
+  const layoutAccessService = useRequest(
+    async () => {
+      if (!role || !enabledLayouts.length) {
+        return new Set<string>();
+      }
+      const response = await roleUiLayoutsResource.list({
+        paginate: false,
+        filter: {
+          roleName: role.name,
+          uiLayoutUid: enabledLayouts.map((layout) => layout.uid),
+        },
+      });
+      const uids = toRoleUiLayoutPayload(response?.data)
+        .data?.map((item) => item.uiLayoutUid)
+        .filter((uid): uid is string => typeof uid === 'string' && !!uid);
+
+      return new Set(uids);
+    },
+    {
+      ready: active && !!role && !!enabledLayouts.length,
+      refreshDeps: [active, role?.name, layoutUidKey],
+    },
+  );
+
+  const layoutMenuStatsService = useRequest(
+    async () => {
+      if (!role || !enabledLayouts.length) {
+        return new Map<string, LayoutMenuStats>();
+      }
+
+      const entries = await Promise.all(
+        enabledLayouts.map(async (layout) => {
+          const filter = createDesktopRouteLayoutPermissionFilter(layout.uid);
+
+          try {
+            const [routesResponse, permissionsResponse] = await Promise.all([
+              desktopRoutesResource.list({
+                tree: true,
+                sort: 'sort',
+                paginate: false,
+                filter,
+              }),
+              roleUiLayoutDesktopRoutesResource.list({
+                paginate: false,
+                filter: {
+                  roleName: role.name,
+                  uiLayoutUid: layout.uid,
+                },
+              }),
+            ]);
+            const routeIds = getAllChildrenIds(toRouteItems(toDesktopRoutePayload(routesResponse?.data).data));
+            const routeIdSet = new Set(routeIds);
+            const selectedRouteIds = new Set(
+              toRoleUiLayoutDesktopRoutePayload(permissionsResponse?.data)
+                .data?.map((item) => toRouteId(item.desktopRouteId))
+                .filter((id): id is number => typeof id === 'number' && routeIdSet.has(id)),
+            );
+
+            return [layout.uid, { selected: selectedRouteIds.size, total: routeIds.length }] as const;
+          } catch {
+            return [layout.uid, { selected: 0, total: 0 }] as const;
+          }
+        }),
+      );
+
+      return new Map(entries);
+    },
+    {
+      ready: active && !!role && !!enabledLayouts.length,
+      refreshDeps: [active, role?.name, layoutUidKey],
+    },
+  );
 
   const applyPermissionChanges = useMemoizedFn(async (nextSelectedIds: number[]) => {
     if (!roleRoutesResource) {
@@ -316,16 +487,95 @@ export default function LayoutAwareDesktopRoutesPermissionsTab(props: Permission
     await applyPermissionChanges(nextIds);
   });
 
-  const layoutOptions = useMemo(
+  const toggleLayoutAccess = useMemoizedFn(async (layout: UiLayoutRecord, checked: boolean) => {
+    if (!role) {
+      return;
+    }
+    if (checked) {
+      await roleUiLayoutsResource.create({
+        values: {
+          roleName: role.name,
+          uiLayoutUid: layout.uid,
+        },
+      });
+    } else {
+      await roleUiLayoutsResource.destroy({
+        filter: {
+          roleName: role.name,
+          uiLayoutUid: layout.uid,
+        },
+      });
+    }
+    await layoutAccessService.refreshAsync();
+    ctx.message.success(t('Saved successfully'));
+  });
+
+  const configureLayout = useMemoizedFn((layout: UiLayoutRecord) => {
+    setSelectedLayoutUid(layout.uid);
+    setDrawerOpen(true);
+  });
+
+  const layoutRows = useMemo<LayoutSummaryRecord[]>(
     () =>
-      (layoutService.data || []).map((layout) => ({
-        value: layout.uid,
-        label: getLayoutLabel(layout, t),
-      })),
-    [layoutService.data, t],
+      enabledLayouts.map((layout) => {
+        const label = getLayoutLabel(layout, t);
+
+        return {
+          uid: layout.uid,
+          layout,
+          label,
+          typeLabel: getLayoutTypeLabel(layout, t),
+          accessible: !!layoutAccessService.data?.has(layout.uid),
+          menuStats: layoutMenuStatsService.data?.get(layout.uid) ?? { selected: 0, total: 0 },
+        };
+      }),
+    [enabledLayouts, layoutAccessService.data, layoutMenuStatsService.data, t],
   );
 
-  const columns = useMemo<ColumnsType<RoutePermissionRecord>>(
+  const layoutColumns = useMemo<ColumnsType<LayoutSummaryRecord>>(
+    () => [
+      {
+        dataIndex: 'label',
+        title: t('Layout title'),
+      },
+      {
+        dataIndex: 'typeLabel',
+        title: t('Type'),
+      },
+      {
+        dataIndex: 'accessible',
+        title: t('Layout access'),
+        render: (_, item) => (
+          <Switch
+            aria-label={t('Allow access to {{layout}}', { layout: item.label })}
+            checked={item.accessible}
+            onChange={(checked) => toggleLayoutAccess(item.layout, checked)}
+          />
+        ),
+      },
+      {
+        dataIndex: 'menuStats',
+        title: t('Menu access'),
+        render: (_, item) => `${item.menuStats.selected} / ${item.menuStats.total}`,
+      },
+      {
+        dataIndex: 'configure',
+        title: t('Configure'),
+        render: (_, item) => (
+          <Button
+            type="link"
+            aria-label={t('Configure {{layout}}', { layout: item.label })}
+            onClick={() => configureLayout(item.layout)}
+          >
+            {t('Configure')}
+          </Button>
+        ),
+      },
+    ],
+    [configureLayout, t, toggleLayoutAccess],
+  );
+
+  const routeColumns = useMemo<ColumnsType<RoutePermissionRecord>>(
     () => [
       {
         dataIndex: 'title',
@@ -367,17 +617,6 @@ export default function LayoutAwareDesktopRoutesPermissionsTab(props: Permission
         gap: token.marginSM,
       }}
     >
-      <Space align="center" wrap>
-        <Typography.Text strong>{t('UI layout')}</Typography.Text>
-        <Select
-          aria-label={t('UI layout')}
-          value={selectedLayoutUid}
-          loading={layoutService.loading}
-          style={{ minWidth: 180 }}
-          options={layoutOptions}
-          onChange={setSelectedLayoutUid}
-        />
-      </Space>
       <Checkbox
         checked={!!role.allowNewUiLayout}
         onChange={(event) => {
@@ -394,15 +633,38 @@ export default function LayoutAwareDesktopRoutesPermissionsTab(props: Permission
       >
         {t('New routes are allowed to be accessed by default')}
       </Checkbox>
-      <Table<RoutePermissionRecord>
-        rowKey="id"
-        loading={layoutService.loading || routeService.loading || roleRoutesService.loading}
+      <Table<LayoutSummaryRecord>
+        rowKey="uid"
+        loading={layoutService.loading || layoutAccessService.loading || layoutMenuStatsService.loading}
         pagination={false}
-        expandable={{ defaultExpandAllRows: false }}
-        columns={columns}
-        dataSource={routeItems}
-        locale={{ emptyText }}
+        columns={layoutColumns}
+        dataSource={layoutRows}
       />
+      <Drawer title={selectedLayoutLabel} open={drawerOpen} width={640} onClose={() => setDrawerOpen(false)}>
+        <Space direction="vertical" size={token.marginSM} style={{ width: '100%' }}>
+          <Checkbox
+            checked={!!layoutAccessService.data?.has(activeLayoutUid)}
+            onChange={(event) => {
+              const layout = enabledLayouts.find((item) => item.uid === activeLayoutUid);
+              if (layout) {
+                toggleLayoutAccess(layout, event.target.checked);
+              }
+            }}
+          >
+            {t('Allow access to this layout')}
+          </Checkbox>
+          <Typography.Text strong>{t('Menu permissions')}</Typography.Text>
+          <Table<RoutePermissionRecord>
+            rowKey="id"
+            loading={routeService.loading || roleRoutesService.loading}
+            pagination={false}
+            expandable={{ defaultExpandAllRows: false }}
+            columns={routeColumns}
+            dataSource={routeItems}
+            locale={{ emptyText }}
+          />
+        </Space>
+      </Drawer>
     </div>
   );
 }
