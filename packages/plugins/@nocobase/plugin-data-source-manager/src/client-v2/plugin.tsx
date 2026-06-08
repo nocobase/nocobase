@@ -19,6 +19,11 @@ import {
   ViewPreviewConfigureItem,
   ViewSourcesConfigureItem,
 } from './pages/components/ViewCollectionConfigure';
+import {
+  DataSourcePermissionTabRegistry,
+  type DataSourcePermissionTabOptionResolver,
+  type DataSourcePermissionTabProps,
+} from './registries';
 import { syncDataSourcesToRuntime } from './runtime';
 
 export interface DataSourceSettingsFormProps {
@@ -252,6 +257,7 @@ export class PluginDataSourceManagerClientV2 extends Plugin<any, Application> {
   extensionManager = new ExtensionManager();
   collectionTemplateRegistry = new CollectionTemplateRegistry();
   collectionPresetFieldRegistry = new CollectionPresetFieldRegistry();
+  permissionTabRegistry = new DataSourcePermissionTabRegistry();
 
   async load() {
     this.registerBuiltInCollectionPresetFields();
@@ -330,6 +336,14 @@ export class PluginDataSourceManagerClientV2 extends Plugin<any, Application> {
 
   registerCollectionPresetField(options: CollectionPresetFieldOptions) {
     this.collectionPresetFieldRegistry.register(options);
+  }
+
+  registerPermissionTab(options: DataSourcePermissionTabOptionResolver) {
+    this.permissionTabRegistry.add(options);
+  }
+
+  getPermissionTabs(props: DataSourcePermissionTabProps) {
+    return this.permissionTabRegistry.getPermissionTabs(props);
   }
 
   addCollectionPresetField(options: CollectionPresetFieldOptions) {
