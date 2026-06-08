@@ -11,6 +11,25 @@ import { Args, Command, Flags } from '@oclif/core';
 import { executeRawApiRequest } from '../../lib/api-client.js';
 import { ensureCrossEnvConfirmed } from '../../lib/env-guard.js';
 
+const VERSION_CONTROL_PLUGIN_PACKAGE = '@nocobase/plugin-version-control';
+
+interface PluginListSummaryItem {
+  packageName?: string;
+  enabled?: boolean;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null;
+}
+
+function extractPluginList(data: unknown): PluginListSummaryItem[] {
+  const list = Array.isArray(data) ? data : isRecord(data) && Array.isArray(data.data) ? data.data : [];
+  return list.filter(isRecord).map((item) => ({
+    packageName: typeof item.packageName === 'string' ? item.packageName : undefined,
+    enabled: typeof item.enabled === 'boolean' ? item.enabled : undefined,
+  }));
+}
+
 export default class RevisionCreate extends Command {
   static override summary = 'Save the current NocoBase build as a restorable revision';
 
@@ -49,7 +68,7 @@ export default class RevisionCreate extends Command {
     'json-output': Flags.boolean({
       char: 'j',
       description: 'Print raw JSON response',
-      default: true,
+      default: false,
       allowNo: true,
     }),
   };
@@ -69,6 +88,33 @@ export default class RevisionCreate extends Command {
     });
     if (!confirmed) {
       return;
+    }
+
+    const pluginListResponse = await executeRawApiRequest({
+      envName: flags.env,
+      baseUrl: flags['api-base-url'],
+      role: flags.role,
+      token: flags.token,
+      method: 'GET',
+      path: '/pm:list',
+      query: {
+        mode: 'summary',
+      },
+    });
+
+    if (!pluginListResponse.ok) {
+      this.error(
+        `Failed to check plugin status with status ${pluginListResponse.status}\n${JSON.stringify(pluginListResponse.data, null, 2)}`,
+      );
+    }
+
+    const versionControlPlugin = extractPluginList(pluginListResponse.data).find(
+      (plugin) => plugin.packageName === VERSION_CONTROL_PLUGIN_PACKAGE,
+    );
+    if (!versionControlPlugin?.enabled) {
+      this.error(
+        `The ${VERSION_CONTROL_PLUGIN_PACKAGE} plugin is not enabled. Enable it first with \`nb plugin enable ${VERSION_CONTROL_PLUGIN_PACKAGE}\`.`,
+      );
     }
 
     const response = await executeRawApiRequest({
@@ -96,6 +142,6 @@ export default class RevisionCreate extends Command {
       return;
     }
 
-    this.log(`HTTP ${response.status}`);
+    this.log('Revision created successfully');
   }
 }
