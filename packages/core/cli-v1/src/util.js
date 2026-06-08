@@ -367,6 +367,38 @@ function resolvePublicPath(appPublicPath = '/') {
 
 exports.resolvePublicPath = resolvePublicPath;
 
+function resolveDistPublicPath(appPublicPath = '/') {
+  const publicPath = resolvePublicPath(appPublicPath).replace(/\/+$/, '');
+  return `${publicPath}/dist/`;
+}
+
+function buildDefaultCdnBaseUrl(appPublicPath, version) {
+  const normalizedVersion = String(version || '')
+    .trim()
+    .replace(/^\/+|\/+$/g, '');
+  if (!normalizedVersion) {
+    return undefined;
+  }
+  return `${resolveDistPublicPath(appPublicPath)}${normalizedVersion}/`;
+}
+
+exports.buildDefaultCdnBaseUrl = buildDefaultCdnBaseUrl;
+
+function resolveDefaultCdnBaseUrlFromActiveVersion(appPublicPath = '/') {
+  try {
+    const activeVersionFile = storagePathJoin('dist-client', 'active-version');
+    if (!fs.existsSync(activeVersionFile)) {
+      return undefined;
+    }
+    const activeVersion = String(fs.readFileSync(activeVersionFile, 'utf8') || '').trim();
+    return buildDefaultCdnBaseUrl(appPublicPath, activeVersion);
+  } catch (_error) {
+    return undefined;
+  }
+}
+
+exports.resolveDefaultCdnBaseUrlFromActiveVersion = resolveDefaultCdnBaseUrlFromActiveVersion;
+
 // Default URL segment under which the modern (v2) client is served.
 // Kept local here so the CLI bootstrap (bin/index.js -> initEnv) stays lightweight
 // and does not have to require heavier packages. A second copy of the fixed
@@ -622,8 +654,10 @@ exports.initEnv = function initEnv() {
     process.env.__env_modified__ = true;
   }
 
-  if (!process.env.CDN_BASE_URL && process.env.APP_PUBLIC_PATH !== '/') {
-    process.env.CDN_BASE_URL = process.env.APP_PUBLIC_PATH;
+  if (!process.env.CDN_BASE_URL) {
+    process.env.CDN_BASE_URL =
+      resolveDefaultCdnBaseUrlFromActiveVersion(process.env.APP_PUBLIC_PATH) ||
+      (process.env.APP_PUBLIC_PATH !== '/' ? process.env.APP_PUBLIC_PATH : '');
   }
 
   if (process.env.CDN_BASE_URL.includes('http') && process.env.CDN_VERSION === 'auto') {

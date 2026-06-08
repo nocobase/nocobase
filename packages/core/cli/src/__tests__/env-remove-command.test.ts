@@ -154,6 +154,46 @@ test('env remove stops managed local runtime resources before removing the env c
   expect(log).toHaveBeenCalledWith('Removed env "staging".');
 });
 
+test('env remove does not remove the env config when stopping managed runtime resources fails', async () => {
+  const { default: EnvRemove } = await import('../commands/env/remove.js');
+  mocks.getCurrentEnvName.mockResolvedValue('current');
+  mocks.resolveManagedAppRuntime.mockResolvedValue({
+    kind: 'local',
+    envName: 'staging',
+    source: 'git',
+    projectRoot: '/tmp/staging/source',
+    env: {
+      config: {
+        builtinDb: true,
+      },
+    },
+  });
+  mocks.isInteractiveTerminal.mockReturnValue(true);
+  mocks.confirm.mockResolvedValue(true);
+
+  const runCommand = vi.fn(async () => {
+    throw new Error('app stop failed');
+  });
+  const command = Object.assign(Object.create(EnvRemove.prototype), {
+    parse: vi.fn(async () => ({
+      args: { name: 'staging' },
+      flags: { yes: false, force: false, purge: false, verbose: false },
+    })),
+    config: {
+      runCommand,
+    },
+    log: vi.fn(),
+    error: (message: string) => {
+      throw new Error(message);
+    },
+  });
+
+  await expect(EnvRemove.prototype.run.call(command)).rejects.toThrow('app stop failed');
+
+  expect(runCommand).toHaveBeenCalledWith('app:stop', ['--env', 'staging', '--with-db', '--yes']);
+  expect(mocks.removeEnv).not.toHaveBeenCalled();
+});
+
 test('env remove exits quietly when the user answers No', async () => {
   const { default: EnvRemove } = await import('../commands/env/remove.js');
   mocks.getCurrentEnvName.mockResolvedValue('current');

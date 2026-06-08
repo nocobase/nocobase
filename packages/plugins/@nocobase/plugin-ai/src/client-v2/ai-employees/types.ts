@@ -7,6 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import type { BubbleProps } from '@ant-design/x';
+
 export type AIEmployee = {
   username: string;
   nickname?: string;
@@ -14,9 +16,164 @@ export type AIEmployee = {
   avatar?: string;
   bio?: string;
   greeting?: string;
+  userConfig?: {
+    prompt?: string;
+  };
+  skillSettings?: {
+    tools?: { name: string; autoCall?: boolean }[];
+    skills?: string[];
+  };
+  chatSettings?: {
+    systemPromptMode?: 'default' | 'raw' | 'none';
+    enableSkills?: boolean;
+    enableTools?: boolean;
+    [key: string]: unknown;
+  };
+  builtIn?: boolean;
+  webSearch?: boolean;
+  toolsConflict?: boolean;
   category?: string;
+  deprecated?: boolean;
+  modelSettings?: {
+    enabled?: boolean;
+    llmService?: string;
+    model?: string;
+    models?: {
+      llmService?: string;
+      model?: string;
+    }[];
+  };
+};
+
+export type SkillSettings = {
+  toolsVersion?: number;
+  skillsVersion?: number;
+  tools?: string[];
+  skills?: string[];
+};
+
+export type Conversation = {
+  sessionId: string;
+  title: string;
+  updatedAt: string;
+  aiEmployee: AIEmployee;
+  read: boolean;
+  options?: {
+    modelSettings?: {
+      llmService?: string;
+      model?: string;
+    };
+    [key: string]: any;
+  };
+};
+
+export type ContextItem = {
+  type: string;
+  uid: string;
+  title?: string;
+  content?: unknown;
+};
+
+export type ToolCall<T = unknown> = {
+  id: string;
+  type: string;
+  name: string;
+  status?: 'success' | 'error';
+  invokeStatus: 'init' | 'interrupted' | 'waiting' | 'pending' | 'done' | 'confirmed';
+  auto: boolean;
+  args: T;
+  [key: string]: any;
+};
+
+export type Attachment = any;
+
+export type MessageType = 'text' | 'greeting';
+
+export type Message = Omit<BubbleProps, 'content'> & {
+  key?: string | number;
+  role?: string;
+  createdAt?: string | Date;
+  content: {
+    content: any;
+    ref?: React.MutableRefObject<any>;
+    type?: MessageType;
+    messageId?: string;
+    attachments?: Attachment[];
+    workContext?: ContextItem[];
+    tool_calls?: ToolCall<unknown>[];
+    metadata?: {
+      model: string;
+      provider: string;
+      llmService?: string;
+      usage_metadata?: {
+        input_tokens: number;
+        output_tokens: number;
+        total_tokens: number;
+      };
+      autoCallTools?: string[];
+    };
+    reference?: {
+      title: string;
+      url: string;
+    }[];
+    reasoning?: { status: string; content: string };
+    subAgentConversations?: {
+      sessionId: string;
+      toolCallId?: string;
+      status?: 'pending' | 'completed';
+      messages: Message[];
+    }[];
+    from?: 'main-agent' | 'sub-agent';
+  };
+};
+
+export type TaskMessage = {
+  user?: string;
+  system?: string;
+  attachments?: Attachment[];
+  workContext?: ContextItem[];
 };
 
 export type Task = {
   title?: string;
+  message?: TaskMessage;
+  autoSend?: boolean;
+  skillSettings?: SkillSettings;
+  webSearch?: boolean;
+  model?: {
+    llmService: string;
+    model: string;
+  } | null;
 };
+
+export type TriggerTaskOptions = {
+  aiEmployee?: AIEmployee;
+  tasks?: Task[];
+  auto?: boolean;
+};
+
+export type ClearOptions = {
+  sender?: boolean;
+  systemMessage?: boolean;
+  attachments?: boolean;
+  contextItems?: boolean;
+  taskVariables?: boolean;
+  toolModal?: boolean;
+  activeTool?: boolean;
+  activeMessageId?: boolean;
+  skillSettings?: boolean;
+};
+
+export type WebSearching = {
+  type: string;
+  query: string;
+};
+
+export interface ChatEditorRef {
+  write(document: string): void;
+  read(): string;
+  run?(): Promise<unknown>;
+  buttonGroupHeight?: number;
+  snippetEntries: unknown[];
+  logs: unknown[];
+}
