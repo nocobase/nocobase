@@ -2636,12 +2636,15 @@ describe('plugin-ui-layout mobile models', () => {
 
   it('should set the mobile root page model before the active route opens', () => {
     const dispatchSnapshots: Array<string | undefined> = [];
+    const mobileLayoutSnapshots: Array<boolean | undefined> = [];
     const dispatchEvent = vi.spyOn(RouteModel.prototype, 'dispatchEvent').mockImplementation(function (
       this: RouteModel,
       eventName: string,
+      inputArgs?: { isMobileLayout?: boolean },
     ) {
       if (eventName === 'click') {
         dispatchSnapshots.push(this.getStepParams('popupSettings', 'openView')?.pageModelClass as string | undefined);
+        mobileLayoutSnapshots.push(inputArgs?.isMobileLayout);
       }
 
       return Promise.resolve([]);
@@ -2678,6 +2681,7 @@ describe('plugin-ui-layout mobile models', () => {
     });
 
     expect(dispatchSnapshots).toEqual(['MobileRootPageModel']);
+    expect(mobileLayoutSnapshots).toEqual([true]);
     dispatchEvent.mockRestore();
   });
 

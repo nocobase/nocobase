@@ -680,13 +680,6 @@ const MobileLayoutComponent = observer((props: { model: MobileLayoutModel }) => 
       token.paddingXL,
     ],
   );
-  useEffect(() => {
-    model.setIsMobileLayout(true);
-    return () => {
-      model.setIsMobileLayout(false);
-    };
-  }, [model]);
-
   useLayoutEffect(() => {
     return installMobileLayoutRouteRepository(model);
   }, [model]);
@@ -1834,9 +1827,20 @@ export class MobileLayoutModel extends BaseLayoutModel<MobileLayoutMenuStructure
 
   constructor(options: ConstructorParameters<typeof BaseLayoutModel>[0]) {
     super(options);
+    this.setIsMobileLayout(true);
+    this.context.defineProperty('isMobileLayout', {
+      get: () => this.isMobileLayout,
+      observable: true,
+      cache: false,
+    });
     define(this, {
       menuRouteRefreshVersion: observable.ref,
     });
+  }
+
+  protected onMount(): void {
+    this.setIsMobileLayout(true);
+    super.onMount();
   }
 
   refreshMenuRouteTree() {
