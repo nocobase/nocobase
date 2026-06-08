@@ -17,6 +17,8 @@ import {
   WORKFLOW_EXECUTION_ROUTE_NAME,
   WORKFLOW_EXECUTION_ROUTE_PATH,
 } from './constants';
+import type { Instruction } from './canvas/Instruction';
+import { coreInstructions, coreInstructionGroups, type InstructionGroup } from './canvas/instructions';
 
 type LoaderOf<P = Record<string, never>> = () => Promise<{ default: ComponentType<P> }>;
 
@@ -51,6 +53,30 @@ export type WorkflowTriggerOptions = {
 
 export class PluginWorkflowClientV2 extends Plugin {
   triggers = new Registry<WorkflowTriggerOptions>();
+  instructions = new Registry<Instruction>();
+  instructionGroups = new Registry<InstructionGroup>();
+
+  /**
+   * Register a node type's v2 instruction. Mirrors v1's `registerInstruction`
+   * signature (accepts a class or an instance) but writes to *this* (v2)
+   * runtime's registry — see ADR-0003 / doc §9.1 (runtime separation). A type
+   * registered here appears in the v2 add-node menu and renders on the v2 canvas.
+   */
+  registerInstruction(type: string, instruction: Instruction | { new (): Instruction }) {
+    if (typeof instruction === 'function') {
+      this.instructions.register(type, new instruction());
+    } else {
+      this.instructions.register(type, instruction);
+    }
+  }
+
+  getInstruction(type?: string) {
+    return type ? this.instructions.get(type) : undefined;
+  }
+
+  registerInstructionGroup(key: string, group: InstructionGroup) {
+    this.instructionGroups.register(key, group);
+  }
 
   registerTrigger(type: string, options: WorkflowTriggerOptions) {
     // Downstream plugins still call `pm.get('workflow').registerTrigger(type, TriggerClass)`
@@ -71,9 +97,18 @@ export class PluginWorkflowClientV2 extends Plugin {
   async load() {
     this.registerModelLoaders();
     this.registerBuiltinTriggers();
+    this.registerBuiltinInstructions();
     this.registerSettingsPage();
     this.registerCanvasRoute();
     this.registerExecutionRoute();
+  }
+
+  private registerBuiltinInstructions() {
+    coreInstructionGroups.forEach((group) => this.registerInstructionGroup(group.key, group));
+    coreInstructions.forEach((InstructionClass) => {
+      const instance = new InstructionClass();
+      this.registerInstruction(instance.type, instance);
+    });
   }
 
   private registerModelLoaders() {

@@ -7,18 +7,23 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { useFlowContext } from '@nocobase/flow-engine';
+import { useFlowContext as useFlowEngineContext } from '@nocobase/flow-engine';
 import { useRequest } from 'ahooks';
-import { Empty, Spin, theme } from 'antd';
+import { Spin, theme } from 'antd';
 import React, { useMemo } from 'react';
 import { useParams } from 'react-router-dom';
 import { WorkflowCanvasHeader } from '../components/WorkflowCanvasHeader';
 import { normalizeRecordResponse, type WorkflowRevision } from '../components/workflowCanvas';
-import { useWorkflowTranslation } from '../locale';
+import { FlowContext } from '../canvas/contexts';
+import { CanvasContent } from '../canvas/CanvasContent';
+import { linkNodes } from '../canvas/nodeTree';
+import { AddNodeContextProvider } from '../canvas/AddNodeContext';
+import { RemoveNodeContextProvider } from '../canvas/RemoveNodeContext';
+import { NodeClipboardContextProvider } from '../canvas/NodeClipboardContext';
+import { NodeDragContextProvider } from '../canvas/NodeDragContext';
 
 export default function WorkflowCanvasPage() {
-  const { t } = useWorkflowTranslation();
-  const ctx = useFlowContext();
+  const ctx = useFlowEngineContext();
   const { token } = theme.useToken();
   const params = useParams<{ id?: string }>();
   const workflowId = params.id;
@@ -32,7 +37,7 @@ export default function WorkflowCanvasPage() {
       const response = await resource.get({
         filterByTk: workflowId,
         except: ['config'],
-        appends: ['stats', 'versionStats', 'createdBy', 'updatedBy'],
+        appends: ['nodes', 'stats', 'versionStats', 'createdBy', 'updatedBy'],
       });
       return normalizeRecordResponse(response);
     },
@@ -59,6 +64,15 @@ export default function WorkflowCanvasPage() {
   const record = data?.id != null && String(data.id) === String(workflowId) ? data : null;
   const revisions = useMemo(() => revisionsData ?? [], [revisionsData]);
 
+  // Build the in-memory node tree (linked list) and find the entry node.
+  const { nodes, entry } = useMemo(() => {
+    const list = ((record as any)?.nodes ?? []) as any[];
+    linkNodes(list);
+    return { nodes: list, entry: list.find((item) => !item.upstream) ?? null };
+  }, [record]);
+
+  const flowContextValue = useMemo(() => ({ workflow: record, nodes, refresh }), [record, nodes, refresh]);
+
   if (!workflowId) {
     return null;
   }
@@ -68,33 +82,42 @@ export default function WorkflowCanvasPage() {
   }
 
   return (
-    <div
-      style={{
-        display: 'flex',
-        flexDirection: 'column',
-        height: '100dvh',
-        minHeight: 0,
-        overflow: 'hidden',
-        width: '100%',
-        boxSizing: 'border-box',
-        background: token.colorBgLayout,
-      }}
-    >
-      <WorkflowCanvasHeader record={record} revisions={revisions} resource={resource} refresh={refresh} />
+    <FlowContext.Provider value={flowContextValue}>
       <div
         style={{
-          flex: 1,
-          minHeight: 0,
-          overflow: 'auto',
-          position: 'relative',
-          width: '100%',
           display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
+          flexDirection: 'column',
+          height: '100dvh',
+          minHeight: 0,
+          overflow: 'hidden',
+          width: '100%',
+          boxSizing: 'border-box',
+          background: token.colorBgLayout,
         }}
       >
-        <Empty description={t('Workflow canvas editor is being migrated to the new UI.')} />
+        <WorkflowCanvasHeader record={record} revisions={revisions} resource={resource} refresh={refresh} />
+        <div
+          style={{
+            flex: 1,
+            minHeight: 0,
+            // `overflow: hidden` here — the inner `.workflow-canvas` owns the
+            // scroll (mirrors v1). Avoids a double scrollbar.
+            overflow: 'hidden',
+            position: 'relative',
+            width: '100%',
+          }}
+        >
+          <AddNodeContextProvider>
+            <RemoveNodeContextProvider>
+              <NodeDragContextProvider>
+                <NodeClipboardContextProvider>
+                  <CanvasContent entry={entry} />
+                </NodeClipboardContextProvider>
+              </NodeDragContextProvider>
+            </RemoveNodeContextProvider>
+          </AddNodeContextProvider>
+        </div>
       </div>
-    </div>
+    </FlowContext.Provider>
   );
 }
