@@ -136,9 +136,13 @@ describe('FilterFormItemModel defineChildren association fields', () => {
     );
     const managerGroups = await managerAssociation.children();
     const managerFieldsGroup = managerGroups.find((group: any) => group.key === 'department.manager-fields');
+    const managerAssociationGroup = managerGroups.find(
+      (group: any) => group.key === 'department.manager-relation-fields',
+    );
 
     const managerFieldKeys = (managerFieldsGroup?.children || []).map((item: any) => item.key);
     expect(managerFieldKeys).toContain('department.manager.name');
+    expect(managerAssociationGroup).toBeUndefined();
 
     const targetItem = managerFieldsGroup?.children?.find((item: any) => item.key === 'department.manager.name');
     const createOptions = await targetItem.createModelOptions();
@@ -200,7 +204,8 @@ describe('FilterFormItemModel defineChildren association fields', () => {
     });
 
     const ds = engine.dataSourceManager.getDataSource('main');
-    ds!.addCollection({
+    expect(ds).toBeTruthy();
+    ds?.addCollection({
       name: 'users',
       filterTargetKey: 'id',
       fields: [{ name: 'id', type: 'integer', interface: 'number', filterable: { operators: [] } }],

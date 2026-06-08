@@ -76,10 +76,15 @@ function getCollectionFromFormBlockModel(model: any): CollectionLike | null {
   return collection && typeof collection === 'object' ? (collection as CollectionLike) : null;
 }
 
-function buildRootOptionsFromCollection(
+export function buildFieldAssignCascaderOptionsFromCollection(
   collection: CollectionLike | null,
   t: (key: string) => string,
+  options: {
+    associationDepth?: number;
+    maxAssociationFieldDepth?: number;
+  } = {},
 ): FieldAssignCascaderOption[] {
+  const { associationDepth = 0, maxAssociationFieldDepth = 2 } = options;
   const fields = typeof collection?.getFields === 'function' ? collection.getFields() || [] : [];
   const out: FieldAssignCascaderOption[] = [];
   for (const rawField of fields) {
@@ -88,6 +93,7 @@ function buildRootOptionsFromCollection(
       name?: unknown;
       title?: unknown;
       interface?: unknown;
+      target?: unknown;
       isAssociationField?: () => boolean;
       targetCollection?: any;
     };
@@ -99,8 +105,11 @@ function buildRootOptionsFromCollection(
     if (!name) continue;
     const title = t(typeof f.title === 'string' ? f.title : name);
 
-    const isAssoc = !!f.isAssociationField?.();
+    const isAssoc = !!(f.isAssociationField?.() || f.target || f.targetCollection);
     const hasTarget = !!f.targetCollection;
+    if (isAssoc && associationDepth >= maxAssociationFieldDepth) {
+      continue;
+    }
 
     out.push({
       label: title,
@@ -138,8 +147,9 @@ export function collectFieldAssignCascaderOptions(options: {
   t: (key: string) => string;
   /** 子表单模型递归深度（FormItemModel 层级）；默认不限制（只受实际配置与循环引用约束） */
   maxFormItemDepth?: number;
+  maxAssociationFieldDepth?: number;
 }): FieldAssignCascaderOption[] {
-  const { formBlockModel, t, maxFormItemDepth = Number.POSITIVE_INFINITY } = options;
+  const { formBlockModel, t, maxFormItemDepth = Number.POSITIVE_INFINITY, maxAssociationFieldDepth = 2 } = options;
 
   const rootItems = formBlockModel?.subModels?.grid?.subModels?.items || [];
   const rootCollection = getCollectionFromFormBlockModel(formBlockModel);
@@ -167,9 +177,14 @@ export function collectFieldAssignCascaderOptions(options: {
 
       const fieldModel = item?.subModels?.field;
       const childItems = fieldModel?.subModels?.grid?.subModels?.items;
-      const cf: CollectionField | undefined = fieldModel?.context?.collectionField;
-      const isAssociation = !!cf?.isAssociationField?.();
+      const cf: (CollectionField & { target?: unknown; targetCollection?: unknown }) | undefined =
+        fieldModel?.context?.collectionField;
+      const isAssociation = !!(cf?.isAssociationField?.() || cf?.target || cf?.targetCollection);
       const hasTargetCollection = !!cf?.targetCollection;
+      const associationDepth = isAssociation ? targetPath.split('.').filter(Boolean).length : 0;
+      if (isAssociation && associationDepth > maxAssociationFieldDepth) {
+        continue;
+      }
 
       // 1) 子表单/子表单列表：递归展开已配置字段（支持无限深度）。
       //
@@ -207,6 +222,8 @@ export function collectFieldAssignCascaderOptions(options: {
   };
 
   const configuredOptions = walkItems(rootItems, 1);
-  const allFieldOptions = buildRootOptionsFromCollection(rootCollection, t);
+  const allFieldOptions = buildFieldAssignCascaderOptionsFromCollection(rootCollection, t, {
+    maxAssociationFieldDepth,
+  });
   return mergeRootOptions(configuredOptions, allFieldOptions);
 }

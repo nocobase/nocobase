@@ -11,6 +11,7 @@ import path from 'path';
 
 import { Snowflake } from 'nodejs-snowflake';
 import { Transactionable } from 'sequelize';
+import type { Sequelize } from 'sequelize';
 import { LRUCache } from 'lru-cache';
 
 import { Op } from '@nocobase/database';
@@ -46,6 +47,7 @@ import WorkflowRepository from './repositories/WorkflowRepository';
 import type { Transaction } from '@nocobase/database';
 
 type ID = number | string;
+type TransactionWithSequelize = Transaction & { sequelize?: Sequelize };
 
 export const WORKER_JOB_WORKFLOW_PROCESS = 'workflow:process';
 
@@ -547,18 +549,33 @@ export default class PluginWorkflowServer extends Plugin {
    * @experimental
    * @param {string} dataSourceName
    * @param {Transaction} transaction
-   * @param {boolean} create
-   * @returns {Trasaction}
+   * @param {boolean} create Create a new transaction when the input transaction does not belong to this data source.
+   * @returns {Transaction}
    */
-  useDataSourceTransaction(dataSourceName = 'main', transaction, create = false) {
-    const { db } = this.app.dataSourceManager.dataSources.get(dataSourceName)
-      .collectionManager as SequelizeCollectionManager;
+  useDataSourceTransaction(
+    dataSourceName?: string,
+    transaction?: Transaction | null,
+    create?: false,
+  ): Transaction | undefined;
+  useDataSourceTransaction(
+    dataSourceName: string | undefined,
+    transaction: Transaction | null | undefined,
+    create: true,
+  ): Transaction | Promise<Transaction> | undefined;
+  useDataSourceTransaction(dataSourceName = 'main', transaction?: Transaction | null, create = false) {
+    const dataSource = this.app.dataSourceManager.dataSources.get(dataSourceName);
+    if (!dataSource) {
+      throw new Error(`data source ${dataSourceName} is not found`);
+    }
+    const { db } = dataSource.collectionManager as SequelizeCollectionManager;
     if (!db) {
       return;
     }
-    if (db.sequelize === transaction?.sequelize) {
+
+    if (db.sequelize === (transaction as TransactionWithSequelize | undefined)?.sequelize) {
       return transaction;
     }
+
     if (create) {
       return db.sequelize.transaction();
     }
