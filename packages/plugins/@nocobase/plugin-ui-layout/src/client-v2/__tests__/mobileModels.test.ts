@@ -10,10 +10,12 @@
 import {
   BaseLayoutModel,
   ChildPageModel,
+  KeepAlive,
   linkageSetMenuItemProps,
   menuLinkageRules,
   RootPageModel,
   RouteModel,
+  useLayoutRoutePage,
 } from '@nocobase/client-v2';
 import { NocoBaseDesktopRouteType, type NocoBaseDesktopRoute } from '@nocobase/client-v2/flow-compat';
 import { App as AntdApp } from 'antd';
@@ -23,10 +25,11 @@ import {
   FlowEngine,
   FlowEngineProvider,
   GLOBAL_EMBED_CONTAINER_ID,
+  useFlowEngine,
   type FlowSettingsContext,
 } from '@nocobase/flow-engine';
 import React from 'react';
-import { MemoryRouter, Route, Routes } from 'react-router-dom';
+import { MemoryRouter, Route, Routes, useLocation, useParams } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   createMobileAddBlockMenuItems,
@@ -86,6 +89,10 @@ describe('plugin-ui-layout mobile models', () => {
     expect(Object.values(mobileModelSources).join('\n')).not.toContain('@nocobase/client-v2/flow-compat');
   });
 
+  it('should export the core KeepAlive component for client-v2 layouts', () => {
+    expect(KeepAlive).toBeDefined();
+  });
+
   beforeEach(() => {
     window.localStorage.removeItem(FLOW_SETTINGS_PREFERENCE_STORAGE_KEY);
   });
@@ -107,6 +114,7 @@ describe('plugin-ui-layout mobile models', () => {
     engine.registerModels({
       MobileLayoutModel,
       MobileLayoutMenuItemModel,
+      RouteModel,
     });
     engine.registerActions({
       menuLinkageRules,
@@ -209,6 +217,58 @@ describe('plugin-ui-layout mobile models', () => {
     return Array.from(document.querySelectorAll('style'))
       .map((style) => style.textContent || '')
       .join('\n');
+  }
+
+  function MobileRoutePageProbe(props: {
+    events: string[];
+    getModel: () => MobileLayoutModel;
+    layoutBasePathname?: string;
+  }) {
+    const { events, getModel, layoutBasePathname = '/v/mobile' } = props;
+    const flowEngine = useFlowEngine();
+    const location = useLocation();
+    const params = useParams();
+    const layoutContentRef = React.useRef<HTMLDivElement>(null);
+    const pageUid = params.name || '';
+    const model = getModel();
+
+    React.useEffect(() => {
+      if (!pageUid) {
+        return;
+      }
+
+      model.syncLayoutRoute({
+        layoutRouteName: 'mobile',
+        layoutBasePathname,
+        pathname: location.pathname,
+        params: {
+          name: pageUid,
+        },
+      });
+    }, [layoutBasePathname, location.pathname, model, pageUid]);
+
+    useLayoutRoutePage({
+      flowEngine,
+      pageUid,
+      layoutContentRef,
+      getLayoutModel: () => model,
+    });
+
+    React.useEffect(() => {
+      events.push(`mount:${pageUid}`);
+      return () => {
+        events.push(`unmount:${pageUid}`);
+      };
+    }, [events, pageUid]);
+
+    return React.createElement(
+      'div',
+      {
+        ref: layoutContentRef,
+        'data-testid': `mobile-route-page-${pageUid}`,
+      },
+      pageUid,
+    );
   }
 
   type MobileMenuItemLinkageSnapshot = MobileLayoutMenuItemModel & {
@@ -2389,6 +2449,68 @@ describe('plugin-ui-layout mobile models', () => {
     });
 
     expect(screen.getByTestId('layout-content-route-host')).toBeInTheDocument();
+  });
+
+  it('should keep mobile route pages alive when switching bottom tabs', async () => {
+    const events: string[] = [];
+    let layoutModel: MobileLayoutModel | undefined;
+    let unregisterRoutePage: ReturnType<typeof vi.spyOn> | undefined;
+
+    renderMobileLayoutWithRouteRepository(
+      {
+        listAccessible: () => [
+          {
+            id: 1,
+            type: NocoBaseDesktopRouteType.flowPage,
+            title: 'Home',
+            schemaUid: 'home-page',
+            sort: 10,
+          },
+          {
+            id: 2,
+            type: NocoBaseDesktopRouteType.flowPage,
+            title: 'Reports',
+            schemaUid: 'reports-page',
+            sort: 20,
+          },
+        ],
+      },
+      {
+        initialEntries: ['/v/mobile/home-page'],
+        outletElement: React.createElement(MobileRoutePageProbe, {
+          events,
+          getModel: () => {
+            if (!layoutModel) {
+              throw new Error('Mobile layout model is not ready.');
+            }
+            return layoutModel;
+          },
+        }),
+        beforeRender: (model) => {
+          layoutModel = model;
+          unregisterRoutePage = vi.spyOn(model, 'unregisterRoutePage');
+        },
+      },
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId('mobile-route-page-home-page')).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: /Reports/ }));
+
+    await waitFor(() => {
+      expect(screen.getByTestId('mobile-route-page-reports-page')).toBeInTheDocument();
+    });
+
+    expect(screen.getByTestId('mobile-route-page-home-page')).toBeInTheDocument();
+    expect(events).toContain('mount:home-page');
+    expect(events).toContain('mount:reports-page');
+    expect(events).not.toContain('unmount:home-page');
+    expect(unregisterRoutePage).toBeDefined();
+    expect(unregisterRoutePage).not.toHaveBeenCalledWith('home-page');
+    expect(layoutModel?.flowEngine.getModel<RouteModel>('home-page')?.context.pageActive.value).toBe(false);
+    expect(layoutModel?.flowEngine.getModel<RouteModel>('reports-page')?.context.pageActive.value).toBe(true);
   });
 
   it('should restore the default mobile page route from the layout root path', async () => {

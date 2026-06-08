@@ -25,7 +25,13 @@ import {
 import type { DragEndEvent } from '@dnd-kit/core';
 import { define, observable } from '@formily/reactive';
 import { css } from '@emotion/css';
-import { BaseLayoutModel, BaseLayoutRouteCoordinator, type RouteModel, type RoutePageMeta } from '@nocobase/client-v2';
+import {
+  BaseLayoutModel,
+  BaseLayoutRouteCoordinator,
+  KeepAlive,
+  type RouteModel,
+  type RoutePageMeta,
+} from '@nocobase/client-v2';
 import {
   DndProvider,
   DragHandler,
@@ -53,7 +59,7 @@ import {
   Tooltip,
 } from 'antd';
 import React, { type ReactNode, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { useLocation, useNavigate, useOutlet } from 'react-router-dom';
+import { Outlet, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { NAMESPACE } from '../../constants';
 import {
   ensureMobileLayoutAccessibleRoutes,
@@ -583,7 +589,6 @@ function useIsDesktopPreview(screenMD: number) {
 
 const MobileLayoutComponent = observer((props: { model: MobileLayoutModel }) => {
   const { model } = props;
-  const outlet = useOutlet();
   const { token } = theme.useToken();
   const isDesktopPreview = useIsDesktopPreview(token.screenMD);
   const [previewSize, setPreviewSize] = useState<MobilePreviewSize>(MOBILE_PREVIEW_SIZE);
@@ -791,7 +796,6 @@ const MobileLayoutComponent = observer((props: { model: MobileLayoutModel }) => 
                 designModeEnabled={preferredFlowSettingsEnabled}
                 flowSettingsSyncVersion={flowSettingsSyncVersion}
                 model={model}
-                outlet={outlet}
               />
             </div>
           </div>
@@ -1092,17 +1096,13 @@ function normalizeMobileLocationPath(pathname: string) {
 }
 
 const MobileHomePlaceholder = observer(
-  (props: {
-    designModeEnabled: boolean;
-    flowSettingsSyncVersion: number;
-    model: MobileLayoutModel;
-    outlet?: ReactNode;
-  }) => {
-    const { designModeEnabled, flowSettingsSyncVersion, model, outlet } = props;
+  (props: { designModeEnabled: boolean; flowSettingsSyncVersion: number; model: MobileLayoutModel }) => {
+    const { designModeEnabled, flowSettingsSyncVersion, model } = props;
     const { token } = theme.useToken();
     const { message } = App.useApp();
     const navigate = useNavigate();
     const location = useLocation();
+    const routeParams = useParams();
     const [addTabForm] = Form.useForm<MobileTabConfigurationValues>();
     const customToken = token as typeof token & MobileLayoutThemeToken;
     const colorSettings = customToken.colorSettings || 'var(--colorSettings, #F18B62)';
@@ -1449,6 +1449,12 @@ const MobileHomePlaceholder = observer(
         </div>
       </MobilePageSurface>
     );
+    const activePageUid = routeParams.name;
+    const pageSlotContent = activePageUid ? (
+      <KeepAlive uid={activePageUid}>{() => <Outlet />}</KeepAlive>
+    ) : (
+      rootPageContent
+    );
     const className = useMemo(
       () => css`
         width: 100%;
@@ -1722,7 +1728,7 @@ const MobileHomePlaceholder = observer(
     return (
       <div className={className}>
         <div ref={handlePageSlotChange} className="nb-ui-layout-mobile-page-slot">
-          {outlet || rootPageContent}
+          {pageSlotContent}
         </div>
         <DndProvider onDragEnd={handleMobileMenuDragEnd}>
           <nav className="nb-ui-layout-mobile-home-tabbar" aria-label={t('Mobile tab bar')} hidden={!showMobileTabBar}>
