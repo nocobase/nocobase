@@ -26,6 +26,8 @@ import { ChartResource } from '../resources/ChartResource';
 import { genRawByBuilder } from './ChartOptionsBuilder.service';
 import { configStore } from './config-store';
 import PluginDataVisualizationClient from '../../plugin';
+import { DaraButton } from '../components/DaraButton';
+import { useChatBoxStore, useChatMessagesStore } from '@nocobase/plugin-ai/client-v2';
 
 const NO_PREVIEW_SNAPSHOT = Symbol('NO_PREVIEW_SNAPSHOT');
 
@@ -529,12 +531,21 @@ const CancelButton = () => {
         // 回滚 未保存的 stepParams 并刷新图表
         ctx.model.cancelPreview();
 
+        closeAssociatedAIChatBox(ctx);
         ctx.view.close();
       }}
     >
       {t('Cancel')}
     </Button>
   );
+};
+
+const closeAssociatedAIChatBox = (ctx: any) => {
+  const aiOpen = useChatBoxStore.getState().open;
+  const associatedUid = useChatMessagesStore.getState().currentEditorRefUid;
+  if (aiOpen && associatedUid === ctx.model.uid) {
+    useChatBoxStore.getState().setOpen(false);
+  }
 };
 
 ChartBlockModel.define({
@@ -550,6 +561,10 @@ ChartBlockModel.registerFlow({
       uiMode: (ctx) => ({
         type: 'embed',
         props: {
+          onClose: () => {
+            closeAssociatedAIChatBox(ctx);
+          },
+          header: { extra: <DaraButton ctx={ctx} /> },
           footer: (originNode, { OkBtn }) => (
             <Space>
               <CancelButton />

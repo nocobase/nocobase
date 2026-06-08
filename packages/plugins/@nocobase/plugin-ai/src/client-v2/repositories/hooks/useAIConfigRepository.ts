@@ -7,4 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export * from '../../../../client-v2/ai-employees/chatbox/stores/chat-box';
+import { useFlowEngine } from '@nocobase/flow-engine';
+import type { AIConfigRepository } from '../AIConfigRepository';
+
+export const useAIConfigRepository = (): AIConfigRepository => {
+  return useFlowEngine().context.aiConfigRepository;
+};
