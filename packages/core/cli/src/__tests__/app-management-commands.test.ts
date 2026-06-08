@@ -4077,6 +4077,41 @@ test('destroy removes only the saved env config for http envs', async () => {
   expect(mocks.removeEnv.mock.calls).toEqual([['remote']]);
 });
 
+test('destroy does not remove the saved env config when cleanup fails midway', async () => {
+  const { default: Destroy } = await import('../commands/app/destroy.js');
+  const runtime = {
+    kind: 'local',
+    envName: 'local-failure',
+    source: 'local',
+    projectRoot: '/tmp/local-failure/source',
+    workspaceName: 'nb-demo',
+    env: {
+      config: {
+        builtinDb: false,
+        appRootPath: '/tmp/local-failure',
+        storagePath: './local-failure/storage',
+      },
+      envVars: {},
+    },
+  };
+  mocks.resolveManagedAppRuntime.mockResolvedValue(runtime);
+  mocks.fsRm.mockResolvedValueOnce(undefined).mockRejectedValueOnce(new Error('rm failed'));
+
+  const command = createCommandHarness({
+    flags: {
+      env: 'local-failure',
+      force: true,
+    },
+  });
+
+  await expect((() => Destroy.prototype.run.call(command))()).rejects.toThrow(
+    /Couldn't destroy env "local-failure"\./,
+  );
+
+  expect(mocks.fsRm.mock.calls.length).toBeGreaterThanOrEqual(2);
+  expect(mocks.removeEnv).not.toHaveBeenCalled();
+});
+
 test('destroy requires force in non-interactive mode', async () => {
   const { default: Destroy } = await import('../commands/app/destroy.js');
   mocks.resolveManagedAppRuntime.mockResolvedValue({

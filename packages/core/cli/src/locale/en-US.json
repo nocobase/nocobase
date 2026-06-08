@@ -320,7 +320,7 @@
           "placeholder": "local"
         },
         "lang": {
-          "message": "Which language would you like to use?"
+          "message": "Which language would you like to use for the app?"
         },
         "appPath": {
           "message": "Where should this app be stored? (relative to {{root}})",

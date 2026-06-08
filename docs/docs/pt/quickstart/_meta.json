@@ -54,12 +54,12 @@
   {
     "type": "custom-link",
     "label": "Deploy em produção",
-    "link": "/quickstart/production",
+    "link": "/quickstart/production/",
     "items": [
       {
         "type": "custom-link",
         "label": "Proxy reverso",
-        "link": "/quickstart/production/reverse-proxy",
+        "link": "/quickstart/production/reverse-proxy/",
         "items": [
           {
             "type": "custom-link",

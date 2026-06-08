@@ -378,6 +378,7 @@ test('init --yes --env validates global env name uniqueness through preset value
 
 test('install prompts expose the expected defaults and validators', () => {
   const envPrompt = Install.envPrompts.env;
+  const langPrompt = Install.appPrompts.lang;
   const appPathPrompt = Install.appPrompts.appPath;
   const appPortPrompt = Install.appPrompts.appPort;
   const builtinDbPrompt = Install.dbPrompts.builtinDb;
@@ -401,6 +402,11 @@ test('install prompts expose the expected defaults and validators', () => {
   expect(envPrompt.yesInitialValue).toBe(undefined);
   expect(typeof envPrompt.validate).toBe('function');
   expect(envPrompt.validate?.('local-dev', {}) ?? '').toMatch(/letters and numbers only/i);
+
+  expect(langPrompt.type).toBe('select');
+  expect(resolveLocalizedText(langPrompt.message, { locale: 'en-US' })).toBe(
+    'Which language would you like to use for the app?',
+  );
 
   expect(appPathPrompt.type).toBe('text');
   expect(resolveLocalizedText(appPathPrompt.message, { locale: 'en-US' })).toContain(

@@ -320,7 +320,7 @@
           "placeholder": "local"
         },
         "lang": {
-          "message": "你想使用哪种语言？"
+          "message": "你希望应用使用哪种语言？"
         },
         "appPath": {
           "message": "应用要放到哪里？（相对路径基于 {{root}}）",
