@@ -351,6 +351,108 @@ describe('plugin-ui-layout server', () => {
     expect(legacyDeniedRole?.get('desktopRoutes')).toEqual([]);
   });
 
+  it('should sync legacy role desktop route writes to layout-scoped menu permissions', async () => {
+    app = await createUiLayoutMockServer();
+
+    const adminLayout = await app.db.getRepository('uiLayouts').findOne({
+      filter: {
+        uid: DEFAULT_ADMIN_UI_LAYOUT.uid,
+      },
+    });
+    if (!adminLayout) {
+      throw new Error('Default AdminLayout ui layout should exist.');
+    }
+    const mobileLayout = await app.db.getRepository('uiLayouts').create({
+      values: {
+        uid: 'legacy-route-sync-mobile',
+        title: 'Legacy route sync mobile',
+        layoutType: 'mobile',
+        routeName: 'legacyRouteSyncMobile',
+        routePath: '/legacy-route-sync-mobile',
+        authCheck: true,
+        enabled: true,
+      },
+    });
+    const role = await app.db.getRepository('roles').create({
+      values: {
+        name: 'legacy-route-sync-role',
+        allowNewMenu: false,
+      },
+    });
+    const adminRoute = await app.db.getRepository('desktopRoutes').create({
+      values: {
+        type: 'flowPage',
+        title: 'DATA-LEGACY-SYNC-ADMIN',
+        schemaUid: 'legacy-sync-admin',
+      },
+    });
+    const mobileRoute = await app.db.getRepository('desktopRoutes').create({
+      values: {
+        type: 'flowPage',
+        title: 'DATA-LEGACY-SYNC-MOBILE',
+        schemaUid: 'legacy-sync-mobile',
+      },
+    });
+    const sharedRoute = await app.db.getRepository('desktopRoutes').create({
+      values: {
+        type: 'flowPage',
+        title: 'DATA-LEGACY-SYNC-SHARED',
+        schemaUid: 'legacy-sync-shared',
+      },
+    });
+    await app.db.getRepository('desktopRoutes.uiLayouts', adminRoute.get('id')).set({
+      tk: [adminLayout.get('uid')],
+    });
+    await app.db.getRepository('desktopRoutes.uiLayouts', mobileRoute.get('id')).set({
+      tk: [mobileLayout.get('uid')],
+    });
+    await app.db.getRepository('desktopRoutes.uiLayouts', sharedRoute.get('id')).set({
+      tk: [adminLayout.get('uid'), mobileLayout.get('uid')],
+    });
+    const rootUser = await app.db.getRepository('users').findOne({
+      filter: {
+        'roles.name': 'root',
+      },
+    });
+    const rootAgent = await app.agent().login(rootUser);
+    const findScopedKeys = async () => {
+      const records = await app.db.getRepository('rolesUiLayoutDesktopRoutes').find({
+        filter: {
+          roleName: role.get('name'),
+        },
+        sort: ['uiLayoutUid', 'desktopRouteId'],
+      });
+
+      return records.map((record) => `${record.get('uiLayoutUid')}:${record.get('desktopRouteId')}`);
+    };
+
+    await rootAgent.resource('roles.desktopRoutes', role.get('name')).add({
+      values: [sharedRoute.get('id')],
+    });
+    expect(await findScopedKeys()).toEqual([
+      `${adminLayout.get('uid')}:${sharedRoute.get('id')}`,
+      `${mobileLayout.get('uid')}:${sharedRoute.get('id')}`,
+    ]);
+
+    await rootAgent.resource('roles.desktopRoutes', role.get('name')).remove({
+      values: [sharedRoute.get('id')],
+    });
+    expect(await findScopedKeys()).toEqual([]);
+
+    await rootAgent.resource('roles.desktopRoutes', role.get('name')).set({
+      values: [adminRoute.get('id'), mobileRoute.get('id')],
+    });
+    expect(await findScopedKeys()).toEqual([
+      `${adminLayout.get('uid')}:${adminRoute.get('id')}`,
+      `${mobileLayout.get('uid')}:${mobileRoute.get('id')}`,
+    ]);
+
+    await rootAgent.resource('roles.desktopRoutes', role.get('name')).set({
+      values: [mobileRoute.get('id')],
+    });
+    expect(await findScopedKeys()).toEqual([`${mobileLayout.get('uid')}:${mobileRoute.get('id')}`]);
+  });
+
   it('should expose uiLayouts:listAccessible to logged-in users only', async () => {
     app = await createUiLayoutMockServer();
 
