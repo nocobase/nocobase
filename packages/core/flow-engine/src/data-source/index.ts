@@ -336,6 +336,14 @@ export function getCollectionFieldInterface(
   return undefined;
 }
 
+function shouldTranslateOptionLabel(label: unknown): label is string {
+  return typeof label === 'string' && /\{\{\s*t\s*\(/.test(label);
+}
+
+function translateOptionLabel(flowEngine: FlowEngine, label: unknown, options?: Record<string, any>) {
+  return shouldTranslateOptionLabel(label) ? flowEngine.translate(label, options) : label;
+}
+
 export class DataSource {
   dataSourceManager: DataSourceManager;
   collectionManager: CollectionManager;
@@ -1086,7 +1094,7 @@ export class CollectionField {
         }
         return {
           ...v,
-          label: v.label ? this.flowEngine.translate(v.label, { ns: 'lm-collections' }) : v.label,
+          label: translateOptionLabel(this.flowEngine, v.label, { ns: 'lm-collections' }),
           value: Number(v.value),
         };
       });
@@ -1094,7 +1102,7 @@ export class CollectionField {
     return options.map((v) => {
       return {
         ...v,
-        label: this.flowEngine.translate(v.label, { ns: 'lm-collections' }),
+        label: translateOptionLabel(this.flowEngine, v.label, { ns: 'lm-collections' }),
       };
     });
   }
