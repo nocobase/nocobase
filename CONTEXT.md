@@ -58,16 +58,16 @@ A workflow node type's client-side definition (e.g. `query`, `condition`, `delay
 _Avoid_: node class, node handler (that's the server concern)
 
 **Config UI**:
-The form shown in a node's configuration drawer. Has two forms during migration: the **legacy fieldset** (a Formily schema, rendered by the legacy canvas) and the **modern Fieldset** (a plain React + antd component, rendered by the modern canvas).
+The form shown in a node's configuration drawer. Has two forms during migration: the **legacy fieldset** (a Formily schema, rendered by the legacy canvas) and the **modern FieldsetLoader** (a lazy loader of a plain React + antd component, rendered by the modern canvas).
 _Avoid_: node form, settings form
 
 **Legacy fieldset** (`fieldset`, lowercase):
 The Formily `Record<string, ISchema>` config form an Instruction has always carried. Pure data from the modern client's point of view — the modern canvas never interprets it; only the legacy canvas renders it through `SchemaComponent`.
 _Avoid_: schema fieldset
 
-**Modern Fieldset** (`Fieldset`, uppercase):
-A plain React component (antd-based, no Formily) an Instruction optionally carries for the modern canvas. Owns its own form, reads/writes `config.*`. Its presence is the per-node migration switch: a node has migrated when it has a `Fieldset`.
-_Avoid_: React fieldset, config component
+**Modern FieldsetLoader** (`FieldsetLoader`):
+A lazy loader — `() => Promise<{ default: ComponentType }>` — an Instruction optionally carries for the modern canvas (same `LoaderOf` shape as the trigger `createConfigFormLoader`). The loaded component is a plain React + antd form (no Formily) that reads/writes `config.*`. Its presence is the per-node migration switch: a node has migrated when it has a `FieldsetLoader`. (Distinguished from the legacy `fieldset` by **field name**, not letter case — see ADR-0003.)
+_Avoid_: React fieldset, config component, `Fieldset` (the contract is now a loader)
 
 **Output variables** (`useVariables`):
 A hook each Instruction contributes describing the variables that node emits to downstream nodes (e.g. a query node emits the queried record's field tree). The core walks the current node's upstream chain, calls each upstream node's `useVariables`, and assembles the "Node result" branch of the variable tree. The contract is preserved from legacy, but the return shape changes: legacy returns `VariableOption`, modern returns `MetaTreeNode`.
@@ -82,19 +82,19 @@ The React context the modern canvas provides at its root, carrying `{ workflow, 
 _Avoid_: workflow context (collides with flow-engine's own FlowContext — this one is workflow-plugin-local)
 
 **NodeContext** (node-level):
-The React context the modern canvas wraps around a single node (card + config drawer), carrying the node object itself (with live `upstream`/`downstream` linked-list refs) — `useNodeContext()` returns that node. Owned/provided by the workflow core; a downstream node author neither imports nor provides it. The **modern Fieldset** renders inside it, and the shared **workflow variable input** consumes it (deriving `upstreams` via `useAvailableUpstreams(node)`). Mirrors the legacy `NodeContext.Provider value={data}` around the legacy `Node`.
+The React context the modern canvas wraps around a single node (card + config drawer), carrying the node object itself (with live `upstream`/`downstream` linked-list refs) — `useNodeContext()` returns that node. Owned/provided by the workflow core; a downstream node author neither imports nor provides it. The **modern FieldsetLoader**'s loaded form renders inside it, and the shared **workflow variable input** consumes it (deriving `upstreams` via `useAvailableUpstreams(node)`). Mirrors the legacy `NodeContext.Provider value={data}` around the legacy `Node`.
 _Avoid_: workflow context
 
 ## Relationships
 
-- An **Instruction** carries both **Config UI** (legacy fieldset and/or modern Fieldset) and **Output variables**; these are independent extension points, not one schema.
-- A node has **migrated to the modern canvas** when it gains a **modern Fieldset**; the **legacy fieldset** may remain so the legacy canvas keeps working until the node is fully cut over.
+- An **Instruction** carries both **Config UI** (legacy fieldset and/or modern FieldsetLoader) and **Output variables**; these are independent extension points, not one schema.
+- A node has **migrated to the modern canvas** when it gains a **modern FieldsetLoader**; the **legacy fieldset** may remain so the legacy canvas keeps working until the node is fully cut over.
 - The **Instruction** class definition lives in the modern client (`src/client-v2/`); the legacy canvas reaches it via the allowed `v1 → v2` import direction. The legacy Formily *rendering* (SchemaComponent, `Node`, etc.) stays in `src/client/`.
-- **FlowContext** (canvas-level) and **NodeContext** (node-level) are two separate contexts mirroring v1, each with its own job; the **modern Fieldset** and **workflow variable input** derive everything else (`upstreams`, etc.) from these two via hooks rather than receiving a merged context value.
+- **FlowContext** (canvas-level) and **NodeContext** (node-level) are two separate contexts mirroring v1, each with its own job; the **modern FieldsetLoader**'s form and the **workflow variable input** derive everything else (`upstreams`, etc.) from these two via hooks rather than receiving a merged context value.
 
 ## Flagged ambiguities
 
-- **`fieldset` vs `Fieldset`** — case is load-bearing: lowercase = legacy Formily schema, uppercase = modern React component. The uppercase field's presence is the migration switch for a node. (See ADR-0002.)
+- **`fieldset` vs `FieldsetLoader`** — distinguished by **field name**, not letter case (an earlier draft used case-sensitive `fieldset`/`Fieldset`; superseded by ADR-0003). `fieldset` = legacy Formily schema (data, pass-through); `FieldsetLoader` = modern lazy loader of a React form. The `FieldsetLoader`'s presence is the per-node migration switch. (See ADR-0002 as amended by ADR-0003.)
 - **Node context shape** — an earlier config-UI draft modeled the per-node context as a single `WorkflowNodeContext` carrying `{ node, workflow, upstreams }`. Resolved during canvas planning: align with v1's two-context split instead — **FlowContext** `{ workflow, nodes, refresh }` at the canvas root + **NodeContext** = the node object at each node. `workflow`/`upstreams` are derived via hooks, not bundled into a node-context value.
 
 ---
@@ -117,6 +117,14 @@ _Avoid_: v2 canvas (in prose), new editor
 The two canvases are independent destinations over the *same* `workflows` + `flow_nodes` data, distinguished only by URL/entry list — not by any per-workflow flag. A workflow opens in whichever canvas its URL belongs to. The legacy canvas retires by deleting the legacy settings list + route once the modern canvas reaches parity.
 _Avoid_: canvas toggle, canvas feature flag (there is none)
 
+**Runtime separation**:
+The legacy client runs at `/` and loads only each plugin's `client` entry; the modern client runs at `/v/` and loads only each plugin's `client-v2` entry. They never coexist in one browser runtime, so each has its own `app`/PluginManager and its own `'workflow'` plugin instance. Relocating code to client-v2 is *build-time* source sharing (bundled into v1's own output); it is orthogonal to this *runtime* separation.
+_Avoid_: shared runtime, single app instance (there are two, one per client)
+
+**Instruction registry (per-runtime)**:
+Each runtime's `'workflow'` plugin holds its own instruction registry, self-populated by node plugins' entries for that runtime (`registerInstruction` from `client` fills v1's; from `client-v2` fills v2's) — mirroring the existing v2 trigger registry. The modern canvas reads only its own v2 registry (`plugin.getInstruction(type)`); a type registered only in v1 is omitted from the v2 add-node menu and renders a placeholder card if already present in a workflow.
+_Avoid_: shared registry, cross-runtime instruction read (there is none)
+
 **Node tree**:
 The in-memory doubly-linked structure the canvas renders, built from the flat `flow_nodes` list by `linkNodes()` (sets live `upstream`/`downstream` refs). A branch is a node with `branchIndex != null` under a branching node (its `upstreamId`). Pure data — no Formily — so it ports verbatim to the modern canvas.
 _Avoid_: node graph (reserve for the rendered view), node list (that's the flat form)
@@ -128,13 +136,13 @@ _Avoid_: initializer (that's the v1 term `useInitializers`)
 ## Relationships
 
 - The **Legacy canvas** and **Modern canvas** are **Parallel-worlds coexistence** over one dataset; neither is the other's parent, and there is no runtime flip between them.
-- A **Modern canvas** renders the same **Node tree** as the legacy one; when it opens a node, that node's **Config UI** is chosen by the per-node `fieldset`/`Fieldset` switch (see Workflow Node Extension) — so the *page-level* canvas choice and the *per-node* config-UI choice are independent axes.
+- A **Modern canvas** renders the same **Node tree** as the legacy one; when it opens a node, that node's **Config UI** is chosen by the per-node `fieldset`/`FieldsetLoader` switch (see Workflow Node Extension) — so the *page-level* canvas choice and the *per-node* config-UI choice are independent axes.
 - **Two nested layers, two paradigms**: the **Modern canvas** shell (cards, lines, branches, drag) is React context (FlowContext/NodeContext), *not* FlowModel; but a *data block created inside a node's config drawer* is a genuine FlowModel sub-model. The **Block-creation menu item** is the bridge — it runs on the (shared) Instruction, reads the canvas-layer `{ node, workflow }`, and emits a FlowModel-layer `SubModelItem`. The two layers stay decoupled: canvas context reaches the block model only via its `inputArgs`.
 
 ## Flagged ambiguities
 
-- **"canvas switch" is two different axes** — (1) *which canvas* (page-level, = URL/entry list, no flag) and (2) *which config UI a node uses inside the modern canvas* (per-node, = `Fieldset` presence). They compose; they are not the same switch.
+- **"canvas switch" is two different axes** — (1) *which canvas* (page-level, = URL/entry list, no flag) and (2) *which config UI a node uses inside the modern canvas* (per-node, = `FieldsetLoader` presence). They compose; they are not the same switch.
 
 **Unmigrated-node placeholder**:
-In the modern canvas, a node whose Instruction still has only `fieldset` (no `Fieldset`) renders its card normally (topology is intact) but its config drawer shows a placeholder ("config UI not yet migrated"), not a Formily form. This keeps the modern canvas shippable before any config UI migrates — the two axes stay orthogonal. Rendering Formily as a fallback is forbidden (would drag the Formily runtime into client-v2).
+In the modern canvas, a node whose Instruction still has only `fieldset` (no `FieldsetLoader`) renders its card normally (topology is intact) but its config drawer shows a placeholder ("config UI not yet migrated"), not a Formily form. This keeps the modern canvas shippable before any config UI migrates — the two axes stay orthogonal. Rendering Formily as a fallback is forbidden (would drag the Formily runtime into client-v2).
 _Avoid_: fallback form, legacy drawer (the modern canvas never renders `fieldset`)
