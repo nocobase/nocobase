@@ -51,6 +51,12 @@ type DesktopRouteLike = Record<string, unknown> & {
 
 type UiLayoutRuntimeField = (typeof UI_LAYOUT_RUNTIME_FIELDS)[number];
 
+type DesktopRouteLayoutContext = {
+  filter: Record<string, unknown>;
+  layoutUid?: string;
+  valid: boolean;
+};
+
 function getRequestedLayoutUid(layout: unknown) {
   return getExplicitRequestedLayoutUid(layout) ?? DEFAULT_ADMIN_UI_LAYOUT.uid;
 }
@@ -121,10 +127,13 @@ function withDesktopRouteUiLayout(value: unknown, layoutUid: string): unknown {
   };
 }
 
-async function getDesktopRouteLayoutFilter(ctx: ResourcerContext) {
+async function getDesktopRouteLayoutContext(ctx: ResourcerContext): Promise<DesktopRouteLayoutContext> {
   const layoutUid = getExplicitRequestedLayoutUid(ctx.action?.params.layout);
   if (!layoutUid) {
-    return EMPTY_DESKTOP_ROUTE_FILTER;
+    return {
+      filter: EMPTY_DESKTOP_ROUTE_FILTER,
+      valid: false,
+    };
   }
 
   const uiLayout = await ctx.db.getRepository('uiLayouts').findOne({
@@ -135,10 +144,18 @@ async function getDesktopRouteLayoutFilter(ctx: ResourcerContext) {
   });
 
   if (!uiLayout) {
-    return EMPTY_DESKTOP_ROUTE_FILTER;
+    return {
+      filter: EMPTY_DESKTOP_ROUTE_FILTER,
+      layoutUid,
+      valid: false,
+    };
   }
 
-  return getDesktopRouteLayoutFilterByUid(layoutUid);
+  return {
+    filter: getDesktopRouteLayoutFilterByUid(layoutUid),
+    layoutUid,
+    valid: true,
+  };
 }
 
 function getRouteValue(route: unknown, key: string) {
@@ -267,6 +284,54 @@ async function getAccessibleDesktopRouteIds(ctx: ResourcerContext) {
   return routeIds;
 }
 
+async function getLayoutAccessibleRouteIds(ctx: ResourcerContext, layoutUid: string) {
+  const currentRoles = getCurrentRoles(ctx);
+  if (currentRoles.includes('root')) {
+    return;
+  }
+
+  const [scopedRoutePermissions, legacyRouteIds] = await Promise.all([
+    ctx.db.getRepository('rolesUiLayoutDesktopRoutes').find({
+      fields: ['desktopRouteId'],
+      filter: {
+        roleName: currentRoles,
+        uiLayoutUid: layoutUid,
+      },
+    }),
+    getAccessibleDesktopRouteIds(ctx),
+  ]);
+  const routeIds = legacyRouteIds ?? new Set<string>();
+
+  for (const permission of scopedRoutePermissions) {
+    const routeId = permission.get('desktopRouteId');
+    if (routeId !== null && routeId !== undefined) {
+      routeIds.add(String(routeId));
+    }
+  }
+
+  return routeIds;
+}
+
+async function canAccessLayout(ctx: ResourcerContext, layoutUid: string) {
+  const currentRoles = getCurrentRoles(ctx);
+  if (currentRoles.includes('root')) {
+    return true;
+  }
+
+  if (!currentRoles.length) {
+    return false;
+  }
+
+  const count = await ctx.db.getRepository('rolesUiLayouts').count({
+    filter: {
+      roleName: currentRoles,
+      uiLayoutUid: layoutUid,
+    },
+  });
+
+  return count > 0;
+}
+
 function removeInaccessibleRoute(route: unknown, allowedRouteIds: Set<string> | undefined) {
   if (!route || !allowedRouteIds) {
     return route;
@@ -362,25 +427,90 @@ async function includeRouteAncestorsForListAccessible(
 }
 
 async function addDesktopRouteLayoutFilter(ctx: ResourcerContext, next: () => Promise<void>) {
-  const layoutFilter = await getDesktopRouteLayoutFilter(ctx);
+  const layoutContext = await getDesktopRouteLayoutContext(ctx);
   ctx.action?.mergeParams({
-    filter: layoutFilter,
+    filter: layoutContext.filter,
   });
 
   await next();
 
-  ctx.body = removeNestedRootRoutes(await includeRouteAncestorsForListAccessible(ctx, ctx.body, layoutFilter));
+  if (!layoutContext.valid || !layoutContext.layoutUid) {
+    ctx.body = [];
+    return;
+  }
+
+  if (getCurrentRoles(ctx).includes('root')) {
+    ctx.body = removeNestedRootRoutes(
+      await includeRouteAncestorsForListAccessible(ctx, ctx.body, layoutContext.filter),
+    );
+    return;
+  }
+
+  if (!(await canAccessLayout(ctx, layoutContext.layoutUid))) {
+    ctx.body = [];
+    return;
+  }
+
+  const routeIds = await getLayoutAccessibleRouteIds(ctx, layoutContext.layoutUid);
+  if (!routeIds || routeIds.size === 0) {
+    ctx.body = [];
+    return;
+  }
+
+  const routes = await ctx.db.getRepository('desktopRoutes').find({
+    tree: true,
+    sort: 'sort',
+    filter: {
+      ...ctx.action?.params.filter,
+      id: Array.from(routeIds),
+    },
+  });
+  ctx.body = removeNestedRootRoutes(await includeRouteAncestorsForListAccessible(ctx, routes, layoutContext.filter));
 }
 
 async function addDesktopRouteGetLayoutFilter(ctx: ResourcerContext, next: () => Promise<void>) {
+  const layoutContext = await getDesktopRouteLayoutContext(ctx);
   ctx.action?.mergeParams({
-    filter: await getDesktopRouteLayoutFilter(ctx),
+    filter: layoutContext.filter,
   });
 
   await next();
 
-  const route = removeInaccessibleRoute(ctx.body, await getAccessibleDesktopRouteIds(ctx));
-  if (route === null) {
+  if (!layoutContext.valid || !layoutContext.layoutUid) {
+    ctx.status = 204;
+    ctx.body = undefined;
+    return;
+  }
+
+  if (getCurrentRoles(ctx).includes('root')) {
+    if (ctx.body) {
+      return;
+    }
+    ctx.status = 204;
+    ctx.body = undefined;
+    return;
+  }
+
+  if (!(await canAccessLayout(ctx, layoutContext.layoutUid))) {
+    ctx.status = 204;
+    ctx.body = undefined;
+    return;
+  }
+
+  const routeIds = await getLayoutAccessibleRouteIds(ctx, layoutContext.layoutUid);
+  let route = removeInaccessibleRoute(ctx.body, routeIds);
+  if (!route && routeIds && routeIds.size > 0) {
+    route = await ctx.db.getRepository('desktopRoutes').findOne({
+      sort: 'sort',
+      ...ctx.action?.params,
+      filter: {
+        ...ctx.action?.params.filter,
+        id: Array.from(routeIds),
+      },
+    });
+  }
+
+  if (route == null) {
     ctx.status = 204;
     ctx.body = undefined;
     return;
@@ -398,10 +528,31 @@ function pickUiLayoutRuntimeFields(record: { get: (field: string) => unknown }) 
 }
 
 async function listAccessibleUiLayouts(ctx: ResourcerContext, next: () => Promise<void>) {
+  const currentRoles = getCurrentRoles(ctx);
+  const filter: Record<string, unknown> = {
+    enabled: true,
+  };
+
+  if (!currentRoles.includes('root')) {
+    const permissions = await ctx.db.getRepository('rolesUiLayouts').find({
+      fields: ['uiLayoutUid'],
+      filter: {
+        roleName: currentRoles,
+      },
+    });
+    const uiLayoutUids = Array.from(
+      new Set(
+        permissions
+          .map((permission) => permission.get('uiLayoutUid'))
+          .filter((uiLayoutUid): uiLayoutUid is string => typeof uiLayoutUid === 'string' && !!uiLayoutUid),
+      ),
+    );
+
+    filter.uid = uiLayoutUids.length > 0 ? uiLayoutUids : { $eq: null };
+  }
+
   const records = await ctx.db.getRepository('uiLayouts').find({
-    filter: {
-      enabled: true,
-    },
+    filter,
     fields: [...UI_LAYOUT_RUNTIME_FIELDS],
     sort: ['id'],
   });
