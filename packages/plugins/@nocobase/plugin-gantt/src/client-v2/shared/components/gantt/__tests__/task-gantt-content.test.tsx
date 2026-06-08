@@ -148,12 +148,6 @@ describe('TaskGanttContent tooltip hover', () => {
     expect(handleClick).toHaveBeenCalledWith(expect.objectContaining({ id: '1', name: 'Task 1' }));
   });
 
-  test('keeps task items pointer-interactive when the gantt body ignores background clicks', () => {
-    renderHarness(<Harness />);
-
-    expect(screen.getByText('Task 1').parentElement).toHaveAttribute('pointer-events', 'auto');
-  });
-
   test('does not open the task after resizing its date range', async () => {
     const handleClick = vi.fn();
     const handleDateChange = vi.fn().mockResolvedValue(true);

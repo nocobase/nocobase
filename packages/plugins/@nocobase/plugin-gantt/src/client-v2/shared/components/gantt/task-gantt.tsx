@@ -93,7 +93,6 @@ export const TaskGantt: React.FC<TaskGanttProps> = forwardRef(
               fontFamily={barProps.fontFamily}
               ref={ganttSVGRef}
               className="ganttBody"
-              pointerEvents="none"
             >
               <Grid {...gridProps} />
               <TaskGanttContent {...newBarProps} />

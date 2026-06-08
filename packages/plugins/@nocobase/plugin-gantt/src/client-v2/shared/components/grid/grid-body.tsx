@@ -41,7 +41,7 @@ export const GridBody: React.FC<GridBodyProps> = ({
   let y = 0;
   const gridRows: ReactNode[] = [];
   const rowLines: ReactNode[] = [
-    <line key="RowLineFirst" x1={0} y1={0} x2={svgWidth} y2={0} className={styles.gridRowLine} pointerEvents="none" />,
+    <line key="RowLineFirst" x1={0} y1={0} x2={svgWidth} y2={0} className={styles.gridRowLine} />,
   ];
   for (const task of data) {
     if (selectedRowKeySet.has(String(task.id))) {
@@ -53,7 +53,6 @@ export const GridBody: React.FC<GridBodyProps> = ({
           width={svgWidth}
           height={rowHeight}
           className={styles.gridSelectedRow}
-          pointerEvents="none"
         />,
       );
     }
@@ -65,7 +64,6 @@ export const GridBody: React.FC<GridBodyProps> = ({
         x2={svgWidth}
         y2={y + rowHeight}
         className={styles.gridRowLine}
-        pointerEvents="none"
       />,
     );
     y += rowHeight;
@@ -86,7 +84,6 @@ export const GridBody: React.FC<GridBodyProps> = ({
           width={columnWidth}
           height={fullHeight}
           className={styles.gridColumnShade}
-          pointerEvents="none"
         />,
       );
     }
@@ -98,27 +95,18 @@ export const GridBody: React.FC<GridBodyProps> = ({
         date.getTime() < now.getTime() &&
         addToDate(date, date.getTime() - dates[i - 1].getTime(), 'millisecond').getTime() >= now.getTime())
     ) {
-      today = <rect x={tickX} y={0} width={columnWidth} height={fullHeight} fill={todayColor} pointerEvents="none" />;
+      today = <rect x={tickX} y={0} width={columnWidth} height={fullHeight} fill={todayColor} />;
     }
     // rtl for today
     if (rtl && i + 1 !== dates.length && date.getTime() >= now.getTime() && dates[i + 1].getTime() < now.getTime()) {
-      today = (
-        <rect
-          x={tickX + columnWidth}
-          y={0}
-          width={columnWidth}
-          height={fullHeight}
-          fill={todayColor}
-          pointerEvents="none"
-        />
-      );
+      today = <rect x={tickX + columnWidth} y={0} width={columnWidth} height={fullHeight} fill={todayColor} />;
     }
     tickX += columnWidth;
   }
   return (
     <g className={cx('gridBody')}>
       <g className="background">
-        <rect x={0} y={0} width={svgWidth} height={fullHeight} className={styles.gridBackground} pointerEvents="none" />
+        <rect x={0} y={0} width={svgWidth} height={fullHeight} className={styles.gridBackground} />
       </g>
       <g className="columns">{columnShades}</g>
       <g className="today">{today}</g>
