@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import type { NocoBaseDesktopRoute } from '@nocobase/client-v2/flow-compat';
+import type { NocoBaseDesktopRoute } from './models/mobileFlowCompat';
 
 type MobileLayoutApiClient = {
   request: (options: { url: string; params?: Record<string, unknown> }) => Promise<{

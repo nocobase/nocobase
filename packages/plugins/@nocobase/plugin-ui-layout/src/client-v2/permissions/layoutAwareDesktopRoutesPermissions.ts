@@ -8,7 +8,6 @@
  */
 
 import type { Application } from '@nocobase/client-v2';
-import type { ComponentType } from 'react';
 import { DEFAULT_ADMIN_UI_LAYOUT } from '../../constants';
 
 type Translate = (key: string) => unknown;
@@ -18,7 +17,7 @@ interface ACLSettingsUILike {
     key: string;
     label: string;
     sort?: number;
-    componentLoader: () => Promise<{ default: ComponentType }>;
+    componentLoader: () => Promise<unknown>;
   }) => void;
 }
 

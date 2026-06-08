@@ -12,9 +12,10 @@ import { DEFAULT_ADMIN_UI_LAYOUT, UI_LAYOUT_TYPE_DESKTOP, UI_LAYOUT_TYPE_MOBILE 
 
 const GENERATED_DEFAULT_TITLE = 'Untitled';
 
-type UiLayoutRecord = Partial<typeof DEFAULT_ADMIN_UI_LAYOUT> & {
+type UiLayoutRecord = {
   id: number | string;
   uid: string;
+  title?: string;
   layoutType?: string;
   routeName?: string;
 };
@@ -68,7 +69,7 @@ export async function ensureDefaultUiLayout(db: Database) {
     return;
   }
 
-  const values: Partial<typeof DEFAULT_ADMIN_UI_LAYOUT> = {};
+  const values: Partial<Pick<UiLayoutRecord, 'layoutType' | 'title'>> = {};
   if (!existed.get('layoutType')) {
     values.layoutType = DEFAULT_ADMIN_UI_LAYOUT.layoutType;
   }

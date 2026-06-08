@@ -126,6 +126,7 @@ function IconField(props: IconPickerProps) {
   const [open, setOpen] = useState(false);
   const [filteredIcons, setFilteredIcons] = useState(availableIcons);
   const [type, setType] = useState('Outlined');
+  const buttonSize = layout.size === 'default' ? undefined : layout.size;
 
   const filterIcons = useMemo(
     () =>
@@ -224,12 +225,12 @@ function IconField(props: IconPickerProps) {
           }
           trigger="click"
         >
-          <Button size={layout.size} disabled={disabled}>
+          <Button size={buttonSize} disabled={disabled}>
             {isRenderableIcon(value) ? <Icon type={value || ''} /> : t('Select icon')}
           </Button>
         </Popover>
         {value && !disabled ? (
-          <Button size={layout.size} icon={<CloseOutlined />} onClick={() => onChange?.(undefined)} />
+          <Button size={buttonSize} icon={<CloseOutlined />} onClick={() => onChange?.(undefined)} />
         ) : null}
       </Space.Compact>
     </div>

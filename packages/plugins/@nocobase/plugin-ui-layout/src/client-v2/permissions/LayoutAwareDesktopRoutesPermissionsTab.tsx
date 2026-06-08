@@ -160,13 +160,13 @@ export default function LayoutAwareDesktopRoutesPermissionsTab(props: Permission
   const { token } = theme.useToken();
   const role = props.activeRole;
   const active = props.activeKey === 'menu';
-  const [selectedLayoutUid, setSelectedLayoutUid] = useState(DEFAULT_ADMIN_UI_LAYOUT.uid);
+  const [selectedLayoutUid, setSelectedLayoutUid] = useState<string>(DEFAULT_ADMIN_UI_LAYOUT.uid);
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const routeFilter = useMemo(() => createDesktopRouteLayoutPermissionFilter(selectedLayoutUid), [selectedLayoutUid]);
-  const uiLayoutsResource = useMemo(() => ctx.api.resource('uiLayouts') as ListResource, [ctx.api]);
-  const desktopRoutesResource = useMemo(() => ctx.api.resource('desktopRoutes') as ListResource, [ctx.api]);
+  const uiLayoutsResource = useMemo(() => ctx.api.resource('uiLayouts') as unknown as ListResource, [ctx.api]);
+  const desktopRoutesResource = useMemo(() => ctx.api.resource('desktopRoutes') as unknown as ListResource, [ctx.api]);
   const roleRoutesResource = useMemo(
-    () => (role ? (ctx.api.resource('roles.desktopRoutes', role.name) as RoleDesktopRoutesResource) : null),
+    () => (role ? (ctx.api.resource('roles.desktopRoutes', role.name) as unknown as RoleDesktopRoutesResource) : null),
     [ctx.api, role],
   );
 

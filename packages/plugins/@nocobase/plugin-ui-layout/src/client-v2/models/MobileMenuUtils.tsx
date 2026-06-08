@@ -15,6 +15,9 @@ export type MobileRouteTitleTranslator = (key: string) => string;
 export type MobileTabRouteCollectOptions = {
   includeHidden?: boolean;
 };
+export type MobileTabRoute = NocoBaseDesktopRoute & {
+  type: NocoBaseDesktopRouteType.flowPage | NocoBaseDesktopRouteType.link;
+};
 
 function getRouteSort(route: NocoBaseDesktopRoute, index: number) {
   return typeof route.sort === 'number' && Number.isFinite(route.sort) ? route.sort : index;
@@ -41,7 +44,7 @@ export function getMobileRouteTabKey(route: NocoBaseDesktopRoute, fallbackIndex:
   );
 }
 
-export function isMobileTabRoute(route: NocoBaseDesktopRoute) {
+export function isMobileTabRoute(route: NocoBaseDesktopRoute): route is MobileTabRoute {
   return route.type === NocoBaseDesktopRouteType.flowPage || route.type === NocoBaseDesktopRouteType.link;
 }
 

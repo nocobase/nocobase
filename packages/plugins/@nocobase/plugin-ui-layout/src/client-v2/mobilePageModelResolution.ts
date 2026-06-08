@@ -17,6 +17,7 @@ type PageModelClass = (typeof RootPageModel | typeof ChildPageModel) & {
   [mobilePageResolutionPatched]?: boolean;
   resolveUse?: (options: CreateModelOptions, engine: FlowEngine, parent?: FlowModel) => ResolveUseResult | void;
 };
+type MobilePageModelClass = typeof MobileRootPageModel | typeof MobileChildPageModel;
 
 type MobileLayoutRuntimeContext = {
   isMobileLayout?: boolean;
@@ -103,7 +104,7 @@ function hasResolvedTarget(result: ResolveUseResult | void) {
   return typeof result !== 'object' || !('use' in result) || !!result.use;
 }
 
-function patchPageModelResolution(ModelClass: PageModelClass, MobileModelClass: typeof MobileRootPageModel) {
+function patchPageModelResolution(ModelClass: PageModelClass, MobileModelClass: MobilePageModelClass) {
   if (ModelClass[mobilePageResolutionPatched]) {
     return;
   }

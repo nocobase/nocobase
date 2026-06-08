@@ -14,6 +14,7 @@ import {
   type FlowSettingsContext,
   type StepParams,
 } from '@nocobase/flow-engine';
+import type { ISchema } from '@formily/json-schema';
 import React, { type ReactNode } from 'react';
 import { NocoBaseDesktopRouteType, type NocoBaseDesktopRoute } from './mobileFlowCompat';
 import {
@@ -74,6 +75,11 @@ type MobileMenuRouteTreeRefresher = {
 };
 
 type MobileRouteRepository = {
+  listAccessible?: () => NocoBaseDesktopRoute[];
+  setRoutes?: (routes: NocoBaseDesktopRoute[]) => void;
+  isAccessibleLoaded?: () => boolean;
+  refreshAccessible?: () => Promise<NocoBaseDesktopRoute[]>;
+  ensureAccessibleLoaded?: () => Promise<NocoBaseDesktopRoute[]>;
   updateRoute?: (
     filterByTk: string | number,
     values: Partial<Omit<NocoBaseDesktopRoute, 'options'>> & {
@@ -125,7 +131,7 @@ function getMobileMenuEditDefaultParams(route: NocoBaseDesktopRoute | undefined)
   return {
     title: route?.title,
     icon: route?.icon,
-    href: route?.options?.href,
+    href: typeof route?.options?.href === 'string' ? route.options.href : undefined,
     openInNewWindow: route?.options?.openInNewWindow !== false,
   };
 }
@@ -133,8 +139,8 @@ function getMobileMenuEditDefaultParams(route: NocoBaseDesktopRoute | undefined)
 function getMobileMenuEditUiSchema(
   t: (title: string) => string,
   route: NocoBaseDesktopRoute | undefined,
-): Record<string, unknown> {
-  const schema: Record<string, unknown> = {
+): Record<string, ISchema> {
+  const schema: Record<string, ISchema> = {
     title: {
       title: t('Title'),
       required: true,
