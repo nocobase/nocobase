@@ -9,7 +9,6 @@
 
 const { resolve, posix } = require('path');
 const { storagePathJoin, resolvePublicPath, resolveV2PublicPath, normalizeModernClientPrefix } = require('../util');
-const { Command } = require('commander');
 const { readFileSync, writeFileSync } = require('fs');
 
 /**
@@ -20,6 +19,7 @@ module.exports = (cli) => {
   cli.command('create-nginx-conf').action(async (name, options) => {
     const rawAppPublicPath = process.env.APP_PUBLIC_PATH || '/';
     const appPublicPath = resolvePublicPath(rawAppPublicPath);
+    const distPath = `${appPublicPath.replace(/\/$/, '')}/dist/`;
     const v2PublicPath = resolveV2PublicPath(rawAppPublicPath);
     const modernClientPrefix = normalizeModernClientPrefix(process.env.APP_MODERN_CLIENT_PREFIX);
     const appPublicPathWithoutTrailingSlash = appPublicPath.replace(/\/$/, '');
@@ -46,6 +46,7 @@ module.exports = (cli) => {
     const replaced = data
       .replace(/\{\{cwd\}\}/g, posix.resolve(process.cwd()))
       .replace(/\{\{publicPath\}\}/g, appPublicPath)
+      .replace(/\{\{distPath\}\}/g, distPath)
       .replace(/\{\{v2PublicPath\}\}/g, v2PublicPath)
       .replace(/\{\{v2PublicPathNoTrailingSlash\}\}/g, v2PublicPathWithoutTrailingSlash)
       .replace(/\{\{apiPort\}\}/g, process.env.APP_PORT)

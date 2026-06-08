@@ -19,6 +19,7 @@
 import fsp from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
+import { EventEmitter } from 'node:events';
 import { afterEach, expect, test, vi } from 'vitest';
 import { setCliConfigValue } from '../lib/cli-config.js';
 
@@ -30,7 +31,7 @@ vi.mock('cross-spawn', () => ({
 
 function successfulChild() {
   return {
-    once(event: string, callback: (...args: any[]) => void) {
+    once(event: string, callback: (...args: unknown[]) => void) {
       if (event === 'close') {
         setImmediate(() => callback(0, null));
       }
@@ -49,9 +50,77 @@ function erroredChild(error: Error & { code?: string }) {
       setEncoding() {},
       on() {},
     },
-    once(event: string, callback: (...args: any[]) => void) {
+    once(event: string, callback: (...args: unknown[]) => void) {
       if (event === 'error') {
         setImmediate(() => callback(error));
+      }
+      return this;
+    },
+  };
+}
+
+function pipedChild() {
+  const stdout = new EventEmitter();
+  const stderr = new EventEmitter();
+
+  return {
+    stdout: {
+      setEncoding() {},
+      on(event: string, callback: (...args: unknown[]) => void) {
+        stdout.on(event, callback);
+        return this;
+      },
+    },
+    stderr: {
+      setEncoding() {},
+      on(event: string, callback: (...args: unknown[]) => void) {
+        stderr.on(event, callback);
+        return this;
+      },
+    },
+    once(event: string, callback: (...args: unknown[]) => void) {
+      if (event === 'close') {
+        setImmediate(() => {
+          stdout.emit('data', 'hello stdout');
+          stderr.emit('data', 'hello stderr');
+          callback(0, null);
+        });
+      }
+      return this;
+    },
+  };
+}
+
+function pipedChildWithClose(code: number, stderrChunk: string, stdoutChunk = '') {
+  const stdout = new EventEmitter();
+  const stderr = new EventEmitter();
+
+  return {
+    stdout: {
+      setEncoding() {},
+      on(event: string, callback: (...args: unknown[]) => void) {
+        stdout.on(event, callback);
+        return this;
+      },
+    },
+    stderr: {
+      setEncoding() {},
+      on(event: string, callback: (...args: unknown[]) => void) {
+        stderr.on(event, callback);
+        return this;
+      },
+    },
+    once(event: string, callback: (...args: unknown[]) => void) {
+      if (event === 'close') {
+        setImmediate(() => {
+          if (stdoutChunk) {
+            stdout.emit('data', stdoutChunk);
+          }
+          if (stderrChunk) {
+            stderr.emit('data', stderrChunk);
+          }
+          callback(code, null);
+        });
       }
       return this;
     },
@@ -162,6 +231,28 @@ test('runNocoBaseCommand executes nocobase-v1 via PATH resolution', async () => 
   }
 });
 
+test('run tees inherited child output through pipes when command logging is active', async () => {
+  spawnMock.mockReturnValue(pipedChild());
+  const stdoutWrite = vi.spyOn(process.stdout, 'write').mockReturnValue(true);
+  const stderrWrite = vi.spyOn(process.stderr, 'write').mockReturnValue(true);
+  process.env.NB_CLI_ACTIVE_LOG_FILE = '/tmp/nb-command.log';
+
+  try {
+    const { run } = await import('../lib/run-npm.js');
+    await run('git', ['status'], { stdio: 'inherit' });
+
+    expect(spawnMock).toHaveBeenCalledTimes(1);
+    const [, , options] = spawnMock.mock.calls[0] ?? [];
+    expect(options?.stdio).toEqual(['inherit', 'pipe', 'pipe']);
+    expect(stdoutWrite).toHaveBeenCalledWith('hello stdout');
+    expect(stderrWrite).toHaveBeenCalledWith('hello stderr');
+  } finally {
+    delete process.env.NB_CLI_ACTIVE_LOG_FILE;
+    stdoutWrite.mockRestore();
+    stderrWrite.mockRestore();
+  }
+});
+
 test('run reports a friendly error when Docker is missing', async () => {
   spawnMock.mockReturnValue(erroredChild(Object.assign(new Error('spawn docker ENOENT'), { code: 'ENOENT' })));
 
@@ -189,6 +280,15 @@ test('run reports a friendly error when Yarn is missing', async () => {
   );
 });
 
+test('run reports a friendly error when Nginx is missing', async () => {
+  spawnMock.mockReturnValue(erroredChild(Object.assign(new Error('spawn nginx ENOENT'), { code: 'ENOENT' })));
+
+  const { run } = await import('../lib/run-npm.js');
+  await expect(run('nginx', ['-t'], { stdio: 'ignore', errorName: 'nginx -t' })).rejects.toThrow(
+    "Couldn't run `nginx -t` because the Nginx executable could not be found. Install Nginx or update `nb config set bin.nginx <path>` and try again.",
+  );
+});
+
 test('commandOutputViaFile reports a friendly error when Docker is missing', async () => {
   spawnMock.mockReturnValue(erroredChild(Object.assign(new Error('spawn docker ENOENT'), { code: 'ENOENT' })));
 
@@ -212,4 +312,18 @@ test('commandSucceeds still returns false for unrelated missing commands', async
 
   const { commandSucceeds } = await import('../lib/run-npm.js');
   await expect(commandSucceeds('pm2', ['jlist'])).resolves.toBe(false);
+});
+
+test('ensureDockerDaemonRunning reports a friendly error when Docker daemon is not running', async () => {
+  spawnMock.mockReturnValue(
+    pipedChildWithClose(
+      1,
+      'Cannot connect to the Docker daemon at unix:///var/run/docker.sock. Is the docker daemon running?',
+    ),
+  );
+
+  const { ensureDockerDaemonRunning } = await import('../lib/run-npm.js');
+  await expect(ensureDockerDaemonRunning('prepare Docker resources for this environment')).rejects.toThrow(
+    "Couldn't run `prepare Docker resources for this environment` because Docker is installed but the Docker daemon is not running.",
+  );
 });

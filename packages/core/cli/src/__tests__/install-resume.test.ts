@@ -8,28 +8,32 @@
  */
 
 import { beforeEach, test, vi, expect } from 'vitest';
+import { deleteCliConfigValue, setCliConfigValue } from '../lib/cli-config.js';
 
 const mocks = vi.hoisted(() => ({
   runPromptCatalog: vi.fn(),
   getEnv: vi.fn(),
   upsertEnv: vi.fn(),
   setCurrentEnv: vi.fn(),
+  clearEnvRootSetup: vi.fn(),
   validateExternalDbConfig: vi.fn(async () => undefined),
   validateMysqlLowerCaseTableNamesCompatibility: vi.fn(async () => undefined),
   printInfo: vi.fn(),
   printWarning: vi.fn(),
 }));
 
-beforeEach(() => {
+beforeEach(async () => {
   vi.clearAllMocks();
   mocks.getEnv.mockReset();
   mocks.getEnv.mockResolvedValue(undefined);
   mocks.upsertEnv.mockResolvedValue(undefined);
   mocks.setCurrentEnv.mockResolvedValue(undefined);
+  mocks.clearEnvRootSetup.mockResolvedValue(true);
   mocks.validateExternalDbConfig.mockReset();
   mocks.validateExternalDbConfig.mockResolvedValue(undefined);
   mocks.validateMysqlLowerCaseTableNamesCompatibility.mockReset();
   mocks.validateMysqlLowerCaseTableNamesCompatibility.mockResolvedValue(undefined);
+  await deleteCliConfigValue('default-api-host');
 });
 
 vi.mock('../lib/prompt-catalog.ts', async (importOriginal) => {
@@ -62,6 +66,12 @@ vi.mock('../lib/auth-store.js', async (importOriginal) => {
         return mocks.setCurrentEnv(...args);
       }
       return actual.setCurrentEnv(...args);
+    },
+    clearEnvRootSetup: (...args: Parameters<typeof actual.clearEnvRootSetup>) => {
+      if (mocks.clearEnvRootSetup.mock.calls.length || mocks.clearEnvRootSetup.getMockImplementation()) {
+        return mocks.clearEnvRootSetup(...args);
+      }
+      return actual.clearEnvRootSetup(...args);
     },
   };
 });
@@ -248,6 +258,62 @@ test('install syncs oauth env connection after the app becomes ready', async () 
   ]);
 });
 
+test('install prints the resolved app url when the app becomes ready', async () => {
+  const { default: Install } = await import('../commands/install.js');
+
+  await setCliConfigValue('default-api-host', '192.168.1.10');
+
+  const saveInstalledEnv = vi.fn(async () => undefined);
+  const waitForAppHealthCheck = vi.fn(async () => undefined);
+  const downloadManagedSource = vi.fn(async () => undefined);
+  const installDockerApp = vi.fn(async () => ({
+    containerName: 'nb-chen-app1-app',
+    appPort: '13080',
+    appKey: 'app-key',
+    timeZone: 'Asia/Shanghai',
+  }));
+  const runCommand = vi.fn(async () => undefined);
+  const collectPromptResults = vi.fn(async () => ({
+    envName: 'app1',
+    envResults: {},
+    appResults: {
+      appPort: '13080',
+      storagePath: './app1/storage/',
+    },
+    downloadResults: {
+      source: 'docker',
+    },
+    dbResults: {},
+    rootResults: {},
+    envAddResults: {
+      authType: 'oauth',
+    },
+  }));
+
+  const command = Object.assign(Object.create(Install.prototype), {
+    parse: vi.fn(async () => ({
+      flags: {
+        yes: false,
+        resume: false,
+        force: false,
+        verbose: false,
+        'no-intro': true,
+      },
+    })),
+    collectPromptResults,
+    saveInstalledEnv,
+    waitForAppHealthCheck,
+    downloadManagedSource,
+    installDockerApp,
+    commandStdio: vi.fn(() => 'ignore'),
+    config: { runCommand },
+  });
+
+  await Install.prototype.run.call(command);
+
+  expect(mocks.printInfo).toHaveBeenCalledWith('NocoBase is ready at http://192.168.1.10:13080/');
+});
+
 test('install syncs token env connection after the app becomes ready without oauth login', async () => {
   const { default: Install } = await import('../commands/install.js');
 
@@ -301,6 +367,7 @@ test('install syncs token env connection after the app becomes ready without oau
   await Install.prototype.run.call(command);
 
   expect(runCommand.mock.calls).toEqual([['env:update', ['app1']]]);
+  expect(mocks.clearEnvRootSetup).toHaveBeenCalledWith('app1', { scope: 'global' });
 });
 
 test('install run validates external db config before saving env config', async () => {

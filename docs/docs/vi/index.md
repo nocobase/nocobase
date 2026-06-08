@@ -23,9 +23,9 @@ features:
       - title: Nhập môn sử dụng NocoBase
         details: Tìm hiểu các khái niệm cốt lõi và thao tác cơ bản của NocoBase.
         link: /get-started/how-nocobase-works
-      - title: Cài đặt và nâng cấp Plugin
-        details: Tìm hiểu cách thêm, quản lý và cập nhật Plugin để mở rộng năng lực hệ thống.
-        link: /get-started/install-upgrade-plugins
+      - title: Cài đặt ứng dụng
+        details: Cài đặt và quản lý ứng dụng một cách nhanh chóng.
+        link: /get-started/installation/docker
       - title: Hướng dẫn
         details: Bắt đầu từ con số không, làm theo các hướng dẫn từng bước để xây dựng dự án thực tế.
         link: /tutorials/v2/

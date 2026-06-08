@@ -7,14 +7,18 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { fileURLToPath } from 'node:url';
 import { Command, Flags } from '@oclif/core';
 import { getCurrentEnvName } from '../../lib/auth-store.js';
 import { ensureCrossEnvConfirmed, hasExplicitEnvSelection } from '../../lib/env-guard.js';
 import {
   formatMissingManagedAppEnvMessage,
+  managedAppLifecycleEnvVars,
   resolveManagedAppRuntime,
   runLocalNocoBaseCommand,
+  type ManagedAppRuntime,
 } from '../../lib/app-runtime.js';
+import { resolveProjectCwd, runNocoBaseCommand } from '../../lib/run-npm.js';
 import { announceTargetEnv, failTask, isInteractiveTerminal, printInfo, startTask, succeedTask } from '../../lib/ui.js';
 import { builtinDbContainerName, removeDockerContainerIfExists } from './shared.js';
 
@@ -32,6 +36,41 @@ function formatStopCrossEnvConfirmationRequiredMessage(currentEnv: string, reque
     '',
     'Re-run the command with `--yes` to confirm this one-off cross-env stop, or switch the current env first.',
   ].join('\n');
+}
+
+function isMissingManagedLocalProjectError(message: string): boolean {
+  return (
+    message.includes('The specified --cwd does not exist:') ||
+    message.includes('The specified --cwd is not a directory:') ||
+    message.includes("Couldn't find a NocoBase source project from --cwd:")
+  );
+}
+
+async function stopLocalRuntimeWithFallback(
+  runtime: Extract<ManagedAppRuntime, { kind: 'local' }>,
+  options: { stdio: 'inherit' | 'ignore' },
+): Promise<void> {
+  const env = managedAppLifecycleEnvVars();
+
+  try {
+    await runLocalNocoBaseCommand(runtime, ['pm2', 'kill'], {
+      env,
+      stdio: options.stdio,
+    });
+    return;
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : String(error);
+    if (!isMissingManagedLocalProjectError(message)) {
+      throw error;
+    }
+  }
+
+  const cliProjectCwd = resolveProjectCwd(fileURLToPath(new URL('.', import.meta.url)));
+  await runNocoBaseCommand(['pm2', 'kill'], {
+    cwd: cliProjectCwd,
+    env,
+    stdio: options.stdio,
+  });
 }
 
 export default class AppStop extends Command {
@@ -141,7 +180,7 @@ export default class AppStop extends Command {
     } else {
       startTask(`Stopping NocoBase for "${runtime.envName}"...`);
       try {
-        await runLocalNocoBaseCommand(runtime, ['pm2', 'kill'], {
+        await stopLocalRuntimeWithFallback(runtime, {
           stdio: commandStdio,
         });
         succeedTask(`NocoBase has stopped for "${runtime.envName}".`);

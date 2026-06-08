@@ -1,34 +1,34 @@
 ---
-title: "nb config"
-description: "Referência do comando nb config: gerenciar os itens de configuração padrão do CLI do NocoBase."
-keywords: "nb config,NocoBase CLI,configuration"
+title: 'nb config'
+description: 'Referência do comando nb config: gerencie os itens de configuração padrão do NocoBase CLI.'
+keywords: 'nb config,NocoBase CLI,configuração,configuração padrão'
 ---
 
 # nb config
 
-Gerencia a configuração padrão do CLI. Chaves atualmente suportadas:
+Gerencie a configuração padrão da CLI. Os itens atuais se dividem principalmente nestes grupos:
 
-- `locale`
-- `update.policy`
-- `license.pkg-url`
-- `docker.network`
-- `docker.container-prefix`
-- `bin.docker`
-- `bin.git`
-- `bin.yarn`
+- A própria CLI: `locale`, `update.policy`, `license.pkg-url`
+- Runtime Docker: `docker.network`, `docker.container-prefix`
+- Executáveis externos: `bin.docker`, `bin.caddy`, `bin.git`, `bin.nginx`, `bin.yarn`
+- Geração de proxy: `proxy.nb-cli-root`, `proxy.upstream-host`
 
-## Chaves comuns
+## Itens de configuração comuns
 
-| Chave | Valor padrão | Descrição |
+| Item de configuração | Valor padrão | Descrição |
 | --- | --- | --- |
-| `locale` | resolução atual de locale do CLI | Sobrescreve o idioma usado pelo CLI |
-| `update.policy` | `prompt` | Comportamento de atualização na inicialização: `prompt`, `auto` ou `off` |
-| `license.pkg-url` | `https://pkg.nocobase.com/` | Registro de pacotes usado para pacotes comerciais |
-| `docker.network` | `nocobase` | Rede Docker padrão usada por apps Docker gerenciados pelo CLI |
-| `docker.container-prefix` | `nb` | Prefixo padrão de contêiner usado por apps Docker gerenciados pelo CLI |
+| `locale` | Resolvido de acordo com as regras atuais da CLI | Sobrescreve o idioma usado pela CLI |
+| `update.policy` | `prompt` | Política de atualização na inicialização: `prompt`, `auto` ou `off` |
+| `license.pkg-url` | `https://pkg.nocobase.com/` | Sobrescreve a URL de download dos pacotes de extensões comerciais |
+| `docker.network` | `nocobase` | Rede padrão para aplicativos Docker gerenciados pela CLI |
+| `docker.container-prefix` | `nb` | Prefixo padrão para contêineres Docker gerenciados pela CLI |
 | `bin.docker` | `docker` | Sobrescreve o caminho do executável do Docker |
+| `bin.caddy` | `caddy` | Sobrescreve o caminho do executável do Caddy |
 | `bin.git` | `git` | Sobrescreve o caminho do executável do Git |
+| `bin.nginx` | `nginx` | Sobrescreve o caminho do executável do Nginx |
 | `bin.yarn` | `yarn` | Sobrescreve o caminho do executável do Yarn |
+| `proxy.nb-cli-root` | Raiz da CLI, normalmente o diretório home do usuário atual | Mapeia o caminho `.nocobase` para a raiz visível ao processo do proxy |
+| `proxy.upstream-host` | `127.0.0.1` | Host usado pelo proxy ao encaminhar o tráfego de volta para o aplicativo NocoBase |
 
 ## Uso
 
@@ -40,10 +40,10 @@ nb config <command>
 
 | Comando | Descrição |
 | --- | --- |
-| [`nb config get`](./get.md) | Obter o valor efetivo de uma chave de configuração |
-| [`nb config set`](./set.md) | Definir um valor de configuração |
-| [`nb config delete`](./delete.md) | Excluir um valor configurado explicitamente |
-| [`nb config list`](./list.md) | Listar valores configurados explicitamente |
+| [`nb config get`](./get.md) | Lê o valor efetivo de um item de configuração |
+| [`nb config set`](./set.md) | Define um item de configuração |
+| [`nb config delete`](./delete.md) | Exclui um item de configuração definido explicitamente |
+| [`nb config list`](./list.md) | Lista os itens de configuração explicitamente definidos |
 
 ## Exemplos
 
@@ -51,8 +51,12 @@ nb config <command>
 nb config list
 nb config get update.policy
 nb config set update.policy auto
+nb config get proxy.nb-cli-root
+nb config set proxy.nb-cli-root /workspace
+nb config set proxy.upstream-host host.docker.internal
 nb config get docker.network
 nb config set docker.network nocobase
+nb config set bin.nginx /usr/sbin/nginx
 nb config set bin.git /usr/bin/git
 nb config delete docker.container-prefix
 ```

@@ -52,3 +52,14 @@ export function formatCliEntryError(error: unknown, argv: string[]) {
     `If \`${attemptedCommand}\` should be a runtime command from your NocoBase app, check whether the connected app exposes it, then retry the command.`,
   ].join('\n');
 }
+
+export function appendDiagnosticLogPath(message: string, logFile?: string) {
+  const normalizedMessage = String(message ?? '').trim();
+  const normalizedLogFile = String(logFile ?? '').trim();
+
+  if (!normalizedLogFile) {
+    return normalizedMessage;
+  }
+
+  return [normalizedMessage, `Diagnostic log: ${normalizedLogFile}`].filter(Boolean).join('\n\n');
+}

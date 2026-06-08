@@ -12,20 +12,30 @@ import path from 'node:path';
 import { afterEach, beforeEach, test, expect, vi } from 'vitest';
 import Install from '../commands/install.js';
 import EnvAdd from '../commands/env/add.js';
+import { deleteCliConfigValue } from '../lib/cli-config.js';
 import { resolveCliHomeRoot, resolveEnvRelativePath } from '../lib/cli-home.js';
 
 const originalNbLocale = process.env.NB_LOCALE;
+const originalExtractClientAssets = process.env.NOCOBASE_EXTRACT_CLIENT_ASSETS;
 
-beforeEach(() => {
+beforeEach(async () => {
   process.env.NB_LOCALE = 'en-US';
+  delete process.env.NOCOBASE_EXTRACT_CLIENT_ASSETS;
+  await deleteCliConfigValue('default-api-host');
 });
 
-afterEach(() => {
+afterEach(async () => {
   if (originalNbLocale === undefined) {
     delete process.env.NB_LOCALE;
-    return;
+  } else {
+    process.env.NB_LOCALE = originalNbLocale;
   }
-  process.env.NB_LOCALE = originalNbLocale;
+  if (originalExtractClientAssets === undefined) {
+    delete process.env.NOCOBASE_EXTRACT_CLIENT_ASSETS;
+  } else {
+    process.env.NOCOBASE_EXTRACT_CLIENT_ASSETS = originalExtractClientAssets;
+  }
+  await deleteCliConfigValue('default-api-host');
 });
 
 type InstallStatics = {
@@ -49,14 +59,17 @@ type InstallStatics = {
     timeZone: string;
     args: string[];
   }>;
-  buildSavedEnvConfig: (params: {
-    envName: string;
-    appResults: Record<string, unknown>;
-    downloadResults: Record<string, unknown>;
-    dbResults: Record<string, unknown>;
-    rootResults: Record<string, unknown>;
-    envAddResults: Record<string, unknown>;
-  }) => Record<string, unknown>;
+  buildSavedEnvConfig: (
+    params: {
+      envName: string;
+      appResults: Record<string, unknown>;
+      downloadResults: Record<string, unknown>;
+      dbResults: Record<string, unknown>;
+      rootResults: Record<string, unknown>;
+      envAddResults: Record<string, unknown>;
+    },
+    options?: { defaultApiHost?: string },
+  ) => Record<string, unknown>;
   resolveAvailableDefaultPort: (defaultPort: string) => Promise<string>;
   buildAppPromptInitialValues: (params: {
     envName?: string;
@@ -169,6 +182,57 @@ test('install reuses env add prompts without online apiBaseUrl validation', asyn
   expect(envAddCatalog.apiBaseUrl).toBeDefined();
   expect(envAddCatalog.apiBaseUrl).not.toBe(EnvAdd.prompts.apiBaseUrl);
   expect(envAddCatalog.apiBaseUrl.validate).toBe(undefined);
+});
+
+test('install uses configured default-api-host for the connection step apiBaseUrl default', async () => {
+  const command = Object.create(Install.prototype) as Install & {
+    resolveResumePresetValues: typeof Install.prototype.resolveResumePresetValues;
+  };
+
+  vi.spyOn(command as any, 'resolveResumePresetValues').mockResolvedValue(undefined);
+
+  const { setCliConfigValue } = await import('../lib/cli-config.js');
+  await setCliConfigValue('default-api-host', '192.168.1.10');
+
+  const runPromptCatalogMock = vi
+    .fn()
+    .mockResolvedValueOnce({ env: 'app7593' })
+    .mockResolvedValueOnce({
+      appRootPath: './app7593/source/',
+      appPort: '13000',
+      storagePath: './app7593/storage/',
+    })
+    .mockResolvedValueOnce({})
+    .mockResolvedValueOnce({
+      dbDialect: 'postgres',
+      builtinDb: true,
+    })
+    .mockResolvedValueOnce({
+      rootUsername: 'nocobase',
+      rootEmail: 'admin@nocobase.com',
+      rootPassword: 'nocobase',
+      rootNickname: 'NocoBase',
+    })
+    .mockResolvedValueOnce({
+      name: 'app7593',
+      apiBaseUrl: 'http://192.168.1.10:13000/api',
+      authType: 'oauth',
+    });
+
+  const promptCatalogModule = await import('../lib/prompt-catalog.js');
+  const runPromptCatalogSpy = vi
+    .spyOn(promptCatalogModule, 'runPromptCatalog')
+    .mockImplementation(runPromptCatalogMock as any);
+
+  try {
+    await (Install.prototype as any).collectPromptResults.call(command, { resume: false }, true);
+  } finally {
+    runPromptCatalogSpy.mockRestore();
+    await deleteCliConfigValue('default-api-host');
+  }
+
+  const envAddOptions = runPromptCatalogMock.mock.calls[5]?.[1];
+  expect(envAddOptions.initialValues.apiBaseUrl).toBe('http://192.168.1.10:13000/api');
 });
 
 test('install hides the deferred accessToken prompt when --skip-auth is used with token auth', async () => {
@@ -651,6 +715,77 @@ test('docker app plan wires app, db, network, port, and image settings', async (
   expect(plan.args.includes('DB_UNDERSCORED=true')).toBe(true);
 });
 
+test('docker app plan enables NOCOBASE_EXTRACT_CLIENT_ASSETS by default', async () => {
+  const installStatics = Install as unknown as InstallStatics;
+  const plan = await installStatics.buildDockerAppPlan({
+    envName: 'demo',
+    workspaceName: 'nb-demo',
+    networkName: 'nb-demo',
+    appResults: {
+      appPort: '13000',
+      storagePath: './storage/demo',
+      lang: 'zh-CN',
+    },
+    downloadResults: {
+      source: 'docker',
+      version: 'develop',
+      dockerRegistry: 'registry.cn-shanghai.aliyuncs.com/nocobase/nocobase',
+    },
+    dbResults: {
+      dbDialect: 'postgres',
+      dbHost: 'nb-demo-demo-postgres',
+      dbPort: '5432',
+      dbDatabase: 'nocobase',
+      dbUser: 'nocobase',
+      dbPassword: 'nocobase',
+    },
+    rootResults: {
+      rootUsername: 'nocobase',
+      rootEmail: 'admin@nocobase.com',
+      rootPassword: 'admin123',
+      rootNickname: 'Super Admin',
+    },
+  });
+
+  expect(plan.args.includes('NOCOBASE_EXTRACT_CLIENT_ASSETS=true')).toBe(true);
+});
+
+test('docker app plan forwards NOCOBASE_EXTRACT_CLIENT_ASSETS when explicitly disabled', async () => {
+  process.env.NOCOBASE_EXTRACT_CLIENT_ASSETS = 'false';
+  const installStatics = Install as unknown as InstallStatics;
+  const plan = await installStatics.buildDockerAppPlan({
+    envName: 'demo',
+    workspaceName: 'nb-demo',
+    networkName: 'nb-demo',
+    appResults: {
+      appPort: '13000',
+      storagePath: './storage/demo',
+      lang: 'zh-CN',
+    },
+    downloadResults: {
+      source: 'docker',
+      version: 'develop',
+      dockerRegistry: 'registry.cn-shanghai.aliyuncs.com/nocobase/nocobase',
+    },
+    dbResults: {
+      dbDialect: 'postgres',
+      dbHost: 'nb-demo-demo-postgres',
+      dbPort: '5432',
+      dbDatabase: 'nocobase',
+      dbUser: 'nocobase',
+      dbPassword: 'nocobase',
+    },
+    rootResults: {
+      rootUsername: 'nocobase',
+      rootEmail: 'admin@nocobase.com',
+      rootPassword: 'admin123',
+      rootNickname: 'Super Admin',
+    },
+  });
+
+  expect(plan.args.includes('NOCOBASE_EXTRACT_CLIENT_ASSETS=false')).toBe(true);
+});
+
 test('install saved env config forwards endpoint, auth, app, storage, and db settings', () => {
   const installStatics = Install as unknown as InstallStatics;
   const envConfig = installStatics.buildSavedEnvConfig({
@@ -794,7 +929,31 @@ test('install saved env config records when an env uses an external database', (
   expect(envConfig.apiBaseUrl).toBe('http://127.0.0.1:13081/api');
 });
 
-test('install saved env config keeps absolute appRootPath and storagePath', () => {
+test('install saved env config falls back to configured default api host when apiBaseUrl is empty', () => {
+  const installStatics = Install as unknown as InstallStatics;
+  const envConfig = installStatics.buildSavedEnvConfig(
+    {
+      envName: 'external',
+      appResults: {
+        appPort: '13081',
+        storagePath: './storage/external',
+      },
+      downloadResults: {},
+      dbResults: {},
+      rootResults: {},
+      envAddResults: {
+        authType: 'oauth',
+      },
+    },
+    {
+      defaultApiHost: '192.168.1.10',
+    },
+  );
+
+  expect(envConfig.apiBaseUrl).toBe('http://192.168.1.10:13081/api');
+});
+
+test('install saved env config normalizes equivalent absolute legacy paths to appPath', () => {
   const installStatics = Install as unknown as InstallStatics;
   const envConfig = installStatics.buildSavedEnvConfig({
     envName: 'absolute',
@@ -812,8 +971,57 @@ test('install saved env config keeps absolute appRootPath and storagePath', () =
     },
   });
 
-  expect(envConfig.appRootPath).toBe('/tmp/absolute/source');
-  expect(envConfig.storagePath).toBe('/tmp/absolute/storage');
+  expect(envConfig.appPath).toBe('/tmp/absolute/');
+  expect(Object.prototype.hasOwnProperty.call(envConfig, 'appRootPath')).toBe(false);
+  expect(Object.prototype.hasOwnProperty.call(envConfig, 'storagePath')).toBe(false);
+});
+
+test('install saved env config prefers appPath and omits derived legacy paths', () => {
+  const installStatics = Install as unknown as InstallStatics;
+  const envConfig = installStatics.buildSavedEnvConfig({
+    envName: 'derived',
+    appResults: {
+      appPath: './derived/',
+      appRootPath: './derived/source/',
+      appPort: '13081',
+      storagePath: './derived/storage/',
+    },
+    downloadResults: {},
+    dbResults: {},
+    rootResults: {},
+    envAddResults: {
+      apiBaseUrl: 'http://127.0.0.1:13081/api',
+      authType: 'oauth',
+    },
+  });
+
+  expect(envConfig.appPath).toBe('./derived/');
+  expect(Object.prototype.hasOwnProperty.call(envConfig, 'appRootPath')).toBe(false);
+  expect(Object.prototype.hasOwnProperty.call(envConfig, 'storagePath')).toBe(false);
+});
+
+test('install saved env config omits equivalent legacy paths with different separators', () => {
+  const installStatics = Install as unknown as InstallStatics;
+  const envConfig = installStatics.buildSavedEnvConfig({
+    envName: 'derived-normalized',
+    appResults: {
+      appPath: './derived/',
+      appRootPath: '.\\derived\\source',
+      appPort: '13081',
+      storagePath: './derived/storage',
+    },
+    downloadResults: {},
+    dbResults: {},
+    rootResults: {},
+    envAddResults: {
+      apiBaseUrl: 'http://127.0.0.1:13081/api',
+      authType: 'oauth',
+    },
+  });
+
+  expect(envConfig.appPath).toBe('./derived/');
+  expect(Object.prototype.hasOwnProperty.call(envConfig, 'appRootPath')).toBe(false);
+  expect(Object.prototype.hasOwnProperty.call(envConfig, 'storagePath')).toBe(false);
 });
 
 test('install saved env config records docker download settings for later upgrades', () => {

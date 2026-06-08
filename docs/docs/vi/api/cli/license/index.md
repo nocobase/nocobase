@@ -6,7 +6,7 @@ keywords: "nb license,NocoBase CLI,commercial licensing"
 
 # nb license
 
-Quản lý giấy phép thương mại của NocoBase, bao gồm kích hoạt giấy phép, instance ID, trạng thái giấy phép và các plugin được cấp phép.
+Quản lý giấy phép thương mại của NocoBase, bao gồm kích hoạt bằng license key hiện có, Instance ID, trạng thái giấy phép và các plugin được cấp phép.
 
 ## Cách dùng
 
@@ -18,7 +18,7 @@ nb license <command>
 
 | Lệnh | Mô tả |
 | --- | --- |
-| [`nb license activate`](./activate.md) | Kích hoạt giấy phép thương mại cho env hiện tại |
+| [`nb license activate`](./activate.md) | Kích hoạt giấy phép thương mại cho env hiện tại bằng license key hiện có |
 | [`nb license id`](./id.md) | Hiển thị hoặc tạo instance ID cho env hiện tại |
 | [`nb license status`](./status.md) | Hiển thị trạng thái giấy phép thương mại của env hiện tại |
 | [`nb license plugins`](./plugins/index.md) | Quản lý các plugin thương mại được giấy phép hiện tại cho phép |
