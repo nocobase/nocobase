@@ -209,14 +209,20 @@ describe('plugin-ui-layout server', () => {
       sort: ['-id'],
     });
 
+    const runtimeLayouts = response.body.data as Array<Record<string, unknown>>;
+
     expect(response.status).toBe(200);
-    expect(response.body.data.map((layout) => layout.uid)).toEqual([
+    expect(runtimeLayouts.map((layout) => layout.uid)).toEqual([
       'runtime-layout-enabled-a',
       'runtime-layout-enabled-b',
     ]);
-    expect(response.body.data).toHaveLength(2);
-    expect(response.body.data.every((layout) => layout.enabled === true)).toBe(true);
-    expect(Object.keys(response.body.data[0]).sort()).toEqual([...UI_LAYOUT_RUNTIME_FIELDS].sort());
+    expect(runtimeLayouts).toHaveLength(2);
+    expect(runtimeLayouts.every((layout) => layout.enabled === true)).toBe(true);
+    for (const layout of runtimeLayouts) {
+      expect(Object.keys(layout).sort()).toEqual([...UI_LAYOUT_RUNTIME_FIELDS].sort());
+      expect(layout).not.toHaveProperty('id');
+      expect(layout).not.toHaveProperty('desktopRoutes');
+    }
   });
 
   it('should register the pm.ui-layout ACL snippet with management actions only', async () => {
@@ -280,7 +286,34 @@ describe('plugin-ui-layout server', () => {
     const pmAllAgent = await app.agent().login(pmAllUser);
     const negatedAgent = await app.agent().login(negatedUser);
 
-    expect((await noSnippetAgent.resource('uiLayouts').list()).status).toBe(403);
+    const noSnippetResponses = [
+      await noSnippetAgent.resource('uiLayouts').list(),
+      await noSnippetAgent.resource('uiLayouts').get({
+        filterByTk: deniedLayout.get('id'),
+      }),
+      await noSnippetAgent.resource('uiLayouts').create({
+        values: {
+          uid: 'management-no-snippet-layout',
+          title: 'Management no snippet layout',
+          layoutType: 'mobile',
+          routeName: 'managementNoSnippetLayout',
+          routePath: '/management-no-snippet-layout',
+          authCheck: true,
+          enabled: true,
+        },
+      }),
+      await noSnippetAgent.resource('uiLayouts').update({
+        filterByTk: deniedLayout.get('id'),
+        values: {
+          title: 'Management no snippet layout updated',
+        },
+      }),
+      await noSnippetAgent.resource('uiLayouts').destroy({
+        filterByTk: deniedLayout.get('id'),
+      }),
+    ];
+
+    expect(noSnippetResponses.map((response) => response.status)).toEqual([403, 403, 403, 403, 403]);
 
     const createResponse = await pmAllAgent.resource('uiLayouts').create({
       values: {

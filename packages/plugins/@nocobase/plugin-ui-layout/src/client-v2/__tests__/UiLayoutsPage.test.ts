@@ -214,6 +214,12 @@ describe('plugin-ui-layout settings page', () => {
         skipNotify: true,
       });
     });
+    expect(request).toHaveBeenCalledTimes(1);
+    expect(request).not.toHaveBeenCalledWith(
+      expect.objectContaining({
+        url: 'uiLayouts:listAccessible',
+      }),
+    );
   });
 });
 
