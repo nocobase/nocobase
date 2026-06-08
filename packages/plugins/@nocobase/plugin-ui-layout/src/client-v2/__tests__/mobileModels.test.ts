@@ -3140,7 +3140,6 @@ describe('plugin-ui-layout mobile models', () => {
           type: NocoBaseDesktopRouteType.link,
           title: 'Docs',
           icon: expect.stringMatching(/link/i),
-          uiLayouts: ['mobile-layout-model-render-test'],
           options: expect.objectContaining({
             href: 'https://docs.example.com',
             openInNewWindow: true,
@@ -3151,6 +3150,7 @@ describe('plugin-ui-layout mobile models', () => {
         },
       );
     });
+    expect(createRoute.mock.calls[0]?.[0]).not.toHaveProperty('uiLayouts');
     expect(api.request).toHaveBeenLastCalledWith(
       expect.objectContaining({
         url: '/desktopRoutes:listAccessible',
@@ -3167,7 +3167,7 @@ describe('plugin-ui-layout mobile models', () => {
     expect(screen.getByRole('button', { name: /Docs/ })).not.toHaveAttribute('aria-current');
   });
 
-  it('should create page tabs with the current mobile UI layout on child routes', async () => {
+  it('should create page tabs without serializing the current mobile UI layout', async () => {
     const createRoute = vi.fn(async () => {});
 
     window.localStorage.setItem(FLOW_SETTINGS_PREFERENCE_STORAGE_KEY, '1');
@@ -3203,12 +3203,10 @@ describe('plugin-ui-layout mobile models', () => {
       expect(createRoute).toHaveBeenCalledWith(
         expect.objectContaining({
           title: 'Mobile page',
-          uiLayouts: ['mobile-layout-model-render-test'],
           children: [
             expect.objectContaining({
               type: NocoBaseDesktopRouteType.tabs,
               hidden: true,
-              uiLayouts: ['mobile-layout-model-render-test'],
             }),
           ],
         }),
@@ -3217,6 +3215,9 @@ describe('plugin-ui-layout mobile models', () => {
         },
       );
     });
+    const createdRoute = createRoute.mock.calls[0]?.[0];
+    expect(createdRoute).not.toHaveProperty('uiLayouts');
+    expect(createdRoute?.children?.[0]).not.toHaveProperty('uiLayouts');
   });
 
   it('should create persisted route values for mobile pages and links', () => {
@@ -3304,7 +3305,7 @@ describe('plugin-ui-layout mobile models', () => {
     expect(childTabsElement.props.tabBarExtraContent.right).toBeTruthy();
   });
 
-  it('should persist page tabs with the current mobile UI layout', () => {
+  it('should create page tabs without serializing the current mobile UI layout', () => {
     const flowEngine = new FlowEngine();
     flowEngine.context.defineProperty('layout', {
       value: {
@@ -3316,16 +3317,8 @@ describe('plugin-ui-layout mobile models', () => {
     const rootTabOptions = rootPageModel.createPageTabModelOptions();
     const childTabOptions = childPageModel.createPageTabModelOptions();
 
-    expect(rootTabOptions.props?.route).toEqual(
-      expect.objectContaining({
-        uiLayouts: ['mobile-layout-model-tab-test'],
-      }),
-    );
-    expect(childTabOptions.props?.route).toEqual(
-      expect.objectContaining({
-        uiLayouts: ['mobile-layout-model-tab-test'],
-      }),
-    );
+    expect(rootTabOptions.props?.route || {}).not.toHaveProperty('uiLayouts');
+    expect(childTabOptions.props?.route || {}).not.toHaveProperty('uiLayouts');
   });
 
   it('should render mobile child page titles with the back button in the titlebar', () => {

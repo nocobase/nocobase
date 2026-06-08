@@ -21,46 +21,6 @@ type RouteWithTabs = {
   enableTabs?: boolean;
 };
 
-type PageTabRoute = RouteWithTabs & {
-  uiLayouts?: string[];
-};
-
-type PageTabCreateModelOptions = ReturnType<RootPageModel['createPageTabModelOptions']>;
-type PageTabCreateModelOptionsProps = NonNullable<PageTabCreateModelOptions['props']> & {
-  route?: PageTabRoute;
-};
-type LayoutWithUid = {
-  uid?: unknown;
-};
-
-function getCurrentUiLayoutUid(model: RootPageModel | ChildPageModel) {
-  const uid = (model.context.layout as LayoutWithUid | undefined)?.uid;
-  return typeof uid === 'string' && uid.trim() ? uid : undefined;
-}
-
-function withCurrentUiLayout(
-  model: RootPageModel | ChildPageModel,
-  options: PageTabCreateModelOptions,
-): PageTabCreateModelOptions {
-  const layoutUid = getCurrentUiLayoutUid(model);
-  if (!layoutUid) {
-    return options;
-  }
-
-  const props = (options.props || {}) as PageTabCreateModelOptionsProps;
-
-  return {
-    ...options,
-    props: {
-      ...props,
-      route: {
-        ...(props.route || {}),
-        uiLayouts: [layoutUid],
-      },
-    },
-  };
-}
-
 function routeMatchesRootPage(model: RootPageModel, currentRoute?: RouteWithTabs) {
   if (!currentRoute) {
     return false;
@@ -149,10 +109,6 @@ function renderMobileAddTabButton(model: RootPageModel | ChildPageModel) {
 }
 
 export class MobileRootPageModel extends RootPageModel {
-  private readonly createDefaultPageTabModelOptions = this.createPageTabModelOptions;
-
-  createPageTabModelOptions = () => withCurrentUiLayout(this, this.createDefaultPageTabModelOptions());
-
   tabBarExtraContent = {
     left: renderMobilePageTabLeftSpacer(),
     right: renderMobileAddTabButton(this),
@@ -176,10 +132,6 @@ export class MobileRootPageModel extends RootPageModel {
 }
 
 export class MobileChildPageModel extends ChildPageModel {
-  private readonly createDefaultPageTabModelOptions = this.createPageTabModelOptions;
-
-  createPageTabModelOptions = () => withCurrentUiLayout(this, this.createDefaultPageTabModelOptions());
-
   tabBarExtraContent = {
     left: <MobileBackButton />,
     right: renderMobileAddTabButton(this),
