@@ -259,7 +259,7 @@ export function deleteServerFiles(cwd: string, log: PkgLog) {
     deep: 1,
     onlyFiles: true,
   });
-  const dirs = fg.globSync(['*', '!client', '!node_modules'], {
+  const dirs = fg.globSync(['*', '!client', '!client-v2', '!node_modules'], {
     cwd: path.join(cwd, target_dir),
     absolute: true,
     deep: 1,
