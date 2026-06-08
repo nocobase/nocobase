@@ -18,6 +18,11 @@ const EMPTY_DESKTOP_ROUTE_FILTER = {
   },
 };
 
+type DesktopRouteCreateValue = Record<string, unknown> & {
+  children?: unknown;
+  uiLayouts?: unknown;
+};
+
 function getRequestedLayoutUid(layout: unknown) {
   const uid = Array.isArray(layout) ? layout[0] : layout;
 
@@ -39,6 +44,50 @@ function getDesktopRouteLayoutFilterByUid(layoutUid: string) {
 
   return {
     $or: [currentLayoutFilter, { 'uiLayouts.id.$notExists': true }],
+  };
+}
+
+function isDesktopRouteCreateValue(value: unknown): value is DesktopRouteCreateValue {
+  return !!value && typeof value === 'object' && !Array.isArray(value);
+}
+
+function hasUiLayout(uiLayout: unknown, layoutUid: string) {
+  if (uiLayout === layoutUid) {
+    return true;
+  }
+
+  return isDesktopRouteCreateValue(uiLayout) && uiLayout.uid === layoutUid;
+}
+
+function mergeUiLayoutValue(uiLayouts: unknown, layoutUid: string) {
+  if (Array.isArray(uiLayouts)) {
+    if (uiLayouts.some((uiLayout) => hasUiLayout(uiLayout, layoutUid))) {
+      return uiLayouts;
+    }
+
+    return [...uiLayouts, layoutUid];
+  }
+
+  if (hasUiLayout(uiLayouts, layoutUid)) {
+    return uiLayouts;
+  }
+
+  return uiLayouts == null ? [layoutUid] : [uiLayouts, layoutUid];
+}
+
+function withDesktopRouteUiLayout(value: unknown, layoutUid: string): unknown {
+  if (Array.isArray(value)) {
+    return value.map((item) => withDesktopRouteUiLayout(item, layoutUid));
+  }
+
+  if (!isDesktopRouteCreateValue(value)) {
+    return value;
+  }
+
+  return {
+    ...value,
+    uiLayouts: mergeUiLayoutValue(value.uiLayouts, layoutUid),
+    ...(Array.isArray(value.children) ? { children: withDesktopRouteUiLayout(value.children, layoutUid) } : {}),
   };
 }
 
@@ -102,6 +151,24 @@ function removeNestedRootRoutes(routes: unknown) {
     const parentId = getRouteValue(route, 'parentId');
     return parentId === null || parentId === undefined || !routeIds.has(String(parentId));
   });
+}
+
+async function addDesktopRouteCreateLayout(ctx: ResourcerContext, next: () => Promise<void>) {
+  const layoutUid = getRequestedLayoutUid(ctx.action?.params.layout);
+  const uiLayout = await ctx.db.getRepository('uiLayouts').findOne({
+    filter: {
+      uid: layoutUid,
+      enabled: true,
+    },
+  });
+
+  if (uiLayout) {
+    ctx.action?.mergeParams({
+      values: withDesktopRouteUiLayout(ctx.action?.params.values, layoutUid),
+    });
+  }
+
+  await next();
 }
 
 function getCurrentRoles(ctx: ResourcerContext) {
@@ -181,6 +248,7 @@ export class PluginUiLayoutServer extends Plugin {
   async beforeLoad() {}
 
   async load() {
+    this.app.resourceManager.registerPreActionHandler('desktopRoutes:create', addDesktopRouteCreateLayout);
     this.app.resourceManager.registerPreActionHandler('desktopRoutes:listAccessible', addDesktopRouteLayoutFilter);
     this.app.resourceManager.registerPreActionHandler('desktopRoutes:getAccessible', addDesktopRouteGetLayoutFilter);
   }

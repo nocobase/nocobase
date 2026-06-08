@@ -192,6 +192,72 @@ describe('plugin-ui-layout server', () => {
     ]);
   });
 
+  it('should associate routes created through actions with the requested layout', async () => {
+    app = await createMockServer({
+      registerActions: true,
+      acl: true,
+      plugins: [
+        'error-handler',
+        'users',
+        'auth',
+        'client',
+        'field-sort',
+        'acl',
+        'ui-schema-storage',
+        'system-settings',
+        'data-source-main',
+        'data-source-manager',
+        'ui-layout',
+      ],
+    });
+
+    const mobileLayout = await app.db.getRepository('uiLayouts').create({
+      values: {
+        uid: 'mobile-layout-create-action-test',
+        title: 'Mobile layout create action test',
+        layoutType: 'mobile',
+        routeName: 'mobile-layout-create-action-test',
+        routePath: '/v/mobile-layout-create-action-test',
+        authCheck: true,
+        enabled: true,
+      },
+    });
+    const rootUser = await app.db.getRepository('users').findOne({
+      filter: {
+        'roles.name': 'root',
+      },
+    });
+    const rootAgent = await app.agent().login(rootUser);
+
+    const response = await rootAgent.resource('desktopRoutes').create({
+      layout: mobileLayout.get('uid'),
+      values: {
+        type: 'flowPage',
+        title: 'mobile action page',
+        schemaUid: 'mobile-action-page',
+        children: [
+          {
+            type: 'tabs',
+            title: 'mobile action tabs',
+            schemaUid: 'mobile-action-tabs',
+            hidden: true,
+          },
+        ],
+      },
+    });
+
+    expect(response.status).toBe(200);
+
+    const createdRoute = await app.db.getRepository('desktopRoutes').findOne({
+      filterByTk: response.body.data.id,
+      appends: ['uiLayouts', 'children.uiLayouts'],
+    });
+    const childRoute = createdRoute?.get('children')?.[0];
+
+    expect(createdRoute?.get('uiLayouts').map((layout) => layout.get('uid'))).toEqual([mobileLayout.get('uid')]);
+    expect(childRoute?.get('uiLayouts').map((layout) => layout.get('uid'))).toEqual([mobileLayout.get('uid')]);
+  });
+
   it('should default listAccessible layout filtering to AdminLayout', async () => {
     app = await createMockServer({
       registerActions: true,

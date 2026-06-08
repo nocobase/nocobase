@@ -9,10 +9,14 @@
 
 import { APIClient } from '@nocobase/sdk';
 import type { NocoBaseDesktopRoute } from './flow-compat';
+import { ADMIN_LAYOUT_MODEL_UID } from './flow/admin-shell/admin-layout/constants';
 
 type RouteSubscriber = () => void;
 type RouteCreateValues = Partial<NocoBaseDesktopRoute>;
 type RouteUpdateValues = Partial<NocoBaseDesktopRoute>;
+type RouteLayoutLike = {
+  uid?: unknown;
+};
 
 type RouteMutationOptions = {
   refreshAfterMutation?: boolean;
@@ -32,18 +36,40 @@ export class RouteRepository {
   routes: NocoBaseDesktopRoute[] = [];
   protected subscribers = new Set<RouteSubscriber>();
   protected accessibleLoaded = false;
+  protected accessibleLayoutUid: string | undefined;
+  protected accessibleLoadingLayoutUid: string | undefined;
   protected accessibleLoadingPromise: Promise<NocoBaseDesktopRoute[]> | null = null;
+  private layoutActivations: Array<{ token: symbol; uid: string }> = [];
+  private refreshRequestId = 0;
 
   constructor(protected ctx: { api?: APIClient }) {}
+
+  activateLayout(layout?: RouteLayoutLike) {
+    const uid = this.normalizeLayoutUid(layout?.uid);
+    const token = Symbol('route-layout');
+
+    this.layoutActivations.push({
+      token,
+      uid,
+    });
+
+    return () => {
+      const index = this.layoutActivations.findIndex((item) => item.token === token);
+      if (index >= 0) {
+        this.layoutActivations.splice(index, 1);
+      }
+    };
+  }
 
   /**
    * 同步当前可访问桌面路由，并通知订阅方刷新。
    *
    * @param routes 最新的桌面路由树
    */
-  setRoutes(routes: NocoBaseDesktopRoute[]) {
+  setRoutes(routes: NocoBaseDesktopRoute[], layoutUid = this.getCurrentLayoutUid()) {
     this.routes = routes;
     this.accessibleLoaded = true;
+    this.accessibleLayoutUid = layoutUid;
     this.emitChange();
   }
 
@@ -71,12 +97,16 @@ export class RouteRepository {
    * @returns 最新的路由数组
    */
   async refreshAccessible() {
+    const layoutUid = this.getCurrentLayoutUid();
+    const requestId = ++this.refreshRequestId;
     const response = await this.getAPIClient().request({
       url: '/desktopRoutes:listAccessible',
-      params: { tree: true, sort: 'sort' },
+      params: { tree: true, sort: 'sort', layout: layoutUid },
     });
     const routes = response?.data?.data || [];
-    this.setRoutes(routes);
+    if (requestId === this.refreshRequestId) {
+      this.setRoutes(routes, layoutUid);
+    }
     return routes;
   }
 
@@ -86,17 +116,23 @@ export class RouteRepository {
    * @returns 当前可访问的路由数组
    */
   async ensureAccessibleLoaded() {
-    if (this.accessibleLoaded) {
+    const layoutUid = this.getCurrentLayoutUid();
+    if (this.accessibleLoaded && this.accessibleLayoutUid === layoutUid) {
       return this.routes;
     }
 
-    if (this.accessibleLoadingPromise) {
+    if (this.accessibleLoadingPromise && this.accessibleLoadingLayoutUid === layoutUid) {
       return this.accessibleLoadingPromise;
     }
 
-    this.accessibleLoadingPromise = this.refreshAccessible().finally(() => {
-      this.accessibleLoadingPromise = null;
+    this.accessibleLoadingLayoutUid = layoutUid;
+    const loadingPromise = this.refreshAccessible().finally(() => {
+      if (this.accessibleLoadingPromise === loadingPromise) {
+        this.accessibleLoadingPromise = null;
+        this.accessibleLoadingLayoutUid = undefined;
+      }
     });
+    this.accessibleLoadingPromise = loadingPromise;
 
     return this.accessibleLoadingPromise;
   }
@@ -132,7 +168,10 @@ export class RouteRepository {
    */
   async createRoute(values: RouteCreateValues, options: RouteMutationOptions = {}) {
     const { refreshAfterMutation = true } = options;
-    const res = await this.getResource('desktopRoutes').create({ values });
+    const res = await this.getResource('desktopRoutes').create({
+      values,
+      layout: this.getCurrentLayoutUid(),
+    });
     if (refreshAfterMutation) {
       await this.refreshAccessible();
     }
@@ -228,6 +267,14 @@ export class RouteRepository {
     this.subscribers.forEach((subscriber) => {
       subscriber();
     });
+  }
+
+  private getCurrentLayoutUid() {
+    return this.layoutActivations[this.layoutActivations.length - 1]?.uid || ADMIN_LAYOUT_MODEL_UID;
+  }
+
+  private normalizeLayoutUid(uid: unknown) {
+    return typeof uid === 'string' && uid.trim() ? uid : ADMIN_LAYOUT_MODEL_UID;
   }
 
   private findRoute(routes: NocoBaseDesktopRoute[], schemaUid: string): NocoBaseDesktopRoute | undefined {
