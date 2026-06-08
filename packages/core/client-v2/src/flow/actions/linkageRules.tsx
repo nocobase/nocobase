@@ -46,7 +46,7 @@ import { useAssociationTitleFieldSync } from '../components/useAssociationTitleF
 import _ from 'lodash';
 import { SubFormFieldModel, SubFormListFieldModel } from '../models';
 import { coerceForToOneField } from '../internal/utils/associationValueCoercion';
-import { enumToOptions } from '../internal/utils/enumOptionsUtils';
+import { enumToOptions, translateOptionLabel } from '../internal/utils/enumOptionsUtils';
 import {
   findFormItemModelByFieldPath,
   getCollectionFromModel,
@@ -156,7 +156,7 @@ const getFieldModelOptions = (fieldModel: any, t: (s: string) => string) => {
   if (originalOptions) {
     return originalOptions.map((option: any) =>
       option && typeof option === 'object' && typeof option.label === 'string'
-        ? { ...option, label: t(option.label) }
+        ? { ...option, label: translateOptionLabel(option.label, t) }
         : option,
     );
   }
