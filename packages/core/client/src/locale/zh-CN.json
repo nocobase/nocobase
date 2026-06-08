@@ -717,6 +717,7 @@
   "Html settings": "Html 设置项",
   "IANA registry": "IANA注册表",
   "ID": "ID",
+  "https://www.example.com": "https://www.example.com",
   "Icon": "图标",
   "Icon only": "仅显示图标",
   "Identifier for program usage. Support letters, numbers and underscores, must start with an letter.": "用于程序使用的标识符，支持字母、数字和下划线，必须以字母开头。",
