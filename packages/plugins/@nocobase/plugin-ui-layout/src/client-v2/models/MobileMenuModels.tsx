@@ -307,12 +307,12 @@ export class MobileLayoutMenuItemModel extends FlowModel {
     }
 
     model.__originalProps = {
-      hiddenModel: this.linkageHidden,
       hiddenText: undefined,
       disabled: undefined,
       required: undefined,
       hidden: undefined,
       ...this.props,
+      hiddenModel: this.linkageHidden,
     };
   }
 

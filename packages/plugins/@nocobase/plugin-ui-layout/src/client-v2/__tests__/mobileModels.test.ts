@@ -210,6 +210,12 @@ describe('plugin-ui-layout mobile models', () => {
       .join('\n');
   }
 
+  type MobileMenuItemLinkageSnapshot = MobileLayoutMenuItemModel & {
+    __originalProps?: {
+      hiddenModel?: boolean;
+    };
+  };
+
   function mockDesktopBreakpoint() {
     const originalMatchMedia = window.matchMedia;
 
@@ -732,6 +738,38 @@ describe('plugin-ui-layout mobile models', () => {
     menuItem?.setHidden(true);
 
     expect(model.menuRouteRefreshVersion).toBe(refreshVersion + 1);
+  });
+
+  it('should seed mobile menu linkage hidden snapshots from linkage state', async () => {
+    const engine = new FlowEngine();
+    engine.registerModels({
+      MobileLayoutMenuItemModel,
+    });
+
+    const route: NocoBaseDesktopRoute = {
+      id: 1,
+      type: NocoBaseDesktopRouteType.flowPage,
+      title: 'Route hidden',
+      schemaUid: 'route-hidden-page',
+      hidden: true,
+      sort: 10,
+    };
+    const model = engine.createModel<MobileLayoutMenuItemModel>({
+      uid: 'mobile-menu-item-linkage-original-hidden',
+      use: MobileLayoutMenuItemModel,
+      props: {
+        route,
+        hiddenModel: true,
+      },
+    });
+    model.setStepParams('mobileMenuSettings', 'linkageRules', {
+      value: [{ key: 'r1' }],
+    });
+
+    await model.dispatchEvent('beforeRender');
+
+    expect(model.hidden).toBe(true);
+    expect((model as MobileMenuItemLinkageSnapshot).__originalProps?.hiddenModel).toBe(false);
   });
 
   it('should render mobile tab items after accessible routes are loaded asynchronously', async () => {
