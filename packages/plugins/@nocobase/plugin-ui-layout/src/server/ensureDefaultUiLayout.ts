@@ -8,6 +8,7 @@
  */
 
 import type { Database, Repository } from '@nocobase/database';
+import type { Transaction } from 'sequelize';
 import { DEFAULT_ADMIN_UI_LAYOUT, UI_LAYOUT_TYPE_DESKTOP, UI_LAYOUT_TYPE_MOBILE } from '../constants';
 
 const GENERATED_DEFAULT_TITLE = 'Untitled';
@@ -37,8 +38,8 @@ function shouldBackfillTitle(title: unknown) {
   return !title || title === GENERATED_DEFAULT_TITLE;
 }
 
-async function ensureUiLayoutTitles(repository: Repository<UiLayoutRecord>) {
-  const records = await repository.find({});
+async function ensureUiLayoutTitles(repository: Repository<UiLayoutRecord>, transaction: Transaction) {
+  const records = await repository.find({ transaction });
   for (const record of records) {
     if (!shouldBackfillTitle(record.get('title'))) {
       continue;
@@ -49,40 +50,46 @@ async function ensureUiLayoutTitles(repository: Repository<UiLayoutRecord>) {
       values: {
         title: getFallbackTitle(record.toJSON() as UiLayoutRecord),
       },
+      transaction,
     });
   }
 }
 
 export async function ensureDefaultUiLayout(db: Database) {
-  const repository = db.getRepository('uiLayouts') as Repository<UiLayoutRecord>;
-  const existed = await repository.findOne({
-    filter: {
-      uid: DEFAULT_ADMIN_UI_LAYOUT.uid,
-    },
+  await db.sequelize.transaction(async (transaction) => {
+    const repository = db.getRepository('uiLayouts') as Repository<UiLayoutRecord>;
+    const existed = await repository.findOne({
+      filter: {
+        uid: DEFAULT_ADMIN_UI_LAYOUT.uid,
+      },
+      transaction,
+    });
+
+    if (!existed) {
+      await repository.create({
+        values: DEFAULT_ADMIN_UI_LAYOUT,
+        transaction,
+      });
+      await ensureUiLayoutTitles(repository, transaction);
+      return;
+    }
+
+    const values: Partial<Pick<UiLayoutRecord, 'layoutType' | 'title'>> = {};
+    if (!existed.get('layoutType')) {
+      values.layoutType = DEFAULT_ADMIN_UI_LAYOUT.layoutType;
+    }
+    if (shouldBackfillTitle(existed.get('title'))) {
+      values.title = DEFAULT_ADMIN_UI_LAYOUT.title;
+    }
+
+    if (Object.keys(values).length) {
+      await repository.update({
+        filterByTk: existed.get('id'),
+        values,
+        transaction,
+      });
+    }
+
+    await ensureUiLayoutTitles(repository, transaction);
   });
-
-  if (!existed) {
-    await repository.create({
-      values: DEFAULT_ADMIN_UI_LAYOUT,
-    });
-    await ensureUiLayoutTitles(repository);
-    return;
-  }
-
-  const values: Partial<Pick<UiLayoutRecord, 'layoutType' | 'title'>> = {};
-  if (!existed.get('layoutType')) {
-    values.layoutType = DEFAULT_ADMIN_UI_LAYOUT.layoutType;
-  }
-  if (shouldBackfillTitle(existed.get('title'))) {
-    values.title = DEFAULT_ADMIN_UI_LAYOUT.title;
-  }
-
-  if (Object.keys(values).length) {
-    await repository.update({
-      filterByTk: existed.get('id'),
-      values,
-    });
-  }
-
-  await ensureUiLayoutTitles(repository);
 }

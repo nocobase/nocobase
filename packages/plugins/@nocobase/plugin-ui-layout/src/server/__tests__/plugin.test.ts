@@ -8,6 +8,7 @@
  */
 
 import { createMockServer, type MockServer } from '@nocobase/test';
+import { vi } from 'vitest';
 import { DEFAULT_ADMIN_UI_LAYOUT } from '../../constants';
 import { ensureDefaultUiLayout } from '../ensureDefaultUiLayout';
 import type { PluginUiLayoutServer } from '../plugin';
@@ -75,6 +76,36 @@ describe('plugin-ui-layout server', () => {
     expect(record?.get('routePath')).toBe(DEFAULT_ADMIN_UI_LAYOUT.routePath);
     expect(record?.get('authCheck')).toBe(DEFAULT_ADMIN_UI_LAYOUT.authCheck);
     expect(record?.get('enabled')).toBe(DEFAULT_ADMIN_UI_LAYOUT.enabled);
+  });
+
+  it('should rollback default AdminLayout creation when title backfill fails', async () => {
+    app = await createMockServer({
+      plugins: ['ui-layout'],
+    });
+    await app.db.sync();
+
+    const repository = app.db.getRepository('uiLayouts');
+    await repository.destroy({
+      truncate: true,
+    });
+    const originalFind = repository.find.bind(repository);
+    const findSpy = vi.spyOn(repository, 'find').mockImplementation((async (options) => {
+      if (options?.limit === 1) {
+        return [];
+      }
+
+      throw new Error('title backfill failed');
+    }) as typeof repository.find);
+
+    await expect(ensureDefaultUiLayout(app.db)).rejects.toThrow(/title backfill failed/);
+
+    findSpy.mockRestore();
+    const record = await originalFind({
+      filter: {
+        uid: DEFAULT_ADMIN_UI_LAYOUT.uid,
+      },
+    });
+    expect(record).toHaveLength(0);
   });
 
   it('should backfill generated ui layout titles', async () => {
