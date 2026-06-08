@@ -1,0 +1,18 @@
+# 环境变量（包含敏感信息）
+.env
+
+# 备份文件
+backups/
+
+# 日志文件
+logs/
+
+# 存储数据
+storage/
+
+# Node modules
+node_modules/
+
+# OS files
+.DS_Store
+Thumbs.db
