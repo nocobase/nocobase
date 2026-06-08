@@ -120,7 +120,12 @@ services:
           memory: 128M
 
   # ============================================================
-  # NocoBase 应用（基于本地源码构建，不使用远程镜像）
+  # NocoBase 应用（基于本地源码构建，不使用任何远程镜像）
+  # 架构说明：
+  # - 基础镜像: node:22-bookworm-slim（本地已有）
+  # - 内置 Nginx 作为内部反向代理（80 端口）
+  # - 通过 yarn start --quickstart 启动 Node.js 应用
+  # - 所有依赖从源码构建，不依赖远程 Docker 仓库
   # ============================================================
   app:
     build:
@@ -165,7 +170,7 @@ services:
       minio:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:80/ || exit 1"]
+      test: ["CMD-SHELL", "wget -qO- http://localhost:80/ || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -179,6 +184,7 @@ services:
 
   # ============================================================
   # NocoBase 灰度版本（可选，用于灰度发布/A/B测试）
+  # 使用 profiles: canary 按需启动
   # ============================================================
   app-canary:
     build:
@@ -222,7 +228,7 @@ services:
       minio:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:80/ || exit 1"]
+      test: ["CMD-SHELL", "wget -qO- http://localhost:80/ || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -235,34 +241,3 @@ services:
           memory: 512M
     profiles:
       - canary
-
-  # ============================================================
-  # Nginx 反向代理（从 Docker 仓库拉取官方镜像）
-  # ============================================================
-  nginx:
-    image: nginx:alpine
-    container_name: nocobase-nginx
-    restart: unless-stopped
-    networks:
-      - nocobase
-    volumes:
-      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
-      - ./nginx/conf.d:/etc/nginx/conf.d:ro
-      - ./storage/uploads:/var/www/nocobase/storage/uploads:ro
-    ports:
-      - "${NGINX_PORT:-80}:80"
-      - "${NGINX_SSL_PORT:-443}:443"
-    depends_on:
-      app:
-        condition: service_healthy
-    healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://localhost:80/ || exit 1"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-    deploy:
-      resources:
-        limits:
-          memory: 128M
-        reservations:
-          memory: 32M
