@@ -10,7 +10,7 @@
 import { FLOW_SURFACE_MUTATE_OP_TYPES, FLOW_SURFACE_PLAN_STEP_ACTIONS } from './constants';
 import type { FlowSurfaceApplyBlueprintDefaults } from './blueprint';
 
-export type FlowSurfaceNodeDomain = 'props' | 'decoratorProps' | 'stepParams' | 'flowRegistry';
+export type FlowSurfaceNodeDomain = 'node' | 'props' | 'decoratorProps' | 'stepParams' | 'flowRegistry';
 export type FlowSurfaceMergeStrategy = 'deep' | 'replace';
 export type FlowSurfaceActionScope = 'block' | 'record' | 'form' | 'filterForm' | 'actionPanel';
 export type FlowSurfaceContainerKind = 'page' | 'tab' | 'grid' | 'block' | 'node';

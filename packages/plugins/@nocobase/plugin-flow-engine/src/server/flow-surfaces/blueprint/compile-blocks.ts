@@ -2602,11 +2602,14 @@ function compileBlocks(
       if (initParams && hasBlockResourceInput(block)) {
         throwBadRequest(`${blockContext} dynamic block '${blockType}' does not allow initParams with resource`);
       }
+      const resource = initParams
+        ? undefined
+        : buildBlockResource(block, blockContext, blockResourceContext, blockType);
       return buildDefinedPayload({
         key,
         type: blockType,
         initParams,
-        resource: initParams ? undefined : buildBlockResource(block, blockContext, blockResourceContext, blockType),
+        resource,
         settings: Object.keys(settings).length
           ? compileTreeConnectSettingsTargets(settings, blockKeysByLocalKey, blockContext)
           : undefined,

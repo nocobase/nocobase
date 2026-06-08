@@ -32,6 +32,8 @@ import {
   type FlowSurfaceAutoInferredAuthoringEvidence,
   type FlowSurfaceAutoMenuItem,
   type FlowSurfaceAutoModel,
+  type FlowSurfaceAutoPopupHost,
+  type FlowSurfaceAutoPopupHostDefaultType,
   type FlowSurfaceAutoSnapshot,
   type FlowSurfaceAutoSourceRef,
   type FlowSurfaceExtractionEvent,
@@ -457,7 +459,11 @@ function isFlowSurfaceAutoSnapshot(value: unknown): value is FlowSurfaceAutoSnap
 }
 
 function isFlowSurfaceAutoInferredAuthoring(value: unknown): value is FlowSurfaceAutoInferredAuthoring {
-  return isPlainRecord(value) && isArrayOf(value.capabilities, isFlowSurfaceAutoInferredAuthoringCapability);
+  return (
+    isPlainRecord(value) &&
+    (typeof value.contractVersion === 'undefined' || typeof value.contractVersion === 'number') &&
+    isArrayOf(value.capabilities, isFlowSurfaceAutoInferredAuthoringCapability)
+  );
 }
 
 function isFlowSurfaceAutoInferredAuthoringCapability(
@@ -479,6 +485,7 @@ function isFlowSurfaceAutoInferredAuthoringCapability(
     (typeof value.createRecipe === 'undefined' || isJsonSafePlainValue(value.createRecipe)) &&
     (typeof value.childSurfaces === 'undefined' || isArrayOf(value.childSurfaces, isFlowSurfaceAutoChildSurface)) &&
     (typeof value.allowedChildren === 'undefined' || isArrayOf(value.allowedChildren, isFlowSurfaceAutoAllowedChild)) &&
+    (typeof value.popupHosts === 'undefined' || isArrayOf(value.popupHosts, isFlowSurfaceAutoPopupHost)) &&
     isArrayOf(value.evidence, isFlowSurfaceAutoInferredAuthoringEvidence) &&
     (typeof value.warnings === 'undefined' || isArrayOf(value.warnings, isFlowSurfaceCapabilityWarning))
   );
@@ -520,8 +527,31 @@ function isFlowSurfaceAutoAllowedChild(value: unknown): value is FlowSurfaceAuto
     isPlainRecord(value) &&
     isFlowSurfaceAutoChildSurfaceKind(value.kind) &&
     typeof value.modelUse === 'string' &&
-    hasOptionalStringFields(value, ['publicType', 'label']) &&
+    hasOptionalStringFields(value, ['publicType', 'label', 'builderContainerUse']) &&
     (typeof value.conditions === 'undefined' || isArrayOf(value.conditions, isString))
+  );
+}
+
+function isFlowSurfaceAutoPopupHost(value: unknown): value is FlowSurfaceAutoPopupHost {
+  return (
+    isPlainRecord(value) &&
+    typeof value.key === 'string' &&
+    typeof value.modelUse === 'string' &&
+    hasOptionalStringFields(value, [
+      'publicType',
+      'parentModelUse',
+      'subModelKey',
+      'childSurfaceKey',
+      'openViewPath',
+    ]) &&
+    isFlowSurfaceAutoPopupHostDefaultType(value.defaultType) &&
+    (typeof value.hasCurrentRecord === 'undefined' || typeof value.hasCurrentRecord === 'boolean') &&
+    (typeof value.templateStrategy === 'undefined' ||
+      value.templateStrategy === 'preferTemplateThenFallback' ||
+      value.templateStrategy === 'fallbackOnly') &&
+    (typeof value.openViewDefaults === 'undefined' || isJsonSafePlainValue(value.openViewDefaults)) &&
+    (typeof value.confidence === 'undefined' || isFlowSurfaceCapabilityConfidence(value.confidence)) &&
+    (typeof value.evidence === 'undefined' || isArrayOf(value.evidence, isFlowSurfaceAutoInferredAuthoringEvidence))
   );
 }
 
@@ -620,6 +650,10 @@ function isFlowSurfaceAutoInferredAuthoringEvidenceType(
 
 function isFlowSurfaceAutoChildSurfaceKind(value: unknown): value is FlowSurfaceAutoChildSurface['kind'] {
   return value === 'block' || value === 'action' || value === 'fieldComponent';
+}
+
+function isFlowSurfaceAutoPopupHostDefaultType(value: unknown): value is FlowSurfaceAutoPopupHostDefaultType {
+  return value === 'addNew' || value === 'view' || value === 'edit';
 }
 
 function isFlowSurfaceExtractorEvidenceSource(value: unknown): value is FlowSurfaceExtractorEvidenceSource {

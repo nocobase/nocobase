@@ -48,5 +48,9 @@ describe('GridBody', () => {
     const selectedRow = container.querySelector('g.rows rect');
     expect(selectedRow).not.toBeNull();
     expect(selectedRow?.getAttribute('y')).toBe('40');
+    expect(container.querySelector('g.background rect')?.getAttribute('pointer-events')).toBe('none');
+    expect(container.querySelector('g.columns rect')?.getAttribute('pointer-events')).toBe('none');
+    expect(selectedRow?.getAttribute('pointer-events')).toBe('none');
+    expect(container.querySelector('g.rowLines line')?.getAttribute('pointer-events')).toBe('none');
   });
 });

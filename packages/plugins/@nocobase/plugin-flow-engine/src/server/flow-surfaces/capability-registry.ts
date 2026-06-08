@@ -11,6 +11,7 @@ import _ from 'lodash';
 import { normalizeFlowSurfaceCapabilityManifestItem } from './capability-manifest';
 import { resolveFlowSurfaceCapabilityReadiness } from './capability-readiness';
 import { callFlowSurfaceProvider } from './capability-provider-executor';
+import { assertJsonInferredPopupHostContractSupported } from './json-inferred-popup-host';
 import { resolveFlowSurfaceCapabilityAdmissionRuntimeEvidence } from './admission-report';
 import {
   applyFlowSurfaceCapabilityWritePolicy,
@@ -24,7 +25,11 @@ import { deriveFlowSurfaceAutoCapabilityCandidates } from './extractor/snapshot'
 import type { FlowSurfaceCapabilityAdmissionIntegrity, FlowSurfaceCapabilityAdmissionReport } from './admission-report';
 import type { NormalizedFlowSurfaceProviderCapability } from './capability-manifest';
 import type { FlowSurfaceCapabilityProviderRegistry } from './capability-provider';
-import { FLOW_SURFACE_AUTO_SNAPSHOT_VERSION, type FlowSurfaceAutoSnapshot } from './extractor/types';
+import {
+  FLOW_SURFACE_AUTO_SNAPSHOT_VERSION,
+  FLOW_SURFACE_INFERRED_AUTHORING_CONTRACT_VERSION,
+  type FlowSurfaceAutoSnapshot,
+} from './extractor/types';
 import type { FlowSurfaceAutoInferredAuthoringCapability } from './extractor/types';
 import type {
   FlowSurfaceCapabilitiesProvider,
@@ -72,6 +77,7 @@ const INTERNAL_PUBLIC_PAYLOAD_KEYS = new Set([
   'tableColumnSettings',
   'createModelOptions',
   'subModels',
+  'node',
   'defaultNode',
   'nodeTemplate',
   'lens',
@@ -316,8 +322,12 @@ function toInferredAuthoringPublicCapability(
   const initParamsSchema = sanitizePublicSchema(capability.initParamsSchema, 'init params schema', warnings);
   const settingsSchema = sanitizePublicSchema(capability.settingsSchema, 'settings schema', warnings);
   const configureOptions = sanitizePublicSchema(capability.configureOptions, 'configure options', warnings);
+  const supportedPopupHostContracts = validateInferredAuthoringPopupHostContracts(capability, warnings);
   const highConfidenceWrite =
-    isHighConfidenceInferredAuthoringCapability(capability) && !!initParamsSchema && !!settingsSchema;
+    isHighConfidenceInferredAuthoringCapability(capability) &&
+    supportedPopupHostContracts &&
+    !!initParamsSchema &&
+    !!settingsSchema;
   if (!highConfidenceWrite) {
     addWarningOnce(warnings, {
       code: 'contract-not-verified',
@@ -395,6 +405,31 @@ function isHighConfidenceInferredAuthoringCapability(capability: FlowSurfaceAuto
     !!capability.initParamsSchema &&
     !!capability.settingsSchema
   );
+}
+
+function validateInferredAuthoringPopupHostContracts(
+  capability: FlowSurfaceAutoInferredAuthoringCapability,
+  warnings: FlowSurfaceCapabilityWarning[],
+) {
+  let supported = true;
+  (capability.popupHosts || []).forEach((popupHost) => {
+    if (popupHost.confidence && popupHost.confidence !== 'high') {
+      return;
+    }
+    try {
+      assertJsonInferredPopupHostContractSupported(popupHost);
+    } catch (error) {
+      supported = false;
+      addWarningOnce(warnings, {
+        code: 'contract-not-verified',
+        message:
+          error instanceof Error && error.message
+            ? error.message
+            : 'Inferred popup host contract is not supported for automatic writes.',
+      });
+    }
+  });
+  return supported;
 }
 
 function buildInferredAuthoringAvailability(input: {
@@ -730,15 +765,27 @@ function buildAutoSnapshotAdmissionIntegrity(
 }
 
 function buildAutoSnapshotVersionWarnings(snapshot: FlowSurfaceAutoSnapshot): FlowSurfaceCapabilityWarning[] {
-  if (snapshot.version === FLOW_SURFACE_AUTO_SNAPSHOT_VERSION) {
-    return [];
-  }
-  return [
-    {
+  const warnings: FlowSurfaceCapabilityWarning[] = [];
+  if (snapshot.version !== FLOW_SURFACE_AUTO_SNAPSHOT_VERSION) {
+    warnings.push({
       code: 'snapshot-stale',
       message: `Auto snapshot version is incompatible with current version ${FLOW_SURFACE_AUTO_SNAPSHOT_VERSION}.`,
-    },
-  ];
+    });
+  }
+  if (isInferredAuthoringContractStale(snapshot)) {
+    warnings.push({
+      code: 'snapshot-stale',
+      message: `Auto snapshot inferred authoring contract is incompatible with current version ${FLOW_SURFACE_INFERRED_AUTHORING_CONTRACT_VERSION}.`,
+    });
+  }
+  return warnings;
+}
+
+function isInferredAuthoringContractStale(snapshot: FlowSurfaceAutoSnapshot) {
+  if (!snapshot.inferredAuthoring?.capabilities?.length) {
+    return false;
+  }
+  return snapshot.inferredAuthoring.contractVersion !== FLOW_SURFACE_INFERRED_AUTHORING_CONTRACT_VERSION;
 }
 
 function buildAutoSnapshotAdmissionSnapshotHash(snapshot: FlowSurfaceAutoSnapshot) {

@@ -315,6 +315,12 @@ describe('GanttBlockModel settings', () => {
           },
         },
       },
+      subModels: {
+        eventViewAction: {
+          uid: 'calendar-gantt-eventViewAction',
+          use: 'GanttEventViewActionModel',
+        },
+      },
     });
 
     expect(model.resource.getRequestParameter('paginate')).toBeNull();
@@ -757,6 +763,12 @@ describe('GanttBlockModel settings', () => {
           },
         },
       },
+      subModels: {
+        eventViewAction: {
+          uid: 'calendar-gantt-eventViewAction',
+          use: 'GanttEventViewActionModel',
+        },
+      },
     });
     const step = model.getFlow('ganttSettings')?.steps?.eventPopupSettings;
 
@@ -774,7 +786,143 @@ describe('GanttBlockModel settings', () => {
     });
   });
 
-  test('opens the configured event popup with the clicked task record', async () => {
+  test('preserves inferred event popup template settings while syncing runtime defaults', async () => {
+    const setStepParams = vi.fn();
+
+    await GanttBlockModel.prototype.syncPopupActionSettings.call(
+      {
+        context: { flowSettingsEnabled: false },
+        getPopupSettingsDefaults: () => ({
+          mode: 'drawer',
+          size: 'medium',
+          pageModelClass: 'ChildPageModel',
+          uid: 'event-action',
+          dataSourceKey: 'main',
+          collectionName: 'calendar',
+        }),
+        getStoredPopupSettings: () => ({}),
+        getPopupSettings: GanttBlockModel.prototype.getPopupSettings,
+      },
+      {
+        uid: 'event-action',
+        getStepParams: () => ({
+          mode: 'drawer',
+          size: 'medium',
+          popupTemplateUid: 'template-1',
+          popupTemplateContext: true,
+          uid: 'template-popup-1',
+          dataSourceKey: 'external',
+          collectionName: 'externalEvents',
+        }),
+        setStepParams,
+      },
+    );
+
+    expect(setStepParams).toHaveBeenCalledWith('popupSettings', 'openView', {
+      mode: 'drawer',
+      size: 'medium',
+      pageModelClass: 'ChildPageModel',
+      popupTemplateUid: 'template-1',
+      popupTemplateContext: true,
+      uid: 'template-popup-1',
+      dataSourceKey: 'external',
+      collectionName: 'externalEvents',
+    });
+  });
+
+  test('keeps explicit block popup settings above action template bindings while syncing runtime defaults', async () => {
+    const setStepParams = vi.fn();
+
+    await GanttBlockModel.prototype.syncPopupActionSettings.call(
+      {
+        context: { flowSettingsEnabled: false },
+        getPopupSettingsDefaults: () => ({
+          mode: 'drawer',
+          size: 'medium',
+          pageModelClass: 'ChildPageModel',
+          uid: 'event-action',
+          dataSourceKey: 'main',
+          collectionName: 'calendar',
+        }),
+        getStoredPopupSettings: () => ({
+          dataSourceKey: 'blockSource',
+          collectionName: 'blockEvents',
+        }),
+        getPopupSettings: GanttBlockModel.prototype.getPopupSettings,
+      },
+      {
+        uid: 'event-action',
+        getStepParams: () => ({
+          mode: 'drawer',
+          size: 'medium',
+          popupTemplateUid: 'template-1',
+          popupTemplateContext: true,
+          uid: 'template-popup-1',
+          dataSourceKey: 'external',
+          collectionName: 'externalEvents',
+        }),
+        setStepParams,
+      },
+    );
+
+    expect(setStepParams).toHaveBeenCalledWith('popupSettings', 'openView', {
+      mode: 'drawer',
+      size: 'medium',
+      pageModelClass: 'ChildPageModel',
+      popupTemplateUid: 'template-1',
+      popupTemplateContext: true,
+      uid: 'template-popup-1',
+      dataSourceKey: 'blockSource',
+      collectionName: 'blockEvents',
+    });
+  });
+
+  test('opens the configured event popup through flow context with the clicked task record', async () => {
+    const flowEngine = new FlowEngine();
+    flowEngine.registerModels({ GanttBlockModel, GanttEventViewActionModel });
+    flowEngine.dataSourceManager.getDataSource('main').addCollection({
+      name: 'calendar',
+      filterTargetKey: 'id',
+      fields: [{ name: 'id', type: 'integer', interface: 'number' }],
+    });
+
+    const model = flowEngine.createModel<GanttBlockModel>({
+      uid: 'calendar-gantt',
+      use: 'GanttBlockModel',
+      stepParams: {
+        resourceSettings: {
+          init: {
+            dataSourceKey: 'main',
+            collectionName: 'calendar',
+          },
+        },
+      },
+      subModels: {
+        eventViewAction: {
+          uid: 'calendar-gantt-eventViewAction',
+          use: 'GanttEventViewActionModel',
+        },
+      },
+    });
+    const action = await model.ensurePopupAction('eventViewAction');
+    action.dispatchEvent = vi.fn();
+    const openView = vi.fn().mockResolvedValue(undefined);
+    const layoutContentElement = { id: 'layout-root' };
+    model.context.defineMethod('openView', openView);
+    model.context.defineProperty('layoutContentElement', { value: layoutContentElement });
+
+    await model.openEvent({ id: 12 });
+
+    expect(openView).toHaveBeenCalledWith('calendar-gantt-eventViewAction', {
+      mode: 'drawer',
+      filterByTk: 12,
+      navigation: false,
+      target: layoutContentElement,
+    });
+    expect(action.dispatchEvent).not.toHaveBeenCalled();
+  });
+
+  test('dispatches the synthesized event popup action instead of opening a generic action by uid', async () => {
     const flowEngine = new FlowEngine();
     flowEngine.registerModels({ GanttBlockModel, GanttEventViewActionModel });
     flowEngine.dataSourceManager.getDataSource('main').addCollection({
@@ -796,14 +944,76 @@ describe('GanttBlockModel settings', () => {
       },
     });
     const action = await model.ensurePopupAction('eventViewAction');
-    action.dispatchEvent = vi.fn();
+    action.dispatchEvent = vi.fn().mockResolvedValue(undefined);
+    const openView = vi.fn().mockResolvedValue(undefined);
+    const layoutContentElement = { id: 'layout-root' };
+    model.context.defineMethod('openView', openView);
+    model.context.defineProperty('layoutContentElement', { value: layoutContentElement });
 
     await model.openEvent({ id: 12 });
 
+    expect(openView).not.toHaveBeenCalled();
     expect(action.dispatchEvent).toHaveBeenCalledWith(
       'click',
       {
+        mode: 'drawer',
         filterByTk: 12,
+        navigation: false,
+        target: layoutContentElement,
+      },
+      { debounce: true },
+    );
+  });
+
+  test('falls back to dispatching event popup action when direct context open fails', async () => {
+    const flowEngine = new FlowEngine();
+    flowEngine.registerModels({ GanttBlockModel, GanttEventViewActionModel });
+    flowEngine.dataSourceManager.getDataSource('main').addCollection({
+      name: 'calendar',
+      filterTargetKey: 'id',
+      fields: [{ name: 'id', type: 'integer', interface: 'number' }],
+    });
+
+    const model = flowEngine.createModel<GanttBlockModel>({
+      uid: 'calendar-gantt',
+      use: 'GanttBlockModel',
+      stepParams: {
+        resourceSettings: {
+          init: {
+            dataSourceKey: 'main',
+            collectionName: 'calendar',
+          },
+        },
+      },
+      subModels: {
+        eventViewAction: {
+          uid: 'calendar-gantt-eventViewAction',
+          use: 'GanttEventViewActionModel',
+        },
+      },
+    });
+    const action = await model.ensurePopupAction('eventViewAction');
+    action.dispatchEvent = vi.fn().mockResolvedValue(undefined);
+    const openView = vi.fn().mockRejectedValue(new Error('open failed'));
+    const layoutContentElement = { id: 'layout-root' };
+    model.context.defineMethod('openView', openView);
+    model.context.defineProperty('layoutContentElement', { value: layoutContentElement });
+
+    await model.openEvent({ id: 12 });
+
+    expect(openView).toHaveBeenCalledWith('calendar-gantt-eventViewAction', {
+      mode: 'drawer',
+      filterByTk: 12,
+      navigation: false,
+      target: layoutContentElement,
+    });
+    expect(action.dispatchEvent).toHaveBeenCalledWith(
+      'click',
+      {
+        mode: 'drawer',
+        filterByTk: 12,
+        navigation: false,
+        target: layoutContentElement,
       },
       { debounce: true },
     );

@@ -20,7 +20,7 @@ import type {
   FlowSurfaceSettingBinding,
 } from './types';
 
-const LENS_DOMAINS = new Set<FlowSurfaceNodeDomain>(['props', 'decoratorProps', 'stepParams', 'flowRegistry']);
+const LENS_DOMAINS = new Set<FlowSurfaceNodeDomain>(['node', 'props', 'decoratorProps', 'stepParams', 'flowRegistry']);
 const UNSAFE_LENS_SEGMENTS = new Set(['__proto__', 'prototype', 'constructor']);
 
 export function resolveJsonCreateRecipe(input: {
@@ -134,11 +134,13 @@ function applyLens(
   if (mode === 'append') {
     return applyAppend(parent, key, value, publicPath);
   }
-  parent[key] = _.cloneDeep(value);
-  return [];
+  return setContainerValue(parent, key, _.cloneDeep(value)) ? [] : invalidRecipeMapping(publicPath);
 }
 
 function ensureDomainContainer(node: FlowSurfaceNodeSpec, domain: FlowSurfaceNodeDomain) {
+  if (domain === 'node') {
+    return node;
+  }
   const containers = node as FlowSurfaceNodeSpec & Partial<Record<FlowSurfaceNodeDomain, Record<string, unknown>>>;
   const existing = containers[domain];
   if (_.isUndefined(existing)) {
@@ -149,25 +151,45 @@ function ensureDomainContainer(node: FlowSurfaceNodeSpec, domain: FlowSurfaceNod
 }
 
 function ensurePathParent(root: Record<string, unknown>, path: string[]) {
-  let parent = root;
-  for (const segment of path) {
+  let parent: Record<string, unknown> | unknown[] = root;
+  for (const [index, segment] of path.entries()) {
+    const nextSegment = path[index + 1];
+    if (Array.isArray(parent)) {
+      const arrayIndex = parseArrayIndex(segment);
+      if (arrayIndex === null) {
+        return undefined;
+      }
+      const value = parent[arrayIndex];
+      if (_.isUndefined(value)) {
+        const next = parseArrayIndex(nextSegment) === null ? {} : [];
+        parent[arrayIndex] = next;
+        parent = next;
+        continue;
+      }
+      if (!_.isPlainObject(value) && !Array.isArray(value)) {
+        return undefined;
+      }
+      parent = value as Record<string, unknown> | unknown[];
+      continue;
+    }
+
     const value = parent[segment];
     if (_.isUndefined(value)) {
-      const next: Record<string, unknown> = {};
+      const next = parseArrayIndex(nextSegment) === null ? {} : [];
       parent[segment] = next;
       parent = next;
       continue;
     }
-    if (!_.isPlainObject(value)) {
+    if (!_.isPlainObject(value) && !Array.isArray(value)) {
       return undefined;
     }
-    parent = value as Record<string, unknown>;
+    parent = value as Record<string, unknown> | unknown[];
   }
   return parent;
 }
 
 function applyMerge(
-  parent: Record<string, unknown>,
+  parent: Record<string, unknown> | unknown[],
   key: string,
   value: unknown,
   publicPath: string,
@@ -181,30 +203,71 @@ function applyMerge(
       },
     ];
   }
-  const existing = parent[key];
+  const containerKey = resolveContainerKey(parent, key);
+  if (_.isUndefined(containerKey)) {
+    return invalidRecipeMapping(publicPath);
+  }
+  const existing = getContainerValue(parent, containerKey);
   if (!_.isUndefined(existing) && !_.isPlainObject(existing)) {
     return invalidRecipeMapping(publicPath);
   }
-  parent[key] = _.merge({}, existing || {}, value);
+  setContainerValue(parent, key, _.merge({}, existing || {}, value));
   return [];
 }
 
 function applyAppend(
-  parent: Record<string, unknown>,
+  parent: Record<string, unknown> | unknown[],
   key: string,
   value: unknown,
   publicPath: string,
 ): FlowSurfaceCapabilityValidationError[] {
-  const existing = parent[key];
+  const containerKey = resolveContainerKey(parent, key);
+  if (_.isUndefined(containerKey)) {
+    return invalidRecipeMapping(publicPath);
+  }
+  const existing = getContainerValue(parent, containerKey);
   if (_.isUndefined(existing)) {
-    parent[key] = [_.cloneDeep(value)];
+    setContainerValue(parent, key, [_.cloneDeep(value)]);
     return [];
   }
   if (!Array.isArray(existing)) {
     return invalidRecipeMapping(publicPath);
   }
-  parent[key] = [...existing, _.cloneDeep(value)];
+  setContainerValue(parent, key, [...existing, _.cloneDeep(value)]);
   return [];
+}
+
+function parseArrayIndex(segment?: string) {
+  const normalized = String(segment || '').trim();
+  if (!/^(0|[1-9]\d*)$/.test(normalized)) {
+    return null;
+  }
+  const index = Number(normalized);
+  return Number.isSafeInteger(index) ? index : null;
+}
+
+function resolveContainerKey(parent: Record<string, unknown> | unknown[], key: string) {
+  if (!Array.isArray(parent)) {
+    return key;
+  }
+  return parseArrayIndex(key);
+}
+
+function getContainerValue(parent: Record<string, unknown> | unknown[], key: string | number) {
+  return Array.isArray(parent) ? parent[key as number] : parent[key as string];
+}
+
+function setContainerValue(parent: Record<string, unknown> | unknown[], key: string, value: unknown) {
+  const containerKey = resolveContainerKey(parent, key);
+  if (_.isUndefined(containerKey)) {
+    return false;
+  }
+  if (Array.isArray(parent)) {
+    parent[containerKey as number] = value;
+  } else {
+    parent[containerKey as string] = value;
+  }
+  return true;
 }
 
 function parseSafeLensPath(path: string) {

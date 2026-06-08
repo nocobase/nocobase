@@ -17,6 +17,7 @@ import { FlowSurfaceCapabilityProviderRegistry } from './flow-surfaces/capabilit
 import { readFlowSurfaceCapabilityPolicyConfigFromPluginOptions } from './flow-surfaces/capability-policy';
 import { registerFlowSurfacesResource } from './flow-surfaces';
 import { loadFlowSurfaceAutoSnapshotsFromDirectory, type FlowSurfaceAutoSnapshot } from './flow-surfaces/extractor';
+import { FLOW_SURFACE_INFERRED_AUTHORING_CONTRACT_VERSION } from './flow-surfaces/extractor/types';
 import { registerFlowSurfaceCapabilityAdmissionCommand } from './flow-surfaces/admission-report-cli';
 import { registerFlowSurfaceExtractorCommand } from './flow-surfaces/extractor/cli';
 import PluginUISchemaStorageServer from './server';
@@ -40,9 +41,30 @@ function dedupeFlowSurfaceAutoSnapshots(
 ): readonly FlowSurfaceAutoSnapshot[] {
   const byPlugin = new Map<string, FlowSurfaceAutoSnapshot>();
   for (const snapshot of snapshots) {
-    byPlugin.set(snapshot.plugin, snapshot);
+    const existing = byPlugin.get(snapshot.plugin);
+    if (!existing || shouldReplaceFlowSurfaceAutoSnapshot(existing, snapshot)) {
+      byPlugin.set(snapshot.plugin, snapshot);
+    }
   }
   return Array.from(byPlugin.values()).sort((left, right) => left.plugin.localeCompare(right.plugin));
+}
+
+function shouldReplaceFlowSurfaceAutoSnapshot(existing: FlowSurfaceAutoSnapshot, next: FlowSurfaceAutoSnapshot) {
+  const existingContractVersion = getFlowSurfaceAutoSnapshotInferredAuthoringContractRank(existing);
+  const nextContractVersion = getFlowSurfaceAutoSnapshotInferredAuthoringContractRank(next);
+  if (existingContractVersion !== nextContractVersion) {
+    return nextContractVersion > existingContractVersion;
+  }
+  return true;
+}
+
+function getFlowSurfaceAutoSnapshotInferredAuthoringContractRank(snapshot: FlowSurfaceAutoSnapshot) {
+  if (!snapshot.inferredAuthoring?.capabilities?.length) {
+    return 0;
+  }
+  return snapshot.inferredAuthoring.contractVersion === FLOW_SURFACE_INFERRED_AUTHORING_CONTRACT_VERSION
+    ? FLOW_SURFACE_INFERRED_AUTHORING_CONTRACT_VERSION
+    : 0;
 }
 
 export class PluginFlowEngineServer extends PluginUISchemaStorageServer {

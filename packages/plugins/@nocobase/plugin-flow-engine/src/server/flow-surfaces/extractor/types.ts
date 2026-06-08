@@ -18,6 +18,7 @@ import type {
 } from '../types';
 
 export const FLOW_SURFACE_AUTO_SNAPSHOT_VERSION = 1;
+export const FLOW_SURFACE_INFERRED_AUTHORING_CONTRACT_VERSION = 1;
 
 export type FlowSurfaceExtractorEvidenceSource = 'runtime' | 'ast';
 
@@ -176,6 +177,24 @@ export type FlowSurfaceAutoAllowedChild = {
   builderContainerUse?: string;
 };
 
+export type FlowSurfaceAutoPopupHostDefaultType = 'addNew' | 'view' | 'edit';
+
+export type FlowSurfaceAutoPopupHost = {
+  key: string;
+  modelUse: string;
+  publicType?: string;
+  parentModelUse?: string;
+  subModelKey?: string;
+  childSurfaceKey?: string;
+  openViewPath?: string;
+  defaultType: FlowSurfaceAutoPopupHostDefaultType;
+  hasCurrentRecord?: boolean;
+  templateStrategy?: 'preferTemplateThenFallback' | 'fallbackOnly';
+  openViewDefaults?: Record<string, unknown>;
+  confidence?: FlowSurfaceCapabilityConfidence;
+  evidence?: FlowSurfaceAutoInferredAuthoringEvidence[];
+};
+
 export type FlowSurfaceAutoInferredAuthoringCapability = {
   kind: FlowSurfaceCapabilityKind;
   publicType: string;
@@ -191,11 +210,13 @@ export type FlowSurfaceAutoInferredAuthoringCapability = {
   createRecipe?: FlowSurfaceJsonCreateRecipe;
   childSurfaces?: FlowSurfaceAutoChildSurface[];
   allowedChildren?: FlowSurfaceAutoAllowedChild[];
+  popupHosts?: FlowSurfaceAutoPopupHost[];
   evidence: FlowSurfaceAutoInferredAuthoringEvidence[];
   warnings?: FlowSurfaceCapabilityWarning[];
 };
 
 export type FlowSurfaceAutoInferredAuthoring = {
+  contractVersion?: typeof FLOW_SURFACE_INFERRED_AUTHORING_CONTRACT_VERSION;
   capabilities: FlowSurfaceAutoInferredAuthoringCapability[];
 };
 

@@ -11,6 +11,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { buildFlowSurfaceCapabilitiesResponse } from '../flow-surfaces/capabilities';
 import { resolveJsonCreateRecipe } from '../flow-surfaces/capability-recipe';
 import { resolveDynamicCapabilityCreate } from '../flow-surfaces/capability-resolver';
+import { FLOW_SURFACE_INTERNAL_AUTO_SAVE_DEFAULT_POPUP_TEMPLATE_KEY } from '../flow-surfaces/default-block-actions';
 import { FlowSurfaceAggregateError, FlowSurfaceBadRequestError } from '../flow-surfaces/errors';
 import { buildFlowSurfaceAutoSnapshot } from '../flow-surfaces/extractor';
 import { FlowSurfacesService } from '../flow-surfaces/service';
@@ -38,7 +39,7 @@ describe('flowSurfaces dynamic capability create dry-run', () => {
     parentUid: string;
     subKey: string;
     subType: string;
-    popupProfile: null;
+    popupProfile: unknown;
   };
 
   type DynamicBlockWriteGateHarness = {
@@ -126,6 +127,7 @@ describe('flowSurfaces dynamic capability create dry-run', () => {
     readonly surfaceContext: {
       filterBlocksByTarget(node?: unknown, resolved?: unknown): FlowSurfaceCatalogItem[];
       resolveBlockParent(target: FlowSurfaceWriteTarget, transaction?: unknown): Promise<{ parentUid: string }>;
+      resolveGridNode?(uid: string, transaction?: unknown): Promise<Record<string, unknown>>;
       resolveFieldContainer(uid: string, transaction?: unknown): Promise<unknown>;
       resolveActionContainer(
         target: FlowSurfaceWriteTarget,
@@ -195,6 +197,151 @@ describe('flowSurfaces dynamic capability create dry-run', () => {
     ): Promise<T>;
   };
 
+  type JsonInferredPopupCall = {
+    actionUid: string;
+    defaultType?: string;
+    semanticActionUse?: string;
+    hasCurrentRecord?: boolean;
+    openViewPath?: string[];
+    tryTemplate?: boolean;
+    autoSaveDefaultPopupTemplate?: unknown;
+  };
+
+  type JsonInferredPopupDefaultsHarness = {
+    applyInlineActionPopup(
+      actionName: string,
+      actionUid: string,
+      popup: Record<string, unknown> | undefined,
+      options: {
+        popupActionContext?: {
+          defaultType?: string;
+          semanticActionUse?: string;
+          hasCurrentRecord?: boolean;
+        };
+        allowJsonInferredPopupHostOpenView?: boolean;
+        jsonInferredPopupHostOpenViewPath?: string[];
+      },
+    ): Promise<void>;
+  };
+
+  type InlineActionPopupHarness = {
+    applyInlineActionPopup(
+      actionName: string,
+      actionUid: string,
+      popup: Record<string, unknown> | undefined,
+      options: {
+        transaction?: unknown;
+        autoCompleteDefaultPopup?: boolean;
+        enabledPackages?: ReadonlySet<string>;
+        popupActionContext?: {
+          defaultType?: string;
+          semanticActionUse?: string;
+          hasCurrentRecord?: boolean;
+        };
+        allowJsonInferredPopupHostOpenView?: boolean;
+        jsonInferredPopupHostOpenViewPath?: string[];
+      },
+    ): Promise<void>;
+    applyInlineActionPopupDisplayOpenView(
+      actionName: string,
+      actionUid: string,
+      actionUse: string,
+      popup: Record<string, unknown> | undefined,
+      options: Record<string, unknown>,
+    ): Promise<void>;
+    resolvePopupBlockProfile(
+      actionUid: string,
+      popupUid: unknown,
+      actionNode: Record<string, unknown>,
+      transaction?: unknown,
+    ): Promise<unknown>;
+    syncDefaultActionPopupTabTitle(
+      actionNode: Record<string, unknown>,
+      popupTab: Record<string, unknown> | null,
+      options: Record<string, unknown>,
+    ): Promise<void>;
+    syncDefaultActionPopupOpenViewTitle(
+      actionUid: string,
+      fallbackActionNode: Record<string, unknown>,
+      options: Record<string, unknown>,
+    ): Promise<void>;
+  };
+
+  type JsonInferredPopupHostDefaultsPrivateHarness = {
+    applyJsonInferredPopupHostDefaults(input: {
+      actionName: FlowSurfaceDynamicCapabilityCreateActionName;
+      rootUid: string;
+      inferredAuthoring?: unknown;
+      transaction?: unknown;
+      enabledPackages: ReadonlySet<string>;
+    }): Promise<void>;
+    assertJsonInferredPopupHostReadback(readbackNode: unknown, inferredAuthoring?: unknown): boolean;
+  };
+
+  type ConfigureActionNodeHarness = {
+    configureActionNode(
+      target: FlowSurfaceWriteTarget,
+      use: string,
+      changes: Record<string, unknown>,
+      options: {
+        current?: Record<string, unknown>;
+        popupActionContext?: {
+          defaultType?: string;
+          semanticActionUse?: string;
+          hasCurrentRecord?: boolean;
+        };
+        allowJsonInferredPopupHostOpenView?: boolean;
+        jsonInferredPopupHostOpenViewPath?: string[];
+        skipConfigureGeneratedDefaultPopup?: boolean;
+      },
+    ): Promise<unknown>;
+    updateSettings(values: Record<string, unknown>, options?: Record<string, unknown>): Promise<unknown>;
+  };
+
+  type AutoSaveDefaultActionPopupHarness = {
+    autoSaveDefaultActionPopupAsTemplate(
+      actionUid: string,
+      popup: Record<string, unknown> | undefined,
+      options: {
+        transaction?: unknown;
+        popupActionContext?: {
+          defaultType?: string;
+          semanticActionUse?: string;
+          hasCurrentRecord?: boolean;
+        };
+      },
+    ): Promise<void>;
+    getFlowTemplateRepositorySafe(): unknown;
+    resolvePopupBlockProfile(
+      actionUid: string,
+      popupUid: unknown,
+      actionNode: Record<string, unknown>,
+      transaction?: unknown,
+    ): Promise<unknown>;
+    tryResolveExistingDefaultActionPopupTemplate(): Promise<unknown>;
+    saveTemplate(values: Record<string, unknown>, options?: Record<string, unknown>): Promise<unknown>;
+    syncDefaultActionPopupOpenViewTitle(
+      actionUid: string,
+      fallbackActionNode: Record<string, unknown>,
+      options: Record<string, unknown>,
+    ): Promise<void>;
+  };
+
+  type PopupSurfaceHarness = {
+    ensurePopupSurface(
+      parentUid: string,
+      transaction?: unknown,
+      options?: {
+        popupActionContext?: {
+          defaultType?: string;
+          semanticActionUse?: string;
+          hasCurrentRecord?: boolean;
+        };
+        jsonInferredPopupHostOpenViewPath?: string[];
+      },
+    ): Promise<unknown>;
+  };
+
   function createProviderRegistry(providers: FlowSurfaceCapabilitiesProvider[]) {
     return {
       listProviders: () => providers,
@@ -206,11 +353,11 @@ describe('flowSurfaces dynamic capability create dry-run', () => {
       'GanttExpandCollapseActionModel',
       'GanttTodayActionModel',
       'FilterActionModel',
+      'RefreshActionModel',
+      'BulkDeleteActionModel',
       'AddNewActionModel',
       'PopupCollectionActionModel',
-      'BulkDeleteActionModel',
       'LinkActionModel',
-      'RefreshActionModel',
       'BulkEditActionModel',
       'BulkUpdateActionModel',
       'ExportActionModel',
@@ -307,6 +454,226 @@ describe('flowSurfaces dynamic capability create dry-run', () => {
       delete snapshot.inferredAuthoring;
     }
     return snapshot;
+  }
+
+  function cloneJsonRecord<T>(value: T): T {
+    return JSON.parse(JSON.stringify(value));
+  }
+
+  function isRecord(value: unknown): value is Record<string, unknown> {
+    return !!value && typeof value === 'object' && !Array.isArray(value);
+  }
+
+  function visitFlowNodeTree(root: unknown, visit: (node: Record<string, unknown>) => void) {
+    if (!isRecord(root)) {
+      return;
+    }
+    visit(root);
+    const subModels = root.subModels;
+    if (!isRecord(subModels)) {
+      return;
+    }
+    Object.values(subModels).forEach((value) => {
+      if (Array.isArray(value)) {
+        value.forEach((child) => visitFlowNodeTree(child, visit));
+        return;
+      }
+      visitFlowNodeTree(value, visit);
+    });
+  }
+
+  function materializePersistedRoot(payload: Record<string, unknown>, rootUid: string) {
+    const root = cloneJsonRecord(payload);
+    root.uid = rootUid;
+    let uidIndex = 0;
+    visitFlowNodeTree(root, (node) => {
+      if (String(node.uid || '').trim()) {
+        return;
+      }
+      uidIndex += 1;
+      node.uid = `${rootUid}-${uidIndex}`;
+    });
+    return root;
+  }
+
+  function findFlowNodeByUid(root: unknown, uid: string) {
+    let found: Record<string, unknown> | undefined;
+    visitFlowNodeTree(root, (node) => {
+      if (String(node.uid || '').trim() === uid) {
+        found = node;
+      }
+    });
+    return found;
+  }
+
+  const DEFAULT_JSON_INFERRED_POPUP_OPEN_VIEW_PATH = ['stepParams', 'popupSettings', 'openView'];
+
+  function getValueAtPath(root: unknown, path: string[]) {
+    return path.reduce<unknown>((current, segment) => (isRecord(current) ? current[segment] : undefined), root);
+  }
+
+  function ensureRecordAtPath(root: Record<string, unknown>, path: string[]) {
+    let current = root;
+    path.forEach((segment) => {
+      const next = current[segment];
+      if (isRecord(next)) {
+        current = next;
+        return;
+      }
+      const created: Record<string, unknown> = {};
+      current[segment] = created;
+      current = created;
+    });
+    return current;
+  }
+
+  function setValueAtPath(root: Record<string, unknown>, path: string[], value: Record<string, unknown>) {
+    const parent = ensureRecordAtPath(root, path.slice(0, -1));
+    parent[path[path.length - 1]] = value;
+  }
+
+  function unsetValueAtPath(root: Record<string, unknown>, path: string[]) {
+    const parent = getValueAtPath(root, path.slice(0, -1));
+    if (isRecord(parent)) {
+      delete parent[path[path.length - 1]];
+    }
+  }
+
+  function setPopupTemplateReference(
+    root: unknown,
+    actionUid: string,
+    options: { hasCurrentRecord?: boolean; openViewPath?: string[] } = {},
+  ) {
+    const node = findFlowNodeByUid(root, actionUid);
+    if (!node) {
+      return;
+    }
+    const openViewPath = options.openViewPath || DEFAULT_JSON_INFERRED_POPUP_OPEN_VIEW_PATH;
+    const existing = getValueAtPath(node, openViewPath);
+    const openView = isRecord(existing) ? existing : {};
+    setValueAtPath(node, openViewPath, {
+      ...openView,
+      template: {
+        uid: `${actionUid}-popup-template`,
+        mode: 'reference',
+      },
+      ...(options.hasCurrentRecord ? { popupTemplateHasFilterByTk: true } : {}),
+    });
+  }
+
+  function setSelfPopupOpenViewUid(root: unknown, actionUid: string) {
+    const node = findFlowNodeByUid(root, actionUid);
+    if (!node) {
+      return;
+    }
+    const stepParams = isRecord(node.stepParams) ? node.stepParams : {};
+    node.stepParams = stepParams;
+    const popupSettings = isRecord(stepParams.popupSettings) ? stepParams.popupSettings : {};
+    stepParams.popupSettings = popupSettings;
+    const openView = isRecord(popupSettings.openView) ? popupSettings.openView : {};
+    popupSettings.openView = {
+      ...openView,
+      uid: actionUid,
+    };
+  }
+
+  function setPopupLocalBlock(root: unknown, actionUid: string, blockUse: string) {
+    const node = findFlowNodeByUid(root, actionUid);
+    if (!node) {
+      return;
+    }
+    node.subModels = {
+      page: {
+        use: 'ChildPageModel',
+        subModels: {
+          tabs: [
+            {
+              use: 'ChildPageTabModel',
+              subModels: {
+                grid: {
+                  use: 'BlockGridModel',
+                  subModels: {
+                    items: [
+                      {
+                        use: blockUse,
+                      },
+                    ],
+                  },
+                },
+              },
+            },
+          ],
+        },
+      },
+    };
+  }
+
+  function omitRootActionByUse(root: Record<string, unknown>, actionUse: string) {
+    const nextRoot = cloneJsonRecord(root);
+    const subModels = isRecord(nextRoot.subModels) ? nextRoot.subModels : {};
+    if (Array.isArray(subModels.actions)) {
+      let removed = false;
+      subModels.actions = subModels.actions.filter((action) => {
+        if (removed) {
+          return true;
+        }
+        if (isRecord(action) && action.use === actionUse) {
+          removed = true;
+          return false;
+        }
+        return !isRecord(action) || action.use !== actionUse;
+      });
+    }
+    nextRoot.subModels = subModels;
+    return nextRoot;
+  }
+
+  function mockJsonInferredPopupTemplateDefaults(
+    service: FlowSurfacesService,
+    getRoot: () => Record<string, unknown> | null,
+  ) {
+    const calls: JsonInferredPopupCall[] = [];
+    vi.spyOn(service as unknown as JsonInferredPopupDefaultsHarness, 'applyInlineActionPopup').mockImplementation(
+      async (_actionName, actionUid, popup, options) => {
+        calls.push({
+          actionUid,
+          defaultType: options.popupActionContext?.defaultType,
+          semanticActionUse: options.popupActionContext?.semanticActionUse,
+          hasCurrentRecord: options.popupActionContext?.hasCurrentRecord,
+          openViewPath: options.jsonInferredPopupHostOpenViewPath,
+          tryTemplate: popup?.tryTemplate as boolean | undefined,
+          autoSaveDefaultPopupTemplate: popup?.[FLOW_SURFACE_INTERNAL_AUTO_SAVE_DEFAULT_POPUP_TEMPLATE_KEY],
+        });
+        const root = getRoot();
+        if (root) {
+          setPopupTemplateReference(root, actionUid, {
+            hasCurrentRecord: options.popupActionContext?.hasCurrentRecord,
+            openViewPath: options.jsonInferredPopupHostOpenViewPath,
+          });
+        }
+      },
+    );
+    return calls;
+  }
+
+  function mockJsonInferredPopupSelfReferences(
+    service: FlowSurfacesService,
+    getRoot: () => Record<string, unknown> | null,
+  ) {
+    vi.spyOn(service as unknown as JsonInferredPopupDefaultsHarness, 'applyInlineActionPopup').mockImplementation(
+      async (_actionName, actionUid) => {
+        const root = getRoot();
+        if (root) {
+          setSelfPopupOpenViewUid(root, actionUid);
+        }
+      },
+    );
+  }
+
+  function mockJsonInferredPopupDefaultsWithoutContent(service: FlowSurfacesService) {
+    vi.spyOn(service as unknown as JsonInferredPopupDefaultsHarness, 'applyInlineActionPopup').mockResolvedValue(
+      undefined,
+    );
   }
 
   function createAdmissionChecks(): FlowSurfaceCapabilityAdmissionReport['records'][number]['checks'] {
@@ -928,6 +1295,35 @@ describe('flowSurfaces dynamic capability create dry-run', () => {
       ],
     });
 
+    const narrowTableResponse = await resolveDynamicCapabilityCreate({
+      publicType: 'gantt',
+      initParams: {
+        collectionName: 'tasks',
+      },
+      settings: {
+        titleField: 'title',
+        startField: 'startAt',
+        endField: 'endAt',
+        tableWidth: 320,
+      },
+      enabledPackages: new Set(['@nocobase/plugin-gantt']),
+      providerRegistry: createProviderRegistry([]),
+      autoSnapshots: [autoSnapshot],
+    });
+
+    expect(narrowTableResponse.node).toMatchObject({
+      props: {
+        tableWidth: 320,
+      },
+      stepParams: {
+        ganttSettings: {
+          tableWidth: {
+            tableWidth: 320,
+          },
+        },
+      },
+    });
+
     const directResponse = await resolveDynamicCapabilityCreate({
       publicType: 'pluginGantt.gantt',
       initParams: {
@@ -945,7 +1341,7 @@ describe('flowSurfaces dynamic capability create dry-run', () => {
         showRowNumbers: true,
         treeTable: false,
         showTable: true,
-        tableWidth: 320,
+        tableWidth: 680,
         enableDragToReschedule: true,
       },
       enabledPackages: new Set(['@nocobase/plugin-gantt']),
@@ -989,10 +1385,7 @@ describe('flowSurfaces dynamic capability create dry-run', () => {
           color: 'status',
           range: 'week',
         },
-        eventPopupSettings: {
-          dataSourceKey: 'main',
-          collectionName: 'tasks',
-        },
+        tableWidth: 680,
       },
       stepParams: {
         resourceSettings: {
@@ -1001,14 +1394,16 @@ describe('flowSurfaces dynamic capability create dry-run', () => {
             dataSourceKey: 'main',
           },
         },
+        ganttSettings: {
+          tableWidth: {
+            tableWidth: 680,
+          },
+        },
       },
       subModels: {
         actions: [
           {
             use: 'FilterActionModel',
-          },
-          {
-            use: 'GanttTodayActionModel',
           },
           {
             use: 'RefreshActionModel',
@@ -1034,12 +1429,11 @@ describe('flowSurfaces dynamic capability create dry-run', () => {
               },
             },
           },
-        ],
-        columns: [
           {
-            use: 'TableActionsColumnModel',
+            use: 'GanttTodayActionModel',
           },
         ],
+        columns: expect.any(Array),
         eventViewAction: {
           use: 'GanttEventViewActionModel',
           stepParams: {
@@ -1047,12 +1441,102 @@ describe('flowSurfaces dynamic capability create dry-run', () => {
               openView: {
                 dataSourceKey: 'main',
                 collectionName: 'tasks',
+                mode: 'drawer',
+                pageModelClass: 'ChildPageModel',
+                size: 'medium',
               },
             },
           },
         },
       },
     });
+    const directColumns = ((directResponse.node.subModels as Record<string, any>)?.columns || []) as Array<
+      Record<string, any>
+    >;
+    expect(directColumns.map((item) => item?.use)).toEqual([
+      'TableColumnModel',
+      'TableColumnModel',
+      'TableColumnModel',
+      'TableActionsColumnModel',
+    ]);
+    expect(
+      directColumns
+        .filter((item) => item?.use === 'TableColumnModel')
+        .map((item) => item?.stepParams?.fieldSettings?.init?.fieldPath),
+    ).toEqual(['title', 'startAt', 'endAt']);
+    const directActionColumn = directColumns.find((item) => item?.use === 'TableActionsColumnModel');
+    const directRecordActions = directActionColumn?.subModels?.actions || [];
+    expect(directRecordActions.map((item: any) => item?.use)).toEqual([
+      'ViewActionModel',
+      'EditActionModel',
+      'DeleteActionModel',
+    ]);
+    expect(directRecordActions.map((item: any) => item?.props?.type)).toEqual(['link', 'link', 'link']);
+    expect(directRecordActions.map((item: any) => item?.props?.icon)).toEqual([null, null, null]);
+    expect(directRecordActions.map((item: any) => item?.stepParams?.buttonSettings?.general?.type)).toEqual([
+      'link',
+      'link',
+      'link',
+    ]);
+    expect(directRecordActions.map((item: any) => item?.stepParams?.buttonSettings?.general?.icon)).toEqual([
+      null,
+      null,
+      null,
+    ]);
+    expect(directRecordActions[0]?.stepParams?.popupSettings?.openView).toMatchObject({
+      dataSourceKey: 'main',
+      collectionName: 'tasks',
+      mode: 'drawer',
+    });
+    expect(directRecordActions[0]?.subModels?.page).toBeUndefined();
+    expect(directRecordActions[1]?.stepParams?.popupSettings?.openView).toMatchObject({
+      dataSourceKey: 'main',
+      collectionName: 'tasks',
+      mode: 'drawer',
+    });
+    expect(directRecordActions[1]?.subModels?.page).toBeUndefined();
+    expect(
+      ((directResponse.node.subModels as Record<string, any>)?.actions || []).find(
+        (item: any) => item?.use === 'AddNewActionModel',
+      )?.stepParams?.popupSettings?.openView,
+    ).toMatchObject({
+      dataSourceKey: 'main',
+      collectionName: 'tasks',
+      mode: 'drawer',
+    });
+    expect(
+      ((directResponse.node.subModels as Record<string, any>)?.actions || []).find(
+        (item: any) => item?.use === 'AddNewActionModel',
+      )?.subModels?.page,
+    ).toBeUndefined();
+    expect(
+      (directResponse.node.subModels as Record<string, any>)?.eventViewAction?.stepParams?.popupSettings?.openView,
+    ).toMatchObject({
+      dataSourceKey: 'main',
+      collectionName: 'tasks',
+      mode: 'drawer',
+    });
+    expect((directResponse.node.subModels as Record<string, any>)?.eventViewAction?.subModels?.page).toBeUndefined();
+    expect(autoSnapshot.inferredAuthoring?.capabilities?.[0]?.popupHosts).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          modelUse: 'AddNewActionModel',
+          defaultType: 'addNew',
+        }),
+        expect.objectContaining({
+          modelUse: 'ViewActionModel',
+          defaultType: 'view',
+        }),
+        expect.objectContaining({
+          modelUse: 'EditActionModel',
+          defaultType: 'edit',
+        }),
+        expect.objectContaining({
+          modelUse: 'GanttEventViewActionModel',
+          defaultType: 'view',
+        }),
+      ]),
+    );
     expect(JSON.stringify(directResponse.publicPayload)).not.toContain('GanttBlockModel');
     expect(JSON.stringify(directResponse.publicPayload)).not.toContain('TableActionsColumnModel');
     expect(JSON.stringify(directResponse.publicPayload)).not.toContain('stepParams');
@@ -1085,9 +1569,6 @@ describe('flowSurfaces dynamic capability create dry-run', () => {
             use: 'FilterActionModel',
           },
           {
-            use: 'GanttTodayActionModel',
-          },
-          {
             use: 'RefreshActionModel',
           },
           {
@@ -1096,9 +1577,41 @@ describe('flowSurfaces dynamic capability create dry-run', () => {
           {
             use: 'BulkDeleteActionModel',
           },
+          {
+            use: 'GanttTodayActionModel',
+          },
         ],
+        columns: expect.any(Array),
       },
     });
+    const legacyColumns = ((legacyResponse.node.subModels as Record<string, any>)?.columns || []) as Array<
+      Record<string, any>
+    >;
+    expect(legacyColumns.map((item) => item?.use)).toEqual([
+      'TableColumnModel',
+      'TableColumnModel',
+      'TableColumnModel',
+      'TableActionsColumnModel',
+    ]);
+    expect(
+      legacyColumns
+        .filter((item) => item?.use === 'TableColumnModel')
+        .map((item) => item?.stepParams?.fieldSettings?.init?.fieldPath),
+    ).toEqual(['title', 'startAt', 'endAt']);
+    const legacyRecordActions =
+      legacyColumns.find((item) => item?.use === 'TableActionsColumnModel')?.subModels?.actions || [];
+    expect(legacyRecordActions.map((item: any) => item?.use)).toEqual([
+      'ViewActionModel',
+      'EditActionModel',
+      'DeleteActionModel',
+    ]);
+    expect(legacyRecordActions.map((item: any) => item?.props?.type)).toEqual(['link', 'link', 'link']);
+    expect(legacyRecordActions.map((item: any) => item?.props?.icon)).toEqual([null, null, null]);
+    expect(legacyRecordActions.map((item: any) => item?.stepParams?.buttonSettings?.general?.icon)).toEqual([
+      null,
+      null,
+      null,
+    ]);
 
     const mismatchedRecipeSnapshot = createGanttAutoSnapshot({ inferredAuthoring: true });
     const [mismatchedCapability] = mismatchedRecipeSnapshot.inferredAuthoring?.capabilities || [];
@@ -1363,6 +1876,8 @@ describe('flowSurfaces dynamic capability create dry-run', () => {
     const enabledPackages = new Set(['@nocobase/plugin-gantt']);
     const dynamicBlockTypes = await harness.resolveDynamicBlockTypes(enabledPackages);
     const persistedPayloads: Record<string, unknown>[] = [];
+    let materializedRoot: Record<string, unknown> | null = null;
+    const popupCalls = mockJsonInferredPopupTemplateDefaults(service, () => materializedRoot);
 
     expect(dynamicBlockTypes.has('gantt')).toBe(true);
     expect(dynamicBlockTypes.has('pluginGantt.gantt')).toBe(true);
@@ -1388,22 +1903,10 @@ describe('flowSurfaces dynamic capability create dry-run', () => {
     vi.spyOn(service as unknown as RepositoryGetterHarness, 'repository', 'get').mockReturnValue({
       upsertModel: async (payload) => {
         persistedPayloads.push(payload);
+        materializedRoot = materializePersistedRoot(payload, 'created-gantt-block');
         return 'created-gantt-block';
       },
-      findModelById: async () => {
-        const persisted = (persistedPayloads[0] || {}) as Record<string, unknown>;
-        const { subModels, ...rest } = persisted;
-        const materializedSubModels = Object.fromEntries(
-          Object.entries((subModels as Record<string, unknown>) || {}).filter(
-            ([, value]) => !Array.isArray(value) || value.length > 0,
-          ),
-        );
-        return {
-          uid: 'created-gantt-block',
-          ...rest,
-          ...(Object.keys(materializedSubModels).length ? { subModels: materializedSubModels } : {}),
-        };
-      },
+      findModelById: async (uid) => findFlowNodeByUid(materializedRoot, uid) || materializedRoot,
     });
 
     const result = await harness.tryAddDynamicBlock({
@@ -1447,6 +1950,16 @@ describe('flowSurfaces dynamic capability create dry-run', () => {
       parentUid: 'parent-grid',
       subKey: 'items',
     });
+    expect(popupCalls.map((item) => item.tryTemplate)).toEqual([true, true, true, true]);
+    expect(popupCalls.map((item) => item.autoSaveDefaultPopupTemplate)).toEqual([true, true, true, true]);
+    expect(popupCalls.map((item) => item.defaultType)).toEqual(['addNew', 'view', 'edit', 'view']);
+    expect(popupCalls.map((item) => item.semanticActionUse)).toEqual([
+      'AddNewActionModel',
+      'ViewActionModel',
+      'EditActionModel',
+      'ViewActionModel',
+    ]);
+    expect(popupCalls.map((item) => item.hasCurrentRecord)).toEqual([false, true, true, true]);
     expect(persistedPayloads).toHaveLength(1);
     expect(persistedPayloads[0]).toMatchObject({
       parentId: 'parent-grid',
@@ -1474,9 +1987,6 @@ describe('flowSurfaces dynamic capability create dry-run', () => {
             use: 'FilterActionModel',
           },
           {
-            use: 'GanttTodayActionModel',
-          },
-          {
             use: 'RefreshActionModel',
           },
           {
@@ -1493,10 +2003,56 @@ describe('flowSurfaces dynamic capability create dry-run', () => {
           {
             use: 'BulkDeleteActionModel',
           },
+          {
+            use: 'GanttTodayActionModel',
+          },
         ],
         columns: [
           {
+            use: 'TableColumnModel',
+            stepParams: {
+              fieldSettings: {
+                init: {
+                  fieldPath: 'title',
+                },
+              },
+            },
+          },
+          {
+            use: 'TableColumnModel',
+            stepParams: {
+              fieldSettings: {
+                init: {
+                  fieldPath: 'startAt',
+                },
+              },
+            },
+          },
+          {
+            use: 'TableColumnModel',
+            stepParams: {
+              fieldSettings: {
+                init: {
+                  fieldPath: 'endAt',
+                },
+              },
+            },
+          },
+          {
             use: 'TableActionsColumnModel',
+            subModels: {
+              actions: [
+                {
+                  use: 'ViewActionModel',
+                },
+                {
+                  use: 'EditActionModel',
+                },
+                {
+                  use: 'DeleteActionModel',
+                },
+              ],
+            },
           },
         ],
         eventViewAction: {
@@ -1504,6 +2060,1388 @@ describe('flowSurfaces dynamic capability create dry-run', () => {
         },
       },
     });
+  });
+
+  it('should honor JSON inferred popup host openViewPath through popup defaults and readback', async () => {
+    const autoSnapshot = createGanttAutoSnapshot({ inferredAuthoring: true });
+    const inferredCapability = autoSnapshot.inferredAuthoring?.capabilities?.[0];
+    expect(inferredCapability).toBeTruthy();
+    const customOpenViewPath = ['stepParams', 'selectExitRecordSettings', 'openView'];
+    const uploadActionUid = 'created-upload-action';
+    const materializedRoot: Record<string, unknown> = {
+      uid: 'created-upload-host-block',
+      use: 'ActionPanelBlockModel',
+      subModels: {
+        actions: [
+          {
+            uid: uploadActionUid,
+            use: 'UploadActionModel',
+            stepParams: {
+              selectExitRecordSettings: {
+                openView: {
+                  mode: 'drawer',
+                  size: 'medium',
+                },
+              },
+            },
+          },
+        ],
+      },
+    };
+    const inferredAuthoring = inferredCapability
+      ? {
+          ...inferredCapability,
+          popupHosts: [
+            {
+              key: 'runtime.uploadSelectPopup',
+              modelUse: 'UploadActionModel',
+              parentModelUse: 'ActionPanelBlockModel',
+              subModelKey: 'actions',
+              defaultType: 'addNew' as const,
+              hasCurrentRecord: false,
+              templateStrategy: 'preferTemplateThenFallback' as const,
+              confidence: 'high' as const,
+              openViewPath: customOpenViewPath.join('.'),
+              evidence: [
+                {
+                  type: 'coreTemplate' as const,
+                  ref: 'test:runtime.upload.selectExitRecordSettings',
+                },
+              ],
+            },
+          ],
+        }
+      : undefined;
+    const service = new FlowSurfacesService({
+      flowSurfaceAutoSnapshots: [autoSnapshot],
+      flowSurfaceCapabilityProviders: createProviderRegistry([]),
+    } as unknown as ConstructorParameters<typeof FlowSurfacesService>[0]);
+    const harness = service as unknown as JsonInferredPopupHostDefaultsPrivateHarness;
+    const enabledPackages = new Set(['@nocobase/plugin-gantt']);
+    const popupCalls = mockJsonInferredPopupTemplateDefaults(service, () => materializedRoot);
+
+    vi.spyOn(service as unknown as RepositoryGetterHarness, 'repository', 'get').mockReturnValue({
+      findModelById: async (uid) => findFlowNodeByUid(materializedRoot, uid) || materializedRoot,
+    });
+
+    await harness.applyJsonInferredPopupHostDefaults({
+      actionName: 'addBlock',
+      rootUid: 'created-upload-host-block',
+      inferredAuthoring,
+      enabledPackages,
+    });
+
+    expect(popupCalls).toHaveLength(1);
+    expect(popupCalls[0]).toMatchObject({
+      actionUid: uploadActionUid,
+      defaultType: 'addNew',
+      openViewPath: customOpenViewPath,
+    });
+    const uploadAction = findFlowNodeByUid(materializedRoot, uploadActionUid);
+    expect(getValueAtPath(uploadAction, customOpenViewPath)).toMatchObject({
+      mode: 'drawer',
+      size: 'medium',
+      template: {
+        uid: `${uploadActionUid}-popup-template`,
+      },
+    });
+    expect(getValueAtPath(uploadAction, DEFAULT_JSON_INFERRED_POPUP_OPEN_VIEW_PATH)).toBeUndefined();
+    expect(harness.assertJsonInferredPopupHostReadback(materializedRoot, inferredAuthoring)).toBe(true);
+  });
+
+  it('should fail closed for invalid JSON inferred popup host openViewPath declarations', async () => {
+    const autoSnapshot = createGanttAutoSnapshot({ inferredAuthoring: true });
+    const inferredCapability = autoSnapshot.inferredAuthoring?.capabilities?.[0];
+    expect(inferredCapability).toBeTruthy();
+    const materializedRoot: Record<string, unknown> = {
+      uid: 'created-invalid-popup-host-block',
+      use: 'ActionPanelBlockModel',
+      subModels: {
+        actions: [
+          {
+            uid: 'created-invalid-upload-action',
+            use: 'UploadActionModel',
+          },
+        ],
+      },
+    };
+    const inferredAuthoring = inferredCapability
+      ? {
+          ...inferredCapability,
+          popupHosts: [
+            {
+              key: 'runtime.invalidPopupPath',
+              modelUse: 'UploadActionModel',
+              parentModelUse: 'ActionPanelBlockModel',
+              subModelKey: 'actions',
+              defaultType: 'addNew' as const,
+              hasCurrentRecord: false,
+              templateStrategy: 'preferTemplateThenFallback' as const,
+              confidence: 'high' as const,
+              openViewPath: 'stepParams.__proto__.openView',
+              evidence: [
+                {
+                  type: 'coreTemplate' as const,
+                  ref: 'test:runtime.invalid.openViewPath',
+                },
+              ],
+            },
+          ],
+        }
+      : undefined;
+    const service = new FlowSurfacesService({
+      flowSurfaceAutoSnapshots: [autoSnapshot],
+      flowSurfaceCapabilityProviders: createProviderRegistry([]),
+    } as unknown as ConstructorParameters<typeof FlowSurfacesService>[0]);
+    const defaultsHarness = service as unknown as JsonInferredPopupHostDefaultsPrivateHarness;
+    vi.spyOn(service as unknown as RepositoryGetterHarness, 'repository', 'get').mockReturnValue({
+      findModelById: async (uid) => findFlowNodeByUid(materializedRoot, uid) || materializedRoot,
+    });
+
+    await expect(
+      defaultsHarness.applyJsonInferredPopupHostDefaults({
+        actionName: 'addBlock',
+        rootUid: 'created-invalid-popup-host-block',
+        inferredAuthoring,
+        enabledPackages: new Set(['@nocobase/plugin-gantt']),
+      }),
+    ).rejects.toThrow(FlowSurfaceBadRequestError);
+    expect(() => defaultsHarness.assertJsonInferredPopupHostReadback(materializedRoot, inferredAuthoring)).toThrow(
+      FlowSurfaceBadRequestError,
+    );
+
+    const configureHarness = service as unknown as ConfigureActionNodeHarness;
+    vi.spyOn(configureHarness, 'updateSettings').mockResolvedValue({
+      uid: 'created-invalid-upload-action',
+    });
+    await expect(
+      configureHarness.configureActionNode(
+        {
+          uid: 'created-invalid-upload-action',
+        },
+        'RuntimeDiscoveredPopupActionModel',
+        {
+          openView: {
+            dataSourceKey: 'main',
+            collectionName: 'tasks',
+            mode: 'drawer',
+          },
+        },
+        {
+          current: {
+            uid: 'created-invalid-upload-action',
+            use: 'RuntimeDiscoveredPopupActionModel',
+          },
+          skipConfigureGeneratedDefaultPopup: true,
+          popupActionContext: {
+            defaultType: 'addNew',
+            semanticActionUse: 'AddNewActionModel',
+            hasCurrentRecord: false,
+          },
+          allowJsonInferredPopupHostOpenView: true,
+          jsonInferredPopupHostOpenViewPath: ['stepParams', '__proto__', 'openView'],
+        },
+      ),
+    ).rejects.toThrow(FlowSurfaceBadRequestError);
+  });
+
+  it('should ignore lower-confidence invalid JSON inferred popup hosts during create', async () => {
+    const autoSnapshot = createGanttAutoSnapshot({ inferredAuthoring: true });
+    const inferredCapability = autoSnapshot.inferredAuthoring?.capabilities?.[0];
+    const addNewPopupHost = inferredCapability?.popupHosts?.find((popupHost) => popupHost.defaultType === 'addNew');
+    expect(addNewPopupHost).toBeTruthy();
+    if (inferredCapability && addNewPopupHost) {
+      inferredCapability.popupHosts = [
+        ...(inferredCapability.popupHosts || []),
+        {
+          ...addNewPopupHost,
+          key: 'gantt.lowConfidenceInvalidPopup',
+          confidence: 'low',
+          openViewPath: 'stepParams.__proto__.openView',
+        },
+      ];
+    }
+
+    const result = await resolveDynamicCapabilityCreate({
+      publicType: 'gantt',
+      initParams: {
+        collectionName: 'tasks',
+      },
+      settings: {
+        titleField: 'title',
+        startField: 'startAt',
+        endField: 'endAt',
+      },
+      enabledPackages: new Set(['@nocobase/plugin-gantt']),
+      providerRegistry: createProviderRegistry([]),
+      autoSnapshots: [autoSnapshot],
+    });
+
+    expect(result.node).toMatchObject({
+      use: 'GanttBlockModel',
+    });
+    const addNewAction = (
+      (result.node.subModels as Record<string, unknown>)?.actions as Record<string, unknown>[]
+    ).find((action) => action.use === 'AddNewActionModel');
+    expect(addNewAction).toMatchObject({
+      stepParams: {
+        popupSettings: {
+          openView: expect.objectContaining({
+            collectionName: 'tasks',
+          }),
+        },
+      },
+    });
+  });
+
+  it('should treat semantic custom popup hosts with custom paths as editable template references', async () => {
+    const service = new FlowSurfacesService({
+      flowSurfaceCapabilityProviders: createProviderRegistry([]),
+    } as unknown as ConstructorParameters<typeof FlowSurfacesService>[0]);
+    const harness = service as unknown as PopupSurfaceHarness;
+    const customOpenViewPath = ['stepParams', 'customPopup', 'openView'];
+    const customHost = {
+      uid: 'custom-popup-host',
+      use: 'RuntimeDiscoveredPopupActionModel',
+      stepParams: {
+        customPopup: {
+          openView: {
+            uid: 'external-popup-host',
+            popupTemplateUid: 'existing-template',
+            popupTemplateMode: 'reference',
+          },
+        },
+      },
+    };
+    vi.spyOn(service as unknown as RepositoryGetterHarness, 'repository', 'get').mockReturnValue({
+      findModelById: async (uid) => (uid === 'custom-popup-host' ? customHost : null),
+      findModelByParentId: async (parentUid, query) => {
+        if (parentUid === 'external-popup-host' && query?.subKey === 'page') {
+          return {
+            uid: 'external-popup-page',
+            subModels: {
+              tabs: [
+                {
+                  uid: 'external-popup-tab',
+                  subModels: {
+                    grid: {
+                      uid: 'external-popup-grid',
+                    },
+                  },
+                },
+              ],
+            },
+          };
+        }
+        return null;
+      },
+      upsertModel: vi.fn(),
+    });
+
+    await expect(
+      harness.ensurePopupSurface('custom-popup-host', undefined, {
+        popupActionContext: {
+          defaultType: 'view',
+          semanticActionUse: 'ViewActionModel',
+          hasCurrentRecord: true,
+        },
+        jsonInferredPopupHostOpenViewPath: customOpenViewPath,
+      }),
+    ).resolves.toMatchObject({
+      pageUid: 'external-popup-page',
+      tabUid: 'external-popup-tab',
+      gridUid: 'external-popup-grid',
+    });
+  });
+
+  it('should compose default fallback popup content into JSON inferred custom popup host grids', async () => {
+    const service = new FlowSurfacesService({
+      flowSurfaceCapabilityProviders: createProviderRegistry([]),
+    } as unknown as ConstructorParameters<typeof FlowSurfacesService>[0]);
+    const harness = service as unknown as InlineActionPopupHarness;
+    const customOpenViewPath = ['stepParams', 'customPopup', 'openView'];
+    const customHost = {
+      uid: 'custom-add-new-action',
+      use: 'RuntimeDiscoveredPopupActionModel',
+      stepParams: {
+        customPopup: {
+          openView: {
+            dataSourceKey: 'main',
+            collectionName: 'tasks',
+          },
+        },
+      },
+    };
+    const popupTab = {
+      uid: 'custom-add-new-popup-tab',
+    };
+    const popupGrid = {
+      uid: 'custom-add-new-popup-grid',
+      subModels: {
+        items: [
+          {
+            uid: 'generated-form-block',
+            use: 'FormBlockModel',
+            subModels: {
+              grid: {
+                stepParams: {
+                  eventSettings: {
+                    linkageRules: {
+                      value: [],
+                    },
+                  },
+                },
+              },
+            },
+          },
+        ],
+      },
+    };
+    vi.spyOn(service as unknown as LocatorGetterHarness, 'locator', 'get').mockReturnValue({
+      resolve: async (target) => ({
+        uid: target.uid,
+        node: null,
+      }),
+      resolveCollectionContext: async () => null,
+    });
+    vi.spyOn(service as unknown as RepositoryGetterHarness, 'repository', 'get').mockReturnValue({
+      findModelById: async (uid) => {
+        if (uid === 'custom-add-new-action') {
+          return customHost;
+        }
+        if (uid === 'custom-add-new-popup-tab') {
+          return popupTab;
+        }
+        if (uid === 'custom-add-new-popup-grid') {
+          return popupGrid;
+        }
+        return null;
+      },
+      findModelByParentId: async (parentUid, query) => {
+        if (parentUid === 'custom-add-new-action' && query?.subKey === 'page') {
+          return {
+            uid: 'custom-add-new-popup-page',
+            subModels: {
+              tabs: [
+                {
+                  ...popupTab,
+                  subModels: {
+                    grid: popupGrid,
+                  },
+                },
+              ],
+            },
+          };
+        }
+        return null;
+      },
+      upsertModel: vi.fn(),
+    });
+    vi.spyOn(service as unknown as CollectionGetterHarness, 'getCollection').mockReturnValue({
+      name: 'tasks',
+      getFields: () => [
+        {
+          name: 'title',
+          interface: 'input',
+          type: 'string',
+        },
+      ],
+    });
+    vi.spyOn(harness, 'resolvePopupBlockProfile').mockResolvedValue({
+      isPopupSurface: true,
+      dataSourceKey: 'main',
+      collectionName: 'tasks',
+    });
+    vi.spyOn(harness, 'applyInlineActionPopupDisplayOpenView').mockResolvedValue(undefined);
+    vi.spyOn(harness, 'syncDefaultActionPopupTabTitle').mockResolvedValue(undefined);
+    vi.spyOn(harness, 'syncDefaultActionPopupOpenViewTitle').mockResolvedValue(undefined);
+    const compose = vi.spyOn(service, 'compose').mockResolvedValue({
+      target: {
+        uid: 'custom-add-new-popup-grid',
+      },
+    } as unknown as Awaited<ReturnType<FlowSurfacesService['compose']>>);
+
+    await expect(
+      harness.applyInlineActionPopup('addAction', 'custom-add-new-action', undefined, {
+        autoCompleteDefaultPopup: true,
+        enabledPackages: new Set(),
+        popupActionContext: {
+          defaultType: 'addNew',
+          semanticActionUse: 'AddNewActionModel',
+          hasCurrentRecord: false,
+        },
+        jsonInferredPopupHostOpenViewPath: customOpenViewPath,
+      }),
+    ).resolves.toBeUndefined();
+
+    expect(compose).toHaveBeenCalledWith(
+      expect.objectContaining({
+        target: {
+          uid: 'custom-add-new-popup-grid',
+        },
+        mode: 'replace',
+      }),
+      expect.objectContaining({
+        allowInternalComposeFieldMetadata: true,
+        jsonInferredPopupHostOpenViewPath: customOpenViewPath,
+      }),
+    );
+  });
+
+  it('should route inline popup blocks for JSON inferred custom hosts through the popup grid', async () => {
+    const service = new FlowSurfacesService({
+      flowSurfaceCapabilityProviders: createProviderRegistry([]),
+    } as unknown as ConstructorParameters<typeof FlowSurfacesService>[0]);
+    const harness = service as unknown as InlineActionPopupHarness;
+    const enabledPackages = new Set(['@nocobase/plugin-block-markdown']);
+    const customOpenViewPath = ['stepParams', 'customPopup', 'openView'];
+    const customHost = {
+      uid: 'custom-inline-popup-action',
+      use: 'RuntimeDiscoveredPopupActionModel',
+      stepParams: {
+        customPopup: {
+          openView: {
+            dataSourceKey: 'main',
+            collectionName: 'tasks',
+          },
+        },
+      },
+    };
+    const popupGrid = {
+      uid: 'custom-inline-popup-grid',
+      subModels: {
+        items: [],
+      },
+    };
+    vi.spyOn(service as unknown as LocatorGetterHarness, 'locator', 'get').mockReturnValue({
+      resolve: async (target) => ({
+        uid: target.uid,
+        node: target.uid === 'custom-inline-popup-grid' ? popupGrid : null,
+      }),
+      resolveCollectionContext: async () => null,
+    });
+    vi.spyOn(service as unknown as EnabledPackagesHarness, 'resolveEnabledPluginPackages').mockResolvedValue(
+      enabledPackages,
+    );
+    vi.spyOn(service as unknown as ComposePrivateHarness, 'buildTargetAuthoringContext').mockResolvedValue({});
+    vi.spyOn(service as unknown as ComposePrivateHarness, 'findApprovalSurfaceRootForNode').mockResolvedValue(null);
+    vi.spyOn(service as unknown as SurfaceContextGetterHarness, 'surfaceContext', 'get').mockReturnValue({
+      resolveBlockParent: async (target) => {
+        expect(target).toEqual({
+          uid: 'custom-inline-popup-grid',
+        });
+        return {
+          parentUid: 'custom-inline-popup-grid',
+        };
+      },
+      resolveGridNode: async (uid) => {
+        expect(uid).toBe('custom-inline-popup-grid');
+        return {
+          ...popupGrid,
+          use: 'BlockGridModel',
+        };
+      },
+      filterBlocksByTarget: () => [],
+      resolveFieldContainer: async () => ({}),
+      resolveActionContainer: async () => ({
+        parentUid: 'unused',
+        subKey: 'actions',
+        subType: 'array',
+        ownerUse: 'unused',
+      }),
+    });
+    vi.spyOn(service as unknown as RepositoryGetterHarness, 'repository', 'get').mockReturnValue({
+      findModelById: async (uid) => {
+        if (uid === 'custom-inline-popup-action') {
+          return customHost;
+        }
+        if (uid === 'custom-inline-popup-grid') {
+          return popupGrid;
+        }
+        return {
+          uid,
+        };
+      },
+      findModelByParentId: async (parentUid, query) => {
+        if (parentUid === 'custom-inline-popup-action' && query?.subKey === 'page') {
+          return {
+            uid: 'custom-inline-popup-page',
+            subModels: {
+              tabs: [
+                {
+                  uid: 'custom-inline-popup-tab',
+                  subModels: {
+                    grid: popupGrid,
+                  },
+                },
+              ],
+            },
+          };
+        }
+        return null;
+      },
+      upsertModel: vi.fn(),
+    });
+    vi.spyOn(harness, 'resolvePopupBlockProfile').mockResolvedValue(null);
+    vi.spyOn(harness, 'applyInlineActionPopupDisplayOpenView').mockResolvedValue(undefined);
+    const addBlock = vi.spyOn(service, 'addBlock').mockResolvedValue({
+      uid: 'inline-markdown-block',
+      parentUid: 'custom-inline-popup-grid',
+      subKey: 'items',
+    } as unknown as Awaited<ReturnType<FlowSurfacesService['addBlock']>>);
+    const setLayout = vi.spyOn(service, 'setLayout').mockResolvedValue({ ok: true });
+
+    await expect(
+      harness.applyInlineActionPopup(
+        'addAction',
+        'custom-inline-popup-action',
+        {
+          blocks: [
+            {
+              key: 'popupContent',
+              type: 'markdown',
+            },
+          ],
+        },
+        {
+          enabledPackages,
+          popupActionContext: {
+            defaultType: 'addNew',
+            semanticActionUse: 'AddNewActionModel',
+            hasCurrentRecord: false,
+          },
+          jsonInferredPopupHostOpenViewPath: customOpenViewPath,
+        },
+      ),
+    ).resolves.toBeUndefined();
+
+    expect(addBlock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        target: {
+          uid: 'custom-inline-popup-grid',
+        },
+        type: 'markdown',
+      }),
+      expect.objectContaining({
+        enabledPackages,
+        skipAuthoringValidation: true,
+        dynamicCapabilityActionName: 'compose',
+      }),
+    );
+    expect(setLayout).toHaveBeenCalledWith(
+      expect.objectContaining({
+        target: {
+          uid: 'custom-inline-popup-grid',
+        },
+      }),
+      expect.any(Object),
+    );
+  });
+
+  it('should reject JSON inferred popup host paths that are not valid for the action contract', async () => {
+    const autoSnapshot = createGanttAutoSnapshot({ inferredAuthoring: true });
+    const inferredCapability = autoSnapshot.inferredAuthoring?.capabilities?.[0];
+    const addNewPopupHost = inferredCapability?.popupHosts?.find((popupHost) => popupHost.defaultType === 'addNew');
+    expect(addNewPopupHost).toBeTruthy();
+    if (inferredCapability && addNewPopupHost) {
+      inferredCapability.popupHosts = [
+        {
+          ...addNewPopupHost,
+          key: 'gantt.contractInvalidAddNewPopup',
+          openViewPath: 'stepParams.customPopup.openView',
+        },
+      ];
+      visitFlowNodeTree(inferredCapability.createRecipe?.nodeTemplate, (node) => {
+        if (node.use === 'AddNewActionModel') {
+          unsetValueAtPath(node, DEFAULT_JSON_INFERRED_POPUP_OPEN_VIEW_PATH);
+        }
+      });
+    }
+
+    await expect(
+      resolveDynamicCapabilityCreate({
+        publicType: 'gantt',
+        initParams: {
+          collectionName: 'tasks',
+        },
+        settings: {
+          titleField: 'title',
+          startField: 'startAt',
+          endField: 'endAt',
+        },
+        enabledPackages: new Set(['@nocobase/plugin-gantt']),
+        providerRegistry: createProviderRegistry([]),
+        autoSnapshots: [autoSnapshot],
+      }),
+    ).rejects.toMatchObject({
+      errors: expect.arrayContaining([
+        expect.objectContaining({
+          ruleId: 'contract-guard-failed',
+        }),
+      ]),
+    });
+  });
+
+  it('should keep JSON inferred popup hosts with unsupported childSurfaceKey from enabling writes', async () => {
+    const autoSnapshot = createGanttAutoSnapshot({ inferredAuthoring: true });
+    const inferredCapability = autoSnapshot.inferredAuthoring?.capabilities?.[0];
+    const addNewPopupHost = inferredCapability?.popupHosts?.find((popupHost) => popupHost.defaultType === 'addNew');
+    expect(addNewPopupHost).toBeTruthy();
+    if (inferredCapability && addNewPopupHost) {
+      inferredCapability.popupHosts = [
+        {
+          ...addNewPopupHost,
+          key: 'gantt.unsupportedChildSurfacePopup',
+          childSurfaceKey: 'gantt.actions',
+        },
+      ];
+    }
+
+    await expect(
+      resolveDynamicCapabilityCreate({
+        publicType: 'gantt',
+        initParams: {
+          collectionName: 'tasks',
+        },
+        settings: {
+          titleField: 'title',
+          startField: 'startAt',
+          endField: 'endAt',
+        },
+        enabledPackages: new Set(['@nocobase/plugin-gantt']),
+        providerRegistry: createProviderRegistry([]),
+        autoSnapshots: [autoSnapshot],
+      }),
+    ).rejects.toMatchObject({
+      options: expect.objectContaining({
+        details: expect.objectContaining({
+          reasonCode: 'contract-not-verified',
+        }),
+      }),
+    });
+  });
+
+  it('should honor fallbackOnly JSON inferred popup hosts without auto-saving templates', async () => {
+    const autoSnapshot = createGanttAutoSnapshot({ inferredAuthoring: true });
+    const inferredCapability = autoSnapshot.inferredAuthoring?.capabilities?.[0];
+    const addNewPopupHost = inferredCapability?.popupHosts?.find((popupHost) => popupHost.defaultType === 'addNew');
+    expect(addNewPopupHost).toBeTruthy();
+    if (inferredCapability && addNewPopupHost) {
+      inferredCapability.popupHosts = inferredCapability.popupHosts?.map((popupHost) =>
+        popupHost.key === addNewPopupHost.key
+          ? {
+              ...popupHost,
+              templateStrategy: 'fallbackOnly',
+            }
+          : popupHost,
+      );
+    }
+    const service = new FlowSurfacesService({
+      flowSurfaceAutoSnapshots: [autoSnapshot],
+      flowSurfaceCapabilityProviders: createProviderRegistry([]),
+    } as unknown as ConstructorParameters<typeof FlowSurfacesService>[0]);
+    const harness = service as unknown as DynamicBlockWriteGateHarness;
+    const enabledPackages = new Set(['@nocobase/plugin-gantt']);
+    let materializedRoot: Record<string, unknown> | null = null;
+    const popupCalls = mockJsonInferredPopupTemplateDefaults(service, () => materializedRoot);
+
+    harness.catalog = async () => ({
+      blocks: [
+        {
+          key: 'gantt',
+          label: 'Gantt',
+          use: 'gantt',
+          kind: 'block',
+          publicType: 'gantt',
+          ownerPlugin: '@nocobase/plugin-gantt',
+          origin: 'autoSnapshot',
+          createSupported: true,
+          availability: {
+            create: {
+              supported: true,
+            },
+          },
+        },
+      ],
+    });
+    vi.spyOn(service as unknown as RepositoryGetterHarness, 'repository', 'get').mockReturnValue({
+      upsertModel: async (payload) => {
+        materializedRoot = materializePersistedRoot(payload, 'created-gantt-block');
+        return 'created-gantt-block';
+      },
+      findModelById: async (uid) => findFlowNodeByUid(materializedRoot, uid) || materializedRoot,
+    });
+
+    await expect(
+      harness.tryAddDynamicBlock({
+        values: {
+          target: {
+            uid: 'target-grid',
+          },
+          type: 'gantt',
+          resource: {
+            collectionName: 'tasks',
+          },
+          settings: {
+            titleField: 'title',
+            startField: 'startAt',
+            endField: 'endAt',
+          },
+        },
+        options: {
+          deferAutoLayout: true,
+          dynamicCapabilityActionName: 'addBlock',
+        },
+        enabledPackages,
+        blockType: 'gantt',
+        target: {
+          uid: 'target-grid',
+        },
+        parentUid: 'parent-grid',
+        subKey: 'items',
+        subType: 'array',
+        popupProfile: null,
+        semanticResource: {
+          kind: 'raw',
+          value: {
+            collectionName: 'tasks',
+          },
+        },
+      }),
+    ).resolves.toMatchObject({
+      uid: 'created-gantt-block',
+    });
+
+    expect(popupCalls).toHaveLength(4);
+    expect(popupCalls[0]).toMatchObject({
+      defaultType: 'addNew',
+      tryTemplate: false,
+      autoSaveDefaultPopupTemplate: false,
+    });
+  });
+
+  it('should allow JSON inferred popup hosts to persist openView without action configureOptions', async () => {
+    const service = new FlowSurfacesService({} as unknown as ConstructorParameters<typeof FlowSurfacesService>[0]);
+    const harness = service as unknown as ConfigureActionNodeHarness;
+    const updateSettings = vi.spyOn(harness, 'updateSettings').mockResolvedValue({
+      uid: 'event-view-action',
+    });
+
+    await expect(
+      harness.configureActionNode(
+        {
+          uid: 'event-view-action',
+        },
+        'RuntimeDiscoveredPopupActionModel',
+        {
+          openView: {
+            dataSourceKey: 'main',
+            collectionName: 'tasks',
+            mode: 'drawer',
+          },
+        },
+        {
+          current: {
+            uid: 'event-view-action',
+            use: 'RuntimeDiscoveredPopupActionModel',
+          },
+          skipConfigureGeneratedDefaultPopup: true,
+          popupActionContext: {
+            defaultType: 'view',
+            semanticActionUse: 'ViewActionModel',
+            hasCurrentRecord: true,
+          },
+          allowJsonInferredPopupHostOpenView: true,
+        },
+      ),
+    ).resolves.toEqual({
+      uid: 'event-view-action',
+    });
+
+    expect(updateSettings).toHaveBeenCalledWith(
+      {
+        target: {
+          uid: 'event-view-action',
+        },
+        stepParams: {
+          popupSettings: {
+            openView: {
+              dataSourceKey: 'main',
+              collectionName: 'tasks',
+              mode: 'drawer',
+            },
+          },
+        },
+      },
+      expect.objectContaining({
+        openViewActionName: 'configure action',
+        popupTemplateHostUid: 'event-view-action',
+      }),
+    );
+  });
+
+  it('should place JSON inferred popup host openView at the contract path', async () => {
+    const service = new FlowSurfacesService({} as unknown as ConstructorParameters<typeof FlowSurfacesService>[0]);
+    const harness = service as unknown as ConfigureActionNodeHarness;
+    const updateSettings = vi.spyOn(harness, 'updateSettings').mockResolvedValue({
+      uid: 'event-view-action',
+    });
+    const customOpenViewPath = ['stepParams', 'selectExitRecordSettings', 'openView'];
+
+    await expect(
+      harness.configureActionNode(
+        {
+          uid: 'event-view-action',
+        },
+        'RuntimeDiscoveredPopupActionModel',
+        {
+          openView: {
+            dataSourceKey: 'main',
+            collectionName: 'tasks',
+            mode: 'drawer',
+          },
+        },
+        {
+          current: {
+            uid: 'event-view-action',
+            use: 'RuntimeDiscoveredPopupActionModel',
+          },
+          skipConfigureGeneratedDefaultPopup: true,
+          popupActionContext: {
+            defaultType: 'view',
+            semanticActionUse: 'ViewActionModel',
+            hasCurrentRecord: true,
+          },
+          allowJsonInferredPopupHostOpenView: true,
+          jsonInferredPopupHostOpenViewPath: customOpenViewPath,
+        },
+      ),
+    ).resolves.toEqual({
+      uid: 'event-view-action',
+    });
+
+    expect(updateSettings).toHaveBeenCalledWith(
+      {
+        target: {
+          uid: 'event-view-action',
+        },
+        stepParams: {
+          selectExitRecordSettings: {
+            openView: {
+              dataSourceKey: 'main',
+              collectionName: 'tasks',
+              mode: 'drawer',
+            },
+          },
+        },
+      },
+      expect.objectContaining({
+        openViewActionName: 'configure action',
+        popupTemplateHostUid: 'event-view-action',
+        jsonInferredPopupHostOpenViewPath: customOpenViewPath,
+      }),
+    );
+  });
+
+  it('should let JSON inferred Upload popup hosts override the legacy upload openView path', async () => {
+    const service = new FlowSurfacesService({} as unknown as ConstructorParameters<typeof FlowSurfacesService>[0]);
+    const harness = service as unknown as ConfigureActionNodeHarness;
+    const updateSettings = vi.spyOn(harness, 'updateSettings').mockResolvedValue({
+      uid: 'upload-action',
+    });
+    const customOpenViewPath = ['stepParams', 'customPopupSettings', 'openView'];
+
+    await expect(
+      harness.configureActionNode(
+        {
+          uid: 'upload-action',
+        },
+        'UploadActionModel',
+        {
+          openView: {
+            dataSourceKey: 'main',
+            collectionName: 'tasks',
+            mode: 'drawer',
+          },
+        },
+        {
+          current: {
+            uid: 'upload-action',
+            use: 'UploadActionModel',
+          },
+          skipConfigureGeneratedDefaultPopup: true,
+          popupActionContext: {
+            defaultType: 'addNew',
+            semanticActionUse: 'AddNewActionModel',
+            hasCurrentRecord: false,
+          },
+          allowJsonInferredPopupHostOpenView: true,
+          jsonInferredPopupHostOpenViewPath: customOpenViewPath,
+        },
+      ),
+    ).resolves.toEqual({
+      uid: 'upload-action',
+    });
+
+    expect(updateSettings).toHaveBeenCalledWith(
+      {
+        target: {
+          uid: 'upload-action',
+        },
+        stepParams: {
+          customPopupSettings: {
+            openView: {
+              dataSourceKey: 'main',
+              collectionName: 'tasks',
+              mode: 'drawer',
+            },
+          },
+        },
+      },
+      expect.objectContaining({
+        openViewActionName: 'configure action',
+        popupTemplateHostUid: 'upload-action',
+        jsonInferredPopupHostOpenViewPath: customOpenViewPath,
+      }),
+    );
+    const savedStepParams = (updateSettings.mock.calls[0]?.[0] as Record<string, any>)?.stepParams;
+    expect(savedStepParams).not.toHaveProperty('selectExitRecordSettings');
+  });
+
+  it('should not generate a fallback popup when a JSON inferred custom popup host already has a template reference', async () => {
+    const service = new FlowSurfacesService({} as unknown as ConstructorParameters<typeof FlowSurfacesService>[0]);
+    const configureHarness = service as unknown as ConfigureActionNodeHarness;
+    const popupHarness = service as unknown as JsonInferredPopupDefaultsHarness;
+    const updateSettings = vi.spyOn(configureHarness, 'updateSettings').mockResolvedValue({
+      uid: 'upload-action',
+    });
+    const applyInlineActionPopup = vi.spyOn(popupHarness, 'applyInlineActionPopup').mockResolvedValue(undefined);
+    vi.spyOn(service as unknown as RepositoryGetterHarness, 'repository', 'get').mockReturnValue({
+      findModelById: async () => ({
+        uid: 'upload-action',
+        use: 'RuntimeDiscoveredPopupActionModel',
+        stepParams: {
+          selectExitRecordSettings: {
+            openView: {
+              uid: 'template-popup-host',
+              popupTemplateUid: 'existing-template',
+              popupTemplateMode: 'reference',
+            },
+          },
+        },
+      }),
+    });
+    const customOpenViewPath = ['stepParams', 'selectExitRecordSettings', 'openView'];
+
+    await expect(
+      configureHarness.configureActionNode(
+        {
+          uid: 'upload-action',
+        },
+        'RuntimeDiscoveredPopupActionModel',
+        {
+          openView: {
+            dataSourceKey: 'main',
+            collectionName: 'tasks',
+            mode: 'drawer',
+          },
+        },
+        {
+          current: {
+            uid: 'upload-action',
+            use: 'RuntimeDiscoveredPopupActionModel',
+          },
+          popupActionContext: {
+            defaultType: 'addNew',
+            semanticActionUse: 'AddNewActionModel',
+            hasCurrentRecord: false,
+          },
+          allowJsonInferredPopupHostOpenView: true,
+          jsonInferredPopupHostOpenViewPath: customOpenViewPath,
+        },
+      ),
+    ).resolves.toEqual({
+      uid: 'upload-action',
+    });
+
+    expect(updateSettings).toHaveBeenCalledWith(
+      expect.objectContaining({
+        stepParams: {
+          selectExitRecordSettings: {
+            openView: {
+              dataSourceKey: 'main',
+              collectionName: 'tasks',
+              mode: 'drawer',
+            },
+          },
+        },
+      }),
+      expect.objectContaining({
+        jsonInferredPopupHostOpenViewPath: customOpenViewPath,
+      }),
+    );
+    expect(applyInlineActionPopup).not.toHaveBeenCalled();
+  });
+
+  it('should keep ordinary configure action openView blocked for actions without configureOptions', async () => {
+    const service = new FlowSurfacesService({} as unknown as ConstructorParameters<typeof FlowSurfacesService>[0]);
+    const harness = service as unknown as ConfigureActionNodeHarness;
+    const updateSettings = vi.spyOn(harness, 'updateSettings').mockResolvedValue({
+      uid: 'event-view-action',
+    });
+
+    await expect(
+      harness.configureActionNode(
+        {
+          uid: 'event-view-action',
+        },
+        'RuntimeDiscoveredPopupActionModel',
+        {
+          openView: {
+            mode: 'drawer',
+          },
+        },
+        {
+          current: {
+            uid: 'event-view-action',
+            use: 'RuntimeDiscoveredPopupActionModel',
+          },
+        },
+      ),
+    ).rejects.toMatchObject({
+      message: expect.stringContaining('does not support: openView'),
+    });
+
+    expect(updateSettings).not.toHaveBeenCalled();
+  });
+
+  it('should sanitize applyBlueprint compiled internals before guarding JSON inferred public payloads', async () => {
+    const autoSnapshot = createGanttAutoSnapshot({ inferredAuthoring: true });
+    const service = new FlowSurfacesService({
+      flowSurfaceAutoSnapshots: [autoSnapshot],
+      flowSurfaceCapabilityProviders: createProviderRegistry([]),
+    } as unknown as ConstructorParameters<typeof FlowSurfacesService>[0]);
+    const harness = service as unknown as DynamicBlockWriteGateHarness;
+    const enabledPackages = new Set(['@nocobase/plugin-gantt']);
+    let materializedRoot: Record<string, unknown> | null = null;
+    mockJsonInferredPopupTemplateDefaults(service, () => materializedRoot);
+
+    harness.catalog = async () => ({
+      blocks: [
+        {
+          key: 'gantt',
+          label: 'Gantt',
+          use: 'gantt',
+          kind: 'block',
+          publicType: 'gantt',
+          ownerPlugin: '@nocobase/plugin-gantt',
+          origin: 'autoSnapshot',
+          createSupported: true,
+          availability: {
+            create: {
+              supported: true,
+            },
+          },
+        },
+      ],
+    });
+    vi.spyOn(service as unknown as RepositoryGetterHarness, 'repository', 'get').mockReturnValue({
+      upsertModel: async (payload) => {
+        materializedRoot = materializePersistedRoot(payload, 'created-gantt-block');
+        return 'created-gantt-block';
+      },
+      findModelById: async (uid) => findFlowNodeByUid(materializedRoot, uid) || materializedRoot,
+    });
+
+    await expect(
+      harness.tryAddDynamicBlock({
+        values: {
+          target: {
+            uid: 'target-grid',
+          },
+          type: 'gantt',
+          resource: {
+            collectionName: 'tasks',
+          },
+          settings: {
+            titleField: 'title',
+            startField: 'startAt',
+            endField: 'endAt',
+          },
+          use: 'GanttBlockModel',
+          props: {
+            compiledOnly: true,
+          },
+        },
+        options: {
+          deferAutoLayout: true,
+          dynamicCapabilityActionName: 'applyBlueprint',
+        },
+        enabledPackages,
+        blockType: 'gantt',
+        target: {
+          uid: 'target-grid',
+        },
+        parentUid: 'parent-grid',
+        subKey: 'items',
+        subType: 'array',
+        popupProfile: null,
+        semanticResource: {
+          kind: 'raw',
+          value: {
+            collectionName: 'tasks',
+          },
+        },
+      }),
+    ).resolves.toMatchObject({
+      uid: 'created-gantt-block',
+    });
+  });
+
+  it('should reject JSON inferred addBlock writes when an expected popup host is missing on readback', async () => {
+    const autoSnapshot = createGanttAutoSnapshot({ inferredAuthoring: true });
+    const service = new FlowSurfacesService({
+      flowSurfaceAutoSnapshots: [autoSnapshot],
+      flowSurfaceCapabilityProviders: createProviderRegistry([]),
+    } as unknown as ConstructorParameters<typeof FlowSurfacesService>[0]);
+    const harness = service as unknown as DynamicBlockWriteGateHarness;
+    const enabledPackages = new Set(['@nocobase/plugin-gantt']);
+    let materializedRoot: Record<string, unknown> | null = null;
+    let rootReadCount = 0;
+    mockJsonInferredPopupTemplateDefaults(service, () => materializedRoot);
+
+    harness.catalog = async () => ({
+      blocks: [
+        {
+          key: 'gantt',
+          label: 'Gantt',
+          use: 'gantt',
+          kind: 'block',
+          publicType: 'gantt',
+          ownerPlugin: '@nocobase/plugin-gantt',
+          origin: 'autoSnapshot',
+          createSupported: true,
+          availability: {
+            create: {
+              supported: true,
+            },
+          },
+        },
+      ],
+    });
+    vi.spyOn(service as unknown as RepositoryGetterHarness, 'repository', 'get').mockReturnValue({
+      upsertModel: async (payload) => {
+        materializedRoot = materializePersistedRoot(payload, 'created-gantt-block');
+        return 'created-gantt-block';
+      },
+      findModelById: async (uid) => {
+        if (uid !== 'created-gantt-block') {
+          return findFlowNodeByUid(materializedRoot, String(uid || '')) || materializedRoot;
+        }
+        rootReadCount += 1;
+        if (!materializedRoot || rootReadCount < 2) {
+          return materializedRoot;
+        }
+        return omitRootActionByUse(materializedRoot, 'AddNewActionModel');
+      },
+    });
+
+    await expect(
+      harness.tryAddDynamicBlock({
+        values: {
+          target: {
+            uid: 'target-grid',
+          },
+          type: 'gantt',
+          resource: {
+            collectionName: 'tasks',
+          },
+          settings: {
+            titleField: 'title',
+            startField: 'startAt',
+            endField: 'endAt',
+          },
+        },
+        options: {
+          deferAutoLayout: true,
+          dynamicCapabilityActionName: 'addBlock',
+        },
+        enabledPackages,
+        blockType: 'gantt',
+        target: {
+          uid: 'target-grid',
+        },
+        parentUid: 'parent-grid',
+        subKey: 'items',
+        subType: 'array',
+        popupProfile: null,
+        semanticResource: {
+          kind: 'raw',
+          value: {
+            collectionName: 'tasks',
+          },
+        },
+      }),
+    ).rejects.toMatchObject({
+      message: `flowSurfaces addBlock dynamic block 'gantt' failed readback parity guard`,
+      options: {
+        details: expect.objectContaining({
+          reasonCode: 'readback-parity-failed',
+          reasonSource: 'builder',
+        }),
+      },
+    });
+  });
+
+  it('should reject JSON inferred popup hosts that only self-reference openView uid on readback', async () => {
+    const autoSnapshot = createGanttAutoSnapshot({ inferredAuthoring: true });
+    const service = new FlowSurfacesService({
+      flowSurfaceAutoSnapshots: [autoSnapshot],
+      flowSurfaceCapabilityProviders: createProviderRegistry([]),
+    } as unknown as ConstructorParameters<typeof FlowSurfacesService>[0]);
+    const harness = service as unknown as DynamicBlockWriteGateHarness;
+    const enabledPackages = new Set(['@nocobase/plugin-gantt']);
+    let materializedRoot: Record<string, unknown> | null = null;
+    mockJsonInferredPopupSelfReferences(service, () => materializedRoot);
+
+    harness.catalog = async () => ({
+      blocks: [
+        {
+          key: 'gantt',
+          label: 'Gantt',
+          use: 'gantt',
+          kind: 'block',
+          publicType: 'gantt',
+          ownerPlugin: '@nocobase/plugin-gantt',
+          origin: 'autoSnapshot',
+          createSupported: true,
+          availability: {
+            create: {
+              supported: true,
+            },
+          },
+        },
+      ],
+    });
+    vi.spyOn(service as unknown as RepositoryGetterHarness, 'repository', 'get').mockReturnValue({
+      upsertModel: async (payload) => {
+        materializedRoot = materializePersistedRoot(payload, 'created-gantt-block');
+        return 'created-gantt-block';
+      },
+      findModelById: async (uid) => findFlowNodeByUid(materializedRoot, String(uid || '')) || materializedRoot,
+    });
+
+    await expect(
+      harness.tryAddDynamicBlock({
+        values: {
+          target: {
+            uid: 'target-grid',
+          },
+          type: 'gantt',
+          resource: {
+            collectionName: 'tasks',
+          },
+          settings: {
+            titleField: 'title',
+            startField: 'startAt',
+            endField: 'endAt',
+          },
+        },
+        options: {
+          deferAutoLayout: true,
+          dynamicCapabilityActionName: 'addBlock',
+        },
+        enabledPackages,
+        blockType: 'gantt',
+        target: {
+          uid: 'target-grid',
+        },
+        parentUid: 'parent-grid',
+        subKey: 'items',
+        subType: 'array',
+        popupProfile: null,
+        semanticResource: {
+          kind: 'raw',
+          value: {
+            collectionName: 'tasks',
+          },
+        },
+      }),
+    ).rejects.toMatchObject({
+      message: `flowSurfaces addBlock dynamic block 'gantt' failed readback parity guard`,
+      options: {
+        details: expect.objectContaining({
+          reasonCode: 'readback-parity-failed',
+          reasonSource: 'builder',
+        }),
+      },
+    });
+  });
+
+  it('should auto-save default popup templates for custom popup hosts using popupActionContext', async () => {
+    const service = new FlowSurfacesService({
+      flowSurfaceCapabilityProviders: createProviderRegistry([]),
+    } as unknown as ConstructorParameters<typeof FlowSurfacesService>[0]);
+    const harness = service as unknown as AutoSaveDefaultActionPopupHarness;
+    const actionNode: Record<string, unknown> = {
+      uid: 'custom-view-action',
+      use: 'CustomPopupHostActionModel',
+      stepParams: {
+        popupSettings: {
+          openView: {
+            dataSourceKey: 'main',
+            collectionName: 'tasks',
+          },
+        },
+      },
+    };
+    const popupActionContext = {
+      defaultType: 'view',
+      semanticActionUse: 'ViewActionModel',
+      hasCurrentRecord: true,
+    };
+    vi.spyOn(harness, 'getFlowTemplateRepositorySafe').mockReturnValue({
+      find: async () => [],
+    });
+    vi.spyOn(service as unknown as RepositoryGetterHarness, 'repository', 'get').mockReturnValue({
+      findModelById: async () => actionNode,
+    });
+    vi.spyOn(harness, 'resolvePopupBlockProfile').mockResolvedValue(null);
+    vi.spyOn(harness, 'tryResolveExistingDefaultActionPopupTemplate').mockResolvedValue(null);
+    const saveTemplate = vi.spyOn(harness, 'saveTemplate').mockResolvedValue({
+      uid: 'saved-template',
+    });
+    const syncOpenViewTitle = vi.spyOn(harness, 'syncDefaultActionPopupOpenViewTitle').mockResolvedValue(undefined);
+
+    await harness.autoSaveDefaultActionPopupAsTemplate(
+      'custom-view-action',
+      {
+        tryTemplate: true,
+        [FLOW_SURFACE_INTERNAL_AUTO_SAVE_DEFAULT_POPUP_TEMPLATE_KEY]: true,
+      },
+      {
+        popupActionContext,
+      },
+    );
+
+    expect(saveTemplate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        target: {
+          uid: 'custom-view-action',
+        },
+        saveMode: 'convert',
+      }),
+      expect.objectContaining({
+        popupActionContext,
+      }),
+    );
+    expect(syncOpenViewTitle).toHaveBeenCalledWith(
+      'custom-view-action',
+      actionNode,
+      expect.objectContaining({
+        popupActionContext,
+      }),
+    );
   });
 
   it('should refresh auto snapshots before direct addBlock resolves dynamic block types', async () => {
@@ -3064,7 +5002,9 @@ describe('flowSurfaces dynamic capability create dry-run', () => {
     } as unknown as ConstructorParameters<typeof FlowSurfacesService>[0]);
     const harness = service as unknown as DynamicBlockWriteGateHarness;
     const enabledPackages = new Set(['@nocobase/plugin-gantt']);
-    let persistedPayload: Record<string, unknown> = {};
+    let materializedRoot: Record<string, unknown> | null = null;
+    let rootReadCount = 0;
+    mockJsonInferredPopupTemplateDefaults(service, () => materializedRoot);
 
     harness.catalog = async () => ({
       blocks: [
@@ -3087,21 +5027,31 @@ describe('flowSurfaces dynamic capability create dry-run', () => {
     });
     vi.spyOn(service as unknown as RepositoryGetterHarness, 'repository', 'get').mockReturnValue({
       upsertModel: async (payload) => {
-        persistedPayload = payload;
+        materializedRoot = materializePersistedRoot(payload, 'created-gantt-block');
         return 'created-gantt-block';
       },
-      findModelById: async () => ({
-        uid: 'created-gantt-block',
-        ...persistedPayload,
-        props: {
-          ...((persistedPayload.props as Record<string, unknown>) || {}),
-          showTable: false,
-        },
-        subModels: {
-          ...((persistedPayload.subModels as Record<string, unknown>) || {}),
-          columns: [],
-        },
-      }),
+      findModelById: async (uid) => {
+        if (uid !== 'created-gantt-block') {
+          return findFlowNodeByUid(materializedRoot, String(uid || '')) || materializedRoot;
+        }
+        rootReadCount += 1;
+        if (!materializedRoot || rootReadCount < 2) {
+          return materializedRoot;
+        }
+        const driftedRoot = cloneJsonRecord(materializedRoot);
+        return {
+          uid: 'created-gantt-block',
+          ...driftedRoot,
+          props: {
+            ...((driftedRoot.props as Record<string, unknown>) || {}),
+            showTable: false,
+          },
+          subModels: {
+            ...((driftedRoot.subModels as Record<string, unknown>) || {}),
+            columns: [],
+          },
+        };
+      },
     });
 
     await expect(
@@ -3121,7 +5071,7 @@ describe('flowSurfaces dynamic capability create dry-run', () => {
             pageSize: 50,
             showRowNumbers: true,
             showTable: true,
-            tableWidth: 320,
+            tableWidth: 680,
             enableDragToReschedule: true,
           },
         },
@@ -3158,7 +5108,9 @@ describe('flowSurfaces dynamic capability create dry-run', () => {
     } as unknown as ConstructorParameters<typeof FlowSurfacesService>[0]);
     const harness = service as unknown as DynamicBlockWriteGateHarness;
     const enabledPackages = new Set(['@nocobase/plugin-gantt']);
-    let persistedPayload: Record<string, unknown> = {};
+    let materializedRoot: Record<string, unknown> | null = null;
+    let rootReadCount = 0;
+    mockJsonInferredPopupTemplateDefaults(service, () => materializedRoot);
 
     harness.catalog = async () => ({
       blocks: [
@@ -3181,11 +5133,19 @@ describe('flowSurfaces dynamic capability create dry-run', () => {
     });
     vi.spyOn(service as unknown as RepositoryGetterHarness, 'repository', 'get').mockReturnValue({
       upsertModel: async (payload) => {
-        persistedPayload = payload;
+        materializedRoot = materializePersistedRoot(payload, 'created-gantt-block');
         return 'created-gantt-block';
       },
-      findModelById: async () => {
-        const subModels = (persistedPayload.subModels as Record<string, unknown>) || {};
+      findModelById: async (uid) => {
+        if (uid !== 'created-gantt-block') {
+          return findFlowNodeByUid(materializedRoot, String(uid || '')) || materializedRoot;
+        }
+        rootReadCount += 1;
+        if (!materializedRoot || rootReadCount < 2) {
+          return materializedRoot;
+        }
+        const driftedRoot = cloneJsonRecord(materializedRoot);
+        const subModels = (driftedRoot.subModels as Record<string, unknown>) || {};
         const actions = ((subModels.actions as Record<string, unknown>[]) || []).map((action, index) => {
           if (index !== 0) {
             return action;
@@ -3200,7 +5160,7 @@ describe('flowSurfaces dynamic capability create dry-run', () => {
         });
         return {
           uid: 'created-gantt-block',
-          ...persistedPayload,
+          ...driftedRoot,
           subModels: {
             ...subModels,
             actions,
@@ -3259,6 +5219,7 @@ describe('flowSurfaces dynamic capability create dry-run', () => {
     const harness = service as unknown as DynamicBlockWriteGateHarness;
     const enabledPackages = new Set(['@nocobase/plugin-gantt']);
     let persistedPayload: Record<string, unknown> = {};
+    mockJsonInferredPopupDefaultsWithoutContent(service);
 
     harness.catalog = async () => ({
       blocks: [
@@ -3525,6 +5486,173 @@ describe('flowSurfaces dynamic capability create dry-run', () => {
       use: providerModelUse,
       type: 'dryRun',
     });
+  });
+
+  it('should resolve provider-backed popup raw resource before dynamic create', async () => {
+    const resolvedProviderInputs: unknown[] = [];
+    const provider: FlowSurfaceCapabilitiesProvider = {
+      ownerPlugin: '@nocobase/plugin-dry-run',
+      getCapabilities: () => [
+        {
+          id: 'blocks.popupDryRun',
+          kind: 'block',
+          publicType: 'popupDryRun',
+          label: 'Popup dry run',
+          semantic: {
+            title: 'Popup dry run',
+          },
+          implementation: {
+            modelUse: 'TableBlockModel',
+          },
+          availability: {
+            create: {
+              supported: true,
+            },
+          },
+          initParamsSchema: {
+            type: 'object',
+            additionalProperties: false,
+            required: ['collectionName'],
+            properties: {
+              collectionName: {
+                type: 'string',
+              },
+              dataSourceKey: {
+                type: 'string',
+              },
+            },
+          },
+          settingsSchema: {
+            type: 'object',
+            additionalProperties: false,
+            required: ['pageSize'],
+            properties: {
+              pageSize: {
+                type: 'number',
+              },
+            },
+          },
+        },
+      ],
+      resolveCreate: (_capability, publicInput) => {
+        resolvedProviderInputs.push(JSON.parse(JSON.stringify(publicInput)));
+        return {
+          use: 'TableBlockModel',
+          stepParams: {
+            resourceSettings: {
+              init: JSON.parse(JSON.stringify(publicInput.initParams || {})),
+            },
+            tableSettings: {
+              pageSize: {
+                pageSize: publicInput.settings?.pageSize,
+              },
+            },
+          },
+        };
+      },
+    };
+    const enabledPackages = new Set(['@nocobase/plugin-dry-run']);
+    const service = new FlowSurfacesService({
+      flowSurfaceCapabilityProviders: createProviderRegistry([provider]),
+    } as unknown as ConstructorParameters<typeof FlowSurfacesService>[0]);
+    const harness = service as unknown as DynamicBlockWriteGateHarness;
+    harness.catalog = async () => ({
+      blocks: [
+        {
+          key: 'popupDryRun',
+          label: 'Popup dry run',
+          use: 'TableBlockModel',
+          kind: 'block',
+          publicType: 'popupDryRun',
+          ownerPlugin: '@nocobase/plugin-dry-run',
+          origin: 'provider',
+          createSupported: true,
+          availability: {
+            render: {
+              supported: true,
+            },
+            readback: {
+              supported: true,
+            },
+            create: {
+              supported: true,
+            },
+            configure: {
+              supported: false,
+            },
+          },
+        },
+      ],
+    });
+    const persistedPayloads: Record<string, unknown>[] = [];
+    vi.spyOn(service as unknown as RepositoryGetterHarness, 'repository', 'get').mockReturnValue({
+      upsertModel: async (payload) => {
+        persistedPayloads.push(payload);
+        return 'created-popup-dry-run';
+      },
+    } as unknown as RepositoryGetterHarness['repository']);
+
+    await harness.tryAddDynamicBlock({
+      values: {
+        type: 'popupDryRun',
+        resource: {
+          dataSourceKey: 'main',
+          collectionName: 'tasks',
+        },
+        settings: {
+          pageSize: 20,
+        },
+      },
+      options: {
+        deferAutoLayout: true,
+        dynamicCapabilityActionName: 'applyBlueprint',
+      },
+      enabledPackages,
+      blockType: 'popupDryRun',
+      target: {
+        uid: 'popup-grid',
+      },
+      parentUid: 'popup-grid',
+      subKey: 'items',
+      subType: 'array',
+      popupProfile: {
+        isPopupSurface: true,
+        popupKind: 'recordPopup',
+        dataSourceKey: 'main',
+        collectionName: 'tasks',
+        currentCollection: {
+          name: 'tasks',
+        },
+        hasCurrentRecord: false,
+        hasAssociationContext: false,
+        scene: 'many',
+      },
+      semanticResource: {
+        kind: 'raw',
+        value: {
+          dataSourceKey: 'main',
+          collectionName: 'tasks',
+        },
+      },
+    });
+
+    expect(resolvedProviderInputs).toEqual([
+      expect.objectContaining({
+        initParams: {
+          dataSourceKey: 'main',
+          collectionName: 'tasks',
+        },
+        settings: {
+          pageSize: 20,
+        },
+      }),
+    ]);
+    expect(persistedPayloads).toEqual([
+      expect.objectContaining({
+        parentId: 'popup-grid',
+        use: 'TableBlockModel',
+      }),
+    ]);
   });
 
   it('should require target catalog confirmation before provider block writes', async () => {
@@ -5203,6 +7331,92 @@ describe('flowSurfaces dynamic capability create dry-run', () => {
       expect.objectContaining({
         transaction: 'tx-apply-blueprint',
         enabledPackages,
+      }),
+    );
+  });
+
+  it('should keep provider-backed applyBlueprint dynamic block resource as public resource', async () => {
+    const service = new FlowSurfacesService({
+      flowSurfaceCapabilityProviders: createProviderRegistry([createDryRunProvider()]),
+    } as unknown as ConstructorParameters<typeof FlowSurfacesService>[0]);
+    const enabledPackages = new Set(['@nocobase/plugin-dry-run']);
+    const privateHarness = service as unknown as ApplyBlueprintPrivateHarness;
+    const actionHarness = service as unknown as ApplyBlueprintActionHarness;
+    vi.spyOn(service as unknown as EnabledPackagesHarness, 'resolveEnabledPluginPackages').mockResolvedValue(
+      enabledPackages,
+    );
+    vi.spyOn(privateHarness, 'ensureSurfaceTableDefaultActionIntegrity').mockResolvedValue(undefined);
+    vi.spyOn(actionHarness, 'createMenu').mockResolvedValue({
+      routeId: 'menu-route-1',
+    });
+    vi.spyOn(actionHarness, 'createPage').mockResolvedValue({
+      pageSchemaUid: 'page-schema-1',
+      tabSchemaUid: 'tab-schema-1',
+    });
+    const compose = vi.spyOn(actionHarness, 'compose').mockResolvedValue({
+      target: {
+        uid: 'tab-schema-1',
+      },
+      mode: 'append',
+      blocks: [
+        {
+          key: 'main.plannedDryRun',
+          type: 'dryRun',
+          uid: 'blueprint-dry-run-block',
+        },
+      ],
+    });
+
+    await privateHarness.applyBlueprintWithTransaction(
+      {
+        mode: 'create',
+        tabs: [
+          {
+            key: 'main',
+            blocks: [
+              {
+                key: 'plannedDryRun',
+                type: 'dryRun',
+                resource: {
+                  collectionName: 'tasks',
+                },
+                settings: {
+                  pageSize: 20,
+                },
+              },
+            ],
+          },
+        ],
+      },
+      {
+        transaction: 'tx-provider-apply-blueprint',
+        currentRoles: ['root'],
+        skipAuthoringValidation: true,
+      },
+      [],
+      {
+        readSurface: false,
+      },
+    );
+
+    const forwardedBlock = (compose.mock.calls[0]?.[0]?.blocks as Array<Record<string, unknown>>)[0];
+    expect(forwardedBlock).toMatchObject({
+      type: 'dryRun',
+      resource: {
+        dataSourceKey: 'main',
+        collectionName: 'tasks',
+      },
+      settings: {
+        pageSize: 20,
+      },
+    });
+    expect(forwardedBlock).not.toHaveProperty('initParams');
+    expect(compose).toHaveBeenCalledWith(
+      expect.objectContaining({
+        blocks: expect.arrayContaining([expect.objectContaining({ type: 'dryRun' })]),
+      }),
+      expect.objectContaining({
+        dynamicCapabilityActionName: 'applyBlueprint',
       }),
     );
   });

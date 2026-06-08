@@ -19,6 +19,7 @@ const useStyles = createStyles(({ token, css }) => {
       width: 100%;
       border-left: 2px solid ${token.colorBorderSecondary};
       overflow-x: hidden;
+      pointer-events: none;
       .ganttHeader {
         border-bottom: 1px solid ${token.colorBorderSecondary};
         font-weight: normal;

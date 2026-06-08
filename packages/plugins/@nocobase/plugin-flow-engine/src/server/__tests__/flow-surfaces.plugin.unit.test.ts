@@ -19,6 +19,7 @@ import {
   writeFlowSurfaceAutoSnapshot,
   type FlowSurfaceAutoSnapshot,
 } from '../flow-surfaces/extractor';
+import { FLOW_SURFACE_INFERRED_AUTHORING_CONTRACT_VERSION } from '../flow-surfaces/extractor/types';
 
 const FLOW_SURFACE_PLUGIN_TEST_DATE = '2026-06-04T00:00:00.000Z';
 
@@ -110,6 +111,36 @@ describe('PluginFlowEngineServer flow surface auto snapshot cache', () => {
     };
   }
 
+  function createInferredAuthoringSnapshot(plugin: string, sourceHash: string, options: { currentContract?: boolean }) {
+    const snapshot = createPluginSnapshot(plugin, sourceHash);
+    snapshot.inferredAuthoring = {
+      ...(options.currentContract ? { contractVersion: FLOW_SURFACE_INFERRED_AUTHORING_CONTRACT_VERSION } : {}),
+      capabilities: [
+        {
+          kind: 'block',
+          publicType: 'cacheTest',
+          ownerPlugin: plugin,
+          modelUse: 'CacheTestBlockModel',
+          label: 'Cache test',
+          confidence: {
+            discovery: 'high',
+            placement: 'high',
+            tree: 'high',
+            settings: 'high',
+            write: 'high',
+          },
+          evidence: [
+            {
+              type: 'model',
+              ref: 'CacheTestBlockModel',
+            },
+          ],
+        },
+      ],
+    };
+    return snapshot;
+  }
+
   it('should refresh snapshots when an existing snapshot file is overwritten in place', async () => {
     const tempRoot = await realpath(tmpdir());
     const outDir = await mkdtemp(join(tempRoot, 'flow-surfaces-plugin-cache-'));
@@ -180,6 +211,42 @@ describe('PluginFlowEngineServer flow surface auto snapshot cache', () => {
         expect.objectContaining({
           plugin: '@nocobase/plugin-storage-only-snapshot-test',
           sourceHash: 'storage-only-source-hash',
+        }),
+      ]);
+    } finally {
+      await Promise.all([
+        rm(packageRoot, { recursive: true, force: true }),
+        rm(storageOutDir, { recursive: true, force: true }),
+      ]);
+    }
+  });
+
+  it('should prefer current packaged inferred authoring artifacts over stale storage snapshots', async () => {
+    const tempRoot = await realpath(tmpdir());
+    const packageRoot = await mkdtemp(join(tempRoot, 'flow-surfaces-packaged-current-'));
+    const storageOutDir = await mkdtemp(join(tempRoot, 'flow-surfaces-storage-stale-'));
+    try {
+      const pluginName = '@nocobase/plugin-packaged-current-snapshot-test';
+      await writeFlowSurfaceAutoSnapshot({
+        snapshot: createInferredAuthoringSnapshot(pluginName, 'same-source-hash', { currentContract: true }),
+        outDir: join(packageRoot, 'dist', 'flow-surfaces-capabilities'),
+        fileName: getFlowSurfaceAutoSnapshotFileName(pluginName),
+      });
+      await writeFlowSurfaceAutoSnapshot({
+        snapshot: createInferredAuthoringSnapshot(pluginName, 'same-source-hash', { currentContract: false }),
+        outDir: storageOutDir,
+        fileName: getFlowSurfaceAutoSnapshotFileName(pluginName),
+      });
+      const plugin = new PackagedSnapshotPluginFlowEngineServer({
+        [pluginName]: packageRoot,
+      });
+
+      await expect(plugin.refreshFlowSurfaceAutoSnapshots(storageOutDir, { force: true })).resolves.toEqual([
+        expect.objectContaining({
+          plugin: pluginName,
+          inferredAuthoring: expect.objectContaining({
+            contractVersion: FLOW_SURFACE_INFERRED_AUTHORING_CONTRACT_VERSION,
+          }),
         }),
       ]);
     } finally {

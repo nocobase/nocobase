@@ -40,6 +40,8 @@ export const createGanttBlockClassNames = ({
       border-radius: ${token.borderRadius}px;
     `),
     actionsColumnClass: cx(css`
+      position: relative;
+      z-index: 2;
       flex: 0 0 min(${tableWidth}px, calc(100% - 160px));
       width: min(${tableWidth}px, calc(100% - 160px));
       max-width: calc(100% - 160px);
@@ -95,6 +97,13 @@ export const createGanttBlockClassNames = ({
       flex: 1 1 auto;
       min-width: 0;
       position: relative;
+      z-index: 1;
+      pointer-events: none;
+      .nb-gantt-task-item,
+      .gantt-horizontal-scoll,
+      .verticalScroll {
+        pointer-events: auto;
+      }
       ${hasHorizontalScroll ? 'padding-bottom: 16px;' : ''}
       ${hasVerticalScroll ? 'padding-inline-end: 1rem;' : ''}
     `),

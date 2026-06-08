@@ -90,7 +90,8 @@ export const TaskItem: React.FC<TaskItemProps> = (props) => {
   };
   return (
     <g
-      className={cx(styles.nbganttTaskitem)}
+      className={cx('nb-gantt-task-item', styles.nbganttTaskitem)}
+      pointerEvents="auto"
       onKeyDown={(e) => {
         switch (e.key) {
           case 'Delete': {

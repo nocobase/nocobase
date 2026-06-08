@@ -7,30 +7,39 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import type {
-  FlowSurfaceAutoInferredAuthoring,
-  FlowSurfaceAutoInferredAuthoringCapability,
-  FlowSurfaceAutoMenuItem,
-  FlowSurfaceAutoSnapshot,
+import {
+  FLOW_SURFACE_INFERRED_AUTHORING_CONTRACT_VERSION,
+  type FlowSurfaceAutoInferredAuthoring,
+  type FlowSurfaceAutoInferredAuthoringCapability,
+  type FlowSurfaceAutoMenuItem,
+  type FlowSurfaceAutoSnapshot,
 } from './types';
 
 const GANTT_OWNER_PLUGIN = '@nocobase/plugin-gantt';
 const GANTT_BLOCK_MODEL_USE = 'GanttBlockModel';
 const GANTT_ACTION_GROUP_MODEL_USE = 'GanttCollectionActionGroupModel';
 const GANTT_EVENT_VIEW_ACTION_MODEL_USE = 'GanttEventViewActionModel';
+const GANTT_ACTION_COLUMN_MODEL_USE = 'TableActionsColumnModel';
+const GANTT_RECORD_ACTION_MODEL_USES = ['ViewActionModel', 'EditActionModel', 'DeleteActionModel'];
 const GANTT_TIME_SCALE_VALUES = ['hour', 'quarterDay', 'halfDay', 'day', 'week', 'month', 'year', 'quarterYear'];
+const GANTT_MIN_TABLE_WIDTH = 120;
+const GANTT_AUTHORING_TABLE_WIDTH = 680;
 const GANTT_REQUIRED_ACTION_MODEL_USES = [
   'GanttExpandCollapseActionModel',
   'GanttTodayActionModel',
   'FilterActionModel',
+  'RefreshActionModel',
+  'BulkDeleteActionModel',
   'AddNewActionModel',
   'PopupCollectionActionModel',
-  'RefreshActionModel',
 ];
 const GANTT_ACTION_PUBLIC_TYPES_BY_MODEL_USE = new Map([
   ['FilterActionModel', 'filter'],
   ['AddNewActionModel', 'addNew'],
   ['PopupCollectionActionModel', 'popup'],
+  ['ViewActionModel', 'view'],
+  ['EditActionModel', 'edit'],
+  ['DeleteActionModel', 'delete'],
   ['BulkDeleteActionModel', 'bulkDelete'],
   ['LinkActionModel', 'link'],
   ['RefreshActionModel', 'refresh'],
@@ -43,6 +52,7 @@ const GANTT_ACTION_PUBLIC_TYPES_BY_MODEL_USE = new Map([
   ['JSItemActionModel', 'jsItem'],
   ['JSCollectionActionModel', 'js'],
 ]);
+const BUTTON_GENERAL_PROP_KEYS = ['title', 'tooltip', 'icon', 'type', 'danger', 'color'];
 
 export function inferFlowSurfaceAutoSnapshotAuthoring(
   snapshot: FlowSurfaceAutoSnapshot,
@@ -50,7 +60,12 @@ export function inferFlowSurfaceAutoSnapshotAuthoring(
   const capabilities = [inferGanttAuthoringCapability(snapshot)].filter(
     (item): item is NonNullable<ReturnType<typeof inferGanttAuthoringCapability>> => !!item,
   );
-  return capabilities.length ? { capabilities } : undefined;
+  return capabilities.length
+    ? {
+        contractVersion: FLOW_SURFACE_INFERRED_AUTHORING_CONTRACT_VERSION,
+        capabilities,
+      }
+    : undefined;
 }
 
 function inferGanttAuthoringCapability(
@@ -159,7 +174,7 @@ function inferGanttAuthoringCapability(
       },
       tableWidth: {
         type: 'number' as const,
-        example: 320,
+        example: GANTT_AUTHORING_TABLE_WIDTH,
       },
       enableDragToReschedule: {
         type: 'boolean' as const,
@@ -167,46 +182,7 @@ function inferGanttAuthoringCapability(
       },
     },
     createRecipe: {
-      nodeTemplate: {
-        use: GANTT_BLOCK_MODEL_USE,
-        props: {
-          fieldNames: {
-            range: 'day',
-          },
-          showTable: true,
-          enableDragToReschedule: true,
-        },
-        stepParams: {
-          resourceSettings: {
-            init: {
-              dataSourceKey: 'main',
-            },
-          },
-          ganttSettings: {
-            fields: {
-              range: 'day',
-            },
-            showTable: {
-              showTable: true,
-            },
-            enableDragToReschedule: {
-              enableDragToReschedule: true,
-            },
-          },
-        },
-        subModels: {
-          actions: [],
-          columns: [
-            {
-              use: 'TableActionsColumnModel',
-              props: {
-                title: 'Actions',
-                width: 150,
-              },
-            },
-          ],
-        },
-      },
+      nodeTemplate: buildGanttCreateNodeTemplate({ hasEventViewActionEvidence }),
       initParams: [
         {
           name: 'dataSourceKey',
@@ -214,10 +190,13 @@ function inferGanttAuthoringCapability(
           schema: {
             type: 'string',
           },
-          internalLens: {
-            domain: 'stepParams' as const,
-            path: 'resourceSettings.init.dataSourceKey',
-          },
+          internalLens: [
+            {
+              domain: 'stepParams' as const,
+              path: 'resourceSettings.init.dataSourceKey',
+            },
+            ...buildGanttColumnInitParamLenses('dataSourceKey'),
+          ],
         },
         {
           name: 'collectionName',
@@ -225,10 +204,13 @@ function inferGanttAuthoringCapability(
           schema: {
             type: 'string',
           },
-          internalLens: {
-            domain: 'stepParams' as const,
-            path: 'resourceSettings.init.collectionName',
-          },
+          internalLens: [
+            {
+              domain: 'stepParams' as const,
+              path: 'resourceSettings.init.collectionName',
+            },
+            ...buildGanttColumnInitParamLenses('collectionName'),
+          ],
         },
       ],
       settings: [
@@ -309,7 +291,7 @@ function inferGanttAuthoringCapability(
           key: 'tableWidth',
           schema: {
             type: 'number',
-            minimum: 120,
+            minimum: GANTT_MIN_TABLE_WIDTH,
           },
           internalLens: [
             {
@@ -356,6 +338,13 @@ function inferGanttAuthoringCapability(
         kind: 'fieldComponent' as const,
         allowedChildren: ['TableColumnModel'],
       },
+      {
+        key: 'gantt.recordActions',
+        parentModelUse: GANTT_ACTION_COLUMN_MODEL_USE,
+        subModelKey: 'actions',
+        kind: 'action' as const,
+        allowedChildren: GANTT_RECORD_ACTION_MODEL_USES,
+      },
       ...(hasEventViewActionEvidence
         ? [
             {
@@ -386,6 +375,13 @@ function inferGanttAuthoringCapability(
         label: 'Collection field',
         builderContainerUse: 'TableBlockModel',
       },
+      ...GANTT_RECORD_ACTION_MODEL_USES.map((modelUse) => ({
+        kind: 'action' as const,
+        modelUse,
+        publicType: toGanttActionPublicType(modelUse),
+        label: toGanttActionLabel(modelUse),
+        builderContainerUse: GANTT_ACTION_COLUMN_MODEL_USE,
+      })),
       ...(hasEventViewActionEvidence
         ? [
             {
@@ -394,6 +390,76 @@ function inferGanttAuthoringCapability(
               publicType: 'view',
               label: 'View',
               conditions: ['recordPopup'],
+            },
+          ]
+        : []),
+    ],
+    popupHosts: [
+      {
+        key: 'gantt.addNewPopup',
+        modelUse: 'AddNewActionModel',
+        parentModelUse: GANTT_BLOCK_MODEL_USE,
+        subModelKey: 'actions',
+        defaultType: 'addNew' as const,
+        hasCurrentRecord: false,
+        templateStrategy: 'preferTemplateThenFallback' as const,
+        confidence: 'high' as const,
+        evidence: [
+          {
+            type: 'coreTemplate' as const,
+            ref: 'core-template:gantt.actions.addNew.popup',
+          },
+        ],
+      },
+      {
+        key: 'gantt.recordViewPopup',
+        modelUse: 'ViewActionModel',
+        parentModelUse: GANTT_ACTION_COLUMN_MODEL_USE,
+        subModelKey: 'actions',
+        defaultType: 'view' as const,
+        hasCurrentRecord: true,
+        templateStrategy: 'preferTemplateThenFallback' as const,
+        confidence: 'high' as const,
+        evidence: [
+          {
+            type: 'coreTemplate' as const,
+            ref: 'core-template:gantt.recordActions.view.popup',
+          },
+        ],
+      },
+      {
+        key: 'gantt.recordEditPopup',
+        modelUse: 'EditActionModel',
+        parentModelUse: GANTT_ACTION_COLUMN_MODEL_USE,
+        subModelKey: 'actions',
+        defaultType: 'edit' as const,
+        hasCurrentRecord: true,
+        templateStrategy: 'preferTemplateThenFallback' as const,
+        confidence: 'high' as const,
+        evidence: [
+          {
+            type: 'coreTemplate' as const,
+            ref: 'core-template:gantt.recordActions.edit.popup',
+          },
+        ],
+      },
+      ...(hasEventViewActionEvidence
+        ? [
+            {
+              key: 'gantt.eventViewPopup',
+              modelUse: GANTT_EVENT_VIEW_ACTION_MODEL_USE,
+              parentModelUse: GANTT_BLOCK_MODEL_USE,
+              subModelKey: 'eventViewAction',
+              defaultType: 'view' as const,
+              hasCurrentRecord: true,
+              templateStrategy: 'preferTemplateThenFallback' as const,
+              confidence: 'high' as const,
+              evidence: [
+                {
+                  type: 'coreTemplate' as const,
+                  ref: 'core-template:gantt.eventViewAction.popup',
+                },
+              ],
             },
           ]
         : []),
@@ -467,6 +533,226 @@ function getGanttAllowedActionModelUses(snapshot: FlowSurfaceAutoSnapshot) {
   });
 }
 
+function buildGanttCreateNodeTemplate(input: { hasEventViewActionEvidence: boolean }) {
+  return {
+    use: GANTT_BLOCK_MODEL_USE,
+    props: {
+      fieldNames: {
+        range: 'day',
+      },
+      showTable: true,
+      enableDragToReschedule: true,
+      tableWidth: GANTT_AUTHORING_TABLE_WIDTH,
+    },
+    stepParams: {
+      resourceSettings: {
+        init: {
+          dataSourceKey: 'main',
+        },
+      },
+      ganttSettings: {
+        fields: {
+          range: 'day',
+        },
+        showTable: {
+          showTable: true,
+        },
+        enableDragToReschedule: {
+          enableDragToReschedule: true,
+        },
+        tableWidth: {
+          tableWidth: GANTT_AUTHORING_TABLE_WIDTH,
+        },
+      },
+    },
+    subModels: {
+      actions: [
+        buildGanttActionNode('FilterActionModel', {
+          title: '{{t("Filter")}}',
+          icon: 'FilterOutlined',
+        }),
+        buildGanttActionNode('RefreshActionModel', {
+          title: '{{t("Refresh")}}',
+          icon: 'ReloadOutlined',
+        }),
+        buildGanttActionNode(
+          'AddNewActionModel',
+          {
+            type: 'primary',
+            title: '{{t("Add new")}}',
+            icon: 'PlusOutlined',
+          },
+          {
+            popupSettings: {
+              openView: {},
+            },
+          },
+        ),
+        buildGanttActionNode(
+          'BulkDeleteActionModel',
+          {
+            title: '',
+            tooltip: '{{t("Delete")}}',
+            icon: 'DeleteOutlined',
+            position: 'right',
+          },
+          {
+            deleteSettings: {
+              confirm: {
+                enable: true,
+                title: '{{t("Delete record")}}',
+                content: '{{t("Are you sure you want to delete it?")}}',
+              },
+            },
+          },
+        ),
+        buildGanttActionNode('GanttTodayActionModel', {
+          type: 'default',
+          title: '{{t("Today")}}',
+          icon: 'AimOutlined',
+        }),
+      ],
+      columns: [
+        buildGanttFieldColumnNode(),
+        buildGanttFieldColumnNode(),
+        buildGanttFieldColumnNode(),
+        buildGanttActionsColumnNode(),
+      ],
+      ...(input.hasEventViewActionEvidence
+        ? {
+            eventViewAction: {
+              use: GANTT_EVENT_VIEW_ACTION_MODEL_USE,
+              stepParams: {
+                popupSettings: {
+                  openView: {},
+                },
+              },
+            },
+          }
+        : {}),
+    },
+  };
+}
+
+function buildGanttActionNode(use: string, props: Record<string, unknown>, stepParams?: Record<string, unknown>) {
+  return {
+    use,
+    props,
+    stepParams: {
+      buttonSettings: {
+        general: pickButtonGeneralProps(props),
+      },
+      ...(stepParams || {}),
+    },
+  };
+}
+
+function pickButtonGeneralProps(props: Record<string, unknown>) {
+  return Object.fromEntries(BUTTON_GENERAL_PROP_KEYS.filter((key) => key in props).map((key) => [key, props[key]]));
+}
+
+function buildGanttFieldColumnNode() {
+  return {
+    use: 'TableColumnModel',
+    props: {},
+    stepParams: {
+      fieldSettings: {
+        init: {
+          dataSourceKey: 'main',
+        },
+      },
+      tableColumnSettings: {
+        title: {},
+        model: {
+          use: 'DisplayTextFieldModel',
+        },
+      },
+    },
+    subModels: {
+      field: {
+        use: 'DisplayTextFieldModel',
+        stepParams: {
+          fieldSettings: {
+            init: {
+              dataSourceKey: 'main',
+            },
+          },
+        },
+      },
+    },
+  };
+}
+
+function buildGanttActionsColumnNode() {
+  return {
+    use: GANTT_ACTION_COLUMN_MODEL_USE,
+    props: {
+      title: '{{t("Actions")}}',
+      width: 150,
+    },
+    subModels: {
+      actions: [
+        buildGanttActionNode(
+          'ViewActionModel',
+          {
+            type: 'link',
+            title: '{{t("View")}}',
+            icon: null,
+          },
+          {
+            popupSettings: {
+              openView: {},
+            },
+          },
+        ),
+        buildGanttActionNode(
+          'EditActionModel',
+          {
+            type: 'link',
+            title: '{{t("Edit")}}',
+            icon: null,
+          },
+          {
+            popupSettings: {
+              openView: {},
+            },
+          },
+        ),
+        buildGanttActionNode(
+          'DeleteActionModel',
+          {
+            type: 'link',
+            title: '{{t("Delete")}}',
+            icon: null,
+          },
+          {
+            deleteSettings: {
+              confirm: {
+                enable: true,
+                title: '{{t("Delete record")}}',
+                content: '{{t("Are you sure you want to delete it?")}}',
+              },
+            },
+          },
+        ),
+      ],
+    },
+  };
+}
+
+function buildGanttColumnInitParamLenses(key: 'dataSourceKey' | 'collectionName') {
+  return [0, 1, 2].flatMap((index) => [
+    {
+      domain: 'node' as const,
+      path: `subModels.columns.${index}.stepParams.fieldSettings.init.${key}`,
+    },
+    {
+      domain: 'node' as const,
+      path: `subModels.columns.${index}.subModels.field.stepParams.fieldSettings.init.${key}`,
+    },
+  ]);
+}
+
 function buildGanttSettingsSchema() {
   return {
     type: 'object',
@@ -509,7 +795,7 @@ function buildGanttSettingsSchema() {
       },
       tableWidth: {
         type: 'number',
-        minimum: 120,
+        minimum: GANTT_MIN_TABLE_WIDTH,
       },
       enableDragToReschedule: {
         type: 'boolean',
@@ -520,16 +806,16 @@ function buildGanttSettingsSchema() {
 
 function buildGanttFieldSettingLenses() {
   return [
-    buildGanttFieldSettingLens('titleField', 'title'),
-    buildGanttFieldSettingLens('startField', 'start'),
-    buildGanttFieldSettingLens('endField', 'end'),
+    buildGanttFieldSettingLens('titleField', 'title', 0),
+    buildGanttFieldSettingLens('startField', 'start', 1),
+    buildGanttFieldSettingLens('endField', 'end', 2),
     buildGanttFieldSettingLens('progressField', 'progress'),
     buildGanttFieldSettingLens('colorField', 'color'),
   ];
 }
 
-function buildGanttFieldSettingLens(key: string, internalKey: string) {
-  const lenses = [
+function buildGanttFieldSettingLens(key: string, internalKey: string, columnIndex?: number) {
+  const lenses: Array<{ domain: 'props' | 'stepParams' | 'node'; path: string }> = [
     {
       domain: 'props' as const,
       path: `fieldNames.${internalKey}`,
@@ -539,6 +825,30 @@ function buildGanttFieldSettingLens(key: string, internalKey: string) {
       path: `ganttSettings.fields.${internalKey}`,
     },
   ];
+  if (typeof columnIndex === 'number') {
+    lenses.push(
+      {
+        domain: 'node' as const,
+        path: `subModels.columns.${columnIndex}.props.title`,
+      },
+      {
+        domain: 'node' as const,
+        path: `subModels.columns.${columnIndex}.props.dataIndex`,
+      },
+      {
+        domain: 'node' as const,
+        path: `subModels.columns.${columnIndex}.stepParams.fieldSettings.init.fieldPath`,
+      },
+      {
+        domain: 'node' as const,
+        path: `subModels.columns.${columnIndex}.stepParams.tableColumnSettings.title.title`,
+      },
+      {
+        domain: 'node' as const,
+        path: `subModels.columns.${columnIndex}.subModels.field.stepParams.fieldSettings.init.fieldPath`,
+      },
+    );
+  }
   if (internalKey === 'progress') {
     lenses.push({
       domain: 'stepParams' as const,

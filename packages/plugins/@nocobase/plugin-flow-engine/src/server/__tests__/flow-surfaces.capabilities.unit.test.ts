@@ -337,11 +337,11 @@ describe('flowSurfaces capabilities projection', () => {
       'GanttExpandCollapseActionModel',
       'GanttTodayActionModel',
       'FilterActionModel',
+      'RefreshActionModel',
+      'BulkDeleteActionModel',
       'AddNewActionModel',
       'PopupCollectionActionModel',
-      'BulkDeleteActionModel',
       'LinkActionModel',
-      'RefreshActionModel',
       'BulkEditActionModel',
       'BulkUpdateActionModel',
       'ExportActionModel',
@@ -1928,6 +1928,7 @@ describe('flowSurfaces capabilities projection', () => {
     const response = await buildFlowSurfaceCapabilitiesResponse(
       {
         query: 'gantt',
+        includeUnavailable: true,
         includeWarnings: true,
       },
       {
@@ -2385,6 +2386,159 @@ describe('flowSurfaces capabilities projection', () => {
       },
     );
     expect(disabledResponse.data).toEqual([]);
+  });
+
+  it('should keep JSON inferred popup hosts with unsupported childSurfaceKey read-only', async () => {
+    const autoSnapshot = createGanttAutoSnapshot({ inferredAuthoring: true });
+    const inferredCapability = autoSnapshot.inferredAuthoring?.capabilities?.[0];
+    const addNewPopupHost = inferredCapability?.popupHosts?.find((popupHost) => popupHost.defaultType === 'addNew');
+    expect(addNewPopupHost).toBeTruthy();
+    if (inferredCapability && addNewPopupHost) {
+      inferredCapability.popupHosts = [
+        {
+          ...addNewPopupHost,
+          key: 'gantt.unsupportedChildSurfacePopup',
+          childSurfaceKey: 'gantt.actions',
+        },
+      ];
+    }
+
+    const response = await buildFlowSurfaceCapabilitiesResponse(
+      {
+        query: 'gantt',
+        includeUnavailable: true,
+        includeWarnings: true,
+      },
+      {
+        enabledPackages: new Set(['@nocobase/plugin-gantt']),
+        providerRegistry: createProviderRegistry([]),
+        autoSnapshots: [autoSnapshot],
+        catalog: createCatalogRecorder().catalog,
+        generatedAt: '2026-06-04T00:00:00.000Z',
+      },
+    );
+
+    const ganttCapability = response.data.find((item) => item.publicType === 'gantt');
+    expect(ganttCapability).toEqual(
+      expect.objectContaining({
+        publicType: 'gantt',
+        origin: 'autoSnapshot',
+        supportLevel: 'readback-only',
+        readiness: 'discovered',
+        availability: expect.objectContaining({
+          create: expect.objectContaining({
+            supported: false,
+            reasonCode: 'contract-not-verified',
+          }),
+        }),
+        warnings: expect.arrayContaining([
+          expect.objectContaining({
+            code: 'contract-not-verified',
+          }),
+        ]),
+      }),
+    );
+  });
+
+  it('should keep JSON inferred popup hosts with invalid openViewPath read-only', async () => {
+    const autoSnapshot = createGanttAutoSnapshot({ inferredAuthoring: true });
+    const inferredCapability = autoSnapshot.inferredAuthoring?.capabilities?.[0];
+    const addNewPopupHost = inferredCapability?.popupHosts?.find((popupHost) => popupHost.defaultType === 'addNew');
+    expect(addNewPopupHost).toBeTruthy();
+    if (inferredCapability && addNewPopupHost) {
+      inferredCapability.popupHosts = [
+        {
+          ...addNewPopupHost,
+          key: 'gantt.invalidOpenViewPathPopup',
+          openViewPath: 'stepParams.__proto__.openView',
+        },
+      ];
+    }
+
+    const response = await buildFlowSurfaceCapabilitiesResponse(
+      {
+        query: 'gantt',
+        includeUnavailable: true,
+        includeWarnings: true,
+      },
+      {
+        enabledPackages: new Set(['@nocobase/plugin-gantt']),
+        providerRegistry: createProviderRegistry([]),
+        autoSnapshots: [autoSnapshot],
+        catalog: createCatalogRecorder().catalog,
+        generatedAt: '2026-06-04T00:00:00.000Z',
+      },
+    );
+
+    const ganttCapability = response.data.find((item) => item.publicType === 'gantt');
+    expect(ganttCapability).toEqual(
+      expect.objectContaining({
+        publicType: 'gantt',
+        origin: 'autoSnapshot',
+        supportLevel: 'readback-only',
+        readiness: 'blocked',
+        availability: expect.objectContaining({
+          create: expect.objectContaining({
+            supported: false,
+            reasonCode: 'contract-not-verified',
+          }),
+        }),
+        warnings: expect.arrayContaining([
+          expect.objectContaining({
+            code: 'contract-not-verified',
+          }),
+        ]),
+      }),
+    );
+  });
+
+  it('should keep stale JSON inferred authoring contract snapshots read-only', async () => {
+    const autoSnapshot = createGanttAutoSnapshot({ inferredAuthoring: true });
+    if (!autoSnapshot.inferredAuthoring) {
+      throw new Error('Expected Gantt inferred authoring capability');
+    }
+    delete autoSnapshot.inferredAuthoring.contractVersion;
+
+    const response = await buildFlowSurfaceCapabilitiesResponse(
+      {
+        query: 'gantt',
+        includeUnavailable: true,
+        includeWarnings: true,
+      },
+      {
+        enabledPackages: new Set(['@nocobase/plugin-gantt']),
+        providerRegistry: createProviderRegistry([]),
+        autoSnapshots: [autoSnapshot],
+        catalog: createCatalogRecorder().catalog,
+        generatedAt: '2026-06-04T00:00:00.000Z',
+      },
+    );
+
+    const ganttCapability = response.data.find((item) => item.publicType === 'gantt');
+    expect(ganttCapability).toEqual(
+      expect.objectContaining({
+        publicType: 'gantt',
+        origin: 'autoSnapshot',
+        supportLevel: 'readback-only',
+        readiness: 'blocked',
+        availability: expect.objectContaining({
+          render: expect.objectContaining({
+            supported: false,
+            reasonCode: 'snapshot-stale',
+          }),
+          create: expect.objectContaining({
+            supported: false,
+            reasonCode: 'manifest-required',
+          }),
+        }),
+        warnings: expect.arrayContaining([
+          expect.objectContaining({
+            code: 'snapshot-stale',
+            message: expect.stringContaining('inferred authoring contract'),
+          }),
+        ]),
+      }),
+    );
   });
 
   it('should describe JSON inferred Gantt by accepted alias as the canonical capability', async () => {

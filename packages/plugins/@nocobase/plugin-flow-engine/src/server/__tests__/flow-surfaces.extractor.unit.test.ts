@@ -3019,11 +3019,11 @@ describe('flowSurfaces extractor scaffold', () => {
       'GanttExpandCollapseActionModel',
       'GanttTodayActionModel',
       'FilterActionModel',
+      'RefreshActionModel',
+      'BulkDeleteActionModel',
       'AddNewActionModel',
       'PopupCollectionActionModel',
-      'BulkDeleteActionModel',
       'LinkActionModel',
-      'RefreshActionModel',
       'BulkEditActionModel',
       'BulkUpdateActionModel',
       'ExportActionModel',
@@ -3102,16 +3102,95 @@ describe('flowSurfaces extractor scaffold', () => {
         createRecipe: expect.objectContaining({
           nodeTemplate: expect.objectContaining({
             use: 'GanttBlockModel',
-            subModels: {
-              actions: [],
-              columns: [
+            subModels: expect.objectContaining({
+              actions: expect.arrayContaining([
+                expect.objectContaining({
+                  use: 'FilterActionModel',
+                }),
+                expect.objectContaining({
+                  use: 'GanttTodayActionModel',
+                }),
+                expect.objectContaining({
+                  use: 'RefreshActionModel',
+                }),
+                expect.objectContaining({
+                  use: 'AddNewActionModel',
+                }),
+              ]),
+              columns: expect.arrayContaining([
+                expect.objectContaining({
+                  use: 'TableColumnModel',
+                }),
                 expect.objectContaining({
                   use: 'TableActionsColumnModel',
+                  subModels: {
+                    actions: expect.arrayContaining([
+                      expect.objectContaining({
+                        use: 'ViewActionModel',
+                        props: expect.objectContaining({
+                          type: 'link',
+                          icon: null,
+                        }),
+                        stepParams: expect.objectContaining({
+                          buttonSettings: expect.objectContaining({
+                            general: expect.objectContaining({
+                              type: 'link',
+                              icon: null,
+                            }),
+                          }),
+                        }),
+                      }),
+                      expect.objectContaining({
+                        use: 'EditActionModel',
+                        props: expect.objectContaining({
+                          type: 'link',
+                          icon: null,
+                        }),
+                        stepParams: expect.objectContaining({
+                          buttonSettings: expect.objectContaining({
+                            general: expect.objectContaining({
+                              type: 'link',
+                              icon: null,
+                            }),
+                          }),
+                        }),
+                      }),
+                      expect.objectContaining({
+                        use: 'DeleteActionModel',
+                        props: expect.objectContaining({
+                          type: 'link',
+                          icon: null,
+                        }),
+                        stepParams: expect.objectContaining({
+                          buttonSettings: expect.objectContaining({
+                            general: expect.objectContaining({
+                              type: 'link',
+                              icon: null,
+                            }),
+                          }),
+                        }),
+                      }),
+                    ]),
+                  },
                 }),
-              ],
-            },
+              ]),
+            }),
           }),
         }),
+        popupHosts: expect.arrayContaining([
+          expect.objectContaining({
+            modelUse: 'AddNewActionModel',
+            defaultType: 'addNew',
+          }),
+          expect.objectContaining({
+            modelUse: 'ViewActionModel',
+            defaultType: 'view',
+          }),
+          expect.objectContaining({
+            modelUse: 'EditActionModel',
+            defaultType: 'edit',
+          }),
+        ]),
         childSurfaces: expect.arrayContaining([
           expect.objectContaining({
             subModelKey: 'actions',
@@ -3149,10 +3228,21 @@ describe('flowSurfaces extractor scaffold', () => {
       ganttAllowedActionModelUses,
     );
     expect(
+      snapshot.inferredAuthoring?.capabilities[0].createRecipe?.nodeTemplate?.subModels?.actions?.map(
+        (action: any) => action?.use,
+      ),
+    ).toEqual([
+      'FilterActionModel',
+      'RefreshActionModel',
+      'AddNewActionModel',
+      'BulkDeleteActionModel',
+      'GanttTodayActionModel',
+    ]);
+    expect(
       snapshot.inferredAuthoring?.capabilities[0].allowedChildren
         ?.filter((item) => item.kind === 'action')
         .map((item) => item.modelUse),
-    ).toEqual(ganttAllowedActionModelUses);
+    ).toEqual([...ganttAllowedActionModelUses, 'ViewActionModel', 'EditActionModel', 'DeleteActionModel']);
     expect(snapshot.inferredAuthoring?.capabilities[0].allowedChildren).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
@@ -3218,9 +3308,10 @@ describe('flowSurfaces extractor scaffold', () => {
       'GanttExpandCollapseActionModel',
       'GanttTodayActionModel',
       'FilterActionModel',
+      'RefreshActionModel',
+      'BulkDeleteActionModel',
       'AddNewActionModel',
       'PopupCollectionActionModel',
-      'RefreshActionModel',
     ];
     const fullEvidenceEvents: FlowSurfaceExtractionEvent[] = [
       {
@@ -4631,11 +4722,11 @@ describe('flowSurfaces extractor scaffold', () => {
         'GanttExpandCollapseActionModel',
         'GanttTodayActionModel',
         'FilterActionModel',
+        'RefreshActionModel',
+        'BulkDeleteActionModel',
         'AddNewActionModel',
         'PopupCollectionActionModel',
-        'BulkDeleteActionModel',
         'LinkActionModel',
-        'RefreshActionModel',
         'BulkEditActionModel',
         'BulkUpdateActionModel',
         'ExportActionModel',

@@ -481,9 +481,15 @@ export function registerGanttBlockModelSettings(GanttBlockModel: any) {
         },
         async handler(ctx, params) {
           const model = getGanttModel(ctx);
+          const popupTemplateUidProvided = Object.prototype.hasOwnProperty.call(params || {}, 'popupTemplateUid');
+          const clearTemplate =
+            popupTemplateUidProvided &&
+            (params.popupTemplateUid === undefined ||
+              params.popupTemplateUid === null ||
+              params.popupTemplateUid === '');
           model.setPopupSettings(params);
           const action = await model.ensurePopupAction('eventViewAction');
-          await model.syncPopupActionSettings(action);
+          await model.syncPopupActionSettings(action, { clearTemplate });
         },
       },
     },

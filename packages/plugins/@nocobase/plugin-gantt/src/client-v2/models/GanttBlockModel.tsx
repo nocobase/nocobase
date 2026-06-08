@@ -56,6 +56,8 @@ type GanttScrollToDateOptions = {
   behavior?: ScrollBehavior;
 };
 
+const SYNTHETIC_EVENT_VIEW_ACTION_FLAG = Symbol('syntheticGanttEventViewAction');
+
 export class GanttBlockModel extends TableBlockModel {
   static scene = BlockSceneEnum.many;
 
@@ -415,25 +417,46 @@ export class GanttBlockModel extends TableBlockModel {
     return normalized;
   }
 
-  getPopupSettings(action: any, actionUid?: string) {
+  getPopupSettings(
+    action: any,
+    actionUid?: string,
+    options?: { popupSettings?: Record<string, any>; clearTemplate?: boolean },
+  ) {
     const defaults = this.getPopupSettingsDefaults(action?.uid || actionUid);
-    const currentParams = this.getStoredPopupSettings();
+    const currentActionParams = action?.getStepParams?.('popupSettings', 'openView') || {};
+    const currentBlockParams = options?.popupSettings || this.getStoredPopupSettings();
+    const nextParams = {
+      ...defaults,
+      ...currentActionParams,
+      ...currentBlockParams,
+    };
+
+    if (options?.clearTemplate) {
+      nextParams.popupTemplateUid = undefined;
+      nextParams.popupTemplateContext = undefined;
+      nextParams.popupTemplateHasFilterByTk = undefined;
+      nextParams.popupTemplateHasSourceId = undefined;
+      nextParams.uid = undefined;
+    }
 
     return {
-      ...defaults,
-      ...currentParams,
-      uid: currentParams.uid || defaults.uid,
-      collectionName: currentParams.collectionName || defaults.collectionName,
-      dataSourceKey: currentParams.dataSourceKey || defaults.dataSourceKey,
+      ...nextParams,
+      uid: nextParams.uid || defaults.uid,
+      collectionName:
+        currentBlockParams.collectionName || currentActionParams.collectionName || defaults.collectionName,
+      dataSourceKey: currentBlockParams.dataSourceKey || currentActionParams.dataSourceKey || defaults.dataSourceKey,
     };
   }
 
-  async syncPopupActionSettings(action: any) {
+  async syncPopupActionSettings(
+    action: any,
+    options?: { popupSettings?: Record<string, any>; clearTemplate?: boolean },
+  ) {
     if (!action) {
       return;
     }
 
-    const nextSettings = this.getPopupSettings(action, action?.uid);
+    const nextSettings = this.getPopupSettings(action, action?.uid, options);
     const currentParams = action.getStepParams?.('popupSettings', 'openView') || {};
     if (JSON.stringify(currentParams) === JSON.stringify(nextSettings)) {
       return;
@@ -465,6 +488,8 @@ export class GanttBlockModel extends TableBlockModel {
         this.setSubModel(actionKey, loadedAction);
       } else {
         this.setSubModel(actionKey, createGanttEventViewActionOptions(this.getPopupActionUid(actionKey)));
+        ((this.subModels as GanttBlockStructure['subModels'])?.[actionKey] as any)[SYNTHETIC_EVENT_VIEW_ACTION_FLAG] =
+          true;
       }
 
       action = (this.subModels as GanttBlockStructure['subModels'])?.[actionKey] as any;
@@ -490,13 +515,24 @@ export class GanttBlockModel extends TableBlockModel {
       return;
     }
 
-    await action.dispatchEvent(
-      'click',
-      {
-        filterByTk,
-      },
-      { debounce: true },
-    );
+    const popupSettings = this.getPopupSettings(action, action.uid);
+    const inputArgs = {
+      mode: popupSettings.mode,
+      filterByTk,
+      navigation: false,
+      target: this.context?.layoutContentElement,
+    };
+
+    try {
+      if (typeof this.context?.openView === 'function' && action.uid && !action[SYNTHETIC_EVENT_VIEW_ACTION_FLAG]) {
+        await this.context.openView(action.uid, inputArgs);
+        return;
+      }
+    } catch {
+      // Fall back to the action event below when the host context cannot open the external popup directly.
+    }
+
+    await action.dispatchEvent('click', inputArgs, { debounce: true });
   }
 
   getActionsColumn() {
