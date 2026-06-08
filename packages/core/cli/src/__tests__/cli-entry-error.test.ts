@@ -8,7 +8,7 @@
  */
 
 import { expect, test } from 'vitest';
-import { formatCliEntryError, getCommandPathTokens } from '../lib/cli-entry-error.js';
+import { appendDiagnosticLogPath, formatCliEntryError, getCommandPathTokens } from '../lib/cli-entry-error.js';
 
 test('getCommandPathTokens keeps the full command path before flags', () => {
   expect(getCommandPathTokens(['api', 'flow-surfaces', 'move-menus', '-h'])).toEqual([
@@ -37,4 +37,14 @@ test('formatCliEntryError explains api unknown commands as generated api groups'
       'If this is a built-in command or a typo, run `nb api flow-surfaces --help` to inspect the commands available under that API group.',
     ].join('\n'),
   );
+});
+
+test('appendDiagnosticLogPath adds the log file path when available', () => {
+  expect(appendDiagnosticLogPath('Something failed.', '/tmp/nb-command.log')).toBe(
+    ['Something failed.', 'Diagnostic log: /tmp/nb-command.log'].join('\n\n'),
+  );
+});
+
+test('appendDiagnosticLogPath leaves the message unchanged when no log file is available', () => {
+  expect(appendDiagnosticLogPath('Something failed.')).toBe('Something failed.');
 });

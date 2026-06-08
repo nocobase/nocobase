@@ -77,7 +77,7 @@ const { maybeRunStartupUpdate } = await import(pathToFileURL(startupUpdatePath).
 const cliEntryErrorPath = isDev
   ? path.join(root, 'src/lib/cli-entry-error.ts')
   : path.join(root, 'dist/lib/cli-entry-error.js');
-const { formatCliEntryError } = await import(pathToFileURL(cliEntryErrorPath).href);
+const { appendDiagnosticLogPath, formatCliEntryError } = await import(pathToFileURL(cliEntryErrorPath).href);
 const { flush, run, settings } = await import('@oclif/core');
 
 if (isDev) {
@@ -134,7 +134,10 @@ try {
   flush();
   finalizeCommandLogOnce({ exitCode: 0 });
 } catch (error) {
-  const message = formatCliEntryError(error, process.argv.slice(2));
+  const message = appendDiagnosticLogPath(
+    formatCliEntryError(error, process.argv.slice(2)),
+    commandLogSession?.logFile,
+  );
   console.error(pc.red(message));
   finalizeCommandLogOnce({ exitCode: 1, errorMessage: message });
   process.exit(1);
