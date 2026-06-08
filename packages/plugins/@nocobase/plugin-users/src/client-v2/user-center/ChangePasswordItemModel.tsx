@@ -7,12 +7,17 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { DrawerFormLayout, PasswordInput, UserCenterActionItemModel } from '@nocobase/client-v2';
+import {
+  DrawerFormLayout,
+  getCurrentV2RedirectPath,
+  PasswordInput,
+  redirectToV2Signin,
+  UserCenterActionItemModel,
+} from '@nocobase/client-v2';
 import { useFlowContext } from '@nocobase/flow-engine';
 import { useMemoizedFn } from 'ahooks';
-import { Alert, Form } from 'antd';
+import { Alert, Form, theme } from 'antd';
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { useUsersTranslation } from '../locale';
 import { PluginUsersClientV2 } from '../plugin';
 
@@ -24,7 +29,7 @@ import { PluginUsersClientV2 } from '../plugin';
 function ChangePasswordDrawerContent() {
   const { t } = useUsersTranslation();
   const ctx = useFlowContext();
-  const navigate = useNavigate();
+  const { token } = theme.useToken();
   const [form] = Form.useForm();
   const [submitting, setSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
@@ -49,9 +54,12 @@ function ChangePasswordDrawerContent() {
     try {
       await ctx.api.resource('auth').changePassword({ values });
       form.resetFields();
-      navigate('/signin');
-    } catch (error: any) {
-      const message = error?.response?.data?.errors?.[0]?.message || error?.message || String(error);
+      redirectToV2Signin(ctx.app, getCurrentV2RedirectPath(ctx.app, window.location), {
+        replace: true,
+      });
+    } catch (error: unknown) {
+      const apiError = error as { response?: { data?: { errors?: { message?: string }[] } }; message?: string };
+      const message = apiError?.response?.data?.errors?.[0]?.message || apiError?.message || String(error);
       setErrorMessage(message);
       throw error;
     } finally {
@@ -68,7 +76,9 @@ function ChangePasswordDrawerContent() {
       cancelText={t('Cancel')}
     >
       <Form form={form} layout="vertical">
-        {errorMessage ? <Alert type="error" showIcon message={errorMessage} style={{ marginBottom: 16 }} /> : null}
+        {errorMessage ? (
+          <Alert type="error" showIcon message={errorMessage} style={{ marginBottom: token.marginMD }} />
+        ) : null}
         <Form.Item
           name="oldPassword"
           label={t('Old password')}
@@ -126,7 +136,8 @@ export class ChangePasswordItemModel extends UserCenterActionItemModel {
   }
 
   async onClick() {
-    this.context.viewer.drawer({
+    this.context.viewer.open({
+      type: 'drawer',
       width: '50%',
       closable: true,
       content: () => <ChangePasswordDrawerContent />,

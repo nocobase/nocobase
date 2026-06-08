@@ -21,6 +21,7 @@ import { resolveLocalizedText } from '../lib/cli-locale.js';
 import { runPromptCatalog } from '../lib/prompt-catalog.js';
 import {
   findAvailableTcpPort,
+  validateAppPublicPath,
   validateApiBaseUrl,
   validateAvailableTcpPort,
   validateTcpPort,
@@ -149,6 +150,22 @@ test('validateApiBaseUrl reports connectivity failures', async () => {
 test('validateEnvKey allows only letters and numbers', () => {
   expect(validateEnvKey('local01')).toBe(undefined);
   expect(validateEnvKey('local-dev') ?? '').toMatch(/letters and numbers only/i);
+});
+
+test('validateAppPublicPath accepts root and slash-separated slug paths', () => {
+  expect(validateAppPublicPath('/')).toBe(undefined);
+  expect(validateAppPublicPath('/nocobase/')).toBe(undefined);
+  expect(validateAppPublicPath('/admin_console/')).toBe(undefined);
+  expect(validateAppPublicPath('/foo-bar/baz_2/')).toBe(undefined);
+  expect(validateAppPublicPath('/foo-bar/baz_2')).toBe(undefined);
+});
+
+test('validateAppPublicPath rejects invalid path formats', () => {
+  expect(validateAppPublicPath('nocobase') ?? '').toMatch(/slash-separated path/i);
+  expect(validateAppPublicPath('/中文/') ?? '').toMatch(/slash-separated path/i);
+  expect(validateAppPublicPath('/foo bar/') ?? '').toMatch(/slash-separated path/i);
+  expect(validateAppPublicPath('/foo.bar/') ?? '').toMatch(/slash-separated path/i);
+  expect(validateAppPublicPath('/foo//bar/') ?? '').toMatch(/slash-separated path/i);
 });
 
 test('validateAvailableTcpPort rejects invalid and occupied ports across local bind hosts', async () => {
@@ -361,6 +378,7 @@ test('init --yes --env validates global env name uniqueness through preset value
 
 test('install prompts expose the expected defaults and validators', () => {
   const envPrompt = Install.envPrompts.env;
+  const appPathPrompt = Install.appPrompts.appPath;
   const appPortPrompt = Install.appPrompts.appPort;
   const builtinDbPrompt = Install.dbPrompts.builtinDb;
   const dbDialectPrompt = Install.dbPrompts.dbDialect;
@@ -383,6 +401,11 @@ test('install prompts expose the expected defaults and validators', () => {
   expect(envPrompt.yesInitialValue).toBe(undefined);
   expect(typeof envPrompt.validate).toBe('function');
   expect(envPrompt.validate?.('local-dev', {}) ?? '').toMatch(/letters and numbers only/i);
+
+  expect(appPathPrompt.type).toBe('text');
+  expect(resolveLocalizedText(appPathPrompt.message, { locale: 'en-US' })).toContain(
+    process.env.NB_CLI_ROOT ?? os.homedir(),
+  );
 
   expect(appPortPrompt.type).toBe('text');
   expect(appPortPrompt.initialValue).toBe(undefined);

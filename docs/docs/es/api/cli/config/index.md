@@ -1,42 +1,14 @@
 ---
-title: "nb config"
-description: "Referencia del comando nb config: gestionar la configuración predeterminada del CLI."
-keywords: "nb config,NocoBase CLI,configuration"
+title: 'nb config'
+description: 'Referencia del comando nb config: gestiona los elementos de configuración predeterminados de NocoBase CLI.'
+keywords: 'nb config,NocoBase CLI,configuración,configuración predeterminada'
 ---
 
 # nb config
 
-Gestiona la configuración predeterminada del CLI. Claves compatibles actualmente:
+Gestiona la configuración predeterminada de la CLI. Los elementos actuales se agrupan principalmente así:
 
-- `license.pkg-url`
-- `docker.network`
-- `docker.container-prefix`
-
-## Uso
-
-```bash
-nb config <command>
-```
-
-## Subcomandos
-
-| Comando | Descripción |
-| --- | --- |
-| [`nb config get`](./get.md) | Obtener el valor efectivo de una clave de configuración |
-| [`nb config set`](./set.md) | Establecer un valor de configuración |
-| [`nb config delete`](./delete.md) | Eliminar un valor configurado explícitamente |
-| [`nb config list`](./list.md) | Listar los valores configurados explícitamente |
-
-## Ejemplos
-
-```bash
-nb config list
-nb config get docker.network
-nb config set docker.network nocobase
-nb config delete docker.container-prefix
-```
-
-## Comandos relacionados
-
-- [`nb init`](../init.md)
-- [`nb license`](../license/index.md)
+- La propia CLI: `locale`, `update.policy`, `license.pkg-url`
+- Runtime de Docker: `docker.network`, `docker.container-prefix`
+- Ejecutables externos: `bin.docker`, `bin.caddy`, `bin.git`, `bin.nginx`, `bin.yarn`
+- Generación de proxy: `proxy.nb-cli-root`, `proxy.upstream-host`

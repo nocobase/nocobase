@@ -221,6 +221,23 @@ describe('FlowModel core behaviors (collected)', () => {
     expect(i1).toEqual({ ping: 1 });
   });
 
+  it('unchanged stepParams do not trigger a beforeRender rerun', async () => {
+    vi.useFakeTimers();
+    const spy = vi.fn().mockResolvedValue([]);
+    (engine as any).executor.dispatchEvent = spy;
+    const model = engine.createModel<FlowModel>({
+      use: 'FlowModel',
+      uid: 'm-flow-3-noop',
+      stepParams: { anyFlow: { anyStep: { x: 1 } } },
+    });
+
+    await model.dispatchEvent('beforeRender', { ping: 1 });
+    model.setStepParams('anyFlow', 'anyStep', { x: 1 });
+    await vi.advanceTimersByTimeAsync(150);
+
+    expect(spy).toHaveBeenCalledTimes(1);
+  });
+
   it('applyFlow delegates to executor.runFlow', async () => {
     const spyRun = vi.fn().mockResolvedValue('ok');
     (engine as any).executor.runFlow = spyRun;

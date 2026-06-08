@@ -8,7 +8,6 @@
 
 **バックアップファイル**：
 - [nocobase_crm_v2_backup_260406.nbdata](https://static-docs.nocobase.com/nocobase_crm_v2_backup_260406.nbdata)
-- [nocobase_crm_v2_sql_260406.zip](https://static-docs.nocobase.com/nocobase_crm_v2_sql_260406.zip)
 
 **更新内容**：
 - テーブルの Summary 集計表示の異常を修正しました
@@ -24,7 +23,6 @@
 
 **バックアップファイル**：
 - [nocobase_crm_v2_backup_260327.nbdata](https://static-docs.nocobase.com/nocobase_crm_v2_backup_260327.nbdata)
-- [nocobase_crm_v2_sql_260327.zip](https://static-docs.nocobase.com/nocobase_crm_v2_sql_260327.zip)
 
 **更新内容**：
 
@@ -52,7 +50,6 @@
 
 **バックアップファイル**：
 - nocobase_crm_v2_backup_260223.nbdata
-- nocobase_crm_v2_sql_260223.zip
 
 **更新内容**：
 - CRM 2.0 初回リリース

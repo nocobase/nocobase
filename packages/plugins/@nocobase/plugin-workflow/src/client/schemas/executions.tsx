@@ -16,7 +16,7 @@ import { message } from 'antd';
 import { useActionContext, useResourceActionContext, useResourceContext } from '@nocobase/client';
 import executionCollection from '../../common/collections/executions';
 
-import { ExecutionStatusOptions, EXECUTION_STATUS } from '../constants';
+import { ExecutionReasonOptionsMap, ExecutionStatusOptions, EXECUTION_STATUS } from '../constants';
 import { NAMESPACE } from '../locale';
 import { getWorkflowDetailPath } from '../utils';
 

@@ -15,7 +15,13 @@ import Install from '../install.js';
 import { defaultWorkspaceName } from '../../lib/app-runtime.js';
 import { resolveCliLocale } from '../../lib/cli-locale.js';
 import { findAvailableTcpPort, validateAvailableTcpPort } from '../../lib/prompt-validators.js';
-import { commandSucceeds, resolveProjectCwd, run, runNocoBaseCommand } from '../../lib/run-npm.js';
+import {
+  commandSucceeds,
+  ensureDockerDaemonRunning,
+  resolveProjectCwd,
+  run,
+  runNocoBaseCommand,
+} from '../../lib/run-npm.js';
 import { failTask, printInfo, setVerboseMode, startTask, succeedTask } from '../../lib/ui.js';
 
 type TestDbConfig = {
@@ -59,11 +65,11 @@ const DEFAULT_DB_PORTS: Record<string, number> = {
 };
 const TCP_PORT_READY_SCRIPT = [
   "const net = require('node:net');",
-  "const port = Number(process.argv.at(-1));",
+  'const port = Number(process.argv.at(-1));',
   "const socket = net.createConnection({ host: '127.0.0.1', port });",
   "socket.once('connect', () => { socket.end(); process.exit(0); });",
   "socket.once('error', () => process.exit(1));",
-  "setTimeout(() => { socket.destroy(); process.exit(1); }, 200).unref();",
+  'setTimeout(() => { socket.destroy(); process.exit(1); }, 200).unref();',
 ].join('\n');
 
 function inferTestEnv(paths: string[]): 'client-side' | 'server-side' | undefined {
@@ -73,11 +79,7 @@ function inferTestEnv(paths: string[]): 'client-side' | 'server-side' | undefine
   }
 
   const normalized = first.split('\\').join('/');
-  if (
-    normalized.includes('/client/')
-    || normalized.includes('/client-v2/')
-    || normalized.includes('/flow-engine/')
-  ) {
+  if (normalized.includes('/client/') || normalized.includes('/client-v2/') || normalized.includes('/flow-engine/')) {
     return 'client-side';
   }
 
@@ -98,9 +100,7 @@ function defaultTestDbPort(dbDialect: string): string {
 
 function defaultTestDbImage(dbDialect: string): string {
   const defaults =
-    resolveCliLocale(process.env.NB_LOCALE) === 'zh-CN'
-      ? DEFAULT_TEST_DB_IMAGES_ZH_CN
-      : DEFAULT_TEST_DB_IMAGES;
+    resolveCliLocale(process.env.NB_LOCALE) === 'zh-CN' ? DEFAULT_TEST_DB_IMAGES_ZH_CN : DEFAULT_TEST_DB_IMAGES;
   return defaults[dbDialect] ?? defaults.postgres;
 }
 
@@ -110,11 +110,7 @@ function delay(ms: number): Promise<void> {
   });
 }
 
-function shouldRunServerTests(params: {
-  server: boolean;
-  client: boolean;
-  paths: string[];
-}): boolean {
+function shouldRunServerTests(params: { server: boolean; client: boolean; paths: string[] }): boolean {
   if (params.server) {
     return true;
   }
@@ -159,9 +155,7 @@ async function waitForTcpPortReady(port: string, timeoutMs = 5000): Promise<void
   throw new Error(`Timed out while waiting for the test DB distributor on 127.0.0.1:${port}.`);
 }
 
-async function stopBackgroundProcess(
-  child: ReturnType<typeof spawn>,
-): Promise<void> {
+async function stopBackgroundProcess(child: ReturnType<typeof spawn>): Promise<void> {
   if (child.exitCode !== null || child.killed) {
     return;
   }
@@ -229,11 +223,13 @@ async function startTestDbDistributor(params: {
       return;
     }
 
-    childError = childError ?? new Error(
-      signal
-        ? `test DB distributor exited due to signal ${signal}`
-        : `test DB distributor exited with code ${code ?? 'unknown'}`,
-    );
+    childError =
+      childError ??
+      new Error(
+        signal
+          ? `test DB distributor exited due to signal ${signal}`
+          : `test DB distributor exited with code ${code ?? 'unknown'}`,
+      );
   });
 
   try {
@@ -252,10 +248,9 @@ async function startTestDbDistributor(params: {
   };
 }
 
-async function ensureDockerNetwork(
-  networkName: string,
-  options?: { stdio?: 'inherit' | 'ignore' },
-): Promise<void> {
+async function ensureDockerNetwork(networkName: string, options?: { stdio?: 'inherit' | 'ignore' }): Promise<void> {
+  await ensureDockerDaemonRunning('prepare Docker resources for the built-in test database');
+
   if (await commandSucceeds('docker', ['network', 'inspect', networkName])) {
     return;
   }
@@ -529,9 +524,7 @@ export default class SourceTest extends Command {
     startTask('Recreating the built-in test database...');
 
     let testDbConfig: TestDbConfig;
-    let testDbDistributor:
-      | { port: string; prefix: string; stop: () => Promise<void> }
-      | undefined;
+    let testDbDistributor: { port: string; prefix: string; stop: () => Promise<void> } | undefined;
     try {
       testDbConfig = await prepareTestDatabase(
         buildTestDbConfig({
@@ -553,8 +546,8 @@ export default class SourceTest extends Command {
           server: flags.server,
           client: flags.client,
           paths: args.paths ?? [],
-        })
-        && supportsTestDbDistributor(testDbConfig.env.DB_DIALECT)
+        }) &&
+        supportsTestDbDistributor(testDbConfig.env.DB_DIALECT)
       ) {
         testDbDistributor = await startTestDbDistributor({
           cwd,
@@ -564,9 +557,7 @@ export default class SourceTest extends Command {
         testDbConfig.env.DB_TEST_DISTRIBUTOR_PORT = testDbDistributor.port;
         testDbConfig.env.DB_TEST_PREFIX = testDbDistributor.prefix;
       }
-      succeedTask(
-        `The built-in test database is ready at ${testDbConfig.env.DB_HOST}:${testDbConfig.env.DB_PORT}.`,
-      );
+      succeedTask(`The built-in test database is ready at ${testDbConfig.env.DB_HOST}:${testDbConfig.env.DB_PORT}.`);
       printInfo(
         `Test DB settings: DB_DIALECT=${testDbConfig.env.DB_DIALECT} DB_HOST=${testDbConfig.env.DB_HOST} DB_PORT=${testDbConfig.env.DB_PORT} DB_DATABASE=${testDbConfig.env.DB_DATABASE} DB_USER=${testDbConfig.env.DB_USER}`,
       );

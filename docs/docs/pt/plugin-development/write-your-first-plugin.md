@@ -112,6 +112,33 @@ Após a ativação, crie uma nova página "Modern page (v2)". Ao adicionar bloco
 
 ![20250928174529](https://static-docs.nocobase.com/20250928174529.png)
 
+### Definir Plugin como Padrão ou Ativado por Padrão (Opcional)
+
+O que foi descrito acima é como ativar um único plugin manualmente. Se você estiver mantendo seu próprio aplicativo NocoBase e quiser que determinados plugins estejam automaticamente prontos após executar `nocobase install` (instalação inicial) ou `nocobase upgrade` (atualização), você pode usar duas variáveis de ambiente para controlar o estado padrão dos plugins:
+
+- **`APPEND_PRESET_LOCAL_PLUGINS` (adicionar plugins locais predefinidos padrão)** — adiciona o plugin à lista de plugins locais predefinidos; após a instalação, ele aparece no "Gerenciador de plugins", mas não é ativado por padrão — você precisa ativá-lo manualmente
+- **`APPEND_PRESET_BUILT_IN_PLUGINS` (adicionar plugins integrados padrão)** — adiciona o plugin à lista de plugins integrados; ele é ativado automaticamente durante a instalação e, como plugin integrado, **não pode ser desativado ou removido no "Gerenciador de plugins"**
+
+O valor de ambas as variáveis é o nome do pacote do plugin (o campo `name` no `package.json`), com múltiplos plugins separados por vírgulas. Configure assim no `.env`:
+
+```bash
+# Predefinido por padrão: aparece na lista do gerenciador de plugins, mas não é ativado automaticamente
+APPEND_PRESET_LOCAL_PLUGINS=@my-project/plugin-hello,@my-project/plugin-hello-world
+
+# Ativado por padrão: instalado e ativado automaticamente, e não pode ser desativado na interface
+APPEND_PRESET_BUILT_IN_PLUGINS=@my-project/plugin-hello,@my-project/plugin-hello-world
+```
+
+Em geral, o `yarn pm enable` descrito anteriormente é suficiente para desenvolvimento e depuração local. Essas duas variáveis são mais adequadas para cenários de distribuição "pronto para uso" — por exemplo, quando você empacota um aplicativo NocoBase com plugins fixos e quer que eles estejam disponíveis imediatamente após a inicialização.
+
+:::tip Dica
+
+- O plugin precisa ter sido baixado localmente e ser resolvido no `node_modules`; consulte [Estrutura do Projeto de Plugins](./project-structure.md)
+- Após a configuração, é necessário executar `nocobase install` ou `nocobase upgrade` novamente para que as alterações tenham efeito
+- A descrição completa das variáveis de ambiente está em [Variáveis de Ambiente](../get-started/installation/env.md#append_preset_local_plugins)
+
+:::
+
 ## Passo 4: Construa e Empacote
 
 Quando você estiver pronto para distribuir o plugin para outros ambientes, precisará primeiro construí-lo e depois empacotá-lo:
@@ -130,3 +157,16 @@ Após a construção ser concluída, o arquivo empacotado estará localizado por
 ## Passo 5: Faça o Upload para Outro Aplicativo NocoBase
 
 Faça o upload e extraia para o diretório `./storage/plugins` do aplicativo de destino. Para mais detalhes, consulte [Instalar e Atualizar Plugins](../get-started/install-upgrade-plugins.mdx).
+
+## Links Relacionados
+
+- [Visão Geral do Desenvolvimento de Plugins](./index.md) — Conheça a arquitetura de micronúcleo do NocoBase e o ciclo de vida dos plugins
+- [Estrutura do Projeto de Plugins](./project-structure.md) — Convenções de diretório do projeto, caminhos de carregamento e prioridade dos plugins
+- [Visão Geral do Desenvolvimento no Servidor](./server/index.md) — Introdução geral e conceitos centrais dos plugins do lado do servidor
+- [Visão Geral do Desenvolvimento no Cliente](./client/index.md) — Introdução geral e conceitos centrais dos plugins do lado do cliente
+- [Construção e Empacotamento](./build.md) — Fluxo de construção, empacotamento e distribuição dos plugins
+- [Testes](./server/test.md) — Escrevendo casos de teste para plugins do servidor
+- [Instalar usando create-nocobase-app](../get-started/installation/create-nocobase-app) — Uma das formas de instalar o NocoBase
+- [Instalar a partir do código-fonte Git](../get-started/installation/git) — Instalar o NocoBase a partir do código-fonte
+- [Instalar e Atualizar Plugins](../get-started/install-upgrade-plugins.mdx) — Fazer upload do plugin empacotado para outros ambientes
+- [Variáveis de Ambiente](../get-started/installation/env.md) — Configuração de variáveis de ambiente para plugins predefinidos, integrados e outros

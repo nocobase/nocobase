@@ -8,7 +8,7 @@
  */
 
 import { css } from '@emotion/css';
-import { Collection, observer } from '@nocobase/flow-engine';
+import { Collection, observer, useFlowEngine } from '@nocobase/flow-engine';
 import { Cascader, Select, Space } from 'antd';
 import React, { FC, useMemo } from 'react';
 import { FilterOption, useFilterOptions } from '../../../flow/components/filter/useFilterOptions';
@@ -44,10 +44,20 @@ export interface CollectionFilterItemProps {
   collection: Collection;
   /** Whitelist of field names to expose; empty/undefined means all filterable fields. */
   filterableFieldNames?: string[];
-  /** Bypass the `filterableFieldNames` whitelist (matches the legacy FilterItem `noIgnore`). */
+  /**
+   * Blacklist of field names to drop. Mirrors v1's `nonfilterable: [...]` on `Filter.Action`. When both whitelist and blacklist are supplied, both apply (final = whitelist ∩ ¬blacklist).
+   */
+  nonfilterableFieldNames?: string[];
+  /**
+   * Bypass the `filterableFieldNames` whitelist (matches the legacy FilterItem `noIgnore`).
+   *
+   * Legacy escape hatch — prefer adjusting `filterableFieldNames` / `nonfilterableFieldNames` instead.
+   */
   noIgnore?: boolean;
   /** Translator; defaults to identity so callers can omit it. */
   t?: (key: string) => string;
+  /** Optional v2 app registry used to resolve plugin-provided operator components. */
+  app?: { getComponent?: (name: string) => React.ComponentType<any> | undefined };
 }
 
 const identity = (s: string) => s;
@@ -84,10 +94,12 @@ const toCascaderOptions = (options: FilterOption[]): CascaderOption[] =>
  */
 export const CollectionFilterItem: FC<CollectionFilterItemProps> = observer(
   (props) => {
-    const { collection, filterableFieldNames, noIgnore = false, t = identity } = props;
+    const { collection, filterableFieldNames, nonfilterableFieldNames, noIgnore = false, t = identity } = props;
     const { path: leftValue, operator, value: rightValue } = props.value;
+    const flowEngine = useFlowEngine({ throwError: false }) as any;
+    const app = props.app || flowEngine?.context?.app;
 
-    const options = useFilterOptions(collection, { filterableFieldNames, noIgnore, t });
+    const options = useFilterOptions(collection, { filterableFieldNames, nonfilterableFieldNames, noIgnore, t });
 
     const cascaderOptions = useMemo(() => toCascaderOptions(options), [options]);
 
@@ -152,6 +164,7 @@ export const CollectionFilterItem: FC<CollectionFilterItemProps> = observer(
           onChange={handleValueChange}
           placeholder={t('Enter value')}
           t={t}
+          app={app}
         />
       </Space>
     );
@@ -164,7 +177,10 @@ export const CollectionFilterItem: FC<CollectionFilterItemProps> = observer(
  */
 export function createCollectionFilterItem(
   collection: Collection,
-  bound?: Pick<CollectionFilterItemProps, 'filterableFieldNames' | 'noIgnore' | 't'>,
+  bound?: Pick<
+    CollectionFilterItemProps,
+    'filterableFieldNames' | 'nonfilterableFieldNames' | 'noIgnore' | 't' | 'app'
+  >,
 ) {
   const Component: FC<{ value: CollectionFilterItemValue }> = (props) => (
     <CollectionFilterItem {...bound} value={props.value} collection={collection} />

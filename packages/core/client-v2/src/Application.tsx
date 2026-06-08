@@ -208,4 +208,28 @@ export class Application extends BaseApplication<
   addFieldInterfaceOperator(name: string, operatorOption: any) {
     return this.dataSourceManager.addFieldInterfaceOperator(name, operatorOption);
   }
+
+  registerFieldFilterOperator(operator: any) {
+    return this.dataSourceManager.registerFieldFilterOperator(operator);
+  }
+
+  registerFieldFilterOperatorGroup(name: string, operators: any[] = []) {
+    return this.dataSourceManager.registerFieldFilterOperatorGroup(name, operators);
+  }
+
+  addFieldFilterOperatorsToGroup(name: string, operators: any[] = []) {
+    return this.dataSourceManager.addFieldFilterOperatorsToGroup(name, operators);
+  }
+
+  registerFieldValidationConfigure(item: any) {
+    return this.dataSourceManager.collectionFieldInterfaceManager?.registerFieldValidationConfigure?.(item);
+  }
+
+  registerFieldValidationConfigureGroup(name: string, items: any[] = []) {
+    return this.dataSourceManager.collectionFieldInterfaceManager?.registerFieldValidationConfigureGroup?.(name, items);
+  }
+
+  addFieldValidationConfiguresToGroup(name: string, items: any[] = []) {
+    return this.dataSourceManager.collectionFieldInterfaceManager?.addFieldValidationConfiguresToGroup?.(name, items);
+  }
 }

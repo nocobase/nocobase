@@ -68,7 +68,10 @@ vi.mock('../lib/inquirer.ts', () => ({
   confirm: mocks.crossEnvConfirm,
 }));
 
-function createCommandHarness(parseResult: { args?: Record<string, any>; flags?: Record<string, any> }, argv: string[] = []) {
+function createCommandHarness(
+  parseResult: { args?: Record<string, any>; flags?: Record<string, any> },
+  argv: string[] = [],
+) {
   return {
     argv,
     parse: vi.fn(async () => ({
@@ -172,6 +175,24 @@ afterEach(() => {
   }
 });
 
+test('resolveBackupTargetEnv points empty workspaces to nb init --ui', async () => {
+  const { resolveBackupTargetEnv } = await import('../lib/backup.js');
+  mocks.getEnv.mockResolvedValue(undefined);
+  mocks.listEnvs.mockResolvedValue({
+    lastEnv: undefined,
+    envs: {},
+  });
+
+  await expect(resolveBackupTargetEnv()).rejects.toThrow(/No env is configured\. Run `nb init --ui` first\./);
+});
+
+test('resolveBackupTargetEnv explains how to initialize a missing requested env', async () => {
+  const { resolveBackupTargetEnv } = await import('../lib/backup.js');
+  mocks.getEnv.mockResolvedValue(undefined);
+
+  await expect(resolveBackupTargetEnv('prod')).rejects.toThrow(/Run `nb init --ui --env prod` first\./);
+});
+
 test('backup create refreshes runtime automatically and downloads to the current directory by default', async () => {
   const restoreTty = setTerminalInteractivity(true);
   const cwd = createTempDir('nocobase-cli-backup-create-');
@@ -181,79 +202,98 @@ test('backup create refreshes runtime automatically and downloads to the current
     const { default: BackupCreate } = await import('../commands/backup/create.js');
 
     mocks.commandOutput
-      .mockResolvedValueOnce(JSON.stringify({
-        data: {
-          name: 'base.nbdata',
-          inProgress: true,
-        },
-      }))
-      .mockResolvedValueOnce(JSON.stringify({
-        data: {
-          'base.nbdata': {
-            inProgress: false,
+      .mockResolvedValueOnce(
+        JSON.stringify({
+          data: {
+            name: 'base.nbdata',
+            inProgress: true,
           },
-        },
-      }))
-      .mockResolvedValueOnce(JSON.stringify({
-        data: {
-          output: path.join(cwd, 'base.nbdata'),
-        },
-      }));
+        }),
+      )
+      .mockResolvedValueOnce(
+        JSON.stringify({
+          data: {
+            'base.nbdata': {
+              inProgress: false,
+            },
+          },
+        }),
+      )
+      .mockResolvedValueOnce(
+        JSON.stringify({
+          data: {
+            output: path.join(cwd, 'base.nbdata'),
+          },
+        }),
+      );
 
-    const command = createCommandHarness({
-      flags: {
-        env: 'e2e',
-        yes: false,
+    const command = createCommandHarness(
+      {
+        flags: {
+          env: 'e2e',
+          yes: false,
+        },
       },
-    }, ['--env', 'e2e']);
+      ['--env', 'e2e'],
+    );
 
     await BackupCreate.prototype.run.call(command);
 
-    expect(mocks.updateEnvRuntime).toHaveBeenCalledWith(expect.objectContaining({
-      envName: 'e2e',
-      configFile: expect.stringContaining('nocobase-ctl.config.json'),
-    }));
-    expect(mocks.commandOutput).toHaveBeenCalledTimes(3);
-    expect(mocks.commandOutput.mock.calls[0]?.[1]).toEqual(expect.arrayContaining([
-      expect.stringContaining(path.join('bin', 'run.js')),
-      'api',
-      'backup',
-      'create',
-      '--env',
-      'e2e',
-      '--yes',
-      '--json-output',
-    ]));
-    expect(mocks.commandOutput.mock.calls[0]?.[2]).toEqual(expect.objectContaining({
-      env: expect.objectContaining({
-        NB_SKIP_STARTUP_UPDATE: '1',
-        _NOCO_CLI_TSX_CHILD: '',
+    expect(mocks.updateEnvRuntime).toHaveBeenCalledWith(
+      expect.objectContaining({
+        envName: 'e2e',
+        configFile: expect.stringContaining('nocobase-ctl.config.json'),
       }),
-    }));
-    expect(mocks.commandOutput.mock.calls[1]?.[1]).toEqual(expect.arrayContaining([
-      'api',
-      'backup',
-      'status',
-      '--name',
-      'base.nbdata',
-      '--env',
-      'e2e',
-      '--yes',
-      '--json-output',
-    ]));
-    expect(mocks.commandOutput.mock.calls[2]?.[1]).toEqual(expect.arrayContaining([
-      'api',
-      'backup',
-      'download',
-      '--name',
-      'base.nbdata',
-      '--output',
-      path.join(cwd, 'base.nbdata'),
-      '--env',
-      'e2e',
-      '--yes',
-      '--json-output',
-    ]));
+    );
+    expect(mocks.commandOutput).toHaveBeenCalledTimes(3);
+    expect(mocks.commandOutput.mock.calls[0]?.[1]).toEqual(
+      expect.arrayContaining([
+        expect.stringContaining(path.join('bin', 'run.js')),
+        'api',
+        'backup',
+        'create',
+        '--env',
+        'e2e',
+        '--yes',
+        '--json-output',
+      ]),
+    );
+    expect(mocks.commandOutput.mock.calls[0]?.[2]).toEqual(
+      expect.objectContaining({
+        env: expect.objectContaining({
+          NB_SKIP_STARTUP_UPDATE: '1',
+          _NOCO_CLI_TSX_CHILD: '',
+        }),
+      }),
+    );
+    expect(mocks.commandOutput.mock.calls[1]?.[1]).toEqual(
+      expect.arrayContaining([
+        'api',
+        'backup',
+        'status',
+        '--name',
+        'base.nbdata',
+        '--env',
+        'e2e',
+        '--yes',
+        '--json-output',
+      ]),
+    );
+    expect(mocks.commandOutput.mock.calls[2]?.[1]).toEqual(
+      expect.arrayContaining([
+        'api',
+        'backup',
+        'download',
+        '--name',
+        'base.nbdata',
+        '--output',
+        path.join(cwd, 'base.nbdata'),
+        '--env',
+        'e2e',
+        '--yes',
+        '--json-output',
+      ]),
+    );
     expect(mocks.succeedTask).toHaveBeenCalledWith(`Backup saved to ${path.join(cwd, 'base.nbdata')}`);
   } finally {
     cwdSpy.mockRestore();
@@ -272,17 +312,21 @@ test('backup create treats an existing output path as a destination directory', 
     const { default: BackupCreate } = await import('../commands/backup/create.js');
 
     mocks.commandOutput
-      .mockResolvedValueOnce(JSON.stringify({
-        data: {
-          name: 'fixture.nbdata',
-          inProgress: false,
-        },
-      }))
-      .mockResolvedValueOnce(JSON.stringify({
-        data: {
-          output: path.join(outputDir, 'fixture.nbdata'),
-        },
-      }));
+      .mockResolvedValueOnce(
+        JSON.stringify({
+          data: {
+            name: 'fixture.nbdata',
+            inProgress: false,
+          },
+        }),
+      )
+      .mockResolvedValueOnce(
+        JSON.stringify({
+          data: {
+            output: path.join(outputDir, 'fixture.nbdata'),
+          },
+        }),
+      );
 
     const command = createCommandHarness({
       flags: {
@@ -293,14 +337,16 @@ test('backup create treats an existing output path as a destination directory', 
     await BackupCreate.prototype.run.call(command);
 
     expect(mocks.commandOutput).toHaveBeenCalledTimes(2);
-    expect(mocks.commandOutput.mock.calls[1]?.[1]).toEqual(expect.arrayContaining([
-      'api',
-      'backup',
-      'download',
-      '--output',
-      path.join(outputDir, 'fixture.nbdata'),
-      '--json-output',
-    ]));
+    expect(mocks.commandOutput.mock.calls[1]?.[1]).toEqual(
+      expect.arrayContaining([
+        'api',
+        'backup',
+        'download',
+        '--output',
+        path.join(outputDir, 'fixture.nbdata'),
+        '--json-output',
+      ]),
+    );
   } finally {
     cwdSpy.mockRestore();
     restoreTty();
@@ -316,32 +362,41 @@ test('backup create supports --json-output and suppresses progress text', async 
     const { default: BackupCreate } = await import('../commands/backup/create.js');
 
     mocks.commandOutput
-      .mockResolvedValueOnce(JSON.stringify({
-        data: {
-          name: 'json-backup.nbdata',
-          inProgress: false,
-        },
-      }))
-      .mockResolvedValueOnce(JSON.stringify({
-        data: {
-          output: path.join(cwd, 'json-backup.nbdata'),
-        },
-      }));
+      .mockResolvedValueOnce(
+        JSON.stringify({
+          data: {
+            name: 'json-backup.nbdata',
+            inProgress: false,
+          },
+        }),
+      )
+      .mockResolvedValueOnce(
+        JSON.stringify({
+          data: {
+            output: path.join(cwd, 'json-backup.nbdata'),
+          },
+        }),
+      );
 
-    const command = createCommandHarness({
-      flags: {
-        env: 'e2e',
-        yes: true,
-        'json-output': true,
+    const command = createCommandHarness(
+      {
+        flags: {
+          env: 'e2e',
+          yes: true,
+          'json-output': true,
+        },
       },
-    }, ['--env', 'e2e', '--yes', '--json-output']);
+      ['--env', 'e2e', '--yes', '--json-output'],
+    );
 
     await BackupCreate.prototype.run.call(command);
 
-    expect(mocks.updateEnvRuntime).toHaveBeenCalledWith(expect.objectContaining({
-      envName: 'e2e',
-      quiet: true,
-    }));
+    expect(mocks.updateEnvRuntime).toHaveBeenCalledWith(
+      expect.objectContaining({
+        envName: 'e2e',
+        quiet: true,
+      }),
+    );
     expect(mocks.announceTargetEnv).not.toHaveBeenCalled();
     expect(mocks.startTask).not.toHaveBeenCalled();
     expect(mocks.updateTask).not.toHaveBeenCalled();
@@ -369,12 +424,14 @@ test('backup create times out when the remote backup never finishes', async () =
     const { BACKUP_CREATE_TIMEOUT_MS } = await import('../lib/backup.js');
     const { default: BackupCreate } = await import('../commands/backup/create.js');
 
-    mocks.commandOutput.mockResolvedValueOnce(JSON.stringify({
-      data: {
-        name: 'stuck.nbdata',
-        inProgress: true,
-      },
-    }));
+    mocks.commandOutput.mockResolvedValueOnce(
+      JSON.stringify({
+        data: {
+          name: 'stuck.nbdata',
+          inProgress: true,
+        },
+      }),
+    );
 
     dateNowSpy.mockReturnValueOnce(0);
     dateNowSpy.mockReturnValueOnce(BACKUP_CREATE_TIMEOUT_MS + 1);
@@ -410,11 +467,13 @@ test('backup restore asks for confirmation when --force is omitted', async () =>
   });
 
   try {
-    mocks.commandOutput.mockResolvedValueOnce(JSON.stringify({
-      data: {
-        success: true,
-      },
-    }));
+    mocks.commandOutput.mockResolvedValueOnce(
+      JSON.stringify({
+        data: {
+          success: true,
+        },
+      }),
+    );
 
     await BackupRestore.prototype.run.call(command);
 
@@ -499,46 +558,53 @@ test('backup restore uploads the file and waits for the app to become ready', as
     mocks.loadRuntimeSync.mockReturnValue({
       version: 'runtime-v1',
       generatedAt: '2026-05-20T00:00:00.000Z',
-      commands: [
-        { commandId: 'backup restore-upload' },
-      ],
+      commands: [{ commandId: 'backup restore-upload' }],
     });
-    mocks.commandOutput.mockResolvedValueOnce(JSON.stringify({
-      data: {
-        success: true,
-      },
-    }));
+    mocks.commandOutput.mockResolvedValueOnce(
+      JSON.stringify({
+        data: {
+          success: true,
+        },
+      }),
+    );
 
-    const command = createCommandHarness({
-      flags: {
-        env: 'e2e',
-        yes: true,
-        file: './base.nbdump',
-        force: true,
+    const command = createCommandHarness(
+      {
+        flags: {
+          env: 'e2e',
+          yes: true,
+          file: './base.nbdump',
+          force: true,
+        },
       },
-    }, ['--env', 'e2e', '--yes', '--file', './base.nbdump', '--force']);
+      ['--env', 'e2e', '--yes', '--file', './base.nbdump', '--force'],
+    );
 
     await BackupRestore.prototype.run.call(command);
 
     expect(mocks.updateEnvRuntime).not.toHaveBeenCalled();
     expect(mocks.commandOutput).toHaveBeenCalledTimes(1);
-    expect(mocks.commandOutput.mock.calls[0]?.[1]).toEqual(expect.arrayContaining([
-      'api',
-      'backup',
-      'restore-upload',
-      '--file',
-      backupFile,
-      '--force',
-      '--env',
-      'e2e',
-      '--yes',
-    ]));
-    expect(mocks.commandOutput.mock.calls[0]?.[2]).toEqual(expect.objectContaining({
-      env: expect.objectContaining({
-        NB_SKIP_STARTUP_UPDATE: '1',
-        _NOCO_CLI_TSX_CHILD: '',
+    expect(mocks.commandOutput.mock.calls[0]?.[1]).toEqual(
+      expect.arrayContaining([
+        'api',
+        'backup',
+        'restore-upload',
+        '--file',
+        backupFile,
+        '--force',
+        '--env',
+        'e2e',
+        '--yes',
+      ]),
+    );
+    expect(mocks.commandOutput.mock.calls[0]?.[2]).toEqual(
+      expect.objectContaining({
+        env: expect.objectContaining({
+          NB_SKIP_STARTUP_UPDATE: '1',
+          _NOCO_CLI_TSX_CHILD: '',
+        }),
       }),
-    }));
+    );
     expect(mocks.waitForAppReady).toHaveBeenCalledWith({
       envName: 'e2e',
       apiBaseUrl: 'http://127.0.0.1:13000/api',

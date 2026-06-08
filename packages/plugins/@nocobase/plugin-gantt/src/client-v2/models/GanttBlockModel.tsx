@@ -26,7 +26,7 @@ import {
 } from '@nocobase/flow-engine';
 import { Space } from 'antd';
 import React from 'react';
-import { Task } from '../../shared/types/public-types';
+import { Task } from '../shared/types/public-types';
 import { createGanttEventViewActionOptions } from './actions/GanttPopupModels';
 import { GanttBlock } from './components/GanttBlock';
 import { ROW_SELECTION_COLUMN_WIDTH, TREE_EXPAND_COLUMN_WIDTH } from './components/GanttBlock.helpers';
@@ -160,6 +160,13 @@ export class GanttBlockModel extends TableBlockModel {
     return (
       (this.props?.defaultExpandAllRows ??
         this.getStepParams('tableSettings', 'defaultExpandAllRows')?.defaultExpandAllRows) === true
+    );
+  }
+
+  shouldScrollToTodayOnFirstRender() {
+    return (
+      (this.props?.scrollToTodayOnFirstRender ??
+        this.getStepParams('ganttSettings', 'scrollToTodayOnFirstRender')?.scrollToTodayOnFirstRender) === true
     );
   }
 

@@ -13,6 +13,7 @@ import crypto from 'node:crypto';
 import { access, mkdir } from 'node:fs/promises';
 import path from 'node:path';
 import { exit, stdin as stdinStream, stdout as stdoutStream } from 'node:process';
+import { appendAppPublicPath } from '../lib/app-public-path.js';
 import {
   type PromptCatalogValues,
   type PromptInitialValues,
@@ -30,24 +31,33 @@ import {
   resolveEnvRelativePath,
 } from '../lib/cli-home.js';
 import { defaultDockerContainerPrefix, defaultDockerNetworkName } from '../lib/app-runtime.js';
-import { resolveDockerContainerPrefix, resolveDockerNetworkName } from '../lib/cli-config.js';
+import { resolveDefaultApiHost, resolveDockerContainerPrefix, resolveDockerNetworkName } from '../lib/cli-config.js';
 import { DEFAULT_DOCKER_VERSION, resolveDockerImageRef } from '../lib/docker-image.ts';
 import {
   findAvailableTcpPort,
+  validateAppPublicPath,
   validateAvailableTcpPort,
   validateTcpPort,
   validateEnvKey,
 } from '../lib/prompt-validators.ts';
 import { validateExternalDbConfig, validateMysqlLowerCaseTableNamesCompatibility } from '../lib/db-connection-check.ts';
 import { formatMissingManagedAppEnvMessage } from '../lib/app-runtime.js';
-import { commandOutput, commandSucceeds, run, runNocoBaseCommand } from '../lib/run-npm.js';
+import { commandOutput, commandSucceeds, ensureDockerDaemonRunning, run, runNocoBaseCommand } from '../lib/run-npm.js';
 import { printInfo, printStage, printVerbose, printWarning, setVerboseMode } from '../lib/ui.js';
 import { omitKeys, upperFirst } from '../lib/object-utils.ts';
-import { getEnv, loadAuthConfig, setCurrentEnv, type Env, upsertEnv } from '../lib/auth-store.js';
+import { clearEnvRootSetup, getEnv, loadAuthConfig, setCurrentEnv, type Env, upsertEnv } from '../lib/auth-store.js';
 import { buildStoredEnvConfig, type StoredEnvConfig } from '../lib/env-config.js';
 import { resolveDockerEnvFileArg } from '../lib/docker-env-file.ts';
+import { startDockerLogFollower } from '../lib/docker-log-stream.js';
+import {
+  areConfiguredPathsEquivalent,
+  deriveConfiguredSourcePath,
+  deriveConfiguredStoragePath,
+  inferConfiguredAppPathFromLegacyConfig,
+} from '../lib/env-paths.js';
 import Download, { DownloadParsedFlags, defaultDockerRegistryForLang, type DownloadCommandResult } from './download.js';
 import EnvAdd from './env/add.ts';
+import { resolveAppUrlFromApiBaseUrl } from './env/shared.ts';
 
 const DEFAULT_INSTALL_ENV_NAME = 'local';
 const DEFAULT_INSTALL_LANG = 'en-US';
@@ -79,6 +89,25 @@ const DEFAULT_INSTALL_ROOT_USERNAME = 'nocobase';
 const DEFAULT_INSTALL_ROOT_EMAIL = 'admin@nocobase.com';
 const DEFAULT_INSTALL_ROOT_PASSWORD = 'admin123';
 const DEFAULT_INSTALL_ROOT_NICKNAME = 'Super Admin';
+const DEFAULT_INSTALL_API_HOST = '127.0.0.1';
+
+function toOptionalPromptString(value: unknown): string | undefined {
+  const text = String(value ?? '').trim();
+  return text || undefined;
+}
+
+function buildInstallApiBaseUrl(
+  appResults: Record<string, PromptValue>,
+  defaultApiHost = DEFAULT_INSTALL_API_HOST,
+): string {
+  const appPort = String(appResults.appPort ?? DEFAULT_INSTALL_APP_PORT).trim() || DEFAULT_INSTALL_APP_PORT;
+  const appPublicPath = String(appResults.appPublicPath ?? '').trim();
+  return `http://${defaultApiHost}:${appPort}${appendAppPublicPath(appPublicPath, 'api', { trailingSlash: false })}`;
+}
+
+function formatInstallDisplayUrl(apiBaseUrl: string): string {
+  return resolveAppUrlFromApiBaseUrl(apiBaseUrl) || apiBaseUrl.replace(/\/api\/?$/, '');
+}
 const APP_HEALTH_CHECK_INTERVAL_MS = 2_000;
 const APP_HEALTH_CHECK_TIMEOUT_MS = 600_000;
 const APP_HEALTH_CHECK_REQUEST_TIMEOUT_MS = 5_000;
@@ -257,14 +286,49 @@ async function validateExternalDbPromptField(
   return await validateMysqlLowerCaseTableNamesCompatibility(values);
 }
 
-function defaultInstallAppRootPath(envName: PromptValue | undefined): string {
+function defaultInstallAppPath(envName: PromptValue | undefined): string {
   const name = String(envName ?? DEFAULT_INSTALL_ENV_NAME).trim() || DEFAULT_INSTALL_ENV_NAME;
-  return `./${name}/source/`;
+  return `./${name}/`;
+}
+
+function defaultInstallAppRootPath(envName: PromptValue | undefined): string {
+  return deriveConfiguredSourcePath(defaultInstallAppPath(envName));
 }
 
 function defaultInstallStoragePath(envName: PromptValue | undefined): string {
-  const name = String(envName ?? DEFAULT_INSTALL_ENV_NAME).trim() || DEFAULT_INSTALL_ENV_NAME;
-  return `./${name}/storage/`;
+  return deriveConfiguredStoragePath(defaultInstallAppPath(envName));
+}
+
+function resolveConfiguredAppPathValue(values: Record<string, PromptValue>): string | undefined {
+  const explicitAppPath = toOptionalPromptString(values.appPath);
+  if (explicitAppPath) {
+    return explicitAppPath;
+  }
+
+  return inferConfiguredAppPathFromLegacyConfig({
+    appRootPath: toOptionalPromptString(values.appRootPath),
+    storagePath: toOptionalPromptString(values.storagePath),
+  });
+}
+
+function resolveConfiguredSourcePathValue(values: Record<string, PromptValue>, envName: string): string {
+  const legacyAppRootPath = toOptionalPromptString(values.appRootPath);
+  if (legacyAppRootPath) {
+    return legacyAppRootPath;
+  }
+
+  const appPath = resolveConfiguredAppPathValue(values) ?? defaultInstallAppPath(envName);
+  return deriveConfiguredSourcePath(appPath);
+}
+
+function resolveConfiguredStoragePathValue(values: Record<string, PromptValue>, envName: string): string {
+  const legacyStoragePath = toOptionalPromptString(values.storagePath);
+  if (legacyStoragePath) {
+    return legacyStoragePath;
+  }
+
+  const appPath = resolveConfiguredAppPathValue(values) ?? defaultInstallAppPath(envName);
+  return deriveConfiguredStoragePath(appPath);
 }
 
 function pickPresetKeys(source: PromptInitialValues, keys: readonly string[]): PromptInitialValues {
@@ -287,6 +351,17 @@ function optionalEnvBoolean(value: unknown): boolean | undefined {
     return undefined;
   }
   return Boolean(value);
+}
+
+function resolveExtractClientAssetsDefaultEnabled(value: unknown): boolean {
+  const text = String(value ?? '')
+    .trim()
+    .toLowerCase();
+  if (!text) {
+    return true;
+  }
+
+  return !['0', 'false', 'no', 'off'].includes(text);
 }
 
 function pushOptionalEnvArg(args: string[], key: string, value: string | boolean | undefined): void {
@@ -334,9 +409,11 @@ type InstallParsedFlags = {
   'skip-auth'?: boolean;
   lang?: string;
   force: boolean;
+  'app-path'?: string;
   'app-root-path'?: string;
   'app-port'?: string;
   'storage-path'?: string;
+  'app-public-path'?: string;
   'root-username'?: string;
   'root-email'?: string;
   'root-password'?: string;
@@ -457,9 +534,9 @@ export default class Install extends Command {
     '<%= config.bin %> <%= command.id %> --env app1 -l zh-CN',
     '<%= config.bin %> <%= command.id %> --env app1 --root-username nocobase --root-email admin@nocobase.com --root-password admin123',
     '<%= config.bin %> <%= command.id %> --env app1 --root-nickname "Super Admin"',
-    '<%= config.bin %> <%= command.id %> --env myenv --app-root-path=./myenv/source/ --storage-path=./myenv/storage/',
-    '<%= config.bin %> <%= command.id %> --env dev -y --app-root-path=./dev/source/',
-    '<%= config.bin %> <%= command.id %> --env dev -y --skip-download --source git --app-root-path=./dev/source/',
+    '<%= config.bin %> <%= command.id %> --env myenv --app-path=./myenv/',
+    '<%= config.bin %> <%= command.id %> --env dev -y --app-path=./dev/',
+    '<%= config.bin %> <%= command.id %> --env dev -y --skip-download --source git --app-path=./dev/',
   ];
   static override flags = {
     yes: Flags.boolean({
@@ -482,7 +559,7 @@ export default class Install extends Command {
     env: Flags.string({
       char: 'e',
       description:
-        'App/env name to create or update. Defaults app paths to ./<envName>/source/ and ./<envName>/storage/.',
+        'App/env name to create or update. Defaults the app path to ./<envName>/ and derives source/storage inside it.',
     }),
     'default-api-base-url': Flags.string({
       char: 'd',
@@ -521,14 +598,24 @@ export default class Install extends Command {
       char: 'f',
       required: false,
     }),
+    'app-path': Flags.string({
+      description: 'App directory for a local npm/git app (default: ./<envName>/)',
+    }),
     'app-root-path': Flags.string({
-      description: 'Source directory for a local npm/git app (default: ./<envName>/source/)',
+      hidden: true,
+      deprecated: true,
+      description: 'Legacy source directory for a local npm/git app',
     }),
     'app-port': Flags.string({
       description: 'HTTP port for the local app (default: 13000, or an available port with --yes)',
     }),
     'storage-path': Flags.string({
-      description: 'Storage directory for uploads and managed database data (default: ./<envName>/storage/)',
+      hidden: true,
+      deprecated: true,
+      description: 'Legacy storage directory for uploads and managed database data',
+    }),
+    'app-public-path': Flags.string({
+      description: 'Public path for the local app, for example / or /console/',
     }),
     'root-username': Flags.string({
       description: 'Initial admin username for the installed app',
@@ -602,39 +689,44 @@ export default class Install extends Command {
     },
   };
 
-  static appPrompts: PromptsCatalog = {
-    lang: {
-      type: 'select',
-      message: installText('prompts.lang.message'),
-      options: INSTALL_LANGUAGE_OPTIONS,
-      initialValue: DEFAULT_INSTALL_LANG,
-      yesInitialValue: DEFAULT_INSTALL_LANG,
-    },
-    // force: {
-    //   type: 'boolean',
-    //   message: 'Reinstall the application by clearing the database? (-f / --force)',
-    //   initialValue: false,
-    //   yesInitialValue: false,
-    // },
-    appRootPath: {
-      type: 'text',
-      message: installText('prompts.appRootPath.message'),
-      placeholder: installText('prompts.appRootPath.placeholder'),
-      initialValue: (values) => defaultInstallAppRootPath(values.env ?? values.appName),
-    },
-    appPort: {
-      type: 'text',
-      message: installText('prompts.appPort.message'),
-      placeholder: installText('prompts.appPort.placeholder'),
-      validate: Install.validateAppPort,
-    },
-    storagePath: {
-      type: 'text',
-      message: installText('prompts.storagePath.message'),
-      placeholder: installText('prompts.storagePath.placeholder'),
-      initialValue: (values) => defaultInstallStoragePath(values.env ?? values.appName),
-    },
-  };
+  static get appPrompts(): PromptsCatalog {
+    return {
+      lang: {
+        type: 'select',
+        message: installText('prompts.lang.message'),
+        options: INSTALL_LANGUAGE_OPTIONS,
+        initialValue: DEFAULT_INSTALL_LANG,
+        yesInitialValue: DEFAULT_INSTALL_LANG,
+      },
+      // force: {
+      //   type: 'boolean',
+      //   message: 'Reinstall the application by clearing the database? (-f / --force)',
+      //   initialValue: false,
+      //   yesInitialValue: false,
+      // },
+      appPath: {
+        type: 'text',
+        message: installText('prompts.appPath.message', { root: resolveEnvRoot() }),
+        placeholder: installText('prompts.appPath.placeholder'),
+        initialValue: (values) => defaultInstallAppPath(values.env ?? values.appName),
+        hidden: (values) => Boolean(Install.toOptionalPromptString(values.appRootPath)),
+      },
+      appPort: {
+        type: 'text',
+        message: installText('prompts.appPort.message'),
+        placeholder: installText('prompts.appPort.placeholder'),
+        validate: Install.validateAppPort,
+      },
+      appPublicPath: {
+        type: 'text',
+        message: installText('prompts.appPublicPath.message'),
+        placeholder: installText('prompts.appPublicPath.placeholder'),
+        initialValue: '/',
+        yesInitialValue: '/',
+        validate: validateAppPublicPath,
+      },
+    };
+  }
 
   static dbPrompts: PromptsCatalog = {
     dbDialect: {
@@ -762,8 +854,8 @@ export default class Install extends Command {
   };
 
   /**
-   * App catalog with `env` seeded into `out` first so `storagePath`’s `initialValue(values)`
-   * sees `values.env` (same iteration order as {@link runPromptCatalog}).
+   * App catalog with `env` seeded into `out` first so app path defaults can see `values.env`
+   * (same iteration order as {@link runPromptCatalog}).
    */
   private static buildAppPromptsCatalog(seedEnv: string, options?: { resume?: boolean }): PromptsCatalog {
     return {
@@ -882,6 +974,13 @@ export default class Install extends Command {
       preset.force = flags.force;
     }
 
+    if (flags['app-path'] !== undefined) {
+      const v = flags['app-path']?.trim();
+      if (v) {
+        preset.appPath = v;
+      }
+    }
+
     if (flags['app-root-path'] !== undefined) {
       const v = flags['app-root-path']?.trim();
       if (v) {
@@ -900,6 +999,13 @@ export default class Install extends Command {
       const v = flags['storage-path']?.trim();
       if (v) {
         preset.storagePath = v;
+      }
+    }
+
+    if (flags['app-public-path'] !== undefined) {
+      const v = String(flags['app-public-path'] ?? '').trim();
+      if (v) {
+        preset.appPublicPath = v;
       }
     }
 
@@ -998,9 +1104,11 @@ export default class Install extends Command {
     return pickPresetKeys(Install.buildPresetValuesFromFlags(flags, argv), [
       'lang',
       'force',
+      'appPath',
       'appRootPath',
       'appPort',
       'storagePath',
+      'appPublicPath',
     ]);
   }
 
@@ -1074,11 +1182,33 @@ export default class Install extends Command {
   }
 
   private static toOptionalPromptString(value: unknown): string | undefined {
-    if (value === undefined || value === null) {
-      return undefined;
-    }
-    const text = String(value).trim();
-    return text || undefined;
+    return toOptionalPromptString(value);
+  }
+
+  private static resolveManagedAppKey(value: unknown): string {
+    return Install.toOptionalPromptString(value) ?? crypto.randomBytes(32).toString('hex');
+  }
+
+  private static resolveManagedTimeZone(value: unknown): string {
+    return Install.toOptionalPromptString(value) ?? (Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC');
+  }
+
+  private static formatLocalClientExtractWarning(envName: string, message: string): string {
+    return [
+      `Client assets were not extracted for "${envName}".`,
+      'NocoBase will keep starting, but versioned client files for CDN or external distribution may be stale or missing.',
+      `Details: ${message}`,
+    ].join('\n');
+  }
+
+  private async ensureManagedAppRuntimeConfig(params: {
+    envName: string;
+    appResults: Record<string, PromptValue>;
+  }): Promise<void> {
+    const savedEnv = await getEnv(params.envName, { scope: resolveDefaultConfigScope() });
+    const savedConfig = savedEnv?.config;
+    params.appResults.appKey = Install.resolveManagedAppKey(params.appResults.appKey ?? savedConfig?.appKey);
+    params.appResults.timeZone = Install.resolveManagedTimeZone(params.appResults.timeZone ?? savedConfig?.timezone);
   }
 
   private static async validateAppPort(value, values): Promise<void | string | undefined> {
@@ -1176,7 +1306,7 @@ export default class Install extends Command {
     const source = Install.toOptionalPromptString(values.source);
     const builtinDb = values.builtinDb === undefined ? undefined : Boolean(values.builtinDb);
     const dbDialect = Install.toOptionalPromptString(values.dbDialect);
-    const appRootPath = Install.toOptionalPromptString(values.appRootPath);
+    const appRootPath = resolveConfiguredSourcePathValue(values as Record<string, PromptValue>, envName);
     const dockerNetworkName = await Install.resolveResumeDockerNetworkName();
     const dockerContainerPrefix = await Install.resolveResumeDockerContainerPrefix();
 
@@ -1275,9 +1405,12 @@ export default class Install extends Command {
     const envName = String(env.name ?? '').trim();
     const config = env.config ?? {};
     const source = Install.toOptionalPromptString(config.source);
+    const appPath = Install.toOptionalPromptString(config.appPath) ?? inferConfiguredAppPathFromLegacyConfig(config);
     const appRootPath = Install.toOptionalPromptString(config.appRootPath);
     const appPort = Install.toOptionalPromptString(config.appPort);
     const storagePath = Install.toOptionalPromptString(config.storagePath);
+    const appPublicPath = Install.toOptionalPromptString(config.appPublicPath);
+    const apiBaseUrl = Install.toOptionalPromptString(config.apiBaseUrl);
     const downloadVersion = Install.toOptionalPromptString(config.downloadVersion);
     const dockerRegistry = Install.toOptionalPromptString(config.dockerRegistry);
     const dockerPlatform = Install.toOptionalPromptString(config.dockerPlatform);
@@ -1301,9 +1434,11 @@ export default class Install extends Command {
     const savedAuthType = Install.toOptionalPromptString(config.authType) ?? Install.toOptionalPromptString(auth?.type);
 
     const appPreset: PromptInitialValues = {
+      ...(appPath ? { appPath } : {}),
       ...(appRootPath ? { appRootPath } : {}),
       ...(appPort ? { appPort } : {}),
       ...(storagePath ? { storagePath } : {}),
+      ...(appPublicPath ? { appPublicPath } : {}),
     };
 
     const downloadPreset: PromptInitialValues = {
@@ -1345,6 +1480,9 @@ export default class Install extends Command {
     };
 
     const envAddPreset: PromptInitialValues = {};
+    if (apiBaseUrl) {
+      envAddPreset.apiBaseUrl = apiBaseUrl;
+    }
     if (savedAuthType === 'token') {
       envAddPreset.authType = 'token';
       if (Install.toOptionalPromptString(auth.accessToken)) {
@@ -1412,7 +1550,7 @@ export default class Install extends Command {
           [
             `Cannot continue setup for "${env.name}" in non-interactive resume mode yet.`,
             `These setup-only flags are not saved in the env config: ${missingFlags.join(', ')}`,
-            `Run \`nb init --env ${env.name} --resume\` without \`--yes\`, or pass those flags again.`,
+            `Run \`nb init --ui --env ${env.name} --resume\` without \`--yes\`, or pass those flags again.`,
           ].join('\n'),
         );
       }
@@ -1449,11 +1587,15 @@ export default class Install extends Command {
 
   static async buildAppPromptInitialValues(params: {
     envName?: string;
-    flags: Pick<InstallParsedFlags, 'app-port' | 'app-root-path' | 'storage-path'>;
+    flags: Pick<InstallParsedFlags, 'app-port' | 'app-path' | 'app-root-path' | 'storage-path'>;
     warnOnPortFallback?: boolean;
   }): Promise<PromptInitialValues> {
     const initialValues: PromptInitialValues = {};
     const envName = params.envName ?? DEFAULT_INSTALL_ENV_NAME;
+
+    if (params.flags['app-path'] === undefined && params.flags['app-root-path'] === undefined) {
+      initialValues.appPath = defaultInstallAppPath(envName);
+    }
 
     if (params.flags['app-root-path'] === undefined) {
       initialValues.appRootPath = defaultInstallAppRootPath(envName);
@@ -1514,7 +1656,7 @@ export default class Install extends Command {
     appResults: Record<string, PromptValue>,
     envName: string,
   ): RunPromptCatalogOptions {
-    const appRoot = String(appResults.appRootPath ?? '').trim() || defaultInstallAppRootPath(envName);
+    const appRoot = resolveConfiguredSourcePathValue(appResults, envName);
     const lang = String(appResults.lang ?? DEFAULT_INSTALL_LANG).trim() || DEFAULT_INSTALL_LANG;
     const initialValues: PromptInitialValues = {
       lang,
@@ -1554,7 +1696,7 @@ export default class Install extends Command {
     argv: string[] = process.argv.slice(2),
   ): PromptInitialValues {
     const preset: PromptInitialValues = {};
-    const appRoot = String(appResults.appRootPath ?? '').trim() || defaultInstallAppRootPath(envName);
+    const appRoot = resolveConfiguredSourcePathValue(appResults, envName);
     const lang = String(appResults.lang ?? DEFAULT_INSTALL_LANG).trim() || DEFAULT_INSTALL_LANG;
 
     preset.lang = lang;
@@ -1717,6 +1859,7 @@ export default class Install extends Command {
     workspaceName?: PromptValue;
     dockerNetworkName?: PromptValue;
     dockerContainerPrefix?: PromptValue;
+    appPath?: PromptValue;
     storagePath: string;
     source?: PromptValue;
     dbDialect?: PromptValue;
@@ -1750,7 +1893,10 @@ export default class Install extends Command {
         : containerName;
 
     const storagePath =
-      resolveConfiguredEnvPath(params.storagePath) ?? resolveEnvRelativePath(defaultInstallStoragePath(params.envName));
+      resolveConfiguredEnvPath(params.storagePath) ??
+      resolveEnvRelativePath(
+        resolveConfiguredStoragePathValue({ appPath: params.appPath, storagePath: params.storagePath }, params.envName),
+      );
 
     if (dbDialect === 'postgres') {
       const image = String(params.builtinDbImage ?? '').trim() || defaultBuiltinDbImageForDialect(dbDialect);
@@ -1962,6 +2108,8 @@ export default class Install extends Command {
       return;
     }
 
+    await ensureDockerDaemonRunning('prepare Docker resources for this environment');
+
     printVerbose(`Checking Docker network: ${name}`);
     const exists = await commandSucceeds('docker', ['network', 'inspect', name]);
     if (exists) {
@@ -2068,12 +2216,13 @@ export default class Install extends Command {
     force?: boolean;
     commandStdio?: 'inherit' | 'ignore';
   }): Promise<BuiltinDbPlan> {
-    const storagePath = String(params.appResults.storagePath ?? '').trim() || defaultInstallStoragePath(params.envName);
+    const storagePath = resolveConfiguredStoragePathValue(params.appResults, params.envName);
     const plan = Install.buildBuiltinDbPlan({
       envName: params.envName,
       workspaceName: params.workspaceName,
       dockerNetworkName: params.dockerNetworkName,
       dockerContainerPrefix: params.dockerContainerPrefix,
+      appPath: params.appResults.appPath,
       storagePath,
       source: params.downloadResults.source,
       dbDialect: params.dbResults.dbDialect,
@@ -2130,10 +2279,10 @@ export default class Install extends Command {
       defaultVersion: DEFAULT_DOCKER_VERSION,
     });
     const appPort = String(params.appResults.appPort ?? DEFAULT_INSTALL_APP_PORT).trim() || DEFAULT_INSTALL_APP_PORT;
+    const configuredStoragePath = resolveConfiguredStoragePathValue(params.appResults, params.envName);
     const storagePath =
-      resolveConfiguredEnvPath(
-        String(params.appResults.storagePath ?? '').trim() || defaultInstallStoragePath(params.envName),
-      ) ?? resolveEnvRelativePath(defaultInstallStoragePath(params.envName));
+      resolveConfiguredEnvPath(configuredStoragePath) ??
+      resolveEnvRelativePath(defaultInstallStoragePath(params.envName));
     const dbDialect = String(params.dbResults.dbDialect ?? 'postgres').trim() || 'postgres';
     const dbHost = String(params.dbResults.dbHost ?? DEFAULT_INSTALL_DB_HOST).trim() || DEFAULT_INSTALL_DB_HOST;
     const dbPort =
@@ -2147,8 +2296,10 @@ export default class Install extends Command {
     const dbSchema = optionalEnvString(params.dbResults.dbSchema);
     const dbTablePrefix = optionalEnvString(params.dbResults.dbTablePrefix);
     const dbUnderscored = optionalEnvBoolean(params.dbResults.dbUnderscored);
-    const appKey = crypto.randomBytes(32).toString('hex');
-    const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
+    const extractClientAssets = resolveExtractClientAssetsDefaultEnabled(process.env.NOCOBASE_EXTRACT_CLIENT_ASSETS);
+    const appKey = Install.resolveManagedAppKey(params.appResults.appKey);
+    const appPublicPath = Install.toOptionalPromptString(params.appResults.appPublicPath);
+    const timeZone = Install.resolveManagedTimeZone(params.appResults.timeZone);
     const containerName = Install.buildDockerAppContainerName(
       params.envName,
       params.dockerContainerPrefix ?? params.workspaceName,
@@ -2203,9 +2354,11 @@ export default class Install extends Command {
       '-v',
       `${storagePath}:/app/nocobase/storage`,
     );
+    pushOptionalEnvArg(args, 'APP_PUBLIC_PATH', appPublicPath);
     pushOptionalEnvArg(args, 'DB_SCHEMA', dbSchema);
     pushOptionalEnvArg(args, 'DB_TABLE_PREFIX', dbTablePrefix);
     pushOptionalEnvArg(args, 'DB_UNDERSCORED', dbUnderscored);
+    pushOptionalEnvArg(args, 'NOCOBASE_EXTRACT_CLIENT_ASSETS', extractClientAssets);
     args.push(imageRef);
 
     return {
@@ -2356,8 +2509,7 @@ export default class Install extends Command {
 
     const outputDir =
       String(params.downloadResults.outputDir ?? '').trim() ||
-      String(params.appResults.appRootPath ?? '').trim() ||
-      defaultInstallAppRootPath(params.envName);
+      resolveConfiguredSourcePathValue(params.appResults, params.envName);
     return resolveConfiguredEnvPath(outputDir) ?? resolveEnvRelativePath(defaultInstallAppRootPath(params.envName));
   }
 
@@ -2368,8 +2520,7 @@ export default class Install extends Command {
   }): string {
     return (
       String(params.downloadResults.outputDir ?? '').trim() ||
-      String(params.appResults.appRootPath ?? '').trim() ||
-      defaultInstallAppRootPath(params.envName)
+      resolveConfiguredSourcePathValue(params.appResults, params.envName)
     );
   }
 
@@ -2377,7 +2528,7 @@ export default class Install extends Command {
     envName: string,
     appResults: Record<string, PromptValue>,
   ): PromptInitialValues {
-    const appRoot = String(appResults.appRootPath ?? '').trim() || defaultInstallAppRootPath(envName);
+    const appRoot = resolveConfiguredSourcePathValue(appResults, envName);
     return {
       outputDir: appRoot,
       replace: false,
@@ -2481,14 +2632,13 @@ export default class Install extends Command {
     dbResults: Record<string, PromptValue>;
     rootResults: Record<string, PromptValue>;
   }): Record<string, string> {
-    const configuredStoragePath =
-      String(params.appResults.storagePath ?? '').trim() || defaultInstallStoragePath(params.envName);
+    const configuredStoragePath = resolveConfiguredStoragePathValue(params.appResults, params.envName);
     const storagePath =
       resolveConfiguredEnvPath(configuredStoragePath) ??
       resolveEnvRelativePath(defaultInstallStoragePath(params.envName));
     const dbDialect = String(params.dbResults.dbDialect ?? 'postgres').trim() || 'postgres';
-    const appKey = crypto.randomBytes(32).toString('hex');
-    const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
+    const appKey = Install.resolveManagedAppKey(params.appResults.appKey);
+    const timeZone = Install.resolveManagedTimeZone(params.appResults.timeZone);
     const env: Record<string, string> = {
       STORAGE_PATH: storagePath,
       APP_PORT: String(params.appResults.appPort ?? DEFAULT_INSTALL_APP_PORT).trim() || DEFAULT_INSTALL_APP_PORT,
@@ -2508,6 +2658,7 @@ export default class Install extends Command {
         rootResults: params.rootResults,
       }),
     };
+    setOptionalEnvVar(env, 'APP_PUBLIC_PATH', Install.toOptionalPromptString(params.appResults.appPublicPath));
     setOptionalEnvVar(env, 'DB_SCHEMA', optionalEnvString(params.dbResults.dbSchema));
     setOptionalEnvVar(env, 'DB_TABLE_PREFIX', optionalEnvString(params.dbResults.dbTablePrefix));
     setOptionalEnvVar(env, 'DB_UNDERSCORED', optionalEnvBoolean(params.dbResults.dbUnderscored));
@@ -2544,6 +2695,25 @@ export default class Install extends Command {
       this.logDetail(`Skipped local process cleanup before start: ${message}`);
     }
 
+    this.logDetail(`Running local postinstall in ${params.projectRoot}`);
+    await runNocoBaseCommand(['postinstall'], {
+      cwd: params.projectRoot,
+      env,
+      stdio: params.commandStdio ?? 'ignore',
+    });
+
+    this.logDetail(`Extracting local client assets in ${params.projectRoot}`);
+    try {
+      await runNocoBaseCommand(['client:extract'], {
+        cwd: params.projectRoot,
+        env,
+        stdio: params.commandStdio ?? 'ignore',
+      });
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : String(error);
+      printWarning(Install.formatLocalClientExtractWarning(params.envName, message));
+    }
+
     this.logDetail(`Starting local NocoBase app from ${params.projectRoot}`);
     await runNocoBaseCommand(args, {
       cwd: params.projectRoot,
@@ -2567,10 +2737,12 @@ export default class Install extends Command {
   private static resolveApiBaseUrl(params: {
     appResults: Record<string, PromptValue>;
     envAddResults: Record<string, PromptValue>;
+    defaultApiHost?: string;
   }): string {
-    const appPort = String(params.appResults.appPort ?? DEFAULT_INSTALL_APP_PORT).trim() || DEFAULT_INSTALL_APP_PORT;
-
-    return String(params.envAddResults.apiBaseUrl ?? '').trim() || `http://127.0.0.1:${appPort}/api`;
+    return (
+      String(params.envAddResults.apiBaseUrl ?? '').trim() ||
+      buildInstallApiBaseUrl(params.appResults, params.defaultApiHost)
+    );
   }
 
   private static buildHealthCheckUrl(apiBaseUrl: string): string {
@@ -2636,6 +2808,7 @@ export default class Install extends Command {
       requestTimeoutMs?: number;
       fetchImpl?: typeof fetch;
       containerName?: string;
+      verbose?: boolean;
     },
   ): Promise<void> {
     const healthCheckUrl = Install.buildHealthCheckUrl(apiBaseUrl);
@@ -2648,43 +2821,49 @@ export default class Install extends Command {
     let lastLoggedStatus = '';
 
     printInfo('Waiting for NocoBase to become ready...');
+    const dockerLogFollower =
+      options?.verbose && options.containerName ? startDockerLogFollower(options.containerName) : undefined;
 
-    while (Date.now() - startedAt < timeoutMs) {
-      const result = await Install.requestAppHealthCheck({
-        healthCheckUrl,
-        fetchImpl,
-        requestTimeoutMs,
-      });
+    try {
+      while (Date.now() - startedAt < timeoutMs) {
+        const result = await Install.requestAppHealthCheck({
+          healthCheckUrl,
+          fetchImpl,
+          requestTimeoutMs,
+        });
 
-      if (result.ok) {
-        return;
+        if (result.ok) {
+          return;
+        }
+
+        lastMessage = result.message;
+        const elapsedSeconds = Math.max(1, Math.floor((Date.now() - startedAt) / 1000));
+        const statusLine = `Waiting for NocoBase to become ready... (${elapsedSeconds}s elapsed, last status: ${Install.formatHealthCheckMessage(
+          lastMessage,
+        )})`;
+        if (statusLine !== lastLoggedStatus) {
+          printInfo(statusLine);
+          lastLoggedStatus = statusLine;
+        }
+
+        const remainingMs = timeoutMs - (Date.now() - startedAt);
+        if (remainingMs <= 0) {
+          break;
+        }
+        await Install.sleep(Math.min(intervalMs, remainingMs));
       }
 
-      lastMessage = result.message;
-      const elapsedSeconds = Math.max(1, Math.floor((Date.now() - startedAt) / 1000));
-      const statusLine = `Waiting for NocoBase to become ready... (${elapsedSeconds}s elapsed, last status: ${Install.formatHealthCheckMessage(
-        lastMessage,
-      )})`;
-      if (statusLine !== lastLoggedStatus) {
-        printInfo(statusLine);
-        lastLoggedStatus = statusLine;
-      }
-
-      const remainingMs = timeoutMs - (Date.now() - startedAt);
-      if (remainingMs <= 0) {
-        break;
-      }
-      await Install.sleep(Math.min(intervalMs, remainingMs));
+      const logHint = options?.containerName
+        ? ` You can inspect startup logs with: docker logs ${options.containerName}`
+        : '';
+      throw new Error(
+        `The application did not become ready in time. Expected \`${healthCheckUrl}\` to respond with \`ok\`, but the last status was: ${Install.formatHealthCheckMessage(
+          lastMessage,
+        )}.${logHint}`,
+      );
+    } finally {
+      await dockerLogFollower?.stop();
     }
-
-    const logHint = options?.containerName
-      ? ` You can inspect startup logs with: docker logs ${options.containerName}`
-      : '';
-    throw new Error(
-      `The application did not become ready in time. Expected \`${healthCheckUrl}\` to respond with \`ok\`, but the last status was: ${Install.formatHealthCheckMessage(
-        lastMessage,
-      )}.${logHint}`,
-    );
   }
 
   private async saveInstalledEnv(params: {
@@ -2695,7 +2874,10 @@ export default class Install extends Command {
     rootResults: Record<string, PromptValue>;
     envAddResults: Record<string, PromptValue>;
   }): Promise<void> {
-    await upsertEnv(params.envName, Install.buildSavedEnvConfig(params), { scope: resolveDefaultConfigScope() });
+    const defaultApiHost = await resolveDefaultApiHost();
+    await upsertEnv(params.envName, Install.buildSavedEnvConfig(params, { defaultApiHost }), {
+      scope: resolveDefaultConfigScope(),
+    });
     await setCurrentEnv(params.envName, { scope: resolveDefaultConfigScope() });
   }
 
@@ -2733,20 +2915,31 @@ export default class Install extends Command {
     await this.config.runCommand('env:update', [params.envName]);
   }
 
-  private static buildSavedEnvConfig(params: {
-    envName: string;
-    appResults: Record<string, PromptValue>;
-    downloadResults: Record<string, PromptValue>;
-    dbResults: Record<string, PromptValue>;
-    rootResults: Record<string, PromptValue>;
-    envAddResults: Record<string, PromptValue>;
-  }): StoredEnvConfig {
+  private static buildSavedEnvConfig(
+    params: {
+      envName: string;
+      appResults: Record<string, PromptValue>;
+      downloadResults: Record<string, PromptValue>;
+      dbResults: Record<string, PromptValue>;
+      rootResults: Record<string, PromptValue>;
+      envAddResults: Record<string, PromptValue>;
+    },
+    options: {
+      defaultApiHost?: string;
+    } = {},
+  ): StoredEnvConfig {
+    const appPath = resolveConfiguredAppPathValue(params.appResults);
+    const appRootPath = Install.toOptionalPromptString(params.appResults.appRootPath);
+    const storagePath = Install.toOptionalPromptString(params.appResults.storagePath);
+    const appPublicPath = Install.toOptionalPromptString(params.appResults.appPublicPath);
+    const derivedAppRootPath = appPath ? deriveConfiguredSourcePath(appPath) : undefined;
+    const derivedStoragePath = appPath ? deriveConfiguredStoragePath(appPath) : undefined;
     const appPort = String(params.appResults.appPort ?? DEFAULT_INSTALL_APP_PORT).trim() || DEFAULT_INSTALL_APP_PORT;
-    const storagePath = String(params.appResults.storagePath ?? '').trim() || defaultInstallStoragePath(params.envName);
     const envFile = String(params.appResults.envFile ?? '').trim() || undefined;
     const apiBaseUrl = Install.resolveApiBaseUrl({
       appResults: params.appResults,
       envAddResults: params.envAddResults,
+      defaultApiHost: options.defaultApiHost,
     });
     const authType = String(params.envAddResults.authType ?? 'oauth').trim() || 'oauth';
     const authUsername =
@@ -2765,9 +2958,11 @@ export default class Install extends Command {
       devDependencies: downloadResultsValue(params.downloadResults, 'devDependencies'),
       build: downloadResultsValue(params.downloadResults, 'build'),
       buildDts: downloadResultsValue(params.downloadResults, 'buildDts'),
-      appRootPath: params.appResults.appRootPath,
+      ...(appPath ? { appPath } : {}),
+      ...(appRootPath && !areConfiguredPathsEquivalent(appRootPath, derivedAppRootPath) ? { appRootPath } : {}),
       appPort,
-      storagePath,
+      ...(storagePath && !areConfiguredPathsEquivalent(storagePath, derivedStoragePath) ? { storagePath } : {}),
+      ...(appPublicPath ? { appPublicPath } : {}),
       ...(envFile ? { envFile } : {}),
       appKey: params.appResults.appKey,
       timezone: params.appResults.timeZone,
@@ -2794,6 +2989,7 @@ export default class Install extends Command {
     yes: boolean,
   ): Promise<InstallPromptResults> {
     const commandArgv = this.argv ?? process.argv.slice(2);
+    const defaultApiHost = await resolveDefaultApiHost();
     const resumePreset = await this.resolveResumePresetValues(parsed, yes);
     const envPreset = {
       ...(resumePreset?.envPreset ?? {}),
@@ -2821,6 +3017,7 @@ export default class Install extends Command {
         envName,
         flags: {
           ...parsed,
+          'app-path': parsed['app-path'] ?? Install.toOptionalPromptString(appPreset.appPath),
           'app-root-path': parsed['app-root-path'] ?? Install.toOptionalPromptString(appPreset.appRootPath),
           'app-port': parsed['app-port'] ?? Install.toOptionalPromptString(appPreset.appPort),
           'storage-path': parsed['storage-path'] ?? Install.toOptionalPromptString(appPreset.storagePath),
@@ -2897,7 +3094,7 @@ export default class Install extends Command {
     };
     const resolvedEnvAddAuthType = String(envAddPreset.authType ?? '').trim();
     const envAddInitialValues: PromptInitialValues = {
-      apiBaseUrl: `http://127.0.0.1:${appResults.appPort ?? DEFAULT_INSTALL_APP_PORT}/api`,
+      apiBaseUrl: buildInstallApiBaseUrl(appResults, defaultApiHost),
       ...envAddResumePreset,
       ...(!parsed['skip-auth'] && resolvedEnvAddAuthType === 'basic'
         ? {
@@ -2948,6 +3145,7 @@ export default class Install extends Command {
     const parsed = {
       ...(flags as unknown as InstallParsedFlags & DownloadParsedFlags),
     } as InstallParsedFlags & DownloadParsedFlags;
+    const defaultApiHost = await resolveDefaultApiHost();
     if (parsed['skip-auth'] && (parsed['access-token'] !== undefined || parsed.token !== undefined)) {
       this.error('--skip-auth cannot be used with --access-token or --token.');
     }
@@ -2966,6 +3164,10 @@ export default class Install extends Command {
     }
     const promptResults = await this.collectPromptResults(parsed, flags.yes);
     const { envName, appResults, downloadResults, dbResults, rootResults, envAddResults } = promptResults;
+    await this.ensureManagedAppRuntimeConfig({
+      envName,
+      appResults,
+    });
 
     const source = String(downloadResultsValue(downloadResults, 'source') ?? '').trim();
     const usesDockerResources = Boolean(dbResults.builtinDb) || source === 'docker';
@@ -3089,12 +3291,19 @@ export default class Install extends Command {
         Install.resolveApiBaseUrl({
           appResults,
           envAddResults,
+          defaultApiHost,
         }),
         {
           containerName: dockerAppPlan?.containerName,
+          verbose: parsed.verbose,
         },
       );
-      printInfo(`NocoBase is ready at http://127.0.0.1:${dockerAppPlan?.appPort ?? localAppPlan?.appPort}`);
+      const displayApiBaseUrl = Install.resolveApiBaseUrl({
+        appResults,
+        envAddResults,
+        defaultApiHost,
+      });
+      printInfo(`NocoBase is ready at ${formatInstallDisplayUrl(displayApiBaseUrl)}`);
     }
 
     if (dockerAppPlan || localAppPlan || builtinDbPlan) {
@@ -3114,6 +3323,7 @@ export default class Install extends Command {
       appReady: Boolean(dockerAppPlan || localAppPlan),
       skipAuth: Boolean(parsed['skip-auth']),
     });
+    await clearEnvRootSetup(envName, { scope: resolveDefaultConfigScope() });
 
     if (!dockerAppPlan && !localAppPlan) {
       printInfo(`Install config for "${envName}" has been saved.`);

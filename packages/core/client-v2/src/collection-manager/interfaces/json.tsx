@@ -7,9 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { FormItem, FormLayout } from '@formily/antd-v5';
 import { registerValidateRules } from '@formily/core';
-import React from 'react';
 import { defaultProps } from './properties';
 import { CollectionFieldInterface } from '../../collection-field-interface/CollectionFieldInterface';
 
@@ -55,18 +53,26 @@ export class JsonFieldInterface extends CollectionFieldInterface {
   properties = {
     ...defaultProps,
     jsonb: {
-      type: 'boolean',
       title: 'JSONB',
-      // 不直接用 `FormItem` 的原因是为了想要设置 `FormLayout` 的 `layout` 属性为 `horizontal` （默认就是 horizontal）
-      'x-decorator': ({ children }) => (
-        <FormLayout>
-          <FormItem>{children}</FormItem>
-        </FormLayout>
-      ),
       'x-component': 'Checkbox',
-      'x-hidden': `{{ !isDialect('postgres') }}`,
-      'x-disabled': `{{ disabledJSONB }}`,
     },
+  };
+  configure = {
+    items: [
+      {
+        name: 'jsonb',
+        title: 'JSONB',
+        component: 'Checkbox',
+        schema: {
+          'x-content': ' ',
+        },
+        hidden: ({ context }) => {
+          const isDialect = context.isDialect;
+          return typeof isDialect === 'function' ? !isDialect('postgres') : true;
+        },
+        disabled: ({ context }) => !!context.disabledJSONB,
+      },
+    ],
   };
   // filterable = {
   //   operators: operators.string,

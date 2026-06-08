@@ -1,12 +1,12 @@
 ---
-title: "nb config delete"
-description: "Référence de la commande nb config delete : supprimer un réglage CLI configuré explicitement."
-keywords: "nb config delete,NocoBase CLI,configuration"
+title: 'nb config delete'
+description: 'Référence de la commande nb config delete : supprime un élément de configuration CLI défini explicitement.'
+keywords: 'nb config delete,NocoBase CLI,supprimer la configuration'
 ---
 
 # nb config delete
 
-Supprime un réglage CLI configuré explicitement. Après suppression, le CLI revient à la valeur par défaut pour cette clé.
+Supprime un élément de configuration CLI défini explicitement. Après suppression, cet élément revient à sa valeur par défaut.
 
 ## Utilisation
 
@@ -16,19 +16,25 @@ nb config delete <key>
 
 ## Paramètres
 
-| Paramètre | Type | Description |
-| --- | --- | --- |
-| `<key>` | string | Clé de configuration : `license.pkg-url`, `docker.network` ou `docker.container-prefix` |
+| Paramètre | Type   | Description                                                                                                                                       |
+| --------- | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `<key>` | string | Nom de l’élément de configuration. Consultez [`nb config`](./index.md) pour les valeurs prises en charge |
 
 ## Exemples
 
 ```bash
-nb config delete license.pkg-url
+nb config delete locale
+nb config delete update.policy
 nb config delete docker.network
 nb config delete docker.container-prefix
+nb config delete proxy.provider
+nb config delete proxy.nb-cli-root
+nb config delete proxy.upstream-host
+nb config delete bin.nginx
+nb config delete bin.git
 ```
 
-## Commandes connexes
+## Commandes associées
 
 - [`nb config set`](./set.md)
 - [`nb config get`](./get.md)

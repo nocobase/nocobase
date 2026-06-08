@@ -118,6 +118,33 @@ export default {
 
 ![20250928174529](https://static-docs.nocobase.com/20250928174529.png)
 
+### プラグインをデフォルトでプリセットまたはデフォルトで有効化する（オプション）
+
+上記では単一プラグインを手動で有効化する方法を説明しました。自分の NocoBase アプリケーションを管理していて、`nocobase install`（初回インストール）や `nocobase upgrade`（アップグレード）の実行後に特定のプラグインを自動的に準備しておきたい場合は、2 つの環境変数でプラグインのデフォルト状態を制御できます：
+
+- **`APPEND_PRESET_LOCAL_PLUGINS`（デフォルトプリセットプラグインの追加）** — プラグインをプリセット済みのローカルプラグインリストに追加します。インストール後に「プラグインマネージャー」に表示されますが、デフォルトでは無効であり、手動で有効化する必要があります
+- **`APPEND_PRESET_BUILT_IN_PLUGINS`（デフォルト内蔵プラグインの追加）** — プラグインを内蔵プラグインリストに追加します。インストール時に自動的に有効化され、内蔵プラグインとして**「プラグインマネージャー」では無効化も削除もできません**
+
+どちらの変数の値もプラグインのパッケージ名（`package.json` の `name`）で、複数のプラグインは英語のカンマで区切ります。`.env` での設定例：
+
+```bash
+# デフォルトプリセット：プラグインマネージャーのリストに表示されるが、自動的には有効化されない
+APPEND_PRESET_LOCAL_PLUGINS=@my-project/plugin-hello,@my-project/plugin-hello-world
+
+# デフォルト有効化：自動的にインストールして有効化され、画面から無効化できない
+APPEND_PRESET_BUILT_IN_PLUGINS=@my-project/plugin-hello,@my-project/plugin-hello-world
+```
+
+通常、ローカル開発・デバッグには前述の `yarn pm enable` で十分です。これら 2 つの変数は「すぐに使える」配布シナリオに適しています——たとえば、固定のプラグインセットを含む NocoBase アプリケーションをパッケージングし、初期化後にプラグインをすぐに利用可能にしたい場合などです。
+
+:::tip ヒント
+
+- プラグインがローカルにダウンロードされ、`node_modules` で解決できる状態になっている必要があります。[プロジェクトディレクトリ構造](./project-structure.md)を参照してください
+- 設定後、`nocobase install` または `nocobase upgrade` を再実行することで有効になります
+- 環境変数の完全な説明は[環境変数](../get-started/installation/env.md#append_preset_local_plugins)を参照してください
+
+:::
+
 ## ステップ 4：ビルドとパッケージング
 
 プラグインを他の環境に配布する準備ができたら、まずビルドしてからパッケージングする必要があります：
@@ -158,3 +185,4 @@ yarn nocobase tar @my-project/plugin-hello
 - [create-nocobase-app を使用したインストール](../get-started/installation/create-nocobase-app) — NocoBase のインストール方法の一つ
 - [Git ソースからのインストール](../get-started/installation/git) — ソースコードからの NocoBase インストール
 - [プラグインのインストールとアップグレード](../get-started/install-upgrade-plugins.mdx) — パッケージ済みプラグインを他の環境にアップロード
+- [環境変数](../get-started/installation/env.md) — プリセット・内蔵プラグインなどの環境変数設定

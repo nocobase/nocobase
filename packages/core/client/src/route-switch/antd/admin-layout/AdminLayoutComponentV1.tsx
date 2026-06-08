@@ -11,19 +11,19 @@ import ProLayout, { RouteContext, RouteContextType } from '@ant-design/pro-layou
 import { HeaderViewProps } from '@ant-design/pro-layout/es/components/Header';
 import type { CollisionDetection, DragEndEvent } from '@dnd-kit/core';
 import { closestCenter, pointerWithin } from '@dnd-kit/core';
-import { EllipsisOutlined } from '@ant-design/icons';
+import { EllipsisOutlined, HighlightOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
 import { DndProvider, observer, useFlowEngine } from '@nocobase/flow-engine';
-import { theme as antdTheme, ConfigProvider, Grid, Popover } from 'antd';
+import { theme as antdTheme, ConfigProvider, Grid, Popover, Result } from 'antd';
 import { createStyles, createGlobalStyle } from 'antd-style';
 import React, { FC, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import ReactDOM from 'react-dom';
 import { useTranslation } from 'react-i18next';
-import { useLocation } from 'react-router-dom';
+import { Outlet, useLocation } from 'react-router-dom';
 import {
   ADMIN_LAYOUT_MODEL_UID,
-  AdminLayoutContent,
   useApplications,
+  useAppListRender,
   useGlobalTheme,
   type CustomToken,
   useSystemSettings,
@@ -229,6 +229,62 @@ const appContainerStyle: React.CSSProperties = {
 };
 const embedContainerStyle: React.CSSProperties = { width: 'fit-content', position: 'relative' };
 const FLOAT_MENU_HOST_SELECTOR = '[data-has-float-menu="true"][data-float-menu-model-uid]';
+const layoutContentClass = css`
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  height: calc(100vh - var(--nb-header-height));
+  > div {
+    position: relative;
+  }
+  .ant-layout-footer {
+    position: absolute;
+    bottom: 0;
+    text-align: center;
+    width: 100%;
+    z-index: 0;
+    padding: 0px 50px;
+  }
+`;
+
+const pageContentStyle: React.CSSProperties = {
+  flex: 1,
+  overflowY: 'auto',
+};
+
+const mobileHeight = {
+  height: `calc(100dvh - var(--nb-header-height))`,
+};
+
+function isDvhSupported() {
+  if (typeof document === 'undefined') {
+    return false;
+  }
+
+  const testEl = document.createElement('div');
+  testEl.style.height = '1dvh';
+  return testEl.style.height === '1dvh';
+}
+
+const ShowTipWhenNoPagesV1: FC<{ allAccessRoutes: NocoBaseDesktopRoute[] }> = ({ allAccessRoutes }) => {
+  const flowEngine = useFlowEngine();
+  const { token } = antdTheme.useToken();
+  const { t } = useTranslation();
+  const location = useLocation();
+  const designable = !!flowEngine.context.flowSettingsEnabled;
+
+  if (allAccessRoutes.length === 0 && !designable && ['/admin', '/admin/'].includes(location.pathname)) {
+    return (
+      <Result
+        icon={<HighlightOutlined style={{ fontSize: '8em', color: token.colorText }} />}
+        title={t('No pages yet, please configure first')}
+        subTitle={t(`Click the "UI Editor" icon in the upper right corner to enter the UI Editor mode`)}
+      />
+    );
+  }
+
+  return null;
+};
 
 const GlobalStyle = () => {
   const { token } = antdTheme.useToken();
@@ -288,6 +344,33 @@ function SetIsMobileLayout(props: { isMobile: boolean; children: any }) {
 
   return props.children;
 }
+
+const AdminLayoutContentV1: FC<{
+  allAccessRoutes: NocoBaseDesktopRoute[];
+  onContentElementChange?: (element: HTMLDivElement | null) => void;
+}> = ({ allAccessRoutes, onContentElementChange }) => {
+  const style = useMemo(() => (isDvhSupported() ? mobileHeight : undefined), []);
+  const bindLayoutContentRef = useCallback(
+    (node: HTMLDivElement | null) => {
+      onContentElementChange?.(node);
+    },
+    [onContentElementChange],
+  );
+
+  return (
+    <div
+      ref={bindLayoutContentRef}
+      className={`${layoutContentClass} nb-subpages-slot-without-header-and-side`}
+      style={style}
+    >
+      <div style={pageContentStyle}>
+        {/* Keep V1 page caching inside AdminDynamicPage to avoid nesting with client-v2 KeepAlive. */}
+        <Outlet />
+        <ShowTipWhenNoPagesV1 allAccessRoutes={allAccessRoutes} />
+      </div>
+    </div>
+  );
+};
 
 const DesignerButtonMenuItem: FC<{ item: AdminLayoutMenuNode; fallbackParentRoute?: NocoBaseDesktopRoute }> = (
   props,
@@ -414,7 +497,8 @@ export const AdminLayoutComponent = observer((props: any) => {
   );
   const designable = !isMobileSider && !!flowEngine.context.flowSettingsEnabled;
   const { styles } = useHeaderStyle();
-  const { Component: AppsComponent } = useApplications();
+  const { appList } = useApplications();
+  const appListRender = useAppListRender();
   const flowSettingsSyncRef = useRef(0);
   const desiredFlowSettingsEnabledRef = useRef(false);
   const handleLayoutContentElementChange = useCallback(
@@ -606,6 +690,31 @@ export const AdminLayoutComponent = observer((props: any) => {
       overflowedIndicatorPopupClassName: styles.headerPopup,
     };
   }, [styles.headerPopup]);
+  const appSwitcherStyle = useMemo(
+    () => css`
+      .ant-layout-header.ant-pro-layout-header,
+      .ant-pro-top-nav-header {
+        z-index: 101 !important;
+      }
+
+      .ant-pro-layout-apps-popover {
+        z-index: 2000 !important;
+      }
+
+      .ant-pro-layout-apps-icon {
+        color: ${customToken.colorTextHeaderMenu || 'rgba(255, 255, 255, 0.85)'};
+      }
+
+      .ant-pro-layout-apps-icon:hover,
+      .ant-pro-layout-apps-icon-active {
+        color: ${customToken.colorTextHeaderMenuHover ||
+        customToken.colorTextHeaderMenu ||
+        'rgba(255, 255, 255, 0.85)'};
+        background: ${customToken.colorBgHeaderMenuHover || 'rgba(255, 255, 255, 0.12)'};
+      }
+    `,
+    [customToken.colorBgHeaderMenuHover, customToken.colorTextHeaderMenu, customToken.colorTextHeaderMenuHover],
+  );
 
   const closeMobileMenu = useCallback(() => {
     if (!isMobileSider) {
@@ -639,16 +748,17 @@ export const AdminLayoutComponent = observer((props: any) => {
               {...props}
               contentStyle={contentStyle}
               siderWidth={customToken.siderWidth || 200}
-              className={resetStyle}
+              className={`${resetStyle} ${appSwitcherStyle}`}
               location={location}
               route={route}
               actionsRender={actionsRender}
               logo={
                 <div style={{ display: 'flex', alignItems: 'center' }}>
-                  {AppsComponent && <AppsComponent />}
                   <NocoBaseLogo />
                 </div>
               }
+              appList={appList}
+              appListRender={appListRender}
               title={''}
               layout="mix"
               splitMenus
@@ -674,7 +784,10 @@ export const AdminLayoutComponent = observer((props: any) => {
                     <SetIsMobileLayout isMobile={isMobile}>
                       <ConfigProvider theme={isMobile ? mobileTheme : theme}>
                         <GlobalStyle />
-                        <AdminLayoutContent onContentElementChange={handleLayoutContentElementChange} />
+                        <AdminLayoutContentV1
+                          allAccessRoutes={allAccessRoutes}
+                          onContentElementChange={handleLayoutContentElementChange}
+                        />
                       </ConfigProvider>
                     </SetIsMobileLayout>
                   );

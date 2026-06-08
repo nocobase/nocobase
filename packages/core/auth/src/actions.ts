@@ -17,6 +17,7 @@ export const actions = {
   },
   signOut: async (ctx, next) => {
     await ctx.auth.signOut();
+    await ctx.app.emitAsync('auth:signOut', { ctx, auth: ctx.auth });
     await next();
   },
   signUp: async (ctx, next) => {

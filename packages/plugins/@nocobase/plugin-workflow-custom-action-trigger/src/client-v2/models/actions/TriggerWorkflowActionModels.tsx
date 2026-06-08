@@ -17,6 +17,7 @@ import {
 } from '@nocobase/client-v2';
 import { css } from '@emotion/css';
 import { MultiRecordResource, resolveExpressions, useFlowContext } from '@nocobase/flow-engine';
+import type { FlowEngine, FlowRuntimeContext, ModelConstructor } from '@nocobase/flow-engine';
 import { Alert, Select, Space } from 'antd';
 import type { ButtonProps } from 'antd/es/button';
 import { CONTEXT_TYPE, EVENT_TYPE } from '../../../common/constants';
@@ -30,10 +31,21 @@ type WorkflowCollection = {
   };
 };
 
-type WorkflowSchemaContext = {
-  blockModel?: {
-    collection?: WorkflowCollection | null;
-  };
+type TriggerWorkflowBinding = {
+  workflowKey?: string;
+  context?: string;
+};
+
+type WorkflowOption = {
+  title?: string;
+  key?: string;
+  config?: {
+    type?: number | null;
+  } | null;
+};
+
+type ActionGroupModelClass = ModelConstructor & {
+  registerActionModels?: (models: Record<string, ModelConstructor>) => void;
 };
 
 function joinWorkflowCollectionName(dataSourceKey: string | undefined, collectionName: string | undefined) {
@@ -50,8 +62,9 @@ function getWorkflowCollectionName(collection?: WorkflowCollection | null) {
   return joinWorkflowCollectionName(collection?.dataSourceKey || collection?.dataSource?.key, collection?.name);
 }
 
-function getWorkflowCollectionFilter(ctx?: WorkflowSchemaContext) {
-  const workflowCollection = getWorkflowCollectionName(ctx?.blockModel?.collection);
+function getWorkflowCollectionFilter(ctx?: FlowRuntimeContext) {
+  const collection = ctx?.blockModel?.collection || ctx?.model?.context?.blockModel?.collection;
+  const workflowCollection = getWorkflowCollectionName(collection);
   return workflowCollection
     ? {
         'config.collection': workflowCollection,
@@ -59,7 +72,7 @@ function getWorkflowCollectionFilter(ctx?: WorkflowSchemaContext) {
     : undefined;
 }
 
-const buildTriggerWorkflows = (group?: any[]) => {
+const buildTriggerWorkflows = (group?: TriggerWorkflowBinding[]) => {
   return group?.length
     ? group.map((row) => [row.workflowKey, row.context].filter(Boolean).join('!')).join(',')
     : undefined;
@@ -137,7 +150,7 @@ function createTriggerWorkflowsSchema({
 }: {
   description?: string;
   filter?: Record<string, unknown>;
-  optionFilter?: (item: any) => boolean;
+  optionFilter?: (item: WorkflowOption) => boolean;
   withContextData?: boolean;
 }) {
   return {
@@ -595,18 +608,24 @@ WorkbenchTriggerWorkflowActionModel.registerFlow({
   },
 });
 
-export function registerTriggerWorkflowActionGroups(flowEngine: any) {
-  [
-    'CollectionActionGroupModel',
-    'RecordActionGroupModel',
-    'FormActionGroupModel',
-    'ActionPanelGroupActionModel',
-  ].forEach((modelName) => {
-    flowEngine.getModelClass(modelName)?.registerActionModels?.({
-      FormTriggerWorkflowActionModel,
-      RecordTriggerWorkflowActionModel,
-      CollectionTriggerWorkflowActionModel,
-      WorkbenchTriggerWorkflowActionModel,
-    });
+const triggerWorkflowActionModelsByGroup: Record<string, Record<string, ModelConstructor>> = {
+  CollectionActionGroupModel: {
+    CollectionTriggerWorkflowActionModel,
+  },
+  RecordActionGroupModel: {
+    RecordTriggerWorkflowActionModel,
+  },
+  FormActionGroupModel: {
+    FormTriggerWorkflowActionModel,
+  },
+  ActionPanelGroupActionModel: {
+    WorkbenchTriggerWorkflowActionModel,
+  },
+};
+
+export function registerTriggerWorkflowActionGroups(flowEngine: FlowEngine) {
+  Object.entries(triggerWorkflowActionModelsByGroup).forEach(([modelName, actionModels]) => {
+    const modelClass = flowEngine.getModelClass(modelName) as ActionGroupModelClass | undefined;
+    modelClass?.registerActionModels?.(actionModels);
   });
 }

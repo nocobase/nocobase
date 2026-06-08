@@ -10,6 +10,7 @@
 import {
   DndProvider,
   MultiRecordResource,
+  FlowModelContext,
   FlowModelRenderer,
   Droppable,
   DragHandler,
@@ -17,6 +18,8 @@ import {
   FlowSettingsButton,
   FlowModel,
   observer,
+  buildItems,
+  SubModelItem,
 } from '@nocobase/flow-engine';
 import { SettingOutlined } from '@ant-design/icons';
 import {
@@ -41,6 +44,26 @@ type GridBlockModelStructure = {
     item: GridCardItemModel;
     actions: ActionModel[];
   };
+};
+
+type CollectionSelectionActionModelClass = typeof ActionModel & {
+  capabilityActionName?: string | null;
+};
+
+const selectedRecordActionNames = new Set(['destroyMany', 'updateMany']);
+
+const getCollectionActionNameFromClass = (ModelClass?: CollectionSelectionActionModelClass) => {
+  return ModelClass?.capabilityActionName;
+};
+
+const filterSelectedRecordActionItems = (ctx: FlowModelContext, items: SubModelItem[]) => {
+  return items.filter((item) => {
+    const ModelClass = item.useModel
+      ? (ctx.engine.getModelClass(item.useModel) as CollectionSelectionActionModelClass | undefined)
+      : undefined;
+    const actionName = getCollectionActionNameFromClass(ModelClass);
+    return !actionName || !selectedRecordActionNames.has(actionName);
+  });
 };
 
 export class GridCardBlockModel extends CollectionBlockModel<GridBlockModelStructure> {
@@ -68,18 +91,25 @@ export class GridCardBlockModel extends CollectionBlockModel<GridBlockModelStruc
   createResource(ctx, params) {
     return this.context.createResource(MultiRecordResource);
   }
+
+  async getCollectionActionItems(ctx: FlowModelContext) {
+    const items = await buildItems(this.getModelClassName('CollectionActionGroupModel'))(ctx);
+    return filterSelectedRecordActionItems(ctx, items);
+  }
+
   renderConfiguireActions() {
     return (
       <AddSubModelButton
         key={'table-column-add-actions'}
         model={this}
-        subModelBaseClass={this.getModelClassName('CollectionActionGroupModel')}
+        items={(ctx) => this.getCollectionActionItems(ctx)}
         subModelKey="actions"
       >
         <FlowSettingsButton icon={<SettingOutlined />}>{this.translate('Actions')}</FlowSettingsButton>
       </AddSubModelButton>
     );
   }
+
   pagination() {
     const totalCount = this.resource.getMeta('count');
     const pageSize = this.resource.getPageSize();
@@ -158,13 +188,13 @@ const useGridCardHeight = ({
   containerRef,
   actionsRef,
   listRef,
-  deps = [],
+  height,
 }: {
   heightMode?: string;
   containerRef: React.RefObject<HTMLDivElement>;
   actionsRef: React.RefObject<HTMLDivElement>;
   listRef: React.RefObject<HTMLDivElement>;
-  deps?: React.DependencyList;
+  height?: number;
 }) => {
   const [listHeight, setListHeight] = useState<number>();
   const calcListHeight = useCallback(() => {
@@ -185,7 +215,7 @@ const useGridCardHeight = ({
 
   useLayoutEffect(() => {
     calcListHeight();
-  }, [calcListHeight, ...deps]);
+  }, [calcListHeight, height]);
 
   useEffect(() => {
     if (!containerRef.current || typeof ResizeObserver === 'undefined') return;
@@ -197,7 +227,7 @@ const useGridCardHeight = ({
     if (actions) observer.observe(actions);
     if (paginationEl) observer.observe(paginationEl);
     return () => observer.disconnect();
-  }, [calcListHeight, containerRef, actionsRef, listRef, ...deps]);
+  }, [calcListHeight, containerRef, actionsRef, listRef, height]);
 
   return listHeight;
 };
@@ -216,7 +246,7 @@ const GridCardBlockContent = observer(
       containerRef,
       actionsRef,
       listRef,
-      deps: [height],
+      height,
     });
     const listClassName = useMemo(
       () => css`
@@ -232,7 +262,7 @@ const GridCardBlockContent = observer(
           min-height: 100%;
         }
       `,
-      [],
+      [token.marginLG],
     );
     const listStyle = useMemo(() => {
       if (listHeight == null) return model.props?.style;

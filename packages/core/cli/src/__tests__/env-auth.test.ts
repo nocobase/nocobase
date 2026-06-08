@@ -17,9 +17,11 @@ import {
   buildOauthCompletionHtml,
   buildOauthErrorHtml,
   buildOauthRedirectHtml,
+  getOauthLoopbackRedirectUri,
   getOauthMetadataUrl,
   getOauthResource,
   isOauthAccessTokenExpired,
+  resolveServerRequestTarget,
   resolveAccessToken,
 } from '../lib/env-auth.js';
 
@@ -61,6 +63,7 @@ test('OAuth helpers derive metadata and resource URLs from base URL', () => {
   );
   expect(getOauthResource('http://localhost:13000/api/')).toBe('http://localhost:13000/api/');
   expect(getOauthResource('https://demo.example.com/custom/api')).toBe('https://demo.example.com/custom/api/');
+  expect(getOauthLoopbackRedirectUri(62461)).toBe('http://127.0.0.1:62461/callback');
 });
 
 test('buildOauthRedirectHtml escapes OAuth URLs for HTML and script contexts', () => {
@@ -256,6 +259,47 @@ test('authenticateEnvWithBasic rejects responses without a token', async () => {
     } finally {
       globalThis.fetch = originalFetch;
     }
+  });
+});
+
+test('resolveAccessToken explains how to update a saved env without a base URL', async () => {
+  await withTempCliHome(async () => {
+    await saveAuthConfig(
+      {
+        lastEnv: 'test',
+        envs: {
+          test: {
+            auth: {
+              type: 'oauth',
+              accessToken: 'expired-token',
+              refreshToken: 'refresh-token',
+              expiresAt: '2026-04-14T00:00:00.000Z',
+              issuer: 'http://localhost:13000/api',
+              clientId: 'client-1',
+            },
+          },
+        },
+      },
+      { scope: 'global' },
+    );
+
+    await expect(
+      resolveAccessToken({
+        envName: 'test',
+        scope: 'global',
+      }),
+    ).rejects.toThrow(/Update it with `nb env update test --api-base-url <url>` first\./);
+  });
+});
+
+test('resolveServerRequestTarget explains how to initialize a missing env', async () => {
+  await withTempCliHome(async () => {
+    await expect(
+      resolveServerRequestTarget({
+        envName: 'missing',
+        scope: 'global',
+      }),
+    ).rejects.toThrow(/Use --api-base-url or run `nb init --ui --env missing` first\./);
   });
 });
 

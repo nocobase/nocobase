@@ -8,14 +8,15 @@
  */
 
 import type { FlowEngine } from '@nocobase/flow-engine';
-import { useEffect, useRef } from 'react';
+import type { RefObject } from 'react';
 import { getAdminLayoutModel, type AdminLayoutModel } from './admin-layout/AdminLayoutModel';
+import { useLayoutRoutePage } from './useLayoutRoutePage';
 
 type UseAdminLayoutRoutePageOptions = {
   flowEngine: FlowEngine;
   pageUid: string;
   refreshDesktopRoutes?: () => Promise<unknown>;
-  layoutContentRef: React.RefObject<HTMLDivElement>;
+  layoutContentRef: RefObject<HTMLDivElement>;
 };
 
 /**
@@ -29,28 +30,11 @@ type UseAdminLayoutRoutePageOptions = {
  */
 export function useAdminLayoutRoutePage(options: UseAdminLayoutRoutePageOptions) {
   const { flowEngine, pageUid, refreshDesktopRoutes, layoutContentRef } = options;
-  const adminLayoutModel = getAdminLayoutModel<AdminLayoutModel>(flowEngine, { required: true });
-  const refreshRef = useRef(refreshDesktopRoutes);
-
-  refreshRef.current = refreshDesktopRoutes;
-
-  useEffect(() => {
-    adminLayoutModel.registerRoutePage(pageUid, {
-      active: false,
-      refreshDesktopRoutes: refreshRef.current,
-      layoutContentElement: layoutContentRef.current,
-    });
-    return () => {
-      adminLayoutModel.unregisterRoutePage(pageUid);
-    };
-  }, [adminLayoutModel, pageUid, layoutContentRef]);
-
-  useEffect(() => {
-    adminLayoutModel.updateRoutePage(pageUid, {
-      refreshDesktopRoutes,
-      layoutContentElement: layoutContentRef.current,
-    });
-  }, [adminLayoutModel, pageUid, refreshDesktopRoutes, layoutContentRef]);
-
-  return adminLayoutModel;
+  return useLayoutRoutePage<AdminLayoutModel>({
+    flowEngine,
+    pageUid,
+    refreshDesktopRoutes,
+    layoutContentRef,
+    getLayoutModel: (engine) => getAdminLayoutModel<AdminLayoutModel>(engine, { required: true }),
+  });
 }

@@ -7,10 +7,31 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { observable } from '@formily/reactive';
-import { useEffect, useMemo } from 'react';
-import { useLocation, useMatch, useMatches, useParams } from 'react-router-dom';
+import { useEffect } from 'react';
+import { useLocation, useMatches, useParams } from 'react-router-dom';
 import { Application } from '../Application';
+
+type LayoutMatchLike = {
+  id: string;
+  pathname: string;
+};
+
+type LayoutDefinitionLike = {
+  routeName: string;
+};
+
+export function findDeepestLayoutMatch(layouts: LayoutDefinitionLike[] = [], matches: LayoutMatchLike[] = []) {
+  const layoutRouteNames = new Set(layouts.map((layout) => layout.routeName));
+
+  for (let index = matches.length - 1; index >= 0; index -= 1) {
+    const match = matches[index];
+    if (layoutRouteNames.has(match.id)) {
+      return match;
+    }
+  }
+
+  return null;
+}
 
 export function useRouterSync(app: Application) {
   const params = useParams();
@@ -20,13 +41,16 @@ export function useRouterSync(app: Application) {
   useEffect(() => {
     const last = matches[matches.length - 1];
     if (!last) return;
+    const layoutMatch = findDeepestLayoutMatch(app.layoutManager?.listLayouts?.(), matches);
     engine.context['_observableCache']['route'] = {
       name: last.id,
       pathname: last.pathname,
       path: last.handle?.['path'] || null,
       params,
+      layoutRouteName: layoutMatch?.id,
+      layoutBasePathname: layoutMatch?.pathname,
     };
-  }, [engine.context, params, matches]);
+  }, [app, engine.context, params, matches]);
   useEffect(() => {
     engine.context['_observableCache']['location'] = location;
   }, [engine.context, location]);

@@ -8,11 +8,9 @@
  */
 
 import { Command, Flags } from '@oclif/core';
-import {
-  formatMissingManagedAppEnvMessage,
-  startDockerContainer,
-} from '../../lib/app-runtime.js';
-import { announceTargetEnv, failTask, startTask, succeedTask } from '../../lib/ui.js';
+import { formatMissingManagedAppEnvMessage, startDockerContainer } from '../../lib/app-runtime.js';
+import { ensureBuiltinDbReady } from '../../lib/app-managed-resources.js';
+import { announceTargetEnv, failTask, startTask, succeedTask, updateTask } from '../../lib/ui.js';
 import { formatUnmanagedDbMessage, resolveDbRuntime } from './shared.js';
 
 function formatDbStartFailure(envName: string, message: string): string {
@@ -33,8 +31,7 @@ function formatDbStartFailure(envName: string, message: string): string {
 }
 
 export default class DbStart extends Command {
-  static override description =
-    'Start the built-in database container for the selected env.';
+  static override description = 'Start the built-in database container for the selected env.';
 
   static override examples = [
     '<%= config.bin %> <%= command.id %>',
@@ -56,6 +53,7 @@ export default class DbStart extends Command {
   public async run(): Promise<void> {
     const { flags } = await this.parse(DbStart);
     const requestedEnv = flags.env?.trim() || undefined;
+    const verbose = Boolean(flags.verbose);
 
     const runtime = await resolveDbRuntime(requestedEnv);
     if (!runtime) {
@@ -70,14 +68,35 @@ export default class DbStart extends Command {
 
     startTask(`Starting the built-in database for "${runtime.envName}"...`);
     try {
-      const state = await startDockerContainer(runtime.containerName, {
-        stdio: flags.verbose ? 'inherit' : 'ignore',
-      });
-      succeedTask(
-        state === 'already-running'
-          ? `The built-in database is already running for "${runtime.envName}"${runtime.address ? ` at ${runtime.address}` : ''}.`
-          : `The built-in database is running for "${runtime.envName}"${runtime.address ? ` at ${runtime.address}` : ''}.`,
-      );
+      try {
+        const state = await startDockerContainer(runtime.containerName, {
+          stdio: verbose ? 'inherit' : 'ignore',
+        });
+        succeedTask(
+          state === 'already-running'
+            ? `The built-in database is already running for "${runtime.envName}"${
+                runtime.address ? ` at ${runtime.address}` : ''
+              }.`
+            : `The built-in database is running for "${runtime.envName}"${
+                runtime.address ? ` at ${runtime.address}` : ''
+              }.`,
+        );
+      } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : String(error);
+        if (!/does not exist/i.test(message)) {
+          throw error;
+        }
+
+        updateTask(`Restoring the built-in database for "${runtime.envName}"...`);
+        await ensureBuiltinDbReady(runtime.appRuntime, {
+          verbose,
+        });
+        succeedTask(
+          `The built-in database is running for "${runtime.envName}"${
+            runtime.address ? ` at ${runtime.address}` : ''
+          }.`,
+        );
+      }
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : String(error);
       failTask(`Failed to start the built-in database for "${runtime.envName}".`);

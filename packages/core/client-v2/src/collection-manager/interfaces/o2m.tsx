@@ -7,10 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { ISchema } from '@formily/react';
 import { CollectionFieldInterface } from '../../collection-field-interface/CollectionFieldInterface';
 import { constraintsProps, relationshipType, reverseFieldProperties } from './properties';
-import { getUniqueKeyFromCollection } from './utils';
 export class O2MFieldInterface extends CollectionFieldInterface {
   name = 'o2m';
   type = 'object';
@@ -54,23 +52,6 @@ export class O2MFieldInterface extends CollectionFieldInterface {
     },
   };
   availableTypes = ['hasMany'];
-  schemaInitialize(schema: ISchema, { field, block, readPretty, targetCollection }) {
-    // schema['type'] = 'array';
-    schema['x-component-props'] = schema['x-component-props'] || {};
-    schema['x-component-props'].fieldNames = schema['x-component-props'].fieldNames || {
-      value: getUniqueKeyFromCollection(targetCollection),
-    };
-    schema['x-component-props'].fieldNames.label =
-      schema['x-component-props'].fieldNames?.label ||
-      targetCollection?.titleField ||
-      getUniqueKeyFromCollection(targetCollection);
-    if (['Table', 'Kanban'].includes(block)) {
-      schema['x-component-props'] = schema['x-component-props'] || {};
-      schema['x-component-props']['ellipsis'] = true;
-      // 预览文件时需要的参数
-      schema['x-component-props']['size'] = 'small';
-    }
-  }
   properties = {
     'uiSchema.title': {
       type: 'string',
@@ -118,7 +99,6 @@ export class O2MFieldInterface extends CollectionFieldInterface {
                   type: 'string',
                   title: '{{t("Target collection")}}',
                   required: true,
-                  'x-reactions': ['{{useAsyncDataSource(loadCollections)}}'],
                   'x-decorator': 'FormItem',
                   'x-component': 'Select',
                   'x-disabled': '{{ !createOnly }}',
@@ -139,10 +119,9 @@ export class O2MFieldInterface extends CollectionFieldInterface {
                   type: 'string',
                   title: '{{t("Source key")}}',
                   description: "{{t('Field values must be unique.')}}",
-                  default: 'id',
-                  enum: [{ label: 'ID', value: 'id' }],
                   'x-decorator': 'FormItem',
                   'x-component': 'SourceKey',
+                  'x-disabled': '{{ !createOnly }}',
                 },
               },
             },

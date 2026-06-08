@@ -8,14 +8,15 @@
  */
 
 import { FlowRunJSContext } from '../../flowContext';
+import { createElementPropertyDoc, createZhCNElementPropertyDoc } from './elementDoc';
 
 export class FormJSFieldItemRunJSContext extends FlowRunJSContext {}
 
 FormJSFieldItemRunJSContext.define({
   label: 'FormJSFieldItem RunJS context',
   properties: {
-    element: `ElementProxy instance providing a safe DOM container for form field rendering.
-      Supports innerHTML, append, and other DOM manipulation methods.`,
+    element: createElementPropertyDoc(`ElementProxy instance providing a safe DOM container for form field rendering.
+      Supports innerHTML, append, and other DOM manipulation methods.`),
     value: `Current field value (read-only in display mode; in controlled scenarios, use setProps to modify).`,
     record: `Current record data object (read-only).
       Contains all field values of the parent record.`,
@@ -38,7 +39,7 @@ FormJSFieldItemRunJSContext.define(
   {
     label: '表单 JS 字段项 RunJS 上下文',
     properties: {
-      element: 'ElementProxy，表单字段容器',
+      element: createZhCNElementPropertyDoc('ElementProxy，表单字段容器'),
       value: '字段值（展示模式为只读；受控场景用 setProps 修改）',
       record: '当前记录（只读）',
       formValues: {

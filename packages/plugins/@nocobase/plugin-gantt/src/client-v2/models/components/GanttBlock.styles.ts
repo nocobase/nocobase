@@ -15,12 +15,14 @@ export const createGanttBlockClassNames = ({
   hasVerticalScroll,
   hasHorizontalScroll,
   hasHorizontalTableScroll,
+  rowHeight,
 }: {
   token: any;
   tableWidth: number;
   hasVerticalScroll?: boolean;
   hasHorizontalScroll?: boolean;
   hasHorizontalTableScroll?: boolean;
+  rowHeight: number;
 }) => {
   return {
     tableClass: cx(css`
@@ -54,6 +56,12 @@ export const createGanttBlockClassNames = ({
       .ant-table-cell {
         border-color: ${token.colorSplit};
         white-space: nowrap;
+      }
+      .ant-table-tbody > tr {
+        height: ${rowHeight}px;
+      }
+      .ant-table-tbody > tr > td {
+        height: ${rowHeight}px;
       }
       .nb-gantt-table-index {
         opacity: 0;

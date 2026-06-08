@@ -1,7 +1,7 @@
 ---
 title: "nb plugin"
-description: "nb plugin コマンドリファレンス：選択した NocoBase env のプラグインを管理します。"
-keywords: "nb plugin,NocoBase CLI,プラグイン管理,enable,disable,list"
+description: "nb plugin コマンドリファレンス：選択した NocoBase env のプラグインを管理し、パッケージ化されたプラグインを storage/plugins にインポートします。"
+keywords: "nb plugin,NocoBase CLI,プラグイン管理,enable,disable,list,import"
 ---
 
 # nb plugin
@@ -18,6 +18,7 @@ nb plugin <command>
 
 | コマンド | 説明 |
 | --- | --- |
+| [`nb plugin import`](./import.md) | パッケージ化されたプラグインアーカイブまたは npm パッケージをインポートします |
 | [`nb plugin list`](./list.md) | インストール済みプラグインを一覧表示します |
 | [`nb plugin enable`](./enable.md) | 1 つまたは複数のプラグインを有効化します |
 | [`nb plugin disable`](./disable.md) | 1 つまたは複数のプラグインを無効化します |
@@ -25,6 +26,7 @@ nb plugin <command>
 ## 使用例
 
 ```bash
+nb plugin import ./plugin-auth-cas-1.4.0.tgz --storage-path ./storage
 nb plugin list -e local
 nb plugin enable @nocobase/plugin-sample
 nb plugin disable -e local @nocobase/plugin-sample

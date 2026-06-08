@@ -1,12 +1,12 @@
 ---
-title: "nb config get"
-description: "Справочник по команде nb config get: получение эффективного значения ключа конфигурации CLI."
-keywords: "nb config get,NocoBase CLI,configuration"
+title: 'nb config get'
+description: 'Справка по команде nb config get: чтение итогового значения параметра конфигурации CLI.'
+keywords: 'nb config get,NocoBase CLI,чтение конфигурации'
 ---
 
 # nb config get
 
-Получает эффективное значение ключа конфигурации CLI. Если явное значение не задано, возвращается значение по умолчанию.
+Считывает итоговое значение указанного параметра конфигурации CLI. Если он не был явно задан, возвращается значение по умолчанию.
 
 ## Использование
 
@@ -16,16 +16,23 @@ nb config get <key>
 
 ## Параметры
 
-| Параметр | Тип | Описание |
-| --- | --- | --- |
-| `<key>` | string | Ключ конфигурации: `license.pkg-url`, `docker.network` или `docker.container-prefix` |
+| Параметр | Тип    | Описание                                                                                                                                   |
+| -------- | ------ | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| `<key>` | string | Имя параметра конфигурации. Поддерживаемые значения смотрите в [`nb config`](./index.md) |
 
 ## Примеры
 
 ```bash
+nb config get locale
+nb config get update.policy
 nb config get license.pkg-url
 nb config get docker.network
 nb config get docker.container-prefix
+nb config get proxy.provider
+nb config get proxy.nb-cli-root
+nb config get proxy.upstream-host
+nb config get bin.nginx
+nb config get bin.git
 ```
 
 ## Связанные команды

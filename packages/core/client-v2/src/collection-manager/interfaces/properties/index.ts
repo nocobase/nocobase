@@ -7,13 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Field } from '@formily/core';
 import { ISchema } from '@formily/react';
-import { uid } from '@formily/shared';
 import { css } from '@emotion/css';
 import { DateFormatCom } from '../../../flow/components/ExpiresRadio';
-
-export * as operators from './operators';
 
 export const type: ISchema = {
   type: 'string',
@@ -51,17 +47,6 @@ export const unique = {
   'x-decorator': 'FormItem',
   'x-component': 'Checkbox',
   'x-disabled': '{{ !createMainOnly || primaryKeyOnly }}',
-  'x-reactions': [
-    {
-      dependencies: ['primaryKey'],
-      when: '{{$deps[0]}}',
-      fulfill: {
-        state: {
-          value: false,
-        },
-      },
-    },
-  ],
 };
 export const primaryKey = {
   type: 'boolean',
@@ -69,17 +54,6 @@ export const primaryKey = {
   'x-decorator': 'FormItem',
   'x-component': 'Checkbox',
   'x-disabled': '{{ !createMainOnly || primaryKeyOnly }}',
-  'x-reactions': [
-    {
-      dependencies: ['unique'],
-      when: '{{$deps[0]&&createMainOnly}}',
-      fulfill: {
-        state: {
-          value: false,
-        },
-      },
-    },
-  ],
 };
 
 export const autoIncrement = {
@@ -89,17 +63,6 @@ export const autoIncrement = {
   'x-decorator': 'FormItem',
   'x-component': 'Checkbox',
   'x-disabled': '{{ !createMainOnly }}',
-  'x-reactions': [
-    {
-      dependencies: ['primaryKey'],
-      when: '{{$deps[0]&&createMainOnly}}',
-      fulfill: {
-        state: {
-          value: true,
-        },
-      },
-    },
-  ],
 };
 
 export const autoFill = {
@@ -155,56 +118,6 @@ export const reverseFieldProperties: Record<string, ISchema> = {
         'x-decorator': 'FormItem',
         'x-component': 'Checkbox',
         'x-content': '{{t("Create inverse field in the target collection")}}',
-        'x-reactions': [
-          {
-            target: 'reverseField.type',
-            when: '{{!!$self.value}}',
-            fulfill: {
-              state: {
-                hidden: false,
-              },
-            },
-            otherwise: {
-              state: {
-                hidden: true,
-              },
-            },
-          },
-          {
-            target: 'reverseField.uiSchema.title',
-            when: '{{!!$self.value}}',
-            fulfill: {
-              state: {
-                hidden: false,
-              },
-            },
-            otherwise: {
-              state: {
-                hidden: true,
-              },
-            },
-          },
-          {
-            target: 'reverseField.name',
-            when: '{{!!$self.value}}',
-            fulfill: {
-              state: {
-                hidden: false,
-              },
-            },
-            otherwise: {
-              state: {
-                hidden: true,
-              },
-            },
-          },
-          (field) => {
-            const values = field.form.values;
-            const { reverseField } = values;
-            field.value = !!reverseField?.key;
-            field.disabled = !!reverseField?.key;
-          },
-        ],
       },
       'reverseField.type': {
         ...relationshipType,
@@ -308,44 +221,12 @@ export const dateTimeProps: { [key: string]: ISchema } = {
         value: 'custom',
       },
     ],
-    'x-reactions': {
-      dependencies: ['uiSchema.x-component-props.picker'],
-      fulfill: {
-        state: {
-          value: `{{ getPickerFormat($deps[0])}}`,
-          componentProps: { picker: `{{$deps[0]}}` },
-        },
-      },
-    },
   },
   'uiSchema.x-component-props.showTime': {
     type: 'boolean',
     'x-decorator': 'FormItem',
     'x-component': 'Checkbox',
     'x-content': '{{t("Show time")}}',
-    'x-reactions': [
-      `{{(field) => {
-         field.query('..[].timeFormat').take(f => {
-           f.display = field.value ? 'visible' : 'none';
-           f.value='HH:mm:ss'
-         });
-       }}}`,
-      {
-        dependencies: ['uiSchema.x-component-props.picker'],
-        when: '{{$deps[0]==="date"}}',
-        fulfill: {
-          state: {
-            hidden: false,
-          },
-        },
-        otherwise: {
-          state: {
-            hidden: true,
-            value: false,
-          },
-        },
-      },
-    ],
   },
   'uiSchema.x-component-props.timeFormat': {
     type: 'string',
@@ -363,14 +244,6 @@ export const dateTimeProps: { [key: string]: ISchema } = {
         value: 'HH:mm:ss',
       },
     ],
-    'x-reactions': {
-      dependencies: ['uiSchema.x-component-props.showTime'],
-      fulfill: {
-        state: {
-          hidden: `{{ !$deps[0] }}`,
-        },
-      },
-    },
   },
 };
 
@@ -446,12 +319,6 @@ export const dataSource: ISchema = {
             required: true,
             'x-decorator': 'FormItem',
             'x-component': 'Input',
-            'x-reactions': (field: Field) => {
-              if (!field.initialValue && !field.initialized) {
-                field.initialValue = uid();
-                field.setValue(uid());
-              }
-            },
           },
         },
       },

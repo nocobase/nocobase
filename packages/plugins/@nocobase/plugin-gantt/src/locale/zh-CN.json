@@ -4,6 +4,7 @@
   "Color field": "颜色字段",
   "Day": "天",
   "Details": "详情",
+  "Duration: {{value}} day(s)": "时长：{{value}} 天",
   "Enable drag to reschedule": "启用拖动重新排期",
   "Enable tree table": "启用树表格",
   "End date field": "结束日期字段",
@@ -21,12 +22,15 @@
   "Progress field": "进度字段",
   "Quarter of day": "一天的四分之一",
   "QuarterYear": "季度",
+  "Scroll to today on first display": "默认定位到今天",
   "Show table": "表格显示",
   "Start date field": "开始日期字段",
   "Table width": "表格宽度",
+  "Task date range": "{{name}}：{{start}} ~ {{end}}",
   "Time scale": "时间缩放等级",
   "Title field": "标题字段",
   "Today": "今天",
   "Week": "周",
-  "Year": "年"
+  "Year": "年",
+  "Progress: {{value}}%": "进度：{{value}}%"
 }

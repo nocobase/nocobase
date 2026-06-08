@@ -8,26 +8,32 @@
  */
 
 import { beforeEach, test, vi, expect } from 'vitest';
+import { deleteCliConfigValue, setCliConfigValue } from '../lib/cli-config.js';
 
 const mocks = vi.hoisted(() => ({
   runPromptCatalog: vi.fn(),
   getEnv: vi.fn(),
   upsertEnv: vi.fn(),
   setCurrentEnv: vi.fn(),
+  clearEnvRootSetup: vi.fn(),
   validateExternalDbConfig: vi.fn(async () => undefined),
   validateMysqlLowerCaseTableNamesCompatibility: vi.fn(async () => undefined),
   printInfo: vi.fn(),
   printWarning: vi.fn(),
 }));
 
-beforeEach(() => {
+beforeEach(async () => {
   vi.clearAllMocks();
+  mocks.getEnv.mockReset();
+  mocks.getEnv.mockResolvedValue(undefined);
   mocks.upsertEnv.mockResolvedValue(undefined);
   mocks.setCurrentEnv.mockResolvedValue(undefined);
+  mocks.clearEnvRootSetup.mockResolvedValue(true);
   mocks.validateExternalDbConfig.mockReset();
   mocks.validateExternalDbConfig.mockResolvedValue(undefined);
   mocks.validateMysqlLowerCaseTableNamesCompatibility.mockReset();
   mocks.validateMysqlLowerCaseTableNamesCompatibility.mockResolvedValue(undefined);
+  await deleteCliConfigValue('default-api-host');
 });
 
 vi.mock('../lib/prompt-catalog.ts', async (importOriginal) => {
@@ -60,6 +66,12 @@ vi.mock('../lib/auth-store.js', async (importOriginal) => {
         return mocks.setCurrentEnv(...args);
       }
       return actual.setCurrentEnv(...args);
+    },
+    clearEnvRootSetup: (...args: Parameters<typeof actual.clearEnvRootSetup>) => {
+      if (mocks.clearEnvRootSetup.mock.calls.length || mocks.clearEnvRootSetup.getMockImplementation()) {
+        return mocks.clearEnvRootSetup(...args);
+      }
+      return actual.clearEnvRootSetup(...args);
     },
   };
 });
@@ -135,6 +147,10 @@ test('install saves env config immediately after collecting prompt results for f
   expect(saveInstalledEnv.mock.invocationCallOrder[0]).toBeGreaterThan(
     collectPromptResults.mock.invocationCallOrder[0],
   );
+  expect(saveInstalledEnv.mock.calls[0]?.[0].appResults).toMatchObject({
+    timeZone: expect.any(String),
+  });
+  expect(String(saveInstalledEnv.mock.calls[0]?.[0].appResults.appKey ?? '')).toMatch(/^[a-f0-9]{64}$/);
   expect(waitForAppHealthCheck).not.toHaveBeenCalled();
 });
 
@@ -242,6 +258,62 @@ test('install syncs oauth env connection after the app becomes ready', async () 
   ]);
 });
 
+test('install prints the resolved app url when the app becomes ready', async () => {
+  const { default: Install } = await import('../commands/install.js');
+
+  await setCliConfigValue('default-api-host', '192.168.1.10');
+
+  const saveInstalledEnv = vi.fn(async () => undefined);
+  const waitForAppHealthCheck = vi.fn(async () => undefined);
+  const downloadManagedSource = vi.fn(async () => undefined);
+  const installDockerApp = vi.fn(async () => ({
+    containerName: 'nb-chen-app1-app',
+    appPort: '13080',
+    appKey: 'app-key',
+    timeZone: 'Asia/Shanghai',
+  }));
+  const runCommand = vi.fn(async () => undefined);
+  const collectPromptResults = vi.fn(async () => ({
+    envName: 'app1',
+    envResults: {},
+    appResults: {
+      appPort: '13080',
+      storagePath: './app1/storage/',
+    },
+    downloadResults: {
+      source: 'docker',
+    },
+    dbResults: {},
+    rootResults: {},
+    envAddResults: {
+      authType: 'oauth',
+    },
+  }));
+
+  const command = Object.assign(Object.create(Install.prototype), {
+    parse: vi.fn(async () => ({
+      flags: {
+        yes: false,
+        resume: false,
+        force: false,
+        verbose: false,
+        'no-intro': true,
+      },
+    })),
+    collectPromptResults,
+    saveInstalledEnv,
+    waitForAppHealthCheck,
+    downloadManagedSource,
+    installDockerApp,
+    commandStdio: vi.fn(() => 'ignore'),
+    config: { runCommand },
+  });
+
+  await Install.prototype.run.call(command);
+
+  expect(mocks.printInfo).toHaveBeenCalledWith('NocoBase is ready at http://192.168.1.10:13080/');
+});
+
 test('install syncs token env connection after the app becomes ready without oauth login', async () => {
   const { default: Install } = await import('../commands/install.js');
 
@@ -295,6 +367,7 @@ test('install syncs token env connection after the app becomes ready without oau
   await Install.prototype.run.call(command);
 
   expect(runCommand.mock.calls).toEqual([['env:update', ['app1']]]);
+  expect(mocks.clearEnvRootSetup).toHaveBeenCalledWith('app1', { scope: 'global' });
 });
 
 test('install run validates external db config before saving env config', async () => {
@@ -516,6 +589,70 @@ test('install --resume reuses the saved workspace env config for prompt values',
   expect(result.envAddResults.authType).toBe('token');
   expect(result.envAddResults.accessToken).toBe('resume-token');
   expect(result.envAddResults.apiBaseUrl).toBe('http://127.0.0.1:13080/api');
+});
+
+test('install reuses saved appKey and timezone before resuming docker startup', async () => {
+  const { default: Install } = await import('../commands/install.js');
+
+  mocks.getEnv.mockResolvedValue({
+    name: 'app1',
+    config: {
+      appKey: 'saved-app-key',
+      timezone: 'Asia/Shanghai',
+    },
+  });
+
+  const saveInstalledEnv = vi.fn(async () => undefined);
+  const waitForAppHealthCheck = vi.fn(async () => undefined);
+  const downloadManagedSource = vi.fn(async () => undefined);
+  const installDockerApp = vi.fn(async () => ({
+    containerName: 'nb-chen-app1-app',
+    appPort: '13080',
+    appKey: 'saved-app-key',
+    timeZone: 'Asia/Shanghai',
+  }));
+
+  const command = Object.assign(Object.create(Install.prototype), {
+    parse: vi.fn(async () => ({
+      flags: {
+        yes: false,
+        resume: true,
+        force: false,
+        verbose: false,
+        'no-intro': true,
+      },
+    })),
+    collectPromptResults: vi.fn(async () => ({
+      envName: 'app1',
+      envResults: {},
+      appResults: {
+        appPort: '13080',
+        storagePath: './app1/storage/',
+      },
+      downloadResults: {
+        source: 'docker',
+      },
+      dbResults: {},
+      rootResults: {},
+      envAddResults: {
+        apiBaseUrl: 'http://127.0.0.1:13080/api',
+        authType: 'oauth',
+      },
+    })),
+    saveInstalledEnv,
+    waitForAppHealthCheck,
+    downloadManagedSource,
+    installDockerApp,
+    commandStdio: vi.fn(() => 'ignore'),
+    config: { runCommand: vi.fn(async () => undefined) },
+  });
+
+  await Install.prototype.run.call(command);
+
+  expect(installDockerApp.mock.calls[0]?.[0].appResults).toMatchObject({
+    appKey: 'saved-app-key',
+    timeZone: 'Asia/Shanghai',
+  });
 });
 
 test('install --resume keeps saved basic auth credentials editable in prompts', async () => {

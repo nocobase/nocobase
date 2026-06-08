@@ -46,7 +46,7 @@ describe('linkageRulesRefresh action', () => {
     expect(handler).not.toHaveBeenCalled();
   });
 
-  it('runs linkage action on master model when forks are not mounted in runtime mode', async () => {
+  it('skips master model when forks can handle flow even if regular action buttons do not attach refs', async () => {
     const handler = vi.fn(async () => {});
     const model: any = {
       isFork: false,
@@ -60,6 +60,28 @@ describe('linkageRulesRefresh action', () => {
           getFlow: vi.fn(() => ({})),
         },
       ]),
+      getFlow: vi.fn(() => ({})),
+      getStepParams: vi.fn(() => ({ value: ['master-runtime'] })),
+    };
+    const ctx: any = {
+      model,
+      resolveJsonTemplate: vi.fn(async (p: any) => p),
+      getAction: vi.fn(() => ({ handler })),
+    };
+
+    await linkageRulesRefresh.handler(ctx, {
+      actionName: 'actionLinkageRules',
+      flowKey: 'buttonSettings',
+    });
+
+    expect(handler).not.toHaveBeenCalled();
+  });
+
+  it('runs linkage action on master model when no forks exist in runtime mode', async () => {
+    const handler = vi.fn(async () => {});
+    const model: any = {
+      isFork: false,
+      forks: new Set(),
       getFlow: vi.fn(() => ({})),
       getStepParams: vi.fn(() => ({ value: ['master-runtime'] })),
     };

@@ -282,7 +282,7 @@ const UIEditorTopbarAction = observer(
     const { token } = theme.useToken();
     const customToken = token as CustomToken;
     const designable = !!flowEngine.context.flowSettingsEnabled;
-    const isMobileLayout = !!flowEngine.context.isMobileLayout;
+    const isMobileLayout = !!model.context.isMobileLayout;
 
     useHotkeys(
       'ctrl+shift+u',

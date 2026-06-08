@@ -18,6 +18,7 @@ import {
 } from './cli-locale.ts';
 import {
   isPromptBlockSkipped,
+  type PasswordPromptBlock,
   type PromptBlock,
   type PromptCatalogValues,
   type PromptInitialValues,
@@ -54,6 +55,14 @@ function hasValueKey(iv: PromptInitialValues, key: string): boolean {
 }
 
 function resolveTextDefault(def: TextPromptBlock, out: PromptCatalogValues): string {
+  const iv = def.initialValue;
+  if (typeof iv === 'function') {
+    return String(iv(out) ?? '');
+  }
+  return String(iv ?? '');
+}
+
+function resolvePasswordDefault(def: PasswordPromptBlock, out: PromptCatalogValues): string {
   const iv = def.initialValue;
   if (typeof iv === 'function') {
     return String(iv(out) ?? '');
@@ -127,7 +136,7 @@ function defaultValueForInput(
       return firstValue ?? '';
     }
     case 'password':
-      return def.initialValue ?? '';
+      return resolvePasswordDefault(def, out);
     case 'integer':
       return def.initialValue !== undefined && Number.isFinite(def.initialValue) ? def.initialValue : 0;
     default:

@@ -11,44 +11,97 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 // Mock engine api provider
 vi.mock('@nocobase/flow-engine', () => {
-  const doc = {
-    properties: {
-      foo: 'foo prop',
-      api: {
-        description: 'api client',
-        completion: { insertText: 'ctx.api' },
-        properties: {
-          request: {
-            description: 'send request',
-            completion: { insertText: "await ctx.api.request({ url: '', method: 'get' })" },
-          },
+  const baseDocProperties = {
+    foo: 'foo prop',
+    api: {
+      description: 'api client',
+      completion: { insertText: 'ctx.api' },
+      properties: {
+        request: {
+          description: 'send request',
+          completion: { insertText: "await ctx.api.request({ url: '', method: 'get' })" },
         },
       },
-      popup: {
-        description: 'popup context (async)',
-        detail: 'Promise<any>',
-        hidden: async (ctx: any) => !(await ctx?.popup)?.uid,
-        properties: {
-          uid: 'popup uid',
-          record: 'popup record',
-          parent: {
-            properties: {
-              record: 'parent record',
-            },
+    },
+    viewer: {
+      description: 'viewer helpers',
+      properties: {
+        popover: {
+          type: 'function',
+          description: 'open popover',
+          completion: {
+            insertText: 'await ctx.viewer.popover({ target: ctx.element?.__el, content: <div /> })',
+            requires: ['element'],
+          },
+        },
+        embed: {
+          type: 'function',
+          description: 'open embed',
+          completion: {
+            insertText: 'await ctx.viewer.embed({ target: ctx.element?.__el, content: <div /> })',
+            requires: ['element'],
           },
         },
       },
     },
-    methods: {
-      bar: {
-        description: 'bar method',
-        completion: { insertText: "ctx.bar('value')" },
+    popup: {
+      description: 'popup context (async)',
+      detail: 'Promise<any>',
+      hidden: async (ctx: any) => !(await ctx?.popup)?.uid,
+      properties: {
+        uid: 'popup uid',
+        record: 'popup record',
+        parent: {
+          properties: {
+            record: 'parent record',
+          },
+        },
       },
     },
   };
+  const methods = {
+    bar: {
+      description: 'bar method',
+      completion: { insertText: "ctx.bar('value')" },
+    },
+    render: {
+      description: 'render react content',
+      completion: { insertText: 'ctx.render(<div />)', requires: ['element'] },
+    },
+  };
+  const baseDoc = {
+    properties: baseDocProperties,
+    methods,
+  };
+  const domDoc = {
+    properties: {
+      ...baseDocProperties,
+      element: {
+        description: 'DOM container',
+        detail: 'ElementProxy',
+        properties: {
+          innerHTML: 'inner html',
+          setAttribute: {
+            type: 'function',
+            detail: '(name: string, value: string) => void',
+            completion: { insertText: "ctx.element.setAttribute('data-key', 'value')" },
+          },
+        },
+      },
+    },
+    methods,
+  };
+  const domModels = new Set([
+    'JSBlockModel',
+    'JSFieldModel',
+    'JSEditableFieldModel',
+    'JSItemModel',
+    'JSColumnModel',
+    'FormJSFieldItemModel',
+  ]);
   return {
-    getRunJSDocFor: () => doc,
-    FlowRunJSContext: { getDoc: () => doc },
+    getRunJSDocFor: (ctx: any) => (domModels.has(ctx?.model?.constructor?.name) ? domDoc : baseDoc),
+    FlowRunJSContext: { getDoc: () => baseDoc },
     // New cohesive APIs
     listSnippetsForContext: async () => [
       {
@@ -69,6 +122,17 @@ vi.mock('@nocobase/flow-engine', () => {
 import { buildRunJSCompletions } from '../runjsCompletions';
 
 describe('buildRunJSCompletions', () => {
+  const labelsOf = (completions: any[]) => new Set(completions.map((c: any) => c.label));
+
+  const appliedTextsOf = (completions: any[]) =>
+    completions.flatMap((completion: any) => {
+      const mockView = { dispatch: vi.fn() } as any;
+      if (typeof completion.apply === 'function') {
+        completion.apply(mockView, completion, 0, 0);
+      }
+      return mockView.dispatch.mock.calls.map((call: any[]) => String(call[0]?.changes?.insert || ''));
+    });
+
   it('builds ctx property/method completions and snippets', async () => {
     const hostCtx = { popup: Promise.resolve({ uid: 'p1' }) }; // not used since engine doc is mocked
     const { completions, entries } = await buildRunJSCompletions(hostCtx, 'v1', 'block');
@@ -241,5 +305,186 @@ describe('buildRunJSCompletions', () => {
 
     // restore
     engineDoc.properties.popup.hidden = prev;
+  });
+
+  it('adds safe browser/runtime global completions and excludes blocked globals', async () => {
+    const { completions } = await buildRunJSCompletions({}, 'v1', 'block');
+    const labels = new Set(completions.map((c: any) => c.label));
+
+    expect(labels.has('window.location.reload()')).toBe(true);
+    expect(labels.has('document.createElement()')).toBe(true);
+    expect(labels.has('navigator.clipboard.writeText()')).toBe(true);
+    expect(labels.has('console.log()')).toBe(true);
+    expect(labels.has('setTimeout()')).toBe(true);
+    expect(labels.has('Blob')).toBe(true);
+    expect(labels.has('URL')).toBe(true);
+
+    expect(labels.has('navigator.userAgent')).toBe(false);
+    expect(labels.has('navigator.geolocation')).toBe(false);
+    expect(labels.has('document.cookie')).toBe(false);
+    expect(labels.has('document.body')).toBe(false);
+    expect(labels.has('document.getElementById()')).toBe(false);
+    expect(labels.has('window.location.href')).toBe(false);
+    expect(labels.has('window.location.href =')).toBe(true);
+  });
+
+  it('adds stable ctx runtime namespace completions', async () => {
+    const hostCtx = {
+      model: {
+        constructor: {
+          name: 'JSBlockModel',
+        },
+      },
+    };
+    const { completions } = await buildRunJSCompletions(hostCtx, 'v1', 'block');
+    const labels = labelsOf(completions);
+
+    expect(labels.has('ctx.runjs()')).toBe(true);
+    expect(labels.has('ctx.sql.run()')).toBe(true);
+    expect(labels.has('ctx.logger.info()')).toBe(true);
+    expect(labels.has('ctx.element.setAttribute()')).toBe(true);
+    expect(labels.has('ctx.libs.React.createElement()')).toBe(true);
+    expect(labels.has('ctx.libs.lodash.get()')).toBe(true);
+  });
+
+  it('does not expose ctx.element for generic base completions', async () => {
+    const { completions } = await buildRunJSCompletions({}, 'v1', 'block');
+    const labels = labelsOf(completions);
+    const appliedTexts = appliedTextsOf(completions);
+
+    expect([...labels].some((label) => String(label).startsWith('ctx.element'))).toBe(false);
+    expect(labels.has('ctx.render()')).toBe(false);
+    expect(appliedTexts.some((text) => /\bctx\.element\b/.test(text))).toBe(false);
+    expect(appliedTexts.some((text) => text === 'ctx.render(<div />)')).toBe(false);
+  });
+
+  it('keeps ctx.element completions for DOM container models', async () => {
+    const hostCtx = {
+      model: {
+        constructor: {
+          name: 'JSBlockModel',
+        },
+      },
+    };
+    const { completions } = await buildRunJSCompletions(hostCtx, 'v1', 'block');
+    const labels = labelsOf(completions);
+
+    expect(labels.has('ctx.element.innerHTML')).toBe(true);
+    expect(labels.has('ctx.element.setAttribute()')).toBe(true);
+    expect(labels.has('ctx.libs.ReactDOM.createRoot()')).toBe(true);
+    expect(labels.has('ctx.render()')).toBe(true);
+
+    const renderCompletion = completions.find((c: any) => c.label === 'ctx.render()');
+    const mockView = { dispatch: vi.fn() } as any;
+    (renderCompletion as any).apply?.(mockView, renderCompletion, 0, 0);
+    expect(mockView.dispatch.mock.calls[0][0]?.changes?.insert).toBe('ctx.render(<div />)');
+  });
+
+  it('hides ctx.element-dependent completions for eventFlow', async () => {
+    const hostCtx = {
+      model: {
+        constructor: {
+          name: 'JSBlockModel',
+        },
+      },
+    };
+    const { completions } = await buildRunJSCompletions(hostCtx, 'v1', 'eventFlow');
+    const labels = labelsOf(completions);
+    const appliedTexts = appliedTextsOf(completions);
+
+    expect([...labels].some((label) => String(label).startsWith('ctx.element'))).toBe(false);
+    expect(labels.has('ctx.libs.ReactDOM.createRoot()')).toBe(false);
+    expect(labels.has('ctx.ReactDOM.createRoot()')).toBe(false);
+    expect(labels.has('ctx.viewer.popover()')).toBe(false);
+    expect(labels.has('ctx.viewer.embed()')).toBe(false);
+    expect(labels.has('ctx.render()')).toBe(false);
+    expect(appliedTexts.some((text) => /\bctx\.element\b/.test(text))).toBe(false);
+    expect(appliedTexts.some((text) => text === 'ctx.render(<div />)')).toBe(false);
+  });
+
+  it('hides ctx.element-dependent completions for non-DOM action models', async () => {
+    for (const [modelName, scene] of [
+      ['JSRecordActionModel', 'table'],
+      ['JSFormActionModel', 'form'],
+      ['FilterFormJSActionModel', 'form'],
+    ]) {
+      const hostCtx = {
+        model: {
+          constructor: {
+            name: modelName,
+          },
+        },
+      };
+      const { completions } = await buildRunJSCompletions(hostCtx, 'v1', scene);
+      const labels = labelsOf(completions);
+      const appliedTexts = appliedTextsOf(completions);
+
+      expect([...labels].some((label) => String(label).startsWith('ctx.element'))).toBe(false);
+      expect(labels.has('ctx.libs.ReactDOM.createRoot()')).toBe(false);
+      expect(labels.has('ctx.ReactDOM.createRoot()')).toBe(false);
+      expect(labels.has('ctx.render()')).toBe(false);
+      expect(appliedTexts.some((text) => /\bctx\.element\b/.test(text))).toBe(false);
+      expect(appliedTexts.some((text) => text === 'ctx.render(<div />)')).toBe(false);
+    }
+  });
+
+  it('uses friendly insertText for ctx.loadCSS and ctx.previewRunJS', async () => {
+    const { completions } = await buildRunJSCompletions({}, 'v1', 'block');
+
+    for (const [label, expected] of [
+      ['ctx.loadCSS()', "await ctx.loadCSS('https://example.com/style.css')"],
+      ['ctx.previewRunJS()', "await ctx.previewRunJS('console.log(1)', 'v2')"],
+      ['ctx.resolveJsonTemplate()', "await ctx.resolveJsonTemplate({ value: '{{ctx.record.id}}' })"],
+    ]) {
+      const completion = completions.find((c: any) => c.label === label);
+      expect(completion).toBeTruthy();
+      expect(typeof (completion as any).apply).toBe('function');
+
+      const mockView = { dispatch: vi.fn() } as any;
+      (completion as any).apply?.(mockView, completion, 0, 0);
+      expect(mockView.dispatch.mock.calls[0][0]?.changes?.insert).toBe(expected);
+      expect(mockView.dispatch.mock.calls[0][0]?.changes?.insert).not.toBe(label);
+    }
+  });
+
+  it('requests completion metadata from ctx.getApiInfos() for editor completions', async () => {
+    const getApiInfos = vi.fn(async (options?: any) => ({
+      customRuntime: {
+        type: 'function',
+        description: 'custom runtime helper',
+        completion: {
+          insertText: options?.includeCompletion ? "await ctx.customRuntime('value')" : undefined,
+        },
+      },
+    }));
+
+    const { completions } = await buildRunJSCompletions({ getApiInfos }, 'v1', 'block');
+
+    expect(getApiInfos).toHaveBeenCalledWith({ version: 'v1', includeCompletion: true });
+    const completion = completions.find((c: any) => c.label === 'ctx.customRuntime()');
+    expect(completion).toBeTruthy();
+
+    const mockView = { dispatch: vi.fn() } as any;
+    (completion as any).apply?.(mockView, completion, 0, 0);
+    expect(mockView.dispatch.mock.calls[0][0]?.changes?.insert).toBe("await ctx.customRuntime('value')");
+  });
+
+  it('keeps friendly insertText for ctx.resolveJsonTemplate with Chinese docs', async () => {
+    const hostCtx = {
+      api: {
+        auth: {
+          locale: 'zh-CN',
+        },
+      },
+    };
+    const { completions } = await buildRunJSCompletions(hostCtx, 'v1', 'block');
+    const completion = completions.find((c: any) => c.label === 'ctx.resolveJsonTemplate()');
+    expect(completion).toBeTruthy();
+
+    const mockView = { dispatch: vi.fn() } as any;
+    (completion as any).apply?.(mockView, completion, 0, 0);
+    expect(mockView.dispatch.mock.calls[0][0]?.changes?.insert).toBe(
+      "await ctx.resolveJsonTemplate({ value: '{{ctx.record.id}}' })",
+    );
   });
 });

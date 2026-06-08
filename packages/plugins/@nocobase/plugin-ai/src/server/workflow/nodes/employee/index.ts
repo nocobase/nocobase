@@ -7,7 +7,14 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { FlowNodeModel, Instruction, JOB_STATUS, Processor } from '@nocobase/plugin-workflow';
+import {
+  FlowNodeModel,
+  Instruction,
+  JOB_STATUS,
+  Processor,
+  WorkflowTimeoutError,
+  isWorkflowTimeoutError,
+} from '@nocobase/plugin-workflow';
 import _ from 'lodash';
 import PluginAIServer from '../../../plugin';
 import { AIEmployee } from '../../../ai-employees/ai-employee';
@@ -15,6 +22,7 @@ import { AIEmployeeInstructionConfig } from './types';
 import { Files } from './files';
 import { isValidFilter } from '@nocobase/utils';
 import { SYSTEM_TOOLS } from '@nocobase/ai';
+import { AI_WORKFLOW_TASK_STATUS, REQUIRES_APPROVAL, RequiresApproval } from './constants';
 
 export class AIEmployeeInstruction extends Instruction {
   async run(node: FlowNodeModel, input: any, processor: Processor) {
@@ -24,7 +32,7 @@ export class AIEmployeeInstruction extends Instruction {
       skillSettings,
       webSearch,
       model,
-      requiresApproval = 'no_required',
+      requiresApproval = REQUIRES_APPROVAL.NO_REQUIRED,
       userId,
       files,
     }: AIEmployeeInstructionConfig = processor.getParsedValue(node.config, node.id);
@@ -51,10 +59,12 @@ Do not treat **${toolName}** as optional, and do not finish the task without cal
       upstreamId: input?.id ?? null,
     });
 
+    const abortHandle = processor.createBackgroundAbortHandle();
     await processor.exit();
 
     const runner = async () => {
       try {
+        abortHandle.throwIfAborted();
         if (skillSettings && skillSettings.skillsVersion == null) {
           skillSettings.skillsVersion = 2;
         }
@@ -146,6 +156,7 @@ Do not treat **${toolName}** as optional, and do not finish the task without cal
           ];
           if (retry > 0) {
             if (retry < 2) {
+              abortHandle.throwIfAborted();
               const firstUserMessage = await this.workflow.db
                 .getRepository('aiConversations.messages', conversation.sessionId)
                 .findOne({
@@ -155,9 +166,10 @@ Do not treat **${toolName}** as optional, and do not finish the task without cal
                   sort: ['messageId'],
                 });
               const messageId = firstUserMessage?.messageId;
-              result = await aiEmployee.invoke({ messageId, userMessages });
+              result = await aiEmployee.invoke({ messageId, userMessages, signal: abortHandle.signal });
             } else {
               result = await aiEmployee.invoke({
+                signal: abortHandle.signal,
                 userMessages: [
                   {
                     role: 'user',
@@ -173,9 +185,10 @@ Do not send another normal assistant response without invoking it.
               });
             }
           } else {
-            result = await aiEmployee.invoke({ userMessages });
+            result = await aiEmployee.invoke({ userMessages, signal: abortHandle.signal });
           }
 
+          abortHandle.throwIfAborted();
           isToolInvoke = result.messages
             .filter((it: any) => it.type === 'ai')
             .flatMap((it: any) => it.tool_calls)
@@ -186,8 +199,21 @@ Do not send another normal assistant response without invoking it.
           throw new Error('AI employee not do job correctly');
         }
 
-        await this.checkApproval({ requiresApproval, conversation, aiWorkflowTasks, result, aiEmployee, toolName });
+        await this.checkApproval({
+          requiresApproval,
+          conversation,
+          aiWorkflowTasks,
+          result,
+          aiEmployee,
+          toolName,
+          signal: abortHandle.signal,
+        });
       } catch (e: any) {
+        if (isWorkflowTimeoutError(e) || abortHandle.signal.aborted) {
+          // The workflow abort path owns the pending job transition; this runner only closes the AI task surface.
+          await this.abortAIWorkflowTask(id);
+          return;
+        }
         processor.logger.error(`ai employee invoke failed, ${e.message}`, {
           node: node.id,
           stack: e.stack,
@@ -196,24 +222,21 @@ Do not send another normal assistant response without invoking it.
         const job = await this.workflow.app.db.getRepository('jobs').findOne({
           filterByTk: id,
         });
+        if (!job) {
+          await this.abortAIWorkflowTask(id);
+          return;
+        }
+        if (job.status !== JOB_STATUS.PENDING) {
+          return;
+        }
         job.set({
           status: JOB_STATUS.ERROR,
           result: e.message,
         });
-        const aiWorkflowTask = await this.workflow.db.getRepository('aiWorkflowTasks').findOne({
-          filter: {
-            jobId: id,
-          },
-        });
-        if (aiWorkflowTask) {
-          await this.workflow.db.getRepository('aiWorkflowTasks').update({
-            values: { status: 'aborted' },
-            filter: {
-              id: aiWorkflowTask.id,
-            },
-          });
-        }
+        await this.abortAIWorkflowTask(id);
         await this.workflow.resume(job);
+      } finally {
+        abortHandle.dispose();
       }
     };
 
@@ -239,7 +262,7 @@ Do not send another normal assistant response without invoking it.
     userMessage: string;
     systemMessage: string;
     skillSettings: AIEmployeeInstructionConfig['skillSettings'];
-    requiresApproval: 'no_required' | 'ai_decision' | 'human_decision';
+    requiresApproval: RequiresApproval;
     toolName: string;
     node: FlowNodeModel;
     processor: Processor;
@@ -268,7 +291,7 @@ Do not send another normal assistant response without invoking it.
           workflowTitle: processor.execution.workflow?.title,
           nodeTitle: node.title,
           requiresApproval,
-          status: 'processing',
+          status: AI_WORKFLOW_TASK_STATUS.PROCESSING,
           sessionId: conversation.sessionId,
           jobId,
           executionId: processor.execution.id,
@@ -294,6 +317,44 @@ Do not send another normal assistant response without invoking it.
     });
   }
 
+  private async abortAIWorkflowTask(jobId: number | string) {
+    const tasks = await this.workflow.db.getRepository('aiWorkflowTasks').find({
+      filter: {
+        jobId,
+      },
+      fields: ['id', 'sessionId'],
+    });
+    const sessionIds = tasks.map((task) => task.sessionId).filter(Boolean);
+
+    await this.workflow.db.getRepository('aiWorkflowTasks').update({
+      values: { status: AI_WORKFLOW_TASK_STATUS.ABORTED },
+      filter: {
+        jobId,
+        status: {
+          $ne: AI_WORKFLOW_TASK_STATUS.ABORTED,
+        },
+      },
+    });
+    if (sessionIds.length) {
+      await this.workflow.db.getRepository('aiToolMessages').update({
+        values: {
+          invokeStatus: 'done',
+          status: 'error',
+          content: 'Workflow execution aborted.',
+          invokeEndTime: new Date(),
+        },
+        filter: {
+          sessionId: {
+            $in: sessionIds,
+          },
+          invokeStatus: {
+            $in: ['init', 'interrupted', 'waiting', 'pending'],
+          },
+        },
+      });
+    }
+  }
+
   private async checkApproval({
     requiresApproval,
     conversation,
@@ -301,14 +362,19 @@ Do not send another normal assistant response without invoking it.
     result,
     aiEmployee,
     toolName,
+    signal,
   }: {
-    requiresApproval: 'no_required' | 'ai_decision' | 'human_decision';
+    requiresApproval: RequiresApproval;
     conversation: any;
     aiWorkflowTasks: any;
     result: any;
     aiEmployee: AIEmployee;
     toolName: string;
+    signal?: AbortSignal;
   }) {
+    if (signal?.aborted) {
+      throw signal.reason ?? new WorkflowTimeoutError();
+    }
     const ai = this.workflow.app.pm.get(PluginAIServer);
     const aiToolMessage = await this.workflow.db.getRepository('aiToolMessages').findOne({
       filter: {
@@ -344,23 +410,26 @@ Do not send another normal assistant response without invoking it.
         return;
       }
       const userDecisions = await ai.aiConversationsManager.getUserDecisions(result.messageId);
-      await aiEmployee.invoke({ userDecisions });
+      await aiEmployee.invoke({ userDecisions, signal });
+      if (signal?.aborted) {
+        throw signal.reason ?? new WorkflowTimeoutError();
+      }
       await this.workflow.db.getRepository('aiWorkflowTasks').update({
-        values: { status: 'approved' },
+        values: { status: AI_WORKFLOW_TASK_STATUS.APPROVED },
         filter: {
           id: aiWorkflowTasks.id,
           status: {
-            $ne: 'aborted',
+            $ne: AI_WORKFLOW_TASK_STATUS.ABORTED,
           },
         },
       });
-    } else if (requiresApproval !== 'no_required') {
+    } else if (requiresApproval !== REQUIRES_APPROVAL.NO_REQUIRED) {
       await this.workflow.db.getRepository('aiWorkflowTasks').update({
-        values: { status: 'pending_acceptance' },
+        values: { status: AI_WORKFLOW_TASK_STATUS.PENDING_ACCEPTANCE },
         filter: {
           id: aiWorkflowTasks.id,
           status: {
-            $ne: 'aborted',
+            $ne: AI_WORKFLOW_TASK_STATUS.ABORTED,
           },
         },
       });
@@ -398,7 +467,6 @@ async function parseAssignees(node, processor): Promise<number[]> {
     const users = await UserRepo.find({
       filter: { id: { $in: plainIds } },
       fields: ['id'],
-      transaction: processor.mainTransaction,
     });
     users.forEach((u) => validIdSet.add(u.id));
   }
@@ -420,7 +488,6 @@ async function parseAssignees(node, processor): Promise<number[]> {
       const result = await UserRepo.find({
         ...item,
         fields: ['id'],
-        transaction: processor.mainTransaction,
       });
       result.forEach((user) => addAssignee(user.id));
     } else {

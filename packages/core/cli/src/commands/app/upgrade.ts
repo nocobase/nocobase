@@ -18,6 +18,7 @@ import { ensureCrossEnvConfirmed, hasExplicitEnvSelection } from '../../lib/env-
 import { DEFAULT_DOCKER_REGISTRY } from '../../lib/docker-image.ts';
 import { confirm } from '../../lib/inquirer.ts';
 import { announceTargetEnv, isInteractiveTerminal, printInfo, printWarning, succeedTask } from '../../lib/ui.js';
+import { resolveAppUrlFromApiBaseUrl } from '../env/shared.js';
 
 type UpgradeParsedFlags = {
   env?: string;
@@ -53,17 +54,18 @@ function formatAppUrl(port?: string): string | undefined {
 }
 
 function formatDisplayUrl(apiBaseUrl?: string, appPort?: string): string | undefined {
+  const resolvedFromApiBaseUrl = resolveAppUrlFromApiBaseUrl(apiBaseUrl);
+  if (resolvedFromApiBaseUrl) {
+    return resolvedFromApiBaseUrl;
+  }
+
   const appUrl = formatAppUrl(appPort);
   if (appUrl) {
     return appUrl;
   }
 
   const value = trimValue(apiBaseUrl);
-  if (!value) {
-    return undefined;
-  }
-
-  return value.replace(/\/api\/?$/, '');
+  return value ? value.replace(/\/api\/?$/, '') : undefined;
 }
 
 function readEnvValue(env: Env, key: keyof Env['config']): string {
@@ -412,7 +414,7 @@ export default class AppUpgrade extends Command {
         [
           `Env "${runtime.envName}" does not have a saved \`downloadVersion\`.`,
           'This env cannot be upgraded until a source version is explicit.',
-          'Re-run `nb init` or `nb env add` for this env, or pass `--version` to `nb app upgrade`.',
+          `Re-run \`nb init --ui --env ${runtime.envName}\` for this env, or pass \`--version\` to \`nb app upgrade\`.`,
         ].join('\n'),
       );
     }
@@ -519,7 +521,7 @@ export default class AppUpgrade extends Command {
         [
           `Can't upgrade "${runtime.envName}" from this machine.`,
           'This env only has an API connection, so there is no saved local app or Docker runtime to upgrade here.',
-          'If you want a local NocoBase AI environment that the CLI can upgrade, run `nb init` first.',
+          'If you want a local NocoBase AI environment that the CLI can upgrade, run `nb init --ui` first.',
         ].join('\n'),
       );
     }
@@ -649,8 +651,10 @@ export default class AppUpgrade extends Command {
       }
 
       await runWithSuppressedTargetEnvLog(async () => {
+        const startArgv = buildManagedActionArgv(runtime.envName, parsed, { quickstart: true });
+        startArgv.push('--no-sync-licensed-plugins');
         await runWithSuppressedStartSuccessLog(async () => {
-          await runCommand('app:start', buildManagedActionArgv(runtime.envName, parsed, { quickstart: true }));
+          await runCommand('app:start', startArgv);
         });
       });
 

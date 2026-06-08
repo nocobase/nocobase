@@ -103,7 +103,7 @@ export class PluginFilterOperatorMultipleKeywordsClient extends Plugin {
 
   // You can get and modify the app instance here
   async load() {
-    ['input', 'phone', 'email', 'uuid', 'sequence', 'integer', 'number', 'percent', 'nanoid'].forEach(
+    ['input', 'phone', 'email', 'uuid', 'sequence', 'integer', 'number', 'id', 'percent', 'nanoid'].forEach(
       (interfaceName) => {
         this.app.addFieldInterfaceOperator(interfaceName, $in(interfaceName));
         this.app.addFieldInterfaceOperator(interfaceName, $notIn(interfaceName));

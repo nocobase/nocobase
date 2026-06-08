@@ -30,6 +30,10 @@ function sanitizeEnvSegment(value: string): string {
   return trimValue(value).replace(/[^A-Za-z0-9]+/g, '').slice(0, 16);
 }
 
+function normalizeSnapshotBaseVersion(baseVersion: string): string {
+  return trimValue(baseVersion).replace(/(?:-snapshot\.\d{8}\.[A-Za-z0-9]+)+$/, '');
+}
+
 export async function resolveSourcePublishRegistry(explicitRegistry?: string): Promise<string> {
   const normalized = trimValue(explicitRegistry);
   if (normalized) {
@@ -72,7 +76,7 @@ export function buildSnapshotVersion(baseVersion: string, gitSha: string, now = 
   const yyyy = String(now.getFullYear()).padStart(4, '0');
   const mm = String(now.getMonth() + 1).padStart(2, '0');
   const dd = String(now.getDate()).padStart(2, '0');
-  return `${baseVersion}-snapshot.${yyyy}${mm}${dd}.${gitSha}`;
+  return `${normalizeSnapshotBaseVersion(baseVersion)}-snapshot.${yyyy}${mm}${dd}.${gitSha}`;
 }
 
 export async function resolveGitBranch(cwd?: string): Promise<string> {
@@ -82,6 +86,22 @@ export async function resolveGitBranch(cwd?: string): Promise<string> {
   }));
   if (!branch) {
     throw new Error('`nb source publish --snapshot` requires a named Git branch. Detached HEAD is not supported.');
+  }
+  const branchRef = `refs/heads/${branch}`;
+  try {
+    await commandOutput('git', ['rev-parse', '--verify', branchRef], {
+      cwd,
+      errorName: `git rev-parse --verify ${branchRef}`,
+    });
+  } catch (error) {
+    throw new Error(
+      [
+        `The current Git branch reference is invalid: ${branch}.`,
+        'This usually means a previous source publish cleanup left HEAD pointing at a missing temporary branch.',
+        'Switch to a real local branch, then run `nb source publish --snapshot` again.',
+      ].join('\n'),
+      { cause: error },
+    );
   }
   return branch;
 }
@@ -362,7 +382,11 @@ export async function publishSourceSnapshot(params: {
     throw publishError;
   }
 
-  return result!;
+  if (!result) {
+    throw new Error('Source snapshot publishing finished without a result.');
+  }
+
+  return result;
 }
 
 export function buildSuggestedInitCommand(result: Pick<SourcePublishResult, 'version' | 'npmRegistry' | 'gitSha'>): string {
@@ -370,7 +394,7 @@ export function buildSuggestedInitCommand(result: Pick<SourcePublishResult, 'ver
   const normalizedRegistry = result.npmRegistry || `http://${host}:${port || DEFAULT_SOURCE_REGISTRY_PORT}`;
   const suggestedEnv = ['snapshot', sanitizeEnvSegment(result.gitSha)].filter(Boolean).join('');
   return [
-    `nb init --env ${suggestedEnv} --yes --source npm`,
+    `nb init --ui --env ${suggestedEnv} --yes --source npm`,
     `--version ${result.version}`,
     `--npm-registry=${normalizedRegistry}`,
   ].join(' ');

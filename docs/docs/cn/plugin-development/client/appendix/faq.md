@@ -38,11 +38,11 @@ keywords: "FAQ,常见问题,排错指南,Troubleshooting,NocoBase,构建,部署,
 
 ### 注册的页面路由访问不到
 
-NocoBase v2 的路由会默认加上 `/v2` 前缀。比如你注册了 `path: '/hello'`，实际访问地址是 `/v2/hello`：
+NocoBase v2 的路由会默认加上 `/v` 前缀。比如你注册了 `path: '/hello'`，实际访问地址是 `/v/hello`：
 
 ```ts
 this.router.add('hello', {
-  path: '/hello', // 实际访问 -> /v2/hello
+  path: '/hello', // 实际访问 -> /v/hello
   componentLoader: () => import('./pages/HelloPage'),
 });
 ```
@@ -285,7 +285,7 @@ NocoBase 的构建系统维护了一份 [external 列表](../../dependency-manag
 ## 相关链接
 
 - [Plugin 插件](../plugin) — 插件入口和生命周期
-- [Router 路由](../router) — 路由注册和 `/v2` 前缀
+- [Router 路由](../router) — 路由注册和 `/v` 前缀
 - [FlowEngine 概述](../flow-engine/index.md) — FlowModel 基础用法
 - [FlowEngine → 区块扩展](../flow-engine/block) — BlockModel、TableBlockModel、filterCollection
 - [FlowEngine → 字段扩展](../flow-engine/field) — FieldModel、bindModelToInterface

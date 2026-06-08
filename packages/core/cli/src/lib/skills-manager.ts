@@ -19,7 +19,9 @@ import { commandOutput, commandOutputViaFile, run } from './run-npm.js';
 export const NOCOBASE_SKILLS_SOURCE = 'nocobase/skills';
 export const NOCOBASE_SKILLS_PACKAGE_NAME = '@nocobase/skills';
 const NOCOBASE_SKILLS_NAME_PREFIX = 'nocobase-';
-const SKILLS_LIST_TIMEOUT_MS = 5000;
+// `npx skills list` may take several seconds on cold starts while `npx`
+// resolves and boots the package, even when the local skills installation is healthy.
+const SKILLS_LIST_TIMEOUT_MS = 15000;
 const SKILLS_NPM_VIEW_TIMEOUT_MS = 3000;
 const SKILLS_PACK_TIMEOUT_MS = 30000;
 const SKILLS_ADD_TIMEOUT_MS = 20000;
@@ -196,6 +198,13 @@ async function readManagedSkillsState(workspaceRoot: string): Promise<ManagedSki
   } catch {
     return undefined;
   }
+}
+
+export async function readInstalledManagedSkillsVersion(options: SkillsManagerOptions = {}): Promise<string | undefined> {
+  const globalRoot = resolveSkillsRoot(options);
+  const state = await readManagedSkillsState(globalRoot);
+  const installedVersion = String(state?.installedVersion ?? state?.installedRef ?? '').trim();
+  return installedVersion || undefined;
 }
 
 async function writeManagedSkillsState(workspaceRoot: string, state: ManagedSkillsState): Promise<void> {

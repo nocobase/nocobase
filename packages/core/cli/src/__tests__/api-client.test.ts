@@ -48,6 +48,8 @@ test('executeApiRequest sends the CLI request source header', async () => {
   }) as typeof fetch;
 
   await executeApiRequest({
+    cliVersion: '2.1.0-beta.37',
+    skillsVersion: '1.0.5',
     flags: {},
     operation: {
       method: 'get',
@@ -57,6 +59,8 @@ test('executeApiRequest sends the CLI request source header', async () => {
   });
 
   expect(requestHeaders?.get('x-request-source')).toBe('cli');
+  expect(requestHeaders?.get('x-nb-cli-version')).toBe('2.1.0-beta.37');
+  expect(requestHeaders?.get('x-nb-skills-version')).toBe('1.0.5');
   expect(requestHeaders?.get('authorization')).toBe('Bearer test-token');
 });
 
@@ -115,6 +119,7 @@ test('executeApiRequest preserves authorization across same-url http to https re
   }) as typeof fetch;
 
   const response = await executeApiRequest({
+    cliVersion: '2.1.0-beta.37',
     flags: {},
     operation: {
       method: 'get',
@@ -155,6 +160,7 @@ test('executeApiRequest sends multipart file bodies without setting JSON content
 
   try {
     await executeApiRequest({
+      cliVersion: '2.1.0-beta.37',
       flags: {
         file: filePath,
       },
@@ -196,6 +202,7 @@ test('executeApiRequest writes binary responses to --output', async () => {
 
   try {
     const response = await executeApiRequest({
+      cliVersion: '2.1.0-beta.37',
       flags: {
         output: outputPath,
       },
@@ -214,3 +221,5 @@ test('executeApiRequest writes binary responses to --output', async () => {
     await fs.unlink(outputPath).catch(() => undefined);
   }
 });
+
+// test

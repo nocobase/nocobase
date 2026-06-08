@@ -7,6 +7,7 @@
   "Enable tree table": "Enable tree table",
   "End date field": "End date field",
   "Details": "Details",
+  "Duration: {{value}} day(s)": "Duration: {{value}} day(s)",
   "Event popup settings": "Event popup settings",
   "Expand all": "Expand all",
   "Expand all rows by default": "Expand all rows by default",
@@ -21,12 +22,15 @@
   "Progress field": "Progress field",
   "Quarter of day": "Quarter of day",
   "QuarterYear": "QuarterYear",
+  "Scroll to today on first display": "Scroll to today on first display",
   "Show table": "Show table",
   "Start date field": "Start date field",
   "Table width": "Table width",
+  "Task date range": "{{name}}: {{start}} ~ {{end}}",
   "Time scale": "Time scale",
   "Title field": "Title field",
   "Today": "Today",
   "Week": "Week",
-  "Year": "Year"
+  "Year": "Year",
+  "Progress: {{value}}%": "Progress: {{value}}%"
 }

@@ -29,6 +29,7 @@
   "Notification Management": "通知管理",
   "Notification manager": "通知管理",
   "Notification type": "通知类型",
+  "Notification type {{type}} is not registered.": "通知类型 {{type}} 尚未注册。",
   "Query users": "查询用户",
   "Randomly generated and can not be modified. Support letters, numbers and underscores, must start with an letter.": "随机生成，不可修改。支持英文、数字和下划线，必须以英文字母开头。",
   "Reason": "原因",
