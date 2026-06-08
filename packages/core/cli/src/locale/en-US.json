@@ -154,6 +154,7 @@
     },
     "shared": {
       "missingCommand": "Couldn't run `{{action}}` because the {{displayName}} executable could not be found. Install {{displayName}} or update `nb config set {{configKey}} <path>` and try again.",
+      "dockerDaemonUnavailable": "Couldn't run `{{action}}` because Docker is installed but the Docker daemon is not running. Start Docker Desktop or the Docker daemon service, then try again. Details: {{details}}",
       "targetEnv": "Using env \"{{envName}}\".",
       "crossEnv": {
         "prompt": "Current env is \"{{currentEnv}}\", but this command targets \"{{requestedEnv}}\" via --env. Continue without switching the current env?",

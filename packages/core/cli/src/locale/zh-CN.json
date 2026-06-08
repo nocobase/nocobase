@@ -154,6 +154,7 @@
     },
     "shared": {
       "missingCommand": "无法执行 `{{action}}`，因为找不到 {{displayName}} 可执行文件。请先安装 {{displayName}}，或更新 `nb config set {{configKey}} <path>` 后重试。",
+      "dockerDaemonUnavailable": "无法执行 `{{action}}`，因为 Docker 已安装，但 Docker daemon 尚未运行。请先启动 Docker Desktop 或 Docker daemon 服务，然后重试。详情：{{details}}",
       "targetEnv": "正在使用 env \"{{envName}}\"。",
       "crossEnv": {
         "prompt": "当前 env 是 \"{{currentEnv}}\"，但该命令通过 --env 指向了 \"{{requestedEnv}}\"。要在不切换当前 env 的情况下继续吗？",

@@ -24,7 +24,7 @@ import {
   DEFAULT_DOCKER_VERSION,
   resolveDockerImageRef,
 } from './docker-image.ts';
-import { commandSucceeds, run } from './run-npm.js';
+import { commandSucceeds, ensureDockerDaemonRunning, run } from './run-npm.js';
 import Install from '../commands/install.js';
 const DOCKER_APP_STORAGE_DESTINATION = '/app/nocobase/storage';
 type ManagedDownloadableLocalRuntime = Extract<ManagedAppRuntime, { kind: 'local' }> & {
@@ -36,6 +36,8 @@ function commandStdio(verbose?: boolean): 'inherit' | 'ignore' {
 }
 
 async function ensureDockerNetwork(networkName: string): Promise<void> {
+  await ensureDockerDaemonRunning('prepare Docker resources for this environment');
+
   if (await commandSucceeds('docker', ['network', 'inspect', networkName])) {
     return;
   }

@@ -42,7 +42,7 @@ import {
 } from '../lib/prompt-validators.ts';
 import { validateExternalDbConfig, validateMysqlLowerCaseTableNamesCompatibility } from '../lib/db-connection-check.ts';
 import { formatMissingManagedAppEnvMessage } from '../lib/app-runtime.js';
-import { commandOutput, commandSucceeds, run, runNocoBaseCommand } from '../lib/run-npm.js';
+import { commandOutput, commandSucceeds, ensureDockerDaemonRunning, run, runNocoBaseCommand } from '../lib/run-npm.js';
 import { printInfo, printStage, printVerbose, printWarning, setVerboseMode } from '../lib/ui.js';
 import { omitKeys, upperFirst } from '../lib/object-utils.ts';
 import { clearEnvRootSetup, getEnv, loadAuthConfig, setCurrentEnv, type Env, upsertEnv } from '../lib/auth-store.js';
@@ -2107,6 +2107,8 @@ export default class Install extends Command {
     if (this.ensuredDockerNetworks.has(name)) {
       return;
     }
+
+    await ensureDockerDaemonRunning('prepare Docker resources for this environment');
 
     printVerbose(`Checking Docker network: ${name}`);
     const exists = await commandSucceeds('docker', ['network', 'inspect', name]);

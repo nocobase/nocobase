@@ -49,6 +49,12 @@ const MISSING_COMMAND_SPECS = {
     configKey: 'bin.yarn',
   },
 } as const;
+const DOCKER_DAEMON_UNAVAILABLE_PATTERNS = [
+  /cannot connect to the docker daemon/i,
+  /is the docker daemon running\?/i,
+  /error during connect/i,
+  /docker daemon is not running/i,
+];
 
 async function resolveCommandName(name: string): Promise<string> {
   return await resolveConfiguredCommandName(name);
@@ -89,6 +95,26 @@ function createMissingCommandError(name: string, label: string, error: unknown):
       { action: label, displayName: spec.displayName, configKey: spec.configKey },
       {
         fallback: `Couldn't run \`${label}\` because the ${spec.displayName} executable could not be found. Install ${spec.displayName} or update \`nb config set ${spec.configKey} <path>\` and try again.`,
+      },
+    ),
+  );
+}
+
+function isDockerDaemonUnavailableError(error: unknown): boolean {
+  const message = error instanceof Error ? error.message : String(error);
+  return DOCKER_DAEMON_UNAVAILABLE_PATTERNS.some((pattern) => pattern.test(message));
+}
+
+function createDockerDaemonUnavailableError(action: string, error: unknown): Error {
+  const details = error instanceof Error ? error.message : String(error);
+  return new Error(
+    translateCli(
+      'commands.shared.dockerDaemonUnavailable',
+      { action, details },
+      {
+        fallback:
+          `Couldn't run \`${action}\` because Docker is installed but the Docker daemon is not running.` +
+          ` Start Docker Desktop or the Docker daemon service, then try again. Details: ${details}`,
       },
     ),
   );
@@ -450,6 +476,17 @@ export async function commandOutputViaFile(
 /** Run `yarn` with the given argument list, inheriting stdio (errors label as `npm` for compatibility). */
 export function runNpm(args: string[], options?: Omit<RunProcessOptions, 'errorName'>): Promise<void> {
   return run('yarn', [...args], { ...options, errorName: 'npm' });
+}
+
+export async function ensureDockerDaemonRunning(action = 'use Docker'): Promise<void> {
+  try {
+    await commandOutput('docker', ['info'], { errorName: 'docker info', timeoutMs: 5000 });
+  } catch (error: unknown) {
+    if (isDockerDaemonUnavailableError(error)) {
+      throw createDockerDaemonUnavailableError(action, error);
+    }
+    throw error;
+  }
 }
 
 export function runNocoBaseCommand(args: string[], options?: Omit<RunProcessOptions, 'errorName'>): Promise<void> {

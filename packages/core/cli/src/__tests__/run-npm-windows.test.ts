@@ -91,6 +91,42 @@ function pipedChild() {
   };
 }
 
+function pipedChildWithClose(code: number, stderrChunk: string, stdoutChunk = '') {
+  const stdout = new EventEmitter();
+  const stderr = new EventEmitter();
+
+  return {
+    stdout: {
+      setEncoding() {},
+      on(event: string, callback: (...args: unknown[]) => void) {
+        stdout.on(event, callback);
+        return this;
+      },
+    },
+    stderr: {
+      setEncoding() {},
+      on(event: string, callback: (...args: unknown[]) => void) {
+        stderr.on(event, callback);
+        return this;
+      },
+    },
+    once(event: string, callback: (...args: unknown[]) => void) {
+      if (event === 'close') {
+        setImmediate(() => {
+          if (stdoutChunk) {
+            stdout.emit('data', stdoutChunk);
+          }
+          if (stderrChunk) {
+            stderr.emit('data', stderrChunk);
+          }
+          callback(code, null);
+        });
+      }
+      return this;
+    },
+  };
+}
+
 async function withTempCliHome(run: () => Promise<void>) {
   const previous = process.env.NB_CLI_ROOT;
   const tempHome = await fsp.mkdtemp(path.join(os.tmpdir(), 'nocobase-cli-run-npm-'));
@@ -276,4 +312,18 @@ test('commandSucceeds still returns false for unrelated missing commands', async
 
   const { commandSucceeds } = await import('../lib/run-npm.js');
   await expect(commandSucceeds('pm2', ['jlist'])).resolves.toBe(false);
+});
+
+test('ensureDockerDaemonRunning reports a friendly error when Docker daemon is not running', async () => {
+  spawnMock.mockReturnValue(
+    pipedChildWithClose(
+      1,
+      'Cannot connect to the Docker daemon at unix:///var/run/docker.sock. Is the docker daemon running?',
+    ),
+  );
+
+  const { ensureDockerDaemonRunning } = await import('../lib/run-npm.js');
+  await expect(ensureDockerDaemonRunning('prepare Docker resources for this environment')).rejects.toThrow(
+    "Couldn't run `prepare Docker resources for this environment` because Docker is installed but the Docker daemon is not running.",
+  );
 });
