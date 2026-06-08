@@ -9,6 +9,7 @@
 
 import { Plugin } from '@nocobase/server';
 import type { ResourcerContext } from '@nocobase/resourcer';
+import type { Database, Model, Transaction } from '@nocobase/database';
 import { DEFAULT_ADMIN_UI_LAYOUT } from '../constants';
 import { ensureDefaultUiLayout } from './ensureDefaultUiLayout';
 
@@ -55,6 +56,10 @@ type DesktopRouteLayoutContext = {
   filter: Record<string, unknown>;
   layoutUid?: string;
   valid: boolean;
+};
+
+type DatabaseHookOptions = {
+  transaction?: Transaction;
 };
 
 function getRequestedLayoutUid(layout: unknown) {
@@ -561,6 +566,43 @@ async function listAccessibleUiLayouts(ctx: ResourcerContext, next: () => Promis
   await next();
 }
 
+async function grantDefaultAccessToNewUiLayout(db: Database, uiLayout: Model, options?: DatabaseHookOptions) {
+  if (uiLayout.get('enabled') !== true) {
+    return;
+  }
+  const uiLayoutUid = uiLayout.get('uid');
+  if (typeof uiLayoutUid !== 'string' || !uiLayoutUid) {
+    return;
+  }
+  if (!db.getCollection('roles') || !db.getCollection('rolesUiLayouts')) {
+    return;
+  }
+
+  const roles = await db.getRepository('roles').find({
+    fields: ['name'],
+    filter: {
+      allowNewUiLayout: true,
+    },
+    transaction: options?.transaction,
+  });
+  const records = roles
+    .map((role) => role.get('name'))
+    .filter((roleName): roleName is string => typeof roleName === 'string' && !!roleName)
+    .map((roleName) => ({
+      roleName,
+      uiLayoutUid,
+    }));
+
+  if (!records.length) {
+    return;
+  }
+
+  await db.getRepository('rolesUiLayouts').createMany({
+    records,
+    transaction: options?.transaction,
+  });
+}
+
 export class PluginUiLayoutServer extends Plugin {
   async afterAdd() {}
 
@@ -577,6 +619,9 @@ export class PluginUiLayoutServer extends Plugin {
     this.app.resourceManager.registerPreActionHandler('desktopRoutes:create', addDesktopRouteCreateLayout);
     this.app.resourceManager.registerPreActionHandler('desktopRoutes:listAccessible', addDesktopRouteLayoutFilter);
     this.app.resourceManager.registerPreActionHandler('desktopRoutes:getAccessible', addDesktopRouteGetLayoutFilter);
+    this.app.db.on('uiLayouts.afterCreate', async (uiLayout: Model, options?: DatabaseHookOptions) => {
+      await grantDefaultAccessToNewUiLayout(this.app.db, uiLayout, options);
+    });
   }
 
   async install() {

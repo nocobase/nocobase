@@ -180,6 +180,55 @@ describe('plugin-ui-layout server', () => {
     expect(role?.get('allowNewUiLayout')).toBe(true);
   });
 
+  it('should grant new enabled ui layouts by the role default layout access policy', async () => {
+    app = await createUiLayoutMockServer();
+
+    await app.db.getRepository('roles').create({
+      values: {
+        name: 'new-layout-default-allowed',
+        allowNewUiLayout: true,
+      },
+    });
+    await app.db.getRepository('roles').create({
+      values: {
+        name: 'new-layout-default-denied',
+        allowNewUiLayout: false,
+      },
+    });
+
+    await app.db.getRepository('uiLayouts').create({
+      values: {
+        uid: 'default-policy-new-layout',
+        title: 'Default policy new layout',
+        layoutType: 'mobile',
+        routeName: 'defaultPolicyNewLayout',
+        routePath: '/default-policy-new-layout',
+        authCheck: true,
+        enabled: true,
+      },
+    });
+
+    const layoutAccessRecords = await app.db.getRepository('rolesUiLayouts').find({
+      filter: {
+        roleName: ['new-layout-default-allowed', 'new-layout-default-denied'],
+      },
+      sort: ['roleName', 'uiLayoutUid'],
+    });
+    const layoutAccessKeys = layoutAccessRecords.map(
+      (record) => `${record.get('roleName')}:${record.get('uiLayoutUid')}`,
+    );
+    const menuPermissionCount = await app.db.getRepository('rolesUiLayoutDesktopRoutes').count({
+      filter: {
+        roleName: 'new-layout-default-allowed',
+        uiLayoutUid: 'default-policy-new-layout',
+      },
+    });
+
+    expect(layoutAccessKeys).toEqual(['new-layout-default-allowed:default-policy-new-layout']);
+    expect(layoutAccessKeys).not.toContain(`new-layout-default-allowed:${DEFAULT_ADMIN_UI_LAYOUT.uid}`);
+    expect(menuPermissionCount).toBe(0);
+  });
+
   it('should expose uiLayouts:listAccessible to logged-in users only', async () => {
     app = await createUiLayoutMockServer();
 
