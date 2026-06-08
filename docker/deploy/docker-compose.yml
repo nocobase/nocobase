@@ -178,6 +178,65 @@ services:
           memory: 512M
 
   # ============================================================
+  # NocoBase 灰度版本（可选，用于灰度发布/A/B测试）
+  # ============================================================
+  app-canary:
+    build:
+      context: ../..
+      dockerfile: docker/deploy/Dockerfile
+      args:
+        NODE_ENV: production
+        COMMIT_HASH: canary
+    image: nocobase/nocobase:local
+    container_name: nocobase-app-canary
+    restart: "no"
+    networks:
+      - nocobase
+    env_file: .env
+    environment:
+      - APP_ENV=production
+      - DB_DIALECT=postgres
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_DATABASE=${DB_DATABASE:-nocobase}
+      - DB_USER=${DB_USER:-nocobase}
+      - DB_PASSWORD=${DB_PASSWORD:-nocobase}
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-nocobase}
+      - STORAGE_TYPE=minio
+      - STORAGE_MINIO_ENDPOINT=minio:9000
+      - STORAGE_MINIO_ACCESS_KEY=${MINIO_ROOT_USER:-minioadmin}
+      - STORAGE_MINIO_SECRET_KEY=${MINIO_ROOT_PASSWORD:-minioadmin}
+      - STORAGE_MINIO_BUCKET=nocobase
+      - STORAGE_MINIO_USE_SSL=false
+      - CANARY_MODE=true
+    volumes:
+      - nocobase_storage:/app/nocobase/storage
+      - ./storage/uploads:/app/nocobase/storage/uploads
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:80/ || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+        reservations:
+          memory: 512M
+    profiles:
+      - canary
+
+  # ============================================================
   # Nginx 反向代理（从 Docker 仓库拉取官方镜像）
   # ============================================================
   nginx:
