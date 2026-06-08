@@ -8710,6 +8710,7 @@ ctx.render(React.createElement(DashboardKPIs));
         target: { uid: page.gridUid },
         type: 'table',
         resource: {
+          dataSourceKey: 'main',
           collectionName: 'employees',
         },
       },
@@ -8832,6 +8833,7 @@ ctx.render(React.createElement(DashboardKPIs));
         target: { uid: addBlockPage.gridUid },
         type: 'table',
         resource: {
+          dataSourceKey: 'main',
           collectionName: 'employees',
         },
         fields: [
@@ -8850,11 +8852,12 @@ ctx.render(React.createElement(DashboardKPIs));
 
     const addBlocksResponse = await rootAgent.resource('flowSurfaces').addBlocks({
       values: {
+        target: { uid: addBlockPage.gridUid },
         blocks: [
           {
-            target: { uid: addBlockPage.gridUid },
             type: 'table',
             resource: {
+              dataSourceKey: 'main',
               collectionName: 'employees',
             },
             fields: [
