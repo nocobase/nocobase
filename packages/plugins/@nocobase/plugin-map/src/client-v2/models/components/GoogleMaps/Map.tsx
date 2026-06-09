@@ -99,6 +99,9 @@ export const GoogleMapsCom = React.forwardRef<GoogleMapForwardedRefProps, Google
   const { accessKey } = useMapConfig(props.mapType) || {};
   const t = useT();
   const ctx = useFlowContext();
+  const getLoadFailedMessage = useMemoizedFn(() =>
+    t('Load google maps failed, Please check the Api key and refresh the page'),
+  );
   const drawingManagerRef = useRef<google.maps.drawing.DrawingManager>();
   const map = useRef<google.maps.Map>();
   const overlayRef = useRef<google.maps.Marker | google.maps.Polygon | google.maps.Polyline | google.maps.Circle>();
@@ -304,19 +307,31 @@ export const GoogleMapsCom = React.forwardRef<GoogleMapForwardedRefProps, Google
     setupOverlay(nextOverlay);
     // Focus on the overlay
     setFitView([nextOverlay]);
-  }, [value, needUpdateFlag, type, disabled, readonly, setOverlay, setFitView, setupOverlay]);
+  }, [
+    value,
+    needUpdateFlag,
+    type,
+    disabled,
+    readonly,
+    setOverlay,
+    setFitView,
+    setupOverlay,
+    onChange,
+    toRemoveOverlay,
+  ]);
 
   useEffect(() => {
     if (!accessKey || map.current || !mapContainerRef.current) return;
     let loader: Loader;
+    let disposed = false;
     try {
       loader = new Loader({
         apiKey: accessKey,
-        version: 'weekly',
+        version: 'quarterly',
         language: ctx.api.auth.getLocale(),
       });
     } catch (err) {
-      setErrMessage(t('Load google maps failed, Please check the Api key and refresh the page'));
+      setErrMessage(getLoadFailedMessage());
       return;
     }
 
@@ -324,7 +339,7 @@ export const GoogleMapsCom = React.forwardRef<GoogleMapForwardedRefProps, Google
     const error = console.error;
     console.error = (err, ...args) => {
       if (err?.includes?.('InvalidKeyMapError')) {
-        setErrMessage(t('Load google maps failed, Please check the Api key and refresh the page'));
+        setErrMessage(getLoadFailedMessage());
       }
       error(err, ...args);
     };
@@ -332,7 +347,12 @@ export const GoogleMapsCom = React.forwardRef<GoogleMapForwardedRefProps, Google
     Promise.all([loader.importLibrary('drawing'), loader.importLibrary('core'), loader.importLibrary('geometry')])
       .then(async (res) => {
         const center = await getCurrentPosition();
-        map.current = new google.maps.Map(mapContainerRef.current, {
+        await new Promise((resolve) => requestAnimationFrame(resolve));
+        const mapContainer = mapContainerRef.current;
+        if (disposed || !(mapContainer instanceof HTMLElement)) {
+          return;
+        }
+        map.current = new google.maps.Map(mapContainer, {
           zoom,
           center,
           mapTypeId: google.maps.MapTypeId.ROADMAP,
@@ -342,6 +362,7 @@ export const GoogleMapsCom = React.forwardRef<GoogleMapForwardedRefProps, Google
           mapTypeControl: false,
           fullscreenControl: false,
         });
+        google.maps.event.trigger(map.current, 'resize');
         setErrMessage('');
         forceUpdate([]);
       })
@@ -353,11 +374,12 @@ export const GoogleMapsCom = React.forwardRef<GoogleMapForwardedRefProps, Google
       });
 
     return () => {
+      disposed = true;
       map.current?.unbindAll();
       map.current = null;
       drawingManagerRef.current?.unbindAll();
     };
-  }, [accessKey, ctx.api.auth, type, zoom]);
+  }, [accessKey, ctx.api.auth, getLoadFailedMessage, zoom]);
 
   useEffect(() => {
     if (!map.current || !type || disabled || drawingManagerRef.current) return;
