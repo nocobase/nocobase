@@ -25,7 +25,7 @@ import {
 
 type AdminLayoutContentProps = {
   onContentElementChange?: (element: HTMLDivElement | null) => void;
-  layout?: AdminLayoutRoutePathLike | null;
+  layout?: (AdminLayoutRoutePathLike & { routeName?: string }) | null;
 };
 
 const layoutContentClass = css`
@@ -54,8 +54,6 @@ const pageContentStyle: React.CSSProperties = {
 const mobileHeight = {
   height: `calc(100dvh - var(--nb-header-height))`,
 };
-
-const adminLayoutContentRouteNames = getLayoutContentRouteNames('admin');
 
 /**
  * 检测当前浏览器是否支持 dvh，移动端支持时优先使用它计算可视区域高度。
@@ -112,7 +110,11 @@ export const AdminLayoutContent: FC<AdminLayoutContentProps> = ({ onContentEleme
   const matches = useMatches();
   const pageUid = params.name;
   const currentRouteId = matches.at(-1)?.id;
-  const shouldKeepAlive = !!pageUid && adminLayoutContentRouteNames.includes(currentRouteId || '');
+  const layoutContentRouteNames = useMemo(
+    () => getLayoutContentRouteNames(layout?.routeName || 'admin'),
+    [layout?.routeName],
+  );
+  const shouldKeepAlive = !!pageUid && layoutContentRouteNames.includes(currentRouteId || '');
   const bindLayoutContentRef = useCallback(
     (node: HTMLDivElement | null) => {
       // shell 直接渲染内容区时，仍需把挂载目标同步给 root model。

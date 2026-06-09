@@ -8,13 +8,14 @@
  */
 
 import { FlowEngine, FlowEngineProvider } from '@nocobase/flow-engine';
-import { render, waitFor } from '@testing-library/react';
-import React from 'react';
-import { createMemoryRouter, RouterProvider } from 'react-router-dom';
+import { act, render, screen, waitFor } from '@testing-library/react';
+import React, { useEffect } from 'react';
+import { createMemoryRouter, RouterProvider, useParams } from 'react-router-dom';
 import { describe, expect, it, vi } from 'vitest';
 import type { LayoutDefinition } from '../../../../layout-manager/types';
 import { AdminLayoutComponent } from '../AdminLayoutComponent';
 import { AdminLayoutModel } from '../AdminLayoutModel';
+import { AdminLayoutContent } from '../AdminLayoutSlotModels';
 
 vi.mock('@ant-design/pro-layout', async () => {
   const ReactModule = await import('react');
@@ -53,6 +54,74 @@ vi.mock('../AppListRender', () => ({
 }));
 
 describe('AdminLayoutComponent', () => {
+  it('keeps custom admin layout pages alive by layout route name', async () => {
+    const layout: LayoutDefinition = {
+      routeName: 'admin2',
+      routePath: '/admin2',
+      rootRouteName: 'admin2',
+      uid: 'custom-admin-layout-model',
+      layoutModelClass: 'AdminLayoutModel',
+      rootPageModelClass: 'RootPageModel',
+      childPageModelClass: 'ChildPageModel',
+      authCheck: true,
+    };
+    const events: string[] = [];
+    const engine = new FlowEngine();
+    engine.context.defineProperty('routeRepository', {
+      value: {
+        listAccessible: () => [],
+      },
+    });
+
+    const Page = () => {
+      const { name } = useParams();
+      useEffect(() => {
+        events.push(`mount:${name}`);
+        return () => {
+          events.push(`unmount:${name}`);
+        };
+      }, [name]);
+
+      return <div data-testid={`admin-layout-page-${name}`}>page {name}</div>;
+    };
+
+    const router = createMemoryRouter(
+      [
+        {
+          id: layout.routeName,
+          path: layout.routePath,
+          element: <AdminLayoutContent layout={layout} />,
+          children: [
+            {
+              id: 'admin2.__page',
+              path: ':name',
+              element: <Page />,
+            },
+          ],
+        },
+      ],
+      {
+        initialEntries: ['/admin2/page-a'],
+      },
+    );
+
+    render(
+      <FlowEngineProvider engine={engine}>
+        <RouterProvider router={router} />
+      </FlowEngineProvider>,
+    );
+
+    expect(await screen.findByTestId('admin-layout-page-page-a')).toBeInTheDocument();
+
+    await act(async () => {
+      await router.navigate('/admin2/page-b');
+    });
+
+    expect(await screen.findByTestId('admin-layout-page-page-b')).toBeInTheDocument();
+    expect(screen.getByTestId('admin-layout-page-page-a')).toBeInTheDocument();
+    expect(events).toEqual(['mount:page-a', 'mount:page-b']);
+  });
+
   it('activates the current layout before loading accessible routes', async () => {
     const layout: LayoutDefinition = {
       routeName: 'admin2',
