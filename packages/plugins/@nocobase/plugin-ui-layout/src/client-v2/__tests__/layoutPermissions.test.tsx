@@ -254,6 +254,100 @@ describe('plugin-ui-layout route permissions', () => {
     expect(resource.messageSuccess).toHaveBeenCalledWith('Saved successfully');
   });
 
+  it('should stay on the layout permissions tab when saving default layout access', async () => {
+    const resource = createPartialRoleUpdatePermissionTabResources();
+    const user = userEvent.setup();
+    flowMocks.context = resource.context;
+
+    render(<RolePermissionTabsHarness />);
+
+    await openLayoutPermissionsTab();
+
+    await act(async () => {
+      await user.click(screen.getByRole('checkbox', { name: 'New layouts are allowed to be accessed by default' }));
+    });
+
+    await waitFor(() => {
+      expect(resource.rolesUpdate).toHaveBeenCalledWith({
+        filterByTk: 'admin',
+        values: { allowNewUiLayout: true },
+      });
+    });
+    await waitFor(() => {
+      expect(screen.queryByText('System content')).not.toBeInTheDocument();
+    });
+    expect(screen.getByRole('checkbox', { name: 'New layouts are allowed to be accessed by default' })).toBeChecked();
+  });
+
+  it('should keep the current role filter after re-entering layout permissions', async () => {
+    const resource = createPartialRoleUpdatePermissionTabResources();
+    const user = userEvent.setup();
+    flowMocks.context = resource.context;
+
+    render(<RolePermissionTabsHarness />);
+
+    await openLayoutPermissionsTab();
+
+    await act(async () => {
+      await user.click(screen.getByRole('checkbox', { name: 'New layouts are allowed to be accessed by default' }));
+    });
+
+    await waitFor(() => {
+      expect(resource.rolesUpdate).toHaveBeenCalledTimes(1);
+    });
+
+    await act(async () => {
+      await user.click(screen.getByRole('tab', { name: 'System' }));
+      await user.click(screen.getByRole('tab', { name: 'Layout permissions' }));
+    });
+
+    await act(async () => {
+      await user.click(screen.getByRole('checkbox', { name: 'New routes are allowed to be accessed by default' }));
+    });
+
+    await waitFor(() => {
+      expect(resource.rolesUpdate).toHaveBeenNthCalledWith(2, {
+        filterByTk: 'admin',
+        values: { allowNewMenu: true },
+      });
+    });
+  });
+
+  it('should not report success or update UI state when default permission saving fails', async () => {
+    const resource = createRejectedRoleUpdatePermissionTabResources();
+    const user = userEvent.setup();
+    flowMocks.context = resource.context;
+    const onRoleChange = vi.fn();
+
+    render(
+      <LayoutAwareDesktopRoutesPermissionsTab
+        activeKey="menu"
+        activeRole={{ name: 'admin', title: 'Admin', allowNewUiLayout: false }}
+        onRoleChange={onRoleChange}
+      />,
+    );
+
+    const allowNewLayoutCheckbox = await screen.findByRole('checkbox', {
+      name: 'New layouts are allowed to be accessed by default',
+    });
+
+    await act(async () => {
+      await user.click(allowNewLayoutCheckbox);
+    });
+
+    await waitFor(() => {
+      expect(resource.rolesUpdate).toHaveBeenCalledWith({
+        filterByTk: 'admin',
+        values: { allowNewUiLayout: true },
+      });
+    });
+    expect(resource.messageSuccess).not.toHaveBeenCalled();
+    expect(onRoleChange).not.toHaveBeenCalled();
+    expect(
+      screen.getByRole('checkbox', { name: 'New layouts are allowed to be accessed by default' }),
+    ).not.toBeChecked();
+  });
+
   it('should render the layout permissions summary table without the layout selector', async () => {
     const resource = createLayoutSummaryPermissionTabResources();
     flowMocks.context = resource.context;
@@ -662,6 +756,64 @@ async function selectLayout(label: string) {
   fireEvent.click(await screen.findByRole('button', { name: `Configure ${label}` }));
 }
 
+async function openLayoutPermissionsTab() {
+  await act(async () => {
+    fireEvent.click(screen.getByRole('tab', { name: 'Layout permissions' }));
+  });
+  await screen.findByRole('checkbox', { name: 'New layouts are allowed to be accessed by default' });
+}
+
+function RolePermissionTabsHarness() {
+  type HarnessRole = {
+    name: string;
+    title: string;
+    allowNewMenu?: boolean;
+    allowNewUiLayout?: boolean;
+  };
+
+  const [activeKey, setActiveKey] = React.useState('general');
+  const [role, setRole] = React.useState<HarnessRole>({
+    name: 'admin',
+    title: 'Admin',
+    allowNewMenu: false,
+    allowNewUiLayout: false,
+  });
+  const didMountRef = React.useRef(false);
+  const handleRoleChange = React.useCallback((nextRole: HarnessRole | null) => {
+    if (nextRole) {
+      setRole(nextRole);
+    }
+  }, []);
+
+  React.useEffect(() => {
+    if (!didMountRef.current) {
+      didMountRef.current = true;
+      return;
+    }
+    setActiveKey('general');
+  }, [role?.name]);
+
+  return (
+    <div>
+      <button type="button" role="tab" aria-selected={activeKey === 'general'} onClick={() => setActiveKey('general')}>
+        System
+      </button>
+      <button type="button" role="tab" aria-selected={activeKey === 'menu'} onClick={() => setActiveKey('menu')}>
+        Layout permissions
+      </button>
+      {activeKey === 'general' ? (
+        <div>System content</div>
+      ) : (
+        <LayoutAwareDesktopRoutesPermissionsTab
+          activeKey={activeKey}
+          activeRole={role}
+          onRoleChange={handleRoleChange}
+        />
+      )}
+    </div>
+  );
+}
+
 function getLayoutUidFromFilter(filter: Record<string, unknown> | undefined) {
   if (filter?.['uiLayouts.uid']) {
     return filter['uiLayouts.uid'];
@@ -670,6 +822,109 @@ function getLayoutUidFromFilter(filter: Record<string, unknown> | undefined) {
     return DEFAULT_ADMIN_UI_LAYOUT.uid;
   }
   return undefined;
+}
+
+function createRoleDefaultsPermissionTabResources(options?: {
+  update: (params: { filterByTk?: string; values: Record<string, unknown> }) => Promise<unknown>;
+}) {
+  const rolesUpdate = vi.fn(options?.update ?? (async () => ({ data: { data: {} } })));
+  const flowMessageSuccess = vi.fn();
+
+  return {
+    rolesUpdate,
+    messageSuccess: flowMessageSuccess,
+    context: {
+      api: {
+        resource: vi.fn((name: string) => {
+          if (name === 'uiLayouts') {
+            return {
+              list: vi.fn(async () => ({
+                data: {
+                  data: [
+                    {
+                      uid: DEFAULT_ADMIN_UI_LAYOUT.uid,
+                      title: 'Desktop layout',
+                      layoutType: 'desktop',
+                    },
+                  ],
+                },
+              })),
+            };
+          }
+          if (name === 'desktopRoutes') {
+            return {
+              list: vi.fn(async () => ({
+                data: {
+                  data: [],
+                },
+              })),
+            };
+          }
+          if (name === 'roles.desktopRoutes') {
+            return {
+              list: vi.fn(async () => ({ data: { data: [] } })),
+              add: vi.fn(),
+              remove: vi.fn(),
+            };
+          }
+          if (name === 'rolesUiLayouts') {
+            return {
+              list: vi.fn(async () => ({
+                data: {
+                  data: [
+                    {
+                      roleName: 'admin',
+                      uiLayoutUid: DEFAULT_ADMIN_UI_LAYOUT.uid,
+                    },
+                  ],
+                },
+              })),
+              create: vi.fn(),
+              destroy: vi.fn(),
+            };
+          }
+          if (name === 'rolesUiLayoutDesktopRoutes') {
+            return {
+              list: vi.fn(async () => ({
+                data: {
+                  data: [],
+                },
+              })),
+              create: vi.fn(),
+              destroy: vi.fn(),
+            };
+          }
+          if (name === 'roles') {
+            return {
+              update: rolesUpdate,
+            };
+          }
+          throw new Error(`Unexpected resource: ${name}`);
+        }),
+      },
+      message: {
+        success: flowMessageSuccess,
+      },
+    },
+  };
+}
+
+function createPartialRoleUpdatePermissionTabResources() {
+  return createRoleDefaultsPermissionTabResources({
+    update: async ({ values }) => ({
+      data: {
+        data: values,
+      },
+    }),
+  });
+}
+
+function createRejectedRoleUpdatePermissionTabResources() {
+  return createRoleDefaultsPermissionTabResources({
+    update: async () => {
+      throw new Error('Update failed');
+    },
+  });
 }
 
 function createPermissionTabResources() {

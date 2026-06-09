@@ -527,11 +527,15 @@ export default function LayoutAwareDesktopRoutesPermissionsTab(props: Permission
       if (!role) {
         return;
       }
-      const response = await ctx.api.resource('roles').update({
-        filterByTk: role.name,
-        values,
-      });
-      props.onRoleChange((response?.data?.data as Role | undefined) ?? { ...role, ...values });
+      try {
+        await ctx.api.resource('roles').update({
+          filterByTk: role.name,
+          values,
+        });
+      } catch {
+        return;
+      }
+      props.onRoleChange({ ...role, ...values });
       ctx.message.success(t('Saved successfully'));
     },
   );
