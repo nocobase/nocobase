@@ -62,6 +62,7 @@ export const AdminLayoutEntryGuard: FC<{ children: React.ReactNode; model?: Admi
 
   useEffect(() => {
     let active = true;
+    const deactivateLayout = routeRepository?.activateLayout?.(layout);
 
     const run = async () => {
       setReady(false);
@@ -146,15 +147,17 @@ export const AdminLayoutEntryGuard: FC<{ children: React.ReactNode; model?: Admi
       navigate(toRouterNavigationPath(target.runtimePath, app.router.getBasename()), { replace: true });
     };
 
-    void run();
+    run();
 
     return () => {
       active = false;
+      deactivateLayout?.();
     };
   }, [
     app,
     flowEngine,
     isAdminRoot,
+    layout,
     layoutRuntime,
     location.hash,
     location.pathname,
