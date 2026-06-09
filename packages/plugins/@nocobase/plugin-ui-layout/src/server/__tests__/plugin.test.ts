@@ -2362,7 +2362,7 @@ describe('plugin-ui-layout server', () => {
     expect(mobileTitles).toEqual([]);
   });
 
-  it('should include parent routes only as navigation ancestors for layout-scoped child access', async () => {
+  it('should include descendant routes for layout-scoped parent access', async () => {
     app = await createMockServer({
       registerActions: true,
       acl: true,
@@ -2501,7 +2501,7 @@ describe('plugin-ui-layout server', () => {
     const agent = await app.agent().login(memberUser);
 
     await rootAgent.resource('roles.desktopRoutes', role.get('name')).add({
-      values: [mobileChildRoute.get('id')],
+      values: [mobileParentRoute.get('id')],
     });
 
     const [
@@ -2533,7 +2533,7 @@ describe('plugin-ui-layout server', () => {
 
     expect(mobileListResponse.status).toBe(200);
     expect(adminListResponse.status).toBe(200);
-    expect([200, 204]).toContain(mobileParentGetResponse.status);
+    expect(mobileParentGetResponse.status).toBe(200);
     expect(mobileChildGetResponse.status).toBe(200);
     expect(mobileHiddenTabGetResponse.status).toBe(200);
     expect(mobileListResponse.body.data).toHaveLength(1);
@@ -2543,12 +2543,12 @@ describe('plugin-ui-layout server', () => {
       'DATA-TREE-MOBILE-HIDDEN-TAB',
     ]);
     expect(adminListResponse.body.data).toEqual([]);
-    expect(mobileParentGetResponse.body.data ?? null).toBeNull();
+    expect(mobileParentGetResponse.body.data.title).toBe('DATA-TREE-MOBILE-PARENT');
     expect(mobileChildGetResponse.body.data.title).toBe('DATA-TREE-MOBILE-CHILD');
     expect(mobileHiddenTabGetResponse.body.data.title).toBe('DATA-TREE-MOBILE-HIDDEN-TAB');
 
     await rootAgent.resource('roles.desktopRoutes', role.get('name')).remove({
-      values: [mobileChildRoute.get('id')],
+      values: [mobileParentRoute.get('id')],
     });
 
     const [mobileListAfterRemoveResponse, adminListAfterRemoveResponse, mobileHiddenTabAfterRemoveResponse] =
@@ -2571,6 +2571,109 @@ describe('plugin-ui-layout server', () => {
     expect(mobileListAfterRemoveResponse.body.data).toEqual([]);
     expect(adminListAfterRemoveResponse.body.data).toEqual([]);
     expect(mobileHiddenTabAfterRemoveResponse.body.data ?? null).toBeNull();
+  });
+
+  it('should not allow a parent page through a layout-scoped hidden child permission', async () => {
+    app = await createMockServer({
+      registerActions: true,
+      acl: true,
+      plugins: [
+        'error-handler',
+        'users',
+        'auth',
+        'client',
+        'field-sort',
+        'acl',
+        'ui-schema-storage',
+        'system-settings',
+        'data-source-main',
+        'data-source-manager',
+        'ui-layout',
+      ],
+    });
+
+    const layout = await app.db.getRepository('uiLayouts').create({
+      values: {
+        uid: 'hidden-child-parent-denied-layout',
+        title: 'Hidden child parent denied layout',
+        layoutType: 'desktop',
+        routeName: 'hidden-child-parent-denied',
+        routePath: '/hidden-child-parent-denied',
+        authCheck: true,
+        enabled: true,
+      },
+    });
+    const role = await app.db.getRepository('roles').create({
+      values: {
+        name: 'hidden-child-parent-denied-role',
+      },
+    });
+    await app.db.getRepository('rolesUiLayouts').create({
+      values: {
+        roleName: role.get('name'),
+        uiLayoutUid: layout.get('uid'),
+      },
+    });
+    const parentRoute = await app.db.getRepository('desktopRoutes').create({
+      values: {
+        type: 'flowPage',
+        title: 'DATA-HIDDEN-CHILD-PARENT',
+        schemaUid: 'hidden-child-parent-page',
+        hidden: false,
+        sort: 10,
+      },
+    });
+    const hiddenTabRoute = await app.db.getRepository('desktopRoutes').create({
+      values: {
+        type: 'tabs',
+        title: 'DATA-HIDDEN-CHILD-TAB',
+        parentId: parentRoute.get('id'),
+        hidden: true,
+        sort: 1,
+      },
+    });
+
+    await app.db.getRepository('desktopRoutes.uiLayouts', parentRoute.get('id')).set({
+      tk: [layout.get('uid')],
+    });
+    await app.db.getRepository('desktopRoutes.uiLayouts', hiddenTabRoute.get('id')).set({
+      tk: [layout.get('uid')],
+    });
+    await app.db.getRepository('rolesUiLayoutDesktopRoutes').create({
+      values: {
+        roleName: role.get('name'),
+        uiLayoutUid: layout.get('uid'),
+        desktopRouteId: hiddenTabRoute.get('id'),
+      },
+    });
+
+    const memberUser = await app.db.getRepository('users').create({
+      values: {
+        roles: [role.get('name')],
+      },
+    });
+    const agent = await app.agent().login(memberUser);
+
+    const [routeListResponse, parentGetResponse, hiddenTabGetResponse] = await Promise.all([
+      agent.get('/desktopRoutes:listAccessible').query({
+        layout: layout.get('uid'),
+      }),
+      agent.get('/desktopRoutes:getAccessible').query({
+        filterByTk: parentRoute.get('id'),
+        layout: layout.get('uid'),
+      }),
+      agent.get('/desktopRoutes:getAccessible').query({
+        filterByTk: hiddenTabRoute.get('id'),
+        layout: layout.get('uid'),
+      }),
+    ]);
+
+    expect(routeListResponse.status).toBe(200);
+    expect([200, 204]).toContain(parentGetResponse.status);
+    expect([200, 204]).toContain(hiddenTabGetResponse.status);
+    expect(routeListResponse.body.data).toEqual([]);
+    expect(parentGetResponse.body.data ?? null).toBeNull();
+    expect(hiddenTabGetResponse.body.data ?? null).toBeNull();
   });
 
   it('should apply layout filtering to getAccessible route lookup', async () => {

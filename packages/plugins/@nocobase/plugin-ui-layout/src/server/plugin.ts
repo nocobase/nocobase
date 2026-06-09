@@ -275,6 +275,56 @@ async function includeDescendantRouteIds(ctx: ResourcerContext, routeIds: Set<st
   }
 }
 
+async function removeRouteIdsWithUnauthorizedAncestors(ctx: ResourcerContext, routeIds: Set<string>) {
+  if (routeIds.size === 0) {
+    return;
+  }
+
+  const parentIdByRouteId = new Map<string, string | undefined>();
+  let pendingRouteIds = new Set(routeIds);
+
+  while (pendingRouteIds.size > 0) {
+    const routes = await ctx.db.getRepository('desktopRoutes').find({
+      fields: ['id', 'parentId'],
+      filter: {
+        id: Array.from(pendingRouteIds),
+      },
+    });
+    pendingRouteIds = new Set<string>();
+
+    for (const route of routes) {
+      const routeId = route.get('id');
+      if (routeId === null || routeId === undefined) {
+        continue;
+      }
+
+      const normalizedRouteId = String(routeId);
+      const parentId = route.get('parentId');
+      const normalizedParentId = parentId === null || parentId === undefined ? undefined : String(parentId);
+      parentIdByRouteId.set(normalizedRouteId, normalizedParentId);
+
+      if (normalizedParentId && !parentIdByRouteId.has(normalizedParentId)) {
+        pendingRouteIds.add(normalizedParentId);
+      }
+    }
+  }
+
+  for (const routeId of Array.from(routeIds)) {
+    const visitedRouteIds = new Set<string>([routeId]);
+    let parentId = parentIdByRouteId.get(routeId);
+
+    while (parentId) {
+      if (!routeIds.has(parentId) || visitedRouteIds.has(parentId)) {
+        routeIds.delete(routeId);
+        break;
+      }
+
+      visitedRouteIds.add(parentId);
+      parentId = parentIdByRouteId.get(parentId);
+    }
+  }
+}
+
 async function addDesktopRouteCreateLayout(ctx: ResourcerContext, next: () => Promise<void>) {
   const layoutUid = getRequestedLayoutUid(ctx.action?.params.layout);
   const uiLayout = await ctx.db.getRepository('uiLayouts').findOne({
@@ -324,6 +374,7 @@ async function getLayoutAccessibleRouteIds(ctx: ResourcerContext, layoutUid: str
     }
   }
 
+  await removeRouteIdsWithUnauthorizedAncestors(ctx, routeIds);
   await includeDescendantRouteIds(ctx, routeIds);
   return routeIds;
 }

@@ -79,6 +79,7 @@ interface DesktopRouteOptions {
 interface RoutePermissionRecord {
   id: number;
   title?: string;
+  hidden?: boolean;
   routePath?: string;
   parentId?: number;
   children?: RoutePermissionRecord[];
@@ -181,11 +182,18 @@ function toRouteItems(items: DesktopRouteRecord[] | undefined, parentId?: number
     return {
       id: item.id,
       title: item.title,
+      hidden: item.hidden,
       routePath: toRoutePath(item.options),
       parentId,
       children: children.length ? children : undefined,
     };
   });
+}
+
+function createAllRoutesFilter(filter: Record<string, unknown>) {
+  const allRoutesFilter = { ...filter };
+  delete allRoutesFilter.hidden;
+  return allRoutesFilter;
 }
 
 function toRoutePath(options: DesktopRouteOptions | undefined) {
@@ -202,6 +210,28 @@ function getAllChildrenIds(items: RoutePermissionRecord[] | undefined): number[]
 
 function flattenItems(items: RoutePermissionRecord[]): RoutePermissionRecord[] {
   return items.flatMap((item) => [item, ...flattenItems(item.children ?? [])]);
+}
+
+function removeHiddenRouteItems(items: RoutePermissionRecord[]): RoutePermissionRecord[] {
+  return items.reduce<RoutePermissionRecord[]>((visibleItems, item) => {
+    if (item.hidden) {
+      return visibleItems;
+    }
+
+    const children = removeHiddenRouteItems(item.children ?? []);
+    visibleItems.push({
+      ...item,
+      children: children.length ? children : undefined,
+    });
+    return visibleItems;
+  }, []);
+}
+
+function getRouteIdsWithAllDescendants(items: RoutePermissionRecord[], itemById: Map<number, RoutePermissionRecord>) {
+  return items.flatMap((item) => {
+    const sourceItem = itemById.get(item.id) ?? item;
+    return [item.id, ...getAllChildrenIds(sourceItem.children)];
+  });
 }
 
 function toRouteId(value: unknown) {
@@ -296,6 +326,7 @@ export default function LayoutAwareDesktopRoutesPermissionsTab(props: Permission
   const [routeKeyword, setRouteKeyword] = useState('');
   const activeLayoutUid = selectedLayoutUid || DEFAULT_ADMIN_UI_LAYOUT.uid;
   const routeFilter = useMemo(() => createDesktopRouteLayoutPermissionFilter(activeLayoutUid), [activeLayoutUid]);
+  const allRoutesFilter = useMemo(() => createAllRoutesFilter(routeFilter), [routeFilter]);
   const uiLayoutsResource = useMemo(() => ctx.api.resource('uiLayouts') as unknown as ListResource, [ctx.api]);
   const desktopRoutesResource = useMemo(() => ctx.api.resource('desktopRoutes') as unknown as ListResource, [ctx.api]);
   const roleUiLayoutsResource = useMemo(
@@ -338,7 +369,7 @@ export default function LayoutAwareDesktopRoutesPermissionsTab(props: Permission
         tree: true,
         sort: 'sort',
         paginate: false,
-        filter: routeFilter,
+        filter: allRoutesFilter,
       });
       return {
         layoutUid: activeLayoutUid,
@@ -347,7 +378,7 @@ export default function LayoutAwareDesktopRoutesPermissionsTab(props: Permission
     },
     {
       ready: active && drawerOpen,
-      refreshDeps: [active, drawerOpen, routeFilter, activeLayoutUid],
+      refreshDeps: [active, drawerOpen, allRoutesFilter, activeLayoutUid],
     },
   );
 
@@ -363,11 +394,19 @@ export default function LayoutAwareDesktopRoutesPermissionsTab(props: Permission
     return data.data;
   }, [activeLayoutUid, routeService.data, routeService.error]);
   const routeItems = useMemo(() => toRouteItems(routeData), [routeData]);
-  const visibleRouteItems = useMemo(() => filterRouteItems(routeItems, routeKeyword, t), [routeItems, routeKeyword, t]);
   const flatItems = useMemo(() => flattenItems(routeItems), [routeItems]);
   const allIds = useMemo(() => getAllChildrenIds(routeItems), [routeItems]);
+  const displayRouteItems = useMemo(() => removeHiddenRouteItems(routeItems), [routeItems]);
+  const visibleRouteItems = useMemo(
+    () => filterRouteItems(displayRouteItems, routeKeyword, t),
+    [displayRouteItems, routeKeyword, t],
+  );
   const visibleIds = useMemo(() => getAllChildrenIds(visibleRouteItems), [visibleRouteItems]);
   const itemById = useMemo(() => new Map(flatItems.map((item) => [item.id, item])), [flatItems]);
+  const visibleIdsWithDescendants = useMemo(
+    () => getRouteIdsWithAllDescendants(visibleRouteItems, itemById),
+    [itemById, visibleRouteItems],
+  );
   const emptyText = routeService.error
     ? t('Failed to load routes for {{layout}}', { layout: selectedLayoutLabel })
     : routeKeyword.trim()
@@ -488,16 +527,18 @@ export default function LayoutAwareDesktopRoutesPermissionsTab(props: Permission
   const setAll = useMemoizedFn(async () => {
     const selectedIdSet = new Set(selectedIds);
     const visibleIdSet = new Set(visibleIds);
+    const visibleIdWithDescendantsSet = new Set(visibleIdsWithDescendants);
     const visibleAllSelected = !!visibleIds.length && visibleIds.every((id) => selectedIdSet.has(id));
     const nextIds = visibleAllSelected
-      ? selectedIds.filter((id) => !visibleIdSet.has(id))
-      : uniq([...selectedIds, ...visibleIds]);
+      ? selectedIds.filter((id) => !visibleIdSet.has(id) && !visibleIdWithDescendantsSet.has(id))
+      : uniq([...selectedIds, ...visibleIdsWithDescendants]);
     await applyPermissionChanges(nextIds);
   });
 
   const toggleItem = useMemoizedFn(async (item: RoutePermissionRecord) => {
     const checked = selectedIds.includes(item.id);
-    const descendantIds = getAllChildrenIds(item.children);
+    const sourceItem = itemById.get(item.id) ?? item;
+    const descendantIds = getAllChildrenIds(sourceItem.children);
     let nextIds = checked
       ? selectedIds.filter((id) => id !== item.id && !descendantIds.includes(id))
       : uniq([...selectedIds, item.id, ...descendantIds]);
