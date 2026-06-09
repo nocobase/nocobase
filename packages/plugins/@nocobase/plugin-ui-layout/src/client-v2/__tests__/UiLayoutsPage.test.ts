@@ -443,6 +443,8 @@ describe('plugin-ui-layout form values', () => {
     expect(isUiLayoutRoutePathFormatValid('/')).toBe(false);
     expect(isUiLayoutRoutePathFormatValid('/*')).toBe(false);
     expect(isUiLayoutRoutePathFormatValid('/mobile/*')).toBe(false);
+    expect(isUiLayoutRoutePathFormatValid('/mobile?tab=main')).toBe(false);
+    expect(isUiLayoutRoutePathFormatValid('/mobile#main')).toBe(false);
   });
 
   it('should derive route name from the access path', () => {
@@ -508,6 +510,28 @@ describe('plugin-ui-layout form values', () => {
         enabled: true,
       }),
     ).toThrow('Access path cannot contain wildcard');
+
+    expect(() =>
+      completeUiLayoutFormValues({
+        title: 'Query layout',
+        uid: 'query-layout',
+        layoutType: 'desktop',
+        routePath: '/mobile?tab=main',
+        authCheck: true,
+        enabled: true,
+      }),
+    ).toThrow('Access path cannot contain query or hash');
+
+    expect(() =>
+      completeUiLayoutFormValues({
+        title: 'Hash layout',
+        uid: 'hash-layout',
+        layoutType: 'desktop',
+        routePath: '/mobile#main',
+        authCheck: true,
+        enabled: true,
+      }),
+    ).toThrow('Access path cannot contain query or hash');
   });
 });
 

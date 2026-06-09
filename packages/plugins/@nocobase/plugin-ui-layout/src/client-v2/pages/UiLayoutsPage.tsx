@@ -119,6 +119,9 @@ function getUiLayoutRoutePathFormatError(routePath?: string) {
   if (trimmed.includes('*')) {
     return 'Access path cannot contain wildcard';
   }
+  if (/[?#]/.test(trimmed)) {
+    return 'Access path cannot contain query or hash';
+  }
   if (!isUiLayoutRouteNameFormatValid(getRouteNameFromRoutePath(trimmed))) {
     return 'Route name cannot contain dots';
   }

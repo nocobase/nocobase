@@ -9,6 +9,7 @@
   "Allow access to {{layout}}": "允许访问 {{layout}}",
   "Access path": "访问路径",
   "Access path cannot be /": "访问路径不能是 /",
+  "Access path cannot contain query or hash": "访问路径不能包含查询参数或哈希",
   "Access path cannot contain wildcard": "访问路径不能包含通配符",
   "Access path must start with /": "访问路径必须以 / 开头",
   "Are you sure you want to delete it?": "确定要删除吗？",
