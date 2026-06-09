@@ -544,6 +544,11 @@ export default function LayoutAwareDesktopRoutesPermissionsTab(props: Permission
     setSelectedLayoutUid(layout.uid);
     setDrawerOpen(true);
   });
+  const handleDrawerKeyDown = useMemoizedFn((event: React.KeyboardEvent) => {
+    if (event.key === 'Escape' || event.keyCode === 27) {
+      setDrawerOpen(false);
+    }
+  });
 
   const layoutRows = useMemo<LayoutSummaryRecord[]>(
     () =>
@@ -675,7 +680,14 @@ export default function LayoutAwareDesktopRoutesPermissionsTab(props: Permission
         columns={layoutColumns}
         dataSource={layoutRows}
       />
-      <Drawer title={selectedLayoutLabel} open={drawerOpen} width={640} onClose={() => setDrawerOpen(false)}>
+      <Drawer
+        aria-label={selectedLayoutLabel}
+        title={selectedLayoutLabel}
+        open={drawerOpen}
+        width={640}
+        onClose={() => setDrawerOpen(false)}
+        onKeyDown={handleDrawerKeyDown}
+      >
         <Space direction="vertical" size={token.marginSM} style={{ width: '100%' }}>
           <Checkbox
             checked={!!layoutAccessService.data?.has(activeLayoutUid)}

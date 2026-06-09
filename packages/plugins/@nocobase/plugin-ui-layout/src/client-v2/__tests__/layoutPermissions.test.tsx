@@ -292,6 +292,38 @@ describe('plugin-ui-layout route permissions', () => {
     );
   });
 
+  it('should close the route permissions drawer with Escape', async () => {
+    const resource = createLayoutSummaryPermissionTabResources();
+    const user = userEvent.setup();
+    flowMocks.context = resource.context;
+
+    render(
+      <LayoutAwareDesktopRoutesPermissionsTab
+        activeKey="menu"
+        activeRole={{ name: 'layout-member', title: 'Layout member' }}
+        onRoleChange={vi.fn()}
+      />,
+    );
+
+    const configureDesktopButton = await screen.findByRole('button', { name: 'Configure Desktop layout' });
+    await user.click(configureDesktopButton);
+
+    const drawer = await screen.findByRole('dialog', { name: 'Desktop layout' });
+    expect(await screen.findByText('Menu permissions')).toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.keyDown(drawer, {
+        key: 'Escape',
+        code: 'Escape',
+        keyCode: 27,
+      });
+    });
+
+    await waitFor(() => {
+      expect(drawer.closest('.ant-drawer')).not.toHaveClass('ant-drawer-open');
+    });
+  });
+
   it('should keep current layout permission state when stale requests finish later', async () => {
     const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
     const resource = createConcurrentPermissionTabResources();

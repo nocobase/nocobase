@@ -18,7 +18,7 @@ import {
 import { DrawerFormLayout, Table } from '@nocobase/client-v2';
 import { randomId, useFlowContext } from '@nocobase/flow-engine';
 import { useRequest } from 'ahooks';
-import { App, Button, Card, Dropdown, Flex, Form, Input, Select, Space, Switch, Tag, Typography, theme } from 'antd';
+import { App, Button, Card, Dropdown, Flex, Form, Input, Select, Space, Switch, Tag, theme } from 'antd';
 import type { MenuProps } from 'antd';
 import type { ColumnsType, TableProps } from 'antd/es/table';
 import React, { useCallback, useMemo, useState } from 'react';
@@ -379,15 +379,18 @@ const UiLayoutsPage: React.FC = () => {
               <a href={getUiLayoutRouteUrl(ctx.app, record.routePath)} target="_blank" rel="noopener noreferrer">
                 <EyeOutlined /> {t('View')}
               </a>
-              <a onClick={() => openFormDrawer({ record })}>
-                <EditOutlined /> {t('Edit')}
-              </a>
-              <Typography.Link
+              <Button type="link" icon={<EditOutlined />} onClick={() => openFormDrawer({ record })}>
+                {t('Edit')}
+              </Button>
+              <Button
+                type="link"
+                danger
+                icon={<DeleteOutlined />}
                 disabled={deleteDisabled}
                 onClick={deleteDisabled ? undefined : () => handleDelete(record.id)}
               >
-                <DeleteOutlined /> {t('Delete')}
-              </Typography.Link>
+                {t('Delete')}
+              </Button>
             </Space>
           );
         },

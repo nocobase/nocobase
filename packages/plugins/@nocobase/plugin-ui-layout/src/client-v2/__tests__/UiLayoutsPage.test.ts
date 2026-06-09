@@ -8,7 +8,8 @@
  */
 
 import { App as AntdApp } from 'antd';
-import { cleanup, render, waitFor } from '@testing-library/react';
+import { cleanup, render, screen, waitFor, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import React from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { DEFAULT_ADMIN_UI_LAYOUT } from '../../constants';
@@ -220,6 +221,79 @@ describe('plugin-ui-layout settings page', () => {
         url: 'uiLayouts:listAccessible',
       }),
     );
+  });
+
+  it('should expose table controls and row actions to keyboard and assistive tech', async () => {
+    const user = userEvent.setup();
+    const request = vi.fn().mockResolvedValue({
+      data: {
+        data: [
+          {
+            ...uiLayoutRecord,
+            id: 1,
+            title: 'Desktop layout',
+            uid: DEFAULT_ADMIN_UI_LAYOUT.uid,
+            routePath: '/admin',
+          },
+          {
+            ...uiLayoutRecord,
+            id: 2,
+            title: 'Mobile layout',
+            uid: 'mobile-layout',
+            layoutType: 'mobile',
+            routePath: '/mobile',
+          },
+        ],
+      },
+    });
+    const drawer = vi.fn();
+    flowContext.current = {
+      api: {
+        request,
+        resource: vi.fn(() => makeResource()),
+      },
+      app: {},
+      viewer: {
+        drawer,
+      },
+    };
+
+    render(React.createElement(AntdApp, null, React.createElement(UiLayoutsPage)));
+
+    const desktopTitleCell = (await screen.findAllByText('Desktop layout')).find(
+      (element) => element.closest('td')?.tagName === 'TD',
+    );
+    const mobileTitleCell = screen
+      .getAllByText('Mobile layout')
+      .find((element) => element.closest('td')?.tagName === 'TD');
+    const desktopRow = desktopTitleCell?.closest('tr');
+    const mobileRow = mobileTitleCell?.closest('tr');
+
+    expect(desktopRow).not.toBeNull();
+    expect(mobileRow).not.toBeNull();
+    expect(within(desktopRow as HTMLTableRowElement).getByRole('switch', { name: 'Enabled' })).toBeChecked();
+    expect(within(mobileRow as HTMLTableRowElement).getByRole('link', { name: /View/ })).toHaveAttribute(
+      'href',
+      '/mobile',
+    );
+
+    const defaultDelete = within(desktopRow as HTMLTableRowElement).getByRole('button', { name: /Delete/ });
+    expect(defaultDelete).toBeDisabled();
+
+    const editButton = within(mobileRow as HTMLTableRowElement).getByRole('button', { name: /Edit/ });
+    editButton.focus();
+    expect(editButton).toHaveFocus();
+
+    await user.keyboard('{Enter}');
+
+    await waitFor(() => {
+      expect(drawer).toHaveBeenCalledWith(
+        expect.objectContaining({
+          closable: true,
+          content: expect.any(Function),
+        }),
+      );
+    });
   });
 });
 
