@@ -23,7 +23,7 @@ function createWithACLMetaMiddleware() {
     const dataSource = ctx.app.dataSourceManager.dataSources.get(dataSourceKey);
     const db = dataSource ? dataSource.collectionManager.db : ctx.db;
 
-    if (!db) {
+    if (!db || db.isDBInstance === false) {
       return;
     }
 

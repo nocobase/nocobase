@@ -173,8 +173,11 @@ select * from test
     }));
 
     app.dataSourceManager.dataSources.set('external', {
-      collectionManager: {},
-      runSQL,
+      collectionManager: {
+        db: {
+          runSQL,
+        },
+      },
     } as any);
 
     const response = await agent.resource('flowSql').run({
