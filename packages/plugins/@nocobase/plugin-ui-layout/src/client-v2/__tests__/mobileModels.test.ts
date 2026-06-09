@@ -57,6 +57,8 @@ import {
 import { getMobileMenuItemUid } from '../models/MobileMenuUtils';
 import { MobileChildPageModel, MobileRootPageModel } from '../models/MobilePageModels';
 import { registerMobilePageModelResolution } from '../mobilePageModelResolution';
+import enUS from '../../locale/en-US.json';
+import zhCN from '../../locale/zh-CN.json';
 
 type MobileRouteRepositoryForTest = {
   listAccessible: () => NocoBaseDesktopRoute[];
@@ -3081,6 +3083,15 @@ describe('plugin-ui-layout mobile models', () => {
     expect(Object.keys(mobileMenuSettings?.steps || {})).not.toEqual(
       expect.arrayContaining(['editTooltip', 'moveTo', 'insertBefore', 'insertAfter']),
     );
+  });
+
+  it('should provide locale entries for the mobile menu settings title', () => {
+    const mobileMenuSettings = MobileLayoutMenuItemModel.globalFlowRegistry.getFlow('mobileMenuSettings');
+    const title = mobileMenuSettings?.title;
+
+    expect(title).toBe('Mobile menu settings');
+    expect(enUS).toHaveProperty(String(title));
+    expect(zhCN).toHaveProperty(String(title));
   });
 
   it('should use the mobile menu icon picker for menu edit settings', async () => {
