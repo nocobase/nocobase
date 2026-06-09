@@ -13,6 +13,27 @@ import { tExpr } from './locale';
 
 export class PluginCommentClientV2 extends Plugin<any, Application> {
   async load() {
+    this.flowEngine.registerModelLoaders({
+      CommentsBlockModel: {
+        loader: () => import('./models/CommentsBlockModel'),
+      },
+      CommentItemModel: {
+        loader: () => import('./models/CommentsBlockModel'),
+      },
+      CommentActionGroupModel: {
+        loader: () => import('./models/actions'),
+      },
+      EditCommentActionModel: {
+        loader: () => import('./models/actions'),
+      },
+      DeleteCommentActionModel: {
+        loader: () => import('./models/actions'),
+      },
+      QuoteReplyActionModel: {
+        loader: () => import('./models/actions'),
+      },
+    });
+
     const dataSourceManager = (this.app.pm.get('@nocobase/plugin-data-source-manager') ||
       this.app.pm.get('data-source-manager')) as PluginDataSourceManagerClientV2 | undefined;
 
