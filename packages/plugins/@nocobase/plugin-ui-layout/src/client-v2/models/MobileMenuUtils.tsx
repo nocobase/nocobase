@@ -44,6 +44,20 @@ export function getMobileRouteTabKey(route: NocoBaseDesktopRoute, fallbackIndex:
   );
 }
 
+export function mobileRouteTreeContainsTabKey(routes: NocoBaseDesktopRoute[] | undefined, tabKey: string | undefined) {
+  if (!tabKey) {
+    return false;
+  }
+
+  return (routes || []).some((route, index) => {
+    if (getMobileRouteTabKey(route, index) === tabKey) {
+      return true;
+    }
+
+    return mobileRouteTreeContainsTabKey(route.children, tabKey);
+  });
+}
+
 export function isMobileTabRoute(route: NocoBaseDesktopRoute): route is MobileTabRoute {
   return route.type === NocoBaseDesktopRouteType.flowPage || route.type === NocoBaseDesktopRouteType.link;
 }

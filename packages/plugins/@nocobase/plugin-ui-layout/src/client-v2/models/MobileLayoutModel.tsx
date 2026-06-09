@@ -83,6 +83,7 @@ import {
   resolveMobileMenuDragMoveOptionsFromEvent,
   toMobileRouterNavigationPath,
 } from './MobileMenuModels';
+import { mobileRouteTreeContainsTabKey } from './MobileMenuUtils';
 import { MobilePageSurface } from './mobileComponents';
 
 type MobileHomeAddMenuKey = 'page' | 'link';
@@ -1009,6 +1010,16 @@ function normalizeRenderableMobileTabItems(tabItems: MobileTabNode[], designMode
   }));
 }
 
+function isActiveRouteRepresentedByMobileTabs(tabItems: MobileTabNode[], activeRouteKey: string | undefined) {
+  if (!activeRouteKey) {
+    return false;
+  }
+
+  return tabItems.some(
+    (item) => item.key === activeRouteKey || mobileRouteTreeContainsTabKey(item.route.children, activeRouteKey),
+  );
+}
+
 const MobileTabDragToolbarButton = observer((props: { model: FlowModel }) => {
   const route = isMobileMenuItemModelLike(props.model) ? props.model.getRoute?.() : undefined;
   if (!route?.id) {
@@ -1360,7 +1371,7 @@ const MobileHomePlaceholder = observer(
       if (
         !activeRouteKeyFromLayout ||
         !tabItems.length ||
-        tabItems.some((item) => item.key === activeRouteKeyFromLayout)
+        isActiveRouteRepresentedByMobileTabs(tabItems, activeRouteKeyFromLayout)
       ) {
         return;
       }

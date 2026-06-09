@@ -271,6 +271,18 @@ describe('plugin-ui-layout mobile models', () => {
     );
   }
 
+  function MobileCurrentPathProbe() {
+    const location = useLocation();
+
+    return React.createElement(
+      'span',
+      {
+        'data-testid': 'mobile-current-path',
+      },
+      location.pathname,
+    );
+  }
+
   type MobileMenuItemLinkageSnapshot = MobileLayoutMenuItemModel & {
     __originalProps?: {
       hiddenModel?: boolean;
@@ -2564,6 +2576,87 @@ describe('plugin-ui-layout mobile models', () => {
     expect(unregisterRoutePage).not.toHaveBeenCalledWith('home-page');
     expect(layoutModel?.flowEngine.getModel<RouteModel>('home-page')?.context.pageActive.value).toBe(false);
     expect(layoutModel?.flowEngine.getModel<RouteModel>('reports-page')?.context.pageActive.value).toBe(true);
+  });
+
+  it('should keep an accessible child route instead of falling back to its ancestor', async () => {
+    const events: string[] = [];
+    const routeSnapshots: string[] = [];
+    const routes: NocoBaseDesktopRoute[] = [
+      {
+        id: 1,
+        type: NocoBaseDesktopRouteType.flowPage,
+        title: 'Parent',
+        schemaUid: 'parent-page',
+        sort: 10,
+        children: [
+          {
+            id: 2,
+            parentId: 1,
+            type: NocoBaseDesktopRouteType.flowPage,
+            title: 'Child',
+            schemaUid: 'child-page',
+            sort: 1,
+            children: [
+              {
+                id: 3,
+                parentId: 2,
+                type: NocoBaseDesktopRouteType.tabs,
+                title: 'Hidden tab',
+                hidden: true,
+                sort: 1,
+              },
+            ],
+          },
+        ],
+      },
+    ];
+    const routeRepository: MobileRouteRepositoryForTest = {
+      listAccessible: () => routes,
+      ensureAccessibleLoaded: vi.fn(async () => routes),
+    };
+    let layoutModel: MobileLayoutModel | undefined;
+
+    function RouteSnapshotProbe() {
+      const location = useLocation();
+      React.useEffect(() => {
+        routeSnapshots.push(location.pathname);
+      }, [location.pathname]);
+
+      return React.createElement(MobileCurrentPathProbe);
+    }
+
+    renderMobileLayoutWithRouteRepository(routeRepository, {
+      initialEntries: ['/v/mobile/child-page'],
+      outletElement: React.createElement(
+        React.Fragment,
+        null,
+        React.createElement(MobileRoutePageProbe, {
+          events,
+          getModel: () => {
+            if (!layoutModel) {
+              throw new Error('Mobile layout model is not ready.');
+            }
+            return layoutModel;
+          },
+        }),
+        React.createElement(RouteSnapshotProbe),
+      ),
+      beforeRender: (model) => {
+        layoutModel = model;
+      },
+    });
+
+    await waitFor(() => {
+      expect(routeRepository.ensureAccessibleLoaded).toHaveBeenCalled();
+    });
+    await waitFor(() => {
+      expect(screen.getByTestId('mobile-current-path')).toHaveTextContent('/v/mobile/child-page');
+    });
+
+    expect(screen.getByTestId('mobile-route-page-child-page')).toBeInTheDocument();
+    expect(screen.queryByTestId('mobile-route-page-parent-page')).not.toBeInTheDocument();
+    expect(routeSnapshots).not.toContain('/v/mobile/parent-page');
+    expect(events).toContain('mount:child-page');
   });
 
   it('should restore the default mobile page route from the layout root path', async () => {

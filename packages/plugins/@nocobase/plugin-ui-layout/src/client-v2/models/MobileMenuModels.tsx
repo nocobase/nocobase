@@ -25,6 +25,7 @@ import {
   getMobileRouteTabKey,
   getMobileRouteTitle,
   isMobileTabRoute,
+  mobileRouteTreeContainsTabKey,
   type MobileRouteTitleTranslator,
 } from './MobileMenuUtils';
 import { refreshMobileLayoutAccessibleRoutes } from '../mobileRouteRepository';
@@ -610,7 +611,7 @@ export class MobileLayoutMenuItemModel extends FlowModel {
       label: getMobileRouteTitle(route, options.t),
       icon: getMobileRouteIcon(route),
       type: route.type,
-      active: key === options.activeKey,
+      active: key === options.activeKey || mobileRouteTreeContainsTabKey(route.children, options.activeKey),
       path: isFlowPage ? getMobilePagePath(options.basePathname, route) : undefined,
       href: !isFlowPage && typeof route.options?.href === 'string' ? route.options.href : undefined,
       route,
