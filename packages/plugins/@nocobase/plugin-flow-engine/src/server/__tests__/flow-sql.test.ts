@@ -12,7 +12,7 @@ import { createFlowEngineMockServer } from './test-utils';
 import PluginFlowEngineServer from '../plugin';
 
 describe('flow sql data source proxy', () => {
-  it('runs SQL through non-database data source runSQL method', async () => {
+  it('runs SQL through data source collection manager db runSQL method', async () => {
     const runSQL = vi.fn(async () => [{ count: 1 }]);
     const plugin = Object.create(PluginFlowEngineServer.prototype) as PluginFlowEngineServer;
 
@@ -22,8 +22,11 @@ describe('flow sql data source proxy', () => {
           get: (key: string) =>
             key === 'external'
               ? {
-                  collectionManager: {},
-                  runSQL,
+                  collectionManager: {
+                    db: {
+                      runSQL,
+                    },
+                  },
                 }
               : undefined,
         },
