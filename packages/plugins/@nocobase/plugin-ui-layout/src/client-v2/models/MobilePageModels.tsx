@@ -80,6 +80,12 @@ function renderMobileBody(children: React.ReactNode) {
   return <div className="nb-ui-layout-mobile-body">{children}</div>;
 }
 
+function defineMobilePageRuntimeContext(model: RootPageModel | ChildPageModel) {
+  model.context.defineProperty('isMobileLayout', {
+    value: true,
+  });
+}
+
 function renderMobilePageTabLeftSpacer() {
   return <span aria-hidden="true" className="nb-ui-layout-mobile-page-tab-left-spacer" />;
 }
@@ -114,6 +120,11 @@ export class MobileRootPageModel extends RootPageModel {
     right: renderMobileAddTabButton(this),
   };
 
+  constructor(options: ConstructorParameters<typeof RootPageModel>[0]) {
+    super(options);
+    defineMobilePageRuntimeContext(this);
+  }
+
   async saveStepParams() {
     await super.saveStepParams();
     syncRootEnableTabsAfterSave(this);
@@ -136,6 +147,11 @@ export class MobileChildPageModel extends ChildPageModel {
     left: <MobileBackButton />,
     right: renderMobileAddTabButton(this),
   };
+
+  constructor(options: ConstructorParameters<typeof ChildPageModel>[0]) {
+    super(options);
+    defineMobilePageRuntimeContext(this);
+  }
 
   private renderTabsWithTitlebarBackButton(displayTitle: boolean) {
     const leftExtraContent = this.tabBarExtraContent.left;

@@ -29,6 +29,7 @@ import {
   BaseLayoutModel,
   BaseLayoutRouteCoordinator,
   KeepAlive,
+  type LayoutDefinition,
   type RouteModel,
   type RoutePageMeta,
 } from '@nocobase/client-v2';
@@ -197,10 +198,21 @@ function setMobileRootPageModel(routeModel: RouteModel, rootPageModelClass?: str
   });
 }
 
+function defineMobileRouteRuntimeContext(routeModel: RouteModel, getLayout?: () => LayoutDefinition | undefined) {
+  routeModel.context.defineProperty('isMobileLayout', {
+    value: true,
+  });
+  routeModel.context.defineProperty('layout', {
+    get: getLayout,
+    cache: false,
+  });
+}
+
 class MobileLayoutRouteCoordinator extends BaseLayoutRouteCoordinator {
   registerPage(pageUid: string, meta: RoutePageMeta) {
     const routeModel = super.registerPage(pageUid, meta);
 
+    defineMobileRouteRuntimeContext(routeModel, () => this.layout);
     setMobileRootPageModel(routeModel, this.layout?.rootPageModelClass);
 
     return routeModel;
@@ -1859,6 +1871,7 @@ export class MobileLayoutModel extends BaseLayoutModel<MobileLayoutMenuStructure
   registerRoutePage(pageUid: string, meta: Parameters<BaseLayoutModel['registerRoutePage']>[1]) {
     const routeModel = super.registerRoutePage(pageUid, meta);
 
+    defineMobileRouteRuntimeContext(routeModel, () => this.layout);
     setMobileRootPageModel(routeModel, this.layout.rootPageModelClass);
 
     return routeModel;

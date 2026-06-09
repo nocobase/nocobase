@@ -38,6 +38,7 @@ type InputArgsOverrideContext = OpenViewContext & {
 
 type OpenViewModelContext = {
   inputArgs?: Record<string, unknown>;
+  isMobileLayout?: boolean;
   defineProperty?: (key: string, options: FlowContextPropertyOptions) => void;
 };
 
@@ -154,10 +155,12 @@ function exposeMobileOpenViewInputArgsOnModelContext(
 
   if (typeof modelContext.defineProperty === 'function') {
     modelContext.defineProperty('inputArgs', { value: nextInputArgs });
+    modelContext.defineProperty('isMobileLayout', { value: true });
     return;
   }
 
   modelContext.inputArgs = nextInputArgs;
+  modelContext.isMobileLayout = true;
 }
 
 export const mobileOpenView = {

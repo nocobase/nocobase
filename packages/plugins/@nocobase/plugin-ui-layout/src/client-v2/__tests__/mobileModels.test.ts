@@ -540,6 +540,59 @@ describe('plugin-ui-layout mobile models', () => {
     expect(childPage).toBeInstanceOf(MobileChildPageModel);
   });
 
+  it('should keep mobile context after FlowPage detaches mobile page parent delegates', () => {
+    const engine = new FlowEngine();
+    engine.registerModels({
+      MobileRootPageModel,
+      MobileChildPageModel,
+      RouteModel,
+    });
+    const routeModel = engine.createModel<RouteModel>({
+      uid: 'mobile-detached-route-parent',
+      use: 'RouteModel',
+    });
+    routeModel.context.defineProperty('isMobileLayout', {
+      value: true,
+    });
+    const rootPage = engine.createModel<MobileRootPageModel>({
+      uid: 'mobile-detached-root-page',
+      parentId: routeModel.uid,
+      subKey: 'page',
+      subType: 'object',
+      use: 'MobileRootPageModel',
+    });
+    const childPage = engine.createModel<MobileChildPageModel>({
+      uid: 'mobile-detached-child-page',
+      parentId: routeModel.uid,
+      subKey: 'page',
+      subType: 'object',
+      use: 'MobileChildPageModel',
+    });
+
+    rootPage.removeParentDelegate();
+    childPage.removeParentDelegate();
+
+    const rootSubModel = engine.createModel({
+      uid: 'mobile-detached-root-sub-model',
+      parentId: rootPage.uid,
+      subKey: 'children',
+      subType: 'array',
+      use: 'FlowModel',
+    });
+    const childSubModel = engine.createModel({
+      uid: 'mobile-detached-child-sub-model',
+      parentId: childPage.uid,
+      subKey: 'children',
+      subType: 'array',
+      use: 'FlowModel',
+    });
+
+    expect(rootPage.context.isMobileLayout).toBe(true);
+    expect(childPage.context.isMobileLayout).toBe(true);
+    expect(rootSubModel.context.isMobileLayout).toBe(true);
+    expect(childSubModel.context.isMobileLayout).toBe(true);
+  });
+
   it('should provide temporary mobile home menu data', () => {
     const t = (key: string) => `t:${key}`;
 
@@ -2631,6 +2684,42 @@ describe('plugin-ui-layout mobile models', () => {
       mode: 'embed',
       preventClose: true,
       pageModelClass: 'MobileRootPageModel',
+    });
+  });
+
+  it('should keep mobile route replay context after the layout delegate is detached', () => {
+    const engine = new FlowEngine();
+    engine.registerModels({
+      MobileLayoutModel,
+      RouteModel,
+    });
+    const model = engine.createModel<MobileLayoutModel>({
+      uid: 'mobile-layout-model-detached-route-context',
+      use: 'MobileLayoutModel',
+      props: {
+        layout: {
+          routeName: 'mobile',
+          routePath: '/v/mobile',
+          uid: 'mobile-layout-model-detached-route-context',
+          layoutModelClass: 'MobileLayoutModel',
+          rootPageModelClass: 'MobileRootPageModel',
+          childPageModelClass: 'MobileChildPageModel',
+          authCheck: true,
+        },
+      },
+    });
+
+    const routeModel = model.registerRoutePage('detached-home-page', {
+      active: true,
+      layoutContentElement: document.createElement('div'),
+    });
+    routeModel.context.removeDelegate(model.context);
+
+    expect(routeModel.context.isMobileLayout).toBe(true);
+    expect(routeModel.context.layout).toMatchObject({
+      layoutModelClass: 'MobileLayoutModel',
+      rootPageModelClass: 'MobileRootPageModel',
+      childPageModelClass: 'MobileChildPageModel',
     });
   });
 

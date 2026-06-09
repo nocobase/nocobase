@@ -163,4 +163,19 @@ describe('mobileOpenViewAction', () => {
       pageModelClass: 'MobileChildPageModel',
     });
   });
+
+  it('should expose the mobile layout flag on the opener model context', async () => {
+    const ctx = createContextWithModelInputArgs(
+      {
+        isMobileLayout: true,
+        pageModelClass: 'ChildPageModel',
+      },
+      {},
+    );
+    vi.spyOn(openView, 'handler').mockResolvedValue(undefined);
+
+    await mobileOpenView.handler(ctx, {} as OpenViewParams);
+
+    expect(ctx.model.context.isMobileLayout).toBe(true);
+  });
 });
