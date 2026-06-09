@@ -9,7 +9,8 @@
 
 import { css, cx } from '@emotion/css';
 import { Space, theme } from 'antd';
-import React, { isValidElement, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { FormItemInputContext } from 'antd/es/form/context';
+import React, { isValidElement, useContext, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { MetaTreeNode } from '../../flowContext';
 import { useFlowContext } from '../../FlowContextProvider';
 import { FlowContextSelector } from '../FlowContextSelector';
@@ -37,6 +38,14 @@ export interface VariableHybridInputProps {
   converters?: VariableHybridInputConverters;
   style?: React.CSSProperties;
   className?: string;
+  /**
+   * Validation status — turns the input border red (`error`) or amber
+   * (`warning`). Usually omitted: when rendered inside an antd `Form.Item`, the
+   * status is read automatically from `FormItemInputContext`, so dropping this
+   * into a `Form.Item` with failing rules colours the border with no extra
+   * wiring. An explicit prop wins over the inherited form status.
+   */
+  status?: 'error' | 'warning';
 }
 
 function reactNodeToPlainText(node: React.ReactNode): string {
@@ -226,6 +235,11 @@ const VariableHybridInputComponent: React.FC<VariableHybridInputProps> = (props)
   const { token } = theme.useToken();
   const ctx = useFlowContext();
   const { resolvedMetaTree } = useResolvedMetaTree(metaTree);
+  // Inherit the antd Form.Item validation status (red/amber border) unless an
+  // explicit `status` prop overrides it — so the border colours automatically
+  // inside a failing `Form.Item`, no extra wiring for callers.
+  const formItemStatus = useContext(FormItemInputContext)?.status;
+  const effectiveStatus = props.status ?? formItemStatus;
   const inputRef = useRef<HTMLDivElement>(null);
   const [isComposing, setIsComposing] = useState(false);
   const [changed, setChanged] = useState(false);
@@ -492,6 +506,34 @@ const VariableHybridInputComponent: React.FC<VariableHybridInputProps> = (props)
           border-color: ${token.colorBorder};
         }
       }
+
+      &.is-error {
+        border-color: ${token.colorError};
+
+        &:hover {
+          border-color: ${token.colorErrorBorderHover};
+        }
+
+        &:focus,
+        &:focus-visible {
+          border-color: ${token.colorError};
+          box-shadow: 0 0 0 ${token.controlOutlineWidth}px ${token.colorErrorOutline};
+        }
+      }
+
+      &.is-warning {
+        border-color: ${token.colorWarning};
+
+        &:hover {
+          border-color: ${token.colorWarningBorderHover};
+        }
+
+        &:focus,
+        &:focus-visible {
+          border-color: ${token.colorWarning};
+          box-shadow: 0 0 0 ${token.controlOutlineWidth}px ${token.colorWarningOutline};
+        }
+      }
     `;
   }, [token, addonBefore]);
 
@@ -505,6 +547,8 @@ const VariableHybridInputComponent: React.FC<VariableHybridInputProps> = (props)
           aria-label="textbox"
           className={cx(editorClassName, {
             'is-disabled': disabled,
+            'is-error': effectiveStatus === 'error',
+            'is-warning': effectiveStatus === 'warning',
           })}
           contentEditable={!disabled}
           data-placeholder={placeholder}
