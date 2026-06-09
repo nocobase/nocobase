@@ -476,6 +476,7 @@ export const AdminLayoutComponent = observer((props: any) => {
 
   useEffect(() => {
     const routeRepository = flowEngine.context.routeRepository;
+    const deactivateLayout = routeRepository?.activateLayout?.(adminLayoutModel?.layout);
     const subscriber = () => {
       const updatedRoutes = routeRepository?.listAccessible() || [];
       setAllAccessRoutes(updatedRoutes);
@@ -488,8 +489,9 @@ export const AdminLayoutComponent = observer((props: any) => {
 
     return () => {
       routeRepository?.unsubscribe(subscriber);
+      deactivateLayout?.();
     };
-  }, [flowEngine]);
+  }, [adminLayoutModel, adminLayoutModel?.layout?.uid, flowEngine]);
 
   useEffect(() => {
     if (typeof window === 'undefined') {

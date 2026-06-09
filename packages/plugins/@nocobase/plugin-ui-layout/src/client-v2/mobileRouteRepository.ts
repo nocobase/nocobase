@@ -23,6 +23,7 @@ type MobileLayoutRouteRepository = {
   isAccessibleLoaded?: () => boolean;
   refreshAccessible?: () => Promise<NocoBaseDesktopRoute[]>;
   ensureAccessibleLoaded?: () => Promise<NocoBaseDesktopRoute[]>;
+  activateLayout?: (layout?: { uid?: unknown }) => () => void;
 };
 
 type MobileLayoutRouteModel = {
@@ -45,6 +46,7 @@ type MobileLayoutRouteRepositoryState = {
   requestId: number;
   originalEnsureAccessibleLoaded?: MobileLayoutRouteRepository['ensureAccessibleLoaded'];
   originalRefreshAccessible?: MobileLayoutRouteRepository['refreshAccessible'];
+  deactivateLayout?: () => void;
 };
 
 const mobileLayoutRouteRepositoryStates = new WeakMap<MobileLayoutRouteRepository, MobileLayoutRouteRepositoryState>();
@@ -189,7 +191,11 @@ export function installMobileLayoutRouteRepository(
   const existingState = mobileLayoutRouteRepositoryStates.get(routeRepository);
   if (existingState) {
     existingState.refs += 1;
-    existingState.layoutUid = layoutUid;
+    if (existingState.layoutUid !== layoutUid) {
+      existingState.deactivateLayout?.();
+      existingState.deactivateLayout = routeRepository.activateLayout?.(model.layout);
+      existingState.layoutUid = layoutUid;
+    }
     return () => {
       existingState.refs -= 1;
       if (existingState.refs > 0) {
@@ -198,6 +204,7 @@ export function installMobileLayoutRouteRepository(
 
       routeRepository.ensureAccessibleLoaded = existingState.originalEnsureAccessibleLoaded;
       routeRepository.refreshAccessible = existingState.originalRefreshAccessible;
+      existingState.deactivateLayout?.();
       mobileLayoutRouteRepositoryStates.delete(routeRepository);
     };
   }
@@ -208,6 +215,7 @@ export function installMobileLayoutRouteRepository(
     requestId: 0,
     originalEnsureAccessibleLoaded: routeRepository.ensureAccessibleLoaded,
     originalRefreshAccessible: routeRepository.refreshAccessible,
+    deactivateLayout: routeRepository.activateLayout?.(model.layout),
   };
   mobileLayoutRouteRepositoryStates.set(routeRepository, state);
   routeRepository.ensureAccessibleLoaded = () => ensureMobileLayoutAccessibleRoutes(model, routeRepository);
@@ -221,6 +229,7 @@ export function installMobileLayoutRouteRepository(
 
     routeRepository.ensureAccessibleLoaded = state.originalEnsureAccessibleLoaded;
     routeRepository.refreshAccessible = state.originalRefreshAccessible;
+    state.deactivateLayout?.();
     mobileLayoutRouteRepositoryStates.delete(routeRepository);
   };
 }

@@ -69,6 +69,7 @@ type MobileRouteRepositoryForTest = {
   isAccessibleLoaded?: () => boolean;
   refreshAccessible?: () => Promise<NocoBaseDesktopRoute[]>;
   ensureAccessibleLoaded?: () => Promise<NocoBaseDesktopRoute[]>;
+  activateLayout?: (layout: { uid?: unknown }) => () => void;
   createRoute?: (
     route: NocoBaseDesktopRoute,
     options?: {
@@ -1269,6 +1270,30 @@ describe('plugin-ui-layout mobile models', () => {
     });
     expect(screen.queryByText('Admin only')).not.toBeInTheDocument();
     expect(routeRepository.setRoutes).toHaveBeenCalledWith(mobileRoutes);
+  });
+
+  it('should activate the current mobile layout while mounted', async () => {
+    const deactivateLayout = vi.fn();
+    const activateLayout = vi.fn(() => deactivateLayout);
+    const routeRepository: MobileRouteRepositoryForTest = {
+      listAccessible: () => [],
+      setRoutes: vi.fn(),
+      activateLayout,
+    };
+
+    const { unmount } = renderMobileLayoutWithRouteRepository(routeRepository);
+
+    await waitFor(() => {
+      expect(activateLayout).toHaveBeenCalledWith(
+        expect.objectContaining({
+          uid: 'mobile-layout-model-render-test',
+        }),
+      );
+    });
+
+    unmount();
+
+    expect(deactivateLayout).toHaveBeenCalledTimes(1);
   });
 
   it('should load mobile routes once when a child route also ensures accessible routes', async () => {

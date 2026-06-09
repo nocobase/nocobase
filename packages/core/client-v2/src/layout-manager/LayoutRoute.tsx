@@ -10,7 +10,7 @@
 import { FlowEngine, FlowModel, FlowModelRenderer, isInheritedFrom, useFlowEngine } from '@nocobase/flow-engine';
 import type { ModelConstructor } from '@nocobase/flow-engine';
 import { useRequest } from 'ahooks';
-import React, { useEffect, useLayoutEffect, useMemo, useRef } from 'react';
+import React, { useEffect, useMemo, useRef } from 'react';
 import { useLocation, useMatches } from 'react-router-dom';
 import { SkeletonFallback } from '../flow/components/SkeletonFallback';
 import { useApp } from '../hooks/useApp';
@@ -102,14 +102,6 @@ export const LayoutRoute = (props: LayoutRouteProps) => {
       refreshDeps: [flowEngine, layout],
     },
   );
-
-  useLayoutEffect(() => {
-    const deactivateLayout = flowEngine.context.routeRepository?.activateLayout?.(layout);
-
-    return () => {
-      deactivateLayout?.();
-    };
-  }, [flowEngine, layout]);
 
   useEffect(() => {
     if (!data) {
