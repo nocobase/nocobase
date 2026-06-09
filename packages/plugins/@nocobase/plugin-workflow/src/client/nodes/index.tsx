@@ -31,9 +31,13 @@ import {
 } from '@nocobase/client';
 import { parse, str2moment } from '@nocobase/utils/client';
 
+import { useFlowEngine } from '@nocobase/flow-engine';
+import { useMemoizedFn } from 'ahooks';
+
 import WorkflowPlugin from '..';
 import { AddNodeSlot } from '../AddNodeContext';
 import { useFlowContext } from '../FlowContext';
+import { openNodeConfigDrawer } from '../../client-v2/canvas/NodeConfigDrawer';
 import { DrawerDescription } from '../components/DrawerDescription';
 import { StatusButton } from '../components/StatusButton';
 import { JobStatusOptionsMap } from '../constants';
@@ -557,6 +561,7 @@ export function NodeDefaultView(props) {
   const { data, children } = props;
   const compile = useCompile();
   const api = useAPIClient();
+  const flowEngine = useFlowEngine();
   const { workflow, refresh } = useFlowContext() ?? {};
   const { styles } = useStyles();
   const workflowPlugin = usePlugin(WorkflowPlugin);
@@ -608,27 +613,44 @@ export function NodeDefaultView(props) {
     [data, instruction],
   );
 
-  const onOpenDrawer = useCallback(
-    function (ev) {
-      if (dragContext?.consumeClick?.()) {
-        ev.preventDefault();
+  // Nodes whose config UI has migrated to v2 carry a `FieldsetLoader`; for those
+  // the v1 canvas opens the v2 antd config drawer (`ctx.viewer.drawer`) instead
+  // of the Formily `Action.Drawer` below — the config form is then maintained in
+  // one place (client-v2). The v1 Formily drawer subtree stays mounted but never
+  // opens for these nodes (its `editingConfig` is never set). Returns true when
+  // it handled the open, so the caller skips `setEditingConfig`.
+  const openConfig = useMemoizedFn(() => {
+    if (!instruction?.FieldsetLoader) {
+      return false;
+    }
+    openNodeConfigDrawer({ ctx: flowEngine.context, data, instruction, t: lang, workflow, refresh });
+    return true;
+  });
+
+  const onOpenDrawer = useMemoizedFn(function (ev) {
+    if (dragContext?.consumeClick?.()) {
+      ev.preventDefault();
+      return;
+    }
+    if (ev.target === ev.currentTarget) {
+      if (openConfig()) {
         return;
       }
-      if (ev.target === ev.currentTarget) {
+      setEditingConfig(true);
+      return;
+    }
+    const whiteSet = new Set(['workflow-node-meta', 'workflow-node-config-button', 'ant-input-disabled']);
+    for (let el = ev.target; el && el !== ev.currentTarget && el !== document.documentElement; el = el.parentNode) {
+      if ((Array.from(el.classList) as string[]).some((name: string) => whiteSet.has(name))) {
+        ev.stopPropagation();
+        if (openConfig()) {
+          return;
+        }
         setEditingConfig(true);
         return;
       }
-      const whiteSet = new Set(['workflow-node-meta', 'workflow-node-config-button', 'ant-input-disabled']);
-      for (let el = ev.target; el && el !== ev.currentTarget && el !== document.documentElement; el = el.parentNode) {
-        if ((Array.from(el.classList) as string[]).some((name: string) => whiteSet.has(name))) {
-          setEditingConfig(true);
-          ev.stopPropagation();
-          return;
-        }
-      }
-    },
-    [dragContext],
-  );
+    }
+  });
 
   const onCardMouseDown = useCallback(
     (event) => {

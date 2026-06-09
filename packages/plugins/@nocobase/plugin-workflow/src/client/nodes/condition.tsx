@@ -7,159 +7,31 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { evaluators } from '@nocobase/evaluators/client';
+/**
+ * v1 condition node. The metadata + config UI now live ONCE in the v2 instruction
+ * (`client-v2/nodes/condition.tsx`): this class `extends` it (the allowed v1 → v2
+ * direction), inheriting `title`/`type`/`group`/`icon`/`description`/`branching`/
+ * `testable` and the three modern loaders (`FieldsetLoader` / `PresetFieldsetLoader`
+ * / `ComponentLoader`). The legacy Formily config fields (`fieldset` / `presetFieldset`
+ * / `scope` / `components`) are deliberately dropped — the v1 canvas now routes the
+ * config drawer and add-node preset through the inherited loaders (see
+ * `nodes/index.tsx` and `AddNodeContext.tsx`).
+ *
+ * Only the v1 in-canvas card render (`Component`) is kept here, since the v1 canvas
+ * still renders cards with Formily/v1 contexts. It is deleted with the legacy canvas
+ * at retirement.
+ */
+
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { Instruction, NodeDefaultView } from '.';
+
+import V2ConditionInstruction from '../../client-v2/nodes/condition';
 import { Branch } from '../Branch';
-import { RadioWithTooltip, RadioWithTooltipOption } from '../components/RadioWithTooltip';
-import { renderEngineReference } from '../components/renderEngineReference';
 import { useFlowContext } from '../FlowContext';
-import { lang, NAMESPACE } from '../locale';
 import useStyles from '../style';
-import { useWorkflowVariableOptions, WorkflowVariableTextArea } from '../variable';
-import { CalculationConfig } from '../components/Calculation';
-import { QuestionCircleOutlined } from '@ant-design/icons';
+import { NodeDefaultView } from '.';
 
-const BRANCH_INDEX = {
-  DEFAULT: null,
-  ON_TRUE: 1,
-  ON_FALSE: 0,
-} as const;
-
-export default class extends Instruction {
-  title = `{{t("Condition", { ns: "${NAMESPACE}" })}}`;
-  type = 'condition';
-  group = 'control';
-  description = `{{t('Based on boolean result of the calculation to determine whether to "continue" or "exit" the process, or continue on different branches of "yes" and "no".', { ns: "${NAMESPACE}" })}}`;
-  icon = (<QuestionCircleOutlined style={{}} />);
-  fieldset = {
-    rejectOnFalse: {
-      type: 'boolean',
-      title: `{{t("Mode", { ns: "${NAMESPACE}" })}}`,
-      'x-decorator': 'FormItem',
-      'x-component': 'Radio.Group',
-      'x-component-props': {
-        disabled: true,
-      },
-      enum: [
-        {
-          value: true,
-          label: `{{t('Continue when "Yes"', { ns: "${NAMESPACE}" })}}`,
-        },
-        {
-          value: false,
-          label: `{{t('Branch into "Yes" and "No"', { ns: "${NAMESPACE}" })}}`,
-        },
-      ],
-    },
-    engine: {
-      type: 'string',
-      title: `{{t("Calculation engine", { ns: "${NAMESPACE}" })}}`,
-      'x-decorator': 'FormItem',
-      'x-component': 'RadioWithTooltip',
-      'x-component-props': {
-        options: [
-          ['basic', { label: `{{t("Basic", { ns: "${NAMESPACE}" })}}` }],
-          ...Array.from(evaluators.getEntities()).filter(([key]) => ['math.js', 'formula.js'].includes(key)),
-        ].reduce((result: RadioWithTooltipOption[], [value, options]: any) => result.concat({ value, ...options }), []),
-      },
-      required: true,
-      default: 'basic',
-    },
-    calculation: {
-      type: 'object',
-      title: `{{t("Condition", { ns: "${NAMESPACE}" })}}`,
-      'x-decorator': 'FormItem',
-      'x-component': 'CalculationConfig',
-      'x-reactions': {
-        dependencies: ['engine'],
-        fulfill: {
-          state: {
-            visible: '{{$deps[0] === "basic"}}',
-          },
-        },
-      },
-      required: true,
-    },
-    expression: {
-      type: 'string',
-      title: `{{t("Condition expression", { ns: "${NAMESPACE}" })}}`,
-      'x-decorator': 'FormItem',
-      'x-component': 'WorkflowVariableTextArea',
-      'x-component-props': {
-        changeOnSelect: true,
-      },
-      ['x-validator'](value, rules, { form }) {
-        const { values } = form;
-        const { evaluate } = evaluators.get(values.engine);
-        const exp = value.trim().replace(/{{([^{}]+)}}/g, ' "1" ');
-        try {
-          evaluate(exp);
-          return '';
-        } catch (e) {
-          return lang('Expression syntax error');
-        }
-      },
-      'x-reactions': {
-        dependencies: ['engine'],
-        fulfill: {
-          state: {
-            visible: '{{$deps[0] !== "basic"}}',
-          },
-          schema: {
-            description: '{{renderEngineReference($deps[0])}}',
-          },
-        },
-      },
-      required: true,
-    },
-  };
-  presetFieldset = {
-    rejectOnFalse: {
-      type: 'boolean',
-      title: `{{t("Mode", { ns: "${NAMESPACE}" })}}`,
-      'x-decorator': 'FormItem',
-      'x-component': 'Radio.Group',
-      enum: [
-        {
-          label: `{{t('Continue when "Yes"', { ns: "${NAMESPACE}" })}}`,
-          value: true,
-        },
-        {
-          label: `{{t('Branch into "Yes" and "No"', { ns: "${NAMESPACE}" })}}`,
-          value: false,
-        },
-      ],
-      default: true,
-    },
-  };
-
-  branching = ({ rejectOnFalse = true } = {}) => {
-    return rejectOnFalse
-      ? false
-      : [
-          {
-            label: `{{t('Yes', { ns: "${NAMESPACE}" })}}`,
-            value: BRANCH_INDEX.ON_TRUE,
-          },
-          {
-            label: `{{t('No', { ns: "${NAMESPACE}" })}}`,
-            value: BRANCH_INDEX.ON_FALSE,
-          },
-        ];
-  };
-
-  scope = {
-    renderEngineReference,
-    useWorkflowVariableOptions,
-  };
-  components = {
-    CalculationConfig,
-    WorkflowVariableTextArea,
-    RadioWithTooltip,
-  };
-
+export default class extends V2ConditionInstruction {
   Component({ data }) {
     // eslint-disable-next-line react-hooks/rules-of-hooks
     const { t } = useTranslation();
@@ -190,5 +62,4 @@ export default class extends Instruction {
       </NodeDefaultView>
     );
   }
-  testable = true;
 }
