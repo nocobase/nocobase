@@ -92,6 +92,12 @@ interface RoleUiLayoutDesktopRouteRecord {
   uiLayoutUid?: string;
 }
 
+type RoleUiLayoutDesktopRouteCreateValues = {
+  roleName: string;
+  uiLayoutUid: string;
+  desktopRouteId: number;
+};
+
 interface LayoutSummaryRecord {
   uid: string;
   layout: UiLayoutRecord;
@@ -115,11 +121,7 @@ interface RoleUiLayoutsResource extends ListResource {
 
 interface RoleUiLayoutDesktopRoutesResource extends ListResource {
   create: (params: {
-    values: {
-      roleName: string;
-      uiLayoutUid: string;
-      desktopRouteId: number;
-    };
+    values: RoleUiLayoutDesktopRouteCreateValues | RoleUiLayoutDesktopRouteCreateValues[];
   }) => Promise<unknown>;
   destroy: (params: {
     filter: {
@@ -473,17 +475,14 @@ export default function LayoutAwareDesktopRoutesPermissionsTab(props: Permission
       });
     }
     if (changes.add.length) {
-      await Promise.all(
-        changes.add.map((desktopRouteId) =>
-          roleUiLayoutDesktopRoutesResource.create({
-            values: {
-              roleName: role.name,
-              uiLayoutUid: activeLayoutUid,
-              desktopRouteId,
-            },
-          }),
-        ),
-      );
+      const values = changes.add.map((desktopRouteId) => ({
+        roleName: role.name,
+        uiLayoutUid: activeLayoutUid,
+        desktopRouteId,
+      }));
+      await roleUiLayoutDesktopRoutesResource.create({
+        values: values.length === 1 ? values[0] : values,
+      });
     }
     await roleScopedRouteService.refreshAsync();
     ctx.message.success(t('Saved successfully'));

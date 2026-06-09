@@ -490,27 +490,26 @@ describe('plugin-ui-layout route permissions', () => {
 
     await waitFor(() => {
       expect(resource.scopedRouteCreate).toHaveBeenCalledWith({
-        values: {
-          roleName: 'layout-member',
-          uiLayoutUid: 'mobile-layout',
-          desktopRouteId: 10,
-        },
+        values: [
+          {
+            roleName: 'layout-member',
+            uiLayoutUid: 'mobile-layout',
+            desktopRouteId: 10,
+          },
+          {
+            roleName: 'layout-member',
+            uiLayoutUid: 'mobile-layout',
+            desktopRouteId: 11,
+          },
+          {
+            roleName: 'layout-member',
+            uiLayoutUid: 'mobile-layout',
+            desktopRouteId: 12,
+          },
+        ],
       });
     });
-    expect(resource.scopedRouteCreate).toHaveBeenCalledWith({
-      values: {
-        roleName: 'layout-member',
-        uiLayoutUid: 'mobile-layout',
-        desktopRouteId: 11,
-      },
-    });
-    expect(resource.scopedRouteCreate).toHaveBeenCalledWith({
-      values: {
-        roleName: 'layout-member',
-        uiLayoutUid: 'mobile-layout',
-        desktopRouteId: 12,
-      },
-    });
+    expect(resource.scopedRouteCreate).toHaveBeenCalledTimes(1);
     expect(resource.scopedRouteCreate).not.toHaveBeenCalledWith(
       expect.objectContaining({
         values: expect.objectContaining({
