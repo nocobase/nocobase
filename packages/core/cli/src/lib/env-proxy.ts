@@ -603,6 +603,21 @@ function trimTrailingSlash(value: string): string {
   return value.endsWith('/') ? value.slice(0, -1) : value;
 }
 
+function dedupeAssetPrefix(value: string, prefix: string): string {
+  const normalizedPrefix = ensureTrailingSlash(prefix);
+  const nestedPrefix = normalizedPrefix.replace(/^\/+/, '');
+  if (!nestedPrefix) {
+    return value;
+  }
+
+  let result = value;
+  const duplicatePrefix = `${normalizedPrefix}${nestedPrefix}`;
+  while (result.startsWith(duplicatePrefix)) {
+    result = `${normalizedPrefix}${result.slice(duplicatePrefix.length)}`;
+  }
+  return result;
+}
+
 function renderTemplateString(template: string, values: Record<string, string>): string {
   return template.replace(/{{\s*([\w.]+)\s*}}/g, (_match, key: string) => values[key] ?? '');
 }
@@ -650,6 +665,10 @@ function rewriteHtmlAssetPublicPath(html: string, currentPublicPath: string, nex
   let rewritten = html.replace(new RegExp(`((?:src|href)=["'])${escapedCurrentPrefix}`, 'g'), `$1${nextPrefix}`);
   rewritten = rewritten.replace(/((?:src|href)=["'])(?:\.\/)?assets\//g, `$1${nextPrefix}assets/`);
   rewritten = rewritten.replace(/((?:src|href)=["'])\/assets\//g, `$1${nextPrefix}assets/`);
+  rewritten = rewritten.replace(
+    /((?:src|href)=["'])([^"']+)/g,
+    (_match, attributePrefix: string, assetPath: string) => `${attributePrefix}${dedupeAssetPrefix(assetPath, nextPrefix)}`,
+  );
   return rewritten.replace(new RegExp(`((?:src|href)=["'])${escapeRegExp(trimTrailingSlash(nextPrefix))}//+`, 'g'), '$1');
 }
 
