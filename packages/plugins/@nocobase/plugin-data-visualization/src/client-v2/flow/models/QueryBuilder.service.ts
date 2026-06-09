@@ -14,6 +14,14 @@ function isDatabaseDataSource(dataSource: any) {
   return dataSource?.key === DEFAULT_DATA_SOURCE_KEY || dataSource?.options?.isDBInstance || dataSource?.isDBInstance;
 }
 
+export function getDataSourceCapabilities(dataSource: any) {
+  return dataSource?.options?.options?.capabilities;
+}
+
+function supportsQueryBuilder(dataSource: any) {
+  return isDatabaseDataSource(dataSource) || getDataSourceCapabilities(dataSource)?.query;
+}
+
 function getFieldInterface(dm: any, field: any) {
   return field?.getInterfaceOptions?.() || dm?.collectionFieldInterfaceManager?.getFieldInterface?.(field?.interface);
 }
@@ -202,7 +210,7 @@ export function getCollectionOptions(dm: any, compile: (v: any) => string) {
 
   const dataSources = dm.getDataSources?.() || [];
   return dataSources
-    .filter(isDatabaseDataSource)
+    .filter(supportsQueryBuilder)
     .map((dataSource: any) => ({
       key: dataSource.key,
       displayName: dataSource.displayName,

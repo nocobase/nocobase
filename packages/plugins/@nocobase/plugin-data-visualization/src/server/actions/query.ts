@@ -16,9 +16,39 @@ import { middlewares } from '@nocobase/server';
 import { QueryParams } from '../types';
 import { resolveVariablesTemplate } from '@nocobase/plugin-flow-engine';
 
-const getDB = (ctx: Context, dataSource: string) => {
+const getDataSource = (ctx: Context, dataSource: string) => {
+  return ctx.app.dataSourceManager.dataSources.get(dataSource);
+};
+
+const getQueryCollectionSource = (ctx: Context, dataSource: string) => {
   const ds = ctx.app.dataSourceManager.dataSources.get(dataSource);
-  return ds?.collectionManager.db;
+  return ds?.collectionManager.db || ds?.collectionManager;
+};
+
+const getQueryPermissionSource = (ctx: Context, dataSource: string) => {
+  const source = getQueryCollectionSource(ctx, dataSource);
+  const ds = getDataSource(ctx, dataSource);
+
+  if (!ds || ds.collectionManager.db || !source) {
+    return source || ctx.db;
+  }
+
+  return {
+    getCollection: source.getCollection.bind(source),
+    getFieldByPath: ctx.db.getFieldByPath.bind(ctx.db),
+    getRepository: ctx.db.getRepository.bind(ctx.db),
+  };
+};
+
+const getRepository = (ctx: Context, dataSource: string, collection: string) => {
+  const ds = getDataSource(ctx, dataSource);
+  const source = getQueryCollectionSource(ctx, dataSource) || ctx.db;
+
+  if (ds && !ds.collectionManager.db) {
+    return ds.collectionManager.getRepository(collection);
+  }
+
+  return source.getRepository(collection);
 };
 
 const getTimezone = (ctx: Context) =>
@@ -31,7 +61,7 @@ export const checkPermission = async (ctx: Context, next: Next) => {
   try {
     const result = await applyQueryPermission({
       acl,
-      db: getDB(ctx, values.dataSource) || ctx.db,
+      db: getQueryPermissionSource(ctx, values.dataSource),
       resourceName: values.collection,
       query: values,
       currentUser: ctx.state?.currentUser,
@@ -53,9 +83,9 @@ export const checkPermission = async (ctx: Context, next: Next) => {
 
 export const queryData = async (ctx: Context, next: Next) => {
   const { dataSource, collection, ...queryOptions } = ctx.action.params.values;
-  const db = getDB(ctx, dataSource) || ctx.db;
-  const repository = db.getRepository(collection);
+  const repository = getRepository(ctx, dataSource, collection);
   ctx.body = await repository.query({
+    context: ctx,
     ...queryOptions,
     timezone: ctx.get?.('x-timezone'),
   });

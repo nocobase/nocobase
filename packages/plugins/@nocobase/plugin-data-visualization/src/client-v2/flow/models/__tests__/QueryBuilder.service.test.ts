@@ -65,10 +65,37 @@ describe('query builder service', () => {
         },
       ],
     };
+    const externalNocobase = {
+      key: 'externalNocobase',
+      displayName: 'External NocoBase',
+      options: {
+        options: {
+          capabilities: {
+            query: true,
+          },
+        },
+      },
+      getCollections: () => [
+        {
+          name: 'remoteOrders',
+          title: 'Remote orders',
+        },
+      ],
+    };
+    const unsupported = {
+      key: 'unsupported',
+      displayName: 'Unsupported',
+      getCollections: () => [
+        {
+          name: 'unsupportedOrders',
+          title: 'Unsupported orders',
+        },
+      ],
+    };
     const dm = {
       getCollection: (_dataSourceKey: string, collectionName: string) =>
         collectionName === 'orders' ? orders : collectionName === 'customers' ? customers : undefined,
-      getDataSources: () => [main, external],
+      getDataSources: () => [main, external, externalNocobase, unsupported],
     };
 
     expect(getCollectionOptions(dm, (value) => value)).toEqual([
@@ -84,6 +111,11 @@ describe('query builder service', () => {
         value: 'external',
         label: 'External',
         children: [{ value: 'externalOrders', label: 'External orders' }],
+      },
+      {
+        value: 'externalNocobase',
+        label: 'External NocoBase',
+        children: [{ value: 'remoteOrders', label: 'Remote orders' }],
       },
     ]);
     expect(getFieldOptions(dm, (value) => value, ['main', 'orders'])).toMatchObject([

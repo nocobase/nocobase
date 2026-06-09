@@ -163,7 +163,10 @@ export const useCollectionOptions = () => {
     },
   });
   const options = allCollections
-    .filter(({ key, isDBInstance }) => key === DEFAULT_DATA_SOURCE_KEY || isDBInstance)
+    .filter(
+      ({ key, isDBInstance, options, capabilities }) =>
+        key === DEFAULT_DATA_SOURCE_KEY || isDBInstance || options?.capabilities?.query || capabilities?.query,
+    )
     .map(({ key, displayName, collections }) => ({
       value: key,
       label: displayName,
