@@ -1135,7 +1135,7 @@ GridModel.registerFlow({
 /**
  * 将多列栅格 rows 转换为移动端单列 rows。
  * 遍历原 rows 的行与列顺序，把每个原列（过滤空白列后）变成一个新行（仅一列）。
- * 行 key 使用 uid() 生成，保持插入顺序即可。
+ * 行 key 使用原 rowId 与 columnIndex 生成，避免每次渲染产生随机 key 导致移动端滚动位置丢失。
  * @param rows 原始多列 rows
  * @returns 单列 rows
  */
@@ -1147,10 +1147,10 @@ export function transformRowsToSingleColumn(
   const singleColumnRows: Record<string, string[][]> = {};
   Object.keys(rows).forEach((rowId) => {
     const columns = rows[rowId];
-    columns.forEach((column) => {
+    columns.forEach((column, columnIndex) => {
       const filtered = column.filter((id) => id !== emptyColumnUid);
       if (filtered.length > 0) {
-        singleColumnRows[uid()] = [filtered];
+        singleColumnRows[`mobile:${encodeURIComponent(rowId)}:${columnIndex}`] = [filtered];
       }
     });
   });

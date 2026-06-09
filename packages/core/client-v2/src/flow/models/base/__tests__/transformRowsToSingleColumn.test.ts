@@ -55,4 +55,22 @@ describe('transformRowsToSingleColumn', () => {
     const all = Object.values(result).map((r) => r[0]);
     expect(all).toEqual([['x'], ['y']]);
   });
+
+  it('should keep generated row keys stable for the same input', () => {
+    const rows = buildRows([
+      [['a'], ['b']],
+      [['c'], ['d']],
+    ]);
+
+    expect(Object.keys(transformRowsToSingleColumn(rows))).toEqual(Object.keys(transformRowsToSingleColumn(rows)));
+  });
+
+  it('should keep existing row keys stable when appending new mobile rows', () => {
+    const before = buildRows([[['a'], ['b']]]);
+    const after = buildRows([[['a'], ['b']], [['c']]]);
+    const beforeKeys = Object.keys(transformRowsToSingleColumn(before));
+    const afterKeys = Object.keys(transformRowsToSingleColumn(after));
+
+    expect(afterKeys.slice(0, beforeKeys.length)).toEqual(beforeKeys);
+  });
 });
