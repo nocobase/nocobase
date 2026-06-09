@@ -1172,6 +1172,46 @@ describe('AdminLayoutModel menu items', () => {
     expect(adminLayoutModel.menuRouteRefreshVersion).toBe(refreshBefore + 1);
   });
 
+  it('should refresh the owning admin layout when hiding custom layout menu routes dynamically', () => {
+    const defaultAdminLayoutModel = engine.createModel<AdminLayoutModel>({
+      uid: ADMIN_LAYOUT_MODEL_UID,
+      use: AdminLayoutModel,
+    });
+    const customAdminLayoutModel = engine.createModel<AdminLayoutModel>({
+      uid: 'custom-admin-layout-model',
+      use: AdminLayoutModel,
+      props: {
+        layout: {
+          routeName: 'admin2',
+          routePath: '/admin2',
+          rootRouteName: 'admin2',
+          uid: 'custom-admin-layout-model',
+          layoutModelClass: 'AdminLayoutModel',
+          rootPageModelClass: 'RootPageModel',
+          childPageModelClass: 'ChildPageModel',
+          authCheck: true,
+        },
+      },
+    });
+    const model = engine.createModel<AdminLayoutMenuItemModel>({
+      uid: 'menu-item-custom-layout-dynamic-hidden',
+      use: AdminLayoutMenuItemModel,
+      props: {
+        route: createRoute(),
+      },
+    });
+
+    model.setParent(customAdminLayoutModel);
+
+    const defaultRefreshBefore = defaultAdminLayoutModel.menuRouteRefreshVersion;
+    const customRefreshBefore = customAdminLayoutModel.menuRouteRefreshVersion;
+
+    model.setHidden(true);
+
+    expect(customAdminLayoutModel.menuRouteRefreshVersion).toBe(customRefreshBefore + 1);
+    expect(defaultAdminLayoutModel.menuRouteRefreshVersion).toBe(defaultRefreshBefore);
+  });
+
   it('should render hidden menu item with opacity and keep original title in config mode', () => {
     const model = engine.createModel<AdminLayoutMenuItemModel>({
       uid: 'menu-item-hidden-in-config',

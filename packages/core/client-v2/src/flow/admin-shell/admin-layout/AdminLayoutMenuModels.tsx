@@ -66,6 +66,26 @@ const omitMenuRuntimeProps = (props: Record<string, unknown> = {}) => {
   return persistableProps;
 };
 
+type MenuRouteTreeRefreshableModel = FlowModel & {
+  refreshMenuRouteTree?: () => void;
+};
+
+function isMenuRouteTreeRefreshableModel(model: FlowModel | undefined): model is MenuRouteTreeRefreshableModel {
+  return typeof (model as MenuRouteTreeRefreshableModel | undefined)?.refreshMenuRouteTree === 'function';
+}
+
+function getOwnerMenuRouteTreeRefreshModel(model: FlowModel) {
+  let current = model.parent as FlowModel | undefined;
+  while (current) {
+    if (isMenuRouteTreeRefreshableModel(current)) {
+      return current;
+    }
+    current = current.parent as FlowModel | undefined;
+  }
+
+  return undefined;
+}
+
 export class AdminLayoutMenuItemModel extends FlowModel<AdminLayoutMenuItemStructure> {
   private creationPersisted = false;
   private persistedStateHydrated = false;
@@ -300,7 +320,12 @@ export class AdminLayoutMenuItemModel extends FlowModel<AdminLayoutMenuItemStruc
     const previous = this.hidden;
     super.setHidden(value);
     if (previous !== this.hidden) {
-      (this.flowEngine.getModel?.(ADMIN_LAYOUT_MODEL_UID) as any)?.refreshMenuRouteTree?.();
+      const defaultLayoutModel = this.flowEngine.getModel?.(ADMIN_LAYOUT_MODEL_UID);
+      const refreshableModel =
+        getOwnerMenuRouteTreeRefreshModel(this) ||
+        (isMenuRouteTreeRefreshableModel(defaultLayoutModel) ? defaultLayoutModel : undefined);
+
+      refreshableModel?.refreshMenuRouteTree?.();
     }
   }
 
