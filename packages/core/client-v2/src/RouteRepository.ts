@@ -88,7 +88,7 @@ export class RouteRepository {
    * @returns {boolean} 是否已初始化完成
    */
   isAccessibleLoaded() {
-    return this.accessibleLoaded;
+    return this.accessibleLoaded && this.accessibleLayoutUid === this.getCurrentLayoutUid();
   }
 
   /**

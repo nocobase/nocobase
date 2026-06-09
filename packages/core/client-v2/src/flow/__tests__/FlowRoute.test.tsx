@@ -13,6 +13,7 @@ import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { render, screen, waitFor } from '@testing-library/react';
 import { FlowContextProvider, FlowEngine, FlowEngineProvider, type FlowModel } from '@nocobase/flow-engine';
 import FlowRoute from '../components/FlowRoute';
+import { RouteRepository } from '../../RouteRepository';
 
 type MockAdminLayoutModel = FlowModel & {
   registerRoutePage: ReturnType<typeof vi.fn>;
@@ -319,6 +320,94 @@ describe('FlowRoute', () => {
         }),
       );
     });
+  });
+
+  it('should ensure accessible routes for the current layout before bridging', async () => {
+    const engine = new FlowEngine();
+    const request = vi.fn().mockResolvedValue({
+      data: {
+        data: [
+          {
+            type: 'flowPage',
+            schemaUid: 'mobile-page',
+          },
+        ],
+      },
+    });
+    const routeRepository = new RouteRepository({
+      api: {
+        request,
+        resource: vi.fn(),
+      },
+    } as never);
+    routeRepository.setRoutes([], 'admin-layout-model');
+    const deactivateLayout = routeRepository.activateLayout({
+      uid: 'mobile-layout-model',
+    });
+    engine.context.defineProperty('routeRepository', {
+      value: routeRepository,
+    });
+    engine.context.defineProperty('app', {
+      value: {
+        getPublicPath: () => '/v2/',
+        router: {
+          getBasename: () => '/v2',
+        },
+      },
+    });
+    const routeModel = engine.createModel({
+      uid: 'mobile-route-model',
+      use: 'FlowModel',
+    });
+    routeModel.context.defineProperty('layout', {
+      value: {
+        routeName: 'mobile',
+        routePath: '/mobile',
+        rootRouteName: 'mobile',
+        uid: 'mobile-layout-model',
+        layoutModelClass: 'MobileLayoutModel',
+        rootPageModelClass: 'MobileRootPageModel',
+        childPageModelClass: 'MobileChildPageModel',
+        authCheck: true,
+      },
+    });
+
+    const mobileLayoutModel: MockAdminLayoutModel = Object.assign(
+      engine.createModel({
+        uid: 'mobile-layout-model',
+        use: 'FlowModel',
+      }),
+      {
+        registerRoutePage: vi.fn(),
+        updateRoutePage: vi.fn(),
+        unregisterRoutePage: vi.fn(),
+      },
+    );
+
+    render(
+      <FlowEngineProvider engine={engine}>
+        <FlowContextProvider context={routeModel.context}>
+          <MemoryRouter initialEntries={['/mobile/mobile-page']}>
+            <Routes>
+              <Route path="/mobile/:name" element={<FlowRoute />} />
+            </Routes>
+          </MemoryRouter>
+        </FlowContextProvider>
+      </FlowEngineProvider>,
+    );
+
+    await waitFor(() => {
+      expect(request).toHaveBeenCalledWith({
+        url: '/desktopRoutes:listAccessible',
+        params: {
+          tree: true,
+          sort: 'sort',
+          layout: 'mobile-layout-model',
+        },
+      });
+      expect(mobileLayoutModel.registerRoutePage).toHaveBeenCalledWith('mobile-page', expect.any(Object));
+    });
+    deactivateLayout();
   });
 
   it('should fail fast when admin-layout-model is missing', () => {

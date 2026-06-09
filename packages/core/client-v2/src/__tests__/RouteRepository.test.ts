@@ -106,6 +106,18 @@ describe('RouteRepository', () => {
     });
   });
 
+  it('should report accessible routes as unloaded when the active layout changes', () => {
+    const { repository } = createRouteRepository();
+
+    repository.setRoutes([], 'first-layout-model');
+    const deactivateLayout = repository.activateLayout({
+      uid: 'second-layout-model',
+    });
+
+    expect(repository.isAccessibleLoaded()).toBe(false);
+    deactivateLayout();
+  });
+
   it('should pass the default admin layout when creating a route', async () => {
     const { repository, create } = createRouteRepository();
 
