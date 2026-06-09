@@ -76,14 +76,6 @@ export class PluginUsersClientV2 extends Plugin {
         extends: 'RecordSelectFieldModel',
         loader: () => import('./models/UserRolesSelectFieldModel'),
       },
-      UserCreateFormModel: {
-        extends: 'CreateFormModel',
-        loader: () => import('./models/UserProfileFormModels'),
-      },
-      UserEditFormModel: {
-        extends: 'EditFormModel',
-        loader: () => import('./models/UserProfileFormModels'),
-      },
       ChangePasswordItemModel: {
         extends: 'UserCenterItemModel',
         loader: () => import('./user-center/ChangePasswordItemModel'),

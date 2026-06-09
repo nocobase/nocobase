@@ -12,7 +12,7 @@ import { Select, Tag, Tooltip } from 'antd';
 import React from 'react';
 import { FieldModel } from '../base/FieldModel';
 import { MobileSelect } from './mobile-components/MobileSelect';
-import { enumToOptions, getSelectedEnumLabels } from '../../internal/utils/enumOptionsUtils';
+import { enumToOptions, getSelectedEnumLabels, translateOptionLabel } from '../../internal/utils/enumOptionsUtils';
 
 const getOriginalEnumOptions = (model: SelectFieldModel) => {
   const fromEnum = enumToOptions(model.context.collectionField?.uiSchema?.enum, (text) => text) || [];
@@ -29,12 +29,12 @@ export class SelectFieldModel extends FieldModel {
     const options = this.props.options?.map((v) => {
       return {
         ...v,
-        label: this.translate(v.label),
+        label: translateOptionLabel(v.label, this.translate),
       };
     });
     const selectedLabels = getSelectedEnumLabels(this.props.value, fallbackOptions).map((item) => ({
       ...item,
-      label: this.translate(item.label),
+      label: translateOptionLabel(item.label, this.translate),
     }));
     const value = Array.isArray(this.props.value)
       ? selectedLabels

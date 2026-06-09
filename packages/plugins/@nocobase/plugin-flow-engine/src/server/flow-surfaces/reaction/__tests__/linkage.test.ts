@@ -21,6 +21,7 @@ import {
   compileActionLinkageCanonicalRules,
   compileBlockLinkageCanonicalRules,
   compileFieldLinkageCanonicalRules,
+  normalizeBlockLinkageRules,
   normalizeFieldLinkageRules,
   validateActionLinkageRulesAgainstCapability,
   validateBlockLinkageRulesAgainstCapability,
@@ -112,6 +113,48 @@ describe('flow-surfaces reaction linkage helpers', () => {
         ],
       },
     ]);
+  });
+
+  it('should normalize backend query conditions for block linkage canonical writes', () => {
+    const normalized = normalizeBlockLinkageRules([
+      {
+        key: 'hide-from-sales',
+        title: 'Hide from sales',
+        enable: true,
+        condition: {
+          $and: [
+            {
+              'user.roles.name': {
+                $eq: '销售',
+              },
+            },
+          ],
+        },
+        actions: [],
+      },
+    ]);
+
+    expect(normalized[0].when).toEqual({
+      logic: '$and',
+      items: [
+        {
+          path: 'user.roles.name',
+          operator: '$eq',
+          value: '销售',
+        },
+      ],
+    });
+
+    expect(compileBlockLinkageCanonicalRules(normalized)[0].condition).toEqual({
+      logic: '$and',
+      items: [
+        {
+          path: '{{ ctx.user.roles.name }}',
+          operator: '$eq',
+          value: '销售',
+        },
+      ],
+    });
   });
 
   it('should compile action linkage rules to current canonical shape', () => {

@@ -67,6 +67,13 @@ export default function RoleUsersManager(props: RoleTabProps) {
       type: 'drawer',
       width: '50%',
       closable: true,
+      styles: {
+        body: {
+          display: 'flex',
+          flexDirection: 'column',
+          overflow: 'hidden',
+        },
+      },
       content: () => (
         <ResourcePickerView<User>
           title={t('Add users')}
