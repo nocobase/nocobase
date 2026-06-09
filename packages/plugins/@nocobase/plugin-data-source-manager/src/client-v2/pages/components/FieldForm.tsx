@@ -53,6 +53,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useT } from '../../locale';
 import { PluginDataSourceManagerClientV2 } from '../../plugin';
 import { compileLegacyTemplate, compileLegacyTemplateText } from '../../utils/compileLegacyTemplate';
+import { getErrorMessage, isFormValidationError } from '../../utils/error';
 import { getCollectionFieldActionUrl } from './collectionFieldApi';
 import {
   filterCreateFieldInterfacesByCollectionTemplate,
@@ -117,23 +118,6 @@ function normalizeListResponse(response: any) {
     return payload;
   }
   return Array.isArray(payload?.data) ? payload.data : [];
-}
-
-function isFormValidationError(error: unknown) {
-  return Array.isArray((error as { errorFields?: unknown[] })?.errorFields);
-}
-
-function getSubmitErrorMessage(error: unknown, fallback: string) {
-  const errors = get(error, 'response.data.errors') as Array<{ message?: string }> | undefined;
-  const message =
-    errors
-      ?.map((item) => item.message)
-      .filter(Boolean)
-      .join('\n') ||
-    get(error, 'response.data.message') ||
-    get(error, 'message');
-
-  return typeof message === 'string' && message ? message : fallback;
 }
 
 function toNamePath(name: string) {
@@ -1977,7 +1961,7 @@ export function FieldForm(props: FieldFormProps) {
     } catch (error) {
       if (!isFormValidationError(error)) {
         notification.error({
-          message: getSubmitErrorMessage(error, t('Submit failed')),
+          message: getErrorMessage(error, t('Submit failed')),
         });
       }
       throw error;

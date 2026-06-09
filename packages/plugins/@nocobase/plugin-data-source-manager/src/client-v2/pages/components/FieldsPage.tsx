@@ -34,6 +34,7 @@ import { useT } from '../../locale';
 import { PluginDataSourceManagerClientV2 } from '../../plugin';
 import type { DataSourceTypeOptions } from '../../plugin';
 import { compileLegacyTemplate } from '../../utils/compileLegacyTemplate';
+import { getErrorMessage, isFormValidationError } from '../../utils/error';
 import { getCollectionFieldActionUrl } from './collectionFieldApi';
 import {
   filterCreateFieldInterfacesByCollectionTemplate,
@@ -90,20 +91,6 @@ type SourceFieldOption = {
 function normalizeListResponse(response: any) {
   const payload = response?.data?.data;
   return Array.isArray(payload) ? payload : [];
-}
-
-function getErrorMessage(error: unknown, fallback: string) {
-  const response = (error as any)?.response?.data;
-  const message =
-    (Array.isArray(response?.errors)
-      ? response.errors
-          .map((item: { message?: string }) => item.message)
-          .filter(Boolean)
-          .join('\n')
-      : undefined) ||
-    response?.message ||
-    (error as Error)?.message;
-  return typeof message === 'string' && message ? message : fallback;
 }
 
 const fallbackFieldInterfaceGroups: Record<string, { label: string; order: number }> = {
@@ -500,7 +487,7 @@ function ViewSyncFieldsDrawer(props: {
 }) {
   const t = useT();
   const ctx = useFlowContext();
-  const { message } = App.useApp();
+  const { message, notification } = App.useApp();
   const [form] = Form.useForm();
   const [fields, setFields] = useState<ViewFieldRecord[]>([]);
   const [loading, setLoading] = useState(false);
@@ -769,26 +756,35 @@ function ViewSyncFieldsDrawer(props: {
   );
 
   const handleSubmit = useCallback(async () => {
-    await form.validateFields();
-    const values = form.getFieldsValue(true);
-    setSubmitting(true);
     try {
-      await ctx.api.resource('collections').setFields({
-        filterByTk: props.collection.name,
-        values: {
-          fields: values.fields,
-          schema: values.schema,
-          sources: values.sources,
-          viewName: values.viewName,
-        },
-      });
-      await ctx.dataSourceManager.getDataSource('main')?.reload();
-      props.onSubmitted();
-      message.success(t('Sync successfully'));
-    } finally {
-      setSubmitting(false);
+      await form.validateFields();
+      const values = form.getFieldsValue(true);
+      setSubmitting(true);
+      try {
+        await ctx.api.resource('collections').setFields({
+          filterByTk: props.collection.name,
+          values: {
+            fields: values.fields,
+            schema: values.schema,
+            sources: values.sources,
+            viewName: values.viewName,
+          },
+        });
+        await ctx.dataSourceManager.getDataSource('main')?.reload();
+        props.onSubmitted();
+        message.success(t('Sync successfully'));
+      } finally {
+        setSubmitting(false);
+      }
+    } catch (error) {
+      if (!isFormValidationError(error)) {
+        notification.error({
+          message: getErrorMessage(error, t('Sync failed')),
+        });
+      }
+      throw error;
     }
-  }, [ctx.api, ctx.dataSourceManager, form, message, props, t]);
+  }, [ctx.api, ctx.dataSourceManager, form, message, notification, props, t]);
 
   return (
     <DrawerFormLayout
@@ -988,22 +984,29 @@ export default function FieldsPage(props: FieldsPageProps) {
         title: t('Delete record'),
         content: t('Are you sure you want to delete it?'),
         async onOk() {
-          const keys = Array.isArray(filterByTk) ? filterByTk : [filterByTk];
-          await Promise.all(
-            keys.map((key) =>
-              ctx.api.request({
-                url: getCollectionFieldActionUrl(props.dataSourceKey, props.collection.name, 'destroy', String(key)),
-                method: 'post',
-              }),
-            ),
-          );
-          await ctx.dataSourceManager.getDataSource(props.dataSourceKey)?.reload();
-          setSelectedRowKeys([]);
-          request.refresh();
+          try {
+            const keys = Array.isArray(filterByTk) ? filterByTk : [filterByTk];
+            await Promise.all(
+              keys.map((key) =>
+                ctx.api.request({
+                  url: getCollectionFieldActionUrl(props.dataSourceKey, props.collection.name, 'destroy', String(key)),
+                  method: 'post',
+                }),
+              ),
+            );
+            await ctx.dataSourceManager.getDataSource(props.dataSourceKey)?.reload();
+            setSelectedRowKeys([]);
+            request.refresh();
+          } catch (error) {
+            notification.error({
+              message: getErrorMessage(error, t('Delete failed')),
+            });
+            throw error;
+          }
         },
       });
     },
-    [ctx.api, ctx.dataSourceManager, modal, props.collection.name, props.dataSourceKey, request, t],
+    [ctx.api, ctx.dataSourceManager, modal, notification, props.collection.name, props.dataSourceKey, request, t],
   );
 
   const handleFieldInterfaceChange = useCallback(
@@ -1016,22 +1019,38 @@ export default function FieldsPage(props: FieldsPageProps) {
             title: nextDefault.uiSchema.title || field.uiSchema?.title,
           }
         : field.uiSchema;
-      await ctx.api.request({
-        url: getCollectionFieldActionUrl(props.dataSourceKey, props.collection.name, 'update', field.name),
-        method: 'post',
-        data: {
-          ...field,
-          ...nextDefault,
-          name: field.name,
-          interface: nextInterfaceName || null,
-          type: nextDefault.type || field.type,
-          uiSchema: nextUiSchema,
-        },
-      });
-      await ctx.dataSourceManager.getDataSource(props.dataSourceKey)?.reload();
-      request.refresh();
+      try {
+        await ctx.api.request({
+          url: getCollectionFieldActionUrl(props.dataSourceKey, props.collection.name, 'update', field.name),
+          method: 'post',
+          data: {
+            ...field,
+            ...nextDefault,
+            name: field.name,
+            interface: nextInterfaceName || null,
+            type: nextDefault.type || field.type,
+            uiSchema: nextUiSchema,
+          },
+        });
+        await ctx.dataSourceManager.getDataSource(props.dataSourceKey)?.reload();
+        request.refresh();
+      } catch (error) {
+        notification.error({
+          message: getErrorMessage(error, t('Save failed')),
+        });
+        throw error;
+      }
     },
-    [ctx.api, ctx.dataSourceManager, fieldInterfacesByName, props.collection.name, props.dataSourceKey, request],
+    [
+      ctx.api,
+      ctx.dataSourceManager,
+      fieldInterfacesByName,
+      notification,
+      props.collection.name,
+      props.dataSourceKey,
+      request,
+      t,
+    ],
   );
 
   const handleFieldDisplayNameSave = useCallback(
@@ -1083,11 +1102,16 @@ export default function FieldsPage(props: FieldsPageProps) {
         setTitleField(nextTitleField);
         await ctx.dataSourceManager.getDataSource(props.dataSourceKey)?.reload();
         message.success(t('Saved successfully'));
+      } catch (error) {
+        notification.error({
+          message: getErrorMessage(error, t('Save failed')),
+        });
+        throw error;
       } finally {
         setTitleFieldLoadingKey(undefined);
       }
     },
-    [ctx.api, ctx.dataSourceManager, message, props.collection.name, props.dataSourceKey, t],
+    [ctx.api, ctx.dataSourceManager, message, notification, props.collection.name, props.dataSourceKey, t],
   );
 
   const handleSyncFields = useCallback(async () => {
@@ -1111,6 +1135,11 @@ export default function FieldsPage(props: FieldsPageProps) {
       request.refresh();
       await ctx.dataSourceManager.getDataSource('main')?.reload();
       message.success(t('Sync successfully'));
+    } catch (error) {
+      notification.error({
+        message: getErrorMessage(error, t('Sync failed')),
+      });
+      throw error;
     } finally {
       setSyncFieldsLoading(false);
     }
@@ -1118,6 +1147,7 @@ export default function FieldsPage(props: FieldsPageProps) {
     ctx.api,
     ctx.dataSourceManager,
     message,
+    notification,
     openTemplateSyncFieldsDrawer,
     openViewSyncFieldsDrawer,
     props.collection,
