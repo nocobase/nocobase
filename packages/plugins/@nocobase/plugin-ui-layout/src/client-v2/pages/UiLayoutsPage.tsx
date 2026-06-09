@@ -540,7 +540,7 @@ function UiLayoutForm(props: { layoutType: UiLayoutType; record?: UiLayoutRecord
           <Input />
         </Form.Item>
         <Form.Item name="uid" label={t('UID')} rules={[{ required: true, message: t('The field value is required') }]}>
-          <Input />
+          <Input disabled={!!record} />
         </Form.Item>
         <Form.Item
           name="routePath"

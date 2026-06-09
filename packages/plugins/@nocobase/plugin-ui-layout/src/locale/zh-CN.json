@@ -104,6 +104,7 @@
   "Type": "类型",
   "Title field is required": "标题字段为必填项",
   "UID": "UID",
+  "UID cannot be changed": "UID 不能修改",
   "URL": "URL",
   "URL field is required": "URL 字段为必填项",
   "UI Editor": "UI 配置",

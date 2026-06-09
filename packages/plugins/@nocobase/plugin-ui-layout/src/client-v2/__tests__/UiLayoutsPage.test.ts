@@ -58,6 +58,21 @@ vi.mock('@nocobase/flow-engine', async (importOriginal) => {
   };
 });
 
+vi.mock('@nocobase/client-v2', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@nocobase/client-v2')>();
+  const ReactModule = await import('react');
+  return {
+    ...actual,
+    DrawerFormLayout: (props: { children: React.ReactNode; title: string; onSubmit: () => void; submitText: string }) =>
+      ReactModule.createElement(
+        'div',
+        { role: 'dialog', 'aria-label': props.title },
+        props.children,
+        ReactModule.createElement('button', { type: 'button', onClick: props.onSubmit }, props.submitText),
+      ),
+  };
+});
+
 const formValues: UiLayoutFormValues = {
   title: 'Operations layout',
   uid: 'desktop-layout',
@@ -294,6 +309,11 @@ describe('plugin-ui-layout settings page', () => {
         }),
       );
     });
+
+    const drawerContent = drawer.mock.calls[0][0].content();
+    render(React.createElement(AntdApp, null, drawerContent));
+
+    expect(screen.getByLabelText('UID')).toBeDisabled();
   });
 });
 

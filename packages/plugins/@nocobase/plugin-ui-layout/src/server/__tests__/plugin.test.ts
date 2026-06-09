@@ -998,6 +998,54 @@ describe('plugin-ui-layout server', () => {
     expect(negatedResponses.map((response) => response.status)).toEqual([403, 403, 403, 403, 403]);
   });
 
+  it('should reject ui layout uid changes through the management API', async () => {
+    app = await createUiLayoutMockServer();
+
+    const layout = await app.db.getRepository('uiLayouts').create({
+      values: {
+        uid: 'immutable-uid-layout',
+        title: 'Immutable UID layout',
+        layoutType: 'mobile',
+        routeName: 'immutableUidLayout',
+        routePath: '/immutable-uid-layout',
+        authCheck: true,
+        enabled: true,
+      },
+    });
+    await app.db.getRepository('roles').create({
+      values: {
+        name: 'ui-layout-uid-manager',
+        snippets: ['pm.ui-layout'],
+      },
+    });
+    const user = await app.db.getRepository('users').create({
+      values: {
+        roles: ['ui-layout-uid-manager'],
+      },
+    });
+    const agent = await app.agent().login(user);
+
+    const response = await agent.resource('uiLayouts').update({
+      filterByTk: layout.get('id'),
+      values: {
+        uid: 'changed-uid-layout',
+        title: 'Immutable UID layout updated',
+        layoutType: 'mobile',
+        routeName: 'immutableUidLayout',
+        routePath: '/immutable-uid-layout',
+        authCheck: true,
+        enabled: true,
+      },
+    });
+    const updatedLayout = await app.db.getRepository('uiLayouts').findOne({
+      filterByTk: layout.get('id'),
+    });
+
+    expect(response.status).toBe(400);
+    expect(updatedLayout?.get('uid')).toBe('immutable-uid-layout');
+    expect(updatedLayout?.get('title')).toBe('Immutable UID layout');
+  });
+
   it('should keep role layout permissions behind role configuration snippets', async () => {
     app = await createUiLayoutMockServer();
 

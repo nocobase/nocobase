@@ -10,7 +10,7 @@
 import { Plugin } from '@nocobase/server';
 import type { ResourcerContext } from '@nocobase/resourcer';
 import type { Database, Model, MultipleRelationRepository } from '@nocobase/database';
-import { DEFAULT_ADMIN_UI_LAYOUT } from '../constants';
+import { DEFAULT_ADMIN_UI_LAYOUT, NAMESPACE } from '../constants';
 import { ensureDefaultUiLayout } from './ensureDefaultUiLayout';
 import {
   type DatabaseHookOptions,
@@ -338,6 +338,36 @@ async function addDesktopRouteCreateLayout(ctx: ResourcerContext, next: () => Pr
     ctx.action?.mergeParams({
       values: withDesktopRouteUiLayout(ctx.action?.params.values, layoutUid),
     });
+  }
+
+  await next();
+}
+
+async function preventUiLayoutUidChange(ctx: ResourcerContext, next: () => Promise<void>) {
+  const values = ctx.action?.params.values;
+  if (!isDesktopRouteCreateValue(values) || !Object.prototype.hasOwnProperty.call(values, 'uid')) {
+    await next();
+    return;
+  }
+
+  const requestedUid = values.uid;
+  const filterByTk = ctx.action?.params.filterByTk;
+  if (
+    typeof requestedUid !== 'string' ||
+    filterByTk === null ||
+    filterByTk === undefined ||
+    Array.isArray(filterByTk)
+  ) {
+    ctx.throw(400, ctx.t('UID cannot be changed', { ns: NAMESPACE }));
+    return;
+  }
+
+  const record = await ctx.db.getRepository('uiLayouts').findOne({
+    filterByTk,
+  });
+  if (record && record.get('uid') !== requestedUid) {
+    ctx.throw(400, ctx.t('UID cannot be changed', { ns: NAMESPACE }));
+    return;
   }
 
   await next();
@@ -814,6 +844,7 @@ export class PluginUiLayoutServer extends Plugin {
       ctx.status = 200;
       await next();
     });
+    this.app.resourceManager.registerPreActionHandler('uiLayouts:update', preventUiLayoutUidChange);
     this.app.resourceManager.registerPreActionHandler('desktopRoutes:create', addDesktopRouteCreateLayout);
     this.app.resourceManager.registerPreActionHandler('desktopRoutes:listAccessible', addDesktopRouteLayoutFilter);
     this.app.resourceManager.registerPreActionHandler('desktopRoutes:getAccessible', addDesktopRouteGetLayoutFilter);

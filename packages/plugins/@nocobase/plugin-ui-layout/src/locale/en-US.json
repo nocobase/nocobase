@@ -104,6 +104,7 @@
   "Type": "Type",
   "Title field is required": "Title field is required",
   "UID": "UID",
+  "UID cannot be changed": "UID cannot be changed",
   "URL": "URL",
   "URL field is required": "URL field is required",
   "UI Editor": "UI Editor",
