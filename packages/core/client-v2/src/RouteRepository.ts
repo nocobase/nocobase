@@ -22,6 +22,11 @@ type RouteMutationOptions = {
   refreshAfterMutation?: boolean;
 };
 
+type AccessibleRouteCache = {
+  accessibleLoaded: boolean;
+  routes: NocoBaseDesktopRoute[];
+};
+
 type MoveRouteOptions = {
   sourceId: string | number;
   targetId?: string | number;
@@ -34,13 +39,12 @@ type MoveRouteOptions = {
 
 export class RouteRepository {
   routes: NocoBaseDesktopRoute[] = [];
-  protected subscribers = new Set<RouteSubscriber>();
-  protected accessibleLoaded = false;
-  protected accessibleLayoutUid: string | undefined;
-  protected accessibleLoadingLayoutUid: string | undefined;
-  protected accessibleLoadingPromise: Promise<NocoBaseDesktopRoute[]> | null = null;
+  protected subscribers = new Map<RouteSubscriber, string>();
+  protected accessibleLoadingPromises = new Map<string, Promise<NocoBaseDesktopRoute[]>>();
   private layoutActivations: Array<{ token: symbol; uid: string }> = [];
-  private refreshRequestId = 0;
+  private routeCaches = new Map<string, AccessibleRouteCache>();
+  private refreshRequestIds = new Map<string, number>();
+  private notifiedLayoutUid: string | undefined;
 
   constructor(protected ctx: { api?: APIClient }) {}
 
@@ -52,12 +56,14 @@ export class RouteRepository {
       token,
       uid,
     });
+    this.syncRoutesProperty();
 
     return () => {
       const index = this.layoutActivations.findIndex((item) => item.token === token);
       if (index >= 0) {
         this.layoutActivations.splice(index, 1);
       }
+      this.syncRoutesProperty();
     };
   }
 
@@ -67,10 +73,13 @@ export class RouteRepository {
    * @param routes 最新的桌面路由树
    */
   setRoutes(routes: NocoBaseDesktopRoute[], layoutUid = this.getCurrentLayoutUid()) {
-    this.routes = routes;
-    this.accessibleLoaded = true;
-    this.accessibleLayoutUid = layoutUid;
-    this.emitChange();
+    const cache = this.getRouteCache(layoutUid);
+    cache.routes = routes;
+    cache.accessibleLoaded = true;
+    if (layoutUid === this.getCurrentLayoutUid()) {
+      this.routes = routes;
+    }
+    this.emitChange(layoutUid);
   }
 
   /**
@@ -79,7 +88,9 @@ export class RouteRepository {
    * @returns 当前缓存的路由数组
    */
   listAccessible() {
-    return this.routes;
+    const routes = this.getRouteCache(this.getReadableLayoutUid()).routes;
+    this.routes = routes;
+    return routes;
   }
 
   /**
@@ -88,7 +99,7 @@ export class RouteRepository {
    * @returns {boolean} 是否已初始化完成
    */
   isAccessibleLoaded() {
-    return this.accessibleLoaded && this.accessibleLayoutUid === this.getCurrentLayoutUid();
+    return this.getRouteCache().accessibleLoaded;
   }
 
   /**
@@ -98,13 +109,17 @@ export class RouteRepository {
    */
   async refreshAccessible() {
     const layoutUid = this.getCurrentLayoutUid();
-    const requestId = ++this.refreshRequestId;
+    return this.refreshAccessibleByLayout(layoutUid);
+  }
+
+  private async refreshAccessibleByLayout(layoutUid: string) {
+    const requestId = this.nextRefreshRequestId(layoutUid);
     const response = await this.getAPIClient().request({
       url: '/desktopRoutes:listAccessible',
       params: { tree: true, sort: 'sort', layout: layoutUid },
     });
     const routes = response?.data?.data || [];
-    if (requestId === this.refreshRequestId) {
+    if (requestId === this.getRefreshRequestId(layoutUid)) {
       this.setRoutes(routes, layoutUid);
     }
     return routes;
@@ -117,24 +132,25 @@ export class RouteRepository {
    */
   async ensureAccessibleLoaded() {
     const layoutUid = this.getCurrentLayoutUid();
-    if (this.accessibleLoaded && this.accessibleLayoutUid === layoutUid) {
-      return this.routes;
+    const cache = this.getRouteCache(layoutUid);
+    if (cache.accessibleLoaded) {
+      this.routes = cache.routes;
+      return cache.routes;
     }
 
-    if (this.accessibleLoadingPromise && this.accessibleLoadingLayoutUid === layoutUid) {
-      return this.accessibleLoadingPromise;
+    const existingLoadingPromise = this.accessibleLoadingPromises.get(layoutUid);
+    if (existingLoadingPromise) {
+      return existingLoadingPromise;
     }
 
-    this.accessibleLoadingLayoutUid = layoutUid;
-    const loadingPromise = this.refreshAccessible().finally(() => {
-      if (this.accessibleLoadingPromise === loadingPromise) {
-        this.accessibleLoadingPromise = null;
-        this.accessibleLoadingLayoutUid = undefined;
+    const loadingPromise = this.refreshAccessibleByLayout(layoutUid).finally(() => {
+      if (this.accessibleLoadingPromises.get(layoutUid) === loadingPromise) {
+        this.accessibleLoadingPromises.delete(layoutUid);
       }
     });
-    this.accessibleLoadingPromise = loadingPromise;
+    this.accessibleLoadingPromises.set(layoutUid, loadingPromise);
 
-    return this.accessibleLoadingPromise;
+    return loadingPromise;
   }
 
   /**
@@ -144,7 +160,7 @@ export class RouteRepository {
    * @returns 取消订阅函数
    */
   subscribe(subscriber: RouteSubscriber) {
-    this.subscribers.add(subscriber);
+    this.subscribers.set(subscriber, this.getCurrentLayoutUid());
     return () => {
       this.subscribers.delete(subscriber);
     };
@@ -249,7 +265,7 @@ export class RouteRepository {
    * @returns 匹配到的路由节点
    */
   getRouteBySchemaUid(schemaUid: string): NocoBaseDesktopRoute | undefined {
-    return this.findRoute(this.routes, schemaUid);
+    return this.findRoute(this.listAccessible(), schemaUid);
   }
 
   protected getAPIClient(): APIClient {
@@ -263,9 +279,18 @@ export class RouteRepository {
     return this.getAPIClient().resource(collectionName);
   }
 
-  protected emitChange() {
-    this.subscribers.forEach((subscriber) => {
-      subscriber();
+  protected emitChange(layoutUid = this.getCurrentLayoutUid()) {
+    this.subscribers.forEach((subscriberLayoutUid, subscriber) => {
+      if (subscriberLayoutUid !== layoutUid) {
+        return;
+      }
+      const previousNotifiedLayoutUid = this.notifiedLayoutUid;
+      this.notifiedLayoutUid = layoutUid;
+      try {
+        subscriber();
+      } finally {
+        this.notifiedLayoutUid = previousNotifiedLayoutUid;
+      }
     });
   }
 
@@ -275,6 +300,36 @@ export class RouteRepository {
 
   private normalizeLayoutUid(uid: unknown) {
     return typeof uid === 'string' && uid.trim() ? uid : ADMIN_LAYOUT_MODEL_UID;
+  }
+
+  private getReadableLayoutUid() {
+    return this.notifiedLayoutUid || this.getCurrentLayoutUid();
+  }
+
+  private getRouteCache(layoutUid = this.getCurrentLayoutUid()) {
+    let cache = this.routeCaches.get(layoutUid);
+    if (!cache) {
+      cache = {
+        accessibleLoaded: false,
+        routes: [],
+      };
+      this.routeCaches.set(layoutUid, cache);
+    }
+    return cache;
+  }
+
+  private syncRoutesProperty() {
+    this.routes = this.getRouteCache().routes;
+  }
+
+  private nextRefreshRequestId(layoutUid: string) {
+    const requestId = this.getRefreshRequestId(layoutUid) + 1;
+    this.refreshRequestIds.set(layoutUid, requestId);
+    return requestId;
+  }
+
+  private getRefreshRequestId(layoutUid: string) {
+    return this.refreshRequestIds.get(layoutUid) || 0;
   }
 
   private findRoute(routes: NocoBaseDesktopRoute[], schemaUid: string): NocoBaseDesktopRoute | undefined {

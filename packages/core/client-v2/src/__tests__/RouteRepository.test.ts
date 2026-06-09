@@ -8,6 +8,7 @@
  */
 
 import { describe, expect, it, vi } from 'vitest';
+import type { NocoBaseDesktopRoute } from '../flow-compat';
 import { RouteRepository } from '../RouteRepository';
 
 function createRouteRepository() {
@@ -37,6 +38,10 @@ function createRouteRepository() {
     request,
     resource,
   };
+}
+
+function route(schemaUid: string): NocoBaseDesktopRoute {
+  return { schemaUid } as NocoBaseDesktopRoute;
 }
 
 describe('RouteRepository', () => {
@@ -116,6 +121,53 @@ describe('RouteRepository', () => {
 
     expect(repository.isAccessibleLoaded()).toBe(false);
     deactivateLayout();
+  });
+
+  it('should keep accessible route caches isolated by active layout', () => {
+    const { repository } = createRouteRepository();
+
+    repository.setRoutes([route('admin-page')], 'admin-layout-model');
+    const deactivateLayout = repository.activateLayout({
+      uid: 'custom-desktop-layout-model',
+    });
+    repository.setRoutes([route('custom-page')], 'custom-desktop-layout-model');
+
+    expect(repository.listAccessible().map((route) => route.schemaUid)).toEqual(['custom-page']);
+    expect(repository.getRouteBySchemaUid('admin-page')).toBeUndefined();
+    deactivateLayout();
+
+    expect(repository.listAccessible().map((route) => route.schemaUid)).toEqual(['admin-page']);
+    expect(repository.getRouteBySchemaUid('custom-page')).toBeUndefined();
+  });
+
+  it('should notify only subscribers for the changed layout cache', () => {
+    const { repository } = createRouteRepository();
+    const adminEvents: string[][] = [];
+    const customEvents: string[][] = [];
+
+    const unsubscribeAdmin = repository.subscribe(() => {
+      adminEvents.push(repository.listAccessible().map((route) => route.schemaUid || ''));
+    });
+    const deactivateLayout = repository.activateLayout({
+      uid: 'custom-desktop-layout-model',
+    });
+    const unsubscribeCustom = repository.subscribe(() => {
+      customEvents.push(repository.listAccessible().map((route) => route.schemaUid || ''));
+    });
+
+    repository.setRoutes([route('custom-page')], 'custom-desktop-layout-model');
+
+    expect(adminEvents).toEqual([]);
+    expect(customEvents).toEqual([['custom-page']]);
+
+    deactivateLayout();
+    repository.setRoutes([route('admin-page')], 'admin-layout-model');
+
+    expect(adminEvents).toEqual([['admin-page']]);
+    expect(customEvents).toEqual([['custom-page']]);
+
+    unsubscribeAdmin();
+    unsubscribeCustom();
   });
 
   it('should pass the default admin layout when creating a route', async () => {
