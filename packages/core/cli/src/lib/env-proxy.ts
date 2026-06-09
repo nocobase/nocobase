@@ -1695,19 +1695,13 @@ export function resolveEnvProxyMainOutputPath(options?: { scope?: CliHomeScope; 
 }
 
 export async function resolveEnvProxyMainRuntimeOutputPath(
-  options?: {
-    scope?: CliHomeScope;
-    provider?: ProxyProvider;
-  },
+  options?: EnvProxyProviderOptions,
 ): Promise<string> {
   return await mapProxyPathFromCliRoot(resolveEnvProxyMainOutputPath(options), options);
 }
 
 export async function buildEnvProxyMainConfig(
-  options?: {
-    scope?: CliHomeScope;
-    provider?: ProxyProvider;
-  },
+  options?: EnvProxyProviderOptions,
 ): Promise<string> {
   const provider = resolveProxyProviderName(options?.provider);
   if (provider === 'caddy') {

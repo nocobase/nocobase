@@ -8,8 +8,8 @@
  */
 
 import { Args, Command } from '@oclif/core';
-import { CADDY_PROXY_DRIVER_OPTIONS } from '../../../lib/cli-config.js';
-import { setCaddyProxyDriver, type CaddyProxyDriver } from '../../../lib/proxy-caddy.js';
+import { CADDY_PROXY_DRIVER_OPTIONS, type CaddyProxyDriver } from '../../../lib/cli-config.js';
+import { setCaddyProxyDriver } from '../../../lib/proxy-caddy.js';
 
 export default class ProxyCaddyUse extends Command {
   static override summary = 'Select the caddy runtime driver';
