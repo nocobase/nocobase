@@ -1,12 +1,12 @@
 ---
-title: 'nb config set'
-description: 'Referensi perintah nb config set: menetapkan item konfigurasi CLI.'
-keywords: 'nb config set,NocoBase CLI,mengatur konfigurasi'
+title: "nb config set"
+description: "Referensi perintah nb config set: menetapkan item konfigurasi CLI."
+keywords: "nb config set,NocoBase CLI,menetapkan konfigurasi"
 ---
 
 # nb config set
 
-Menetapkan item konfigurasi CLI. Lihat [`nb config`](./index.md) untuk daftar key konfigurasi yang didukung.
+Menetapkan item konfigurasi CLI. Lihat [`nb config`](./index.md) untuk kunci konfigurasi yang didukung.
 
 ## Penggunaan
 
@@ -16,10 +16,10 @@ nb config set <key> <value>
 
 ## Parameter
 
-| Parameter | Tipe   | Deskripsi                                                                                                                               |
-| --------- | ------ | --------------------------------------------------------------------------------------------------------------------------------------- |
+| Parameter | Tipe | Deskripsi |
+| --- | --- | --- |
 | `<key>` | string | Nama item konfigurasi. Lihat [`nb config`](./index.md) untuk nilai yang didukung |
-| `<value>` | string | Nilai konfigurasi, tidak boleh kosong                                                                                                   |
+| `<value>` | string | Nilai konfigurasi, tidak boleh kosong |
 
 ## Contoh
 
@@ -38,10 +38,9 @@ nb config set proxy.upstream-host host.docker.internal
 nb config set bin.yarn yarn
 ```
 
-## Keterangan
+## Catatan
 
 `update.policy` mendukung `prompt`, `auto`, dan `off`, dengan nilai default `prompt`.
-
 
 ## Perintah terkait
 

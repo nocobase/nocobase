@@ -1,163 +1,169 @@
 ---
 title: "Deployment produksi"
-description: "Deploy NocoBase ke produksi dengan dua langkah akhir: aktifkan autostart aplikasi dan konfigurasikan reverse proxy."
-keywords: "NocoBase,deployment produksi,nb app autostart,nb env proxy,Nginx,Caddy"
+description: "Selesaikan deployment produksi NocoBase dengan cepat: konfigurasikan auto-start aplikasi terlebih dahulu, lalu reverse proxy."
+keywords: "NocoBase,deployment produksi,nb app autostart,nb proxy nginx,nb proxy caddy,Nginx,Caddy"
 ---
 
 # Deployment produksi
 
-Jika aplikasi NocoBase Anda sudah berjalan dengan benar di server, biasanya hanya ada dua langkah lagi untuk masuk ke produksi:
+Jika aplikasi NocoBase kamu sudah bisa berjalan normal di server, rollout ke produksi biasanya hanya membutuhkan dua hal tambahan:
 
-1. Pastikan aplikasi dapat start otomatis setelah mesin direstart
-2. Letakkan reverse proxy di depan aplikasi agar akses eksternal tetap stabil
+1. memastikan aplikasi dapat pulih otomatis setelah mesin di-restart
+2. menambahkan entrypoint reverse proxy agar aplikasi dapat diakses dari luar secara stabil
 
-Di NocoBase CLI, perintah utamanya adalah:
+Di NocoBase CLI, grup perintah utama untuk itu adalah:
 
 - `nb app autostart`
-- `nb env proxy`
+- `nb proxy`
 
-Halaman ini menjelaskan alur besarnya terlebih dahulu. Untuk detail Nginx atau Caddy, lanjutkan ke subhalaman masing-masing.
+Halaman ini menjelaskan alur besarnya terlebih dahulu. Untuk detail Nginx atau Caddy, lanjutkan ke halaman khusus masing-masing provider.
 
-## Langkah 1: aktifkan autostart aplikasi
+## Langkah 1: konfigurasi auto-start aplikasi
 
-Di lingkungan produksi, prioritas pertama bukan domain, tetapi memastikan layanan bisa pulih secara andal setelah reboot, recreasi container, atau pekerjaan maintenance.
+Di produksi, prioritas utamanya bukan domain name, melainkan memastikan servis itu sendiri bisa pulih dengan andal. Jika tidak, setelah mesin direstart, container dibuat ulang, atau ada operasi pemeliharaan, aplikasi bisa saja tidak kembali hidup otomatis.
 
-Di CLI, `nb app autostart` adalah grup perintah. Yang paling sering dipakai adalah:
+Subcommand `nb app autostart` yang paling umum digunakan adalah:
 
 - `nb app autostart enable`
 - `nb app autostart list`
 - `nb app autostart run`
 
-Aktifkan autostart untuk env saat ini:
+Aktifkan auto-start untuk env saat ini:
 
 ```bash
 nb app autostart enable
 ```
 
-Jika ingin menargetkan env lain secara eksplisit:
+Jika targetnya bukan env saat ini, sebutkan secara eksplisit:
 
 ```bash
 nb app autostart enable --env app1 --yes
 ```
 
-Lalu cek env mana saja yang sudah ditandai untuk autostart:
+Periksa env mana saja yang ditandai untuk auto-start:
 
 ```bash
 nb app autostart list
 ```
 
-Setelah sistem boot, jalankan perintah berikut untuk menyalakan semua env yang telah diaktifkan autostart:
+Setelah sistem menyala, jalankan semua env yang sudah diaktifkan:
 
 ```bash
 nb app autostart run
 ```
 
-Jika ingin melihat output startup di level bawah untuk troubleshooting:
+Jika kamu ingin melihat output startup yang detail saat debugging:
 
 ```bash
 nb app autostart run --verbose
 ```
 
-:::tip Apa yang sebenarnya dilakukan perintah ini
+:::tip Apa yang sebenarnya dilakukan langkah ini
 
-`nb app autostart enable` menandai env yang dikelola CLI agar boleh dijalankan otomatis.  
-`nb app autostart run` adalah perintah yang benar-benar menjalankan semua env yang sudah ditandai untuk autostart.
+`nb app autostart enable` menandai env yang dikelola CLI agar diizinkan untuk start otomatis. `nb app autostart run` benar-benar menjalankan semua env yang telah diaktifkan auto-start-nya.
 
-Artinya, di lingkungan produksi nyata Anda biasanya tetap perlu menghubungkan `nb app autostart run` ke alur startup sistem Anda sendiri, misalnya lewat `systemd`, startup script platform container, atau mekanisme boot host lain yang sudah Anda gunakan.
+Di produksi, biasanya kamu tetap perlu menghubungkan `nb app autostart run` ke alur startup sistemmu sendiri, misalnya lewat `systemd`, startup script platform container, atau mekanisme auto-start level host lain yang sudah kamu pakai.
 
 :::
 
 ### Cakupan
 
-`nb app autostart` hanya berlaku untuk env yang memiliki runtime yang dikelola CLI pada mesin saat ini:
+`nb app autostart` hanya bekerja untuk env yang runtime-nya dikelola CLI:
 
 - `local`
 - `docker`
 
-Jika env hanya berupa koneksi API jarak jauh, atau aplikasi tidak dikelola secara lokal oleh CLI pada mesin ini, perintah ini bukan alat yang tepat untuk autostart.
+Jika env hanya berupa koneksi API jarak jauh, atau aplikasi tidak dikelola secara lokal oleh CLI di mesin saat ini, grup perintah ini bukan cara yang tepat untuk auto-start.
 
 ## Langkah 2: konfigurasi reverse proxy
 
-Setelah aplikasi bisa pulih otomatis, langkah berikutnya adalah menangani entry point eksternal. Di produksi, reverse proxy biasanya bertugas untuk:
+Setelah aplikasi bisa pulih otomatis, barulah tangani entrypoint eksternal. Di produksi, reverse proxy biasanya bertanggung jawab atas:
 
-- mengikat domain atau port publik
-- meneruskan trafik HTTP dan WebSocket ke NocoBase
+- binding domain name atau port entry
+- meneruskan request HTTP dan WebSocket ke NocoBase
 - menangani HTTPS, sertifikat, cache, atau kontrol akses
 
-Di NocoBase CLI, titik masuk yang direkomendasikan adalah:
+Entrypoint CLI yang direkomendasikan adalah:
 
-- `nb env proxy nginx`
-- `nb env proxy caddy`
+- `nb proxy nginx`
+- `nb proxy caddy`
 
-### Pendekatan default
+### Alur default
 
-Jika aplikasi Anda sudah tersimpan sebagai env CLI dan merupakan env `local` atau `docker`, biasanya cukup biarkan CLI membuat konfigurasi proxynya:
-
-```bash
-nb env proxy nginx --env app1 --host app.example.com
-nb env proxy caddy --env app1 --host app.example.com
-```
-
-Jika env saat ini sudah merupakan env target, Anda bisa menghilangkan `--env`:
+Jika aplikasi sudah disimpan sebagai env CLI dan env itu bertipe `local` atau `docker`, cara yang paling umum adalah membiarkan CLI langsung menghasilkan konfigurasinya:
 
 ```bash
-nb env proxy nginx --host app.example.com
+nb proxy nginx use docker
+nb proxy nginx generate --env app1 --host app.example.com
+
+nb proxy caddy use local
+nb proxy caddy generate --env app1 --host app.example.com
 ```
 
-CLI membantu menangani detail yang mudah terlewat saat menulis konfigurasi manual, misalnya:
+Lalu jalankan provider yang dipilih:
+
+```bash
+nb proxy nginx start
+nb proxy caddy start
+```
+
+CLI juga membantu menangani detail yang mudah terlewat pada konfigurasi manual, seperti:
 
 - forwarding WebSocket
-- path entry dan asset statis untuk deployment subpath
+- URL entry dan aset di bawah subpath
 - halaman fallback SPA
-- file konfigurasi bersama milik provider
+- file konfigurasi bersama di level provider
 
 ### Kapan memilih Nginx atau Caddy
 
-Biasanya Anda bisa menentukannya seperti ini:
-
 | Skenario | Rekomendasi |
 | --- | --- |
-| Anda sudah memakai Nginx untuk site, cache, sertifikat, atau kontrol akses | [Nginx](./reverse-proxy/nginx.md) |
-| Anda sudah punya domain dan ingin HTTPS aktif lebih cepat dengan perawatan TLS yang lebih sedikit | [Caddy](./reverse-proxy/caddy.md) |
-| Anda ingin memahami gambaran umum grup perintah ini terlebih dahulu | [Production Reverse Proxy](./reverse-proxy/index.md) |
+| Kamu sudah menggunakan Nginx untuk mengelola situs, cache, sertifikat, atau kontrol akses | [Nginx](./reverse-proxy/nginx.md) |
+| Kamu sudah punya domain dan ingin HTTPS aktif dengan cepat sambil mengelola lebih sedikit detail TLS | [Caddy](./reverse-proxy/caddy.md) |
+| Kamu ingin melihat pengantar umumnya terlebih dahulu | [Reverse Proxy di produksi](./reverse-proxy/index.md) |
 
-Jika Anda mengubah konfigurasi env yang memengaruhi hasil proxy, seperti `app-port` atau `app-public-path`, ingat untuk menjalankan ulang subperintah proxy yang sesuai.
+Jika nanti kamu mengubah pengaturan env seperti `app-port` atau `app-public-path` yang memengaruhi perilaku proxy, jalankan ulang subcommand proxy yang sesuai.
 
-## Jalur rollout yang disarankan
+## Jalur rollout default
 
-Jika Anda ingin jalur produksi yang paling sederhana, urutan ini biasanya bekerja dengan baik:
+Untuk rollout produksi paling sederhana, urutan ini biasanya sudah cukup:
 
-1. Pastikan aplikasi sudah bisa start dengan benar langsung di server
-2. Jalankan `nb app autostart enable`
-3. Masukkan `nb app autostart run` ke proses startup sistem Anda
-4. Pilih Nginx atau Caddy lalu jalankan subperintah `nb env proxy` yang sesuai
-5. Verifikasi akses eksternal melalui domain akhir atau alamat publik
+1. pastikan aplikasi memang sudah bisa start normal di server itu sendiri
+2. jalankan `nb app autostart enable`
+3. hubungkan `nb app autostart run` ke alur startup sistem
+4. pilih Nginx atau Caddy lalu jalankan subcommand `nb proxy` yang sesuai
+5. verifikasi akses eksternal melalui domain name atau alamat entry
 
-## Tautan cepat
+## Indeks cepat
 
-| Saya ingin... | Baca ini |
+| Saya ingin... | Lihat di sini |
 | --- | --- |
-| Mulai dari penjelasan umum reverse proxy | [Production Reverse Proxy](./reverse-proxy/index.md) |
-| Tetap memakai Nginx untuk lapisan entry | [Nginx](./reverse-proxy/nginx.md) |
-| Memakai Caddy untuk setup HTTPS yang lebih cepat | [Caddy](./reverse-proxy/caddy.md) |
-| Mengelola start, stop, log, dan upgrade | [Manage Apps](../operations/manage-app.md) |
-| Membaca referensi CLI `nb env proxy` | [`nb env proxy`](../../api/cli/env/proxy/index.md) |
+| Membaca pengantar umum reverse proxy terlebih dahulu | [Reverse Proxy di produksi](./reverse-proxy/index.md) |
+| Tetap menggunakan Nginx di entry layer | [Nginx](./reverse-proxy/nginx.md) |
+| Menggunakan Caddy agar HTTPS lebih cepat aktif | [Caddy](./reverse-proxy/caddy.md) |
+| Melihat operasi start, stop, log, dan upgrade aplikasi | [Kelola aplikasi](../operations/manage-app.md) |
+| Membaca referensi CLI `nb proxy nginx` | [`nb proxy nginx`](../../api/cli/proxy/nginx/index.md) |
+| Membaca referensi CLI `nb proxy caddy` | [`nb proxy caddy`](../../api/cli/proxy/caddy/index.md) |
 
 ## Perintah terkait
 
 ```bash
-# Aktifkan autostart untuk satu env
+# Aktifkan auto-start untuk satu env
 nb app autostart enable --env app1 --yes
 
-# Lihat status autostart
+# Periksa status auto-start
 nb app autostart list
 
-# Jalankan semua env dengan autostart aktif
+# Jalankan semua env yang sudah diaktifkan
 nb app autostart run
 
-# Buat konfigurasi reverse proxy Nginx
-nb env proxy nginx --env app1 --host app.example.com
+# Pilih runtime Nginx dan hasilkan konfigurasi
+nb proxy nginx use docker
+nb proxy nginx generate --env app1 --host app.example.com
+nb proxy nginx start
 
-# Buat konfigurasi reverse proxy Caddy
-nb env proxy caddy --env app1 --host app.example.com
+# Pilih runtime Caddy dan hasilkan konfigurasi
+nb proxy caddy use local
+nb proxy caddy generate --env app1 --host app.example.com
+nb proxy caddy start
 ```

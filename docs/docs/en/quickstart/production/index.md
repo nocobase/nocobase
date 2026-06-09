@@ -1,163 +1,169 @@
 ---
 title: "Production Deployment"
-description: "Deploy NocoBase in production with two final steps: enable app autostart and configure a reverse proxy."
-keywords: "NocoBase,production deployment,nb app autostart,nb env proxy,Nginx,Caddy"
+description: "Finish NocoBase production deployment quickly: configure app auto-start first, then configure a reverse proxy."
+keywords: "NocoBase,production deployment,nb app autostart,nb proxy nginx,nb proxy caddy,Nginx,Caddy"
 ---
 
 # Production Deployment
 
-If your NocoBase app is already running correctly on the server, production rollout usually only needs two more steps:
+If your NocoBase app can already run normally on the server, production rollout usually only needs two more things:
 
-1. Make sure the app starts automatically after the machine restarts
-2. Put a reverse proxy in front of the app for stable external access
+1. make sure the app can recover automatically after the machine restarts
+2. add a reverse-proxy entrypoint so the app can be accessed from outside reliably
 
-In the NocoBase CLI, the main commands are:
+In NocoBase CLI, the main command groups are:
 
 - `nb app autostart`
-- `nb env proxy`
+- `nb proxy`
 
-This page gives the overall path first. For Nginx or Caddy details, continue to the corresponding subpages.
+This page explains the overall path first. For Nginx or Caddy details, continue to the provider-specific pages.
 
-## Step 1: Enable App Autostart
+## Step 1: configure app auto-start
 
-In production, the first priority is not the domain name. The first priority is making sure the service can recover reliably after a reboot, container recreation, or routine maintenance.
+In production, the first priority is not the domain name. It is making sure the service itself can recover reliably. Otherwise, after a machine restart, container recreation, or routine operations work, the app may not come back automatically.
 
-In the CLI, `nb app autostart` is a command group. The most commonly used commands are:
+The most common `nb app autostart` subcommands are:
 
 - `nb app autostart enable`
 - `nb app autostart list`
 - `nb app autostart run`
 
-Enable autostart for the current env:
+Enable auto-start for the current env:
 
 ```bash
 nb app autostart enable
 ```
 
-If you want to target a different env explicitly:
+If the target is not the current env, specify it explicitly:
 
 ```bash
 nb app autostart enable --env app1 --yes
 ```
 
-Then check which envs are marked for autostart:
+Check which envs are marked for auto-start:
 
 ```bash
 nb app autostart list
 ```
 
-After the system boots, run the following command to start every env that has autostart enabled:
+After the system boots, start all enabled envs with:
 
 ```bash
 nb app autostart run
 ```
 
-If you want the underlying startup output for troubleshooting:
+If you want detailed startup output while debugging:
 
 ```bash
 nb app autostart run --verbose
 ```
 
-:::tip What this actually does
+:::tip What this step actually does
 
-`nb app autostart enable` marks a CLI-managed env as allowed to start automatically.  
-`nb app autostart run` is the command that actually starts all envs that were marked for autostart.
+`nb app autostart enable` marks a CLI-managed env as allowed to start automatically. `nb app autostart run` actually starts all envs that have auto-start enabled.
 
-In other words, in a real production setup you usually still need to wire `nb app autostart run` into your own system startup flow, such as `systemd`, a container platform startup script, or another host-level boot mechanism you already use.
+In production, you usually still need to connect `nb app autostart run` to your own system startup flow, such as `systemd`, a container platform startup script, or another host-level auto-start mechanism that you already use.
 
 :::
 
-### Scope
+### Applicability
 
-`nb app autostart` only applies to envs with a CLI-managed runtime on the current machine:
+`nb app autostart` only works for envs with a CLI-managed runtime:
 
 - `local`
 - `docker`
 
-If the env is only a remote API connection, or the app is not managed locally by the CLI on this machine, these commands are not the right tool for autostart.
+If an env is only a remote API connection, or the app is not managed locally by the CLI on the current machine, this command group is not the right way to handle auto-start.
 
-## Step 2: Configure a Reverse Proxy
+## Step 2: configure the reverse proxy
 
-Once the app can recover automatically, the next step is to handle the external entry point. In production, the reverse proxy usually takes care of:
+After the app can recover automatically, handle the external entrypoint. In production, the reverse proxy usually takes care of:
 
-- binding the domain name or public port
-- forwarding HTTP and WebSocket traffic to NocoBase
+- binding the domain name or entry port
+- forwarding HTTP and WebSocket requests to NocoBase
 - handling HTTPS, certificates, caching, or access control
 
-In the NocoBase CLI, the recommended entry points are:
+The recommended CLI entrypoints are:
 
-- `nb env proxy nginx`
-- `nb env proxy caddy`
+- `nb proxy nginx`
+- `nb proxy caddy`
 
-### Default Approach
+### Default workflow
 
-If your app is already saved as a CLI env and is a `local` or `docker` env, letting the CLI generate the proxy config is usually enough:
-
-```bash
-nb env proxy nginx --env app1 --host app.example.com
-nb env proxy caddy --env app1 --host app.example.com
-```
-
-If the current env is already the target env, you can omit `--env`:
+If the app has already been saved as a CLI env and that env is `local` or `docker`, the usual path is to let the CLI generate the config directly:
 
 ```bash
-nb env proxy nginx --host app.example.com
+nb proxy nginx use docker
+nb proxy nginx generate --env app1 --host app.example.com
+
+nb proxy caddy use local
+nb proxy caddy generate --env app1 --host app.example.com
 ```
 
-The CLI helps cover details that are easy to miss in handwritten configs, such as:
+Then start the chosen provider:
+
+```bash
+nb proxy nginx start
+nb proxy caddy start
+```
+
+The CLI also helps with details that are easy to miss in handwritten configs, such as:
 
 - WebSocket forwarding
-- entry and static asset paths for subpath deployments
+- entry and asset URLs under subpaths
 - SPA fallback pages
-- provider shared config files
+- provider-level shared config files
 
-### When To Choose Nginx Or Caddy
+### When to choose Nginx or Caddy
 
-You can usually decide like this:
-
-| Scenario | Recommended |
+| Scenario | Recommendation |
 | --- | --- |
-| You already use Nginx for sites, caching, certificates, or access control | [Nginx](./reverse-proxy/nginx.md) |
-| You already have a domain and want HTTPS working quickly with less TLS maintenance | [Caddy](./reverse-proxy/caddy.md) |
-| You want the overall explanation of this command group first | [Production Reverse Proxy](./reverse-proxy/index.md) |
+| You already use Nginx to manage sites, caching, certificates, or access control | [Nginx](./reverse-proxy/nginx.md) |
+| You already have a domain and want HTTPS up quickly with fewer TLS details to maintain | [Caddy](./reverse-proxy/caddy.md) |
+| You want the overall introduction first | [Reverse Proxy in Production](./reverse-proxy/index.md) |
 
-If you change env settings that affect the proxy result, such as `app-port` or `app-public-path`, remember to rerun the corresponding proxy subcommand.
+If you later change env settings such as `app-port` or `app-public-path` that affect proxy behavior, rerun the matching proxy subcommand.
 
-## Recommended Rollout Path
+## Default rollout path
 
-If you want the simplest production path, this order usually works well:
+For the simplest production rollout, this sequence is usually enough:
 
-1. Make sure the app can already start correctly on the server itself
-2. Run `nb app autostart enable`
-3. Add `nb app autostart run` to your system startup process
-4. Choose Nginx or Caddy and run the matching `nb env proxy` subcommand
-5. Verify external access through the final domain or public entry address
+1. confirm the app can already start normally on the server itself
+2. run `nb app autostart enable`
+3. connect `nb app autostart run` to your system startup flow
+4. choose Nginx or Caddy and run the matching `nb proxy` subcommand
+5. verify external access through the domain name or entry address
 
-## Quick Links
+## Quick index
 
-| I want to... | Read this |
+| I want to... | Go here |
 | --- | --- |
-| Start with the overall reverse proxy explanation | [Production Reverse Proxy](./reverse-proxy/index.md) |
-| Keep using Nginx for the entry layer | [Nginx](./reverse-proxy/nginx.md) |
-| Use Caddy for a faster HTTPS setup | [Caddy](./reverse-proxy/caddy.md) |
-| Manage start, stop, logs, and upgrades | [Manage Apps](../operations/manage-app.md) |
-| Read the `nb env proxy` CLI reference | [`nb env proxy`](../../api/cli/env/proxy/index.md) |
+| Read the overall reverse-proxy introduction first | [Reverse Proxy in Production](./reverse-proxy/index.md) |
+| Keep using Nginx at the entry layer | [Nginx](./reverse-proxy/nginx.md) |
+| Use Caddy to get HTTPS faster | [Caddy](./reverse-proxy/caddy.md) |
+| View app start, stop, logs, and upgrade operations | [Manage the App](../operations/manage-app.md) |
+| Read the `nb proxy nginx` CLI reference | [`nb proxy nginx`](../../api/cli/proxy/nginx/index.md) |
+| Read the `nb proxy caddy` CLI reference | [`nb proxy caddy`](../../api/cli/proxy/caddy/index.md) |
 
-## Related Commands
+## Related commands
 
 ```bash
-# Enable autostart for one env
+# Enable auto-start for one env
 nb app autostart enable --env app1 --yes
 
-# List autostart status
+# Check auto-start state
 nb app autostart list
 
-# Start all envs with autostart enabled
+# Start all enabled envs
 nb app autostart run
 
-# Generate Nginx reverse proxy config
-nb env proxy nginx --env app1 --host app.example.com
+# Choose the Nginx runtime and generate config
+nb proxy nginx use docker
+nb proxy nginx generate --env app1 --host app.example.com
+nb proxy nginx start
 
-# Generate Caddy reverse proxy config
-nb env proxy caddy --env app1 --host app.example.com
+# Choose the Caddy runtime and generate config
+nb proxy caddy use local
+nb proxy caddy generate --env app1 --host app.example.com
+nb proxy caddy start
 ```

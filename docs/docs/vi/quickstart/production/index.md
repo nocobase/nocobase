@@ -1,163 +1,169 @@
 ---
 title: "Triển khai production"
-description: "Triển khai NocoBase lên production với hai bước cuối: bật tự khởi động ứng dụng và cấu hình reverse proxy."
-keywords: "NocoBase,triển khai production,nb app autostart,nb env proxy,Nginx,Caddy"
+description: "Hoàn tất triển khai production cho NocoBase một cách nhanh chóng: trước tiên cấu hình auto-start cho ứng dụng, sau đó cấu hình reverse proxy."
+keywords: "NocoBase,production deployment,nb app autostart,nb proxy nginx,nb proxy caddy,Nginx,Caddy"
 ---
 
 # Triển khai production
 
-Nếu ứng dụng NocoBase của bạn đã chạy đúng trên máy chủ, thông thường chỉ còn hai bước nữa để đưa vào production:
+Nếu ứng dụng NocoBase của bạn đã có thể chạy bình thường trên server, thì để rollout production thông thường chỉ còn cần thêm hai việc:
 
-1. Đảm bảo ứng dụng tự khởi động lại sau khi máy được reboot
-2. Đặt reverse proxy phía trước ứng dụng để cung cấp truy cập bên ngoài ổn định
+1. đảm bảo ứng dụng có thể tự khôi phục sau khi máy được khởi động lại
+2. thêm một reverse proxy entrypoint để ứng dụng có thể được truy cập ổn định từ bên ngoài
 
-Trong NocoBase CLI, các lệnh chính là:
+Trong NocoBase CLI, hai nhóm lệnh chính cho việc này là:
 
 - `nb app autostart`
-- `nb env proxy`
+- `nb proxy`
 
-Trang này giải thích trước luồng tổng thể. Với chi tiết của Nginx hoặc Caddy, hãy tiếp tục sang các trang con tương ứng.
+Trang này giải thích trước toàn bộ lộ trình. Với chi tiết về Nginx hoặc Caddy, hãy tiếp tục sang các trang riêng theo từng provider.
 
-## Bước 1: bật tự khởi động ứng dụng
+## Bước 1: cấu hình auto-start cho ứng dụng
 
-Trong môi trường production, ưu tiên đầu tiên không phải là tên miền mà là đảm bảo dịch vụ có thể phục hồi ổn định sau khi reboot, tạo lại container hoặc thực hiện bảo trì.
+Trong môi trường production, ưu tiên đầu tiên không phải là domain name, mà là đảm bảo bản thân dịch vụ có thể tự phục hồi một cách ổn định. Nếu không, sau khi máy khởi động lại, container được tạo lại, hoặc có thao tác vận hành, ứng dụng có thể sẽ không tự chạy lại.
 
-Trong CLI, `nb app autostart` là một nhóm lệnh. Các lệnh được dùng nhiều nhất là:
+Các subcommand `nb app autostart` thường dùng nhất là:
 
 - `nb app autostart enable`
 - `nb app autostart list`
 - `nb app autostart run`
 
-Bật tự khởi động cho env hiện tại:
+Bật auto-start cho env hiện tại:
 
 ```bash
 nb app autostart enable
 ```
 
-Nếu bạn muốn chỉ định rõ một env khác:
+Nếu đích không phải là env hiện tại, hãy chỉ rõ:
 
 ```bash
 nb app autostart enable --env app1 --yes
 ```
 
-Sau đó, kiểm tra env nào đã được đánh dấu để tự khởi động:
+Kiểm tra env nào đang được đánh dấu để auto-start:
 
 ```bash
 nb app autostart list
 ```
 
-Sau khi hệ thống khởi động, chạy lệnh sau để khởi động tất cả env đã bật autostart:
+Sau khi hệ thống khởi động, chạy tất cả các env đã được bật:
 
 ```bash
 nb app autostart run
 ```
 
-Nếu bạn muốn xem output startup tầng dưới để troubleshoot:
+Nếu bạn muốn xem log khởi động chi tiết khi debug:
 
 ```bash
 nb app autostart run --verbose
 ```
 
-:::tip Lệnh này thực sự làm gì
+:::tip Bước này thực sự làm gì
 
-`nb app autostart enable` đánh dấu một env do CLI quản lý là được phép tự khởi động.  
-`nb app autostart run` là lệnh thực sự khởi động tất cả env đã được đánh dấu cho autostart.
+`nb app autostart enable` đánh dấu một env do CLI quản lý là được phép tự khởi động. `nb app autostart run` sẽ thực sự khởi động tất cả các env đã bật auto-start.
 
-Nói cách khác, trong môi trường production thực tế, bạn thường vẫn cần gắn `nb app autostart run` vào quy trình startup hệ thống của riêng mình, ví dụ như `systemd`, script khởi động của nền tảng container hoặc cơ chế boot ở cấp máy chủ mà bạn đang dùng.
+Trong môi trường production, thông thường bạn vẫn cần nối `nb app autostart run` vào luồng khởi động hệ thống riêng của mình, như `systemd`, startup script của nền tảng container, hoặc một cơ chế auto-start cấp máy chủ khác mà bạn đang dùng.
 
 :::
 
 ### Phạm vi áp dụng
 
-`nb app autostart` chỉ áp dụng cho env có runtime do CLI quản lý trên chính máy hiện tại:
+`nb app autostart` chỉ hoạt động với các env có runtime do CLI quản lý:
 
 - `local`
 - `docker`
 
-Nếu env chỉ là kết nối API từ xa, hoặc ứng dụng không được CLI quản lý cục bộ trên máy này, các lệnh này không phải công cụ phù hợp cho autostart.
+Nếu một env chỉ là kết nối API từ xa, hoặc ứng dụng không được CLI quản lý cục bộ trên máy hiện tại, thì nhóm lệnh này không phải là cách phù hợp để xử lý auto-start.
 
 ## Bước 2: cấu hình reverse proxy
 
-Khi ứng dụng đã có thể tự phục hồi, bước tiếp theo là xử lý điểm vào từ bên ngoài. Trong production, reverse proxy thường chịu trách nhiệm:
+Sau khi ứng dụng đã có thể tự phục hồi, bước tiếp theo là xử lý entrypoint bên ngoài. Trong production, reverse proxy thường chịu trách nhiệm:
 
-- gắn domain hoặc cổng public
-- chuyển tiếp lưu lượng HTTP và WebSocket tới NocoBase
+- bind domain name hoặc cổng entry
+- chuyển tiếp request HTTP và WebSocket tới NocoBase
 - xử lý HTTPS, chứng chỉ, cache hoặc kiểm soát truy cập
 
-Trong NocoBase CLI, các điểm vào được khuyến nghị là:
+Các CLI entrypoint được khuyến nghị là:
 
-- `nb env proxy nginx`
-- `nb env proxy caddy`
+- `nb proxy nginx`
+- `nb proxy caddy`
 
-### Cách làm mặc định
+### Luồng mặc định
 
-Nếu ứng dụng của bạn đã được lưu thành một CLI env và là env `local` hoặc `docker`, thông thường chỉ cần để CLI sinh cấu hình proxy là đủ:
-
-```bash
-nb env proxy nginx --env app1 --host app.example.com
-nb env proxy caddy --env app1 --host app.example.com
-```
-
-Nếu env hiện tại đã là env mục tiêu, bạn có thể bỏ `--env`:
+Nếu ứng dụng đã được lưu thành một CLI env và env đó là `local` hoặc `docker`, cách thông thường nhất là để CLI tự sinh cấu hình trực tiếp:
 
 ```bash
-nb env proxy nginx --host app.example.com
+nb proxy nginx use docker
+nb proxy nginx generate --env app1 --host app.example.com
+
+nb proxy caddy use local
+nb proxy caddy generate --env app1 --host app.example.com
 ```
 
-CLI giúp bao phủ những chi tiết dễ bị bỏ sót khi viết cấu hình thủ công, ví dụ:
+Sau đó khởi động provider đã chọn:
+
+```bash
+nb proxy nginx start
+nb proxy caddy start
+```
+
+CLI cũng hỗ trợ xử lý những chi tiết rất dễ bị bỏ sót trong cấu hình viết tay, chẳng hạn như:
 
 - chuyển tiếp WebSocket
-- đường dẫn entry và static asset trong triển khai theo subpath
+- URL entry và asset dưới các subpath
 - trang fallback cho SPA
-- file cấu hình dùng chung của provider
+- các file cấu hình dùng chung ở cấp provider
 
-### Khi nào chọn Nginx, khi nào chọn Caddy
-
-Thông thường bạn có thể quyết định như sau:
+### Khi nào nên chọn Nginx hoặc Caddy
 
 | Tình huống | Khuyến nghị |
 | --- | --- |
-| Bạn đã dùng Nginx để quản lý website, cache, chứng chỉ hoặc kiểm soát truy cập | [Nginx](./reverse-proxy/nginx.md) |
-| Bạn đã có domain và muốn bật HTTPS nhanh hơn với ít việc bảo trì TLS hơn | [Caddy](./reverse-proxy/caddy.md) |
-| Bạn muốn đọc phần giải thích tổng quan của nhóm lệnh này trước | [Production Reverse Proxy](./reverse-proxy/index.md) |
+| Bạn đã dùng Nginx để quản lý site, cache, chứng chỉ hoặc kiểm soát truy cập | [Nginx](./reverse-proxy/nginx.md) |
+| Bạn đã có domain và muốn bật HTTPS nhanh với ít chi tiết TLS phải tự duy trì hơn | [Caddy](./reverse-proxy/caddy.md) |
+| Bạn muốn xem phần giới thiệu tổng quan trước | [Reverse Proxy trong production](./reverse-proxy/index.md) |
 
-Nếu bạn thay đổi cấu hình env ảnh hưởng đến kết quả proxy, như `app-port` hoặc `app-public-path`, hãy nhớ chạy lại subcommand proxy tương ứng.
+Nếu sau đó bạn thay đổi các thiết lập env như `app-port` hoặc `app-public-path` có ảnh hưởng tới hành vi proxy, hãy chạy lại subcommand proxy tương ứng.
 
-## Lộ trình triển khai khuyến nghị
+## Lộ trình rollout mặc định
 
-Nếu bạn muốn con đường đơn giản nhất để lên production, thứ tự này thường hoạt động tốt:
+Đối với rollout production đơn giản nhất, trình tự sau thường là đủ:
 
-1. Đảm bảo ứng dụng đã có thể khởi động đúng ngay trên máy chủ
-2. Chạy `nb app autostart enable`
-3. Gắn `nb app autostart run` vào quy trình khởi động hệ thống
-4. Chọn Nginx hoặc Caddy và chạy subcommand `nb env proxy` tương ứng
-5. Kiểm tra truy cập từ bên ngoài qua domain cuối cùng hoặc địa chỉ public
+1. xác nhận ứng dụng đã có thể khởi động bình thường ngay trên chính server đó
+2. chạy `nb app autostart enable`
+3. nối `nb app autostart run` vào luồng khởi động hệ thống
+4. chọn Nginx hoặc Caddy và chạy subcommand `nb proxy` tương ứng
+5. xác minh truy cập từ bên ngoài bằng domain name hoặc địa chỉ entry
 
-## Liên kết nhanh
+## Chỉ mục nhanh
 
 | Tôi muốn... | Xem tại đây |
 | --- | --- |
-| Bắt đầu từ phần giải thích tổng quan về reverse proxy | [Production Reverse Proxy](./reverse-proxy/index.md) |
-| Tiếp tục dùng Nginx cho lớp entry | [Nginx](./reverse-proxy/nginx.md) |
-| Dùng Caddy để thiết lập HTTPS nhanh hơn | [Caddy](./reverse-proxy/caddy.md) |
-| Quản lý start, stop, log và upgrade | [Manage Apps](../operations/manage-app.md) |
-| Đọc tài liệu tham chiếu CLI cho `nb env proxy` | [`nb env proxy`](../../api/cli/env/proxy/index.md) |
+| Đọc phần giới thiệu tổng quan về reverse proxy trước | [Reverse Proxy trong production](./reverse-proxy/index.md) |
+| Tiếp tục dùng Nginx ở lớp entry | [Nginx](./reverse-proxy/nginx.md) |
+| Dùng Caddy để bật HTTPS nhanh hơn | [Caddy](./reverse-proxy/caddy.md) |
+| Xem các thao tác start, stop, log và upgrade của ứng dụng | [Quản lý ứng dụng](../operations/manage-app.md) |
+| Đọc tài liệu CLI cho `nb proxy nginx` | [`nb proxy nginx`](../../api/cli/proxy/nginx/index.md) |
+| Đọc tài liệu CLI cho `nb proxy caddy` | [`nb proxy caddy`](../../api/cli/proxy/caddy/index.md) |
 
-## Các lệnh liên quan
+## Lệnh liên quan
 
 ```bash
-# Bật autostart cho một env
+# Bật auto-start cho một env
 nb app autostart enable --env app1 --yes
 
-# Liệt kê trạng thái autostart
+# Kiểm tra trạng thái auto-start
 nb app autostart list
 
-# Khởi động tất cả env đã bật autostart
+# Khởi động tất cả env đã được bật
 nb app autostart run
 
-# Sinh cấu hình reverse proxy cho Nginx
-nb env proxy nginx --env app1 --host app.example.com
+# Chọn runtime Nginx và sinh cấu hình
+nb proxy nginx use docker
+nb proxy nginx generate --env app1 --host app.example.com
+nb proxy nginx start
 
-# Sinh cấu hình reverse proxy cho Caddy
-nb env proxy caddy --env app1 --host app.example.com
+# Chọn runtime Caddy và sinh cấu hình
+nb proxy caddy use local
+nb proxy caddy generate --env app1 --host app.example.com
+nb proxy caddy start
 ```

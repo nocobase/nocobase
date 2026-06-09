@@ -1,64 +1,100 @@
+---
+title: "Nginx"
+description: "Dùng nb proxy nginx để tạo và quản lý cấu hình reverse proxy Nginx cho các env NocoBase do CLI quản lý."
+keywords: "NocoBase,nb proxy nginx,reverse proxy,Nginx,production"
+---
+
 # Nginx
 
-Nếu ứng dụng NocoBase của bạn đã có thể truy cập bình thường qua `http://127.0.0.1:13000`, bước tiếp theo thường là đặt thêm một lớp Nginx phía trước. Cách này thường có hai lợi ích trực tiếp: bên ngoài chỉ cần mở các cổng chuẩn `80/443`, đồng thời cũng thuận tiện hơn khi bổ sung HTTPS, chứng chỉ và chính sách cache về sau.
+Nếu bạn đã dùng Nginx trên máy chủ để quản lý site, hoặc vẫn muốn tự quản lý chứng chỉ, cache và kiểm soát truy cập, thì `nb proxy nginx` là lựa chọn được khuyến nghị.
 
-## Cấu hình tối thiểu có thể chạy
+## Thứ tự được khuyến nghị
 
-Trước tiên, hãy tạo một tệp cấu hình trên máy chủ, ví dụ `/etc/nginx/conf.d/nocobase.conf`:
+Với một env do CLI quản lý thuộc loại `local` hoặc `docker`, thứ tự mặc định là:
 
-```nginx
-server {
-    listen 80;
-    server_name your-domain.com;
+```bash
+nb proxy nginx use docker
+nb proxy nginx generate --env test2 --host c.local.nocobase.com
+nb proxy nginx start
+```
 
-    client_max_body_size 100m;
+Hoặc chạy bằng tiến trình cục bộ:
 
-    location / {
-        proxy_pass http://127.0.0.1:13000;
-        proxy_http_version 1.1;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection "upgrade";
-    }
-}
+```bash
+nb proxy nginx use local
+nb proxy nginx generate --env test2 --host c.local.nocobase.com
+nb proxy nginx start
+```
+
+Các lệnh theo sau thường dùng là:
+
+```bash
+nb proxy nginx current
+nb proxy nginx status
+nb proxy nginx info
+nb proxy nginx reload
+nb proxy nginx restart
+nb proxy nginx stop
+```
+
+## Dữ liệu đầu vào cho `generate`
+
+Cách dùng phổ biến nhất là:
+
+```bash
+nb proxy nginx generate --env test2 --host c.local.nocobase.com
+```
+
+Nếu bạn cũng muốn chỉ định cổng entry:
+
+```bash
+nb proxy nginx generate --env test2 --host c.local.nocobase.com --port 8080
 ```
 
 Trong đó:
 
-- đổi `server_name` thành tên miền của bạn
-- đổi `127.0.0.1:13000` thành địa chỉ thực tế mà NocoBase đang lắng nghe
-- bạn có thể tăng `client_max_body_size` thêm tùy theo nhu cầu upload
+- `--env`: env CLI nào sẽ được tạo cấu hình
+- `--host`: tên miền công khai
+- `--port`: cổng entry của proxy, không phải `appPort` của chính ứng dụng
 
-## Kiểm tra và nạp lại cấu hình
+Nếu env chưa có `appPort`, hãy lưu trước bằng `nb env update test2 --app-port 56575`.
+
+## Các tệp do CLI quản lý
+
+Lấy `test2` làm ví dụ, workflow của Nginx thường quản lý:
+
+- `NB_CLI_ROOT/.nocobase/proxy/nginx/snippets`
+- `NB_CLI_ROOT/.nocobase/proxy/nginx/test2/app.conf`
+- `NB_CLI_ROOT/.nocobase/proxy/nginx/test2/public/index-v1.html`
+- `NB_CLI_ROOT/.nocobase/proxy/nginx/test2/public/index-v2.html`
+- `NB_CLI_ROOT/test2/storage/dist-client`
+- `NB_CLI_ROOT/test2/storage/uploads`
+
+Một entry Nginx được tạo đầy đủ thường bao phủ các khu vực sau:
+
+- `uploads`
+- `dist`
+- `well-known`
+- `api`
+- `ws`
+- `spa`
+
+Điều đó có nghĩa là một cấu hình production thực tế của NocoBase thường không chỉ là một khối `proxy_pass` đơn giản.
+
+## Cấu hình viết tay
+
+Nếu ứng dụng không do CLI quản lý, hoặc bạn cố ý muốn tự duy trì toàn bộ cấu hình Nginx, bạn vẫn có thể viết tay.
+
+Nhưng với NocoBase, một reverse proxy sẵn sàng cho production thường không chỉ xử lý việc proxy tới backend, mà còn phải xử lý uploads, tài nguyên frontend, WebSocket, các route `.well-known` và các trang fallback SPA.
+
+Khi ứng dụng dùng triển khai theo subpath, hoặc khi tài nguyên, uploads và proxy không cùng chia sẻ một góc nhìn đường dẫn, cấu hình viết tay sẽ dễ sai hơn. Trong những trường hợp như vậy, thường an toàn hơn nếu tạo cấu hình trước bằng:
 
 ```bash
-nginx -t
-systemctl reload nginx
+nb proxy nginx generate --env test2 --host c.local.nocobase.com
 ```
 
-Nếu bạn không quản lý Nginx bằng `systemd`, hãy dùng quy trình reload riêng của bạn.
+## Liên kết liên quan
 
-## Truy cập sau khi cấu hình xong
-
-Nếu DNS đã trỏ về máy chủ này, hãy truy cập:
-
-```text
-http://your-domain.com
-```
-
-Lúc này Nginx sẽ chuyển tiếp yêu cầu tới NocoBase.
-
-## Còn HTTPS thì sao
-
-Nếu bạn cũng cần HTTPS, thông thường có hai cách phổ biến:
-
-- tiếp tục cấu hình chứng chỉ ngay trên Nginx
-- chuyển hẳn sang [Caddy](./caddy.md) để Caddy tự động xin và gia hạn chứng chỉ
-
-## Xem tiếp ở đâu
-
-- Nếu ứng dụng của bạn vẫn chưa chạy, hãy xem [Cài đặt bằng Docker Compose](../../installation/docker-compose.md) trước
-- Nếu bạn vẫn cần kiểm tra cổng hoặc khóa, hãy xem tiếp [Biến môi trường của ứng dụng](../../installation/env.md)
+- [Reverse proxy trong môi trường production](./index.md)
+- [Caddy](./caddy.md)
+- [Cài bằng CLI](../../installation/cli.md)

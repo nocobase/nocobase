@@ -1,12 +1,12 @@
 ---
-title: 'nb config set'
-description: 'nb config set コマンドリファレンス：CLI の設定項目を設定します。'
-keywords: 'nb config set,NocoBase CLI,設定を行う'
+title: "nb config set"
+description: "nb config set コマンドリファレンス：CLI 設定項目を設定します。"
+keywords: "nb config set,NocoBase CLI,設定を保存"
 ---
 
 # nb config set
 
-CLI の設定項目を設定します。サポートされている設定キーは [`nb config`](./index.md) を参照してください。
+CLI 設定項目を設定します。対応している設定キーは [`nb config`](./index.md) を参照してください。
 
 ## 使い方
 
@@ -16,10 +16,10 @@ nb config set <key> <value>
 
 ## パラメータ
 
-| パラメータ | 型     | 説明                                                                                                                          |
-| ---------- | ------ | ----------------------------------------------------------------------------------------------------------------------------- |
-| `<key>` | string | 設定項目名。サポートされている値は [`nb config`](./index.md) を参照してください |
-| `<value>`  | string | 設定値。空にすることはできません                                                                                              |
+| パラメータ | 型 | 説明 |
+| --- | --- | --- |
+| `<key>` | string | 設定項目名。対応している値は [`nb config`](./index.md) を参照してください |
+| `<value>` | string | 設定値。空にはできません |
 
 ## 例
 
@@ -33,17 +33,14 @@ nb config set bin.docker /usr/local/bin/docker
 nb config set bin.caddy /opt/homebrew/bin/caddy
 nb config set bin.git /usr/bin/git
 nb config set bin.nginx /usr/sbin/nginx
-nb config set proxy.provider caddy
 nb config set proxy.nb-cli-root /workspace
 nb config set proxy.upstream-host host.docker.internal
 nb config set bin.yarn yarn
 ```
 
-## 説明
+## 補足
 
-`update.policy` は `prompt`、`auto`、`off` をサポートし、デフォルト値は `prompt` です。
-
-`proxy.provider` は `nginx` と `caddy` をサポートします。
+`update.policy` では `prompt`、`auto`、`off` が使えます。デフォルト値は `prompt` です。
 
 ## 関連コマンド
 

@@ -1,7 +1,7 @@
 ---
 title: "nb env"
-description: "nb env 命令参考：管理 NocoBase CLI env，包括添加、查看 current env、状态检查、切换、更新、代理配置、认证和移除。"
-keywords: "nb env,NocoBase CLI,环境管理,env,current env,proxy,认证,OpenAPI"
+description: "nb env 命令参考：管理 NocoBase CLI env，包括添加、查看 current env、状态检查、切换、更新、认证和移除。"
+keywords: "nb env,NocoBase CLI,环境管理,env,current env,认证,OpenAPI"
 ---
 
 # nb env
@@ -29,7 +29,6 @@ nb env <command>
 | [`nb env list`](./list.md) | 列出已配置 env |
 | [`nb env status`](./status.md) | 查看当前 env、指定 env 或全部 env 的状态 |
 | [`nb env info`](./info.md) | 查看单个 env 的详细信息 |
-| [`nb env proxy`](./proxy/index.md) | 查看代理 provider 子命令，并为托管 env 生成 Nginx 或 Caddy 代理配置 |
 | [`nb env remove`](./remove.md) | 停止托管运行态后移除 env 配置 |
 | [`nb env auth`](./auth.md) | 对已保存 env 执行 OAuth 登录 |
 | [`nb env use`](./use.md) | 切换当前 env |
@@ -42,7 +41,6 @@ nb env current
 nb env list
 nb env status
 nb env info app1
-nb env proxy nginx --env app1
 nb env update app1
 nb env use app1
 nb env auth app1
@@ -61,4 +59,5 @@ nb env auth app1
 - [`nb init`](../init.md)
 - [`nb api`](../api/index.md)
 - [`nb app`](../app/index.md)
+- [`nb proxy`](../proxy/index.md)
 - [`nb session`](../session/index.md)

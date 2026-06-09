@@ -295,13 +295,16 @@ test('cli config stores explicit binary overrides under settings', async () => {
 test('cli config stores explicit proxy path settings under settings', async () => {
   await withTempCliHome(async () => {
     const nbCliRoot = await setCliConfigValue('proxy.nb-cli-root', '/workspace', { scope: 'global' });
+    const caddyDriver = await setCliConfigValue('proxy.caddy-driver', 'docker', { scope: 'global' });
     const host = await setCliConfigValue('proxy.upstream-host', 'host.docker.internal', { scope: 'global' });
     const config = await loadAuthConfig({ scope: 'global' });
 
     expect(nbCliRoot).toBe('/workspace');
+    expect(caddyDriver).toBe('docker');
     expect(host).toBe('host.docker.internal');
     expect(config.settings?.proxy).toEqual({
       nbCliRoot: '/workspace',
+      caddyDriver: 'docker',
       upstreamHost: 'host.docker.internal',
     });
   });
@@ -415,6 +418,7 @@ test('cli config returns default binary names when bin overrides are not configu
 test('cli config returns default proxy path settings', async () => {
   await withTempCliHome(async () => {
     expect(await getCliConfigValue('proxy.nb-cli-root', { scope: 'global' })).toBe(resolveCliHomeRoot());
+    expect(await getCliConfigValue('proxy.nginx-driver', { scope: 'global' })).toBe('local');
     expect(await getCliConfigValue('proxy.upstream-host', { scope: 'global' })).toBe('127.0.0.1');
   });
 });
