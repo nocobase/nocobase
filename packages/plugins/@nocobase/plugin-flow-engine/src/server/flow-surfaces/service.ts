@@ -2862,6 +2862,13 @@ export class FlowSurfacesService {
     return `{{ctx.record.${this.getCollectionFilterTargetKey(popupProfile.currentCollection)}}}`;
   }
 
+  private resolveLocalActionPopupOpenViewFilterByTk(popupProfile: FlowSurfacePopupBlockProfile | null | undefined) {
+    if (!popupProfile?.hasCurrentRecord || !popupProfile.currentCollection) {
+      return undefined;
+    }
+    return `{{ctx.record.${this.getCollectionFilterTargetKey(popupProfile.currentCollection)}}}`;
+  }
+
   private resolvePopupAssociationFields(popupProfile: FlowSurfacePopupBlockProfile, blockUse: string) {
     if (!popupProfile.currentCollection || !popupProfile.hasCurrentRecord) {
       return [];
@@ -14269,7 +14276,7 @@ export class FlowSurfacesService {
       : popupProfile?.currentCollection
         ? this.getCollectionFilterTargetKey(popupProfile.currentCollection)
         : null;
-    const defaultFilterByTk = this.resolvePopupCurrentRecordResourceFilterByTk(popupProfile);
+    const defaultFilterByTk = this.resolveLocalActionPopupOpenViewFilterByTk(popupProfile);
     const currentFilterByTk = _.isString(currentOpenView.filterByTk) ? currentOpenView.filterByTk.trim() : '';
     const preserveCustomFilterByTk =
       currentFilterByTk &&
@@ -14315,9 +14322,12 @@ export class FlowSurfacesService {
     }
 
     const currentOpenView = this.resolvePopupHostOpenView(actionNode);
+    if (this.isExternalPopupOpenView(currentOpenView, actionNode.uid)) {
+      return;
+    }
     if (
-      this.isExternalPopupOpenView(currentOpenView, actionNode.uid) ||
-      hasConfiguredFlowContextValue(currentOpenView?.filterByTk)
+      hasConfiguredFlowContextValue(currentOpenView?.filterByTk) &&
+      this.normalizeFlowContextTemplateValue(currentOpenView?.filterByTk) !== '{{ctx.view.inputArgs.filterByTk}}'
     ) {
       return;
     }
@@ -14345,11 +14355,15 @@ export class FlowSurfacesService {
     const currentFilterByTk = _.isString(currentGroupOpenView?.filterByTk)
       ? currentGroupOpenView.filterByTk.trim()
       : '';
-    const defaultFilterByTk = this.resolvePopupCurrentRecordResourceFilterByTk(popupProfile);
+    const defaultFilterByTk = this.resolveLocalActionPopupOpenViewFilterByTk(popupProfile);
+    const normalizedCurrentFilterByTk = this.normalizeFlowContextTemplateValue(currentGroupOpenView?.filterByTk);
+    const normalizedDefaultFilterByTk = this.normalizeFlowContextTemplateValue(defaultFilterByTk);
+    const normalizedExpectedRecordFilterByTk = filterTargetKey ? `{{ctx.record.${filterTargetKey}}}` : '';
     const preserveCustomFilterByTk =
-      currentFilterByTk &&
-      currentFilterByTk !== '{{ctx.view.inputArgs.filterByTk}}' &&
-      currentFilterByTk !== '{{ctx.record.' + filterTargetKey + '}}';
+      !!currentFilterByTk &&
+      normalizedCurrentFilterByTk !== '{{ctx.view.inputArgs.filterByTk}}' &&
+      (!normalizedDefaultFilterByTk || normalizedCurrentFilterByTk !== normalizedDefaultFilterByTk) &&
+      (!normalizedExpectedRecordFilterByTk || normalizedCurrentFilterByTk !== normalizedExpectedRecordFilterByTk);
     const nextOpenView = buildDefinedPayload({
       ...currentGroupOpenView,
       dataSourceKey: currentOpenView?.dataSourceKey || popupProfile?.dataSourceKey || 'main',

@@ -3926,6 +3926,94 @@ describe('flowSurfaces templates', () => {
     }
   });
 
+  it('should replace legacy popup inputArgs filter during local record action title sync', async () => {
+    const service = new FlowSurfacesService(app.pm.get('flow-engine') as any) as any;
+    const actionNode = {
+      uid: 'local-record-action-title-sync',
+      use: 'ViewActionModel',
+      stepParams: {
+        popupSettings: {
+          openView: {
+            collectionName: 'target_code_records',
+            filterByTk: '{{ ctx.view.inputArgs.filterByTk }}',
+          },
+        },
+      },
+    };
+    const findSpy = vi.spyOn(service.repository, 'findModelById').mockResolvedValue(actionNode);
+    const profileSpy = vi.spyOn(service, 'resolvePopupBlockProfile').mockResolvedValue({
+      dataSourceKey: 'main',
+      collectionName: 'target_code_records',
+      currentCollection: {
+        filterTargetKey: 'id',
+      },
+      filterByTk: '{{ctx.view.inputArgs.filterByTk}}',
+      popupKind: 'recordPopup',
+      hasCurrentRecord: true,
+      hasAssociationContext: false,
+      scene: 'one',
+    });
+    const patchSpy = vi.spyOn(service, 'patchFlowSurfaceModelOptions').mockResolvedValue(undefined);
+
+    try {
+      await service.syncDefaultActionPopupOpenViewTitle(actionNode.uid, actionNode, {
+        openViewTitle: 'Synced title',
+      });
+
+      expect(patchSpy).toHaveBeenCalledTimes(1);
+      const patchedOpenView = patchSpy.mock.calls[0][0].stepParams.popupSettings.openView;
+      expect(patchedOpenView.title).toBe('Synced title');
+      expect(patchedOpenView.filterByTk).toBe('{{ctx.record.id}}');
+    } finally {
+      findSpy.mockRestore();
+      profileSpy.mockRestore();
+      patchSpy.mockRestore();
+    }
+  });
+
+  it('should not add record filter during new-record action title sync', async () => {
+    const service = new FlowSurfacesService(app.pm.get('flow-engine') as any) as any;
+    const actionNode = {
+      uid: 'new-record-action-title-sync',
+      use: 'AddNewActionModel',
+      stepParams: {
+        popupSettings: {
+          openView: {
+            collectionName: 'target_code_records',
+          },
+        },
+      },
+    };
+    const findSpy = vi.spyOn(service.repository, 'findModelById').mockResolvedValue(actionNode);
+    const profileSpy = vi.spyOn(service, 'resolvePopupBlockProfile').mockResolvedValue({
+      dataSourceKey: 'main',
+      collectionName: 'target_code_records',
+      currentCollection: {
+        filterTargetKey: 'id',
+      },
+      popupKind: 'plainPopup',
+      hasCurrentRecord: false,
+      hasAssociationContext: false,
+      scene: 'new',
+    });
+    const patchSpy = vi.spyOn(service, 'patchFlowSurfaceModelOptions').mockResolvedValue(undefined);
+
+    try {
+      await service.syncDefaultActionPopupOpenViewTitle(actionNode.uid, actionNode, {
+        openViewTitle: 'Create record',
+      });
+
+      expect(patchSpy).toHaveBeenCalledTimes(1);
+      const patchedOpenView = patchSpy.mock.calls[0][0].stepParams.popupSettings.openView;
+      expect(patchedOpenView.title).toBe('Create record');
+      expect(patchedOpenView).not.toHaveProperty('filterByTk');
+    } finally {
+      findSpy.mockRestore();
+      profileSpy.mockRestore();
+      patchSpy.mockRestore();
+    }
+  });
+
   it('should preserve custom record filter when popup target key differs from opener key', async () => {
     const service = new FlowSurfacesService(app.pm.get('flow-engine') as any) as any;
     const template = {

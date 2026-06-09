@@ -6466,7 +6466,16 @@ describe('flowSurfaces applyBlueprint contract', () => {
     const data = getData(executeRes);
     const mainTable = collectDescendantNodes(data.surface.tree, (item) => item?.use === 'TableBlockModel')[0];
     const mainViewAction = collectDescendantNodes(mainTable, (item) => item?.use === 'ViewActionModel')[0];
-    const { popupBlock: userDetailsBlock } = await readPrimaryPopupBlockFromAction(mainViewAction.uid);
+    const { actionReadback: mainViewActionReadback, popupBlock: userDetailsBlock } =
+      await readPrimaryPopupBlockFromAction(mainViewAction.uid);
+    expect(mainViewActionReadback.tree?.stepParams?.popupSettings?.openView).toMatchObject({
+      collectionName: sourceCollection,
+      filterByTk: '{{ctx.record.id}}',
+    });
+    expect(userDetailsBlock?.stepParams?.resourceSettings?.init).toMatchObject({
+      collectionName: sourceCollection,
+      filterByTk: '{{ctx.view.inputArgs.filterByTk}}',
+    });
     const userDetailsReadback = await getSurface(rootAgent, {
       uid: userDetailsBlock.uid,
     });
@@ -6491,6 +6500,7 @@ describe('flowSurfaces applyBlueprint contract', () => {
     expect(userRolesTable?.stepParams?.resourceSettings?.init).toMatchObject({
       collectionName: targetCollection,
       associationName,
+      sourceId: '{{ctx.view.inputArgs.filterByTk}}',
     });
   });
 
