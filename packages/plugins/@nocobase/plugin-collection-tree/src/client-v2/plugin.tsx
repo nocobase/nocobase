@@ -90,7 +90,7 @@ export class PluginCollectionTreeClientV2 extends Plugin<any, Application> {
     dataSourceManager?.registerCollectionTemplate?.({
       name: 'tree',
       title: '{{t("Tree collection")}}',
-      order: 30,
+      order: 24,
       color: 'blue',
       collection: {
         options: {
