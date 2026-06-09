@@ -401,6 +401,8 @@ describe('plugin-ui-layout route permissions', () => {
       'mobile-layout',
       DEFAULT_ADMIN_UI_LAYOUT.uid,
       'mobile-layout',
+      DEFAULT_ADMIN_UI_LAYOUT.uid,
+      'mobile-layout',
     ]);
     expect(roleRouteRequests).toEqual([
       { roleName: 'layout-member', layoutUid: DEFAULT_ADMIN_UI_LAYOUT.uid },
@@ -411,6 +413,45 @@ describe('plugin-ui-layout route permissions', () => {
     expect(resource.roleRoutesAdd).toHaveBeenCalledTimes(1);
     expect(resource.roleRoutesRemove).not.toHaveBeenCalled();
     expect(resource.messageSuccess).toHaveBeenCalledTimes(1);
+  });
+
+  it('should refresh the summary menu count after saving drawer route permissions', async () => {
+    const resource = createCountingPermissionTabResources();
+    const user = userEvent.setup();
+    flowMocks.context = resource.context;
+
+    render(
+      <LayoutAwareDesktopRoutesPermissionsTab
+        activeKey="menu"
+        activeRole={{ name: 'layout-member', title: 'Layout member' }}
+        onRoleChange={vi.fn()}
+      />,
+    );
+
+    expect(await screen.findByText('0 / 1')).toBeInTheDocument();
+
+    await selectLayout('Mobile layout');
+
+    const mobileCheckbox = await screen.findByRole('checkbox', { name: 'Allow access to Mobile route' });
+
+    await act(async () => {
+      await user.click(mobileCheckbox);
+    });
+
+    await waitFor(() => {
+      expect(screen.queryByText('0 / 1')).not.toBeInTheDocument();
+    });
+    expect(screen.getAllByText('1 / 1')).toHaveLength(2);
+
+    await act(async () => {
+      await user.click(screen.getByRole('button', { name: 'Close' }));
+    });
+    await selectLayout('Mobile layout');
+
+    expect(await screen.findByRole('checkbox', { name: 'Allow access to Mobile route' })).toBeChecked();
+    expect(resource.roleRoutesAdd).toHaveBeenCalledWith('layout-member', { values: [2] });
+    expect(resource.roleRoutesRemove).not.toHaveBeenCalled();
+    expect(resource.messageSuccess).toHaveBeenCalledWith('Saved successfully');
   });
 });
 

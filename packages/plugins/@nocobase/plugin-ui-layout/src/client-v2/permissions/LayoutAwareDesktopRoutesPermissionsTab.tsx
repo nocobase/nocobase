@@ -443,7 +443,7 @@ export default function LayoutAwareDesktopRoutesPermissionsTab(props: Permission
     if (changes.add.length) {
       await roleRoutesResource.add({ values: changes.add });
     }
-    await roleRoutesService.refreshAsync();
+    await Promise.all([roleRoutesService.refreshAsync(), layoutMenuStatsService.refreshAsync()]);
     ctx.message.success(t('Saved successfully'));
   });
 
