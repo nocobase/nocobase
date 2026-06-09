@@ -135,6 +135,9 @@ function Calculation({ calculator, operands = [], onChange }: any) {
         style={{ flex: 1, minWidth: 0 }}
       />
       <Select
+        // antd's Select prop type doesn't surface DOM passthrough props (`role`),
+        // though it forwards them — same as the core `CollectionSelectorFieldModel`.
+        // @ts-expect-error -- role is forwarded to the DOM node
         role="button"
         aria-label="select-operator-calc"
         value={calculator}
@@ -261,6 +264,10 @@ function CalculationGroup({ value, onChange }: any) {
         <Trans t={tt}>
           {'Meet '}
           <Select
+            // antd's Select prop type doesn't surface DOM passthrough props
+            // (`role`/`data-testid`), though it forwards them — same as the core
+            // `CollectionSelectorFieldModel`.
+            // @ts-expect-error -- role/data-testid are forwarded to the DOM node
             role="button"
             data-testid="filter-select-all-or-any"
             value={type}

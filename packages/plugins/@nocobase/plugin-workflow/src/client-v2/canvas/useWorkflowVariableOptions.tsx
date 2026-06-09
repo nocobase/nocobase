@@ -37,8 +37,6 @@
  */
 
 import React, { useMemo } from 'react';
-import { QuestionCircleOutlined } from '@ant-design/icons';
-import { Tooltip } from 'antd';
 import type { MetaTreeNode } from '@nocobase/flow-engine';
 import { useFlowEngine } from '@nocobase/flow-engine';
 import { useCurrentWorkflowContext, useNodeContext } from './contexts';
@@ -54,11 +52,34 @@ const SCOPES_ROOT = '$scopes';
 
 /**
  * A system variable as held by either runtime's `systemVariables` registry.
- * v2 stores `{ key, label(string template), tooltip? }`; v1 stores
- * `{ key, label(string OR already-rendered JSX), value }` with the tooltip
- * inlined into the JSX label. `useSystemScope` below renders both shapes.
+ * v2 stores `{ key, label(string template) }`; v1 stores
+ * `{ key, label(string OR already-rendered JSX), value }` (the JSX bakes in a
+ * tooltip icon). `useSystemScope` reduces either to a plain string title.
  */
-type SystemVariableLike = { key: string; label: React.ReactNode; tooltip?: React.ReactNode };
+type SystemVariableLike = { key: string; label: React.ReactNode };
+
+/**
+ * Coerce a React node to plain text for use as a `MetaTreeNode.title` (which is a
+ * string). v1 system-variable labels are JSX (`<span>Instance ID</span><Tooltip/>`);
+ * recursively collect their text so the picker shows "Instance ID" rather than
+ * `[object Object]`. Strings/numbers pass through; non-text nodes (the tooltip
+ * icon) contribute nothing.
+ */
+function reactNodeToPlainText(node: React.ReactNode): string {
+  if (node == null || typeof node === 'boolean') {
+    return '';
+  }
+  if (typeof node === 'string' || typeof node === 'number') {
+    return String(node);
+  }
+  if (Array.isArray(node)) {
+    return node.map(reactNodeToPlainText).join('');
+  }
+  if (React.isValidElement(node)) {
+    return reactNodeToPlainText((node.props as { children?: React.ReactNode })?.children);
+  }
+  return '';
+}
 
 /**
  * A trigger as held by either runtime's `triggers` registry. v1 stores a
@@ -188,32 +209,18 @@ function useSystemScope(): MetaTreeNode | null {
   const flowEngine = useFlowEngine();
   const plugin = useWorkflowPlugin();
   const t = (key: string) => flowEngine.context.t(key, { ns: NAMESPACE });
-  const vars = Array.from(plugin?.systemVariables?.getValues?.() ?? []);
+  const vars: SystemVariableLike[] = plugin ? Array.from(plugin.systemVariables.getValues()) : [];
   if (!vars.length) {
     return null;
   }
   const children: MetaTreeNode[] = vars.map((item) => {
-    // The label is a `{{t("…")}}` template string (v2) or an already-rendered
-    // JSX node with the tooltip inlined (v1). Translate only the string form;
-    // pass JSX through untouched.
-    const label = typeof item.label === 'string' ? t(item.label) : item.label;
-    // The `tooltip` field only exists on v2's option shape (a string template);
-    // v1 has none (its tooltip is baked into the JSX label above).
-    const tooltip = typeof item.tooltip === 'string' ? t(item.tooltip) : item.tooltip;
+    // `MetaTreeNode.title` is a plain string (the cascader label). v2 labels are
+    // `{{t("…")}}` templates → translate them; v1 labels may be already-rendered
+    // JSX — coerce to a plain string for the title (the picker renders strings).
+    const label = typeof item.label === 'string' ? t(item.label) : reactNodeToPlainText(item.label);
     return {
       name: item.key,
-      // Render a `?` tooltip icon next to the label when the variable carries a
-      // (string) tooltip — mirrors v1's JSX system-variable labels.
-      title: tooltip ? (
-        <span>
-          <span style={{ marginRight: '0.5em' }}>{label}</span>
-          <Tooltip title={tooltip}>
-            <QuestionCircleOutlined />
-          </Tooltip>
-        </span>
-      ) : (
-        label
-      ),
+      title: label,
       type: '',
       paths: [SYSTEM_ROOT, item.key],
     };
