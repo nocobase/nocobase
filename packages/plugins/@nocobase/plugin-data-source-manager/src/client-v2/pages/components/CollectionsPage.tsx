@@ -631,9 +631,13 @@ function getTemplatePresetFieldsDisabledIncludes(template: CollectionTemplateOpt
 
 function hasTemplateCapability(
   template: CollectionTemplateOptions | undefined,
-  capability: 'recordUniqueKey' | 'simplePaginate',
+  capability: keyof NonNullable<CollectionTemplateOptions['capabilities']>,
 ) {
   return !!template?.capabilities?.[capability];
+}
+
+function supportsTemplateInherits(template: CollectionTemplateOptions | undefined) {
+  return template?.capabilities?.inherits !== false;
 }
 
 const CollectionTemplatePreview: FC<{ template?: CollectionTemplateOptions }> = ({ template }) => {
@@ -911,6 +915,7 @@ function CollectionCreateDrawer(props: {
     [t],
   );
   const TemplateConfigureForm = template.configure?.Form || template.ConfigureForm;
+  const supportsInherits = supportsTemplateInherits(template);
   const collectionCategoryFormItem = (
     <Form.Item name="category" label={t('Categories')}>
       <Select
@@ -927,6 +932,12 @@ function CollectionCreateDrawer(props: {
     <Form.Item name="description" label={t('Description')}>
       <Input.TextArea autoSize={{ minRows: 3, maxRows: 8 }} />
     </Form.Item>
+  );
+  const templateConfigureItems = (
+    <>
+      {TemplateConfigureForm ? <TemplateConfigureForm mode="create" template={template} form={form} /> : null}
+      <CollectionTemplateConfigureItems mode="create" template={template} form={form} />
+    </>
   );
 
   const handleSubmit = useCallback(async () => {
@@ -1002,10 +1013,9 @@ function CollectionCreateDrawer(props: {
         >
           <Input />
         </Form.Item>
+        {templateConfigureItems}
         {isSqlTemplate ? (
           <>
-            {TemplateConfigureForm ? <TemplateConfigureForm mode="create" template={template} form={form} /> : null}
-            <CollectionTemplateConfigureItems mode="create" template={template} form={form} />
             {hasTemplateCapability(template, 'recordUniqueKey') ? (
               <CollectionCreateFilterTargetKey form={form} />
             ) : null}
@@ -1014,8 +1024,6 @@ function CollectionCreateDrawer(props: {
           </>
         ) : isViewTemplate ? (
           <>
-            {TemplateConfigureForm ? <TemplateConfigureForm mode="create" template={template} form={form} /> : null}
-            <CollectionTemplateConfigureItems mode="create" template={template} form={form} />
             {hasTemplateCapability(template, 'recordUniqueKey') ? (
               <CollectionCreateFilterTargetKey form={form} />
             ) : null}
@@ -1033,9 +1041,11 @@ function CollectionCreateDrawer(props: {
           </>
         ) : (
           <>
-            <Form.Item name="inherits" label={t('Inherits')}>
-              <Select mode="multiple" options={collectionOptions} loading={collectionRequest.loading} allowClear />
-            </Form.Item>
+            {supportsInherits ? (
+              <Form.Item name="inherits" label={t('Inherits')}>
+                <Select mode="multiple" options={collectionOptions} loading={collectionRequest.loading} allowClear />
+              </Form.Item>
+            ) : null}
             {collectionCategoryFormItem}
             {collectionDescriptionFormItem}
             <Form.Item
@@ -1047,8 +1057,6 @@ function CollectionCreateDrawer(props: {
             >
               <Checkbox>{t('Use simple pagination mode')}</Checkbox>
             </Form.Item>
-            {TemplateConfigureForm ? <TemplateConfigureForm mode="create" template={template} form={form} /> : null}
-            <CollectionTemplateConfigureItems mode="create" template={template} form={form} />
             {hasTemplateCapability(template, 'recordUniqueKey') ? (
               <CollectionCreateFilterTargetKey form={form} />
             ) : null}
@@ -1280,6 +1288,13 @@ function CollectionEditDrawer(props: {
   }
 
   const TemplateConfigureForm = template?.configure?.Form || template?.ConfigureForm;
+  const supportsInherits = supportsTemplateInherits(template);
+  const templateConfigureItems = template ? (
+    <>
+      {TemplateConfigureForm ? <TemplateConfigureForm mode="edit" template={template} form={form} /> : null}
+      <CollectionTemplateConfigureItems mode="edit" template={template} form={form} />
+    </>
+  ) : null;
 
   return (
     <DrawerFormLayout
@@ -1303,11 +1318,14 @@ function CollectionEditDrawer(props: {
         >
           <Input disabled />
         </Form.Item>
+        {templateConfigureItems}
         {isMainDataSource ? (
           <>
-            <Form.Item name="inherits" label={t('Inherits')}>
-              <Select mode="multiple" options={collectionOptions} loading={collectionRequest.loading} allowClear />
-            </Form.Item>
+            {supportsInherits ? (
+              <Form.Item name="inherits" label={t('Inherits')}>
+                <Select mode="multiple" options={collectionOptions} loading={collectionRequest.loading} allowClear />
+              </Form.Item>
+            ) : null}
             <Form.Item name="category" label={t('Categories')}>
               <Select
                 mode="multiple"
@@ -1343,10 +1361,6 @@ function CollectionEditDrawer(props: {
             <Select mode="multiple" options={filterTargetKeyOptions} loading={fieldsRequest.loading} allowClear />
           </Form.Item>
         ) : null}
-        {template && TemplateConfigureForm ? (
-          <TemplateConfigureForm mode="edit" template={template} form={form} />
-        ) : null}
-        {template ? <CollectionTemplateConfigureItems mode="edit" template={template} form={form} /> : null}
       </Form>
     </DrawerFormLayout>
   );

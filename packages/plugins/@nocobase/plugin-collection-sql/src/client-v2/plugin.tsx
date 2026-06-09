@@ -28,7 +28,6 @@ export class PluginCollectionSqlClientV2 extends Plugin<any, Application> {
       title: '{{t("SQL collection")}}',
       order: 40,
       color: 'yellow',
-      divider: true,
       collection: {
         options: {
           template: 'sql',
