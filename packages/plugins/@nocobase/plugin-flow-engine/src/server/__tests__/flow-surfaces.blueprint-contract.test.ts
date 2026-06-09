@@ -642,6 +642,15 @@ describe('flowSurfaces applyBlueprint contract', () => {
 
     expect(getRouteBackedTabs(data.surface).map((tab: any) => tab?.props?.title)).toEqual(['Overview', 'Summary']);
     expect(data.surface.target.locator.pageSchemaUid).toBe(data.target.pageSchemaUid);
+    expect(data.surface.pageRoute.menuSchemaUid).toEqual(expect.any(String));
+    expect(data.surface.pageRoute.menuSchemaUid).not.toBe(data.target.pageSchemaUid);
+
+    const pageRoute = await routesRepo.findOne({
+      filter: {
+        schemaUid: data.target.pageSchemaUid,
+      },
+    });
+    expect(pageRoute?.get('menuSchemaUid')).toBe(data.surface.pageRoute.menuSchemaUid);
   });
 
   it('should force single-tab applyBlueprint pages to hidden-tab mode even when enableTabs is explicit true', async () => {

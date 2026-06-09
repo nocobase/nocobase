@@ -972,6 +972,8 @@ describe('flowSurfaces API contract core', () => {
     expect(group.type).toBe('group');
     expect(item.type).toBe('flowPage');
     expect(item.parentMenuRouteId).toBe(group.routeId);
+    expect(item.menuSchemaUid).toEqual(expect.any(String));
+    expect(item.menuSchemaUid).not.toBe(item.pageSchemaUid);
 
     const initialized = await createPage(rootAgent, {
       menuRouteId: item.routeId,
@@ -981,6 +983,7 @@ describe('flowSurfaces API contract core', () => {
 
     expect(initialized.routeId).toBe(item.routeId);
     expect(initialized.pageSchemaUid).toBe(item.pageSchemaUid);
+    expect(initialized.menuSchemaUid).toBe(item.menuSchemaUid);
     expect(initialized.pageUid).toBe(item.pageUid);
 
     const pageRoute = await routesRepo.findOne({
@@ -988,6 +991,7 @@ describe('flowSurfaces API contract core', () => {
       appends: ['children'],
     });
     expect(pageRoute?.get('parentId')).toBe(group.routeId);
+    expect(pageRoute?.get('menuSchemaUid')).toBe(item.menuSchemaUid);
     expect(pageRoute?.get('enableTabs')).toBe(true);
 
     const tabRoute = _.castArray(pageRoute?.get('children') || [])[0];
@@ -1000,6 +1004,50 @@ describe('flowSurfaces API contract core', () => {
     ).toMatchObject({
       use: 'BlockGridModel',
     });
+  });
+
+  it('should persist menuSchemaUid when createPage creates the menu route directly', async () => {
+    const requestedMenuSchemaUid = `external-menu-schema-${uid()}`;
+    const page = await createPage(rootAgent, {
+      title: `Direct menuSchemaUid page ${uid()}`,
+      tabTitle: 'Overview',
+      menuSchemaUid: requestedMenuSchemaUid,
+    });
+
+    expect(page.menuSchemaUid).toEqual(expect.any(String));
+    expect(page.menuSchemaUid).not.toBe(page.pageSchemaUid);
+    expect(page.menuSchemaUid).not.toBe(requestedMenuSchemaUid);
+
+    const pageRoute = await routesRepo.findOne({
+      filterByTk: String(page.routeId),
+    });
+    expect(pageRoute?.get('menuSchemaUid')).toBe(page.menuSchemaUid);
+  });
+
+  it('should not backfill menuSchemaUid while initializing an existing route that lacks it', async () => {
+    const item = await createMenu(rootAgent, {
+      title: `Legacy bindable route ${uid()}`,
+      type: 'item',
+    });
+    await routesRepo.update({
+      filterByTk: String(item.routeId),
+      values: {
+        menuSchemaUid: null,
+      },
+    });
+
+    const initialized = await createPage(rootAgent, {
+      menuRouteId: item.routeId,
+      tabTitle: 'Overview',
+      menuSchemaUid: `ignored-menu-schema-${uid()}`,
+    });
+
+    expect(initialized).not.toHaveProperty('menuSchemaUid');
+
+    const pageRoute = await routesRepo.findOne({
+      filterByTk: String(item.routeId),
+    });
+    expect(pageRoute?.get('menuSchemaUid')).toBeNull();
   });
 
   it('should reuse a unique same-parent menu group on repeated createMenu calls', async () => {

@@ -1774,6 +1774,7 @@ export class FlowSurfacesService {
     const parentRoute = await this.assertMenuParentIsGroup(values.parentMenuRouteId, transaction);
     this.assertVisibleNavigationIcon('createMenu', 'values', values);
     const pageSchemaUid = values.pageSchemaUid || uid();
+    const menuSchemaUid = uid();
     const pageUid = values.pageUid || uid();
     const tabSchemaUid = values.tabSchemaUid || uid();
     const tabSchemaName = values.tabSchemaName || uid();
@@ -1789,6 +1790,7 @@ export class FlowSurfacesService {
         icon: values.icon,
         tooltip: values.tooltip,
         schemaUid: pageSchemaUid,
+        menuSchemaUid,
         hideInMenu: !!values.hideInMenu,
         enableTabs: false,
         displayTitle: values.displayTitle !== false,
@@ -1844,6 +1846,7 @@ export class FlowSurfacesService {
 
     return this.buildMenuResult(route, {
       pageSchemaUid,
+      menuSchemaUid,
       pageUid,
       tabRouteId: this.readRouteField(tabRoute, 'id'),
       tabSchemaUid,
@@ -7774,6 +7777,7 @@ export class FlowSurfacesService {
     const enableTabs = !!values.enableTabs;
     const displayTitle = values.displayTitle !== false;
     const title = values.title || this.readRouteField(route, 'title') || pageSchemaUid;
+    const menuSchemaUid = this.readRouteField(route, 'menuSchemaUid');
     const nextRouteOptions = {
       ...routeOptions,
       ...(values.routeOptions || {}),
@@ -7836,6 +7840,7 @@ export class FlowSurfacesService {
       values: {
         title,
         icon: Object.prototype.hasOwnProperty.call(values, 'icon') ? values.icon : this.readRouteField(route, 'icon'),
+        ...(!_.isNil(menuSchemaUid) && menuSchemaUid !== '' ? { menuSchemaUid } : {}),
         enableTabs,
         enableHeader: values.enableHeader,
         displayTitle,
@@ -7869,6 +7874,7 @@ export class FlowSurfacesService {
       routeId,
       parentMenuRouteId: this.readRouteField(route, 'parentId') ?? null,
       pageSchemaUid,
+      ...(!_.isNil(menuSchemaUid) && menuSchemaUid !== '' ? { menuSchemaUid } : {}),
       pageUid,
       tabSchemaUid,
       tabRouteId: this.readRouteField(tabRoute, 'id'),
