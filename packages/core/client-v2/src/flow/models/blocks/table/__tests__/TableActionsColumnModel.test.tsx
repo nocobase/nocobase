@@ -19,11 +19,16 @@ const capturedDroppableUids: string[] = [];
 const capturedRendererProps: any[] = [];
 let latestOnDragEnd: ((event: any) => void) | undefined;
 const capturedDndProviders: Array<{ persist: boolean }> = [];
+const capturedAddSubModelButtonProps: any[] = [];
 
 vi.mock('@nocobase/flow-engine', async () => {
   const actual = await vi.importActual<any>('@nocobase/flow-engine');
   return {
     ...actual,
+    AddSubModelButton: (props) => {
+      capturedAddSubModelButtonProps.push(props);
+      return <button data-testid="add-sub-model-button">{props.children}</button>;
+    },
     DndProvider: ({ children, onDragEnd, persist = true, ...restProps }) => {
       const engine = actual.useFlowEngine();
       const handleDragEnd = (event: any) => {
@@ -49,6 +54,17 @@ vi.mock('@nocobase/flow-engine', async () => {
       capturedRendererProps.push(props);
       const ActualFlowModelRenderer = actual.FlowModelRenderer;
       return <ActualFlowModelRenderer {...props} />;
+    },
+    FlowsFloatContextMenu: ({ children, extraToolbarItems = [], model }) => {
+      return (
+        <div data-test-flow-context-menu>
+          {children}
+          {extraToolbarItems.map((item) => {
+            const Component = item.component;
+            return <Component key={item.key} model={model} />;
+          })}
+        </div>
+      );
     },
   };
 });
@@ -165,6 +181,7 @@ describe('TableActionsColumnModel: drag integration', () => {
     capturedDroppableUids.length = 0;
     capturedRendererProps.length = 0;
     capturedDndProviders.length = 0;
+    capturedAddSubModelButtonProps.length = 0;
     latestOnDragEnd = undefined;
   });
 
@@ -177,6 +194,7 @@ describe('TableActionsColumnModel: drag integration', () => {
       props: { width: 200, title: 'Actions' },
       subModels: { actions: [{ use: 'TestViewActionModel' }, { use: 'TestViewActionModel' }] },
     });
+    actionsCol.context.defineMethod('getModelClassName', (className: string) => className);
 
     const colProps = actionsCol.getColumnProps();
     const record = { id: 1, phone: '000000' } as any;
@@ -278,5 +296,41 @@ describe('TableActionsColumnModel: drag integration', () => {
     latestOnDragEnd({ active: { id: firstUid }, over: { id: secondUid } });
 
     expect(moveModelSpy).toHaveBeenCalledWith(firstUid, secondUid, { persist: true });
+  });
+
+  it('disables icon-only mode when adding row actions without icons', async () => {
+    const engine = new FlowEngine();
+    engine.registerModels({ TableActionsColumnModel, TestViewActionModel });
+
+    const actionsCol = engine.createModel<TableActionsColumnModel>({
+      use: 'TableActionsColumnModel',
+      props: { width: 200, title: 'Actions' },
+    });
+    actionsCol.context.defineMethod('getModelClassName', (className: string) => className);
+
+    render(
+      <FlowEngineProvider engine={engine}>
+        <ConfigProvider>
+          <App>{actionsCol.getColumnProps().title as React.ReactNode}</App>
+        </ConfigProvider>
+      </FlowEngineProvider>,
+    );
+
+    const addButtonProps = capturedAddSubModelButtonProps.find(
+      (props) => props.subModelKey === 'actions' && props.subModelBaseClass === 'RecordActionGroupModel',
+    );
+    expect(addButtonProps).toBeDefined();
+    expect(addButtonProps.afterSubModelInit).toBeTypeOf('function');
+
+    const actionModel = {
+      setStepParams: vi.fn(),
+    };
+    await addButtonProps.afterSubModelInit(actionModel);
+
+    expect(actionModel.setStepParams).toHaveBeenCalledWith('buttonSettings', 'general', {
+      type: 'link',
+      icon: null,
+      iconOnly: false,
+    });
   });
 });

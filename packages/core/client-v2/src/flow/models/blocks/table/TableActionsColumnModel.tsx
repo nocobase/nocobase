@@ -140,7 +140,7 @@ const AddActionToolbarComponent = observer(({ model }: any) => {
       subModelBaseClass={model.context.getModelClassName('RecordActionGroupModel')}
       subModelKey="actions"
       afterSubModelInit={async (actionModel) => {
-        actionModel.setStepParams('buttonSettings', 'general', { type: 'link', icon: null });
+        actionModel.setStepParams('buttonSettings', 'general', { type: 'link', icon: null, iconOnly: false });
       }}
     >
       <PlusOutlined />
