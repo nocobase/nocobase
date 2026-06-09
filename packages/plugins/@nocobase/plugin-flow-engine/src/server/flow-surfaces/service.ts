@@ -418,6 +418,7 @@ import {
 import {
   assertJsonInferredPopupHostContractSupported,
   resolveJsonInferredPopupHostOpenViewPath,
+  resolveJsonInferredPopupHostParentOpenViewMirrorPaths,
   resolveJsonInferredPopupHostStepParamsOpenViewPath,
 } from './json-inferred-popup-host';
 import {
@@ -4663,11 +4664,12 @@ export class FlowSurfacesService {
 
   private resolveJsonInferredDynamicBlockResourceInitParams(
     resource: FlowSurfaceNormalizedResourceInput,
+    rawResourceInit?: Record<string, any>,
   ): Record<string, unknown> | undefined {
-    if (!resource) {
+    if (!resource && !rawResourceInit) {
       return undefined;
     }
-    const value = _.cloneDeep(resource.value || {});
+    const value = _.cloneDeep(rawResourceInit || resource?.value || {});
     return Object.keys(value).length ? value : undefined;
   }
 
@@ -10913,7 +10915,7 @@ export class FlowSurfacesService {
             target: input.target,
             initParams:
               explicitInitParams ||
-              this.resolveJsonInferredDynamicBlockResourceInitParams(input.semanticResource) ||
+              this.resolveJsonInferredDynamicBlockResourceInitParams(input.semanticResource, input.rawResourceInit) ||
               {},
             settings: this.normalizeDynamicCapabilityPublicObject(actionName, 'settings', input.values.settings) || {},
             rawPublicPayload: this.buildDynamicCapabilityRawPublicPayload({
@@ -11003,7 +11005,14 @@ export class FlowSurfacesService {
       });
       throw error;
     }
+    const inferredAuthoring =
+      dynamicCreate.capability.origin === 'autoSnapshot'
+        ? getFlowSurfacePublicCapabilityInferredAuthoring(dynamicCreate.capability)
+        : undefined;
     const tree = assignClientKeysToUids(_.cloneDeep(dynamicCreate.node), {});
+    if (dynamicCreate.capability.origin === 'autoSnapshot') {
+      this.applyJsonInferredDefaultFilterToNodeTree(tree);
+    }
     if (capability) {
       this.assertDynamicCapabilityNodeUse({
         actionName,
@@ -11028,10 +11037,6 @@ export class FlowSurfacesService {
       },
       { transaction: input.options.transaction },
     );
-    const inferredAuthoring =
-      dynamicCreate.capability.origin === 'autoSnapshot'
-        ? getFlowSurfacePublicCapabilityInferredAuthoring(dynamicCreate.capability)
-        : undefined;
     if (dynamicCreate.capability.origin === 'autoSnapshot') {
       await this.applyJsonInferredPopupHostDefaults({
         actionName,
@@ -11073,6 +11078,69 @@ export class FlowSurfacesService {
     return result;
   }
 
+  private getJsonInferredNodeTreeCollection(node: any) {
+    const resourceInit = _.get(node, ['stepParams', 'resourceSettings', 'init']);
+    if (!_.isPlainObject(resourceInit)) {
+      return null;
+    }
+    const collectionName = String(resourceInit.collectionName || '').trim();
+    if (!collectionName) {
+      return null;
+    }
+    const dataSourceKey = String(resourceInit.dataSourceKey || 'main').trim() || 'main';
+    return this.getCollection(dataSourceKey, collectionName);
+  }
+
+  private applyJsonInferredDefaultFilterToNodeTree(node: FlowSurfaceNodeSpec) {
+    const filterActions = this.collectNodeTreeDescendants(node, (item) => item?.use === 'FilterActionModel');
+    if (!filterActions.length) {
+      return;
+    }
+    const collection = this.getJsonInferredNodeTreeCollection(node);
+    const defaultFilter = buildFlowSurfaceDefaultFilterFromCollection(collection);
+    if (_.isUndefined(defaultFilter)) {
+      return;
+    }
+    const normalizedDefaultFilter = this.normalizeEffectivePublicDataSurfaceDefaultFilter(defaultFilter, {
+      requiredFieldCount: resolveFlowSurfaceDefaultFilterRequiredFieldCount(collection),
+    });
+    if (_.isUndefined(normalizedDefaultFilter)) {
+      return;
+    }
+    const filterableFieldNames = resolveFlowSurfaceDefaultFilterFieldNames(normalizedDefaultFilter);
+    filterActions.forEach((action) => {
+      const hasExistingDefaultFilter =
+        _.has(action, ['props', 'defaultFilterValue']) ||
+        _.has(action, ['props', 'filterValue']) ||
+        _.has(action, ['stepParams', 'filterSettings', 'defaultFilter', 'defaultFilter']);
+      if (hasExistingDefaultFilter) {
+        return;
+      }
+      action.props = {
+        ...(action.props || {}),
+        ...(filterableFieldNames.length ? { filterableFieldNames: _.cloneDeep(filterableFieldNames) } : {}),
+        defaultFilterValue: _.cloneDeep(normalizedDefaultFilter),
+        filterValue: _.cloneDeep(normalizedDefaultFilter),
+      };
+      action.stepParams = {
+        ...(action.stepParams || {}),
+        filterSettings: {
+          ...(action.stepParams?.filterSettings || {}),
+          ...(filterableFieldNames.length
+            ? {
+                filterableFieldNames: {
+                  filterableFieldNames: _.cloneDeep(filterableFieldNames),
+                },
+              }
+            : {}),
+          defaultFilter: {
+            defaultFilter: _.cloneDeep(normalizedDefaultFilter),
+          },
+        },
+      };
+    });
+  }
+
   private buildJsonInferredPopupActionContext(
     popupHost: FlowSurfaceAutoPopupHost,
   ): FlowSurfaceTemplateListPopupActionContext {
@@ -11094,9 +11162,6 @@ export class FlowSurfacesService {
     blockType: string;
     actionName: FlowSurfaceDynamicCapabilityCreateActionName;
   }) {
-    if (input.actionName !== 'applyBlueprint') {
-      return input.values;
-    }
     return buildDefinedPayload({
       key: input.values.key,
       type: input.blockType || input.values.type,
@@ -11151,10 +11216,11 @@ export class FlowSurfacesService {
     }
     const matches: Array<{
       node: Record<string, any>;
+      parentNode?: Record<string, any>;
       popupHost: FlowSurfaceAutoPopupHost;
       identity: string;
     }> = [];
-    const visit = (current: unknown, parentUse?: string, subModelKey?: string) => {
+    const visit = (current: unknown, parentUse?: string, subModelKey?: string, parentNode?: Record<string, any>) => {
       if (!_.isPlainObject(current)) {
         return;
       }
@@ -11163,6 +11229,7 @@ export class FlowSurfacesService {
         if (this.isJsonInferredPopupHostNodeMatch(node, popupHost, parentUse, subModelKey)) {
           matches.push({
             node,
+            parentNode,
             popupHost,
             identity: this.getJsonInferredPopupHostIdentity(popupHost),
           });
@@ -11174,7 +11241,7 @@ export class FlowSurfacesService {
         return;
       }
       Object.entries(subModels as Record<string, unknown>).forEach(([childSubModelKey, value]) => {
-        _.castArray(value).forEach((child) => visit(child, currentUse, childSubModelKey));
+        _.castArray(value).forEach((child) => visit(child, currentUse, childSubModelKey, node));
       });
     };
     visit(rootNode);
@@ -11217,7 +11284,7 @@ export class FlowSurfacesService {
       includeAsyncNode: true,
     });
     const popupHosts = this.collectJsonInferredPopupHostNodes(rootNode, input.inferredAuthoring);
-    for (const { node, popupHost } of popupHosts) {
+    for (const { node, parentNode, popupHost } of popupHosts) {
       const actionUid = String(node.uid || '').trim();
       if (!actionUid) {
         continue;
@@ -11235,6 +11302,56 @@ export class FlowSurfacesService {
           jsonInferredPopupHostOpenViewPath: resolveJsonInferredPopupHostOpenViewPath(popupHost) || undefined,
         },
       );
+      const reloadedNode = await this.repository.findModelById(actionUid, {
+        transaction: input.transaction,
+        includeAsyncNode: true,
+      });
+      await this.syncJsonInferredPopupHostParentOpenViewMirrors({
+        parentNode,
+        actionNode: reloadedNode || node,
+        popupHost,
+        transaction: input.transaction,
+      });
+    }
+  }
+
+  private async syncJsonInferredPopupHostParentOpenViewMirrors(input: {
+    parentNode?: Record<string, any>;
+    actionNode: Record<string, any>;
+    popupHost: FlowSurfaceAutoPopupHost;
+    transaction?: any;
+  }) {
+    const mirrorPaths = resolveJsonInferredPopupHostParentOpenViewMirrorPaths(input.popupHost);
+    if (!mirrorPaths.length) {
+      return;
+    }
+    const parentUid = String(input.parentNode?.uid || '').trim();
+    if (!parentUid) {
+      return;
+    }
+    const openView = this.resolvePopupHostOpenView(
+      input.actionNode,
+      resolveJsonInferredPopupHostOpenViewPath(input.popupHost) || undefined,
+    );
+    if (!_.isPlainObject(openView)) {
+      return;
+    }
+    const patchPayload: Record<string, any> = {
+      uid: parentUid,
+    };
+    mirrorPaths.forEach((mirrorPath) => {
+      const domain = mirrorPath[0];
+      const domainValue = _.cloneDeep(
+        _.isPlainObject(patchPayload[domain]) ? patchPayload[domain] : input.parentNode?.[domain] || {},
+      );
+      _.set(domainValue, mirrorPath.slice(1), _.cloneDeep(openView));
+      patchPayload[domain] = domainValue;
+      _.set(input.parentNode as Record<string, any>, [domain], _.cloneDeep(domainValue));
+    });
+    if (typeof this.repository.patch === 'function') {
+      await this.repository.patch(patchPayload, {
+        transaction: input.transaction,
+      });
     }
   }
 
@@ -11253,11 +11370,17 @@ export class FlowSurfacesService {
     );
     return (
       hasAllExpectedHosts &&
-      popupHosts.every(({ node, popupHost }) => this.isJsonInferredPopupHostReadbackSatisfied(node, popupHost))
+      popupHosts.every(({ node, parentNode, popupHost }) =>
+        this.isJsonInferredPopupHostReadbackSatisfied(node, popupHost, parentNode),
+      )
     );
   }
 
-  private isJsonInferredPopupHostReadbackSatisfied(node: Record<string, any>, popupHost: FlowSurfaceAutoPopupHost) {
+  private isJsonInferredPopupHostReadbackSatisfied(
+    node: Record<string, any>,
+    popupHost: FlowSurfaceAutoPopupHost,
+    parentNode?: Record<string, any>,
+  ) {
     const openView = this.resolvePopupHostOpenView(
       node,
       resolveJsonInferredPopupHostOpenViewPath(popupHost) || undefined,
@@ -11268,6 +11391,9 @@ export class FlowSurfacesService {
       !!openView?.popupTemplateContext;
     const hasExternalPopup = !!this.resolveExternalPopupHostUid(node?.uid, openView);
     if (!this.isJsonInferredPopupHostCurrentRecordContextSatisfied(openView, popupHost)) {
+      return false;
+    }
+    if (!this.isJsonInferredPopupHostParentMirrorReadbackSatisfied(openView, popupHost, parentNode)) {
       return false;
     }
     if (hasTemplate) {
@@ -11290,6 +11416,21 @@ export class FlowSurfacesService {
       return popupBlocks.some((block: any) => block?.use === 'CreateFormModel');
     }
     return true;
+  }
+
+  private isJsonInferredPopupHostParentMirrorReadbackSatisfied(
+    openView: any,
+    popupHost: FlowSurfaceAutoPopupHost,
+    parentNode?: Record<string, any>,
+  ) {
+    const mirrorPaths = resolveJsonInferredPopupHostParentOpenViewMirrorPaths(popupHost);
+    if (!mirrorPaths.length) {
+      return true;
+    }
+    if (!_.isPlainObject(openView) || !parentNode) {
+      return false;
+    }
+    return mirrorPaths.every((mirrorPath) => _.isEqual(_.get(parentNode, mirrorPath), openView));
   }
 
   private isJsonInferredPopupHostCurrentRecordContextSatisfied(openView: any, popupHost: FlowSurfaceAutoPopupHost) {

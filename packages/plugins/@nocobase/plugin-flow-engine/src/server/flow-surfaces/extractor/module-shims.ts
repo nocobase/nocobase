@@ -181,6 +181,7 @@ const FLOW_ENGINE_HELPER_EXPORTS = [
   'createEphemeralContext',
   'createRecordMetaFactory',
   'createRecordResolveOnServerWithLocal',
+  'define',
   'defineAction',
   'defineFlow',
   'isInheritedFrom',
@@ -278,6 +279,7 @@ export type FlowSurfaceExtractorClientV2ModuleShim = Record<string, unknown> & {
   Application: new () => object;
   Plugin: FlowSurfaceExtractorPluginClass;
   CollectionFieldInterface: new () => object;
+  InputFieldInterface: new () => object;
   FlowModel: FlowSurfaceExtractorFlowModelClass;
   ActionModel: FlowSurfaceExtractorFlowModelClass;
   BlockModel: FlowSurfaceExtractorFlowModelClass;
@@ -335,6 +337,7 @@ export type FlowSurfaceExtractorFlowEngineModuleShim = Record<string, unknown> &
   buildSubModelItems: (
     modelClass: FlowSurfaceExtractorModelConstructor,
   ) => (context?: unknown) => FlowSurfaceExtractorSubModelItem[];
+  define: (...args: unknown[]) => unknown;
   defineAction: <T>(definition: T) => T;
   defineFlow: <T>(definition: T) => T;
   largeField: () => <T>(target: T) => T;
@@ -453,6 +456,7 @@ export function createFlowSurfaceExtractorModuleShims(input: {
       Application: class FlowSurfaceExtractorApplication {},
       Plugin,
       CollectionFieldInterface: class FlowSurfaceExtractorCollectionFieldInterface {},
+      InputFieldInterface: class FlowSurfaceExtractorInputFieldInterface {},
       FlowModel,
       ActionModel: clientV2ModelExports.ActionModel,
       BlockModel: clientV2ModelExports.BlockModel,
@@ -839,6 +843,7 @@ function createFlowSurfaceExtractorFlowEngineHelperExports(
     createRecordMetaFactory: () => ({}),
     createRecordResolveOnServerWithLocal: () => ({}),
     defineAction: passthrough,
+    define: createFlowSurfaceExtractorNamedNoop('define'),
     defineFlow: passthrough,
     escapeT: passthrough,
     FlowExitException: class FlowSurfaceExtractorFlowExitException extends Error {},

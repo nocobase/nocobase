@@ -40,6 +40,11 @@ describe('flowSurfaces dynamic capability create dry-run', () => {
     subKey: string;
     subType: string;
     popupProfile: unknown;
+    semanticResource?: {
+      kind: 'semantic' | 'raw';
+      value: Record<string, unknown>;
+    };
+    rawResourceInit?: Record<string, unknown>;
   };
 
   type DynamicBlockWriteGateHarness = {
@@ -147,6 +152,7 @@ describe('flowSurfaces dynamic capability create dry-run', () => {
     readonly repository: {
       findModelById(uid: string, options?: Record<string, unknown>): Promise<unknown>;
       upsertModel?(payload: Record<string, unknown>, options?: Record<string, unknown>): Promise<string>;
+      patch?(payload: Record<string, unknown>, options?: Record<string, unknown>): Promise<void>;
     };
   };
 
@@ -504,6 +510,48 @@ describe('flowSurfaces dynamic capability create dry-run', () => {
       }
     });
     return found;
+  }
+
+  function findFlowNodeByUse(root: unknown, use: string) {
+    let found: Record<string, unknown> | undefined;
+    visitFlowNodeTree(root, (node) => {
+      if (!found && String(node.use || '').trim() === use) {
+        found = node;
+      }
+    });
+    return found;
+  }
+
+  function patchFlowNodeByUid(root: unknown, payload: Record<string, unknown>) {
+    const uid = String(payload.uid || '').trim();
+    const node = uid ? findFlowNodeByUid(root, uid) : null;
+    if (!node) {
+      return;
+    }
+    Object.entries(payload).forEach(([key, value]) => {
+      if (key === 'uid') {
+        return;
+      }
+      node[key] = cloneJsonRecord(value);
+    });
+  }
+
+  function createDefaultFilterCollection() {
+    return {
+      name: 'tasks',
+      dataSourceKey: 'main',
+      options: {
+        titleField: 'title',
+      },
+      getFields: () => [
+        { name: 'id', type: 'integer', interface: 'integer', primaryKey: true },
+        { name: 'title', type: 'string', interface: 'input' },
+        { name: 'status', type: 'string', interface: 'select' },
+        { name: 'code', type: 'string', interface: 'input' },
+        { name: 'startAt', type: 'date', interface: 'datetime' },
+        { name: 'endAt', type: 'date', interface: 'datetime' },
+      ],
+    };
   }
 
   const DEFAULT_JSON_INFERRED_POPUP_OPEN_VIEW_PATH = ['stepParams', 'popupSettings', 'openView'];
@@ -1406,18 +1454,10 @@ describe('flowSurfaces dynamic capability create dry-run', () => {
             use: 'FilterActionModel',
           },
           {
-            use: 'RefreshActionModel',
+            use: 'GanttTodayActionModel',
           },
           {
-            use: 'AddNewActionModel',
-            stepParams: {
-              popupSettings: {
-                openView: {
-                  dataSourceKey: 'main',
-                  collectionName: 'tasks',
-                },
-              },
-            },
+            use: 'RefreshActionModel',
           },
           {
             use: 'BulkDeleteActionModel',
@@ -1430,7 +1470,15 @@ describe('flowSurfaces dynamic capability create dry-run', () => {
             },
           },
           {
-            use: 'GanttTodayActionModel',
+            use: 'AddNewActionModel',
+            stepParams: {
+              popupSettings: {
+                openView: {
+                  dataSourceKey: 'main',
+                  collectionName: 'tasks',
+                },
+              },
+            },
           },
         ],
         columns: expect.any(Array),
@@ -1534,6 +1582,7 @@ describe('flowSurfaces dynamic capability create dry-run', () => {
         expect.objectContaining({
           modelUse: 'GanttEventViewActionModel',
           defaultType: 'view',
+          parentOpenViewMirrorPaths: ['props.eventPopupSettings'],
         }),
       ]),
     );
@@ -1569,16 +1618,16 @@ describe('flowSurfaces dynamic capability create dry-run', () => {
             use: 'FilterActionModel',
           },
           {
-            use: 'RefreshActionModel',
+            use: 'GanttTodayActionModel',
           },
           {
-            use: 'AddNewActionModel',
+            use: 'RefreshActionModel',
           },
           {
             use: 'BulkDeleteActionModel',
           },
           {
-            use: 'GanttTodayActionModel',
+            use: 'AddNewActionModel',
           },
         ],
         columns: expect.any(Array),
@@ -1878,6 +1927,9 @@ describe('flowSurfaces dynamic capability create dry-run', () => {
     const persistedPayloads: Record<string, unknown>[] = [];
     let materializedRoot: Record<string, unknown> | null = null;
     const popupCalls = mockJsonInferredPopupTemplateDefaults(service, () => materializedRoot);
+    vi.spyOn(service as unknown as CollectionGetterHarness, 'getCollection').mockReturnValue(
+      createDefaultFilterCollection(),
+    );
 
     expect(dynamicBlockTypes.has('gantt')).toBe(true);
     expect(dynamicBlockTypes.has('pluginGantt.gantt')).toBe(true);
@@ -1907,6 +1959,9 @@ describe('flowSurfaces dynamic capability create dry-run', () => {
         return 'created-gantt-block';
       },
       findModelById: async (uid) => findFlowNodeByUid(materializedRoot, uid) || materializedRoot,
+      patch: async (payload) => {
+        patchFlowNodeByUid(materializedRoot, payload);
+      },
     });
 
     const result = await harness.tryAddDynamicBlock({
@@ -1985,9 +2040,69 @@ describe('flowSurfaces dynamic capability create dry-run', () => {
         actions: [
           {
             use: 'FilterActionModel',
+            props: {
+              filterableFieldNames: ['title', 'status', 'code'],
+              defaultFilterValue: {
+                logic: '$and',
+                items: [
+                  {
+                    path: 'title',
+                  },
+                  {
+                    path: 'status',
+                  },
+                  {
+                    path: 'code',
+                  },
+                ],
+              },
+              filterValue: {
+                logic: '$and',
+                items: [
+                  {
+                    path: 'title',
+                  },
+                  {
+                    path: 'status',
+                  },
+                  {
+                    path: 'code',
+                  },
+                ],
+              },
+            },
+            stepParams: {
+              filterSettings: {
+                filterableFieldNames: {
+                  filterableFieldNames: ['title', 'status', 'code'],
+                },
+                defaultFilter: {
+                  defaultFilter: {
+                    logic: '$and',
+                    items: [
+                      {
+                        path: 'title',
+                      },
+                      {
+                        path: 'status',
+                      },
+                      {
+                        path: 'code',
+                      },
+                    ],
+                  },
+                },
+              },
+            },
+          },
+          {
+            use: 'GanttTodayActionModel',
           },
           {
             use: 'RefreshActionModel',
+          },
+          {
+            use: 'BulkDeleteActionModel',
           },
           {
             use: 'AddNewActionModel',
@@ -1999,12 +2114,6 @@ describe('flowSurfaces dynamic capability create dry-run', () => {
                 },
               },
             },
-          },
-          {
-            use: 'BulkDeleteActionModel',
-          },
-          {
-            use: 'GanttTodayActionModel',
           },
         ],
         columns: [
@@ -2057,6 +2166,106 @@ describe('flowSurfaces dynamic capability create dry-run', () => {
         ],
         eventViewAction: {
           use: 'GanttEventViewActionModel',
+        },
+      },
+    });
+    expect(materializedRoot?.props).toMatchObject({
+      eventPopupSettings: {
+        template: {
+          uid: expect.stringContaining('popup-template'),
+          mode: 'reference',
+        },
+        popupTemplateHasFilterByTk: true,
+      },
+    });
+  });
+
+  it('should map raw resourceInit into JSON inferred dynamic create initParams', async () => {
+    const autoSnapshot = createGanttAutoSnapshot({ inferredAuthoring: true });
+    const service = new FlowSurfacesService({
+      flowSurfaceAutoSnapshots: [autoSnapshot],
+      flowSurfaceCapabilityProviders: createProviderRegistry([]),
+    } as unknown as ConstructorParameters<typeof FlowSurfacesService>[0]);
+    const harness = service as unknown as DynamicBlockWriteGateHarness;
+    const enabledPackages = new Set(['@nocobase/plugin-gantt']);
+    let materializedRoot: Record<string, unknown> | null = null;
+    mockJsonInferredPopupTemplateDefaults(service, () => materializedRoot);
+    vi.spyOn(service as unknown as CollectionGetterHarness, 'getCollection').mockReturnValue(
+      createDefaultFilterCollection(),
+    );
+    harness.catalog = async () => ({
+      blocks: [
+        {
+          key: 'gantt',
+          label: 'Gantt',
+          use: 'gantt',
+          kind: 'block',
+          publicType: 'gantt',
+          ownerPlugin: '@nocobase/plugin-gantt',
+          origin: 'autoSnapshot',
+          createSupported: true,
+          availability: {
+            create: {
+              supported: true,
+            },
+          },
+        },
+      ],
+    });
+    vi.spyOn(service as unknown as RepositoryGetterHarness, 'repository', 'get').mockReturnValue({
+      upsertModel: async (payload) => {
+        materializedRoot = materializePersistedRoot(payload, 'created-gantt-block');
+        return 'created-gantt-block';
+      },
+      findModelById: async (uid) => findFlowNodeByUid(materializedRoot, uid) || materializedRoot,
+      patch: async (payload) => {
+        patchFlowNodeByUid(materializedRoot, payload);
+      },
+    });
+
+    await expect(
+      harness.tryAddDynamicBlock({
+        values: {
+          target: {
+            uid: 'target-grid',
+          },
+          type: 'gantt',
+          resourceInit: {
+            dataSourceKey: 'main',
+            collectionName: 'tasks',
+          },
+          settings: {
+            titleField: 'title',
+            startField: 'startAt',
+            endField: 'endAt',
+          },
+        },
+        options: {
+          deferAutoLayout: true,
+          dynamicCapabilityActionName: 'compose',
+        },
+        enabledPackages,
+        blockType: 'gantt',
+        target: {
+          uid: 'target-grid',
+        },
+        parentUid: 'parent-grid',
+        subKey: 'items',
+        subType: 'array',
+        popupProfile: null,
+        rawResourceInit: {
+          dataSourceKey: 'main',
+          collectionName: 'tasks',
+        },
+      }),
+    ).resolves.toMatchObject({
+      uid: 'created-gantt-block',
+    });
+    expect(materializedRoot?.stepParams).toMatchObject({
+      resourceSettings: {
+        init: {
+          dataSourceKey: 'main',
+          collectionName: 'tasks',
         },
       },
     });
@@ -2147,6 +2356,49 @@ describe('flowSurfaces dynamic capability create dry-run', () => {
     });
     expect(getValueAtPath(uploadAction, DEFAULT_JSON_INFERRED_POPUP_OPEN_VIEW_PATH)).toBeUndefined();
     expect(harness.assertJsonInferredPopupHostReadback(materializedRoot, inferredAuthoring)).toBe(true);
+  });
+
+  it('should require JSON inferred popup host parent openView mirrors during readback', async () => {
+    const autoSnapshot = createGanttAutoSnapshot({ inferredAuthoring: true });
+    const inferredCapability = autoSnapshot.inferredAuthoring?.capabilities?.[0];
+    const response = await resolveDynamicCapabilityCreate({
+      publicType: 'gantt',
+      initParams: {
+        collectionName: 'tasks',
+      },
+      settings: {
+        titleField: 'title',
+        startField: 'startAt',
+        endField: 'endAt',
+      },
+      enabledPackages: new Set(['@nocobase/plugin-gantt']),
+      providerRegistry: createProviderRegistry([]),
+      autoSnapshots: [autoSnapshot],
+    });
+    const materializedRoot = materializePersistedRoot(response.node, 'created-gantt-block');
+    const addNewAction = findFlowNodeByUse(materializedRoot, 'AddNewActionModel');
+    const viewAction = findFlowNodeByUse(materializedRoot, 'ViewActionModel');
+    const editAction = findFlowNodeByUse(materializedRoot, 'EditActionModel');
+    const eventViewAction = findFlowNodeByUse(materializedRoot, 'GanttEventViewActionModel');
+
+    [addNewAction, viewAction, editAction, eventViewAction].forEach((action) => {
+      expect(action?.uid).toBeTruthy();
+    });
+    setPopupTemplateReference(materializedRoot, String(addNewAction?.uid || ''));
+    setPopupTemplateReference(materializedRoot, String(viewAction?.uid || ''), { hasCurrentRecord: true });
+    setPopupTemplateReference(materializedRoot, String(editAction?.uid || ''), { hasCurrentRecord: true });
+    setPopupTemplateReference(materializedRoot, String(eventViewAction?.uid || ''), { hasCurrentRecord: true });
+
+    const service = new FlowSurfacesService({} as unknown as ConstructorParameters<typeof FlowSurfacesService>[0]);
+    const harness = service as unknown as JsonInferredPopupHostDefaultsPrivateHarness;
+    expect(harness.assertJsonInferredPopupHostReadback(materializedRoot, inferredCapability)).toBe(false);
+
+    const eventOpenView = getValueAtPath(eventViewAction, DEFAULT_JSON_INFERRED_POPUP_OPEN_VIEW_PATH);
+    materializedRoot.props = {
+      eventPopupSettings: cloneJsonRecord(eventOpenView),
+    };
+
+    expect(harness.assertJsonInferredPopupHostReadback(materializedRoot, inferredCapability)).toBe(true);
   });
 
   it('should fail closed for invalid JSON inferred popup host openViewPath declarations', async () => {

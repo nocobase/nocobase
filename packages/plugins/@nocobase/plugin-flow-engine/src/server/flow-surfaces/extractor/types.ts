@@ -187,6 +187,7 @@ export type FlowSurfaceAutoPopupHost = {
   subModelKey?: string;
   childSurfaceKey?: string;
   openViewPath?: string;
+  parentOpenViewMirrorPaths?: string[];
   defaultType: FlowSurfaceAutoPopupHostDefaultType;
   hasCurrentRecord?: boolean;
   templateStrategy?: 'preferTemplateThenFallback' | 'fallbackOnly';

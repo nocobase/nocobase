@@ -450,6 +450,7 @@ function inferGanttAuthoringCapability(
               modelUse: GANTT_EVENT_VIEW_ACTION_MODEL_USE,
               parentModelUse: GANTT_BLOCK_MODEL_USE,
               subModelKey: 'eventViewAction',
+              parentOpenViewMirrorPaths: ['props.eventPopupSettings'],
               defaultType: 'view' as const,
               hasCurrentRecord: true,
               templateStrategy: 'preferTemplateThenFallback' as const,
@@ -571,23 +572,15 @@ function buildGanttCreateNodeTemplate(input: { hasEventViewActionEvidence: boole
           title: '{{t("Filter")}}',
           icon: 'FilterOutlined',
         }),
+        buildGanttActionNode('GanttTodayActionModel', {
+          type: 'default',
+          title: '{{t("Today")}}',
+          icon: 'AimOutlined',
+        }),
         buildGanttActionNode('RefreshActionModel', {
           title: '{{t("Refresh")}}',
           icon: 'ReloadOutlined',
         }),
-        buildGanttActionNode(
-          'AddNewActionModel',
-          {
-            type: 'primary',
-            title: '{{t("Add new")}}',
-            icon: 'PlusOutlined',
-          },
-          {
-            popupSettings: {
-              openView: {},
-            },
-          },
-        ),
         buildGanttActionNode(
           'BulkDeleteActionModel',
           {
@@ -606,11 +599,19 @@ function buildGanttCreateNodeTemplate(input: { hasEventViewActionEvidence: boole
             },
           },
         ),
-        buildGanttActionNode('GanttTodayActionModel', {
-          type: 'default',
-          title: '{{t("Today")}}',
-          icon: 'AimOutlined',
-        }),
+        buildGanttActionNode(
+          'AddNewActionModel',
+          {
+            type: 'primary',
+            title: '{{t("Add new")}}',
+            icon: 'PlusOutlined',
+          },
+          {
+            popupSettings: {
+              openView: {},
+            },
+          },
+        ),
       ],
       columns: [
         buildGanttFieldColumnNode(),

@@ -3233,10 +3233,10 @@ describe('flowSurfaces extractor scaffold', () => {
       ),
     ).toEqual([
       'FilterActionModel',
-      'RefreshActionModel',
-      'AddNewActionModel',
-      'BulkDeleteActionModel',
       'GanttTodayActionModel',
+      'RefreshActionModel',
+      'BulkDeleteActionModel',
+      'AddNewActionModel',
     ]);
     expect(
       snapshot.inferredAuthoring?.capabilities[0].allowedChildren

@@ -106,6 +106,22 @@ export function buildFlowSurfaceAutoSnapshot(input: BuildFlowSurfaceAutoSnapshot
   return snapshot;
 }
 
+export function refreshFlowSurfaceAutoSnapshotInferredAuthoring(
+  snapshot: FlowSurfaceAutoSnapshot,
+): FlowSurfaceAutoSnapshot {
+  const inferredAuthoring = inferFlowSurfaceAutoSnapshotAuthoring(snapshot);
+  if (!inferredAuthoring) {
+    return snapshot;
+  }
+  if (_.isEqual(snapshot.inferredAuthoring, inferredAuthoring)) {
+    return snapshot;
+  }
+  return {
+    ...snapshot,
+    inferredAuthoring,
+  };
+}
+
 export function deriveFlowSurfaceAutoCapabilityCandidates(
   snapshot: FlowSurfaceAutoSnapshot,
 ): FlowSurfaceAutoCapabilityCandidate[] {
@@ -278,7 +294,7 @@ export async function loadFlowSurfaceAutoSnapshotsFromDirectory(
       }
       const snapshot = await readFlowSurfaceAutoSnapshotFile(pinnedDirectory, fileName);
       if (snapshot) {
-        snapshots.push(snapshot);
+        snapshots.push(refreshFlowSurfaceAutoSnapshotInferredAuthoring(snapshot));
       }
     }
     return snapshots;
@@ -544,6 +560,7 @@ function isFlowSurfaceAutoPopupHost(value: unknown): value is FlowSurfaceAutoPop
       'childSurfaceKey',
       'openViewPath',
     ]) &&
+    (typeof value.parentOpenViewMirrorPaths === 'undefined' || isArrayOf(value.parentOpenViewMirrorPaths, isString)) &&
     isFlowSurfaceAutoPopupHostDefaultType(value.defaultType) &&
     (typeof value.hasCurrentRecord === 'undefined' || typeof value.hasCurrentRecord === 'boolean') &&
     (typeof value.templateStrategy === 'undefined' ||
