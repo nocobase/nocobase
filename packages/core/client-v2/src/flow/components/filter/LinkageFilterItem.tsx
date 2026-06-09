@@ -29,7 +29,8 @@ import {
   UiSchemaEnumItem,
 } from '../../internal/utils/enumOptionsUtils';
 import { mergeItemMetaTreeForAssignValue } from '../FieldAssignValueInput';
-import { resolveOperatorComponent } from '../../internal/utils/operatorSchemaHelper';
+import { pickOperatorStyle as pickStyle, resolveOperatorComponent } from '../../internal/utils/operatorSchemaHelper';
+import { limitAssociationMetaTree } from './metaTreeAssociationDepth';
 
 const { DateFilterDynamicComponent: DateFilterDynamicComponentLazy } = lazy(
   () => import('../../models/blocks/filter-form/fields/date-time/components/DateFilterDynamicComponent'),
@@ -49,6 +50,14 @@ export interface LinkageFilterItemProps {
   model: FlowModel;
   /** 向变量树额外注入节点（置于根部） */
   extraMetaTree?: MetaTreeNode[];
+  maxAssociationFieldDepth?: number;
+}
+
+function limitMetaTreeIfNeeded(nodes: MetaTreeNode[], maxAssociationFieldDepth?: number) {
+  if (typeof maxAssociationFieldDepth !== 'number') {
+    return nodes;
+  }
+  return limitAssociationMetaTree(nodes, { maxAssociationDepth: maxAssociationFieldDepth });
 }
 
 function createStaticInputRenderer(
@@ -221,7 +230,7 @@ export async function enhanceMetaTreeWithFilterableChildren(
  * LinkageFilterItem：左/右均为可变量输入，适用于联动规则等“前端逻辑”场景
  */
 export const LinkageFilterItem: React.FC<LinkageFilterItemProps> = observer((props) => {
-  const { value, model, extraMetaTree } = props;
+  const { value, model, extraMetaTree, maxAssociationFieldDepth } = props;
   const ctx = useFlowViewContext();
   const t = model.translate;
   const { path: leftPath, operator: selectedOperator, value: rightOperandValue } = value || {};
@@ -345,7 +354,8 @@ export const LinkageFilterItem: React.FC<LinkageFilterItemProps> = observer((pro
     return (inputProps: { value?: any; onChange?: (v: any) => void } & Record<string, any>) => {
       const { value: inputValue, onChange, ...rest } = inputProps || {};
       const nextProps = { ...componentProps };
-      if ((!nextProps?.options || nextProps?.options.length === 0) && enumOptions.length > 0) {
+      const options = Array.isArray(nextProps.options) ? nextProps.options : undefined;
+      if ((!options || options.length === 0) && enumOptions.length > 0) {
         nextProps.options = enumOptions;
       }
       const normalizedValue = Array.isArray(inputValue)
@@ -363,7 +373,7 @@ export const LinkageFilterItem: React.FC<LinkageFilterItemProps> = observer((pro
           {...rest}
           value={normalizedValue}
           onChange={onChange}
-          style={{ width: 200, ...(nextProps?.style || {}), ...(rest?.style || {}) }}
+          style={{ width: 200, ...pickStyle(nextProps.style), ...pickStyle(rest?.style) }}
         />
       );
 
@@ -386,13 +396,16 @@ export const LinkageFilterItem: React.FC<LinkageFilterItemProps> = observer((pro
     return async () => {
       const baseMetaTree = (model?.context.getPropertyMetaTree() || ctx.getPropertyMetaTree()) as MetaTreeNode[];
       const mergedMetaTree = mergeExtraMetaTreeWithBase(baseMetaTree, extraMetaTree);
-      return [
-        { title: t('Constant'), name: 'constant', type: 'string', paths: ['constant'] },
-        { title: t('Null'), name: 'null', type: 'object', paths: ['null'] },
-        ...mergedMetaTree,
-      ];
+      return limitMetaTreeIfNeeded(
+        [
+          { title: t('Constant'), name: 'constant', type: 'string', paths: ['constant'] },
+          { title: t('Null'), name: 'null', type: 'object', paths: ['null'] },
+          ...mergedMetaTree,
+        ],
+        maxAssociationFieldDepth,
+      );
     };
-  }, [ctx, model, t, extraMetaTree]);
+  }, [ctx, model, t, extraMetaTree, maxAssociationFieldDepth]);
 
   // 左侧变量树：默认整棵 ctx（不追加 Constant/Null），确保可获取字段 interface
   const leftMetaTreeGetter = useCallback(async () => {
@@ -403,8 +416,9 @@ export const LinkageFilterItem: React.FC<LinkageFilterItemProps> = observer((pro
       getFlowFieldInterfaceOptions(name, model.context.dataSourceManager, model.context.app?.dataSourceManager) as
         | FieldInterfaceDef
         | undefined;
-    return await enhanceMetaTreeWithFilterableChildren(merged, getFieldInterface);
-  }, [ctx, model, extraMetaTree]);
+    const enhanced = await enhanceMetaTreeWithFilterableChildren(merged, getFieldInterface);
+    return limitMetaTreeIfNeeded(enhanced, maxAssociationFieldDepth);
+  }, [ctx, model, extraMetaTree, maxAssociationFieldDepth]);
 
   // 右侧 converters：常量/空值特殊处理；变量沿用默认（表达式）
   const rightSideConverters = useMemo<Converters>(() => {

@@ -1,16 +1,18 @@
 ---
-title: "nb env remove"
-description: "Tài liệu lệnh nb env remove: xóa cấu hình của một NocoBase CLI env."
-keywords: "nb env remove,NocoBase CLI,Xóa môi trường,Xóa cấu hình"
+title: 'nb env remove'
+description: 'Tài liệu tham khảo lệnh nb env remove: dừng các runtime được quản lý trước khi xóa cấu hình env, hoặc dọn dẹp hoàn toàn các tài nguyên cục bộ được quản lý khi cần.'
+keywords: 'nb env remove,NocoBase CLI,xóa môi trường,xóa cấu hình,purge'
 ---
 
 # nb env remove
 
-Xóa một env đã cấu hình. Lệnh này chỉ xóa cấu hình CLI env đã lưu và không dọn dẹp thư mục ứng dụng cục bộ, container hay dữ liệu storage; hãy dùng [`nb app down`](../app/down.md) khi bạn cần dọn tài nguyên runtime cục bộ.
+Xóa một env đã được cấu hình. Với env local/docker, lệnh này trước tiên sẽ dừng runtime ứng dụng và runtime cơ sở dữ liệu tích hợp do CLI quản lý trên máy hiện tại, sau đó xóa cấu hình CLI env đã lưu. Với env http/ssh, lệnh này chỉ xóa cấu hình CLI env đã lưu.
 
-Nếu env bị xóa cũng chính là env hiện tại, CLI sẽ tự động chọn một env hiện tại mới từ các env còn lại. Nếu không còn env nào, env hiện tại sẽ được xóa khỏi trạng thái.
+Nếu env bị xóa là env hiện tại, CLI sẽ tự động chọn một current env mới từ các env còn lại; nếu không còn env nào khả dụng, current env sẽ bị xóa trống.
 
-Theo mặc định, lệnh sẽ yêu cầu xác nhận. Để bỏ qua xác nhận, hãy truyền `--yes`. Trong chế độ không tương tác, bắt buộc phải có `--yes` trước khi env có thể bị xóa.
+Theo mặc định, lệnh sẽ yêu cầu xác nhận. Trong chế độ không tương tác, bạn phải truyền rõ ràng `--force` thì mới có thể thực thi.
+
+Nếu cần dọn dẹp tài nguyên do CLI quản lý trên máy hiện tại nhiều nhất có thể, bạn có thể truyền `--purge`. Với env local/docker, `--purge` cũng sẽ dọn dẹp tài nguyên runtime được quản lý, dữ liệu storage và các tệp app cục bộ đã tải xuống khi áp dụng; với env http/ssh, `--purge` sẽ không tác động đến các dịch vụ bên ngoài mà chỉ xóa cấu hình CLI env đã lưu.
 
 ## Cách dùng
 
@@ -20,21 +22,23 @@ nb env remove <name> [flags]
 
 ## Tham số
 
-| Tham số | Kiểu | Mô tả |
-| --- | --- | --- |
-| `<name>` | string | Tên env đã cấu hình để xoá |
-| `--yes`, `-y` | boolean | Bỏ qua xác nhận và xóa cấu hình CLI env đã lưu |
-| `--verbose` | boolean | Hiển thị tiến trình chi tiết |
+| Tham số         | Kiểu    | Mô tả                                                                                                                                                                              |
+| --------------- | ------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `<name>`        | string  | Tên môi trường đã được cấu hình cần xóa                                                                                                                                            |
+| `--force`, `-f` | boolean | Bỏ qua xác nhận trong chế độ remove hiện tại; bắt buộc trong chế độ không tương tác                                                                                                |
+| `--purge`       | boolean | Dọn dẹp thêm các tài nguyên do CLI quản lý, dữ liệu storage và các tệp app cục bộ đã tải xuống trên máy hiện tại khi áp dụng; với env API từ xa, chỉ cấu hình env đã lưu sẽ bị xóa |
+| `--verbose`     | boolean | Hiển thị tiến trình chi tiết                                                                                                                                                       |
 
 ## Ví dụ
 
 ```bash
 nb env remove staging
-nb env remove staging --yes
+nb env remove staging --force
+nb env remove staging --purge --force
 ```
 
-## Lệnh liên quan
+## Các lệnh liên quan
 
-- [`nb app down`](../app/down.md)
+- [`nb app stop`](../app/stop.md)
 - [`nb env current`](./current.md)
 - [`nb env list`](./list.md)

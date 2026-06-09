@@ -23,9 +23,9 @@ features:
       - title: NocoBase 入門
         details: NocoBase のコア概念と基本操作を理解します。
         link: /get-started/how-nocobase-works
-      - title: プラグインのインストールとアップグレード
-        details: プラグインの追加、管理、更新方法を学び、システム機能を拡張しましょう。
-        link: /get-started/install-upgrade-plugins
+      - title: アプリをインストール
+        details: アプリケーションをすばやくインストールして管理します。
+        link: /get-started/installation/docker
       - title: チュートリアル
         details: ゼロから始めて、チュートリアルに沿って実際のプロジェクトを構築します。
         link: /tutorials/v2/

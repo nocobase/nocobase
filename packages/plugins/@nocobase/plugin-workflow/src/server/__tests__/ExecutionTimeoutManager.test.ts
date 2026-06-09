@@ -7,9 +7,17 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { LockManager } from '@nocobase/lock-manager';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { EXECUTION_STATUS } from '../constants';
 import ExecutionTimeoutManager from '../ExecutionTimeoutManager';
+import { getExecutionLockKey } from '../utils';
+
+function createApp() {
+  return {
+    lockManager: new LockManager(),
+  };
+}
 
 describe('workflow > ExecutionTimeoutManager', () => {
   afterEach(() => {
@@ -31,12 +39,18 @@ describe('workflow > ExecutionTimeoutManager', () => {
       expiresAt: new Date(Date.now() + 30_000),
     };
     const findAll = vi.fn().mockResolvedValue([expiredExecution]);
-    const findOne = vi.fn().mockResolvedValue(nextExecution);
+    const findNextExecution = vi.fn().mockResolvedValue(nextExecution);
+    const findExpiredExecution = vi.fn().mockResolvedValue(expiredExecution);
+    const app = createApp();
     const manager = new ExecutionTimeoutManager({
+      app,
       db: {
         getModel: () => ({
           findAll,
-          findOne,
+          findOne: findNextExecution,
+        }),
+        getRepository: () => ({
+          findOne: findExpiredExecution,
         }),
       },
       getLogger: () => ({
@@ -49,7 +63,8 @@ describe('workflow > ExecutionTimeoutManager', () => {
     await manager.load();
 
     expect(findAll).toHaveBeenCalledTimes(1);
-    expect(findOne).toHaveBeenCalledTimes(1);
+    expect(findNextExecution).toHaveBeenCalledTimes(1);
+    expect(findExpiredExecution).toHaveBeenCalledWith({ filterByTk: expiredExecution.id });
     expect(abortSpy).toHaveBeenCalledWith(expiredExecution);
     expect(scheduleSpy).not.toHaveBeenCalled();
 
@@ -64,10 +79,17 @@ describe('workflow > ExecutionTimeoutManager', () => {
       expiresAt: new Date(Date.now() - 1_000),
     };
     const findAll = vi.fn().mockResolvedValue([expiredExecution]);
+    const findOne = vi.fn().mockResolvedValue(expiredExecution);
+    const app = createApp();
+    const tryAcquireSpy = vi.spyOn(app.lockManager, 'tryAcquire');
     const manager = new ExecutionTimeoutManager({
+      app,
       db: {
         getModel: () => ({
           findAll,
+        }),
+        getRepository: () => ({
+          findOne,
         }),
       },
     } as any);
@@ -76,6 +98,8 @@ describe('workflow > ExecutionTimeoutManager', () => {
 
     await (manager as any).scanExpiredExecutions();
 
+    expect(tryAcquireSpy).toHaveBeenCalledWith(getExecutionLockKey(expiredExecution.id), 60_000);
+    expect(findOne).toHaveBeenCalledWith({ filterByTk: expiredExecution.id });
     expect(abortSpy).toHaveBeenCalledWith(expiredExecution);
 
     await manager.unload();
@@ -94,12 +118,18 @@ describe('workflow > ExecutionTimeoutManager', () => {
       expiresAt: new Date(Date.now() - 1_000),
     };
     const findAll = vi.fn().mockResolvedValue([execution]);
-    const findOne = vi.fn().mockResolvedValueOnce(execution).mockResolvedValueOnce(null);
+    const findNextExecution = vi.fn().mockResolvedValueOnce(execution).mockResolvedValueOnce(null);
+    const findExpiredExecution = vi.fn().mockResolvedValue(execution);
+    const app = createApp();
     const manager = new ExecutionTimeoutManager({
+      app,
       db: {
         getModel: () => ({
           findAll,
-          findOne,
+          findOne: findNextExecution,
+        }),
+        getRepository: () => ({
+          findOne: findExpiredExecution,
         }),
       },
       getLogger: () => ({
@@ -117,6 +147,33 @@ describe('workflow > ExecutionTimeoutManager', () => {
     expect(abortSpy).toHaveBeenCalledWith(execution);
 
     await manager.unload();
+  });
+
+  it('should reload expired execution after acquiring the execution lock', async () => {
+    const execution = {
+      id: 1,
+      workflowId: 1,
+      status: EXECUTION_STATUS.STARTED,
+      expiresAt: new Date(Date.now() - 1_000),
+    };
+    const findOne = vi.fn().mockResolvedValue(execution);
+    const app = createApp();
+    const tryAcquireSpy = vi.spyOn(app.lockManager, 'tryAcquire');
+    const manager = new ExecutionTimeoutManager({
+      app,
+      db: {
+        getRepository: () => ({
+          findOne,
+        }),
+      },
+    } as any);
+    const abortSpy = vi.spyOn(manager, 'abortExecutionIfExpired').mockResolvedValue(true);
+
+    await (manager as any).abortExecutionIfExpiredWithLock(execution.id);
+
+    expect(tryAcquireSpy).toHaveBeenCalledWith(getExecutionLockKey(execution.id), 60_000);
+    expect(findOne).toHaveBeenCalledWith({ filterByTk: execution.id });
+    expect(abortSpy).toHaveBeenCalledWith(execution);
   });
 
   it('should reschedule owner timer instead of aborting early for long timeouts', async () => {

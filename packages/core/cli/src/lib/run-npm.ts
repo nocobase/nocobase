@@ -19,7 +19,7 @@
 import fs from 'node:fs';
 import fsp from 'node:fs/promises';
 import os from 'node:os';
-import type { ChildProcess } from 'node:child_process';
+import type { ChildProcess, StdioOptions } from 'node:child_process';
 import path from 'node:path';
 import spawn from 'cross-spawn';
 import { translateCli } from './cli-locale.js';
@@ -32,15 +32,29 @@ const MISSING_COMMAND_SPECS = {
     displayName: 'Docker',
     configKey: 'bin.docker',
   },
+  caddy: {
+    displayName: 'Caddy',
+    configKey: 'bin.caddy',
+  },
   git: {
     displayName: 'Git',
     configKey: 'bin.git',
+  },
+  nginx: {
+    displayName: 'Nginx',
+    configKey: 'bin.nginx',
   },
   yarn: {
     displayName: 'Yarn',
     configKey: 'bin.yarn',
   },
 } as const;
+const DOCKER_DAEMON_UNAVAILABLE_PATTERNS = [
+  /cannot connect to the docker daemon/i,
+  /is the docker daemon running\?/i,
+  /error during connect/i,
+  /docker daemon is not running/i,
+];
 
 async function resolveCommandName(name: string): Promise<string> {
   return await resolveConfiguredCommandName(name);
@@ -58,6 +72,10 @@ type RunProcessOptions = CommandProcessOptions & {
   onStdout?: (chunk: string) => void;
   onStderr?: (chunk: string) => void;
 };
+
+function shouldTeeInheritedOutput(options?: RunProcessOptions): boolean {
+  return options?.stdio === 'inherit' && Boolean(String(process.env.NB_CLI_ACTIVE_LOG_FILE ?? '').trim());
+}
 
 function createMissingCommandError(name: string, label: string, error: unknown): Error | undefined {
   const code =
@@ -77,6 +95,26 @@ function createMissingCommandError(name: string, label: string, error: unknown):
       { action: label, displayName: spec.displayName, configKey: spec.configKey },
       {
         fallback: `Couldn't run \`${label}\` because the ${spec.displayName} executable could not be found. Install ${spec.displayName} or update \`nb config set ${spec.configKey} <path>\` and try again.`,
+      },
+    ),
+  );
+}
+
+function isDockerDaemonUnavailableError(error: unknown): boolean {
+  const message = error instanceof Error ? error.message : String(error);
+  return DOCKER_DAEMON_UNAVAILABLE_PATTERNS.some((pattern) => pattern.test(message));
+}
+
+function createDockerDaemonUnavailableError(action: string, error: unknown): Error {
+  const details = error instanceof Error ? error.message : String(error);
+  return new Error(
+    translateCli(
+      'commands.shared.dockerDaemonUnavailable',
+      { action, details },
+      {
+        fallback:
+          `Couldn't run \`${action}\` because Docker is installed but the Docker daemon is not running.` +
+          ` Start Docker Desktop or the Docker daemon service, then try again. Details: ${details}`,
       },
     ),
   );
@@ -143,9 +181,12 @@ export async function run(name: string, args: string[], options?: RunProcessOpti
   const cwd = resolveCwd(options?.cwd);
   const label = options?.errorName ?? name;
   const command = await resolveCommandName(name);
+  const stdio: StdioOptions = shouldTeeInheritedOutput(options)
+    ? ['inherit', 'pipe', 'pipe']
+    : (options?.stdio ?? 'inherit');
   return await new Promise((resolve, reject) => {
     const child = spawn(command, [...args], {
-      stdio: options?.stdio ?? 'inherit',
+      stdio,
       cwd,
       env: {
         ...process.env,
@@ -153,19 +194,21 @@ export async function run(name: string, args: string[], options?: RunProcessOpti
       },
       windowsHide: process.platform === 'win32',
     });
-    if (options?.stdio === 'pipe') {
+    if (options?.stdio === 'pipe' || shouldTeeInheritedOutput(options)) {
       child.stdout?.setEncoding('utf8');
       child.stderr?.setEncoding('utf8');
-      if (options.onStdout) {
-        child.stdout?.on('data', (chunk) => {
-          options.onStdout?.(String(chunk));
-        });
-      }
-      if (options.onStderr) {
-        child.stderr?.on('data', (chunk) => {
-          options.onStderr?.(String(chunk));
-        });
-      }
+      child.stdout?.on('data', (chunk) => {
+        if (shouldTeeInheritedOutput(options)) {
+          process.stdout.write(chunk);
+        }
+        options.onStdout?.(String(chunk));
+      });
+      child.stderr?.on('data', (chunk) => {
+        if (shouldTeeInheritedOutput(options)) {
+          process.stderr.write(chunk);
+        }
+        options.onStderr?.(String(chunk));
+      });
     }
     const cleanupSignalForwarding = forwardSignalsToChild(child);
     const timeoutController = attachProcessTimeout(child, options?.timeoutMs);
@@ -433,6 +476,17 @@ export async function commandOutputViaFile(
 /** Run `yarn` with the given argument list, inheriting stdio (errors label as `npm` for compatibility). */
 export function runNpm(args: string[], options?: Omit<RunProcessOptions, 'errorName'>): Promise<void> {
   return run('yarn', [...args], { ...options, errorName: 'npm' });
+}
+
+export async function ensureDockerDaemonRunning(action = 'use Docker'): Promise<void> {
+  try {
+    await commandOutput('docker', ['info'], { errorName: 'docker info', timeoutMs: 5000 });
+  } catch (error: unknown) {
+    if (isDockerDaemonUnavailableError(error)) {
+      throw createDockerDaemonUnavailableError(action, error);
+    }
+    throw error;
+  }
 }
 
 export function runNocoBaseCommand(args: string[], options?: Omit<RunProcessOptions, 'errorName'>): Promise<void> {

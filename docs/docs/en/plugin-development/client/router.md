@@ -15,7 +15,7 @@ Route registration is typically done in the plugin's `load()` method. See [Plugi
 
 :::warning Note
 
-For NocoBase v2 plugins, registered routes automatically get a `/v2` prefix. You need to include this prefix when accessing the routes.
+For NocoBase v2 plugins, registered routes automatically get a `/v` prefix. You need to include this prefix when accessing the routes.
 
 :::
 
@@ -25,9 +25,9 @@ NocoBase has the following default routes registered:
 
 | Name           | Path                  | Component           | Description               |
 | -------------- | --------------------- | ------------------- | ------------------------- |
-| admin          | /v2/admin/\*          | AdminLayout         | Admin pages               |
-| admin.page     | /v2/admin/:name       | AdminDynamicPage    | Dynamically created pages |
-| admin.settings | /v2/admin/settings/\* | AdminSettingsLayout | Plugin settings pages     |
+| admin          | /v/admin/\*          | AdminLayout         | Admin pages               |
+| admin.page     | /v/admin/:name       | AdminDynamicPage    | Dynamically created pages |
+| admin.settings | /v/admin/settings/\* | AdminSettingsLayout | Plugin settings pages     |
 
 ## Page Routes
 
@@ -55,7 +55,7 @@ class MyPlugin extends Plugin {
   async load() {
     this.router.add('hello', {
       path: '/hello',
-      // Lazy loading: the module is loaded only when /v2/hello is visited
+      // Lazy loading: the module is loaded only when /v/hello is visited
       componentLoader: () => import('./pages/HelloPage'),
     });
   }
@@ -103,12 +103,12 @@ class MyPlugin extends Plugin {
 
     // Child route, using componentLoader for lazy loading
     this.router.add('root.home', {
-      path: '/', // -> /v2/
+      path: '/', // -> /v/
       componentLoader: () => import('./pages/HomePage'),
     });
 
     this.router.add('root.about', {
-      path: '/about', // -> /v2/about
+      path: '/about', // -> /v/about
       componentLoader: () => import('./pages/AboutPage'),
     });
   }
@@ -121,7 +121,7 @@ Route paths support dynamic parameters:
 
 ```tsx
 this.router.add('root.user', {
-  path: '/user/:id', // -> /v2/user/:id
+  path: '/user/:id', // -> /v/user/:id
   componentLoader: () => import('./pages/UserPage'),
 });
 ```
@@ -176,7 +176,7 @@ export class HelloPlugin extends Plugin<any, Application> {
 }
 ```
 
-After registration, the access path is `/admin/settings/hello`. When there is only one page under the menu, the top tab bar is automatically hidden.
+After registration, the access path is `/v/admin/settings/hello`. When there is only one page under the menu, the top tab bar is automatically hidden.
 
 ### Multi-Tab Settings Page
 
@@ -194,7 +194,7 @@ class HelloPlugin extends Plugin<any, Application> {
       icon: 'ApiOutlined',
     });
 
-    // Tab 1: General settings (key 'index' maps to /admin/settings/hello)
+    // Tab 1: General settings (key 'index' maps to /v/admin/settings/hello)
     this.pluginSettingsManager.addPageTabItem({
       menuKey: 'hello',
       key: 'index',
@@ -202,7 +202,7 @@ class HelloPlugin extends Plugin<any, Application> {
       componentLoader: () => import('./settings/GeneralPage'),
     });
 
-    // Tab 2: Advanced settings (maps to /admin/settings/hello/advanced)
+    // Tab 2: Advanced settings (maps to /v/admin/settings/hello/advanced)
     this.pluginSettingsManager.addPageTabItem({
       menuKey: 'hello',
       key: 'advanced',

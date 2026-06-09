@@ -61,7 +61,6 @@ export interface DataSourceTypeOptions {
     | ((context: { collection: Record<string, any> }) => DataSourceFieldInterfaceFilterOptions | undefined);
   disableAddFields?: boolean;
   disableConfigureFields?: boolean;
-  disableConfigureFieldsActions?: boolean;
   disableTestConnection?: boolean;
   capabilities?: {
     query?: boolean;

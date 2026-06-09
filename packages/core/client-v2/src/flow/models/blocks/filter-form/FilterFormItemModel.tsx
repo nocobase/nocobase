@@ -22,7 +22,12 @@ import { CollectionBlockModel, FieldModel } from '../../base';
 import { RecordSelectFieldModel } from '../../fields/AssociationFieldModel/RecordSelectFieldModel';
 import { normalizeAssociationFieldNames } from '../../fields/AssociationFieldModel/recordSelectShared';
 import { FilterManager } from '../filter-manager';
-import { getAllDataModels, getDefaultOperator, isFilterValueEmpty } from '../filter-manager/utils';
+import {
+  getAllDataModels,
+  getDefaultOperator,
+  getFilterFormOperatorMeta,
+  isFilterValueEmpty,
+} from '../filter-manager/utils';
 import { FilterFormFieldModel } from './fields';
 import { normalizeFilterValueByOperator } from './valueNormalization';
 
@@ -51,7 +56,11 @@ const getTargetFilterableFields = (field: any, collection?: Collection, model?: 
   return (targetCollection.getFields() || []).filter((childField: any) => childField?.filterable);
 };
 
-const MAX_ASSOCIATION_DEPTH = 5;
+const MAX_ASSOCIATION_DEPTH = 2;
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return !!value && typeof value === 'object' && !Array.isArray(value);
+}
 
 const normalizeAssociationDefaultFilterValue = (value: any, fieldModel: any) => {
   const collectionField = fieldModel?.context?.collectionField;
@@ -449,15 +458,7 @@ export class FilterFormItemModel extends FilterableItemModel<{
 
   private getCurrentOperatorMeta() {
     const operator = getDefaultOperator(this);
-    if (!operator) return null;
-
-    const operatorList = this.collectionField?.filterable?.operators;
-
-    if (!Array.isArray(operatorList)) {
-      return null;
-    }
-
-    return operatorList.find((op) => op.value === operator) || null;
+    return getFilterFormOperatorMeta(this, operator);
   }
 
   onInit(options: any) {
@@ -530,7 +531,8 @@ export class FilterFormItemModel extends FilterableItemModel<{
     rawValue = this.normalizeAssociationFilterValue(rawValue, fieldModel);
     const operatorMeta = this.getCurrentOperatorMeta();
     if (operatorMeta?.noValue) {
-      const options = operatorMeta?.schema?.['x-component-props']?.options;
+      const componentProps = operatorMeta?.schema?.['x-component-props'];
+      const options = isRecord(componentProps) ? componentProps.options : undefined;
       if (Array.isArray(options)) {
         return rawValue;
       }

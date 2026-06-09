@@ -26,7 +26,7 @@ import type { PDFDocumentLoadingTask, PDFDocumentProxy, PDFWorker, RenderTask } 
 import { NAMESPACE } from '../../common/constants';
 
 // Static placeholder icons live under the app's public folder, served by the gateway at the
-// runtime public path (`/nocobase/v2/` in v2, `/nocobase/` in v1). Prefix the bare
+// runtime public path (`/nocobase/v/` in the modern client, `/nocobase/` in v1). Prefix the bare
 // `/file-placeholder/...` paths so they resolve when APP_PUBLIC_PATH !== '/'. We intentionally
 // read only `__nocobase_public_path__` (not v1's `__nocobase_dev_public_path__`, which is '/'
 // for the v1 dev-server-direct scenario) because this app is always reached through the gateway.

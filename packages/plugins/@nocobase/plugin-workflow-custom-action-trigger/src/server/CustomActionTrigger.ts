@@ -35,6 +35,8 @@ import { ResourcerContext } from '@nocobase/resourcer';
 
 type CustomActionTriggerEvent = [WorkflowModel, Record<string, any>];
 
+const ASYNC_WORKFLOW_TRIGGER_DELAY_MS = 200;
+
 class CustomActionInterceptionError extends Error {
   status = 400;
   messages: any[] = [];
@@ -354,9 +356,39 @@ export default class CustomActionTrigger extends Trigger {
 
     await next();
 
-    for (const event of asyncGroup) {
-      this.workflow.trigger(event[0], event[1]);
+    this.scheduleAsyncWorkflowTriggers(context, asyncGroup);
+  }
+
+  private scheduleAsyncWorkflowTriggers(context: ResourcerContext, events: CustomActionTriggerEvent[]) {
+    if (!events.length) {
+      return;
     }
+
+    const triggerAsyncWorkflows = () => {
+      const triggerAsyncWorkflow = async (workflow: WorkflowModel, values: Record<string, any>) => {
+        await this.workflow.trigger(workflow, values);
+      };
+
+      setTimeout(() => {
+        for (const [workflow, values] of events) {
+          triggerAsyncWorkflow(workflow, values).catch((error) => {
+            context.logger.error('[Workflow custom-action]: async workflow trigger failed', {
+              error,
+              workflowId: workflow.id,
+              workflowKey: workflow.key,
+              workflowTitle: workflow.title,
+            });
+          });
+        }
+      }, ASYNC_WORKFLOW_TRIGGER_DELAY_MS);
+    };
+
+    if (context.res.writableEnded) {
+      triggerAsyncWorkflows();
+      return;
+    }
+
+    context.res.once('finish', triggerAsyncWorkflows);
   }
 
   validateContext(values: any, workflow: WorkflowModel) {

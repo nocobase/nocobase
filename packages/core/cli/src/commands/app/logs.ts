@@ -11,6 +11,7 @@ import { Command, Flags } from '@oclif/core';
 import { ensureCrossEnvConfirmed, hasExplicitEnvSelection } from '../../lib/env-guard.js';
 import {
   formatMissingManagedAppEnvMessage,
+  managedAppLifecycleEnvVars,
   resolveManagedAppRuntime,
   runLocalNocoBaseCommand,
 } from '../../lib/app-runtime.js';
@@ -126,6 +127,7 @@ export default class AppLogs extends Command {
         localArgs.push('--nostream');
       }
       await runLocalNocoBaseCommand(runtime, localArgs, {
+        env: managedAppLifecycleEnvVars(),
         stdio: 'inherit',
       });
     } catch (error: unknown) {

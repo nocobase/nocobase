@@ -176,6 +176,10 @@ const NON_BUSINESS_VISIBLE_FIELD_TYPES = new Set([
   'operations',
   'sort',
 ]);
+const VISIBLE_DATA_BLOCK_JS_COLUMN_BLOCK_TYPES = new Set(['table']);
+const VISIBLE_DATA_BLOCK_JS_ITEM_BLOCK_TYPES = new Set(['createForm', 'editForm']);
+const VISIBLE_DATA_BLOCK_DISPLAY_JS_FIELD_BLOCK_TYPES = new Set(['table', 'details', 'list', 'gridCard', 'kanban']);
+const VISIBLE_DATA_BLOCK_EDITABLE_JS_FIELD_BLOCK_TYPES = new Set(['createForm', 'editForm']);
 const ANT_DESIGN_ICON_NAMES = new Set(Object.keys(antDesignIconAsn || {}));
 const PUBLIC_BLOCK_TYPE_BY_MODEL_USE: Record<string, string> = {
   TableBlockModel: 'table',
@@ -5823,6 +5827,10 @@ function collectVisibleDataBlockFieldErrors(
   }
   const fieldEntries = collectVisibleDataBlockFieldEntries(block, path);
   const validBusinessFieldNames = collectVisibleDataBlockValidBusinessFieldNames(block, context, fieldEntries);
+  const hasJsFieldEntry = hasVisibleDataBlockJsFieldEntry(fieldEntries, blockType);
+  if (hasJsFieldEntry) {
+    return;
+  }
   if (!fieldEntries.length || !validBusinessFieldNames.length) {
     const hasBlockFields = Array.isArray(block?.fields);
     const hasBlockFieldGroups = Array.isArray(block?.fieldGroups);
@@ -5903,6 +5911,63 @@ function collectVisibleDataBlockFieldEntries(block: any, path: string): Array<{ 
     });
   }
   return entries;
+}
+
+function hasVisibleDataBlockJsFieldEntry(fieldEntries: Array<{ field: any; path: string }>, blockType: string) {
+  return fieldEntries.some((entry) => isVisibleDataBlockJsField(entry.field, blockType));
+}
+
+function isVisibleDataBlockJsField(field: any, blockType: string) {
+  if (!_.isPlainObject(field)) {
+    return false;
+  }
+  if (field.hidden === true || field.internal === true || field.actionOnly === true) {
+    return false;
+  }
+  const normalizedType = normalizeVisibleDataBlockJsFieldToken(field.type);
+  if (normalizedType === 'jscolumn') {
+    return VISIBLE_DATA_BLOCK_JS_COLUMN_BLOCK_TYPES.has(blockType);
+  }
+  if (normalizedType === 'jsitem') {
+    return VISIBLE_DATA_BLOCK_JS_ITEM_BLOCK_TYPES.has(blockType);
+  }
+  if (
+    String(field.renderer || '')
+      .trim()
+      .toLowerCase() === 'js'
+  ) {
+    return isVisibleDataBlockBoundJsFieldBlockType(blockType) && !!getAssociationAwareFieldPathInput(field);
+  }
+  const fieldUse = String(field.use || field.fieldUse || '').trim();
+  if (fieldUse === 'JSColumnModel') {
+    return VISIBLE_DATA_BLOCK_JS_COLUMN_BLOCK_TYPES.has(blockType);
+  }
+  if (fieldUse === 'JSItemModel') {
+    return VISIBLE_DATA_BLOCK_JS_ITEM_BLOCK_TYPES.has(blockType);
+  }
+  if (fieldUse === 'JSFieldModel') {
+    return VISIBLE_DATA_BLOCK_DISPLAY_JS_FIELD_BLOCK_TYPES.has(blockType) && !!getAssociationAwareFieldPathInput(field);
+  }
+  if (fieldUse === 'JSEditableFieldModel') {
+    return (
+      VISIBLE_DATA_BLOCK_EDITABLE_JS_FIELD_BLOCK_TYPES.has(blockType) && !!getAssociationAwareFieldPathInput(field)
+    );
+  }
+  return false;
+}
+
+function isVisibleDataBlockBoundJsFieldBlockType(blockType: string) {
+  return (
+    VISIBLE_DATA_BLOCK_DISPLAY_JS_FIELD_BLOCK_TYPES.has(blockType) ||
+    VISIBLE_DATA_BLOCK_EDITABLE_JS_FIELD_BLOCK_TYPES.has(blockType)
+  );
+}
+
+function normalizeVisibleDataBlockJsFieldToken(value: any) {
+  return String(value || '')
+    .trim()
+    .replace(/[-_]/g, '')
+    .toLowerCase();
 }
 
 function collectVisibleDataBlockValidBusinessFieldNames(

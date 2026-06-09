@@ -1,56 +1,60 @@
 ---
-title: "nb env"
-description: "Referência do comando nb env: gerencia envs do NocoBase CLI, incluindo adicionar, visualizar o env atual, verificar status, alternar, autenticar e remover."
-keywords: "nb env,NocoBase CLI,gerenciamento de ambiente,env,env atual,autenticação,OpenAPI"
+title: 'nb env'
+description: 'Referência do comando nb env: gerencie envs do NocoBase CLI, incluindo adicionar, ver o env atual, verificar status, trocar, atualizar, gerar proxy, autenticar e remover.'
+keywords: 'nb env,NocoBase CLI,gerenciamento de ambiente,env,current env,proxy,autenticação,OpenAPI'
 ---
 
 # nb env
 
-Gerencia os envs do NocoBase CLI já salvos. O env armazena o endereço da API, informações de autenticação, caminhos da aplicação local, configuração do banco de dados e o cache de comandos em tempo de execução.
+Gerencie envs salvos do NocoBase CLI. Um env guarda informações de conexão e de runtime local, como endereço da API, autenticação, caminho local do app e configuração do banco de dados.
 
-No modelo atual, a CLI separa dois conceitos:
+A partir desta versão, a CLI separa dois conceitos:
 
-- `current env`: o env usado pelo shell ou runtime de agente ativo, isolado por `NB_SESSION_ID` quando disponível
-- `last env`: o último env usado globalmente, usado como fallback quando o session mode não está habilitado
+- `current env`: o env usado pelo shell ou agent runtime atual, isolado por `NB_SESSION_ID` quando possível
+- `last env`: o último env usado globalmente, usado como fallback quando o session mode não está ativado
 
 ## Uso
 
-
+```bash
 nb env <command>
+```
 
 ## Subcomandos
 
 | Comando | Descrição |
 | --- | --- |
-| [`nb env add`](./add.md) | Salva um endpoint da API NocoBase e alterna para esse env |
+| [`nb env add`](./add.md) | Salva um endpoint da API do NocoBase e troca para esse env |
 | [`nb env current`](./current.md) | Mostra o env atualmente efetivo |
-| [`nb env update`](./update.md) | Atualiza o OpenAPI Schema e o cache de comandos em tempo de execução a partir da aplicação |
+| [`nb env update`](./update.md) | Atualiza a configuração salva de um env e executa a sincronização necessária |
 | [`nb env list`](./list.md) | Lista os envs configurados |
-| [`nb env status`](./status.md) | Mostra o status do env atual, de um env ou de todos os envs |
-| [`nb env info`](./info.md) | Visualiza as informações detalhadas de um env específico |
-| [`nb env remove`](./remove.md) | Remove a configuração de um env |
-| [`nb env auth`](./auth.md) | Executa o login OAuth para um env já salvo |
-| [`nb env use`](./use.md) | Alterna o env atual |
+| [`nb env status`](./status.md) | Mostra o status do env atual, de um env específico ou de todos |
+| [`nb env info`](./info.md) | Mostra detalhes de um único env |
+| [`nb env proxy`](./proxy/index.md) | Mostra os subcomandos de proxy e gera configurações Nginx ou Caddy para um env gerenciado |
+| [`nb env remove`](./remove.md) | Remove a configuração do env depois de parar o runtime gerenciado |
+| [`nb env auth`](./auth.md) | Executa o login OAuth para um env salvo |
+| [`nb env use`](./use.md) | Troca o env atual |
 
 ## Exemplos
 
-
+```bash
 nb env add app1 --api-base-url http://localhost:13000/api
 nb env current
 nb env list
 nb env status
 nb env info app1
+nb env proxy nginx --env app1
 nb env update app1
 nb env use app1
 nb env auth app1
+```
 
-## Session mode
+## session mode
 
-Session mode é a recomendação padrão. Ele mantém `current env` isolado entre diferentes terminais, shells e runtimes de agente, para que o trabalho em paralelo não se afete.
+Por padrão, é recomendado ativar o session mode. Assim, o `current env` em terminais, shells ou agent runtimes diferentes fica isolado e não interfere em execuções paralelas.
 
-Quando o session mode não está habilitado, `nb env use` atualiza o `last env` global, e outras sessões sem isolamento também podem ser afetadas.
+Se o session mode não estiver ativo, `nb env use` atualiza o `last env` global, e outras sessões sem isolamento também serão afetadas.
 
-Ative com [`nb session setup`](../session/setup.md).
+Veja [`nb session setup`](../session/setup.md) para ativar.
 
 ## Comandos relacionados
 

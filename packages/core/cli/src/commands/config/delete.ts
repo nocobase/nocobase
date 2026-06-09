@@ -16,12 +16,17 @@ export default class ConfigDelete extends Command {
   static override examples = [
     '<%= config.bin %> <%= command.id %> locale',
     '<%= config.bin %> <%= command.id %> update.policy',
-    '<%= config.bin %> <%= command.id %> license.pkg-url',
     '<%= config.bin %> <%= command.id %> docker.network',
     '<%= config.bin %> <%= command.id %> docker.container-prefix',
     '<%= config.bin %> <%= command.id %> bin.docker',
+    '<%= config.bin %> <%= command.id %> bin.caddy',
     '<%= config.bin %> <%= command.id %> bin.git',
+    '<%= config.bin %> <%= command.id %> bin.nginx',
+    '<%= config.bin %> <%= command.id %> proxy.nb-cli-root',
+    '<%= config.bin %> <%= command.id %> proxy.upstream-host',
     '<%= config.bin %> <%= command.id %> bin.yarn',
+    '<%= config.bin %> <%= command.id %> log.enabled',
+    '<%= config.bin %> <%= command.id %> log.retention-days',
   ];
 
   static override args = {

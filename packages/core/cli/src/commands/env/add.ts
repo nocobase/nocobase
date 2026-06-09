@@ -10,11 +10,8 @@
 import { Args, Command, Flags } from '@oclif/core';
 import { setCurrentEnv, upsertEnv } from '../../lib/auth-store.js';
 import { resolveDefaultConfigScope } from '../../lib/cli-home.js';
-import {
-  buildStoredEnvConfig,
-  type StoredEnvConfig,
-  type StoredEnvConfigInput,
-} from '../../lib/env-config.js';
+import { ENV_BOOLEAN_CONFIG_FLAG_MAP, ENV_STRING_CONFIG_FLAG_MAP } from '../../lib/env-command-config.js';
+import { buildStoredEnvConfig, type StoredEnvConfig, type StoredEnvConfigInput } from '../../lib/env-config.js';
 import {
   runPromptCatalog,
   type PromptCatalogValues,
@@ -54,8 +51,11 @@ type EnvAddParsedFlags = {
   'dev-dependencies'?: boolean;
   build?: boolean;
   'build-dts'?: boolean;
+  'app-path'?: string;
   'app-root-path'?: string;
   'storage-path'?: string;
+  'app-public-path'?: string;
+  'env-file'?: string;
   'app-port'?: string;
   'app-key'?: string;
   timezone?: string;
@@ -76,43 +76,7 @@ type EnvAddParsedFlags = {
   'root-nickname'?: string;
 };
 
-const ENV_RUNTIME_FLAG_MAP = {
-  source: 'source',
-  'download-version': 'downloadVersion',
-  'docker-registry': 'dockerRegistry',
-  'docker-platform': 'dockerPlatform',
-  'git-url': 'gitUrl',
-  'npm-registry': 'npmRegistry',
-  'app-root-path': 'appRootPath',
-  'storage-path': 'storagePath',
-  'app-port': 'appPort',
-  'app-key': 'appKey',
-  timezone: 'timezone',
-  'db-dialect': 'dbDialect',
-  'builtin-db-image': 'builtinDbImage',
-  'db-host': 'dbHost',
-  'db-port': 'dbPort',
-  'db-database': 'dbDatabase',
-  'db-user': 'dbUser',
-  'db-password': 'dbPassword',
-  'db-schema': 'dbSchema',
-  'db-table-prefix': 'dbTablePrefix',
-  'root-username': 'rootUsername',
-  'root-email': 'rootEmail',
-  'root-password': 'rootPassword',
-  'root-nickname': 'rootNickname',
-} as const;
-
-const ENV_BOOLEAN_RUNTIME_FLAG_MAP = {
-  'builtin-db': 'builtinDb',
-  'dev-dependencies': 'devDependencies',
-  build: 'build',
-  'build-dts': 'buildDts',
-  'db-underscored': 'dbUnderscored',
-} as const;
-
-const envAddText = (key: string, values?: Record<string, unknown>) =>
-  localeText(`commands.envAdd.${key}`, values);
+const envAddText = (key: string, values?: Record<string, unknown>) => localeText(`commands.envAdd.${key}`, values);
 
 const envAddAccessTokenPrompt: TextPromptBlock = {
   type: 'text',
@@ -214,16 +178,13 @@ export default class EnvAdd extends Command {
     'access-token': Flags.string({
       char: 't',
       aliases: ['token'],
-      description:
-        'API key or access token when using --auth-type token (prompted in a TTY when omitted)',
+      description: 'API key or access token when using --auth-type token (prompted in a TTY when omitted)',
     }),
     username: Flags.string({
-      description:
-        'Username when using --auth-type basic (prompted in a TTY when omitted)',
+      description: 'Username when using --auth-type basic (prompted in a TTY when omitted)',
     }),
     password: Flags.string({
-      description:
-        'Password when using --auth-type basic (prompted in a TTY when omitted)',
+      description: 'Password when using --auth-type basic (prompted in a TTY when omitted)',
     }),
     'skip-auth': Flags.boolean({
       description: 'Save the env now and finish authentication later with `nb env auth`',
@@ -268,13 +229,27 @@ export default class EnvAdd extends Command {
       hidden: true,
       description: 'Whether declaration files were emitted during build for this env',
     }),
+    'app-path': Flags.string({
+      hidden: true,
+      description: 'App path saved with this env',
+    }),
     'app-root-path': Flags.string({
       hidden: true,
+      deprecated: true,
       description: 'Application root path saved with this env',
     }),
     'storage-path': Flags.string({
       hidden: true,
+      deprecated: true,
       description: 'Storage path saved with this env',
+    }),
+    'app-public-path': Flags.string({
+      hidden: true,
+      description: 'Application public path saved with this env',
+    }),
+    'env-file': Flags.string({
+      hidden: true,
+      description: 'Docker env file saved with this env',
     }),
     'app-port': Flags.string({
       hidden: true,
@@ -371,16 +346,16 @@ export default class EnvAdd extends Command {
       message: envAddText('prompts.authType.message'),
       options: [
         {
-          value: 'basic',
-          label: envAddText('prompts.authType.basicLabel'),
-          hint: envAddText('prompts.authType.basicHint'),
-        },
-        {
           value: 'oauth',
           label: envAddText('prompts.authType.oauthLabel'),
           hint: envAddText('prompts.authType.oauthHint'),
         },
         { value: 'token', label: envAddText('prompts.authType.tokenLabel') },
+        {
+          value: 'basic',
+          label: envAddText('prompts.authType.basicLabel'),
+          hint: envAddText('prompts.authType.basicHint'),
+        },
       ],
       initialValue: 'oauth',
       required: true,
@@ -390,10 +365,7 @@ export default class EnvAdd extends Command {
     accessToken: envAddAccessTokenPrompt,
   };
 
-  private buildPromptValues(
-    nameArg: string | undefined,
-    flags: EnvAddParsedFlags,
-  ): PromptInitialValues {
+  private buildPromptValues(nameArg: string | undefined, flags: EnvAddParsedFlags): PromptInitialValues {
     const values: PromptInitialValues = {};
     const name = nameArg?.trim() || flags.env?.trim();
     if (name) {
@@ -453,15 +425,9 @@ export default class EnvAdd extends Command {
     };
   }
 
-  private buildEnvConfig(
-    results: PromptCatalogValues,
-    flags: EnvAddParsedFlags,
-  ): StoredEnvConfig {
+  private buildEnvConfig(results: PromptCatalogValues, flags: EnvAddParsedFlags): StoredEnvConfig {
     const authType = String(results.authType ?? '').trim();
-    const authUsername =
-      authType === 'basic'
-        ? String(results.username ?? flags.username ?? '').trim()
-        : '';
+    const authUsername = authType === 'basic' ? String(results.username ?? flags.username ?? '').trim() : '';
     const envConfigInput: StoredEnvConfigInput & Record<string, unknown> = {
       apiBaseUrl: results.apiBaseUrl,
       authType,
@@ -469,13 +435,13 @@ export default class EnvAdd extends Command {
       accessToken: results.accessToken,
     };
 
-    for (const [flagName, configKey] of Object.entries(ENV_RUNTIME_FLAG_MAP)) {
-      const value = flags[flagName as keyof typeof ENV_RUNTIME_FLAG_MAP];
+    for (const [flagName, configKey] of Object.entries(ENV_STRING_CONFIG_FLAG_MAP)) {
+      const value = flags[flagName as keyof typeof ENV_STRING_CONFIG_FLAG_MAP];
       envConfigInput[configKey] = value;
     }
 
-    for (const [flagName, configKey] of Object.entries(ENV_BOOLEAN_RUNTIME_FLAG_MAP)) {
-      const value = flags[flagName as keyof typeof ENV_BOOLEAN_RUNTIME_FLAG_MAP];
+    for (const [flagName, configKey] of Object.entries(ENV_BOOLEAN_CONFIG_FLAG_MAP)) {
+      const value = flags[flagName as keyof typeof ENV_BOOLEAN_CONFIG_FLAG_MAP];
       envConfigInput[configKey] = value;
     }
 
@@ -504,11 +470,7 @@ export default class EnvAdd extends Command {
 
     printVerbose(`Saving env "${envName}" globally.`);
 
-    await upsertEnv(
-      envName,
-      envConfig,
-      { scope: resolveDefaultConfigScope() },
-    );
+    await upsertEnv(envName, envConfig, { scope: resolveDefaultConfigScope() });
     await setCurrentEnv(envName, { scope: resolveDefaultConfigScope() });
 
     if (parsedFlags['skip-auth']) {

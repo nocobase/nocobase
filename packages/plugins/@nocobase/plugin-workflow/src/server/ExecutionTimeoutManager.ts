@@ -11,12 +11,13 @@ import { Op, Transactionable, type Transaction } from '@nocobase/database';
 import type PluginWorkflowServer from './Plugin';
 import { EXECUTION_REASON, EXECUTION_STATUS } from './constants';
 import type { ExecutionModel } from './types';
-import { abortExecution } from './utils';
+import { abortExecution, getExecutionLockKey } from './utils';
 
 const LOAD_BATCH_SIZE = 1000;
 const DEFAULT_SCAN_INTERVAL = 30_000;
 const SCAN_JITTER = 5_000;
 const MAX_TIMER_DELAY = 2_147_483_647;
+const EXECUTION_LOCK_TIMEOUT = 60_000;
 
 export default class ExecutionTimeoutManager {
   private readonly timers = new Map<string, NodeJS.Timeout>();
@@ -90,6 +91,22 @@ export default class ExecutionTimeoutManager {
       return false;
     }
     return this.abort(execution, options);
+  }
+
+  private async abortExecutionIfExpiredWithLock(executionOrId: ExecutionModel | number | string) {
+    const executionId = typeof executionOrId === 'object' ? executionOrId.id : executionOrId;
+    const lock = await this.plugin.app.lockManager.tryAcquire(getExecutionLockKey(executionId), EXECUTION_LOCK_TIMEOUT);
+
+    return lock.runExclusive(async () => {
+      const execution = await this.plugin.db.getRepository('executions').findOne({
+        filterByTk: executionId,
+      });
+      if (!execution) {
+        return false;
+      }
+
+      return this.abortExecutionIfExpired(execution);
+    }, EXECUTION_LOCK_TIMEOUT);
   }
 
   clear(executionId: number | string) {
@@ -195,7 +212,7 @@ export default class ExecutionTimeoutManager {
       })) as ExecutionModel[];
 
       for (const execution of executions) {
-        await this.abortExecutionIfExpired(execution);
+        await this.abortExecutionIfExpiredWithLock(execution);
       }
     })();
 
@@ -319,13 +336,6 @@ export default class ExecutionTimeoutManager {
       return;
     }
 
-    const execution = await this.plugin.db.getRepository('executions').findOne({
-      filterByTk: executionId,
-    });
-    if (!execution) {
-      return;
-    }
-
-    await this.abortExecutionIfExpired(execution);
+    await this.abortExecutionIfExpiredWithLock(executionId);
   }
 }

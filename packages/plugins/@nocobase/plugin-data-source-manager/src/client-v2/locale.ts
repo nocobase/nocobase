@@ -20,5 +20,6 @@ export function tExpr(key: string) {
 
 export function useT() {
   const engine = useFlowEngine();
-  return (key: string) => engine.context.t(key, { ns: [NAMESPACE, 'client'] });
+  return (key: string, options?: Record<string, unknown>) =>
+    engine.context.t(key, { ns: [NAMESPACE, 'client'], ...options });
 }

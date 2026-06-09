@@ -11,7 +11,7 @@ import { Args, Command, Flags } from '@oclif/core';
 import { formatMissingManagedAppEnvMessage, resolveManagedAppRuntime } from '../../lib/app-runtime.js';
 import { resolveBuiltinDbConnection } from '../../lib/builtin-db.js';
 import { renderTable } from '../../lib/ui.js';
-import { appRootPath, appUrl, dbStatus, runtimeStatus, storagePath } from './shared.js';
+import { appPath, appUrl, dbStatus, runtimeStatus, sourcePath, storagePath } from './shared.js';
 
 type EnvInfoValue = string | boolean | number | null | undefined;
 
@@ -152,7 +152,8 @@ export default class EnvInfo extends Command {
     const dbDialect = builtinDbConnection?.dbDialect ?? runtime.env.config.dbDialect;
     const appGroup: EnvInfoGroup = {
       url: appUrl(runtime),
-      appRootPath: appRootPath(runtime),
+      appPath: appPath(runtime),
+      sourcePath: sourcePath(runtime),
       storagePath: storagePath(runtime),
       appPort: runtime.env.config.appPort,
       appStatus: await runtimeStatus(runtime),
