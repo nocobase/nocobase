@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import React from 'react';
 import { DEFAULT_ADMIN_UI_LAYOUT } from '../../constants';
@@ -363,8 +363,8 @@ describe('plugin-ui-layout route permissions', () => {
     expect(await screen.findByRole('columnheader', { name: 'Layout title' })).toBeInTheDocument();
     expect(screen.getByRole('columnheader', { name: 'Type' })).toBeInTheDocument();
     expect(screen.getByRole('columnheader', { name: 'Layout access' })).toBeInTheDocument();
-    expect(screen.getByRole('columnheader', { name: 'Menu access' })).toBeInTheDocument();
-    expect(screen.getByRole('columnheader', { name: 'Configure' })).toBeInTheDocument();
+    expect(screen.queryByRole('columnheader', { name: 'Menu access' })).not.toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: 'Menu permissions' })).toBeInTheDocument();
 
     expect(screen.queryByRole('combobox', { name: 'UI layout' })).not.toBeInTheDocument();
     expect(screen.getByText('Desktop layout')).toBeInTheDocument();
@@ -373,11 +373,15 @@ describe('plugin-ui-layout route permissions', () => {
 
     expect(screen.getByRole('switch', { name: 'Allow access to Desktop layout' })).toBeChecked();
     expect(screen.getByRole('switch', { name: 'Allow access to Mobile layout' })).not.toBeChecked();
-    expect(screen.getByText('1 / 2')).toBeInTheDocument();
-    expect(screen.getByText('0 / 1')).toBeInTheDocument();
-    expect(screen.getByText('Inactive')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Configure Desktop layout' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Configure Mobile layout' })).toBeInTheDocument();
+    expect(screen.queryByText('1 / 2')).not.toBeInTheDocument();
+    expect(screen.queryByText('0 / 1')).not.toBeInTheDocument();
+    expect(screen.queryByText('Inactive')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Configure menu permissions for Desktop layout' })).toHaveTextContent(
+      'Configure',
+    );
+    expect(screen.getByRole('button', { name: 'Configure menu permissions for Mobile layout' })).toHaveTextContent(
+      'Configure',
+    );
     expect(resource.uiLayoutsList).toHaveBeenCalledWith(
       expect.objectContaining({
         filter: {
@@ -385,6 +389,68 @@ describe('plugin-ui-layout route permissions', () => {
         },
       }),
     );
+  });
+
+  it('should not request layout menu statistics before configuring a layout', async () => {
+    const resource = createLayoutSummaryPermissionTabResources();
+    flowMocks.context = resource.context;
+
+    render(
+      <LayoutAwareDesktopRoutesPermissionsTab
+        activeKey="menu"
+        activeRole={{ name: 'layout-member', title: 'Layout member' }}
+        onRoleChange={vi.fn()}
+      />,
+    );
+
+    expect(await screen.findByRole('switch', { name: 'Allow access to Desktop layout' })).toBeInTheDocument();
+
+    await waitFor(() => {
+      expect(resource.uiLayoutsList).toHaveBeenCalled();
+      expect(resource.rolesUiLayoutsList).toHaveBeenCalled();
+    });
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    expect(resource.desktopRoutesList).not.toHaveBeenCalled();
+    expect(resource.rolesUiLayoutDesktopRoutesList).not.toHaveBeenCalled();
+  });
+
+  it('should request menu permission details after configuring a layout', async () => {
+    const resource = createLayoutSummaryPermissionTabResources();
+    flowMocks.context = resource.context;
+
+    render(
+      <LayoutAwareDesktopRoutesPermissionsTab
+        activeKey="menu"
+        activeRole={{ name: 'layout-member', title: 'Layout member' }}
+        onRoleChange={vi.fn()}
+      />,
+    );
+
+    expect(await screen.findByRole('switch', { name: 'Allow access to Mobile layout' })).toBeInTheDocument();
+    resource.desktopRoutesList.mockClear();
+    resource.rolesUiLayoutDesktopRoutesList.mockClear();
+
+    await selectLayout('Mobile layout');
+
+    await waitFor(() => {
+      expect(resource.desktopRoutesList).toHaveBeenCalledWith(
+        expect.objectContaining({
+          filter: expect.objectContaining({
+            'uiLayouts.uid': 'mobile-layout',
+          }),
+        }),
+      );
+      expect(resource.rolesUiLayoutDesktopRoutesList).toHaveBeenCalledWith({
+        paginate: false,
+        filter: {
+          roleName: 'layout-member',
+          uiLayoutUid: 'mobile-layout',
+        },
+      });
+    });
   });
 
   it('should distinguish large route trees by path and keep bulk updates layout scoped', async () => {
@@ -470,11 +536,13 @@ describe('plugin-ui-layout route permissions', () => {
       />,
     );
 
-    const configureDesktopButton = await screen.findByRole('button', { name: 'Configure Desktop layout' });
+    const configureDesktopButton = await screen.findByRole('button', {
+      name: 'Configure menu permissions for Desktop layout',
+    });
     await user.click(configureDesktopButton);
 
     const drawer = await screen.findByRole('dialog', { name: 'Desktop layout' });
-    expect(await screen.findByText('Menu permissions')).toBeInTheDocument();
+    expect(within(drawer).getByText('Menu permissions')).toBeInTheDocument();
 
     await act(async () => {
       fireEvent.keyDown(drawer, {
@@ -602,29 +670,19 @@ describe('plugin-ui-layout route permissions', () => {
       layoutUid: (params?.filter as Record<string, unknown> | undefined)?.uiLayoutUid,
     }));
 
-    expect(desktopRouteLayouts).toEqual([
-      DEFAULT_ADMIN_UI_LAYOUT.uid,
-      'mobile-layout',
-      DEFAULT_ADMIN_UI_LAYOUT.uid,
-      'mobile-layout',
-      DEFAULT_ADMIN_UI_LAYOUT.uid,
-      'mobile-layout',
-      DEFAULT_ADMIN_UI_LAYOUT.uid,
-      'mobile-layout',
+    expect(desktopRouteLayouts).toEqual([DEFAULT_ADMIN_UI_LAYOUT.uid, 'mobile-layout']);
+    expect(scopedRouteRequests).toEqual([
+      { roleName: 'layout-member', layoutUid: DEFAULT_ADMIN_UI_LAYOUT.uid },
+      { roleName: 'layout-member', layoutUid: 'mobile-layout' },
+      { roleName: 'layout-auditor', layoutUid: 'mobile-layout' },
+      { roleName: 'layout-auditor', layoutUid: 'mobile-layout' },
     ]);
-    expect(scopedRouteRequests).toEqual(
-      expect.arrayContaining([
-        { roleName: 'layout-member', layoutUid: DEFAULT_ADMIN_UI_LAYOUT.uid },
-        { roleName: 'layout-member', layoutUid: 'mobile-layout' },
-        { roleName: 'layout-auditor', layoutUid: 'mobile-layout' },
-      ]),
-    );
     expect(resource.roleRoutesAdd).not.toHaveBeenCalled();
     expect(resource.roleRoutesRemove).not.toHaveBeenCalled();
     expect(resource.messageSuccess).toHaveBeenCalledTimes(1);
   });
 
-  it('should refresh the summary menu count after saving drawer route permissions', async () => {
+  it('should keep drawer route permissions current after saving', async () => {
     const resource = createCountingPermissionTabResources();
     const user = userEvent.setup();
     flowMocks.context = resource.context;
@@ -637,7 +695,7 @@ describe('plugin-ui-layout route permissions', () => {
       />,
     );
 
-    expect(await screen.findByText('0 / 1')).toBeInTheDocument();
+    expect(await screen.findByRole('switch', { name: 'Allow access to Mobile layout' })).toBeInTheDocument();
 
     await selectLayout('Mobile layout');
 
@@ -646,11 +704,6 @@ describe('plugin-ui-layout route permissions', () => {
     await act(async () => {
       await user.click(mobileCheckbox);
     });
-
-    await waitFor(() => {
-      expect(screen.queryByText('0 / 1')).not.toBeInTheDocument();
-    });
-    expect(screen.getAllByText('1 / 1')).toHaveLength(2);
 
     await act(async () => {
       await user.click(screen.getByRole('button', { name: 'Close' }));
@@ -753,7 +806,7 @@ describe('plugin-ui-layout route permissions', () => {
 });
 
 async function selectLayout(label: string) {
-  fireEvent.click(await screen.findByRole('button', { name: `Configure ${label}` }));
+  fireEvent.click(await screen.findByRole('button', { name: `Configure menu permissions for ${label}` }));
 }
 
 async function openLayoutPermissionsTab() {
@@ -1166,6 +1219,9 @@ function createLayoutSummaryPermissionTabResources() {
   const flowMessageSuccess = vi.fn();
 
   return {
+    desktopRoutesList,
+    rolesUiLayoutsList,
+    rolesUiLayoutDesktopRoutesList,
     uiLayoutsList,
     context: {
       api: {

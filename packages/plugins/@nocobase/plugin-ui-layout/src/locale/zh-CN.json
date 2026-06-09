@@ -36,6 +36,7 @@
   "Confirm delete": "确认删除",
   "Configure": "配置",
   "Configure {{layout}}": "配置 {{layout}}",
+  "Configure menu permissions for {{layout}}": "配置 {{layout}} 的菜单权限",
   "Copy failed": "复制失败",
   "Copy UID": "复制 UID",
   "Drag": "拖拽",

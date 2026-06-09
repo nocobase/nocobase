@@ -94,18 +94,12 @@ interface RoleUiLayoutDesktopRouteRecord {
   uiLayoutUid?: string;
 }
 
-interface LayoutMenuStats {
-  selected: number;
-  total: number;
-}
-
 interface LayoutSummaryRecord {
   uid: string;
   layout: UiLayoutRecord;
   label: string;
   typeLabel: string;
   accessible: boolean;
-  menuStats: LayoutMenuStats;
 }
 
 interface ResourceResponse {
@@ -437,55 +431,6 @@ export default function LayoutAwareDesktopRoutesPermissionsTab(props: Permission
   );
   const activeLayoutAccessible = !!layoutAccessService.data?.has(activeLayoutUid);
 
-  const layoutMenuStatsService = useRequest(
-    async () => {
-      if (!role || !enabledLayouts.length) {
-        return new Map<string, LayoutMenuStats>();
-      }
-
-      const entries = await Promise.all(
-        enabledLayouts.map(async (layout) => {
-          const filter = createDesktopRouteLayoutPermissionFilter(layout.uid);
-
-          try {
-            const [routesResponse, permissionsResponse] = await Promise.all([
-              desktopRoutesResource.list({
-                tree: true,
-                sort: 'sort',
-                paginate: false,
-                filter,
-              }),
-              roleUiLayoutDesktopRoutesResource.list({
-                paginate: false,
-                filter: {
-                  roleName: role.name,
-                  uiLayoutUid: layout.uid,
-                },
-              }),
-            ]);
-            const routeIds = getAllChildrenIds(toRouteItems(toDesktopRoutePayload(routesResponse?.data).data));
-            const routeIdSet = new Set(routeIds);
-            const selectedRouteIds = new Set(
-              toRoleUiLayoutDesktopRoutePayload(permissionsResponse?.data)
-                .data?.map((item) => toRouteId(item.desktopRouteId))
-                .filter((id): id is number => typeof id === 'number' && routeIdSet.has(id)),
-            );
-
-            return [layout.uid, { selected: selectedRouteIds.size, total: routeIds.length }] as const;
-          } catch {
-            return [layout.uid, { selected: 0, total: 0 }] as const;
-          }
-        }),
-      );
-
-      return new Map(entries);
-    },
-    {
-      ready: active && !!role && !!enabledLayouts.length,
-      refreshDeps: [active, role?.name, layoutUidKey],
-    },
-  );
-
   const applyPermissionChanges = useMemoizedFn(async (nextSelectedIds: number[]) => {
     if (!role || !activeLayoutAccessible) {
       return;
@@ -518,7 +463,7 @@ export default function LayoutAwareDesktopRoutesPermissionsTab(props: Permission
         ),
       );
     }
-    await Promise.all([roleScopedRouteService.refreshAsync(), layoutMenuStatsService.refreshAsync()]);
+    await roleScopedRouteService.refreshAsync();
     ctx.message.success(t('Saved successfully'));
   });
 
@@ -619,10 +564,9 @@ export default function LayoutAwareDesktopRoutesPermissionsTab(props: Permission
           label,
           typeLabel: getLayoutTypeLabel(layout, t),
           accessible: !!layoutAccessService.data?.has(layout.uid),
-          menuStats: layoutMenuStatsService.data?.get(layout.uid) ?? { selected: 0, total: 0 },
         };
       }),
-    [enabledLayouts, layoutAccessService.data, layoutMenuStatsService.data, t],
+    [enabledLayouts, layoutAccessService.data, t],
   );
 
   const layoutColumns = useMemo<ColumnsType<LayoutSummaryRecord>>(
@@ -647,22 +591,12 @@ export default function LayoutAwareDesktopRoutesPermissionsTab(props: Permission
         ),
       },
       {
-        dataIndex: 'menuStats',
-        title: t('Menu access'),
-        render: (_, item) => (
-          <Space size={token.marginXXS}>
-            <span>{`${item.menuStats.selected} / ${item.menuStats.total}`}</span>
-            {!item.accessible && <Typography.Text type="secondary">{t('Inactive')}</Typography.Text>}
-          </Space>
-        ),
-      },
-      {
         dataIndex: 'configure',
-        title: t('Configure'),
+        title: t('Menu permissions'),
         render: (_, item) => (
           <Button
             type="link"
-            aria-label={t('Configure {{layout}}', { layout: item.label })}
+            aria-label={t('Configure menu permissions for {{layout}}', { layout: item.label })}
             onClick={() => configureLayout(item.layout)}
           >
             {t('Configure')}
@@ -670,7 +604,7 @@ export default function LayoutAwareDesktopRoutesPermissionsTab(props: Permission
         ),
       },
     ],
-    [configureLayout, t, toggleLayoutAccess, token.marginXXS],
+    [configureLayout, t, toggleLayoutAccess],
   );
 
   const routeColumns = useMemo<ColumnsType<RoutePermissionRecord>>(
@@ -745,7 +679,7 @@ export default function LayoutAwareDesktopRoutesPermissionsTab(props: Permission
       </Checkbox>
       <Table<LayoutSummaryRecord>
         rowKey="uid"
-        loading={layoutService.loading || layoutAccessService.loading || layoutMenuStatsService.loading}
+        loading={layoutService.loading || layoutAccessService.loading}
         pagination={false}
         columns={layoutColumns}
         dataSource={layoutRows}
