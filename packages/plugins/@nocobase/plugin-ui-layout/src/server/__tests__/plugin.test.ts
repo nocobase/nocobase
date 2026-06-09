@@ -776,6 +776,208 @@ describe('plugin-ui-layout server', () => {
     expect(negatedResponses.map((response) => response.status)).toEqual([403, 403, 403, 403, 403]);
   });
 
+  it('should keep role layout permissions behind role configuration snippets', async () => {
+    app = await createUiLayoutMockServer();
+
+    const layout = await app.db.getRepository('uiLayouts').create({
+      values: {
+        uid: 'role-acl-layout',
+        title: 'Role ACL layout',
+        layoutType: 'mobile',
+        routeName: 'roleAclLayout',
+        routePath: '/role-acl-layout',
+        authCheck: true,
+        enabled: true,
+      },
+    });
+    const secondLayout = await app.db.getRepository('uiLayouts').create({
+      values: {
+        uid: 'role-acl-layout-second',
+        title: 'Role ACL layout second',
+        layoutType: 'mobile',
+        routeName: 'roleAclLayoutSecond',
+        routePath: '/role-acl-layout-second',
+        authCheck: true,
+        enabled: true,
+      },
+    });
+    const route = await app.db.getRepository('desktopRoutes').create({
+      values: {
+        type: 'flowPage',
+        title: 'DATA-ROLE-ACL-ROUTE',
+        schemaUid: 'role-acl-route',
+      },
+    });
+    const secondRoute = await app.db.getRepository('desktopRoutes').create({
+      values: {
+        type: 'flowPage',
+        title: 'DATA-ROLE-ACL-ROUTE-SECOND',
+        schemaUid: 'role-acl-route-second',
+      },
+    });
+    await app.db.getRepository('desktopRoutes.uiLayouts', route.get('id')).set({
+      tk: [layout.get('uid')],
+    });
+    await app.db.getRepository('desktopRoutes.uiLayouts', secondRoute.get('id')).set({
+      tk: [secondLayout.get('uid')],
+    });
+    const targetRole = await app.db.getRepository('roles').create({
+      values: {
+        name: 'role-acl-target',
+      },
+    });
+    const layoutPermission = await app.db.getRepository('rolesUiLayouts').create({
+      values: {
+        roleName: targetRole.get('name'),
+        uiLayoutUid: layout.get('uid'),
+      },
+    });
+    const menuPermission = await app.db.getRepository('rolesUiLayoutDesktopRoutes').create({
+      values: {
+        roleName: targetRole.get('name'),
+        uiLayoutUid: layout.get('uid'),
+        desktopRouteId: route.get('id'),
+      },
+    });
+    await app.db.getRepository('roles').create({
+      values: {
+        name: 'role-acl-logged-in',
+      },
+    });
+    await app.db.getRepository('roles').create({
+      values: {
+        name: 'role-acl-ui-layout-manager',
+        snippets: ['pm.ui-layout'],
+      },
+    });
+    await app.db.getRepository('roles').create({
+      values: {
+        name: 'role-acl-role-manager',
+        snippets: ['pm.acl.roles'],
+      },
+    });
+    const loggedInUser = await app.db.getRepository('users').create({
+      values: {
+        roles: ['role-acl-logged-in'],
+      },
+    });
+    const uiLayoutManagerUser = await app.db.getRepository('users').create({
+      values: {
+        roles: ['role-acl-ui-layout-manager'],
+      },
+    });
+    const roleManagerUser = await app.db.getRepository('users').create({
+      values: {
+        roles: ['role-acl-role-manager'],
+      },
+    });
+    const loggedInAgent = await app.agent().login(loggedInUser);
+    const uiLayoutManagerAgent = await app.agent().login(uiLayoutManagerUser);
+    const roleManagerAgent = await app.agent().login(roleManagerUser);
+    const deniedOperations = async (agent: typeof loggedInAgent): Promise<number[]> => {
+      const responses = [
+        await agent.resource('rolesUiLayouts').list({
+          paginate: false,
+          filter: {
+            roleName: targetRole.get('name'),
+          },
+        }),
+        await agent.resource('rolesUiLayouts').create({
+          values: {
+            roleName: targetRole.get('name'),
+            uiLayoutUid: secondLayout.get('uid'),
+          },
+        }),
+        await agent.resource('rolesUiLayouts').update({
+          filterByTk: layoutPermission.get('id'),
+          values: {
+            uiLayoutUid: layout.get('uid'),
+          },
+        }),
+        await agent.resource('rolesUiLayouts').destroy({
+          filterByTk: layoutPermission.get('id'),
+        }),
+        await agent.resource('rolesUiLayoutDesktopRoutes').list({
+          paginate: false,
+          filter: {
+            roleName: targetRole.get('name'),
+          },
+        }),
+        await agent.resource('rolesUiLayoutDesktopRoutes').create({
+          values: {
+            roleName: targetRole.get('name'),
+            uiLayoutUid: secondLayout.get('uid'),
+            desktopRouteId: secondRoute.get('id'),
+          },
+        }),
+        await agent.resource('rolesUiLayoutDesktopRoutes').update({
+          filterByTk: menuPermission.get('id'),
+          values: {
+            desktopRouteId: route.get('id'),
+          },
+        }),
+        await agent.resource('rolesUiLayoutDesktopRoutes').destroy({
+          filterByTk: menuPermission.get('id'),
+        }),
+      ];
+
+      return responses.map((response) => response.status);
+    };
+
+    expect(await deniedOperations(loggedInAgent)).toEqual([403, 403, 403, 403, 403, 403, 403, 403]);
+    expect(await deniedOperations(uiLayoutManagerAgent)).toEqual([403, 403, 403, 403, 403, 403, 403, 403]);
+
+    const layoutCreateResponse = await roleManagerAgent.resource('rolesUiLayouts').create({
+      values: {
+        roleName: targetRole.get('name'),
+        uiLayoutUid: secondLayout.get('uid'),
+      },
+    });
+    const menuCreateResponse = await roleManagerAgent.resource('rolesUiLayoutDesktopRoutes').create({
+      values: {
+        roleName: targetRole.get('name'),
+        uiLayoutUid: secondLayout.get('uid'),
+        desktopRouteId: secondRoute.get('id'),
+      },
+    });
+    const roleManagerResponses = [
+      await roleManagerAgent.resource('rolesUiLayouts').list({
+        paginate: false,
+        filter: {
+          roleName: targetRole.get('name'),
+        },
+      }),
+      layoutCreateResponse,
+      await roleManagerAgent.resource('rolesUiLayouts').update({
+        filterByTk: layoutPermission.get('id'),
+        values: {
+          uiLayoutUid: layout.get('uid'),
+        },
+      }),
+      await roleManagerAgent.resource('rolesUiLayouts').destroy({
+        filterByTk: layoutPermission.get('id'),
+      }),
+      await roleManagerAgent.resource('rolesUiLayoutDesktopRoutes').list({
+        paginate: false,
+        filter: {
+          roleName: targetRole.get('name'),
+        },
+      }),
+      menuCreateResponse,
+      await roleManagerAgent.resource('rolesUiLayoutDesktopRoutes').update({
+        filterByTk: menuPermission.get('id'),
+        values: {
+          desktopRouteId: route.get('id'),
+        },
+      }),
+      await roleManagerAgent.resource('rolesUiLayoutDesktopRoutes').destroy({
+        filterByTk: menuPermission.get('id'),
+      }),
+    ];
+
+    expect(roleManagerResponses.map((response) => response.status)).toEqual([200, 200, 200, 200, 200, 200, 200, 200]);
+  });
+
   it('should associate desktop routes with ui layouts by uid without breaking existing relations', async () => {
     app = await createMockServer({
       plugins: [

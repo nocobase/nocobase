@@ -37,6 +37,8 @@ const UI_LAYOUT_MANAGEMENT_ACTIONS = [
   'uiLayouts:destroy',
 ];
 
+const ROLE_UI_LAYOUT_PERMISSION_ACTIONS = ['rolesUiLayouts:*', 'rolesUiLayoutDesktopRoutes:*'];
+
 type DesktopRouteCreateValue = Record<string, unknown> & {
   children?: unknown;
   uiLayouts?: unknown;
@@ -787,6 +789,10 @@ export class PluginUiLayoutServer extends Plugin {
     this.app.acl.registerSnippet({
       name: 'pm.ui-layout',
       actions: UI_LAYOUT_MANAGEMENT_ACTIONS,
+    });
+    this.app.acl.registerSnippet({
+      name: 'pm.acl.roles',
+      actions: ROLE_UI_LAYOUT_PERMISSION_ACTIONS,
     });
     this.app.acl.allow('uiLayouts', 'listAccessible', 'loggedIn');
 
