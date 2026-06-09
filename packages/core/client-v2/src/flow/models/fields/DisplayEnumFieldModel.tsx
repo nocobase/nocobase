@@ -13,6 +13,7 @@ import { Tag } from 'antd';
 import React from 'react';
 import { castArray } from 'lodash';
 import { ClickableFieldModel } from './ClickableFieldModel';
+import { translateOptionLabel } from '../../internal/utils/enumOptionsUtils';
 
 interface FieldNames {
   value: string;
@@ -70,7 +71,7 @@ export class DisplayEnumFieldModel extends ClickableFieldModel {
     }
     return currentOptions.map((option) => (
       <Tag key={option[fieldNames.value]} color={option[fieldNames.color]} icon={<Icon type={option['icon']} />}>
-        {this.translate(option[fieldNames.label])}
+        {translateOptionLabel(option[fieldNames.label], this.translate)}
       </Tag>
     ));
   }
