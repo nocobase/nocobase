@@ -110,17 +110,27 @@ interface ListResource {
   list: (params?: Record<string, unknown>) => Promise<ResourceResponse>;
 }
 
-interface RoleDesktopRoutesResource extends ListResource {
-  add: (params: { values: number[] }) => Promise<unknown>;
-  remove: (params: { values: number[] }) => Promise<unknown>;
-}
-
 interface RoleUiLayoutsResource extends ListResource {
   create: (params: { values: { roleName: string; uiLayoutUid: string } }) => Promise<unknown>;
   destroy: (params: { filter: { roleName: string; uiLayoutUid: string } }) => Promise<unknown>;
 }
 
-type RoleUiLayoutDesktopRoutesResource = ListResource;
+interface RoleUiLayoutDesktopRoutesResource extends ListResource {
+  create: (params: {
+    values: {
+      roleName: string;
+      uiLayoutUid: string;
+      desktopRouteId: number;
+    };
+  }) => Promise<unknown>;
+  destroy: (params: {
+    filter: {
+      roleName: string;
+      uiLayoutUid: string;
+      desktopRouteId: number[];
+    };
+  }) => Promise<unknown>;
+}
 
 function toUiLayoutPayload(responseData: unknown): UiLayoutPayload {
   if (!responseData || typeof responseData !== 'object') {
@@ -262,10 +272,6 @@ export default function LayoutAwareDesktopRoutesPermissionsTab(props: Permission
     () => ctx.api.resource('rolesUiLayoutDesktopRoutes') as unknown as RoleUiLayoutDesktopRoutesResource,
     [ctx.api],
   );
-  const roleRoutesResource = useMemo(
-    () => (role ? (ctx.api.resource('roles.desktopRoutes', role.name) as unknown as RoleDesktopRoutesResource) : null),
-    [ctx.api, role],
-  );
 
   const layoutService = useRequest(
     async () => {
@@ -330,20 +336,27 @@ export default function LayoutAwareDesktopRoutesPermissionsTab(props: Permission
     ? t('Failed to load routes for {{layout}}', { layout: selectedLayoutLabel })
     : t('No routes in {{layout}}', { layout: selectedLayoutLabel });
 
-  const roleRoutesService = useRequest(
+  const roleScopedRouteService = useRequest(
     async () => {
-      if (!roleRoutesResource) {
+      if (!role) {
         return [];
       }
-      const response = await roleRoutesResource.list({
+      const response = await roleUiLayoutDesktopRoutesResource.list({
         paginate: false,
-        filter: routeFilter,
+        filter: {
+          roleName: role.name,
+          uiLayoutUid: activeLayoutUid,
+        },
       });
-      return toDesktopRoutePayload(response?.data).data?.map((item) => item.id) ?? [];
+      return (
+        toRoleUiLayoutDesktopRoutePayload(response?.data)
+          .data?.map((item) => toRouteId(item.desktopRouteId))
+          .filter((id): id is number => typeof id === 'number') ?? []
+      );
     },
     {
-      ready: active && drawerOpen && !!roleRoutesResource,
-      refreshDeps: [role?.name, active, drawerOpen, routeFilter],
+      ready: active && drawerOpen && !!role,
+      refreshDeps: [role?.name, active, drawerOpen, activeLayoutUid],
       onSuccess(data) {
         setSelectedIds(data);
       },
@@ -428,7 +441,7 @@ export default function LayoutAwareDesktopRoutesPermissionsTab(props: Permission
   );
 
   const applyPermissionChanges = useMemoizedFn(async (nextSelectedIds: number[]) => {
-    if (!roleRoutesResource) {
+    if (!role) {
       return;
     }
     const changes = getLayoutScopedPermissionChanges({
@@ -438,12 +451,28 @@ export default function LayoutAwareDesktopRoutesPermissionsTab(props: Permission
     });
     setSelectedIds(nextSelectedIds);
     if (changes.remove.length) {
-      await roleRoutesResource.remove({ values: changes.remove });
+      await roleUiLayoutDesktopRoutesResource.destroy({
+        filter: {
+          roleName: role.name,
+          uiLayoutUid: activeLayoutUid,
+          desktopRouteId: changes.remove,
+        },
+      });
     }
     if (changes.add.length) {
-      await roleRoutesResource.add({ values: changes.add });
+      await Promise.all(
+        changes.add.map((desktopRouteId) =>
+          roleUiLayoutDesktopRoutesResource.create({
+            values: {
+              roleName: role.name,
+              uiLayoutUid: activeLayoutUid,
+              desktopRouteId,
+            },
+          }),
+        ),
+      );
     }
-    await Promise.all([roleRoutesService.refreshAsync(), layoutMenuStatsService.refreshAsync()]);
+    await Promise.all([roleScopedRouteService.refreshAsync(), layoutMenuStatsService.refreshAsync()]);
     ctx.message.success(t('Saved successfully'));
   });
 
@@ -656,7 +685,7 @@ export default function LayoutAwareDesktopRoutesPermissionsTab(props: Permission
           <Typography.Text strong>{t('Menu permissions')}</Typography.Text>
           <Table<RoutePermissionRecord>
             rowKey="id"
-            loading={routeService.loading || roleRoutesService.loading}
+            loading={routeService.loading || roleScopedRouteService.loading}
             pagination={false}
             expandable={{ defaultExpandAllRows: false }}
             columns={routeColumns}
