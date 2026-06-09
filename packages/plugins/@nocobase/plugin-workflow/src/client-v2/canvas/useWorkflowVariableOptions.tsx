@@ -36,20 +36,60 @@
  * adaptation is v2-specific. A node author never touches `useVariables`.
  */
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import { QuestionCircleOutlined } from '@ant-design/icons';
 import { Tooltip } from 'antd';
 import type { MetaTreeNode } from '@nocobase/flow-engine';
 import { useFlowEngine } from '@nocobase/flow-engine';
-import { useNodeContext } from './contexts';
-import { useAvailableUpstreams } from './Instruction';
-import { adaptVariableOptionToMetaTree } from './adaptVariableOptionToMetaTree';
-import { PluginWorkflowClientV2 } from '../plugin';
+import { useCurrentWorkflowContext, useNodeContext } from './contexts';
+import { useAvailableUpstreams, useUpstreamScopes, type Instruction } from './Instruction';
+import { adaptVariableOptionToMetaTree, adaptVariableOptionsToMetaTree } from './adaptVariableOptionToMetaTree';
 import { NAMESPACE } from '../locale';
 
 const NODE_RESULT_ROOT = '$jobsMapByNodeKey';
 const ENV_ROOT = '$env';
 const SYSTEM_ROOT = '$system';
+const TRIGGER_ROOT = '$context';
+const SCOPES_ROOT = '$scopes';
+
+/**
+ * A system variable as held by either runtime's `systemVariables` registry.
+ * v2 stores `{ key, label(string template), tooltip? }`; v1 stores
+ * `{ key, label(string OR already-rendered JSX), value }` with the tooltip
+ * inlined into the JSX label. `useSystemScope` below renders both shapes.
+ */
+type SystemVariableLike = { key: string; label: React.ReactNode; tooltip?: React.ReactNode };
+
+/**
+ * A trigger as held by either runtime's `triggers` registry. v1 stores a
+ * `Trigger` instance carrying a `useVariables(config, options)` hook; v2 stores
+ * a plain options object with no `useVariables` (so its trigger scope is empty —
+ * the trigger variable migration hasn't happened in v2 yet).
+ */
+type TriggerLike = { useVariables?(config: any, options?: any): any[] | null | undefined };
+
+/**
+ * The minimal slice of the workflow client plugin that this aggregator needs —
+ * the registries shared by BOTH runtimes (v1 `PluginWorkflowClient` and v2
+ * `PluginWorkflowClientV2`). Resolved at runtime via the neutral `'workflow'`
+ * package alias (`pm.get('workflow')`), so the same hook feeds the variable tree
+ * in either client. Kept structural (not a concrete plugin class) so client-v2
+ * never imports from the v1 client and the back-imported v1 canvas stays
+ * runtime-agnostic.
+ */
+type WorkflowVariablePlugin = {
+  instructions: { get(type: string): Instruction | undefined };
+  systemVariables: { getValues(): Iterable<SystemVariableLike> };
+  triggers: { get(type: string): TriggerLike | undefined };
+};
+
+/** Resolve the current runtime's workflow client plugin via the neutral
+ *  `'workflow'` alias — v1's `PluginWorkflowClient` or v2's
+ *  `PluginWorkflowClientV2`, whichever this runtime loaded. */
+function useWorkflowPlugin(): WorkflowVariablePlugin | undefined {
+  const flowEngine = useFlowEngine();
+  return flowEngine.context.app.pm.get('workflow') as WorkflowVariablePlugin | undefined;
+}
 
 export type UseWorkflowVariableOptions = {
   types?: any[];
@@ -65,13 +105,13 @@ export type UseWorkflowVariableOptions = {
  */
 function useNodeResultScope(options: UseWorkflowVariableOptions): MetaTreeNode | null {
   const flowEngine = useFlowEngine();
-  const plugin = flowEngine.context.app.pm.get(PluginWorkflowClientV2) as PluginWorkflowClientV2;
+  const plugin = useWorkflowPlugin();
   const current = useNodeContext();
   const upstreams = useAvailableUpstreams(current);
 
   const children: MetaTreeNode[] = [];
   upstreams.forEach((node: any) => {
-    const instruction = plugin?.getInstruction(node.type);
+    const instruction = plugin?.instructions?.get(node.type);
     const option = instruction?.useVariables?.(node, options);
     if (!option) {
       return;
@@ -101,54 +141,83 @@ function useNodeResultScope(options: UseWorkflowVariableOptions): MetaTreeNode |
  */
 function useEnvScope(): MetaTreeNode | null {
   const flowEngine = useFlowEngine();
+  // The environment-variables plugin registers `$env` on the flow-engine context
+  // (`defineProperty('$env', …)`) in BOTH runtimes — v2 in `client-v2/plugin.tsx`,
+  // v1 in `client/index.tsx` via the shared `registerEnvProperty` (so it resolves
+  // from the config drawer, which mounts detached from v1's React tree). It shows
+  // up in the property meta tree with an **async** `children` thunk; return that
+  // node as-is — the downstream pickers resolve the thunk on expand (the result is
+  // cached by the flow-engine context, so it is fetched only once). Returns null
+  // when the env plugin is absent.
   const tree = flowEngine.context.getPropertyMetaTree?.() ?? [];
   const env = tree.find((node) => node.name === ENV_ROOT);
-  // The env plugin registers `$env` with an **async** meta factory, so its
-  // `children` is a lazy `() => Promise<MetaTreeNode[]>` thunk (not an array)
-  // on the synchronous tree. Return the node as-is — the downstream pickers
-  // (`FlowContextSelector` / `TypedVariableInput` loadData) resolve the thunk
-  // when the user expands it. (Requiring `children` to be an array here is what
-  // previously dropped the whole `$env` branch.)
   return env ?? null;
 }
 
 /**
- * Trigger / Scope scope stubs. These two panels exist in v1 but their v2 data
- * sources are not built yet (v2 triggers have no `useVariables`, and branch
- * nodes that contribute `$scopes` are not migrated). Each returns null today;
- * lighting one up later is filling in the body, not restructuring the
- * aggregator. (`$system` is now live — see `useSystemScope`.)
+ * "Trigger variables" (`$context`) — the workflow trigger's output. Resolves the
+ * current workflow (threaded into the config drawer via `CurrentWorkflowContext`,
+ * since the drawer renders at the React root, outside the canvas `FlowContext`),
+ * looks up its trigger, and calls the trigger's `useVariables(config, options)`.
+ *
+ * Runtime-neutral, mirroring `useNodeResultScope`: a v1 trigger
+ * (`PluginWorkflowClient.triggers`) implements `useVariables` so the scope lights
+ * up; a v2 trigger (a plain options object) has none, so it stays empty until the
+ * trigger-variable migration reaches v2. Returns null when no trigger contributes.
  */
-function useTriggerScope(): MetaTreeNode | null {
-  // TODO: lit when v2 triggers implement `useVariables` (`$context`).
-  return null;
+function useTriggerScope(options: UseWorkflowVariableOptions): MetaTreeNode | null {
+  const flowEngine = useFlowEngine();
+  const plugin = useWorkflowPlugin();
+  const workflow = useCurrentWorkflowContext();
+  const trigger = workflow?.type ? plugin?.triggers?.get(workflow.type) : undefined;
+  const subOptions = trigger?.useVariables?.(workflow?.config, options);
+  const list = Array.isArray(subOptions) ? subOptions.filter(Boolean) : [];
+  if (!list.length) {
+    return null;
+  }
+  return {
+    name: TRIGGER_ROOT,
+    title: flowEngine.context.t('Trigger variables', { ns: NAMESPACE }),
+    type: '',
+    paths: [TRIGGER_ROOT],
+    children: adaptVariableOptionsToMetaTree(list, [TRIGGER_ROOT]),
+  };
 }
 
 function useSystemScope(): MetaTreeNode | null {
   const flowEngine = useFlowEngine();
-  const plugin = flowEngine.context.app.pm.get(PluginWorkflowClientV2) as PluginWorkflowClientV2;
+  const plugin = useWorkflowPlugin();
   const t = (key: string) => flowEngine.context.t(key, { ns: NAMESPACE });
   const vars = Array.from(plugin?.systemVariables?.getValues?.() ?? []);
   if (!vars.length) {
     return null;
   }
-  const children: MetaTreeNode[] = vars.map((item) => ({
-    name: item.key,
-    // Render a `?` tooltip icon next to the label when the variable carries one
-    // (Instance ID / Snowflake ID), mirroring v1's JSX system-variable labels.
-    title: item.tooltip ? (
-      <span>
-        <span style={{ marginRight: '0.5em' }}>{t(item.label)}</span>
-        <Tooltip title={t(item.tooltip)}>
-          <QuestionCircleOutlined />
-        </Tooltip>
-      </span>
-    ) : (
-      t(item.label)
-    ),
-    type: '',
-    paths: [SYSTEM_ROOT, item.key],
-  }));
+  const children: MetaTreeNode[] = vars.map((item) => {
+    // The label is a `{{t("…")}}` template string (v2) or an already-rendered
+    // JSX node with the tooltip inlined (v1). Translate only the string form;
+    // pass JSX through untouched.
+    const label = typeof item.label === 'string' ? t(item.label) : item.label;
+    // The `tooltip` field only exists on v2's option shape (a string template);
+    // v1 has none (its tooltip is baked into the JSX label above).
+    const tooltip = typeof item.tooltip === 'string' ? t(item.tooltip) : item.tooltip;
+    return {
+      name: item.key,
+      // Render a `?` tooltip icon next to the label when the variable carries a
+      // (string) tooltip — mirrors v1's JSX system-variable labels.
+      title: tooltip ? (
+        <span>
+          <span style={{ marginRight: '0.5em' }}>{label}</span>
+          <Tooltip title={tooltip}>
+            <QuestionCircleOutlined />
+          </Tooltip>
+        </span>
+      ) : (
+        label
+      ),
+      type: '',
+      paths: [SYSTEM_ROOT, item.key],
+    };
+  });
   return {
     name: SYSTEM_ROOT,
     title: t('System variables'),
@@ -158,23 +227,95 @@ function useSystemScope(): MetaTreeNode | null {
   };
 }
 
-function useScopeVariablesScope(): MetaTreeNode | null {
-  // TODO: lit when branch nodes (loop / parallel) migrate and implement
-  // `useScopeVariables` (`$scopes`).
-  return null;
+/**
+ * "Scope variables" (`$scopes`) — variables contributed by the branch nodes the
+ * current node is nested inside (loop / parallel). Walks the upstream branching
+ * scopes (`useUpstreamScopes`) and calls each scope node's `useScopeVariables`.
+ * Mirrors v1's `scopeOptions` (`client/variable.tsx`): one child per scope node,
+ * whose own children are that node's scope variables.
+ *
+ * No node implements `useScopeVariables` yet (v1 or v2), so this is wiring-only
+ * today — it produces nothing until a branch node (loop / parallel) is migrated
+ * and implements it. Returns null when no scope contributes.
+ */
+function useScopeVariablesScope(options: UseWorkflowVariableOptions): MetaTreeNode | null {
+  const flowEngine = useFlowEngine();
+  const plugin = useWorkflowPlugin();
+  const current = useNodeContext();
+  const scopes = useUpstreamScopes(current);
+
+  const children: MetaTreeNode[] = [];
+  scopes.forEach((node: any) => {
+    const instruction = plugin?.instructions?.get(node.type);
+    const subOptions = instruction?.useScopeVariables?.(node, options);
+    if (!subOptions) {
+      return;
+    }
+    // Each scope node hangs under $scopes.<nodeKey>, its variables beneath it.
+    children.push(
+      adaptVariableOptionToMetaTree(
+        {
+          key: node.key,
+          value: node.key,
+          label: node.title ?? `#${node.id}`,
+          children: subOptions,
+        },
+        [SCOPES_ROOT],
+      ),
+    );
+  });
+
+  if (!children.length) {
+    return null;
+  }
+  return {
+    name: SCOPES_ROOT,
+    title: flowEngine.context.t('Scope variables', { ns: NAMESPACE }),
+    type: '',
+    paths: [SCOPES_ROOT],
+    children,
+  };
 }
 
 /**
  * Build the workflow variable MetaTree for the current node's config form.
  * Aggregates every scope in v1's display order, dropping the ones that
  * contribute nothing.
+ *
+ * The result is **referentially stable** across re-renders for the same inputs
+ * (memoized on the current node + upstream/scope node keys + workflow id). This
+ * is load-bearing for lazy relation expansion: `TypedVariableInput.loadData`
+ * resolves a node's children and mutates them onto the meta node in place, then
+ * forces a re-render — if this hook returned a brand-new tree each render, that
+ * mutated (resolved) child list would be discarded and the cascader column would
+ * spin forever. Memoizing keeps the same tree objects alive so the resolved
+ * children survive the re-render.
  */
 export function useWorkflowVariableOptions(options: UseWorkflowVariableOptions = {}): MetaTreeNode[] {
-  const scopeVars = useScopeVariablesScope();
+  const scopeVars = useScopeVariablesScope(options);
   const nodeResult = useNodeResultScope(options);
-  const trigger = useTriggerScope();
+  const trigger = useTriggerScope(options);
   const system = useSystemScope();
   const env = useEnvScope();
 
-  return [scopeVars, nodeResult, trigger, system, env].filter(Boolean) as MetaTreeNode[];
+  const current = useNodeContext();
+  const workflow = useCurrentWorkflowContext();
+  // A signature that changes only when the variable tree's *structure* could
+  // change — the current node, its upstream chain (node-result), its branching
+  // scopes, and the workflow (trigger). Lazy children resolved into the tree by
+  // the picker are NOT part of this key, so they persist until the structure
+  // itself changes.
+  const upstreamKeys = useAvailableUpstreams(current)
+    .map((n: any) => n.key)
+    .join(',');
+  const scopeKeys = useUpstreamScopes(current)
+    .map((n: any) => n.key)
+    .join(',');
+  const signature = `${current?.key ?? ''}|${upstreamKeys}|${scopeKeys}|${workflow?.id ?? ''}|${workflow?.type ?? ''}`;
+
+  /* eslint-disable-next-line react-hooks/exhaustive-deps -- intentionally keyed
+     on the structural `signature`, not the scope objects (which are fresh each
+     render); see the doc comment above. Including them would defeat the memo and
+     reintroduce the lazy-load spinner bug. */
+  return useMemo(() => [scopeVars, nodeResult, trigger, system, env].filter(Boolean) as MetaTreeNode[], [signature]);
 }

@@ -85,7 +85,7 @@ function AddNodeMenu({ items, onPick }: { items: MenuProps['items']; onPick: (ty
  * `onSubmit(values)` — the provider owns the actual create + downstream
  * re-parenting.
  */
-function PresetDialogForm({
+export function PresetDialogForm({
   instruction,
   downstreamOptions,
   onSubmit,

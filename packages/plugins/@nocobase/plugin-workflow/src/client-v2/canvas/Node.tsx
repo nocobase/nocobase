@@ -140,7 +140,7 @@ export function NodeDefaultView({ data, children }: { data: any; children?: Reac
   const { styles, cx } = useStyles();
   const t = useT();
   const flowEngine = useFlowEngine();
-  const { refresh } = useFlowContext() ?? {};
+  const { workflow, refresh } = useFlowContext() ?? {};
   const clipboard = useNodeClipboardContext();
   const dragContext = useNodeDragContext();
   const plugin = flowEngine.context.app.pm.get(PluginWorkflowClientV2) as PluginWorkflowClientV2;
@@ -151,8 +151,8 @@ export function NodeDefaultView({ data, children }: { data: any; children?: Reac
   const isDraggingSelf = Boolean(dragContext?.dragging && dragContext?.dragNode?.id === data.id);
 
   const openConfig = useCallback(() => {
-    openNodeConfigDrawer({ ctx: flowEngine.context, data, instruction, t, refresh });
-  }, [flowEngine, data, instruction, t, refresh]);
+    openNodeConfigDrawer({ ctx: flowEngine.context, data, instruction, t, workflow, refresh });
+  }, [flowEngine, data, instruction, t, workflow, refresh]);
 
   const onCardMouseDown = useCallback(
     (event: React.MouseEvent) => {

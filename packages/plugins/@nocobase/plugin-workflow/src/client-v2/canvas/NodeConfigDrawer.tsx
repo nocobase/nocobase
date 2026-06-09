@@ -25,7 +25,7 @@ import { css, cx } from '@emotion/css';
 import { DrawerFormLayout } from '@nocobase/client-v2';
 import { useFlowContext as useFlowEngineContext, useFlowView } from '@nocobase/flow-engine';
 import { useT } from '../locale';
-import { NodeContext, useWorkflowCanvasExecuted } from './contexts';
+import { CurrentWorkflowContext, NodeContext } from './contexts';
 import { TestRunButton } from '../components/TestRunButton';
 import type { Instruction } from './Instruction';
 
@@ -97,36 +97,47 @@ function NodeTypeDescription({
 /**
  * Open the node config drawer for a node. Call from a card click handler.
  * `ctx` is the flow-engine context (from `useFlowContext()`).
+ *
+ * `workflow` is threaded in explicitly because the drawer renders at the React
+ * root (`ctx.viewer.drawer`), OUTSIDE the canvas `FlowContext.Provider` — so the
+ * config form can't read the workflow from the canvas tree. It is re-provided via
+ * `CurrentWorkflowContext` so the variable aggregator's trigger scope (and the
+ * `executed` read-only state) resolve correctly.
  */
 export function openNodeConfigDrawer(opts: {
   ctx: any;
   data: any;
   instruction?: Instruction;
   t: (key: string, options?: Record<string, any>) => string;
+  workflow?: any;
   refresh?: () => void;
 }) {
-  const { ctx, data, instruction, t } = opts;
+  const { ctx, data, instruction, workflow } = opts;
   ctx.viewer.drawer({
     width: '50%',
     closable: true,
-    content: () => <NodeConfigForm data={data} instruction={instruction} onSubmitted={opts.refresh} />,
+    content: () => (
+      <NodeConfigForm data={data} instruction={instruction} workflow={workflow} onSubmitted={opts.refresh} />
+    ),
   });
 }
 
 function NodeConfigForm({
   data,
   instruction,
+  workflow,
   onSubmitted,
 }: {
   data: any;
   instruction?: Instruction;
+  workflow?: any;
   onSubmitted?: () => void;
 }) {
   const ctx = useFlowEngineContext();
   const t = useT();
   const { message } = App.useApp();
   const view = useFlowView();
-  const executed = useWorkflowCanvasExecuted();
+  const executed = Boolean(workflow?.executed);
   const [form] = Form.useForm();
   const [submitting, setSubmitting] = useState(false);
 
@@ -186,36 +197,38 @@ function NodeConfigForm({
   );
 
   return (
-    <NodeContext.Provider value={data}>
-      <DrawerFormLayout
-        title={
-          // `justify-content: space-between` pushes the node-key tag to the
-          // drawer's far right (mirrors v1's flex title), the native close X
-          // sitting just left of the title.
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
-            <strong>{data.title ?? typeTitle}</strong>
-            <Tooltip title={t('Variable key of node')}>
-              <Tag style={{ marginInlineEnd: 0 }}>
-                <code>{data.key}</code>
-              </Tag>
-            </Tooltip>
-          </div>
-        }
-        footer={footer}
-      >
-        <Form form={form} layout="vertical" disabled={executed}>
-          {instruction ? <NodeTypeDescription instruction={instruction} t={t} /> : null}
-          {Fieldset ? (
-            <Suspense fallback={<Skeleton active paragraph={{ rows: 4 }} />}>
-              <Fieldset />
-            </Suspense>
-          ) : (
-            <div style={{ padding: '2em 0', textAlign: 'center', color: 'var(--colorTextTertiary, #999)' }}>
-              {t("This node's configuration has not been migrated to the new canvas yet.")}
+    <CurrentWorkflowContext.Provider value={workflow}>
+      <NodeContext.Provider value={data}>
+        <DrawerFormLayout
+          title={
+            // `justify-content: space-between` pushes the node-key tag to the
+            // drawer's far right (mirrors v1's flex title), the native close X
+            // sitting just left of the title.
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
+              <strong>{data.title ?? typeTitle}</strong>
+              <Tooltip title={t('Variable key of node')}>
+                <Tag style={{ marginInlineEnd: 0 }}>
+                  <code>{data.key}</code>
+                </Tag>
+              </Tooltip>
             </div>
-          )}
-        </Form>
-      </DrawerFormLayout>
-    </NodeContext.Provider>
+          }
+          footer={footer}
+        >
+          <Form form={form} layout="vertical" disabled={executed}>
+            {instruction ? <NodeTypeDescription instruction={instruction} t={t} /> : null}
+            {Fieldset ? (
+              <Suspense fallback={<Skeleton active paragraph={{ rows: 4 }} />}>
+                <Fieldset />
+              </Suspense>
+            ) : (
+              <div style={{ padding: '2em 0', textAlign: 'center', color: 'var(--colorTextTertiary, #999)' }}>
+                {t("This node's configuration has not been migrated to the new canvas yet.")}
+              </div>
+            )}
+          </Form>
+        </DrawerFormLayout>
+      </NodeContext.Provider>
+    </CurrentWorkflowContext.Provider>
   );
 }
