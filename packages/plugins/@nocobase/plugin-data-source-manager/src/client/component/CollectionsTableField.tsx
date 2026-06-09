@@ -39,8 +39,10 @@ const CollectionsTable = observer((tableProps: any) => {
     if (searchText.trim()) {
       filteredData = filteredData.filter((item: any) => {
         const keyword = searchText.toLowerCase();
-        const displayName = item.displayName ? compile(item.displayName) : '';
-        return item.name?.toLowerCase().includes(keyword) || displayName?.toLowerCase().includes(keyword);
+        const compiledDisplayName = item.displayName ? compile(item.displayName) : '';
+        const displayName =
+          typeof compiledDisplayName === 'string' ? compiledDisplayName : String(compiledDisplayName ?? '');
+        return item.name?.toLowerCase().includes(keyword) || displayName.toLowerCase().includes(keyword);
       });
     }
 
