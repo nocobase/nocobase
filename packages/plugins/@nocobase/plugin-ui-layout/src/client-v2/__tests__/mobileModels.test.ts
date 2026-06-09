@@ -2711,6 +2711,70 @@ describe('plugin-ui-layout mobile models', () => {
     expect(events).toContain('mount:child-page');
   });
 
+  it('should navigate from mobile home child menu buttons to child pages', async () => {
+    const events: string[] = [];
+    const routes: NocoBaseDesktopRoute[] = [
+      {
+        id: 1,
+        type: NocoBaseDesktopRouteType.link,
+        title: 'Parent',
+        schemaUid: 'parent-link',
+        sort: 10,
+        options: {
+          href: 'https://example.com/parent',
+        },
+        children: [
+          {
+            id: 2,
+            parentId: 1,
+            type: NocoBaseDesktopRouteType.flowPage,
+            title: 'Child',
+            schemaUid: 'child-page',
+            sort: 1,
+          },
+        ],
+      },
+    ];
+    const routeRepository: MobileRouteRepositoryForTest = {
+      listAccessible: () => routes,
+      ensureAccessibleLoaded: vi.fn(async () => routes),
+    };
+    let layoutModel: MobileLayoutModel | undefined;
+
+    renderMobileLayoutWithRouteRepository(routeRepository, {
+      initialEntries: ['/v/mobile'],
+      outletElement: React.createElement(
+        React.Fragment,
+        null,
+        React.createElement(MobileRoutePageProbe, {
+          events,
+          getModel: () => {
+            if (!layoutModel) {
+              throw new Error('Mobile layout model is not ready.');
+            }
+            return layoutModel;
+          },
+        }),
+        React.createElement(MobileCurrentPathProbe),
+      ),
+      beforeRender: (model) => {
+        layoutModel = model;
+      },
+    });
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /Child/ })).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: /Child/ }));
+
+    await waitFor(() => {
+      expect(screen.getByTestId('mobile-current-path')).toHaveTextContent('/v/mobile/child-page');
+    });
+    expect(screen.getByTestId('mobile-route-page-child-page')).toBeInTheDocument();
+    expect(events).toContain('mount:child-page');
+  });
+
   it('should restore the default mobile page route from the layout root path', async () => {
     renderMobileLayoutWithRouteRepository(
       {

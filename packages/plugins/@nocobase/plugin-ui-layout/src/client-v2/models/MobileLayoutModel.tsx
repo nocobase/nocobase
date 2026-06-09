@@ -83,7 +83,7 @@ import {
   resolveMobileMenuDragMoveOptionsFromEvent,
   toMobileRouterNavigationPath,
 } from './MobileMenuModels';
-import { mobileRouteTreeContainsTabKey } from './MobileMenuUtils';
+import { getMobilePagePath, mobileRouteTreeContainsTabKey } from './MobileMenuUtils';
 import { MobilePageSurface } from './mobileComponents';
 
 type MobileHomeAddMenuKey = 'page' | 'link';
@@ -96,6 +96,9 @@ type FakeMobileDesktopRoute = {
   description?: string;
   icon: ReactNode;
   sort: number;
+  path?: string;
+  href?: string;
+  route?: NocoBaseDesktopRoute;
   hidden?: boolean;
   hideInMenu?: boolean;
   children?: FakeMobileDesktopRoute[];
@@ -327,20 +330,28 @@ export function normalizeAccessibleDesktopRoutesToMobileRoutes(
   routes: NocoBaseDesktopRoute[],
   t: Translate,
   parentIndexPath: number[] = [],
+  basePathname?: string,
 ): FakeMobileDesktopRoute[] {
   return routes.map((route, index) => {
     const indexPath = [...parentIndexPath, index];
     const key = getAccessibleDesktopRouteKey(route, indexPath);
-    const children = normalizeAccessibleDesktopRoutesToMobileRoutes(route.children || [], t, indexPath);
+    const children = normalizeAccessibleDesktopRoutesToMobileRoutes(route.children || [], t, indexPath, basePathname);
+    const type = route.type || NocoBaseDesktopRouteType.flowPage;
 
     return {
       key,
       schemaUid: route.schemaUid || route.pageSchemaUid || route.menuSchemaUid || key,
-      type: route.type || NocoBaseDesktopRouteType.flowPage,
+      type,
       label: getAccessibleDesktopRouteTitle(route, t),
       description: route.tooltip && route.tooltip !== route.title ? t(route.tooltip) : undefined,
       icon: getAccessibleDesktopRouteIcon(route),
       sort: typeof route.sort === 'number' ? route.sort : index,
+      path: type === NocoBaseDesktopRouteType.flowPage ? getMobilePagePath(basePathname, route) : undefined,
+      href:
+        type === NocoBaseDesktopRouteType.link && typeof route.options?.href === 'string'
+          ? route.options.href
+          : undefined,
+      route,
       hidden: route.hidden,
       hideInMenu: route.hideInMenu,
       children,
@@ -936,10 +947,11 @@ function MobileHomeRouteGrid(props: {
   designModeEnabled: boolean;
   hasTabItems: boolean;
   loadState: MobileRoutesLoadState;
+  onRouteClick?: (route: FakeMobileDesktopRoute) => void;
   routes: FakeMobileDesktopRoute[];
   t: Translate;
 }) {
-  const { addBlockMenuItems, designModeEnabled, hasTabItems, loadState, routes, t } = props;
+  const { addBlockMenuItems, designModeEnabled, hasTabItems, loadState, onRouteClick, routes, t } = props;
   const status =
     loadState === 'error' ? (
       <Alert type="error" showIcon message={t('Failed to load mobile pages')} />
@@ -967,7 +979,12 @@ function MobileHomeRouteGrid(props: {
       {status ? <div className="nb-ui-layout-mobile-home-status">{status}</div> : null}
       <div className="nb-ui-layout-mobile-home-menu" aria-label={t('Mobile menu')}>
         {routes.map((route) => (
-          <button key={route.key} type="button" className="nb-ui-layout-mobile-home-menu-item">
+          <button
+            key={route.key}
+            type="button"
+            className="nb-ui-layout-mobile-home-menu-item"
+            onClick={() => onRouteClick?.(route)}
+          >
             <span className="nb-ui-layout-mobile-home-menu-icon">{route.icon}</span>
             <span>
               <span className="nb-ui-layout-mobile-home-menu-label">{route.label}</span>
@@ -1163,8 +1180,14 @@ const MobileHomePlaceholder = observer(
       renderableTabItems.find((route) => route.type === NocoBaseDesktopRouteType.flowPage) ||
       renderableTabItems[0];
     const menuItems = useMemo(
-      () => normalizeAccessibleDesktopRoutesToMobileRoutes(activeRoute?.route.children || [], routeTitleT),
-      [activeRoute?.route.children, routeTitleT],
+      () =>
+        normalizeAccessibleDesktopRoutesToMobileRoutes(
+          activeRoute?.route.children || [],
+          routeTitleT,
+          [],
+          model.getMobileBasePathname(),
+        ),
+      [activeRoute?.route.children, model, routeTitleT],
     );
     const tabBarColumnCount = Math.max(1, renderableTabItems.length + (designModeEnabled ? 1 : 0));
     const dropdownMenuItems = useMemo<MenuProps['items']>(
@@ -1450,6 +1473,40 @@ const MobileHomePlaceholder = observer(
       },
       [model.flowEngine.context.app?.router, model.flowEngine.context.router?.basename, navigate],
     );
+    const handleMenuItemClick = useCallback(
+      (item: FakeMobileDesktopRoute) => {
+        if (item.path) {
+          setActiveRouteKey(item.key);
+          const basename =
+            model.flowEngine.context.app?.router?.getBasename?.() ||
+            model.flowEngine.context.app?.router?.basename ||
+            model.flowEngine.context.router?.basename;
+          navigate(toMobileRouterNavigationPath(item.path, basename));
+          return;
+        }
+
+        if (!item.href) {
+          return;
+        }
+
+        if (item.route?.options?.openInNewWindow === false) {
+          if (isAbsoluteUrl(item.href)) {
+            window.location.assign(item.href);
+            return;
+          }
+
+          navigate(toMobileRouterNavigationPath(item.href, model.flowEngine.context.router?.basename));
+          return;
+        }
+
+        const basename =
+          model.flowEngine.context.app?.router?.getBasename?.() ||
+          model.flowEngine.context.app?.router?.basename ||
+          model.flowEngine.context.router?.basename;
+        window.open(toMobileDocumentUrlWithRouterBasename(item.href, basename), '_blank', 'noopener,noreferrer');
+      },
+      [model.flowEngine.context.app?.router, model.flowEngine.context.router?.basename, navigate],
+    );
 
     const rootPageContent = (
       <MobilePageSurface title={t('Mobile')} displayTitle>
@@ -1459,6 +1516,7 @@ const MobileHomePlaceholder = observer(
             designModeEnabled={designModeEnabled}
             hasTabItems={tabItems.length > 0}
             loadState={routesLoadState}
+            onRouteClick={handleMenuItemClick}
             routes={menuItems}
             t={t}
           />
