@@ -300,8 +300,10 @@ describe('plugin-ui-layout settings page', () => {
 describe('plugin-ui-layout form values', () => {
   it('should require access path to start with slash', () => {
     expect(isUiLayoutRoutePathFormatValid('/admin')).toBe(true);
+    expect(isUiLayoutRoutePathFormatValid('/foo')).toBe(true);
     expect(isUiLayoutRoutePathFormatValid(' /mobile ')).toBe(true);
     expect(isUiLayoutRoutePathFormatValid('admin')).toBe(false);
+    expect(isUiLayoutRoutePathFormatValid('/foo.bar')).toBe(false);
   });
 
   it('should derive route name from the access path', () => {
@@ -329,6 +331,20 @@ describe('plugin-ui-layout form values', () => {
       authCheck: true,
       enabled: true,
     });
+  });
+
+  it('should reject access paths that derive route names with dots', () => {
+    expect(getRouteNameFromRoutePath('/foo.bar')).toBe('foo.bar');
+    expect(() =>
+      completeUiLayoutFormValues({
+        title: 'Mobile workspace',
+        uid: 'mobile-layout',
+        layoutType: 'mobile',
+        routePath: '/foo.bar',
+        authCheck: true,
+        enabled: true,
+      }),
+    ).toThrow('Route name cannot contain dots');
   });
 });
 

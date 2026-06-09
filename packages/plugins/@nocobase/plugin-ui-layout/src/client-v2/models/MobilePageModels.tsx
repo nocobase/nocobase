@@ -8,8 +8,9 @@
  */
 
 import { PlusOutlined } from '@ant-design/icons';
+import { uid } from '@formily/shared';
 import { ChildPageModel, RootPageModel } from '@nocobase/client-v2';
-import { AddSubModelButton, FlowSettingsButton } from '@nocobase/flow-engine';
+import { AddSubModelButton, FlowSettingsButton, type CreateModelOptions } from '@nocobase/flow-engine';
 import React from 'react';
 import { MobileBackButton, MobilePageSurface } from './mobileComponents';
 
@@ -20,6 +21,34 @@ type RouteWithTabs = {
   schemaUid?: string | null;
   enableTabs?: boolean;
 };
+
+type RouteWithUiLayouts = Record<string, unknown> & {
+  uiLayouts?: unknown;
+};
+
+function getCurrentLayoutUid(model: RootPageModel | ChildPageModel) {
+  const layout = model.context?.layout as { uid?: unknown } | undefined;
+  const layoutUid = layout?.uid;
+
+  return typeof layoutUid === 'string' && layoutUid.trim() ? layoutUid : undefined;
+}
+
+function withCurrentLayoutRoute<T extends RouteWithUiLayouts>(model: RootPageModel | ChildPageModel, route: T) {
+  const layoutUid = getCurrentLayoutUid(model);
+
+  if (!layoutUid) {
+    return route;
+  }
+
+  const existingUiLayouts = Array.isArray(route.uiLayouts)
+    ? route.uiLayouts.filter((value): value is string => typeof value === 'string' && !!value)
+    : [];
+
+  return {
+    ...route,
+    uiLayouts: existingUiLayouts.includes(layoutUid) ? existingUiLayouts : [...existingUiLayouts, layoutUid],
+  };
+}
 
 function routeMatchesRootPage(model: RootPageModel, currentRoute?: RouteWithTabs) {
   if (!currentRoute) {
@@ -115,6 +144,25 @@ function renderMobileAddTabButton(model: RootPageModel | ChildPageModel) {
 }
 
 export class MobileRootPageModel extends RootPageModel {
+  createPageTabModelOptions = (): CreateModelOptions => {
+    const modeId = uid();
+    return {
+      uid: modeId,
+      use: 'RootPageTabModel',
+      props: {
+        route: withCurrentLayoutRoute(this, {
+          parentId: this.props.routeId,
+          type: 'tabs',
+          schemaUid: modeId,
+          tabSchemaName: uid(),
+          params: [],
+          hideInMenu: false,
+          enableTabs: false,
+        }),
+      },
+    };
+  };
+
   tabBarExtraContent = {
     left: renderMobilePageTabLeftSpacer(),
     right: renderMobileAddTabButton(this),
@@ -143,6 +191,20 @@ export class MobileRootPageModel extends RootPageModel {
 }
 
 export class MobileChildPageModel extends ChildPageModel {
+  createPageTabModelOptions = (): CreateModelOptions => {
+    const route = withCurrentLayoutRoute(this, {});
+    return Object.keys(route).length > 0
+      ? {
+          use: 'ChildPageTabModel',
+          props: {
+            route,
+          },
+        }
+      : {
+          use: 'ChildPageTabModel',
+        };
+  };
+
   tabBarExtraContent = {
     left: <MobileBackButton />,
     right: renderMobileAddTabButton(this),

@@ -101,19 +101,40 @@ export function getRouteNameFromRoutePath(routePath: string) {
   return pathname.replace(/^\/+/, '').split('/').filter(Boolean)[0] || '';
 }
 
-export function isUiLayoutRoutePathFormatValid(routePath?: string) {
+function isUiLayoutRouteNameFormatValid(routeName: string) {
+  return !routeName.includes('.');
+}
+
+function getUiLayoutRoutePathFormatError(routePath?: string) {
   const trimmed = routePath?.trim();
-  return !trimmed || trimmed.startsWith('/');
+  if (!trimmed) {
+    return undefined;
+  }
+  if (!trimmed.startsWith('/')) {
+    return 'Access path must start with /';
+  }
+  if (!isUiLayoutRouteNameFormatValid(getRouteNameFromRoutePath(trimmed))) {
+    return 'Route name cannot contain dots';
+  }
+  return undefined;
+}
+
+export function isUiLayoutRoutePathFormatValid(routePath?: string) {
+  return !getUiLayoutRoutePathFormatError(routePath);
 }
 
 export function completeUiLayoutFormValues(values: UiLayoutFormDraftValues): UiLayoutFormValues {
   const routePath = values.routePath.trim();
+  const routeName = getRouteNameFromRoutePath(routePath);
+  if (!isUiLayoutRouteNameFormatValid(routeName)) {
+    throw new Error('Route name cannot contain dots');
+  }
   const title = values.title.trim();
   return {
     ...values,
     title,
     routePath,
-    routeName: getRouteNameFromRoutePath(routePath),
+    routeName,
   };
 }
 
@@ -528,10 +549,10 @@ function UiLayoutForm(props: { layoutType: UiLayoutType; record?: UiLayoutRecord
           rules={[
             { required: true, message: t('The field value is required') },
             {
-              validator: (_, value?: string) =>
-                isUiLayoutRoutePathFormatValid(value)
-                  ? Promise.resolve()
-                  : Promise.reject(new Error(t('Access path must start with /'))),
+              validator: (_, value?: string) => {
+                const error = getUiLayoutRoutePathFormatError(value);
+                return error ? Promise.reject(new Error(t(error))) : Promise.resolve();
+              },
             },
           ]}
         >

@@ -14,6 +14,7 @@ import {
   linkageSetMenuItemProps,
   menuLinkageRules,
   RootPageModel,
+  RootPageTabModel,
   RouteModel,
   useLayoutRoutePage,
 } from '@nocobase/client-v2';
@@ -3610,7 +3611,7 @@ describe('plugin-ui-layout mobile models', () => {
     expect(screen.getByRole('button', { name: /Docs/ })).not.toHaveAttribute('aria-current');
   });
 
-  it('should create page tabs without serializing the current mobile UI layout', async () => {
+  it('should create mobile tab bar pages without serializing the current mobile UI layout', async () => {
     const createRoute = vi.fn(async () => {});
 
     window.localStorage.setItem(FLOW_SETTINGS_PREFERENCE_STORAGE_KEY, '1');
@@ -3748,13 +3749,40 @@ describe('plugin-ui-layout mobile models', () => {
     expect(childTabsElement.props.tabBarExtraContent.right).toBeTruthy();
   });
 
-  it('should create page tabs without serializing the current mobile UI layout', () => {
+  it('should scope mobile page tabs to the current mobile UI layout', () => {
     const flowEngine = new FlowEngine();
     flowEngine.context.defineProperty('layout', {
       value: {
         uid: 'mobile-layout-model-tab-test',
       },
     });
+    const rootPageModel = new MobileRootPageModel({
+      flowEngine,
+      props: {
+        routeId: 'mobile-root-route',
+      },
+    } as never);
+    const childPageModel = new MobileChildPageModel({ flowEngine } as never);
+    const rootTabOptions = rootPageModel.createPageTabModelOptions();
+    const childTabOptions = childPageModel.createPageTabModelOptions();
+
+    expect(rootTabOptions.props?.route).toMatchObject({
+      parentId: 'mobile-root-route',
+      type: 'tabs',
+      params: [],
+      hideInMenu: false,
+      enableTabs: false,
+      uiLayouts: ['mobile-layout-model-tab-test'],
+    });
+    expect(rootTabOptions.props?.route).toHaveProperty('schemaUid');
+    expect(rootTabOptions.props?.route).toHaveProperty('tabSchemaName');
+    expect(childTabOptions.props?.route).toMatchObject({
+      uiLayouts: ['mobile-layout-model-tab-test'],
+    });
+  });
+
+  it('should not add invalid UI layout relations to mobile page tabs without a current layout', () => {
+    const flowEngine = new FlowEngine();
     const rootPageModel = new MobileRootPageModel({ flowEngine } as never);
     const childPageModel = new MobileChildPageModel({ flowEngine } as never);
     const rootTabOptions = rootPageModel.createPageTabModelOptions();
@@ -3762,6 +3790,53 @@ describe('plugin-ui-layout mobile models', () => {
 
     expect(rootTabOptions.props?.route || {}).not.toHaveProperty('uiLayouts');
     expect(childTabOptions.props?.route || {}).not.toHaveProperty('uiLayouts');
+  });
+
+  it('should include the current mobile UI layout when saving page tab routes', async () => {
+    const flowEngine = new FlowEngine();
+    flowEngine.context.defineProperty('layout', {
+      value: {
+        uid: 'mobile-layout-model-tab-test',
+      },
+    });
+    const request = vi.fn().mockResolvedValue({});
+    flowEngine.context.defineProperty('api', {
+      value: { request },
+    });
+    flowEngine.context.defineProperty('t', {
+      value: (value: string) => value,
+    });
+    const rootPageModel = new MobileRootPageModel({
+      flowEngine,
+      props: {
+        routeId: 'mobile-root-route',
+      },
+    } as never);
+    const rootTabOptions = rootPageModel.createPageTabModelOptions();
+    const tabModel = new RootPageTabModel({
+      flowEngine,
+      uid: rootTabOptions.uid,
+      props: rootTabOptions.props,
+      stepParams: {
+        pageTabSettings: {
+          tab: {
+            title: 'Overview',
+          },
+        },
+      },
+    } as never);
+
+    await tabModel.save();
+
+    expect(request).toHaveBeenCalledWith(
+      expect.objectContaining({
+        url: 'desktopRoutes:updateOrCreate',
+        data: expect.objectContaining({
+          schemaUid: rootTabOptions.props?.route?.schemaUid,
+          uiLayouts: ['mobile-layout-model-tab-test'],
+        }),
+      }),
+    );
   });
 
   it('should render mobile child page titles with the back button in the titlebar', () => {
