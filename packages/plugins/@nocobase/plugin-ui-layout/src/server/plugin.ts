@@ -137,7 +137,9 @@ function withDesktopRouteUiLayout(value: unknown, layoutUid: string): unknown {
 }
 
 async function getDesktopRouteLayoutContext(ctx: ResourcerContext): Promise<DesktopRouteLayoutContext> {
-  const layoutUid = getExplicitRequestedLayoutUid(ctx.action?.params.layout);
+  const requestedLayout = ctx.action?.params.layout;
+  const layoutUid =
+    requestedLayout === undefined ? DEFAULT_ADMIN_UI_LAYOUT.uid : getExplicitRequestedLayoutUid(requestedLayout);
   if (!layoutUid) {
     return {
       filter: EMPTY_DESKTOP_ROUTE_FILTER,

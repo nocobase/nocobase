@@ -1365,7 +1365,7 @@ describe('plugin-ui-layout server', () => {
     expect(childRoute?.get('uiLayouts').map((layout) => layout.get('uid'))).toEqual([mobileLayout.get('uid')]);
   });
 
-  it('should require an explicit valid layout for listAccessible route lookup', async () => {
+  it('should fallback to AdminLayout when listAccessible omits layout', async () => {
     app = await createMockServer({
       registerActions: true,
       acl: true,
@@ -1446,9 +1446,11 @@ describe('plugin-ui-layout server', () => {
       agent.get('/desktopRoutes:listAccessible').query({ layout: DEFAULT_ADMIN_UI_LAYOUT.uid }),
     ]);
     const adminRouteTitles = adminResponse.body.data.map((route) => route.title).sort();
+    const omittedRouteTitles = omittedResponse.body.data.map((route) => route.title).sort();
 
     expect([omittedResponse.status, emptyResponse.status, adminResponse.status]).toEqual([200, 200, 200]);
-    expect(omittedResponse.body.data).toEqual([]);
+    expect(omittedRouteTitles).toEqual(expect.arrayContaining([unassignedRoute.get('title'), adminRoute.get('title')]));
+    expect(omittedRouteTitles).not.toContain(mobileRoute.get('title'));
     expect(emptyResponse.body.data).toEqual([]);
     expect(adminRouteTitles).toEqual(expect.arrayContaining([unassignedRoute.get('title'), adminRoute.get('title')]));
     expect(adminRouteTitles).not.toContain(mobileRoute.get('title'));
@@ -1643,24 +1645,20 @@ describe('plugin-ui-layout server', () => {
     const rootAdminTitles = rootAdminResponse.body.data.map((route) => route.title);
     const memberAdminTitles = memberAdminResponse.body.data.map((route) => route.title);
     const invalidListResponses = [
-      rootOmittedResponse,
       rootEmptyResponse,
       rootMissingResponse,
       rootDisabledResponse,
       rootDeletedResponse,
-      memberOmittedResponse,
       memberEmptyResponse,
       memberMissingResponse,
       memberDisabledResponse,
       memberDeletedResponse,
     ];
     const invalidGetResponses = [
-      rootOmittedGetResponse,
       rootEmptyGetResponse,
       rootMissingGetResponse,
       rootDisabledGetResponse,
       rootDeletedGetResponse,
-      memberOmittedGetResponse,
       memberEmptyGetResponse,
       memberMissingGetResponse,
       memberDisabledGetResponse,
@@ -1677,9 +1675,15 @@ describe('plugin-ui-layout server', () => {
     expect(memberAdminGetResponse.status).toBe(200);
     expect(rootAdminGetResponse.body.data.title).toBe(adminRoute.get('title'));
     expect(memberAdminGetResponse.body.data.title).toBe(adminRoute.get('title'));
-    expect(invalidListResponses.map((response) => response.status)).toEqual(Array(10).fill(200));
-    expect(invalidListResponses.map((response) => response.body.data)).toEqual(Array(10).fill([]));
-    expect(invalidGetResponses.map((response) => response.body.data ?? null)).toEqual(Array(10).fill(null));
+    expect(rootOmittedResponse.body.data.map((route) => route.title)).toEqual(
+      expect.arrayContaining([unassignedRoute.get('title'), adminRoute.get('title')]),
+    );
+    expect(memberOmittedResponse.body.data.map((route) => route.title)).toEqual([adminRoute.get('title')]);
+    expect(rootOmittedGetResponse.body.data.title).toBe(adminRoute.get('title'));
+    expect(memberOmittedGetResponse.body.data.title).toBe(adminRoute.get('title'));
+    expect(invalidListResponses.map((response) => response.status)).toEqual(Array(8).fill(200));
+    expect(invalidListResponses.map((response) => response.body.data)).toEqual(Array(8).fill([]));
+    expect(invalidGetResponses.map((response) => response.body.data ?? null)).toEqual(Array(8).fill(null));
   });
 
   it('should filter root routes by layout while preserving tree sort and caller filters', async () => {
