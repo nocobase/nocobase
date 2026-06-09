@@ -35,6 +35,10 @@ const UI_LAYOUT_RUNTIME_FIELDS = [
   'enabled',
 ] as const;
 
+const UI_LAYOUT_ROLE_PERMISSION_TARGET_FIELDS = ['uid', 'title', 'layoutType', 'routeName', 'enabled'] as const;
+
+const DESKTOP_ROUTE_ROLE_PERMISSION_TARGET_FIELDS = ['id', 'title', 'hidden', 'parentId', 'options'] as const;
+
 const UI_LAYOUT_MANAGEMENT_ACTIONS = [
   'uiLayouts:list',
   'uiLayouts:get',
@@ -43,7 +47,12 @@ const UI_LAYOUT_MANAGEMENT_ACTIONS = [
   'uiLayouts:destroy',
 ];
 
-const ROLE_UI_LAYOUT_PERMISSION_ACTIONS = ['rolesUiLayouts:*', 'rolesUiLayoutDesktopRoutes:*'];
+const ROLE_UI_LAYOUT_PERMISSION_ACTIONS = [
+  'rolesUiLayouts:*',
+  'rolesUiLayoutDesktopRoutes:*',
+  'uiLayouts:listRolePermissionTargets',
+  'desktopRoutes:listRolePermissionTargets',
+];
 
 const DEFAULT_ADMIN_UI_LAYOUT_PROTECTED_FIELDS = [
   'uid',
@@ -75,6 +84,8 @@ type DesktopRouteLike = Record<string, unknown> & {
 };
 
 type UiLayoutRuntimeField = (typeof UI_LAYOUT_RUNTIME_FIELDS)[number];
+type UiLayoutRolePermissionTargetField = (typeof UI_LAYOUT_ROLE_PERMISSION_TARGET_FIELDS)[number];
+type DesktopRouteRolePermissionTargetField = (typeof DESKTOP_ROUTE_ROLE_PERMISSION_TARGET_FIELDS)[number];
 
 type DesktopRouteLayoutContext = {
   filter: Record<string, unknown>;
@@ -706,6 +717,30 @@ function pickUiLayoutRuntimeFields(record: { get: (field: string) => unknown }) 
   return result;
 }
 
+function pickUiLayoutRolePermissionTargetFields(record: { get: (field: string) => unknown }) {
+  const result = {} as Record<UiLayoutRolePermissionTargetField, unknown>;
+  for (const field of UI_LAYOUT_ROLE_PERMISSION_TARGET_FIELDS) {
+    result[field] = record.get(field);
+  }
+  return result;
+}
+
+function pickDesktopRouteRolePermissionTargetFields(
+  route: unknown,
+): Record<DesktopRouteRolePermissionTargetField | 'children', unknown> {
+  const result = {} as Record<DesktopRouteRolePermissionTargetField | 'children', unknown>;
+  for (const field of DESKTOP_ROUTE_ROLE_PERMISSION_TARGET_FIELDS) {
+    result[field] = getRouteValue(route, field) ?? null;
+  }
+
+  const children = getRouteValue(route, 'children');
+  result.children = Array.isArray(children)
+    ? children.map((child) => pickDesktopRouteRolePermissionTargetFields(child))
+    : [];
+
+  return result;
+}
+
 async function listAccessibleUiLayouts(ctx: ResourcerContext, next: () => Promise<void>) {
   const currentRoles = getCurrentRoles(ctx);
   const filter: Record<string, unknown> = {
@@ -737,6 +772,38 @@ async function listAccessibleUiLayouts(ctx: ResourcerContext, next: () => Promis
   });
 
   ctx.body = records.map((record) => pickUiLayoutRuntimeFields(record));
+  await next();
+}
+
+async function listUiLayoutRolePermissionTargets(ctx: ResourcerContext, next: () => Promise<void>) {
+  const records = await ctx.db.getRepository('uiLayouts').find({
+    filter: {
+      enabled: true,
+    },
+    fields: [...UI_LAYOUT_ROLE_PERMISSION_TARGET_FIELDS],
+    sort: ['id'],
+  });
+
+  ctx.body = records.map((record) => pickUiLayoutRolePermissionTargetFields(record));
+  await next();
+}
+
+async function listDesktopRouteRolePermissionTargets(ctx: ResourcerContext, next: () => Promise<void>) {
+  const layoutContext = await getDesktopRouteLayoutContext(ctx);
+  if (!layoutContext.valid) {
+    ctx.body = [];
+    await next();
+    return;
+  }
+
+  const routes = await ctx.db.getRepository('desktopRoutes').find({
+    tree: true,
+    sort: 'sort',
+    filter: layoutContext.filter,
+    fields: [...DESKTOP_ROUTE_ROLE_PERMISSION_TARGET_FIELDS],
+  });
+
+  ctx.body = removeNestedRootRoutes(routes).map((route) => pickDesktopRouteRolePermissionTargetFields(route));
   await next();
 }
 
@@ -916,6 +983,14 @@ export class PluginUiLayoutServer extends Plugin {
     this.app.acl.allow('uiLayouts', 'listAccessible', 'loggedIn');
 
     this.app.resourceManager.registerActionHandler('uiLayouts:listAccessible', listAccessibleUiLayouts);
+    this.app.resourceManager.registerActionHandler(
+      'uiLayouts:listRolePermissionTargets',
+      listUiLayoutRolePermissionTargets,
+    );
+    this.app.resourceManager.registerActionHandler(
+      'desktopRoutes:listRolePermissionTargets',
+      listDesktopRouteRolePermissionTargets,
+    );
     this.app.resourceManager.registerActionHandler('roles.desktopRoutes:add', async (ctx: ResourcerContext, next) => {
       const repository = ctx.db.getRepository<MultipleRelationRepository>(ctx.action.resourceName, ctx.action.sourceId);
       const values = ctx.action.params.filterByTk || ctx.action.params.filterByTks || ctx.action.params.values;

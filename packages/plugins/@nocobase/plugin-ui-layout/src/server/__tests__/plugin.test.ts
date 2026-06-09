@@ -22,6 +22,8 @@ const UI_LAYOUT_MANAGEMENT_ACTIONS = [
 ];
 
 const UI_LAYOUT_RUNTIME_FIELDS = ['uid', 'title', 'layoutType', 'routeName', 'routePath', 'authCheck', 'enabled'];
+const UI_LAYOUT_ROLE_PERMISSION_TARGET_FIELDS = ['uid', 'title', 'layoutType', 'routeName', 'enabled'];
+const DESKTOP_ROUTE_ROLE_PERMISSION_TARGET_FIELDS = ['id', 'title', 'hidden', 'parentId', 'options', 'children'];
 
 async function createUiLayoutMockServer() {
   return createMockServer({
@@ -1307,6 +1309,148 @@ describe('plugin-ui-layout server', () => {
     ];
 
     expect(roleManagerResponses.map((response) => response.status)).toEqual([200, 200, 200, 200, 200, 200, 200, 200]);
+  });
+
+  it('should expose layout permission target readers only to role configuration snippets', async () => {
+    app = await createUiLayoutMockServer();
+
+    const enabledLayout = await app.db.getRepository('uiLayouts').create({
+      values: {
+        uid: 'role-target-layout-enabled',
+        title: 'Role target layout enabled',
+        layoutType: 'mobile',
+        routeName: 'roleTargetLayoutEnabled',
+        routePath: '/role-target-layout-enabled',
+        authCheck: true,
+        enabled: true,
+      },
+    });
+    const disabledLayout = await app.db.getRepository('uiLayouts').create({
+      values: {
+        uid: 'role-target-layout-disabled',
+        title: 'Role target layout disabled',
+        layoutType: 'mobile',
+        routeName: 'roleTargetLayoutDisabled',
+        routePath: '/role-target-layout-disabled',
+        authCheck: true,
+        enabled: false,
+      },
+    });
+    const enabledRoute = await app.db.getRepository('desktopRoutes').create({
+      values: {
+        type: 'flowPage',
+        title: 'ROLE-TARGET-ENABLED-ROUTE',
+        schemaUid: 'role-target-enabled-route',
+        hidden: false,
+        options: {
+          path: '/role-target-enabled-route',
+        },
+      },
+    });
+    const disabledRoute = await app.db.getRepository('desktopRoutes').create({
+      values: {
+        type: 'flowPage',
+        title: 'ROLE-TARGET-DISABLED-ROUTE',
+        schemaUid: 'role-target-disabled-route',
+        hidden: false,
+        options: {
+          path: '/role-target-disabled-route',
+        },
+      },
+    });
+    await app.db.getRepository('desktopRoutes.uiLayouts', enabledRoute.get('id')).set({
+      tk: [enabledLayout.get('uid')],
+    });
+    await app.db.getRepository('desktopRoutes.uiLayouts', disabledRoute.get('id')).set({
+      tk: [disabledLayout.get('uid')],
+    });
+    await app.db.getRepository('roles').create({
+      values: {
+        name: 'role-target-no-snippet',
+      },
+    });
+    await app.db.getRepository('roles').create({
+      values: {
+        name: 'role-target-ui-layout-manager',
+        snippets: ['pm.ui-layout'],
+      },
+    });
+    await app.db.getRepository('roles').create({
+      values: {
+        name: 'role-target-role-manager',
+        snippets: ['pm.acl.roles'],
+      },
+    });
+    const noSnippetUser = await app.db.getRepository('users').create({
+      values: {
+        roles: ['role-target-no-snippet'],
+      },
+    });
+    const uiLayoutManagerUser = await app.db.getRepository('users').create({
+      values: {
+        roles: ['role-target-ui-layout-manager'],
+      },
+    });
+    const roleManagerUser = await app.db.getRepository('users').create({
+      values: {
+        roles: ['role-target-role-manager'],
+      },
+    });
+    const noSnippetAgent = await app.agent().login(noSnippetUser);
+    const uiLayoutManagerAgent = await app.agent().login(uiLayoutManagerUser);
+    const roleManagerAgent = await app.agent().login(roleManagerUser);
+
+    const deniedResponses = await Promise.all([
+      noSnippetAgent.get('/uiLayouts:listRolePermissionTargets'),
+      noSnippetAgent.get('/desktopRoutes:listRolePermissionTargets').query({ layout: enabledLayout.get('uid') }),
+      uiLayoutManagerAgent.get('/uiLayouts:listRolePermissionTargets'),
+      uiLayoutManagerAgent.get('/desktopRoutes:listRolePermissionTargets').query({ layout: enabledLayout.get('uid') }),
+    ]);
+    expect(deniedResponses.map((response) => response.status)).toEqual([403, 403, 403, 403]);
+    expect((await roleManagerAgent.resource('uiLayouts').list()).status).toBe(403);
+    expect((await roleManagerAgent.resource('desktopRoutes').list()).status).toBe(403);
+
+    const layoutsResponse = await roleManagerAgent.get('/uiLayouts:listRolePermissionTargets').query({
+      filter: {
+        uid: disabledLayout.get('uid'),
+      },
+      fields: ['id', 'uid'],
+      appends: ['desktopRoutes'],
+      sort: '-id',
+    });
+    const routesResponse = await roleManagerAgent.get('/desktopRoutes:listRolePermissionTargets').query({
+      layout: enabledLayout.get('uid'),
+      filter: {
+        id: disabledRoute.get('id'),
+      },
+      fields: ['id'],
+      appends: ['uiLayouts'],
+    });
+    const disabledRoutesResponse = await roleManagerAgent.get('/desktopRoutes:listRolePermissionTargets').query({
+      layout: disabledLayout.get('uid'),
+    });
+
+    expect(layoutsResponse.status).toBe(200);
+    expect(routesResponse.status).toBe(200);
+    expect(disabledRoutesResponse.status).toBe(200);
+
+    const layouts = layoutsResponse.body.data as Array<Record<string, unknown>>;
+    expect(layouts.map((layout) => layout.uid)).toContain(enabledLayout.get('uid'));
+    expect(layouts.map((layout) => layout.uid)).not.toContain(disabledLayout.get('uid'));
+    for (const layout of layouts) {
+      expect(Object.keys(layout).sort()).toEqual([...UI_LAYOUT_ROLE_PERMISSION_TARGET_FIELDS].sort());
+      expect(layout).not.toHaveProperty('id');
+      expect(layout).not.toHaveProperty('desktopRoutes');
+    }
+
+    const routes = routesResponse.body.data as Array<Record<string, unknown>>;
+    expect(routes.map((route) => route.id)).toEqual([enabledRoute.get('id')]);
+    for (const route of routes) {
+      expect(Object.keys(route).sort()).toEqual([...DESKTOP_ROUTE_ROLE_PERMISSION_TARGET_FIELDS].sort());
+      expect(route).not.toHaveProperty('uiLayouts');
+      expect(route).not.toHaveProperty('createdBy');
+    }
+    expect(disabledRoutesResponse.body.data).toEqual([]);
   });
 
   it('should associate desktop routes with ui layouts by uid without breaking existing relations', async () => {

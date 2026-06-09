@@ -25,6 +25,7 @@ const flowMocks = vi.hoisted(() => ({
     | {
         api: {
           resource: ReturnType<typeof vi.fn>;
+          request?: ReturnType<typeof vi.fn>;
         };
         message: {
           success: ReturnType<typeof vi.fn>;
@@ -382,13 +383,10 @@ describe('plugin-ui-layout route permissions', () => {
     expect(screen.getByRole('button', { name: 'Configure menu permissions for Mobile layout' })).toHaveTextContent(
       'Configure',
     );
-    expect(resource.uiLayoutsList).toHaveBeenCalledWith(
-      expect.objectContaining({
-        filter: {
-          enabled: true,
-        },
-      }),
-    );
+    expect(resource.request).toHaveBeenCalledWith({
+      url: 'uiLayouts:listRolePermissionTargets',
+    });
+    expect(resource.uiLayoutsList).not.toHaveBeenCalled();
   });
 
   it('should not request layout menu statistics before configuring a layout', async () => {
@@ -406,7 +404,9 @@ describe('plugin-ui-layout route permissions', () => {
     expect(await screen.findByRole('switch', { name: 'Allow access to Desktop layout' })).toBeInTheDocument();
 
     await waitFor(() => {
-      expect(resource.uiLayoutsList).toHaveBeenCalled();
+      expect(resource.request).toHaveBeenCalledWith({
+        url: 'uiLayouts:listRolePermissionTargets',
+      });
       expect(resource.rolesUiLayoutsList).toHaveBeenCalled();
     });
     await act(async () => {
@@ -436,13 +436,13 @@ describe('plugin-ui-layout route permissions', () => {
     await selectLayout('Mobile layout');
 
     await waitFor(() => {
-      expect(resource.desktopRoutesList).toHaveBeenCalledWith(
-        expect.objectContaining({
-          filter: expect.objectContaining({
-            'uiLayouts.uid': 'mobile-layout',
-          }),
-        }),
-      );
+      expect(resource.request).toHaveBeenCalledWith({
+        url: 'desktopRoutes:listRolePermissionTargets',
+        params: {
+          layout: 'mobile-layout',
+        },
+      });
+      expect(resource.desktopRoutesList).not.toHaveBeenCalled();
       expect(resource.rolesUiLayoutDesktopRoutesList).toHaveBeenCalledWith({
         paginate: false,
         filter: {
@@ -912,40 +912,70 @@ function getLayoutUidFromFilter(filter: Record<string, unknown> | undefined) {
   return undefined;
 }
 
+function createAllRoutesPermissionFilter(layoutUid: unknown) {
+  const filter = createDesktopRouteLayoutPermissionFilter(layoutUid);
+  delete filter.hidden;
+  return filter;
+}
+
+function createRolePermissionTargetRequest(
+  uiLayoutsList: (params?: Record<string, unknown>) => Promise<ResourceResponse>,
+  desktopRoutesList: (params?: Record<string, unknown>) => Promise<ResourceResponse>,
+) {
+  return vi.fn(async (options: { url?: string; params?: Record<string, unknown> }) => {
+    if (options.url === 'uiLayouts:listRolePermissionTargets') {
+      return uiLayoutsList();
+    }
+    if (options.url === 'desktopRoutes:listRolePermissionTargets') {
+      return desktopRoutesList({
+        tree: true,
+        sort: 'sort',
+        paginate: false,
+        filter: createAllRoutesPermissionFilter(options.params?.layout),
+      });
+    }
+    throw new Error(`Unexpected request: ${options.url}`);
+  });
+}
+
 function createRoleDefaultsPermissionTabResources(options?: {
   update: (params: { filterByTk?: string; values: Record<string, unknown> }) => Promise<unknown>;
 }) {
   const rolesUpdate = vi.fn(options?.update ?? (async () => ({ data: { data: {} } })));
   const flowMessageSuccess = vi.fn();
+  const uiLayoutsList = vi.fn(async () => ({
+    data: {
+      data: [
+        {
+          uid: DEFAULT_ADMIN_UI_LAYOUT.uid,
+          title: 'Desktop layout',
+          layoutType: 'desktop',
+        },
+      ],
+    },
+  }));
+  const desktopRoutesList = vi.fn(async () => ({
+    data: {
+      data: [],
+    },
+  }));
+  const request = createRolePermissionTargetRequest(uiLayoutsList, desktopRoutesList);
 
   return {
     rolesUpdate,
     messageSuccess: flowMessageSuccess,
     context: {
       api: {
+        request,
         resource: vi.fn((name: string) => {
           if (name === 'uiLayouts') {
             return {
-              list: vi.fn(async () => ({
-                data: {
-                  data: [
-                    {
-                      uid: DEFAULT_ADMIN_UI_LAYOUT.uid,
-                      title: 'Desktop layout',
-                      layoutType: 'desktop',
-                    },
-                  ],
-                },
-              })),
+              list: uiLayoutsList,
             };
           }
           if (name === 'desktopRoutes') {
             return {
-              list: vi.fn(async () => ({
-                data: {
-                  data: [],
-                },
-              })),
+              list: desktopRoutesList,
             };
           }
           if (name === 'roles.desktopRoutes') {
@@ -1061,6 +1091,7 @@ function createPermissionTabResources() {
       },
     };
   });
+  const request = createRolePermissionTargetRequest(uiLayoutsList, desktopRoutesList);
   const roleRoutesList = vi.fn(async (params?: Record<string, unknown>) => {
     const layoutUid = getLayoutUidFromFilter(params?.filter as Record<string, unknown> | undefined);
 
@@ -1136,11 +1167,13 @@ function createPermissionTabResources() {
   return {
     desktopRoutesList,
     messageSuccess: flowMessageSuccess,
+    request,
     rolesUpdate,
     roleRoutesRemove: roleRoutesResource.remove,
     scopedRouteDestroy,
     context: {
       api: {
+        request,
         resource: vi.fn((name: string) => {
           if (name === 'uiLayouts') {
             return {
@@ -1175,28 +1208,29 @@ function createPermissionTabResources() {
 }
 
 function createLayoutSummaryPermissionTabResources() {
+  const uiLayoutTargets = [
+    {
+      uid: DEFAULT_ADMIN_UI_LAYOUT.uid,
+      title: 'Desktop layout',
+      layoutType: 'desktop',
+      enabled: true,
+    },
+    {
+      uid: 'mobile-layout',
+      title: 'Mobile layout',
+      layoutType: 'mobile',
+      enabled: true,
+    },
+    {
+      uid: 'disabled-layout',
+      title: 'Disabled layout',
+      layoutType: 'mobile',
+      enabled: false,
+    },
+  ];
   const uiLayoutsList = vi.fn(async () => ({
     data: {
-      data: [
-        {
-          uid: DEFAULT_ADMIN_UI_LAYOUT.uid,
-          title: 'Desktop layout',
-          layoutType: 'desktop',
-          enabled: true,
-        },
-        {
-          uid: 'mobile-layout',
-          title: 'Mobile layout',
-          layoutType: 'mobile',
-          enabled: true,
-        },
-        {
-          uid: 'disabled-layout',
-          title: 'Disabled layout',
-          layoutType: 'mobile',
-          enabled: false,
-        },
-      ],
+      data: uiLayoutTargets,
     },
   }));
   const desktopRoutesList = vi.fn(async (params?: Record<string, unknown>) => {
@@ -1251,15 +1285,53 @@ function createLayoutSummaryPermissionTabResources() {
       },
     };
   });
+  const request = vi.fn(async (options: { url?: string; params?: Record<string, unknown> }) => {
+    if (options.url === 'uiLayouts:listRolePermissionTargets') {
+      return {
+        data: {
+          data: uiLayoutTargets,
+        },
+      };
+    }
+    if (options.url === 'desktopRoutes:listRolePermissionTargets') {
+      const layoutUid = options.params?.layout;
+
+      return {
+        data: {
+          data:
+            layoutUid === 'mobile-layout'
+              ? [
+                  {
+                    id: 3,
+                    title: 'Mobile route',
+                  },
+                ]
+              : [
+                  {
+                    id: 1,
+                    title: 'Admin route',
+                  },
+                  {
+                    id: 2,
+                    title: 'Reports',
+                  },
+                ],
+        },
+      };
+    }
+    throw new Error(`Unexpected request: ${options.url}`);
+  });
   const flowMessageSuccess = vi.fn();
 
   return {
     desktopRoutesList,
+    request,
     rolesUiLayoutsList,
     rolesUiLayoutDesktopRoutesList,
     uiLayoutsList,
     context: {
       api: {
+        request,
         resource: vi.fn((name: string) => {
           if (name === 'uiLayouts') {
             return {
@@ -1358,6 +1430,7 @@ function createConcurrentPermissionTabResources() {
       },
     };
   });
+  const request = createRolePermissionTargetRequest(uiLayoutsList, desktopRoutesList);
   const roleRoutesList = vi.fn(async () => ({
     data: {
       data: [],
@@ -1433,6 +1506,7 @@ function createConcurrentPermissionTabResources() {
     scopedRouteCreate: rolesUiLayoutDesktopRoutesResource.create,
     context: {
       api: {
+        request,
         resource: vi.fn((name: string) => {
           if (name === 'uiLayouts') {
             return {
@@ -1511,6 +1585,7 @@ function createDisabledLayoutAccessPermissionTabResources() {
       },
     };
   });
+  const request = createRolePermissionTargetRequest(uiLayoutsList, desktopRoutesList);
   const roleRoutesResource = {
     list: vi.fn(async () => ({ data: { data: [] } })),
     add: vi.fn(async () => undefined),
@@ -1555,6 +1630,7 @@ function createDisabledLayoutAccessPermissionTabResources() {
     scopedRouteDestroy,
     context: {
       api: {
+        request,
         resource: vi.fn((name: string) => {
           if (name === 'uiLayouts') {
             return {
@@ -1659,6 +1735,7 @@ function createLargeTreePermissionTabResources() {
       },
     };
   });
+  const request = createRolePermissionTargetRequest(uiLayoutsList, desktopRoutesList);
   const getSelectedRouteIds = (roleName: string, layoutUid: string) => {
     const key = `${roleName}:${layoutUid}`;
     let routeIds = selectedRouteIdsByRoleAndLayout.get(key);
@@ -1726,6 +1803,7 @@ function createLargeTreePermissionTabResources() {
     scopedRouteCreate,
     context: {
       api: {
+        request,
         resource: vi.fn((name: string) => {
           if (name === 'uiLayouts') {
             return {
@@ -1815,6 +1893,7 @@ function createHiddenDescendantPermissionTabResources() {
       },
     };
   });
+  const request = createRolePermissionTargetRequest(uiLayoutsList, desktopRoutesList);
   const rolesUiLayoutsResource = {
     list: vi.fn(async () => ({
       data: {
@@ -1867,6 +1946,7 @@ function createHiddenDescendantPermissionTabResources() {
     scopedRouteDestroy,
     context: {
       api: {
+        request,
         resource: vi.fn((name: string) => {
           if (name === 'uiLayouts') {
             return {
@@ -1948,6 +2028,7 @@ function createCountingPermissionTabResources() {
       },
     };
   });
+  const request = createRolePermissionTargetRequest(uiLayoutsList, desktopRoutesList);
   const getSelectedRouteIds = (roleName: string, layoutUid: string) => {
     const key = `${roleName}:${layoutUid}`;
     let routeIds = selectedRouteIdsByRoleAndLayout.get(key);
@@ -2056,6 +2137,7 @@ function createCountingPermissionTabResources() {
     scopedRouteList: rolesUiLayoutDesktopRoutesList,
     context: {
       api: {
+        request,
         resource: vi.fn((name: string, roleName?: string) => {
           if (name === 'uiLayouts') {
             return {

@@ -16,10 +16,7 @@ import { uniq } from 'lodash';
 import React, { useEffect, useMemo, useState } from 'react';
 import { DEFAULT_ADMIN_UI_LAYOUT } from '../../constants';
 import { useT } from '../locale';
-import {
-  createDesktopRouteLayoutPermissionFilter,
-  getLayoutScopedPermissionChanges,
-} from './layoutAwareDesktopRoutesPermissions';
+import { getLayoutScopedPermissionChanges } from './layoutAwareDesktopRoutesPermissions';
 
 interface Role {
   name: string;
@@ -190,12 +187,6 @@ function toRouteItems(items: DesktopRouteRecord[] | undefined, parentId?: number
   });
 }
 
-function createAllRoutesFilter(filter: Record<string, unknown>) {
-  const allRoutesFilter = { ...filter };
-  delete allRoutesFilter.hidden;
-  return allRoutesFilter;
-}
-
 function toRoutePath(options: DesktopRouteOptions | undefined) {
   const path = options?.path;
   return typeof path === 'string' && path.trim() ? path.trim() : undefined;
@@ -325,10 +316,6 @@ export default function LayoutAwareDesktopRoutesPermissionsTab(props: Permission
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [routeKeyword, setRouteKeyword] = useState('');
   const activeLayoutUid = selectedLayoutUid || DEFAULT_ADMIN_UI_LAYOUT.uid;
-  const routeFilter = useMemo(() => createDesktopRouteLayoutPermissionFilter(activeLayoutUid), [activeLayoutUid]);
-  const allRoutesFilter = useMemo(() => createAllRoutesFilter(routeFilter), [routeFilter]);
-  const uiLayoutsResource = useMemo(() => ctx.api.resource('uiLayouts') as unknown as ListResource, [ctx.api]);
-  const desktopRoutesResource = useMemo(() => ctx.api.resource('desktopRoutes') as unknown as ListResource, [ctx.api]);
   const roleUiLayoutsResource = useMemo(
     () => ctx.api.resource('rolesUiLayouts') as unknown as RoleUiLayoutsResource,
     [ctx.api],
@@ -340,12 +327,8 @@ export default function LayoutAwareDesktopRoutesPermissionsTab(props: Permission
 
   const layoutService = useRequest(
     async () => {
-      const response = await uiLayoutsResource.list({
-        paginate: false,
-        sort: 'id',
-        filter: {
-          enabled: true,
-        },
+      const response = await ctx.api.request({
+        url: 'uiLayouts:listRolePermissionTargets',
       });
       return toUiLayoutPayload(response?.data).data ?? [];
     },
@@ -365,11 +348,11 @@ export default function LayoutAwareDesktopRoutesPermissionsTab(props: Permission
 
   const routeService = useRequest(
     async () => {
-      const response = await desktopRoutesResource.list({
-        tree: true,
-        sort: 'sort',
-        paginate: false,
-        filter: allRoutesFilter,
+      const response = await ctx.api.request({
+        url: 'desktopRoutes:listRolePermissionTargets',
+        params: {
+          layout: activeLayoutUid,
+        },
       });
       return {
         layoutUid: activeLayoutUid,
@@ -378,7 +361,7 @@ export default function LayoutAwareDesktopRoutesPermissionsTab(props: Permission
     },
     {
       ready: active && drawerOpen,
-      refreshDeps: [active, drawerOpen, allRoutesFilter, activeLayoutUid],
+      refreshDeps: [active, drawerOpen, activeLayoutUid],
     },
   );
 
