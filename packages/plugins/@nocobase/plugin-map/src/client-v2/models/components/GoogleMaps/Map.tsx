@@ -65,7 +65,7 @@ const methodMapping = {
 
 export class GoogleMapsDrawingManager {
   private readonly listeners = new Set<OverlayCompleteListener>();
-  private readonly mapListeners: google.maps.MapsEventListener[] = [];
+  private readonly mapListeners: Array<google.maps.MapsEventListener | undefined> = [];
   private readonly options: OverlayOptions & { map?: google.maps.Map };
   private drawingMode: GoogleMapsDrawingMode = null;
   private draftOverlay: google.maps.Polygon | google.maps.Polyline | google.maps.Circle | null = null;
@@ -124,7 +124,7 @@ export class GoogleMapsDrawingManager {
   }
 
   private clearMapEvents() {
-    this.mapListeners.forEach((listener) => listener.remove());
+    this.mapListeners.forEach((listener) => listener?.remove?.());
     this.mapListeners.length = 0;
   }
 
