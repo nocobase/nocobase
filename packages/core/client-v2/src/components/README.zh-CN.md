@@ -190,6 +190,9 @@ import { TypedVariableInput } from '@nocobase/client-v2';
 <Form.Item name={['options', 'secure']} label={t('安全模式')} initialValue={true}>
   <TypedVariableInput types={['boolean']} namespaces={['$env']} />
 </Form.Item>
+
+// 注入自定义变量树（如工作流节点的上游输出，不在全局注册表里）
+<TypedVariableInput types={['string', 'number']} metaTree={workflowMetaTree} />
 ```
 
 主要属性：
@@ -197,6 +200,7 @@ import { TypedVariableInput } from '@nocobase/client-v2';
 - `types`：允许的常量类型。形态对齐 v1 `useTypedConstant`，可以传裸类型名 `['number', 'boolean']`，也可以传 `[type, editorProps]` 元组 `[['number', { min, max, step }]]` 把 props 透传给底层 antd 编辑器。默认 `['string', 'number', 'boolean', 'date']`。**即使只允许一种类型，「常量」入口也会展开二级菜单**（数字 / 逻辑值 / 日期 / 字符串）——跟 v1 一致，让用户能直观看到当前常量是什么类型
 - `namespaces`：限定变量 picker 可选的顶层命名空间（如 `['$env']`）。不传就用 `flowEngine.context` 里所有已注册命名空间
 - `extraNodes`：在命名空间过滤后追加几条静态变量节点
+- `metaTree`：**直接注入变量树**，取代读取全局 `flowEngine.context` 的 MetaTree。传了它就**忽略** `namespaces`/`extraNodes`，原样使用这棵树——用于不在全局注册表里的、上下文相关的变量源（典型如工作流节点的上游节点输出 `$jobsMapByNodeKey`）。树里 `children` 为函数（`() => Promise<MetaTreeNode[]>`）的节点会在用户展开 Cascader 时**按需懒加载**（复用 flow-engine 的 `loadMetaTreeChildren`）
 - `nullable`：是否暴露「空值」入口，默认 `true`。配合 `Form.Item.rules={[{ required: true }]}` 可以让用户能手动清空、但提交时会被校验拦截——跟 v1 的「空值 + required」组合一致
 - `delimiters`：变量 token 开闭分隔符，默认 `['{{', '}}']`，跟 `VariableInput` 一致
 - `value` / `onChange` / `placeholder` / `disabled` / `style` / `className`：标准受控字段属性
@@ -212,9 +216,10 @@ import { TypedVariableInput } from '@nocobase/client-v2';
 - **纯字面量字段**（用户不会想填变量）→ 直接用 antd `InputNumber` / `Select` / `DatePicker` / `Input`，省掉 Cascader 那一格的视觉开销
 - **纯变量字段**（用户不会想填字面量）→ 用 `EnvVariableInput`（`$env` 专用，带 password mask）或 `VariableInput`（更通用）
 
+支持的常量类型：`string` / `number` / `boolean` / `date` / `object`。其中 `object`（即 JSON）渲染为一个等宽字体的内联 textarea（默认两行、可拖拽拉伸），编辑时保留原始文本草稿、失焦（blur）时 `JSON.parse` 回写为对象；解析失败则在输入框**下方单独一行**显示原生 `JSON.parse` 的错误信息（如 `Expected property name or '}' in JSON at position …`，对齐 v1）且不回写。对齐 v1 `useTypedConstant` 的 object 形态（默认值 `{}`）。
+
 跳过的能力（v1 有但 v2 还没补）：
 
-- `object` 类型（JSON 编辑器）——v2 还没对应的「内联 JSON 编辑器 + Cascader 切换」组件，等真有需求再补
 - 异步 `loadChildren` 分支——大多数命名空间的 MetaTree 已经由 `useFilteredMetaTree` 提前展平，没遇到刚需
 
 #### FileSizeInput
