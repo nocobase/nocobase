@@ -22,6 +22,13 @@ import { Search } from './Search';
 import { getCurrentPosition, getIcon } from './utils';
 
 export type OverlayOptions = google.maps.PolygonOptions & google.maps.MarkerOptions & google.maps.PolylineOptions;
+type GoogleMapsOverlay = google.maps.Marker | google.maps.Polygon | google.maps.Polyline | google.maps.Circle;
+export type GoogleMapsDrawingMode = 'marker' | 'polygon' | 'polyline' | 'circle' | null;
+type GoogleMapsOverlayCompleteEvent = {
+  type: Exclude<GoogleMapsDrawingMode, null>;
+  overlay: GoogleMapsOverlay;
+};
+type OverlayCompleteListener = (event: GoogleMapsOverlayCompleteEvent) => void;
 
 export const getDrawingMode = (type: MapEditorType) => {
   if (type === 'point') {
@@ -56,6 +63,179 @@ const methodMapping = {
   },
 };
 
+export class GoogleMapsDrawingManager {
+  private readonly listeners = new Set<OverlayCompleteListener>();
+  private readonly mapListeners: google.maps.MapsEventListener[] = [];
+  private readonly options: OverlayOptions & { map?: google.maps.Map };
+  private drawingMode: GoogleMapsDrawingMode = null;
+  private draftOverlay: google.maps.Polygon | google.maps.Polyline | google.maps.Circle | null = null;
+  private draftPath: google.maps.LatLng[] = [];
+  private circleCenter: google.maps.LatLng | null = null;
+
+  constructor(options: OverlayOptions & { drawingMode?: GoogleMapsDrawingMode; map?: google.maps.Map }) {
+    this.options = options;
+    this.setDrawingMode(options.drawingMode || null);
+  }
+
+  addListener(eventName: 'overlaycomplete', listener: OverlayCompleteListener) {
+    if (eventName === 'overlaycomplete') {
+      this.listeners.add(listener);
+    }
+    return {
+      remove: () => {
+        this.listeners.delete(listener);
+      },
+    };
+  }
+
+  setDrawingMode(mode: GoogleMapsDrawingMode) {
+    this.drawingMode = mode;
+    this.resetDraft();
+    this.bindMapEvents();
+  }
+
+  unbindAll() {
+    this.listeners.clear();
+    this.clearMapEvents();
+    this.resetDraft();
+    this.drawingMode = null;
+  }
+
+  private bindMapEvents() {
+    this.clearMapEvents();
+    if (!this.options.map || !this.drawingMode) {
+      return;
+    }
+    this.mapListeners.push(
+      this.options.map.addListener('click', (event: google.maps.MapMouseEvent) => {
+        if (event.latLng) {
+          this.handleClick(event.latLng);
+        }
+      }),
+      this.options.map.addListener('dblclick', () => {
+        this.completePathOverlay();
+      }),
+      this.options.map.addListener('mousemove', (event: google.maps.MapMouseEvent) => {
+        if (event.latLng) {
+          this.updatePreview(event.latLng);
+        }
+      }),
+    );
+  }
+
+  private clearMapEvents() {
+    this.mapListeners.forEach((listener) => listener.remove());
+    this.mapListeners.length = 0;
+  }
+
+  private resetDraft() {
+    this.draftOverlay?.setMap(null);
+    this.draftOverlay = null;
+    this.draftPath = [];
+    this.circleCenter = null;
+  }
+
+  private handleClick(position: google.maps.LatLng) {
+    if (this.drawingMode === 'marker') {
+      this.emitComplete('marker', new google.maps.Marker({ ...this.options, icon: getIcon(defaultImage), position }));
+      return;
+    }
+
+    if (this.drawingMode === 'circle') {
+      this.handleCircleClick(position);
+      return;
+    }
+
+    if (this.drawingMode === 'polygon' || this.drawingMode === 'polyline') {
+      this.handlePathClick(position);
+    }
+  }
+
+  private handlePathClick(position: google.maps.LatLng) {
+    if (this.drawingMode !== 'polygon' && this.drawingMode !== 'polyline') {
+      return;
+    }
+    this.draftPath.push(position);
+    if (!this.draftOverlay) {
+      this.draftOverlay =
+        this.drawingMode === 'polygon'
+          ? new google.maps.Polygon({ ...this.options, paths: this.draftPath })
+          : new google.maps.Polyline({ ...this.options, path: this.draftPath });
+      return;
+    }
+    this.updatePath(this.draftPath);
+  }
+
+  private handleCircleClick(position: google.maps.LatLng) {
+    if (!this.circleCenter) {
+      this.circleCenter = position;
+      this.draftOverlay = new google.maps.Circle({ ...this.options, center: position, radius: 0 });
+      return;
+    }
+    this.updateCircle(position);
+    this.completeCircleOverlay();
+  }
+
+  private updatePreview(position: google.maps.LatLng) {
+    if (this.drawingMode === 'circle' && this.circleCenter) {
+      this.updateCircle(position);
+      return;
+    }
+    if ((this.drawingMode === 'polygon' || this.drawingMode === 'polyline') && this.draftOverlay) {
+      this.updatePath([...this.draftPath, position]);
+    }
+  }
+
+  private updatePath(path: google.maps.LatLng[]) {
+    if (this.draftOverlay instanceof google.maps.Polygon) {
+      this.draftOverlay.setPath(path);
+    } else if (this.draftOverlay instanceof google.maps.Polyline) {
+      this.draftOverlay.setPath(path);
+    }
+  }
+
+  private updateCircle(position: google.maps.LatLng) {
+    if (!(this.draftOverlay instanceof google.maps.Circle) || !this.circleCenter) {
+      return;
+    }
+    this.draftOverlay.setRadius(google.maps.geometry.spherical.computeDistanceBetween(this.circleCenter, position));
+  }
+
+  private completePathOverlay() {
+    if ((this.drawingMode !== 'polygon' && this.drawingMode !== 'polyline') || !this.draftOverlay) {
+      return;
+    }
+    if (
+      (this.drawingMode === 'polygon' && this.draftPath.length < 3) ||
+      (this.drawingMode === 'polyline' && this.draftPath.length < 2)
+    ) {
+      return;
+    }
+    const overlay = this.draftOverlay;
+    const type = this.drawingMode;
+    this.updatePath(this.draftPath);
+    this.draftOverlay = null;
+    this.draftPath = [];
+    this.emitComplete(type, overlay);
+  }
+
+  private completeCircleOverlay() {
+    if (!(this.draftOverlay instanceof google.maps.Circle)) {
+      return;
+    }
+    const overlay = this.draftOverlay;
+    this.draftOverlay = null;
+    this.circleCenter = null;
+    this.emitComplete('circle', overlay);
+  }
+
+  private emitComplete(type: Exclude<GoogleMapsDrawingMode, null>, overlay: GoogleMapsOverlay) {
+    this.listeners.forEach((listener) => {
+      listener({ type, overlay });
+    });
+  }
+}
+
 export interface GoogleMapsCompProps {
   value?: any;
   onChange?: (value: number[]) => void;
@@ -77,10 +257,10 @@ export interface GoogleMapForwardedRefProps {
   setOverlay: (t: MapEditorType, v: any, o?: OverlayOptions) => google.maps.MVCObject;
   getOverlay: (t: MapEditorType, v: any, o?: OverlayOptions) => google.maps.MVCObject;
   setFitView: (overlays: google.maps.MVCObject[]) => void;
-  createDraw: (onlyCreate?: boolean, additionalOptions?: OverlayOptions) => any;
+  createDraw: (onlyCreate?: boolean, additionalOptions?: OverlayOptions) => GoogleMapsDrawingManager;
   map: google.maps.Map;
   overlay: google.maps.MVCObject;
-  drawingManager: google.maps.drawing.DrawingManager;
+  drawingManager: GoogleMapsDrawingManager;
   errMessage?: string;
 }
 
@@ -102,7 +282,7 @@ export const GoogleMapsCom = React.forwardRef<GoogleMapForwardedRefProps, Google
   const getLoadFailedMessage = useMemoizedFn(() =>
     t('Load google maps failed, Please check the Api key and refresh the page'),
   );
-  const drawingManagerRef = useRef<google.maps.drawing.DrawingManager>();
+  const drawingManagerRef = useRef<GoogleMapsDrawingManager>();
   const map = useRef<google.maps.Map>();
   const overlayRef = useRef<google.maps.Marker | google.maps.Polygon | google.maps.Polyline | google.maps.Circle>();
   const [needUpdateFlag, forceUpdate] = useState([]);
@@ -114,7 +294,7 @@ export const GoogleMapsCom = React.forwardRef<GoogleMapForwardedRefProps, Google
     }
   }, [zoom, block]);
 
-  const drawingMode = useRef(getDrawingMode(type) as google.maps.drawing.OverlayType);
+  const drawingMode = useRef(getDrawingMode(type) as GoogleMapsDrawingMode);
 
   const [commonOptions] = useState<OverlayOptions>({
     strokeWeight: 5,
@@ -243,18 +423,14 @@ export const GoogleMapsCom = React.forwardRef<GoogleMapForwardedRefProps, Google
       ...additionalOptions,
       map: map.current,
     };
-    drawingManagerRef.current = new google.maps.drawing.DrawingManager({
+    drawingManagerRef.current = new GoogleMapsDrawingManager({
       drawingMode: drawingMode.current,
-      drawingControl: false,
-      markerOptions: { ...currentOptions, icon: getIcon(defaultImage) },
-      polygonOptions: currentOptions,
-      polylineOptions: currentOptions,
-      circleOptions: currentOptions,
-      map: map.current,
+      ...currentOptions,
+      icon: getIcon(defaultImage),
     });
 
     if (!onlyCreate) {
-      drawingManagerRef.current.addListener('overlaycomplete', (event: { type: string; overlay: unknown }) => {
+      drawingManagerRef.current.addListener('overlaycomplete', (event) => {
         const overlay = event.overlay as google.maps.Marker;
         onMapChange(overlay);
       });
@@ -327,7 +503,7 @@ export const GoogleMapsCom = React.forwardRef<GoogleMapForwardedRefProps, Google
     try {
       loader = new Loader({
         apiKey: accessKey,
-        version: 'quarterly',
+        version: 'weekly',
         language: ctx.api.auth.getLocale(),
       });
     } catch (err) {
@@ -344,7 +520,12 @@ export const GoogleMapsCom = React.forwardRef<GoogleMapForwardedRefProps, Google
       error(err, ...args);
     };
 
-    Promise.all([loader.importLibrary('drawing'), loader.importLibrary('core'), loader.importLibrary('geometry')])
+    Promise.all([
+      loader.importLibrary('maps'),
+      loader.importLibrary('marker'),
+      loader.importLibrary('core'),
+      loader.importLibrary('geometry'),
+    ])
       .then(async (res) => {
         const center = await getCurrentPosition();
         await new Promise((resolve) => requestAnimationFrame(resolve));
