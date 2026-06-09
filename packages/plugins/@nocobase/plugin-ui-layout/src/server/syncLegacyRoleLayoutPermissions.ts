@@ -77,6 +77,7 @@ async function grantLegacyAdminLayoutAccess(
   permissions: Model[],
   routeLayoutUidMap: Map<string, string[]>,
   options?: DatabaseHookOptions,
+  onlyAdminLayoutRoutes = false,
 ) {
   if (!db.getCollection('rolesUiLayouts')) {
     return;
@@ -85,7 +86,14 @@ async function grantLegacyAdminLayoutAccess(
   const roleNames = Array.from(
     new Set(
       permissions
-        .filter((permission) => routeLayoutUidMap.has(String(permission.get('desktopRouteId'))))
+        .filter((permission) => {
+          const uiLayoutUids = routeLayoutUidMap.get(String(permission.get('desktopRouteId')));
+          if (!uiLayoutUids) {
+            return false;
+          }
+
+          return onlyAdminLayoutRoutes ? uiLayoutUids.includes(DEFAULT_ADMIN_UI_LAYOUT.uid) : true;
+        })
         .map((permission) => permission.get('roleName'))
         .filter((roleName): roleName is string => typeof roleName === 'string' && !!roleName),
     ),
@@ -126,6 +134,10 @@ export async function syncLegacyRoleDesktopRoutePermissions(
       permissions.map((permission) => permission.get('desktopRouteId')),
       options,
     ));
+
+  if (options?.defaultUnassignedToAdminLayout) {
+    await grantLegacyAdminLayoutAccess(db, permissions, resolvedRouteLayoutUidMap, options, true);
+  }
 
   for (const permission of permissions) {
     const roleName = permission.get('roleName');

@@ -9,7 +9,7 @@
 
 import { Plugin } from '@nocobase/server';
 import type { ResourcerContext } from '@nocobase/resourcer';
-import type { Database, Model } from '@nocobase/database';
+import type { Database, Model, MultipleRelationRepository } from '@nocobase/database';
 import { DEFAULT_ADMIN_UI_LAYOUT } from '../constants';
 import { ensureDefaultUiLayout } from './ensureDefaultUiLayout';
 import {
@@ -704,6 +704,38 @@ async function grantDefaultMenuAccessToNewDesktopRoute(
   }
 }
 
+async function syncExplicitLegacyRoleDesktopRouteAdd(
+  db: Database,
+  roleName: unknown,
+  desktopRouteIds: unknown,
+  options?: DatabaseHookOptions,
+) {
+  if (typeof roleName !== 'string' || !roleName || !db.getCollection('rolesDesktopRoutes')) {
+    return;
+  }
+
+  const normalizedDesktopRouteIds = (Array.isArray(desktopRouteIds) ? desktopRouteIds : [desktopRouteIds]).filter(
+    (desktopRouteId) => desktopRouteId !== null && desktopRouteId !== undefined,
+  );
+  if (!normalizedDesktopRouteIds.length) {
+    return;
+  }
+
+  const permissions = await db.getRepository('rolesDesktopRoutes').find({
+    fields: ['roleName', 'desktopRouteId'],
+    filter: {
+      roleName,
+      desktopRouteId: normalizedDesktopRouteIds,
+    },
+    transaction: options?.transaction,
+  });
+
+  await syncLegacyRoleDesktopRoutePermissions(db, permissions, {
+    ...options,
+    defaultUnassignedToAdminLayout: true,
+  });
+}
+
 export class PluginUiLayoutServer extends Plugin {
   async afterAdd() {}
 
@@ -721,6 +753,16 @@ export class PluginUiLayoutServer extends Plugin {
     this.app.acl.allow('uiLayouts', 'listAccessible', 'loggedIn');
 
     this.app.resourceManager.registerActionHandler('uiLayouts:listAccessible', listAccessibleUiLayouts);
+    this.app.resourceManager.registerActionHandler('roles.desktopRoutes:add', async (ctx: ResourcerContext, next) => {
+      const repository = ctx.db.getRepository<MultipleRelationRepository>(ctx.action.resourceName, ctx.action.sourceId);
+      const values = ctx.action.params.filterByTk || ctx.action.params.filterByTks || ctx.action.params.values;
+
+      await repository.add(values);
+      await syncExplicitLegacyRoleDesktopRouteAdd(this.app.db, ctx.action.sourceId, values);
+
+      ctx.status = 200;
+      await next();
+    });
     this.app.resourceManager.registerPreActionHandler('desktopRoutes:create', addDesktopRouteCreateLayout);
     this.app.resourceManager.registerPreActionHandler('desktopRoutes:listAccessible', addDesktopRouteLayoutFilter);
     this.app.resourceManager.registerPreActionHandler('desktopRoutes:getAccessible', addDesktopRouteGetLayoutFilter);

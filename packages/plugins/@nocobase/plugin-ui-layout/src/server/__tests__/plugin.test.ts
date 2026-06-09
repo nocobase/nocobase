@@ -2066,6 +2066,106 @@ describe('plugin-ui-layout server', () => {
     expect(legacyRoleRoutesResponse.body.data.map((route) => route.title)).toContain('DATA-DENIED-LAYOUT-LEGACY-ROUTE');
   });
 
+  it('should sync live legacy route permissions into AdminLayout access', async () => {
+    app = await createMockServer({
+      registerActions: true,
+      acl: true,
+      plugins: [
+        'error-handler',
+        'users',
+        'auth',
+        'client',
+        'field-sort',
+        'acl',
+        'ui-schema-storage',
+        'system-settings',
+        'data-source-main',
+        'data-source-manager',
+        'ui-layout',
+      ],
+    });
+
+    const adminLayout = await app.db.getRepository('uiLayouts').findOne({
+      filter: {
+        uid: DEFAULT_ADMIN_UI_LAYOUT.uid,
+      },
+    });
+    if (!adminLayout) {
+      throw new Error('Default AdminLayout ui layout should exist.');
+    }
+    const role = await app.db.getRepository('roles').create({
+      values: {
+        name: 'layout-live-legacy-route-member',
+      },
+    });
+    const adminRoute = await app.db.getRepository('desktopRoutes').create({
+      values: {
+        type: 'flowPage',
+        title: 'DATA-LIVE-LEGACY-ADMIN',
+        schemaUid: 'layout-live-legacy-admin',
+        hidden: false,
+        sort: 10,
+      },
+    });
+    const unassignedRoute = await app.db.getRepository('desktopRoutes').create({
+      values: {
+        type: 'flowPage',
+        title: 'DATA-LIVE-LEGACY-UNASSIGNED',
+        schemaUid: 'layout-live-legacy-unassigned',
+        hidden: false,
+        sort: 20,
+      },
+    });
+
+    await app.db.getRepository('desktopRoutes.uiLayouts', adminRoute.get('id')).set({
+      tk: [adminLayout.get('uid')],
+    });
+
+    const rootUser = await app.db.getRepository('users').findOne({
+      filter: {
+        'roles.name': 'root',
+      },
+    });
+    const memberUser = await app.db.getRepository('users').create({
+      values: {
+        roles: [role.get('name')],
+      },
+    });
+    const rootAgent = await app.agent().login(rootUser);
+    const memberAgent = await app.agent().login(memberUser);
+
+    await rootAgent.resource('roles.desktopRoutes', role.get('name')).add({
+      values: [adminRoute.get('id'), unassignedRoute.get('id')],
+    });
+
+    const [layoutAccessCount, routePermissionCount, routeListResponse] = await Promise.all([
+      app.db.getRepository('rolesUiLayouts').count({
+        filter: {
+          roleName: role.get('name'),
+          uiLayoutUid: DEFAULT_ADMIN_UI_LAYOUT.uid,
+        },
+      }),
+      app.db.getRepository('rolesUiLayoutDesktopRoutes').count({
+        filter: {
+          roleName: role.get('name'),
+          uiLayoutUid: DEFAULT_ADMIN_UI_LAYOUT.uid,
+          desktopRouteId: [adminRoute.get('id'), unassignedRoute.get('id')],
+        },
+      }),
+      memberAgent.get('/desktopRoutes:listAccessible').query({
+        layout: DEFAULT_ADMIN_UI_LAYOUT.uid,
+      }),
+    ]);
+
+    expect(layoutAccessCount).toBe(1);
+    expect(routePermissionCount).toBe(2);
+    expect(routeListResponse.status).toBe(200);
+    expect(routeListResponse.body.data.map((route) => route.title)).toEqual([
+      'DATA-LIVE-LEGACY-ADMIN',
+      'DATA-LIVE-LEGACY-UNASSIGNED',
+    ]);
+  });
+
   it('should require migrated layout-scoped route permissions for layout route access', async () => {
     app = await createMockServer({
       registerActions: true,
