@@ -93,4 +93,135 @@ describe('ensureFormValueDrivenDataScopeClear', () => {
 
     expect(onChange).not.toHaveBeenCalled();
   });
+
+  it('maps ctx.item.value dependencies to the current row path', () => {
+    const emitter = new EventEmitter();
+    const formBlock = {
+      uid: 'form-1',
+      disposed: false,
+      emitter,
+      context: { form: {} },
+    };
+
+    const onChange = vi.fn();
+    const model: any = {
+      disposed: false,
+      props: {
+        value: { id: 1 },
+        onChange,
+      },
+      context: {
+        blockModel: formBlock,
+        fieldIndex: ['users:1'],
+      },
+    };
+
+    const ctx: any = {
+      model,
+      flowKey: 'selectSettings',
+    };
+
+    const filter = {
+      logic: '$and',
+      items: [{ path: 'nickname', operator: '$eq', value: '{{ ctx.item.value.nickname }}' }],
+    };
+
+    ensureFormValueDrivenDataScopeClear(ctx, filter);
+
+    emitter.emit('formValuesChange', {
+      changedPaths: [['users', 0, 'nickname']],
+    });
+    expect(onChange).not.toHaveBeenCalled();
+
+    emitter.emit('formValuesChange', {
+      changedPaths: [['users', 1, 'nickname']],
+    });
+    expect(onChange).toHaveBeenCalledWith(null);
+  });
+
+  it('parses object-patch changedPaths before matching ctx.item.value dependencies', () => {
+    const emitter = new EventEmitter();
+    const formBlock = {
+      uid: 'form-1',
+      disposed: false,
+      emitter,
+      context: { form: {} },
+    };
+
+    const onChange = vi.fn();
+    const model: any = {
+      disposed: false,
+      props: {
+        value: { id: 1 },
+        onChange,
+      },
+      context: {
+        blockModel: formBlock,
+        fieldIndex: ['users:1'],
+      },
+    };
+
+    const ctx: any = {
+      model,
+      flowKey: 'selectSettings',
+    };
+
+    const filter = {
+      logic: '$and',
+      items: [{ path: 'nickname', operator: '$eq', value: '{{ ctx.item.value.nickname }}' }],
+    };
+
+    ensureFormValueDrivenDataScopeClear(ctx, filter);
+
+    emitter.emit('formValuesChange', {
+      changedPaths: [['users[1].nickname']],
+    });
+
+    expect(onChange).toHaveBeenCalledWith(null);
+  });
+
+  it('maps root parentItem.value dependencies to the root form path', () => {
+    const emitter = new EventEmitter();
+    const formBlock = {
+      uid: 'form-1',
+      disposed: false,
+      emitter,
+      context: { form: {} },
+    };
+
+    const onChange = vi.fn();
+    const model: any = {
+      disposed: false,
+      props: {
+        value: { id: 1 },
+        onChange,
+      },
+      context: {
+        blockModel: formBlock,
+        fieldIndex: ['roles:0'],
+      },
+    };
+
+    const ctx: any = {
+      model,
+      flowKey: 'selectSettings',
+    };
+
+    const filter = {
+      logic: '$and',
+      items: [{ path: 'departmentId', operator: '$eq', value: '{{ ctx.item.parentItem.value.departmentId }}' }],
+    };
+
+    ensureFormValueDrivenDataScopeClear(ctx, filter);
+
+    emitter.emit('formValuesChange', {
+      changedPaths: [['roles', 0, 'name']],
+    });
+    expect(onChange).not.toHaveBeenCalled();
+
+    emitter.emit('formValuesChange', {
+      changedPaths: [['departmentId']],
+    });
+    expect(onChange).toHaveBeenCalledWith(null);
+  });
 });
