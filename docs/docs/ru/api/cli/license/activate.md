@@ -1,12 +1,12 @@
 ---
 title: "nb license activate"
-description: "Справочник по команде nb license activate: активация коммерческой лицензии NocoBase для выбранного env."
+description: "Справочник по команде nb license activate: активация существующего коммерческого license key NocoBase для выбранного env."
 keywords: "nb license activate,NocoBase CLI,commercial licensing"
 ---
 
 # nb license activate
 
-Активирует коммерческую лицензию для выбранного env. Можно напрямую передать существующий license key или запросить и активировать лицензию онлайн.
+Активирует существующий коммерческий license key для выбранного env. Его можно передать напрямую, прочитать из файла или вставить в интерактивном терминале.
 
 ## Использование
 
@@ -19,33 +19,34 @@ nb license activate [flags]
 | Параметр | Тип | Описание |
 | --- | --- | --- |
 | `--env`, `-e` | string | Имя CLI env; если не указано, используется текущий env |
-| `--key` | string | Передать существующий license key напрямую |
-| `--key-file` | string | Считать license key из файла |
-| `--online` | boolean | Запросить лицензию онлайн и активировать её |
-| `--account` | string | Аккаунт сервиса лицензирования для онлайн-активации |
-| `--password` | string | Пароль сервиса лицензирования для онлайн-активации |
-| `--desc` | string | Имя приложения для онлайн-активации |
+| `--key` | string | Передать существующий коммерческий license key напрямую |
+| `--key-file` | string | Считать существующий коммерческий license key из файла |
 | `--yes`, `-y` | boolean | Если явно переданный `--env` указывает на env, отличающуюся от текущей env, пропускает интерактивное подтверждение |
 | `--json` | boolean | Вывод JSON |
 
 ## Примеры
 
 ```bash
+nb license activate
 nb license activate --env app1 --key <licenseKey>
 nb license activate --env app1 --key-file ./license.txt
-nb license activate --env app1 --online
-nb license activate --env app1 --online --account aa --password bb --desc test24
-nb license activate --env app1 --online --account aa --password bb --desc test24 --yes
 nb license activate --env app1 --json --key-file ./license.txt
 ```
 
 ## Примечания
 
-При онлайн-активации CLI запрашивает license key у сервиса лицензирования, используя instance ID и URL приложения текущего env.
+При интерактивном запуске CLI сначала показывает текущие Hostname и Instance ID, а затем предлагает вставить license key напрямую или указать путь к файлу с key. Эта информация помогает проверить, что лицензия привязывается к правильному экземпляру.
+
+После успешной активации перезапустите приложение, чтобы лицензия и состояние коммерческих плагинов действительно вступили в силу; перед перезапуском CLI автоматически синхронизирует коммерческие плагины, разрешённые текущей лицензией:
+
+```bash
+nb app restart
+```
 
 Если вы явно передаёте `--env`, и она отличается от текущей env, CLI сначала запросит подтверждение. В неинтерактивных терминалах или сессиях AI-агента добавьте `--yes` самостоятельно либо сначала выполните `nb env use <name>`, а затем повторите попытку.
 
 ## Связанные команды
 
+- [`nb app restart`](../app/restart.md)
 - [`nb license id`](./id.md)
 - [`nb license status`](./status.md)

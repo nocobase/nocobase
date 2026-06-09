@@ -467,7 +467,6 @@ async function parseAssignees(node, processor): Promise<number[]> {
     const users = await UserRepo.find({
       filter: { id: { $in: plainIds } },
       fields: ['id'],
-      transaction: processor.mainTransaction,
     });
     users.forEach((u) => validIdSet.add(u.id));
   }
@@ -489,7 +488,6 @@ async function parseAssignees(node, processor): Promise<number[]> {
       const result = await UserRepo.find({
         ...item,
         fields: ['id'],
-        transaction: processor.mainTransaction,
       });
       result.forEach((user) => addAssignee(user.id));
     } else {

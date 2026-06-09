@@ -96,6 +96,13 @@ test('buildSnapshotVersion uses date and git sha to form a unique version', asyn
     '2.1.0-beta.34-snapshot.20260519.abc12345',
   );
   expect(
+    buildSnapshotVersion(
+      '2.1.0-beta.44-snapshot.20260607.b7e1284f-snapshot.20260607.bc696023',
+      'bc696023',
+      new Date('2026-06-07T10:03:52Z'),
+    ),
+  ).toBe('2.1.0-beta.44-snapshot.20260607.bc696023');
+  expect(
     buildSuggestedInitCommand({
       version: '2.1.0-beta.34-snapshot.20260519.abc12345',
       npmRegistry: 'http://127.0.0.1:4873',
@@ -103,6 +110,27 @@ test('buildSnapshotVersion uses date and git sha to form a unique version', asyn
     }),
   ).toBe(
     'nb init --ui --env snapshotabc12345 --yes --source npm --version 2.1.0-beta.34-snapshot.20260519.abc12345 --npm-registry=http://127.0.0.1:4873',
+  );
+});
+
+test('resolveGitBranch rejects a missing current branch reference before publishing', async () => {
+  const { resolveGitBranch } = await import('../lib/source-publish.js');
+  mocks.commandOutput.mockImplementation(async (_command: string, args: string[]) => {
+    if (args[0] === 'branch' && args[1] === '--show-current') {
+      return 'nb/source-publish-20260607100306-b7e1284f';
+    }
+    if (args[0] === 'rev-parse' && args[1] === '--verify' && args[2] === 'refs/heads/nb/source-publish-20260607100306-b7e1284f') {
+      throw new Error('fatal: invalid reference: nb/source-publish-20260607100306-b7e1284f');
+    }
+    return 'abc12345';
+  });
+
+  await expect(resolveGitBranch('/repo')).rejects.toThrow(
+    [
+      'The current Git branch reference is invalid: nb/source-publish-20260607100306-b7e1284f.',
+      'This usually means a previous source publish cleanup left HEAD pointing at a missing temporary branch.',
+      'Switch to a real local branch, then run `nb source publish --snapshot` again.',
+    ].join('\n'),
   );
 });
 

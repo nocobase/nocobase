@@ -10,13 +10,26 @@
 import { access } from 'node:fs/promises';
 import { resolveConfiguredEnvPath } from './cli-home.js';
 import type { EnvConfigEntry } from './auth-store.js';
+import { inferConfiguredAppPathFromLegacyConfig } from './env-paths.js';
 
 function trimValue(value: unknown): string | undefined {
   const text = String(value ?? '').trim();
   return text || undefined;
 }
 
-export function defaultDockerEnvFilePath(envName: string): string {
+function appendDotEnvPath(basePath: string): string {
+  return `${basePath.replace(/[\\/]+$/, '')}/.env`;
+}
+
+export function defaultDockerEnvFilePath(
+  envName: string,
+  config?: Partial<Pick<EnvConfigEntry, 'appPath' | 'appRootPath' | 'storagePath'>>,
+): string {
+  const appPath = inferConfiguredAppPathFromLegacyConfig(config ?? {});
+  if (appPath) {
+    return appendDotEnvPath(appPath);
+  }
+
   return `${envName}/.env`;
 }
 
@@ -24,7 +37,7 @@ export function resolveConfiguredDockerEnvFilePath(
   envName: string,
   config?: Partial<EnvConfigEntry>,
 ): string {
-  return trimValue(config?.envFile) || defaultDockerEnvFilePath(envName);
+  return trimValue(config?.envFile) || defaultDockerEnvFilePath(envName, config);
 }
 
 export function hasExplicitDockerEnvFile(config?: Partial<EnvConfigEntry>): boolean {

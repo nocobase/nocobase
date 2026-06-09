@@ -181,9 +181,7 @@ const external = [
   '@langchain/ollama',
   '@langchain/mcp-adapters',
 ];
-const pluginPrefix = (
-  process.env.PLUGIN_PACKAGE_PREFIX || '@nocobase/plugin-,@nocobase/preset-,@nocobase/plugin-pro-'
-).split(',');
+const pluginPrefix = (process.env.PLUGIN_PACKAGE_PREFIX || '@nocobase/plugin-,@nocobase/preset-').split(',');
 
 const target_dir = 'dist';
 

@@ -12,9 +12,11 @@ import os from 'node:os';
 import path from 'node:path';
 import { test, expect, vi } from 'vitest';
 import {
+  clearEnvRootSetup,
   getEnv,
   getCurrentEnvName,
   loadAuthConfig,
+  replaceEnvConfig,
   removeEnv,
   saveAuthConfig,
   setCurrentEnv,
@@ -79,6 +81,55 @@ test('upsertEnv clears runtime metadata when base URL or token changes', async (
     const env = await getEnv('test', { scope: 'global' });
     expect(env?.auth?.accessToken).toBe('new-token');
     expect(env?.runtime).toBe(undefined);
+  });
+});
+
+test('clearEnvRootSetup removes saved root setup fields while preserving other env settings', async () => {
+  await withTempCliHome(async () => {
+    await saveAuthConfig(
+      {
+        lastEnv: 'test',
+        envs: {
+          test: {
+            baseUrl: 'http://localhost:13000/api',
+            authType: 'token',
+            auth: {
+              type: 'token',
+              accessToken: 'token-123',
+            },
+            dbDatabase: 'nocobase',
+            rootUsername: 'admin',
+            rootEmail: 'admin@nocobase.com',
+            rootPassword: 'admin123',
+            rootNickname: 'Admin',
+            runtime: {
+              version: 'v1',
+              schemaHash: 'hash',
+              generatedAt: '2026-04-13T00:00:00.000Z',
+            },
+          },
+        },
+      },
+      { scope: 'global' },
+    );
+
+    const removed = await clearEnvRootSetup('test', { scope: 'global' });
+
+    const env = await getEnv('test', { scope: 'global' });
+    expect(removed).toBe(true);
+    expect(env?.baseUrl).toBe('http://localhost:13000/api');
+    expect(env?.authType).toBe('token');
+    expect(env?.auth?.type).toBe('token');
+    expect(env?.auth?.accessToken).toBe('token-123');
+    expect(env?.runtime).toEqual({
+      version: 'v1',
+      schemaHash: 'hash',
+      generatedAt: '2026-04-13T00:00:00.000Z',
+    });
+    expect(env).not.toHaveProperty('rootUsername');
+    expect(env).not.toHaveProperty('rootEmail');
+    expect(env).not.toHaveProperty('rootPassword');
+    expect(env).not.toHaveProperty('rootNickname');
   });
 });
 
@@ -218,19 +269,64 @@ test('cli config stores explicit locale under settings', async () => {
 test('cli config stores explicit binary overrides under settings', async () => {
   await withTempCliHome(async () => {
     const dockerBin = await setCliConfigValue('bin.docker', '/usr/local/bin/docker', { scope: 'global' });
+    const caddyBin = await setCliConfigValue('bin.caddy', '/usr/bin/caddy', { scope: 'global' });
     const gitBin = await setCliConfigValue('bin.git', '/usr/bin/git', { scope: 'global' });
+    const nginxBin = await setCliConfigValue('bin.nginx', '/usr/sbin/nginx', { scope: 'global' });
     const yarnBin = await setCliConfigValue('bin.yarn', 'yarn-custom', { scope: 'global' });
     const config = await loadAuthConfig({ scope: 'global' });
 
     expect(dockerBin).toBe('/usr/local/bin/docker');
+    expect(caddyBin).toBe('/usr/bin/caddy');
     expect(gitBin).toBe('/usr/bin/git');
+    expect(nginxBin).toBe('/usr/sbin/nginx');
     expect(yarnBin).toBe('yarn-custom');
     expect(config.settings).toEqual({
       bin: {
         docker: '/usr/local/bin/docker',
+        caddy: '/usr/bin/caddy',
         git: '/usr/bin/git',
+        nginx: '/usr/sbin/nginx',
         yarn: 'yarn-custom',
       },
+    });
+  });
+});
+
+test('cli config stores explicit proxy path settings under settings', async () => {
+  await withTempCliHome(async () => {
+    const nbCliRoot = await setCliConfigValue('proxy.nb-cli-root', '/workspace', { scope: 'global' });
+    const host = await setCliConfigValue('proxy.upstream-host', 'host.docker.internal', { scope: 'global' });
+    const config = await loadAuthConfig({ scope: 'global' });
+
+    expect(nbCliRoot).toBe('/workspace');
+    expect(host).toBe('host.docker.internal');
+    expect(config.settings?.proxy).toEqual({
+      nbCliRoot: '/workspace',
+      upstreamHost: 'host.docker.internal',
+    });
+  });
+});
+
+test('cli config stores explicit log retention settings under settings', async () => {
+  await withTempCliHome(async () => {
+    const retentionDays = await setCliConfigValue('log.retention-days', '21', { scope: 'global' });
+    const config = await loadAuthConfig({ scope: 'global' });
+
+    expect(retentionDays).toBe('21');
+    expect(config.settings?.log).toEqual({
+      retentionDays: 21,
+    });
+  });
+});
+
+test('cli config stores explicit log enabled settings under settings', async () => {
+  await withTempCliHome(async () => {
+    const enabled = await setCliConfigValue('log.enabled', 'false', { scope: 'global' });
+    const config = await loadAuthConfig({ scope: 'global' });
+
+    expect(enabled).toBe('false');
+    expect(config.settings?.log).toEqual({
+      enabled: false,
     });
   });
 });
@@ -273,18 +369,33 @@ test('cli config list and delete only affect explicit settings', async () => {
     await setCliConfigValue('license.pkg-url', 'https://pkg.example.com', { scope: 'global' });
     await setCliConfigValue('docker.network', 'nocobase-team', { scope: 'global' });
     await setCliConfigValue('bin.docker', '/usr/local/bin/docker', { scope: 'global' });
+    await setCliConfigValue('bin.caddy', '/usr/bin/caddy', { scope: 'global' });
+    await setCliConfigValue('proxy.nb-cli-root', '/workspace', { scope: 'global' });
+    await setCliConfigValue('proxy.upstream-host', 'host.docker.internal', { scope: 'global' });
+    await setCliConfigValue('log.enabled', 'false', { scope: 'global' });
+    await setCliConfigValue('log.retention-days', '30', { scope: 'global' });
 
     expect(await listExplicitCliConfigValues({ scope: 'global' })).toEqual({
       locale: 'zh-CN',
       'license.pkg-url': 'https://pkg.example.com/',
       'docker.network': 'nocobase-team',
       'bin.docker': '/usr/local/bin/docker',
+      'bin.caddy': '/usr/bin/caddy',
+      'proxy.nb-cli-root': '/workspace',
+      'proxy.upstream-host': 'host.docker.internal',
+      'log.enabled': 'false',
+      'log.retention-days': '30',
     });
 
     expect(await deleteCliConfigValue('locale', { scope: 'global' })).toBe(true);
     expect(await deleteCliConfigValue('docker.container-prefix', { scope: 'global' })).toBe(false);
     expect(await deleteCliConfigValue('docker.network', { scope: 'global' })).toBe(true);
     expect(await deleteCliConfigValue('bin.docker', { scope: 'global' })).toBe(true);
+    expect(await deleteCliConfigValue('bin.caddy', { scope: 'global' })).toBe(true);
+    expect(await deleteCliConfigValue('proxy.nb-cli-root', { scope: 'global' })).toBe(true);
+    expect(await deleteCliConfigValue('proxy.upstream-host', { scope: 'global' })).toBe(true);
+    expect(await deleteCliConfigValue('log.enabled', { scope: 'global' })).toBe(true);
+    expect(await deleteCliConfigValue('log.retention-days', { scope: 'global' })).toBe(true);
     expect(await listExplicitCliConfigValues({ scope: 'global' })).toEqual({
       'license.pkg-url': 'https://pkg.example.com/',
     });
@@ -294,8 +405,29 @@ test('cli config list and delete only affect explicit settings', async () => {
 test('cli config returns default binary names when bin overrides are not configured', async () => {
   await withTempCliHome(async () => {
     expect(await getCliConfigValue('bin.docker', { scope: 'global' })).toBe('docker');
+    expect(await getCliConfigValue('bin.caddy', { scope: 'global' })).toBe('caddy');
     expect(await getCliConfigValue('bin.git', { scope: 'global' })).toBe('git');
+    expect(await getCliConfigValue('bin.nginx', { scope: 'global' })).toBe('nginx');
     expect(await getCliConfigValue('bin.yarn', { scope: 'global' })).toBe('yarn');
+  });
+});
+
+test('cli config returns default proxy path settings', async () => {
+  await withTempCliHome(async () => {
+    expect(await getCliConfigValue('proxy.nb-cli-root', { scope: 'global' })).toBe(resolveCliHomeRoot());
+    expect(await getCliConfigValue('proxy.upstream-host', { scope: 'global' })).toBe('127.0.0.1');
+  });
+});
+
+test('cli config returns default log retention days', async () => {
+  await withTempCliHome(async () => {
+    expect(await getCliConfigValue('log.retention-days', { scope: 'global' })).toBe('14');
+  });
+});
+
+test('cli config returns default log enabled state', async () => {
+  await withTempCliHome(async () => {
+    expect(await getCliConfigValue('log.enabled', { scope: 'global' })).toBe('true');
   });
 });
 
@@ -600,6 +732,94 @@ test('updateEnvConnection preserves runtime metadata when connection settings ar
       schemaHash: 'hash',
       generatedAt: '2026-04-13T00:00:00.000Z',
     });
+  });
+});
+
+test('replaceEnvConfig preserves runtime metadata when only saved app settings change', async () => {
+  await withTempCliHome(async () => {
+    await saveAuthConfig(
+      {
+        lastEnv: 'test',
+        envs: {
+          test: {
+            apiBaseUrl: 'http://localhost:13000/api',
+            authType: 'token',
+            auth: {
+              type: 'token',
+              accessToken: 'same-token',
+            },
+            appPort: '13000',
+            runtime: {
+              version: 'v1',
+              schemaHash: 'hash',
+              generatedAt: '2026-04-13T00:00:00.000Z',
+            },
+          },
+        },
+      },
+      { scope: 'global' },
+    );
+
+    await replaceEnvConfig(
+      'test',
+      {
+        kind: 'http',
+        apiBaseUrl: 'http://localhost:13000/api',
+        authType: 'token',
+        accessToken: 'same-token',
+        appPort: '14000',
+      },
+      { scope: 'global' },
+    );
+
+    const env = await getEnv('test', { scope: 'global' });
+    expect(env?.appPort).toBe('14000');
+    expect(env?.runtime).toEqual({
+      version: 'v1',
+      schemaHash: 'hash',
+      generatedAt: '2026-04-13T00:00:00.000Z',
+    });
+  });
+});
+
+test('replaceEnvConfig can remove a saved token while keeping token auth type', async () => {
+  await withTempCliHome(async () => {
+    await saveAuthConfig(
+      {
+        lastEnv: 'test',
+        envs: {
+          test: {
+            apiBaseUrl: 'http://localhost:13000/api',
+            authType: 'token',
+            auth: {
+              type: 'token',
+              accessToken: 'old-token',
+            },
+            runtime: {
+              version: 'v1',
+              schemaHash: 'hash',
+              generatedAt: '2026-04-13T00:00:00.000Z',
+            },
+          },
+        },
+      },
+      { scope: 'global' },
+    );
+
+    await replaceEnvConfig(
+      'test',
+      {
+        kind: 'http',
+        apiBaseUrl: 'http://localhost:13000/api',
+        authType: 'token',
+      },
+      { scope: 'global' },
+    );
+
+    const env = await getEnv('test', { scope: 'global' });
+    expect(env?.authType).toBe('token');
+    expect(env?.auth).toBe(undefined);
+    expect(env?.runtime).toBe(undefined);
   });
 });
 

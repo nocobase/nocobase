@@ -23,9 +23,9 @@ features:
       - title: NocoBase Getting Started
         details: Understand NocoBase's core concepts and basic operations.
         link: /get-started/how-nocobase-works
-      - title: Install & Upgrade Plugins
-        details: Learn how to add, manage and update plugins to extend system capabilities.
-        link: /get-started/install-upgrade-plugins
+      - title: Install App
+        details: Quickly install and manage applications.
+        link: /get-started/installation/docker
       - title: Tutorials
         details: Step-by-step tutorials to build real projects with NocoBase from scratch.
         link: /tutorials/v2/

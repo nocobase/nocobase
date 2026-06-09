@@ -8,14 +8,153 @@
  */
 
 import { FlowModel } from '@nocobase/flow-engine';
+import {
+  normalizeFilterableOperators,
+  type FieldFilterable,
+  type FieldFilterOperator,
+} from '../../../../collection-manager/filter-operators';
+import { operators } from '../../../../flow-compat';
 import { BlockGridModel, CollectionBlockModel } from '../../base';
 
-export function getDefaultOperator(model: any) {
+type FilterFormFieldMeta = {
+  filterable?: FieldFilterable<unknown> | false;
+  interface?: string;
+  type?: string;
+};
+
+type FilterFormOperatorModel = FlowModel & {
+  operator?: string;
+  collectionField?: FilterFormFieldMeta;
+  filterField?: FilterFormFieldMeta;
+  subModels?: {
+    field?: {
+      operator?: string;
+    };
+  };
+  getStepParams?: (flowKey: string, stepKey: string) => { value?: string } | undefined;
+};
+
+function getModelContext(model: FlowModel) {
+  return model.context as unknown as Record<string, unknown>;
+}
+
+function getModelField(model: FlowModel, key: 'collectionField' | 'filterField') {
+  const modelWithFields = model as FilterFormOperatorModel;
+  const field = modelWithFields[key] || getModelContext(model)?.[key];
+  return field && typeof field === 'object' ? (field as FilterFormFieldMeta) : undefined;
+}
+
+function getDataSourceManager(model: FlowModel) {
+  const contextManager = getModelContext(model)?.dataSourceManager;
+  if (contextManager) {
+    return contextManager as Record<string, unknown>;
+  }
+  return model.flowEngine?.context?.dataSourceManager as unknown as Record<string, unknown> | undefined;
+}
+
+function cloneFilterable(filterable: FieldFilterable<unknown>): FieldFilterable<unknown> {
+  return {
+    operatorGroup: filterable.operatorGroup,
+    operators: Array.isArray(filterable.operators) ? [...filterable.operators] : filterable.operators,
+    operatorOverrides: Array.isArray(filterable.operatorOverrides)
+      ? [...filterable.operatorOverrides]
+      : filterable.operatorOverrides,
+  };
+}
+
+function getFilterableOperators(filterable?: FieldFilterable<unknown> | false) {
+  if (filterable === false) {
+    return [];
+  }
+
+  if (!filterable || typeof filterable !== 'object') {
+    return;
+  }
+
+  const normalized = normalizeFilterableOperators(cloneFilterable(filterable));
+  if (Array.isArray(normalized?.operators) && normalized.operators.length > 0) {
+    return normalized.operators;
+  }
+
+  if (Array.isArray(normalized?.operatorOverrides) && normalized.operatorOverrides.length > 0) {
+    return normalized.operatorOverrides;
+  }
+}
+
+function getFieldInterfaceFilterable(model: FlowModel, field?: FilterFormFieldMeta) {
+  const interfaceName = typeof field?.interface === 'string' ? field.interface : undefined;
+  if (!interfaceName) {
+    return;
+  }
+
+  const dataSourceManager = getDataSourceManager(model);
+  const fieldInterfaceManager = dataSourceManager?.collectionFieldInterfaceManager as
+    | {
+        getFieldInterface?: (name: string) => { filterable?: FieldFilterable<unknown> | false } | undefined;
+      }
+    | undefined;
+  const fieldInterface = fieldInterfaceManager?.getFieldInterface?.(interfaceName);
+  return fieldInterface?.filterable;
+}
+
+function getFallbackOperators(field?: FilterFormFieldMeta) {
+  const fallbackKeys = [field?.interface, field?.type].filter((item): item is string => typeof item === 'string');
+  const standardOperators = operators as Record<string, FieldFilterOperator<unknown>[] | undefined>;
+  for (const key of fallbackKeys) {
+    const operatorList = standardOperators[key];
+    if (operatorList?.length) {
+      return operatorList;
+    }
+  }
+  return [];
+}
+
+export function getFilterFormOperatorList(model: FlowModel) {
+  const collectionField = getModelField(model, 'collectionField');
+  const filterField = getModelField(model, 'filterField');
+  const field = collectionField || filterField;
+
+  if (field?.filterable === false) {
+    return [];
+  }
+
+  const fieldOperators = getFilterableOperators(field?.filterable);
+  if (fieldOperators?.length) {
+    return fieldOperators;
+  }
+
+  const fieldInterfaceFilterable = getFieldInterfaceFilterable(model, field);
+  if (fieldInterfaceFilterable === false) {
+    return [];
+  }
+
+  const fieldInterfaceOperators = getFilterableOperators(fieldInterfaceFilterable);
+  if (fieldInterfaceOperators?.length) {
+    return fieldInterfaceOperators;
+  }
+
+  return getFallbackOperators(field);
+}
+
+export function getFilterFormOperatorMeta(model: FlowModel, operator = getDefaultOperator(model)) {
+  if (!operator) {
+    return null;
+  }
+
+  const meta = getModelField(model, 'collectionField') || getModelField(model, 'filterField');
+  return (
+    getFilterFormOperatorList(model).find((op) => op.value === operator && (!op.visible || op.visible(meta))) || null
+  );
+}
+
+export function getDefaultOperator(model: FilterFormOperatorModel) {
+  const operatorList = getFilterFormOperatorList(model);
   return (
     model.operator ||
-    model.getStepParams('filterFormItemSettings', 'defaultOperator')?.value ||
-    model.subModels.field?.operator ||
-    model.collectionField?.filterable?.operators?.[0]?.value ||
+    model.getStepParams?.('filterFormItemSettings', 'defaultOperator')?.value ||
+    model.subModels?.field?.operator ||
+    operatorList.find((op) => op.selected)?.value ||
+    operatorList[0]?.value ||
     '$includes'
   );
 }

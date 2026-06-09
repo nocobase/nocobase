@@ -23,9 +23,9 @@ features:
       - title: Начало работы с NocoBase
         details: Ознакомьтесь с основными концепциями и базовыми операциями NocoBase.
         link: /get-started/how-nocobase-works
-      - title: Установка и обновление плагинов
-        details: Узнайте, как добавлять, управлять и обновлять плагины для расширения возможностей системы.
-        link: /get-started/install-upgrade-plugins
+      - title: Установка приложения
+        details: Быстро устанавливайте приложения и управляйте ими.
+        link: /get-started/installation/docker
       - title: Учебные пособия
         details: Начните с нуля и следуйте учебным пособиям, чтобы шаг за шагом построить реальный проект.
         link: /tutorials/v2/

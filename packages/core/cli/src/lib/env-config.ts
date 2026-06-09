@@ -8,6 +8,7 @@
  */
 
 import type { EnvConfigEntry } from './auth-store.js';
+import { resolveAppPublicPath } from './app-public-path.js';
 
 const STRING_ENV_CONFIG_KEYS = [
   'source',
@@ -16,8 +17,11 @@ const STRING_ENV_CONFIG_KEYS = [
   'dockerPlatform',
   'gitUrl',
   'npmRegistry',
+  'appPath',
   'appRootPath',
   'storagePath',
+  'appPublicPath',
+  'cdnBaseUrl',
   'envFile',
   'appPort',
   'appKey',
@@ -68,13 +72,14 @@ function trimConfigValue(value: unknown): string | undefined {
 
 function resolveEnvKind(input: StoredEnvConfigInput): EnvConfigEntry['kind'] {
   const source = trimConfigValue(input.source);
+  const appPath = trimConfigValue(input.appPath);
   const appRootPath = trimConfigValue(input.appRootPath);
 
   if (source === 'docker') {
     return 'docker';
   }
 
-  if (source === 'npm' || source === 'git' || source === 'local' || appRootPath) {
+  if (source === 'npm' || source === 'git' || source === 'local' || appPath || appRootPath) {
     return 'local';
   }
 
@@ -90,7 +95,7 @@ export function buildStoredEnvConfig(input: StoredEnvConfigInput): StoredEnvConf
   for (const key of STRING_ENV_CONFIG_KEYS) {
     const value = trimConfigValue(input[key]);
     if (value) {
-      envConfig[key] = value;
+      envConfig[key] = key === 'appPublicPath' ? resolveAppPublicPath(value) : value;
     }
   }
 

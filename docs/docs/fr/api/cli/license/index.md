@@ -6,7 +6,7 @@ keywords: "nb license,NocoBase CLI,commercial licensing"
 
 # nb license
 
-Gère la licence commerciale NocoBase, y compris l'activation de la licence, les ID d'instance, l'état de la licence et les plugins sous licence.
+Gère la licence commerciale NocoBase, y compris l'activation avec une license key existante, les Instance ID, l'état de la licence et les plugins sous licence.
 
 ## Utilisation
 
@@ -18,7 +18,7 @@ nb license <command>
 
 | Commande | Description |
 | --- | --- |
-| [`nb license activate`](./activate.md) | Activer la licence commerciale pour l'env courant |
+| [`nb license activate`](./activate.md) | Activer la licence commerciale de l'env courant avec une license key existante |
 | [`nb license id`](./id.md) | Afficher ou générer l'ID d'instance pour l'env courant |
 | [`nb license status`](./status.md) | Afficher l'état de la licence commerciale pour l'env courant |
 | [`nb license plugins`](./plugins/index.md) | Gérer les plugins commerciaux autorisés par la licence actuelle |

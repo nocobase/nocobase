@@ -1,12 +1,12 @@
 ---
 title: "nb app upgrade"
-description: "Tài liệu lệnh nb app upgrade: dừng ứng dụng, thay source code hoặc image đã lưu, rồi khởi động lại ứng dụng NocoBase được chọn."
+description: "Tài liệu lệnh nb app upgrade: dừng ứng dụng, thay source code hoặc image đã lưu, rồi thực hiện nâng cấp và khởi động ứng dụng NocoBase được chọn."
 keywords: "nb app upgrade,NocoBase CLI,Nâng cấp,Cập nhật,Docker image"
 ---
 
 # nb app upgrade
 
-Nâng cấp ứng dụng NocoBase được chọn. CLI sẽ dừng ứng dụng hiện tại trước, mặc định thay source code hoặc image đã lưu, đồng bộ plugin thương mại, khởi động lại ứng dụng bằng quickstart và làm mới runtime của env ở bước cuối. Env Docker sẽ tạo lại container ứng dụng từ cấu hình env đã lưu trong lúc khởi động.
+Nâng cấp ứng dụng NocoBase được chọn. CLI sẽ dừng ứng dụng hiện tại trước, mặc định thay source code hoặc image đã lưu, đồng bộ plugin thương mại, thực hiện nâng cấp và khởi động ứng dụng, rồi làm mới runtime của env ở bước cuối. Env Docker sẽ tạo lại container ứng dụng từ cấu hình env đã lưu trong lúc khởi động.
 
 ## Cách dùng
 
@@ -21,7 +21,7 @@ nb app upgrade [flags]
 | `--env`, `-e` | string | Tên CLI env muốn nâng cấp, bỏ qua thì dùng env hiện tại |
 | `--yes`, `-y` | boolean | Khi `--env` được truyền tường minh và trỏ tới env khác với env hiện tại, bỏ qua bước xác nhận tương tác |
 | `--force`, `-f` | boolean | Bỏ qua bước xác nhận upgrade. Bắt buộc phải truyền rõ trong terminal không tương tác và phiên AI agent |
-| `--skip-download`, `-s` | boolean | Khởi động lại bằng source code cục bộ hoặc Docker image đang được lưu mà không tải update trước; đồng thời bỏ qua `nb license plugins sync` |
+| `--skip-download`, `-s` | boolean | Bỏ qua bước tải source code hoặc image, rồi thực hiện luồng nâng cấp và khởi động dựa trên source code cục bộ hoặc Docker image đang được lưu; đồng thời bỏ qua `nb license plugins sync` |
 | `--version` | string | Ghi đè phiên bản đích cho lần upgrade này; khi thành công, phiên bản mới sẽ được ghi lại vào `downloadVersion` trong cấu hình env |
 | `--verbose` | boolean | Hiển thị output của lệnh update và restart bên dưới |
 
@@ -48,13 +48,13 @@ Theo mặc định, `nb app upgrade` sẽ chạy các bước sau:
 1. `nb app stop`
 2. `nb source download --replace`
 3. `nb license plugins sync --skip-if-no-license`
-4. `nb app start --quickstart`
+4. `nb app start`
 5. Lưu `downloadVersion` mới khi cần
 6. `nb env update`
 
-Nếu truyền `--skip-download`, CLI sẽ bỏ qua bước 2 và 3 rồi khởi động lại trực tiếp source code hoặc image đang được lưu. Nếu đồng thời truyền `--version`, CLI sẽ không tải phiên bản đó trong lần chạy này; thay vào đó, CLI chỉ lưu nó thành `downloadVersion` mới sau khi restart thành công để các lần upgrade sau có thể dùng.
+Nếu truyền `--skip-download`, CLI sẽ bỏ qua bước 2 và 3 rồi trực tiếp thực hiện luồng nâng cấp và khởi động dựa trên source code hoặc image đang được lưu. Nếu đồng thời truyền `--version`, CLI sẽ không tải phiên bản đó trong lần chạy này; thay vào đó, CLI chỉ lưu nó thành `downloadVersion` mới sau khi khởi động thành công để các lần upgrade sau có thể dùng.
 
-Bước 4 sẽ đợi ứng dụng vượt qua `__health_check`. Trong thời gian chờ, CLI sẽ in trước một dòng waiting, sau đó in một dòng progress mỗi 10 giây cho đến khi ứng dụng sẵn sàng hoặc health check hết thời gian chờ.
+Ở bước 4, CLI sẽ tự động hoàn tất phần chuẩn bị nâng cấp cần thiết theo trạng thái code hiện tại, rồi mới đợi ứng dụng vượt qua `__health_check`. Trong thời gian chờ, CLI sẽ in trước một dòng waiting, sau đó in một dòng progress mỗi 10 giây cho đến khi ứng dụng sẵn sàng hoặc health check hết thời gian chờ.
 
 Nếu bước cuối `nb env update` thất bại, lần upgrade này vẫn được tính là thành công. CLI sẽ in warning và hướng dẫn bạn tự chạy `nb env update <envName>` sau đó.
 

@@ -22,7 +22,7 @@ pkg: "@nocobase/plugin-action-template-print"
 
 ### Установка плагина
 
-Ознакомьтесь с [Установкой и обновлением коммерческих плагинов](https://www.nocobase.com/c/blog/nocobase-commercial-license-activation-guide)
+Ознакомьтесь с [Установкой и обновлением коммерческих плагинов](https://www.nocobase.com/ru/blog/nocobase-commercial-license-activation-guide)
 
 ### Установка LibreOffice (необязательно)
 

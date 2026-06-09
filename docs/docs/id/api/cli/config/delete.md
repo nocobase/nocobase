@@ -1,12 +1,12 @@
 ---
-title: "nb config delete"
-description: "Referensi perintah nb config delete: menghapus pengaturan CLI yang dikonfigurasi secara eksplisit."
-keywords: "nb config delete,NocoBase CLI,configuration"
+title: 'nb config delete'
+description: 'Referensi perintah nb config delete: menghapus item konfigurasi CLI yang diatur secara eksplisit.'
+keywords: 'nb config delete,NocoBase CLI,hapus konfigurasi'
 ---
 
 # nb config delete
 
-Menghapus pengaturan CLI yang dikonfigurasi secara eksplisit. Setelah dihapus, CLI akan kembali memakai nilai default untuk key tersebut.
+Menghapus item konfigurasi CLI yang telah diatur secara eksplisit. Setelah dihapus, item konfigurasi tersebut akan kembali ke nilai default.
 
 ## Penggunaan
 
@@ -16,22 +16,24 @@ nb config delete <key>
 
 ## Parameter
 
-| Parameter | Tipe | Penjelasan |
-| --- | --- | --- |
-| `<key>` | string | Key konfigurasi: `locale`, `update.policy`, `license.pkg-url`, `docker.network`, `docker.container-prefix`, `bin.docker`, `bin.git`, atau `bin.yarn` |
+| Parameter | Tipe   | Deskripsi                                                                                                                               |
+| --------- | ------ | --------------------------------------------------------------------------------------------------------------------------------------- |
+| `<key>` | string | Nama item konfigurasi. Lihat [`nb config`](./index.md) untuk nilai yang didukung |
 
 ## Contoh
 
 ```bash
 nb config delete locale
 nb config delete update.policy
-nb config delete license.pkg-url
 nb config delete docker.network
 nb config delete docker.container-prefix
+nb config delete proxy.nb-cli-root
+nb config delete proxy.upstream-host
+nb config delete bin.nginx
 nb config delete bin.git
 ```
 
-## Perintah Terkait
+## Perintah terkait
 
 - [`nb config set`](./set.md)
 - [`nb config get`](./get.md)

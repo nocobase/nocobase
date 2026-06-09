@@ -15,6 +15,8 @@ import {
   DEFAULT_DOCKER_NETWORK,
   getEffectiveCliConfigValue,
 } from './cli-config.js';
+import { resolveConfiguredAppPath } from './env-paths.js';
+import { resolveManagedLocalEnvFilePath } from './managed-env-file.js';
 import { commandOutput, commandSucceeds, run, runNocoBaseCommand } from './run-npm.js';
 import { buildRuntimeEnvVars } from './runtime-env-vars.js';
 
@@ -146,7 +148,7 @@ export async function resolveManagedAppRuntime(envName?: string): Promise<Manage
       env,
       envName: resolvedName,
       source: source === 'git' ? 'git' : source === 'npm' ? 'npm' : 'local',
-      projectRoot: env.appRootPath,
+      projectRoot: env.sourcePath,
       dockerNetworkName,
       dockerContainerPrefix,
       workspaceName: dockerNetworkName,
@@ -182,6 +184,13 @@ export function formatMissingManagedAppEnvMessage(envName?: string): string {
   return 'No NocoBase env is configured yet. Run `nb init --ui` to create one first.';
 }
 
+export function managedAppLifecycleEnvVars(): Record<string, string> {
+  return {
+    APP_ENV: 'production',
+    NODE_ENV: 'production',
+  };
+}
+
 export async function runLocalNocoBaseCommand(
   runtime: Extract<ManagedAppRuntime, { kind: 'local' }>,
   args: string[],
@@ -193,10 +202,12 @@ export async function runLocalNocoBaseCommand(
   },
 ): Promise<void> {
   const envVars = await buildRuntimeEnvVars(runtime);
+  const appEnvPath = resolveManagedLocalEnvFilePath(runtime);
   await runNocoBaseCommand(args, {
     cwd: runtime.projectRoot,
     env: {
       ...envVars,
+      APP_ENV_PATH: appEnvPath,
       ...options?.env,
     },
     stdio: options?.stdio,
