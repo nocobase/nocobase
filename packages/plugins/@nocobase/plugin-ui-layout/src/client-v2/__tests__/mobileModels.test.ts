@@ -3271,6 +3271,48 @@ describe('plugin-ui-layout mobile models', () => {
     }
   });
 
+  it('should include router basename when opening internal mobile links in the current tab', async () => {
+    const routes: NocoBaseDesktopRoute[] = [
+      {
+        id: 1,
+        type: NocoBaseDesktopRouteType.flowPage,
+        title: 'Home',
+        schemaUid: 'home-page',
+        sort: 1,
+      },
+      {
+        id: 2,
+        type: NocoBaseDesktopRouteType.link,
+        title: 'Link',
+        schemaUid: 'internal-link',
+        sort: 2,
+        options: {
+          href: '/mobile/wxc8k79dysq',
+          openInNewWindow: false,
+        },
+      },
+    ];
+    const routeRepository: MobileRouteRepositoryForTest = {
+      listAccessible: () => routes,
+      ensureAccessibleLoaded: vi.fn(async () => routes),
+    };
+
+    renderMobileLayoutWithRouteRepository(routeRepository, {
+      outletElement: React.createElement(MobileCurrentPathProbe),
+      routerBasename: '/v',
+    });
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /Home/ })).toHaveAttribute('aria-current', 'page');
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: /Link/ }));
+
+    await waitFor(() => {
+      expect(screen.getByTestId('mobile-current-path')).toHaveTextContent('/v/mobile/wxc8k79dysq');
+    });
+  });
+
   it('should provide mobile tab add menu items', () => {
     const t = (key: string) => `t:${key}`;
 

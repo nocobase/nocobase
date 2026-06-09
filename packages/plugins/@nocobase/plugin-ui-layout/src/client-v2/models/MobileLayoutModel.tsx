@@ -1116,6 +1116,14 @@ function normalizeMobileRouterBasename(basename?: string) {
   return `/${basename.replace(/^\/+/, '').replace(/\/+$/, '')}`;
 }
 
+function getMobileRouterBasename(model: MobileLayoutModel) {
+  return (
+    model.flowEngine.context.app?.router?.getBasename?.() ||
+    model.flowEngine.context.app?.router?.basename ||
+    model.flowEngine.context.router?.basename
+  );
+}
+
 function isStandaloneDocumentUrl(url: string) {
   return /^[a-z][a-z\d+\-.]*:/i.test(url) || url.startsWith('//') || url.startsWith('#') || url.startsWith('?');
 }
@@ -1384,10 +1392,7 @@ const MobileHomePlaceholder = observer(
         return;
       }
 
-      const basename =
-        model.flowEngine.context.app?.router?.getBasename?.() ||
-        model.flowEngine.context.app?.router?.basename ||
-        model.flowEngine.context.router?.basename;
+      const basename = getMobileRouterBasename(model);
       const mobileLayoutRootPath = toMobileRouterNavigationPath(model.getMobileBasePathname(), basename);
       const currentPath = normalizeMobileLocationPath(location.pathname);
 
@@ -1425,13 +1430,11 @@ const MobileHomePlaceholder = observer(
         return;
       }
 
-      const basename =
-        model.flowEngine.context.app?.router?.getBasename?.() ||
-        model.flowEngine.context.app?.router?.basename ||
-        model.flowEngine.context.router?.basename;
+      const basename = getMobileRouterBasename(model);
       navigate(toMobileRouterNavigationPath(fallbackRoute.path, basename), { replace: true });
     }, [
       activeRouteKeyFromLayout,
+      model,
       model.flowEngine.context.app?.router,
       model.flowEngine.context.router?.basename,
       navigate,
@@ -1464,10 +1467,7 @@ const MobileHomePlaceholder = observer(
       (item: MobileTabNode) => {
         if (item.path) {
           setActiveRouteKey(item.key);
-          const basename =
-            model.flowEngine.context.app?.router?.getBasename?.() ||
-            model.flowEngine.context.app?.router?.basename ||
-            model.flowEngine.context.router?.basename;
+          const basename = getMobileRouterBasename(model);
           navigate(toMobileRouterNavigationPath(item.path, basename));
           return;
         }
@@ -1482,26 +1482,20 @@ const MobileHomePlaceholder = observer(
             return;
           }
 
-          navigate(toMobileRouterNavigationPath(item.href, model.flowEngine.context.router?.basename));
+          navigate(toMobileDocumentUrlWithRouterBasename(item.href, getMobileRouterBasename(model)));
           return;
         }
 
-        const basename =
-          model.flowEngine.context.app?.router?.getBasename?.() ||
-          model.flowEngine.context.app?.router?.basename ||
-          model.flowEngine.context.router?.basename;
+        const basename = getMobileRouterBasename(model);
         window.open(toMobileDocumentUrlWithRouterBasename(item.href, basename), '_blank', 'noopener,noreferrer');
       },
-      [model.flowEngine.context.app?.router, model.flowEngine.context.router?.basename, navigate],
+      [model, navigate],
     );
     const handleMenuItemClick = useCallback(
       (item: FakeMobileDesktopRoute) => {
         if (item.path) {
           setActiveRouteKey(item.key);
-          const basename =
-            model.flowEngine.context.app?.router?.getBasename?.() ||
-            model.flowEngine.context.app?.router?.basename ||
-            model.flowEngine.context.router?.basename;
+          const basename = getMobileRouterBasename(model);
           navigate(toMobileRouterNavigationPath(item.path, basename));
           return;
         }
@@ -1516,17 +1510,14 @@ const MobileHomePlaceholder = observer(
             return;
           }
 
-          navigate(toMobileRouterNavigationPath(item.href, model.flowEngine.context.router?.basename));
+          navigate(toMobileDocumentUrlWithRouterBasename(item.href, getMobileRouterBasename(model)));
           return;
         }
 
-        const basename =
-          model.flowEngine.context.app?.router?.getBasename?.() ||
-          model.flowEngine.context.app?.router?.basename ||
-          model.flowEngine.context.router?.basename;
+        const basename = getMobileRouterBasename(model);
         window.open(toMobileDocumentUrlWithRouterBasename(item.href, basename), '_blank', 'noopener,noreferrer');
       },
-      [model.flowEngine.context.app?.router, model.flowEngine.context.router?.basename, navigate],
+      [model, navigate],
     );
 
     const rootPageContent = (
