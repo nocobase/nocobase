@@ -9,6 +9,7 @@
 
 import { createMockServer, type MockServer } from '@nocobase/test';
 import { vi } from 'vitest';
+import packageJson from '../../../package.json';
 import { DEFAULT_ADMIN_UI_LAYOUT } from '../../constants';
 import { ensureDefaultUiLayout } from '../ensureDefaultUiLayout';
 import type { PluginUiLayoutServer } from '../plugin';
@@ -51,6 +52,13 @@ describe('plugin-ui-layout server', () => {
   afterEach(async () => {
     await app?.destroy();
     app = undefined;
+  });
+
+  it('should declare direct NocoBase runtime imports as peer dependencies', () => {
+    expect(packageJson.peerDependencies).toMatchObject({
+      '@nocobase/flow-engine': '2.x',
+      '@nocobase/utils': '2.x',
+    });
   });
 
   it('should ensure the default AdminLayout record exists on install', async () => {
