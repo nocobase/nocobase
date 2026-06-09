@@ -132,6 +132,7 @@ export interface CollectionTemplateOptions {
     fields?: CollectionTemplateField[] | (() => CollectionTemplateField[]);
   };
   capabilities?: {
+    inherits?: boolean;
     recordUniqueKey?: boolean;
     simplePaginate?: boolean;
   };
