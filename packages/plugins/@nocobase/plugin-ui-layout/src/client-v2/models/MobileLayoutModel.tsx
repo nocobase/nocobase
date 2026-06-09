@@ -844,6 +844,7 @@ const MobileDesktopModeHeader = observer(
       (key: string) => model.flowEngine.context.t(key, { ns: [NAMESPACE, 'client'] }),
       [model.flowEngine.context],
     );
+    const [qrCodeOpen, setQrCodeOpen] = useState(false);
     const qrCodeValue = typeof window === 'undefined' ? '' : window.location.href;
     const className = useMemo(
       () => css`
@@ -931,8 +932,19 @@ const MobileDesktopModeHeader = observer(
               <MobileOutlined />
             </button>
           </Tooltip>
-          <Popover trigger="hover" content={<QRCode value={qrCodeValue} bordered={false} />}>
-            <button type="button" className="nb-ui-layout-mobile-desktop-action" aria-label={t('QR code')}>
+          <Popover
+            trigger={['hover', 'click']}
+            open={qrCodeOpen}
+            onOpenChange={setQrCodeOpen}
+            content={<QRCode value={qrCodeValue} bordered={false} />}
+          >
+            <button
+              type="button"
+              className="nb-ui-layout-mobile-desktop-action"
+              aria-label={t('QR code')}
+              aria-haspopup="dialog"
+              aria-expanded={qrCodeOpen}
+            >
               <QrcodeOutlined />
             </button>
           </Popover>

@@ -3636,6 +3636,37 @@ describe('plugin-ui-layout mobile models', () => {
     });
   });
 
+  it('should open the desktop QR code popover by clicking the action button', async () => {
+    const restoreBreakpoint = mockDesktopBreakpoint();
+    const getContextSpy = vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(null);
+
+    try {
+      renderMobileLayoutWithRouteRepository({
+        listAccessible: () => [
+          {
+            id: 1,
+            type: NocoBaseDesktopRouteType.flowPage,
+            title: 'Home',
+            schemaUid: 'home-page',
+          },
+        ],
+      });
+
+      const qrCodeButton = await screen.findByRole('button', { name: 'QR code' });
+      expect(qrCodeButton).toHaveAttribute('aria-expanded', 'false');
+
+      fireEvent.click(qrCodeButton);
+
+      await waitFor(() => {
+        expect(qrCodeButton).toHaveAttribute('aria-expanded', 'true');
+        expect(document.querySelector('.ant-popover')).toBeInTheDocument();
+      });
+    } finally {
+      getContextSpy.mockRestore();
+      restoreBreakpoint();
+    }
+  });
+
   it('should render the add tab icon picker above the mobile tab modal', async () => {
     const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
 
