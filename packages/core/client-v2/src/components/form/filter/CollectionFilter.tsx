@@ -19,6 +19,8 @@ const identity = (s: string) => s;
 export interface CollectionFilterProps {
   /** Collection whose fields drive the filter row's field picker. */
   collection: Collection | undefined;
+  /** Previously compiled filter param used to seed the editable filter group. */
+  initialValue?: CompiledFilter;
   /** Called on Submit or Reset with the compiled NocoBase filter param (`undefined` when cleared). */
   onChange: (filter: CompiledFilter) => void;
   /** Translator. Defaults to identity. */
@@ -55,6 +57,7 @@ export interface CollectionFilterProps {
 export const CollectionFilter: FC<CollectionFilterProps> = (props) => {
   const {
     collection,
+    initialValue,
     onChange,
     t = identity,
     filterableFieldNames,
@@ -71,6 +74,7 @@ export const CollectionFilter: FC<CollectionFilterProps> = (props) => {
 
   const filterAction = useFilterActionProps({
     collection,
+    initialValue,
     filterableFieldNames,
     nonfilterableFieldNames,
     noIgnore,
