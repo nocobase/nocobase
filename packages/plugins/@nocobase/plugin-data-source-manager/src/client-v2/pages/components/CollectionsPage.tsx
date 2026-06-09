@@ -57,6 +57,7 @@ import {
   PluginDataSourceManagerClientV2,
 } from '../../plugin';
 import { compileLegacyTemplate, preferLegacyTemplateTitle } from '../../utils/compileLegacyTemplate';
+import { getErrorMessage, isFormValidationError } from '../../utils/error';
 import { getCollectionFieldActionUrl } from './collectionFieldApi';
 import FieldsPage from './FieldsPage';
 
@@ -485,9 +486,13 @@ function getTemplatePresetFieldsDisabledIncludes(template: CollectionTemplateOpt
 
 function hasTemplateCapability(
   template: CollectionTemplateOptions | undefined,
-  capability: 'recordUniqueKey' | 'simplePaginate',
+  capability: keyof NonNullable<CollectionTemplateOptions['capabilities']>,
 ) {
   return !!template?.capabilities?.[capability];
+}
+
+function supportsTemplateInherits(template: CollectionTemplateOptions | undefined) {
+  return template?.capabilities?.inherits !== false;
 }
 
 const CollectionTemplatePreview: FC<{ template?: CollectionTemplateOptions }> = ({ template }) => {
@@ -695,6 +700,7 @@ function CollectionCreateDrawer(props: {
   const { activeCategoryKey, categories, onSubmitted, template } = props;
   const t = useT();
   const ctx = useFlowContext();
+  const { notification } = App.useApp();
   const plugin = ctx.app.pm.get(PluginDataSourceManagerClientV2);
   const [form] = Form.useForm<CollectionFormValues>();
   const collectionPresetFields = useMemo(() => plugin.getCollectionPresetFields(), [plugin]);
@@ -764,6 +770,7 @@ function CollectionCreateDrawer(props: {
     [t],
   );
   const TemplateConfigureForm = template.configure?.Form || template.ConfigureForm;
+  const supportsInherits = supportsTemplateInherits(template);
   const collectionCategoryFormItem = (
     <Form.Item name="category" label={t('Categories')}>
       <Select
@@ -781,28 +788,53 @@ function CollectionCreateDrawer(props: {
       <Input.TextArea autoSize={{ minRows: 3, maxRows: 8 }} />
     </Form.Item>
   );
+  const templateConfigureItems = (
+    <>
+      {TemplateConfigureForm ? <TemplateConfigureForm mode="create" template={template} form={form} /> : null}
+      <CollectionTemplateConfigureItems mode="create" template={template} form={form} />
+    </>
+  );
 
   const handleSubmit = useCallback(async () => {
-    const values = await form.validateFields();
-    const normalizedValues = buildCollectionCreateValues({
-      template,
-      formValues: values,
-      selectedPresetFields,
-      presetFields: collectionPresetFields,
-      fieldInterfaceManager: ctx.dataSourceManager.collectionFieldInterfaceManager,
-    });
-
-    setSubmitting(true);
     try {
-      await ctx.api.resource('collections').create({
-        values: normalizedValues,
+      const values = await form.validateFields();
+      const normalizedValues = buildCollectionCreateValues({
+        template,
+        formValues: values,
+        selectedPresetFields,
+        presetFields: collectionPresetFields,
+        fieldInterfaceManager: ctx.dataSourceManager.collectionFieldInterfaceManager,
       });
-      onSubmitted();
-      ctx.dataSourceManager.getDataSource('main')?.reload();
-    } finally {
-      setSubmitting(false);
+
+      setSubmitting(true);
+      try {
+        await ctx.api.resource('collections').create({
+          values: normalizedValues,
+        });
+        onSubmitted();
+        ctx.dataSourceManager.getDataSource('main')?.reload();
+      } finally {
+        setSubmitting(false);
+      }
+    } catch (error) {
+      if (!isFormValidationError(error)) {
+        notification.error({
+          message: getErrorMessage(error, t('Submit failed')),
+        });
+      }
+      throw error;
     }
-  }, [collectionPresetFields, ctx.api, ctx.dataSourceManager, form, onSubmitted, selectedPresetFields, template]);
+  }, [
+    collectionPresetFields,
+    ctx.api,
+    ctx.dataSourceManager,
+    form,
+    notification,
+    onSubmitted,
+    selectedPresetFields,
+    t,
+    template,
+  ]);
 
   return (
     <DrawerFormLayout
@@ -836,10 +868,9 @@ function CollectionCreateDrawer(props: {
         >
           <Input />
         </Form.Item>
+        {templateConfigureItems}
         {isSqlTemplate ? (
           <>
-            {TemplateConfigureForm ? <TemplateConfigureForm mode="create" template={template} form={form} /> : null}
-            <CollectionTemplateConfigureItems mode="create" template={template} form={form} />
             {hasTemplateCapability(template, 'recordUniqueKey') ? (
               <CollectionCreateFilterTargetKey form={form} />
             ) : null}
@@ -848,8 +879,6 @@ function CollectionCreateDrawer(props: {
           </>
         ) : isViewTemplate ? (
           <>
-            {TemplateConfigureForm ? <TemplateConfigureForm mode="create" template={template} form={form} /> : null}
-            <CollectionTemplateConfigureItems mode="create" template={template} form={form} />
             {hasTemplateCapability(template, 'recordUniqueKey') ? (
               <CollectionCreateFilterTargetKey form={form} />
             ) : null}
@@ -867,9 +896,11 @@ function CollectionCreateDrawer(props: {
           </>
         ) : (
           <>
-            <Form.Item name="inherits" label={t('Inherits')}>
-              <Select mode="multiple" options={collectionOptions} loading={collectionRequest.loading} allowClear />
-            </Form.Item>
+            {supportsInherits ? (
+              <Form.Item name="inherits" label={t('Inherits')}>
+                <Select mode="multiple" options={collectionOptions} loading={collectionRequest.loading} allowClear />
+              </Form.Item>
+            ) : null}
             {collectionCategoryFormItem}
             {collectionDescriptionFormItem}
             <Form.Item
@@ -881,8 +912,6 @@ function CollectionCreateDrawer(props: {
             >
               <Checkbox>{t('Use simple pagination mode')}</Checkbox>
             </Form.Item>
-            {TemplateConfigureForm ? <TemplateConfigureForm mode="create" template={template} form={form} /> : null}
-            <CollectionTemplateConfigureItems mode="create" template={template} form={form} />
             {hasTemplateCapability(template, 'recordUniqueKey') ? (
               <CollectionCreateFilterTargetKey form={form} />
             ) : null}
@@ -920,6 +949,7 @@ function CollectionEditDrawer(props: {
   const { categories, collection, dataSourceKey, onSubmitted } = props;
   const t = useT();
   const ctx = useFlowContext();
+  const { notification } = App.useApp();
   const plugin = ctx.app.pm.get(PluginDataSourceManagerClientV2);
   const [form] = Form.useForm();
   const [submitting, setSubmitting] = useState(false);
@@ -1005,40 +1035,49 @@ function CollectionEditDrawer(props: {
   );
 
   const handleSubmit = useCallback(async () => {
-    const values = await form.validateFields();
-    let submitValues = { ...values };
-    if (collection.template === 'sql') {
-      submitValues.name = collection.name;
-      submitValues.key = collection.key;
-    } else {
-      delete submitValues.name;
-    }
-    if (!isMainDataSource) {
-      delete submitValues.category;
-      delete submitValues.inherits;
-    }
-    submitValues = template?.configure?.transformSubmitValues?.(submitValues) || submitValues;
-    setSubmitting(true);
     try {
-      if (isMainDataSource) {
-        await ctx.api.resource(collection.template === 'sql' ? 'sqlCollection' : 'collections').update({
-          filterByTk: collection.name,
-          values: submitValues,
-        });
+      const values = await form.validateFields();
+      let submitValues = { ...values };
+      if (collection.template === 'sql') {
+        submitValues.name = collection.name;
+        submitValues.key = collection.key;
       } else {
-        await ctx.api.request({
-          url: `dataSources/${dataSourceKey}/collections:update`,
-          method: 'post',
-          params: {
+        delete submitValues.name;
+      }
+      if (!isMainDataSource) {
+        delete submitValues.category;
+        delete submitValues.inherits;
+      }
+      submitValues = template?.configure?.transformSubmitValues?.(submitValues) || submitValues;
+      setSubmitting(true);
+      try {
+        if (isMainDataSource) {
+          await ctx.api.resource(collection.template === 'sql' ? 'sqlCollection' : 'collections').update({
             filterByTk: collection.name,
-          },
-          data: submitValues,
+            values: submitValues,
+          });
+        } else {
+          await ctx.api.request({
+            url: `dataSources/${dataSourceKey}/collections:update`,
+            method: 'post',
+            params: {
+              filterByTk: collection.name,
+            },
+            data: submitValues,
+          });
+        }
+        onSubmitted();
+        ctx.dataSourceManager.getDataSource(dataSourceKey)?.reload();
+      } finally {
+        setSubmitting(false);
+      }
+    } catch (error) {
+      if (!isFormValidationError(error)) {
+        notification.error({
+          message: getErrorMessage(error, t('Submit failed')),
         });
       }
-      onSubmitted();
-      ctx.dataSourceManager.getDataSource(dataSourceKey)?.reload();
-    } finally {
-      setSubmitting(false);
+      throw error;
     }
   }, [
     collection.key,
@@ -1049,7 +1088,9 @@ function CollectionEditDrawer(props: {
     dataSourceKey,
     form,
     isMainDataSource,
+    notification,
     onSubmitted,
+    t,
     template,
   ]);
 
@@ -1102,6 +1143,13 @@ function CollectionEditDrawer(props: {
   }
 
   const TemplateConfigureForm = template?.configure?.Form || template?.ConfigureForm;
+  const supportsInherits = supportsTemplateInherits(template);
+  const templateConfigureItems = template ? (
+    <>
+      {TemplateConfigureForm ? <TemplateConfigureForm mode="edit" template={template} form={form} /> : null}
+      <CollectionTemplateConfigureItems mode="edit" template={template} form={form} />
+    </>
+  ) : null;
 
   return (
     <DrawerFormLayout
@@ -1125,11 +1173,14 @@ function CollectionEditDrawer(props: {
         >
           <Input disabled />
         </Form.Item>
+        {templateConfigureItems}
         {isMainDataSource ? (
           <>
-            <Form.Item name="inherits" label={t('Inherits')}>
-              <Select mode="multiple" options={collectionOptions} loading={collectionRequest.loading} allowClear />
-            </Form.Item>
+            {supportsInherits ? (
+              <Form.Item name="inherits" label={t('Inherits')}>
+                <Select mode="multiple" options={collectionOptions} loading={collectionRequest.loading} allowClear />
+              </Form.Item>
+            ) : null}
             <Form.Item name="category" label={t('Categories')}>
               <Select
                 mode="multiple"
@@ -1165,10 +1216,6 @@ function CollectionEditDrawer(props: {
             <Select mode="multiple" options={filterTargetKeyOptions} loading={fieldsRequest.loading} allowClear />
           </Form.Item>
         ) : null}
-        {template && TemplateConfigureForm ? (
-          <TemplateConfigureForm mode="edit" template={template} form={form} />
-        ) : null}
-        {template ? <CollectionTemplateConfigureItems mode="edit" template={template} form={form} /> : null}
       </Form>
     </DrawerFormLayout>
   );
@@ -1177,7 +1224,7 @@ function CollectionEditDrawer(props: {
 function CollectionsPage(props: CollectionsPageProps) {
   const t = useT();
   const ctx = useFlowContext();
-  const { message, modal } = App.useApp();
+  const { message, modal, notification } = App.useApp();
   const plugin = ctx.app.pm.get(PluginDataSourceManagerClientV2);
   const [categoryForm] = Form.useForm();
   const filterValueRef = useRef<FilterGroupValue>(createEmptyFilter());
@@ -1306,28 +1353,37 @@ function CollectionsPage(props: CollectionsPageProps) {
   );
 
   const handleSubmitCategory = useCallback(async () => {
-    const values = await categoryForm.validateFields();
-    setCategorySubmitting(true);
     try {
-      if (editingCategory) {
-        await ctx.api.resource('collectionCategories').update({
-          filter: { id: editingCategory.id },
-          values,
-        });
-      } else {
-        await ctx.api.resource('collectionCategories').create({
-          values,
+      const values = await categoryForm.validateFields();
+      setCategorySubmitting(true);
+      try {
+        if (editingCategory) {
+          await ctx.api.resource('collectionCategories').update({
+            filter: { id: editingCategory.id },
+            values,
+          });
+        } else {
+          await ctx.api.resource('collectionCategories').create({
+            values,
+          });
+        }
+        setCategoryModalOpen(false);
+        setEditingCategory(undefined);
+        categoryForm.resetFields();
+        categoryRequest.refresh();
+        request.refresh();
+      } finally {
+        setCategorySubmitting(false);
+      }
+    } catch (error) {
+      if (!isFormValidationError(error)) {
+        notification.error({
+          message: getErrorMessage(error, t('Submit failed')),
         });
       }
-      setCategoryModalOpen(false);
-      setEditingCategory(undefined);
-      categoryForm.resetFields();
-      categoryRequest.refresh();
-      request.refresh();
-    } finally {
-      setCategorySubmitting(false);
+      throw error;
     }
-  }, [categoryForm, categoryRequest, ctx.api, editingCategory, request]);
+  }, [categoryForm, categoryRequest, ctx.api, editingCategory, notification, request, t]);
 
   const handleDeleteCategory = useCallback(
     (category: CollectionCategoryRecord) => {
@@ -1335,30 +1391,44 @@ function CollectionsPage(props: CollectionsPageProps) {
         title: t('Delete category'),
         content: t('Are you sure you want to delete it?'),
         async onOk() {
-          await ctx.api.resource('collectionCategories').destroy({
-            filter: { id: category.id },
-          });
-          if (String(category.id) === activeCategoryKey) {
-            setActiveCategoryKey('all');
+          try {
+            await ctx.api.resource('collectionCategories').destroy({
+              filter: { id: category.id },
+            });
+            if (String(category.id) === activeCategoryKey) {
+              setActiveCategoryKey('all');
+            }
+            categoryRequest.refresh();
+            request.refresh();
+          } catch (error) {
+            notification.error({
+              message: getErrorMessage(error, t('Delete failed')),
+            });
+            throw error;
           }
-          categoryRequest.refresh();
-          request.refresh();
         },
       });
     },
-    [activeCategoryKey, categoryRequest, ctx.api, modal, request, t],
+    [activeCategoryKey, categoryRequest, ctx.api, modal, notification, request, t],
   );
 
   const handleSortCategory = useCallback(
     async (from: CollectionCategoryRecord, to: CollectionCategoryRecord) => {
-      await ctx.api.resource('collectionCategories').move({
-        sourceId: from.id,
-        targetId: to.id,
-      });
-      categoryRequest.refresh();
-      request.refresh();
+      try {
+        await ctx.api.resource('collectionCategories').move({
+          sourceId: from.id,
+          targetId: to.id,
+        });
+        categoryRequest.refresh();
+        request.refresh();
+      } catch (error) {
+        notification.error({
+          message: getErrorMessage(error, t('Save failed')),
+        });
+        throw error;
+      }
     },
-    [categoryRequest, ctx.api, request],
+    [categoryRequest, ctx.api, notification, request, t],
   );
 
   const openCreateCollectionDrawer = useCallback(
@@ -1428,17 +1498,24 @@ function CollectionsPage(props: CollectionsPageProps) {
           </div>
         ),
         async onOk() {
-          await ctx.api.resource('collections').destroy({
-            filterByTk: keys,
-            cascade,
-          });
-          setSelectedRowKeys([]);
-          request.refresh();
-          ctx.dataSourceManager.getDataSource('main')?.reload();
+          try {
+            await ctx.api.resource('collections').destroy({
+              filterByTk: keys,
+              cascade,
+            });
+            setSelectedRowKeys([]);
+            request.refresh();
+            ctx.dataSourceManager.getDataSource('main')?.reload();
+          } catch (error) {
+            notification.error({
+              message: getErrorMessage(error, t('Delete failed')),
+            });
+            throw error;
+          }
         },
       });
     },
-    [ctx.api, ctx.dataSourceManager, modal, request, t],
+    [ctx.api, ctx.dataSourceManager, modal, notification, request, t],
   );
 
   const handleSortCollection = useCallback(
@@ -1446,15 +1523,22 @@ function CollectionsPage(props: CollectionsPageProps) {
       if (!isMainDataSource) {
         return;
       }
-      await ctx.api.resource('collections').move({
-        sourceId: from.name,
-        targetId: to.name,
-      });
-      message.success(t('Saved successfully'));
-      request.refresh();
-      ctx.dataSourceManager.getDataSource('main')?.reload();
+      try {
+        await ctx.api.resource('collections').move({
+          sourceId: from.name,
+          targetId: to.name,
+        });
+        message.success(t('Saved successfully'));
+        request.refresh();
+        ctx.dataSourceManager.getDataSource('main')?.reload();
+      } catch (error) {
+        notification.error({
+          message: getErrorMessage(error, t('Save failed')),
+        });
+        throw error;
+      }
     },
-    [ctx.api, ctx.dataSourceManager, isMainDataSource, message, request, t],
+    [ctx.api, ctx.dataSourceManager, isMainDataSource, message, notification, request, t],
   );
 
   const handleRefresh = useCallback(async () => {
@@ -1481,24 +1565,43 @@ function CollectionsPage(props: CollectionsPageProps) {
       }
       await ctx.dataSourceManager.getDataSource(props.dataSourceKey)?.reload();
     } catch (error) {
-      message.error(t('Data source synchronization failed'));
+      notification.error({
+        message: getErrorMessage(error, t('Data source synchronization failed')),
+      });
     } finally {
       setRefreshing(false);
     }
-  }, [ctx.api, ctx.dataSourceManager, dataSource?.status, isMainDataSource, message, props.dataSourceKey, request, t]);
+  }, [
+    ctx.api,
+    ctx.dataSourceManager,
+    dataSource?.status,
+    isMainDataSource,
+    message,
+    notification,
+    props.dataSourceKey,
+    request,
+    t,
+  ]);
 
   const handleSyncFromDatabase = useCallback(() => {
     modal.confirm({
       title: t('Sync field changes from database'),
       content: t('Field synchronization confirmation prompt'),
       async onOk() {
-        await ctx.api.resource('mainDataSource').syncFields();
-        request.refresh();
-        ctx.dataSourceManager.getDataSource('main')?.reload();
-        message.success(t('Sync successfully'));
+        try {
+          await ctx.api.resource('mainDataSource').syncFields();
+          request.refresh();
+          ctx.dataSourceManager.getDataSource('main')?.reload();
+          message.success(t('Sync successfully'));
+        } catch (error) {
+          notification.error({
+            message: getErrorMessage(error, t('Sync failed')),
+          });
+          throw error;
+        }
       },
     });
-  }, [ctx.api, ctx.dataSourceManager, message, modal, request, t]);
+  }, [ctx.api, ctx.dataSourceManager, message, modal, notification, request, t]);
 
   const resetLoadTablesDrawer = useCallback(() => {
     setLoadTablesDrawerOpen(false);
@@ -1526,11 +1629,13 @@ function CollectionsPage(props: CollectionsPageProps) {
       setSelectedTableKeys([]);
       setSelectedTransferKeys([]);
     } catch (error) {
-      message.error(t('Failed to load tables'));
+      notification.error({
+        message: getErrorMessage(error, t('Failed to load tables')),
+      });
     } finally {
       setLoadTablesLoading(false);
     }
-  }, [ctx.api, message, t]);
+  }, [ctx.api, notification, t]);
 
   const handleLoadTables = useCallback(() => {
     if (!selectedTableKeys.length) {
@@ -1558,13 +1663,26 @@ function CollectionsPage(props: CollectionsPageProps) {
           request.refresh();
           ctx.dataSourceManager.getDataSource('main')?.reload();
         } catch (error) {
-          message.error(t('Failed to load tables'));
+          notification.error({
+            message: getErrorMessage(error, t('Failed to load tables')),
+          });
+          throw error;
         } finally {
           setLoadTablesLoading(false);
         }
       },
     });
-  }, [ctx.api, ctx.dataSourceManager, message, modal, request, resetLoadTablesDrawer, selectedTableKeys, t]);
+  }, [
+    ctx.api,
+    ctx.dataSourceManager,
+    message,
+    modal,
+    notification,
+    request,
+    resetLoadTablesDrawer,
+    selectedTableKeys,
+    t,
+  ]);
 
   const handleSubmitFilter = useCallback(() => {
     setFilterPayload(transformFilter(filterValueRef.current as FilterGroupType) as CollectionFilterPayload);

@@ -20,6 +20,11 @@
       },
       {
         "type": "custom-link",
+        "label": "Quản lý phiên bản",
+        "link": "/ops-management/version-control/"
+      },
+      {
+        "type": "custom-link",
         "label": "Quản lý di chuyển",
         "link": "/ops-management/migration-manager/"
       }

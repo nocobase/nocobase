@@ -9,7 +9,8 @@
 
 import { css, cx } from '@emotion/css';
 import { DisplayItemModel } from '@nocobase/flow-engine';
-import React, { useRef, useState, useEffect } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
+import type { CSSProperties } from 'react';
 import { Tooltip } from 'antd';
 import { DisplayTitleFieldModel } from './DisplayTitleFieldModel';
 
@@ -21,8 +22,14 @@ const JSONClassName = css`
   border: none !important;
 `;
 
-const EllipsisJSON = ({ content, style, className }) => {
-  const ref = useRef(null);
+interface EllipsisJSONProps {
+  content: string;
+  style?: CSSProperties;
+  className?: string;
+}
+
+const EllipsisJSON = ({ content, style, className }: EllipsisJSONProps) => {
+  const ref = useRef<HTMLDivElement>(null);
   const [overflow, setOverflow] = useState(false);
 
   useEffect(() => {
@@ -75,7 +82,7 @@ const EllipsisJSON = ({ content, style, className }) => {
 };
 
 export class DisplayJSONFieldModel extends DisplayTitleFieldModel {
-  public renderComponent(value) {
+  public renderComponent(value: unknown) {
     const { space, style, className, overflowMode } = this.props;
     let content = '';
     if (value !== undefined && value !== null) {
@@ -95,6 +102,10 @@ export class DisplayJSONFieldModel extends DisplayTitleFieldModel {
         {content}
       </pre>
     );
+  }
+
+  public render() {
+    return this.renderComponent(this.props.value);
   }
 }
 

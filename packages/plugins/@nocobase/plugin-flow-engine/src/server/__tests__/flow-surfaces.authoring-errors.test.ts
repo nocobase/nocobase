@@ -8710,6 +8710,7 @@ ctx.render(React.createElement(DashboardKPIs));
         target: { uid: page.gridUid },
         type: 'table',
         resource: {
+          dataSourceKey: 'main',
           collectionName: 'employees',
         },
       },
@@ -8740,6 +8741,220 @@ ctx.render(React.createElement(DashboardKPIs));
       'data-block-visible-fields-required',
     );
     expect(addBlocksResponse.body?.errors?.map((error: any) => error.path)).toContain('$.blocks[0].fields');
+  });
+
+  it('should allow JS field entries without business fields before authoring writes', async () => {
+    const applyBlueprintResponse = await rootAgent.resource('flowSurfaces').applyBlueprint({
+      values: {
+        mode: 'create',
+        navigation: {
+          item: {
+            title: 'Authoring JS field only visible data blocks',
+          },
+        },
+        tabs: [
+          {
+            title: 'Overview',
+            blocks: [
+              {
+                key: 'jsColumnOnlyTable',
+                type: 'table',
+                collection: 'employees',
+                fields: [
+                  {
+                    key: 'employeeSummary',
+                    type: 'jsColumn',
+                    settings: {
+                      code: `ctx.render('Employee summary');`,
+                    },
+                  },
+                ],
+              },
+              {
+                key: 'jsItemOnlyCreateForm',
+                type: 'createForm',
+                collection: 'employees',
+                fields: [
+                  {
+                    key: 'employeePreview',
+                    type: 'jsItem',
+                    settings: {
+                      code: `ctx.render('Employee preview');`,
+                    },
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(applyBlueprintResponse.status, readErrorMessage(applyBlueprintResponse)).toBe(200);
+
+    const composePage = await createPage(rootAgent, {
+      title: 'Authoring compose JS field only page',
+      tabTitle: 'Authoring compose JS field only tab',
+    });
+    const composeResponse = await rootAgent.resource('flowSurfaces').compose({
+      values: {
+        target: { uid: composePage.gridUid },
+        blocks: [
+          {
+            key: 'composeJsColumnOnlyTable',
+            type: 'table',
+            resource: {
+              dataSourceKey: 'main',
+              collectionName: 'employees',
+            },
+            fields: [
+              {
+                key: 'employeeStatus',
+                fieldPath: 'status',
+                renderer: 'js',
+                settings: {
+                  code: `ctx.render(ctx.value || 'No status');`,
+                },
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(composeResponse.status, readErrorMessage(composeResponse)).toBe(200);
+
+    const addBlockPage = await createPage(rootAgent, {
+      title: 'Authoring add block JS field only page',
+      tabTitle: 'Authoring add block JS field only tab',
+    });
+    const addBlockResponse = await rootAgent.resource('flowSurfaces').addBlock({
+      values: {
+        target: { uid: addBlockPage.gridUid },
+        type: 'table',
+        resource: {
+          dataSourceKey: 'main',
+          collectionName: 'employees',
+        },
+        fields: [
+          {
+            key: 'employeeMetric',
+            type: 'jsColumn',
+            settings: {
+              code: `ctx.render('Metric');`,
+            },
+          },
+        ],
+      },
+    });
+
+    expect(addBlockResponse.status, readErrorMessage(addBlockResponse)).toBe(200);
+
+    const addBlocksResponse = await rootAgent.resource('flowSurfaces').addBlocks({
+      values: {
+        target: { uid: addBlockPage.gridUid },
+        blocks: [
+          {
+            type: 'table',
+            resource: {
+              dataSourceKey: 'main',
+              collectionName: 'employees',
+            },
+            fields: [
+              {
+                key: 'employeeRisk',
+                type: 'jsColumn',
+                settings: {
+                  code: `ctx.render('Risk');`,
+                },
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(addBlocksResponse.status, readErrorMessage(addBlocksResponse)).toBe(200);
+  });
+
+  it('should keep visible field error text when JS inputs are not valid field substitutes', async () => {
+    const response = await rootAgent.resource('flowSurfaces').applyBlueprint({
+      values: {
+        mode: 'create',
+        navigation: {
+          item: {
+            title: 'Authoring invalid JS field substitute data blocks',
+          },
+        },
+        tabs: [
+          {
+            title: 'Overview',
+            blocks: [
+              {
+                key: 'jsActionOnlyTable',
+                type: 'table',
+                collection: 'employees',
+                actions: [
+                  {
+                    key: 'tableJsAction',
+                    type: 'jsItem',
+                    settings: {
+                      code: `ctx.render('Action');`,
+                    },
+                  },
+                ],
+              },
+              {
+                key: 'wrongContainerJsItemTable',
+                type: 'table',
+                collection: 'employees',
+                fields: [
+                  {
+                    key: 'wrongTableItem',
+                    type: 'jsItem',
+                    settings: {
+                      code: `ctx.render('Wrong table item');`,
+                    },
+                  },
+                ],
+              },
+              {
+                key: 'wrongContainerJsColumnForm',
+                type: 'createForm',
+                collection: 'employees',
+                fields: [
+                  {
+                    key: 'wrongFormColumn',
+                    type: 'jsColumn',
+                    settings: {
+                      code: `ctx.render('Wrong form column');`,
+                    },
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(response.status).toBe(400);
+    const visibleFieldErrors = response.body?.errors?.filter(
+      (error: any) => error.ruleId === 'data-block-visible-fields-required',
+    );
+    expect(visibleFieldErrors).toHaveLength(3);
+    expect(visibleFieldErrors.map((error: any) => error.path)).toEqual(
+      expect.arrayContaining([
+        '$.tabs[0].blocks[0].fields',
+        '$.tabs[0].blocks[1].fields',
+        '$.tabs[0].blocks[2].fields',
+      ]),
+    );
+    for (const visibleFieldError of visibleFieldErrors) {
+      expect(visibleFieldError?.message).toContain('Add collection field names');
+      expect(visibleFieldError?.message).toContain('defaults.collections.*.fieldGroups');
+      expect(visibleFieldError?.message).not.toContain('JS');
+    }
   });
 
   it('should allow direct visible data blocks with valid business fields', async () => {

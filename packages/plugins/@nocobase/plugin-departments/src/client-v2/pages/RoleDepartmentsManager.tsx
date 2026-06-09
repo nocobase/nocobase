@@ -9,18 +9,19 @@
 
 import { DeleteOutlined, PlusOutlined, ReloadOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
-import { CollectionFilter, DrawerFormLayout, Table, type CompiledFilter, type TableProps } from '@nocobase/client-v2';
+import { CollectionFilter, Table, type CompiledFilter, type TableProps } from '@nocobase/client-v2';
 import type { RoleTabProps } from '@nocobase/plugin-acl/client-v2';
-import { useFlowContext } from '@nocobase/flow-engine';
+import { useFlowContext, useFlowView } from '@nocobase/flow-engine';
 import { useRequest } from 'ahooks';
 import { Button, Empty, Popconfirm, Space, Typography, theme } from 'antd';
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
 
 import { useT } from '../locale';
 import type { DepartmentPrimaryKey, DepartmentRecord } from '../shared/department';
-import { getDepartmentTitle } from '../shared/department';
+import { buildLazyDepartmentTreeNodes, getDepartmentTitle } from '../shared/department';
 
 const ROLE_DEPARTMENTS_PAGE_SIZE = 20;
+const ROLE_DEPARTMENTS_DRAWER_WIDTH = '50%';
 const TABLE_ACTION_BUTTON_STYLE: React.CSSProperties = { paddingInline: 0, height: 'auto' };
 
 interface ListPayload<RecordType extends object> {
@@ -57,6 +58,10 @@ function toTableData<RecordType extends object>(response: unknown) {
   };
 }
 
+function hasCompiledFilter(filter?: CompiledFilter) {
+  return Boolean(filter && typeof filter === 'object' && Object.keys(filter).length > 0);
+}
+
 function departmentColumns(
   t: (key: string, options?: Record<string, unknown>) => string,
 ): TableProps<DepartmentRecord>['columns'] {
@@ -68,22 +73,128 @@ function departmentColumns(
   ];
 }
 
+function departmentPickerColumns(
+  t: (key: string, options?: Record<string, unknown>) => string,
+  hasFilter: boolean,
+): TableProps<DepartmentRecord>['columns'] {
+  return [
+    {
+      title: t('Department name'),
+      render: (_, record) => (hasFilter ? getDepartmentTitle(record) : record.title),
+    },
+  ];
+}
+
+function replaceDepartmentChildren(
+  records: DepartmentRecord[],
+  parentId: DepartmentPrimaryKey,
+  children: DepartmentRecord[],
+): DepartmentRecord[] {
+  return records.map((record) => {
+    if (record.id === parentId) {
+      const next = { ...record, isLeaf: children.length ? false : true };
+      if (children.length) {
+        next.children = children;
+      } else {
+        delete next.children;
+      }
+      return next;
+    }
+
+    if (record.children?.length) {
+      return {
+        ...record,
+        children: replaceDepartmentChildren(record.children, parentId, children),
+      };
+    }
+
+    return record;
+  });
+}
+
+function useDrawerTableLayoutStyles() {
+  const { token } = theme.useToken();
+  const contentClassName = useMemo(
+    () => css`
+      height: 100%;
+      flex: 1;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    `,
+    [],
+  );
+  const toolbarClassName = useMemo(
+    () => css`
+      flex: 0 0 auto;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: ${token.marginSM}px;
+      flex-wrap: wrap;
+      margin-bottom: ${token.marginSM}px;
+    `,
+    [token.marginSM],
+  );
+  const tableClassName = useMemo(
+    () => css`
+      flex: 1;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+
+      .ant-spin-nested-loading,
+      .ant-spin-container,
+      .ant-table,
+      .ant-table-container {
+        min-height: 0;
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+      }
+
+      .ant-table-content,
+      .ant-table-body {
+        flex: 1;
+        min-height: 0;
+      }
+
+      .ant-table-thead > tr > th {
+        white-space: nowrap;
+      }
+
+      .ant-pagination {
+        flex: 0 0 auto;
+      }
+    `,
+    [],
+  );
+
+  return { contentClassName, tableClassName, toolbarClassName };
+}
+
 function RoleDepartmentsPicker(props: { roleName: string; onSubmitted: () => Promise<void> | void }) {
   const ctx = useFlowContext();
+  const view = useFlowView();
   const t = useT();
-  const { token } = theme.useToken();
+  const { contentClassName, tableClassName, toolbarClassName } = useDrawerTableLayoutStyles();
   const [selectedKeys, setSelectedKeys] = useState<React.Key[]>([]);
   const [filter, setFilter] = useState<CompiledFilter>();
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(ROLE_DEPARTMENTS_PAGE_SIZE);
   const [submitting, setSubmitting] = useState(false);
+  const [departmentTreeData, setDepartmentTreeData] = useState<DepartmentRecord[]>([]);
+  const [expandedRowKeys, setExpandedRowKeys] = useState<React.Key[]>([]);
+  const loadingDepartmentKeysRef = useRef(new Set<React.Key>());
   const collection = ctx.dataSourceManager?.getDataSource('main')?.getCollection('departments');
+  const filtered = hasCompiledFilter(filter);
 
   const departmentsRequest = useRequest(
     async () => {
       const response = await ctx.api.resource('departments').list({
         appends: ['parent(recursively=true)', 'roles'],
-        filter,
+        filter: filtered ? filter : { parentId: null },
         page,
         pageSize,
         sort: ['sort'],
@@ -91,8 +202,37 @@ function RoleDepartmentsPicker(props: { roleName: string; onSubmitted: () => Pro
       return toTableData<DepartmentRecord>(response);
     },
     {
-      refreshDeps: [filter, page, pageSize],
+      refreshDeps: [filter, filtered, page, pageSize],
+      onSuccess: (result) => {
+        if (!filtered) {
+          setDepartmentTreeData(buildLazyDepartmentTreeNodes(result.data));
+          setExpandedRowKeys([]);
+        }
+      },
     },
+  );
+
+  const loadDepartmentChildren = useCallback(
+    async (record: DepartmentRecord) => {
+      if (record.isLeaf || record.children?.length || loadingDepartmentKeysRef.current.has(record.id)) {
+        return;
+      }
+
+      loadingDepartmentKeysRef.current.add(record.id);
+      try {
+        const response = await ctx.api.resource('departments').list({
+          appends: ['parent(recursively=true)', 'roles'],
+          filter: { parentId: record.id },
+          paginate: false,
+          sort: ['sort'],
+        });
+        const children = buildLazyDepartmentTreeNodes(toTableData<DepartmentRecord>(response).data);
+        setDepartmentTreeData((current) => replaceDepartmentChildren(current, record.id, children));
+      } finally {
+        loadingDepartmentKeysRef.current.delete(record.id);
+      }
+    },
+    [ctx.api],
   );
 
   const handleSubmit = useCallback(async () => {
@@ -107,35 +247,62 @@ function RoleDepartmentsPicker(props: { roleName: string; onSubmitted: () => Pro
       });
       ctx.message.success(t('Saved successfully'));
       await props.onSubmitted();
+      await view.close();
     } finally {
       setSubmitting(false);
     }
-  }, [ctx.api, ctx.message, props, selectedKeys, t]);
+  }, [ctx.api, ctx.message, props, selectedKeys, t, view]);
+
+  const handleCancel = useCallback(async () => {
+    await view.close();
+  }, [view]);
 
   return (
-    <DrawerFormLayout
-      title={t('Add departments')}
-      onSubmit={handleSubmit}
-      submitting={submitting}
-      submitText={t('Submit')}
-      cancelText={t('Cancel')}
+    <div
+      style={{ flex: 1, height: '100%', minHeight: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}
     >
-      <Space direction="vertical" style={{ width: '100%' }}>
-        <CollectionFilter
-          collection={collection}
-          t={t}
-          onChange={(nextFilter) => {
-            setSelectedKeys([]);
-            setPage(1);
-            setFilter(nextFilter);
-          }}
-        />
+      {view.Header ? <view.Header title={t('Add departments')} /> : null}
+      <div className={contentClassName}>
+        <div className={toolbarClassName}>
+          <Space wrap>
+            <CollectionFilter
+              collection={collection}
+              t={t}
+              onChange={(nextFilter) => {
+                setSelectedKeys([]);
+                setExpandedRowKeys([]);
+                setPage(1);
+                setFilter(nextFilter);
+              }}
+            />
+          </Space>
+          <Space wrap>
+            <Button icon={<ReloadOutlined />} onClick={() => departmentsRequest.refresh()}>
+              {t('Refresh')}
+            </Button>
+          </Space>
+        </div>
         <Table<DepartmentRecord>
           rowKey="id"
           showIndex={false}
           loading={departmentsRequest.loading}
-          dataSource={departmentsRequest.data?.data || []}
-          columns={departmentColumns(t)}
+          dataSource={filtered ? departmentsRequest.data?.data || [] : departmentTreeData}
+          columns={departmentPickerColumns(t, filtered)}
+          expandable={
+            filtered
+              ? undefined
+              : {
+                  defaultExpandAllRows: false,
+                  expandedRowKeys,
+                  rowExpandable: (record) => record.isLeaf === false || Boolean(record.children?.length),
+                  onExpand: (expanded, record) => {
+                    if (expanded) {
+                      loadDepartmentChildren(record);
+                    }
+                  },
+                  onExpandedRowsChange: (keys) => setExpandedRowKeys([...keys]),
+                }
+          }
           pagination={{
             current: departmentsRequest.data?.page ?? page,
             pageSize: departmentsRequest.data?.pageSize ?? pageSize,
@@ -157,10 +324,21 @@ function RoleDepartmentsPicker(props: { roleName: string; onSubmitted: () => Pro
           locale={{
             emptyText: <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} />,
           }}
-          style={{ marginTop: token.marginSM }}
+          scroll={{ x: 'max-content', y: '100%' }}
+          className={tableClassName}
         />
-      </Space>
-    </DrawerFormLayout>
+      </div>
+      {view.Footer ? (
+        <view.Footer>
+          <Space>
+            <Button onClick={handleCancel}>{t('Cancel')}</Button>
+            <Button type="primary" loading={submitting} disabled={!selectedKeys.length} onClick={handleSubmit}>
+              {t('Submit')}
+            </Button>
+          </Space>
+        </view.Footer>
+      ) : null}
+    </div>
   );
 }
 
@@ -260,7 +438,14 @@ export default function RoleDepartmentsManager(props: RoleTabProps) {
 
     ctx.viewer.drawer({
       closable: true,
-      width: '70%',
+      width: ROLE_DEPARTMENTS_DRAWER_WIDTH,
+      styles: {
+        body: {
+          display: 'flex',
+          flexDirection: 'column',
+          overflow: 'hidden',
+        },
+      },
       content: () => <RoleDepartmentsPicker roleName={role.name} onSubmitted={refresh} />,
     });
   }, [ctx.viewer, refresh, role]);

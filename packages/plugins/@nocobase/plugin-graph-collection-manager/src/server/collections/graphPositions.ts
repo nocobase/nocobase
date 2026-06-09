@@ -12,6 +12,7 @@ import { defineCollection } from '@nocobase/database';
 export default defineCollection({
   dumpRules: 'required',
   name: 'graphPositions',
+  dataCategory: 'system',
   migrationRules: ['overwrite', 'schema-only'],
   shared: true,
   fields: [

@@ -16,6 +16,7 @@ export default defineCollection({
   migrationRules: ['schema-only', 'overwrite'],
   shared: true,
   name: 'userDataSyncRecords',
+  dataCategory: 'business',
   createdAt: true,
   updatedAt: true,
   logging: true,

@@ -24,27 +24,28 @@ function mockT(input: string) {
 }
 
 describe('enumOptions utils', () => {
-  it('enumToOptions: converts primitive enum and translates labels', () => {
+  it('enumToOptions: converts primitive enum and translates explicit template labels', () => {
     const uiEnum = ['{{t("Yes")}}', '{{t("No")}}'];
-    const options = enumToOptions(uiEnum as any, mockT)!;
-    expect(options).toHaveLength(2);
-    expect(options[0]).toEqual({ label: '是', value: '{{t("Yes")}}' });
-    expect(options[1]).toEqual({ label: '否', value: '{{t("No")}}' });
+    const options = enumToOptions(uiEnum as any, mockT);
+    expect(options).toEqual([
+      { label: '是', value: '{{t("Yes")}}' },
+      { label: '否', value: '{{t("No")}}' },
+    ]);
   });
 
-  it('enumToOptions: keeps object value and translates object label', () => {
+  it('enumToOptions: keeps object value and translates explicit template object label', () => {
     const uiEnum = [
       { label: '{{t("Yes")}}', value: true },
       { label: '{{t("No")}}', value: false },
     ];
-    const options = enumToOptions(uiEnum as any, mockT)!;
+    const options = enumToOptions(uiEnum as any, mockT);
     expect(options).toEqual([
       { label: '是', value: true },
       { label: '否', value: false },
     ]);
   });
 
-  it('translateOptions: maps given options labels through t()', () => {
+  it('translateOptions: maps only explicit template labels through t()', () => {
     const options = [
       { label: '{{t("Draft")}}', value: 'draft' },
       { label: 'No', value: false },
@@ -52,7 +53,7 @@ describe('enumOptions utils', () => {
     const out = translateOptions(options as any, mockT);
     expect(out).toEqual([
       { label: '草稿', value: 'draft' },
-      { label: '否', value: false },
+      { label: 'No', value: false },
     ]);
   });
 
