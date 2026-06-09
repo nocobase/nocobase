@@ -244,6 +244,35 @@ function removeNestedRootRoutes(routes: unknown) {
   });
 }
 
+async function includeDescendantRouteIds(ctx: ResourcerContext, routeIds: Set<string>) {
+  let pendingParentIds = new Set(routeIds);
+
+  while (pendingParentIds.size > 0) {
+    const childRoutes = await ctx.db.getRepository('desktopRoutes').find({
+      fields: ['id', 'parentId'],
+      filter: {
+        parentId: Array.from(pendingParentIds),
+      },
+    });
+    pendingParentIds = new Set<string>();
+
+    for (const route of childRoutes) {
+      const routeId = route.get('id');
+      if (routeId === null || routeId === undefined) {
+        continue;
+      }
+
+      const normalizedRouteId = String(routeId);
+      if (routeIds.has(normalizedRouteId)) {
+        continue;
+      }
+
+      routeIds.add(normalizedRouteId);
+      pendingParentIds.add(normalizedRouteId);
+    }
+  }
+}
+
 async function addDesktopRouteCreateLayout(ctx: ResourcerContext, next: () => Promise<void>) {
   const layoutUid = getRequestedLayoutUid(ctx.action?.params.layout);
   const uiLayout = await ctx.db.getRepository('uiLayouts').findOne({
@@ -271,45 +300,20 @@ function getCurrentRoles(ctx: ResourcerContext) {
   return currentRoles.filter((role): role is string => typeof role === 'string');
 }
 
-async function getAccessibleDesktopRouteIds(ctx: ResourcerContext) {
-  const currentRoles = getCurrentRoles(ctx);
-  if (currentRoles.includes('root')) {
-    return;
-  }
-
-  const roles = await ctx.db.getRepository('roles').find({
-    filterByTk: currentRoles,
-    appends: ['desktopRoutes'],
-  });
-  const routeIds = new Set<string>();
-
-  for (const role of roles) {
-    const routes = role.get('desktopRoutes');
-    if (Array.isArray(routes)) {
-      collectRouteIds(routes, routeIds);
-    }
-  }
-
-  return routeIds;
-}
-
 async function getLayoutAccessibleRouteIds(ctx: ResourcerContext, layoutUid: string) {
   const currentRoles = getCurrentRoles(ctx);
   if (currentRoles.includes('root')) {
     return;
   }
 
-  const [scopedRoutePermissions, legacyRouteIds] = await Promise.all([
-    ctx.db.getRepository('rolesUiLayoutDesktopRoutes').find({
-      fields: ['desktopRouteId'],
-      filter: {
-        roleName: currentRoles,
-        uiLayoutUid: layoutUid,
-      },
-    }),
-    getAccessibleDesktopRouteIds(ctx),
-  ]);
-  const routeIds = legacyRouteIds ?? new Set<string>();
+  const scopedRoutePermissions = await ctx.db.getRepository('rolesUiLayoutDesktopRoutes').find({
+    fields: ['desktopRouteId'],
+    filter: {
+      roleName: currentRoles,
+      uiLayoutUid: layoutUid,
+    },
+  });
+  const routeIds = new Set<string>();
 
   for (const permission of scopedRoutePermissions) {
     const routeId = permission.get('desktopRouteId');
@@ -318,6 +322,7 @@ async function getLayoutAccessibleRouteIds(ctx: ResourcerContext, layoutUid: str
     }
   }
 
+  await includeDescendantRouteIds(ctx, routeIds);
   return routeIds;
 }
 

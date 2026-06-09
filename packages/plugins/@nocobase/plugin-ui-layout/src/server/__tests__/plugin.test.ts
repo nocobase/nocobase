@@ -1947,6 +1947,102 @@ describe('plugin-ui-layout server', () => {
     expect(legacyRoleRoutesResponse.body.data.map((route) => route.title)).toContain('DATA-DENIED-LAYOUT-LEGACY-ROUTE');
   });
 
+  it('should require migrated layout-scoped route permissions for layout route access', async () => {
+    app = await createMockServer({
+      registerActions: true,
+      acl: true,
+      plugins: [
+        'error-handler',
+        'users',
+        'auth',
+        'client',
+        'field-sort',
+        'acl',
+        'ui-schema-storage',
+        'system-settings',
+        'data-source-main',
+        'data-source-manager',
+        'ui-layout',
+      ],
+    });
+
+    const adminLayout = await app.db.getRepository('uiLayouts').findOne({
+      filter: {
+        uid: DEFAULT_ADMIN_UI_LAYOUT.uid,
+      },
+    });
+    if (!adminLayout) {
+      throw new Error('Default AdminLayout ui layout should exist.');
+    }
+    const role = await app.db.getRepository('roles').create({
+      values: {
+        name: 'layout-scoped-required-member',
+      },
+    });
+    const adminRoute = await app.db.getRepository('desktopRoutes').create({
+      values: {
+        type: 'flowPage',
+        title: 'DATA-LAYOUT-SCOPED-REQUIRED',
+        schemaUid: 'layout-scoped-required',
+        hidden: false,
+        sort: 10,
+      },
+    });
+
+    await app.db.getRepository('desktopRoutes.uiLayouts', adminRoute.get('id')).set({
+      tk: [adminLayout.get('uid')],
+    });
+    await app.db.getRepository('rolesUiLayouts').create({
+      values: {
+        roleName: role.get('name'),
+        uiLayoutUid: adminLayout.get('uid'),
+      },
+    });
+
+    const rootUser = await app.db.getRepository('users').findOne({
+      filter: {
+        'roles.name': 'root',
+      },
+    });
+    const memberUser = await app.db.getRepository('users').create({
+      values: {
+        roles: [role.get('name')],
+      },
+    });
+    const rootAgent = await app.agent().login(rootUser);
+    const memberAgent = await app.agent().login(memberUser);
+
+    await rootAgent.resource('roles.desktopRoutes', role.get('name')).add({
+      values: [adminRoute.get('id')],
+    });
+    await app.db.getRepository('rolesUiLayoutDesktopRoutes').destroy({
+      filter: {
+        roleName: role.get('name'),
+        uiLayoutUid: adminLayout.get('uid'),
+        desktopRouteId: adminRoute.get('id'),
+      },
+    });
+
+    const [routeListResponse, routeGetResponse, legacyRoleRoutesResponse] = await Promise.all([
+      memberAgent.get('/desktopRoutes:listAccessible').query({
+        layout: DEFAULT_ADMIN_UI_LAYOUT.uid,
+      }),
+      memberAgent.get('/desktopRoutes:getAccessible').query({
+        filterByTk: adminRoute.get('id'),
+        layout: DEFAULT_ADMIN_UI_LAYOUT.uid,
+      }),
+      rootAgent.resource('roles.desktopRoutes', role.get('name')).list({
+        paginate: false,
+      }),
+    ]);
+
+    expect(routeListResponse.status).toBe(200);
+    expect([200, 204]).toContain(routeGetResponse.status);
+    expect(routeListResponse.body.data).toEqual([]);
+    expect(routeGetResponse.body.data ?? null).toBeNull();
+    expect(legacyRoleRoutesResponse.body.data.map((route) => route.title)).toContain('DATA-LAYOUT-SCOPED-REQUIRED');
+  });
+
   it('should keep shared route permissions independent per layout', async () => {
     app = await createMockServer({
       registerActions: true,
