@@ -288,6 +288,47 @@ describe('TypedVariableInput - injected metaTree', () => {
       expect(handleChange).toHaveBeenCalledWith('{{$jobsMapByNodeKey.n1}}');
     });
   });
+
+  it('preloads a saved variable label across a lazy level (deep label not dropped on mount)', async () => {
+    const ctx = createBareContext();
+    // The query-node case: a saved reference `$jobsMapByNodeKey.n1.role` points
+    // below `n1`, whose children are a lazy thunk (relation not yet expanded). On
+    // mount the tag must show the full path "Query / Role", not stop at "Query" —
+    // the component walks the saved path resolving each lazy level. (Regression:
+    // reopening a saved condition showed only "节点数据 / 查询数据" and dropped
+    // "角色标识".)
+    const loadRoleFields = vi.fn(async () => [
+      { name: 'role', title: 'Role', type: 'string', paths: ['$jobsMapByNodeKey', 'n1', 'role'] },
+    ]);
+    const metaTree: MetaTreeNode[] = [
+      {
+        name: '$jobsMapByNodeKey',
+        title: 'Node result',
+        type: 'object',
+        paths: ['$jobsMapByNodeKey'],
+        children: [
+          {
+            name: 'n1',
+            title: 'Query',
+            type: 'object',
+            paths: ['$jobsMapByNodeKey', 'n1'],
+            children: loadRoleFields,
+          },
+        ],
+      },
+    ];
+    renderWithCtx(
+      ctx,
+      <TypedVariableInput value="{{$jobsMapByNodeKey.n1.role}}" metaTree={metaTree} onChange={() => undefined} />,
+    );
+    const tag = screen.getByRole('button', { name: 'variable-tag' });
+    // Preload resolves the lazy level so the deep label appears without expanding.
+    await waitFor(() => {
+      expect(loadRoleFields).toHaveBeenCalled();
+      expect(tag.textContent).toContain('Role');
+    });
+    expect(tag.textContent).toContain('Query');
+  });
 });
 
 describe('TypedVariableInput - editor onChange propagation', () => {

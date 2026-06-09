@@ -533,10 +533,56 @@ export function TypedVariableInput(props: TypedVariableInputProps) {
   const isVariable = detected.mode === 'variable';
   const isNull = detected.mode === 'null';
 
-  const variableLabels = useMemo(
-    () => (isVariable && detected.variablePath ? resolveVariableLabels(detected.variablePath, metaTree) : []),
-    [isVariable, detected.variablePath, metaTree],
-  );
+  const variableLabels = useMemo(() => {
+    // `updateFlag` is read so this recomputes after the preload effect below
+    // resolves a lazy level in the tree (same pattern as `switcherOptions`).
+    void updateFlag;
+    return isVariable && detected.variablePath ? resolveVariableLabels(detected.variablePath, metaTree) : [];
+  }, [isVariable, detected.variablePath, metaTree, updateFlag]);
+
+  // Preload a saved variable's label path across lazy levels. `resolveVariableLabels`
+  // can only read already-loaded `children`; when a saved reference points below a
+  // node whose children are still a lazy thunk (e.g. a relation field that hasn't
+  // been expanded), the deep segments render as raw names. Walk the saved path on
+  // mount / value change, resolving each lazy level in place (then bump `updateFlag`
+  // so the labels recompute). Mirrors v1 `Variable.Input`'s preload effect.
+  useEffect(() => {
+    if (!isVariable || !detected.variablePath?.length) {
+      return;
+    }
+    let cancelled = false;
+    const run = async () => {
+      let nodes: MetaTreeNode[] | undefined = metaTree;
+      let didLoad = false;
+      for (const segment of detected.variablePath as string[]) {
+        if (!nodes) {
+          break;
+        }
+        const matched: MetaTreeNode | undefined = nodes.find((node) => node.name === segment);
+        if (!matched) {
+          break;
+        }
+        if (typeof matched.children === 'function') {
+          const resolved = await loadMetaTreeChildren(matched);
+          if (cancelled) {
+            return;
+          }
+          matched.children = resolved;
+          didLoad = true;
+        }
+        nodes = Array.isArray(matched.children) ? matched.children : undefined;
+      }
+      if (didLoad && !cancelled) {
+        triggerUpdate();
+      }
+    };
+    run();
+    return () => {
+      cancelled = true;
+    };
+    // `metaTree` identity is stable per structural change (see consumers); re-run
+    // when the saved path or the tree changes.
+  }, [isVariable, detected.variablePath, metaTree, triggerUpdate]);
 
   // JSON parse error from the object editor, rendered on its own row below the
   // input (not squeezed into the compact row). Cleared whenever the value is no
