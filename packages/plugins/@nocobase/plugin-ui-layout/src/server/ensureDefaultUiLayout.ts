@@ -19,7 +19,18 @@ type UiLayoutRecord = {
   title?: string;
   layoutType?: string;
   routeName?: string;
+  routePath?: string;
+  authCheck?: boolean;
+  enabled?: boolean;
 };
+
+const DEFAULT_ADMIN_UI_LAYOUT_PROTECTED_FIELDS = [
+  'layoutType',
+  'routeName',
+  'routePath',
+  'authCheck',
+  'enabled',
+] as const;
 
 function getFallbackTitle(record: UiLayoutRecord) {
   if (record.uid === DEFAULT_ADMIN_UI_LAYOUT.uid) {
@@ -74,9 +85,13 @@ export async function ensureDefaultUiLayout(db: Database) {
       return;
     }
 
-    const values: Partial<Pick<UiLayoutRecord, 'layoutType' | 'title'>> = {};
-    if (!existed.get('layoutType')) {
-      values.layoutType = DEFAULT_ADMIN_UI_LAYOUT.layoutType;
+    const values: Partial<
+      Pick<UiLayoutRecord, 'layoutType' | 'routeName' | 'routePath' | 'authCheck' | 'enabled' | 'title'>
+    > = {};
+    for (const field of DEFAULT_ADMIN_UI_LAYOUT_PROTECTED_FIELDS) {
+      if (existed.get(field) !== DEFAULT_ADMIN_UI_LAYOUT[field]) {
+        values[field] = DEFAULT_ADMIN_UI_LAYOUT[field];
+      }
     }
     if (shouldBackfillTitle(existed.get('title'))) {
       values.title = DEFAULT_ADMIN_UI_LAYOUT.title;

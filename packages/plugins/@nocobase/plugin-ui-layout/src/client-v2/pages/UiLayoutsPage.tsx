@@ -249,6 +249,10 @@ export function isDefaultAdminUiLayout(record: Pick<UiLayoutRecord, 'uid'>) {
   return record.uid === DEFAULT_ADMIN_UI_LAYOUT.uid;
 }
 
+function isDefaultAdminUiLayoutEdit(record?: Pick<UiLayoutRecord, 'uid'>) {
+  return !!record && isDefaultAdminUiLayout(record);
+}
+
 const UiLayoutsPage: React.FC = () => {
   const t = useT();
   const ctx = useFlowContext();
@@ -384,6 +388,7 @@ const UiLayoutsPage: React.FC = () => {
           <Switch
             aria-label={t('Enabled')}
             checked={value}
+            disabled={isDefaultAdminUiLayout(record)}
             loading={updatingEnabledRowKeys.includes(record.id)}
             onChange={async (checked) => {
               await handleToggleEnabled(record, checked);
@@ -471,6 +476,7 @@ function UiLayoutForm(props: { layoutType: UiLayoutType; record?: UiLayoutRecord
   const [form] = Form.useForm<UiLayoutFormDraftValues>();
   const [submitting, setSubmitting] = useState(false);
   const resource = useMemo(() => ctx.api.resource('uiLayouts') as UiLayoutResource, [ctx.api]);
+  const defaultAdminLayoutEdit = isDefaultAdminUiLayoutEdit(record);
 
   const initialValues = useMemo<Partial<UiLayoutFormDraftValues>>(
     () =>
@@ -556,7 +562,7 @@ function UiLayoutForm(props: { layoutType: UiLayoutType; record?: UiLayoutRecord
             },
           ]}
         >
-          <Input />
+          <Input disabled={defaultAdminLayoutEdit} />
         </Form.Item>
         <Form.Item
           name="authCheck"
@@ -564,7 +570,7 @@ function UiLayoutForm(props: { layoutType: UiLayoutType; record?: UiLayoutRecord
           valuePropName="checked"
           extra={t('Require users to sign in before accessing this layout.')}
         >
-          <Switch />
+          <Switch disabled={defaultAdminLayoutEdit} />
         </Form.Item>
         <Form.Item
           name="enabled"
@@ -572,7 +578,7 @@ function UiLayoutForm(props: { layoutType: UiLayoutType; record?: UiLayoutRecord
           valuePropName="checked"
           extra={t('When disabled, this layout will not be registered or accessible.')}
         >
-          <Switch />
+          <Switch disabled={defaultAdminLayoutEdit} />
         </Form.Item>
       </Form>
     </DrawerFormLayout>

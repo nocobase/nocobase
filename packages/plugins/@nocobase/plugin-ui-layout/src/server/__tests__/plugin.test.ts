@@ -138,6 +138,11 @@ describe('plugin-ui-layout server', () => {
       filterByTk: adminLayout.get('id'),
       values: {
         title: 'Untitled',
+        layoutType: 'mobile',
+        routeName: 'broken-admin',
+        routePath: '/broken-admin',
+        authCheck: false,
+        enabled: false,
       },
     });
 
@@ -151,6 +156,11 @@ describe('plugin-ui-layout server', () => {
     });
 
     expect(updatedAdminLayout?.get('title')).toBe(DEFAULT_ADMIN_UI_LAYOUT.title);
+    expect(updatedAdminLayout?.get('layoutType')).toBe(DEFAULT_ADMIN_UI_LAYOUT.layoutType);
+    expect(updatedAdminLayout?.get('routeName')).toBe(DEFAULT_ADMIN_UI_LAYOUT.routeName);
+    expect(updatedAdminLayout?.get('routePath')).toBe(DEFAULT_ADMIN_UI_LAYOUT.routePath);
+    expect(updatedAdminLayout?.get('authCheck')).toBe(DEFAULT_ADMIN_UI_LAYOUT.authCheck);
+    expect(updatedAdminLayout?.get('enabled')).toBe(DEFAULT_ADMIN_UI_LAYOUT.enabled);
     expect(updatedMobileLayout?.get('title')).toBe('Mobile layout');
   });
 
@@ -1044,6 +1054,57 @@ describe('plugin-ui-layout server', () => {
     expect(response.status).toBe(400);
     expect(updatedLayout?.get('uid')).toBe('immutable-uid-layout');
     expect(updatedLayout?.get('title')).toBe('Immutable UID layout');
+  });
+
+  it('should protect the default AdminLayout from unsafe management API changes', async () => {
+    app = await createUiLayoutMockServer();
+
+    await app.db.getRepository('roles').create({
+      values: {
+        name: 'default-ui-layout-manager',
+        snippets: ['pm.ui-layout'],
+      },
+    });
+    const user = await app.db.getRepository('users').create({
+      values: {
+        roles: ['default-ui-layout-manager'],
+      },
+    });
+    const agent = await app.agent().login(user);
+    const defaultLayout = await app.db.getRepository('uiLayouts').findOne({
+      filter: {
+        uid: DEFAULT_ADMIN_UI_LAYOUT.uid,
+      },
+    });
+    if (!defaultLayout) {
+      throw new Error('Default AdminLayout ui layout should exist.');
+    }
+
+    const updateResponse = await agent.resource('uiLayouts').update({
+      filterByTk: defaultLayout.get('id'),
+      values: {
+        ...DEFAULT_ADMIN_UI_LAYOUT,
+        title: 'Broken desktop layout',
+        routePath: '/broken-admin',
+        enabled: false,
+      },
+    });
+    const deleteResponse = await agent.resource('uiLayouts').destroy({
+      filterByTk: defaultLayout.get('id'),
+    });
+    const batchDeleteResponse = await agent.resource('uiLayouts').destroy({
+      filterByTk: [defaultLayout.get('id')],
+    });
+    const updatedDefaultLayout = await app.db.getRepository('uiLayouts').findOne({
+      filterByTk: defaultLayout.get('id'),
+    });
+
+    expect(updateResponse.status).toBe(400);
+    expect(deleteResponse.status).toBe(400);
+    expect(batchDeleteResponse.status).toBe(400);
+    expect(updatedDefaultLayout?.get('title')).toBe(DEFAULT_ADMIN_UI_LAYOUT.title);
+    expect(updatedDefaultLayout?.get('routePath')).toBe(DEFAULT_ADMIN_UI_LAYOUT.routePath);
+    expect(updatedDefaultLayout?.get('enabled')).toBe(DEFAULT_ADMIN_UI_LAYOUT.enabled);
   });
 
   it('should keep role layout permissions behind role configuration snippets', async () => {

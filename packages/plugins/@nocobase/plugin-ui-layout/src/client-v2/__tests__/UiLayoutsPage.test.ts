@@ -286,7 +286,9 @@ describe('plugin-ui-layout settings page', () => {
 
     expect(desktopRow).not.toBeNull();
     expect(mobileRow).not.toBeNull();
-    expect(within(desktopRow as HTMLTableRowElement).getByRole('switch', { name: 'Enabled' })).toBeChecked();
+    const defaultEnabledSwitch = within(desktopRow as HTMLTableRowElement).getByRole('switch', { name: 'Enabled' });
+    expect(defaultEnabledSwitch).toBeChecked();
+    expect(defaultEnabledSwitch).toBeDisabled();
     expect(within(mobileRow as HTMLTableRowElement).getByRole('link', { name: /View/ })).toHaveAttribute(
       'href',
       '/mobile',
@@ -294,6 +296,27 @@ describe('plugin-ui-layout settings page', () => {
 
     const defaultDelete = within(desktopRow as HTMLTableRowElement).getByRole('button', { name: /Delete/ });
     expect(defaultDelete).toBeDisabled();
+
+    const defaultEditButton = within(desktopRow as HTMLTableRowElement).getByRole('button', { name: /Edit/ });
+    await user.click(defaultEditButton);
+
+    await waitFor(() => {
+      expect(drawer).toHaveBeenCalledWith(
+        expect.objectContaining({
+          closable: true,
+          content: expect.any(Function),
+        }),
+      );
+    });
+
+    const defaultDrawerContent = drawer.mock.calls[0][0].content();
+    const defaultDrawer = render(React.createElement(AntdApp, null, defaultDrawerContent));
+    expect(within(defaultDrawer.container).getByLabelText('UID')).toBeDisabled();
+    expect(within(defaultDrawer.container).getByLabelText('Access path')).toBeDisabled();
+    expect(within(defaultDrawer.container).getByLabelText('Auth check')).toBeDisabled();
+    expect(within(defaultDrawer.container).getByLabelText('Enabled')).toBeDisabled();
+    defaultDrawer.unmount();
+    drawer.mockClear();
 
     const editButton = within(mobileRow as HTMLTableRowElement).getByRole('button', { name: /Edit/ });
     editButton.focus();
@@ -311,9 +334,12 @@ describe('plugin-ui-layout settings page', () => {
     });
 
     const drawerContent = drawer.mock.calls[0][0].content();
-    render(React.createElement(AntdApp, null, drawerContent));
+    const mobileDrawer = render(React.createElement(AntdApp, null, drawerContent));
 
-    expect(screen.getByLabelText('UID')).toBeDisabled();
+    expect(within(mobileDrawer.container).getByLabelText('UID')).toBeDisabled();
+    expect(within(mobileDrawer.container).getByLabelText('Access path')).not.toBeDisabled();
+    expect(within(mobileDrawer.container).getByLabelText('Auth check')).not.toBeDisabled();
+    expect(within(mobileDrawer.container).getByLabelText('Enabled')).not.toBeDisabled();
   });
 });
 

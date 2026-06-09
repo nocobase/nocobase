@@ -22,6 +22,8 @@
   "Daily overview": "每日概览",
   "Data blocks": "数据区块",
   "Data reports": "数据报表",
+  "Default AdminLayout cannot be changed": "默认 AdminLayout 不能修改",
+  "Default AdminLayout cannot be deleted": "默认 AdminLayout 不能删除",
   "Delete": "删除",
   "Delete failed": "删除失败",
   "Delete UI layout": "删除 UI 布局",

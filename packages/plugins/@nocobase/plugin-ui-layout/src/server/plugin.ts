@@ -45,9 +45,25 @@ const UI_LAYOUT_MANAGEMENT_ACTIONS = [
 
 const ROLE_UI_LAYOUT_PERMISSION_ACTIONS = ['rolesUiLayouts:*', 'rolesUiLayoutDesktopRoutes:*'];
 
+const DEFAULT_ADMIN_UI_LAYOUT_PROTECTED_FIELDS = [
+  'uid',
+  'layoutType',
+  'routeName',
+  'routePath',
+  'authCheck',
+  'enabled',
+] as const;
+
 type DesktopRouteCreateValue = Record<string, unknown> & {
   children?: unknown;
   uiLayouts?: unknown;
+};
+
+type UiLayoutActionParams = {
+  filter?: Record<string, unknown>;
+  filterByTk?: unknown;
+  filterByTks?: unknown;
+  values?: unknown;
 };
 
 type DesktopRouteLike = Record<string, unknown> & {
@@ -94,6 +110,47 @@ function getDesktopRouteLayoutFilterByUid(layoutUid: string) {
 
 function isDesktopRouteCreateValue(value: unknown): value is DesktopRouteCreateValue {
   return !!value && typeof value === 'object' && !Array.isArray(value);
+}
+
+function isUiLayoutActionParams(value: unknown): value is UiLayoutActionParams {
+  return isDesktopRouteCreateValue(value);
+}
+
+function isDefaultAdminUiLayoutRecord(record: Model) {
+  return record.get('uid') === DEFAULT_ADMIN_UI_LAYOUT.uid;
+}
+
+function hasUnsafeDefaultAdminUiLayoutValues(values: unknown) {
+  if (!isDesktopRouteCreateValue(values)) {
+    return false;
+  }
+
+  return DEFAULT_ADMIN_UI_LAYOUT_PROTECTED_FIELDS.some(
+    (field) => Object.prototype.hasOwnProperty.call(values, field) && values[field] !== DEFAULT_ADMIN_UI_LAYOUT[field],
+  );
+}
+
+async function findUiLayoutActionTargets(ctx: ResourcerContext) {
+  const params = ctx.action?.params;
+  if (!isUiLayoutActionParams(params)) {
+    return [];
+  }
+
+  const repository = ctx.db.getRepository('uiLayouts');
+  const filterByTk = params.filterByTk ?? params.filterByTks;
+  if (filterByTk !== undefined && filterByTk !== null) {
+    return repository.find({
+      filterByTk,
+    });
+  }
+
+  if (params.filter && Object.keys(params.filter).length) {
+    return repository.find({
+      filter: params.filter,
+    });
+  }
+
+  return [];
 }
 
 function hasUiLayout(uiLayout: unknown, layoutUid: string) {
@@ -367,6 +424,31 @@ async function preventUiLayoutUidChange(ctx: ResourcerContext, next: () => Promi
   });
   if (record && record.get('uid') !== requestedUid) {
     ctx.throw(400, ctx.t('UID cannot be changed', { ns: NAMESPACE }));
+    return;
+  }
+
+  await next();
+}
+
+async function preventDefaultAdminUiLayoutUpdate(ctx: ResourcerContext, next: () => Promise<void>) {
+  if (!hasUnsafeDefaultAdminUiLayoutValues(ctx.action?.params.values)) {
+    await next();
+    return;
+  }
+
+  const targets = await findUiLayoutActionTargets(ctx);
+  if (targets.some(isDefaultAdminUiLayoutRecord)) {
+    ctx.throw(400, ctx.t('Default AdminLayout cannot be changed', { ns: NAMESPACE }));
+    return;
+  }
+
+  await next();
+}
+
+async function preventDefaultAdminUiLayoutDestroy(ctx: ResourcerContext, next: () => Promise<void>) {
+  const targets = await findUiLayoutActionTargets(ctx);
+  if (targets.some(isDefaultAdminUiLayoutRecord)) {
+    ctx.throw(400, ctx.t('Default AdminLayout cannot be deleted', { ns: NAMESPACE }));
     return;
   }
 
@@ -845,6 +927,8 @@ export class PluginUiLayoutServer extends Plugin {
       await next();
     });
     this.app.resourceManager.registerPreActionHandler('uiLayouts:update', preventUiLayoutUidChange);
+    this.app.resourceManager.registerPreActionHandler('uiLayouts:update', preventDefaultAdminUiLayoutUpdate);
+    this.app.resourceManager.registerPreActionHandler('uiLayouts:destroy', preventDefaultAdminUiLayoutDestroy);
     this.app.resourceManager.registerPreActionHandler('desktopRoutes:create', addDesktopRouteCreateLayout);
     this.app.resourceManager.registerPreActionHandler('desktopRoutes:listAccessible', addDesktopRouteLayoutFilter);
     this.app.resourceManager.registerPreActionHandler('desktopRoutes:getAccessible', addDesktopRouteGetLayoutFilter);
