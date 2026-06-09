@@ -11,6 +11,7 @@ import { createMockServer, type MockServer } from '@nocobase/test';
 import { vi } from 'vitest';
 import { DEFAULT_ADMIN_UI_LAYOUT } from '../../constants';
 import { ensureDefaultUiLayout } from '../ensureDefaultUiLayout';
+import AddRolesAllowNewUiLayoutMigration from '../migrations/20260609093000-add-roles-allow-new-ui-layout';
 import type { PluginUiLayoutServer } from '../plugin';
 
 const UI_LAYOUT_MANAGEMENT_ACTIONS = [
@@ -175,6 +176,43 @@ describe('plugin-ui-layout server', () => {
 
     const role = await app.db.getRepository('roles').findOne({
       filterByTk: 'layout-default-access-role',
+    });
+
+    expect(role?.get('allowNewUiLayout')).toBe(true);
+  });
+
+  it('should add the missing role-level default ui layout access column during migration', async () => {
+    app = await createUiLayoutMockServer();
+
+    const rolesCollection = app.db.getCollection('roles');
+    const field = rolesCollection.getField('allowNewUiLayout');
+    if (!field) {
+      throw new Error('roles.allowNewUiLayout field should exist.');
+    }
+    const tableNameWithSchema = rolesCollection.getTableNameWithSchema();
+    const columnName = field.columnName();
+    const queryInterface = app.db.sequelize.getQueryInterface();
+
+    await queryInterface.removeColumn(tableNameWithSchema, columnName);
+    let columns = await queryInterface.describeTable(tableNameWithSchema);
+    expect(columns[columnName]).toBeUndefined();
+
+    const migration = new AddRolesAllowNewUiLayoutMigration({ db: app.db, app } as never);
+    await migration.up();
+    await migration.up();
+
+    columns = await queryInterface.describeTable(tableNameWithSchema);
+    expect(columns[columnName]).toBeDefined();
+
+    await app.db.getRepository('roles').create({
+      values: {
+        name: 'layout-default-access-migration-role',
+        allowNewUiLayout: true,
+      },
+    });
+
+    const role = await app.db.getRepository('roles').findOne({
+      filterByTk: 'layout-default-access-migration-role',
     });
 
     expect(role?.get('allowNewUiLayout')).toBe(true);
