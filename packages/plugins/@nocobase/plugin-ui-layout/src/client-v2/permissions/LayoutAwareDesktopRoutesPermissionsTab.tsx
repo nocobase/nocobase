@@ -591,7 +591,12 @@ export default function LayoutAwareDesktopRoutesPermissionsTab(props: Permission
       {
         dataIndex: 'menuStats',
         title: t('Menu access'),
-        render: (_, item) => `${item.menuStats.selected} / ${item.menuStats.total}`,
+        render: (_, item) => (
+          <Space size={token.marginXXS}>
+            <span>{`${item.menuStats.selected} / ${item.menuStats.total}`}</span>
+            {!item.accessible && <Typography.Text type="secondary">{t('Inactive')}</Typography.Text>}
+          </Space>
+        ),
       },
       {
         dataIndex: 'configure',
@@ -607,7 +612,7 @@ export default function LayoutAwareDesktopRoutesPermissionsTab(props: Permission
         ),
       },
     ],
-    [configureLayout, t, toggleLayoutAccess],
+    [configureLayout, t, toggleLayoutAccess, token.marginXXS],
   );
 
   const routeColumns = useMemo<ColumnsType<RoutePermissionRecord>>(

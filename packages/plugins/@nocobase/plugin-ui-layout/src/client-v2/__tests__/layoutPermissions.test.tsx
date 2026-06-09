@@ -281,6 +281,7 @@ describe('plugin-ui-layout route permissions', () => {
     expect(screen.getByRole('switch', { name: 'Allow access to Mobile layout' })).not.toBeChecked();
     expect(screen.getByText('1 / 2')).toBeInTheDocument();
     expect(screen.getByText('0 / 1')).toBeInTheDocument();
+    expect(screen.getByText('Inactive')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Configure Desktop layout' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Configure Mobile layout' })).toBeInTheDocument();
     expect(resource.uiLayoutsList).toHaveBeenCalledWith(
