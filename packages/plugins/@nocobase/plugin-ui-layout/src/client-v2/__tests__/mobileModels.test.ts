@@ -2126,6 +2126,55 @@ describe('plugin-ui-layout mobile models', () => {
     }
   });
 
+  it('should not write mobile routes to the shared route cache after unmount', async () => {
+    const mobileRoutes: NocoBaseDesktopRoute[] = [
+      {
+        id: 2,
+        type: NocoBaseDesktopRouteType.flowPage,
+        title: 'Late mobile route',
+        schemaUid: 'late-mobile-route',
+        sort: 10,
+      },
+    ];
+    let resolveRoutes: ((response: { data: { data: NocoBaseDesktopRoute[] } }) => void) | undefined;
+    const api = {
+      request: vi.fn(
+        () =>
+          new Promise<{ data: { data: NocoBaseDesktopRoute[] } }>((resolve) => {
+            resolveRoutes = resolve;
+          }),
+      ),
+    };
+    const routeRepository: MobileRouteRepositoryForTest = {
+      listAccessible: vi.fn(() => []),
+      setRoutes: vi.fn(),
+    };
+
+    const { unmount } = renderMobileLayoutWithRouteRepository(routeRepository, { api });
+
+    await waitFor(() => {
+      expect(api.request).toHaveBeenCalledWith(
+        expect.objectContaining({
+          url: '/desktopRoutes:listAccessible',
+          params: expect.objectContaining({
+            layout: 'mobile-layout-model-render-test',
+          }),
+        }),
+      );
+    });
+
+    unmount();
+    await act(async () => {
+      resolveRoutes?.({
+        data: {
+          data: mobileRoutes,
+        },
+      });
+    });
+
+    expect(routeRepository.setRoutes).not.toHaveBeenCalled();
+  });
+
   it('should keep hidden mobile menu item models for design mode rendering', () => {
     const engine = new FlowEngine();
     engine.registerModels({

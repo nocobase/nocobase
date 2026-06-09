@@ -79,10 +79,14 @@ async function requestMobileLayoutAccessibleRoutes(
   });
   const routes = normalizeRoutes(response?.data?.data);
   const state = mobileLayoutRouteRepositoryStates.get(routeRepository);
+  const canWriteRoutes =
+    requestId === undefined
+      ? !state || state.layoutUid === layoutUid
+      : !!state && state.requestId === requestId && state.layoutUid === layoutUid;
 
-  if (!state || requestId === undefined || state.requestId === requestId) {
+  if (canWriteRoutes) {
     routeRepository.setRoutes(routes);
-    if (state?.layoutUid === layoutUid) {
+    if (state) {
       state.loadedLayoutUid = layoutUid;
     }
   }
