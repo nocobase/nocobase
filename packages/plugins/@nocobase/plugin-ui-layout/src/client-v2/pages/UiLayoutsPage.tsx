@@ -455,8 +455,8 @@ const UiLayoutsPage: React.FC = () => {
           >
             {t('Delete')}
           </Button>
-          <Dropdown menu={createLayoutMenu} trigger={['hover']}>
-            <Button type="primary" icon={<PlusOutlined />}>
+          <Dropdown menu={createLayoutMenu} trigger={['hover', 'click']}>
+            <Button type="primary" icon={<PlusOutlined />} aria-haspopup="menu">
               {t('Add UI layout')} <DownOutlined />
             </Button>
           </Dropdown>

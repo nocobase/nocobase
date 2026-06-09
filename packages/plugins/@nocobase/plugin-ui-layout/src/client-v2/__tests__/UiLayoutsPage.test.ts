@@ -300,6 +300,34 @@ describe('plugin-ui-layout settings page', () => {
     expect(await screen.findByText('Layout 21')).toBeInTheDocument();
   });
 
+  it('should open the create layout menu on click', async () => {
+    const user = userEvent.setup();
+    const request = vi.fn().mockResolvedValue({
+      data: {
+        data: [],
+      },
+    });
+    flowContext.current = {
+      api: {
+        request,
+        resource: vi.fn(() => makeResource()),
+      },
+      app: {},
+      viewer: {
+        drawer: vi.fn(),
+      },
+    };
+
+    render(React.createElement(AntdApp, null, React.createElement(UiLayoutsPage)));
+
+    const addButton = await screen.findByRole('button', { name: /Add UI layout/ });
+    expect(addButton).toHaveAttribute('aria-haspopup', 'menu');
+    await user.click(addButton);
+
+    expect(await screen.findByRole('menuitem', { name: 'Desktop layout' })).toBeInTheDocument();
+    expect(screen.getByRole('menuitem', { name: 'Mobile layout' })).toBeInTheDocument();
+  });
+
   it('should expose table controls and row actions to keyboard and assistive tech', async () => {
     const user = userEvent.setup();
     const request = vi.fn().mockResolvedValue({
