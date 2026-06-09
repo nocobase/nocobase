@@ -8,6 +8,8 @@
   "Allow access": "Allow access",
   "Allow access to {{layout}}": "Allow access to {{layout}}",
   "Access path": "Access path",
+  "Access path cannot be /": "Access path cannot be /",
+  "Access path cannot contain wildcard": "Access path cannot contain wildcard",
   "Access path must start with /": "Access path must start with /",
   "Are you sure you want to delete it?": "Are you sure you want to delete it?",
   "Are you sure you want to delete this item? This action cannot be undone.": "Are you sure you want to delete this item? This action cannot be undone.",

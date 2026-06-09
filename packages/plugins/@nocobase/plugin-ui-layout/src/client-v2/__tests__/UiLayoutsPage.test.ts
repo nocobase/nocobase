@@ -350,6 +350,9 @@ describe('plugin-ui-layout form values', () => {
     expect(isUiLayoutRoutePathFormatValid(' /mobile ')).toBe(true);
     expect(isUiLayoutRoutePathFormatValid('admin')).toBe(false);
     expect(isUiLayoutRoutePathFormatValid('/foo.bar')).toBe(false);
+    expect(isUiLayoutRoutePathFormatValid('/')).toBe(false);
+    expect(isUiLayoutRoutePathFormatValid('/*')).toBe(false);
+    expect(isUiLayoutRoutePathFormatValid('/mobile/*')).toBe(false);
   });
 
   it('should derive route name from the access path', () => {
@@ -391,6 +394,30 @@ describe('plugin-ui-layout form values', () => {
         enabled: true,
       }),
     ).toThrow('Route name cannot contain dots');
+  });
+
+  it('should reject unsupported access paths before submit', () => {
+    expect(() =>
+      completeUiLayoutFormValues({
+        title: 'Root layout',
+        uid: 'root-layout',
+        layoutType: 'desktop',
+        routePath: '/',
+        authCheck: true,
+        enabled: true,
+      }),
+    ).toThrow('Access path cannot be /');
+
+    expect(() =>
+      completeUiLayoutFormValues({
+        title: 'Wildcard layout',
+        uid: 'wildcard-layout',
+        layoutType: 'desktop',
+        routePath: '/mobile/*',
+        authCheck: true,
+        enabled: true,
+      }),
+    ).toThrow('Access path cannot contain wildcard');
   });
 });
 

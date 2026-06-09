@@ -113,6 +113,12 @@ function getUiLayoutRoutePathFormatError(routePath?: string) {
   if (!trimmed.startsWith('/')) {
     return 'Access path must start with /';
   }
+  if (trimmed.replace(/\/+$/, '') === '') {
+    return 'Access path cannot be /';
+  }
+  if (trimmed.includes('*')) {
+    return 'Access path cannot contain wildcard';
+  }
   if (!isUiLayoutRouteNameFormatValid(getRouteNameFromRoutePath(trimmed))) {
     return 'Route name cannot contain dots';
   }
@@ -125,10 +131,11 @@ export function isUiLayoutRoutePathFormatValid(routePath?: string) {
 
 export function completeUiLayoutFormValues(values: UiLayoutFormDraftValues): UiLayoutFormValues {
   const routePath = values.routePath.trim();
-  const routeName = getRouteNameFromRoutePath(routePath);
-  if (!isUiLayoutRouteNameFormatValid(routeName)) {
-    throw new Error('Route name cannot contain dots');
+  const routePathError = getUiLayoutRoutePathFormatError(routePath);
+  if (routePathError) {
+    throw new Error(routePathError);
   }
+  const routeName = getRouteNameFromRoutePath(routePath);
   const title = values.title.trim();
   return {
     ...values,
