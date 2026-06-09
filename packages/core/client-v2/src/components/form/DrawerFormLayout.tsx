@@ -64,7 +64,7 @@ export function DrawerFormLayout(props: DrawerFormLayoutProps) {
   }, [props, view]);
 
   return (
-    <div>
+    <div style={{ height: '100%', minHeight: 0, display: 'flex', flexDirection: 'column' }}>
       {view.Header ? <view.Header title={props.title} /> : null}
       {props.children}
       {view.Footer ? (
