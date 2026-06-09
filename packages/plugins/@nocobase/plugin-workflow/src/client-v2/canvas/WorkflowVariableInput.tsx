@@ -29,7 +29,7 @@ import { useWorkflowVariableOptions, type UseWorkflowVariableOptions } from './u
 const VARIABLE_REGEXP = /\{\{\s*([^{}]+?)\s*\}\}/g;
 
 const workflowConverters: VariableHybridInputConverters = {
-  formatPathToValue: (item: MetaTreeNode) => {
+  formatPathToValue: (item?: MetaTreeNode) => {
     const path = item?.paths ?? [];
     return path.length ? `{{${path.join('.')}}}` : '';
   },
