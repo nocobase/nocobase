@@ -20,13 +20,79 @@
  */
 
 import React, { Suspense, lazy, useMemo, useState } from 'react';
-import { App, Button, Form, Skeleton, Space, Tag, Tooltip } from 'antd';
-import { CaretRightOutlined } from '@ant-design/icons';
+import { App, Button, Form, Skeleton, Space, Tag, Tooltip, theme } from 'antd';
+import { css, cx } from '@emotion/css';
 import { DrawerFormLayout } from '@nocobase/client-v2';
 import { useFlowContext as useFlowEngineContext, useFlowView } from '@nocobase/flow-engine';
 import { useT } from '../locale';
 import { NodeContext, useWorkflowCanvasExecuted } from './contexts';
+import { TestRunButton } from '../components/TestRunButton';
 import type { Instruction } from './Instruction';
+
+/**
+ * The grey "node type" description region at the top of the config drawer body —
+ * v2 mirror of v1's `DrawerDescription` (`client/components/DrawerDescription.tsx`).
+ * Shows a `Node type: <icon tag>` definition row and, when the instruction has a
+ * `description`, a muted paragraph below it. Rendered only for nodes that carry
+ * a `description`.
+ */
+function NodeTypeDescription({
+  instruction,
+  t,
+}: {
+  instruction: Instruction;
+  t: (key: string, options?: Record<string, any>) => string;
+}) {
+  const { token } = theme.useToken();
+  if (!instruction.description) {
+    return null;
+  }
+  const containerClass = css`
+    margin-bottom: 1.5em;
+    padding: 1em;
+    background-color: ${token.colorFillAlter};
+
+    > *:last-child {
+      margin-bottom: 0;
+    }
+
+    dl {
+      display: flex;
+      align-items: baseline;
+      margin: 0;
+
+      dt {
+        color: ${token.colorText};
+        &:after {
+          content: ':';
+          margin-right: 0.5em;
+        }
+      }
+
+      dd {
+        margin: 0;
+      }
+    }
+
+    p {
+      color: ${token.colorTextDescription};
+      margin-top: 0.5em;
+    }
+  `;
+  return (
+    <div className={cx(containerClass)}>
+      <dl>
+        <dt>{t('Node type')}</dt>
+        <dd>
+          <Tag icon={instruction.icon} style={{ background: 'none' }}>
+            {t(instruction.title as string)}
+          </Tag>
+        </dd>
+      </dl>
+      <p>{t(instruction.description as string)}</p>
+    </div>
+  );
+}
 
 /**
  * Open the node config drawer for a node. Call from a card click handler.
@@ -123,18 +189,22 @@ function NodeConfigForm({
     <NodeContext.Provider value={data}>
       <DrawerFormLayout
         title={
-          <Space>
+          // `justify-content: space-between` pushes the node-key tag to the
+          // drawer's far right (mirrors v1's flex title), the native close X
+          // sitting just left of the title.
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
             <strong>{data.title ?? typeTitle}</strong>
             <Tooltip title={t('Variable key of node')}>
-              <Tag>
+              <Tag style={{ marginInlineEnd: 0 }}>
                 <code>{data.key}</code>
               </Tag>
             </Tooltip>
-          </Space>
+          </div>
         }
         footer={footer}
       >
         <Form form={form} layout="vertical" disabled={executed}>
+          {instruction ? <NodeTypeDescription instruction={instruction} t={t} /> : null}
           {Fieldset ? (
             <Suspense fallback={<Skeleton active paragraph={{ rows: 4 }} />}>
               <Fieldset />
@@ -147,48 +217,5 @@ function NodeConfigForm({
         </Form>
       </DrawerFormLayout>
     </NodeContext.Provider>
-  );
-}
-
-/** "Test run" action (doc — v1 `TestButton`). Runs the node with the current
- *  form config via `flow_nodes.test` and surfaces the result/log. */
-function TestRunButton({ data, form }: { data: any; form: any }) {
-  const ctx = useFlowEngineContext();
-  const t = useT();
-  const { message, modal } = App.useApp();
-  const [loading, setLoading] = useState(false);
-
-  const onTest = async () => {
-    setLoading(true);
-    try {
-      const values = form.getFieldsValue();
-      const {
-        data: { data: result },
-      } = await ctx.api.resource('flow_nodes').test({
-        values: { config: values.config ?? {}, type: data.type },
-      });
-      modal.info({
-        title: t('Test run'),
-        width: 640,
-        content: (
-          <pre style={{ maxHeight: '60vh', overflow: 'auto', whiteSpace: 'pre-wrap' }}>
-            {JSON.stringify(result?.result ?? result, null, 2)}
-            {result?.log ? `\n\n--- log ---\n${result.log}` : ''}
-          </pre>
-        ),
-      });
-    } catch (err) {
-      message.error((err as any)?.message ?? t('Failed to run'));
-      // eslint-disable-next-line no-console
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  return (
-    <Button icon={<CaretRightOutlined />} loading={loading} onClick={onTest}>
-      {t('Test run')}
-    </Button>
   );
 }

@@ -53,6 +53,9 @@ export type WorkflowVariableInputProps = {
   placeholder?: string;
   className?: string;
   style?: React.CSSProperties;
+  /** Validation status (red/amber border). Usually omitted — inside a
+   *  `Form.Item` the status is inherited automatically. */
+  status?: 'error' | 'warning';
   /** Variable-tree options forwarded to each upstream `useVariables` (types
    *  filter, appends, depth, fieldNames). */
   variableOptions?: UseWorkflowVariableOptions;

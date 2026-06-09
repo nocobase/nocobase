@@ -127,7 +127,16 @@ function isInteractiveClickTarget(target: EventTarget | null): boolean {
   return Boolean(target.closest('textarea, input, button, a, .ant-dropdown, .workflow-node-actions'));
 }
 
-function NodeCard({ data }: { data: any }) {
+/**
+ * The default node card — type tag + editable title + actions menu, wrapped in
+ * the canvas `nodeClass`/`nodeCardClass` chrome (drag mousedown, click-to-open
+ * config, copy/drag highlight). Exported and given a `children` slot so a node's
+ * `ComponentLoader` can reuse the exact card and append its own subtree after it
+ * (e.g. the condition node's Yes/No branches) — the v2 mirror of v1's
+ * `NodeDefaultView` (doc §9.5, ADR-0003). Assumes the type is registered; the
+ * unregistered placeholder is handled by `NodeCard`.
+ */
+export function NodeDefaultView({ data, children }: { data: any; children?: React.ReactNode }) {
   const { styles, cx } = useStyles();
   const t = useT();
   const flowEngine = useFlowEngine();
@@ -158,6 +167,49 @@ function NodeCard({ data }: { data: any }) {
     [data, dragContext],
   );
 
+  const typeTitle = t(instruction?.title as string);
+
+  return (
+    <div className={styles.nodeClass}>
+      <div
+        className={cx(styles.nodeCardClass, { active: isCopiedSelf || isDraggingSelf, dragging: isDraggingSelf })}
+        role="button"
+        aria-label={`${typeTitle}-${data.title ?? data.id}`}
+        onMouseDown={onCardMouseDown}
+        onClick={(ev) => {
+          // A drag just ended → swallow the click so it doesn't open the drawer.
+          if (dragContext?.consumeClick?.()) {
+            ev.preventDefault();
+            return;
+          }
+          if (!isInteractiveClickTarget(ev.target)) {
+            openConfig();
+          }
+        }}
+      >
+        <div className={styles.nodeHeaderClass}>
+          <div className={cx(styles.nodeMetaClass, 'workflow-node-meta')}>
+            <Tag icon={instruction?.icon}>{typeTitle}</Tag>
+            <span className="workflow-node-id">{data.id}</span>
+          </div>
+          <div className="workflow-node-actions">
+            <NodeActions data={data} />
+          </div>
+        </div>
+        <NodeTitle data={data} fallback={typeTitle} />
+      </div>
+      {children}
+    </div>
+  );
+}
+
+function NodeCard({ data }: { data: any }) {
+  const { styles, cx } = useStyles();
+  const t = useT();
+  const flowEngine = useFlowEngine();
+  const plugin = flowEngine.context.app.pm.get(PluginWorkflowClientV2) as PluginWorkflowClientV2;
+  const instruction = plugin?.getInstruction(data.type);
+
   const Rendered = useMemo(() => {
     if (instruction?.ComponentLoader) {
       return lazy(instruction.ComponentLoader);
@@ -184,10 +236,9 @@ function NodeCard({ data }: { data: any }) {
     );
   }
 
-  const typeTitle = t(instruction.title as string);
-
-  // Branch nodes self-render via ComponentLoader (it draws its own nested
-  // <Branch>); otherwise the default card.
+  // Branch nodes self-render via ComponentLoader (it draws its own card by
+  // wrapping `NodeDefaultView` and appending nested <Branch>); otherwise the
+  // default card.
   if (Rendered) {
     return (
       <Suspense fallback={<Skeleton.Button active block style={{ width: '16em', height: '4em' }} />}>
@@ -196,37 +247,7 @@ function NodeCard({ data }: { data: any }) {
     );
   }
 
-  return (
-    <div className={styles.nodeClass}>
-      <div
-        className={cx(styles.nodeCardClass, { active: isCopiedSelf || isDraggingSelf, dragging: isDraggingSelf })}
-        role="button"
-        aria-label={`${typeTitle}-${data.title ?? data.id}`}
-        onMouseDown={onCardMouseDown}
-        onClick={(ev) => {
-          // A drag just ended → swallow the click so it doesn't open the drawer.
-          if (dragContext?.consumeClick?.()) {
-            ev.preventDefault();
-            return;
-          }
-          if (!isInteractiveClickTarget(ev.target)) {
-            openConfig();
-          }
-        }}
-      >
-        <div className={styles.nodeHeaderClass}>
-          <div className={cx(styles.nodeMetaClass, 'workflow-node-meta')}>
-            <Tag icon={instruction.icon}>{typeTitle}</Tag>
-            <span className="workflow-node-id">{data.id}</span>
-          </div>
-          <div className="workflow-node-actions">
-            <NodeActions data={data} />
-          </div>
-        </div>
-        <NodeTitle data={data} fallback={typeTitle} />
-      </div>
-    </div>
-  );
+  return <NodeDefaultView data={data} />;
 }
 
 export function Node({ data }: { data: any }) {
