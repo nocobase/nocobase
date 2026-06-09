@@ -19,6 +19,7 @@ import {
   useAPIClient,
   useAttach,
   useCompile,
+  useDataSourceManager,
   usePlugin,
   useRecord,
   useResourceContext,
@@ -59,6 +60,7 @@ export const CollectionFields = () => {
   const location = useLocation();
   const plugin = usePlugin(PluginDatabaseConnectionsClient);
   const api = useAPIClient();
+  const dm = useDataSourceManager();
   const compile = useCompile();
   const service = useContext(ResourceActionContext);
   const collectionResource = useResourceContext();

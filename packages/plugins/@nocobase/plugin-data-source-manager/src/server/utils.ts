@@ -40,7 +40,8 @@ export const mapDataSourceWithCollection = (
   const dataSource = app.dataSourceManager.dataSources.get(dataSourceModel.get('key'));
   const dataSourceStatus = plugin.dataSourceStatus[dataSourceModel.get('key')];
   const publicOptions = dataSource?.publicOptions();
-  const db = dataSource?.collectionManager.db;
+  const collectionManager = dataSource?.collectionManager as { db?: { isDBInstance?: boolean } };
+  const db = collectionManager?.db;
   const isDBInstance = db?.isDBInstance === false ? false : !!db;
 
   const item: any = {
