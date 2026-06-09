@@ -9,9 +9,15 @@
 
 import { Plugin } from '@nocobase/server';
 import type { ResourcerContext } from '@nocobase/resourcer';
-import type { Database, Model, Transaction } from '@nocobase/database';
+import type { Database, Model } from '@nocobase/database';
 import { DEFAULT_ADMIN_UI_LAYOUT } from '../constants';
 import { ensureDefaultUiLayout } from './ensureDefaultUiLayout';
+import {
+  type DatabaseHookOptions,
+  removeLegacyRoleDesktopRoutePermissions,
+  syncExistingLegacyRoleDesktopRoutePermissions,
+  syncLegacyRoleDesktopRoutePermissions,
+} from './syncLegacyRoleLayoutPermissions';
 
 const EMPTY_DESKTOP_ROUTE_FILTER = {
   id: {
@@ -58,11 +64,6 @@ type DesktopRouteLayoutContext = {
   filter: Record<string, unknown>;
   layoutUid?: string;
   valid: boolean;
-};
-
-type DatabaseHookOptions = {
-  transaction?: Transaction;
-  where?: Record<string, unknown>;
 };
 
 function getRequestedLayoutUid(layout: unknown) {
@@ -600,10 +601,14 @@ async function grantDefaultAccessToNewUiLayout(db: Database, uiLayout: Model, op
     return;
   }
 
-  await db.getRepository('rolesUiLayouts').createMany({
-    records,
-    transaction: options?.transaction,
-  });
+  const repository = db.getRepository('rolesUiLayouts');
+  for (const values of records) {
+    await repository.firstOrCreate({
+      filterKeys: ['roleName', 'uiLayoutUid'],
+      values,
+      transaction: options?.transaction,
+    });
+  }
 }
 
 async function grantDefaultMenuAccessToNewDesktopRoute(
@@ -657,124 +662,19 @@ async function grantDefaultMenuAccessToNewDesktopRoute(
     return;
   }
 
-  await db.getRepository('rolesUiLayoutDesktopRoutes').createMany({
-    records: roleNames.flatMap((roleName) =>
-      uiLayoutUids.map((uiLayoutUid) => ({
-        roleName,
-        uiLayoutUid,
-        desktopRouteId,
-      })),
-    ),
-    transaction: options?.transaction,
-  });
-}
-
-async function getDesktopRouteLayoutUidMap(db: Database, desktopRouteIds: unknown[], options?: DatabaseHookOptions) {
-  const routeIds = Array.from(
-    new Set(
-      desktopRouteIds
-        .filter((desktopRouteId) => desktopRouteId !== null && desktopRouteId !== undefined)
-        .map((desktopRouteId) => String(desktopRouteId)),
-    ),
+  const repository = db.getRepository('rolesUiLayoutDesktopRoutes');
+  const records = roleNames.flatMap((roleName) =>
+    uiLayoutUids.map((uiLayoutUid) => ({
+      roleName,
+      uiLayoutUid,
+      desktopRouteId,
+    })),
   );
-  if (!routeIds.length) {
-    return new Map<string, string[]>();
-  }
 
-  const routes = await db.getRepository('desktopRoutes').find({
-    filter: {
-      id: routeIds,
-    },
-    appends: ['uiLayouts'],
-    transaction: options?.transaction,
-  });
-  const layoutUidsByRouteId = new Map<string, string[]>();
-
-  for (const route of routes) {
-    const routeId = route.get('id');
-    const uiLayouts = route.get('uiLayouts');
-    if (routeId === null || routeId === undefined || !Array.isArray(uiLayouts)) {
-      continue;
-    }
-
-    layoutUidsByRouteId.set(
-      String(routeId),
-      Array.from(
-        new Set(
-          uiLayouts
-            .map((uiLayout) => uiLayout.get('uid'))
-            .filter((uiLayoutUid): uiLayoutUid is string => typeof uiLayoutUid === 'string' && !!uiLayoutUid),
-        ),
-      ),
-    );
-  }
-
-  return layoutUidsByRouteId;
-}
-
-async function syncLegacyRoleDesktopRoutePermissions(
-  db: Database,
-  permissions: Model[],
-  options?: DatabaseHookOptions,
-) {
-  if (
-    !db.getCollection('desktopRoutes') ||
-    !db.getCollection('rolesDesktopRoutes') ||
-    !db.getCollection('rolesUiLayoutDesktopRoutes')
-  ) {
-    return;
-  }
-
-  const routeLayoutUidMap = await getDesktopRouteLayoutUidMap(
-    db,
-    permissions.map((permission) => permission.get('desktopRouteId')),
-    options,
-  );
-  const scopedPermissionsRepository = db.getRepository('rolesUiLayoutDesktopRoutes');
-
-  for (const permission of permissions) {
-    const roleName = permission.get('roleName');
-    const desktopRouteId = permission.get('desktopRouteId');
-    if (typeof roleName !== 'string' || desktopRouteId === null || desktopRouteId === undefined) {
-      continue;
-    }
-
-    const uiLayoutUids = routeLayoutUidMap.get(String(desktopRouteId)) ?? [];
-    for (const uiLayoutUid of uiLayoutUids) {
-      await scopedPermissionsRepository.firstOrCreate({
-        filterKeys: ['roleName', 'uiLayoutUid', 'desktopRouteId'],
-        values: {
-          roleName,
-          uiLayoutUid,
-          desktopRouteId,
-        },
-        transaction: options?.transaction,
-      });
-    }
-  }
-}
-
-async function removeLegacyRoleDesktopRoutePermissions(
-  db: Database,
-  permissions: Model[],
-  options?: DatabaseHookOptions,
-) {
-  if (!db.getCollection('rolesUiLayoutDesktopRoutes')) {
-    return;
-  }
-
-  for (const permission of permissions) {
-    const roleName = permission.get('roleName');
-    const desktopRouteId = permission.get('desktopRouteId');
-    if (typeof roleName !== 'string' || desktopRouteId === null || desktopRouteId === undefined) {
-      continue;
-    }
-
-    await db.getRepository('rolesUiLayoutDesktopRoutes').destroy({
-      filter: {
-        roleName,
-        desktopRouteId,
-      },
+  for (const values of records) {
+    await repository.firstOrCreate({
+      filterKeys: ['roleName', 'uiLayoutUid', 'desktopRouteId'],
+      values,
       transaction: options?.transaction,
     });
   }
@@ -830,10 +730,12 @@ export class PluginUiLayoutServer extends Plugin {
 
   async install() {
     await ensureDefaultUiLayout(this.db);
+    await syncExistingLegacyRoleDesktopRoutePermissions(this.db);
   }
 
   async afterEnable() {
     await ensureDefaultUiLayout(this.db);
+    await syncExistingLegacyRoleDesktopRoutePermissions(this.db);
   }
 
   async afterDisable() {}

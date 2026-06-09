@@ -453,6 +453,113 @@ describe('plugin-ui-layout server', () => {
     expect(await findScopedKeys()).toEqual([`${mobileLayout.get('uid')}:${mobileRoute.get('id')}`]);
   });
 
+  it('should initialize existing legacy route permissions into layout-scoped permissions idempotently', async () => {
+    app = await createUiLayoutMockServer();
+
+    const adminLayout = await app.db.getRepository('uiLayouts').findOne({
+      filter: {
+        uid: DEFAULT_ADMIN_UI_LAYOUT.uid,
+      },
+    });
+    if (!adminLayout) {
+      throw new Error('Default AdminLayout ui layout should exist.');
+    }
+    const mobileLayout = await app.db.getRepository('uiLayouts').create({
+      values: {
+        uid: 'legacy-init-mobile',
+        title: 'Legacy init mobile',
+        layoutType: 'mobile',
+        routeName: 'legacyInitMobile',
+        routePath: '/legacy-init-mobile',
+        authCheck: true,
+        enabled: true,
+      },
+    });
+    const role = await app.db.getRepository('roles').create({
+      values: {
+        name: 'legacy-init-role',
+        allowNewMenu: false,
+      },
+    });
+    const sharedRoute = await app.db.getRepository('desktopRoutes').create({
+      values: {
+        type: 'flowPage',
+        title: 'DATA-LEGACY-INIT-SHARED',
+        schemaUid: 'legacy-init-shared',
+      },
+    });
+    const unassignedRoute = await app.db.getRepository('desktopRoutes').create({
+      values: {
+        type: 'flowPage',
+        title: 'DATA-LEGACY-INIT-UNASSIGNED',
+        schemaUid: 'legacy-init-unassigned',
+      },
+    });
+    await app.db.getRepository('desktopRoutes.uiLayouts', sharedRoute.get('id')).set({
+      tk: [adminLayout.get('uid'), mobileLayout.get('uid')],
+    });
+
+    const rootUser = await app.db.getRepository('users').findOne({
+      filter: {
+        'roles.name': 'root',
+      },
+    });
+    const rootAgent = await app.agent().login(rootUser);
+    await rootAgent.resource('roles.desktopRoutes', role.get('name')).add({
+      values: [sharedRoute.get('id'), unassignedRoute.get('id')],
+    });
+    await app.db.getRepository('rolesUiLayouts').destroy({
+      filter: {
+        roleName: role.get('name'),
+      },
+    });
+    await app.db.getRepository('rolesUiLayoutDesktopRoutes').destroy({
+      filter: {
+        roleName: role.get('name'),
+      },
+    });
+
+    const plugin = app.pm.get('ui-layout') as PluginUiLayoutServer;
+    await plugin.afterEnable();
+    await plugin.afterEnable();
+
+    const layoutAccessRecords = await app.db.getRepository('rolesUiLayouts').find({
+      filter: {
+        roleName: role.get('name'),
+      },
+      sort: ['uiLayoutUid'],
+    });
+    const scopedRouteRecords = await app.db.getRepository('rolesUiLayoutDesktopRoutes').find({
+      filter: {
+        roleName: role.get('name'),
+      },
+      sort: ['uiLayoutUid', 'desktopRouteId'],
+    });
+    const legacyRouteRecords = await app.db.getRepository('rolesDesktopRoutes').find({
+      filter: {
+        roleName: role.get('name'),
+      },
+      sort: ['desktopRouteId'],
+    });
+
+    expect(layoutAccessRecords.map((record) => `${record.get('roleName')}:${record.get('uiLayoutUid')}`)).toEqual([
+      `${role.get('name')}:${DEFAULT_ADMIN_UI_LAYOUT.uid}`,
+    ]);
+    expect(
+      scopedRouteRecords.map(
+        (record) => `${record.get('roleName')}:${record.get('uiLayoutUid')}:${record.get('desktopRouteId')}`,
+      ),
+    ).toEqual([
+      `${role.get('name')}:${DEFAULT_ADMIN_UI_LAYOUT.uid}:${sharedRoute.get('id')}`,
+      `${role.get('name')}:${DEFAULT_ADMIN_UI_LAYOUT.uid}:${unassignedRoute.get('id')}`,
+      `${role.get('name')}:${mobileLayout.get('uid')}:${sharedRoute.get('id')}`,
+    ]);
+    expect(legacyRouteRecords.map((record) => record.get('desktopRouteId'))).toEqual([
+      sharedRoute.get('id'),
+      unassignedRoute.get('id'),
+    ]);
+  });
+
   it('should expose uiLayouts:listAccessible to logged-in users only', async () => {
     app = await createUiLayoutMockServer();
 
