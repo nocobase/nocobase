@@ -473,6 +473,37 @@ describe('plugin-ui-layout route permissions', () => {
     expect(resource.messageSuccess).toHaveBeenCalledWith('Saved successfully');
   });
 
+  it('should keep disabled layout menu permissions viewable without removing checked routes', async () => {
+    const resource = createDisabledLayoutAccessPermissionTabResources();
+    flowMocks.context = resource.context;
+
+    render(
+      <LayoutAwareDesktopRoutesPermissionsTab
+        activeKey="menu"
+        activeRole={{ name: 'layout-member', title: 'Layout member' }}
+        onRoleChange={vi.fn()}
+      />,
+    );
+
+    expect(await screen.findByRole('switch', { name: 'Allow access to Mobile layout' })).not.toBeChecked();
+
+    await selectLayout('Mobile layout');
+
+    const drawerLayoutAccess = await screen.findByRole('checkbox', { name: 'Allow access to this layout' });
+    const allowAllRoutes = screen.getByRole('checkbox', { name: 'Allow access' });
+    const mobileRouteCheckbox = await screen.findByRole('checkbox', { name: 'Allow access to Mobile route' });
+
+    expect(drawerLayoutAccess).not.toBeChecked();
+    expect(allowAllRoutes).toBeDisabled();
+    expect(mobileRouteCheckbox).toBeChecked();
+    expect(mobileRouteCheckbox).toBeDisabled();
+
+    expect(resource.scopedRouteCreate).not.toHaveBeenCalled();
+    expect(resource.scopedRouteDestroy).not.toHaveBeenCalled();
+    expect(resource.roleRoutesAdd).not.toHaveBeenCalled();
+    expect(resource.roleRoutesRemove).not.toHaveBeenCalled();
+  });
+
   it('should write drawer route changes through layout-scoped menu permissions', async () => {
     const resource = createCountingPermissionTabResources();
     const user = userEvent.setup();
@@ -895,7 +926,16 @@ function createConcurrentPermissionTabResources() {
   const rolesUiLayoutsResource = {
     list: vi.fn(async () => ({
       data: {
-        data: [],
+        data: [
+          {
+            roleName: 'layout-member',
+            uiLayoutUid: DEFAULT_ADMIN_UI_LAYOUT.uid,
+          },
+          {
+            roleName: 'layout-member',
+            uiLayoutUid: 'mobile-layout',
+          },
+        ],
       },
     })),
     create: vi.fn(async () => undefined),
@@ -963,6 +1003,132 @@ function createConcurrentPermissionTabResources() {
           }
           if (name === 'rolesUiLayoutDesktopRoutes') {
             return rolesUiLayoutDesktopRoutesResource;
+          }
+          if (name === 'roles') {
+            return {
+              update: vi.fn(),
+            };
+          }
+          throw new Error(`Unexpected resource: ${name}`);
+        }),
+      },
+      message: {
+        success: flowMessageSuccess,
+      },
+    },
+  };
+}
+
+function createDisabledLayoutAccessPermissionTabResources() {
+  const selectedRouteIdsByRoleAndLayout = new Map<string, Set<number>>([
+    [`layout-member:${DEFAULT_ADMIN_UI_LAYOUT.uid}`, new Set([1])],
+    ['layout-member:mobile-layout', new Set([2])],
+  ]);
+  const uiLayoutsList = vi.fn(async () => ({
+    data: {
+      data: [
+        {
+          uid: DEFAULT_ADMIN_UI_LAYOUT.uid,
+          title: 'Desktop layout',
+          layoutType: 'desktop',
+        },
+        {
+          uid: 'mobile-layout',
+          title: 'Mobile layout',
+          layoutType: 'mobile',
+        },
+      ],
+    },
+  }));
+  const desktopRoutesList = vi.fn(async (params?: Record<string, unknown>) => {
+    const layoutUid = getLayoutUidFromFilter(params?.filter as Record<string, unknown> | undefined);
+
+    return {
+      data: {
+        data:
+          layoutUid === 'mobile-layout'
+            ? [
+                {
+                  id: 2,
+                  title: 'Mobile route',
+                },
+              ]
+            : [
+                {
+                  id: 1,
+                  title: 'Admin route',
+                },
+              ],
+      },
+    };
+  });
+  const roleRoutesResource = {
+    list: vi.fn(async () => ({ data: { data: [] } })),
+    add: vi.fn(async () => undefined),
+    remove: vi.fn(async () => undefined),
+  };
+  const rolesUiLayoutsResource = {
+    list: vi.fn(async () => ({
+      data: {
+        data: [
+          {
+            roleName: 'layout-member',
+            uiLayoutUid: DEFAULT_ADMIN_UI_LAYOUT.uid,
+          },
+        ],
+      },
+    })),
+    create: vi.fn(async () => undefined),
+    destroy: vi.fn(async () => undefined),
+  };
+  const rolesUiLayoutDesktopRoutesList = vi.fn(async (params?: Record<string, unknown>) => {
+    const filter = (params?.filter as Record<string, unknown> | undefined) || {};
+    const roleName = typeof filter.roleName === 'string' ? filter.roleName : '';
+    const layoutUid = typeof filter.uiLayoutUid === 'string' ? filter.uiLayoutUid : DEFAULT_ADMIN_UI_LAYOUT.uid;
+    const selectedRouteIds = selectedRouteIdsByRoleAndLayout.get(`${roleName}:${layoutUid}`) ?? new Set<number>();
+
+    return {
+      data: {
+        data: Array.from(selectedRouteIds).map((desktopRouteId) => ({
+          desktopRouteId,
+        })),
+      },
+    };
+  });
+  const scopedRouteCreate = vi.fn(async () => undefined);
+  const scopedRouteDestroy = vi.fn(async () => undefined);
+  const flowMessageSuccess = vi.fn();
+
+  return {
+    roleRoutesAdd: roleRoutesResource.add,
+    roleRoutesRemove: roleRoutesResource.remove,
+    scopedRouteCreate,
+    scopedRouteDestroy,
+    context: {
+      api: {
+        resource: vi.fn((name: string) => {
+          if (name === 'uiLayouts') {
+            return {
+              list: uiLayoutsList,
+            };
+          }
+          if (name === 'desktopRoutes') {
+            return {
+              list: desktopRoutesList,
+            };
+          }
+          if (name === 'roles.desktopRoutes') {
+            return roleRoutesResource;
+          }
+          if (name === 'rolesUiLayouts') {
+            return rolesUiLayoutsResource;
+          }
+          if (name === 'rolesUiLayoutDesktopRoutes') {
+            return {
+              list: rolesUiLayoutDesktopRoutesList,
+              create: scopedRouteCreate,
+              destroy: scopedRouteDestroy,
+            };
           }
           if (name === 'roles') {
             return {
@@ -1056,12 +1222,28 @@ function createCountingPermissionTabResources() {
 
     params.values.forEach((id) => selectedRouteIds.delete(id));
   });
+  const layoutAccessByRole = new Map<string, string[]>([
+    ['layout-member', [DEFAULT_ADMIN_UI_LAYOUT.uid, 'mobile-layout']],
+    ['layout-auditor', [DEFAULT_ADMIN_UI_LAYOUT.uid, 'mobile-layout']],
+  ]);
   const rolesUiLayoutsResource = {
-    list: vi.fn(async () => ({
-      data: {
-        data: [],
-      },
-    })),
+    list: vi.fn(async (params?: Record<string, unknown>) => {
+      const filter = (params?.filter as Record<string, unknown> | undefined) || {};
+      const roleName = typeof filter.roleName === 'string' ? filter.roleName : '';
+      const requestedLayoutUids = Array.isArray(filter.uiLayoutUid) ? filter.uiLayoutUid : [];
+      const allowedLayoutUids = layoutAccessByRole.get(roleName) ?? [];
+
+      return {
+        data: {
+          data: allowedLayoutUids
+            .filter((uiLayoutUid) => requestedLayoutUids.includes(uiLayoutUid))
+            .map((uiLayoutUid) => ({
+              roleName,
+              uiLayoutUid,
+            })),
+        },
+      };
+    }),
     create: vi.fn(async () => undefined),
     destroy: vi.fn(async () => undefined),
   };

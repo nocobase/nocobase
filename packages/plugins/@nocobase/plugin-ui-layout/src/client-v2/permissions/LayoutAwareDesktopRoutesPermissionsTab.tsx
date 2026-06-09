@@ -390,6 +390,7 @@ export default function LayoutAwareDesktopRoutesPermissionsTab(props: Permission
       refreshDeps: [active, role?.name, layoutUidKey],
     },
   );
+  const activeLayoutAccessible = !!layoutAccessService.data?.has(activeLayoutUid);
 
   const layoutMenuStatsService = useRequest(
     async () => {
@@ -441,7 +442,7 @@ export default function LayoutAwareDesktopRoutesPermissionsTab(props: Permission
   );
 
   const applyPermissionChanges = useMemoizedFn(async (nextSelectedIds: number[]) => {
-    if (!role) {
+    if (!role || !activeLayoutAccessible) {
       return;
     }
     const changes = getLayoutScopedPermissionChanges({
@@ -614,7 +615,11 @@ export default function LayoutAwareDesktopRoutesPermissionsTab(props: Permission
       {
         dataIndex: 'accessible',
         title: (
-          <Checkbox checked={!!allIds.length && selectedIds.length === allIds.length} onChange={setAll}>
+          <Checkbox
+            checked={!!allIds.length && selectedIds.length === allIds.length}
+            disabled={!activeLayoutAccessible}
+            onChange={setAll}
+          >
             {t('Allow access')}
           </Checkbox>
         ),
@@ -624,13 +629,14 @@ export default function LayoutAwareDesktopRoutesPermissionsTab(props: Permission
             <Checkbox
               aria-label={t('Allow access to {{route}}', { route: routeTitle })}
               checked={selectedIds.includes(item.id)}
+              disabled={!activeLayoutAccessible}
               onChange={() => toggleItem(item)}
             />
           );
         },
       },
     ],
-    [allIds.length, selectedIds, setAll, t, toggleItem],
+    [activeLayoutAccessible, allIds.length, selectedIds, setAll, t, toggleItem],
   );
 
   if (!role) {
