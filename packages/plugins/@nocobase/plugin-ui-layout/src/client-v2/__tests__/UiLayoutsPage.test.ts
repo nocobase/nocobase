@@ -224,6 +224,7 @@ describe('plugin-ui-layout settings page', () => {
         url: 'uiLayouts:list',
         method: 'get',
         params: {
+          page: 1,
           pageSize: 20,
           sort: ['id'],
         },
@@ -236,6 +237,67 @@ describe('plugin-ui-layout settings page', () => {
         url: 'uiLayouts:listAccessible',
       }),
     );
+  });
+
+  it('should request the selected page when table pagination changes', async () => {
+    const user = userEvent.setup();
+    const request = vi
+      .fn()
+      .mockResolvedValueOnce({
+        data: {
+          data: Array.from({ length: 20 }, (_, index) => ({
+            ...uiLayoutRecord,
+            id: index + 1,
+            title: `Layout ${index + 1}`,
+            uid: `layout-${index + 1}`,
+          })),
+          meta: {
+            count: 21,
+            page: 1,
+            pageSize: 20,
+          },
+        },
+      })
+      .mockResolvedValueOnce({
+        data: {
+          data: [{ ...uiLayoutRecord, id: 21, title: 'Layout 21', uid: 'layout-21' }],
+          meta: {
+            count: 21,
+            page: 2,
+            pageSize: 20,
+          },
+        },
+      });
+
+    flowContext.current = {
+      api: {
+        request,
+        resource: vi.fn(() => makeResource()),
+      },
+      app: {},
+      viewer: {
+        drawer: vi.fn(),
+      },
+    };
+
+    render(React.createElement(AntdApp, null, React.createElement(UiLayoutsPage)));
+
+    expect(await screen.findByText('Layout 1')).toBeInTheDocument();
+    await user.click(screen.getByTitle('2'));
+
+    await waitFor(() => {
+      expect(request).toHaveBeenLastCalledWith({
+        url: 'uiLayouts:list',
+        method: 'get',
+        params: {
+          page: 2,
+          pageSize: 20,
+          sort: ['id'],
+        },
+        skipNotify: true,
+      });
+    });
+    expect(await screen.findByText('Layout 21')).toBeInTheDocument();
   });
 
   it('should expose table controls and row actions to keyboard and assistive tech', async () => {

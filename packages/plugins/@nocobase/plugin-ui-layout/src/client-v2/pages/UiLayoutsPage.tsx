@@ -269,11 +269,12 @@ const UiLayoutsPage: React.FC = () => {
   const [updatingEnabledRowKeys, setUpdatingEnabledRowKeys] = useState<UiLayoutPrimaryKey[]>([]);
   const resource = useMemo(() => ctx.api.resource('uiLayouts') as UiLayoutResource, [ctx.api]);
 
-  const listRequest = useRequest(async (): Promise<ListBody> => {
+  const listRequest = useRequest(async (page = 1): Promise<ListBody> => {
     const response = await ctx.api.request<ListBody>({
       url: 'uiLayouts:list',
       method: 'get',
       params: {
+        page,
         pageSize: 20,
         sort: ['id'],
       },
@@ -299,8 +300,15 @@ const UiLayoutsPage: React.FC = () => {
 
   const refreshList = useCallback(() => {
     setSelectedRowKeys([]);
-    listRequest.refresh();
-  }, [listRequest]);
+    listRequest.run(listResp?.meta?.page ?? 1);
+  }, [listRequest, listResp?.meta?.page]);
+
+  const handleTableChange = useCallback<NonNullable<TableProps<UiLayoutRecord>['onChange']>>(
+    (tablePagination) => {
+      listRequest.run(tablePagination.current ?? 1);
+    },
+    [listRequest],
+  );
 
   const openFormDrawer = useCallback(
     (options: { record?: UiLayoutRecord; layoutType?: UiLayoutType } = {}) => {
@@ -461,6 +469,7 @@ const UiLayoutsPage: React.FC = () => {
         columns={columns}
         pagination={pagination}
         rowSelection={rowSelection}
+        onChange={handleTableChange}
       />
     </Card>
   );
