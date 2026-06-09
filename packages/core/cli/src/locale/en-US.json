@@ -149,7 +149,7 @@
         "appEntryMissingInclude": "The editable app entry config at {{appConfigPath}} does not reference {{generatedConfigPath}}. Add the managed generated-config reference back into the editable app entry and rerun the command.",
         "nginxOutputUnsupported": "The nginx provider does not support `--output`. It writes `app.conf`, `public/index-v1.html`, `public/index-v2.html`, and `nocobase.conf` into `~/.nocobase/proxy/nginx/<env>/`.",
         "caddyOutputUnsupported": "The caddy provider does not support `--output`. It writes `app.caddy`, `generated.caddy`, `public/index-v1.html`, `public/index-v2.html`, and `nocobase.caddy` into `~/.nocobase/proxy/caddy/<env>/`.",
-        "nginxAppEntryMissingManagedBlock": "The editable nginx app entry config at {{appConfigPath}} does not contain the NocoBase managed block. Restore the managed block or delete the file and rerun `nb env proxy`."
+        "nginxAppEntryMissingManagedBlock": "The editable nginx app entry config at {{appConfigPath}} does not contain the NocoBase managed block. Restore the managed block or delete the file and rerun `nb proxy nginx generate`."
       }
     },
     "shared": {

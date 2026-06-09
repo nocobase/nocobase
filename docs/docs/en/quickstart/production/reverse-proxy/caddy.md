@@ -1,158 +1,289 @@
+---
+title: "Caddy"
+description: "Use nb proxy caddy to generate and manage Caddy reverse-proxy configuration for CLI-managed NocoBase envs."
+keywords: "NocoBase,nb proxy caddy,reverse proxy,Caddy,production"
+---
+
 # Caddy
 
-If you already have a domain and want to get HTTPS running quickly, Caddy is usually the easiest choice. Compared with maintaining Nginx certificate config yourself, Caddy is more like the shortcut path for getting the entry layer online first.
+If you already have a domain and want to get HTTPS running quickly, `nb proxy caddy` is usually the simplest entry path.
 
-The default recommendation is to run `nb env proxy caddy` directly.
+Compared with maintaining certificate configuration in Nginx yourself, Caddy is more like the default shortcut for getting the entry layer online quickly.
 
-## When Caddy is usually the better fit
+## When Caddy is the better fit
 
-These cases usually favor Caddy first:
+In practice, Caddy is usually the better choice when:
 
-- You already have a domain and want HTTPS quickly
-- You do not want to maintain too many certificate and TLS details yourself
-- You only need a simple and stable entry layer
+- you already have a domain and want to get HTTPS online quickly
+- you do not want to manage many certificate and TLS details yourself
+- you mainly want a simple and stable entry layer
 
-If you already use Nginx across the server to manage many sites, or you still need heavier caching, access control, and custom rules, [Nginx](./nginx.md) is usually the better fit.
+If you already use Nginx to manage many sites on the same server, or you still need heavier caching, access control, or custom rules, [Nginx](./nginx.md) is usually the better fit.
 
-## Default path: let the CLI generate the Caddy config
+## Recommended order: choose a driver, generate config, then start
 
-If your app has already been saved as a CLI env and the env type is `local` or `docker`, the default recommendation is still to let the CLI generate the config. That way, routing details related to NocoBase paths, WebSocket handling, and subpaths stay managed by the CLI, and you only need to care about the site entry itself.
-
-The most direct form is:
+For a CLI-managed env of type `local` or `docker`, the default order is:
 
 ```bash
-nb env proxy caddy --env demo --host demo.example.com
+nb proxy caddy use docker
+nb proxy caddy generate --env test2 --host c.local.nocobase.com
+nb proxy caddy start
 ```
 
-If you have already switched to the current env, you can also omit `--env`:
+Or with a local process:
 
 ```bash
-nb env proxy caddy --host demo.example.com
+nb proxy caddy use local
+nb proxy caddy generate --env test2 --host c.local.nocobase.com
+nb proxy caddy start
 ```
 
-If you also want to specify the entry port, add it at the same time:
+Common follow-up commands are:
 
 ```bash
-nb env proxy caddy --env demo --host demo.example.com --port 8080
+nb proxy caddy current
+nb proxy caddy status
+nb proxy caddy info
+nb proxy caddy reload
+nb proxy caddy restart
+nb proxy caddy stop
 ```
 
-`--host` is important here. Caddy decides whether to manage HTTPS based on the site address. In production, try to pass a domain that already resolves to the current server.
+In most cases:
 
-### Which files the CLI generates
+- `current` is the quickest way to confirm the active runtime driver
+- `status` shows whether Caddy is currently running normally
+- `info` shows the current config path, runtime root, and related runtime details
+- after regenerating config, `reload` is usually the first command to use
+- use `restart` when you need a full restart
 
-If you do not pass `--output`, the Caddy provider keeps three layers of files under `~/.nocobase/proxy/caddy/<env>/`:
+## What `generate` needs as input
 
-| File | Purpose |
-| --- | --- |
-| `generated.caddy` | The actual reverse-proxy config managed by the CLI and overwritten every time you run `nb env proxy caddy` |
-| `app.caddy` | Editable site entry file where you can add site-level config |
-| `~/.nocobase/proxy/caddy/nocobase.caddy` | Shared main config that imports every env `app.caddy` |
+The most common form is:
+
+```bash
+nb proxy caddy generate --env test2 --host c.local.nocobase.com
+```
+
+If you also want to specify the entry port:
+
+```bash
+nb proxy caddy generate --env test2 --host c.local.nocobase.com --port 8080
+```
 
 Where:
 
-- `generated.caddy` is only meant to be managed by the CLI and should not be edited manually
-- `app.caddy` is editable, but you should keep the generated import inserted by the CLI
-- `nocobase.caddy` is mainly used by `--install`
+- `--env`: which CLI env to generate config for
+- `--host`: the public domain name
+- `--port`: the proxy entry port
+
+For Caddy, `--host` matters especially because the site address strongly affects the HTTPS workflow. In production, it is usually best to pass a domain that already resolves to the current server.
+
+If the command says the env is missing `appPort`, save it first with:
+
+```bash
+nb env update test2 --app-port 56575
+```
+
+If you later change settings such as `app-port` or `app-public-path` that affect proxy behavior, rerun `generate`.
+
+## Files maintained by the CLI
+
+Using `test2` as an example, the Caddy workflow usually maintains:
+
+| Path | Purpose |
+| --- | --- |
+| `NB_CLI_ROOT/.nocobase/proxy/caddy/test2/app.caddy` | CLI-generated full site config |
+| `NB_CLI_ROOT/.nocobase/proxy/caddy/nocobase.caddy` | Provider-level Caddy entry file that imports all env `app.caddy` files |
+| `NB_CLI_ROOT/.nocobase/proxy/caddy/test2/public/index-v1.html` | v1 SPA fallback page |
+| `NB_CLI_ROOT/.nocobase/proxy/caddy/test2/public/index-v2.html` | v2 SPA fallback page |
+| `NB_CLI_ROOT/test2/storage/dist-client` | Frontend build output for the current app |
+| `NB_CLI_ROOT/test2/storage/uploads` | Uploads directory for the current app |
+
+Where:
+
+- files under `NB_CLI_ROOT/.nocobase/proxy/caddy/...` are CLI-managed proxy helper files
+- files under `NB_CLI_ROOT/test2/storage/...` belong to the application itself
+- `nocobase.caddy` is the provider-level entry file and usually does not need manual edits
+- `app.caddy` is the full site config for one env and is overwritten as a whole when you regenerate it
 
 :::warning Note
 
-If you need to add site-level Caddy config such as extra headers, authentication, rate limiting, or compression rules, edit `app.caddy`. `generated.caddy` will be overwritten the next time you run `nb env proxy caddy`.
+If you need site-level Caddy config such as extra headers, authentication, rate limiting, or compression policy, you can adjust `app.caddy` as the baseline. But remember that running `generate` again overwrites that file.
 
 :::
 
-### Install the shared config into Caddy and reload it
+## Handwritten config: when you are not using the CLI
 
-If you want the CLI to connect the shared config to the Caddy main config and immediately validate and reload Caddy, run:
+If the app is not CLI-managed, or you intentionally want to maintain the full Caddy config yourself, you can still write it by hand.
 
-```bash
-nb env proxy caddy --env demo --host demo.example.com --install --reload
-```
+For NocoBase, though, a production entry is usually more than a simple `reverse_proxy`. In addition to forwarding API requests to the backend app, a complete Caddy config usually needs to handle uploads, frontend assets, `.well-known` routes, WebSocket, and SPA fallback pages together.
 
-These flags are split like this:
+Using `test2` as the example, the key Caddy-related paths usually include:
 
-- `--install` connects `~/.nocobase/proxy/caddy/nocobase.caddy` to the Caddy main config
-- `--reload` validates the config first and then reloads Caddy
+- SPA fallback directory: `NB_CLI_ROOT/.nocobase/proxy/caddy/test2/public`
+- Frontend build output: `NB_CLI_ROOT/test2/storage/dist-client`
+- Uploads directory: `NB_CLI_ROOT/test2/storage/uploads`
 
-If your Caddy executable is not on the default path, set the CLI config first:
+In other words, a handwritten config usually needs to cover at least these entry areas:
 
-```bash
-nb config set bin.caddy /usr/bin/caddy
-```
+- `v`: redirect `/v` to `/v/`
+- `uploads`: expose the uploads directory
+- `dist`: expose the frontend build output
+- `oauth well-known`: handle the OAuth discovery path
+- `openid well-known`: handle the OpenID discovery path
+- `api`: forward `/api/` requests to the backend app
+- `ws`: forward WebSocket requests to the backend app
+- `spa v2`: serve `/v/` with the v2 entry and fallback page
+- `spa v1`: serve `/` with the v1 entry and fallback page
 
-### When should you change `proxy.nb-cli-root`
-
-Most setups do not need to change `proxy.nb-cli-root`. You usually need it only when Caddy runs in another container, mount root, or path view and cannot see the current user's `~/.nocobase` path.
-
-For example, if Caddy sees that path as `/workspace/.nocobase/...` inside a container, set:
-
-```bash
-nb config set proxy.nb-cli-root /workspace
-nb env proxy caddy --env demo --install --reload
-```
-
-If you only want to preview the generated result, use:
-
-```bash
-nb env proxy caddy --env demo --print
-```
-
-If you want to write the generated route fragment to a custom file, use:
-
-```bash
-nb env proxy caddy --env demo --output ./generated.caddy
-```
-
-For the full parameter reference, see [`nb env proxy caddy`](../../../api/cli/env/proxy/caddy.md).
-
-## Handwritten config: what to do without the CLI
-
-If your app is not managed by the CLI, or you explicitly want to maintain the full `Caddyfile` yourself, start with this minimal version:
+So a complete Caddy config is usually more than a generic example such as:
 
 ```text
 your-domain.com {
-  encode zstd gzip
   reverse_proxy 127.0.0.1:13000
 }
+```
+
+For a CLI-managed app such as `test2`, a more realistic deployment structure usually looks closer to this:
+
+```text
+c.local.nocobase.com {
+    encode zstd gzip
+
+    handle /v {
+        redir * /v/ 302
+    }
+
+    handle_path /storage/uploads/* {
+        root * NB_CLI_ROOT/test2/storage/uploads
+        header Cache-Control public
+        header X-Content-Type-Options nosniff
+        file_server
+    }
+
+    handle_path /dist/* {
+        root * NB_CLI_ROOT/test2/storage/dist-client
+        header Cache-Control public
+        file_server
+    }
+
+    @oauth path_regexp oauth ^/\\.well-known/oauth-authorization-server/(.+)$
+    handle @oauth {
+        rewrite * /{re.oauth.1}/.well-known/oauth-authorization-server
+        reverse_proxy host.docker.internal:56575
+    }
+
+    @openid path_regexp openid ^/\\.well-known/openid-configuration/(.+)$
+    handle @openid {
+        rewrite * /{re.openid.1}/.well-known/openid-configuration
+        reverse_proxy host.docker.internal:56575
+    }
+
+    handle /api/* {
+        reverse_proxy host.docker.internal:56575
+    }
+
+    handle /ws {
+        reverse_proxy host.docker.internal:56575
+    }
+
+    handle_path /v/* {
+        root * NB_CLI_ROOT/.nocobase/proxy/caddy/test2/public
+        header Cache-Control "no-store, no-cache, must-revalidate"
+        header X-Robots-Tag "noindex, nofollow"
+        try_files {path} /index-v2.html
+        file_server
+    }
+
+    handle_path /* {
+        root * NB_CLI_ROOT/.nocobase/proxy/caddy/test2/public
+        header Cache-Control "no-store, no-cache, must-revalidate"
+        header X-Robots-Tag "noindex, nofollow"
+        try_files {path} /index-v1.html
+        file_server
+    }
+}
+```
+
+Two details matter here:
+
+- files under `NB_CLI_ROOT/.nocobase/proxy/caddy/...` are CLI-managed SPA fallback files
+- files under `NB_CLI_ROOT/test2/storage/...` belong to the application's own build output and uploads
+
+If the app uses subpath deployment, or if frontend assets, uploads, and the entry layer do not share the same path view, handwritten config becomes easier to get wrong. In those cases, it is usually safer to generate the config first with:
+
+```bash
+nb proxy caddy generate --env test2 --host c.local.nocobase.com
+```
+
+Then use the generated result as the baseline for manual adjustments.
+
+If you want the CLI to get the routes and paths working first, the generated structure usually looks like this:
+
+```text
+NB_CLI_ROOT/.nocobase/proxy/caddy/nocobase.caddy
+NB_CLI_ROOT/.nocobase/proxy/caddy/test2/app.caddy
+NB_CLI_ROOT/.nocobase/proxy/caddy/test2/public/index-v1.html
+NB_CLI_ROOT/.nocobase/proxy/caddy/test2/public/index-v2.html
+NB_CLI_ROOT/test2/storage/dist-client
+NB_CLI_ROOT/test2/storage/uploads
 ```
 
 Where:
 
-- Replace `your-domain.com` with your domain
-- Replace `127.0.0.1:13000` with the real address your NocoBase app listens on
+- `nocobase.caddy` imports all `*/app.caddy` files
+- `test2/app.caddy` is the full site config for env `test2`
+- `public/index-v1.html` and `public/index-v2.html` are CLI-generated SPA fallback pages
 
-If the domain already resolves to the current server correctly, Caddy usually handles HTTPS certificate issuance and renewal automatically.
+The safer workflow is usually:
 
-If you do not have a domain yet and only want to verify the reverse-proxy chain first, you can listen on a port:
+1. let the CLI generate the Caddy config first
+2. use the generated output to confirm the routing structure and real filesystem paths
+3. then adjust it for your own domain, runtime driver, and mount layout
 
-```text
-:80 {
-  reverse_proxy 127.0.0.1:13000
-}
-```
-
-In production, though, it is still better to switch to a domain-based site address as soon as possible so Caddy can also take over HTTPS.
-
-If your app is not mounted at `/` but under a subpath, handwritten Caddy config also means you need to confirm application variables such as `APP_PUBLIC_PATH` and `WS_PATH`. In that case, it is usually easier to go back to `nb env proxy caddy` and let the CLI generate the config.
+That is usually less error-prone than writing the full config from scratch.
 
 ## Validate and reload the config
+
+If you write or adjust Caddy config manually, validate it first and then reload:
 
 ```bash
 caddy validate --config /etc/caddy/Caddyfile
 systemctl reload caddy
 ```
 
-If you do not manage Caddy with `systemd`, use your own startup and reload workflow.
+If you are not using `systemd` to manage Caddy, replace that with your own start and reload workflow.
 
-## Notes
+If you manage the entry layer through `nb proxy caddy`, the usual first choice is:
 
-- `nb env proxy caddy` only works for CLI-managed envs whose runtime is reachable from the current machine, which means `local` or `docker`
-- If the command says the env is missing `appPort`, run `nb env update <name> --app-port <port>` first
-- `--output` and `--print` are useful for preview or custom integration, but they do not additionally create `app.caddy` or the shared main config
-- If you already have a domain that resolves correctly to the server, Caddy is often the fastest way to get HTTPS working
+```bash
+nb proxy caddy reload
+```
+
+If you want to inspect the current driver, main config-file path, runtime root, and container or local binary details, run:
+
+```bash
+nb proxy caddy info
+```
+
+If you only want to confirm whether Caddy is already running, run:
+
+```bash
+nb proxy caddy status
+```
+
+## Common notes
+
+- `nb proxy caddy generate` only works for CLI-managed envs whose runtime is reachable from the current machine, which means `local` or `docker`
+- if the command says the env is missing `appPort`, run `nb env update <name> --app-port <port>` first
+- if you already have a domain that resolves correctly to the current server, Caddy is often the fastest way to get HTTPS
+- if you later change settings such as `app-port` or `app-public-path` that affect proxy behavior, rerun `generate`
 
 ## Related links
 
-- [`nb env proxy caddy`](../../../api/cli/env/proxy/caddy.md)
-- [Install with CLI (Recommended)](../../installation/cli.md)
+- [Reverse Proxy in Production](./index.md)
+- [Nginx](./nginx.md)
+- [Install with the CLI](../../installation/cli.md)
 - [Install with Docker Compose](../../installation/docker-compose.md)
-- [App Environment Variables](../../installation/env.md)
+- [Environment variables](../../installation/env.md)
