@@ -32,6 +32,7 @@ export type OrderProps = {
 
 export type QueryParams = Partial<{
   uid: string;
+  flowModelUid: string;
   mode: 'builder' | 'sql';
   dataSource: string;
   collection: string;

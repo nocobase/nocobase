@@ -1948,16 +1948,18 @@ describe('FlowContext resolveOnServer selective server resolution', () => {
     const engine = new FlowEngine();
     const api = {
       request: vi.fn(async (config: any) => {
-        const cp = config?.data?.values?.contextParams || {};
+        const batchItem = config?.data?.values?.batch?.[0];
+        const cp = batchItem?.contextParams || {};
         // Only 'view.record' should be present
         expect(Object.keys(cp)).toContain('view.record');
+        expect(batchItem?.flowModelUid).toBe('view-model');
         return { data: { id: 1 } } as any;
       }),
     } as any;
     engine.context.defineProperty('api', { value: api });
 
     engine.context.defineProperty('view', {
-      get: () => ({ type: 'dialog' }),
+      get: () => ({ type: 'dialog', record: { id: 99, secret: 'local-secret' } }),
       resolveOnServer: (p: string) => p === 'record' || p.startsWith('record.'),
       meta: async () => ({
         type: 'object',
@@ -1966,20 +1968,53 @@ describe('FlowContext resolveOnServer selective server resolution', () => {
       }),
     });
 
+    const M = class extends FlowModel {};
+    engine.registerModels({ M });
+    const model = engine.createModel({ uid: 'view-model', use: 'M' });
+
     const tpl = { id: '{{ ctx.view.record.id }}', type: '{{ ctx.view.type }}' } as any;
-    const out = await (engine.context as any).resolveJsonTemplate(tpl);
+    const out = await (model.context as any).resolveJsonTemplate(tpl);
     expect(out.type).toBe('dialog');
     expect(api.request).toHaveBeenCalledTimes(1);
     const [{ url }] = api.request.mock.calls[0];
     expect(url).toBe('variables:resolve');
   });
 
+  it('skips server for record-like context params when no flow model uid is available', async () => {
+    const engine = new FlowEngine();
+    const api = { request: vi.fn() } as any;
+    engine.context.defineProperty('api', { value: api });
+
+    engine.context.defineProperty('view', {
+      get: () => ({ type: 'dialog', record: { id: 99, secret: 'local-secret' } }),
+      resolveOnServer: (p: string) => p === 'record' || p.startsWith('record.'),
+      meta: async () => ({
+        type: 'object',
+        title: 'View',
+        buildVariablesParams: () => ({ record: { collection: 'users', filterByTk: 1, dataSourceKey: 'main' } }),
+      }),
+    });
+
+    const tpl = {
+      id: '{{ ctx.view.record.id }}',
+      secret: '{{ ctx.view.record.secret }}',
+      type: '{{ ctx.view.type }}',
+    } as any;
+    const out = await (engine.context as any).resolveJsonTemplate(tpl);
+    expect(out.type).toBe('dialog');
+    expect(out.id).toBe('{{ ctx.view.record.id }}');
+    expect(out.secret).toBe('{{ ctx.view.record.secret }}');
+    expect(api.request).not.toHaveBeenCalled();
+  });
+
   it('calls server for whole variable when resolveOnServer is true', async () => {
     const engine = new FlowEngine();
     const api = {
       request: vi.fn(async (config: any) => {
-        const cp = config?.data?.values?.contextParams || {};
+        const batchItem = config?.data?.values?.batch?.[0];
+        const cp = batchItem?.contextParams || {};
         expect(Object.keys(cp)).toContain('user');
+        expect(batchItem?.flowModelUid).toBe('user-model');
         return { data: { userId: 1 } } as any;
       }),
     } as any;
@@ -1995,9 +2030,43 @@ describe('FlowContext resolveOnServer selective server resolution', () => {
       }),
     });
 
+    const M = class extends FlowModel {};
+    engine.registerModels({ M });
+    const model = engine.createModel({ uid: 'user-model', use: 'M' });
+
     const tpl = { uid: '{{ ctx.user.id }}' } as any;
-    await (engine.context as any).resolveJsonTemplate(tpl);
+    await (model.context as any).resolveJsonTemplate(tpl);
     expect(api.request).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not fallback to client-only resolution on variables:resolve client errors', async () => {
+    const engine = new FlowEngine();
+    const api = {
+      request: vi.fn(async () => {
+        const error = new Error('Forbidden') as Error & { response?: { status: number } };
+        error.response = { status: 403 };
+        throw error;
+      }),
+    } as any;
+    engine.context.defineProperty('api', { value: api });
+
+    engine.context.defineProperty('user', {
+      value: { id: 1, email: 'secret@example.com' },
+      resolveOnServer: true,
+      meta: async () => ({
+        type: 'object',
+        title: 'User',
+        buildVariablesParams: () => ({ collection: 'users', filterByTk: 1, dataSourceKey: 'main' }),
+      }),
+    });
+
+    const M = class extends FlowModel {};
+    engine.registerModels({ M });
+    const model = engine.createModel({ uid: 'forbidden-user-model', use: 'M' });
+
+    await expect((model.context as any).resolveJsonTemplate({ email: '{{ ctx.user.email }}' })).rejects.toMatchObject({
+      response: { status: 403 },
+    });
   });
 
   it('reads resolveOnServer from delegated context properties (e.g., engine.context -> model.context)', async () => {
@@ -2026,6 +2095,8 @@ describe('FlowContext resolveOnServer selective server resolution', () => {
     const tpl = { uid: '{{ ctx.user.id }}' } as any;
     await (model.context as any).resolveJsonTemplate(tpl);
     expect(api.request).toHaveBeenCalledTimes(1);
+    const batchItem = api.request.mock.calls[0][0]?.data?.values?.batch?.[0];
+    expect(batchItem?.flowModelUid).toBe(model.uid);
   });
 
   it('still calls server when resolveOnServer=true even without meta/buildVariablesParams', async () => {
@@ -2050,8 +2121,10 @@ describe('FlowContext resolveOnServer selective server resolution', () => {
     const engine = new FlowEngine();
     const api = {
       request: vi.fn(async (config: any) => {
-        const cp = config?.data?.values?.contextParams || {};
+        const batchItem = config?.data?.values?.batch?.[0];
+        const cp = batchItem?.contextParams || {};
         expect(Object.keys(cp).sort()).toEqual(['user', 'view.record']);
+        expect(batchItem?.flowModelUid).toBe('mixed-model');
         return { data: { ok: true } } as any;
       }),
     } as any;
@@ -2079,13 +2152,17 @@ describe('FlowContext resolveOnServer selective server resolution', () => {
 
     engine.context.defineProperty('role', { value: 'admin' });
 
+    const M = class extends FlowModel {};
+    engine.registerModels({ M });
+    const model = engine.createModel({ uid: 'mixed-model', use: 'M' });
+
     const tpl = {
       a: '{{ ctx.user.id }}',
       b: '{{ ctx.view.record.id }}',
       c: '{{ ctx.view.type }}',
       d: '{{ ctx.role }}',
     } as any;
-    const out = await (engine.context as any).resolveJsonTemplate(tpl);
+    const out = await (model.context as any).resolveJsonTemplate(tpl);
     // client-resolved fields
     expect(out.c).toBe('dialog');
     expect(out.d).toBe('admin');
@@ -2140,8 +2217,12 @@ describe('FlowContext resolveOnServer selective server resolution', () => {
       }),
     });
 
+    const M = class extends FlowModel {};
+    engine.registerModels({ M });
+    const model = engine.createModel({ uid: 'context-params-model', use: 'M' });
+
     const tpl = { a: '{{ ctx.foo.a }}', u: '{{ ctx.user.id }}' } as any;
-    await (engine.context as any).resolveJsonTemplate(tpl);
+    await (model.context as any).resolveJsonTemplate(tpl);
     expect(api.request).toHaveBeenCalledTimes(1);
   });
 });
@@ -2846,6 +2927,7 @@ describe('FlowContext getPropertyMetaTree with complex async/sync mixing scenari
         const batch = config?.data?.values?.batch;
         expect(Array.isArray(batch)).toBe(true);
         expect(batch.length).toBe(2);
+        expect(batch.every((item: any) => typeof item.flowModelUid === 'undefined')).toBe(true);
         // Echo back distinct data for each id to verify mapping
         const results = batch.map((item: any, idx: number) => ({ id: item.id, data: { ok: idx + 1 } }));
         return { data: { data: { results } } } as any;

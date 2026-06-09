@@ -11,19 +11,123 @@ import { vi } from 'vitest';
 import { createMockServer, MockServer } from '@nocobase/test';
 import { variables, inferSelectsFromUsage } from '../variables/registry';
 import { resetVariablesRegistryForTest } from './test-utils';
+import FlowModelRepository from '../repository';
 
 describe('plugin-flow-engine variables:resolve (no HTTP)', () => {
   let app: MockServer;
+  let modelSeq = 0;
   beforeAll(() => {
     resetVariablesRegistryForTest();
   });
-  const execResolve = async (values: any, userId?: number) => {
+
+  const isRecordParams = (value: unknown) =>
+    !!value &&
+    typeof value === 'object' &&
+    !Array.isArray(value) &&
+    typeof (value as { collection?: unknown }).collection === 'string' &&
+    Object.prototype.hasOwnProperty.call(value, 'filterByTk');
+
+  const hasRecordParams = (value: unknown): boolean => {
+    if (isRecordParams(value)) return true;
+    if (Array.isArray(value)) return value.some((item) => hasRecordParams(item));
+    if (!value || typeof value !== 'object') return false;
+    return Object.values(value).some((item) => hasRecordParams(item));
+  };
+
+  const collectRecordParams = (
+    value: unknown,
+    output: Array<{ collection: string; dataSourceKey?: string }> = [],
+  ): Array<{ collection: string; dataSourceKey?: string }> => {
+    if (isRecordParams(value)) {
+      const { collection, dataSourceKey } = value as { collection: string; dataSourceKey?: string };
+      output.push({ collection, dataSourceKey });
+      return output;
+    }
+    if (Array.isArray(value)) {
+      value.forEach((item) => collectRecordParams(item, output));
+      return output;
+    }
+    if (!value || typeof value !== 'object') return output;
+    Object.values(value).forEach((item) => collectRecordParams(item, output));
+    return output;
+  };
+
+  const createTestFlowModel = async (
+    template: unknown,
+    options: { collectionName?: string; extraSources?: Array<{ collection: string; dataSourceKey?: string }> } = {},
+  ) => {
+    const uid = `variables-resolve-test-${++modelSeq}`;
+    const repository = app.db.getCollection('flowModels').repository as FlowModelRepository;
+    await repository.insertModel({
+      uid,
+      use: 'VariablesResolveTestModel',
+      stepParams: {
+        resourceSettings: {
+          init: {
+            dataSourceKey: 'main',
+            collectionName: options.collectionName || 'users',
+          },
+        },
+        variablesResolveTest: {
+          template,
+          extraSources: (options.extraSources || []).map((source, index) => ({
+            stepParams: {
+              resourceSettings: {
+                init: {
+                  dataSourceKey: source.dataSourceKey || 'main',
+                  collectionName: source.collection,
+                },
+              },
+            },
+            index,
+            template,
+          })),
+        },
+      },
+    });
+    return uid;
+  };
+
+  const maybeAttachFlowModelUid = async (
+    values: any,
+    options: { autoFlowModelUid?: boolean; flowModelUid?: string } = {},
+  ) => {
+    if (options.autoFlowModelUid === false) return values;
+    if (values?.flowModelUid || (Array.isArray(values?.batch) && values.batch.every((item) => item?.flowModelUid))) {
+      return values;
+    }
+    if (!hasRecordParams(values?.contextParams) && !hasRecordParams(values?.batch)) return values;
+
+    const templates = Array.isArray(values?.batch)
+      ? values.batch.map((item) => item?.template ?? {})
+      : [values?.template ?? {}];
+    const flowModelUid =
+      options.flowModelUid ||
+      (await createTestFlowModel(templates, {
+        extraSources: collectRecordParams(values),
+      }));
+
+    if (Array.isArray(values?.batch)) {
+      return {
+        ...values,
+        batch: values.batch.map((item) => ({ ...item, flowModelUid: item?.flowModelUid || flowModelUid })),
+      };
+    }
+    return { ...values, flowModelUid };
+  };
+
+  const execResolve = async (
+    values: any,
+    userId?: number,
+    options: { autoFlowModelUid?: boolean; flowModelUid?: string } = {},
+  ) => {
+    const requestValues = await maybeAttachFlowModelUid(values, options);
     const action = app.resourceManager.getAction('variables', 'resolve');
     const ctx: any = {
       app,
       db: app.db,
       headers: {},
-      request: { method: 'POST', path: '/api/variables:resolve', query: {}, body: values },
+      request: { method: 'POST', path: '/api/variables:resolve', query: {}, body: requestValues },
       auth: userId ? { user: { id: userId }, role: 'root' } : {},
       state: {},
       getCurrentLocale: () => 'en-US',
@@ -32,7 +136,7 @@ describe('plugin-flow-engine variables:resolve (no HTTP)', () => {
     ctx.throw = (status: number, body: any) => {
       throw { status, body };
     };
-    action.mergeParams({ values });
+    action.mergeParams({ values: requestValues });
     // 为兼容服务端中间件（依赖 ctx.action.*），显式设置 ctx.action
     ctx.action = action;
     try {
@@ -55,8 +159,8 @@ describe('plugin-flow-engine variables:resolve (no HTTP)', () => {
         'auth',
         'users',
         'acl',
-        'data-source-manager',
         'data-source-main',
+        'data-source-manager',
         'field-sort',
         'flow-engine',
       ],
@@ -121,11 +225,271 @@ describe('plugin-flow-engine variables:resolve (no HTTP)', () => {
     expect(data.id).toBe(1);
   });
 
-  it('should respect explicit fields/appends and keep unresolved placeholders', async () => {
+  it('should require flowModelUid when resolving record-like context params', async () => {
+    const payload = {
+      template: { id: '{{ ctx.view.record.id }}' },
+      contextParams: {
+        'view.record': {
+          dataSourceKey: 'main',
+          collection: 'users',
+          filterByTk: 1,
+        },
+      },
+    };
+    const res = await execResolve(payload, 1, { autoFlowModelUid: false });
+    expect(res.status).toBe(400);
+    expect(res.body?.error?.code).toBe('FLOW_MODEL_UID_REQUIRED');
+  });
+
+  it('should reject variables not configured in the current flow model', async () => {
+    const flowModelUid = await createTestFlowModel({ allowed: '{{ ctx.record.id }}' });
+    const payload = {
+      flowModelUid,
+      template: { secret: '{{ ctx.record.secret }}' },
+      contextParams: {
+        record: {
+          dataSourceKey: 'main',
+          collection: 'users',
+          filterByTk: 1,
+        },
+      },
+    };
+    const res = await execResolve(payload, 1, { autoFlowModelUid: false });
+    expect(res.status).toBe(403);
+    expect(res.body?.error?.code).toBe('VARIABLE_NOT_ALLOWED');
+  });
+
+  it('should reject unconfigured variables passed as method arguments', async () => {
+    const flowModelUid = await createTestFlowModel({ allowed: '{{ ctx.echo(1) }}' });
+    const payload = {
+      flowModelUid,
+      template: { secret: '{{ ctx.echo(ctx.record.secret) }}' },
+      contextParams: {
+        record: {
+          dataSourceKey: 'main',
+          collection: 'users',
+          filterByTk: 1,
+        },
+      },
+    };
+    const res = await execResolve(payload, 1, { autoFlowModelUid: false });
+    expect(res.status).toBe(403);
+    expect(res.body?.error?.code).toBe('VARIABLE_NOT_ALLOWED');
+  });
+
+  it('should reject unsupported dynamic paths before resolving static variables in the same template', async () => {
+    const flowModelUid = await createTestFlowModel({
+      allowedDynamic: '{{ ctx.record[ctx.field] }}',
+      allowedId: '{{ ctx.record.id }}',
+    });
+    const payload = {
+      flowModelUid,
+      template: {
+        dynamic: '{{ ctx.record[ctx.field] }}',
+        secret: '{{ ctx.record.secret }}',
+      },
+      contextParams: {
+        record: {
+          dataSourceKey: 'main',
+          collection: 'users',
+          filterByTk: 1,
+        },
+      },
+    };
+    const res = await execResolve(payload, 1, { autoFlowModelUid: false });
+    expect(res.status).toBe(403);
+    expect(res.body?.error?.code).toBe('VARIABLE_NOT_ALLOWED');
+  });
+
+  it('should reject unsupported dynamic paths even without a flow model uid', async () => {
+    const payload = {
+      template: {
+        dynamic: '{{ ctx.record[ctx.field] }}',
+        timestamp: '{{ ctx.timestamp }}',
+      },
+    };
+    const res = await execResolve(payload, 1, { autoFlowModelUid: false });
+    expect(res.status).toBe(403);
+    expect(res.body?.error?.code).toBe('VARIABLE_NOT_ALLOWED');
+  });
+
+  it('should reject source tampering when the flow model source is known', async () => {
+    const flowModelUid = await createTestFlowModel({ allowed: '{{ ctx.record.name }}' }, { collectionName: 'users' });
+    const payload = {
+      flowModelUid,
+      template: { name: '{{ ctx.record.name }}' },
+      contextParams: {
+        record: {
+          dataSourceKey: 'main',
+          collection: 'roles',
+          filterByTk: 'root',
+        },
+      },
+    };
+    const res = await execResolve(payload, 1, { autoFlowModelUid: false });
+    expect(res.status).toBe(403);
+    expect(res.body?.error?.code).toBe('VARIABLE_NOT_ALLOWED');
+  });
+
+  it('should reject flattened record source tampering when the flow model source is known', async () => {
+    const flowModelUid = await createTestFlowModel(
+      { allowed: '{{ ctx.view.record.name }}' },
+      { collectionName: 'users' },
+    );
+    const payload = {
+      flowModelUid,
+      template: { name: '{{ ctx.view.record.name }}' },
+      contextParams: {
+        'view.record': {
+          dataSourceKey: 'main',
+          collection: 'roles',
+          filterByTk: 'root',
+        },
+      },
+    };
+    const res = await execResolve(payload, 1, { autoFlowModelUid: false });
+    expect(res.status).toBe(403);
+    expect(res.body?.error?.code).toBe('VARIABLE_NOT_ALLOWED');
+  });
+
+  it('should reject array-indexed record source tampering when the flow model source is known', async () => {
+    const flowModelUid = await createTestFlowModel({ allowed: '{{ ctx.list[0].name }}' });
+    const payload = {
+      flowModelUid,
+      template: { name: '{{ ctx.list[0].name }}' },
+      contextParams: {
+        'list.0': {
+          dataSourceKey: 'main',
+          collection: 'roles',
+          filterByTk: 'root',
+        },
+      },
+    };
+    const res = await execResolve(payload, 1, { autoFlowModelUid: false });
+    expect(res.status).toBe(403);
+    expect(res.body?.error?.code).toBe('VARIABLE_NOT_ALLOWED');
+  });
+
+  it('should allow association target collection for nested record context params', async () => {
+    const roleName = 'association_target_role';
+    const rolesRepo = app.db.getRepository('roles');
+    const existing = await rolesRepo.findOne({ filter: { name: roleName } }).catch(() => null);
+    if (!existing) {
+      await rolesRepo.create({
+        values: {
+          name: roleName,
+          title: 'Association Target Role',
+          allowConfigure: true,
+        },
+      });
+    }
+
+    const flowModelUid = await createTestFlowModel(
+      { allowed: '{{ ctx.record.roles.name }}' },
+      { collectionName: 'users' },
+    );
+    const payload = {
+      flowModelUid,
+      template: { roleName: '{{ ctx.record.roles.name }}' },
+      contextParams: {
+        'record.roles': {
+          dataSourceKey: 'main',
+          collection: 'roles',
+          filterByTk: roleName,
+        },
+      },
+    };
+    const res = await execResolve(payload, 1, { autoFlowModelUid: false });
+    const data = res.body?.data ?? res.body;
+    expect(data.roleName).toBe(roleName);
+  });
+
+  it('should allow configured whole record variables', async () => {
+    const flowModelUid = await createTestFlowModel({ allowed: '{{ ctx.record }}' }, { collectionName: 'users' });
+    const payload = {
+      flowModelUid,
+      template: { record: '{{ ctx.record }}' },
+      contextParams: {
+        record: {
+          dataSourceKey: 'main',
+          collection: 'users',
+          filterByTk: 1,
+        },
+      },
+    };
+    const res = await execResolve(payload, 1, { autoFlowModelUid: false });
+    const data = res.body?.data ?? res.body;
+    const record = typeof data.record === 'string' ? JSON.parse(data.record) : data.record;
+    expect(record?.id).toBe(1);
+  });
+
+  it('should allow configured whole association variables from nested record context params', async () => {
+    const roleName = 'whole_association_target_role';
+    const rolesRepo = app.db.getRepository('roles');
+    const existing = await rolesRepo.findOne({ filter: { name: roleName } }).catch(() => null);
+    if (!existing) {
+      await rolesRepo.create({
+        values: {
+          name: roleName,
+          title: 'Whole Association Target Role',
+          allowConfigure: true,
+        },
+      });
+    }
+
+    const flowModelUid = await createTestFlowModel({ allowed: '{{ ctx.record.roles }}' }, { collectionName: 'users' });
+    const payload = {
+      flowModelUid,
+      template: { role: '{{ ctx.record.roles }}' },
+      contextParams: {
+        'record.roles': {
+          dataSourceKey: 'main',
+          collection: 'roles',
+          filterByTk: roleName,
+        },
+      },
+    };
+    const res = await execResolve(payload, 1, { autoFlowModelUid: false });
+    const data = res.body?.data ?? res.body;
+    const role = typeof data.role === 'string' ? JSON.parse(data.role) : data.role;
+    expect(role?.name).toBe(roleName);
+  });
+
+  it('should not allow another source from the same flow model for a different variable key', async () => {
+    const flowModelUid = await createTestFlowModel({
+      allowedUserName: '{{ ctx.view.record.name }}',
+      otherRoleSource: {
+        stepParams: {
+          resourceSettings: {
+            init: {
+              dataSourceKey: 'main',
+              collectionName: 'roles',
+            },
+          },
+        },
+        template: '{{ ctx.view.record.title }}',
+      },
+    });
+    const payload = {
+      flowModelUid,
+      template: { name: '{{ ctx.view.record.name }}' },
+      contextParams: {
+        'view.record': {
+          dataSourceKey: 'main',
+          collection: 'roles',
+          filterByTk: 'root',
+        },
+      },
+    };
+    const res = await execResolve(payload, 1, { autoFlowModelUid: false });
+    expect(res.status).toBe(403);
+    expect(res.body?.error?.code).toBe('VARIABLE_NOT_ALLOWED');
+  });
+
+  it('should ignore explicit fields/appends on public resolve and infer selects from template', async () => {
     const payload = {
       template: {
         id: '{{ ctx.view.record.id }}',
-        // name 未在 fields 中显式选择，必须保留占位符
         name: '{{ ctx.view.record.name }}',
       },
       contextParams: {
@@ -140,7 +504,58 @@ describe('plugin-flow-engine variables:resolve (no HTTP)', () => {
     const res = await execResolve(payload, 1);
     const data = res.body?.data ?? res.body;
     expect(data.id).toBe(1);
-    expect(data.name).toBe('{{ ctx.view.record.name }}');
+    expect(typeof data.name).toBe('string');
+    expect(data.name.length).toBeGreaterThan(0);
+  });
+
+  it('should strip injected fields/appends before querying records', async () => {
+    const originalGetRepository = app.db.getRepository.bind(app.db);
+    const queryCalls: Array<{ fields?: string[]; appends?: string[] }> = [];
+    const repositoryCalls: Array<{ collection: string; args: unknown[] }> = [];
+    (app.db as any).getRepository = (collection: string, ...args: unknown[]) => {
+      repositoryCalls.push({ collection, args });
+      const repo = originalGetRepository(collection, ...(args as []));
+      if (collection === 'users') {
+        const originalFindOne = repo.findOne.bind(repo);
+        repo.findOne = async (opts: { fields?: string[]; appends?: string[] }) => {
+          queryCalls.push(opts);
+          return await originalFindOne(opts);
+        };
+      }
+      return repo;
+    };
+    try {
+      const payload = {
+        template: {
+          id: '{{ ctx.view.record.id }}',
+        },
+        contextParams: {
+          'view.record': {
+            dataSourceKey: 'main',
+            collection: 'users',
+            filterByTk: 1,
+            fields: ['id', 'nickname'],
+            appends: ['roles'],
+            associationName: 'users.roles',
+            sourceId: 1,
+          },
+        },
+      };
+      const res = await execResolve(payload, 1);
+      const data = res.body?.data ?? res.body;
+      expect(data.id).toBe(1);
+      expect(queryCalls.length).toBeGreaterThan(0);
+      const queryOptions = queryCalls[0];
+      expect(queryOptions.fields).toEqual(expect.arrayContaining(['id']));
+      expect(queryOptions.fields || []).not.toContain('nickname');
+      expect(queryOptions.appends).toBeUndefined();
+      expect(repositoryCalls.some((call) => call.collection === 'users.roles')).toBe(false);
+      expect(
+        repositoryCalls.filter((call) => call.collection === 'users').every((call) => call.args.length === 0),
+      ).toBe(true);
+    } finally {
+      app.db.getRepository = originalGetRepository;
+    }
   });
 
   it('should merge top-level record params with deep record params (deep wins)', async () => {
@@ -1017,44 +1432,30 @@ describe('plugin-flow-engine variables:resolve (no HTTP)', () => {
     });
   });
 
-  it('prefers association repository when associationName + sourceId are provided', async () => {
-    const roleRepo = app.db.getRepository('roles');
-    const roleName = 'assoc_fallback_role';
-    const role = await roleRepo.create({
-      values: {
-        name: roleName,
-        title: 'Assoc Role',
-        allowConfigure: true,
-      },
-    });
-
-    const userRolesRepo: any = app.db.getRepository('users.roles', 1);
-    try {
-      await userRolesRepo.add(roleName);
-    } catch (_) {
-      // ignore duplicate
-    }
-
+  it('strips associationName + sourceId instead of switching to association repository', async () => {
     const repoSpy = vi.spyOn(app.db as any, 'getRepository');
-
-    const payload = {
-      template: {
-        rid: '{{ ctx.popup.record.name }}',
-      },
-      contextParams: {
-        'popup.record': {
-          collection: 'roles',
-          dataSourceKey: 'main',
-          associationName: 'users.roles',
-          sourceId: 1,
-          filterByTk: role.get('name'),
+    try {
+      const payload = {
+        template: {
+          rid: '{{ ctx.popup.record.id }}',
         },
-      },
-    };
+        contextParams: {
+          'popup.record': {
+            collection: 'users',
+            dataSourceKey: 'main',
+            associationName: 'users.roles',
+            sourceId: 1,
+            filterByTk: 1,
+          },
+        },
+      };
 
-    const res = await execResolve(payload, 1);
-    const data = res.body?.data ?? res.body;
-    expect(data?.rid).toBe(roleName);
-    expect(repoSpy).toHaveBeenCalledWith('users.roles', 1);
+      const res = await execResolve(payload, 1);
+      const data = res.body?.data ?? res.body;
+      expect(data?.rid).toBe(1);
+      expect(repoSpy).not.toHaveBeenCalledWith('users.roles', 1);
+    } finally {
+      repoSpy.mockRestore();
+    }
   });
 });
