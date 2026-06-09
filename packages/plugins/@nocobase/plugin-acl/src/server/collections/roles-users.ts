@@ -11,6 +11,7 @@ import { defineCollection } from '@nocobase/database';
 
 export default defineCollection({
   name: 'rolesUsers',
+  dataCategory: 'business',
   description: "User's roles",
   dumpRules: {
     group: 'user',
