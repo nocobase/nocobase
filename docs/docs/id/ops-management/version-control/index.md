@@ -8,7 +8,13 @@ keywords: "Kontrol versi,Version control,manajemen operasi,membuat versi,memulih
 
 Di NocoBase, **Kontrol versi** memungkinkan kamu menyimpan versi aplikasi saat ini yang bisa dipulihkan kembali. Kamu bisa membuat versi secara manual, memulihkan aplikasi ke versi yang sudah disimpan saat diperlukan, dan memakai pengaturan plugin untuk mengatur berapa banyak versi yang disimpan, shortcut yang dipakai, serta koleksi pengguna mana yang ikut disimpan bersama versi tersebut.
 
-Fitur ini bergantung pada [Manajemen Backup](../backup-manager/index.mdx). Jika plugin kontrol versi sudah diaktifkan tetapi sistem masih menampilkan error terkait, pastikan dulu Manajemen Backup juga aktif.
+Kontrol versi bergantung pada [Manajemen Backup](../backup-manager/index.mdx) untuk menyimpan dan memulihkan status aplikasi. Sebelum menggunakan kontrol versi, aktifkan Manajemen Backup terlebih dahulu.
+
+:::warning Catatan
+
+Edisi Community dan Standard tidak menyertakan plugin kontrol versi. Jika kamu perlu menyimpan status aplikasi yang bisa dipulihkan, gunakan [Manajemen Backup](../backup-manager/index.mdx): buat backup manual sebelum perubahan penting, lalu pulihkan backup yang sesuai saat perlu kembali ke kondisi sebelumnya.
+
+:::
 
 ## Membuka plugin
 
