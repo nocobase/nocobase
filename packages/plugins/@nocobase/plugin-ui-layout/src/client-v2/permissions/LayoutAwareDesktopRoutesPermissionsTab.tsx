@@ -238,22 +238,20 @@ function filterRouteItems(
     return items;
   }
 
-  return items
-    .map((item) => {
-      const children = filterRouteItems(item.children ?? [], normalizedKeyword, t);
-      const title = translateTitle(item.title, t).toLowerCase();
-      const routePath = item.routePath?.toLowerCase() ?? '';
+  return items.reduce<RoutePermissionRecord[]>((filteredItems, item) => {
+    const children = filterRouteItems(item.children ?? [], normalizedKeyword, t);
+    const title = translateTitle(item.title, t).toLowerCase();
+    const routePath = item.routePath?.toLowerCase() ?? '';
 
-      if (title.includes(normalizedKeyword) || routePath.includes(normalizedKeyword) || children.length) {
-        return {
-          ...item,
-          children: children.length ? children : undefined,
-        };
-      }
+    if (title.includes(normalizedKeyword) || routePath.includes(normalizedKeyword) || children.length) {
+      filteredItems.push({
+        ...item,
+        children: children.length ? children : undefined,
+      });
+    }
 
-      return null;
-    })
-    .filter((item): item is RoutePermissionRecord => !!item);
+    return filteredItems;
+  }, []);
 }
 
 export function getLayoutLabel(layout: UiLayoutRecord, t: (key: string, options?: Record<string, unknown>) => string) {
