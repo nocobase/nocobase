@@ -152,7 +152,7 @@ const BackupSettings = () => {
   const storageOptions = useMemo(
     () =>
       (storagesRequest.data ?? []).map((storage) => ({
-        label: storage.title ?? storage.name ?? String(storage.id),
+        label: storage.title,
         value: storage.id,
       })),
     [storagesRequest.data],
@@ -214,17 +214,7 @@ const BackupSettings = () => {
         </Form.Item>
 
         <Form.Item name="storageId" label={label(t('Sync backups to cloud storage'))}>
-          <Select
-            allowClear
-            loading={storagesRequest.loading}
-            options={storageOptions}
-            style={{ width: '100%' }}
-            onDropdownVisibleChange={(open) => {
-              if (open) {
-                storagesRequest.refresh();
-              }
-            }}
-          />
+          <Select loading={storagesRequest.loading} options={storageOptions} style={{ width: '100%' }} />
         </Form.Item>
 
         <Form.Item name="enableFilesBackup" label={label(t('Backup local storage files'))} valuePropName="checked">
