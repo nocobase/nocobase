@@ -1027,6 +1027,15 @@ function normalizeRenderableMobileTabItems(tabItems: MobileTabNode[], designMode
   }));
 }
 
+function normalizeRenderableMobileMenuItems(routes: FakeMobileDesktopRoute[], designModeEnabled: boolean) {
+  const renderableRoutes = designModeEnabled ? routes : routes.filter((route) => !route.hidden && !route.hideInMenu);
+
+  return renderableRoutes.map((route) => ({
+    ...route,
+    children: normalizeRenderableMobileMenuItems(route.children || [], designModeEnabled),
+  }));
+}
+
 function isActiveRouteRepresentedByMobileTabs(tabItems: MobileTabNode[], activeRouteKey: string | undefined) {
   if (!activeRouteKey) {
     return false;
@@ -1179,16 +1188,16 @@ const MobileHomePlaceholder = observer(
       renderableTabItems.find((route) => route.active) ||
       renderableTabItems.find((route) => route.type === NocoBaseDesktopRouteType.flowPage) ||
       renderableTabItems[0];
-    const menuItems = useMemo(
-      () =>
-        normalizeAccessibleDesktopRoutesToMobileRoutes(
-          activeRoute?.route.children || [],
-          routeTitleT,
-          [],
-          model.getMobileBasePathname(),
-        ),
-      [activeRoute?.route.children, model, routeTitleT],
-    );
+    const menuItems = useMemo(() => {
+      const routes = normalizeAccessibleDesktopRoutesToMobileRoutes(
+        activeRoute?.route.children || [],
+        routeTitleT,
+        [],
+        model.getMobileBasePathname(),
+      );
+
+      return normalizeRenderableMobileMenuItems(routes, designModeEnabled);
+    }, [activeRoute?.route.children, designModeEnabled, model, routeTitleT]);
     const tabBarColumnCount = Math.max(1, renderableTabItems.length + (designModeEnabled ? 1 : 0));
     const dropdownMenuItems = useMemo<MenuProps['items']>(
       () =>

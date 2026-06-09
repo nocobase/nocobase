@@ -1026,6 +1026,85 @@ describe('plugin-ui-layout mobile models', () => {
     });
   });
 
+  it('should hide hidden child menu routes outside design mode', async () => {
+    renderMobileLayoutWithRouteRepository({
+      listAccessible: () => [
+        {
+          id: 1,
+          type: NocoBaseDesktopRouteType.flowPage,
+          title: 'Home',
+          schemaUid: 'home-page',
+          children: [
+            {
+              id: 11,
+              type: NocoBaseDesktopRouteType.flowPage,
+              title: 'Visible child',
+              schemaUid: 'visible-child',
+            },
+            {
+              id: 12,
+              type: NocoBaseDesktopRouteType.flowPage,
+              title: 'Hidden child',
+              schemaUid: 'hidden-child',
+              hidden: true,
+            },
+            {
+              id: 13,
+              type: NocoBaseDesktopRouteType.link,
+              title: 'Hidden link child',
+              schemaUid: 'hidden-link-child',
+              hideInMenu: true,
+              options: {
+                href: '/hidden-link',
+              },
+            },
+          ],
+        },
+      ],
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText('Visible child')).toBeInTheDocument();
+      expect(screen.queryByText('Hidden child')).not.toBeInTheDocument();
+      expect(screen.queryByText('Hidden link child')).not.toBeInTheDocument();
+    });
+  });
+
+  it('should keep hidden child menu routes visible in design mode', async () => {
+    window.localStorage.setItem(FLOW_SETTINGS_PREFERENCE_STORAGE_KEY, '1');
+
+    renderMobileLayoutWithRouteRepository({
+      listAccessible: () => [
+        {
+          id: 1,
+          type: NocoBaseDesktopRouteType.flowPage,
+          title: 'Home',
+          schemaUid: 'home-page',
+          children: [
+            {
+              id: 11,
+              type: NocoBaseDesktopRouteType.flowPage,
+              title: 'Visible child',
+              schemaUid: 'visible-child',
+            },
+            {
+              id: 12,
+              type: NocoBaseDesktopRouteType.flowPage,
+              title: 'Hidden child',
+              schemaUid: 'hidden-child',
+              hidden: true,
+            },
+          ],
+        },
+      ],
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText('Visible child')).toBeInTheDocument();
+      expect(screen.getByText('Hidden child')).toBeInTheDocument();
+    });
+  });
+
   it('should render hidden mobile tab items in design mode with a hidden marker', async () => {
     window.localStorage.setItem(FLOW_SETTINGS_PREFERENCE_STORAGE_KEY, '1');
 
