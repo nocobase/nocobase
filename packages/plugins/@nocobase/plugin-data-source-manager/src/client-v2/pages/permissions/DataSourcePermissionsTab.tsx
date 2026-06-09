@@ -228,7 +228,6 @@ interface GeneralActionPermissionsProps {
 }
 
 function GeneralActionPermissions(props: GeneralActionPermissionsProps) {
-  const { token } = theme.useToken();
   const ctx = useFlowContext();
   const { message } = App.useApp();
   const [actions, setActions] = useState<string[]>([]);
@@ -276,11 +275,6 @@ function GeneralActionPermissions(props: GeneralActionPermissionsProps) {
         width: 100%;
       `}
     >
-      <Typography.Paragraph type="secondary" style={{ marginBottom: token.marginSM }}>
-        {props.t(
-          'All collections use general action permissions by default; permission configured individually will override the default one.',
-        )}
-      </Typography.Paragraph>
       <StrategyActionsEditor
         value={actions}
         onChange={handleChange}
