@@ -9,7 +9,7 @@
 
 import { useFlowContext } from '@nocobase/flow-engine';
 import { useRequest } from 'ahooks';
-import { Card, Flex, Space, theme } from 'antd';
+import { Card, Space } from 'antd';
 import React from 'react';
 import { BackupsTable } from '../components/BackupsTable';
 import { NewBackup } from '../components/NewBackup';
@@ -22,7 +22,6 @@ const EMPTY_BACKUPS_LIST: BackupsListBody = { data: [] };
 
 const BackupsManagement = () => {
   const ctx = useFlowContext();
-  const { token } = theme.useToken();
   const request = useRequest<BackupsListBody, []>(async () => {
     const response = await ctx.api.request<BackupsListBody>({
       url: `${NAMESPACE}:list`,
@@ -34,14 +33,12 @@ const BackupsManagement = () => {
 
   return (
     <BackupsContext.Provider value={request}>
-      <Card>
-        <Flex justify="flex-end" style={{ marginBottom: token.marginMD }}>
-          <Space>
-            <RefreshBackups />
-            <RestoreFromLocal />
-            <NewBackup />
-          </Space>
-        </Flex>
+      <Card bordered={false}>
+        <Space style={{ float: 'right', marginBottom: 16 }}>
+          <RefreshBackups />
+          <RestoreFromLocal />
+          <NewBackup />
+        </Space>
         <BackupsTable />
       </Card>
     </BackupsContext.Provider>

@@ -36,6 +36,7 @@ export class PluginBackupsClientV2 extends Plugin<Record<string, never>, Applica
       menuKey: NAMESPACE,
       key: 'list',
       title: this.t('Backup list') as unknown as string,
+      icon: 'CloudServerOutlined',
       aclSnippet: `pm.${NAMESPACE}`,
       componentLoader: () => import('./pages/BackupsManagement'),
     });
@@ -44,6 +45,7 @@ export class PluginBackupsClientV2 extends Plugin<Record<string, never>, Applica
       menuKey: NAMESPACE,
       key: 'settings',
       title: this.t('Settings') as unknown as string,
+      icon: 'SettingOutlined',
       aclSnippet: `pm.${NAMESPACE}.settings`,
       componentLoader: () => import('./pages/BackupSettings'),
     });

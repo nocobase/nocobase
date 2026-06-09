@@ -11,6 +11,8 @@ import { useFlowContext } from '@nocobase/flow-engine';
 import { useRequest } from 'ahooks';
 import { App, Button, Card, Checkbox, Form, Input, InputNumber, Select, Space, Switch } from 'antd';
 import React, { useMemo, useState } from 'react';
+import { CronProps as ReactJsCronProps, Cron as ReactCron } from 'react-js-cron';
+import 'react-js-cron/dist/styles.css';
 import { useT } from '../locale';
 
 type BackupSettingsValues = {
@@ -42,9 +44,75 @@ type ResourceResponse<T> = {
 const DEFAULT_FORM_VALUES: BackupSettingsValues = {
   scheduled: false,
   cron: '0 0 * * *',
-  keep: 1,
+  keep: 100,
   enableFilesBackup: false,
 };
+
+type BackupCronProps = Omit<ReactJsCronProps, 'setValue' | 'value'> & {
+  value?: string;
+  onChange?: (value: string) => void;
+};
+
+type WindowWithCronLocale = Window & {
+  cronLocale?: ReactJsCronProps['locale'];
+};
+
+const BACKUP_SETTINGS_CRON_STYLES = `
+  .nb-backup-settings-cron {
+    min-width: 0;
+    margin: 0;
+    padding: 0;
+    border: 0;
+  }
+
+  .nb-backup-settings-cron .react-js-cron {
+    padding: 0.5em 0.5em 0 0.5em;
+    border: 1px dashed #ccc;
+  }
+
+  .nb-backup-settings-cron .react-js-cron .react-js-cron-field {
+    flex-shrink: 0;
+    margin-bottom: 0.5em;
+  }
+
+  .nb-backup-settings-cron .react-js-cron .react-js-cron-field > span {
+    flex-shrink: 0;
+    margin: 0 0.5em 0 0;
+  }
+
+  .nb-backup-settings-cron .react-js-cron .react-js-cron-field > .react-js-cron-select {
+    margin: 0 0.5em 0 0;
+  }
+
+  .nb-backup-settings-cron
+    .react-js-cron
+    .react-js-cron-field
+    > .react-js-cron-select
+    .ant-select-selection-overflow {
+    align-items: center;
+    flex: initial;
+  }
+`;
+
+const BackupCron = ({ onChange, value, ...props }: BackupCronProps) => {
+  const cronLocale = (window as WindowWithCronLocale).cronLocale;
+
+  return (
+    <fieldset className="nb-backup-settings-cron">
+      <ReactCron
+        {...props}
+        clearButton={false}
+        locale={cronLocale}
+        value={value ?? DEFAULT_FORM_VALUES.cron ?? ''}
+        setValue={(nextValue) => {
+          onChange?.(nextValue);
+        }}
+      />
+    </fieldset>
+  );
+};
+
+const label = (text: string) => <strong>{text}:</strong>;
 
 const BackupSettings = () => {
   const ctx = useFlowContext();
@@ -112,42 +180,45 @@ const BackupSettings = () => {
   };
 
   return (
-    <Card>
+    <Card bordered={false}>
+      <style>{BACKUP_SETTINGS_CRON_STYLES}</style>
       <Form<BackupSettingsValues>
         form={form}
         layout="vertical"
         initialValues={DEFAULT_FORM_VALUES}
         disabled={settingsRequest.loading}
       >
-        <Form.Item label={t('Automatic backup')}>
-          <Space direction="vertical">
+        <Form.Item label={label(t('Automatic backup'))}>
+          <Space direction="vertical" style={{ width: '100%' }}>
             <Form.Item name="scheduled" valuePropName="checked" noStyle>
               <Checkbox>{t('Run automatic backup on the cron schedule')}</Checkbox>
             </Form.Item>
             <Form.Item
               name="cron"
               rules={[{ required: !!scheduled, message: t('The field value is required') }]}
-              noStyle
+              style={{ marginBottom: 0 }}
             >
-              <Input disabled={!scheduled} placeholder="0 0 * * *" />
+              <BackupCron disabled={!scheduled} />
             </Form.Item>
           </Space>
         </Form.Item>
 
         <Form.Item
           name="keep"
-          label={t('Maximum number of backups')}
-          tooltip={t('The maximum number of backups to keep, older backups are automatically deleted.')}
+          label={label(t('Maximum number of backups'))}
+          extra={t('The maximum number of backups to keep, older backups are automatically deleted.')}
+          required
           rules={[{ required: true, message: t('The field value is required') }]}
         >
-          <InputNumber min={1} />
+          <InputNumber min={1} style={{ width: '100%' }} />
         </Form.Item>
 
-        <Form.Item name="storageId" label={t('Sync backups to cloud storage')}>
+        <Form.Item name="storageId" label={label(t('Sync backups to cloud storage'))}>
           <Select
             allowClear
             loading={storagesRequest.loading}
             options={storageOptions}
+            style={{ width: '100%' }}
             onDropdownVisibleChange={(open) => {
               if (open) {
                 storagesRequest.refresh();
@@ -156,16 +227,16 @@ const BackupSettings = () => {
           />
         </Form.Item>
 
-        <Form.Item name="enableFilesBackup" label={t('Backup local storage files')} valuePropName="checked">
+        <Form.Item name="enableFilesBackup" label={label(t('Backup local storage files'))} valuePropName="checked">
           <Switch />
         </Form.Item>
 
         <Form.Item
           name="encryptionPassword"
-          label={t('Restore password')}
-          tooltip={t('If a restore password is set, it must be entered when restoring the backup.')}
+          label={label(t('Restore password'))}
+          extra={t('If a restore password is set, it must be entered when restoring the backup.')}
         >
-          <Input.Password autoComplete="new-password" />
+          <Input.Password autoComplete="new-password" style={{ width: '100%' }} />
         </Form.Item>
 
         <Form.Item>

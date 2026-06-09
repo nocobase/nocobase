@@ -10,7 +10,7 @@
 import { Table, useCurrentAppInfo } from '@nocobase/client-v2';
 import { useFlowContext } from '@nocobase/flow-engine';
 import { useRequest } from 'ahooks';
-import { App, Button, Divider, Space, theme } from 'antd';
+import { App, Divider, Space, theme } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import dayjs from 'dayjs';
 import { saveAs } from 'file-saver';
@@ -100,6 +100,7 @@ export const BackupsTable = () => {
       {
         title: t('Backup list'),
         dataIndex: 'name',
+        width: 400,
         onCell: (record) => {
           return record.inProgress
             ? {
@@ -125,7 +126,9 @@ export const BackupsTable = () => {
         title: t('Created at'),
         dataIndex: 'createdAt',
         onCell: hideCellWhenInProgress,
-        render: (value: string | undefined) => (value ? dayjs(value).format('YYYY-MM-DD HH:mm:ss') : '-'),
+        render: (value: string | undefined) => {
+          return value ? dayjs(value).format('YYYY-MM-DD HH:mm:ss') : null;
+        },
       },
       {
         title: t('Actions'),
@@ -134,12 +137,14 @@ export const BackupsTable = () => {
         render: (_: unknown, record) => (
           <Space split={<Divider type="vertical" />}>
             <RestoreFromBackup backup={record} />
-            <Button type="link" size="small" onClick={() => handleDownload(record)}>
+            <a
+              onClick={() => {
+                handleDownload(record);
+              }}
+            >
               {t('Download')}
-            </Button>
-            <Button type="link" size="small" onClick={() => handleDestroy(record)}>
-              {t('Delete')}
-            </Button>
+            </a>
+            <a onClick={() => handleDestroy(record)}>{t('Delete')}</a>
           </Space>
         ),
       },
