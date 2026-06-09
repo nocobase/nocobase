@@ -21,7 +21,7 @@ import { useMemoizedFn, useRequest } from 'ahooks';
 import { Alert, App, Empty, Form, Radio, Tabs, Tag, Typography, theme } from 'antd';
 import type { ColumnsType, TablePaginationConfig } from 'antd/es/table';
 import React, { lazy, Suspense, useMemo, useRef, useState } from 'react';
-import { compileLegacyTemplate } from '../../utils/compileLegacyTemplate';
+import { compileLegacyTemplate, compileLegacyTemplateText } from '../../utils/compileLegacyTemplate';
 import { StrategyActionsEditor, RoleResourceActionsEditor } from './PermissionEditors';
 import {
   saveRoleResourcePermissions,
@@ -145,6 +145,79 @@ function getStableLazyComponent<Props>(
   const Component = lazy(loader);
   cache.set(key, { loader, Component });
   return Component;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
+}
+
+function normalizeSearchText(value: unknown) {
+  return String(value ?? '').toLowerCase();
+}
+
+function matchCollectionFilterValue(candidates: string[], operator: string, value: unknown) {
+  const expected = normalizeSearchText(value);
+  if (!expected) {
+    return true;
+  }
+
+  switch (operator) {
+    case '$eq':
+      return candidates.some((candidate) => candidate === expected);
+    case '$ne':
+      return candidates.every((candidate) => candidate !== expected);
+    case '$notIncludes':
+      return candidates.every((candidate) => !candidate.includes(expected));
+    case '$includes':
+    default:
+      return candidates.some((candidate) => candidate.includes(expected));
+  }
+}
+
+function matchCollectionFilterField(candidates: string[], value: unknown) {
+  if (!isRecord(value)) {
+    return matchCollectionFilterValue(candidates, '$includes', value);
+  }
+
+  const operatorEntries = Object.entries(value).filter(([operator]) => operator.startsWith('$'));
+  if (!operatorEntries.length) {
+    return true;
+  }
+
+  return operatorEntries.every(([operator, operatorValue]) =>
+    matchCollectionFilterValue(candidates, operator, operatorValue),
+  );
+}
+
+function matchesRoleCollectionFilter(
+  record: RoleCollectionRecord,
+  filter: unknown,
+  t: (key: string, options?: Record<string, unknown>) => string,
+) {
+  if (!isRecord(filter)) {
+    return true;
+  }
+
+  const results: boolean[] = [];
+  if (Array.isArray(filter.$and)) {
+    results.push(filter.$and.every((item) => matchesRoleCollectionFilter(record, item, t)));
+  }
+  if (Array.isArray(filter.$or)) {
+    results.push(filter.$or.some((item) => matchesRoleCollectionFilter(record, item, t)));
+  }
+
+  if (Object.prototype.hasOwnProperty.call(filter, 'title')) {
+    const rawTitle = record.title == null ? '' : String(record.title);
+    const candidates = Array.from(
+      new Set([rawTitle, compileLegacyTemplateText(record.title, t, '')].filter(Boolean).map(normalizeSearchText)),
+    );
+    results.push(matchCollectionFilterField(candidates, filter.title));
+  }
+  if (Object.prototype.hasOwnProperty.call(filter, 'name')) {
+    results.push(matchCollectionFilterField([normalizeSearchText(record.name)], filter.name));
+  }
+
+  return results.length ? results.every(Boolean) : true;
 }
 
 interface GeneralActionPermissionsProps {
@@ -363,28 +436,36 @@ function CollectionActionPermissionsContent(props: CollectionActionPermissionsPr
       if (!props.activeRole?.name) {
         return { records: [], total: 0 };
       }
-      const filter = {
-        hidden: { $isFalsy: true },
-        dataSourceKey: props.dataSource.key,
-        ...(collectionFilter || {}),
-      };
       const response = await resource.list({
-        page,
-        pageSize,
-        filter,
+        page: 1,
+        pageSize: COLLECTION_ACTION_PERMISSION_PAGE_SIZE,
+        filter: {
+          dataSourceKey: props.dataSource.key,
+        },
         sort: ['sort'],
         appends: ['fields'],
       });
       return normalizeListResponse(response);
     },
     {
-      refreshDeps: [props.activeRole?.name, props.dataSource.key, page, pageSize, collectionFilter],
+      refreshDeps: [props.activeRole?.name, props.dataSource.key],
     },
   );
 
+  const filteredRecords = useMemo(() => {
+    return (request.data?.records || []).filter((record) =>
+      matchesRoleCollectionFilter(record, collectionFilter, props.t),
+    );
+  }, [collectionFilter, props.t, request.data?.records]);
+
+  const pagedRecords = useMemo(() => {
+    const start = (page - 1) * pageSize;
+    return filteredRecords.slice(start, start + pageSize);
+  }, [filteredRecords, page, pageSize]);
+
   const openResourceForm = useMemoizedFn((record: RoleCollectionRecord) => {
     ctx.viewer.drawer({
-      width: token.screenLG,
+      width: '50%',
       closable: true,
       content: () => (
         <ResourcePermissionForm
@@ -438,15 +519,15 @@ function CollectionActionPermissionsContent(props: CollectionActionPermissionsPr
 
   const pagination = useMemo<TablePaginationConfig>(
     () => ({
-      current: request.data?.page ?? page,
-      pageSize: request.data?.pageSize ?? pageSize,
-      total: request.data?.total,
+      current: page,
+      pageSize,
+      total: filteredRecords.length,
       onChange(nextPage, nextPageSize) {
         setPage(nextPage);
         setPageSize(nextPageSize);
       },
     }),
-    [page, pageSize, request.data?.page, request.data?.pageSize, request.data?.total],
+    [filteredRecords.length, page, pageSize],
   );
 
   return (
@@ -482,7 +563,7 @@ function CollectionActionPermissionsContent(props: CollectionActionPermissionsPr
       <Table<RoleCollectionRecord>
         rowKey="name"
         loading={request.loading}
-        dataSource={request.data?.records || []}
+        dataSource={pagedRecords}
         columns={columns}
         pagination={pagination}
         scroll={{ x: 'max-content', y: '100%' }}
@@ -632,7 +713,7 @@ export default function DataSourcePermissionsTab(props: DataSourcePermissionsTab
 
   const openDataSourceDrawer = useMemoizedFn((record: DataSourceRecord) => {
     ctx.viewer.drawer({
-      width: token.screenLG,
+      width: '50%',
       closable: true,
       content: () => (
         <DataSourcePermissionDrawer
