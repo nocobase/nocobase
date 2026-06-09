@@ -64,7 +64,7 @@ export interface DataSourceTypeOptions {
   disableTestConnection?: boolean;
   capabilities?: {
     query?: boolean;
-    sql?: boolean;
+    runSQL?: boolean;
   };
   AddCollection?: ComponentType<DataSourceCollectionActionProps>;
   EditCollection?: ComponentType<DataSourceCollectionActionProps>;

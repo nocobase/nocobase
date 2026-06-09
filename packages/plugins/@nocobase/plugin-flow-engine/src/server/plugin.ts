@@ -40,15 +40,11 @@ export class PluginFlowEngineServer extends PluginUISchemaStorageServer {
 
     const cm = dataSource.collectionManager as SequelizeCollectionManager;
 
-    if (cm.db) {
-      return await cm.db.runSQL(sql, options);
-    }
-
-    if (typeof (dataSource as any).runSQL !== 'function') {
+    if (typeof cm.db?.runSQL !== 'function') {
       throw new Error(`data source "${key}" does not support SQL`);
     }
 
-    return await (dataSource as any).runSQL(sql, options);
+    return await cm.db.runSQL(sql, options);
   }
 
   async load() {

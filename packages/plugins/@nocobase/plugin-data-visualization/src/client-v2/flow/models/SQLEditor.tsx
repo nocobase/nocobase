@@ -39,7 +39,7 @@ export const SQLEditor: React.FC<{
           dataSource?.key === DEFAULT_DATA_SOURCE_KEY ||
           dataSource?.options?.isDBInstance ||
           dataSource?.isDBInstance ||
-          getDataSourceCapabilities(dataSource)?.sql,
+          getDataSourceCapabilities(dataSource)?.runSQL,
       )
       .map(({ key, displayName }: any) => ({ value: key, label: compile(displayName) }));
   }, [dm, compile]);

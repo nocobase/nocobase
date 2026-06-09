@@ -16,39 +16,9 @@ import { middlewares } from '@nocobase/server';
 import { QueryParams } from '../types';
 import { resolveVariablesTemplate } from '@nocobase/plugin-flow-engine';
 
-const getDataSource = (ctx: Context, dataSource: string) => {
-  return ctx.app.dataSourceManager.dataSources.get(dataSource);
-};
-
-const getQueryCollectionSource = (ctx: Context, dataSource: string) => {
+const getQueryDatabase = (ctx: Context, dataSource: string) => {
   const ds = ctx.app.dataSourceManager.dataSources.get(dataSource);
-  return ds?.collectionManager.db || ds?.collectionManager;
-};
-
-const getQueryPermissionSource = (ctx: Context, dataSource: string) => {
-  const source = getQueryCollectionSource(ctx, dataSource);
-  const ds = getDataSource(ctx, dataSource);
-
-  if (!ds || ds.collectionManager.db || !source) {
-    return source || ctx.db;
-  }
-
-  return {
-    getCollection: source.getCollection.bind(source),
-    getFieldByPath: ctx.db.getFieldByPath.bind(ctx.db),
-    getRepository: ctx.db.getRepository.bind(ctx.db),
-  };
-};
-
-const getRepository = (ctx: Context, dataSource: string, collection: string) => {
-  const ds = getDataSource(ctx, dataSource);
-  const source = getQueryCollectionSource(ctx, dataSource) || ctx.db;
-
-  if (ds && !ds.collectionManager.db) {
-    return ds.collectionManager.getRepository(collection);
-  }
-
-  return source.getRepository(collection);
+  return ds?.collectionManager?.db || ctx.db;
 };
 
 const getTimezone = (ctx: Context) =>
@@ -57,16 +27,22 @@ const getTimezone = (ctx: Context) =>
 export const checkPermission = async (ctx: Context, next: Next) => {
   const values = ctx.action.params.values || {};
   const acl = ctx.app.dataSourceManager.get(values.dataSource)?.acl || ctx.app.acl;
+  const currentRoles = ctx.state?.currentRoles || (ctx.state?.currentRole ? [ctx.state.currentRole] : []);
+
+  if (currentRoles.includes('root')) {
+    await next();
+    return;
+  }
 
   try {
     const result = await applyQueryPermission({
       acl,
-      db: getQueryPermissionSource(ctx, values.dataSource),
+      db: getQueryDatabase(ctx, values.dataSource),
       resourceName: values.collection,
       query: values,
       currentUser: ctx.state?.currentUser,
       currentRole: ctx.state?.currentRole,
-      currentRoles: ctx.state?.currentRoles,
+      currentRoles,
       timezone: getTimezone(ctx) as string,
       state: ctx.state,
     });
@@ -83,7 +59,7 @@ export const checkPermission = async (ctx: Context, next: Next) => {
 
 export const queryData = async (ctx: Context, next: Next) => {
   const { dataSource, collection, ...queryOptions } = ctx.action.params.values;
-  const repository = getRepository(ctx, dataSource, collection);
+  const repository = getQueryDatabase(ctx, dataSource).getRepository(collection);
   ctx.body = await repository.query({
     context: ctx,
     ...queryOptions,
