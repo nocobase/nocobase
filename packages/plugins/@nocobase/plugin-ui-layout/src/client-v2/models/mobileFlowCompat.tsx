@@ -167,19 +167,30 @@ function IconField(props: IconPickerProps) {
           if (!filteredIcons.includes(key)) {
             return null;
           }
+          const iconLabel = key.replace(/outlined|filled|twotone$/i, '');
 
           return (
-            <span
+            <button
               key={key}
-              title={key.replace(/outlined|filled|twotone$/i, '')}
-              style={{ fontSize: iconSize, marginRight: token.marginSM, cursor: 'pointer' }}
+              type="button"
+              aria-label={iconLabel}
+              title={iconLabel}
+              style={{
+                padding: 0,
+                border: 0,
+                background: 'transparent',
+                color: 'inherit',
+                fontSize: iconSize,
+                marginRight: token.marginSM,
+                cursor: 'pointer',
+              }}
               onClick={() => {
                 onChange?.(key);
                 setOpen(false);
               }}
             >
               <Icon type={key} />
-            </span>
+            </button>
           );
         })}
       </div>

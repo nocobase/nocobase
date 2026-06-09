@@ -21,6 +21,7 @@ import {
 import { NocoBaseDesktopRouteType, type NocoBaseDesktopRoute } from '@nocobase/client-v2/flow-compat';
 import { App as AntdApp } from 'antd';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import {
   createViewScopedEngine,
   FlowEngine,
@@ -3342,6 +3343,30 @@ describe('plugin-ui-layout mobile models', () => {
       expect(popover).toBeInTheDocument();
       expect(Number(popover?.style.zIndex)).toBeGreaterThan(6000);
     });
+  });
+
+  it('should expose menu edit icon choices as keyboard accessible buttons', async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+
+    render(React.createElement(MobileMenuSettingsIconPicker, { onChange }));
+
+    fireEvent.click(screen.getByRole('button', { name: 'Select icon' }));
+
+    const rawIconOption = await waitFor(() => {
+      const option = Array.from(document.querySelectorAll<HTMLElement>('[title]')).find((element) =>
+        element.getAttribute('title'),
+      );
+      expect(option).toBeTruthy();
+      return option as HTMLElement;
+    });
+    const iconLabel = rawIconOption.getAttribute('title') as string;
+    const iconOption = screen.getByRole('button', { name: iconLabel });
+
+    iconOption.focus();
+    await user.keyboard('{Enter}');
+
+    expect(onChange).toHaveBeenCalledWith(expect.any(String));
   });
 
   it('should not persist mobile menu item runtime props when saving settings', async () => {
