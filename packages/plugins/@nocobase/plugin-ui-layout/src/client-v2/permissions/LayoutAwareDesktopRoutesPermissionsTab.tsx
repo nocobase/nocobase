@@ -10,7 +10,7 @@
 import { Table } from '@nocobase/client-v2';
 import { useFlowContext } from '@nocobase/flow-engine';
 import { useMemoizedFn, useRequest } from 'ahooks';
-import { Button, Checkbox, Drawer, Space, Switch, Typography, theme } from 'antd';
+import { Button, Checkbox, Drawer, Input, Space, Switch, Typography, theme } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { uniq } from 'lodash';
 import React, { useEffect, useMemo, useState } from 'react';
@@ -68,12 +68,18 @@ interface DesktopRouteRecord {
   title?: string;
   hidden?: boolean;
   parentId?: number;
+  options?: DesktopRouteOptions;
   children?: DesktopRouteRecord[];
+}
+
+interface DesktopRouteOptions {
+  path?: unknown;
 }
 
 interface RoutePermissionRecord {
   id: number;
   title?: string;
+  routePath?: string;
   parentId?: number;
   children?: RoutePermissionRecord[];
 }
@@ -181,10 +187,16 @@ function toRouteItems(items: DesktopRouteRecord[] | undefined, parentId?: number
     return {
       id: item.id,
       title: item.title,
+      routePath: toRoutePath(item.options),
       parentId,
       children: children.length ? children : undefined,
     };
   });
+}
+
+function toRoutePath(options: DesktopRouteOptions | undefined) {
+  const path = options?.path;
+  return typeof path === 'string' && path.trim() ? path.trim() : undefined;
 }
 
 function getAllChildrenIds(items: RoutePermissionRecord[] | undefined): number[] {
@@ -213,6 +225,35 @@ function translateTitle(title: unknown, t: (key: string, options?: Record<string
     return t('Unnamed');
   }
   return t(title) || t('Unnamed');
+}
+
+function filterRouteItems(
+  items: RoutePermissionRecord[],
+  keyword: string,
+  t: (key: string, options?: Record<string, unknown>) => string,
+): RoutePermissionRecord[] {
+  const normalizedKeyword = keyword.trim().toLowerCase();
+
+  if (!normalizedKeyword) {
+    return items;
+  }
+
+  return items
+    .map((item) => {
+      const children = filterRouteItems(item.children ?? [], normalizedKeyword, t);
+      const title = translateTitle(item.title, t).toLowerCase();
+      const routePath = item.routePath?.toLowerCase() ?? '';
+
+      if (title.includes(normalizedKeyword) || routePath.includes(normalizedKeyword) || children.length) {
+        return {
+          ...item,
+          children: children.length ? children : undefined,
+        };
+      }
+
+      return null;
+    })
+    .filter((item): item is RoutePermissionRecord => !!item);
 }
 
 export function getLayoutLabel(layout: UiLayoutRecord, t: (key: string, options?: Record<string, unknown>) => string) {
@@ -260,6 +301,7 @@ export default function LayoutAwareDesktopRoutesPermissionsTab(props: Permission
   const [selectedLayoutUid, setSelectedLayoutUid] = useState<string | null>(null);
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [routeKeyword, setRouteKeyword] = useState('');
   const activeLayoutUid = selectedLayoutUid || DEFAULT_ADMIN_UI_LAYOUT.uid;
   const routeFilter = useMemo(() => createDesktopRouteLayoutPermissionFilter(activeLayoutUid), [activeLayoutUid]);
   const uiLayoutsResource = useMemo(() => ctx.api.resource('uiLayouts') as unknown as ListResource, [ctx.api]);
@@ -329,12 +371,16 @@ export default function LayoutAwareDesktopRoutesPermissionsTab(props: Permission
     return data.data;
   }, [activeLayoutUid, routeService.data, routeService.error]);
   const routeItems = useMemo(() => toRouteItems(routeData), [routeData]);
+  const visibleRouteItems = useMemo(() => filterRouteItems(routeItems, routeKeyword, t), [routeItems, routeKeyword, t]);
   const flatItems = useMemo(() => flattenItems(routeItems), [routeItems]);
   const allIds = useMemo(() => getAllChildrenIds(routeItems), [routeItems]);
+  const visibleIds = useMemo(() => getAllChildrenIds(visibleRouteItems), [visibleRouteItems]);
   const itemById = useMemo(() => new Map(flatItems.map((item) => [item.id, item])), [flatItems]);
   const emptyText = routeService.error
     ? t('Failed to load routes for {{layout}}', { layout: selectedLayoutLabel })
-    : t('No routes in {{layout}}', { layout: selectedLayoutLabel });
+    : routeKeyword.trim()
+      ? t('No matching routes in {{layout}}', { layout: selectedLayoutLabel })
+      : t('No routes in {{layout}}', { layout: selectedLayoutLabel });
 
   const roleScopedRouteService = useRequest(
     async () => {
@@ -365,6 +411,7 @@ export default function LayoutAwareDesktopRoutesPermissionsTab(props: Permission
 
   useEffect(() => {
     setSelectedIds([]);
+    setRouteKeyword('');
   }, [activeLayoutUid, role?.name]);
 
   const layoutAccessService = useRequest(
@@ -492,7 +539,12 @@ export default function LayoutAwareDesktopRoutesPermissionsTab(props: Permission
   );
 
   const setAll = useMemoizedFn(async () => {
-    const nextIds = selectedIds.length === allIds.length ? [] : allIds;
+    const selectedIdSet = new Set(selectedIds);
+    const visibleIdSet = new Set(visibleIds);
+    const visibleAllSelected = !!visibleIds.length && visibleIds.every((id) => selectedIdSet.has(id));
+    const nextIds = visibleAllSelected
+      ? selectedIds.filter((id) => !visibleIdSet.has(id))
+      : uniq([...selectedIds, ...visibleIds]);
     await applyPermissionChanges(nextIds);
   });
 
@@ -549,6 +601,10 @@ export default function LayoutAwareDesktopRoutesPermissionsTab(props: Permission
       setDrawerOpen(false);
     }
   });
+  const visibleSelectedCount = useMemo(() => {
+    const selectedIdSet = new Set(selectedIds);
+    return visibleIds.filter((id) => selectedIdSet.has(id)).length;
+  }, [selectedIds, visibleIds]);
 
   const layoutRows = useMemo<LayoutSummaryRecord[]>(
     () =>
@@ -623,11 +679,18 @@ export default function LayoutAwareDesktopRoutesPermissionsTab(props: Permission
         render: (value) => translateTitle(value, t),
       },
       {
+        dataIndex: 'routePath',
+        title: t('Route path'),
+        render: (value: string | undefined) =>
+          value ? value : <Typography.Text type="secondary">{t('No route path')}</Typography.Text>,
+      },
+      {
         dataIndex: 'accessible',
         title: (
           <Checkbox
-            checked={!!allIds.length && selectedIds.length === allIds.length}
-            disabled={!activeLayoutAccessible}
+            checked={!!visibleIds.length && visibleSelectedCount === visibleIds.length}
+            indeterminate={visibleSelectedCount > 0 && visibleSelectedCount < visibleIds.length}
+            disabled={!activeLayoutAccessible || !visibleIds.length}
             onChange={setAll}
           >
             {t('Allow access')}
@@ -646,7 +709,7 @@ export default function LayoutAwareDesktopRoutesPermissionsTab(props: Permission
         },
       },
     ],
-    [activeLayoutAccessible, allIds.length, selectedIds, setAll, t, toggleItem],
+    [activeLayoutAccessible, selectedIds, setAll, t, toggleItem, visibleIds.length, visibleSelectedCount],
   );
 
   if (!role) {
@@ -706,13 +769,23 @@ export default function LayoutAwareDesktopRoutesPermissionsTab(props: Permission
             {t('Allow access to this layout')}
           </Checkbox>
           <Typography.Text strong>{t('Menu permissions')}</Typography.Text>
+          <Input.Search
+            allowClear
+            aria-label={t('Search routes')}
+            placeholder={t('Search routes')}
+            value={routeKeyword}
+            onChange={(event) => setRouteKeyword(event.target.value)}
+          />
           <Table<RoutePermissionRecord>
             rowKey="id"
             loading={routeService.loading || roleScopedRouteService.loading}
             pagination={false}
-            expandable={{ defaultExpandAllRows: false }}
+            expandable={{
+              defaultExpandAllRows: false,
+              expandedRowKeys: routeKeyword.trim() ? visibleIds : undefined,
+            }}
             columns={routeColumns}
-            dataSource={routeItems}
+            dataSource={visibleRouteItems}
             locale={{ emptyText }}
           />
         </Space>
