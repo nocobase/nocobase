@@ -324,13 +324,13 @@ test('replaceManagedNginxConfigBlock preserves user-edited content outside the m
   expect(replaced).not.toContain('old content');
 });
 
-test('buildEnvProxyConfig renders a Caddy route config when provider is caddy', async () => {
+test('buildEnvProxyConfig renders a full Caddy app config when provider is caddy', async () => {
   const root = await createTempRoot('nocobase-cli-env-proxy-caddy-');
   const runtime = await createLocalRuntime(root);
 
   const result = await buildEnvProxyConfig(runtime, { provider: 'caddy' });
 
-  expect(result.content).toContain('route {');
+  expect(result.content).toContain(':80 {');
   expect(result.content).toContain('encode zstd gzip');
   expect(result.content).toContain('handle_path /dist/*');
   expect(result.content).toContain('try_files {path} /index-v1.html');
@@ -351,7 +351,7 @@ test('buildEnvProxyConfig renders explicit Caddy redirects when app public path 
   expect(result.content).toContain('redir * /nocobase{uri} 302');
 });
 
-test('buildEnvProxyCaddyBundle renders app.caddy, generated.caddy, and index HTML files', async () => {
+test('buildEnvProxyCaddyBundle renders app.caddy and index HTML files', async () => {
   const root = await createTempRoot('nocobase-cli-env-proxy-caddy-bundle-');
   process.env.NB_CLI_ROOT = root;
   await setCliConfigValue('proxy.nb-cli-root', '/workspace', { scope: 'global' });
@@ -367,13 +367,13 @@ test('buildEnvProxyCaddyBundle renders app.caddy, generated.caddy, and index HTM
   expect(bundle.entryDir).toBe(path.join(root, '.nocobase', 'proxy', 'caddy', 'demo'));
   expect(bundle.publicDir).toBe(path.join(root, '.nocobase', 'proxy', 'caddy', 'demo', 'public'));
   expect(bundle.appConfigPath).toBe(path.join(root, '.nocobase', 'proxy', 'caddy', 'demo', 'app.caddy'));
-  expect(bundle.generatedConfigPath).toBe(path.join(root, '.nocobase', 'proxy', 'caddy', 'demo', 'generated.caddy'));
   expect(bundle.indexV1Path).toBe(path.join(root, '.nocobase', 'proxy', 'caddy', 'demo', 'public', 'index-v1.html'));
   expect(bundle.indexV2Path).toBe(path.join(root, '.nocobase', 'proxy', 'caddy', 'demo', 'public', 'index-v2.html'));
-  expect(bundle.appConfigContent).toContain('import ./generated.caddy');
-  expect(bundle.generatedConfigContent).toContain('handle_path /console/admin/* {');
-  expect(bundle.generatedConfigContent).toContain('try_files {path} /index-v2.html');
-  expect(bundle.generatedConfigContent).toContain('root * /workspace/.nocobase/proxy/caddy/demo/public');
+  expect(bundle.appConfigContent).toContain(':80 {');
+  expect(bundle.appConfigContent).not.toContain('route {');
+  expect(bundle.appConfigContent).toContain('handle_path /console/admin/* {');
+  expect(bundle.appConfigContent).toContain('try_files {path} /index-v2.html');
+  expect(bundle.appConfigContent).toContain('root * /workspace/.nocobase/proxy/caddy/demo/public');
   expect(bundle.mainConfigContent).toContain('import /workspace/.nocobase/proxy/caddy/*/app.caddy');
   expect(bundle.indexV1Content).toContain(`window['__webpack_public_path__'] = "/console/dist/2.1.0-beta.44/";`);
   expect(bundle.indexV1Content).toContain(`window['__nocobase_public_path__'] = "/console/";`);
@@ -384,7 +384,7 @@ test('buildEnvProxyCaddyBundle renders app.caddy, generated.caddy, and index HTM
 test('buildEnvProxyAppConfig creates an editable Caddy app entry with a managed import block', () => {
   expect(buildEnvProxyAppConfig('caddy', '/tmp/nocobase/proxy/demo/generated.caddy')).toBe(`:80 {
     # BEGIN NocoBase generated routes
-    # Keep this import so \`nb env proxy\` can refresh managed routes.
+    # Keep this import so the CLI can refresh managed routes.
     import ./generated.caddy
     # END NocoBase generated routes
 }
@@ -396,7 +396,7 @@ test('buildEnvProxyAppConfig creates an editable Caddy app entry with a managed 
     }),
   ).toBe(`a.local.nocobase.com:8080 {
     # BEGIN NocoBase generated routes
-    # Keep this import so \`nb env proxy\` can refresh managed routes.
+    # Keep this import so the CLI can refresh managed routes.
     import ./generated.caddy
     # END NocoBase generated routes
 }

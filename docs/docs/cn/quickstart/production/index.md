@@ -1,7 +1,7 @@
 ---
 title: "生产环境部署"
 description: "快速完成 NocoBase 生产环境部署：先配置应用自启动，再配置反向代理。"
-keywords: "NocoBase,生产环境部署,nb app autostart,nb env proxy,Nginx,Caddy"
+keywords: "NocoBase,生产环境部署,nb app autostart,nb proxy nginx,nb proxy caddy,Nginx,Caddy"
 ---
 
 # 生产环境部署
@@ -14,7 +14,7 @@ keywords: "NocoBase,生产环境部署,nb app autostart,nb env proxy,Nginx,Caddy
 对应到 NocoBase CLI，主要就是下面两组命令：
 
 - `nb app autostart`
-- `nb env proxy`
+- `nb proxy`
 
 这篇页先把整体路径讲清楚，具体到 Nginx 或 Caddy 的配置细节，再继续看各自的子页。
 
@@ -85,22 +85,26 @@ nb app autostart run --verbose
 
 在 NocoBase CLI 里，推荐入口是：
 
-- `nb env proxy nginx`
-- `nb env proxy caddy`
+- `nb proxy nginx`
+- `nb proxy caddy`
 
 ### 默认做法
 
 如果你的应用已经保存成 CLI env，并且属于 `local` 或 `docker`，通常直接让 CLI 生成配置就够了：
 
 ```bash
-nb env proxy nginx --env app1 --host app.example.com
-nb env proxy caddy --env app1 --host app.example.com
+nb proxy nginx use docker
+nb proxy nginx generate --env app1 --host app.example.com
+
+nb proxy caddy use local
+nb proxy caddy generate --env app1 --host app.example.com
 ```
 
-如果当前 env 就是目标 env，也可以省略 `--env`：
+生成完成后，再启动对应 provider：
 
 ```bash
-nb env proxy nginx --host app.example.com
+nb proxy nginx start
+nb proxy caddy start
 ```
 
 CLI 会顺手帮你处理几类手写时很容易漏掉的细节，比如：
@@ -129,7 +133,7 @@ CLI 会顺手帮你处理几类手写时很容易漏掉的细节，比如：
 1. 先确认应用已经能在服务器本机正常启动
 2. 执行 `nb app autostart enable`
 3. 把 `nb app autostart run` 接入系统启动流程
-4. 选择 Nginx 或 Caddy，并执行对应的 `nb env proxy` 子命令
+4. 选择 Nginx 或 Caddy，并执行对应的 `nb proxy` 子命令
 5. 用域名或入口地址验证外部访问是否正常
 
 ## 快速索引
@@ -140,7 +144,8 @@ CLI 会顺手帮你处理几类手写时很容易漏掉的细节，比如：
 | 继续用 Nginx 管理入口层 | [Nginx](./reverse-proxy/nginx.md) |
 | 用 Caddy 更快接入 HTTPS | [Caddy](./reverse-proxy/caddy.md) |
 | 查看应用的启动、停止、日志和升级 | [管理应用](../operations/manage-app.md) |
-| 查看 `nb env proxy` 的命令参考 | [`nb env proxy`](../../api/cli/env/proxy/index.md) |
+| 查看 `nb proxy nginx` 的命令参考 | [`nb proxy nginx`](../../api/cli/proxy/nginx/index.md) |
+| 查看 `nb proxy caddy` 的命令参考 | [`nb proxy caddy`](../../api/cli/proxy/caddy/index.md) |
 
 ## 相关命令
 
@@ -154,9 +159,13 @@ nb app autostart list
 # 启动所有已开启自启动的 env
 nb app autostart run
 
-# 生成 Nginx 反向代理配置
-nb env proxy nginx --env app1 --host app.example.com
+# 选择 Nginx 的运行方式并生成配置
+nb proxy nginx use docker
+nb proxy nginx generate --env app1 --host app.example.com
+nb proxy nginx start
 
-# 生成 Caddy 反向代理配置
-nb env proxy caddy --env app1 --host app.example.com
+# 选择 Caddy 的运行方式并生成配置
+nb proxy caddy use local
+nb proxy caddy generate --env app1 --host app.example.com
+nb proxy caddy start
 ```

@@ -1,14 +1,14 @@
 ---
-title: 'nb env update'
-description: 'Référence de la commande nb env update : met à jour les configurations enregistrées d’API, d’authentification, de code source, d’application et de base de données.'
-keywords: 'nb env update,NocoBase CLI,configuration env,authentification,base de données,code source'
+title: "nb env update"
+description: "Référence de la commande nb env update : mettre à jour la configuration enregistrée de l'API, de l'authentification, du code source, de l'application et de la base de données."
+keywords: "nb env update,NocoBase CLI,configuration d'env,authentification,base de données,code source"
 ---
 
 # nb env update
 
-`nb env update` sert à mettre à jour la configuration d’un env déjà enregistré. Vous pouvez l’utiliser pour ajuster l’adresse API, la méthode d’authentification, la source du code, le chemin de l’application locale, le port, les paramètres de base de données, etc. Une fois la mise à jour terminée, le CLI traitera automatiquement les étapes suivantes en fonction des modifications.
+`nb env update` met à jour la configuration d'un env enregistré. Tu peux l'utiliser pour ajuster l'adresse de l'API, la méthode d'authentification, l'origine du code source, le chemin local de l'application, le chemin public, le port, les paramètres de base de données, et plus encore. Une fois la mise à jour terminée, la CLI traite automatiquement les étapes de suivi nécessaires en fonction des changements.
 
-Si vous n’ajoutez aucun paramètre de configuration, le CLI effectuera également une resynchronisation selon l’état actuel de l’env.
+Si tu ne fournis aucun paramètre de configuration, la CLI effectue quand même une resynchronisation basée sur l'état actuel de l'env.
 
 ## Utilisation
 
@@ -16,108 +16,117 @@ Si vous n’ajoutez aucun paramètre de configuration, le CLI effectuera égalem
 nb env update [name] [flags]
 ```
 
-## Paramètres généraux
+## Options courantes
 
-| Paramètre   | Type    | Description                                                                           |
-| ----------- | ------- | ------------------------------------------------------------------------------------- |
-| `[name]`    | string  | Nom de l’environnement configuré à mettre à jour ; si omis, l’env actuel est utilisé. |
-| `--verbose` | boolean | Affiche la progression détaillée.                                                     |
+| Option | Type | Description |
+| --- | --- | --- |
+| `[name]` | string | Nom de l'env configuré à mettre à jour. Si omis, l'env courant est utilisé |
+| `--verbose` | boolean | Afficher une progression détaillée |
 
-## Paramètres d’API et d’authentification
+## Options d'API et d'authentification
 
-| Paramètre                         | Type   | Description                                                                                                                                                                               |
-| --------------------------------- | ------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `--api-base-url`, `-u`            | string | Adresse de l’API NocoBase, incluant le préfixe `/api`.                                                                                                                                    |
-| `--auth-type`                     | string | Méthode d’authentification : `basic`, `token`, `oauth`.                                                                                                                                   |
-| `--access-token`, `--token`, `-t` | string | Clé API ou access token utilisé pour l’authentification `token`. Après l’enregistrement, la méthode d’authentification sera basculée vers `token`.                                        |
-| `--username`                      | string | Nom d’utilisateur enregistré pour l’authentification `basic`. Peut être utilisé uniquement lorsque l’env actuel utilise `basic`, ou lorsque `--auth-type basic` est fourni en même temps. |
+| Option | Type | Description |
+| --- | --- | --- |
+| `--api-base-url`, `-u` | string | URL de l'API NocoBase, y compris le préfixe `/api` |
+| `--auth-type` | string | Méthode d'authentification : `basic`, `token` ou `oauth` |
+| `--access-token`, `--token`, `-t` | string | API key ou access token utilisé avec l'authentification `token`. Son enregistrement bascule aussi le type d'authentification sur `token` |
+| `--username` | string | Nom d'utilisateur enregistré pour l'authentification `basic`. À utiliser uniquement si l'env courant utilise déjà `basic`, ou avec `--auth-type basic` |
 
-## Paramètres de code source et de téléchargement
+## Options de source et de téléchargement
 
-| Paramètre                                      | Type    | Description                                                                               |
-| ---------------------------------------------- | ------- | ----------------------------------------------------------------------------------------- |
-| `--source`                                     | string  | Source d’application enregistrée : `docker`, `git`, `local`, `npm`.                       |
-| `--download-version`, `--version`              | string  | Paramètre de version enregistré : tag Docker, version de paquet npm ou ref Git.           |
-| `--docker-registry`                            | string  | Nom du registre d’images Docker, sans le tag.                                             |
-| `--docker-platform`                            | string  | Plateforme de l’image Docker : `auto`, `linux/amd64`, `linux/arm64`.                      |
-| `--git-url`                                    | string  | Adresse du dépôt Git.                                                                     |
-| `--npm-registry`                               | string  | Registry utilisé pour les téléchargements npm/Git et l’installation des dépendances.      |
-| `--dev-dependencies` / `--no-dev-dependencies` | boolean | Indique s’il faut installer les devDependencies lors d’une installation npm/Git.          |
-| `--build` / `--no-build`                       | boolean | Indique s’il faut construire automatiquement après un téléchargement npm/Git.             |
-| `--build-dts` / `--no-build-dts`               | boolean | Indique s’il faut générer les fichiers de déclaration TypeScript lors de la construction. |
+| Option | Type | Description |
+| --- | --- | --- |
+| `--source` | string | Source enregistrée de l'application : `docker`, `git`, `local` ou `npm` |
+| `--download-version`, `--version` | string | Sélecteur de version enregistré : tag Docker, version de paquet npm ou ref Git |
+| `--docker-registry` | string | Nom du registre d'images Docker, sans le tag |
+| `--docker-platform` | string | Plateforme de l'image Docker : `auto`, `linux/amd64` ou `linux/arm64` |
+| `--git-url` | string | URL du dépôt Git |
+| `--npm-registry` | string | Registre utilisé pour les téléchargements npm ou Git et l'installation des dépendances |
+| `--dev-dependencies` / `--no-dev-dependencies` | boolean | Installer ou non les `devDependencies` pour les sources npm ou Git |
+| `--build` / `--no-build` | boolean | Compiler automatiquement ou non après un téléchargement npm ou Git |
+| `--build-dts` / `--no-build-dts` | boolean | Générer ou non les fichiers de déclaration TypeScript pendant la compilation |
 
-## Paramètres de l’application
+## Options d'application
 
-| Paramètre    | Type   | Description                                                                                                                     |
-| ------------ | ------ | ------------------------------------------------------------------------------------------------------------------------------- |
-| `--app-path` | string | Répertoire de l’application. Il est désormais recommandé d’utiliser en priorité ce paramètre pour gérer les répertoires locaux. |
-| `--app-port` | string | Port HTTP de l’application.                                                                                                     |
-| `--app-key`  | string | Clé de l’application (`APP_KEY`).                                                                                               |
-| `--timezone` | string | Fuseau horaire de l’application (`TZ`).                                                                                         |
+| Option | Type | Description |
+| --- | --- | --- |
+| `--app-path` | string | Répertoire de l'application. C'est désormais la méthode recommandée pour gérer le chemin local de l'application |
+| `--app-public-path` | string | Chemin public de l'application (`APP_PUBLIC_PATH`), comme `/` ou `/nocobase/` |
+| `--app-port` | string | Port HTTP de l'application |
+| `--cdn-base-url` | string | URL de base du CDN pour les ressources statiques du client (`CDN_BASE_URL`) |
+| `--app-key` | string | Clé de l'application (`APP_KEY`) |
+| `--timezone` | string | Fuseau horaire de l'application (`TZ`) |
 
-## Paramètres de base de données
+## Options de base de données
 
-| Paramètre                                  | Type    | Description                                                                    |
-| ------------------------------------------ | ------- | ------------------------------------------------------------------------------ |
-| `--builtin-db` / `--no-builtin-db`         | boolean | Indique s’il faut utiliser la base de données intégrée gérée par le CLI.       |
-| `--db-dialect`                             | string  | Type de base de données : `postgres`, `mysql`, `mariadb`, `kingbase`.          |
-| `--builtin-db-image`                       | string  | Image de conteneur de la base de données intégrée.                             |
-| `--db-host`                                | string  | Adresse de l’hôte de la base de données.                                       |
-| `--db-port`                                | string  | Port de la base de données.                                                    |
-| `--db-database`                            | string  | Nom de la base de données.                                                     |
-| `--db-user`                                | string  | Nom d’utilisateur de la base de données.                                       |
-| `--db-password`                            | string  | Mot de passe de la base de données.                                            |
-| `--db-schema`                              | string  | Schéma de la base de données. Généralement utilisé uniquement avec PostgreSQL. |
-| `--db-table-prefix`                        | string  | Préfixe des tables de base de données.                                         |
-| `--db-underscored` / `--no-db-underscored` | boolean | Indique si les noms de tables et de champs utilisent le style avec tirets bas. |
+| Option | Type | Description |
+| --- | --- | --- |
+| `--builtin-db` / `--no-builtin-db` | boolean | Indique s'il faut utiliser la base de données intégrée gérée par la CLI |
+| `--db-dialect` | string | Type de base de données : `postgres`, `mysql`, `mariadb` ou `kingbase` |
+| `--builtin-db-image` | string | Image de conteneur utilisée pour la base de données intégrée |
+| `--db-host` | string | Hôte de la base de données |
+| `--db-port` | string | Port de la base de données |
+| `--db-database` | string | Nom de la base de données |
+| `--db-user` | string | Nom d'utilisateur de la base de données |
+| `--db-password` | string | Mot de passe de la base de données |
+| `--db-schema` | string | Schéma de la base de données. Cela n'est généralement utilisé que pour PostgreSQL |
+| `--db-table-prefix` | string | Préfixe de table |
+| `--db-underscored` / `--no-db-underscored` | boolean | Indique si les noms de tables et de champs utilisent le style avec underscores |
 
-## Paramètres de nettoyage de configuration
+## Nettoyage de configuration
 
-| Paramètre | Type     | Description                                                                                                                                                                                |
-| --------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `--unset` | string[] | Efface un ou plusieurs champs enregistrés selon le nom canonique du flag. Peut être répété ou fourni sous forme de liste séparée par des virgules, par exemple `--unset git-url,username`. |
+| Option | Type | Description |
+| --- | --- | --- |
+| `--unset` | string[] | Effacer un ou plusieurs champs enregistrés à partir du nom de flag. Tu peux répéter l'option ou passer une liste séparée par des virgules, comme `--unset git-url,username` |
 
-## Remarques
+## Notes
 
 :::tip
 
-Si vous voulez simplement que le CLI resynchronise selon le dernier état actuel de l’env, il suffit d’exécuter `nb env update` ou `nb env update <name>`, sans paramètre supplémentaire.
+Si tu veux simplement que la CLI resynchronise l'env courant selon son état le plus récent, exécute simplement `nb env update` ou `nb env update <name>` sans option supplémentaire.
 
 :::
 
-- Une fois la mise à jour terminée, le CLI traitera automatiquement les synchronisations de suivi nécessaires en fonction de cette modification.
-- Les autres paramètres ne mettront à jour que la configuration enregistrée de l’env ; ils ne redémarreront pas automatiquement l’application et ne remplaceront pas automatiquement le code source local ni les images Docker.
-- Après avoir modifié des configurations comme `app-path`, `app-port`, `timezone`, `db-*`, le CLI vous invitera généralement à exécuter ensuite `nb app restart --env <name>` ; si la modification implique la base de données intégrée gérée par le CLI, il vous invitera à utiliser `nb app restart --env <name> --with-db`.
-- Lors de la mise à jour de paramètres de code source comme `source`, `download-version`, `docker-registry`, `git-url`, `npm-registry`, seules les valeurs enregistrées seront modifiées. Le code source local existant, les dépendances et les images ne seront pas remplacés automatiquement.
-- `--access-token` ne peut pas être utilisé avec `--auth-type basic` ou `--auth-type oauth`.
-- Un même champ ne peut pas être utilisé à la fois avec `--unset` et une valeur explicite. Par exemple, vous ne pouvez pas écrire en même temps `--unset git-url` et `--git-url ...`.
-- Si vous basculez la méthode d’authentification vers `basic` ou `oauth`, ou si vous effacez le token, vous devrez généralement ensuite exécuter `nb env auth <name>`.
+- Une fois la mise à jour terminée, la CLI traite automatiquement les synchronisations de suivi nécessaires en fonction des changements effectués cette fois-ci
+- Les autres options mettent seulement à jour la configuration enregistrée de l'env. Elles ne redémarrent pas automatiquement l'application et ne remplacent pas non plus le code source local ou les images Docker
+- Après modification de paramètres comme `app-path`, `app-port`, `timezone` ou `db-*`, la CLI t'indiquera généralement d'exécuter `nb app restart --env <name>` ; si le changement concerne la base de données intégrée gérée par la CLI, elle indiquera d'utiliser `nb app restart --env <name> --with-db`
+- Après modification de paramètres comme `app-port`, `app-public-path` ou `cdn-base-url` qui affectent le résultat du reverse proxy, réexécute `nb proxy nginx generate` ou `nb proxy caddy generate` si tu utilises déjà une configuration proxy générée
+- Lors de la mise à jour de paramètres de source comme `source`, `download-version`, `docker-registry`, `git-url` ou `npm-registry`, seules les valeurs enregistrées changent. Le code source local, les dépendances et les images existants ne sont pas remplacés automatiquement
+- `--access-token` ne peut pas être utilisé avec `--auth-type basic` ou `--auth-type oauth`
+- Le même champ ne peut pas être utilisé à la fois avec `--unset` et avec une valeur explicite. Par exemple, n'utilise pas `--unset git-url` avec `--git-url ...`
+- Si tu bascules la méthode d'authentification vers `basic` ou `oauth`, ou si tu effaces le token, tu devras généralement exécuter ensuite `nb env auth <name>`
 
 ## Exemples
 
 ```bash
-# Resynchroniser l’env actuel selon le dernier état
+# Resynchroniser l'env courant selon son dernier état enregistré
 nb env update
 
-# Resynchroniser l’env spécifié selon le dernier état
+# Resynchroniser un env spécifique
 nb env update prod
 
-# Mettre à jour l’adresse API
+# Mettre à jour l'URL de l'API
 nb env update prod --api-base-url http://localhost:13000/api
 
-# Mettre à jour le token et basculer la méthode d’authentification vers token
+# Mettre à jour le token et basculer le type d'authentification vers token
 nb env update prod --access-token <token>
 
-# Basculer vers l’authentification basic, enregistrer seulement le nom d’utilisateur, puis exécuter nb env auth plus tard
+# Passer à l'authentification basic, enregistrer le nom d'utilisateur et exécuter nb env auth plus tard
 nb env update prod --auth-type basic --username admin
 
-# Ajuster la source du code et la version, mettre à jour uniquement la configuration enregistrée
+# Mettre à jour la source et la version enregistrées sans remplacer immédiatement le code local
 nb env update local --source git --git-url git@github.com:nocobase/nocobase.git --download-version next
 
-# Ajuster le port de l’application et le fuseau horaire, puis redémarrer l’application plus tard
+# Ajuster le port de l'application et le fuseau horaire, puis redémarrer plus tard
 nb env update local --app-port 13080 --timezone Asia/Shanghai
 
-# Effacer les champs enregistrés
+# Ajuster le chemin public et régénérer le proxy ensuite si nécessaire
+nb env update local --app-public-path /nocobase/
+
+# Enregistrer l'URL de base du CDN pour les ressources du client
+nb env update local --cdn-base-url https://cdn.example.com/nocobase/
+
+# Effacer des champs enregistrés
 nb env update local --unset git-url --unset username
 nb env update local --unset git-url,username
 ```

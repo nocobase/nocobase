@@ -141,6 +141,8 @@ export interface AuthConfig {
     };
     proxy?: {
       nbCliRoot?: string;
+      caddyDriver?: string;
+      nginxDriver?: string;
       upstreamHost?: string;
     };
     log?: {
@@ -310,11 +312,19 @@ function normalizeAuthConfig(config: AuthConfig & { dockerResourcePrefix?: strin
           }
         : {}),
       ...(settings.proxy?.nbCliRoot ||
+      settings.proxy?.caddyDriver ||
+      settings.proxy?.nginxDriver ||
       settings.proxy?.upstreamHost ||
       (settings.proxy as { host?: unknown } | undefined)?.host
         ? {
             proxy: {
               ...(settings.proxy?.nbCliRoot ? { nbCliRoot: normalizeOptionalString(settings.proxy.nbCliRoot) } : {}),
+              ...(settings.proxy?.caddyDriver
+                ? { caddyDriver: normalizeOptionalString(settings.proxy.caddyDriver) }
+                : {}),
+              ...(settings.proxy?.nginxDriver
+                ? { nginxDriver: normalizeOptionalString(settings.proxy.nginxDriver) }
+                : {}),
               ...(settings.proxy?.upstreamHost || (settings.proxy as { host?: unknown } | undefined)?.host
                 ? {
                     upstreamHost: normalizeOptionalString(

@@ -1,53 +1,94 @@
+---
+title: "Caddy"
+description: "Dùng nb proxy caddy để tạo và quản lý cấu hình reverse proxy Caddy cho các env NocoBase do CLI quản lý."
+keywords: "NocoBase,nb proxy caddy,reverse proxy,Caddy,production"
+---
+
 # Caddy
 
-Nếu bạn đã có tên miền và muốn cấu hình luôn HTTPS càng sớm càng tốt, Caddy thường là lựa chọn nhẹ đầu hơn. Trong phần lớn trường hợp, chỉ cần một `Caddyfile` ngắn là đủ.
+Nếu bạn đã có domain và muốn bật HTTPS thật nhanh, `nb proxy caddy` thường là điểm vào đơn giản nhất.
 
-## Cấu hình tối thiểu có thể chạy
+## Thứ tự được khuyến nghị
 
-Hãy chỉnh sửa `/etc/caddy/Caddyfile`:
+Với một env do CLI quản lý thuộc loại `local` hoặc `docker`, thứ tự mặc định là:
 
-```text
-your-domain.com {
-  encode zstd gzip
-  reverse_proxy 127.0.0.1:13000
-}
+```bash
+nb proxy caddy use docker
+nb proxy caddy generate --env test2 --host c.local.nocobase.com
+nb proxy caddy start
+```
+
+Hoặc chạy bằng tiến trình cục bộ:
+
+```bash
+nb proxy caddy use local
+nb proxy caddy generate --env test2 --host c.local.nocobase.com
+nb proxy caddy start
+```
+
+Các lệnh theo sau thường dùng là:
+
+```bash
+nb proxy caddy current
+nb proxy caddy status
+nb proxy caddy info
+nb proxy caddy reload
+nb proxy caddy restart
+nb proxy caddy stop
+```
+
+## Dữ liệu đầu vào cho `generate`
+
+Cách dùng phổ biến nhất là:
+
+```bash
+nb proxy caddy generate --env test2 --host c.local.nocobase.com
+```
+
+Nếu bạn cũng muốn chỉ định cổng entry:
+
+```bash
+nb proxy caddy generate --env test2 --host c.local.nocobase.com --port 8080
 ```
 
 Trong đó:
 
-- đổi `your-domain.com` thành tên miền của bạn
-- đổi `127.0.0.1:13000` thành địa chỉ thực tế mà NocoBase đang lắng nghe
+- `--env`: env CLI nào sẽ được tạo cấu hình
+- `--host`: tên miền công khai
+- `--port`: cổng entry của proxy
 
-Nếu tên miền đã trỏ đúng về máy chủ hiện tại, Caddy thường sẽ tự động xử lý việc xin và gia hạn chứng chỉ HTTPS.
+Với Caddy, `--host` đặc biệt quan trọng vì địa chỉ site ảnh hưởng trực tiếp đến luồng HTTPS.
 
-## Kiểm tra và nạp lại cấu hình
+## Các tệp do CLI quản lý
+
+Lấy `test2` làm ví dụ, workflow của Caddy thường quản lý:
+
+- `NB_CLI_ROOT/.nocobase/proxy/caddy/test2/app.caddy`
+- `NB_CLI_ROOT/.nocobase/proxy/caddy/nocobase.caddy`
+- `NB_CLI_ROOT/.nocobase/proxy/caddy/test2/public/index-v1.html`
+- `NB_CLI_ROOT/.nocobase/proxy/caddy/test2/public/index-v2.html`
+- `NB_CLI_ROOT/test2/storage/dist-client`
+- `NB_CLI_ROOT/test2/storage/uploads`
+
+Trong đó:
+
+- `nocobase.caddy` là tệp entry ở cấp provider, dùng để import tất cả các tệp `app.caddy` của env
+- `app.caddy` là cấu hình site đầy đủ cho một env và sẽ bị ghi đè toàn bộ khi bạn tạo lại
+
+## Cấu hình viết tay
+
+Nếu ứng dụng không do CLI quản lý, hoặc bạn cố ý muốn tự duy trì toàn bộ cấu hình Caddy, bạn vẫn có thể viết tay.
+
+Nhưng với NocoBase, một entry Caddy sẵn sàng cho production thường phải xử lý nhiều hơn một dòng `reverse_proxy` đơn giản. Thông thường nó cũng bao gồm uploads, tài nguyên frontend, các route `.well-known`, WebSocket và các trang fallback SPA.
+
+Khi ứng dụng dùng triển khai theo subpath, hoặc khi tài nguyên, uploads và lớp entry không cùng chia sẻ một góc nhìn đường dẫn, cấu hình viết tay sẽ dễ sai hơn. Trong những trường hợp như vậy, thường an toàn hơn nếu tạo cấu hình trước bằng:
 
 ```bash
-caddy validate --config /etc/caddy/Caddyfile
-systemctl reload caddy
+nb proxy caddy generate --env test2 --host c.local.nocobase.com
 ```
 
-Nếu bạn không quản lý Caddy bằng `systemd`, hãy dùng quy trình khởi động và reload riêng của bạn.
+## Liên kết liên quan
 
-## Nếu trước mắt chỉ muốn chạy HTTP
-
-Nếu bạn chưa có tên miền, bạn cũng có thể tạm thời lắng nghe một cổng để kiểm tra trước:
-
-```shell
-:80 {
-  reverse_proxy 127.0.0.1:13000
-}
-```
-
-Tuy vậy, trong production thực tế, bạn vẫn nên sớm chuyển sang cấu hình có tên miền.
-
-## Khi nào Caddy phù hợp hơn
-
-- bạn muốn bật HTTPS nhanh hơn
-- bạn không muốn tự duy trì quá nhiều cấu hình reverse proxy
-- hiện tại bạn chỉ cần một lớp entry đơn giản và ổn định
-
-## Xem tiếp ở đâu
-
-- Nếu ứng dụng của bạn vẫn chưa chạy, hãy xem [Cài đặt bằng Docker Compose](../../installation/docker-compose.md) trước
-- Nếu bạn vẫn cần kiểm tra cổng hoặc khóa, hãy xem tiếp [Biến môi trường của ứng dụng](../../installation/env.md)
+- [Reverse proxy trong môi trường production](./index.md)
+- [Nginx](./nginx.md)
+- [Cài bằng CLI](../../installation/cli.md)

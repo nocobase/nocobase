@@ -1,14 +1,14 @@
 ---
-title: 'nb config get'
-description: 'nb config get コマンドリファレンス：CLI 設定項目の有効値を読み取ります。'
-keywords: 'nb config get,NocoBase CLI,設定の読み取り'
+title: "nb config get"
+description: "nb config get コマンドリファレンス：CLI 設定項目の実際に有効な値を読み取ります。"
+keywords: "nb config get,NocoBase CLI,設定を読む"
 ---
 
 # nb config get
 
-指定した CLI 設定項目の有効値を読み取ります。明示的に設定されていない場合は、デフォルト値を返します。
+指定した CLI 設定項目の実際に有効な値を読み取ります。明示的に設定されていない場合は、デフォルト値が返されます。
 
-## 使用法
+## 使い方
 
 ```bash
 nb config get <key>
@@ -16,9 +16,9 @@ nb config get <key>
 
 ## パラメータ
 
-| パラメータ | 型     | 説明                                                                                                                          |
-| ---------- | ------ | ----------------------------------------------------------------------------------------------------------------------------- |
-| `<key>` | string | 設定項目名。サポートされている値は [`nb config`](./index.md) を参照してください |
+| パラメータ | 型 | 説明 |
+| --- | --- | --- |
+| `<key>` | string | 設定項目名。対応している値は [`nb config`](./index.md) を参照してください |
 
 ## 例
 
@@ -28,7 +28,6 @@ nb config get update.policy
 nb config get license.pkg-url
 nb config get docker.network
 nb config get docker.container-prefix
-nb config get proxy.provider
 nb config get proxy.nb-cli-root
 nb config get proxy.upstream-host
 nb config get bin.nginx

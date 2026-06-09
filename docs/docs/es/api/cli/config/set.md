@@ -1,12 +1,12 @@
 ---
-title: 'nb config set'
-description: 'Referencia del comando nb config set: establece un elemento de configuración de la CLI.'
-keywords: 'nb config set,NocoBase CLI,establecer configuración'
+title: "nb config set"
+description: "Referencia del comando nb config set: establecer un elemento de configuración de la CLI."
+keywords: "nb config set,NocoBase CLI,establecer configuración"
 ---
 
 # nb config set
 
-Establece un elemento de configuración de la CLI. Consulta [`nb config`](./index.md) para ver las claves de configuración compatibles.
+Establece un elemento de configuración de la CLI. Consulta [`nb config`](./index.md) para ver las claves de configuración admitidas.
 
 ## Uso
 
@@ -16,10 +16,10 @@ nb config set <key> <value>
 
 ## Parámetros
 
-| Parámetro | Tipo   | Descripción                                                                                                                                        |
-| --------- | ------ | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Parámetro | Tipo | Descripción |
+| --- | --- | --- |
 | `<key>` | string | Nombre del elemento de configuración. Consulta [`nb config`](./index.md) para ver los valores admitidos |
-| `<value>` | string | Valor de configuración, no puede estar vacío                                                                                                       |
+| `<value>` | string | Valor de configuración; no puede estar vacío |
 
 ## Ejemplos
 
@@ -41,7 +41,6 @@ nb config set bin.yarn yarn
 ## Notas
 
 `update.policy` admite `prompt`, `auto` y `off`, y el valor predeterminado es `prompt`.
-
 
 ## Comandos relacionados
 

@@ -79,6 +79,51 @@ test('nb config set/get/delete updates supported keys', async () => {
   });
 });
 
+test('nb config set/get/delete supports proxy.caddy-driver', async () => {
+  await withTempCliHome(async () => {
+    const { default: ConfigSet } = await import('../commands/config/set.js');
+    const { default: ConfigGet } = await import('../commands/config/get.js');
+    const { default: ConfigDelete } = await import('../commands/config/delete.js');
+
+    const setCaddyDriverCommand = Object.assign(Object.create(ConfigSet.prototype), {
+      parse: vi.fn(async () => ({
+        args: {
+          key: 'proxy.caddy-driver',
+          value: 'docker',
+        },
+      })),
+      log: vi.fn(),
+    });
+    await ConfigSet.prototype.run.call(setCaddyDriverCommand);
+    expect(setCaddyDriverCommand.log).toHaveBeenCalledWith('proxy.caddy-driver=docker');
+
+    const getCaddyDriverCommand = Object.assign(Object.create(ConfigGet.prototype), {
+      parse: vi.fn(async () => ({
+        args: {
+          key: 'proxy.caddy-driver',
+        },
+      })),
+      log: vi.fn(),
+    });
+    await ConfigGet.prototype.run.call(getCaddyDriverCommand);
+    expect(getCaddyDriverCommand.log).toHaveBeenCalledWith('docker');
+
+    const deleteCaddyDriverCommand = Object.assign(Object.create(ConfigDelete.prototype), {
+      parse: vi.fn(async () => ({
+        args: {
+          key: 'proxy.caddy-driver',
+        },
+      })),
+      log: vi.fn(),
+    });
+    await ConfigDelete.prototype.run.call(deleteCaddyDriverCommand);
+    expect(deleteCaddyDriverCommand.log).toHaveBeenCalledWith('Deleted proxy.caddy-driver');
+
+    const config = await loadAuthConfig({ scope: 'global' });
+    expect(config.settings?.proxy?.caddyDriver).toBe(undefined);
+  });
+});
+
 test('nb config set/get/delete supports locale', async () => {
   await withTempCliHome(async () => {
     const { default: ConfigSet } = await import('../commands/config/set.js');
@@ -384,7 +429,7 @@ test('nb config set/get/delete supports log.enabled', async () => {
   });
 });
 
-test('nb config set/get/delete supports caddy/nginx binaries and proxy path settings', async () => {
+test('nb config set/get/delete supports caddy/nginx binaries and proxy settings', async () => {
   await withTempCliHome(async () => {
     const { default: ConfigSet } = await import('../commands/config/set.js');
     const { default: ConfigGet } = await import('../commands/config/get.js');
@@ -425,6 +470,18 @@ test('nb config set/get/delete supports caddy/nginx binaries and proxy path sett
     });
     await ConfigSet.prototype.run.call(setProxyRootCommand);
     expect(setProxyRootCommand.log).toHaveBeenCalledWith('proxy.nb-cli-root=/workspace');
+
+    const setNginxDriverCommand = Object.assign(Object.create(ConfigSet.prototype), {
+      parse: vi.fn(async () => ({
+        args: {
+          key: 'proxy.nginx-driver',
+          value: 'docker',
+        },
+      })),
+      log: vi.fn(),
+    });
+    await ConfigSet.prototype.run.call(setNginxDriverCommand);
+    expect(setNginxDriverCommand.log).toHaveBeenCalledWith('proxy.nginx-driver=docker');
 
     const setProxyHostCommand = Object.assign(Object.create(ConfigSet.prototype), {
       parse: vi.fn(async () => ({
@@ -471,6 +528,17 @@ test('nb config set/get/delete supports caddy/nginx binaries and proxy path sett
     await ConfigGet.prototype.run.call(getProxyRootCommand);
     expect(getProxyRootCommand.log).toHaveBeenCalledWith('/workspace');
 
+    const getNginxDriverCommand = Object.assign(Object.create(ConfigGet.prototype), {
+      parse: vi.fn(async () => ({
+        args: {
+          key: 'proxy.nginx-driver',
+        },
+      })),
+      log: vi.fn(),
+    });
+    await ConfigGet.prototype.run.call(getNginxDriverCommand);
+    expect(getNginxDriverCommand.log).toHaveBeenCalledWith('docker');
+
     const getProxyHostCommand = Object.assign(Object.create(ConfigGet.prototype), {
       parse: vi.fn(async () => ({
         args: {
@@ -515,6 +583,17 @@ test('nb config set/get/delete supports caddy/nginx binaries and proxy path sett
     await ConfigDelete.prototype.run.call(deleteProxyRootCommand);
     expect(deleteProxyRootCommand.log).toHaveBeenCalledWith('Deleted proxy.nb-cli-root');
 
+    const deleteNginxDriverCommand = Object.assign(Object.create(ConfigDelete.prototype), {
+      parse: vi.fn(async () => ({
+        args: {
+          key: 'proxy.nginx-driver',
+        },
+      })),
+      log: vi.fn(),
+    });
+    await ConfigDelete.prototype.run.call(deleteNginxDriverCommand);
+    expect(deleteNginxDriverCommand.log).toHaveBeenCalledWith('Deleted proxy.nginx-driver');
+
     const deleteProxyHostCommand = Object.assign(Object.create(ConfigDelete.prototype), {
       parse: vi.fn(async () => ({
         args: {
@@ -530,6 +609,7 @@ test('nb config set/get/delete supports caddy/nginx binaries and proxy path sett
     expect(config.settings?.bin?.caddy).toBe(undefined);
     expect(config.settings?.bin?.nginx).toBe(undefined);
     expect(config.settings?.proxy?.nbCliRoot).toBe(undefined);
+    expect(config.settings?.proxy?.nginxDriver).toBe(undefined);
     expect(config.settings?.proxy?.upstreamHost).toBe(undefined);
   });
 });

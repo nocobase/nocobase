@@ -1,64 +1,100 @@
+---
+title: "Nginx"
+description: "Используйте nb proxy nginx, чтобы генерировать и управлять конфигурацией reverse proxy Nginx для env NocoBase, управляемых CLI."
+keywords: "NocoBase,nb proxy nginx,reverse proxy,Nginx,production"
+---
+
 # Nginx
 
-Если ваше приложение NocoBase уже доступно по адресу `http://127.0.0.1:13000`, следующим шагом обычно ставят перед ним Nginx. У этого решения обычно два прямых плюса: наружу открываются только стандартные порты `80/443`, и позже становится проще добавить HTTPS, сертификаты и правила кеширования.
+Если вы уже используете Nginx на сервере для управления сайтами или хотите и дальше самостоятельно поддерживать сертификаты, кэширование и контроль доступа, `nb proxy nginx` — рекомендуемый путь.
 
-## Минимальная рабочая конфигурация
+## Рекомендуемый порядок
 
-Сначала создайте на сервере файл конфигурации, например `/etc/nginx/conf.d/nocobase.conf`:
-
-```nginx
-server {
-    listen 80;
-    server_name your-domain.com;
-
-    client_max_body_size 100m;
-
-    location / {
-        proxy_pass http://127.0.0.1:13000;
-        proxy_http_version 1.1;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection "upgrade";
-    }
-}
-```
-
-Здесь:
-
-- замените `server_name` на ваш домен
-- замените `127.0.0.1:13000` на фактический адрес, на котором слушает NocoBase
-- `client_max_body_size` можно увеличить в зависимости от ваших требований к загрузкам
-
-## Проверка и перезагрузка конфигурации
+Для CLI-управляемого env типа `local` или `docker` обычно используется такой порядок:
 
 ```bash
-nginx -t
-systemctl reload nginx
+nb proxy nginx use docker
+nb proxy nginx generate --env test2 --host c.local.nocobase.com
+nb proxy nginx start
 ```
 
-Если вы не управляете Nginx через `systemd`, используйте свой обычный способ перезагрузки.
+Или с локальным процессом:
 
-## Как обращаться после настройки
-
-Если DNS уже указывает на этот сервер, откройте:
-
-```text
-http://your-domain.com
+```bash
+nb proxy nginx use local
+nb proxy nginx generate --env test2 --host c.local.nocobase.com
+nb proxy nginx start
 ```
 
-Тогда Nginx будет проксировать запросы в NocoBase.
+Часто используемые последующие команды:
 
-## Что делать с HTTPS
+```bash
+nb proxy nginx current
+nb proxy nginx status
+nb proxy nginx info
+nb proxy nginx reload
+nb proxy nginx restart
+nb proxy nginx stop
+```
 
-Если вам также нужен HTTPS, обычно есть два распространенных варианта:
+## Какие входные данные нужны для `generate`
 
-- продолжить настраивать сертификаты прямо в Nginx
-- сразу перейти на [Caddy](./caddy.md), чтобы он автоматически выпускал и продлевал сертификаты
+Наиболее типичная форма:
 
-## Куда идти дальше
+```bash
+nb proxy nginx generate --env test2 --host c.local.nocobase.com
+```
 
-- Если приложение еще не запущено, сначала посмотрите [Установка через Docker Compose](../../installation/docker-compose.md)
-- Если вам еще нужно проверить порты или ключи, продолжайте с [Переменные окружения приложения](../../installation/env.md)
+Если вы также хотите указать входной порт:
+
+```bash
+nb proxy nginx generate --env test2 --host c.local.nocobase.com --port 8080
+```
+
+Где:
+
+- `--env`: для какого CLI env нужно сгенерировать конфигурацию
+- `--host`: публичное доменное имя
+- `--port`: входной порт proxy, а не собственный `appPort` приложения
+
+Если в env отсутствует `appPort`, сначала сохраните его с помощью `nb env update test2 --app-port 56575`.
+
+## Какие файлы поддерживает CLI
+
+На примере `test2` workflow Nginx обычно поддерживает:
+
+- `NB_CLI_ROOT/.nocobase/proxy/nginx/snippets`
+- `NB_CLI_ROOT/.nocobase/proxy/nginx/test2/app.conf`
+- `NB_CLI_ROOT/.nocobase/proxy/nginx/test2/public/index-v1.html`
+- `NB_CLI_ROOT/.nocobase/proxy/nginx/test2/public/index-v2.html`
+- `NB_CLI_ROOT/test2/storage/dist-client`
+- `NB_CLI_ROOT/test2/storage/uploads`
+
+Полноценная сгенерированная точка входа Nginx обычно покрывает такие области:
+
+- `uploads`
+- `dist`
+- `well-known`
+- `api`
+- `ws`
+- `spa`
+
+Это значит, что реальная production-конфигурация NocoBase обычно не сводится к одному простому блоку `proxy_pass`.
+
+## Ручная конфигурация
+
+Если приложение не управляется CLI, или вы намеренно хотите поддерживать всю конфигурацию Nginx вручную, вы всё равно можете написать её сами.
+
+Но для NocoBase готовый к production reverse proxy обычно должен обрабатывать не только проксирование на backend, но и uploads, frontend-ресурсы, WebSocket, маршруты `.well-known` и SPA fallback pages.
+
+Когда приложение использует размещение в подпути, или когда ресурсы, uploads и proxy не разделяют одно и то же представление путей, ручная конфигурация становится заметно более подверженной ошибкам. В таких случаях обычно безопаснее сначала сгенерировать конфигурацию:
+
+```bash
+nb proxy nginx generate --env test2 --host c.local.nocobase.com
+```
+
+## Связанные ссылки
+
+- [Reverse proxy в продакшене](./index.md)
+- [Caddy](./caddy.md)
+- [Установка через CLI](../../installation/cli.md)

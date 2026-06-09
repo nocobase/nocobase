@@ -1,12 +1,12 @@
 ---
-title: 'nb config set'
-description: 'Referenz zum Befehl nb config set: Setzt einen CLI-Konfigurationseintrag.'
-keywords: 'nb config set,NocoBase CLI,Konfiguration setzen'
+title: "nb config set"
+description: "Referenz zum Befehl nb config set: einen CLI-Konfigurationseintrag setzen."
+keywords: "nb config set,NocoBase CLI,Konfiguration setzen"
 ---
 
 # nb config set
 
-Setzt einen CLI-Konfigurationseintrag. Die unterstützten Konfigurationsschlüssel finden Sie unter [`nb config`](./index.md).
+Setzt einen CLI-Konfigurationseintrag. Die unterstützten Konfigurationsschlüssel findest du unter [`nb config`](./index.md).
 
 ## Verwendung
 
@@ -16,10 +16,10 @@ nb config set <key> <value>
 
 ## Parameter
 
-| Parameter | Typ    | Beschreibung                                                                                                                                     |
-| --------- | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `<key>` | string | Name des Konfigurationseintrags. Unterstützte Werte finden Sie unter [`nb config`](./index.md) |
-| `<value>` | string | Konfigurationswert, darf nicht leer sein                                                                                                         |
+| Parameter | Typ | Beschreibung |
+| --- | --- | --- |
+| `<key>` | string | Name des Konfigurationseintrags. Unterstützte Werte findest du unter [`nb config`](./index.md) |
+| `<value>` | string | Konfigurationswert, darf nicht leer sein |
 
 ## Beispiele
 
@@ -33,7 +33,6 @@ nb config set bin.docker /usr/local/bin/docker
 nb config set bin.caddy /opt/homebrew/bin/caddy
 nb config set bin.git /usr/bin/git
 nb config set bin.nginx /usr/sbin/nginx
-nb config set proxy.provider caddy
 nb config set proxy.nb-cli-root /workspace
 nb config set proxy.upstream-host host.docker.internal
 nb config set bin.yarn yarn
@@ -41,9 +40,7 @@ nb config set bin.yarn yarn
 
 ## Hinweise
 
-`update.policy` unterstützt `prompt`, `auto` und `off`; der Standardwert ist `prompt`.
-
-`proxy.provider` unterstützt `nginx` und `caddy`.
+`update.policy` unterstützt `prompt`, `auto` und `off`. Der Standardwert ist `prompt`.
 
 ## Verwandte Befehle
 
