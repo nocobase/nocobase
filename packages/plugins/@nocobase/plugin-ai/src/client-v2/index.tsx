@@ -9,6 +9,7 @@
 
 import { Plugin } from '@nocobase/client-v2';
 import { AIConfigRepository } from './repositories/AIConfigRepository';
+import { AIPluginFeatureManagerImpl } from './manager/ai-feature-manager';
 
 type AIFlowContext = {
   aiConfigRepository?: AIConfigRepository;
@@ -16,6 +17,8 @@ type AIFlowContext = {
 };
 
 export class PluginAIClientV2 extends Plugin {
+  features = new AIPluginFeatureManagerImpl();
+
   async load() {
     const context = this.app.flowEngine.context as AIFlowContext;
     if (!context.aiConfigRepository) {
@@ -45,6 +48,9 @@ export type {
 } from './ai-employees/types';
 export { formatModelLabel } from './llm-services/model-label';
 export { AIConfigRepository } from './repositories/AIConfigRepository';
+export { AIPluginFeatureManagerImpl } from './manager/ai-feature-manager';
+export * from './features';
+export { defaultVectorStorePropForm } from './features/components';
 export { useAIConfigRepository } from './repositories/hooks/useAIConfigRepository';
 export { useChatMessagesStore } from './ai-employees/chatbox/stores/chat-messages';
 export { useChatBoxStore } from './ai-employees/chatbox/stores/chat-box';

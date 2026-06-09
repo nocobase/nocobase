@@ -99,7 +99,7 @@ export class KnowledgeBaseManager {
         for (const knowledgeBase of knowledgeBaseList) {
           const vectorStoreService = await vectorStoreProvider.createVectorStoreService(
             vectorStoreConfig.vectorStoreProvider,
-            knowledgeBase.vectorStoreProps,
+            this.plugin.app.environment.renderJsonTemplate(knowledgeBase.vectorStoreProps ?? []),
           );
           const result = await vectorStoreService.search(query, {
             topK,

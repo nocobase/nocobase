@@ -35,5 +35,3 @@ export abstract class BasePluginFeatureManager<T> implements PluginFeatureManage
     return Array.from(features).every((f) => this.features[f]);
   }
 }
-
-export type PluginFeatureKeys<T> = { [key in keyof T]: key };
