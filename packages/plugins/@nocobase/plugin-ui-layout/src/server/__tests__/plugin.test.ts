@@ -61,6 +61,26 @@ describe('plugin-ui-layout server', () => {
     });
   });
 
+  it('should declare direct external runtime imports as dev dependencies', () => {
+    expect(packageJson.devDependencies).toMatchObject({
+      '@ant-design/icons': '5.x',
+      '@dnd-kit/core': '^6.0.0',
+      '@emotion/css': '11.x',
+      '@formily/antd-v5': '1.x',
+      '@formily/json-schema': '2.x',
+      '@formily/react': '2.x',
+      '@formily/reactive': '2.x',
+      '@formily/shared': '2.x',
+      ahooks: '3.x',
+      antd: '5.x',
+      lodash: '4.x',
+      react: '^18.2.0',
+      'react-i18next': '11.x',
+      'react-router-dom': '6.x',
+      sequelize: '^6.26.0',
+    });
+  });
+
   it('should ensure the default AdminLayout record exists on install', async () => {
     app = await createMockServer({
       plugins: ['ui-layout'],
