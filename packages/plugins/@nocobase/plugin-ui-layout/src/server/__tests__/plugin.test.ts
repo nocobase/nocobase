@@ -351,6 +351,121 @@ describe('plugin-ui-layout server', () => {
     expect(legacyDeniedRole?.get('desktopRoutes')).toEqual([]);
   });
 
+  it('should keep default access policies scoped to future accessible objects', async () => {
+    app = await createUiLayoutMockServer();
+
+    const role = await app.db.getRepository('roles').create({
+      values: {
+        name: 'default-policy-future-only',
+        allowNewUiLayout: false,
+        allowNewMenu: false,
+      },
+    });
+    const rootUser = await app.db.getRepository('users').findOne({
+      filter: {
+        'roles.name': 'root',
+      },
+    });
+    const rootAgent = await app.agent().login(rootUser);
+    const memberUser = await app.db.getRepository('users').create({
+      values: {
+        roles: [role.get('name')],
+      },
+    });
+    const memberAgent = await app.agent().login(memberUser);
+    const deniedLayout = await app.db.getRepository('uiLayouts').create({
+      values: {
+        uid: 'default-policy-denied-layout',
+        title: 'Default policy denied layout',
+        layoutType: 'mobile',
+        routeName: 'defaultPolicyDeniedLayout',
+        routePath: '/default-policy-denied-layout',
+        authCheck: true,
+        enabled: true,
+      },
+    });
+    const deniedHistoricalRouteResponse = await rootAgent.resource('desktopRoutes').create({
+      layout: deniedLayout.get('uid'),
+      values: {
+        type: 'flowPage',
+        title: 'DATA-DEFAULT-POLICY-DENIED-HISTORICAL',
+        schemaUid: 'default-policy-denied-historical',
+      },
+    });
+
+    await app.db.getRepository('roles').update({
+      filterByTk: role.get('name'),
+      values: {
+        allowNewUiLayout: true,
+        allowNewMenu: true,
+      },
+    });
+
+    const allowedLayout = await app.db.getRepository('uiLayouts').create({
+      values: {
+        uid: 'default-policy-allowed-layout',
+        title: 'Default policy allowed layout',
+        layoutType: 'mobile',
+        routeName: 'defaultPolicyAllowedLayout',
+        routePath: '/default-policy-allowed-layout',
+        authCheck: true,
+        enabled: true,
+      },
+    });
+    const allowedRouteResponse = await rootAgent.resource('desktopRoutes').create({
+      layout: allowedLayout.get('uid'),
+      values: {
+        type: 'flowPage',
+        title: 'DATA-DEFAULT-POLICY-ALLOWED-ROUTE',
+        schemaUid: 'default-policy-allowed-route',
+      },
+    });
+    const deniedFutureRouteResponse = await rootAgent.resource('desktopRoutes').create({
+      layout: deniedLayout.get('uid'),
+      values: {
+        type: 'flowPage',
+        title: 'DATA-DEFAULT-POLICY-DENIED-FUTURE',
+        schemaUid: 'default-policy-denied-future',
+      },
+    });
+
+    const layoutAccessRecords = await app.db.getRepository('rolesUiLayouts').find({
+      filter: {
+        roleName: role.get('name'),
+      },
+      sort: ['uiLayoutUid'],
+    });
+    const scopedMenuPermissions = await app.db.getRepository('rolesUiLayoutDesktopRoutes').find({
+      filter: {
+        roleName: role.get('name'),
+      },
+      sort: ['uiLayoutUid', 'desktopRouteId'],
+    });
+    const [accessibleLayoutsResponse, deniedRoutesResponse, allowedRoutesResponse] = await Promise.all([
+      memberAgent.get('/uiLayouts:listAccessible'),
+      memberAgent.get('/desktopRoutes:listAccessible').query({
+        layout: deniedLayout.get('uid'),
+      }),
+      memberAgent.get('/desktopRoutes:listAccessible').query({
+        layout: allowedLayout.get('uid'),
+      }),
+    ]);
+    const accessibleLayoutUids = accessibleLayoutsResponse.body.data.map((layout) => layout.uid);
+    const deniedRouteTitles = deniedRoutesResponse.body.data.map((route) => route.title);
+    const allowedRouteTitles = allowedRoutesResponse.body.data.map((route) => route.title);
+
+    expect(layoutAccessRecords.map((record) => record.get('uiLayoutUid'))).toEqual([allowedLayout.get('uid')]);
+    expect(
+      scopedMenuPermissions.map((permission) => `${permission.get('uiLayoutUid')}:${permission.get('desktopRouteId')}`),
+    ).toEqual([`${allowedLayout.get('uid')}:${allowedRouteResponse.body.data.id}`]);
+    expect(accessibleLayoutUids).toEqual([allowedLayout.get('uid')]);
+    expect(deniedRouteTitles).toEqual([]);
+    expect(allowedRouteTitles).toEqual(['DATA-DEFAULT-POLICY-ALLOWED-ROUTE']);
+    expect(scopedMenuPermissions.map((permission) => permission.get('desktopRouteId'))).not.toEqual(
+      expect.arrayContaining([deniedHistoricalRouteResponse.body.data.id, deniedFutureRouteResponse.body.data.id]),
+    );
+  });
+
   it('should sync legacy role desktop route writes to layout-scoped menu permissions', async () => {
     app = await createUiLayoutMockServer();
 
