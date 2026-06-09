@@ -159,18 +159,26 @@ const BridgeFlowRoute = ({
  * @throws {Error} 当缺少 `route.params.name` 时抛出异常
  */
 const FlowRoute = (props: FlowRouteProps = {}) => {
+  const {
+    active,
+    getLayoutModel: getLayoutModelProp,
+    legacyPageBehavior: legacyPageBehaviorProp,
+    pageUid: pageUidProp,
+  } = props;
   const flowEngine = useFlowEngine();
   const flowContext = useFlowContext<{ layout?: FlowRouteLayoutContext }>();
   const contextLayout = flowContext?.layout;
+  const propsLayoutModel = useMemo(() => getLayoutModelProp?.(flowEngine), [flowEngine, getLayoutModelProp]);
+  const routeLayout = contextLayout || propsLayoutModel?.layout;
   const getLayoutModel = useMemo(
-    () => props.getLayoutModel || ((engine: FlowEngine) => getDefaultLayoutModel(engine, contextLayout)),
-    [contextLayout, props.getLayoutModel],
+    () => getLayoutModelProp || ((engine: FlowEngine) => getDefaultLayoutModel(engine, routeLayout)),
+    [getLayoutModelProp, routeLayout],
   );
-  const legacyPageBehavior = props.legacyPageBehavior || getDefaultLegacyPageBehavior(flowEngine, contextLayout);
+  const legacyPageBehavior = legacyPageBehaviorProp || getDefaultLegacyPageBehavior(flowEngine, routeLayout);
   const app = useApp();
   const routeRepository = flowEngine.context.routeRepository;
   const params = useParams();
-  const pageUid = props.pageUid || params?.name;
+  const pageUid = pageUidProp || params?.name;
   const skipRouteRepositoryCheck = !routeRepository;
   const [guardState, setGuardState] = useState<FlowRouteGuardState>({
     pending: true,
@@ -207,7 +215,7 @@ const FlowRoute = (props: FlowRouteProps = {}) => {
       }
 
       const route = skipRouteRepositoryCheck ? undefined : routeRepository?.getRouteBySchemaUid?.(pageUid);
-      if (!route && !skipRouteRepositoryCheck && shouldRequireAccessibleRoute(contextLayout)) {
+      if (!route && !skipRouteRepositoryCheck && shouldRequireAccessibleRoute(routeLayout)) {
         setGuardState({ pending: false, allowBridge: false, notFound: true });
         return;
       }
@@ -266,7 +274,7 @@ const FlowRoute = (props: FlowRouteProps = {}) => {
     return () => {
       active = false;
     };
-  }, [app, contextLayout, flowEngine, legacyPageBehavior, pageUid, routeRepository, skipRouteRepositoryCheck]);
+  }, [app, flowEngine, legacyPageBehavior, pageUid, routeLayout, routeRepository, skipRouteRepositoryCheck]);
 
   const content = useMemo(() => {
     if (guardState.pending) {
@@ -281,8 +289,8 @@ const FlowRoute = (props: FlowRouteProps = {}) => {
       return null;
     }
 
-    return <BridgeFlowRoute pageUid={pageUid} active={props.active} getLayoutModel={getLayoutModel} />;
-  }, [getLayoutModel, guardState.allowBridge, guardState.notFound, guardState.pending, pageUid, props.active]);
+    return <BridgeFlowRoute pageUid={pageUid} active={active} getLayoutModel={getLayoutModel} />;
+  }, [active, getLayoutModel, guardState.allowBridge, guardState.notFound, guardState.pending, pageUid]);
 
   return content;
 };

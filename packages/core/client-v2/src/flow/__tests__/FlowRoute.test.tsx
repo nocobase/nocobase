@@ -707,6 +707,73 @@ describe('FlowRoute', () => {
     expect(screen.queryByText('404')).not.toBeInTheDocument();
   });
 
+  it('should use getLayoutModel layout authCheck when FlowContext has no layout', async () => {
+    const engine = new FlowEngine();
+    engine.setModelRepository({
+      findOne: vi.fn().mockResolvedValue({
+        uid: 'public-form-1',
+        use: 'FlowModel',
+      }),
+      save: vi.fn(),
+      destroy: vi.fn(),
+    } as any);
+    engine.context.defineProperty('routeRepository', {
+      value: {
+        refreshAccessible: hookState.refresh,
+        isAccessibleLoaded: () => true,
+        ensureAccessibleLoaded: vi.fn().mockResolvedValue([]),
+        getRouteBySchemaUid: vi.fn(() => undefined),
+      },
+    });
+    engine.context.defineProperty('app', {
+      value: {
+        getPublicPath: () => '/v2/',
+        router: {
+          getBasename: () => '/v2',
+        },
+      },
+    });
+
+    const layoutModel: MockAdminLayoutModel = Object.assign(
+      engine.createModel({ uid: 'public-form-layout-model', use: 'FlowModel' }),
+      {
+        registerRoutePage: vi.fn(),
+        updateRoutePage: vi.fn(),
+        unregisterRoutePage: vi.fn(),
+      },
+    );
+    Object.defineProperty(layoutModel, 'layout', {
+      value: {
+        routeName: 'public-forms',
+        routePath: '/public-forms',
+        rootRouteName: 'public-forms',
+        uid: 'public-form-layout-model',
+        layoutModelClass: 'PublicFormLayoutModel',
+        rootPageModelClass: 'PublicFormPageModel',
+        childPageModelClass: 'ChildPageModel',
+        authCheck: false,
+      },
+    });
+
+    render(
+      <FlowEngineProvider engine={engine}>
+        <MemoryRouter initialEntries={['/public-forms/public-form-1']}>
+          <Routes>
+            <Route
+              path="/public-forms/:name"
+              element={<FlowRoute legacyPageBehavior="notFound" getLayoutModel={() => layoutModel as any} />}
+            />
+          </Routes>
+        </MemoryRouter>
+      </FlowEngineProvider>,
+    );
+
+    await waitFor(() => {
+      expect(layoutModel.registerRoutePage).toHaveBeenCalledWith('public-form-1', expect.any(Object));
+    });
+    expect(screen.queryByText('404')).not.toBeInTheDocument();
+  });
+
   it('should render not found when admin route is not accessible', async () => {
     const engine = new FlowEngine();
     engine.setModelRepository({
