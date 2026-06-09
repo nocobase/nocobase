@@ -363,6 +363,66 @@ describe('plugin-ui-layout server', () => {
     expect(legacyDeniedRole?.get('desktopRoutes')).toEqual([]);
   });
 
+  it('should grant unassigned new desktop routes to AdminLayout by the role default menu access policy', async () => {
+    app = await createUiLayoutMockServer();
+
+    const adminLayout = await app.db.getRepository('uiLayouts').findOne({
+      filter: {
+        uid: DEFAULT_ADMIN_UI_LAYOUT.uid,
+      },
+    });
+    if (!adminLayout) {
+      throw new Error('Default AdminLayout ui layout should exist.');
+    }
+    const allowedRole = await app.db.getRepository('roles').create({
+      values: {
+        name: 'new-unassigned-route-default-allowed',
+        allowNewMenu: true,
+      },
+    });
+    const deniedRole = await app.db.getRepository('roles').create({
+      values: {
+        name: 'new-unassigned-route-default-denied',
+        allowNewMenu: false,
+      },
+    });
+    await app.db.getRepository('rolesUiLayouts').create({
+      values: {
+        roleName: allowedRole.get('name'),
+        uiLayoutUid: adminLayout.get('uid'),
+      },
+    });
+    await app.db.getRepository('rolesUiLayouts').create({
+      values: {
+        roleName: deniedRole.get('name'),
+        uiLayoutUid: adminLayout.get('uid'),
+      },
+    });
+
+    const route = await app.db.getRepository('desktopRoutes').create({
+      values: {
+        type: 'flowPage',
+        title: 'DATA-DEFAULT-MENU-UNASSIGNED',
+        schemaUid: 'default-menu-unassigned',
+      },
+    });
+
+    const scopedMenuPermissions = await app.db.getRepository('rolesUiLayoutDesktopRoutes').find({
+      filter: {
+        roleName: [allowedRole.get('name'), deniedRole.get('name')],
+        desktopRouteId: route.get('id'),
+      },
+      sort: ['roleName', 'uiLayoutUid', 'desktopRouteId'],
+    });
+
+    expect(
+      scopedMenuPermissions.map(
+        (permission) =>
+          `${permission.get('roleName')}:${permission.get('uiLayoutUid')}:${permission.get('desktopRouteId')}`,
+      ),
+    ).toEqual([`${allowedRole.get('name')}:${DEFAULT_ADMIN_UI_LAYOUT.uid}:${route.get('id')}`]);
+  });
+
   it('should keep default access policies scoped to future accessible objects', async () => {
     app = await createUiLayoutMockServer();
 

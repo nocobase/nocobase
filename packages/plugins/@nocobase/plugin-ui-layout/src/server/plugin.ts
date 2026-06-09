@@ -872,16 +872,16 @@ async function grantDefaultMenuAccessToNewDesktopRoute(
     transaction: options?.transaction,
   });
   const uiLayouts = route?.get('uiLayouts');
-  if (!Array.isArray(uiLayouts) || uiLayouts.length === 0) {
-    return;
-  }
-  const uiLayoutUids = Array.from(
-    new Set(
-      uiLayouts
-        .map((uiLayout) => uiLayout.get('uid'))
-        .filter((uiLayoutUid): uiLayoutUid is string => typeof uiLayoutUid === 'string' && !!uiLayoutUid),
-    ),
-  );
+  const uiLayoutUids =
+    Array.isArray(uiLayouts) && uiLayouts.length > 0
+      ? Array.from(
+          new Set(
+            uiLayouts
+              .map((uiLayout) => uiLayout.get('uid'))
+              .filter((uiLayoutUid): uiLayoutUid is string => typeof uiLayoutUid === 'string' && !!uiLayoutUid),
+          ),
+        )
+      : [DEFAULT_ADMIN_UI_LAYOUT.uid];
   if (!uiLayoutUids.length) {
     return;
   }
