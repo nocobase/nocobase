@@ -293,6 +293,38 @@ describe('KanbanBlockModel.filterCollection', () => {
     });
   });
 
+  test('syncPopupAction persists collection context for popup add-block menus', async () => {
+    const setStepParams = vi.fn();
+
+    await KanbanBlockModel.prototype.syncPopupAction.call(
+      {
+        context: { flowSettingsEnabled: false },
+      },
+      {
+        uid: 'card-view-action',
+        getStepParams: () => ({ mode: 'drawer' }),
+        setStepParams,
+      },
+      {
+        mode: 'drawer',
+        size: 'medium',
+        uid: 'card-view-action',
+        dataSourceKey: 'main',
+        collectionName: 'tasks',
+      },
+    );
+
+    expect(setStepParams).toHaveBeenCalledWith('popupSettings', 'openView', {
+      mode: 'drawer',
+      size: 'medium',
+      popupTemplateUid: undefined,
+      uid: 'card-view-action',
+      pageModelClass: undefined,
+      dataSourceKey: 'main',
+      collectionName: 'tasks',
+    });
+  });
+
   test('syncPopupAction overwrites removed popup settings with undefined so stale template params do not survive merges', async () => {
     const setStepParams = vi.fn();
 
@@ -1806,6 +1838,8 @@ describe('KanbanBlockModel.filterCollection', () => {
         },
         translate: (value: string) => value,
         collection: {
+          name: 'tasks',
+          dataSourceKey: 'main',
           getFilterByTK: (record: any) => record.id,
           filterTargetKey: 'id',
         },
@@ -1821,6 +1855,8 @@ describe('KanbanBlockModel.filterCollection', () => {
     expect(ensureCardViewAction).toHaveBeenCalledTimes(1);
     expect(openView).toHaveBeenCalledWith('card-view-action', {
       mode: 'dialog',
+      dataSourceKey: 'main',
+      collectionName: 'tasks',
       filterByTk: 1,
       navigation: false,
       target: { id: 'layout-root' },

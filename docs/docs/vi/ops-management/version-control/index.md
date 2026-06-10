@@ -8,7 +8,13 @@ keywords: "Quản lý phiên bản,Version control,vận hành,tạo phiên bả
 
 Trong NocoBase, **Quản lý phiên bản (Version control)** giúp bạn lưu lại một phiên bản có thể khôi phục của ứng dụng hiện tại. Bạn có thể tạo phiên bản thủ công, khôi phục ứng dụng về một phiên bản đã lưu khi cần, đồng thời dùng phần cài đặt của plugin để kiểm soát số lượng phiên bản được giữ lại, phím tắt sử dụng và những collection người dùng nào sẽ được lưu kèm.
 
-Plugin này phụ thuộc vào [Quản lý sao lưu](../backup-manager/index.mdx). Nếu bạn đã bật plugin quản lý phiên bản nhưng hệ thống vẫn hiển thị lỗi liên quan, trước hết hãy kiểm tra xem plugin Quản lý sao lưu đã được bật chưa.
+Quản lý phiên bản dùng [Quản lý sao lưu](../backup-manager/index.mdx) để lưu và khôi phục trạng thái ứng dụng. Trước khi sử dụng quản lý phiên bản, hãy bật Quản lý sao lưu trước.
+
+:::warning Lưu ý
+
+Phiên bản Community và Standard không bao gồm plugin quản lý phiên bản. Nếu bạn cần lưu trạng thái ứng dụng có thể khôi phục, hãy dùng [Quản lý sao lưu](../backup-manager/index.mdx): tạo bản sao lưu thủ công trước các thay đổi quan trọng, rồi khôi phục bản sao lưu tương ứng khi cần quay lại.
+
+:::
 
 ## Mở plugin
 
