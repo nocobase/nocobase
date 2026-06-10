@@ -16293,8 +16293,9 @@ export class FlowSurfacesService {
       return { riskyHints };
     }
 
-    const db = (this.plugin as any).getDatabaseByDataSourceKey?.(query?.sqlDatasource || 'main');
-    if (!db?.runSQL) {
+    const sqlDataSourceKey = query?.sqlDatasource || 'main';
+    const runSQLByDataSourceKey = (this.plugin as any).runSQLByDataSourceKey?.bind(this.plugin);
+    if (!runSQLByDataSourceKey) {
       riskyHints.push({
         key: 'sql_preview_unavailable',
         title: 'SQL preview unavailable',
@@ -16304,14 +16305,23 @@ export class FlowSurfacesService {
     }
 
     try {
-      const previewMetadataResult = await this.runChartSqlPreviewRaw(
-        db,
-        this.buildChartSqlPreviewMetadataQuery(transformed.sql),
-        transformed.bind,
-        _transaction,
-      );
-      const previewAliases = this.extractSqlChartPreviewAliases(previewMetadataResult?.[1]);
-      const rows = await db.runSQL(this.buildChartSqlPreviewQuery(transformed.sql), {
+      let previewAliases: string[] = [];
+      try {
+        const db = (this.plugin as any).getDatabaseByDataSourceKey?.(sqlDataSourceKey);
+        if (db) {
+          const previewMetadataResult = await this.runChartSqlPreviewRaw(
+            db,
+            this.buildChartSqlPreviewMetadataQuery(transformed.sql),
+            transformed.bind,
+            _transaction,
+          );
+          previewAliases = this.extractSqlChartPreviewAliases(previewMetadataResult?.[1]);
+        }
+      } catch {
+        previewAliases = [];
+      }
+
+      const rows = await runSQLByDataSourceKey(sqlDataSourceKey, this.buildChartSqlPreviewQuery(transformed.sql), {
         type: 'selectRows',
         bind: transformed.bind,
         transaction: _transaction,
