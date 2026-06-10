@@ -9,7 +9,6 @@
 
 import { createForm, Field } from '@formily/core';
 import { FieldContext, FormContext, RecursionField, useField } from '@formily/react';
-import { cloneDeep } from 'lodash';
 import {
   Collection,
   ResourceActionContext,
@@ -101,22 +100,7 @@ export const CollectionFields = () => {
 
   const dataSourceType = new URLSearchParams(location.search).get('type');
   const disableConfigureFields = !!(dataSourceType && plugin.types.get(dataSourceType)?.disableConfigureFields);
-  const fieldTableSchema = useMemo(() => {
-    if (!disableConfigureFields) {
-      return fieldsTableSchema;
-    }
-
-    const schema = cloneDeep(fieldsTableSchema);
-    const tableSchema = Object.values(schema.properties || {}).find(
-      (property: any) => property?.['x-component'] === 'Table.Void',
-    ) as { properties?: Record<string, unknown> };
-
-    if (tableSchema?.properties) {
-      delete tableSchema.properties.column7;
-    }
-
-    return schema;
-  }, [disableConfigureFields]);
+  const fieldTableSchema = fieldsTableSchema;
 
   let isProcessing = false;
   const queue = [];
