@@ -10,6 +10,9 @@
 import { describe, expect, it, vi } from 'vitest';
 import { actionLinkageRules } from '../linkageRules';
 
+class ActionModel {}
+class PopupSubTableEditActionModel extends ActionModel {}
+
 function createActionModel() {
   const model: any = {
     uid: 'edit-action',
@@ -195,5 +198,47 @@ describe('actionLinkageRules props patch isolation', () => {
     await secondRun;
 
     expect(model.hidden).toBe(true);
+  });
+
+  it('does not sync row action hidden state to the popup subtable field path', async () => {
+    const model = createActionModel();
+    Object.defineProperty(model, 'constructor', {
+      value: PopupSubTableEditActionModel,
+    });
+    model.isFork = true;
+    model.context = {
+      blockModel: { uid: 'form-block' },
+      fieldPathArray: ['org_o2m'],
+    };
+    const fieldModel: any = {
+      uid: 'org-o2m-field',
+      hidden: false,
+      context: {
+        blockModel: { uid: 'form-block' },
+        fieldPathArray: ['org_o2m'],
+      },
+    };
+    const { ctx } = createRuntime(model, { pauseHiddenAction: false });
+    ctx.engine = {
+      forEachModel: (visitor: (m: any) => void) => {
+        visitor(model);
+        visitor(fieldModel);
+      },
+    };
+
+    await actionLinkageRules.handler(
+      ctx,
+      createLinkageParams([
+        {
+          name: 'linkageSetActionProps',
+          params: {
+            value: 'hidden',
+          },
+        },
+      ]),
+    );
+
+    expect(model.hidden).toBe(true);
+    expect(fieldModel.hidden).toBe(false);
   });
 });
