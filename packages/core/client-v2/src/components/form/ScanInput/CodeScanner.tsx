@@ -148,6 +148,10 @@ function CodeScannerContent({ visible, formatsToSupport, onClose, onScanSuccess 
       height: 100% !important;
       max-width: none !important;
     }
+
+    #qr-shaded-region {
+      display: none !important;
+    }
   `;
   const closeButtonClass = css`
     position: absolute;
