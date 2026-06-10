@@ -1,7 +1,7 @@
 ---
-title: 'nb config delete'
-description: 'Справка по команде nb config delete: удаляет явно заданный параметр конфигурации CLI.'
-keywords: 'nb config delete,NocoBase CLI,удалить конфигурацию'
+title: "nb config delete"
+description: "Справка по команде nb config delete: удалить явно заданный параметр конфигурации CLI."
+keywords: "nb config delete,NocoBase CLI,удалить конфигурацию"
 ---
 
 # nb config delete
@@ -16,9 +16,9 @@ nb config delete <key>
 
 ## Параметры
 
-| Параметр | Тип    | Описание                                                                                                                                   |
-| -------- | ------ | ------------------------------------------------------------------------------------------------------------------------------------------ |
-| `<key>` | string | Имя параметра конфигурации. Поддерживаемые значения смотрите в [`nb config`](./index.md) |
+| Параметр | Тип | Описание |
+| --- | --- | --- |
+| `<key>` | string | Имя параметра конфигурации. Поддерживаемые значения см. в [`nb config`](./index.md) |
 
 ## Примеры
 
@@ -27,7 +27,6 @@ nb config delete locale
 nb config delete update.policy
 nb config delete docker.network
 nb config delete docker.container-prefix
-nb config delete proxy.provider
 nb config delete proxy.nb-cli-root
 nb config delete proxy.upstream-host
 nb config delete bin.nginx

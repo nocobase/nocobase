@@ -1,8 +1,8 @@
 # Caddy
 
-如果你已经有域名，并且希望尽快把 HTTPS 一起配好，Caddy 通常是最省心的选择。比起自己维护 Nginx 证书配置，Caddy 更像是“把入口层先跑通”的默认捷径。
+如果你已经有域名，并且希望尽快把 HTTPS 一起配好，那么 `nb proxy caddy` 通常是最省心的入口方式。
 
-默认直接执行 `nb env proxy caddy` 就行。
+比起自己维护 Nginx 的证书配置，Caddy 更像是“先把入口层跑通”的默认捷径。
 
 ## 什么时候更适合用 Caddy
 
@@ -14,129 +14,235 @@
 
 如果你已经在服务器上统一用 Nginx 管理很多站点，或者后面还要做比较重的缓存、访问控制和定制规则，那么继续看 [Nginx](./nginx.md) 会更顺。
 
-## 默认做法：让 CLI 生成 Caddy 配置
+## 推荐顺序：先选运行方式，再生成配置，再启动
 
-如果你的应用已经保存成 CLI env，并且属于 `local` 或 `docker`，默认还是推荐让 CLI 生成配置。这样 Caddyfile 里跟 NocoBase 路由、WebSocket、子路径相关的细节都由 CLI 维护，你只需要关心站点入口本身。
+如果你的应用已经保存成 CLI env，并且属于 `local` 或 `docker`，默认推荐按下面的顺序操作。
 
-最直接的写法是：
+使用 Docker 方式运行 Caddy：
 
 ```bash
-nb env proxy caddy --env demo --host demo.example.com
+nb proxy caddy use docker
+nb proxy caddy generate --env test2 --host c.local.nocobase.com
+nb proxy caddy start
 ```
 
-如果你已经切到了当前 env，也可以省略 `--env`：
+使用本地进程方式运行 Caddy：
 
 ```bash
-nb env proxy caddy --host demo.example.com
+nb proxy caddy use local
+nb proxy caddy generate --env test2 --host c.local.nocobase.com
+nb proxy caddy start
+```
+
+后续常用命令还有：
+
+```bash
+nb proxy caddy current
+nb proxy caddy status
+nb proxy caddy info
+nb proxy caddy reload
+nb proxy caddy restart
+nb proxy caddy stop
+```
+
+通常来说：
+
+- `current` 用来快速查看当前的运行方式
+- `status` 用来查看 Caddy 当前是否正常运行
+- `info` 用来查看当前配置、路径和状态等完整信息
+- 改完配置后，优先使用 `reload`
+- 需要完整重启时，再使用 `restart`
+
+## 生成配置时需要哪些输入
+
+`generate` 用来按指定 env 生成 Caddy 配置。最常见的写法是：
+
+```bash
+nb proxy caddy generate --env test2 --host c.local.nocobase.com
 ```
 
 如果你还想指定入口端口，也可以一起写：
 
 ```bash
-nb env proxy caddy --env demo --host demo.example.com --port 8080
+nb proxy caddy generate --env test2 --host c.local.nocobase.com --port 8080
 ```
 
-这里的 `--host` 很重要。Caddy 会根据站点地址判断是否接管 HTTPS。正式环境里，默认尽量传一个已经解析到当前服务器的域名。
+这里的参数含义是：
 
-### CLI 会生成哪些文件
+- `--env`：指定为哪个 CLI env 生成配置
+- `--host`：指定对外访问域名
+- `--port`：指定代理入口端口
 
-如果你没有传 `--output`，Caddy provider 会在 `~/.nocobase/proxy/caddy/<env>/` 下面维护三层文件：
+对于 Caddy 来说，`--host` 尤其重要。正式环境里，默认尽量传一个已经解析到当前服务器的域名，这样 HTTPS 的接入会更自然。
 
-| 文件 | 作用 |
+如果命令提示 env 缺少 `appPort`，先执行：
+
+```bash
+nb env update test2 --app-port 56575
+```
+
+如果你后续又改了 `app-port`、`app-public-path` 这类会影响代理结果的配置，记得重新执行 `generate`。
+
+## CLI 会维护哪些文件
+
+以 `test2` 为例，Caddy 相关命令通常会维护这些文件与目录：
+
+| 路径 | 作用 |
 | --- | --- |
-| `generated.caddy` | CLI 托管的实际反向代理配置，每次执行 `nb env proxy caddy` 都会覆盖 |
-| `app.caddy` | 可编辑的站点入口文件，你可以在这里补站点级别配置 |
-| `~/.nocobase/proxy/caddy/nocobase.caddy` | 共享主配置，用来统一导入所有 env 的 `app.caddy` |
+| `NB_CLI_ROOT/.nocobase/proxy/caddy/test2/app.caddy` | CLI 生成的完整站点配置 |
+| `NB_CLI_ROOT/.nocobase/proxy/caddy/nocobase.caddy` | Caddy 总入口文件，负责导入所有 env 的 `app.caddy` |
+| `NB_CLI_ROOT/.nocobase/proxy/caddy/test2/public/index-v1.html` | v1 SPA 回退页 |
+| `NB_CLI_ROOT/.nocobase/proxy/caddy/test2/public/index-v2.html` | v2 SPA 回退页 |
+| `NB_CLI_ROOT/test2/storage/dist-client` | 当前应用的前端构建产物目录 |
+| `NB_CLI_ROOT/test2/storage/uploads` | 当前应用的上传目录 |
 
 其中：
 
-- `generated.caddy` 只给 CLI 维护，不要手改
-- `app.caddy` 可以改，不过要保留 CLI 自动插入的 generated import
-- `nocobase.caddy` 主要给 `--install` 使用，用来接进 Caddy 主配置
+- `NB_CLI_ROOT/.nocobase/proxy/caddy/...` 下面的是 CLI 维护的代理辅助文件
+- `NB_CLI_ROOT/test2/storage/...` 下面的是应用自己的静态资源和上传目录
+- `nocobase.caddy` 是 provider 级入口文件，通常不需要手动改
+- `app.caddy` 是某个 env 的完整 Caddy 站点配置，重新执行 `generate` 会整体覆盖
 
 :::warning 注意
 
-如果你要补 Caddy 站点级别的配置，比如额外 header、认证、限速或压缩策略，改 `app.caddy` 就行。`generated.caddy` 会在下次执行 `nb env proxy caddy` 时被覆盖。
+如果你要补 Caddy 站点级别的配置，比如额外 header、认证、限速或压缩策略，可以先以 `app.caddy` 为基准调整；不过要注意，后续重新执行 `generate` 会覆盖这个文件。
 
 :::
 
-### 把共享配置接进 Caddy 并重载
-
-如果你希望 CLI 直接把共享配置安装到 Caddy 主配置里，并立即校验后重载，可以这样写：
-
-```bash
-nb env proxy caddy --env demo --host demo.example.com --install --reload
-```
-
-这两个参数的分工是：
-
-- `--install` 把 `~/.nocobase/proxy/caddy/nocobase.caddy` 接进 Caddy 主配置
-- `--reload` 先校验配置，再重载 Caddy
-
-如果你的 Caddy 可执行文件不在默认路径，先补一下 CLI 配置：
-
-```bash
-nb config set bin.caddy /usr/bin/caddy
-```
-
-### 什么时候要改 `proxy.nb-cli-root`
-
-通常来说，大部分场景不用改 `proxy.nb-cli-root`。只有当 Caddy 运行在另一个容器、挂载目录或路径视角里，看不到当前用户的 `~/.nocobase` 路径时，才需要把它改成 Caddy 实际能访问到的根路径。
-
-比如 Caddy 在容器里看到的是 `/workspace/.nocobase/...`，那就这样设置：
-
-```bash
-nb config set proxy.nb-cli-root /workspace
-nb env proxy caddy --env demo --install --reload
-```
-
-如果你只是想先预览生成结果，可以用：
-
-```bash
-nb env proxy caddy --env demo --print
-```
-
-如果你想把自动生成的路由片段写到一个自定义文件，也可以用：
-
-```bash
-nb env proxy caddy --env demo --output ./generated.caddy
-```
-
-更完整的参数说明见 [`nb env proxy caddy`](../../../api/cli/env/proxy/caddy.md)。
-
 ## 手写配置：不通过 CLI 时怎么做
 
-如果你的应用不是 CLI 托管的，或者你明确要自己维护整份 `Caddyfile`，可以先从这个最小版本开始：
+如果你的应用不是 CLI 托管的，或者你明确要自己维护完整的 Caddy 配置，也可以手写。
+
+不过对于 NocoBase 来说，生产环境入口通常不只是一个简单的 `reverse_proxy`。除了把 API 请求转发到后端应用之外，一份完整可用的 Caddy 配置通常还需要同时处理上传目录、前端静态资源、`.well-known` 路由、WebSocket，以及 SPA 回退页。
+
+以 `test2` 为例，和 Caddy 相关的关键目录通常包括：
+
+- SPA 回退页目录：`NB_CLI_ROOT/.nocobase/proxy/caddy/test2/public`
+- 前端构建产物目录：`NB_CLI_ROOT/test2/storage/dist-client`
+- 上传目录：`NB_CLI_ROOT/test2/storage/uploads`
+
+也就是说，手写配置时通常至少要覆盖下面这几类入口：
+
+- `v`：把 `/v` 重定向到 `/v/`
+- `uploads`：暴露上传目录
+- `dist`：暴露前端构建产物目录
+- `oauth well-known`：处理 OAuth 发现路径
+- `openid well-known`：处理 OpenID 发现路径
+- `api`：转发 `/api/` 请求到后端应用
+- `ws`：转发 WebSocket 请求到后端应用
+- `spa v2`：为 `/v/` 提供前端入口及回退页
+- `spa v1`：为 `/` 提供前端入口及回退页
+
+所以一份完整的 Caddy 配置，通常并不只是下面这种通用写法：
 
 ```text
 your-domain.com {
-  encode zstd gzip
   reverse_proxy 127.0.0.1:13000
 }
+```
+
+对 `test2` 这类 CLI 托管应用来说，更接近真实部署情况的结构通常会像下面这样：
+
+```text
+c.local.nocobase.com {
+    encode zstd gzip
+
+    handle /v {
+        redir * /v/ 302
+    }
+
+    handle_path /storage/uploads/* {
+        root * NB_CLI_ROOT/test2/storage/uploads
+        header Cache-Control public
+        header X-Content-Type-Options nosniff
+        file_server
+    }
+
+    handle_path /dist/* {
+        root * NB_CLI_ROOT/test2/storage/dist-client
+        header Cache-Control public
+        file_server
+    }
+
+    @oauth path_regexp oauth ^/\\.well-known/oauth-authorization-server/(.+)$
+    handle @oauth {
+        rewrite * /{re.oauth.1}/.well-known/oauth-authorization-server
+        reverse_proxy host.docker.internal:56575
+    }
+
+    @openid path_regexp openid ^/\\.well-known/openid-configuration/(.+)$
+    handle @openid {
+        rewrite * /{re.openid.1}/.well-known/openid-configuration
+        reverse_proxy host.docker.internal:56575
+    }
+
+    handle /api/* {
+        reverse_proxy host.docker.internal:56575
+    }
+
+    handle /ws {
+        reverse_proxy host.docker.internal:56575
+    }
+
+    handle_path /v/* {
+        root * NB_CLI_ROOT/.nocobase/proxy/caddy/test2/public
+        header Cache-Control "no-store, no-cache, must-revalidate"
+        header X-Robots-Tag "noindex, nofollow"
+        try_files {path} /index-v2.html
+        file_server
+    }
+
+    handle_path /* {
+        root * NB_CLI_ROOT/.nocobase/proxy/caddy/test2/public
+        header Cache-Control "no-store, no-cache, must-revalidate"
+        header X-Robots-Tag "noindex, nofollow"
+        try_files {path} /index-v1.html
+        file_server
+    }
+}
+```
+
+这里也有两个关键点：
+
+- `NB_CLI_ROOT/.nocobase/proxy/caddy/...` 下面的是 CLI 维护的 SPA 回退页目录
+- `NB_CLI_ROOT/test2/storage/...` 下面的是应用自己的构建产物目录和上传目录
+
+如果你的应用使用了子路径部署，或者前端资源、上传目录和入口层不在同一个路径视角里，那么手写配置会更容易出错。这种场景下，通常更推荐先执行：
+
+```bash
+nb proxy caddy generate --env test2 --host c.local.nocobase.com
+```
+
+然后再以生成结果为基准做调整。
+
+如果你希望先让 CLI 帮你把路径和路由都跑通，那么生成后的结构通常会是：
+
+```text
+NB_CLI_ROOT/.nocobase/proxy/caddy/nocobase.caddy
+NB_CLI_ROOT/.nocobase/proxy/caddy/test2/app.caddy
+NB_CLI_ROOT/.nocobase/proxy/caddy/test2/public/index-v1.html
+NB_CLI_ROOT/.nocobase/proxy/caddy/test2/public/index-v2.html
+NB_CLI_ROOT/test2/storage/dist-client
+NB_CLI_ROOT/test2/storage/uploads
 ```
 
 其中：
 
-- `your-domain.com` 改成你的域名
-- `127.0.0.1:13000` 改成 NocoBase 实际监听的地址
+- `nocobase.caddy` 负责统一 `import */app.caddy`
+- `test2/app.caddy` 是 `test2` 这个 env 的完整站点配置
+- `public/index-v1.html` 和 `public/index-v2.html` 是 CLI 生成的 SPA 回退页
 
-如果域名已经正确解析到当前服务器，Caddy 通常会自动处理 HTTPS 证书的申请和续期。
+更稳妥的做法通常是：
 
-如果你暂时还没有域名，只是想先验证反向代理链路，可以先监听一个端口：
+1. 先让 CLI 生成 Caddy 配置
+2. 以生成结果作为基准确认路由结构和实际路径
+3. 再根据你的域名、运行方式和挂载路径做手工调整
 
-```text
-:80 {
-  reverse_proxy 127.0.0.1:13000
-}
-```
-
-不过正式环境里，还是建议尽快换成带域名的站点地址。这样 Caddy 才能把 HTTPS 也一并接管起来。
-
-如果你的应用不是直接挂在 `/`，而是要放到某个子路径下，那么手写 Caddy 配置时还要同时确认 `APP_PUBLIC_PATH`、`WS_PATH` 这类应用变量。这种场景更推荐回到 `nb env proxy caddy`，让 CLI 生成配置。
+这样通常比从零手写一份配置更不容易漏掉 WebSocket、静态资源、上传目录、`.well-known` 路由或 SPA 回退页相关的细节。
 
 ## 检查并重载配置
 
-手写配置时，先校验，再重载：
+如果你是手写或手工调整 Caddy 配置，改完后先校验，再重载：
 
 ```bash
 caddy validate --config /etc/caddy/Caddyfile
@@ -145,16 +251,35 @@ systemctl reload caddy
 
 如果你不是用 `systemd` 管理 Caddy，也可以改用你自己的启动和重载方式。
 
+如果你是通过 `nb proxy caddy` 管理入口层，那么通常优先使用：
+
+```bash
+nb proxy caddy reload
+```
+
+如果你想看当前 driver、总入口文件路径、运行时根目录和容器或本地二进制信息，可以执行：
+
+```bash
+nb proxy caddy info
+```
+
+如果你只想快速确认当前是否已经跑起来，可以执行：
+
+```bash
+nb proxy caddy status
+```
+
 ## 常见说明
 
-- `nb env proxy caddy` 只适用于 CLI 托管且当前机器可访问运行态的 env，也就是 `local` 或 `docker`
+- `nb proxy caddy generate` 适用于 CLI 托管且当前机器可访问运行态的 env，也就是 `local` 或 `docker`
 - 如果命令提示 env 缺少 `appPort`，先执行 `nb env update <name> --app-port <port>`
-- `--output` 和 `--print` 适合做预览或自定义集成，不过这两种写法不会额外创建 `app.caddy` 和共享主配置
 - 如果你已经有能正常解析到服务器的域名，Caddy 往往是最快拿到 HTTPS 的方式
+- 如果你后续改了 `app-port`、`app-public-path` 这类会影响代理结果的配置，记得重新执行 `generate`
 
 ## 相关链接
 
-- [`nb env proxy caddy`](../../../api/cli/env/proxy/caddy.md)
+- [生产环境反向代理](./index.md)
+- [Nginx](./nginx.md)
 - [使用 CLI 安装（推荐）](../../installation/cli.md)
 - [通过 Docker Compose 安装](../../installation/docker-compose.md)
 - [应用环境变量](../../installation/env.md)

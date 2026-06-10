@@ -22,6 +22,12 @@ export const DEFAULT_NGINX_BIN = 'nginx';
 export const PROXY_PROVIDER_OPTIONS = ['nginx', 'caddy'] as const;
 export type ProxyProvider = (typeof PROXY_PROVIDER_OPTIONS)[number];
 export const DEFAULT_PROXY_PROVIDER: ProxyProvider = 'nginx';
+export const NGINX_PROXY_DRIVER_OPTIONS = ['local', 'docker'] as const;
+export type NginxProxyDriver = (typeof NGINX_PROXY_DRIVER_OPTIONS)[number];
+export const DEFAULT_NGINX_PROXY_DRIVER: NginxProxyDriver = 'local';
+export const CADDY_PROXY_DRIVER_OPTIONS = ['local', 'docker'] as const;
+export type CaddyProxyDriver = (typeof CADDY_PROXY_DRIVER_OPTIONS)[number];
+export const DEFAULT_CADDY_PROXY_DRIVER: CaddyProxyDriver = 'local';
 export const DEFAULT_PROXY_HOST = '127.0.0.1';
 export const DEFAULT_YARN_BIN = 'yarn';
 export const DEFAULT_LOG_RETENTION_DAYS = 14;
@@ -43,6 +49,8 @@ export const SUPPORTED_CLI_CONFIG_KEYS = [
   'bin.git',
   'bin.nginx',
   'proxy.nb-cli-root',
+  'proxy.caddy-driver',
+  'proxy.nginx-driver',
   'proxy.upstream-host',
   'bin.yarn',
   'log.enabled',
@@ -91,6 +99,28 @@ export function normalizeProxyProvider(value: unknown): ProxyProvider | undefine
   }
 
   return (PROXY_PROVIDER_OPTIONS as readonly string[]).includes(normalized) ? (normalized as ProxyProvider) : undefined;
+}
+
+export function normalizeNginxProxyDriver(value: unknown): NginxProxyDriver | undefined {
+  const normalized = trimValue(value);
+  if (!normalized) {
+    return undefined;
+  }
+
+  return (NGINX_PROXY_DRIVER_OPTIONS as readonly string[]).includes(normalized)
+    ? (normalized as NginxProxyDriver)
+    : undefined;
+}
+
+export function normalizeCaddyProxyDriver(value: unknown): CaddyProxyDriver | undefined {
+  const normalized = trimValue(value);
+  if (!normalized) {
+    return undefined;
+  }
+
+  return (CADDY_PROXY_DRIVER_OPTIONS as readonly string[]).includes(normalized)
+    ? (normalized as CaddyProxyDriver)
+    : undefined;
 }
 
 function cloneSettings(config: AuthConfig): NonNullable<AuthConfig['settings']> {
@@ -144,7 +174,13 @@ function pruneSettings(config: AuthConfig): void {
   }
 
   const proxy = config.settings?.proxy;
-  if (proxy && !trimValue(proxy.nbCliRoot) && !trimValue(proxy.upstreamHost)) {
+  if (
+    proxy &&
+    !trimValue(proxy.nbCliRoot) &&
+    !trimValue(proxy.caddyDriver) &&
+    !trimValue(proxy.nginxDriver) &&
+    !trimValue(proxy.upstreamHost)
+  ) {
     delete config.settings?.proxy;
   }
 
@@ -194,6 +230,10 @@ export function getExplicitCliConfigValue(config: AuthConfig, key: SupportedCliC
       return trimValue(config.settings?.bin?.nginx);
     case 'proxy.nb-cli-root':
       return trimValue(config.settings?.proxy?.nbCliRoot);
+    case 'proxy.caddy-driver':
+      return normalizeCaddyProxyDriver(config.settings?.proxy?.caddyDriver);
+    case 'proxy.nginx-driver':
+      return normalizeNginxProxyDriver(config.settings?.proxy?.nginxDriver);
     case 'proxy.upstream-host':
       return trimValue(config.settings?.proxy?.upstreamHost);
     case 'bin.yarn':
@@ -238,6 +278,10 @@ export function getEffectiveCliConfigValue(config: AuthConfig, key: SupportedCli
       return DEFAULT_NGINX_BIN;
     case 'proxy.nb-cli-root':
       return explicit ?? resolveCliHomeRoot();
+    case 'proxy.caddy-driver':
+      return explicit ?? DEFAULT_CADDY_PROXY_DRIVER;
+    case 'proxy.nginx-driver':
+      return explicit ?? DEFAULT_NGINX_PROXY_DRIVER;
     case 'proxy.upstream-host':
       return explicit ?? DEFAULT_PROXY_HOST;
     case 'bin.yarn':
@@ -292,6 +336,24 @@ export function normalizeCliConfigValue(key: SupportedCliConfigKey, value: strin
     }
 
     return normalized;
+  }
+
+  if (key === 'proxy.nginx-driver') {
+    const driver = normalizeNginxProxyDriver(normalized);
+    if (!driver) {
+      throw new Error(`Config key "${key}" must be one of: ${NGINX_PROXY_DRIVER_OPTIONS.join(', ')}`);
+    }
+
+    return driver;
+  }
+
+  if (key === 'proxy.caddy-driver') {
+    const driver = normalizeCaddyProxyDriver(normalized);
+    if (!driver) {
+      throw new Error(`Config key "${key}" must be one of: ${CADDY_PROXY_DRIVER_OPTIONS.join(', ')}`);
+    }
+
+    return driver;
   }
 
   return normalized;
@@ -402,6 +464,18 @@ export async function setCliConfigValue(
         nbCliRoot: normalized,
       };
       break;
+    case 'proxy.caddy-driver':
+      config.settings.proxy = {
+        ...(config.settings.proxy ?? {}),
+        caddyDriver: normalized,
+      };
+      break;
+    case 'proxy.nginx-driver':
+      config.settings.proxy = {
+        ...(config.settings.proxy ?? {}),
+        nginxDriver: normalized,
+      };
+      break;
     case 'proxy.upstream-host':
       config.settings.proxy = {
         ...(config.settings.proxy ?? {}),
@@ -503,6 +577,16 @@ export async function deleteCliConfigValue(
     case 'proxy.nb-cli-root':
       if (config.settings.proxy) {
         delete config.settings.proxy.nbCliRoot;
+      }
+      break;
+    case 'proxy.caddy-driver':
+      if (config.settings.proxy) {
+        delete config.settings.proxy.caddyDriver;
+      }
+      break;
+    case 'proxy.nginx-driver':
+      if (config.settings.proxy) {
+        delete config.settings.proxy.nginxDriver;
       }
       break;
     case 'proxy.upstream-host':

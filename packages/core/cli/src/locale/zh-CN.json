@@ -149,7 +149,7 @@
         "appEntryMissingInclude": "可编辑入口配置 {{appConfigPath}} 没有引用 {{generatedConfigPath}}。请把托管的 generated 配置引用补回入口配置中，然后重新执行该命令。",
         "nginxOutputUnsupported": "nginx provider 不支持 `--output`。它会把 `app.conf`、`public/index-v1.html`、`public/index-v2.html` 和 `nocobase.conf` 写入 `~/.nocobase/proxy/nginx/<env>/`。",
         "caddyOutputUnsupported": "caddy provider 不支持 `--output`。它会把 `app.caddy`、`generated.caddy`、`public/index-v1.html`、`public/index-v2.html` 和 `nocobase.caddy` 写入 `~/.nocobase/proxy/caddy/<env>/`。",
-        "nginxAppEntryMissingManagedBlock": "可编辑的 nginx 入口配置 {{appConfigPath}} 不包含 NocoBase 的托管区块。请恢复这个托管区块，或删除该文件后重新执行 `nb env proxy`。"
+        "nginxAppEntryMissingManagedBlock": "可编辑的 nginx 入口配置 {{appConfigPath}} 不包含 NocoBase 的托管区块。请恢复这个托管区块，或删除该文件后重新执行 `nb proxy nginx generate`。"
       }
     },
     "shared": {

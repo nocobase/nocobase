@@ -1,163 +1,169 @@
 ---
-title: "Produktionsbereitstellung"
-description: "Stellen Sie NocoBase produktiv bereit: Aktivieren Sie zuerst den automatischen Start der Anwendung und konfigurieren Sie dann einen Reverse Proxy."
-keywords: "NocoBase,Produktionsbereitstellung,nb app autostart,nb env proxy,Nginx,Caddy"
+title: "Bereitstellung in Produktion"
+description: "NocoBase schnell für Produktion bereitstellen: zuerst App-Autostart konfigurieren, dann den Reverse Proxy."
+keywords: "NocoBase,Produktion,nb app autostart,nb proxy nginx,nb proxy caddy,Nginx,Caddy"
 ---
 
-# Produktionsbereitstellung
+# Bereitstellung in Produktion
 
-Wenn Ihre NocoBase-Anwendung bereits korrekt auf dem Server läuft, sind für den Produktivbetrieb normalerweise nur noch zwei Schritte nötig:
+Wenn deine NocoBase-Anwendung bereits normal auf dem Server läuft, braucht ein produktiver Rollout normalerweise nur noch zwei Dinge:
 
-1. Sicherstellen, dass die Anwendung nach einem Neustart des Servers automatisch wieder startet
-2. Einen Reverse Proxy vor die Anwendung setzen, um einen stabilen externen Zugriff bereitzustellen
+1. sicherstellen, dass die Anwendung nach einem Neustart des Systems automatisch wieder hochkommt
+2. einen Reverse-Proxy-Einstiegspunkt hinzufügen, damit die Anwendung von außen stabil erreichbar ist
 
-Im NocoBase CLI sind die wichtigsten Befehle dafür:
+In der NocoBase CLI sind dafür vor allem diese beiden Befehlsgruppen relevant:
 
 - `nb app autostart`
-- `nb env proxy`
+- `nb proxy`
 
-Diese Seite erklärt zuerst den Gesamtweg. Für Details zu Nginx oder Caddy gehen Sie anschließend zu den jeweiligen Unterseiten.
+Diese Seite erklärt zuerst den Gesamtweg. Für Details zu Nginx oder Caddy gehst du anschließend auf die provider-spezifischen Seiten.
 
-## Schritt 1: Autostart der Anwendung aktivieren
+## Schritt 1: App-Autostart konfigurieren
 
-In Produktionsumgebungen ist die erste Priorität nicht die Domain, sondern dass sich der Dienst nach Neustarts, Container-Neuerstellungen oder Wartungsarbeiten zuverlässig wiederherstellen lässt.
+In Produktion ist nicht zuerst die Domain wichtig, sondern dass sich der Dienst selbst zuverlässig erholen kann. Sonst kommt die Anwendung nach einem Maschinenneustart, einer Container-Neuerstellung oder Wartungsarbeiten womöglich nicht automatisch zurück.
 
-Im CLI ist `nb app autostart` eine Befehlsgruppe. Am häufigsten werden diese Befehle verwendet:
+Die am häufigsten verwendeten Unterbefehle von `nb app autostart` sind:
 
 - `nb app autostart enable`
 - `nb app autostart list`
 - `nb app autostart run`
 
-Aktivieren Sie den Autostart für die aktuelle Env:
+Autostart für das aktuelle Env aktivieren:
 
 ```bash
 nb app autostart enable
 ```
 
-Wenn Sie explizit eine andere Env angeben möchten:
+Wenn das Ziel nicht das aktuelle Env ist, gib es explizit an:
 
 ```bash
 nb app autostart enable --env app1 --yes
 ```
 
-Danach können Sie prüfen, welche Envs für den Autostart markiert sind:
+Prüfen, welche Envs für Autostart markiert sind:
 
 ```bash
 nb app autostart list
 ```
 
-Nach dem Systemstart verwenden Sie den folgenden Befehl, um alle für den Autostart markierten Envs zu starten:
+Nach dem Systemstart alle aktivierten Envs starten:
 
 ```bash
 nb app autostart run
 ```
 
-Wenn Sie zur Fehlersuche die zugrunde liegende Startausgabe sehen möchten:
+Wenn du beim Debuggen detaillierte Startausgaben sehen möchtest:
 
 ```bash
 nb app autostart run --verbose
 ```
 
-:::tip Was diese Befehle tatsächlich tun
+:::tip Was dieser Schritt tatsächlich macht
 
-`nb app autostart enable` markiert eine vom CLI verwaltete Env als automatisch startbar.  
-`nb app autostart run` startet dann tatsächlich alle Envs, die für den Autostart markiert wurden.
+`nb app autostart enable` markiert ein CLI-verwaltetes Env so, dass es automatisch gestartet werden darf. `nb app autostart run` startet dann tatsächlich alle Envs, für die Autostart aktiviert wurde.
 
-Das bedeutet: In einer echten Produktionsumgebung müssen Sie `nb app autostart run` normalerweise zusätzlich in Ihren eigenen Systemstart einbinden, zum Beispiel über `systemd`, ein Startskript Ihrer Container-Plattform oder einen anderen Host-Boot-Mechanismus.
+In Produktion musst du `nb app autostart run` in der Regel trotzdem in deinen eigenen Systemstart einbinden, etwa über `systemd`, ein Startskript auf der Container-Plattform oder einen anderen Host-Mechanismus, den du bereits verwendest.
 
 :::
 
 ### Geltungsbereich
 
-`nb app autostart` gilt nur für Envs mit einer vom CLI verwalteten Laufzeit auf der aktuellen Maschine:
+`nb app autostart` funktioniert nur für Envs mit einer von der CLI verwalteten Runtime:
 
 - `local`
 - `docker`
 
-Wenn die Env nur eine Remote-API-Verbindung ist oder die Anwendung auf dieser Maschine nicht lokal vom CLI verwaltet wird, sind diese Befehle nicht für den Autostart geeignet.
+Wenn ein Env nur eine entfernte API-Verbindung ist oder die Anwendung auf dem aktuellen Rechner nicht lokal von der CLI verwaltet wird, ist diese Befehlsgruppe nicht der richtige Weg für Autostart.
 
 ## Schritt 2: Reverse Proxy konfigurieren
 
-Sobald die Anwendung automatisch wieder starten kann, ist der nächste Schritt der externe Zugriffspunkt. In Produktionsumgebungen übernimmt der Reverse Proxy typischerweise:
+Sobald sich die Anwendung automatisch wiederherstellen kann, folgt der externe Einstiegspunkt. In Produktion übernimmt der Reverse Proxy normalerweise diese Aufgaben:
 
-- das Binden der Domain oder des öffentlichen Ports
-- das Weiterleiten von HTTP- und WebSocket-Anfragen an NocoBase
-- die Verwaltung von HTTPS, Zertifikaten, Caching oder Zugriffskontrolle
+- Domain oder Entry-Port binden
+- HTTP- und WebSocket-Anfragen an NocoBase weiterleiten
+- HTTPS, Zertifikate, Caching oder Zugriffskontrolle übernehmen
 
-Im NocoBase CLI sind die empfohlenen Einstiegspunkte:
+Die empfohlenen CLI-Einstiegspunkte sind:
 
-- `nb env proxy nginx`
-- `nb env proxy caddy`
+- `nb proxy nginx`
+- `nb proxy caddy`
 
-### Standardvorgehen
+### Standardablauf
 
-Wenn Ihre Anwendung bereits als CLI-Env gespeichert ist und eine `local`- oder `docker`-Env ist, reicht es in der Regel aus, die Proxy-Konfiguration vom CLI generieren zu lassen:
-
-```bash
-nb env proxy nginx --env app1 --host app.example.com
-nb env proxy caddy --env app1 --host app.example.com
-```
-
-Wenn die aktuelle Env bereits die Ziel-Env ist, können Sie `--env` weglassen:
+Wenn die Anwendung bereits als CLI-Env gespeichert wurde und dieses Env `local` oder `docker` ist, lässt du die CLI die Konfiguration normalerweise direkt erzeugen:
 
 ```bash
-nb env proxy nginx --host app.example.com
+nb proxy nginx use docker
+nb proxy nginx generate --env app1 --host app.example.com
+
+nb proxy caddy use local
+nb proxy caddy generate --env app1 --host app.example.com
 ```
 
-Das CLI hilft dabei, Details abzudecken, die bei handgeschriebenen Konfigurationen leicht übersehen werden, zum Beispiel:
+Danach den gewählten Provider starten:
+
+```bash
+nb proxy nginx start
+nb proxy caddy start
+```
+
+Die CLI kümmert sich dabei auch um Details, die in handgeschriebenen Konfigurationen leicht übersehen werden, zum Beispiel:
 
 - WebSocket-Weiterleitung
-- Eintrags- und statische Asset-Pfade bei Unterpfad-Bereitstellungen
+- Entry- und Asset-URLs unter Subpfaden
 - SPA-Fallback-Seiten
-- gemeinsame Konfigurationsdateien des Providers
+- gemeinsam genutzte Konfigurationsdateien auf Provider-Ebene
 
-### Wann Nginx und wann Caddy?
-
-In der Regel können Sie so entscheiden:
+### Wann Nginx und wann Caddy
 
 | Szenario | Empfehlung |
 | --- | --- |
-| Sie verwenden bereits Nginx für Websites, Caching, Zertifikate oder Zugriffskontrolle | [Nginx](./reverse-proxy/nginx.md) |
-| Sie haben bereits eine Domain und möchten HTTPS schnell mit weniger TLS-Pflege aktivieren | [Caddy](./reverse-proxy/caddy.md) |
-| Sie möchten zuerst die Gesamtübersicht dieser Befehlsgruppe lesen | [Production Reverse Proxy](./reverse-proxy/index.md) |
+| Du verwendest Nginx bereits für Websites, Caching, Zertifikate oder Zugriffskontrolle | [Nginx](./reverse-proxy/nginx.md) |
+| Du hast bereits eine Domain und willst HTTPS schnell aktivieren, mit weniger TLS-Details zur Pflege | [Caddy](./reverse-proxy/caddy.md) |
+| Du möchtest zuerst die Gesamtübersicht lesen | [Reverse Proxy in Produktion](./reverse-proxy/index.md) |
 
-Wenn Sie Env-Einstellungen ändern, die das Proxy-Ergebnis beeinflussen, etwa `app-port` oder `app-public-path`, denken Sie daran, den entsprechenden Proxy-Unterbefehl erneut auszuführen.
+Wenn du später Env-Einstellungen wie `app-port` oder `app-public-path` änderst, die das Proxy-Verhalten beeinflussen, führe den passenden Proxy-Unterbefehl erneut aus.
 
-## Empfohlener Rollout-Pfad
+## Standardpfad für den Rollout
 
-Wenn Sie den einfachsten Weg in die Produktion möchten, funktioniert diese Reihenfolge normalerweise gut:
+Für den einfachsten produktiven Rollout reicht normalerweise diese Reihenfolge:
 
-1. Sicherstellen, dass die Anwendung bereits direkt auf dem Server korrekt startet
+1. sicherstellen, dass die Anwendung bereits direkt auf dem Server normal startet
 2. `nb app autostart enable` ausführen
-3. `nb app autostart run` in den Systemstartprozess einbinden
-4. Nginx oder Caddy auswählen und den passenden `nb env proxy`-Unterbefehl ausführen
-5. Den externen Zugriff über die endgültige Domain oder öffentliche Adresse prüfen
+3. `nb app autostart run` in den Systemstart einbinden
+4. Nginx oder Caddy wählen und den passenden `nb proxy`-Unterbefehl ausführen
+5. den externen Zugriff über Domain oder Entry-Adresse prüfen
 
-## Schnellzugriffe
+## Schnelleinstieg
 
 | Ich möchte... | Hier weiterlesen |
 | --- | --- |
-| Mit der allgemeinen Erklärung zum Reverse Proxy beginnen | [Production Reverse Proxy](./reverse-proxy/index.md) |
-| Weiterhin Nginx für die Einstiegsschicht verwenden | [Nginx](./reverse-proxy/nginx.md) |
-| Caddy für eine schnellere HTTPS-Einrichtung verwenden | [Caddy](./reverse-proxy/caddy.md) |
-| Start, Stopp, Logs und Upgrades verwalten | [Manage Apps](../operations/manage-app.md) |
-| Die CLI-Referenz zu `nb env proxy` lesen | [`nb env proxy`](../../api/cli/env/proxy/index.md) |
+| Zuerst die allgemeine Einführung zum Reverse Proxy lesen | [Reverse Proxy in Produktion](./reverse-proxy/index.md) |
+| Nginx auf der Entry-Ebene weiterverwenden | [Nginx](./reverse-proxy/nginx.md) |
+| Mit Caddy schneller HTTPS bekommen | [Caddy](./reverse-proxy/caddy.md) |
+| App-Start, Stop, Logs und Upgrade-Vorgänge ansehen | [App verwalten](../operations/manage-app.md) |
+| Die CLI-Referenz für `nb proxy nginx` lesen | [`nb proxy nginx`](../../api/cli/proxy/nginx/index.md) |
+| Die CLI-Referenz für `nb proxy caddy` lesen | [`nb proxy caddy`](../../api/cli/proxy/caddy/index.md) |
 
 ## Verwandte Befehle
 
 ```bash
-# Autostart für eine Env aktivieren
+# Autostart für ein Env aktivieren
 nb app autostart enable --env app1 --yes
 
-# Autostart-Status anzeigen
+# Autostart-Status prüfen
 nb app autostart list
 
-# Alle für Autostart aktivierten Envs starten
+# Alle aktivierten Envs starten
 nb app autostart run
 
-# Nginx-Reverse-Proxy-Konfiguration generieren
-nb env proxy nginx --env app1 --host app.example.com
+# Nginx-Runtime wählen und Konfiguration erzeugen
+nb proxy nginx use docker
+nb proxy nginx generate --env app1 --host app.example.com
+nb proxy nginx start
 
-# Caddy-Reverse-Proxy-Konfiguration generieren
-nb env proxy caddy --env app1 --host app.example.com
+# Caddy-Runtime wählen und Konfiguration erzeugen
+nb proxy caddy use local
+nb proxy caddy generate --env app1 --host app.example.com
+nb proxy caddy start
 ```

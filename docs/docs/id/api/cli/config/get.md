@@ -1,12 +1,12 @@
 ---
-title: 'nb config get'
-description: 'Referensi perintah nb config get: membaca nilai efektif dari item konfigurasi CLI.'
-keywords: 'nb config get,NocoBase CLI,membaca konfigurasi'
+title: "nb config get"
+description: "Referensi perintah nb config get: membaca nilai efektif dari item konfigurasi CLI."
+keywords: "nb config get,NocoBase CLI,membaca konfigurasi"
 ---
 
 # nb config get
 
-Membaca nilai efektif dari item konfigurasi CLI yang ditentukan. Jika belum diatur secara eksplisit, nilai default akan dikembalikan.
+Membaca nilai efektif dari item konfigurasi CLI yang ditentukan. Jika belum pernah diatur secara eksplisit, nilai default yang akan dikembalikan.
 
 ## Penggunaan
 
@@ -16,8 +16,8 @@ nb config get <key>
 
 ## Parameter
 
-| Parameter | Tipe   | Deskripsi                                                                                                                               |
-| --------- | ------ | --------------------------------------------------------------------------------------------------------------------------------------- |
+| Parameter | Tipe | Deskripsi |
+| --- | --- | --- |
 | `<key>` | string | Nama item konfigurasi. Lihat [`nb config`](./index.md) untuk nilai yang didukung |
 
 ## Contoh

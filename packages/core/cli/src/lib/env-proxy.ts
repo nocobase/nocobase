@@ -126,7 +126,6 @@ export type EnvProxyCaddyBundle = {
   entryDir: string;
   publicDir: string;
   appConfigPath: string;
-  generatedConfigPath: string;
   indexV1Path: string;
   indexV2Path: string;
   mainConfigPath: string;
@@ -139,7 +138,6 @@ export type EnvProxyCaddyBundle = {
   cdnBaseUrl: string;
   backendUrl: string;
   appConfigContent: string;
-  generatedConfigContent: string;
   mainConfigContent: string;
   indexV1Content: string;
   indexV2Content: string;
@@ -178,6 +176,8 @@ type ProxyEnvSettings = {
 type EnvProxyProviderOptions = {
   scope?: CliHomeScope;
   provider?: ProxyProvider;
+  runtimeCliRoot?: string;
+  upstreamHost?: string;
 };
 
 type EnvProxyBuildOptions = EnvProxyProviderOptions & {
@@ -254,8 +254,8 @@ export function buildManagedAppEntryGeneratedConfigBlock(provider: ProxyProvider
   return [
     `    ${MANAGED_APP_ENTRY_BLOCK_BEGIN}`,
     provider === 'caddy'
-      ? '    # Keep this import so `nb env proxy` can refresh managed routes.'
-      : '    # Keep this include so `nb env proxy` can refresh managed routes.',
+      ? '    # Keep this import so the CLI can refresh managed routes.'
+      : '    # Keep this include so the CLI can refresh managed routes.',
     `    ${referenceLine}`,
     `    ${MANAGED_APP_ENTRY_BLOCK_END}`,
   ].join('\n');
@@ -427,12 +427,13 @@ function applyCaddyAppEntryOptions(content: string, options?: EnvProxyAppEntryOp
 
   const currentAddress = parseCaddySiteAddress(content);
   const nextAddress = buildCaddySiteAddress(options, currentAddress);
+  let nextContent = content;
 
   if (currentAddress) {
-    return content.replace(currentAddress, nextAddress);
+    nextContent = nextContent.replace(/^([^\s#][^\n{]*)\s*\{/m, `${nextAddress} {`);
   }
 
-  return content;
+  return nextContent.replace(/^# host=.*$/m, `# host=${nextAddress}`);
 }
 
 export function applyEnvProxyAppEntryOptions(
@@ -528,10 +529,16 @@ export async function resolveManagedProxyAppVersion(
 }
 
 export async function resolveProxyNbCliRoot(options?: EnvProxyProviderOptions): Promise<string> {
+  if (trimValue(options?.runtimeCliRoot)) {
+    return trimValue(options?.runtimeCliRoot) as string;
+  }
   return await getCliConfigValue('proxy.nb-cli-root', { scope: options?.scope });
 }
 
 export async function resolveProxyUpstreamHost(options?: EnvProxyProviderOptions): Promise<string> {
+  if (trimValue(options?.upstreamHost)) {
+    return trimValue(options?.upstreamHost) as string;
+  }
   return await getCliConfigValue('proxy.upstream-host', { scope: options?.scope });
 }
 
@@ -1035,19 +1042,11 @@ export async function buildEnvProxyCaddyBundle(
   const sourceV2PublicPath = extractRuntimePublicPath(sourceIndexV2Content);
   const indexV1AssetPublicPath = context.cdnBaseUrl;
   const indexV2AssetPublicPath = `${trimTrailingSlash(context.cdnBaseUrl)}/${DEFAULT_MODERN_CLIENT_PREFIX}/`;
-  const generatedConfigPath = resolveEnvProxyOutputPath(runtime.envName, {
-    provider: 'caddy',
-    scope: options?.scope,
-  });
-  const renderedGeneratedConfigPath = await mapProxyPathFromCliRoot(generatedConfigPath, {
-    ...options,
-    provider: 'caddy',
-  });
   const appConfigPath = resolveEnvProxyAppOutputPath(runtime.envName, { scope: options?.scope, provider: 'caddy' });
   const entryDir = resolveEnvProxyEntryDir(runtime.envName, { scope: options?.scope, provider: 'caddy' });
   const publicDir = resolveEnvProxyCaddyPublicOutputDir(runtime.envName, { scope: options?.scope });
   const renderedPublicDir = await mapProxyPathFromCliRoot(publicDir, { ...options, provider: 'caddy' });
-  const generatedConfigContent = renderCaddyGeneratedTemplate({
+  const appConfigContent = renderCaddyAppTemplate(buildCaddySiteAddress(), {
     appPublicPath: context.appPublicPath,
     apiBasePath: context.apiBasePath,
     apiPort: context.apiPort,
@@ -1067,7 +1066,6 @@ export async function buildEnvProxyCaddyBundle(
     entryDir,
     publicDir,
     appConfigPath,
-    generatedConfigPath,
     indexV1Path: resolveEnvProxyCaddyIndexOutputPath(runtime.envName, 'v1', { scope: options?.scope }),
     indexV2Path: resolveEnvProxyCaddyIndexOutputPath(runtime.envName, 'v2', { scope: options?.scope }),
     mainConfigPath: resolveEnvProxyMainOutputPath({ scope: options?.scope, provider: 'caddy' }),
@@ -1079,8 +1077,7 @@ export async function buildEnvProxyCaddyBundle(
     activeVersion: context.activeVersion,
     cdnBaseUrl: context.cdnBaseUrl,
     backendUrl: context.backendUrl,
-    appConfigContent: buildEnvProxyAppConfig('caddy', renderedGeneratedConfigPath),
-    generatedConfigContent,
+    appConfigContent,
     mainConfigContent: await buildEnvProxyMainConfig({ provider: 'caddy', scope: options?.scope }),
     indexV1Content: injectRuntimeScriptIntoHtml(
       rewriteHtmlAssetPublicPath(sourceIndexV1Content, sourceV1PublicPath, indexV1AssetPublicPath),
@@ -1354,12 +1351,32 @@ ${renderNginxLocationTemplate(context)}}
 }
 
 function renderNginxGeneratedTemplate(context: EnvProxyTemplateContext): string {
-  return `# Managed by \`nb env proxy\`. Changes will be overwritten.
+  return `# Managed by NocoBase CLI. Changes will be overwritten.
 
 ${renderNginxLocationTemplate(context)}`;
 }
 
-function renderCaddyGeneratedTemplate(context: EnvProxyTemplateContext, publicDir: string): string {
+function buildCaddyContextCommentLines(
+  siteAddress: string,
+  context: EnvProxyTemplateContext,
+  publicDir: string,
+): string[] {
+  return [
+    '# Rendered by `nb proxy caddy generate`.',
+    '# Context:',
+    `# host=${siteAddress}`,
+    `# publicBasePath=${context.appPublicPath}`,
+    `# apiBasePath=${context.apiBasePath}`,
+    `# wsPath=${context.wsPath}`,
+    `# v2PublicPath=${context.v2PublicPath}`,
+    `# backendUrl=http://${context.proxyHost}:${context.apiPort}`,
+    `# uploadsDir=${context.uploadsPath}`,
+    `# distRootDir=${context.distClientRoot}`,
+    `# publicDir=${publicDir}`,
+  ];
+}
+
+function renderCaddyAppTemplate(siteAddress: string, context: EnvProxyTemplateContext, publicDir: string): string {
   const uploadsPath = `${context.appPublicPath}storage/uploads/`;
   const distPathMatcher = toCaddyPathMatcher(context.distPath);
   const uploadsPathMatcher = toCaddyPathMatcher(uploadsPath);
@@ -1400,61 +1417,65 @@ function renderCaddyGeneratedTemplate(context: EnvProxyTemplateContext, publicDi
         redir * ${appPublicPathNoTrailingSlash}{uri} 302
     }`;
 
-  return `# Managed by \`nb env proxy\`. Changes will be overwritten.
-
-route {
-    encode zstd gzip${rootRedirectBlock}${appPublicPathRedirectBlock}${modernClientRedirectBlock}${shorthandModernClientRedirectBlock}
-
-    handle_path ${uploadsPathMatcher} {
-        root * ${context.uploadsPath}
-        header Cache-Control public
-        header X-Content-Type-Options nosniff
-        file_server
-    }
-
-    handle_path ${distPathMatcher} {
-        root * ${context.distClientRoot}
-        header Cache-Control public
-        file_server
-    }
-
-    @oauth path_regexp oauth ^/\\.well-known/oauth-authorization-server/(.+)$
-    handle @oauth {
-        rewrite * /{re.oauth.1}/.well-known/oauth-authorization-server
-        reverse_proxy ${context.proxyHost}:${context.apiPort}
-    }
-
-    @openid path_regexp openid ^/\\.well-known/openid-configuration/(.+)$
-    handle @openid {
-        rewrite * /{re.openid.1}/.well-known/openid-configuration
-        reverse_proxy ${context.proxyHost}:${context.apiPort}
-    }
-
-    handle ${apiPathMatcher} {
-        reverse_proxy ${context.proxyHost}:${context.apiPort}
-    }
-
-    handle ${context.wsPath} {
-        reverse_proxy ${context.proxyHost}:${context.apiPort}
-    }
-
-    handle_path ${toCaddyPathMatcher(context.v2PublicPath)} {
-        root * ${publicDir}
-        header Cache-Control "no-store, no-cache, must-revalidate"
-        header X-Robots-Tag "noindex, nofollow"
-        try_files {path} /index-v2.html
-        file_server
-    }
-
-    handle_path ${toCaddyPathMatcher(context.appPublicPath)} {
-        root * ${publicDir}
-        header Cache-Control "no-store, no-cache, must-revalidate"
-        header X-Robots-Tag "noindex, nofollow"
-        try_files {path} /index-v1.html
-        file_server
-    }
-}
-`;
+  return [
+    ...buildCaddyContextCommentLines(siteAddress, context, publicDir),
+    '',
+    `${siteAddress} {`,
+    `    encode zstd gzip${rootRedirectBlock}${appPublicPathRedirectBlock}${modernClientRedirectBlock}${shorthandModernClientRedirectBlock}`,
+    '',
+    `    handle_path ${uploadsPathMatcher} {`,
+    `        root * ${context.uploadsPath}`,
+    '        header Cache-Control public',
+    '        header X-Content-Type-Options nosniff',
+    '        file_server',
+    '    }',
+    '',
+    `    handle_path ${distPathMatcher} {`,
+    `        root * ${context.distClientRoot}`,
+    '        header Cache-Control public',
+    '        file_server',
+    '    }',
+    '',
+    '    @oauth path_regexp oauth ^/\\.well-known/oauth-authorization-server/(.+)$',
+    '    handle @oauth {',
+    '        rewrite * /{re.oauth.1}/.well-known/oauth-authorization-server',
+    `        reverse_proxy ${context.proxyHost}:${context.apiPort}`,
+    '    }',
+    '',
+    '    @openid path_regexp openid ^/\\.well-known/openid-configuration/(.+)$',
+    '    handle @openid {',
+    '        rewrite * /{re.openid.1}/.well-known/openid-configuration',
+    `        reverse_proxy ${context.proxyHost}:${context.apiPort}`,
+    '    }',
+    '',
+    '    # Keep API and WS routes above the SPA fallbacks.',
+    `    handle ${apiPathMatcher} {`,
+    `        reverse_proxy ${context.proxyHost}:${context.apiPort}`,
+    '    }',
+    '',
+    `    handle ${context.wsPath} {`,
+    `        reverse_proxy ${context.proxyHost}:${context.apiPort}`,
+    '    }',
+    '',
+    '    # Keep the v2 SPA route above the fallback SPA route.',
+    `    handle_path ${toCaddyPathMatcher(context.v2PublicPath)} {`,
+    `        root * ${publicDir}`,
+    '        header Cache-Control "no-store, no-cache, must-revalidate"',
+    '        header X-Robots-Tag "noindex, nofollow"',
+    '        try_files {path} /index-v2.html',
+    '        file_server',
+    '    }',
+    '',
+    `    handle_path ${toCaddyPathMatcher(context.appPublicPath)} {`,
+    `        root * ${publicDir}`,
+    '        header Cache-Control "no-store, no-cache, must-revalidate"',
+    '        header X-Robots-Tag "noindex, nofollow"',
+    '        try_files {path} /index-v1.html',
+    '        file_server',
+    '    }',
+    '}',
+    '',
+  ].join('\n');
 }
 
 export function buildEnvProxyAppConfig(
@@ -1499,7 +1520,7 @@ export function appConfigIncludesGeneratedConfig(
 }
 
 function renderCaddyMainTemplate(appConfigImportPath: string): string {
-  return `# Managed by \`nb env proxy\`. Changes will be overwritten.
+  return `# Managed by NocoBase CLI. Changes will be overwritten.
 
 import ${appConfigImportPath}
 `;
@@ -1580,7 +1601,7 @@ export async function buildEnvProxyConfig(
     ...base,
     content:
       provider === 'caddy'
-        ? renderCaddyGeneratedTemplate(templateContext, publicDir ?? '')
+        ? renderCaddyAppTemplate(buildCaddySiteAddress(), templateContext, publicDir ?? '')
         : renderNginxGeneratedTemplate(templateContext),
   };
 }
@@ -1674,19 +1695,13 @@ export function resolveEnvProxyMainOutputPath(options?: { scope?: CliHomeScope; 
 }
 
 export async function resolveEnvProxyMainRuntimeOutputPath(
-  options?: {
-    scope?: CliHomeScope;
-    provider?: ProxyProvider;
-  },
+  options?: EnvProxyProviderOptions,
 ): Promise<string> {
   return await mapProxyPathFromCliRoot(resolveEnvProxyMainOutputPath(options), options);
 }
 
 export async function buildEnvProxyMainConfig(
-  options?: {
-    scope?: CliHomeScope;
-    provider?: ProxyProvider;
-  },
+  options?: EnvProxyProviderOptions,
 ): Promise<string> {
   const provider = resolveProxyProviderName(options?.provider);
   if (provider === 'caddy') {
