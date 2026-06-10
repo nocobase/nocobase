@@ -32,6 +32,19 @@ type SourceRef = {
 
 const unsupportedVariableKey = '__unsupported_dynamic_variable_path__';
 
+type RoleWithStrategy = {
+  getStrategy?: () => { allowConfigure?: boolean } | null | undefined;
+};
+
+type AclWithRoles = {
+  getRole?: (name: string) => RoleWithStrategy | undefined;
+};
+
+type RoleRecord = {
+  allowConfigure?: unknown;
+  get?: (key: string) => unknown;
+};
+
 export function clearVariableAllowListCache(app?: object) {
   // Kept as a stable invalidation hook for callers; allow-lists are request-local to avoid stale cross-request caches.
   return app;
@@ -330,6 +343,49 @@ async function getVariableAllowList(ctx: ResourcerContext, flowModelUid: string)
   return allowList;
 }
 
+function getCurrentRoleNames(ctx: ResourcerContext): string[] {
+  const state = (ctx as ResourcerContext & { state?: { currentRole?: unknown; currentRoles?: unknown } }).state;
+  const roleNames = new Set<string>();
+  const currentRoles = state?.currentRoles;
+  if (Array.isArray(currentRoles)) {
+    currentRoles.forEach((roleName) => {
+      if (typeof roleName === 'string' && roleName) {
+        roleNames.add(roleName);
+      }
+    });
+  }
+
+  const currentRole = state?.currentRole;
+  if (typeof currentRole === 'string' && currentRole) {
+    roleNames.add(currentRole);
+  }
+
+  return Array.from(roleNames);
+}
+
+async function currentRoleAllowsConfigure(ctx: ResourcerContext): Promise<boolean> {
+  const roleNames = getCurrentRoleNames(ctx);
+  if (!roleNames.length) return false;
+  if (roleNames.includes('root')) return true;
+
+  const acl = (ctx.app as typeof ctx.app & { acl?: AclWithRoles }).acl;
+  if (roleNames.some((roleName) => acl?.getRole?.(roleName)?.getStrategy?.()?.allowConfigure === true)) {
+    return true;
+  }
+
+  try {
+    const roles = (await ctx.db.getRepository('roles').find({
+      filter: { name: roleNames },
+      fields: ['name', 'allowConfigure'],
+    })) as RoleRecord[];
+    return roles.some((role) =>
+      typeof role?.get === 'function' ? role.get('allowConfigure') === true : role?.allowConfigure === true,
+    );
+  } catch {
+    return false;
+  }
+}
+
 function collectRecordParamEntries(
   value: unknown,
   path: string[] = [],
@@ -382,6 +438,10 @@ export async function authorizeVariablesResolve(
       code: 'VARIABLE_NOT_ALLOWED',
       message: 'Dynamic variable paths are not allowed in public variable resolution',
     });
+  }
+
+  if (await currentRoleAllowsConfigure(ctx)) {
+    return sanitizedContextParams;
   }
 
   if (!flowModelUid) {

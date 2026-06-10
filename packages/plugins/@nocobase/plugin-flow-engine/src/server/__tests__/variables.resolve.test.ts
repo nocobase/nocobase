@@ -119,7 +119,7 @@ describe('plugin-flow-engine variables:resolve (no HTTP)', () => {
   const execResolve = async (
     values: any,
     userId?: number,
-    options: { autoFlowModelUid?: boolean; flowModelUid?: string } = {},
+    options: { autoFlowModelUid?: boolean; flowModelUid?: string; currentRole?: string; currentRoles?: string[] } = {},
   ) => {
     const requestValues = await maybeAttachFlowModelUid(values, options);
     const action = app.resourceManager.getAction('variables', 'resolve');
@@ -129,7 +129,10 @@ describe('plugin-flow-engine variables:resolve (no HTTP)', () => {
       headers: {},
       request: { method: 'POST', path: '/api/variables:resolve', query: {}, body: requestValues },
       auth: userId ? { user: { id: userId }, role: 'root' } : {},
-      state: {},
+      state: {
+        currentRole: options.currentRole,
+        currentRoles: options.currentRoles ?? (options.currentRole ? [options.currentRole] : undefined),
+      },
       getCurrentLocale: () => 'en-US',
     };
     ctx.get = (name: string) => ctx.headers?.[name] || ctx.headers?.[name?.toLowerCase?.()] || undefined;
@@ -150,6 +153,32 @@ describe('plugin-flow-engine variables:resolve (no HTTP)', () => {
       }
     }
     return ctx;
+  };
+
+  const createConfigureRole = async () => {
+    const roleName = `variables-resolve-configure-${++modelSeq}`;
+    const role = await app.db.getRepository('roles').create({
+      values: {
+        name: roleName,
+        title: roleName,
+        allowConfigure: true,
+      },
+    });
+    await app.emitAsync('acl:writeRoleToACL', role);
+    return roleName;
+  };
+
+  const createRegularRole = async () => {
+    const roleName = `variables-resolve-regular-${++modelSeq}`;
+    const role = await app.db.getRepository('roles').create({
+      values: {
+        name: roleName,
+        title: roleName,
+        allowConfigure: false,
+      },
+    });
+    await app.emitAsync('acl:writeRoleToACL', role);
+    return roleName;
   };
 
   beforeEach(async () => {
@@ -255,6 +284,145 @@ describe('plugin-flow-engine variables:resolve (no HTTP)', () => {
       },
     };
     const res = await execResolve(payload, 1, { autoFlowModelUid: false });
+    expect(res.status).toBe(403);
+    expect(res.body?.error?.code).toBe('VARIABLE_NOT_ALLOWED');
+  });
+
+  it('should allow configure roles to resolve unsaved variables not yet in the flow model allow-list', async () => {
+    const configureRole = await createConfigureRole();
+    const flowModelUid = await createTestFlowModel({ allowed: '{{ ctx.record.id }}' }, { collectionName: 'users' });
+    const payload = {
+      flowModelUid,
+      template: { name: '{{ ctx.record.name }}' },
+      contextParams: {
+        record: {
+          dataSourceKey: 'main',
+          collection: 'users',
+          filterByTk: 1,
+        },
+      },
+    };
+
+    const res = await execResolve(payload, 1, {
+      autoFlowModelUid: false,
+      currentRole: configureRole,
+    });
+    const data = res.body?.data ?? res.body;
+    expect(res.status).toBeUndefined();
+    expect(typeof data.name).toBe('string');
+    expect(data.name.length).toBeGreaterThan(0);
+  });
+
+  it('should allow configure roles to resolve record variables without a flowModelUid', async () => {
+    const configureRole = await createConfigureRole();
+    const payload = {
+      template: { name: '{{ ctx.record.name }}' },
+      contextParams: {
+        record: {
+          dataSourceKey: 'main',
+          collection: 'users',
+          filterByTk: 1,
+        },
+      },
+    };
+
+    const res = await execResolve(payload, 1, {
+      autoFlowModelUid: false,
+      currentRole: configureRole,
+    });
+    const data = res.body?.data ?? res.body;
+    expect(res.status).toBeUndefined();
+    expect(typeof data.name).toBe('string');
+    expect(data.name.length).toBeGreaterThan(0);
+  });
+
+  it('should allow configure roles to resolve record variables with a stale flowModelUid', async () => {
+    const configureRole = await createConfigureRole();
+    const payload = {
+      flowModelUid: 'missing-flow-model-for-configure-preview',
+      template: { name: '{{ ctx.record.name }}' },
+      contextParams: {
+        record: {
+          dataSourceKey: 'main',
+          collection: 'users',
+          filterByTk: 1,
+        },
+      },
+    };
+
+    const res = await execResolve(payload, 1, {
+      autoFlowModelUid: false,
+      currentRole: configureRole,
+    });
+    const data = res.body?.data ?? res.body;
+    expect(res.status).toBeUndefined();
+    expect(typeof data.name).toBe('string');
+    expect(data.name.length).toBeGreaterThan(0);
+  });
+
+  it('should still reject unsupported dynamic paths for configure roles', async () => {
+    const configureRole = await createConfigureRole();
+    const payload = {
+      template: {
+        dynamic: '{{ ctx.record[ctx.field] }}',
+      },
+      contextParams: {
+        record: {
+          dataSourceKey: 'main',
+          collection: 'users',
+          filterByTk: 1,
+        },
+      },
+    };
+
+    const res = await execResolve(payload, 1, {
+      autoFlowModelUid: false,
+      currentRole: configureRole,
+    });
+    expect(res.status).toBe(403);
+    expect(res.body?.error?.code).toBe('VARIABLE_NOT_ALLOWED');
+  });
+
+  it('should still require flowModelUid for regular roles with currentRole state', async () => {
+    const regularRole = await createRegularRole();
+    const payload = {
+      template: { name: '{{ ctx.record.name }}' },
+      contextParams: {
+        record: {
+          dataSourceKey: 'main',
+          collection: 'users',
+          filterByTk: 1,
+        },
+      },
+    };
+
+    const res = await execResolve(payload, 1, {
+      autoFlowModelUid: false,
+      currentRole: regularRole,
+    });
+    expect(res.status).toBe(400);
+    expect(res.body?.error?.code).toBe('FLOW_MODEL_UID_REQUIRED');
+  });
+
+  it('should still reject unconfigured variables for regular roles with currentRole state', async () => {
+    const regularRole = await createRegularRole();
+    const flowModelUid = await createTestFlowModel({ allowed: '{{ ctx.record.id }}' });
+    const payload = {
+      flowModelUid,
+      template: { secret: '{{ ctx.record.secret }}' },
+      contextParams: {
+        record: {
+          dataSourceKey: 'main',
+          collection: 'users',
+          filterByTk: 1,
+        },
+      },
+    };
+
+    const res = await execResolve(payload, 1, {
+      autoFlowModelUid: false,
+      currentRole: regularRole,
+    });
     expect(res.status).toBe(403);
     expect(res.body?.error?.code).toBe('VARIABLE_NOT_ALLOWED');
   });
