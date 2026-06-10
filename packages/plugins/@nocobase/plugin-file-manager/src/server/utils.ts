@@ -103,6 +103,48 @@ export function getFileKey(record) {
   return urlJoin(record.path || '', record.filename).replace(/^\//, '');
 }
 
+function pathError(message: string) {
+  const error = new Error(message) as NodeJS.ErrnoException;
+  error.code = 'PATH_TRAVERSAL';
+  return error;
+}
+
+function normalizeStoragePathForJoin(value: unknown, message: string, { allowLeadingSlash = false } = {}) {
+  if (value == null || value === '') {
+    return '';
+  }
+  if (typeof value !== 'string' || value.includes('\0')) {
+    throw pathError(message);
+  }
+  const normalized = value.replace(/\\/g, '/');
+  if (!allowLeadingSlash && normalized.startsWith('/')) {
+    throw pathError(message);
+  }
+  const segments = normalized
+    .replace(/^\/+|\/+$/g, '')
+    .split('/')
+    .filter((segment) => segment && segment !== '.');
+  if (segments.some((segment) => segment === '..')) {
+    throw pathError('Access denied');
+  }
+  return segments.join('/');
+}
+
+export function normalizeStorageSubPath(subPath?: unknown) {
+  return normalizeStoragePathForJoin(subPath, 'Invalid storage sub path');
+}
+
+export function resolveStoragePath(storagePath?: unknown, subPath?: unknown) {
+  const normalizedSubPath = normalizeStorageSubPath(subPath);
+  if (!normalizedSubPath) {
+    return typeof storagePath === 'string' ? storagePath : '';
+  }
+  const normalizedStoragePath = normalizeStoragePathForJoin(storagePath, 'Invalid storage path', {
+    allowLeadingSlash: true,
+  });
+  return normalizedStoragePath ? `${normalizedStoragePath}/${normalizedSubPath}` : normalizedSubPath;
+}
+
 export function ensureUrlEncoded(value) {
   try {
     // 如果解码后与原字符串不同，说明已经被转义过
