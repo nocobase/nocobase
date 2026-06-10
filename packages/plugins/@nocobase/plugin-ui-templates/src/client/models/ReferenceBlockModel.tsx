@@ -44,6 +44,34 @@ const TEMPLATE_FALLBACK_PATCH_ORIGINAL_GET_STEP_PARAMS = Symbol.for(
 );
 const TARGET_OWN_CONTEXT_MISSING = Symbol.for('nocobase.referenceBlockTargetOwnContextMissing');
 
+function isNonEmptyValue(value: unknown): boolean {
+  return value !== undefined && value !== null && String(value).trim() !== '';
+}
+
+function getViewInputArgs(ctx: any, model: any): Record<string, any> {
+  return model?.context?.view?.inputArgs || ctx?.view?.inputArgs || {};
+}
+
+function getAssociationNameFromCurrentRecordView(ctx: any, model: any, tpl: Record<string, any>): string {
+  const associationName = normalizeStr(tpl?.associationName);
+  const sourceCollectionName = associationName.includes('.') ? associationName.split('.').filter(Boolean)[0] : '';
+  if (!sourceCollectionName) return '';
+
+  const viewArgs = getViewInputArgs(ctx, model);
+  const collectionName = normalizeStr(viewArgs?.collectionName);
+  if (!collectionName || sourceCollectionName !== collectionName) return '';
+
+  const hasRecordAnchor =
+    isNonEmptyValue(viewArgs?.filterByTk) || isNonEmptyValue(viewArgs?.sourceId) || !!viewArgs?.record;
+  if (!hasRecordAnchor) return '';
+
+  const viewDataSourceKey = normalizeStr(viewArgs?.dataSourceKey) || 'main';
+  const templateDataSourceKey = normalizeStr(tpl?.dataSourceKey);
+  if (templateDataSourceKey && viewDataSourceKey && templateDataSourceKey !== viewDataSourceKey) return '';
+
+  return associationName;
+}
+
 /**
  * ReferenceBlockModel（插件版）
  * - 通过配置 targetUid（实例 model.uid）引用并渲染另一个区块；
@@ -665,10 +693,11 @@ ReferenceBlockModel.registerFlow({
             const fromInit = normalizeStr(init?.associationName);
             if (fromInit) return fromInit;
 
-            const assocName = normalizeStr((m as any)?.context?.association?.resourceName);
+            const context = (m as any)?.context || {};
+            const assocName = normalizeStr(context?.association?.resourceName);
             if (assocName) return assocName;
 
-            const resourceCtx = (m as any)?.context?.resource;
+            const resourceCtx = context?.resource;
             if (resourceCtx) {
               const fromResourceAssoc =
                 typeof resourceCtx.getAssociationName === 'function'
@@ -681,7 +710,7 @@ ReferenceBlockModel.registerFlow({
               if (fromResourceName) return fromResourceName;
             }
 
-            const viewArgs = (m as any)?.context?.view?.inputArgs || {};
+            const viewArgs = getViewInputArgs(ctx, m);
             const fromView = normalizeStr(viewArgs?.associationName);
             if (fromView) return fromView;
           } catch (_) {
@@ -691,10 +720,12 @@ ReferenceBlockModel.registerFlow({
         };
         const expectedAssociationName = resolveExpectedAssociationName();
         const getTemplateDisabledReason = (tpl: Record<string, any>): string | undefined => {
+          const availabilityAssociationName =
+            expectedAssociationName || getAssociationNameFromCurrentRecordView(ctx, m, tpl);
           return getTemplateAvailabilityDisabledReason(
             ctx,
             tpl,
-            { associationName: expectedAssociationName },
+            { associationName: availabilityAssociationName },
             { checkResource: false, associationMatch: 'associationResourceOnly' },
           );
         };
