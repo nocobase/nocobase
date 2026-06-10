@@ -133,58 +133,18 @@ export function Node({ data }) {
 
 export function RemoveButton() {
   const { t } = useTranslation();
-  const api = useAPIClient();
-  const { workflow, nodes, refresh } = useFlowContext() ?? {};
+  const { workflow } = useFlowContext() ?? {};
   const current = useNodeContext();
-  const { modal } = App.useApp();
   const executed = useWorkflowExecuted();
   const removeNodeContext = useRemoveNodeContext();
   const clipboard = useNodeClipboardContext();
   const isCopiedSelf = Boolean(clipboard?.clipboard?.sourceId && clipboard.clipboard.sourceId === current.id);
 
-  const onOk = useCallback(async () => {
-    await api.resource('flow_nodes').destroy?.({
-      filterByTk: current.id,
-    });
-    refresh();
-  }, [current.id, refresh, api]);
-
-  const onRemove = useCallback(async () => {
-    const branches = nodes.filter((item) => item.upstream === current && item.branchIndex != null);
-    if (!branches.length) {
-      const usingNodes = nodes.filter((node) => {
-        if (node === current) {
-          return false;
-        }
-
-        const template = parse(node.config);
-        const refs = template.parameters.filter(
-          ({ key }) =>
-            key.startsWith(`$jobsMapByNodeKey.${current.key}.`) || key === `$jobsMapByNodeKey.${current.key}`,
-        );
-        return refs.length;
-      });
-
-      if (usingNodes.length) {
-        modal.error({
-          title: lang('Can not delete'),
-          content: lang(
-            'The result of this node has been referenced by other nodes ({{nodes}}), please remove the usage before deleting.',
-            { nodes: usingNodes.map((item) => item.title).join(', ') },
-          ),
-        });
-        return;
-      }
-
-      modal.confirm({
-        title: t('Delete'),
-        content: t('Are you sure you want to delete it?'),
-        onOk,
-      });
-    } else {
-      removeNodeContext?.setDeletingNode(current);
-    }
-  }, [current, modal, nodes, onOk, removeNodeContext, t]);
+  // Delegate the whole delete flow (leaf reference-check + confirm, or the
+  // keep-branch modal for branching nodes) to the shared provider.
+  const onRemove = useCallback(() => {
+    removeNodeContext?.requestRemove?.(current);
+  }, [removeNodeContext, current]);
 
   const onCopy = useCallback(() => {
     if (isCopiedSelf) {
