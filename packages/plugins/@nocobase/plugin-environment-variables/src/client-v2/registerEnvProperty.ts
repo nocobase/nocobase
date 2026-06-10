@@ -50,11 +50,16 @@ export async function fetchEnvironmentVariables(apiClient: EnvApiClient): Promis
   }
 }
 
+/** A translator for the scope label. Accepts the i18next `t` from either runtime
+ *  (its return type isn't a bare `string` — it's a `TFunctionDetailedResult` /
+ *  union), so the result is coerced to a string by the helper. */
+type Translate = (key: string) => unknown;
+
 /**
  * Define `$env` on the given flow-engine context. `t` translates the scope label
  * ("Variables and secrets"); `apiClient` fetches the variable list lazily.
  */
-export function registerEnvProperty(context: FlowContext, apiClient: EnvApiClient, t: (key: string) => string): void {
+export function registerEnvProperty(context: FlowContext, apiClient: EnvApiClient, t: Translate): void {
   context.defineProperty(ENV_ROOT, {
     get: async () => {
       const list = await fetchEnvironmentVariables(apiClient);
@@ -62,7 +67,7 @@ export function registerEnvProperty(context: FlowContext, apiClient: EnvApiClien
     },
     meta: {
       type: 'object',
-      title: t('Variables and secrets'),
+      title: String(t('Variables and secrets')),
       properties: async (): Promise<Record<string, PropertyMeta>> => {
         const list = await fetchEnvironmentVariables(apiClient);
         const out: Record<string, PropertyMeta> = {};

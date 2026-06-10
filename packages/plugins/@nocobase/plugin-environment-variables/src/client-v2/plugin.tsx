@@ -33,7 +33,7 @@ export class PluginEnvironmentVariablesClientV2 extends Plugin<Record<string, ne
     // `addGlobalVar('$env', ...)` + Provider chain. Lazy-loaded — the API is
     // only hit on first read, then cached by FlowContext. Shared with the v1
     // runtime via `registerEnvProperty` (see `./registerEnvProperty`).
-    registerEnvProperty(this.flowEngine.context, this.app.apiClient, (key) => this.t(key) as unknown as string);
+    registerEnvProperty(this.flowEngine.context, this.app.apiClient, (key) => this.t(key));
   }
 }
 

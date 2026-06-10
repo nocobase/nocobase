@@ -206,14 +206,19 @@ describe('useWorkflowVariableOptions — runtime-neutral resolution', () => {
     expect(result.current).toEqual([]);
   });
 
-  it('passes a v1 JSX system-variable label through untouched (no string translate)', () => {
+  it('coerces a v1 JSX system-variable label to plain-text title (MetaTreeNode.title is a string)', () => {
     setupEngine(makeV1ShapedPlugin());
     holder.currentNode = { key: 'n1', type: 'condition', upstream: null };
 
     const { result } = renderHook(() => useWorkflowVariableOptions());
     const system = result.current.find((n) => n.name === '$system');
     const instanceId = system?.children?.find((c: any) => c.name === 'instanceId');
-    // The JSX label is preserved as the node title (string-only labels get t()).
-    expect(React.isValidElement(instanceId?.title)).toBe(true);
+    // `MetaTreeNode.title` is a string, so the v1 `<span>Instance ID</span>` label
+    // is reduced to its text ("Instance ID"), not kept as a React element.
+    expect(typeof instanceId?.title).toBe('string');
+    expect(instanceId?.title).toBe('Instance ID');
+    // A plain-string v2-style label is translated through `t` (identity in tests).
+    const now = system?.children?.find((c: any) => c.name === 'now');
+    expect(now?.title).toBe('System time');
   });
 });
