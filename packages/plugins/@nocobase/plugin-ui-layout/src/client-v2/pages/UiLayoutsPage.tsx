@@ -49,7 +49,8 @@ export type UiLayoutFormValues = {
   enabled: boolean;
 };
 
-type UiLayoutFormDraftValues = Omit<UiLayoutFormValues, 'routeName'>;
+type UiLayoutFormDraftValues = Omit<UiLayoutFormValues, 'routeName' | 'authCheck'> &
+  Partial<Pick<UiLayoutFormValues, 'authCheck'>>;
 
 type ListMeta = {
   count?: number;
@@ -145,6 +146,7 @@ export function completeUiLayoutFormValues(values: UiLayoutFormDraftValues): UiL
     title,
     routePath,
     routeName,
+    authCheck: true,
   };
 }
 
@@ -155,9 +157,9 @@ function toUiLayoutFormValues(record: UiLayoutRecord, overrides: Partial<UiLayou
     layoutType: record.layoutType,
     routeName: record.routeName,
     routePath: record.routePath,
-    authCheck: record.authCheck,
     enabled: record.enabled,
     ...overrides,
+    authCheck: true,
   };
 }
 
@@ -224,8 +226,7 @@ export function getUiLayoutRouteUrl(app: UiLayoutAppLike | undefined, routePath:
   return joinRoutePath(app?.getPublicPath?.(), normalizedRoutePath);
 }
 
-const defaultFormValues: Pick<UiLayoutFormValues, 'authCheck' | 'enabled'> = {
-  authCheck: true,
+const defaultFormValues: Pick<UiLayoutFormValues, 'enabled'> = {
   enabled: true,
 };
 
@@ -395,11 +396,6 @@ const UiLayoutsPage: React.FC = () => {
       },
       { title: t('Access path'), dataIndex: 'routePath', ellipsis: true },
       {
-        title: t('Auth check'),
-        dataIndex: 'authCheck',
-        render: (value: boolean) => <BooleanTag value={value} />,
-      },
-      {
         title: t('Enabled'),
         dataIndex: 'enabled',
         render: (value: boolean, record) => (
@@ -478,11 +474,6 @@ const UiLayoutsPage: React.FC = () => {
   );
 };
 
-function BooleanTag(props: { value: boolean }) {
-  const t = useT();
-  return <Tag color={props.value ? 'success' : 'default'}>{props.value ? t('Yes') : t('No')}</Tag>;
-}
-
 function LayoutTypeTag(props: { layoutType: string }) {
   const t = useT();
   return <Tag color={getLayoutTypeTagColor(props.layoutType)}>{getLayoutTypeLabel(t, props.layoutType)}</Tag>;
@@ -505,7 +496,6 @@ function UiLayoutForm(props: { layoutType: UiLayoutType; record?: UiLayoutRecord
             uid: record.uid,
             layoutType: record.layoutType,
             routePath: record.routePath,
-            authCheck: record.authCheck,
             enabled: record.enabled,
           }
         : {
@@ -582,14 +572,6 @@ function UiLayoutForm(props: { layoutType: UiLayoutType; record?: UiLayoutRecord
           ]}
         >
           <Input disabled={defaultAdminLayoutEdit} />
-        </Form.Item>
-        <Form.Item
-          name="authCheck"
-          label={t('Auth check')}
-          valuePropName="checked"
-          extra={t('Require users to sign in before accessing this layout.')}
-        >
-          <Switch disabled={defaultAdminLayoutEdit} />
         </Form.Item>
         <Form.Item
           name="enabled"

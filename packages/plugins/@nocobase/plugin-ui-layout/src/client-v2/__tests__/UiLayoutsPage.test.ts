@@ -145,7 +145,15 @@ describe('plugin-ui-layout submit pipeline', () => {
     const resource = makeResource();
     const onSubmitted = vi.fn();
 
-    await updateUiLayoutEnabled({ resource, record: uiLayoutRecord, enabled: false, onSubmitted });
+    await updateUiLayoutEnabled({
+      resource,
+      record: {
+        ...uiLayoutRecord,
+        authCheck: false,
+      },
+      enabled: false,
+      onSubmitted,
+    });
 
     expect(resource.update).toHaveBeenCalledTimes(1);
     expect(resource.update).toHaveBeenCalledWith({
@@ -368,6 +376,7 @@ describe('plugin-ui-layout settings page', () => {
     const desktopTitleCell = (await screen.findAllByText('Desktop layout')).find(
       (element) => element.closest('td')?.tagName === 'TD',
     );
+    expect(screen.queryByRole('columnheader', { name: 'Auth check' })).not.toBeInTheDocument();
     const mobileTitleCell = screen
       .getAllByText('Mobile layout')
       .find((element) => element.closest('td')?.tagName === 'TD');
@@ -403,7 +412,7 @@ describe('plugin-ui-layout settings page', () => {
     const defaultDrawer = render(React.createElement(AntdApp, null, defaultDrawerContent));
     expect(within(defaultDrawer.container).getByLabelText('UID')).toBeDisabled();
     expect(within(defaultDrawer.container).getByLabelText('Access path')).toBeDisabled();
-    expect(within(defaultDrawer.container).getByLabelText('Auth check')).toBeDisabled();
+    expect(within(defaultDrawer.container).queryByLabelText('Auth check')).not.toBeInTheDocument();
     expect(within(defaultDrawer.container).getByLabelText('Enabled')).toBeDisabled();
     defaultDrawer.unmount();
     drawer.mockClear();
@@ -428,8 +437,132 @@ describe('plugin-ui-layout settings page', () => {
 
     expect(within(mobileDrawer.container).getByLabelText('UID')).toBeDisabled();
     expect(within(mobileDrawer.container).getByLabelText('Access path')).not.toBeDisabled();
-    expect(within(mobileDrawer.container).getByLabelText('Auth check')).not.toBeDisabled();
+    expect(within(mobileDrawer.container).queryByLabelText('Auth check')).not.toBeInTheDocument();
     expect(within(mobileDrawer.container).getByLabelText('Enabled')).not.toBeDisabled();
+  });
+
+  it('should create layouts with auth check enabled without exposing the field', async () => {
+    const user = userEvent.setup();
+    const request = vi.fn().mockResolvedValue({
+      data: {
+        data: [],
+      },
+    });
+    const resource = makeResource();
+    const drawer = vi.fn();
+    flowContext.current = {
+      api: {
+        request,
+        resource: vi.fn(() => resource),
+      },
+      app: {},
+      viewer: {
+        drawer,
+      },
+    };
+
+    render(React.createElement(AntdApp, null, React.createElement(UiLayoutsPage)));
+
+    await user.click(await screen.findByRole('button', { name: /Add UI layout/ }));
+    await user.click(await screen.findByRole('menuitem', { name: 'Desktop layout' }));
+
+    await waitFor(() => {
+      expect(drawer).toHaveBeenCalledWith(expect.objectContaining({ content: expect.any(Function) }));
+    });
+
+    const drawerContent = drawer.mock.calls[0][0].content();
+    const createDrawer = render(React.createElement(AntdApp, null, drawerContent));
+
+    expect(within(createDrawer.container).queryByLabelText('Auth check')).not.toBeInTheDocument();
+    await user.type(within(createDrawer.container).getByLabelText('Title'), 'Operations layout');
+    await user.type(within(createDrawer.container).getByLabelText('Access path'), '/operations');
+    await user.click(within(createDrawer.container).getByRole('button', { name: 'Submit' }));
+
+    await waitFor(() => {
+      expect(resource.create).toHaveBeenCalledWith({
+        values: expect.objectContaining({
+          title: 'Operations layout',
+          uid: 'ui-layout-random-id',
+          layoutType: 'desktop',
+          routeName: 'operations',
+          routePath: '/operations',
+          authCheck: true,
+          enabled: true,
+        }),
+      });
+    });
+
+    createDrawer.unmount();
+  });
+
+  it('should update layouts with auth check enabled without exposing the field', async () => {
+    const user = userEvent.setup();
+    const request = vi.fn().mockResolvedValue({
+      data: {
+        data: [
+          {
+            ...uiLayoutRecord,
+            id: 2,
+            title: 'Mobile layout',
+            uid: 'mobile-layout',
+            layoutType: 'mobile',
+            routePath: '/mobile',
+            authCheck: false,
+          },
+        ],
+      },
+    });
+    const resource = makeResource();
+    const drawer = vi.fn();
+    flowContext.current = {
+      api: {
+        request,
+        resource: vi.fn(() => resource),
+      },
+      app: {},
+      viewer: {
+        drawer,
+      },
+    };
+
+    render(React.createElement(AntdApp, null, React.createElement(UiLayoutsPage)));
+
+    const mobileTitleCell = (await screen.findAllByText('Mobile layout')).find(
+      (element) => element.closest('td')?.tagName === 'TD',
+    );
+    const mobileRow = mobileTitleCell?.closest('tr');
+    expect(mobileRow).not.toBeNull();
+
+    await user.click(within(mobileRow as HTMLTableRowElement).getByRole('button', { name: /Edit/ }));
+
+    await waitFor(() => {
+      expect(drawer).toHaveBeenCalledWith(expect.objectContaining({ content: expect.any(Function) }));
+    });
+
+    const drawerContent = drawer.mock.calls[0][0].content();
+    const editDrawer = render(React.createElement(AntdApp, null, drawerContent));
+
+    expect(within(editDrawer.container).queryByLabelText('Auth check')).not.toBeInTheDocument();
+    await user.clear(within(editDrawer.container).getByLabelText('Title'));
+    await user.type(within(editDrawer.container).getByLabelText('Title'), 'Updated mobile layout');
+    await user.click(within(editDrawer.container).getByRole('button', { name: 'Submit' }));
+
+    await waitFor(() => {
+      expect(resource.update).toHaveBeenCalledWith({
+        filterByTk: 2,
+        values: expect.objectContaining({
+          title: 'Updated mobile layout',
+          uid: 'mobile-layout',
+          layoutType: 'mobile',
+          routeName: 'mobile',
+          routePath: '/mobile',
+          authCheck: true,
+          enabled: true,
+        }),
+      });
+    });
+
+    editDrawer.unmount();
   });
 });
 
@@ -469,6 +602,27 @@ describe('plugin-ui-layout form values', () => {
       layoutType: 'mobile',
       routeName: 'mobile',
       routePath: '/mobile',
+      authCheck: true,
+      enabled: true,
+    });
+  });
+
+  it('should always complete UI-managed layouts with auth check enabled', () => {
+    expect(
+      completeUiLayoutFormValues({
+        title: 'Public-looking layout',
+        uid: 'public-layout',
+        layoutType: 'desktop',
+        routePath: '/public',
+        authCheck: false,
+        enabled: true,
+      }),
+    ).toEqual({
+      title: 'Public-looking layout',
+      uid: 'public-layout',
+      layoutType: 'desktop',
+      routeName: 'public',
+      routePath: '/public',
       authCheck: true,
       enabled: true,
     });
