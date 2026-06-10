@@ -509,6 +509,75 @@ describe('FlowRoute', () => {
     });
   });
 
+  it('should not rerun accessible guard when layout reference changes but fields stay the same', async () => {
+    const engine = new FlowEngine();
+    const ensureAccessibleLoaded = vi.fn().mockResolvedValue([]);
+    const getRouteBySchemaUid = vi.fn(() => ({ type: 'flowPage', schemaUid: 'test-page' }));
+    engine.context.defineProperty('routeRepository', {
+      value: {
+        refreshAccessible: hookState.refresh,
+        isAccessibleLoaded: () => true,
+        ensureAccessibleLoaded,
+        getRouteBySchemaUid,
+      },
+    });
+    engine.context.defineProperty('app', {
+      value: {
+        getPublicPath: () => '/v2/',
+        router: {
+          getBasename: () => '/v2',
+        },
+      },
+    });
+
+    const layoutModel: MockAdminLayoutModel = Object.assign(
+      engine.createModel({ uid: 'legacy-admin-layout-model', use: 'FlowModel' }),
+      {
+        registerRoutePage: vi.fn(),
+        updateRoutePage: vi.fn(),
+        unregisterRoutePage: vi.fn(),
+      },
+    );
+    let layoutReadCount = 0;
+    const stableLayout = {
+      uid: 'admin-layout-model',
+      routeName: 'admin',
+      routePath: '/admin',
+      authCheck: true,
+    };
+    Object.defineProperty(layoutModel, 'layout', {
+      get: () => {
+        layoutReadCount += 1;
+        return layoutReadCount <= 2 ? { ...stableLayout } : stableLayout;
+      },
+    });
+
+    const element = (
+      <FlowEngineProvider engine={engine}>
+        <MemoryRouter initialEntries={['/flow/test-page']}>
+          <Routes>
+            <Route path="/flow/:name" element={<FlowRoute getLayoutModel={() => layoutModel as any} />} />
+          </Routes>
+        </MemoryRouter>
+      </FlowEngineProvider>
+    );
+    const { rerender } = render(element);
+
+    await waitFor(() => {
+      expect(layoutModel.registerRoutePage).toHaveBeenCalledWith('test-page', expect.any(Object));
+    });
+    expect(ensureAccessibleLoaded).not.toHaveBeenCalled();
+    expect(getRouteBySchemaUid).toHaveBeenCalledTimes(1);
+
+    rerender(element);
+
+    await waitFor(() => {
+      expect(layoutModel.updateRoutePage).toHaveBeenCalled();
+    });
+    expect(ensureAccessibleLoaded).not.toHaveBeenCalled();
+    expect(getRouteBySchemaUid).toHaveBeenCalledTimes(1);
+  });
+
   it('should show 404 when current route is a legacy page in v2 runtime', async () => {
     const originalLocation = window.location;
     const replace = vi.fn();

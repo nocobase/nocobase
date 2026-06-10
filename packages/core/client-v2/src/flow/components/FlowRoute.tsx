@@ -30,6 +30,7 @@ export type LegacyPageBehavior = 'redirect' | 'notFound' | 'bridge';
 
 type FlowRouteLayoutContext = {
   authCheck?: boolean;
+  routePath?: string;
   routeName?: string;
   uid?: string;
 };
@@ -169,7 +170,27 @@ const FlowRoute = (props: FlowRouteProps = {}) => {
   const flowContext = useFlowContext<{ layout?: FlowRouteLayoutContext }>();
   const contextLayout = flowContext?.layout;
   const propsLayoutModel = useMemo(() => getLayoutModelProp?.(flowEngine), [flowEngine, getLayoutModelProp]);
-  const routeLayout = contextLayout || propsLayoutModel?.layout;
+  const rawRouteLayout = contextLayout || propsLayoutModel?.layout;
+  const routeLayoutUid = rawRouteLayout?.uid;
+  const routeLayoutRouteName = rawRouteLayout?.routeName;
+  const routeLayoutRoutePath = rawRouteLayout?.routePath;
+  const routeLayoutAuthCheck = rawRouteLayout?.authCheck;
+  const routeLayout = useMemo(() => {
+    if (
+      !routeLayoutUid &&
+      !routeLayoutRouteName &&
+      !routeLayoutRoutePath &&
+      typeof routeLayoutAuthCheck === 'undefined'
+    ) {
+      return undefined;
+    }
+    return {
+      authCheck: routeLayoutAuthCheck,
+      routeName: routeLayoutRouteName,
+      routePath: routeLayoutRoutePath,
+      uid: routeLayoutUid,
+    };
+  }, [routeLayoutAuthCheck, routeLayoutRouteName, routeLayoutRoutePath, routeLayoutUid]);
   const getLayoutModel = useMemo(
     () => getLayoutModelProp || ((engine: FlowEngine) => getDefaultLayoutModel(engine, routeLayout)),
     [getLayoutModelProp, routeLayout],
@@ -269,7 +290,7 @@ const FlowRoute = (props: FlowRouteProps = {}) => {
       }
     };
 
-    void run();
+    run();
 
     return () => {
       active = false;
