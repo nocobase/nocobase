@@ -245,6 +245,18 @@ test('proxy caddy reload reloads the configured driver', async () => {
   expect(mocks.succeedTask).toHaveBeenCalledWith('Caddy proxy reloaded with the local driver.');
 });
 
+test('proxy caddy reload starts the proxy when it is not running yet', async () => {
+  const { default: ProxyCaddyReload } = await import('../commands/proxy/caddy/reload.js');
+  mocks.reloadCaddyProxy.mockResolvedValueOnce('started');
+  const command = Object.assign(Object.create(ProxyCaddyReload.prototype), {
+    parse: vi.fn(async () => ({})),
+  });
+
+  await ProxyCaddyReload.prototype.run.call(command);
+
+  expect(mocks.succeedTask).toHaveBeenCalledWith('Caddy proxy started with the local driver using the latest config.');
+});
+
 test('proxy caddy stop stops the configured driver', async () => {
   const { default: ProxyCaddyStop } = await import('../commands/proxy/caddy/stop.js');
   const command = Object.assign(Object.create(ProxyCaddyStop.prototype), {

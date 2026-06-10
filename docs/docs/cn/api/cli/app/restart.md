@@ -20,7 +20,6 @@ nb app restart [flags]
 | --- | --- | --- |
 | `--env`, `-e` | string | 要重启的 CLI env 名称，省略时使用当前 env |
 | `--yes`, `-y` | boolean | 当显式 `--env` 指向的 env 与当前 env 不一致时，跳过交互确认 |
-| `--daemon`, `-d` / `--no-daemon` | boolean | 停止后是否以守护进程模式运行，默认开启 |
 | `--verbose` | boolean | 显示底层停止和启动命令输出 |
 
 ## 示例
@@ -28,7 +27,6 @@ nb app restart [flags]
 ```bash
 nb app restart
 nb app restart --env local
-nb app restart --env local --no-daemon
 nb app restart --env local --verbose
 nb app restart --env local-docker
 ```
@@ -37,7 +35,7 @@ nb app restart --env local-docker
 
 只有在你显式传入 `--env` 时，CLI 才会检查它是否与当前 env 一致。如果显式指定了不同的 env，交互终端会先确认；在非交互终端或 AI agent 场景下，需要由你自己显式追加 `--yes`，或者先执行 `nb env use <name>` 再重试。
 
-默认情况下，在适用时 CLI 会先执行 `nb license plugins sync --skip-if-no-license`，同步当前授权允许使用的商业插件；然后本地 env 会在重新启动前自动完成必要的安装或升级准备，Docker env 会在重建容器前完成这一步。只要 CLI 需要等待应用就绪，就会检查 `__health_check` 接口：先输出一条等待日志，之后每 10 秒输出一条进度提示，直到应用可用或超时。如果本地 env 传入 `--no-daemon`，应用会以前台模式运行，此时 CLI 不会在启动后继续等待健康检查。
+默认情况下，在适用时 CLI 会先执行 `nb license plugins sync --skip-if-no-license`，同步当前授权允许使用的商业插件；然后本地 env 会在重新启动前自动完成必要的安装或升级准备，Docker env 会在重建容器前完成这一步。只要 CLI 需要等待应用就绪，就会检查 `__health_check` 接口：先输出一条等待日志，之后每 10 秒输出一条进度提示，直到应用可用或超时。
 
 ## 相关命令
 

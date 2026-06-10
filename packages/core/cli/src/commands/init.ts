@@ -34,6 +34,7 @@ import {
   deriveConfiguredStoragePath,
   inferConfiguredAppPathFromLegacyConfig,
 } from '../lib/env-paths.js';
+import { formatMissingManagedAppEnvMessage } from '../lib/app-runtime.js';
 import { type RunPromptCatalogWebUIStage, runPromptCatalogWebUI } from '../lib/prompt-web-ui.ts';
 import { validateApiBaseUrl, validateEnvKey } from '../lib/prompt-validators.ts';
 import { installNocoBaseSkills, isNpmRegistryUnavailable } from '../lib/skills-manager.js';
@@ -209,10 +210,10 @@ function deriveInstallConnectionApiBaseUrl(
 
 function createInstallConnectionApiBaseUrlPrompt(defaultApiHost: string): TextPromptBlock {
   return installConnectionOnly({
-  type: 'text',
-  message: initText('prompts.apiBaseUrl.message'),
-  placeholder: initText('prompts.apiBaseUrl.placeholder'),
-  required: true,
+    type: 'text',
+    message: initText('prompts.apiBaseUrl.message'),
+    placeholder: initText('prompts.apiBaseUrl.placeholder'),
+    required: true,
     initialValue: (values) => deriveInstallConnectionApiBaseUrl(values, defaultApiHost),
   }) as TextPromptBlock;
 }
@@ -484,10 +485,7 @@ Prompt modes:
     installAccessToken: installConnectionAccessTokenPrompt,
   };
 
-  private buildPromptCatalog(
-    flags: { 'skip-auth'?: boolean },
-    options: { defaultApiHost: string },
-  ): PromptsCatalog {
+  private buildPromptCatalog(flags: { 'skip-auth'?: boolean }, options: { defaultApiHost: string }): PromptsCatalog {
     const prompts: PromptsCatalog = {
       ...Init.prompts,
       installApiBaseUrl: createInstallConnectionApiBaseUrlPrompt(options.defaultApiHost),
@@ -556,7 +554,7 @@ Prompt modes:
     }),
     verbose: Flags.boolean({
       description: 'Show detailed command output',
-      default: false,
+      default: true,
     }),
     'skip-skills': Flags.boolean({
       description: 'Skip installing NocoBase AI coding skills during init',
@@ -571,7 +569,7 @@ Prompt modes:
       max: 65535,
     }),
     ...pickKeys(EnvAdd.flags, INIT_ENV_ADD_FLAG_NAMES),
-    ...omitKeys(Install.flags, ['yes', 'env']),
+    ...omitKeys(Install.flags, ['yes', 'env', 'verbose']),
   };
 
   public async run(): Promise<void> {
@@ -594,10 +592,6 @@ Prompt modes:
       this.error('--skip-auth cannot be used with --access-token or --token.');
     }
 
-    if (normalizedFlags.ui && normalizedFlags.resume) {
-      this.error('--ui cannot be used with --resume.');
-    }
-
     if (normalizedFlags['prepare-only'] && explicitSetupModeFlag(normalizedFlags) === 'connect-remote') {
       this.error('--prepare-only is only available for local or install-new setup flows.');
     }
@@ -606,7 +600,7 @@ Prompt modes:
       this.error('--ui-host and --ui-port require --ui.');
     }
 
-    if (normalizedFlags.resume) {
+    if (normalizedFlags.resume && !normalizedFlags.ui) {
       const envName = String(normalizedFlags.env ?? '').trim();
       if (!envName) {
         this.error(formatResumeEnvRequiredMessage());
@@ -725,15 +719,27 @@ Prompt modes:
         const resumeEnv = await getEnv(resumeEnvName, {
           scope: resolveDefaultConfigScope(),
         });
-        if (resumeEnv) {
-          const savedAppPort = String(resumeEnv.config.appPort ?? '').trim();
-          const savedDbPort = String(resumeEnv.config.dbPort ?? '').trim();
-          if (savedAppPort) {
-            presetValues.resumeSavedAppPort = savedAppPort;
-          }
-          if (savedDbPort) {
-            presetValues.resumeSavedDbPort = savedDbPort;
-          }
+        if (!resumeEnv) {
+          this.error(formatMissingManagedAppEnvMessage(resumeEnvName));
+        }
+        const resumePresetValues = Install.buildResumePresetValues(resumeEnv);
+        presetValues = {
+          ...resumePresetValues.envPreset,
+          ...resumePresetValues.appPreset,
+          ...resumePresetValues.downloadPreset,
+          ...resumePresetValues.dbPreset,
+          ...resumePresetValues.rootPreset,
+          ...resumePresetValues.envAddPreset,
+          ...presetValues,
+        };
+
+        const savedAppPort = String(resumeEnv.config.appPort ?? '').trim();
+        const savedDbPort = String(resumeEnv.config.dbPort ?? '').trim();
+        if (savedAppPort) {
+          presetValues.resumeSavedAppPort = savedAppPort;
+        }
+        if (savedDbPort) {
+          presetValues.resumeSavedDbPort = savedDbPort;
         }
       }
     }
@@ -871,13 +877,13 @@ Prompt modes:
             String(normalizedResults.appName ?? DEFAULT_INIT_APP_NAME).trim() || DEFAULT_INIT_APP_NAME
           }".`,
         );
-        printVerbose('Running nb init');
+        printVerbose('Running nb install');
         await this.config.runCommand('install', this.buildInstallArgv(normalizedResults, normalizedFlags));
       }
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : String(error);
       const formatted = managedInstallResults
-        ? this.formatManagedInstallFailureMessage(message, managedInstallResults, normalizedFlags)
+        ? await this.formatManagedInstallFailureMessage(message, managedInstallResults, normalizedFlags)
         : message;
       this.error(pc.red(formatted));
       this.exit(1);
@@ -1656,93 +1662,32 @@ Prompt modes:
 
   private buildManagedInstallResumeCommand(
     results: Record<string, string | number | boolean>,
-    flags: { yes?: boolean; 'skip-download'?: boolean },
+    flags: { ui?: boolean; yes?: boolean },
   ): string {
     const argv = ['nb', 'init'];
+    const envName = String(results.appName ?? DEFAULT_INIT_APP_NAME).trim() || DEFAULT_INIT_APP_NAME;
+    argv.push('--env', envName);
     if (flags.yes) {
       argv.push('--yes');
     }
-
-    const envName = String(results.appName ?? DEFAULT_INIT_APP_NAME).trim() || DEFAULT_INIT_APP_NAME;
-    argv.push('--env', envName);
-
-    const setupMode = resolveInitSetupMode(results);
-    if (setupMode === 'manage-local') {
-      argv.push('--setup-mode', 'manage-local');
+    if (flags.ui) {
+      argv.push('--ui');
     }
-
-    const source = String(results.source ?? '').trim();
-    const skipDownload =
-      setupMode === 'manage-local' ? false : Boolean(flags['skip-download']) || results.skipDownload === true;
-    if (source) {
-      argv.push('--source', source);
-    }
-
-    const version = resolveInitDownloadVersion(results);
-    if (version) {
-      argv.push('--version', version);
-    }
-
-    const gitUrl = String(results.gitUrl ?? '').trim();
-    if (gitUrl) {
-      argv.push('--git-url', gitUrl);
-    }
-
-    const dockerRegistry = String(results.dockerRegistry ?? '').trim();
-    if (dockerRegistry) {
-      argv.push('--docker-registry', dockerRegistry);
-    }
-
-    const dockerPlatform = String(results.dockerPlatform ?? '').trim();
-    if (dockerPlatform) {
-      argv.push('--docker-platform', dockerPlatform);
-    }
-
-    const npmRegistry = String(results.npmRegistry ?? '').trim();
-    if (npmRegistry) {
-      argv.push('--npm-registry', npmRegistry);
-    }
-
-    if (skipDownload) {
-      argv.push('--skip-download');
-    } else {
-      const outputDir = String(results.outputDir ?? '').trim();
-      const appPath =
-        String(results.appPath ?? '').trim() ||
-        inferConfiguredAppPathFromLegacyConfig({
-          appRootPath: results.appRootPath,
-          storagePath: results.storagePath,
-        }) ||
-        '';
-      const expectedOutputDir =
-        String(results.appRootPath ?? '').trim() || (appPath ? deriveConfiguredSourcePath(appPath) : '');
-      if (outputDir && outputDir !== expectedOutputDir) {
-        argv.push('--output-dir', outputDir);
-      }
-
-      if (results.devDependencies) {
-        argv.push('--dev-dependencies');
-      }
-      if (results.dockerSave) {
-        argv.push('--docker-save');
-      }
-      if (results.build !== undefined && !results.build) {
-        argv.push('--no-build');
-      }
-      if (results.buildDts) {
-        argv.push('--build-dts');
-      }
-    }
-
-    argv.push('--resume', '--verbose');
+    argv.push('--resume');
     return argv.map(shellQuoteArg).join(' ');
   }
 
-  private formatManagedInstallFailureMessage(
+  private async formatManagedInstallFailureMessage(
     message: string,
     results: Record<string, string | number | boolean>,
-    flags: { yes?: boolean },
-  ): string {
+    flags: { ui?: boolean; yes?: boolean },
+  ): Promise<string> {
+    const envName = String(results.appName ?? DEFAULT_INIT_APP_NAME).trim() || DEFAULT_INIT_APP_NAME;
+    const savedEnv = await getEnv(envName, { scope: resolveDefaultConfigScope() });
+    if (savedEnv?.config.setupState === 'installed') {
+      return message;
+    }
+
     const command = this.buildManagedInstallResumeCommand(results, flags);
     return [message, '', translateCli('commands.init.messages.resumeAfterInstallFailure', { command })].join('\n');
   }

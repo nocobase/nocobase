@@ -867,6 +867,67 @@ test('install --resume maps arbitrary saved download versions to otherVersion pr
   expect(result.downloadResults.otherVersion).toBe('next');
 });
 
+test('install --resume --yes keeps saved download source and version from env config', async () => {
+  const { default: Install } = await import('../commands/install.js');
+
+  mocks.getEnv.mockResolvedValue({
+    name: 'missingp006102423',
+    config: {
+      source: 'npm',
+      downloadVersion: 'not-a-real-version',
+      appPath: './missingp006102423/',
+      appPort: '52976',
+      appPublicPath: '/',
+      builtinDb: true,
+      dbDialect: 'postgres',
+      builtinDbImage: 'postgres:16',
+      dbPort: '52977',
+      dbDatabase: 'nocobase',
+      dbUser: 'nocobase',
+      dbPassword: 'nocobase',
+      dbUnderscored: false,
+      setupState: 'prepared',
+      lang: 'en-US',
+      rootUsername: 'nocobase',
+      rootEmail: 'admin@nocobase.com',
+      rootPassword: 'admin123',
+      rootNickname: 'Super Admin',
+      apiBaseUrl: 'http://127.0.0.1:52976/api',
+    },
+  });
+  mocks.runPromptCatalog.mockImplementation(async (_catalog, options) => ({
+    ...(options.initialValues ?? {}),
+    ...(options.values ?? {}),
+  }));
+
+  const command = Object.create(Install.prototype);
+  const result = await (
+    Install.prototype as unknown as {
+      collectPromptResults: (
+        parsed: Record<string, unknown>,
+        yes: boolean,
+      ) => Promise<{
+        downloadResults: Record<string, unknown>;
+      }>;
+    }
+  ).collectPromptResults.call(
+    command,
+    {
+      resume: true,
+      env: 'missingp006102423',
+      yes: true,
+      force: false,
+      'skip-download': false,
+      'builtin-db': true,
+    },
+    true,
+  );
+
+  expect(result.downloadResults.source).toBe('npm');
+  expect(result.downloadResults.version).toBe('other');
+  expect(result.downloadResults.otherVersion).toBe('not-a-real-version');
+});
+
 test('install --resume fails with a clear message when the env is missing', async () => {
   const { default: Install } = await import('../commands/install.js');
 

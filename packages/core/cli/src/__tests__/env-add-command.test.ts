@@ -120,9 +120,7 @@ test('env add saves builtinDb into env config when provided by install', async (
     },
     { scope: 'global' },
   ]);
-  expect(runCommand.mock.calls).toEqual([
-    ['env:update', ['local']],
-  ]);
+  expect(runCommand.mock.calls).toEqual([['env:update', ['local']]]);
   expect(mocks.setCurrentEnv).toHaveBeenCalledWith('local', { scope: 'global' });
   expect(mocks.printSuccess).toHaveBeenCalledWith('✔ Env "local" is ready.');
 });

@@ -245,6 +245,18 @@ test('proxy nginx reload reloads the configured driver', async () => {
   expect(mocks.succeedTask).toHaveBeenCalledWith('Nginx proxy reloaded with the local driver.');
 });
 
+test('proxy nginx reload starts the proxy when it is not running yet', async () => {
+  const { default: ProxyNginxReload } = await import('../commands/proxy/nginx/reload.js');
+  mocks.reloadNginxProxy.mockResolvedValueOnce('started');
+  const command = Object.assign(Object.create(ProxyNginxReload.prototype), {
+    parse: vi.fn(async () => ({})),
+  });
+
+  await ProxyNginxReload.prototype.run.call(command);
+
+  expect(mocks.succeedTask).toHaveBeenCalledWith('Nginx proxy started with the local driver using the latest config.');
+});
+
 test('proxy nginx stop stops the configured driver', async () => {
   const { default: ProxyNginxStop } = await import('../commands/proxy/nginx/stop.js');
   const command = Object.assign(Object.create(ProxyNginxStop.prototype), {
