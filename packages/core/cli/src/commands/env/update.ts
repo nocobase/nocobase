@@ -13,11 +13,27 @@ import { Args, Command, Flags } from '@oclif/core';
 import { getCurrentEnvName, getEnv, replaceEnvConfig } from '../../lib/auth-store.js';
 import { updateEnvRuntime } from '../../lib/bootstrap.js';
 import { resolveDefaultConfigScope } from '../../lib/cli-home.js';
+import { appendDiagnosticLogPath } from '../../lib/cli-entry-error.js';
+import { getActiveCommandLogFile } from '../../lib/command-log.js';
 import { ENV_BOOLEAN_CONFIG_FLAG_MAP, ENV_STRING_CONFIG_FLAG_MAP } from '../../lib/env-command-config.js';
 import { buildStoredEnvConfig, type StoredEnvConfigInput } from '../../lib/env-config.js';
-import { failTask, printInfo, printVerbose, printWarningBlock, setVerboseMode, startTask, stopTask, succeedTask } from '../../lib/ui.js';
+import { validateApiBaseUrl } from '../../lib/prompt-validators.js';
+import {
+  failTask,
+  printInfo,
+  printVerbose,
+  printWarningBlock,
+  setVerboseMode,
+  startTask,
+  stopTask,
+  succeedTask,
+} from '../../lib/ui.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
+function throwValidationError(message: string): never {
+  throw new Error(appendDiagnosticLogPath(message, getActiveCommandLogFile()));
+}
 
 const UPDATE_STRING_FLAGS = [
   'source',
@@ -482,6 +498,10 @@ export default class EnvUpdate extends Command {
     nextInput.authUsername = currentEnv.config.authUsername;
 
     if (parsedFlags['api-base-url'] !== undefined) {
+      const apiBaseUrlValidationError = await validateApiBaseUrl(parsedFlags['api-base-url']);
+      if (apiBaseUrlValidationError) {
+        throwValidationError(apiBaseUrlValidationError);
+      }
       nextInput.apiBaseUrl = parsedFlags['api-base-url'];
     }
 

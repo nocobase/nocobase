@@ -71,7 +71,11 @@ function formatDockerRestartFailure(envName: string, message: string): string {
   ].join('\n');
 }
 
-function resolveDisplayAppUrl(apiBaseUrl: string | undefined, port?: string, appPublicPath?: string): string | undefined {
+function resolveDisplayAppUrl(
+  apiBaseUrl: string | undefined,
+  port?: string,
+  appPublicPath?: string,
+): string | undefined {
   const resolvedFromApiBaseUrl = resolveAppUrlFromApiBaseUrl(apiBaseUrl);
   if (resolvedFromApiBaseUrl) {
     return resolvedFromApiBaseUrl;
@@ -87,8 +91,6 @@ export default class AppRestart extends Command {
   static override examples = [
     '<%= config.bin %> <%= command.id %>',
     '<%= config.bin %> <%= command.id %> --env local',
-    '<%= config.bin %> <%= command.id %> --env local --daemon',
-    '<%= config.bin %> <%= command.id %> --env local --no-daemon',
     '<%= config.bin %> <%= command.id %> --env local --verbose',
     '<%= config.bin %> <%= command.id %> --env local-docker',
   ];
@@ -118,6 +120,7 @@ export default class AppRestart extends Command {
       allowNo: true,
     }),
     daemon: Flags.boolean({
+      hidden: true,
       description:
         'Run the application as a daemon after stopping it (default: true; use --no-daemon to stay in the foreground)',
       char: 'd',

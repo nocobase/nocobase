@@ -103,6 +103,41 @@ test('validateApiBaseUrl rejects malformed URLs and unsupported schemes', async 
   );
 });
 
+test('validateApiBaseUrl rejects URLs that do not include the api prefix', async () => {
+  await expect(validateApiBaseUrl('http://localhost:13000')).resolves.toMatch(/must include the \/api prefix/i);
+  await expect(validateApiBaseUrl('https://demo.example.com/nocobase')).resolves.toMatch(
+    /must include the \/api prefix/i,
+  );
+});
+
+test('validateApiBaseUrl accepts supported api base url shapes with optional public path prefixes', async () => {
+  const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValue({
+    status: 200,
+    json: vi.fn(),
+  } as any);
+
+  await expect(validateApiBaseUrl('https://demo.example.com/nocobase/api')).resolves.toBe(undefined);
+  await expect(validateApiBaseUrl('https://demo.example.com/nocobase/api/__app/mobile')).resolves.toBe(undefined);
+
+  expect(fetchMock).toHaveBeenCalledWith(
+    'https://demo.example.com/nocobase/api/__health_check',
+    expect.objectContaining({ method: 'GET' }),
+  );
+  expect(fetchMock).toHaveBeenCalledWith(
+    'https://demo.example.com/nocobase/api/__app/mobile/__health_check',
+    expect.objectContaining({ method: 'GET' }),
+  );
+});
+
+test('validateApiBaseUrl rejects unsupported paths that only contain api as a middle segment', async () => {
+  await expect(validateApiBaseUrl('https://demo.example.com/foo/api/bar')).resolves.toMatch(
+    /must include the \/api prefix/i,
+  );
+  await expect(validateApiBaseUrl('https://demo.example.com/api/foo')).resolves.toMatch(
+    /must include the \/api prefix/i,
+  );
+});
+
 test('validateApiBaseUrl rejects URLs that already include the health check path', async () => {
   await expect(validateApiBaseUrl('http://localhost:13000/api/__health_check')).resolves.toMatch(
     /Do not include \/__health_check/i,

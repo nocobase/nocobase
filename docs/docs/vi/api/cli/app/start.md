@@ -20,7 +20,6 @@ nb app start [flags]
 | --- | --- | --- |
 | `--env`, `-e` | string | Tên CLI env muốn khởi động, bỏ qua thì dùng env hiện tại |
 | `--yes`, `-y` | boolean | Khi `--env` được truyền tường minh và trỏ tới env khác với env hiện tại, bỏ qua bước xác nhận tương tác |
-| `--daemon`, `-d` / `--no-daemon` | boolean | Có chạy ở chế độ daemon hay không, mặc định bật |
 | `--verbose` | boolean | Hiển thị output của lệnh cục bộ hoặc Docker bên dưới |
 
 ## Ví dụ
@@ -28,8 +27,6 @@ nb app start [flags]
 ```bash
 nb app start
 nb app start --env local
-nb app start --env local --daemon
-nb app start --env local --no-daemon
 nb app start --env local --verbose
 nb app start --env local-docker
 ```
@@ -37,9 +34,6 @@ nb app start --env local-docker
 Nếu bạn truyền `--env` một cách tường minh và nó khác env hiện tại, CLI sẽ yêu cầu xác nhận trước. Trong terminal không tương tác hoặc phiên AI agent, hãy tự thêm `--yes` hoặc chạy `nb env use <name>` trước rồi thử lại.
 
 Theo mặc định, khi phù hợp, CLI sẽ chạy `nb license plugins sync --skip-if-no-license` trước để đồng bộ các plugin thương mại được giấy phép hiện tại cho phép. Sau đó, env cục bộ sẽ tự động hoàn tất bước chuẩn bị cài đặt hoặc nâng cấp cần thiết trước khi khởi động ở chế độ nền, còn env Docker sẽ tạo lại container ứng dụng từ cấu hình env đã lưu. Mỗi khi CLI cần đợi ứng dụng sẵn sàng, CLI sẽ kiểm tra `__health_check`: trước hết in ra một dòng waiting, sau đó in một dòng progress mỗi 10 giây cho đến khi ứng dụng khả dụng hoặc hết thời gian chờ.
-
-Nếu bạn truyền `--no-daemon` cho env cục bộ, ứng dụng sẽ chạy ở chế độ foreground. Khi đó, CLI sẽ không tiếp tục đợi kiểm tra readiness sau khi khởi động.
-
 ## Lệnh liên quan
 
 - [`nb app stop`](./stop.md)

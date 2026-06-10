@@ -38,6 +38,27 @@ nb init --env app1 --resume
 
 `--resume` hanya berlaku untuk alur inisialisasi yang env config-nya sudah pernah disimpan, dan `--env` harus diberikan secara eksplisit.
 
+## Siapkan env terlebih dahulu, lalu instal app nanti
+
+`--prepare-only` ditujukan untuk alur yang perlu menyiapkan env terlebih dahulu, lalu mengaktifkan lisensi, dan baru setelah itu menginstal serta menjalankan app.
+
+Jika Anda ingin lebih dulu menyimpan konfigurasi env, menyiapkan source code atau image, dan membuat database siap digunakan, tetapi menunda instalasi app yang sebenarnya serta startup pertama, Anda dapat menggunakan:
+
+```bash
+nb init --env app1 --prepare-only
+nb init --env app1 --prepare-only --ui
+nb init --env app1 --prepare-only --yes
+```
+
+Mode ini tersedia untuk alur instalasi lokal, termasuk wizard `--ui`. Mode ini tidak tersedia untuk alur koneksi remote. CLI akan menyimpan env saat ini dalam status prepared, sehingga nanti Anda dapat melanjutkan dengan alur seperti berikut:
+
+```bash
+nb license activate --env app1
+nb app start --env app1
+```
+
+Setelah itu, `nb app start` akan menyelesaikan instalasi pertama dan mengubah env dari status prepared ke status normal installed.
+
 ## Penjelasan direktori instalasi
 
 Anda dapat melihat path lengkap dengan `nb env info app1 --field app.appPath`.
@@ -78,7 +99,7 @@ Jika Anda mengikuti wizard UI lokal langkah demi langkah, Anda bisa memakai tabe
 
 | Step                      | Parameter utama yang perlu diperhatikan                                                                                                                                                                           |
 | ------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `Getting started`         | `--env`、`--yes`、`--ui`、`--locale`、`--verbose`、`--skip-skills`、`--resume`                                                                                                                                    |
+| `Getting started`         | `--env`、`--yes`、`--ui`、`--locale`、`--verbose`、`--skip-skills`、`--resume`、`--prepare-only`                                                                                                                 |
 | `App environment`         | `--lang`、`--app-path`、`--app-port`、`--force`                                                                                                                                                                   |
 | `App source and version`  | `--source`、`--version`、`--skip-download`、`--git-url`、`--docker-registry`、`--docker-platform`、`--npm-registry`、`--replace`、`--dev-dependencies`、`--output-dir`、`--docker-save`、`--build`、`--build-dts` |
 | `Configure the database`  | `--builtin-db`、`--db-dialect`、`--builtin-db-image`、`--db-host`、`--db-port`、`--db-database`、`--db-user`、`--db-password`、`--db-schema`、`--db-table-prefix`、`--db-underscored`                             |
@@ -104,6 +125,7 @@ Parameternya cukup banyak, jadi akan lebih jelas jika dilihat berdasarkan skenar
 | `--ui-port`     | integer | `0`                                                                                | Port layanan lokal `--ui`; `0` berarti dialokasikan otomatis                                                             |
 | `--locale`      | string  | Mengikuti `NB_LOCALE`, konfigurasi CLI, atau locale sistem; fallback akhir `en-US` | Bahasa prompt CLI dan UI setup lokal: `en-US` atau `zh-CN`                                                               |
 | `--resume`      | boolean | `false`                                                                            | Melanjutkan inisialisasi sebelumnya yang belum selesai dengan menggunakan ulang workspace env config yang sudah disimpan |
+| `--prepare-only` | boolean | `false`                                                                           | Simpan dan siapkan env instalasi lokal, termasuk alur `--ui`, tanpa menginstal atau menjalankan app terlebih dahulu |
 
 ### Menghubungkan aplikasi yang sudah ada
 
@@ -178,6 +200,14 @@ nb init
 ```bash
 nb init --ui
 nb init --ui --ui-port 3000
+```
+
+### Siapkan dulu, lalu aktifkan lisensi dan jalankan nanti
+
+```bash
+nb init --env app1 --prepare-only
+nb license activate --env app1
+nb app start --env app1
 ```
 
 ### Instalasi non-interaktif untuk aplikasi lokal baru

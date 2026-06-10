@@ -20,7 +20,6 @@ nb app restart [flags]
 | --- | --- | --- |
 | `--env`, `-e` | string | Name der neu zu startenden CLI env; bei Auslassung wird die aktuelle env verwendet |
 | `--yes`, `-y` | boolean | Wenn ein explizit übergebenes `--env` auf eine andere env als die aktuelle env zeigt, die interaktive Bestätigung überspringen |
-| `--daemon`, `-d` / `--no-daemon` | boolean | Ob nach dem Stoppen im Daemon-Modus ausgeführt wird, standardmäßig aktiviert |
 | `--verbose` | boolean | Ausgabe der zugrunde liegenden Stop- und Startbefehle anzeigen |
 
 ## Beispiele
@@ -28,14 +27,13 @@ nb app restart [flags]
 ```bash
 nb app restart
 nb app restart --env local
-nb app restart --env local --no-daemon
 nb app restart --env local --verbose
 nb app restart --env local-docker
 ```
 
 Wenn Sie `--env` explizit übergeben und es sich von der aktuellen env unterscheidet, fragt die CLI zuerst nach einer Bestätigung. In nicht interaktiven Terminals oder AI-Agent-Sitzungen fügen Sie `--yes` selbst hinzu oder führen zuerst `nb env use <name>` aus und versuchen es dann erneut.
 
-Standardmäßig führt die CLI, sofern zutreffend, zuerst `nb license plugins sync --skip-if-no-license` aus, um die durch die aktuelle Lizenz erlaubten kommerziellen Plugins zu synchronisieren. Danach führen lokale envs vor dem erneuten Start automatisch die erforderliche Installations- oder Upgrade-Vorbereitung aus, und Docker-envs schließen diesen Schritt vor dem Neuerstellen des Containers ab. Immer wenn die CLI auf die Bereitschaft der Anwendung warten muss, prüft sie `__health_check`: zuerst wird eine Wartezeile ausgegeben, danach alle 10 Sekunden eine Fortschrittszeile, bis die Anwendung verfügbar ist oder das Zeitlimit erreicht wird. Wenn Sie für eine lokale env `--no-daemon` übergeben, läuft die Anwendung im Vordergrund, daher wartet die CLI nach dem Start nicht weiter auf den Readiness-Check.
+Standardmäßig führt die CLI, sofern zutreffend, zuerst `nb license plugins sync --skip-if-no-license` aus, um die durch die aktuelle Lizenz erlaubten kommerziellen Plugins zu synchronisieren. Danach führen lokale envs vor dem erneuten Start automatisch die erforderliche Installations- oder Upgrade-Vorbereitung aus, und Docker-envs schließen diesen Schritt vor dem Neuerstellen des Containers ab. Immer wenn die CLI auf die Bereitschaft der Anwendung warten muss, prüft sie `__health_check`: zuerst wird eine Wartezeile ausgegeben, danach alle 10 Sekunden eine Fortschrittszeile, bis die Anwendung verfügbar ist oder das Zeitlimit erreicht wird. Wenn Sie fübergeben, läuft die Anwendung im Vordergrund, daher wartet die CLI nach dem Start nicht weiter auf den Readiness-Check.
 
 ## Verwandte Befehle
 
