@@ -8,11 +8,11 @@
  */
 
 import React from 'react';
-import { act, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { FlowEngine, FlowEngineProvider, FlowModel, FlowModelRenderer } from '@nocobase/flow-engine';
 import { get as lodashGet, set as lodashSet } from 'lodash';
-import { JSEditableFieldModel } from '../JSEditableFieldModel';
+import { JSEditableFieldModel, getDefaultEditableJsCode } from '../JSEditableFieldModel';
 
 function createField(props?: Record<string, any>, code = '') {
   const engine = new FlowEngine();
@@ -80,6 +80,13 @@ ctx.setValue?.('44');
 ctx.render(<span data-testid="js-name-path">{JSON.stringify(ctx.namePath)}</span>);
 `;
 
+const REQUEST_AND_RENDER_CODE = `
+const React = ctx.React;
+ctx.request({ url: 'users:list' }).then(() => {
+  ctx.render(<span data-testid="js-request-ready">done</span>);
+});
+`;
+
 function createFormStub(initialValues: any = {}) {
   const store = JSON.parse(JSON.stringify(initialValues));
   return {
@@ -103,6 +110,16 @@ function renderParentFieldWithFlowRenderer(
     fieldIndex?: string[];
     fieldStepParams?: Record<string, any>;
     form?: any;
+    collectionField?: Record<string, any>;
+    i18n?: {
+      t?: (key: string, options?: unknown) => string;
+      language?: string;
+    };
+    app?: {
+      apiClient?: {
+        request?: (options: unknown) => unknown;
+      };
+    };
   },
 ) {
   const engine = new FlowEngine();
@@ -131,6 +148,23 @@ function renderParentFieldWithFlowRenderer(
   if (options?.form) {
     parent.context.defineProperty('form', { value: options.form });
   }
+  if (options?.collectionField) {
+    parent.subModels.field.context.defineProperty('collectionField', { value: options.collectionField });
+  }
+  if (options?.i18n) {
+    engine.context.defineProperty('i18n', { value: options.i18n });
+    parent.context.defineProperty('i18n', { value: options.i18n });
+    parent.subModels.field.context.defineProperty('i18n', { value: options.i18n });
+  }
+  if (options?.app) {
+    engine.context.defineProperty('app', { value: options.app });
+    parent.context.defineProperty('app', { value: options.app });
+    if (options.app.apiClient) {
+      engine.context.defineProperty('api', { value: options.app.apiClient });
+      parent.context.defineProperty('api', { value: options.app.apiClient });
+      parent.subModels.field.context.defineProperty('api', { value: options.app.apiClient });
+    }
+  }
   if (options?.fieldIndex) {
     parent.subModels.field.context.defineProperty('fieldIndex', { value: options.fieldIndex });
   }
@@ -145,6 +179,105 @@ function renderParentFieldWithFlowRenderer(
 }
 
 describe('JSEditableFieldModel', () => {
+  describe('getDefaultEditableJsCode', () => {
+    it('uses the input template for regular input fields', () => {
+      expect(getDefaultEditableJsCode({ collectionField: { interface: 'input' } })).toContain('JsEditableField');
+    });
+
+    it('uses a single select template for select-like fields', () => {
+      expect(getDefaultEditableJsCode({ collectionField: { interface: 'select' } })).toContain('JsSelectField');
+      expect(getDefaultEditableJsCode({ collectionField: { interface: 'radioGroup' } })).toContain('JsSelectField');
+    });
+
+    it('uses a multiple select template for multiple option fields', () => {
+      expect(getDefaultEditableJsCode({ collectionField: { interface: 'multipleSelect' } })).toContain(
+        'JsMultipleSelectField',
+      );
+      expect(getDefaultEditableJsCode({ collectionField: { interface: 'checkboxGroup' } })).toContain(
+        'JsMultipleSelectField',
+      );
+    });
+
+    it('uses a yes/no select template for checkbox fields', () => {
+      const code = getDefaultEditableJsCode({ collectionField: { interface: 'checkbox' } });
+
+      expect(code).toContain('JsCheckboxSelectField');
+      expect(code).toContain("ctx.t('Yes')");
+      expect(code).toContain("ctx.t('No')");
+    });
+
+    it('uses an association select template for association fields', () => {
+      const code = getDefaultEditableJsCode({
+        collectionField: {
+          interface: 'm2o',
+          isAssociationField: () => true,
+        },
+      });
+
+      expect(code).toContain('JsAssociationSelectField');
+      expect(code).toContain("field.target + ':list'");
+      expect(code).toContain("'X-Data-Source': dataSourceKey");
+      expect(code).toContain('uniqueRecords');
+      expect(code).toContain('...selectProps');
+      expect(code).toContain('allowMultiple !== false');
+      expect(code).not.toContain('filterByTk');
+    });
+  });
+
+  it('translates local select option labels in the default code dropdown', async () => {
+    const collectionField = {
+      interface: 'select',
+    };
+
+    renderParentFieldWithFlowRenderer(
+      {
+        options: [{ label: '{{t("Draft")}}', value: 'draft' }],
+      },
+      undefined,
+      getDefaultEditableJsCode({ collectionField }),
+      {
+        collectionField,
+        i18n: {
+          t: (key) => (key === 'Draft' ? '草稿' : key),
+        },
+      },
+    );
+
+    fireEvent.mouseDown(await screen.findByRole('combobox'));
+
+    await waitFor(() => {
+      expect(screen.getByText('草稿')).toBeInTheDocument();
+    });
+  });
+
+  it('translates local multiple select option labels in default code read only mode', async () => {
+    const collectionField = {
+      interface: 'multipleSelect',
+      uiSchema: {
+        enum: [{ label: '{{t("Draft")}}', value: 'draft' }],
+      },
+    };
+
+    renderParentFieldWithFlowRenderer(
+      {
+        pattern: 'readPretty',
+        value: ['draft'],
+      },
+      undefined,
+      getDefaultEditableJsCode({ collectionField }),
+      {
+        collectionField,
+        i18n: {
+          t: (key) => (key === 'Draft' ? '草稿' : key),
+        },
+      },
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText('草稿')).toBeInTheDocument();
+    });
+  });
+
   it('renders configured JavaScript in display only mode', async () => {
     const field = renderParentFieldWithFlowRenderer(
       { pattern: 'readPretty', value: 'hello' },
@@ -235,6 +368,238 @@ describe('JSEditableFieldModel', () => {
     } finally {
       applyFlowSpy.mockRestore();
     }
+  });
+
+  it('exposes app apiClient request to editable JavaScript', async () => {
+    const request = vi.fn().mockResolvedValue({ data: { data: [] } });
+
+    renderParentFieldWithFlowRenderer({ value: 'hello' }, undefined, REQUEST_AND_RENDER_CODE, {
+      app: {
+        apiClient: {
+          request,
+        },
+      },
+    });
+
+    await waitFor(() => {
+      expect(request).toHaveBeenCalledWith({ url: 'users:list' });
+      expect(screen.getByTestId('js-request-ready')).toHaveTextContent('done');
+    });
+  });
+
+  it('renders association options with explicit fieldNames using the default code', async () => {
+    const collectionField = {
+      interface: 'm2o',
+      type: 'belongsTo',
+      target: 'users',
+      dataSourceKey: 'main',
+      targetCollection: {
+        filterTargetKey: ['id'],
+        titleCollectionField: { name: 'name' },
+      },
+      isAssociationField: () => true,
+    };
+    const request = vi.fn().mockResolvedValue({ data: { data: [{ id: 1, name: 'Alice' }] } });
+
+    renderParentFieldWithFlowRenderer(
+      {
+        fieldNames: { label: 'name', value: 'id' },
+      },
+      undefined,
+      getDefaultEditableJsCode({ collectionField }),
+      {
+        collectionField,
+        app: {
+          apiClient: {
+            request,
+          },
+        },
+      },
+    );
+
+    expect(request).not.toHaveBeenCalled();
+
+    fireEvent.mouseDown(await screen.findByRole('combobox'));
+
+    await waitFor(() => {
+      expect(request).toHaveBeenCalledWith(
+        expect.objectContaining({
+          url: 'users:list',
+          headers: { 'X-Data-Source': 'main' },
+        }),
+      );
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText('Alice')).toBeInTheDocument();
+    });
+  });
+
+  it('does not duplicate selected association records in default code options', async () => {
+    const collectionField = {
+      interface: 'm2o',
+      type: 'belongsTo',
+      target: 'users',
+      targetCollection: {
+        filterTargetKey: ['id'],
+        titleCollectionField: { name: 'name' },
+      },
+      isAssociationField: () => true,
+    };
+    const request = vi.fn().mockResolvedValue({ data: { data: [{ id: 1, name: 'Alice' }] } });
+
+    renderParentFieldWithFlowRenderer(
+      {
+        value: { id: 1, name: 'Alice' },
+        fieldNames: { label: 'name', value: 'id' },
+      },
+      undefined,
+      getDefaultEditableJsCode({ collectionField }),
+      {
+        collectionField,
+        app: {
+          apiClient: {
+            request,
+          },
+        },
+      },
+    );
+
+    fireEvent.mouseDown(await screen.findByRole('combobox'));
+
+    await waitFor(() => {
+      expect(screen.getAllByRole('option', { name: 'Alice' })).toHaveLength(1);
+    });
+  });
+
+  it('writes a single association record when to-many allowMultiple is false in the default code', async () => {
+    const collectionField = {
+      interface: 'm2m',
+      type: 'belongsToMany',
+      target: 'users',
+      dataSourceKey: 'main',
+      targetCollection: {
+        filterTargetKey: ['id'],
+        titleCollectionField: { name: 'name' },
+      },
+      isAssociationField: () => true,
+    };
+    const form = createFormStub({});
+    const request = vi.fn().mockResolvedValue({ data: { data: [{ id: 2, name: 'Bob' }] } });
+
+    renderParentFieldWithFlowRenderer(
+      {
+        name: 'assignee',
+        fieldNames: { label: 'name', value: 'id' },
+        allowMultiple: false,
+        multiple: true,
+      },
+      undefined,
+      getDefaultEditableJsCode({ collectionField }),
+      {
+        collectionField,
+        form,
+        fieldStepParams: {
+          fieldSettings: {
+            init: {
+              fieldPath: 'assignee',
+            },
+          },
+        },
+        app: {
+          apiClient: {
+            request,
+          },
+        },
+      },
+    );
+
+    expect(request).not.toHaveBeenCalled();
+
+    fireEvent.mouseDown(await screen.findByRole('combobox'));
+
+    await waitFor(() => {
+      expect(request).toHaveBeenCalledWith(
+        expect.objectContaining({
+          url: 'users:list',
+          headers: { 'X-Data-Source': 'main' },
+        }),
+      );
+    });
+
+    fireEvent.click(await screen.findByText('Bob'));
+
+    await waitFor(() => {
+      expect(form.getFieldValue(['assignee'])).toEqual({ id: 2, name: 'Bob' });
+    });
+  });
+
+  it('renders selected association labels in read only mode without loading remote records', async () => {
+    const collectionField = {
+      interface: 'm2o',
+      type: 'belongsTo',
+      target: 'users',
+      dataSourceKey: 'external',
+      targetCollection: {
+        filterTargetKey: ['id'],
+        titleCollectionField: { name: 'name' },
+      },
+      isAssociationField: () => true,
+    };
+    const request = vi.fn().mockResolvedValue({ data: { data: [] } });
+
+    renderParentFieldWithFlowRenderer(
+      {
+        pattern: 'readPretty',
+        value: { id: 3, name: 'Carol' },
+        fieldNames: { label: 'name', value: 'id' },
+      },
+      undefined,
+      getDefaultEditableJsCode({ collectionField }),
+      {
+        collectionField,
+        app: {
+          apiClient: {
+            request,
+          },
+        },
+      },
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText('Carol')).toBeInTheDocument();
+    });
+    expect(request).not.toHaveBeenCalled();
+  });
+
+  it('falls back to association value keys in read only mode', async () => {
+    const collectionField = {
+      interface: 'm2o',
+      type: 'belongsTo',
+      target: 'users',
+      targetCollection: {
+        filterTargetKey: ['id'],
+        titleCollectionField: { name: 'name' },
+      },
+      isAssociationField: () => true,
+    };
+
+    renderParentFieldWithFlowRenderer(
+      {
+        pattern: 'readPretty',
+        value: { id: 3 },
+        fieldNames: { label: 'name', value: 'id' },
+      },
+      undefined,
+      getDefaultEditableJsCode({ collectionField }),
+      {
+        collectionField,
+      },
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText('3')).toBeInTheDocument();
+    });
   });
 
   it('writes top-level form values through the effective name path', async () => {
