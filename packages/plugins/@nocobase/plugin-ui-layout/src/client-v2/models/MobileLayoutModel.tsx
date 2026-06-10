@@ -1151,6 +1151,14 @@ function toMobileDocumentUrlWithRouterBasename(url: string, basename?: string) {
   return `${normalizedBasename}${rootRelativeUrl}`;
 }
 
+function toMobileRouterLinkNavigationPath(url: string, basename?: string) {
+  if (!url || isStandaloneDocumentUrl(url)) {
+    return url;
+  }
+
+  return toMobileRouterNavigationPath(url, basename);
+}
+
 function normalizeMobileLocationPath(pathname: string) {
   const normalized = `/${pathname.replace(/^\/+/, '').replace(/\/+$/, '')}`;
 
@@ -1482,7 +1490,7 @@ const MobileHomePlaceholder = observer(
             return;
           }
 
-          navigate(toMobileDocumentUrlWithRouterBasename(item.href, getMobileRouterBasename(model)));
+          navigate(toMobileRouterLinkNavigationPath(item.href, getMobileRouterBasename(model)));
           return;
         }
 
@@ -1510,7 +1518,7 @@ const MobileHomePlaceholder = observer(
             return;
           }
 
-          navigate(toMobileDocumentUrlWithRouterBasename(item.href, getMobileRouterBasename(model)));
+          navigate(toMobileRouterLinkNavigationPath(item.href, getMobileRouterBasename(model)));
           return;
         }
 

@@ -110,11 +110,13 @@ describe('plugin-ui-layout mobile models', () => {
         request: (options: Record<string, unknown>) => Promise<{ data?: { data?: NocoBaseDesktopRoute[] } }>;
       };
       initialEntries?: string[];
+      memoryRouterBasename?: string;
       outletElement?: React.ReactNode;
       routerBasename?: string;
     } = {},
   ) {
     const engine = new FlowEngine();
+    const routerRoutePath = options.memoryRouterBasename ? '/mobile' : '/v/mobile';
 
     engine.registerModels({
       MobileLayoutModel,
@@ -174,7 +176,12 @@ describe('plugin-ui-layout mobile models', () => {
           null,
           React.createElement(
             MemoryRouter,
-            { initialEntries: options.initialEntries || ['/v/mobile'] },
+            {
+              initialEntries: options.initialEntries || [
+                options.memoryRouterBasename ? `${options.memoryRouterBasename}/mobile` : '/v/mobile',
+              ],
+              basename: options.memoryRouterBasename,
+            },
             React.createElement(
               Routes,
               null,
@@ -182,7 +189,7 @@ describe('plugin-ui-layout mobile models', () => {
                 ? React.createElement(
                     Route,
                     {
-                      path: '/v/mobile',
+                      path: routerRoutePath,
                       element: model.render(),
                     },
                     React.createElement(Route, {
@@ -191,7 +198,7 @@ describe('plugin-ui-layout mobile models', () => {
                     }),
                   )
                 : React.createElement(Route, {
-                    path: '/v/mobile/*',
+                    path: `${routerRoutePath}/*`,
                     element: model.render(),
                   }),
             ),
@@ -3271,7 +3278,7 @@ describe('plugin-ui-layout mobile models', () => {
     }
   });
 
-  it('should include router basename when opening internal mobile links in the current tab', async () => {
+  it('should navigate internal mobile links in the current tab without duplicating router basename', async () => {
     const routes: NocoBaseDesktopRoute[] = [
       {
         id: 1,
@@ -3299,6 +3306,7 @@ describe('plugin-ui-layout mobile models', () => {
 
     renderMobileLayoutWithRouteRepository(routeRepository, {
       outletElement: React.createElement(MobileCurrentPathProbe),
+      memoryRouterBasename: '/v',
       routerBasename: '/v',
     });
 
@@ -3309,7 +3317,9 @@ describe('plugin-ui-layout mobile models', () => {
     fireEvent.click(screen.getByRole('button', { name: /Link/ }));
 
     await waitFor(() => {
-      expect(screen.getByTestId('mobile-current-path')).toHaveTextContent('/v/mobile/wxc8k79dysq');
+      expect(screen.getAllByTestId('mobile-current-path').map((element) => element.textContent)).toContain(
+        '/mobile/wxc8k79dysq',
+      );
     });
   });
 
