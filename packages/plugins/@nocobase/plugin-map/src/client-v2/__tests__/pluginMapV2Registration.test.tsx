@@ -17,6 +17,27 @@ import { formatMapDisplayValue } from '../models/fieldModels/DisplayMapFieldMode
 import PluginMapClient from '../plugin';
 
 describe('PluginMapClient v2 registration', () => {
+  it('registers map geometry field interfaces for data source manager', async () => {
+    const app = new Application({
+      plugins: [PluginMapClient],
+    });
+
+    await app.load();
+
+    const manager = app.dataSourceManager.collectionFieldInterfaceManager;
+    const interfaces = manager.getFieldInterfaces().map((fieldInterface) => fieldInterface.name);
+
+    expect(interfaces).toContain('point');
+    expect(interfaces).toContain('lineString');
+    expect(interfaces).toContain('circle');
+    expect(interfaces).toContain('polygon');
+    expect(manager.getFieldInterfaceGroup('map')?.label).toContain('Map-based geometry');
+    expect(manager.getFieldInterfaceGroup('map')?.label).toContain('@nocobase/plugin-map');
+    expect(manager.getFieldInterfaceGroup('map')?.order).toBe(300);
+    expect(manager.getFieldInterface('point')?.default?.type).toBe('point');
+    expect(manager.getFieldInterface('point')?.configure?.items?.[0]?.name).toBe('uiSchema.x-component-props.mapType');
+  });
+
   it('registers map models through lazy loaders', async () => {
     const app = new Application({
       plugins: [PluginMapClient],

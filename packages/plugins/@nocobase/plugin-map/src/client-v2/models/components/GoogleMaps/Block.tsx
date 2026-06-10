@@ -84,7 +84,7 @@ export const GoogleMapsBlock = (props) => {
       });
     }
     const listenerSet = new Set<() => void>();
-    mapRef.current?.drawingManager.setDrawingMode(google.maps.drawing.OverlayType.POLYGON);
+    mapRef.current?.drawingManager.setDrawingMode('polygon');
     mapRef.current?.drawingManager.addListener('overlaycomplete', (event) => {
       const polygon = event.overlay as google.maps.Polygon;
       mapRef.current?.drawingManager.setDrawingMode(null);
@@ -145,7 +145,7 @@ export const GoogleMapsBlock = (props) => {
     setSelectedRecordKeys((lastIds) => ids.concat(lastIds));
     overlay?.unbindAll();
     overlay?.setMap(null);
-    mapRef.current?.drawingManager.setDrawingMode(google.maps.drawing.OverlayType.POLYGON);
+    mapRef.current?.drawingManager.setDrawingMode('polygon');
   });
 
   useEffect(() => {
