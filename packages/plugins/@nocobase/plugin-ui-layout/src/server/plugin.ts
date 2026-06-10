@@ -319,35 +319,6 @@ function removeNestedRootRoutes(routes: unknown): unknown[] {
   });
 }
 
-async function includeDescendantRouteIds(ctx: ResourcerContext, routeIds: Set<string>) {
-  let pendingParentIds = new Set(routeIds);
-
-  while (pendingParentIds.size > 0) {
-    const childRoutes = await ctx.db.getRepository('desktopRoutes').find({
-      fields: ['id', 'parentId'],
-      filter: {
-        parentId: Array.from(pendingParentIds),
-      },
-    });
-    pendingParentIds = new Set<string>();
-
-    for (const route of childRoutes) {
-      const routeId = route.get('id');
-      if (routeId === null || routeId === undefined) {
-        continue;
-      }
-
-      const normalizedRouteId = String(routeId);
-      if (routeIds.has(normalizedRouteId)) {
-        continue;
-      }
-
-      routeIds.add(normalizedRouteId);
-      pendingParentIds.add(normalizedRouteId);
-    }
-  }
-}
-
 async function removeRouteIdsWithUnauthorizedAncestors(ctx: ResourcerContext, routeIds: Set<string>) {
   if (routeIds.size === 0) {
     return;
@@ -503,7 +474,6 @@ async function getLayoutAccessibleRouteIds(ctx: ResourcerContext, layoutUid: str
   }
 
   await removeRouteIdsWithUnauthorizedAncestors(ctx, routeIds);
-  await includeDescendantRouteIds(ctx, routeIds);
   return routeIds;
 }
 

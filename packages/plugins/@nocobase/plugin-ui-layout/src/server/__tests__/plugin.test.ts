@@ -2909,7 +2909,7 @@ describe('plugin-ui-layout server', () => {
     expect(mobileTitles).toEqual([]);
   });
 
-  it('should include descendant routes for layout-scoped parent access', async () => {
+  it('should only return explicitly authorized layout routes with authorized ancestors', async () => {
     app = await createMockServer({
       registerActions: true,
       acl: true,
@@ -3047,77 +3047,108 @@ describe('plugin-ui-layout server', () => {
     const rootAgent = await app.agent().login(rootUser);
     const agent = await app.agent().login(memberUser);
 
-    await rootAgent.resource('roles.desktopRoutes', role.get('name')).add({
-      values: [mobileParentRoute.get('id')],
-    });
+    const roleName = role.get('name');
+    const layoutUid = mobileLayout.get('uid');
+    const allMobileRouteIds = [mobileParentRoute.get('id'), mobileChildRoute.get('id'), mobileHiddenTabRoute.get('id')];
+    const resetPermissions = async (routeIds: number[]) => {
+      await rootAgent.resource('roles.desktopRoutes', roleName).remove({
+        values: allMobileRouteIds,
+      });
+      if (routeIds.length) {
+        await rootAgent.resource('roles.desktopRoutes', roleName).add({
+          values: routeIds,
+        });
+      }
+    };
+    const listMobileRoutes = async () =>
+      agent.get('/desktopRoutes:listAccessible').query({
+        layout: layoutUid,
+      });
+    const getMobileRoute = async (routeId: number) =>
+      agent.get('/desktopRoutes:getAccessible').query({
+        filterByTk: routeId,
+        layout: layoutUid,
+      });
+
+    await resetPermissions([mobileChildRoute.get('id')]);
+
+    const [childOnlyListResponse, childOnlyParentGetResponse, childOnlyChildGetResponse] = await Promise.all([
+      listMobileRoutes(),
+      getMobileRoute(mobileParentRoute.get('id')),
+      getMobileRoute(mobileChildRoute.get('id')),
+    ]);
+
+    expect(childOnlyListResponse.status).toBe(200);
+    expect([200, 204]).toContain(childOnlyParentGetResponse.status);
+    expect([200, 204]).toContain(childOnlyChildGetResponse.status);
+    expect(childOnlyListResponse.body.data).toEqual([]);
+    expect(childOnlyParentGetResponse.body.data ?? null).toBeNull();
+    expect(childOnlyChildGetResponse.body.data ?? null).toBeNull();
+
+    await resetPermissions([mobileParentRoute.get('id')]);
 
     const [
-      mobileListResponse,
+      parentOnlyListResponse,
       adminListResponse,
-      mobileParentGetResponse,
-      mobileChildGetResponse,
-      mobileHiddenTabGetResponse,
+      parentOnlyParentGetResponse,
+      parentOnlyChildGetResponse,
+      parentOnlyHiddenTabGetResponse,
     ] = await Promise.all([
-      agent.get('/desktopRoutes:listAccessible').query({
-        layout: mobileLayout.get('uid'),
-      }),
+      listMobileRoutes(),
       agent.get('/desktopRoutes:listAccessible').query({
         layout: DEFAULT_ADMIN_UI_LAYOUT.uid,
       }),
-      agent.get('/desktopRoutes:getAccessible').query({
-        filterByTk: mobileParentRoute.get('id'),
-        layout: mobileLayout.get('uid'),
-      }),
-      agent.get('/desktopRoutes:getAccessible').query({
-        filterByTk: mobileChildRoute.get('id'),
-        layout: mobileLayout.get('uid'),
-      }),
-      agent.get('/desktopRoutes:getAccessible').query({
-        filterByTk: mobileHiddenTabRoute.get('id'),
-        layout: mobileLayout.get('uid'),
-      }),
+      getMobileRoute(mobileParentRoute.get('id')),
+      getMobileRoute(mobileChildRoute.get('id')),
+      getMobileRoute(mobileHiddenTabRoute.get('id')),
     ]);
 
-    expect(mobileListResponse.status).toBe(200);
+    expect(parentOnlyListResponse.status).toBe(200);
     expect(adminListResponse.status).toBe(200);
-    expect(mobileParentGetResponse.status).toBe(200);
-    expect(mobileChildGetResponse.status).toBe(200);
-    expect(mobileHiddenTabGetResponse.status).toBe(200);
-    expect(mobileListResponse.body.data).toHaveLength(1);
-    expect(mobileListResponse.body.data[0].title).toBe('DATA-TREE-MOBILE-PARENT');
-    expect(mobileListResponse.body.data[0].children.map((route) => route.title)).toEqual(['DATA-TREE-MOBILE-CHILD']);
-    expect(mobileListResponse.body.data[0].children[0].children.map((route) => route.title)).toEqual([
-      'DATA-TREE-MOBILE-HIDDEN-TAB',
-    ]);
+    expect(parentOnlyParentGetResponse.status).toBe(200);
+    expect([200, 204]).toContain(parentOnlyChildGetResponse.status);
+    expect([200, 204]).toContain(parentOnlyHiddenTabGetResponse.status);
+    expect(parentOnlyListResponse.body.data).toHaveLength(1);
+    expect(parentOnlyListResponse.body.data[0].title).toBe('DATA-TREE-MOBILE-PARENT');
+    expect(parentOnlyListResponse.body.data[0].children ?? []).toEqual([]);
     expect(adminListResponse.body.data).toEqual([]);
-    expect(mobileParentGetResponse.body.data.title).toBe('DATA-TREE-MOBILE-PARENT');
-    expect(mobileChildGetResponse.body.data.title).toBe('DATA-TREE-MOBILE-CHILD');
-    expect(mobileHiddenTabGetResponse.body.data.title).toBe('DATA-TREE-MOBILE-HIDDEN-TAB');
+    expect(parentOnlyParentGetResponse.body.data.title).toBe('DATA-TREE-MOBILE-PARENT');
+    expect(parentOnlyChildGetResponse.body.data ?? null).toBeNull();
+    expect(parentOnlyHiddenTabGetResponse.body.data ?? null).toBeNull();
 
-    await rootAgent.resource('roles.desktopRoutes', role.get('name')).remove({
-      values: [mobileParentRoute.get('id')],
-    });
+    await resetPermissions([mobileParentRoute.get('id'), mobileChildRoute.get('id')]);
 
-    const [mobileListAfterRemoveResponse, adminListAfterRemoveResponse, mobileHiddenTabAfterRemoveResponse] =
-      await Promise.all([
-        agent.get('/desktopRoutes:listAccessible').query({
-          layout: mobileLayout.get('uid'),
-        }),
-        agent.get('/desktopRoutes:listAccessible').query({
-          layout: DEFAULT_ADMIN_UI_LAYOUT.uid,
-        }),
-        agent.get('/desktopRoutes:getAccessible').query({
-          filterByTk: mobileHiddenTabRoute.get('id'),
-          layout: mobileLayout.get('uid'),
-        }),
-      ]);
+    const [
+      parentAndChildListResponse,
+      parentAndChildParentGetResponse,
+      parentAndChildChildGetResponse,
+      parentAndChildHiddenTabGetResponse,
+      rootListResponse,
+    ] = await Promise.all([
+      listMobileRoutes(),
+      getMobileRoute(mobileParentRoute.get('id')),
+      getMobileRoute(mobileChildRoute.get('id')),
+      getMobileRoute(mobileHiddenTabRoute.get('id')),
+      rootAgent.get('/desktopRoutes:listAccessible').query({
+        layout: layoutUid,
+      }),
+    ]);
 
-    expect(mobileListAfterRemoveResponse.status).toBe(200);
-    expect(adminListAfterRemoveResponse.status).toBe(200);
-    expect([200, 204]).toContain(mobileHiddenTabAfterRemoveResponse.status);
-    expect(mobileListAfterRemoveResponse.body.data).toEqual([]);
-    expect(adminListAfterRemoveResponse.body.data).toEqual([]);
-    expect(mobileHiddenTabAfterRemoveResponse.body.data ?? null).toBeNull();
+    expect(parentAndChildListResponse.status).toBe(200);
+    expect(parentAndChildParentGetResponse.status).toBe(200);
+    expect(parentAndChildChildGetResponse.status).toBe(200);
+    expect([200, 204]).toContain(parentAndChildHiddenTabGetResponse.status);
+    expect(rootListResponse.status).toBe(200);
+    expect(parentAndChildListResponse.body.data).toHaveLength(1);
+    expect(parentAndChildListResponse.body.data[0].title).toBe('DATA-TREE-MOBILE-PARENT');
+    expect(parentAndChildListResponse.body.data[0].children.map((route) => route.title)).toEqual([
+      'DATA-TREE-MOBILE-CHILD',
+    ]);
+    expect(parentAndChildListResponse.body.data[0].children[0].children ?? []).toEqual([]);
+    expect(parentAndChildParentGetResponse.body.data.title).toBe('DATA-TREE-MOBILE-PARENT');
+    expect(parentAndChildChildGetResponse.body.data.title).toBe('DATA-TREE-MOBILE-CHILD');
+    expect(parentAndChildHiddenTabGetResponse.body.data ?? null).toBeNull();
+    expect(JSON.stringify(rootListResponse.body.data)).toContain('DATA-TREE-MOBILE-PARENT');
   });
 
   it('should not allow a parent page through a layout-scoped hidden child permission', async () => {
