@@ -12,7 +12,7 @@ import PluginFileManagerServer from '../server';
 
 import { STORAGE_TYPE_LOCAL } from '../../constants';
 
-import { cloudFilenameGetter, getFileKey } from '../utils';
+import { cloudFilenameGetter, getFileKey, normalizeStorageSubPath, resolveStoragePath } from '../utils';
 import fs from 'fs/promises';
 import os from 'os';
 import path from 'path';
@@ -97,6 +97,25 @@ describe('file manager > utils', () => {
   describe('getFileKey', () => {
     it('handles null path', async () => {
       expect(getFileKey({ path: null, filename: 'test.jpg' })).toBe('test.jpg');
+    });
+  });
+
+  describe('storage sub path helpers', () => {
+    it('appends subPath under storage path', () => {
+      expect(resolveStoragePath('base/path', 'orders/123')).toBe('base/path/orders/123');
+      expect(resolveStoragePath('/base/path//', 'orders\\123')).toBe('base/path/orders/123');
+    });
+
+    it('does not append empty subPath', () => {
+      expect(resolveStoragePath('base/path', '')).toBe('base/path');
+      expect(resolveStoragePath('base/path')).toBe('base/path');
+    });
+
+    it('rejects unsafe subPath', () => {
+      expect(() => normalizeStorageSubPath('/absolute')).toThrow('Invalid storage sub path');
+      expect(() => normalizeStorageSubPath('../outside')).toThrow('Access denied');
+      expect(() => normalizeStorageSubPath('safe\0path')).toThrow('Invalid storage sub path');
+      expect(() => normalizeStorageSubPath(1)).toThrow('Invalid storage sub path');
     });
   });
 
