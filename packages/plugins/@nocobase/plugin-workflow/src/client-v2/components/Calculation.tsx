@@ -32,13 +32,12 @@ import { Trans } from 'react-i18next';
 import { useT, useWorkflowTranslation, NAMESPACE } from '../locale';
 import { useWorkflowVariableOptions } from '../canvas/useWorkflowVariableOptions';
 
-// Constant types a calculation operand accepts. v1 uses bare `useTypedConstant`
-// (= all types), whose constant submenu includes JSON — so include `object`.
+// Constant types a calculation operand accepts. v1 uses bare `useTypedConstant` (= all types), whose constant submenu
+// includes JSON — so include `object`.
 const OPERAND_TYPES: TypedConstantSpec[] = ['string', 'number', 'boolean', 'date', 'object'];
 
-// v1 relied on a global FormItem `.auto-width` rule to shrink the operator
-// Select to its content; v2 has no such global rule, so scope it locally (same
-// pattern as the core `FileSizeInput`). Without this the antd Select defaults to
+// v1 relied on a global FormItem `.auto-width` rule to shrink the operator Select to its content; v2 has no such global
+// rule, so scope it locally (same pattern as the core `FileSizeInput`). Without this the antd Select defaults to
 // `width: 100%` and swallows the whole row, collapsing the operands.
 const operatorWidthClassName = css`
   &.ant-select {
@@ -135,8 +134,8 @@ function Calculation({ calculator, operands = [], onChange }: any) {
         style={{ flex: 1, minWidth: 0 }}
       />
       <Select
-        // antd's Select prop type doesn't surface DOM passthrough props (`role`),
-        // though it forwards them — same as the core `CollectionSelectorFieldModel`.
+        // antd's Select prop type doesn't surface DOM passthrough props (`role`), though it forwards them — same as the
+        // core `CollectionSelectorFieldModel`.
         // @ts-expect-error -- role is forwarded to the DOM node
         role="button"
         aria-label="select-operator-calc"
@@ -196,9 +195,8 @@ function CalculationItem({ value, onChange, onRemove }: any) {
 
 function CalculationGroup({ value, onChange }: any) {
   const t = useT();
-  // The "Meet [All/Any] conditions in the group" sentence is a composite
-  // `<Trans>` key that lives in the core `client` namespace (not workflow's), so
-  // it needs the fallback-aware translator — same as v1's bare `useTranslation()`.
+  // The "Meet [All/Any] conditions in the group" sentence is a composite `<Trans>` key that lives in the core `client`
+  // namespace (not workflow's), so it needs the fallback-aware translator — same as v1's bare `useTranslation()`.
   const { t: tt } = useWorkflowTranslation();
   const { type = 'and', calculations = [] } = value;
 
@@ -264,9 +262,8 @@ function CalculationGroup({ value, onChange }: any) {
         <Trans t={tt}>
           {'Meet '}
           <Select
-            // antd's Select prop type doesn't surface DOM passthrough props
-            // (`role`/`data-testid`), though it forwards them — same as the core
-            // `CollectionSelectorFieldModel`.
+            // antd's Select prop type doesn't surface DOM passthrough props (`role`/`data-testid`), though it forwards
+            // them — same as the core `CollectionSelectorFieldModel`.
             // @ts-expect-error -- role/data-testid are forwarded to the DOM node
             role="button"
             data-testid="filter-select-all-or-any"

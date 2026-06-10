@@ -17,8 +17,8 @@
 import { describe, expect, it, vi } from 'vitest';
 import { getCollectionFieldOptions } from '../collectionFieldOptions';
 
-// Same `compile` contract both v1 `useCompile` and v2 `useT` must satisfy:
-// expand `{{t("…")}}` → translation, pass plain strings through.
+// Same `compile` contract both v1 `useCompile` and v2 `useT` must satisfy: expand `{{t("…")}}` → translation, pass
+// plain strings through.
 const compile = (source: unknown) => {
   if (typeof source !== 'string') {
     return source;

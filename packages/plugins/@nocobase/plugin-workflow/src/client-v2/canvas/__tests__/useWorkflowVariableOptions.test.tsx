@@ -32,18 +32,16 @@ const holder = vi.hoisted(() => ({
   workflow: null as any,
 }));
 
-// The aggregator reads the engine via `useFlowEngine()`; everything it needs
-// (`context.app.pm.get`, `context.t`, `context.getPropertyMetaTree`,
-// `context.app.getGlobalVar`) hangs off the engine we inject here. Keep the rest
-// of flow-engine real (MetaTreeNode etc).
+// The aggregator reads the engine via `useFlowEngine()`; everything it needs (`context.app.pm.get`, `context.t`,
+// `context.getPropertyMetaTree`, `context.app.getGlobalVar`) hangs off the engine we inject here. Keep the rest of
+// flow-engine real (MetaTreeNode etc).
 vi.mock('@nocobase/flow-engine', async (importOriginal) => {
   const actual = (await importOriginal()) as Record<string, unknown>;
   return { ...actual, useFlowEngine: () => holder.engine };
 });
 
-// `useNodeContext()` returns the current node (with a live `upstream` chain);
-// `useCurrentWorkflowContext()` returns the workflow threaded into the drawer.
-// `useAvailableUpstreams` / `useUpstreamScopes` are the real pure traversals.
+// `useNodeContext()` returns the current node (with a live `upstream` chain); `useCurrentWorkflowContext()` returns the
+// workflow threaded into the drawer. `useAvailableUpstreams` / `useUpstreamScopes` are the real pure traversals.
 vi.mock('../contexts', async (importOriginal) => {
   const actual = (await importOriginal()) as Record<string, unknown>;
   return {
@@ -62,8 +60,8 @@ import { useWorkflowVariableOptions } from '../useWorkflowVariableOptions';
  */
 function makeV1ShapedPlugin() {
   const instructions = new Map<string, any>();
-  // An upstream "calculation" node that contributes a single result variable —
-  // its `useVariables` returns the legacy `VariableOption` shape the adapter eats.
+  // An upstream "calculation" node that contributes a single result variable — its `useVariables` returns the legacy
+  // `VariableOption` shape the adapter eats.
   instructions.set('calculation', {
     useVariables: (node: any) => ({
       value: node.key,
@@ -72,15 +70,14 @@ function makeV1ShapedPlugin() {
     }),
   });
 
-  // v1-style system variables: `now` is a plain string label; `instanceId` carries
-  // an already-rendered JSX label (with tooltip inlined) — NOT a `{{t}}` template.
+  // v1-style system variables: `now` is a plain string label; `instanceId` carries an already-rendered JSX label (with
+  // tooltip inlined) — NOT a `{{t}}` template.
   const systemVariables = [
     { key: 'now', label: 'System time', value: 'now' },
     { key: 'instanceId', label: <span data-testid="v1-jsx-label">Instance ID</span>, value: 'instanceId' },
   ];
 
-  // A v1-style trigger: `useVariables(config, options)` returns a VariableOption[]
-  // (the trigger's `data` output tree).
+  // A v1-style trigger: `useVariables(config, options)` returns a VariableOption[] (the trigger's `data` output tree).
   const triggers = new Map<string, any>();
   triggers.set('collection', {
     useVariables: () => [{ value: 'data', label: 'Trigger data', children: [{ value: 'title', label: 'Title' }] }],
@@ -155,10 +152,9 @@ describe('useWorkflowVariableOptions — runtime-neutral resolution', () => {
   });
 
   it('exposes $env from the flow-engine property tree (registered in both runtimes)', () => {
-    // The env plugin registers `$env` on `flowEngine.context` in BOTH runtimes
-    // (v1 via the shared `registerEnvProperty`, v2 in its own plugin) — a lazy
-    // `children` thunk that resolves once and is cached. The aggregator returns
-    // that node as-is, so it works from the detached config drawer.
+    // The env plugin registers `$env` on `flowEngine.context` in BOTH runtimes (v1 via the shared
+    // `registerEnvProperty`, v2 in its own plugin) — a lazy `children` thunk that resolves once and is cached. The
+    // aggregator returns that node as-is, so it works from the detached config drawer.
     const envChildren = async () => [];
     setupEngine(makeV1ShapedPlugin(), {
       propertyTree: [{ name: '$env', type: 'object', children: envChildren }],
@@ -190,9 +186,8 @@ describe('useWorkflowVariableOptions — runtime-neutral resolution', () => {
     const { result, rerender } = renderHook(() => useWorkflowVariableOptions());
     const first = result.current;
     rerender();
-    // Same tree object — load-bearing so lazily-resolved relation children
-    // (mutated onto the meta nodes by the picker) survive a re-render instead of
-    // being discarded (the infinite-spinner bug).
+    // Same tree object — load-bearing so lazily-resolved relation children (mutated onto the meta nodes by the picker)
+    // survive a re-render instead of being discarded (the infinite-spinner bug).
     expect(result.current).toBe(first);
   });
 
@@ -213,8 +208,8 @@ describe('useWorkflowVariableOptions — runtime-neutral resolution', () => {
     const { result } = renderHook(() => useWorkflowVariableOptions());
     const system = result.current.find((n) => n.name === '$system');
     const instanceId = system?.children?.find((c: any) => c.name === 'instanceId');
-    // `MetaTreeNode.title` is a string, so the v1 `<span>Instance ID</span>` label
-    // is reduced to its text ("Instance ID"), not kept as a React element.
+    // `MetaTreeNode.title` is a string, so the v1 `<span>Instance ID</span>` label is reduced to its text ("Instance
+    // ID"), not kept as a React element.
     expect(typeof instanceId?.title).toBe('string');
     expect(instanceId?.title).toBe('Instance ID');
     // A plain-string v2-style label is translated through `t` (identity in tests).

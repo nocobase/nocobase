@@ -49,9 +49,8 @@ function VariableReplacer({
   value: unknown;
   onChange: (value: unknown) => void;
 }) {
-  // A plain flex row (not antd `Space`): `Space` wraps each child in a
-  // shrink-to-content `.ant-space-item`, which collapses `TypedVariableInput`'s
-  // internal `width:100%` and squashes the boolean Select. Giving each side an
+  // A plain flex row (not antd `Space`): `Space` wraps each child in a shrink-to-content `.ant-space-item`, which
+  // collapses `TypedVariableInput`'s internal `width:100%` and squashes the boolean Select. Giving each side an
   // explicit flex basis keeps both at a usable width (mirrors v1's layout).
   return (
     <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start', width: '100%' }}>
@@ -201,9 +200,8 @@ export function TestRunButton({ data, form }: { data: any; form: any }) {
 
   const onOpen = () => {
     const config = form.getFieldsValue()?.config ?? data.config ?? {};
-    // The dialog renders in a detached portal, so React contexts from the drawer
-    // (NodeContext) don't cross into it. Re-provide it from the same `data` node
-    // object — its live `.upstream` linked-list lets the variable pills resolve
+    // The dialog renders in a detached portal, so React contexts from the drawer (NodeContext) don't cross into it.
+    // Re-provide it from the same `data` node object — its live `.upstream` linked-list lets the variable pills resolve
     // labels (Node result / field names), exactly as the config drawer does.
     ctx.viewer.dialog({
       width: 800,

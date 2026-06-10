@@ -201,9 +201,8 @@ function NodeConfigForm({
       <NodeContext.Provider value={data}>
         <DrawerFormLayout
           title={
-            // `justify-content: space-between` pushes the node-key tag to the
-            // drawer's far right (mirrors v1's flex title), the native close X
-            // sitting just left of the title.
+            // `justify-content: space-between` pushes the node-key tag to the drawer's far right (mirrors v1's flex
+            // title), the native close X sitting just left of the title.
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
               <strong>{data.title ?? typeTitle}</strong>
               <Tooltip title={t('Variable key of node')}>

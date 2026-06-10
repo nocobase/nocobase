@@ -123,8 +123,8 @@ export function RemoveNodeContextProvider(props: {
     (node: any) => {
       const branches = (nodes ?? []).filter((item: any) => item.upstream === node && item.branchIndex != null);
       if (!branches.length) {
-        // Leaf delete: block when another node references this node's result,
-        // else confirm and delete (mirrors v1's `RemoveButton.onRemove`).
+        // Leaf delete: block when another node references this node's result, else confirm and delete (mirrors v1's
+        // `RemoveButton.onRemove`).
         if (blockedByReferences(node, nodes ?? [], false)) {
           return;
         }
@@ -135,8 +135,8 @@ export function RemoveNodeContextProvider(props: {
         });
         return;
       }
-      // Branching delete: open the keep-branch modal; the actual check + delete
-      // happen on confirm (over the kept-branch + downstream subtree).
+      // Branching delete: open the keep-branch modal; the actual check + delete happen on confirm (over the kept-branch
+      // + downstream subtree).
       setKeepBranch(null);
       setDeletingNode(node);
     },
@@ -165,8 +165,8 @@ export function RemoveNodeContextProvider(props: {
     if (!deletingNode) {
       return;
     }
-    // Same reference guard as v1's `useRemoveNodeSubmitAction`, over the kept
-    // branch + downstream subtree, including `$scopes` references.
+    // Same reference guard as v1's `useRemoveNodeSubmitAction`, over the kept branch + downstream subtree, including
+    // `$scopes` references.
     const branchHead =
       keepBranch != null ? deletingBranches.find((item: any) => item.branchIndex === keepBranch) : null;
     const relatedNodes = collectBranchNodes(nodes ?? [], branchHead);

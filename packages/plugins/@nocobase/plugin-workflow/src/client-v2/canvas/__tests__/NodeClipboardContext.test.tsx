@@ -70,8 +70,8 @@ describe('NodeClipboardContextProvider — injected runtime drives copy/paste', 
   });
 
   it('refuses to copy when the injected runtime reports executed (read-only)', () => {
-    // The legacy canvas derives `executed` from `versionStats.executed`; whatever
-    // the source, the provider honors the injected boolean.
+    // The legacy canvas derives `executed` from `versionStats.executed`; whatever the source, the provider honors the
+    // injected boolean.
     const captured = setup({ workflow: { id: 9 }, nodes: [NODE], refresh: vi.fn(), executed: true });
     act(() => captured.ctx.copyNode(NODE));
     expect(captured.ctx.clipboard).toBeNull();

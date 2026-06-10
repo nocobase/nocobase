@@ -54,9 +54,8 @@ import { useRemoveNodeContext } from '../RemoveNodeContext';
 import { useNodeDragContext } from '../NodeDragContext';
 import { useNodeClipboardContext } from '../NodeClipboardContext';
 
-// The Instruction base class + its pure logic hooks + NodeContext now live in
-// client-v2 and are shared by both canvases (ADR-0002/0003). Re-exported here so
-// the ~16 node files that `extends Instruction` from this barrel are unchanged.
+// The Instruction base class + its pure logic hooks + NodeContext now live in client-v2 and are shared by both canvases
+// (ADR-0002/0003). Re-exported here so the ~16 node files that `extends Instruction` from this barrel are unchanged.
 import {
   Instruction,
   NodeContext,
@@ -122,10 +121,9 @@ export function Node({ data }) {
   const instruction = workflowPlugin.instructions.get(data.type) ?? {};
   const { Component, ComponentLoader, end } = instruction;
   const renderMode = resolveLegacyNodeRenderMode(instruction);
-  // A node that dropped its v1 `Component` but still inherits a v2
-  // `ComponentLoader` renders its card fully via v2 (the card-layer mirror of the
-  // drawer's `FieldsetLoader` dispatch). Memoize the lazy component so it isn't
-  // rebuilt every render. Other modes never touch the loader.
+  // A node that dropped its v1 `Component` but still inherits a v2 `ComponentLoader` renders its card fully via v2 (the
+  // card-layer mirror of the drawer's `FieldsetLoader` dispatch). Memoize the lazy component so it isn't rebuilt every
+  // render. Other modes never touch the loader.
   const ModernComponent = useMemo(
     () => (renderMode === 'modern-loader' && ComponentLoader ? lazy(ComponentLoader) : null),
     [renderMode, ComponentLoader],
@@ -163,8 +161,8 @@ export function RemoveButton() {
   const clipboard = useNodeClipboardContext();
   const isCopiedSelf = Boolean(clipboard?.clipboard?.sourceId && clipboard.clipboard.sourceId === current.id);
 
-  // Delegate the whole delete flow (leaf reference-check + confirm, or the
-  // keep-branch modal for branching nodes) to the shared provider.
+  // Delegate the whole delete flow (leaf reference-check + confirm, or the keep-branch modal for branching nodes) to
+  // the shared provider.
   const onRemove = useCallback(() => {
     removeNodeContext?.requestRemove?.(current);
   }, [removeNodeContext, current]);
@@ -560,9 +558,8 @@ export function NodeDefaultView(props) {
   const isCopiedSelf = Boolean(clipboard?.clipboard?.sourceId && clipboard.clipboard.sourceId === data.id);
   const isActive = Boolean(editingConfig || isCopiedSelf || isDraggingSelf);
 
-  // Rebuild the form when the node data changes (switching workflow version
-  // yields a fresh `data` per node) or when execution state flips the disabled
-  // flag. `executed` already derives from `workflow.versionStats`, so `workflow`
+  // Rebuild the form when the node data changes (switching workflow version yields a fresh `data` per node) or when
+  // execution state flips the disabled flag. `executed` already derives from `workflow.versionStats`, so `workflow`
   // itself is not a separate dependency.
   const form = useMemo(() => {
     const values = cloneDeep(data.config);
@@ -600,13 +597,11 @@ export function NodeDefaultView(props) {
     [data, instruction, api, compile, refresh],
   );
 
-  // Drawer dispatch (ADR-0003): a legacy `fieldset` wins, so a node keeps its
-  // Formily drawer until it drops `fieldset`; only then does the inherited
-  // `FieldsetLoader` open the v2 antd config drawer (`ctx.viewer.drawer`), with
-  // the form maintained once in client-v2. This mirrors the card-layer
-  // `resolveLegacyNodeRenderMode` so every surface migrates the same way. Returns
-  // true only when it opened the v2 drawer, so the caller falls through to the
-  // Formily `Action.Drawer` (`setEditingConfig`) for the legacy/none cases.
+  // Drawer dispatch (ADR-0003): a legacy `fieldset` wins, so a node keeps its Formily drawer until it drops `fieldset`;
+  // only then does the inherited `FieldsetLoader` open the v2 antd config drawer (`ctx.viewer.drawer`), with the form
+  // maintained once in client-v2. This mirrors the card-layer `resolveLegacyNodeRenderMode` so every surface migrates
+  // the same way. Returns true only when it opened the v2 drawer, so the caller falls through to the Formily
+  // `Action.Drawer` (`setEditingConfig`) for the legacy/none cases.
   const openConfig = useMemoizedFn(() => {
     if (resolveLegacyConfigRenderMode(instruction) !== 'modern-loader') {
       return false;

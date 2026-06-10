@@ -23,10 +23,9 @@ import { useT, useWorkflowTranslation } from '../locale';
 
 const EXECUTION_PAGE_SIZE = 20;
 
-// Mirror v1's `nonfilterable: ['workflow']` on its execution `Filter.Action`.
-// Dropping the `workflow` association also keeps the filter field picker from
-// resolving the `workflows` target collection, which isn't published to the v2
-// data source.
+// Mirror v1's `nonfilterable: ['workflow']` on its execution `Filter.Action`. Dropping the `workflow` association also
+// keeps the filter field picker from resolving the `workflows` target collection, which isn't published to the v2 data
+// source.
 const EXECUTIONS_NONFILTERABLE_FIELD_NAMES = ['workflow'];
 
 type ExecutionRecord = {
@@ -73,8 +72,8 @@ function ExecutionHistoryDrawerInner({ workflowKey }: { workflowKey: string | nu
 
   const { data, loading, refresh } = useRequest(
     async () => {
-      // The `{ key: workflowKey }` scope is mandatory; the user-built filter is
-      // ANDed onto it so it can never widen the result set past this workflow.
+      // The `{ key: workflowKey }` scope is mandatory; the user-built filter is ANDed onto it so it can never widen the
+      // result set past this workflow.
       const filter: Record<string, any> = filterPayload
         ? { $and: [{ key: workflowKey }, filterPayload] }
         : { key: workflowKey };
@@ -153,8 +152,8 @@ function ExecutionHistoryDrawerInner({ workflowKey }: { workflowKey: string | nu
         render: (value) => (value ? dayjs(value).format('YYYY-MM-DD HH:mm:ss') : null),
       },
       {
-        // Linking to the workflow version opens the canvas, which is not yet
-        // migrated to v2 — show the version number as plain text for now.
+        // Linking to the workflow version opens the canvas, which is not yet migrated to v2 — show the version number
+        // as plain text for now.
         title: t('Version'),
         dataIndex: 'workflowId',
         render: (value) => (value != null ? `#${value}` : null),
@@ -229,12 +228,10 @@ function ExecutionHistoryDrawerInner({ workflowKey }: { workflowKey: string | nu
 
 export function ExecutionHistoryDrawer({ workflowKey }: { workflowKey: string | number }) {
   const compile = useT();
-  // The shared `executions` collection is `schema-only`, so it isn't published
-  // to the v2 data source — register a client-only copy so `CollectionFilter`
-  // can resolve its fields. Its `status` field carries the v1 Formily template
-  // `enum: '{{ExecutionStatusOptions}}'`, which the v2 filter value renderer
-  // can't compile; replace it with the resolved `{ label, value }` options up
-  // front so the Status condition renders as a Select (matching v1).
+  // The shared `executions` collection is `schema-only`, so it isn't published to the v2 data source — register a
+  // client-only copy so `CollectionFilter` can resolve its fields. Its `status` field carries the v1 Formily template
+  // `enum: '{{ExecutionStatusOptions}}'`, which the v2 filter value renderer can't compile; replace it with the
+  // resolved `{ label, value }` options up front so the Status condition renders as a Select (matching v1).
   const collections = useMemo(() => {
     const statusOptions = EXECUTION_STATUS_OPTIONS.map((option) => ({
       value: option.value,

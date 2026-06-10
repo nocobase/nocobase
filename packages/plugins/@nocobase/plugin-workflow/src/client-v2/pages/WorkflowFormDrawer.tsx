@@ -58,8 +58,8 @@ export function WorkflowFormDrawer(props: WorkflowFormDrawerProps) {
       label: opt?.title ? compile(opt.title) : String(value),
       description: opt?.description ? compile(opt.description) : undefined,
     }));
-    // Keep an existing workflow's type selectable in edit mode even if its
-    // trigger plugin hasn't exposed a v2 surface yet.
+    // Keep an existing workflow's type selectable in edit mode even if its trigger plugin hasn't exposed a v2 surface
+    // yet.
     if (mode === 'edit' && record?.type && !options.some((item) => item.value === record.type)) {
       options.push({ value: record.type, label: record.type, description: undefined });
     }
@@ -113,8 +113,7 @@ export function WorkflowFormDrawer(props: WorkflowFormDrawerProps) {
     return loader ? lazy(loader) : null;
   }, [mode, triggerOption]);
 
-  // Switching trigger type discards the previous type's `config` payload — each
-  // trigger owns its own config shape.
+  // Switching trigger type discards the previous type's `config` payload — each trigger owns its own config shape.
   const handleTypeChange = useMemoizedFn(() => {
     form.setFieldValue('config', {});
   });
@@ -137,9 +136,8 @@ export function WorkflowFormDrawer(props: WorkflowFormDrawerProps) {
           },
         });
       } else {
-        // Only send the fields this form owns; `config`/`type` are not edited
-        // here, so they are never overwritten. `options` renders all of its
-        // keys, so the round-trip cannot drop one.
+        // Only send the fields this form owns; `config`/`type` are not edited here, so they are never overwritten.
+        // `options` renders all of its keys, so the round-trip cannot drop one.
         await resource.update({
           filterByTk: record.id,
           values: {

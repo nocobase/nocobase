@@ -11,8 +11,8 @@ export { default, PluginWorkflowClientV2 } from './plugin';
 export type { WorkflowTriggerOptions } from './plugin';
 export * from './models';
 
-// Workflow node extension contract (shared base class + canvas building blocks)
-// for downstream node plugins migrating their config UI to the modern canvas.
+// Workflow node extension contract (shared base class + canvas building blocks) for downstream node plugins migrating
+// their config UI to the modern canvas.
 export { Instruction } from './canvas/Instruction';
 export type { LoaderOf, NodeAvailableContext, TempAssociationSource } from './canvas/Instruction';
 export { WorkflowVariableInput } from './canvas/WorkflowVariableInput';

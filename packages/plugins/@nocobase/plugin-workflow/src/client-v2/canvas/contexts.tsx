@@ -79,17 +79,16 @@ export function useFlowContext() {
   return useContext(FlowContext);
 }
 
-// Holds the bare workflow record (v1's split from FlowContext). Default `{}`
-// (not null) preserves v1's behavior, so unguarded `.type`/`.config` reads at
-// existing call sites stay safe; `Partial` makes the empty default assignable.
+// Holds the bare workflow record (v1's split from FlowContext). Default `{}` (not null) preserves v1's behavior, so
+// unguarded `.type`/`.config` reads at existing call sites stay safe; `Partial` makes the empty default assignable.
 export const CurrentWorkflowContext = React.createContext<Partial<WorkflowCanvasRecord>>({});
 
 export function useCurrentWorkflowContext() {
   return useContext(CurrentWorkflowContext);
 }
 
-// Default `{}` (not null) to match v1's `NodeContext` default, so existing v1
-// call sites that read `useNodeContext().config` without guarding are unaffected.
+// Default `{}` (not null) to match v1's `NodeContext` default, so existing v1 call sites that read
+// `useNodeContext().config` without guarding are unaffected.
 export const NodeContext = React.createContext<CanvasNode>({} as CanvasNode);
 
 export function useNodeContext() {

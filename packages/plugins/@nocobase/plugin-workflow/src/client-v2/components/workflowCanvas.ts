@@ -18,11 +18,10 @@ export type WorkflowRevision = {
 };
 
 export type WorkflowCanvasRecord = {
-  // Optional because the canvas context (`WorkflowCanvasFlowContextValue.workflow`)
-  // is itself `WorkflowCanvasRecord | null`, and downstream consumers (e.g. the
-  // approval pro-plugin's association `approval.workflow`) may hold a partially
-  // loaded record without `id`. Every internal canvas read already guards with
-  // `workflow?.id`, so the type was over-promising — this aligns it with usage.
+  // Optional because the canvas context (`WorkflowCanvasFlowContextValue.workflow`) is itself `WorkflowCanvasRecord |
+  // null`, and downstream consumers (e.g. the approval pro-plugin's association `approval.workflow`) may hold a
+  // partially loaded record without `id`. Every internal canvas read already guards with `workflow?.id`, so the type
+  // was over-promising — this aligns it with usage.
   id?: number | string;
   key?: string;
   title?: string;

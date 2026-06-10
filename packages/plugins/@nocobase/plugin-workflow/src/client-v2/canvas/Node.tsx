@@ -57,8 +57,8 @@ function NodeActions({ data }: { data: any }) {
           { key: 'delete', label: t('Delete'), icon: <DeleteOutlined />, danger: true },
         ],
         onClick: ({ key, domEvent }) => {
-          // Menu items render in a portal; stop the click from bubbling to the
-          // card (which would otherwise open the config drawer).
+          // Menu items render in a portal; stop the click from bubbling to the card (which would otherwise open the
+          // config drawer).
           domEvent.stopPropagation();
           if (key === 'copy') {
             if (isCopiedSelf) {
@@ -145,8 +145,8 @@ export function NodeDefaultView({ data, children }: { data: any; children?: Reac
   const clipboard = useNodeClipboardContext();
   const dragContext = useNodeDragContext();
   const instruction = useInstruction(data.type);
-  // Highlight (blue dashed outline) when this node is the one copied to the
-  // clipboard or being dragged — mirrors v1's `active`/`dragging` state.
+  // Highlight (blue dashed outline) when this node is the one copied to the clipboard or being dragged — mirrors v1's
+  // `active`/`dragging` state.
   const isCopiedSelf = Boolean(clipboard?.clipboard?.sourceId && clipboard.clipboard.sourceId === data.id);
   const isDraggingSelf = Boolean(dragContext?.dragging && dragContext?.dragNode?.id === data.id);
 
@@ -156,9 +156,8 @@ export function NodeDefaultView({ data, children }: { data: any; children?: Reac
 
   const onCardMouseDown = useCallback(
     (event: React.MouseEvent) => {
-      // React synthetic events bubble through the component tree (not the DOM
-      // tree), so a mousedown inside a portal (e.g. the config drawer) would
-      // also trigger this. Skip when the target isn't a DOM descendant of the card.
+      // React synthetic events bubble through the component tree (not the DOM tree), so a mousedown inside a portal
+      // (e.g. the config drawer) would also trigger this. Skip when the target isn't a DOM descendant of the card.
       if (!(event.currentTarget as HTMLElement).contains(event.target as Node)) {
         return;
       }
@@ -234,9 +233,8 @@ function NodeCard({ data }: { data: any }) {
     );
   }
 
-  // Branch nodes self-render via ComponentLoader (it draws its own card by
-  // wrapping `NodeDefaultView` and appending nested <Branch>); otherwise the
-  // default card.
+  // Branch nodes self-render via ComponentLoader (it draws its own card by wrapping `NodeDefaultView` and appending
+  // nested <Branch>); otherwise the default card.
   if (Rendered) {
     return (
       <Suspense fallback={<Skeleton.Button active block style={{ width: '16em', height: '4em' }} />}>

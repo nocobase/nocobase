@@ -18,8 +18,8 @@ describe('FlowI18n', () => {
   });
 
   it('keeps embedded quotes of a different type inside the key', () => {
-    // A single-quoted key whose text contains double quotes (and vice versa)
-    // must not be truncated at the first inner quote.
+    // A single-quoted key whose text contains double quotes (and vice versa) must not be truncated at the first inner
+    // quote.
     const key = 'Unlike "Post-action event", it listens for data changes.';
     const table: Record<string, string> = { [key]: '与“操作后事件”不同，它监听数据变动。' };
     const i18n = new FlowI18n({ i18n: { t: (k: string) => table[k] ?? k } });

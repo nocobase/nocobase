@@ -10,9 +10,8 @@
 import type { BranchContextValue } from './BranchContext';
 import { lang } from './locale';
 
-// `linkNodes` now lives in `src/client-v2/canvas/nodeTree.ts` and is shared by
-// both canvases (ADR-0003); re-exported here via the allowed `v1 → v2` import
-// direction so existing v1 import sites are unchanged.
+// `linkNodes` now lives in `src/client-v2/canvas/nodeTree.ts` and is shared by both canvases (ADR-0003); re-exported
+// here via the allowed `v1 → v2` import direction so existing v1 import sites are unchanged.
 export { linkNodes } from '../client-v2/canvas/nodeTree';
 
 export function traverseSchema(schema, fn) {

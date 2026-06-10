@@ -32,9 +32,8 @@
 import { uniqBy } from 'lodash';
 import type React from 'react';
 
-// Minimal structural type for the injected collection manager — only the one
-// method the field-tree logic calls. Avoids importing the concrete
-// `CollectionManager` from `@nocobase/client` (iron rule).
+// Minimal structural type for the injected collection manager — only the one method the field-tree logic calls. Avoids
+// importing the concrete `CollectionManager` from `@nocobase/client` (iron rule).
 export type FieldTreeCollectionManager = {
   getCollectionAllFields(collection: string): any[];
 };

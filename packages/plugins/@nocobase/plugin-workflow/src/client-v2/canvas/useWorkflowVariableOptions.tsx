@@ -162,14 +162,12 @@ function useNodeResultScope(options: UseWorkflowVariableOptions): MetaTreeNode |
  */
 function useEnvScope(): MetaTreeNode | null {
   const flowEngine = useFlowEngine();
-  // The environment-variables plugin registers `$env` on the flow-engine context
-  // (`defineProperty('$env', …)`) in BOTH runtimes — v2 in `client-v2/plugin.tsx`,
-  // v1 in `client/index.tsx` via the shared `registerEnvProperty` (so it resolves
-  // from the config drawer, which mounts detached from v1's React tree). It shows
-  // up in the property meta tree with an **async** `children` thunk; return that
-  // node as-is — the downstream pickers resolve the thunk on expand (the result is
-  // cached by the flow-engine context, so it is fetched only once). Returns null
-  // when the env plugin is absent.
+  // The environment-variables plugin registers `$env` on the flow-engine context (`defineProperty('$env', …)`) in BOTH
+  // runtimes — v2 in `client-v2/plugin.tsx`, v1 in `client/index.tsx` via the shared `registerEnvProperty` (so it
+  // resolves from the config drawer, which mounts detached from v1's React tree). It shows up in the property meta tree
+  // with an **async** `children` thunk; return that node as-is — the downstream pickers resolve the thunk on expand
+  // (the result is cached by the flow-engine context, so it is fetched only once). Returns null when the env plugin is
+  // absent.
   const tree = flowEngine.context.getPropertyMetaTree?.() ?? [];
   const env = tree.find((node) => node.name === ENV_ROOT);
   return env ?? null;
@@ -214,9 +212,9 @@ function useSystemScope(): MetaTreeNode | null {
     return null;
   }
   const children: MetaTreeNode[] = vars.map((item) => {
-    // `MetaTreeNode.title` is a plain string (the cascader label). v2 labels are
-    // `{{t("…")}}` templates → translate them; v1 labels may be already-rendered
-    // JSX — coerce to a plain string for the title (the picker renders strings).
+    // `MetaTreeNode.title` is a plain string (the cascader label). v2 labels are `{{t("…")}}` templates → translate
+    // them; v1 labels may be already-rendered JSX — coerce to a plain string for the title (the picker renders
+    // strings).
     const label = typeof item.label === 'string' ? t(item.label) : reactNodeToPlainText(item.label);
     return {
       name: item.key,
@@ -307,11 +305,9 @@ export function useWorkflowVariableOptions(options: UseWorkflowVariableOptions =
 
   const current = useNodeContext();
   const workflow = useCurrentWorkflowContext();
-  // A signature that changes only when the variable tree's *structure* could
-  // change — the current node, its upstream chain (node-result), its branching
-  // scopes, and the workflow (trigger). Lazy children resolved into the tree by
-  // the picker are NOT part of this key, so they persist until the structure
-  // itself changes.
+  // A signature that changes only when the variable tree's *structure* could change — the current node, its upstream
+  // chain (node-result), its branching scopes, and the workflow (trigger). Lazy children resolved into the tree by the
+  // picker are NOT part of this key, so they persist until the structure itself changes.
   const upstreamKeys = useAvailableUpstreams(current)
     .map((n: any) => n.key)
     .join(',');

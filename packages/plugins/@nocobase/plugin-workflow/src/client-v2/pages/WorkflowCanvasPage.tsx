@@ -44,8 +44,7 @@ export default function WorkflowCanvasPage() {
     { refreshDeps: [workflowId] },
   );
 
-  // Revisions feed the "delete" fallback target (jump to the current version
-  // after deleting a non-current one).
+  // Revisions feed the "delete" fallback target (jump to the current version after deleting a non-current one).
   const { data: revisionsData } = useRequest(
     async () => {
       if (!data?.key) {
@@ -100,8 +99,8 @@ export default function WorkflowCanvasPage() {
           style={{
             flex: 1,
             minHeight: 0,
-            // `overflow: hidden` here — the inner `.workflow-canvas` owns the
-            // scroll (mirrors v1). Avoids a double scrollbar.
+            // `overflow: hidden` here — the inner `.workflow-canvas` owns the scroll (mirrors v1). Avoids a double
+            // scrollbar.
             overflow: 'hidden',
             position: 'relative',
             width: '100%',

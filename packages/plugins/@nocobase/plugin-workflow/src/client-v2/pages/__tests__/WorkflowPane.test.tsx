@@ -190,9 +190,8 @@ describe('WorkflowPane (request layer)', () => {
   });
 
   it('edit drawer survives a v1-style (title-less) trigger registration', async () => {
-    // Regression: a downstream plugin registers via the v1 signature
-    // `registerTrigger(type, TriggerClass)`, so the v2 registry holds an entry
-    // whose `title` is undefined. The trigger-options sort must not crash on
+    // Regression: a downstream plugin registers via the v1 signature `registerTrigger(type, TriggerClass)`, so the v2
+    // registry holds an entry whose `title` is undefined. The trigger-options sort must not crash on
     // `undefined.localeCompare`.
     class LegacyTrigger {}
     const pluginWithLegacy = {

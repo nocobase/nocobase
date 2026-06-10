@@ -22,8 +22,8 @@ import React from 'react';
 import { EXECUTION_STATUS, EXECUTION_STATUS_OPTIONS_MAP } from '../../common/executionStatus';
 import { useT } from '../locale';
 
-// The framework-neutral `EXECUTION_STATUS_OPTIONS` only carries plain data, so
-// the React icon nodes (a v1-client concern) live here in the v2 client lane.
+// The framework-neutral `EXECUTION_STATUS_OPTIONS` only carries plain data, so the React icon nodes (a v1-client
+// concern) live here in the v2 client lane.
 const STATUS_ICON: Record<string, React.ReactNode> = {
   [EXECUTION_STATUS.QUEUEING as number]: <HourglassOutlined />,
   [EXECUTION_STATUS.STARTED]: <LoadingOutlined />,

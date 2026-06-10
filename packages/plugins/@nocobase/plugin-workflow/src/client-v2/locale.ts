@@ -31,8 +31,8 @@ export function tExpr(key: string, options?: Record<string, any>) {
  * strings. For those, use {@link useT}.
  */
 export function useWorkflowTranslation() {
-  // Fall back to the core `client` namespace so generic UI strings (Title,
-  // Edit, Add new, Filter, …) resolve without re-declaring them here.
+  // Fall back to the core `client` namespace so generic UI strings (Title, Edit, Add new, Filter, …) resolve without
+  // re-declaring them here.
   return useTranslation([NAMESPACE, 'client'], { nsMode: 'fallback' });
 }
 

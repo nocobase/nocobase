@@ -64,9 +64,8 @@ export class FlowI18n {
    * @private
    */
   private isTemplate(str: string): boolean {
-    // The closing quote is a backreference to the opening one (group 1) so an
-    // embedded quote of a different type — e.g. {{t('… "Post-action event" …')}}
-    // — does not terminate the key early.
+    // The closing quote is a backreference to the opening one (group 1) so an embedded quote of a different type — e.g.
+    // {{t('… "Post-action event" …')}} — does not terminate the key early.
     return /\{\{\s*t\s*\(\s*(["'`])(?:\\.|(?!\1).)*?\1\s*(?:,\s*.*?)?\s*\)\s*\}\}/.test(str);
   }
 
@@ -75,9 +74,8 @@ export class FlowI18n {
    * @private
    */
   private compileTemplate(template: string): string {
-    // `(["'`])` captures the opening quote; the key allows escaped chars (`\\.`)
-    // and any char that is not that same quote (`(?!\1).`), and `\1` closes on
-    // the matching quote. This keeps embedded quotes of a different type inside
+    // `(["'`])` captures the opening quote; the key allows escaped chars (`\\.`) and any char that is not that same
+    // quote (`(?!\1).`), and `\1` closes on the matching quote. This keeps embedded quotes of a different type inside
     // the key instead of truncating it at the first quote of any kind.
     return template.replace(
       /\{\{\s*t\s*\(\s*(["'`])((?:\\.|(?!\1).)*?)\1\s*(?:,\s*((?:[^{}]|\{[^}]*\})*?))?\s*\)\s*\}\}/g,

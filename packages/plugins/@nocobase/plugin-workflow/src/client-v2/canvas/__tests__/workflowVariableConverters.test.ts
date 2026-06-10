@@ -17,9 +17,8 @@
 import { describe, expect, it } from 'vitest';
 import { adaptVariableOptionToMetaTree } from '../adaptVariableOptionToMetaTree';
 
-// Re-declare the converters here as a pure-logic mirror (the component wires the
-// same functions into VariableHybridInput). Keeping them inline avoids importing
-// the .tsx component (and React) into a pure logic test.
+// Re-declare the converters here as a pure-logic mirror (the component wires the same functions into
+// VariableHybridInput). Keeping them inline avoids importing the .tsx component (and React) into a pure logic test.
 const formatPathToValue = (item: { paths?: string[] }) => {
   const path = item?.paths ?? [];
   return path.length ? `{{${path.join('.')}}}` : '';

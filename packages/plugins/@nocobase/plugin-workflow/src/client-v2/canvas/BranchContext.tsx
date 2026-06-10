@@ -27,8 +27,8 @@ export type BranchContextValue = {
   syncOnly?: boolean;
 };
 
-// Default `null` (matches v1): every consumer reads through `useBranchContext()?.`,
-// so the absence of a provider is handled the same in both canvases.
+// Default `null` (matches v1): every consumer reads through `useBranchContext()?.`, so the absence of a provider is
+// handled the same in both canvases.
 export const BranchContext = createContext<BranchContextValue | null>(null);
 
 export function useBranchContext() {

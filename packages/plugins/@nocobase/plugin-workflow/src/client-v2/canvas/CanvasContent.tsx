@@ -64,9 +64,8 @@ export function CanvasContent({ entry }: { entry?: any }) {
   const [zoom, setZoom] = useState(100);
 
   return (
-    // The `.workflow-canvas-*` layout rules (centering, padding, the zoomer
-    // position) are defined *nested* under `workflowPageClass`, so the wrapper
-    // must live inside an element carrying that class — exactly as v1's
+    // The `.workflow-canvas-*` layout rules (centering, padding, the zoomer position) are defined *nested* under
+    // `workflowPageClass`, so the wrapper must live inside an element carrying that class — exactly as v1's
     // WorkflowPage wraps its canvas.
     <div className={cx(styles.workflowPageClass, css({ height: '100%' }))}>
       <div className="workflow-canvas-wrapper">

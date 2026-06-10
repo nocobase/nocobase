@@ -23,8 +23,8 @@ import { describe, expect, it } from 'vitest';
 import { extractDependencyKeys, stripVariableReferences, collectUpstreams } from '../nodeVariableUtils';
 import { linkNodes } from '../utils';
 
-// `parse` (the workflow template parser) treats `{{ ... }}` in string values as
-// parameters. These fixtures pin how the utils read/strip those references.
+// `parse` (the workflow template parser) treats `{{ ... }}` in string values as parameters. These fixtures pin how the
+// utils read/strip those references.
 
 describe('extractDependencyKeys — golden baseline (v1)', () => {
   it('collects node keys referenced via $jobsMapByNodeKey.<key>.<field>', () => {

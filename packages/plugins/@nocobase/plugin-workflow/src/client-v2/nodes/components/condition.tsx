@@ -109,9 +109,8 @@ export function ConditionFieldset() {
           { required: engine !== BASIC_ENGINE },
           {
             validator: async (_rule, value) => {
-              // No-op for the basic engine (the expression field is unused/hidden
-              // then) — keeps the rule array stable so the error survives the
-              // round-trip rather than being cleared.
+              // No-op for the basic engine (the expression field is unused/hidden then) — keeps the rule array stable
+              // so the error survives the round-trip rather than being cleared.
               if (engine === BASIC_ENGINE || !value) {
                 return;
               }
@@ -119,8 +118,8 @@ export function ConditionFieldset() {
               if (!evaluator) {
                 return;
               }
-              // Replace every `{{ var }}` with a dummy literal so only the
-              // surrounding expression syntax is validated (mirrors v1).
+              // Replace every `{{ var }}` with a dummy literal so only the surrounding expression syntax is validated
+              // (mirrors v1).
               const exp = String(value)
                 .trim()
                 .replace(/{{([^{}]+)}}/g, ' "1" ');

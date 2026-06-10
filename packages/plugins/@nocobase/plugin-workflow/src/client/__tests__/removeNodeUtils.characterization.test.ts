@@ -24,8 +24,8 @@ import { describe, expect, it } from 'vitest';
 import { collectBranchNodes, findNodesReferencing } from '../../client-v2/canvas/removeNodeUtils';
 import { linkNodes } from '../utils';
 
-// Build a linked node graph (ids + upstreamId/downstreamId/branchIndex), then
-// `linkNodes` wires the `upstream`/`downstream`/object refs the helpers walk.
+// Build a linked node graph (ids + upstreamId/downstreamId/branchIndex), then `linkNodes` wires the
+// `upstream`/`downstream`/object refs the helpers walk.
 function makeGraph(defs: any[]) {
   const nodes = defs.map((d) => ({ branchIndex: null, upstreamId: null, downstreamId: null, config: {}, ...d }));
   linkNodes(nodes);

@@ -34,9 +34,8 @@ export default class extends Instruction {
   type = 'condition';
   title = t('Condition');
   group = 'control';
-  // Inline single-quote `{{t('…')}}` template (mirrors v1's `condition.tsx`):
-  // the text contains inner double-quotes, so the key must be single-quoted to
-  // avoid terminating the template early. `useT()` expands it in the drawer.
+  // Inline single-quote `{{t('…')}}` template (mirrors v1's `condition.tsx`): the text contains inner double-quotes, so
+  // the key must be single-quoted to avoid terminating the template early. `useT()` expands it in the drawer.
   description = `{{t('Based on boolean result of the calculation to determine whether to "continue" or "exit" the process, or continue on different branches of "yes" and "no".', { ns: "${NAMESPACE}" })}}`;
   icon = (<QuestionCircleOutlined />);
   testable = true;
@@ -48,15 +47,13 @@ export default class extends Instruction {
           { label: t('Yes'), value: BRANCH_INDEX.ON_TRUE },
           { label: t('No'), value: BRANCH_INDEX.ON_FALSE },
         ];
-  // Modern canvas extension points (doc §9.5): config drawer form, add-time
-  // preset (mode picker), and the in-canvas render with Yes/No branch subtrees.
-  // The lazily-loaded components live in `./components/condition`; the loaders
-  // wrap its named exports as `{ default }` for `React.lazy`.
+  // Modern canvas extension points (doc §9.5): config drawer form, add-time preset (mode picker), and the in-canvas
+  // render with Yes/No branch subtrees. The lazily-loaded components live in `./components/condition`; the loaders wrap
+  // its named exports as `{ default }` for `React.lazy`.
   //
-  // No `createDefaultConfig` (matching v1's condition): initial values come from
-  // the Form.Item `initialValue`s — `rejectOnFalse` from the add-time preset
-  // form, `engine` from the config drawer — the antd equivalent of v1's Formily
-  // schema `default` props.
+  // No `createDefaultConfig` (matching v1's condition): initial values come from the Form.Item `initialValue`s —
+  // `rejectOnFalse` from the add-time preset form, `engine` from the config drawer — the antd equivalent of v1's
+  // Formily schema `default` props.
   FieldsetLoader = () => import('./components/condition').then((m) => ({ default: m.ConditionFieldset }));
   PresetFieldsetLoader = () => import('./components/condition').then((m) => ({ default: m.ConditionPresetFieldset }));
   ComponentLoader = () => import('./components/condition').then((m) => ({ default: m.ConditionCanvasComponent }));

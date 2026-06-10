@@ -33,9 +33,9 @@ import { collectDownstreams, collectBranchSubtree } from './dropImpact';
 /** Per-canvas runtime the drag provider needs but that differs by runtime —
  *  injected via `NodeDragContextProvider`'s `useCanvasRuntime` prop. */
 export type CanvasDragRuntime = {
-  // The API client (`resource('flow_nodes').move/update`). Left loose to avoid
-  // importing `APIClient` from `@nocobase/client` into client-v2; the body never
-  // needs a cast — only the `flow_nodes` move/update actions are called.
+  // The API client (`resource('flow_nodes').move/update`). Left loose to avoid importing `APIClient` from
+  // `@nocobase/client` into client-v2; the body never needs a cast — only the `flow_nodes` move/update actions are
+  // called.
   api: any;
   /** Plain-key translation (no `{{t("…")}}` expansion) — v1 `lang`, v2 `useWorkflowTranslation().t`. */
   lang: (key: string, options?: Record<string, unknown>) => string;
@@ -60,8 +60,8 @@ function useModernCanvasRuntime(): CanvasDragRuntime {
     api,
     lang,
     compile,
-    // Bind the registry at render time → a plain `.get` callable any time (the
-    // body calls it inside callbacks, where a hook would break the rules).
+    // Bind the registry at render time → a plain `.get` callable any time (the body calls it inside callbacks, where a
+    // hook would break the rules).
     getInstruction: (type: string) => plugin?.instructions.get(type),
     executed: Boolean(executed),
   };

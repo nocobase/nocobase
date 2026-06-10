@@ -11,8 +11,8 @@ import { Form, Radio } from 'antd';
 import React from 'react';
 import { useWorkflowTranslation } from '../../locale';
 
-// Inlined (not imported from the v1 `triggers/schedule/constants`, which
-// transitively pulls `@nocobase/client` through the v1 locale module).
+// Inlined (not imported from the v1 `triggers/schedule/constants`, which transitively pulls `@nocobase/client` through
+// the v1 locale module).
 const SCHEDULE_MODE = {
   STATIC: 0,
   DATE_FIELD: 1,

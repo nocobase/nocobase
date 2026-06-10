@@ -466,9 +466,8 @@ export function AddNodeContextProvider(props) {
     [api, refresh, workflow.id],
   );
 
-  // Create a node from the v2 preset dialog's submit values, then (when a
-  // branching node landed above an existing downstream node and the user chose a
-  // branch) re-parent that downstream node — mirrors v1's `useAddNodeSubmitAction`
+  // Create a node from the v2 preset dialog's submit values, then (when a branching node landed above an existing
+  // downstream node and the user chose a branch) re-parent that downstream node — mirrors v1's `useAddNodeSubmitAction`
   // and v2's `createNode`. Used only on the modern (`PresetFieldsetLoader`) path.
   const createModernNode = useMemoizedFn(async (anchor, instruction, presetValues) => {
     const { downstreamBranchIndex, config: presetConfig } = presetValues ?? {};
@@ -534,10 +533,9 @@ export function AddNodeContextProvider(props) {
       ? nodes.find((item) => item.upstreamId === data.upstreamId && item.branchIndex === data.branchIndex)
       : nodes.find((item) => item.upstreamId === null);
 
-    // Preset dispatch (ADR-0003), v1-first like the card/drawer surfaces: a legacy
-    // `presetFieldset` (with entries) keeps the Formily preset modal; only a node
-    // that dropped it falls through to the inherited `PresetFieldsetLoader` and the
-    // v2 antd preset dialog (`ctx.viewer.dialog`), maintained once in client-v2.
+    // Preset dispatch (ADR-0003), v1-first like the card/drawer surfaces: a legacy `presetFieldset` (with entries)
+    // keeps the Formily preset modal; only a node that dropped it falls through to the inherited `PresetFieldsetLoader`
+    // and the v2 antd preset dialog (`ctx.viewer.dialog`), maintained once in client-v2.
     const presetMode = resolveLegacyPresetRenderMode(instruction);
 
     if (presetMode === 'legacy-fieldset') {
@@ -568,8 +566,8 @@ export function AddNodeContextProvider(props) {
       return;
     }
 
-    // No preset form on either side — still show the v1 branch-preservation modal
-    // when the node branches into an existing downstream.
+    // No preset form on either side — still show the v1 branch-preservation modal when the node branches into an
+    // existing downstream.
     if (
       (typeof instruction.branching === 'function' ? instruction.branching(data.config) : instruction.branching) &&
       downstream

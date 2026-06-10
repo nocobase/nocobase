@@ -169,12 +169,12 @@ describe('TypedVariableInput - object / JSON constant', () => {
       <TypedVariableInput value={{}} types={['object']} namespaces={['$env']} onChange={handleChange} />,
     );
     const textarea = await screen.findByDisplayValue('{}');
-    // Typing an invalid value surfaces the error immediately — no blur needed
-    // (mirrors v1's `Json`, which validates on every change).
+    // Typing an invalid value surfaces the error immediately — no blur needed (mirrors v1's `Json`, which validates on
+    // every change).
     fireEvent.change(textarea, { target: { value: '{ not json' } });
     await waitFor(() => {
-      // The raw `JSON.parse` error message is shown (matching v1), e.g.
-      // "Expected property name or '}' in JSON at position …".
+      // The raw `JSON.parse` error message is shown (matching v1), e.g. "Expected property name or '}' in JSON at
+      // position …".
       expect(screen.getByText(/Expected property name/i)).toBeInTheDocument();
     });
     // The value is only emitted on blur, and never for an invalid value.
@@ -250,9 +250,8 @@ describe('TypedVariableInput - injected metaTree', () => {
 
   it('surfaces lazy children on the FIRST expansion (no stuck-loading regression)', async () => {
     const ctx = createBareContext();
-    // A deferred promise so loading→resolved is a real two-phase transition,
-    // reproducing the rc-cascader reference-cache bug where the first expand
-    // stayed stuck on the spinner until the column was reopened.
+    // A deferred promise so loading→resolved is a real two-phase transition, reproducing the rc-cascader
+    // reference-cache bug where the first expand stayed stuck on the spinner until the column was reopened.
     let resolveChildren: (nodes: MetaTreeNode[]) => void = () => undefined;
     const childrenPromise = new Promise<MetaTreeNode[]>((resolve) => {
       resolveChildren = resolve;
@@ -291,12 +290,10 @@ describe('TypedVariableInput - injected metaTree', () => {
 
   it('preloads a saved variable label across a lazy level (deep label not dropped on mount)', async () => {
     const ctx = createBareContext();
-    // The query-node case: a saved reference `$jobsMapByNodeKey.n1.role` points
-    // below `n1`, whose children are a lazy thunk (relation not yet expanded). On
-    // mount the tag must show the full path "Query / Role", not stop at "Query" —
-    // the component walks the saved path resolving each lazy level. (Regression:
-    // reopening a saved condition showed only "节点数据 / 查询数据" and dropped
-    // "角色标识".)
+    // The query-node case: a saved reference `$jobsMapByNodeKey.n1.role` points below `n1`, whose children are a lazy
+    // thunk (relation not yet expanded). On mount the tag must show the full path "Query / Role", not stop at "Query" —
+    // the component walks the saved path resolving each lazy level. (Regression: reopening a saved condition showed
+    // only "节点数据 / 查询数据" and dropped "角色标识".)
     const loadRoleFields = vi.fn(async () => [
       { name: 'role', title: 'Role', type: 'string', paths: ['$jobsMapByNodeKey', 'n1', 'role'] },
     ]);

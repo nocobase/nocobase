@@ -361,10 +361,9 @@ const FlowContextSelectorComponent: React.FC<FlowContextSelectorProps> = ({
     [cascaderOnDropdownVisibleChange, open],
   );
 
-  // Footer hint at the bottom of the dropdown. Defaults to the
-  // "double click to choose entire object" hint whenever non-leaf selection is
-  // allowed (double-clicking a non-leaf selects the whole object). Callers can
-  // override with their own node, or pass `null` to hide it.
+  // Footer hint at the bottom of the dropdown. Defaults to the "double click to choose entire object" hint whenever
+  // non-leaf selection is allowed (double-clicking a non-leaf selects the whole object). Callers can override with
+  // their own node, or pass `null` to hide it.
   const footerNode = useMemo(() => {
     if (dropdownFooter !== undefined) {
       return dropdownFooter;

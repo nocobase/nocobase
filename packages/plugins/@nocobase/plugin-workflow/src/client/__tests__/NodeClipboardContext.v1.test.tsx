@@ -38,8 +38,8 @@ vi.mock('../FlowContext', () => ({
   useFlowContext: () => holder.flow,
 }));
 
-// v1 hooks barrel pulls `@nocobase/client`-importing siblings; mock it to the one
-// hook the wrapper uses, returning the BigInt executed count (v1's real shape).
+// v1 hooks barrel pulls `@nocobase/client`-importing siblings; mock it to the one hook the wrapper uses, returning the
+// BigInt executed count (v1's real shape).
 vi.mock('../hooks', () => ({
   useWorkflowExecuted: () => holder.executed,
 }));
@@ -70,9 +70,8 @@ function resolveInjectedRuntime() {
 
 describe('v1 NodeClipboardContextProvider — injects the legacy canvas runtime', () => {
   it('re-exports the shared `useNodeClipboardContext` (one hook, not a v1 copy)', () => {
-    // v1 consumers read through the same hook the shared provider feeds — if the
-    // re-export created a separate hook/context, copy/paste state would silently
-    // not propagate.
+    // v1 consumers read through the same hook the shared provider feeds — if the re-export created a separate
+    // hook/context, copy/paste state would silently not propagate.
     expect(useNodeClipboardContext).toBe(sharedHook);
   });
 
@@ -95,8 +94,8 @@ describe('v1 NodeClipboardContextProvider — injects the legacy canvas runtime'
   });
 
   it('coerces a non-zero versionStats.executed BigInt to executed=true (read-only)', () => {
-    // The real-world case behind "an executed workflow hides the node ... menu":
-    // versionStats.executed is a BigInt count; any non-zero value means executed.
+    // The real-world case behind "an executed workflow hides the node ... menu": versionStats.executed is a BigInt
+    // count; any non-zero value means executed.
     holder.flow = { workflow: { id: 7 }, nodes: [], refresh: vi.fn() };
     holder.executed = 3n;
 

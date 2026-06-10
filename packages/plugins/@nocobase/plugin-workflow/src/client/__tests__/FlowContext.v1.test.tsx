@@ -30,8 +30,8 @@ import {
 
 describe('v1 FlowContext — re-exports the shared client-v2 instances', () => {
   it('are the very same context objects as client-v2 (not second instances)', () => {
-    // If the re-export accidentally created a new context, v1 providers and
-    // v2 consumers (e.g. the shared Node card) would silently miss each other.
+    // If the re-export accidentally created a new context, v1 providers and v2 consumers (e.g. the shared Node card)
+    // would silently miss each other.
     expect(FlowContext).toBe(SharedFlowContext);
     expect(CurrentWorkflowContext).toBe(SharedCurrentWorkflowContext);
   });

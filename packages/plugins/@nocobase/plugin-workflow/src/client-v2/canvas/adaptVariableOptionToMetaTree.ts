@@ -63,17 +63,16 @@ export function adaptVariableOptionToMetaTree(option: VariableOption, parentPath
     node.disabled = option.disabled;
   }
 
-  // children: a static array maps recursively; a v1 `loadChildren` thunk (which
-  // mutates the option in place) becomes a flow-engine lazy `() => Promise<...>`.
+  // children: a static array maps recursively; a v1 `loadChildren` thunk (which mutates the option in place) becomes a
+  // flow-engine lazy `() => Promise<...>`.
   if (Array.isArray(option.children)) {
     node.children = option.children.map((child) => adaptVariableOptionToMetaTree(child, paths));
   } else if (typeof (option.loadChildren as LoadChildren | null | undefined) === 'function') {
     const loadChildren = option.loadChildren as LoadChildren;
     node.children = async () => {
-      // v1 loadChildren mutates `option`: sets `option.children`, clears
-      // `option.loadChildren`, may set `isLeaf`/`disabled`. The v1-only keys it
-      // reads (`field`/`types`/`appends`/`depth`) live on `option` — captured by
-      // this closure, never copied onto the MetaTreeNode.
+      // v1 loadChildren mutates `option`: sets `option.children`, clears `option.loadChildren`, may set
+      // `isLeaf`/`disabled`. The v1-only keys it reads (`field`/`types`/`appends`/`depth`) live on `option` — captured
+      // by this closure, never copied onto the MetaTreeNode.
       loadChildren(option);
       const loaded = Array.isArray(option.children) ? option.children : [];
       return loaded.map((child) => adaptVariableOptionToMetaTree(child, paths));

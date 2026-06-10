@@ -21,9 +21,8 @@ import { describe, expect, it } from 'vitest';
 
 const BASIC = 'basic';
 
-// A minimal stand-in for ConditionFieldset's calculation/expression switch:
-// two always-mounted Form.Items toggled with `hidden`, the expression carrying
-// a validator that fails for the literal `BAD`.
+// A minimal stand-in for ConditionFieldset's calculation/expression switch: two always-mounted Form.Items toggled with
+// `hidden`, the expression carrying a validator that fails for the literal `BAD`.
 function MiniFieldset({ conditionalRules }: { conditionalRules: boolean }) {
   const engine = Form.useWatch('engine') ?? BASIC;
   return (
@@ -92,9 +91,8 @@ function setup(conditionalRules: boolean) {
 }
 
 describe('condition fieldset — switch engine keeps expression error', () => {
-  // The real scenario: the user does NOT re-edit the expression after switching
-  // back — they just toggle the engine radios. The error must reappear on its
-  // own (v1 behaviour), driven by `dependencies` re-validating.
+  // The real scenario: the user does NOT re-edit the expression after switching back — they just toggle the engine
+  // radios. The error must reappear on its own (v1 behaviour), driven by `dependencies` re-validating.
   async function showInitialError() {
     fireEvent.click(screen.getByRole('radio', { name: /Formula\.js/i }));
     fireEvent.change(screen.getByLabelText('expr-input'), { target: { value: 'BAD' } });
@@ -112,11 +110,10 @@ describe('condition fieldset — switch engine keeps expression error', () => {
     setup(false); // stable rules; each validator no-ops for the inactive engine
     await showInitialError();
     await roundTripEngine();
-    // Without re-editing the expression, the error reappears on its own —
-    // matching v1, where the field model + error persist while the DOM hides.
-    // (Toggling `rules` to `[]` when hidden — `setup(true)` — instead clears the
-    // error permanently; that anti-pattern is why condition.tsx keeps the rules
-    // array stable and no-ops each validator for the inactive engine.)
+    // Without re-editing the expression, the error reappears on its own — matching v1, where the field model + error
+    // persist while the DOM hides. (Toggling `rules` to `[]` when hidden — `setup(true)` — instead clears the error
+    // permanently; that anti-pattern is why condition.tsx keeps the rules array stable and no-ops each validator for
+    // the inactive engine.)
     await waitFor(() => {
       expect(screen.getByText('Expression syntax error')).toBeInTheDocument();
     });

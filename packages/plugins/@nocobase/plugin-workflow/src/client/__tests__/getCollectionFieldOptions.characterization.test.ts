@@ -29,9 +29,8 @@ import { getCollectionFieldOptions } from '../variable';
 
 // --- Test doubles -----------------------------------------------------------
 
-// `compile` only expands field titles. In v1 this is `useCompile` (Formily
-// Schema.compile); in v2 it will be `useT` (flowEngine.translate). Both expand
-// `{{t("X")}}` → translation and pass plain strings through. The mock models
+// `compile` only expands field titles. In v1 this is `useCompile` (Formily Schema.compile); in v2 it will be `useT`
+// (flowEngine.translate). Both expand `{{t("X")}}` → translation and pass plain strings through. The mock models
 // exactly that contract: strip the `{{t("…")}}` wrapper, else identity.
 const compile = (source: unknown) => {
   if (typeof source !== 'string') {
@@ -64,8 +63,8 @@ function makeCollectionManager(collections: Record<string, MockField[]>) {
 
 // --- Fixtures ---------------------------------------------------------------
 
-// Flat collection: scalar fields of several interfaces (+ one hidden, one
-// no-interface) to pin the `interface && !hidden` filter.
+// Flat collection: scalar fields of several interfaces (+ one hidden, one no-interface) to pin the `interface &&
+// !hidden` filter.
 const postFields: MockField[] = [
   { name: 'id', type: 'bigInt', interface: 'integer', uiSchema: { title: 'ID' }, primaryKey: true },
   { name: 'title', type: 'string', interface: 'input', uiSchema: { title: '{{t("Title")}}' } },
@@ -117,8 +116,8 @@ describe('getCollectionFieldOptions — golden baseline (v1)', () => {
     expect(title?.key).toBe('title');
     expect(title?.isLeaf).toBe(true);
     expect(title?.loadChildren).toBeNull();
-    // v1-only keys are present on the produced option (they get stripped by the
-    // future adapter, not here — this baseline pins that they exist in v1).
+    // v1-only keys are present on the produced option (they get stripped by the future adapter, not here — this
+    // baseline pins that they exist in v1).
     expect(title).toHaveProperty('field');
     expect(title).toHaveProperty('depth');
     expect(title).toHaveProperty('appends');
@@ -131,8 +130,8 @@ describe('getCollectionFieldOptions — golden baseline (v1)', () => {
     });
     const result = getCollectionFieldOptions({ collection: 'posts', compile, collectionManager });
 
-    // The `author` belongsTo is NOT surfaced when not explicitly appended;
-    // getNormalizedFields surfaces the foreign key `authorId` instead.
+    // The `author` belongsTo is NOT surfaced when not explicitly appended; getNormalizedFields surfaces the foreign key
+    // `authorId` instead.
     expect(result.map((o) => o.value)).toEqual(['id', 'title', 'authorId']);
     expect(result.find((o) => o.value === 'author')).toBeUndefined();
     // Every surviving field is a leaf here (the FK is scalar).
@@ -158,8 +157,8 @@ describe('getCollectionFieldOptions — golden baseline (v1)', () => {
     expect(author?.isLeaf).toBe(false);
     expect(typeof author?.loadChildren).toBe('function');
 
-    // Invoke the lazy loader the way the variable picker would: it mutates the
-    // option in place (sets `children`, clears `loadChildren`).
+    // Invoke the lazy loader the way the variable picker would: it mutates the option in place (sets `children`, clears
+    // `loadChildren`).
     author?.loadChildren?.(author);
     expect(author?.loadChildren).toBeNull();
     expect(Array.isArray(author?.children)).toBe(true);
@@ -212,10 +211,9 @@ describe('getCollectionFieldOptions — golden baseline (v1)', () => {
 
 describe('compile ↔ useT equivalence boundary', () => {
   it('expands {{t("…")}} field titles and passes plain strings through (the only compile usage)', () => {
-    // The relocated builder uses `compile` ONLY on field titles. This pins the
-    // contract both v1 useCompile and v2 useT must satisfy identically. If a
-    // field title ever carried a non-i18n scope expression, this assertion (and
-    // the v2 copy) would diverge and surface the drift.
+    // The relocated builder uses `compile` ONLY on field titles. This pins the contract both v1 useCompile and v2 useT
+    // must satisfy identically. If a field title ever carried a non-i18n scope expression, this assertion (and the v2
+    // copy) would diverge and surface the drift.
     expect(compile('{{t("Title")}}')).toBe('Title');
     expect(compile('Plain title')).toBe('Plain title');
     expect(compile('{{t("With ns", { ns: "workflow" })}}')).toBe('With ns');

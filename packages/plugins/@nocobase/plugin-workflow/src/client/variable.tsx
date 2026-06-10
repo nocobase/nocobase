@@ -16,9 +16,9 @@ import { useFlowContext } from './FlowContext';
 import { NAMESPACE } from './locale';
 import { useAvailableUpstreams, useNodeContext, useUpstreamScopes } from './nodes';
 
-// The field-tree builder + its shared constants/types now live in client-v2 and
-// are shared by both canvases (ADR-0003). Re-exported here so existing v1 import
-// sites (`from '../variable'`) are unchanged. Delete on legacy-canvas retirement.
+// The field-tree builder + its shared constants/types now live in client-v2 and are shared by both canvases (ADR-0003).
+// Re-exported here so existing v1 import sites (`from '../variable'`) are unchanged. Delete on legacy-canvas
+// retirement.
 export { getCollectionFieldOptions, BaseTypeSets, defaultFieldNames } from '../client-v2/canvas/collectionFieldOptions';
 export type { VariableOption, VariableDataType, UseVariableOptions } from '../client-v2/canvas/collectionFieldOptions';
 import {

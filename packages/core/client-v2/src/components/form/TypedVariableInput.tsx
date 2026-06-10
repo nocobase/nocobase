@@ -311,8 +311,8 @@ function JsonConstantEditor({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [value, stringify]);
 
-  // Validate as the user types (live red border + error row), mirroring v1's
-  // `Json` which calls `setFeedback` on every change — not just on blur.
+  // Validate as the user types (live red border + error row), mirroring v1's `Json` which calls `setFeedback` on every
+  // change — not just on blur.
   const handleChange = useCallback(
     (raw: string) => {
       setText(raw);
@@ -334,8 +334,8 @@ function JsonConstantEditor({
     [onError],
   );
 
-  // Commit the parsed object up on blur (v1 emits the value on blur). A still-
-  // invalid value keeps its error and is not emitted.
+  // Commit the parsed object up on blur (v1 emits the value on blur). A still-invalid value keeps its error and is not
+  // emitted.
   const commit = useCallback(
     (raw: string) => {
       const trimmed = raw.trim();
@@ -353,8 +353,8 @@ function JsonConstantEditor({
   );
 
   return (
-    // No `autoSize` — it would disable the resize grip. Default to 2 rows
-    // (mirrors v1's `Json`) and let the user drag-resize from the corner.
+    // No `autoSize` — it would disable the resize grip. Default to 2 rows (mirrors v1's `Json`) and let the user
+    // drag-resize from the corner.
     <Input.TextArea
       className={jsonEditorClassName}
       value={text}
@@ -401,9 +401,8 @@ export function TypedVariableInput(props: TypedVariableInputProps) {
   const t = useCallback((text: string): string => (typeof ctx?.t === 'function' ? ctx.t(text) : text), [ctx]);
   const { token } = theme.useToken();
 
-  // An explicit `metaTree` wins over the global FlowContext tree. The hook is
-  // still called unconditionally (Rules of Hooks); its result is simply unused
-  // when a tree is injected.
+  // An explicit `metaTree` wins over the global FlowContext tree. The hook is still called unconditionally (Rules of
+  // Hooks); its result is simply unused when a tree is injected.
   const filteredMetaTree = useFilteredMetaTree({ namespaces, extraNodes });
   const metaTree = metaTreeProp ?? filteredMetaTree;
 
@@ -413,11 +412,10 @@ export function TypedVariableInput(props: TypedVariableInputProps) {
   const normalizedTypes = useMemo(() => normalizeTypes(types), [types]);
   const detected = useMemo(() => detectMode(value, parseVariablePath), [value, parseVariablePath]);
 
-  // rc-cascader caches its options by *reference* (useEntities), so lazily
-  // filling a node's children in place is invisible to it. We mirror
-  // `FlowContextSelector`: lazy `loadData` mutates the **meta tree** in place,
-  // bumps `updateFlag`, and the options are rebuilt from scratch (fresh
-  // references) on every bump — forcing rc-cascader to re-index the new column.
+  // rc-cascader caches its options by *reference* (useEntities), so lazily filling a node's children in place is
+  // invisible to it. We mirror `FlowContextSelector`: lazy `loadData` mutates the **meta tree** in place, bumps
+  // `updateFlag`, and the options are rebuilt from scratch (fresh references) on every bump — forcing rc-cascader to
+  // re-index the new column.
   const [updateFlag, setUpdateFlag] = useState(0);
   const triggerUpdate = useCallback(() => setUpdateFlag((prev) => prev + 1), []);
 
@@ -441,12 +439,12 @@ export function TypedVariableInput(props: TypedVariableInputProps) {
       }
       target.loading = true;
       triggerUpdate();
-      // `loadMetaTreeChildren` already swallows its own errors (returns []), so a
-      // bare chain is safe; `return` satisfies the promise/catch-or-return rule.
+      // `loadMetaTreeChildren` already swallows its own errors (returns []), so a bare chain is safe; `return`
+      // satisfies the promise/catch-or-return rule.
       return loadMetaTreeChildren(meta)
         .then((childMetas) => {
-          // Cache resolved children on the meta node; the options tree is then
-          // rebuilt from the mutated meta tree on the next `updateFlag` bump.
+          // Cache resolved children on the meta node; the options tree is then rebuilt from the mutated meta tree on
+          // the next `updateFlag` bump.
           meta.children = childMetas;
         })
         .finally(() => {
@@ -458,8 +456,7 @@ export function TypedVariableInput(props: TypedVariableInputProps) {
   );
 
   const switcherOptions = useMemo<SwitcherOption[]>(() => {
-    // `updateFlag` is read so this recomputes (with fresh option references)
-    // after a lazy load mutates the meta tree.
+    // `updateFlag` is read so this recomputes (with fresh option references) after a lazy load mutates the meta tree.
     void updateFlag;
     const items: SwitcherOption[] = [];
     if (nullable) {
@@ -534,18 +531,17 @@ export function TypedVariableInput(props: TypedVariableInputProps) {
   const isNull = detected.mode === 'null';
 
   const variableLabels = useMemo(() => {
-    // `updateFlag` is read so this recomputes after the preload effect below
-    // resolves a lazy level in the tree (same pattern as `switcherOptions`).
+    // `updateFlag` is read so this recomputes after the preload effect below resolves a lazy level in the tree (same
+    // pattern as `switcherOptions`).
     void updateFlag;
     return isVariable && detected.variablePath ? resolveVariableLabels(detected.variablePath, metaTree) : [];
   }, [isVariable, detected.variablePath, metaTree, updateFlag]);
 
-  // Preload a saved variable's label path across lazy levels. `resolveVariableLabels`
-  // can only read already-loaded `children`; when a saved reference points below a
-  // node whose children are still a lazy thunk (e.g. a relation field that hasn't
-  // been expanded), the deep segments render as raw names. Walk the saved path on
-  // mount / value change, resolving each lazy level in place (then bump `updateFlag`
-  // so the labels recompute). Mirrors v1 `Variable.Input`'s preload effect.
+  // Preload a saved variable's label path across lazy levels. `resolveVariableLabels` can only read already-loaded
+  // `children`; when a saved reference points below a node whose children are still a lazy thunk (e.g. a relation field
+  // that hasn't been expanded), the deep segments render as raw names. Walk the saved path on mount / value change,
+  // resolving each lazy level in place (then bump `updateFlag` so the labels recompute). Mirrors v1 `Variable.Input`'s
+  // preload effect.
   useEffect(() => {
     if (!isVariable || !detected.variablePath?.length) {
       return;
@@ -580,13 +576,12 @@ export function TypedVariableInput(props: TypedVariableInputProps) {
     return () => {
       cancelled = true;
     };
-    // `metaTree` identity is stable per structural change (see consumers); re-run
-    // when the saved path or the tree changes.
+    // `metaTree` identity is stable per structural change (see consumers); re-run when the saved path or the tree
+    // changes.
   }, [isVariable, detected.variablePath, metaTree, triggerUpdate]);
 
-  // JSON parse error from the object editor, rendered on its own row below the
-  // input (not squeezed into the compact row). Cleared whenever the value is no
-  // longer an object literal.
+  // JSON parse error from the object editor, rendered on its own row below the input (not squeezed into the compact
+  // row). Cleared whenever the value is no longer an object literal.
   const [jsonError, setJsonError] = useState<string | null>(null);
   useEffect(() => {
     if (constantTypeForRendering !== 'object') setJsonError(null);
@@ -646,9 +641,8 @@ export function TypedVariableInput(props: TypedVariableInputProps) {
               ) : null}
             </div>
           ) : isNull ? (
-            // v1 used the `placeholder` slot (not `value`) so the antd default
-            // placeholder colour applies — keeps the field looking visibly
-            // empty/inactive rather than holding a real text value.
+            // v1 used the `placeholder` slot (not `value`) so the antd default placeholder colour applies — keeps the
+            // field looking visibly empty/inactive rather than holding a real text value.
             <Input placeholder={`<${t('Null')}>`} readOnly disabled={disabled} style={{ width: '100%' }} />
           ) : (
             renderConstantEditor(constantTypeForRendering, value, onChange, {
@@ -673,9 +667,8 @@ export function TypedVariableInput(props: TypedVariableInputProps) {
             type={isVariable ? 'primary' : 'default'}
             style={{
               flexShrink: 0,
-              // `height: auto` (instead of antd's fixed control height) lets the
-              // button stretch to the value component's height under the compact
-              // row's default `align-items: stretch` — so it stays joined to a
+              // `height: auto` (instead of antd's fixed control height) lets the button stretch to the value
+              // component's height under the compact row's default `align-items: stretch` — so it stays joined to a
               // tall JSON textarea. Mirrors v1's `.ant-btn { height: auto }`.
               height: 'auto',
               fontStyle: 'italic',

@@ -19,8 +19,8 @@ import {
 } from './constants';
 import type { Instruction } from './canvas/Instruction';
 
-// Core node instructions — one file per node under `nodes/`, mirroring v1's
-// `client/nodes/` layout. Each default-exports its Instruction class.
+// Core node instructions — one file per node under `nodes/`, mirroring v1's `client/nodes/` layout. Each
+// default-exports its Instruction class.
 import CalculationInstruction from './nodes/calculation';
 import ConditionInstruction from './nodes/condition';
 import MultiConditionsInstruction from './nodes/multi-conditions';
@@ -128,11 +128,9 @@ export class PluginWorkflowClientV2 extends Plugin {
   }
 
   registerTrigger(type: string, options: WorkflowTriggerOptions) {
-    // Downstream plugins still call `pm.get('workflow').registerTrigger(type, TriggerClass)`
-    // with the v1-style Trigger class (a no-op before this v2 plugin existed).
-    // The v2 registry only holds plain option objects describing the create
-    // form — ignore class/instance registrations rather than storing a garbage
-    // entry with no `title`.
+    // Downstream plugins still call `pm.get('workflow').registerTrigger(type, TriggerClass)` with the v1-style Trigger
+    // class (a no-op before this v2 plugin existed). The v2 registry only holds plain option objects describing the
+    // create form — ignore class/instance registrations rather than storing a garbage entry with no `title`.
     if (!options || typeof options !== 'object' || typeof options.title !== 'string') {
       return;
     }
@@ -153,8 +151,8 @@ export class PluginWorkflowClientV2 extends Plugin {
     this.registerExecutionRoute();
   }
 
-  // The three fixed `$system` variables (v1 `client/index.tsx`). Self-registered
-  // by the workflow plugin — no external dependency, so available in v2 now.
+  // The three fixed `$system` variables (v1 `client/index.tsx`). Self-registered by the workflow plugin — no external
+  // dependency, so available in v2 now.
   private registerBuiltinSystemVariables() {
     this.registerSystemVariable({ key: 'now', label: `{{t("System time", { ns: "${NAMESPACE}" })}}` });
     this.registerSystemVariable({
@@ -184,9 +182,8 @@ export class PluginWorkflowClientV2 extends Plugin {
   }
 
   private registerModelLoaders() {
-    // Lazy loaders (not eager `registerModels`). `extends` declares the parent
-    // class so the engine can discover these as sub-model candidates without
-    // loading their chunks first.
+    // Lazy loaders (not eager `registerModels`). `extends` declares the parent class so the engine can discover these
+    // as sub-model candidates without loading their chunks first.
     this.flowEngine.registerModelLoaders({
       NodeDetailsModel: {
         extends: 'CollectionBlockModel',
@@ -231,9 +228,8 @@ export class PluginWorkflowClientV2 extends Plugin {
       sort: 300,
       aclSnippet: 'pm.workflow.workflows',
     });
-    // `index` is the menu's default tab: the settings manager registers it at
-    // the menu root (`.../settings/workflow`) with no extra path segment,
-    // matching v1's route instead of `.../settings/workflow/workflows`.
+    // `index` is the menu's default tab: the settings manager registers it at the menu root (`.../settings/workflow`)
+    // with no extra path segment, matching v1's route instead of `.../settings/workflow/workflows`.
     this.pluginSettingsManager.addPageTabItem({
       menuKey: NAMESPACE,
       key: 'index',
@@ -244,9 +240,8 @@ export class PluginWorkflowClientV2 extends Plugin {
     });
   }
 
-  // The canvas page is registered directly under `admin` (not `admin.settings`),
-  // so it renders in the admin content area without the settings left menu —
-  // mirroring v1's `router.add('admin.workflow.workflows.id', ...)`.
+  // The canvas page is registered directly under `admin` (not `admin.settings`), so it renders in the admin content
+  // area without the settings left menu — mirroring v1's `router.add('admin.workflow.workflows.id', ...)`.
   private registerCanvasRoute() {
     this.app.router.add(WORKFLOW_CANVAS_ROUTE_NAME, {
       path: WORKFLOW_CANVAS_ROUTE_PATH,
@@ -254,8 +249,8 @@ export class PluginWorkflowClientV2 extends Plugin {
     });
   }
 
-  // The execution detail page, a sibling of the canvas under the same
-  // `admin.workflow` namespace — mirrors v1's `admin.workflow.executions.id`.
+  // The execution detail page, a sibling of the canvas under the same `admin.workflow` namespace — mirrors v1's
+  // `admin.workflow.executions.id`.
   private registerExecutionRoute() {
     this.app.router.add(WORKFLOW_EXECUTION_ROUTE_NAME, {
       path: WORKFLOW_EXECUTION_ROUTE_PATH,

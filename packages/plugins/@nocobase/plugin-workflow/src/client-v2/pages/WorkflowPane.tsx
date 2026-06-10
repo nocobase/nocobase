@@ -29,9 +29,8 @@ import { ExecutionHistoryDrawer } from './ExecutionHistoryDrawer';
 import { ALL_CATEGORY_KEY, WorkflowCategoryTabs, WorkflowCategory } from './WorkflowCategoryTabs';
 import { WorkflowFormDrawer, WorkflowRecord } from './WorkflowFormDrawer';
 
-// Mirror v1's `nonfilterable: ['id', 'description', 'categories']` on the
-// workflows `Filter.Action`. The remaining filterable fields are Name, Status
-// (enabled), Trigger type, Mode (sync), and Created by.
+// Mirror v1's `nonfilterable: ['id', 'description', 'categories']` on the workflows `Filter.Action`. The remaining
+// filterable fields are Name, Status (enabled), Trigger type, Mode (sync), and Created by.
 const WORKFLOWS_NONFILTERABLE_FIELD_NAMES = ['id', 'description', 'categories'];
 
 function normalizeListResponse(response: any) {
@@ -155,9 +154,8 @@ function WorkflowPaneInner() {
 
   const { data, loading, refresh } = useRequest(
     async () => {
-      // `{ current: true }` (latest version only) and the active-category scope
-      // are mandatory; the user-built filter is ANDed onto them so it can only
-      // narrow, never widen, the list.
+      // `{ current: true }` (latest version only) and the active-category scope are mandatory; the user-built filter is
+      // ANDed onto them so it can only narrow, never widen, the list.
       const scope: Record<string, any> = { current: true };
       if (activeCategory !== ALL_CATEGORY_KEY) {
         scope['categories.id'] = activeCategory;
@@ -364,12 +362,10 @@ export default function WorkflowPane() {
   const compile = useT();
   const ctx = useFlowContext();
   const plugin = ctx.app.pm.get(PluginWorkflowClientV2);
-  // The shared `workflows` collection is `schema-only`, so it isn't published to
-  // the v2 data source — register a client-only copy so `CollectionFilter` can
-  // resolve its fields. Its `type` field carries the v1 Formily template
-  // `enum: '{{useTriggersOptions()}}'`, which the v2 filter value renderer can't
-  // compile; replace it with the registered trigger options up front so the
-  // Trigger type condition renders as a Select (matching v1).
+  // The shared `workflows` collection is `schema-only`, so it isn't published to the v2 data source — register a
+  // client-only copy so `CollectionFilter` can resolve its fields. Its `type` field carries the v1 Formily template
+  // `enum: '{{useTriggersOptions()}}'`, which the v2 filter value renderer can't compile; replace it with the
+  // registered trigger options up front so the Trigger type condition renders as a Select (matching v1).
   const collections = useMemo(() => {
     const triggerOptions = Array.from(plugin.triggers.getEntities() as Iterable<[string, { title?: string }]>)
       .map(([value, opt]) => ({ value, label: opt?.title ? compile(opt.title) : String(value) }))

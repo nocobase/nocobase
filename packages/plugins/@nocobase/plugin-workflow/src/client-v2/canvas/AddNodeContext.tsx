@@ -152,9 +152,8 @@ export function AddNodeContextProvider(props: { children: React.ReactNode }) {
       .filter(Boolean) as MenuProps['items'];
   }, [plugin, t]);
 
-  // Create the node, then (when a branching node was inserted above an existing
-  // downstream node and the user chose a branch) re-parent that downstream node
-  // into the chosen branch. Mirrors v1's `useAddNodeSubmitAction`.
+  // Create the node, then (when a branching node was inserted above an existing downstream node and the user chose a
+  // branch) re-parent that downstream node into the chosen branch. Mirrors v1's `useAddNodeSubmitAction`.
   const createNode = useCallback(
     async (anchor: Anchor, instruction: Instruction, presetValues: any) => {
       const upstreamId = anchor.upstream?.id ?? null;
@@ -203,8 +202,8 @@ export function AddNodeContextProvider(props: { children: React.ReactNode }) {
       if (!instruction || !workflow?.id) {
         return;
       }
-      // Does a branching node land above an existing downstream node? If so the
-      // user must pick where that downstream goes (DownstreamBranchIndex).
+      // Does a branching node land above an existing downstream node? If so the user must pick where that downstream
+      // goes (DownstreamBranchIndex).
       const upstreamId = anchor.upstream?.id ?? null;
       const branchIndex = anchor.branchIndex ?? null;
       const downstream = anchor.upstream?.id
@@ -218,8 +217,8 @@ export function AddNodeContextProvider(props: { children: React.ReactNode }) {
         t,
       });
 
-      // Preset dialog when the node has an add-time preset form, or when a
-      // branching node needs the downstream-placement choice (mirrors v1).
+      // Preset dialog when the node has an add-time preset form, or when a branching node needs the
+      // downstream-placement choice (mirrors v1).
       if (instruction.PresetFieldsetLoader || downstreamOptions.length) {
         ctx.viewer.dialog({
           width: 520,

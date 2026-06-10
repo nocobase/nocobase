@@ -43,8 +43,8 @@ vi.mock('@nocobase/client', () => ({
 }));
 // `lang` (plain-key translator) — tag the output so we can assert it's the one wired.
 vi.mock('../locale', () => ({ lang: (key: string) => `lang:${key}` }));
-// v1 hooks barrel pulls @nocobase/client-importing siblings; mock to the one hook
-// the wrapper uses, returning the BigInt executed count (v1's real shape).
+// v1 hooks barrel pulls @nocobase/client-importing siblings; mock to the one hook the wrapper uses, returning the
+// BigInt executed count (v1's real shape).
 vi.mock('../hooks', () => ({ useWorkflowExecuted: () => holder.executed }));
 // The wrapper imports the plugin default (`from '.'`) only as a usePlugin token.
 vi.mock('..', () => ({ default: class PluginWorkflowClient {} }));
@@ -88,8 +88,7 @@ describe('v1 NodeDragContextProvider — injects the legacy canvas runtime', () 
 
   it('wires the two distinct translators: lang (plain) and compile (template)', () => {
     const runtime = resolveInjectedRuntime();
-    // lang resolves plain keys; compile expands titles — they must be the v1
-    // functions, not collapsed into one.
+    // lang resolves plain keys; compile expands titles — they must be the v1 functions, not collapsed into one.
     expect(runtime.lang('Confirm move')).toBe('lang:Confirm move');
     expect(runtime.compile('{{t("Query")}}')).toBe('compiled:{{t("Query")}}');
   });
