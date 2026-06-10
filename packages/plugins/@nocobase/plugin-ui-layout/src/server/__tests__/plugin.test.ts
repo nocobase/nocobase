@@ -165,7 +165,7 @@ describe('plugin-ui-layout server', () => {
       },
     });
     await repository.update({
-      filterByTk: adminLayout.get('id'),
+      filterByTk: adminLayout.get('uid'),
       values: {
         title: 'Untitled',
         layoutType: 'mobile',
@@ -179,10 +179,10 @@ describe('plugin-ui-layout server', () => {
     await ensureDefaultUiLayout(app.db);
 
     const updatedAdminLayout = await repository.findOne({
-      filterByTk: adminLayout.get('id'),
+      filterByTk: adminLayout.get('uid'),
     });
     const updatedMobileLayout = await repository.findOne({
-      filterByTk: mobileLayout.get('id'),
+      filterByTk: mobileLayout.get('uid'),
     });
 
     expect(updatedAdminLayout?.get('title')).toBe(DEFAULT_ADMIN_UI_LAYOUT.title);
@@ -1078,7 +1078,7 @@ describe('plugin-ui-layout server', () => {
     }
   });
 
-  it('should return only enabled uiLayouts with runtime fields in id ascending order', async () => {
+  it('should return only enabled uiLayouts with runtime fields in uid ascending order', async () => {
     app = await createUiLayoutMockServer();
 
     const repository = app.db.getRepository('uiLayouts');
@@ -1216,7 +1216,7 @@ describe('plugin-ui-layout server', () => {
     const noSnippetResponses = [
       await noSnippetAgent.resource('uiLayouts').list(),
       await noSnippetAgent.resource('uiLayouts').get({
-        filterByTk: deniedLayout.get('id'),
+        filterByTk: deniedLayout.get('uid'),
       }),
       await noSnippetAgent.resource('uiLayouts').create({
         values: {
@@ -1230,13 +1230,13 @@ describe('plugin-ui-layout server', () => {
         },
       }),
       await noSnippetAgent.resource('uiLayouts').update({
-        filterByTk: deniedLayout.get('id'),
+        filterByTk: deniedLayout.get('uid'),
         values: {
           title: 'Management no snippet layout updated',
         },
       }),
       await noSnippetAgent.resource('uiLayouts').destroy({
-        filterByTk: deniedLayout.get('id'),
+        filterByTk: deniedLayout.get('uid'),
       }),
     ];
 
@@ -1254,21 +1254,21 @@ describe('plugin-ui-layout server', () => {
       },
     });
     expect(createResponse.status).toBe(200);
-    const createdLayoutId = createResponse.body.data.id;
+    const createdLayoutUid = createResponse.body.data.uid;
     const managementResponses = [
       await pmAllAgent.resource('uiLayouts').list(),
       await pmAllAgent.resource('uiLayouts').get({
-        filterByTk: createdLayoutId,
+        filterByTk: createdLayoutUid,
       }),
       createResponse,
       await pmAllAgent.resource('uiLayouts').update({
-        filterByTk: createdLayoutId,
+        filterByTk: createdLayoutUid,
         values: {
           title: 'Management allowed layout updated',
         },
       }),
       await pmAllAgent.resource('uiLayouts').destroy({
-        filterByTk: createdLayoutId,
+        filterByTk: createdLayoutUid,
       }),
     ];
 
@@ -1277,7 +1277,7 @@ describe('plugin-ui-layout server', () => {
     const negatedResponses = await Promise.all([
       negatedAgent.resource('uiLayouts').list(),
       negatedAgent.resource('uiLayouts').get({
-        filterByTk: deniedLayout.get('id'),
+        filterByTk: deniedLayout.get('uid'),
       }),
       negatedAgent.resource('uiLayouts').create({
         values: {
@@ -1291,13 +1291,13 @@ describe('plugin-ui-layout server', () => {
         },
       }),
       negatedAgent.resource('uiLayouts').update({
-        filterByTk: deniedLayout.get('id'),
+        filterByTk: deniedLayout.get('uid'),
         values: {
           title: 'Management denied layout updated',
         },
       }),
       negatedAgent.resource('uiLayouts').destroy({
-        filterByTk: deniedLayout.get('id'),
+        filterByTk: deniedLayout.get('uid'),
       }),
     ]);
 
@@ -1332,7 +1332,7 @@ describe('plugin-ui-layout server', () => {
     const agent = await app.agent().login(user);
 
     const response = await agent.resource('uiLayouts').update({
-      filterByTk: layout.get('id'),
+      filterByTk: layout.get('uid'),
       values: {
         uid: 'changed-uid-layout',
         title: 'Immutable UID layout updated',
@@ -1344,7 +1344,7 @@ describe('plugin-ui-layout server', () => {
       },
     });
     const updatedLayout = await app.db.getRepository('uiLayouts').findOne({
-      filterByTk: layout.get('id'),
+      filterByTk: layout.get('uid'),
     });
 
     expect(response.status).toBe(400);
@@ -1377,7 +1377,7 @@ describe('plugin-ui-layout server', () => {
     }
 
     const updateResponse = await agent.resource('uiLayouts').update({
-      filterByTk: defaultLayout.get('id'),
+      filterByTk: defaultLayout.get('uid'),
       values: {
         ...DEFAULT_ADMIN_UI_LAYOUT,
         title: 'Broken desktop layout',
@@ -1386,13 +1386,13 @@ describe('plugin-ui-layout server', () => {
       },
     });
     const deleteResponse = await agent.resource('uiLayouts').destroy({
-      filterByTk: defaultLayout.get('id'),
+      filterByTk: defaultLayout.get('uid'),
     });
     const batchDeleteResponse = await agent.resource('uiLayouts').destroy({
-      filterByTk: [defaultLayout.get('id')],
+      filterByTk: [defaultLayout.get('uid')],
     });
     const updatedDefaultLayout = await app.db.getRepository('uiLayouts').findOne({
-      filterByTk: defaultLayout.get('id'),
+      filterByTk: defaultLayout.get('uid'),
     });
 
     expect(updateResponse.status).toBe(400);
@@ -3460,7 +3460,7 @@ describe('plugin-ui-layout server', () => {
       paginate: false,
       filter: {
         hidden: { $ne: true },
-        $or: [{ 'uiLayouts.uid': DEFAULT_ADMIN_UI_LAYOUT.uid }, { 'uiLayouts.id.$notExists': true }],
+        $or: [{ 'uiLayouts.uid': DEFAULT_ADMIN_UI_LAYOUT.uid }, { 'uiLayouts.uid.$notExists': true }],
       },
     });
     const mobileRoutesResponse = await agent.resource('roles.desktopRoutes', role.get('name')).list({
@@ -3483,7 +3483,7 @@ describe('plugin-ui-layout server', () => {
       paginate: false,
       filter: {
         hidden: { $ne: true },
-        $or: [{ 'uiLayouts.uid': DEFAULT_ADMIN_UI_LAYOUT.uid }, { 'uiLayouts.id.$notExists': true }],
+        $or: [{ 'uiLayouts.uid': DEFAULT_ADMIN_UI_LAYOUT.uid }, { 'uiLayouts.uid.$notExists': true }],
       },
     });
     const mobileRoutesAfterMobileRemoveResponse = await agent.resource('roles.desktopRoutes', role.get('name')).list({

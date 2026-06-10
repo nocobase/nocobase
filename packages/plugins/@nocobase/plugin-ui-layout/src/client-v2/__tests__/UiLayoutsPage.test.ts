@@ -84,7 +84,6 @@ const formValues: UiLayoutFormValues = {
 };
 
 const uiLayoutRecord: UiLayoutRecord = {
-  id: 42,
   ...formValues,
 };
 
@@ -122,14 +121,14 @@ describe('plugin-ui-layout submit pipeline', () => {
     expect(onSubmitted).not.toHaveBeenCalled();
   });
 
-  it('should fire resource.update with the numeric id as filterByTk on edit', async () => {
+  it('should fire resource.update with the uid as filterByTk on edit', async () => {
     const resource = makeResource();
     const onSubmitted = vi.fn();
 
-    await updateUiLayout({ resource, filterByTk: 42, values: formValues, onSubmitted });
+    await updateUiLayout({ resource, filterByTk: 'desktop-layout', values: formValues, onSubmitted });
 
     expect(resource.update).toHaveBeenCalledTimes(1);
-    expect(resource.update).toHaveBeenCalledWith({ filterByTk: 42, values: formValues });
+    expect(resource.update).toHaveBeenCalledWith({ filterByTk: 'desktop-layout', values: formValues });
     expect(onSubmitted).toHaveBeenCalledTimes(1);
   });
 
@@ -137,7 +136,9 @@ describe('plugin-ui-layout submit pipeline', () => {
     const resource = makeResource({ update: vi.fn().mockRejectedValue(new Error('nope')) });
     const onSubmitted = vi.fn();
 
-    await expect(updateUiLayout({ resource, filterByTk: 1, values: formValues, onSubmitted })).rejects.toThrow(/nope/);
+    await expect(
+      updateUiLayout({ resource, filterByTk: 'desktop-layout', values: formValues, onSubmitted }),
+    ).rejects.toThrow(/nope/);
     expect(onSubmitted).not.toHaveBeenCalled();
   });
 
@@ -157,7 +158,7 @@ describe('plugin-ui-layout submit pipeline', () => {
 
     expect(resource.update).toHaveBeenCalledTimes(1);
     expect(resource.update).toHaveBeenCalledWith({
-      filterByTk: 42,
+      filterByTk: 'desktop-layout',
       values: {
         ...formValues,
         enabled: false,
@@ -176,25 +177,25 @@ describe('plugin-ui-layout submit pipeline', () => {
     expect(onSubmitted).not.toHaveBeenCalled();
   });
 
-  it('should fire resource.destroy with the numeric id as filterByTk on row delete', async () => {
+  it('should fire resource.destroy with the uid as filterByTk on row delete', async () => {
     const resource = makeResource();
     const onDeleted = vi.fn();
 
-    await deleteUiLayouts({ resource, filterByTk: 42, onDeleted });
+    await deleteUiLayouts({ resource, filterByTk: 'desktop-layout', onDeleted });
 
     expect(resource.destroy).toHaveBeenCalledTimes(1);
-    expect(resource.destroy).toHaveBeenCalledWith({ filterByTk: 42 });
+    expect(resource.destroy).toHaveBeenCalledWith({ filterByTk: 'desktop-layout' });
     expect(onDeleted).toHaveBeenCalledTimes(1);
   });
 
-  it('should fire resource.destroy with selected ids on batch delete', async () => {
+  it('should fire resource.destroy with selected uids on batch delete', async () => {
     const resource = makeResource();
     const onDeleted = vi.fn();
 
-    await deleteUiLayouts({ resource, filterByTk: [42, 43], onDeleted });
+    await deleteUiLayouts({ resource, filterByTk: ['desktop-layout', 'mobile-layout'], onDeleted });
 
     expect(resource.destroy).toHaveBeenCalledTimes(1);
-    expect(resource.destroy).toHaveBeenCalledWith({ filterByTk: [42, 43] });
+    expect(resource.destroy).toHaveBeenCalledWith({ filterByTk: ['desktop-layout', 'mobile-layout'] });
     expect(onDeleted).toHaveBeenCalledTimes(1);
   });
 
@@ -202,7 +203,9 @@ describe('plugin-ui-layout submit pipeline', () => {
     const resource = makeResource({ destroy: vi.fn().mockRejectedValue(new Error('delete failed')) });
     const onDeleted = vi.fn();
 
-    await expect(deleteUiLayouts({ resource, filterByTk: 1, onDeleted })).rejects.toThrow(/delete failed/);
+    await expect(deleteUiLayouts({ resource, filterByTk: 'desktop-layout', onDeleted })).rejects.toThrow(
+      /delete failed/,
+    );
     expect(onDeleted).not.toHaveBeenCalled();
   });
 });
@@ -234,7 +237,7 @@ describe('plugin-ui-layout settings page', () => {
         params: {
           page: 1,
           pageSize: 20,
-          sort: ['id'],
+          sort: ['uid'],
         },
         skipNotify: true,
       });
@@ -255,7 +258,6 @@ describe('plugin-ui-layout settings page', () => {
         data: {
           data: Array.from({ length: 20 }, (_, index) => ({
             ...uiLayoutRecord,
-            id: index + 1,
             title: `Layout ${index + 1}`,
             uid: `layout-${index + 1}`,
           })),
@@ -268,7 +270,7 @@ describe('plugin-ui-layout settings page', () => {
       })
       .mockResolvedValueOnce({
         data: {
-          data: [{ ...uiLayoutRecord, id: 21, title: 'Layout 21', uid: 'layout-21' }],
+          data: [{ ...uiLayoutRecord, title: 'Layout 21', uid: 'layout-21' }],
           meta: {
             count: 21,
             page: 2,
@@ -300,7 +302,7 @@ describe('plugin-ui-layout settings page', () => {
         params: {
           page: 2,
           pageSize: 20,
-          sort: ['id'],
+          sort: ['uid'],
         },
         skipNotify: true,
       });
@@ -343,14 +345,12 @@ describe('plugin-ui-layout settings page', () => {
         data: [
           {
             ...uiLayoutRecord,
-            id: 1,
             title: 'Desktop layout',
             uid: DEFAULT_ADMIN_UI_LAYOUT.uid,
             routePath: '/admin',
           },
           {
             ...uiLayoutRecord,
-            id: 2,
             title: 'Mobile layout',
             uid: 'mobile-layout',
             layoutType: 'mobile',
@@ -503,7 +503,6 @@ describe('plugin-ui-layout settings page', () => {
         data: [
           {
             ...uiLayoutRecord,
-            id: 2,
             title: 'Mobile layout',
             uid: 'mobile-layout',
             layoutType: 'mobile',
@@ -550,7 +549,7 @@ describe('plugin-ui-layout settings page', () => {
 
     await waitFor(() => {
       expect(resource.update).toHaveBeenCalledWith({
-        filterByTk: 2,
+        filterByTk: 'mobile-layout',
         values: expect.objectContaining({
           title: 'Updated mobile layout',
           uid: 'mobile-layout',

@@ -25,11 +25,10 @@ import React, { useCallback, useMemo, useState } from 'react';
 import { DEFAULT_ADMIN_UI_LAYOUT, UI_LAYOUT_TYPE_DESKTOP, UI_LAYOUT_TYPE_MOBILE } from '../../constants';
 import { useT } from '../locale';
 
-type UiLayoutPrimaryKey = number | string;
+type UiLayoutPrimaryKey = string;
 type UiLayoutType = string;
 
 export type UiLayoutRecord = {
-  id: UiLayoutPrimaryKey;
   title: string;
   uid: string;
   layoutType: UiLayoutType;
@@ -170,7 +169,7 @@ export async function updateUiLayoutEnabled(args: {
   onSubmitted: () => void;
 }): Promise<void> {
   await args.resource.update({
-    filterByTk: args.record.id,
+    filterByTk: args.record.uid,
     values: toUiLayoutFormValues(args.record, { enabled: args.enabled }),
   });
   args.onSubmitted();
@@ -280,7 +279,7 @@ const UiLayoutsPage: React.FC = () => {
       params: {
         page,
         pageSize: 20,
-        sort: ['id'],
+        sort: ['uid'],
       },
       skipNotify: true,
     });
@@ -347,7 +346,7 @@ const UiLayoutsPage: React.FC = () => {
 
   const handleToggleEnabled = useCallback(
     async (record: UiLayoutRecord, enabled: boolean) => {
-      setUpdatingEnabledRowKeys((keys) => (keys.includes(record.id) ? keys : [...keys, record.id]));
+      setUpdatingEnabledRowKeys((keys) => (keys.includes(record.uid) ? keys : [...keys, record.uid]));
       try {
         await updateUiLayoutEnabled({
           resource,
@@ -357,7 +356,7 @@ const UiLayoutsPage: React.FC = () => {
         });
         message.success(t('Updated successfully'));
       } finally {
-        setUpdatingEnabledRowKeys((keys) => keys.filter((key) => key !== record.id));
+        setUpdatingEnabledRowKeys((keys) => keys.filter((key) => key !== record.uid));
       }
     },
     [message, refreshList, resource, t],
@@ -403,7 +402,7 @@ const UiLayoutsPage: React.FC = () => {
             aria-label={t('Enabled')}
             checked={value}
             disabled={isDefaultAdminUiLayout(record)}
-            loading={updatingEnabledRowKeys.includes(record.id)}
+            loading={updatingEnabledRowKeys.includes(record.uid)}
             size="small"
             onChange={async (checked) => {
               await handleToggleEnabled(record, checked);
@@ -428,7 +427,7 @@ const UiLayoutsPage: React.FC = () => {
                 danger
                 icon={<DeleteOutlined />}
                 disabled={deleteDisabled}
-                onClick={deleteDisabled ? undefined : () => handleDelete(record.id)}
+                onClick={deleteDisabled ? undefined : () => handleDelete(record.uid)}
               >
                 {t('Delete')}
               </Button>
@@ -463,7 +462,7 @@ const UiLayoutsPage: React.FC = () => {
         </Space>
       </Flex>
       <Table<UiLayoutRecord>
-        rowKey="id"
+        rowKey="uid"
         loading={loading}
         dataSource={records}
         columns={columns}
@@ -514,7 +513,7 @@ function UiLayoutForm(props: { layoutType: UiLayoutType; record?: UiLayoutRecord
       if (record) {
         await updateUiLayout({
           resource,
-          filterByTk: record.id,
+          filterByTk: record.uid,
           values,
           onSubmitted,
         });

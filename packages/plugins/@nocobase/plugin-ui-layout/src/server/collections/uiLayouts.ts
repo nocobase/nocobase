@@ -60,5 +60,5 @@ export default defineCollection({
       allowNull: false,
     },
   ],
-  filterTargetKey: 'id',
+  filterTargetKey: 'uid',
 });

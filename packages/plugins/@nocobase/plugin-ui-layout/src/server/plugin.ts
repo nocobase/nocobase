@@ -120,7 +120,7 @@ function getDesktopRouteLayoutFilterByUid(layoutUid: string) {
   }
 
   return {
-    $or: [currentLayoutFilter, { 'uiLayouts.id.$notExists': true }],
+    $or: [currentLayoutFilter, { 'uiLayouts.uid.$notExists': true }],
   };
 }
 

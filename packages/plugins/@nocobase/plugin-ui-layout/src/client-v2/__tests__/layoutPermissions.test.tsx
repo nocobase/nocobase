@@ -85,7 +85,7 @@ describe('plugin-ui-layout route permissions', () => {
   it('should create an AdminLayout route permission filter with unassigned routes', () => {
     expect(createDesktopRouteLayoutPermissionFilter(DEFAULT_ADMIN_UI_LAYOUT.uid)).toEqual({
       hidden: { $ne: true },
-      $or: [{ 'uiLayouts.uid': DEFAULT_ADMIN_UI_LAYOUT.uid }, { 'uiLayouts.id.$notExists': true }],
+      $or: [{ 'uiLayouts.uid': DEFAULT_ADMIN_UI_LAYOUT.uid }, { 'uiLayouts.uid.$notExists': true }],
     });
   });
 

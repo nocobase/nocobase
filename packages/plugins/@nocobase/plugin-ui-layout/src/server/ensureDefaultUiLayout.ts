@@ -14,7 +14,6 @@ import { DEFAULT_ADMIN_UI_LAYOUT, UI_LAYOUT_TYPE_DESKTOP, UI_LAYOUT_TYPE_MOBILE 
 const GENERATED_DEFAULT_TITLE = 'Untitled';
 
 type UiLayoutRecord = {
-  id: number | string;
   uid: string;
   title?: string;
   layoutType?: string;
@@ -57,7 +56,7 @@ async function ensureUiLayoutTitles(repository: Repository<UiLayoutRecord>, tran
     }
 
     await repository.update({
-      filterByTk: record.get('id'),
+      filterByTk: record.get('uid'),
       values: {
         title: getFallbackTitle(record.toJSON() as UiLayoutRecord),
       },
@@ -101,7 +100,7 @@ export async function ensureDefaultUiLayout(db: Database) {
 
     if (Object.keys(values).length) {
       await repository.update({
-        filterByTk: existed.get('id'),
+        filterByTk: existed.get('uid'),
         values,
         transaction,
       });
