@@ -19,6 +19,10 @@ function trimValue(value: unknown): string | undefined {
   return text || undefined;
 }
 
+function normalizeEnvFilePath(value: string): string {
+  return value.replace(/\\/g, '/');
+}
+
 function stripWrappingQuotes(value: string) {
   if (value.length >= 2 && value.startsWith('"') && value.endsWith('"')) {
     return value
@@ -67,19 +71,19 @@ export function resolveManagedLocalEnvFilePath(runtime: Extract<ManagedAppRuntim
   const config = runtime.env.config ?? {};
   const explicitEnvFile = trimValue(config.envFile);
   if (explicitEnvFile) {
-    return resolveConfiguredEnvPath(explicitEnvFile) ?? explicitEnvFile;
+    return normalizeEnvFilePath(resolveConfiguredEnvPath(explicitEnvFile) ?? explicitEnvFile);
   }
 
   const configuredAppPath = resolveConfiguredAppPath(config);
   if (configuredAppPath) {
-    return path.join(configuredAppPath, '.env');
+    return normalizeEnvFilePath(path.join(configuredAppPath, '.env'));
   }
 
   if (path.basename(runtime.projectRoot) === 'source') {
-    return path.resolve(runtime.projectRoot, '..', '.env');
+    return normalizeEnvFilePath(path.resolve(runtime.projectRoot, '..', '.env'));
   }
 
-  return path.join(runtime.projectRoot, '.env');
+  return normalizeEnvFilePath(path.join(runtime.projectRoot, '.env'));
 }
 
 export async function resolveManagedRuntimeEnvFilePath(
