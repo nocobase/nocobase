@@ -1,31 +1,33 @@
-# 第三方插件安装与升级
+# Instalação e atualização de plug-ins de terceiros
 
-如果你拿到的是第三方插件包，通常来说先把它导入目标应用的 `storage/plugins`，然后先重启应用，再继续启用或验证插件是否生效。
+Se você obtiver um pacote de plug-in de terceiros, geralmente importe-o para o `storage/plugins` do aplicativo de destino, reinicie o aplicativo e continue a ativar ou verificar se o plug-in entra em vigor.
 
-## 快速索引
+## Índice rápido
 
-| 我想要…… | 去哪里看 |
+| Eu quero... | Onde procurar |
 | --- | --- |
-| 先切到目标 env，再开始导入或重启插件 | [先确认目标环境](#先确认目标环境) |
-| 从远程压缩包、本地压缩包或 npm 导入第三方插件 | [用 `nb plugin import` 导入插件包](#用-nb-plugin-import-导入插件包) |
-| 导入完成后让应用重新加载插件目录 | [`nb app restart`](../../api/cli/app/restart.md) |
-| 第一次安装后正式启用插件 | [`nb plugin enable`](../../api/cli/plugin/enable.md) |
-| 想确认插件是否已经出现在当前应用里 | [`nb plugin list`](../../api/cli/plugin/list.md) |
-| 目标机器不能直接联网，只能手动上传 `.tgz` 再导入 | [不能直接联网时](#不能直接联网时) |
+| Primeiro mude para o ambiente de destino e, em seguida, comece a importar ou reiniciar o plug-in | [Confirme o ambiente de destino primeiro](#Confirme o ambiente de destino primeiro) |
+| Importe plug-ins de terceiros de pacotes compactados remotos, pacotes compactados locais ou npm | [Use `nb plugin import` para importar pacotes de plug-ins](#Use -nb-plugin-import-Import pacotes de plug-ins) |
+| Especifique o plug-in de importação de armazenamento | [Especifique o caminho de armazenamento para importar](#Especifique o caminho de armazenamento para importar) |
+| Após a conclusão da importação, deixe o aplicativo recarregar o diretório do plug-in | [`nb app restart`](../../api/cli/app/restart.md) |
+| Habilite oficialmente o plug-in após a primeira instalação | [`nb plugin enable`](../../api/cli/plugin/enable.md) |
+| Atualizar um plug-in de terceiros ativado | [O que fazer ao atualizar o plug-in](#O que fazer ao atualizar o plug-in) |
+| Deseja confirmar se o plug-in apareceu no aplicativo atual | [`nb plugin list`](../../api/cli/plugin/list.md) |
+| A máquina de destino não pode ser conectada diretamente à Internet e só pode ser carregada manualmente `.tgz` e depois importada | [Quando a Internet não pode ser conectada diretamente](#Quando a Internet não pode ser conectada diretamente) |
 
-## 先确认目标环境
+## Confirme primeiro o ambiente de destino
 
-如果你本地管理了多个应用，先切到目标 env 再操作：
+Se você gerencia vários aplicativos localmente, primeiro mude para o ambiente de destino e depois opere:
 
 ```bash
 nb env use app1
 ```
 
-## 用 `nb plugin import` 导入插件包
+## Use `nb plugin import` para importar o pacote de plug-in
 
-`nb plugin import` 支持三类来源：远程压缩包、本地压缩包、npm 包名。这个命令只负责把插件导入 `storage/plugins`，不会自动启用插件。
+`nb plugin import` suporta três tipos de fontes: pacotes compactados remotos, pacotes compactados locais e nomes de pacotes npm. Este comando é responsável apenas por importar o plug-in para `storage/plugins` e não ativará o plug-in automaticamente.
 
-如果你已经拿到了插件包下载地址、本地文件路径，或者插件已经发布到 npm，可以执行：
+Se você obteve o endereço de download do pacote de plug-in, o caminho do arquivo local ou se o plug-in foi publicado no npm, você pode executar:
 
 ```bash
 # 远程压缩包
@@ -38,49 +40,74 @@ nb plugin import /your/path/plugin-auth-cas-1.4.0.tgz
 nb plugin import @my-scope/plugin-auth-cas@beta
 ```
 
-如果你用的是私有 npm 源，通常来说先登录，再指定 registry：
+Se você estiver usando uma fonte npm privada, geralmente faça login primeiro e depois especifique o registro:
 
 ```bash
 npm login --registry=https://registry.example.com
 nb plugin import @my-scope/plugin-auth-cas@beta --npm-registry=https://registry.example.com
 ```
 
-## 导入之后先重启
+## Especifique o caminho de armazenamento para importar
 
-导入完成后，先重启目标应用：
+Se você já conhece o diretório raiz `storage` do aplicativo de destino, também pode passar `--storage-path` diretamente sem depender do ambiente atual:
+
+```bash
+nb plugin import /your/path/plugin-auth-cas-1.4.0.tgz --storage-path ./storage
+```
+
+A CLI gravará o plugin em `<storage-path>/plugins`. Neste momento, você não pode executar `nb env use` primeiro ou passar `--env`.
+
+## Reinicie após importar
+
+Após a conclusão da importação, reinicie o aplicativo de destino:
 
 ```bash
 nb app restart
 ```
 
-如果你没有先切换当前 env，也可以在命令里显式传入 `-e <env>`。
+Se você não mudar o ambiente atual primeiro, também poderá passar explicitamente `-e <env>` no comando.
 
-## 重启之后再启用或验证
+## Habilite ou verifique após reiniciar
 
-如果这是第一次安装，重启后再启用插件：
+Se esta for a primeira instalação, reinicie e habilite o plugin:
 
 ```bash
 nb plugin enable @nocobase/plugin-auth-cas
 ```
 
-第一次启用时会自动完成安装。
+A instalação será concluída automaticamente quando ativada pela primeira vez.
 
-如果插件已经启用，而你这次只是更新压缩包或重新导入一个新版本，通常来说重启完成后就可以继续验证插件是否正常工作，不需要再用 `upgrade` 的做法。
+## O que fazer ao atualizar plug-ins
 
+Se o plug-in já estiver ativado e você apenas mudar para uma nova versão desta vez, geralmente há apenas duas etapas:
 
-## 不能直接联网时
+```bash
+nb plugin import /your/path/plugin-auth-cas-1.5.0.tgz
+nb app restart
+```
 
-如果目标机器不能直接访问插件下载地址，可以先把 `.tgz` 文件上传到目标机器的任意目录，再在目标机器执行本地导入。
+O mesmo se aplica se você importar um pacote npm:
 
-比如：
+```bash
+nb plugin import @my-scope/plugin-auth-cas@latest
+nb app restart
+```
+
+Em outras palavras, o cenário de atualização não requer execução adicional de `nb plugin enable`. Basta importar o novo pacote e reiniciar o aplicativo.
+
+## Quando a Internet não pode ser conectada diretamente
+
+Se a máquina de destino não puder acessar diretamente o endereço de download do plug-in, você poderá primeiro fazer upload do arquivo `.tgz` para qualquer diretório na máquina de destino e, em seguida, executar a importação local na máquina de destino.
+
+por exemplo:
 
 ```bash
 nb plugin import /your/path/plugin-auth-cas-1.4.0.tgz
 nb app restart
 ```
 
-:::warning 注意
+:::nota de aviso
 
-这里不需要手动解压到 `storage/plugins`。`nb plugin import` 会自动把插件放到正确目录。
+Não há necessidade de extrair manualmente para `storage/plugins` aqui. `nb plugin import` colocará automaticamente o plug-in no diretório correto.
 
 :::

@@ -1,29 +1,29 @@
-# 多环境管理
+#複数の環境管理
 
-如果你同时维护 `dev`、`test`、`staging`、`prod` 等多个 NocoBase 应用，可以把它们分别保存成 CLI env。之后大多数 `nb` 命令都会默认作用在当前 env 上，所以在执行 `nb app`、`nb api`、`nb db` 这类命令前，先确认自己正在用哪个 env 很重要。
+`dev`、`test`、`staging`、`prod` などの複数の NocoBase アプリケーションを維持する場合、それらをそれぞれ CLI 環境として保存できます。将来の `nb` コマンドのほとんどはデフォルトで現在の環境で動作するため、`nb app`、`nb api`、`nb db` などのコマンドを実行する前に、使用している環境を確認することが重要です。
 
-CLI 从这一版开始把概念拆成了 `current env` 和 `last env`。你通常只需要关心 `current env`——也就是当前 shell 或 agent runtime 正在使用的环境。只有在没有开启 session mode 时，CLI 才会回退到全局 `last env`。
+このバージョンから、CLI は概念を `current env` と `last env` に分割します。通常は、現在のシェルまたはエージェント ランタイムが使用している環境である `current env` のみを気にする必要があります。 CLI は、セッション モードが有効になっていない場合にのみ、グローバル `last env` にフォールバックします。
 
-## 快速索引
+## クイックインデックス
 
-| 我想要…… | 用哪个命令 |
+|欲しいです... |どのコマンドを使用するか |
 | --- | --- |
-| 新建一个本地 env，并顺手完成初始化 | [`nb init`](../../api/cli/init.md) |
-| 把一个已有应用登记成 CLI env | [`nb env add`](../../api/cli/env/add.md) |
-| 看本地保存了哪些 env | [`nb env list`](../../api/cli/env/list.md) |
-| 检查所有 env 的连通性和认证状态 | [`nb env status --all`](../../api/cli/env/status.md) |
-| 切换后续命令要使用的 env | [`nb env use`](../../api/cli/env/use.md) |
-| 确认当前命令会落到哪个 env | [`nb env current`](../../api/cli/env/current.md) 和 [`nb env status`](../../api/cli/env/status.md) |
-| 查看某个 env 保存了哪些详细配置 | [`nb env info`](../../api/cli/env/info.md) |
-| 更新已保存的 env 配置，必要时让 CLI 重新同步当前状态 | [`nb env update`](../../api/cli/env/update.md) |
-| 登录态过期后重新认证，或者改用新的认证方式 | [`nb env auth`](../../api/cli/env/auth.md) |
-| 删除不用的 env 配置，必要时连本机托管资源一起清理 | [`nb env remove`](../../api/cli/env/remove.md) |
+|新しいローカル環境を作成し、初期化をスムーズに完了します。 [`nb init`](../../api/cli/init.md) |
+|既存のアプリケーションを CLI env として登録する | [`nb env add`](../../api/cli/env/add.md) |
+|どの環境がローカルに保存されているかを確認する | [`nb env list`](../../api/cli/env/list.md) |
+|すべての環境の接続と認証ステータスを確認する | [`nb env status --all`](../../api/cli/env/status.md) |
+|後続のコマンドで使用する環境を切り替えます。 [`nb env use`](../../api/cli/env/use.md) |
+|現在のコマンドがどの環境に該当するかを確認します。 [`nb env current`](../../api/cli/env/current.md) および [`nb env status`](../../api/cli/env/status.md) |
+|環境によって保存された詳細な設定を表示 | [`nb env info`](../../api/cli/env/info.md) |
+|保存された環境設定を更新し、必要に応じて CLI が現在の状態を再同期できるようにします。 [`nb env update`](../../api/cli/env/update.md) |
+|ログイン状態の有効期限が切れた後に再認証するか、新しい認証方法を使用します。 [`nb env auth`](../../api/cli/env/auth.md) |
+|必要に応じて、未使用の環境設定を削除し、ローカルでホストされているリソースをクリーンアップします。 [`nb env remove`](../../api/cli/env/remove.md) |
 
-:::tip 建议先开启 session mode
+:::tip 最初にセッション モードを有効にすることをお勧めします
 
-默认推荐先执行一次 [`nb session setup`](../../api/cli/session/setup.md)。这样不同终端、不同 shell，或者不同 agent runtime 可以各自维护自己的 `current env`，并行操作时不容易互相影响。
+デフォルトでは、最初に [`nb session setup`](../../api/cli/session/setup.md) を実行することをお勧めします。このようにして、異なる端末、異なるシェル、または異なるエージェント ランタイムはそれぞれ独自の `current env` を維持でき、並列操作中に簡単に相互に影響を与えることはありません。
 
-如果没有开启 session mode，那么 `nb env use` 会回退到更新全局 `last env`。这种情况下，一个终端切走环境，另一个终端也可能跟着受影响。
+セッション モードが有効になっていない場合、`nb env use` はグローバル `last env` の更新に戻ります。この場合、一方の端末が環境を遮断すると、もう一方の端末にも影響が出る可能性があります。
 
 ```bash
 nb session setup
@@ -31,64 +31,64 @@ nb session setup
 
 :::
 
-## 创建多个环境
+## 複数の環境を作成する
 
-如果你要新建或恢复一个本地应用，用 `nb init` 就行。它会完成初始化，并把结果保存成一个新的 CLI env。
+ローカル アプリケーションを作成または復元する場合は、`nb init` を使用してください。初期化が完了し、結果が新しい CLI 環境に保存されます。
 
 ```bash
 nb init --env dev
 nb init --env test
 ```
 
-如果应用已经存在，只是想把它接入 CLI，通常来说用 `nb env add` 更直接：
+アプリケーションがすでに存在し、それを CLI に接続したいだけの場合は、通常、`nb env add` を使用する方が簡単です。
 
 ```bash
 nb env add staging --api-base-url http://staging.example.com/api --auth-type oauth
 nb env add prod --api-base-url https://api.example.com/api --auth-type token --access-token <token>
 ```
 
-前者偏“初始化一个环境”，后者偏“登记一个已有环境”。如果你只是连接已有应用，默认用 `nb env add` 就行。
+前者は「環境の初期化」に関するものであり、後者は「既存の環境の登録」に関するものです。既存のアプリケーションに接続するだけの場合は、デフォルトで `nb env add` を使用してください。
 
-## 查看已经配置的环境
+## 構成された環境を表示する
 
-先用 `nb env list` 看看本地已经保存了哪些 env：
+まず、`nb env list` を使用して、どの環境がローカルに保存されているかを確認します。
 
 ```bash
 nb env list
 ```
 
-这个命令只展示配置本身，不主动检查应用状态。想同时看连通性和认证状态时，用 `nb env status --all`：
+このコマンドは構成自体を表示するだけであり、アプリケーションのステータスを積極的に確認することはありません。接続と認証ステータスの両方を確認したい場合は、`nb env status --all` を使用します。
 
 ```bash
 nb env status --all
 ```
 
-你通常会看到 `ok`、`auth failed`、`unreachable` 这类状态值。
+通常、`ok`、`auth failed`、`unreachable` などのステータス値が表示されます。
 
-## 切换当前环境
+## 現在の環境を切り替える
 
-切换环境用 `nb env use`：
+`nb env use` を使用して環境を切り替えます。
 
 ```bash
 nb env use dev
 ```
 
-切换完成后，后续省略 `--env` 的命令都会默认使用这个 env。
+切り替えが完了すると、`--env` を省略した後続のコマンドは、デフォルトでこの環境を使用します。
 
-## 查看当前环境
+## 現在の環境を確認する
 
-如果你不确定当前命令会落到哪个环境上，先执行这两个命令：
+現在のコマンドがどの環境に該当するかわからない場合は、最初に次の 2 つのコマンドを実行します。
 
 ```bash
 nb env current
 nb env status
 ```
 
-`nb env current` 用来看名称，`nb env status` 用来看当前 env 是否可访问、认证是否正常。
+`nb env current` は名前を確認するために使用され、`nb env status` は現在の環境にアクセス可能かどうか、および認証が正常であるかどうかを確認するために使用されます。
 
-## 查看单个 env 的详细信息
+## 単一の環境の詳細を表示する
 
-想看某个 env 保存了哪些配置，用 `nb env info`：
+特定の環境にどのような構成が保存されているかを確認したい場合は、`nb env info` を使用します。
 
 ```bash
 nb env info dev
@@ -97,20 +97,20 @@ nb env info dev --field app.url
 nb env info dev --show-secrets
 ```
 
-其中，`--field` 适合在脚本里只取一个值。`--show-secrets` 会明文显示 token、密码这类敏感信息，只有在你明确需要排查时再用。
+このうち、`--field` はスクリプト内で値を 1 つだけ取るのに適しています。 `--show-secrets` は、トークンやパスワードなどの機密情報をプレーン テキストで表示します。明らかにトラブルシューティングが必要な場合にのみ使用してください。
 
-## 更新 env 配置
+## 環境設定を更新する
 
-`nb env update` 用来调整一个已保存 env 的配置。比如 API 地址、认证方式、源码来源、应用端口和数据库参数。更新完成后，CLI 会根据变更自动处理后续事宜。
+`nb env update` は、保存された環境の構成を調整するために使用されます。 API アドレス、認証方法、ソース コード ソース、アプリケーション ポート、データベース パラメーターなど。更新が完了すると、CLI は変更に基づいてフォローアップ手順を自動的に処理します。
 
-如果你只是想让 CLI 按当前 env 的最新状态重新同步，直接这样写就行：
+現在の環境の最新の状態に従って CLI を再同期したいだけの場合は、次のように記述します。
 
 ```bash
 nb env update
 nb env update prod
 ```
 
-如果你要修改这个 env 保存的连接信息或本地配置，可以显式带上参数：
+この環境によって保存された接続情報またはローカル構成を変更する場合は、明示的にパラメーターを指定できます。
 
 ```bash
 nb env update prod --api-base-url https://api.example.com/api
@@ -118,18 +118,18 @@ nb env update prod --access-token <token>
 nb env update dev --app-port 13080 --timezone Asia/Shanghai
 ```
 
-这里可以先记住一个默认判断：
+ここでまずデフォルトの判断を思い出してください。
 
-- 要修改 env 保存的连接信息或本地配置，用 `nb env update`
-- 应用接口、插件或 CLI 可用能力刚发生变化，也可以再执行一次 `nb env update`
-- 登录态过期了，或者要重新走一遍认证流程，用 `nb env auth`
-- 只是想看当前保存了什么，用 `nb env info`
+- env によって保存された接続情報またはローカル構成を変更するには、`nb env update` を使用します。
+- アプリケーション インターフェイス、プラグイン、または CLI で使用できる機能が変更されたばかりです。`nb env update` を再度実行することもできます
+- ログイン ステータスの有効期限が切れているか、認証プロセスを再度実行する必要がある場合は、`nb env auth` を使用してください。
+- 現在保存されている内容を確認するには、`nb env info` を使用してください
 
-如果你改的是 `app-port`、`timezone`、`db-*` 这类本地运行配置，`update` 只会改保存值，不会自动重启应用。通常来说后续还要再执行 `nb app restart --env <name>`；如果变更涉及 CLI 托管的内置数据库，则用 `nb app restart --env <name> --with-db`。
+`app-port`、`timezone`、`db-*` などのローカル実行構成を変更した場合、`update` は保存された値を変更するだけで、アプリケーションは自動的に再起動しません。一般に、`nb app restart --env <name>` は後で実行されます。変更に CLI 管理の組み込みデータベースが関係する場合は、`nb app restart --env <name> --with-db` を使用します。
 
-## 重新认证
+## 再認証
 
-如果 env 已经保存，只是登录态过期了，或者你想切换认证方式，可以重新认证：
+env は保存されているが、ログイン状態の有効期限が切れている場合、または認証方法を切り替えたい場合は、次のようにして再認証できます。
 
 ```bash
 nb env auth
@@ -139,33 +139,61 @@ nb env auth prod --auth-type basic --username admin --password secret
 nb env auth prod --auth-type token --access-token <api-key>
 ```
 
-省略环境名时，CLI 会使用当前 env。认证完成后，CLI 会自动处理后续同步。
+環境名を省略した場合、CLI は現在の環境を使用します。認証が完了すると、CLI はその後の同期を自動的に処理します。
 
-## 移除环境
+## 環境を削除する
 
-如果你只想移除保存的 env 配置：
+これらのシナリオは最も混乱を招きます。まず、デフォルトの提案を覚えておいてください。
+
+- アプリケーションを停止したいだけの場合は、`nb app stop` を使用してください。
+- 現在のマシンの組み込みデータベース ランタイムも停止したいので、`nb app stop --with-db` を使用してください。
+- この環境はもう必要ないが、ストレージとローカル アプリ ファイルを最初に保持したい場合は、`nb env remove` を使用してください。
+- ローカル ホスティング リソースもクリーンアップし、`nb env remove --purge` を使用します
+
+保存された環境設定のみを削除したい場合は、次のようにします。
 
 ```bash
 nb env remove staging
 ```
 
-如果是本地或 Docker 托管的 env，并且你还想一起清理本机上的运行资源和 storage 数据，可以加上 `--purge`：
+ローカルまたは Docker でホストされている環境で、ローカル マシン上で実行中のリソースとストレージ データもクリーンアップしたい場合は、`--purge` を追加できます。
 
 ```bash
 nb env remove test --purge
 ```
 
-在非交互模式下，`nb env remove` 需要显式传入 `--force`：
+非対話モードでは、`nb env remove` を `--force` に明示的に渡す必要があります。
 
 ```bash
 nb env remove test --purge --force
 ```
 
-`--purge` 只会清理当前机器上的 CLI 托管资源。对于远程 API env，它不会去删除远端服务本身。
+`--purge` は、現在のマシン上の CLI 管理のリソースのみをクリーンアップします。リモート API 環境の場合、リモート サービス自体は削除されません。
 
-## 相关链接
+アプリケーションと CLI で管理される組み込みデータベースを停止したいだけの場合は、次のように記述します。
 
-- [`nb env` 命令参考](../../api/cli/env/index.md)
+```bash
+nb app stop --env app1 --with-db
+```
+
+この環境を削除してもストレージとローカル アプリ ファイルは保持したい場合は、次のようにします。
+
+```bash
+nb env remove app1 --force
+```
+
+この環境のネイティブにホストされているコンテンツを本当にクリーンアップしたい場合は、`--purge` を追加します。
+
+```bash
+nb env remove app1 --purge --force
+```
+
+CLI ダウンロードによって管理されるローカル npm/Git env の場合、`--purge` は CLI でホストされるローカル アプリ ファイルも削除します。 HTTP または SSH 環境の場合、CLI に保存された環境設定のみが削除され、外部サービス自体は削除されません。
+
+## 関連リンク
+
+- [`nb env` コマンドリファレンス](../../api/cli/env/index.md)
 - [`nb env update`](../../api/cli/env/update.md)
-- [`nb session` 命令参考](../../api/cli/session/index.md)
-- [管理应用](./manage-app.md)
+- [`nb session` コマンドリファレンス](../../api/cli/session/index.md)
+- [nb アプリの設計意図](../cli-design/nb-app-design-intent.md)
+- [アプリの管理](./manage-app.md)

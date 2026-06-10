@@ -14,46 +14,47 @@
 
 如果你的目标只是尽快把 HTTPS 跑通，另外不想自己维护太多 TLS 细节，那么 [Caddy](./caddy.md) 会更省心。
 
-## 推荐顺序：先选运行方式，再生成配置，再启动
+## 先按这三条命令操作
 
-如果你的应用已经保存成 CLI env，并且属于 `local` 或 `docker`，默认推荐按下面的顺序操作。
-
-使用 Docker 方式运行 Nginx：
+如果你只想先把 Nginx 入口层跑起来，默认记住这三条命令就够了：
 
 ```bash
 nb proxy nginx use docker
 nb proxy nginx generate --env test2 --host c.local.nocobase.com
-nb proxy nginx start
+nb proxy nginx reload
 ```
 
-使用本地进程方式运行 Nginx：
+如果本地已经安装好了 Nginx，把第一条改成 `nb proxy nginx use local` 就行。
+
+多数场景下，先执行 `use`，再执行 `generate`，最后执行 `reload` 就够了。其他细节和更多命令，直接看后面的章节或 CLI 参考。
+
+## 第一步：先选 Nginx 自己怎么运行
+
+如果当前机器上已经安装好了 Nginx，直接用 `use local` 就行。
+
+如果你想用 Docker 版的 Nginx，就用 `use docker`。
+
+这里的 `local` / `docker` 指的是 **Nginx 本身的运行方式**。
+
+使用 Docker 版 Nginx：
+
+```bash
+nb proxy nginx use docker
+```
+
+使用本地安装的 Nginx：
 
 ```bash
 nb proxy nginx use local
-nb proxy nginx generate --env test2 --host c.local.nocobase.com
-nb proxy nginx start
 ```
 
-后续常用命令还有：
+如果你后面忘了当前选的是哪一种方式，可以执行：
 
 ```bash
 nb proxy nginx current
-nb proxy nginx status
-nb proxy nginx info
-nb proxy nginx reload
-nb proxy nginx restart
-nb proxy nginx stop
 ```
 
-通常来说：
-
-- `current` 用来快速查看当前的运行方式
-- `status` 用来查看 Nginx 当前是否正常运行
-- `info` 用来查看当前配置、路径和状态等完整信息
-- 改完配置后，优先使用 `reload`
-- 需要完整重启时，再使用 `restart`
-
-## 生成配置时需要哪些输入
+## 第二步：执行 `generate`
 
 `generate` 用来按指定 env 生成 Nginx 入口配置。最常见的写法是：
 
@@ -80,6 +81,16 @@ nb env update test2 --app-port 56575
 ```
 
 如果你后续又改了 `app-port`、`app-public-path` 这类会影响代理结果的配置，记得重新执行 `generate`。
+
+## 第三步：执行 `reload`
+
+生成配置之后，直接执行：
+
+```bash
+nb proxy nginx reload
+```
+
+多数场景下都直接用这条命令就行。如果当前还没跑起来，内部会先处理启动；如果已经在运行，则会按最新配置重载。
 
 ## CLI 会维护哪些文件
 
@@ -220,23 +231,6 @@ nb proxy nginx generate --env test2 --host c.local.nocobase.com
 
 这样通常比从零手写一份配置更不容易漏掉 WebSocket、静态资源、上传目录或 SPA 回退页相关的细节。
 
-## 检查并重载配置
-
-如果你是手写或手工调整 Nginx 配置，改完后先校验，再重载：
-
-```bash
-nginx -t
-systemctl reload nginx
-```
-
-如果你不是用 `systemd` 管理 Nginx，也可以按你自己的运行方式执行重载命令。
-
-如果你是通过 `nb proxy nginx` 管理入口层，那么通常优先使用：
-
-```bash
-nb proxy nginx reload
-```
-
 ## HTTPS 怎么处理
 
 如果你已经决定继续用 Nginx，那么 HTTPS 也可以继续在 Nginx 里配。常见做法是把 `listen 80` 扩成 `80/443` 双入口，再补证书路径和 TLS 配置。
@@ -245,9 +239,7 @@ nb proxy nginx reload
 
 ## 常见说明
 
-- `nb proxy nginx generate` 适用于 CLI 托管且当前机器可访问运行态的 env，也就是 `local` 或 `docker`
-- 如果命令提示 env 缺少 `appPort`，先执行 `nb env update <name> --app-port <port>`
-- 如果你已经有一套很重的 Nginx 主配置，CLI 生成的配置通常更适合作为站点片段接进去，而不是替代整份主配置
+- `nb proxy nginx generate` 适用于 `nb init` 安装的应用
 - 如果你后续改了 `app-port`、`app-public-path` 这类会影响代理结果的配置，记得重新执行 `generate`
 
 ## 相关链接
@@ -255,5 +247,5 @@ nb proxy nginx reload
 - [生产环境反向代理](./index.md)
 - [Caddy](./caddy.md)
 - [使用 CLI 安装（推荐）](../../installation/cli.md)
-- [通过 Docker Compose 安装](../../installation/docker-compose.md)
-- [应用环境变量](../../installation/env.md)
+- [应用配置与 `.env`](../../installation/env.md)
+- [`nb proxy nginx` 命令参考](../../../api/cli/proxy/nginx/index.md)

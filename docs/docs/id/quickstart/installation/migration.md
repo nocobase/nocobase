@@ -1,18 +1,55 @@
-# 从旧方式迁移到 CLI
+# Cara menghubungkan metode instalasi lama ke AI dan bermigrasi ke CLI
 
-如果你现在还是按旧文档使用 Docker、`create-nocobase-app` 或 Git 源码方式安装和维护 NocoBase，可以逐步切换到基于 CLI 的安装和管理方式。
+Jika Anda masih menggunakan kode sumber Docker, `create-nocobase-app` atau Git untuk menginstal dan memelihara NocoBase sesuai dengan dokumentasi lama, Anda dapat terus menggunakannya dengan cara ini. Tidak perlu segera menginstal ulang aplikasi untuk mengakses AI.
 
-默认先迁移测试环境就够了。只有当你已经确认备份、环境变量和数据库配置都没问题时，再迁移生产环境。
+Halaman ini terutama membantu Anda menentukan rute terlebih dahulu:
 
-## 迁移前先确认
+- Terus gunakan metode instalasi dan peningkatan asli
+- Biarkan aplikasi yang ada mengakses agen AI terlebih dahulu
+- Bermigrasi ke pendekatan berbasis CLI baru
 
-1. 已备份数据库。
-2. 已备份 `storage` 目录。
-3. 已记录旧应用的关键环境变量，比如 `APP_KEY`、`TZ`、`DB_*`、`DB_UNDERSCORED`。
+Secara default, disarankan untuk terlebih dahulu memeriksa kategori mana yang Anda ikuti, lalu memasukkan dokumen terkait. Ini lebih stabil dan kecil kemungkinannya untuk salah mengoperasikan lingkungan produksi.
 
-## 方式一：连接已有应用
+## Metode mana yang harus saya pilih?
 
-如果你的旧应用已经稳定运行，默认先用这个方式。风险最低，CLI 只保存连接信息，不会直接接管旧应用的启动、停止和升级流程。
+| Jika Anda mau sekarang... | Apa yang harus dilakukan secara default |
+| --- | --- |
+| Lanjutkan menginstal, mengupgrade, dan memelihara aplikasi seperti aslinya | Lanjutkan saja cara lama, baca dulu entri dokumen terkait di bawah |
+| Biarkan aplikasi lama yang sudah berjalan stabil terhubung ke agen AI | Secara default, koneksi jarak jauh digunakan terlebih dahulu, yang memiliki risiko paling rendah |
+| Gunakan `nb app`, `nb env`, `nb source` untuk mengelola aplikasi di masa mendatang | Buat aplikasi CLI baru dan migrasikan data lama ke sana |
+
+## Lanjutkan menggunakan metode instalasi asli
+
+Jika Anda sudah terbiasa dengan cara instalasi sebelumnya, Anda bisa terus menggunakannya. Cukup ikuti dokumen asli untuk instalasi, peningkatan, dan konfigurasi variabel lingkungan.
+
+### Instal NocoBase
+
+- [Instalasi Docker](/memulai/instalasi/buruh pelabuhan)
+- [buat instalasi-nocobabase-aplikasi](/mulai/instalasi/buat-nocobabase-aplikasi)
+- [Instalasi kode sumber Git](/memulai/instalasi/git)
+- [Variabel lingkungan](/memulai/instalasi/env)
+
+### Tingkatkan NocoBase
+
+- [Meningkatkan instalasi Docker](/memulai/meningkatkan/buruh pelabuhan)
+- [Peningkatan instalasi create-nocobase-app](/get-started/upgrade/create-nocobase-app)
+- [Meningkatkan instalasi kode sumber Git](/memulai/meningkatkan/git)
+
+## Metode 1: Pertama biarkan aplikasi yang ada mengakses agen AI
+
+Jika aplikasi lama Anda sudah berjalan stabil, gunakan cara ini secara default.
+
+Fokus metode ini adalah menghubungkan terlebih dahulu aplikasi yang ada ke CLI dan agen AI melalui koneksi jarak jauh. Ini adalah risiko paling rendah karena tidak secara langsung mengambil alih proses instalasi, permulaan, penghentian, dan pemutakhiran Anda saat ini.
+
+Namun pertama-tama kita harus memperjelas batasannya:
+
+- Metode ini tidak memiliki kemampuan terkait `nb app`
+- Ini tidak mengambil alih manajemen runtime aplikasi lama untuk Anda
+- Tapi kemampuan yang berhubungan dengan pembuatan AI dapat digunakan secara normal
+
+Dengan kata lain, jika yang paling Anda pedulikan saat ini adalah "hubungkan AI terlebih dahulu" daripada "segera alihkan seluruh sistem manajemen operasi ke CLI", Anda akan mengambil jalur ini terlebih dahulu secara default.
+
+Saat menyambung ke aplikasi yang sudah ada, Anda dapat menginisialisasi env CLI seperti ini:
 
 ```bash
 # 默认使用 OAuth 认证
@@ -26,25 +63,41 @@ nb init --yes --env app1 \
   --access-token=<token>
 ```
 
-如果后续需要重新认证，可以执行：
+Jika autentikasi ulang diperlukan nanti, Anda dapat menjalankan:
 
 ```bash
 nb env auth app1
 ```
 
-## 方式二：新建 CLI env 后迁移
+Jika Anda baru ingin mulai menggunakan AI untuk membangun kemampuan, lanjutkan saja membaca [Mulai Cepat Pembuatan AI](/ai-builder/).
 
-如果你希望后续统一用 `nb app`、`nb env`、`nb source` 管理本地应用，可以新建一个 CLI env，再把旧应用的数据和配置迁过去。
+## Metode 2: Bermigrasi ke CLI
 
-先创建新的 CLI env：
+Jika Anda ingin menggunakan `nb app`, `nb env`, dan `nb source` untuk mengelola aplikasi lokal di masa mendatang, maka pendekatan yang lebih aman adalah tidak mengambil alih aplikasi yang sudah ada secara langsung, namun membuat aplikasi baru lalu memigrasikan data aplikasi lama ke sana.
+
+Alasannya juga sangat sederhana: kemampuan untuk "mengambil alih aplikasi yang ada" masih dalam tahap pengembangan.
+
+Jadi saat ini, rute migrasi default yang disarankan adalah:
+
+1. Pertama buat aplikasi CLI baru
+2. Migrasi database, `storage` dan variabel lingkungan aplikasi lama.
+3. Setelah memverifikasi bahwa pengoperasian, peningkatan, dan kemampuan AI aplikasi baru normal, putuskan apakah akan beralih ke lingkungan produksi.
+
+Pertama buat env CLI baru:
 
 ```bash
 nb init --yes --env app1
 ```
 
-创建完成后，再根据你的旧安装方式迁移数据库、`storage` 和环境变量配置。
+Sebelum melakukan migrasi, disarankan untuk mengonfirmasi bahwa konten berikut sudah siap:
 
-## 下一步去哪里看
+1. Database telah dibackup
+2. Direktori `storage` telah dicadangkan
+3. Variabel lingkungan utama dari aplikasi lama telah dicatat, seperti `APP_KEY`, `TZ`, `DB_*`, `DB_UNDERSCORED`
 
-- 如果你只是想开始用新的 CLI 方式安装和维护应用，继续看 [使用 CLI 安装（推荐）](./cli.md)
-- 如果你需要完整的迁移步骤，继续看 [安装与升级迁移指南：使用 NocoBase CLI](/ai/install-upgrade-migration#从旧方式迁移到-cli)
+Secara default, cukup memigrasikan lingkungan pengujian terlebih dahulu. Hanya migrasikan lingkungan produksi ketika Anda telah mengonfirmasi bahwa cadangan, variabel lingkungan, dan konfigurasi database semuanya benar.
+
+## Di mana mencarinya selanjutnya
+
+- Jika Anda siap menginstal dan mengelola aplikasi dengan cara baru, lanjutkan ke [Instalasi menggunakan CLI (disarankan)](./cli.md)
+- Jika Anda tetap menggunakan metode instalasi asli, cukup kembali ke instalasi dan perbarui entri dokumen di atas.

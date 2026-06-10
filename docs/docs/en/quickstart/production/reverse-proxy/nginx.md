@@ -1,141 +1,148 @@
----
-title: "Nginx"
-description: "Use nb proxy nginx to generate and manage Nginx reverse-proxy configuration for CLI-managed NocoBase envs."
-keywords: "NocoBase,nb proxy nginx,reverse proxy,Nginx,production"
----
+#Nginx
 
-# Nginx
+If you have used Nginx to manage the site on the server, or you need to handle certificates, caches, and access control later, then `nb proxy nginx` is the default recommended path.
 
-If you already use Nginx on the server to manage sites, or you still want to manage certificates, caching, and access control yourself, `nb proxy nginx` is the recommended path.
+If you just want to configure HTTPS as soon as possible and don't want to maintain too many proxy details yourself, then [Caddy](./caddy.md) will be more worry-free. But as long as you are using Nginx, this document is the default path.
 
-If your goal is simply to get HTTPS working as quickly as possible and you do not want to maintain many proxy details yourself, [Caddy](./caddy.md) is usually the simpler option. But if Nginx is already part of your server setup, this page is the default path.
+## When is it more suitable to use Nginx?
 
-## When Nginx is the better fit
+Generally speaking, the following situations give priority to continuing to use Nginx:
 
-In practice, Nginx is usually the better choice when:
+- You have used Nginx to manage multiple sites on the server.
+- You will need to maintain certificates, caches, access controls or more custom rules yourself later
+- You want the entry layer to continue to use the existing Nginx operation and maintenance method
 
-- you already use Nginx to manage multiple sites on the same server
-- you still need to maintain certificates, caching, access control, or more custom rules yourself
-- you want the entry layer to stay aligned with your existing Nginx operations workflow
+If your goal is just to get HTTPS through as quickly as possible, and you don’t want to maintain too many TLS details yourself, then [Caddy](./caddy.md) will be more worry-free.
 
-If the only goal is to get HTTPS online quickly with less TLS work, [Caddy](./caddy.md) is usually the simpler route.
+## First follow these three commands.
 
-## Recommended order: choose a driver, generate config, then start
-
-For a CLI-managed env of type `local` or `docker`, the default order is:
+If you just want to run the Nginx entry layer first, it is enough to remember these three commands by default:
 
 ```bash
 nb proxy nginx use docker
 nb proxy nginx generate --env test2 --host c.local.nocobase.com
-nb proxy nginx start
+nb proxy nginx reload
 ```
 
-Or with a local process:
+If Nginx has been installed locally, just change the first entry to `nb proxy nginx use local`.
+
+In most scenarios, it is enough to execute `use` first, then `generate`, and finally `reload`. For other details and more commands, see the following chapters or the CLI reference.
+
+## Step 1: First select how to run Nginx yourself
+
+If Nginx is already installed on the current machine, just use `use local`.
+
+If you want to use the Docker version of Nginx, use `use docker`.
+
+The `local` / `docker` here refers to the running mode of **Nginx itself**.
+
+Using the Docker version of Nginx:
+
+```bash
+nb proxy nginx use docker
+```
+
+Using a locally installed Nginx:
 
 ```bash
 nb proxy nginx use local
-nb proxy nginx generate --env test2 --host c.local.nocobase.com
-nb proxy nginx start
 ```
 
-Common follow-up commands are:
+If you forget which method is currently selected later, you can execute:
 
 ```bash
 nb proxy nginx current
-nb proxy nginx status
-nb proxy nginx info
-nb proxy nginx reload
-nb proxy nginx restart
-nb proxy nginx stop
 ```
 
-In most cases:
+## Step 2: Execute `generate`
 
-- `current` is the quickest way to confirm the active runtime driver
-- `status` shows whether Nginx is currently running normally
-- `info` shows the current config path, runtime root, and related runtime details
-- after regenerating config, `reload` is usually the first command to use
-- use `restart` when you need a full restart
-
-## What `generate` needs as input
-
-The most common form is:
+`generate` is used to generate Nginx entry configuration according to the specified env. The most common way to write it is:
 
 ```bash
 nb proxy nginx generate --env test2 --host c.local.nocobase.com
 ```
 
-If you also want to specify the entry port:
+If you also want to specify the entry port, you can also write it together:
 
 ```bash
 nb proxy nginx generate --env test2 --host c.local.nocobase.com --port 8080
 ```
 
-Where:
+The meaning of the parameters here is:
 
-- `--env`: which CLI env to generate config for
-- `--host`: the public domain name
-- `--port`: the proxy entry port, not the app's own `appPort`
+- `--env`: Specify which CLI env to generate configuration for
+- `--host`: Specify the domain name for external access
+- `--port`: Specifies the proxy entry port, not the `appPort` of the NocoBase application itself
 
-The upstream application port comes from the saved `appPort` of that env. If the command says the env is missing `appPort`, save it first with:
+The upstream application port comes from this env's saved `appPort`. If the command prompts that env is missing `appPort`, execute:
 
 ```bash
 nb env update test2 --app-port 56575
 ```
 
-If you later change settings such as `app-port` or `app-public-path` that affect proxy behavior, rerun `generate`.
+If you later change configurations such as `app-port` and `app-public-path` that will affect the proxy results, remember to re-execute `generate`.
 
-## Files maintained by the CLI
+## Step 3: Execute `reload`
 
-Using `test2` as an example, the Nginx workflow usually maintains:
+After generating the configuration, execute directly:
 
-| Path | Purpose |
+```bash
+nb proxy nginx reload
+```
+
+In most scenarios, just use this command directly. If it is not running yet, the startup will be processed internally first; if it is already running, it will be reloaded according to the latest configuration.
+
+## What files will the CLI maintain?
+
+Taking `test2` as an example, Nginx related commands usually maintain these files and directories:
+
+| path | function |
 | --- | --- |
-| `NB_CLI_ROOT/.nocobase/proxy/nginx/snippets` | Shared Nginx snippets directory |
-| `NB_CLI_ROOT/.nocobase/proxy/nginx/test2/app.conf` | Editable site entry config |
+| `NB_CLI_ROOT/.nocobase/proxy/nginx/snippets` | Nginx shared snippets directory |
+| `NB_CLI_ROOT/.nocobase/proxy/nginx/test2/app.conf` | Editable site entry configuration |
 | `NB_CLI_ROOT/.nocobase/proxy/nginx/test2/public/index-v1.html` | v1 SPA fallback page |
 | `NB_CLI_ROOT/.nocobase/proxy/nginx/test2/public/index-v2.html` | v2 SPA fallback page |
-| `NB_CLI_ROOT/test2/storage/dist-client` | Frontend build output for the current app |
-| `NB_CLI_ROOT/test2/storage/uploads` | Uploads directory for the current app |
+| `NB_CLI_ROOT/test2/storage/dist-client` | Currently used front-end build product directory |
+| `NB_CLI_ROOT/test2/storage/uploads` | The upload directory of the current application |
 
-Where:
+in:
 
-- files under `NB_CLI_ROOT/.nocobase/proxy/nginx/...` are CLI-managed proxy helper files
-- files under `NB_CLI_ROOT/test2/storage/...` belong to the application itself
-- `app.conf` can be edited, but the NocoBase-managed block must stay intact
-- `index-v1.html` and `index-v2.html` are rewritten according to the current env's subpath, active client version, and `CDN_BASE_URL`
+- `NB_CLI_ROOT/.nocobase/proxy/nginx/...` The following are agent auxiliary files maintained by CLI
+- `NB_CLI_ROOT/test2/storage/...` The following are the application's own static resources and upload directories
+- `app.conf` can be changed, but the NocoBase managed block must be retained
+- `index-v1.html` and `index-v2.html` will automatically rewrite resource addresses according to the current env subpath, active client version, and `CDN_BASE_URL`
 
-:::warning Note
+:::warning note
 
-If you need site-level Nginx config such as rate limiting, extra headers, or access control, edit `app.conf`. The CLI-managed helper files are updated again when you regenerate the config.
+If you want to add site-level Nginx configuration, such as current limiting, additional headers, and access control, just change `app.conf`. CLI-managed auxiliary files are updated synchronously on subsequent rebuilds.
 
 :::
 
-## Handwritten config: when you are not using the CLI
+## Handwritten configuration: what to do without CLI
 
-If the app is not CLI-managed, or you intentionally want to maintain the complete Nginx config yourself, you can still write it by hand.
+If your application is not CLI hosted, or you explicitly want to maintain the complete Nginx configuration yourself, you can also write it by hand.
 
-For NocoBase, though, a production reverse proxy is usually more than a single `proxy_pass`. In addition to forwarding API requests to the backend app, a complete config usually needs to handle uploads, frontend assets, WebSocket, `.well-known` routes, and SPA fallback pages together.
+However, for NocoBase, the production reverse proxy is usually more than a simple `proxy_pass`. In addition to forwarding API requests to the backend application, a complete and usable configuration usually needs to handle the upload directory, front-end static resources, WebSocket, `.well-known` route, and SPA fallback page.
 
-Using `test2` as the example, these are the key Nginx-related files and directories:
+Taking `test2` as an example, key files and directories related to Nginx usually include:
 
 - Nginx snippets: `NB_CLI_ROOT/.nocobase/proxy/nginx/snippets`
-- Editable entry config: `NB_CLI_ROOT/.nocobase/proxy/nginx/test2/app.conf`
-- SPA fallback page for v1: `NB_CLI_ROOT/.nocobase/proxy/nginx/test2/public/index-v1.html`
-- SPA fallback page for v2: `NB_CLI_ROOT/.nocobase/proxy/nginx/test2/public/index-v2.html`
-- Frontend build output: `NB_CLI_ROOT/test2/storage/dist-client`
-- Uploads directory: `NB_CLI_ROOT/test2/storage/uploads`
+- Editable entry configuration: `NB_CLI_ROOT/.nocobase/proxy/nginx/test2/app.conf`
+- SPA fallback page (v1): `NB_CLI_ROOT/.nocobase/proxy/nginx/test2/public/index-v1.html`
+- SPA fallback page (v2): `NB_CLI_ROOT/.nocobase/proxy/nginx/test2/public/index-v2.html`
+- Front-end build product directory: `NB_CLI_ROOT/test2/storage/dist-client`
+- Upload directory: `NB_CLI_ROOT/test2/storage/uploads`
 
-In other words, a handwritten config usually needs to cover at least these entry areas:
+In other words, handwritten configuration usually needs to cover at least the following types of entries:
 
-- `uploads`
-- `dist`
-- `well-known`
-- `api`
-- `ws`
-- `spa`
+- `uploads`: Expose the upload directory through `alias`
+- `dist`: Expose the front-end build product directory through `alias`
+- `well-known`: Handle OAuth / OpenID related discovery paths
+- `api`: forward `/api/` request to the backend application
+- `ws`: forward WebSocket requests to the backend application
+- `spa`: Provides front-end entry and `try_files` fallback for `/` and `/v/`
 
-So a complete Nginx config is usually more than a generic reverse proxy such as:
+Therefore, a complete Nginx configuration is usually not just the following general reverse proxy writing method:
 
 ```nginx
 location / {
@@ -143,7 +150,7 @@ location / {
 }
 ```
 
-For a CLI-managed app such as `test2`, a more realistic deployment structure usually looks closer to this:
+For a CLI-hosted application like `test2`, a structure closer to a real deployment would usually look like this:
 
 ```nginx
 server {
@@ -203,61 +210,42 @@ server {
 }
 ```
 
-Two details matter here:
+There are two key points here:
 
-- files under `NB_CLI_ROOT/.nocobase/proxy/nginx/...` are CLI-managed proxy helper files
-- files under `NB_CLI_ROOT/test2/storage/...` belong to the application's own build output and uploads
+- `NB_CLI_ROOT/.nocobase/proxy/nginx/...` The following are agent auxiliary files maintained by CLI
+- `NB_CLI_ROOT/test2/storage/...` The following is to use your own product directory and upload directory
 
-If the app uses subpath deployment, or if frontend assets, uploads, and the reverse proxy do not share the same path view, handwritten config becomes easier to get wrong. In those cases, it is usually safer to generate the config first with:
+If your application uses sub-path deployment, or the front-end resources, upload directory, and reverse proxy are not in the same path perspective, handwritten configuration will be more error-prone. In this scenario, it is usually more recommended to execute:
 
 ```bash
 nb proxy nginx generate --env test2 --host c.local.nocobase.com
 ```
 
-Then use the generated result as the baseline for manual adjustments.
+Then make adjustments based on the generated results.
 
-The safer workflow is usually:
+A more prudent approach is usually:
 
-1. let the CLI generate the Nginx config first
-2. use the generated output to confirm the routing structure and real filesystem paths
-3. then adjust it for your own domain, runtime driver, and mount layout
+1. First let the CLI generate the Nginx configuration
+2. Confirm the routing structure and actual path based on the generated results.
+3. Then make manual adjustments according to your domain name, running mode and mounting path.
 
-That is usually less error-prone than writing the full config from scratch.
-
-## Validate and reload the config
-
-If you write or adjust Nginx config manually, validate it first and then reload:
-
-```bash
-nginx -t
-systemctl reload nginx
-```
-
-If you are not using `systemd` to manage Nginx, replace that with your own reload workflow.
-
-If you manage the entry layer through `nb proxy nginx`, the usual first choice is:
-
-```bash
-nb proxy nginx reload
-```
+This is usually less likely to miss details related to WebSockets, static resources, upload directories, or SPA fallback pages than handwriting a configuration from scratch.
 
 ## How to handle HTTPS
 
-If you have already decided to keep using Nginx, you can keep HTTPS there as well. A common pattern is to extend `listen 80` into a `80/443` setup and then add certificate paths and TLS settings.
+If you have decided to continue using Nginx, HTTPS can also continue to be configured in Nginx. A common practice is to expand `listen 80` to `80/443` dual entry, and then add the certificate path and TLS configuration.
 
-If the goal is simply to get usable HTTPS quickly without managing certificate issuance and renewal yourself, switching to [Caddy](./caddy.md) is usually simpler.
+However, if you just want to get available HTTPS as soon as possible, and don't want to handle certificate application and renewal yourself, then it will be more worry-free to use [Caddy](./caddy.md) directly.
 
-## Common notes
+## Common instructions
 
-- `nb proxy nginx generate` only works for CLI-managed envs whose runtime is reachable from the current machine, which means `local` or `docker`
-- if the command says the env is missing `appPort`, run `nb env update <name> --app-port <port>` first
-- if you already have a large top-level Nginx config, the CLI-generated config is usually better used as a site fragment than as a replacement for the entire main config
-- if you later change settings such as `app-port` or `app-public-path` that affect proxy behavior, rerun `generate`
+- `nb proxy nginx generate` is for applications installed by `nb init`
+- If you subsequently change configurations such as `app-port` and `app-public-path` that will affect the proxy results, remember to re-execute `generate`
 
 ## Related links
 
-- [Reverse Proxy in Production](./index.md)
+- [Production environment reverse proxy](./index.md)
 - [Caddy](./caddy.md)
-- [Install with the CLI](../../installation/cli.md)
-- [Install with Docker Compose](../../installation/docker-compose.md)
-- [Environment variables](../../installation/env.md)
+- [Install using CLI (recommended)](../../installation/cli.md)
+- [Application configuration with `.env`](../../installation/env.md)
+- [`nb proxy nginx` Command Reference](../../../api/cli/proxy/nginx/index.md)

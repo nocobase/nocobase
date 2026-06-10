@@ -1,169 +1,82 @@
 ---
-title: "本番環境へのデプロイ"
-description: "NocoBase の本番デプロイをすばやく完了するには、まずアプリの自動起動を設定し、その後 reverse proxy を設定します。"
-keywords: "NocoBase,production deployment,nb app autostart,nb proxy nginx,nb proxy caddy,Nginx,Caddy"
+title: "実稼働環境の展開の概要"
+description: "運用環境の展開に関する全体的な手順: アプリケーションが正常に実行されていることを確認した後、アプリケーションの自動起動エントリとリバース プロキシ エントリを追加します。"
+keywords: "NocoBase、実稼働環境の展開、概要、アプリケーションの自動起動、リバース プロキシ、Nginx、Caddy"
 ---
 
-# 本番環境へのデプロイ
 
-NocoBase アプリがすでにサーバー上で正常に動作しているなら、本番公開に向けて通常追加で必要になるのは次の 2 点だけです。
+# 本番環境の展開の概要
 
-1. マシン再起動後にアプリが自動的に復旧するようにすること
-2. 外部から安定してアクセスできるように reverse proxy の entrypoint を追加すること
+NocoBase がすでにサーバー上で正常に実行できる場合は、通常、正式に起動する前にさらに 2 つの機能を追加する必要があります。
 
-NocoBase CLI では、主に次の 2 つのコマンドグループを使います。
+1. マシンの再起動後にアプリケーションが自動的に実行を再開できるようにします。
+2. リバース プロキシの入り口をアプリケーションに接続し、外部への安定したアクセスを提供します。
+
+NocoBase CLI に対応し、主に次の 2 つのコマンド セットで構成されます。
 
 - `nb app autostart`
 - `nb proxy`
 
-このページではまず全体の流れを説明します。Nginx または Caddy の詳細は、その後で各 provider のページを参照してください。
+この一連のドキュメントは主に 2 つの部分に分かれています。
 
-## ステップ 1: アプリの自動起動を設定する
+1. アプリケーションの自動起動: マシンの再起動後にアプリケーションの実行を再開できるようにします。
+2. リバースプロキシ: アプリケーションに安定した外部アクセス入り口を提供します。
 
-本番環境で最初に重要なのはドメイン名ではなく、サービス自体が確実に復旧できることです。そうでないと、マシン再起動、コンテナ再作成、運用作業のあとに、アプリが自動で戻ってこない可能性があります。
+まず現在どの部分がさらに必要かを確認し、対応するページにアクセスしてください。
 
-`nb app autostart` でよく使うサブコマンドは次のとおりです。
+## これら 2 つの部分は実稼働環境でどのような問題を解決しますか?
 
-- `nb app autostart enable`
-- `nb app autostart list`
-- `nb app autostart run`
+つまり、次のようになります。
 
-現在の env に対して自動起動を有効にします。
+- `nb app autostart` は「システム起動後にアプリケーションの動作を再開するにはどうすればよいか」という問題を解決します
+- `nb proxy` は「外部世界への安定したアクセスをどのように提供するか」という問題を解決します
 
-```bash
-nb app autostart enable
-```
+:::tip ここで、Docker、PM2、または Supervisor 独自の自動起動構成を直接使用してみてはいかがでしょうか?
 
-対象が現在の env でない場合は、明示的に指定します。
+`nb app autostart` は、これらのプロセス管理メソッドをバイパスするのではなく、さまざまなプロセス管理メソッドを均一に適応させ、それらを安定した自己開始型の管理入口セットに統合します。この方法では、基礎となるレイヤーは将来サポートされる可能性のある Docker、PM2、または Supervisor であるため、別の自己開始構成のセットを覚えておく必要はありません。
 
-```bash
-nb app autostart enable --env app1 --yes
-```
-
-どの env が自動起動対象としてマークされているか確認します。
-
-```bash
-nb app autostart list
-```
-
-システム起動後に、有効化された env をすべて起動します。
+システムがこの層を開始すると、`systemd`、`launchd`、またはホスト起動スクリプトによって処理され続けます。これらは、マシンの起動時に 1 回実行する責任があります。
 
 ```bash
 nb app autostart run
 ```
 
-デバッグ時に詳細な起動ログを見たい場合は次を使います。
+このコマンドは、自動起動が有効になっているすべてのアプリケーションを起動します。
 
-```bash
-nb app autostart run --verbose
-```
+混ぜてはいけないものの 2 つの層を次に示します。
 
-:::tip このステップが実際に行うこと
+- Docker、PM2、Supervisor などの機能は、「アプリケーションの通常の実行方法とアプリケーション プロセスの管理方法」に近いものです。
+- `systemd`、`launchd`、ホスト起動スクリプトなどの機能は、「システム起動時に実行するコマンド」に近くなります。
 
-`nb app autostart enable` は、CLI 管理 env に対して自動起動を許可するマークを付けます。`nb app autostart run` は、その自動起動が有効になっている env を実際に起動します。
-
-本番環境では通常、`nb app autostart run` を `systemd`、コンテナプラットフォームの起動スクリプト、あるいはすでに使っているホストレベルの自動起動機構など、自分のシステム起動フローに組み込む必要があります。
+ここで「`nb app autostart` が必要な理由」に行き詰まった場合は、[アプリケーションの自動起動](./autostart.md) と [nb アプリの設計意図](../cli-design/nb-app-design-intent.md) を読み続けてください。
 
 :::
 
-### 適用範囲
+## 今どのページを見るべきですか?
 
-`nb app autostart` は、CLI によって runtime が管理されている env に対してのみ動作します。
-
-- `local`
-- `docker`
-
-env が単なるリモート API 接続である場合や、現在のマシン上で CLI によってローカル管理されていない場合、このコマンドグループは自動起動には適していません。
-
-## ステップ 2: reverse proxy を設定する
-
-アプリが自動復旧できるようになったら、次に外部向け entrypoint を扱います。本番環境では、reverse proxy は通常次の役割を担います。
-
-- ドメイン名または entry port のバインド
-- HTTP / WebSocket リクエストの NocoBase への転送
-- HTTPS、証明書、キャッシュ、アクセス制御の管理
-
-推奨される CLI entrypoint は次のとおりです。
-
-- `nb proxy nginx`
-- `nb proxy caddy`
-
-### デフォルトの流れ
-
-アプリがすでに CLI env として保存され、その env が `local` または `docker` であるなら、通常は CLI に直接設定を生成させるのが一般的です。
-
-```bash
-nb proxy nginx use docker
-nb proxy nginx generate --env app1 --host app.example.com
-
-nb proxy caddy use local
-nb proxy caddy generate --env app1 --host app.example.com
-```
-
-その後、選択した provider を起動します。
-
-```bash
-nb proxy nginx start
-nb proxy caddy start
-```
-
-CLI は、手書き設定では見落としやすい次のような点も補ってくれます。
-
-- WebSocket の転送
-- サブパス配下での entry URL と asset URL
-- SPA fallback ページ
-- provider レベルで共有される設定ファイル
-
-### Nginx と Caddy のどちらを選ぶか
-
-| シナリオ | 推奨 |
+|欲しいです... |どこを見るべきか |
 | --- | --- |
-| サイト、キャッシュ、証明書、アクセス制御にすでに Nginx を使っている | [Nginx](./reverse-proxy/nginx.md) |
-| すでにドメインを持っていて、TLS の細かい管理を減らしながら HTTPS をすばやく有効にしたい | [Caddy](./reverse-proxy/caddy.md) |
-| まず全体の概要を見たい | [本番環境の Reverse Proxy](./reverse-proxy/index.md) |
+|まずサーバーを再起動すると、アプリケーションは自動的に実行を再開できます。 [アプリケーションの自動起動](./autostart.md) |
+|まず、この CLI における Nginx / Caddy のエントリ関係を理解し​​ます。 [リバースプロキシ](./reverse-proxy/index.md) |
+|引き続き Nginx を使用してサイトの入り口を管理します | [Nginx](./リバースプロキシ/nginx.md) |
+|できるだけ早く HTTPS に接続し、維持する TLS の詳細を減らします | [キャディ](./reverse-proxy/caddy.md) |
+|アプリケーション自体の起動、停止、ログ、アップグレードを表示します。 [アプリケーションの管理](../operations/manage-app.md) |
 
-後で `app-port` や `app-public-path` のように proxy の挙動へ影響する env 設定を変更した場合は、対応する proxy サブコマンドを再実行してください。
+## 実稼働環境に入る前に、次の前提条件を確認してください。
 
-## デフォルトの公開手順
+- アプリケーションは CLI 環境として保存されています
+- アプリケーションはサーバー自体で正常に起動できます
+- リバースプロキシに接続する場合は、`appPort`がenvに保存されています
+- 正式に外部に公開する準備ができている場合は、ドメイン名、入口ポート、HTTPS ソリューションをすでに計画しています。
 
-もっともシンプルな本番公開であれば、通常は次の順序で十分です。
+CLI のインストールまたは環境の初期化が完了していない場合は、[CLI を使用したインストール (推奨)](../installation/cli.md) に戻ります。
 
-1. まずサーバー上でアプリがそのまま正常起動できることを確認する
-2. `nb app autostart enable` を実行する
-3. `nb app autostart run` をシステム起動フローに組み込む
-4. Nginx または Caddy を選び、対応する `nb proxy` サブコマンドを実行する
-5. ドメイン名または entry アドレス経由で外部アクセスを確認する
+env が `appPort` がないというコマンド プロンプトが表示された場合は、まず [`nb env update`](../../api/cli/env/update.md) を実行してそれを入力します。
 
-## クイックインデックス
+## 関連リンク
 
-| やりたいこと | 参照先 |
-| --- | --- |
-| まず reverse proxy 全体の紹介を読みたい | [本番環境の Reverse Proxy](./reverse-proxy/index.md) |
-| entry layer で引き続き Nginx を使いたい | [Nginx](./reverse-proxy/nginx.md) |
-| Caddy を使って HTTPS を素早く有効にしたい | [Caddy](./reverse-proxy/caddy.md) |
-| アプリの起動、停止、ログ、アップグレード操作を見たい | [アプリ管理](../operations/manage-app.md) |
-| `nb proxy nginx` の CLI リファレンスを読みたい | [`nb proxy nginx`](../../api/cli/proxy/nginx/index.md) |
-| `nb proxy caddy` の CLI リファレンスを読みたい | [`nb proxy caddy`](../../api/cli/proxy/caddy/index.md) |
-
-## 関連コマンド
-
-```bash
-# 1 つの env に自動起動を有効化する
-nb app autostart enable --env app1 --yes
-
-# 自動起動状態を確認する
-nb app autostart list
-
-# 有効化された env をすべて起動する
-nb app autostart run
-
-# Nginx の runtime を選択して設定を生成する
-nb proxy nginx use docker
-nb proxy nginx generate --env app1 --host app.example.com
-nb proxy nginx start
-
-# Caddy の runtime を選択して設定を生成する
-nb proxy caddy use local
-nb proxy caddy generate --env app1 --host app.example.com
-nb proxy caddy start
-```
+- [アプリケーションの自動起動](./autostart.md)
+- [リバースプロキシ](./reverse-proxy/index.md)
+- [Nginx](./リバースプロキシ/nginx.md)
+- [キャディ](./reverse-proxy/caddy.md)
+- [アプリケーションの管理](../operations/manage-app.md)

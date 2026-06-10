@@ -143,6 +143,13 @@ nb env auth prod --auth-type token --access-token <api-key>
 
 ## 移除环境
 
+这几种场景最容易混淆。可以先记住一个默认建议：
+
+- 只是想把应用停掉，用 `nb app stop`
+- 也想把当前机器上的内置数据库运行时一起停掉，用 `nb app stop --with-db`
+- 确定这个 env 不再需要了，但想先保留 storage 和本地 app 文件，用 `nb env remove`
+- 连本机托管资源也一起清理掉，再用 `nb env remove --purge`
+
 如果你只想移除保存的 env 配置：
 
 ```bash
@@ -163,9 +170,30 @@ nb env remove test --purge --force
 
 `--purge` 只会清理当前机器上的 CLI 托管资源。对于远程 API env，它不会去删除远端服务本身。
 
+如果你只是想停掉应用和 CLI 托管的内置数据库，直接这样写就行：
+
+```bash
+nb app stop --env app1 --with-db
+```
+
+如果你要移除这个 env，但还想保留 storage 和本地 app 文件：
+
+```bash
+nb env remove app1 --force
+```
+
+如果你确实要把这个 env 的本机托管内容也一起清理掉，那么加上 `--purge`：
+
+```bash
+nb env remove app1 --purge --force
+```
+
+对于 CLI 下载管理的本地 npm/Git env，`--purge` 还会删除 CLI 托管的本地应用文件。对于 HTTP 或 SSH env，它只会删除 CLI 里保存的 env 配置，不会去删除外部服务本身。
+
 ## 相关链接
 
 - [`nb env` 命令参考](../../api/cli/env/index.md)
 - [`nb env update`](../../api/cli/env/update.md)
 - [`nb session` 命令参考](../../api/cli/session/index.md)
+- [nb app 的设计意图](../cli-design/nb-app-design-intent.md)
 - [管理应用](./manage-app.md)

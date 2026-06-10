@@ -1,17 +1,17 @@
-# 内网安装
+#Intranet-Installation
 
-如果你的服务器无法访问公网，安装方式就要提前准备好离线所需的镜像、依赖和插件包。默认推荐先用 Docker 方式，路径最短，也最容易复现。
+Wenn Ihr Server nicht auf das öffentliche Netzwerk zugreifen kann, erfordert die Installationsmethode, dass Sie die für die Offline-Nutzung erforderlichen Images, Abhängigkeiten und Plug-in-Pakete im Voraus vorbereiten. Standardmäßig wird empfohlen, zuerst Docker zu verwenden, da es den kürzesten Pfad hat und am einfachsten zu reproduzieren ist.
 
-## 默认推荐：离线准备 Docker 镜像
+## Standardempfehlung: Docker-Image offline vorbereiten
 
-在一台可以访问公网的机器上，先把应用镜像和数据库镜像拉下来：
+Rufen Sie auf einem Computer, der auf das öffentliche Netzwerk zugreifen kann, zunächst das Anwendungs-Image und das Datenbank-Image herunter:
 
 ```bash
 docker pull registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:latest-full
 docker pull registry.cn-shanghai.aliyuncs.com/nocobase/postgres:16
 ```
 
-然后导出为离线文件：
+Dann als Offline-Datei exportieren:
 
 ```bash
 docker save -o nocobase-app.tar \
@@ -21,47 +21,47 @@ docker save -o nocobase-postgres.tar \
   registry.cn-shanghai.aliyuncs.com/nocobase/postgres:16
 ```
 
-如果你还需要商业插件，也建议在外网环境先准备好插件包，再一起带入内网。
+Sollten Sie dennoch kommerzielle Plug-Ins benötigen, empfiehlt es sich außerdem, das Plug-In-Paket in der externen Netzwerkumgebung vorzubereiten und es dann gemeinsam ins Intranet zu bringen.
 
-## 把文件拷贝到内网服务器
+## Kopieren Sie die Datei auf den Intranetserver
 
-至少准备这些文件：
+Bereiten Sie mindestens diese Dokumente vor:
 
 - `nocobase-app.tar`
 - `nocobase-postgres.tar`
 - `docker-compose.yml`
-- `.env` 或你自己的部署说明
+- `.env` oder Ihre eigenen Bereitstellungsanweisungen
 
-## 在内网服务器导入镜像
+## Importieren Sie das Bild auf den Intranetserver
 
 ```bash
 docker load -i nocobase-app.tar
 docker load -i nocobase-postgres.tar
 ```
 
-## 启动应用
+## Anwendung starten
 
-准备好 `docker-compose.yml` 后，直接启动：
+Nachdem Sie `docker-compose.yml` vorbereitet haben, beginnen Sie direkt:
 
 ```bash
 docker compose up -d
 docker compose logs -f app
 ```
 
-如果你还没写 compose 文件，先看 [通过 Docker Compose 安装](./docker-compose.md)，把里面的示例保存到本地即可。
+Wenn Sie noch keine Compose-Datei geschrieben haben, lesen Sie zunächst [Installation über Docker Compose](./docker-compose.md) und speichern Sie die Beispiele dort lokal.
 
-## 不能使用 Docker 怎么办
+## Was tun, wenn Sie Docker nicht verwenden können?
 
-如果你的内网环境不能使用 Docker，也可以在外网环境先用 `create-nocobase-app` 创建完整项目、安装依赖并打包，再把整个项目拷贝到内网服务器。
+Wenn Docker in Ihrer Intranetumgebung nicht verwendet werden kann, können Sie auch `create-nocobase-app` verwenden, um ein vollständiges Projekt in der externen Netzwerkumgebung zu erstellen, Abhängigkeiten zu installieren und zu verpacken und dann das gesamte Projekt auf den Intranetserver zu kopieren.
 
-这条路径会更长，不过在没有容器能力的环境里更实用。整体流程通常是：
+Dieser Weg ist länger, aber in Umgebungen ohne Containerfunktionen praktischer. Der Gesamtprozess ist normalerweise:
 
-1. 在外网环境创建项目并安装依赖。
-2. 把项目目录打包。
-3. 拷贝到内网服务器。
-4. 在内网解压、补齐 `.env` 后启动应用。
+1. Erstellen Sie ein Projekt in einer externen Netzwerkumgebung und installieren Sie Abhängigkeiten.
+2. Packen Sie das Projektverzeichnis.
+3. Auf den Intranetserver kopieren.
+4. Entpacken Sie die Datei im Intranet, füllen Sie `.env` aus und starten Sie die Anwendung.
 
-## 下一步去哪里看
+## Wo Sie als nächstes suchen müssen
 
-- 如果你还没确认应用配置，继续看 [应用环境变量](./env.md)
-- 如果你准备把应用正式开放给业务用户，继续看 [Nginx](../production/reverse-proxy/nginx.md) 或 [Caddy](../production/reverse-proxy/caddy.md)
+- Wenn Sie die Anwendungskonfiguration nicht bestätigt haben, lesen Sie weiter unter [Anwendungsumgebungsvariablen](./env.md)
+- Wenn Sie bereit sind, die Anwendung offiziell für Geschäftsanwender zu öffnen, lesen Sie weiter [Nginx](../produktion/reverse-proxy/nginx.md) oder [Caddy](../produktion/reverse-proxy/caddy.md)

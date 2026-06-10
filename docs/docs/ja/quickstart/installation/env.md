@@ -1,101 +1,153 @@
-# 应用环境变量
+# アプリケーション構成と `.env`
 
-大部分场景只需要先看这几类环境变量：`APP_KEY`、`TZ`、`APP_PORT`，以及数据库相关的 `DB_*`。如果你只是想把应用先跑起来，通常来说先把这几项确认好就够了。
+このページは、NocoBase CLI を介して作成またはホストされるアプリケーションにのみ適用されます。
 
-## 怎么设置环境变量
+[CLI を使用したインストール (推奨)](./cli.md) を読み終えて、「インストール ディレクトリ」セクションを見た場合は、通常、遭遇する最も一般的な問題は次のとおりです。
 
-### `create-nocobase-app` 或 Git 源码方式
+- `.env` ファイルはどこにありますか?
+- `.env` に書き込むのにまだ適している構成はどれですか
+- どの構成が `nb env update` に引き継ぐのに適しているか
 
-在项目根目录的 `.env` 文件里设置环境变量。修改完成后，重新启动应用。
+まず結論からお話しましょう。
+
+- CLI がインストールされたアプリケーションの場合、`.env` はデフォルトで `<app-path>/.env` に配置されます
+- このファイルはオプションです。すべての環境を手動で作成する必要はありません
+- `APP_KEY`、`TZ`、`APP_PORT`、`APP_PUBLIC_PATH`、`DB_*` などの基本構成は、デフォルトでは `nb env update` によって管理されます。
+- `.env` は主に、ストレージ、キャッシュ、ログ、監視、一部のプラグイン拡張変数など、CLI が直接引き継いでいないランタイム変数を補足するために使用されます。
+
+## 最初に `app-path` を見つけます
+
+[CLIを使用したインストール(推奨)](./cli.md#インストールディレクトリ)における、CLI環境のデフォルトのディレクトリ構成は以下のとおりです。
+
+```text
+<app-path>/
+├── source/
+├── storage/
+└── .env
+```
+
+現在適用されている `app-path` がどこにあるのかわからない場合は、次のようにして直接確認できます。
 
 ```bash
-APP_KEY=your-app-key
-TZ=Asia/Shanghai
-APP_PORT=13000
-DB_DIALECT=postgres
-DB_HOST=127.0.0.1
-DB_PORT=5432
-DB_DATABASE=nocobase
-DB_USER=nocobase
-DB_PASSWORD=nocobase
+nb env info app1 --field app.appPath
 ```
 
-### Docker Compose 方式
+`app1` を環境名に置き換えるだけです。
 
-可以直接在 `docker-compose.yml` 的 `environment` 里设置：
+つまり、CLI を介して作成またはホストされるアプリケーションの場合、`.env` ファイルの最適な場所は次のとおりです。
 
-```yml
-services:
-  app:
-    image: nocobase/nocobase:latest
-    environment:
-      - APP_ENV=production
-      - APP_KEY=your-app-key
-      - TZ=Asia/Shanghai
+```text
+<app-path>/.env
 ```
 
-也可以用 `env_file` 引入单独的 `.env` 文件：
+一般に、古いインストール方法に従って、`source/.env` に配置する必要はなく、Docker Compose プロジェクトのルート ディレクトリで `.env` を見つける必要もありません。
 
-```yml
-services:
-  app:
-    image: nocobase/nocobase:latest
-    env_file: .env
-```
+## `.env` を自分で作成する必要があるのはどのような場合ですか?
 
-修改完成后，重新创建应用容器：
+`.env` はオプションです。
+
+最初にアプリケーションを実行するだけの場合、またはポート、タイムゾーン、データベース接続、パブリック アクセス パスなどの基本構成を変更するだけの場合は、多くの場合、`.env` を手動で作成する必要はありません。
+
+CLI が直接引き継いでいないランタイム変数を追加する必要がある場合にのみ、`<app-path>/.env` に追加してください。
+
+## デフォルトでは最初に `nb env update` を使用します
+
+新しい CLI インストール方法では、デフォルトで基本的なアプリケーション構成を [`nb env update`](../../api/cli/env/update.md) に優先させることをお勧めします。
+
+これには次の 2 つの利点があります。
+
+- 構成と環境自体は同じ CLI マインドに保存されるため、確認と変更が容易になります
+- 将来的には、ユーザー、スクリプト、AI エージェントはメンテナンスのために同じコマンド セットを使用し続けることができるため、「あるセットの変更がファイルに行われたが、別のセットが CLI に記録される」という状況が起こりにくくなります。
+
+### これらの構成は、`nb env update` に引き渡すのに適しています。
+
+以下の項目については、以前は `.env` に直接書き込むことに慣れていたかもしれません。ただし、CLI インストール モードでは、デフォルトで `nb env update` を使用することをお勧めします。
+
+|変わりたい… |デフォルトを変更する方法 |
+| --- | --- |
+| `APP_KEY` | `nb env update <name> --app-key <value>` |
+| `TZ` | `nb env update <name> --timezone <value>` |
+| `APP_PORT` | `nb env update <name> --app-port <value>` |
+| `APP_PUBLIC_PATH` | `nb env update <name> --app-public-path <value>` |
+| `CDN_BASE_URL` | `nb env update <name> --cdn-base-url <value>` |
+|データベースの種類と接続パラメータ (`DB_DIALECT`、`DB_HOST`、`DB_PORT`、`DB_DATABASE`、`DB_USER`、`DB_PASSWORD` など) `nb env update <name> --db-dialect ... --db-host ... --db-port ... --db-database ... --db-user ... --db-password ...` |
+| PostgreSQL スキーマ、テーブル接頭辞、データベース補助項目などの名前付けのアンダースコア (`DB_SCHEMA`、`DB_TABLE_PREFIX`、`DB_UNDERSCORED` など) | `nb env update <name> --db-schema ... --db-table-prefix ... --db-underscored` |
+
+たとえば、アプリケーションのポートとタイムゾーンを変更したい場合は、次のように直接記述できます。
 
 ```bash
-docker compose up -d app
+nb env update app1 --app-port 13080 --timezone Asia/Shanghai
 ```
 
-## 先确认哪些变量
-
-### `APP_KEY`
-
-应用密钥，用于生成 token 等敏感数据。部署到正式环境前，记得改成你自己的值，并妥善保管。
-
-:::warning 注意
-
-如果 `APP_KEY` 改了，旧的 token 也会随之失效。
-
-:::
-
-### `TZ`
-
-应用时区。和时间相关的处理都会受它影响。
+データベース接続パラメータを変更したい場合は、次のように記述できます。
 
 ```bash
-TZ=Asia/Shanghai
+nb env update app1 \
+  --db-dialect postgres \
+  --db-host 127.0.0.1 \
+  --db-port 5432 \
+  --db-database nocobase \
+  --db-user nocobase \
+  --db-password nocobase
 ```
 
-### `APP_PORT`
+変更を加えた後、通常、CLI は後で `nb app restart` を実行するように求めるプロンプトを表示します。より完全なパラメーターの説明については、[`nb env update`](../../api/cli/env/update.md) を参照してください。
 
-应用端口，默认值通常是 `13000`。
+## `.env` に書き込むのがより適切な状況はどれですか
+
+変数に対応する CLI パラメーターがまだない場合、または「アプリケーション ランタイムに直接渡される」拡張構成に近い場合は、`<app-path>/.env` の書き込みを続けます。
+
+通常、次のカテゴリが含まれます。
+
+- ファイル ストレージおよびオブジェクト ストレージ構成 (`LOCAL_STORAGE_*`、`AWS_S3_*`、`ALI_OSS_*`、`TX_COS_*` など)
+- キャッシュと Redis の構成 (`CACHE_*`、`REDIS_URL` など)
+- ログおよび観察の構成 (`LOGGER_*`、`TELEMETRY_*` など)
+- エクスポート、非同期タスク、ワークフロー、AI 拡張機能関連の変数など、特定のプラグインまたは拡張機能固有の変数
+
+例えば：
 
 ```bash
-APP_PORT=13000
+LOCAL_STORAGE_DEST=storage/uploads
+AWS_S3_BUCKET=your-bucket
+AWS_S3_REGION=ap-southeast-1
+LOGGER_LEVEL=info
+REDIS_URL=redis://127.0.0.1:6379
 ```
 
-### `DB_*`
+このタイプの変数は基本的にアプリケーションのランタイム構成であり、現時点では CLI はそれを項目ごとに引き継ぎません。 `.env` に配置するのが最も自然です。
 
-如果你使用外部数据库，至少要确认这些变量：
+## `.env` と `nb env update` の間で作業を分割する方法
+
+特定の構成をどこに配置すべきかわからない場合は、デフォルトで次のルールに従ってください。
+
+- `nb env update` に対応するパラメータがすでにある場合は、デフォルトでそのパラメータが最初に使用されます。
+- 対応するパラメータがない場合、または明らかにプラグイン、ストレージ、キャッシュ、ログなどのランタイム拡張設定に属する場合は、`<app-path>/.env` に配置します。
+
+ほとんどのシナリオでは、この役割分担で十分です。
+
+### よくある誤解
+
+同じ構成の 2 つのコピーを同時に維持しないでください。
+
+たとえば、`APP_PORT`、`TZ`、`APP_PUBLIC_PATH`、`DB_HOST` などの基本的な項目を `nb env update` で保存した場合、通常はそれらを `.env` に再度記述する必要はありません。そうしないと、後で問題のトラブルシューティングを行うときに、どのレイヤーが実際に有効にしたい値であるかが分からなくなりやすくなります。
+
+## 最小限の `.env` の例
+
+基本設定が CLI を通じて保存されている場合、`.env` はおそらく次のようないくつかの拡張変数を保持するだけで済みます。
 
 ```bash
-DB_DIALECT=postgres
-DB_HOST=127.0.0.1
-DB_PORT=5432
-DB_DATABASE=nocobase
-DB_USER=nocobase
-DB_PASSWORD=nocobase
+LOGGER_LEVEL=info
+REDIS_URL=redis://127.0.0.1:6379
+AWS_S3_BUCKET=your-bucket
+AWS_S3_REGION=ap-southeast-1
 ```
 
-如果你使用 MySQL 或 MariaDB，并且数据库配置了 `lower_case_table_names=1`，还需要确认：
+これは、このページが構築するのに最も役立ちたい考え方でもあります。
 
-```bash
-DB_UNDERSCORED=true
-```
+`.env` は依然として便利ですが、新しい CLI インストール方法では、すべての基本的なインストール パラメーターを引き続き想定するのではなく、ランタイム拡張機能の構成を補足することに重点が置かれています。
 
-## 完整变量列表
+## 次にどこを見るべきか
 
-如果你需要查看全部环境变量说明，比如 `CLUSTER_MODE`、`CACHE_*`、`FILE_STORAGE`、插件相关变量等，继续看 [全局环境变量](/api/app/env)。
+・ アプリケーションのディレクトリ構成を確認していない場合は、「CLIを使用したインストール(推奨)」(./cli.md#インストールディレクトリ)に戻ってください。
+- ポート、タイムゾーン、データベース接続、パブリック アクセス パスなどの基本構成を変更する場合は、引き続き [`nb env update`](../../api/cli/env/update.md) を参照してください。
+- アプリケーションのログを起動、再起動、表示したい場合は、引き続き [アプリケーションの管理](../operations/manage-app.md) を参照してください。

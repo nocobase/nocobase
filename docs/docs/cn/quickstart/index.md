@@ -1,27 +1,54 @@
 # 快速开始
 
-NocoBase 的快速开始主要解决三件事：先把应用装起来，再把插件装起来，最后把应用稳定地跑起来。你不需要一次把所有文档都看完，按你当前所在的阶段往下走就够了。
+如果你是第一次接触这套 CLI，不需要一开始就把所有命令都记住。先用 `nb init --ui` 安装一个应用，后面的事再按场景继续看就行。
 
-如果你还没决定用哪种方式安装，默认先看 [使用 CLI 安装（推荐）](./installation/cli.md)。如果你更习惯直接在服务器上用容器跑起来，继续看 [通过 Docker Compose 安装](./installation/docker-compose.md)。
+## 先建立一个最重要的心智
+
+在 NocoBase CLI 里，后续操作默认不是围绕“某个目录”或“某个端口”展开，而是围绕 **env** 展开。
+
+你可以把 env 理解成“CLI 记住的一套应用连接和运行信息”。只要它已经保存成功，后面的很多命令就能直接接着用：
+
+- 用 `nb init` 新装一个应用，并顺手保存成 env
+- 用 `nb env add` 把一个已有应用接入 CLI
+- 用 `nb app start`、`nb app logs`、`nb app upgrade` 管理这个 env
+- 用 `nb backup` 备份和恢复这个 env
+- 用 `nb app autostart`、`nb proxy` 继续补生产环境能力
+
+先把这件事记住，后面的文档会顺很多。
+
+## 默认推荐路径
+
+如果你不确定该从哪里开始，通常来说按下面这条路径走最省心：
+
+1. 先看 [使用 CLI 安装（推荐）](./installation/cli.md)，完成一次 `nb init`。
+2. 应用保存成 env 之后，再看 [多环境管理](./operations/multi-environment.md)，确认当前 env、切换 env、查看状态。
+3. 日常启动、停止、日志和升级，继续看 [管理应用](./operations/manage-app.md)。
+4. 做升级、迁移或重要变更前，先看 [备份还原](./operations/backup-restore.md)。
+5. 如果准备正式上线，再进入 [生产环境部署概述](./production/index.md)。
+
+前三步覆盖大多数使用场景。
 
 ## 快速索引
 
 | 我想要…… | 去哪里看 |
 | --- | --- |
-| 直接安装一个新的 NocoBase 应用 | [使用 CLI 安装（推荐）](./installation/cli.md) |
+| 还没有应用，先装一个新的 NocoBase，并保存成 CLI env | [使用 CLI 安装（推荐）](./installation/cli.md) |
+| 已经有一个运行中的 NocoBase，想接入 CLI 管理 | [使用 CLI 安装（推荐）](./installation/cli.md) |
 | 把旧的安装方式逐步迁移到 CLI | [从旧方式迁移到 CLI](./installation/migration.md) |
-| 用 Docker Compose 在服务器上部署 | [通过 Docker Compose 安装](./installation/docker-compose.md) |
-| 在无法访问公网的环境里安装 | [内网安装](./installation/airgap.md) |
+| 看本地保存了哪些 env、切换当前 env、检查状态 | [多环境管理](./operations/multi-environment.md) |
+| 启动、停止、重启应用，查看日志，或者继续升级 | [管理应用](./operations/manage-app.md) |
+| 升级、迁移或批量改数据前先做备份，需要时再恢复 | [备份还原](./operations/backup-restore.md) |
 | 先确认应用运行需要的关键环境变量 | [应用环境变量](./installation/env.md) |
 | 安装第三方插件 | [第三方插件安装与升级](./plugins/third-party.md) |
-| 给生产环境加上反向代理 | [Nginx](./production/reverse-proxy/nginx.md) / [Caddy](./production/reverse-proxy/caddy.md) |
-| 查看应用、切换环境、备份还原 | [管理应用](./operations/manage-app.md) / [多环境管理](./operations/multi-environment.md) / [备份还原](./operations/backup-restore.md) |
+| 让应用进入生产环境：自动启动、稳定对外访问、反向代理 | [生产环境部署概述](./production/index.md) |
 
-## 默认路径
+## 什么时候看命令参考
 
-如果你不确定该怎么选，通常来说按下面这条路径走最省心：
+这组快速开始文档更偏“我现在要做什么”。如果你已经知道自己要执行哪条命令，只是想继续看完整参数，再去看 [NocoBase CLI 命令参考](../api/cli/index.md) 就行。
 
-1. 先看 [使用 CLI 安装（推荐）](./installation/cli.md)。
-2. 应用跑起来后，再确认 [应用环境变量](./installation/env.md)。
-3. 如果要正式上线，再补上 [Nginx](./production/reverse-proxy/nginx.md) 或 [Caddy](./production/reverse-proxy/caddy.md)。
-4. 后续日常维护时，再看 [管理应用](./operations/manage-app.md) 和 [备份还原](./operations/backup-restore.md)。
+默认建议是：
+
+- 先用快速开始文档建立路径感
+- 再在具体命令页里查参数细节
+
+这样比一上来就读完整命令树更容易上手。

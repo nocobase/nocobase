@@ -1,25 +1,25 @@
-# 通过 Docker Compose 安装
+#Instalar via Docker Compose
 
-如果你希望直接在服务器上把 NocoBase 跑起来，`docker compose` 仍然是最直接的方式。大部分场景用一份 `docker-compose.yml` 就够了。
+Se você deseja executar o NocoBase diretamente no servidor, `docker compose` ainda é o caminho mais direto. Uma porção de `docker-compose.yml` é suficiente para a maioria dos cenários.
 
-不过生产环境里，建议固定具体版本号，不要长期直接使用 `latest`。这样升级时更可控。
+Porém, em um ambiente de produção, é recomendável corrigir o número de versão específico e não usar `latest` diretamente por um longo período. Isso tornará a atualização mais controlável.
 
-## 前提条件
+## Pré-requisitos
 
-- 已安装 Docker 和 Docker Compose
-- 确保 Docker 服务已经启动
-- 已准备好一个要对外开放的端口，比如 `13000`
+- Docker e Docker Compose instalados
+- Certifique-se de que o serviço Docker esteja iniciado
+- Foi preparada uma porta para ser aberta ao mundo exterior, como `13000`
 
-## 第一步：创建项目目录
+## Etapa 1: Crie o diretório do projeto
 
 ```bash
 mkdir my-nocobase-app
 cd my-nocobase-app
 ```
 
-## 第二步：创建 `docker-compose.yml`
+## Etapa 2: Criar `docker-compose.yml`
 
-下面这个示例使用 PostgreSQL，也是默认最省心的一种组合：
+O exemplo a seguir usa PostgreSQL, que também é a combinação mais despreocupada por padrão:
 
 ```yml
 networks:
@@ -62,62 +62,62 @@ services:
       - nocobase
 ```
 
-其中：
+em:
 
-- `APP_KEY` 记得改成你自己的随机字符串
-- `13000:80` 代表把主机的 `13000` 端口映射到容器的 `80` 端口
-- 如果你已经有数据库服务，可以删掉 `postgres` 这一段，并把 `DB_HOST` 改成现有数据库地址
+- `APP_KEY` Lembre-se de alterá-lo para sua própria string aleatória
+- `13000:80` representa o mapeamento da porta `13000` do host para a porta `80` do contêiner
+- Se você já possui um serviço de banco de dados, pode excluir a seção `postgres` e alterar `DB_HOST` para o endereço do banco de dados existente
 
-如果你使用 MySQL 或 MariaDB，记得把 `DB_DIALECT` 改成对应类型，并补上：
+Se você usa MySQL ou MariaDB, lembre-se de alterar `DB_DIALECT` para o tipo correspondente e adicionar:
 
 ```bash
 DB_UNDERSCORED=true
 ```
 
-## 第三步：启动应用
+## Etapa 3: inicie o aplicativo
 
 ```bash
 docker compose up -d
 ```
 
-查看日志：
+Verifique o registro:
 
 ```bash
 docker compose logs -f app
 ```
 
-## 第四步：访问应用
+## Passo 4: Acesse o aplicativo
 
-应用启动完成后，打开：
+Depois que o aplicativo for iniciado, abra:
 
 ```text
 http://<服务器IP>:13000
 ```
 
-如果是第一次启动，按页面提示初始化管理员账号即可。
+Se for a primeira vez que inicia, basta seguir as instruções da página para inicializar a conta de administrador.
 
-## 常用命令
+## Comandos comuns
 
-启动或更新容器：
+Inicie ou atualize contêineres:
 
 ```bash
 docker compose up -d
 ```
 
-停止应用：
+Parar aplicação:
 
 ```bash
 docker compose down
 ```
 
-查看日志：
+Verifique o registro:
 
 ```bash
 docker compose logs -f app
 ```
 
-## 下一步去哪里看
+## Onde procurar em seguida
 
-- 如果你要调整密钥、端口、数据库等配置，继续看 [应用环境变量](./env.md)
-- 如果你准备正式上线，继续看 [Nginx](../production/reverse-proxy/nginx.md) 或 [Caddy](../production/reverse-proxy/caddy.md)
-- 如果你后续要备份数据，继续看 [备份还原](../operations/backup-restore.md)
+- Se você deseja ajustar a configuração de chaves, portas, bancos de dados, etc., continue em [Variáveis de ambiente de aplicação](./env.md)
+- Se você está pronto para entrar oficialmente online, continue lendo [Nginx](../production/reverse-proxy/nginx.md) ou [Caddy](../production/reverse-proxy/caddy.md)
+- Se você quiser fazer backup dos dados mais tarde, continue em [Backup e Restauração](../operações/backup-restore.md)

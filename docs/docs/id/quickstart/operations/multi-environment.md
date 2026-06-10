@@ -1,29 +1,29 @@
-# 多环境管理
+#Beberapa manajemen lingkungan
 
-如果你同时维护 `dev`、`test`、`staging`、`prod` 等多个 NocoBase 应用，可以把它们分别保存成 CLI env。之后大多数 `nb` 命令都会默认作用在当前 env 上，所以在执行 `nb app`、`nb api`、`nb db` 这类命令前，先确认自己正在用哪个 env 很重要。
+Jika Anda memelihara beberapa aplikasi NocoBase seperti `dev`, `test`, `staging`, `prod`, dll., Anda dapat menyimpannya masing-masing sebagai CLI env. Sebagian besar perintah `nb` di masa mendatang akan bekerja pada env saat ini secara default, jadi penting untuk mengonfirmasi env mana yang Anda gunakan sebelum menjalankan perintah seperti `nb app`, `nb api`, dan `nb db`.
 
-CLI 从这一版开始把概念拆成了 `current env` 和 `last env`。你通常只需要关心 `current env`——也就是当前 shell 或 agent runtime 正在使用的环境。只有在没有开启 session mode 时，CLI 才会回退到全局 `last env`。
+Mulai dari versi ini, CLI membagi konsep menjadi `current env` dan `last env`. Anda biasanya hanya perlu memperhatikan `current env` - yang merupakan lingkungan yang digunakan runtime shell atau agen saat ini. CLI akan kembali ke `last env` global hanya ketika mode sesi tidak diaktifkan.
 
-## 快速索引
+## Indeks cepat
 
-| 我想要…… | 用哪个命令 |
+| saya ingin... | Perintah mana yang harus digunakan |
 | --- | --- |
-| 新建一个本地 env，并顺手完成初始化 | [`nb init`](../../api/cli/init.md) |
-| 把一个已有应用登记成 CLI env | [`nb env add`](../../api/cli/env/add.md) |
-| 看本地保存了哪些 env | [`nb env list`](../../api/cli/env/list.md) |
-| 检查所有 env 的连通性和认证状态 | [`nb env status --all`](../../api/cli/env/status.md) |
-| 切换后续命令要使用的 env | [`nb env use`](../../api/cli/env/use.md) |
-| 确认当前命令会落到哪个 env | [`nb env current`](../../api/cli/env/current.md) 和 [`nb env status`](../../api/cli/env/status.md) |
-| 查看某个 env 保存了哪些详细配置 | [`nb env info`](../../api/cli/env/info.md) |
-| 更新已保存的 env 配置，必要时让 CLI 重新同步当前状态 | [`nb env update`](../../api/cli/env/update.md) |
-| 登录态过期后重新认证，或者改用新的认证方式 | [`nb env auth`](../../api/cli/env/auth.md) |
-| 删除不用的 env 配置，必要时连本机托管资源一起清理 | [`nb env remove`](../../api/cli/env/remove.md) |
+| Buat env lokal baru dan selesaikan inisialisasi dengan lancar | [`nb init`](../../api/cli/init.md) |
+| Daftarkan aplikasi yang ada sebagai CLI env | [`nb env add`](../../api/cli/env/add.md) |
+| Lihat env mana yang disimpan secara lokal | [`nb env list`](../../api/cli/env/list.md) |
+| Periksa konektivitas dan status otentikasi semua envs | [`nb env status --all`](../../api/cli/env/status.md) |
+| Ganti env untuk digunakan oleh perintah selanjutnya | [`nb env use`](../../api/cli/env/use.md) |
+| Konfirmasikan env mana dari perintah saat ini yang akan dimasukkan | [`nb env current`](../../api/cli/env/current.md) dan [`nb env status`](../../api/cli/env/status.md) |
+| Lihat konfigurasi terperinci yang disimpan oleh env | [`nb env info`](../../api/cli/env/info.md) |
+| Perbarui konfigurasi env yang disimpan, biarkan CLI menyinkronkan ulang status saat ini jika perlu | [`nb env update`](../../api/cli/env/update.md) |
+| Otentikasi ulang setelah status login berakhir, atau gunakan metode otentikasi baru | [`nb env auth`](../../api/cli/env/auth.md) |
+| Hapus konfigurasi env yang tidak digunakan dan bersihkan sumber daya lokal yang dihosting jika perlu | [`nb env remove`](../../api/cli/env/remove.md) |
 
-:::tip 建议先开启 session mode
+:::tip Disarankan untuk mengaktifkan mode sesi terlebih dahulu
 
-默认推荐先执行一次 [`nb session setup`](../../api/cli/session/setup.md)。这样不同终端、不同 shell，或者不同 agent runtime 可以各自维护自己的 `current env`，并行操作时不容易互相影响。
+Secara default, disarankan untuk menjalankan [`nb session setup`](../../api/cli/session/setup.md) terlebih dahulu. Dengan cara ini, terminal yang berbeda, shell yang berbeda, atau runtime agen yang berbeda masing-masing dapat mempertahankan `current env` mereka sendiri, dan mereka tidak akan mudah mempengaruhi satu sama lain selama operasi paralel.
 
-如果没有开启 session mode，那么 `nb env use` 会回退到更新全局 `last env`。这种情况下，一个终端切走环境，另一个终端也可能跟着受影响。
+Jika mode sesi tidak diaktifkan, `nb env use` akan kembali memperbarui `last env` global. Dalam hal ini, jika salah satu terminal memutus lingkungan, terminal lainnya juga dapat terpengaruh.
 
 ```bash
 nb session setup
@@ -31,64 +31,64 @@ nb session setup
 
 :::
 
-## 创建多个环境
+## Buat banyak lingkungan
 
-如果你要新建或恢复一个本地应用，用 `nb init` 就行。它会完成初始化，并把结果保存成一个新的 CLI env。
+Jika Anda ingin membuat atau memulihkan aplikasi lokal, gunakan saja `nb init`. Ini akan menyelesaikan inisialisasi dan menyimpan hasilnya ke dalam lingkungan CLI baru.
 
 ```bash
 nb init --env dev
 nb init --env test
 ```
 
-如果应用已经存在，只是想把它接入 CLI，通常来说用 `nb env add` 更直接：
+Jika aplikasi sudah ada dan Anda hanya ingin menghubungkannya ke CLI, biasanya lebih mudah menggunakan `nb env add`:
 
 ```bash
 nb env add staging --api-base-url http://staging.example.com/api --auth-type oauth
 nb env add prod --api-base-url https://api.example.com/api --auth-type token --access-token <token>
 ```
 
-前者偏“初始化一个环境”，后者偏“登记一个已有环境”。如果你只是连接已有应用，默认用 `nb env add` 就行。
+Yang pertama lebih tentang "menginisialisasi lingkungan", sedangkan yang kedua lebih tentang "mendaftarkan lingkungan yang ada". Jika Anda baru menyambung ke aplikasi yang sudah ada, cukup gunakan `nb env add` secara default.
 
-## 查看已经配置的环境
+## Lihat lingkungan yang dikonfigurasi
 
-先用 `nb env list` 看看本地已经保存了哪些 env：
+Pertama gunakan `nb env list` untuk melihat envs mana yang telah disimpan secara lokal:
 
 ```bash
 nb env list
 ```
 
-这个命令只展示配置本身，不主动检查应用状态。想同时看连通性和认证状态时，用 `nb env status --all`：
+Perintah ini hanya menampilkan konfigurasi itu sendiri dan tidak secara aktif memeriksa status aplikasi. Jika Anda ingin melihat status konektivitas dan autentikasi, gunakan `nb env status --all`:
 
 ```bash
 nb env status --all
 ```
 
-你通常会看到 `ok`、`auth failed`、`unreachable` 这类状态值。
+Anda biasanya akan melihat nilai status seperti `ok`, `auth failed`, `unreachable`.
 
-## 切换当前环境
+## Ganti lingkungan saat ini
 
-切换环境用 `nb env use`：
+Gunakan `nb env use` untuk berpindah lingkungan:
 
 ```bash
 nb env use dev
 ```
 
-切换完成后，后续省略 `--env` 的命令都会默认使用这个 env。
+Setelah peralihan selesai, perintah berikutnya yang menghilangkan `--env` akan menggunakan env ini secara default.
 
-## 查看当前环境
+## Periksa lingkungan saat ini
 
-如果你不确定当前命令会落到哪个环境上，先执行这两个命令：
+Jika Anda tidak yakin di lingkungan mana perintah saat ini akan berada, jalankan dua perintah ini terlebih dahulu:
 
 ```bash
 nb env current
 nb env status
 ```
 
-`nb env current` 用来看名称，`nb env status` 用来看当前 env 是否可访问、认证是否正常。
+`nb env current` digunakan untuk melihat nama, `nb env status` digunakan untuk melihat apakah env saat ini dapat diakses dan otentikasi normal.
 
-## 查看单个 env 的详细信息
+## Lihat detail satu env
 
-想看某个 env 保存了哪些配置，用 `nb env info`：
+Jika Anda ingin melihat konfigurasi apa yang disimpan di env tertentu, gunakan `nb env info`:
 
 ```bash
 nb env info dev
@@ -97,20 +97,20 @@ nb env info dev --field app.url
 nb env info dev --show-secrets
 ```
 
-其中，`--field` 适合在脚本里只取一个值。`--show-secrets` 会明文显示 token、密码这类敏感信息，只有在你明确需要排查时再用。
+Diantaranya, `--field` cocok untuk mengambil hanya satu nilai dalam skrip. `--show-secrets` akan menampilkan informasi sensitif seperti token dan kata sandi dalam teks biasa. Gunakan hanya jika Anda benar-benar perlu memecahkan masalah.
 
-## 更新 env 配置
+## Perbarui konfigurasi env
 
-`nb env update` 用来调整一个已保存 env 的配置。比如 API 地址、认证方式、源码来源、应用端口和数据库参数。更新完成后，CLI 会根据变更自动处理后续事宜。
+`nb env update` digunakan untuk menyesuaikan konfigurasi env yang disimpan. Seperti alamat API, metode otentikasi, sumber kode sumber, port aplikasi dan parameter database. Setelah pembaruan selesai, CLI secara otomatis menangani langkah-langkah tindak lanjut berdasarkan perubahan.
 
-如果你只是想让 CLI 按当前 env 的最新状态重新同步，直接这样写就行：
+Jika Anda hanya ingin CLI melakukan sinkronisasi ulang sesuai dengan status terbaru dari env saat ini, tulis saja seperti ini:
 
 ```bash
 nb env update
 nb env update prod
 ```
 
-如果你要修改这个 env 保存的连接信息或本地配置，可以显式带上参数：
+Jika Anda ingin mengubah informasi koneksi atau konfigurasi lokal yang disimpan oleh env ini, Anda dapat secara eksplisit membawa parameter:
 
 ```bash
 nb env update prod --api-base-url https://api.example.com/api
@@ -118,18 +118,18 @@ nb env update prod --access-token <token>
 nb env update dev --app-port 13080 --timezone Asia/Shanghai
 ```
 
-这里可以先记住一个默认判断：
+Di sini Anda pertama-tama dapat mengingat penilaian default:
 
-- 要修改 env 保存的连接信息或本地配置，用 `nb env update`
-- 应用接口、插件或 CLI 可用能力刚发生变化，也可以再执行一次 `nb env update`
-- 登录态过期了，或者要重新走一遍认证流程，用 `nb env auth`
-- 只是想看当前保存了什么，用 `nb env info`
+- Untuk mengubah informasi koneksi atau konfigurasi lokal yang disimpan oleh env, gunakan `nb env update`
+- Antarmuka aplikasi, plug-in, atau kemampuan CLI yang tersedia baru saja berubah, Anda juga dapat menjalankan `nb env update` lagi
+- Status login telah kedaluwarsa, atau Anda harus melalui proses otentikasi lagi, gunakan `nb env auth`
+- Hanya untuk melihat apa yang disimpan saat ini, gunakan `nb env info`
 
-如果你改的是 `app-port`、`timezone`、`db-*` 这类本地运行配置，`update` 只会改保存值，不会自动重启应用。通常来说后续还要再执行 `nb app restart --env <name>`；如果变更涉及 CLI 托管的内置数据库，则用 `nb app restart --env <name> --with-db`。
+Jika Anda mengubah konfigurasi berjalan lokal seperti `app-port`, `timezone`, dan `db-*`, `update` hanya akan mengubah nilai yang disimpan dan tidak akan memulai ulang aplikasi secara otomatis. Secara umum, `nb app restart --env <name>` akan dieksekusi nanti; jika perubahan melibatkan database bawaan yang dikelola CLI, gunakan `nb app restart --env <name> --with-db`.
 
-## 重新认证
+## Autentikasi ulang
 
-如果 env 已经保存，只是登录态过期了，或者你想切换认证方式，可以重新认证：
+Jika env telah disimpan, tetapi status login telah kedaluwarsa, atau Anda ingin mengganti metode autentikasi, Anda dapat mengautentikasi ulang:
 
 ```bash
 nb env auth
@@ -139,33 +139,61 @@ nb env auth prod --auth-type basic --username admin --password secret
 nb env auth prod --auth-type token --access-token <api-key>
 ```
 
-省略环境名时，CLI 会使用当前 env。认证完成后，CLI 会自动处理后续同步。
+Jika nama lingkungan dihilangkan, CLI menggunakan env saat ini. Setelah autentikasi selesai, CLI secara otomatis menangani sinkronisasi berikutnya.
 
-## 移除环境
+## Hapus lingkungan
 
-如果你只想移除保存的 env 配置：
+Skenario ini adalah yang paling membingungkan. Pertama-tama Anda dapat mengingat saran default:
+
+- Jika Anda hanya ingin menghentikan aplikasi, gunakan `nb app stop`
+- Saya juga ingin menghentikan runtime database bawaan pada mesin saat ini, gunakan `nb app stop --with-db`
+- Jika Anda yakin env ini tidak diperlukan lagi, tetapi Anda ingin menyimpan penyimpanan dan file aplikasi lokal terlebih dahulu, gunakan `nb env remove`
+- Bersihkan bahkan sumber daya hosting lokal dan gunakan `nb env remove --purge`
+
+Jika Anda hanya ingin menghapus konfigurasi env yang disimpan:
 
 ```bash
 nb env remove staging
 ```
 
-如果是本地或 Docker 托管的 env，并且你还想一起清理本机上的运行资源和 storage 数据，可以加上 `--purge`：
+Jika itu adalah env lokal atau yang dihosting Docker, dan Anda juga ingin membersihkan sumber daya yang berjalan dan data penyimpanan di mesin lokal, Anda dapat menambahkan `--purge`:
 
 ```bash
 nb env remove test --purge
 ```
 
-在非交互模式下，`nb env remove` 需要显式传入 `--force`：
+Dalam mode non-interaktif, `nb env remove` harus diteruskan dalam `--force` secara eksplisit:
 
 ```bash
 nb env remove test --purge --force
 ```
 
-`--purge` 只会清理当前机器上的 CLI 托管资源。对于远程 API env，它不会去删除远端服务本身。
+`--purge` hanya akan membersihkan sumber daya yang dikelola CLI pada mesin saat ini. Untuk env API jarak jauh, ini tidak akan menghapus layanan jarak jauh itu sendiri.
 
-## 相关链接
+Jika Anda hanya ingin menghentikan aplikasi dan database bawaan yang dikelola CLI, tulis saja:
 
-- [`nb env` 命令参考](../../api/cli/env/index.md)
+```bash
+nb app stop --env app1 --with-db
+```
+
+Jika Anda ingin menghapus env ini tetapi masih ingin menyimpan penyimpanan dan file aplikasi lokal:
+
+```bash
+nb env remove app1 --force
+```
+
+Jika Anda benar-benar ingin membersihkan konten yang dihosting secara asli di env ini, tambahkan `--purge`:
+
+```bash
+nb env remove app1 --purge --force
+```
+
+Untuk npm/Git env lokal yang dikelola oleh unduhan CLI, `--purge` juga menghapus file aplikasi lokal yang dihosting CLI. Untuk env HTTP atau SSH, ini hanya akan menghapus konfigurasi env yang disimpan di CLI dan tidak akan menghapus layanan eksternal itu sendiri.
+
+## Tautan terkait
+
+- [`nb env` Referensi Perintah](../../api/cli/env/index.md)
 - [`nb env update`](../../api/cli/env/update.md)
-- [`nb session` 命令参考](../../api/cli/session/index.md)
-- [管理应用](./manage-app.md)
+- [`nb session` Referensi Perintah](../../api/cli/session/index.md)
+- [nb maksud desain aplikasi](../cli-design/nb-app-design-intent.md)
+- [Kelola Aplikasi](./manage-app.md)

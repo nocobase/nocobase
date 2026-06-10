@@ -1,1 +1,1 @@
-# 发布管理
+# Gerenciamento de liberação

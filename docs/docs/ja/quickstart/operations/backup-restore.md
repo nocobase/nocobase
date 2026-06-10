@@ -1,75 +1,75 @@
-# 备份还原
+# バックアップと復元
 
-如果你已经把一个 NocoBase 应用保存成 CLI env，日常备份和恢复基本都在 `nb backup` 这一组命令里完成。`nb backup create` 用来在目标 env 创建备份并下载到本地，`nb backup restore` 用来把本地备份文件恢复到目标 env。
+NocoBase アプリケーションを CLI 環境として保存した場合、毎日のバックアップとリカバリは基本的に `nb backup` グループのコマンドで完了します。 `nb backup create` は、ターゲット環境にバックアップを作成し、それをローカルにダウンロードするために使用されます。 `nb backup restore` は、ローカル バックアップ ファイルをターゲット環境に復元するために使用されます。
 
-大多数时候，先记住一个默认建议就够了：升级、迁移、批量改数据前先备份；只有当你明确知道自己要覆盖当前数据时，再执行恢复。
+ほとんどの場合、デフォルトのアドバイスを覚えておくだけで十分です。データをアップグレード、移行、またはバッチ変更する前にバックアップを作成します。現在のデータを上書きすることが明確にわかっている場合にのみ、リカバリを実行してください。
 
-## 快速索引
+## クイックインデックス
 
-| 我想要…… | 用哪个命令 |
+|欲しいです... |どのコマンドを使用するか |
 | --- | --- |
-| 先把当前 env 备份到本地 | [`nb backup create`](../../api/cli/backup/create.md) |
-| 把备份保存到指定目录 | [`nb backup create --output ./backups`](../../api/cli/backup/create.md) |
-| 让脚本继续消费备份结果 | [`nb backup create --json-output`](../../api/cli/backup/create.md) |
-| 把本地备份恢复到当前 env | [`nb backup restore --file ./backups/xxx.nbdata --force`](../../api/cli/backup/restore.md) |
-| 把本地备份恢复到另一个 env | [`nb backup restore --env app1 --file ./backups/xxx.nbdata --yes --force`](../../api/cli/backup/restore.md) |
+|まず、現在の環境をローカルにバックアップします。 [`nb backup create`](../../api/cli/backup/create.md) |
+|バックアップを指定したディレクトリに保存します。 [`nb backup create --output ./backups`](../../api/cli/backup/create.md) |
+|スクリプトがバックアップ結果を引き続き使用できるようにします。 [`nb backup create --json-output`](../../api/cli/backup/create.md) |
+|ローカル バックアップを現在の環境に復元する | [`nb backup restore --file ./backups/xxx.nbdata --force`](../../api/cli/backup/restore.md) |
+|ローカル バックアップを別の環境に復元する | [`nb backup restore --env app1 --file ./backups/xxx.nbdata --yes --force`](../../api/cli/backup/restore.md) |
 
-:::tip 先确认当前 env
+:::tip まず現在の環境を確認してください
 
-`nb backup` 命令默认作用在当前 env 上。如果你同时维护多个环境，默认推荐先看一眼当前 env，再执行备份或恢复。
+`nb backup` コマンドは、デフォルトで現在の環境に作用します。複数の環境を同時に維持する場合、デフォルトの推奨事項は、バックアップまたは復元を実行する前に現在の環境を確認することです。
 
 ```bash
 nb env current
 nb env use app1
 ```
 
-如果你显式传入了不同的 `--env`，CLI 通常会要求确认。脚本或非交互场景里，可以加 `--yes` 跳过这一步。
+別の `--env` を明示的に渡すと、通常、CLI は確認を求めます。スクリプトまたは非対話型シナリオでは、`--yes` を追加してこの手順をスキップできます。
 
 :::
 
-## 创建备份
+## バックアップを作成する
 
-最简单的用法就是直接创建一个备份：
+最も簡単な使用法は、バックアップを直接作成することです。
 
 ```bash
 nb backup create
 ```
 
-命令成功返回后，备份文件已经下载到本地。省略 `--output` 时，CLI 会把文件保存到当前工作目录，并沿用远端返回的文件名——通常是 `backup_*.nbdata`。
+コマンドが正常に返されると、バックアップ ファイルがローカルにダウンロードされます。 `--output` が省略された場合、CLI はファイルを現在の作業ディレクトリに保存し、リモート エンドから返されたファイル名 (通常は `backup_*.nbdata`) を使用します。
 
-如果你想把备份统一放到一个目录里，可以这样用：
+バックアップを 1 つのディレクトリに置きたい場合は、これを使用できます。
 
 ```bash
 nb backup create --output ./backups
 ```
 
-如果 `./backups` 已经存在，而且它是一个目录，CLI 会自动把远端备份文件名拼到这个目录后面。只有当路径不存在时，CLI 才会把它当成目标文件路径。
+`./backups` がすでに存在し、それがディレクトリである場合、CLI はリモート バックアップ ファイル名をディレクトリに自動的に追加します。パスが存在しない場合にのみ、CLI はそのパスをターゲット ファイル パスとして扱います。
 
-如果你要在脚本、CI 或 agent 链路里继续消费备份结果，可以加 `--json-output`：
+スクリプト、CI、またはエージェント リンクでバックアップ結果を引き続き使用したい場合は、`--json-output` を追加できます。
 
 ```bash
 nb backup create --env app1 --yes --json-output
 ```
 
-这个模式下，CLI 不再输出进度文本，而是直接返回最终 JSON，里面通常会包含 `env`、`name` 和 `output` 三个字段。
+このモードでは、CLI は進行状況テキストを出力しなくなり、最終的な JSON を直接返します。これには通常、`env`、`name`、`output` の 3 つのフィールドが含まれます。
 
-## 恢复备份
+## バックアップを復元する
 
-恢复命令会把本地备份文件上传到目标 env，并覆盖当前应用数据：
+復元コマンドは、ローカル バックアップ ファイルをターゲット環境にアップロードし、現在のアプリケーション データを上書きします。
 
 ```bash
 nb backup restore --file ./backups/backup_20260520_190408_8397.nbdata --force
 ```
 
-如果你要恢复到的不是当前 env，通常来说这样写更稳妥：
+現在の環境以外の環境に復元したい場合は、通常は次のように記述する方が安全です。
 
 ```bash
 nb backup restore --env app1 --file ./backups/backup_20260520_190408_8397.nbdata --yes --force
 ```
 
-:::warning 注意
+:::警告メモ
 
-恢复是全量覆盖操作。默认推荐在恢复前，先对当前目标 env 再做一份备份。
+リカバリは完全にカバーされる操作です。デフォルトでは、復元する前に現在のターゲット環境のバックアップを再度作成することをお勧めします。
 
 ```bash
 nb backup create --env app1 --yes --output ./backups
@@ -78,17 +78,17 @@ nb backup restore --env app1 --file ./backups/backup_20260520_190408_8397.nbdata
 
 :::
 
-`nb backup restore` 会先检查 `--file` 指向的路径是否存在，并确认它是一个普通文件。上传成功后，CLI 还会继续等待应用重新通过健康检查，所以命令成功返回时，应用通常已经恢复到可访问状态。
+`nb backup restore` は、まず `--file` が指すパスが存在するかどうかをチェックし、それが通常のファイルであることを確認します。アップロードが成功した後、CLI はアプリケーションがヘルス チェックに再度合格するまで待機し続けるため、コマンドが正常に返されると、通常、アプリケーションはアクセス可能な状態に復元されています。
 
-如果没有传入 `--force`，交互终端会再要求你确认一次。在非交互终端、脚本和 AI agent 会话里，`--force` 是必需的。
+`--force` が渡されない場合、対話型端末は再度確認を求めます。非対話型ターミナル、スクリプト、および AI エージェント セッションでは、`--force` が必要です。
 
-## 常见情况
+## よくある状況
 
-如果你更习惯在界面里操作，或者需要定时备份、云存储同步这类能力，可以直接看 [备份管理](../../ops-management/backup-manager/index.mdx)。这类场景下，Web UI 往往更合适。
+インターフェイスでの操作に慣れている場合、またはスケジュールされたバックアップやクラウド ストレージの同期などの機能が必要な場合は、[バックアップ管理](../../ops-management/backup-manager/index.mdx) を直接参照できます。このようなシナリオでは、多くの場合、Web UI の方が適しています。
 
-## 相关链接
+## 関連リンク
 
-- [`nb backup` 命令参考](../../api/cli/backup/index.md)
-- [`nb env` 命令参考](../../api/cli/env/index.md)
-- [多环境管理](./multi-environment.md)
-- [备份管理](../../ops-management/backup-manager/index.mdx)
+- [`nb backup` コマンドリファレンス](../../api/cli/backup/index.md)
+- [`nb env` コマンドリファレンス](../../api/cli/env/index.md)
+- [複数の環境管理](./multi-environment.md)
+- [バックアップ管理](../../ops-management/backup-manager/index.mdx)

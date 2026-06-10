@@ -1,75 +1,51 @@
 ---
-title: "Reverse proxy trong môi trường production"
-description: "Dùng nb proxy nginx và nb proxy caddy để tạo và quản lý cấu hình reverse proxy cho các env NocoBase do CLI quản lý."
-keywords: "NocoBase,nb proxy nginx,nb proxy caddy,reverse proxy,Nginx,Caddy,production"
+title: "Proxy ngược môi trường sản xuất"
+description: "Tạo và quản lý cấu hình proxy ngược cho NocoBase env được lưu trữ trên CLI dựa trên nb proxy nginx và nb proxy caddy."
+keywords: "NocoBase,nb proxy nginx,nb proxy caddy, proxy ngược, Nginx, Caddy, môi trường sản xuất"
 ---
 
-# Reverse proxy trong môi trường production
 
-Trong NocoBase CLI, các điểm vào được khuyến nghị cho reverse proxy production là:
+# Proxy ngược
 
-- `nb proxy nginx`
-- `nb proxy caddy`
+Bài viết này chỉ áp dụng cho các ứng dụng được cài đặt bằng `nb init`.
 
-Trong đó:
+Trong NocoBase, proxy ngược của môi trường sản xuất không chỉ đơn giản là chuyển tiếp các yêu cầu đến quy trình ứng dụng. Thông thường, các chi tiết về WebSockets, đường dẫn phụ, tài nguyên tĩnh giao diện người dùng, thư mục tải lên và trang dự phòng SPA cũng được xử lý cùng lúc.
 
-- `proxy` quản lý lớp entry
-- `nginx` và `caddy` là các provider implementation
-- `docker` và `local` là runtime driver
-- `--env <name>` chọn env CLI mà bạn muốn tạo cấu hình cho
+Chức năng của `nb proxy` là thu thập những chi tiết dễ bị bỏ sót này thành một tập hợp các mục lệnh ổn định.
 
-Miễn là ứng dụng của bạn đã được lưu dưới dạng env do CLI quản lý và env đó là `local` hoặc `docker`, thông thường chỉ cần để CLI tạo và quản lý cấu hình reverse proxy. Cách này giúp việc xử lý WebSocket, subpath, trang fallback SPA và các lần cập nhật sau đó luôn nhất quán ở một nơi.
+##Quy trình cốt lõi
 
-Nếu ứng dụng không do CLI quản lý, hoặc bạn muốn tự tay duy trì toàn bộ cấu hình proxy, hãy chuyển sang phần cấu hình thủ công trong các trang provider tương ứng.
-
-## Trước khi bắt đầu
-
-Hãy chắc chắn rằng:
-
-- ứng dụng đã có thể truy cập nội bộ, ví dụ như `http://127.0.0.1:13000`
-- ứng dụng đã được lưu thành một CLI env, và env đó là `local` hoặc `docker`
-- env đó đã lưu `appPort`
-
-Nếu lệnh cho biết env còn thiếu `appPort`, hãy cập nhật trước bằng [`nb env update`](../../../api/cli/env/update.md).
-
-Nếu sau đó bạn thay đổi các thiết lập như `app-port` hoặc `app-public-path` làm ảnh hưởng đến hành vi proxy, hãy chạy lại lệnh `generate` tương ứng.
-
-## Luồng mặc định
-
-Với Nginx:
+Nếu bạn chỉ nhìn vào quy trình cốt lõi, chỉ cần nhớ ba lệnh sau là đủ:
 
 ```bash
 nb proxy nginx use docker
 nb proxy nginx generate --env test2 --host c.local.nocobase.com
-nb proxy nginx start
+nb proxy nginx reload
 ```
 
-Với Caddy:
+Nếu bạn đang sử dụng Caddy, chỉ cần thay thế `nginx` trong lệnh bằng `caddy`.
 
-```bash
-nb proxy caddy use local
-nb proxy caddy generate --env test2 --host c.local.nocobase.com
-nb proxy caddy start
-```
+`use local` và `use docker` có thể được đánh giá trực tiếp như thế này:
 
-Vai trò của từng bước là:
+- Nếu Nginx hoặc Caddy đã được cài đặt cục bộ, hãy sử dụng `use local`
+- Không có cài đặt cục bộ. Nếu bạn định cho phép CLI sử dụng Docker để quản lý tác nhân, hãy sử dụng `use docker`
 
-- `use docker|local`: chọn runtime driver cho provider hiện tại
-- `generate --env <name> --host <domain>`: tạo cấu hình reverse proxy cho một env
-- `start`: khởi động tiến trình cục bộ hoặc container Docker của provider hiện tại
+Trong hầu hết các trường hợp, chỉ cần thực thi `use` trước, sau đó là `generate` và cuối cùng là `reload` là đủ. Để biết chi tiết về Nginx hoặc Caddy, hãy tiếp tục đến các trang tương ứng của chúng.
 
-## CLI duy trì những gì
+## Khi nào nên chọn Nginx và khi nào nên chọn Caddy
 
-CLI không chỉ tạo ra một đoạn proxy. Nó còn giữ cho các tệp trợ giúp và cấu trúc entry của site luôn đồng bộ với provider:
+Nó thường có thể được đánh giá như thế này:
 
-- Nginx duy trì `snippets`, `app.conf`, `public/index-v1.html` và `public/index-v2.html` dùng chung
-- Caddy duy trì `nocobase.caddy`, `app.caddy`, `public/index-v1.html` và `public/index-v2.html`, trong đó `app.caddy` là cấu hình site đầy đủ cho một env
-
-## Nên mở trang nào trước
-
-| Tôi muốn... | Xem ở đâu |
+| Kịch bản | Khuyến nghị |
 | --- | --- |
-| Tiếp tục dùng Nginx cho site, chứng chỉ, cache hoặc kiểm soát truy cập | [Nginx](./nginx.md) |
-| Bật HTTPS nhanh và tự quản ít chi tiết TLS hơn | [Caddy](./caddy.md) |
-| Điều chỉnh các thiết lập env có thể ảnh hưởng đến hành vi proxy như `app-port` hoặc `app-public-path` | [`nb env update`](../../../api/cli/env/update.md) |
-| Cài ứng dụng thành env do CLI quản lý trước | [Cài bằng CLI](../../installation/cli.md) |
+| Bạn đã sử dụng Nginx để quản lý trang web, chứng chỉ, bộ đệm hoặc kiểm soát truy cập của mình | [Nginx](./nginx.md) |
+| Bạn đã có tên miền và muốn chạy HTTPS càng sớm càng tốt và lưu một số chi tiết TLS để duy trì | [Caddy](./caddy.md) |
+
+## Đọc tiếp phần bên dưới
+
+| Tôi muốn... | Tìm ở đâu |
+| --- | --- |
+| Theo lối vào trang quản lý Nginx | [Nginx](./nginx.md) |
+| Kết nối HTTPS càng sớm càng tốt | [Caddy](./caddy.md) |
+| Trước tiên hãy điều chỉnh cấu hình env sẽ ảnh hưởng đến kết quả proxy, chẳng hạn như `app-port`, `app-public-path` | [`nb env update`](../../../api/cli/env/update.md) |
+| Đầu tiên hãy xác nhận cài đặt và cấu hình env của ứng dụng | [Cài đặt bằng CLI (được khuyến nghị)](../../installation/cli.md) |

@@ -1,138 +1,153 @@
-# 应用环境变量
+# 应用配置与 `.env`
 
-如果你只是想把应用先跑起来，通常来说先确认 `APP_KEY`、`TZ`、`APP_PORT`，以及数据库相关的 `DB_*` 就够了。
+这篇页只适用于通过 NocoBase CLI 创建或托管的应用。
 
-不过按当前源码来扫，应用运行时实际会读取的环境变量比这多不少。下面这份清单以源码为准整理，只统计应用运行时会读到的变量，不包含文档站构建变量，也不包含大部分测试专用变量。
+如果你刚看完 [使用 CLI 安装（推荐）](./cli.md)，并且已经看到其中的“安装目录”一节，那么接下来最容易遇到的问题通常就是这几个：
 
-## 怎么设置环境变量
+- `.env` 文件放在哪里
+- 哪些配置还适合写进 `.env`
+- 哪些配置现在更适合交给 `nb env update`
 
-### `create-nocobase-app` 或 Git 源码方式
+先说结论：
 
-在项目根目录的 `.env` 文件里设置环境变量。修改完成后，重新启动应用。
+- 对于 CLI 安装的应用，`.env` 默认放在 `<app-path>/.env`
+- 这个文件是可选的，不是每个 env 都必须手动创建
+- `APP_KEY`、`TZ`、`APP_PORT`、`APP_PUBLIC_PATH`、`DB_*` 这类基础配置，默认优先用 `nb env update` 管理
+- `.env` 主要用来补充 CLI 还没有直接接管的运行时变量，比如存储、缓存、日志、观测和部分插件扩展变量
+
+## 先找到 `app-path`
+
+在 [使用 CLI 安装（推荐）](./cli.md#安装目录) 里，CLI env 的默认目录结构是这样：
+
+```text
+<app-path>/
+├── source/
+├── storage/
+└── .env
+```
+
+如果你还不确定当前应用的 `app-path` 在哪，可以直接查看：
 
 ```bash
-APP_KEY=your-app-key
-TZ=Asia/Shanghai
-APP_PORT=13000
-DB_DIALECT=postgres
-DB_HOST=127.0.0.1
-DB_PORT=5432
-DB_DATABASE=nocobase
-DB_USER=nocobase
-DB_PASSWORD=nocobase
+nb env info app1 --field app.appPath
 ```
 
-### Docker Compose 方式
+把 `app1` 换成你的 env 名称就行。
 
-可以直接在 `docker-compose.yml` 的 `environment` 里设置：
+也就是说，对一个通过 CLI 创建或托管的应用来说，`.env` 文件最合适的位置就是：
 
-```yml
-services:
-  app:
-    image: nocobase/nocobase:latest
-    environment:
-      - APP_ENV=production
-      - APP_KEY=your-app-key
-      - TZ=Asia/Shanghai
+```text
+<app-path>/.env
 ```
 
-也可以用 `env_file` 引入单独的 `.env` 文件：
+通常来说，不需要把它放到 `source/.env`，也不需要再按旧安装方式去找 Docker Compose 项目根目录里的 `.env`。
 
-```yml
-services:
-  app:
-    image: nocobase/nocobase:latest
-    env_file: .env
-```
+## 什么时候需要自己创建 `.env`
 
-修改完成后，重新创建应用容器：
+`.env` 是可选的。
+
+如果你只是想把应用先跑起来，或者只是修改端口、时区、数据库连接、公开访问路径这类基础配置，那么很多时候根本不需要手动创建 `.env`。
+
+只有当你需要补充一些 CLI 还没有直接接管的运行时变量时，才需要在 `<app-path>/.env` 里添加它们。
+
+## 默认先用 `nb env update`
+
+在新的 CLI 安装方式里，应用基础配置默认推荐优先交给 [`nb env update`](../../api/cli/env/update.md)。
+
+这样做有两个好处：
+
+- 配置和 env 本身保存在同一套 CLI 心智里，更容易查和改
+- 后续你自己、脚本和 AI agent 都可以继续用同一组命令维护，不容易出现“文件里改了一套，CLI 里记的是另一套”的情况
+
+### 这些配置现在更适合交给 `nb env update`
+
+下面这些项目，过去你可能会习惯直接写进 `.env`。不过在 CLI 安装方式下，默认更推荐用 `nb env update`：
+
+| 我想改…… | 默认怎么改 |
+| --- | --- |
+| `APP_KEY` | `nb env update <name> --app-key <value>` |
+| `TZ` | `nb env update <name> --timezone <value>` |
+| `APP_PORT` | `nb env update <name> --app-port <value>` |
+| `APP_PUBLIC_PATH` | `nb env update <name> --app-public-path <value>` |
+| `CDN_BASE_URL` | `nb env update <name> --cdn-base-url <value>` |
+| 数据库类型和连接参数，比如 `DB_DIALECT`、`DB_HOST`、`DB_PORT`、`DB_DATABASE`、`DB_USER`、`DB_PASSWORD` | `nb env update <name> --db-dialect ... --db-host ... --db-port ... --db-database ... --db-user ... --db-password ...` |
+| PostgreSQL schema、表前缀、下划线命名这类数据库补充项，比如 `DB_SCHEMA`、`DB_TABLE_PREFIX`、`DB_UNDERSCORED` | `nb env update <name> --db-schema ... --db-table-prefix ... --db-underscored` |
+
+比如你想改应用端口和时区，可以直接这样写：
 
 ```bash
-docker compose up -d app
+nb env update app1 --app-port 13080 --timezone Asia/Shanghai
 ```
 
-## 源码里主要有哪些变量
-
-:::tip 说明
-
-当前源码里没有读取统一的 `FILE_STORAGE` 变量。文件存储相关配置已经拆成了 `LOCAL_STORAGE_DEST`、`AWS_S3_*`、`ALI_OSS_*`、`TX_COS_*` 等更具体的变量。
-
-:::
-
-- **应用启动与路由**：`APP_ENV`、`APP_KEY`、`APP_PORT`、`APP_PUBLIC_PATH`、`APP_PUBLIC_ORIGIN`、`API_BASE_PATH`、`API_BASE_URL`、`WEBSOCKET_URL`、`WS_PATH`、`APP_MODERN_CLIENT_PREFIX`、`CDN_BASE_URL`、`ESM_CDN_BASE_URL`、`ESM_CDN_SUFFIX`
-- **数据库连接**：`DB_DIALECT`、`DB_STORAGE`、`DB_HOST`、`DB_PORT`、`DB_DATABASE`、`DB_USER`、`DB_PASSWORD`、`DB_TIMEZONE`、`DB_TABLE_PREFIX`、`DB_SCHEMA`、`DB_UNDERSCORED`、`DB_LOGGING`
-- **数据库高级配置**：`DB_POOL_MAX`、`DB_POOL_MIN`、`DB_POOL_IDLE`、`DB_POOL_ACQUIRE`、`DB_POOL_EVICT`、`DB_POOL_MAX_USES`、`DB_DIALECT_OPTIONS_SSL_MODE`、`DB_DIALECT_OPTIONS_SSL_CA`、`DB_DIALECT_OPTIONS_SSL_KEY`、`DB_DIALECT_OPTIONS_SSL_CERT`、`DB_DIALECT_OPTIONS_SSL_REJECT_UNAUTHORIZED`、`DB_SQL_BENCHMARK`
-- **缓存、日志与观测**：`CACHE_DEFAULT_STORE`、`CACHE_MEMORY_MAX`、`CACHE_REDIS_URL`、`REDIS_URL`、`LOGGER_TRANSPORT`、`LOGGER_LEVEL`、`LOGGER_FORMAT`、`LOGGER_MAX_FILES`、`LOGGER_MAX_SIZE`、`TELEMETRY_SERVICE_NAME`、`TELEMETRY_ENABLED`、`TELEMETRY_METRIC_READER`、`TELEMETRY_TRACE_PROCESSOR`、`ENABLE_PERF_HOOKS`
-- **初始化与安全**：`INIT_LANG`、`INIT_APP_LANG`、`INIT_ROOT_EMAIL`、`INIT_ROOT_PASSWORD`、`INIT_ROOT_NICKNAME`、`INIT_ROOT_USERNAME`、`SERVER_REQUEST_WHITELIST`、`CORS_ORIGIN_WHITELIST`、`CORS_DISALLOW_NO_ORIGIN`、`REQUEST_BODY_LIMIT`、`APP_AES_SECRET_KEY`、`APP_AES_SECRET_KEY_PATH`
-- **存储与插件目录**：`STORAGE_PATH`、`LOCAL_STORAGE_DEST`、`LOCAL_STORAGE_ALLOWED_ROOTS`、`PLUGIN_STORAGE_PATH`、`NODE_MODULES_PATH`、`PLUGIN_PATH`、`PLUGIN_STATICS_PATH`、`PLUGIN_PACKAGE_PREFIX`、`APPEND_PRESET_BUILT_IN_PLUGINS`、`DISABLE_PM_ADD`
-- **集群、Worker 与多应用**：`CLUSTER_MODE`、`WORKER_MODE`、`APP_MODE`、`APP_DISCOVERY_ADAPTER`、`APP_PROCESS_ADAPTER`、`APP_COMMAND_ADAPTER`、`APP_SUPERVISOR_AES_SECRET_KEY`、`STARTUP_SUBAPP`、`USE_DB_SCHEMA_IN_SUBAPP`、`SUBAPP_BOOTSTRAP_CONCURRENCY`、`SUBAPP_BOOTSTRAP_INTERVAL_CAP`、`SUBAPP_BOOTSTRAP_INTERVAL`、`LOCK_ADAPTER_DEFAULT`
-- **常见插件扩展**：`EXPORT_LIMIT`、`EXPORT_AUTO_MODE_THRESHOLD`、`EXPORT_ATTACHMENTS_AUTO_MODE_THRESHOLD`、`ASYNC_TASK_MAX_CONCURRENCY`、`ASYNC_TASK_CONCURRENCY_MODE`、`ASYNC_TASK_WORKER_MAX_OLD`、`ASYNC_TASK_WORKER_MAX_YOUNG`、`WORKFLOW_NODES_LIMIT`、`WORKFLOW_LOOP_LIMIT`、`WORKFLOW_SCRIPT_MODULES`、`NOCOBASE_AI_DOCS_DIR`
-- **对象存储提供商**：`AWS_S3_*`、`ALI_OSS_*`、`TX_COS_*`
-
-## 多数场景先确认哪些变量
-
-### `APP_KEY`
-
-应用密钥，用于生成 token 等敏感数据。部署到正式环境前，记得改成你自己的值，并妥善保管。
-
-如果你没有显式配置，源码里会优先尝试读取 `storage/apps/main/jwt_secret.dat`，再决定是否自动生成。所以正式环境里最好还是明确配置 `APP_KEY`，不要依赖默认行为。
-
-:::warning 注意
-
-如果 `APP_KEY` 改了，旧的 token 也会随之失效。
-
-:::
-
-### `TZ`
-
-应用时区。和时间相关的处理都会受它影响。
+如果你想改数据库连接参数，可以这样写：
 
 ```bash
-TZ=Asia/Shanghai
+nb env update app1 \
+  --db-dialect postgres \
+  --db-host 127.0.0.1 \
+  --db-port 5432 \
+  --db-database nocobase \
+  --db-user nocobase \
+  --db-password nocobase
 ```
 
-### `APP_PORT`
+改完之后，CLI 通常会提示你后续执行 `nb app restart`。更完整的参数说明直接看 [`nb env update`](../../api/cli/env/update.md) 就行。
 
-应用端口，默认值通常是 `13000`。
+## 哪些情况更适合写进 `.env`
+
+如果某个变量还没有对应的 CLI 参数，或者它本身更像“直接传给应用运行时”的扩展配置，那么继续写进 `<app-path>/.env` 就可以。
+
+通常包括这几类：
+
+- 文件存储和对象存储配置，比如 `LOCAL_STORAGE_*`、`AWS_S3_*`、`ALI_OSS_*`、`TX_COS_*`
+- 缓存和 Redis 配置，比如 `CACHE_*`、`REDIS_URL`
+- 日志和观测配置，比如 `LOGGER_*`、`TELEMETRY_*`
+- 某些插件或扩展专用变量，比如导出、异步任务、工作流、AI 扩展相关变量
+
+比如：
 
 ```bash
-APP_PORT=13000
+LOCAL_STORAGE_DEST=storage/uploads
+AWS_S3_BUCKET=your-bucket
+AWS_S3_REGION=ap-southeast-1
+LOGGER_LEVEL=info
+REDIS_URL=redis://127.0.0.1:6379
 ```
 
-### `DB_*`
+这类变量本质上还是应用运行时配置，CLI 目前不会逐项接管，放在 `.env` 里最自然。
 
-如果你使用外部数据库，至少要确认这些变量：
+## `.env` 和 `nb env update` 怎么分工
+
+如果你不确定某个配置该放哪，默认按这条规则判断就够了：
+
+- 如果 `nb env update` 已经有对应参数，默认先用它
+- 如果没有对应参数，或者它明显属于插件、存储、缓存、日志这类运行时扩展配置，就放进 `<app-path>/.env`
+
+多数场景下，这样分工已经够用了。
+
+### 一个常见误区
+
+不要把同一个配置同时维护两份。
+
+比如 `APP_PORT`、`TZ`、`APP_PUBLIC_PATH`、`DB_HOST` 这些基础项，如果你已经用 `nb env update` 保存了，通常就不要再在 `.env` 里重复写一遍。否则后面排查问题时，很容易分不清到底哪一层才是你真正想生效的值。
+
+## 一个最小的 `.env` 例子
+
+如果你的基础配置都已经通过 CLI 保存好了，那么 `.env` 很可能只需要保留少量扩展变量，比如：
 
 ```bash
-DB_DIALECT=postgres
-DB_HOST=127.0.0.1
-DB_PORT=5432
-DB_DATABASE=nocobase
-DB_USER=nocobase
-DB_PASSWORD=nocobase
+LOGGER_LEVEL=info
+REDIS_URL=redis://127.0.0.1:6379
+AWS_S3_BUCKET=your-bucket
+AWS_S3_REGION=ap-southeast-1
 ```
 
-如果你使用 MySQL 或 MariaDB，并且数据库配置了 `lower_case_table_names=1`，还需要确认：
+这也是这篇页最想帮你建立的心智：
 
-```bash
-DB_UNDERSCORED=true
-```
+`.env` 仍然有用，不过它在新的 CLI 安装方式里，更多是在补充运行时扩展配置，而不是继续承担所有基础安装参数。
 
-### 另外这几项也比较常见
+## 下一步去哪里看
 
-- `DB_STORAGE`：如果你用 SQLite，实际会读这个变量来确定数据库文件路径
-- `APP_PUBLIC_PATH`：如果你把应用部署在子路径下，而不是直接挂在 `/`，通常要配这个
-- `CACHE_DEFAULT_STORE` 和 `CACHE_REDIS_URL`：如果你要做集群、多实例或把缓存切到 Redis，这两个变量通常会一起出现
-- `DB_SCHEMA` 和 `USE_DB_SCHEMA_IN_SUBAPP`：如果你在 PostgreSQL 下跑多应用，或者需要按 schema 隔离数据，经常会用到
-
-## 源码里的默认值
-
-- `STORAGE_PATH` 默认是项目根目录下的 `storage`
-- `DB_STORAGE` 默认是 `storage/db/nocobase.sqlite`
-- `LOCAL_STORAGE_DEST` 默认是 `storage/uploads`
-- `PLUGIN_STORAGE_PATH` 默认是 `storage/plugins`
-- `DB_TIMEZONE` 没有单独配置时，会跟 `TZ` 对齐
-
-## 继续往下看
-
-如果你要看 `APP_KEY`、`TZ`、`DB_*` 这类基础项的逐项说明，继续看 [全局环境变量](/api/app/env)。如果你要看文件存储、工作流、队列、多应用这类插件专用变量，直接看对应插件文档会更准。
+- 如果你还没确认应用目录结构，先回到 [使用 CLI 安装（推荐）](./cli.md#安装目录)
+- 如果你要修改端口、时区、数据库连接、公开访问路径这类基础配置，继续看 [`nb env update`](../../api/cli/env/update.md)
+- 如果你要启动、重启或查看应用日志，继续看 [管理应用](../operations/manage-app.md)
