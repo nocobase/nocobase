@@ -897,6 +897,79 @@ describe('FlowRoute', () => {
     expect(layoutModel.registerRoutePage).not.toHaveBeenCalled();
   });
 
+  it('should not load a known page uid when a protected custom layout has no accessible route', async () => {
+    const engine = new FlowEngine();
+    const findOne = vi.fn().mockResolvedValue({
+      uid: 'known-denied-custom-page',
+      use: 'FlowModel',
+    });
+    engine.setModelRepository({
+      findOne,
+      save: vi.fn(),
+      destroy: vi.fn(),
+    } as any);
+    engine.context.defineProperty('routeRepository', {
+      value: {
+        refreshAccessible: hookState.refresh,
+        isAccessibleLoaded: () => true,
+        ensureAccessibleLoaded: vi.fn().mockResolvedValue([]),
+        getRouteBySchemaUid: vi.fn(() => undefined),
+      },
+    });
+    engine.context.defineProperty('app', {
+      value: {
+        getPublicPath: () => '/v2/',
+        router: {
+          getBasename: () => '/v2',
+        },
+      },
+    });
+    const routeModel = engine.createModel({
+      uid: 'custom-layout-route-model',
+      use: 'FlowModel',
+    });
+    routeModel.context.defineProperty('layout', {
+      value: {
+        routeName: 'admin2',
+        routePath: '/admin2',
+        rootRouteName: 'admin2',
+        uid: 'custom-protected-layout-model',
+        layoutModelClass: 'AdminLayoutModel',
+        rootPageModelClass: 'RootPageModel',
+        childPageModelClass: 'ChildPageModel',
+        authCheck: true,
+      },
+    });
+
+    const layoutModel: MockAdminLayoutModel = Object.assign(
+      engine.createModel({ uid: 'custom-protected-layout-model', use: 'FlowModel' }),
+      {
+        registerRoutePage: vi.fn(),
+        updateRoutePage: vi.fn(),
+        unregisterRoutePage: vi.fn(),
+      },
+    );
+
+    render(
+      <FlowEngineProvider engine={engine}>
+        <FlowContextProvider context={routeModel.context}>
+          <MemoryRouter initialEntries={['/admin2/known-denied-custom-page']}>
+            <Routes>
+              <Route
+                path="/admin2/:name"
+                element={<FlowRoute legacyPageBehavior="notFound" getLayoutModel={() => layoutModel} />}
+              />
+            </Routes>
+          </MemoryRouter>
+        </FlowContextProvider>
+      </FlowEngineProvider>,
+    );
+
+    expect(await screen.findByText('404')).toBeInTheDocument();
+    expect(findOne).not.toHaveBeenCalled();
+    expect(layoutModel.registerRoutePage).not.toHaveBeenCalled();
+  });
+
   it('should check model existence without occupying the route model uid', async () => {
     const engine = new FlowEngine();
     const findOne = vi.fn().mockResolvedValue({

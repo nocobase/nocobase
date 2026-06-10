@@ -773,7 +773,20 @@ async function listAccessibleUiLayouts(ctx: ResourcerContext, next: () => Promis
   const records = await ctx.db.getRepository('uiLayouts').find({
     filter,
     fields: [...UI_LAYOUT_RUNTIME_FIELDS],
-    sort: ['id'],
+    sort: ['uid'],
+  });
+
+  ctx.body = records.map((record) => pickUiLayoutRuntimeFields(record));
+  await next();
+}
+
+async function listEnabledUiLayouts(ctx: ResourcerContext, next: () => Promise<void>) {
+  const records = await ctx.db.getRepository('uiLayouts').find({
+    filter: {
+      enabled: true,
+    },
+    fields: [...UI_LAYOUT_RUNTIME_FIELDS],
+    sort: ['uid'],
   });
 
   ctx.body = records.map((record) => pickUiLayoutRuntimeFields(record));
@@ -786,7 +799,7 @@ async function listUiLayoutRolePermissionTargets(ctx: ResourcerContext, next: ()
       enabled: true,
     },
     fields: [...UI_LAYOUT_ROLE_PERMISSION_TARGET_FIELDS],
-    sort: ['id'],
+    sort: ['uid'],
   });
 
   ctx.body = records.map((record) => pickUiLayoutRolePermissionTargetFields(record));
@@ -985,8 +998,10 @@ export class PluginUiLayoutServer extends Plugin {
       name: 'pm.acl.roles',
       actions: ROLE_UI_LAYOUT_PERMISSION_ACTIONS,
     });
+    this.app.acl.allow('uiLayouts', 'listEnabled', 'public');
     this.app.acl.allow('uiLayouts', 'listAccessible', 'loggedIn');
 
+    this.app.resourceManager.registerActionHandler('uiLayouts:listEnabled', listEnabledUiLayouts);
     this.app.resourceManager.registerActionHandler('uiLayouts:listAccessible', listAccessibleUiLayouts);
     this.app.resourceManager.registerActionHandler(
       'uiLayouts:listRolePermissionTargets',

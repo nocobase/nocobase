@@ -96,7 +96,7 @@ describe('PluginUiLayoutClientV2', () => {
     const registeredFlowSettingsComponents = app.flowEngine.flowSettings.registerComponents.mock.calls[0]?.[0];
     expect(registeredFlowSettingsComponents?.MobileMenuSettingsIconPicker).toBeDefined();
     expect(app.apiClient.request).toHaveBeenCalledWith({
-      url: 'uiLayouts:listAccessible',
+      url: 'uiLayouts:listEnabled',
       method: 'get',
       skipNotify: true,
     });
@@ -107,5 +107,33 @@ describe('PluginUiLayoutClientV2', () => {
       layoutModelClass: 'AdminLayoutModel',
       authCheck: true,
     });
+  });
+
+  it('should register custom layout routes during plugin load', async () => {
+    const { default: PluginUiLayoutClientV2 } = await import('../plugin');
+    const app = createMockClient({
+      publicPath: '/v/',
+      plugins: [PluginUiLayoutClientV2],
+      router: { type: 'memory', initialEntries: ['/v/admin2/odx187kzx2d'] },
+    });
+    app.apiMock.onGet('uiLayouts:listEnabled').reply(200, {
+      data: [
+        {
+          uid: 'admin2-layout-model',
+          layoutType: UI_LAYOUT_TYPE_DESKTOP,
+          routeName: 'admin2',
+          routePath: '/admin2',
+          authCheck: true,
+          enabled: true,
+        },
+      ],
+    });
+
+    await app.load();
+
+    const matches = app.router.matchRoutes('/v/admin2/odx187kzx2d') || [];
+    expect(matches.some((match) => match.route.path === '/admin2' && match.route.authCheck === true)).toBe(true);
+    expect(matches.some((match) => match.route.path === ':name')).toBe(true);
+    expect(matches.some((match) => match.route.path === ':uiLayoutRouteName/*')).toBe(false);
   });
 });

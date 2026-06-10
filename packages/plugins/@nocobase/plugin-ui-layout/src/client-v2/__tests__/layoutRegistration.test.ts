@@ -63,7 +63,7 @@ describe('plugin-ui-layout layout registration', () => {
     expect(toUiLayoutRegisterOptions({ ...desktopLayout, layoutType: 'custom' })).toBeNull();
   });
 
-  it('should fetch accessible uiLayouts for runtime registration', async () => {
+  it('should fetch enabled uiLayouts for runtime registration', async () => {
     const request = vi.fn().mockResolvedValue({
       data: {
         data: [desktopLayout],
@@ -72,7 +72,7 @@ describe('plugin-ui-layout layout registration', () => {
 
     await expect(fetchUiLayouts({ request })).resolves.toEqual([desktopLayout]);
     expect(request).toHaveBeenCalledWith({
-      url: 'uiLayouts:listAccessible',
+      url: 'uiLayouts:listEnabled',
       method: 'get',
       skipNotify: true,
     });

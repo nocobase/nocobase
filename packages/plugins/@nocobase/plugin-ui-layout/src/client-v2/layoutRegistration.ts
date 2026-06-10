@@ -77,7 +77,7 @@ export function toUiLayoutRegisterOptions(record: UiLayoutRuntimeRecord): Layout
 
 export async function fetchUiLayouts(apiClient: UiLayoutRegistrationApp['apiClient']) {
   const response = await apiClient.request<UiLayoutListBody>({
-    url: 'uiLayouts:listAccessible',
+    url: 'uiLayouts:listEnabled',
     method: 'get',
     skipNotify: true,
   });

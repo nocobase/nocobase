@@ -815,6 +815,125 @@ describe('plugin-ui-layout server', () => {
     expect(userResponse.status).toBe(200);
   });
 
+  it('should expose uiLayouts:listEnabled as a public route manifest', async () => {
+    app = await createUiLayoutMockServer();
+
+    await app.db.getRepository('uiLayouts').create({
+      values: {
+        uid: 'runtime-layout-enabled-public',
+        title: 'Runtime public enabled layout',
+        layoutType: 'desktop',
+        routeName: 'runtimePublicEnabledLayout',
+        routePath: '/runtime-public-enabled-layout',
+        authCheck: true,
+        enabled: true,
+      },
+    });
+    await app.db.getRepository('uiLayouts').create({
+      values: {
+        uid: 'runtime-layout-disabled-public',
+        title: 'Runtime public disabled layout',
+        layoutType: 'mobile',
+        routeName: 'runtimePublicDisabledLayout',
+        routePath: '/runtime-public-disabled-layout',
+        authCheck: true,
+        enabled: false,
+      },
+    });
+
+    const response = await app.agent().get('/uiLayouts:listEnabled');
+    const layouts = response.body.data as Array<Record<string, unknown>>;
+
+    expect(response.status).toBe(200);
+    expect(layouts.map((layout) => layout.uid)).toEqual(
+      expect.arrayContaining([DEFAULT_ADMIN_UI_LAYOUT.uid, 'runtime-layout-enabled-public']),
+    );
+    expect(layouts.map((layout) => layout.uid)).not.toContain('runtime-layout-disabled-public');
+    for (const layout of layouts) {
+      expect(layout.enabled).toBe(true);
+      expect(Object.keys(layout).sort()).toEqual([...UI_LAYOUT_RUNTIME_FIELDS].sort());
+    }
+  });
+
+  it('should not grant desktop route access through public ui layout manifest', async () => {
+    app = await createUiLayoutMockServer();
+
+    const layoutUid = 'runtime-public-manifest-denied-layout';
+    const layout = await app.db.getRepository('uiLayouts').create({
+      values: {
+        uid: layoutUid,
+        title: 'Runtime public manifest denied layout',
+        layoutType: 'desktop',
+        routeName: 'runtimePublicManifestDeniedLayout',
+        routePath: '/runtime-public-manifest-denied-layout',
+        authCheck: true,
+        enabled: true,
+      },
+    });
+    const route = await app.db.getRepository('desktopRoutes').create({
+      values: {
+        type: 'flowPage',
+        title: 'DATA-PUBLIC-MANIFEST-DENIED-ROUTE',
+        schemaUid: 'public-manifest-denied-route',
+        hidden: false,
+        sort: 10,
+      },
+    });
+    await app.db.getRepository('desktopRoutes.uiLayouts', route.get('id')).set({
+      tk: [layout.get('uid')],
+    });
+
+    const role = await app.db.getRepository('roles').create({
+      values: {
+        name: 'runtime-public-manifest-denied-member',
+      },
+    });
+    const user = await app.db.getRepository('users').create({
+      values: {
+        roles: [role.get('name')],
+      },
+    });
+    const guestAgent = app.agent();
+    const memberAgent = await app.agent().login(user);
+
+    const [
+      manifestResponse,
+      guestRouteListResponse,
+      guestRouteGetResponse,
+      memberLayoutResponse,
+      memberRouteListResponse,
+      memberRouteGetResponse,
+    ] = await Promise.all([
+      guestAgent.get('/uiLayouts:listEnabled'),
+      guestAgent.get('/desktopRoutes:listAccessible').query({
+        layout: layoutUid,
+      }),
+      guestAgent.get('/desktopRoutes:getAccessible').query({
+        filterByTk: route.get('id'),
+        layout: layoutUid,
+      }),
+      memberAgent.get('/uiLayouts:listAccessible'),
+      memberAgent.get('/desktopRoutes:listAccessible').query({
+        layout: layoutUid,
+      }),
+      memberAgent.get('/desktopRoutes:getAccessible').query({
+        filterByTk: route.get('id'),
+        layout: layoutUid,
+      }),
+    ]);
+
+    expect(manifestResponse.status).toBe(200);
+    expect(manifestResponse.body.data.map((item) => item.uid)).toContain(layoutUid);
+    expect(guestRouteListResponse.status).toBe(401);
+    expect(guestRouteGetResponse.status).toBe(401);
+    expect(memberLayoutResponse.status).toBe(200);
+    expect(memberLayoutResponse.body.data.map((item) => item.uid)).not.toContain(layoutUid);
+    expect(memberRouteListResponse.status).toBe(200);
+    expect(memberRouteListResponse.body.data).toEqual([]);
+    expect([200, 204]).toContain(memberRouteGetResponse.status);
+    expect(memberRouteGetResponse.body.data ?? null).toBeNull();
+  });
+
   it('should filter uiLayouts:listAccessible by role layout access', async () => {
     app = await createUiLayoutMockServer();
 
@@ -887,6 +1006,76 @@ describe('plugin-ui-layout server', () => {
     expect(memberUids).not.toContain(mobileLayout.get('uid'));
     expect(rootUids).toEqual(expect.arrayContaining([DEFAULT_ADMIN_UI_LAYOUT.uid, mobileLayout.get('uid')]));
     expect(rootUids).not.toContain('runtime-layout-role-filter-disabled');
+  });
+
+  it('should ignore unsafe query params when calling uiLayouts:listEnabled', async () => {
+    app = await createUiLayoutMockServer();
+
+    const repository = app.db.getRepository('uiLayouts');
+    await repository.destroy({
+      truncate: true,
+    });
+    await repository.create({
+      values: {
+        uid: 'runtime-layout-enabled-query-a',
+        title: 'Runtime layout query A',
+        layoutType: 'desktop',
+        routeName: 'runtimeLayoutQueryA',
+        routePath: '/runtime-layout-query-a',
+        authCheck: true,
+        enabled: true,
+      },
+    });
+    await repository.create({
+      values: {
+        uid: 'runtime-layout-disabled-query',
+        title: 'Runtime layout query disabled',
+        layoutType: 'mobile',
+        routeName: 'runtimeLayoutQueryDisabled',
+        routePath: '/runtime-layout-query-disabled',
+        authCheck: true,
+        enabled: false,
+      },
+    });
+    await repository.create({
+      values: {
+        uid: 'runtime-layout-enabled-query-b',
+        title: 'Runtime layout query B',
+        layoutType: 'mobile',
+        routeName: 'runtimeLayoutQueryB',
+        routePath: '/runtime-layout-query-b',
+        authCheck: false,
+        enabled: true,
+      },
+    });
+
+    const response = await app
+      .agent()
+      .get('/uiLayouts:listEnabled')
+      .query({
+        filter: {
+          enabled: false,
+        },
+        fields: ['id', 'uid'],
+        appends: ['desktopRoutes'],
+        page: 2,
+        pageSize: 1,
+        sort: ['-id'],
+      });
+    const runtimeLayouts = response.body.data as Array<Record<string, unknown>>;
+
+    expect(response.status).toBe(200);
+    expect(runtimeLayouts.map((layout) => layout.uid)).toEqual([
+      'runtime-layout-enabled-query-a',
+      'runtime-layout-enabled-query-b',
+    ]);
+    expect(runtimeLayouts).toHaveLength(2);
+    for (const layout of runtimeLayouts) {
+      expect(layout.enabled).toBe(true);
+      expect(Object.keys(layout).sort()).toEqual([...UI_LAYOUT_RUNTIME_FIELDS].sort());
+      expect(layout).not.toHaveProperty('id');
+      expect(layout).not.toHaveProperty('desktopRoutes');
+    }
   });
 
   it('should return only enabled uiLayouts with runtime fields in id ascending order', async () => {
@@ -969,6 +1158,7 @@ describe('plugin-ui-layout server', () => {
 
     expect(snippet).toBeDefined();
     expect(snippet?.actions.sort()).toEqual([...UI_LAYOUT_MANAGEMENT_ACTIONS].sort());
+    expect(snippet?.actions).not.toContain('uiLayouts:listEnabled');
     expect(snippet?.actions).not.toContain('uiLayouts:listAccessible');
   });
 

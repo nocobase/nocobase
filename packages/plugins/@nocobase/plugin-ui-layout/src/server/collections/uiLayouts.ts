@@ -18,16 +18,10 @@ export default defineCollection({
   timestamps: false,
   fields: [
     {
-      name: 'id',
-      type: 'snowflakeId',
-      primaryKey: true,
-      allowNull: false,
-      interface: 'id',
-    },
-    {
       name: 'uid',
       type: 'string',
       unique: true,
+      primaryKey: true,
       allowNull: false,
     },
     {
