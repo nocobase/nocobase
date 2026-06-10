@@ -201,7 +201,7 @@
         },
         "messages": {
           "activated": "Activated the license for env \"{{envName}}\".",
-          "savedLicenseKey": "Saved license key at {{licenseKeyPath}}"
+          "savedLicenseKey": "Saved the license key securely for this env"
         }
       }
     },
