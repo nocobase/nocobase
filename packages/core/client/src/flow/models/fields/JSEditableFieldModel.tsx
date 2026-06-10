@@ -201,6 +201,7 @@ function JsAssociationSelectField() {
   const toArray = (input) => (Array.isArray(input) ? input : input == null ? [] : [input]);
   const getRecordKey = (record) => (record && typeof record === 'object' ? record[valueKey] : record);
   const currentRecords = () => toArray(ctx.getValue()).filter((item) => item && typeof item === 'object');
+  const labelOf = (record) => ctx.t(String(record?.[labelKey] ?? record?.[valueKey] ?? record ?? ''));
   const toSelectValue = (input) => {
     return multiple ? toArray(input).map(getRecordKey) : getRecordKey(input);
   };
@@ -249,7 +250,7 @@ function JsAssociationSelectField() {
 
   const mergedRecords = uniqueRecords([...records, ...currentRecords()]);
   const options = mergedRecords.map((record) => ({
-    label: String(record?.[labelKey] ?? record?.[valueKey] ?? ''),
+    label: labelOf(record),
     value: record?.[valueKey],
   }));
   const findRecord = (key) => {
@@ -273,7 +274,7 @@ function JsAssociationSelectField() {
   };
 
   if (ctx.readOnly) {
-    const labels = toArray(ctx.getValue()).map((record) => String(record?.[labelKey] ?? record?.[valueKey] ?? record ?? ''));
+    const labels = toArray(ctx.getValue()).map(labelOf);
     return <span>{labels.join(', ')}</span>;
   }
 

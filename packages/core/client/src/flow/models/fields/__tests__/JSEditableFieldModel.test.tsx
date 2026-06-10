@@ -218,6 +218,7 @@ describe('JSEditableFieldModel', () => {
       expect(code).toContain("field.target + ':list'");
       expect(code).toContain("'X-Data-Source': dataSourceKey");
       expect(code).toContain('uniqueRecords');
+      expect(code).toContain('labelOf');
       expect(code).toContain('...selectProps');
       expect(code).toContain('allowMultiple !== false');
       expect(code).not.toContain('filterByTk');
@@ -243,7 +244,8 @@ describe('JSEditableFieldModel', () => {
       },
     );
 
-    fireEvent.mouseDown(await screen.findByRole('combobox'));
+    const comboboxes = await screen.findAllByRole('combobox');
+    fireEvent.mouseDown(comboboxes[comboboxes.length - 1]);
 
     await waitFor(() => {
       expect(screen.getByText('草稿')).toBeInTheDocument();
@@ -419,7 +421,8 @@ describe('JSEditableFieldModel', () => {
 
     expect(request).not.toHaveBeenCalled();
 
-    fireEvent.mouseDown(await screen.findByRole('combobox'));
+    const comboboxes = await screen.findAllByRole('combobox');
+    fireEvent.mouseDown(comboboxes[comboboxes.length - 1]);
 
     await waitFor(() => {
       expect(request).toHaveBeenCalledWith(
@@ -469,6 +472,68 @@ describe('JSEditableFieldModel', () => {
 
     await waitFor(() => {
       expect(screen.getAllByRole('option', { name: 'Alice' })).toHaveLength(1);
+    });
+  });
+
+  it('translates association option labels in the default code dropdown', async () => {
+    const collectionField = {
+      interface: 'm2m',
+      type: 'belongsToMany',
+      target: 'roles',
+      targetCollection: {
+        filterTargetKey: ['id'],
+        titleCollectionField: { name: 'name' },
+      },
+      isAssociationField: () => true,
+    };
+    const request = vi.fn().mockResolvedValue({
+      data: {
+        data: [
+          { id: 1, name: '{{t("Member")}}' },
+          { id: 2, name: '{{t("Admin")}}' },
+          { id: 3, name: '{{t("Root")}}' },
+        ],
+      },
+    });
+
+    renderParentFieldWithFlowRenderer(
+      {
+        value: [
+          { id: 1, name: '{{t("Member")}}' },
+          { id: 2, name: '{{t("Admin")}}' },
+        ],
+        fieldNames: { label: 'name', value: 'id' },
+      },
+      undefined,
+      getDefaultEditableJsCode({ collectionField }),
+      {
+        collectionField,
+        i18n: {
+          t: (key) =>
+            (
+              ({
+                Member: '成员',
+                Admin: '管理员',
+                Root: '根用户',
+              }) as Record<string, string>
+            )[key] || key,
+        },
+        app: {
+          apiClient: {
+            request,
+          },
+        },
+      },
+    );
+
+    const comboboxes = await screen.findAllByRole('combobox');
+    fireEvent.mouseDown(comboboxes[comboboxes.length - 1]);
+
+    await waitFor(() => {
+      expect(screen.getAllByRole('option', { name: '成员' })).toHaveLength(1);
+      expect(screen.getAllByRole('option', { name: '管理员' })).toHaveLength(1);
+      expect(screen.getByText('根用户')).toBeInTheDocument();
+      expect(screen.queryByText('{{t("Root")}}')).not.toBeInTheDocument();
     });
   });
 
@@ -534,7 +599,7 @@ describe('JSEditableFieldModel', () => {
     });
   });
 
-  it('renders selected association labels in read only mode without loading remote records', async () => {
+  it('translates selected association labels in read only mode without loading remote records', async () => {
     const collectionField = {
       interface: 'm2o',
       type: 'belongsTo',
@@ -551,13 +616,16 @@ describe('JSEditableFieldModel', () => {
     renderParentFieldWithFlowRenderer(
       {
         pattern: 'readPretty',
-        value: { id: 3, name: 'Carol' },
+        value: { id: 3, name: '{{t("Member")}}' },
         fieldNames: { label: 'name', value: 'id' },
       },
       undefined,
       getDefaultEditableJsCode({ collectionField }),
       {
         collectionField,
+        i18n: {
+          t: (key) => (key === 'Member' ? '成员' : key),
+        },
         app: {
           apiClient: {
             request,
@@ -567,8 +635,9 @@ describe('JSEditableFieldModel', () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByText('Carol')).toBeInTheDocument();
+      expect(screen.getByText('成员')).toBeInTheDocument();
     });
+    expect(screen.queryByText('{{t("Member")}}')).not.toBeInTheDocument();
     expect(request).not.toHaveBeenCalled();
   });
 
