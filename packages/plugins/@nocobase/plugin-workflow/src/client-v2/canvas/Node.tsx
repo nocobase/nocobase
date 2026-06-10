@@ -110,7 +110,7 @@ function NodeTitle({ data, fallback }: { data: any; fallback: string }) {
   return (
     <Input.TextArea
       value={title}
-      disabled={executed}
+      disabled={Boolean(executed)}
       onChange={(ev) => setTitle(ev.target.value)}
       onBlur={(ev) => onSave(ev.target.value)}
       autoSize

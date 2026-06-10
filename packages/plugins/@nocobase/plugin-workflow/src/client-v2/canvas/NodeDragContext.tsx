@@ -8,27 +8,111 @@
  */
 
 /**
- * Modern canvas node drag-to-reorder (doc §9.6). A per-canvas copy of v1's
- * `NodeDragContextProvider` — the ~700-line pointer machinery (mousemove
- * tracking, RAF drag preview, auto-scroll, drop-zone hit-testing, the move API)
- * is framework-agnostic DOM logic, copied near-verbatim; only the runtime hooks
- * at the top (api / plugin / compile / flow context / executed) are swapped to
- * the v2 equivalents, and the shared pure graph walks come from the relocated
- * client-v2 modules.
+ * Canvas node drag-to-reorder, shared by BOTH canvases (ADR-0003, doc §9.6). The
+ * ~700-line pointer machinery (mousemove tracking, RAF drag preview, auto-scroll,
+ * drop-zone hit-testing, the move API) is framework-agnostic DOM logic; the
+ * runtime-specific bits at the top (`api`, the i18n functions, the instruction
+ * registry, the executed flag) are read through an injected `useCanvasRuntime`
+ * so v1 can re-import this single provider and pass its own runtime (the allowed
+ * v1 → v2 direction). `workflow`/`nodes`/`refresh` come from the now-shared
+ * `FlowContext` directly, and the pure graph walks from the relocated modules.
  */
 
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { App, Checkbox } from 'antd';
 import { useFlowContext as useFlowEngineContext } from '@nocobase/flow-engine';
 
-import { useFlowContext, useWorkflowCanvasExecuted } from './contexts';
-import { useT } from '../locale';
+import { useFlowContext, useWorkflowCanvasExecuted, type CanvasNode } from './contexts';
+import { useT, useWorkflowTranslation } from '../locale';
 import useStyles from './style';
+import { useWorkflowPlugin } from './useWorkflowInstruction';
+import type { Instruction } from './Instruction';
 import { collectUpstreams, extractDependencyKeys, stripVariableReferences } from './nodeVariableUtils';
 import { collectDownstreams, collectBranchSubtree } from './dropImpact';
-import { PluginWorkflowClientV2 } from '../plugin';
 
-const NodeDragContext = createContext<any>(null);
+/** Per-canvas runtime the drag provider needs but that differs by runtime —
+ *  injected via `NodeDragContextProvider`'s `useCanvasRuntime` prop. */
+export type CanvasDragRuntime = {
+  // The API client (`resource('flow_nodes').move/update`). Left loose to avoid
+  // importing `APIClient` from `@nocobase/client` into client-v2; the body never
+  // needs a cast — only the `flow_nodes` move/update actions are called.
+  api: any;
+  /** Plain-key translation (no `{{t("…")}}` expansion) — v1 `lang`, v2 `useWorkflowTranslation().t`. */
+  lang: (key: string, options?: Record<string, unknown>) => string;
+  /** Template expander for instruction titles (`{{t("…")}}`) — v1 `useCompile()`, v2 `useT()`. */
+  compile: (source: string) => string;
+  /** Resolve an instruction by type — for the drag-preview node title. */
+  getInstruction: (type: string) => Instruction | undefined;
+  /** Whether the workflow has been executed (read-only) — the move API is disabled. */
+  executed: boolean;
+};
+
+/** Default (modern-canvas) runtime source: flow-engine `ctx.api`, the two v2
+ *  translators (plain `useWorkflowTranslation().t` + template-expanding `useT()`),
+ *  the v2 instruction registry, and the v2 executed flag. */
+function useModernCanvasRuntime(): CanvasDragRuntime {
+  const { api } = useFlowEngineContext();
+  const lang = useWorkflowTranslation().t;
+  const compile = useT();
+  const plugin = useWorkflowPlugin();
+  const executed = useWorkflowCanvasExecuted();
+  return {
+    api,
+    lang,
+    compile,
+    // Bind the registry at render time → a plain `.get` callable any time (the
+    // body calls it inside callbacks, where a hook would break the rules).
+    getInstruction: (type: string) => plugin?.instructions.get(type),
+    executed: Boolean(executed),
+  };
+}
+
+/**
+ * A drop target: the add-slot's position in the graph, identified by its upstream
+ * node (`null`/absent = the root slot) and, for a branch slot, its branch index.
+ * Built by `AddNodeSlot`'s `DropZone` as `{ upstream, branchIndex }`.
+ */
+export type DropTarget = {
+  upstream?: CanvasNode | null;
+  branchIndex?: number | null;
+};
+
+/** The result of dropping the dragged node onto a target: whether the move is
+ *  allowed (`safe`), allowed-with-consequences (`warning` — lists the nodes whose
+ *  variable references would break), or forbidden (`disabled`). */
+export type DropImpact = {
+  status: 'safe' | 'warning' | 'disabled';
+  impactedSelf: CanvasNode[];
+  impactedDependents: CanvasNode[];
+};
+
+/** The minimal node snapshot driving the floating drag preview (set on drag start,
+ *  read by the preview-rendering effect). */
+export type DragPreviewNode = {
+  id: number;
+  key?: string;
+  title?: string;
+  type?: string;
+  hasBranches: boolean;
+};
+
+/** What `useNodeDragContext()` exposes to node cards / add-slots / the canvas. */
+export type NodeDragContextValue = {
+  dragging: boolean;
+  dragNode: DragPreviewNode | null;
+  onNodeMouseDown: (node: CanvasNode, event: React.MouseEvent) => void;
+  getDropImpact: (target: DropTarget) => DropImpact;
+  setActiveDrop: (target: DropTarget | null) => void;
+  clearActiveDrop: (target: DropTarget) => void;
+  /** Registers an add-slot's DOM element as a drop zone; returns a cleanup fn
+   *  that unregisters it (used directly as a `useEffect` teardown). */
+  registerDropZone: (target: DropTarget, element: HTMLElement | null) => () => void;
+  getDropKey: (target: DropTarget) => string;
+  activeDropKey: string | null;
+  consumeClick: () => boolean;
+};
+
+const NodeDragContext = createContext<NodeDragContextValue | null>(null);
 
 export function useNodeDragContext() {
   return useContext(NodeDragContext);
@@ -63,28 +147,28 @@ function isInteractiveTarget(target: EventTarget | null): boolean {
   );
 }
 
-export function NodeDragContextProvider(props) {
-  const ctx = useFlowEngineContext();
-  const api = ctx.api;
-  const t = useT();
-  // `compile` mirrors v1's `useCompile` — here it just expands a title via the
-  // workflow translator. Memoized so the RAF-preview effect's deps stay stable.
-  const compile = useCallback((text: string) => t(text), [t]);
-  const workflowPlugin = ctx.app.pm.get(PluginWorkflowClientV2) as PluginWorkflowClientV2;
+export function NodeDragContextProvider(props: {
+  children: React.ReactNode;
+  /** Injected per-canvas runtime source. Defaults to the modern canvas's; the
+   *  legacy canvas passes its own (v1 `useAPIClient` / `lang` / `useCompile` /
+   *  `usePlugin` registry / `useWorkflowExecuted`). */
+  useCanvasRuntime?: () => CanvasDragRuntime;
+}) {
+  const { useCanvasRuntime = useModernCanvasRuntime } = props;
+  const { api, lang, compile, getInstruction, executed } = useCanvasRuntime();
   const { workflow, nodes, refresh } = useFlowContext() ?? {};
-  const executed = useWorkflowCanvasExecuted();
   const { modal, message } = App.useApp();
   const { styles } = useStyles();
 
   const [dragging, setDragging] = useState(false);
-  const [dragNode, setDragNode] = useState(null);
+  const [dragNode, setDragNode] = useState<DragPreviewNode | null>(null);
   const [activeDropKey, setActiveDropKey] = useState<string | null>(null);
 
-  const dragNodeRef = useRef<any>(null);
+  const dragNodeRef = useRef<CanvasNode | null>(null);
   const dragSubtreeRef = useRef<Set<number>>(new Set());
-  const activeDropRef = useRef<any>(null);
+  const activeDropRef = useRef<DropTarget | null>(null);
   const activeDropKeyRef = useRef<string | null>(null);
-  const pendingRef = useRef<any>(null);
+  const pendingRef = useRef<{ node: CanvasNode; startX: number; startY: number } | null>(null);
   const draggingRef = useRef(false);
   const pointerRef = useRef({ x: 0, y: 0 });
   const suppressClickRef = useRef(false);
@@ -95,7 +179,7 @@ export function NodeDragContextProvider(props) {
   const previewRafRef = useRef<number | null>(null);
   const previewOffsetRef = useRef({ x: 0, y: 0 });
   const previewSizeRef = useRef({ width: 0, height: 0 });
-  const dropZonesRef = useRef<Map<string, { target: any; element: HTMLElement }>>(new Map());
+  const dropZonesRef = useRef<Map<string, { target: DropTarget; element: HTMLElement }>>(new Map());
   const updateActiveDropRef = useRef<() => void>(() => {});
   const autoScrollRef = useRef<{
     raf: number | null;
@@ -105,7 +189,7 @@ export function NodeDragContextProvider(props) {
   }>({ raf: null, vx: 0, vy: 0, container: null });
 
   const branchChildrenMap = useMemo(() => {
-    const map = new Map<number, any[]>();
+    const map = new Map<number, CanvasNode[]>();
     if (!nodes) {
       return map;
     }
@@ -120,7 +204,7 @@ export function NodeDragContextProvider(props) {
   }, [nodes]);
 
   const nodesByKey = useMemo(() => {
-    const map = new Map<string, any>();
+    const map = new Map<string, CanvasNode>();
     if (!nodes) {
       return map;
     }
@@ -134,7 +218,7 @@ export function NodeDragContextProvider(props) {
 
   const { nodeDepsMap, dependentsMap } = useMemo(() => {
     const deps = new Map<number, Set<string>>();
-    const dependents = new Map<string, Set<any>>();
+    const dependents = new Map<string, Set<CanvasNode>>();
     if (!nodes) {
       return { nodeDepsMap: deps, dependentsMap: dependents };
     }
@@ -142,7 +226,7 @@ export function NodeDragContextProvider(props) {
       const nodeDeps = extractDependencyKeys(node.config ?? {});
       deps.set(node.id, nodeDeps);
       nodeDeps.forEach((depKey) => {
-        const list = dependents.get(depKey) ?? new Set<any>();
+        const list = dependents.get(depKey) ?? new Set<CanvasNode>();
         list.add(node);
         dependents.set(depKey, list);
       });
@@ -275,7 +359,7 @@ export function NodeDragContextProvider(props) {
     }, 0);
   }, [handleMouseMove, handleMouseUp, resetSuppressClick, stopAutoScroll]);
 
-  const getDropKey = useCallback((target) => {
+  const getDropKey = useCallback((target: DropTarget) => {
     const upstreamId = target?.upstream?.id ?? 'root';
     const branchIndex = target?.upstream ? target?.branchIndex ?? 'null' : 'root';
     return `${upstreamId}:${branchIndex}`;
@@ -302,7 +386,7 @@ export function NodeDragContextProvider(props) {
     const isLeaving = Boolean(activeDropKeyRef.current);
     const widthThreshold = width * (isLeaving ? 0.18 : 0.25);
     const heightThreshold = height * (isLeaving ? 0.18 : 0.25);
-    let best: { target: any; area: number; key: string } | null = null;
+    let best: { target: DropTarget; area: number; key: string } | null = null;
 
     for (const [key, item] of dropZonesRef.current.entries()) {
       if (!document.contains(item.element)) {
@@ -337,7 +421,7 @@ export function NodeDragContextProvider(props) {
   }, [updateActiveDropByPreview]);
 
   const getTargetDownstream = useCallback(
-    (upstream, branchIndex, currentNode) => {
+    (upstream: CanvasNode | null, branchIndex: number | null, currentNode: CanvasNode | null) => {
       if (!nodes) {
         return null;
       }
@@ -353,7 +437,7 @@ export function NodeDragContextProvider(props) {
   );
 
   const getDropImpact = useCallback(
-    (target) => {
+    (target: DropTarget): DropImpact => {
       const node = dragNodeRef.current;
       if (!node || !target) {
         return { status: 'disabled', impactedSelf: [], impactedDependents: [] };
@@ -380,7 +464,7 @@ export function NodeDragContextProvider(props) {
         : new Set<number>();
 
       const deps = nodeDepsMap.get(node.id) ?? new Set<string>();
-      const impactedSelf = [] as any[];
+      const impactedSelf: CanvasNode[] = [];
       deps.forEach((depKey) => {
         const depNode = nodesByKey.get(String(depKey));
         if (!depNode) {
@@ -391,8 +475,8 @@ export function NodeDragContextProvider(props) {
         }
       });
 
-      const dependents = dependentsMap.get(String(node.key)) ?? new Set<any>();
-      const impactedDependents = [] as any[];
+      const dependents = dependentsMap.get(String(node.key)) ?? new Set<CanvasNode>();
+      const impactedDependents: CanvasNode[] = [];
       dependents.forEach((depNode) => {
         if (depNode.id === node.id) {
           return;
@@ -413,12 +497,12 @@ export function NodeDragContextProvider(props) {
   );
 
   const moveNode = useCallback(
-    async (nodeId, target, options?: { refresh?: boolean }) => {
+    async (nodeId: number, target: DropTarget | null, options?: { refresh?: boolean }) => {
       if (!nodeId) {
         return false;
       }
       const upstream = target?.upstream ?? null;
-      const branchIndex = upstream ? target.branchIndex ?? null : null;
+      const branchIndex = upstream ? target?.branchIndex ?? null : null;
       try {
         await api.resource('flow_nodes').move({
           filterByTk: nodeId,
@@ -428,20 +512,20 @@ export function NodeDragContextProvider(props) {
           },
         });
         if (options?.refresh !== false) {
-          refresh();
+          refresh?.();
         }
         return true;
       } catch (err) {
         console.error(err);
-        message.error(t('Failed to move node'));
+        message.error(lang('Failed to move node'));
         return false;
       }
     },
-    [api, message, refresh],
+    [api, lang, message, refresh],
   );
 
   const updateNodeConfigs = useCallback(
-    async (items: { node: any; keys: Set<string> }[]) => {
+    async (items: { node: CanvasNode; keys: Set<string> }[]) => {
       let updated = false;
       for (const item of items) {
         const { node, keys } = item;
@@ -480,7 +564,7 @@ export function NodeDragContextProvider(props) {
       const impactedSelfTitles = impact.impactedSelf.map((item) => item.title).join(', ');
       const impactedDependentTitles = impact.impactedDependents.map((item) => item.title).join(', ');
       const keepVariablesRef = { current: false };
-      const updates: { node: any; keys: Set<string> }[] = [];
+      const updates: { node: CanvasNode; keys: Set<string> }[] = [];
       const selfKeys = new Set(impact.impactedSelf.map((item) => String(item.key)).filter(Boolean));
       if (selfKeys.size) {
         updates.push({ node, keys: selfKeys });
@@ -492,19 +576,23 @@ export function NodeDragContextProvider(props) {
         });
       }
       modal.confirm({
-        title: t('Confirm move'),
+        title: lang('Confirm move'),
         content: (
           <div>
             <div>
-              {t('This action will remove invalid variable references, otherwise the workflow cannot run correctly.')}
+              {lang(
+                'This action will remove invalid variable references, otherwise the workflow cannot run correctly.',
+              )}
             </div>
-            {impactedSelfTitles ? <div>{t('Impacted current node variables') + ': ' + impactedSelfTitles}</div> : null}
+            {impactedSelfTitles ? (
+              <div>{lang('Impacted current node variables') + ': ' + impactedSelfTitles}</div>
+            ) : null}
             {impactedDependentTitles ? (
-              <div>{t('Impacted dependent node variables') + ': ' + impactedDependentTitles}</div>
+              <div>{lang('Impacted dependent node variables') + ': ' + impactedDependentTitles}</div>
             ) : null}
             <div style={{ marginTop: '0.75em' }}>
               <Checkbox onChange={(ev) => (keepVariablesRef.current = ev.target.checked)}>
-                {t('Keep variable references')}
+                {lang('Keep variable references')}
               </Checkbox>
             </div>
           </div>
@@ -514,7 +602,7 @@ export function NodeDragContextProvider(props) {
             const moved = await moveNode(nodeId, target);
             if (moved) {
               message.warning(
-                t('Keeping variable references requires manual adjustment, otherwise workflow may fail.'),
+                lang('Keeping variable references requires manual adjustment, otherwise workflow may fail.'),
               );
             }
             return;
@@ -527,16 +615,16 @@ export function NodeDragContextProvider(props) {
             await updateNodeConfigs(updates);
           } catch (err) {
             console.error(err);
-            message.error(t('Failed to update node variables'));
+            message.error(lang('Failed to update node variables'));
           } finally {
-            refresh();
+            refresh?.();
           }
         },
       });
       return;
     }
     await moveNode(nodeId, target);
-  }, [getDropImpact, message, modal, moveNode, refresh, updateNodeConfigs]);
+  }, [getDropImpact, lang, message, modal, moveNode, refresh, updateNodeConfigs]);
 
   useEffect(() => {
     onMouseMoveRef.current = (event: MouseEvent) => {
@@ -595,8 +683,8 @@ export function NodeDragContextProvider(props) {
       return;
     }
 
-    const instruction = workflowPlugin.instructions.get(dragNode.type);
-    const typeTitle = instruction ? compile(instruction.title) : dragNode.type;
+    const instruction = dragNode.type ? getInstruction(dragNode.type) : undefined;
+    const typeTitle = instruction ? compile(instruction.title) : dragNode.type ?? '';
 
     const preview = document.createElement('div');
     preview.className = styles.dragPreviewClass;
@@ -651,10 +739,10 @@ export function NodeDragContextProvider(props) {
         previewRef.current = null;
       }
     };
-  }, [compile, dragNode, dragging, styles.dragPreviewClass, workflowPlugin.instructions]);
+  }, [compile, dragNode, dragging, styles.dragPreviewClass, getInstruction]);
 
   const onNodeMouseDown = useCallback(
-    (node, event: React.MouseEvent) => {
+    (node: CanvasNode, event: React.MouseEvent) => {
       if (!workflow || executed) {
         return;
       }
@@ -677,7 +765,7 @@ export function NodeDragContextProvider(props) {
   );
 
   const setActiveDrop = useCallback(
-    (target) => {
+    (target: DropTarget | null) => {
       activeDropRef.current = target;
       const nextKey = target ? getDropKey(target) : null;
       if (nextKey !== activeDropKeyRef.current) {
@@ -688,7 +776,7 @@ export function NodeDragContextProvider(props) {
     [getDropKey],
   );
 
-  const clearActiveDrop = useCallback((target) => {
+  const clearActiveDrop = useCallback((target: DropTarget) => {
     if (activeDropRef.current === target) {
       activeDropRef.current = null;
       if (activeDropKeyRef.current) {
@@ -699,7 +787,7 @@ export function NodeDragContextProvider(props) {
   }, []);
 
   const registerDropZone = useCallback(
-    (target, element: HTMLElement) => {
+    (target: DropTarget, element: HTMLElement | null) => {
       if (!element || !target) {
         return () => {};
       }

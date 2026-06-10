@@ -93,10 +93,14 @@ export function useNodeContext() {
 }
 
 /**
- * Whether the workflow shown on the canvas has been executed (its nodes are
- * read-only). Derived from the FlowContext workflow's `executed` count.
+ * The executed-version count of the workflow shown on the canvas — `> 0n` means
+ * its nodes are read-only. A BigInt mirroring v1's `useWorkflowExecuted`, reading
+ * the same `versionStats.executed` field (the workflow record has NO top-level
+ * `executed` — the previous `workflow?.executed` read was always undefined, so
+ * the canvas never went read-only after an execution). Callers needing a boolean
+ * coerce with `Boolean(...)`.
  */
-export function useWorkflowCanvasExecuted(): boolean {
+export function useWorkflowCanvasExecuted(): bigint {
   const { workflow } = useFlowContext() ?? {};
-  return Boolean(workflow?.executed);
+  return BigInt(workflow?.versionStats?.executed || 0);
 }

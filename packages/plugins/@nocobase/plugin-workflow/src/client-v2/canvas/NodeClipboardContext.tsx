@@ -68,7 +68,7 @@ export type CanvasClipboardRuntime = {
 function useModernCanvasRuntime(): CanvasClipboardRuntime {
   const { workflow, nodes, refresh } = useFlowContext() ?? {};
   const executed = useWorkflowCanvasExecuted();
-  return { workflow, nodes, refresh, executed };
+  return { workflow, nodes, refresh, executed: Boolean(executed) };
 }
 
 const NodeClipboardContext = createContext<NodeClipboardContextValue | null>(null);
