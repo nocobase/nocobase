@@ -150,6 +150,9 @@ async function localProjectHasFiles(projectRoot: string): Promise<boolean> {
 
 export async function buildSavedDockerRunArgs(
   runtime: Extract<ManagedAppRuntime, { kind: 'docker' }>,
+  options?: {
+    initEnvVars?: Record<string, string>;
+  },
 ): Promise<{
   appPort?: string;
   storagePath: string;
@@ -240,6 +243,10 @@ export async function buildSavedDockerRunArgs(
     args.push('--env-file', envFile);
   }
 
+  for (const [key, value] of Object.entries(options?.initEnvVars ?? {})) {
+    args.push('-e', `${key}=${value}`);
+  }
+
   const lifecycleEnvVars = managedAppLifecycleEnvVars();
   args.push(
     '-e',
@@ -283,9 +290,11 @@ export async function buildSavedDockerRunArgs(
 
 export async function recreateSavedDockerApp(
   runtime: Extract<ManagedAppRuntime, { kind: 'docker' }>,
-  options?: { verbose?: boolean },
+  options?: { verbose?: boolean; initEnvVars?: Record<string, string> },
 ): Promise<void> {
-  const plan = await buildSavedDockerRunArgs(runtime);
+  const plan = await buildSavedDockerRunArgs(runtime, {
+    initEnvVars: options?.initEnvVars,
+  });
 
   try {
     await ensureDockerNetwork(runtime.workspaceName);

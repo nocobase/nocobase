@@ -425,6 +425,76 @@ test('install run validates external db config before saving env config', async 
   );
 });
 
+test('install --prepare-only prepares local app files without starting the app or clearing root setup data', async () => {
+  const { default: Install } = await import('../commands/install.js');
+
+  const saveInstalledEnv = vi.fn(async () => undefined);
+  const waitForAppHealthCheck = vi.fn(async () => undefined);
+  const downloadLocalApp = vi.fn(async () => '/tmp/app1');
+  const startLocalApp = vi.fn(async () => ({
+    source: 'npm',
+    projectRoot: '/tmp/app1',
+    appPort: '13080',
+    storagePath: './app1/storage/',
+    appKey: 'app-key',
+    timeZone: 'UTC',
+    env: {},
+    args: ['start'],
+  }));
+  const collectPromptResults = vi.fn(async () => ({
+    envName: 'app1',
+    envResults: {},
+    appResults: {
+      lang: 'en-US',
+      appPort: '13080',
+      storagePath: './app1/storage/',
+    },
+    downloadResults: {
+      source: 'npm',
+    },
+    dbResults: {},
+    rootResults: {
+      rootUsername: 'admin',
+      rootPassword: 'admin123',
+    },
+    envAddResults: {
+      apiBaseUrl: 'http://127.0.0.1:13080/api',
+      authType: 'oauth',
+    },
+  }));
+
+  const command = Object.assign(Object.create(Install.prototype), {
+    parse: vi.fn(async () => ({
+      flags: {
+        yes: false,
+        resume: false,
+        force: false,
+        verbose: false,
+        'no-intro': true,
+        'prepare-only': true,
+      },
+    })),
+    collectPromptResults,
+    saveInstalledEnv,
+    waitForAppHealthCheck,
+    downloadLocalApp,
+    startLocalApp,
+    commandStdio: vi.fn(() => 'ignore'),
+    config: { runCommand: vi.fn(async () => undefined) },
+  });
+
+  await Install.prototype.run.call(command);
+
+  expect(downloadLocalApp).toHaveBeenCalledTimes(1);
+  expect(startLocalApp).not.toHaveBeenCalled();
+  expect(waitForAppHealthCheck).not.toHaveBeenCalled();
+  expect(mocks.clearEnvRootSetup).not.toHaveBeenCalled();
+  expect(saveInstalledEnv).toHaveBeenCalled();
+  expect(saveInstalledEnv.mock.calls.at(-1)?.[0].appResults).toMatchObject({
+    setupState: 'prepared',
+  });
+});
+
 test('install seeds basic auth credentials as prompt defaults instead of fixed values', async () => {
   const { default: Install } = await import('../commands/install.js');
 
