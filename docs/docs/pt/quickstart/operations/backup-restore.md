@@ -1,75 +1,75 @@
-# 备份还原
+# Backup e restauração
 
-如果你已经把一个 NocoBase 应用保存成 CLI env，日常备份和恢复基本都在 `nb backup` 这一组命令里完成。`nb backup create` 用来在目标 env 创建备份并下载到本地，`nb backup restore` 用来把本地备份文件恢复到目标 env。
+Se você salvou um aplicativo NocoBase como um ambiente CLI, o backup e a recuperação diários são basicamente concluídos no grupo de comandos `nb backup`. `nb backup create` é usado para criar um backup no ambiente de destino e baixá-lo para o local. `nb backup restore` é usado para restaurar o arquivo de backup local para o ambiente de destino.
 
-大多数时候，先记住一个默认建议就够了：升级、迁移、批量改数据前先备份；只有当你明确知道自己要覆盖当前数据时，再执行恢复。
+Na maioria das vezes, basta lembrar o conselho padrão: faça backup antes de atualizar, migrar ou alterar dados em lote; execute a recuperação somente quando você souber claramente que deseja substituir os dados atuais.
 
-## 快速索引
+## Índice rápido
 
-| 我想要…… | 用哪个命令 |
+| Eu quero... | Qual comando usar |
 | --- | --- |
-| 先把当前 env 备份到本地 | [`nb backup create`](../../api/cli/backup/create.md) |
-| 把备份保存到指定目录 | [`nb backup create --output ./backups`](../../api/cli/backup/create.md) |
-| 让脚本继续消费备份结果 | [`nb backup create --json-output`](../../api/cli/backup/create.md) |
-| 把本地备份恢复到当前 env | [`nb backup restore --file ./backups/xxx.nbdata --force`](../../api/cli/backup/restore.md) |
-| 把本地备份恢复到另一个 env | [`nb backup restore --env app1 --file ./backups/xxx.nbdata --yes --force`](../../api/cli/backup/restore.md) |
+| Primeiro faça backup do ambiente atual para local | [`nb backup create`](../../api/cli/backup/create.md) |
+| Salve o backup no diretório especificado | [`nb backup create --output ./backups`](../../api/cli/backup/create.md) |
+| Deixe o script continuar consumindo os resultados do backup | [`nb backup create --json-output`](../../api/cli/backup/create.md) |
+| Restaurar backup local para ambiente atual | [`nb backup restore --file ./backups/xxx.nbdata --force`](../../api/cli/backup/restore.md) |
+| Restaurar backup local para outro ambiente | [`nb backup restore --env app1 --file ./backups/xxx.nbdata --yes --force`](../../api/cli/backup/restore.md) |
 
-:::tip 先确认当前 env
+:::tip primeiro confirme o ambiente atual
 
-`nb backup` 命令默认作用在当前 env 上。如果你同时维护多个环境，默认推荐先看一眼当前 env，再执行备份或恢复。
+O comando `nb backup` atua no ambiente atual por padrão. Se você mantém vários ambientes ao mesmo tempo, a recomendação padrão é dar uma olhada no ambiente atual antes de executar um backup ou uma restauração.
 
 ```bash
 nb env current
 nb env use app1
 ```
 
-如果你显式传入了不同的 `--env`，CLI 通常会要求确认。脚本或非交互场景里，可以加 `--yes` 跳过这一步。
+Se você passar explicitamente um `--env` diferente, a CLI geralmente solicitará confirmação. Em scripts ou cenários não interativos, você pode adicionar `--yes` para pular esta etapa.
 
 :::
 
-## 创建备份
+## Crie um backup
 
-最简单的用法就是直接创建一个备份：
+O uso mais simples é criar um backup diretamente:
 
 ```bash
 nb backup create
 ```
 
-命令成功返回后，备份文件已经下载到本地。省略 `--output` 时，CLI 会把文件保存到当前工作目录，并沿用远端返回的文件名——通常是 `backup_*.nbdata`。
+Após o comando retornar com sucesso, o arquivo de backup foi baixado localmente. Quando `--output` é omitido, a CLI salva o arquivo no diretório de trabalho atual e usa o nome do arquivo retornado pela extremidade remota – geralmente `backup_*.nbdata`.
 
-如果你想把备份统一放到一个目录里，可以这样用：
+Se quiser colocar os backups em um diretório, você pode usar isto:
 
 ```bash
 nb backup create --output ./backups
 ```
 
-如果 `./backups` 已经存在，而且它是一个目录，CLI 会自动把远端备份文件名拼到这个目录后面。只有当路径不存在时，CLI 才会把它当成目标文件路径。
+Se `./backups` já existir e for um diretório, a CLI anexará automaticamente o nome do arquivo de backup remoto ao diretório. Somente se o caminho não existir, a CLI o tratará como o caminho do arquivo de destino.
 
-如果你要在脚本、CI 或 agent 链路里继续消费备份结果，可以加 `--json-output`：
+Se quiser continuar consumindo resultados de backup em scripts, CI ou links de agente, você pode adicionar `--json-output`:
 
 ```bash
 nb backup create --env app1 --yes --json-output
 ```
 
-这个模式下，CLI 不再输出进度文本，而是直接返回最终 JSON，里面通常会包含 `env`、`name` 和 `output` 三个字段。
+Nesse modo, a CLI não gera mais texto de progresso, mas retorna diretamente o JSON final, que geralmente contém três campos: `env`, `name` e `output`.
 
-## 恢复备份
+## Restaurar backup
 
-恢复命令会把本地备份文件上传到目标 env，并覆盖当前应用数据：
+O comando de restauração fará upload do arquivo de backup local para o ambiente de destino e substituirá os dados atuais do aplicativo:
 
 ```bash
 nb backup restore --file ./backups/backup_20260520_190408_8397.nbdata --force
 ```
 
-如果你要恢复到的不是当前 env，通常来说这样写更稳妥：
+Se você deseja restaurar para algo diferente do ambiente atual, geralmente é mais seguro escrever assim:
 
 ```bash
 nb backup restore --env app1 --file ./backups/backup_20260520_190408_8397.nbdata --yes --force
 ```
 
-:::warning 注意
+:::nota de aviso
 
-恢复是全量覆盖操作。默认推荐在恢复前，先对当前目标 env 再做一份备份。
+A recuperação é uma operação de cobertura total. Por padrão, é recomendado fazer outro backup do ambiente de destino atual antes de restaurar.
 
 ```bash
 nb backup create --env app1 --yes --output ./backups
@@ -78,17 +78,17 @@ nb backup restore --env app1 --file ./backups/backup_20260520_190408_8397.nbdata
 
 :::
 
-`nb backup restore` 会先检查 `--file` 指向的路径是否存在，并确认它是一个普通文件。上传成功后，CLI 还会继续等待应用重新通过健康检查，所以命令成功返回时，应用通常已经恢复到可访问状态。
+`nb backup restore` irá primeiro verificar se o caminho apontado por `--file` existe e confirmar se é um arquivo normal. Depois que o upload for bem-sucedido, a CLI continuará aguardando que o aplicativo passe novamente na verificação de integridade; portanto, quando o comando retornar com êxito, o aplicativo geralmente terá sido restaurado para um estado acessível.
 
-如果没有传入 `--force`，交互终端会再要求你确认一次。在非交互终端、脚本和 AI agent 会话里，`--force` 是必需的。
+Se `--force` não for passado, o terminal interativo solicitará novamente a confirmação. Em terminais não interativos, scripts e sessões de agente de IA, `--force` é necessário.
 
-## 常见情况
+## Situações comuns
 
-如果你更习惯在界面里操作，或者需要定时备份、云存储同步这类能力，可以直接看 [备份管理](../../ops-management/backup-manager/index.mdx)。这类场景下，Web UI 往往更合适。
+Se você está mais acostumado a operar na interface ou precisa de recursos como backup agendado e sincronização de armazenamento em nuvem, consulte diretamente [Gerenciamento de backup](../../ops-management/backup-manager/index.mdx). Nesses cenários, a UI da Web costuma ser mais adequada.
 
-## 相关链接
+## Links relacionados
 
-- [`nb backup` 命令参考](../../api/cli/backup/index.md)
-- [`nb env` 命令参考](../../api/cli/env/index.md)
-- [多环境管理](./multi-environment.md)
-- [备份管理](../../ops-management/backup-manager/index.mdx)
+- [`nb backup` Referência de comando](../../api/cli/backup/index.md)
+- [`nb env` Referência de comando](../../api/cli/env/index.md)
+- [Gerenciamento de vários ambientes](./multi-environment.md)
+- [Gerenciamento de backup](../../ops-management/backup-manager/index.mdx)

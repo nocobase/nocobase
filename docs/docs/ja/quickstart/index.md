@@ -1,27 +1,54 @@
-# 快速开始
+# クイックスタート
 
-NocoBase 的快速开始主要解决三件事：先把应用装起来，再把插件装起来，最后把应用稳定地跑起来。你不需要一次把所有文档都看完，按你当前所在的阶段往下走就够了。
+この CLI を初めて使用する場合は、最初にすべてのコマンドを覚える必要はありません。 `nb init --ui` を使用して最初にアプリケーションをインストールし、シナリオに従って残りの部分を調べ続けます。
 
-如果你还没决定用哪种方式安装，默认先看 [使用 CLI 安装（推荐）](./installation/cli.md)。如果你更习惯直接在服务器上用容器跑起来，继续看 [通过 Docker Compose 安装](./installation/docker-compose.md)。
+## まず最も重要な心を確立する
 
-## 快速索引
+NocoBase CLI では、後続の操作はデフォルトで「特定のディレクトリ」や「特定のポート」を中心に展開するのではなく、**env** を中心に展開します。
 
-| 我想要…… | 去哪里看 |
+env は、「CLI によって記憶されるアプリケーション接続と実行情報のセット」と考えることができます。正常に保存されていれば、後続の多くのコマンドを直接使用できます。
+
+- `nb init` を使用して新しいアプリケーションをインストールし、env として保存します
+- `nb env add` を使用して既存のアプリケーションを CLI に接続します
+- この環境を `nb app start`、`nb app logs`、`nb app upgrade` で管理します
+- `nb backup` を使用してこの環境をバックアップおよび復元します
+- `nb app autostart`、`nb proxy` を使用して、運用環境の機能を引き続き補完します
+
+これを最初に覚えておくと、その後の書類作成がスムーズになります。
+
+## デフォルトの推奨パス
+
+どこから始めればよいかわからない場合は、通常、次のパスに従うのが最も簡単です。
+
+1. まず [CLI を使用したインストール (推奨)](./installation/cli.md) を読み、`nb init` を一度完了します。
+2. アプリケーションを env として保存したら、[複数環境管理](./operations/multi-environment.md) を参照して、現在の env を確認し、env を切り替え、状態を確認します。
+3. 毎日の起動、停止、ログ記録、およびアップグレードについては、引き続き [アプリケーションの管理](./operations/manage-app.md) を参照してください。
+4. アップグレード、移行、または重要な変更を行う前に、[バックアップと復元](./operations/backup-restore.md) を参照してください。
+5. 正式にオンラインにする準備ができている場合は、[実稼働環境の展開の概要] (./production/index.md) を入力します。
+
+最初の 3 つのステップは、ほとんどの使用シナリオをカバーします。
+
+## クイックインデックス
+
+|欲しいです... |どこを見るべきか |
 | --- | --- |
-| 直接安装一个新的 NocoBase 应用 | [使用 CLI 安装（推荐）](./installation/cli.md) |
-| 把旧的安装方式逐步迁移到 CLI | [从旧方式迁移到 CLI](./installation/migration.md) |
-| 用 Docker Compose 在服务器上部署 | [通过 Docker Compose 安装](./installation/docker-compose.md) |
-| 在无法访问公网的环境里安装 | [内网安装](./installation/airgap.md) |
-| 先确认应用运行需要的关键环境变量 | [应用环境变量](./installation/env.md) |
-| 激活商业插件或安装第三方插件 | [商业插件激活与升级](../api/cli/license/index.md) / [第三方插件安装与升级](./plugins/third-party.md) |
-| 给生产环境加上反向代理 | [Nginx](./production/reverse-proxy/nginx.md) / [Caddy](./production/reverse-proxy/caddy.md) |
-| 查看应用、切换环境、备份还原 | [管理应用](./operations/manage-app.md) / [多环境管理](./operations/multi-environment.md) / [备份还原](./operations/backup-restore.md) |
+|まだアプリケーションがありません。まず新しい NocoBase をインストールし、CLI env | として保存します。 [CLI を使用したインストール (推奨)](./installation/cli.md) |
+|すでに NocoBase を実行していて、CLI 管理にアクセスしたい | [CLI を使用したインストール (推奨)](./installation/cli.md) |
+|古いインストール方法を段階的に CLI に移行します。 [古いインストール方法から CLI への移行](./installation/migration.md) |
+|どの環境がローカルに保存されているかを確認し、現在の環境を切り替えてステータスを確認します。 [複数の環境管理](./operations/multi-environment.md) |
+|アプリケーションの開始、停止、再起動、ログの表示、またはアップグレードの続行 | [アプリケーションの管理](./operations/manage-app.md) |
+|データのアップグレード、移行、または一括変更の前にバックアップを作成し、必要に応じて復元します。 [バックアップと復元](./operations/backup-restore.md) |
+|まず、アプリケーションの実行に必要な主要な環境変数を確認します。 [アプリケーション環境変数](./installation/env.md) |
+|サードパーティのプラグインをインストールする | [サードパーティのプラグインのインストールとアップグレード](./plugins/third-party.md) |
+|アプリケーションを運用環境に移行させます: 自動起動、安定した外部アクセス、リバース プロキシ | [本番環境導入の概要](./production/index.md) |
 
-## 默认路径
+## コマンドリファレンスを参照する場合
 
-如果你不确定该怎么选，通常来说按下面这条路径走最省心：
+このクイック スタート ドキュメントのセットは、「今何をしたいのか」に焦点を当てています。実行するコマンドがすでにわかっていて、引き続き完全なパラメーターを確認したい場合は、[NocoBase CLI コマンド リファレンス](../api/cli/index.md) にアクセスしてください。
 
-1. 先看 [使用 CLI 安装（推荐）](./installation/cli.md)。
-2. 应用跑起来后，再确认 [应用环境变量](./installation/env.md)。
-3. 如果要正式上线，再补上 [Nginx](./production/reverse-proxy/nginx.md) 或 [Caddy](./production/reverse-proxy/caddy.md)。
-4. 后续日常维护时，再看 [管理应用](./operations/manage-app.md) 和 [备份还原](./operations/backup-restore.md)。
+デフォルトの提案は次のとおりです。
+
+- 最初にクイック スタート ドキュメントを使用して、パスの感覚を確立します。
+- 次に、特定のコマンド ページでパラメータの詳細を確認します。
+
+これにより、完全なコマンド ツリーを一目で読むよりも簡単に始めることができます。

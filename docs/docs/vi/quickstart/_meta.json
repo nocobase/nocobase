@@ -1,72 +1,74 @@
 [
   {
     "type": "custom-link",
-    "label": "开始前",
+    "label": "Trước khi bắt đầu",
     "items": [
       {
         "type": "custom-link",
-        "label": "NocoBase 如何工作",
+        "label": "bắt đầu nhanh",
+        "link": "/quickstart/"
+      },
+      {
+        "type": "custom-link",
+        "label": "Cách thức hoạt động của NocoBase",
         "link": "/get-started/how-nocobase-works"
       },
       {
         "type": "custom-link",
-        "label": "系统要求",
+        "label": "Yêu cầu hệ thống",
         "link": "/get-started/system-requirements"
       }
     ]
   },
   {
     "type": "custom-link",
-    "label": "应用的安装",
+    "label": "Cài đặt NocoBase",
     "items": [
       {
         "type": "custom-link",
-        "label": "使用 CLI 安装（推荐）",
+        "label": "Cài đặt bằng CLI (được khuyến nghị)",
         "link": "/quickstart/installation/cli"
       },
       {
         "type": "custom-link",
-        "label": "从旧方式迁移到 CLI",
+        "label": "Kết nối các phương pháp cài đặt cũ với AI và di chuyển",
         "link": "/quickstart/installation/migration"
       },
       {
         "type": "custom-link",
-        "label": "通过 Docker Compose 安装",
-        "link": "/quickstart/installation/docker-compose"
-      },
-      {
-        "type": "custom-link",
-        "label": "内网安装",
-        "link": "/quickstart/installation/airgap"
-      },
-      {
-        "type": "custom-link",
-        "label": "应用环境变量",
+        "label": "Cấu hình ứng dụng và .env",
         "link": "/quickstart/installation/env"
-      }
-    ]
-  },
-  {
-    "type": "custom-link",
-    "label": "插件的安装",
-    "items": [
+      },
       {
         "type": "custom-link",
-        "label": "第三方插件安装",
+        "label": "Cài đặt plug-in của bên thứ ba",
         "link": "/quickstart/plugins/third-party"
       }
     ]
   },
   {
     "type": "custom-link",
-    "label": "生产环境部署",
-    "link": "/quickstart/production/",
+    "label": "Triển khai môi trường sản xuất",
     "items": [
       {
         "type": "custom-link",
-        "label": "反向代理",
-        "link": "/quickstart/production/reverse-proxy/",
+        "label": "Tổng quan",
+        "link": "/quickstart/production/"
+      },
+      {
+        "type": "custom-link",
+        "label": "Ứng dụng tự động khởi động",
+        "link": "/quickstart/production/autostart"
+      },
+      {
+        "type": "custom-link",
+        "label": "proxy ngược",
         "items": [
+          {
+            "type": "custom-link",
+            "label": "Tổng quan",
+            "link": "/quickstart/production/reverse-proxy/"
+          },
           {
             "type": "custom-link",
             "label": "Nginx",
@@ -74,7 +76,7 @@
           },
           {
             "type": "custom-link",
-            "label": "Caddy",
+            "label": "caddie",
             "link": "/quickstart/production/reverse-proxy/caddy"
           }
         ]
@@ -83,28 +85,44 @@
   },
   {
     "type": "custom-link",
-    "label": "运维与发布",
+    "label": "Vận hành, bảo trì và phát hành",
     "items": [
       {
         "type": "custom-link",
-        "label": "管理应用",
+        "label": "Ứng dụng quản lý",
         "link": "/quickstart/operations/manage-app"
       },
       {
         "type": "custom-link",
-        "label": "多环境管理",
+        "label": "Quản lý nhiều môi trường",
         "link": "/quickstart/operations/multi-environment"
       },
       {
         "type": "custom-link",
-        "label": "备份还原",
+        "label": "Sao lưu và khôi phục",
         "link": "/quickstart/operations/backup-restore"
       }
     ]
   },
   {
     "type": "custom-link",
-    "label": "开始（旧版）",
+    "label": "Ghi chú thiết kế CLI",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "ý định thiết kế ứng dụng nb",
+        "link": "/quickstart/cli-design/nb-app-design-intent"
+      },
+      {
+        "type": "custom-link",
+        "label": "Ý định thiết kế của proxy nb",
+        "link": "/quickstart/cli-design/nb-proxy-design-intent"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Bắt đầu (phiên bản cũ)",
     "proxy": false,
     "link": "/get-started/how-nocobase-works"
   }

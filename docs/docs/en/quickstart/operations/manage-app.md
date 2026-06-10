@@ -1,86 +1,76 @@
-# 管理应用
+#Manage applications
 
-如果你已经把一个 NocoBase 应用保存成 CLI env，日常管理基本都在 `nb app` 这一组命令里完成：启动、停止、重启、查看日志、升级，以及清理本地运行资源。
+If you have saved a NocoBase application as a CLI env, daily management is basically completed in the `nb app` group of commands: start, stop, restart, view logs and upgrade.
 
-大多数时候，你不需要记住所有参数。先分清楚自己要做的是“把应用跑起来”“看日志排查问题”，还是“彻底清理这个 env”，再选对应命令就行。
+Most of the time, you don't need to remember all the parameters. First make it clear whether what you want to do is "run the application", "read the logs to troubleshoot problems", or "upgrade to a new version", and then select the corresponding command.
 
-## 快速索引
+If you want to first understand why `nb app` is unified into this set of commands and its relationship with `nb app autostart`, first read [nb app design intent](../cli-design/nb-app-design-intent.md). This page only retains the most common daily operations.
 
-| 我想要…… | 用哪个命令 |
+## Quick index
+
+| I want... | Which command to use |
 | --- | --- |
-| 启动或恢复应用运行 | [`nb app start`](../../api/cli/app/start.md) |
-| 临时停止应用 | [`nb app stop`](../../api/cli/app/stop.md) |
-| 连同 CLI 托管的内置数据库一起停掉 | [`nb app stop --with-db`](../../api/cli/app/stop.md) |
-| 修改配置后重新拉起应用 | [`nb app restart`](../../api/cli/app/restart.md) |
-| 实时查看应用日志 | [`nb app logs`](../../api/cli/app/logs.md) |
-| 升级到新的源码或镜像版本 | [`nb app upgrade`](../../api/cli/app/upgrade.md) |
-| 移除 env 配置，但保留 storage 和本地 app 文件 | [`nb env remove`](../../api/cli/env/remove.md) |
-| 连同本机托管资源一起彻底清理 | [`nb env remove --purge`](../../api/cli/env/remove.md) |
+| Start or resume application operation | [`nb app start`](../../api/cli/app/start.md) |
+| Temporarily stop the application | [`nb app stop`](../../api/cli/app/stop.md) |
+| Stop along with the CLI-managed built-in database | [`nb app stop --with-db`](../../api/cli/app/stop.md) |
+| Restart the application after modifying the configuration | [`nb app restart`](../../api/cli/app/restart.md) |
+| View application logs in real time | [`nb app logs`](../../api/cli/app/logs.md) |
+| Upgrade to a new source or image version | [`nb app upgrade`](../../api/cli/app/upgrade.md) |
 
-:::tip 先确认当前 env
+:::tip first confirm the current env
 
-`nb app` 命令默认作用在当前 env 上。如果你同时维护多个环境，默认推荐先切到目标 env，再执行启动、升级或清理操作。
+The `nb app` command acts on the current env by default. If you maintain multiple environments at the same time, it is recommended by default to confirm the target env before starting, stopping, logging, or upgrading operations.
 
-```bash
-nb env current
-nb env use app1
-```
-
-如果你显式传入了不同的 `--env`，CLI 通常会要求确认。脚本或非交互场景里，可以加 `--yes` 跳过这一步。
+If you explicitly pass in a different `--env`, the CLI will usually ask for confirmation. In scripts or non-interactive scenarios, you can add `--yes` to skip this step. Multi-environment switching, viewing and removal are introduced in [Multi-Environment Management](./multi-environment.md).
 
 :::
 
-## 启动应用
+## Start application
 
-把应用拉起来，默认用 `nb app start` 就行：
+Pull up the application and use `nb app start` by default:
 
 ```bash
 nb app start
 ```
 
-如果你要操作的不是当前 env，可以显式指定：
+If you want to operate on something other than the current env, you can specify it explicitly:
 
 ```bash
 nb app start --env app1 --yes
 ```
 
-另外几个比较常用的启动参数：
+Several other commonly used startup parameters:
 
-```bash
-nb app start --no-daemon
-```
+- `nb app start` By default, the necessary installation or upgrade preparations will be automatically completed first, and then the service will be started.
 
-- `nb app start` 默认会先自动完成必要的安装或升级准备，再把服务拉起来
-- `--no-daemon` 只在本地 env 下有明显意义——应用会以前台模式运行，方便你直接看控制台输出
+Local npm/Git env will start the local application process, and Docker env will rebuild the application container according to the saved configuration. For detailed parameters, see [`nb app start`](../../api/cli/app/start.md).
 
-本地 npm/Git env 会启动本地应用进程，Docker env 会按已保存配置重建应用容器。详细参数见 [`nb app start`](../../api/cli/app/start.md)。
+## Stop and restart
 
-## 停止和重启
-
-只想临时把应用停掉，用 `nb app stop`：
+If you just want to stop the application temporarily, use `nb app stop`:
 
 ```bash
 nb app stop
 ```
 
-如果你刚改完配置、依赖或代码，通常来说直接 `nb app restart` 更省事：
+If you have just changed the configuration, dependencies or code, it is usually easier to just use `nb app restart` directly:
 
 ```bash
 nb app restart
 nb app restart --env app1 --yes
 ```
 
-`nb app restart` 会先执行停止，再按 `start` 的方式重新启动，所以它也支持 `--no-daemon` 这类启动参数。详细用法见 [`nb app stop`](../../api/cli/app/stop.md) 和 [`nb app restart`](../../api/cli/app/restart.md)。
+`nb app restart` will be stopped first and then restarted in the same way as `start`. For detailed usage, see [`nb app stop`](../../api/cli/app/stop.md) and [`nb app restart`](../../api/cli/app/restart.md).
 
-## 查看日志
+## View log
 
-排查问题时，通常先看日志：
+When troubleshooting problems, you usually look at the logs first:
 
 ```bash
 nb app logs
 ```
 
-如果你只想多看一点最近输出，或者不想持续跟随日志，可以这样用：
+If you just want to see more recent output, or don't want to continue following the log, you can use this:
 
 ```bash
 nb app logs --tail 200
@@ -88,39 +78,39 @@ nb app logs --no-follow
 nb app logs --env app1 --yes
 ```
 
-本地 npm/Git env 读取的是 pm2 日志，Docker env 读取的是容器日志。默认情况下，`nb app logs` 会持续跟随新日志输出。详细参数见 [`nb app logs`](../../api/cli/app/logs.md)。
+Local npm/Git env reads pm2 logs, and Docker env reads container logs. By default, `nb app logs` will continue to follow new log output. For detailed parameters, see [`nb app logs`](../../api/cli/app/logs.md).
 
-## 升级应用
+## Upgrade application
 
-升级命令是 `nb app upgrade`：
+The upgrade command is `nb app upgrade`:
 
 ```bash
 nb app upgrade
 ```
 
-这个命令做的不只是“下载新版本”。默认流程通常包括：
+This command does more than just "download the new version". The default process usually includes:
 
-1. 停止当前应用
-2. 下载并替换已保存的源码或镜像
-3. 同步商业插件
-4. 升级并启动应用
-5. 刷新 env runtime 信息
+1. Stop the current application
+2. Download and replace the saved source code or image
+3. Synchronize commercial plug-ins
+4. Upgrade and start the application
+5. Refresh env runtime information
 
-如果你已经提前更新好了源码或镜像，只想基于当前内容继续执行升级并启动应用，可以加 `--skip-download`：
+If you have updated the source code or image in advance and just want to continue the upgrade and start the application based on the current content, you can add `--skip-download`:
 
 ```bash
 nb app upgrade --skip-download
 ```
 
-如果你想显式指定目标版本，也可以加 `--version`：
+If you want to explicitly specify the target version, you can also add `--version`:
 
 ```bash
 nb app upgrade --version beta
 ```
 
-:::warning 注意
+:::warning note
 
-`nb app upgrade` 在真正开始前通常还会要求你确认一次。脚本、CI 或其他非交互场景里，需要显式传入 `--force`。如果同时还是跨 env 操作，通常要一起带上 `--yes`。
+`nb app upgrade` You will also usually be asked to confirm once before actually starting. In scripts, CI, or other non-interactive scenarios, `--force` needs to be passed in explicitly. If you also operate across envs at the same time, you usually need to bring `--yes` together.
 
 ```bash
 nb app upgrade --env app1 --yes --force
@@ -128,39 +118,10 @@ nb app upgrade --env app1 --yes --force
 
 :::
 
-更完整的参数说明见 [`nb app upgrade`](../../api/cli/app/upgrade.md)。
+For a more complete parameter description, see [`nb app upgrade`](../../api/cli/app/upgrade.md).
 
-## 清理运行资源和销毁 env
+## Related links
 
-这几种场景最容易混淆。可以先记住一个默认建议：
-
-- 只是想把应用停掉，用 `nb app stop`
-- 也想把当前机器上的内置数据库运行时一起停掉，用 `nb app stop --with-db`
-- 确定这个 env 不再需要了，但想先保留 storage 和本地 app 文件，用 `nb env remove`
-- 连本机托管资源也一起清理掉，再用 `nb env remove --purge`
-
-如果你只是想停掉应用和 CLI 托管的内置数据库，直接这样写就行：
-
-```bash
-nb app stop --env app1 --with-db
-```
-
-如果你要移除这个 env，但还想保留 storage 和本地 app 文件：
-
-```bash
-nb env remove app1 --force
-```
-
-如果你确实要把这个 env 的本机托管内容也一起清理掉，那么加上 `--purge`：
-
-```bash
-nb env remove app1 --purge --force
-```
-
-对于 CLI 下载管理的本地 npm/Git env，`--purge` 还会删除 CLI 托管的本地应用文件。对于 HTTP 或 SSH env，它只会删除 CLI 里保存的 env 配置，不会去删除外部服务本身。
-
-## 相关链接
-
-- [多环境管理](./multi-environment.md)
-- [`nb app` 命令参考](../../api/cli/app/index.md)
-- [`nb env` 命令参考](../../api/cli/env/index.md)
+- [nb app design intent](../cli-design/nb-app-design-intent.md)
+- [Multiple environment management](./multi-environment.md)
+- [`nb app` Command Reference](../../api/cli/app/index.md)

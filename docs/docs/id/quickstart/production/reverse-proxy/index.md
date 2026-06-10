@@ -1,119 +1,51 @@
 ---
-title: "Reverse proxy di produksi"
-description: "Gunakan nb proxy nginx dan nb proxy caddy untuk menghasilkan dan mengelola konfigurasi reverse proxy bagi env NocoBase yang dikelola CLI."
-keywords: "NocoBase,nb proxy nginx,nb proxy caddy,reverse proxy,Nginx,Caddy,produksi"
+title: "Proksi terbalik lingkungan produksi"
+description: "Hasilkan dan kelola konfigurasi proksi terbalik untuk env NocoBase yang dihosting CLI berdasarkan nb proxy nginx dan nb proxy caddy."
+keywords: "NocoBase,nb proxy nginx,nb proxy caddy, reverse proxy, Nginx, Caddy, lingkungan produksi"
 ---
 
-# Reverse proxy di produksi
 
-Di NocoBase CLI, titik masuk yang direkomendasikan untuk reverse proxy produksi adalah:
+# Membalikkan proksi
 
-- `nb proxy nginx`
-- `nb proxy caddy`
+Artikel ini hanya berlaku untuk aplikasi yang diinstal menggunakan `nb init`.
 
-Di sini:
+Di NocoBase, proksi terbalik lingkungan produksi melakukan lebih dari sekadar meneruskan permintaan ke proses aplikasi. Seringkali detail WebSockets, subjalur, sumber daya statis front-end, direktori unggahan, dan halaman cadangan SPA juga ditangani secara bersamaan.
 
-- `proxy` mengelola lapisan entry
-- `nginx` dan `caddy` adalah implementasi provider
-- `docker` dan `local` adalah driver runtime
-- `--env <name>` memilih env CLI yang ingin dibuatkan konfigurasinya
+Fungsi `nb proxy` adalah untuk mengumpulkan detail yang mudah terlewatkan ini ke dalam kumpulan entri perintah yang stabil.
 
-Selama aplikasi Anda sudah disimpan sebagai env yang dikelola CLI dan env tersebut bertipe `local` atau `docker`, membiarkan CLI menghasilkan dan mengelola konfigurasi reverse proxy biasanya sudah cukup. Dengan pendekatan ini, penanganan WebSocket, subpath, halaman fallback SPA, dan pembaruan berikutnya tetap selaras di satu tempat.
+## Proses inti
 
-Jika aplikasinya bukan env yang dikelola CLI, atau Anda memang ingin memelihara seluruh konfigurasi proxy secara manual, lanjutkan ke bagian konfigurasi manual di halaman provider terkait.
-
-## Sebelum memulai
-
-Pastikan bahwa:
-
-- aplikasi sudah bisa diakses secara internal, misalnya `http://127.0.0.1:13000`
-- aplikasi sudah disimpan sebagai env CLI, dan env tersebut bertipe `local` atau `docker`
-- env tersebut sudah memiliki `appPort`
-
-Jika perintah mengatakan env belum memiliki `appPort`, perbarui terlebih dahulu dengan [`nb env update`](../../../api/cli/env/update.md).
-
-Jika nanti Anda mengubah pengaturan seperti `app-port` atau `app-public-path` yang memengaruhi perilaku proxy, jalankan ulang perintah `generate` yang sesuai.
-
-## Alur default
-
-Untuk Nginx:
+Jika hanya melihat proses inti saja, cukup mengingat tiga perintah ini:
 
 ```bash
 nb proxy nginx use docker
 nb proxy nginx generate --env test2 --host c.local.nocobase.com
-nb proxy nginx start
+nb proxy nginx reload
 ```
 
-Untuk Caddy:
+Jika Anda menggunakan Caddy, ganti saja `nginx` pada perintah dengan `caddy`.
 
-```bash
-nb proxy caddy use local
-nb proxy caddy generate --env test2 --host c.local.nocobase.com
-nb proxy caddy start
-```
+`use local` dan `use docker` dapat dinilai secara langsung seperti ini:
 
-Peran tiap langkah adalah:
+- Jika Nginx atau Caddy telah diinstal secara lokal, gunakan `use local`
+- Tidak ada instalasi lokal. Jika Anda ingin CLI menggunakan Docker untuk mengelola agen, gunakan `use docker`
 
-- `use docker|local`: memilih driver runtime untuk provider saat ini
-- `generate --env <name> --host <domain>`: menghasilkan konfigurasi reverse proxy untuk satu env
-- `start`: menjalankan proses lokal atau container Docker untuk provider saat ini
+Di sebagian besar skenario, cukup mengeksekusi `use` terlebih dahulu, lalu `generate`, dan terakhir `reload`. Untuk detail Nginx atau Caddy, lanjutkan ke halamannya masing-masing.
 
-Jika Anda memperbarui konfigurasi setelah itu, `reload` biasanya menjadi pilihan pertama. Gunakan `restart` bila Anda membutuhkan restart penuh pada lapisan entry.
+## Kapan memilih Nginx dan kapan memilih Caddy
 
-## Pembagian grup perintah
+Biasanya dapat dinilai seperti ini:
 
-Menggunakan Nginx sebagai contoh:
-
-| Perintah | Tujuan |
+| Skenario | Rekomendasi |
 | --- | --- |
-| `nb proxy nginx use docker` | Mengganti runtime Nginx ke Docker |
-| `nb proxy nginx use local` | Mengganti runtime Nginx ke proses lokal |
-| `nb proxy nginx current` | Menampilkan driver runtime saat ini |
-| `nb proxy nginx generate --env <name> --host <domain>` | Menghasilkan konfigurasi Nginx untuk satu env |
-| `nb proxy nginx start` | Menjalankan Nginx |
-| `nb proxy nginx reload` | Memuat ulang konfigurasi Nginx |
-| `nb proxy nginx restart` | Menjalankan ulang Nginx |
-| `nb proxy nginx stop` | Menghentikan Nginx |
-| `nb proxy nginx status` | Menampilkan status Nginx |
-| `nb proxy nginx info` | Menampilkan konfigurasi saat ini, path, dan detail runtime |
+| Anda sudah menggunakan Nginx untuk mengelola situs, sertifikat, cache, atau kontrol akses | [Nginx](./nginx.md) |
+| Anda sudah memiliki nama domain dan ingin menjalankan HTTPS sesegera mungkin dan menyimpan beberapa detail TLS untuk dipelihara | [Caddy](./caddy.md) |
 
-Caddy menggunakan kumpulan aksi yang sama, hanya providernya berbeda.
+## Lanjutkan membaca di bawah
 
-## Apa yang dipelihara CLI
-
-CLI tidak hanya menghasilkan satu fragmen proxy. CLI juga menjaga file pendukung dan struktur entry situs agar tetap selaras dengan provider:
-
-- Nginx memelihara `snippets` bersama, `app.conf`, `public/index-v1.html`, dan `public/index-v2.html`
-- Caddy memelihara `nocobase.caddy`, `app.caddy`, `public/index-v1.html`, dan `public/index-v2.html`, di mana `app.caddy` adalah konfigurasi situs lengkap untuk satu env
-
-:::warning Catatan
-
-Jika Anda perlu menambahkan konfigurasi di tingkat situs, biasanya Anda mengedit `app.conf` untuk Nginx dan memakai `app.caddy` sebagai dasar untuk Caddy. Jangan mengedit langsung file pendukung yang dikelola CLI. Perlu juga diingat bahwa `app.caddy` akan ditimpa sepenuhnya saat Anda menjalankan `generate` lagi, sedangkan `nocobase.caddy` terutama berfungsi sebagai file entry tingkat provider.
-
-:::
-
-## Halaman mana yang sebaiknya dibuka lebih dulu
-
-| Saya ingin... | Buka halaman ini |
+| saya ingin... | Di mana mencarinya |
 | --- | --- |
-| Tetap memakai Nginx untuk situs, sertifikat, cache, atau kontrol akses | [Nginx](./nginx.md) |
-| Menjalankan HTTPS dengan cepat dengan detail TLS yang lebih sedikit | [Caddy](./caddy.md) |
-| Menyesuaikan pengaturan env yang dapat memengaruhi proxy, seperti `app-port` atau `app-public-path` | [`nb env update`](../../../api/cli/env/update.md) |
-| Memasang aplikasi sebagai env yang dikelola CLI terlebih dahulu | [Instal dengan CLI](../../installation/cli.md) |
-
-## Kapan jalur CLI bukan pilihan yang tepat
-
-Dalam kasus berikut, bagian konfigurasi manual di halaman provider biasanya lebih cocok:
-
-- aplikasi tidak dikelola CLI
-- env hanya berupa koneksi API jarak jauh atau env SSH
-- Anda memang ingin memelihara seluruh konfigurasi Nginx atau `Caddyfile` sendiri
-
-Selama aplikasi sudah disimpan sebagai env CLI dan runtime-nya bisa dijangkau dari mesin saat ini, grup perintah ini tetap menjadi pilihan default yang direkomendasikan. Biasanya jauh lebih mudah dipelihara nanti saat Anda perlu mengganti domain, menambah konfigurasi tingkat situs, mengganti driver, atau menghasilkan ulang file entry.
-
-## Tautan terkait
-
-- [Nginx](./nginx.md)
-- [Caddy](./caddy.md)
-- [Variabel lingkungan](../../installation/env.md)
-- [Instal dengan CLI](../../installation/cli.md)
+| Ikuti pintu masuk situs manajemen Nginx | [Nginx](./nginx.md) |
+| Hubungkan HTTPS sesegera mungkin | [Caddy](./caddy.md) |
+| Sesuaikan terlebih dahulu konfigurasi env yang akan mempengaruhi hasil proxy, seperti `app-port`, `app-public-path` | [`nb env update`](../../../api/cli/env/update.md) |
+| Konfirmasikan terlebih dahulu instalasi dan konfigurasi env aplikasi | [Instal menggunakan CLI (disarankan)](../../installation/cli.md) |

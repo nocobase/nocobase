@@ -1,119 +1,51 @@
 ---
-title: "Reverse Proxy in Produktion"
-description: "Mit nb proxy nginx und nb proxy caddy Reverse-Proxy-Konfigurationen für CLI-verwaltete NocoBase-Envs erzeugen und verwalten."
-keywords: "NocoBase,nb proxy nginx,nb proxy caddy,reverse proxy,Nginx,Caddy,Produktion"
+title: "Reverse-Proxy für die Produktionsumgebung"
+description: "Generieren und verwalten Sie die Reverse-Proxy-Konfiguration für die von der CLI gehostete NocoBase-Umgebung basierend auf nb-Proxy-Nginx und nb-Proxy-Caddy."
+keywords: "NocoBase, NB-Proxy-Nginx, NB-Proxy-Caddy, Reverse-Proxy, Nginx, Caddy, Produktionsumgebung"
 ---
 
-# Reverse Proxy in Produktion
 
-In der NocoBase CLI sind diese beiden Einstiegspunkte die empfohlene Wahl für einen produktiven Reverse Proxy:
+# Reverse-Proxy
 
-- `nb proxy nginx`
-- `nb proxy caddy`
+Dieser Artikel gilt nur für Anwendungen, die mit `nb init` installiert wurden.
 
-Dabei gilt:
+In NocoBase leistet der Reverse-Proxy der Produktionsumgebung mehr als nur die Weiterleitung von Anfragen an den Anwendungsprozess. Oftmals werden auch die Details von WebSockets, Unterpfaden, statischen Front-End-Ressourcen, Upload-Verzeichnissen und SPA-Fallback-Seiten gleichzeitig behandelt.
 
-- `proxy` verwaltet die Entry-Ebene
-- `nginx` und `caddy` sind die Provider-Implementierungen
-- `docker` und `local` sind die Runtime-Driver
-- `--env <name>` gibt an, für welches CLI-Env die Konfiguration erzeugt werden soll
+Die Funktion von `nb proxy` besteht darin, diese leicht übersehenen Details in einem stabilen Satz von Befehlseinträgen zusammenzufassen.
 
-Solange deine Anwendung als CLI-verwaltetes Env gespeichert wurde und dieses Env `local` oder `docker` ist, reicht es normalerweise aus, die Konfiguration direkt von der CLI erzeugen und verwalten zu lassen. So bleiben WebSocket-Behandlung, Subpfade, SPA-Fallback-Seiten und spätere Aktualisierungen an einer Stelle abgestimmt.
+## Kernprozess
 
-Wenn die Anwendung nicht CLI-verwaltet ist oder du die vollständige Proxy-Konfiguration bewusst selbst pflegen willst, geh direkt zu den Abschnitten für handgeschriebene Konfiguration auf den Provider-Seiten.
-
-## Vor dem Start
-
-Stelle sicher, dass:
-
-- die Anwendung intern bereits erreichbar ist, zum Beispiel unter `http://127.0.0.1:13000`
-- die Anwendung bereits als CLI-Env gespeichert wurde und dieses Env `local` oder `docker` ist
-- im Env bereits `appPort` gespeichert ist
-
-Wenn der Befehl meldet, dass `appPort` fehlt, ergänze es zuerst mit [`nb env update`](../../../api/cli/env/update.md).
-
-Wenn du später Einstellungen wie `app-port` oder `app-public-path` änderst, die das Proxy-Verhalten beeinflussen, führe den passenden `generate`-Befehl erneut aus.
-
-## Standardablauf
-
-Für Nginx:
+Wenn Sie nur den Kernprozess betrachten, reicht es aus, sich diese drei Befehle zu merken:
 
 ```bash
 nb proxy nginx use docker
 nb proxy nginx generate --env test2 --host c.local.nocobase.com
-nb proxy nginx start
+nb proxy nginx reload
 ```
 
-Für Caddy:
+Wenn Sie Caddy verwenden, ersetzen Sie einfach `nginx` im Befehl durch `caddy`.
 
-```bash
-nb proxy caddy use local
-nb proxy caddy generate --env test2 --host c.local.nocobase.com
-nb proxy caddy start
-```
+`use local` und `use docker` können direkt wie folgt beurteilt werden:
 
-Die Rollen dieser Schritte sind:
+- Wenn Nginx oder Caddy lokal installiert wurde, verwenden Sie `use local`
+- Es gibt keine lokale Installation. Wenn Sie zulassen, dass CLI Docker zur Verwaltung des Agenten verwendet, verwenden Sie `use docker`
 
-- `use docker|local`: Runtime-Driver des aktuellen Providers wählen
-- `generate --env <name> --host <domain>`: Reverse-Proxy-Konfiguration für ein Env erzeugen
-- `start`: lokalen Prozess oder Docker-Container des aktuellen Providers starten
+In den meisten Szenarien reicht es aus, zuerst `use`, dann `generate` und schließlich `reload` auszuführen. Weitere Informationen zu Nginx oder Caddy finden Sie auf den jeweiligen Seiten.
 
-Wenn du die Konfiguration später aktualisierst, ist `reload` normalerweise die erste Wahl. Verwende `restart`, wenn du die Entry-Ebene vollständig neu starten musst.
+## Wann Sie sich für Nginx und wann für Caddy entscheiden sollten
 
-## Aufteilung der Befehlsgruppe
+Normalerweise lässt sich das so beurteilen:
 
-Am Beispiel von Nginx:
-
-| Befehl | Zweck |
+| Szenario | Empfehlung |
 | --- | --- |
-| `nb proxy nginx use docker` | Nginx-Runtime auf Docker umstellen |
-| `nb proxy nginx use local` | Nginx-Runtime auf einen lokalen Prozess umstellen |
-| `nb proxy nginx current` | Aktuellen Runtime-Driver anzeigen |
-| `nb proxy nginx generate --env <name> --host <domain>` | Nginx-Konfiguration für ein Env erzeugen |
-| `nb proxy nginx start` | Nginx starten |
-| `nb proxy nginx reload` | Nginx-Konfiguration neu laden |
-| `nb proxy nginx restart` | Nginx neu starten |
-| `nb proxy nginx stop` | Nginx stoppen |
-| `nb proxy nginx status` | Nginx-Status anzeigen |
-| `nb proxy nginx info` | Aktuelle Konfiguration, Pfade und Runtime-Details anzeigen |
+| Sie verwenden Nginx bereits zur Verwaltung Ihrer Site, Zertifikate, Cache oder Zugriffskontrolle | [Nginx](./nginx.md) |
+| Sie haben bereits einen Domänennamen und möchten so schnell wie möglich HTTPS ausführen und einige TLS-Details speichern, um sie beizubehalten | [Caddy](./caddy.md) |
 
-Caddy verwendet dieselbe Aktionsgruppe, nur mit einem anderen Provider.
+## Lesen Sie weiter unten
 
-## Was die CLI verwaltet
-
-Die CLI erzeugt nicht nur ein einzelnes Proxy-Fragment. Sie hält auch die Hilfsdateien und die Site-Entry-Struktur passend zum jeweiligen Provider synchron:
-
-- Nginx verwaltet gemeinsame `snippets`, `app.conf`, `public/index-v1.html` und `public/index-v2.html`
-- Caddy verwaltet `nocobase.caddy`, `app.caddy`, `public/index-v1.html` und `public/index-v2.html`, wobei `app.caddy` die vollständige Site-Konfiguration für ein einzelnes Env ist
-
-:::warning Hinweis
-
-Wenn du Site-Level-Konfiguration ergänzen musst, bearbeitest du bei Nginx normalerweise `app.conf` und verwendest bei Caddy `app.caddy` als Ausgangspunkt. Bearbeite CLI-verwaltete Hilfsdateien nicht direkt. Beachte außerdem, dass `app.caddy` beim erneuten Ausführen von `generate` vollständig überschrieben wird, während `nocobase.caddy` hauptsächlich als Entry-Datei auf Provider-Ebene dient.
-
-:::
-
-## Welche Seite du zuerst öffnen solltest
-
-| Ich möchte... | Hier weiterlesen |
+| Ich möchte... | Wo suchen |
 | --- | --- |
-| Nginx weiter für Websites, Zertifikate, Caching oder Zugriffskontrolle verwenden | [Nginx](./nginx.md) |
-| HTTPS schnell verfügbar machen und weniger TLS-Details pflegen | [Caddy](./caddy.md) |
-| Env-Einstellungen anpassen, die das Proxy-Verhalten beeinflussen können, etwa `app-port` oder `app-public-path` | [`nb env update`](../../../api/cli/env/update.md) |
-| Die Anwendung zuerst als CLI-verwaltetes Env installieren | [Mit der CLI installieren](../../installation/cli.md) |
-
-## Wann der CLI-Weg nicht der richtige ist
-
-In diesen Fällen passen die Abschnitte für handgeschriebene Konfiguration auf den Provider-Seiten meist besser:
-
-- die Anwendung ist nicht CLI-verwaltet
-- das Env ist nur eine entfernte API-Verbindung oder ein SSH-Env
-- du möchtest die vollständige Nginx-Konfiguration oder das gesamte `Caddyfile` bewusst selbst pflegen
-
-Solange die Anwendung als CLI-Env gespeichert ist und ihre Runtime vom aktuellen Rechner aus erreichbar ist, bleibt diese Befehlsgruppe dennoch die empfohlene Standardwahl. Spätere Änderungen an Domain, Site-Level-Konfiguration, Driver oder neu erzeugten Entry-Dateien lassen sich so in der Regel deutlich einfacher pflegen.
-
-## Verwandte Links
-
-- [Nginx](./nginx.md)
-- [Caddy](./caddy.md)
-- [Umgebungsvariablen](../../installation/env.md)
-- [Mit der CLI installieren](../../installation/cli.md)
+| Folgen Sie dem Eingang zur Nginx-Verwaltungsseite | [Nginx](./nginx.md) |
+| HTTPS so schnell wie möglich verbinden | [Caddy](./caddy.md) |
+| Passen Sie zunächst die Umgebungskonfiguration an, die sich auf die Proxy-Ergebnisse auswirkt, z. B. `app-port`, `app-public-path` | [`nb env update`](../../../api/cli/env/update.md) |
+| Bestätigen Sie zunächst die Installation und Umgebungskonfiguration der Anwendung | [Mit CLI installieren (empfohlen)](../../installation/cli.md) |

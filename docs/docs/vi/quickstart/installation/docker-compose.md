@@ -1,25 +1,25 @@
-# 通过 Docker Compose 安装
+# Cài đặt qua Docker Compose
 
-如果你希望直接在服务器上把 NocoBase 跑起来，`docker compose` 仍然是最直接的方式。大部分场景用一份 `docker-compose.yml` 就够了。
+Nếu bạn muốn chạy NocoBase trực tiếp trên máy chủ thì `docker compose` vẫn là cách trực tiếp nhất. Một khẩu phần `docker-compose.yml` là đủ cho hầu hết các trường hợp.
 
-不过生产环境里，建议固定具体版本号，不要长期直接使用 `latest`。这样升级时更可控。
+Tuy nhiên, trong môi trường sản xuất, bạn nên sửa số phiên bản cụ thể và không sử dụng trực tiếp `latest` trong thời gian dài. Điều này sẽ làm cho việc nâng cấp dễ kiểm soát hơn.
 
-## 前提条件
+## Điều kiện tiên quyết
 
-- 已安装 Docker 和 Docker Compose
-- 确保 Docker 服务已经启动
-- 已准备好一个要对外开放的端口，比如 `13000`
+- Đã cài đặt Docker và Docker Compose
+- Đảm bảo dịch vụ Docker được khởi động
+- Một cổng mở ra thế giới bên ngoài đã được chuẩn bị sẵn, chẳng hạn như `13000`
 
-## 第一步：创建项目目录
+## Bước 1: Tạo thư mục dự án
 
 ```bash
 mkdir my-nocobase-app
 cd my-nocobase-app
 ```
 
-## 第二步：创建 `docker-compose.yml`
+## Bước 2: Tạo `docker-compose.yml`
 
-下面这个示例使用 PostgreSQL，也是默认最省心的一种组合：
+Ví dụ sau đây sử dụng PostgreSQL, đây cũng là sự kết hợp an toàn nhất theo mặc định:
 
 ```yml
 networks:
@@ -62,62 +62,62 @@ services:
       - nocobase
 ```
 
-其中：
+TRONG:
 
-- `APP_KEY` 记得改成你自己的随机字符串
-- `13000:80` 代表把主机的 `13000` 端口映射到容器的 `80` 端口
-- 如果你已经有数据库服务，可以删掉 `postgres` 这一段，并把 `DB_HOST` 改成现有数据库地址
+- `APP_KEY` Nhớ đổi thành chuỗi ngẫu nhiên của riêng bạn
+- `13000:80` thể hiện việc ánh xạ cổng `13000` của máy chủ tới cổng `80` của vùng chứa
+- Nếu bạn đã có dịch vụ cơ sở dữ liệu, bạn có thể xóa phần `postgres` và thay đổi `DB_HOST` thành địa chỉ cơ sở dữ liệu hiện có
 
-如果你使用 MySQL 或 MariaDB，记得把 `DB_DIALECT` 改成对应类型，并补上：
+Nếu bạn sử dụng MySQL hoặc MariaDB, hãy nhớ thay đổi `DB_DIALECT` thành loại tương ứng và thêm:
 
 ```bash
 DB_UNDERSCORED=true
 ```
 
-## 第三步：启动应用
+## Bước 3: Khởi động ứng dụng
 
 ```bash
 docker compose up -d
 ```
 
-查看日志：
+Kiểm tra nhật ký:
 
 ```bash
 docker compose logs -f app
 ```
 
-## 第四步：访问应用
+## Bước 4: Truy cập ứng dụng
 
-应用启动完成后，打开：
+Sau khi ứng dụng đã khởi động, hãy mở:
 
 ```text
 http://<服务器IP>:13000
 ```
 
-如果是第一次启动，按页面提示初始化管理员账号即可。
+Nếu đây là lần đầu tiên bắt đầu, chỉ cần làm theo lời nhắc trên trang để khởi tạo tài khoản quản trị viên.
 
-## 常用命令
+## Các lệnh thông dụng
 
-启动或更新容器：
+Bắt đầu hoặc cập nhật vùng chứa:
 
 ```bash
 docker compose up -d
 ```
 
-停止应用：
+Dừng ứng dụng:
 
 ```bash
 docker compose down
 ```
 
-查看日志：
+Kiểm tra nhật ký:
 
 ```bash
 docker compose logs -f app
 ```
 
-## 下一步去哪里看
+## Nơi để tìm tiếp theo
 
-- 如果你要调整密钥、端口、数据库等配置，继续看 [应用环境变量](./env.md)
-- 如果你准备正式上线，继续看 [Nginx](../production/reverse-proxy/nginx.md) 或 [Caddy](../production/reverse-proxy/caddy.md)
-- 如果你后续要备份数据，继续看 [备份还原](../operations/backup-restore.md)
+- Nếu bạn muốn điều chỉnh cấu hình khóa, cổng, cơ sở dữ liệu, v.v., hãy tiếp tục xem [Biến môi trường ứng dụng](./env.md)
+- Nếu bạn đã sẵn sàng lên mạng chính thức, hãy tiếp tục đọc [Nginx](../production/reverse-proxy/nginx.md) hoặc [Caddy](../production/reverse-proxy/caddy.md)
+- Nếu bạn muốn sao lưu dữ liệu sau, hãy tiếp tục xem [Backup and Restore](../Operations/backup-restore.md)

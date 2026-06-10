@@ -1,27 +1,54 @@
-# 快速开始
+# Bắt đầu nhanh
 
-NocoBase 的快速开始主要解决三件事：先把应用装起来，再把插件装起来，最后把应用稳定地跑起来。你不需要一次把所有文档都看完，按你当前所在的阶段往下走就够了。
+Nếu đây là lần đầu tiên bạn sử dụng CLI này, bạn không cần phải ghi nhớ tất cả các lệnh lúc đầu. Trước tiên, hãy sử dụng `nb init --ui` để cài đặt một ứng dụng, sau đó tiếp tục xem phần còn lại theo kịch bản.
 
-如果你还没决定用哪种方式安装，默认先看 [使用 CLI 安装（推荐）](./installation/cli.md)。如果你更习惯直接在服务器上用容器跑起来，继续看 [通过 Docker Compose 安装](./installation/docker-compose.md)。
+## Đầu tiên hãy thiết lập tâm trí quan trọng nhất
 
-## 快速索引
+Trong NocoBase CLI, các thao tác tiếp theo không xoay quanh "một thư mục nhất định" hoặc "một cổng nhất định" theo mặc định mà xoay quanh **env**.
 
-| 我想要…… | 去哪里看 |
+Bạn có thể coi env là "một tập hợp kết nối ứng dụng và thông tin đang chạy được CLI ghi nhớ". Miễn là nó đã được lưu thành công, nhiều lệnh tiếp theo có thể được sử dụng trực tiếp:
+
+- Sử dụng `nb init` để cài đặt ứng dụng mới và lưu dưới dạng env
+- Sử dụng `nb env add` để kết nối ứng dụng hiện có với CLI
+- Quản lý env này với `nb app start`, `nb app logs`, `nb app upgrade`
+- Sao lưu và khôi phục env này bằng `nb backup`
+- Sử dụng `nb app autostart`, `nb proxy` để tiếp tục bổ sung khả năng của môi trường sản xuất
+
+Hãy ghi nhớ điều này trước tiên và các tài liệu tiếp theo sẽ mượt mà hơn nhiều.
+
+## Đường dẫn mặc định được đề xuất
+
+Nếu bạn không chắc chắn nên bắt đầu từ đâu thì cách dễ nhất là đi theo con đường này:
+
+1. Trước tiên hãy đọc [Cài đặt bằng CLI (được khuyến nghị)](./installation/cli.md) và hoàn tất `nb init` một lần.
+2. Sau khi ứng dụng được lưu dưới dạng env, hãy xem [Quản lý nhiều môi trường](./Operations/multi-environment.md) để xác nhận env hiện tại, chuyển đổi env và kiểm tra trạng thái.
+3. Để khởi động hàng ngày, dừng, đăng nhập và nâng cấp, tiếp tục xem [Quản lý ứng dụng](./Operations/manage-app.md).
+4. Trước khi thực hiện nâng cấp, di chuyển hoặc thay đổi quan trọng, hãy xem [Sao lưu và khôi phục](./Operations/backup-restore.md).
+5. Nếu bạn đã sẵn sàng trực tuyến chính thức, hãy nhập [Tổng quan về triển khai môi trường sản xuất] (./production/index.md).
+
+Ba bước đầu tiên bao gồm hầu hết các tình huống sử dụng.
+
+## Lập chỉ mục nhanh
+
+| Tôi muốn... | Tìm ở đâu |
 | --- | --- |
-| 直接安装一个新的 NocoBase 应用 | [使用 CLI 安装（推荐）](./installation/cli.md) |
-| 把旧的安装方式逐步迁移到 CLI | [从旧方式迁移到 CLI](./installation/migration.md) |
-| 用 Docker Compose 在服务器上部署 | [通过 Docker Compose 安装](./installation/docker-compose.md) |
-| 在无法访问公网的环境里安装 | [内网安装](./installation/airgap.md) |
-| 先确认应用运行需要的关键环境变量 | [应用环境变量](./installation/env.md) |
-| 激活商业插件或安装第三方插件 | [商业插件激活与升级](../api/cli/license/index.md) / [第三方插件安装与升级](./plugins/third-party.md) |
-| 给生产环境加上反向代理 | [Nginx](./production/reverse-proxy/nginx.md) / [Caddy](./production/reverse-proxy/caddy.md) |
-| 查看应用、切换环境、备份还原 | [管理应用](./operations/manage-app.md) / [多环境管理](./operations/multi-environment.md) / [备份还原](./operations/backup-restore.md) |
+| Chưa có ứng dụng nào, trước tiên hãy cài đặt NocoBase mới và lưu nó dưới dạng CLI env | [Cài đặt bằng CLI (được khuyến nghị)](./installation/cli.md) |
+| Đã có NocoBase đang chạy và muốn truy cập quản lý CLI | [Cài đặt bằng CLI (được khuyến nghị)](./installation/cli.md) |
+| Di chuyển dần dần các phương pháp cài đặt cũ sang CLI | [Di chuyển từ các phương thức cài đặt cũ sang CLI](./installation/migration.md) |
+| Xem env nào được lưu cục bộ, chuyển env hiện tại và kiểm tra trạng thái | [Quản lý nhiều môi trường](./Operations/multi-environment.md) |
+| Bắt đầu, dừng, khởi động lại ứng dụng, xem nhật ký hoặc tiếp tục nâng cấp | [Quản lý ứng dụng](./Operations/manage-app.md) |
+| Tạo bản sao lưu trước khi nâng cấp, di chuyển hoặc thay đổi dữ liệu hàng loạt, sau đó khôi phục dữ liệu khi cần thiết | [Sao lưu và khôi phục](./Operations/backup-restore.md) |
+| Trước tiên hãy xác nhận các biến môi trường chính cần thiết để chạy ứng dụng | [Biến môi trường ứng dụng](./installation/env.md) |
+| Cài đặt plug-in của bên thứ ba | [Cài đặt và nâng cấp plug-in của bên thứ ba](./plugins/third-party.md) |
+| Cho ứng dụng vào môi trường sản xuất: khởi động tự động, truy cập bên ngoài ổn định, proxy ngược | [Tổng quan về triển khai môi trường sản xuất](./production/index.md) |
 
-## 默认路径
+## Khi nào cần xem tham chiếu lệnh
 
-如果你不确定该怎么选，通常来说按下面这条路径走最省心：
+Bộ tài liệu bắt đầu nhanh này mang tính chất "tôi muốn làm gì bây giờ". Nếu bạn đã biết lệnh nào mình muốn thực thi và chỉ muốn tiếp tục xem các tham số đầy đủ, chỉ cần truy cập [Tham khảo lệnh NocoBase CLI](../api/cli/index.md).
 
-1. 先看 [使用 CLI 安装（推荐）](./installation/cli.md)。
-2. 应用跑起来后，再确认 [应用环境变量](./installation/env.md)。
-3. 如果要正式上线，再补上 [Nginx](./production/reverse-proxy/nginx.md) 或 [Caddy](./production/reverse-proxy/caddy.md)。
-4. 后续日常维护时，再看 [管理应用](./operations/manage-app.md) 和 [备份还原](./operations/backup-restore.md)。
+Các đề xuất mặc định là:
+
+- Trước tiên hãy sử dụng tài liệu Bắt đầu nhanh để thiết lập ý thức về đường dẫn
+- Sau đó kiểm tra chi tiết thông số trên trang lệnh cụ thể
+
+Điều này giúp bạn bắt đầu dễ dàng hơn so với việc đọc cây lệnh hoàn chỉnh ngay từ cái nhìn đầu tiên.

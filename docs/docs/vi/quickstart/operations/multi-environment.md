@@ -1,29 +1,29 @@
-# 多环境管理
+#Quản lý đa môi trường
 
-如果你同时维护 `dev`、`test`、`staging`、`prod` 等多个 NocoBase 应用，可以把它们分别保存成 CLI env。之后大多数 `nb` 命令都会默认作用在当前 env 上，所以在执行 `nb app`、`nb api`、`nb db` 这类命令前，先确认自己正在用哪个 env 很重要。
+Nếu bạn duy trì nhiều ứng dụng NocoBase như `dev`, `test`, `staging`, `prod`, v.v., bạn có thể lưu chúng dưới dạng CLI env tương ứng. Hầu hết các lệnh `nb` trong tương lai sẽ hoạt động trên env hiện tại theo mặc định, vì vậy điều quan trọng là phải xác nhận bạn đang sử dụng env nào trước khi thực thi các lệnh như `nb app`, `nb api` và `nb db`.
 
-CLI 从这一版开始把概念拆成了 `current env` 和 `last env`。你通常只需要关心 `current env`——也就是当前 shell 或 agent runtime 正在使用的环境。只有在没有开启 session mode 时，CLI 才会回退到全局 `last env`。
+Bắt đầu từ phiên bản này, CLI chia khái niệm thành `current env` và `last env`. Bạn thường chỉ cần quan tâm đến `current env` - môi trường mà thời gian chạy shell hoặc tác nhân hiện tại đang sử dụng. CLI sẽ chỉ quay lại `last env` chung khi chế độ phiên không được bật.
 
-## 快速索引
+## Lập chỉ mục nhanh
 
-| 我想要…… | 用哪个命令 |
+| Tôi muốn... | Sử dụng lệnh nào |
 | --- | --- |
-| 新建一个本地 env，并顺手完成初始化 | [`nb init`](../../api/cli/init.md) |
-| 把一个已有应用登记成 CLI env | [`nb env add`](../../api/cli/env/add.md) |
-| 看本地保存了哪些 env | [`nb env list`](../../api/cli/env/list.md) |
-| 检查所有 env 的连通性和认证状态 | [`nb env status --all`](../../api/cli/env/status.md) |
-| 切换后续命令要使用的 env | [`nb env use`](../../api/cli/env/use.md) |
-| 确认当前命令会落到哪个 env | [`nb env current`](../../api/cli/env/current.md) 和 [`nb env status`](../../api/cli/env/status.md) |
-| 查看某个 env 保存了哪些详细配置 | [`nb env info`](../../api/cli/env/info.md) |
-| 更新已保存的 env 配置，必要时让 CLI 重新同步当前状态 | [`nb env update`](../../api/cli/env/update.md) |
-| 登录态过期后重新认证，或者改用新的认证方式 | [`nb env auth`](../../api/cli/env/auth.md) |
-| 删除不用的 env 配置，必要时连本机托管资源一起清理 | [`nb env remove`](../../api/cli/env/remove.md) |
+| Tạo một env cục bộ mới và hoàn thành quá trình khởi tạo một cách suôn sẻ | [`nb init`](../../api/cli/init.md) |
+| Đăng ký một ứng dụng hiện có dưới dạng CLI env | [`nb env add`](../../api/cli/env/add.md) |
+| Xem env nào được lưu cục bộ | [`nb env list`](../../api/cli/env/list.md) |
+| Kiểm tra trạng thái kết nối và xác thực của tất cả envs | [`nb env status --all`](../../api/cli/env/status.md) |
+| Chuyển env để sử dụng cho các lệnh tiếp theo | [`nb env use`](../../api/cli/env/use.md) |
+| Xác nhận env lệnh hiện tại sẽ rơi vào | [`nb env current`](../../api/cli/env/current.md) và [`nb env status`](../../api/cli/env/status.md) |
+| Xem cấu hình chi tiết được lưu bởi env | [`nb env info`](../../api/cli/env/info.md) |
+| Cập nhật cấu hình env đã lưu, cho phép CLI đồng bộ hóa lại trạng thái hiện tại nếu cần | [`nb env update`](../../api/cli/env/update.md) |
+| Xác thực lại sau khi trạng thái đăng nhập hết hạn hoặc sử dụng phương thức xác thực mới | [`nb env auth`](../../api/cli/env/auth.md) |
+| Xóa các cấu hình env không sử dụng và dọn sạch tài nguyên được lưu trữ cục bộ nếu cần | [`nb env remove`](../../api/cli/env/remove.md) |
 
-:::tip 建议先开启 session mode
+:::tip Nên bật chế độ phiên trước
 
-默认推荐先执行一次 [`nb session setup`](../../api/cli/session/setup.md)。这样不同终端、不同 shell，或者不同 agent runtime 可以各自维护自己的 `current env`，并行操作时不容易互相影响。
+Theo mặc định, trước tiên bạn nên thực thi [`nb session setup`](../../api/cli/session/setup.md). Bằng cách này, mỗi thiết bị đầu cuối, hệ vỏ khác nhau hoặc thời gian chạy tác nhân khác nhau có thể duy trì `current env` của riêng mình và chúng sẽ không dễ dàng ảnh hưởng lẫn nhau trong các hoạt động song song.
 
-如果没有开启 session mode，那么 `nb env use` 会回退到更新全局 `last env`。这种情况下，一个终端切走环境，另一个终端也可能跟着受影响。
+Nếu chế độ phiên không được bật, `nb env use` sẽ quay lại cập nhật `last env` toàn cầu. Trong trường hợp này, nếu một thiết bị đầu cuối cắt môi trường thì thiết bị đầu cuối kia cũng có thể bị ảnh hưởng.
 
 ```bash
 nb session setup
@@ -31,64 +31,64 @@ nb session setup
 
 :::
 
-## 创建多个环境
+## Tạo nhiều môi trường
 
-如果你要新建或恢复一个本地应用，用 `nb init` 就行。它会完成初始化，并把结果保存成一个新的 CLI env。
+Nếu bạn muốn tạo hoặc khôi phục ứng dụng cục bộ, chỉ cần sử dụng `nb init`. Nó sẽ hoàn tất quá trình khởi tạo và lưu kết quả vào một môi trường CLI mới.
 
 ```bash
 nb init --env dev
 nb init --env test
 ```
 
-如果应用已经存在，只是想把它接入 CLI，通常来说用 `nb env add` 更直接：
+Nếu ứng dụng đã tồn tại và bạn chỉ muốn kết nối nó với CLI thì việc sử dụng `nb env add` thường đơn giản hơn:
 
 ```bash
 nb env add staging --api-base-url http://staging.example.com/api --auth-type oauth
 nb env add prod --api-base-url https://api.example.com/api --auth-type token --access-token <token>
 ```
 
-前者偏“初始化一个环境”，后者偏“登记一个已有环境”。如果你只是连接已有应用，默认用 `nb env add` 就行。
+Cái trước thiên về "khởi tạo một môi trường", trong khi cái sau thiên về "đăng ký một môi trường hiện có". Nếu bạn chỉ đang kết nối với một ứng dụng hiện có, chỉ cần sử dụng `nb env add` theo mặc định.
 
-## 查看已经配置的环境
+## Xem môi trường đã cấu hình
 
-先用 `nb env list` 看看本地已经保存了哪些 env：
+Trước tiên hãy sử dụng `nb env list` để xem env nào đã được lưu cục bộ:
 
 ```bash
 nb env list
 ```
 
-这个命令只展示配置本身，不主动检查应用状态。想同时看连通性和认证状态时，用 `nb env status --all`：
+Lệnh này chỉ hiển thị chính cấu hình và không chủ động kiểm tra trạng thái ứng dụng. Khi bạn muốn xem cả trạng thái kết nối và xác thực, hãy sử dụng `nb env status --all`:
 
 ```bash
 nb env status --all
 ```
 
-你通常会看到 `ok`、`auth failed`、`unreachable` 这类状态值。
+Bạn thường sẽ thấy các giá trị trạng thái như `ok`, `auth failed`, `unreachable`.
 
-## 切换当前环境
+## Chuyển đổi môi trường hiện tại
 
-切换环境用 `nb env use`：
+Sử dụng `nb env use` để chuyển đổi môi trường:
 
 ```bash
 nb env use dev
 ```
 
-切换完成后，后续省略 `--env` 的命令都会默认使用这个 env。
+Sau khi quá trình chuyển đổi hoàn tất, các lệnh tiếp theo bỏ qua `--env` sẽ sử dụng env này theo mặc định.
 
-## 查看当前环境
+## Kiểm tra môi trường hiện tại
 
-如果你不确定当前命令会落到哪个环境上，先执行这两个命令：
+Nếu bạn không chắc chắn lệnh hiện tại sẽ rơi vào môi trường nào, trước tiên hãy thực hiện hai lệnh sau:
 
 ```bash
 nb env current
 nb env status
 ```
 
-`nb env current` 用来看名称，`nb env status` 用来看当前 env 是否可访问、认证是否正常。
+`nb env current` được sử dụng để xem tên, `nb env status` được sử dụng để xem liệu env hiện tại có thể truy cập được hay không và việc xác thực có bình thường hay không.
 
-## 查看单个 env 的详细信息
+## Xem chi tiết của một env
 
-想看某个 env 保存了哪些配置，用 `nb env info`：
+Nếu bạn muốn xem cấu hình nào được lưu trong một env nhất định, hãy sử dụng `nb env info`:
 
 ```bash
 nb env info dev
@@ -97,20 +97,20 @@ nb env info dev --field app.url
 nb env info dev --show-secrets
 ```
 
-其中，`--field` 适合在脚本里只取一个值。`--show-secrets` 会明文显示 token、密码这类敏感信息，只有在你明确需要排查时再用。
+Trong số đó, `--field` chỉ phù hợp để lấy một giá trị trong tập lệnh. `--show-secrets` sẽ hiển thị thông tin nhạy cảm như mã thông báo và mật khẩu ở dạng văn bản thuần túy. Chỉ sử dụng chúng khi bạn rõ ràng cần khắc phục sự cố.
 
-## 更新 env 配置
+## Cập nhật cấu hình env
 
-`nb env update` 用来调整一个已保存 env 的配置。比如 API 地址、认证方式、源码来源、应用端口和数据库参数。更新完成后，CLI 会根据变更自动处理后续事宜。
+`nb env update` được sử dụng để điều chỉnh cấu hình của env đã lưu. Chẳng hạn như địa chỉ API, phương thức xác thực, nguồn mã nguồn, cổng ứng dụng và các tham số cơ sở dữ liệu. Sau khi cập nhật hoàn tất, CLI sẽ tự động xử lý các bước tiếp theo dựa trên những thay đổi.
 
-如果你只是想让 CLI 按当前 env 的最新状态重新同步，直接这样写就行：
+Nếu bạn chỉ muốn CLI đồng bộ lại theo trạng thái mới nhất của env hiện tại, chỉ cần viết như thế này:
 
 ```bash
 nb env update
 nb env update prod
 ```
 
-如果你要修改这个 env 保存的连接信息或本地配置，可以显式带上参数：
+Nếu bạn muốn sửa đổi thông tin kết nối hoặc cấu hình cục bộ được lưu bởi env này, bạn có thể đưa các tham số một cách rõ ràng:
 
 ```bash
 nb env update prod --api-base-url https://api.example.com/api
@@ -118,18 +118,18 @@ nb env update prod --access-token <token>
 nb env update dev --app-port 13080 --timezone Asia/Shanghai
 ```
 
-这里可以先记住一个默认判断：
+Ở đây trước tiên bạn có thể nhớ lại phán quyết mặc định:
 
-- 要修改 env 保存的连接信息或本地配置，用 `nb env update`
-- 应用接口、插件或 CLI 可用能力刚发生变化，也可以再执行一次 `nb env update`
-- 登录态过期了，或者要重新走一遍认证流程，用 `nb env auth`
-- 只是想看当前保存了什么，用 `nb env info`
+- Để sửa đổi thông tin kết nối hoặc cấu hình cục bộ được lưu bởi env, hãy sử dụng `nb env update`
+- Giao diện ứng dụng, plug-in hoặc khả năng sẵn có CLI vừa thay đổi, bạn cũng có thể thực hiện lại `nb env update`
+- Trạng thái đăng nhập đã hết hạn hoặc bạn cần thực hiện lại quá trình xác thực, hãy sử dụng `nb env auth`
+- Để xem nội dung hiện được lưu, hãy sử dụng `nb env info`
 
-如果你改的是 `app-port`、`timezone`、`db-*` 这类本地运行配置，`update` 只会改保存值，不会自动重启应用。通常来说后续还要再执行 `nb app restart --env <name>`；如果变更涉及 CLI 托管的内置数据库，则用 `nb app restart --env <name> --with-db`。
+Nếu bạn thay đổi cấu hình đang chạy cục bộ như `app-port`, `timezone` và `db-*`, `update` sẽ chỉ thay đổi giá trị đã lưu và sẽ không tự động khởi động lại ứng dụng. Nói chung, `nb app restart --env <name>` sẽ được thực thi sau; nếu thay đổi liên quan đến cơ sở dữ liệu tích hợp do CLI quản lý, hãy sử dụng `nb app restart --env <name> --with-db`.
 
-## 重新认证
+## Xác thực lại
 
-如果 env 已经保存，只是登录态过期了，或者你想切换认证方式，可以重新认证：
+Nếu env đã được lưu nhưng trạng thái đăng nhập đã hết hạn hoặc bạn muốn chuyển đổi phương thức xác thực, bạn có thể xác thực lại:
 
 ```bash
 nb env auth
@@ -139,33 +139,61 @@ nb env auth prod --auth-type basic --username admin --password secret
 nb env auth prod --auth-type token --access-token <api-key>
 ```
 
-省略环境名时，CLI 会使用当前 env。认证完成后，CLI 会自动处理后续同步。
+Khi tên môi trường bị bỏ qua, CLI sẽ sử dụng env hiện tại. Sau khi xác thực hoàn tất, CLI sẽ tự động xử lý việc đồng bộ hóa tiếp theo.
 
-## 移除环境
+## Xóa môi trường
 
-如果你只想移除保存的 env 配置：
+Những kịch bản này là khó hiểu nhất. Trước tiên bạn có thể nhớ một đề xuất mặc định:
+
+- Nếu bạn chỉ muốn dừng ứng dụng, hãy sử dụng `nb app stop`
+- Tôi cũng muốn dừng thời gian chạy cơ sở dữ liệu tích hợp trên máy hiện tại, hãy sử dụng `nb app stop --with-db`
+- Nếu bạn chắc chắn rằng env này không còn cần thiết nữa nhưng trước tiên bạn muốn giữ lại bộ nhớ và tệp ứng dụng cục bộ, hãy sử dụng `nb env remove`
+- Dọn dẹp ngay cả tài nguyên lưu trữ cục bộ và sử dụng `nb env remove --purge`
+
+Nếu bạn chỉ muốn xóa cấu hình env đã lưu:
 
 ```bash
 nb env remove staging
 ```
 
-如果是本地或 Docker 托管的 env，并且你还想一起清理本机上的运行资源和 storage 数据，可以加上 `--purge`：
+Nếu đó là env cục bộ hoặc được lưu trữ trên Docker và bạn cũng muốn dọn sạch các tài nguyên đang chạy và dữ liệu lưu trữ trên máy cục bộ, bạn có thể thêm `--purge`:
 
 ```bash
 nb env remove test --purge
 ```
 
-在非交互模式下，`nb env remove` 需要显式传入 `--force`：
+Ở chế độ không tương tác, `nb env remove` cần được chuyển vào `--force` một cách rõ ràng:
 
 ```bash
 nb env remove test --purge --force
 ```
 
-`--purge` 只会清理当前机器上的 CLI 托管资源。对于远程 API env，它不会去删除远端服务本身。
+`--purge` sẽ chỉ dọn sạch các tài nguyên do CLI quản lý trên máy hiện tại. Đối với env API từ xa, nó sẽ không tự xóa dịch vụ từ xa.
 
-## 相关链接
+Nếu bạn chỉ muốn dừng ứng dụng và cơ sở dữ liệu tích hợp do CLI quản lý, chỉ cần viết:
 
-- [`nb env` 命令参考](../../api/cli/env/index.md)
+```bash
+nb app stop --env app1 --with-db
+```
+
+Nếu bạn muốn xóa env này nhưng vẫn muốn giữ các tệp ứng dụng lưu trữ và cục bộ:
+
+```bash
+nb env remove app1 --force
+```
+
+Nếu bạn thực sự muốn dọn sạch nội dung được lưu trữ nguyên gốc của env này, hãy thêm `--purge`:
+
+```bash
+nb env remove app1 --purge --force
+```
+
+Đối với npm/Git env cục bộ được quản lý bằng các lượt tải xuống CLI, `--purge` cũng xóa các tệp ứng dụng cục bộ được lưu trữ trên máy chủ CLI. Đối với HTTP hoặc SSH env, nó sẽ chỉ xóa cấu hình env được lưu trong CLI và sẽ không xóa chính dịch vụ bên ngoài.
+
+## Các liên kết liên quan
+
+- [`nb env` Tham chiếu lệnh](../../api/cli/env/index.md)
 - [`nb env update`](../../api/cli/env/update.md)
-- [`nb session` 命令参考](../../api/cli/session/index.md)
-- [管理应用](./manage-app.md)
+- [`nb session` Tham chiếu lệnh](../../api/cli/session/index.md)
+- [ý định thiết kế ứng dụng nb](../cli-design/nb-app-design-intent.md)
+- [Quản lý ứng dụng](./manage-app.md)

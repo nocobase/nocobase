@@ -1,27 +1,54 @@
-# 快速开始
+# Mulai cepat
 
-NocoBase 的快速开始主要解决三件事：先把应用装起来，再把插件装起来，最后把应用稳定地跑起来。你不需要一次把所有文档都看完，按你当前所在的阶段往下走就够了。
+Jika Anda baru pertama kali menggunakan CLI ini, Anda tidak perlu menghafal semua perintah di awal. Gunakan `nb init --ui` untuk menginstal aplikasi terlebih dahulu, lalu lanjutkan melihat sisanya sesuai skenario.
 
-如果你还没决定用哪种方式安装，默认先看 [使用 CLI 安装（推荐）](./installation/cli.md)。如果你更习惯直接在服务器上用容器跑起来，继续看 [通过 Docker Compose 安装](./installation/docker-compose.md)。
+## Pertama-tama tentukan pikiran yang paling penting
 
-## 快速索引
+Di NocoBase CLI, operasi selanjutnya tidak berkisar pada "direktori tertentu" atau "port tertentu" secara default, tetapi pada **env**.
 
-| 我想要…… | 去哪里看 |
+Anda dapat menganggap env sebagai "seperangkat koneksi aplikasi dan informasi yang berjalan yang diingat oleh CLI". Selama berhasil disimpan, banyak perintah berikut yang dapat digunakan secara langsung:
+
+- Gunakan `nb init` untuk menginstal aplikasi baru dan menyimpannya sebagai env
+- Gunakan `nb env add` untuk menghubungkan aplikasi yang ada ke CLI
+- Kelola lingkungan ini dengan `nb app start`, `nb app logs`, `nb app upgrade`
+- Cadangkan dan pulihkan env ini menggunakan `nb backup`
+- Gunakan `nb app autostart`, `nb proxy` untuk terus melengkapi kemampuan lingkungan produksi
+
+Ingatlah hal ini terlebih dahulu, dan dokumen selanjutnya akan lebih lancar.
+
+## Jalur yang direkomendasikan secara default
+
+Jika Anda tidak yakin harus mulai dari mana, biasanya cara termudah adalah mengikuti jalur ini:
+
+1. Baca terlebih dahulu [Instalasi menggunakan CLI (disarankan)](./installation/cli.md) dan selesaikan `nb init` satu kali.
+2. Setelah aplikasi disimpan sebagai env, lihat [Manajemen Lingkungan Berganda](./operations/multi-environment.md) untuk mengonfirmasi env saat ini, mengganti env, dan memeriksa status.
+3. Untuk startup harian, stop, log dan upgrade, terus lihat [Kelola Aplikasi](./operations/manage-app.md).
+4. Sebelum melakukan peningkatan, migrasi, atau perubahan penting, lihat [Pencadangan dan Pemulihan](./operations/backup-restore.md).
+5. Jika Anda sudah siap untuk online secara resmi, masukkan [Ikhtisar Penerapan Lingkungan Produksi] (./production/index.md).
+
+Tiga langkah pertama mencakup sebagian besar skenario penggunaan.
+
+## Indeks cepat
+
+| saya ingin... | Di mana mencarinya |
 | --- | --- |
-| 直接安装一个新的 NocoBase 应用 | [使用 CLI 安装（推荐）](./installation/cli.md) |
-| 把旧的安装方式逐步迁移到 CLI | [从旧方式迁移到 CLI](./installation/migration.md) |
-| 用 Docker Compose 在服务器上部署 | [通过 Docker Compose 安装](./installation/docker-compose.md) |
-| 在无法访问公网的环境里安装 | [内网安装](./installation/airgap.md) |
-| 先确认应用运行需要的关键环境变量 | [应用环境变量](./installation/env.md) |
-| 激活商业插件或安装第三方插件 | [商业插件激活与升级](../api/cli/license/index.md) / [第三方插件安装与升级](./plugins/third-party.md) |
-| 给生产环境加上反向代理 | [Nginx](./production/reverse-proxy/nginx.md) / [Caddy](./production/reverse-proxy/caddy.md) |
-| 查看应用、切换环境、备份还原 | [管理应用](./operations/manage-app.md) / [多环境管理](./operations/multi-environment.md) / [备份还原](./operations/backup-restore.md) |
+| Belum ada aplikasinya, install dulu NocoBase baru dan simpan sebagai CLI env | [Instal menggunakan CLI (disarankan)](./installation/cli.md) |
+| Sudah menjalankan NocoBase dan ingin mengakses manajemen CLI | [Instal menggunakan CLI (disarankan)](./installation/cli.md) |
+| Migrasikan metode instalasi lama secara bertahap ke CLI | [Bermigrasi dari metode instalasi lama ke CLI](./installation/migration.md) |
+| Lihat env mana yang disimpan secara lokal, ganti env saat ini, dan periksa status | [Manajemen berbagai lingkungan](./operations/multi-environment.md) |
+| Mulai, hentikan, mulai ulang aplikasi, lihat log, atau lanjutkan pemutakhiran | [Kelola Aplikasi](./operations/manage-app.md) |
+| Buat cadangan sebelum memutakhirkan, memigrasikan, atau mengubah data secara batch, lalu memulihkannya bila diperlukan | [Cadangkan dan pulihkan](./operations/backup-restore.md) |
+| Pertama konfirmasikan variabel lingkungan utama yang diperlukan untuk menjalankan aplikasi | [Variabel lingkungan aplikasi](./installation/env.md) |
+| Instal plugin pihak ketiga | [Pemasangan dan peningkatan plug-in pihak ketiga](./plugins/third-party.md) |
+| Biarkan aplikasi memasuki lingkungan produksi: startup otomatis, akses eksternal yang stabil, proxy terbalik | [Ikhtisar penerapan lingkungan produksi](./production/index.md) |
 
-## 默认路径
+## Kapan harus melihat referensi perintah
 
-如果你不确定该怎么选，通常来说按下面这条路径走最省心：
+Kumpulan dokumen mulai cepat ini lebih bersifat "apa yang ingin saya lakukan sekarang". Jika Anda sudah mengetahui perintah mana yang ingin Anda jalankan dan hanya ingin terus melihat parameter lengkapnya, buka saja [Referensi Perintah NocoBase CLI](../api/cli/index.md).
 
-1. 先看 [使用 CLI 安装（推荐）](./installation/cli.md)。
-2. 应用跑起来后，再确认 [应用环境变量](./installation/env.md)。
-3. 如果要正式上线，再补上 [Nginx](./production/reverse-proxy/nginx.md) 或 [Caddy](./production/reverse-proxy/caddy.md)。
-4. 后续日常维护时，再看 [管理应用](./operations/manage-app.md) 和 [备份还原](./operations/backup-restore.md)。
+Saran defaultnya adalah:
+
+- Pertama-tama gunakan dokumen Mulai Cepat untuk menentukan jalurnya
+- Kemudian periksa detail parameter pada halaman perintah tertentu
+
+Hal ini membuatnya lebih mudah untuk memulai daripada membaca sekilas pohon perintah secara lengkap.

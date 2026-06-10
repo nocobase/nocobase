@@ -1,21 +1,21 @@
-# 使用 CLI 安装（推荐）
+# Installation über CLI (empfohlen)
 
-NocoBase 2.1.0 之后，官方提供了基于 CLI 的安装和管理方式。你可以用它完成安装、连接、升级和日常维护，也可以顺手给 AI Agent 准备一个可连接、可操作的环境。
+Nach NocoBase 2.1.0 wird die offizielle CLI-basierte Installations- und Verwaltungsmethode bereitgestellt. Sie können damit Installation, Verbindung, Upgrade und tägliche Wartung abschließen und außerdem eine anschließbare und betriebsbereite Umgebung für AI Agent vorbereiten.
 
-## 安装 NocoBase CLI
+## Installieren Sie die NocoBase-CLI
 
-仅在第一次安装 CLI 时执行。
+Wird nur bei der Erstinstallation der CLI ausgeführt.
 
-先全局安装 CLI：
+Installieren Sie zunächst die CLI global:
 
 ```bash
 npm install -g @nocobase/cli@beta
 nb --version
 ```
 
-:::tip 建议先开启 session mode
+:::tip Es wird empfohlen, zuerst den Sitzungsmodus zu aktivieren
 
-如果你会同时开多个终端、多个 shell，或者要让 AI Agent 和你自己并行操作，默认推荐先执行一次 [`nb session setup`](../../api/cli/session/setup.md)。这样每个会话都能维护自己的 `current env`，不容易互相影响。
+Wenn Sie mehrere Terminals oder Shells gleichzeitig öffnen oder möchten, dass der AI-Agent parallel zu Ihnen selbst arbeitet, wird standardmäßig empfohlen, zuerst [`nb session setup`](../../api/cli/session/setup.md) auszuführen. Auf diese Weise kann jede Sitzung ihre eigene `current env` beibehalten und sich nicht gegenseitig beeinflussen.
 
 ```bash
 nb session setup
@@ -23,17 +23,17 @@ nb session setup
 
 :::
 
-如果你打算长期用中文界面，通常来说先把 locale 设好就够了：
+Wenn Sie planen, die chinesische Benutzeroberfläche längere Zeit zu verwenden, reicht es normalerweise aus, zuerst das Gebietsschema festzulegen:
 
 ```bash
 nb config set locale zh-CN
 ```
 
-CLI 默认会检查自更新。你可以按自己的习惯调整更新策略：
+Die CLI sucht standardmäßig nach Selbstaktualisierungen. Sie können die Update-Strategie an Ihre eigenen Gewohnheiten anpassen:
 
-- `prompt`：发现新版本时提示
-- `auto`：自动更新
-- `off`：关闭自动更新
+- `prompt`: Aufforderung, wenn eine neue Version gefunden wird
+- `auto`: automatische Aktualisierung
+- `off`: Automatische Updates deaktivieren
 
 ```bash
 nb config set update.policy prompt
@@ -41,55 +41,55 @@ nb config set update.policy auto
 nb config set update.policy off
 ```
 
-如果你准备把 NocoBase 部署到服务器上，并且希望从远程浏览器打开 `nb init --ui` 向导，建议先把 CLI 的默认 host 改成当前服务器 IP：
+Wenn Sie NocoBase auf dem Server bereitstellen und den `nb init --ui`-Assistenten über einen Remote-Browser öffnen möchten, wird empfohlen, zunächst den Standardhost der CLI auf die aktuelle Server-IP zu ändern:
 
 ```bash
 nb config set default-ui-host <server-ip>
 nb config set default-api-host <server-ip>
 ```
 
-将 `<server-ip>` 替换为当前服务器对你可访问的实际 IP。
+Ersetzen Sie `<server-ip>` durch die tatsächliche IP des aktuellen Servers, auf den Sie zugreifen können.
 
-`nb config` 是 CLI 的全局配置。通常只需要设置一次，后续再次运行 `nb init --ui` 时会自动沿用这些默认值，不需要每次重复配置。
+`nb config` ist die globale Konfiguration der CLI. Normalerweise muss es nur einmal festgelegt werden, und diese Standardwerte werden automatisch verwendet, wenn `nb init --ui` später erneut ausgeführt wird, sodass die Konfiguration nicht jedes Mal wiederholt werden muss.
 
-通常来说：
+Allgemein gesprochen:
 
-- `default-ui-host` 用于 `nb init --ui` 启动向导页面时的默认监听地址
-- `default-api-host` 用于新安装时默认生成的 API 地址
+– `default-ui-host` wird beim Starten der Assistentenseite als Standard-Abhöradresse `nb init --ui` verwendet
+- `default-api-host` für die API-Adresse, die standardmäßig bei Neuinstallationen generiert wird
 
-如果是在服务器上部署，这两个值通常都应该改成当前服务器可访问的 IP，而不是继续使用默认的本机地址。
+Bei der Bereitstellung auf einem Server sollten beide Werte normalerweise in IPs geändert werden, auf die der aktuelle Server zugreifen kann, anstatt weiterhin die lokale Standardadresse zu verwenden.
 
-:::warning 这只是安装向导或临时访问方式，不是生产环境推荐入口
+:::Warnung Dies ist nur ein Installationsassistent oder eine temporäre Zugriffsmethode, kein empfohlener Zugang für Produktionsumgebungen.
 
-把 `default-ui-host` / `default-api-host` 设成服务器 IP，主要是为了让你能从远程浏览器打开 `nb init --ui`，或者在安装完成后临时验证服务是否可访问。
+Setzen Sie `default-ui-host` / `default-api-host` auf die Server-IP, hauptsächlich, damit Sie `nb init --ui` über einen Remote-Browser öffnen oder vorübergehend überprüfen können, ob nach Abschluss der Installation auf den Dienst zugegriffen werden kann.
 
-这不代表生产环境应该长期使用 `IP + port` 对外提供服务。正式部署时，仍然推荐使用域名，并通过 Nginx 或 Caddy 这类反向代理统一接入，再启用 HTTPS。
+Dies bedeutet nicht, dass die Produktionsumgebung `IP + port` für die Bereitstellung externer Dienste über einen längeren Zeitraum verwenden sollte. Bei der formellen Bereitstellung wird weiterhin empfohlen, einen Domänennamen zu verwenden und einen einheitlichen Zugriff über einen Reverse-Proxy wie Nginx oder Caddy bereitzustellen und dann HTTPS zu aktivieren.
 
 :::
 
-## 安装 NocoBase
+## NocoBase installieren
 
-### 方式一：通过 UI 向导安装
+### Methode 1: Installation über den UI-Assistenten
 
-这是默认推荐的入口。你只需要运行：
+Dies ist der standardmäßig empfohlene Eintrag. Sie müssen nur Folgendes ausführen:
 
 ```bash
 nb init --ui
 ```
 
-如果你想给向导页面指定一个固定端口，可以直接加上 `--ui-port`，例如：
+Wenn Sie einen festen Port für die Assistentenseite angeben möchten, können Sie `--ui-port` direkt hinzufügen, zum Beispiel:
 
 ```bash
 nb init --ui --ui-port 3000
 ```
 
-![nb init UI 向导](https://static-docs.nocobase.com/2026-06-03-20-54-01.png)
+![nb init UI-Assistent](https://static-docs.nocobase.com/2026-06-03-20-54-01.png)
 
-向导会根据当前场景，带你一步一步完成安装或连接所需的配置。
+Der Assistent führt Sie Schritt für Schritt durch die für die Installation oder Verbindung erforderliche Konfiguration basierend auf dem aktuellen Szenario.
 
-### 方式二：通过终端交互
+### Methode 2: Interaktion über das Terminal
 
-如果你更习惯在终端里一步一步输入，可以直接运行：
+Wenn Sie Schritt für Schritt im Terminal tippen möchten, können Sie Folgendes direkt ausführen:
 
 ```bash
 nb init
@@ -97,33 +97,33 @@ nb init
 
 ![2026-06-03-21-36-33](https://static-docs.nocobase.com/2026-06-03-21-36-33.png)
 
-### 方式三：通过非交互命令
+### Methode 3: Durch nicht interaktive Befehle
 
-如果你在脚本、CI/CD 或其他非交互环境里运行，直接用 `--yes` 就行。这个模式下必须显式传 `--env`，没有显式指定的参数会按默认值处理。
+Wenn Sie in einem Skript, CI/CD oder einer anderen nicht interaktiven Umgebung arbeiten, verwenden Sie einfach `--yes`. In diesem Modus muss `--env` explizit übergeben werden und nicht explizit angegebene Parameter werden mit Standardwerten verarbeitet.
 
-最短的默认写法是：
+Die kürzeste Standardmethode zum Schreiben ist:
 
 ```bash
 nb init --yes --env app1
 ```
 
-具体到不同安装来源、版本选择、`basic` 认证、CI/CD 连接已有应用，以及数据库命名这类常见组合，直接看 [`nb init` 命令参考的示例](../../api/cli/init.md#示例) 就行。
+Spezifisch für gängige Kombinationen wie unterschiedliche Installationsquellen, Versionsauswahl, `basic`-Zertifizierung, CI/CD-Verbindung zu vorhandenen Anwendungen und Datenbankbenennung, schauen Sie sich einfach [Befehlsreferenzbeispiel `nb init`] an (Beispiel ../../api/cli/init.md#).
 
-## 安装完成后先确认什么
+## Was sollten Sie nach Abschluss der Installation zuerst bestätigen?
 
-`--env` 是 CLI 里的环境名。通常来说，安装完成后你接下来做的事都围绕这个 env 展开。
+`--env` ist der Umgebungsname in der CLI. Im Allgemeinen dreht sich das nächste, was Sie nach Abschluss der Installation tun, um diese Umgebung.
 
-通常建议先确认这 3 件事：
+Normalerweise wird empfohlen, zuerst diese drei Dinge zu bestätigen:
 
-1. env 是否已经创建并保存成功
-2. 应用是否可以正常启动、日志是否正常
-3. 如果准备正式对外开放，是否已经规划好生产环境入口，而不是继续直接使用 `IP + port`
+1. Ob die Umgebung erfolgreich erstellt und gespeichert wurde
+2. Ob die Anwendung normal gestartet werden kann und ob die Protokolle normal sind
+3. Wenn Sie es offiziell für die Außenwelt öffnen möchten, haben Sie den Zugang zur Produktionsumgebung geplant, anstatt `IP + port` weiterhin direkt zu verwenden?
 
-### 安装目录
+### Installationsverzeichnis
 
-如果你刚用 `nb init --env app1` 新装了一个本地应用，可以通过 `nb env info app1 --field app.appPath` 查看完整路径。
+Wenn Sie gerade eine lokale Anwendung mit `nb init --env app1` installiert haben, können Sie den vollständigen Pfad über `nb env info app1 --field app.appPath` anzeigen.
 
-默认情况下，CLI 会在 `app-path` 下按下面这套约定组织本地文件：
+Standardmäßig organisiert die CLI lokale Dateien unter `app-path` gemäß der folgenden Konvention:
 
 ```text
 <app-path>/
@@ -132,35 +132,35 @@ nb init --yes --env app1
 └── .env      # 可选的应用环境变量文件
 ```
 
-通常来说：
+Allgemein gesprochen:
 
-- `source/` 主要对应 npm / Git env 的本地应用目录。对于 Docker env，CLI 也会保留这套默认路径推导，不过大多数时候你不需要手动关心它
-- `storage/` 用来放运行时数据，比如内置数据库数据、插件、日志等内容
-- `.env` 是可选的应用环境变量文件。只有当你需要自定义环境变量时，才需要在 `<app-path>/.env` 里添加它；如果这个文件存在，Docker、npm 和 Git 这几种安装来源默认都会读取它
+- `source/` entspricht hauptsächlich dem lokalen Anwendungsverzeichnis von npm/Git env. Für die Docker-Umgebung behält die CLI diesen Satz an Standardpfadableitungen ebenfalls bei, aber in den meisten Fällen müssen Sie sich nicht manuell darum kümmern
+- `storage/` wird zum Speichern von Laufzeitdaten verwendet, z. B. integrierte Datenbankdaten, Plug-Ins, Protokolle usw.
+- `.env` ist eine optionale Anwendungsumgebungsvariablendatei. Nur wenn Sie Umgebungsvariablen anpassen müssen, müssen Sie sie in `<app-path>/.env` hinzufügen. Wenn diese Datei vorhanden ist, wird sie standardmäßig von Docker-, NPM- und Git-Installationsquellen gelesen.
 
-更完整的说明见 [`nb init` 命令参考](../../api/cli/init.md)。
+Eine ausführlichere Beschreibung finden Sie unter [`nb init` Befehlsreferenz](../../api/cli/init.md).
 
-### 生产环境部署提醒
+### Erinnerung an die Bereitstellung der Produktionsumgebung
 
-如果你现在只是刚装完，想先验证安装结果，那么用 `IP + port` 打开页面通常没有问题。
+Wenn Sie die Installation gerade abgeschlossen haben und zunächst die Installationsergebnisse überprüfen möchten, ist es normalerweise kein Problem, die Seite mit `IP + port` zu öffnen.
 
-但如果这个 env 接下来要正式对外提供服务，需要特别注意：
+Wenn diese Umgebung jedoch offiziell Dienste für die Außenwelt bereitstellen soll, muss besonderes Augenmerk darauf gelegt werden:
 
-- `nb init --ui` 本身只是安装向导的临时页面，用来完成安装或初始化，不是应用正式对外服务入口
-- 通过 `nb init` 安装完成后，应用当前暴露出来的 `IP + port` 更适合调试阶段、验证阶段或内网临时访问
-- 生产环境不建议直接把 NocoBase 应用端口暴露给公网长期使用
-- 正式对外访问时，推荐使用域名，并通过 Nginx 或 Caddy 反向代理到 NocoBase
-- 生产环境应优先启用 HTTPS，而不是长期使用裸露的 `http://IP:port`
+- `nb init --ui` selbst ist nur eine temporäre Seite des Installationsassistenten, die zum Abschließen der Installation oder Initialisierung verwendet wird, und ist nicht der offizielle externe Diensteingang der Anwendung.
+- Nach Abschluss der Installation über `nb init` eignet sich der derzeit von der Anwendung bereitgestellte `IP + port` besser für die Debugging-Phase, die Überprüfungsphase oder den temporären Zugriff auf das Intranet
+- In der Produktionsumgebung wird nicht empfohlen, den NocoBase-Anwendungsport für eine langfristige Nutzung direkt dem öffentlichen Netzwerk zugänglich zu machen.
+- Für den offiziellen externen Zugriff wird empfohlen, einen Domainnamen und einen Reverse-Proxy zu NocoBase über Nginx oder Caddy zu verwenden
+– Produktionsumgebungen sollten der Aktivierung von HTTPS Vorrang vor der langfristigen Nutzung von exponierten `http://IP:port` geben.
 
-也就是说，`default-ui-host` 和 `default-api-host` 只是为了让安装向导和默认地址生成更方便，并不代表最终生产环境的访问入口。
+Mit anderen Worten: `default-ui-host` und `default-api-host` dienen lediglich dazu, den Installationsassistenten und die Standardadressgenerierung komfortabler zu gestalten, und stellen nicht den Zugangseingang zur endgültigen Produktionsumgebung dar.
 
-如果这个 env 准备正式上线，建议把“接入反向代理并启用 HTTPS”视为安装完成后的下一步，而不是可选优化项。
+Wenn diese Umgebung zum offiziellen Start bereit ist, wird empfohlen, als nächsten Schritt nach Abschluss der Installation „eine Verbindung zum Reverse-Proxy herzustellen und HTTPS zu aktivieren“ und nicht als optionales Optimierungselement.
 
-如果你现在就准备继续做正式部署，建议先从 [生产环境部署](../production/index.md) 开始，再按需要继续看 [Nginx](../production/reverse-proxy/nginx.md) 或 [Caddy](../production/reverse-proxy/caddy.md) 的反向代理配置。
+Wenn Sie jetzt bereit sind, mit der formellen Bereitstellung fortzufahren, wird empfohlen, mit der [Bereitstellung der Produktionsumgebung](../Production/Index.md) zu beginnen und sich dann bei Bedarf weiterhin die Reverse-Proxy-Konfiguration von [Nginx](../Production/Reverse-Proxy/Nginx.md) oder [Caddy](../Production/Reverse-Proxy/Caddy.md) anzusehen.
 
-### 日常操作
+### Täglicher Betrieb
 
-你可以先确认这个 env 是否已经保存成功：
+Sie können zunächst bestätigen, ob diese Umgebung erfolgreich gespeichert wurde:
 
 ```bash
 nb env current
@@ -170,19 +170,19 @@ nb env info app1
 nb env info app1 --json
 ```
 
-如果你想继续做安装后的后续操作，可以按下面这个索引往下看：
+Wenn Sie nach der Installation mit den nachfolgenden Vorgängen fortfahren möchten, können Sie auf den folgenden Index klicken, um nach unten zu schauen:
 
-| 我想要…… | 去哪里看 |
+| Ich möchte... | Wo suchen |
 | --- | --- |
-| 如果你准备把这个 env 正式对外开放，给它接上生产环境反向代理，并使用域名和 HTTPS 暴露服务。 | [Nginx](../production/reverse-proxy/nginx.md) / [Caddy](../production/reverse-proxy/caddy.md)。 |
-| 确认 env 是否保存成功、查看当前用了哪个 env、在多个 env 之间切换。 | [`nb env`](../../api/cli/env/index.md)、[多环境管理](../operations/multi-environment.md)。 |
-| 启动、停止、重启应用，查看日志，或者继续升级应用。 | [`nb app`](../../api/cli/app/index.md)、[管理应用](../operations/manage-app.md)。 |
-| 检查数据库连接、查看内置数据库状态，或者排查数据库容器问题。 | [`nb db`](../../api/cli/db/index.md)。 |
-| 查看已安装插件，启用或停用插件。 | [`nb plugin`](../../api/cli/plugin/index.md)。 |
-| 激活商业授权、查看授权状态、同步商业插件。 | [`nb license`](../../api/cli/license/index.md)。 |
-| 管理本地源码工程，比如下载源码、启动开发模式、构建或测试。这个通常用于 npm / Git env。 | [`nb source`](../../api/cli/source/index.md)。 |
+| Wenn Sie bereit sind, diese Umgebung offiziell für die Außenwelt zugänglich zu machen, verbinden Sie sie mit dem Reverse-Proxy der Produktionsumgebung und verwenden Sie den Domänennamen und HTTPS, um den Dienst verfügbar zu machen. | [Nginx](../produktion/reverse-proxy/nginx.md) / [Caddy](../produktion/reverse-proxy/caddy.md). |
+| Bestätigen Sie, ob die Umgebung erfolgreich gespeichert wurde, prüfen Sie, welche Umgebung derzeit verwendet wird, und wechseln Sie zwischen mehreren Umgebungen. | [`nb env`](../../api/cli/env/index.md), [Multi-Umgebungsverwaltung](../operations/multi-environment.md). |
+| Starten, stoppen, starten Sie die Anwendung neu, zeigen Sie Protokolle an oder fahren Sie mit dem Upgrade der Anwendung fort. | [`nb app`](../../api/cli/app/index.md), [Anwendung verwalten](../operations/manage-app.md). |
+| Überprüfen Sie Datenbankverbindungen, zeigen Sie den Status der integrierten Datenbank an oder beheben Sie Probleme mit Datenbankcontainern. | [`nb db`](../../api/cli/db/index.md). |
+| Installierte Plug-Ins anzeigen, Plug-Ins aktivieren oder deaktivieren. | [`nb plugin`](../../api/cli/plugin/index.md). |
+| Aktivieren Sie die kommerzielle Autorisierung, überprüfen Sie den Autorisierungsstatus und synchronisieren Sie kommerzielle Plug-Ins. | [`nb license`](../../api/cli/license/index.md). |
+| Verwalten Sie lokale Quellcodeprojekte, z. B. das Herunterladen von Quellcode, das Starten des Entwicklungsmodus, das Erstellen oder Testen. Dies wird normalerweise mit npm/Git env verwendet. | [`nb source`](../../api/cli/source/index.md). |
 
-如果你刚装完一个本地应用，通常可以先跑这几条命令：
+Wenn Sie gerade eine lokale Anwendung installiert haben, können Sie normalerweise zuerst diese Befehle ausführen:
 
 ```bash
 nb env use app1
@@ -191,15 +191,15 @@ nb app logs
 nb plugin list
 ```
 
-如果你同时维护多个 env，后续切换和查看状态的方式见 [多环境管理](../operations/multi-environment.md)。
+Wenn Sie mehrere Umgebungen gleichzeitig verwalten, finden Sie unter [Multiple Environment Management](../operations/multi-environment.md) Informationen zu nachfolgenden Wechsel- und Statusanzeigemethoden.
 
-如果你后续要升级应用，直接看 [管理应用](../operations/manage-app.md) 和 [`nb app upgrade` 命令参考](../../api/cli/app/upgrade.md) 就行。
+Wenn Sie die Anwendung später aktualisieren möchten, schauen Sie sich einfach [Manage Application](../operations/manage-app.md) und [`nb app upgrade` Command Reference](../../api/cli/app/upgrade.md) an.
 
-## 相关链接
+## Verwandte Links
 
-- [`nb init` 命令参考](../../api/cli/init.md)
-- [`nb env info` 命令参考](../../api/cli/env/info.md)
-- [生产环境反向代理：Nginx](../production/reverse-proxy/nginx.md) / [Caddy](../production/reverse-proxy/caddy.md)
-- [从旧方式迁移到 CLI](./migration.md)
-- [多环境管理](../operations/multi-environment.md)
-- [管理应用](../operations/manage-app.md)
+- [`nb init` Befehlsreferenz](../../api/cli/init.md)
+- [`nb env info` Befehlsreferenz](../../api/cli/env/info.md)
+- [Reverse-Proxy der Produktionsumgebung: Nginx](../produktion/reverse-proxy/nginx.md) / [Caddy](../produktion/reverse-proxy/caddy.md)
+- [Vom alten Weg zur CLI migrieren](./migration.md)
+- [Verwaltung mehrerer Umgebungen](../operations/multi-environment.md)
+- [Anwendung verwalten](../operations/manage-app.md)

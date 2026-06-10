@@ -1,1 +1,1 @@
-# 发布管理
+# Gestión de lanzamientos

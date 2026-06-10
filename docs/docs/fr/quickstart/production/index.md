@@ -1,169 +1,82 @@
 ---
-title: "Déploiement en production"
-description: "Finaliser rapidement un déploiement NocoBase en production : configurer d'abord l'auto-démarrage de l'application, puis le reverse proxy."
-keywords: "NocoBase,déploiement en production,nb app autostart,nb proxy nginx,nb proxy caddy,Nginx,Caddy"
+title: "Présentation du déploiement de l'environnement de production"
+description: "Instructions générales pour le déploiement de l'environnement de production : Après avoir confirmé que l'application fonctionne normalement, ajoutez les entrées de démarrage automatique et de proxy inverse de l'application."
+keywords: "NocoBase, déploiement d'un environnement de production, présentation, démarrage automatique de l'application, proxy inverse, Nginx, Caddy"
 ---
 
-# Déploiement en production
 
-Si ton application NocoBase fonctionne déjà normalement sur le serveur, un passage en production ne nécessite généralement plus que deux choses :
+# Présentation du déploiement de l'environnement de production
 
-1. s'assurer que l'application peut redémarrer automatiquement après un redémarrage de la machine
-2. ajouter un point d'entrée reverse proxy afin qu'elle soit accessible de manière fiable depuis l'extérieur
+Si votre NocoBase peut déjà fonctionner normalement sur le serveur, vous devez généralement ajouter deux fonctionnalités supplémentaires avant son lancement officiel :
 
-Dans NocoBase CLI, les principaux groupes de commandes concernés sont :
+1. Autorisez l'application à reprendre automatiquement son exécution après le redémarrage de la machine.
+2. Connectez l'entrée proxy inverse à l'application pour fournir un accès stable au monde extérieur.
+
+Correspondant à la CLI NocoBase, elle se compose principalement des deux jeux de commandes suivants :
 
 - `nb app autostart`
 - `nb proxy`
 
-Cette page explique d'abord le chemin global. Pour les détails propres à Nginx ou Caddy, poursuis vers les pages dédiées à chaque provider.
+Cet ensemble de documents est principalement divisé en deux parties :
 
-## Étape 1 : configurer l'auto-démarrage de l'application
+1. Démarrage automatique de l'application : permet à l'application de reprendre son exécution après le redémarrage de la machine.
+2. Proxy inverse : fournit une entrée d'accès externe stable pour les applications
 
-En production, la priorité n'est pas d'abord le nom de domaine. Il faut d'abord s'assurer que le service lui-même peut se rétablir de manière fiable. Sinon, après un redémarrage de la machine, une recréation de conteneur ou une opération de maintenance, l'application risque de ne pas revenir automatiquement.
+Vous pouvez d'abord voir de quelle pièce vous avez le plus besoin actuellement, puis accéder à la page correspondante.
 
-Les sous-commandes `nb app autostart` les plus courantes sont :
+## Quels problèmes ces deux éléments résolvent-ils dans l'environnement de production ?
 
-- `nb app autostart enable`
-- `nb app autostart list`
-- `nb app autostart run`
+C'est à dire :
 
-Activer l'auto-démarrage pour l'env courant :
+- `nb app autostart` résout le problème de "comment reprendre le fonctionnement des applications après le démarrage du système"
+- `nb proxy` résout le problème de "comment fournir un accès stable au monde extérieur"
 
-```bash
-nb app autostart enable
-```
+:::tip Pourquoi n'utilisez-vous pas directement la configuration à démarrage automatique de Docker, PM2 ou Supervisor ici ?
 
-Si la cible n'est pas l'env courant, indique-la explicitement :
+`nb app autostart` ne contourne pas ces méthodes de gestion de processus, mais adapte uniformément différentes méthodes de gestion de processus, puis les fait converger vers un ensemble stable d'entrées de gestion à démarrage automatique. De cette façon, vous n'avez pas besoin de mémoriser un ensemble différent de configurations à démarrage automatique, car la couche sous-jacente est Docker, PM2 ou Supervisor qui pourrait être prise en charge à l'avenir.
 
-```bash
-nb app autostart enable --env app1 --yes
-```
-
-Vérifier quels envs sont marqués pour l'auto-démarrage :
-
-```bash
-nb app autostart list
-```
-
-Après le démarrage du système, lancer tous les envs activés :
+Lorsque le système démarre cette couche, elle continuera à être traitée par `systemd`, `launchd` ou le script de démarrage de l'hôte. Ils sont chargés d'exécuter une seule fois au démarrage de la machine :
 
 ```bash
 nb app autostart run
 ```
 
-Si tu veux une sortie de démarrage détaillée pendant le débogage :
+Cette commande extraira ensuite toutes les applications dont le démarrage automatique est activé.
 
-```bash
-nb app autostart run --verbose
-```
+Voici deux couches de choses qui ne doivent pas être mélangées :
 
-:::tip Ce que fait réellement cette étape
+- Des fonctionnalités telles que Docker, PM2 et Supervisor sont plus proches de « la façon dont les applications s'exécutent habituellement et comment gérer les processus d'application ».
+- Les fonctionnalités telles que `systemd`, `launchd` et les scripts de démarrage de l'hôte sont plus proches de « quelle commande exécuter au démarrage du système »
 
-`nb app autostart enable` marque un env géré par la CLI comme autorisé à démarrer automatiquement. `nb app autostart run` démarre ensuite réellement tous les envs pour lesquels l'auto-démarrage est activé.
-
-En production, tu dois généralement quand même intégrer `nb app autostart run` dans ton propre flux de démarrage système, par exemple via `systemd`, un script de démarrage sur une plateforme de conteneurs, ou tout autre mécanisme de démarrage automatique au niveau de l'hôte que tu utilises déjà.
+Si vous êtes bloqué ici "Pourquoi avez-vous besoin de `nb app autostart`", continuez simplement à lire [Démarrage automatique de l'application] (./autostart.md) et [Intention de conception d'application nb] (../cli-design/nb-app-design-intent.md).
 
 :::
 
-### Applicabilité
+## Quelle page dois-je consulter maintenant ?
 
-`nb app autostart` ne fonctionne que pour les envs ayant une runtime gérée par la CLI :
-
-- `local`
-- `docker`
-
-Si un env n'est qu'une connexion API distante, ou si l'application n'est pas gérée localement par la CLI sur la machine courante, ce groupe de commandes n'est pas la bonne façon de gérer l'auto-démarrage.
-
-## Étape 2 : configurer le reverse proxy
-
-Une fois que l'application peut se rétablir automatiquement, il faut traiter le point d'entrée externe. En production, le reverse proxy prend généralement en charge :
-
-- l'attachement du nom de domaine ou du port d'entrée
-- le transfert des requêtes HTTP et WebSocket vers NocoBase
-- la gestion de HTTPS, des certificats, du cache ou du contrôle d'accès
-
-Les points d'entrée CLI recommandés sont :
-
-- `nb proxy nginx`
-- `nb proxy caddy`
-
-### Flux par défaut
-
-Si l'application a déjà été enregistrée comme env CLI et que cet env est `local` ou `docker`, le chemin le plus courant est de laisser la CLI générer directement la configuration :
-
-```bash
-nb proxy nginx use docker
-nb proxy nginx generate --env app1 --host app.example.com
-
-nb proxy caddy use local
-nb proxy caddy generate --env app1 --host app.example.com
-```
-
-Ensuite, démarre le provider choisi :
-
-```bash
-nb proxy nginx start
-nb proxy caddy start
-```
-
-La CLI aide aussi sur des détails faciles à oublier dans une configuration écrite à la main, comme :
-
-- le transfert WebSocket
-- les URL d'entrée et de ressources sous des sous-chemins
-- les pages de fallback SPA
-- les fichiers de configuration partagés au niveau du provider
-
-### Quand choisir Nginx ou Caddy
-
-| Scénario | Recommandation |
+| Je veux... | Où chercher |
 | --- | --- |
-| Tu utilises déjà Nginx pour gérer des sites, du cache, des certificats ou le contrôle d'accès | [Nginx](./reverse-proxy/nginx.md) |
-| Tu as déjà un nom de domaine et tu veux mettre HTTPS en service rapidement avec moins de détails TLS à maintenir | [Caddy](./reverse-proxy/caddy.md) |
-| Tu veux d'abord lire l'introduction générale | [Reverse Proxy en production](./reverse-proxy/index.md) |
+| Laissez d'abord le serveur redémarrer, puis l'application pourra automatiquement reprendre son exécution | [Démarrage automatique de l'application](./autostart.md) |
+| Comprenez d’abord la relation d’entrée de Nginx / Caddy dans cette CLI | [Proxy inverse](./reverse-proxy/index.md) |
+| Continuer à utiliser Nginx pour gérer l'entrée du site | [Nginx](./reverse-proxy/nginx.md) |
+| Connectez HTTPS dès que possible et conservez moins de détails TLS | [Caddy](./reverse-proxy/caddy.md) |
+| Afficher le démarrage, l'arrêt, les journaux et les mises à niveau de l'application elle-même | [Gérer l'application](../operations/manage-app.md) |
 
-Si tu modifies ensuite des paramètres d'env comme `app-port` ou `app-public-path` qui affectent le comportement du proxy, réexécute la sous-commande proxy correspondante.
+## Avant d'entrer dans l'environnement de production, confirmez ces prérequis
 
-## Chemin de déploiement par défaut
+- L'application a été enregistrée en tant qu'environnement CLI
+- L'application peut être démarrée normalement sur le serveur lui-même
+- Si vous allez vous connecter au proxy inverse, `appPort` a été enregistré dans env
+- Si vous êtes prêt à l'ouvrir officiellement au monde extérieur, vous avez déjà prévu le nom de domaine, le port d'entrée et la solution HTTPS.
 
-Pour le déploiement en production le plus simple, cette séquence suffit généralement :
+Si vous n'avez pas terminé l'installation CLI ou l'initialisation de l'environnement, revenez à [Installation à l'aide de CLI (recommandé)] (../installation/cli.md).
 
-1. confirmer que l'application peut déjà démarrer normalement sur le serveur lui-même
-2. exécuter `nb app autostart enable`
-3. relier `nb app autostart run` à ton flux de démarrage système
-4. choisir Nginx ou Caddy et exécuter la sous-commande `nb proxy` correspondante
-5. vérifier l'accès externe via le nom de domaine ou l'adresse d'entrée
+Si la commande indique qu'il manque `appPort` env, exécutez d'abord [`nb env update`](../../api/cli/env/update.md) pour le remplir.
 
-## Index rapide
+## Liens connexes
 
-| Je veux... | Aller ici |
-| --- | --- |
-| Lire d'abord l'introduction générale au reverse proxy | [Reverse Proxy en production](./reverse-proxy/index.md) |
-| Continuer à utiliser Nginx sur la couche d'entrée | [Nginx](./reverse-proxy/nginx.md) |
-| Utiliser Caddy pour obtenir HTTPS plus rapidement | [Caddy](./reverse-proxy/caddy.md) |
-| Voir les opérations de démarrage, d'arrêt, de logs et de mise à niveau de l'application | [Gérer l'application](../operations/manage-app.md) |
-| Lire la référence CLI de `nb proxy nginx` | [`nb proxy nginx`](../../api/cli/proxy/nginx/index.md) |
-| Lire la référence CLI de `nb proxy caddy` | [`nb proxy caddy`](../../api/cli/proxy/caddy/index.md) |
-
-## Commandes associées
-
-```bash
-# Activer l'auto-démarrage pour un env
-nb app autostart enable --env app1 --yes
-
-# Vérifier l'état de l'auto-démarrage
-nb app autostart list
-
-# Démarrer tous les envs activés
-nb app autostart run
-
-# Choisir la runtime Nginx et générer la configuration
-nb proxy nginx use docker
-nb proxy nginx generate --env app1 --host app.example.com
-nb proxy nginx start
-
-# Choisir la runtime Caddy et générer la configuration
-nb proxy caddy use local
-nb proxy caddy generate --env app1 --host app.example.com
-nb proxy caddy start
-```
+- [Démarrage automatique de l'application](./autostart.md)
+- [Proxy inverse](./reverse-proxy/index.md)
+- [Nginx](./reverse-proxy/nginx.md)
+- [Caddy](./reverse-proxy/caddy.md)
+- [Gérer l'application](../operations/manage-app.md)

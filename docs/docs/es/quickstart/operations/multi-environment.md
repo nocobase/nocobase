@@ -1,29 +1,29 @@
-# 多环境管理
+#Gestión de entornos múltiples
 
-如果你同时维护 `dev`、`test`、`staging`、`prod` 等多个 NocoBase 应用，可以把它们分别保存成 CLI env。之后大多数 `nb` 命令都会默认作用在当前 env 上，所以在执行 `nb app`、`nb api`、`nb db` 这类命令前，先确认自己正在用哪个 env 很重要。
+Si mantiene varias aplicaciones NocoBase como `dev`, `test`, `staging`, `prod`, etc., puede guardarlas como entorno CLI respectivamente. La mayoría de los futuros comandos `nb` actuarán en el entorno actual de forma predeterminada, por lo que es importante confirmar qué entorno está utilizando antes de ejecutar comandos como `nb app`, `nb api` y `nb db`.
 
-CLI 从这一版开始把概念拆成了 `current env` 和 `last env`。你通常只需要关心 `current env`——也就是当前 shell 或 agent runtime 正在使用的环境。只有在没有开启 session mode 时，CLI 才会回退到全局 `last env`。
+A partir de esta versión, la CLI divide el concepto en `current env` y `last env`. Por lo general, solo necesita preocuparse por `current env`, que es el entorno que utiliza el shell o el tiempo de ejecución del agente actual. La CLI volverá a `last env` global solo cuando el modo de sesión no esté habilitado.
 
-## 快速索引
+## Índice rápido
 
-| 我想要…… | 用哪个命令 |
+| Quiero... | Qué comando usar |
 | --- | --- |
-| 新建一个本地 env，并顺手完成初始化 | [`nb init`](../../api/cli/init.md) |
-| 把一个已有应用登记成 CLI env | [`nb env add`](../../api/cli/env/add.md) |
-| 看本地保存了哪些 env | [`nb env list`](../../api/cli/env/list.md) |
-| 检查所有 env 的连通性和认证状态 | [`nb env status --all`](../../api/cli/env/status.md) |
-| 切换后续命令要使用的 env | [`nb env use`](../../api/cli/env/use.md) |
-| 确认当前命令会落到哪个 env | [`nb env current`](../../api/cli/env/current.md) 和 [`nb env status`](../../api/cli/env/status.md) |
-| 查看某个 env 保存了哪些详细配置 | [`nb env info`](../../api/cli/env/info.md) |
-| 更新已保存的 env 配置，必要时让 CLI 重新同步当前状态 | [`nb env update`](../../api/cli/env/update.md) |
-| 登录态过期后重新认证，或者改用新的认证方式 | [`nb env auth`](../../api/cli/env/auth.md) |
-| 删除不用的 env 配置，必要时连本机托管资源一起清理 | [`nb env remove`](../../api/cli/env/remove.md) |
+| Cree un nuevo entorno local y complete la inicialización sin problemas | [`nb init`](../../api/cli/init.md) |
+| Registre una aplicación existente como CLI env | [`nb env add`](../../api/cli/env/add.md) |
+| Ver qué envs se guardan localmente | [`nb env list`](../../api/cli/env/list.md) |
+| Verifique el estado de conectividad y autenticación de todos los entornos | [`nb env status --all`](../../api/cli/env/status.md) |
+| Cambie el entorno que utilizarán los comandos posteriores | [`nb env use`](../../api/cli/env/use.md) |
+| Confirme en qué entorno caerá el comando actual | [`nb env current`](../../api/cli/env/current.md) y [`nb env status`](../../api/cli/env/status.md) |
+| Ver configuraciones detalladas guardadas por un env | [`nb env info`](../../api/cli/env/info.md) |
+| Actualice la configuración del entorno guardada y permita que la CLI resincronice el estado actual si es necesario | [`nb env update`](../../api/cli/env/update.md) |
+| Vuelva a autenticarse después de que caduque el estado de inicio de sesión o utilice un nuevo método de autenticación | [`nb env auth`](../../api/cli/env/auth.md) |
+| Elimine las configuraciones de entorno no utilizadas y limpie los recursos alojados locales si es necesario | [`nb env remove`](../../api/cli/env/remove.md) |
 
-:::tip 建议先开启 session mode
+:::consejo Se recomienda habilitar primero el modo de sesión
 
-默认推荐先执行一次 [`nb session setup`](../../api/cli/session/setup.md)。这样不同终端、不同 shell，或者不同 agent runtime 可以各自维护自己的 `current env`，并行操作时不容易互相影响。
+De forma predeterminada, se recomienda ejecutar [`nb session setup`](../../api/cli/session/setup.md) primero. De esta manera, diferentes terminales, diferentes shells o diferentes tiempos de ejecución de agentes pueden mantener cada uno su propio `current env` y no se afectarán fácilmente entre sí durante las operaciones paralelas.
 
-如果没有开启 session mode，那么 `nb env use` 会回退到更新全局 `last env`。这种情况下，一个终端切走环境，另一个终端也可能跟着受影响。
+Si el modo de sesión no está habilitado, `nb env use` recurrirá a la actualización global `last env`. En este caso, si un terminal corta el entorno, el otro terminal también puede verse afectado.
 
 ```bash
 nb session setup
@@ -31,64 +31,64 @@ nb session setup
 
 :::
 
-## 创建多个环境
+## Crea múltiples entornos
 
-如果你要新建或恢复一个本地应用，用 `nb init` 就行。它会完成初始化，并把结果保存成一个新的 CLI env。
+Si desea crear o restaurar una aplicación local, simplemente use `nb init`. Completará la inicialización y guardará los resultados en un nuevo entorno CLI.
 
 ```bash
 nb init --env dev
 nb init --env test
 ```
 
-如果应用已经存在，只是想把它接入 CLI，通常来说用 `nb env add` 更直接：
+Si la aplicación ya existe y solo desea conectarla a la CLI, normalmente es más sencillo usar `nb env add`:
 
 ```bash
 nb env add staging --api-base-url http://staging.example.com/api --auth-type oauth
 nb env add prod --api-base-url https://api.example.com/api --auth-type token --access-token <token>
 ```
 
-前者偏“初始化一个环境”，后者偏“登记一个已有环境”。如果你只是连接已有应用，默认用 `nb env add` 就行。
+El primero se trata más de "iniciar un entorno", mientras que el segundo se trata más de "registrar un entorno existente". Si recién se está conectando a una aplicación existente, use `nb env add` de forma predeterminada.
 
-## 查看已经配置的环境
+## Ver el entorno configurado
 
-先用 `nb env list` 看看本地已经保存了哪些 env：
+Primero use `nb env list` para ver qué entornos se han guardado localmente:
 
 ```bash
 nb env list
 ```
 
-这个命令只展示配置本身，不主动检查应用状态。想同时看连通性和认证状态时，用 `nb env status --all`：
+Este comando solo muestra la configuración en sí y no verifica activamente el estado de la aplicación. Cuando desee ver el estado de conectividad y autenticación, utilice `nb env status --all`:
 
 ```bash
 nb env status --all
 ```
 
-你通常会看到 `ok`、`auth failed`、`unreachable` 这类状态值。
+Normalmente verá valores de estado como `ok`, `auth failed`, `unreachable`.
 
-## 切换当前环境
+## Cambiar el entorno actual
 
-切换环境用 `nb env use`：
+Utilice `nb env use` para cambiar de entorno:
 
 ```bash
 nb env use dev
 ```
 
-切换完成后，后续省略 `--env` 的命令都会默认使用这个 env。
+Una vez completado el cambio, los comandos posteriores que omitan `--env` usarán este entorno de forma predeterminada.
 
-## 查看当前环境
+## Verifique el entorno actual
 
-如果你不确定当前命令会落到哪个环境上，先执行这两个命令：
+Si no está seguro de en qué entorno caerá el comando actual, primero ejecute estos dos comandos:
 
 ```bash
 nb env current
 nb env status
 ```
 
-`nb env current` 用来看名称，`nb env status` 用来看当前 env 是否可访问、认证是否正常。
+`nb env current` se usa para ver el nombre, `nb env status` se usa para ver si el entorno actual es accesible y la autenticación es normal.
 
-## 查看单个 env 的详细信息
+## Ver detalles de un único entorno
 
-想看某个 env 保存了哪些配置，用 `nb env info`：
+Si desea ver qué configuraciones se guardan en un entorno determinado, use `nb env info`:
 
 ```bash
 nb env info dev
@@ -97,20 +97,20 @@ nb env info dev --field app.url
 nb env info dev --show-secrets
 ```
 
-其中，`--field` 适合在脚本里只取一个值。`--show-secrets` 会明文显示 token、密码这类敏感信息，只有在你明确需要排查时再用。
+Entre ellos, `--field` es adecuado para tomar solo un valor en el script. `--show-secrets` mostrará información confidencial, como tokens y contraseñas, en texto sin formato. Úsalos sólo cuando claramente necesites solucionar problemas.
 
-## 更新 env 配置
+## Actualizar la configuración del entorno
 
-`nb env update` 用来调整一个已保存 env 的配置。比如 API 地址、认证方式、源码来源、应用端口和数据库参数。更新完成后，CLI 会根据变更自动处理后续事宜。
+`nb env update` se utiliza para ajustar la configuración de un entorno guardado. Como dirección API, método de autenticación, código fuente, puerto de aplicación y parámetros de base de datos. Una vez que se completa la actualización, la CLI maneja automáticamente los pasos de seguimiento basados ​​en los cambios.
 
-如果你只是想让 CLI 按当前 env 的最新状态重新同步，直接这样写就行：
+Si solo desea que la CLI se resincronice de acuerdo con el último estado del entorno actual, simplemente escriba así:
 
 ```bash
 nb env update
 nb env update prod
 ```
 
-如果你要修改这个 env 保存的连接信息或本地配置，可以显式带上参数：
+Si desea modificar la información de conexión o la configuración local guardada por este entorno, puede traer explícitamente los parámetros:
 
 ```bash
 nb env update prod --api-base-url https://api.example.com/api
@@ -118,18 +118,18 @@ nb env update prod --access-token <token>
 nb env update dev --app-port 13080 --timezone Asia/Shanghai
 ```
 
-这里可以先记住一个默认判断：
+Aquí puede recordar primero una sentencia en rebeldía:
 
-- 要修改 env 保存的连接信息或本地配置，用 `nb env update`
-- 应用接口、插件或 CLI 可用能力刚发生变化，也可以再执行一次 `nb env update`
-- 登录态过期了，或者要重新走一遍认证流程，用 `nb env auth`
-- 只是想看当前保存了什么，用 `nb env info`
+- Para modificar la información de conexión o la configuración local guardada por env, use `nb env update`
+- Las capacidades disponibles de la interfaz de la aplicación, el complemento o la CLI acaban de cambiar; también puede ejecutar `nb env update` nuevamente
+- El estado de inicio de sesión ha caducado o necesita realizar el proceso de autenticación nuevamente, use `nb env auth`
+- Sólo para ver lo que está guardado actualmente, use `nb env info`
 
-如果你改的是 `app-port`、`timezone`、`db-*` 这类本地运行配置，`update` 只会改保存值，不会自动重启应用。通常来说后续还要再执行 `nb app restart --env <name>`；如果变更涉及 CLI 托管的内置数据库，则用 `nb app restart --env <name> --with-db`。
+Si cambia las configuraciones de ejecución locales como `app-port`, `timezone` y `db-*`, `update` solo cambiará el valor guardado y no reiniciará automáticamente la aplicación. En términos generales, `nb app restart --env <name>` se ejecutará más tarde; si el cambio involucra la base de datos integrada administrada por CLI, use `nb app restart --env <name> --with-db`.
 
-## 重新认证
+## Reautenticación
 
-如果 env 已经保存，只是登录态过期了，或者你想切换认证方式，可以重新认证：
+Si se guardó env, pero el estado de inicio de sesión expiró o si desea cambiar el método de autenticación, puede volver a autenticarse:
 
 ```bash
 nb env auth
@@ -139,33 +139,61 @@ nb env auth prod --auth-type basic --username admin --password secret
 nb env auth prod --auth-type token --access-token <api-key>
 ```
 
-省略环境名时，CLI 会使用当前 env。认证完成后，CLI 会自动处理后续同步。
+Cuando se omite el nombre del entorno, la CLI utiliza el entorno actual. Una vez que se completa la autenticación, la CLI maneja automáticamente la sincronización posterior.
 
-## 移除环境
+## Eliminar entorno
 
-如果你只想移除保存的 env 配置：
+Estos escenarios son los más confusos. Primero puedes recordar una sugerencia predeterminada:
+
+- Si solo desea detener la aplicación, utilice `nb app stop`
+- También quiero detener el tiempo de ejecución de la base de datos integrada en la máquina actual, use `nb app stop --with-db`
+- Si está seguro de que este entorno ya no es necesario, pero primero desea conservar el almacenamiento y los archivos de la aplicación local, use `nb env remove`
+- Limpia incluso los recursos de alojamiento local y usa `nb env remove --purge`
+
+Si solo desea eliminar la configuración de entorno guardada:
 
 ```bash
 nb env remove staging
 ```
 
-如果是本地或 Docker 托管的 env，并且你还想一起清理本机上的运行资源和 storage 数据，可以加上 `--purge`：
+Si se trata de un entorno local o alojado en Docker y también desea limpiar los recursos en ejecución y los datos de almacenamiento en la máquina local, puede agregar `--purge`:
 
 ```bash
 nb env remove test --purge
 ```
 
-在非交互模式下，`nb env remove` 需要显式传入 `--force`：
+En modo no interactivo, `nb env remove` debe pasarse explícitamente en `--force`:
 
 ```bash
 nb env remove test --purge --force
 ```
 
-`--purge` 只会清理当前机器上的 CLI 托管资源。对于远程 API env，它不会去删除远端服务本身。
+`--purge` solo limpiará los recursos administrados por CLI en la máquina actual. Para el entorno de API remoto, no eliminará el servicio remoto en sí.
 
-## 相关链接
+Si solo desea detener la aplicación y la base de datos integrada administrada por CLI, simplemente escriba:
 
-- [`nb env` 命令参考](../../api/cli/env/index.md)
+```bash
+nb app stop --env app1 --with-db
+```
+
+Si desea eliminar este entorno pero aún desea conservar el almacenamiento y los archivos de la aplicación local:
+
+```bash
+nb env remove app1 --force
+```
+
+Si realmente desea limpiar el contenido alojado de forma nativa de este entorno, agregue `--purge`:
+
+```bash
+nb env remove app1 --purge --force
+```
+
+Para el entorno npm/Git local administrado por descargas CLI, `--purge` también elimina archivos de aplicaciones locales alojados en CLI. Para el entorno HTTP o SSH, solo eliminará la configuración del entorno guardada en la CLI y no eliminará el servicio externo en sí.
+
+## Enlaces relacionados
+
+- [`nb env` Referencia de comando](../../api/cli/env/index.md)
 - [`nb env update`](../../api/cli/env/update.md)
-- [`nb session` 命令参考](../../api/cli/session/index.md)
-- [管理应用](./manage-app.md)
+- [`nb session` Referencia de comando](../../api/cli/session/index.md)
+- [nb intención de diseño de la aplicación] (../cli-design/nb-app-design-intent.md)
+- [Administrar aplicación] (./manage-app.md)

@@ -1,31 +1,33 @@
-# 第三方插件安装与升级
+# Plug-in-Installation und Upgrade von Drittanbietern
 
-如果你拿到的是第三方插件包，通常来说先把它导入目标应用的 `storage/plugins`，然后先重启应用，再继续启用或验证插件是否生效。
+Wenn Sie ein Plug-in-Paket eines Drittanbieters erhalten, importieren Sie es normalerweise in `storage/plugins` der Zielanwendung, starten Sie die Anwendung neu und aktivieren Sie dann weiter oder überprüfen Sie, ob das Plug-in wirksam wird.
 
-## 快速索引
+## Schnellindex
 
-| 我想要…… | 去哪里看 |
+| Ich möchte... | Wo suchen |
 | --- | --- |
-| 先切到目标 env，再开始导入或重启插件 | [先确认目标环境](#先确认目标环境) |
-| 从远程压缩包、本地压缩包或 npm 导入第三方插件 | [用 `nb plugin import` 导入插件包](#用-nb-plugin-import-导入插件包) |
-| 导入完成后让应用重新加载插件目录 | [`nb app restart`](../../api/cli/app/restart.md) |
-| 第一次安装后正式启用插件 | [`nb plugin enable`](../../api/cli/plugin/enable.md) |
-| 想确认插件是否已经出现在当前应用里 | [`nb plugin list`](../../api/cli/plugin/list.md) |
-| 目标机器不能直接联网，只能手动上传 `.tgz` 再导入 | [不能直接联网时](#不能直接联网时) |
+| Wechseln Sie zunächst zur Zielumgebung und beginnen Sie dann mit dem Import oder Neustart des Plug-Ins | [Zuerst die Zielumgebung bestätigen](#Zuerst die Zielumgebung bestätigen) |
+| Importieren Sie Plug-Ins von Drittanbietern aus entfernten komprimierten Paketen, lokalen komprimierten Paketen oder npm | [Verwenden Sie `nb plugin import`, um Plug-In-Pakete zu importieren](#Use -nb-plugin-import-Import Plug-In-Pakete) |
+| Speicherimport-Plug-in angeben | [Speicherpfad für den Import angeben](#Specify-storage-path to import) |
+| Nachdem der Import abgeschlossen ist, lassen Sie die Anwendung das Plug-in-Verzeichnis neu laden | [`nb app restart`](../../api/cli/app/restart.md) |
+| Aktivieren Sie das Plug-in nach der ersten Installation offiziell | [`nb plugin enable`](../../api/cli/plugin/enable.md) |
+| Aktualisieren Sie ein aktiviertes Drittanbieter-Plug-in | [Was ist beim Upgrade des Plug-Ins zu tun?](#Was ist beim Upgrade des Plug-Ins zu tun?) |
+| Möchten Sie bestätigen, ob das Plug-in in der aktuellen Anwendung angezeigt wurde | [`nb plugin list`](../../api/cli/plugin/list.md) |
+| Der Zielcomputer kann nicht direkt mit dem Internet verbunden sein und kann nur manuell hochgeladen `.tgz` und dann importiert werden | [Wenn keine direkte Internetverbindung möglich ist](#Wenn keine direkte Internetverbindung möglich ist) |
 
-## 先确认目标环境
+## Bestätigen Sie zuerst die Zielumgebung
 
-如果你本地管理了多个应用，先切到目标 env 再操作：
+Wenn Sie mehrere Anwendungen lokal verwalten, wechseln Sie zunächst zur Zielumgebung und führen Sie dann Folgendes aus:
 
 ```bash
 nb env use app1
 ```
 
-## 用 `nb plugin import` 导入插件包
+## Verwenden Sie `nb plugin import`, um das Plug-in-Paket zu importieren
 
-`nb plugin import` 支持三类来源：远程压缩包、本地压缩包、npm 包名。这个命令只负责把插件导入 `storage/plugins`，不会自动启用插件。
+`nb plugin import` unterstützt drei Arten von Quellen: entfernte komprimierte Pakete, lokal komprimierte Pakete und NPM-Paketnamen. Dieser Befehl ist nur für den Import des Plug-Ins in `storage/plugins` verantwortlich und aktiviert das Plug-In nicht automatisch.
 
-如果你已经拿到了插件包下载地址、本地文件路径，或者插件已经发布到 npm，可以执行：
+Wenn Sie die Download-Adresse des Plug-in-Pakets oder den lokalen Dateipfad erhalten haben oder das Plug-in in npm veröffentlicht wurde, können Sie Folgendes ausführen:
 
 ```bash
 # 远程压缩包
@@ -38,49 +40,74 @@ nb plugin import /your/path/plugin-auth-cas-1.4.0.tgz
 nb plugin import @my-scope/plugin-auth-cas@beta
 ```
 
-如果你用的是私有 npm 源，通常来说先登录，再指定 registry：
+Wenn Sie eine private NPM-Quelle verwenden, melden Sie sich normalerweise zuerst an und geben Sie dann die Registrierung an:
 
 ```bash
 npm login --registry=https://registry.example.com
 nb plugin import @my-scope/plugin-auth-cas@beta --npm-registry=https://registry.example.com
 ```
 
-## 导入之后先重启
+## Geben Sie den Speicherpfad für den Import an
 
-导入完成后，先重启目标应用：
+Wenn Sie das Stammverzeichnis `storage` der Zielanwendung bereits kennen, können Sie `--storage-path` auch direkt übergeben, ohne auf die aktuelle Umgebung angewiesen zu sein:
+
+```bash
+nb plugin import /your/path/plugin-auth-cas-1.4.0.tgz --storage-path ./storage
+```
+
+Die CLI schreibt das Plugin in `<storage-path>/plugins`. Zu diesem Zeitpunkt dürfen Sie `nb env use` nicht zuerst ausführen oder `--env` übergeben.
+
+## Nach dem Import neu starten
+
+Nachdem der Import abgeschlossen ist, starten Sie die Zielanwendung neu:
 
 ```bash
 nb app restart
 ```
 
-如果你没有先切换当前 env，也可以在命令里显式传入 `-e <env>`。
+Wenn Sie nicht zuerst die aktuelle Umgebung wechseln, können Sie im Befehl auch explizit `-e <env>` übergeben.
 
-## 重启之后再启用或验证
+## Nach dem Neustart aktivieren oder überprüfen
 
-如果这是第一次安装，重启后再启用插件：
+Wenn es sich um die erste Installation handelt, starten Sie das Plugin neu und aktivieren Sie es:
 
 ```bash
 nb plugin enable @nocobase/plugin-auth-cas
 ```
 
-第一次启用时会自动完成安装。
+Die Installation wird bei der ersten Aktivierung automatisch abgeschlossen.
 
-如果插件已经启用，而你这次只是更新压缩包或重新导入一个新版本，通常来说重启完成后就可以继续验证插件是否正常工作，不需要再用 `upgrade` 的做法。
+## Was ist beim Upgrade von Plugins zu tun?
 
+Wenn das Plug-in bereits aktiviert ist und Sie dieses Mal einfach auf eine neue Version wechseln, sind es in der Regel nur zwei Schritte:
 
-## 不能直接联网时
+```bash
+nb plugin import /your/path/plugin-auth-cas-1.5.0.tgz
+nb app restart
+```
 
-如果目标机器不能直接访问插件下载地址，可以先把 `.tgz` 文件上传到目标机器的任意目录，再在目标机器执行本地导入。
+Das Gleiche gilt, wenn Sie ein npm-Paket importieren:
 
-比如：
+```bash
+nb plugin import @my-scope/plugin-auth-cas@latest
+nb app restart
+```
+
+Mit anderen Worten: Das Upgrade-Szenario erfordert keine zusätzliche Ausführung von `nb plugin enable`. Importieren Sie einfach das neue Paket und starten Sie die Anwendung neu.
+
+## Wenn das Internet nicht direkt verbunden werden kann
+
+Wenn der Zielcomputer nicht direkt auf die Plug-In-Download-Adresse zugreifen kann, können Sie zunächst die Datei `.tgz` in ein beliebiges Verzeichnis auf dem Zielcomputer hochladen und dann einen lokalen Import auf dem Zielcomputer durchführen.
+
+Zum Beispiel:
 
 ```bash
 nb plugin import /your/path/plugin-auth-cas-1.4.0.tgz
 nb app restart
 ```
 
-:::warning 注意
+:::Warnhinweis
 
-这里不需要手动解压到 `storage/plugins`。`nb plugin import` 会自动把插件放到正确目录。
+Es ist hier nicht erforderlich, manuell nach `storage/plugins` zu extrahieren. `nb plugin import` legt das Plug-in automatisch im richtigen Verzeichnis ab.
 
 :::
