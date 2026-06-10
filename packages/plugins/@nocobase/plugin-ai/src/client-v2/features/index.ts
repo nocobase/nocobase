@@ -27,5 +27,6 @@ export type {
   VectorStoreProviderFeature,
   VectorStoreProvider,
   VectorStoreProp,
+  VectorStorePropFormValues,
   VectorStorePropField,
 } from './vector-store-provider';
