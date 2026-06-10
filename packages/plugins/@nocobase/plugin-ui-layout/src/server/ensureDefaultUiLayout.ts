@@ -90,7 +90,9 @@ export async function ensureDefaultUiLayout(db: Database) {
     > = {};
     for (const field of DEFAULT_ADMIN_UI_LAYOUT_PROTECTED_FIELDS) {
       if (existed.get(field) !== DEFAULT_ADMIN_UI_LAYOUT[field]) {
-        values[field] = DEFAULT_ADMIN_UI_LAYOUT[field];
+        Object.assign(values, {
+          [field]: DEFAULT_ADMIN_UI_LAYOUT[field],
+        });
       }
     }
     if (shouldBackfillTitle(existed.get('title'))) {

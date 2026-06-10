@@ -39,6 +39,10 @@ const UI_LAYOUT_ROLE_PERMISSION_TARGET_FIELDS = ['uid', 'title', 'layoutType', '
 
 const DESKTOP_ROUTE_ROLE_PERMISSION_TARGET_FIELDS = ['id', 'title', 'hidden', 'parentId', 'options'] as const;
 
+type MultipleRelationRepositoryWithAdd = MultipleRelationRepository & {
+  add: (values: unknown) => Promise<void>;
+};
+
 const UI_LAYOUT_MANAGEMENT_ACTIONS = [
   'uiLayouts:list',
   'uiLayouts:get',
@@ -300,9 +304,9 @@ function collectRouteIds(routes: unknown[], ids: Set<string>) {
   }
 }
 
-function removeNestedRootRoutes(routes: unknown) {
+function removeNestedRootRoutes(routes: unknown): unknown[] {
   if (!Array.isArray(routes)) {
-    return routes;
+    return [];
   }
 
   const routeIds = new Set<string>();
@@ -796,12 +800,12 @@ async function listDesktopRouteRolePermissionTargets(ctx: ResourcerContext, next
     return;
   }
 
-  const routes = await ctx.db.getRepository('desktopRoutes').find({
+  const routes = (await ctx.db.getRepository('desktopRoutes').find({
     tree: true,
     sort: 'sort',
     filter: layoutContext.filter,
     fields: [...DESKTOP_ROUTE_ROLE_PERMISSION_TARGET_FIELDS],
-  });
+  })) as unknown[];
 
   ctx.body = removeNestedRootRoutes(routes).map((route) => pickDesktopRouteRolePermissionTargetFields(route));
   await next();
@@ -992,7 +996,10 @@ export class PluginUiLayoutServer extends Plugin {
       listDesktopRouteRolePermissionTargets,
     );
     this.app.resourceManager.registerActionHandler('roles.desktopRoutes:add', async (ctx: ResourcerContext, next) => {
-      const repository = ctx.db.getRepository<MultipleRelationRepository>(ctx.action.resourceName, ctx.action.sourceId);
+      const repository = (ctx.db as Database).getRepository<MultipleRelationRepositoryWithAdd>(
+        ctx.action.resourceName,
+        ctx.action.sourceId,
+      );
       const values = ctx.action.params.filterByTk || ctx.action.params.filterByTks || ctx.action.params.values;
 
       await repository.add(values);
