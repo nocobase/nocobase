@@ -468,20 +468,22 @@ describe('plugin-ui-layout route permissions', () => {
 
     await selectLayout('Mobile layout');
 
-    expect(await screen.findByRole('columnheader', { name: 'Route path' })).toBeInTheDocument();
+    expect(await screen.findByRole('columnheader', { name: 'Route name' })).toBeInTheDocument();
+    expect(screen.queryByRole('columnheader', { name: 'Route path' })).not.toBeInTheDocument();
     await act(async () => {
       await user.click(screen.getByRole('button', { name: 'Expand row' }));
     });
     expect(screen.getAllByText('Shared page')).toHaveLength(2);
-    expect(screen.getByText('/mobile/customers')).toBeInTheDocument();
-    expect(screen.getByText('/mobile/customers/archive')).toBeInTheDocument();
+    expect(screen.queryByText('/mobile/customers')).not.toBeInTheDocument();
+    expect(screen.queryByText('/mobile/customers/archive')).not.toBeInTheDocument();
 
     await act(async () => {
       await user.type(screen.getByRole('searchbox', { name: 'Search routes' }), 'archive');
     });
 
+    expect(screen.getAllByText('Shared page')).toHaveLength(1);
     expect(screen.queryByText('/mobile/customers')).not.toBeInTheDocument();
-    expect(screen.getByText('/mobile/customers/archive')).toBeInTheDocument();
+    expect(screen.queryByText('/mobile/customers/archive')).not.toBeInTheDocument();
 
     await act(async () => {
       await user.clear(screen.getByRole('searchbox', { name: 'Search routes' }));

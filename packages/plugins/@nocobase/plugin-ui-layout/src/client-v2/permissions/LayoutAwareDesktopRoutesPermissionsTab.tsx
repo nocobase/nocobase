@@ -638,12 +638,6 @@ export default function LayoutAwareDesktopRoutesPermissionsTab(props: Permission
         render: (value) => translateTitle(value, t),
       },
       {
-        dataIndex: 'routePath',
-        title: t('Route path'),
-        render: (value: string | undefined) =>
-          value ? value : <Typography.Text type="secondary">{t('No route path')}</Typography.Text>,
-      },
-      {
         dataIndex: 'accessible',
         title: (
           <Checkbox
