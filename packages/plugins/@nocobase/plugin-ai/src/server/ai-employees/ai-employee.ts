@@ -899,25 +899,6 @@ If information is missing, clearly state it in the summary.</Important>`;
     }
   }
 
-  async retrieveKnowledgeBase(userMessage: AIMessageInput): Promise<DocumentSegmentedWithScore[]> {
-    const { knowledgeBaseKeys } = this.employee.knowledgeBase ?? {};
-    if (!knowledgeBaseKeys || _.isEmpty(knowledgeBaseKeys)) {
-      return [];
-    }
-    const query: string = userMessage.content.content as string;
-    if (!query || _.isEmpty(query)) {
-      return [];
-    }
-    const { topK, score } = this.employee.knowledgeBase ?? {};
-    return this.plugin.features.knowledgeBase.search({ knowledgeBaseKeys, query, topK, score });
-  }
-
-  isEnabledKnowledgeBase(): boolean {
-    const featureEnabled = this.plugin.features.isFeaturesEnabled(Object.values(EEFeatures));
-    const knowledgeBaseEnabled = this.employee.enableKnowledgeBase;
-    return featureEnabled && knowledgeBaseEnabled;
-  }
-
   // === Tool calls ===
   async initToolCall(
     transaction: Transaction,
