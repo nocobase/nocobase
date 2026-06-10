@@ -38,7 +38,11 @@ import WorkflowPlugin from '..';
 import { AddNodeSlot } from '../AddNodeContext';
 import { useFlowContext } from '../FlowContext';
 import { openNodeConfigDrawer } from '../../client-v2/canvas/NodeConfigDrawer';
-import { nodeTypeClassName, resolveLegacyNodeRenderMode } from '../../client-v2/canvas/nodeRenderDispatch';
+import {
+  nodeTypeClassName,
+  resolveLegacyNodeRenderMode,
+  resolveLegacyConfigRenderMode,
+} from '../../client-v2/canvas/nodeRenderDispatch';
 import { DrawerDescription } from '../components/DrawerDescription';
 import { StatusButton } from '../components/StatusButton';
 import { JobStatusOptionsMap } from '../constants';
@@ -556,13 +560,17 @@ export function NodeDefaultView(props) {
   const isCopiedSelf = Boolean(clipboard?.clipboard?.sourceId && clipboard.clipboard.sourceId === data.id);
   const isActive = Boolean(editingConfig || isCopiedSelf || isDraggingSelf);
 
+  // Rebuild the form when the node data changes (switching workflow version
+  // yields a fresh `data` per node) or when execution state flips the disabled
+  // flag. `executed` already derives from `workflow.versionStats`, so `workflow`
+  // itself is not a separate dependency.
   const form = useMemo(() => {
     const values = cloneDeep(data.config);
     return createForm({
       initialValues: values,
       disabled: Boolean(executed),
     });
-  }, [data, workflow]);
+  }, [data, executed]);
 
   const resetForm = useCallback(
     (editing) => {
@@ -589,17 +597,18 @@ export function NodeDefaultView(props) {
       });
       refresh();
     },
-    [data, instruction],
+    [data, instruction, api, compile, refresh],
   );
 
-  // Nodes whose config UI has migrated to v2 carry a `FieldsetLoader`; for those
-  // the v1 canvas opens the v2 antd config drawer (`ctx.viewer.drawer`) instead
-  // of the Formily `Action.Drawer` below — the config form is then maintained in
-  // one place (client-v2). The v1 Formily drawer subtree stays mounted but never
-  // opens for these nodes (its `editingConfig` is never set). Returns true when
-  // it handled the open, so the caller skips `setEditingConfig`.
+  // Drawer dispatch (ADR-0003): a legacy `fieldset` wins, so a node keeps its
+  // Formily drawer until it drops `fieldset`; only then does the inherited
+  // `FieldsetLoader` open the v2 antd config drawer (`ctx.viewer.drawer`), with
+  // the form maintained once in client-v2. This mirrors the card-layer
+  // `resolveLegacyNodeRenderMode` so every surface migrates the same way. Returns
+  // true only when it opened the v2 drawer, so the caller falls through to the
+  // Formily `Action.Drawer` (`setEditingConfig`) for the legacy/none cases.
   const openConfig = useMemoizedFn(() => {
-    if (!instruction?.FieldsetLoader) {
+    if (resolveLegacyConfigRenderMode(instruction) !== 'modern-loader') {
       return false;
     }
     openNodeConfigDrawer({ ctx: flowEngine.context, data, instruction, t: lang, workflow, refresh });

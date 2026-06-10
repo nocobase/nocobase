@@ -39,6 +39,7 @@ import { useFlowEngine } from '@nocobase/flow-engine';
 import { useMemoizedFn } from 'ahooks';
 import { PresetDialogForm } from '../client-v2/canvas/AddNodeContext';
 import { getDownstreamBranchOptions } from '../client-v2/canvas/DownstreamBranchIndex';
+import { resolveLegacyPresetRenderMode } from '../client-v2/canvas/nodeRenderDispatch';
 
 interface AddButtonProps {
   upstream;
@@ -533,10 +534,18 @@ export function AddNodeContextProvider(props) {
       ? nodes.find((item) => item.upstreamId === data.upstreamId && item.branchIndex === data.branchIndex)
       : nodes.find((item) => item.upstreamId === null);
 
-    // Nodes whose add-time preset has migrated to v2 carry a `PresetFieldsetLoader`;
-    // for those, open the v2 antd preset dialog (`ctx.viewer.dialog`) instead of the
-    // Formily `Action.Modal` below — the preset form is maintained once in client-v2.
-    if (instruction.PresetFieldsetLoader) {
+    // Preset dispatch (ADR-0003), v1-first like the card/drawer surfaces: a legacy
+    // `presetFieldset` (with entries) keeps the Formily preset modal; only a node
+    // that dropped it falls through to the inherited `PresetFieldsetLoader` and the
+    // v2 antd preset dialog (`ctx.viewer.dialog`), maintained once in client-v2.
+    const presetMode = resolveLegacyPresetRenderMode(instruction);
+
+    if (presetMode === 'legacy-fieldset') {
+      setPresetting({ data, instruction });
+      return;
+    }
+
+    if (presetMode === 'modern-loader') {
       const t = (key, options?) => flowEngine.context.t(key, options);
       const downstreamOptions = getDownstreamBranchOptions({
         instruction,
@@ -559,10 +568,11 @@ export function AddNodeContextProvider(props) {
       return;
     }
 
+    // No preset form on either side — still show the v1 branch-preservation modal
+    // when the node branches into an existing downstream.
     if (
-      instruction.presetFieldset ||
-      ((typeof instruction.branching === 'function' ? instruction.branching(data.config) : instruction.branching) &&
-        downstream)
+      (typeof instruction.branching === 'function' ? instruction.branching(data.config) : instruction.branching) &&
+      downstream
     ) {
       setPresetting({ data, instruction });
       return;
