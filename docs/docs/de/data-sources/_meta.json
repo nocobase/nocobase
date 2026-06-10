@@ -66,6 +66,11 @@
       },
       {
         "type": "custom-link",
+        "label": "Externes NocoBase",
+        "link": "/data-sources/data-source-external-nocobase/"
+      },
+      {
+        "type": "custom-link",
         "label": "KingbaseES-Datenquelle",
         "link": "/data-sources/data-source-kingbase/"
       }

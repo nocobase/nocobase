@@ -16,6 +16,7 @@ NocoBase cung cấp plugin Data Source Manager, dùng để quản lý Data Sour
 - [External PostgreSQL](/data-sources/data-source-external-postgres): Sử dụng database PostgreSQL bên ngoài làm Data Source.
 - [External MSSQL](/data-sources/data-source-external-mssql): Sử dụng database MSSQL (SQL Server) bên ngoài làm Data Source.
 - [External Oracle](/data-sources/data-source-external-oracle): Sử dụng database Oracle bên ngoài làm Data Source.
+- [NocoBase bên ngoài](/data-sources/data-source-external-nocobase/): Sử dụng một ứng dụng NocoBase khác làm Data Source bên ngoài thông qua API NocoBase từ xa.
 
 Ngoài ra, có thể mở rộng thêm nhiều kiểu thông qua plugin, có thể là các loại database thông dụng, cũng có thể là các nền tảng cung cấp API (SDK).
 
@@ -38,3 +39,7 @@ Hỗ trợ External Database làm Data Source. Xem thêm tại tài liệu [Exte
 ![nocobase_doc-2025-10-29-19-46-34](https://static-docs.nocobase.com/nocobase_doc-2025-10-29-19-46-34.png)
 
 Cũng có thể tích hợp dữ liệu từ nguồn HTTP API, xem thêm tại tài liệu [Data Source REST API](/data-sources/data-source-rest-api/index.md).
+
+### Data Source NocoBase bên ngoài
+
+Bạn có thể sử dụng một ứng dụng NocoBase khác làm Data Source bên ngoài thông qua API NocoBase từ xa. Xem thêm tại tài liệu [NocoBase bên ngoài](/data-sources/data-source-external-nocobase/).

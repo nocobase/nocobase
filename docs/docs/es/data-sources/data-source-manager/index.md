@@ -14,6 +14,7 @@ NocoBase proporciona un plugin de gestión de fuentes de datos para administrar 
 - [PostgreSQL Externo](/data-sources/data-source-external-postgres): Utilice una base de datos PostgreSQL externa como fuente de datos.
 - [MSSQL Externo](/data-sources/data-source-external-mssql): Utilice una base de datos MSSQL (SQL Server) externa como fuente de datos.
 - [Oracle Externo](/data-sources/data-source-external-oracle): Utilice una base de datos Oracle externa como fuente de datos.
+- [NocoBase externo](/data-sources/data-source-external-nocobase/): Utilice otra aplicación NocoBase como fuente de datos externa mediante la API remota de NocoBase.
 
 Además, puede extender más tipos a través de plugins, que pueden ser bases de datos comunes o plataformas que ofrecen APIs (SDKs).
 
@@ -36,3 +37,7 @@ Se admite el uso de bases de datos externas como fuentes de datos. Para más inf
 ![nocobase_doc-2025-10-29-19-46-34](https://static-docs.nocobase.com/nocobase_doc-2025-10-29-19-46-34.png)
 
 También puede acceder a datos de fuentes de API HTTP. Para más información, consulte la documentación de [Fuente de Datos REST API](/data-sources/data-source-rest-api/index.md).
+
+### Fuente de Datos NocoBase Externa
+
+Puede utilizar otra aplicación NocoBase como fuente de datos externa mediante la API remota de NocoBase. Para más información, consulte la documentación de [NocoBase externo](/data-sources/data-source-external-nocobase/).

@@ -16,6 +16,7 @@ NocoBase menyediakan Plugin Manajemen Data Source untuk mengelola data source da
 - [External PostgreSQL](/data-sources/data-source-external-postgres): Menggunakan database PostgreSQL eksternal sebagai data source.
 - [External MSSQL](/data-sources/data-source-external-mssql): Menggunakan database MSSQL (SQL Server) eksternal sebagai data source.
 - [External Oracle](/data-sources/data-source-external-oracle): Menggunakan database Oracle eksternal sebagai data source.
+- [NocoBase Eksternal](/data-sources/data-source-external-nocobase/): Menggunakan aplikasi NocoBase lain sebagai data source eksternal melalui API NocoBase jarak jauh.
 
 Selain itu, lebih banyak tipe dapat diperluas melalui plugin, dapat berupa berbagai jenis database umum, atau platform yang menyediakan API (SDK).
 
@@ -38,3 +39,7 @@ Mendukung database eksternal sebagai data source. Untuk lebih lanjut, lihat doku
 ![nocobase_doc-2025-10-29-19-46-34](https://static-docs.nocobase.com/nocobase_doc-2025-10-29-19-46-34.png)
 
 Anda juga dapat mengintegrasikan data dari sumber HTTP API. Untuk lebih lanjut, lihat dokumentasi [Data Source REST API](/data-sources/data-source-rest-api/index.md).
+
+### Data Source NocoBase Eksternal
+
+Anda dapat menggunakan aplikasi NocoBase lain sebagai data source eksternal melalui API NocoBase jarak jauh. Untuk lebih lanjut, lihat dokumentasi [NocoBase Eksternal](/data-sources/data-source-external-nocobase/).
