@@ -9,7 +9,6 @@
 
 import { CollectionFieldInterface, type FieldInterfaceConfigure } from '@nocobase/client-v2';
 import { ForeignKeyConfigureField } from './components/ForeignKeyConfigureField';
-import { TargetKeyConfigureField } from './components/TargetKeyConfigureField';
 import { tExpr } from './locale';
 
 export class MBMFieldInterface extends CollectionFieldInterface {
@@ -61,7 +60,7 @@ export class MBMFieldInterface extends CollectionFieldInterface {
       {
         name: 'targetKey',
         title: '{{t("Target key")}}',
-        Component: TargetKeyConfigureField,
+        component: 'TargetKey',
         required: true,
         description: "{{t('Field values must be unique.')}}",
         disabled: '{{ !createOnly }}',
