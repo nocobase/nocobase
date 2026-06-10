@@ -721,7 +721,6 @@ Prompt modes:
         });
         if (!resumeEnv) {
           this.error(formatMissingManagedAppEnvMessage(resumeEnvName));
-          this.exit(1);
         }
         const resumePresetValues = Install.buildResumePresetValues(resumeEnv);
         presetValues = {
