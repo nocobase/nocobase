@@ -66,6 +66,11 @@
       },
       {
         "type": "custom-link",
+        "label": "外部 NocoBase",
+        "link": "/data-sources/data-source-external-nocobase/"
+      },
+      {
+        "type": "custom-link",
         "label": "人大金仓（KingbaseES）数据源",
         "link": "/data-sources/data-source-kingbase/"
       }
