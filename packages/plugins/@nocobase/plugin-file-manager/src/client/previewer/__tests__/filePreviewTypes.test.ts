@@ -8,10 +8,18 @@
  */
 
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { getDownloadFileName, getFileName, getPreviewThumbnailUrl, isActiveContentFile } from '../filePreviewTypes';
+import {
+  getDownloadFileName,
+  getFileName,
+  getPdfPreviewResourceOptions,
+  getPreviewThumbnailUrl,
+  isActiveContentFile,
+} from '../filePreviewTypes';
 
 describe('getDownloadFileName', () => {
   afterEach(() => {
+    delete window.__webpack_public_path__;
+    delete window.__nocobase_public_path__;
     vi.restoreAllMocks();
   });
 
@@ -63,5 +71,23 @@ describe('getDownloadFileName', () => {
     expect(getPreviewThumbnailUrl({ mimetype: 'image/svg+xml', url: 'https://example.com/files/logo.svg' })).toBe(
       '/file-placeholder/svg-200-200.png',
     );
+  });
+
+  it('应为 PDF.js 预览资源生成插件静态目录地址', () => {
+    expect(getPdfPreviewResourceOptions()).toEqual({
+      cMapPacked: true,
+      cMapUrl: '/static/plugins/@nocobase/plugin-file-manager/dist/client/pdfjs/cmaps/',
+      standardFontDataUrl: '/static/plugins/@nocobase/plugin-file-manager/dist/client/pdfjs/standard_fonts/',
+    });
+  });
+
+  it('应兼容子路径部署下的 PDF.js 预览资源地址', () => {
+    window.__webpack_public_path__ = '/nocobase';
+
+    expect(getPdfPreviewResourceOptions()).toEqual({
+      cMapPacked: true,
+      cMapUrl: '/nocobase/static/plugins/@nocobase/plugin-file-manager/dist/client/pdfjs/cmaps/',
+      standardFontDataUrl: '/nocobase/static/plugins/@nocobase/plugin-file-manager/dist/client/pdfjs/standard_fonts/',
+    });
   });
 });

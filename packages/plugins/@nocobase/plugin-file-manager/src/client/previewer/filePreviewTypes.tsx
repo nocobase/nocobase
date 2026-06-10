@@ -23,6 +23,7 @@ import { Alert, Image, Modal, Space, Spin } from 'antd';
 import { matchMimetype } from '@nocobase/client';
 import { useTranslation } from 'react-i18next';
 import type { PDFDocumentLoadingTask, PDFDocumentProxy, PDFWorker, RenderTask } from 'pdfjs-dist';
+import type { DocumentInitParameters } from 'pdfjs-dist/types/src/display/api';
 import { useFmTranslation } from '../locale';
 
 export interface FilePreviewerProps {
@@ -346,6 +347,33 @@ type PdfJs = typeof import('pdfjs-dist/build/pdf.mjs');
 
 let pdfjsPromise: Promise<PdfJs> | null = null;
 
+type NocoBaseWindow = Window & {
+  __nocobase_dev_public_path__?: string;
+  __nocobase_public_path__?: string;
+  __webpack_public_path__?: string;
+};
+
+export const getPdfPreviewResourceOptions = (): Pick<
+  DocumentInitParameters,
+  'cMapPacked' | 'cMapUrl' | 'standardFontDataUrl'
+> => {
+  const browserWindow = typeof window === 'undefined' ? undefined : (window as NocoBaseWindow);
+  let publicPath =
+    browserWindow?.__webpack_public_path__ ||
+    browserWindow?.__nocobase_dev_public_path__ ||
+    browserWindow?.__nocobase_public_path__ ||
+    '/';
+  if (!publicPath.endsWith('/')) {
+    publicPath += '/';
+  }
+  const pdfjsBaseUrl = `${publicPath}static/plugins/@nocobase/plugin-file-manager/dist/client/pdfjs/`;
+  return {
+    cMapPacked: true,
+    cMapUrl: `${pdfjsBaseUrl}cmaps/`,
+    standardFontDataUrl: `${pdfjsBaseUrl}standard_fonts/`,
+  };
+};
+
 type PdfPreviewErrorCode = 'resources' | 'file' | 'document';
 
 class PdfPreviewError extends Error {
@@ -485,11 +513,11 @@ const PdfPreviewer = ({ file }: FilePreviewerProps) => {
       } catch (error) {
         throw new PdfPreviewError('resources', 'Failed to load PDF.js worker.', error);
       }
-      // Security hardening: no eval-based font hinting, no XFA scripting
-      // (annotations are disabled per render call). getDocument detaches the
-      // buffer it receives, so hand it a copy and keep `data` for later pages.
+      // Security hardening: no eval-based font hinting and no XFA scripting.
+      // getDocument detaches the buffer it receives, so hand it a copy and keep `data` for later pages.
       const metaTask = pdfjs.getDocument({
         data: data.slice(0),
+        ...getPdfPreviewResourceOptions(),
         isEvalSupported: false,
         enableXfa: false,
         useWasm: false,
@@ -568,6 +596,7 @@ const PdfPreviewer = ({ file }: FilePreviewerProps) => {
         } else {
           task = pdfjs.getDocument({
             data: session.data.slice(0),
+            ...getPdfPreviewResourceOptions(),
             isEvalSupported: false,
             enableXfa: false,
             useWasm: false,
@@ -598,7 +627,7 @@ const PdfPreviewer = ({ file }: FilePreviewerProps) => {
           canvas,
           canvasContext: context,
           viewport,
-          annotationMode: pdfjs.AnnotationMode.DISABLE,
+          annotationMode: pdfjs.AnnotationMode.ENABLE,
         });
         session.renderTasks.push(renderTask);
         await renderTask.promise;
