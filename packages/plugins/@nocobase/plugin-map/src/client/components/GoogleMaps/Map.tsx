@@ -15,6 +15,11 @@ import { useMemoizedFn } from 'ahooks';
 import { Alert, App, Button, Spin } from 'antd';
 import React, { useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
 import { defaultImage } from '../../constants';
+import {
+  createGoogleMapsDrawingManager,
+  GoogleMapsDrawingManager,
+  GoogleMapsDrawingMode,
+} from '../../googleMapsDrawingManager';
 import { useMapConfiguration, useMapConfig } from '../../hooks';
 import { useMapTranslation } from '../../locale';
 import { MapEditorType } from '../../types';
@@ -80,7 +85,7 @@ export interface GoogleMapForwardedRefProps {
   createDraw: (onlyCreate?: boolean, additionalOptions?: OverlayOptions) => any;
   map: google.maps.Map;
   overlay: google.maps.MVCObject;
-  drawingManager: google.maps.drawing.DrawingManager;
+  drawingManager: GoogleMapsDrawingManager;
   errMessage?: string;
 }
 
@@ -100,7 +105,7 @@ export const GoogleMapsComponent = React.forwardRef<GoogleMapForwardedRefProps, 
     const { t } = useMapTranslation();
     const { getField } = useCollection_deprecated();
     const fieldSchema = useFieldSchema();
-    const drawingManagerRef = useRef<google.maps.drawing.DrawingManager>();
+    const drawingManagerRef = useRef<GoogleMapsDrawingManager>();
     const map = useRef<google.maps.Map>();
     const overlayRef = useRef<google.maps.Marker | google.maps.Polygon | google.maps.Polyline | google.maps.Circle>();
     const [needUpdateFlag, forceUpdate] = useState([]);
@@ -119,7 +124,7 @@ export const GoogleMapsComponent = React.forwardRef<GoogleMapForwardedRefProps, 
       return collectionField?.interface;
     }, [props?.type, fieldSchema?.name]);
 
-    const drawingMode = useRef(getDrawingMode(type) as google.maps.drawing.OverlayType);
+    const drawingMode = useRef(getDrawingMode(type) as GoogleMapsDrawingMode);
 
     const [commonOptions] = useState<OverlayOptions>({
       strokeWeight: 5,
@@ -240,9 +245,8 @@ export const GoogleMapsComponent = React.forwardRef<GoogleMapForwardedRefProps, 
         ...additionalOptions,
         map: map.current,
       };
-      drawingManagerRef.current = new google.maps.drawing.DrawingManager({
+      drawingManagerRef.current = createGoogleMapsDrawingManager({
         drawingMode: drawingMode.current,
-        drawingControl: false,
         markerOptions: { ...currentOptions, icon: getIcon(defaultImage) },
         polygonOptions: currentOptions,
         polylineOptions: currentOptions,
@@ -329,7 +333,12 @@ export const GoogleMapsComponent = React.forwardRef<GoogleMapForwardedRefProps, 
         error(err, ...args);
       };
 
-      Promise.all([loader.importLibrary('drawing'), loader.importLibrary('core'), loader.importLibrary('geometry')])
+      Promise.all([
+        loader.importLibrary('maps'),
+        loader.importLibrary('core'),
+        loader.importLibrary('geometry'),
+        loader.importLibrary('marker'),
+      ])
         .then(async (res) => {
           const center = await getCurrentPosition();
           map.current = new google.maps.Map(mapContainerRef.current, {
