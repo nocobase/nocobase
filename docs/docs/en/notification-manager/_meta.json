@@ -17,6 +17,16 @@
         "type": "custom-link",
         "label": "Email",
         "link": "/notification-manager/notification-email"
+      },
+      {
+        "type": "custom-link",
+        "label": "WeChat Work",
+        "link": "/notification-manager/wecom"
+      },
+      {
+        "type": "custom-link",
+        "label": "DingTalk",
+        "link": "/notification-manager/dingtalk"
       }
     ]
   },

@@ -78,6 +78,11 @@
           },
           {
             "type": "custom-link",
+            "label": "钉钉",
+            "link": "/users-permissions/sync/sources/dingtalk"
+          },
+          {
+            "type": "custom-link",
             "label": "HTTP API",
             "link": "/users-permissions/sync/sources/api"
           }

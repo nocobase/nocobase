@@ -1,5 +1,5 @@
 ---
-pkg: "@nocobase/plugin-wecom"
+pkg: "@nocobase/plugin-auth-wecom"
 ---
 
 # Synchronize User Data from WeChat Work

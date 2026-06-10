@@ -1,17 +1,17 @@
 ---
-displayName: "认证：钉钉"
+displayName: "钉钉"
 packageName: '@nocobase/plugin-auth-dingtalk'
-title: "认证：钉钉"
-keywords: "认证：钉钉,插件,NocoBase"
+title: "钉钉"
+keywords: "钉钉,插件,NocoBase"
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  通过钉钉账号认证身份。
+  提供钉钉集成的能力，包括认证方式、通知渠道和用户数据同步来源。
 isFree: false
 builtIn: false
 defaultEnabled: false
 editionLevel: 2
 ---
 
-# 认证：钉钉
+# 钉钉
