@@ -22,44 +22,6 @@
  * at retirement.
  */
 
-import React from 'react';
-import { useTranslation } from 'react-i18next';
-
 import V2ConditionInstruction from '../../client-v2/nodes/condition';
-import { Branch } from '../Branch';
-import { useFlowContext } from '../FlowContext';
-import useStyles from '../style';
-import { NodeDefaultView } from '.';
 
-export default class extends V2ConditionInstruction {
-  Component({ data }) {
-    // eslint-disable-next-line react-hooks/rules-of-hooks
-    const { t } = useTranslation();
-    // eslint-disable-next-line react-hooks/rules-of-hooks
-    const { nodes } = useFlowContext();
-    // eslint-disable-next-line react-hooks/rules-of-hooks
-    const { styles } = useStyles();
-    const {
-      id,
-      config: { rejectOnFalse },
-    } = data;
-    const trueEntry = nodes.find((item) => item.upstreamId === id && item.branchIndex === 1);
-    const falseEntry = nodes.find((item) => item.upstreamId === id && item.branchIndex === 0);
-    return (
-      <NodeDefaultView data={data}>
-        {rejectOnFalse ? null : (
-          <div className={styles.nodeSubtreeClass}>
-            <div className={styles.branchBlockClass}>
-              <Branch from={data} entry={falseEntry} branchIndex={0} />
-              <Branch from={data} entry={trueEntry} branchIndex={1} />
-            </div>
-            <div className={styles.conditionClass}>
-              <span style={{ right: '4em' }}>{t('No')}</span>
-              <span style={{ left: '4em' }}>{t('Yes')}</span>
-            </div>
-          </div>
-        )}
-      </NodeDefaultView>
-    );
-  }
-}
+export default class extends V2ConditionInstruction {}
