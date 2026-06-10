@@ -1,100 +1,77 @@
 ---
-title: '本番環境の Reverse Proxy'
-description: 'CLI 管理の NocoBase env 向けに、nb env proxy nginx と nb env proxy caddy で reverse proxy 設定を生成します。'
-keywords: 'NocoBase,nb env proxy nginx,nb env proxy caddy,reverse proxy,Nginx,Caddy,production'
+title: "本番環境のリバースプロキシ"
+description: "CLI 管理の NocoBase env に対して、nb proxy nginx と nb proxy caddy を使ってリバースプロキシ設定を生成・管理します。"
+keywords: "NocoBase,nb proxy nginx,nb proxy caddy,reverse proxy,Nginx,Caddy,production"
 ---
 
-# 本番環境の Reverse Proxy
+# 本番環境のリバースプロキシ
 
-NocoBase CLI では、本番アプリの前段に reverse proxy を置くときの推奨エントリが 2 つあります。
+NocoBase CLI では、本番環境のリバースプロキシに推奨される入口は次の 2 つです。
 
-- `nb env proxy nginx`
-- `nb env proxy caddy`
+- `nb proxy nginx`
+- `nb proxy caddy`
 
-アプリがすでに CLI env として保存されていて、env の種類が `local` または `docker` であれば、CLI に設定を生成させるのが通常いちばん簡単です。そうすると、WebSocket の扱い、サブパス、SPA のフォールバックページ、その後の更新のような細かい部分も CLI が同期してくれます。あなたが決めるのは、入口レイヤーで Nginx を使い続けるか、Caddy に切り替えるかだけです。
+ここでの意味は次の通りです。
 
-アプリが CLI 管理ではない場合や、proxy の完全な設定を自分で手書きしたい場合は、provider ページにある手書き設定のセクションへそのまま進んでください。
+- `proxy` はエントリレイヤーを管理します
+- `nginx` と `caddy` は provider の実装です
+- `docker` と `local` は実行 driver です
+- `--env <name>` はどの CLI env に対して設定を生成するかを指定します
 
-## まずこの進め方が合うか確認する
+アプリがすでに CLI 管理 env として保存されていて、その env が `local` または `docker` であれば、通常は CLI にリバースプロキシ設定の生成と管理を任せれば十分です。そうすることで、WebSocket、サブパス、SPA フォールバックページ、その後の更新まで 1 か所でそろえて管理できます。
 
-- アプリがすでに `http://127.0.0.1:13000` のような内部アドレスで到達できる
-- アプリがすでに CLI env として保存されていて、env の種類が `local` または `docker` である
-- その env に `appPort` が保存されている
+アプリが CLI 管理ではない場合や、設定全体を手書きで管理したい場合は、各 provider ページにある手動設定のセクションを参照してください。
 
-コマンドが `appPort` がないと表示した場合は、先に [`nb env update`](../../../api/cli/env/update.md) を実行して保存してください。
+## 事前確認
 
-そのあとで `app-port` や `app-public-path` のように proxy 出力へ影響する設定を変更した場合は、対応する proxy サブコマンドをもう一度実行する必要があります。
+次の点を確認してください。
 
-## 標準ルート: まずは CLI に設定を生成させる
+- アプリが `http://127.0.0.1:13000` のような内部アドレスですでに到達できること
+- アプリがすでに CLI env として保存され、その env が `local` または `docker` であること
+- その env に `appPort` が保存されていること
 
-どの入口 provider を使い続けたいかがすでに決まっているなら、そのサブコマンドへ直接進めます。
+コマンドが `appPort` の不足を示した場合は、先に [`nb env update`](../../../api/cli/env/update.md) で更新してください。
 
-```bash
-nb env proxy nginx --env demo --host demo.example.com
-nb env proxy caddy --env demo --host demo.example.com
-```
+その後、`app-port` や `app-public-path` のように proxy の挙動へ影響する設定を変更した場合は、対応する `generate` コマンドを再実行してください。
 
-すでに current env へ切り替えているなら、`--env` は省略できます。
+## 標準的な流れ
 
-```bash
-nb env proxy nginx --host demo.example.com
-```
-
-ポイントは次のとおりです。
-
-- すでに Nginx でサイト、キャッシュ、アクセス制御、証明書を管理しているなら、[`nb env proxy nginx`](../../../api/cli/env/proxy/nginx.md) から始めてください
-- HTTPS をすばやく有効にしたくて、TLS の細かい管理をあまり自分で持ちたくないなら、[`nb env proxy caddy`](../../../api/cli/env/proxy/caddy.md) から始めてください
-- `--port` は proxy の入口ポートであり、アプリの `appPort` ではありません
-
-CLI に共有設定を provider のメイン設定へ接続させ、検証後に再読み込みまでさせたい場合は、次のように追加します。
+Nginx を使う場合:
 
 ```bash
-nb env proxy nginx --env demo --host demo.example.com --install --reload
+nb proxy nginx use docker
+nb proxy nginx generate --env test2 --host c.local.nocobase.com
+nb proxy nginx start
 ```
 
-完全なコマンドリファレンスは [`nb env proxy`](../../../api/cli/env/proxy/index.md) を見てください。
+Caddy を使う場合:
 
-## CLI が同期してくれるもの
+```bash
+nb proxy caddy use local
+nb proxy caddy generate --env test2 --host c.local.nocobase.com
+nb proxy caddy start
+```
 
-CLI は単なる proxy スニペットだけではなく、provider ごとの補助ファイルも管理します。出力の形は provider によって変わります。
+各ステップの役割は次の通りです。
 
-- Nginx では `app.conf`, `public/index-v1.html`, `public/index-v2.html`, 共有の `nocobase.conf`, 共有の `snippets/` を管理します
-- Caddy では `generated.caddy`, `app.caddy`, 共有の `nocobase.caddy` を管理します
+- `use docker|local`: 現在の provider の実行 driver を選ぶ
+- `generate --env <name> --host <domain>`: 1 つの env 用のリバースプロキシ設定を生成する
+- `start`: 現在の provider のローカルプロセスまたは Docker コンテナを起動する
 
-:::warning 注意
+後から設定を更新した場合、通常はまず `reload` を使います。エントリレイヤーを完全に再起動したいときに `restart` を使ってください。
 
-サイト固有の設定を追加したい場合は `app.conf` または `app.caddy` を編集してください。CLI が管理する補助ファイルは、次にコマンドを実行したときに上書きされるため、手動では編集しないでください。
+## CLI が管理するもの
 
-:::
+CLI は単なる proxy 断片だけを生成するのではなく、provider に応じて補助ファイルやサイトのエントリ構造もそろえて管理します。
 
-## 最初にどのページを開くべきか
+- Nginx は共有 `snippets`、`app.conf`、`public/index-v1.html`、`public/index-v2.html` を管理します
+- Caddy は `nocobase.caddy`、`app.caddy`、`public/index-v1.html`、`public/index-v2.html` を管理し、`app.caddy` は 1 つの env 用の完全なサイト設定です
 
-| やりたいこと | 開くページ |
+## まず見るページ
+
+| やりたいこと | 参照先 |
 | --- | --- |
-| サイト、証明書、キャッシュ、アクセス制御で引き続き Nginx を使いたい | [Nginx](./nginx.md) |
-| HTTPS をすばやく有効にして、証明書や TLS の管理を減らしたい | [Caddy](./caddy.md) |
-| コマンドツリーを確認してから provider を選びたい | [`nb env proxy`](../../../api/cli/env/proxy/index.md) |
-| Nginx サブコマンドのオプション、出力ファイル、例を先に見たい | [`nb env proxy nginx`](../../../api/cli/env/proxy/nginx.md) |
-| Caddy サブコマンドのオプション、出力ファイル、例を先に見たい | [`nb env proxy caddy`](../../../api/cli/env/proxy/caddy.md) |
-| `app-port` や `app-public-path` など、proxy 出力へ影響する env 設定を調整したい | [`nb env update`](../../../api/cli/env/update.md) |
-| まずアプリを CLI 管理 env としてインストールしたい | [CLI でインストール（推奨）](../../installation/cli.md) |
-
-## CLI 生成ルートがあまり向かないケース
-
-次のようなケースは、provider ページにある手書き設定のセクションのほうが合っています。
-
-- アプリが CLI 管理ではない
-- env がリモート API 接続だけか、SSH env である
-- 完全な Nginx 設定や完全な `Caddyfile` を自分で管理したい
-
-それでも、アプリがすでに CLI env として保存されていて、現在のマシンから runtime に到達できるなら、まずはこれらのコマンドから始めるのが標準のおすすめです。あとからドメインを変える場合や、サイトごとの調整、再生成もかなり扱いやすくなります。
-
-## 関連リンク
-
-- [`nb env proxy`](../../../api/cli/env/proxy/index.md)
-- [`nb env proxy nginx`](../../../api/cli/env/proxy/nginx.md)
-- [`nb env proxy caddy`](../../../api/cli/env/proxy/caddy.md)
-- [Nginx](./nginx.md)
-- [Caddy](./caddy.md)
-- [アプリ環境変数](../../installation/env.md)
-- [CLI でインストール（推奨）](../../installation/cli.md)
+| サイト、証明書、キャッシュ、アクセス制御に引き続き Nginx を使いたい | [Nginx](./nginx.md) |
+| HTTPS を素早く有効化し、TLS の管理を減らしたい | [Caddy](./caddy.md) |
+| `app-port` や `app-public-path` のように proxy の結果へ影響する env 設定を調整したい | [`nb env update`](../../../api/cli/env/update.md) |
+| まずアプリを CLI 管理 env としてインストールしたい | [CLI でインストール](../../installation/cli.md) |

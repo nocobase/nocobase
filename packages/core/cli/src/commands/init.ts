@@ -598,6 +598,10 @@ Prompt modes:
       this.error('--ui cannot be used with --resume.');
     }
 
+    if (normalizedFlags['prepare-only'] && explicitSetupModeFlag(normalizedFlags) === 'connect-remote') {
+      this.error('--prepare-only is only available for local or install-new setup flows.');
+    }
+
     if (!normalizedFlags.ui && (normalizedFlags['ui-host'] !== undefined || normalizedFlags['ui-port'] !== undefined)) {
       this.error('--ui-host and --ui-port require --ui.');
     }
@@ -658,6 +662,7 @@ Prompt modes:
               'docker-save'?: boolean;
               'npm-registry'?: string;
               'setup-mode'?: string;
+              'prepare-only'?: boolean;
             },
           ),
         );
@@ -1360,6 +1365,8 @@ Prompt modes:
         ...(dbSchema ? { dbSchema } : {}),
         ...(dbTablePrefix ? { dbTablePrefix } : {}),
         ...(results.dbUnderscored !== undefined ? { dbUnderscored: Boolean(results.dbUnderscored) } : {}),
+        setupState: 'prepared',
+        ...(String(results.lang ?? '').trim() ? { lang: String(results.lang ?? '').trim() } : {}),
       },
       { scope: resolveDefaultConfigScope() },
     );
@@ -1405,6 +1412,7 @@ Prompt modes:
       'db-table-prefix'?: string;
       'db-underscored'?: boolean;
       'setup-mode'?: string;
+      'prepare-only'?: boolean;
     },
     options?: {
       nonInteractive?: boolean;
@@ -1434,6 +1442,9 @@ Prompt modes:
     argv.push('--env', envName);
     if (options?.resume) {
       argv.push('--resume');
+    }
+    if (flags['prepare-only']) {
+      argv.push('--prepare-only');
     }
 
     if (flags.verbose) {
@@ -1775,6 +1786,7 @@ Prompt modes:
     'docker-save'?: boolean;
     'npm-registry'?: string;
     'skip-auth'?: boolean;
+    'prepare-only'?: boolean;
   }): string[] {
     const preset = this.buildPresetValuesFromFlags(flags) as Record<string, string | number | boolean>;
     const setupMode = resolveInitSetupMode(preset);

@@ -1,64 +1,100 @@
+---
+title: "Nginx"
+description: "CLI 管理の NocoBase env に対して、nb proxy nginx を使って Nginx のリバースプロキシ設定を生成・管理します。"
+keywords: "NocoBase,nb proxy nginx,reverse proxy,Nginx,production"
+---
+
 # Nginx
 
-NocoBase アプリがすでに `http://127.0.0.1:13000` で正常にアクセスできるなら、次の一歩はその前段に Nginx を置くことです。こうしておくと主に 2 つの利点があります。外向けには標準の `80/443` ポートだけを公開すればよくなり、そのあとで HTTPS、証明書、キャッシュ戦略も追加しやすくなります。
+サーバー上ですでに Nginx を使ってサイトを管理している場合や、証明書、キャッシュ、アクセス制御を引き続き自分で管理したい場合は、`nb proxy nginx` が推奨される選択です。
 
-## 最小構成
+## 推奨される順序
 
-まずはサーバー上に設定ファイルを作成します。たとえば `/etc/nginx/conf.d/nocobase.conf` です。
-
-```nginx
-server {
-    listen 80;
-    server_name your-domain.com;
-
-    client_max_body_size 100m;
-
-    location / {
-        proxy_pass http://127.0.0.1:13000;
-        proxy_http_version 1.1;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection "upgrade";
-    }
-}
-```
-
-ここでのポイントは次のとおりです。
-
-- `server_name` は自分のドメインに置き換えます
-- `127.0.0.1:13000` は NocoBase が実際に待ち受けているアドレスに置き換えます
-- `client_max_body_size` はアップロード要件に合わせてさらに大きくできます
-
-## 設定を検証して再読み込みする
+`local` または `docker` の CLI 管理 env では、通常は次の順序で進めます。
 
 ```bash
-nginx -t
-systemctl reload nginx
+nb proxy nginx use docker
+nb proxy nginx generate --env test2 --host c.local.nocobase.com
+nb proxy nginx start
 ```
 
-Nginx を `systemd` で管理していない場合は、自分の運用方法に合わせた再読み込み手順を使ってください。
+ローカルプロセスとして動かす場合は次の通りです。
 
-## 設定後のアクセス方法
-
-DNS がすでにこのサーバーを向いているなら、次へアクセスします。
-
-```text
-http://your-domain.com
+```bash
+nb proxy nginx use local
+nb proxy nginx generate --env test2 --host c.local.nocobase.com
+nb proxy nginx start
 ```
 
-これで Nginx が NocoBase へ転送します。
+後続でよく使うコマンドは次の通りです。
 
-## HTTPS はどうするか
+```bash
+nb proxy nginx current
+nb proxy nginx status
+nb proxy nginx info
+nb proxy nginx reload
+nb proxy nginx restart
+nb proxy nginx stop
+```
 
-HTTPS も必要であれば、通常は次の 2 つのやり方があります。
+## `generate` に必要な入力
 
-- 引き続き Nginx 側で証明書を設定する
-- そのまま [Caddy](./caddy.md) に切り替えて、証明書の取得と更新を自動化する
+最も一般的な形は次の通りです。
 
-## 次に見るページ
+```bash
+nb proxy nginx generate --env test2 --host c.local.nocobase.com
+```
 
-- アプリがまだ起動していないなら、まず [Docker Compose でインストール](../../installation/docker-compose.md) を見てください
-- ポートやキーを確認したいなら、続けて [アプリ環境変数](../../installation/env.md) を見てください
+エントリポートも指定したい場合は、次のように書けます。
+
+```bash
+nb proxy nginx generate --env test2 --host c.local.nocobase.com --port 8080
+```
+
+各引数の意味は次の通りです。
+
+- `--env`: 設定を生成する対象の CLI env
+- `--host`: 公開用のドメイン名
+- `--port`: プロキシのエントリポート。アプリ自身の `appPort` ではありません
+
+env に `appPort` がない場合は、先に `nb env update test2 --app-port 56575` で保存してください。
+
+## CLI が管理するファイル
+
+`test2` を例にすると、Nginx のワークフローでは通常次のファイルやディレクトリを管理します。
+
+- `NB_CLI_ROOT/.nocobase/proxy/nginx/snippets`
+- `NB_CLI_ROOT/.nocobase/proxy/nginx/test2/app.conf`
+- `NB_CLI_ROOT/.nocobase/proxy/nginx/test2/public/index-v1.html`
+- `NB_CLI_ROOT/.nocobase/proxy/nginx/test2/public/index-v2.html`
+- `NB_CLI_ROOT/test2/storage/dist-client`
+- `NB_CLI_ROOT/test2/storage/uploads`
+
+生成される Nginx エントリは、通常次の領域をまとめて扱います。
+
+- `uploads`
+- `dist`
+- `well-known`
+- `api`
+- `ws`
+- `spa`
+
+つまり、実際の NocoBase 本番設定は、単純な `proxy_pass` ブロック 1 つだけで済むことはほとんどありません。
+
+## 手書き設定
+
+アプリが CLI 管理ではない場合や、Nginx 設定全体を意図的に自分で維持したい場合は、手書きで構成することもできます。
+
+ただし NocoBase では、本番向けのリバースプロキシはバックエンドへのプロキシだけでなく、uploads、フロントエンド資産、WebSocket、`.well-known` ルート、SPA フォールバックページまで扱う必要があるのが普通です。
+
+アプリがサブパス配置を使っている場合や、資産、uploads、プロキシで同じパスの見え方を共有していない場合は、手書き設定のほうが間違えやすくなります。そういう場合は、まず次のコマンドで設定を生成してから確認するほうが安全です。
+
+```bash
+nb proxy nginx generate --env test2 --host c.local.nocobase.com
+```
+
+## 関連リンク
+
+- [本番環境のリバースプロキシ](./index.md)
+- [Caddy](./caddy.md)
+- [CLI でインストール](../../installation/cli.md)

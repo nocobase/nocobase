@@ -1,12 +1,12 @@
 ---
-title: 'nb config set'
-description: 'nb config set command reference: set a CLI configuration item.'
-keywords: 'nb config set,NocoBase CLI,set configuration'
+title: "nb config set"
+description: "nb config set command reference: set a CLI configuration item."
+keywords: "nb config set,NocoBase CLI,set configuration"
 ---
 
 # nb config set
 
-Set a CLI configuration item. See [`nb config`](./index.md) for the supported configuration keys.
+Set a CLI configuration item. See [`nb config`](./index.md) for supported configuration keys.
 
 ## Usage
 
@@ -16,10 +16,10 @@ nb config set <key> <value>
 
 ## Parameters
 
-| Parameter | Type   | Description                                                                                                                             |
-| --------- | ------ | --------------------------------------------------------------------------------------------------------------------------------------- |
+| Parameter | Type | Description |
+| --- | --- | --- |
 | `<key>` | string | Configuration item name. See [`nb config`](./index.md) for supported values |
-| `<value>` | string | Configuration value, cannot be empty                                                                                                    |
+| `<value>` | string | Configuration value, cannot be empty |
 
 ## Examples
 
@@ -35,6 +35,8 @@ nb config set bin.git /usr/bin/git
 nb config set bin.nginx /usr/sbin/nginx
 nb config set proxy.nb-cli-root /workspace
 nb config set proxy.upstream-host host.docker.internal
+nb config set proxy.nginx-driver docker
+nb config set proxy.caddy-driver local
 nb config set bin.yarn yarn
 ```
 

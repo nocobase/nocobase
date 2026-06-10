@@ -1,100 +1,75 @@
 ---
-title: "Обратный прокси в продакшене"
-description: "Используйте nb env proxy nginx и nb env proxy caddy, чтобы сгенерировать конфигурацию обратного прокси для CLI-managed env в NocoBase."
-keywords: "NocoBase,nb env proxy nginx,nb env proxy caddy,обратный прокси,Nginx,Caddy,production"
+title: "Reverse proxy в продакшене"
+description: "Используйте nb proxy nginx и nb proxy caddy, чтобы генерировать и управлять конфигурацией reverse proxy для env NocoBase, управляемых CLI."
+keywords: "NocoBase,nb proxy nginx,nb proxy caddy,reverse proxy,Nginx,Caddy,production"
 ---
 
-# Обратный прокси в продакшене
+# Reverse proxy в продакшене
 
-В NocoBase CLI есть две рекомендуемые точки входа для настройки reverse proxy перед production-приложением:
+В NocoBase CLI рекомендуемыми точками входа для reverse proxy в продакшене являются:
 
-- `nb env proxy nginx`
-- `nb env proxy caddy`
-
-Если ваше приложение уже сохранено как CLI env, а тип env — `local` или `docker`, обычно достаточно просто дать CLI сгенерировать конфигурацию. Так CLI сам поддерживает в актуальном состоянии детали, которые легко упустить: WebSocket, подпути, SPA fallback page и последующие обновления. Вам остается только решить, должен ли входной слой продолжать работать через Nginx или лучше перейти на Caddy.
-
-Если приложение не управляется через CLI, или вы сознательно хотите полностью написать конфигурацию прокси вручную, сразу переходите к разделу с ручной конфигурацией на страницах конкретного provider.
-
-## Сначала проверьте, подходит ли вам этот путь
-
-- Приложение уже доступно по внутреннему адресу, например `http://127.0.0.1:13000`
-- Приложение уже сохранено как CLI env, и тип env — `local` или `docker`
-- Для env уже сохранен `appPort`
-
-Если команда сообщает, что в env не хватает `appPort`, сначала выполните [`nb env update`](../../../api/cli/env/update.md) и сохраните его.
-
-Если позже вы измените такие настройки, как `app-port` или `app-public-path`, которые влияют на результат проксирования, не забудьте повторно выполнить соответствующую proxy-подкоманду.
-
-## Базовый путь: сначала дайте CLI сгенерировать конфигурацию
-
-Если вы уже знаете, какой provider входного слоя хотите использовать, можно сразу выбрать нужную подкоманду:
-
-```bash
-nb env proxy nginx --env demo --host demo.example.com
-nb env proxy caddy --env demo --host demo.example.com
-```
-
-Если вы уже переключились на нужный текущий env, `--env` тоже можно опустить:
-
-```bash
-nb env proxy nginx --host demo.example.com
-```
+- `nb proxy nginx`
+- `nb proxy caddy`
 
 Здесь:
 
-- Если вы уже используете Nginx для управления сайтами, кэшем, контролем доступа или сертификатами, начните с [`nb env proxy nginx`](../../../api/cli/env/proxy/nginx.md)
-- Если вы хотите быстрее поднять HTTPS и не хотите сами поддерживать слишком много TLS-деталей, начните с [`nb env proxy caddy`](../../../api/cli/env/proxy/caddy.md)
-- `--port` — это входной порт прокси, а не `appPort` самого приложения
+- `proxy` управляет входным слоем
+- `nginx` и `caddy` — это реализации provider
+- `docker` и `local` — это runtime driver
+- `--env <name>` выбирает, для какого CLI env нужно сгенерировать конфигурацию
 
-Если вы хотите, чтобы CLI также подключил общий конфиг к основной конфигурации provider и сразу перезагрузил ее после проверки, добавьте:
+Если приложение уже сохранено как env, управляемый CLI, и этот env имеет тип `local` или `docker`, обычно достаточно поручить CLI генерацию и управление reverse proxy. Так обработка WebSocket, подпути, SPA fallback и последующие обновления будут согласованы в одном месте.
+
+Если приложение не управляется CLI, или вы намеренно хотите поддерживать всю конфигурацию вручную, перейдите к разделам ручной настройки на страницах provider.
+
+## Перед началом
+
+Убедитесь, что:
+
+- приложение уже доступно по внутреннему адресу, например `http://127.0.0.1:13000`
+- приложение уже сохранено как CLI env, и этот env имеет тип `local` или `docker`
+- в env уже сохранён `appPort`
+
+Если команда сообщает, что в env отсутствует `appPort`, сначала обновите его через [`nb env update`](../../../api/cli/env/update.md).
+
+Если позже вы измените настройки вроде `app-port` или `app-public-path`, влияющие на поведение proxy, повторно выполните соответствующую команду `generate`.
+
+## Стандартный поток
+
+Для Nginx:
 
 ```bash
-nb env proxy nginx --env demo --host demo.example.com --install --reload
+nb proxy nginx use docker
+nb proxy nginx generate --env test2 --host c.local.nocobase.com
+nb proxy nginx start
 ```
 
-Полное описание команды смотрите в [`nb env proxy`](../../../api/cli/env/proxy/index.md).
+Для Caddy:
 
-## Что CLI поддерживает за вас
+```bash
+nb proxy caddy use local
+nb proxy caddy generate --env test2 --host c.local.nocobase.com
+nb proxy caddy start
+```
 
-CLI не просто генерирует один фрагмент прокси-конфигурации. Он также поддерживает вспомогательные файлы, нужные конкретному provider. Структура вывода у двух provider различается:
+Роли этих шагов:
 
-- Для Nginx поддерживаются `app.conf`, `public/index-v1.html`, `public/index-v2.html`, общий `nocobase.conf` и общая директория `snippets/`
-- Для Caddy поддерживаются `generated.caddy`, `app.caddy` и общий `nocobase.caddy`
+- `use docker|local`: выбрать runtime driver для текущего provider
+- `generate --env <name> --host <domain>`: сгенерировать конфигурацию reverse proxy для одного env
+- `start`: запустить локальный процесс или Docker-контейнер текущего provider
 
-:::warning Важно
+## Что поддерживает CLI
 
-Если вам нужно добавить конфигурацию уровня сайта, редактируйте `app.conf` или `app.caddy`. Не меняйте вручную вспомогательные файлы, которыми управляет CLI: при следующем запуске команды они будут перезаписаны.
+CLI делает больше, чем просто генерирует один фрагмент proxy. Он также поддерживает вспомогательные файлы и структуру входа сайта в соответствии с provider:
 
-:::
+- Nginx поддерживает общие `snippets`, `app.conf`, `public/index-v1.html` и `public/index-v2.html`
+- Caddy поддерживает `nocobase.caddy`, `app.caddy`, `public/index-v1.html` и `public/index-v2.html`, где `app.caddy` — это полная конфигурация сайта для одного env
 
-## Какую страницу открыть первой
+## С какой страницы начать
 
-| Я хочу... | Перейти сюда |
+| Я хочу... | Куда перейти |
 | --- | --- |
-| Продолжать использовать Nginx для управления сайтами, сертификатами, кэшем или контролем доступа | [Nginx](./nginx.md) |
-| Быстро включить HTTPS и меньше заниматься сертификатами и TLS-деталями | [Caddy](./caddy.md) |
-| Сначала посмотреть дерево команд и выбрать provider | [`nb env proxy`](../../../api/cli/env/proxy/index.md) |
-| Сначала посмотреть параметры, выходные файлы и примеры подкоманды Nginx | [`nb env proxy nginx`](../../../api/cli/env/proxy/nginx.md) |
-| Сначала посмотреть параметры, выходные файлы и примеры подкоманды Caddy | [`nb env proxy caddy`](../../../api/cli/env/proxy/caddy.md) |
-| Сначала скорректировать настройки env, влияющие на результат проксирования, например `app-port` или `app-public-path` | [`nb env update`](../../../api/cli/env/update.md) |
-| Сначала установить приложение как CLI-managed env | [Установка через CLI (рекомендуется)](../../installation/cli.md) |
-
-## Когда путь с конфигурацией от CLI подходит не лучше всего
-
-Обычно в следующих случаях разумнее сразу перейти к разделу с ручной конфигурацией на страницах provider:
-
-- Вашим приложением не управляет CLI
-- У этого env есть только удаленное API-подключение, или это SSH env
-- Вы сознательно хотите полностью сами поддерживать всю конфигурацию Nginx или весь `Caddyfile`
-
-Но если приложение уже сохранено как CLI env, а текущая машина может достучаться до его runtime, рекомендация по умолчанию все равно остается такой: начать именно с этих команд. Так потом будет заметно проще менять домен, добавлять site-level настройки и заново генерировать конфигурацию.
-
-## Связанные ссылки
-
-- [`nb env proxy`](../../../api/cli/env/proxy/index.md)
-- [`nb env proxy nginx`](../../../api/cli/env/proxy/nginx.md)
-- [`nb env proxy caddy`](../../../api/cli/env/proxy/caddy.md)
-- [Nginx](./nginx.md)
-- [Caddy](./caddy.md)
-- [Переменные окружения приложения](../../installation/env.md)
-- [Установка через CLI (рекомендуется)](../../installation/cli.md)
+| Продолжать использовать Nginx для сайтов, сертификатов, кэша или контроля доступа | [Nginx](./nginx.md) |
+| Быстро включить HTTPS и меньше вручную поддерживать детали TLS | [Caddy](./caddy.md) |
+| Изменить настройки env, которые могут влиять на поведение proxy, например `app-port` или `app-public-path` | [`nb env update`](../../../api/cli/env/update.md) |
+| Сначала установить приложение как env, управляемый CLI | [Установка через CLI](../../installation/cli.md) |

@@ -1,53 +1,94 @@
+---
+title: "Caddy"
+description: "Используйте nb proxy caddy, чтобы генерировать и управлять конфигурацией reverse proxy Caddy для env NocoBase, управляемых CLI."
+keywords: "NocoBase,nb proxy caddy,reverse proxy,Caddy,production"
+---
+
 # Caddy
 
-Если у вас уже есть домен и вы хотите как можно быстрее включить HTTPS, Caddy обычно оказывается более простым вариантом. В большинстве случаев достаточно короткого `Caddyfile`.
+Если у вас уже есть домен и вы хотите быстро включить HTTPS, `nb proxy caddy` обычно является самым простым входным вариантом.
 
-## Минимальная рабочая конфигурация
+## Рекомендуемый порядок
 
-Отредактируйте `/etc/caddy/Caddyfile`:
+Для CLI-управляемого env типа `local` или `docker` обычно используется такой порядок:
 
-```text
-your-domain.com {
-  encode zstd gzip
-  reverse_proxy 127.0.0.1:13000
-}
+```bash
+nb proxy caddy use docker
+nb proxy caddy generate --env test2 --host c.local.nocobase.com
+nb proxy caddy start
 ```
+
+Или с локальным процессом:
+
+```bash
+nb proxy caddy use local
+nb proxy caddy generate --env test2 --host c.local.nocobase.com
+nb proxy caddy start
+```
+
+Часто используемые последующие команды:
+
+```bash
+nb proxy caddy current
+nb proxy caddy status
+nb proxy caddy info
+nb proxy caddy reload
+nb proxy caddy restart
+nb proxy caddy stop
+```
+
+## Какие входные данные нужны для `generate`
+
+Наиболее типичная форма:
+
+```bash
+nb proxy caddy generate --env test2 --host c.local.nocobase.com
+```
+
+Если вы также хотите указать входной порт:
+
+```bash
+nb proxy caddy generate --env test2 --host c.local.nocobase.com --port 8080
+```
+
+Где:
+
+- `--env`: для какого CLI env нужно сгенерировать конфигурацию
+- `--host`: публичное доменное имя
+- `--port`: входной порт proxy
+
+Для Caddy параметр `--host` особенно важен, потому что адрес сайта напрямую влияет на поток HTTPS.
+
+## Какие файлы поддерживает CLI
+
+На примере `test2` workflow Caddy обычно поддерживает:
+
+- `NB_CLI_ROOT/.nocobase/proxy/caddy/test2/app.caddy`
+- `NB_CLI_ROOT/.nocobase/proxy/caddy/nocobase.caddy`
+- `NB_CLI_ROOT/.nocobase/proxy/caddy/test2/public/index-v1.html`
+- `NB_CLI_ROOT/.nocobase/proxy/caddy/test2/public/index-v2.html`
+- `NB_CLI_ROOT/test2/storage/dist-client`
+- `NB_CLI_ROOT/test2/storage/uploads`
 
 Здесь:
 
-- замените `your-domain.com` на ваш домен
-- замените `127.0.0.1:13000` на фактический адрес, на котором слушает NocoBase
+- `nocobase.caddy` — это provider-level entry file, который импортирует все `app.caddy` для env
+- `app.caddy` — это полная конфигурация сайта для одного env, и при повторной генерации он перезаписывается целиком
 
-Если домен уже правильно указывает на текущий сервер, Caddy обычно сам занимается выпуском и продлением HTTPS-сертификатов.
+## Ручная конфигурация
 
-## Проверка и перезагрузка конфигурации
+Если приложение не управляется CLI, или вы намеренно хотите поддерживать всю конфигурацию Caddy вручную, вы всё равно можете написать её сами.
+
+Но для NocoBase готовая к production точка входа Caddy обычно должна обрабатывать больше, чем одну простую строку `reverse_proxy`. Как правило, она также включает uploads, frontend-ресурсы, маршруты `.well-known`, WebSocket и SPA fallback pages.
+
+Когда приложение использует размещение в подпути, или когда ресурсы, uploads и входной слой не разделяют одно и то же представление путей, ручная конфигурация становится заметно более подверженной ошибкам. В таких случаях обычно безопаснее сначала сгенерировать конфигурацию:
 
 ```bash
-caddy validate --config /etc/caddy/Caddyfile
-systemctl reload caddy
+nb proxy caddy generate --env test2 --host c.local.nocobase.com
 ```
 
-Если вы не управляете Caddy через `systemd`, используйте свой обычный способ запуска и перезагрузки.
+## Связанные ссылки
 
-## Если сначала нужен только HTTP
-
-Если у вас пока нет домена, можно для проверки сначала просто слушать один порт:
-
-```shell
-:80 {
-  reverse_proxy 127.0.0.1:13000
-}
-```
-
-Но для настоящего production лучше как можно скорее перейти на конфигурацию с доменом.
-
-## Когда Caddy обычно подходит лучше
-
-- вы хотите быстрее включить HTTPS
-- вы не хотите сами поддерживать слишком много деталей reverse proxy
-- сейчас вам нужен только простой и стабильный входной слой
-
-## Куда идти дальше
-
-- Если приложение еще не запущено, сначала посмотрите [Установка через Docker Compose](../../installation/docker-compose.md)
-- Если вам еще нужно проверить порты или ключи, продолжайте с [Переменные окружения приложения](../../installation/env.md)
+- [Reverse proxy в продакшене](./index.md)
+- [Nginx](./nginx.md)
+- [Установка через CLI](../../installation/cli.md)

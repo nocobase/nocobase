@@ -24,10 +24,11 @@ import {
   SortableCategoryTabs,
   Table,
   normalizeCollectionTemplateFields,
-  type CollectionTemplateField,
 } from '@nocobase/client-v2';
+import type { CollectionTemplateField } from '@nocobase/client-v2';
 import { observable, observer, randomId, useFlowContext } from '@nocobase/flow-engine';
-import { transformFilter, type FilterGroupType } from '@nocobase/utils/client';
+import { transformFilter } from '@nocobase/utils/client';
+import type { FilterGroupType } from '@nocobase/utils/client';
 import { useRequest } from 'ahooks';
 import {
   App,
@@ -48,14 +49,13 @@ import {
   theme,
   Transfer,
 } from 'antd';
+import type { FormInstance } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
-import React, { type FC, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import type { FC } from 'react';
 import { useT } from '../../locale';
-import {
-  type CollectionPresetFieldOptions,
-  type CollectionTemplateOptions,
-  PluginDataSourceManagerClientV2,
-} from '../../plugin';
+import type { CollectionPresetFieldOptions, CollectionTemplateOptions } from '../../plugin';
+import { PluginDataSourceManagerClientV2 } from '../../plugin';
 import { compileLegacyTemplate, preferLegacyTemplateTitle } from '../../utils/compileLegacyTemplate';
 import { getErrorMessage, isFormValidationError } from '../../utils/error';
 import { getCollectionFieldActionUrl } from './collectionFieldApi';
@@ -207,6 +207,23 @@ function normalizeListResponse(response: any) {
   return {
     records,
     total: meta.count || meta.total || records.length,
+  };
+}
+
+function updateCollectionListRecord(
+  data: { records: Record<string, any>[]; total: number } | undefined,
+  collectionName: string,
+  values: Record<string, any>,
+) {
+  if (!data?.records) {
+    return data;
+  }
+
+  return {
+    ...data,
+    records: data.records.map((collection) =>
+      collection.name === collectionName ? { ...collection, ...values } : collection,
+    ),
   };
 }
 
@@ -663,7 +680,7 @@ const CollectionTemplateConfigureItems: FC<{
 };
 
 const CollectionCreateFilterTargetKey: FC<{
-  form: ReturnType<typeof Form.useForm<CollectionFormValues>>[0];
+  form: FormInstance<CollectionFormValues>;
 }> = ({ form }) => {
   const t = useT();
   const fields = Form.useWatch('fields', form);
@@ -1323,10 +1340,20 @@ function CollectionsPage(props: CollectionsPageProps) {
         ),
         width: '80%',
         closable: true,
-        content: () => <FieldsPage dataSourceKey={props.dataSourceKey} collection={collection} />,
+        content: () => (
+          <FieldsPage
+            dataSourceKey={props.dataSourceKey}
+            collection={collection}
+            onCollectionChange={(collectionName, values) => {
+              Object.assign(collection, values);
+              request.mutate(updateCollectionListRecord(request.data, collectionName, values));
+              request.refresh();
+            }}
+          />
+        ),
       });
     },
-    [ctx.viewer, props.dataSourceKey, t],
+    [ctx.viewer, props.dataSourceKey, request, t],
   );
 
   const handleCategoryChange = useCallback((key: string) => {

@@ -1,7 +1,7 @@
 ---
-title: 'nb config set'
-description: 'Referência do comando nb config set: define um item de configuração da CLI.'
-keywords: 'nb config set,NocoBase CLI,definir configuração'
+title: "nb config set"
+description: "Referência do comando nb config set: defina um item de configuração da CLI."
+keywords: "nb config set,NocoBase CLI,definir configuração"
 ---
 
 # nb config set
@@ -19,7 +19,7 @@ nb config set <key> <value>
 | Parâmetro | Tipo | Descrição |
 | --- | --- | --- |
 | `<key>` | string | Nome do item de configuração. Consulte [`nb config`](./index.md) para ver os valores suportados |
-| `<value>` | string | Valor da configuração, não pode estar vazio |
+| `<value>` | string | Valor de configuração; não pode estar vazio |
 
 ## Exemplos
 
@@ -38,9 +38,9 @@ nb config set proxy.upstream-host host.docker.internal
 nb config set bin.yarn yarn
 ```
 
-## Observações
+## Notas
 
-`update.policy` suporta `prompt`, `auto` e `off`, e o valor padrão é `prompt`.
+`update.policy` aceita `prompt`, `auto` e `off`, e o valor padrão é `prompt`.
 
 ## Comandos relacionados
 

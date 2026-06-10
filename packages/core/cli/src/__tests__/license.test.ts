@@ -955,6 +955,9 @@ test('license activate validates and saves a matching license key', async () => 
     const saved = await readFile(path.join(storagePath, '.license', 'license-key'), 'utf8');
     expect(saved).toBe('license-key-raw');
     expect(log.mock.calls[0]?.[0]).toContain('Activated the license');
+    expect(log.mock.calls[1]?.[0]).toContain('Saved the license key securely for this env');
+    expect(String(log.mock.calls[1]?.[0] ?? '')).not.toContain('license-key');
+    expect(String(log.mock.calls[1]?.[0] ?? '')).not.toContain(storagePath);
     restoreTerminal();
   } finally {
     await rm(storagePath, { recursive: true, force: true });

@@ -84,6 +84,7 @@ export class BaseAuth extends Auth {
       this.ctx.throw(401, {
         message: this.ctx.t('Unauthenticated. Please sign in to continue.', { ns: localeNamespace }),
         code: AuthErrorCode.EMPTY_TOKEN,
+        logLevel: 'trace',
       });
     }
 

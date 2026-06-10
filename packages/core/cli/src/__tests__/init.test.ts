@@ -2371,6 +2371,59 @@ test('nb init forwards prompted skipDownload to install while keeping source met
   expect(installArgv).not.toContain('--replace');
 });
 
+test('nb init forwards --prepare-only to install and saves a prepared env config first', async () => {
+  const { default: Init } = await import('../commands/init.js');
+
+  mocks.runPromptCatalog.mockImplementation(async (_catalog, options) => ({
+    hasNocobase: 'no',
+    appName: 'prepareapp',
+    lang: 'en-US',
+    appRootPath: './apps/prepareapp',
+    appPort: '13080',
+    storagePath: './storage/prepareapp',
+    source: 'git',
+    version: 'beta',
+    gitUrl: 'https://github.com/nocobase/nocobase.git',
+    builtinDb: true,
+    dbDialect: 'postgres',
+    rootUsername: 'admin',
+    rootEmail: 'admin@nocobase.com',
+    rootPassword: 'admin123',
+    rootNickname: 'Admin',
+    ...(options.values ?? {}),
+  }));
+  mocks.runNpm.mockResolvedValue(undefined);
+
+  const runCommand = vi.fn(async () => undefined);
+  const command = Object.assign(Object.create(Init.prototype), {
+    parse: vi.fn(async () => ({
+      flags: {
+        yes: false,
+        ui: false,
+        env: 'prepareapp',
+        'prepare-only': true,
+      },
+    })),
+    config: { runCommand },
+    log: mocks.log,
+    error: mocks.error,
+    exit: (code?: number) => {
+      throw new Error(`unexpected exit: ${code ?? 'unknown'}`);
+    },
+  });
+
+  await Init.prototype.run.call(command);
+
+  expect(mocks.upsertEnv.mock.calls[0]?.[0]).toBe('prepareapp');
+  expect(mocks.upsertEnv.mock.calls[0]?.[1]).toMatchObject({
+    setupState: 'prepared',
+    lang: 'en-US',
+  });
+  expect(mocks.upsertEnv.mock.calls[0]?.[2]).toEqual({ scope: 'global' });
+  const installArgv = runCommand.mock.calls.find(([name]) => name === 'install')?.[1] as string[];
+  expect(installArgv).toContain('--prepare-only');
+});
+
 test('nb init --yes preserves hidden basic auth settings for a new app flow', async () => {
   const { default: Init } = await import('../commands/init.js');
 
