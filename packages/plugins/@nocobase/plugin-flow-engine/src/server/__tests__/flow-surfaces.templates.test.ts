@@ -3715,7 +3715,7 @@ describe('flowSurfaces templates', () => {
       description: 'Popup template requiring a current record for popup.tryTemplate context coverage.',
       saveMode: 'duplicate',
     });
-    expect(recordTemplate.filterByTk).toBe('{{ctx.view.inputArgs.filterByTk}}');
+    expect(recordTemplate.filterByTk).toBe('{{ctx.record.id}}');
     const recordTemplateSurface = await getSurface(rootAgent, {
       uid: recordTemplate.targetUid,
     });
@@ -3725,7 +3725,7 @@ describe('flowSurfaces templates', () => {
     expect(recordTemplateDetails?.stepParams?.resourceSettings?.init).toMatchObject({
       dataSourceKey: 'main',
       collectionName: 'popup_try_template_record_context_targets',
-      filterByTk: '{{ctx.view.inputArgs.filterByTk}}',
+      filterByTk: '{{ctx.record.id}}',
     });
     const convertRecordAction = getData(
       await rootAgent.resource('flowSurfaces').addRecordAction({
@@ -3753,7 +3753,7 @@ describe('flowSurfaces templates', () => {
       description: 'Popup template converted from a current-record opener.',
       saveMode: 'convert',
     });
-    expect(convertedRecordTemplate.filterByTk).toBe('{{ctx.view.inputArgs.filterByTk}}');
+    expect(convertedRecordTemplate.filterByTk).toBe('{{ctx.record.id}}');
     const convertedRecordActionSurface = await getSurface(rootAgent, { uid: convertRecordAction.uid });
     expect(convertedRecordActionSurface.tree.popup?.template).toMatchObject({
       uid: convertedRecordTemplate.uid,
@@ -3800,7 +3800,7 @@ describe('flowSurfaces templates', () => {
       }),
     );
     expect(targetRecordActionPopupTemplate.collectionName).toBe('popup_try_template_record_context_targets');
-    expect(targetRecordActionPopupTemplate.filterByTk).toBe('{{ctx.view.inputArgs.filterByTk}}');
+    expect(targetRecordActionPopupTemplate.filterByTk).toBe('{{ctx.record.id}}');
     expect(getPopupOpenView(targetRecordActionSurface.tree)).toMatchObject({
       dataSourceKey: 'main',
       collectionName: 'popup_try_template_record_context_targets',
@@ -4830,7 +4830,7 @@ describe('flowSurfaces templates', () => {
       }),
     );
     expect(recordActionPopupTemplate.collectionName).toBe('popup_try_template_apply_record_context_targets');
-    expect(recordActionPopupTemplate.filterByTk).toBe('{{ctx.view.inputArgs.filterByTk}}');
+    expect(recordActionPopupTemplate.filterByTk).toBe('{{ctx.record.id}}');
     expect(getPopupOpenView(recordActionSurface.tree)).toMatchObject({
       dataSourceKey: 'main',
       collectionName: 'popup_try_template_apply_record_context_targets',

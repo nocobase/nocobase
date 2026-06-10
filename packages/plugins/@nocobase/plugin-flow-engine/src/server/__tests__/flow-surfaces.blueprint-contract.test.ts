@@ -6479,11 +6479,11 @@ describe('flowSurfaces applyBlueprint contract', () => {
       await readPrimaryPopupBlockFromAction(mainViewAction.uid);
     expect(mainViewActionReadback.tree?.stepParams?.popupSettings?.openView).toMatchObject({
       collectionName: sourceCollection,
-      filterByTk: '{{ctx.record.id}}',
     });
+    expect(mainViewActionReadback.tree?.stepParams?.popupSettings?.openView).not.toHaveProperty('filterByTk');
     expect(userDetailsBlock?.stepParams?.resourceSettings?.init).toMatchObject({
       collectionName: sourceCollection,
-      filterByTk: '{{ctx.view.inputArgs.filterByTk}}',
+      filterByTk: '{{ctx.record.id}}',
     });
     const userDetailsReadback = await getSurface(rootAgent, {
       uid: userDetailsBlock.uid,
@@ -6498,7 +6498,7 @@ describe('flowSurfaces applyBlueprint contract', () => {
     expect(userEditForm?.use).toBe('EditFormModel');
     expect(userEditForm?.stepParams?.resourceSettings?.init).toMatchObject({
       collectionName: sourceCollection,
-      filterByTk: '{{ctx.view.inputArgs.filterByTk}}',
+      filterByTk: '{{ctx.record.id}}',
     });
     expect(collectFieldPaths(userEditForm)).toEqual(expect.arrayContaining(['username', 'roles']));
     expect(_.castArray(userEditForm?.subModels?.actions || []).map((item: any) => item?.use)).toContain(
