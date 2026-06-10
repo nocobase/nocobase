@@ -8,14 +8,20 @@
  */
 
 /**
- * Modern canvas copy/paste (doc §9.6), a per-canvas rewrite of v1's
- * `NodeClipboardContext` — same behavior, v2 hooks/api, sharing the relocated
- * pure functions (`collectUpstreams`, `extractDependencyKeys`,
- * `stripVariableReferences`). Copy a node to the clipboard; an add-slot becomes
- * a paste zone; pasting into a position where the node's variable references are
- * no longer in scope prompts to strip them (or keep, with a warning).
+ * Canvas copy/paste, shared by BOTH canvases (ADR-0003). Copy a node to the
+ * clipboard; an add-slot becomes a paste zone; pasting into a position where the
+ * node's variable references are no longer in scope prompts to strip them (or
+ * keep, with a warning). Pastes via `flow_nodes.duplicate`.
  *
- * Pastes via `flow_nodes.duplicate`.
+ * The provider's runtime-neutral dependencies (`api`, `t`, antd `modal`/`message`)
+ * resolve identically in either runtime (flow-engine `ctx.api`, `useT`,
+ * `App.useApp`). The two genuinely runtime-specific bits — the canvas flow data
+ * (`{ workflow, nodes, refresh }`) and the `executed` flag — are read through an
+ * injected `useCanvasRuntime` hook so each canvas supplies its own source: the
+ * modern canvas reads its `FlowContext` + `workflow.executed`, the legacy canvas
+ * its own `FlowContext` + `versionStats.executed`. v1 imports this provider from
+ * here (the allowed `v1 → v2` direction) and passes its own runtime hook, so a
+ * single implementation serves both.
  */
 
 import React, { createContext, useCallback, useContext, useMemo, useState } from 'react';
@@ -49,17 +55,38 @@ type NodeClipboardContextValue = {
   pasteNode: (target: any) => Promise<void>;
 };
 
+/** The per-canvas runtime data the provider needs but that differs by runtime —
+ *  injected via `NodeClipboardContextProvider`'s `useCanvasRuntime` prop. */
+export type CanvasClipboardRuntime = {
+  workflow: any;
+  nodes: any[] | undefined;
+  refresh?: () => void;
+  executed: boolean;
+};
+
+/** Default (modern-canvas) runtime source: the v2 `FlowContext` + `executed`. */
+function useModernCanvasRuntime(): CanvasClipboardRuntime {
+  const { workflow, nodes, refresh } = useFlowContext() ?? {};
+  const executed = useWorkflowCanvasExecuted();
+  return { workflow, nodes, refresh, executed };
+}
+
 const NodeClipboardContext = createContext<NodeClipboardContextValue | null>(null);
 
 export function useNodeClipboardContext() {
   return useContext(NodeClipboardContext);
 }
 
-export function NodeClipboardContextProvider(props: { children: React.ReactNode }) {
+export function NodeClipboardContextProvider(props: {
+  children: React.ReactNode;
+  /** Injected per-canvas runtime source. Defaults to the modern canvas's. The
+   *  legacy canvas passes its own (v1 `FlowContext` + `versionStats.executed`). */
+  useCanvasRuntime?: () => CanvasClipboardRuntime;
+}) {
+  const { useCanvasRuntime = useModernCanvasRuntime } = props;
   const ctx = useFlowEngineContext();
   const t = useT();
-  const { workflow, nodes, refresh } = useFlowContext() ?? {};
-  const executed = useWorkflowCanvasExecuted();
+  const { workflow, nodes, refresh, executed } = useCanvasRuntime();
   const { modal, message } = App.useApp();
   const [clipboard, setClipboard] = useState<ClipboardNode | null>(null);
 

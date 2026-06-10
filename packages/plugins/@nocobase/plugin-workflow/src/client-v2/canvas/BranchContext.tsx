@@ -8,20 +8,37 @@
  */
 
 /**
- * Per-branch context for the modern canvas (doc §9.6): carries the branch index
- * and whether the branch accepts added nodes. A second copy of v1
- * `BranchContext` (v2 canvas keeps its own; both are trivial).
+ * Per-branch context, shared by BOTH canvases (ADR-0003). Carries the branch
+ * index, whether the branch accepts added nodes, and whether the branch is
+ * sync-only. Zero dependencies (bare `React.createContext`, no runtime hooks),
+ * so — like `NodeContext` — a single definition serves both runtimes: v1
+ * re-exports it from here via the allowed `v1 → v2` import direction. Each
+ * canvas's own `Branch` component supplies the value; `syncOnly` is optional, so
+ * the modern canvas (which doesn't set it) is unaffected.
  */
 
-import React, { useContext } from 'react';
+import { createContext, useContext } from 'react';
 
 export type BranchContextValue = {
   branchIndex: number | null;
   addable: boolean;
+  /** Whether the branch is restricted to synchronous nodes. Optional — only the
+   *  legacy canvas's `Branch` sets it; consumers read it via `?.syncOnly`. */
+  syncOnly?: boolean;
 };
 
-export const BranchContext = React.createContext<BranchContextValue>({ branchIndex: null, addable: true });
+// Default `null` (matches v1): every consumer reads through `useBranchContext()?.`,
+// so the absence of a provider is handled the same in both canvases.
+export const BranchContext = createContext<BranchContextValue | null>(null);
 
 export function useBranchContext() {
   return useContext(BranchContext);
+}
+
+export function useBranchIndex() {
+  return useBranchContext()?.branchIndex ?? null;
+}
+
+export function useBranchSyncOnly() {
+  return useBranchContext()?.syncOnly ?? false;
 }
