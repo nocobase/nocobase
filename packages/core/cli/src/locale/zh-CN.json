@@ -201,7 +201,7 @@
         },
         "messages": {
           "activated": "已为 env \"{{envName}}\" 激活 license。",
-          "savedLicenseKey": "license key 已保存到 {{licenseKeyPath}}"
+          "savedLicenseKey": "已为当前 env 安全保存 license key"
         }
       }
     },
