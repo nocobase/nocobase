@@ -220,6 +220,22 @@ describe('plugin-ui-layout server', () => {
     expect(role?.get('allowNewUiLayout')).toBe(true);
   });
 
+  it('should allow new ui layouts by default for initialized built-in roles', async () => {
+    app = await createUiLayoutMockServer();
+
+    const roles = await app.db.getRepository('roles').find({
+      filter: {
+        name: ['admin', 'member'],
+      },
+      sort: ['name'],
+    });
+
+    expect(roles.map((role) => [role.get('name'), role.get('allowNewUiLayout')])).toEqual([
+      ['admin', true],
+      ['member', true],
+    ]);
+  });
+
   it('should grant new enabled ui layouts by the role default layout access policy', async () => {
     app = await createUiLayoutMockServer();
 

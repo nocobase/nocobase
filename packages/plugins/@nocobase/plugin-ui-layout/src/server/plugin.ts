@@ -11,6 +11,7 @@ import { Plugin } from '@nocobase/server';
 import type { ResourcerContext } from '@nocobase/resourcer';
 import type { Database, Model, MultipleRelationRepository } from '@nocobase/database';
 import { DEFAULT_ADMIN_UI_LAYOUT, NAMESPACE } from '../constants';
+import { applyDefaultRoleUiLayoutAccess, ensureDefaultRoleUiLayoutAccess } from './ensureDefaultRoleUiLayoutAccess';
 import { ensureDefaultUiLayout } from './ensureDefaultUiLayout';
 import {
   type DatabaseHookOptions,
@@ -1014,6 +1015,9 @@ export class PluginUiLayoutServer extends Plugin {
     this.app.resourceManager.registerPreActionHandler('desktopRoutes:create', addDesktopRouteCreateLayout);
     this.app.resourceManager.registerPreActionHandler('desktopRoutes:listAccessible', addDesktopRouteLayoutFilter);
     this.app.resourceManager.registerPreActionHandler('desktopRoutes:getAccessible', addDesktopRouteGetLayoutFilter);
+    this.app.db.on('roles.beforeCreate', (role: Model) => {
+      applyDefaultRoleUiLayoutAccess(role);
+    });
     this.app.db.on('uiLayouts.afterCreate', async (uiLayout: Model, options?: DatabaseHookOptions) => {
       await grantDefaultAccessToNewUiLayout(this.app.db, uiLayout, options);
     });
@@ -1044,11 +1048,13 @@ export class PluginUiLayoutServer extends Plugin {
 
   async install() {
     await ensureDefaultUiLayout(this.db);
+    await ensureDefaultRoleUiLayoutAccess(this.db);
     await syncExistingLegacyRoleDesktopRoutePermissions(this.db);
   }
 
   async afterEnable() {
     await ensureDefaultUiLayout(this.db);
+    await ensureDefaultRoleUiLayoutAccess(this.db);
     await syncExistingLegacyRoleDesktopRoutePermissions(this.db);
   }
 
