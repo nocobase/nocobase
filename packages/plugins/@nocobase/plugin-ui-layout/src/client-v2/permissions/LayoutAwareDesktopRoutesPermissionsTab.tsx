@@ -464,28 +464,32 @@ export default function LayoutAwareDesktopRoutesPermissionsTab(props: Permission
       nextSelectedIds,
       selectedIds,
     });
-    setSelectedIds(nextSelectedIds);
-    if (changes.remove.length) {
-      await roleUiLayoutDesktopRoutesResource.destroy({
-        filter: {
+    try {
+      if (changes.remove.length) {
+        await roleUiLayoutDesktopRoutesResource.destroy({
+          filter: {
+            roleName: role.name,
+            uiLayoutUid: activeLayoutUid,
+            desktopRouteId: changes.remove,
+          },
+        });
+      }
+      if (changes.add.length) {
+        const values = changes.add.map((desktopRouteId) => ({
           roleName: role.name,
           uiLayoutUid: activeLayoutUid,
-          desktopRouteId: changes.remove,
-        },
-      });
+          desktopRouteId,
+        }));
+        await roleUiLayoutDesktopRoutesResource.create({
+          values: values.length === 1 ? values[0] : values,
+        });
+      }
+      await roleScopedRouteService.refreshAsync();
+      setSelectedIds(nextSelectedIds);
+      ctx.message.success(t('Saved successfully'));
+    } catch {
+      await roleScopedRouteService.refreshAsync().catch(() => undefined);
     }
-    if (changes.add.length) {
-      const values = changes.add.map((desktopRouteId) => ({
-        roleName: role.name,
-        uiLayoutUid: activeLayoutUid,
-        desktopRouteId,
-      }));
-      await roleUiLayoutDesktopRoutesResource.create({
-        values: values.length === 1 ? values[0] : values,
-      });
-    }
-    await roleScopedRouteService.refreshAsync();
-    ctx.message.success(t('Saved successfully'));
   });
 
   const updateRoleDefaults = useMemoizedFn(

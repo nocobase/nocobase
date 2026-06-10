@@ -809,6 +809,74 @@ describe('plugin-ui-layout route permissions', () => {
     expect(resource.roleRoutesRemove).not.toHaveBeenCalled();
   });
 
+  it('should keep route unchecked when adding a layout menu permission fails', async () => {
+    const resource = createCountingPermissionTabResources();
+    const user = userEvent.setup();
+    flowMocks.context = resource.context;
+    resource.scopedRouteCreate.mockRejectedValueOnce(new Error('create failed'));
+
+    render(
+      <LayoutAwareDesktopRoutesPermissionsTab
+        activeKey="menu"
+        activeRole={{ name: 'layout-member', title: 'Layout member' }}
+        onRoleChange={vi.fn()}
+      />,
+    );
+
+    await selectLayout('Mobile layout');
+
+    const mobileCheckbox = await screen.findByRole('checkbox', { name: 'Allow access to Mobile route' });
+    expect(mobileCheckbox).not.toBeChecked();
+
+    await act(async () => {
+      await user.click(mobileCheckbox);
+    });
+
+    await waitFor(() => {
+      expect(resource.scopedRouteCreate).toHaveBeenCalled();
+    });
+    expect(mobileCheckbox).not.toBeChecked();
+    expect(resource.messageSuccess).not.toHaveBeenCalled();
+  });
+
+  it('should keep route checked when removing a layout menu permission fails', async () => {
+    const resource = createCountingPermissionTabResources();
+    const user = userEvent.setup();
+    flowMocks.context = resource.context;
+
+    render(
+      <LayoutAwareDesktopRoutesPermissionsTab
+        activeKey="menu"
+        activeRole={{ name: 'layout-member', title: 'Layout member' }}
+        onRoleChange={vi.fn()}
+      />,
+    );
+
+    await selectLayout('Mobile layout');
+
+    const mobileCheckbox = await screen.findByRole('checkbox', { name: 'Allow access to Mobile route' });
+    await act(async () => {
+      await user.click(mobileCheckbox);
+    });
+    await waitFor(() => {
+      expect(resource.scopedRouteCreate).toHaveBeenCalled();
+    });
+    expect(mobileCheckbox).toBeChecked();
+
+    resource.messageSuccess.mockClear();
+    resource.scopedRouteDestroy.mockRejectedValueOnce(new Error('destroy failed'));
+
+    await act(async () => {
+      await user.click(mobileCheckbox);
+    });
+
+    await waitFor(() => {
+      expect(resource.scopedRouteDestroy).toHaveBeenCalled();
+    });
+    expect(mobileCheckbox).toBeChecked();
+    expect(resource.messageSuccess).not.toHaveBeenCalled();
+  });
+
   it('should remove hidden descendant permissions when disabling a visible parent route', async () => {
     const resource = createHiddenDescendantPermissionTabResources();
     const user = userEvent.setup();
