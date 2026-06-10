@@ -16,9 +16,9 @@ import { middlewares } from '@nocobase/server';
 import { QueryParams } from '../types';
 import { resolveVariablesTemplate } from '@nocobase/plugin-flow-engine';
 
-const getDB = (ctx: Context, dataSource: string) => {
+const getQueryDatabase = (ctx: Context, dataSource: string) => {
   const ds = ctx.app.dataSourceManager.dataSources.get(dataSource);
-  return ds?.collectionManager.db;
+  return ds?.collectionManager?.db || ctx.db;
 };
 
 const getTimezone = (ctx: Context) =>
@@ -27,16 +27,22 @@ const getTimezone = (ctx: Context) =>
 export const checkPermission = async (ctx: Context, next: Next) => {
   const values = ctx.action.params.values || {};
   const acl = ctx.app.dataSourceManager.get(values.dataSource)?.acl || ctx.app.acl;
+  const currentRoles = ctx.state?.currentRoles || (ctx.state?.currentRole ? [ctx.state.currentRole] : []);
+
+  if (currentRoles.includes('root')) {
+    await next();
+    return;
+  }
 
   try {
     const result = await applyQueryPermission({
       acl,
-      db: getDB(ctx, values.dataSource) || ctx.db,
+      db: getQueryDatabase(ctx, values.dataSource),
       resourceName: values.collection,
       query: values,
       currentUser: ctx.state?.currentUser,
       currentRole: ctx.state?.currentRole,
-      currentRoles: ctx.state?.currentRoles,
+      currentRoles,
       timezone: getTimezone(ctx) as string,
       state: ctx.state,
     });
@@ -53,9 +59,9 @@ export const checkPermission = async (ctx: Context, next: Next) => {
 
 export const queryData = async (ctx: Context, next: Next) => {
   const { dataSource, collection, ...queryOptions } = ctx.action.params.values;
-  const db = getDB(ctx, dataSource) || ctx.db;
-  const repository = db.getRepository(collection);
+  const repository = getQueryDatabase(ctx, dataSource).getRepository(collection);
   ctx.body = await repository.query({
+    context: ctx,
     ...queryOptions,
     timezone: ctx.get?.('x-timezone'),
   });

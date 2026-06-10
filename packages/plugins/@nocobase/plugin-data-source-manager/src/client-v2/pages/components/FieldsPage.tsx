@@ -365,6 +365,14 @@ function isTemplateSyncFieldsVisible(options: { collection: Record<string, any>;
 }
 
 function isSyncFieldsVisible(dataSourceKey: string, collection: Record<string, any>, ctx: any) {
+  const plugin = ctx.app.pm.get(PluginDataSourceManagerClientV2);
+  const dataSource = ctx.dataSourceManager.getDataSource(dataSourceKey);
+  const dataSourceType = plugin?.getType?.(dataSource?.options?.type);
+
+  if (dataSourceType?.disableConfigureFields) {
+    return false;
+  }
+
   if (isViewCollection(collection)) {
     return dataSourceKey === 'main';
   }
