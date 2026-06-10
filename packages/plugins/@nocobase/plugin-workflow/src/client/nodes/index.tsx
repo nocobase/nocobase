@@ -11,9 +11,9 @@ import { CaretRightOutlined, CloseOutlined, CopyOutlined, DeleteOutlined, Ellips
 import { createForm, Field } from '@formily/core';
 import { toJS } from '@formily/reactive';
 import { ISchema, observer, useField, useForm } from '@formily/react';
-import { Alert, App, Button, Collapse, Dropdown, Empty, Input, Space, Tag, Tooltip, message } from 'antd';
+import { Alert, App, Button, Collapse, Dropdown, Empty, Input, Skeleton, Space, Tag, Tooltip, message } from 'antd';
 import { cloneDeep, get, set } from 'lodash';
-import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import React, { createContext, Suspense, lazy, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import {
@@ -38,6 +38,7 @@ import WorkflowPlugin from '..';
 import { AddNodeSlot } from '../AddNodeContext';
 import { useFlowContext } from '../FlowContext';
 import { openNodeConfigDrawer } from '../../client-v2/canvas/NodeConfigDrawer';
+import { nodeTypeClassName, resolveLegacyNodeRenderMode } from '../../client-v2/canvas/nodeRenderDispatch';
 import { DrawerDescription } from '../components/DrawerDescription';
 import { StatusButton } from '../components/StatusButton';
 import { JobStatusOptionsMap } from '../constants';
@@ -114,11 +115,29 @@ export function Node({ data }) {
   const { styles } = useStyles();
   const { getAriaLabel } = useGetAriaLabelOfAddButton(data);
   const workflowPlugin = usePlugin(WorkflowPlugin);
-  const { Component = NodeDefaultView, end } = workflowPlugin.instructions.get(data.type) ?? {};
+  const instruction = workflowPlugin.instructions.get(data.type) ?? {};
+  const { Component, ComponentLoader, end } = instruction;
+  const renderMode = resolveLegacyNodeRenderMode(instruction);
+  // A node that dropped its v1 `Component` but still inherits a v2
+  // `ComponentLoader` renders its card fully via v2 (the card-layer mirror of the
+  // drawer's `FieldsetLoader` dispatch). Memoize the lazy component so it isn't
+  // rebuilt every render. Other modes never touch the loader.
+  const ModernComponent = useMemo(
+    () => (renderMode === 'modern-loader' && ComponentLoader ? lazy(ComponentLoader) : null),
+    [renderMode, ComponentLoader],
+  );
   return (
     <NodeContext.Provider value={data}>
       <div className={cx(styles.nodeBlockClass)}>
-        <Component data={data} />
+        {renderMode === 'legacy-component' && Component ? (
+          <Component data={data} />
+        ) : ModernComponent ? (
+          <Suspense fallback={<Skeleton.Button active block style={{ width: '16em', height: '4em' }} />}>
+            <ModernComponent data={data} />
+          </Suspense>
+        ) : (
+          <NodeDefaultView data={data} />
+        )}
         {!end || (typeof end === 'function' && !end(data)) ? (
           <AddNodeSlot aria-label={getAriaLabel()} upstream={data} />
         ) : (
@@ -201,7 +220,7 @@ export function RemoveButton() {
 
 export function JobButton() {
   const { execution, setViewJob } = useFlowContext();
-  const { jobs } = useNodeContext() ?? {};
+  const { jobs } = useNodeContext();
   const { styles } = useStyles();
 
   const onOpenJobInList = useCallback(
@@ -628,7 +647,7 @@ export function NodeDefaultView(props) {
 
   if (!instruction) {
     return (
-      <div className={cx(styles.nodeClass, `workflow-node-type-${data.type}`)}>
+      <div className={cx(styles.nodeClass, nodeTypeClassName(data.type))}>
         <Tooltip
           title={lang(
             'Node with unknown type will cause error. Please delete it or check plugin which provide this type.',
@@ -663,7 +682,7 @@ export function NodeDefaultView(props) {
   const typeTitle = compile(instruction.title);
 
   return (
-    <div className={cx(styles.nodeClass, `workflow-node-type-${data.type}`)}>
+    <div className={cx(styles.nodeClass, nodeTypeClassName(data.type))}>
       <div
         role="button"
         aria-label={`${typeTitle}-${editingTitle}`}

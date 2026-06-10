@@ -26,7 +26,8 @@ import { useFlowEngine } from '@nocobase/flow-engine';
 import { NodeContext, useFlowContext, useWorkflowCanvasExecuted } from './contexts';
 import useStyles from './style';
 import { useT } from '../locale';
-import { PluginWorkflowClientV2 } from '../plugin';
+import { useInstruction } from './useWorkflowInstruction';
+import { nodeTypeClassName } from './nodeRenderDispatch';
 import { AddNodeSlot } from './AddNodeSlot';
 import { useRemoveNodeContext } from './RemoveNodeContext';
 import { useNodeClipboardContext } from './NodeClipboardContext';
@@ -143,8 +144,7 @@ export function NodeDefaultView({ data, children }: { data: any; children?: Reac
   const { workflow, refresh } = useFlowContext() ?? {};
   const clipboard = useNodeClipboardContext();
   const dragContext = useNodeDragContext();
-  const plugin = flowEngine.context.app.pm.get(PluginWorkflowClientV2) as PluginWorkflowClientV2;
-  const instruction = plugin?.getInstruction(data.type);
+  const instruction = useInstruction(data.type);
   // Highlight (blue dashed outline) when this node is the one copied to the
   // clipboard or being dragged — mirrors v1's `active`/`dragging` state.
   const isCopiedSelf = Boolean(clipboard?.clipboard?.sourceId && clipboard.clipboard.sourceId === data.id);
@@ -170,7 +170,7 @@ export function NodeDefaultView({ data, children }: { data: any; children?: Reac
   const typeTitle = t(instruction?.title as string);
 
   return (
-    <div className={styles.nodeClass}>
+    <div className={cx(styles.nodeClass, nodeTypeClassName(data.type))}>
       <div
         className={cx(styles.nodeCardClass, { active: isCopiedSelf || isDraggingSelf, dragging: isDraggingSelf })}
         role="button"
@@ -206,9 +206,7 @@ export function NodeDefaultView({ data, children }: { data: any; children?: Reac
 function NodeCard({ data }: { data: any }) {
   const { styles, cx } = useStyles();
   const t = useT();
-  const flowEngine = useFlowEngine();
-  const plugin = flowEngine.context.app.pm.get(PluginWorkflowClientV2) as PluginWorkflowClientV2;
-  const instruction = plugin?.getInstruction(data.type);
+  const instruction = useInstruction(data.type);
 
   const Rendered = useMemo(() => {
     if (instruction?.ComponentLoader) {
@@ -220,7 +218,7 @@ function NodeCard({ data }: { data: any }) {
   // Unregistered in v2 (only implemented in v1) → placeholder card, topology intact.
   if (!instruction) {
     return (
-      <div className={styles.nodeClass}>
+      <div className={cx(styles.nodeClass, nodeTypeClassName(data.type))}>
         <Tooltip title={t('This node type is not available in the new canvas yet.')}>
           <div className={cx(styles.nodeCardClass, 'invalid')}>
             <div className={styles.nodeHeaderClass}>
@@ -252,15 +250,13 @@ function NodeCard({ data }: { data: any }) {
 
 export function Node({ data }: { data: any }) {
   const { styles } = useStyles();
-  const flowEngine = useFlowEngine();
-  const plugin = flowEngine.context.app.pm.get(PluginWorkflowClientV2) as PluginWorkflowClientV2;
-  const instruction = plugin?.getInstruction(data.type);
+  const instruction = useInstruction(data.type);
   const endFlag = instruction?.end;
   const isEnd = typeof endFlag === 'function' ? endFlag(data) : Boolean(endFlag);
 
   return (
     <NodeContext.Provider value={data}>
-      <div className={cxNodeBlock(styles, data.type)}>
+      <div className={styles.nodeBlockClass}>
         <NodeCard data={data} />
         {isEnd ? (
           <div className="end-sign">
@@ -272,8 +268,4 @@ export function Node({ data }: { data: any }) {
       </div>
     </NodeContext.Provider>
   );
-}
-
-function cxNodeBlock(styles: { nodeBlockClass: string }, type: string) {
-  return `${styles.nodeBlockClass} workflow-node-block workflow-node-type-${type}`;
 }

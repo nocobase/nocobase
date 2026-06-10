@@ -24,14 +24,61 @@
  */
 
 import React, { useContext } from 'react';
+import type { WorkflowCanvasRecord, WorkflowRevision } from '../components/workflowCanvas';
 
-export const FlowContext = React.createContext<any>({});
+/**
+ * A canvas node — the live linked-list element produced by `linkNodes`: the flat
+ * `flow_nodes` row plus the wired `upstream`/`downstream` object refs. Kept loose
+ * (index signature) because node `config` shapes are per-instruction; the named
+ * fields are the ones the canvas itself reads.
+ */
+export type CanvasNode = {
+  // `flow_nodes` rows are integer-keyed (matches v1's `Set<number>` / `filterByTk`).
+  id: number;
+  key?: string;
+  type?: string;
+  title?: string;
+  config?: Record<string, any>;
+  upstreamId?: number | null;
+  downstreamId?: number | null;
+  branchIndex?: number | null;
+  upstream?: CanvasNode | null;
+  downstream?: CanvasNode | null;
+  [key: string]: any;
+};
+
+/**
+ * The canvas-root context value, shared by both canvases and matching v1's two
+ * `FlowContext.Provider` shapes:
+ *   - editor canvas    → `{ workflow, nodes, refresh }`
+ *   - execution canvas → `{ workflow, nodes, execution, viewJob, setViewJob }`
+ * All fields optional so a consumer reading e.g. only `nodes` is typed against
+ * either canvas, and the bare-`{}` default (no provider) still satisfies it.
+ */
+export type WorkflowCanvasFlowContextValue = {
+  workflow?: WorkflowCanvasRecord | null;
+  nodes?: CanvasNode[];
+  refresh?: () => void;
+  /** Editor canvas: sibling versions of the workflow (the version dropdown). */
+  revisions?: WorkflowRevision[];
+  /** Execution canvas only: the execution being viewed (read-only nodes). */
+  execution?: Record<string, any> | null;
+  /** Execution canvas only: the job whose result modal is open. */
+  viewJob?: Record<string, any> | null;
+  /** Execution canvas only: open/close the job result modal. */
+  setViewJob?: (job: Record<string, any> | null) => void;
+};
+
+export const FlowContext = React.createContext<WorkflowCanvasFlowContextValue>({});
 
 export function useFlowContext() {
   return useContext(FlowContext);
 }
 
-export const CurrentWorkflowContext = React.createContext<any>({});
+// Holds the bare workflow record (v1's split from FlowContext). Default `{}`
+// (not null) preserves v1's behavior, so unguarded `.type`/`.config` reads at
+// existing call sites stay safe; `Partial` makes the empty default assignable.
+export const CurrentWorkflowContext = React.createContext<Partial<WorkflowCanvasRecord>>({});
 
 export function useCurrentWorkflowContext() {
   return useContext(CurrentWorkflowContext);
@@ -39,7 +86,7 @@ export function useCurrentWorkflowContext() {
 
 // Default `{}` (not null) to match v1's `NodeContext` default, so existing v1
 // call sites that read `useNodeContext().config` without guarding are unaffected.
-export const NodeContext = React.createContext<any>({});
+export const NodeContext = React.createContext<CanvasNode>({} as CanvasNode);
 
 export function useNodeContext() {
   return useContext(NodeContext);
