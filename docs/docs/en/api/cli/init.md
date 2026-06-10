@@ -38,6 +38,27 @@ nb init --env app1 --resume
 
 `--resume` only applies to initialization flows where the env configuration has already been saved, and `--env` must be passed explicitly.
 
+## Preparing an env without installing the app yet
+
+`--prepare-only` is intended for flows where the env should be prepared first, then the license is activated, and only after that the app is installed and started.
+
+If you want to save the env config, prepare the source files or image, and get the database ready first, but delay the actual app installation and first startup, you can use:
+
+```bash
+nb init --env app1 --prepare-only
+nb init --env app1 --prepare-only --ui
+nb init --env app1 --prepare-only --yes
+```
+
+This mode is available for local installation flows, including the `--ui` wizard. It is not available for remote connection flows. It saves the env as a prepared env, so you can continue later with a flow such as:
+
+```bash
+nb license activate --env app1
+nb app start --env app1
+```
+
+`nb app start` will then complete the first installation and switch the env from the prepared state to the normal installed state.
+
 ## Installation directory layout
 
 You can view the full path with `nb env info app1 --field app.appPath`.
@@ -104,6 +125,7 @@ The “Default” below means the value or behavior that `nb init` usually uses 
 | `--ui-port`     | integer | `0`                                                                          | Port for the `--ui` local service; `0` means automatic assignment                      |
 | `--locale`      | string  | Follows `NB_LOCALE`, CLI config, or system locale; final fallback is `en-US` | Language for CLI prompts and the local setup UI: `en-US` or `zh-CN`                    |
 | `--resume`      | boolean | `false`                                                                      | Continue the last unfinished initialization and reuse the saved workspace env config   |
+| `--prepare-only` | boolean | `false`                                                                     | Save and prepare a local installation env, including `--ui` flows, without installing or starting the app yet |
 
 ### Connecting to an existing app
 
@@ -178,6 +200,14 @@ nb init
 ```bash
 nb init --ui
 nb init --ui --ui-port 3000
+```
+
+### Prepare first, then activate the license and start later
+
+```bash
+nb init --env app1 --prepare-only
+nb license activate --env app1
+nb app start --env app1
 ```
 
 ### Install a new local app in non-interactive mode
