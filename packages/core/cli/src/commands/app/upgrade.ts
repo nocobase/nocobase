@@ -379,7 +379,7 @@ export default class AppUpgrade extends Command {
     }),
     verbose: Flags.boolean({
       description: 'Show raw output from the underlying local or Docker commands',
-      default: false,
+      default: true,
     }),
   };
 

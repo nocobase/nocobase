@@ -4235,9 +4235,7 @@ test('destroy does not remove the saved env config when cleanup fails midway', a
     },
   });
 
-  await expect((() => Destroy.prototype.run.call(command))()).rejects.toThrow(
-    /Couldn't destroy env "local-failure"\./,
-  );
+  await expect((() => Destroy.prototype.run.call(command))()).rejects.toThrow(/Couldn't destroy env "local-failure"\./);
 
   expect(mocks.fsRm.mock.calls.length).toBeGreaterThanOrEqual(2);
   expect(mocks.removeEnv).not.toHaveBeenCalled();
@@ -4669,6 +4667,11 @@ test('upgrade forwards --verbose to local source refresh and local runtime comma
     ['app:start', ['--env', 'local', '--yes', '--verbose', '--quickstart', '--no-sync-licensed-plugins']],
     ['env:update', ['local', '--verbose']],
   ]);
+});
+
+test('upgrade enables --verbose by default', async () => {
+  const { default: Upgrade } = await import('../commands/app/upgrade.js');
+  expect(Upgrade.flags.verbose.default).toBe(true);
 });
 
 test('upgrade skips download for local app-path envs and still restarts with quickstart', async () => {
