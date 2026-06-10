@@ -8,10 +8,20 @@
  */
 
 import { Plugin } from '@nocobase/client-v2';
+import { fields } from './fields';
+import { tExpr } from './locale';
 import { setDefaultZoomLevel } from './models/fieldModels/setDefaultZoomLevel';
 
 export class PluginMapClient extends Plugin {
   async load() {
+    this.app.addFieldInterfaces(fields);
+    this.app.addFieldInterfaceGroups({
+      map: {
+        label: tExpr('Map-based geometry'),
+        order: 300,
+      },
+    });
+
     this.pluginSettingsManager.addMenuItem({
       key: 'map',
       title: this.t('Map manager'),
