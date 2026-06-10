@@ -23,6 +23,13 @@ function buildHealthCheckUrl(apiBaseUrl: string): string {
   return `${apiBaseUrl.replace(/\/+$/, '')}/__health_check`;
 }
 
+function hasApiPathSegment(pathname: string): boolean {
+  return pathname
+    .split('/')
+    .filter(Boolean)
+    .includes('api');
+}
+
 function isMaintainingHealthCheckResponse(status: number, body: unknown): boolean {
   if (status !== 503 || !body || typeof body !== 'object') {
     return false;
@@ -57,6 +64,10 @@ export async function validateApiBaseUrl(value: PromptValue): Promise<string | u
 
   if (url.protocol !== 'http:' && url.protocol !== 'https:') {
     return translateCli('validators.apiBaseUrl.invalidProtocol', { example: API_BASE_URL_EXAMPLE });
+  }
+
+  if (!hasApiPathSegment(url.pathname)) {
+    return translateCli('validators.apiBaseUrl.missingApiPrefix', { example: API_BASE_URL_EXAMPLE });
   }
 
   if (/\/__health_check\/?$/i.test(url.pathname)) {

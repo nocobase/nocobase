@@ -103,6 +103,13 @@ test('validateApiBaseUrl rejects malformed URLs and unsupported schemes', async 
   );
 });
 
+test('validateApiBaseUrl rejects URLs that do not include the api prefix', async () => {
+  await expect(validateApiBaseUrl('http://localhost:13000')).resolves.toMatch(/must include the \/api prefix/i);
+  await expect(validateApiBaseUrl('https://demo.example.com/nocobase')).resolves.toMatch(
+    /must include the \/api prefix/i,
+  );
+});
+
 test('validateApiBaseUrl rejects URLs that already include the health check path', async () => {
   await expect(validateApiBaseUrl('http://localhost:13000/api/__health_check')).resolves.toMatch(
     /Do not include \/__health_check/i,

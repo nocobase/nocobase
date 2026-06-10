@@ -79,6 +79,7 @@ const cliEntryErrorPath = isDev
   : path.join(root, 'dist/lib/cli-entry-error.js');
 const { appendDiagnosticLogPath, formatCliEntryError } = await import(pathToFileURL(cliEntryErrorPath).href);
 const { flush, run, settings } = await import('@oclif/core');
+const forcedColors = pc.createColors(true);
 
 if (isDev) {
   settings.debug = true;
@@ -138,7 +139,7 @@ try {
     formatCliEntryError(error, process.argv.slice(2)),
     commandLogSession?.logFile,
   );
-  console.error(pc.red(message));
+  console.error(forcedColors.red(message));
   finalizeCommandLogOnce({ exitCode: 1, errorMessage: message });
   process.exit(1);
 }

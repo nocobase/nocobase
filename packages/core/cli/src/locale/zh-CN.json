@@ -54,6 +54,7 @@
     "apiBaseUrl": {
       "invalid": "请输入有效的 URL，例如 {{example}}。",
       "invalidProtocol": "URL 必须以 http:// 或 https:// 开头，例如 {{example}}。",
+      "missingApiPrefix": "API 基础地址必须包含 /api 前缀，例如 {{example}}。",
       "healthCheckPathNotAllowed": "API 基础地址中不要包含 /__health_check。请输入应用的 API 基础地址，例如 http://localhost:13000/api。",
       "maintaining": "该 API 地址可以访问，但应用仍在启动或维护过程中，请稍后再试。",
       "healthCheckFailed": "该 API 地址未通过健康检查（HTTP {{status}}），请确认它指向的是一个正在运行的 NocoBase API 地址。",
