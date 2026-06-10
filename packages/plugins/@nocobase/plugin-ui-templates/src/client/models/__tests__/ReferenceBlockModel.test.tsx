@@ -95,6 +95,13 @@ describe('ReferenceBlockModel', () => {
   let store: Record<string, any>;
   let lastSavedSnapshot: Record<string, any>;
   let hostCollection: { name: string };
+  let mockRepository: {
+    findOne: ReturnType<typeof vi.fn>;
+    save: ReturnType<typeof vi.fn>;
+    destroy: ReturnType<typeof vi.fn>;
+    move: ReturnType<typeof vi.fn>;
+    duplicate: ReturnType<typeof vi.fn>;
+  };
 
   beforeEach(() => {
     vi.spyOn(ReferenceBlockModel.prototype as any, 'rerender').mockResolvedValue(undefined);
@@ -140,7 +147,7 @@ describe('ReferenceBlockModel', () => {
     scopedEngine.context.defineProperty('api', { value: engine.context.api });
 
     const clone = (obj: any) => JSON.parse(JSON.stringify(obj));
-    const mockRepository = {
+    mockRepository = {
       findOne: vi.fn(async (query) => {
         const data = store[query.uid];
         return data ? clone(data) : null;
@@ -712,6 +719,38 @@ describe('ReferenceBlockModel', () => {
       },
       TEST_TIMEOUT,
     );
+
+    it(
+      'copy mode moves duplicated persisted block before the old reference block',
+      async () => {
+        store['reference-block-uid'] = {
+          uid: 'reference-block-uid',
+          use: 'ReferenceBlockModel',
+          parentId: 'grid-uid',
+          subKey: 'items',
+          subType: 'array',
+        };
+        referenceBlockModel = engine.createModel({
+          uid: 'reference-block-uid',
+          use: 'ReferenceBlockModel',
+          parentId: 'grid-uid',
+          subKey: 'items',
+          subType: 'array',
+        }) as ReferenceBlockModel;
+        gridModel.addSubModel('items', referenceBlockModel);
+
+        const flow: any = (ReferenceBlockModel as any).globalFlowRegistry.getFlow('referenceSettings');
+        const step: any = flow?.steps?.target;
+
+        await step.beforeParamsSave({ engine, model: referenceBlockModel, exit: vi.fn() } as any, {
+          targetUid: 'target-block-uid',
+          mode: 'copy',
+        });
+
+        expect(mockRepository.move).toHaveBeenCalledWith('target-block-uid-copy', 'reference-block-uid', 'before');
+      },
+      TEST_TIMEOUT,
+    );
   });
 
   describe('Reference block basics', () => {
@@ -1021,11 +1060,13 @@ describe('ReferenceBlockModel', () => {
         await referenceBlockModel.dispatchEvent('beforeRender');
 
         const target = (referenceBlockModel as any)._targetModel as FlowModel | undefined;
-        expect(target).toBeTruthy();
-        expect(referenceBlockModel.props).toBe(target!.props);
+        if (!target) {
+          throw new Error('target model should exist');
+        }
+        expect(referenceBlockModel.props).toBe(target.props);
 
         (referenceBlockModel.props as any).summary = 'x';
-        expect((target!.props as any).summary).toBe('x');
+        expect((target.props as any).summary).toBe('x');
       },
       TEST_TIMEOUT,
     );
@@ -1054,10 +1095,12 @@ describe('ReferenceBlockModel', () => {
         await referenceBlockModel.dispatchEvent('beforeRender');
 
         const target = (referenceBlockModel as any)._targetModel as FlowModel | undefined;
-        expect(target).toBeTruthy();
+        if (!target) {
+          throw new Error('target model should exist');
+        }
 
         referenceBlockModel.setProps({ summary: 'y' as any });
-        expect((target!.props as any).summary).toBe('y');
+        expect((target.props as any).summary).toBe('y');
         expect((referenceBlockModel.getProps() as any).summary).toBe('y');
       },
       TEST_TIMEOUT,
@@ -1152,11 +1195,13 @@ describe('ReferenceBlockModel', () => {
         });
 
         const target = (referenceBlockModel as any)._targetModel as FlowModel | undefined;
-        expect(target).toBeTruthy();
+        if (!target) {
+          throw new Error('target model should exist');
+        }
 
-        await target!.dispatchEvent('rowClick', { record: { id: 1 } });
+        await target.dispatchEvent('rowClick', { record: { id: 1 } });
 
-        expect((target!.props as any).highlightedRowKey).toBe(1);
+        expect((target.props as any).highlightedRowKey).toBe(1);
         expect(flowSpy).toHaveBeenCalledTimes(1);
       },
       TEST_TIMEOUT,
