@@ -8,7 +8,13 @@ keywords: "Controle de versão,Version control,gestão operacional,criar versão
 
 No NocoBase, **Controle de versão** permite salvar uma versão restaurável da aplicação atual. Você pode criar versões manualmente, restaurar uma versão salva quando precisar e usar as configurações do plugin para controlar quantas versões manter, qual atalho usar e quais coleções de usuário devem ser salvas junto com a versão.
 
-Ele depende de [Gerenciamento de backups](../backup-manager/index.mdx). Se o plugin de controle de versão já estiver habilitado, mas o sistema ainda mostrar erros relacionados, confirme primeiro que o Gerenciamento de backups também está habilitado.
+O controle de versão depende de [Gerenciamento de backups](../backup-manager/index.mdx) para salvar e restaurar estados da aplicação. Antes de usar o controle de versão, habilite primeiro o Gerenciamento de backups.
+
+:::warning Atenção
+
+As edições Community e Standard não incluem o plugin de controle de versão. Se você precisa salvar um estado restaurável da aplicação, use [Gerenciamento de backups](../backup-manager/index.mdx): crie um backup manual antes de mudanças importantes e restaure o backup correspondente quando precisar voltar atrás.
+
+:::
 
 ## Abrir o plugin
 

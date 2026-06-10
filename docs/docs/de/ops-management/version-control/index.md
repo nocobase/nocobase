@@ -8,7 +8,13 @@ keywords: "Versionsverwaltung,Version control,Betriebsmanagement,Version erstell
 
 In NocoBase kannst du mit der **Versionsverwaltung (Version control)** eine wiederherstellbare Version der aktuellen Anwendung speichern. Du kannst Versionen manuell erstellen, bei Bedarf auf eine gespeicherte Version zurücksetzen und in den Plugin-Einstellungen steuern, wie viele Versionen aufbewahrt werden, welches Tastenkürzel verwendet wird und welche Benutzer-Sammlungen mitgesichert werden.
 
-Sie basiert auf [Backup-Verwaltung](../backup-manager/index.mdx). Wenn das Plugin für die Versionsverwaltung bereits aktiviert ist, das System aber weiterhin entsprechende Fehler anzeigt, prüfe zuerst, ob die Backup-Verwaltung aktiviert ist.
+Die Versionsverwaltung nutzt [Backup-Verwaltung](../backup-manager/index.mdx), um Anwendungsstände zu speichern und wiederherzustellen. Bevor du die Versionsverwaltung verwendest, aktiviere zuerst die Backup-Verwaltung.
+
+:::warning Hinweis
+
+Die Community- und Standard-Editionen enthalten das Plugin für die Versionsverwaltung nicht. Wenn du einen wiederherstellbaren Anwendungsstand speichern möchtest, nutze [Backup-Verwaltung](../backup-manager/index.mdx): Erstelle vor wichtigen Änderungen manuell ein Backup und stelle bei Bedarf das entsprechende Backup wieder her.
+
+:::
 
 ## Plugin öffnen
 
