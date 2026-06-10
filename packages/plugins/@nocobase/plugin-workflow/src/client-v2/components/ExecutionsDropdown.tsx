@@ -17,7 +17,11 @@ import { ExecutionStatusIcon } from './ExecutionStatusIcon';
 import { formatTime } from './workflowCanvas';
 
 export type ExecutionRecord = {
-  id: number | string;
+  // Optional to chain from the loosely-typed page record (`WorkflowCanvasRecord`
+  // → `ExecutionViewRecord` → here), all of which keep `id` optional. The
+  // dropdown only renders once the parent has a concrete execution, so `id` is
+  // present at runtime.
+  id?: number | string;
   key?: string;
   status?: number | null;
   createdAt?: string;

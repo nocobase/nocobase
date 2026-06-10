@@ -31,7 +31,10 @@ type ExecutionWorkflow = {
 };
 
 type ExecutionViewRecord = {
-  id: number | string;
+  // Optional to accept the loosely-typed page record (a `WorkflowCanvasRecord`,
+  // whose `id` is itself optional) without a cast. The header only reads `id`
+  // after the page has guarded `data?.id != null`, so it is present at runtime.
+  id?: number | string;
   key?: string;
   status?: number | null;
   reason?: string;
