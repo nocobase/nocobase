@@ -223,7 +223,6 @@ function JsAssociationSelectField() {
   React.useEffect(() => {
     const handler = (event) => {
       setValue(toSelectValue(event.detail));
-      setRecords(currentRecords());
     };
     ctx.element.addEventListener('js-field:value-change', handler);
     return () => ctx.element.removeEventListener('js-field:value-change', handler);

@@ -475,6 +475,74 @@ describe('JSEditableFieldModel', () => {
     });
   });
 
+  it('keeps loaded to-many association options after removing a selected value in the default code', async () => {
+    const collectionField = {
+      interface: 'm2m',
+      type: 'belongsToMany',
+      target: 'roles',
+      targetCollection: {
+        filterTargetKey: ['id'],
+        titleCollectionField: { name: 'name' },
+      },
+      isAssociationField: () => true,
+    };
+    const form = createFormStub({});
+    const request = vi.fn().mockResolvedValue({
+      data: {
+        data: [
+          { id: 1, name: 'Member' },
+          { id: 2, name: 'Admin' },
+          { id: 3, name: 'Root' },
+        ],
+      },
+    });
+
+    renderParentFieldWithFlowRenderer(
+      {
+        name: 'roles',
+        value: [
+          { id: 1, name: 'Member' },
+          { id: 2, name: 'Admin' },
+        ],
+        fieldNames: { label: 'name', value: 'id' },
+      },
+      undefined,
+      getDefaultEditableJsCode({ collectionField }),
+      {
+        collectionField,
+        form,
+        fieldStepParams: {
+          fieldSettings: {
+            init: {
+              fieldPath: 'roles',
+            },
+          },
+        },
+        app: {
+          apiClient: {
+            request,
+          },
+        },
+      },
+    );
+
+    const comboboxes = await screen.findAllByRole('combobox');
+    fireEvent.mouseDown(comboboxes[comboboxes.length - 1]);
+
+    await waitFor(() => {
+      expect(screen.getByText('Root')).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByText('Member'));
+
+    await waitFor(() => {
+      expect(form.getFieldValue(['roles'])).toEqual([{ id: 2, name: 'Admin' }]);
+    });
+    expect(screen.getByText('Member')).toBeInTheDocument();
+    expect(screen.getByText('Admin')).toBeInTheDocument();
+    expect(screen.getByText('Root')).toBeInTheDocument();
+  });
+
   it('translates association option labels in the default code dropdown', async () => {
     const collectionField = {
       interface: 'm2m',
