@@ -12,12 +12,41 @@ import { act, render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
 import { NocoBaseBuildInPlugin } from '../nocobase-buildin-plugin';
 
+const TestingAppSpin = () => <div data-testid="app-spin">app spin</div>;
+
+const TestingAppError = ({ error }: { error: Error }) => <div role="alert">{error.message}</div>;
+
 class SkippedPublicRoutePlugin extends Plugin {
   async load() {
     this.router.add('public', {
       path: '/public',
       skipAuthCheck: true,
       Component: () => <div>public page</div>,
+    });
+  }
+}
+
+class DummySigninRoutePlugin extends Plugin {
+  async load() {
+    this.router.add('signin-test', {
+      path: '/signin',
+      skipAuthCheck: true,
+      Component: () => <div>signin page</div>,
+    });
+  }
+}
+
+class AuthBootstrapRoutePlugin extends Plugin {
+  async load() {
+    this.router.add('secure', {
+      path: '/secure',
+      authCheck: true,
+      Component: () => <div>secure page</div>,
+    });
+    this.router.add('guest', {
+      path: '/guest',
+      authCheck: false,
+      Component: () => <div>guest page</div>,
     });
   }
 }
@@ -153,6 +182,176 @@ describe('nocobase buildin plugin auth redirect', () => {
       expect(app.router.router.state.location.pathname).toBe('/v2/signin');
       expect(app.router.router.state.location.search).toBe('?redirect=%2Fv2%2Fadmin');
     });
+  });
+
+  it('should defer data source bootstrap until auth-required route is authenticated after signin redirect', async () => {
+    const app = createMockClient({
+      publicPath: '/v2/',
+      plugins: [NocoBaseBuildInPlugin as any, DummySigninRoutePlugin as any, AuthBootstrapRoutePlugin as any],
+      components: { AppSpin: TestingAppSpin },
+      router: { type: 'memory', initialEntries: ['/v2/secure'] },
+    });
+    app.apiMock.onGet('app:getLang').reply(200, {
+      data: { lang: 'en-US', resources: { client: {} }, cron: {} },
+    });
+    const events: string[] = [];
+    app.apiMock.onGet('/auth:check').replyOnce(() => {
+      events.push('auth:first');
+      return [200, { data: {} }];
+    });
+    app.apiMock.onGet('/auth:check').reply(() => {
+      events.push('auth:second');
+      return [200, { data: { id: 1 } }];
+    });
+
+    const ensureLoaded = vi.spyOn(app.dataSourceManager, 'ensureLoaded').mockImplementation(() => {
+      if (!app.apiClient.auth.token) {
+        const pending = new Promise<void>(() => undefined);
+        app.dataSourceManager.loadingPromise = pending;
+        return pending;
+      }
+      events.push('bootstrap');
+      expect(events).toContain('auth:second');
+      return Promise.resolve();
+    });
+
+    const Root = app.getRootComponent();
+    render(<Root />);
+
+    await waitFor(() => {
+      expect(app.router.router.state.location.pathname).toBe('/v2/signin');
+      expect(app.router.router.state.location.search).toBe('?redirect=%2Fv2%2Fsecure');
+    });
+    expect(await screen.findByText('signin page')).toBeInTheDocument();
+    expect(screen.queryByTestId('app-spin')).not.toBeInTheDocument();
+    expect(ensureLoaded).not.toHaveBeenCalled();
+    expect(app.dataSourceManager.loadingPromise).toBeNull();
+    expect(events).toEqual(['auth:first']);
+
+    act(() => {
+      app.apiClient.auth.setToken('test-token');
+    });
+
+    await act(async () => {
+      await app.router.router.navigate('/secure');
+    });
+
+    expect(await screen.findByText('secure page')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(document.querySelector('.ant-spin-spinning')).not.toBeInTheDocument();
+    });
+    expect(ensureLoaded).toHaveBeenCalledTimes(1);
+  });
+
+  it('should redirect on auth-required /auth:check 401 without bootstrapping data sources', async () => {
+    const app = createMockClient({
+      publicPath: '/v2/',
+      plugins: [NocoBaseBuildInPlugin as any, DummySigninRoutePlugin as any, AuthBootstrapRoutePlugin as any],
+      components: { AppSpin: TestingAppSpin },
+      router: { type: 'memory', initialEntries: ['/v2/secure'] },
+    });
+    app.apiMock.onGet('app:getLang').reply(200, {
+      data: { lang: 'en-US', resources: { client: {} }, cron: {} },
+    });
+    app.apiMock.onGet('/auth:check').reply(401, { errors: [{ code: 'EMPTY_TOKEN' }] });
+    const ensureLoaded = vi.spyOn(app.dataSourceManager, 'ensureLoaded').mockImplementation(() => {
+      const pending = new Promise<void>(() => undefined);
+      app.dataSourceManager.loadingPromise = pending;
+      return pending;
+    });
+
+    const Root = app.getRootComponent();
+    render(<Root />);
+
+    await waitFor(() => {
+      expect(app.router.router.state.location.pathname).toBe('/v2/signin');
+      expect(app.router.router.state.location.search).toBe('?redirect=%2Fv2%2Fsecure');
+    });
+    expect(await screen.findByText('signin page')).toBeInTheDocument();
+    expect(screen.queryByTestId('app-spin')).not.toBeInTheDocument();
+    expect(ensureLoaded).not.toHaveBeenCalled();
+    expect(app.dataSourceManager.loadingPromise).toBeNull();
+  });
+
+  it('should surface non-auth /auth:check errors instead of leaving auth-required route spinning', async () => {
+    const app = createMockClient({
+      publicPath: '/v2/',
+      plugins: [NocoBaseBuildInPlugin as any, AuthBootstrapRoutePlugin as any],
+      components: { AppSpin: TestingAppSpin, AppError: TestingAppError },
+      router: { type: 'memory', initialEntries: ['/v2/secure'] },
+    });
+    app.apiMock.onGet('app:getLang').reply(200, {
+      data: { lang: 'en-US', resources: { client: {} }, cron: {} },
+    });
+    app.apiMock.onGet('/auth:check').reply(500, { errors: [{ message: 'auth check failed' }] });
+    const ensureLoaded = vi.spyOn(app.dataSourceManager, 'ensureLoaded').mockResolvedValue(undefined);
+
+    const Root = app.getRootComponent();
+    render(<Root />);
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('Request failed with status code 500');
+    expect(screen.queryByTestId('app-spin')).not.toBeInTheDocument();
+    expect(ensureLoaded).not.toHaveBeenCalled();
+  });
+
+  it.each(['/v2/signin', '/v2/public'])('should not bootstrap data sources on skipped auth route: %s', async (path) => {
+    const app = createMockClient({
+      publicPath: '/v2/',
+      plugins: [NocoBaseBuildInPlugin as any, DummySigninRoutePlugin as any, SkippedPublicRoutePlugin as any],
+      components: { AppSpin: TestingAppSpin },
+      router: { type: 'memory', initialEntries: [path] },
+    });
+    app.apiMock.onGet('app:getLang').reply(200, {
+      data: { lang: 'en-US', resources: { client: {} }, cron: {} },
+    });
+    const ensureLoaded = vi.spyOn(app.dataSourceManager, 'ensureLoaded').mockResolvedValue(undefined);
+
+    const Root = app.getRootComponent();
+    render(<Root />);
+
+    expect(await screen.findByText(path === '/v2/signin' ? 'signin page' : 'public page')).toBeInTheDocument();
+    expect(screen.queryByTestId('app-spin')).not.toBeInTheDocument();
+    expect(ensureLoaded).not.toHaveBeenCalled();
+    expect(app.apiMock.history.get.filter((request) => request.url === '/auth:check')).toHaveLength(0);
+  });
+
+  it('should bootstrap data sources for authenticated auth-required route access', async () => {
+    const app = createMockClient({
+      publicPath: '/v2/',
+      plugins: [NocoBaseBuildInPlugin as any, AuthBootstrapRoutePlugin as any],
+      router: { type: 'memory', initialEntries: ['/v2/secure'] },
+    });
+    app.apiClient.auth.setToken('test-token');
+    app.apiMock.onGet('app:getLang').reply(200, {
+      data: { lang: 'en-US', resources: { client: {} }, cron: {} },
+    });
+    app.apiMock.onGet('/auth:check').reply(200, { data: { id: 1 } });
+    const ensureLoaded = vi.spyOn(app.dataSourceManager, 'ensureLoaded').mockResolvedValue(undefined);
+
+    const Root = app.getRootComponent();
+    render(<Root />);
+
+    expect(await screen.findByText('secure page')).toBeInTheDocument();
+    expect(ensureLoaded).toHaveBeenCalledTimes(1);
+  });
+
+  it('should not auth-check or bootstrap authCheck false routes', async () => {
+    const app = createMockClient({
+      publicPath: '/v2/',
+      plugins: [NocoBaseBuildInPlugin as any, AuthBootstrapRoutePlugin as any],
+      router: { type: 'memory', initialEntries: ['/v2/guest'] },
+    });
+    app.apiMock.onGet('app:getLang').reply(200, {
+      data: { lang: 'en-US', resources: { client: {} }, cron: {} },
+    });
+    const ensureLoaded = vi.spyOn(app.dataSourceManager, 'ensureLoaded').mockResolvedValue(undefined);
+
+    const Root = app.getRootComponent();
+    render(<Root />);
+
+    expect(await screen.findByText('guest page')).toBeInTheDocument();
+    expect(ensureLoaded).not.toHaveBeenCalled();
+    expect(app.apiMock.history.get.filter((request) => request.url === '/auth:check')).toHaveLength(0);
   });
 
   it('should render v2 admin root without redirecting away', async () => {
