@@ -91,7 +91,7 @@ export const SchemaSettingsNumberFormat = function NumberFormatConfig(props: { f
                 },
                 {
                   value: '0 0,00',
-                  label: t('100 000.00'),
+                  label: t('100 000,00'),
                 },
                 {
                   value: '0.00',

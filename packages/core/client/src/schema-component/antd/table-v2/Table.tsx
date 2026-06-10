@@ -68,6 +68,7 @@ import { HighPerformanceSpin } from '../../common/high-performance-spin/HighPerf
 import { useToken } from '../__builtins__';
 import { useAssociationFieldContext } from '../association-field/hooks';
 import { TableColumnProps, useTableColumnIntegration } from '../edit-table/hooks/useTableColumnIntegration';
+import { resolveColumnAlign } from './resolveColumnAlign';
 import { TableSkeleton } from './TableSkeleton';
 import { extractIndex, isCollectionFieldComponent, isColumnComponent } from './utils';
 
@@ -238,6 +239,11 @@ const useTableColumns = (
           uiSchema.default = defaultValue;
         }
 
+        // Auto right-align numeric columns (decimal-aligned reads better in tables;
+        // matches accounting/spreadsheet convention). Explicit `align` in
+        // x-component-props still wins.
+        const align = resolveColumnAlign(columnSchema['x-component-props']?.align, _interface);
+
         return {
           title: (
             <RefreshComponentProvider refresh={refresh}>
@@ -256,6 +262,7 @@ const useTableColumns = (
           columnHidden: schemaHidden,
           fixed: columnFixed,
           ...columnSchema['x-component-props'],
+          align,
           width: columnWidth,
           schema: columnSchema,
           render: (value, record, index) => {

@@ -13,8 +13,36 @@ import BigNumber from 'bignumber.js';
 import { format } from 'd3-format';
 import * as math from 'mathjs';
 import React, { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toString } from 'lodash';
 import { withPopupWrapper } from '../../common/withPopupWrapper';
+
+// Locale-aware default separator. Most non-English European locales use
+// dot-thousands and comma-decimal; English uses comma-thousands and dot-decimal.
+// The literal '0,0.00' format string is interpreted by `separators` below — it is
+// *not* a literal output, so the mapping is correct.
+const LOCALE_DEFAULT_SEPARATOR: Record<string, '0,0.00' | '0.0,00' | '0 0,00' | '0.00'> = {
+  'en-US': '0,0.00',
+  'en-GB': '0,0.00',
+  en: '0,0.00',
+  'de-DE': '0.0,00',
+  de: '0.0,00',
+  'es-ES': '0.0,00',
+  es: '0.0,00',
+  'it-IT': '0.0,00',
+  it: '0.0,00',
+  'nl-NL': '0.0,00',
+  nl: '0.0,00',
+  'fr-FR': '0 0,00',
+  fr: '0 0,00',
+  'pt-BR': '0.0,00',
+  pt: '0.0,00',
+};
+
+function getLocaleDefaultSeparator(locale?: string): '0,0.00' | '0.0,00' | '0 0,00' | '0.00' {
+  if (!locale) return '0,0.00';
+  return LOCALE_DEFAULT_SEPARATOR[locale] || LOCALE_DEFAULT_SEPARATOR[locale.split('-')[0]] || '0,0.00';
+}
 
 function countDecimalPlaces(value) {
   const strValue = toString(value);
@@ -30,7 +58,7 @@ function countDecimalPlaces(value) {
 const separators = {
   '0,0.00': { thousands: ',', decimal: '.' },
   '0.0,00': { thousands: '.', decimal: ',' },
-  '0 0,00': { thousands: ' ', decimal: '.' },
+  '0 0,00': { thousands: ' ', decimal: ',' },
   '0.00': { thousands: '', decimal: '.' }, // 没有千位分隔符
 };
 //分隔符换算
@@ -134,7 +162,11 @@ export function scientificNotation(number, decimalPlaces, separator = '.') {
 }
 
 export function formatNumber(props) {
-  const { step, formatStyle = 'normal', value, unitConversion, unitConversionType, separator = '0,0.00' } = props;
+  const { step, formatStyle = 'normal', value, unitConversion, unitConversionType, separator, locale } = props;
+  // Backwards-compatible: explicit `separator` (set by SchemaSettingsNumberFormat)
+  // wins. If undefined, fall back to a locale-aware default so e.g. `de-DE`
+  // sessions render `1.234,56` and `en-US` renders `1,234.56` out of the box.
+  const effectiveSeparator = separator ?? getLocaleDefaultSeparator(locale);
 
   if (!isValid(value)) {
     return null;
@@ -145,10 +177,14 @@ export function formatNumber(props) {
   const precisionData = toFixedByStep(unitData, step);
   let result;
   //分隔符换算
-  result = formatNumberWithSeparator(precisionData, separator, countDecimalPlaces(step), formatStyle);
+  result = formatNumberWithSeparator(precisionData, effectiveSeparator, countDecimalPlaces(step), formatStyle);
   if (formatStyle === 'scientifix') {
     //科学计数显示
-    result = scientificNotation(Number(unitData), countDecimalPlaces(step), separators?.[separator]?.['decimal']);
+    result = scientificNotation(
+      Number(unitData),
+      countDecimalPlaces(step),
+      separators?.[effectiveSeparator]?.['decimal'],
+    );
   }
   return result;
 }
@@ -172,9 +208,11 @@ export interface InputNumberReadPrettyProps {
 
 export const ReadPretty: React.FC<InputNumberReadPrettyProps> = withPopupWrapper((props) => {
   const { step, formatStyle, value, addonBefore, addonAfter, unitConversion, unitConversionType, separator } = props;
+  const { i18n } = useTranslation();
+  const locale = i18n?.language;
   const result = useMemo(() => {
-    return formatNumber({ step, formatStyle, value, unitConversion, unitConversionType, separator });
-  }, [step, formatStyle, value, unitConversion, unitConversionType, separator]);
+    return formatNumber({ step, formatStyle, value, unitConversion, unitConversionType, separator, locale });
+  }, [step, formatStyle, value, unitConversion, unitConversionType, separator, locale]);
   if (!isValid(result)) {
     return null;
   }

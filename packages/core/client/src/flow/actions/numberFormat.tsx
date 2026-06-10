@@ -75,7 +75,7 @@ export const numberFormat = defineAction({
           },
           {
             value: '0 0,00',
-            label: '100 000.00',
+            label: '100 000,00',
           },
           {
             value: '0.00',
