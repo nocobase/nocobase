@@ -139,6 +139,40 @@ describe('normalizeDataScopeFilter', () => {
     expect(resource.removeFilterGroup).not.toHaveBeenCalled();
   });
 
+  it('dataScope handler resolves union current role to actual role names', async () => {
+    const engine = new FlowEngine();
+    const resource = {
+      addFilterGroup: vi.fn(),
+      removeFilterGroup: vi.fn(),
+    };
+    const ctx = engine.context;
+    ctx.defineProperty('api', { value: { auth: { role: '__union__' } } });
+    ctx.defineProperty('user', {
+      value: {
+        roles: [{ name: 'admin' }, { name: 'member' }],
+      },
+    });
+    ctx.defineProperty('model', {
+      value: {
+        uid: 'table-1',
+        resource,
+      },
+    });
+    const params = {
+      filter: {
+        logic: '$and',
+        items: [{ path: 'roles.name', operator: '$includes', value: '{{ ctx.role }}' }],
+      },
+    };
+
+    await (dataScope as { handler: (ctx: typeof ctx, params: typeof params) => Promise<void> }).handler(ctx, params);
+
+    expect(resource.addFilterGroup).toHaveBeenCalledWith('table-1', {
+      $and: [{ roles: { name: { $includes: ['admin', 'member'] } } }],
+    });
+    expect(resource.removeFilterGroup).not.toHaveBeenCalled();
+  });
+
   it('setTargetDataScope handler sends null for empty variable dependencies', async () => {
     const resource = {
       addFilterGroup: vi.fn(),

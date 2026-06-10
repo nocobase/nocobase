@@ -3396,7 +3396,19 @@ export class FlowEngineContext extends BaseFlowEngineContext {
       }),
     });
     this.defineProperty('role', {
-      get: () => this.api?.auth?.role,
+      get: () => {
+        const currentRole = this.api?.auth?.role;
+        if (currentRole !== '__union__') {
+          return currentRole;
+        }
+        const roles = this.user?.roles;
+        if (!Array.isArray(roles)) {
+          return [];
+        }
+        return roles
+          .map((role: { name?: string }) => role?.name)
+          .filter((name: string | undefined): name is string => !!name);
+      },
       cache: false,
       // 注意：使用惰性 meta 工厂，避免在 i18n 尚未注入时提前求值导致无法翻译
       meta: Object.assign(() => ({ type: 'string', title: this.t('Current role'), sort: 990 }), {
