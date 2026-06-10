@@ -120,9 +120,7 @@ test('env add saves builtinDb into env config when provided by install', async (
     },
     { scope: 'global' },
   ]);
-  expect(runCommand.mock.calls).toEqual([
-    ['env:update', ['local']],
-  ]);
+  expect(runCommand.mock.calls).toEqual([['env:update', ['local']]]);
   expect(mocks.setCurrentEnv).toHaveBeenCalledWith('local', { scope: 'global' });
   expect(mocks.printSuccess).toHaveBeenCalledWith('✔ Env "local" is ready.');
 });
@@ -255,4 +253,43 @@ test('env add explains that deferred basic auth will prompt for username and pas
   expect(mocks.printInfo).toHaveBeenCalledWith(
     'Authentication was skipped for env "local". Run `nb env auth local` to finish setup. You will be prompted for a username and password.',
   );
+});
+
+test('env add rejects api base urls that do not include the api prefix', async () => {
+  const { default: EnvAdd } = await import('../commands/env/add.js');
+  mocks.runPromptCatalog.mockResolvedValue({
+    name: 'local',
+    apiBaseUrl: 'http://127.0.0.1:13000',
+    authType: 'token',
+    accessToken: 'token-123',
+  });
+
+  const command = Object.assign(Object.create(EnvAdd.prototype), {
+    parse: vi.fn(async () => ({
+      args: { name: 'local' },
+      flags: {
+        verbose: false,
+        'api-base-url': 'http://127.0.0.1:13000',
+        'auth-type': 'token',
+        'access-token': 'token-123',
+      },
+    })),
+    config: {
+      runCommand: vi.fn(async () => undefined),
+    },
+  });
+
+  const previousLogFile = process.env.NB_CLI_ACTIVE_LOG_FILE;
+  process.env.NB_CLI_ACTIVE_LOG_FILE = '/tmp/nb-command.log';
+  try {
+    await expect(EnvAdd.prototype.run.call(command)).rejects.toThrow(/must include the \/api prefix/i);
+    await expect(EnvAdd.prototype.run.call(command)).rejects.toThrow(/Diagnostic log: \/tmp\/nb-command\.log/);
+    expect(mocks.upsertEnv).not.toHaveBeenCalled();
+  } finally {
+    if (previousLogFile === undefined) {
+      delete process.env.NB_CLI_ACTIVE_LOG_FILE;
+    } else {
+      process.env.NB_CLI_ACTIVE_LOG_FILE = previousLogFile;
+    }
+  }
 });

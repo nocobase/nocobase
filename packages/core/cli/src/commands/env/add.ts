@@ -10,6 +10,8 @@
 import { Args, Command, Flags } from '@oclif/core';
 import { setCurrentEnv, upsertEnv } from '../../lib/auth-store.js';
 import { resolveDefaultConfigScope } from '../../lib/cli-home.js';
+import { appendDiagnosticLogPath } from '../../lib/cli-entry-error.js';
+import { getActiveCommandLogFile } from '../../lib/command-log.js';
 import { ENV_BOOLEAN_CONFIG_FLAG_MAP, ENV_STRING_CONFIG_FLAG_MAP } from '../../lib/env-command-config.js';
 import { buildStoredEnvConfig, type StoredEnvConfig, type StoredEnvConfigInput } from '../../lib/env-config.js';
 import {
@@ -28,6 +30,10 @@ import {
 } from '../../lib/cli-locale.js';
 import { validateApiBaseUrl } from '../../lib/prompt-validators.js';
 import { printInfo, printStage, printSuccess, printVerbose, setVerboseMode } from '../../lib/ui.js';
+
+function throwValidationError(message: string): never {
+  throw new Error(appendDiagnosticLogPath(message, getActiveCommandLogFile()));
+}
 
 type EnvAddParsedFlags = {
   env?: string;
@@ -465,6 +471,10 @@ export default class EnvAdd extends Command {
       initialValues: this.buildPromptInitialValues(parsedFlags),
       command: this,
     });
+    const apiBaseUrlValidationError = await validateApiBaseUrl(results.apiBaseUrl);
+    if (apiBaseUrlValidationError) {
+      throwValidationError(apiBaseUrlValidationError);
+    }
     const envName = String(results.name);
     const envConfig = this.buildEnvConfig(results, parsedFlags);
 

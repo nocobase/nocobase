@@ -8,7 +8,6 @@
  */
 
 import { beforeEach, expect, test, vi } from 'vitest';
-
 const mocks = vi.hoisted(() => ({
   getCurrentEnvName: vi.fn(),
   getEnv: vi.fn(),
@@ -211,6 +210,10 @@ test('env update refreshes runtime after saving a new api base url', async () =>
   mocks.updateEnvRuntime.mockResolvedValue({
     version: 'v2',
   });
+  vi.spyOn(globalThis, 'fetch').mockResolvedValue({
+    status: 200,
+    json: vi.fn(),
+  } as Response);
 
   const command = Object.assign(Object.create(EnvUpdate.prototype), {
     parse: vi.fn(async () => ({
@@ -337,4 +340,33 @@ test('env update keeps saved config changes when runtime refresh fails', async (
   expect(mocks.printWarningBlock).toHaveBeenCalledWith(
     'Saved env config for "local", but failed to refresh the runtime.\nboom',
   );
+});
+
+test('env update rejects api base urls that do not include the api prefix', async () => {
+  const { default: EnvUpdate } = await import('../commands/env/update.js');
+  mocks.getEnv.mockResolvedValue(createEnv());
+
+  const command = Object.assign(Object.create(EnvUpdate.prototype), {
+    parse: vi.fn(async () => ({
+      args: { name: 'local' },
+      flags: {
+        verbose: false,
+        'api-base-url': 'http://127.0.0.1:13001',
+      },
+    })),
+  });
+
+  const previousLogFile = process.env.NB_CLI_ACTIVE_LOG_FILE;
+  process.env.NB_CLI_ACTIVE_LOG_FILE = '/tmp/nb-command.log';
+  try {
+    await expect(EnvUpdate.prototype.run.call(command)).rejects.toThrow(/must include the \/api prefix/i);
+    await expect(EnvUpdate.prototype.run.call(command)).rejects.toThrow(/Diagnostic log: \/tmp\/nb-command\.log/);
+    expect(mocks.replaceEnvConfig).not.toHaveBeenCalled();
+  } finally {
+    if (previousLogFile === undefined) {
+      delete process.env.NB_CLI_ACTIVE_LOG_FILE;
+    } else {
+      process.env.NB_CLI_ACTIVE_LOG_FILE = previousLogFile;
+    }
+  }
 });
