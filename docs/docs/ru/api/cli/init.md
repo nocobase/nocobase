@@ -38,6 +38,27 @@ nb init --env app1 --resume
 
 `--resume` применим только к процессам инициализации, где env-конфигурация уже была сохранена, и требует явной передачи `--env`.
 
+## Сначала подготовить env, а приложение установить позже
+
+`--prepare-only` предназначен для сценариев, где сначала нужно подготовить env, затем активировать лицензию, и только после этого установить и запустить приложение.
+
+Если вы хотите сначала сохранить конфигурацию env, подготовить исходники или образ и привести базу данных в готовность, но отложить фактическую установку приложения и первый запуск, можно использовать:
+
+```bash
+nb init --env app1 --prepare-only
+nb init --env app1 --prepare-only --ui
+nb init --env app1 --prepare-only --yes
+```
+
+Этот режим доступен для сценариев локальной установки, включая мастер `--ui`. Он недоступен для сценариев удалённого подключения. CLI сохранит текущий env в состоянии prepared, поэтому позже вы сможете продолжить с помощью такого сценария:
+
+```bash
+nb license activate --env app1
+nb app start --env app1
+```
+
+После этого `nb app start` завершит первую установку и переведёт env из состояния prepared в обычное состояние installed.
+
 ## О каталоге установки
 
 Полный путь можно посмотреть через `nb env info app1 --field app.appPath`.
@@ -78,7 +99,7 @@ nb init --env app1 --resume
 
 | Step                      | Параметры, на которые стоит обратить внимание                                                                                                                                                                     |
 | ------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `Getting started`         | `--env`、`--yes`、`--ui`、`--locale`、`--verbose`、`--skip-skills`、`--resume`                                                                                                                                    |
+| `Getting started`         | `--env`、`--yes`、`--ui`、`--locale`、`--verbose`、`--skip-skills`、`--resume`、`--prepare-only`                                                                                                                 |
 | `App environment`         | `--lang`、`--app-path`、`--app-port`、`--force`                                                                                                                                                                   |
 | `App source and version`  | `--source`、`--version`、`--skip-download`、`--git-url`、`--docker-registry`、`--docker-platform`、`--npm-registry`、`--replace`、`--dev-dependencies`、`--output-dir`、`--docker-save`、`--build`、`--build-dts` |
 | `Configure the database`  | `--builtin-db`、`--db-dialect`、`--builtin-db-image`、`--db-host`、`--db-port`、`--db-database`、`--db-user`、`--db-password`、`--db-schema`、`--db-table-prefix`、`--db-underscored`                             |
@@ -104,6 +125,7 @@ nb init --env app1 --resume
 | `--ui-port`     | integer | `0`                                                                                       | Порт локального сервиса `--ui`; `0` означает автоматическое назначение                                        |
 | `--locale`      | string  | Следует `NB_LOCALE`, настройке CLI или системной locale; окончательный fallback — `en-US` | Язык подсказок CLI и локального UI setup: `en-US` или `zh-CN`                                                 |
 | `--resume`      | boolean | `false`                                                                                   | Продолжить предыдущую незавершённую инициализацию с повторным использованием сохранённой workspace env config |
+| `--prepare-only` | boolean | `false`                                                                                  | Сохранить и подготовить env для локальной установки, включая сценарии `--ui`, но пока не устанавливать и не запускать приложение |
 
 ### Подключение существующего приложения
 
@@ -178,6 +200,14 @@ nb init
 ```bash
 nb init --ui
 nb init --ui --ui-port 3000
+```
+
+### Сначала подготовить, затем активировать лицензию и запустить позже
+
+```bash
+nb init --env app1 --prepare-only
+nb license activate --env app1
+nb app start --env app1
 ```
 
 ### Неинтерактивная установка нового локального приложения
