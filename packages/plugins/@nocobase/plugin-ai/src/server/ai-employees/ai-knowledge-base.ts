@@ -15,6 +15,21 @@ import _ from 'lodash';
 
 export type KnowledgeBaseRetrieveOptions = { username?: string; employee?: AIEmployee; query: string };
 
+const normalizeMatchedQuestions = (value: unknown) => {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+  return value.filter((item): item is string => typeof item === 'string' && item.trim() !== '');
+};
+
+const buildKnowledgeBaseContent = (content: string, metadata?: Record<string, unknown>) => {
+  const matchedQuestions = normalizeMatchedQuestions(metadata?.matchedQuestions);
+  if (!matchedQuestions.length) {
+    return content;
+  }
+  return `Related questions:\n${matchedQuestions.join('\n')}\n\n${content}`;
+};
+
 export class KnowledgeBaseManager {
   constructor(private readonly plugin: PluginAIServer) {}
 
@@ -34,7 +49,7 @@ export class KnowledgeBaseManager {
       return 'No document match in knowledge base';
     }
 
-    const knowledgeBaseData = docs.map((x) => x.content).join('\n');
+    const knowledgeBaseData = docs.map((doc) => buildKnowledgeBaseContent(doc.content, doc.metadata)).join('\n');
     return _.isEmpty(knowledgeBaseData)
       ? 'No document match in knowledge base'
       : await promptTemplate.format({
