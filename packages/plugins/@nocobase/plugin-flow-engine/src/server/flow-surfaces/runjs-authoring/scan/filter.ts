@@ -19,7 +19,7 @@ import {
   resolveFieldFromCollection,
   resolveFieldTargetCollection,
 } from '../../service-helpers';
-import { normalizeFlowSurfaceStrictFilterDateValue } from '../../filter-group';
+import { isFlowSurfaceDateLikeFieldMeta, normalizeFlowSurfaceDateConditionValue } from '../../filter-group';
 import {
   INIT_RESOURCE_CLASS_NAMES,
   RUNJS_DATE_FILTER_OPERATORS,
@@ -1165,7 +1165,15 @@ function buildRunJsResourceDateFilterValueError(
     staticFilterValueBindings: StaticFilterValueBinding[];
   },
 ): RunJsAstInspection['invalidResourceFilterCalls'][number] | null {
-  if (!isRunJsDateFilterOperator(operator)) {
+  const fieldType = String(getFieldType(input.field) || '').trim();
+  const fieldInterface = String(getFieldInterface(input.field) || '').trim();
+  const shouldValidateDateValue =
+    isRunJsDateFilterOperator(operator) ||
+    isFlowSurfaceDateLikeFieldMeta({
+      type: fieldType,
+      interface: fieldInterface,
+    });
+  if (!shouldValidateDateValue) {
     return null;
   }
 
@@ -1192,7 +1200,11 @@ function buildRunJsResourceDateFilterValueError(
   }
 
   try {
-    normalizeFlowSurfaceStrictFilterDateValue(operator, resolvedValue.value, `${input.fieldPath}.${operator}`);
+    normalizeFlowSurfaceDateConditionValue(operator, resolvedValue.value, `${input.fieldPath}.${operator}`, {
+      fieldPath: input.fieldPath,
+      fieldType,
+      fieldInterface,
+    });
     return null;
   } catch (error) {
     return buildRunJsStrictDateFilterValueError(operator, index, resolvedValue.value, input, error);

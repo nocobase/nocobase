@@ -217,7 +217,11 @@ import {
   isApprovalFormContainerUse,
   normalizeApprovalSemanticUse,
 } from './approval';
-import { buildFieldValueWriteResult, normalizeFieldValueRules } from './reaction/field-value';
+import {
+  buildFieldValueWriteResult,
+  normalizeFieldValueRules,
+  validateFieldValueRulesAgainstCapability,
+} from './reaction/field-value';
 import { buildReactionFingerprint } from './reaction/fingerprint';
 import {
   compileActionLinkageCanonicalRules,
@@ -236,6 +240,7 @@ import type {
   FlowSurfaceActionLinkageRule,
   FlowSurfaceBlockLinkageRule,
   FlowSurfaceFieldLinkageRule,
+  FlowSurfaceFieldValueCapability,
   FlowSurfaceLinkageCapability,
   FlowSurfaceFieldLinkageScene,
   FlowSurfaceFieldValueRule,
@@ -3805,6 +3810,34 @@ export class FlowSurfacesService {
     return capability;
   }
 
+  private async getLiveFieldValueCapability(
+    writeTarget: FlowSurfaceWriteTarget,
+    resolvedTarget: FlowSurfaceResolvedReactionTarget,
+    node: any,
+    options: { transaction?: any } = {},
+  ): Promise<FlowSurfaceFieldValueCapability> {
+    const context = await this.context(
+      {
+        target: writeTarget,
+      },
+      options,
+    );
+    const { capabilities } = buildReactionMetaCapabilities({
+      resolvedTarget: {
+        ...resolvedTarget,
+        node,
+      },
+      context,
+    });
+    const capability = capabilities.find((item): item is FlowSurfaceFieldValueCapability => item.kind === 'fieldValue');
+    if (!capability) {
+      throwBadRequest(
+        `flowSurfaces reaction target '${resolvedTarget.use || resolvedTarget.target.uid}' does not support fieldValue`,
+      );
+    }
+    return capability;
+  }
+
   async getReactionMeta(
     values: FlowSurfaceGetReactionMetaValues,
     options: { transaction?: any } = {},
@@ -3858,6 +3891,8 @@ export class FlowSurfacesService {
       },
       rules: Array.isArray(values?.rules) ? values.rules : [],
     });
+    const liveCapability = await this.getLiveFieldValueCapability(writeTarget, resolvedTarget, node, options);
+    validateFieldValueRulesAgainstCapability(result.normalizedRules, liveCapability);
 
     await this.persistReactionSlot(storageNode, capability.resolvedSlot, result.canonicalRules, options);
 
