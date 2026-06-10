@@ -138,7 +138,7 @@ describe('plugin-ui-layout route permissions', () => {
     expect(addPermissionsTab).toHaveBeenCalledWith(
       expect.objectContaining({
         key: 'menu',
-        label: 'Layout permissions',
+        label: 'UI layouts',
         sort: 20,
       }),
     );
@@ -299,7 +299,7 @@ describe('plugin-ui-layout route permissions', () => {
 
     await act(async () => {
       await user.click(screen.getByRole('tab', { name: 'System' }));
-      await user.click(screen.getByRole('tab', { name: 'Layout permissions' }));
+      await user.click(screen.getByRole('tab', { name: 'UI layouts' }));
     });
 
     await act(async () => {
@@ -365,7 +365,7 @@ describe('plugin-ui-layout route permissions', () => {
     expect(screen.getByRole('columnheader', { name: 'Type' })).toBeInTheDocument();
     expect(screen.getByRole('columnheader', { name: 'Layout access' })).toBeInTheDocument();
     expect(screen.queryByRole('columnheader', { name: 'Menu access' })).not.toBeInTheDocument();
-    expect(screen.getByRole('columnheader', { name: 'Menu permissions' })).toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: 'Routes permissions' })).toBeInTheDocument();
 
     expect(screen.queryByRole('combobox', { name: 'UI layout' })).not.toBeInTheDocument();
     expect(screen.getByText('Desktop layout')).toBeInTheDocument();
@@ -377,10 +377,10 @@ describe('plugin-ui-layout route permissions', () => {
     expect(screen.queryByText('1 / 2')).not.toBeInTheDocument();
     expect(screen.queryByText('0 / 1')).not.toBeInTheDocument();
     expect(screen.queryByText('Inactive')).not.toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Configure menu permissions for Desktop layout' })).toHaveTextContent(
+    expect(screen.getByRole('button', { name: 'Configure routes permissions for Desktop layout' })).toHaveTextContent(
       'Configure',
     );
-    expect(screen.getByRole('button', { name: 'Configure menu permissions for Mobile layout' })).toHaveTextContent(
+    expect(screen.getByRole('button', { name: 'Configure routes permissions for Mobile layout' })).toHaveTextContent(
       'Configure',
     );
     expect(resource.request).toHaveBeenCalledWith({
@@ -538,12 +538,12 @@ describe('plugin-ui-layout route permissions', () => {
     );
 
     const configureDesktopButton = await screen.findByRole('button', {
-      name: 'Configure menu permissions for Desktop layout',
+      name: 'Configure routes permissions for Desktop layout',
     });
     await user.click(configureDesktopButton);
 
     const drawer = await screen.findByRole('dialog', { name: 'Desktop layout' });
-    expect(within(drawer).getByText('Menu permissions')).toBeInTheDocument();
+    expect(within(drawer).getByText('Routes permissions')).toBeInTheDocument();
 
     await act(async () => {
       fireEvent.keyDown(drawer, {
@@ -842,12 +842,12 @@ describe('plugin-ui-layout route permissions', () => {
 });
 
 async function selectLayout(label: string) {
-  fireEvent.click(await screen.findByRole('button', { name: `Configure menu permissions for ${label}` }));
+  fireEvent.click(await screen.findByRole('button', { name: `Configure routes permissions for ${label}` }));
 }
 
 async function openLayoutPermissionsTab() {
   await act(async () => {
-    fireEvent.click(screen.getByRole('tab', { name: 'Layout permissions' }));
+    fireEvent.click(screen.getByRole('tab', { name: 'UI layouts' }));
   });
   await screen.findByRole('checkbox', { name: 'New layouts are allowed to be accessed by default' });
 }
@@ -888,7 +888,7 @@ function RolePermissionTabsHarness() {
         System
       </button>
       <button type="button" role="tab" aria-selected={activeKey === 'menu'} onClick={() => setActiveKey('menu')}>
-        Layout permissions
+        UI layouts
       </button>
       {activeKey === 'general' ? (
         <div>System content</div>

@@ -615,11 +615,11 @@ export default function LayoutAwareDesktopRoutesPermissionsTab(props: Permission
       },
       {
         dataIndex: 'configure',
-        title: t('Menu permissions'),
+        title: t('Routes permissions'),
         render: (_, item) => (
           <Button
             type="link"
-            aria-label={t('Configure menu permissions for {{layout}}', { layout: item.label })}
+            aria-label={t('Configure routes permissions for {{layout}}', { layout: item.label })}
             onClick={() => configureLayout(item.layout)}
           >
             {t('Configure')}
@@ -721,7 +721,7 @@ export default function LayoutAwareDesktopRoutesPermissionsTab(props: Permission
           >
             {t('Allow access to this layout')}
           </Checkbox>
-          <Typography.Text strong>{t('Menu permissions')}</Typography.Text>
+          <Typography.Text strong>{t('Routes permissions')}</Typography.Text>
           <Input.Search
             allowClear
             aria-label={t('Search routes')}
