@@ -48,12 +48,13 @@ export type CanvasNode = {
 };
 
 /**
- * The canvas-root context value, shared by both canvases and matching v1's two
+ * The canvas-root context value, shared by both canvases and matching v1's
  * `FlowContext.Provider` shapes:
- *   - editor canvas    → `{ workflow, nodes, refresh }`
- *   - execution canvas → `{ workflow, nodes, execution, viewJob, setViewJob }`
+ *   - editor canvas        → `{ workflow, nodes, refresh }`
+ *   - execution canvas     → `{ workflow, nodes, execution, viewJob, setViewJob }`
+ *   - manual-todo canvas   → `{ workflow, nodes, execution, userJob }`
  * All fields optional so a consumer reading e.g. only `nodes` is typed against
- * either canvas, and the bare-`{}` default (no provider) still satisfies it.
+ * any canvas, and the bare-`{}` default (no provider) still satisfies it.
  */
 export type WorkflowCanvasFlowContextValue = {
   workflow?: WorkflowCanvasRecord | null;
@@ -67,6 +68,9 @@ export type WorkflowCanvasFlowContextValue = {
   viewJob?: Record<string, any> | null;
   /** Execution canvas only: open/close the job result modal. */
   setViewJob?: (job: Record<string, any> | null) => void;
+  /** Manual-todo canvas only (plugin-workflow-manual): the current user job
+   *  record whose form/status the todo card renders. */
+  userJob?: Record<string, any> | null;
 };
 
 export const FlowContext = React.createContext<WorkflowCanvasFlowContextValue>({});
