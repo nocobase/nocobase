@@ -388,6 +388,7 @@ describe('plugin-ui-layout settings page', () => {
     const defaultEnabledSwitch = within(desktopRow as HTMLTableRowElement).getByRole('switch', { name: 'Enabled' });
     expect(defaultEnabledSwitch).toBeChecked();
     expect(defaultEnabledSwitch).toBeDisabled();
+    expect(defaultEnabledSwitch).toHaveClass('ant-switch-small');
     expect(within(mobileRow as HTMLTableRowElement).getByRole('link', { name: /View/ })).toHaveAttribute(
       'href',
       '/mobile',

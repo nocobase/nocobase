@@ -609,6 +609,7 @@ export default function LayoutAwareDesktopRoutesPermissionsTab(props: Permission
           <Switch
             aria-label={t('Allow access to {{layout}}', { layout: item.label })}
             checked={item.accessible}
+            size="small"
             onChange={(checked) => toggleLayoutAccess(item.layout, checked)}
           />
         ),

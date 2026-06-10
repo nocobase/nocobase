@@ -372,7 +372,11 @@ describe('plugin-ui-layout route permissions', () => {
     expect(screen.getByText('Mobile layout')).toBeInTheDocument();
     expect(screen.queryByText('Disabled layout')).not.toBeInTheDocument();
 
-    expect(screen.getByRole('switch', { name: 'Allow access to Desktop layout' })).toBeChecked();
+    const desktopLayoutAccessSwitch = screen.getByRole('switch', { name: 'Allow access to Desktop layout' });
+    await waitFor(() => {
+      expect(desktopLayoutAccessSwitch).toBeChecked();
+    });
+    expect(desktopLayoutAccessSwitch).toHaveClass('ant-switch-small');
     expect(screen.getByRole('switch', { name: 'Allow access to Mobile layout' })).not.toBeChecked();
     expect(screen.queryByText('1 / 2')).not.toBeInTheDocument();
     expect(screen.queryByText('0 / 1')).not.toBeInTheDocument();

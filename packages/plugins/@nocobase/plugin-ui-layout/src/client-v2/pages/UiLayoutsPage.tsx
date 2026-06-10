@@ -404,6 +404,7 @@ const UiLayoutsPage: React.FC = () => {
             checked={value}
             disabled={isDefaultAdminUiLayout(record)}
             loading={updatingEnabledRowKeys.includes(record.id)}
+            size="small"
             onChange={async (checked) => {
               await handleToggleEnabled(record, checked);
             }}
