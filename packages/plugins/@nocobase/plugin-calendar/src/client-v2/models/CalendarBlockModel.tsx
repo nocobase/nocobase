@@ -445,18 +445,24 @@ export class CalendarBlockModel extends CollectionBlockModel {
       popupAction: action,
       fieldNames: this.getFieldNames(),
     });
-
-    await action.dispatchEvent(
-      'click',
-      {
-        ...(Object.keys(formData).length ? { formData } : {}),
-        defineProperties: {
-          calendarSelectedSlot: { value: slotInfo },
-          calendarFieldNames: { value: this.getFieldNames() },
-        },
+    const inputArgs = {
+      ...(Object.keys(formData).length ? { formData } : {}),
+      ...(this.collection?.dataSourceKey ? { dataSourceKey: this.collection.dataSourceKey } : {}),
+      ...(this.collection?.name ? { collectionName: this.collection.name } : {}),
+      navigation: false,
+      target: this.context?.layoutContentElement,
+      defineProperties: {
+        calendarSelectedSlot: { value: slotInfo },
+        calendarFieldNames: { value: this.getFieldNames() },
       },
-      { debounce: true },
-    );
+    };
+
+    if (typeof this.context?.openView === 'function' && action.uid) {
+      await this.context.openView(action.uid, inputArgs);
+      return;
+    }
+
+    await action.dispatchEvent('click', inputArgs, { debounce: true });
   }
 
   async openEvent(record: any) {
@@ -469,14 +475,20 @@ export class CalendarBlockModel extends CollectionBlockModel {
     if (!filterByTk) {
       return;
     }
+    const inputArgs = {
+      ...(this.collection?.dataSourceKey ? { dataSourceKey: this.collection.dataSourceKey } : {}),
+      ...(this.collection?.name ? { collectionName: this.collection.name } : {}),
+      filterByTk,
+      navigation: false,
+      target: this.context?.layoutContentElement,
+    };
 
-    await action.dispatchEvent(
-      'click',
-      {
-        filterByTk,
-      },
-      { debounce: true },
-    );
+    if (typeof this.context?.openView === 'function' && action.uid) {
+      await this.context.openView(action.uid, inputArgs);
+      return;
+    }
+
+    await action.dispatchEvent('click', inputArgs, { debounce: true });
   }
 }
 
