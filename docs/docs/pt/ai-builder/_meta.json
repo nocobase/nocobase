@@ -48,5 +48,10 @@
     "type": "file",
     "name": "publish",
     "label": "Gerenciamento de Publicação"
+  },
+  {
+    "type": "file",
+    "name": "version-control",
+    "label": "Controle de Versão"
   }
 ]

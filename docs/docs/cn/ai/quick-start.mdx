@@ -2,7 +2,6 @@
 title: "AI Agent 接入指南"
 description: "安装 NocoBase CLI，连接或安装 NocoBase 应用，让 AI Agent 开始操作你的业务系统。"
 keywords: "NocoBase CLI,AI Agent,接入,连接,安装,Skills,快速开始"
-sidebar: false
 ---
 
 # AI Agent 接入指南
@@ -42,7 +41,7 @@ import { Tab, Tabs } from '@rspress/core/theme';
 #### 第一步：安装 CLI
 
 ```bash
-npm install -g @nocobase/cli@beta
+npm install -g @nocobase/cli
 nb --version // 确认安装成功
 ```
 
@@ -58,15 +57,16 @@ nb init --ui
 
 :::
 
-浏览器会自动打开可视化配置页面，分 5 步引导你完成配置：
+浏览器会自动打开可视化配置页面，分 6 步引导你完成配置：
 
-1. **开始配置** — 设置应用名称（同时作为 CLI 环境名），选择「全新安装」
-2. **创建应用** — 选择安装方式（Docker / npm / Git）、设置端口等基础配置
-3. **下载应用文件** — 选择来源和版本，下载 NocoBase 源码或镜像
-4. **配置数据库** — 使用内置数据库或配置外部数据库（PostgreSQL、MySQL、MariaDB）
-5. **创建管理员账号** — 设置管理员邮箱和密码
+1. 「开始设置」——选择新安装、本机接管，或远程连接。
+2. 「应用环境信息」——设置应用的基础信息、存储位置和运行端口。
+3. 「应用来源和版本」——选择应用的获取方式，以及要使用的来源和版本。
+4. 「配置数据库」——选择内置数据库或自定义数据库。
+5. 「创建管理员账号」——设置第一个管理员账号。
+6. 「连接与认证」——填写应用访问地址并选择认证方式。
 
-![nocobase cli 可视化向导](https://static-docs.nocobase.com/2026-04-29-15-55-19.png)
+![nocobase cli 可视化向导](https://static-docs.nocobase.com/2026-06-11-20-14-32.png)
 
 安装完成后，打开浏览器访问 `http://localhost:13000`（默认端口），用你刚才设置的管理员账号登录即可。
 
@@ -100,7 +100,7 @@ nb init --ui
 #### 第一步：安装 CLI
 
 ```bash
-npm install -g @nocobase/cli@beta
+npm install -g @nocobase/cli
 nb --version // 确认安装成功
 ```
 
@@ -116,12 +116,12 @@ nb init --ui
 
 :::
 
-浏览器会自动打开可视化配置页面。在第一步「开始配置」中选择「连接已有应用」，然后：
+浏览器会自动打开可视化配置页面。在第一步「开始配置」中选择「远程连接」，然后：
 
 1. **填写 API 地址** — 输入你已有 NocoBase 实例的 API 地址（比如：`http://localhost:13000/api`）
 2. **选择认证方式** — 选择 [认证方式](../ai-builder/security)（快速上手推荐 OAuth）
 
-![nocobase cli 可视化向导](https://static-docs.nocobase.com/2026-04-29-15-55-55.png)
+![nocobase cli 可视化向导](https://static-docs.nocobase.com/2026-06-11-21-18-31.png)
 
 无需配置安装方式、数据库和管理员账号，向导会跳过这些步骤。
 
@@ -132,7 +132,7 @@ nb init --ui
 </Tab>
 <Tab label="用 AI Agent 连接" value="ai-connect">
 
-将下方提示词复制给你的 AI 助手，它会完成 CLI 的安装和引导你完成连接已有 NocoBase 实例的配置，在可视化向导的第一步选择「连接已有应用」即可：
+将下方提示词复制给你的 AI 助手，它会完成 CLI 的安装和引导你完成连接已有 NocoBase 实例的配置，在可视化向导的第一步选择「远程连接」即可：
 
 ```
 帮我安装 NocoBase CLI 并完成初始化：https://docs.nocobase.com/cn/ai/ai-quick-start.md （请直接访问链接内容）
@@ -144,6 +144,13 @@ nb init --ui
 </Tabs>
 
 ## 接下来
+
+### 生产环境安装部署
+
+如果你准备把 NocoBase 部署到生产环境，建议按这个顺序继续看：
+
+1. [使用 CLI 安装应用](../nocobase-cli/installation/cli.md) —— 完整安装流程。适合从零安装 CLI、初始化 env，并确认应用已经能在服务器上正常跑起来
+2. [生产环境部署概述](../nocobase-cli/production/index.md) —— 应用跑起来后的下一步。主要补上应用自启动、反向代理、域名和 HTTPS
 
 ### 管理应用环境
 
@@ -172,4 +179,4 @@ nb init --ui
 - [AI 员工](../ai-employees/index.md) — 在业务界面中与 AI 协作
 - [环境管理](../ai-builder/env-bootstrap) — 环境检查、添加环境、升级和故障诊断
 - [NocoBase CLI 命令参考](../api/cli/index.md) — 所有命令的完整参数说明
-- [安装方式和版本对比](../get-started/quickstart) — NocoBase 的不同安装方式和版本通道
+- [安装方式和版本对比](../ai/quickstart) — NocoBase 的不同安装方式和版本通道

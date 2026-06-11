@@ -6,6 +6,7 @@ import { createRequire } from 'node:module';
 import path from 'node:path';
 import pc from 'picocolors';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+import { formatUnsupportedNodeVersionMessage, isSupportedNodeVersion } from './node-version.js';
 import { normalizeNodeOptions, normalizeSessionEnv } from './session-env.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -16,6 +17,11 @@ const isSourcePackage = realRoot.split(path.sep).join('/').endsWith('/packages/c
 let isDev = isSourcePackage;
 if (process.env.NB_CLI_USE_DIST === '1') {
   isDev = false;
+}
+
+if (!isSupportedNodeVersion()) {
+  console.error(pc.red(formatUnsupportedNodeVersionMessage(process.version)));
+  process.exit(1);
 }
 
 normalizeSessionEnv();
