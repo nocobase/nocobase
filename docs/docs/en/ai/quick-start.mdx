@@ -2,7 +2,6 @@
 title: "AI Agent Integration Guide"
 description: "Install NocoBase CLI, connect to or install a NocoBase application, and let AI Agents start operating your business system."
 keywords: "NocoBase CLI,AI Agent,integration,connect,installation,Skills,quick start"
-sidebar: false
 ---
 
 # AI Agent Integration Guide
@@ -42,7 +41,7 @@ If you don't have a NocoBase application yet, you can use CLI to install and ini
 #### Step 1: Install CLI
 
 ```bash
-npm install -g @nocobase/cli@beta
+npm install -g @nocobase/cli
 nb --version // Confirm successful installation
 ```
 
@@ -100,7 +99,7 @@ If you already have a running NocoBase instance, you can connect AI Agent to it 
 #### Step 1: Install CLI
 
 ```bash
-npm install -g @nocobase/cli@beta
+npm install -g @nocobase/cli
 nb --version // Confirm successful installation
 ```
 
@@ -145,6 +144,13 @@ After configuration is complete, restart your AI Agent session and you can start
 
 ## What's Next
 
+### Production Installation and Deployment
+
+If you're preparing to deploy NocoBase to production, this order usually works best:
+
+1. [Install using CLI](../nocobase-cli/installation/cli.md) - the complete installation flow. This is the right place when you want to install CLI from scratch, initialize env, and confirm the app is already running on your server
+2. [Production deployment overview](../nocobase-cli/production/index.md) - the next step after the app is running. This mainly covers autostart, reverse proxy, domain setup, and HTTPS
+
 ### Manage Application Environments
 
 If you need to manage existing NocoBase instances (such as test or production environments), or switch between multiple environments, see [Environment Management](../ai-builder/env-bootstrap) — covering environment checks, adding environments, upgrades, and troubleshooting.
@@ -172,4 +178,4 @@ If you already have a NocoBase application running, or have successfully complet
 - [AI Employees](../ai-employees/index.md) — Collaborate with AI in the business interface
 - [Environment Management](../ai-builder/env-bootstrap) — Environment checks, adding environments, upgrades, and troubleshooting
 - [NocoBase CLI Command Reference](../api/cli/index.md) — Full parameter documentation for all commands
-- [Installation Methods and Version Comparison](../get-started/quickstart) — Different installation methods and version channels for NocoBase
+- [Installation Methods and Version Comparison](../ai/quickstart) — Different installation methods and version channels for NocoBase

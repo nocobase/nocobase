@@ -219,7 +219,7 @@ async function stopLocalCaddyProxy(): Promise<CaddyProxyLifecycleResult> {
 async function reloadLocalCaddyProxy(runtimeContext: CaddyProxyRuntimeContext): Promise<CaddyProxyLifecycleResult> {
   const mainConfigPath = await ensureCaddyProxyMainConfig(runtimeContext);
   if (!(await isLocalCaddyRunning())) {
-    throw new Error('Local caddy proxy is not running. Start it first with `nb proxy caddy start`.');
+    return await startLocalCaddyProxy(runtimeContext);
   }
 
   await run('caddy', ['reload', '--config', mainConfigPath, '--adapter', 'caddyfile'], {
@@ -288,7 +288,7 @@ async function reloadDockerCaddyProxy(runtimeContext: CaddyProxyRuntimeContext):
   await ensureCaddyProxyMainConfig(runtimeContext);
 
   if (!(await dockerContainerIsRunning(containerName))) {
-    throw new Error('Docker caddy proxy is not running. Start it first with `nb proxy caddy start`.');
+    return await startDockerCaddyProxy(runtimeContext);
   }
 
   await run('docker', ['exec', containerName, 'caddy', 'reload', '--config', DOCKER_CADDY_PROXY_CONF_DESTINATION, '--adapter', 'caddyfile'], {

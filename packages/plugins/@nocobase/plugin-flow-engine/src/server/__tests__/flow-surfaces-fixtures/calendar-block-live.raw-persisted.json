@@ -34,7 +34,7 @@
       },
       "calendarSettings": {
         "eventPopupSettings": {
-          "filterByTk": "{{ctx.view.inputArgs.filterByTk}}"
+          "filterByTk": "{{ctx.record.id}}"
         }
       }
     },
@@ -125,7 +125,7 @@
               "uid": "fcal9b1ock1-eventViewAction",
               "collectionName": "pets",
               "dataSourceKey": "main",
-              "filterByTk": "{{ctx.view.inputArgs.filterByTk}}"
+              "filterByTk": "{{ctx.record.id}}"
             }
           }
         }

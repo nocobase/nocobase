@@ -23,7 +23,7 @@ AI 搭建是 NocoBase 提供的 AI 辅助搭建能力——你可以用自然语
 ### 手动安装
 
 ```bash
-npm install -g @nocobase/cli@beta
+npm install -g @nocobase/cli
 nb init --ui
 ```
 
@@ -95,13 +95,27 @@ AI 先输出设计方案，确认后一次性搭建完成：
 
 想了解更多整套系统搭建的用法，请参阅 [解决方案](./dsl-reconciler)。
 
+### 搭好一个节点，AI 帮你存一个可回退的版本
+
+完成一个页面、一组数据表或一条工作流后，让 AI 把当前状态保存为版本——配置改坏了随时能回退到上一个清晰的节点。
+
+```
+保存当前搭建成果为版本：完成客户管理页面、筛选区和编辑表单配置
+```
+
+![AI 搭建后创建版本](https://static-docs.nocobase.com/20260611115804.png)
+
+AI 不会每改一个字段就存一次，只在完成并验证一个清晰节点后保存，这样版本列表更容易读，恢复时也更容易判断该回到哪里。
+
+想了解更多版本管理的用法，请参阅 [版本管理](./version-control)。
+
 ## 安全与审计
 
 在让 AI Agent 操作 NocoBase 之前，建议先了解鉴权方式、权限控制和操作审计——确保 AI 只做该做的事，每一步都有记录。请参阅 [安全与审计](./security)。
 
 ## NocoBase Skills
 
-[NocoBase Skills](https://github.com/nocobase/skills) 是可安装到 AI Agent 中的领域知识包，让 AI 理解 NocoBase 的配置体系。NocoBase 提供 8 个 Skills，覆盖搭建全流程：
+[NocoBase Skills](https://github.com/nocobase/skills) 是可安装到 AI Agent 中的领域知识包，让 AI 理解 NocoBase 的配置体系。NocoBase 提供 9 个 Skills，覆盖搭建全流程：
 
 - [环境管理](./env-bootstrap) — 环境检查、安装部署、升级和故障诊断
 - [数据建模](./data-modeling) — 创建和管理数据表、字段、关联关系
@@ -111,6 +125,7 @@ AI 先输出设计方案，确认后一次性搭建完成：
 - [解决方案](./dsl-reconciler) — 从 YAML 批量搭建整套业务系统
 - [插件管理](./plugin-manage) — 查看、启用和停用插件
 - [发布管理](./publish) — 跨环境发布、备份恢复和迁移
+- [版本管理](./version-control) — 在阶段性成果完成后保存可恢复版本
 
 :::tip 提示
 

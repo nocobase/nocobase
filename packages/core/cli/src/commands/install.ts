@@ -1406,7 +1406,7 @@ export default class Install extends Command {
     }
   }
 
-  private static buildResumePresetValues(env: Pick<Env, 'name' | 'config'>): ResumePresetValues {
+  static buildResumePresetValues(env: Pick<Env, 'name' | 'config'>) {
     const envName = String(env.name ?? '').trim();
     const config = env.config ?? {};
     const source = Install.toOptionalPromptString(config.source);
@@ -1517,21 +1517,36 @@ export default class Install extends Command {
     };
   }
 
-  private static buildResumeMissingYesFlags(flags: InstallParsedFlags): string[] {
+  private static buildResumeMissingYesFlags(
+    flags: InstallParsedFlags,
+    resumePreset: Pick<ResumePresetValues, 'appPreset' | 'rootPreset'>,
+  ): string[] {
     const missing: string[] = [];
-    if (!Install.toOptionalPromptString(flags.lang)) {
+    if (!Install.toOptionalPromptString(flags.lang) && !Install.toOptionalPromptString(resumePreset.appPreset.lang)) {
       missing.push('--lang');
     }
-    if (!Install.toOptionalPromptString(flags['root-username'])) {
+    if (
+      !Install.toOptionalPromptString(flags['root-username']) &&
+      !Install.toOptionalPromptString(resumePreset.rootPreset.rootUsername)
+    ) {
       missing.push('--root-username');
     }
-    if (!Install.toOptionalPromptString(flags['root-email'])) {
+    if (
+      !Install.toOptionalPromptString(flags['root-email']) &&
+      !Install.toOptionalPromptString(resumePreset.rootPreset.rootEmail)
+    ) {
       missing.push('--root-email');
     }
-    if (!Install.toOptionalPromptString(flags['root-password'])) {
+    if (
+      !Install.toOptionalPromptString(flags['root-password']) &&
+      !Install.toOptionalPromptString(resumePreset.rootPreset.rootPassword)
+    ) {
       missing.push('--root-password');
     }
-    if (!Install.toOptionalPromptString(flags['root-nickname'])) {
+    if (
+      !Install.toOptionalPromptString(flags['root-nickname']) &&
+      !Install.toOptionalPromptString(resumePreset.rootPreset.rootNickname)
+    ) {
       missing.push('--root-nickname');
     }
     return missing;
@@ -1550,8 +1565,10 @@ export default class Install extends Command {
       throw new Error(formatMissingManagedAppEnvMessage(parsed.env));
     }
 
+    const resumePreset = Install.buildResumePresetValues(env);
+
     if (yes) {
-      const missingFlags = Install.buildResumeMissingYesFlags(parsed);
+      const missingFlags = Install.buildResumeMissingYesFlags(parsed, resumePreset);
       if (missingFlags.length > 0) {
         throw new Error(
           [
@@ -1563,7 +1580,7 @@ export default class Install extends Command {
       }
     }
 
-    return Install.buildResumePresetValues(env);
+    return resumePreset;
   }
 
   static async resolveAvailableDefaultPort(
@@ -1774,7 +1791,7 @@ export default class Install extends Command {
       preset.buildDts = flags['build-dts'];
     }
 
-    if (yes) {
+    if (yes && !flags.resume) {
       preset.source ??= 'docker';
       preset.version ??= 'alpha';
       preset.outputDir ??= appRoot;
@@ -3334,7 +3351,9 @@ export default class Install extends Command {
     }
 
     if (parsed['prepare-only']) {
-      printInfo(`Preparation complete for "${envName}". Activate the license, then run \`nb app start --env ${envName}\`.`);
+      printInfo(
+        `Preparation complete for "${envName}". Activate the license, then run \`nb app start --env ${envName}\`.`,
+      );
     } else if (!dockerAppPlan && !localAppPlan) {
       printInfo(`Install config for "${envName}" has been saved.`);
     }

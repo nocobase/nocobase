@@ -58,4 +58,7 @@ Anda dapat menginstal NocoBase dengan berbagai cara.
 | **Skenario yang Sesuai** | Pengguna no-code, pengguna yang ingin deployment cepat ke server. | Developer frontend/fullstack, proyek tim, pengembangan low-code. | Developer teknis, pengguna yang ingin mencoba versi yang belum dirilis. |
 | **Persyaratan Teknis** | ★☆☆☆☆ | ★★★☆☆ | ★★★★★ |
 | **Cara Upgrade** | Tarik image terbaru dan restart container | Gunakan yarn untuk memperbarui dependencies | Sinkronisasi pembaruan melalui alur Git |
-| **Tutorial** | [<code>Instalasi</code>](#) [<code>Upgrade</code>](#) [<code>Deployment</code>](#) | [<code>Instalasi</code>](#) [<code>Upgrade</code>](#) [<code>Deployment</code>](#) | [<code>Instalasi</code>](#) [<code>Upgrade</code>](#) [<code>Deployment</code>](#) |
+
+## Langkah selanjutnya
+
+Jika Anda sudah memilih metode instalasi, langkah berikutnya adalah [Mulai Cepat](../ai/quick-start.md). Di sana Anda akan menginstal NocoBase CLI, terhubung ke aplikasi yang sudah ada atau menginisialisasi aplikasi baru, lalu membiarkan AI Agent mulai bekerja.

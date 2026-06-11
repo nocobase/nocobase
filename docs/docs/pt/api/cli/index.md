@@ -191,7 +191,6 @@ Este arquivo é gerado ou atualizado por [`nb env update`](./env/update.md) e é
 ## Links relacionados
 
 - [Início rápido](../../ai/quick-start.mdx)
-- [Instalação, atualização e migração](../../ai/install-upgrade-migration.mdx)
 - [Variáveis de ambiente globais](../app/env.md)
 - [AI Builder](../../ai-builder/index.md)
 - [Desenvolvimento de plugins](../../plugin-development/index.md)

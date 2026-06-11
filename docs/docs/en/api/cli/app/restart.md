@@ -20,7 +20,6 @@ nb app restart [flags]
 | --- | --- | --- |
 | `--env`, `-e` | string | CLI env name to restart; uses the current env if omitted |
 | `--yes`, `-y` | boolean | When an explicitly passed `--env` targets a different env than the current env, skip the interactive confirmation prompt |
-| `--daemon`, `-d` / `--no-daemon` | boolean | Whether to run in daemon mode after stopping; enabled by default |
 | `--verbose` | boolean | Show underlying stop and start command output |
 
 ## Examples
@@ -28,14 +27,13 @@ nb app restart [flags]
 ```bash
 nb app restart
 nb app restart --env local
-nb app restart --env local --no-daemon
 nb app restart --env local --verbose
 nb app restart --env local-docker
 ```
 
 If you explicitly pass `--env` and it differs from the current env, the CLI asks for confirmation first. In non-interactive terminals or AI agent sessions, add `--yes` yourself or run `nb env use <name>` first and try again.
 
-By default, when applicable, the CLI first runs `nb license plugins sync --skip-if-no-license` to synchronize the commercial plugins allowed by the current license. Then local envs automatically complete any required install or upgrade preparation before starting again, and Docker envs complete that step before recreating the container. Whenever the CLI needs to wait for readiness, it checks `__health_check`: it prints one waiting line first, then one progress line every 10 seconds until the app becomes available or times out. If you pass `--no-daemon` for a local env, the app runs in the foreground, so the CLI does not keep waiting for the readiness check after startup.
+By default, when applicable, the CLI first runs `nb license plugins sync --skip-if-no-license` to synchronize the commercial plugins allowed by the current license. Then local envs automatically complete any required install or upgrade preparation before starting again, and Docker envs complete that step before recreating the container. Whenever the CLI needs to wait for readiness, it checks `__health_check`: it prints one waiting line first, then one progress line every 10 seconds until the app becomes available or times out.
 
 ## Related Commands
 

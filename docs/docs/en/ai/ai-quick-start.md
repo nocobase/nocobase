@@ -27,7 +27,7 @@ If the prerequisites are not met, tell the user they need to install the missing
 If the user already has NocoBase CLI installed (run `nb --version` to check), proceed to the next step. If not, run the following command to install:
 
 ```bash
-npm install -g @nocobase/cli@beta
+npm install -g @nocobase/cli
 ```
 
 Run `nb --version` to confirm successful installation.

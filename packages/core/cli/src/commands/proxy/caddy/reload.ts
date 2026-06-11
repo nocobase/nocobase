@@ -21,8 +21,12 @@ export default class ProxyCaddyReload extends Command {
     startTask(`Reloading caddy proxy with the ${driver} driver...`);
 
     try {
-      await reloadCaddyProxy(runtimeContext);
-      succeedTask(`Caddy proxy reloaded with the ${driver} driver.`);
+      const result = await reloadCaddyProxy(runtimeContext);
+      succeedTask(
+        result === 'started'
+          ? `Caddy proxy started with the ${driver} driver using the latest config.`
+          : `Caddy proxy reloaded with the ${driver} driver.`,
+      );
     } catch (error) {
       failTask(`Failed to reload caddy proxy with the ${driver} driver.`);
       this.error(error instanceof Error ? error.message : String(error));
