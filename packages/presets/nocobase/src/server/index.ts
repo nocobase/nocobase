@@ -69,7 +69,6 @@ export class PresetNocoBase extends Plugin {
       'zh-CN': 'cn/',
       'en-US': '',
       'ja-JP': 'ja/',
-      'ko-KR': 'ko/',
       'es-ES': 'es/',
       'pt-PT': 'pt/',
       'de-DE': 'de',

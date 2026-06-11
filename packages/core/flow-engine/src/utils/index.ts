@@ -104,3 +104,6 @@ export { isBeforeRenderFlow } from './flows';
 
 // Module URL resolver
 export { resolveModuleUrl, isCssFile } from './resolveModuleUrl';
+
+// Random base36 identifier with optional semantic prefix
+export { randomId } from './randomId';

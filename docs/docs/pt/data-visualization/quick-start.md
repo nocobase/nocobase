@@ -1,7 +1,3 @@
-:::tip Aviso de tradução por IA
-Esta documentação foi traduzida automaticamente por IA.
-:::
-
 # Início Rápido
 
 Vamos configurar um gráfico do zero, utilizando as funcionalidades essenciais. Recursos opcionais serão abordados em capítulos posteriores.

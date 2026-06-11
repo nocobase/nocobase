@@ -29,7 +29,7 @@ keywords: "快捷任务,AI 任务,区块绑定,任务配置,NocoBase"
 
 每个标签页都代表一个独立的任务，点击旁边“+”号添加新的任务。
 
-![clipboard-image-1771913187](https://static-docs.nocobase.com/clipboard-image-1771913187.png)
+![20260426230344](https://static-docs.nocobase.com/20260426230344.png)
 
 任务设置表单：
 
@@ -37,7 +37,8 @@ keywords: "快捷任务,AI 任务,区块绑定,任务配置,NocoBase"
 - 在 `Background` 输入框中输入任务的主要内容，这个内容将会作为与 AI 员工对话时使用的系统提示词。
 - 在 `Default user message` 输入框中输入默认发送的用户消息，选中任务后会自动填充到用户输入框中。
 - 在 `Work context` 中选择默认发送给 AI 员工的应用上下文信息，这部分操作和在对话框中的操作一样。
-- 在 `Skills` 选择框中展示的是当前 AI 员工是否具备的技能，可以取消某个技能，让 AI 员工执行该任务时忽略不使用该技能。
+- 在 `Skills` 设置 `Preset` 使用当前 AI 员工预设技能。设置 `Customer` 配置使用 AI 员工部分技能，留空表示不使用任何技能。
+- 在 `Tools` 设置 `Preset` 使用当前 AI 员工预设工具。设置 `Customer` 配置使用 AI 员工部分工具，留空表示不使用任何工具。
 - `Send default user message automatically` 勾选框配置是否点击执行任务后自动发送默认用户消息。
 
 

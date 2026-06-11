@@ -42,7 +42,7 @@ import { useChartBlockRefreshActionProps } from './initializers/BlockRefreshActi
 import { ChartRendererToolbar, ChartFilterBlockToolbar, ChartFilterItemToolbar } from './toolbar';
 import { ChartCardItem } from './block/CardItem';
 import { Schema } from '@formily/react';
-import { ChartBlockModel } from './flow/models/ChartBlockModel';
+import { ChartBlockModel } from '../client-v2/flow/models/ChartBlockModel';
 import type PluginAIClient from '@nocobase/plugin-ai/client';
 // import { buildChartBlockTool } from './ai/tools';
 

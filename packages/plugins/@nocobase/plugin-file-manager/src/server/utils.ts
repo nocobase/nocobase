@@ -7,18 +7,32 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { uid } from '@nocobase/utils';
+import { storagePathJoin, uid } from '@nocobase/utils';
 import crypto from 'crypto';
 import path from 'path';
 import urlJoin from 'url-join';
 
+const INVALID_FILENAME_CHARS = new Set(['<', '>', '?', '*', '|', ':', '"', '\\', '/']);
+
+function sanitizeFilename(value: string) {
+  return Array.from(value)
+    .map((char) => {
+      const code = char.charCodeAt(0);
+      return code < 32 || code === 127 || INVALID_FILENAME_CHARS.has(char) ? '-' : char;
+    })
+    .join('');
+}
+
 function normalizeOriginalname(file) {
-  const originalname = file?.originalname;
+  const originalname: string | Buffer | undefined = file?.originalname;
   if (!originalname) {
     return '';
   }
   if (Buffer.isBuffer(originalname)) {
     return originalname.toString('utf8');
+  }
+  if (Array.from(originalname).some((char: string) => char.charCodeAt(0) > 0xff)) {
+    return originalname;
   }
   const decoded = Buffer.from(originalname, 'binary').toString('utf8');
   if (decoded.includes('\uFFFD')) {
@@ -30,14 +44,14 @@ function normalizeOriginalname(file) {
 export function getFilename(req, file, cb) {
   const originalname = normalizeOriginalname(file);
   // Filename in Windows cannot contain the following characters: < > ? * | : " \ /
-  const baseName = path.basename(originalname.replace(/[<>?*|:"\\/]/g, '-'), path.extname(originalname));
+  const baseName = path.basename(sanitizeFilename(originalname), path.extname(originalname));
   cb(null, `${baseName}-${uid(6)}${path.extname(originalname)}`);
 }
 
 function getOriginalFilename(file) {
   const originalname = normalizeOriginalname(file);
   const extname = path.extname(originalname);
-  const baseName = path.basename(originalname.replace(/[<>?*|:"\\/]/g, '-'), extname);
+  const baseName = path.basename(sanitizeFilename(originalname), extname);
   return `${baseName}${extname}`;
 }
 
@@ -89,6 +103,48 @@ export function getFileKey(record) {
   return urlJoin(record.path || '', record.filename).replace(/^\//, '');
 }
 
+function pathError(message: string) {
+  const error = new Error(message) as NodeJS.ErrnoException;
+  error.code = 'PATH_TRAVERSAL';
+  return error;
+}
+
+function normalizeStoragePathForJoin(value: unknown, message: string, { allowLeadingSlash = false } = {}) {
+  if (value == null || value === '') {
+    return '';
+  }
+  if (typeof value !== 'string' || value.includes('\0')) {
+    throw pathError(message);
+  }
+  const normalized = value.replace(/\\/g, '/');
+  if (!allowLeadingSlash && normalized.startsWith('/')) {
+    throw pathError(message);
+  }
+  const segments = normalized
+    .replace(/^\/+|\/+$/g, '')
+    .split('/')
+    .filter((segment) => segment && segment !== '.');
+  if (segments.some((segment) => segment === '..')) {
+    throw pathError('Access denied');
+  }
+  return segments.join('/');
+}
+
+export function normalizeStorageSubPath(subPath?: unknown) {
+  return normalizeStoragePathForJoin(subPath, 'Invalid storage sub path');
+}
+
+export function resolveStoragePath(storagePath?: unknown, subPath?: unknown) {
+  const normalizedSubPath = normalizeStorageSubPath(subPath);
+  if (!normalizedSubPath) {
+    return typeof storagePath === 'string' ? storagePath : '';
+  }
+  const normalizedStoragePath = normalizeStoragePathForJoin(storagePath, 'Invalid storage path', {
+    allowLeadingSlash: true,
+  });
+  return normalizedStoragePath ? `${normalizedStoragePath}/${normalizedSubPath}` : normalizedSubPath;
+}
+
 export function ensureUrlEncoded(value) {
   try {
     // 如果解码后与原字符串不同，说明已经被转义过
@@ -119,4 +175,31 @@ export function encodeURL(url) {
   } catch (error) {
     return url;
   }
+}
+
+function isStorageRelativeDocumentRoot(documentRoot: string): boolean {
+  return (
+    documentRoot === 'storage' ||
+    documentRoot.startsWith('storage/') ||
+    documentRoot === './storage' ||
+    documentRoot.startsWith('./storage/')
+  );
+}
+
+export function normalizeDocumentRoot(documentRoot?: string): string {
+  if (!documentRoot) {
+    return storagePathJoin('uploads');
+  }
+  // 如果 documentRoot 是绝对路径，直接返回
+  if (path.isAbsolute(documentRoot)) {
+    return documentRoot;
+  }
+  const normalizedDocumentRoot = documentRoot.replace(/\\/g, '/');
+  // 如果以 storage/ 或 ./storage/ 开头，按 storagePathJoin 处理，不过要去掉开头的 storage 或 ./storage
+  if (isStorageRelativeDocumentRoot(normalizedDocumentRoot)) {
+    const relativePath = normalizedDocumentRoot.replace(/^\.?\/?storage(?:\/|$)/, '').replace(/^[/\\]+/, '');
+    return relativePath ? storagePathJoin(relativePath) : storagePathJoin();
+  }
+  // 否则按相对路径处理，基于当前工作目录
+  return path.resolve(process.cwd(), documentRoot);
 }

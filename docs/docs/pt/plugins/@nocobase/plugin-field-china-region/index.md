@@ -1,12 +1,12 @@
 ---
-displayName: "Collection field: administrative divisions of China"
+displayName: "Campo de coleção: Divisões administrativas da China"
 packageName: '@nocobase/plugin-field-china-region'
 description: |
-  Provides data and field type for administrative divisions of China.
+  Fornece dados e tipos de campo de divisões administrativas da China.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Collection field: administrative divisions of China
+# Campo de coleção: Divisões administrativas da China

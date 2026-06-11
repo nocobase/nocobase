@@ -33,5 +33,10 @@
     "type": "custom-link",
     "label": "Formato de array",
     "link": "/template-print/syntax/formatters/array-formatting"
+  },
+  {
+    "type": "custom-link",
+    "label": "Formato de campos multimedia",
+    "link": "/template-print/syntax/formatters/media-field-formatting"
   }
 ]

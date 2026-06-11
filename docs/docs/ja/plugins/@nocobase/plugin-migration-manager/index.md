@@ -1,15 +1,15 @@
 ---
-displayName: "Migration manager"
+displayName: "移行管理"
 packageName: '@nocobase/plugin-migration-manager'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Used to migrate configuration content between application environments.
+  設定内容をある製品環境から別の製品環境へ移行するために使用します。
 isFree: false
 builtIn: false
 defaultEnabled: false
 editionLevel: 2
 ---
 
-# Migration manager
+# 移行管理

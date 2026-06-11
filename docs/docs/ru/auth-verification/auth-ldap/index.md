@@ -1,10 +1,6 @@
 ---
 pkg: "@nocobase/plugin-auth-ldap"
 ---
-:::tip Уведомление о переводе ИИ
-Эта документация была автоматически переведена ИИ.
-:::
-
 
 
 pkg: '@nocobase/plugin-auth-ldap'

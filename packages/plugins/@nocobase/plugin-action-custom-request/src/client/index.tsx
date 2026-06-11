@@ -9,6 +9,8 @@
 
 import { Plugin, SchemaComponentOptions } from '@nocobase/client';
 import React from 'react';
+import { CustomRequestActionModel, registerCustomRequestActionGroups } from '../client-v2/CustomRequestActionModel';
+import { customRequestFlowAction } from '../client-v2/customRequestFlowAction';
 import { CustomRequestAction } from './components';
 import { customRequestActionSettings } from './components/CustomRequestActionDesigner';
 import { CustomRequestInitializer } from './initializer';
@@ -31,6 +33,11 @@ const CustomRequestProvider: React.FC = (props) => {
 export class PluginActionCustomRequestClient extends Plugin {
   async load() {
     this.app.use(CustomRequestProvider);
+    this.app.flowEngine.registerActions({ customRequestFlowAction });
+    this.app.flowEngine.registerModels({
+      CustomRequestActionModel,
+    });
+    registerCustomRequestActionGroups(this.app.flowEngine);
     this.app.schemaSettingsManager.add(customizeCustomRequestActionSettings);
 
     // @deprecated

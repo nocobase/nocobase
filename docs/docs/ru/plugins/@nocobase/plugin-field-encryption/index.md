@@ -1,14 +1,14 @@
 ---
-displayName: "Collection field: Encryption"
+displayName: "Поле коллекции: Шифрование"
 packageName: '@nocobase/plugin-field-encryption'
 supportedVersions:
   - 2.x
 description: |
-  Encrypts and decrypts specified fields automatically for secure data storage.
+  Автоматически шифрует и дешифрует указанные поля для обеспечения безопасности данных.
 isFree: false
 builtIn: false
 defaultEnabled: false
 editionLevel: 2
 ---
 
-# Collection field: Encryption
+# Поле коллекции: Шифрование

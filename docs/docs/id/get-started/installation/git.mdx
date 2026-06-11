@@ -1,0 +1,118 @@
+---
+title: "Instalasi Source Code Git"
+description: "Mulai cepat NocoBase: Instalasi source code Git"
+keywords: "git,NocoBase"
+---
+
+# Instalasi Source Code Git
+
+:::tip Prasyarat
+
+- Sudah menginstal Git, Node.js >= 22, Yarn 1.22.x
+- Sudah mengonfigurasi dan menjalankan database yang dibutuhkan: MySQL 8.0.17+, MariaDB 10.9+, atau PostgreSQL 10+
+- Karena keterbatasan jaringan di beberapa wilayah, disarankan untuk mengganti dengan registry mirror (opsional)
+
+```bash
+$ yarn config set disable-self-update-check true
+$ yarn config set registry https://registry.npmmirror.com/
+```
+
+:::
+
+## 1. Download NocoBase ke Lokal
+
+Pilih versi NocoBase ([Perbandingan Versi](../quickstart.md)), lalu jalankan perintah yang sesuai.
+
+<Tabs>
+<Tab label="Versi Latest">
+
+```bash
+git clone https://github.com/nocobase/nocobase.git -b main --depth=1 my-nocobase
+```
+
+</Tab>
+<Tab label="Versi Beta">
+
+```bash
+git clone https://github.com/nocobase/nocobase.git -b next --depth=1 my-nocobase
+```
+
+</Tab>
+<Tab label="Versi Alpha">
+
+```bash
+git clone https://github.com/nocobase/nocobase.git -b develop --depth=1 my-nocobase
+```
+
+</Tab>
+</Tabs>
+
+## 2. Pindah Direktori
+
+```bash
+cd my-nocobase
+```
+
+## 3. Instal Dependencies
+
+📢 Karena pengaruh kondisi jaringan, konfigurasi sistem, dan faktor lainnya, langkah ini mungkin membutuhkan waktu beberapa belas menit.
+
+```bash
+yarn install --frozen-lockfile
+```
+
+## 4. Atur Variabel Lingkungan
+
+Variabel lingkungan yang dibutuhkan NocoBase disimpan di file `.env` di direktori root, sesuaikan variabel lingkungan berdasarkan situasi aktual.
+
+```bash
+TZ=Asia/Shanghai
+APP_KEY=your-secret-key
+DB_HOST=localhost
+DB_PORT=5432
+DB_DATABASE=postgres
+DB_USER=nocobase
+DB_PASSWORD=nocobase
+```
+
+:::warning Penjelasan Variabel Lingkungan
+
+- `TZ` digunakan untuk mengatur zona waktu aplikasi, default adalah zona waktu sistem operasi;
+- `APP_KEY` adalah kunci aplikasi, digunakan untuk menghasilkan Token pengguna dan lainnya (jika APP_KEY dimodifikasi, Token lama akan menjadi tidak valid). Bisa berupa string acak apa saja. Mohon ubah dengan kunci Anda sendiri dan pastikan tidak bocor ke pihak luar;
+- `DB_*` adalah konfigurasi terkait database, jika bukan layanan database default seperti contoh, sesuaikan berdasarkan situasi aktual.
+
+:::
+
+## 5. Instal NocoBase
+
+```bash
+yarn nocobase install --lang=zh-CN
+```
+
+## 6. Jalankan NocoBase
+
+
+**Lingkungan Pengembangan**
+
+```bash
+yarn dev
+```
+
+**Lingkungan Produksi (Tidak Direkomendasikan)**
+
+Tidak disarankan untuk langsung men-deploy source code di lingkungan produksi. Untuk lingkungan produksi, lihat [Deployment Lingkungan Produksi](../deployment/production.md).
+
+```bash
+yarn build
+yarn start
+```
+
+## 7. Login ke NocoBase
+
+Buka [http://localhost:13000](http://localhost:13000) di browser, akun dan password awal adalah `admin@nocobase.com` dan `admin123`.
+
+:::warning Tips Keamanan Akun
+
+Setelah login pertama kali, segera ubah password default untuk memastikan keamanan sistem.
+
+:::

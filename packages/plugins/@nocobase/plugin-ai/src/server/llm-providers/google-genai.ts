@@ -9,7 +9,7 @@
 
 import { ChatGoogleGenerativeAI, GoogleGenerativeAIEmbeddings } from '@langchain/google-genai';
 import { EmbeddingProvider, LLMProvider, ParsedAttachmentResult } from './provider';
-import axios from 'axios';
+import { serverRequest } from '@nocobase/utils';
 import { Model } from '@nocobase/database';
 import { encodeFile } from '../utils';
 import { AttachmentModel, PluginFileManagerServer } from '@nocobase/plugin-file-manager';
@@ -29,7 +29,7 @@ export class GoogleGenAIProvider extends LLMProvider {
   }
 
   createModel() {
-    const { apiKey, baseURL } = this.serviceOptions || {};
+    const { apiKey } = this.serviceOptions || {};
     const { model, responseFormat } = this.modelOptions || {};
 
     return new ChatGoogleGenerativeAI({
@@ -37,7 +37,7 @@ export class GoogleGenAIProvider extends LLMProvider {
       ...this.modelOptions,
       model,
       json: responseFormat === 'json',
-      baseUrl: baseURL ?? this.baseURL,
+      baseUrl: this.getResolvedBaseURL(),
     });
   }
 
@@ -48,18 +48,23 @@ export class GoogleGenAIProvider extends LLMProvider {
   }> {
     const options = this.serviceOptions || {};
     const apiKey = options.apiKey;
-    let baseURL = options.baseURL || this.baseURL;
-    if (!baseURL) {
+    let url: string;
+    try {
+      url = this.buildRequestURL(`v1beta/models?key=${encodeURIComponent(apiKey ?? '')}`);
+    } catch (e) {
+      return { code: 400, errMsg: e instanceof Error ? e.message : String(e) };
+    }
+    if (!url) {
       return { code: 400, errMsg: 'baseURL is required' };
     }
     if (!apiKey) {
       return { code: 400, errMsg: 'API Key required' };
     }
-    if (baseURL && baseURL.endsWith('/')) {
-      baseURL = baseURL.slice(0, -1);
-    }
     try {
-      const res = await axios.get(`${baseURL}/v1beta/models?key=${apiKey}`);
+      const res = await serverRequest({
+        method: 'GET',
+        url,
+      });
       return {
         models: res?.data?.models.map((model) => ({
           id: model.name,
@@ -71,7 +76,7 @@ export class GoogleGenAIProvider extends LLMProvider {
   }
 
   parseResponseMessage(message: Model) {
-    const { content: rawContent, messageId, metadata, role, toolCalls, attachments, workContext } = message;
+    const { content: rawContent, messageId, metadata, role, toolCalls, attachments, workContext, createdAt } = message;
     const content = {
       ...rawContent,
       messageId,
@@ -103,6 +108,7 @@ export class GoogleGenAIProvider extends LLMProvider {
 
     return {
       key: messageId,
+      createdAt,
       content,
       role,
     };

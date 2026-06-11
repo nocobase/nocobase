@@ -1,10 +1,6 @@
 ---
 pkg: "@nocobase/plugin-file-storage-s3-pro"
 ---
-:::tip
-このドキュメントはAIによって翻訳されました。不正確な情報については、[英語版](/en)をご参照ください
-:::
-
 
 
 pkg: "@nocobase/plugin-file-storage-s3-pro"

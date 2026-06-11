@@ -1,10 +1,6 @@
 ---
 pkg: "@nocobase/plugin-block-iframe"
 ---
-:::tip Aviso de tradução por IA
-Esta documentação foi traduzida automaticamente por IA.
-:::
-
 # Bloco Iframe
 
 ## Introdução

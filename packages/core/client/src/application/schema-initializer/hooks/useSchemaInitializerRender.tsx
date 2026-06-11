@@ -10,8 +10,8 @@
 import { ButtonProps } from 'antd';
 import React, { FC, useMemo } from 'react';
 import { useOpenModeContext } from '../../../modules/popup/OpenModeProvider';
-import { useApp } from '../../hooks';
-import { SchemaInitializerItems } from '../components';
+import { useApp } from '../../hooks/useApp';
+import { SchemaInitializerItems } from '../components/SchemaInitializerItems';
 import { SchemaInitializerButton } from '../components/SchemaInitializerButton';
 import { SchemaInitializer } from '../SchemaInitializer';
 import { SchemaInitializerOptions } from '../types';

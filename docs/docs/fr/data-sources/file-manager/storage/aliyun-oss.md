@@ -1,7 +1,3 @@
-:::tip Avis de traduction IA
-Cette documentation a été traduite automatiquement par IA.
-:::
-
 # Aliyun OSS
 
 Ce moteur de stockage est basé sur Aliyun OSS. Avant de l'utiliser, vous devez préparer les comptes et les autorisations nécessaires.

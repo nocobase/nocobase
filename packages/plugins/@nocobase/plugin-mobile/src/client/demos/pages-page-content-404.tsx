@@ -4,6 +4,8 @@ import React from 'react';
 
 import { mockApp } from '@nocobase/client/demo-utils';
 
+const Home = () => <div>Home</div>;
+
 const Demo = () => {
   return (
     <MobileRoutesProvider>
@@ -16,6 +18,10 @@ class DemoPlugin extends Plugin {
   async load() {
     this.app.addComponents({
       MobileNotFoundPage,
+    });
+    this.app.router.add('home', {
+      path: '/',
+      Component: Home,
     });
     this.app.router.add('schema', {
       path: '/page',

@@ -20,7 +20,7 @@ import { Form } from './Form';
 
 const { Echarts } = lazy(() => import('./ECharts'), 'Echarts');
 
-export const Markdown: React.FC<{
+const MarkdownComponent: React.FC<{
   message: Message['content'];
 }> = ({ message }) => {
   const tagIndexes: Record<string, number> = {};
@@ -70,3 +70,10 @@ export const Markdown: React.FC<{
     </div>
   );
 };
+
+export const Markdown = React.memo(MarkdownComponent, (prevProps, nextProps) => {
+  return (
+    prevProps.message?.messageId === nextProps.message?.messageId &&
+    prevProps.message?.content === nextProps.message?.content
+  );
+});

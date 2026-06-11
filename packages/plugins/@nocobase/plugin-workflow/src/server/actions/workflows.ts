@@ -14,7 +14,48 @@ import Plugin from '../Plugin';
 import Processor from '../Processor';
 import WorkflowRepository from '../repositories/WorkflowRepository';
 
+export class WorkflowValidationError extends Error {
+  status = 400;
+  errors: Record<string, string>;
+
+  constructor(errors: Record<string, string>) {
+    super('Workflow validation failed');
+    this.name = 'WorkflowValidationError';
+    this.errors = errors;
+  }
+}
+
+function validateWorkflow(
+  context: Context,
+  plugin: Plugin,
+  { type, config }: { type?: string; config?: Record<string, any> },
+) {
+  if (!type) {
+    context.throw(400, 'Trigger type is required');
+  }
+  const trigger = plugin.triggers.get(type);
+  if (!trigger) {
+    context.throw(400, `Trigger type "${type}" is not registered`);
+  }
+  if (config && typeof trigger.validateConfig === 'function') {
+    const errors = trigger.validateConfig(config);
+    if (errors) {
+      throw new WorkflowValidationError(errors);
+    }
+  }
+}
+
+export async function create(context: Context, next) {
+  const plugin = context.app.pm.get(Plugin) as Plugin;
+  const { values } = context.action.params;
+
+  validateWorkflow(context, plugin, values);
+
+  return actions.create(context, next);
+}
+
 export async function update(context: Context, next) {
+  const plugin = context.app.pm.get(Plugin) as Plugin;
   const repository = utils.getRepositoryFromParams(context) as WorkflowRepository;
   const { filterByTk, values } = context.action.params;
   context.action.mergeParams({
@@ -29,6 +70,10 @@ export async function update(context: Context, next) {
     if (workflow.versionStats.executed > 0) {
       return context.throw(400, 'config of executed workflow can not be updated');
     }
+
+    const type = values.type ?? workflow.type;
+    const config = values.config ?? workflow.config;
+    validateWorkflow(context, plugin, { type, config });
   }
   return actions.update(context, next);
 }

@@ -11,7 +11,7 @@ import { useFieldSchema } from '@formily/react';
 import React, { createContext, FC, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { UseRequestResult } from '../../../api-client/hooks/useRequest';
 import { useIsSubPageClosedByPageMenu } from '../../../application/CustomRouterContextProvider';
-import { useDataBlockRequest } from '../../../data-source';
+import { useDataBlockRequest } from '../../../data-source/data-block/DataBlockRequestProvider';
 import { useCurrentPopupContext } from '../page/PagePopups';
 import { getBlockService, storeBlockService } from '../page/pagePopupUtils';
 import { ActionContextProps } from './types';

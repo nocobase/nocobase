@@ -1,15 +1,15 @@
 ---
-displayName: "Data source: External ClickHouse"
+displayName: "データソース：外部 ClickHouse"
 packageName: '@nocobase/plugin-data-source-external-clickhouse'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Use external ClickHouse databases as data sources.
+  外部の ClickHouse データベースをデータソースとして使用します。
 isFree: false
 builtIn: false
 defaultEnabled: false
 editionLevel: 3
 ---
 
-# Data source: External ClickHouse
+# データソース：外部 ClickHouse

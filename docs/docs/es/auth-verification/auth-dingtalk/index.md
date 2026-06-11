@@ -1,10 +1,6 @@
 ---
 pkg: '@nocobase/plugin-auth-dingtalk'
 ---
-:::tip Aviso de traducción por IA
-Esta documentación ha sido traducida automáticamente por IA.
-:::
-
 # Autenticación: DingTalk
 
 ## Introducción

@@ -21,7 +21,8 @@ import {
 import { withDynamicSchemaProps } from '../hoc/withDynamicSchemaProps';
 import { useTreeParentRecord } from '../modules/blocks/data-blocks/table/TreeRecordProvider';
 import { RecordProvider } from '../record-provider';
-import { useActionContext, useDesignable } from '../schema-component';
+import { useActionContext } from '../schema-component/antd/action/hooks';
+import { useDesignable } from '../schema-component/hooks/useDesignable';
 import { BlockProvider, useBlockRequestContext } from './BlockProvider';
 import { TemplateBlockProvider } from './TemplateBlockProvider';
 import { FormActiveFieldsProvider } from './hooks/useFormActiveFields';

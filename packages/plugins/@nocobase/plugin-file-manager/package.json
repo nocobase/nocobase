@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-file-manager",
-  "version": "2.0.57",
+  "version": "2.1.1",
   "displayName": "File manager",
   "displayName.ru-RU": "Менеджер файлов",
   "displayName.zh-CN": "文件管理器",
@@ -27,7 +27,6 @@
     "antd": "5.x",
     "axios": "^1.7.0",
     "cos-nodejs-sdk-v5": "^2.11.14",
-    "file-type": "^21.0.0",
     "koa-static": "^5.0.0",
     "mime-match": "^1.0.2",
     "mime-types": "^3.0.1",
@@ -41,10 +40,18 @@
     "supertest": "^6.1.6",
     "url-join": "4.0.1"
   },
+  "dependencies": {
+    "file-type": "^21.0.0"
+  },
   "peerDependencies": {
     "@nocobase/actions": "2.x",
     "@nocobase/client": "2.x",
+    "@nocobase/client-v2": "2.x",
     "@nocobase/database": "2.x",
+    "@nocobase/flow-engine": "2.x",
+    "@nocobase/plugin-data-source-main": "2.x",
+    "@nocobase/plugin-data-source-manager": "2.x",
+    "@nocobase/plugin-environment-variables": "2.x",
     "@nocobase/server": "2.x",
     "@nocobase/test": "2.x",
     "@nocobase/utils": "2.x"

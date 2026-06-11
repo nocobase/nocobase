@@ -400,6 +400,10 @@ export type FlowContextGetApiInfosOptions = {
    * RunJS 文档版本（默认 v1）。
    */
   version?: RunJSVersion;
+  /**
+   * Include editor completion metadata. Defaults to false so API-doc callers keep the compact public shape.
+   */
+  includeCompletion?: boolean;
 };
 
 export type FlowContextGetVarInfosOptions = {
@@ -704,10 +708,11 @@ export class FlowContext {
    * - 输出仅来自 RunJS doc 与 defineProperty/defineMethod 的 info
    * - 不读取/展开 PropertyMeta（变量结构）
    * - 不自动展开深层 properties
-   * - 不返回自动补全字段（例如 completion）
+   * - 默认不返回自动补全字段（例如 completion），传入 includeCompletion=true 时返回
    */
   async getApiInfos(options: FlowContextGetApiInfosOptions = {}): Promise<Record<string, FlowContextApiInfo>> {
     const version = (options.version as RunJSVersion) || ('v1' as RunJSVersion);
+    const includeCompletion = !!options.includeCompletion;
     const evalCtx = this.createProxy();
 
     const isPrivateKey = (key: string) => typeof key === 'string' && key.startsWith('_');
@@ -759,7 +764,14 @@ export class FlowContext {
       const src = toDocObject(obj);
       if (!src) return {};
       const out: any = {};
-      for (const k of ['description', 'examples', 'ref', 'params', 'returns']) {
+      for (const k of [
+        'description',
+        'examples',
+        ...(includeCompletion ? ['completion'] : []),
+        'ref',
+        'params',
+        'returns',
+      ]) {
         const v = (src as any)[k];
         if (typeof v !== 'undefined') out[k] = v;
       }
@@ -773,7 +785,17 @@ export class FlowContext {
       const src = toDocObject(obj);
       if (!src) return {};
       const out: any = {};
-      for (const k of ['title', 'type', 'interface', 'description', 'examples', 'ref', 'params', 'returns']) {
+      for (const k of [
+        'title',
+        'type',
+        'interface',
+        'description',
+        'examples',
+        ...(includeCompletion ? ['completion'] : []),
+        'ref',
+        'params',
+        'returns',
+      ]) {
         const v = (src as any)[k];
         if (typeof v !== 'undefined') out[k] = v;
       }
@@ -872,7 +894,7 @@ export class FlowContext {
       node = { ...node, ...pickPropertyInfo(docObj) };
       node = { ...node, ...pickPropertyInfo(infoObj) };
       delete (node as any).properties;
-      delete (node as any).completion;
+      if (!includeCompletion) delete (node as any).completion;
       if (!Object.keys(node).length) continue;
       const outKey = mapDocKeyToApiKey(key, docNode);
       // Avoid exposing ctx.React/ctx.ReactDOM/ctx.antd in api docs when mapping to ctx.libs.*.
@@ -890,7 +912,7 @@ export class FlowContext {
       node = { ...node, ...pickMethodInfo(docObj) };
       node = { ...node, ...pickMethodInfo(info) };
       delete (node as any).properties;
-      delete (node as any).completion;
+      if (!includeCompletion) delete (node as any).completion;
       if (!Object.keys(node).length) continue;
       node.type = 'function';
 
@@ -913,7 +935,7 @@ export class FlowContext {
         let node: FlowContextApiInfo = {};
         node = { ...node, ...pickPropertyInfo(childObj) };
         delete (node as any).properties;
-        delete (node as any).completion;
+        if (!includeCompletion) delete (node as any).completion;
         if (!node.description || !String(node.description).trim()) continue;
         out[outKey] = node;
       }
@@ -3006,8 +3028,10 @@ export class FlowContext {
 }
 
 class BaseFlowEngineContext extends FlowContext {
+  declare t: (key: any, options?: any) => string;
   declare router: Router;
   declare dataSourceManager: DataSourceManager;
+  declare isDarkTheme: boolean;
   declare requireAsync: (url: string) => Promise<any>;
   declare importAsync: (url: string) => Promise<any>;
   declare createJSRunner: (options?: JSRunnerOptions) => Promise<JSRunner>;
@@ -3072,6 +3096,17 @@ class BaseFlowEngineContext extends FlowContext {
         });
         const jsCode = await prepareRunJsCode(String(code ?? ''), { preprocessTemplates: shouldPreprocessTemplates });
         return runner.run(jsCode);
+      },
+      {
+        description: 'Execute a RunJS code string in the current Flow context.',
+        detail: '(code: string, variables?: Record<string, any>, options?: JSRunnerOptions) => Promise<RunJSResult>',
+        params: [
+          { name: 'code', type: 'string', description: 'RunJS code to execute.' },
+          { name: 'variables', type: 'Record<string, any>', optional: true, description: 'Additional globals.' },
+          { name: 'options', type: 'JSRunnerOptions', optional: true, description: 'Runner options.' },
+        ],
+        returns: { type: 'Promise<{ success: boolean; value?: any; error?: any; timeout?: boolean }>' },
+        completion: { insertText: `await ctx.runjs('return 1')` },
       },
     );
   }
@@ -3579,6 +3614,9 @@ export class FlowEngineContext extends BaseFlowEngineContext {
       },
     });
     this.defineMethod('aclCheck', function (params) {
+      if (this.skipAclCheck) {
+        return true;
+      }
       return this.acl.aclCheck(params);
     });
     this.defineMethod('createResource', function (this: BaseFlowEngineContext, resourceType) {
@@ -3922,6 +3960,7 @@ export type FlowSettingsContext<TModel extends FlowModel = FlowModel> = FlowRunt
 
 export type RunJSDocCompletionDoc = {
   insertText?: string;
+  requires?: Array<'element'>;
 };
 
 export type RunJSDocHiddenDoc = boolean | ((ctx: any) => boolean | Promise<boolean>);

@@ -1,7 +1,3 @@
-:::tip Aviso de tradução por IA
-Esta documentação foi traduzida automaticamente por IA.
-:::
-
 # Entrar com o Google
 
 > https://developers.google.com/identity/openid-connect/openid-connect
