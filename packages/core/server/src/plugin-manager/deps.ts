@@ -24,7 +24,7 @@ const deps: Record<string, string> = {
   mathjs: '15.x',
   winston: '3.x',
   'winston-daily-rotate-file': '4.x',
-  koa: '2.x',
+  koa: '3.x',
   '@koa/cors': '5.x',
   '@koa/router': '13.x',
   multer: '1.x',
@@ -57,6 +57,7 @@ const deps: Record<string, string> = {
   'china-division': '2.x',
   cronstrue: '2.x',
   '@nocobase/license-kit': '0.3.x',
+  joi: '17.x',
 };
 
 export default deps;

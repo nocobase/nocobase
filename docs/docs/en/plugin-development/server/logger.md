@@ -1,8 +1,14 @@
+---
+title: "Logger"
+description: "NocoBase server-side logging: app.logger, log levels, creating sub-loggers, log output configuration."
+keywords: "Logger,logging,app.logger,log levels,server-side logging,NocoBase"
+---
+
 # Logger
 
-NocoBase logging is based on <a href="https://github.com/winstonjs/winston" target="_blank">Winston</a>. By default, NocoBase divides logs into API request logs, system runtime logs, and SQL execution logs. API request logs and SQL execution logs are printed internally by the application. Plugin developers usually only need to print plugin-related system runtime logs.
+NocoBase logging is based on <a href="https://github.com/winstonjs/winston" target="_blank">Winston</a>. By default, NocoBase divides logs into API request logs, system runtime logs, and SQL execution logs. API request logs and SQL execution logs are printed internally by the application. Plugin developers usually only need to focus on plugin-related system runtime logs.
 
-This document explains how to create and print logs during plugin development.
+The following explains how to create and print logs during plugin development.
 
 ## Default Printing Methods
 
@@ -27,7 +33,7 @@ class CustomPlugin extends Plugin {
 
 All of the above methods follow the usage below:
 
-The first parameter is the log message, and the second parameter is an optional metadata object, which can be any key-value pairs. where `module`, `submodule`, and `method` will be extracted as separate fields, and the remaining fields will be placed in the `meta` field.
+The first parameter is the log message, and the second parameter is an optional metadata object, which can be any key-value pairs. The `module`, `submodule`, and `method` fields will be extracted as separate fields, and the remaining fields will be placed in the `meta` field.
 
 ```ts
 app.log.info('message', {
@@ -54,13 +60,13 @@ import { createSystemLogger } from '@nocobase/logger';
 const logger = createSystemLogger({
   dirname: '/pathto/',
   filename: 'xxx',
-  seperateError: true, // Whether to output error level logs separately to 'xxx_error.log'
+  seperateError: true, // Whether to output error level logs separately to xxx_error.log
 });
 ```
 
 ## Custom Logger
 
-If you want to use Winston's native methods instead of the system-provided ones, you can create logs using the following methods.
+If you don't want to use the system-provided printing methods and prefer to use Winston's native approach directly, you can create logs using the following methods.
 
 ### `createLogger`
 
@@ -79,7 +85,7 @@ const logger = createLogger({
 
 ### `app.createLogger`
 
-In multi-app scenarios, sometimes we want custom output directories and files, which can be output to a directory named after the current application.
+In multi-app scenarios, if you want custom logs to be output to a directory named after the current application, you can use this method.
 
 ```ts
 app.createLogger({
@@ -105,3 +111,10 @@ class CustomPlugin extends Plugin {
 }
 ```
 
+## Related Links
+
+- [Context](./context.md) - Print logs via `ctx.logger` in middleware and Actions
+- [Plugin](./plugin.md) - Use logging via `this.log` and `plugin.createLogger` in plugins
+- [Telemetry](./telemetry.md) - Combine logging with telemetry for observability
+- [Middleware](./middleware.md) - Typical scenarios for logging requests in middleware
+- [Server Development Overview](./index.md) - Where the logging system fits in the server architecture

@@ -10,7 +10,7 @@
 import { createForm } from '@formily/core';
 import { Schema, useFieldSchema } from '@formily/react';
 import { Spin } from 'antd';
-import React, { memo, useMemo } from 'react';
+import React, { memo, useEffect, useMemo } from 'react';
 import { useRemoteCollectionManagerLoading } from '../../collection-manager/CollectionManagerProvider';
 import { LOADING_DELAY } from '../../variables/constants';
 import { useComponent } from '../hooks';
@@ -64,13 +64,19 @@ const RequestSchemaComponent: React.FC<RemoteSchemaComponentProps> = (props) => 
   const collectionManagerLoading = useRemoteCollectionManagerLoading();
   const parentSchema = useFieldSchema();
   const transformedSchema = useMemo(() => schemaTransform(schema || {}), [schema, schemaTransform]);
+  const pageNotFound = !schema || Object.keys(schema).length === 0;
+
+  useEffect(() => {
+    if (!collectionManagerLoading && !loading && !hidden && pageNotFound) {
+      onPageNotFind && onPageNotFind();
+    }
+  }, [collectionManagerLoading, hidden, loading, onPageNotFind, pageNotFound]);
 
   if (collectionManagerLoading || loading || hidden) {
     return <Spin style={{ width: '100%', marginTop: 20 }} delay={LOADING_DELAY} />;
   }
 
-  if (!schema || Object.keys(schema).length === 0) {
-    onPageNotFind && onPageNotFind();
+  if (pageNotFound) {
     return NotFoundComponent ? <NotFoundComponent /> : null;
   }
 

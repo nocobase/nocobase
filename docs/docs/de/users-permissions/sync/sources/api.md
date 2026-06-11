@@ -1,7 +1,3 @@
-:::tip KI-Übersetzungshinweis
-Diese Dokumentation wurde automatisch von KI übersetzt.
-:::
-
 # Benutzerdaten über die HTTP API synchronisieren
 
 ## API-Schlüssel erhalten

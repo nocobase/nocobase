@@ -8,9 +8,9 @@
  */
 
 import { vi } from 'vitest';
-import { createMockServer, MockServer } from '@nocobase/test';
+import { MockServer } from '@nocobase/test';
 import { variables, inferSelectsFromUsage } from '../variables/registry';
-import { resetVariablesRegistryForTest } from './test-utils';
+import { createFlowEngineMockServer, resetVariablesRegistryForTest } from './test-utils';
 import FlowModelRepository from '../repository';
 
 describe('plugin-flow-engine variables:resolve (no HTTP)', () => {
@@ -182,7 +182,7 @@ describe('plugin-flow-engine variables:resolve (no HTTP)', () => {
   };
 
   beforeEach(async () => {
-    app = await createMockServer({
+    app = await createFlowEngineMockServer({
       plugins: [
         'error-handler',
         'auth',
@@ -1176,11 +1176,19 @@ describe('plugin-flow-engine variables:resolve (no HTTP)', () => {
   });
 
   describe('custom collection: hospital_customers', () => {
+    let hospitalCustomersCollection = '';
+    let hospitalCustomersCollectionSequence = 0;
+
     beforeEach(async () => {
+      hospitalCustomersCollectionSequence += 1;
+      hospitalCustomersCollection = `v2_hospital_customers_${
+        process.pid
+      }_${Date.now()}_${hospitalCustomersCollectionSequence}`;
+
       const collRepo = app.db.getRepository('collections');
       await collRepo.create({
         values: {
-          name: 'v2_hospital_customers',
+          name: hospitalCustomersCollection,
           autoGenId: false,
           fields: [
             { name: 'id', type: 'string', primaryKey: true },
@@ -1191,7 +1199,7 @@ describe('plugin-flow-engine variables:resolve (no HTTP)', () => {
       // @ts-ignore
       await (app.db.getRepository('collections') as any).load();
       await app.db.sync();
-      await app.db.getRepository('v2_hospital_customers').create({
+      await app.db.getRepository(hospitalCustomersCollection).create({
         values: { id: '323538', hospital_customer: 'HC-Name-323538' },
       });
     });
@@ -1228,7 +1236,7 @@ describe('plugin-flow-engine variables:resolve (no HTTP)', () => {
             contextParams: {
               'popup.parent.record': {
                 dataSourceKey: 'main',
-                collection: 'v2_hospital_customers',
+                collection: hospitalCustomersCollection,
                 filterByTk: '323538',
               },
             },
@@ -1287,7 +1295,7 @@ describe('plugin-flow-engine variables:resolve (no HTTP)', () => {
             contextParams: {
               'popup.parent.record': {
                 dataSourceKey: 'main',
-                collection: 'v2_hospital_customers',
+                collection: hospitalCustomersCollection,
                 filterByTk: '323538',
               },
             },
@@ -1352,7 +1360,7 @@ describe('plugin-flow-engine variables:resolve (no HTTP)', () => {
             contextParams: {
               'popup.parent.record': {
                 dataSourceKey: 'main',
-                collection: 'v2_hospital_customers',
+                collection: hospitalCustomersCollection,
                 filterByTk: '323538',
               },
             },
@@ -1361,7 +1369,7 @@ describe('plugin-flow-engine variables:resolve (no HTTP)', () => {
       };
 
       // 从 DB 中获取期望的“完整记录”形态，用于对比 keys 集合
-      const repo = app.db.getRepository('v2_hospital_customers');
+      const repo = app.db.getRepository(hospitalCustomersCollection);
       const expectedRec = await repo.findOne({ filterByTk: '323538' });
       const expectedJson = expectedRec?.toJSON?.() || {};
       const expectedKeys = Object.keys(expectedJson).sort();
@@ -1411,7 +1419,7 @@ describe('plugin-flow-engine variables:resolve (no HTTP)', () => {
             contextParams: {
               'popup.parent.record': {
                 dataSourceKey: 'main',
-                collection: 'v2_hospital_customers',
+                collection: hospitalCustomersCollection,
                 filterByTk: '323538',
               },
             },
@@ -1438,7 +1446,7 @@ describe('plugin-flow-engine variables:resolve (no HTTP)', () => {
             contextParams: {
               'popup.parent.record': {
                 dataSourceKey: 'main',
-                collection: 'v2_hospital_customers',
+                collection: hospitalCustomersCollection,
                 filterByTk: '323538',
               },
             },
@@ -1493,7 +1501,7 @@ describe('plugin-flow-engine variables:resolve (no HTTP)', () => {
             contextParams: {
               'popup.parent.record': {
                 dataSourceKey: 'main',
-                collection: 'v2_hospital_customers',
+                collection: hospitalCustomersCollection,
                 filterByTk: '323538',
               },
             },

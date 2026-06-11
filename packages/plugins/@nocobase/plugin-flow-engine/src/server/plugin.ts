@@ -10,6 +10,7 @@
 import { SequelizeCollectionManager } from '@nocobase/data-source-manager';
 import type { ResourcerContext } from '@nocobase/resourcer';
 import { parseLiquidContext, transformSQL } from '@nocobase/utils';
+import { registerFlowSurfacesResource } from './flow-surfaces';
 import PluginUISchemaStorageServer from './server';
 import { JSONValue } from './template/resolver';
 import { resolveVariablesBatch, resolveVariablesTemplate } from './variables/resolve';
@@ -30,8 +31,25 @@ export class PluginFlowEngineServer extends PluginUISchemaStorageServer {
     return cm.db;
   }
 
+  async runSQLByDataSourceKey(dataSourceKey: string | undefined, sql: string, options: Record<string, unknown> = {}) {
+    const key = dataSourceKey || 'main';
+    const dataSource = this.app.dataSourceManager.get(key);
+    if (!dataSource) {
+      throw new Error(`data source "${key}" does not exist`);
+    }
+
+    const cm = dataSource.collectionManager as SequelizeCollectionManager;
+
+    if (typeof cm.db?.runSQL !== 'function') {
+      throw new Error(`data source "${key}" does not support SQL`);
+    }
+
+    return await cm.db.runSQL(sql, options);
+  }
+
   async load() {
     await super.load();
+    registerFlowSurfacesResource(this);
     this.app.auditManager.registerAction('flowSql:save');
     this.app.auditManager.registerAction('flowModels:save');
     this.app.auditManager.registerAction('flowModels:duplicate');
@@ -101,10 +119,9 @@ export class PluginFlowEngineServer extends PluginUISchemaStorageServer {
         const record = await r.findOne({
           filter: { uid },
         });
-        const db = this.getDatabaseByDataSourceKey(record.dataSourceKey || dataSourceKey);
         const result = await transformSQL(record.sql);
         const sql = await parseLiquidContext(result.sql, liquidContext);
-        ctx.body = await db.runSQL(sql, {
+        ctx.body = await this.runSQLByDataSourceKey(record.dataSourceKey || dataSourceKey, sql, {
           type,
           filter,
           bind,
@@ -136,8 +153,7 @@ export class PluginFlowEngineServer extends PluginUISchemaStorageServer {
       },
       'flowSql:run': async (ctx, next) => {
         const { sql, type, filter, bind, dataSourceKey } = ctx.action.params.values;
-        const db = this.getDatabaseByDataSourceKey(dataSourceKey);
-        ctx.body = await db.runSQL(sql, { type, filter, bind });
+        ctx.body = await this.runSQLByDataSourceKey(dataSourceKey, sql, { type, filter, bind });
         await next();
       },
     });

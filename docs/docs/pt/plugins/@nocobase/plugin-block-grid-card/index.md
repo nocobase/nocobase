@@ -1,12 +1,12 @@
 ---
-displayName: "Block: GridCard"
+displayName: "Bloco: Cartão em grade"
 packageName: '@nocobase/plugin-block-grid-card'
 description: |
-  Display data in a grid list with pagination support.
+  Exibe dados em formato de lista em grade, suporta configurações de paginação
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Block: GridCard
+# Bloco: Cartão em grade

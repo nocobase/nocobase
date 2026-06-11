@@ -7,21 +7,22 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { MockServer } from '@nocobase/test';
-import Database from '@nocobase/database';
+import type { MockServer, ExtendedAgent } from '@nocobase/test';
+import Database, { Repository, Model } from '@nocobase/database';
 import { getApp, sleep } from '@nocobase/plugin-workflow-test';
-import { EXECUTION_STATUS, JOB_STATUS } from '../../constants';
+import { EXECUTION_REASON, EXECUTION_STATUS, JOB_STATUS } from '../../constants';
 import PluginWorkflowServer from '../../Plugin';
+import { WorkflowModel, ExecutionModel, FlowNodeModel, JobModel } from '../../types';
 
 describe('workflow > actions > executions', () => {
   let app: MockServer;
-  let agent;
+  let agent: ExtendedAgent;
   let db: Database;
-  let PostRepo;
-  let WorkflowModel;
-  let workflow;
-  let users;
-  let userAgents;
+  let PostRepo: Repository;
+  let WorkflowRepo: Repository;
+  let workflow: WorkflowModel;
+  let users: Model[];
+  let userAgents: ExtendedAgent[];
 
   beforeEach(async () => {
     app = await getApp({
@@ -32,15 +33,17 @@ describe('workflow > actions > executions', () => {
     const UserRepo = db.getCollection('users').repository;
     const user = await UserRepo.findOne();
     agent = await app.agent().loginUsingId(user.id);
-    WorkflowModel = db.getCollection('workflows').model;
+    WorkflowRepo = db.getCollection('workflows').repository;
     PostRepo = db.getCollection('posts').repository;
 
-    workflow = await WorkflowModel.create({
-      enabled: true,
-      type: 'collection',
-      config: {
-        mode: 1,
-        collection: 'posts',
+    workflow = await WorkflowRepo.create({
+      values: {
+        enabled: true,
+        type: 'collection',
+        config: {
+          mode: 1,
+          collection: 'posts',
+        },
       },
     });
     users = await UserRepo.createMany({
@@ -135,12 +138,12 @@ describe('workflow > actions > executions', () => {
       const post = await PostRepo.create({ values: { title: 't1' } });
       await sleep(500);
 
-      const e1 = await workflow.getExecutions();
+      const e1: ExecutionModel[] = await workflow.getExecutions();
       expect(e1.length).toBe(1);
       expect(e1[0].get('status')).toBe(EXECUTION_STATUS.RESOLVED);
 
       const { status } = await agent.resource('executions').cancel({
-        filterByTk: e1.id,
+        filterByTk: e1[0].id,
       });
 
       expect(status).toBe(400);
@@ -154,17 +157,18 @@ describe('workflow > actions > executions', () => {
       const post = await PostRepo.create({ values: { title: 't1' } });
       await sleep(500);
 
-      const e1 = await workflow.getExecutions();
+      const e1: ExecutionModel[] = await workflow.getExecutions();
       expect(e1.length).toBe(1);
       expect(e1[0].get('status')).toBe(EXECUTION_STATUS.STARTED);
 
       await agent.resource('executions').cancel({
-        filterByTk: e1.id,
+        filterByTk: e1[0].id,
       });
 
-      const e2 = await workflow.getExecutions();
+      const e2: ExecutionModel[] = await workflow.getExecutions();
       expect(e2.length).toBe(1);
       expect(e2[0].get('status')).toBe(EXECUTION_STATUS.ABORTED);
+      expect(e2[0].get('reason')).toBe(EXECUTION_REASON.MANUAL_CANCEL);
       const jobs = await e2[0].getJobs();
       expect(jobs[0].status).toBe(JOB_STATUS.ABORTED);
     });
@@ -214,7 +218,7 @@ describe('workflow > actions > executions', () => {
       return { execution, pendingJob };
     }
 
-    async function createJob(execution, node, values = {}) {
+    async function createJob(execution: ExecutionModel, node: FlowNodeModel, values = {}) {
       const workflowPlugin = app.pm.get(PluginWorkflowServer) as PluginWorkflowServer;
       const JobModel = db.getModel('jobs');
       return JobModel.create({
@@ -259,7 +263,7 @@ describe('workflow > actions > executions', () => {
       const res1 = await agent.resource('executions').rerun({
         filterByTk: execution.id,
       });
-      expect(res1.status).toBe(409);
+      expect(res1.status).toBe(400);
 
       const queued = await workflow.createExecution({
         status: EXECUTION_STATUS.QUEUEING,
@@ -269,7 +273,7 @@ describe('workflow > actions > executions', () => {
       const res2 = await agent.resource('executions').rerun({
         filterByTk: queued.id,
       });
-      expect(res2.status).toBe(409);
+      expect(res2.status).toBe(400);
     });
 
     it('rerun without overwrite creates new jobs from head node', async () => {
@@ -281,7 +285,7 @@ describe('workflow > actions > executions', () => {
       expect(res.status).toBe(202);
       await sleep(500);
 
-      const jobs = await execution.getJobs({ order: [['id', 'ASC']] });
+      const jobs: JobModel[] = await execution.getJobs({ order: [['id', 'ASC']] });
       expect(jobs.filter((job) => job.nodeId === n1.id).length).toBe(2);
       expect(jobs.filter((job) => job.nodeId === n2.id).length).toBe(2);
     });
@@ -298,7 +302,7 @@ describe('workflow > actions > executions', () => {
       expect(res.status).toBe(202);
       await sleep(500);
 
-      const jobs = await execution.getJobs({ order: [['id', 'ASC']] });
+      const jobs: JobModel[] = await execution.getJobs({ order: [['id', 'ASC']] });
       expect(jobs.filter((job) => job.nodeId === n1.id).length).toBe(1);
       expect(jobs.filter((job) => job.nodeId === n2.id).length).toBe(2);
     });
@@ -326,7 +330,7 @@ describe('workflow > actions > executions', () => {
       expect(res.status).toBe(202);
       await sleep(500);
 
-      const jobs = await execution.getJobs({ order: [['id', 'ASC']] });
+      const jobs: JobModel[] = await execution.getJobs({ order: [['id', 'ASC']] });
       const headJobs = jobs.filter((job) => job.nodeId === n1.id);
       expect(headJobs.length).toBe(1);
       expect(headJobs[0].id).toBe(firstJob.id);
@@ -370,93 +374,8 @@ describe('workflow > actions > executions', () => {
       expect(res.status).toBe(202);
       await sleep(500);
 
-      const jobs = await execution.getJobs({ where: { nodeId: n2.id }, order: [['id', 'ASC']] });
+      const jobs: JobModel[] = await execution.getJobs({ where: { nodeId: n2.id }, order: [['id', 'ASC']] });
       expect(jobs[jobs.length - 1].result).toEqual({ source: 'latest' });
-    });
-
-    it('rerun fails when node does not exist', async () => {
-      const { execution } = await prepareStartedExecution();
-
-      const res = await agent.resource('executions').rerun({
-        filterByTk: execution.id,
-        values: {
-          nodeId: -1,
-        },
-      });
-      expect(res.status).toBe(400);
-    });
-
-    it('rerun fails when workflow revision does not exist', async () => {
-      const { execution } = await prepareStartedExecution();
-      await workflow.destroy();
-
-      const res = await agent.resource('executions').rerun({
-        filterByTk: execution.id,
-      });
-      expect(res.status).toBe(400);
-    });
-
-    it('rerun fails when target node has no latest job', async () => {
-      const n1 = await workflow.createNode({
-        type: 'echo',
-      });
-      const execution = await workflow.createExecution({
-        status: EXECUTION_STATUS.STARTED,
-        context: {},
-        key: workflow.key,
-      });
-
-      const res = await agent.resource('executions').rerun({
-        filterByTk: execution.id,
-        values: {
-          nodeId: n1.id,
-        },
-      });
-      expect(res.status).toBe(400);
-    });
-
-    it('rerun fails when target node has no latest upstream job', async () => {
-      const n1 = await workflow.createNode({
-        type: 'echo',
-      });
-      const n2 = await workflow.createNode({
-        type: 'echo',
-        upstreamId: n1.id,
-      });
-      await n1.setDownstream(n2);
-      const execution = await workflow.createExecution({
-        status: EXECUTION_STATUS.STARTED,
-        context: {},
-        key: workflow.key,
-      });
-      await createJob(execution, n2);
-
-      const res = await agent.resource('executions').rerun({
-        filterByTk: execution.id,
-        values: {
-          nodeId: n2.id,
-        },
-      });
-      expect(res.status).toBe(400);
-    });
-
-    it('rerun fails when overwrite from head has no latest job', async () => {
-      await workflow.createNode({
-        type: 'echo',
-      });
-      const execution = await workflow.createExecution({
-        status: EXECUTION_STATUS.STARTED,
-        context: {},
-        key: workflow.key,
-      });
-
-      const res = await agent.resource('executions').rerun({
-        filterByTk: execution.id,
-        values: {
-          overwrite: true,
-        },
-      });
-      expect(res.status).toBe(400);
     });
 
     it('processing rerun blocks cancel', async () => {
@@ -472,7 +391,6 @@ describe('workflow > actions > executions', () => {
         filterByTk: execution.id,
       });
       expect(cancelRes.status).toBe(409);
-      await sleep(1200);
     });
 
     it('processing rerun blocks resume', async () => {
@@ -491,23 +409,6 @@ describe('workflow > actions > executions', () => {
         },
       });
       expect(resumeRes.status).toBe(409);
-      await sleep(1200);
-    });
-
-    it('processing rerun blocks duplicate rerun', async () => {
-      const { execution } = await prepareLongRunningStartedExecution();
-
-      const rerunRes = await agent.resource('executions').rerun({
-        filterByTk: execution.id,
-      });
-      expect(rerunRes.status).toBe(202);
-      await sleep(100);
-
-      const duplicateRes = await agent.resource('executions').rerun({
-        filterByTk: execution.id,
-      });
-      expect(duplicateRes.status).toBe(409);
-      await sleep(1200);
     });
   });
 });

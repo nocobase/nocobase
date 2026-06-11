@@ -39,7 +39,7 @@ export function useRestoreTask() {
     };
     const interval = setInterval(checkRestoreTask, 3000);
     return () => clearInterval(interval);
-  }, [maintaining]);
+  }, [apiClient, hideCheckBackupMessage, maintaining, notification]);
 
   return restoreTaskId;
 }

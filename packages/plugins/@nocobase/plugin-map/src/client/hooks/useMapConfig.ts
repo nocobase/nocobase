@@ -9,11 +9,9 @@
 
 import { useState, useEffect } from 'react';
 import { useFlowEngine } from '@nocobase/flow-engine';
+import { getSSKey, MapConfigurationResourceKey } from '../../shared/configuration';
 
-export const MapConfigurationResourceKey = 'map-configuration';
-export const getSSKey = (type) => {
-  return `NOCOBASE_PLUGIN_MAP_CONFIGURATION_${type}`;
-};
+export { getSSKey, MapConfigurationResourceKey };
 export const useMapConfig = (type: string, caching = true) => {
   const flowEngine = useFlowEngine();
 

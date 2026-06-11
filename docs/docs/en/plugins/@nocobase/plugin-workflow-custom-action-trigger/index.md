@@ -5,7 +5,7 @@ supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Triggers after click a custom action button.
+  Triggered after clicking a button bound to a custom event. Suitable for orchestrating custom actions on data rows.
 isFree: true
 builtIn: true
 defaultEnabled: false

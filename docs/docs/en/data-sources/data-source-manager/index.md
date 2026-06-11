@@ -14,6 +14,7 @@ NocoBase provides a data source management plugin for managing data sources and 
 - [External PostgreSQL](/data-sources/data-source-external-postgres): Use an external PostgreSQL database as a data source.
 - [External MSSQL](/data-sources/data-source-external-mssql): Use an external MSSQL (SQL Server) database as a data source.
 - [External Oracle](/data-sources/data-source-external-oracle): Use an external Oracle database as a data source.
+- [External NocoBase](/data-sources/data-source-external-nocobase/): Use another NocoBase application as an external data source through the remote NocoBase API.
 
 In addition, more types can be extended through plugins, which can be common types of databases or platforms that provide APIs (SDKs).
 
@@ -23,7 +24,7 @@ Built-in plugin, no separate installation required.
 
 ## Usage Instructions
 
-When the application is initialized and installed, a data source is provided by default to store NocoBase data, known as the main database. For more information, see the [Main Database](/data-sources/data-source-main/) documentation.
+When the application is initialized and installed, a data source is provided by default to store NocoBase data, known as the main database. For more information, see the [Main Database](/data-sources/data-source-main/index.md) documentation.
 
 ### External Data Sources
 
@@ -39,4 +40,8 @@ External databases are supported as data sources. For more information, see the 
 ![nocobase_doc-2025-10-29-19-46-34](https://static-docs.nocobase.com/nocobase_doc-2025-10-29-19-46-34.png)
 
 
-You can also access data from HTTP API sources. For more information, see the [REST API Data Source](/data-sources/data-source-rest-api/) documentation.
+You can also access data from HTTP API sources. For more information, see the [REST API Data Source](/data-sources/data-source-rest-api/index.md) documentation.
+
+### External NocoBase Data Source
+
+You can use another NocoBase application as an external data source through the remote NocoBase API. For more information, see the [External NocoBase](/data-sources/data-source-external-nocobase/) documentation.

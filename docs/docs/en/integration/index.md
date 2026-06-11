@@ -12,8 +12,8 @@ NocoBase provides powerful API capabilities for integrating with external applic
 
 ![20250301003106](https://static-docs.nocobase.com/20250301003106.png)
 
-- **[API Keys](/integration/api-keys/)**: Secure authentication using API keys for programmatic access to NocoBase resources
-- **[API Documentation](/integration/api-doc/)**: Built-in API documentation for exploring and testing endpoints
+- **[API Keys](/integration/api-keys/index.md)**: Secure authentication using API keys for programmatic access to NocoBase resources
+- **[API Documentation](/integration/api-doc/index.md)**: Built-in API documentation for exploring and testing endpoints
 
 ### Single Sign-On (SSO)
 
@@ -21,7 +21,7 @@ Integrate with enterprise identity systems for unified authentication:
 
 ![auth_sso-2025-11-24-08-26-46](https://static-docs.nocobase.com/auth_sso-2025-11-24-08-26-46.png)
 
-- **[SSO Integration](/integration/sso/)**: Support for SAML, OIDC, CAS, LDAP, and third-party platform authentication
+- **[SSO Integration](/integration/sso/index.md)**: Support for SAML, OIDC, CAS, LDAP, and third-party platform authentication
 - Centralized user management and access control
 - Seamless authentication experience across systems
 
@@ -31,8 +31,8 @@ Connect NocoBase workflows with external systems:
 
 ![auth_sso-2025-11-24-12-02-01](https://static-docs.nocobase.com/auth_sso-2025-11-24-12-02-01.png)
 
-- **[Workflow Webhook](/integration/workflow-webhook/)**: Receive events from external systems to trigger workflows
-- **[Workflow HTTP Request](/integration/workflow-http-request/)**: Send HTTP requests to external APIs from workflows
+- **[Workflow Webhook](/integration/workflow-webhook/index.md)**: Receive events from external systems to trigger workflows
+- **[Workflow HTTP Request](/integration/workflow-http-request/index.md)**: Send HTTP requests to external APIs from workflows
 - Automate business processes across platforms
 
 ### External Data Sources
@@ -41,7 +41,7 @@ Connect to external databases and data systems:
 
 ![20240512085558](https://static-docs.nocobase.com/20240512085558.png)
 
-- **[External Databases](/data-sources/)**: Directly connect to MySQL, PostgreSQL, MariaDB, MSSQL, Oracle, and KingbaseES databases
+- **[External Databases](/data-sources/index.md)**: Directly connect to MySQL, PostgreSQL, MariaDB, MSSQL, Oracle, and KingbaseES databases
 - Recognize external database table structures and perform CRUD operations on external data directly within NocoBase
 - Unified data management interface
 
@@ -51,7 +51,7 @@ Embed external content within NocoBase:
 
 ![20240408220322](https://static-docs.nocobase.com/20240408220322.png)
 
-- **[Iframe Block](/integration/block-iframe/)**: Embed external web pages and applications
+- **[Iframe Block](/integration/block-iframe/index.md)**: Embed external web pages and applications
 - **JS Blocks**: Execute custom JavaScript code for advanced integrations
 
 ## Common Integration Scenarios

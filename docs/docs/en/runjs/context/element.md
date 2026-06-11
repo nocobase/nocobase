@@ -1,57 +1,60 @@
 # ctx.element
 
-The ElementProxy instance for the sandbox DOM container; it is the default render target of `ctx.render()`. Available in JSBlock, JSField, JSItem, JSColumn, and other contexts that have a render container.
+An `ElementProxy` instance pointing to the sandbox DOM container, serving as the default rendering target for `ctx.render()`. It is available in scenarios where a rendering container exists, such as `JSBlock`, `JSField`, `JSItem`, and `JSColumn`.
 
-## Use Cases
+## Applicable Scenarios
 
 | Scenario | Description |
-|----------|-------------|
-| **JSBlock** | Block’s DOM container for custom content |
-| **JSField / JSItem / FormJSFieldItem** | Field/item render container (often a `<span>`) |
-| **JSColumn** | Table cell DOM container for custom column content |
+|------|------|
+| **JSBlock** | The DOM container for the block, used to render custom block content. |
+| **JSField / JSItem / FormJSFieldItem** | The rendering container for a field or form item (usually a `<span>`). |
+| **JSColumn** | The DOM container for a table cell, used to render custom column content. |
 
-> Note: `ctx.element` is only available in RunJS contexts that have a render container; in contexts without UI (e.g. pure backend) it may be `undefined`—check before use.
+> Note: `ctx.element` is only available in RunJS contexts that have a rendering container. In contexts without a UI (such as pure backend logic), it may be `undefined`. It is recommended to perform a null check before use.
 
-## Type
+## Type Definition
 
 ```typescript
 element: ElementProxy | undefined;
 
+// ElementProxy is a proxy for the raw HTMLElement, exposing a secure API
 class ElementProxy {
-  __el: HTMLElement;  // Internal native DOM (only for specific cases)
-  innerHTML: string;  // Read/write sanitized with DOMPurify
-  outerHTML: string;
+  __el: HTMLElement;  // The internal raw DOM element (accessible only in specific scenarios)
+  innerHTML: string;  // Sanitized via DOMPurify during read/write
+  outerHTML: string; // Same as above
   appendChild(child: HTMLElement | string): void;
-  // Other HTMLElement methods passed through (not recommended)
+  // Other HTMLElement methods are passed through (direct use is not recommended)
 }
 ```
 
-## Security
+## Security Requirements
 
-**Recommended: do all rendering via `ctx.render()`.** Do not use `ctx.element`’s DOM APIs directly (e.g. `innerHTML`, `appendChild`, `querySelector`).
+**Recommended: All rendering should be performed via `ctx.render()`.** Avoid using the DOM APIs of `ctx.element` directly (e.g., `innerHTML`, `appendChild`, `querySelector`, etc.).
 
-### Why use ctx.render()
+### Why ctx.render() is Recommended
 
-| Benefit | Description |
-|---------|-------------|
-| **Security** | Centralized control, avoids XSS and unsafe DOM use |
-| **React** | Full JSX, components, and lifecycle |
-| **Context** | Inherits app ConfigProvider, theme, etc. |
-| **Conflicts** | Manages React root create/unmount, avoids multiple instances |
+| Advantage | Description |
+|------|------|
+| **Security** | Centralized security control to prevent XSS and improper DOM operations. |
+| **React Support** | Full support for JSX, React components, and lifecycles. |
+| **Context Inheritance** | Automatically inherits the application's `ConfigProvider`, themes, etc. |
+| **Conflict Handling** | Automatically manages React root creation/unmounting to avoid multi-instance conflicts. |
 
-### ❌ Not recommended: direct ctx.element use
+### ❌ Not Recommended: Direct Manipulation of ctx.element
 
 ```ts
+// ❌ Not recommended: Using ctx.element APIs directly
 ctx.element.innerHTML = '<div>Content</div>';
 ctx.element.appendChild(node);
 ctx.element.querySelector('.class');
 ```
 
-> `ctx.element.innerHTML` is deprecated; use `ctx.render()` instead.
+> `ctx.element.innerHTML` is deprecated. Please use `ctx.render()` instead.
 
-### ✅ Recommended: ctx.render()
+### ✅ Recommended: Using ctx.render()
 
 ```ts
+// ✅ Rendering a React component
 const { Button, Card } = ctx.libs.antd;
 ctx.render(
   <Card title={ctx.t('Welcome')}>
@@ -59,40 +62,43 @@ ctx.render(
   </Card>
 );
 
+// ✅ Rendering an HTML string
 ctx.render('<div style="padding:16px;">' + ctx.t('Content') + '</div>');
 
+// ✅ Rendering a DOM node
 const div = document.createElement('div');
 div.textContent = ctx.t('Hello');
 ctx.render(div);
 ```
 
-## Exception: popover anchor
+## Special Case: As a Popover Anchor
 
-When you need the current element as a popover anchor, use `ctx.element?.__el` as the native DOM `target`:
+When you need to open a Popover using the current element as an anchor, you can access `ctx.element?.__el` to get the raw DOM as the `target`:
 
 ```ts
+// ctx.viewer.popover requires a raw DOM as the target
 await ctx.viewer.popover({
   target: ctx.element?.__el,
-  content: <div>Popover content</div>,
+  content: <div>Popup Content</div>,
 });
 ```
 
-> Use `__el` only for this “current container as anchor” case; do not touch DOM otherwise.
+> Use `__el` only in scenarios like "using the current container as an anchor"; do not manipulate the DOM directly in other cases.
 
-## Relation to ctx.render
+## Relationship with ctx.render
 
-- `ctx.render(vnode)` without a `container` argument renders into `ctx.element`.
-- If there is no `ctx.element` and no `container`, an error is thrown.
-- You can pass a container: `ctx.render(vnode, customContainer)`.
+- If `ctx.render(vnode)` is called without a `container` argument, it renders into the `ctx.element` container by default.
+- If both `ctx.element` is missing and no `container` is provided, an error will be thrown.
+- You can explicitly specify a container: `ctx.render(vnode, customContainer)`.
 
 ## Notes
 
-- Treat `ctx.element` as the internal container for `ctx.render()`; avoid reading or mutating it directly.
-- In contexts without a render container, `ctx.element` is `undefined`; ensure a container exists or pass `container` to `ctx.render()`.
-- ElementProxy’s `innerHTML`/`outerHTML` are sanitized with DOMPurify, but prefer `ctx.render()` for all rendering.
+- `ctx.element` is intended for internal use by `ctx.render()`. Directly accessing or modifying its properties/methods is not recommended.
+- In contexts without a rendering container, `ctx.element` will be `undefined`. Ensure the container is available or pass a `container` manually before calling `ctx.render()`.
+- Although `innerHTML`/`outerHTML` in `ElementProxy` are sanitized via DOMPurify, it is still recommended to use `ctx.render()` for unified rendering management.
 
 ## Related
 
-- [ctx.render](./render.md): render into container
-- [ctx.view](./view.md): current view controller
-- [ctx.modal](./modal.md): modal APIs
+- [ctx.render](./render.md): Rendering content into a container
+- [ctx.view](./view.md): Current view controller
+- [ctx.modal](./modal.md): Shortcut API for modals

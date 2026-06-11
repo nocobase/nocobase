@@ -1,10 +1,6 @@
 ---
 pkg: "@nocobase/plugin-collection-tree"
 ---
-:::tip KI-Übersetzungshinweis
-Diese Dokumentation wurde automatisch von KI übersetzt.
-:::
-
 
 # Baumsammlung
 

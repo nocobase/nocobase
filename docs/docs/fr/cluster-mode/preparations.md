@@ -1,6 +1,9 @@
-:::tip Avis de traduction IA
-Cette documentation a été traduite automatiquement par IA.
-:::
+---
+pkg: "@nocobase/preset-cluster"
+title: "Préparatifs au déploiement en cluster"
+description: "Préparation au déploiement en cluster : licences de plugins commerciaux (adaptateurs PubSub, Queue, Lock, Worker ID), base de données, middleware Redis ou RabbitMQ, stockage partagé et équilibrage de charge."
+keywords: "préparation cluster,licence commerciale,Redis,RabbitMQ,stockage partagé,équilibrage de charge,Nginx,NocoBase"
+---
 
 # Prérequis
 
@@ -115,7 +118,7 @@ Pour les déploiements à haute disponibilité, il est recommandé :
 
 ## Configuration des variables d'environnement
 
-Tous les nœuds du cluster doivent utiliser la même configuration de variables d'environnement. En plus des [variables d'environnement](/api/cli/env) de base de NocoBase, vous devez également configurer les variables d'environnement suivantes, liées aux middlewares.
+Tous les nœuds du cluster doivent utiliser la même configuration de variables d'environnement. En plus des [variables d'environnement](../api/app/env) de base de NocoBase, vous devez également configurer les variables d'environnement suivantes, liées aux middlewares.
 
 ### Secrets clés
 

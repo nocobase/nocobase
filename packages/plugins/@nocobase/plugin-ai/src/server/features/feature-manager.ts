@@ -36,4 +36,4 @@ export abstract class BasePluginFeatureManager<T> implements PluginFeatureManage
   }
 }
 
-export type PluginFeatureKeys<T> = Partial<{ [key in keyof T]: key }>;
+export type PluginFeatureKeys<T> = { [key in keyof T]: key };

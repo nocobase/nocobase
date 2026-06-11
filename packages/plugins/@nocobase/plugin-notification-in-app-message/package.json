@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-notification-in-app-message",
-  "version": "2.0.61",
+  "version": "2.1.1",
   "displayName": "Notification: In-app message",
   "displayName.ru-RU": "Уведомления: Всплывающие сообщения внутри приложения",
   "displayName.zh-CN": "通知：站内信",
@@ -24,6 +24,8 @@
     "@formily/reactive": "2.x",
     "@formily/reactive-react": "^2",
     "@nocobase/client": "2.x",
+    "@nocobase/client-v2": "2.x",
+    "@nocobase/plugin-mobile": "2.x",
     "@nocobase/plugin-notification-manager": "2.x",
     "@nocobase/plugin-workflow": "2.x",
     "@nocobase/server": "2.x",

@@ -5,7 +5,7 @@ supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Used to call other workflows within a workflow, can use the variables of the current workflow as the input of the subflow, and use the output of the subflow as the variables of the current workflow.
+  Usado para chamar outros fluxos dentro de um workflow, permitindo usar as variáveis do workflow atual como entrada do subflow e a saída do subflow como variáveis do workflow atual.
 isFree: false
 builtIn: false
 defaultEnabled: false

@@ -8,8 +8,9 @@
  */
 
 import { Collection, Database } from '@nocobase/database';
-import { MockServer, createMockServer } from '@nocobase/test';
+import { MockServer } from '@nocobase/test';
 import FlowModelRepository from '../repository';
+import { createFlowEngineMockServer } from './test-utils';
 
 describe('ui_schema repository', () => {
   let app: MockServer;
@@ -23,7 +24,7 @@ describe('ui_schema repository', () => {
   });
 
   beforeEach(async () => {
-    app = await createMockServer({
+    app = await createFlowEngineMockServer({
       registerActions: true,
       plugins: ['flow-engine'],
     });
@@ -33,7 +34,7 @@ describe('ui_schema repository', () => {
     treePathCollection = db.getCollection('flowModelTreePath');
   });
 
-  it('should insert model', async () => {
+  it('should insert a flat model', async () => {
     const model1 = {
       uid: 'uid1',
       use: 'TestModel',
@@ -44,7 +45,7 @@ describe('ui_schema repository', () => {
     expect(model2.use).toBe('TestModel');
   });
 
-  it('should insert model', async () => {
+  it('should insert a model with mixed object and array subModels', async () => {
     const model1 = {
       uid: 'uid1',
       use: 'TestModel',
@@ -122,7 +123,7 @@ describe('ui_schema repository', () => {
     expect(directChild.parentId).toBe('read-parent');
   });
 
-  it('should insert model', async () => {
+  it('should insert a deeply nested model tree', async () => {
     const model1 = {
       uid: 'uid1',
       use: 'TestModel',
@@ -169,7 +170,7 @@ describe('ui_schema repository', () => {
     expect(model2.subModels.sub1.subModels.sub3.use).toBe('TestSubModel4');
   });
 
-  it('should insert model', async () => {
+  it('should auto-generate missing uids while inserting subModels', async () => {
     const model1 = {
       uid: 'uid1',
       use: 'TestModel',
@@ -202,7 +203,7 @@ describe('ui_schema repository', () => {
     expect(model2.subModels.sub2[1].uid).toBeDefined();
   });
 
-  it('should insert model', async () => {
+  it('should skip async subModels on insert readback by default', async () => {
     const model1 = {
       uid: 'uid1',
       use: 'TestModel',
@@ -270,7 +271,7 @@ describe('ui_schema repository', () => {
     expect(model2.subModels.sub2[1].uid).toBeDefined();
   });
 
-  it('should upsert model', async () => {
+  it('should upsert an existing model tree in place', async () => {
     const model1 = {
       uid: 'uid1',
       use: 'TestModel',
@@ -348,7 +349,7 @@ describe('ui_schema repository', () => {
     expect(model5.subModels.sub2[1].use).toBe('TestSubModel3_2');
   });
 
-  it('should upsert model', async () => {
+  it('should append a missing array child during upsert', async () => {
     const model1 = {
       uid: 'uid1',
       use: 'TestModel',

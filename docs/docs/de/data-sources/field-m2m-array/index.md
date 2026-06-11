@@ -1,10 +1,6 @@
 ---
 pkg: "@nocobase/plugin-field-m2m-array"
 ---
-:::tip KI-Übersetzungshinweis
-Diese Dokumentation wurde automatisch von KI übersetzt.
-:::
-
 
 # Viele-zu-Viele (Array)
 

@@ -1,12 +1,12 @@
 ---
-displayName: "Workflow: mailer node"
+displayName: "Workflow: Узел отправки почты"
 packageName: '@nocobase/plugin-workflow-mailer'
 description: |
-  Send email in workflow.
+  Используется для отправки электронной почты в Workflow.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Workflow: mailer node
+# Workflow: Узел отправки почты

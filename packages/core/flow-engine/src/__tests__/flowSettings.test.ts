@@ -8,6 +8,10 @@
  */
 
 import { describe, test, expect, beforeEach, afterEach, vi } from 'vitest';
+import React from 'react';
+import { createForm } from '@formily/core';
+import { createSchemaField, FormProvider } from '@formily/react';
+import { render, screen } from '@testing-library/react';
 import { FlowSettings } from '../flowSettings';
 import { DefaultSettingsIcon } from '../components/settings/wrappers/contextual/DefaultSettingsIcon';
 import { FlowModel } from '../models';
@@ -142,10 +146,10 @@ describe('FlowSettings', () => {
       expect(settingsItem?.sort).toBe(0);
     });
 
-    test('should set up observable properties', () => {
+    test('should set up observable properties', async () => {
       // Test that enabled property is reactive
       const initialEnabled = flowSettings.enabled;
-      flowSettings.enable();
+      await flowSettings.enable();
       expect(flowSettings.enabled).not.toBe(initialEnabled);
       expect(flowSettings.enabled).toBe(true);
     });
@@ -185,6 +189,43 @@ describe('FlowSettings', () => {
     test('should handle empty components object', () => {
       flowSettings.registerComponents({});
       expect(Object.keys(flowSettings.components)).toHaveLength(0);
+    });
+
+    test('should register component loaders and load component on render', async () => {
+      const loader = vi.fn(async () => ({
+        default: () => React.createElement('div', null, 'Lazy Flow Settings Component'),
+      }));
+
+      flowSettings.registerComponentLoaders({
+        DemoFlowSettingsLazyField: loader,
+      });
+
+      expect(loader).not.toHaveBeenCalled();
+
+      const SchemaField = createSchemaField();
+      const form = createForm();
+
+      render(
+        React.createElement(
+          FormProvider,
+          { form },
+          React.createElement(SchemaField, {
+            schema: {
+              type: 'object',
+              properties: {
+                demo: {
+                  type: 'void',
+                  'x-component': 'DemoFlowSettingsLazyField',
+                },
+              },
+            },
+            components: flowSettings.components,
+          }),
+        ),
+      );
+
+      expect(await screen.findByText('Lazy Flow Settings Component')).toBeInTheDocument();
+      expect(loader).toHaveBeenCalledTimes(1);
     });
   });
 
@@ -228,30 +269,68 @@ describe('FlowSettings', () => {
   });
 
   describe('Enable/Disable Functionality', () => {
-    test('should enable flow settings', () => {
+    test('should enable flow settings', async () => {
       expect(flowSettings.enabled).toBe(false);
 
-      flowSettings.enable();
+      await flowSettings.enable();
 
       expect(flowSettings.enabled).toBe(true);
     });
 
-    test('should disable flow settings', () => {
-      flowSettings.enable();
+    test('should preload model loaders before enabling flow settings', async () => {
+      const preloadSpy = vi.spyOn(engine, 'preloadModelLoaders').mockResolvedValue({
+        requested: [],
+        loaded: [],
+        failed: [],
+      });
+
+      await flowSettings.enable();
+
+      expect(preloadSpy).toHaveBeenCalledTimes(1);
+      expect(flowSettings.enabled).toBe(true);
+    });
+
+    test('should preload model loaders before force enabling flow settings', async () => {
+      const preloadSpy = vi.spyOn(engine, 'preloadModelLoaders').mockResolvedValue({
+        requested: [],
+        loaded: [],
+        failed: [],
+      });
+
+      await flowSettings.forceEnable();
+
+      expect(preloadSpy).toHaveBeenCalledTimes(1);
+      expect(flowSettings.enabled).toBe(true);
+    });
+
+    test('should disable flow settings', async () => {
+      await flowSettings.enable();
       expect(flowSettings.enabled).toBe(true);
 
-      flowSettings.disable();
+      await flowSettings.disable();
 
       expect(flowSettings.enabled).toBe(false);
     });
 
-    test('should handle multiple enable/disable calls', () => {
-      flowSettings.enable();
-      flowSettings.enable();
+    test('should handle multiple enable/disable calls', async () => {
+      await flowSettings.enable();
+      await flowSettings.enable();
       expect(flowSettings.enabled).toBe(true);
 
-      flowSettings.disable();
-      flowSettings.disable();
+      await flowSettings.disable();
+      await flowSettings.disable();
+      expect(flowSettings.enabled).toBe(false);
+    });
+
+    test('forceDisable should clear force-enabled state and disable flow settings', async () => {
+      await flowSettings.forceEnable();
+      expect(flowSettings.enabled).toBe(true);
+
+      await flowSettings.forceDisable();
+
+      expect(flowSettings.enabled).toBe(false);
+
+      await flowSettings.disable();
       expect(flowSettings.enabled).toBe(false);
     });
   });
@@ -512,7 +591,7 @@ describe('FlowSettings', () => {
   });
 
   describe('Complex Integration Scenarios', () => {
-    test('should maintain state consistency during multiple operations', () => {
+    test('should maintain state consistency during multiple operations', async () => {
       // Initialize with components and scopes
       const TestComponent = () => 'TestComponent';
       const testScope = () => 'testScope';
@@ -528,7 +607,7 @@ describe('FlowSettings', () => {
       });
 
       // Enable/disable
-      flowSettings.enable();
+      await flowSettings.enable();
       expect(flowSettings.enabled).toBe(true);
 
       // Verify all state is maintained
@@ -536,7 +615,7 @@ describe('FlowSettings', () => {
       expect(flowSettings.scopes.testScope).toBe(testScope);
       expect(flowSettings.getToolbarItems().find((item) => item.key === 'integration-test')).toBeDefined();
 
-      flowSettings.disable();
+      await flowSettings.disable();
       expect(flowSettings.enabled).toBe(false);
 
       // State should still be maintained after disable

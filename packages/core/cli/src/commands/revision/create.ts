@@ -1,0 +1,147 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
+import { Args, Command, Flags } from '@oclif/core';
+import { executeRawApiRequest } from '../../lib/api-client.js';
+import { ensureCrossEnvConfirmed } from '../../lib/env-guard.js';
+
+const VERSION_CONTROL_PLUGIN_PACKAGE = '@nocobase/plugin-version-control';
+
+interface PluginListSummaryItem {
+  packageName?: string;
+  enabled?: boolean;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null;
+}
+
+function extractPluginList(data: unknown): PluginListSummaryItem[] {
+  const list = Array.isArray(data) ? data : isRecord(data) && Array.isArray(data.data) ? data.data : [];
+  return list.filter(isRecord).map((item) => ({
+    packageName: typeof item.packageName === 'string' ? item.packageName : undefined,
+    enabled: typeof item.enabled === 'boolean' ? item.enabled : undefined,
+  }));
+}
+
+export default class RevisionCreate extends Command {
+  static override summary = 'Save the current NocoBase build as a restorable revision';
+
+  static override examples = [
+    '<%= config.bin %> <%= command.id %> "description here"',
+    '<%= config.bin %> <%= command.id %> --env app1 "description here"',
+  ];
+
+  static override args = {
+    description: Args.string({
+      required: true,
+      description: 'Revision description, up to 2000 characters.',
+    }),
+  };
+
+  static override flags = {
+    'api-base-url': Flags.string({
+      description: 'NocoBase API base URL, for example http://localhost:13000/api',
+    }),
+    env: Flags.string({
+      char: 'e',
+      description: 'Environment name',
+    }),
+    role: Flags.string({
+      description: 'Role override, sent as X-Role',
+    }),
+    token: Flags.string({
+      char: 't',
+      description: 'API key override',
+    }),
+    yes: Flags.boolean({
+      char: 'y',
+      description: 'Confirm using --env when it targets a different env than the current env',
+      default: false,
+    }),
+    'json-output': Flags.boolean({
+      char: 'j',
+      description: 'Print raw JSON response',
+      default: false,
+      allowNo: true,
+    }),
+  };
+
+  async run(): Promise<void> {
+    const { args, flags } = await this.parse(RevisionCreate);
+    const description = args.description;
+
+    if (description.length > 2000) {
+      this.error('Description length should not be over 2000');
+    }
+
+    const confirmed = await ensureCrossEnvConfirmed({
+      command: this,
+      requestedEnv: flags.env,
+      yes: flags.yes,
+    });
+    if (!confirmed) {
+      return;
+    }
+
+    const pluginListResponse = await executeRawApiRequest({
+      envName: flags.env,
+      baseUrl: flags['api-base-url'],
+      role: flags.role,
+      token: flags.token,
+      method: 'GET',
+      path: '/pm:list',
+      query: {
+        mode: 'summary',
+      },
+    });
+
+    if (!pluginListResponse.ok) {
+      this.error(
+        `Failed to check plugin status with status ${pluginListResponse.status}\n${JSON.stringify(pluginListResponse.data, null, 2)}`,
+      );
+    }
+
+    const versionControlPlugin = extractPluginList(pluginListResponse.data).find(
+      (plugin) => plugin.packageName === VERSION_CONTROL_PLUGIN_PACKAGE,
+    );
+    if (!versionControlPlugin?.enabled) {
+      this.error(
+        `The ${VERSION_CONTROL_PLUGIN_PACKAGE} plugin is not enabled. Enable it first with \`nb plugin enable ${VERSION_CONTROL_PLUGIN_PACKAGE}\`.`,
+      );
+    }
+
+    const response = await executeRawApiRequest({
+      envName: flags.env,
+      baseUrl: flags['api-base-url'],
+      role: flags.role,
+      token: flags.token,
+      method: 'POST',
+      path: '/app:publishEvent',
+      body: {
+        plugin: 'plugin-version-control',
+        command: 'revision:create',
+        payload: {
+          description,
+        },
+      },
+    });
+
+    if (!response.ok) {
+      this.error(`Request failed with status ${response.status}\n${JSON.stringify(response.data, null, 2)}`);
+    }
+
+    if (flags['json-output']) {
+      this.log(JSON.stringify(response.data, null, 2));
+      return;
+    }
+
+    this.log('Revision created successfully');
+  }
+}

@@ -1,15 +1,15 @@
 ---
-displayName: "Action: Export records Pro"
+displayName: "Aktion: Datensätze exportieren Pro"
 packageName: '@nocobase/plugin-action-export-pro'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Enhance data export capabilities with asynchronous exports for handling large volumes. Supports exporting attachments.
+  Erweiterte Datenexportfunktionen. Asynchroner Export, unterstützt große Datenmengen. Unterstützt den Export von Anhängen.
 isFree: false
 builtIn: false
 defaultEnabled: false
 editionLevel: 1
 ---
 
-# Action: Export records Pro
+# Aktion: Datensätze exportieren Pro

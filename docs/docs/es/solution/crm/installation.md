@@ -1,130 +1,70 @@
-# Installation Guide
+# Cómo instalar
 
-> The current version is deployed via **backup restoration**. In future versions, we may switch to **incremental migration** to make it easier to integrate the solution into your existing system.
+> La versión actual adopta la forma de **copia de seguridad y restauración** para su despliegue. En versiones posteriores, es posible que cambiemos a la forma de **migración incremental**, para facilitar la integración de la solución en sus sistemas existentes.
 
-To help you deploy the CRM 2.0 solution smoothly to your own NocoBase environment, we provide two restoration methods. Choose the one that best suits your edition and technical background.
+> **El plugin Administrador de copias de seguridad ahora es de código abierto**: el plugin "[Administrador de copias de seguridad](https://docs-cn.nocobase.com/handbook/backups)" necesario para restaurar la solución ahora es de código abierto y está disponible para todas las versiones (incluida la Community). Recomendamos restaurar directamente a través de este plugin.
 
-Before you begin, please ensure:
+Antes de comenzar, asegúrese de que:
 
-- You have a basic NocoBase running environment. See the [official installation guide](https://docs-cn.nocobase.com/welcome/getting-started/installation) for details.
-- NocoBase version **v2.1.0-beta.2 or above**
-- You have downloaded the CRM system files:
-  - **Backup file**: [nocobase_crm_v2_backup_260223.nbdata](https://static-docs.nocobase.com/nocobase_crm_v2_backup_260223.nbdata) — for Method 1
-  - **SQL file**: [nocobase_crm_v2_sql_260223.zip](https://static-docs.nocobase.com/nocobase_crm_v2_sql_260223.zip) — for Method 2
+- Ya tiene un entorno de ejecución básico de NocoBase. Para la instalación del sistema principal, consulte la [documentación oficial de instalación](https://docs-cn.nocobase.com/welcome/getting-started/installation) más detallada.
+- Versión de NocoBase **v2.1.0-beta.2 o superior**
+- Ya ha descargado el archivo de copia de seguridad del sistema CRM: [nocobase_crm_v2_backup_260523.nbdata](https://static-docs.nocobase.com/nocobase_crm_v2_backup_260523.nbdata)
 
-**Important notes**:
-- This solution is built on **PostgreSQL 16**. Ensure your environment uses PostgreSQL 16.
-- **DB_UNDERSCORED must not be true**: Check your `docker-compose.yml` and ensure `DB_UNDERSCORED` is not set to `true`, otherwise the restoration will fail.
+**Nota importante**:
+- Esta solución se basa en la base de datos **PostgreSQL 16**, asegúrese de que su entorno utilice PostgreSQL 16.
+- **DB_UNDERSCORED no puede ser true**: Compruebe su archivo `docker-compose.yml` y asegúrese de que la variable de entorno `DB_UNDERSCORED` no esté establecida en `true`; de lo contrario, entrará en conflicto con la copia de seguridad de la solución y provocará un fallo en la restauración.
 
 ---
 
-## Method 1: Restore Using Backup Manager (Recommended for Pro/Enterprise Users)
+## Restaurar usando el Administrador de copias de seguridad
 
-This method uses NocoBase's built-in "[Backup Manager](https://docs-cn.nocobase.com/handbook/backups)" (Pro/Enterprise) plugin for one-click restoration. It is the simplest option but has some environment and edition requirements.
+Este método realiza una restauración con un solo clic a través del plugin "[Administrador de copias de seguridad](https://docs-cn.nocobase.com/handbook/backups)" integrado en NocoBase, siendo la operación más sencilla. Este plugin ahora es de código abierto y está disponible para todas las versiones (incluida la Community).
 
-### Key Characteristics
+### Características principales
 
-* **Advantages**:
-  1. **Easy to operate**: Fully UI-based, restores all configuration including plugins.
-  2. **Complete restoration**: **Restores all system files**, including print template files and files uploaded to file fields in tables.
-* **Limitations**:
-  1. **Pro/Enterprise only**: "Backup Manager" is an enterprise plugin, available only to Pro/Enterprise users.
-  2. **Strict environment requirements**: Your database environment (version, case sensitivity settings, etc.) must be highly compatible with the environment used to create the backup.
-  3. **Plugin dependency**: If the solution includes commercial plugins not available in your environment, the restoration will fail.
+* **Ventajas**:
+  1. **Operación conveniente**: Se puede completar en la interfaz de usuario, permitiendo restaurar completamente todas las configuraciones, incluidos los plugins.
+  2. **Restauración completa**: **Capaz de restaurar todos los archivos del sistema**, incluidos los archivos de plantillas de impresión, archivos cargados en campos de archivos de las tablas, etc., asegurando la integridad funcional.
+* **Limitaciones**:
+  1. **Requisitos de entorno estrictos**: Requiere que su entorno de base de datos (versión, configuración de sensibilidad a mayúsculas y minúsculas, etc.) sea altamente compatible con el entorno donde se creó la copia de seguridad.
+  2. **Dependencia de plugins**: Si la solución incluye plugins comerciales que no tiene en su entorno local, la restauración fallará.
 
-### Steps
+### Pasos a seguir
 
-**Step 1: (Strongly recommended) Start the application with the `full` image**
+**Paso 1: 【Altamente recomendado】 Iniciar la aplicación usando la imagen `full`**
 
-To avoid restoration failures due to a missing database client, we strongly recommend using the `full` Docker image, which bundles all required tools.
+Para evitar fallos en la restauración debido a la falta de un cliente de base de datos, le recomendamos encarecidamente utilizar la versión `full` de la imagen de Docker. Esta incluye todos los programas de soporte necesarios, por lo que no requiere configuración adicional.
+
+Ejemplo de comando para descargar la imagen:
 
 ```bash
 docker pull nocobase/nocobase:beta-full
 ```
 
-Then start your NocoBase service using this image.
+Luego, use esta imagen para iniciar su servicio NocoBase.
 
-> **Note**: Without the `full` image, you may need to manually install the `pg_dump` client inside the container, which is error-prone.
+> **Nota**: Si no utiliza la imagen `full`, es posible que deba instalar manualmente el cliente de base de datos `pg_dump` dentro del contenedor, lo cual es un proceso tedioso e inestable.
 
-**Step 2: Enable the "Backup Manager" plugin**
+**Paso 2: Activar el plugin "Administrador de copias de seguridad"**
 
-1. Log in to your NocoBase system.
-2. Go to **`Plugin Management`**.
-3. Find and enable the **`Backup Manager`** plugin.
+1. Inicie sesión en su sistema NocoBase.
+2. Entre en **`Gestión de plugins`**.
+3. Busque y active el plugin **`Administrador de copias de seguridad`**.
 
-**Step 3: Restore from local backup file**
+**Paso 3: Restaurar desde un archivo de copia de seguridad local**
 
-1. After enabling the plugin, refresh the page.
-2. Go to **`System Management`** -> **`Backup Manager`** in the left menu.
-3. Click the **`Restore from Local Backup`** button in the upper right corner.
-4. Drag the downloaded backup file to the upload area.
-5. Click **`Submit`** and wait for the restoration to complete. This may take anywhere from a few seconds to a few minutes.
+1. Tras activar el plugin, actualice la página.
+2. Entre en el menú de la izquierda **`Administración del sistema`** -> **`Administrador de copias de seguridad`**.
+3. Haga clic en el botón **`Restaurar desde copia de seguridad local`** en la esquina superior derecha.
+4. Arrastre el archivo de copia de seguridad descargado al área de carga.
+5. Haga clic en **`Enviar`** y espere pacientemente a que el sistema complete la restauración; este proceso puede tardar desde unas decenas de segundos hasta varios minutos.
 
-### Notes
+### Notas
 
-* **Database compatibility**: This is the most critical point. Your PostgreSQL database **version, character set, and case sensitivity settings** must match those of the backup source. In particular, the `schema` name must be consistent.
-* **Commercial plugin matching**: Ensure you have enabled all commercial plugins required by the solution, otherwise the restoration will be interrupted.
+* **Compatibilidad de la base de datos**: Este es el punto más crítico de este método. La **versión, el juego de caracteres y la configuración de sensibilidad a mayúsculas y minúsculas** de su base de datos PostgreSQL deben coincidir con el archivo fuente de la copia de seguridad. Especialmente el nombre del `schema` debe ser consistente.
+* **Coincidencia de plugins comerciales**: Asegúrese de tener y haber activado todos los plugins comerciales requeridos por la solución; de lo contrario, la restauración se interrumpirá.
 
+Esperamos que este tutorial le ayude a desplegar con éxito el sistema CRM 2.0. Si encuentra algún problema durante el proceso, ¡no dude en ponerse en contacto con nosotros en cualquier momento!
 ---
 
-## Method 2: Direct SQL File Import (Universal, Better for Community Edition)
-
-This method restores data by directly operating the database, bypassing the Backup Manager plugin — no Pro/Enterprise edition required.
-
-### Key Characteristics
-
-* **Advantages**:
-  1. **No edition restriction**: Works for all NocoBase users, including Community Edition.
-  2. **High compatibility**: Does not depend on the in-app `dump` tool — as long as you can connect to the database, you can operate.
-  3. **Fault-tolerant**: If the solution includes commercial plugins you don't have, related features won't be enabled but won't prevent the app from starting.
-* **Limitations**:
-  1. **Requires basic database knowledge**: You need to know how to execute a `.sql` file against a database.
-  2. **System files are lost**: **All system files will be missing**, including print templates and files uploaded to file fields.
-
-### Steps
-
-**Step 1: Prepare a clean database**
-
-Create a brand new, empty database for the data you're about to import.
-
-**Step 2: Import the `.sql` file into the database**
-
-* **Option A: Via server command line (Docker example)**
-
-  ```bash
-  # Copy the sql file into the container
-  docker cp nocobase_crm_v2_sql_260223.sql my-nocobase-db:/tmp/
-  # Enter the container and execute the import
-  docker exec -it my-nocobase-db psql -U nocobase -d nocobase -f /tmp/nocobase_crm_v2_sql_260223.sql
-  ```
-
-* **Option B: Via a remote database client (Navicat, etc.)**
-
-  Connect to the database using any GUI client (Navicat, DBeaver, pgAdmin, etc.), then:
-  1. Right-click the target database
-  2. Select "Run SQL File" or "Execute SQL Script"
-  3. Select the downloaded `.sql` file and execute
-
-**Step 3: Connect to the database and start the application**
-
-Configure your NocoBase startup parameters (e.g., `DB_HOST`, `DB_PORT`, `DB_DATABASE`, `DB_USER`, `DB_PASSWORD`) to point to the database you just imported. Then start the NocoBase service normally.
-
-### Notes
-
-* **Database permissions**: This method requires credentials with direct database access.
-* **Plugin status**: After a successful import, data for commercial plugins exists in the system, but if the corresponding plugin is not installed and enabled locally, related features will not be visible or usable — this will not cause the application to crash.
-
----
-
-## Summary & Comparison
-
-| Feature | Method 1: Backup Manager | Method 2: Direct SQL Import |
-| :------ | :----------------------- | :--------------------------- |
-| **Applicable users** | **Pro/Enterprise** users | **All users** (including Community Edition) |
-| **Ease of use** | ⭐⭐⭐⭐⭐ (very simple, UI-based) | ⭐⭐⭐ (requires basic database knowledge) |
-| **Environment requirements** | **Strict** — database and system versions must be highly compatible | **Moderate** — requires database compatibility |
-| **Plugin dependency** | **Strong** — any missing plugin causes restoration failure | **Feature-dependent** — data imports independently; missing plugins disable related features but won't crash the app |
-| **System files** | **Fully preserved** (print templates, uploaded files, etc.) | **Lost** (print templates, uploaded files, etc.) |
-| **Recommended for** | Enterprise users with a controlled, consistent environment needing full functionality | Missing some plugins, prioritizing compatibility and flexibility, or Community Edition users who can accept missing file features |
-
-We hope this guide helps you deploy CRM 2.0 successfully. If you run into any issues, feel free to reach out!
+*Last updated: 2026-04-02*

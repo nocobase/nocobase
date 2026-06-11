@@ -1,7 +1,3 @@
-:::tip
-このドキュメントはAIによって翻訳されました。不正確な情報については、[英語版](/en)をご参照ください
-:::
-
 # JS Item
 
 ## 概要
@@ -32,7 +28,7 @@ JS Item は、フォーム内で「カスタム項目」（フィールドにバ
 
 ![jsitem-toolbars-20251029](https://static-docs.nocobase.com/jsitem-toolbars-20251029.png)
 
-- AI従業員と連携してスクリプトを生成・修正することも可能です：[AI従業員・Nathan：フロントエンドエンジニア](/ai-employees/built-in/ai-coding)
+- AI従業員と連携してスクリプトを生成・修正することも可能です：[AI従業員・Nathan：フロントエンドエンジニア](/ai-employees/built-in/)
 
 ## よくある使い方（簡易例）
 

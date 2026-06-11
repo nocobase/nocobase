@@ -47,6 +47,7 @@ export async function setupRunJSContexts() {
     RunJSContextRegistry.register(version, 'JSFieldModel', JSFieldRunJSContext, { scenes: ['detail'] });
     RunJSContextRegistry.register(version, 'JSEditableFieldModel', JSEditableFieldRunJSContext, { scenes: ['form'] });
     RunJSContextRegistry.register(version, 'JSItemModel', JSItemRunJSContext, { scenes: ['form'] });
+    RunJSContextRegistry.register(version, 'JSItemActionModel', JSItemRunJSContext, { scenes: ['table'] });
     RunJSContextRegistry.register(version, 'JSColumnModel', JSColumnRunJSContext, { scenes: ['table'] });
     RunJSContextRegistry.register(version, 'FormJSFieldItemModel', FormJSFieldItemRunJSContext, { scenes: ['form'] });
     RunJSContextRegistry.register(version, 'JSRecordActionModel', JSRecordActionRunJSContext, { scenes: ['table'] });

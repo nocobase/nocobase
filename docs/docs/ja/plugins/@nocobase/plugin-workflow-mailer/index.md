@@ -1,12 +1,12 @@
 ---
-displayName: "Workflow: mailer node"
+displayName: "ワークフロー：メール送信ノード"
 packageName: '@nocobase/plugin-workflow-mailer'
 description: |
-  Send email in workflow.
+  ワークフロー内でメールを送信するために使用できます。
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Workflow: mailer node
+# ワークフロー：メール送信ノード

@@ -58,8 +58,10 @@ export class APIClient extends APIClientSDK {
   services: Record<string, Result<any, any>> = {};
   silence = false;
   app: Application;
-  /** 该值会在 AntdAppProvider 中被重新赋值 */
-  notification: any = notification;
+
+  get notification() {
+    return this.app?.context?.notification || notification;
+  }
 
   cloneInstance() {
     const api = new APIClient(this.options);
@@ -69,7 +71,6 @@ export class APIClient extends APIClientSDK {
     api.app = this.app;
     api.auth = this.auth;
     api.storagePrefix = this.storagePrefix;
-    api.notification = this.notification;
     const handlers = [];
     for (const handler of this.axios.interceptors.response['handlers']) {
       if (handler?.rejected?.['_name'] === 'handleNotificationError') {
