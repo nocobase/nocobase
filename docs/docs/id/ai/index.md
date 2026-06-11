@@ -92,7 +92,7 @@ features:
     items:
       - title: NocoBase CLI
         details: Tool baris perintah NocoBase, siap setelah instalasi — dilengkapi AI Skills bawaan, agar asisten AI Anda dapat langsung mengoperasikan NocoBase.
-        link: /api/cli/
+        link: /nocobase-cli/
       - title: NocoBase Skills
         details: Paket pengetahuan domain yang dapat dipasang ke AI Agent, agar AI memahami kemampuan dan standar NocoBase.
         link: /ai-builder#nocobase-skills

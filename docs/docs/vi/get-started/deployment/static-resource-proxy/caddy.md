@@ -6,6 +6,6 @@ keywords: "Caddy,proxy tài nguyên tĩnh,reverse proxy,HTTPS tự động,produ
 
 # Caddy
 
-Nếu hiện tại bạn muốn cấu hình proxy production cho một ứng dụng NocoBase, tốt nhất hãy bắt đầu từ [Reverse proxy trong production](../../../quickstart/production/reverse-proxy/index.md), rồi tiếp tục với trang [Caddy](../../../quickstart/production/reverse-proxy/caddy.md).
+Nếu hiện tại bạn muốn cấu hình proxy production cho một ứng dụng NocoBase, tốt nhất hãy bắt đầu từ [Reverse proxy trong production](../../../nocobase-cli/production/reverse-proxy/index.md), rồi tiếp tục với trang [Caddy](../../../nocobase-cli/production/reverse-proxy/caddy.md).
 
 Phần cũ này chủ yếu từng đóng vai trò là điểm vào cho proxy tài nguyên tĩnh. Tài liệu hiện tại đã được tổ chức lại xoay quanh `nb proxy caddy`, bao quát thống nhất việc tạo cấu hình, chạy local hoặc Docker, điểm vào HTTPS, cùng các route `uploads`, `dist`, `api`, `ws` và SPA.

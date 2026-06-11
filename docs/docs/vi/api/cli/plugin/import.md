@@ -71,4 +71,4 @@ Bạn không cần tự giải nén bất cứ thứ gì vào `storage/plugins`.
 
 - [`nb app restart`](../app/restart.md)
 - [`nb plugin enable`](./enable.md)
-- [`Cài đặt và nâng cấp plugin bên thứ ba`](../../../quickstart/plugins/third-party.md)
+- [`Cài đặt và nâng cấp plugin bên thứ ba`](../../../nocobase-cli/plugins/third-party.md)

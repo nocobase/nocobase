@@ -71,4 +71,4 @@ Tu n'as pas besoin d'extraire quoi que ce soit manuellement dans `storage/plugin
 
 - [`nb app restart`](../app/restart.md)
 - [`nb plugin enable`](./enable.md)
-- [`Installer et mettre à niveau des plugins tiers`](../../../quickstart/plugins/third-party.md)
+- [`Installer et mettre à niveau des plugins tiers`](../../../nocobase-cli/plugins/third-party.md)

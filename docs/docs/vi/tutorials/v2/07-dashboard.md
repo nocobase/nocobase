@@ -8,7 +8,7 @@ Có bao nhiêu ticket? Đã xử lý bao nhiêu? Loại vấn đề nào nhiều
 
 Trước tiên, chúng ta thêm một menu item mới vào thanh navigation trên cùng.
 
-Vào [chế độ cấu hình](/quickstart/how-nocobase-works), trên thanh menu trên cùng click **"Thêm menu item"** (biểu tượng `+`), chọn **"Trang phiên bản mới (v2)"**, đặt tên là "Dashboard dữ liệu".
+Vào [chế độ cấu hình](/get-started/how-nocobase-works), trên thanh menu trên cùng click **"Thêm menu item"** (biểu tượng `+`), chọn **"Trang phiên bản mới (v2)"**, đặt tên là "Dashboard dữ liệu".
 
 ![07-dashboard-2026-03-15-21-39-35](https://static-docs.nocobase.com/07-dashboard-2026-03-15-21-39-35.png)
 
