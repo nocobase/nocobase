@@ -11,6 +11,13 @@ import { createMockServer, type MockServer } from '@nocobase/test';
 import { DEFAULT_ADMIN_UI_LAYOUT, DEFAULT_MOBILE_UI_LAYOUT } from '../../../../plugin-ui-layout/src/constants';
 
 const MULTI_PORTAL_RUNTIME_FIELDS = ['uid', 'title', 'routeName', 'routePath', 'authCheck', 'enabled', 'uiLayout'];
+const MULTI_PORTAL_MANAGEMENT_ACTIONS = [
+  'multiPortals:list',
+  'multiPortals:get',
+  'multiPortals:create',
+  'multiPortals:update',
+  'multiPortals:destroy',
+];
 
 interface RouteResponseItem {
   title?: string;
@@ -864,5 +871,157 @@ describe('plugin-multi-portal server', () => {
         layoutType: DEFAULT_MOBILE_UI_LAYOUT.layoutType,
       },
     });
+  });
+
+  it('should register the pm.multi-portal ACL snippet with management actions only', async () => {
+    app = await createMultiPortalAclMockServer();
+
+    const snippet = app.acl.snippetManager.snippets.get('pm.multi-portal');
+
+    expect(snippet).toBeDefined();
+    expect(snippet?.actions.sort()).toEqual([...MULTI_PORTAL_MANAGEMENT_ACTIONS].sort());
+    expect(snippet?.actions).not.toContain('multiPortals:listEnabled');
+  });
+
+  it('should keep multiPortals management actions behind plugin configuration snippets', async () => {
+    app = await createMultiPortalAclMockServer();
+
+    const repository = app.db.getRepository('multiPortals');
+    const deniedPortal = await repository.create({
+      values: {
+        uid: 'management-denied-portal',
+        title: 'Management denied portal',
+        routeName: 'managementDeniedPortal',
+        routePath: '/management-denied-portal',
+        authCheck: true,
+        enabled: true,
+        uiLayoutUid: DEFAULT_ADMIN_UI_LAYOUT.uid,
+      },
+    });
+    await app.db.getRepository('roles').create({
+      values: {
+        name: 'multi-portal-no-snippet',
+      },
+    });
+    await app.db.getRepository('roles').create({
+      values: {
+        name: 'multi-portal-pm-all',
+        snippets: ['pm.*'],
+      },
+    });
+    await app.db.getRepository('roles').create({
+      values: {
+        name: 'multi-portal-negated',
+        snippets: ['pm.*', '!pm.multi-portal'],
+      },
+    });
+    const noSnippetUser = await app.db.getRepository('users').create({
+      values: {
+        roles: ['multi-portal-no-snippet'],
+      },
+    });
+    const pmAllUser = await app.db.getRepository('users').create({
+      values: {
+        roles: ['multi-portal-pm-all'],
+      },
+    });
+    const negatedUser = await app.db.getRepository('users').create({
+      values: {
+        roles: ['multi-portal-negated'],
+      },
+    });
+    const noSnippetAgent = await app.agent().login(noSnippetUser);
+    const pmAllAgent = await app.agent().login(pmAllUser);
+    const negatedAgent = await app.agent().login(negatedUser);
+
+    const noSnippetResponses = [
+      await noSnippetAgent.resource('multiPortals').list(),
+      await noSnippetAgent.resource('multiPortals').get({
+        filterByTk: deniedPortal.get('uid'),
+      }),
+      await noSnippetAgent.resource('multiPortals').create({
+        values: {
+          uid: 'management-no-snippet-portal',
+          title: 'Management no snippet portal',
+          routeName: 'managementNoSnippetPortal',
+          routePath: '/management-no-snippet-portal',
+          authCheck: true,
+          enabled: true,
+          uiLayoutUid: DEFAULT_ADMIN_UI_LAYOUT.uid,
+        },
+      }),
+      await noSnippetAgent.resource('multiPortals').update({
+        filterByTk: deniedPortal.get('uid'),
+        values: {
+          title: 'Management no snippet portal updated',
+        },
+      }),
+      await noSnippetAgent.resource('multiPortals').destroy({
+        filterByTk: deniedPortal.get('uid'),
+      }),
+    ];
+
+    expect(noSnippetResponses.map((response) => response.status)).toEqual([403, 403, 403, 403, 403]);
+
+    const createResponse = await pmAllAgent.resource('multiPortals').create({
+      values: {
+        uid: 'management-allowed-portal',
+        title: 'Management allowed portal',
+        routeName: 'managementAllowedPortal',
+        routePath: '/management-allowed-portal',
+        authCheck: true,
+        enabled: true,
+        uiLayoutUid: DEFAULT_ADMIN_UI_LAYOUT.uid,
+      },
+    });
+    expect(createResponse.status).toBe(200);
+    const createdPortalUid = createResponse.body.data.uid;
+    const managementResponses = [
+      await pmAllAgent.resource('multiPortals').list(),
+      await pmAllAgent.resource('multiPortals').get({
+        filterByTk: createdPortalUid,
+      }),
+      createResponse,
+      await pmAllAgent.resource('multiPortals').update({
+        filterByTk: createdPortalUid,
+        values: {
+          title: 'Management allowed portal updated',
+        },
+      }),
+      await pmAllAgent.resource('multiPortals').destroy({
+        filterByTk: createdPortalUid,
+      }),
+    ];
+
+    expect(managementResponses.map((response) => response.status)).toEqual([200, 200, 200, 200, 200]);
+
+    const negatedResponses = await Promise.all([
+      negatedAgent.resource('multiPortals').list(),
+      negatedAgent.resource('multiPortals').get({
+        filterByTk: deniedPortal.get('uid'),
+      }),
+      negatedAgent.resource('multiPortals').create({
+        values: {
+          uid: 'management-negated-portal',
+          title: 'Management negated portal',
+          routeName: 'managementNegatedPortal',
+          routePath: '/management-negated-portal',
+          authCheck: true,
+          enabled: true,
+          uiLayoutUid: DEFAULT_ADMIN_UI_LAYOUT.uid,
+        },
+      }),
+      negatedAgent.resource('multiPortals').update({
+        filterByTk: deniedPortal.get('uid'),
+        values: {
+          title: 'Management denied portal updated',
+        },
+      }),
+      negatedAgent.resource('multiPortals').destroy({
+        filterByTk: deniedPortal.get('uid'),
+      }),
+    ]);
+
+    expect(negatedResponses.map((response) => response.status)).toEqual([403, 403, 403, 403, 403]);
   });
 });

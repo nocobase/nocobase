@@ -13,6 +13,13 @@ import type { ResourcerContext } from '@nocobase/resourcer';
 const MULTI_PORTAL_RUNTIME_FIELDS = ['uid', 'title', 'routeName', 'routePath', 'authCheck', 'enabled'] as const;
 const MULTI_PORTAL_RUNTIME_QUERY_FIELDS = [...MULTI_PORTAL_RUNTIME_FIELDS, 'uiLayoutUid'] as const;
 const MULTI_PORTAL_UI_LAYOUT_RUNTIME_FIELDS = ['layoutType'] as const;
+const MULTI_PORTAL_MANAGEMENT_ACTIONS = [
+  'multiPortals:list',
+  'multiPortals:get',
+  'multiPortals:create',
+  'multiPortals:update',
+  'multiPortals:destroy',
+];
 const ROLE_MULTI_PORTAL_PERMISSION_ACTIONS = ['roles.multiPortals:*', 'rolesMultiPortalDesktopRoutes:*'];
 const DEFAULT_ADMIN_UI_LAYOUT_UID = 'admin-layout-model';
 
@@ -347,6 +354,10 @@ export class PluginMultiPortalServer extends Plugin {
   }
 
   async load() {
+    this.app.acl.registerSnippet({
+      name: 'pm.multi-portal',
+      actions: MULTI_PORTAL_MANAGEMENT_ACTIONS,
+    });
     this.app.acl.registerSnippet({
       name: 'pm.acl.roles',
       actions: ROLE_MULTI_PORTAL_PERMISSION_ACTIONS,
