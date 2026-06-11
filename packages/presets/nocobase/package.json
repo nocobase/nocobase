@@ -78,6 +78,7 @@
     "@nocobase/plugin-text-copy": "2.2.0-beta.1",
     "@nocobase/plugin-theme-editor": "2.2.0-beta.1",
     "@nocobase/plugin-ui-layout": "2.2.0-beta.1",
+    "@nocobase/plugin-multi-portal": "2.2.0-beta.1",
     "@nocobase/plugin-ui-schema-storage": "2.2.0-beta.1",
     "@nocobase/plugin-ui-templates": "2.2.0-beta.1",
     "@nocobase/plugin-user-data-sync": "2.2.0-beta.1",
