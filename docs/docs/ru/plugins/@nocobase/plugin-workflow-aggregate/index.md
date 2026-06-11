@@ -1,8 +1,10 @@
 ---
+title: "Workflow: Aggregate node"
+keywords: "Workflow"
 displayName: "Workflow: Aggregate node"
 packageName: '@nocobase/plugin-workflow-aggregate'
 description: |
-  Используется для выполнения агрегатных запросов к базе данных в Workflow, таких как: подсчет количества, сумма, среднее значение и т. д.
+  Used to aggregate data against the database in workflow, such as: statistics, sum, average, etc.
 isFree: true
 builtIn: true
 defaultEnabled: false

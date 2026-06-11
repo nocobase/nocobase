@@ -1,14 +1,17 @@
 ---
-displayName: "NocoBase を埋め込む"
+title: "Embed NocoBase"
+keywords: "Embed NocoBase,Plugin,NocoBase"
+displayName: "Embed NocoBase"
 packageName: '@nocobase/plugin-embed'
 supportedVersions:
   - 1.x
+  - 2.x
 description: |
-  NocoBase を外部システムやページに埋め込み、そのシステムやページの一部として統合します。
+  Embed NocoBase into another system or webpage, integrating it as a part of that system or webpage.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# NocoBase を埋め込む
+# Embed NocoBase

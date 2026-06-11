@@ -1,8 +1,8 @@
 ---
-displayName: "字段组件：掩码"
-packageName: '@nocobase/plugin-field-component-mask'
 title: "字段组件：掩码"
 keywords: "字段组件：掩码,插件,NocoBase"
+displayName: "字段组件：掩码"
+packageName: '@nocobase/plugin-field-component-mask'
 supportedVersions:
   - 1.x
 description: |

@@ -1,15 +1,17 @@
 ---
-displayName: "Workflow : Approbation"
+title: "Workflow: Approval"
+keywords: "Workflow"
+displayName: "Workflow: Approval"
 packageName: '@nocobase/plugin-workflow-approval'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Déclenché lorsqu'une demande d'approbation est initiée via un bouton d'action ou une API. Dédié au processus d'approbation, avec un nœud et un bloc d'approbation exclusifs pour gérer les documents et suivre le processus de traitement.
+  Triggered when an approval request is initiated through an action button or API. Dedicated to the approval process, with exclusive approval node and block for managing documents and tracking processing processes.
 isFree: false
 builtIn: false
 defaultEnabled: false
 editionLevel: 2
 ---
 
-# Workflow : Approbation
+# Workflow: Approval

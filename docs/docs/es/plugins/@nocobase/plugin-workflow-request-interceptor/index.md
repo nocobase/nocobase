@@ -1,15 +1,17 @@
 ---
-displayName: "Flujo de trabajo: Evento previo a la acción"
+title: "Workflow: Pre-action event"
+keywords: "Workflow"
+displayName: "Workflow: Pre-action event"
 packageName: '@nocobase/plugin-workflow-request-interceptor'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Se activa antes de la ejecución de una solicitud iniciada a través de un botón de acción o API, como antes de agregar, actualizar o eliminar datos. Es adecuado para realizar la validación de datos y el juicio lógico antes de la operación, y puede interceptar la solicitud a través del "nodo de finalización".
+  Triggered before the execution of a request initiated through an action button or API, such as before adding, updating, or deleting data. Suitable for data validation and logic judgment before action, and the request could be rejected by using the "End process" node.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Flujo de trabajo: Evento previo a la acción
+# Workflow: Pre-action event
