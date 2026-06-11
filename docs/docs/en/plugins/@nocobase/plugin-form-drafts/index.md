@@ -1,14 +1,16 @@
 ---
-displayName: "Form Drafts"
+title: "Form drafts"
+keywords: "Form drafts,Plugin,NocoBase"
+displayName: "Form drafts"
 packageName: '@nocobase/plugin-form-drafts'
 supportedVersions:
   - 2.x
 description: |
-  Supports saving drafts while filling out forms, allowing users to continue editing and submit them later.
+  Allow users to save form drafts and continue editing later.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Form Drafts
+# Form drafts

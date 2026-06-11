@@ -1,15 +1,17 @@
 ---
-displayName: "アクション：レコードのエクスポート Pro"
+title: "Action: Export records Pro"
+keywords: "Actions"
+displayName: "Action: Export records Pro"
 packageName: '@nocobase/plugin-action-export-pro'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  データエクスポート機能を強化します。非同期エクスポートにより、大量のデータに対応します。添付ファイルのエクスポートもサポートしています。
+  Enhance data export capabilities with asynchronous exports for handling large volumes. Supports exporting attachments.
 isFree: false
 builtIn: false
 defaultEnabled: false
 editionLevel: 1
 ---
 
-# アクション：レコードのエクスポート Pro
+# Action: Export records Pro

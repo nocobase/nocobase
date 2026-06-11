@@ -1,8 +1,10 @@
 ---
-displayName: "Journal d'audit (obsolète)"
+title: "Audit logs (deprecated)"
+keywords: "System & security"
+displayName: "Audit logs (deprecated)"
 packageName: '@nocobase/plugin-audit-logs'
 description: |
-  Ce plugin est obsolète, veuillez ne pas l'utiliser. Un nouveau plugin de journal d'audit sera disponible à l'avenir.
+  This plugin is deprecated. There will be a new audit log plugin in the future.
 isFree: true
 builtIn: true
 defaultEnabled: false
@@ -10,6 +12,6 @@ deprecated: true
 editionLevel: 0
 ---
 
-# Journal d'audit (obsolète)
+# Audit logs (deprecated)
 
-> Remarque : Ce plugin est obsolète (deprecated).
+> Note: This plugin is deprecated.

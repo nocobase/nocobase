@@ -1,14 +1,16 @@
 ---
-displayName: "バージョン管理"
+title: "Version control"
+keywords: "System management"
+displayName: "Version control"
 packageName: '@nocobase/plugin-version-control'
 supportedVersions:
   - 2.x
 description: |
-  復元可能なアプリケーションバージョンを保存し、必要なときに指定したバージョンへ復元します。
+  Save and restore versions during NocoBase builds.
 isFree: false
 builtIn: false
 defaultEnabled: false
 editionLevel: 2
 ---
 
-# バージョン管理
+# Version control

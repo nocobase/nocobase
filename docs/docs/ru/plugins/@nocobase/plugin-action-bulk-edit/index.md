@@ -1,4 +1,6 @@
 ---
+title: "Action: Batch edit"
+keywords: "Actions"
 displayName: "Action: Batch edit"
 packageName: '@nocobase/plugin-action-bulk-edit'
 supportedVersions:

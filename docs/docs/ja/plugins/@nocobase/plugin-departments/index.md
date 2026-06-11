@@ -1,12 +1,14 @@
 ---
-displayName: "部門"
+title: "Departments"
+keywords: "Users & permissions"
+displayName: "Departments"
 packageName: '@nocobase/plugin-departments'
 description: |
-  ユーザーを部門で組織化し、階層関係の設定、ロールによる権限管理、さらにWorkflowや式の変数としての利用をサポートします。
+  Organize users by departments, set hierarchical relationships, link roles to control permissions, and use departments as variables in workflows and expressions.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# 部門
+# Departments

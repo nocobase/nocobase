@@ -1,8 +1,12 @@
 ---
-displayName: "Mobiler Client (Veraltet)"
+title: "Mobile client(Deprecated)"
+keywords: "Mobile client(Deprecated),Plugin,NocoBase"
+displayName: "Mobile client(Deprecated)"
 packageName: '@nocobase/plugin-mobile-client'
+supportedVersions:
+  - 1.x
 description: |
-  Bietet die Möglichkeit, mobile Seiten zu konfigurieren.
+  Provides the ability to configure mobile pages.
 isFree: true
 builtIn: true
 defaultEnabled: false
@@ -10,6 +14,6 @@ deprecated: true
 editionLevel: 0
 ---
 
-# Mobiler Client (Veraltet)
+# Mobile client(Deprecated)
 
-> Hinweis: Dieses Plugin ist veraltet (deprecated).
+> Note: This plugin is deprecated.
