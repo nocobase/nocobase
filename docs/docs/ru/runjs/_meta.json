@@ -11,7 +11,7 @@
   },
   {
     "type": "custom-link",
-    "label": "Рендеринг в контейнере",
+    "label": "Рендер в контейнере",
     "link": "/runjs/render"
   },
   {

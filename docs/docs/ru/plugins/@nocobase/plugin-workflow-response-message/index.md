@@ -1,12 +1,12 @@
 ---
-displayName: "Workflow: Ответное сообщение"
+displayName: "Рабочий процесс: ответное сообщение"
 packageName: '@nocobase/plugin-workflow-response-message'
 description: |
-  Используется для формирования и отображения ответных сообщений клиенту в Workflow событий форм и перехвата запросов.
+  Формирование ответа и показ клиенту в сценариях событий формы и перехвата запроса.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Workflow: Ответное сообщение
+# Рабочий процесс: ответное сообщение

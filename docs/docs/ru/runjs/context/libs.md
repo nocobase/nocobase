@@ -1,51 +1,51 @@
 # ctx.libs
 
-`ctx.libs` — это единое пространство имен для встроенных библиотек в RunJS, включающее такие популярные библиотеки, как React, Ant Design, dayjs и lodash. **Не требуется использовать `import` или асинхронную загрузку**; их можно использовать напрямую через `ctx.libs.xxx`.
+`ctx.libs` — единое пространство имён для встроенных библиотек RunJS (React, Ant Design, dayjs, lodash и т. д.). **Без `import` и асинхронной загрузки**; используйте библиотеки напрямую через `ctx.libs.xxx`.
 
 ## Сценарии использования
 
 | Сценарий | Описание |
-|------|------|
-| **JSBlock / JSField / JSItem / JSColumn** | Использование React + Ant Design для рендеринга UI, dayjs для работы с датами и lodash для обработки данных. |
-| **Формулы / Вычисления** | Использование formula или math для создания формул в стиле Excel и выполнения математических операций. |
-| **Рабочий процесс / Правила связей** | Вызов вспомогательных библиотек, таких как lodash, dayjs и formula, в сценариях с чистой логикой. |
+|----------|----------|
+| **JS-блок / Поле JS / Элемент JS / JS-столбец таблицы** | React и Ant Design для UI, dayjs для дат, lodash для работы с данными |
+| **Формулы / вычисления** | formula и math для формул в стиле Excel и математических выражений |
+| **Поток событий / связывание** | lodash, dayjs, formula и т. д. в логике без UI |
 
-## Обзор встроенных библиотек
+## Встроенные библиотеки
 
 | Свойство | Описание | Документация |
-|------|------|------|
-| `ctx.libs.React` | Ядро React, используется для JSX и хуков | [React](https://react.dev/) |
-| `ctx.libs.ReactDOM` | Клиентский API ReactDOM (включая `createRoot`), используется вместе с React для рендеринга | [React DOM](https://react.dev/reference/react-dom) |
-| `ctx.libs.antd` | Библиотека компонентов Ant Design (Button, Card, Table, Form, Input, Modal и др.) | [Ant Design](https://ant.design/components/overview/) |
-| `ctx.libs.antdIcons` | Библиотека иконок Ant Design (например, PlusOutlined, UserOutlined) | [@ant-design/icons](https://ant.design/components/icon/) |
-| `ctx.libs.dayjs` | Библиотека для работы с датой и временем | [dayjs](https://day.js.org/) |
-| `ctx.libs.lodash` | Вспомогательная библиотека (get, set, debounce и др.) | [Lodash](https://lodash.com/docs/) |
-| `ctx.libs.formula` | Библиотека функций для формул в стиле Excel (SUM, AVERAGE, IF и др.) | [Formula.js](https://formulajs.info/functions/) |
-| `ctx.libs.math` | Библиотека для математических выражений и вычислений | [Math.js](https://mathjs.org/docs/) |
+|----------|----------|--------------|
+| `ctx.libs.React` | Ядро React для JSX и хуков | [React](https://react.dev/) |
+| `ctx.libs.ReactDOM` | ReactDOM (например, `createRoot`) | [React DOM](https://react.dev/reference/react-dom) |
+| `ctx.libs.antd` | Компоненты Ant Design (Button, Card, Table, Form, Input, Modal и т. д.) | [Ant Design](https://ant.design/components/overview/) |
+| `ctx.libs.antdIcons` | Иконки Ant Design (PlusOutlined, UserOutlined и т. д.) | [@ant-design/icons](https://ant.design/components/icon/) |
+| `ctx.libs.dayjs` | Утилиты для даты/времени | [dayjs](https://day.js.org/) |
+| `ctx.libs.lodash` | Утилиты (get, set, debounce и т. д.) | [Lodash](https://lodash.com/docs/) |
+| `ctx.libs.formula` | Excel-подобные формулы (SUM, AVERAGE, IF и т. д.) | [Formula.js](https://formulajs.info/functions/) |
+| `ctx.libs.math` | Математические выражения и вычисления | [Math.js](https://mathjs.org/docs/) |
 
-## Псевдонимы верхнего уровня
+## Алиасы верхнего уровня
 
-Для совместимости с устаревшим кодом некоторые библиотеки также доступны на верхнем уровне: `ctx.React`, `ctx.ReactDOM`, `ctx.antd` и `ctx.dayjs`. **Рекомендуется единообразно использовать `ctx.libs.xxx`** для упрощения обслуживания и поиска в документации.
+Для обратной совместимости некоторые библиотеки также доступны прямо в `ctx`: `ctx.React`, `ctx.ReactDOM`, `ctx.antd`, `ctx.dayjs`. Для единообразия и удобства документации предпочтительно использовать **`ctx.libs.xxx`**.
 
 ## Ленивая загрузка
 
-`lodash`, `formula` и `math` используют **ленивую загрузку**: динамический импорт запускается только при первом обращении к `ctx.libs.lodash`, после чего используется кэш. `React`, `antd`, `dayjs` и `antdIcons` предварительно настроены в контексте и доступны сразу.
+`lodash`, `formula`, `math` загружаются **лениво**: первый доступ к `ctx.libs.lodash` запускает динамический импорт, затем результат кешируется. `React`, `antd`, `dayjs`, `antdIcons` предзагружаются в контекст.
 
 ## Примеры
 
-### Рендеринг с React и Ant Design
+### React и Ant Design
 
 ```tsx
 const { Button, Card } = ctx.libs.antd;
 
 ctx.render(
-  <Card title="Заголовок">
-    <Button type="primary">Нажать</Button>
+  <Card title="Title">
+    <Button type="primary">Click</Button>
   </Card>
 );
 ```
 
-### Использование хуков
+### Хуки
 
 ```tsx
 const { React } = ctx.libs;
@@ -59,16 +59,16 @@ const App = () => {
 ctx.render(<App />);
 ```
 
-### Использование иконок
+### Иконки
 
 ```tsx
 const { Button } = ctx.libs.antd;
 const { UserOutlined, HeartOutlined } = ctx.libs.antdIcons;
 
-ctx.render(<Button icon={<UserOutlined />}>Пользователь</Button>);
+ctx.render(<Button icon={<UserOutlined />}>User</Button>);
 ```
 
-### Обработка дат с dayjs
+### dayjs
 
 ```ts
 const now = ctx.libs.dayjs();
@@ -76,14 +76,14 @@ const formatted = now.format('YYYY-MM-DD HH:mm:ss');
 ctx.message.info(formatted);
 ```
 
-### Вспомогательные функции lodash
+### lodash
 
 ```ts
 const user = { profile: { name: 'Alice' } };
 const name = ctx.libs.lodash.get(user, 'profile.name', 'Unknown');
 ```
 
-### Вычисления по формулам
+### formula
 
 ```ts
 const values = [1, 2, 3, 4];
@@ -91,19 +91,19 @@ const sum = ctx.libs.formula.SUM(values);
 const avg = ctx.libs.formula.AVERAGE(values);
 ```
 
-### Математические выражения с math.js
+### math
 
 ```ts
 const result = ctx.libs.math.evaluate('2 + 3 * 4');
-// result === 14
+// результат === 14
 ```
 
 ## Примечания
 
-- **Смешивание с ctx.importAsync**: Если внешний React загружен через `ctx.importAsync('react@19')`, JSX будет использовать этот экземпляр. В этом случае **не смешивайте** его с `ctx.libs.antd`. Ant Design должен быть загружен в версии, соответствующей этому React (например, `ctx.importAsync('antd@5.x')`, `ctx.importAsync('@ant-design/icons@5.x')`).
-- **Несколько экземпляров React**: Если возникает ошибка "Invalid hook call" или диспетчер хуков равен null, обычно это вызвано наличием нескольких экземпляров React. Перед чтением `ctx.libs.React` или вызовом хуков сначала выполните `await ctx.importAsync('react@версия')`, чтобы убедиться, что используется тот же экземпляр React, что и на странице.
+- **Смешивание с ctx.importAsync**: если вы загрузили внешний React через `ctx.importAsync('react@19')`, JSX будет использовать этот экземпляр; **не** смешивайте его с `ctx.libs.antd`. Подгружайте antd под ту же версию React (например, `ctx.importAsync('antd@5.x')`, `ctx.importAsync('@ant-design/icons@5.x')`).
+- **Несколько экземпляров React**: ошибка «некорректный вызов хука» или null hook dispatcher обычно означает несколько экземпляров React. Перед использованием `ctx.libs.React` и хуков убедитесь, что используется тот же React, что и на странице.
 
-## Связанные разделы
+## Связанные материалы
 
-- [ctx.importAsync()](./import-async.md) — загрузка внешних ESM-модулей по требованию (например, конкретных версий React, Vue)
-- [ctx.render()](./render.md) — рендеринг контента в контейнер
+- [ctx.importAsync()](./import-async.md): загрузка внешних ESM-модулей (например, конкретной версии React или Vue)
+- [ctx.render()](./render.md): рендер в контейнер

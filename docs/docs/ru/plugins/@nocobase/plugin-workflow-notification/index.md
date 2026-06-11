@@ -1,12 +1,12 @@
 ---
-displayName: "Workflow: Узел уведомления"
+displayName: "Рабочий процесс: узел уведомлений"
 packageName: '@nocobase/plugin-workflow-notification'
 description: |
-  Позволяет отправлять различные уведомления в Workflow.
+  Отправка уведомлений в рабочем процессе.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Workflow: Узел уведомления
+# Рабочий процесс: узел уведомлений

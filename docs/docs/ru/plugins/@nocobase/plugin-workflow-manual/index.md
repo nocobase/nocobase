@@ -1,12 +1,12 @@
 ---
-displayName: "Workflow: Узел ручной обработки"
+displayName: "Рабочий процесс: ручной узел"
 packageName: '@nocobase/plugin-workflow-manual'
 description: |
-  Используется для процессов, в которых часть решений принимается вручную.
+  Для процессов, где часть решений принимается пользователями.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Workflow: Узел ручной обработки
+# Рабочий процесс: ручной узел

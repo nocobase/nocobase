@@ -2,7 +2,7 @@
 displayName: "Копирование текста"
 packageName: '@nocobase/plugin-text-copy'
 description: |
-  Добавляет кнопку копирования в текстовые поля
+  Добавляет кнопку копирования для текстовых полей.
 isFree: true
 builtIn: true
 defaultEnabled: false

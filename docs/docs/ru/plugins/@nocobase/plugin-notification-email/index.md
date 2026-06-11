@@ -1,12 +1,12 @@
 ---
-displayName: "Уведомление: Электронная почта"
+displayName: "Уведомления: электронная почта"
 packageName: '@nocobase/plugin-notification-email'
 description: |
-  Отправка уведомлений по электронной почте. На данный момент поддерживается только протокол SMTP.
+  Отправка уведомлений по электронной почте со встроенной доставкой через SMTP.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Уведомление: Электронная почта
+# Уведомления: электронная почта

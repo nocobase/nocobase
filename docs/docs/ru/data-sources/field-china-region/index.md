@@ -13,4 +13,4 @@ pkg: "@nocobase/plugin-field-china-region"
 
 ## Примеры
 
-Будет дополнено.
+Будет добавлено.

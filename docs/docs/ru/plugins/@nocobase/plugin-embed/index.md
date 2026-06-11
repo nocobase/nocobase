@@ -4,7 +4,7 @@ packageName: '@nocobase/plugin-embed'
 supportedVersions:
   - 1.x
 description: |
-  Встраивайте NocoBase во внешние системы или страницы, делая его частью этой системы или страницы.
+  Встраивание NocoBase в другую систему или страницу как часть интерфейса.
 isFree: true
 builtIn: true
 defaultEnabled: false

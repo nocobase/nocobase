@@ -1,14 +1,14 @@
 ---
-displayName: "Блок: Дерево"
+displayName: "Блок: дерево"
 packageName: '@nocobase/plugin-block-tree'
 supportedVersions:
   - 1.x
 description: |
-  Предоставляет блок фильтрации с древовидной структурой
+  Блок фильтрации в виде дерева.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Блок: Дерево
+# Блок: дерево
