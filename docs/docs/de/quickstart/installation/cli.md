@@ -150,7 +150,7 @@ Mit anderen Worten: `default-ui-host` und `default-api-host` dienen lediglich da
 
 Wenn diese Umgebung zum offiziellen Start bereit ist, wird empfohlen, als nächsten Schritt nach Abschluss der Installation „eine Verbindung zum Reverse-Proxy herzustellen und HTTPS zu aktivieren“ und nicht als optionales Optimierungselement.
 
-Wenn Sie jetzt bereit sind, mit der formellen Bereitstellung fortzufahren, wird empfohlen, mit der [Bereitstellung der Produktionsumgebung](../Production/Index.md) zu beginnen und sich dann bei Bedarf weiterhin die Reverse-Proxy-Konfiguration von [Nginx](../Production/Reverse-Proxy/Nginx.md) oder [Caddy](../Production/Reverse-Proxy/Caddy.md) anzusehen.
+Wenn Sie jetzt bereit sind, mit der formellen Bereitstellung fortzufahren, wird empfohlen, mit der [Bereitstellung der Produktionsumgebung](../production/index.md) zu beginnen und sich dann bei Bedarf weiterhin die Reverse-Proxy-Konfiguration von [Nginx](../production/reverse-proxy/nginx.md) oder [Caddy](../production/reverse-proxy/caddy.md) anzusehen.
 
 ### Täglicher Betrieb
 
@@ -168,7 +168,7 @@ Wenn Sie nach der Installation mit den nachfolgenden Vorgängen fortfahren möch
 
 | Ich möchte... | Wo suchen |
 | --- | --- |
-| Wenn Sie bereit sind, diese Umgebung offiziell für die Außenwelt zugänglich zu machen, verbinden Sie sie mit dem Reverse-Proxy der Produktionsumgebung und verwenden Sie den Domänennamen und HTTPS, um den Dienst verfügbar zu machen. | [Nginx](../produktion/reverse-proxy/nginx.md) / [Caddy](../produktion/reverse-proxy/caddy.md). |
+| Wenn Sie bereit sind, diese Umgebung offiziell für die Außenwelt zugänglich zu machen, verbinden Sie sie mit dem Reverse-Proxy der Produktionsumgebung und verwenden Sie den Domänennamen und HTTPS, um den Dienst verfügbar zu machen. | [Nginx](../production/reverse-proxy/nginx.md) / [Caddy](../production/reverse-proxy/caddy.md). |
 | Bestätigen Sie, ob die Umgebung erfolgreich gespeichert wurde, prüfen Sie, welche Umgebung derzeit verwendet wird, und wechseln Sie zwischen mehreren Umgebungen. | [`nb env`](../../api/cli/env/index.md), [Multi-Umgebungsverwaltung](../operations/multi-environment.md). |
 | Starten, stoppen, starten Sie die Anwendung neu, zeigen Sie Protokolle an oder fahren Sie mit dem Upgrade der Anwendung fort. | [`nb app`](../../api/cli/app/index.md), [Anwendung verwalten](../operations/manage-app.md). |
 | Überprüfen Sie Datenbankverbindungen, zeigen Sie den Status der integrierten Datenbank an oder beheben Sie Probleme mit Datenbankcontainern. | [`nb db`](../../api/cli/db/index.md). |
@@ -193,7 +193,7 @@ Wenn Sie die Anwendung später aktualisieren möchten, schauen Sie sich einfach 
 
 - [`nb init` Befehlsreferenz](../../api/cli/init.md)
 - [`nb env info` Befehlsreferenz](../../api/cli/env/info.md)
-- [Reverse-Proxy der Produktionsumgebung: Nginx](../produktion/reverse-proxy/nginx.md) / [Caddy](../produktion/reverse-proxy/caddy.md)
+- [Reverse-Proxy der Produktionsumgebung: Nginx](../production/reverse-proxy/nginx.md) / [Caddy](../production/reverse-proxy/caddy.md)
 - [Vom alten Weg zur CLI migrieren](./migration.md)
 - [Verwaltung mehrerer Umgebungen](../operations/multi-environment.md)
 - [Anwendung verwalten](../operations/manage-app.md)

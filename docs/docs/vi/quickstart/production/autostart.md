@@ -137,4 +137,4 @@ nb app autostart run --verbose
 - [Tổng quan về triển khai môi trường sản xuất](./index.md)
 - [Proxy ngược](./reverse-proxy/index.md)
 - [ý định thiết kế ứng dụng nb](../cli-design/nb-app-design-intent.md)
-- [Quản lý ứng dụng](../Operations/manage-app.md)
+- [Quản lý ứng dụng](../operations/manage-app.md)

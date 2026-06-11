@@ -21,9 +21,9 @@ Hãy ghi nhớ điều này trước tiên và các tài liệu tiếp theo sẽ
 Nếu bạn không chắc chắn nên bắt đầu từ đâu thì cách dễ nhất là đi theo con đường này:
 
 1. Trước tiên hãy đọc [Cài đặt bằng CLI (được khuyến nghị)](./installation/cli.md) và hoàn tất `nb init` một lần.
-2. Sau khi ứng dụng được lưu dưới dạng env, hãy xem [Quản lý nhiều môi trường](./Operations/multi-environment.md) để xác nhận env hiện tại, chuyển đổi env và kiểm tra trạng thái.
-3. Để khởi động hàng ngày, dừng, đăng nhập và nâng cấp, tiếp tục xem [Quản lý ứng dụng](./Operations/manage-app.md).
-4. Trước khi thực hiện nâng cấp, di chuyển hoặc thay đổi quan trọng, hãy xem [Sao lưu và khôi phục](./Operations/backup-restore.md).
+2. Sau khi ứng dụng được lưu dưới dạng env, hãy xem [Quản lý nhiều môi trường](./operations/multi-environment.md) để xác nhận env hiện tại, chuyển đổi env và kiểm tra trạng thái.
+3. Để khởi động hàng ngày, dừng, đăng nhập và nâng cấp, tiếp tục xem [Quản lý ứng dụng](./operations/manage-app.md).
+4. Trước khi thực hiện nâng cấp, di chuyển hoặc thay đổi quan trọng, hãy xem [Sao lưu và khôi phục](./operations/backup-restore.md).
 5. Nếu bạn đã sẵn sàng trực tuyến chính thức, hãy nhập [Tổng quan về triển khai môi trường sản xuất] (./production/index.md).
 
 Ba bước đầu tiên bao gồm hầu hết các tình huống sử dụng.
@@ -35,9 +35,9 @@ Ba bước đầu tiên bao gồm hầu hết các tình huống sử dụng.
 | Chưa có ứng dụng nào, trước tiên hãy cài đặt NocoBase mới và lưu nó dưới dạng CLI env | [Cài đặt bằng CLI (được khuyến nghị)](./installation/cli.md) |
 | Đã có NocoBase đang chạy và muốn truy cập quản lý CLI | [Cài đặt bằng CLI (được khuyến nghị)](./installation/cli.md) |
 | Di chuyển dần dần các phương pháp cài đặt cũ sang CLI | [Di chuyển từ các phương thức cài đặt cũ sang CLI](./installation/migration.md) |
-| Xem env nào được lưu cục bộ, chuyển env hiện tại và kiểm tra trạng thái | [Quản lý nhiều môi trường](./Operations/multi-environment.md) |
-| Bắt đầu, dừng, khởi động lại ứng dụng, xem nhật ký hoặc tiếp tục nâng cấp | [Quản lý ứng dụng](./Operations/manage-app.md) |
-| Tạo bản sao lưu trước khi nâng cấp, di chuyển hoặc thay đổi dữ liệu hàng loạt, sau đó khôi phục dữ liệu khi cần thiết | [Sao lưu và khôi phục](./Operations/backup-restore.md) |
+| Xem env nào được lưu cục bộ, chuyển env hiện tại và kiểm tra trạng thái | [Quản lý nhiều môi trường](./operations/multi-environment.md) |
+| Bắt đầu, dừng, khởi động lại ứng dụng, xem nhật ký hoặc tiếp tục nâng cấp | [Quản lý ứng dụng](./operations/manage-app.md) |
+| Tạo bản sao lưu trước khi nâng cấp, di chuyển hoặc thay đổi dữ liệu hàng loạt, sau đó khôi phục dữ liệu khi cần thiết | [Sao lưu và khôi phục](./operations/backup-restore.md) |
 | Trước tiên hãy xác nhận các biến môi trường chính cần thiết để chạy ứng dụng | [Biến môi trường ứng dụng](./installation/env.md) |
 | Cài đặt plug-in của bên thứ ba | [Cài đặt và nâng cấp plug-in của bên thứ ba](./plugins/third-party.md) |
 | Cho ứng dụng vào môi trường sản xuất: khởi động tự động, truy cập bên ngoài ổn định, proxy ngược | [Tổng quan về triển khai môi trường sản xuất](./production/index.md) |

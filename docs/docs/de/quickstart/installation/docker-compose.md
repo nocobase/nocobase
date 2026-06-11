@@ -119,5 +119,5 @@ docker compose logs -f app
 ## Wo Sie als nächstes suchen müssen
 
 - Wenn Sie die Konfiguration von Schlüsseln, Ports, Datenbanken usw. anpassen möchten, lesen Sie weiter unter [Anwendungsumgebungsvariablen](./env.md)
-- Wenn Sie bereit sind, offiziell online zu gehen, lesen Sie weiter [Nginx](../produktion/reverse-proxy/nginx.md) oder [Caddy](../produktion/reverse-proxy/caddy.md)
+- Wenn Sie bereit sind, offiziell online zu gehen, lesen Sie weiter [Nginx](../production/reverse-proxy/nginx.md) oder [Caddy](../production/reverse-proxy/caddy.md)
 - Wenn Sie Daten später sichern möchten, lesen Sie weiter unter [Sichern und Wiederherstellen](../operations/backup-restore.md)

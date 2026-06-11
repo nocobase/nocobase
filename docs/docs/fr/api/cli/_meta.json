@@ -335,7 +335,7 @@
       {
         "type": "custom-link",
         "label": "nb proxy caddy",
-        "link": "/api/cli/proxy/caddy",
+        "link": "/api/cli/proxy/caddy/",
         "items": [
           {
             "type": "custom-link",
@@ -388,7 +388,7 @@
       {
         "type": "custom-link",
         "label": "nb proxy nginx",
-        "link": "/api/cli/proxy/nginx",
+        "link": "/api/cli/proxy/nginx/",
         "items": [
           {
             "type": "custom-link",

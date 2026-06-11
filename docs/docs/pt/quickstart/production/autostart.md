@@ -137,4 +137,4 @@ nb app autostart run --verbose
 - [Visão geral da implantação do ambiente de produção](./index.md)
 - [Proxy reverso](./reverse-proxy/index.md)
 - [nb intenção de design do aplicativo](../cli-design/nb-app-design-intent.md)
-- [Gerenciar aplicativo](../operações/manage-app.md)
+- [Gerenciar aplicativo](../operations/manage-app.md)
