@@ -404,9 +404,28 @@ type PdfJs = typeof import('pdfjs-dist/build/pdf.mjs');
 let pdfjsPromise: Promise<PdfJs> | null = null;
 
 type NocoBaseWindow = Window & {
-  __nocobase_dev_public_path__?: string;
+  __nocobase_modern_client_prefix__?: string;
   __nocobase_public_path__?: string;
   __webpack_public_path__?: string;
+};
+
+const ensureTrailingSlash = (path: string) => (path.endsWith('/') ? path : `${path}/`);
+
+const escapeRegExp = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+const getPluginStaticPublicPath = (browserWindow?: NocoBaseWindow) => {
+  const webpackPublicPath = browserWindow?.__webpack_public_path__;
+  if (webpackPublicPath) {
+    return ensureTrailingSlash(webpackPublicPath);
+  }
+
+  const publicPath = ensureTrailingSlash(browserWindow?.__nocobase_public_path__ || '/');
+  const modernClientPrefix = String(browserWindow?.__nocobase_modern_client_prefix__ || 'v').replace(/^\/+|\/+$/g, '');
+  if (!modernClientPrefix) {
+    return publicPath;
+  }
+
+  return publicPath.replace(new RegExp(`/${escapeRegExp(modernClientPrefix)}/$`), '/');
 };
 
 export const getPdfPreviewResourceOptions = (): Pick<
@@ -414,14 +433,7 @@ export const getPdfPreviewResourceOptions = (): Pick<
   'cMapPacked' | 'cMapUrl' | 'standardFontDataUrl'
 > => {
   const browserWindow = typeof window === 'undefined' ? undefined : (window as NocoBaseWindow);
-  let publicPath =
-    browserWindow?.__webpack_public_path__ ||
-    browserWindow?.__nocobase_dev_public_path__ ||
-    browserWindow?.__nocobase_public_path__ ||
-    '/';
-  if (!publicPath.endsWith('/')) {
-    publicPath += '/';
-  }
+  const publicPath = getPluginStaticPublicPath(browserWindow);
   const pdfjsBaseUrl = `${publicPath}static/plugins/@nocobase/plugin-file-manager/dist/client/pdfjs/`;
   return {
     cMapPacked: true,

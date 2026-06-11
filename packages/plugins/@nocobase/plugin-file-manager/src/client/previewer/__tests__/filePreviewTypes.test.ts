@@ -20,6 +20,7 @@ describe('getDownloadFileName', () => {
   afterEach(() => {
     delete window.__webpack_public_path__;
     delete window.__nocobase_public_path__;
+    delete window.__nocobase_modern_client_prefix__;
     vi.restoreAllMocks();
   });
 
@@ -82,12 +83,35 @@ describe('getDownloadFileName', () => {
   });
 
   it('应兼容子路径部署下的 PDF.js 预览资源地址', () => {
-    window.__webpack_public_path__ = '/nocobase';
+    window.__nocobase_public_path__ = '/nocobase/v/';
 
     expect(getPdfPreviewResourceOptions()).toEqual({
       cMapPacked: true,
       cMapUrl: '/nocobase/static/plugins/@nocobase/plugin-file-manager/dist/client/pdfjs/cmaps/',
       standardFontDataUrl: '/nocobase/static/plugins/@nocobase/plugin-file-manager/dist/client/pdfjs/standard_fonts/',
+    });
+  });
+
+  it('应兼容自定义现代客户端前缀下的 PDF.js 预览资源地址', () => {
+    window.__nocobase_public_path__ = '/nocobase/admin/';
+    window.__nocobase_modern_client_prefix__ = 'admin';
+
+    expect(getPdfPreviewResourceOptions()).toEqual({
+      cMapPacked: true,
+      cMapUrl: '/nocobase/static/plugins/@nocobase/plugin-file-manager/dist/client/pdfjs/cmaps/',
+      standardFontDataUrl: '/nocobase/static/plugins/@nocobase/plugin-file-manager/dist/client/pdfjs/standard_fonts/',
+    });
+  });
+
+  it('配置 CDN 地址时应优先使用 CDN 基础路径', () => {
+    window.__webpack_public_path__ = 'https://cdn.example.com/assets';
+    window.__nocobase_public_path__ = '/nocobase/v/';
+
+    expect(getPdfPreviewResourceOptions()).toEqual({
+      cMapPacked: true,
+      cMapUrl: 'https://cdn.example.com/assets/static/plugins/@nocobase/plugin-file-manager/dist/client/pdfjs/cmaps/',
+      standardFontDataUrl:
+        'https://cdn.example.com/assets/static/plugins/@nocobase/plugin-file-manager/dist/client/pdfjs/standard_fonts/',
     });
   });
 });
