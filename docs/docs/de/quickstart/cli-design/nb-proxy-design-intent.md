@@ -29,7 +29,7 @@ Dies ist auch die Erfahrung, die diese Schicht von `nb proxy` am meisten bieten 
 
 Da das von `nb proxy` gelöste Problem tatsächlich sehr konvergent ist: **Geben Sie der Anwendung einen stabilen externen Zugriffseingang. **
 
-Wenn Sie [Übersicht über die Bereitstellung der Produktionsumgebung](../produktion/index.md) bereits gesehen haben, können Sie es sich getrennt von `nb app autostart` wie folgt merken:
+Wenn Sie [Übersicht über die Bereitstellung der Produktionsumgebung](../production/index.md) bereits gesehen haben, können Sie es sich getrennt von `nb app autostart` wie folgt merken:
 
 - `nb app autostart` ist verantwortlich dafür, „wie die Ausführung der Anwendung nach dem Neustart der Maschine wieder aufgenommen wird“
 - `nb proxy` ist verantwortlich dafür, „wie die Anwendung einen stabilen externen Zugriff über Nginx oder Caddy bereitstellen kann“
@@ -150,4 +150,4 @@ Worüber Sie sich mehr Sorgen machen, ist:
 - Für die meisten Benutzer reicht es aus, sich diese drei Befehle zu merken
 - Der Schwerpunkt des Designs liegt nicht darauf, alle Details zu verbergen, sondern zunächst die gängigsten Prozesse auf der Eingangsebene festzulegen.
 
-Wenn Sie sich die spezifischen Befehle weiter ansehen möchten, können Sie direkt zu [`nb proxy`](../../api/cli/proxy/index.md) gehen. Wenn Sie bereit sind, sich mit dem offiziellen Eingang zu verbinden, können Sie sich auch weiterhin [Reverse Proxy](../produktion/reverse-proxy/index.md) ansehen.
+Wenn Sie sich die spezifischen Befehle weiter ansehen möchten, können Sie direkt zu [`nb proxy`](../../api/cli/proxy/index.md) gehen. Wenn Sie bereit sind, sich mit dem offiziellen Eingang zu verbinden, können Sie sich auch weiterhin [Reverse Proxy](../production/reverse-proxy/index.md) ansehen.

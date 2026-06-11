@@ -100,4 +100,4 @@ O que é adaptado aqui são os mecanismos de inicialização do sistema, como `s
 - A implementação do gerenciamento de processos pode ser Docker, PM2, Supervisor, etc. Atualmente, Docker e PM2 são suportados
 - Como as configurações de inicialização automática de diferentes métodos de gerenciamento de processos são diferentes, é necessário um conjunto unificado de recursos `nb app autostart` para que todo o processo seja concluído.
 
-Se quiser continuar a ver as operações diárias, você pode ir diretamente para [Gerenciar aplicativo](../operações/manage-app.md). Se você estiver pronto para implantar o aplicativo no ambiente formal, poderá continuar consultando [Implantação do ambiente de produção](../production/index.md).
+Se quiser continuar a ver as operações diárias, você pode ir diretamente para [Gerenciar aplicativo](../operations/manage-app.md). Se você estiver pronto para implantar o aplicativo no ambiente formal, poderá continuar consultando [Implantação do ambiente de produção](../production/index.md).

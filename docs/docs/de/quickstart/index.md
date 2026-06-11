@@ -40,7 +40,7 @@ Die ersten drei Schritte decken die meisten Nutzungsszenarien ab.
 | Erstellen Sie ein Backup, bevor Sie Daten aktualisieren, migrieren oder stapelweise ändern, und stellen Sie sie dann bei Bedarf wieder her | [Sichern und Wiederherstellen](./operations/backup-restore.md) |
 | Bestätigen Sie zunächst die wichtigsten Umgebungsvariablen, die zum Ausführen der Anwendung erforderlich sind | [Anwendungsumgebungsvariablen](./installation/env.md) |
 | Plug-Ins von Drittanbietern installieren | [Installation und Aktualisierung von Plug-Ins von Drittanbietern](./plugins/third-party.md) |
-| Lassen Sie die Anwendung in die Produktionsumgebung gelangen: automatischer Start, stabiler externer Zugriff, Reverse-Proxy | [Überblick über die Bereitstellung der Produktionsumgebung](./produktion/index.md) |
+| Lassen Sie die Anwendung in die Produktionsumgebung gelangen: automatischer Start, stabiler externer Zugriff, Reverse-Proxy | [Überblick über die Bereitstellung der Produktionsumgebung](./production/index.md) |
 
 ## Wann Sie sich die Befehlsreferenz ansehen sollten
 

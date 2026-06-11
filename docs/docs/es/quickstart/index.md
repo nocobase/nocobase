@@ -21,9 +21,9 @@ Tenga esto en cuenta primero y los documentos posteriores serán mucho más flui
 Si no está seguro de por dónde empezar, normalmente lo más fácil es seguir este camino:
 
 1. Primero lea [Instalación usando CLI (recomendado)](./installation/cli.md) y complete `nb init` una vez.
-2. Después de guardar la aplicación como env, mire [Administración de entornos múltiples] (./operaciones/multi-environment.md) para confirmar el env actual, cambiar env y verificar el estado.
-3. Para el inicio, detención, registro y actualización diarios, continúe viendo [Administrar aplicación] (./operaciones/manage-app.md).
-4. Antes de realizar actualizaciones, migraciones o cambios importantes, consulte [Copia de seguridad y restauración] (./operaciones/backup-restore.md).
+2. Después de guardar la aplicación como env, mire [Administración de entornos múltiples] (./operations/multi-environment.md) para confirmar el env actual, cambiar env y verificar el estado.
+3. Para el inicio, detención, registro y actualización diarios, continúe viendo [Administrar aplicación] (./operations/manage-app.md).
+4. Antes de realizar actualizaciones, migraciones o cambios importantes, consulte [Copia de seguridad y restauración] (./operations/backup-restore.md).
 5. Si está listo para conectarse oficialmente, ingrese a [Descripción general de la implementación del entorno de producción] (./production/index.md).
 
 Los primeros tres pasos cubren la mayoría de los escenarios de uso.
@@ -35,9 +35,9 @@ Los primeros tres pasos cubren la mayoría de los escenarios de uso.
 | Aún no hay ninguna aplicación, primero instale una nueva NocoBase y guárdela como CLI env | [Instalar usando CLI (recomendado)](./installation/cli.md) |
 | Ya tiene NocoBase en ejecución y desea acceder a la administración CLI | [Instalar usando CLI (recomendado)](./installation/cli.md) |
 | Migre gradualmente los métodos de instalación antiguos a CLI | [Migrar desde métodos de instalación antiguos a CLI](./installation/migration.md) |
-| Vea qué entornos se guardan localmente, cambie el entorno actual y verifique el estado | [Gestión de entornos múltiples](./operaciones/multi-environment.md) |
-| Iniciar, detener, reiniciar la aplicación, ver registros o continuar con la actualización | [Administrar aplicación](./operaciones/manage-app.md) |
-| Haga una copia de seguridad antes de actualizar, migrar o cambiar datos por lotes y luego restaurarla cuando sea necesario | [Copia de seguridad y restauración](./operaciones/backup-restore.md) |
+| Vea qué entornos se guardan localmente, cambie el entorno actual y verifique el estado | [Gestión de entornos múltiples](./operations/multi-environment.md) |
+| Iniciar, detener, reiniciar la aplicación, ver registros o continuar con la actualización | [Administrar aplicación](./operations/manage-app.md) |
+| Haga una copia de seguridad antes de actualizar, migrar o cambiar datos por lotes y luego restaurarla cuando sea necesario | [Copia de seguridad y restauración](./operations/backup-restore.md) |
 | Primero confirme las variables de entorno clave necesarias para ejecutar la aplicación | [Variables de entorno de la aplicación](./installation/env.md) |
 | Instalar complementos de terceros | [Instalación y actualización de complementos de terceros](./plugins/third-party.md) |
 | Deje que la aplicación ingrese al entorno de producción: inicio automático, acceso externo estable, proxy inverso | [Descripción general de la implementación del entorno de producción](./production/index.md) |

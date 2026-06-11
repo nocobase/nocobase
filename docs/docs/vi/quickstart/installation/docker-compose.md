@@ -120,4 +120,4 @@ docker compose logs -f app
 
 - Nếu bạn muốn điều chỉnh cấu hình khóa, cổng, cơ sở dữ liệu, v.v., hãy tiếp tục xem [Biến môi trường ứng dụng](./env.md)
 - Nếu bạn đã sẵn sàng lên mạng chính thức, hãy tiếp tục đọc [Nginx](../production/reverse-proxy/nginx.md) hoặc [Caddy](../production/reverse-proxy/caddy.md)
-- Nếu bạn muốn sao lưu dữ liệu sau, hãy tiếp tục xem [Backup and Restore](../Operations/backup-restore.md)
+- Nếu bạn muốn sao lưu dữ liệu sau, hãy tiếp tục xem [Backup and Restore](../operations/backup-restore.md)

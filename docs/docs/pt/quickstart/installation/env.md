@@ -150,4 +150,4 @@ Esta é também a mentalidade que esta página mais deseja ajudar você a constr
 
 - Se você não confirmou a estrutura de diretórios do aplicativo, primeiro volte para [Instalar usando CLI (recomendado)](./cli.md#Installation directory)
 - Se você deseja modificar configurações básicas como portas, fusos horários, conexões de banco de dados e caminhos de acesso público, continue em [`nb env update`](../../api/cli/env/update.md)
-- Se você deseja iniciar, reiniciar ou visualizar os logs do aplicativo, continue em [Gerenciar aplicativo](../operações/manage-app.md)
+- Se você deseja iniciar, reiniciar ou visualizar os logs do aplicativo, continue em [Gerenciar aplicativo](../operations/manage-app.md)

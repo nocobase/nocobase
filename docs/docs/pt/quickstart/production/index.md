@@ -60,7 +60,7 @@ Se acontecer de você ficar preso aqui "Por que você precisa de `nb app autosta
 | Primeiro entenda a relação de entrada do Nginx/Caddy nesta CLI | [Proxy reverso](./reverse-proxy/index.md) |
 | Continue usando o Nginx para gerenciar a entrada do site | [Nginx](./reverse-proxy/nginx.md) |
 | Conecte HTTPS o mais rápido possível e mantenha menos detalhes de TLS | [Caddy](./reverse-proxy/caddy.md) |
-| Visualize a inicialização, parada, logs e atualizações do próprio aplicativo | [Gerenciar aplicativo](../operações/manage-app.md) |
+| Visualize a inicialização, parada, logs e atualizações do próprio aplicativo | [Gerenciar aplicativo](../operations/manage-app.md) |
 
 ## Antes de entrar no ambiente de produção, confirme estes pré-requisitos
 
@@ -79,4 +79,4 @@ Se o comando solicitar que env está faltando `appPort`, primeiro execute [`nb e
 - [Proxy reverso](./reverse-proxy/index.md)
 - [Nginx](./reverse-proxy/nginx.md)
 - [Caddy](./reverse-proxy/caddy.md)
-- [Gerenciar aplicativo](../operações/manage-app.md)
+- [Gerenciar aplicativo](../operations/manage-app.md)

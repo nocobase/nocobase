@@ -60,7 +60,7 @@ Nếu bạn tình cờ bị mắc kẹt ở đây "Tại sao bạn cần `nb app
 | Trước tiên hãy hiểu mối quan hệ đầu vào của Nginx/Caddy trong CLI này | [Proxy ngược](./reverse-proxy/index.md) |
 | Tiếp tục sử dụng Nginx để quản lý lối vào trang web | [Nginx](./reverse-proxy/nginx.md) |
 | Kết nối HTTPS càng sớm càng tốt và duy trì ít chi tiết TLS hơn | [Caddy](./reverse-proxy/caddy.md) |
-| Xem quá trình khởi động, dừng, ghi nhật ký và nâng cấp của chính ứng dụng | [Quản lý ứng dụng](../Operations/manage-app.md) |
+| Xem quá trình khởi động, dừng, ghi nhật ký và nâng cấp của chính ứng dụng | [Quản lý ứng dụng](../operations/manage-app.md) |
 
 ## Trước khi vào môi trường production, hãy xác nhận các điều kiện tiên quyết này
 
@@ -79,4 +79,4 @@ Nếu lệnh nhắc rằng env bị thiếu `appPort`, trước tiên hãy thự
 - [Proxy ngược](./reverse-proxy/index.md)
 - [Nginx](./reverse-proxy/nginx.md)
 - [Caddy](./reverse-proxy/caddy.md)
-- [Quản lý ứng dụng](../Operations/manage-app.md)
+- [Quản lý ứng dụng](../operations/manage-app.md)

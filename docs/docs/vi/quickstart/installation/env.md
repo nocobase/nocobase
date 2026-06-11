@@ -150,4 +150,4 @@ AWS_S3_REGION=ap-southeast-1
 
 - Nếu bạn chưa xác nhận cấu trúc thư mục ứng dụng, trước tiên hãy quay lại [Cài đặt bằng CLI (được khuyến nghị)](./cli.md#Installation folder)
 - Nếu bạn muốn sửa đổi các cấu hình cơ bản như cổng, múi giờ, kết nối cơ sở dữ liệu và đường dẫn truy cập công cộng, hãy tiếp tục xem [`nb env update`](../../api/cli/env/update.md)
-- Nếu bạn muốn khởi động, khởi động lại hoặc xem nhật ký ứng dụng, hãy tiếp tục xem [Quản lý ứng dụng](../Operations/manage-app.md)
+- Nếu bạn muốn khởi động, khởi động lại hoặc xem nhật ký ứng dụng, hãy tiếp tục xem [Quản lý ứng dụng](../operations/manage-app.md)
