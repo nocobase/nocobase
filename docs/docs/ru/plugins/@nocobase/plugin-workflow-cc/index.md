@@ -1,12 +1,12 @@
 ---
-displayName: "Workflow: Копия (CC)"
+displayName: "Рассылка копии"
 packageName: '@nocobase/plugin-workflow-cc'
 description: |
-  Обеспечивает функцию копии (CC) в Workflow для отправки согласований или любой другой информации определенным пользователям.
+  Копия в рамках рабочего процесса: отправка материалов на согласование или иной информации указанным пользователям.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Workflow: Копия (CC)
+# Рассылка копии

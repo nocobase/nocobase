@@ -5,7 +5,7 @@ supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Использование внешней базы данных Apache Doris в качестве источника данных.
+  Внешние базы Apache Doris в качестве источников данных.
 isFree: false
 builtIn: false
 defaultEnabled: false

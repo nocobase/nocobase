@@ -5,7 +5,7 @@ supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Аутентификация через протокол OIDC (OpenID Connect).
+  Аутентификация по OIDC.
 isFree: false
 builtIn: false
 defaultEnabled: false

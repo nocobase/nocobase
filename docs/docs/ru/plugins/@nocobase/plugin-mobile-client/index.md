@@ -2,7 +2,7 @@
 displayName: "Мобильный клиент (устарело)"
 packageName: '@nocobase/plugin-mobile-client'
 description: |
-  Предоставляет возможность настройки мобильных страниц.
+  Предоставляет возможность настраивать мобильные страницы.
 isFree: true
 builtIn: true
 defaultEnabled: false
@@ -12,4 +12,4 @@ editionLevel: 0
 
 # Мобильный клиент (устарело)
 
-> Примечание: этот плагин устарел (deprecated).
+> Примечание: этот плагин устарел.

@@ -1,12 +1,12 @@
 ---
-displayName: "Поле Collection: Many-to-Many (M2M) (массив)"
+displayName: "Поле коллекции: многие-ко-многим (массив)"
 packageName: '@nocobase/plugin-field-m2m-array'
 description: |
-  Поддерживает создание связей Many-to-Many (M2M) путем хранения массива уникальных ключей целевой Collection.
+  Связь «многие ко многим» между коллекциями через массив уникальных ключей целевой коллекции.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Поле Collection: Many-to-Many (M2M) (массив)
+# Поле коллекции: многие-ко-многим (массив)

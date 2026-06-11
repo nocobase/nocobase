@@ -12,7 +12,7 @@
   {
     "type": "file",
     "name": "quickstart",
-    "label": "Способы установки и сравнение версий"
+    "label": "Быстрый старт"
   },
   {
     "type": "custom-link",
@@ -46,33 +46,33 @@
     "items": [
       {
         "type": "custom-link",
-        "label": "Обновление установки Docker",
+        "label": "Обновление при установке через Docker",
         "link": "/get-started/upgrading/docker"
       },
       {
         "type": "custom-link",
-        "label": "Обновление установки create-nocobase-app",
+        "label": "Обновление при установке через create-nocobase-app",
         "link": "/get-started/upgrading/create-nocobase-app"
       },
       {
         "type": "custom-link",
-        "label": "Обновление установки из исходного кода Git",
+        "label": "Обновление при установке из исходного кода Git",
         "link": "/get-started/upgrading/git"
       }
     ]
   },
   {
     "type": "custom-link",
-    "label": "Развертывание",
+    "label": "Развёртывание",
     "items": [
       {
         "type": "custom-link",
-        "label": "Развертывание в производственной среде",
+        "label": "Развёртывание в продакшн-среде",
         "link": "/get-started/deployment/production"
       },
       {
         "type": "custom-link",
-        "label": "Развертывание во внутренней сети",
+        "label": "Развёртывание во внутренней сети",
         "items": [
           {
             "type": "custom-link",
@@ -88,7 +88,7 @@
       },
       {
         "type": "custom-link",
-        "label": "Прокси для статических ресурсов",
+        "label": "Проксирование статических ресурсов",
         "items": [
           {
             "type": "custom-link",
@@ -109,7 +109,7 @@
       },
       {
         "type": "custom-link",
-        "label": "Основные команды для эксплуатации",
+        "label": "Часто используемые команды",
         "items": [
           {
             "type": "custom-link",
@@ -125,7 +125,7 @@
       },
       {
         "type": "custom-link",
-        "label": "Как ускорить развертывание",
+        "label": "Как ускорить развёртывание",
         "link": "/get-started/deployment/how-to-deploy-nocobase-faster"
       }
     ]
@@ -137,7 +137,7 @@
   },
   {
     "type": "custom-link",
-    "label": "Вклад в переводы",
+    "label": "Участие в переводе",
     "link": "/get-started/translations"
   }
 ]

@@ -20,27 +20,27 @@
         "items": [
           {
             "type": "custom-link",
-            "label": "Таблица",
+            "label": "Блок таблицы",
             "link": "/interface-builder/blocks/data-blocks/table"
           },
           {
             "type": "custom-link",
-            "label": "Форма",
+            "label": "Блок формы",
             "link": "/interface-builder/blocks/data-blocks/form"
           },
           {
             "type": "custom-link",
-            "label": "Детали",
+            "label": "Блок деталей",
             "link": "/interface-builder/blocks/data-blocks/details"
           },
           {
             "type": "custom-link",
-            "label": "Список",
+            "label": "Блок списка",
             "link": "/interface-builder/blocks/data-blocks/list"
           },
           {
             "type": "custom-link",
-            "label": "Карточки-сетка",
+            "label": "Сетка карточек",
             "link": "/interface-builder/blocks/data-blocks/grid-card"
           },
           {
@@ -67,12 +67,12 @@
       },
       {
         "type": "custom-link",
-        "label": "Блоки фильтров",
+        "label": "Фильтрующие блоки",
         "collapsed": true,
         "items": [
           {
             "type": "custom-link",
-            "label": "Форма",
+            "label": "Форма фильтра",
             "link": "/interface-builder/blocks/filter-blocks/form"
           },
           {
@@ -94,17 +94,17 @@
           },
           {
             "type": "custom-link",
-            "label": "Iframe",
+            "label": "Блок Iframe",
             "link": "/interface-builder/blocks/other-blocks/iframe"
           },
           {
             "type": "custom-link",
-            "label": "Markdown",
+            "label": "Блок Markdown",
             "link": "/interface-builder/blocks/other-blocks/markdown"
           },
           {
             "type": "custom-link",
-            "label": "JS Block",
+            "label": "Блок JS",
             "link": "/interface-builder/blocks/other-blocks/js-block"
           }
         ]
@@ -131,17 +131,17 @@
           },
           {
             "type": "custom-link",
-            "label": "Правила взаимодействия блоков",
+            "label": "Правила связывания блоков",
             "link": "/interface-builder/blocks/block-settings/block-linkage-rule"
           },
           {
             "type": "custom-link",
-            "label": "Правила взаимодействия полей",
+            "label": "Правила связывания полей",
             "link": "/interface-builder/blocks/block-settings/field-linkage-rule"
           },
           {
             "type": "custom-link",
-            "label": "Правила сортировки",
+            "label": "Настройка правил сортировки",
             "link": "/interface-builder/blocks/block-settings/sorting-rule"
           },
           {
@@ -179,7 +179,7 @@
     "items": [
       {
         "type": "custom-link",
-        "label": "Обзор",
+        "label": "Поле",
         "link": "/interface-builder/fields/"
       },
       {
@@ -189,17 +189,17 @@
         "items": [
           {
             "type": "custom-link",
-            "label": "Поля таблицы",
+            "label": "Столбец таблицы",
             "link": "/interface-builder/fields/generic/table-column"
           },
           {
             "type": "custom-link",
-            "label": "Поля сведений",
+            "label": "Поля деталей",
             "link": "/interface-builder/fields/generic/detail-form-item"
           },
           {
             "type": "custom-link",
-            "label": "Поля формы фильтрации",
+            "label": "Поля формы фильтра",
             "link": "/interface-builder/fields/generic/filter-form-item"
           },
           {
@@ -216,7 +216,7 @@
         "items": [
           {
             "type": "custom-link",
-            "label": "Дата",
+            "label": "Дата и время",
             "link": "/interface-builder/fields/specific/date-picker"
           },
           {
@@ -241,12 +241,12 @@
           },
           {
             "type": "custom-link",
-            "label": "Каскадный селектор",
+            "label": "Каскадный выбор",
             "link": "/interface-builder/fields/specific/cascade-select"
           },
           {
             "type": "custom-link",
-            "label": "Вложенная таблица (редактирование в строке)",
+            "label": "Подтаблица",
             "link": "/interface-builder/fields/specific/sub-table"
           },
           {
@@ -256,7 +256,7 @@
           },
           {
             "type": "custom-link",
-            "label": "Вложенные сведения",
+            "label": "Подробности",
             "link": "/interface-builder/fields/specific/sub-detail"
           },
           {
@@ -266,17 +266,17 @@
           },
           {
             "type": "custom-link",
-            "label": "JS Field",
+            "label": "Поле JS",
             "link": "/interface-builder/fields/specific/js-field"
           },
           {
             "type": "custom-link",
-            "label": "JS Item",
+            "label": "Элемент JS",
             "link": "/interface-builder/fields/specific/js-item"
           },
           {
             "type": "custom-link",
-            "label": "JS Column",
+            "label": "Колонка JS",
             "link": "/interface-builder/fields/specific/js-column"
           }
         ]
@@ -293,17 +293,17 @@
           },
           {
             "type": "custom-link",
-            "label": "Метка поля",
+            "label": "Редактировать заголовок поля",
             "link": "/interface-builder/fields/field-settings/edit-title"
           },
           {
             "type": "custom-link",
-            "label": "Отображение метки",
+            "label": "Показать метку",
             "link": "/interface-builder/fields/field-settings/show-label"
           },
           {
             "type": "custom-link",
-            "label": "Подсказка для поля",
+            "label": "Редактировать подсказку",
             "link": "/interface-builder/fields/field-settings/edit-tooltip"
           },
           {
@@ -323,7 +323,7 @@
           },
           {
             "type": "custom-link",
-            "label": "Режим",
+            "label": "Шаблон",
             "link": "/interface-builder/fields/field-settings/pattern"
           },
           {
@@ -338,19 +338,19 @@
           },
           {
             "type": "custom-link",
-            "label": "Поле заголовка",
+            "label": "Заголовок поля",
             "link": "/interface-builder/fields/field-settings/title-field"
           },
           {
             "type": "custom-link",
-            "label": "Правила валидации",
+            "label": "Установка правил валидации",
             "link": "/interface-builder/fields/field-settings/validation-rules"
           }
         ]
       },
       {
         "type": "custom-link",
-        "label": "Компонент поля связи",
+        "label": "Поле связи",
         "link": "/interface-builder/fields/association-field"
       }
     ]
@@ -376,27 +376,27 @@
           },
           {
             "type": "custom-link",
-            "label": "Запрос подтверждения",
+            "label": "Подтверждение",
             "link": "/interface-builder/actions/action-settings/double-check"
           },
           {
             "type": "custom-link",
-            "label": "Присвоение значения полю",
+            "label": "Присвоение значений",
             "link": "/interface-builder/actions/action-settings/assign-values"
           },
           {
             "type": "custom-link",
-            "label": "Привязка Workflow",
+            "label": "Привязка рабочего процесса",
             "link": "/interface-builder/actions/action-settings/bind-workflow"
           },
           {
             "type": "custom-link",
-            "label": "Модальное окно редактирования",
+            "label": "Редактирование всплывающего окна",
             "link": "/interface-builder/actions/action-settings/edit-popup"
           },
           {
             "type": "custom-link",
-            "label": "Правила взаимодействия действий",
+            "label": "Правила связывания действий",
             "link": "/interface-builder/actions/action-settings/linkage-rule"
           }
         ]
@@ -438,7 +438,7 @@
           },
           {
             "type": "custom-link",
-            "label": "Импорт Pro",
+            "label": "Импорт Про",
             "link": "/interface-builder/actions/types/import-pro"
           },
           {
@@ -448,7 +448,7 @@
           },
           {
             "type": "custom-link",
-            "label": "Экспорт Pro",
+            "label": "Экспорт Про",
             "link": "/interface-builder/actions/types/export-pro"
           },
           {
@@ -478,12 +478,12 @@
           },
           {
             "type": "custom-link",
-            "label": "Отправить данные",
+            "label": "Отправить",
             "link": "/interface-builder/actions/types/submit"
           },
           {
             "type": "custom-link",
-            "label": "Запустить Workflow",
+            "label": "Запуск рабочего процесса",
             "link": "/interface-builder/actions/types/trigger-workflow"
           },
           {
@@ -503,7 +503,7 @@
           },
           {
             "type": "custom-link",
-            "label": "Добавить дочернюю запись",
+            "label": "Добавить дочерний элемент",
             "link": "/interface-builder/actions/types/add-child"
           },
           {
@@ -513,7 +513,7 @@
           },
           {
             "type": "custom-link",
-            "label": "JS Action",
+            "label": "Действие JS",
             "link": "/interface-builder/actions/types/js-action"
           },
           {
@@ -525,18 +525,18 @@
       },
       {
         "type": "custom-link",
-        "label": "Права на действия",
+        "label": "Разрешения действий",
         "link": "/interface-builder/actions/permission"
       }
     ]
   },
   {
     "type": "custom-link",
-    "label": "Продвинутый уровень",
+    "label": "Дополнительно",
     "items": [
       {
         "type": "custom-link",
-        "label": "Правила взаимодействия",
+        "label": "Правила связывания",
         "link": "/interface-builder/linkage-rule"
       },
       {
@@ -551,12 +551,12 @@
       },
       {
         "type": "custom-link",
-        "label": "RunJS",
+        "label": "Написание кода и запуск JS онлайн",
         "link": "/interface-builder/runjs"
       },
       {
         "type": "custom-link",
-        "label": "UI-шаблоны",
+        "label": "Шаблоны UI",
         "link": "/interface-builder/ui-templates"
       }
     ]

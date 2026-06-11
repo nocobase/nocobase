@@ -1,15 +1,15 @@
 ---
-displayName: "Печать шаблонов"
+displayName: "Печать по шаблону"
 packageName: '@nocobase/plugin-action-template-print'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Поддержка печати шаблонов пользователями внутри приложений NocoBase.
+  Позволяет пользователям печатать шаблоны внутри приложения NocoBase.
 isFree: false
 builtIn: false
 defaultEnabled: false
 editionLevel: 2
 ---
 
-# Печать шаблонов
+# Печать по шаблону

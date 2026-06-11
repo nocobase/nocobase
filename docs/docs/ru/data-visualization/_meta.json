@@ -11,7 +11,7 @@
   },
   {
     "type": "custom-link",
-    "label": "Обзор функций",
+    "label": "Возможности",
     "items": [
       {
         "type": "custom-link",
@@ -20,7 +20,7 @@
       },
       {
         "type": "custom-link",
-        "label": "Опции диаграммы",
+        "label": "Параметры графика",
         "link": "/data-visualization/guide/chart-options"
       },
       {
@@ -30,28 +30,28 @@
       },
       {
         "type": "custom-link",
-        "label": "Использование переменных окружения контекста",
+        "label": "Использование контекстных переменных",
         "link": "/data-visualization/guide/context-variables"
       },
       {
         "type": "custom-link",
-        "label": "Фильтры страницы и взаимодействие",
+        "label": "Фильтры страницы и связывание",
         "link": "/data-visualization/guide/filters-and-linkage"
       }
     ]
   },
   {
     "type": "custom-link",
-    "label": "Продвинутый уровень",
+    "label": "Продвинутые возможности",
     "items": [
       {
         "type": "custom-link",
-        "label": "Запрос данных в режиме SQL",
+        "label": "Запрос данных в SQL-режиме",
         "link": "/data-visualization/guide/sql-data-query"
       },
       {
         "type": "custom-link",
-        "label": "Пользовательская настройка диаграмм",
+        "label": "Пользовательская настройка графика",
         "link": "/data-visualization/guide/custom-chart-options"
       },
       {
@@ -63,7 +63,7 @@
   },
   {
     "type": "custom-link",
-    "label": "Часто задаваемые вопросы",
+    "label": "Частые вопросы",
     "link": "/data-visualization/faq"
   },
   {
