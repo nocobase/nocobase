@@ -21,3 +21,13 @@ export const DEFAULT_ADMIN_UI_LAYOUT = {
   authCheck: true,
   enabled: true,
 } as const;
+
+export const DEFAULT_MOBILE_UI_LAYOUT = {
+  title: 'Mobile layout',
+  uid: 'mobile-layout-model',
+  layoutType: UI_LAYOUT_TYPE_MOBILE,
+  routeName: 'mobile',
+  routePath: '/mobile',
+  authCheck: true,
+  enabled: true,
+} as const;

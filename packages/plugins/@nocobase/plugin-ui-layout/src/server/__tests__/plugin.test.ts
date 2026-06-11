@@ -10,7 +10,7 @@
 import { createMockServer, type MockServer } from '@nocobase/test';
 import { vi } from 'vitest';
 import packageJson from '../../../package.json';
-import { DEFAULT_ADMIN_UI_LAYOUT } from '../../constants';
+import { DEFAULT_ADMIN_UI_LAYOUT, DEFAULT_MOBILE_UI_LAYOUT } from '../../constants';
 import { ensureDefaultUiLayout } from '../ensureDefaultUiLayout';
 import type { PluginUiLayoutServer } from '../plugin';
 
@@ -106,6 +106,53 @@ describe('plugin-ui-layout server', () => {
     expect(record?.get('routePath')).toBe(DEFAULT_ADMIN_UI_LAYOUT.routePath);
     expect(record?.get('authCheck')).toBe(DEFAULT_ADMIN_UI_LAYOUT.authCheck);
     expect(record?.get('enabled')).toBe(DEFAULT_ADMIN_UI_LAYOUT.enabled);
+  });
+
+  it('should expose default enabled Desktop and Mobile layout manifests after install', async () => {
+    app = await createMockServer({
+      registerActions: true,
+      acl: true,
+      plugins: ['ui-layout'],
+    });
+    await app.db.sync();
+
+    const repository = app.db.getRepository('uiLayouts');
+    await repository.destroy({
+      truncate: true,
+    });
+
+    const plugin = app.pm.get('ui-layout') as PluginUiLayoutServer;
+    await plugin.install();
+    await repository.create({
+      values: {
+        uid: 'disabled-default-manifest-test',
+        title: 'Disabled manifest test',
+        layoutType: 'mobile',
+        routeName: 'disabledDefaultManifestTest',
+        routePath: '/disabled-default-manifest-test',
+        authCheck: true,
+        enabled: false,
+      },
+    });
+
+    const [adminLayout, mobileLayout, response] = await Promise.all([
+      repository.findOne({ filterByTk: DEFAULT_ADMIN_UI_LAYOUT.uid }),
+      repository.findOne({ filterByTk: DEFAULT_MOBILE_UI_LAYOUT.uid }),
+      app.agent().get('/uiLayouts:listEnabled'),
+    ]);
+    const layouts = response.body.data as Array<Record<string, unknown>>;
+
+    expect(adminLayout?.toJSON()).toMatchObject(DEFAULT_ADMIN_UI_LAYOUT);
+    expect(mobileLayout?.toJSON()).toMatchObject(DEFAULT_MOBILE_UI_LAYOUT);
+    expect(response.status).toBe(200);
+    expect(layouts).toEqual([
+      expect.objectContaining(DEFAULT_ADMIN_UI_LAYOUT),
+      expect.objectContaining(DEFAULT_MOBILE_UI_LAYOUT),
+    ]);
+    expect(layouts.map((layout) => layout.uid)).not.toContain('disabled-default-manifest-test');
+    for (const layout of layouts) {
+      expect(Object.keys(layout).sort()).toEqual([...UI_LAYOUT_RUNTIME_FIELDS].sort());
+    }
   });
 
   it('should rollback default AdminLayout creation when title backfill fails', async () => {
@@ -1775,8 +1822,8 @@ describe('plugin-ui-layout server', () => {
         uid: 'mobile-layout-model-test',
         title: 'Mobile layout relation test',
         layoutType: 'mobile',
-        routeName: 'mobile',
-        routePath: '/v/mobile',
+        routeName: 'mobileLayoutRelationTest',
+        routePath: '/mobile-layout-relation-test',
         authCheck: true,
         enabled: true,
       },

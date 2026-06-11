@@ -9,7 +9,12 @@
 
 import type { Database, Repository } from '@nocobase/database';
 import type { Transaction } from 'sequelize';
-import { DEFAULT_ADMIN_UI_LAYOUT, UI_LAYOUT_TYPE_DESKTOP, UI_LAYOUT_TYPE_MOBILE } from '../constants';
+import {
+  DEFAULT_ADMIN_UI_LAYOUT,
+  DEFAULT_MOBILE_UI_LAYOUT,
+  UI_LAYOUT_TYPE_DESKTOP,
+  UI_LAYOUT_TYPE_MOBILE,
+} from '../constants';
 
 const GENERATED_DEFAULT_TITLE = 'Untitled';
 
@@ -65,6 +70,24 @@ async function ensureUiLayoutTitles(repository: Repository<UiLayoutRecord>, tran
   }
 }
 
+async function ensureDefaultMobileUiLayout(repository: Repository<UiLayoutRecord>, transaction: Transaction) {
+  const existed = await repository.findOne({
+    filter: {
+      uid: DEFAULT_MOBILE_UI_LAYOUT.uid,
+    },
+    transaction,
+  });
+
+  if (existed) {
+    return;
+  }
+
+  await repository.create({
+    values: DEFAULT_MOBILE_UI_LAYOUT,
+    transaction,
+  });
+}
+
 export async function ensureDefaultUiLayout(db: Database) {
   await db.sequelize.transaction(async (transaction) => {
     const repository = db.getRepository('uiLayouts') as Repository<UiLayoutRecord>;
@@ -80,6 +103,7 @@ export async function ensureDefaultUiLayout(db: Database) {
         values: DEFAULT_ADMIN_UI_LAYOUT,
         transaction,
       });
+      await ensureDefaultMobileUiLayout(repository, transaction);
       await ensureUiLayoutTitles(repository, transaction);
       return;
     }
@@ -107,5 +131,6 @@ export async function ensureDefaultUiLayout(db: Database) {
     }
 
     await ensureUiLayoutTitles(repository, transaction);
+    await ensureDefaultMobileUiLayout(repository, transaction);
   });
 }
