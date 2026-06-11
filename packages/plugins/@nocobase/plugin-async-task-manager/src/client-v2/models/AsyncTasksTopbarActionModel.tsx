@@ -76,6 +76,26 @@ function getTaskOrigin(plugin: PluginAsyncTaskManagerClientV2 | undefined, origi
   return plugin?.taskOrigins.get(origin);
 }
 
+function ErrorDetailsContent(props: { message: React.ReactNode }) {
+  const { token } = theme.useToken();
+
+  return (
+    <div
+      style={{
+        maxHeight: '60vh',
+        overflow: 'auto',
+        padding: `${token.paddingXS}px ${token.paddingSM}px`,
+        borderRadius: token.borderRadius,
+        background: token.colorFillAlter,
+        whiteSpace: 'pre-wrap',
+        wordBreak: 'break-word',
+      }}
+    >
+      <Typography.Text>{props.message}</Typography.Text>
+    </div>
+  );
+}
+
 const AsyncTasksButton = React.memo(
   (props: {
     popoverVisible: boolean;
@@ -265,12 +285,10 @@ const AsyncTasksButton = React.memo(
                     Modal.info({
                       title: t('Error Details'),
                       content: (
-                        <Typography.Text>
-                          {t(result.message ?? '', { ...result.params, ns: namespace })}
-                        </Typography.Text>
+                        <ErrorDetailsContent message={t(result.message ?? '', { ...result.params, ns: namespace })} />
                       ),
                       closable: true,
-                      width: token.screenSM,
+                      width: token.screenMD,
                     });
                   }}
                 >
