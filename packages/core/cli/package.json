@@ -12,6 +12,11 @@
   "keywords": [],
   "author": "",
   "license": "Apache-2.0",
+  "files": [
+    "bin",
+    "dist",
+    "nocobase-ctl.config.json"
+  ],
   "bin": {
     "nb": "./bin/run.js"
   },
