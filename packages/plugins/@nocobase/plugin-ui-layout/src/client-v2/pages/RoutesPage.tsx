@@ -7,12 +7,22 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { DeleteOutlined, EditOutlined, PlusOutlined, ReloadOutlined } from '@ant-design/icons';
+import {
+  CheckOutlined,
+  CloseOutlined,
+  DeleteOutlined,
+  EditOutlined,
+  EyeInvisibleOutlined,
+  EyeOutlined,
+  PlusOutlined,
+  ReloadOutlined,
+} from '@ant-design/icons';
 import type { NocoBaseDesktopRoute } from '@nocobase/client-v2/flow-compat';
 import { NocoBaseDesktopRouteType } from '@nocobase/client-v2/flow-compat';
 import { randomId, useFlowContext } from '@nocobase/flow-engine';
 import { Button, Card, Form, Input, Modal, Popconfirm, Select, Space, Table, Tabs, Typography, theme } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
+import type { Key } from 'antd/es/table/interface';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { DEFAULT_ADMIN_UI_LAYOUT, DEFAULT_MOBILE_UI_LAYOUT } from '../../constants';
 import { useT } from '../locale';
@@ -21,6 +31,7 @@ type RouteLayoutConfig = {
   key: string;
   label: string;
   uid: string;
+  mobile?: boolean;
 };
 
 type RouteFormValues = {
@@ -31,7 +42,7 @@ type RouteFormValues = {
 
 type DesktopRoutesResource = {
   create: (params: { layout: string; values: Partial<NocoBaseDesktopRoute> }) => Promise<unknown>;
-  destroy: (params: { filterByTk: number | string; layout: string }) => Promise<unknown>;
+  destroy: (params: { filterByTk: Array<number | string> | number | string; layout: string }) => Promise<unknown>;
   update: (params: {
     filterByTk: number | string;
     layout: string;
@@ -68,6 +79,7 @@ const routeLayouts: RouteLayoutConfig[] = [
   {
     key: 'mobile',
     label: 'Mobile routes',
+    mobile: true,
     uid: DEFAULT_MOBILE_UI_LAYOUT.uid,
   },
 ];
@@ -93,17 +105,20 @@ function getRoutePath(route: NocoBaseDesktopRoute) {
 
 function normalizeRouteValues(values: RouteFormValues, route?: NocoBaseDesktopRoute): Partial<NocoBaseDesktopRoute> {
   const routePath = values.routePath?.trim();
+  const shouldPersistSchemaUid =
+    values.type === NocoBaseDesktopRouteType.page || values.type === NocoBaseDesktopRouteType.flowPage;
   return {
-    schemaUid: route?.schemaUid || randomId(),
+    ...(shouldPersistSchemaUid ? { schemaUid: route?.schemaUid || randomId() } : {}),
     title: values.title.trim(),
     type: values.type,
-    ...(routePath ? { options: { ...(route?.options ?? {}), path: routePath } } : {}),
+    ...(routePath ? { options: { ...(route?.options ?? {}), href: routePath } } : {}),
   };
 }
 
 function RouteEditorModal(props: {
   confirmLoading?: boolean;
   initialRoute?: NocoBaseDesktopRoute | null;
+  mobile?: boolean;
   onCancel: () => void;
   onSubmit: (values: RouteFormValues) => Promise<void>;
   open: boolean;
@@ -118,11 +133,46 @@ function RouteEditorModal(props: {
       return;
     }
     form.setFieldsValue({
-      routePath: props.initialRoute ? getRoutePath(props.initialRoute) : '',
+      routePath: props.initialRoute
+        ? getRoutePath(props.initialRoute) || String(props.initialRoute.options?.href || '')
+        : '',
       title: props.initialRoute?.title || '',
       type: props.initialRoute?.type || NocoBaseDesktopRouteType.flowPage,
     });
   }, [form, props.initialRoute, props.open]);
+  const routeTypeOptions = useMemo(() => {
+    if (props.mobile) {
+      return [
+        {
+          label: t('Page'),
+          value: NocoBaseDesktopRouteType.flowPage,
+        },
+        {
+          label: t('Link'),
+          value: NocoBaseDesktopRouteType.link,
+        },
+      ];
+    }
+
+    return [
+      {
+        label: t('Group'),
+        value: NocoBaseDesktopRouteType.group,
+      },
+      {
+        label: t('Classic page (v1)'),
+        value: NocoBaseDesktopRouteType.page,
+      },
+      {
+        label: t('Modern page (v2)'),
+        value: NocoBaseDesktopRouteType.flowPage,
+      },
+      {
+        label: t('Link'),
+        value: NocoBaseDesktopRouteType.link,
+      },
+    ];
+  }, [props.mobile, t]);
 
   return (
     <Modal
@@ -165,18 +215,7 @@ function RouteEditorModal(props: {
             },
           ]}
         >
-          <Select
-            options={[
-              {
-                label: t('Page'),
-                value: NocoBaseDesktopRouteType.flowPage,
-              },
-              {
-                label: t('Link'),
-                value: NocoBaseDesktopRouteType.link,
-              },
-            ]}
-          />
+          <Select options={routeTypeOptions} />
         </Form.Item>
         {routeType === NocoBaseDesktopRouteType.link ? (
           <Form.Item
@@ -208,6 +247,7 @@ function RoutesTable({ layout }: { layout: RouteLayoutConfig }) {
   const [saving, setSaving] = useState(false);
   const [editingRoute, setEditingRoute] = useState<NocoBaseDesktopRoute | null>(null);
   const [editorOpen, setEditorOpen] = useState(false);
+  const [selectedRowKeys, setSelectedRowKeys] = useState<Key[]>([]);
   const desktopRoutesResource = useMemo(() => ctx.api.resource('desktopRoutes'), [ctx.api]);
 
   useEffect(() => {
@@ -229,6 +269,7 @@ function RoutesTable({ layout }: { layout: RouteLayoutConfig }) {
         skipNotify: true,
       });
       setRoutes(toRoutePayload(response?.data).data ?? []);
+      setSelectedRowKeys([]);
     } catch {
       const translate = tRef.current;
       ctx.message?.error?.(translate('Failed to load routes for {{layout}}', { layout: translate(layout.label) }));
@@ -301,6 +342,38 @@ function RoutesTable({ layout }: { layout: RouteLayoutConfig }) {
     },
     [ctx.message, desktopRoutesResource, layout.uid, loadRoutes, t],
   );
+  const selectedRouteIds = useMemo(
+    () => selectedRowKeys.filter((key): key is number | string => typeof key === 'number' || typeof key === 'string'),
+    [selectedRowKeys],
+  );
+  const hasSelectedRoutes = selectedRouteIds.length > 0;
+
+  const updateSelectedRoutes = useCallback(
+    async (values: Partial<NocoBaseDesktopRoute>) => {
+      for (const routeId of selectedRouteIds) {
+        await desktopRoutesResource.update({
+          filterByTk: routeId,
+          layout: layout.uid,
+          values,
+        });
+      }
+      ctx.message?.success?.(t('Updated successfully'));
+      await loadRoutes();
+    },
+    [ctx.message, desktopRoutesResource, layout.uid, loadRoutes, selectedRouteIds, t],
+  );
+
+  const deleteSelectedRoutes = useCallback(async () => {
+    if (!selectedRouteIds.length) {
+      return;
+    }
+    await desktopRoutesResource.destroy({
+      filterByTk: selectedRouteIds,
+      layout: layout.uid,
+    });
+    ctx.message?.success?.(t('Deleted successfully'));
+    await loadRoutes();
+  }, [ctx.message, desktopRoutesResource, layout.uid, loadRoutes, selectedRouteIds, t]);
 
   const columns = useMemo<ColumnsType<NocoBaseDesktopRoute>>(
     () => [
@@ -325,7 +398,24 @@ function RoutesTable({ layout }: { layout: RouteLayoutConfig }) {
         dataIndex: 'routePath',
         title: t('Route path'),
         width: 220,
-        render: (_value, route) => getRoutePath(route) || t('No route path'),
+        render: (_value, route) => getRoutePath(route) || String(route.options?.href || '') || t('No route path'),
+      },
+      {
+        dataIndex: 'hideInMenu',
+        title: t('Show in menu'),
+        width: 140,
+        render: (value) =>
+          value ? (
+            <Space>
+              <CloseOutlined style={{ color: token.colorError }} />
+              {t('Hidden')}
+            </Space>
+          ) : (
+            <Space>
+              <CheckOutlined style={{ color: token.colorSuccess }} />
+              {t('Shown')}
+            </Space>
+          ),
       },
       {
         dataIndex: 'actions',
@@ -360,7 +450,7 @@ function RoutesTable({ layout }: { layout: RouteLayoutConfig }) {
         },
       },
     ],
-    [handleDelete, openEditModal, t, token.marginXXS],
+    [handleDelete, openEditModal, t, token.colorError, token.colorSuccess, token.marginXXS],
   );
 
   return (
@@ -368,6 +458,30 @@ function RoutesTable({ layout }: { layout: RouteLayoutConfig }) {
       <Space style={{ justifyContent: 'space-between', width: '100%' }}>
         <Typography.Text type="secondary">{t(layout.label)}</Typography.Text>
         <Space>
+          <Button
+            aria-label={t('Delete')}
+            disabled={!hasSelectedRoutes}
+            icon={<DeleteOutlined />}
+            onClick={deleteSelectedRoutes}
+          >
+            {t('Delete')}
+          </Button>
+          <Button
+            aria-label={t('Hide in menu')}
+            disabled={!hasSelectedRoutes}
+            icon={<EyeInvisibleOutlined />}
+            onClick={() => updateSelectedRoutes({ hideInMenu: true })}
+          >
+            {t('Hide in menu')}
+          </Button>
+          <Button
+            aria-label={t('Show in menu')}
+            disabled={!hasSelectedRoutes}
+            icon={<EyeOutlined />}
+            onClick={() => updateSelectedRoutes({ hideInMenu: false })}
+          >
+            {t('Show in menu')}
+          </Button>
           <Button icon={<ReloadOutlined />} loading={loading} onClick={loadRoutes}>
             {t('Refresh')}
           </Button>
@@ -384,11 +498,16 @@ function RoutesTable({ layout }: { layout: RouteLayoutConfig }) {
           emptyText: t('No routes in {{layout}}', { layout: t(layout.label) }),
         }}
         pagination={false}
-        rowKey={(route) => String(route.id ?? route.schemaUid)}
+        rowSelection={{
+          onChange: setSelectedRowKeys,
+          selectedRowKeys,
+        }}
+        rowKey={(route) => route.id ?? String(route.schemaUid)}
       />
       <RouteEditorModal
         confirmLoading={saving}
         initialRoute={editingRoute}
+        mobile={layout.mobile}
         onCancel={closeEditor}
         onSubmit={handleSubmit}
         open={editorOpen}

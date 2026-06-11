@@ -128,6 +128,69 @@ describe('plugin-ui-layout RoutesPage', () => {
     });
     expect(await screen.findByText('Desktop home')).toBeInTheDocument();
   });
+
+  it('should expose v1-compatible route management actions without v1 imports', async () => {
+    const resource = createRoutesPageResources();
+    flowContext.current = resource.context;
+
+    render(
+      <AntdApp>
+        <RoutesPage />
+      </AntdApp>,
+    );
+
+    expect(await screen.findByText('Desktop dashboard')).toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: 'Show in menu' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Delete' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Hide in menu' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Show in menu' })).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: /Add route/ }));
+    const addDialog = await screen.findByRole('dialog', { name: 'Add route' });
+    fireEvent.mouseDown(within(addDialog).getByLabelText('Type'));
+    expect(await screen.findByText('Group')).toBeInTheDocument();
+    expect(screen.getByText('Classic page (v1)')).toBeInTheDocument();
+    expect(screen.getAllByText('Modern page (v2)').length).toBeGreaterThan(0);
+    expect(screen.getByText('Link')).toBeInTheDocument();
+    fireEvent.click(within(addDialog).getByText('Cancel'));
+    await waitFor(() => {
+      expect(screen.queryByRole('dialog', { name: 'Add route' })).not.toBeInTheDocument();
+      expect(screen.queryByText('Classic page (v1)')).not.toBeInTheDocument();
+    });
+
+    const desktopRow = screen.getByRole('row', { name: /Desktop dashboard/ });
+    fireEvent.click(within(desktopRow).getByRole('checkbox'));
+    fireEvent.click(screen.getByRole('button', { name: 'Hide in menu' }));
+    await waitFor(() => {
+      expect(resource.update).toHaveBeenCalledWith({
+        filterByTk: 1,
+        layout: DEFAULT_ADMIN_UI_LAYOUT.uid,
+        values: { hideInMenu: true },
+      });
+    });
+    expect(await screen.findByText('Hidden')).toBeInTheDocument();
+
+    fireEvent.click(within(screen.getByRole('row', { name: /Desktop dashboard/ })).getByRole('checkbox'));
+    fireEvent.click(screen.getByRole('button', { name: 'Show in menu' }));
+    await waitFor(() => {
+      expect(resource.update).toHaveBeenCalledWith({
+        filterByTk: 1,
+        layout: DEFAULT_ADMIN_UI_LAYOUT.uid,
+        values: { hideInMenu: false },
+      });
+    });
+
+    fireEvent.click(screen.getByRole('tab', { name: 'Mobile routes' }));
+    expect(await screen.findByText('Mobile workbench')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /Add route/ }));
+    const mobileAddDialog = await screen.findByRole('dialog', { name: 'Add route' });
+    fireEvent.mouseDown(within(mobileAddDialog).getByLabelText('Type'));
+    expect(screen.queryByText('Group')).not.toBeInTheDocument();
+    expect(screen.queryByText('Classic page (v1)')).not.toBeInTheDocument();
+    expect(screen.queryByText('Modern page (v2)')).not.toBeInTheDocument();
+    expect(screen.getAllByText('Page').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Link').length).toBeGreaterThan(0);
+  });
 });
 
 function createRoutesPageResources() {
