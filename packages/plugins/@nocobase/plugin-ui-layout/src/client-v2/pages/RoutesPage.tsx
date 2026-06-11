@@ -7,9 +7,395 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Card, Tabs } from 'antd';
-import React from 'react';
+import { DeleteOutlined, EditOutlined, PlusOutlined, ReloadOutlined } from '@ant-design/icons';
+import type { NocoBaseDesktopRoute } from '@nocobase/client-v2/flow-compat';
+import { NocoBaseDesktopRouteType } from '@nocobase/client-v2/flow-compat';
+import { randomId, useFlowContext } from '@nocobase/flow-engine';
+import { Button, Card, Form, Input, Modal, Popconfirm, Select, Space, Table, Tabs, Typography, theme } from 'antd';
+import type { ColumnsType } from 'antd/es/table';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { DEFAULT_ADMIN_UI_LAYOUT, DEFAULT_MOBILE_UI_LAYOUT } from '../../constants';
 import { useT } from '../locale';
+
+type RouteLayoutConfig = {
+  key: string;
+  label: string;
+  uid: string;
+};
+
+type RouteFormValues = {
+  title: string;
+  type: NocoBaseDesktopRouteType;
+  routePath?: string;
+};
+
+type DesktopRoutesResource = {
+  create: (params: { layout: string; values: Partial<NocoBaseDesktopRoute> }) => Promise<unknown>;
+  destroy: (params: { filterByTk: number | string; layout: string }) => Promise<unknown>;
+  update: (params: {
+    filterByTk: number | string;
+    layout: string;
+    values: Partial<NocoBaseDesktopRoute>;
+  }) => Promise<unknown>;
+};
+
+type RoutesPageFlowContext = {
+  api: {
+    request: (params: {
+      method: 'get';
+      params: Record<string, unknown>;
+      skipNotify?: boolean;
+      url: string;
+    }) => Promise<{ data?: unknown }>;
+    resource: (name: string) => DesktopRoutesResource;
+  };
+  message?: {
+    error?: (content: string) => void;
+    success?: (content: string) => void;
+  };
+};
+
+type RouteListPayload = {
+  data?: NocoBaseDesktopRoute[];
+};
+
+const routeLayouts: RouteLayoutConfig[] = [
+  {
+    key: 'desktop',
+    label: 'Desktop routes',
+    uid: DEFAULT_ADMIN_UI_LAYOUT.uid,
+  },
+  {
+    key: 'mobile',
+    label: 'Mobile routes',
+    uid: DEFAULT_MOBILE_UI_LAYOUT.uid,
+  },
+];
+
+function toRoutePayload(responseData: unknown): RouteListPayload {
+  if (!responseData || typeof responseData !== 'object') {
+    return {};
+  }
+  const payload = responseData as RouteListPayload;
+  return {
+    data: Array.isArray(payload.data) ? payload.data : [],
+  };
+}
+
+function getRouteTitle(route: NocoBaseDesktopRoute, t: (key: string, options?: Record<string, unknown>) => string) {
+  return route.title || route.schemaUid || t('Untitled');
+}
+
+function getRoutePath(route: NocoBaseDesktopRoute) {
+  const path = route.options?.path;
+  return typeof path === 'string' && path.trim() ? path.trim() : '';
+}
+
+function normalizeRouteValues(values: RouteFormValues, route?: NocoBaseDesktopRoute): Partial<NocoBaseDesktopRoute> {
+  const routePath = values.routePath?.trim();
+  return {
+    schemaUid: route?.schemaUid || randomId(),
+    title: values.title.trim(),
+    type: values.type,
+    ...(routePath ? { options: { ...(route?.options ?? {}), path: routePath } } : {}),
+  };
+}
+
+function RouteEditorModal(props: {
+  confirmLoading?: boolean;
+  initialRoute?: NocoBaseDesktopRoute | null;
+  onCancel: () => void;
+  onSubmit: (values: RouteFormValues) => Promise<void>;
+  open: boolean;
+}) {
+  const t = useT();
+  const [form] = Form.useForm<RouteFormValues>();
+  const routeType = Form.useWatch('type', form);
+  const title = props.initialRoute ? t('Edit route') : t('Add route');
+
+  useEffect(() => {
+    if (!props.open) {
+      return;
+    }
+    form.setFieldsValue({
+      routePath: props.initialRoute ? getRoutePath(props.initialRoute) : '',
+      title: props.initialRoute?.title || '',
+      type: props.initialRoute?.type || NocoBaseDesktopRouteType.flowPage,
+    });
+  }, [form, props.initialRoute, props.open]);
+
+  return (
+    <Modal
+      cancelText={t('Cancel')}
+      confirmLoading={props.confirmLoading}
+      destroyOnClose
+      okText={t('Submit')}
+      onCancel={props.onCancel}
+      onOk={() => form.submit()}
+      open={props.open}
+      title={title}
+    >
+      <Form
+        form={form}
+        layout="vertical"
+        onFinish={(values) => {
+          props.onSubmit(values);
+        }}
+      >
+        <Form.Item
+          label={t('Title')}
+          name="title"
+          rules={[
+            {
+              message: t('Title field is required'),
+              required: true,
+              whitespace: true,
+            },
+          ]}
+        >
+          <Input />
+        </Form.Item>
+        <Form.Item
+          label={t('Type')}
+          name="type"
+          rules={[
+            {
+              message: t('The field value is required'),
+              required: true,
+            },
+          ]}
+        >
+          <Select
+            options={[
+              {
+                label: t('Page'),
+                value: NocoBaseDesktopRouteType.flowPage,
+              },
+              {
+                label: t('Link'),
+                value: NocoBaseDesktopRouteType.link,
+              },
+            ]}
+          />
+        </Form.Item>
+        {routeType === NocoBaseDesktopRouteType.link ? (
+          <Form.Item
+            label={t('URL')}
+            name="routePath"
+            rules={[
+              {
+                message: t('URL field is required'),
+                required: true,
+                whitespace: true,
+              },
+            ]}
+          >
+            <Input />
+          </Form.Item>
+        ) : null}
+      </Form>
+    </Modal>
+  );
+}
+
+function RoutesTable({ layout }: { layout: RouteLayoutConfig }) {
+  const ctx = useFlowContext<RoutesPageFlowContext>();
+  const t = useT();
+  const tRef = useRef(t);
+  const { token } = theme.useToken();
+  const [routes, setRoutes] = useState<NocoBaseDesktopRoute[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [editingRoute, setEditingRoute] = useState<NocoBaseDesktopRoute | null>(null);
+  const [editorOpen, setEditorOpen] = useState(false);
+  const desktopRoutesResource = useMemo(() => ctx.api.resource('desktopRoutes'), [ctx.api]);
+
+  useEffect(() => {
+    tRef.current = t;
+  }, [t]);
+
+  const loadRoutes = useCallback(async () => {
+    setLoading(true);
+    try {
+      const response = await ctx.api.request({
+        url: '/desktopRoutes:listAccessible',
+        method: 'get',
+        params: {
+          layout: layout.uid,
+          paginate: false,
+          sort: 'sort',
+          tree: true,
+        },
+        skipNotify: true,
+      });
+      setRoutes(toRoutePayload(response?.data).data ?? []);
+    } catch {
+      const translate = tRef.current;
+      ctx.message?.error?.(translate('Failed to load routes for {{layout}}', { layout: translate(layout.label) }));
+      setRoutes([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [ctx.api, ctx.message, layout.label, layout.uid]);
+
+  useEffect(() => {
+    async function run() {
+      await loadRoutes();
+    }
+    run().catch(() => undefined);
+  }, [loadRoutes]);
+
+  const openAddModal = useCallback(() => {
+    setEditingRoute(null);
+    setEditorOpen(true);
+  }, []);
+
+  const openEditModal = useCallback((route: NocoBaseDesktopRoute) => {
+    setEditingRoute(route);
+    setEditorOpen(true);
+  }, []);
+
+  const closeEditor = useCallback(() => {
+    setEditorOpen(false);
+    setEditingRoute(null);
+  }, []);
+
+  const handleSubmit = useCallback(
+    async (values: RouteFormValues) => {
+      setSaving(true);
+      try {
+        if (editingRoute?.id !== undefined) {
+          await desktopRoutesResource.update({
+            filterByTk: editingRoute.id,
+            layout: layout.uid,
+            values: normalizeRouteValues(values, editingRoute),
+          });
+          ctx.message?.success?.(t('Updated successfully'));
+        } else {
+          await desktopRoutesResource.create({
+            layout: layout.uid,
+            values: normalizeRouteValues(values),
+          });
+          ctx.message?.success?.(t('Saved successfully'));
+        }
+        closeEditor();
+        await loadRoutes();
+      } finally {
+        setSaving(false);
+      }
+    },
+    [closeEditor, ctx.message, desktopRoutesResource, editingRoute, layout.uid, loadRoutes, t],
+  );
+
+  const handleDelete = useCallback(
+    async (route: NocoBaseDesktopRoute) => {
+      if (route.id === undefined) {
+        return;
+      }
+      await desktopRoutesResource.destroy({
+        filterByTk: route.id,
+        layout: layout.uid,
+      });
+      ctx.message?.success?.(t('Deleted successfully'));
+      await loadRoutes();
+    },
+    [ctx.message, desktopRoutesResource, layout.uid, loadRoutes, t],
+  );
+
+  const columns = useMemo<ColumnsType<NocoBaseDesktopRoute>>(
+    () => [
+      {
+        dataIndex: 'title',
+        title: t('Route name'),
+        render: (_value, route) => getRouteTitle(route, t),
+      },
+      {
+        dataIndex: 'type',
+        title: t('Type'),
+        width: 160,
+        render: (value) => value || t('Unknown'),
+      },
+      {
+        dataIndex: 'schemaUid',
+        title: t('UID'),
+        width: 220,
+        render: (value) => value || '-',
+      },
+      {
+        dataIndex: 'routePath',
+        title: t('Route path'),
+        width: 220,
+        render: (_value, route) => getRoutePath(route) || t('No route path'),
+      },
+      {
+        dataIndex: 'actions',
+        title: t('Actions'),
+        width: 160,
+        render: (_value, route) => {
+          const routeTitle = getRouteTitle(route, t);
+          return (
+            <Space size={token.marginXXS}>
+              <Button
+                aria-label={t('Edit route {{route}}', { route: routeTitle })}
+                icon={<EditOutlined />}
+                onClick={() => openEditModal(route)}
+                size="small"
+                type="text"
+              />
+              <Popconfirm
+                cancelText={t('Cancel')}
+                okText={t('Delete')}
+                onConfirm={() => handleDelete(route)}
+                title={t('Are you sure you want to delete it?')}
+              >
+                <Button
+                  aria-label={t('Delete route {{route}}', { route: routeTitle })}
+                  icon={<DeleteOutlined />}
+                  size="small"
+                  type="text"
+                />
+              </Popconfirm>
+            </Space>
+          );
+        },
+      },
+    ],
+    [handleDelete, openEditModal, t, token.marginXXS],
+  );
+
+  return (
+    <Space direction="vertical" size={token.marginSM} style={{ width: '100%' }}>
+      <Space style={{ justifyContent: 'space-between', width: '100%' }}>
+        <Typography.Text type="secondary">{t(layout.label)}</Typography.Text>
+        <Space>
+          <Button icon={<ReloadOutlined />} loading={loading} onClick={loadRoutes}>
+            {t('Refresh')}
+          </Button>
+          <Button icon={<PlusOutlined />} onClick={openAddModal} type="primary">
+            {t('Add route')}
+          </Button>
+        </Space>
+      </Space>
+      <Table<NocoBaseDesktopRoute>
+        columns={columns}
+        dataSource={routes}
+        loading={loading}
+        locale={{
+          emptyText: t('No routes in {{layout}}', { layout: t(layout.label) }),
+        }}
+        pagination={false}
+        rowKey={(route) => String(route.id ?? route.schemaUid)}
+      />
+      <RouteEditorModal
+        confirmLoading={saving}
+        initialRoute={editingRoute}
+        onCancel={closeEditor}
+        onSubmit={handleSubmit}
+        open={editorOpen}
+      />
+    </Space>
+  );
+}
 
 const RoutesPage: React.FC = () => {
   const t = useT();
@@ -17,18 +403,12 @@ const RoutesPage: React.FC = () => {
   return (
     <Card>
       <Tabs
-        items={[
-          {
-            key: 'desktop',
-            label: t('Desktop routes'),
-            children: null,
-          },
-          {
-            key: 'mobile',
-            label: t('Mobile routes'),
-            children: null,
-          },
-        ]}
+        destroyInactiveTabPane
+        items={routeLayouts.map((layout) => ({
+          key: layout.key,
+          label: t(layout.label),
+          children: <RoutesTable layout={layout} />,
+        }))}
       />
     </Card>
   );
