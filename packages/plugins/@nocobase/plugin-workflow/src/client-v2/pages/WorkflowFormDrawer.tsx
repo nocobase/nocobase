@@ -109,7 +109,7 @@ export function WorkflowFormDrawer(props: WorkflowFormDrawerProps) {
     if (mode !== 'create') {
       return null;
     }
-    const loader = triggerOption?.createConfigFormLoader;
+    const loader = triggerOption?.PresetFieldsetLoader;
     return loader ? lazy(loader) : null;
   }, [mode, triggerOption]);
 

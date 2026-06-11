@@ -7,16 +7,27 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { css } from '@nocobase/client';
+import { css } from '@emotion/css';
 import { DatePicker, Select } from 'antd';
 import dayjs from 'dayjs';
 import React from 'react';
 import { useWorkflowTranslation } from '../../locale';
-import { OnField } from './OnField';
+import { OnField, type ScheduleOnFieldValue } from './OnField';
 
-export function EndsByField({ value, onChange }) {
+type EndsByValue = string | Date | ScheduleOnFieldValue | null;
+
+export function EndsByField({
+  collection,
+  value,
+  onChange,
+}: {
+  collection?: string;
+  value?: EndsByValue;
+  onChange?: (value: EndsByValue) => void;
+}) {
   const { t } = useWorkflowTranslation();
   const type = value != null ? (typeof value === 'object' && !(value instanceof Date) ? 'field' : 'date') : null;
+  const emitChange = (nextValue: EndsByValue) => onChange?.(nextValue);
   return (
     <fieldset
       className={css`
@@ -26,8 +37,8 @@ export function EndsByField({ value, onChange }) {
     >
       <Select
         value={type}
-        onChange={(t) => {
-          onChange(t ? (t === 'field' ? {} : new Date()) : null);
+        onChange={(nextType) => {
+          emitChange(nextType ? (nextType === 'field' ? {} : new Date()) : null);
         }}
         className="auto-width"
       >
@@ -35,16 +46,20 @@ export function EndsByField({ value, onChange }) {
         <Select.Option value={'field'}>{t('By field')}</Select.Option>
         <Select.Option value={'date'}>{t('By custom date')}</Select.Option>
       </Select>
-      {type === 'field' ? <OnField value={value} onChange={onChange} /> : null}
+      {type === 'field' ? (
+        <OnField collection={collection} value={value as ScheduleOnFieldValue} onChange={onChange} />
+      ) : null}
       {type === 'date' ? (
         <DatePicker
           showTime
-          value={dayjs(value)}
+          value={dayjs(value as string | Date)}
           onChange={(v) => {
-            onChange(v ? v.toDate() : null);
+            emitChange(v ? v.toDate() : null);
           }}
         />
       ) : null}
     </fieldset>
   );
 }
+
+export default EndsByField;

@@ -66,11 +66,11 @@ The Formily `Record<string, ISchema>` config form an Instruction has always carr
 _Avoid_: schema fieldset
 
 **Modern FieldsetLoader** (`FieldsetLoader`):
-A lazy loader — `() => Promise<{ default: ComponentType }>` — an Instruction optionally carries for the modern canvas (same `LoaderOf` shape as the trigger `createConfigFormLoader`). The loaded component is a plain React + antd form (no Formily) that reads/writes `config.*`. Its presence is the per-node migration switch: a node has migrated when it has a `FieldsetLoader`. (Distinguished from the legacy `fieldset` by **field name**, not letter case — see ADR-0003.)
+A lazy loader — `() => Promise<{ default: ComponentType }>` — an Instruction optionally carries for the modern canvas (same `LoaderOf` shape as workflow trigger loaders). The loaded component is a plain React + antd form (no Formily) that reads/writes `config.*`. Its presence is the per-node migration switch: a node has migrated when it has a `FieldsetLoader`. (Distinguished from the legacy `fieldset` by **field name**, not letter case — see ADR-0003.)
 _Avoid_: React fieldset, config component, `Fieldset` (the contract is now a loader)
 
 **Output variables** (`useVariables`):
-A hook each Instruction contributes describing the variables that node emits to downstream nodes (e.g. a query node emits the queried record's field tree). The core walks the current node's upstream chain, calls each upstream node's `useVariables`, and assembles the "Node result" branch of the variable tree. The contract is preserved from legacy, but the return shape changes: legacy returns `VariableOption`, modern returns `MetaTreeNode`.
+A hook each Instruction contributes describing the variables that node emits to downstream nodes (e.g. a query node emits the queried record's field tree). The core walks the current node's upstream chain, calls each upstream node's `useVariables`, and assembles the "Node result" branch of the variable tree. The contract keeps returning the legacy `VariableOption` shape during migration; the modern canvas adapts it to `MetaTreeNode` at the aggregation boundary.
 _Avoid_: node variables (ambiguous with config-time vs run-time)
 
 **Workflow variable input**:
@@ -96,6 +96,45 @@ _Avoid_: workflow context
 
 - **`fieldset` vs `FieldsetLoader`** — distinguished by **field name**, not letter case (an earlier draft used case-sensitive `fieldset`/`Fieldset`; superseded by ADR-0003). `fieldset` = legacy Formily schema (data, pass-through); `FieldsetLoader` = modern lazy loader of a React form. The `FieldsetLoader`'s presence is the per-node migration switch. (See ADR-0002 as amended by ADR-0003.)
 - **Node context shape** — an earlier config-UI draft modeled the per-node context as a single `WorkflowNodeContext` carrying `{ node, workflow, upstreams }`. Resolved during canvas planning: align with v1's two-context split instead — **FlowContext** `{ workflow, nodes, refresh }` at the canvas root + **NodeContext** = the node object at each node. `workflow`/`upstreams` are derived via hooks, not bundled into a node-context value.
+
+---
+
+# Workflow Trigger Extension
+
+How workflow trigger plugins contribute trigger metadata, configuration forms, manual-execution inputs, and trigger variables during the migration.
+
+## Language
+
+**Trigger**:
+A workflow trigger type's client-side definition (e.g. `collection`, `schedule`). A class registered by type that carries trigger metadata (title, description, sync mode), configuration UI, manual-execution UI, validation, trigger variables, and block-creation hooks.
+_Avoid_: trigger option (too narrow), trigger handler (that's the server concern)
+
+**Trigger config UI**:
+The form shown when configuring a workflow's trigger. Has two forms during migration: the **legacy trigger fieldset** (a Formily schema, rendered by legacy surfaces) and the **modern trigger FieldsetLoader** (a lazy loader of a plain React + antd component, rendered by modern surfaces).
+_Avoid_: workflow form, trigger settings (ambiguous with workflow metadata)
+
+**Legacy trigger fieldset** (`fieldset`, `presetFieldset`, `triggerFieldset`):
+The Formily schema maps a Trigger may carry for its three legacy surfaces: create-time preset config, trigger configuration, and manual execution variables. The modern client never interprets these schemas.
+_Avoid_: trigger schema (too broad)
+
+**Modern trigger loaders** (`PresetFieldsetLoader`, `FieldsetLoader`, `TriggerFieldsetLoader`):
+Lazy loaders a Trigger may carry for the same three surfaces: create-time preset config, trigger configuration, and manual execution variables. The loaded components are plain React + antd forms and use the same loader naming convention as **Instruction**.
+_Avoid_: createConfigFormLoader (retired name)
+
+**Trigger variables**:
+Variables contributed by the workflow's trigger under `$context` (for example schedule trigger time or trigger data). During migration the hook remains named `useVariables` and returns `VariableOption`; the modern variable aggregator adapts it to `MetaTreeNode`.
+_Avoid_: context variables (too broad)
+
+## Relationships
+
+- A **Trigger** carries both legacy fieldsets and modern trigger loaders; each surface can migrate independently.
+- The Trigger contract lives in the modern client, and the legacy client may import or extend it through the allowed `v1 -> v2` direction.
+- On legacy surfaces, a non-empty legacy trigger fieldset wins. When that fieldset is absent and the matching modern trigger loader exists, the legacy surface opens the modern implementation.
+- The modern client never imports legacy trigger files or legacy Formily rendering.
+
+## Flagged ambiguities
+
+- **`createConfigFormLoader` vs `PresetFieldsetLoader`** — `createConfigFormLoader` was an early v2 registry option name. The trigger API now aligns with Instruction naming: `PresetFieldsetLoader` is the create-time trigger preset loader.
 
 ---
 

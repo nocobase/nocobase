@@ -18,7 +18,7 @@ import React, { useMemo, useState } from 'react';
 import executionCollection from '../../common/collections/executions';
 import { EXECUTION_STATUS, EXECUTION_STATUS_OPTIONS } from '../../common/executionStatus';
 import { ExecutionStatusTag } from '../components/ExecutionStatusTag';
-import { getWorkflowExecutionPath } from '../constants';
+import { useWorkflowRuntimePaths } from '../hooks/useWorkflowRuntimePaths';
 import { useT, useWorkflowTranslation } from '../locale';
 
 const EXECUTION_PAGE_SIZE = 20;
@@ -53,6 +53,7 @@ function ExecutionHistoryDrawerInner({ workflowKey }: { workflowKey: string | nu
   const compile = useT();
   const ctx = useFlowContext();
   const engine = useFlowEngine();
+  const { getWorkflowExecutionPath } = useWorkflowRuntimePaths();
   const { token } = theme.useToken();
   const { modal, message } = App.useApp();
   const resource = ctx.api.resource('executions');

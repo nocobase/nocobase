@@ -8,7 +8,6 @@
  */
 
 export { default, PluginWorkflowClientV2 } from './plugin';
-export type { WorkflowTriggerOptions } from './plugin';
 export * from './models';
 
 // Workflow node extension contract (shared base class + canvas building blocks) for downstream node plugins migrating
@@ -18,3 +17,5 @@ export type { LoaderOf, NodeAvailableContext, TempAssociationSource } from './ca
 export { WorkflowVariableInput } from './canvas/WorkflowVariableInput';
 export type { WorkflowVariableInputProps } from './canvas/WorkflowVariableInput';
 export { useWorkflowVariableOptions } from './canvas/useWorkflowVariableOptions';
+export { Trigger } from './triggers';
+export type { LoaderOf as TriggerLoaderOf, TriggerTempAssociationSource } from './triggers';

@@ -7,7 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export default {
+import type { Locale } from 'react-js-cron';
+
+const zhCN: Locale = {
   everyText: '每',
   emptyMonths: '每月',
   emptyMonthDays: '每日(月)',
@@ -36,8 +38,8 @@ export default {
   errorInvalidCron: '不符合 cron 规则的表达式',
   clearButtonText: '清空',
   weekDays: [
-    // Order is important, the index will be used as value
-    '周日', // Sunday must always be first, it's "0"
+    // Order is important, the index will be used as value.
+    '周日',
     '周一',
     '周二',
     '周三',
@@ -46,7 +48,7 @@ export default {
     '周六',
   ],
   months: [
-    // Order is important, the index will be used as value
+    // Order is important, the index will be used as value.
     '一月',
     '二月',
     '三月',
@@ -60,29 +62,8 @@ export default {
     '十一月',
     '十二月',
   ],
-  altWeekDays: [
-    // Order is important, the index will be used as value
-    '周日', // Sunday must always be first, it's "0"
-    '周一',
-    '周二',
-    '周三',
-    '周四',
-    '周五',
-    '周六',
-  ],
-  altMonths: [
-    // Order is important, the index will be used as value
-    '一月',
-    '二月',
-    '三月',
-    '四月',
-    '五月',
-    '六月',
-    '七月',
-    '八月',
-    '九月',
-    '十月',
-    '十一月',
-    '十二月',
-  ],
+  altWeekDays: ['周日', '周一', '周二', '周三', '周四', '周五', '周六'],
+  altMonths: ['一月', '二月', '三月', '四月', '五月', '六月', '七月', '八月', '九月', '十月', '十一月', '十二月'],
 };
+
+export default zhCN;

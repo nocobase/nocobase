@@ -17,7 +17,7 @@
  */
 
 import React, { useState } from 'react';
-import { Alert, Button, Slider, Tag, Typography } from 'antd';
+import { Alert, Button, Slider } from 'antd';
 import { CloseOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
 import { useFlowEngine } from '@nocobase/flow-engine';
@@ -27,6 +27,7 @@ import { useFlowContext, useWorkflowCanvasExecuted } from './contexts';
 import { useNodeClipboardContext } from './NodeClipboardContext';
 import { useT } from '../locale';
 import { PluginWorkflowClientV2 } from '../plugin';
+import { TriggerConfig } from '../triggers/TriggerConfig';
 
 /** "Copied node" preview, top-left of the canvas (mirrors v1). Shown while a
  *  node is on the clipboard; the X clears it. */
@@ -81,17 +82,7 @@ export function CanvasContent({ entry }: { entry?: any }) {
                 />
               ) : null}
 
-              {/* Trigger config block — placeholder; v2 trigger config is a separate surface. */}
-              <div className={styles.nodeClass}>
-                <div className={styles.nodeCardClass}>
-                  <div className={styles.nodeHeaderClass}>
-                    <div className={cx(styles.nodeMetaClass, 'workflow-node-meta')}>
-                      <Tag color="processing">{t('Trigger')}</Tag>
-                    </div>
-                  </div>
-                  <Typography.Text strong>{workflow?.title ?? t('Trigger')}</Typography.Text>
-                </div>
-              </div>
+              <TriggerConfig />
 
               <div className={cx(styles.branchBlockClass, css({ marginTop: '0 !important' }))}>
                 <Branch entry={entry} />

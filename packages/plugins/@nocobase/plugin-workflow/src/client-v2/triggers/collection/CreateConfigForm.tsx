@@ -38,14 +38,21 @@ function parseCollectionName(value?: string): string[] | undefined {
 
 type CascaderOption = { value: string; label: string; children?: CascaderOption[] };
 
-function CollectionCascader({ value, onChange }: { value?: string; onChange?: (value: string) => void }) {
+type DataSourceLike = {
+  key: string;
+  displayName: string;
+  options?: { isDBInstance?: boolean };
+  getCollections(): Array<{ name: string; title: string; hidden?: boolean }>;
+};
+
+function CollectionCascader({ value, onChange }: { value?: string; onChange?: (value?: string) => void }) {
   const { t } = useWorkflowTranslation();
   const flowEngine = useFlowEngine();
 
   const options = useMemo<CascaderOption[]>(() => {
-    const dataSources = flowEngine.dataSourceManager.getDataSources();
+    const dataSources = flowEngine.dataSourceManager.getDataSources() as DataSourceLike[];
     return dataSources
-      .filter((ds) => ds.key === 'main' || (ds.options as any)?.isDBInstance)
+      .filter((ds) => ds.key === 'main' || ds.options?.isDBInstance)
       .map((ds) => ({
         value: ds.key,
         label: ds.displayName,
@@ -69,7 +76,7 @@ function CollectionCascader({ value, onChange }: { value?: string; onChange?: (v
       showSearch
       onChange={(path) => {
         if (!path?.length) {
-          onChange?.(undefined as unknown as string);
+          onChange?.(undefined);
           return;
         }
         const [dataSourceKey, collectionName] = path as string[];

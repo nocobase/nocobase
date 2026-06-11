@@ -12,7 +12,7 @@ import { NAMESPACE } from '../../locale';
 export const SCHEDULE_MODE = {
   STATIC: 0,
   DATE_FIELD: 1,
-};
+} as const;
 
 export const scheduleModeOptions = [
   { value: SCHEDULE_MODE.STATIC, label: `{{t("Based on certain date", { ns: "${NAMESPACE}" })}}` },

@@ -56,13 +56,7 @@ import { useNodeClipboardContext } from '../NodeClipboardContext';
 
 // The Instruction base class + its pure logic hooks + NodeContext now live in client-v2 and are shared by both canvases
 // (ADR-0002/0003). Re-exported here so the ~16 node files that `extends Instruction` from this barrel are unchanged.
-import {
-  Instruction,
-  NodeContext,
-  useNodeContext,
-  useAvailableUpstreams,
-  useUpstreamScopes,
-} from '../../client-v2/canvas/Instruction';
+import { Instruction, NodeContext, useNodeContext } from '../../client-v2/canvas/Instruction';
 
 export {
   Instruction,
@@ -118,7 +112,7 @@ export function Node({ data }) {
   const { styles } = useStyles();
   const { getAriaLabel } = useGetAriaLabelOfAddButton(data);
   const workflowPlugin = usePlugin(WorkflowPlugin);
-  const instruction = workflowPlugin.instructions.get(data.type) ?? {};
+  const instruction = (workflowPlugin.instructions.get(data.type) ?? {}) as Instruction;
   const { Component, ComponentLoader, end } = instruction;
   const renderMode = resolveLegacyNodeRenderMode(instruction);
   // A node that dropped its v1 `Component` but still inherits a v2 `ComponentLoader` renders its card fully via v2 (the

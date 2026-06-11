@@ -7,8 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useCallback, useContext, useEffect, useState } from 'react';
-import { App, Switch, Tooltip } from 'antd';
+import React, { Suspense, lazy, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import { App, Form, Skeleton, Switch, Tooltip } from 'antd';
 import { onFieldChange, onFieldValueChange } from '@formily/core';
 import { useField, useForm, useFormEffects } from '@formily/react';
 
@@ -139,6 +139,20 @@ function TriggerPresetFieldset() {
   });
 
   const trigger = triggerType ? workflowPlugin.triggers.get(triggerType) : null;
+  const PresetFieldset = useMemo(
+    () => (!trigger?.presetFieldset && trigger?.PresetFieldsetLoader ? lazy(trigger.PresetFieldsetLoader) : null),
+    [trigger],
+  );
+
+  if (PresetFieldset) {
+    return (
+      <TriggerPresetFieldsetLoaderBridge
+        key={triggerType}
+        PresetFieldset={PresetFieldset}
+        defaultConfig={trigger?.createDefaultConfig?.() ?? {}}
+      />
+    );
+  }
 
   if (!trigger?.presetFieldset) {
     return null;
@@ -162,6 +176,38 @@ function TriggerPresetFieldset() {
         },
       }}
     />
+  );
+}
+
+function TriggerPresetFieldsetLoaderBridge({
+  PresetFieldset,
+  defaultConfig,
+}: {
+  PresetFieldset: React.ComponentType;
+  defaultConfig: Record<string, any>;
+}) {
+  const formilyForm = useForm();
+  const [form] = Form.useForm();
+
+  const onValuesChange = useCallback(
+    (_changed: unknown, values: { config?: Record<string, any> }) => {
+      formilyForm.setValuesIn('config', values.config ?? {});
+    },
+    [formilyForm],
+  );
+
+  useEffect(() => {
+    const initialConfig = { ...defaultConfig, ...(formilyForm.values?.config ?? {}) };
+    form.setFieldsValue({ config: initialConfig });
+    formilyForm.setValuesIn('config', initialConfig);
+  }, [defaultConfig, form, formilyForm]);
+
+  return (
+    <Form form={form} layout="vertical" onValuesChange={onValuesChange}>
+      <Suspense fallback={<Skeleton active paragraph={{ rows: 2 }} />}>
+        <PresetFieldset />
+      </Suspense>
+    </Form>
   );
 }
 

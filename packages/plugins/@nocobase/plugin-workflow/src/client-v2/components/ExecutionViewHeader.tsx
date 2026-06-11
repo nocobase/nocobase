@@ -17,7 +17,7 @@ import {
   EXECUTION_STATUS,
   EXECUTION_STATUS_OPTIONS_MAP,
 } from '../../common/executionStatus';
-import { getWorkflowCanvasPath } from '../constants';
+import { useWorkflowRuntimePaths } from '../hooks/useWorkflowRuntimePaths';
 import { useT, useWorkflowTranslation } from '../locale';
 import { ExecutionsDropdown } from './ExecutionsDropdown';
 import { formatTime } from './workflowCanvas';
@@ -75,6 +75,7 @@ export function ExecutionViewHeader({
 }) {
   const { t } = useWorkflowTranslation();
   const compile = useT();
+  const { getWorkflowCanvasPath } = useWorkflowRuntimePaths();
   const { token } = theme.useToken();
   const { modal, message } = App.useApp();
   const workflow = execution.workflow;

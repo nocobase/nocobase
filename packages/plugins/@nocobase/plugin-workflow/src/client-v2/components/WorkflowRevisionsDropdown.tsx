@@ -14,7 +14,7 @@ import { Button, Dropdown, theme } from 'antd';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import React, { useMemo } from 'react';
-import { getWorkflowCanvasPath } from '../constants';
+import { useWorkflowRuntimePaths } from '../hooks/useWorkflowRuntimePaths';
 import { useWorkflowTranslation } from '../locale';
 import type { WorkflowCanvasRecord, WorkflowRevision } from './workflowCanvas';
 
@@ -23,6 +23,7 @@ dayjs.extend(relativeTime);
 export function WorkflowRevisionsDropdown({ record, resource }: { record: WorkflowCanvasRecord; resource: any }) {
   const { t } = useWorkflowTranslation();
   const ctx = useFlowContext();
+  const { getWorkflowCanvasPath } = useWorkflowRuntimePaths();
   const { token } = theme.useToken();
   const { data, run } = useRequest(
     async () => {

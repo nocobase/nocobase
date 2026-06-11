@@ -36,7 +36,6 @@ export default function WorkflowCanvasPage() {
       }
       const response = await resource.get({
         filterByTk: workflowId,
-        except: ['config'],
         appends: ['nodes', 'stats', 'versionStats', 'createdBy', 'updatedBy'],
       });
       return normalizeRecordResponse(response);

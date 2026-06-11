@@ -9,7 +9,6 @@
 
 import { Plugin } from '@nocobase/client-v2';
 import { Registry } from '@nocobase/utils/client';
-import type { ComponentType } from 'react';
 import { NAMESPACE } from './locale';
 import {
   WORKFLOW_CANVAS_ROUTE_NAME,
@@ -18,6 +17,7 @@ import {
   WORKFLOW_EXECUTION_ROUTE_PATH,
 } from './constants';
 import type { Instruction } from './canvas/Instruction';
+import type { Trigger } from './triggers';
 
 // Core node instructions — one file per node under `nodes/`, mirroring v1's `client/nodes/` layout. Each
 // default-exports its Instruction class.
@@ -30,6 +30,8 @@ import QueryInstruction from './nodes/query';
 import CreateInstruction from './nodes/create';
 import UpdateInstruction from './nodes/update';
 import DestroyInstruction from './nodes/destroy';
+import CollectionTrigger from './triggers/collection';
+import ScheduleTrigger from './triggers/schedule';
 
 export type InstructionGroup = { key: string; label: string };
 
@@ -43,37 +45,6 @@ const coreInstructionGroups: InstructionGroup[] = [
   { key: 'manual', label: tpl('Manual') },
   { key: 'extended', label: tpl('Extended types') },
 ];
-
-type LoaderOf<P = Record<string, never>> = () => Promise<{ default: ComponentType<P> }>;
-
-/**
- * V2 trigger-type registration. Mirrors `plugin-auth`'s `AuthOptions` /
- * `registerType` extension point. Each trigger contributes its create-time
- * configuration form as an async `import()` loader (the v1 `presetFieldset`
- * equivalent) so downstream trigger plugins ship their config form as a
- * separate chunk and only load it when that trigger type is actually chosen.
- *
- * The create config form renders below the common workflow fields inside the
- * "Add new" drawer; it reads/writes the parent antd `<Form>` via `Form.Item`
- * with `name={['config', ...]}` — i.e. its values land under `values.config.*`,
- * matching the v1 schema (`config: { properties: trigger.presetFieldset }`).
- */
-export type WorkflowTriggerOptions = {
-  /** Trigger type display name. Accepts a plain string or a `{{t("…")}}` template. */
-  title: string;
-  /**
-   * Trigger type description, shown under the title in the "Trigger type"
-   * dropdown. Accepts a plain string or a `{{t("…")}}` template.
-   */
-  description?: string;
-  /**
-   * Fixed execute mode for this trigger type. `true` = synchronous only,
-   * `false` = asynchronous only, `undefined` = the user may choose.
-   */
-  sync?: boolean;
-  /** Create-time configuration form loader (v1 `presetFieldset`). */
-  createConfigFormLoader?: LoaderOf;
-};
 
 /**
  * A workflow **system variable** (the `$system` scope). Registered by the
@@ -91,7 +62,7 @@ export type SystemVariableOption = {
 };
 
 export class PluginWorkflowClientV2 extends Plugin {
-  triggers = new Registry<WorkflowTriggerOptions>();
+  triggers = new Registry<Trigger>();
   instructions = new Registry<Instruction>();
   instructionGroups = new Registry<InstructionGroup>();
   systemVariables = new Registry<SystemVariableOption>();
@@ -127,14 +98,14 @@ export class PluginWorkflowClientV2 extends Plugin {
     this.instructionGroups.register(key, group);
   }
 
-  registerTrigger(type: string, options: WorkflowTriggerOptions) {
-    // Downstream plugins still call `pm.get('workflow').registerTrigger(type, TriggerClass)` with the v1-style Trigger
-    // class (a no-op before this v2 plugin existed). The v2 registry only holds plain option objects describing the
-    // create form — ignore class/instance registrations rather than storing a garbage entry with no `title`.
-    if (!options || typeof options !== 'object' || typeof options.title !== 'string') {
-      return;
+  registerTrigger(type: string, trigger: Trigger | { new (): Trigger }) {
+    if (typeof trigger === 'function') {
+      this.triggers.register(type, new trigger());
+    } else if (trigger) {
+      this.triggers.register(type, trigger);
+    } else {
+      throw new TypeError('invalid trigger type to register');
     }
-    this.triggers.register(type, options);
   }
 
   getTriggerOptions(type?: string) {
@@ -205,17 +176,8 @@ export class PluginWorkflowClientV2 extends Plugin {
   }
 
   private registerBuiltinTriggers() {
-    this.registerTrigger('collection', {
-      title: `{{t("Collection event", { ns: "${NAMESPACE}" })}}`,
-      description: `{{t('Triggered when data changes in the collection, such as after adding, updating, or deleting a record. Unlike "Post-action event", Collection event listens for data changes rather than HTTP requests. Unless you understand the exact meaning, it is recommended to use "Post-action event".', { ns: "${NAMESPACE}" })}}`,
-      createConfigFormLoader: () => import('./triggers/collection/CreateConfigForm'),
-    });
-    this.registerTrigger('schedule', {
-      title: `{{t("Schedule event", { ns: "${NAMESPACE}" })}}`,
-      description: `{{t("Triggered according to preset time conditions. Suitable for one-time or periodic tasks, such as sending notifications and cleaning data on a schedule.", { ns: "${NAMESPACE}" })}}`,
-      sync: false,
-      createConfigFormLoader: () => import('./triggers/schedule/CreateConfigForm'),
-    });
+    this.registerTrigger('collection', CollectionTrigger);
+    this.registerTrigger('schedule', ScheduleTrigger);
   }
 
   private registerSettingsPage() {

@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Breadcrumb, Button, Tag, Tooltip, theme } from 'antd';
+import { Breadcrumb, Tag, Tooltip, theme } from 'antd';
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { useT, useWorkflowTranslation } from '../locale';
@@ -15,6 +15,7 @@ import type { WorkflowCanvasRecord, WorkflowRevision } from './workflowCanvas';
 import { WorkflowEnabledSwitch } from './WorkflowEnabledSwitch';
 import { WorkflowMenu } from './WorkflowMenu';
 import { WorkflowRevisionsDropdown } from './WorkflowRevisionsDropdown';
+import { ExecuteWorkflowButton } from '../triggers/ExecuteWorkflowButton';
 
 const WORKFLOW_HOMEPAGE = '/admin/settings/workflow';
 
@@ -64,11 +65,7 @@ export function WorkflowCanvasHeader({
         {record.sync ? <Tag color="orange">{t('Synchronously')}</Tag> : <Tag color="cyan">{t('Asynchronously')}</Tag>}
       </div>
       <div style={{ display: 'flex', alignItems: 'center', gap: token.marginXS }}>
-        {/* Execute manually depends on the trigger's variable fieldset (deferred
-            canvas machinery), so the button is a placeholder for now. */}
-        <Tooltip title={t('This type of trigger has not been supported to be executed manually.')}>
-          <Button>{t('Execute manually')}</Button>
-        </Tooltip>
+        <ExecuteWorkflowButton record={record} refresh={refresh} />
         <WorkflowRevisionsDropdown record={record} resource={resource} />
         <WorkflowEnabledSwitch record={record} resource={resource} onChanged={() => refresh()} />
         <WorkflowMenu record={record} revisions={revisions} resource={resource} refresh={refresh} />

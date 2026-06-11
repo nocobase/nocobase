@@ -64,6 +64,9 @@ import { RemoveNodeContextProvider } from './RemoveNodeContext';
 import { NodeDragContextProvider } from './NodeDragContext';
 import { NodeClipboardContextProvider } from './NodeClipboardContext';
 import { useResourceFilterActionProps } from './hooks/useResourceFilterActionProps';
+import { useFlowEngine } from '@nocobase/flow-engine';
+import { resolveLegacyTriggerExecuteRenderMode } from '../client-v2/triggers';
+import { openExecuteWorkflowDialog } from '../client-v2/triggers/ExecuteWorkflowButton';
 
 function ExecutionResourceProvider({ request, filter = {}, ...others }) {
   const { workflow } = useFlowContext();
@@ -150,13 +153,17 @@ function ActionDisabledProvider({ children }) {
   const field = useField<any>();
   const { workflow } = useFlowContext();
   const trigger = useTrigger();
-  const valid = trigger.validate(workflow.config);
+  const valid = trigger?.validate?.(workflow.config) ?? false;
+  const renderMode = trigger ? resolveLegacyTriggerExecuteRenderMode(trigger) : 'none';
   let message = '';
   switch (true) {
+    case !trigger:
+      message = lang('This trigger type is not available in the new canvas yet.');
+      break;
     case !valid:
       message = lang('The trigger is not configured correctly, please check the trigger configuration.');
       break;
-    case !trigger.triggerFieldset:
+    case renderMode === 'none':
       message = lang('This type of trigger has not been supported to be executed manually.');
       break;
     default:
@@ -168,8 +175,45 @@ function ActionDisabledProvider({ children }) {
 
 function ExecuteActionButton() {
   const { workflow } = useFlowContext();
+  const flowEngine = useFlowEngine();
   const executed = useWorkflowExecuted();
   const trigger = useTrigger();
+  const { refresh } = useResourceActionContext();
+  const renderMode = trigger ? resolveLegacyTriggerExecuteRenderMode(trigger) : 'none';
+
+  if (!trigger) {
+    return (
+      <Tooltip title={lang('This trigger type is not available in the new canvas yet.')}>
+        <span>
+          <Button disabled>{lang('Execute manually')}</Button>
+        </span>
+      </Tooltip>
+    );
+  }
+
+  if (renderMode === 'modern-loader' && trigger?.TriggerFieldsetLoader) {
+    const valid = trigger.validate(workflow.config);
+    return (
+      <Tooltip title={undefined}>
+        <span>
+          <Button
+            onClick={() =>
+              openExecuteWorkflowDialog({
+                ctx: flowEngine.context,
+                workflow,
+                trigger,
+                TriggerFieldsetLoader: trigger.TriggerFieldsetLoader,
+                valid,
+                refresh,
+              })
+            }
+          >
+            {lang('Execute manually')}
+          </Button>
+        </span>
+      </Tooltip>
+    );
+  }
 
   return (
     <CurrentWorkflowContext.Provider value={workflow}>

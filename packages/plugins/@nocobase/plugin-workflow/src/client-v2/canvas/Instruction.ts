@@ -32,9 +32,8 @@ import type { ISchema } from '@formily/react';
 import type { SubModelItem } from '@nocobase/flow-engine';
 import type { UseVariableOptions, VariableOption } from './collectionFieldOptions';
 
-/** `() => Promise<{ default: Component }>` loader, matching the trigger
- *  `createConfigFormLoader` convention (doc §9.5). */
-export type LoaderOf<P = Record<string, never>> = () => Promise<{ default: ComponentType<P> }>;
+/** `() => Promise<{ default: Component }>` loader, matching the trigger `*Loader` convention (doc §9.5). */
+export type LoaderOf<P = {}> = () => Promise<{ default: ComponentType<P> }>;
 
 export type NodeAvailableContext = {
   /** The workflow client plugin instance (v1 `WorkflowPlugin` / v2 `PluginWorkflowClientV2`). */

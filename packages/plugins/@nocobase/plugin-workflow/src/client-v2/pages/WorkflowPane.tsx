@@ -22,7 +22,7 @@ import { App, Button, Card, Flex, Form, Input, Space, Switch, Tag, Tooltip, them
 import type { ColumnsType } from 'antd/es/table';
 import React, { useMemo, useState } from 'react';
 import workflowCollection from '../../common/collections/workflows';
-import { getWorkflowCanvasPath } from '../constants';
+import { useWorkflowRuntimePaths } from '../hooks/useWorkflowRuntimePaths';
 import { useT, useWorkflowTranslation } from '../locale';
 import PluginWorkflowClientV2 from '../plugin';
 import { ExecutionHistoryDrawer } from './ExecutionHistoryDrawer';
@@ -122,6 +122,7 @@ function WorkflowPaneInner() {
   const { t } = useWorkflowTranslation();
   const compile = useT();
   const ctx = useFlowContext();
+  const { getWorkflowCanvasPath } = useWorkflowRuntimePaths();
   const { token } = theme.useToken();
   const { modal, message } = App.useApp();
   const resource = ctx.api.resource('workflows');

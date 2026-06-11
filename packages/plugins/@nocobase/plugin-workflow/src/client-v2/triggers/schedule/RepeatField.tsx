@@ -7,13 +7,23 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { css } from '@nocobase/client';
+import { css } from '@emotion/css';
+import { useMemoizedFn } from 'ahooks';
 import { InputNumber, Select } from 'antd';
-import React, { useCallback } from 'react';
-import { Cron } from 'react-js-cron';
+import React from 'react';
+import { Cron, type Locale } from 'react-js-cron';
 import { useWorkflowTranslation } from '../../locale';
 
-const RepeatOptions = [
+declare global {
+  interface Window {
+    cronLocale?: Locale;
+  }
+}
+
+type RepeatValue = number | string | null;
+type RepeatOption = { value: 'none' | 'cron' | number; text: string; unitText?: string };
+
+const RepeatOptions: RepeatOption[] = [
   { value: 'none', text: 'No repeat' },
   { value: 60_000, text: 'By minute', unitText: 'Minutes' },
   { value: 3600_000, text: 'By hour', unitText: 'Hours' },
@@ -23,13 +33,15 @@ const RepeatOptions = [
   { value: 'cron', text: 'Advanced' },
 ];
 
-function getNumberOption(v) {
-  const opts = RepeatOptions.filter((option) => typeof option.value === 'number').reverse() as any[];
-  return opts.find((item) => !(v % item.value));
+function getNumberOption(v?: RepeatValue) {
+  const opts = RepeatOptions.filter(
+    (option): option is RepeatOption & { value: number } => typeof option.value === 'number',
+  ).reverse();
+  return opts.find((item) => typeof v === 'number' && !(v % item.value));
 }
 
-function getRepeatTypeValue(v) {
-  let option;
+function getRepeatTypeValue(v?: RepeatValue) {
+  let option: RepeatOption | undefined;
   switch (typeof v) {
     case 'number':
       option = getNumberOption(v);
@@ -42,9 +54,17 @@ function getRepeatTypeValue(v) {
   return 'none';
 }
 
-function CommonRepeatField({ value, onChange, disabled }) {
+function CommonRepeatField({
+  value,
+  onChange,
+  disabled,
+}: {
+  value: number;
+  onChange?: (value: RepeatValue) => void;
+  disabled?: boolean;
+}) {
   const { t } = useWorkflowTranslation();
-  const option = getNumberOption(value);
+  const option = getNumberOption(value) as RepeatOption & { value: number; unitText: string };
 
   return (
     <InputNumber
@@ -53,7 +73,7 @@ function CommonRepeatField({ value, onChange, disabled }) {
         if (!v) {
           return;
         }
-        onChange(v * option.value);
+        onChange?.(v * option.value);
       }}
       min={1}
       addonBefore={t('Every')}
@@ -64,23 +84,28 @@ function CommonRepeatField({ value, onChange, disabled }) {
   );
 }
 
-export function RepeatField({ value = null, onChange, disabled }) {
+export function RepeatField({
+  value = null,
+  onChange,
+  disabled,
+}: {
+  value?: RepeatValue;
+  onChange?: (value: RepeatValue) => void;
+  disabled?: boolean;
+}) {
   const { t } = useWorkflowTranslation();
   const typeValue = getRepeatTypeValue(value);
-  const onTypeChange = useCallback(
-    (v) => {
-      if (v === 'none') {
-        onChange(null);
-        return;
-      }
-      if (v === 'cron') {
-        onChange('0 * * * * *');
-        return;
-      }
-      onChange(typeof typeValue === 'number' ? Math.round((value / typeValue) * v) : v);
-    },
-    [onChange, typeValue, value],
-  );
+  const onTypeChange = useMemoizedFn((v: RepeatValue | 'none' | 'cron') => {
+    if (v === 'none') {
+      onChange?.(null);
+      return;
+    }
+    if (v === 'cron') {
+      onChange?.('0 * * * * *');
+      return;
+    }
+    onChange?.(typeof typeValue === 'number' ? Math.round(((value as number) / typeValue) * (v as number)) : v);
+  });
 
   return (
     <fieldset
@@ -123,12 +148,12 @@ export function RepeatField({ value = null, onChange, disabled }) {
         ))}
       </Select>
       {typeof typeValue === 'number' ? (
-        <CommonRepeatField value={value} onChange={onChange} disabled={disabled} />
+        <CommonRepeatField value={value as number} onChange={onChange} disabled={disabled} />
       ) : null}
       {typeValue === 'cron' ? (
         <Cron
-          value={value.trim().split(/\s+/).slice(1).join(' ')}
-          setValue={(v) => onChange(`0 ${v}`)}
+          value={(value as string).trim().split(/\s+/).slice(1).join(' ')}
+          setValue={(v) => onChange?.(`0 ${v}`)}
           clearButton={false}
           locale={window['cronLocale']}
           disabled={disabled}
@@ -137,3 +162,5 @@ export function RepeatField({ value = null, onChange, disabled }) {
     </fieldset>
   );
 }
+
+export default RepeatField;

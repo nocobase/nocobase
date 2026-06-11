@@ -12,7 +12,7 @@ import { useFlowContext } from '@nocobase/flow-engine';
 import { useMemoizedFn } from 'ahooks';
 import { App, Button, Dropdown } from 'antd';
 import React, { useState } from 'react';
-import { getWorkflowCanvasPath } from '../constants';
+import { useWorkflowRuntimePaths } from '../hooks/useWorkflowRuntimePaths';
 import { useWorkflowTranslation } from '../locale';
 import { ExecutionHistoryDrawer } from '../pages/ExecutionHistoryDrawer';
 import { WorkflowDetailsModal } from './WorkflowDetailsModal';
@@ -33,6 +33,7 @@ export function WorkflowMenu({
 }) {
   const { t } = useWorkflowTranslation();
   const ctx = useFlowContext();
+  const { getWorkflowCanvasPath } = useWorkflowRuntimePaths();
   const { modal, message } = App.useApp();
   const [detailsVisible, setDetailsVisible] = useState(false);
 
