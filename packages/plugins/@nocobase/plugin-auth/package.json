@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-auth",
-  "version": "2.0.61",
+  "version": "2.1.1",
   "main": "./dist/server/index.js",
   "homepage": "https://docs.nocobase.com/handbook/auth",
   "homepage.ru-RU": "https://docs-ru.nocobase.com/handbook/auth",
@@ -20,6 +20,7 @@
     "@nocobase/actions": "2.x",
     "@nocobase/auth": "2.x",
     "@nocobase/client": "2.x",
+    "@nocobase/client-v2": "2.x",
     "@nocobase/database": "2.x",
     "@nocobase/server": "2.x",
     "@nocobase/test": "2.x"

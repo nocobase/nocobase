@@ -1,14 +1,14 @@
 ---
-displayName: "Form drafts"
+displayName: "フォームの下書き"
 packageName: '@nocobase/plugin-form-drafts'
 supportedVersions:
   - 2.x
 description: |
-  Allow users to save form drafts and continue editing later.
+  フォームの入力中に下書きを保存し、後で編集を再開して提出できるようにします。
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Form drafts
+# フォームの下書き

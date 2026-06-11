@@ -1,12 +1,12 @@
 ---
-displayName: "Workflow: HTTP request node"
+displayName: "ワークフロー：HTTP リクエストノード"
 packageName: '@nocobase/plugin-workflow-request'
 description: |
-  Send HTTP requests to any HTTP service for data interaction in workflow.
+  ワークフロー内で任意の HTTP サービスにリクエストを送信し、データインタラクションを行うことができます。
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Workflow: HTTP request node
+# ワークフロー：HTTP リクエストノード

@@ -1,12 +1,12 @@
 ---
-displayName: "Verification"
+displayName: "検証"
 packageName: '@nocobase/plugin-verification'
 description: |
-  User identity verification management, including SMS, TOTP authenticator, with extensibility.
+  SMS、TOTP認証器などを含む、拡張可能なユーザー認証管理。
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Verification
+# 検証

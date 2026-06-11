@@ -26,9 +26,6 @@ import { NAMESPACE } from './constants';
 import { useImportContext } from './context';
 import { ImportStatus } from './ImportModal';
 import { useEffect } from 'react';
-import { useFields } from './useFields';
-import { initImportSettings } from './ImportActionInitializer';
-import { useImportActionContext } from './ImportActionContext';
 
 const useImportSchema = () => {
   const { fieldSchema: actionSchema } = useActionContext();

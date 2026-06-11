@@ -28,7 +28,7 @@ import { defaultImage, selectedImage } from '../../constants';
 import { useMapTranslation } from '../../locale';
 import { getSource } from '../../utils';
 import { MapBlockDrawer } from '../MapBlockDrawer';
-import { GoogleMapForwardedRefProps, GoogleMapsComponent, OverlayOptions } from './Map';
+import { GoogleMapForwardedRefProps, GoogleMapsComponent } from './Map';
 import { getIcon } from './utils';
 
 const OVERLAY_KEY = 'google-maps-overlay-id';
@@ -48,9 +48,43 @@ const pointClass = css`
   border: 1px solid #0000f5;
 `;
 
+const isPositionInPolygon = (position: google.maps.LatLng, polygonPath: google.maps.LatLng[]) => {
+  const x = position.lng();
+  const y = position.lat();
+  let inside = false;
+
+  for (let i = 0, j = polygonPath.length - 1; i < polygonPath.length; j = i++) {
+    const xi = polygonPath[i].lng();
+    const yi = polygonPath[i].lat();
+    const xj = polygonPath[j].lng();
+    const yj = polygonPath[j].lat();
+    const intersects = yi > y !== yj > y && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi;
+
+    if (intersects) {
+      inside = !inside;
+    }
+  }
+
+  return inside;
+};
+
+const getMarkerLabel = (text: unknown): google.maps.MarkerLabel | undefined => {
+  if (typeof text !== 'string' || !text) {
+    return;
+  }
+
+  return {
+    className: labelClass,
+    fontFamily: 'inherit',
+    fontSize: '13px',
+    color: '#333',
+    text,
+  } as google.maps.MarkerLabel;
+};
+
 export const GoogleMapsBlock = (props) => {
   // 新版 UISchema（1.0 之后）中已经废弃了 useProps，这里之所以继续保留是为了兼容旧版的 UISchema
-  const { collectionField, fieldNames, dataSource, fixedBlock, zoom, setSelectedRecordKeys, lineSort } =
+  const { collectionField, fieldNames, dataSource, fixedBlock, zoom, setSelectedRecordKeys, lineSort, service } =
     useProps(props);
   const { getPrimaryKey } = useCollection_deprecated();
   const primaryKey = getPrimaryKey();
@@ -66,6 +100,9 @@ export const GoogleMapsBlock = (props) => {
   const selectingModeRef = useRef(selectingMode);
   const selectionOverlayRef = useRef<google.maps.Polygon | null>(null);
   const overlaysRef = useRef<google.maps.MVCObject[]>([]);
+  const selectedRecordKeysRef = useRef<Set<string | number>>(new Set());
+  const lastSelectionCompleteAtRef = useRef(0);
+  const listLoadingRef = useRef(Boolean(service?.loading));
   selectingModeRef.current = selectingMode;
   const { fields } = useCollection();
   const parentRecordData = useCollectionParentRecordData();
@@ -74,22 +111,34 @@ export const GoogleMapsBlock = (props) => {
   const { openPopup } = usePopupUtils();
 
   const setOverlayOptions = (overlay: google.maps.MVCObject, state?: boolean) => {
-    const selected = typeof state !== 'undefined' ? !state : overlay.get(OVERLAY_SELECtED);
-    overlay.set(OVERLAY_SELECtED, !selected);
-    (overlay as google.maps.Marker).setOptions({
-      ...(selected
+    const selected = typeof state !== 'undefined' ? state : !overlay.get(OVERLAY_SELECtED);
+    overlay.set(OVERLAY_SELECtED, selected);
+    if (overlay instanceof google.maps.Marker) {
+      overlay.setIcon(getIcon(selected ? selectedImage : defaultImage));
+      overlay.setZIndex(selected ? 138 : null);
+      return;
+    }
+
+    (overlay as google.maps.Polygon).setOptions(
+      selected
         ? {
-            icon: getIcon(defaultImage),
-            strokeColor: '#4e9bff',
-            fillColor: '#4e9bff',
-          }
-        : {
-            icon: getIcon(selectedImage),
             strokeColor: '#F18b62',
             fillColor: '#F18b62',
-          }),
-    } as OverlayOptions);
+          }
+        : {
+            strokeColor: '#4e9bff',
+            fillColor: '#4e9bff',
+          },
+    );
   };
+
+  const clearSelectionState = useMemoizedFn(() => {
+    selectedRecordKeysRef.current.clear();
+    overlaysRef.current.forEach((overlay) => {
+      setOverlayOptions(overlay, false);
+    });
+    setSelectedRecordKeys([]);
+  });
 
   // selection
   useEffect(() => {
@@ -102,27 +151,19 @@ export const GoogleMapsBlock = (props) => {
         draggable: true,
       });
     }
-    const listenerSet = new Set<() => void>();
-    mapRef.current?.drawingManager.setDrawingMode(google.maps.drawing.OverlayType.POLYGON);
-    mapRef.current?.drawingManager.addListener('overlaycomplete', (event) => {
+    mapRef.current?.drawingManager?.setDrawingMode('polygon');
+    mapRef.current?.drawingManager?.addListener('overlaycomplete', (event) => {
       const polygon = event.overlay as google.maps.Polygon;
-      mapRef.current?.drawingManager.setDrawingMode(null);
+      mapRef.current?.drawingManager?.setDrawingMode(null);
       selectionOverlayRef.current = polygon;
-      const path = polygon.getPath();
-      ['insert_at', 'remove_at', 'set_at'].forEach((key) => {
-        listenerSet.add(path.addListener(key, () => {}).remove);
-      });
     });
     return () => {
-      listenerSet.forEach((i) => {
-        i();
-      });
       if (!mapRef.current) return;
       selectionOverlayRef.current?.unbindAll();
       selectionOverlayRef.current?.setMap(null);
       selectionOverlayRef.current = null;
-      mapRef.current?.drawingManager.setDrawingMode(null);
-      mapRef.current?.drawingManager.unbindAll();
+      mapRef.current?.drawingManager?.setDrawingMode(null);
+      mapRef.current?.drawingManager?.unbindAll();
     };
   }, [selectingMode]);
 
@@ -139,21 +180,30 @@ export const GoogleMapsBlock = (props) => {
   }, [selectingMode]);
 
   const onSelectingComplete = useMemoizedFn(() => {
+    mapRef.current?.drawingManager?.completeDrawing();
     const overlay = selectionOverlayRef.current;
+    if (!overlay) {
+      return;
+    }
     const overlays = overlaysRef.current;
-    const poly = google.maps.geometry.poly;
+    const selectionPath = overlay.getPath().getArray();
+    if (selectionPath.length < 3) {
+      return;
+    }
     const selectedOverlays = overlays.filter((o) => {
       if (o === overlay || o.get(OVERLAY_KEY) === undefined) return;
       if (o instanceof google.maps.Marker) {
-        return poly.containsLocation(o.getPosition()!, overlay!);
+        const position = o.getPosition();
+        return position ? isPositionInPolygon(position, selectionPath) : false;
       } else if (o instanceof google.maps.Circle) {
-        return poly.containsLocation(o.getCenter()!, overlay!);
+        const center = o.getCenter();
+        return center ? isPositionInPolygon(center, selectionPath) : false;
       } else {
         return (o as google.maps.Polygon)
           .getPath()
           .getArray()
           .some((position) => {
-            return poly.containsLocation(position, overlay!);
+            return isPositionInPolygon(position, selectionPath);
           });
       }
     });
@@ -161,10 +211,15 @@ export const GoogleMapsBlock = (props) => {
       setOverlayOptions(o, true);
       return o.get(OVERLAY_KEY);
     });
+    ids.forEach((id) => {
+      selectedRecordKeysRef.current.add(id);
+    });
+    lastSelectionCompleteAtRef.current = Date.now();
     setSelectedRecordKeys((lastIds) => ids.concat(lastIds));
-    overlay?.unbindAll();
-    overlay?.setMap(null);
-    mapRef.current?.drawingManager.setDrawingMode(google.maps.drawing.OverlayType.POLYGON);
+    overlay.unbindAll();
+    overlay.setMap(null);
+    selectionOverlayRef.current = null;
+    mapRef.current?.drawingManager?.setDrawingMode('polygon');
   });
 
   useEffect(() => {
@@ -179,6 +234,7 @@ export const GoogleMapsBlock = (props) => {
       .map((item) => {
         const data = getSource(item, fieldNames?.field, cf?.interface);
         const title = getLabelFormatValue(labelUiSchema, item[fieldNames.marker]);
+        const markerLabel = getMarkerLabel(fieldNames?.marker ? compile(title) : undefined);
         if (!data?.length) return [];
         return data?.filter(Boolean).map((mapItem) => {
           if (!data) return;
@@ -186,15 +242,12 @@ export const GoogleMapsBlock = (props) => {
             strokeColor: '#4e9bff',
             fillColor: '#4e9bff',
             cursor: 'pointer',
-            label: {
-              className: labelClass,
-              fontFamily: 'inherit',
-              fontSize: '13px',
-              color: '#333',
-              text: fieldNames?.marker ? compile(title) : undefined,
-            } as google.maps.MarkerLabel,
+            label: markerLabel,
           });
           overlay?.set(OVERLAY_KEY, item[primaryKey]);
+          if (overlay) {
+            setOverlayOptions(overlay, selectedRecordKeysRef.current.has(item[primaryKey]));
+          }
           return overlay;
         });
       })
@@ -205,6 +258,12 @@ export const GoogleMapsBlock = (props) => {
 
     const events = overlays.map((o: google.maps.MVCObject) => {
       const onClick = (event) => {
+        if (selectingModeRef.current === 'selection') {
+          const markerPosition = o instanceof google.maps.Marker ? o.getPosition() : undefined;
+          mapRef.current?.drawingManager?.handleOverlayClick(event, markerPosition);
+          return;
+        }
+
         const overlay = o as google.maps.Polygon;
         const id = overlay.get(OVERLAY_KEY);
         if (!id) return;
@@ -240,7 +299,13 @@ export const GoogleMapsBlock = (props) => {
           });
         }
       };
+      const onDoubleClick = () => {
+        if (selectingModeRef.current === 'selection') {
+          mapRef.current?.drawingManager?.handleDoubleClick();
+        }
+      };
       o.addListener('click', onClick);
+      o.addListener('dblclick', onDoubleClick);
       return () => o.unbindAll();
     });
 
@@ -299,9 +364,22 @@ export const GoogleMapsBlock = (props) => {
 
   useEffect(() => {
     setTimeout(() => {
-      setSelectedRecordKeys([]);
+      if (Date.now() - lastSelectionCompleteAtRef.current < 100) {
+        return;
+      }
+      clearSelectionState();
     });
-  }, [dataSource]);
+  }, [clearSelectionState, dataSource]);
+
+  useEffect(() => {
+    const wasLoading = listLoadingRef.current;
+    const isLoading = Boolean(service?.loading);
+    listLoadingRef.current = isLoading;
+
+    if (wasLoading && !isLoading) {
+      clearSelectionState();
+    }
+  }, [clearSelectionState, service?.loading]);
 
   const mapRefCallback = (instance: GoogleMapForwardedRefProps) => {
     mapRef.current = instance;

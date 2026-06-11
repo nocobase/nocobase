@@ -51,6 +51,11 @@
       },
       {
         "type": "custom-link",
+        "label": "Почтовые алиасы",
+        "link": "/email-manager/usage/alias"
+      },
+      {
+        "type": "custom-link",
         "label": "Шаблоны писем",
         "link": "/email-manager/usage/template"
       }

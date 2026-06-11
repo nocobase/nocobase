@@ -269,7 +269,7 @@ export class BaseAuth extends Auth {
   }
 
   async signNewToken(userId: number) {
-    const tokenInfo = await this.tokenController.add({ userId });
+    const tokenInfo = await this.tokenController.add({ userId, authenticator: this.authenticator?.name });
     const expiresIn = Math.floor((await this.tokenController.getConfig()).tokenExpirationTime / 1000);
     const token = this.jwt.sign(
       {

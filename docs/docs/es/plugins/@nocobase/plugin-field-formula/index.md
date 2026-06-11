@@ -1,12 +1,12 @@
 ---
-displayName: "Collection field: Formula"
+displayName: "Campo de colección: Fórmula"
 packageName: '@nocobase/plugin-field-formula'
 description: |
-  Configure and store the results of calculations between multiple field values in the same record, supporting both Math.js and Excel formula functions.
+  Permite configurar y almacenar los resultados de cálculos entre múltiples valores de campos de un mismo registro, compatible con los motores Math.js y funciones de fórmulas de Excel
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Collection field: Formula
+# Campo de colección: Fórmula

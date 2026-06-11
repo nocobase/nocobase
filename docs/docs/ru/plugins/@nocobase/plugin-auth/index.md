@@ -1,12 +1,12 @@
 ---
-displayName: "Authentication"
+displayName: "Аутентификация пользователей"
 packageName: '@nocobase/plugin-auth'
 description: |
-  User authentication management, including password, SMS, and support for Single Sign-On (SSO) protocols, with extensibility.
+  Управление аутентификацией пользователей, включая пароли, SMS и поддержку протоколов Single Sign-On (SSO), с возможностью расширения.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Authentication
+# Аутентификация пользователей

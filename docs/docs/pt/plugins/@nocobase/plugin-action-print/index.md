@@ -2,7 +2,7 @@
 displayName: "Action: Print"
 packageName: '@nocobase/plugin-action-print'
 description: |
-  Calls the browser's print function to print a record.
+  Chama a função de impressão do navegador para imprimir um único registro.
 isFree: true
 builtIn: true
 defaultEnabled: false

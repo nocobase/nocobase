@@ -1,0 +1,34 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Como o NocoBase Funciona",
+    "link": "/get-started/how-nocobase-works"
+  },
+  {
+    "type": "custom-link",
+    "label": "Requisitos do sistema",
+    "link": "/get-started/system-requirements"
+  },
+  {
+    "type": "custom-link",
+    "label": "Comparação de métodos de instalação e versões",
+    "link": "/get-started/quickstart"
+  },
+  {
+    "type": "custom-link",
+    "label": "Início rápido",
+    "link": "/ai/quick-start"
+  },
+  {
+    "type": "custom-link",
+    "label": "NocoBase CLI",
+    "proxy": false,
+    "link": "/nocobase-cli/"
+  },
+  {
+    "type": "custom-link",
+    "label": "Primeiros passos (versão antiga)",
+    "proxy": false,
+    "link": "/get-started/how-nocobase-works"
+  }
+]

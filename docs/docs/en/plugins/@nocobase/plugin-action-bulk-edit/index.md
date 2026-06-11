@@ -1,15 +1,15 @@
 ---
-displayName: "Action: Batch edit"
+displayName: "Action: Bulk edit"
 packageName: '@nocobase/plugin-action-bulk-edit'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Batch edit all records or selected records.
+  Bulk edit all or selected data.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Action: Batch edit
+# Action: Bulk edit

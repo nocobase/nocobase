@@ -281,10 +281,12 @@ export const InternalCascadeSelect = observer(
     const { loading, data: formData } = useDataBlockRequest() || {};
     const fieldValue = field.value !== undefined ? field.value : props.value;
     const requestValue = formData?.data?.[fieldSchema.name];
-    const initialValue = useMemo(() => {
-      const value = requestValue !== undefined ? requestValue : fieldValue;
+    const getLatestValue = useCallback(() => {
+      const latestFieldValue = field.value !== undefined ? field.value : props.value;
+      const value = latestFieldValue !== undefined ? latestFieldValue : requestValue;
       return collectionField.interface === 'm2o' ? normalizeToOneCascadeValue(value) : value;
-    }, [collectionField.interface, fieldValue, requestValue]);
+    }, [collectionField.interface, field, props.value, requestValue]);
+    const initialValue = useMemo(() => getLatestValue(), [getLatestValue]);
     const associationDataFlag =
       !formData ||
       fieldSchema.name in (formData?.data || {}) ||
@@ -311,6 +313,7 @@ export const InternalCascadeSelect = observer(
       [collectionField.interface, field, fieldSchema.name],
     );
     const currentFieldValue = form.values?.[fieldSchema.name];
+    const hasCurrentFieldValue = Object.prototype.hasOwnProperty.call(form.values || {}, fieldSchema.name);
 
     useEffect(() => {
       const id = uid();
@@ -331,15 +334,18 @@ export const InternalCascadeSelect = observer(
       if (collectionField.interface !== 'm2o') {
         return;
       }
-      const value = initialValue ?? null;
+      const value = getLatestValue() ?? null;
       if (isEqual(normalizeToOneCascadeValue(selectForm.values?.[fieldSchema.name]), value)) {
         return;
       }
       selectForm.setInitialValues({ [fieldSchema.name]: value });
       selectForm.setValuesIn(fieldSchema.name, value);
-    }, [collectionField.interface, fieldSchema.name, initialValue, selectForm]);
+    }, [collectionField.interface, fieldSchema.name, getLatestValue, selectForm]);
 
     useEffect(() => {
+      if (!hasCurrentFieldValue) {
+        return;
+      }
       if (!currentFieldValue) {
         if (selectForm && selectForm.values.select_array && !currentFieldValue) {
           selectForm.setValuesIn('select_array', undefined);
@@ -350,7 +356,7 @@ export const InternalCascadeSelect = observer(
           selectForm.setValuesIn(fieldSchema.name, null);
         }
       }
-    }, [currentFieldValue, fieldSchema.name, selectForm]);
+    }, [currentFieldValue, fieldSchema.name, hasCurrentFieldValue, selectForm]);
 
     const toValue = () => {
       if (Array.isArray(initialValue) && initialValue.length > 0) {

@@ -8,15 +8,7 @@
  */
 
 import type Application from '../application';
-import { createDocsIndex, DocsIndexOptions } from '../ai/create-docs-index';
 
 export default (app: Application) => {
-  const ai = app.command('ai');
-
-  ai.command('create-docs-index')
-    .option('--pkg [pkg]', 'Generate docs index for the specified plugin package (comma separated).')
-    .action(async (...cliArgs) => {
-      const [opts] = cliArgs as [DocsIndexOptions?];
-      await createDocsIndex(app, opts);
-    });
+  app.command('ai');
 };

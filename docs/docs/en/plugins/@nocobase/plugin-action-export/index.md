@@ -5,7 +5,7 @@ supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Export filtered records to excel, you can configure which fields to export.
+  Export filtered records to Excel, you can configure which fields to export.
 isFree: true
 builtIn: true
 defaultEnabled: false

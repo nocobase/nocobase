@@ -8,11 +8,11 @@
  */
 
 import { vi } from 'vitest';
-import { createMockServer, MockServer } from '@nocobase/test';
+import { MockServer } from '@nocobase/test';
 import { GlobalContext, HttpRequestContext, ServerBaseContext } from '../template/contexts';
 import { resolveJsonTemplate } from '../template/resolver';
 import { variables } from '../variables/registry';
-import { resetVariablesRegistryForTest } from './test-utils';
+import { createFlowEngineMockServer, resetVariablesRegistryForTest } from './test-utils';
 
 describe('variables resolver (no HTTP)', () => {
   let app: MockServer;
@@ -23,7 +23,7 @@ describe('variables resolver (no HTTP)', () => {
     process.env.INIT_ROOT_EMAIL = 'test@nocobase.com';
     process.env.INIT_ROOT_PASSWORD = '123456';
     process.env.INIT_ROOT_NICKNAME = 'Test';
-    app = await createMockServer({
+    app = await createFlowEngineMockServer({
       plugins: ['auth', 'users', 'acl', 'data-source-manager', 'field-sort'],
       skipStart: false,
     });

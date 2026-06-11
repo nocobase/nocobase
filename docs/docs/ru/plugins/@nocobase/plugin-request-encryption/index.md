@@ -1,15 +1,15 @@
 ---
-displayName: "HTTP request encryption"
+displayName: "Шифрование HTTP-запросов"
 packageName: '@nocobase/plugin-request-encryption'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Encrypts request parameters (Query Parameters) before sending an HTTP request.
+  Используется для шифрования параметров запроса (Query Parameters) перед отправкой HTTP-запроса.
 isFree: false
 builtIn: false
 defaultEnabled: false
 editionLevel: 3
 ---
 
-# HTTP request encryption
+# Шифрование HTTP-запросов

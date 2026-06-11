@@ -1,7 +1,3 @@
-:::tip Aviso de traducción por IA
-Esta documentación ha sido traducida automáticamente por IA.
-:::
-
 **Parámetros**
 
 | Nombre del parámetro   | Tipo          | Valor predeterminado | Descripción                                                                 |

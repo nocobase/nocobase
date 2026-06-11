@@ -1,8 +1,8 @@
 ---
-displayName: "Mobile client(Deprecated)"
+displayName: "モバイルクライアント（廃止済み）"
 packageName: '@nocobase/plugin-mobile-client'
 description: |
-  Provides the ability to configure mobile pages.
+  モバイルページを設定する機能を提供します。
 isFree: true
 builtIn: true
 defaultEnabled: false
@@ -10,6 +10,6 @@ deprecated: true
 editionLevel: 0
 ---
 
-# Mobile client(Deprecated)
+# モバイルクライアント（廃止済み）
 
-> Note: This plugin is deprecated.
+> 注意：このプラグインは廃止されました（deprecated）。

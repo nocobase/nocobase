@@ -1,12 +1,12 @@
 ---
-displayName: "Collection field: Sort"
+displayName: "Champ de collection : Tri"
 packageName: '@nocobase/plugin-field-sort'
 description: |
-  Used to sort the data in a collection.
+  Utilisé pour trier les données d'une collection.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Collection field: Sort
+# Champ de collection : Tri

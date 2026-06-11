@@ -9,7 +9,8 @@
 
 import { useForm } from '@formily/react';
 import React, { FC, useCallback, useMemo } from 'react';
-import { useActionContext, SchemaComponent } from '../../../schema-component';
+import { useActionContext } from '../../../schema-component/antd/action/hooks';
+import { SchemaComponent } from '../../../schema-component/core/SchemaComponent';
 import { useSchemaInitializer, useSchemaInitializerItem } from '../context';
 import { SchemaInitializerItem } from './SchemaInitializerItem';
 import { uid } from '@formily/shared';

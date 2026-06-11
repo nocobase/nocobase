@@ -1,12 +1,12 @@
 ---
-displayName: "License settings"
+displayName: "ライセンス設定"
 packageName: '@nocobase/plugin-license'
 description: |
-  Instance ID and license key settings
+  インスタンスIDとライセンスキーの設定
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# License settings
+# ライセンス設定

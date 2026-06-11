@@ -1,10 +1,6 @@
 ---
 pkg: "@nocobase/plugin-data-source-main"
 ---
-:::tip KI-Übersetzungshinweis
-Diese Dokumentation wurde automatisch von KI übersetzt.
-:::
-
 
 # Sammlungsvererbung
 

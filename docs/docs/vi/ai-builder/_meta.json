@@ -1,0 +1,52 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Bắt đầu nhanh",
+    "link": "/ai-builder/"
+  },
+  {
+    "type": "file",
+    "name": "security",
+    "label": "Bảo mật và kiểm toán"
+  },
+  {
+    "type": "file",
+    "name": "env-bootstrap",
+    "label": "Quản lý môi trường"
+  },
+  {
+    "type": "file",
+    "name": "data-modeling",
+    "label": "Mô hình hóa dữ liệu"
+  },
+  {
+    "type": "file",
+    "name": "ui-builder",
+    "label": "Cấu hình giao diện"
+  },
+  {
+    "type": "file",
+    "name": "workflow",
+    "label": "Quản lý Workflow"
+  },
+  {
+    "type": "file",
+    "name": "acl",
+    "label": "Cấu hình quyền"
+  },
+  {
+    "type": "file",
+    "name": "dsl-reconciler",
+    "label": "Giải pháp"
+  },
+  {
+    "type": "file",
+    "name": "plugin-manage",
+    "label": "Quản lý Plugin"
+  },
+  {
+    "type": "file",
+    "name": "publish",
+    "label": "Quản lý phát hành"
+  }
+]

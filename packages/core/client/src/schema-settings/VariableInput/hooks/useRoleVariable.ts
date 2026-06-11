@@ -97,6 +97,6 @@ export const useCurrentRoleVariable = ({
     /** 变量配置项 */
     currentRoleSettings,
     /** 变量的值 */
-    currentRoleCtx: apiClient.auth?.role === '__union__' ? roles.map((v) => v.name) : apiClient.auth?.role,
+    currentRoleCtx: apiClient?.auth?.role === '__union__' ? roles.map((v) => v.name) : apiClient?.auth?.role,
   };
 };

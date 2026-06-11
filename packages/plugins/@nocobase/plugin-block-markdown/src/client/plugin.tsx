@@ -8,7 +8,7 @@
  */
 
 import { Plugin } from '@nocobase/client';
-import { MarkdownBlockModel } from './models';
+import { MarkdownBlockModel } from '../client-v2/models/MarkdownBlockModel';
 
 export class PluginBlockMarkdownClient extends Plugin {
   async load() {

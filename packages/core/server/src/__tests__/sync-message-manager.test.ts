@@ -18,6 +18,7 @@ describe('sync-message-manager', () => {
     await node1.syncMessageManager.subscribe('test1', mockListener);
     await node2.syncMessageManager.subscribe('test1', mockListener);
     await node2.syncMessageManager.publish('test1', 'message1');
+    await sleep(1100);
     expect(mockListener).toHaveBeenCalled();
     expect(mockListener).toBeCalledTimes(1);
     expect(mockListener).toHaveBeenCalledWith('message1');

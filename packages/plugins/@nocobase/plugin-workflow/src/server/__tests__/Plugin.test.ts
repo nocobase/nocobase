@@ -8,7 +8,7 @@
  */
 
 import { MockServer } from '@nocobase/test';
-import Database from '@nocobase/database';
+import Database, { Transaction } from '@nocobase/database';
 import { getApp, sleep } from '@nocobase/plugin-workflow-test';
 
 import Plugin, { Processor } from '..';
@@ -31,6 +31,38 @@ describe('workflow > Plugin', () => {
   });
 
   afterEach(() => app.destroy());
+
+  describe('useDataSourceTransaction', () => {
+    it('create should reuse the incoming same-datasource transaction', async () => {
+      const sourceTransaction = await db.sequelize.transaction();
+      try {
+        const transaction = await plugin.useDataSourceTransaction('main', sourceTransaction, true);
+
+        expect(transaction).toBe(sourceTransaction);
+      } finally {
+        await sourceTransaction.rollback();
+      }
+    });
+
+    it.skipIf(process.env['DB_DIALECT'] === 'sqlite')(
+      'create with null transaction should open a transaction isolated from the incoming same-datasource transaction',
+      async () => {
+        const sourceTransaction = await db.sequelize.transaction();
+        let historyTransaction: Transaction | undefined;
+        try {
+          historyTransaction = await plugin.useDataSourceTransaction('main', null, true);
+
+          expect(historyTransaction).toBeDefined();
+          expect(historyTransaction).not.toBe(sourceTransaction);
+        } finally {
+          if (historyTransaction) {
+            await historyTransaction.rollback();
+          }
+          await sourceTransaction.rollback();
+        }
+      },
+    );
+  });
 
   describe('create', () => {
     it('create with enabled', async () => {
@@ -268,13 +300,13 @@ describe('workflow > Plugin', () => {
         })) as ExecutionModel;
 
         type PendingDispatcher = {
-          acquirePendingExecution(execution: ExecutionModel): Promise<ExecutionModel | null>;
+          prepare(input: ExecutionModel | null, options?: { immediate?: boolean }): Promise<ExecutionModel | null>;
         };
         const dispatcher = (plugin as unknown as { dispatcher: PendingDispatcher }).dispatcher;
 
         const acquired = await Promise.all([
-          dispatcher.acquirePendingExecution(e1),
-          dispatcher.acquirePendingExecution(sameExecution),
+          dispatcher.prepare(e1, { immediate: true }),
+          dispatcher.prepare(sameExecution, { immediate: true }),
         ]);
 
         const acquiredExecutions = acquired.filter((execution): execution is ExecutionModel => Boolean(execution));
@@ -300,7 +332,7 @@ describe('workflow > Plugin', () => {
       });
 
       type PendingDispatcher = {
-        acquirePendingExecution(execution: ExecutionModel): Promise<ExecutionModel | null>;
+        prepare(input: ExecutionModel | null, options?: { immediate?: boolean }): Promise<ExecutionModel | null>;
       };
       const dispatcher = (plugin as unknown as { dispatcher: PendingDispatcher }).dispatcher;
       const transaction = db.sequelize.transaction;
@@ -309,7 +341,7 @@ describe('workflow > Plugin', () => {
       }) as typeof db.sequelize.transaction;
 
       try {
-        const acquired = await dispatcher.acquirePendingExecution(e1);
+        const acquired = await dispatcher.prepare(e1, { immediate: true });
         expect(acquired).toBeNull();
       } finally {
         db.sequelize.transaction = transaction;
@@ -346,14 +378,11 @@ describe('workflow > Plugin', () => {
         });
 
         type QueueingDispatcher = {
-          acquireQueueingExecution(): Promise<ExecutionModel | null>;
+          prepare(input: ExecutionModel | null, options?: { immediate?: boolean }): Promise<ExecutionModel | null>;
         };
         const dispatcher = (plugin as unknown as { dispatcher: QueueingDispatcher }).dispatcher;
 
-        const acquired = await Promise.all([
-          dispatcher.acquireQueueingExecution(),
-          dispatcher.acquireQueueingExecution(),
-        ]);
+        const acquired = await Promise.all([dispatcher.prepare(null), dispatcher.prepare(null)]);
 
         const acquiredExecutions = acquired.filter((execution): execution is ExecutionModel => Boolean(execution));
         expect(acquiredExecutions.map((execution) => execution.id)).toEqual([e1.id]);
@@ -684,6 +713,34 @@ describe('workflow > Plugin', () => {
       expect(e2s[0].status).toBe(EXECUTION_STATUS.RESOLVED);
     });
 
+    it('timeout should start counting after deferred execution starts', async () => {
+      const w1 = await WorkflowModel.create({
+        enabled: true,
+        type: 'asyncTrigger',
+        options: {
+          timeout: 1000,
+        },
+      });
+
+      plugin.trigger(w1, {}, { deferred: true });
+
+      await sleep(500);
+
+      const [e1] = await w1.getExecutions();
+      expect(e1.status).toBe(EXECUTION_STATUS.STARTED);
+      expect(e1.startedAt).toBeNull();
+      expect(e1.expiresAt).toBeNull();
+
+      await plugin.start(e1);
+      await sleep(500);
+
+      const [e2] = await w1.getExecutions();
+      expect(e2.status).toBe(EXECUTION_STATUS.RESOLVED);
+      expect(e2.startedAt).toBeTruthy();
+      expect(e2.expiresAt).toBeTruthy();
+      expect(e2.expiresAt.getTime()).toBeGreaterThan(e2.startedAt.getTime());
+    });
+
     it('sync workflow will ignore the deferred option, and start it immediately', async () => {
       const w1 = await WorkflowModel.create({
         enabled: true,
@@ -729,6 +786,39 @@ describe('workflow > Plugin', () => {
       expect(processor.execution.id).toBe(executions[0].id);
       expect(processor.execution.status).toBe(executions[0].status);
     });
+
+    it.skipIf(process.env['DB_DIALECT'] === 'sqlite')(
+      'history should persist after the source transaction rolls back',
+      async () => {
+        const w1 = await WorkflowModel.create({
+          enabled: true,
+          type: 'syncTrigger',
+        });
+
+        await w1.createNode({
+          type: 'echo',
+        });
+
+        const transaction = await db.sequelize.transaction();
+        try {
+          await plugin.trigger(w1, {}, { transaction });
+          await transaction.rollback();
+        } catch (error) {
+          await transaction.rollback();
+          throw error;
+        }
+
+        const executions = await w1.getExecutions();
+        expect(executions.length).toBe(1);
+        expect(executions[0].status).toBe(EXECUTION_STATUS.RESOLVED);
+
+        const jobs = await executions[0].getJobs();
+        expect(jobs.length).toBe(1);
+
+        const stats = await w1.getStats();
+        expect(Number(stats.executed)).toBe(1);
+      },
+    );
   });
 
   describe('stats', () => {
