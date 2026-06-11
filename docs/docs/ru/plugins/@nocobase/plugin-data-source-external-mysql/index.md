@@ -5,7 +5,7 @@ supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Использование внешних баз данных MySQL в качестве источников данных.
+  Внешние базы MySQL в качестве источников данных.
 isFree: false
 builtIn: false
 defaultEnabled: false

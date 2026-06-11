@@ -5,7 +5,7 @@ supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Использование внешних источников данных REST API.
+  Внешние источники данных на базе REST API.
 isFree: false
 builtIn: false
 defaultEnabled: false

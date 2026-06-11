@@ -2,7 +2,7 @@
 displayName: "Пользователи"
 packageName: '@nocobase/plugin-users'
 description: |
-  Предоставляет базовую модель пользователя, а также поля «Кем создано» и «Кем обновлено».
+  Базовая модель пользователя, а также поля «кто создал» и «кто обновил».
 isFree: true
 builtIn: true
 defaultEnabled: false

@@ -4,7 +4,7 @@ packageName: '@nocobase/plugin-custom-variables'
 supportedVersions:
   - 1.x
 description: |
-  Поддержка добавления и использования пользовательских переменных
+  Добавление и использование пользовательских переменных.
 isFree: true
 builtIn: true
 defaultEnabled: false

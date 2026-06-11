@@ -20,7 +20,7 @@
   },
   {
     "type": "custom-link",
-    "label": "Процессы эксплуатации",
+    "label": "Процедуры обслуживания",
     "link": "/cluster-mode/operations"
   },
   {
@@ -30,7 +30,7 @@
   },
   {
     "type": "custom-link",
-    "label": "Справочник для разработчиков",
+    "label": "Справочник для разработки",
     "link": "/cluster-mode/development"
   }
 ]

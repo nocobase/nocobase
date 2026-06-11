@@ -5,7 +5,7 @@ supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Поддержка включения двухфакторной аутентификации (2FA) для входа по паролю.
+  Поддержка двухфакторной аутентификации при входе по паролю.
 isFree: false
 builtIn: false
 defaultEnabled: false

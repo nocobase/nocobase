@@ -1,12 +1,12 @@
 ---
-displayName: "Коллекция: Дерево"
+displayName: "Коллекция: Древовидная коллекция"
 packageName: '@nocobase/plugin-collection-tree'
 description: |
-  Предоставляет шаблон коллекции типа «дерево»
+  Шаблон древовидной коллекции.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Коллекция: Дерево
+# Коллекция: Древовидная коллекция

@@ -5,7 +5,7 @@ supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Аутентификация через протокол SAML 2.0.
+  Аутентификация по SAML 2.0.
 isFree: false
 builtIn: false
 defaultEnabled: false

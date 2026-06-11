@@ -1,15 +1,15 @@
 ---
-displayName: "Действие: Импорт записей"
+ displayName: "Действие: импорт записей"
 packageName: '@nocobase/plugin-action-import'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Импорт данных с использованием шаблонов Excel. Вы можете настроить, какие поля импортировать, шаблоны генерируются автоматически.
+  Импорт записей по шаблонам Excel. Можно настроить импортируемые поля; шаблоны формируются автоматически.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Действие: Импорт записей
+# Действие: импорт записей

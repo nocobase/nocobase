@@ -2,7 +2,7 @@
 pkg: "@nocobase/plugin-field-formula"
 ---
 
-# Расчетная формула
+# Формула
 
 ## Введение
 

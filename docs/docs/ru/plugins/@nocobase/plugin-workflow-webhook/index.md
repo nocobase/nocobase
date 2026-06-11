@@ -1,15 +1,15 @@
 ---
-displayName: "Workflow: Триггер Webhook"
+displayName: "Входящий HTTP/Webhook"
 packageName: '@nocobase/plugin-workflow-webhook'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Принимает HTTP-запросы от внешних систем и запускает события. Подходит для передачи данных и уведомлений о событиях, инициируемых сторонними системами, такими как обратные вызовы платежей и уведомления о сообщениях.
+  Приём HTTP-вызовов из внешних систем и запуск событий. Подходит для данных и уведомлений, поступающих по инициативе внешней стороны: уведомления об оплате, служебные сообщения и т.п.
 isFree: false
 builtIn: false
 defaultEnabled: false
 editionLevel: 2
 ---
 
-# Workflow: Триггер Webhook
+# Входящий HTTP/Webhook
