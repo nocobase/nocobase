@@ -107,6 +107,7 @@
   "KnowledgeBase": "Knowledge Base",
   "LLM service": "Layanan LLM",
   "LLM services": "Layanan LLM",
+  "LLM service test failed. Please check the service configuration.": "Pengujian layanan LLM gagal. Silakan periksa konfigurasi layanan.",
   "Label for task selection buttons when multiple tasks exist": "Label for task selection buttons when multiple tasks exist",
   "Limit": "Limit",
   "Max completion tokens description": "Batas atas jumlah token yang dapat dihasilkan untuk penyelesaian, termasuk token keluaran yang terlihat dan token penalaran.",

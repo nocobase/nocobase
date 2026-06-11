@@ -12,7 +12,7 @@ import { UiSchemaRepository } from '@nocobase/plugin-ui-schema-storage';
 import { Instruction, JOB_STATUS } from '@nocobase/plugin-workflow';
 import { TASK_STATUS } from '../common/constants';
 
-async function getUsers(config, { db, transaction }): Promise<number[]> {
+async function getUsers(config, { db }): Promise<number[]> {
   const users: Set<number> = new Set();
   const UserRepo = db.getRepository('users');
   for (const item of config) {
@@ -23,7 +23,6 @@ async function getUsers(config, { db, transaction }): Promise<number[]> {
       const result = await UserRepo.find({
         ...item,
         fields: ['id'],
-        transaction,
       });
       result.forEach((item) => users.add(item.id));
     } else {
@@ -49,7 +48,7 @@ export default class CCInstruction extends Instruction {
       .getParsedValue(node.config.users ?? [], node.id)
       .flat()
       .filter(Boolean);
-    const users = await getUsers(usersConfig, { db, transaction: processor.mainTransaction });
+    const users = await getUsers(usersConfig, { db });
 
     const RecordRepo = db.getRepository('workflowCcTasks');
     const title = node.config.title ? processor.getParsedValue(node.config.title, node.id) : node.title;
@@ -63,7 +62,6 @@ export default class CCInstruction extends Instruction {
         status: TASK_STATUS.UNREAD,
         title,
       })),
-      transaction: processor.mainTransaction,
     });
 
     // const { notifications = [] } = node.config;

@@ -23,7 +23,7 @@ import {
   STORAGE_TYPE_LOCAL,
 } from '../../constants';
 import { StorageClassType, StorageType } from '../storages';
-import { getDocumentRoot, resolveSafePath } from '../storages/local';
+import { getDocumentRoot, normalizeLocalStoragePath, resolveSafePath } from '../storages/local';
 
 function makeMulterStorage(storage: StorageType) {
   const innerStorage = storage.make();
@@ -229,10 +229,10 @@ export async function createMiddleware(ctx: Context, next: Next) {
       const filePath = values?.path ?? '';
       const filename = values?.filename ?? '';
       try {
-        resolveSafePath(getDocumentRoot(storage), filePath, filename);
+        resolveSafePath(getDocumentRoot(storage), normalizeLocalStoragePath(filePath), filename);
       } catch (error) {
         if ((error as NodeJS.ErrnoException).code === 'PATH_TRAVERSAL') {
-          return ctx.throw(400, error);
+          return ctx.throw(400, (error as Error).message);
         }
         throw error;
       }

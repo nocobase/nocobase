@@ -7,8 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { KnowledgeBaseGroup } from '../types';
+import { KnowledgeBase, KnowledgeBaseGroup } from '../types';
 
 export interface KnowledgeBaseFeature {
-  getKnowledgeBaseGroup(knowledgeBaseIds: string[]): Promise<KnowledgeBaseGroup[]>;
+  getKnowledgeBase(knowledgeBaseKeys: string[]): Promise<KnowledgeBase[]>;
+  getKnowledgeBaseGroup(knowledgeBaseKeys: string[]): Promise<KnowledgeBaseGroup[]>;
 }

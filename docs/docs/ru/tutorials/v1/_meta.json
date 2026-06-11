@@ -1,0 +1,127 @@
+[
+  {
+    "type": "file",
+    "name": "index",
+    "label": "Обзор системы управления задачами"
+  },
+  {
+    "type": "file",
+    "name": "01-getting-started",
+    "label": "Глава 1: Знакомство с NocoBase"
+  },
+  {
+    "type": "file",
+    "name": "02-designing-system",
+    "label": "Глава 2: Проектирование системы управления задачами"
+  },
+  {
+    "type": "file",
+    "name": "03-task-data",
+    "label": "Глава 3: Управление данными задач"
+  },
+  {
+    "type": "file",
+    "name": "04-plugins",
+    "label": "Глава 4: Плагины задач и комментариев"
+  },
+  {
+    "type": "file",
+    "name": "05-tabs-dynamic-blocks",
+    "label": "Глава 5: Вкладки и динамические блоки"
+  },
+  {
+    "type": "file",
+    "name": "06-user-permissions",
+    "label": "Глава 6: Пользователи и права доступа"
+  },
+  {
+    "type": "file",
+    "name": "07-workflow",
+    "label": "Глава 7: Рабочие процессы"
+  },
+  {
+    "type": "file",
+    "name": "08-project-overview",
+    "label": "Обзор платформы управления проектами"
+  },
+  {
+    "type": "file",
+    "name": "09-knowledge-base",
+    "label": "Глава 8: База знаний — древовидные таблицы"
+  },
+  {
+    "type": "file",
+    "name": "10-dashboard-charts",
+    "label": "Глава 9: Панели задач и графики"
+  },
+  {
+    "type": "file",
+    "name": "11-dashboard-filters",
+    "label": "Глава 10: Фильтры и условия панелей"
+  },
+  {
+    "type": "file",
+    "name": "12-subtasks-workhours",
+    "label": "Глава 11: Подзадачи и расчёт трудозатрат"
+  },
+  {
+    "type": "file",
+    "name": "13-meeting-rooms",
+    "label": "Глава 12: Бронирование переговорных и рабочие процессы"
+  },
+  {
+    "type": "file",
+    "name": "14-user-review",
+    "label": "Реализация проверки регистрации пользователей"
+  },
+  {
+    "type": "file",
+    "name": "15-crm-lead-conversion",
+    "label": "Реализация конвертации CRM-лидов"
+  },
+  {
+    "type": "file",
+    "name": "16-markdown-tips",
+    "label": "Советы по работе с блоками Markdown"
+  },
+  {
+    "type": "file",
+    "name": "17-crm-overview",
+    "label": "Обзор функций CRM Sales Cloud"
+  },
+  {
+    "type": "file",
+    "name": "18-lead-followup",
+    "label": "Сопровождение лидов и управление статусами"
+  },
+  {
+    "type": "file",
+    "name": "19-crm-sales-cloud",
+    "label": "CRM-система Sales Cloud"
+  },
+  {
+    "type": "file",
+    "name": "20-api-keys",
+    "label": "Получение данных через API Keys"
+  },
+  {
+    "type": "file",
+    "name": "21-markdown-variables",
+    "label": "Использование переменных в шаблонах Markdown"
+  },
+  {
+    "type": "file",
+    "name": "22-deploy-faster",
+    "label": "Как быстрее развернуть NocoBase"
+  },
+  {
+    "type": "file",
+    "name": "23-crm-pipeline",
+    "label": "Визуализация воронки продаж CRM"
+  },
+  {
+    "type": "file",
+    "name": "24-crm-demo-deploy",
+    "label": "Руководство по развёртыванию CRM Demo"
+  }
+]

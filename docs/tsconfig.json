@@ -1,4 +1,5 @@
 {
+  "extends": "../tsconfig.paths.json",
   "compilerOptions": {
     "lib": ["DOM", "ES2020"],
     "jsx": "react-jsx",
@@ -6,7 +7,7 @@
     "noEmit": true,
     "skipLibCheck": true,
     "useDefineForClassFields": true,
-
+    "baseUrl": "..",
     /* modules */
     "module": "ESNext",
     "moduleDetection": "force",
@@ -15,7 +16,6 @@
     "resolveJsonModule": true,
     "allowImportingTsExtensions": true,
     "isolatedModules": true,
-
     /* type checking */
     "strict": true,
     "noUnusedLocals": true,

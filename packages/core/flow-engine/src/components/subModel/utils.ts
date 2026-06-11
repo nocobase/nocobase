@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import * as _ from 'lodash';
+import _ from 'lodash';
 import type { Collection } from '../../data-source';
 import { FlowModelContext } from '../../flowContext';
 import { FlowModelMeta, ModelConstructor } from '../../types';
@@ -196,12 +196,16 @@ export function buildSubModelGroups(subModelBaseClasses: (string | ModelConstruc
       const baseKey = typeof subModelBaseClass === 'string' ? subModelBaseClass : BaseClass.name;
       const menuType = BaseClass?.meta?.menuType || 'group';
       const groupSort = BaseClass?.meta?.sort ?? 1000;
+      const searchable = !!BaseClass?.meta?.searchable;
+      const searchPlaceholder = BaseClass?.meta?.searchPlaceholder;
       if (menuType === 'submenu') {
         // 作为可点击的一级项，展开二级子菜单
         items.push({
           key: baseKey,
           label: groupLabel,
           sort: groupSort,
+          searchable,
+          searchPlaceholder,
           children,
         });
       } else {
@@ -211,6 +215,8 @@ export function buildSubModelGroups(subModelBaseClasses: (string | ModelConstruc
           type: 'group',
           label: groupLabel,
           sort: groupSort,
+          searchable,
+          searchPlaceholder,
           children,
         });
       }
@@ -226,6 +232,7 @@ export interface BuildFieldChildrenOptions {
   fieldUseModel?: string | ((field: any) => string);
   collection?: Collection;
   associationPathName?: string;
+  maxAssociationFieldDepth?: number;
   /**
    * 点击这些子项后，除自身路径外，还需要联动刷新的其他菜单路径前缀
    */
@@ -233,13 +240,17 @@ export interface BuildFieldChildrenOptions {
 }
 
 export function buildWrapperFieldChildren(ctx: FlowModelContext, options: BuildFieldChildrenOptions) {
-  const { useModel, fieldUseModel, associationPathName, refreshTargets } = options;
+  const { useModel, fieldUseModel, associationPathName, refreshTargets, maxAssociationFieldDepth = 2 } = options;
   const collection: Collection = options.collection || ctx.model['collection'] || ctx.collection;
   const fields = collection.getFields();
   const defaultItemKeys = ['fieldSettings', 'init'];
   const children: SubModelItem[] = [];
+  const associationDepth = associationPathName ? associationPathName.split('.').filter(Boolean).length : 0;
   for (const f of fields) {
     if (!f?.options?.interface) continue;
+    if (associationDepth >= maxAssociationFieldDepth && (f.isAssociationField?.() || f.target || f.targetCollection)) {
+      continue;
+    }
     const fieldPath = associationPathName ? `${associationPathName}.${f.name}` : f.name;
 
     const childUse = typeof fieldUseModel === 'function' ? fieldUseModel(f) : fieldUseModel ?? 'FieldModel';

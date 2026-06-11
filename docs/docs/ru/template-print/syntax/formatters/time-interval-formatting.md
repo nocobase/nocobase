@@ -1,7 +1,3 @@
-:::tip Уведомление о переводе ИИ
-Эта документация была автоматически переведена ИИ.
-:::
-
 ### Форматирование интервалов
 
 #### 1. :formatI(patternOut, patternIn)
@@ -17,7 +13,6 @@
 
 ##### Пример
 ```
-// Пример окружения: параметры API { "lang": "en", "timezone": "Europe/Paris" }
 2000:formatI('second')       // Выведет 2
 2000:formatI('seconds')      // Выведет 2
 2000:formatI('s')            // Выведет 2
@@ -25,17 +20,12 @@
 3600000:formatI('hour')      // Выведет 1
 2419200000:formatI('days')   // Выведет 28
 
-// Пример на французском:
-2000:formatI('human')        // Выведет "quelques secondes"
-2000:formatI('human+')       // Выведет "dans quelques secondes"
--2000:formatI('human+')      // Выведет "il y a quelques secondes"
-
-// Пример на английском:
+// Человекочитаемое отображение:
 2000:formatI('human')        // Выведет "a few seconds"
 2000:formatI('human+')       // Выведет "in a few seconds"
 -2000:formatI('human+')      // Выведет "a few seconds ago"
 
-// Пример конвертации единиц:
+// Примеры конвертации единиц:
 60:formatI('ms', 'minute')   // Выведет 3600000
 4:formatI('ms', 'weeks')      // Выведет 2419200000
 'P1M':formatI('ms')          // Выведет 2628000000

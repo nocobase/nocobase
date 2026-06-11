@@ -8,15 +8,22 @@
  */
 
 import React, { useEffect, useState } from 'react';
-import { Avatar as AntdAvatar, Radio, Tabs } from 'antd';
-import { ExtendCollectionsProvider, SchemaComponent, useAPIClient, useTableBlockContext } from '@nocobase/client';
+import { Avatar as AntdAvatar, Radio, Space, Tabs, Tooltip } from 'antd';
+import {
+  ExtendCollectionsProvider,
+  SchemaComponent,
+  useAPIClient,
+  useTableBlockContext,
+  useRecord,
+} from '@nocobase/client';
 import { useT } from '../../locale';
-import { useField } from '@formily/react';
+import { useField, useForm } from '@formily/react';
 import { Field } from '@formily/core';
 import { avatars } from '../avatars';
 import { ProfileSettings } from './ProfileSettings';
 import { SystemPrompt } from './SystemPrompt';
-import aiEmployees from '../../../collections/ai-employees';
+import { ModelSettings } from './ModelSettings';
+import aiEmployees, { type AIEmployee } from '../../../collections/ai-employees';
 import { SkillSettings } from './SkillSettings';
 import { Templates } from './Templates';
 import {
@@ -28,15 +35,20 @@ import {
   useDeleteActionProps,
 } from './hooks';
 import { KnowledgeBaseSettings } from './KnowledgeBaseSettings';
-import { CheckOutlined } from '@ant-design/icons';
+import { CheckOutlined, ExclamationCircleOutlined } from '@ant-design/icons';
 import { EnableSwitch } from './EnableSwitch';
+import { ToolSettings } from './ToolsSettings';
 
 const AIEmployeeForm: React.FC<{
   edit?: boolean;
 }> = ({ edit }) => {
   const t = useT();
   const api = useAPIClient();
+  const form = useForm();
   const [knowledgeBaseEnabled, setKnowledgeBaseEnabled] = useState(false);
+  const chatSettings = form.values?.chatSettings ?? {};
+  const showSkills = chatSettings.enableSkills !== false;
+  const showTools = chatSettings.enableTools !== false;
 
   useEffect(() => {
     api
@@ -63,16 +75,30 @@ const AIEmployeeForm: React.FC<{
           children: <SystemPrompt />,
           forceRender: true,
         },
-        // {
-        //   key: 'chat',
-        //   label: 'Chat settings',
-        //   children: <ChatSettings />,
-        // },
         {
-          key: 'skills',
-          label: t('Skills'),
-          children: <SkillSettings />,
+          key: 'modelSettings',
+          label: t('Model settings'),
+          children: <ModelSettings />,
+          forceRender: true,
         },
+        ...(showSkills
+          ? [
+              {
+                key: 'skills',
+                label: t('Skills'),
+                children: <SkillSettings />,
+              },
+            ]
+          : []),
+        ...(showTools
+          ? [
+              {
+                key: 'tools',
+                label: t('Tools'),
+                children: <ToolSettings />,
+              },
+            ]
+          : []),
         ...(knowledgeBaseEnabled
           ? [
               {
@@ -134,12 +160,43 @@ const CategoryFilter: React.FC = () => {
   );
 };
 
+const Username: React.FC = () => {
+  const t = useT();
+  const field = useField<Field<string>>();
+  const record = useRecord<AIEmployee>();
+  const missingKnowledgeBaseKeys = record?.missingKnowledgeBaseKeys || [];
+
+  if (!field.value) {
+    return null;
+  }
+
+  if (!missingKnowledgeBaseKeys.length) {
+    return <span>{field.value}</span>;
+  }
+
+  return (
+    <Space size={4}>
+      <span>{field.value}</span>
+      <Tooltip
+        title={t(
+          'Missing knowledge base configuration for keys: {{keys}}. Create knowledge bases with the same keys to enable this employee normally.',
+          {
+            keys: missingKnowledgeBaseKeys.join(', '),
+          },
+        )}
+      >
+        <ExclamationCircleOutlined style={{ color: '#faad14', cursor: 'help' }} />
+      </Tooltip>
+    </Space>
+  );
+};
+
 export const Employees: React.FC = () => {
   const t = useT();
   return (
     <ExtendCollectionsProvider collections={[aiEmployees]}>
       <SchemaComponent
-        components={{ AIEmployeeForm, Avatar, Templates, Enabled, EnableSwitch, CategoryFilter }}
+        components={{ AIEmployeeForm, Avatar, Templates, Enabled, EnableSwitch, CategoryFilter, Username }}
         scope={{
           t,
           useCreateFormProps,
@@ -300,7 +357,7 @@ export const Employees: React.FC = () => {
                       properties: {
                         username: {
                           type: 'string',
-                          'x-component': 'Input',
+                          'x-component': 'Username',
                           'x-pattern': 'readPretty',
                         },
                       },

@@ -18,6 +18,33 @@ import { APIClient as SDKApiClient } from '@nocobase/sdk';
 import { FlowEngine } from '../flowEngine';
 import { createViewScopedEngine } from '../ViewScopedFlowEngine';
 import { FlowModel } from '../models';
+import type { IFlowModelRepository } from '../types';
+
+const clone = <T>(value: T): T => (value == null ? value : JSON.parse(JSON.stringify(value)));
+
+class DirtyPageRepository implements IFlowModelRepository<FlowModel> {
+  public findOneCalls = 0;
+  public data: Record<string, any> | null = null;
+
+  async findOne(): Promise<Record<string, any> | null> {
+    this.findOneCalls += 1;
+    return clone(this.data);
+  }
+
+  async save(model: FlowModel): Promise<Record<string, any>> {
+    return model.serialize();
+  }
+
+  async destroy(): Promise<boolean> {
+    return true;
+  }
+
+  async move(): Promise<void> {}
+
+  async duplicate(): Promise<Record<string, any> | null> {
+    return null;
+  }
+}
 
 describe('ViewScopedFlowEngine', () => {
   it('shares global actions/events and model classes with parent', async () => {
@@ -256,11 +283,11 @@ describe('ViewScopedFlowEngine', () => {
 
     // Both children should return null from hydration because parent has flowSettingsEnabled
     // This is the bug fix: previously only children with their own flowSettingsEnabled would return null
-    const result1 = (scoped as any).hydrateModelFromPreviousEngines({
+    const result1 = await (scoped as any).hydrateModelFromPreviousEngines({
       parentId: 'parent-with-settings',
       subKey: 'popup',
     });
-    const result2 = (scoped as any).hydrateModelFromPreviousEngines({
+    const result2 = await (scoped as any).hydrateModelFromPreviousEngines({
       parentId: 'parent-with-settings',
       subKey: 'items',
     });
@@ -298,7 +325,7 @@ describe('ViewScopedFlowEngine', () => {
     const scoped = createViewScopedEngine(root);
 
     // Call the private method hydrateModelFromPreviousEngines directly
-    const result = (scoped as any).hydrateModelFromPreviousEngines({
+    const result = await (scoped as any).hydrateModelFromPreviousEngines({
       parentId: 'parent-normal',
       subKey: 'content',
     });
@@ -306,5 +333,111 @@ describe('ViewScopedFlowEngine', () => {
     // hydrateModelFromPreviousEngines should return a hydrated model (not null)
     expect(result).not.toBeNull();
     expect(result?.uid).toBe('child-normal');
+  });
+
+  it('reloads a dirty loaded page from repository and replaces stale parent reference', async () => {
+    const root = new FlowEngine();
+    const repository = new DirtyPageRepository();
+    root.setModelRepository(repository);
+
+    class ParentModel extends FlowModel {}
+    class PageModel extends FlowModel {}
+    class BlockModel extends FlowModel {}
+    root.registerModels({ ParentModel, PageModel, BlockModel });
+
+    const parent = root.createModel<ParentModel>({ use: 'ParentModel', uid: 'popup-action' });
+    const oldScoped = createViewScopedEngine(root);
+    const stalePage = oldScoped.createModel<PageModel>({
+      use: 'PageModel',
+      uid: 'popup-page',
+      parentId: parent.uid,
+      subKey: 'page',
+      subType: 'object',
+      subModels: {
+        items: [{ use: 'BlockModel', uid: 'stale-block' }],
+      },
+    });
+    const staleBlock = stalePage.findSubModel('items' as any, (item) => item.uid === 'stale-block') as FlowModel;
+    parent.setSubModel('page', stalePage);
+    oldScoped.unlinkFromStack();
+
+    repository.data = {
+      use: 'PageModel',
+      uid: 'popup-page',
+      parentId: parent.uid,
+      subKey: 'page',
+      subType: 'object',
+      subModels: {
+        items: [{ use: 'BlockModel', uid: 'fresh-block' }],
+      },
+    };
+
+    root.flowSettings.enable();
+    await staleBlock.saveStepParams();
+    root.flowSettings.disable();
+    repository.findOneCalls = 0;
+
+    const runtimeScoped = createViewScopedEngine(root);
+    const loaded = await runtimeScoped.loadOrCreateModel<PageModel>({
+      async: true,
+      parentId: parent.uid,
+      subKey: 'page',
+      subType: 'object',
+      use: 'PageModel',
+    });
+
+    expect(repository.findOneCalls).toBe(1);
+    expect(loaded).not.toBe(stalePage);
+    expect((parent.subModels as any).page).toBe(loaded);
+    expect(loaded?.mapSubModels('items' as any, (item) => item.uid)).toEqual(['fresh-block']);
+
+    repository.findOneCalls = 0;
+    const nextRuntimeScoped = createViewScopedEngine(root);
+    const loadedAgain = await nextRuntimeScoped.loadOrCreateModel<PageModel>({
+      async: true,
+      parentId: parent.uid,
+      subKey: 'page',
+      subType: 'object',
+      use: 'PageModel',
+    });
+
+    expect(repository.findOneCalls).toBe(0);
+    expect(loadedAgain?.uid).toBe('popup-page');
+  });
+
+  it('does not bypass loaded page cache after a non-config save', async () => {
+    const root = new FlowEngine();
+    const repository = new DirtyPageRepository();
+    root.setModelRepository(repository);
+
+    class ParentModel extends FlowModel {}
+    class PageModel extends FlowModel {}
+    root.registerModels({ ParentModel, PageModel });
+
+    const parent = root.createModel<ParentModel>({ use: 'ParentModel', uid: 'normal-parent' });
+    const stalePage = root.createModel<PageModel>({
+      use: 'PageModel',
+      uid: 'normal-page',
+      parentId: parent.uid,
+      subKey: 'page',
+      subType: 'object',
+    });
+    parent.setSubModel('page', stalePage);
+
+    root.flowSettings.disable();
+    await root.saveModel(stalePage);
+    repository.findOneCalls = 0;
+
+    const runtimeScoped = createViewScopedEngine(root);
+    const loaded = await runtimeScoped.loadOrCreateModel<PageModel>({
+      async: true,
+      parentId: parent.uid,
+      subKey: 'page',
+      subType: 'object',
+      use: 'PageModel',
+    });
+
+    expect(repository.findOneCalls).toBe(0);
+    expect(loaded?.uid).toBe('normal-page');
   });
 });

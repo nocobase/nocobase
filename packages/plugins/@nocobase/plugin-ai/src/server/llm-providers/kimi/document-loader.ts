@@ -31,8 +31,8 @@ export class KimiDocumentLoader {
     this.client = this.createClient();
   }
 
-  async load(file: ParseableFile): Promise<Document[]> {
-    const text = await this.parseByApi(file);
+  async load(file: ParseableFile, options?: any): Promise<Document[]> {
+    const text = await this.parseByApi(file, options);
     if (!text) {
       return [];
     }
@@ -48,12 +48,12 @@ export class KimiDocumentLoader {
     ];
   }
 
-  private async parseByApi(sourceFile: ParseableFile): Promise<string> {
+  private async parseByApi(sourceFile: ParseableFile, options?: any): Promise<string> {
     let uploadedFileId = '';
     const safeFilename = path.basename(sourceFile.filename || 'document');
     const tempFilePath = path.join(os.tmpdir(), `${sourceFile.id ?? Date.now()}.${Date.now()}.${safeFilename}`);
     try {
-      const { stream } = await this.fileManager.getFileStream(sourceFile as any);
+      const { stream } = await this.fileManager.getFileStream(sourceFile as any, options);
       await pipeline(stream, createWriteStream(tempFilePath));
 
       let uploaded: any;

@@ -103,7 +103,7 @@ export const InternalActionDrawer: React.FC<ActionDrawerProps> = observer(
     }, [hidden, drawerProps?.style, others?.style]);
 
     const container = React.useMemo(() => {
-      return document.querySelector('#nocobase-app-container');
+      return document.querySelector('#nocobase-app-container') || document.body;
     }, []);
 
     if (process.env.__E2E__) {

@@ -113,7 +113,7 @@
           {
             "type": "custom-link",
             "label": "Étendre les types d'authentification",
-            "link": "/auth-verification/auth/dev"
+            "link": "/auth-verification/auth/dev/"
           },
           {
             "type": "custom-link",

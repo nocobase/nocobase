@@ -10,7 +10,7 @@
 import { LLMProvider, ParsedAttachmentResult } from './provider';
 import { ChatAnthropic } from '@langchain/anthropic';
 import { PluginFileManagerServer } from '@nocobase/plugin-file-manager';
-import axios from 'axios';
+import { serverRequest } from '@nocobase/utils';
 import { encodeFile, stripToolCallTags } from '../utils';
 import { Model } from '@nocobase/database';
 import { LLMProviderMeta, SupportedModel } from '../manager/ai-manager';
@@ -31,7 +31,7 @@ export class AnthropicProvider extends LLMProvider {
   }
 
   createModel() {
-    const { apiKey, baseURL } = this.serviceOptions || {};
+    const { apiKey } = this.serviceOptions || {};
     const sanitizedModelOptions = { ...(this.modelOptions || {}) };
     const model = sanitizedModelOptions.model;
 
@@ -68,7 +68,7 @@ export class AnthropicProvider extends LLMProvider {
       apiKey,
       ...sanitizedModelOptions,
       model,
-      anthropicApiUrl: baseURL || this.baseURL,
+      anthropicApiUrl: this.getResolvedBaseURL(),
       verbose: false,
     });
   }
@@ -80,18 +80,22 @@ export class AnthropicProvider extends LLMProvider {
   }> {
     const options = this.serviceOptions || {};
     const apiKey = options.apiKey;
-    let baseURL = options.baseURL || this.baseURL;
-    if (!baseURL) {
+    let url: string;
+    try {
+      url = this.buildRequestURL('v1/models');
+    } catch (e) {
+      return { code: 400, errMsg: e instanceof Error ? e.message : String(e) };
+    }
+    if (!url) {
       return { code: 400, errMsg: 'baseURL is required' };
     }
     if (!apiKey) {
       return { code: 400, errMsg: 'API Key required' };
     }
-    if (baseURL && baseURL.endsWith('/')) {
-      baseURL = baseURL.slice(0, -1);
-    }
     try {
-      const res = await axios.get(`${baseURL}/v1/models`, {
+      const res = await serverRequest({
+        method: 'GET',
+        url,
         headers: {
           'x-api-key': apiKey,
           'anthropic-version': '2023-06-01',
@@ -108,7 +112,7 @@ export class AnthropicProvider extends LLMProvider {
   }
 
   parseResponseMessage(message: Model) {
-    const { content: rawContent, messageId, metadata, role, toolCalls, attachments, workContext } = message;
+    const { content: rawContent, messageId, metadata, role, toolCalls, attachments, workContext, createdAt } = message;
     const content = {
       ...rawContent,
       messageId,
@@ -146,6 +150,7 @@ export class AnthropicProvider extends LLMProvider {
 
     return {
       key: messageId,
+      createdAt,
       content,
       role,
     };

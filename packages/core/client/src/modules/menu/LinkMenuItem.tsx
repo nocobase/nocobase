@@ -22,8 +22,7 @@ import {
   DataSourceManagerProvider,
   useDataSourceManager,
 } from '../../data-source/data-source/DataSourceManagerProvider';
-import { useGlobalTheme } from '../../global-theme';
-import { NocoBaseDesktopRouteType } from '../../route-switch/antd/admin-layout/convertRoutesToSchema';
+import { useGlobalTheme } from '@nocobase/client-v2';
 import {
   FormDialog,
   ICON_POPUP_Z_INDEX,
@@ -35,6 +34,7 @@ import {
 } from '../../schema-component';
 import { useStyles } from '../../schema-component/antd/menu/MenuItemInitializers';
 import { useURLAndHTMLSchema } from '../actions/link/useURLAndHTMLSchema';
+import { NocoBaseDesktopRouteType } from '../../route-switch';
 
 export const LinkMenuItem = () => {
   const { t } = useTranslation();

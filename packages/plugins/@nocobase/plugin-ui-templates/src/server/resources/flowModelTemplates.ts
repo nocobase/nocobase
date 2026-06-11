@@ -238,6 +238,13 @@ export default {
           data: { usageCount },
         });
       }
+      const templateRepo = ctx.db.getRepository('flowModelTemplates');
+      const template = await templateRepo.findOne({
+        filter: { uid: templateUid },
+        transaction: ctx.transaction,
+        context: ctx,
+      });
+      const targetUid = template?.get?.('targetUid') || template?.targetUid;
       await actions.destroy(ctx, next);
       // 兜底清理孤立 usage（正常情况下 usageCount 已为 0）
       await usageRepo.destroy({
@@ -246,6 +253,10 @@ export default {
         },
         context: ctx,
       });
+      if (targetUid) {
+        const flowRepo = ctx.db.getRepository('flowModels') as FlowModelRepository;
+        await flowRepo.remove(targetUid, { transaction: ctx.transaction });
+      }
     },
   },
 };

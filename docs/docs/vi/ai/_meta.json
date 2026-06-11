@@ -1,0 +1,45 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Bắt đầu nhanh",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "NocoBase hoạt động như thế nào",
+        "link": "/get-started/how-nocobase-works"
+      },
+      {
+        "type": "custom-link",
+        "label": "Yêu cầu hệ thống",
+        "link": "/get-started/system-requirements"
+      },
+      {
+        "type": "custom-link",
+        "label": "So sánh các phương thức cài đặt và phiên bản",
+        "link": "/get-started/quickstart"
+      },
+      {
+        "type": "custom-link",
+        "label": "Cài đặt ứng dụng NocoBase",
+        "link": "/ai/install-nocobase-app"
+      },
+      {
+        "type": "custom-link",
+        "label": "Hướng dẫn tích hợp AI Agent",
+        "link": "/ai/quick-start"
+      },
+      {
+        "type": "custom-link",
+        "label": "NocoBase CLI",
+        "proxy": false,
+        "link": "/nocobase-cli/"
+      },
+      {
+        "type": "custom-link",
+        "label": "Bắt đầu (phiên bản cũ)",
+        "proxy": false,
+        "link": "/get-started/how-nocobase-works"
+      }
+    ]
+  }
+]

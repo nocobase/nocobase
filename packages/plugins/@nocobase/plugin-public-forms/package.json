@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-public-forms",
-  "version": "2.0.51",
+  "version": "2.1.1",
   "main": "dist/server/index.js",
   "displayName": "Public forms",
   "displayName.ru-RU": "Публичные формы",
@@ -14,7 +14,10 @@
   "homepage.zh-CN": "https://docs-cn.nocobase.com/public-form",
   "peerDependencies": {
     "@nocobase/client": "2.x",
+    "@nocobase/client-v2": "2.x",
+    "@nocobase/flow-engine": "2.x",
     "@nocobase/plugin-client": "2.x",
+    "@nocobase/plugin-flow-engine": "2.x",
     "@nocobase/plugin-ui-schema-storage": "2.x",
     "@nocobase/server": "2.x",
     "@nocobase/test": "2.x"

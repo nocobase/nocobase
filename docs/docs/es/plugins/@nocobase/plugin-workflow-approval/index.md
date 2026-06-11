@@ -5,7 +5,7 @@ supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Triggered when an approval request is initiated through an action button or API. Dedicated to the approval process, with exclusive approval node and block for managing documents and tracking processing processes.
+  Se activa cuando se inicia una solicitud de Approval a través de un botón de acción o API. Está dedicado al proceso de Approval, con un Node y un bloque de Approval exclusivos para gestionar documentos y realizar el seguimiento de los procesos de tramitación.
 isFree: false
 builtIn: false
 defaultEnabled: false

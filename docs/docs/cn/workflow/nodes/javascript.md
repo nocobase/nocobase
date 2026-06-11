@@ -11,7 +11,7 @@ keywords: "工作流,JavaScript,脚本,自定义逻辑,服务端脚本,NocoBase"
 
 JavaScript 脚本节点允许用户在工作流中执行一段自定义的服务端 JavaScript 脚本。脚本中可以使用流程上游的变量作为参数，并且可以将脚本的返回值提供给下游节点使用。
 
-脚本会在 NocoBase 应用的服务端开启一个工作线程执行，默认使用安全沙箱（isolated-vm）运行，不支持 `require` 和 Node.js 内置 API，详见 [执行引擎](#执行引擎)和[特性列表](#特性列表)。
+脚本会在 NocoBase 应用的服务端开启一个工作线程执行，默认使用安全沙箱（基于 WebAssembly 的 QuickJS）运行，不支持 `require` 和 Node.js 内置 API，详见 [执行引擎](#执行引擎)和[特性列表](#特性列表)。
 
 ## 创建节点
 
@@ -53,7 +53,7 @@ JavaScript 脚本节点支持两种执行引擎，通过环境变量 `WORKFLOW_S
 
 ### 安全模式（默认）
 
-当**未配置** `WORKFLOW_SCRIPT_MODULES` 环境变量时，脚本使用 [isolated-vm](https://github.com/laverdet/isolated-vm) 引擎执行。该引擎在独立的 V8 隔离环境中运行代码，具备以下特点：
+当**未配置** `WORKFLOW_SCRIPT_MODULES` 环境变量时，脚本使用 [QuickJS](https://bellard.org/quickjs/)（基于 WebAssembly）引擎执行。该引擎在隔离的 JavaScript 运行时中运行代码，具备以下特点：
 
 - **不支持** `require`，无法引入任何模块
 - **不支持** Node.js 内置 API（如 `process`、`Buffer`、`global` 等）
@@ -67,7 +67,9 @@ JavaScript 脚本节点支持两种执行引擎，通过环境变量 `WORKFLOW_S
 当**配置了** `WORKFLOW_SCRIPT_MODULES` 环境变量时，脚本切换为 Node.js 内置的 `vm` 引擎执行，以获得 `require` 能力。
 
 :::warning{title="安全警告"}
-非安全模式下，脚本虽然运行在 `vm` 沙箱中并限制了可用模块，但 Node.js 的 `vm` 模块并非安全的沙箱机制。启用此模式意味着信任所有有权编辑工作流脚本的用户。管理员应当自行评估安全风险，并严格管控模块白名单和工作流编辑权限。
+非安全模式仅使用 Node.js 的 `vm` 来提供 CommonJS `require` 能力。Node.js 的 `vm` 模块并非安全的沙箱机制。启用此模式意味着信任所有有权编辑、测试或运行工作流脚本的用户，等同于允许这些用户以 NocoBase 服务端进程权限执行代码。
+
+`WORKFLOW_SCRIPT_MODULES` 不是安全边界，也不是权限模型。它只用于控制脚本执行前 `require()` 可接受的模块名称。
 :::
 
 在脚本中使用模块与 CommonJS 一致，代码中使用 `require()` 指令引入模块。
@@ -79,7 +81,7 @@ WORKFLOW_SCRIPT_MODULES=crypto,timers,lodash,dayjs
 ```
 
 :::info{title="提示"}
-在环境变量 `WORKFLOW_SCRIPT_MODULES` 中未声明的模块，即使是 Node.js 原生的或 `node_modules` 中已安装的，也**不能**在脚本中使用。该策略可以用于在运维层管控用户可使用的模块列表，在一些场景下避免脚本权限过高。
+在环境变量 `WORKFLOW_SCRIPT_MODULES` 中未声明的模块，即使是 Node.js 原生的或 `node_modules` 中已安装的，也**不能**通过 `require()` 直接引入。该列表仅用于配置支持的模块导入，不应依赖它来降低脚本权限，也不应以此将脚本编辑能力安全地委派给较低信任级别的用户。
 :::
 
 在非源码部署的环境下，如果某个模块未在 node_modules 中安装，可以将需要的包手动安装到 storage 目录中。例如需要使用 `exceljs` 包时，可以执行如下操作：

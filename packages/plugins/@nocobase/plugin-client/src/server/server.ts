@@ -8,7 +8,6 @@
  */
 
 import { Model, MultipleRelationRepository, Transaction } from '@nocobase/database';
-import PluginLocalizationServer from '@nocobase/plugin-localization';
 import { Plugin } from '@nocobase/server';
 import { tval } from '@nocobase/utils';
 import _ from 'lodash';
@@ -70,7 +69,7 @@ export class PluginClientServer extends Plugin {
     this.app.acl.allow('app', 'getInfo');
     this.app.acl.registerSnippet({
       name: 'app',
-      actions: ['app:restart', 'app:refresh', 'app:clearCache'],
+      actions: ['app:restart', 'app:refresh', 'app:clearCache', 'app:publishEvent'],
     });
     const dialect = this.app.db.sequelize.getDialect();
 
@@ -133,10 +132,39 @@ export class PluginClientServer extends Plugin {
           ctx.app.runCommand('refresh');
           await next();
         },
+        async publishEvent(ctx, next) {
+          const { plugin, command, payload } = ctx.action?.params?.values ?? {};
+
+          if (!plugin || typeof plugin !== 'string') {
+            ctx.throw(400, 'Plugin is required');
+            return;
+          }
+
+          if (!command || typeof command !== 'string') {
+            ctx.throw(400, 'Command is required');
+            return;
+          }
+
+          const { id, username } = ctx.auth?.user ?? {};
+          const user = id ? { id, username } : undefined;
+
+          const eventName = `${command}@${plugin}`;
+          try {
+            await ctx.app.eventQueue.publish(eventName, {
+              plugin,
+              command,
+              user,
+              payload: payload ?? {},
+            });
+          } catch (err) {
+            ctx.app.logger.warn(`fail to publish event to [${eventName}]: ${(err as Error).message}`, payload);
+          }
+          await next();
+        },
       },
     });
 
-    this.app.auditManager.registerActions(['app:restart', 'app:refresh', 'app:clearCache']);
+    this.app.auditManager.registerActions(['app:restart', 'app:refresh', 'app:clearCache', 'app:publishEvent']);
 
     this.registerActionHandlers();
     this.bindNewMenuToRoles();
@@ -189,15 +217,53 @@ export class PluginClientServer extends Plugin {
         instance.allowNewMenu === undefined ? ['admin', 'member'].includes(instance.name) : !!instance.allowNewMenu,
       );
     });
-    this.db.on('desktopRoutes.afterDestroy', async (instance: Model, { transaction }) => {
-      const r = this.db.getRepository('flowModels');
-      if (r) {
-        await r.destroy({
+
+    const collectDesktopRouteSchemaUids = async (instance: Model, transaction?: Transaction) => {
+      const routeRepo = this.db.getRepository('desktopRoutes');
+      const schemaUids = new Set<string>();
+      const pendingIds: Array<string | number> = [];
+      const rootId = instance.get('id');
+      const rootSchemaUid = instance.get('schemaUid');
+
+      if (rootSchemaUid) {
+        schemaUids.add(rootSchemaUid);
+      }
+      if (rootId) {
+        pendingIds.push(rootId);
+      }
+
+      while (pendingIds.length) {
+        const routes = await routeRepo.find({
+          fields: ['id', 'schemaUid'],
           filter: {
-            uid: instance.get('schemaUid'),
+            parentId: {
+              $in: pendingIds.splice(0, pendingIds.length),
+            },
           },
           transaction,
         });
+        for (const route of routes) {
+          const schemaUid = route.get('schemaUid');
+          const id = route.get('id');
+          if (schemaUid) {
+            schemaUids.add(schemaUid);
+          }
+          if (id) {
+            pendingIds.push(id);
+          }
+        }
+      }
+
+      return Array.from(schemaUids);
+    };
+
+    this.db.on('desktopRoutes.beforeDestroy', async (instance: Model, { transaction }) => {
+      const r = this.db.getRepository('flowModels') as any;
+      if (r?.remove) {
+        const schemaUids = await collectDesktopRouteSchemaUids(instance, transaction);
+        for (const schemaUid of schemaUids) {
+          await r.remove(schemaUid, { transaction });
+        }
       }
     });
     this.db.on('desktopRoutes.afterCreate', async (instance: Model, { transaction }) => {
@@ -376,11 +442,7 @@ export class PluginClientServer extends Plugin {
   }
 
   registerLocalizationSource() {
-    const localizationPlugin = this.app.pm.get('localization') as PluginLocalizationServer;
-    if (!localizationPlugin) {
-      return;
-    }
-    localizationPlugin.sourceManager.registerSource('desktop-routes', {
+    this.app.localeManager.registerSource('desktop-routes', {
       title: tval('Desktop routes'),
       sync: async (ctx) => {
         const desktopRoutes = await ctx.db.getRepository('desktopRoutes').find({

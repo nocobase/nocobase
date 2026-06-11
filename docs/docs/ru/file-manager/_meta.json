@@ -6,7 +6,7 @@
   {
     "type": "custom-link",
     "label": "Обзор",
-    "link": "/file-manager/index"
+    "link": "/file-manager/"
   },
   {
     "type": "custom-link",
@@ -15,7 +15,7 @@
       {
         "type": "custom-link",
         "label": "Обзор",
-        "link": "/file-manager/storage/index"
+        "link": "/file-manager/storage/"
       },
       {
         "type": "custom-link",
@@ -46,17 +46,38 @@
   },
   {
     "type": "custom-link",
-    "label": "Таблицы файлов",
+    "label": "Таблица файлов",
     "link": "/file-manager/file-collection"
   },
   {
     "type": "custom-link",
-    "label": "Поле \"Вложение",
+    "label": "Поле вложения",
     "link": "/file-manager/field-attachment"
   },
   {
     "type": "custom-link",
+    "label": "Предпросмотр файлов",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Обзор",
+        "link": "/file-manager/file-preview/"
+      },
+      {
+        "type": "custom-link",
+        "label": "Предпросмотр Office-файлов",
+        "link": "/file-manager/file-preview/ms-office"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "HTTP API",
+    "link": "/file-manager/http-api"
+  },
+  {
+    "type": "custom-link",
     "label": "Разработка расширений",
-    "link": "/file-manager/development/index"
+    "link": "/file-manager/development/"
   }
 ]

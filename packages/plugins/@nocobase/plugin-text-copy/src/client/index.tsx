@@ -14,7 +14,7 @@ import { Typography } from 'antd';
 import _ from 'lodash';
 import React, { FC, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { registerTextCopyDisplayField } from './textCopyDisplayField';
+import { registerTextCopyDisplayField } from '../client-v2/textCopyDisplayField';
 
 // Define namespace for i18n
 const NAMESPACE = 'text-copy';

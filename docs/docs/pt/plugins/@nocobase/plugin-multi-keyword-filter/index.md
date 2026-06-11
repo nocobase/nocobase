@@ -1,14 +1,14 @@
 ---
-displayName: "Multi-keyword filter"
+displayName: "Filtro de múltiplas palavras-chave"
 packageName: '@nocobase/plugin-multi-keyword-filter'
 supportedVersions:
   - 1.x
 description: |
-  Supports multi-keyword filtering for common fields, with options for quick input or batch import of keywords from Excel.
+  Suporta filtragem por múltiplas palavras-chave para campos comuns, com suporte para entrada rápida ou importação em lote de palavras-chave do Excel.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Multi-keyword filter
+# Filtro de múltiplas palavras-chave

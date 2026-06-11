@@ -1,8 +1,8 @@
 ---
-displayName: "Audit logs (deprecated)"
+displayName: "Logs de auditoria (descontinuado)"
 packageName: '@nocobase/plugin-audit-logs'
 description: |
-  This plugin is deprecated. There will be a new audit log plugin in the future.
+  Este plugin foi descontinuado. Não o utilize; haverá um novo plugin de logs de auditoria no futuro.
 isFree: true
 builtIn: true
 defaultEnabled: false
@@ -10,6 +10,6 @@ deprecated: true
 editionLevel: 0
 ---
 
-# Audit logs (deprecated)
+# Logs de auditoria (descontinuado)
 
-> Note: This plugin is deprecated.
+> Nota: Este plugin foi descontinuado.

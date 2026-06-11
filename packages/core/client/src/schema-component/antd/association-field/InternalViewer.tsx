@@ -11,7 +11,7 @@ import { observer, useField, useFieldSchema } from '@formily/react';
 import { toArr } from '@formily/shared';
 import _ from 'lodash';
 import React, { FC, Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useDesignable, usePopupSettings } from '../../';
+import { usePopupSettings } from '../../';
 import { WithoutTableFieldResource } from '../../../block-provider';
 import {
   CollectionRecordProvider,
@@ -25,6 +25,7 @@ import { NocoBaseRecursionField } from '../../../formily/NocoBaseRecursionField'
 import { useOpenModeContext } from '../../../modules/popup/OpenModeProvider';
 import { VariablePopupRecordProvider } from '../../../modules/variable/variablesProvider/VariablePopupRecordProvider';
 import { useCompile } from '../../hooks';
+import { useDesignable } from '../../hooks/useDesignable';
 import { ActionContextProvider, useActionContext } from '../action';
 import { EllipsisWithTooltip } from '../input/EllipsisWithTooltip';
 import { PopupVisibleProvider } from '../page/PagePopups';

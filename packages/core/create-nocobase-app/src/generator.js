@@ -144,11 +144,18 @@ class AppGenerator extends Generator {
       ...(await fs.readJSON(join(this.cwd, 'package.json'), 'utf8')),
     };
 
-    json['dependencies']['@nocobase/cli'] = context.version;
+    json['dependencies']['@nocobase/app'] = context.version;
 
     if (!this.args.skipDevDependencies) {
       json['devDependencies'] = json['devDependencies'] || {};
       json['devDependencies']['@nocobase/devtools'] = context.version;
+    } else {
+      delete json['resolutions']['antd'];
+      delete json['resolutions']['@types/react'];
+      delete json['resolutions']['@types/react-dom'];
+      delete json['resolutions']['react-router-dom'];
+      delete json['resolutions']['react-router'];
+      delete json['resolutions']['rollup'];
     }
 
     await fs.writeJSON(join(this.cwd, 'package.json'), json, { encoding: 'utf8', spaces: 2 });

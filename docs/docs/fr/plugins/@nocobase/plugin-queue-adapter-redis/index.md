@@ -1,15 +1,15 @@
 ---
-displayName: "Redis queue adapter"
+displayName: "Adaptateur de file d'attente Redis"
 packageName: '@nocobase/plugin-queue-adapter-redis'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Used for hanlding message queue with Redis.
+  Utilisé pour gérer les files d'attente de messages avec Redis.
 isFree: false
 builtIn: false
 defaultEnabled: false
 editionLevel: 3
 ---
 
-# Redis queue adapter
+# Adaptateur de file d'attente Redis

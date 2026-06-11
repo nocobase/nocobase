@@ -1,12 +1,12 @@
 ---
-displayName: "Collection: Tree"
+displayName: "コレクション：ツリー"
 packageName: '@nocobase/plugin-collection-tree'
 description: |
-  Provides tree collection template
+  ツリーコレクションテンプレートを提供します。
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Collection: Tree
+# コレクション：ツリー

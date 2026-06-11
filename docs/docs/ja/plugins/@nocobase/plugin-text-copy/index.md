@@ -1,12 +1,12 @@
 ---
-displayName: "Text copy"
+displayName: "テキストコピー"
 packageName: '@nocobase/plugin-text-copy'
 description: |
-  Add copy button to text fields
+  Text Fieldにコピーボタンを追加します
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Text copy
+# テキストコピー

@@ -22,7 +22,7 @@ export class OpenAIResponsesProvider extends LLMProvider {
   }
 
   createModel() {
-    const { baseURL, apiKey } = this.serviceOptions || {};
+    const { apiKey } = this.serviceOptions || {};
     const { responseFormat, structuredOutput } = this.modelOptions || {};
     const { schema } = structuredOutput || {};
     const responseFormatOptions = {
@@ -41,7 +41,7 @@ export class OpenAIResponsesProvider extends LLMProvider {
         },
       },
       configuration: {
-        baseURL: baseURL || this.baseURL,
+        baseURL: this.getResolvedBaseURL(),
       },
       verbose: false,
       useResponsesApi: true,
@@ -58,7 +58,7 @@ export class OpenAIResponsesProvider extends LLMProvider {
   }
 
   parseResponseMessage(message: Model) {
-    const { content: rawContent, messageId, metadata, role, toolCalls, attachments, workContext } = message;
+    const { content: rawContent, messageId, metadata, role, toolCalls, attachments, workContext, createdAt } = message;
     const content = {
       ...rawContent,
       messageId,
@@ -102,6 +102,7 @@ export class OpenAIResponsesProvider extends LLMProvider {
 
     return {
       key: messageId,
+      createdAt,
       content,
       role,
     };

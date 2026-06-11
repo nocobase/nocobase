@@ -1,12 +1,12 @@
 ---
-displayName: "Collection: Tree"
+displayName: "Collection : Arborescence"
 packageName: '@nocobase/plugin-collection-tree'
 description: |
-  Provides tree collection template
+  Fournit un modèle de collection d'arborescence
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Collection: Tree
+# Collection : Arborescence

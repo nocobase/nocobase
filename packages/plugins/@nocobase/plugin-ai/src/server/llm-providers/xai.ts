@@ -19,7 +19,7 @@ export class XAIProvider extends LLMProvider {
   }
 
   createModel() {
-    const { baseURL, apiKey } = this.serviceOptions || {};
+    const { apiKey } = this.serviceOptions || {};
     const { responseFormat, structuredOutput, ...restModelOptions } = this.modelOptions || {};
     const { schema } = structuredOutput || {};
 
@@ -35,7 +35,7 @@ export class XAIProvider extends LLMProvider {
     return new ChatXAI({
       apiKey,
       ...restModelOptions,
-      baseURL: baseURL || this.baseURL,
+      baseURL: this.getResolvedBaseURL(),
       modelKwargs: {
         response_format: responseFormatOptions,
       },

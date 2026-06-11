@@ -29,6 +29,7 @@ export default {
       name: 'avatar',
       type: 'string',
       interface: 'image',
+      defaultValue: 'nocobase-015-male',
     },
     {
       name: 'bio',
@@ -42,7 +43,8 @@ export default {
     },
     {
       name: 'defaultPrompt',
-      type: 'virtual',
+      type: 'text',
+      interface: 'textarea',
     },
     {
       name: 'greeting',
@@ -80,7 +82,7 @@ export default {
      * knowledgeBase: {
      *  topK: number;
      *  score: string;
-     *  knowledgeBaseIds: string[];
+     *  knowledgeBaseKeys: string[];
      * }
      */
     {
@@ -106,6 +108,12 @@ export default {
       allowNull: false,
       defaultValue: 'business', // business, developer
     },
+    {
+      name: 'deprecated',
+      type: 'boolean',
+      allowNull: false,
+      defaultValue: false,
+    },
   ],
 };
 
@@ -126,9 +134,10 @@ export type AIEmployee = {
   knowledgeBase?: {
     topK: number;
     score: string;
-    knowledgeBaseIds: string[];
+    knowledgeBaseKeys: string[];
   };
   enableKnowledgeBase: boolean;
   enabled: boolean;
   builtIn: boolean;
+  missingKnowledgeBaseKeys?: string[];
 };

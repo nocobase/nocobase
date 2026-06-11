@@ -1,5 +1,5 @@
 ---
-displayName: "Data source: KingbaseES"
+displayName: "Data Source: KingbaseES"
 packageName: '@nocobase/plugin-data-source-kingbase'
 supportedVersions:
   - 1.x
@@ -12,4 +12,4 @@ defaultEnabled: false
 editionLevel: 2
 ---
 
-# Data source: KingbaseES
+# Data Source: KingbaseES

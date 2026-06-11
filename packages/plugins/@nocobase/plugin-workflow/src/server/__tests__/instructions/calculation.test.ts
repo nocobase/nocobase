@@ -99,7 +99,10 @@ describe('workflow > instructions > calculation', () => {
 
     it('$jobsMapByNodeKey', async () => {
       const n1 = await workflow.createNode({
-        type: 'echo',
+        type: 'echoVariable',
+        config: {
+          variable: '{{$context}}',
+        },
       });
 
       const n2 = await workflow.createNode({

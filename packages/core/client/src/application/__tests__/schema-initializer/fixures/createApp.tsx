@@ -8,7 +8,7 @@
  */
 
 import React from 'react';
-import { renderAppOptions } from '@nocobase/test/client';
+import { renderAppOptions, screen, waitFor } from '@nocobase/test/client';
 import {
   SchemaComponent,
   SchemaInitializer,
@@ -90,5 +90,8 @@ export async function createApp(options = {}, appOptions = {}) {
       designable: true,
       ...appOptions,
     },
+  });
+  await waitFor(() => {
+    expect(screen.getByTestId('render')).toBeInTheDocument();
   });
 }

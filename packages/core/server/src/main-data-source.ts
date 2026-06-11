@@ -158,8 +158,13 @@ export class MainDataSource extends SequelizeDataSource {
       ctx.log.error(err);
     }
     const toLoadCollections = this.mergeWithLoadedCollections(collections, loadedCollections);
+    const currentSchema = process.env.COLLECTION_MANAGER_SCHEMA || db.options.schema || 'public';
 
     for (const values of toLoadCollections) {
+      if (values.schema === currentSchema) {
+        delete values.schema;
+      }
+
       const existsFields = loadedCollections[values.tableName].fields;
       const deletedFields = existsFields.filter((field: any) => !values.fields.find((f) => f.name === field.name));
 

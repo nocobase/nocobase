@@ -1,12 +1,12 @@
 ---
-displayName: "Block: List"
+displayName: "Block: Liste"
 packageName: '@nocobase/plugin-block-list'
 description: |
-  Display data in a list with pagination support.
+  Daten in einer Liste anzeigen, mit Unterstützung für Paginierung.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Block: List
+# Block: Liste

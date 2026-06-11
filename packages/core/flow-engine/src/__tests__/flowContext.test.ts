@@ -160,6 +160,23 @@ describe('FlowContext properties and methods', () => {
     expect(ctx.shared).toBe('from delegate');
   });
 
+  it('should expose current language as a top-level variable', async () => {
+    const engine = new FlowEngine();
+    const ctx = engine.context;
+    ctx.defineProperty('api', { value: { auth: { locale: 'zh-CN' } } });
+    ctx.defineProperty('i18n', { value: { language: 'en-US' } });
+
+    expect(ctx.locale).toBe('zh-CN');
+    await expect(ctx.resolveJsonTemplate('{{ ctx.locale }}')).resolves.toBe('zh-CN');
+
+    const localeNode = ctx.getPropertyMetaTree().find((node) => node.name === 'locale');
+    expect(localeNode).toMatchObject({
+      name: 'locale',
+      title: '{{t("Current language")}}',
+      paths: ['locale'],
+    });
+  });
+
   it('should throw sync error in get', () => {
     const ctx = new FlowContext();
     ctx.defineProperty('error', {
@@ -777,6 +794,29 @@ describe('FlowContext.getApiInfos', () => {
     const infos = await ctx.getApiInfos();
     expect((infos.bar as any)?.completion).toBeUndefined();
     expect((infos.bar?.ref as any)?.url).toBe('https://example.com');
+  });
+
+  it('should include completion only when requested by getApiInfos()', async () => {
+    const ctx = new FlowContext();
+    ctx.defineMethod('bar', () => 2, {
+      description: 'Bar',
+      completion: { insertText: 'ctx.bar()' },
+    });
+    ctx.defineProperty('token', {
+      value: 't',
+      info: {
+        description: 'Token string',
+        completion: { insertText: 'ctx.token' },
+      },
+    });
+
+    const compact = await ctx.getApiInfos();
+    expect((compact.bar as any)?.completion).toBeUndefined();
+    expect((compact.token as any)?.completion).toBeUndefined();
+
+    const editorInfos = await ctx.getApiInfos({ includeCompletion: true });
+    expect((editorInfos.bar as any)?.completion?.insertText).toBe('ctx.bar()');
+    expect((editorInfos.token as any)?.completion?.insertText).toBe('ctx.token');
   });
 
   it('should return property infos with completion/ref/examples', async () => {

@@ -12,23 +12,24 @@ export type KnowledgeBaseType = 'LOCAL' | 'READONLY' | 'EXTERNAL';
 export type VectorStoreProp = {
   name?: string;
   key: string;
-  value: string;
+  value: any;
 };
 
 export type KnowledgeBase = {
   knowledgeBaseType: KnowledgeBaseType;
   knowledgeBaseOuterId: string;
+  key: string;
   name: string;
   description: string;
   vectorStoreProvider: string;
-  vectorStoreConfigId?: string;
+  vectorStoreConfigKey?: string;
   vectorStoreProps?: VectorStoreProp[];
   enabled: boolean;
 };
 
 export type VectorStoreConfig = {
   vectorStoreProvider: string;
-  vectorStoreConfigId?: string;
+  vectorStoreConfigKey?: string;
 };
 
 export type KnowledgeBaseGroup = {

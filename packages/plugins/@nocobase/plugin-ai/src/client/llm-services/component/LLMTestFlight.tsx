@@ -27,7 +27,7 @@ export const LLMTestFlight: React.FC = observer(() => {
     const { provider, options, enabledModels } = form.values;
 
     // Check if API Key is filled
-    if (!options?.apiKey) {
+    if (provider !== 'ollama' && !options?.apiKey) {
       message.warning(t('Please fill in the API Key first'));
       return;
     }

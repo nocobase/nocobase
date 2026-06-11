@@ -39,6 +39,27 @@ describe('workflow > actions > workflows', () => {
 
   afterEach(() => app.destroy());
 
+  describe('create', () => {
+    it('type should be required', async () => {
+      const { status } = await agent.resource('workflows').create({
+        values: {
+          enabled: true,
+        },
+      });
+      expect(status).toBe(400);
+    });
+
+    it('type should be valid', async () => {
+      const { status } = await agent.resource('workflows').create({
+        values: {
+          enabled: true,
+          type: 'invalid',
+        },
+      });
+      expect(status).toBe(400);
+    });
+  });
+
   describe('update', () => {
     it('update unexecuted workflow should be ok', async () => {
       const workflow = await WorkflowModel.create({
@@ -400,7 +421,10 @@ describe('workflow > actions > workflows', () => {
       });
 
       const n1 = await w1.createNode({
-        type: 'echo',
+        type: 'echoVariable',
+        config: {
+          variable: '{{$context}}',
+        },
       });
       const n2 = await w1.createNode({
         type: 'calculation',
@@ -426,7 +450,7 @@ describe('workflow > actions > workflows', () => {
       const n2_2 = w2.nodes.find((n) => !n.downstreamId);
 
       expect(n1_2.key).toBe(n1.key);
-      expect(n1_2.type).toBe('echo');
+      expect(n1_2.type).toBe('echoVariable');
       expect(n2_2.type).toBe('calculation');
       expect(n2_2.config).toMatchObject({
         engine: 'math.js',

@@ -22,7 +22,7 @@ export class PluginNotificationInAppServer extends Plugin {
     const notificationServer = this.pm.get(NotificationsServerPlugin) as NotificationsServerPlugin;
     const instance = new InAppNotificationChannel(this.app);
     instance.load();
-    notificationServer.registerChannelType({ type: inAppTypeName, Channel: InAppNotificationChannel });
+    notificationServer.registerChannelType({ type: inAppTypeName, Channel: InAppNotificationChannel, useQueue: false });
   }
 
   async install() {}

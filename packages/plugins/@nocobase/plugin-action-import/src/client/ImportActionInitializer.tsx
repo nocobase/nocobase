@@ -17,10 +17,9 @@ import {
   useSchemaInitializerItem,
 } from '@nocobase/client';
 import React from 'react';
-import { useImportTranslation } from './locale';
 import { useFields } from './useFields';
-import { Alert } from 'antd';
 import { lodash } from '@nocobase/utils/client';
+import { DownloadTips, ImportWarning, initImportSettings } from '../client-v2/importSupport';
 
 const findSchema = (schema: Schema, key: string, action: string) => {
   return schema.reduceProperties((buf, s) => {
@@ -33,11 +32,6 @@ const findSchema = (schema: Schema, key: string, action: string) => {
     }
     return buf;
   });
-};
-
-export const initImportSettings = (fields) => {
-  const importColumns = fields?.filter((f) => !f.children && !f.disabled).map((f) => ({ dataIndex: [f.name] }));
-  return { importColumns, explain: '' };
 };
 
 export const ImportActionInitializer = () => {
@@ -67,13 +61,4 @@ export const ImportActionInitializer = () => {
     />
   );
 };
-
-export const ImportWarning = () => {
-  const { t } = useImportTranslation();
-  return <Alert type="warning" style={{ marginBottom: '10px' }} message={t('Import warnings', { limit: 2000 })} />;
-};
-
-export const DownloadTips = () => {
-  const { t } = useImportTranslation();
-  return <Alert type="info" style={{ marginBottom: '10px', whiteSpace: 'pre-line' }} message={t('Download tips')} />;
-};
+export { DownloadTips, ImportWarning, initImportSettings };

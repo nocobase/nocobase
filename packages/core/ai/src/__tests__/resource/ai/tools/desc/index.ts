@@ -17,7 +17,7 @@ export default defineTools({
     description: 'tools with description.md',
     schema: null,
   },
-  invoke: async (ctx: Context, args: any, id: string) => {
+  invoke: async (ctx: Context, args: any) => {
     return { status: 'success' };
   },
 });

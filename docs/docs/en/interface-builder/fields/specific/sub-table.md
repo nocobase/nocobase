@@ -1,8 +1,8 @@
-# Sub-table
+# Sub-table (Inline Edit)
 
 ## Introduction
 
-The sub-table is suitable for handling to-many relationship fields. It supports batch creation and association of new data in the target collection, or selecting and associating existing data.
+The sub-table is suitable for handling to-many association fields. It supports batch creation and association of new data in the target collection, or selecting and associating existing data.
 
 ## Usage Instructions
 
@@ -16,7 +16,7 @@ Different types of fields in the sub-table display different field components. L
 ![20251027223426](https://static-docs.nocobase.com/20251027223426.png)
 
 
-Relationship fields in the sub-table.
+Association fields in the sub-table.
 
 Orders (One-to-Many) > Order Products (One-to-One) > Opportunity
 
@@ -24,7 +24,7 @@ Orders (One-to-Many) > Order Products (One-to-One) > Opportunity
 ![20251027223530](https://static-docs.nocobase.com/20251027223530.png)
 
 
-The default component for a relationship field is the Dropdown (supports Dropdown/Data Picker).
+The default component for an association field is the Single select (supports Single select/Data selector).
 
 
 ![20251027223754](https://static-docs.nocobase.com/20251027223754.png)
@@ -32,7 +32,7 @@ The default component for a relationship field is the Dropdown (supports Dropdow
 
 ## Field Configuration Options
 
-### Allow selecting existing data (disabled by default)
+### Allow selecting existing data (enabled by default)
 
 Supports selecting and associating existing data.
 
@@ -46,11 +46,11 @@ Supports selecting and associating existing data.
 
 ### Field Component
 
-[Field Component](/interface-builder/fields/association-field): Switch to other relationship field components, such as Dropdown, Data Picker, etc.
+[Field Component](/interface-builder/fields/association-field): Switch to other association field components, such as Single select, Data selector, etc.
 
 ### Allow unlinking existing data
 
-> Whether to allow unlinking existing data for the relationship field in the edit form.
+> Whether to allow unlinking existing data for the association field in the edit form.
 
 
 ![20251028153425](https://static-docs.nocobase.com/20251028153425.gif)

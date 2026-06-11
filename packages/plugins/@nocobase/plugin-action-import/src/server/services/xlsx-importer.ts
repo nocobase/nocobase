@@ -383,10 +383,9 @@ export class XlsxImporter extends EventEmitter {
 
       const interfaceInstance = new InterfaceClass(field.options);
 
-      const ctx: any = {
-        transaction: options.transaction,
-        field,
-      };
+      const ctx: any = options.context ? Object.create(options.context) : {};
+      ctx.transaction = options.transaction;
+      ctx.field = field;
 
       if (column.dataIndex.length > 1) {
         ctx.associationField = field;

@@ -1,12 +1,12 @@
 ---
-displayName: "Workflow: Parallel node"
+displayName: "Workflow: 並行ブランチノード"
 packageName: '@nocobase/plugin-workflow-parallel'
 description: |
-  Could be used for parallel execution of branch processes in the workflow.
+  ワークフロー内で並行して実行する必要があるブランチプロセスに使用されます。
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Workflow: Parallel node
+# Workflow: 並行ブランチノード

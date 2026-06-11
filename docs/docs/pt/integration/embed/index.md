@@ -1,10 +1,6 @@
 ---
 pkg: "@nocobase/plugin-embed"
 ---
-:::tip Aviso de tradução por IA
-Esta documentação foi traduzida automaticamente por IA.
-:::
-
 
 
 # Incorporar NocoBase
@@ -15,13 +11,11 @@ Este plugin é usado para incorporar páginas do NocoBase em outros sites ou apl
 
 ## Instalação
 
-Este plugin é um plugin comercial e precisa ser enviado e ativado através do gerenciador de plugins.
-
-![20240323162741](https://static-docs.nocobase.com/20240323162741.png)
+Ative o plugin "Incorporar NocoBase" no gerenciador de plugins para usá-lo.
 
 ## Guia de Uso
 
-Após ativar a configuração da interface, clique em "Copiar link de incorporação" no menu de configuração da página (canto superior direito).
+Após ativar o plugin, clique em "Copiar link de incorporação" no menu de configuração da página (canto superior direito).
 
 ![](https://static-docs.nocobase.com/f11bd6d5e88d38731d7cd3cb149022c8.png)
 
