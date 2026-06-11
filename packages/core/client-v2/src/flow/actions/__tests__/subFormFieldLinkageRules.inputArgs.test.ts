@@ -13,7 +13,7 @@ import { subFormFieldLinkageRules } from '../linkageRules';
 import { SubFormFieldModel, SubFormListFieldModel } from '../../models/fields/AssociationFieldModel/SubFormFieldModel';
 
 describe('subFormFieldLinkageRules action', () => {
-  it('passes inputArgs to fork runtime context', async () => {
+  it('passes inputArgs to fork runtime context when grid forks are stored in a Set', async () => {
     const linkageAssignHandler = vi.fn();
     const engine = new FlowEngine();
     const forkModel = new FlowModel({ uid: 'fork-model', flowEngine: engine }) as any;
@@ -38,7 +38,7 @@ describe('subFormFieldLinkageRules action', () => {
         hidden: false,
         subModels: {
           grid: {
-            forks: [forkModel],
+            forks: new Set([forkModel]),
           },
         },
       },
