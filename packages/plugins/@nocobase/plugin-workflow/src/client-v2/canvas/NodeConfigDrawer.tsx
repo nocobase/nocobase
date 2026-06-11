@@ -137,7 +137,7 @@ function NodeConfigForm({
   const t = useT();
   const { message } = App.useApp();
   const view = useFlowView();
-  const executed = Boolean(workflow?.executed);
+  const executed = Boolean(workflow?.versionStats?.executed);
   const [form] = Form.useForm();
   const [submitting, setSubmitting] = useState(false);
 

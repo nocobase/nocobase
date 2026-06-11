@@ -33,6 +33,7 @@ import { useRemoveNodeContext } from './RemoveNodeContext';
 import { useNodeClipboardContext } from './NodeClipboardContext';
 import { useNodeDragContext } from './NodeDragContext';
 import { openNodeConfigDrawer } from './NodeConfigDrawer';
+import { JobButton } from './JobButton';
 
 function NodeActions({ data }: { data: any }) {
   const t = useT();
@@ -193,6 +194,7 @@ export function NodeDefaultView({ data, children }: { data: any; children?: Reac
           </div>
           <div className="workflow-node-actions">
             <NodeActions data={data} />
+            <JobButton data={data} />
           </div>
         </div>
         <NodeTitle data={data} fallback={typeTitle} />
