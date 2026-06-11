@@ -1,12 +1,16 @@
 ---
-displayName: "KI-Mitarbeiter"
+title: "AI employees"
+keywords: "AI"
+displayName: "AI employees"
 packageName: '@nocobase/plugin-ai'
+supportedVersions:
+  - 2.x
 description: |
-  Erstellen Sie KI-Mitarbeiter mit verschiedenen Fähigkeiten, um mit Menschen zusammenzuarbeiten, Systeme aufzubauen und Geschäftsprozesse abzuwickeln.
+  Create AI employees with diverse skills to collaborate with humans, build systems, and handle business operations.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# KI-Mitarbeiter
+# AI employees

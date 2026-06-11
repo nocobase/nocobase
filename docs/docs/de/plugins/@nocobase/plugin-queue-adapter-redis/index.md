@@ -1,15 +1,17 @@
 ---
-displayName: "Redis-Warteschlangen-Adapter"
+title: "Redis queue adapter"
+keywords: "Architecture"
+displayName: "Redis queue adapter"
 packageName: '@nocobase/plugin-queue-adapter-redis'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Wird zur Verarbeitung von Nachrichten-Warteschlangen in Anwendungen auf Basis von Redis verwendet.
+  Used for hanlding message queue with Redis.
 isFree: false
 builtIn: false
 defaultEnabled: false
 editionLevel: 3
 ---
 
-# Redis-Warteschlangen-Adapter
+# Redis queue adapter

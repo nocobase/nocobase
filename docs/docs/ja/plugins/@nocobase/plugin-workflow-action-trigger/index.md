@@ -1,12 +1,14 @@
 ---
-displayName: "ワークフロー：操作後イベント"
+title: "Workflow: Post-action event"
+keywords: "Workflow"
+displayName: "Workflow: Post-action event"
 packageName: '@nocobase/plugin-workflow-action-trigger'
 description: |
-  操作ボタンや API を通じてリクエストが開始され、実行が完了した後にトリガーされます。例えば、データの追加、更新、削除、または「ワークフローに送信」の後などです。操作完了後のデータ処理や通知の送信などに適しています。
+  Triggered after the completion of a request initiated through an action button or API, such as after adding, updating, deleting data, or "submit to workflow". Suitable for data processing, sending notifications, etc., after actions are completed.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# ワークフロー：操作後イベント
+# Workflow: Post-action event

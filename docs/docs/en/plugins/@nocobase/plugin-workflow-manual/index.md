@@ -1,12 +1,14 @@
 ---
-displayName: "Workflow: Manual Node"
+title: "Workflow: Manual node"
+keywords: "Workflow"
+displayName: "Workflow: Manual node"
 packageName: '@nocobase/plugin-workflow-manual'
 description: |
-  Used for processes where some decisions are controlled manually.
+  Could be used for workflows which some of decisions are made by users.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Workflow: Manual Node
+# Workflow: Manual node

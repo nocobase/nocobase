@@ -1,14 +1,16 @@
 ---
-displayName: "カスタム変数"
+title: "Custom variables"
+keywords: "Custom variables"
+displayName: "Custom variables"
 packageName: '@nocobase/plugin-custom-variables'
 supportedVersions:
   - 1.x
 description: |
-  カスタム変数の追加と使用をサポートします。
+  Support for adding and using custom variables
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# カスタム変数
+# Custom variables

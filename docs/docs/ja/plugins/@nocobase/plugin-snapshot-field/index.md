@@ -1,8 +1,10 @@
 ---
-displayName: "コレクションフィールド：リレーションスナップショット"
+title: "Collection field: Snapshot"
+keywords: "Collection fields"
+displayName: "Collection field: Snapshot"
 packageName: '@nocobase/plugin-snapshot-field'
 description: |
-  データを追加する際、そのリレーションデータのスナップショットを作成し、現在のデータに保存します。リレーションデータが更新されても、スナップショットは更新されません。
+  When adding a new record, create a snapshot for its relational record and save in the new record. The snapshot will not be updated when the relational record is updated.
 isFree: true
 builtIn: true
 defaultEnabled: false
@@ -10,6 +12,6 @@ deprecated: true
 editionLevel: 0
 ---
 
-# コレクションフィールド：リレーションスナップショット
+# Collection field: Snapshot
 
-> 注意：本プラグインは廃止されました（deprecated）。
+> Note: This plugin is deprecated.

@@ -1,12 +1,14 @@
 ---
-displayName: "ワークフロー：集計クエリノード"
+title: "Workflow: Aggregate node"
+keywords: "Workflow"
+displayName: "Workflow: Aggregate node"
 packageName: '@nocobase/plugin-workflow-aggregate'
 description: |
-  ワークフロー内でデータベースに対して集計クエリを実行するために使用できます。例えば、件数のカウント、合計、平均などです。
+  Used to aggregate data against the database in workflow, such as: statistics, sum, average, etc.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# ワークフロー：集計クエリノード
+# Workflow: Aggregate node

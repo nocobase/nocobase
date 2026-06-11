@@ -1,12 +1,14 @@
 ---
-displayName: "Workflow: JSON Query"
+title: "Workflow: JSON calculation"
+keywords: "Workflow"
+displayName: "Workflow: JSON calculation"
 packageName: '@nocobase/plugin-workflow-json-query'
 description: |
-  Used to transform or calculate values of complex JSON objects (such as results from HTTP Request and SQL nodes).
+  Used for transforming or calculating values from complex JSON data (result of HTTP request or SQL etc.).
 isFree: true
 builtIn: true
 defaultEnabled: true
 editionLevel: 0
 ---
 
-# Workflow: JSON Query
+# Workflow: JSON calculation
