@@ -101,7 +101,7 @@ Avant de laisser un AI Agent opérer sur NocoBase, il est recommandé de compren
 
 ## NocoBase Skills
 
-Les [NocoBase Skills](https://github.com/nocobase/skills) sont des packs de connaissances métier installables dans votre AI Agent, qui permettent à l'IA de comprendre le système de configuration de NocoBase. NocoBase fournit 8 Skills couvrant l'ensemble du processus de construction :
+Les [NocoBase Skills](https://github.com/nocobase/skills) sont des packs de connaissances métier installables dans votre AI Agent, qui permettent à l'IA de comprendre le système de configuration de NocoBase. NocoBase fournit 9 Skills couvrant l'ensemble du processus de construction :
 
 - [Gestion des environnements](./env-bootstrap) — vérification d'environnement, installation, déploiement, mise à niveau et diagnostic
 - [Modélisation des données](./data-modeling) — création et gestion des tables, champs et relations
@@ -111,6 +111,7 @@ Les [NocoBase Skills](https://github.com/nocobase/skills) sont des packs de conn
 - [Solutions](./dsl-reconciler) — construction par lots de systèmes métier complets à partir de YAML
 - [Gestion des plugins](./plugin-manage) — consultation, activation et désactivation des plugins
 - [Gestion des publications](./publish) — publication multi-environnements, sauvegarde, restauration et migration
+- [Contrôle de version](./version-control) — enregistrer des versions restaurables après des jalons terminés
 
 :::tip Astuce
 

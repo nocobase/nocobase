@@ -101,7 +101,7 @@ Bevor Sie einen AI Agent NocoBase steuern lassen, sollten Sie sich mit den Authe
 
 ## NocoBase Skills
 
-[NocoBase Skills](https://github.com/nocobase/skills) sind Wissenspakete für bestimmte Domänen, die in einen AI Agent installiert werden können, sodass die KI das Konfigurationssystem von NocoBase versteht. NocoBase stellt 8 Skills bereit, die den gesamten Aufbauprozess abdecken:
+[NocoBase Skills](https://github.com/nocobase/skills) sind Wissenspakete für bestimmte Domänen, die in einen AI Agent installiert werden können, sodass die KI das Konfigurationssystem von NocoBase versteht. NocoBase stellt 9 Skills bereit, die den gesamten Aufbauprozess abdecken:
 
 - [Umgebungsverwaltung](./env-bootstrap) – Umgebungsprüfung, Installation und Bereitstellung, Upgrade und Fehlerdiagnose
 - [Datenmodellierung](./data-modeling) – Erstellen und Verwalten von Datentabellen, Feldern und Beziehungen
@@ -111,6 +111,7 @@ Bevor Sie einen AI Agent NocoBase steuern lassen, sollten Sie sich mit den Authe
 - [Lösungen](./dsl-reconciler) – Aufbau ganzer Geschäftssysteme im Stapelbetrieb über YAML
 - [Plugin-Verwaltung](./plugin-manage) – Anzeigen, Aktivieren und Deaktivieren von Plugins
 - [Release-Verwaltung](./publish) – Umgebungsübergreifende Veröffentlichung, Sicherung und Wiederherstellung sowie Migration
+- [Versionsverwaltung](./version-control) – Speichern wiederherstellbarer Versionen nach abgeschlossenen Meilensteinen
 
 :::tip Tipp
 
