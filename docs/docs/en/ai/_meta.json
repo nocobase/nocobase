@@ -1,34 +1,45 @@
 [
   {
     "type": "custom-link",
-    "label": "How NocoBase Works",
-    "link": "/get-started/how-nocobase-works"
-  },
-  {
-    "type": "custom-link",
-    "label": "System Requirements",
-    "link": "/get-started/system-requirements"
-  },
-  {
-    "type": "custom-link",
-    "label": "Installation and Version Comparison",
-    "link": "/get-started/quickstart"
-  },
-  {
-    "type": "custom-link",
     "label": "Quick Start",
-    "link": "/ai/quick-start"
-  },
-  {
-    "type": "custom-link",
-    "label": "NocoBase CLI",
-    "proxy": false,
-    "link": "/nocobase-cli/"
-  },
-  {
-    "type": "custom-link",
-    "label": "Get Started (Legacy)",
-    "proxy": false,
-    "link": "/get-started/how-nocobase-works"
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "How NocoBase Works",
+        "link": "/get-started/how-nocobase-works"
+      },
+      {
+        "type": "custom-link",
+        "label": "System Requirements",
+        "link": "/get-started/system-requirements"
+      },
+      {
+        "type": "custom-link",
+        "label": "Installation and Version Comparison",
+        "link": "/get-started/quickstart"
+      },
+      {
+        "type": "custom-link",
+        "label": "Install NocoBase App",
+        "link": "/ai/install-nocobase-app"
+      },
+      {
+        "type": "custom-link",
+        "label": "AI Agent Integration Guide",
+        "link": "/ai/quick-start"
+      },
+      {
+        "type": "custom-link",
+        "label": "NocoBase CLI",
+        "proxy": false,
+        "link": "/nocobase-cli/"
+      },
+      {
+        "type": "custom-link",
+        "label": "Get Started (Legacy)",
+        "proxy": false,
+        "link": "/get-started/how-nocobase-works"
+      }
+    ]
   }
 ]

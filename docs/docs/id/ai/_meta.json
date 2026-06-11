@@ -1,34 +1,45 @@
 [
   {
     "type": "custom-link",
-    "label": "Cara Kerja NocoBase",
-    "link": "/get-started/how-nocobase-works"
-  },
-  {
-    "type": "custom-link",
-    "label": "Persyaratan Sistem",
-    "link": "/get-started/system-requirements"
-  },
-  {
-    "type": "custom-link",
-    "label": "Perbandingan Metode Instalasi dan Versi",
-    "link": "/get-started/quickstart"
-  },
-  {
-    "type": "custom-link",
     "label": "Mulai Cepat",
-    "link": "/ai/quick-start"
-  },
-  {
-    "type": "custom-link",
-    "label": "NocoBase CLI",
-    "proxy": false,
-    "link": "/nocobase-cli/"
-  },
-  {
-    "type": "custom-link",
-    "label": "Mulai (versi lama)",
-    "proxy": false,
-    "link": "/get-started/how-nocobase-works"
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Cara Kerja NocoBase",
+        "link": "/get-started/how-nocobase-works"
+      },
+      {
+        "type": "custom-link",
+        "label": "Persyaratan Sistem",
+        "link": "/get-started/system-requirements"
+      },
+      {
+        "type": "custom-link",
+        "label": "Perbandingan Metode Instalasi dan Versi",
+        "link": "/get-started/quickstart"
+      },
+      {
+        "type": "custom-link",
+        "label": "Instal aplikasi NocoBase",
+        "link": "/ai/install-nocobase-app"
+      },
+      {
+        "type": "custom-link",
+        "label": "Panduan Integrasi AI Agent",
+        "link": "/ai/quick-start"
+      },
+      {
+        "type": "custom-link",
+        "label": "NocoBase CLI",
+        "proxy": false,
+        "link": "/nocobase-cli/"
+      },
+      {
+        "type": "custom-link",
+        "label": "Mulai (versi lama)",
+        "proxy": false,
+        "link": "/get-started/how-nocobase-works"
+      }
+    ]
   }
 ]

@@ -20,12 +20,12 @@ features:
   - title: Start
     details: Get started with NocoBase quickly - install, configure, and explore step by step.
     items:
-      - title: Quick Start
-        details: Install NocoBase CLI, configure NocoBase Skills, and connect your AI Agent so you're ready to build, use, and develop with NocoBase.
-        link: /ai/quick-start
       - title: How NocoBase Works
         details: Understand NocoBase's core concepts and basic operations.
         link: /ai/how-nocobase-works
+      - title: Install NocoBase App
+        details: Use NocoBase CLI to install an application quickly.
+        link: /ai/install-nocobase-app
       - title: Tutorials
         details: Step-by-step tutorials to build real projects with NocoBase from scratch.
         link: /tutorials/v2/
