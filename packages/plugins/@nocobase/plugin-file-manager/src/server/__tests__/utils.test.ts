@@ -16,7 +16,13 @@ import PluginFileManagerServer from '../server';
 
 import { STORAGE_TYPE_LOCAL } from '../../constants';
 
-import { cloudFilenameGetter, getFileKey, normalizeStorageSubPath, resolveStoragePath } from '../utils';
+import {
+  cloudFilenameGetter,
+  getFileKey,
+  normalizeDocumentRoot,
+  normalizeStorageSubPath,
+  resolveStoragePath,
+} from '../utils';
 import {
   getRepairedAttachmentValues,
   repairAttachmentFilenames,
