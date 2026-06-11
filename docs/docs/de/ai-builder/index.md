@@ -95,6 +95,20 @@ Die KI gibt zunächst einen Designvorschlag aus und führt nach Bestätigung den
 
 Weitere Anwendungsfälle für den Aufbau kompletter Systeme finden Sie unter [Lösungen](./dsl-reconciler).
 
+### Einen Meilenstein aufbauen, und die KI speichert eine wiederherstellbare Version für Sie
+
+Nachdem Sie eine Seite, eine Gruppe von Datentabellen oder einen Workflow fertiggestellt haben, lassen Sie die KI den aktuellen Zustand als Version speichern – wenn eine Konfiguration schiefgeht, können Sie jederzeit zum letzten klaren Meilenstein zurückkehren.
+
+```
+Speichere den aktuellen Aufbau als Version: Kundenverwaltungsseite, Filterbereich und Bearbeitungsformular sind fertig konfiguriert
+```
+
+![KI erstellt nach der Erstellung eine Version](https://static-docs.nocobase.com/20260611115804.png)
+
+Die KI speichert nicht bei jeder Feldänderung eine Version, sondern erst nach dem Abschließen und Überprüfen eines klaren Meilensteins. So bleibt die Versionsliste übersichtlich und es ist leichter zu entscheiden, wohin man zurückkehren möchte.
+
+Weitere Anwendungsfälle für die Versionsverwaltung finden Sie unter [Versionsverwaltung](./version-control).
+
 ## Sicherheit und Audit
 
 Bevor Sie einen AI Agent NocoBase steuern lassen, sollten Sie sich mit den Authentifizierungsverfahren, der Berechtigungssteuerung und dem Audit der Vorgänge vertraut machen – damit die KI nur das tut, was sie tun soll, und jeder Schritt protokolliert wird. Siehe [Sicherheit und Audit](./security).
