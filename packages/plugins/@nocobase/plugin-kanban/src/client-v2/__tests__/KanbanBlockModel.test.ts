@@ -203,7 +203,7 @@ describe('KanbanBlockModel.filterCollection', () => {
 
   test('card click uses flow context openView with the latest card-item props', async () => {
     const openView = vi.fn().mockResolvedValue(undefined);
-    const ensureCardViewAction = vi.fn().mockResolvedValue({ uid: 'card-view-action' });
+    const ensureCardViewAction = vi.fn().mockResolvedValue({ uid: 'u_card_view_popup' });
 
     await KanbanBlockModel.prototype.openCard.call(
       {
@@ -229,10 +229,9 @@ describe('KanbanBlockModel.filterCollection', () => {
     );
 
     expect(ensureCardViewAction).toHaveBeenCalledTimes(1);
-    expect(openView).toHaveBeenCalledWith('card-view-action', {
+    expect(openView).toHaveBeenCalledWith('u_card_view_popup', {
       mode: 'dialog',
       filterByTk: 1,
-      navigation: false,
       target: { id: 'layout-root' },
     });
   });
@@ -323,6 +322,203 @@ describe('KanbanBlockModel.filterCollection', () => {
       dataSourceKey: 'main',
       collectionName: 'tasks',
     });
+  });
+
+  test('does not persist hidden popup actions while opening kanban popups', async () => {
+    const save = vi.fn();
+    const saveStepParams = vi.fn();
+    const action = {
+      uid: 'kanban-block-quick-create-action',
+      getStepParams: vi.fn(() => ({})),
+      setStepParams: vi.fn(),
+      save,
+      saveStepParams,
+    };
+    const model = Object.create(KanbanBlockModel.prototype) as KanbanBlockModel;
+    Object.defineProperty(model, 'subModels', {
+      value: {
+        quickCreateAction: action,
+      },
+      configurable: true,
+    });
+    Object.defineProperty(model, 'context', {
+      value: {
+        flowSettingsEnabled: true,
+      },
+      configurable: true,
+    });
+    Object.defineProperty(model, 'collection', {
+      value: {
+        name: 'tasks',
+        dataSourceKey: 'main',
+      },
+      configurable: true,
+    });
+    Object.defineProperty(model, 'props', {
+      value: {},
+      writable: true,
+      configurable: true,
+    });
+
+    await model.ensureQuickCreateAction();
+
+    expect(save).not.toHaveBeenCalled();
+    expect(saveStepParams).not.toHaveBeenCalled();
+    expect(action.setStepParams).toHaveBeenCalled();
+  });
+
+  test('persists hidden popup actions only when kanban popup settings are saved', async () => {
+    const save = vi.fn();
+    const saveStepParams = vi.fn();
+    const action = {
+      uid: 'kanban-block-card-view-action',
+      getStepParams: vi.fn(() => ({})),
+      setStepParams: vi.fn(),
+      save,
+      saveStepParams,
+    };
+    const model = Object.create(KanbanBlockModel.prototype) as KanbanBlockModel;
+    Object.defineProperty(model, 'subModels', {
+      value: {
+        cardViewAction: action,
+      },
+      configurable: true,
+    });
+    Object.defineProperty(model, 'context', {
+      value: {
+        flowSettingsEnabled: true,
+      },
+      configurable: true,
+    });
+    Object.defineProperty(model, 'collection', {
+      value: {
+        name: 'tasks',
+        dataSourceKey: 'main',
+      },
+      configurable: true,
+    });
+    Object.defineProperty(model, 'props', {
+      value: {},
+      writable: true,
+      configurable: true,
+    });
+
+    await model.ensureCardViewAction({ persist: true });
+
+    expect(save).toHaveBeenCalledTimes(1);
+    expect(saveStepParams).toHaveBeenCalledTimes(1);
+  });
+
+  test('loads persisted kanban popup actions before creating hidden actions', async () => {
+    const loadedAction = {
+      uid: 'u_quick_create_popup',
+      getStepParams: vi.fn(() => ({})),
+      setStepParams: vi.fn(),
+    };
+    const model = Object.create(KanbanBlockModel.prototype) as KanbanBlockModel;
+    Object.defineProperty(model, 'uid', {
+      value: 'kanban-block',
+      configurable: true,
+    });
+    Object.defineProperty(model, 'subModels', {
+      value: {},
+      configurable: true,
+    });
+    Object.defineProperty(model, 'flowEngine', {
+      value: {
+        loadModel: vi.fn().mockResolvedValue(loadedAction),
+      },
+      configurable: true,
+    });
+    Object.defineProperty(model, 'context', {
+      value: {
+        flowSettingsEnabled: true,
+      },
+      configurable: true,
+    });
+    Object.defineProperty(model, 'collection', {
+      value: {
+        name: 'tasks',
+        dataSourceKey: 'main',
+      },
+      configurable: true,
+    });
+    Object.defineProperty(model, 'props', {
+      value: {},
+      writable: true,
+      configurable: true,
+    });
+    model.setSubModel = vi.fn(function (this: any, key, value) {
+      this.subModels[key] = value;
+      return value;
+    }) as any;
+
+    await model.ensureQuickCreateAction();
+
+    expect(model.flowEngine.loadModel).toHaveBeenCalledWith({ parentId: 'kanban-block', subKey: 'quickCreateAction' });
+    expect(model.subModels.quickCreateAction).toBe(loadedAction);
+  });
+
+  test('replaces legacy kanban popup action uid when popup settings are saved', async () => {
+    const destroy = vi.fn();
+    const clonedAction = {
+      uid: 'u_card_view_popup',
+      getStepParams: vi.fn(() => ({})),
+      setStepParams: vi.fn(),
+      save: vi.fn(),
+      saveStepParams: vi.fn(),
+    };
+    const action = {
+      uid: 'kanban-block-card-view-action',
+      getStepParams: vi.fn(() => ({})),
+      setStepParams: vi.fn(),
+      clone: vi.fn(() => clonedAction),
+      destroy,
+    };
+    const model = Object.create(KanbanBlockModel.prototype) as KanbanBlockModel;
+    Object.defineProperty(model, 'subModels', {
+      value: {
+        cardViewAction: action,
+      },
+      configurable: true,
+    });
+    Object.defineProperty(model, 'context', {
+      value: {
+        flowSettingsEnabled: true,
+      },
+      configurable: true,
+    });
+    Object.defineProperty(model, 'collection', {
+      value: {
+        name: 'tasks',
+        dataSourceKey: 'main',
+      },
+      configurable: true,
+    });
+    Object.defineProperty(model, 'props', {
+      value: {},
+      writable: true,
+      configurable: true,
+    });
+    model.setSubModel = vi.fn(function (this: any, key, value) {
+      this.subModels[key] = value;
+      return value;
+    }) as any;
+
+    await model.ensureCardViewAction();
+
+    expect(action.clone).toHaveBeenCalledTimes(1);
+    expect(model.subModels.cardViewAction).toBe(clonedAction);
+    expect(clonedAction.save).not.toHaveBeenCalled();
+    expect(clonedAction.saveStepParams).not.toHaveBeenCalled();
+    expect(destroy).not.toHaveBeenCalled();
+
+    await model.ensureCardViewAction({ persist: true });
+
+    expect(action.clone).toHaveBeenCalledTimes(1);
+    expect(clonedAction.save).toHaveBeenCalledTimes(1);
+    expect(clonedAction.saveStepParams).toHaveBeenCalledTimes(1);
+    expect(destroy).toHaveBeenCalledTimes(1);
   });
 
   test('syncPopupAction overwrites removed popup settings with undefined so stale template params do not survive merges', async () => {
@@ -472,7 +668,10 @@ describe('KanbanBlockModel.filterCollection', () => {
         return this.props.popupTargetUid;
       },
       getAction: () => ({ beforeParamsSave: vi.fn().mockResolvedValue(undefined) }),
-      ensureQuickCreateAction: vi.fn().mockResolvedValue(action),
+      ensureQuickCreateAction: vi.fn(async function (this: any, options) {
+        await this.syncQuickCreateAction(action, options);
+        return action;
+      }),
       syncQuickCreateAction: KanbanBlockModel.prototype.syncQuickCreateAction,
       syncPopupAction: KanbanBlockModel.prototype.syncPopupAction,
       getPopupMode: () => 'drawer',
@@ -568,8 +767,8 @@ describe('KanbanBlockModel.filterCollection', () => {
     expect(parentModel.props).toMatchObject({
       cardPopupPageModelClass: 'PopupPageModel',
     });
-    expect(ensureCardViewAction).toHaveBeenCalledTimes(1);
-    expect(syncCardViewAction).toHaveBeenCalledWith({ uid: 'card-view-action' });
+    expect(ensureCardViewAction).toHaveBeenCalledWith({ persist: true });
+    expect(syncCardViewAction).not.toHaveBeenCalled();
   });
 
   test('grouping uiSchema does not embed cyclical runtime objects in component props', () => {
@@ -1604,8 +1803,8 @@ describe('KanbanBlockModel.filterCollection', () => {
       popupTemplateUid: 'tpl-quick-create',
       popupTargetUid: 'popup-action-1',
     });
-    expect(ensureQuickCreateAction).toHaveBeenCalledTimes(1);
-    expect(syncQuickCreateAction).toHaveBeenCalledWith({ uid: 'quick-create-action' });
+    expect(ensureQuickCreateAction).toHaveBeenCalledWith({ persist: true });
+    expect(syncQuickCreateAction).not.toHaveBeenCalled();
   });
 
   test('kanban model wraps openView popup template selector without changing the global action', async () => {
@@ -1756,7 +1955,7 @@ describe('KanbanBlockModel.filterCollection', () => {
 
   test('quick create uses flow context openView with the prefilled form data', async () => {
     const openView = vi.fn().mockResolvedValue(undefined);
-    const ensureQuickCreateAction = vi.fn().mockResolvedValue({ uid: 'quick-create-action' });
+    const ensureQuickCreateAction = vi.fn().mockResolvedValue({ uid: 'u_quick_create_popup' });
 
     await KanbanBlockModel.prototype.openQuickCreate.call(
       {
@@ -1775,9 +1974,8 @@ describe('KanbanBlockModel.filterCollection', () => {
     );
 
     expect(ensureQuickCreateAction).toHaveBeenCalledTimes(1);
-    expect(openView).toHaveBeenCalledWith('quick-create-action', {
+    expect(openView).toHaveBeenCalledWith('u_quick_create_popup', {
       formData: { status: 'todo' },
-      navigation: false,
       target: { id: 'layout-root' },
     });
   });
@@ -1785,7 +1983,7 @@ describe('KanbanBlockModel.filterCollection', () => {
   test('quick create falls back to an empty popup shell when the popup action open fails', async () => {
     const open = vi.fn().mockResolvedValue(undefined);
     const openView = vi.fn().mockRejectedValue(new Error('open failed'));
-    const ensureQuickCreateAction = vi.fn().mockResolvedValue({ uid: 'quick-create-action' });
+    const ensureQuickCreateAction = vi.fn().mockResolvedValue({ uid: 'u_quick_create_popup' });
 
     await KanbanBlockModel.prototype.openQuickCreate.call(
       {
@@ -1809,9 +2007,8 @@ describe('KanbanBlockModel.filterCollection', () => {
     );
 
     expect(ensureQuickCreateAction).toHaveBeenCalledTimes(1);
-    expect(openView).toHaveBeenCalledWith('quick-create-action', {
+    expect(openView).toHaveBeenCalledWith('u_quick_create_popup', {
       formData: { status: 'todo' },
-      navigation: false,
       target: { id: 'layout-root' },
     });
     expect(open).toHaveBeenCalledWith(
@@ -1827,7 +2024,7 @@ describe('KanbanBlockModel.filterCollection', () => {
   test('card click falls back to an empty popup shell when the popup action open fails', async () => {
     const open = vi.fn().mockResolvedValue(undefined);
     const openView = vi.fn().mockRejectedValue(new Error('open failed'));
-    const ensureCardViewAction = vi.fn().mockResolvedValue({ uid: 'card-view-action' });
+    const ensureCardViewAction = vi.fn().mockResolvedValue({ uid: 'u_card_view_popup' });
 
     await KanbanBlockModel.prototype.openCard.call(
       {
@@ -1853,12 +2050,11 @@ describe('KanbanBlockModel.filterCollection', () => {
     );
 
     expect(ensureCardViewAction).toHaveBeenCalledTimes(1);
-    expect(openView).toHaveBeenCalledWith('card-view-action', {
+    expect(openView).toHaveBeenCalledWith('u_card_view_popup', {
       mode: 'dialog',
       dataSourceKey: 'main',
       collectionName: 'tasks',
       filterByTk: 1,
-      navigation: false,
       target: { id: 'layout-root' },
     });
     expect(open).toHaveBeenCalledWith(
