@@ -172,7 +172,7 @@ export const ImportAction = (props) => {
   };
 
   return (
-    <ActionContextProvider value={{ visible, setVisible, fieldSchema, errorMessage, setErrorMessage }}>
+    <ActionContextProvider value={{ visible, setVisible, fieldSchema, errorMessage, setErrorMessage } as any}>
       <Action
         icon={props.icon || 'uploadoutlined'}
         title={compile(fieldSchema?.title || "t('Import')")}
