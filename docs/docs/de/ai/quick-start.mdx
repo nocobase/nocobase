@@ -57,15 +57,16 @@ Die bei der Initialisierung erzeugten Konfigurationsdateien und Anwendungsdaten 
 
 :::
 
-Der Browser öffnet automatisch eine visuelle Konfigurationsseite und führt Sie in 5 Schritten durch die Konfiguration:
+Der Browser öffnet automatisch eine visuelle Konfigurationsseite und führt Sie in 6 Schritten durch die Konfiguration:
 
-1. **Konfiguration starten** – Anwendungsnamen festlegen (gleichzeitig der CLI-Umgebungsname) und „Neuinstallation" auswählen
-2. **Anwendung erstellen** – Installationsmethode (Docker / npm / Git) wählen, Port und weitere Grundkonfigurationen festlegen
-3. **Anwendungsdateien herunterladen** – Quelle und Version wählen, NocoBase-Quellcode oder Image herunterladen
-4. **Datenbank konfigurieren** – Eingebaute Datenbank verwenden oder externe Datenbank konfigurieren (PostgreSQL, MySQL, MariaDB)
-5. **Administratorkonto erstellen** – E-Mail und Passwort des Administrators festlegen
+1. „Erste Schritte" – wählen, ob eine neue App installiert, eine lokale App verwaltet oder eine Remote-App verbunden werden soll.
+2. „App-Umgebung" – Basisdaten der App, Speicherort und Laufzeit-Port festlegen.
+3. „App-Quelle und Version" – auswählen, wie die App bezogen wird und welche Quelle und Version verwendet werden.
+4. „Datenbank konfigurieren" – integriert oder benutzerdefiniert verwenden.
+5. „Administratorkonto erstellen" – den ersten Administrator einrichten.
+6. „Verbindung und Authentifizierung" – Zugriffs-URL der App eingeben und Authentifizierungsmethode auswählen.
 
-![nocobase cli visueller Assistent](https://static-docs.nocobase.com/2026-04-29-15-55-19.png)
+![nocobase cli visueller Assistent](https://static-docs.nocobase.com/2026-06-11-20-14-32.png)
 
 Nach Abschluss der Installation öffnen Sie den Browser unter `http://localhost:13000` (Standardport) und melden sich mit dem soeben festgelegten Administratorkonto an.
 
@@ -115,12 +116,12 @@ Die bei der Initialisierung erzeugten Konfigurationsdateien werden standardmäß
 
 :::
 
-Der Browser öffnet automatisch eine visuelle Konfigurationsseite. Wählen Sie im ersten Schritt „Konfiguration starten" die Option „Bestehende Anwendung verbinden" und gehen Sie wie folgt vor:
+Der Browser öffnet automatisch eine visuelle Konfigurationsseite. Wählen Sie im ersten Schritt „Konfiguration starten" die Option „Remote-Verbindung" und gehen Sie wie folgt vor:
 
 1. **API-Adresse eingeben** – die API-Adresse Ihrer bestehenden NocoBase-Instanz eingeben (z. B. `http://localhost:13000/api`)
 2. **Authentifizierungsmethode wählen** – eine [Authentifizierungsmethode](../ai-builder/security) auswählen (für den schnellen Einstieg empfehlen wir OAuth)
 
-![nocobase cli visueller Assistent](https://static-docs.nocobase.com/2026-04-29-15-55-55.png)
+![nocobase cli visueller Assistent](https://static-docs.nocobase.com/2026-06-11-21-18-31.png)
 
 Installationsmethode, Datenbank und Administratorkonto müssen nicht konfiguriert werden – der Assistent überspringt diese Schritte.
 
@@ -131,7 +132,7 @@ Installationsmethode, Datenbank und Administratorkonto müssen nicht konfigurier
 </Tab>
 <Tab label="Mit AI Agent verbinden" value="ai-connect">
 
-Kopieren Sie den folgenden Prompt in Ihren KI-Assistenten; er installiert die CLI und führt Sie durch die Konfiguration zur Verbindung mit der bestehenden NocoBase-Instanz. Wählen Sie im ersten Schritt des visuellen Assistenten einfach „Bestehende Anwendung verbinden":
+Kopieren Sie den folgenden Prompt in Ihren KI-Assistenten; er installiert die CLI und führt Sie durch die Konfiguration zur Verbindung mit der bestehenden NocoBase-Instanz. Wählen Sie im ersten Schritt des visuellen Assistenten einfach „Remote-Verbindung":
 
 ```
 Hilf mir, die NocoBase CLI zu installieren und die Initialisierung abzuschließen: https://docs.nocobase.com/de/ai/ai-quick-start.md (Bitte direkt den Inhalt des Links abrufen)
