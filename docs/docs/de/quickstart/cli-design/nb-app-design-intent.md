@@ -100,4 +100,4 @@ Was hier angepasst wird, sind Systemstartmechanismen wie `systemd`, `launchd` un
 - Die Implementierung des Prozessmanagements kann Docker, PM2, Supervisor usw. sein. Derzeit werden Docker und PM2 unterstützt
 - Da die Selbststartkonfigurationen verschiedener Prozessmanagementmethoden unterschiedlich sind, ist ein einheitlicher Satz von `nb app autostart`-Funktionen erforderlich, damit der gesamte Prozess abgeschlossen ist.
 
-Wenn Sie weiterhin den täglichen Betrieb sehen möchten, können Sie direkt zu [Anwendung verwalten] (../operations/manage-app.md) gehen. Wenn Sie bereit sind, die Anwendung in der formalen Umgebung bereitzustellen, können Sie sich weiterhin [Produktionsumgebungsbereitstellung](../produktion/index.md) ansehen.
+Wenn Sie weiterhin den täglichen Betrieb sehen möchten, können Sie direkt zu [Anwendung verwalten] (../operations/manage-app.md) gehen. Wenn Sie bereit sind, die Anwendung in der formalen Umgebung bereitzustellen, können Sie sich weiterhin [Produktionsumgebungsbereitstellung](../production/index.md) ansehen.

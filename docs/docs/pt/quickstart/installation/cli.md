@@ -169,8 +169,8 @@ Se quiser continuar com as operações subsequentes após a instalação, você 
 | Eu quero... | Onde procurar |
 | --- | --- |
 | Se você estiver pronto para tornar este ambiente oficialmente aberto ao mundo externo, conecte-o ao proxy reverso do ambiente de produção e use o nome de domínio e HTTPS para expor o serviço. | [Nginx](../production/reverse-proxy/nginx.md) / [Caddy](../production/reverse-proxy/caddy.md). |
-| Confirme se o ambiente foi salvo com sucesso, verifique qual ambiente está sendo usado atualmente e alterne entre vários ambientes. | [`nb env`](../../api/cli/env/index.md), [Gerenciamento de vários ambientes](../operações/multi-environment.md). |
-| Inicie, pare, reinicie o aplicativo, visualize logs ou continue atualizando o aplicativo. | [`nb app`](../../api/cli/app/index.md), [Gerenciar aplicativo](../operações/manage-app.md). |
+| Confirme se o ambiente foi salvo com sucesso, verifique qual ambiente está sendo usado atualmente e alterne entre vários ambientes. | [`nb env`](../../api/cli/env/index.md), [Gerenciamento de vários ambientes](../operations/multi-environment.md). |
+| Inicie, pare, reinicie o aplicativo, visualize logs ou continue atualizando o aplicativo. | [`nb app`](../../api/cli/app/index.md), [Gerenciar aplicativo](../operations/manage-app.md). |
 | Verifique as conexões do banco de dados, visualize o status do banco de dados integrado ou solucione problemas de contêiner de banco de dados. | [`nb db`](../../api/cli/db/index.md). |
 | Visualize plug-ins instalados, ative ou desative plug-ins. | [`nb plugin`](../../api/cli/plugin/index.md). |
 | Ative a autorização comercial, verifique o status da autorização e sincronize plug-ins comerciais. | [`nb license`](../../api/cli/license/index.md). |
@@ -185,9 +185,9 @@ nb app logs
 nb plugin list
 ```
 
-Se você mantiver vários ambientes ao mesmo tempo, consulte [Gerenciamento de vários ambientes](../operações/multi-environment.md) para métodos subsequentes de alternância e visualização de status.
+Se você mantiver vários ambientes ao mesmo tempo, consulte [Gerenciamento de vários ambientes](../operations/multi-environment.md) para métodos subsequentes de alternância e visualização de status.
 
-Se você quiser atualizar o aplicativo posteriormente, basta consultar [Gerenciar aplicativo](../operações/manage-app.md) e [Referência de comandos `nb app upgrade`](../../api/cli/app/upgrade.md).
+Se você quiser atualizar o aplicativo posteriormente, basta consultar [Gerenciar aplicativo](../operations/manage-app.md) e [Referência de comandos `nb app upgrade`](../../api/cli/app/upgrade.md).
 
 ## Links relacionados
 
@@ -195,5 +195,5 @@ Se você quiser atualizar o aplicativo posteriormente, basta consultar [Gerencia
 - [`nb env info` Referência de comando](../../api/cli/env/info.md)
 - [Proxy reverso do ambiente de produção: Nginx](../production/reverse-proxy/nginx.md) / [Caddy](../production/reverse-proxy/caddy.md)
 - [Migrar do método antigo para CLI](./migration.md)
-- [Gerenciamento de vários ambientes](../operações/multi-environment.md)
-- [Gerenciar aplicativo](../operações/manage-app.md)
+- [Gerenciamento de vários ambientes](../operations/multi-environment.md)
+- [Gerenciar aplicativo](../operations/manage-app.md)

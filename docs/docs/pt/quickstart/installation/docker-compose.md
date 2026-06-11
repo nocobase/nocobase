@@ -120,4 +120,4 @@ docker compose logs -f app
 
 - Se você deseja ajustar a configuração de chaves, portas, bancos de dados, etc., continue em [Variáveis de ambiente de aplicação](./env.md)
 - Se você está pronto para entrar oficialmente online, continue lendo [Nginx](../production/reverse-proxy/nginx.md) ou [Caddy](../production/reverse-proxy/caddy.md)
-- Se você quiser fazer backup dos dados mais tarde, continue em [Backup e Restauração](../operações/backup-restore.md)
+- Se você quiser fazer backup dos dados mais tarde, continue em [Backup e Restauração](../operations/backup-restore.md)

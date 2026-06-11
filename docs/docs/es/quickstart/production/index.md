@@ -60,7 +60,7 @@ Si se encuentra atascado aquí "¿Por qué necesita `nb app autostart`", simplem
 | Primero comprenda la relación de entrada de Nginx/Caddy en esta CLI | [Proxy inverso](./reverse-proxy/index.md) |
 | Continuar usando Nginx para administrar la entrada al sitio | [Nginx](./reverse-proxy/nginx.md) |
 | Conecte HTTPS lo antes posible y mantenga menos detalles TLS | [Caddy](./reverse-proxy/caddy.md) |
-| Ver el inicio, detención, registros y actualizaciones de la propia aplicación | [Administrar aplicación](../operaciones/manage-app.md) |
+| Ver el inicio, detención, registros y actualizaciones de la propia aplicación | [Administrar aplicación](../operations/manage-app.md) |
 
 ## Antes de ingresar al entorno de producción, confirme estos requisitos previos
 
@@ -79,4 +79,4 @@ Si el comando indica que falta env `appPort`, primero ejecute [`nb env update`](
 - [Proxy inverso](./reverse-proxy/index.md)
 - [Nginx](./reverse-proxy/nginx.md)
 - [Caddy](./reverse-proxy/caddy.md)
-- [Administrar aplicación] (../operaciones/manage-app.md)
+- [Administrar aplicación] (../operations/manage-app.md)

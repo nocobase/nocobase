@@ -100,4 +100,4 @@ Những gì được điều chỉnh ở đây là các cơ chế khởi động
 - Việc thực hiện quản lý quy trình có thể là Docker, PM2, Giám sát viên, v.v. Hiện tại, Docker và PM2 được hỗ trợ
 - Vì cấu hình tự khởi động của các phương pháp quản lý quy trình khác nhau là khác nhau nên cần có một bộ khả năng `nb app autostart` thống nhất để toàn bộ quy trình hoàn tất.
 
-Nếu bạn muốn tiếp tục xem các hoạt động hàng ngày, bạn có thể truy cập trực tiếp vào [Quản lý ứng dụng](../Operations/manage-app.md). Nếu bạn đã sẵn sàng triển khai ứng dụng vào môi trường chính thức, bạn có thể tiếp tục xem [Triển khai môi trường sản xuất](../production/index.md).
+Nếu bạn muốn tiếp tục xem các hoạt động hàng ngày, bạn có thể truy cập trực tiếp vào [Quản lý ứng dụng](../operations/manage-app.md). Nếu bạn đã sẵn sàng triển khai ứng dụng vào môi trường chính thức, bạn có thể tiếp tục xem [Triển khai môi trường sản xuất](../production/index.md).

@@ -24,16 +24,16 @@ Jika Anda sudah terbiasa dengan cara instalasi sebelumnya, Anda bisa terus mengg
 
 ### Instal NocoBase
 
-- [Instalasi Docker](/memulai/instalasi/buruh pelabuhan)
-- [buat instalasi-nocobabase-aplikasi](/mulai/instalasi/buat-nocobabase-aplikasi)
-- [Instalasi kode sumber Git](/memulai/instalasi/git)
-- [Variabel lingkungan](/memulai/instalasi/env)
+- [Instalasi Docker](/get-started/installation/docker)
+- [buat instalasi-nocobabase-aplikasi](/get-started/installation/create-nocobase-app)
+- [Instalasi kode sumber Git](/get-started/installation/git)
+- [Variabel lingkungan](/get-started/installation/env)
 
 ### Tingkatkan NocoBase
 
-- [Meningkatkan instalasi Docker](/memulai/meningkatkan/buruh pelabuhan)
-- [Peningkatan instalasi create-nocobase-app](/get-started/upgrade/create-nocobase-app)
-- [Meningkatkan instalasi kode sumber Git](/memulai/meningkatkan/git)
+- [Meningkatkan instalasi Docker](/get-started/upgrading/docker)
+- [Peningkatan instalasi create-nocobase-app](/get-started/upgrading/create-nocobase-app)
+- [Meningkatkan instalasi kode sumber Git](/get-started/upgrading/git)
 
 ## Metode 1: Pertama biarkan aplikasi yang ada mengakses agen AI
 

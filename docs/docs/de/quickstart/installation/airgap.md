@@ -64,4 +64,4 @@ Dieser Weg ist länger, aber in Umgebungen ohne Containerfunktionen praktischer.
 ## Wo Sie als nächstes suchen müssen
 
 - Wenn Sie die Anwendungskonfiguration nicht bestätigt haben, lesen Sie weiter unter [Anwendungsumgebungsvariablen](./env.md)
-- Wenn Sie bereit sind, die Anwendung offiziell für Geschäftsanwender zu öffnen, lesen Sie weiter [Nginx](../produktion/reverse-proxy/nginx.md) oder [Caddy](../produktion/reverse-proxy/caddy.md)
+- Wenn Sie bereit sind, die Anwendung offiziell für Geschäftsanwender zu öffnen, lesen Sie weiter [Nginx](../production/reverse-proxy/nginx.md) oder [Caddy](../production/reverse-proxy/caddy.md)
