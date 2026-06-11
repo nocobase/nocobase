@@ -9,6 +9,7 @@
 
 import { Plugin } from '@nocobase/client-v2';
 import { registerMultiPortalsFromApi } from './layoutRegistration';
+import { registerMultiPortalPermissionsTab } from './permissions/multiPortalPermissions';
 
 export class PluginMultiPortalClientV2 extends Plugin {
   async load() {
@@ -28,6 +29,8 @@ export class PluginMultiPortalClientV2 extends Plugin {
       aclSnippet: 'pm.multi-portal',
       componentLoader: () => import('./pages/MultiPortalsPage'),
     });
+
+    registerMultiPortalPermissionsTab(this.app, (key) => this.t(key));
 
     await registerMultiPortalsFromApi(this.app);
   }

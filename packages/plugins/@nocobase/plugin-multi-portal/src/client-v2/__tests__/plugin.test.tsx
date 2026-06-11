@@ -116,6 +116,7 @@ describe('PluginMultiPortalClientV2', () => {
         routePath: '/mobile',
       },
     };
+    const addPermissionsTab = vi.fn();
     const app = {
       i18n: {
         t: vi.fn((key: string) => key),
@@ -123,6 +124,13 @@ describe('PluginMultiPortalClientV2', () => {
       pluginSettingsManager: {
         addMenuItem: vi.fn(),
         addPageTabItem: vi.fn(),
+      },
+      pm: {
+        get: vi.fn(() => ({
+          settingsUI: {
+            addPermissionsTab,
+          },
+        })),
       },
       apiClient: {
         request: vi.fn().mockResolvedValue({
@@ -153,6 +161,13 @@ describe('PluginMultiPortalClientV2', () => {
       aclSnippet: 'pm.multi-portal',
       componentLoader: expect.any(Function),
     });
+    expect(addPermissionsTab).toHaveBeenCalledWith({
+      key: 'multi-portals',
+      label: 'Multi-Portal',
+      sort: 22,
+      componentLoader: expect.any(Function),
+    });
+    await expect(addPermissionsTab.mock.calls[0][0].componentLoader()).resolves.toHaveProperty('default');
     expect(app.apiClient.request).toHaveBeenCalledWith({
       url: 'multiPortals:listEnabled',
       method: 'get',

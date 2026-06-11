@@ -12,6 +12,27 @@ import { DEFAULT_ADMIN_UI_LAYOUT, DEFAULT_MOBILE_UI_LAYOUT } from '../../../../p
 
 const MULTI_PORTAL_RUNTIME_FIELDS = ['uid', 'title', 'routeName', 'routePath', 'authCheck', 'enabled', 'uiLayout'];
 
+async function createMultiPortalAclMockServer() {
+  return createMockServer({
+    registerActions: true,
+    acl: true,
+    plugins: [
+      'error-handler',
+      'users',
+      'auth',
+      'client',
+      'field-sort',
+      'acl',
+      'ui-schema-storage',
+      'system-settings',
+      'data-source-main',
+      'data-source-manager',
+      'ui-layout',
+      'multi-portal',
+    ],
+  });
+}
+
 describe('plugin-multi-portal server', () => {
   let app: MockServer | undefined;
 
@@ -149,25 +170,141 @@ describe('plugin-multi-portal server', () => {
     ).rejects.toThrow();
   });
 
-  it('should expose enabled portal manifests for runtime registration', async () => {
-    app = await createMockServer({
-      registerActions: true,
-      acl: true,
-      plugins: [
-        'error-handler',
-        'users',
-        'auth',
-        'client',
-        'field-sort',
-        'acl',
-        'ui-schema-storage',
-        'system-settings',
-        'data-source-main',
-        'data-source-manager',
-        'ui-layout',
-        'multi-portal',
-      ],
+  it('should define role multi-portal permission relation', async () => {
+    app = await createMultiPortalAclMockServer();
+    await app.db.sync();
+
+    const collection = app.db.getCollection('rolesMultiPortals');
+    expect(collection).toBeTruthy();
+    expect(collection.getField('role')?.options).toMatchObject({
+      type: 'belongsTo',
+      target: 'roles',
+      targetKey: 'name',
+      foreignKey: 'roleName',
+      onDelete: 'CASCADE',
     });
+    expect(collection.getField('multiPortal')?.options).toMatchObject({
+      type: 'belongsTo',
+      target: 'multiPortals',
+      targetKey: 'uid',
+      foreignKey: 'multiPortalUid',
+      onDelete: 'CASCADE',
+    });
+    expect(app.db.getCollection('roles').getField('multiPortals')?.options).toMatchObject({
+      type: 'belongsToMany',
+      target: 'multiPortals',
+      through: 'rolesMultiPortals',
+      sourceKey: 'name',
+      targetKey: 'uid',
+      foreignKey: 'roleName',
+      otherKey: 'multiPortalUid',
+    });
+  });
+
+  it('should enforce role portal access before listing portal routes', async () => {
+    app = await createMultiPortalAclMockServer();
+
+    const repository = app.db.getRepository('multiPortals');
+    const allowedPortal = await repository.create({
+      values: {
+        uid: 'allowed-permission-portal',
+        title: 'Allowed permission portal',
+        routeName: 'allowedPermissionPortal',
+        routePath: '/allowed-permission-portal',
+        authCheck: true,
+        enabled: true,
+        uiLayoutUid: DEFAULT_ADMIN_UI_LAYOUT.uid,
+      },
+    });
+    const deniedPortal = await repository.create({
+      values: {
+        uid: 'denied-permission-portal',
+        title: 'Denied permission portal',
+        routeName: 'deniedPermissionPortal',
+        routePath: '/denied-permission-portal',
+        authCheck: true,
+        enabled: true,
+        uiLayoutUid: DEFAULT_ADMIN_UI_LAYOUT.uid,
+      },
+    });
+    const route = await app.db.getRepository('desktopRoutes').create({
+      values: {
+        type: 'flowPage',
+        title: 'DATA-PORTAL-PERMISSION-ROUTE',
+        schemaUid: 'portal-permission-route',
+        hidden: false,
+        sort: 10,
+      },
+    });
+    const role = await app.db.getRepository('roles').create({
+      values: {
+        name: 'multi-portal-permission-member',
+      },
+    });
+    await app.db.getRepository('desktopRoutes.uiLayouts', route.get('id')).set({
+      tk: [DEFAULT_ADMIN_UI_LAYOUT.uid],
+    });
+    await app.db.getRepository('rolesDesktopRoutes').create({
+      values: {
+        roleName: role.get('name'),
+        desktopRouteId: route.get('id'),
+      },
+    });
+    await app.db.getRepository('rolesMultiPortals').create({
+      values: {
+        roleName: role.get('name'),
+        multiPortalUid: allowedPortal.get('uid'),
+      },
+    });
+
+    const rootUser = await app.db.getRepository('users').findOne({
+      filter: {
+        'roles.name': 'root',
+      },
+    });
+    const memberUser = await app.db.getRepository('users').create({
+      values: {
+        roles: [role.get('name')],
+      },
+    });
+    const rootAgent = await app.agent().login(rootUser);
+    const memberAgent = await app.agent().login(memberUser);
+
+    const [allowedListResponse, deniedListResponse, allowedGetResponse, deniedGetResponse, rootDeniedListResponse] =
+      await Promise.all([
+        memberAgent.get('/desktopRoutes:listAccessible').query({
+          layout: allowedPortal.get('uid'),
+        }),
+        memberAgent.get('/desktopRoutes:listAccessible').query({
+          layout: deniedPortal.get('uid'),
+        }),
+        memberAgent.get('/desktopRoutes:getAccessible').query({
+          filterByTk: route.get('id'),
+          layout: allowedPortal.get('uid'),
+        }),
+        memberAgent.get('/desktopRoutes:getAccessible').query({
+          filterByTk: route.get('id'),
+          layout: deniedPortal.get('uid'),
+        }),
+        rootAgent.get('/desktopRoutes:listAccessible').query({
+          layout: deniedPortal.get('uid'),
+        }),
+      ]);
+
+    expect(allowedListResponse.status).toBe(200);
+    expect(deniedListResponse.status).toBe(200);
+    expect(allowedGetResponse.status).toBe(200);
+    expect([200, 204]).toContain(deniedGetResponse.status);
+    expect(rootDeniedListResponse.status).toBe(200);
+    expect(allowedListResponse.body.data.map((item) => item.title)).toEqual(['DATA-PORTAL-PERMISSION-ROUTE']);
+    expect(deniedListResponse.body.data).toEqual([]);
+    expect(allowedGetResponse.body.data.title).toBe('DATA-PORTAL-PERMISSION-ROUTE');
+    expect(deniedGetResponse.body.data ?? null).toBeNull();
+    expect(rootDeniedListResponse.body.data.map((item) => item.title)).toContain('DATA-PORTAL-PERMISSION-ROUTE');
+  });
+
+  it('should expose enabled portal manifests for runtime registration', async () => {
+    app = await createMultiPortalAclMockServer();
     await app.db.sync();
 
     const repository = app.db.getRepository('multiPortals');
