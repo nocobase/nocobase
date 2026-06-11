@@ -95,6 +95,20 @@ AI terlebih dahulu mengeluarkan rancangan desain, setelah dikonfirmasi langsung 
 
 Untuk mempelajari lebih lanjut tentang penggunaan pembangunan seluruh sistem, silakan lihat [Solusi](./dsl-reconciler).
 
+### Bangun satu milestone, dan AI menyimpan versi yang dapat dipulihkan untukmu
+
+Setelah menyelesaikan sebuah halaman, sekelompok tabel data, atau sebuah workflow, minta AI menyimpan keadaan saat ini sebagai versi — jika ada konfigurasi yang rusak, kamu selalu bisa kembali ke milestone terakhir yang jelas.
+
+```
+Simpan hasil pembangunan saat ini sebagai versi: halaman manajemen pelanggan, area filter, dan form edit sudah selesai dikonfigurasi
+```
+
+![AI membuat versi setelah membangun](https://static-docs.nocobase.com/20260611115804.png)
+
+AI tidak menyimpan versi setiap kali mengubah satu field; AI hanya menyimpan setelah menyelesaikan dan memverifikasi satu milestone yang jelas, sehingga daftar versi lebih mudah dibaca dan lebih mudah menentukan ke mana harus kembali.
+
+Untuk mempelajari lebih lanjut tentang kontrol versi, silakan lihat [Kontrol Versi](./version-control).
+
 ## Keamanan & Audit
 
 Sebelum membiarkan AI Agent mengoperasikan NocoBase, disarankan untuk memahami terlebih dahulu metode autentikasi, kontrol Permission, dan audit operasi — pastikan AI hanya melakukan apa yang seharusnya, setiap langkah tercatat. Silakan lihat [Keamanan & Audit](./security).
