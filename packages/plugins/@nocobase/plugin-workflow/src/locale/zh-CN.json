@@ -212,6 +212,7 @@
   "Support pre-action event (local mode), post-action event (local mode), and approval event here.": "此处支持“操作前事件（局部模式）”、“操作后事件（局部模式）”、“审批事件”。",
   "Sync": "同步",
   "Sync enabled status of all workflows from database": "从数据库同步所有工作流的启用状态",
+  "Synchronous collection event workflows run within the trigger transaction by default. Related data operations automatically use this transaction.": "同步的数据表事件工作流默认包含在触发器事务之内，相关的数据处理会自动应用该事务。",
   "Synchronously": "同步",
   "Syntax references: ": "语法参考：",
   "System time": "系统时间",

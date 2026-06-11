@@ -88,7 +88,11 @@ function getTransporter(provider: Provider): Transporter {
     return createNewTransporter(key, newConfig);
   }
 
-  return transporterMap.get(key)!;
+  const transporter = transporterMap.get(key);
+  if (!transporter) {
+    return createNewTransporter(key, newConfig);
+  }
+  return transporter;
 }
 
 function discardTransporter(key: string, transporter: Transporter) {
@@ -239,7 +243,7 @@ export default class MailerInstruction extends Instruction {
 
     const { workflow } = processor.execution as ExecutionModel & { workflow: WorkflowModel };
     const currentWorkflow = workflow?.options || workflow?.get?.('options') ? workflow : await node.getWorkflow();
-    const sync = this.workflow.isWorkflowSync(currentWorkflow);
+    const sync = processor.isInstructionSync(node);
     const workflowOptions = currentWorkflow?.options ?? currentWorkflow?.get?.('options') ?? {};
     const workflowTimeout = Number(workflowOptions.timeout ?? 0);
 

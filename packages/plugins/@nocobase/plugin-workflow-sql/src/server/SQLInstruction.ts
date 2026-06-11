@@ -62,10 +62,13 @@ export default class extends Instruction {
         status: JOB_STATUS.RESOLVED,
       };
     }
+    const transaction =
+      processor.getScopeTransaction(node, dataSourceName) ??
+      this.workflow.useDataSourceTransaction(dataSourceName, processor.transaction);
 
     const [result = null, meta = null] =
       (await collectionManager.db.sequelize.query(sql, {
-        transaction: this.workflow.useDataSourceTransaction(dataSourceName, processor.transaction),
+        transaction,
         replacements,
         // plain: true,
         // model: db.getCollection(node.config.collection).model

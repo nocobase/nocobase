@@ -186,6 +186,11 @@
             "type": "custom-link",
             "label": "Thao tác SQL",
             "link": "/workflow/nodes/sql"
+          },
+          {
+            "type": "custom-link",
+            "label": "Giao dịch cơ sở dữ liệu",
+            "link": "/workflow/nodes/transaction"
           }
         ]
       },

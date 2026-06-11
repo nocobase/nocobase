@@ -208,6 +208,7 @@
   "Support pre-action event (local mode), post-action event (local mode), and approval event here.": "Support pre-action event (local mode), post-action event (local mode), and approval event here.",
   "Sync": "Sync",
   "Sync enabled status of all workflows from database": "Sync enabled status of all workflows from database",
+  "Synchronous collection event workflows run within the trigger transaction by default. Related data operations automatically use this transaction.": "Synchronous collection event workflows run within the trigger transaction by default. Related data operations automatically use this transaction.",
   "Synchronously": "Synchronously",
   "Syntax references: ": "Syntax references: ",
   "System time": "System time",

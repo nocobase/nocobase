@@ -62,11 +62,14 @@ export default class extends Instruction {
     if (!options.dataType && aggregator === 'avg') {
       options.dataType = DataTypes.DOUBLE;
     }
+    const transaction =
+      processor.getScopeTransaction(node, dataSourceName) ??
+      this.workflow.useDataSourceTransaction(dataSourceName, processor.transaction);
 
     const result = await repo.aggregate({
       ...options,
       method: aggregators[aggregator],
-      transaction: this.workflow.useDataSourceTransaction(dataSourceName, processor.transaction),
+      transaction,
     });
 
     return {
