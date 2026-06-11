@@ -120,6 +120,10 @@ describe('PluginMultiPortalClientV2', () => {
       i18n: {
         t: vi.fn((key: string) => key),
       },
+      pluginSettingsManager: {
+        addMenuItem: vi.fn(),
+        addPageTabItem: vi.fn(),
+      },
       apiClient: {
         request: vi.fn().mockResolvedValue({
           data: {
@@ -134,6 +138,21 @@ describe('PluginMultiPortalClientV2', () => {
 
     await plugin.load();
 
+    expect(app.pluginSettingsManager.addMenuItem).toHaveBeenCalledWith({
+      key: 'multi-portal',
+      title: 'Multi-Portal',
+      icon: 'PartitionOutlined',
+      aclSnippet: 'pm.multi-portal',
+      showTabs: true,
+    });
+    expect(app.pluginSettingsManager.addPageTabItem).toHaveBeenCalledTimes(1);
+    expect(app.pluginSettingsManager.addPageTabItem).toHaveBeenCalledWith({
+      menuKey: 'multi-portal',
+      key: 'index',
+      title: 'Multi-Portal',
+      aclSnippet: 'pm.multi-portal',
+      componentLoader: expect.any(Function),
+    });
     expect(app.apiClient.request).toHaveBeenCalledWith({
       url: 'multiPortals:listEnabled',
       method: 'get',

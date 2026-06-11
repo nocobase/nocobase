@@ -12,6 +12,23 @@ import { registerMultiPortalsFromApi } from './layoutRegistration';
 
 export class PluginMultiPortalClientV2 extends Plugin {
   async load() {
+    const title = this.t('Multi-Portal') as string;
+
+    this.pluginSettingsManager.addMenuItem({
+      key: 'multi-portal',
+      title,
+      icon: 'PartitionOutlined',
+      aclSnippet: 'pm.multi-portal',
+      showTabs: true,
+    });
+    this.pluginSettingsManager.addPageTabItem({
+      menuKey: 'multi-portal',
+      key: 'index',
+      title,
+      aclSnippet: 'pm.multi-portal',
+      componentLoader: () => import('./pages/MultiPortalsPage'),
+    });
+
     await registerMultiPortalsFromApi(this.app);
   }
 }

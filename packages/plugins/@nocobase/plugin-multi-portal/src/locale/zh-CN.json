@@ -1,3 +1,21 @@
 {
-  "Multi-Portal": "多门户"
+  "Access path": "访问路径",
+  "Actions": "操作",
+  "Add Multi-Portal": "新增多门户",
+  "Are you sure you want to delete it?": "确定要删除吗？",
+  "Are you sure you want to delete the selected Multi-Portal records?": "确定要删除选中的多门户记录吗？",
+  "Cancel": "取消",
+  "Delete": "删除",
+  "Delete Multi-Portal": "删除多门户",
+  "Edit": "编辑",
+  "Edit Multi-Portal": "编辑多门户",
+  "Enabled": "启用",
+  "Layout": "布局",
+  "Multi-Portal": "多门户",
+  "Refresh": "刷新",
+  "Route name": "路由名称",
+  "Submit": "提交",
+  "Title": "标题",
+  "UID": "UID",
+  "Updated successfully": "更新成功"
 }

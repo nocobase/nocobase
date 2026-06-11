@@ -1,3 +1,21 @@
 {
-  "Multi-Portal": "Multi-Portal"
+  "Access path": "Access path",
+  "Actions": "Actions",
+  "Add Multi-Portal": "Add Multi-Portal",
+  "Are you sure you want to delete it?": "Are you sure you want to delete it?",
+  "Are you sure you want to delete the selected Multi-Portal records?": "Are you sure you want to delete the selected Multi-Portal records?",
+  "Cancel": "Cancel",
+  "Delete": "Delete",
+  "Delete Multi-Portal": "Delete Multi-Portal",
+  "Edit": "Edit",
+  "Edit Multi-Portal": "Edit Multi-Portal",
+  "Enabled": "Enabled",
+  "Layout": "Layout",
+  "Multi-Portal": "Multi-Portal",
+  "Refresh": "Refresh",
+  "Route name": "Route name",
+  "Submit": "Submit",
+  "Title": "Title",
+  "UID": "UID",
+  "Updated successfully": "Updated successfully"
 }
