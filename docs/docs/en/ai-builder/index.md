@@ -101,7 +101,7 @@ Before letting an AI Agent operate NocoBase, we recommend understanding the auth
 
 ## NocoBase Skills
 
-[NocoBase Skills](https://github.com/nocobase/skills) are domain knowledge packages that can be installed into AI Agents, enabling AI to understand NocoBase's configuration system. NocoBase provides 8 Skills covering the entire building workflow:
+[NocoBase Skills](https://github.com/nocobase/skills) are domain knowledge packages that can be installed into AI Agents, enabling AI to understand NocoBase's configuration system. NocoBase provides 9 Skills covering the entire building workflow:
 
 - [Environment Management](./env-bootstrap) — Environment checks, installation, deployment, upgrades, and troubleshooting
 - [Data Modeling](./data-modeling) — Create and manage data tables, fields, and relationships
@@ -111,6 +111,7 @@ Before letting an AI Agent operate NocoBase, we recommend understanding the auth
 - [Solutions](./dsl-reconciler) — Batch-build entire business systems from YAML
 - [Plugin Management](./plugin-manage) — View, enable, and disable plugins
 - [Release Management](./publish) — Cross-environment releases, backup & restore, and migration
+- [Version Control](./version-control) — Save restorable versions after completed milestones
 
 :::tip
 

@@ -101,7 +101,7 @@ Sebelum membiarkan AI Agent mengoperasikan NocoBase, disarankan untuk memahami t
 
 ## NocoBase Skills
 
-[NocoBase Skills](https://github.com/nocobase/skills) adalah paket pengetahuan domain yang dapat dipasang ke AI Agent, agar AI memahami sistem konfigurasi NocoBase. NocoBase menyediakan 8 Skills, mencakup seluruh proses pembangunan:
+[NocoBase Skills](https://github.com/nocobase/skills) adalah paket pengetahuan domain yang dapat dipasang ke AI Agent, agar AI memahami sistem konfigurasi NocoBase. NocoBase menyediakan 9 Skills, mencakup seluruh proses pembangunan:
 
 - [Manajemen Lingkungan](./env-bootstrap) — Pemeriksaan lingkungan, instalasi deployment, upgrade, dan diagnostik masalah
 - [Pemodelan Data](./data-modeling) — Membuat dan mengelola tabel data, Field, relasi
@@ -111,6 +111,7 @@ Sebelum membiarkan AI Agent mengoperasikan NocoBase, disarankan untuk memahami t
 - [Solusi](./dsl-reconciler) — Membangun seluruh sistem bisnis secara batch dari YAML
 - [Manajemen Plugin](./plugin-manage) — Melihat, mengaktifkan, dan menonaktifkan Plugin
 - [Manajemen Publikasi](./publish) — Publikasi lintas lingkungan, backup recovery, dan migrasi
+- [Kontrol Versi](./version-control) — Menyimpan versi yang dapat dipulihkan setelah milestone selesai
 
 :::tip Tips
 

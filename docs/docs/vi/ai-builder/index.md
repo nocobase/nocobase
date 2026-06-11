@@ -101,7 +101,7 @@ Trước khi để AI Agent thao tác trên NocoBase, khuyến nghị tìm hiể
 
 ## NocoBase Skills
 
-[NocoBase Skills](https://github.com/nocobase/skills) là gói kiến thức chuyên ngành có thể cài vào AI Agent, giúp AI hiểu được hệ thống cấu hình của NocoBase. NocoBase cung cấp 8 Skills, bao quát toàn bộ quy trình xây dựng:
+[NocoBase Skills](https://github.com/nocobase/skills) là gói kiến thức chuyên ngành có thể cài vào AI Agent, giúp AI hiểu được hệ thống cấu hình của NocoBase. NocoBase cung cấp 9 Skills, bao quát toàn bộ quy trình xây dựng:
 
 - [Quản lý môi trường](./env-bootstrap) — Kiểm tra môi trường, cài đặt triển khai, nâng cấp và chẩn đoán sự cố
 - [Mô hình hóa dữ liệu](./data-modeling) — Tạo và quản lý bảng, Field, quan hệ liên kết
@@ -111,6 +111,7 @@ Trước khi để AI Agent thao tác trên NocoBase, khuyến nghị tìm hiể
 - [Giải pháp](./dsl-reconciler) — Xây dựng nguyên cả hệ thống nghiệp vụ hàng loạt từ YAML
 - [Quản lý Plugin](./plugin-manage) — Xem, kích hoạt và tắt Plugin
 - [Quản lý phát hành](./publish) — Phát hành đa môi trường, sao lưu khôi phục và di chuyển
+- [Quản lý phiên bản](./version-control) — Lưu phiên bản có thể khôi phục sau các mốc đã hoàn thành
 
 :::tip Mẹo
 
