@@ -15,6 +15,9 @@ export async function checkAssociationOperate(ctx: Context, next: Next) {
   if (!(resourceName.includes('.') && ['add', 'set', 'remove', 'toggle'].includes(actionName))) {
     return next();
   }
+  if (ctx.permission?.skip) {
+    return next();
+  }
   const acl: ACL = ctx.acl;
   const roles = ctx.state.currentRoles;
   for (const role of roles) {
