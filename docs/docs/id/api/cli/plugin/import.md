@@ -71,4 +71,4 @@ Kamu tidak perlu mengekstrak apa pun secara manual ke `storage/plugins`. `nb plu
 
 - [`nb app restart`](../app/restart.md)
 - [`nb plugin enable`](./enable.md)
-- [`Instal dan upgrade plugin pihak ketiga`](../../../quickstart/plugins/third-party.md)
+- [`Instal dan upgrade plugin pihak ketiga`](../../../nocobase-cli/plugins/third-party.md)

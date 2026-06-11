@@ -12,7 +12,7 @@ In the last chapter, we quickly created a working "Add new" form. Now let's refi
 
 ### Adding the "Add new" Action Button
 
-1. Make sure you're in [UI Editor](/quickstart/how-nocobase-works) mode (top-right toggle is on).
+1. Make sure you're in [UI Editor](/get-started/how-nocobase-works) mode (top-right toggle is on).
 2. Go to the "All Tickets" page, and click **"[Actions](/interface-builder/actions)"** above the Table block.
 3. Check the **"Add new"** action button.
 4. An "Add new" button will appear above the table. Clicking it opens a [popup](../../interface-builder/actions/types/pop-up.md).

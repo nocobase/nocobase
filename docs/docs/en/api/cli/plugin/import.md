@@ -71,4 +71,4 @@ You do not need to extract anything into `storage/plugins` by hand. `nb plugin i
 
 - [`nb app restart`](../app/restart.md)
 - [`nb plugin enable`](./enable.md)
-- [`Install and upgrade third-party plugins`](../../../quickstart/plugins/third-party.md)
+- [`Install and upgrade third-party plugins`](../../../nocobase-cli/plugins/third-party.md)

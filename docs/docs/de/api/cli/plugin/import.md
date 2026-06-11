@@ -71,4 +71,4 @@ Du musst nichts manuell nach `storage/plugins` entpacken. `nb plugin import` leg
 
 - [`nb app restart`](../app/restart.md)
 - [`nb plugin enable`](./enable.md)
-- [`Drittanbieter-Plugins installieren und aktualisieren`](../../../quickstart/plugins/third-party.md)
+- [`Drittanbieter-Plugins installieren und aktualisieren`](../../../nocobase-cli/plugins/third-party.md)
