@@ -1,12 +1,12 @@
 ---
-displayName: "File manager"
+displayName: "Gerenciador de arquivos"
 packageName: '@nocobase/plugin-file-manager'
 description: |
-  Provides files storage services with files collection template and attachment field.
+  Fornece serviços de armazenamento de arquivos, com modelo de coleção de arquivos e campo de anexo.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# File manager
+# Gerenciador de arquivos

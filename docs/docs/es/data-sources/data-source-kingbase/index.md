@@ -1,10 +1,6 @@
 ---
 pkg: "@nocobase/plugin-data-source-kingbase"
 ---
-:::tip Aviso de traducción por IA
-Esta documentación ha sido traducida automáticamente por IA.
-:::
-
 
 # Fuente de datos - KingbaseES
 
@@ -45,7 +41,7 @@ networks:
 
 services:
   app:
-    image: registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:latest
+    image: nocobase/nocobase:latest
     restart: always
     networks:
       - nocobase
@@ -76,7 +72,7 @@ services:
 
   # Kingbase service for testing purposes only
   kingbase:
-    image: registry.cn-shanghai.aliyuncs.com/nocobase/kingbase:v009r001c001b0030_single_x86
+    image: nocobase/kingbase:v009r001c001b0030_single_x86
     platform: linux/amd64
     restart: always
     privileged: true
@@ -102,7 +98,7 @@ yarn create nocobase-app my-nocobase-app -d kingbase \
    -e DB_DATABASE=kingbase \
    -e DB_USER=nocobase \
    -e DB_PASSWORD=nocobase \
-   -e TZ=Asia/Shanghai
+   -e TZ=UTC
 ```
 
 ### Uso como base de datos externa
@@ -121,5 +117,5 @@ Active el plugin
 
 ## Guía de uso
 
-- Base de datos principal: Consulte la [fuente de datos principal](/data-sources/data-source-main/)
+- Base de datos principal: Consulte la [fuente de datos principal](/data-sources/data-source-main/index.md)
 - Base de datos externa: Consulte [Fuente de datos / Base de datos externa](/data-sources/data-source-manager/external-database)

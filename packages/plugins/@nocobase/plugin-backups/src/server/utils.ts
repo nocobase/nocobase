@@ -8,6 +8,7 @@
  */
 
 export const BACKUP_EXTENSION = 'nbdata';
+export const METADATA_EXTENSION = '_metadata.json';
 export const STORAGE_PATH = 'storage/uploads';
 export const SETTINGS = 'backupSettings';
 export const BACKUPS = 'backups';

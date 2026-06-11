@@ -1,14 +1,14 @@
 ---
-displayName: "Form drafts"
+displayName: "Formularentwürfe"
 packageName: '@nocobase/plugin-form-drafts'
 supportedVersions:
   - 2.x
 description: |
-  Allow users to save form drafts and continue editing later.
+  Unterstützt das Speichern von Entwürfen beim Ausfüllen von Formularen, um diese später weiter zu bearbeiten und einzureichen.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Form drafts
+# Formularentwürfe

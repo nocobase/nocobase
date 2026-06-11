@@ -33,10 +33,6 @@ install_methods:
     technical_requirement: ★★★★★
     upgrade_method: Updates über den Git-Workflow synchronisieren
 ---
-:::tip KI-Übersetzungshinweis
-Diese Dokumentation wurde automatisch von KI übersetzt.
-:::
-
 
 
 # Installationsmethoden und Versionsvergleich
@@ -60,4 +56,7 @@ Sie können NocoBase auf verschiedene Arten installieren.
 | **Anwendungsbereiche** | No-Code-Benutzer, schnelle Bereitstellung auf einem Server. | Frontend-/Full-Stack-Entwickler, Teamprojekte, Low-Code-Entwicklung. | Technische Entwickler, Benutzer, die unveröffentlichte Versionen testen möchten. |
 | **Technische Anforderungen** | ★☆☆☆☆ | ★★★☆☆ | ★★★★★ |
 | **Upgrade-Methode** | Neuestes Image herunterladen und Container neu starten | Abhängigkeiten mit yarn aktualisieren | Updates über den Git-Workflow synchronisieren |
-| **Anleitungen** | [<code>Installation</code>](#) [<code>Upgrade</code>](#) [<code>Bereitstellung</code>](#) | [<code>Installation</code>](#) [<code>Upgrade</code>](#) [<code>Bereitstellung</code>](#) | [<code>Installation</code>](#) [<code>Upgrade</code>](#) [<code>Bereitstellung</code>](#) |
+
+## Wie geht es weiter
+
+Wenn Sie sich für eine Installationsmethode entschieden haben, lesen Sie als Nächstes [Schnellstart](../ai/quick-start.md). Dort installieren Sie die NocoBase CLI, verbinden sich mit einer bestehenden Anwendung oder initialisieren eine neue und lassen dann Ihren AI Agent loslegen.

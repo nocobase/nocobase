@@ -14,7 +14,8 @@ import { Card } from 'antd';
 import _ from 'lodash';
 import { dayjs } from '@nocobase/utils/client';
 import { ContextItem } from '../types';
-import { useChatMessagesStore } from '../chatbox/stores/chat-messages';
+import { useChat } from '../chatbox/hooks/useChat';
+import { useChatConversationsStore } from '../chatbox/stores/chat-conversations';
 
 const { Text } = Typography;
 
@@ -27,7 +28,9 @@ export type DatasourceListProps = {
 
 export const DatasourceList: React.FC<DatasourceListProps> = observer(({ onSelect, contextItems, onAdd, onRemove }) => {
   const ctx = useFlowContext<FlowModelContext & { resource: MultiRecordResource }>();
-  const workContextItems = contextItems ?? useChatMessagesStore.use.contextItems();
+  const currentConversation = useChatConversationsStore.use.currentConversation();
+  const chat = useChat(currentConversation);
+  const workContextItems = contextItems ?? chat.use.contextItems();
   const dataSource = ctx.resource.getData();
   const [selectedRowKey, setSelectedRowKey] = useState<string | null>(null);
   const [checked, setChecked] = useState<string[]>([]);

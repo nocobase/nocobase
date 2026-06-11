@@ -14,8 +14,7 @@ import React, { useCallback, useContext } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAPIClient } from '../../api-client/hooks/useAPIClient';
 import { SchemaInitializerItem } from '../../application';
-import { useGlobalTheme } from '../../global-theme';
-import { NocoBaseDesktopRouteType } from '../../route-switch/antd/admin-layout/convertRoutesToSchema';
+import { useGlobalTheme } from '@nocobase/client-v2';
 import {
   FormDialog,
   SchemaComponent,
@@ -26,6 +25,7 @@ import {
   ICON_POPUP_Z_INDEX,
 } from '../../schema-component';
 import { useStyles } from '../../schema-component/antd/menu/MenuItemInitializers';
+import { NocoBaseDesktopRouteType } from '../../route-switch';
 
 const useInsertFlowPageSchema = () => {
   const api = useAPIClient();

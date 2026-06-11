@@ -1,10 +1,6 @@
 ---
 pkg: "@nocobase/plugin-action-export"
 ---
-:::tip Avis de traduction IA
-Cette documentation a été traduite automatiquement par IA.
-:::
-
 # Exportation
 
 ## Introduction

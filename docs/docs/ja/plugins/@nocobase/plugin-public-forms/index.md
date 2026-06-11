@@ -1,12 +1,12 @@
 ---
-displayName: "Public forms"
+displayName: "公開フォーム"
 packageName: '@nocobase/plugin-public-forms'
 description: |
-  Share public forms externally to collect information from anonymous users
+  公開フォームを外部に共有し、匿名ユーザーから情報を収集します。
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Public forms
+# 公開フォーム

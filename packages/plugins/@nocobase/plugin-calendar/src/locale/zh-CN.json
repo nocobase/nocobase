@@ -25,7 +25,9 @@
   "End date field": "结束日期字段",
   "Event": "事件",
   "Event open mode": "事项打开方式",
+  "Event popup settings": "事项弹窗设置",
   "Filter": "筛选",
+  "Monday": "周一",
   "Month": "月",
   "Monthly": "每月",
   "None": "无",
@@ -33,6 +35,7 @@
   "Popup": "弹窗",
   "Print": "打印",
   "Quick create event": "快速创建事项",
+  "Quick create popup settings": "快速创建弹窗设置",
   "Repeats": "重复",
   "Select view": "切换视图",
   "Show lunar": "展示农历",
@@ -52,5 +55,6 @@
   "Weekly": "每周",
   "Work week": "工作日",
   "Yearly": "每年",
+  "Sunday": "周日",
   "{{count}} more items": "{{count}} 更多事项"
 }

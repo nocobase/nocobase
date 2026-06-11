@@ -1,12 +1,12 @@
 ---
-displayName: "Graph collection manager"
+displayName: "コレクションの可視化管理"
 packageName: '@nocobase/plugin-graph-collection-manager'
 description: |
-  An ER diagram-like tool. Currently only the Master database is supported.
+  ER図のようなツールです。現在はメインデータベースのみをサポートしています。
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Graph collection manager
+# コレクションの可視化管理

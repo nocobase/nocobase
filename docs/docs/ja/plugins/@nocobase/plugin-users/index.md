@@ -1,12 +1,12 @@
 ---
-displayName: "Users"
+displayName: "ユーザー"
 packageName: '@nocobase/plugin-users'
 description: |
-  Provides basic user model, as well as created by and updated by fields.
+  基本的なユーザーモデルと、作成者および最終更新者フィールドを提供します。
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Users
+# ユーザー

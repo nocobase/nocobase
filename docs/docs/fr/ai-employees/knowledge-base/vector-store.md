@@ -1,7 +1,3 @@
-:::tip Avis de traduction IA
-Cette documentation a été traduite automatiquement par IA.
-:::
-
 # Stockage vectoriel
 
 ## Introduction
@@ -20,7 +16,7 @@ Cliquez sur le bouton `Add new` en haut à droite pour ajouter un nouveau stocka
 
 - Dans le champ `Name`, saisissez le nom du stockage vectoriel ;
 - Dans `Vector store`, sélectionnez une base de données vectorielle déjà configurée. Référez-vous à : [Base de données vectorielle](/ai-employees/knowledge-base/vector-database) ;
-- Dans `LLM service`, sélectionnez un service LLM déjà configuré. Référez-vous à : [Gestion des services LLM](/ai-employees/quick-start/llm-service) ;
+- Dans `LLM service`, sélectionnez un service LLM déjà configuré. Référez-vous à : [Gestion des services LLM](/ai-employees/features/llm-service) ;
 - Dans le champ `Embedding model`, saisissez le nom du modèle `Embedding` à utiliser ;
 
 Cliquez sur le bouton `Submit` pour enregistrer les informations du stockage vectoriel.

@@ -7,10 +7,14 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { useFlowEngine } from '@nocobase/flow-engine';
 import { useContext } from 'react';
 import type { Application } from '../Application';
 import { ApplicationContext } from '../context';
 
 export const useApp = () => {
-  return useContext(ApplicationContext) || ({} as Application);
+  const appFromContext = useContext(ApplicationContext);
+  const flowEngine = useFlowEngine({ throwError: false });
+  const appFromFlowContext = flowEngine?.context?.app as Application;
+  return appFromFlowContext || appFromContext || ({} as Application);
 };

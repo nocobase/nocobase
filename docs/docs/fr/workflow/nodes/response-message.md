@@ -1,10 +1,6 @@
 ---
 pkg: '@nocobase/plugin-workflow-response-message'
 ---
-:::tip Avis de traduction IA
-Cette documentation a été traduite automatiquement par IA.
-:::
-
 # Message de réponse
 
 ## Introduction
@@ -35,7 +31,7 @@ Lorsque le flux de travail exécute ce nœud, le modèle sera analysé pour gén
 Le produit « iPhone 14 pro » est en rupture de stock.
 ```
 
-![Contenu du message](https://static-docs.nocobase.com/06ad4a6b6ec499c853f0c39987f63a6a.png)
+![Contenu du message](https://static-docs.nocobase.com/06bd4a6b6ec499c853f0c39987f63a6a.png)
 
 ## Configuration du flux de travail
 

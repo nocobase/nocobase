@@ -134,6 +134,46 @@ If you need to revert to a stable state after an upgrade or corruption:
 
 ![20251227164004](https://static-docs.nocobase.com/20251227164004.png)
 
+## CLI
+
+### `yarn nocobase migration generate`
+
+```bash
+Usage: nocobase migration generate [options]
+
+Options:
+  --title [title]    migration title
+  --ruleId <ruleId>  migration rule id
+```
+
+Example
+
+```bash
+yarn nocobase migration generate --ruleId=1
+```
+
+### `yarn nocobase migration run`
+
+```bash
+Usage: nocobase migration run [options] <filePath>
+
+Arguments:
+  filePath           migration file path
+
+Options:
+  --skip-backup      skip backup
+  --var [var]        variable (default: [])
+  --secret [secret]  secret (default: [])
+```
+
+Example
+
+```bash
+yarn nocobase migration run /your/path/migration_1775658568158.nbdata \
+  --var A=a --var B=b \
+  --secret C=c --secret D=d
+```
+
 ## Best Practices
 
 ### Recommended Deployment Workflow (Blue-Green Switch)

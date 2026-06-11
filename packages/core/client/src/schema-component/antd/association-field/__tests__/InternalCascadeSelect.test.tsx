@@ -187,8 +187,10 @@ describe('InternalCascadeSelect', () => {
     await userEvent.click(document.querySelector('.ant-select-selector'));
     await userEvent.click(await screen.findByText('1', { selector: '.ant-select-item-option-content' }));
 
-    expect(Array.isArray(form.values.org_m2o_tree)).toBe(false);
-    expect(form.values.org_m2o_tree).toMatchObject({ id: 1, parentId: null });
+    await waitFor(() => {
+      expect(Array.isArray(form.values.org_m2o_tree)).toBe(false);
+      expect(form.values.org_m2o_tree).toMatchObject({ id: 1, parentId: null });
+    });
 
     await waitFor(() => {
       expect(document.querySelectorAll('.ant-select-selector')).toHaveLength(2);

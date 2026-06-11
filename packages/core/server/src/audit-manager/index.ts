@@ -11,6 +11,8 @@ import { Context } from '@nocobase/actions';
 import { head } from 'lodash';
 import Stream from 'stream';
 
+const REQUEST_SOURCE_HEADER = 'x-request-source';
+
 function isStream(obj) {
   return (
     obj instanceof Stream.Readable ||
@@ -25,6 +27,7 @@ export interface AuditLog {
   dataSource: string;
   resource: string;
   action: string;
+  requestSource?: string;
   sourceCollection?: string;
   sourceRecordUK?: string;
   targetCollection?: string;
@@ -240,6 +243,7 @@ export class AuditManager {
           'x-authenticator': ctx.request?.headers['x-authenticator'],
           'x-locale': ctx.request?.headers['x-locale'],
           'x-timezone': ctx.request?.headers['x-timezone'],
+          'x-request-source': ctx.request?.headers[REQUEST_SOURCE_HEADER],
         },
       },
       response: {
@@ -265,6 +269,7 @@ export class AuditManager {
       dataSource: (ctx.request.header['x-data-source'] || 'main') as string,
       resource: resourceName,
       action: ctx.action.actionName,
+      requestSource: ctx.request.header[REQUEST_SOURCE_HEADER] as string,
       userId: ctx.state?.currentUser?.id,
       roleName: ctx.state?.currentRole,
       ip: ips.length > 0 ? ips[0] : ctx.request.ip,

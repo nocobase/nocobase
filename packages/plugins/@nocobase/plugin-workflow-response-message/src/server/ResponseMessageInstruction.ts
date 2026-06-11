@@ -17,12 +17,17 @@
  */
 
 import { Instruction, Processor, JOB_STATUS, FlowNodeModel } from '@nocobase/plugin-workflow';
+import Joi from 'joi';
 
 interface Config {
   message?: string;
 }
 
 export default class extends Instruction {
+  configSchema = Joi.object({
+    message: Joi.string(),
+  });
+
   async run(node: FlowNodeModel, prevJob, processor: Processor) {
     const { httpContext } = processor.options;
 

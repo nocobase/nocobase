@@ -313,6 +313,7 @@ export const GoogleMapsComponent = React.forwardRef<GoogleMapForwardedRefProps, 
     useEffect(() => {
       if (!accessKey || map.current || !mapContainerRef.current) return;
       let loader: Loader;
+      let disposed = false;
       try {
         loader = new Loader({
           apiKey: accessKey,
@@ -341,7 +342,11 @@ export const GoogleMapsComponent = React.forwardRef<GoogleMapForwardedRefProps, 
       ])
         .then(async (res) => {
           const center = await getCurrentPosition();
-          map.current = new google.maps.Map(mapContainerRef.current, {
+          const mapContainer = mapContainerRef.current;
+          if (disposed || !(mapContainer instanceof HTMLElement)) {
+            return;
+          }
+          map.current = new google.maps.Map(mapContainer, {
             zoom,
             center,
             mapTypeId: google.maps.MapTypeId.ROADMAP,
@@ -362,6 +367,7 @@ export const GoogleMapsComponent = React.forwardRef<GoogleMapForwardedRefProps, 
         });
 
       return () => {
+        disposed = true;
         map.current?.unbindAll();
         map.current = null;
         drawingManagerRef.current?.unbindAll();

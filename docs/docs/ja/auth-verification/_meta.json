@@ -113,7 +113,7 @@
           {
             "type": "custom-link",
             "label": "拡張認証タイプ",
-            "link": "/auth-verification/auth/dev"
+            "link": "/auth-verification/auth/dev/"
           },
           {
             "type": "custom-link",

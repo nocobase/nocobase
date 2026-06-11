@@ -1,0 +1,15 @@
+{
+  "block.list1": {
+    "uid": "e4895a8b00a"
+  },
+  "node.ListItemModel1": {
+    "uid": "cb869ae49e4"
+  },
+  "node.DetailsGridModel1": {
+    "uid": "dfa112a7338"
+  },
+  "page.route": {
+    "routeId": 355812088348672,
+    "schemaUid": "nhpj3e672ci"
+  }
+}

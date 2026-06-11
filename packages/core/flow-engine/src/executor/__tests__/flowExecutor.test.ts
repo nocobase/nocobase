@@ -81,7 +81,7 @@ describe('FlowExecutor', () => {
     expect(result.step2).toBe('step2-ok');
   });
 
-  it('runFlow warns and skips steps without use or handler', async () => {
+  it('runFlow silently skips steps without use or handler', async () => {
     const flows = {
       referenceSettings: {
         steps: {
@@ -98,9 +98,7 @@ describe('FlowExecutor', () => {
       const result = await engine.executor.runFlow(model, 'referenceSettings');
 
       expect(result).toEqual({});
-      expect(loggerWarnSpy).toHaveBeenCalledWith(
-        "BaseModel.applyFlow: Step 'target' in flow 'referenceSettings' has neither 'use' nor 'handler'. Skipping.",
-      );
+      expect(loggerWarnSpy).not.toHaveBeenCalled();
       expect(loggerErrorSpy).not.toHaveBeenCalled();
     } finally {
       loggerChildSpy.mockRestore();

@@ -8,5 +8,7 @@
  */
 
 export * from './useApp';
+export * from './useCurrentAppInfo';
 export * from './usePlugin';
 export * from './useRouter';
+export { escapeHTML, getAppVersionHTML } from '../utils/appVersionHTML';

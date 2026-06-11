@@ -1,12 +1,12 @@
 ---
-displayName: "Workflow: Delay node"
+displayName: "Workflow: Verzögerungsknoten"
 packageName: '@nocobase/plugin-workflow-delay'
 description: |
-  Could be used in workflow parallel branch for waiting other branches.
+  Kann in parallelen Zweigen eines Workflows verwendet werden, um auf den Abschluss anderer Zweige zu warten.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Workflow: Delay node
+# Workflow: Verzögerungsknoten

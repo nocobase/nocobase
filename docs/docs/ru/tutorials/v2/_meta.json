@@ -1,0 +1,30 @@
+[
+  { "type": "file", "name": "index", "label": "Введение в учебник" },
+  {
+    "type": "file",
+    "name": "01-getting-started",
+    "label": "Глава 1. Знакомство с NocoBase"
+  },
+  {
+    "type": "file",
+    "name": "02-data-modeling",
+    "label": "Глава 2. Моделирование данных"
+  },
+  {
+    "type": "file",
+    "name": "03-building-pages",
+    "label": "Глава 3. Сборка страниц"
+  },
+  {
+    "type": "file",
+    "name": "04-forms-and-details",
+    "label": "Глава 4. Формы и детали"
+  },
+  {
+    "type": "file",
+    "name": "05-roles-and-permissions",
+    "label": "Глава 5. Пользователи и права"
+  },
+  { "type": "file", "name": "06-workflows", "label": "Глава 6. Workflow" },
+  { "type": "file", "name": "07-dashboard", "label": "Глава 7. Дашборд" }
+]

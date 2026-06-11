@@ -2,7 +2,7 @@
 displayName: "Collection: SQL"
 packageName: '@nocobase/plugin-collection-sql'
 description: |
-  Provides SQL collection template
+  SQL Collection テンプレートを提供します
 isFree: true
 builtIn: true
 defaultEnabled: false
