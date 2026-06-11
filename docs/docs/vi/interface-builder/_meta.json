@@ -328,6 +328,11 @@
           },
           {
             "type": "custom-link",
+            "label": "Nhập bằng Quét mã",
+            "link": "/interface-builder/fields/field-settings/scan-input"
+          },
+          {
+            "type": "custom-link",
             "label": "Field tiêu đề",
             "link": "/interface-builder/fields/field-settings/title-field"
           },

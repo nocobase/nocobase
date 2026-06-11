@@ -23,12 +23,6 @@ nb session setup
 
 :::
 
-Wenn Sie planen, die chinesische Benutzeroberfläche längere Zeit zu verwenden, reicht es normalerweise aus, zuerst das Gebietsschema festzulegen:
-
-```bash
-nb config set locale zh-CN
-```
-
 Die CLI sucht standardmäßig nach Selbstaktualisierungen. Sie können die Update-Strategie an Ihre eigenen Gewohnheiten anpassen:
 
 - `prompt`: Aufforderung, wenn eine neue Version gefunden wird

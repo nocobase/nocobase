@@ -23,12 +23,6 @@ nb session setup
 
 :::
 
-If you plan to use the Chinese interface for a long time, it is usually enough to set the locale first:
-
-```bash
-nb config set locale zh-CN
-```
-
 The CLI checks for self-updates by default. You can adjust the update strategy according to your own habits:
 
 - `prompt`: Prompt when a new version is found
