@@ -11,7 +11,7 @@
       {
         "type": "custom-link",
         "label": "Bagaimana NocoBase bekerja",
-        "link": "/quickstart/how-nocobase-works"
+        "link": "/get-started/how-nocobase-works"
       },
       {
         "type": "custom-link",
@@ -124,6 +124,6 @@
     "type": "custom-link",
     "label": "Mulai (versi lama)",
     "proxy": false,
-    "link": "/quickstart/how-nocobase-works"
+    "link": "/get-started/how-nocobase-works"
   }
 ]
