@@ -32,13 +32,16 @@ nb --version
 nb init --ui
 ```
 
-ウィザードでは、次の手順を順番に進めます：
+![2026-06-11-20-14-32](https://static-docs.nocobase.com/2026-06-11-20-14-32.png)
 
-1. アプリ名を設定する - その名前が CLI の env 名にもなります
-2. 「新規インストール」を選ぶ
-3. インストール方法を選ぶ - Docker、npm、または Git
-4. ポート、データベース、管理者アカウントを設定する
-5. ダウンロード、インストール、起動の完了を待つ
+選ぶ setup の経路によって、表示されるステップは少し変わります。ただし、標準の `Install a new app` ルートなら、通常は次の 6 ステップが表示されます。
+
+1. `Getting started` - `--env` 識別子を設定し、`Install a new app` を選ぶ
+2. `App environment` - アプリの基本情報、保存先、ランタイムポートを設定する
+3. `App source and version` - アプリの取得方法と使用するソース、バージョンを選ぶ
+4. `Configure the database` - 組み込みデータベースかカスタムデータベースを選ぶ
+5. `Create an admin account` - 最初の管理者アカウントを設定する
+6. `Connection & authentication` - アプリのアクセス URL を入力し、認証方式を選ぶ
 
 ターミナルでの操作に慣れている場合は、次のコマンドを直接実行してもかまいません：
 
@@ -75,7 +78,7 @@ nb config set default-api-host <server-ip>
 
 ```bash
 nb env list
-nb env status
+nb env info
 nb app logs
 ```
 
@@ -85,8 +88,11 @@ CLI の設定はデフォルトで `~/.nocobase/` に保存されるため、AI 
 
 このアプリを今後実際のユーザー向けに公開する予定がある場合、長期的に `IP + port` をそのまま使うのはおすすめしません。通常、次のステップはリバースプロキシを挟み、HTTPS を有効にすることです。
 
-## 次に読むもの
+## 関連リンク
 
-- すでに動いている NocoBase インスタンスがある場合は、[AI Agent 接続ガイド](./quick-start.mdx) を参照してください
-- 本番環境へのデプロイを続ける場合は、[CLI を使ったインストール](../nocobase-cli/installation/cli.md) と [本番環境デプロイ概要](../nocobase-cli/production/index.md) を参照してください
-- 次に AI でアプリ構築を始めたい場合は、[AI Builder](../ai-builder/index.md) を参照してください
+- [インストール方法とバージョンの比較](../get-started/quickstart.md) — 先にインストール方法とバージョンチャネルを比べてから、どの方法で入れるか決める
+- [AI Agent 接続ガイド](./quick-start.mdx) — 既存の NocoBase アプリを接続して、AI Agent の作業を始める
+- [`nb init` コマンドリファレンス](../api/cli/init.md) — 新しいアプリの初期化、既存のローカルアプリの引き取り、またはリモートアプリの接続
+- [`nb env info` コマンドリファレンス](../api/cli/env/info.md) — 現在の env の接続情報とランタイム設定を確認する
+- [NocoBase CLI](../api/cli/index.md) — すべての `nb` コマンドの完全なリファレンス
+- [複数の環境管理](../nocobase-cli/operations/multi-environment.md) — 複数の env を同時に管理するときによく使う操作

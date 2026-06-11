@@ -59,6 +59,8 @@ install_methods:
 | **技术要求** | ★☆☆☆☆ | ★★★☆☆ | ★★★★★ |
 | **升级方式** | 拉取最新镜像并重启容器 | 使用 yarn 更新依赖 | 通过 Git 流程同步更新 |
 
+![2026-06-11-20-09-54](https://static-docs.nocobase.com/2026-06-11-20-09-54.png)
+
 ## 接下来做什么
 
-如果你已经选好了安装方式，下一步直接看 [快速开始](../ai/quick-start.md) 就行。它会带你安装 NocoBase CLI、连接或初始化应用，再让 AI Agent 开始工作。
+如果你已经选好了安装方式，下一步直接看 [安装 NocoBase 应用](/ai/install-nocobase-app) 就行。它会带你安装 NocoBase CLI，并完成 NocoBase 应用的安装和初始化。
