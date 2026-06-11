@@ -27,7 +27,7 @@ Si les prérequis ne sont pas satisfaits, indiquez à l'utilisateur les dépenda
 Si l'utilisateur a déjà installé NocoBase CLI dans son environnement (vérifiez avec `nb --version`), passez directement à l'étape suivante. Sinon, exécutez la commande suivante pour l'installer :
 
 ```bash
-npm install -g @nocobase/cli@beta
+npm install -g @nocobase/cli
 ```
 
 Exécutez `nb --version` pour confirmer le succès de l'installation.

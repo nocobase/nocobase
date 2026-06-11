@@ -11,7 +11,7 @@ hero:
   actions:
     - theme: brand
       text: Bắt đầu nhanh
-      link: /get-started/how-nocobase-works
+      link: /quickstart/how-nocobase-works
     - theme: alt
       text: GitHub
       link: https://github.com/nocobase/nocobase
@@ -22,10 +22,10 @@ features:
     items:
       - title: Nhập môn sử dụng NocoBase
         details: Tìm hiểu các khái niệm cốt lõi và thao tác cơ bản của NocoBase.
-        link: /get-started/how-nocobase-works
+        link: /quickstart/how-nocobase-works
       - title: Cài đặt ứng dụng
         details: Cài đặt và quản lý ứng dụng một cách nhanh chóng.
-        link: /get-started/installation/docker
+        link: /quickstart/installation/cli
       - title: Hướng dẫn
         details: Bắt đầu từ con số không, làm theo các hướng dẫn từng bước để xây dựng dự án thực tế.
         link: /tutorials/v2/

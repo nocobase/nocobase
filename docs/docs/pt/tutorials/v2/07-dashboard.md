@@ -8,7 +8,7 @@ Quantos tickets há? Quantos foram tratados? Qual tipo de problema é o mais fre
 
 Primeiro, vamos adicionar um novo item de menu na barra de navegação superior.
 
-Entre no [modo de configuração](/get-started/how-nocobase-works), na barra de menu superior clique em **«Adicionar item de menu»** (ícone `+`), escolha **«Página nova versão (v2)»**, dê o nome de «Dashboard de Dados».
+Entre no [modo de configuração](/quickstart/how-nocobase-works), na barra de menu superior clique em **«Adicionar item de menu»** (ícone `+`), escolha **«Página nova versão (v2)»**, dê o nome de «Dashboard de Dados».
 
 ![07-dashboard-2026-03-15-21-39-35](https://static-docs.nocobase.com/07-dashboard-2026-03-15-21-39-35.png)
 

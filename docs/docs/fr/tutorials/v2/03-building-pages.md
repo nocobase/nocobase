@@ -23,7 +23,7 @@ Retenez la métaphore : **block = brique**. Nous allons assembler ces briques po
 
 D'abord, créons l'entrée « Gestion des tickets » dans le système.
 
-1. Cliquez sur l'interrupteur **UI Editor** en haut à droite pour entrer en [mode configuration](/get-started/how-nocobase-works) (la page se borde de cadres orange éditables).
+1. Cliquez sur l'interrupteur **UI Editor** en haut à droite pour entrer en [mode configuration](/quickstart/how-nocobase-works) (la page se borde de cadres orange éditables).
 2. Survolez le bouton **« Add menu item »** dans la barre de navigation, choisissez **« Add group »** et nommez-le **« Gestion des tickets »**.
 
 ![03-building-pages-2026-03-12-09-38-36](https://static-docs.nocobase.com/03-building-pages-2026-03-12-09-38-36.png)

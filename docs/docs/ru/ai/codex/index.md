@@ -76,7 +76,7 @@ Codex работает с NocoBase следующим образом:
 ### Ручная установка
 
 ```bash
-npm install -g @nocobase/cli@beta
+npm install -g @nocobase/cli
 nb init --ui
 ```
 

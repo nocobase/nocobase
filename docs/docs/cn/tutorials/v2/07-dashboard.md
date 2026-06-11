@@ -8,7 +8,7 @@
 
 首先，我们在顶部导航栏添加一个新菜单项。
 
-进入[配置模式](/get-started/how-nocobase-works)，在顶部菜单栏点击 **「添加菜单项」**（`+` 图标），选择 **「新版页面（v2）」**，命名为「数据看板」。
+进入[配置模式](/quickstart/how-nocobase-works)，在顶部菜单栏点击 **「添加菜单项」**（`+` 图标），选择 **「新版页面（v2）」**，命名为「数据看板」。
 
 ![07-dashboard-2026-03-15-21-39-35](https://static-docs.nocobase.com/07-dashboard-2026-03-15-21-39-35.png)
 

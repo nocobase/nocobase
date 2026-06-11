@@ -9,7 +9,7 @@ Executado apenas ao instalar a CLI pela primeira vez.
 Primeiro instale a CLI globalmente:
 
 ```bash
-npm install -g @nocobase/cli@beta
+npm install -g @nocobase/cli
 nb --version
 ```
 

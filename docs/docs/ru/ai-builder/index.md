@@ -23,7 +23,7 @@ keywords: "Конструктор ИИ,AI Builder,NocoBase AI,Agent Skills,по�
 ### Ручная установка
 
 ```bash
-npm install -g @nocobase/cli@beta
+npm install -g @nocobase/cli
 nb init --ui
 ```
 

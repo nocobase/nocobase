@@ -78,7 +78,7 @@ NocoBase 2.0 基于以下技术构建：
 ## 相关文档
 
 ### 入门指南
-- [NocoBase 是如何工作的](/get-started/how-nocobase-works) — 核心概念介绍
+- [NocoBase 是如何工作的](/quickstart/how-nocobase-works) — 核心概念介绍
 - [快速开始](/get-started/quickstart) — 安装与初始配置
 - [系统要求](/get-started/system-requirements) — 环境配置要求
 

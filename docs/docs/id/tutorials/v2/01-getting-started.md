@@ -2,7 +2,7 @@
 
 Dalam seri ini, kita akan memulai dari nol dan membangun **Sistem Tiket (HelpDesk) yang sangat sederhana** menggunakan NocoBase. Seluruh sistem hanya membutuhkan **2 [tabel data](/data-sources/data-modeling/collection)**, tanpa menulis satu baris kode pun, untuk merealisasikan pengiriman tiket, manajemen kategori, pelacakan perubahan, kontrol izin, dan [dashboard](/data-visualization) data.
 
-Bab ini pertama-tama akan men-deploy NocoBase dengan satu klik melalui [Docker](/get-started/installation/docker), menyelesaikan login pertama, memahami perbedaan antara [mode konfigurasi dan mode penggunaan](/get-started/how-nocobase-works), dan melihat gambaran umum sistem tiket.
+Bab ini pertama-tama akan men-deploy NocoBase dengan satu klik melalui [Docker](/get-started/installation/docker), menyelesaikan login pertama, memahami perbedaan antara [mode konfigurasi dan mode penggunaan](/quickstart/how-nocobase-works), dan melihat gambaran umum sistem tiket.
 
 
 ## 1.1 Apa itu NocoBase
@@ -97,7 +97,7 @@ Antarmuka NocoBase memiliki dua mode:
 | **Mode Penggunaan** | Antarmuka sehari-hari yang digunakan pengguna biasa | Semua orang |
 | **Mode Konfigurasi** | Mode desain untuk membangun dan menyesuaikan antarmuka | Administrator |
 
-Cara beralih: klik tombol **"[Konfigurasi UI](/get-started/how-nocobase-works) (UI Editor)"** di pojok kanan atas (ikon highlighter).
+Cara beralih: klik tombol **"[Konfigurasi UI](/quickstart/how-nocobase-works) (UI Editor)"** di pojok kanan atas (ikon highlighter).
 
 ![01-getting-started-2026-03-11-08-17-26](https://static-docs.nocobase.com/01-getting-started-2026-03-11-08-17-26.png)
 
@@ -173,4 +173,4 @@ Sampai jumpa di bab berikutnya!
 
 - [Detail Instalasi Docker](/get-started/installation/docker) — Penjelasan opsi instalasi lengkap dan variabel lingkungan
 - [Persyaratan Sistem](/get-started/system-requirements) — Persyaratan lingkungan hardware dan software
-- [Cara Kerja NocoBase](/get-started/how-nocobase-works) — Konsep inti seperti Data Source, Block, Action, dan lainnya
+- [Cara Kerja NocoBase](/quickstart/how-nocobase-works) — Konsep inti seperti Data Source, Block, Action, dan lainnya

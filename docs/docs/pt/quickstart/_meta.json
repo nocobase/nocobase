@@ -11,7 +11,7 @@
       {
         "type": "custom-link",
         "label": "Como funciona o NocoBase",
-        "link": "/get-started/how-nocobase-works"
+        "link": "/quickstart/how-nocobase-works"
       },
       {
         "type": "custom-link",
@@ -124,6 +124,6 @@
     "type": "custom-link",
     "label": "Iniciar (versão antiga)",
     "proxy": false,
-    "link": "/get-started/how-nocobase-works"
+    "link": "/quickstart/how-nocobase-works"
   }
 ]

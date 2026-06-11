@@ -108,7 +108,7 @@ Before testing permissions, let's add a handy feature to the ticket list: **assi
 
 The implementation is simple — add a custom popup button to the table row actions:
 
-1. Enter [UI Editor](/get-started/how-nocobase-works) mode. In the ticket list table's actions column, click **"+"** to add a **"Popup"** action button.
+1. Enter [UI Editor](/quickstart/how-nocobase-works) mode. In the ticket list table's actions column, click **"+"** to add a **"Popup"** action button.
 
 ![05-roles-and-permissions-2026-03-14-13-57-31](https://static-docs.nocobase.com/05-roles-and-permissions-2026-03-14-13-57-31.png)
 

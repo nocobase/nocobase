@@ -2,7 +2,7 @@
 
 В этом цикле мы с нуля построим **минимальную систему заявок (HelpDesk)** на NocoBase. Понадобится всего **2 [таблицы данных](/data-sources/data-modeling/collection)**, и без единой строки кода Вы получите подачу заявок, управление категориями, отслеживание изменений, контроль доступа и [дашборд](/data-visualization).
 
-В этой главе мы развернём NocoBase в один клик через [Docker](/get-started/installation/docker), выполним первый вход, разберёмся с [режимами конфигурации и использования](/get-started/how-nocobase-works) и посмотрим, как будет выглядеть итоговая система.
+В этой главе мы развернём NocoBase в один клик через [Docker](/get-started/installation/docker), выполним первый вход, разберёмся с [режимами конфигурации и использования](/quickstart/how-nocobase-works) и посмотрим, как будет выглядеть итоговая система.
 
 
 ## 1.1 Что такое NocoBase
@@ -97,7 +97,7 @@ docker compose logs -f app
 | **Режим использования** | Повседневный интерфейс пользователей | Все |
 | **Режим конфигурации** | Дизайнерский режим для сборки и настройки | Администратор |
 
-Переключение: нажмите кнопку **«[UI Editor](/get-started/how-nocobase-works)»** в правом верхнем углу (иконка маркера).
+Переключение: нажмите кнопку **«[UI Editor](/quickstart/how-nocobase-works)»** в правом верхнем углу (иконка маркера).
 
 ![01-getting-started-2026-03-11-08-17-26](https://static-docs.nocobase.com/01-getting-started-2026-03-11-08-17-26.png)
 
@@ -173,4 +173,4 @@ docker compose logs -f app
 
 - [Установка через Docker](/get-started/installation/docker) — все опции установки и переменные окружения
 - [Системные требования](/get-started/system-requirements) — требования к железу и софту
-- [Как работает NocoBase](/get-started/how-nocobase-works) — источники данных, блоки, операции и др.
+- [Как работает NocoBase](/quickstart/how-nocobase-works) — источники данных, блоки, операции и др.

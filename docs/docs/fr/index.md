@@ -11,7 +11,7 @@ hero:
   actions:
     - theme: brand
       text: Prise en main
-      link: /get-started/how-nocobase-works
+      link: /quickstart/how-nocobase-works
     - theme: alt
       text: GitHub
       link: https://github.com/nocobase/nocobase
@@ -22,10 +22,10 @@ features:
     items:
       - title: Premiers pas avec NocoBase
         details: Comprenez les concepts fondamentaux et les opérations de base de NocoBase.
-        link: /get-started/how-nocobase-works
+        link: /quickstart/how-nocobase-works
       - title: Installer une application
         details: Installez et gérez rapidement des applications.
-        link: /get-started/installation/docker
+        link: /quickstart/installation/cli
       - title: Tutoriels
         details: Partez de zéro et suivez les tutoriels pour construire pas à pas un projet réel.
         link: /tutorials/v2/

@@ -8,7 +8,7 @@ Combien y a-t-il de tickets ? Combien sont traités ? Quelles catégories domine
 
 Commençons par ajouter un nouvel item de menu dans la barre de navigation.
 
-Passez en [mode configuration](/get-started/how-nocobase-works), dans la barre supérieure cliquez sur **« Add menu item »** (icône `+`), choisissez **« Modern page (v2) »** et nommez-la « Tableau de bord ».
+Passez en [mode configuration](/quickstart/how-nocobase-works), dans la barre supérieure cliquez sur **« Add menu item »** (icône `+`), choisissez **« Modern page (v2) »** et nommez-la « Tableau de bord ».
 
 ![07-dashboard-2026-03-15-21-39-35](https://static-docs.nocobase.com/07-dashboard-2026-03-15-21-39-35.png)
 
