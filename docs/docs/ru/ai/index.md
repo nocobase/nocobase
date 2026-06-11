@@ -92,7 +92,7 @@ features:
     items:
       - title: NocoBase CLI
         details: Инструмент командной строки NocoBase — установили и готово. Со встроенными AI Skills, чтобы Ваш ИИ-помощник сразу мог управлять NocoBase.
-        link: /api/cli/
+        link: /nocobase-cli/
       - title: NocoBase Skills
         details: Пакеты доменных знаний, которые можно установить в AI Agent, чтобы ИИ понимал возможности и правила NocoBase.
         link: /ai-builder#nocobase-skills
