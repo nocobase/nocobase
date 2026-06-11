@@ -18,12 +18,12 @@ features:
   - title: Bắt đầu
     details: 'Cách thức truyền thống để bắt đầu với NocoBase — cài đặt, cấu hình, khám phá từng bước.'
     items:
-      - title: Bắt đầu nhanh
-        details: 'Cài đặt NocoBase CLI và cấu hình AI Skills, kết nối AI Agent, chuẩn bị sẵn sàng để AI xây dựng, sử dụng và phát triển NocoBase.'
-        link: /ai/quick-start
       - title: Nhập môn sử dụng NocoBase
         details: Tìm hiểu các khái niệm cốt lõi và thao tác cơ bản của NocoBase.
         link: /ai/how-nocobase-works
+      - title: Cài đặt ứng dụng NocoBase
+        details: Dùng NocoBase CLI để cài đặt ứng dụng nhanh chóng.
+        link: /ai/install-nocobase-app
       - title: Hướng dẫn
         details: 'Bắt đầu từ con số không, làm theo các hướng dẫn từng bước để xây dựng dự án thực tế.'
         link: /tutorials/v2/

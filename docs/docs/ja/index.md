@@ -18,12 +18,12 @@ features:
   - title: はじめに
     details: 従来の方法で NocoBase を使い始める — インストール、設定、段階的に探索。
     items:
-      - title: クイックスタート
-        details: NocoBase CLI のインストールと AI Skills の設定、AI Agent への接続を行い、AI による NocoBase の構築・使用・開発の準備を整えます。
-        link: /ai/quick-start
       - title: NocoBase 入門
         details: NocoBase のコア概念と基本操作を理解します。
         link: /ai/how-nocobase-works
+      - title: NocoBase アプリをインストール
+        details: NocoBase CLI を使ってアプリをすばやくインストールします。
+        link: /ai/install-nocobase-app
       - title: チュートリアル
         details: ゼロから始めて、チュートリアルに沿って実際のプロジェクトを構築します。
         link: /tutorials/v2/
