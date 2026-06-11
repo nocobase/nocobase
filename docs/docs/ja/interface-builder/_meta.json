@@ -328,6 +328,11 @@
           },
           {
             "type": "custom-link",
+            "label": "スキャン入力",
+            "link": "/interface-builder/fields/field-settings/scan-input"
+          },
+          {
+            "type": "custom-link",
             "label": "タイトルフィールド",
             "link": "/interface-builder/fields/field-settings/title-field"
           },

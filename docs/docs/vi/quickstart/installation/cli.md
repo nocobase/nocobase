@@ -23,12 +23,6 @@ nb session setup
 
 :::
 
-Nếu bạn dự định sử dụng giao diện tiếng Trung trong thời gian dài, thông thường chỉ cần đặt ngôn ngữ trước là đủ:
-
-```bash
-nb config set locale zh-CN
-```
-
 CLI kiểm tra việc tự cập nhật theo mặc định. Bạn có thể điều chỉnh chiến lược cập nhật theo thói quen của riêng mình:
 
 - `prompt`: Nhắc khi tìm thấy phiên bản mới

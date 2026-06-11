@@ -328,6 +328,11 @@
           },
           {
             "type": "custom-link",
+            "label": "Ввод через сканирование",
+            "link": "/interface-builder/fields/field-settings/scan-input"
+          },
+          {
+            "type": "custom-link",
             "label": "Поле заголовка",
             "link": "/interface-builder/fields/field-settings/title-field"
           },
