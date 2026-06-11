@@ -201,6 +201,35 @@ describe('plugin-multi-portal server', () => {
     });
   });
 
+  it('should define role multi-portal desktop route permission relation', async () => {
+    app = await createMultiPortalAclMockServer();
+    await app.db.sync();
+
+    const collection = app.db.getCollection('rolesMultiPortalDesktopRoutes');
+    expect(collection).toBeTruthy();
+    expect(collection.getField('role')?.options).toMatchObject({
+      type: 'belongsTo',
+      target: 'roles',
+      targetKey: 'name',
+      foreignKey: 'roleName',
+      onDelete: 'CASCADE',
+    });
+    expect(collection.getField('multiPortal')?.options).toMatchObject({
+      type: 'belongsTo',
+      target: 'multiPortals',
+      targetKey: 'uid',
+      foreignKey: 'multiPortalUid',
+      onDelete: 'CASCADE',
+    });
+    expect(collection.getField('desktopRoute')?.options).toMatchObject({
+      type: 'belongsTo',
+      target: 'desktopRoutes',
+      targetKey: 'id',
+      foreignKey: 'desktopRouteId',
+      onDelete: 'CASCADE',
+    });
+  });
+
   it('should enforce role portal access before listing portal routes', async () => {
     app = await createMultiPortalAclMockServer();
 
@@ -256,6 +285,13 @@ describe('plugin-multi-portal server', () => {
         multiPortalUid: allowedPortal.get('uid'),
       },
     });
+    await app.db.getRepository('rolesMultiPortalDesktopRoutes').create({
+      values: {
+        roleName: role.get('name'),
+        multiPortalUid: allowedPortal.get('uid'),
+        desktopRouteId: route.get('id'),
+      },
+    });
 
     const rootUser = await app.db.getRepository('users').findOne({
       filter: {
@@ -301,6 +337,103 @@ describe('plugin-multi-portal server', () => {
     expect(allowedGetResponse.body.data.title).toBe('DATA-PORTAL-PERMISSION-ROUTE');
     expect(deniedGetResponse.body.data ?? null).toBeNull();
     expect(rootDeniedListResponse.body.data.map((item) => item.title)).toContain('DATA-PORTAL-PERMISSION-ROUTE');
+  });
+
+  it('should scope route access to the requested portal when portals share one ui layout', async () => {
+    app = await createMultiPortalAclMockServer();
+
+    const repository = app.db.getRepository('multiPortals');
+    const firstPortal = await repository.create({
+      values: {
+        uid: 'first-shared-layout-portal',
+        title: 'First shared layout portal',
+        routeName: 'firstSharedLayoutPortal',
+        routePath: '/first-shared-layout-portal',
+        authCheck: true,
+        enabled: true,
+        uiLayoutUid: DEFAULT_ADMIN_UI_LAYOUT.uid,
+      },
+    });
+    const secondPortal = await repository.create({
+      values: {
+        uid: 'second-shared-layout-portal',
+        title: 'Second shared layout portal',
+        routeName: 'secondSharedLayoutPortal',
+        routePath: '/second-shared-layout-portal',
+        authCheck: true,
+        enabled: true,
+        uiLayoutUid: DEFAULT_ADMIN_UI_LAYOUT.uid,
+      },
+    });
+    const route = await app.db.getRepository('desktopRoutes').create({
+      values: {
+        type: 'flowPage',
+        title: 'DATA-PORTAL-SCOPED-ROUTE',
+        schemaUid: 'portal-scoped-route',
+        hidden: false,
+        sort: 10,
+      },
+    });
+    const role = await app.db.getRepository('roles').create({
+      values: {
+        name: 'multi-portal-route-permission-member',
+      },
+    });
+    await app.db.getRepository('desktopRoutes.uiLayouts', route.get('id')).set({
+      tk: [DEFAULT_ADMIN_UI_LAYOUT.uid],
+    });
+    await app.db.getRepository('rolesMultiPortals').create({
+      values: {
+        roleName: role.get('name'),
+        multiPortalUid: firstPortal.get('uid'),
+      },
+    });
+    await app.db.getRepository('rolesMultiPortals').create({
+      values: {
+        roleName: role.get('name'),
+        multiPortalUid: secondPortal.get('uid'),
+      },
+    });
+    await app.db.getRepository('rolesMultiPortalDesktopRoutes').create({
+      values: {
+        roleName: role.get('name'),
+        multiPortalUid: firstPortal.get('uid'),
+        desktopRouteId: route.get('id'),
+      },
+    });
+
+    const memberUser = await app.db.getRepository('users').create({
+      values: {
+        roles: [role.get('name')],
+      },
+    });
+    const memberAgent = await app.agent().login(memberUser);
+
+    const [firstListResponse, secondListResponse, firstGetResponse, secondGetResponse] = await Promise.all([
+      memberAgent.get('/desktopRoutes:listAccessible').query({
+        layout: firstPortal.get('uid'),
+      }),
+      memberAgent.get('/desktopRoutes:listAccessible').query({
+        layout: secondPortal.get('uid'),
+      }),
+      memberAgent.get('/desktopRoutes:getAccessible').query({
+        filterByTk: route.get('id'),
+        layout: firstPortal.get('uid'),
+      }),
+      memberAgent.get('/desktopRoutes:getAccessible').query({
+        filterByTk: route.get('id'),
+        layout: secondPortal.get('uid'),
+      }),
+    ]);
+
+    expect(firstListResponse.status).toBe(200);
+    expect(secondListResponse.status).toBe(200);
+    expect(firstGetResponse.status).toBe(200);
+    expect([200, 204]).toContain(secondGetResponse.status);
+    expect(firstListResponse.body.data.map((item) => item.title)).toEqual(['DATA-PORTAL-SCOPED-ROUTE']);
+    expect(secondListResponse.body.data).toEqual([]);
+    expect(firstGetResponse.body.data.title).toBe('DATA-PORTAL-SCOPED-ROUTE');
+    expect(secondGetResponse.body.data ?? null).toBeNull();
   });
 
   it('should expose enabled portal manifests for runtime registration', async () => {
