@@ -7,4 +7,4 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export * from '../../client-v2/manager/ai-feature-manager';
+export * from '../../client-v2/features/vector-store-provider';

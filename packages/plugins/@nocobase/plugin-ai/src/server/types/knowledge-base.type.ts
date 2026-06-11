@@ -12,7 +12,7 @@ export type KnowledgeBaseType = 'LOCAL' | 'READONLY' | 'EXTERNAL';
 export type VectorStoreProp = {
   name?: string;
   key: string;
-  value: string;
+  value: any;
 };
 
 export type KnowledgeBase = {
