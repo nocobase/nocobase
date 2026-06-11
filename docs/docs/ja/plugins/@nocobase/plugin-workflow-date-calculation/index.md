@@ -1,15 +1,15 @@
 ---
-displayName: "Workflow: date calculation node"
+displayName: "Workflow: 日付計算ノード"
 packageName: '@nocobase/plugin-workflow-date-calculation'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Used to do date calculation in workflows, such as manipulating, comparing and formatting, etc.
+  Workflow 内で日付の加算・減算、比較、フォーマットなどの操作や評価を行うために使用されます。
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Workflow: date calculation node
+# Workflow: 日付計算ノード

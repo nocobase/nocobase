@@ -1,33 +1,33 @@
 # ctx.getValue()
 
-In JSField, JSItem, and other editable field contexts, returns the current value of the field. Use with `ctx.setValue(v)` for two-way binding with the form.
+In editable field scenarios such as JSField and JSItem, use this to get the latest value of the current field. Combined with `ctx.setValue(v)`, it enables two-way binding with the form.
 
-## Use Cases
+## Scenarios
 
 | Scenario | Description |
-|----------|-------------|
-| **JSField** | Read user input or current form value in editable custom fields |
-| **JSItem** | Read current cell value in table/sub-table editable items |
-| **JSColumn** | Read row field value when rendering a column |
+|------|------|
+| **JSField** | Read user input or the current form value in editable custom fields. |
+| **JSItem** | Read the current cell value in editable items of tables/sub-tables. |
+| **JSColumn** | Read the field value of the corresponding row during table column rendering. |
 
-> Note: `ctx.getValue()` is only available in RunJS contexts with form binding; it does not exist in event flow, linkage, etc., where there is no field binding.
+> **Note**: `ctx.getValue()` is only available in RunJS contexts with form binding; it does not exist in scenarios without field binding, such as workflows or linkage rules.
 
-## Type
+## Type Definition
 
 ```ts
 getValue<T = any>(): T | undefined;
 ```
 
-- **Returns**: Current field value; type depends on the field’s form item type. May be `undefined` if the field is not registered or not filled.
+- **Return Value**: The current field value, whose type is determined by the field's form item type; it may be `undefined` if the field is not registered or not filled.
 
-## Value resolution
+## Retrieval Order
 
-`ctx.getValue()` resolves in this order:
+`ctx.getValue()` retrieves values in the following order:
 
-1. **Form state**: Prefer current Ant Design Form state.
-2. **Fallback**: If the field is not in the form, use the field’s initial value or props.
+1. **Form State**: Prioritizes reading from the current state of the Ant Design Form.
+2. **Fallback Value**: If the field is not in the form, it falls back to the field's initial value or props.
 
-If the form is not yet rendered or the field is not registered, the result may be `undefined`.
+> If the form has not finished rendering or the field is not registered, it may return `undefined`.
 
 ## Examples
 
@@ -36,9 +36,9 @@ If the form is not yet rendered or the field is not registered, the result may b
 ```ts
 const current = ctx.getValue();
 if (current == null || current === '') {
-  ctx.render(<span>Please enter something</span>);
+  ctx.render(<span>Please enter content first</span>);
 } else {
-  ctx.render(<span>Current: {current}</span>);
+  ctx.render(<span>Current value: {current}</span>);
 }
 ```
 
@@ -47,6 +47,7 @@ if (current == null || current === '') {
 ```tsx
 const { Input } = ctx.libs.antd;
 
+// Read current value as default value
 const defaultValue = ctx.getValue() ?? '';
 
 ctx.render(
@@ -59,6 +60,6 @@ ctx.render(
 
 ## Related
 
-- [ctx.setValue()](./set-value.md): set current field value; use with getValue for two-way binding
-- [ctx.form](./form.md): Ant Design Form instance for other fields
-- `js-field:value-change`: container event when value changes from outside; use to update display
+- [ctx.setValue()](./set-value.md) - Set the current field value, used with `getValue` for two-way binding.
+- [ctx.form](./form.md) - Ant Design Form instance, for reading/writing other fields.
+- `js-field:value-change` - Container event triggered when external values change, used to update the display.

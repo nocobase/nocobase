@@ -18,17 +18,14 @@ import { useFieldComponentName } from '../../../../common/useFieldComponentName'
 import { useCollectionManager, useRerenderDataBlock, useCollectionField } from '../../../../data-source';
 import { FlagProvider } from '../../../../flag-provider/FlagProvider';
 import { withDynamicSchemaProps } from '../../../../hoc/withDynamicSchemaProps';
-import {
-  useDesignable,
-  useFieldModeOptions,
-  useIsAddNewForm,
-  useIsFieldReadPretty,
-} from '../../../../schema-component';
 import { isSubMode } from '../../../../schema-component/antd/association-field/util';
+import { useIsAddNewForm, useIsFieldReadPretty } from '../../../../schema-component/antd/form-item/FormItem.Settings';
 import { useIsAssociationField } from '../../../../schema-component/antd/form-item';
+import { useColumnSchema } from '../../../../schema-component/antd/table-v2/Table.Column.Decorator';
+import { useDesignable } from '../../../../schema-component/hooks/useDesignable';
+import { useFieldModeOptions } from '../../../../schema-component/hooks/useFieldModeOptions';
 import { FormLinkageRules } from '../../../../schema-settings/LinkageRules';
 import { SchemaSettingsLinkageRules } from '../../../../schema-settings/SchemaSettings';
-import { useColumnSchema } from '../../../../schema-component';
 import { SchemaSettingsItemType } from '../../../../application';
 
 const enabledIndexColumn: SchemaSettingsItemType = {

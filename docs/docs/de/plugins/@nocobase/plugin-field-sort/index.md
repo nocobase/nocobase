@@ -1,12 +1,12 @@
 ---
-displayName: "Collection field: Sort"
+displayName: "Sammlungsfeld: Sortierung"
 packageName: '@nocobase/plugin-field-sort'
 description: |
-  Used to sort the data in a collection.
+  Wird verwendet, um die Daten in einer Sammlung zu sortieren.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Collection field: Sort
+# Sammlungsfeld: Sortierung

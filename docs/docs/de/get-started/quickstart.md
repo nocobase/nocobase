@@ -33,10 +33,6 @@ install_methods:
     technical_requirement: ★★★★★
     upgrade_method: Updates über den Git-Workflow synchronisieren
 ---
-:::tip KI-Übersetzungshinweis
-Diese Dokumentation wurde automatisch von KI übersetzt.
-:::
-
 
 
 # Installationsmethoden und Versionsvergleich

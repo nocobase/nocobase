@@ -1,5 +1,5 @@
 ---
-displayName: "WEB client"
+displayName: "Web Client"
 packageName: '@nocobase/plugin-client'
 description: |
   Provides a client interface for the NocoBase server
@@ -9,4 +9,4 @@ defaultEnabled: false
 editionLevel: 0
 ---
 
-# WEB client
+# Web Client

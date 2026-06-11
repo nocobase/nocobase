@@ -33,6 +33,10 @@ const cardCss = css`
   overflow-wrap: normal;
   word-wrap: normal;
 
+  .ant-formily-item-control .ant-space-item: {
+    whitespace: normal;
+    wordbreak: break-all;
+    wordwrap: break-word;
   .ant-card-body {
     padding: 16px;
   }

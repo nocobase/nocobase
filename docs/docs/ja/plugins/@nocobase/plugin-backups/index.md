@@ -1,15 +1,15 @@
 ---
-displayName: "Backup manager"
+displayName: "バックアップマネージャー"
 packageName: '@nocobase/plugin-backups'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Provides backup and restore functionality, supports scheduled backups, and ensures data security and quick recovery.
+  バックアップと復元機能を提供し、定期的なバックアップをサポートすることで、データの安全と迅速なリカバリを保証します。
 isFree: false
 builtIn: false
 defaultEnabled: false
 editionLevel: 2
 ---
 
-# Backup manager
+# バックアップマネージャー

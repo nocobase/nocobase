@@ -10,17 +10,13 @@
 import { vi } from 'vitest';
 import Application from '../application';
 import { Plugin } from '../plugin';
+import { mockServer } from '@nocobase/test';
 
 describe('application life cycle', () => {
   let app: Application;
 
   beforeEach(async () => {
-    app = new Application({
-      database: {
-        dialect: 'sqlite',
-        storage: ':memory:',
-      },
-    });
+    app = mockServer();
   });
 
   afterEach(async () => {

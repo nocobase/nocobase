@@ -1,15 +1,15 @@
 ---
-displayName: "Custom brand"
+displayName: "カスタムブランド"
 packageName: '@nocobase/plugin-custom-brand'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Customize the brand name and more brand-related information.
+  ブランド名やその他のブランド関連情報をカスタマイズできます。
 isFree: false
 builtIn: false
 defaultEnabled: false
 editionLevel: 1
 ---
 
-# Custom brand
+# カスタムブランド

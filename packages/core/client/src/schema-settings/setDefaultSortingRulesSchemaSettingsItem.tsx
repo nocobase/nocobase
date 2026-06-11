@@ -11,11 +11,10 @@ import { ArrayItems } from '@formily/antd-v5';
 import { ISchema } from '@formily/json-schema';
 import { useField, useFieldSchema } from '@formily/react';
 import { useTranslation } from 'react-i18next';
-import { useTableBlockContext } from '../block-provider';
-import { useCollection_deprecated, useSortFields } from '../collection-manager';
-import { useDesignable } from '../schema-component';
 import { SchemaSettingsItemType } from '../application';
-import { useCollection } from '../data-source';
+import { useTableBlockContext } from '../block-provider/TableBlockProvider';
+import { useCollection_deprecated, useSortFields } from '../collection-manager';
+import { useDesignable } from '../schema-component/hooks/useDesignable';
 
 export const setDefaultSortingRulesSchemaSettingsItem: SchemaSettingsItemType = {
   name: 'SetDefaultSortingRules',

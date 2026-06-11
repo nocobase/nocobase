@@ -1,12 +1,12 @@
 ---
-displayName: "Mobile (deprecated)"
+displayName: "Mobil (veraltet)"
 packageName: '@nocobase/plugin-mobile'
 description: |
-  Since version 2.0, the mobile plugin has been replaced by the new ui-layout plugin, which is still under development.
+  Seit Version 2.0 wird das Mobile-Plugin durch das neue ui-layout-Plugin ersetzt, das sich noch in der Entwicklung befindet.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Mobile (deprecated)
+# Mobil (veraltet)

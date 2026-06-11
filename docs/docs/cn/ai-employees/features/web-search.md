@@ -20,14 +20,20 @@ keywords: "联网搜索,Web Search,AI 检索,NocoBase"
 
 在对话输入区域使用联网搜索开关：
 
-- 打开后，AI 可先检索再回答。
+- 打开后，AI 会根据上下文提炼出关键词，然后调用工具进行搜索，最后结合搜索结果回复。
 
-![web-search-switch-visible-on-supported-model.png](https://static-docs.nocobase.com/ai-employees/2026-02-14/web-search-switch-visible-on-supported-model.png)
+![20260420155024](https://static-docs.nocobase.com/20260420155024.png)
 
 - 关闭后，AI 仅基于已有上下文回答。
 
-![web-search-switch-hidden-on-unsupported-model.png](https://static-docs.nocobase.com/ai-employees/2026-02-14/web-search-switch-hidden-on-unsupported-model.png)
+![20260420154948](https://static-docs.nocobase.com/20260420154948.png)
 
 ## 平台差异
 
-不同模型对 Web Search 的支持能力不同，请根据实际情况使用。
+不同 LLM 服务平台对 Web Search 的支持能力不同，请根据实际情况使用。
+
+下面几个 LLM 服务支持联网搜索：
+
+- OpenAI（注意 OpenAI (completions) 不支持）
+- Google Generative AI
+- Dashscope

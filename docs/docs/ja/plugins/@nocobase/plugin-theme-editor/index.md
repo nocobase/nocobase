@@ -1,12 +1,12 @@
 ---
-displayName: "Theme editor"
+displayName: "テーマエディター"
 packageName: '@nocobase/plugin-theme-editor'
 description: |
-  Customize UI colors, sizes, etc. and save the result as a theme to switch between multiple themes.
+  UIのカラーやサイズなどをカスタマイズし、その結果をテーマとして保存して、複数のテーマ間で切り替えることができます。
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Theme editor
+# テーマエディター

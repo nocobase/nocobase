@@ -1,5 +1,5 @@
 ---
-displayName: "Locale tester"
+displayName: "Outil de test de traduction"
 packageName: '@nocobase/plugin-locale-tester'
 description: |
   
@@ -9,4 +9,4 @@ defaultEnabled: false
 editionLevel: 0
 ---
 
-# Locale tester
+# Outil de test de traduction

@@ -1,0 +1,52 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Inicio rápido",
+    "link": "/ai-builder/"
+  },
+  {
+    "type": "file",
+    "name": "security",
+    "label": "Seguridad y auditoría"
+  },
+  {
+    "type": "file",
+    "name": "env-bootstrap",
+    "label": "Gestión de entornos"
+  },
+  {
+    "type": "file",
+    "name": "data-modeling",
+    "label": "Modelado de datos"
+  },
+  {
+    "type": "file",
+    "name": "ui-builder",
+    "label": "Configuración de la interfaz"
+  },
+  {
+    "type": "file",
+    "name": "workflow",
+    "label": "Gestión de flujos de trabajo"
+  },
+  {
+    "type": "file",
+    "name": "acl",
+    "label": "Configuración de permisos"
+  },
+  {
+    "type": "file",
+    "name": "dsl-reconciler",
+    "label": "Soluciones"
+  },
+  {
+    "type": "file",
+    "name": "plugin-manage",
+    "label": "Gestión de plugins"
+  },
+  {
+    "type": "file",
+    "name": "publish",
+    "label": "Gestión de publicación"
+  }
+]

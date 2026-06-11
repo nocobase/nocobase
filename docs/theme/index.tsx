@@ -1,20 +1,19 @@
-import { NoSSR, useLang } from '@rspress/core/runtime';
-import { Badge, SwitchAppearance as BaseSwitchAppearance, getCustomMDXComponent as basicGetCustomMDXComponent, Layout as BasicLayout, HomeFooter, HomeHero, Link, renderHtmlOrText, Tab, Tabs } from '@rspress/core/theme';
+import { NoSSR, useFrontmatter, useLang, useNavigate, usePage, usePages } from '@rspress/core/runtime';
+import type { Feature } from '@rspress/core';
+import { Badge, DocContent, DocLayout as OriginalDocLayout, getCustomMDXComponent as basicGetCustomMDXComponent, Layout as BasicLayout, HomeFooter, Link, renderHtmlOrText, Tab, Tabs } from '@rspress/core/theme-original';
 import {
   LlmsContainer,
   LlmsCopyButton,
   LlmsViewOptions,
 } from '@rspress/plugin-llms/runtime';
-import { useFrontmatter, useLocation, useNavigate, usePage, usePages } from '@rspress/runtime';
-import type { Feature } from '@rspress/shared';
-import type { JSX } from 'react';
-import { locales } from '../locales';
+import type { ComponentProps, JSX, ReactNode } from 'react';
 import { PluginCard } from './components/PluginCard';
 import { PluginInfo } from './components/PluginInfo';
 import { PluginList } from './components/PluginList';
 import { ProvidedBy } from './components/ProvidedBy';
 import './index.scss';
 import { transformHref, useLangPrefix } from './utils';
+import { HomeHero } from './components/HomeHero';
 
 function getCustomMDXComponent() {
   const { h1: H1, ...mdxComponents } = basicGetCustomMDXComponent();
@@ -48,133 +47,51 @@ function getCustomMDXComponent() {
 export { getCustomMDXComponent };
 
 export interface HomeLayoutProps {
-  beforeHero?: React.ReactNode;
-  afterHero?: React.ReactNode;
-  beforeHeroActions?: React.ReactNode;
-  afterHeroActions?: React.ReactNode;
-  beforeFeatures?: React.ReactNode;
-  afterFeatures?: React.ReactNode;
+  beforeHero?: ReactNode;
+  afterHero?: ReactNode;
+  beforeHeroActions?: ReactNode;
+  afterHeroActions?: ReactNode;
+  beforeFeatures?: ReactNode;
+  afterFeatures?: ReactNode;
 }
 
+type HomeFeatureItemData = Feature & {
+  showOnHome?: boolean;
+};
 
-interface Language {
-  code: string;
-  label: string;
-  href: string;
+type HomeFeatureGroup = {
+  title?: string;
+  details?: string;
+  items?: HomeFeatureItemData[];
+};
+
+type ThemeFrontmatter = {
+  pageName?: string;
+  hero?: unknown;
+  features?: HomeFeatureGroup[];
+  displayName?: string;
+  packageName?: string;
+};
+
+type ThemePage = {
+  lang?: string;
+  frontmatter?: ThemeFrontmatter & Record<string, unknown>;
+};
+
+function getFeatureGroups(page?: ThemePage | { frontmatter?: ThemeFrontmatter }): HomeFeatureGroup[] {
+  return page?.frontmatter?.features ?? [];
 }
 
-const LANGUAGES: Language[] = locales;
-
-function LanguageDropdown() {
-  const lang = useLang();
-  const currentLanguage = LANGUAGES.find(l => l.code === lang) || LANGUAGES[0];
-  const { pathname, search } = useLocation();
-  const getLanguageHref = (targetLang: string) => {
-    return targetLang === 'en' ? `${pathname}${search}` : `/${targetLang}${pathname}${search}`;
-  };
-
-  return (
-    <div
-      style={{ position: 'relative', zIndex: 1000 }}
-      className="language-dropdown translation rp-flex rp-text-sm rp-font-bold rp-items-center rp-px-3 rp-py-2"
-    >
-      <div>
-        <div
-          className="rspress-nav-menu-group-button rp-flex rp-justify-center rp-items-center rp-font-medium rp-text-sm rp-text-text-1 hover:rp-text-text-2 rp-transition-colors rp-duration-200 rp-cursor-pointer"
-          role="button"
-          aria-haspopup="true"
-          aria-label="Language selector"
-          tabIndex={0}
-        >
-          <span className="rp-text-sm rp-font-medium rp-flex rp-break-keep" style={{ marginRight: '2px' }}>
-            <svg width="18" height="18" viewBox="0 0 32 32" style={{ width: '18px', height: '18px' }}>
-              <path
-                fill="currentColor"
-                d="M27.85 29H30l-6-15h-2.35l-6 15h2.15l1.6-4h6.85zm-7.65-6 2.62-6.56L25.45 23zM18 7V5h-7V2H9v3H2v2h10.74a14.7 14.7 0 0 1-3.19 6.18A13.5 13.5 0 0 1 7.26 9h-2.1a16.5 16.5 0 0 0 3 5.58A16.8 16.8 0 0 1 3 18l.75 1.86A18.5 18.5 0 0 0 9.53 16a16.9 16.9 0 0 0 5.76 3.84L16 18a14.5 14.5 0 0 1-5.12-3.37A17.64 17.64 0 0 0 14.8 7z"
-              />
-            </svg>
-          </span>
-          <svg
-            width="1em"
-            height="1em"
-            viewBox="0 0 32 32"
-            className="dropdown-arrow"
-            style={{ transition: 'transform 0.2s ease' }}
-          >
-            <path fill="currentColor" d="M16 22 6 12l1.4-1.4 8.6 8.6 8.6-8.6L26 12z" />
-          </svg>
-        </div>
-        <div
-          className="rspress-nav-menu-group-content rp-absolute rp-mx-0.8 rp-transition-opacity rp-duration-300"
-          style={{
-            opacity: 0,
-            visibility: 'hidden',
-            right: '0px',
-            top: '32px',
-            pointerEvents: 'none'
-          }}
-          role="menu"
-        >
-          <div
-            className="rp-p-3 rp-pr-2 rp-w-full rp-h-full rp-max-h-100vh rp-whitespace-nowrap"
-            style={{
-              boxShadow: 'var(--rp-shadow-3)',
-              zIndex: 100,
-              border: '1px solid var(--rp-c-divider-light)',
-              borderRadius: 'var(--rp-radius-large)',
-              background: 'var(--rp-c-bg)',
-            }}
-          >
-            {LANGUAGES.map((language) => {
-              const href = getLanguageHref(language.code);
-              
-              if (language.code === currentLanguage.code) {
-                return (
-                  <div key={language.code}>
-                    <div
-                      className="rp-rounded-2xl rp-my-1 rp-flex"
-                      style={{ padding: '0.4rem 1.5rem 0.4rem 0.75rem' }}
-                    >
-                      <a href={href} className="rp-text-brand">{currentLanguage.label}</a>
-                    </div>
-                  </div>
-                );
-              }
-              return (
-                <div key={language.code}>
-                  <div className="rp-font-medium rp-my-1">
-                    <a
-                      href={href}
-                      className="rp-link"
-                      role="menuitem"
-                    >
-                      <div
-                        className="rp-rounded-2xl hover:rp-bg-mute"
-                        style={{ padding: '0.4rem 1.5rem 0.4rem 0.75rem' }}
-                      >
-                        <div className="rp-flex">
-                          <span>{language.label}</span>
-                        </div>
-                      </div>
-                    </a>
-                  </div>
-                </div>
-              )
-            })}
-          </div>
-        </div>
-      </div>
-    </div>
+function isPluginDetailPage(frontmatter?: ThemeFrontmatter, routePath?: string): boolean {
+  return Boolean(
+    frontmatter?.displayName &&
+    frontmatter?.packageName &&
+    routePath?.includes('/plugins/@nocobase/'),
   );
 }
 
-export function SwitchAppearance(props: any) {
-  return (
-    <div className="rp-flex rp-items-center rp-justify-center rp-h-14">
-      <LanguageDropdown />
-      <BaseSwitchAppearance {...props} />
-    </div>
-  );
+function isSidebarCenteredLayout(routePath?: string): boolean {
+  return routePath === '/api' || routePath === '/api/';
 }
 
 export function HomeLayout(props: HomeLayoutProps) {
@@ -240,23 +157,70 @@ const getGridClass = (feature: Feature): string => {
 };
 
 export const Layout = () => {
-  // const lang = useLang();
+  const {
+    page: { routePath },
+  } = usePage();
+  const { frontmatter } = useFrontmatter() as {
+    frontmatter?: {
+      displayName?: string;
+      packageName?: string;
+    };
+  };
+  const isPluginDetailPage = Boolean(
+    frontmatter?.displayName &&
+    frontmatter?.packageName &&
+    routePath?.startsWith('/plugins/@'),
+  );
+  const pageClassName = [
+    isPluginDetailPage ? 'plugin-detail-page' : '',
+    isSidebarCenteredLayout(routePath) ? 'doc-layout-sidebar-centered' : '',
+  ]
+    .filter(Boolean)
+    .join(' ');
+
   return (
-    <BasicLayout
-    // beforeNav={
-    //   <NoSSR>
-    //     <div className="rp-banner">
-    //       {
-    //         lang === 'en'
-    //           ? '🚧 NocoBase 2.0 documentation is incomplete and currently being written'
-    //           : '🚧 NocoBase 2.0 文档尚不完整，内容正在编写中'
-    //       }
-    //     </div>
-    //   </NoSSR>
-    // }
-    />
+    <div className={pageClassName || undefined}>
+      <BasicLayout
+      // beforeNav={
+      //   <NoSSR>
+      //     <div className="rp-banner">
+      //       {
+      //         lang === 'en'
+      //           ? '🚧 NocoBase 2.0 documentation is incomplete and currently being written'
+      //           : '🚧 NocoBase 2.0 文档尚不完整，内容正在编写中'
+      //       }
+      //     </div>
+      //   </NoSSR>
+      // }
+      />
+    </div>
   );
 };
+
+export function DocLayout(props: ComponentProps<typeof OriginalDocLayout>) {
+  const { page } = usePage();
+  const { frontmatter } = useFrontmatter() as { frontmatter?: ThemeFrontmatter };
+
+  if (!isPluginDetailPage(frontmatter, page.routePath)) {
+    return <OriginalDocLayout {...props} />;
+  }
+
+  const { beforeDoc, afterDoc, components } = props;
+
+  return (
+    <>
+      {beforeDoc}
+      <div className="rp-plugin-detail-layout">
+        <main className="rp-plugin-detail-layout__main rp-doc-layout__doc-container">
+          <div className="rp-doc rspress-doc">
+            <DocContent components={components} />
+          </div>
+        </main>
+      </div>
+      {afterDoc}
+    </>
+  );
+}
 
 function HomeFeatureItem({ feature }: { feature: Feature }): JSX.Element {
   const { title, details, link: rawLink } = feature;
@@ -302,28 +266,32 @@ function HomeFeatureItem({ feature }: { feature: Feature }): JSX.Element {
 }
 
 export function HomeFeature() {
-  const { frontmatter } = useFrontmatter();
-  const { pages } = usePages();
+  const { frontmatter } = useFrontmatter() as { frontmatter?: ThemeFrontmatter };
+  const { pages } = usePages() as { pages: ThemePage[] };
   const lang = useLang();
+  const featureGroups = frontmatter?.features ?? [];
+
   if (frontmatter?.pageName === 'home') {
     return (
       <div>
-        {frontmatter?.features?.map((feature: any, index: number) => {
-          let items = feature?.items || [];
-          if (index === 1) {
-            const page: any = pages.find(page => page.lang === lang && page.frontmatter?.pageName === 'guide');
+        {featureGroups.map((feature, index) => {
+          let items = feature.items ?? [];
+
+          if (index === 2) {
+            const page = pages.find((currentPage) => currentPage.lang === lang && currentPage.frontmatter?.pageName === 'guide');
             if (page) {
-              const allItems = page.frontmatter?.features?.flatMap((feature: any) => feature?.items || []);
-              items = [...allItems.filter((item: any) => item.showOnHome), ...items];
+              const allItems = getFeatureGroups(page).flatMap((group) => group.items ?? []);
+              items = [...allItems.filter((item) => item.showOnHome), ...items];
             }
-          } else if (index === 2) {
-            const page: any = pages.find(page => page.lang === lang && page.frontmatter?.pageName === 'development');
+          } else if (index === 3) {
+            const page = pages.find((currentPage) => currentPage.lang === lang && currentPage.frontmatter?.pageName === 'development');
             if (page) {
               // 把 page.frontmatter?.features 里的 items 都拍平合并，取前 8 个
-              const allItems = page.frontmatter?.features?.flatMap((feature: any) => feature?.items || []);
-              items = [...allItems.filter((item: any) => item.showOnHome), ...feature?.items];
+              const allItems = getFeatureGroups(page).flatMap((group) => group.items ?? []);
+              items = [...allItems.filter((item) => item.showOnHome), ...(feature.items ?? [])];
             }
           }
+
           return (
             <div key={feature.title || `feature-${index}`}>
               <div className="rp-home-feature-container">
@@ -331,7 +299,7 @@ export function HomeFeature() {
                 <p className="rp-home-feature-desc">{feature.details}</p>
               </div>
               <div className="rp-home-feature">
-                {items?.map((item: any) => {
+                {items.map((item) => {
                   return <HomeFeatureItem key={item.title} feature={item} />;
                 })}
               </div>
@@ -344,7 +312,7 @@ export function HomeFeature() {
 
   return (
     <div>
-      {frontmatter?.features?.map((feature: any, index: number) => {
+      {featureGroups.map((feature, index) => {
         return (
           <div key={feature.title || `feature-${index}`}>
             <div className="rp-home-feature-container">
@@ -352,7 +320,7 @@ export function HomeFeature() {
               <p className="rp-home-feature-desc">{feature.details}</p>
             </div>
             <div className="rp-home-feature">
-              {feature?.items?.map((item: any) => {
+              {(feature.items ?? []).map((item) => {
                 return <HomeFeatureItem key={item.title} feature={item} />;
               })}
             </div>
@@ -363,5 +331,6 @@ export function HomeFeature() {
   );
 }
 
-export * from '@rspress/core/theme';
+export { Nav } from './components/Nav';
 
+export * from '@rspress/core/theme-original';

@@ -1,15 +1,15 @@
 ---
-displayName: "Password policy"
+displayName: "Политика паролей"
 packageName: '@nocobase/plugin-password-policy'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Set the password rules and sign in lockout policy for all users
+  Установка правил паролей и политики блокировки входа для всех пользователей
 isFree: false
 builtIn: false
 defaultEnabled: false
 editionLevel: 2
 ---
 
-# Password policy
+# Политика паролей

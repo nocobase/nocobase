@@ -7,7 +7,7 @@
  *
  * Rules:
  * - CN: displayName.zh-CN, description.zh-CN (fallback to EN)
- * - All others (ar, cs, de, en, es, fr, he, hi, id, it, ja, ko, nl, pl, pt, ru, sv, th, tr, uk, vi): displayName, description (EN)
+ * - All others (de, en, es, fr, ja, pt, ru): displayName, description (EN)
  * - supportedVersions: ["2.x"] (default)
  * - isFree:        true for community plugins; false for pro-plugins
  * - defaultInstalled: false by default (do not guess)
@@ -22,30 +22,7 @@ const COMMUNITY_DIR = path.join(ROOT, 'packages', 'plugins', '@nocobase');
 const PRO_DIR = path.join(ROOT, 'packages', 'pro-plugins', '@nocobase');
 
 const DOCS_ROOT = path.join(ROOT, 'docs', 'docs');
-const LOCALES = [
-  'ar',
-  'cn',
-  'cs',
-  'de',
-  'en',
-  'es',
-  'fr',
-  'he',
-  'hi',
-  'id',
-  'it',
-  'ja',
-  'ko',
-  'nl',
-  'pl',
-  'pt',
-  'ru',
-  'sv',
-  'th',
-  'tr',
-  'uk',
-  'vi',
-];
+const LOCALES = ['cn', 'de', 'en', 'es', 'fr', 'ja', 'pt', 'ru'];
 
 // Load preset deprecated list (optional)
 const PRESET_PKG = path.join(ROOT, 'packages', 'presets', 'nocobase', 'package.json');

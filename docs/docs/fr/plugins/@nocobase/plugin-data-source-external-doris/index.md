@@ -1,15 +1,15 @@
 ---
-displayName: "Data source: External Doris"
+displayName: "Source de données : Doris externe"
 packageName: '@nocobase/plugin-data-source-external-doris'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Use external Apache Doris databases as data sources.
+  Utilisez une base de données Apache Doris externe comme source de données.
 isFree: false
 builtIn: false
 defaultEnabled: false
 editionLevel: 3
 ---
 
-# Data source: External Doris
+# Source de données : Doris externe

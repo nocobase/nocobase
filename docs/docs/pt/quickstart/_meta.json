@@ -1,0 +1,129 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Antes de começar",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "início rápido",
+        "link": "/quickstart/"
+      },
+      {
+        "type": "custom-link",
+        "label": "Como funciona o NocoBase",
+        "link": "/get-started/how-nocobase-works"
+      },
+      {
+        "type": "custom-link",
+        "label": "Requisitos do sistema",
+        "link": "/get-started/system-requirements"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Instale o NocoBase",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Instalar usando CLI (recomendado)",
+        "link": "/quickstart/installation/cli"
+      },
+      {
+        "type": "custom-link",
+        "label": "Conectando métodos de instalação antigos à IA e migrando",
+        "link": "/quickstart/installation/migration"
+      },
+      {
+        "type": "custom-link",
+        "label": "Configuração do aplicativo e .env",
+        "link": "/quickstart/installation/env"
+      },
+      {
+        "type": "custom-link",
+        "label": "Instalação de plug-ins de terceiros",
+        "link": "/quickstart/plugins/third-party"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Implantação do ambiente de produção",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Visão geral",
+        "link": "/quickstart/production/"
+      },
+      {
+        "type": "custom-link",
+        "label": "O aplicativo é iniciado automaticamente",
+        "link": "/quickstart/production/autostart"
+      },
+      {
+        "type": "custom-link",
+        "label": "proxy reverso",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "Visão geral",
+            "link": "/quickstart/production/reverse-proxy/"
+          },
+          {
+            "type": "custom-link",
+            "label": "Nginx",
+            "link": "/quickstart/production/reverse-proxy/nginx"
+          },
+          {
+            "type": "custom-link",
+            "label": "Caddie",
+            "link": "/quickstart/production/reverse-proxy/caddy"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Operação, manutenção e liberação",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Aplicativo de gerenciamento",
+        "link": "/quickstart/operations/manage-app"
+      },
+      {
+        "type": "custom-link",
+        "label": "Gerenciamento de múltiplos ambientes",
+        "link": "/quickstart/operations/multi-environment"
+      },
+      {
+        "type": "custom-link",
+        "label": "Backup e restauração",
+        "link": "/quickstart/operations/backup-restore"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Notas de design CLI",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "intenção de design do aplicativo nb",
+        "link": "/quickstart/cli-design/nb-app-design-intent"
+      },
+      {
+        "type": "custom-link",
+        "label": "A intenção do design do proxy nb",
+        "link": "/quickstart/cli-design/nb-proxy-design-intent"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Iniciar (versão antiga)",
+    "proxy": false,
+    "link": "/get-started/how-nocobase-works"
+  }
+]

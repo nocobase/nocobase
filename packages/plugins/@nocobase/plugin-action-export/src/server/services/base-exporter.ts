@@ -23,6 +23,7 @@ import os from 'os';
 import { Logger } from '@nocobase/logger';
 import _ from 'lodash';
 import { Field, RelationField } from '@nocobase/database';
+import { storagePathJoin } from '@nocobase/utils';
 
 export type ExportOptions = {
   collectionManager: ICollectionManager;
@@ -277,11 +278,7 @@ abstract class BaseExporter<T extends ExportOptions = ExportOptions> extends Eve
     return value;
   }
 
-  public generateOutputPath(
-    prefix = 'export',
-    ext = '',
-    destination = path.join(process.cwd(), 'storage', 'tmp'),
-  ): string {
+  public generateOutputPath(prefix = 'export', ext = '', destination = storagePathJoin('tmp')): string {
     const fileName = `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2)}${ext}`;
     return path.join(destination, fileName);
   }

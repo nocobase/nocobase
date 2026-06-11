@@ -11,7 +11,8 @@
   },
   {
     "type": "file",
-    "name": "quickstart"
+    "name": "quickstart",
+    "label": "安装方式和版本对比"
   },
   {
     "type": "custom-link",
@@ -125,7 +126,7 @@
       {
         "type": "custom-link",
         "label": "如何部署才更快",
-        "link": "https://www.nocobase.com/cn/tutorials/how-to-deploy-nocobase-faster"
+        "link": "/get-started/deployment/how-to-deploy-nocobase-faster"
       }
     ]
   },

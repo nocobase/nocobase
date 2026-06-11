@@ -34,7 +34,13 @@ const diagnosticHost: ts.FormatDiagnosticsHost = {
   getNewLine: () => ts.sys.newLine,
 };
 
+let cachedBaseCompilerOptions: ts.CompilerOptions | null = null;
+
 function loadCompilerOptions(): ts.CompilerOptions {
+  if (cachedBaseCompilerOptions) {
+    return { ...cachedBaseCompilerOptions };
+  }
+
   const configPath = path.join(ROOT_PATH, 'tsconfig.json');
   const configFile = ts.readConfigFile(configPath, ts.sys.readFile);
   if (configFile.error) {
@@ -50,8 +56,13 @@ function loadCompilerOptions(): ts.CompilerOptions {
   const options: ts.CompilerOptions = {
     ...parsedConfig.options,
   };
+  // Remove paths so TypeScript resolves imports via node_modules (to built .d.ts files)
+  // instead of via tsconfig paths (to .ts source files). Keeping paths would cause TS6059
+  // errors because source files from other packages fall outside the current rootDir.
   delete options.paths;
-  return options;
+
+  cachedBaseCompilerOptions = Object.freeze({ ...options });
+  return { ...cachedBaseCompilerOptions };
 }
 
 export const buildDeclaration = async (cwd: string, targetDir: string) => {
@@ -77,7 +88,19 @@ export const buildDeclaration = async (cwd: string, targetDir: string) => {
     rootDir: srcPath,
   } satisfies ts.CompilerOptions;
 
-  const program = ts.createProgram(files, compilerOptions);
+  const host = ts.createCompilerHost(compilerOptions);
+  const originalDirectoryExists = host.directoryExists?.bind(host);
+  const rootPrefix = ROOT_PATH.endsWith(path.sep) ? ROOT_PATH : ROOT_PATH + path.sep;
+  host.directoryExists = (dirPath: string) => {
+    // Prevent module resolution from walking up to parent node_modules
+    const resolved = path.resolve(dirPath);
+    if (resolved !== ROOT_PATH && !resolved.startsWith(rootPrefix) && resolved.includes(`${path.sep}node_modules`)) {
+      return false;
+    }
+    return originalDirectoryExists ? originalDirectoryExists(dirPath) : ts.sys.directoryExists(dirPath);
+  };
+
+  const program = ts.createProgram(files, compilerOptions, host);
   const emitResult = program.emit(undefined, undefined, undefined, true);
   const diagnostics = ts.getPreEmitDiagnostics(program).concat(emitResult.diagnostics);
 

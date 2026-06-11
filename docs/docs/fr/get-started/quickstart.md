@@ -33,10 +33,6 @@ install_methods:
     technical_requirement: ★★★★★
     upgrade_method: Synchroniser les mises à jour via Git.
 ---
-:::tip Avis de traduction IA
-Cette documentation a été traduite automatiquement par IA.
-:::
-
 
 
 # Comparaison des méthodes d'installation et des versions

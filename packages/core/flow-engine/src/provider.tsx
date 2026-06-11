@@ -45,34 +45,50 @@ export const FlowEngineGlobalsContextProvider: React.FC<{ children: React.ReactN
   const engine = useFlowEngine();
   const config = useContext(ConfigProvider.ConfigContext);
   const { token } = theme.useToken();
+  const isDarkTheme = React.useMemo(() => {
+    const algorithm = config?.theme?.algorithm;
+    if (Array.isArray(algorithm)) {
+      return algorithm.includes(theme.darkAlgorithm);
+    }
+    return algorithm === theme.darkAlgorithm;
+  }, [config]);
+
+  // 这些全局能力需要在 children 首次渲染前就可读，不能等到 effect 后再挂到上下文。
+  engine.context.defineProperty('viewer', {
+    cache: false,
+    get: (ctx) => new FlowViewer(ctx, { drawer, embed, popover, dialog }),
+  });
+  for (const item of Object.entries({
+    antdConfig: config,
+    modal,
+    message,
+    notification,
+  })) {
+    const [key, value] = item;
+    if (value) {
+      engine.context.defineProperty(key, { value });
+    }
+  }
+  // 将 themeToken 定义为 observable, 使组件能够响应主题的变更。
+  engine.context.defineProperty('themeToken', {
+    get: () => token,
+    observable: true,
+    cache: true,
+  });
+  // 统一把暗色模式暴露到 Flow 上下文，避免 flow 侧继续依赖 global-theme。
+  engine.context.defineProperty('isDarkTheme', {
+    get: () => isDarkTheme,
+    observable: true,
+    cache: true,
+    info: {
+      description: 'Whether current theme algorithm is dark mode.',
+      detail: 'boolean',
+    },
+  });
 
   useEffect(() => {
-    const context = {
-      antdConfig: config,
-      // themeToken 改为可观察的 getter，在下方单独 define
-      modal,
-      message,
-      notification,
-    };
-    engine.context.defineProperty('viewer', {
-      cache: false,
-      get: (ctx) => new FlowViewer(ctx, { drawer, embed, popover, dialog }),
-    });
-    for (const item of Object.entries(context)) {
-      const [key, value] = item;
-      if (value) {
-        engine.context.defineProperty(key, { value });
-      }
-    }
-    // 将 themeToken 定义为 observable, 使组件能够响应主题的变更
-    // NOTE: 必须在 antdConfig 写入后再更新 themeToken；否则会读取到旧 antdConfig 的值。
-    engine.context.defineProperty('themeToken', {
-      get: () => token,
-      observable: true,
-      cache: true,
-    });
     engine.reactView.refresh();
-  }, [engine, drawer, modal, message, notification, config, popover, token, dialog, embed]);
+  }, [engine, drawer, modal, message, notification, config, popover, token, dialog, embed, isDarkTheme]);
 
   return (
     <ConfigProvider {...config} locale={engine.context.locales?.antd} popupMatchSelectWidth={false}>

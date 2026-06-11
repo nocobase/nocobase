@@ -1,15 +1,15 @@
 ---
-displayName: "Data source: External MySQL"
+displayName: "データソース：外部 MySQL"
 packageName: '@nocobase/plugin-data-source-external-mysql'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Use external MySQL databases as data sources.
+  外部の MySQL データベースをデータソースとして使用します。
 isFree: false
 builtIn: false
 defaultEnabled: false
 editionLevel: 1
 ---
 
-# Data source: External MySQL
+# データソース：外部 MySQL

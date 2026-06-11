@@ -22,7 +22,7 @@ export async function checkAssociationOperate(ctx: Context, next: Next) {
   const roles = ctx.state.currentRoles;
   for (const role of roles) {
     const aclRole = acl.getRole(role);
-    if (aclRole.snippetAllowed(`${resourceName}:${actionName}`)) {
+    if (aclRole?.snippetAllowed(`${resourceName}:${actionName}`)) {
       return next();
     }
   }

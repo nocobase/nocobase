@@ -18,7 +18,7 @@ keywords: "验证管理,短信验证码,TOTP,2FA,身份验证,二次验证,NocoB
 **验证管理中心支持管理和接入不同的用户身份验证方式。** 比如：
 
 - 短信验证码 - 由验证插件默认提供。参考：[验证：短信](./sms)
-- TOTP 认证器 - 参考：[验证：TOTP 认证器](../verification-totp/)
+- TOTP 认证器 - 参考：[验证：TOTP 认证器](../verification-totp/index.md)
 
 开发者也可以以插件的形式扩展其他验证类型。参考：[扩展验证类型](./dev/type)
 

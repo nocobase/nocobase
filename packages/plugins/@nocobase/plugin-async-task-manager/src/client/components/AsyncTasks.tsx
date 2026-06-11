@@ -229,7 +229,7 @@ const AsyncTasksButton = (props) => {
               icon={<Icon type="ExclamationCircleOutlined" />}
               onClick={() => {
                 setPopoverVisible(false);
-                const { namespace: ns = 'client' } = plugin.taskOrigins.get(record.origin);
+                const { namespace: ns = 'client' } = plugin.taskOrigins.get(record.origin) ?? {};
                 Modal.info({
                   title: localT('Error Details'),
                   content: <Typography.Text>{t(result.message, { ...result.params, ns })}</Typography.Text>,
@@ -306,8 +306,7 @@ export const AsyncTasks = () => {
   const handleTaskCreated = useCallback(async () => {
     setPopoverVisible(true);
     refresh();
-    console.log('handleTaskCreated');
-  }, []);
+  }, [refresh]);
   const handleTaskProgress = useCallback((event) => {
     const { detail } = event;
     setTasks((prevTasks) => {
@@ -322,12 +321,10 @@ export const AsyncTasks = () => {
   }, []);
   const handleTaskStatus = useCallback(() => {
     refresh();
-    console.log('handleTaskStatus');
-  }, []);
+  }, [refresh]);
   const handleTaskDeleted = useCallback(() => {
     refresh();
-    console.log('handleTaskDeleted');
-  }, []);
+  }, [refresh]);
 
   useEffect(() => {
     app.eventBus.addEventListener('ws:message:async-tasks:created', handleTaskCreated);

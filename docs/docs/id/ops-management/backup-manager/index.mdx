@@ -1,0 +1,208 @@
+---
+pkg: '@nocobase/plugin-backups'
+title: "Manajemen Backup"
+description: "Backup ops management: full backup database dan file user, scheduled backup, download/delete/restore, mendukung MySQL/PostgreSQL, perlu instalasi database client, fitur professional."
+keywords: "manajemen backup,Backup,backup data,scheduled backup,restore backup,MySQL PostgreSQL,ops management,NocoBase"
+---
+# Manajemen Backup
+
+## Pengantar
+
+Plugin backup manager NocoBase menyediakan fitur full backup database NocoBase dan file yang di-upload user, scheduled backup, download backup, delete, dan restore.
+
+:::warning
+Plugin backup manager termasuk dalam versi professional dan enterprise. Untuk pengguna versi community dan standard, Anda dapat backup database secara langsung. Untuk detail lihat: [`Cara backup dan restore NocoBase`](https://www.nocobase.com/en/blog/nocobase-backup-restore)
+:::
+
+## Instalasi Database Client
+
+Backup manager bergantung pada client dari main data yang sesuai. Sebelum digunakan, silakan unduh client yang sesuai dengan versi database yang digunakan dari website resmi:
+
+- MySQL: https://dev.mysql.com/downloads/
+- PostgreSQL: https://www.postgresql.org/download/
+
+Versi Docker, Anda dapat langsung menulis script di direktori `./storage/scripts`
+
+```bash
+mkdir ./storage/scripts
+cd ./storage/scripts
+vim install-database-client.sh
+```
+
+Konten `install-database-client.sh` sebagai berikut:
+
+<Tabs>
+
+<Tab label="PostgreSQL" name="PostgreSQL">
+
+```bash
+#!/bin/bash
+
+# Check if pg_dump is installed
+if [ ! -f /usr/bin/pg_dump ]; then
+    echo "pg_dump is not installed, starting PostgreSQL client installation..."
+
+    # Configure Aliyun mirrors
+    tee /etc/apt/sources.list > /dev/null <<EOF
+deb http://mirrors.aliyun.com/debian/ bookworm main contrib non-free
+deb-src http://mirrors.aliyun.com/debian/ bookworm main contrib non-free
+deb http://mirrors.aliyun.com/debian-security/ bookworm-security main contrib non-free
+deb-src http://mirrors.aliyun.com/debian-security/ bookworm-security main contrib non-free
+deb http://mirrors.aliyun.com/debian/ bookworm-updates main contrib non-free
+deb-src http://mirrors.aliyun.com/debian/ bookworm-updates main contrib non-free
+deb http://mirrors.aliyun.com/debian/ bookworm-backports main contrib non-free
+deb-src http://mirrors.aliyun.com/debian/ bookworm-backports main contrib non-free
+EOF
+
+    # Install necessary tools and clean cache
+    rm -rf /etc/apt/sources.list.d/debian.sources && apt-get update && apt-get install -y --no-install-recommends wget gnupg \
+      && rm -rf /var/lib/apt/lists/*
+
+    # Configure PostgreSQL source
+    echo "deb [signed-by=/usr/share/keyrings/pgdg.asc] http://mirrors.aliyun.com/postgresql/repos/apt bookworm-pgdg main" > /etc/apt/sources.list.d/pgdg.list
+    wget --quiet -O /usr/share/keyrings/pgdg.asc http://mirrors.aliyun.com/postgresql/repos/apt/ACCC4CF8.asc
+
+    # Install PostgreSQL client
+    apt-get update && apt-get install -y --no-install-recommends postgresql-client-16 \
+      && rm -rf /var/lib/apt/lists/*
+
+    echo "PostgreSQL client installation completed."
+else
+    echo "pg_dump is already installed, skipping PostgreSQL client installation."
+fi
+```
+
+</Tab>
+<Tab label="MySQL/MariaDB" name="MySQL/MariaDB">
+
+```bash
+#!/bin/bash
+
+if [ ! -f /usr/bin/mysql ]; then
+    echo "MySQL client is not installed, starting MySQL client installation..."
+
+    tee /etc/apt/sources.list > /dev/null <<EOF
+deb http://mirrors.aliyun.com/debian/ bookworm main contrib non-free
+deb-src http://mirrors.aliyun.com/debian/ bookworm main contrib non-free
+deb http://mirrors.aliyun.com/debian-security/ bookworm-security main contrib non-free
+deb-src http://mirrors.aliyun.com/debian-security/ bookworm-security main contrib non-free
+deb http://mirrors.aliyun.com/debian/ bookworm-updates main contrib non-free
+deb-src http://mirrors.aliyun.com/debian/ bookworm-updates main contrib non-free
+deb http://mirrors.aliyun.com/debian/ bookworm-backports main contrib non-free
+deb-src http://mirrors.aliyun.com/debian/ bookworm-backports main contrib non-free
+EOF
+
+    echo "Updating package list and installing necessary tools..."
+    rm -rf /etc/apt/sources.list.d/debian.sources && apt-get update && apt-get install -y --no-install-recommends wget gnupg \
+        && rm -rf /var/lib/apt/lists/*
+
+    wget --no-check-certificate https://downloads.mysql.com/archives/get/p/23/file/mysql-community-client-core_8.0.39-1debian12_amd64.deb && \
+        dpkg -x mysql-community-client-core_8.0.39-1debian12_amd64.deb /tmp/mysql-client && \
+        cp /tmp/mysql-client/usr/bin/mysqldump /usr/bin/ && \
+        cp /tmp/mysql-client/usr/bin/mysql /usr/bin/
+
+    echo "MySQL client installation completed."
+else
+    echo "MySQL client is already installed, skipping installation."
+fi
+```
+
+</Tab>
+
+</Tabs>
+
+Kemudian restart container app
+
+```bash
+docker compose restart app
+# Lihat log
+docker compose logs app
+```
+
+Lihat versi database client, harus sama dengan versi server database
+
+<Tabs>
+<Tab label="PostgreSQL" name="PostgreSQL">
+
+```bash
+docker compose exec app bash -c "pg_dump -V"
+```
+
+</Tab>
+<Tab label="MySQL/MariaDB" name="MySQL/MariaDB">
+
+```bash
+docker compose exec app bash -c "mysql -V"
+```
+
+</Tab>
+</Tabs>
+
+## Penggunaan
+
+![](https://static-docs.nocobase.com/202510302154966.png)
+
+### Buat Backup Baru
+
+Klik tombol "Create new backup", Anda dapat membuat backup baru sesuai konfigurasi backup, dan menampilkan status backup di list backup.
+
+![](https://static-docs.nocobase.com/202510302154912.png)
+
+### Restore Backup
+
+Mendukung restore backup dari list backup, upload file backup lokal untuk restore backup.
+Operasi restore tidak diizinkan di skenario berikut:
+
+- Saat versi NocoBase saat ini lebih rendah dari versi NocoBase di file backup.
+- Saat database NocoBase saat ini tidak konsisten dengan konfigurasi berikut di file backup:
+  - dialect tipe database
+  - underscored konfigurasi field
+  - table prefix
+  - schema struktur tabel
+- Saat `tolerance mode` tidak diaktifkan, dan versi database saat backup dibuat lebih tinggi dari versi database aplikasi saat ini.
+
+> **Backup dan restore semuanya adalah operasi full database, disarankan untuk backup database saat ini terlebih dahulu sebelum restore backup**
+
+#### Restore dari List Backup
+
+Klik tombol `Restore` pada item backup di list backup, masukkan password encryption file backup di popup window, klik confirm untuk restore backup.
+
+> File backup yang tidak di-encrypt tidak perlu memasukkan password.
+
+> Jika perlu restore file backup ke versi database yang lebih rendah, perlu mengaktifkan tolerance mode.
+
+![](https://static-docs.nocobase.com/202510302156882.png)
+
+#### Restore dengan Upload File Backup Lokal
+
+Klik tombol `Restore from local backup`, pilih file backup lokal di popup window, masukkan password encryption file backup, klik confirm untuk restore backup.
+
+> File backup yang tidak di-encrypt tidak perlu memasukkan password.
+
+> Jika perlu restore file backup ke versi database yang lebih rendah, perlu mengaktifkan tolerance mode.
+
+![](https://static-docs.nocobase.com/202510302155602.png)
+
+#### Download File Backup
+
+Klik tombol `Download` pada item backup di list backup, untuk men-download file backup.
+
+#### Delete Backup
+
+Klik tombol `Delete` pada item backup di list backup, untuk menghapus file backup.
+
+## Settings Backup
+
+Beralih ke tab `Settings`, modifikasi settings backup, klik save untuk berlaku.
+
+![](https://static-docs.nocobase.com/202510302156326.png)
+
+### Penjelasan Settings Backup
+
+- `Auto backup`: Setelah `Run auto backup based on Cron` diaktifkan, Anda dapat mengatur auto backup pada waktu yang ditentukan.
+- `Max backups`: Mengatur jumlah maksimum penyimpanan lokal file backup. Setelah melebihi jumlah, file backup terlama lokal akan otomatis dihapus.
+- `Sync backup file to cloud storage`: Mengatur cloud storage untuk auto upload setelah backup file berhasil.
+- `Backup local storage files`: Apakah file yang di-upload user ke local storage server (storage/uploads) termasuk dalam backup.
+- `Restore password`: Jika restore password diatur, perlu memasukkan password tersebut saat recovery backup.
+
+> **Mohon simpan restore password dengan baik. Lupa password akan menyebabkan tidak dapat restore file backup.**

@@ -14,7 +14,7 @@ import { NAMESPACE, lang } from '../../locale';
 import { getCollectionFieldOptions, useGetDataSourceCollectionManager } from '../../variable';
 import { Trigger } from '..';
 import { ScheduleConfig } from './ScheduleConfig';
-import { SCHEDULE_MODE } from './constants';
+import { SCHEDULE_MODE, scheduleModeOptions } from './constants';
 import { TriggerScheduleConfig } from './TriggerScheduleConfig';
 import { ScheduleModes } from './ScheduleModes';
 import { WorkflowVariableWrapper } from '../../variable';
@@ -64,6 +64,18 @@ export default class extends Trigger {
   sync = false;
   title = `{{t("Schedule event", { ns: "${NAMESPACE}" })}}`;
   description = `{{t("Triggered according to preset time conditions. Suitable for one-time or periodic tasks, such as sending notifications and cleaning data on a schedule.", { ns: "${NAMESPACE}" })}}`;
+  presetFieldset = {
+    mode: {
+      type: 'number',
+      title: `{{t("Trigger mode", { ns: "${NAMESPACE}" })}}`,
+      name: 'mode',
+      'x-decorator': 'FormItem',
+      'x-component': 'Radio.Group',
+      enum: scheduleModeOptions,
+      required: true,
+      default: SCHEDULE_MODE.STATIC,
+    },
+  };
   fieldset = {
     config: {
       type: 'void',

@@ -15,14 +15,14 @@ Starting with `1.6.0-alpha.30`, the original "verification code" feature has bee
 **The Verification Management Center supports managing and integrating various methods of user verification.** For example:
 
 - SMS Verification Code – Provided by the verification plugin by default. Refer to: [Verification: SMS](./sms)
-- TOTP Authenticator – Refer to: [Verification: TOTP Authenticator](../verification-totp/)
+- TOTP Authenticator – Refer to: [Verification: TOTP Authenticator](../verification-totp/index.md)
 
 Developers can also extend other types of verification via plugins. Refer to: [Extending Verification Types](./dev/type)
 
 **Users can perform identity verification when needed after binding the corresponding verification method.** For example:
 
 - SMS Verification Login – Refer to: [Authentication: SMS](../auth-sms/index.md)
-- Two-Factor Authentication (2FA) – Refer to: [Two-Factor Authentication (2FA)](../2fa/)
+- Two-Factor Authentication (2FA) – Refer to: [Two-Factor Authentication (2FA)](../2fa/index.md)
 - Secondary Verification for Risk Operations – Future support
 
 Developers can also integrate identity verification into other necessary scenarios by extending plugins. Refer to: [Extending Verification Scenarios](./dev/scene)

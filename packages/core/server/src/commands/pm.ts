@@ -12,9 +12,17 @@
 import { AppSupervisor } from '../app-supervisor';
 import Application from '../application';
 import { PluginCommandError } from '../errors/plugin-command-error';
+import { pmListSummary } from '../plugin-manager/utils';
 
 export default (app: Application) => {
   const pm = app.command('pm');
+
+  pm.command('list').action(async () => {
+    const items = await pmListSummary(app);
+    console.log('--- BEGIN_PLUGIN_LIST_JSON ---');
+    console.log(JSON.stringify(items));
+    console.log('--- END_PLUGIN_LIST_JSON ---');
+  });
 
   pm.command('create')
     .argument('plugin')
