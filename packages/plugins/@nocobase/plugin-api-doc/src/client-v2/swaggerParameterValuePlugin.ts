@@ -8,7 +8,6 @@
  */
 
 const ROW_SELECTOR = 'tr[data-param-name][data-param-in]';
-const INPUT_SELECTOR = 'input, textarea';
 const RECENT_INPUT_TTL = 2000;
 
 type InputLike = HTMLInputElement | HTMLTextAreaElement;
