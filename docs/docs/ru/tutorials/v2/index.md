@@ -78,7 +78,7 @@ NocoBase 2.0 построен на:
 ## Связанные документы
 
 ### Введение
-- [Как работает NocoBase](/get-started/how-nocobase-works) — основные концепции
+- [Как работает NocoBase](/quickstart/how-nocobase-works) — основные концепции
 - [Быстрый старт](/get-started/quickstart) — установка и первичная настройка
 - [Системные требования](/get-started/system-requirements) — требования к окружению
 

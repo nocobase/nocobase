@@ -23,7 +23,7 @@
 
 首先，我们需要在系统里创建"工单管理"的入口。
 
-1. 点击右上角 **UI 编辑器** 开关，进入界面[配置模式](/get-started/how-nocobase-works)（整个页面会出现橙色的可编辑边框）。
+1. 点击右上角 **UI 编辑器** 开关，进入界面[配置模式](/quickstart/how-nocobase-works)（整个页面会出现橙色的可编辑边框）。
 2. 鼠标移到顶部导航栏的 **「添加菜单项（Add menu item）」** 按钮，选择 **「添加分组（Add group）」**，命名为 **「工单管理」**。
 
 ![03-building-pages-2026-03-12-09-38-36](https://static-docs.nocobase.com/03-building-pages-2026-03-12-09-38-36.png)

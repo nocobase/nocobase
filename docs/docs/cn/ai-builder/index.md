@@ -23,7 +23,7 @@ AI 搭建是 NocoBase 提供的 AI 辅助搭建能力——你可以用自然语
 ### 手动安装
 
 ```bash
-npm install -g @nocobase/cli@beta
+npm install -g @nocobase/cli
 nb init --ui
 ```
 

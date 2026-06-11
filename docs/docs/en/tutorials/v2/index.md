@@ -78,7 +78,7 @@ If you're evaluating no-code/low-code platforms:
 ## Related Docs
 
 ### Getting Started
-- [How NocoBase Works](/get-started/how-nocobase-works) — Core concepts overview
+- [How NocoBase Works](/quickstart/how-nocobase-works) — Core concepts overview
 - [Quick Start](/get-started/quickstart) — Installation and initial setup
 - [System Requirements](/get-started/system-requirements) — Hardware and software requirements
 

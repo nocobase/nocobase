@@ -9,7 +9,7 @@ NocoBase 2.1.0 之后，官方提供了基于 CLI 的安装和管理方式。你
 先全局安装 CLI：
 
 ```bash
-npm install -g @nocobase/cli@beta
+npm install -g @nocobase/cli
 nb --version
 ```
 

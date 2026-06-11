@@ -78,7 +78,7 @@ Se você está avaliando plataformas no-code/low-code, aqui vão algumas compara
 ## Documentação Relacionada
 
 ### Guia de Introdução
-- [Como o NocoBase Funciona](/get-started/how-nocobase-works) — Introdução aos conceitos centrais
+- [Como o NocoBase Funciona](/quickstart/how-nocobase-works) — Introdução aos conceitos centrais
 - [Início Rápido](/get-started/quickstart) — Instalação e configuração inicial
 - [Requisitos do Sistema](/get-started/system-requirements) — Requisitos de ambiente
 

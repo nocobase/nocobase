@@ -78,7 +78,7 @@ NocoBase 2.0 は以下の技術で構築されています。
 ## 関連ドキュメント
 
 ### 入門ガイド
-- [NocoBase の仕組み](/get-started/how-nocobase-works) — コア概念の紹介
+- [NocoBase の仕組み](/quickstart/how-nocobase-works) — コア概念の紹介
 - [クイックスタート](/get-started/quickstart) — インストールと初期設定
 - [システム要件](/get-started/system-requirements) — 動作環境の要件
 
