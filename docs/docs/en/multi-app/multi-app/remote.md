@@ -50,7 +50,7 @@ APP_PROCESS_ADAPTER=remote
 # Redis for application and environment configuration cache
 APP_SUPERVISOR_REDIS_URL=
 # Command communication adapter
-APP_COMMAND_ADPATER=redis
+APP_COMMAND_ADAPTER=redis
 # Redis for command communication
 APP_COMMAND_REDIS_URL=
 ```
@@ -71,7 +71,7 @@ APP_PROCESS_ADAPTER=local
 # Redis for application and environment configuration cache
 APP_SUPERVISOR_REDIS_URL=
 # Command communication adapter
-APP_COMMAND_ADPATER=redis
+APP_COMMAND_ADAPTER=redis
 # Redis for command communication
 APP_COMMAND_REDIS_URL=
 # Environment identifier

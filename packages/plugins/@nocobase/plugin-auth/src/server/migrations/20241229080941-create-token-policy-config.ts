@@ -8,7 +8,7 @@
  */
 
 import { Migration } from '@nocobase/server';
-import { tokenPolicyCollectionName, tokenPolicyRecordKey } from '../../constants';
+import { defaultTokenPolicyConfig, tokenPolicyCollectionName, tokenPolicyRecordKey } from '../../constants';
 export default class extends Migration {
   on = 'afterLoad'; // 'beforeLoad' or 'afterLoad'
   appVersion = '<1.6.1';
@@ -19,18 +19,13 @@ export default class extends Migration {
     if (tokenPolicy) {
       this.app.authManager.tokenController.setConfig(tokenPolicy.config);
     } else {
-      const config = {
-        tokenExpirationTime: '1d',
-        sessionExpirationTime: '7d',
-        expiredTokenRenewLimit: '1d',
-      };
       await tokenPolicyRepo.create({
         values: {
           key: tokenPolicyRecordKey,
-          config,
+          config: defaultTokenPolicyConfig,
         },
       });
-      this.app.authManager.tokenController.setConfig(config);
+      this.app.authManager.tokenController.setConfig(defaultTokenPolicyConfig);
     }
   }
 }

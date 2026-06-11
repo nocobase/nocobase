@@ -1,12 +1,12 @@
 ---
-displayName: "Workflow: Manual node"
+displayName: "Workflow: 手動処理ノード"
 packageName: '@nocobase/plugin-workflow-manual'
 description: |
-  Could be used for workflows which some of decisions are made by users.
+  一部の意思決定を人間が手動で制御するためのプロセス。
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Workflow: Manual node
+# Workflow: 手動処理ノード

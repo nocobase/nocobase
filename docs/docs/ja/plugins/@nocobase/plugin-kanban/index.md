@@ -2,7 +2,7 @@
 displayName: "Block: Kanban"
 packageName: '@nocobase/plugin-kanban'
 description: |
-  Provides kanban block.
+  Kanban Block を提供します。
 isFree: true
 builtIn: true
 defaultEnabled: false

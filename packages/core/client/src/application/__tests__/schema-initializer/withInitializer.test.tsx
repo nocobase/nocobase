@@ -21,7 +21,7 @@ describe('withInitializer', () => {
     expect(screen.queryByText('Item')).not.toBeInTheDocument();
 
     await act(async () => {
-      await user.hover(screen.getByText('Test'));
+      await user.hover(screen.getByRole('button'));
       await sleep(100);
     });
     expect(screen.queryByText('Item')).toBeInTheDocument();
@@ -53,7 +53,7 @@ describe('withInitializer', () => {
     expect(screen.queryByText('Item')).not.toBeInTheDocument();
 
     await act(async () => {
-      await user.hover(screen.getByText('Test'));
+      await user.hover(screen.getByRole('button'));
       await sleep(100);
     });
 
@@ -76,7 +76,7 @@ describe('withInitializer', () => {
     });
 
     await act(async () => {
-      await user.hover(screen.getByText('Test'));
+      await user.hover(screen.getByRole('button'));
       await sleep(100);
     });
 
@@ -98,7 +98,7 @@ describe('withInitializer', () => {
     });
 
     await act(async () => {
-      await user.hover(screen.getByText('Test'));
+      await user.hover(screen.getByRole('button'));
       await sleep(100);
     });
 
@@ -123,7 +123,7 @@ describe('withInitializer', () => {
     });
 
     await act(async () => {
-      await user.hover(screen.getByText('Test'));
+      await user.hover(screen.getByRole('button'));
       await sleep(100);
     });
 

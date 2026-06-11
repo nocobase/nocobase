@@ -1,15 +1,15 @@
 ---
-displayName: "Custom brand"
+displayName: "Individuelles Branding"
 packageName: '@nocobase/plugin-custom-brand'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Customize the brand name and more brand-related information.
+  Passen Sie den Markennamen und weitere markenbezogene Informationen an.
 isFree: false
 builtIn: false
 defaultEnabled: false
 editionLevel: 1
 ---
 
-# Custom brand
+# Individuelles Branding

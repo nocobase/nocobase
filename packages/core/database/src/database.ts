@@ -103,6 +103,7 @@ export interface IDatabaseOptions extends Options {
   migrator?: any;
   usingBigIntForId?: boolean;
   underscored?: boolean;
+  rawTimezone?: string;
   logger?: LoggerOptions | Logger;
   customHooks?: any;
   instanceId?: string;
@@ -324,6 +325,7 @@ export class Database extends EventEmitter implements AsyncEmitter {
 
     this.collection({
       name: 'migrations',
+      dataCategory: 'system',
       autoGenId: false,
       timestamps: false,
       dumpRules: 'required',

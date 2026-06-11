@@ -1,12 +1,12 @@
 ---
-displayName: "Block: Gantt"
+displayName: "ブロック：ガントチャート"
 packageName: '@nocobase/plugin-gantt'
 description: |
-  Provides Gantt block.
+  ガントチャートブロックを提供します。
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Block: Gantt
+# ブロック：ガントチャート

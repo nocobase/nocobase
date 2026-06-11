@@ -1,10 +1,6 @@
 ---
 pkg: '@nocobase/plugin-auth'
 ---
-:::tip Avis de traduction IA
-Cette documentation a été traduite automatiquement par IA.
-:::
-
 
 # Stratégie de sécurité des Tokens
 

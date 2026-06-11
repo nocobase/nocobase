@@ -1,15 +1,15 @@
 ---
-displayName: "Audit logs"
+displayName: "監査ログ"
 packageName: '@nocobase/plugin-audit-logger'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Track and document user activities and resource actions across the system
+  システム内のユーザーアクティビティやリソース操作を追跡し、記録します。
 isFree: false
 builtIn: false
 defaultEnabled: false
 editionLevel: 3
 ---
 
-# Audit logs
+# 監査ログ

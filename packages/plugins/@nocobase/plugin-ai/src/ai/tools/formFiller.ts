@@ -9,14 +9,16 @@
 
 import { defineTools } from '@nocobase/ai';
 import { z } from 'zod';
+// @ts-ignore
+import pkg from '../../../package.json';
 
 export default defineTools({
   scope: 'GENERAL',
   defaultPermission: 'ALLOW',
   execution: 'frontend',
   introduction: {
-    title: '{{t("Form filler")}}',
-    about: '{{t("Fill the form with the given content")}}',
+    title: `{{t("Form filler", { ns: "${pkg.name}" })}}`,
+    about: `{{t("Fill the form with the given content", { ns: "${pkg.name}" })}}`,
   },
   definition: {
     name: 'formFiller',

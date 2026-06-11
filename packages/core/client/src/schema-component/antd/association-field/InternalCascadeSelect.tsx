@@ -14,8 +14,8 @@ import { uid } from '@formily/shared';
 import { Select as AntdSelect, Input, Space, Spin, Tag } from 'antd';
 import dayjs from 'dayjs';
 import { css } from '@emotion/css';
-import { debounce } from 'lodash';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { debounce, isEqual } from 'lodash';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAPIClient, useCollectionManager_deprecated } from '../../../';
 import { mergeFilter } from '../../../filter-provider/utils';
@@ -38,6 +38,7 @@ const CascadeSelect = connect((props) => {
   const [selectedOptions, setSelectedOptions] = useState<{ key: string; children: any; value?: any }[]>([
     { key: undefined, children: [], value: null },
   ]);
+  const selectedOptionsRef = useRef(selectedOptions);
 
   const [options, setOptions] = useState(data);
   const [loading, setLoading] = useState(false);
@@ -57,29 +58,45 @@ const CascadeSelect = connect((props) => {
       return getInterface(targetField.interface)?.filterable?.operators[0].value || '$includes';
     }
     return '$includes';
-  }, [targetField]);
+  }, [getInterface, targetField]);
   const field: any = useField();
 
   useEffect(() => {
-    if (value) {
-      const values = Array.isArray(value)
-        ? extractLastNonNullValueObjects(value?.filter((v) => v.value), true)
-        : transformNestedData(value);
-      const options = values?.map?.((v) => {
-        return {
-          key: v.parentId,
-          children: [],
-          value: v,
-        };
-      });
-      setSelectedOptions(options);
-    }
-  }, []);
+    selectedOptionsRef.current = selectedOptions;
+  }, [selectedOptions]);
+
   useEffect(() => {
-    if (!value) {
+    if (value) {
+      if (collectionField.interface === 'm2o' && !Array.isArray(value)) {
+        const selectedValue = normalizeToOneCascadeValue(selectedOptionsRef.current);
+        if (isEqual(selectedValue, value)) {
+          return;
+        }
+      }
+      if (Array.isArray(value)) {
+        const cascadeOptions = value
+          ?.filter((v) => v && (v.value || v.children))
+          .map((v) => ({
+            key: v.key,
+            children: v.children || [],
+            value: v.value,
+          }));
+        setSelectedOptions(cascadeOptions?.length ? cascadeOptions : [{ key: undefined, children: [], value: null }]);
+      } else {
+        const values = transformNestedData(value);
+        const options = values?.map?.((v) => {
+          return {
+            key: v.parentId,
+            children: [],
+            value: v,
+          };
+        });
+        setSelectedOptions(options);
+      }
+    } else {
       setSelectedOptions([{ key: undefined, children: [], value: null }]);
     }
-  }, [value]);
+  }, [collectionField.interface, value]);
   const mapOptionsToTags = useCallback(
     (options) => {
       try {
@@ -133,7 +150,7 @@ const CascadeSelect = connect((props) => {
         return options;
       }
     },
-    [targetField?.uiSchema, fieldNames],
+    [compile, fieldNames, mapOptions, targetField],
   );
   const handleGetOptions = async (filter) => {
     const response = await resource.list({
@@ -145,6 +162,16 @@ const CascadeSelect = connect((props) => {
     return response?.data?.data;
   };
 
+  const getAssociationValue = (options) => {
+    if (options.length === 1 && !options[0].value) {
+      return null;
+    }
+    if (collectionField.interface === 'm2o') {
+      return normalizeToOneCascadeValue(options);
+    }
+    return options;
+  };
+
   const handleSelect = async (value, option, index) => {
     const data = await handleGetOptions({ parentId: option?.id });
     const options = [...selectedOptions];
@@ -154,18 +181,15 @@ const CascadeSelect = connect((props) => {
       options[index + 1] = { key: option?.id, children: data?.length > 0 ? data : null };
     }
     setSelectedOptions(options);
+    const associationValue = getAssociationValue(options);
     if (['o2m', 'm2m'].includes(collectionField.interface)) {
       const fieldValue = Array.isArray(associationField.fieldValue) ? associationField.fieldValue : [];
       fieldValue[field.index] = option;
       associationField.fieldValue = fieldValue;
     } else {
-      associationField.value = option;
+      associationField.value = associationValue;
     }
-    if (options.length === 1 && !options[0].value) {
-      onChange?.(null);
-    } else {
-      onChange?.(options);
-    }
+    onChange?.(associationValue);
   };
 
   const onDropdownVisibleChange = async (visible, selectedValue, index) => {
@@ -181,7 +205,11 @@ const CascadeSelect = connect((props) => {
         options[index] = { ...options[index], value: selectedValue?.value };
         options[index + 1] = { key: selectedValue?.value?.id, children: data?.length > 0 ? data : null };
         setSelectedOptions(options);
-        onChange?.(options);
+        const associationValue = getAssociationValue(options);
+        if (!['o2m', 'm2m'].includes(collectionField.interface)) {
+          associationField.value = associationValue;
+        }
+        onChange?.(associationValue);
       }
     }
   };
@@ -251,26 +279,41 @@ export const InternalCascadeSelect = observer(
     const form = useForm();
     const fieldSchema = useFieldSchema();
     const { loading, data: formData } = useDataBlockRequest() || {};
-    const initialValue = useMemo(() => formData?.data?.[fieldSchema.name], [loading]);
-    const associationDataFlag = !formData || fieldSchema.name in (formData?.data || {});
-    const handleFormValuesChange = debounce((form) => {
-      if (collectionField.interface === 'm2o') {
-        // 对 m2o 类型字段，提取最后一个非 null 值
-        const value = extractLastNonNullValueObjects(form.values?.[fieldSchema.name]);
-        setTimeout(() => {
-          form.setValuesIn(fieldSchema.name, value);
-          field.value = value;
-        });
-      } else {
-        // 对 select_array 类型字段，过滤掉空对象
-        const value = extractLastNonNullValueObjects(form.values?.select_array || []).filter(
-          (v) => v && Object.keys(v).length > 0,
-        );
-        setTimeout(() => {
-          field.value = value;
-        });
-      }
-    }, 300);
+    const fieldValue = field.value !== undefined ? field.value : props.value;
+    const requestValue = formData?.data?.[fieldSchema.name];
+    const getLatestValue = useCallback(() => {
+      const latestFieldValue = field.value !== undefined ? field.value : props.value;
+      const value = latestFieldValue !== undefined ? latestFieldValue : requestValue;
+      return collectionField.interface === 'm2o' ? normalizeToOneCascadeValue(value) : value;
+    }, [collectionField.interface, field, props.value, requestValue]);
+    const initialValue = useMemo(() => getLatestValue(), [getLatestValue]);
+    const associationDataFlag =
+      !formData ||
+      fieldSchema.name in (formData?.data || {}) ||
+      (collectionField.interface === 'm2o' && fieldValue !== undefined);
+    const handleFormValuesChange = useMemo(
+      () =>
+        debounce((form) => {
+          if (collectionField.interface === 'm2o') {
+            // 对 m2o 类型字段，提取最后一个非 null 值
+            const value = normalizeToOneCascadeValue(form.values?.[fieldSchema.name]);
+            setTimeout(() => {
+              field.value = value;
+            });
+          } else {
+            // 对 select_array 类型字段，过滤掉空对象
+            const value = extractLastNonNullValueObjects(form.values?.select_array || []).filter(
+              (v) => v && Object.keys(v).length > 0,
+            );
+            setTimeout(() => {
+              field.value = value;
+            });
+          }
+        }, 300),
+      [collectionField.interface, field, fieldSchema.name],
+    );
+    const currentFieldValue = form.values?.[fieldSchema.name];
+    const hasCurrentFieldValue = Object.prototype.hasOwnProperty.call(form.values || {}, fieldSchema.name);
 
     useEffect(() => {
       const id = uid();
@@ -285,11 +328,26 @@ export const InternalCascadeSelect = observer(
         // 清除防抖定时器
         handleFormValuesChange.cancel();
       };
-    }, []);
+    }, [handleFormValuesChange, selectForm]);
 
     useEffect(() => {
-      if (!form.values?.[fieldSchema.name]) {
-        if (selectForm && selectForm.values.select_array && !form.values?.[fieldSchema.name]) {
+      if (collectionField.interface !== 'm2o') {
+        return;
+      }
+      const value = getLatestValue() ?? null;
+      if (isEqual(normalizeToOneCascadeValue(selectForm.values?.[fieldSchema.name]), value)) {
+        return;
+      }
+      selectForm.setInitialValues({ [fieldSchema.name]: value });
+      selectForm.setValuesIn(fieldSchema.name, value);
+    }, [collectionField.interface, fieldSchema.name, getLatestValue, selectForm]);
+
+    useEffect(() => {
+      if (!hasCurrentFieldValue) {
+        return;
+      }
+      if (!currentFieldValue) {
+        if (selectForm && selectForm.values.select_array && !currentFieldValue) {
           selectForm.setValuesIn('select_array', undefined);
           setTimeout(() => {
             selectForm.setValuesIn('select_array', [{}]);
@@ -298,7 +356,7 @@ export const InternalCascadeSelect = observer(
           selectForm.setValuesIn(fieldSchema.name, null);
         }
       }
-    }, [form.values?.[fieldSchema.name]]);
+    }, [currentFieldValue, fieldSchema.name, hasCurrentFieldValue, selectForm]);
 
     const toValue = () => {
       if (Array.isArray(initialValue) && initialValue.length > 0) {
@@ -433,6 +491,14 @@ function extractLastNonNullValueObjects(data, flag?) {
     }
   }
   return result;
+}
+
+function normalizeToOneCascadeValue(value) {
+  if (!Array.isArray(value)) {
+    return value;
+  }
+  const result = extractLastNonNullValueObjects(value);
+  return Array.isArray(result) && result.length === 0 ? null : result;
 }
 
 export function transformNestedData(inputData) {

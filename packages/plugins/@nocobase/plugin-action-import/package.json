@@ -6,7 +6,7 @@
   "description": "Import records using excel templates. You can configure which fields to import and templates will be generated automatically.",
   "description.ru-RU": "Импорт записей с помощью шаблонов Excel: можно настроить, какие поля импортировать, шаблоны будут генерироваться автоматически.",
   "description.zh-CN": "使用 Excel 模板导入数据，可以配置导入哪些字段，自动生成模板。",
-  "version": "2.0.60",
+  "version": "2.1.1",
   "license": "Apache-2.0",
   "main": "./dist/server/index.js",
   "homepage": "https://docs.nocobase.com/handbook/action-import",
@@ -36,11 +36,12 @@
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-i18next": "^11.15.1",
-    "xlsx": "^0.18.5"
+    "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz"
   },
   "peerDependencies": {
     "@nocobase/actions": "2.x",
     "@nocobase/client": "2.x",
+    "@nocobase/client-v2": "2.x",
     "@nocobase/database": "2.x",
     "@nocobase/server": "2.x",
     "@nocobase/test": "2.x",

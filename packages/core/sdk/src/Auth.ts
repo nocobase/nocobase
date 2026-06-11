@@ -148,16 +148,16 @@ export class Auth {
   }
 
   middleware(config: AxiosRequestConfig) {
-    if (this.locale) {
+    if (this.locale && config.headers) {
       config.headers['X-Locale'] = this.locale;
     }
-    if (this.role) {
+    if (this.role && config.headers) {
       config.headers['X-Role'] = this.role;
     }
-    if (this.authenticator && !hasHeaderValue(config.headers, 'X-Authenticator')) {
+    if (this.authenticator && !hasHeaderValue(config.headers, 'X-Authenticator') && config.headers) {
       config.headers['X-Authenticator'] = this.authenticator;
     }
-    if (this.token && !hasHeaderValue(config.headers, 'Authorization')) {
+    if (this.token && !hasHeaderValue(config.headers, 'Authorization') && config.headers) {
       config.headers['Authorization'] = `Bearer ${this.token}`;
     }
     return config;

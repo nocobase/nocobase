@@ -19,7 +19,9 @@ import { useCollectionManager_deprecated, useCollection_deprecated } from '../..
 import { useCollectOperator } from '../../../modules/blocks/filter-blocks/form/hooks/useCollectOperator';
 import { SchemaSettingsModalItem, SchemaSettingsSelectItem, SchemaSettingsSwitchItem } from '../../../schema-settings';
 import { isPatternDisabled } from '../../../schema-settings/isPatternDisabled';
-import { useCompile, useDesignable, useFieldModeOptions } from '../../hooks';
+import { useCompile } from '../../hooks/useCompile';
+import { useDesignable } from '../../hooks/useDesignable';
+import { useFieldModeOptions } from '../../hooks/useFieldModeOptions';
 import { useOperatorList } from '../filter/useOperators';
 import { isFileCollection } from './FormItem';
 

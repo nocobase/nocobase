@@ -1,0 +1,13 @@
+[
+  {
+    "type": "dir",
+    "name": "v2",
+    "label": "V2-Tutorial (IT-Ticketsystem)"
+  },
+  {
+    "type": "dir",
+    "name": "v1",
+    "label": "V1-Tutorial (Legacy)",
+    "collapsed": true
+  }
+]

@@ -8,8 +8,12 @@
   "Delete": "Delete",
   "Edit": "Edit",
   "Enable Create": "Allow adding comments",
+  "Failed to create comment": "Failed to create comment",
+  "Failed to delete comment": "Failed to delete comment",
+  "Failed to update comment": "Failed to update comment",
   "Quote Reply": "Quote reply",
   "Quote reply": "Quote reply",
+  "Render error": "Render error",
   "Update Comment": "Update comment",
   "commented": "commented"
 }

@@ -1,0 +1,291 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+const _ = require('lodash');
+const { Command } = require('commander');
+const {
+  generatePlugins,
+  run,
+  runWithPrefix,
+  postCheck,
+  nodeCheck,
+  promptForTs,
+  isPortReachable,
+  buildWSURL,
+  checkDBDialect,
+} = require('../util');
+const { getPortPromise } = require('portfinder');
+const chokidar = require('chokidar');
+const { uid } = require('@formily/shared');
+const path = require('path');
+const fs = require('fs');
+const { resolvePluginStoragePath } = require('@nocobase/utils/plugin-symlink');
+
+function sleep(ms = 1000) {
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
+}
+
+async function buildBundleStatusHtml() {
+  const data = await fs.promises.readFile(path.resolve(__dirname, '../../templates/bundle-status.html'), 'utf-8');
+  await fs.promises.writeFile(
+    path.resolve(process.cwd(), 'node_modules/@umijs/preset-umi/assets/bundle-status.html'),
+    data,
+    'utf-8',
+  );
+}
+
+/**
+ *
+ * @param {Command} cli
+ */
+module.exports = (cli) => {
+  const { APP_PACKAGE_ROOT } = process.env;
+  cli
+    .command('dev')
+    .option('-p, --port [port]')
+    .option('-c, --client')
+    .option('-s, --server')
+    .option('--db-sync')
+    .option('--rsbuild')
+    .option('--client-v2-only')
+    .option('-i, --inspect [port]')
+    .allowUnknownOption()
+    .action(async (opts) => {
+      checkDBDialect();
+      await buildBundleStatusHtml();
+
+      promptForTs();
+      const { SERVER_TSCONFIG_PATH } = process.env;
+      process.env.IS_DEV_CMD = true;
+
+      if (process.argv.includes('-h') || process.argv.includes('--help')) {
+        run('ts-node', [
+          '-P',
+          SERVER_TSCONFIG_PATH,
+          '-r',
+          'tsconfig-paths/register',
+          `${APP_PACKAGE_ROOT}/src/index.ts`,
+          ...process.argv.slice(2),
+        ]);
+        return;
+      }
+
+      const { port, client, server, inspect, clientV2Only, rsbuild } = opts;
+
+      if (port) {
+        process.env.APP_PORT = opts.port;
+      }
+
+      const APP_PORT = Number(process.env.APP_PORT);
+
+      let clientPort = APP_PORT;
+      let serverPort;
+      let clientV2Port = APP_PORT;
+
+      nodeCheck();
+      await postCheck(opts);
+
+      const shouldRunClientV2 = clientV2Only || client || !server;
+      const shouldRunClient = !clientV2Only && (client || !server);
+      const shouldRunServer = !clientV2Only && (server || !client);
+      const shouldRunClientWithRsbuild = shouldRunClient && !!rsbuild;
+
+      if (shouldRunServer && server) {
+        serverPort = APP_PORT;
+      } else if (shouldRunServer) {
+        serverPort = await getPortPromise({
+          port: 1 * clientPort + 1,
+        });
+      }
+
+      if (shouldRunClientV2 && !clientV2Only) {
+        clientV2Port = await getPortPromise({
+          port: 1 * clientPort + 2,
+        });
+      }
+
+      let subprocessClient;
+      let subprocessClientV2;
+
+      const runDevClientV2 = () => {
+        console.log('starting client-v2', 1 * clientV2Port);
+        subprocessClientV2 = runWithPrefix(
+          'rsbuild',
+          ['dev', '--config', `${APP_PACKAGE_ROOT}/client-v2/rsbuild.config.ts`],
+          {
+            prefix: 'client-v2',
+            color: 'magenta',
+            env: {
+              ...process.env,
+              APP_V2_PORT: `${clientV2Port}`,
+              NODE_ENV: 'development',
+              RSPACK_HMR_CLIENT_PORT: `${clientV2Only ? clientV2Port : clientPort}`,
+              API_BASE_URL: process.env.API_BASE_URL || process.env.API_BASE_PATH,
+              API_CLIENT_STORAGE_PREFIX: process.env.API_CLIENT_STORAGE_PREFIX,
+              API_CLIENT_STORAGE_TYPE: process.env.API_CLIENT_STORAGE_TYPE,
+              API_CLIENT_SHARE_TOKEN: process.env.API_CLIENT_SHARE_TOKEN || 'false',
+              WEBSOCKET_URL: process.env.WEBSOCKET_URL || buildWSURL(process.env.API_BASE_URL, serverPort),
+              WS_PATH: process.env.WS_PATH,
+              ESM_CDN_BASE_URL: process.env.ESM_CDN_BASE_URL || 'https://esm.sh',
+              ESM_CDN_SUFFIX: process.env.ESM_CDN_SUFFIX || '',
+              PROXY_TARGET_URL:
+                process.env.PROXY_TARGET_URL || (serverPort ? `http://127.0.0.1:${serverPort}` : undefined),
+            },
+          },
+        );
+      };
+
+      if (clientV2Only) {
+        runDevClientV2();
+        return;
+      }
+
+      const runDevClient = () => {
+        console.log('starting client', 1 * clientPort);
+        const command = shouldRunClientWithRsbuild ? 'rsbuild' : 'umi';
+        const args = shouldRunClientWithRsbuild
+          ? ['dev', '--config', `${APP_PACKAGE_ROOT}/client/rsbuild.config.ts`]
+          : ['dev'];
+        subprocessClient = runWithPrefix(command, args, {
+          prefix: 'client',
+          color: 'cyan',
+          env: {
+            ...process.env,
+            stdio: 'inherit',
+            shell: true,
+            PORT: clientPort,
+            APP_PORT: `${clientPort}`,
+            APP_ROOT: `${APP_PACKAGE_ROOT}/client`,
+            APP_V2_PORT: `${clientV2Port}`,
+            NODE_ENV: 'development',
+            RSPACK_HMR_CLIENT_PORT: `${clientPort}`,
+            API_BASE_URL: process.env.API_BASE_URL || process.env.API_BASE_PATH,
+            API_CLIENT_STORAGE_PREFIX: process.env.API_CLIENT_STORAGE_PREFIX,
+            API_CLIENT_STORAGE_TYPE: process.env.API_CLIENT_STORAGE_TYPE,
+            API_CLIENT_SHARE_TOKEN: process.env.API_CLIENT_SHARE_TOKEN || 'false',
+            WEBSOCKET_URL: process.env.WEBSOCKET_URL || buildWSURL(process.env.API_BASE_URL, serverPort),
+            PROXY_TARGET_URL:
+              process.env.PROXY_TARGET_URL || (serverPort ? `http://127.0.0.1:${serverPort}` : undefined),
+          },
+        });
+      };
+
+      const restartSubprocess = async (subprocessRef, port, start) => {
+        if (!subprocessRef) {
+          start();
+          return;
+        }
+        subprocessRef.cancel();
+        let i = 0;
+        while (true) {
+          ++i;
+          const result = await isPortReachable(port);
+          if (!result) {
+            break;
+          }
+          await sleep(500);
+          if (i > 10) {
+            break;
+          }
+        }
+        start();
+      };
+
+      if (shouldRunClient) {
+        const storagePluginPath = resolvePluginStoragePath();
+        const watcher = chokidar.watch(`${storagePluginPath}/**/*`, {
+          cwd: process.cwd(),
+          ignored: /(^|[\/\\])\../, // 忽略隐藏文件
+          persistent: true,
+          depth: 1, // 只监听第一层目录
+        });
+
+        await fs.promises.mkdir(path.dirname(process.env.WATCH_FILE), { recursive: true });
+        let isReady = false;
+
+        const restartClient = _.debounce(async () => {
+          if (!isReady) return;
+          generatePlugins();
+          if (shouldRunClient) {
+            await restartSubprocess(subprocessClient, clientPort, runDevClient);
+          }
+          if (shouldRunClientV2) {
+            await restartSubprocess(subprocessClientV2, clientV2Port, runDevClientV2);
+          }
+          await fs.promises.writeFile(process.env.WATCH_FILE, `export const watchId = '${uid()}';`, 'utf-8');
+        }, 500);
+
+        watcher
+          .on('ready', () => {
+            console.log('watching plugin folder changes...');
+            isReady = true;
+          })
+          .on('addDir', async () => {
+            if (!isReady) return;
+            restartClient();
+          })
+          .on('unlinkDir', async () => {
+            if (!isReady) return;
+            restartClient();
+          });
+      }
+
+      if (shouldRunServer) {
+        console.log('starting server', serverPort);
+
+        const filteredArgs = process.argv.filter(
+          (item, i) => !item.startsWith('--inspect') && !(process.argv[i - 1] === '--inspect' && Number.parseInt(item)),
+        );
+
+        const argv = [
+          'watch',
+          ...(inspect ? [`--inspect=${inspect === true ? 9229 : inspect}`] : []),
+          `--ignore=${resolvePluginStoragePath()}/**`,
+          '--tsconfig',
+          SERVER_TSCONFIG_PATH,
+          '-r',
+          'tsconfig-paths/register',
+          `${APP_PACKAGE_ROOT}/src/index.ts`,
+          'start',
+          ...filteredArgs.slice(3),
+          `--port=${serverPort}`,
+        ];
+
+        if (opts.dbSync) {
+          argv.push('--db-sync');
+        }
+
+        const runDevServer = () => {
+          run('tsx', argv, {
+            env: {
+              APP_PORT: serverPort,
+            },
+          }).catch((err) => {
+            if (err.exitCode == 100) {
+              console.log('Restarting server...');
+              runDevServer();
+            } else {
+              console.error(err);
+            }
+          });
+        };
+
+        runDevServer();
+      }
+
+      if (shouldRunClient) {
+        runDevClient();
+      }
+
+      if (shouldRunClientV2) {
+        runDevClientV2();
+      }
+    });
+};

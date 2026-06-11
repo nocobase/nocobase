@@ -1,14 +1,14 @@
 ---
-displayName: "UI templates"
+displayName: "Plantillas de UI"
 packageName: '@nocobase/plugin-ui-templates'
 supportedVersions:
   - 2.x
 description: |
-  Provides block templates and popup templates for UI reuse.
+  Proporciona la capacidad de reutilizar plantillas de bloques y plantillas de ventanas emergentes.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# UI templates
+# Plantillas de UI

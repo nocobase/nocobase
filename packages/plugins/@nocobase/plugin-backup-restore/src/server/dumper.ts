@@ -15,6 +15,7 @@ import fse from 'fs-extra';
 import fsPromises from 'fs/promises';
 import { default as _, default as lodash } from 'lodash';
 import path from 'path';
+import { storagePathJoin } from '@nocobase/utils';
 import * as process from 'process';
 import stream from 'stream';
 import util from 'util';
@@ -165,13 +166,10 @@ export class Dumper extends AppMigrator {
   }
 
   backUpStorageDir() {
-    const paths = [process.cwd(), 'storage', 'backups'];
-
     if (this.app.name !== 'main') {
-      paths.push(this.app.name);
+      return storagePathJoin('backups', this.app.name);
     }
-
-    return path.resolve(...paths);
+    return storagePathJoin('backups');
   }
 
   async allBackUpFilePaths(options?: { includeInProgress?: boolean; dir?: string }) {

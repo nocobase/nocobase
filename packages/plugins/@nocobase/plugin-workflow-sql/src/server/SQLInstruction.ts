@@ -9,6 +9,7 @@
 
 import { SequelizeCollectionManager } from '@nocobase/data-source-manager';
 import { Processor, Instruction, JOB_STATUS, FlowNodeModel } from '@nocobase/plugin-workflow';
+import Joi from 'joi';
 
 export type SQLInstructionConfig = {
   dataSource?: string;
@@ -19,6 +20,19 @@ export type SQLInstructionConfig = {
 };
 
 export default class extends Instruction {
+  configSchema = Joi.object({
+    dataSource: Joi.string(),
+    sql: Joi.string(),
+    withMeta: Joi.boolean().default(false),
+    unsafeInjection: Joi.boolean().default(false),
+    variables: Joi.array().items(
+      Joi.object({
+        name: Joi.string().required(),
+        value: Joi.any(),
+      }),
+    ),
+  });
+
   async run(node: FlowNodeModel, input, processor: Processor) {
     const dataSourceName = node.config.dataSource || 'main';
     const { collectionManager } = this.workflow.app.dataSourceManager.dataSources.get(dataSourceName);
@@ -26,7 +40,7 @@ export default class extends Instruction {
       throw new Error(`type of data source "${node.config.dataSource}" is not database`);
     }
 
-    const { unsafeInjection = false, variables: variablesConfig = [] } = node.config;
+    const { unsafeInjection = false, variables = [] } = node.config;
 
     let sql = '';
     let replacements = null;
@@ -34,10 +48,11 @@ export default class extends Instruction {
       sql = processor.getParsedValue(node.config.sql || '', node.id).trim();
     } else {
       sql = (node.config.sql || '').trim();
+      const parameters = processor.getParsedValue(variables, node.id);
       replacements = {};
-      for (const { name, value } of variablesConfig) {
+      for (const { name, value } of parameters) {
         if (name) {
-          replacements[name] = processor.getParsedValue(value, node.id);
+          replacements[name] = value;
         }
       }
     }
@@ -67,7 +82,7 @@ export default class extends Instruction {
     sql: sqlConfig,
     withMeta,
     unsafeInjection = false,
-    variables: variablesConfig = [],
+    variables = [],
   }: SQLInstructionConfig = {}) {
     if (!sqlConfig) {
       return {
@@ -90,7 +105,7 @@ export default class extends Instruction {
       } else {
         sql = sqlConfig.trim();
         replacements = {};
-        for (const { name, value } of variablesConfig) {
+        for (const { name, value } of variables) {
           if (name) {
             replacements[name] = value;
           }

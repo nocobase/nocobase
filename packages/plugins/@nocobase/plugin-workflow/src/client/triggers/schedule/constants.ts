@@ -7,7 +7,17 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { NAMESPACE } from '../../locale';
+
 export const SCHEDULE_MODE = {
   STATIC: 0,
   DATE_FIELD: 1,
 };
+
+export const scheduleModeOptions = [
+  { value: SCHEDULE_MODE.STATIC, label: `{{t("Based on certain date", { ns: "${NAMESPACE}" })}}` },
+  {
+    value: SCHEDULE_MODE.DATE_FIELD,
+    label: `{{t("Based on date field of collection", { ns: "${NAMESPACE}" })}}`,
+  },
+];

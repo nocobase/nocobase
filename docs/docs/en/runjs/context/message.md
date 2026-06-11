@@ -1,63 +1,63 @@
 # ctx.message
 
-Ant Design global message API; shows short messages at the top center. Messages auto-close after a while or can be closed by the user.
+Ant Design global message API, used to display temporary light prompts at the top center of the page. Messages close automatically after a certain period or can be closed manually by the user.
 
 ## Use Cases
 
 | Scenario | Description |
-|----------|-------------|
-| **JSBlock / JSField / JSItem / JSColumn** | Quick feedback: validation, copy success, etc. |
-| **Form actions / event flow** | Submit success, save failed, validation failed |
-| **JSAction** | Click or batch action feedback |
+|------|------|
+| **JSBlock / JSField / JSItem / JSColumn** | Operation feedback, validation prompts, copy success, and other light prompts |
+| **Form Operations / Workflow** | Feedback for submission success, save failure, validation failure, etc. |
+| **Action Events (JSAction)** | Immediate feedback for clicks, batch operation completion, etc. |
 
-## Type
+## Type Definition
 
 ```ts
 message: MessageInstance;
 ```
 
-`MessageInstance` is the Ant Design message API.
+`MessageInstance` is the Ant Design message interface, providing the following methods.
 
 ## Common Methods
 
 | Method | Description |
-|--------|-------------|
-| `success(content, duration?)` | Success message |
-| `error(content, duration?)` | Error message |
-| `warning(content, duration?)` | Warning message |
-| `info(content, duration?)` | Info message |
-| `loading(content, duration?)` | Loading (usually closed manually) |
-| `open(config)` | Open with custom config |
-| `destroy()` | Close all messages |
+|------|------|
+| `success(content, duration?)` | Display a success prompt |
+| `error(content, duration?)` | Display an error prompt |
+| `warning(content, duration?)` | Display a warning prompt |
+| `info(content, duration?)` | Display an information prompt |
+| `loading(content, duration?)` | Display a loading prompt (must be closed manually) |
+| `open(config)` | Open a message using custom configuration |
+| `destroy()` | Close all currently displayed messages |
 
 **Parameters:**
 
-- `content`: `string` or `ConfigOptions`
-- `duration`: optional seconds; default 3; 0 = no auto-close
+- `content` (`string` | `ConfigOptions`): Message content or configuration object
+- `duration` (`number`, optional): Auto-close delay (seconds), default is 3 seconds; set to 0 to disable auto-close
 
-**ConfigOptions** (when content is an object):
+**ConfigOptions** (when `content` is an object):
 
 ```ts
 interface ConfigOptions {
-  content: React.ReactNode;
-  duration?: number;
-  onClose?: () => void;
-  icon?: React.ReactNode;
+  content: React.ReactNode;  // Message content
+  duration?: number;        // Auto-close delay (seconds)
+  onClose?: () => void;    // Callback when closed
+  icon?: React.ReactNode;  // Custom icon
 }
 ```
 
 ## Examples
 
-### Basic
+### Basic Usage
 
 ```ts
-ctx.message.success('Done');
-ctx.message.error('Failed');
+ctx.message.success('Operation successful');
+ctx.message.error('Operation failed');
 ctx.message.warning('Please select data first');
 ctx.message.info('Processing...');
 ```
 
-### With ctx.t (i18n)
+### Internationalization with ctx.t
 
 ```ts
 ctx.message.success(ctx.t('Copied'));
@@ -65,42 +65,43 @@ ctx.message.warning(ctx.t('Please select at least one row'));
 ctx.message.success(ctx.t('Exported {{count}} records', { count: rows.length }));
 ```
 
-### Loading and manual close
+### Loading and Manual Close
 
 ```ts
 const hide = ctx.message.loading(ctx.t('Saving...'));
+// Execute asynchronous operation
 await saveData();
-hide();
+hide();  // Manually close loading
 ctx.message.success(ctx.t('Saved'));
 ```
 
-### open with config
+### Custom Configuration with open
 
 ```ts
 ctx.message.open({
   type: 'success',
-  content: 'Custom success',
+  content: 'Custom success prompt',
   duration: 5,
-  onClose: () => console.log('closed'),
+  onClose: () => console.log('message closed'),
 });
 ```
 
-### Close all
+### Close All Messages
 
 ```ts
 ctx.message.destroy();
 ```
 
-## ctx.message vs ctx.notification
+## Difference Between ctx.message and ctx.notification
 
-| | ctx.message | ctx.notification |
-|---|-------------|-------------------|
-| **Position** | Top center | Top right |
-| **Use** | Short, auto-dismiss | Panel with title/description; can stay longer |
-| **Typical** | Action feedback, validation, copy | Task done, system notice, longer content |
+| Feature | ctx.message | ctx.notification |
+|------|--------------|------------------|
+| **Position** | Top center of the page | Top right corner |
+| **Purpose** | Temporary light prompt, disappears automatically | Notification panel, can include title and description, suitable for longer display |
+| **Typical Scenarios** | Operation feedback, validation prompts, copy success | Task completion notifications, system messages, longer content requiring user attention |
 
 ## Related
 
-- [ctx.notification](./notification.md): top-right notifications
-- [ctx.modal](./modal.md): modal confirm
-- [ctx.t()](./t.md): i18n; often used with message
+- [ctx.notification](./notification.md) - Top-right notifications, suitable for longer display durations
+- [ctx.modal](./modal.md) - Modal confirmation, blocking interaction
+- [ctx.t()](./t.md) - Internationalization, commonly used with message

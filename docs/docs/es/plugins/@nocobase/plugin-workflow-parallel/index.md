@@ -1,12 +1,12 @@
 ---
-displayName: "Workflow: Parallel node"
+displayName: "Workflow: Nodo de rama paralela"
 packageName: '@nocobase/plugin-workflow-parallel'
 description: |
-  Could be used for parallel execution of branch processes in the workflow.
+  Se utiliza para procesos de ramas que requieren ejecución paralela en el workflow.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Workflow: Parallel node
+# Workflow: Nodo de rama paralela

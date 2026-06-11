@@ -1,14 +1,14 @@
 ---
-displayName: "Collection field: Encryption"
+displayName: "Champ de collection : Chiffrement"
 packageName: '@nocobase/plugin-field-encryption'
 supportedVersions:
   - 2.x
 description: |
-  Encrypts and decrypts specified fields automatically for secure data storage.
+  Chiffre et déchiffre automatiquement les champs spécifiés pour garantir la sécurité des données.
 isFree: false
 builtIn: false
 defaultEnabled: false
 editionLevel: 2
 ---
 
-# Collection field: Encryption
+# Champ de collection : Chiffrement

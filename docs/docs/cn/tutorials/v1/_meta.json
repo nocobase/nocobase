@@ -1,0 +1,127 @@
+[
+  {
+    "type": "file",
+    "name": "index",
+    "label": "任务管理系统概览"
+  },
+  {
+    "type": "file",
+    "name": "01-getting-started",
+    "label": "第 1 章：初识 NocoBase"
+  },
+  {
+    "type": "file",
+    "name": "02-designing-system",
+    "label": "第 2 章：设计任务管理系统"
+  },
+  {
+    "type": "file",
+    "name": "03-task-data",
+    "label": "第 3 章：任务数据管理"
+  },
+  {
+    "type": "file",
+    "name": "04-plugins",
+    "label": "第 4 章：任务与评论插件"
+  },
+  {
+    "type": "file",
+    "name": "05-tabs-dynamic-blocks",
+    "label": "第 5 章：标签页与动态区块"
+  },
+  {
+    "type": "file",
+    "name": "06-user-permissions",
+    "label": "第 6 章：用户与权限"
+  },
+  {
+    "type": "file",
+    "name": "07-workflow",
+    "label": "第 7 章：工作流"
+  },
+  {
+    "type": "file",
+    "name": "08-project-overview",
+    "label": "项目管理平台概览"
+  },
+  {
+    "type": "file",
+    "name": "09-knowledge-base",
+    "label": "第 8 章：知识库 - 树表"
+  },
+  {
+    "type": "file",
+    "name": "10-dashboard-charts",
+    "label": "第 9 章：任务看板与图表"
+  },
+  {
+    "type": "file",
+    "name": "11-dashboard-filters",
+    "label": "第 10 章：看板筛选与条件"
+  },
+  {
+    "type": "file",
+    "name": "12-subtasks-workhours",
+    "label": "第 11 章：子任务与工时计算"
+  },
+  {
+    "type": "file",
+    "name": "13-meeting-rooms",
+    "label": "第 12 章：会议室预订与工作流"
+  },
+  {
+    "type": "file",
+    "name": "14-user-review",
+    "label": "实现用户注册审核"
+  },
+  {
+    "type": "file",
+    "name": "15-crm-lead-conversion",
+    "label": "实现 CRM 线索转化"
+  },
+  {
+    "type": "file",
+    "name": "16-markdown-tips",
+    "label": "Markdown 区块技巧"
+  },
+  {
+    "type": "file",
+    "name": "17-crm-overview",
+    "label": "CRM 销售云功能概览"
+  },
+  {
+    "type": "file",
+    "name": "18-lead-followup",
+    "label": "线索跟进与状态管理"
+  },
+  {
+    "type": "file",
+    "name": "19-crm-sales-cloud",
+    "label": "CRM 销售云系统"
+  },
+  {
+    "type": "file",
+    "name": "20-api-keys",
+    "label": "使用 API Keys 获取数据"
+  },
+  {
+    "type": "file",
+    "name": "21-markdown-variables",
+    "label": "Markdown 模板变量用法"
+  },
+  {
+    "type": "file",
+    "name": "22-deploy-faster",
+    "label": "如何更快部署 NocoBase"
+  },
+  {
+    "type": "file",
+    "name": "23-crm-pipeline",
+    "label": "CRM 销售管道可视化"
+  },
+  {
+    "type": "file",
+    "name": "24-crm-demo-deploy",
+    "label": "CRM Demo 部署指南"
+  }
+]

@@ -1,52 +1,25 @@
-:::tip Aviso de tradução por IA
-Esta documentação foi traduzida automaticamente por IA.
-:::
+---
+title: 'Funcionários de IA integrados'
+description: 'Visão geral dos funcionários de IA integrados.'
+keywords: 'Built-in AI Employees,Atlas,Viz,Dara,Dex,Ellis,Lexi,Vera,Lina,Nathan,NocoBase'
+---
 
-# Funcionários de IA Integrados
+# Funcionários de IA integrados
 
-## Visão Geral
+O NocoBase fornece funcionários de IA integrados para diferentes cenários. Eles ajudam com análise de dados, organização de dados, e-mails, tradução, localização, desenvolvimento frontend e mais.
 
-O NocoBase já vem com os seguintes funcionários de IA integrados. Eles possuem um conjunto completo de habilidades, ferramentas e bases de conhecimento. Você só precisa configurar um LLM para que eles comecem a trabalhar.
+![](https://static-docs.nocobase.com/202605121048555.png)
 
-- `Orin`: Especialista em modelagem de dados
-- `Avery`: Preenchedor de formulários
-- `Viz`: Analista de insights
-- `Lexi`: Tradutor
-- `Nathan`: Engenheiro de front-end
-- `Cole`: Assistente NocoBase
-- `Vera`: Analista de pesquisa
-- `Dex`: Organizador de dados
-- `Ellis`: Especialista em e-mail
+## Lista de funcionários
 
-## Como Habilitar
-
-Acesse a página de configuração do **plugin** de Funcionários de IA, clique na aba `AI employees` para entrar na página de gerenciamento de funcionários de IA.
-
-Você verá que o sistema já possui vários funcionários de IA integrados, mas nenhum deles está habilitado. Por enquanto, você não poderá colaborar com esses funcionários de IA na página do aplicativo.
-
-![20251022121248](https://static-docs.nocobase.com/20251022121248.png)
-
-Selecione o funcionário de IA integrado que você deseja habilitar, clique no botão `Edit` para acessar a página de edição do funcionário de IA.
-
-Primeiro, na aba `Profile`, ative o interruptor `Enable`.
-
-![20251022121546](https://static-docs.nocobase.com/20251022121546.png)
-
-Em seguida, na aba `Model settings`, configure o modelo para o funcionário de IA integrado:
-
-- Selecione o serviço LLM que criamos no gerenciamento de serviços LLM;
-- Insira o nome do modelo de linguagem grande que você deseja usar.
-
-![20251022121729](https://static-docs.nocobase.com/20251022121729.png)
-
-### Concluindo a Habilitação
-
-Após configurar o modelo para o funcionário de IA integrado, clique no botão `Submit` para salvar as alterações.
-
-Em seguida, você poderá ver este funcionário de IA integrado no botão de acesso rápido de funcionários de IA, localizado no canto inferior direito da página.
-
-![20251022121951](https://static-docs.nocobase.com/20251022121951.png)
-
-### Observação
-
-Alguns funcionários de IA integrados não aparecerão na lista de funcionários de IA no canto inferior direito após serem habilitados. Por exemplo, Orin só aparecerá na página principal de configuração de dados; Nathan só aparecerá no editor JS.
+| Funcionário | Função | Cenário típico | Tipo |
+| --- | --- | --- | --- |
+| [Atlas](./atlas.md) | Líder de equipe | Trabalhar com conteúdo ou dados do cenário correspondente. | Agente principal |
+| [Viz](./viz.md) | Analista de insights | Trabalhar com conteúdo ou dados do cenário correspondente. | Funcionário de negócio |
+| [Dex](./dex.md) | Organizador de dados | Trabalhar com conteúdo ou dados do cenário correspondente. | Funcionário de negócio |
+| [Ellis](./ellis.md) | Especialista em e-mail | Trabalhar com conteúdo ou dados do cenário correspondente. | Funcionário de negócio |
+| [Lexi](./lexi.md) | Assistente de tradução | Trabalhar com conteúdo ou dados do cenário correspondente. | Funcionário de negócio |
+| [Vera](./vera.md) | Analista de pesquisa | Trabalhar com conteúdo ou dados do cenário correspondente. | Funcionário de negócio |
+| [Nathan](./nathan.md) | Engenheiro Frontend | Trabalhar com conteúdo ou dados do cenário correspondente. | Funcionário desenvolvedor |
+| [Lina](./lina.md) | Engenheira de localização | Trabalhar com conteúdo ou dados do cenário correspondente. | Funcionário desenvolvedor |
+| [Dara](./dara.md) | Especialista em visualização de dados | Trabalhar com conteúdo ou dados do cenário correspondente. | Funcionário desenvolvedor |

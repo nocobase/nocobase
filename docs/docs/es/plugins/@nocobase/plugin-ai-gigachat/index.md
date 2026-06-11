@@ -1,14 +1,14 @@
 ---
-displayName: "AI LLM: GigaChat"
+displayName: "IA LLM: GigaChat"
 packageName: '@nocobase/plugin-ai-gigachat'
 supportedVersions:
   - 2.x
 description: |
-  Support integration with GigaChat LLM service.
+  Soporte para la integración con el servicio GigaChat LLM.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# AI LLM: GigaChat
+# IA LLM: GigaChat

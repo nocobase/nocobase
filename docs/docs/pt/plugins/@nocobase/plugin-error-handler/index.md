@@ -1,12 +1,12 @@
 ---
-displayName: "Error handler"
+displayName: "Manipulador de erros"
 packageName: '@nocobase/plugin-error-handler'
 description: |
-  Handling application errors and exceptions.
+  Trata erros e exceções na aplicação.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Error handler
+# Manipulador de erros

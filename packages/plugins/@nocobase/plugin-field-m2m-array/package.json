@@ -6,10 +6,11 @@
   "description": "Allows to create many to many relationships between two models by storing an array of unique keys of the target model.",
   "description.ru-RU": "Позволяет создавать отношения «многие ко многим» между двумя моделями, сохраняя массив уникальных ключей целевой модели.",
   "description.zh-CN": "支持通过在数组中存储目标表唯一键的方式建立多对多关系。",
-  "version": "2.0.60",
+  "version": "2.1.1",
   "main": "dist/server/index.js",
   "peerDependencies": {
     "@nocobase/client": "2.x",
+    "@nocobase/client-v2": "2.x",
     "@nocobase/server": "2.x",
     "@nocobase/test": "2.x"
   },

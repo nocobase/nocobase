@@ -1,0 +1,9 @@
+# Snowflake ID (53 bits)
+
+## Introdução
+
+https://github.com/nocobase/nocobase/tree/main/packages/core/snowflake-id
+
+## Configuração do campo
+
+![20251209204217](https://static-docs.nocobase.com/20251209204217.png)

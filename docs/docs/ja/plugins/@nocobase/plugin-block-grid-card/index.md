@@ -1,12 +1,12 @@
 ---
-displayName: "Block: GridCard"
+displayName: "ブロック: グリッドカード"
 packageName: '@nocobase/plugin-block-grid-card'
 description: |
-  Display data in a grid list with pagination support.
+  データをグリッドリスト形式で表示し、ページネーション設定をサポートします。
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Block: GridCard
+# ブロック: グリッドカード

@@ -1,10 +1,6 @@
 ---
 pkg: "@nocobase/plugin-ip-restriction"
 ---
-:::tip Avis de traduction IA
-Cette documentation a été traduite automatiquement par IA.
-:::
-
 
 
 pkg: '@nocobase/plugin-ip-restriction'

@@ -241,10 +241,360 @@ describe('openViewActionExtensions (popup template)', () => {
 
     await enhanced.beforeParamsSave(ctx, params, {});
     expect(params.uid).toBe('popup-1');
-    expect(params.popupTemplateHasFilterByTk).toBe(false);
-    expect(params.popupTemplateHasSourceId).toBe(false);
     expect('filterByTk' in params).toBe(false);
     expect('sourceId' in params).toBe(false);
+    expect(params.popupTemplateHasFilterByTk).toBeUndefined();
+    expect(params.popupTemplateHasSourceId).toBeUndefined();
+  });
+
+  it('omits template filterByTk for record-only popup action models when saving template references', async () => {
+    const cases = [
+      {
+        use: 'ViewActionModel',
+        registerModel(engine: FlowEngine) {
+          class RecordOnlyModel {
+            static _isScene(scene: string) {
+              return scene === 'record';
+            }
+          }
+          engine.registerModels({ ViewActionModel: RecordOnlyModel } as any);
+        },
+      },
+      {
+        use: 'AddChildActionModel',
+      },
+    ];
+
+    for (const item of cases) {
+      const engine = new FlowEngine();
+      item.registerModel?.(engine);
+
+      const baseBefore = vi.fn(async () => {});
+      const baseOpenView: ActionDefinition = {
+        name: 'openView',
+        title: 'openView',
+        uiSchema: {
+          uid: { type: 'string' },
+        },
+        beforeParamsSave: baseBefore as any,
+        handler: vi.fn(async () => undefined) as any,
+      };
+      engine.registerActions({ openView: baseOpenView });
+
+      registerOpenViewPopupTemplateAction(engine);
+      const enhanced = engine.getAction('openView') as any;
+
+      const api = {
+        resource: (name: string) => {
+          if (name !== 'flowModelTemplates') throw new Error('unexpected resource');
+          return {
+            get: vi.fn(async () => ({
+              data: {
+                data: {
+                  uid: `tpl-${item.use}`,
+                  targetUid: 'popup-1',
+                  dataSourceKey: 'main',
+                  collectionName: 'users',
+                  filterByTk: '{{ ctx.record.id }}',
+                },
+              },
+            })),
+          };
+        },
+      };
+      const model: any = {
+        use: item.use,
+        getStepParams: vi.fn((flowKey: string, stepKey: string) => {
+          if (flowKey === 'resourceSettings' && stepKey === 'init') {
+            return { dataSourceKey: 'main', collectionName: 'users' };
+          }
+          return {};
+        }),
+        parent: null,
+      };
+      const ctx: any = { engine, api, model, collection: { filterTargetKey: 'id' }, t: (k: string) => k };
+      const params: any = {
+        popupTemplateUid: `tpl-${item.use}`,
+        uid: 'old',
+        dataSourceKey: 'main',
+        collectionName: 'users',
+        filterByTk: '{{ ctx.record.id }}',
+      };
+
+      await enhanced.beforeParamsSave(ctx, params, {});
+      expect(params.uid).toBe('popup-1');
+      expect('filterByTk' in params).toBe(false);
+      expect(params.popupTemplateHasFilterByTk).toBeUndefined();
+      expect(baseBefore.mock.calls[0][1]?.filterByTk).toBeUndefined();
+    }
+  });
+
+  it('keeps template filterByTk for collection-capable popup action models when action scope is ambiguous', async () => {
+    const engine = new FlowEngine();
+    class BothSceneModel {
+      static _isScene(scene: string) {
+        return scene === 'record' || scene === 'collection';
+      }
+    }
+    engine.registerModels({ PopupCollectionActionModel: BothSceneModel } as any);
+
+    const baseBefore = vi.fn(async () => {});
+    engine.registerActions({
+      openView: {
+        name: 'openView',
+        title: 'openView',
+        uiSchema: { uid: { type: 'string' } },
+        beforeParamsSave: baseBefore as any,
+        handler: vi.fn(async () => undefined) as any,
+      },
+    });
+    registerOpenViewPopupTemplateAction(engine);
+    const enhanced = engine.getAction('openView') as any;
+
+    const api = {
+      resource: (name: string) => {
+        if (name !== 'flowModelTemplates') throw new Error('unexpected resource');
+        return {
+          get: vi.fn(async () => ({
+            data: {
+              data: {
+                uid: 'tpl-both-scene',
+                targetUid: 'popup-1',
+                dataSourceKey: 'main',
+                collectionName: 'users',
+                filterByTk: '{{ ctx.record.id }}',
+              },
+            },
+          })),
+        };
+      },
+    };
+    const ctx: any = {
+      engine,
+      api,
+      model: { use: 'PopupCollectionActionModel' },
+      collection: { filterTargetKey: 'id' },
+      t: (k: string) => k,
+    };
+    const params: any = {
+      popupTemplateUid: 'tpl-both-scene',
+      uid: 'old',
+      dataSourceKey: 'main',
+      collectionName: 'users',
+      filterByTk: '{{ ctx.record.id }}',
+    };
+
+    await enhanced.beforeParamsSave(ctx, params, {});
+    expect(params.uid).toBe('popup-1');
+    expect(params.filterByTk).toBe('{{ ctx.record.id }}');
+    expect(params.popupTemplateHasFilterByTk).toBeUndefined();
+    expect(baseBefore.mock.calls[0][1]?.filterByTk).toBe('{{ ctx.record.id }}');
+  });
+
+  it('persists custom template filterByTk for record-capable popup action models', async () => {
+    const engine = new FlowEngine();
+    class RecordOnlyModel {
+      static _isScene(scene: string) {
+        return scene === 'record';
+      }
+    }
+    engine.registerModels({ ViewActionModel: RecordOnlyModel } as any);
+
+    const baseBefore = vi.fn(async () => {});
+    engine.registerActions({
+      openView: {
+        name: 'openView',
+        title: 'openView',
+        uiSchema: { uid: { type: 'string' } },
+        beforeParamsSave: baseBefore as any,
+        handler: vi.fn(async () => undefined) as any,
+      },
+    });
+    registerOpenViewPopupTemplateAction(engine);
+    const enhanced = engine.getAction('openView') as any;
+
+    const api = {
+      resource: (name: string) => {
+        if (name !== 'flowModelTemplates') throw new Error('unexpected resource');
+        return {
+          get: vi.fn(async () => ({
+            data: {
+              data: {
+                uid: 'tpl-custom-filter',
+                targetUid: 'popup-1',
+                dataSourceKey: 'main',
+                collectionName: 'users',
+                filterByTk: '{{ ctx.record.code }}',
+              },
+            },
+          })),
+        };
+      },
+    };
+    const ctx: any = {
+      engine,
+      api,
+      model: { constructor: { name: 'ViewActionModel' } },
+      collection: { filterTargetKey: 'id' },
+      t: (k: string) => k,
+    };
+    const params: any = {
+      popupTemplateUid: 'tpl-custom-filter',
+      uid: 'old',
+      dataSourceKey: 'main',
+      collectionName: 'users',
+      filterByTk: '{{ ctx.record.id }}',
+    };
+
+    await enhanced.beforeParamsSave(ctx, params, {});
+    expect(params.uid).toBe('popup-1');
+    expect(params.filterByTk).toBe('{{ ctx.record.code }}');
+    expect(params.popupTemplateHasFilterByTk).toBeUndefined();
+    expect(baseBefore.mock.calls[0][1]?.filterByTk).toBe('{{ ctx.record.code }}');
+  });
+
+  it('clears stale custom filterByTk when switching a record opener to a runtime-default template', async () => {
+    const cases = [
+      {
+        uid: 'tpl-runtime-default',
+        filterByTk: '{{ ctx.record.id }}',
+      },
+      {
+        uid: 'tpl-no-filter',
+      },
+    ];
+
+    for (const item of cases) {
+      const engine = new FlowEngine();
+      class RecordOnlyModel {
+        static _isScene(scene: string) {
+          return scene === 'record';
+        }
+      }
+      engine.registerModels({ ViewActionModel: RecordOnlyModel } as any);
+
+      const baseBefore = vi.fn(async () => {});
+      engine.registerActions({
+        openView: {
+          name: 'openView',
+          title: 'openView',
+          uiSchema: { uid: { type: 'string' } },
+          beforeParamsSave: baseBefore as any,
+          handler: vi.fn(async () => undefined) as any,
+        },
+      });
+      registerOpenViewPopupTemplateAction(engine);
+      const enhanced = engine.getAction('openView') as any;
+
+      const api = {
+        resource: (name: string) => {
+          if (name !== 'flowModelTemplates') throw new Error('unexpected resource');
+          return {
+            get: vi.fn(async () => ({
+              data: {
+                data: {
+                  uid: item.uid,
+                  targetUid: 'popup-1',
+                  useModel: 'ViewActionModel',
+                  dataSourceKey: 'main',
+                  collectionName: 'users',
+                  filterByTk: item.filterByTk,
+                },
+              },
+            })),
+          };
+        },
+      };
+      const ctx: any = {
+        engine,
+        api,
+        model: { constructor: { name: 'ViewActionModel' } },
+        collection: { filterTargetKey: 'id' },
+        t: (k: string) => k,
+      };
+      const params: any = {
+        popupTemplateUid: item.uid,
+        uid: 'old',
+        dataSourceKey: 'main',
+        collectionName: 'users',
+        filterByTk: '{{ ctx.record.code }}',
+      };
+
+      await enhanced.beforeParamsSave(ctx, params, {});
+      expect(params.uid).toBe('popup-1');
+      expect('filterByTk' in params).toBe(false);
+      expect(baseBefore.mock.calls[0][1]?.filterByTk).toBeUndefined();
+    }
+  });
+
+  it('omits template filterByTk at runtime for record-scene popup template openers', async () => {
+    const engine = new FlowEngine();
+    class RecordOnlyModel {
+      static _isScene(scene: string) {
+        return scene === 'record';
+      }
+    }
+    engine.registerModels({ ViewActionModel: RecordOnlyModel } as any);
+
+    let capturedCtx: any;
+    let capturedParams: any;
+    const baseHandler = vi.fn(async (ctxArg: any, paramsArg: any) => {
+      capturedCtx = ctxArg;
+      capturedParams = paramsArg;
+      return undefined;
+    });
+    engine.registerActions({
+      openView: {
+        name: 'openView',
+        title: 'openView',
+        uiSchema: { uid: { type: 'string' } },
+        handler: baseHandler as any,
+      },
+    });
+    registerOpenViewPopupTemplateAction(engine);
+    const enhanced = engine.getAction('openView') as any;
+
+    const api = {
+      resource: (name: string) => {
+        if (name !== 'flowModelTemplates') throw new Error('unexpected resource');
+        return {
+          get: vi.fn(async () => ({
+            data: {
+              data: {
+                uid: 'tpl-1',
+                targetUid: 'popup-1',
+                dataSourceKey: 'main',
+                collectionName: 'orders',
+                filterByTk: '{{ctx.view.inputArgs.filterByTk}}',
+              },
+            },
+          })),
+        };
+      },
+    };
+    const ctx: any = new FlowContext();
+    ctx.engine = engine;
+    ctx.api = api;
+    ctx.model = { constructor: { name: 'ViewActionModel' } };
+    ctx.t = (k: string) => k;
+    ctx.defineProperty('inputArgs', {
+      value: {
+        filterByTk: 'order-row-1',
+        defaultInputKeys: ['filterByTk'],
+      },
+    });
+
+    await enhanced.handler(ctx, {
+      uid: 'popup-1',
+      popupTemplateUid: 'tpl-1',
+      popupTemplateHasFilterByTk: true,
+      filterByTk: '{{ctx.view.inputArgs.filterByTk}}',
+    });
+
+    expect(baseHandler).toHaveBeenCalledTimes(1);
+    expect(capturedParams?.filterByTk).toBeUndefined();
+    expect(capturedCtx?.inputArgs?.filterByTk).toBe('order-row-1');
+    expect(capturedCtx?.inputArgs?.defaultInputKeys || []).toContain('filterByTk');
   });
 
   it('runtime overrides resource keys via shadow ctx (non-relation template in relation trigger)', async () => {
@@ -1179,7 +1529,8 @@ describe('openViewActionExtensions (popup template)', () => {
     await expect(enhanced.beforeParamsSave(ctx, params, {})).resolves.toBeUndefined();
     expect(params.uid).toBe('popup-1');
     expect(params.collectionName).toBe('roles');
-    expect(params.filterByTk).toBe('{{ ctx.record.id }}');
+    expect('filterByTk' in params).toBe(false);
+    expect(params.popupTemplateHasFilterByTk).toBeUndefined();
   });
 
   it('uses action params to resolve target collection for relation popups', async () => {

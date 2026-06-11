@@ -15,7 +15,7 @@ import { useAPIClient } from '../api-client';
 import type { CollectionFieldOptions_deprecated } from '../collection-manager';
 import { useCollectionManager_deprecated } from '../collection-manager';
 import { getDataSourceHeaders } from '../data-source/utils';
-import { useCompile } from '../schema-component';
+import { useCompile } from '../schema-component/hooks/useCompile';
 import useBuiltInVariables from './hooks/useBuiltinVariables';
 import { VariableOption, VariablesContextType } from './types';
 import { filterEmptyValues } from './utils/filterEmptyValues';

@@ -1,6 +1,12 @@
+---
+title: "CronJobManager"
+description: "NocoBase scheduled tasks: app.cronJobManager, cron expressions, registering and scheduling tasks."
+keywords: "CronJobManager,scheduled tasks,cron,app.cronJobManager,task scheduling,NocoBase"
+---
+
 # CronJobManager
 
-`CronJobManager` is a scheduled task manager provided by NocoBase based on [cron](https://www.npmjs.com/package/cron). It allows plugins to register scheduled tasks on the server for periodically executing specific logic.
+`CronJobManager` is a scheduled task manager provided by NocoBase, based on [cron](https://www.npmjs.com/package/cron). You can register scheduled tasks in your plugins for periodically executing specific logic.
 
 ## Basic Usage
 
@@ -10,13 +16,13 @@ import { Plugin } from '@nocobase/server';
 export default class PluginCronDemo extends Plugin {
   async load() {
     this.app.cronJobManager.addJob({
-      cronTime: '0 0 * * *', // Execute daily at 00:00
+      cronTime: '0 0 * * *',       // Execute daily at 00:00
       onTick: async () => {
         console.log('Daily task: clean temporary data');
         await this.cleanTemporaryData();
       },
       timeZone: 'Asia/Shanghai',
-      start: true, // Auto start
+      start: true,                  // Auto start
     });
   }
 
@@ -65,19 +71,31 @@ export declare interface CronJobParameters {
 | `0 9 * * 1`       | Execute every Monday at 09:00 |
 | `*/10 * * * *`    | Execute every 10 minutes   |
 
-> 💡 You can use [crontab.guru](https://crontab.guru/) to help generate expressions.
+:::tip
+
+You can use [crontab.guru](https://crontab.guru/) to help generate cron expressions.
+
+:::
 
 ## Control Task Start and Stop
 
+`addJob()` returns a job object that you can use to manually control the task:
+
 ```ts
 const job = app.cronJobManager.addJob({ ... });
-job.start(); // Start task
-job.stop();  // Stop task
+job.start();  // Start task
+job.stop();   // Stop task
 ```
 
 :::tip
 
-Scheduled tasks start and stop along with the application. You generally don't need to manually start or stop them.
+Scheduled tasks start and stop along with the application. You generally don't need to manually call `start()` or `stop()`.
 
 :::
 
+## Related Links
+
+- [Plugin](./plugin.md) - Plugin lifecycle and core APIs
+- [Event](./event.md) - Application event listening and triggering
+- [Server Development Overview](./index.md) - Overview of all server modules
+- [Plugin Development Overview](../index.md) - Overall introduction to plugin development
