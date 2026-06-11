@@ -8,6 +8,7 @@
  */
 
 import type { FlowContext, FlowModel } from '@nocobase/flow-engine';
+import { cloneDeep, isEqual } from 'lodash';
 import { namePathToPathKey, pathKeyToNamePath } from '../models/blocks/form/value-runtime/path';
 import { collectStaticDepsFromTemplateValue, type DepCollector } from '../models/blocks/form/value-runtime/deps';
 
@@ -21,7 +22,19 @@ type DataScopeClearDeps = {
 
 type DataScopeClearBinding = {
   signature: string;
+  snapshot: DataScopeClearSnapshot | null;
   dispose: () => void;
+};
+
+type DataScopeClearSnapshot = {
+  complete: boolean;
+  values: Map<string, unknown>;
+  structures: Map<string, unknown>;
+};
+
+type DataScopeClearChangeStatus = {
+  status: 'changed' | 'unchanged' | 'unknown';
+  snapshot: DataScopeClearSnapshot | null;
 };
 
 const FORM_VALUES_CHANGE_EVENT = 'formValuesChange';
@@ -252,6 +265,114 @@ function getChangedPathsFromPayload(payload: any): NamePath[] {
   return out;
 }
 
+function hasOwnValue(source: unknown, key: string | number) {
+  if (source == null) return false;
+  if (Array.isArray(source) && typeof key === 'number') {
+    return key >= 0 && key < source.length;
+  }
+  if (typeof source !== 'object') return false;
+  return Object.prototype.hasOwnProperty.call(source, key);
+}
+
+function getValueAtPath(source: unknown, path: NamePath): { found: boolean; value?: unknown } {
+  let cursor = source;
+  for (const seg of path) {
+    if (!hasOwnValue(cursor, seg)) {
+      return { found: false };
+    }
+    cursor = (cursor as Record<string | number, unknown>)[seg];
+  }
+  return { found: true, value: cursor };
+}
+
+function getSnapshotSourceFromPayload(payload: any) {
+  return payload?.allValuesSnapshot ?? payload?.allValues;
+}
+
+function getPathValue(formBlock: any, payload: any, path: NamePath): { found: boolean; value?: unknown } {
+  const payloadSource = getSnapshotSourceFromPayload(payload);
+  const payloadValue = getValueAtPath(payloadSource, path);
+  if (payloadValue.found) {
+    return payloadValue;
+  }
+
+  const form = formBlock?.context?.form;
+  if (typeof form?.getFieldValue === 'function') {
+    return { found: true, value: form.getFieldValue(path) };
+  }
+
+  return getValueAtPath(formBlock?.context?.formValues, path);
+}
+
+function getStructuralValue(value: unknown) {
+  return Array.isArray(value) ? value.length : value;
+}
+
+function buildDepsSnapshot(deps: DataScopeClearDeps, formBlock: any, payload?: any): DataScopeClearSnapshot | null {
+  if (deps.wildcard) return null;
+
+  const snapshot: DataScopeClearSnapshot = {
+    complete: true,
+    values: new Map(),
+    structures: new Map(),
+  };
+
+  for (const path of deps.valuePaths) {
+    const result = getPathValue(formBlock, payload, path);
+    if (!result.found) {
+      snapshot.complete = false;
+      continue;
+    }
+    snapshot.values.set(namePathToPathKey(path), cloneDeep(result.value));
+  }
+
+  for (const path of deps.structuralPaths) {
+    const result = getPathValue(formBlock, payload, path);
+    if (!result.found) {
+      snapshot.complete = false;
+      continue;
+    }
+    snapshot.structures.set(namePathToPathKey(path), cloneDeep(getStructuralValue(result.value)));
+  }
+
+  return snapshot;
+}
+
+function snapshotValuesEqual(prev: Map<string, unknown>, next: Map<string, unknown>) {
+  if (prev.size !== next.size) return false;
+  for (const [key, value] of prev.entries()) {
+    if (!next.has(key) || !isEqual(value, next.get(key))) {
+      return false;
+    }
+  }
+  return true;
+}
+
+function getDepsChangeStatus(
+  deps: DataScopeClearDeps,
+  formBlock: any,
+  payload: any,
+  snapshot: DataScopeClearSnapshot | null,
+): DataScopeClearChangeStatus {
+  if (deps.wildcard || !snapshot?.complete) {
+    return { status: 'unknown', snapshot: buildDepsSnapshot(deps, formBlock, payload) };
+  }
+
+  const nextSnapshot = buildDepsSnapshot(deps, formBlock, payload);
+  if (!nextSnapshot?.complete) {
+    return { status: 'unknown', snapshot: nextSnapshot };
+  }
+
+  const changed =
+    !snapshotValuesEqual(snapshot.values, nextSnapshot.values) ||
+    !snapshotValuesEqual(snapshot.structures, nextSnapshot.structures);
+
+  return {
+    status: changed ? 'changed' : 'unchanged',
+    snapshot: nextSnapshot,
+  };
+}
+
 function depsMatchPayload(deps: DataScopeClearDeps, payload: any) {
   if (!hasDeps(deps)) return false;
   if (deps.wildcard) return true;
@@ -377,6 +498,7 @@ export function ensureFormValueDrivenDataScopeClear(ctx: FlowContext, params: an
 
   const binding: DataScopeClearBinding = {
     signature,
+    snapshot: buildDepsSnapshot(deps, formBlock),
     dispose: () => {},
   };
 
@@ -395,7 +517,19 @@ export function ensureFormValueDrivenDataScopeClear(ctx: FlowContext, params: an
       return;
     }
 
-    if (!hasModelValue(model) || !depsMatchPayload(deps, payload)) {
+    if (!depsMatchPayload(deps, payload)) {
+      return;
+    }
+
+    const changeStatus = getDepsChangeStatus(deps, formBlock, payload, binding.snapshot);
+    if (changeStatus.snapshot?.complete) {
+      binding.snapshot = changeStatus.snapshot;
+    }
+    if (changeStatus.status === 'unchanged') {
+      return;
+    }
+
+    if (!hasModelValue(model)) {
       return;
     }
 
