@@ -851,6 +851,124 @@ describe('FormValueRuntime (form assign rules)', () => {
     expect(formStub.getFieldValue(['a'])).toBe('Manual');
   });
 
+  it('stops mode=override for an association root when the user edits descendant fields', async () => {
+    const engineEmitter = new EventEmitter();
+    const blockEmitter = new EventEmitter();
+    const formStub = createFormStub({
+      b: { id: 2, name: 'Auto' },
+      user: { id: 1, name: 'Existing' },
+    });
+
+    const blockModel: any = {
+      uid: 'form-assign-override-association-root',
+      flowEngine: { emitter: engineEmitter },
+      emitter: blockEmitter,
+      dispatchEvent: vi.fn(),
+      getAclActionName: () => 'update',
+    };
+
+    const runtime = new FormValueRuntime({ model: blockModel, getForm: () => formStub as any });
+    runtime.mount({ sync: true });
+
+    const blockCtx = createFieldContext(runtime);
+    blockModel.context = blockCtx;
+
+    runtime.syncAssignRules([
+      {
+        key: 'r1',
+        enable: true,
+        targetPath: 'user',
+        mode: 'override',
+        condition: { logic: '$and', items: [] },
+        value: '__B__',
+      },
+    ]);
+
+    await waitFor(() => expect(formStub.getFieldValue(['user'])).toEqual({ id: 2, name: 'Auto' }));
+    expect(runtime.canApplyOverrideValuePatch(['user'])).toBe(true);
+
+    lodashSet((formStub as any).__store, ['user'], { id: 3, name: 'Manual' });
+    runtime.handleFormValuesChange({ user: formStub.getFieldValue(['user']) }, formStub.getFieldsValue());
+    expect(runtime.canApplyOverrideValuePatch(['user'])).toBe(false);
+
+    await runtime.setFormValues(blockCtx, [{ path: ['b'], value: { id: 4, name: 'Next' } }], { source: 'user' });
+    await new Promise((resolve) => setTimeout(resolve, 20));
+
+    expect(formStub.getFieldValue(['user'])).toEqual({ id: 3, name: 'Manual' });
+  });
+
+  it('stops mode=override for a subtable relation array after a user edits a row cell', async () => {
+    const engineEmitter = new EventEmitter();
+    const blockEmitter = new EventEmitter();
+    const formStub = createFormStub({
+      roles: [
+        { id: 1, name: 'Existing A' },
+        { id: 2, name: 'Existing B' },
+      ],
+    });
+
+    const blockModel: any = {
+      uid: 'form-assign-override-subtable-array',
+      flowEngine: { emitter: engineEmitter },
+      emitter: blockEmitter,
+      dispatchEvent: vi.fn(),
+      getAclActionName: () => 'update',
+    };
+
+    const runtime = new FormValueRuntime({ model: blockModel, getForm: () => formStub as any });
+    runtime.mount({ sync: true });
+
+    const blockCtx = createFieldContext(runtime);
+    blockModel.context = blockCtx;
+
+    runtime.syncAssignRules([
+      {
+        key: 'r1',
+        enable: true,
+        targetPath: 'roles',
+        mode: 'override',
+        condition: { logic: '$and', items: [] },
+        value: [
+          { id: 1, name: 'Auto A' },
+          { id: 2, name: 'Auto B' },
+        ],
+      },
+    ]);
+
+    await waitFor(() =>
+      expect(formStub.getFieldValue(['roles'])).toEqual([
+        { id: 1, name: 'Auto A' },
+        { id: 2, name: 'Auto B' },
+      ]),
+    );
+
+    lodashSet((formStub as any).__store, ['roles', 0, 'name'], 'Manual A');
+    runtime.handleFormFieldsChange([{ name: ['roles', 0, 'name'], touched: true } as any]);
+    runtime.handleFormValuesChange({ roles: formStub.getFieldValue(['roles']) }, formStub.getFieldsValue());
+    expect(runtime.canApplyOverrideValuePatch(['roles'])).toBe(false);
+
+    runtime.syncAssignRules([
+      {
+        key: 'r1',
+        enable: true,
+        targetPath: 'roles',
+        mode: 'override',
+        condition: { logic: '$and', items: [] },
+        value: [
+          { id: 1, name: 'Next A' },
+          { id: 2, name: 'Next B' },
+          { id: 3, name: 'Unexpected extra row' },
+        ],
+      },
+    ]);
+    await new Promise((resolve) => setTimeout(resolve, 20));
+
+    expect(formStub.getFieldValue(['roles'])).toEqual([
+      { id: 1, name: 'Manual A' },
+      { id: 2, name: 'Auto B' },
+    ]);
+  });
+
   it('reapplies mode=override after user edited state is reset', async () => {
     const engineEmitter = new EventEmitter();
     const blockEmitter = new EventEmitter();

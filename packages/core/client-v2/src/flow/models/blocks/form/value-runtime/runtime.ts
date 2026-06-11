@@ -140,6 +140,15 @@ export class FormValueRuntime {
     return this.getForm().getFieldsValue(true);
   }
 
+  private toMirrorSnapshot(value: any) {
+    const raw = isObservable(value) ? toJS(value) : value;
+    return _.cloneDeepWith(raw, (item) => {
+      if (!item || typeof item !== 'object') return undefined;
+      if (Array.isArray(item) || _.isPlainObject(item)) return undefined;
+      return item;
+    });
+  }
+
   canApplyDefaultValuePatch(namePath: NamePath, resolved: any) {
     if (!namePath?.length) return false;
     if (typeof resolved === 'undefined') return false;
@@ -156,7 +165,7 @@ export class FormValueRuntime {
 
     const canOverwrite = isEmptyValue(current) || currentEqualsLastDefault;
     if (!canOverwrite && _.isEqual(current, nextSnapshot)) {
-      this.lastDefaultValueByPathKey.set(pathKey, nextSnapshot);
+      this.lastDefaultValueByPathKey.set(pathKey, this.toMirrorSnapshot(nextSnapshot));
       return false;
     }
 
@@ -173,7 +182,7 @@ export class FormValueRuntime {
     const pathKey = namePathToPathKey(namePath);
     const snapshot =
       arguments.length >= 2 ? (isObservable(value) ? toJS(value) : value) : this.getFormValueAtPath(namePath);
-    this.lastDefaultValueByPathKey.set(pathKey, snapshot);
+    this.lastDefaultValueByPathKey.set(pathKey, this.toMirrorSnapshot(snapshot));
     const current = this.getFormValueAtPath(namePath);
     const currentSnapshot = isObservable(current) ? toJS(current) : current;
     if (_.isEqual(currentSnapshot, snapshot)) {
@@ -216,7 +225,7 @@ export class FormValueRuntime {
     if (options?.sync) {
       const snapshot = this.getFormValuesSnapshot();
       if (snapshot && typeof snapshot === 'object') {
-        _.merge(this.valuesMirror, snapshot);
+        _.merge(this.valuesMirror, this.toMirrorSnapshot(snapshot));
         this.bumpChangeTick();
       }
       this.ruleEngine.enable();
@@ -267,7 +276,7 @@ export class FormValueRuntime {
       delete (this.valuesMirror as Record<string, any>)[key];
     }
     if (snapshot && typeof snapshot === 'object') {
-      _.merge(this.valuesMirror, snapshot);
+      _.merge(this.valuesMirror, this.toMirrorSnapshot(snapshot));
     }
 
     this.writeSeq += 1;
@@ -308,7 +317,7 @@ export class FormValueRuntime {
         this.writeSeq += 1;
         bumpedWriteSeq = true;
       }
-      _.set(this.valuesMirror, namePath, nextValue);
+      _.set(this.valuesMirror, namePath, this.toMirrorSnapshot(nextValue));
       changedPaths.push(namePath);
       const isMeaningfulTouched =
         field?.touched === true && !this.shouldIgnoreSyntheticTouchedInit(namePath, prevValue, nextValue);
@@ -670,7 +679,7 @@ export class FormValueRuntime {
         this.writeSeq += 1;
         bumpedWriteSeq = true;
       }
-      _.set(this.valuesMirror, p, nextValue);
+      _.set(this.valuesMirror, p, this.toMirrorSnapshot(nextValue));
       hasMirrorChange = true;
       actuallyChangedPaths.push(p);
     }
@@ -897,7 +906,7 @@ export class FormValueRuntime {
             } else {
               form.setFieldsValue?.({ [pathKey]: value });
             }
-            _.set(this.valuesMirror, [pathKey], value);
+            _.set(this.valuesMirror, [pathKey], this.toMirrorSnapshot(value));
           }
           this.bumpChangeTick();
         } finally {
@@ -999,7 +1008,7 @@ export class FormValueRuntime {
       try {
         for (const { namePath, value } of filteredToWrite) {
           form.setFieldValue?.(namePath, value);
-          _.set(this.valuesMirror, namePath, value);
+          _.set(this.valuesMirror, namePath, this.toMirrorSnapshot(value));
           changedPaths.push(namePath);
         }
         this.bumpChangeTick();
@@ -1023,7 +1032,7 @@ export class FormValueRuntime {
       if (source === 'default') {
         for (const { namePath, pathKey } of filteredToWrite) {
           const current = this.getFormValueAtPath(namePath);
-          this.lastDefaultValueByPathKey.set(pathKey, current);
+          this.lastDefaultValueByPathKey.set(pathKey, this.toMirrorSnapshot(current));
         }
       }
 
@@ -1096,7 +1105,7 @@ export class FormValueRuntime {
     this.suppressFormCallbackDepth++;
     try {
       form.setFieldValue?.(namePath, nextValue);
-      _.set(this.valuesMirror, namePath, nextValue);
+      _.set(this.valuesMirror, namePath, this.toMirrorSnapshot(nextValue));
       this.bumpChangeTick();
     } finally {
       this.suppressFormCallbackDepth--;
@@ -1144,7 +1153,7 @@ export class FormValueRuntime {
     }
 
     if (source === 'default') {
-      this.lastDefaultValueByPathKey.set(pathKey, this.getFormValueAtPath(namePath));
+      this.lastDefaultValueByPathKey.set(pathKey, this.toMirrorSnapshot(this.getFormValueAtPath(namePath)));
     }
   }
 
@@ -1282,6 +1291,18 @@ export class FormValueRuntime {
       }
       return key;
     }
+    for (const key of this.userEditedSet) {
+      if (!this.isDescendantPathKey(key, pathKey)) continue;
+      return key;
+    }
     return null;
+  }
+
+  private isDescendantPathKey(candidateKey: string, parentKey: string) {
+    if (!candidateKey || !parentKey || candidateKey === parentKey) return false;
+    const candidatePath = pathKeyToNamePath(candidateKey);
+    const parentPath = pathKeyToNamePath(parentKey);
+    if (candidatePath.length <= parentPath.length) return false;
+    return parentPath.every((seg, index) => candidatePath[index] === seg);
   }
 }
