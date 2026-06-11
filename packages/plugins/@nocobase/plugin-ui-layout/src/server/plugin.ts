@@ -457,17 +457,36 @@ async function getLayoutAccessibleRouteIds(ctx: ResourcerContext, layoutUid: str
     return;
   }
 
-  const scopedRoutePermissions = await ctx.db.getRepository('rolesUiLayoutDesktopRoutes').find({
+  const routePermissions = await ctx.db.getRepository('rolesDesktopRoutes').find({
     fields: ['desktopRouteId'],
     filter: {
       roleName: currentRoles,
-      uiLayoutUid: layoutUid,
+    },
+  });
+  const permittedRouteIds = new Set<string>();
+
+  for (const permission of routePermissions) {
+    const routeId = permission.get('desktopRouteId');
+    if (routeId !== null && routeId !== undefined) {
+      permittedRouteIds.add(String(routeId));
+    }
+  }
+
+  if (permittedRouteIds.size === 0) {
+    return permittedRouteIds;
+  }
+
+  const layoutRoutes = await ctx.db.getRepository('desktopRoutes').find({
+    fields: ['id'],
+    filter: {
+      ...getDesktopRouteLayoutFilterByUid(layoutUid),
+      id: Array.from(permittedRouteIds),
     },
   });
   const routeIds = new Set<string>();
 
-  for (const permission of scopedRoutePermissions) {
-    const routeId = permission.get('desktopRouteId');
+  for (const route of layoutRoutes) {
+    const routeId = route.get('id');
     if (routeId !== null && routeId !== undefined) {
       routeIds.add(String(routeId));
     }
@@ -475,26 +494,6 @@ async function getLayoutAccessibleRouteIds(ctx: ResourcerContext, layoutUid: str
 
   await removeRouteIdsWithUnauthorizedAncestors(ctx, routeIds);
   return routeIds;
-}
-
-async function canAccessLayout(ctx: ResourcerContext, layoutUid: string) {
-  const currentRoles = getCurrentRoles(ctx);
-  if (currentRoles.includes('root')) {
-    return true;
-  }
-
-  if (!currentRoles.length) {
-    return false;
-  }
-
-  const count = await ctx.db.getRepository('rolesUiLayouts').count({
-    filter: {
-      roleName: currentRoles,
-      uiLayoutUid: layoutUid,
-    },
-  });
-
-  return count > 0;
 }
 
 function removeInaccessibleRoute(route: unknown, allowedRouteIds: Set<string> | undefined) {
@@ -611,11 +610,6 @@ async function addDesktopRouteLayoutFilter(ctx: ResourcerContext, next: () => Pr
     return;
   }
 
-  if (!(await canAccessLayout(ctx, layoutContext.layoutUid))) {
-    ctx.body = [];
-    return;
-  }
-
   const routeIds = await getLayoutAccessibleRouteIds(ctx, layoutContext.layoutUid);
   if (!routeIds || routeIds.size === 0) {
     ctx.body = [];
@@ -651,12 +645,6 @@ async function addDesktopRouteGetLayoutFilter(ctx: ResourcerContext, next: () =>
     if (ctx.body) {
       return;
     }
-    ctx.status = 204;
-    ctx.body = undefined;
-    return;
-  }
-
-  if (!(await canAccessLayout(ctx, layoutContext.layoutUid))) {
     ctx.status = 204;
     ctx.body = undefined;
     return;

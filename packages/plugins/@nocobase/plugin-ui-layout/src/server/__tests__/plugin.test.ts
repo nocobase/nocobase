@@ -467,7 +467,7 @@ describe('plugin-ui-layout server', () => {
     ).toEqual([`${allowedRole.get('name')}:${DEFAULT_ADMIN_UI_LAYOUT.uid}:${route.get('id')}`]);
   });
 
-  it('should keep default access policies scoped to future accessible objects', async () => {
+  it('should apply default route access independently from layout access', async () => {
     app = await createUiLayoutMockServer();
 
     const role = await app.db.getRepository('roles').create({
@@ -575,7 +575,7 @@ describe('plugin-ui-layout server', () => {
       scopedMenuPermissions.map((permission) => `${permission.get('uiLayoutUid')}:${permission.get('desktopRouteId')}`),
     ).toEqual([`${allowedLayout.get('uid')}:${allowedRouteResponse.body.data.id}`]);
     expect(accessibleLayoutUids).toEqual([allowedLayout.get('uid')]);
-    expect(deniedRouteTitles).toEqual([]);
+    expect(deniedRouteTitles).toEqual(['DATA-DEFAULT-POLICY-DENIED-FUTURE']);
     expect(allowedRouteTitles).toEqual(['DATA-DEFAULT-POLICY-ALLOWED-ROUTE']);
     expect(scopedMenuPermissions.map((permission) => permission.get('desktopRouteId'))).not.toEqual(
       expect.arrayContaining([deniedHistoricalRouteResponse.body.data.id, deniedFutureRouteResponse.body.data.id]),
@@ -2510,7 +2510,7 @@ describe('plugin-ui-layout server', () => {
     expect(mobileTitles).not.toContain('DATA-ROLE-LAYOUT-MOBILE-DENIED');
   });
 
-  it('should deny layout routes when only legacy route permission exists', async () => {
+  it('should allow layout routes from role desktop route permissions without layout access', async () => {
     app = await createMockServer({
       registerActions: true,
       acl: true,
@@ -2606,10 +2606,10 @@ describe('plugin-ui-layout server', () => {
 
     expect(layoutResponse.status).toBe(200);
     expect(routeListResponse.status).toBe(200);
-    expect([200, 204]).toContain(routeGetResponse.status);
+    expect(routeGetResponse.status).toBe(200);
     expect(layoutResponse.body.data.map((layout) => layout.uid)).toEqual([DEFAULT_ADMIN_UI_LAYOUT.uid]);
-    expect(routeListResponse.body.data).toEqual([]);
-    expect(routeGetResponse.body.data ?? null).toBeNull();
+    expect(routeListResponse.body.data.map((route) => route.title)).toEqual(['DATA-DENIED-LAYOUT-LEGACY-ROUTE']);
+    expect(routeGetResponse.body.data.title).toBe('DATA-DENIED-LAYOUT-LEGACY-ROUTE');
     expect(legacyRoleRoutesResponse.body.data.map((route) => route.title)).toContain('DATA-DENIED-LAYOUT-LEGACY-ROUTE');
   });
 
@@ -2713,7 +2713,7 @@ describe('plugin-ui-layout server', () => {
     ]);
   });
 
-  it('should require migrated layout-scoped route permissions for layout route access', async () => {
+  it('should not require legacy layout-scoped route permissions for layout route access', async () => {
     app = await createMockServer({
       registerActions: true,
       acl: true,
@@ -2803,13 +2803,13 @@ describe('plugin-ui-layout server', () => {
     ]);
 
     expect(routeListResponse.status).toBe(200);
-    expect([200, 204]).toContain(routeGetResponse.status);
-    expect(routeListResponse.body.data).toEqual([]);
-    expect(routeGetResponse.body.data ?? null).toBeNull();
+    expect(routeGetResponse.status).toBe(200);
+    expect(routeListResponse.body.data.map((route) => route.title)).toEqual(['DATA-LAYOUT-SCOPED-REQUIRED']);
+    expect(routeGetResponse.body.data.title).toBe('DATA-LAYOUT-SCOPED-REQUIRED');
     expect(legacyRoleRoutesResponse.body.data.map((route) => route.title)).toContain('DATA-LAYOUT-SCOPED-REQUIRED');
   });
 
-  it('should keep shared route permissions independent per layout', async () => {
+  it('should ignore legacy layout-scoped route permissions at runtime', async () => {
     app = await createMockServer({
       registerActions: true,
       acl: true,
@@ -2905,7 +2905,7 @@ describe('plugin-ui-layout server', () => {
 
     expect(adminResponse.status).toBe(200);
     expect(mobileResponse.status).toBe(200);
-    expect(adminTitles).toEqual(['DATA-SHARED-ROUTE-LAYOUT-SCOPED']);
+    expect(adminTitles).toEqual([]);
     expect(mobileTitles).toEqual([]);
   });
 
@@ -3051,12 +3051,18 @@ describe('plugin-ui-layout server', () => {
     const layoutUid = mobileLayout.get('uid');
     const allMobileRouteIds = [mobileParentRoute.get('id'), mobileChildRoute.get('id'), mobileHiddenTabRoute.get('id')];
     const resetPermissions = async (routeIds: number[]) => {
-      await rootAgent.resource('roles.desktopRoutes', roleName).remove({
-        values: allMobileRouteIds,
+      await app.db.getRepository('rolesDesktopRoutes').destroy({
+        filter: {
+          roleName,
+          desktopRouteId: allMobileRouteIds,
+        },
       });
       if (routeIds.length) {
-        await rootAgent.resource('roles.desktopRoutes', roleName).add({
-          values: routeIds,
+        await app.db.getRepository('rolesDesktopRoutes').create({
+          values: routeIds.map((desktopRouteId) => ({
+            roleName,
+            desktopRouteId,
+          })),
         });
       }
     };
@@ -3529,5 +3535,91 @@ describe('plugin-ui-layout server', () => {
       'DATA-ROLE-PERMISSION-ADMIN-A',
     ]);
     expect(mobileRoutesAfterMobileRemoveResponse.body.data).toEqual([]);
+  });
+
+  it('should authorize runtime layout routes from role desktop route permissions without role layout access', async () => {
+    app = await createMockServer({
+      registerActions: true,
+      acl: true,
+      plugins: [
+        'error-handler',
+        'users',
+        'auth',
+        'client',
+        'field-sort',
+        'acl',
+        'ui-schema-storage',
+        'system-settings',
+        'data-source-main',
+        'data-source-manager',
+        'ui-layout',
+      ],
+    });
+
+    const mobileLayout = await app.db.getRepository('uiLayouts').create({
+      values: {
+        uid: 'mobile-layout-runtime-route-permission-test',
+        title: 'Mobile runtime route permission test',
+        layoutType: 'mobile',
+        routeName: 'mobile-runtime-route-permission-test',
+        routePath: '/v/mobile-runtime-route-permission-test',
+        authCheck: true,
+        enabled: true,
+      },
+    });
+    const role = await app.db.getRepository('roles').create({
+      values: {
+        name: 'runtime-route-only-member',
+      },
+    });
+    const user = await app.db.getRepository('users').create({
+      values: {
+        roles: [role.get('name')],
+      },
+    });
+    const mobileRoute = await app.db.getRepository('desktopRoutes').create({
+      values: {
+        type: 'flowPage',
+        title: 'DATA-RUNTIME-ROUTE-ONLY-MOBILE',
+        schemaUid: 'runtime-route-only-mobile',
+        hidden: false,
+        sort: 10,
+      },
+    });
+    await app.db.getRepository('desktopRoutes.uiLayouts', mobileRoute.get('id')).set({
+      tk: [mobileLayout.get('uid')],
+    });
+    await app.db.getRepository('rolesDesktopRoutes').create({
+      values: {
+        roleName: role.get('name'),
+        desktopRouteId: mobileRoute.get('id'),
+      },
+    });
+    await app.db.getRepository('rolesUiLayouts').destroy({
+      filter: {
+        roleName: role.get('name'),
+      },
+    });
+    await app.db.getRepository('rolesUiLayoutDesktopRoutes').destroy({
+      filter: {
+        roleName: role.get('name'),
+      },
+    });
+
+    const agent = await app.agent().login(user);
+    const [listResponse, getResponse] = await Promise.all([
+      agent.get('/desktopRoutes:listAccessible').query({
+        layout: mobileLayout.get('uid'),
+      }),
+      agent.get('/desktopRoutes:getAccessible').query({
+        filterByTk: mobileRoute.get('id'),
+        layout: mobileLayout.get('uid'),
+      }),
+    ]);
+
+    expect(listResponse.status).toBe(200);
+    expect(getResponse.status).toBe(200);
+    expect(listResponse.body.data.map((route) => route.title)).toEqual(['DATA-RUNTIME-ROUTE-ONLY-MOBILE']);
+    expect(getResponse.body.data.title).toBe('DATA-RUNTIME-ROUTE-ONLY-MOBILE');
   });
 });

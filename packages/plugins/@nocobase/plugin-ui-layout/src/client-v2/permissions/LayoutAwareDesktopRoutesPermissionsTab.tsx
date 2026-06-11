@@ -10,18 +10,22 @@
 import { Table } from '@nocobase/client-v2';
 import { useFlowContext } from '@nocobase/flow-engine';
 import { useMemoizedFn, useRequest } from 'ahooks';
-import { Button, Checkbox, Drawer, Input, Space, Switch, Typography, theme } from 'antd';
+import { Checkbox, Input, Space, Typography, theme } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { uniq } from 'lodash';
 import React, { useEffect, useMemo, useState } from 'react';
 import { DEFAULT_ADMIN_UI_LAYOUT } from '../../constants';
 import { useT } from '../locale';
-import { getLayoutScopedPermissionChanges } from './layoutAwareDesktopRoutesPermissions';
+import {
+  createDesktopRouteLayoutPermissionFilter,
+  getLayoutScopedPermissionChanges,
+} from './layoutAwareDesktopRoutesPermissions';
+
+const DEFAULT_MOBILE_UI_LAYOUT_UID = 'mobile-layout-model';
 
 interface Role {
   name: string;
   title: string;
-  allowNewUiLayout?: boolean;
   allowNewMenu?: boolean;
 }
 
@@ -31,33 +35,14 @@ interface PermissionTabProps {
   onRoleChange: (role: Role | null) => void;
 }
 
-interface UiLayoutRecord {
-  uid: string;
-  title?: string;
-  routeName?: string;
-  layoutType?: string;
-  enabled?: boolean;
-}
-
-interface UiLayoutPayload {
-  data?: UiLayoutRecord[];
+interface RoutePermissionTabProps extends PermissionTabProps {
+  layoutUid: string;
+  tabKey: string;
+  title: string;
 }
 
 interface DesktopRoutePayload {
   data?: DesktopRouteRecord[];
-}
-
-interface RoleUiLayoutPayload {
-  data?: RoleUiLayoutRecord[];
-}
-
-interface RoleUiLayoutDesktopRoutePayload {
-  data?: RoleUiLayoutDesktopRouteRecord[];
-}
-
-interface DesktopRouteRequestResult {
-  layoutUid: string;
-  data: DesktopRouteRecord[];
 }
 
 interface DesktopRouteRecord {
@@ -82,30 +67,6 @@ interface RoutePermissionRecord {
   children?: RoutePermissionRecord[];
 }
 
-interface RoleUiLayoutRecord {
-  roleName?: string;
-  uiLayoutUid?: string;
-}
-
-interface RoleUiLayoutDesktopRouteRecord {
-  desktopRouteId?: number | string;
-  uiLayoutUid?: string;
-}
-
-type RoleUiLayoutDesktopRouteCreateValues = {
-  roleName: string;
-  uiLayoutUid: string;
-  desktopRouteId: number;
-};
-
-interface LayoutSummaryRecord {
-  uid: string;
-  layout: UiLayoutRecord;
-  label: string;
-  typeLabel: string;
-  accessible: boolean;
-}
-
 interface ResourceResponse {
   data?: unknown;
 }
@@ -114,32 +75,9 @@ interface ListResource {
   list: (params?: Record<string, unknown>) => Promise<ResourceResponse>;
 }
 
-interface RoleUiLayoutsResource extends ListResource {
-  create: (params: { values: { roleName: string; uiLayoutUid: string } }) => Promise<unknown>;
-  destroy: (params: { filter: { roleName: string; uiLayoutUid: string } }) => Promise<unknown>;
-}
-
-interface RoleUiLayoutDesktopRoutesResource extends ListResource {
-  create: (params: {
-    values: RoleUiLayoutDesktopRouteCreateValues | RoleUiLayoutDesktopRouteCreateValues[];
-  }) => Promise<unknown>;
-  destroy: (params: {
-    filter: {
-      roleName: string;
-      uiLayoutUid: string;
-      desktopRouteId: number[];
-    };
-  }) => Promise<unknown>;
-}
-
-function toUiLayoutPayload(responseData: unknown): UiLayoutPayload {
-  if (!responseData || typeof responseData !== 'object') {
-    return {};
-  }
-  const payload = responseData as UiLayoutPayload;
-  return {
-    data: Array.isArray(payload.data) ? payload.data : [],
-  };
+interface RoleDesktopRoutesResource extends ListResource {
+  add: (params: { values: number[] }) => Promise<unknown>;
+  remove: (params: { values: number[] }) => Promise<unknown>;
 }
 
 function toDesktopRoutePayload(responseData: unknown): DesktopRoutePayload {
@@ -147,26 +85,6 @@ function toDesktopRoutePayload(responseData: unknown): DesktopRoutePayload {
     return {};
   }
   const payload = responseData as DesktopRoutePayload;
-  return {
-    data: Array.isArray(payload.data) ? payload.data : [],
-  };
-}
-
-function toRoleUiLayoutPayload(responseData: unknown): RoleUiLayoutPayload {
-  if (!responseData || typeof responseData !== 'object') {
-    return {};
-  }
-  const payload = responseData as RoleUiLayoutPayload;
-  return {
-    data: Array.isArray(payload.data) ? payload.data : [],
-  };
-}
-
-function toRoleUiLayoutDesktopRoutePayload(responseData: unknown): RoleUiLayoutDesktopRoutePayload {
-  if (!responseData || typeof responseData !== 'object') {
-    return {};
-  }
-  const payload = responseData as RoleUiLayoutDesktopRoutePayload;
   return {
     data: Array.isArray(payload.data) ? payload.data : [],
   };
@@ -227,16 +145,6 @@ function getRouteIdsWithAllDescendants(items: RoutePermissionRecord[], itemById:
   });
 }
 
-function toRouteId(value: unknown) {
-  if (typeof value === 'number') {
-    return value;
-  }
-  if (typeof value === 'string' && value.trim()) {
-    const id = Number(value);
-    return Number.isNaN(id) ? undefined : id;
-  }
-}
-
 function translateTitle(title: unknown, t: (key: string, options?: Record<string, unknown>) => string) {
   if (typeof title !== 'string') {
     return t('Unnamed');
@@ -271,114 +179,38 @@ function filterRouteItems(
   }, []);
 }
 
-export function getLayoutLabel(layout: UiLayoutRecord, t: (key: string, options?: Record<string, unknown>) => string) {
-  const title = layout.title?.trim();
-  if (title) {
-    return t(title) || title;
-  }
-  if (layout.uid === DEFAULT_ADMIN_UI_LAYOUT.uid) {
-    return t('Desktop layout');
-  }
-  if (layout.layoutType === 'mobile') {
-    return t('Mobile layout');
-  }
-  return layout.routeName || layout.uid;
-}
-
-function getEnabledLayouts(layouts: UiLayoutRecord[] | undefined) {
-  return (layouts ?? []).filter((layout) => layout.enabled !== false);
-}
-
-function getDefaultLayoutUid(layouts: UiLayoutRecord[] | undefined) {
-  const enabledLayouts = getEnabledLayouts(layouts);
-
-  return enabledLayouts.some((layout) => layout.uid === DEFAULT_ADMIN_UI_LAYOUT.uid)
-    ? DEFAULT_ADMIN_UI_LAYOUT.uid
-    : enabledLayouts[0]?.uid || DEFAULT_ADMIN_UI_LAYOUT.uid;
-}
-
-function getLayoutTypeLabel(layout: UiLayoutRecord, t: (key: string, options?: Record<string, unknown>) => string) {
-  if (layout.layoutType === 'mobile') {
-    return t('Mobile');
-  }
-  if (layout.layoutType === 'desktop') {
-    return t('Desktop');
-  }
-  return layout.layoutType || t('Unknown');
-}
-
-export default function LayoutAwareDesktopRoutesPermissionsTab(props: PermissionTabProps) {
+function RoutePermissionsTab(props: RoutePermissionTabProps) {
   const ctx = useFlowContext();
   const t = useT();
   const { token } = theme.useToken();
   const role = props.activeRole;
-  const active = props.activeKey === 'menu';
-  const [selectedLayoutUid, setSelectedLayoutUid] = useState<string | null>(null);
+  const active = props.activeKey === props.tabKey;
+  const layoutFilter = useMemo(() => createDesktopRouteLayoutPermissionFilter(props.layoutUid), [props.layoutUid]);
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
-  const [drawerOpen, setDrawerOpen] = useState(false);
   const [routeKeyword, setRouteKeyword] = useState('');
-  const activeLayoutUid = selectedLayoutUid || DEFAULT_ADMIN_UI_LAYOUT.uid;
-  const roleUiLayoutsResource = useMemo(
-    () => ctx.api.resource('rolesUiLayouts') as unknown as RoleUiLayoutsResource,
-    [ctx.api],
+  const desktopRoutesResource = useMemo(() => ctx.api.resource('desktopRoutes') as unknown as ListResource, [ctx.api]);
+  const roleDesktopRoutesResource = useMemo(
+    () =>
+      role ? (ctx.api.resource('roles.desktopRoutes', role.name) as unknown as RoleDesktopRoutesResource) : undefined,
+    [ctx.api, role],
   );
-  const roleUiLayoutDesktopRoutesResource = useMemo(
-    () => ctx.api.resource('rolesUiLayoutDesktopRoutes') as unknown as RoleUiLayoutDesktopRoutesResource,
-    [ctx.api],
-  );
-
-  const layoutService = useRequest(
-    async () => {
-      const response = await ctx.api.request({
-        url: 'uiLayouts:listRolePermissionTargets',
-      });
-      return toUiLayoutPayload(response?.data).data ?? [];
-    },
-    {
-      ready: active,
-      refreshDeps: [active],
-      onSuccess(layouts) {
-        const nextLayoutUid = getDefaultLayoutUid(layouts);
-        if (!selectedLayoutUid || !getEnabledLayouts(layouts).some((layout) => layout.uid === selectedLayoutUid)) {
-          setSelectedLayoutUid(nextLayoutUid);
-        }
-      },
-    },
-  );
-  const enabledLayouts = useMemo(() => getEnabledLayouts(layoutService.data), [layoutService.data]);
-  const layoutUidKey = useMemo(() => enabledLayouts.map((layout) => layout.uid).join(','), [enabledLayouts]);
 
   const routeService = useRequest(
     async () => {
-      const response = await ctx.api.request({
-        url: 'desktopRoutes:listRolePermissionTargets',
-        params: {
-          layout: activeLayoutUid,
-        },
+      const response = await desktopRoutesResource.list({
+        tree: true,
+        sort: 'sort',
+        paginate: false,
+        filter: layoutFilter,
       });
-      return {
-        layoutUid: activeLayoutUid,
-        data: toDesktopRoutePayload(response?.data).data ?? [],
-      };
+      return toDesktopRoutePayload(response?.data).data ?? [];
     },
     {
-      ready: active && drawerOpen,
-      refreshDeps: [active, drawerOpen, activeLayoutUid],
+      ready: active,
+      refreshDeps: [active, layoutFilter],
     },
   );
-
-  const selectedLayoutLabel = useMemo(() => {
-    const selectedLayout = enabledLayouts.find((layout) => layout.uid === activeLayoutUid);
-    return selectedLayout ? getLayoutLabel(selectedLayout, t) : activeLayoutUid;
-  }, [activeLayoutUid, enabledLayouts, t]);
-  const routeData = useMemo(() => {
-    const data = routeService.data as DesktopRouteRequestResult | undefined;
-    if (routeService.error || data?.layoutUid !== activeLayoutUid) {
-      return [];
-    }
-    return data.data;
-  }, [activeLayoutUid, routeService.data, routeService.error]);
-  const routeItems = useMemo(() => toRouteItems(routeData), [routeData]);
+  const routeItems = useMemo(() => toRouteItems(routeService.data), [routeService.data]);
   const flatItems = useMemo(() => flattenItems(routeItems), [routeItems]);
   const allIds = useMemo(() => getAllChildrenIds(routeItems), [routeItems]);
   const displayRouteItems = useMemo(() => removeHiddenRouteItems(routeItems), [routeItems]);
@@ -392,33 +224,30 @@ export default function LayoutAwareDesktopRoutesPermissionsTab(props: Permission
     () => getRouteIdsWithAllDescendants(visibleRouteItems, itemById),
     [itemById, visibleRouteItems],
   );
+  const visibleSelectedCount = useMemo(() => {
+    const selectedIdSet = new Set(selectedIds);
+    return visibleIds.filter((id) => selectedIdSet.has(id)).length;
+  }, [selectedIds, visibleIds]);
   const emptyText = routeService.error
-    ? t('Failed to load routes for {{layout}}', { layout: selectedLayoutLabel })
+    ? t('Failed to load routes')
     : routeKeyword.trim()
-      ? t('No matching routes in {{layout}}', { layout: selectedLayoutLabel })
-      : t('No routes in {{layout}}', { layout: selectedLayoutLabel });
+      ? t('No matching routes')
+      : t('No routes');
 
   const roleScopedRouteService = useRequest(
     async () => {
-      if (!role) {
+      if (!roleDesktopRoutesResource) {
         return [];
       }
-      const response = await roleUiLayoutDesktopRoutesResource.list({
+      const response = await roleDesktopRoutesResource.list({
         paginate: false,
-        filter: {
-          roleName: role.name,
-          uiLayoutUid: activeLayoutUid,
-        },
+        filter: layoutFilter,
       });
-      return (
-        toRoleUiLayoutDesktopRoutePayload(response?.data)
-          .data?.map((item) => toRouteId(item.desktopRouteId))
-          .filter((id): id is number => typeof id === 'number') ?? []
-      );
+      return (toDesktopRoutePayload(response?.data).data ?? []).map((item) => item.id);
     },
     {
-      ready: active && drawerOpen && !!role,
-      refreshDeps: [role?.name, active, drawerOpen, activeLayoutUid],
+      ready: active && !!roleDesktopRoutesResource,
+      refreshDeps: [active, role?.name, layoutFilter],
       onSuccess(data) {
         setSelectedIds(data);
       },
@@ -428,35 +257,10 @@ export default function LayoutAwareDesktopRoutesPermissionsTab(props: Permission
   useEffect(() => {
     setSelectedIds([]);
     setRouteKeyword('');
-  }, [activeLayoutUid, role?.name]);
-
-  const layoutAccessService = useRequest(
-    async () => {
-      if (!role || !enabledLayouts.length) {
-        return new Set<string>();
-      }
-      const response = await roleUiLayoutsResource.list({
-        paginate: false,
-        filter: {
-          roleName: role.name,
-          uiLayoutUid: enabledLayouts.map((layout) => layout.uid),
-        },
-      });
-      const uids = toRoleUiLayoutPayload(response?.data)
-        .data?.map((item) => item.uiLayoutUid)
-        .filter((uid): uid is string => typeof uid === 'string' && !!uid);
-
-      return new Set(uids);
-    },
-    {
-      ready: active && !!role && !!enabledLayouts.length,
-      refreshDeps: [active, role?.name, layoutUidKey],
-    },
-  );
-  const activeLayoutAccessible = !!layoutAccessService.data?.has(activeLayoutUid);
+  }, [props.layoutUid, role?.name]);
 
   const applyPermissionChanges = useMemoizedFn(async (nextSelectedIds: number[]) => {
-    if (!role || !activeLayoutAccessible) {
+    if (!roleDesktopRoutesResource) {
       return;
     }
     const changes = getLayoutScopedPermissionChanges({
@@ -466,22 +270,13 @@ export default function LayoutAwareDesktopRoutesPermissionsTab(props: Permission
     });
     try {
       if (changes.remove.length) {
-        await roleUiLayoutDesktopRoutesResource.destroy({
-          filter: {
-            roleName: role.name,
-            uiLayoutUid: activeLayoutUid,
-            desktopRouteId: changes.remove,
-          },
+        await roleDesktopRoutesResource.remove({
+          values: changes.remove,
         });
       }
       if (changes.add.length) {
-        const values = changes.add.map((desktopRouteId) => ({
-          roleName: role.name,
-          uiLayoutUid: activeLayoutUid,
-          desktopRouteId,
-        }));
-        await roleUiLayoutDesktopRoutesResource.create({
-          values: values.length === 1 ? values[0] : values,
+        await roleDesktopRoutesResource.add({
+          values: changes.add,
         });
       }
       await roleScopedRouteService.refreshAsync();
@@ -492,23 +287,21 @@ export default function LayoutAwareDesktopRoutesPermissionsTab(props: Permission
     }
   });
 
-  const updateRoleDefaults = useMemoizedFn(
-    async (values: Pick<Role, 'allowNewMenu'> | Pick<Role, 'allowNewUiLayout'>) => {
-      if (!role) {
-        return;
-      }
-      try {
-        await ctx.api.resource('roles').update({
-          filterByTk: role.name,
-          values,
-        });
-      } catch {
-        return;
-      }
-      props.onRoleChange({ ...role, ...values });
-      ctx.message.success(t('Saved successfully'));
-    },
-  );
+  const updateRoleDefaults = useMemoizedFn(async (values: Pick<Role, 'allowNewMenu'>) => {
+    if (!role) {
+      return;
+    }
+    try {
+      await ctx.api.resource('roles').update({
+        filterByTk: role.name,
+        values,
+      });
+    } catch {
+      return;
+    }
+    props.onRoleChange({ ...role, ...values });
+    ctx.message.success(t('Saved successfully'));
+  });
 
   const setAll = useMemoizedFn(async () => {
     const selectedIdSet = new Set(selectedIds);
@@ -543,98 +336,6 @@ export default function LayoutAwareDesktopRoutesPermissionsTab(props: Permission
     await applyPermissionChanges(nextIds);
   });
 
-  const toggleLayoutAccess = useMemoizedFn(async (layout: UiLayoutRecord, checked: boolean) => {
-    if (!role) {
-      return;
-    }
-    if (checked) {
-      await roleUiLayoutsResource.create({
-        values: {
-          roleName: role.name,
-          uiLayoutUid: layout.uid,
-        },
-      });
-    } else {
-      await roleUiLayoutsResource.destroy({
-        filter: {
-          roleName: role.name,
-          uiLayoutUid: layout.uid,
-        },
-      });
-    }
-    await layoutAccessService.refreshAsync();
-    ctx.message.success(t('Saved successfully'));
-  });
-
-  const configureLayout = useMemoizedFn((layout: UiLayoutRecord) => {
-    setSelectedLayoutUid(layout.uid);
-    setDrawerOpen(true);
-  });
-  const handleDrawerKeyDown = useMemoizedFn((event: React.KeyboardEvent) => {
-    if (event.key === 'Escape' || event.keyCode === 27) {
-      setDrawerOpen(false);
-    }
-  });
-  const visibleSelectedCount = useMemo(() => {
-    const selectedIdSet = new Set(selectedIds);
-    return visibleIds.filter((id) => selectedIdSet.has(id)).length;
-  }, [selectedIds, visibleIds]);
-
-  const layoutRows = useMemo<LayoutSummaryRecord[]>(
-    () =>
-      enabledLayouts.map((layout) => {
-        const label = getLayoutLabel(layout, t);
-
-        return {
-          uid: layout.uid,
-          layout,
-          label,
-          typeLabel: getLayoutTypeLabel(layout, t),
-          accessible: !!layoutAccessService.data?.has(layout.uid),
-        };
-      }),
-    [enabledLayouts, layoutAccessService.data, t],
-  );
-
-  const layoutColumns = useMemo<ColumnsType<LayoutSummaryRecord>>(
-    () => [
-      {
-        dataIndex: 'label',
-        title: t('Layout title'),
-      },
-      {
-        dataIndex: 'typeLabel',
-        title: t('Type'),
-      },
-      {
-        dataIndex: 'accessible',
-        title: t('Layout access'),
-        render: (_, item) => (
-          <Switch
-            aria-label={t('Allow access to {{layout}}', { layout: item.label })}
-            checked={item.accessible}
-            size="small"
-            onChange={(checked) => toggleLayoutAccess(item.layout, checked)}
-          />
-        ),
-      },
-      {
-        dataIndex: 'configure',
-        title: t('Routes permissions'),
-        render: (_, item) => (
-          <Button
-            type="link"
-            aria-label={t('Configure routes permissions for {{layout}}', { layout: item.label })}
-            onClick={() => configureLayout(item.layout)}
-          >
-            {t('Configure')}
-          </Button>
-        ),
-      },
-    ],
-    [configureLayout, t, toggleLayoutAccess],
-  );
-
   const routeColumns = useMemo<ColumnsType<RoutePermissionRecord>>(
     () => [
       {
@@ -648,7 +349,7 @@ export default function LayoutAwareDesktopRoutesPermissionsTab(props: Permission
           <Checkbox
             checked={!!visibleIds.length && visibleSelectedCount === visibleIds.length}
             indeterminate={visibleSelectedCount > 0 && visibleSelectedCount < visibleIds.length}
-            disabled={!activeLayoutAccessible || !visibleIds.length}
+            disabled={!visibleIds.length}
             onChange={setAll}
           >
             {t('Allow access')}
@@ -660,14 +361,13 @@ export default function LayoutAwareDesktopRoutesPermissionsTab(props: Permission
             <Checkbox
               aria-label={t('Allow access to {{route}}', { route: routeTitle })}
               checked={selectedIds.includes(item.id)}
-              disabled={!activeLayoutAccessible}
               onChange={() => toggleItem(item)}
             />
           );
         },
       },
     ],
-    [activeLayoutAccessible, selectedIds, setAll, t, toggleItem, visibleIds.length, visibleSelectedCount],
+    [selectedIds, setAll, t, toggleItem, visibleIds.length, visibleSelectedCount],
   );
 
   if (!role) {
@@ -675,22 +375,8 @@ export default function LayoutAwareDesktopRoutesPermissionsTab(props: Permission
   }
 
   return (
-    <div
-      style={{
-        width: '100%',
-        display: 'flex',
-        flexDirection: 'column',
-        gap: token.marginSM,
-      }}
-    >
-      <Checkbox
-        checked={!!role.allowNewUiLayout}
-        onChange={(event) => {
-          updateRoleDefaults({ allowNewUiLayout: event.target.checked });
-        }}
-      >
-        {t('New layouts are allowed to be accessed by default')}
-      </Checkbox>
+    <Space direction="vertical" size={token.marginSM} style={{ width: '100%' }}>
+      <Typography.Text strong>{t(props.title)}</Typography.Text>
       <Checkbox
         checked={!!role.allowNewMenu}
         onChange={(event) => {
@@ -699,55 +385,42 @@ export default function LayoutAwareDesktopRoutesPermissionsTab(props: Permission
       >
         {t('New routes are allowed to be accessed by default')}
       </Checkbox>
-      <Table<LayoutSummaryRecord>
-        rowKey="uid"
-        loading={layoutService.loading || layoutAccessService.loading}
-        pagination={false}
-        columns={layoutColumns}
-        dataSource={layoutRows}
+      <Input.Search
+        allowClear
+        aria-label={t('Search routes')}
+        placeholder={t('Search routes')}
+        value={routeKeyword}
+        onChange={(event) => setRouteKeyword(event.target.value)}
       />
-      <Drawer
-        aria-label={selectedLayoutLabel}
-        title={selectedLayoutLabel}
-        open={drawerOpen}
-        width={640}
-        onClose={() => setDrawerOpen(false)}
-        onKeyDown={handleDrawerKeyDown}
-      >
-        <Space direction="vertical" size={token.marginSM} style={{ width: '100%' }}>
-          <Checkbox
-            checked={!!layoutAccessService.data?.has(activeLayoutUid)}
-            onChange={(event) => {
-              const layout = enabledLayouts.find((item) => item.uid === activeLayoutUid);
-              if (layout) {
-                toggleLayoutAccess(layout, event.target.checked);
-              }
-            }}
-          >
-            {t('Allow access to this layout')}
-          </Checkbox>
-          <Typography.Text strong>{t('Routes permissions')}</Typography.Text>
-          <Input.Search
-            allowClear
-            aria-label={t('Search routes')}
-            placeholder={t('Search routes')}
-            value={routeKeyword}
-            onChange={(event) => setRouteKeyword(event.target.value)}
-          />
-          <Table<RoutePermissionRecord>
-            rowKey="id"
-            loading={routeService.loading || roleScopedRouteService.loading}
-            pagination={false}
-            expandable={{
-              defaultExpandAllRows: false,
-              expandedRowKeys: routeKeyword.trim() ? visibleIds : undefined,
-            }}
-            columns={routeColumns}
-            dataSource={visibleRouteItems}
-            locale={{ emptyText }}
-          />
-        </Space>
-      </Drawer>
-    </div>
+      <Table<RoutePermissionRecord>
+        rowKey="id"
+        loading={routeService.loading || roleScopedRouteService.loading}
+        pagination={false}
+        expandable={{
+          defaultExpandAllRows: false,
+          expandedRowKeys: routeKeyword.trim() ? visibleIds : undefined,
+        }}
+        columns={routeColumns}
+        dataSource={visibleRouteItems}
+        locale={{ emptyText }}
+      />
+    </Space>
+  );
+}
+
+export function MobileRoutesPermissionsTab(props: PermissionTabProps) {
+  return (
+    <RoutePermissionsTab
+      {...props}
+      layoutUid={DEFAULT_MOBILE_UI_LAYOUT_UID}
+      tabKey="mobile-routes"
+      title="Mobile routes"
+    />
+  );
+}
+
+export default function LayoutAwareDesktopRoutesPermissionsTab(props: PermissionTabProps) {
+  return (
+    <RoutePermissionsTab {...props} layoutUid={DEFAULT_ADMIN_UI_LAYOUT.uid} tabKey="menu" title="Desktop routes" />
   );
 }
