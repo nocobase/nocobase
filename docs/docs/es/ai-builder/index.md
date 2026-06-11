@@ -95,6 +95,20 @@ La IA primero presenta el diseño de la solución y, una vez confirmado, la cons
 
 Para conocer más sobre la construcción de sistemas completos, consulte [Soluciones](./dsl-reconciler).
 
+### Construye un hito y la IA guarda una versión restaurable por ti
+
+Después de terminar una página, un conjunto de tablas de datos o un flujo de trabajo, deja que la IA guarde el estado actual como versión: si una configuración sale mal, siempre puedes volver al último hito claro.
+
+```
+Guarda la construcción actual como versión: página de gestión de clientes, área de filtros y formulario de edición completados
+```
+
+![La IA crea una versión después de construir](https://static-docs.nocobase.com/20260611115804.png)
+
+La IA no guarda una versión cada vez que cambia un campo; solo guarda tras completar y verificar un hito claro, lo que mantiene la lista de versiones legible y facilita decidir a dónde volver.
+
+Para conocer más sobre el control de versiones, consulte [Control de versiones](./version-control).
+
 ## Seguridad y auditoría
 
 Antes de permitir que un AI Agent opere NocoBase, le recomendamos comprender los métodos de autenticación, el control de permisos y la auditoría de operaciones, para asegurarse de que la IA solo haga lo que debe y de que cada paso quede registrado. Consulte [Seguridad y auditoría](./security).
