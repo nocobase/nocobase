@@ -9,41 +9,12 @@
 
 import React, { useCallback, useMemo } from 'react';
 import { Button, Dropdown, Tag, Tooltip } from 'antd';
-import {
-  CheckOutlined,
-  ClockCircleOutlined,
-  CloseOutlined,
-  ExclamationOutlined,
-  MinusOutlined,
-  RedoOutlined,
-} from '@ant-design/icons';
 import { css } from '@emotion/css';
 import { useFlowContext } from './contexts';
 import useStyles from './style';
 import { useT } from '../locale';
 import { formatTime } from '../components/workflowCanvas';
-
-const JOB_STATUS = {
-  PENDING: 0,
-  RESOLVED: 1,
-  FAILED: -1,
-  ERROR: -2,
-  ABORTED: -3,
-  CANCELED: -4,
-  REJECTED: -5,
-  RETRY_NEEDED: -6,
-} as const;
-
-const JOB_STATUS_OPTIONS_MAP: Record<number, { label: string; color: string; icon: React.ReactNode }> = {
-  [JOB_STATUS.PENDING]: { label: 'Pending', color: 'gold', icon: <ClockCircleOutlined /> },
-  [JOB_STATUS.RESOLVED]: { label: 'Resolved', color: 'green', icon: <CheckOutlined /> },
-  [JOB_STATUS.FAILED]: { label: 'Failed', color: 'red', icon: <ExclamationOutlined /> },
-  [JOB_STATUS.ERROR]: { label: 'Error', color: 'red', icon: <CloseOutlined /> },
-  [JOB_STATUS.ABORTED]: { label: 'Aborted', color: 'red', icon: <MinusOutlined rotate={90} /> },
-  [JOB_STATUS.CANCELED]: { label: 'Canceled', color: 'volcano', icon: <MinusOutlined rotate={45} /> },
-  [JOB_STATUS.REJECTED]: { label: 'Rejected', color: 'volcano', icon: <MinusOutlined /> },
-  [JOB_STATUS.RETRY_NEEDED]: { label: 'Retry needed', color: 'volcano', icon: <RedoOutlined /> },
-};
+import { JOB_STATUS_OPTIONS_MAP } from '../components/jobStatus';
 
 const statusButtonClass = css`
   border: none;

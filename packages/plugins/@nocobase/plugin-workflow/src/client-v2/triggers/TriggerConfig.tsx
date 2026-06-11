@@ -21,6 +21,7 @@ import {
 import useStyles from '../canvas/style';
 import { useT } from '../locale';
 import { PluginWorkflowClientV2 } from '../plugin';
+import { TriggerExecutionButton } from './TriggerExecutionButton';
 import type { Trigger } from '.';
 
 function TriggerTypeDescription({
@@ -135,7 +136,7 @@ function isInteractiveClickTarget(target: EventTarget | null): boolean {
   if (!(target instanceof HTMLElement)) {
     return false;
   }
-  return Boolean(target.closest('textarea, input, button, a, .ant-dropdown, .workflow-node-actions'));
+  return Boolean(target.closest('textarea, input, button, a, .ant-dropdown, .workflow-node-actions, .ant-modal'));
 }
 
 export function TriggerConfig() {
@@ -190,6 +191,9 @@ export function TriggerConfig() {
       role="button"
       aria-label={`${titleText}-${editingTitle}`}
       onClick={(event) => {
+        if (!event.currentTarget.contains(event.target as Node)) {
+          return;
+        }
         if (!isInteractiveClickTarget(event.target)) {
           openDrawer();
         }
@@ -203,6 +207,9 @@ export function TriggerConfig() {
                 <span className="type">{triggerTitle}</span>
               </Tag>
             </Tooltip>
+          </div>
+          <div className="workflow-node-actions">
+            <TriggerExecutionButton triggerTitle={triggerTitle} />
           </div>
         </div>
         <div className="workflow-node-title">

@@ -9,15 +9,15 @@
 
 import { useFlowContext } from '@nocobase/flow-engine';
 import { useRequest } from 'ahooks';
-import { Empty, Spin, theme } from 'antd';
+import { Spin, theme } from 'antd';
 import React from 'react';
 import { useParams } from 'react-router-dom';
-import { ExecutionViewHeader } from '../components/ExecutionViewHeader';
+import ExecutionCanvas from '../ExecutionCanvas';
 import { normalizeRecordResponse } from '../components/workflowCanvas';
 import { useWorkflowTranslation } from '../locale';
 
 export default function ExecutionViewPage() {
-  const { t } = useWorkflowTranslation();
+  useWorkflowTranslation();
   const ctx = useFlowContext();
   const { token } = theme.useToken();
   const params = useParams<{ id?: string }>();
@@ -31,8 +31,8 @@ export default function ExecutionViewPage() {
       }
       const response = await resource.get({
         filterByTk: executionId,
-        appends: ['workflow'],
-        except: ['context', 'output', 'stack', 'workflow.config', 'workflow.options'],
+        appends: ['jobs', 'workflow', 'workflow.nodes', 'workflow.versionStats', 'workflow.stats'],
+        except: ['jobs.result', 'workflow.options'],
       });
       return normalizeRecordResponse(response);
     },
@@ -62,20 +62,8 @@ export default function ExecutionViewPage() {
         background: token.colorBgLayout,
       }}
     >
-      <ExecutionViewHeader execution={record} resource={resource} refresh={refresh} />
-      <div
-        style={{
-          flex: 1,
-          minHeight: 0,
-          overflow: 'auto',
-          position: 'relative',
-          width: '100%',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-        }}
-      >
-        <Empty description={t('Workflow canvas editor is being migrated to the new UI.')} />
+      <div style={{ flex: 1, minHeight: 0, overflow: 'hidden', position: 'relative', width: '100%' }}>
+        <ExecutionCanvas record={record} resource={resource} refresh={refresh} />
       </div>
     </div>
   );
