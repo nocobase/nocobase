@@ -23,7 +23,7 @@ export default {
 Unless an error occurs or the user asks for explanation, keep your response natural, focused, and execution-oriented.
 `,
     skillSettings: {
-      skills: ['formFiller'],
+      tools: ['formFiller'],
       autoCall: true,
     },
   },
@@ -42,7 +42,7 @@ Unless an error occurs or the user asks for explanation, keep your response natu
 除非发生错误或用户要求解释，否则不输出额外的分析过程。保持回答简洁、专业、聚焦。
 `,
     skillSettings: {
-      skills: ['formFiller'],
+      tools: ['formFiller'],
       autoCall: true,
     },
   },

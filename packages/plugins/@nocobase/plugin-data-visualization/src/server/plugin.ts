@@ -9,7 +9,7 @@
 
 import { Cache } from '@nocobase/cache';
 import { InstallOptions, Plugin } from '@nocobase/server';
-import { query } from './actions/query';
+import { queryDataAction } from './actions/query';
 import PluginAIServer from '@nocobase/plugin-ai';
 // import { buildChartBlock } from './ai/tools/build-chart-block';
 
@@ -22,10 +22,10 @@ export class PluginDataVisualizationServer extends Plugin {
     this.app.resourceManager.define({
       name: 'charts',
       actions: {
-        query,
+        queryData: queryDataAction,
       },
     });
-    this.app.acl.allow('charts', 'query', 'loggedIn');
+    this.app.acl.allow('charts', 'queryData', 'loggedIn');
   }
 
   async load() {

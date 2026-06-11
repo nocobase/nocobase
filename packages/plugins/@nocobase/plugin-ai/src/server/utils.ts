@@ -12,6 +12,8 @@ import path from 'path';
 import fs from 'fs';
 import { getDateVars, parse, serverRequest } from '@nocobase/utils';
 import { Context } from '@nocobase/actions';
+import { ToolsEntry } from '@nocobase/ai';
+import { tool } from 'langchain';
 
 export function sendSSEError(ctx: Context, error: Error | string, errorName?: string) {
   const body = typeof error === 'string' ? error : error.message || 'Unknown error';
@@ -35,7 +37,7 @@ export function stripToolCallTags(content: string): string | null {
 }
 
 export function parseResponseMessage(row: Model) {
-  const { content: rawContent, messageId, metadata, role, toolCalls, attachments, workContext } = row;
+  const { content: rawContent, messageId, metadata, role, toolCalls, attachments, workContext, createdAt } = row;
   const content = {
     ...(rawContent ?? {}),
     content: stripToolCallTags(rawContent?.content),
@@ -49,6 +51,7 @@ export function parseResponseMessage(row: Model) {
   }
   return {
     key: messageId,
+    createdAt,
     content,
     role,
   };
@@ -112,7 +115,7 @@ export async function parseVariables(ctx: Context, value: string) {
   for (const [key, value] of Object.entries(dateVariables)) {
     if (typeof value === 'function') {
       $nDate[key] = value({
-        timezone: ctx.get('x-timezone'),
+        timezone: ctx.get?.('x-timezone'),
         now: new Date().toISOString(),
       });
     } else {
@@ -122,7 +125,39 @@ export async function parseVariables(ctx: Context, value: string) {
   return parse(value)({
     $user,
     $nRole: ctx.state.currentRole === '__union__' ? ctx.state.currentRoles : ctx.state.currentRole,
-    $nLang: ctx.getCurrentLocale(),
+    $nLang: ctx.getCurrentLocale?.(),
     $nDate,
   });
+}
+
+const noWriter = (chunk: any) => console.warn(`No writer in tools runtime, chunk:[${chunk}]`);
+export const buildTool = (toolsEntry: ToolsEntry) => {
+  const {
+    invoke,
+    definition: { name, description, schema },
+  } = toolsEntry;
+  return tool(
+    (input, config) => {
+      const { context, toolCall } = config;
+      const writer = (config['writer'] as (chunk: any) => void) ?? noWriter;
+      return invoke(context.ctx, input, { toolCallId: toolCall.id, writer });
+    },
+    {
+      name,
+      description,
+      schema,
+      returnDirect: false,
+    },
+  );
+};
+
+export class ResourceActionError extends Error {
+  constructor(
+    readonly status: number,
+    message: string,
+    options?: ErrorOptions,
+  ) {
+    super(message, options);
+    this.name = 'ResourceActionError';
+  }
 }

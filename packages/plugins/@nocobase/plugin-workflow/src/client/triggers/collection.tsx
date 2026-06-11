@@ -65,10 +65,20 @@ function useVariables(config, options) {
 export default class extends Trigger {
   title = `{{t("Collection event", { ns: "${NAMESPACE}" })}}`;
   description = `{{t('Triggered when data changes in the collection, such as after adding, updating, or deleting a record. Unlike "Post-action event", Collection event listens for data changes rather than HTTP requests. Unless you understand the exact meaning, it is recommended to use "Post-action event".', { ns: "${NAMESPACE}" })}}`;
+  presetFieldset = {
+    collection: {
+      ...collection,
+      'x-component-props': {
+        dataSourceFilter(item) {
+          return item.options.key === 'main' || item.options.isDBInstance;
+        },
+      },
+    },
+  };
   fieldset = {
     collection: {
       ...collection,
-      'x-disabled': '{{ useWorkflowAnyExecuted() }}',
+      'x-disabled': true,
       'x-component-props': {
         dataSourceFilter(item) {
           return item.options.key === 'main' || item.options.isDBInstance;

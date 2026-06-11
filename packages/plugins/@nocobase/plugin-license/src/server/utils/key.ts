@@ -10,6 +10,7 @@
 import { keyDecrypt } from '@nocobase/license-kit';
 import { Context } from 'koa';
 import path from 'path';
+import { storagePathJoin } from '@nocobase/utils';
 import fs from 'fs';
 import { KeyData } from './interface';
 import { CACHE_KEY } from './interface';
@@ -63,7 +64,7 @@ export async function request(
 }
 
 export async function saveLicenseKey(licenseKey: string, ctx?: any) {
-  const dir = path.resolve(process.cwd(), 'storage/.license');
+  const dir = storagePathJoin('.license');
   const filePath = path.resolve(dir, 'license-key');
   await fs.promises.writeFile(filePath, licenseKey);
 
@@ -74,7 +75,7 @@ export async function saveLicenseKey(licenseKey: string, ctx?: any) {
 }
 
 export async function getLocalKeyData() {
-  const keyFile = path.resolve(process.cwd(), 'storage/.license/license-key');
+  const keyFile = storagePathJoin('.license', 'license-key');
   try {
     const key = (await fs.promises.readFile(keyFile, 'utf8')).trim();
     return JSON.parse(keyDecrypt(key));
@@ -85,7 +86,7 @@ export async function getLocalKeyData() {
 
 export async function getKey(ctx?: Context): Promise<string> {
   let key: string | undefined;
-  const keyFile = path.resolve(process.cwd(), 'storage/.license/license-key');
+  const keyFile = storagePathJoin('.license', 'license-key');
 
   if (ctx?.cache) {
     try {

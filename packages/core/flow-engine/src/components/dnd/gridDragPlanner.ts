@@ -1146,6 +1146,21 @@ const findCellByPath = (layout: GridLayoutV2, path?: GridLayoutPath) => {
   return null;
 };
 
+const findCellByPathOrClosestAncestor = (layout: GridLayoutV2, path?: GridLayoutPath) => {
+  if (!path?.length) {
+    return null;
+  }
+
+  for (let length = path.length; length > 0; length -= 1) {
+    const target = findCellByPath(layout, path.slice(0, length));
+    if (target) {
+      return target;
+    }
+  }
+
+  return null;
+};
+
 const removeItemFromGridLayout = (layout: GridLayoutV2, sourceUid: string) => {
   const removeFromRows = (rows: GridRowV2[]): GridRowV2[] =>
     rows
@@ -1231,7 +1246,7 @@ const simulateGridLayoutForSlot = ({
 
   switch (slot.type) {
     case 'column': {
-      const target = findCellByPath(cloned, targetPath);
+      const target = findCellByPathOrClosestAncestor(cloned, targetPath);
       if (!target) {
         break;
       }
@@ -1247,7 +1262,7 @@ const simulateGridLayoutForSlot = ({
       break;
     }
     case 'empty-column': {
-      const target = findCellByPath(cloned, targetPath);
+      const target = findCellByPathOrClosestAncestor(cloned, targetPath);
       if (target) {
         delete target.cell.rows;
         target.cell.items = [sourceUid];
@@ -1255,7 +1270,7 @@ const simulateGridLayoutForSlot = ({
       break;
     }
     case 'column-edge': {
-      const target = findCellByPath(cloned, targetPath);
+      const target = findCellByPathOrClosestAncestor(cloned, targetPath);
       if (!target) {
         break;
       }
@@ -1282,7 +1297,7 @@ const simulateGridLayoutForSlot = ({
       if (!targetItemUid) {
         break;
       }
-      const target = findCellByPath(cloned, targetPath);
+      const target = findCellByPathOrClosestAncestor(cloned, targetPath);
       if (!target?.cell.items) {
         break;
       }

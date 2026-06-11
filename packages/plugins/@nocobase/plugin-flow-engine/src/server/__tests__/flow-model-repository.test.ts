@@ -8,8 +8,9 @@
  */
 
 import { Collection, Database } from '@nocobase/database';
-import { MockServer, createMockServer } from '@nocobase/test';
+import { MockServer } from '@nocobase/test';
 import FlowModelRepository from '../repository';
+import { createFlowEngineMockServer } from './test-utils';
 
 describe('ui_schema repository', () => {
   let app: MockServer;
@@ -23,7 +24,7 @@ describe('ui_schema repository', () => {
   });
 
   beforeEach(async () => {
-    app = await createMockServer({
+    app = await createFlowEngineMockServer({
       registerActions: true,
       plugins: ['flow-engine'],
     });
@@ -33,7 +34,7 @@ describe('ui_schema repository', () => {
     treePathCollection = db.getCollection('flowModelTreePath');
   });
 
-  it('should insert model', async () => {
+  it('should insert a flat model', async () => {
     const model1 = {
       uid: 'uid1',
       use: 'TestModel',
@@ -44,7 +45,7 @@ describe('ui_schema repository', () => {
     expect(model2.use).toBe('TestModel');
   });
 
-  it('should insert model', async () => {
+  it('should insert a model with mixed object and array subModels', async () => {
     const model1 = {
       uid: 'uid1',
       use: 'TestModel',
@@ -122,7 +123,7 @@ describe('ui_schema repository', () => {
     expect(directChild.parentId).toBe('read-parent');
   });
 
-  it('should insert model', async () => {
+  it('should insert a deeply nested model tree', async () => {
     const model1 = {
       uid: 'uid1',
       use: 'TestModel',
@@ -169,7 +170,7 @@ describe('ui_schema repository', () => {
     expect(model2.subModels.sub1.subModels.sub3.use).toBe('TestSubModel4');
   });
 
-  it('should insert model', async () => {
+  it('should auto-generate missing uids while inserting subModels', async () => {
     const model1 = {
       uid: 'uid1',
       use: 'TestModel',
@@ -202,7 +203,7 @@ describe('ui_schema repository', () => {
     expect(model2.subModels.sub2[1].uid).toBeDefined();
   });
 
-  it('should insert model', async () => {
+  it('should skip async subModels on insert readback by default', async () => {
     const model1 = {
       uid: 'uid1',
       use: 'TestModel',
@@ -270,7 +271,7 @@ describe('ui_schema repository', () => {
     expect(model2.subModels.sub2[1].uid).toBeDefined();
   });
 
-  it('should upsert model', async () => {
+  it('should upsert an existing model tree in place', async () => {
     const model1 = {
       uid: 'uid1',
       use: 'TestModel',
@@ -348,7 +349,7 @@ describe('ui_schema repository', () => {
     expect(model5.subModels.sub2[1].use).toBe('TestSubModel3_2');
   });
 
-  it('should upsert model', async () => {
+  it('should append a missing array child during upsert', async () => {
     const model1 = {
       uid: 'uid1',
       use: 'TestModel',
@@ -680,6 +681,188 @@ describe('ui_schema repository', () => {
     });
     expect(rows.map((row) => row.get('descendant'))).toEqual(['sub2-1', 'sub2-3', 'sub2-2']);
     expect(rows.map((row) => row.get('sort'))).toEqual([1, 2, 3]);
+  });
+
+  it('should move a detached duplicated tree beside a target model', async () => {
+    await repository.insertModel({
+      uid: 'uid1',
+      use: 'TestModel',
+      subModels: {
+        sub2: [
+          {
+            uid: 'sub2-1',
+            use: 'TestSubModel2',
+            subModels: {
+              sub3: {
+                uid: 'sub2-1-child',
+                use: 'TestSubModelChild',
+              },
+            },
+          },
+          {
+            uid: 'sub2-2',
+            use: 'TestSubModel3',
+          },
+        ],
+      },
+    });
+
+    const duplicated = await repository.duplicate('sub2-1');
+    await repository.move({ sourceId: duplicated.uid, targetId: 'sub2-2', position: 'after' });
+
+    const model2 = await repository.findModelById('uid1', { includeAsyncNode: true });
+    expect(model2.subModels.sub2.map((item) => item.uid)).toEqual(['sub2-1', 'sub2-2', duplicated.uid]);
+    expect(model2.subModels.sub2.map((item) => item.sortIndex)).toEqual([1, 2, 3]);
+    expect(model2.subModels.sub2[2].parentId).toBe('uid1');
+    expect(model2.subModels.sub2[2].subKey).toBe('sub2');
+    expect(model2.subModels.sub2[2].subType).toBe('array');
+    expect(model2.subModels.sub2[2].subModels.sub3).toBeTruthy();
+
+    const duplicatedRow = await repository.model.findByPk(duplicated.uid);
+    const duplicatedOptions = FlowModelRepository.optionsToJson(duplicatedRow.get('options') || {});
+    expect(duplicatedOptions.parentId).toBe('uid1');
+    expect(duplicatedOptions.subKey).toBe('sub2');
+    expect(duplicatedOptions.subType).toBe('array');
+  });
+
+  it('should move a model across parents and normalize both sibling lists', async () => {
+    await repository.insertModel({
+      uid: 'root',
+      use: 'RootModel',
+      subModels: {
+        left: [
+          {
+            uid: 'left-1',
+            use: 'LeftModel1',
+          },
+          {
+            uid: 'left-2',
+            use: 'LeftModel2',
+          },
+        ],
+        right: [
+          {
+            uid: 'right-1',
+            use: 'RightModel1',
+          },
+          {
+            uid: 'right-2',
+            use: 'RightModel2',
+          },
+        ],
+      },
+    });
+
+    await treePathCollection.model.update(
+      { sort: null },
+      {
+        where: {
+          ancestor: 'root',
+          depth: 1,
+        },
+      },
+    );
+
+    await repository.move({ sourceId: 'left-1', targetId: 'right-2', position: 'before' });
+
+    const root = await repository.findModelById('root', { includeAsyncNode: true });
+    expect(root.subModels.left.map((item) => item.uid)).toEqual(['left-2']);
+    expect(root.subModels.left.map((item) => item.sortIndex)).toEqual([1]);
+    expect(root.subModels.right.map((item) => item.uid)).toEqual(['right-1', 'left-1', 'right-2']);
+    expect(root.subModels.right.map((item) => item.sortIndex)).toEqual([1, 2, 3]);
+    expect(root.subModels.right[1].parentId).toBe('root');
+    expect(root.subModels.right[1].subKey).toBe('right');
+    expect(root.subModels.right[1].subType).toBe('array');
+
+    const movedRow = await repository.model.findByPk('left-1');
+    const movedOptions = FlowModelRepository.optionsToJson(movedRow.get('options') || {});
+    expect(movedOptions.parentId).toBe('root');
+    expect(movedOptions.subKey).toBe('right');
+    expect(movedOptions.subType).toBe('array');
+  });
+
+  it('should allow moving a duplicated object submodel beside an existing object submodel', async () => {
+    await repository.insertModel({
+      uid: 'form',
+      use: 'FormModel',
+      subModels: {
+        grid: {
+          uid: 'grid-1',
+          use: 'GridModel',
+        },
+      },
+    });
+
+    const duplicated = await repository.duplicate('grid-1');
+    await repository.move({ sourceId: duplicated.uid, targetId: 'grid-1', position: 'after' });
+    await repository.remove('grid-1');
+
+    const form = await repository.findModelById('form', { includeAsyncNode: true });
+    expect(form.subModels.grid.uid).toBe(duplicated.uid);
+    expect(form.subModels.grid.parentId).toBe('form');
+    expect(form.subModels.grid.subKey).toBe('grid');
+    expect(form.subModels.grid.subType).toBe('object');
+
+    const duplicatedRow = await repository.model.findByPk(duplicated.uid);
+    const duplicatedOptions = FlowModelRepository.optionsToJson(duplicatedRow.get('options') || {});
+    expect(duplicatedOptions.parentId).toBe('form');
+    expect(duplicatedOptions.subKey).toBe('grid');
+    expect(duplicatedOptions.subType).toBe('object');
+  });
+
+  it('should reject moving a missing source model', async () => {
+    await repository.insertModel({
+      uid: 'uid1',
+      use: 'TestModel',
+      subModels: {
+        sub2: [
+          {
+            uid: 'sub2-1',
+            use: 'TestSubModel2',
+          },
+        ],
+      },
+    });
+
+    await expect(repository.move({ sourceId: 'missing', targetId: 'sub2-1', position: 'after' })).rejects.toThrow(
+      "flowModels:move sourceId 'missing' not found",
+    );
+  });
+
+  it('should reject moving beside a detached target model', async () => {
+    await repository.insertModel({ uid: 'source', use: 'SourceModel' });
+    await repository.insertModel({ uid: 'target', use: 'TargetModel' });
+
+    await expect(repository.move({ sourceId: 'source', targetId: 'target', position: 'after' })).rejects.toThrow(
+      'flowModels:move target is not attached to a parent',
+    );
+  });
+
+  it('should reject moving a model beside its descendant', async () => {
+    await repository.insertModel({
+      uid: 'root',
+      use: 'RootModel',
+      subModels: {
+        items: [
+          {
+            uid: 'parent',
+            use: 'ParentModel',
+            subModels: {
+              items: [
+                {
+                  uid: 'child',
+                  use: 'ChildModel',
+                },
+              ],
+            },
+          },
+        ],
+      },
+    });
+
+    await expect(repository.move({ sourceId: 'parent', targetId: 'child', position: 'after' })).rejects.toThrow(
+      'flowModels:move cycle detected',
+    );
   });
 
   it('should sort schema children deterministically when sibling sort is null', () => {

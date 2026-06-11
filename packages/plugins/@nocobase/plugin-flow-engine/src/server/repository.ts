@@ -1249,6 +1249,60 @@ WHERE TreeTable.depth = 1 AND  TreeTable.ancestor = :ancestor and TreeTable.sort
     await this.clearXUidPathCache(parentUid, transaction);
   }
 
+  private async normalizeSiblingSorts(info: SiblingInfo | null | undefined, transaction?: Transaction) {
+    if (!info) {
+      return;
+    }
+    const siblingRows = await this.findSiblingSortRows(info.parentUid, info.type, transaction);
+    await this.writeSiblingSorts(
+      info.parentUid,
+      siblingRows.map((row) => row.uid),
+      transaction,
+    );
+  }
+
+  private async isAncestorOf(ancestorUid: string, descendantUid: string, transaction?: Transaction) {
+    const rows = (await this.database.sequelize.query(
+      this.sqlAdapter(`SELECT 1 as v
+        FROM ${this.flowModelTreePathTableName}
+        WHERE ancestor = :ancestorUid
+          AND descendant = :descendantUid
+          AND depth > 0
+        LIMIT 1`),
+      {
+        type: 'SELECT',
+        replacements: { ancestorUid, descendantUid },
+        transaction,
+      },
+    )) as Array<{ v?: number }>;
+    return rows.length > 0;
+  }
+
+  private async updateModelParentOptions(
+    uid: string,
+    parentId: string,
+    subKey: string,
+    subType: 'array' | 'object',
+    transaction?: Transaction,
+  ) {
+    const modelInstance = await this.model.findByPk(uid, { transaction });
+    if (!modelInstance) {
+      throw new Error(`flowModels:move sourceId '${uid}' not found`);
+    }
+    await modelInstance.update(
+      {
+        options: {
+          ...lodash.omit(FlowModelRepository.optionsToJson(modelInstance.get('options') || {}), ['uid']),
+          parentId,
+          parent: parentId,
+          subKey,
+          subType,
+        },
+      },
+      { transaction, hooks: false },
+    );
+  }
+
   protected async findNodeSchemaWithParent(uid, transaction) {
     const schema = await this.database.getRepository('flowModels').findOne({
       filter: {
@@ -1922,43 +1976,70 @@ WHERE TreeTable.depth = 1 AND  TreeTable.ancestor = :ancestor and TreeTable.sort
     }
 
     const transaction = transactionOptions?.transaction;
+    const sourceInstance = await this.model.findByPk(sourceUid, { transaction });
+    if (!sourceInstance) {
+      throw new Error(`flowModels:move sourceId '${sourceUid}' not found`);
+    }
+
     if (sourceUid === targetUid) {
-      const sourceInfo = await this.findSiblingInfo(sourceUid, transaction);
-      if (sourceInfo) {
-        const siblingRows = await this.findSiblingSortRows(sourceInfo.parentUid, sourceInfo.type, transaction);
-        await this.writeSiblingSorts(
-          sourceInfo.parentUid,
-          siblingRows.map((row) => row.uid),
-          transaction,
-        );
-      }
+      await this.normalizeSiblingSorts(await this.findSiblingInfo(sourceUid, transaction), transaction);
       return null;
     }
 
     const sourceInfo = await this.findSiblingInfo(sourceUid, transaction);
     const targetInfo = await this.findSiblingInfo(targetUid, transaction);
-    if (!sourceInfo || !targetInfo) {
-      throw new Error('flowModels:move source or target is not attached to a parent');
+    if (!targetInfo) {
+      throw new Error('flowModels:move target is not attached to a parent');
     }
-    if (sourceInfo.parentUid !== targetInfo.parentUid || sourceInfo.type !== targetInfo.type) {
-      throw new Error('flowModels:move source and target must be sibling nodes under the same parent/subKey');
-    }
-
-    const siblingRows = await this.findSiblingSortRows(sourceInfo.parentUid, sourceInfo.type, transaction);
-    const sourceRow = siblingRows.find((row) => row.uid === sourceUid);
-    const targetIndex = siblingRows.findIndex((row) => row.uid === targetUid);
-    if (!sourceRow || targetIndex === -1) {
-      throw new Error('flowModels:move source and target must be sibling nodes under the same parent/subKey');
+    const targetInstance = await this.model.findByPk(targetUid, { transaction });
+    const targetOptions = FlowModelRepository.optionsToJson(targetInstance?.get('options') || {});
+    const targetSubType = targetOptions.subType === 'object' ? 'object' : 'array';
+    if (targetInfo.parentUid === sourceUid || (await this.isAncestorOf(sourceUid, targetInfo.parentUid, transaction))) {
+      throw new Error('flowModels:move cycle detected');
     }
 
-    const rowsWithoutSource = siblingRows.filter((row) => row.uid !== sourceUid);
-    const insertIndex = rowsWithoutSource.findIndex((row) => row.uid === targetUid);
-    rowsWithoutSource.splice(position === 'after' ? insertIndex + 1 : insertIndex, 0, sourceRow);
-    await this.writeSiblingSorts(
-      sourceInfo.parentUid,
-      rowsWithoutSource.map((row) => row.uid),
-      transaction,
+    if (sourceInfo?.parentUid === targetInfo.parentUid && sourceInfo.type === targetInfo.type) {
+      const siblingRows = await this.findSiblingSortRows(sourceInfo.parentUid, sourceInfo.type, transaction);
+      const sourceRow = siblingRows.find((row) => row.uid === sourceUid);
+      const targetIndex = siblingRows.findIndex((row) => row.uid === targetUid);
+      if (!sourceRow || targetIndex === -1) {
+        throw new Error('flowModels:move source and target must be sibling nodes under the same parent/subKey');
+      }
+
+      const rowsWithoutSource = siblingRows.filter((row) => row.uid !== sourceUid);
+      const insertIndex = rowsWithoutSource.findIndex((row) => row.uid === targetUid);
+      rowsWithoutSource.splice(position === 'after' ? insertIndex + 1 : insertIndex, 0, sourceRow);
+      await this.writeSiblingSorts(
+        sourceInfo.parentUid,
+        rowsWithoutSource.map((row) => row.uid),
+        transaction,
+      );
+      return await this.findModelById(sourceUid, { transaction });
+    }
+
+    await this.normalizeSiblingSorts(sourceInfo, transaction);
+    await this.normalizeSiblingSorts(targetInfo, transaction);
+    await this.updateModelParentOptions(sourceUid, targetInfo.parentUid, targetInfo.type, targetSubType, transaction);
+
+    await this.insertSingleNode(
+      {
+        uid: sourceUid,
+        name: sourceUid,
+        childOptions: {
+          parentUid: targetInfo.parentUid,
+          type: targetInfo.type,
+          position: {
+            type: position,
+            target: targetUid,
+          },
+        },
+      } as SchemaNode,
+      { transaction, removeParentsIfNoChildren: false },
     );
+
+    await this.normalizeSiblingSorts(sourceInfo, transaction);
+    await this.normalizeSiblingSorts(await this.findSiblingInfo(sourceUid, transaction), transaction);
+
     return await this.findModelById(sourceUid, { transaction });
   }
 }

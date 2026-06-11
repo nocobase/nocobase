@@ -9,8 +9,8 @@
 
 import { lazy, Plugin } from '@nocobase/client';
 import 'vditor/dist/index.css';
-import { DisplayVditorFieldModel } from './models/DisplayVditorFieldModel';
-import { VditorFieldModel } from './models/VditorFieldModel';
+import { DisplayVditorFieldModel } from '../client-v2/models/DisplayVditorFieldModel';
+import { VditorFieldModel } from '../client-v2/models/VditorFieldModel';
 const { MarkdownVditor } = lazy(() => import('./components'), 'MarkdownVditor');
 import { editModeSettingsItem } from './settings/markdownVditorComponentFieldSettings';
 import { MarkdownVditorFieldInterface } from './interfaces/markdown-vditor';

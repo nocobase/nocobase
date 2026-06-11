@@ -50,6 +50,21 @@ describe('sql collection', () => {
     });
     expect(res.status).toBe(400);
     expect(res.body.errors[0].message).toMatch('SQL statements contain dangerous keywords');
+
+    for (const sql of [
+      'select usename, passwd from pg_shadow',
+      'select rolname, rolsuper from pg_roles',
+      'select table_name from information_schema.tables',
+      'select * from (select usename, passwd from pg_shadow) as passwords',
+    ]) {
+      res = await agent.resource('sqlCollection').execute({
+        values: {
+          sql,
+        },
+      });
+      expect(res.status).toBe(400);
+      expect(res.body.errors[0].message).toMatch('SQL statements contain dangerous keywords');
+    }
   });
 
   it('sqlCollection:execute', async () => {

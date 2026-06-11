@@ -465,12 +465,16 @@ jobs:
           MAJOR_MINOR_VERSION="${{ needs.prepare-release.outputs.major_minor_version }}"
           DEFAULT_TAG="${{ needs.prepare-release.outputs.default_tag }}"
           ALI_REG="${{ secrets.ALI_DOCKER_PUBLIC_REGISTRY }}"
+          MINOR_TAG="$MAJOR_MINOR_VERSION"
+          if [[ "$DEFAULT_TAG" == "alpha" || "$DEFAULT_TAG" == "beta" ]]; then
+            MINOR_TAG="$MAJOR_MINOR_VERSION-$DEFAULT_TAG"
+          fi
 
           TAGS=(
             "nocobase/nocobase:$RELEASE_VERSION"
             "$ALI_REG/nocobase/nocobase:$RELEASE_VERSION"
-            "nocobase/nocobase:$MAJOR_MINOR_VERSION"
-            "$ALI_REG/nocobase/nocobase:$MAJOR_MINOR_VERSION"
+            "nocobase/nocobase:$MINOR_TAG"
+            "$ALI_REG/nocobase/nocobase:$MINOR_TAG"
           )
 
           # For v1 maintenance tags, do not push a floating default tag (e.g. `latest`).
@@ -489,12 +493,16 @@ jobs:
           MAJOR_MINOR_VERSION="${{ needs.prepare-release.outputs.major_minor_version }}"
           DEFAULT_TAG="${{ needs.prepare-release.outputs.default_tag }}"
           ALI_REG="${{ secrets.ALI_DOCKER_PUBLIC_REGISTRY }}"
+          MINOR_TAG="$MAJOR_MINOR_VERSION"
+          if [[ "$DEFAULT_TAG" == "alpha" || "$DEFAULT_TAG" == "beta" ]]; then
+            MINOR_TAG="$MAJOR_MINOR_VERSION-$DEFAULT_TAG"
+          fi
 
           TAGS=(
             "nocobase/nocobase:$RELEASE_VERSION-full"
             "$ALI_REG/nocobase/nocobase:$RELEASE_VERSION-full"
-            "nocobase/nocobase:$MAJOR_MINOR_VERSION-full"
-            "$ALI_REG/nocobase/nocobase:$MAJOR_MINOR_VERSION-full"
+            "nocobase/nocobase:$MINOR_TAG-full"
+            "$ALI_REG/nocobase/nocobase:$MINOR_TAG-full"
           )
 
           # For v1 maintenance tags, do not push a floating default tag (e.g. `latest-full`).

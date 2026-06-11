@@ -11,12 +11,13 @@ import { observer } from '@nocobase/flow-engine';
 import { Input } from 'antd';
 import { debounce } from 'lodash';
 import React, { useState, useMemo, useEffect } from 'react';
-import { useRecord } from '@nocobase/client';
+import { useCompile, useRecord } from '@nocobase/client';
 
 export const FieldTitleInput = observer(
   (props: any) => {
-    const { value, handleFieldChange } = props;
+    const { value, handleFieldChange, disabled } = props;
     const record = useRecord();
+    const compile = useCompile();
     const [titleValue, setTitleValue] = useState(value);
     // 实时更新
     const handleRealTimeChange = (newValue: string) => {
@@ -47,6 +48,9 @@ export const FieldTitleInput = observer(
     useEffect(() => {
       setTitleValue(value);
     }, [value]);
+    if (disabled) {
+      return <>{compile(value) || value}</>;
+    }
     return (
       <Input value={titleValue} onChange={handleChange} style={{ minWidth: '100px' }} aria-label="field-title-input" />
     );

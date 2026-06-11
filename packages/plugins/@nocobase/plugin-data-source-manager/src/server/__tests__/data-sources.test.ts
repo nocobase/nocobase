@@ -746,6 +746,59 @@ describe('data source', async () => {
       expect(collection2.getField('post')).toBeFalsy();
     });
 
+    it('should apply external data source relation field from compact input', async () => {
+      const dataSource = app.dataSourceManager.dataSources.get('mockInstance1');
+      const collection = dataSource.collectionManager.getCollection('comments');
+
+      expect(collection.getField('post')).toBeFalsy();
+
+      const applyResp = await app
+        .agent()
+        .resource('dataSourcesCollections.fields', 'mockInstance1.comments')
+        .apply({
+          values: {
+            interface: 'm2o',
+            name: 'post',
+            target: 'posts',
+            targetTitleField: 'title',
+          },
+        });
+
+      expect(applyResp.status).toBe(200);
+      expect(applyResp.body.data.data).toMatchObject({
+        collectionName: 'comments',
+        dataSourceKey: 'mockInstance1',
+        foreignKey: 'postId',
+        interface: 'm2o',
+        name: 'post',
+        sourceKey: 'id',
+        target: 'posts',
+        targetKey: 'id',
+        type: 'belongsTo',
+      });
+      expect(applyResp.body.data.data.uiSchema['x-component-props'].fieldNames).toMatchObject({
+        label: 'title',
+        value: 'id',
+      });
+      expect(collection.getField('post')).toBeTruthy();
+
+      const applyAgainResp = await app
+        .agent()
+        .resource('dataSourcesCollections.fields', 'mockInstance1.comments')
+        .apply({
+          values: {
+            interface: 'm2o',
+            name: 'post',
+            target: 'posts',
+            foreignKey: 'post_id',
+            targetKey: 'id',
+          },
+        });
+
+      expect(applyAgainResp.status).toBe(200);
+      expect(collection.getField('post').options.foreignKey).toBe('post_id');
+    });
+
     it(`should not return possibleTypes field when creating field`, async () => {
       const createResp = await app
         .agent()

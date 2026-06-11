@@ -15,7 +15,7 @@ pkg: '@nocobase/plugin-file-manager'
 
 現在、NocoBase は次のファイルプレビュープラグインを提供しています。
 
-* Office ファイルプレビュープラグイン
+* [Office ファイルプレビュープラグイン](../file-preview/ms-office.md)
 
 ## 外部ストレージでの PDF プレビュー
 

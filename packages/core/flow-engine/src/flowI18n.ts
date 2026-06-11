@@ -52,7 +52,8 @@ export class FlowI18n {
    */
   private translateKey(key: string, options?: any): string {
     if (this.context?.i18n?.t) {
-      return this.context.i18n.t(key, options);
+      const translated = this.context.i18n.t(key, options);
+      return translated == null || translated === '' ? key : translated;
     }
     // 如果没有翻译函数，返回原始键值
     return key;

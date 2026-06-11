@@ -13,18 +13,16 @@ import { ISchema, Schema, useField, useFieldSchema } from '@formily/react';
 import _ from 'lodash';
 import React, { useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import {
-  FormProvider,
-  SchemaComponent,
-  useActionContext,
-  useCollectionManager_deprecated,
-  useCollection_deprecated,
-  useDesignable,
-  useRecord,
-} from '..';
 import { useFormBlockContext } from '../block-provider/FormBlockProvider';
+import { useCollectionManager_deprecated } from '../collection-manager/hooks/useCollectionManager_deprecated';
+import { useCollection_deprecated } from '../collection-manager/hooks/useCollection_deprecated';
 import { useCollectionFilterOptionsV2 } from '../collection-manager/action-hooks';
 import { FlagProvider, useFlag } from '../flag-provider';
+import { useRecord } from '../record-provider';
+import { useActionContext } from '../schema-component/antd/action/hooks';
+import { FormProvider } from '../schema-component/core/FormProvider';
+import { SchemaComponent } from '../schema-component/core/SchemaComponent';
+import { useDesignable } from '../schema-component/hooks/useDesignable';
 import { useLocalVariables, useVariables } from '../variables';
 import { isVariable } from '../variables/utils/isVariable';
 import {

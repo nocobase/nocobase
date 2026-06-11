@@ -29,9 +29,14 @@ export const useToolCallActions = ({ messageId }: { messageId: string }) => {
   const toolsMap = toolsManager.useTools();
 
   const updateUserDecision = async (toolCallId: string, userDecision: UserDecision) => {
-    if (!isInterrupted(messageId, toolCallId)) {
-      const invokeStatus = getInvokeStatus(messageId, toolCallId);
+    if (!sessionId) {
+      throw new Error('sessionId is required to update tool call user decision');
+    }
+
+    if (!isInterrupted(sessionId, messageId, toolCallId)) {
+      const invokeStatus = getInvokeStatus(sessionId, messageId, toolCallId);
       console.warn('tool call invokeStatus is not interrupted', {
+        sessionId,
         messageId,
         toolCallId,
         invokeStatus,
@@ -46,8 +51,8 @@ export const useToolCallActions = ({ messageId }: { messageId: string }) => {
       return;
     }
 
-    updateToolCallInvokeStatus(messageId, toolCallId, 'waiting');
-    if (!isAllWaiting(messageId)) {
+    updateToolCallInvokeStatus(sessionId, messageId, toolCallId, 'waiting');
+    if (!isAllWaiting(sessionId, messageId)) {
       return;
     }
 

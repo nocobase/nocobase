@@ -1,0 +1,18 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Quick Start",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Pengantar",
+        "link": "/ui-development-field/"
+      },
+      {
+        "type": "custom-link",
+        "label": "Menulis Plugin Field",
+        "link": "/ui-development-field/write-a-field-plugin"
+      }
+    ]
+  }
+]

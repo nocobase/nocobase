@@ -12,7 +12,7 @@ import { ObjectField } from '@formily/core';
 import { useField } from '@formily/react';
 import classnames from 'classnames';
 import React from 'react';
-import { useDesignable } from '../../hooks';
+import { useDesignable } from '../../hooks/useDesignable';
 
 import { useCollectionParentRecordData } from '../../../data-source/collection-record/CollectionRecordProvider';
 import { withDynamicSchemaProps } from '../../../hoc/withDynamicSchemaProps';

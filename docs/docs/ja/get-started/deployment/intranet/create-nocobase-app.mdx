@@ -1,0 +1,386 @@
+---
+title: "イントラネット環境での NocoBase のインストールとアップグレード（create-nocobase-app 方式）"
+description: "NocoBase クイックスタート：イントラネット環境での NocoBase のインストールとアップグレード（create-nocobase-app 方式）"
+keywords: "create,nocobase,app,NocoBase"
+---
+
+# イントラネット環境での NocoBase のインストールとアップグレード（create-nocobase-app 方式）
+
+イントラネット環境では npm の公式ソースに直接アクセスできないため、外部ネットワーク環境でプロジェクトを作成して依存関係をインストールした後、完全なプロジェクトをパッケージ化してイントラネットサーバーに移行してデプロイする必要があります。
+
+**全体フロー**：外部ネットワークでプロジェクト作成 → 依存関係のインストールとパッケージ化 → イントラネットにコピー → 解凍して設定・起動
+
+:::tip 前提条件
+
+- 外部ネットワーク・イントラネットの両方のマシンに **Node.js >= 22**、**Yarn 1.22.x** がインストールされている必要があります
+- データベース：MySQL 8.0.17+、MariaDB 10.9+、PostgreSQL 10+ のいずれかを選択（イントラネットまたは外部ネットワークにデプロイ可能）
+- 外部ネットワークとイントラネットのマシンの **Node.js バージョン、OS アーキテクチャ**が一致している必要があります。一致しない場合、`node_modules` 内の一部のネイティブモジュールに互換性の問題が発生する可能性があります
+- 外部ネットワークとイントラネットのプロジェクト**インストールパスは同一**である必要があります（例：両方とも `/app/my-nocobase-app`）。一致しない場合、移行後に実行できません
+
+:::
+
+## 外部ネットワーク環境
+
+外部ネットワークにアクセスできる環境でプロジェクトを作成し、依存関係をインストールします。
+
+### 初回インストール
+
+#### 1. 外部ネットワーク環境でプロジェクトを作成
+
+npm にアクセス可能なマシンで実行します。**重要**：まず対象の親ディレクトリに移動してください（例：`cd /app`）。プロジェクト作成後のパスが `/app/my-nocobase-app` となるようにし、イントラネットのデプロイパスと一致させます。
+
+<Tabs>
+
+<Tab label="Latest バージョン">
+
+<Tabs>
+<Tab label="PostgreSQL">
+
+```bash
+yarn create nocobase-app my-nocobase-app -d postgres \
+   --skip-dev-dependencies \
+   -e APP_ENV=production \
+   -e DB_HOST=localhost \
+   -e DB_PORT=5432 \
+   -e DB_DATABASE=nocobase \
+   -e DB_USER=nocobase \
+   -e DB_PASSWORD=nocobase \
+   -e TZ=Asia/Shanghai
+```
+
+</Tab>
+
+<Tab label="MySQL">
+
+```bash
+yarn create nocobase-app my-nocobase-app -d mysql \
+   --skip-dev-dependencies \
+   -e APP_ENV=production \
+   -e DB_HOST=localhost \
+   -e DB_PORT=3306 \
+   -e DB_DATABASE=nocobase \
+   -e DB_USER=nocobase \
+   -e DB_PASSWORD=nocobase \
+   -e TZ=Asia/Shanghai
+```
+
+</Tab>
+
+<Tab label="MariaDB">
+
+```bash
+yarn create nocobase-app my-nocobase-app -d mariadb \
+   --skip-dev-dependencies \
+   -e APP_ENV=production \
+   -e DB_HOST=localhost \
+   -e DB_PORT=3306 \
+   -e DB_DATABASE=nocobase \
+   -e DB_USER=nocobase \
+   -e DB_PASSWORD=nocobase \
+   -e TZ=Asia/Shanghai
+```
+
+</Tab>
+</Tabs>
+
+</Tab>
+
+<Tab label="Beta バージョン">
+
+<Tabs>
+<Tab label="PostgreSQL">
+
+```bash
+npx create-nocobase-app@beta my-nocobase-app -d postgres \
+   --skip-dev-dependencies \
+   -e APP_ENV=production \
+   -e DB_HOST=localhost \
+   -e DB_PORT=5432 \
+   -e DB_DATABASE=nocobase \
+   -e DB_USER=nocobase \
+   -e DB_PASSWORD=nocobase \
+   -e TZ=Asia/Shanghai
+```
+
+</Tab>
+
+<Tab label="MySQL">
+
+```bash
+npx create-nocobase-app@beta my-nocobase-app -d mysql \
+   --skip-dev-dependencies \
+   -e APP_ENV=production \
+   -e DB_HOST=localhost \
+   -e DB_PORT=3306 \
+   -e DB_DATABASE=nocobase \
+   -e DB_USER=nocobase \
+   -e DB_PASSWORD=nocobase \
+   -e TZ=Asia/Shanghai
+```
+
+</Tab>
+
+<Tab label="MariaDB">
+
+```bash
+npx create-nocobase-app@beta my-nocobase-app -d mariadb \
+   --skip-dev-dependencies \
+   -e APP_ENV=production \
+   -e DB_HOST=localhost \
+   -e DB_PORT=3306 \
+   -e DB_DATABASE=nocobase \
+   -e DB_USER=nocobase \
+   -e DB_PASSWORD=nocobase \
+   -e TZ=Asia/Shanghai
+```
+
+</Tab>
+</Tabs>
+
+</Tab>
+
+<Tab label="Alpha バージョン">
+
+<Tabs>
+<Tab label="PostgreSQL">
+
+```bash
+npx create-nocobase-app@alpha my-nocobase-app -d postgres \
+   --skip-dev-dependencies \
+   -e APP_ENV=production \
+   -e DB_HOST=localhost \
+   -e DB_PORT=5432 \
+   -e DB_DATABASE=nocobase \
+   -e DB_USER=nocobase \
+   -e DB_PASSWORD=nocobase \
+   -e TZ=Asia/Shanghai
+```
+
+</Tab>
+
+<Tab label="MySQL">
+
+```bash
+npx create-nocobase-app@alpha my-nocobase-app -d mysql \
+   --skip-dev-dependencies \
+   -e APP_ENV=production \
+   -e DB_HOST=localhost \
+   -e DB_PORT=3306 \
+   -e DB_DATABASE=nocobase \
+   -e DB_USER=nocobase \
+   -e DB_PASSWORD=nocobase \
+   -e TZ=Asia/Shanghai
+```
+
+</Tab>
+
+<Tab label="MariaDB">
+
+```bash
+npx create-nocobase-app@alpha my-nocobase-app -d mariadb \
+   --skip-dev-dependencies \
+   -e APP_ENV=production \
+   -e DB_HOST=localhost \
+   -e DB_PORT=3306 \
+   -e DB_DATABASE=nocobase \
+   -e DB_USER=nocobase \
+   -e DB_PASSWORD=nocobase \
+   -e TZ=Asia/Shanghai
+```
+
+</Tab>
+</Tabs>
+
+</Tab>
+
+</Tabs>
+
+:::warning 注意
+
+- `--skip-dev-dependencies` は開発用依存関係のインストールをスキップします（本番環境デプロイ時に、サイズを削減するために必要な依存関係のみインストールできます）
+- `APP_ENV=production` はアプリケーション環境を本番環境に設定します
+- `TZ` はアプリケーションのタイムゾーンを設定するために使用します。デフォルトは OS のタイムゾーンです
+- `DB_*` はデータベース関連の設定です。実際のデータベース接続情報に合わせて変更してください
+
+:::
+
+#### 2. ディレクトリに移動
+
+```bash
+cd my-nocobase-app
+```
+
+#### 3. 依存関係のインストール
+
+```bash
+yarn install
+```
+
+:::tip 商用プラグイン（オプション）
+
+以下のステップ 4-7 は商用プラグインのダウンロード用です。オープンソース版のみ使用する場合は、ステップ 4-7 をスキップしてステップ 8 のパッケージ化に直接進んでください。
+
+:::
+
+#### 4. NocoBase のインストール
+
+```bash
+yarn nocobase install
+```
+
+#### 5. NocoBase の起動
+
+```bash
+yarn start
+```
+
+#### 6. License Key の入力
+
+以下にアクセスします：
+
+```
+http://<外部ネットワークサーバーIP>:13000/admin/settings/license-settings
+```
+
+#### 7. 商用プラグインのダウンロード
+
+```bash
+yarn nocobase pkg download-pro
+```
+
+#### 8. プロジェクトのパッケージ化
+
+```bash
+# my-nocobase-app ディレクトリ内で実行します。圧縮ファイルは親ディレクトリに生成されます
+# .env（機密情報を含む）を除外し、storage/plugins（商用プラグインなど）のみをパッケージ化します
+tar -czf ../nocobase-app.tar.gz \
+  --exclude='./.env' \
+  --exclude='./storage' \
+  . \
+  ./storage/plugins
+```
+
+### アプリケーションのアップグレード
+
+#### 1. アプリケーションコードとプラグインのアップグレード
+
+```bash
+yarn nocobase upgrade
+```
+
+#### 2. プロジェクトの再パッケージ化
+
+```bash
+tar -czf ../nocobase-app.tar.gz \
+  --exclude='./.env' \
+  --exclude='./storage' \
+  . \
+  ./storage/plugins
+```
+
+## イントラネット環境
+
+完全なプロジェクトをパッケージ化してイントラネットサーバーに移行します。
+
+### 初回インストール
+
+#### 1. アプリケーションコードとプラグインのアップロード
+
+`nocobase-app.tar.gz` を USB メモリやイントラネットファイル共有などの方法でイントラネットサーバーにコピーした後、解凍を実行します（tar.gz がカレントディレクトリにない場合は、フルパスを使用してください）：
+
+```bash
+mkdir -p /app/my-nocobase-app
+tar -xzf nocobase-app.tar.gz -C /app/my-nocobase-app
+```
+
+#### 2. ディレクトリに移動
+
+```bash
+cd /app/my-nocobase-app
+```
+
+#### 3. .env ファイルの設定
+
+プロジェクトルートディレクトリに `.env` ファイルを作成します。外部ネットワーク環境の設定を参考に、**以下の点を重点的に変更**してください：
+
+- `DB_HOST`：イントラネットのデータベースアドレスに変更（データベースがイントラネット上の別のサーバーにある場合）
+- `DB_PORT`、`DB_DATABASE`、`DB_USER`、`DB_PASSWORD`：イントラネットのデータベースの実際の設定に合わせる
+- `APP_KEY`：外部ネットワークと同じ値にすることを推奨します。異なる場合、既存のトークンが無効になります
+
+外部ネットワークのプロジェクトルートで `cat .env` を実行して完全な設定を確認し、コピーした後にイントラネット環境に合わせて変更できます。
+
+#### 4. NocoBase のインストール
+
+```bash
+yarn nocobase install
+```
+
+#### 5. NocoBase の起動
+
+```bash
+yarn start -d
+```
+
+#### 6. NocoBase へのログイン
+
+`http://<イントラネットサーバーIP>:13000` にアクセスし、初期化アカウントでログインします。
+
+#### 7. License Key の入力
+
+商用版ユーザーは License Key を入力する必要があります。以下にアクセスします：
+
+```
+http://<イントラネットサーバーIP>:13000/admin/settings/license-settings
+```
+
+### アプリケーションのアップグレード
+
+#### 1. アプリケーションの停止
+
+```bash
+cd /app/my-nocobase-app
+yarn nocobase pm2-stop
+```
+
+#### 2. アプリケーションコードとプラグインの上書き
+
+`nocobase-app.tar.gz` を USB メモリやイントラネットファイル共有などの方法でイントラネットサーバーにコピーした後、解凍を実行します：
+
+```bash
+tar -xzf nocobase-app.tar.gz -C /app/my-nocobase-app
+```
+
+#### 3. アプリケーションのアップグレード
+
+```bash
+cd /app/my-nocobase-app
+yarn nocobase upgrade --skip-code-update
+```
+
+#### 4. アプリケーションの再起動
+
+```bash
+yarn start -d
+```
+
+#### 5. License Key の入力（ライセンスに変更がある場合）
+
+ライセンスの認可に変更がある場合は、再入力が必要です。以下にアクセスします：
+
+```
+http://<イントラネットサーバーIP>:13000/admin/settings/license-settings
+```
+
+## よくある質問
+
+**Q：イントラネットで起動時にエラーが発生し、モジュールやバイナリファイルが見つからないと表示される場合は？**
+
+A：外部ネットワークとイントラネットの Node.js バージョンと OS アーキテクチャが一致しているか確認してください（例：両方とも Linux x64、Node 20.x）。一致しない場合は、同一の環境で `yarn install` を再実行してパッケージ化する必要があります。
+
+**Q：解凍後に実行するとパス関連のエラーが発生する場合は？**
+
+A：イントラネットの解凍パスと外部ネットワークの作成パスが一致していることを確認してください（例：両方とも `/app/my-nocobase-app`）。`tar -xzf` 実行時に `-C` で同じパスを指定できます。
+
+**Q：データベースへの接続に失敗する場合は？**
+
+A：`.env` の `DB_HOST` がイントラネットからアクセス可能なデータベースアドレスに変更されていること、ポートやファイアウォールルールが正しいことを確認してください。
