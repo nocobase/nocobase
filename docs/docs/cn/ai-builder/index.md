@@ -101,7 +101,7 @@ AI 先输出设计方案，确认后一次性搭建完成：
 
 ## NocoBase Skills
 
-[NocoBase Skills](https://github.com/nocobase/skills) 是可安装到 AI Agent 中的领域知识包，让 AI 理解 NocoBase 的配置体系。NocoBase 提供 8 个 Skills，覆盖搭建全流程：
+[NocoBase Skills](https://github.com/nocobase/skills) 是可安装到 AI Agent 中的领域知识包，让 AI 理解 NocoBase 的配置体系。NocoBase 提供 9 个 Skills，覆盖搭建全流程：
 
 - [环境管理](./env-bootstrap) — 环境检查、安装部署、升级和故障诊断
 - [数据建模](./data-modeling) — 创建和管理数据表、字段、关联关系
@@ -111,6 +111,7 @@ AI 先输出设计方案，确认后一次性搭建完成：
 - [解决方案](./dsl-reconciler) — 从 YAML 批量搭建整套业务系统
 - [插件管理](./plugin-manage) — 查看、启用和停用插件
 - [发布管理](./publish) — 跨环境发布、备份恢复和迁移
+- [版本管理](./version-control) — 在阶段性成果完成后保存可恢复版本
 
 :::tip 提示
 
