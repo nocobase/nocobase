@@ -10,6 +10,8 @@
 import { createMockServer, type MockServer } from '@nocobase/test';
 import { DEFAULT_ADMIN_UI_LAYOUT, DEFAULT_MOBILE_UI_LAYOUT } from '../../../../plugin-ui-layout/src/constants';
 
+const MULTI_PORTAL_RUNTIME_FIELDS = ['uid', 'title', 'routeName', 'routePath', 'authCheck', 'enabled', 'uiLayout'];
+
 describe('plugin-multi-portal server', () => {
   let app: MockServer | undefined;
 
@@ -145,5 +147,102 @@ describe('plugin-multi-portal server', () => {
         },
       }),
     ).rejects.toThrow();
+  });
+
+  it('should expose enabled portal manifests for runtime registration', async () => {
+    app = await createMockServer({
+      registerActions: true,
+      acl: true,
+      plugins: [
+        'error-handler',
+        'users',
+        'auth',
+        'client',
+        'field-sort',
+        'acl',
+        'ui-schema-storage',
+        'system-settings',
+        'data-source-main',
+        'data-source-manager',
+        'ui-layout',
+        'multi-portal',
+      ],
+    });
+    await app.db.sync();
+
+    const repository = app.db.getRepository('multiPortals');
+    await repository.create({
+      values: {
+        uid: 'desktop-runtime-portal',
+        title: 'Desktop runtime portal',
+        routeName: 'desktopRuntimePortal',
+        routePath: '/desktop-runtime-portal',
+        authCheck: true,
+        enabled: true,
+        uiLayoutUid: DEFAULT_ADMIN_UI_LAYOUT.uid,
+      },
+    });
+    await repository.create({
+      values: {
+        uid: 'mobile-runtime-portal',
+        title: 'Mobile runtime portal',
+        routeName: 'mobileRuntimePortal',
+        routePath: '/mobile-runtime-portal',
+        authCheck: false,
+        enabled: true,
+        uiLayoutUid: DEFAULT_MOBILE_UI_LAYOUT.uid,
+      },
+    });
+    await repository.create({
+      values: {
+        uid: 'disabled-runtime-portal',
+        title: 'Disabled runtime portal',
+        routeName: 'disabledRuntimePortal',
+        routePath: '/disabled-runtime-portal',
+        authCheck: true,
+        enabled: false,
+        uiLayoutUid: DEFAULT_ADMIN_UI_LAYOUT.uid,
+      },
+    });
+
+    const response = await app
+      .agent()
+      .get('/multiPortals:listEnabled')
+      .query({
+        filter: {
+          enabled: false,
+        },
+        fields: ['uid'],
+        appends: ['uiLayout.routeName'],
+        sort: '-uid',
+        page: 1,
+        pageSize: 1,
+      });
+    const portals = response.body.data as Array<Record<string, unknown>>;
+
+    expect(response.status).toBe(200);
+    expect(portals.map((portal) => portal.uid)).toEqual(['desktop-runtime-portal', 'mobile-runtime-portal']);
+    for (const portal of portals) {
+      expect(portal.enabled).toBe(true);
+      expect(Object.keys(portal).sort()).toEqual([...MULTI_PORTAL_RUNTIME_FIELDS].sort());
+      expect(Object.keys(portal.uiLayout as Record<string, unknown>).sort()).toEqual(['layoutType']);
+    }
+    expect(portals[0]).toMatchObject({
+      title: 'Desktop runtime portal',
+      routeName: 'desktopRuntimePortal',
+      routePath: '/desktop-runtime-portal',
+      uiLayout: {
+        layoutType: DEFAULT_ADMIN_UI_LAYOUT.layoutType,
+      },
+    });
+    expect(portals[1]).toMatchObject({
+      title: 'Mobile runtime portal',
+      routeName: 'mobileRuntimePortal',
+      routePath: '/mobile-runtime-portal',
+      authCheck: false,
+      uiLayout: {
+        layoutType: DEFAULT_MOBILE_UI_LAYOUT.layoutType,
+      },
+    });
   });
 });

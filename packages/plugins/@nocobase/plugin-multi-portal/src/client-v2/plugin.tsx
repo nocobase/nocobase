@@ -8,9 +8,12 @@
  */
 
 import { Plugin } from '@nocobase/client-v2';
+import { registerMultiPortalsFromApi } from './layoutRegistration';
 
 export class PluginMultiPortalClientV2 extends Plugin {
-  async load() {}
+  async load() {
+    await registerMultiPortalsFromApi(this.app);
+  }
 }
 
 export default PluginMultiPortalClientV2;
