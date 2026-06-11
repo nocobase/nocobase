@@ -29,16 +29,19 @@ nb --version
 默认推荐直接打开可视化向导：
 
 ```bash
-nb init --ui
+nb init --ui --locale zh-CN
 ```
 
-向导里按顺序完成这几件事：
+![2026-06-11-20-14-32](https://static-docs.nocobase.com/2026-06-11-20-14-32.png)
 
-1. 设置应用名称——它同时也是 CLI 里的 env 名
-2. 选择「全新安装」
-3. 选择安装方式——Docker、npm 或 Git
-4. 设置端口、数据库和管理员账号
-5. 等待下载、安装和启动完成
+不同 setup 路径看到的步骤不完全一样。不过如果你走的是默认的「新安装」路径，通常会依次看到这 6 步：
+
+1. 「开始设置」——设置 `--env` 标识，并选择「新安装」
+2. 「应用环境信息」——设置应用的基础信息、存储位置和运行端口
+3. 「应用来源和版本」——选择应用的获取方式，以及要使用的来源和版本
+4. 「配置数据库」——选择内置数据库或自定义数据库
+5. 「创建管理员账号」——设置第一个管理员账号
+6. 「连接与认证」——填写应用访问地址并选择认证方式
 
 如果你更习惯终端交互，也可以直接运行：
 
@@ -75,7 +78,7 @@ nb config set default-api-host <server-ip>
 
 ```bash
 nb env list
-nb env status
+nb env info
 nb app logs
 ```
 
@@ -91,3 +94,11 @@ CLI 的配置默认保存在 `~/.nocobase/`，所以 AI Agent 通常可以在任
 - 如果你要继续做生产环境部署，直接看 [使用 CLI 安装应用](../nocobase-cli/installation/cli.md) 和 [生产环境部署概述](../nocobase-cli/production/index.md)
 - 如果你想继续让 AI 开始搭建应用，直接看 [AI 搭建](../ai-builder/index.md)
 
+## 相关链接
+
+- [安装方式和版本对比](../get-started/quickstart.md) — 先比较不同安装方式和版本通道，再决定怎么安装
+- [AI Agent 接入指南](./quick-start.mdx) — 连接已有的 NocoBase 应用，让 AI Agent 开始工作
+- [`nb init` 命令参考](../api/cli/init.md) — 初始化应用、接管本机已有应用或连接远程应用
+- [`nb env info` 命令参考](../api/cli/env/info.md) — 查看当前 env 的连接信息和运行配置
+- [NocoBase CLI 命令参考](../api/cli/index.md) — 所有 `nb` 命令的完整参数说明
+- [多环境管理](../nocobase-cli/operations/multi-environment.md) — 同时维护多个 env 时的常用操作

@@ -32,13 +32,16 @@ Rekomendasi defaultnya adalah langsung membuka wizard visual:
 nb init --ui
 ```
 
-Di dalam wizard, selesaikan langkah-langkah berikut secara berurutan:
+![2026-06-11-20-14-32](https://static-docs.nocobase.com/2026-06-11-20-14-32.png)
 
-1. Atur nama aplikasi - nama ini juga akan menjadi nama env di CLI
-2. Pilih "Instalasi Baru"
-3. Pilih metode instalasi - Docker, npm, atau Git
-4. Atur port, database, dan akun administrator
-5. Tunggu hingga proses unduh, instalasi, dan startup selesai
+Tergantung jalur setup yang Anda pilih, langkah yang muncul bisa sedikit berbeda. Jika Anda mengikuti jalur default `Install a new app`, biasanya Anda akan melihat enam langkah berikut:
+
+1. `Getting started` - tetapkan identifier `--env` dan pilih `Install a new app`
+2. `App environment` - atur informasi dasar aplikasi, lokasi penyimpanan, dan port runtime
+3. `App source and version` - pilih cara mendapatkan aplikasi serta source dan version yang akan digunakan
+4. `Configure the database` - pilih database bawaan atau database kustom
+5. `Create an admin account` - siapkan akun administrator pertama
+6. `Connection & authentication` - masukkan URL akses aplikasi dan pilih metode autentikasi
 
 Jika Anda lebih nyaman bekerja lewat terminal, Anda juga bisa langsung menjalankan:
 
@@ -75,7 +78,7 @@ Perintah yang umum dipakai:
 
 ```bash
 nb env list
-nb env status
+nb env info
 nb app logs
 ```
 
@@ -85,8 +88,11 @@ Konfigurasi CLI secara default disimpan di `~/.nocobase/`, sehingga AI Agents bi
 
 Jika aplikasi ini nantinya akan dibuka untuk pengguna sungguhan, kami tidak menyarankan penggunaan jangka panjang dengan `IP + port` secara langsung. Langkah berikutnya biasanya adalah menambahkan reverse proxy dan mengaktifkan HTTPS.
 
-## Langkah berikutnya
+## Tautan terkait
 
-- Jika Anda sudah memiliki instance NocoBase yang sedang berjalan, langsung lihat [Panduan Integrasi AI Agent](./quick-start.mdx)
-- Jika Anda ingin melanjutkan ke deployment production, langsung lihat [Instal menggunakan CLI](../nocobase-cli/installation/cli.md) dan [Ringkasan deployment production](../nocobase-cli/production/index.md)
-- Jika Anda ingin AI mulai membangun aplikasi setelah ini, langsung lihat [AI Builder](../ai-builder/index.md)
+- [Perbandingan Metode Instalasi dan Versi](../get-started/quickstart.md) — Bandingkan dulu metode instalasi dan kanal versi, lalu putuskan cara instalasinya
+- [Panduan Integrasi AI Agent](./quick-start.mdx) — Hubungkan aplikasi NocoBase yang sudah ada dan biarkan AI Agent mulai bekerja
+- [Referensi perintah `nb init`](../api/cli/init.md) — Inisialisasi aplikasi baru, ambil alih aplikasi lokal yang sudah ada, atau hubungkan aplikasi remote
+- [Referensi perintah `nb env info`](../api/cli/env/info.md) — Lihat detail koneksi dan konfigurasi runtime dari env saat ini
+- [NocoBase CLI](../api/cli/index.md) — Referensi lengkap untuk semua perintah `nb`
+- [Beberapa manajemen lingkungan](../nocobase-cli/operations/multi-environment.md) — Operasi umum saat Anda memelihara beberapa env sekaligus
