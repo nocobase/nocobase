@@ -12,6 +12,11 @@ import { DEFAULT_ADMIN_UI_LAYOUT, DEFAULT_MOBILE_UI_LAYOUT } from '../../../../p
 
 const MULTI_PORTAL_RUNTIME_FIELDS = ['uid', 'title', 'routeName', 'routePath', 'authCheck', 'enabled', 'uiLayout'];
 
+interface RouteResponseItem {
+  title?: string;
+  children?: RouteResponseItem[];
+}
+
 async function createMultiPortalAclMockServer() {
   return createMockServer({
     registerActions: true,
@@ -31,6 +36,13 @@ async function createMultiPortalAclMockServer() {
       'multi-portal',
     ],
   });
+}
+
+function collectRouteTitles(routes: RouteResponseItem[] = []) {
+  return routes.flatMap((route) => [
+    ...(typeof route.title === 'string' ? [route.title] : []),
+    ...collectRouteTitles(route.children),
+  ]);
 }
 
 describe('plugin-multi-portal server', () => {
@@ -434,6 +446,133 @@ describe('plugin-multi-portal server', () => {
     expect(secondListResponse.body.data).toEqual([]);
     expect(firstGetResponse.body.data.title).toBe('DATA-PORTAL-SCOPED-ROUTE');
     expect(secondGetResponse.body.data ?? null).toBeNull();
+  });
+
+  it('should enforce explicit route parent chain inside portal permissions', async () => {
+    app = await createMultiPortalAclMockServer();
+
+    const portal = await app.db.getRepository('multiPortals').create({
+      values: {
+        uid: 'explicit-parent-chain-portal',
+        title: 'Explicit parent chain portal',
+        routeName: 'explicitParentChainPortal',
+        routePath: '/explicit-parent-chain-portal',
+        authCheck: true,
+        enabled: true,
+        uiLayoutUid: DEFAULT_ADMIN_UI_LAYOUT.uid,
+      },
+    });
+    const parentRoute = await app.db.getRepository('desktopRoutes').create({
+      values: {
+        type: 'flowPage',
+        title: 'DATA-PORTAL-PARENT-ROUTE',
+        schemaUid: 'portal-parent-route',
+        hidden: false,
+        sort: 10,
+      },
+    });
+    const childRoute = await app.db.getRepository('desktopRoutes').create({
+      values: {
+        type: 'flowPage',
+        title: 'DATA-PORTAL-CHILD-ROUTE',
+        schemaUid: 'portal-child-route',
+        parentId: parentRoute.get('id'),
+        hidden: false,
+        sort: 20,
+      },
+    });
+    const role = await app.db.getRepository('roles').create({
+      values: {
+        name: 'multi-portal-parent-chain-member',
+      },
+    });
+    await app.db.getRepository('desktopRoutes.uiLayouts', parentRoute.get('id')).set({
+      tk: [DEFAULT_ADMIN_UI_LAYOUT.uid],
+    });
+    await app.db.getRepository('desktopRoutes.uiLayouts', childRoute.get('id')).set({
+      tk: [DEFAULT_ADMIN_UI_LAYOUT.uid],
+    });
+    await app.db.getRepository('rolesMultiPortals').create({
+      values: {
+        roleName: role.get('name'),
+        multiPortalUid: portal.get('uid'),
+      },
+    });
+
+    const memberUser = await app.db.getRepository('users').create({
+      values: {
+        roles: [role.get('name')],
+      },
+    });
+    const rootUser = await app.db.getRepository('users').findOne({
+      filter: {
+        'roles.name': 'root',
+      },
+    });
+    const memberAgent = await app.agent().login(memberUser);
+    const rootAgent = await app.agent().login(rootUser);
+    const routePermissionsRepository = app.db.getRepository('rolesMultiPortalDesktopRoutes');
+
+    const resetRoutePermissions = async (desktopRouteIds: unknown[]) => {
+      await routePermissionsRepository.destroy({
+        filter: {
+          roleName: role.get('name'),
+          multiPortalUid: portal.get('uid'),
+        },
+      });
+
+      for (const desktopRouteId of desktopRouteIds) {
+        await routePermissionsRepository.create({
+          values: {
+            roleName: role.get('name'),
+            multiPortalUid: portal.get('uid'),
+            desktopRouteId,
+          },
+        });
+      }
+    };
+    const listAccessibleRouteTitles = async () => {
+      const response = await memberAgent.get('/desktopRoutes:listAccessible').query({
+        layout: portal.get('uid'),
+      });
+
+      expect(response.status).toBe(200);
+      return collectRouteTitles(response.body.data as RouteResponseItem[]);
+    };
+
+    await resetRoutePermissions([childRoute.get('id')]);
+    const childOnlyChildGetResponse = await memberAgent.get('/desktopRoutes:getAccessible').query({
+      filterByTk: childRoute.get('id'),
+      layout: portal.get('uid'),
+    });
+    expect(await listAccessibleRouteTitles()).toEqual([]);
+    expect(childOnlyChildGetResponse.body.data ?? null).toBeNull();
+
+    await resetRoutePermissions([parentRoute.get('id')]);
+    const parentOnlyParentGetResponse = await memberAgent.get('/desktopRoutes:getAccessible').query({
+      filterByTk: parentRoute.get('id'),
+      layout: portal.get('uid'),
+    });
+    const parentOnlyChildGetResponse = await memberAgent.get('/desktopRoutes:getAccessible').query({
+      filterByTk: childRoute.get('id'),
+      layout: portal.get('uid'),
+    });
+    expect(await listAccessibleRouteTitles()).toEqual(['DATA-PORTAL-PARENT-ROUTE']);
+    expect(parentOnlyParentGetResponse.body.data.title).toBe('DATA-PORTAL-PARENT-ROUTE');
+    expect(parentOnlyChildGetResponse.body.data ?? null).toBeNull();
+
+    await resetRoutePermissions([parentRoute.get('id'), childRoute.get('id')]);
+    const parentAndChildGetResponse = await memberAgent.get('/desktopRoutes:getAccessible').query({
+      filterByTk: childRoute.get('id'),
+      layout: portal.get('uid'),
+    });
+    const rootListResponse = await rootAgent.get('/desktopRoutes:listAccessible').query({
+      layout: portal.get('uid'),
+    });
+    expect(await listAccessibleRouteTitles()).toEqual(['DATA-PORTAL-PARENT-ROUTE', 'DATA-PORTAL-CHILD-ROUTE']);
+    expect(parentAndChildGetResponse.body.data.title).toBe('DATA-PORTAL-CHILD-ROUTE');
+    expect(rootListResponse.status).toBe(200);
+    expect(collectRouteTitles(rootListResponse.body.data as RouteResponseItem[])).toContain('DATA-PORTAL-PARENT-ROUTE');
   });
 
   it('should expose enabled portal manifests for runtime registration', async () => {
