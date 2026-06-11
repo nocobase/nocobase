@@ -54,6 +54,7 @@
     "apiBaseUrl": {
       "invalid": "Enter a valid URL, for example {{example}}.",
       "invalidProtocol": "URL must start with http:// or https://, for example {{example}}.",
+      "missingApiPrefix": "The API base URL must include the /api prefix, for example {{example}}.",
       "healthCheckPathNotAllowed": "Do not include /__health_check in the API base URL. Enter the application API base URL, for example http://localhost:13000/api.",
       "maintaining": "The API base URL is reachable, but the app is still starting or in maintenance mode. Please try again later.",
       "healthCheckFailed": "The API base URL did not pass the health check (HTTP {{status}}). Make sure it points to a running NocoBase API endpoint.",
@@ -149,7 +150,7 @@
         "appEntryMissingInclude": "The editable app entry config at {{appConfigPath}} does not reference {{generatedConfigPath}}. Add the managed generated-config reference back into the editable app entry and rerun the command.",
         "nginxOutputUnsupported": "The nginx provider does not support `--output`. It writes `app.conf`, `public/index-v1.html`, `public/index-v2.html`, and `nocobase.conf` into `~/.nocobase/proxy/nginx/<env>/`.",
         "caddyOutputUnsupported": "The caddy provider does not support `--output`. It writes `app.caddy`, `generated.caddy`, `public/index-v1.html`, `public/index-v2.html`, and `nocobase.caddy` into `~/.nocobase/proxy/caddy/<env>/`.",
-        "nginxAppEntryMissingManagedBlock": "The editable nginx app entry config at {{appConfigPath}} does not contain the NocoBase managed block. Restore the managed block or delete the file and rerun `nb env proxy`."
+        "nginxAppEntryMissingManagedBlock": "The editable nginx app entry config at {{appConfigPath}} does not contain the NocoBase managed block. Restore the managed block or delete the file and rerun `nb proxy nginx generate`."
       }
     },
     "shared": {
@@ -201,7 +202,7 @@
         },
         "messages": {
           "activated": "Activated the license for env \"{{envName}}\".",
-          "savedLicenseKey": "Saved license key at {{licenseKeyPath}}"
+          "savedLicenseKey": "Saved the license key securely for this env"
         }
       }
     },

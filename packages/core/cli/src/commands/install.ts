@@ -49,6 +49,7 @@ import { clearEnvRootSetup, getEnv, loadAuthConfig, setCurrentEnv, type Env, ups
 import { buildStoredEnvConfig, type StoredEnvConfig } from '../lib/env-config.js';
 import { resolveDockerEnvFileArg } from '../lib/docker-env-file.ts';
 import { startDockerLogFollower } from '../lib/docker-log-stream.js';
+import { buildInitAppEnvVarsFromConfig } from '../lib/managed-init-env.js';
 import {
   areConfiguredPathsEquivalent,
   deriveConfiguredSourcePath,
@@ -554,6 +555,10 @@ export default class Install extends Command {
     }),
     'skip-save-env-log': Flags.boolean({
       hidden: true,
+      default: false,
+    }),
+    'prepare-only': Flags.boolean({
+      description: 'Prepare the env and save config without installing or starting the application yet',
       default: false,
     }),
     env: Flags.string({
@@ -1401,7 +1406,7 @@ export default class Install extends Command {
     }
   }
 
-  private static buildResumePresetValues(env: Pick<Env, 'name' | 'config'>): ResumePresetValues {
+  static buildResumePresetValues(env: Pick<Env, 'name' | 'config'>) {
     const envName = String(env.name ?? '').trim();
     const config = env.config ?? {};
     const source = Install.toOptionalPromptString(config.source);
@@ -1430,10 +1435,12 @@ export default class Install extends Command {
     const rootEmail = Install.toOptionalPromptString(config.rootEmail);
     const rootPassword = Install.toOptionalPromptString(config.rootPassword);
     const rootNickname = Install.toOptionalPromptString(config.rootNickname);
+    const lang = Install.toOptionalPromptString(config.lang);
     const auth = config.auth as { type?: string; accessToken?: string } | undefined;
     const savedAuthType = Install.toOptionalPromptString(config.authType) ?? Install.toOptionalPromptString(auth?.type);
 
     const appPreset: PromptInitialValues = {
+      ...(lang ? { lang } : {}),
       ...(appPath ? { appPath } : {}),
       ...(appRootPath ? { appRootPath } : {}),
       ...(appPort ? { appPort } : {}),
@@ -1510,21 +1517,36 @@ export default class Install extends Command {
     };
   }
 
-  private static buildResumeMissingYesFlags(flags: InstallParsedFlags): string[] {
+  private static buildResumeMissingYesFlags(
+    flags: InstallParsedFlags,
+    resumePreset: Pick<ResumePresetValues, 'appPreset' | 'rootPreset'>,
+  ): string[] {
     const missing: string[] = [];
-    if (!Install.toOptionalPromptString(flags.lang)) {
+    if (!Install.toOptionalPromptString(flags.lang) && !Install.toOptionalPromptString(resumePreset.appPreset.lang)) {
       missing.push('--lang');
     }
-    if (!Install.toOptionalPromptString(flags['root-username'])) {
+    if (
+      !Install.toOptionalPromptString(flags['root-username']) &&
+      !Install.toOptionalPromptString(resumePreset.rootPreset.rootUsername)
+    ) {
       missing.push('--root-username');
     }
-    if (!Install.toOptionalPromptString(flags['root-email'])) {
+    if (
+      !Install.toOptionalPromptString(flags['root-email']) &&
+      !Install.toOptionalPromptString(resumePreset.rootPreset.rootEmail)
+    ) {
       missing.push('--root-email');
     }
-    if (!Install.toOptionalPromptString(flags['root-password'])) {
+    if (
+      !Install.toOptionalPromptString(flags['root-password']) &&
+      !Install.toOptionalPromptString(resumePreset.rootPreset.rootPassword)
+    ) {
       missing.push('--root-password');
     }
-    if (!Install.toOptionalPromptString(flags['root-nickname'])) {
+    if (
+      !Install.toOptionalPromptString(flags['root-nickname']) &&
+      !Install.toOptionalPromptString(resumePreset.rootPreset.rootNickname)
+    ) {
       missing.push('--root-nickname');
     }
     return missing;
@@ -1543,8 +1565,10 @@ export default class Install extends Command {
       throw new Error(formatMissingManagedAppEnvMessage(parsed.env));
     }
 
+    const resumePreset = Install.buildResumePresetValues(env);
+
     if (yes) {
-      const missingFlags = Install.buildResumeMissingYesFlags(parsed);
+      const missingFlags = Install.buildResumeMissingYesFlags(parsed, resumePreset);
       if (missingFlags.length > 0) {
         throw new Error(
           [
@@ -1556,7 +1580,7 @@ export default class Install extends Command {
       }
     }
 
-    return Install.buildResumePresetValues(env);
+    return resumePreset;
   }
 
   static async resolveAvailableDefaultPort(
@@ -1767,7 +1791,7 @@ export default class Install extends Command {
       preset.buildDts = flags['build-dts'];
     }
 
-    if (yes) {
+    if (yes && !flags.resume) {
       preset.source ??= 'docker';
       preset.version ??= 'alpha';
       preset.outputDir ??= appRoot;
@@ -1832,22 +1856,13 @@ export default class Install extends Command {
     appResults: Record<string, PromptValue>;
     rootResults: Record<string, PromptValue>;
   }): Record<string, string> {
-    const out: Record<string, string> = {};
-    const put = (key: string, value: PromptValue | undefined) => {
-      const text = String(value ?? '').trim();
-      if (!text) {
-        return;
-      }
-      out[key] = text;
-    };
-
-    put('INIT_APP_LANG', params.appResults.lang);
-    put('INIT_ROOT_USERNAME', params.rootResults.rootUsername);
-    put('INIT_ROOT_EMAIL', params.rootResults.rootEmail);
-    put('INIT_ROOT_PASSWORD', params.rootResults.rootPassword);
-    put('INIT_ROOT_NICKNAME', params.rootResults.rootNickname);
-
-    return out;
+    return buildInitAppEnvVarsFromConfig({
+      lang: String(params.appResults.lang ?? ''),
+      rootUsername: String(params.rootResults.rootUsername ?? ''),
+      rootEmail: String(params.rootResults.rootEmail ?? ''),
+      rootPassword: String(params.rootResults.rootPassword ?? ''),
+      rootNickname: String(params.rootResults.rootNickname ?? ''),
+    });
   }
 
   private static shouldPublishBuiltinDbPort(source: PromptValue | undefined): boolean {
@@ -2949,6 +2964,7 @@ export default class Install extends Command {
       authType,
       ...(authUsername ? { authUsername } : {}),
       accessToken: params.envAddResults.accessToken,
+      setupState: params.appResults.setupState,
       source: downloadResultsValue(params.downloadResults, 'source'),
       downloadVersion: downloadResultsValue(params.downloadResults, 'version'),
       dockerRegistry: downloadResultsValue(params.downloadResults, 'dockerRegistry'),
@@ -2964,6 +2980,7 @@ export default class Install extends Command {
       ...(storagePath && !areConfiguredPathsEquivalent(storagePath, derivedStoragePath) ? { storagePath } : {}),
       ...(appPublicPath ? { appPublicPath } : {}),
       ...(envFile ? { envFile } : {}),
+      lang: params.appResults.lang,
       appKey: params.appResults.appKey,
       timezone: params.appResults.timeZone,
       builtinDb: params.dbResults.builtinDb,
@@ -3168,6 +3185,7 @@ export default class Install extends Command {
       envName,
       appResults,
     });
+    appResults.setupState = 'prepared';
 
     const source = String(downloadResultsValue(downloadResults, 'source') ?? '').trim();
     const usesDockerResources = Boolean(dbResults.builtinDb) || source === 'docker';
@@ -3238,20 +3256,22 @@ export default class Install extends Command {
           });
           printInfo('Application image ready.');
         }
-        dockerAppPlan = await this.installDockerApp({
-          envName,
-          dockerNetworkName,
-          dockerContainerPrefix,
-          appResults,
-          downloadResults,
-          dbResults,
-          rootResults,
-          builtinDbPlan,
-          force: parsed.force,
-          commandStdio,
-        });
-        appResults.appKey = dockerAppPlan.appKey;
-        appResults.timeZone = dockerAppPlan.timeZone;
+        if (!parsed['prepare-only']) {
+          dockerAppPlan = await this.installDockerApp({
+            envName,
+            dockerNetworkName,
+            dockerContainerPrefix,
+            appResults,
+            downloadResults,
+            dbResults,
+            rootResults,
+            builtinDbPlan,
+            force: parsed.force,
+            commandStdio,
+          });
+          appResults.appKey = dockerAppPlan.appKey;
+          appResults.timeZone = dockerAppPlan.timeZone;
+        }
       } else if (source === 'npm' || source === 'git') {
         const localSource: 'npm' | 'git' = source === 'npm' ? 'npm' : 'git';
         const projectRoot = parsed['skip-download']
@@ -3269,17 +3289,19 @@ export default class Install extends Command {
         if (!parsed['skip-download']) {
           printInfo('Application files ready.');
         }
-        localAppPlan = await this.startLocalApp({
-          envName,
-          source: localSource,
-          projectRoot,
-          appResults,
-          dbResults,
-          rootResults,
-          commandStdio,
-        });
-        appResults.appKey = localAppPlan.appKey;
-        appResults.timeZone = localAppPlan.timeZone;
+        if (!parsed['prepare-only']) {
+          localAppPlan = await this.startLocalApp({
+            envName,
+            source: localSource,
+            projectRoot,
+            appResults,
+            dbResults,
+            rootResults,
+            commandStdio,
+          });
+          appResults.appKey = localAppPlan.appKey;
+          appResults.timeZone = localAppPlan.timeZone;
+        }
       }
     } else {
       this.logDetail('Skipped app download and install.');
@@ -3304,6 +3326,7 @@ export default class Install extends Command {
         defaultApiHost,
       });
       printInfo(`NocoBase is ready at ${formatInstallDisplayUrl(displayApiBaseUrl)}`);
+      appResults.setupState = 'installed';
     }
 
     if (dockerAppPlan || localAppPlan || builtinDbPlan) {
@@ -3323,9 +3346,15 @@ export default class Install extends Command {
       appReady: Boolean(dockerAppPlan || localAppPlan),
       skipAuth: Boolean(parsed['skip-auth']),
     });
-    await clearEnvRootSetup(envName, { scope: resolveDefaultConfigScope() });
+    if (!parsed['prepare-only']) {
+      await clearEnvRootSetup(envName, { scope: resolveDefaultConfigScope() });
+    }
 
-    if (!dockerAppPlan && !localAppPlan) {
+    if (parsed['prepare-only']) {
+      printInfo(
+        `Preparation complete for "${envName}". Activate the license, then run \`nb app start --env ${envName}\`.`,
+      );
+    } else if (!dockerAppPlan && !localAppPlan) {
       printInfo(`Install config for "${envName}" has been saved.`);
     }
   }

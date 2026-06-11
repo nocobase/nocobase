@@ -1,18 +1,18 @@
 {
   "name": "@nocobase/app",
-  "version": "2.1.0-beta.46",
+  "version": "2.2.0-beta.1",
   "description": "",
   "license": "Apache-2.0",
   "main": "./lib/index.js",
   "types": "./lib/index.d.ts",
   "dependencies": {
-    "@nocobase/cli-v1": "2.1.0-beta.46",
-    "@nocobase/database": "2.1.0-beta.46",
-    "@nocobase/preset-nocobase": "2.1.0-beta.46",
-    "@nocobase/server": "2.1.0-beta.46"
+    "@nocobase/cli-v1": "2.2.0-beta.1",
+    "@nocobase/database": "2.2.0-beta.1",
+    "@nocobase/preset-nocobase": "2.2.0-beta.1",
+    "@nocobase/server": "2.2.0-beta.1"
   },
   "devDependencies": {
-    "@nocobase/client": "2.1.0-beta.46"
+    "@nocobase/client": "2.2.0-beta.1"
   },
   "repository": {
     "type": "git",

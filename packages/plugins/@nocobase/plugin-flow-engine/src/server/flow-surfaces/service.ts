@@ -2225,6 +2225,7 @@ export class FlowSurfacesService {
     const parentRoute = await this.assertMenuParentIsGroup(values.parentMenuRouteId, transaction);
     this.assertVisibleNavigationIcon('createMenu', 'values', values);
     const pageSchemaUid = values.pageSchemaUid || uid();
+    const menuSchemaUid = uid();
     const pageUid = values.pageUid || uid();
     const tabSchemaUid = values.tabSchemaUid || uid();
     const tabSchemaName = values.tabSchemaName || uid();
@@ -2240,6 +2241,7 @@ export class FlowSurfacesService {
         icon: values.icon,
         tooltip: values.tooltip,
         schemaUid: pageSchemaUid,
+        menuSchemaUid,
         hideInMenu: !!values.hideInMenu,
         enableTabs: false,
         displayTitle: values.displayTitle !== false,
@@ -2295,6 +2297,7 @@ export class FlowSurfacesService {
 
     return this.buildMenuResult(route, {
       pageSchemaUid,
+      menuSchemaUid,
       pageUid,
       tabRouteId: this.readRouteField(tabRoute, 'id'),
       tabSchemaUid,
@@ -4545,6 +4548,13 @@ export class FlowSurfacesService {
       POPUP_ACTION_USES.has(popupProfile.popupHostUse)
     ) {
       return '{{ctx.view.inputArgs.filterByTk}}';
+    }
+    return `{{ctx.record.${this.getCollectionFilterTargetKey(popupProfile.currentCollection)}}}`;
+  }
+
+  private resolveLocalActionPopupOpenViewFilterByTk(popupProfile: FlowSurfacePopupBlockProfile | null | undefined) {
+    if (!popupProfile?.hasCurrentRecord || !popupProfile.currentCollection) {
+      return undefined;
     }
     return `{{ctx.record.${this.getCollectionFilterTargetKey(popupProfile.currentCollection)}}}`;
   }
@@ -9722,6 +9732,7 @@ export class FlowSurfacesService {
     const enableTabs = !!values.enableTabs;
     const displayTitle = values.displayTitle !== false;
     const title = values.title || this.readRouteField(route, 'title') || pageSchemaUid;
+    const menuSchemaUid = this.readRouteField(route, 'menuSchemaUid');
     const nextRouteOptions = {
       ...routeOptions,
       ...(values.routeOptions || {}),
@@ -9784,6 +9795,7 @@ export class FlowSurfacesService {
       values: {
         title,
         icon: Object.prototype.hasOwnProperty.call(values, 'icon') ? values.icon : this.readRouteField(route, 'icon'),
+        ...(!_.isNil(menuSchemaUid) && menuSchemaUid !== '' ? { menuSchemaUid } : {}),
         enableTabs,
         enableHeader: values.enableHeader,
         displayTitle,
@@ -9817,6 +9829,7 @@ export class FlowSurfacesService {
       routeId,
       parentMenuRouteId: this.readRouteField(route, 'parentId') ?? null,
       pageSchemaUid,
+      ...(!_.isNil(menuSchemaUid) && menuSchemaUid !== '' ? { menuSchemaUid } : {}),
       pageUid,
       tabSchemaUid,
       tabRouteId: this.readRouteField(tabRoute, 'id'),
@@ -17344,7 +17357,7 @@ export class FlowSurfacesService {
       : popupProfile?.currentCollection
         ? this.getCollectionFilterTargetKey(popupProfile.currentCollection)
         : null;
-    const defaultFilterByTk = this.resolvePopupCurrentRecordResourceFilterByTk(popupProfile);
+    const defaultFilterByTk = this.resolveLocalActionPopupOpenViewFilterByTk(popupProfile);
     const currentFilterByTk = _.isString(currentOpenView.filterByTk) ? currentOpenView.filterByTk.trim() : '';
     const preserveCustomFilterByTk =
       currentFilterByTk &&
@@ -17394,9 +17407,12 @@ export class FlowSurfacesService {
     }
 
     const currentOpenView = this.resolvePopupHostOpenView(actionNode, options.jsonInferredPopupHostOpenViewPath);
+    if (this.isExternalPopupOpenView(currentOpenView, actionNode.uid)) {
+      return;
+    }
     if (
-      this.isExternalPopupOpenView(currentOpenView, actionNode.uid) ||
-      hasConfiguredFlowContextValue(currentOpenView?.filterByTk)
+      hasConfiguredFlowContextValue(currentOpenView?.filterByTk) &&
+      this.normalizeFlowContextTemplateValue(currentOpenView?.filterByTk) !== '{{ctx.view.inputArgs.filterByTk}}'
     ) {
       return;
     }
@@ -17425,11 +17441,15 @@ export class FlowSurfacesService {
     const currentFilterByTk = _.isString(currentGroupOpenView?.filterByTk)
       ? currentGroupOpenView.filterByTk.trim()
       : '';
-    const defaultFilterByTk = this.resolvePopupCurrentRecordResourceFilterByTk(popupProfile);
+    const defaultFilterByTk = this.resolveLocalActionPopupOpenViewFilterByTk(popupProfile);
+    const normalizedCurrentFilterByTk = this.normalizeFlowContextTemplateValue(currentGroupOpenView?.filterByTk);
+    const normalizedDefaultFilterByTk = this.normalizeFlowContextTemplateValue(defaultFilterByTk);
+    const normalizedExpectedRecordFilterByTk = filterTargetKey ? `{{ctx.record.${filterTargetKey}}}` : '';
     const preserveCustomFilterByTk =
-      currentFilterByTk &&
-      currentFilterByTk !== '{{ctx.view.inputArgs.filterByTk}}' &&
-      currentFilterByTk !== '{{ctx.record.' + filterTargetKey + '}}';
+      !!currentFilterByTk &&
+      normalizedCurrentFilterByTk !== '{{ctx.view.inputArgs.filterByTk}}' &&
+      (!normalizedDefaultFilterByTk || normalizedCurrentFilterByTk !== normalizedDefaultFilterByTk) &&
+      (!normalizedExpectedRecordFilterByTk || normalizedCurrentFilterByTk !== normalizedExpectedRecordFilterByTk);
     const nextOpenView = buildDefinedPayload({
       ...currentGroupOpenView,
       dataSourceKey: currentOpenView?.dataSourceKey || popupProfile?.dataSourceKey || 'main',
@@ -19424,8 +19444,9 @@ export class FlowSurfacesService {
       return { riskyHints };
     }
 
-    const db = (this.plugin as any).getDatabaseByDataSourceKey?.(query?.sqlDatasource || 'main');
-    if (!db?.runSQL) {
+    const sqlDataSourceKey = query?.sqlDatasource || 'main';
+    const runSQLByDataSourceKey = (this.plugin as any).runSQLByDataSourceKey?.bind(this.plugin);
+    if (!runSQLByDataSourceKey) {
       riskyHints.push({
         key: 'sql_preview_unavailable',
         title: 'SQL preview unavailable',
@@ -19435,14 +19456,23 @@ export class FlowSurfacesService {
     }
 
     try {
-      const previewMetadataResult = await this.runChartSqlPreviewRaw(
-        db,
-        this.buildChartSqlPreviewMetadataQuery(transformed.sql),
-        transformed.bind,
-        _transaction,
-      );
-      const previewAliases = this.extractSqlChartPreviewAliases(previewMetadataResult?.[1]);
-      const rows = await db.runSQL(this.buildChartSqlPreviewQuery(transformed.sql), {
+      let previewAliases: string[] = [];
+      try {
+        const db = (this.plugin as any).getDatabaseByDataSourceKey?.(sqlDataSourceKey);
+        if (db) {
+          const previewMetadataResult = await this.runChartSqlPreviewRaw(
+            db,
+            this.buildChartSqlPreviewMetadataQuery(transformed.sql),
+            transformed.bind,
+            _transaction,
+          );
+          previewAliases = this.extractSqlChartPreviewAliases(previewMetadataResult?.[1]);
+        }
+      } catch {
+        previewAliases = [];
+      }
+
+      const rows = await runSQLByDataSourceKey(sqlDataSourceKey, this.buildChartSqlPreviewQuery(transformed.sql), {
         type: 'selectRows',
         bind: transformed.bind,
         transaction: _transaction,

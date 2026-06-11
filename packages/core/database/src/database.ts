@@ -325,6 +325,7 @@ export class Database extends EventEmitter implements AsyncEmitter {
 
     this.collection({
       name: 'migrations',
+      dataCategory: 'system',
       autoGenId: false,
       timestamps: false,
       dumpRules: 'required',

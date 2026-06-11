@@ -19,4 +19,7 @@ Puede instalar NocoBase de diferentes maneras.
 | **Escenarios de uso** | Usuarios sin código, usuarios que desean desplegar rápidamente en un servidor. | Desarrolladores frontend/full-stack, proyectos en equipo, desarrollo low-code. | Desarrolladores técnicos, usuarios que desean probar versiones no publicadas. |
 | **Requisitos técnicos** | ★☆☆☆☆ | ★★★☆☆ | ★★★★★ |
 | **Método de actualización** | Extraer la última imagen y reiniciar el contenedor. | Actualizar dependencias con yarn. | Sincronizar actualizaciones mediante el flujo de Git. |
-| **Tutoriales** | [<code>Instalación</code>](#) [<code>Actualización</code>](#) [<code>Despliegue</code>](#) | [<code>Instalación</code>](#) [<code>Actualización</code>](#) [<code>Despliegue</code>](#) | [<code>Instalación</code>](#) [<code>Actualización</code>](#) [<code>Despliegue</code>](#) |
+
+## Qué hacer a continuación
+
+Si ya eligió un método de instalación, el siguiente paso es [Inicio rápido](../ai/quick-start.md). Allí instalará NocoBase CLI, se conectará a una aplicación existente o inicializará una nueva, y luego dejará que su AI Agent empiece a trabajar.

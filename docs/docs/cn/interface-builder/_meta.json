@@ -57,6 +57,11 @@
             "type": "custom-link",
             "label": "看板",
             "link": "/interface-builder/blocks/data-blocks/kanban"
+          },
+          {
+            "type": "custom-link",
+            "label": "甘特图",
+            "link": "/interface-builder/blocks/data-blocks/gantt"
           }
         ]
       },
@@ -325,6 +330,11 @@
             "type": "custom-link",
             "label": "必填",
             "link": "/interface-builder/fields/field-settings/required"
+          },
+          {
+            "type": "custom-link",
+            "label": "扫码录入",
+            "link": "/interface-builder/fields/field-settings/scan-input"
           },
           {
             "type": "custom-link",

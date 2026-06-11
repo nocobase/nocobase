@@ -10,6 +10,14 @@
 import lodash from 'lodash';
 import { applyExternalFieldDefinition, parseCollectionNameWithDataSourceKey } from '../services/external-field-apply';
 
+function ensureFieldConfigureEnabled(ctx, dataSourceKey: string) {
+  const dataSource = ctx.app.dataSourceManager.dataSources.get(dataSourceKey);
+
+  if (dataSource?.disableConfigureFields) {
+    ctx.throw(403, 'Field configuration is disabled for this data source');
+  }
+}
+
 export default {
   name: 'dataSourcesCollections.fields',
   actions: {
@@ -47,6 +55,7 @@ export default {
     async update(ctx, next) {
       const { associatedIndex: collectionNameWithDataSourceKey, filterByTk: name, values } = ctx.action.params;
       const [dataSourceKey, collectionName] = collectionNameWithDataSourceKey.split('.');
+      ensureFieldConfigureEnabled(ctx, dataSourceKey);
 
       const mainDb = ctx.app.db;
 
@@ -95,6 +104,7 @@ export default {
     async create(ctx, next) {
       const { associatedIndex: collectionNameWithDataSourceKey, values } = ctx.action.params;
       const [dataSourceKey, collectionName] = collectionNameWithDataSourceKey.split('.');
+      ensureFieldConfigureEnabled(ctx, dataSourceKey);
 
       const mainDb = ctx.app.db;
 
@@ -131,6 +141,7 @@ export default {
     async apply(ctx, next) {
       const rawValues = ctx.action.params.values || ctx.request.body || {};
       const defaults = parseCollectionNameWithDataSourceKey(ctx.action.params.associatedIndex);
+      ensureFieldConfigureEnabled(ctx, defaults.dataSourceKey);
 
       ctx.body = {
         data: await applyExternalFieldDefinition(ctx, rawValues, defaults),
@@ -142,6 +153,7 @@ export default {
     async destroy(ctx, next) {
       const { associatedIndex: collectionNameWithDataSourceKey, filterByTk: name } = ctx.action.params;
       const [dataSourceKey, collectionName] = collectionNameWithDataSourceKey.split('.');
+      ensureFieldConfigureEnabled(ctx, dataSourceKey);
 
       const mainDb = ctx.app.db;
 

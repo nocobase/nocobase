@@ -3,7 +3,6 @@ scope: GENERAL
 name: data-query
 description: Inspect schemas, retrieve records, and run aggregate queries on specified datasources
 tools:
-  - getSkill
   - dataQuery
   - dataSourceQuery
   - dataSourceCounting

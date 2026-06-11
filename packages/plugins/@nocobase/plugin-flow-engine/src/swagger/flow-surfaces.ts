@@ -2263,6 +2263,10 @@ const schemas = {
       schemaUid: {
         type: 'string',
       },
+      menuSchemaUid: {
+        type: 'string',
+        nullable: true,
+      },
       tabSchemaName: {
         type: 'string',
       },
@@ -5263,6 +5267,9 @@ const schemas = {
       pageSchemaUid: {
         type: 'string',
       },
+      menuSchemaUid: {
+        type: 'string',
+      },
       pageUid: {
         type: 'string',
       },
@@ -5374,6 +5381,9 @@ const schemas = {
         nullable: true,
       },
       pageSchemaUid: {
+        type: 'string',
+      },
+      menuSchemaUid: {
         type: 'string',
       },
       pageUid: {

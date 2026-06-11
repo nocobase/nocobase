@@ -98,6 +98,7 @@ run_node_check "Meta alignment check" "check-meta-alignment.mjs" "${COMMON_ARGS[
 run_node_check "Navigation alignment check" "check-nav-alignment.mjs" "${COMMON_ARGS[@]}"
 run_node_check "Home alignment check" "check-home-alignment.mjs" "${COMMON_ARGS[@]}"
 run_node_check "Bloated files check" "check-bloated-files.mjs" "${COMMON_ARGS[@]}"
+run_node_check "Deprecated document reference check" "check-deprecated-doc-refs.mjs" "${COMMON_ARGS[@]}"
 
 should_run_i18n_coverage() {
   case "$RUN_I18N_COVERAGE" in

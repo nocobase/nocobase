@@ -615,7 +615,7 @@ describe('flowSurfaces resource', () => {
     expect(recordPopupBlock.stepParams?.resourceSettings?.init).toMatchObject({
       dataSourceKey: 'main',
       collectionName: 'employees',
-      filterByTk: '{{ctx.view.inputArgs.filterByTk}}',
+      filterByTk: '{{ctx.record.id}}',
     });
 
     const recordScopedPopupAction = await addRecordAction(rootAgent, tableUid, 'popup');

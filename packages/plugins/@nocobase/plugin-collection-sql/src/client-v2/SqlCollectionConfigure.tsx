@@ -272,6 +272,10 @@ function getSqlSyncErrorMessage(error: unknown, fallback: string) {
   );
 }
 
+function getSqlFormValue(value: unknown) {
+  return typeof value === 'string' ? value : undefined;
+}
+
 export function buildSqlFieldsFromPreview(options: {
   currentFields?: SqlFieldRecord[];
   manager?: FieldInterfaceManager;
@@ -357,6 +361,7 @@ function SqlStatementControl(props: {
   return (
     <div>
       <Input.TextArea
+        autoSize={{ minRows: 5 }}
         disabled={!editing}
         value={value}
         onChange={(event) => {
@@ -386,11 +391,31 @@ function SqlStatementControl(props: {
 export function SqlStatementConfigureItem(props: CollectionTemplateConfigureItemProps) {
   const ctx = useFlowContext();
   const t = ctx.t;
-  const [confirmed, setConfirmed] = useState(() => !!props.form.getFieldValue('sql'));
-  const [editing, setEditing] = useState(() => !props.form.getFieldValue('sql'));
+  const initialSql = getSqlFormValue(props.form.getFieldValue('sql'));
+  const [editing, setEditing] = useState(() => !initialSql);
   const sql = Form.useWatch('sql', props.form);
   const manager = ctx.dataSourceManager.collectionFieldInterfaceManager as FieldInterfaceManager;
   const autoPreviewRunRef = useRef(false);
+  const confirmedSqlRef = useRef<string | undefined>(initialSql);
+  const editingRef = useRef(!initialSql);
+  const markEditing = useCallback(() => {
+    editingRef.current = true;
+    setEditing(true);
+  }, []);
+  const markUnconfirmed = useCallback(() => {
+    confirmedSqlRef.current = undefined;
+    editingRef.current = true;
+    setEditing(true);
+  }, []);
+  const markConfirmed = useCallback(
+    (value: string) => {
+      confirmedSqlRef.current = value;
+      editingRef.current = false;
+      setEditing(false);
+      props.form.setFields([{ name: 'sql', errors: [] }]);
+    },
+    [props.form],
+  );
   const request = useRequest(
     async (statement: string) => {
       const response = await ctx.api.resource('sqlCollection').execute({
@@ -437,14 +462,13 @@ export function SqlStatementConfigureItem(props: CollectionTemplateConfigureItem
       props.form.setFieldValue(internalPreviewName, {
         error: message || t('SQL error'),
       });
-      setConfirmed(false);
-      setEditing(true);
+      markUnconfirmed();
     },
-    [props.form, t],
+    [markUnconfirmed, props.form, t],
   );
   const runSql = useCallback(
     async (options: { confirm?: boolean } = {}) => {
-      const currentSql = props.form.getFieldValue('sql') || sql;
+      const currentSql = getSqlFormValue(props.form.getFieldValue('sql')) || getSqlFormValue(sql);
       if (!currentSql) {
         return;
       }
@@ -452,17 +476,16 @@ export function SqlStatementConfigureItem(props: CollectionTemplateConfigureItem
         const data = await request.runAsync(currentSql);
         applyPreviewResult(data);
         if (options.confirm) {
-          setConfirmed(true);
-          setEditing(false);
+          markConfirmed(currentSql);
         }
       } catch (error) {
         applyPreviewError(error);
       }
     },
-    [applyPreviewError, applyPreviewResult, props.form, request, sql],
+    [applyPreviewError, applyPreviewResult, markConfirmed, props.form, request, sql],
   );
   const handleConfirm = useCallback(async () => {
-    if (!props.form.getFieldValue('sql') && !sql) {
+    if (!getSqlFormValue(props.form.getFieldValue('sql')) && !getSqlFormValue(sql)) {
       return;
     }
     await runSql({ confirm: true });
@@ -476,7 +499,7 @@ export function SqlStatementConfigureItem(props: CollectionTemplateConfigureItem
       return;
     }
 
-    const currentSql = props.form.getFieldValue('sql') || sql;
+    const currentSql = getSqlFormValue(props.form.getFieldValue('sql')) || getSqlFormValue(sql);
     if (!currentSql) {
       return;
     }
@@ -496,7 +519,8 @@ export function SqlStatementConfigureItem(props: CollectionTemplateConfigureItem
         { required: true },
         {
           validator() {
-            if (confirmed && !editing) {
+            const currentSql = getSqlFormValue(props.form.getFieldValue('sql')) || getSqlFormValue(sql);
+            if (currentSql && confirmedSqlRef.current === currentSql && !editingRef.current) {
               return Promise.resolve();
             }
             return Promise.reject(new Error(t('Please confirm the SQL statement first')));
@@ -508,12 +532,9 @@ export function SqlStatementConfigureItem(props: CollectionTemplateConfigureItem
         editing={editing}
         loading={request.loading}
         t={t}
-        onValueChange={() => {
-          setConfirmed(false);
-          setEditing(true);
-        }}
+        onValueChange={markUnconfirmed}
         onConfirm={handleConfirm}
-        onEdit={() => setEditing(true)}
+        onEdit={markEditing}
         onExecute={handleExecute}
       />
     </Form.Item>

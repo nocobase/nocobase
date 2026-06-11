@@ -8,7 +8,7 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import { compileFilterGroup } from '../useFilterActionProps';
+import { compileFilterGroup, decompileFilterGroup } from '../useFilterActionProps';
 
 describe('compileFilterGroup', () => {
   it('returns undefined for an empty group so callers can drop the filter param', () => {
@@ -141,6 +141,81 @@ describe('compileFilterGroup', () => {
     });
     expect(out).toEqual({
       $and: [{ lockedTs: { $dateOn: dateDescriptor } }, { lockReason: { $in: ['abuse', 'spam'] } }],
+    });
+  });
+});
+
+describe('decompileFilterGroup', () => {
+  it('returns undefined for an empty compiled filter', () => {
+    expect(decompileFilterGroup(undefined)).toBeUndefined();
+    expect(decompileFilterGroup({})).toBeUndefined();
+  });
+
+  it('restores a compiled condition into an editable filter row', () => {
+    expect(decompileFilterGroup({ $and: [{ lockReason: { $includes: 'abuse' } }] })).toEqual({
+      logic: '$and',
+      items: [{ path: 'lockReason', operator: '$includes', value: 'abuse' }],
+    });
+  });
+
+  it('restores a direct condition object into an editable filter row', () => {
+    expect(decompileFilterGroup({ title: { $includes: 'test' } })).toEqual({
+      logic: '$and',
+      items: [{ path: 'title', operator: '$includes', value: 'test' }],
+    });
+  });
+
+  it('restores legacy direct field values as equality rows', () => {
+    expect(decompileFilterGroup({ createdById: '{{ ctx.state.currentUser.id }}' })).toEqual({
+      logic: '$and',
+      items: [{ path: 'createdById', operator: '$eq', value: '{{ ctx.state.currentUser.id }}' }],
+    });
+  });
+
+  it('restores multiple direct condition fields', () => {
+    expect(
+      decompileFilterGroup({
+        title: { $includes: 'test' },
+        status: 'published',
+      }),
+    ).toEqual({
+      logic: '$and',
+      items: [
+        { path: 'title', operator: '$includes', value: 'test' },
+        { path: 'status', operator: '$eq', value: 'published' },
+      ],
+    });
+  });
+
+  it('restores nested association paths', () => {
+    expect(decompileFilterGroup({ $and: [{ user: { createdBy: { password: { $includes: '123' } } } }] })).toEqual({
+      logic: '$and',
+      items: [{ path: 'user.createdBy.password', operator: '$includes', value: '123' }],
+    });
+  });
+
+  it('restores nested filter groups', () => {
+    expect(
+      decompileFilterGroup({
+        $and: [
+          { lockReason: { $eq: 'abuse' } },
+          {
+            $or: [{ lockedTs: { $dateAfter: '2026-01-01' } }, { lockedTs: { $dateBefore: '2026-12-31' } }],
+          },
+        ],
+      }),
+    ).toEqual({
+      logic: '$and',
+      items: [
+        { path: 'lockReason', operator: '$eq', value: 'abuse' },
+        {
+          logic: '$or',
+          items: [
+            { path: 'lockedTs', operator: '$dateAfter', value: '2026-01-01' },
+            { path: 'lockedTs', operator: '$dateBefore', value: '2026-12-31' },
+          ],
+        },
+      ],
     });
   });
 });

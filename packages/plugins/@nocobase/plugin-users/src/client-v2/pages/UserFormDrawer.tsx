@@ -22,6 +22,7 @@ import { useRequest } from 'ahooks';
 import React from 'react';
 import { useT } from '../locale';
 import type { User } from './types';
+import { UserCreateFormModel, UserEditFormModel } from '../models/UserProfileFormModels';
 import {
   ADMIN_PROFILE_CREATE_FORM_MODEL_UID,
   ADMIN_PROFILE_EDIT_FORM_MODEL_UID,
@@ -63,7 +64,23 @@ const userFormBlockClassName = css`
   }
 `;
 
-type PersistedFlowModelTree = CreateModelOptions;
+type PersistedFlowModelTree = CreateModelOptions & Record<string, unknown>;
+
+const privateUserFormModels = {
+  [ADMIN_PROFILE_CREATE_FORM_MODEL_UID]: UserCreateFormModel,
+  [ADMIN_PROFILE_EDIT_FORM_MODEL_UID]: UserEditFormModel,
+} as const;
+
+function withPrivateUserFormModel(tree: PersistedFlowModelTree, uid: string): PersistedFlowModelTree {
+  const ModelClass = privateUserFormModels[uid as keyof typeof privateUserFormModels];
+  if (!ModelClass) {
+    return tree;
+  }
+  return {
+    ...tree,
+    use: ModelClass,
+  };
+}
 
 async function ensurePersistedUserFormModel(options: {
   flowEngine: ReturnType<typeof useFlowEngine>;
@@ -73,15 +90,14 @@ async function ensurePersistedUserFormModel(options: {
 }) {
   const { flowEngine, api, uid, fallbackTree } = options;
   const flowModels = api.resource('flowModels') as FlowModelsResource;
-  let loaded = (await flowEngine.loadModel({ uid })) as LoadedUserFormModel | null;
-  if (loaded) {
-    return loaded;
+  let modelTree = (await flowEngine.modelRepository?.findOne({ uid })) as PersistedFlowModelTree | null | undefined;
+  if (!modelTree) {
+    await flowModels.save({
+      values: fallbackTree,
+    });
+    modelTree = fallbackTree;
   }
-  await flowModels.save({
-    values: fallbackTree,
-  });
-  loaded = (await flowEngine.loadModel({ uid })) as LoadedUserFormModel | null;
-  return loaded;
+  return (await flowEngine.createModelAsync(withPrivateUserFormModel(modelTree, uid))) as LoadedUserFormModel;
 }
 
 export interface UserFormDrawerProps {
@@ -139,13 +155,12 @@ export default function UserFormDrawer(props: UserFormDrawerProps) {
 
   useRequest(
     async () => {
-      const loadedModel =
-        (await ensurePersistedUserFormModel({
-          flowEngine,
-          api: ctx.api,
-          uid: formModelUid,
-          fallbackTree,
-        })) ?? ((await flowEngine.createModelAsync(fallbackTree)) as LoadedUserFormModel);
+      const loadedModel = await ensurePersistedUserFormModel({
+        flowEngine,
+        api: ctx.api,
+        uid: formModelUid,
+        fallbackTree,
+      });
       if (viewCtx) {
         loadedModel.context.addDelegate(viewCtx);
       }

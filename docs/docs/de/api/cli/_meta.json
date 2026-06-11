@@ -232,23 +232,6 @@
       },
       {
         "type": "custom-link",
-        "label": "nb env proxy",
-        "link": "/api/cli/env/proxy/",
-        "items": [
-          {
-            "type": "custom-link",
-            "label": "nb env proxy nginx",
-            "link": "/api/cli/env/proxy/nginx"
-          },
-          {
-            "type": "custom-link",
-            "label": "nb env proxy caddy",
-            "link": "/api/cli/env/proxy/caddy"
-          }
-        ]
-      },
-      {
-        "type": "custom-link",
         "label": "nb env remove",
         "link": "/api/cli/env/remove"
       },
@@ -340,6 +323,120 @@
         "type": "custom-link",
         "label": "nb plugin list",
         "link": "/api/cli/plugin/list"
+      }
+    ],
+    "collapsed": true
+  },
+  {
+    "type": "custom-link",
+    "label": "nb proxy",
+    "link": "/api/cli/proxy/",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "nb proxy caddy",
+        "link": "/api/cli/proxy/caddy/",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "nb proxy caddy current",
+            "link": "/api/cli/proxy/caddy/current"
+          },
+          {
+            "type": "custom-link",
+            "label": "nb proxy caddy generate",
+            "link": "/api/cli/proxy/caddy/generate"
+          },
+          {
+            "type": "custom-link",
+            "label": "nb proxy caddy info",
+            "link": "/api/cli/proxy/caddy/info"
+          },
+          {
+            "type": "custom-link",
+            "label": "nb proxy caddy reload",
+            "link": "/api/cli/proxy/caddy/reload"
+          },
+          {
+            "type": "custom-link",
+            "label": "nb proxy caddy restart",
+            "link": "/api/cli/proxy/caddy/restart"
+          },
+          {
+            "type": "custom-link",
+            "label": "nb proxy caddy start",
+            "link": "/api/cli/proxy/caddy/start"
+          },
+          {
+            "type": "custom-link",
+            "label": "nb proxy caddy status",
+            "link": "/api/cli/proxy/caddy/status"
+          },
+          {
+            "type": "custom-link",
+            "label": "nb proxy caddy stop",
+            "link": "/api/cli/proxy/caddy/stop"
+          },
+          {
+            "type": "custom-link",
+            "label": "nb proxy caddy use",
+            "link": "/api/cli/proxy/caddy/use"
+          }
+        ],
+        "collapsed": true
+      },
+      {
+        "type": "custom-link",
+        "label": "nb proxy nginx",
+        "link": "/api/cli/proxy/nginx/",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "nb proxy nginx current",
+            "link": "/api/cli/proxy/nginx/current"
+          },
+          {
+            "type": "custom-link",
+            "label": "nb proxy nginx generate",
+            "link": "/api/cli/proxy/nginx/generate"
+          },
+          {
+            "type": "custom-link",
+            "label": "nb proxy nginx info",
+            "link": "/api/cli/proxy/nginx/info"
+          },
+          {
+            "type": "custom-link",
+            "label": "nb proxy nginx reload",
+            "link": "/api/cli/proxy/nginx/reload"
+          },
+          {
+            "type": "custom-link",
+            "label": "nb proxy nginx restart",
+            "link": "/api/cli/proxy/nginx/restart"
+          },
+          {
+            "type": "custom-link",
+            "label": "nb proxy nginx start",
+            "link": "/api/cli/proxy/nginx/start"
+          },
+          {
+            "type": "custom-link",
+            "label": "nb proxy nginx status",
+            "link": "/api/cli/proxy/nginx/status"
+          },
+          {
+            "type": "custom-link",
+            "label": "nb proxy nginx stop",
+            "link": "/api/cli/proxy/nginx/stop"
+          },
+          {
+            "type": "custom-link",
+            "label": "nb proxy nginx use",
+            "link": "/api/cli/proxy/nginx/use"
+          }
+        ],
+        "collapsed": true
       }
     ],
     "collapsed": true

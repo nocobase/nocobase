@@ -1,12 +1,12 @@
 ---
-title: 'nb config delete'
-description: 'Referencia del comando nb config delete: elimina un elemento de configuración de CLI establecido explícitamente.'
-keywords: 'nb config delete,NocoBase CLI,eliminar configuración'
+title: "nb config delete"
+description: "Referencia del comando nb config delete: eliminar un elemento de configuración de la CLI establecido explícitamente."
+keywords: "nb config delete,NocoBase CLI,eliminar configuración"
 ---
 
 # nb config delete
 
-Elimina un elemento de configuración de CLI establecido explícitamente. Después de eliminarlo, el elemento vuelve a su valor predeterminado.
+Elimina un elemento de configuración de la CLI que se haya establecido explícitamente. Después de eliminarlo, ese elemento vuelve a su valor predeterminado.
 
 ## Uso
 
@@ -16,8 +16,8 @@ nb config delete <key>
 
 ## Parámetros
 
-| Parámetro | Tipo   | Descripción                                                                                                                                        |
-| --------- | ------ | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Parámetro | Tipo | Descripción |
+| --- | --- | --- |
 | `<key>` | string | Nombre del elemento de configuración. Consulta [`nb config`](./index.md) para ver los valores admitidos |
 
 ## Ejemplos

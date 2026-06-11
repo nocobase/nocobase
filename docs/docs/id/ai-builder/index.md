@@ -23,7 +23,7 @@ Bantu saya memasang NocoBase CLI dan menyelesaikan inisialisasi: https://docs.no
 ### Instalasi Manual
 
 ```bash
-npm install -g @nocobase/cli@beta
+npm install -g @nocobase/cli
 nb init --ui
 ```
 
@@ -95,13 +95,27 @@ AI terlebih dahulu mengeluarkan rancangan desain, setelah dikonfirmasi langsung 
 
 Untuk mempelajari lebih lanjut tentang penggunaan pembangunan seluruh sistem, silakan lihat [Solusi](./dsl-reconciler).
 
+### Bangun satu milestone, dan AI menyimpan versi yang dapat dipulihkan untukmu
+
+Setelah menyelesaikan sebuah halaman, sekelompok tabel data, atau sebuah workflow, minta AI menyimpan keadaan saat ini sebagai versi — jika ada konfigurasi yang rusak, kamu selalu bisa kembali ke milestone terakhir yang jelas.
+
+```
+Simpan hasil pembangunan saat ini sebagai versi: halaman manajemen pelanggan, area filter, dan form edit sudah selesai dikonfigurasi
+```
+
+![AI membuat versi setelah membangun](https://static-docs.nocobase.com/20260611115804.png)
+
+AI tidak menyimpan versi setiap kali mengubah satu field; AI hanya menyimpan setelah menyelesaikan dan memverifikasi satu milestone yang jelas, sehingga daftar versi lebih mudah dibaca dan lebih mudah menentukan ke mana harus kembali.
+
+Untuk mempelajari lebih lanjut tentang kontrol versi, silakan lihat [Kontrol Versi](./version-control).
+
 ## Keamanan & Audit
 
 Sebelum membiarkan AI Agent mengoperasikan NocoBase, disarankan untuk memahami terlebih dahulu metode autentikasi, kontrol Permission, dan audit operasi — pastikan AI hanya melakukan apa yang seharusnya, setiap langkah tercatat. Silakan lihat [Keamanan & Audit](./security).
 
 ## NocoBase Skills
 
-[NocoBase Skills](https://github.com/nocobase/skills) adalah paket pengetahuan domain yang dapat dipasang ke AI Agent, agar AI memahami sistem konfigurasi NocoBase. NocoBase menyediakan 8 Skills, mencakup seluruh proses pembangunan:
+[NocoBase Skills](https://github.com/nocobase/skills) adalah paket pengetahuan domain yang dapat dipasang ke AI Agent, agar AI memahami sistem konfigurasi NocoBase. NocoBase menyediakan 9 Skills, mencakup seluruh proses pembangunan:
 
 - [Manajemen Lingkungan](./env-bootstrap) — Pemeriksaan lingkungan, instalasi deployment, upgrade, dan diagnostik masalah
 - [Pemodelan Data](./data-modeling) — Membuat dan mengelola tabel data, Field, relasi
@@ -111,6 +125,7 @@ Sebelum membiarkan AI Agent mengoperasikan NocoBase, disarankan untuk memahami t
 - [Solusi](./dsl-reconciler) — Membangun seluruh sistem bisnis secara batch dari YAML
 - [Manajemen Plugin](./plugin-manage) — Melihat, mengaktifkan, dan menonaktifkan Plugin
 - [Manajemen Publikasi](./publish) — Publikasi lintas lingkungan, backup recovery, dan migrasi
+- [Kontrol Versi](./version-control) — Menyimpan versi yang dapat dipulihkan setelah milestone selesai
 
 :::tip Tips
 

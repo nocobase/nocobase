@@ -55,11 +55,11 @@ import {
 } from '../api';
 import { useT } from '../locale';
 import type { DepartmentPrimaryKey, DepartmentRecord, RoleRecord, UserRecord } from '../shared/department';
-import { getDepartmentTitle } from '../shared/department';
+import { buildDepartmentTree, getDepartmentTitle } from '../shared/department';
 
 const FORM_DRAWER_WIDTH = '50%';
-const TABLE_DRAWER_WIDTH = '70%';
-const DEPARTMENT_PICKER_DRAWER_WIDTH = '40%';
+const TABLE_DRAWER_WIDTH = '50%';
+const DEPARTMENT_PICKER_DRAWER_WIDTH = '50%';
 const DEPARTMENT_TREE_PANEL_WIDTH = 280;
 const MEMBER_TABLE_PAGE_SIZE = 20;
 const ADD_MEMBERS_TABLE_PAGE_SIZE = 20;
@@ -95,6 +95,68 @@ interface ApiResource {
   listExcludeDept(params: Record<string, unknown>): Promise<unknown>;
   setOwner(params: Record<string, unknown>): Promise<unknown>;
   removeOwner(params: Record<string, unknown>): Promise<unknown>;
+}
+
+function useDrawerTableLayoutStyles() {
+  const { token } = theme.useToken();
+  const contentClassName = useMemo(
+    () => css`
+      height: 100%;
+      flex: 1;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    `,
+    [],
+  );
+  const toolbarClassName = useMemo(
+    () => css`
+      flex: 0 0 auto;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: ${token.marginSM}px;
+      flex-wrap: wrap;
+      margin-bottom: ${token.marginSM}px;
+    `,
+    [token.marginSM],
+  );
+  const tableClassName = useMemo(
+    () => css`
+      flex: 1;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+
+      .ant-spin-nested-loading,
+      .ant-spin-container,
+      .ant-table,
+      .ant-table-container {
+        min-height: 0;
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+      }
+
+      .ant-table-content,
+      .ant-table-body {
+        flex: 1;
+        min-height: 0;
+      }
+
+      .ant-table-thead > tr > th {
+        white-space: nowrap;
+      }
+
+      .ant-pagination {
+        flex: 0 0 auto;
+      }
+    `,
+    [],
+  );
+
+  return { contentClassName, tableClassName, toolbarClassName };
 }
 
 interface ApiResourceFactory {
@@ -152,25 +214,6 @@ function buildMembersFilter(department: DepartmentRecord | null, filter?: Member
   }
 
   return filters.length === 1 ? filters[0] : { $and: filters };
-}
-
-function buildDepartmentTree(records: DepartmentRecord[]): DepartmentRecord[] {
-  const nodes = new Map<DepartmentPrimaryKey, DepartmentRecord>();
-  const roots: DepartmentRecord[] = [];
-
-  records.forEach((record) => {
-    nodes.set(record.id, { ...record, children: [] });
-  });
-
-  nodes.forEach((node) => {
-    if (node.parentId != null && nodes.has(node.parentId)) {
-      nodes.get(node.parentId)?.children?.push(node);
-      return;
-    }
-    roots.push(node);
-  });
-
-  return roots;
 }
 
 function toTreeNodes(
@@ -347,7 +390,7 @@ function DepartmentForm(props: {
 function AddMembersForm(props: { department: DepartmentRecord; onSubmitted: () => void }) {
   const t = useT();
   const ctx = useFlowContext();
-  const { token } = theme.useToken();
+  const { contentClassName, tableClassName, toolbarClassName } = useDrawerTableLayoutStyles();
   const usersCollection = ctx.dataSourceManager?.getDataSource('main')?.getCollection('users');
   const [selectedKeys, setSelectedKeys] = useState<React.Key[]>([]);
   const [filter, setFilter] = useState<CompiledFilter>();
@@ -411,16 +454,25 @@ function AddMembersForm(props: { department: DepartmentRecord; onSubmitted: () =
       submitText={t('Submit')}
       cancelText={t('Cancel')}
     >
-      <Space direction="vertical" style={{ width: '100%' }}>
-        <CollectionFilter
-          collection={usersCollection}
-          t={t}
-          onChange={(nextFilter) => {
-            setSelectedKeys([]);
-            setPage(1);
-            setFilter(nextFilter);
-          }}
-        />
+      <div className={contentClassName}>
+        <div className={toolbarClassName}>
+          <Space wrap>
+            <CollectionFilter
+              collection={usersCollection}
+              t={t}
+              onChange={(nextFilter) => {
+                setSelectedKeys([]);
+                setPage(1);
+                setFilter(nextFilter);
+              }}
+            />
+          </Space>
+          <Space wrap>
+            <Button icon={<ReloadOutlined />} onClick={() => usersRequest.refresh()}>
+              {t('Refresh')}
+            </Button>
+          </Space>
+        </div>
         <Table<UserRecord>
           rowKey="id"
           showIndex={false}
@@ -442,9 +494,10 @@ function AddMembersForm(props: { department: DepartmentRecord; onSubmitted: () =
             selectedRowKeys: selectedKeys,
             onChange: setSelectedKeys,
           }}
-          style={{ marginTop: token.marginSM }}
+          scroll={{ x: 'max-content', y: '100%' }}
+          className={tableClassName}
         />
-      </Space>
+      </div>
     </DrawerFormLayout>
   );
 }
@@ -456,7 +509,7 @@ function DepartmentPickerForm(props: {
 }) {
   const t = useT();
   const ctx = useFlowContext();
-  const { token } = theme.useToken();
+  const { contentClassName, tableClassName, toolbarClassName } = useDrawerTableLayoutStyles();
   const departmentsCollection = ctx.dataSourceManager?.getDataSource('main')?.getCollection('departments');
   const [selectedKeys, setSelectedKeys] = useState<React.Key[]>([]);
   const [selectedDepartments, setSelectedDepartments] = useState<DepartmentRecord[]>([]);
@@ -510,8 +563,17 @@ function DepartmentPickerForm(props: {
       submitText={t('Submit')}
       cancelText={t('Cancel')}
     >
-      <Space direction="vertical" style={{ width: '100%' }}>
-        <CollectionFilter collection={departmentsCollection} t={t} onChange={setFilter} />
+      <div className={contentClassName}>
+        <div className={toolbarClassName}>
+          <Space wrap>
+            <CollectionFilter collection={departmentsCollection} t={t} onChange={setFilter} />
+          </Space>
+          <Space wrap>
+            <Button icon={<ReloadOutlined />} onClick={() => departmentsRequest.refresh()}>
+              {t('Refresh')}
+            </Button>
+          </Space>
+        </div>
         <Table<DepartmentRecord>
           rowKey="id"
           showIndex={false}
@@ -530,9 +592,10 @@ function DepartmentPickerForm(props: {
               disabled: props.disabledIds.has(record.id),
             }),
           }}
-          style={{ marginTop: token.marginSM }}
+          scroll={{ x: 'max-content', y: '100%' }}
+          className={tableClassName}
         />
-      </Space>
+      </div>
     </DrawerFormLayout>
   );
 }
@@ -584,6 +647,13 @@ function UserDepartmentsForm(props: { user: UserRecord; departments: DepartmentR
     ctx.viewer.drawer({
       closable: true,
       width: DEPARTMENT_PICKER_DRAWER_WIDTH,
+      styles: {
+        body: {
+          display: 'flex',
+          flexDirection: 'column',
+          overflow: 'hidden',
+        },
+      },
       content: () => (
         <DepartmentPickerForm
           departments={props.departments}
@@ -815,6 +885,13 @@ const DepartmentsPage: React.FC = () => {
     ctx.viewer.drawer({
       closable: true,
       width: TABLE_DRAWER_WIDTH,
+      styles: {
+        body: {
+          display: 'flex',
+          flexDirection: 'column',
+          overflow: 'hidden',
+        },
+      },
       content: () => <AddMembersForm department={selectedDepartment} onSubmitted={() => membersRequest.refresh()} />,
     });
   }, [ctx.viewer, membersRequest, selectedDepartment]);

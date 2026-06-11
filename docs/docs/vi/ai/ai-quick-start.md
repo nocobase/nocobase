@@ -27,7 +27,7 @@ Nếu môi trường tiên quyết không đáp ứng, hãy thông báo cho ngư
 Nếu trong môi trường người dùng đã có sẵn NocoBase CLI (chạy `nb --version` để kiểm tra), chuyển sang bước tiếp theo. Nếu chưa có, chạy lệnh sau để cài đặt:
 
 ```bash
-npm install -g @nocobase/cli@beta
+npm install -g @nocobase/cli
 ```
 
 Chạy `nb --version` để xác nhận cài đặt thành công.

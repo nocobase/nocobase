@@ -1,12 +1,12 @@
 ---
-title: 'nb config get'
-description: 'Referência do comando nb config get: lê o valor efetivo de um item de configuração da CLI.'
-keywords: 'nb config get,NocoBase CLI,ler configuração'
+title: "nb config get"
+description: "Referência do comando nb config get: leia o valor efetivo de um item de configuração da CLI."
+keywords: "nb config get,NocoBase CLI,ler configuração"
 ---
 
 # nb config get
 
-Lê o valor efetivo do item de configuração da CLI especificado. Se não tiver sido definido explicitamente, retorna o valor padrão.
+Lê o valor efetivo do item de configuração da CLI especificado. Se ele não tiver sido definido explicitamente, o valor padrão será retornado.
 
 ## Uso
 

@@ -1,12 +1,12 @@
 ---
-title: 'nb config get'
-description: 'Referencia del comando nb config get: lee el valor efectivo de un elemento de configuración de la CLI.'
-keywords: 'nb config get,NocoBase CLI,leer configuración'
+title: "nb config get"
+description: "Referencia del comando nb config get: leer el valor efectivo de un elemento de configuración de la CLI."
+keywords: "nb config get,NocoBase CLI,leer configuración"
 ---
 
 # nb config get
 
-Lee el valor efectivo del elemento de configuración de la CLI especificado. Si no se ha establecido explícitamente, devuelve el valor predeterminado.
+Lee el valor efectivo del elemento de configuración indicado de la CLI. Si no se ha definido de forma explícita, se devuelve el valor predeterminado.
 
 ## Uso
 
@@ -16,8 +16,8 @@ nb config get <key>
 
 ## Parámetros
 
-| Parámetro | Tipo   | Descripción                                                                                                                                        |
-| --------- | ------ | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Parámetro | Tipo | Descripción |
+| --- | --- | --- |
 | `<key>` | string | Nombre del elemento de configuración. Consulta [`nb config`](./index.md) para ver los valores admitidos |
 
 ## Ejemplos

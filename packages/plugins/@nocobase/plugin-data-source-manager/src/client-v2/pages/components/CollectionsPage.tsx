@@ -18,27 +18,19 @@ import {
   ReloadOutlined,
   SyncOutlined,
 } from '@ant-design/icons';
-import {
-  DndContext,
-  DragOverlay,
-  MouseSensor,
-  useDraggable,
-  useDroppable,
-  useSensor,
-  useSensors,
-  type DragEndEvent,
-  type DragStartEvent,
-} from '@dnd-kit/core';
+import { DndContext, DragOverlay, MouseSensor, useDraggable, useDroppable, useSensor, useSensors } from '@dnd-kit/core';
+import type { DragEndEvent, DragStartEvent } from '@dnd-kit/core';
 import {
   DEFAULT_PAGE_SIZE,
   DrawerFormLayout,
   FilterContent,
   Table,
   normalizeCollectionTemplateFields,
-  type CollectionTemplateField,
 } from '@nocobase/client-v2';
+import type { CollectionTemplateField } from '@nocobase/client-v2';
 import { observable, observer, randomId, useFlowContext } from '@nocobase/flow-engine';
-import { transformFilter, type FilterGroupType } from '@nocobase/utils/client';
+import { transformFilter } from '@nocobase/utils/client';
+import type { FilterGroupType } from '@nocobase/utils/client';
 import { useRequest } from 'ahooks';
 import {
   App,
@@ -61,14 +53,13 @@ import {
   theme,
   Transfer,
 } from 'antd';
+import type { FormInstance } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
-import React, { type FC, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import type { FC } from 'react';
 import { useT } from '../../locale';
-import {
-  type CollectionPresetFieldOptions,
-  type CollectionTemplateOptions,
-  PluginDataSourceManagerClientV2,
-} from '../../plugin';
+import type { CollectionPresetFieldOptions, CollectionTemplateOptions } from '../../plugin';
+import { PluginDataSourceManagerClientV2 } from '../../plugin';
 import { compileLegacyTemplate, preferLegacyTemplateTitle } from '../../utils/compileLegacyTemplate';
 import { getErrorMessage, isFormValidationError } from '../../utils/error';
 import { getCollectionFieldActionUrl } from './collectionFieldApi';
@@ -355,6 +346,23 @@ function normalizeListResponse(response: any) {
   };
 }
 
+function updateCollectionListRecord(
+  data: { records: Record<string, any>[]; total: number } | undefined,
+  collectionName: string,
+  values: Record<string, any>,
+) {
+  if (!data?.records) {
+    return data;
+  }
+
+  return {
+    ...data,
+    records: data.records.map((collection) =>
+      collection.name === collectionName ? { ...collection, ...values } : collection,
+    ),
+  };
+}
+
 function normalizeArrayResponse(response: any) {
   const payload = response?.data?.data;
   return Array.isArray(payload) ? payload : Array.isArray(payload?.data) ? payload.data : [];
@@ -631,9 +639,13 @@ function getTemplatePresetFieldsDisabledIncludes(template: CollectionTemplateOpt
 
 function hasTemplateCapability(
   template: CollectionTemplateOptions | undefined,
-  capability: 'recordUniqueKey' | 'simplePaginate',
+  capability: keyof NonNullable<CollectionTemplateOptions['capabilities']>,
 ) {
   return !!template?.capabilities?.[capability];
+}
+
+function supportsTemplateInherits(template: CollectionTemplateOptions | undefined) {
+  return template?.capabilities?.inherits !== false;
 }
 
 const CollectionTemplatePreview: FC<{ template?: CollectionTemplateOptions }> = ({ template }) => {
@@ -804,7 +816,7 @@ const CollectionTemplateConfigureItems: FC<{
 };
 
 const CollectionCreateFilterTargetKey: FC<{
-  form: ReturnType<typeof Form.useForm<CollectionFormValues>>[0];
+  form: FormInstance<CollectionFormValues>;
 }> = ({ form }) => {
   const t = useT();
   const fields = Form.useWatch('fields', form);
@@ -911,6 +923,7 @@ function CollectionCreateDrawer(props: {
     [t],
   );
   const TemplateConfigureForm = template.configure?.Form || template.ConfigureForm;
+  const supportsInherits = supportsTemplateInherits(template);
   const collectionCategoryFormItem = (
     <Form.Item name="category" label={t('Categories')}>
       <Select
@@ -927,6 +940,12 @@ function CollectionCreateDrawer(props: {
     <Form.Item name="description" label={t('Description')}>
       <Input.TextArea autoSize={{ minRows: 3, maxRows: 8 }} />
     </Form.Item>
+  );
+  const templateConfigureItems = (
+    <>
+      {TemplateConfigureForm ? <TemplateConfigureForm mode="create" template={template} form={form} /> : null}
+      <CollectionTemplateConfigureItems mode="create" template={template} form={form} />
+    </>
   );
 
   const handleSubmit = useCallback(async () => {
@@ -1002,10 +1021,9 @@ function CollectionCreateDrawer(props: {
         >
           <Input />
         </Form.Item>
+        {templateConfigureItems}
         {isSqlTemplate ? (
           <>
-            {TemplateConfigureForm ? <TemplateConfigureForm mode="create" template={template} form={form} /> : null}
-            <CollectionTemplateConfigureItems mode="create" template={template} form={form} />
             {hasTemplateCapability(template, 'recordUniqueKey') ? (
               <CollectionCreateFilterTargetKey form={form} />
             ) : null}
@@ -1014,8 +1032,6 @@ function CollectionCreateDrawer(props: {
           </>
         ) : isViewTemplate ? (
           <>
-            {TemplateConfigureForm ? <TemplateConfigureForm mode="create" template={template} form={form} /> : null}
-            <CollectionTemplateConfigureItems mode="create" template={template} form={form} />
             {hasTemplateCapability(template, 'recordUniqueKey') ? (
               <CollectionCreateFilterTargetKey form={form} />
             ) : null}
@@ -1033,9 +1049,11 @@ function CollectionCreateDrawer(props: {
           </>
         ) : (
           <>
-            <Form.Item name="inherits" label={t('Inherits')}>
-              <Select mode="multiple" options={collectionOptions} loading={collectionRequest.loading} allowClear />
-            </Form.Item>
+            {supportsInherits ? (
+              <Form.Item name="inherits" label={t('Inherits')}>
+                <Select mode="multiple" options={collectionOptions} loading={collectionRequest.loading} allowClear />
+              </Form.Item>
+            ) : null}
             {collectionCategoryFormItem}
             {collectionDescriptionFormItem}
             <Form.Item
@@ -1047,8 +1065,6 @@ function CollectionCreateDrawer(props: {
             >
               <Checkbox>{t('Use simple pagination mode')}</Checkbox>
             </Form.Item>
-            {TemplateConfigureForm ? <TemplateConfigureForm mode="create" template={template} form={form} /> : null}
-            <CollectionTemplateConfigureItems mode="create" template={template} form={form} />
             {hasTemplateCapability(template, 'recordUniqueKey') ? (
               <CollectionCreateFilterTargetKey form={form} />
             ) : null}
@@ -1280,6 +1296,13 @@ function CollectionEditDrawer(props: {
   }
 
   const TemplateConfigureForm = template?.configure?.Form || template?.ConfigureForm;
+  const supportsInherits = supportsTemplateInherits(template);
+  const templateConfigureItems = template ? (
+    <>
+      {TemplateConfigureForm ? <TemplateConfigureForm mode="edit" template={template} form={form} /> : null}
+      <CollectionTemplateConfigureItems mode="edit" template={template} form={form} />
+    </>
+  ) : null;
 
   return (
     <DrawerFormLayout
@@ -1303,11 +1326,14 @@ function CollectionEditDrawer(props: {
         >
           <Input disabled />
         </Form.Item>
+        {templateConfigureItems}
         {isMainDataSource ? (
           <>
-            <Form.Item name="inherits" label={t('Inherits')}>
-              <Select mode="multiple" options={collectionOptions} loading={collectionRequest.loading} allowClear />
-            </Form.Item>
+            {supportsInherits ? (
+              <Form.Item name="inherits" label={t('Inherits')}>
+                <Select mode="multiple" options={collectionOptions} loading={collectionRequest.loading} allowClear />
+              </Form.Item>
+            ) : null}
             <Form.Item name="category" label={t('Categories')}>
               <Select
                 mode="multiple"
@@ -1343,10 +1369,6 @@ function CollectionEditDrawer(props: {
             <Select mode="multiple" options={filterTargetKeyOptions} loading={fieldsRequest.loading} allowClear />
           </Form.Item>
         ) : null}
-        {template && TemplateConfigureForm ? (
-          <TemplateConfigureForm mode="edit" template={template} form={form} />
-        ) : null}
-        {template ? <CollectionTemplateConfigureItems mode="edit" template={template} form={form} /> : null}
       </Form>
     </DrawerFormLayout>
   );
@@ -1454,10 +1476,20 @@ function CollectionsPage(props: CollectionsPageProps) {
         ),
         width: '80%',
         closable: true,
-        content: () => <FieldsPage dataSourceKey={props.dataSourceKey} collection={collection} />,
+        content: () => (
+          <FieldsPage
+            dataSourceKey={props.dataSourceKey}
+            collection={collection}
+            onCollectionChange={(collectionName, values) => {
+              Object.assign(collection, values);
+              request.mutate(updateCollectionListRecord(request.data, collectionName, values));
+              request.refresh();
+            }}
+          />
+        ),
       });
     },
-    [ctx.viewer, props.dataSourceKey, t],
+    [ctx.viewer, props.dataSourceKey, request, t],
   );
 
   const handleCategoryChange = useCallback((key: string) => {

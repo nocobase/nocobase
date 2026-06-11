@@ -57,6 +57,11 @@
             "type": "custom-link",
             "label": "Канбан",
             "link": "/interface-builder/blocks/data-blocks/kanban"
+          },
+          {
+            "type": "custom-link",
+            "label": "Диаграмма Ганта",
+            "link": "/interface-builder/blocks/data-blocks/gantt"
           }
         ]
       },
@@ -325,6 +330,11 @@
             "type": "custom-link",
             "label": "Обязательное",
             "link": "/interface-builder/fields/field-settings/required"
+          },
+          {
+            "type": "custom-link",
+            "label": "Ввод через сканирование",
+            "link": "/interface-builder/fields/field-settings/scan-input"
           },
           {
             "type": "custom-link",

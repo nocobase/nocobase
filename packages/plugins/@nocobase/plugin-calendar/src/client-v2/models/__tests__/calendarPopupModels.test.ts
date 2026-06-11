@@ -632,4 +632,106 @@ describe('calendarPopupModels', () => {
       dataSourceKey: 'main',
     });
   });
+
+  it('should keep popup collection context in add and event drawers', () => {
+    const model = Object.create(CalendarBlockModel.prototype) as CalendarBlockModel;
+    Object.defineProperty(model, 'collection', {
+      value: {
+        name: 'events',
+        dataSourceKey: 'main',
+      },
+      configurable: true,
+    });
+    Object.defineProperty(model, 'props', {
+      value: {},
+      configurable: true,
+    });
+
+    expect(model.getPopupSettings({ uid: 'quick-action' }, 'quickCreateAction')).toMatchObject({
+      uid: 'quick-action',
+      collectionName: 'events',
+      dataSourceKey: 'main',
+    });
+    expect(model.getPopupSettings({ uid: 'event-action' }, 'eventViewAction')).toMatchObject({
+      uid: 'event-action',
+      collectionName: 'events',
+      dataSourceKey: 'main',
+    });
+  });
+
+  it('should open quick-create drawer through flow context openView with selected slot data', async () => {
+    const openView = vi.fn().mockResolvedValue(undefined);
+    const ensurePopupAction = vi.fn().mockResolvedValue({ uid: 'quick-create-action' });
+    const slotInfo = {
+      start: new Date(2026, 3, 20, 9, 30, 0),
+      end: new Date(2026, 3, 20, 10, 30, 0),
+    };
+
+    await CalendarBlockModel.prototype.openQuickCreate.call(
+      {
+        props: {},
+        context: {
+          openView,
+          layoutContentElement: { id: 'layout-root' },
+        },
+        collection: {
+          name: 'events',
+          dataSourceKey: 'main',
+          getField: () => ({
+            getComponentProps: () => ({ picker: 'date', showTime: true }),
+          }),
+        },
+        ensurePopupAction,
+        getFieldNames: () => ({ start: 'startsAt', end: 'endsAt' }),
+      } as any,
+      slotInfo,
+    );
+
+    expect(ensurePopupAction).toHaveBeenCalledWith('quickCreateAction');
+    expect(openView).toHaveBeenCalledWith('quick-create-action', {
+      formData: {
+        startsAt: '2026-04-20 09:30:00',
+        endsAt: '2026-04-20 10:30:00',
+      },
+      dataSourceKey: 'main',
+      collectionName: 'events',
+      navigation: false,
+      target: { id: 'layout-root' },
+      defineProperties: {
+        calendarSelectedSlot: { value: slotInfo },
+        calendarFieldNames: { value: { start: 'startsAt', end: 'endsAt' } },
+      },
+    });
+  });
+
+  it('should open event drawer through flow context openView with record filter key', async () => {
+    const openView = vi.fn().mockResolvedValue(undefined);
+    const ensurePopupAction = vi.fn().mockResolvedValue({ uid: 'event-view-action' });
+
+    await CalendarBlockModel.prototype.openEvent.call(
+      {
+        context: {
+          openView,
+          layoutContentElement: { id: 'layout-root' },
+        },
+        collection: {
+          name: 'events',
+          dataSourceKey: 'main',
+          filterTargetKey: 'id',
+          getFilterByTK: (record: any) => record.id,
+        },
+        ensurePopupAction,
+      } as any,
+      { id: 7 },
+    );
+
+    expect(ensurePopupAction).toHaveBeenCalledWith('eventViewAction');
+    expect(openView).toHaveBeenCalledWith('event-view-action', {
+      dataSourceKey: 'main',
+      collectionName: 'events',
+      filterByTk: 7,
+      navigation: false,
+      target: { id: 'layout-root' },
+    });
+  });
 });

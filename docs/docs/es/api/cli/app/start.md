@@ -20,7 +20,6 @@ nb app start [flags]
 | --- | --- | --- |
 | `--env`, `-e` | string | Nombre del env del CLI a iniciar; si se omite, se utiliza el env actual |
 | `--yes`, `-y` | boolean | Cuando un `--env` pasado explícitamente apunta a una env distinta de la env actual, omite la confirmación interactiva |
-| `--daemon`, `-d` / `--no-daemon` | boolean | Si ejecutar en modo daemon; activado por defecto |
 | `--verbose` | boolean | Mostrar la salida de los comandos subyacentes locales o de Docker |
 
 ## Ejemplos
@@ -28,8 +27,6 @@ nb app start [flags]
 ```bash
 nb app start
 nb app start --env local
-nb app start --env local --daemon
-nb app start --env local --no-daemon
 nb app start --env local --verbose
 nb app start --env local-docker
 ```
@@ -37,9 +34,6 @@ nb app start --env local-docker
 Si pasa `--env` explícitamente y es diferente de la env actual, la CLI pedirá confirmación primero. En terminales no interactivos o sesiones de agentes de IA, agregue `--yes` usted mismo o ejecute antes `nb env use <name>` y vuelva a intentarlo.
 
 De forma predeterminada, cuando corresponda, la CLI primero ejecuta `nb license plugins sync --skip-if-no-license` para sincronizar los plugins comerciales permitidos por la licencia actual. Después, los env locales completan automáticamente la preparación de instalación o actualización necesaria antes de iniciarse en segundo plano, y los env de Docker vuelven a crear el contenedor de la aplicación a partir de la configuración guardada del env. Siempre que la CLI tenga que esperar a que la aplicación esté lista, comprobará `__health_check`: primero mostrará una línea de espera y después una línea de progreso cada 10 segundos hasta que la aplicación esté disponible o se agote el tiempo.
-
-Si pasa `--no-daemon` para un env local, la aplicación se ejecutará en primer plano. En ese caso, la CLI no seguirá esperando la comprobación de disponibilidad después del arranque.
-
 ## Comandos relacionados
 
 - [`nb app stop`](./stop.md)

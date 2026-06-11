@@ -11,6 +11,7 @@ import { defineCollection } from '@nocobase/database';
 
 export default defineCollection({
   name: 'uiButtonSchemasRoles',
+  dataCategory: 'system',
   dumpRules: 'required',
   autoGenId: false,
   migrationRules: ['overwrite', 'schema-only'],

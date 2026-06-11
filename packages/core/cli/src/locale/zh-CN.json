@@ -54,6 +54,7 @@
     "apiBaseUrl": {
       "invalid": "请输入有效的 URL，例如 {{example}}。",
       "invalidProtocol": "URL 必须以 http:// 或 https:// 开头，例如 {{example}}。",
+      "missingApiPrefix": "API 基础地址必须包含 /api 前缀，例如 {{example}}。",
       "healthCheckPathNotAllowed": "API 基础地址中不要包含 /__health_check。请输入应用的 API 基础地址，例如 http://localhost:13000/api。",
       "maintaining": "该 API 地址可以访问，但应用仍在启动或维护过程中，请稍后再试。",
       "healthCheckFailed": "该 API 地址未通过健康检查（HTTP {{status}}），请确认它指向的是一个正在运行的 NocoBase API 地址。",
@@ -149,7 +150,7 @@
         "appEntryMissingInclude": "可编辑入口配置 {{appConfigPath}} 没有引用 {{generatedConfigPath}}。请把托管的 generated 配置引用补回入口配置中，然后重新执行该命令。",
         "nginxOutputUnsupported": "nginx provider 不支持 `--output`。它会把 `app.conf`、`public/index-v1.html`、`public/index-v2.html` 和 `nocobase.conf` 写入 `~/.nocobase/proxy/nginx/<env>/`。",
         "caddyOutputUnsupported": "caddy provider 不支持 `--output`。它会把 `app.caddy`、`generated.caddy`、`public/index-v1.html`、`public/index-v2.html` 和 `nocobase.caddy` 写入 `~/.nocobase/proxy/caddy/<env>/`。",
-        "nginxAppEntryMissingManagedBlock": "可编辑的 nginx 入口配置 {{appConfigPath}} 不包含 NocoBase 的托管区块。请恢复这个托管区块，或删除该文件后重新执行 `nb env proxy`。"
+        "nginxAppEntryMissingManagedBlock": "可编辑的 nginx 入口配置 {{appConfigPath}} 不包含 NocoBase 的托管区块。请恢复这个托管区块，或删除该文件后重新执行 `nb proxy nginx generate`。"
       }
     },
     "shared": {
@@ -201,7 +202,7 @@
         },
         "messages": {
           "activated": "已为 env \"{{envName}}\" 激活 license。",
-          "savedLicenseKey": "license key 已保存到 {{licenseKeyPath}}"
+          "savedLicenseKey": "已为当前 env 安全保存 license key"
         }
       }
     },

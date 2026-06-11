@@ -38,6 +38,27 @@ nb init --env app1 --resume
 
 `--resume` は、すでに env 設定が保存されている初期化フローにのみ適用でき、`--env` を明示的に渡す必要があります。
 
+## 先に env を準備し、アプリのインストールは後で行う
+
+`--prepare-only` は、最初に env を準備し、その後 license を有効化し、最後にアプリをインストールして起動する必要があるフロー向けです。
+
+env 設定を先に保存し、ソースファイルまたはイメージを準備し、データベースも用意しておきたい一方で、実際のアプリインストールと初回起動は後回しにしたい場合は、次のように実行できます:
+
+```bash
+nb init --env app1 --prepare-only
+nb init --env app1 --prepare-only --ui
+nb init --env app1 --prepare-only --yes
+```
+
+このモードは `--ui` ウィザードを含むローカルインストールフローで利用できますが、リモート接続フローでは利用できません。CLI は現在の env を prepared 状態として保存するため、後で次のようなフローで続行できます:
+
+```bash
+nb license activate --env app1
+nb app start --env app1
+```
+
+その後、`nb app start` が初回インストールを完了し、env を prepared 状態から通常の installed 状態へ切り替えます。
+
 ## インストールディレクトリの説明
 
 完全なパスは `nb env info app1 --field app.appPath` で確認できます。
@@ -78,7 +99,7 @@ nb init --env app1 --resume
 
 | Step                      | 主に確認するパラメータ                                                                                                                                                                                            |
 | ------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `Getting started`         | `--env`、`--yes`、`--ui`、`--locale`、`--verbose`、`--skip-skills`、`--resume`                                                                                                                                    |
+| `Getting started`         | `--env`、`--yes`、`--ui`、`--locale`、`--verbose`、`--skip-skills`、`--resume`、`--prepare-only`                                                                                                                 |
 | `App environment`         | `--lang`、`--app-path`、`--app-port`、`--force`                                                                                                                                                                   |
 | `App source and version`  | `--source`、`--version`、`--skip-download`、`--git-url`、`--docker-registry`、`--docker-platform`、`--npm-registry`、`--replace`、`--dev-dependencies`、`--output-dir`、`--docker-save`、`--build`、`--build-dts` |
 | `Configure the database`  | `--builtin-db`、`--db-dialect`、`--builtin-db-image`、`--db-host`、`--db-port`、`--db-database`、`--db-user`、`--db-password`、`--db-schema`、`--db-table-prefix`、`--db-underscored`                             |
@@ -104,6 +125,7 @@ nb init --env app1 --resume
 | `--ui-port`     | integer | `0`                                                                                   | `--ui` ローカルサービスポート。`0` は自動割り当てを意味する                  |
 | `--locale`      | string  | `NB_LOCALE`、CLI 設定、またはシステム locale に従い、最終的なフォールバックは `en-US` | CLI プロンプトとローカル setup UI の言語: `en-US` または `zh-CN`             |
 | `--resume`      | boolean | `false`                                                                               | 前回未完了だった初期化を続行し、保存済みの workspace env config を再利用する |
+| `--prepare-only` | boolean | `false`                                                                              | `--ui` フローを含むローカルインストール env を保存して準備するが、アプリはまだインストールも起動もしない |
 
 ### 既存アプリへの接続
 
@@ -178,6 +200,14 @@ nb init
 ```bash
 nb init --ui
 nb init --ui --ui-port 3000
+```
+
+### 先に準備し、その後で license を有効化して起動する
+
+```bash
+nb init --env app1 --prepare-only
+nb license activate --env app1
+nb app start --env app1
 ```
 
 ### 非対話モードで新しいローカルアプリをインストールする

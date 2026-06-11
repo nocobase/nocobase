@@ -8,6 +8,7 @@
  */
 
 import { ReloadOutlined } from '@ant-design/icons';
+import { css, cx } from '@emotion/css';
 import type { Collection } from '@nocobase/flow-engine';
 import { useFlowView } from '@nocobase/flow-engine';
 import { useMemoizedFn, useRequest } from 'ahooks';
@@ -68,6 +69,39 @@ export function ResourcePickerView<RecordType extends object = Record<string, un
   const [pageSize, setPageSize] = useState(props.defaultPageSize ?? DEFAULT_PAGE_SIZE);
   const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
   const [selectedRows, setSelectedRows] = useState<RecordType[]>([]);
+  const tableClassName = useMemo(
+    () => css`
+      flex: 1;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+
+      .ant-spin-nested-loading,
+      .ant-spin-container,
+      .ant-table,
+      .ant-table-container {
+        min-height: 0;
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+      }
+
+      .ant-table-content,
+      .ant-table-body {
+        flex: 1;
+        min-height: 0;
+      }
+
+      .ant-table-thead > tr > th {
+        white-space: nowrap;
+      }
+
+      .ant-pagination {
+        flex: 0 0 auto;
+      }
+    `,
+    [],
+  );
 
   const service = useMemoizedFn(async () => {
     return props.request({ filter, page, pageSize });
@@ -102,32 +136,57 @@ export function ResourcePickerView<RecordType extends object = Record<string, un
     await props.onSubmit(selectedRows, selectedRowKeys);
     await view.close({ selectedRows, selectedRowKeys });
   });
+  const { className: tablePropClassName, scroll: tablePropScroll, ...restTableProps } = props.tableProps ?? {};
 
   return (
-    <div>
+    <div style={{ flex: 1, height: '100%', minHeight: 0, display: 'flex', flexDirection: 'column' }}>
       {view.Header ? <view.Header title={props.title} /> : null}
-      <div style={{ padding: token.paddingLG }}>
-        <Space style={{ marginBottom: token.marginSM }}>
-          {props.collection ? (
-            <CollectionFilter
-              collection={props.collection}
-              t={t}
-              filterableFieldNames={props.filterableFieldNames}
-              noIgnore={props.noIgnore}
-              onChange={handleFilterChange}
-            />
-          ) : null}
-          <Button icon={<ReloadOutlined />} onClick={refresh}>
-            {t('Refresh')}
-          </Button>
-        </Space>
+      <div
+        style={{
+          flex: 1,
+          minHeight: 0,
+          display: 'flex',
+          flexDirection: 'column',
+          overflow: 'hidden',
+        }}
+      >
+        <div
+          style={{
+            flex: '0 0 auto',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            gap: token.marginSM,
+            flexWrap: 'wrap',
+            marginBottom: token.marginSM,
+          }}
+        >
+          <Space wrap>
+            {props.collection ? (
+              <CollectionFilter
+                collection={props.collection}
+                t={t}
+                filterableFieldNames={props.filterableFieldNames}
+                noIgnore={props.noIgnore}
+                onChange={handleFilterChange}
+              />
+            ) : null}
+          </Space>
+          <Space wrap>
+            <Button icon={<ReloadOutlined />} onClick={refresh}>
+              {t('Refresh')}
+            </Button>
+          </Space>
+        </div>
         <Table<RecordType>
-          {...props.tableProps}
+          {...restTableProps}
           rowKey={props.rowKey}
           loading={loading}
           dataSource={data?.data ?? []}
           columns={props.columns}
           pagination={pagination}
+          scroll={{ x: 'max-content', y: '100%', ...tablePropScroll }}
+          className={cx(tableClassName, tablePropClassName)}
           rowSelection={{
             type: props.selectionType ?? 'checkbox',
             selectedRowKeys,

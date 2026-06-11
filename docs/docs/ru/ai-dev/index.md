@@ -25,7 +25,7 @@ keywords: "AI-разработка,AI Development,NocoBase AI,разработк
 ### Ручная установка
 
 ```bash
-npm install -g @nocobase/cli@beta
+npm install -g @nocobase/cli
 nb init --ui
 ```
 

@@ -1,12 +1,12 @@
 ---
-title: 'nb config delete'
-description: 'Referência do comando nb config delete: exclui um item de configuração da CLI definido explicitamente.'
-keywords: 'nb config delete,NocoBase CLI,excluir configuração'
+title: "nb config delete"
+description: "Referência do comando nb config delete: exclua um item de configuração da CLI definido explicitamente."
+keywords: "nb config delete,NocoBase CLI,excluir configuração"
 ---
 
 # nb config delete
 
-Exclui um item de configuração da CLI definido explicitamente. Após a exclusão, esse item volta ao valor padrão.
+Exclui um item de configuração da CLI que tenha sido definido explicitamente. Após a exclusão, esse item volta ao valor padrão.
 
 ## Uso
 

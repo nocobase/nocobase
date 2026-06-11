@@ -38,6 +38,27 @@ nb init --env app1 --resume
 
 `--resume` chỉ áp dụng cho các luồng khởi tạo mà env config đã được lưu trước đó, và bắt buộc phải truyền rõ ràng `--env`.
 
+## Chuẩn bị env trước, cài app sau
+
+`--prepare-only` dành cho các luồng mà bạn cần chuẩn bị env trước, sau đó kích hoạt license, rồi mới cài đặt và khởi động app.
+
+Nếu bạn muốn lưu cấu hình env trước, chuẩn bị source code hoặc image, đồng thời chuẩn bị sẵn cơ sở dữ liệu, nhưng tạm hoãn việc cài đặt app thực tế và lần khởi động đầu tiên, bạn có thể dùng:
+
+```bash
+nb init --env app1 --prepare-only
+nb init --env app1 --prepare-only --ui
+nb init --env app1 --prepare-only --yes
+```
+
+Chế độ này khả dụng cho các luồng cài đặt cục bộ, bao gồm cả trình hướng dẫn `--ui`. Nó không khả dụng cho các luồng kết nối từ xa. CLI sẽ lưu env hiện tại ở trạng thái prepared, để sau đó bạn có thể tiếp tục với luồng như sau:
+
+```bash
+nb license activate --env app1
+nb app start --env app1
+```
+
+Sau đó, `nb app start` sẽ hoàn tất lần cài đặt đầu tiên và chuyển env từ trạng thái prepared sang trạng thái installed thông thường.
+
 ## Giải thích thư mục cài đặt
 
 Bạn có thể xem đường dẫn đầy đủ bằng `nb env info app1 --field app.appPath`.
@@ -78,7 +99,7 @@ Nếu bạn đang thao tác từng bước theo trình hướng dẫn UI cục b
 
 | Step                      | Các tham số cần chú ý chính                                                                                                                                                                                       |
 | ------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `Getting started`         | `--env`、`--yes`、`--ui`、`--locale`、`--verbose`、`--skip-skills`、`--resume`                                                                                                                                    |
+| `Getting started`         | `--env`、`--yes`、`--ui`、`--locale`、`--verbose`、`--skip-skills`、`--resume`、`--prepare-only`                                                                                                                 |
 | `App environment`         | `--lang`、`--app-path`、`--app-port`、`--force`                                                                                                                                                                   |
 | `App source and version`  | `--source`、`--version`、`--skip-download`、`--git-url`、`--docker-registry`、`--docker-platform`、`--npm-registry`、`--replace`、`--dev-dependencies`、`--output-dir`、`--docker-save`、`--build`、`--build-dts` |
 | `Configure the database`  | `--builtin-db`、`--db-dialect`、`--builtin-db-image`、`--db-host`、`--db-port`、`--db-database`、`--db-user`、`--db-password`、`--db-schema`、`--db-table-prefix`、`--db-underscored`                             |
@@ -104,6 +125,7 @@ Có khá nhiều tham số, nên sẽ dễ hiểu hơn nếu tách ra theo từn
 | `--ui-port`     | integer | `0`                                                                                | Cổng dịch vụ cục bộ `--ui`; `0` nghĩa là tự động cấp phát                             |
 | `--locale`      | string  | Theo `NB_LOCALE`, cấu hình CLI hoặc locale hệ thống; fallback cuối cùng là `en-US` | Ngôn ngữ của lời nhắc CLI và UI setup cục bộ: `en-US` hoặc `zh-CN`                    |
 | `--resume`      | boolean | `false`                                                                            | Tiếp tục lần khởi tạo trước đó chưa hoàn tất, tái sử dụng workspace env config đã lưu |
+| `--prepare-only` | boolean | `false`                                                                           | Lưu và chuẩn bị env cài đặt cục bộ, bao gồm các luồng `--ui`, nhưng chưa cài đặt hay khởi động app |
 
 ### Kết nối ứng dụng đã có sẵn
 
@@ -178,6 +200,14 @@ nb init
 ```bash
 nb init --ui
 nb init --ui --ui-port 3000
+```
+
+### Chuẩn bị trước, rồi kích hoạt license và khởi động sau
+
+```bash
+nb init --env app1 --prepare-only
+nb license activate --env app1
+nb app start --env app1
 ```
 
 ### Cài đặt không tương tác một ứng dụng cục bộ mới

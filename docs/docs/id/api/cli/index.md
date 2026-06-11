@@ -191,7 +191,6 @@ File ini dibuat atau diperbarui oleh [`nb env update`](./env/update.md), dan dig
 ## Tautan terkait
 
 - [Mulai cepat](../../ai/quick-start.mdx)
-- [Instalasi, upgrade, dan migrasi](../../ai/install-upgrade-migration.mdx)
 - [Variabel lingkungan global](../app/env.md)
 - [Pembangunan AI](../../ai-builder/index.md)
 - [Pengembangan plugin](../../plugin-development/index.md)

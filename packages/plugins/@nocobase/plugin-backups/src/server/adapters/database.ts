@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { DatabaseOptions } from '@nocobase/database';
 import { exec as execCallback, execSync, spawn } from 'child_process';
 import { createReadStream, createWriteStream } from 'fs';
@@ -13,10 +22,23 @@ const D$$ = os.platform() === 'win32' ? '$$' : '\\$\\$';
 
 const STREAM_BUFFER_SIZE = 2 * 1024 * 1024; // 2MB buffer for better IO performance
 
+export type DBBackupOptions = {
+  dir: string;
+  skipFdw?: boolean;
+  includeTables?: string[];
+  excludeTables?: string[];
+};
+
+export type DBRestoreOptions = {
+  filePath: string;
+  schema?: string;
+  skipDropAllTables?: boolean;
+};
+
 export interface DBAdapter {
   dbOpts: DatabaseOptions;
-  backup(dir: string, skipFdw?: boolean): Promise<void>;
-  restore(filePath: string, schema?: string): Promise<void>;
+  backup(options: DBBackupOptions): Promise<void>;
+  restore(options: DBRestoreOptions): Promise<void>;
   check(op: 'backup' | 'restore'): Promise<void>;
   clientVersion(op: 'backup' | 'restore'): Promise<string | void>;
 }
@@ -37,12 +59,23 @@ const formatPathInEnv = (path?: string) => {
   return path;
 };
 const escapeStringLiteral = (value: string) => String(value).replace(/'/g, "''");
+const quotePgIdentifier = (value: string) => `"${String(value).replace(/"/g, '""')}"`;
+const quoteShellArg = (value: string) => `'${String(value).replace(/'/g, "'\\''")}'`;
+const quotePgTablePattern = (table: string) => quoteShellArg(String(table).split('.').map(quotePgIdentifier).join('.'));
+const qualifyPgTablePattern = (table: string, schema?: string) => {
+  const tablePattern = String(table);
+  if (!schema || tablePattern.includes('.')) {
+    return tablePattern;
+  }
+
+  return `${schema}.${tablePattern}`;
+};
 
 abstract class BaseDBAdapter implements DBAdapter {
   constructor(public dbOpts: DatabaseOptions) {}
 
-  abstract backup(dir: string, skipFdw?: boolean): Promise<void>;
-  abstract restore(filePath: string): Promise<void>;
+  abstract backup(options: DBBackupOptions): Promise<void>;
+  abstract restore(options: DBRestoreOptions): Promise<void>;
 
   async check(_: 'backup' | 'restore') {}
   async clientVersion(_: 'backup' | 'restore'): Promise<string | void> {}
@@ -82,7 +115,7 @@ class MySQLAdapter extends BaseDBAdapter {
     }
   }
 
-  async backup(dir: string, skipFdw = false): Promise<void> {
+  async backup({ dir, skipFdw = false, includeTables, excludeTables }: DBBackupOptions): Promise<void> {
     const { username, host, port, database, password } = this.dbOpts;
     const filePath = `${dir}/data`;
     const versionStr = await this.clientVersion('backup');
@@ -93,6 +126,13 @@ class MySQLAdapter extends BaseDBAdapter {
     if (!skipFdw) {
       createServerSQL = await this.#getFederatedServerSQL(username, host, port, database, password);
     }
+
+    const includeOption =
+      Array.isArray(includeTables) && includeTables.length ? includeTables.map((table) => table) : [];
+    const excludeOption =
+      Array.isArray(excludeTables) && excludeTables.length
+        ? excludeTables.map((table) => `--ignore-table=${database}.${table}`)
+        : [];
 
     const mysqldumpArgs = [
       '-u',
@@ -110,6 +150,14 @@ class MySQLAdapter extends BaseDBAdapter {
       ...(version && version > 7 ? ['--column-statistics=0'] : []),
       database,
     ];
+
+    if (excludeOption.length) {
+      mysqldumpArgs.push(...excludeOption);
+    }
+
+    if (includeOption.length) {
+      mysqldumpArgs.push(...includeOption);
+    }
 
     // Stream mysqldump output directly to final file (no intermediate file)
     return new Promise((resolve, reject) => {
@@ -226,12 +274,13 @@ class MySQLAdapter extends BaseDBAdapter {
     }
   }
 
-  async restore(filePath: string): Promise<void> {
+  async restore({ filePath, skipDropAllTables = false }: DBRestoreOptions): Promise<void> {
     const { username, host, port, database, password } = this.dbOpts;
 
-    const dropDataCommand = `mysql -u ${username} -h ${host} ${
-      port ? `-P ${port}` : ''
-    } --protocol=tcp -D ${database} -e "
+    if (!skipDropAllTables) {
+      const dropDataCommand = `mysql -u ${username} -h ${host} ${
+        port ? `-P ${port}` : ''
+      } --protocol=tcp -D ${database} -e "
     DELIMITER $$
     DROP PROCEDURE IF EXISTS drop_all_tables_and_triggers$$
     CREATE PROCEDURE drop_all_tables_and_triggers()
@@ -312,8 +361,9 @@ class MySQLAdapter extends BaseDBAdapter {
     DELIMITER ;
     "`;
 
-    // Run the command to drop all tables
-    await run(dropDataCommand, { MYSQL_PWD: password });
+      // Run the command to drop all tables
+      await run(dropDataCommand, { MYSQL_PWD: password });
+    }
 
     const command = `${this.#restoreCmd} -u ${username} -h ${host} ${
       port ? `-P ${port}` : ''
@@ -349,18 +399,30 @@ class PostgresAdapter extends BaseDBAdapter {
     }
   }
 
-  async backup(dir: string): Promise<void> {
+  async backup({ dir, includeTables, excludeTables }: DBBackupOptions): Promise<void> {
     const { username, host, port, database, password, schema: backupSchema } = this.dbOpts;
     const filePath = `${dir}/data`;
     const schemaOption = backupSchema ? `--schema=${backupSchema}` : '';
+    const includeOption =
+      Array.isArray(includeTables) && includeTables.length
+        ? includeTables
+            .map((table) => `-t ${quotePgTablePattern(qualifyPgTablePattern(table, backupSchema))}`)
+            .join(' ')
+        : '';
+    const excludeOption =
+      Array.isArray(excludeTables) && excludeTables.length
+        ? excludeTables
+            .map((table) => `-T ${quotePgTablePattern(qualifyPgTablePattern(table, backupSchema))}`)
+            .join(' ')
+        : '';
     // set the password in the environment variable, so we don't need to pass it in the command
-    const command = `${this.#backupCmd} -U ${username} -h ${host} ${
+    const command = `${this.#backupCmd} ${includeOption} ${excludeOption} -U ${username} -h ${host} ${
       port ? `-p ${port}` : ''
     } -F c -b --quote-all-identifiers ${schemaOption} -f ${filePath} ${database}`;
     await run(command, { PGPASSWORD: password });
   }
 
-  async restore(filePath: string, schema?: string): Promise<void> {
+  async restore({ filePath, schema, skipDropAllTables = false }: DBRestoreOptions): Promise<void> {
     const { username, host, port, database, password } = this.dbOpts;
     let schemaOption = this.dbOpts.schema;
     if (schema && !schemaOption) {
@@ -374,7 +436,8 @@ class PostgresAdapter extends BaseDBAdapter {
     const relnamespaceCondition = schemaOption
       ? `WHERE relnamespace = '${schemaOption}'::regnamespace`
       : `WHERE tgrelid IN (SELECT oid FROM pg_class WHERE relnamespace NOT IN (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname IN ('pg_catalog', 'information_schema')))`;
-    const dropDataCommand = `psql -U ${username} -h ${host} ${port ? `-p ${port}` : ''} -d ${database} -c "
+    if (!skipDropAllTables) {
+      const dropDataCommand = `psql -U ${username} -h ${host} ${port ? `-p ${port}` : ''} -d ${database} -c "
     DO ${D$$} DECLARE r RECORD;
     BEGIN
     FOR r IN (SELECT viewname,schemaname FROM pg_views ${schemaNameCondition}) LOOP
@@ -415,8 +478,9 @@ class PostgresAdapter extends BaseDBAdapter {
 
     END ${D$$};"`.replace(/\n/g, ' ');
 
-    // Run the command to drop all existing data
-    await run(dropDataCommand, { PGPASSWORD: password });
+      // Run the command to drop all existing data
+      await run(dropDataCommand, { PGPASSWORD: password });
+    }
 
     if (schema === schemaOption || !schemaOption) {
       // current schema is the same as the backup schema
@@ -497,7 +561,7 @@ class PostgresAdapter extends BaseDBAdapter {
 }
 
 class SQLiteAdapter extends BaseDBAdapter {
-  async backup(dir: string): Promise<void> {
+  async backup({ dir }: DBBackupOptions): Promise<void> {
     const { storage } = this.dbOpts;
     const filePath = `${dir}/data`;
     const dbFilePath = path.resolve(storage);
@@ -505,7 +569,7 @@ class SQLiteAdapter extends BaseDBAdapter {
     await fsPromises.copyFile(dbFilePath, filePath);
   }
 
-  async restore(filePath: string): Promise<void> {
+  async restore({ filePath }: DBRestoreOptions): Promise<void> {
     const { storage } = this.dbOpts;
     const dbFilePath = path.resolve(storage);
     await fsPromises.copyFile(filePath, dbFilePath, fsPromises.constants.COPYFILE_FICLONE);

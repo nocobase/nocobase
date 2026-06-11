@@ -95,13 +95,27 @@ La IA primero presenta el diseño de la solución y, una vez confirmado, la cons
 
 Para conocer más sobre la construcción de sistemas completos, consulte [Soluciones](./dsl-reconciler).
 
+### Construye un hito y la IA guarda una versión restaurable por ti
+
+Después de terminar una página, un conjunto de tablas de datos o un flujo de trabajo, deja que la IA guarde el estado actual como versión: si una configuración sale mal, siempre puedes volver al último hito claro.
+
+```
+Guarda la construcción actual como versión: página de gestión de clientes, área de filtros y formulario de edición completados
+```
+
+![La IA crea una versión después de construir](https://static-docs.nocobase.com/20260611115804.png)
+
+La IA no guarda una versión cada vez que cambia un campo; solo guarda tras completar y verificar un hito claro, lo que mantiene la lista de versiones legible y facilita decidir a dónde volver.
+
+Para conocer más sobre el control de versiones, consulte [Control de versiones](./version-control).
+
 ## Seguridad y auditoría
 
 Antes de permitir que un AI Agent opere NocoBase, le recomendamos comprender los métodos de autenticación, el control de permisos y la auditoría de operaciones, para asegurarse de que la IA solo haga lo que debe y de que cada paso quede registrado. Consulte [Seguridad y auditoría](./security).
 
 ## NocoBase Skills
 
-Los [NocoBase Skills](https://github.com/nocobase/skills) son paquetes de conocimiento de dominio que se pueden instalar en un AI Agent y permiten que la IA comprenda el sistema de configuración de NocoBase. NocoBase ofrece 8 Skills que cubren todo el flujo de construcción:
+Los [NocoBase Skills](https://github.com/nocobase/skills) son paquetes de conocimiento de dominio que se pueden instalar en un AI Agent y permiten que la IA comprenda el sistema de configuración de NocoBase. NocoBase ofrece 9 Skills que cubren todo el flujo de construcción:
 
 - [Gestión de entornos](./env-bootstrap): comprobación del entorno, instalación, despliegue, actualización y diagnóstico de fallos
 - [Modelado de datos](./data-modeling): creación y gestión de tablas, campos y relaciones
@@ -111,6 +125,7 @@ Los [NocoBase Skills](https://github.com/nocobase/skills) son paquetes de conoci
 - [Soluciones](./dsl-reconciler): construcción masiva de un sistema de negocio completo a partir de YAML
 - [Gestión de plugins](./plugin-manage): consultar, activar y desactivar plugins
 - [Gestión de publicación](./publish): publicación entre entornos, copia de seguridad, restauración y migración
+- [Control de versiones](./version-control): guardar versiones restaurables después de hitos completados
 
 :::tip Sugerencia
 

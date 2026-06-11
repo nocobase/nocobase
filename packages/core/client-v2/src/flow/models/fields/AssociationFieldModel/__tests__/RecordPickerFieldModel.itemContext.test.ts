@@ -20,6 +20,14 @@ import {
   resolveRecordPersistenceState,
 } from '../itemChain';
 import { injectRecordPickerPopupContext } from '@nocobase/client-v2';
+import {
+  canRecordPickerSelectMultiple,
+  getRecordPickerClearedValue,
+  getRecordPickerEmptyValue,
+  normalizeRecordPickerSelectedRows,
+  normalizeRecordPickerValue,
+  shouldClearRecordPickerValueOnMultipleChange,
+} from '../RecordPickerFieldModel';
 
 function createMockCollection() {
   return {
@@ -32,6 +40,59 @@ function createMockCollection() {
 }
 
 describe('RecordPickerFieldModel item context', () => {
+  it('resolves popup select multiple mode for association fields', () => {
+    expect(canRecordPickerSelectMultiple({ type: 'belongsToMany' })).toBe(true);
+    expect(canRecordPickerSelectMultiple({ type: 'hasMany' })).toBe(true);
+    expect(canRecordPickerSelectMultiple({ type: 'belongsToArray' })).toBe(true);
+    expect(canRecordPickerSelectMultiple({ type: 'belongsToMany' }, false)).toBe(false);
+    expect(canRecordPickerSelectMultiple({ type: 'belongsTo' })).toBe(false);
+    expect(canRecordPickerSelectMultiple({ type: 'hasOne' })).toBe(false);
+  });
+
+  it('normalizes popup select selected rows according to multiple mode', () => {
+    const rows = [
+      { id: 1, name: 'A' },
+      { id: 2, name: 'B' },
+    ];
+
+    expect(normalizeRecordPickerSelectedRows(rows, true)).toEqual(rows);
+    expect(normalizeRecordPickerSelectedRows(rows, false)).toEqual([{ id: 1, name: 'A' }]);
+    expect(normalizeRecordPickerSelectedRows({ id: 1, name: 'A' }, false)).toEqual([{ id: 1, name: 'A' }]);
+    expect(normalizeRecordPickerSelectedRows(undefined, true)).toEqual([]);
+  });
+
+  it('normalizes popup select display value according to multiple mode', () => {
+    const fieldNames = { label: 'name', value: 'id' };
+    const rows = [
+      { id: 1, name: 'A' },
+      { id: 2, name: 'B' },
+    ];
+
+    expect(normalizeRecordPickerValue(rows, fieldNames, true)).toEqual([
+      { id: 1, name: 'A', label: 'A', value: 1 },
+      { id: 2, name: 'B', label: 'B', value: 2 },
+    ]);
+    expect(normalizeRecordPickerValue(rows, fieldNames, false)).toEqual({ id: 1, name: 'A', label: 'A', value: 1 });
+    expect(normalizeRecordPickerValue(undefined, fieldNames, true)).toEqual([]);
+    expect(normalizeRecordPickerValue(undefined, fieldNames, false)).toBeUndefined();
+  });
+
+  it('returns the empty popup select value for the current multiple mode', () => {
+    expect(getRecordPickerEmptyValue(true)).toEqual([]);
+    expect(getRecordPickerEmptyValue(false)).toBeUndefined();
+  });
+
+  it('clears popup select value to undefined when multiple mode changes', () => {
+    expect(getRecordPickerClearedValue()).toBeUndefined();
+  });
+
+  it('detects when changing multiple mode should clear popup select value', () => {
+    expect(shouldClearRecordPickerValueOnMultipleChange({ type: 'belongsToMany' }, true, false)).toBe(true);
+    expect(shouldClearRecordPickerValueOnMultipleChange({ type: 'belongsToMany' }, false, true)).toBe(true);
+    expect(shouldClearRecordPickerValueOnMultipleChange({ type: 'belongsToMany' }, true, true)).toBe(false);
+    expect(shouldClearRecordPickerValueOnMultipleChange({ type: 'belongsTo' }, true, false)).toBe(false);
+  });
+
   it('itemChain helpers: createParentItemAccessorsFromInputArgs works', () => {
     const inputArgs = {
       parentItem: { value: { id: 1 } },

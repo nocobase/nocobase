@@ -2,7 +2,6 @@
 title: "Guía de integración para AI Agent"
 description: "Instale NocoBase CLI, conecte o instale una aplicación NocoBase y permita que los AI Agent comiencen a operar su sistema de negocio."
 keywords: "NocoBase CLI,AI Agent,Integración,Conectar,Instalar,Skills,Inicio rápido"
-sidebar: false
 ---
 
 # Guía de integración para AI Agent
@@ -145,6 +144,13 @@ Una vez completada la configuración, reinicie la sesión de su AI Agent y podr�
 
 ## A continuación
 
+### Instalación y despliegue en producción
+
+Si se está preparando para desplegar NocoBase en producción, este orden suele funcionar mejor:
+
+1. [Instalar usando CLI (recomendado)](../nocobase-cli/installation/cli.md) — el flujo completo de instalación. Este es el lugar adecuado si quiere instalar la CLI desde cero, inicializar el env y confirmar que la aplicación ya funciona correctamente en su servidor
+2. [Descripción general de la implementación del entorno de producción](../nocobase-cli/production/index.md) — el siguiente paso después de que la aplicación ya esté en funcionamiento. Aquí se cubren principalmente el inicio automático, el proxy inverso, el dominio y HTTPS
+
 ### Gestionar entornos de la aplicación
 
 Si necesita gestionar instancias existentes de NocoBase (por ejemplo, entornos de prueba o de producción) o cambiar entre varios entornos, consulte [Gestión de entornos](../ai-builder/env-bootstrap), que cubre la verificación, la incorporación de entornos, las actualizaciones y el diagnóstico de fallos.
@@ -172,4 +178,4 @@ Si ya tiene una aplicación NocoBase en ejecución o ya completó una inicializa
 - [Empleados de IA](../ai-employees/index.md) — Colabore con la IA dentro de la interfaz de negocio
 - [Gestión de entornos](../ai-builder/env-bootstrap) — Verificación, incorporación, actualización y diagnóstico de entornos
 - [Referencia de comandos de NocoBase CLI](../api/cli/index.md) — Descripción completa de todos los comandos
-- [Comparativa de métodos de instalación y versiones](../get-started/quickstart) — Distintos métodos de instalación y canales de versiones de NocoBase
+- [Comparativa de métodos de instalación y versiones](../ai/quickstart) — Distintos métodos de instalación y canales de versiones de NocoBase

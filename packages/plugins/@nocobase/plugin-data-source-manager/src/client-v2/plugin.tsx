@@ -18,7 +18,23 @@ import {
   ViewPreviewConfigureItem,
   ViewSourcesConfigureItem,
 } from './pages/components/ViewCollectionConfigure';
+import {
+  DataSourcePermissionTabRegistry,
+  type DataSourcePermissionTabOptionResolver,
+  type DataSourcePermissionTabProps,
+} from './registries';
 import { syncDataSourcesToRuntime } from './runtime';
+
+interface PluginAclClientV2Compat {
+  settingsUI: {
+    addPermissionsTab: (options: {
+      key: string;
+      label: React.ReactNode;
+      sort?: number;
+      componentLoader: () => Promise<unknown>;
+    }) => void;
+  };
+}
 
 export interface DataSourceSettingsFormProps {
   mode: 'create' | 'edit';
@@ -62,6 +78,10 @@ export interface DataSourceTypeOptions {
   disableAddFields?: boolean;
   disableConfigureFields?: boolean;
   disableTestConnection?: boolean;
+  capabilities?: {
+    query?: boolean;
+    runSQL?: boolean;
+  };
   AddCollection?: ComponentType<DataSourceCollectionActionProps>;
   EditCollection?: ComponentType<DataSourceCollectionActionProps>;
   DeleteCollection?: ComponentType<DataSourceCollectionActionProps>;
@@ -132,6 +152,7 @@ export interface CollectionTemplateOptions {
     fields?: CollectionTemplateField[] | (() => CollectionTemplateField[]);
   };
   capabilities?: {
+    inherits?: boolean;
     recordUniqueKey?: boolean;
     simplePaginate?: boolean;
   };
@@ -251,10 +272,19 @@ export class PluginDataSourceManagerClientV2 extends Plugin<any, Application> {
   extensionManager = new ExtensionManager();
   collectionTemplateRegistry = new CollectionTemplateRegistry();
   collectionPresetFieldRegistry = new CollectionPresetFieldRegistry();
+  permissionTabRegistry = new DataSourcePermissionTabRegistry();
 
   async load() {
     this.registerBuiltInCollectionPresetFields();
     this.registerBuiltInCollectionTemplates();
+
+    const aclPlugin = this.app.pm.get('@nocobase/plugin-acl') as PluginAclClientV2Compat | undefined;
+    aclPlugin?.settingsUI.addPermissionsTab({
+      key: 'dataSource',
+      label: String(this.t('Data sources')),
+      sort: 15,
+      componentLoader: () => import('./pages/permissions/DataSourcePermissionsTab'),
+    });
 
     this.dataSourceManager.registerLoader('*', async () => {
       const response = await this.app.apiClient.request({
@@ -321,6 +351,14 @@ export class PluginDataSourceManagerClientV2 extends Plugin<any, Application> {
 
   registerCollectionPresetField(options: CollectionPresetFieldOptions) {
     this.collectionPresetFieldRegistry.register(options);
+  }
+
+  registerPermissionTab(options: DataSourcePermissionTabOptionResolver) {
+    this.permissionTabRegistry.add(options);
+  }
+
+  getPermissionTabs(props: DataSourcePermissionTabProps) {
+    return this.permissionTabRegistry.getPermissionTabs(props);
   }
 
   addCollectionPresetField(options: CollectionPresetFieldOptions) {

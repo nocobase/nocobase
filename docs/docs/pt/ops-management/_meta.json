@@ -20,6 +20,11 @@
       },
       {
         "type": "custom-link",
+        "label": "Controle de versão",
+        "link": "/ops-management/version-control/"
+      },
+      {
+        "type": "custom-link",
         "label": "Gerenciamento de migrações",
         "link": "/ops-management/migration-manager/"
       }

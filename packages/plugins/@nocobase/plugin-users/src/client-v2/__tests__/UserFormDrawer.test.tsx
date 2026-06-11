@@ -15,11 +15,11 @@ import {
   ADMIN_PROFILE_EDIT_FORM_MODEL_UID,
 } from '../shared/adminProfileFormModels';
 
-const { create, update, save, loadModel, createModelAsync, submit, close, success } = vi.hoisted(() => ({
+const { create, update, save, findOne, createModelAsync, submit, close, success } = vi.hoisted(() => ({
   create: vi.fn(),
   update: vi.fn(),
   save: vi.fn(),
-  loadModel: vi.fn(),
+  findOne: vi.fn(),
   createModelAsync: vi.fn(),
   submit: vi.fn(),
   close: vi.fn(),
@@ -27,7 +27,40 @@ const { create, update, save, loadModel, createModelAsync, submit, close, succes
 }));
 
 vi.mock('@nocobase/client-v2', async () => {
+  class MockFormModel {
+    props = {};
+    decoratorProps = {};
+    subModels = { grid: {} };
+    resource = {
+      loading: false,
+      getMeta: () => 0,
+    };
+    context = {
+      themeToken: {},
+    };
+
+    onInit() {}
+
+    setDecoratorProps(props: Record<string, unknown>) {
+      this.decoratorProps = props;
+    }
+
+    hasAvailableData() {
+      return true;
+    }
+
+    isMultiRecordResource() {
+      return false;
+    }
+
+    translate(value: string) {
+      return value;
+    }
+  }
+
   return {
+    CreateFormModel: MockFormModel,
+    EditFormModel: MockFormModel,
     DrawerFormLayout: ({
       title,
       children,
@@ -55,13 +88,17 @@ vi.mock('@nocobase/client-v2', async () => {
         <button onClick={() => close()}>{cancelText ?? 'Cancel'}</button>
       </div>
     ),
+    FormBlockContent: () => <div data-testid="form-block-content" />,
     SkeletonFallback: () => <div data-testid="flow-skeleton" />,
+    dispatchEventDeep: vi.fn(),
   };
 });
 
 vi.mock('@nocobase/flow-engine', () => {
   const flowEngine = {
-    loadModel,
+    modelRepository: {
+      findOne,
+    },
     createModelAsync,
   };
   const flowContext = {
@@ -95,6 +132,7 @@ vi.mock('@nocobase/flow-engine', () => {
 
   return {
     FlowModelRenderer: () => <div data-testid="flow-model-renderer" />,
+    MultiRecordResource: class MultiRecordResource {},
     useFlowEngine: () => flowEngine,
     useFlowContext: () => flowContext,
     useFlowViewContext: () => flowViewContext,
@@ -113,11 +151,14 @@ describe('UserFormDrawer', () => {
         addDelegate: vi.fn(),
       },
     };
-    loadModel.mockResolvedValue(model);
-    createModelAsync.mockResolvedValue(model);
     submit.mockReset();
     create.mockReset();
     update.mockReset();
+    findOne.mockReset();
+    findOne.mockResolvedValue({
+      uid: ADMIN_PROFILE_CREATE_FORM_MODEL_UID,
+      use: 'UserCreateFormModel',
+    });
     createModelAsync.mockReset();
     createModelAsync.mockResolvedValue(model);
     save.mockReset();
@@ -141,7 +182,16 @@ describe('UserFormDrawer', () => {
     render(<UserFormDrawer onSubmitted={onSubmitted} />);
 
     await waitFor(() => {
-      expect(loadModel).toHaveBeenCalledWith({ uid: ADMIN_PROFILE_CREATE_FORM_MODEL_UID });
+      expect(findOne).toHaveBeenCalledWith({ uid: ADMIN_PROFILE_CREATE_FORM_MODEL_UID });
+    });
+
+    await waitFor(() => {
+      expect(createModelAsync).toHaveBeenCalledWith(
+        expect.objectContaining({
+          uid: ADMIN_PROFILE_CREATE_FORM_MODEL_UID,
+          use: expect.any(Function),
+        }),
+      );
     });
 
     fireEvent.click(screen.getByRole('button', { name: 'Submit' }));
@@ -161,6 +211,10 @@ describe('UserFormDrawer', () => {
   });
 
   it('should load the persisted edit form model and submit update by user id', async () => {
+    findOne.mockResolvedValue({
+      uid: ADMIN_PROFILE_EDIT_FORM_MODEL_UID,
+      use: 'UserEditFormModel',
+    });
     submit.mockImplementation(async (_params, cb) => {
       await cb?.({
         email: 'alice@example.com',
@@ -179,7 +233,7 @@ describe('UserFormDrawer', () => {
     );
 
     await waitFor(() => {
-      expect(loadModel).toHaveBeenCalledWith({ uid: ADMIN_PROFILE_EDIT_FORM_MODEL_UID });
+      expect(findOne).toHaveBeenCalledWith({ uid: ADMIN_PROFILE_EDIT_FORM_MODEL_UID });
     });
 
     fireEvent.click(screen.getByRole('button', { name: 'Submit' }));
@@ -196,12 +250,7 @@ describe('UserFormDrawer', () => {
   });
 
   it('should persist the create form model with password defaults', async () => {
-    loadModel.mockResolvedValueOnce(null).mockResolvedValueOnce({
-      context: {
-        addDelegate: vi.fn(),
-      },
-      submit,
-    });
+    findOne.mockResolvedValueOnce(null);
 
     render(<UserFormDrawer onSubmitted={() => undefined} />);
 
@@ -240,5 +289,12 @@ describe('UserFormDrawer', () => {
         }),
       );
     });
+
+    expect(createModelAsync).toHaveBeenCalledWith(
+      expect.objectContaining({
+        uid: ADMIN_PROFILE_CREATE_FORM_MODEL_UID,
+        use: expect.any(Function),
+      }),
+    );
   });
 });

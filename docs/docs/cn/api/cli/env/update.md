@@ -90,7 +90,7 @@ nb env update [name] [flags]
 - 更新完成后，CLI 会根据这次变更自动处理需要的后续同步
 - 其他参数只会更新已保存的 env 配置，不会自动重启应用，也不会自动替换本地源码或 Docker 镜像
 - 修改 `app-path`、`app-port`、`timezone`、`db-*` 这类配置后，CLI 通常会提示你后续执行 `nb app restart --env <name>`；如果变更涉及 CLI 托管的内置数据库，则会提示使用 `nb app restart --env <name> --with-db`
-- 修改 `app-port`、`app-public-path`、`cdn-base-url` 这类会影响反向代理渲染结果的配置后，如果你已经在用 `nb env proxy nginx` 或 `nb env proxy caddy`，通常还要重新执行对应的 proxy 子命令
+- 修改 `app-port`、`app-public-path`、`cdn-base-url` 这类会影响反向代理渲染结果的配置后，如果你已经在用 `nb proxy nginx` 或 `nb proxy caddy`，通常还要重新执行对应的 `generate`
 - 更新 `source`、`download-version`、`docker-registry`、`git-url`、`npm-registry` 这类源码设置时，只会改保存值。现有本地源码、依赖和镜像不会自动替换
 - `--access-token` 不能和 `--auth-type basic` 或 `--auth-type oauth` 一起使用
 - 同一个字段不能同时用 `--unset` 和显式赋值。比如不能同时写 `--unset git-url` 和 `--git-url ...`

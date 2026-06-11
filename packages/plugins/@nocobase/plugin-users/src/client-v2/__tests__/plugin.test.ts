@@ -21,6 +21,21 @@ describe('plugin-users client-v2', () => {
     vi.restoreAllMocks();
   });
 
+  it('should not register user form models as global model loaders', async () => {
+    const app = createMockClient({ publicPath: '/v2/' });
+    const registerModelLoaders = vi.spyOn(app.flowEngine, 'registerModelLoaders');
+
+    await app.pm.add(PluginUsersClientV2);
+    await app.load();
+
+    const registeredLoaders = Object.assign(
+      {},
+      ...registerModelLoaders.mock.calls.map(([loaders]) => loaders as Record<string, unknown>),
+    );
+    expect(registeredLoaders).not.toHaveProperty('UserCreateFormModel');
+    expect(registeredLoaders).not.toHaveProperty('UserEditFormModel');
+  });
+
   it('should use same-origin signin redirect returned by server when whitelisted', async () => {
     const replace = vi.fn();
     Object.defineProperty(globalThis.window, 'location', {

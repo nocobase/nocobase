@@ -30,6 +30,8 @@ import {
   ensureSavedLocalSource,
   recreateSavedDockerApp,
 } from '../../lib/app-managed-resources.js';
+import { clearEnvRootSetup, getEnv, upsertEnv } from '../../lib/auth-store.js';
+import { buildInitAppEnvVarsFromConfig, isPreparedSetupState } from '../../lib/managed-init-env.js';
 import { resolveAppUrlFromApiBaseUrl } from '../env/shared.js';
 import { readManagedRuntimeEnvValues } from '../../lib/managed-env-file.js';
 import { run } from '../../lib/run-npm.js';
@@ -128,7 +130,11 @@ function formatLocalClientExtractWarning(envName: string, message: string): stri
   ].join('\n');
 }
 
-function resolveDisplayAppUrl(apiBaseUrl: string | undefined, port?: string, appPublicPath?: string): string | undefined {
+function resolveDisplayAppUrl(
+  apiBaseUrl: string | undefined,
+  port?: string,
+  appPublicPath?: string,
+): string | undefined {
   const resolvedFromApiBaseUrl = resolveAppUrlFromApiBaseUrl(apiBaseUrl);
   if (resolvedFromApiBaseUrl) {
     return resolvedFromApiBaseUrl;
@@ -167,6 +173,15 @@ async function resolveDefaultLocalCdnBaseUrl(
   return buildDefaultCdnBaseUrl(runtime.env.config?.appPublicPath || envValues.APP_PUBLIC_PATH, activeVersion);
 }
 
+async function finalizePreparedEnv(envName: string): Promise<void> {
+  const existingEnv = await getEnv(envName);
+  await clearEnvRootSetup(envName);
+  await upsertEnv(envName, {
+    ...(existingEnv?.config.apiBaseUrl ? { apiBaseUrl: existingEnv.config.apiBaseUrl } : {}),
+    setupState: 'installed',
+  });
+}
+
 export default class AppStart extends Command {
   static override hidden = false;
   static override description =
@@ -174,8 +189,6 @@ export default class AppStart extends Command {
   static override examples = [
     '<%= config.bin %> <%= command.id %>',
     '<%= config.bin %> <%= command.id %> --env local',
-    '<%= config.bin %> <%= command.id %> --env local --daemon',
-    '<%= config.bin %> <%= command.id %> --env local --no-daemon',
     '<%= config.bin %> <%= command.id %> --env local --verbose',
     '<%= config.bin %> <%= command.id %> --env local-docker',
   ];
@@ -205,6 +218,7 @@ export default class AppStart extends Command {
       allowNo: true,
     }),
     daemon: Flags.boolean({
+      hidden: true,
       description: 'Run the application as a daemon (default: true; use --no-daemon to stay in the foreground)',
       char: 'd',
       required: false,
@@ -236,6 +250,8 @@ export default class AppStart extends Command {
 
     const daemonFlagWasProvided = argvHasToken(this.argv, ['--daemon', '--no-daemon']);
     const runtime = await resolveManagedAppRuntime(requestedEnv);
+    const preparedInitEnvVars = buildInitAppEnvVarsFromConfig(runtime?.env.config);
+    const isPreparedEnv = isPreparedSetupState(runtime?.env.config?.setupState);
     const runCommand = this.config.runCommand.bind(this.config) as (id: string, argv?: string[]) => Promise<unknown>;
     const commandStdio = flags.verbose ? 'inherit' : 'ignore';
     if (!runtime) {
@@ -316,6 +332,7 @@ export default class AppStart extends Command {
           stdio: commandStdio,
         }).catch(() => undefined);
         await recreateSavedDockerApp(runtime, {
+          initEnvVars: isPreparedEnv ? preparedInitEnvVars : undefined,
           verbose: flags.verbose,
         });
         succeedTask(`Docker app container is ready for "${runtime.envName}".`);
@@ -331,6 +348,9 @@ export default class AppStart extends Command {
         logHint: `You can inspect startup logs with \`nb app logs --env ${runtime.envName}\`.`,
         ...(flags.verbose ? { verbose: true } : {}),
       });
+      if (isPreparedEnv) {
+        await finalizePreparedEnv(runtime.envName);
+      }
       if (shouldPrintStartSuccess()) {
         succeedTask(`NocoBase is running for "${runtime.envName}"${appUrl ? ` at ${appUrl}` : ''}.`);
       }
@@ -352,6 +372,12 @@ export default class AppStart extends Command {
         onSucceedTask: succeedTask,
         onFailTask: failTask,
       });
+    }
+
+    if (isPreparedEnv && flags.daemon === false) {
+      this.error(
+        `Can't start "${runtime.envName}" with --no-daemon yet. Run \`nb app start --env ${runtime.envName}\` to finish the first installation in daemon mode.`,
+      );
     }
 
     const npmArgs = ['start'];
@@ -453,8 +479,12 @@ export default class AppStart extends Command {
         ? {
             ...managedAppLifecycleEnvVars(),
             CDN_BASE_URL: defaultCdnBaseUrl,
+            ...(isPreparedEnv ? preparedInitEnvVars : {}),
           }
-        : managedAppLifecycleEnvVars();
+        : {
+            ...managedAppLifecycleEnvVars(),
+            ...(isPreparedEnv ? preparedInitEnvVars : {}),
+          };
       await runLocalNocoBaseCommand(runtime, npmArgs, {
         env: startEnv,
         stdio: commandStdio,
@@ -465,6 +495,9 @@ export default class AppStart extends Command {
           apiBaseUrl,
           logHint: `You can inspect startup logs with \`nb app logs --env ${runtime.envName}\`.`,
         });
+        if (isPreparedEnv) {
+          await finalizePreparedEnv(runtime.envName);
+        }
         if (shouldPrintStartSuccess()) {
           succeedTask(`NocoBase is running for "${runtime.envName}"${appUrl ? ` at ${appUrl}` : ''}.`);
         }

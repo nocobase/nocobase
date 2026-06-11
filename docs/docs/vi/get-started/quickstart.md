@@ -58,4 +58,7 @@ Bạn có thể cài đặt NocoBase bằng nhiều cách khác nhau.
 | **Tình huống áp dụng** | Người dùng no-code, người dùng muốn triển khai nhanh lên server. | Lập trình viên frontend/full-stack, dự án nhóm, phát triển low-code. | Lập trình viên kỹ thuật, người dùng muốn trải nghiệm phiên bản chưa phát hành. |
 | **Yêu cầu kỹ thuật** | ★☆☆☆☆ | ★★★☆☆ | ★★★★★ |
 | **Cách nâng cấp** | Pull image mới nhất và khởi động lại container | Dùng yarn để cập nhật phụ thuộc | Đồng bộ cập nhật qua quy trình Git |
-| **Hướng dẫn** | [<code>Cài đặt</code>](#) [<code>Nâng cấp</code>](#) [<code>Triển khai</code>](#) | [<code>Cài đặt</code>](#) [<code>Nâng cấp</code>](#) [<code>Triển khai</code>](#) | [<code>Cài đặt</code>](#) [<code>Nâng cấp</code>](#) [<code>Triển khai</code>](#) |
+
+## Tiếp theo nên làm gì
+
+Nếu bạn đã chọn được phương thức cài đặt, bước tiếp theo là [Bắt đầu nhanh](../ai/quick-start.md). Trang này sẽ hướng dẫn bạn cài đặt NocoBase CLI, kết nối tới ứng dụng hiện có hoặc khởi tạo ứng dụng mới, rồi để AI Agent bắt đầu làm việc.

@@ -2,7 +2,6 @@
 title: "Guide d'intégration pour AI Agent"
 description: "Installez NocoBase CLI, connectez ou installez une application NocoBase, et laissez votre AI Agent piloter votre système métier."
 keywords: "NocoBase CLI,AI Agent,intégration,connexion,installation,Skills,démarrage rapide"
-sidebar: false
 ---
 
 # Guide d'intégration pour AI Agent
@@ -42,7 +41,7 @@ Si vous n'avez pas encore d'application NocoBase, vous pouvez en installer et in
 #### Étape 1 : installer la CLI
 
 ```bash
-npm install -g @nocobase/cli@beta
+npm install -g @nocobase/cli
 nb --version // vérifie le succès de l'installation
 ```
 
@@ -100,7 +99,7 @@ Si vous disposez déjà d'une instance NocoBase en cours d'exécution, vous pouv
 #### Étape 1 : installer la CLI
 
 ```bash
-npm install -g @nocobase/cli@beta
+npm install -g @nocobase/cli
 nb --version // vérifie le succès de l'installation
 ```
 
@@ -145,6 +144,13 @@ Une fois la configuration terminée, redémarrez la session de votre AI Agent po
 
 ## Et après ?
 
+### Installation et déploiement en production
+
+Si vous préparez un déploiement de NocoBase en production, cet ordre fonctionne généralement le mieux :
+
+1. [Installer à l'aide de CLI (recommandé)](../nocobase-cli/installation/cli.md) — le processus complet d'installation. C'est le bon point d'entrée si vous voulez installer la CLI depuis zéro, initialiser l'env et confirmer que l'application fonctionne déjà correctement sur votre serveur
+2. [Présentation du déploiement de l'environnement de production](../nocobase-cli/production/index.md) — l'étape suivante une fois l'application en cours d'exécution. Cette partie couvre surtout le démarrage automatique, le reverse proxy, le domaine et HTTPS
+
 ### Gérer les environnements applicatifs
 
 Si vous devez gérer des instances NocoBase existantes (environnements de test, de production, etc.) ou basculer entre plusieurs environnements, consultez [Gestion des environnements](../ai-builder/env-bootstrap) — qui couvre la vérification d'environnement, l'ajout d'environnements, les mises à niveau et le diagnostic des pannes.
@@ -172,4 +178,4 @@ Si vous avez déjà une application NocoBase en cours d'exécution, ou si vous a
 - [Employés AI](../ai-employees/index.md) — collaborer avec l'AI dans l'interface métier
 - [Gestion des environnements](../ai-builder/env-bootstrap) — vérification d'environnement, ajout, mise à niveau et diagnostic
 - [Référence des commandes NocoBase CLI](../api/cli/index.md) — description complète des paramètres de toutes les commandes
-- [Comparaison des méthodes d'installation et des versions](../get-started/quickstart) — différentes méthodes d'installation et canaux de version de NocoBase
+- [Comparaison des méthodes d'installation et des versions](../ai/quickstart) — différentes méthodes d'installation et canaux de version de NocoBase
