@@ -304,6 +304,19 @@ async function addMultiPortalGetAccessibleGuard(ctx: ResourcerContext, next: () 
   }
 }
 
+async function mapMultiPortalLayoutToUiLayoutForRolePermissionTargets(
+  ctx: ResourcerContext,
+  next: () => Promise<void>,
+) {
+  const portal = await findRequestedMultiPortal(ctx);
+  const uiLayoutUid = portal?.get('uiLayoutUid');
+  if (typeof uiLayoutUid === 'string' && uiLayoutUid) {
+    ctx.action.params.layout = uiLayoutUid;
+  }
+
+  await next();
+}
+
 async function listEnabledMultiPortals(ctx: ResourcerContext, next: () => Promise<void>) {
   const records = await ctx.db.getRepository('multiPortals').find({
     filter: {
@@ -327,6 +340,10 @@ export class PluginMultiPortalServer extends Plugin {
       addMultiPortalListAccessibleGuard,
     );
     this.app.resourceManager.registerPreActionHandler('desktopRoutes:getAccessible', addMultiPortalGetAccessibleGuard);
+    this.app.resourceManager.registerPreActionHandler(
+      'desktopRoutes:listRolePermissionTargets',
+      mapMultiPortalLayoutToUiLayoutForRolePermissionTargets,
+    );
   }
 
   async load() {

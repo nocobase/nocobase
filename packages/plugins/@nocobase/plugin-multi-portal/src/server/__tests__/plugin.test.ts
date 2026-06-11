@@ -242,6 +242,64 @@ describe('plugin-multi-portal server', () => {
     });
   });
 
+  it('should expose portal route permission targets through role configuration reader', async () => {
+    app = await createMultiPortalAclMockServer();
+
+    const portal = await app.db.getRepository('multiPortals').create({
+      values: {
+        uid: 'route-target-portal',
+        title: 'Route target portal',
+        routeName: 'routeTargetPortal',
+        routePath: '/route-target-portal',
+        authCheck: true,
+        enabled: true,
+        uiLayoutUid: DEFAULT_MOBILE_UI_LAYOUT.uid,
+      },
+    });
+    const route = await app.db.getRepository('desktopRoutes').create({
+      values: {
+        type: 'flowPage',
+        title: 'DATA-PORTAL-ROUTE-TARGET',
+        schemaUid: 'portal-route-target',
+        hidden: false,
+        sort: 10,
+      },
+    });
+    await app.db.getRepository('desktopRoutes.uiLayouts', route.get('id')).set({
+      tk: [DEFAULT_MOBILE_UI_LAYOUT.uid],
+    });
+    const role = await app.db.getRepository('roles').create({
+      values: {
+        name: 'portal-route-target-role-manager',
+        snippets: ['pm.acl.roles'],
+      },
+    });
+    const user = await app.db.getRepository('users').create({
+      values: {
+        roles: [role.get('name')],
+      },
+    });
+    const agent = await app.agent().login(user);
+
+    const response = await agent.get('/desktopRoutes:listRolePermissionTargets').query({
+      layout: portal.get('uid'),
+      filter: {
+        id: -1,
+      },
+      fields: ['id'],
+      appends: ['uiLayouts'],
+    });
+
+    expect(response.status).toBe(200);
+    expect((response.body.data as Array<Record<string, unknown>>).map((item) => item.title)).toEqual([
+      'DATA-PORTAL-ROUTE-TARGET',
+    ]);
+    for (const item of response.body.data as Array<Record<string, unknown>>) {
+      expect(Object.keys(item).sort()).toEqual(['children', 'hidden', 'id', 'options', 'parentId', 'title'].sort());
+      expect(item).not.toHaveProperty('uiLayouts');
+    }
+  });
+
   it('should enforce role portal access before listing portal routes', async () => {
     app = await createMultiPortalAclMockServer();
 
