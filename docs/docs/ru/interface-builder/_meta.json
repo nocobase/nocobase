@@ -57,6 +57,11 @@
             "type": "custom-link",
             "label": "Канбан",
             "link": "/interface-builder/blocks/data-blocks/kanban"
+          },
+          {
+            "type": "custom-link",
+            "label": "Диаграмма Ганта",
+            "link": "/interface-builder/blocks/data-blocks/gantt"
           }
         ]
       },
