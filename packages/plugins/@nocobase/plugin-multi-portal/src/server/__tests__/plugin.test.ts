@@ -448,6 +448,159 @@ describe('plugin-multi-portal server', () => {
     expect(secondGetResponse.body.data ?? null).toBeNull();
   });
 
+  it('should keep ui layout route permissions and multi-portal route permissions isolated', async () => {
+    app = await createMultiPortalAclMockServer();
+
+    const portal = await app.db.getRepository('multiPortals').create({
+      values: {
+        uid: 'permission-isolation-portal',
+        title: 'Permission isolation portal',
+        routeName: 'permissionIsolationPortal',
+        routePath: '/permission-isolation-portal',
+        authCheck: true,
+        enabled: true,
+        uiLayoutUid: DEFAULT_ADMIN_UI_LAYOUT.uid,
+      },
+    });
+    const uiLayoutRoute = await app.db.getRepository('desktopRoutes').create({
+      values: {
+        type: 'flowPage',
+        title: 'DATA-UI-LAYOUT-ISOLATED-ROUTE',
+        schemaUid: 'ui-layout-isolated-route',
+        hidden: false,
+        sort: 10,
+      },
+    });
+    const firstPortalRoute = await app.db.getRepository('desktopRoutes').create({
+      values: {
+        type: 'flowPage',
+        title: 'DATA-PORTAL-ISOLATED-ROUTE-1',
+        schemaUid: 'portal-isolated-route-1',
+        hidden: false,
+        sort: 20,
+      },
+    });
+    const secondPortalRoute = await app.db.getRepository('desktopRoutes').create({
+      values: {
+        type: 'flowPage',
+        title: 'DATA-PORTAL-ISOLATED-ROUTE-2',
+        schemaUid: 'portal-isolated-route-2',
+        hidden: false,
+        sort: 30,
+      },
+    });
+    const role = await app.db.getRepository('roles').create({
+      values: {
+        name: 'permission-isolation-member',
+      },
+    });
+
+    for (const route of [uiLayoutRoute, firstPortalRoute, secondPortalRoute]) {
+      await app.db.getRepository('desktopRoutes.uiLayouts', route.get('id')).set({
+        tk: [DEFAULT_ADMIN_UI_LAYOUT.uid],
+      });
+    }
+    await app.db.getRepository('rolesUiLayouts').create({
+      values: {
+        roleName: role.get('name'),
+        uiLayoutUid: DEFAULT_ADMIN_UI_LAYOUT.uid,
+      },
+    });
+    await app.db.getRepository('rolesMultiPortals').create({
+      values: {
+        roleName: role.get('name'),
+        multiPortalUid: portal.get('uid'),
+      },
+    });
+    await app.db.getRepository('rolesMultiPortalDesktopRoutes').create({
+      values: {
+        roleName: role.get('name'),
+        multiPortalUid: portal.get('uid'),
+        desktopRouteId: firstPortalRoute.get('id'),
+      },
+    });
+
+    const rootUser = await app.db.getRepository('users').findOne({
+      filter: {
+        'roles.name': 'root',
+      },
+    });
+    const memberUser = await app.db.getRepository('users').create({
+      values: {
+        roles: [role.get('name')],
+      },
+    });
+    const rootAgent = await app.agent().login(rootUser);
+    const memberAgent = await app.agent().login(memberUser);
+    const roleName = role.get('name');
+    const portalUid = portal.get('uid');
+
+    await rootAgent.resource('roles.desktopRoutes', roleName).add({
+      values: [uiLayoutRoute.get('id')],
+    });
+
+    const portalPermissionsAfterUiLayoutChange = await app.db.getRepository('rolesMultiPortalDesktopRoutes').find({
+      filter: {
+        roleName,
+        multiPortalUid: portalUid,
+      },
+      sort: ['desktopRouteId'],
+    });
+    expect(portalPermissionsAfterUiLayoutChange.map((record) => record.get('desktopRouteId'))).toEqual([
+      firstPortalRoute.get('id'),
+    ]);
+
+    await app.db.getRepository('rolesMultiPortalDesktopRoutes').create({
+      values: {
+        roleName,
+        multiPortalUid: portalUid,
+        desktopRouteId: secondPortalRoute.get('id'),
+      },
+    });
+
+    const uiLayoutPermissionsAfterPortalChange = await app.db.getRepository('rolesDesktopRoutes').find({
+      filter: {
+        roleName,
+      },
+      sort: ['desktopRouteId'],
+    });
+    expect(uiLayoutPermissionsAfterPortalChange.map((record) => record.get('desktopRouteId'))).toEqual([
+      uiLayoutRoute.get('id'),
+    ]);
+
+    const [uiLayoutListResponse, portalListResponse, uiLayoutPortalRouteGetResponse, portalUiLayoutRouteGetResponse] =
+      await Promise.all([
+        memberAgent.get('/desktopRoutes:listAccessible').query({
+          layout: DEFAULT_ADMIN_UI_LAYOUT.uid,
+        }),
+        memberAgent.get('/desktopRoutes:listAccessible').query({
+          layout: portalUid,
+        }),
+        memberAgent.get('/desktopRoutes:getAccessible').query({
+          filterByTk: firstPortalRoute.get('id'),
+          layout: DEFAULT_ADMIN_UI_LAYOUT.uid,
+        }),
+        memberAgent.get('/desktopRoutes:getAccessible').query({
+          filterByTk: uiLayoutRoute.get('id'),
+          layout: portalUid,
+        }),
+      ]);
+
+    expect(uiLayoutListResponse.status).toBe(200);
+    expect(portalListResponse.status).toBe(200);
+    expect([200, 204]).toContain(uiLayoutPortalRouteGetResponse.status);
+    expect([200, 204]).toContain(portalUiLayoutRouteGetResponse.status);
+    expect(collectRouteTitles(uiLayoutListResponse.body.data as RouteResponseItem[])).toEqual([
+      'DATA-UI-LAYOUT-ISOLATED-ROUTE',
+    ]);
+    expect(collectRouteTitles(portalListResponse.body.data as RouteResponseItem[])).toEqual([
+      'DATA-PORTAL-ISOLATED-ROUTE-1',
+      'DATA-PORTAL-ISOLATED-ROUTE-2',
+    ]);
+    expect(uiLayoutPortalRouteGetResponse.body.data ?? null).toBeNull();
+    expect(portalUiLayoutRouteGetResponse.body.data ?? null).toBeNull();
+  });
+
   it('should enforce explicit route parent chain inside portal permissions', async () => {
     app = await createMultiPortalAclMockServer();
 
