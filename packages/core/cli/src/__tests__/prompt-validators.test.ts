@@ -731,13 +731,13 @@ test('version prompt uses presets and reveals otherVersion when needed', () => {
 
   expect(versionPrompt.type).toBe('select');
   expect(versionPrompt.variant).toBe('radio');
-  expect(versionPrompt.initialValue).toBe('beta');
-  expect(versionPrompt.yesInitialValue).toBe('beta');
+  expect(versionPrompt.initialValue).toBe('latest');
+  expect(versionPrompt.yesInitialValue).toBe('latest');
   expect(
     versionPrompt.options[0] && typeof versionPrompt.options[0] !== 'string'
       ? versionPrompt.options[0].disabled
       : undefined,
-  ).toBe(true);
+  ).toBeUndefined();
   expect(
     resolveLocalizedText(
       versionPrompt.options?.[0] && typeof versionPrompt.options[0] !== 'string'
