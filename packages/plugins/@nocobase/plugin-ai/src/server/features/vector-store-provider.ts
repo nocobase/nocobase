@@ -11,6 +11,7 @@ import { VectorStoreProp } from '../types';
 
 export interface VectorStoreProviderFeature {
   register(vsp: VectorStoreProvider): void;
+  providerNames: string[];
   createVectorStoreService(providerName: string, vectorStoreProps?: VectorStoreProp[]): Promise<VectorStoreService>;
 }
 
