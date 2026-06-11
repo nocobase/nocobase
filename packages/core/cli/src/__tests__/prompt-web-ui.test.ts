@@ -548,7 +548,7 @@ test('reflow returns default values for fields that become visible later', async
   }
 });
 
-test('web UI renders disabled radio options for unavailable version presets', async () => {
+test('web UI renders enabled radio options for version presets', async () => {
   const { runPromptCatalogWebUI } = await import('../lib/prompt-web-ui.js');
   const { default: Download } = await import('../commands/source/download.js');
 
@@ -585,8 +585,9 @@ test('web UI renders disabled radio options for unavailable version presets', as
 
     const page = await requestWithAgent(uiUrl, { agent });
     expect(page.statusCode).toBe(200);
-    expect(page.body).toMatch(/name="version" type="radio" value="latest"[^>]*disabled/);
-    expect(page.body).toMatch(/name="version" type="radio" value="latest"[^>]*data-pwc-static-disabled="1"/);
+    expect(page.body).toMatch(/name="version" type="radio" value="latest"/);
+    expect(page.body).not.toMatch(/name="version" type="radio" value="latest"[^>]*disabled/);
+    expect(page.body).not.toMatch(/name="version" type="radio" value="latest"[^>]*data-pwc-static-disabled="1"/);
 
     const reflowUrl = new URL('/__pwc_ui_reflow', uiUrl).toString();
     const reflow = await requestWithAgent(reflowUrl, {
@@ -630,8 +631,8 @@ test('reflow reveals otherVersion and recomputes outputDir from the final versio
     source: 'git',
   });
   expect(presetState.show.otherVersion).toBe(false);
-  expect(presetState.values.version).toBe('beta');
-  expect(presetState.values.outputDir).toBe('./nocobase-beta');
+  expect(presetState.values.version).toBe('latest');
+  expect(presetState.values.outputDir).toBe('./nocobase-latest');
 
   const otherState = reflowWebFormState(Download.prompts, {
     source: 'git',

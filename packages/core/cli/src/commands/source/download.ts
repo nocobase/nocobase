@@ -38,7 +38,7 @@ type DownloadSource = 'docker' | 'npm' | 'git';
 type DockerPlatform = 'auto' | 'linux/amd64' | 'linux/arm64';
 type DownloadVersionPreset = 'latest' | 'beta' | 'alpha' | 'other';
 const DEFAULT_DOCKER_PLATFORM: DockerPlatform = 'auto';
-const DEFAULT_DOWNLOAD_VERSION: DownloadVersionPreset = 'beta';
+const DEFAULT_DOWNLOAD_VERSION: DownloadVersionPreset = 'latest';
 const downloadText = (key: string, values?: Record<string, unknown>) => localeText(`commands.download.${key}`, values);
 const downloadTranslatedText = (key: string, values?: Record<string, unknown>, fallback?: string) =>
   translateCli(`commands.download.${key}`, values, { fallback });
@@ -381,7 +381,6 @@ export default class SourceDownload extends Command {
           value: 'latest',
           label: downloadText('prompts.version.latestLabel'),
           hint: downloadText('prompts.version.latestHint'),
-          disabled: true,
         },
         {
           value: 'beta',
