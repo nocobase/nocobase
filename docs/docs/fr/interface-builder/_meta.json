@@ -328,6 +328,11 @@
           },
           {
             "type": "custom-link",
+            "label": "Saisie par Scan",
+            "link": "/interface-builder/fields/field-settings/scan-input"
+          },
+          {
+            "type": "custom-link",
             "label": "Champ de titre",
             "link": "/interface-builder/fields/field-settings/title-field"
           },

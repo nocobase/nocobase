@@ -328,6 +328,11 @@
           },
           {
             "type": "custom-link",
+            "label": "Scan-Eingabe",
+            "link": "/interface-builder/fields/field-settings/scan-input"
+          },
+          {
+            "type": "custom-link",
             "label": "Titelfeld",
             "link": "/interface-builder/fields/field-settings/title-field"
           },

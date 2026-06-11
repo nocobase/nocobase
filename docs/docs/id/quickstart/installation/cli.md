@@ -23,12 +23,6 @@ nb session setup
 
 :::
 
-Jika Anda berencana menggunakan antarmuka berbahasa Mandarin untuk waktu yang lama, biasanya cukup dengan menyetel lokalnya terlebih dahulu:
-
-```bash
-nb config set locale zh-CN
-```
-
 CLI memeriksa pembaruan mandiri secara default. Anda dapat menyesuaikan strategi pembaruan sesuai dengan kebiasaan Anda:
 
 - `prompt`: Konfirmasi ketika versi baru ditemukan

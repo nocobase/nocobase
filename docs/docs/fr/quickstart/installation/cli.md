@@ -23,12 +23,6 @@ nb session setup
 
 :::
 
-Si vous envisagez d'utiliser l'interface chinoise pendant une longue période, il suffit généralement de définir d'abord les paramètres régionaux :
-
-```bash
-nb config set locale zh-CN
-```
-
 La CLI vérifie les mises à jour automatiques par défaut. Vous pouvez ajuster la stratégie de mise à jour selon vos propres habitudes :
 
 - `prompt` : invite lorsqu'une nouvelle version est trouvée
