@@ -19,13 +19,15 @@ import {
   useAttach,
   useCompile,
   useDataSourceManager,
+  usePlugin,
   useRecord,
   useResourceContext,
 } from '@nocobase/client';
 import { message } from 'antd';
 import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useParams } from 'react-router-dom';
+import { useLocation, useParams } from 'react-router-dom';
+import PluginDatabaseConnectionsClient from '../..';
 import { AddCollectionField } from './AddFieldAction';
 import { ForeignKey, SourceCollection, SourceKey, TargetKey, ThroughCollection } from './components';
 import { CollectionFieldInterfaceSelect } from './components/CollectionFieldInterfaceSelect';
@@ -54,7 +56,10 @@ export const CollectionFields = () => {
   const f = useAttach(form.createArrayField({ ...field.props, basePath: '' }));
   const { t } = useTranslation();
   const { name: dataSourceKey } = useParams();
+  const location = useLocation();
+  const plugin = usePlugin(PluginDatabaseConnectionsClient);
   const api = useAPIClient();
+  const dm = useDataSourceManager();
   const compile = useCompile();
   const service = useContext(ResourceActionContext);
   const collectionResource = useResourceContext();
@@ -70,7 +75,7 @@ export const CollectionFields = () => {
         options?.onSuccess(service.data);
         field.componentProps.dragSort = !!service.dragSort;
       }
-    }, [service.loading]);
+    }, [field.componentProps, options, service.data, service.dragSort, service.loading]);
     return service;
   };
 
@@ -93,7 +98,9 @@ export const CollectionFields = () => {
     },
   };
 
-  const dm = useDataSourceManager();
+  const dataSourceType = new URLSearchParams(location.search).get('type');
+  const disableConfigureFields = !!(dataSourceType && plugin.types.get(dataSourceType)?.disableConfigureFields);
+  const fieldTableSchema = fieldsTableSchema;
 
   let isProcessing = false;
   const queue = [];
@@ -217,9 +224,10 @@ export const CollectionFields = () => {
                 useDestroyActionAndRefreshCM,
                 useBulkDestroyActionAndRefreshCM,
                 loadCollections,
+                disableConfigureFields,
               }}
             >
-              <RecursionField schema={fieldsTableSchema} onlyRenderProperties />
+              <RecursionField schema={fieldTableSchema} onlyRenderProperties />
             </SchemaComponentOptions>
           </FieldContext.Provider>
         </FormContext.Provider>

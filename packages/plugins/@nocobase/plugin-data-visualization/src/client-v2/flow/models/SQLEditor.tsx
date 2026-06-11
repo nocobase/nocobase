@@ -14,6 +14,7 @@ import { FlowContextSelector, observer, useFlowContext } from '@nocobase/flow-en
 import { DEFAULT_DATA_SOURCE_KEY } from '@nocobase/client-v2';
 import { useT } from '../../locale';
 import { useCompile } from '../utils';
+import { getDataSourceCapabilities } from './QueryBuilder.service';
 
 export const SQLEditor: React.FC<{
   value?: string;
@@ -35,7 +36,10 @@ export const SQLEditor: React.FC<{
     return dataSources
       .filter(
         (dataSource: any) =>
-          dataSource?.key === DEFAULT_DATA_SOURCE_KEY || dataSource?.options?.isDBInstance || dataSource?.isDBInstance,
+          dataSource?.key === DEFAULT_DATA_SOURCE_KEY ||
+          dataSource?.options?.isDBInstance ||
+          dataSource?.isDBInstance ||
+          getDataSourceCapabilities(dataSource)?.runSQL,
       )
       .map(({ key, displayName }: any) => ({ value: key, label: compile(displayName) }));
   }, [dm, compile]);

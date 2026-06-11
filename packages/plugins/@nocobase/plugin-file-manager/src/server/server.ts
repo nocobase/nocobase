@@ -23,7 +23,7 @@ import StorageTypeAliOss from './storages/ali-oss';
 import StorageTypeLocal, { validateLocalStorageConfig } from './storages/local';
 import StorageTypeS3 from './storages/s3';
 import StorageTypeTxCos from './storages/tx-cos';
-import { encodeURL } from './utils';
+import { encodeURL, resolveStoragePath } from './utils';
 import { registerRepairFilenamesCommand } from './commands/repair-filenames';
 
 export type * from './storages';
@@ -44,12 +44,14 @@ export type FileRecordOptions = {
   collectionName: string;
   filePath: string;
   storageName?: string;
+  subPath?: string;
   values?: any;
 } & Transactionable;
 
 export type UploadFileOptions = {
   filePath: string;
   storageName?: string;
+  subPath?: string;
   documentRoot?: string;
 };
 
@@ -94,14 +96,14 @@ export class PluginFileManagerServer extends Plugin {
   }
 
   async createFileRecord(options: FileRecordOptions) {
-    const { values, storageName, collectionName, filePath, transaction } = options;
+    const { values, storageName, subPath, collectionName, filePath, transaction } = options;
     const collection = this.db.getCollection(collectionName);
     if (!collection) {
       throw new Error(`collection does not exist`);
     }
     const collectionRepository = this.db.getRepository(collectionName);
     const name = storageName || collection.options.storage;
-    const data = await this.uploadFile({ storageName: name, filePath });
+    const data = await this.uploadFile({ storageName: name, subPath, filePath });
     return await collectionRepository.create({ values: { ...data, ...values }, transaction });
   }
 
@@ -110,17 +112,23 @@ export class PluginFileManagerServer extends Plugin {
   }
 
   async uploadFile(options: UploadFileOptions) {
-    const { storageName, filePath, documentRoot } = options;
+    const { storageName, subPath, filePath, documentRoot } = options;
 
     if (!this.storagesCache.size) {
       await this.loadStorages();
     }
     const storages = Array.from(this.storagesCache.values());
-    const storage = storages.find((item) => item.name === storageName) || storages.find((item) => item.default);
+    const cachedStorage = storages.find((item) => item.name === storageName) || storages.find((item) => item.default);
 
-    if (!storage) {
+    if (!cachedStorage) {
       throw new Error('[file-manager] no linked or default storage provided');
     }
+
+    const storage = {
+      ...cachedStorage,
+      options: { ...(cachedStorage.options || {}) },
+      path: resolveStoragePath(cachedStorage.path, subPath),
+    };
 
     const fileStream = fs.createReadStream(filePath);
 

@@ -11,7 +11,7 @@ hero:
   actions:
     - theme: brand
       text: クイックスタート
-      link: /get-started/how-nocobase-works
+      link: /quickstart/how-nocobase-works
     - theme: alt
       text: GitHub
       link: https://github.com/nocobase/nocobase
@@ -22,10 +22,10 @@ features:
     items:
       - title: NocoBase 入門
         details: NocoBase のコア概念と基本操作を理解します。
-        link: /get-started/how-nocobase-works
+        link: /quickstart/how-nocobase-works
       - title: アプリをインストール
         details: アプリケーションをすばやくインストールして管理します。
-        link: /get-started/installation/docker
+        link: /quickstart/installation/cli
       - title: チュートリアル
         details: ゼロから始めて、チュートリアルに沿って実際のプロジェクトを構築します。
         link: /tutorials/v2/

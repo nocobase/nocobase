@@ -1,1 +1,1 @@
-# 发布管理
+# Manajemen rilis

@@ -91,6 +91,9 @@ export interface EnvConfigEntry {
   /** Application timezone (TZ). */
   timezone?: string;
   /** Initial root/admin user settings saved for install resume flows. */
+  setupState?: 'prepared' | 'installed';
+  /** Initial install language saved for prepare/install flows. */
+  lang?: string;
   rootUsername?: string;
   rootEmail?: string;
   rootPassword?: string;

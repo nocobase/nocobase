@@ -5,8 +5,13 @@
     "items": [
       {
         "type": "custom-link",
-        "label": "Como o NocoBase funciona",
-        "link": "/get-started/how-nocobase-works"
+        "label": "início rápido",
+        "link": "/quickstart/"
+      },
+      {
+        "type": "custom-link",
+        "label": "Como funciona o NocoBase",
+        "link": "/quickstart/how-nocobase-works"
       },
       {
         "type": "custom-link",
@@ -17,50 +22,53 @@
   },
   {
     "type": "custom-link",
-    "label": "Instalar o NocoBase",
+    "label": "Instale o NocoBase",
     "items": [
       {
         "type": "custom-link",
-        "label": "Instalar com CLI (Recomendado)",
+        "label": "Instalar usando CLI (recomendado)",
         "link": "/quickstart/installation/cli"
       },
       {
         "type": "custom-link",
-        "label": "Migrar do método antigo para a CLI",
+        "label": "Conectando métodos de instalação antigos à IA e migrando",
         "link": "/quickstart/installation/migration"
       },
       {
         "type": "custom-link",
-        "label": "Instalar com Docker Compose",
-        "link": "/quickstart/installation/docker-compose"
-      },
-      {
-        "type": "custom-link",
-        "label": "Instalação air-gapped",
-        "link": "/quickstart/installation/airgap"
-      },
-      {
-        "type": "custom-link",
-        "label": "Variáveis de ambiente do app",
+        "label": "Configuração do aplicativo e .env",
         "link": "/quickstart/installation/env"
       },
       {
         "type": "custom-link",
-        "label": "Plugins de terceiros",
+        "label": "Instalação de plug-ins de terceiros",
         "link": "/quickstart/plugins/third-party"
       }
     ]
   },
   {
     "type": "custom-link",
-    "label": "Deploy em produção",
-    "link": "/quickstart/production/",
+    "label": "Implantação do ambiente de produção",
     "items": [
       {
         "type": "custom-link",
-        "label": "Proxy reverso",
-        "link": "/quickstart/production/reverse-proxy/",
+        "label": "Visão geral",
+        "link": "/quickstart/production/"
+      },
+      {
+        "type": "custom-link",
+        "label": "O aplicativo é iniciado automaticamente",
+        "link": "/quickstart/production/autostart"
+      },
+      {
+        "type": "custom-link",
+        "label": "proxy reverso",
         "items": [
+          {
+            "type": "custom-link",
+            "label": "Visão geral",
+            "link": "/quickstart/production/reverse-proxy/"
+          },
           {
             "type": "custom-link",
             "label": "Nginx",
@@ -68,7 +76,7 @@
           },
           {
             "type": "custom-link",
-            "label": "Caddy",
+            "label": "Caddie",
             "link": "/quickstart/production/reverse-proxy/caddy"
           }
         ]
@@ -77,16 +85,16 @@
   },
   {
     "type": "custom-link",
-    "label": "Operações e releases",
+    "label": "Operação, manutenção e liberação",
     "items": [
       {
         "type": "custom-link",
-        "label": "Gerenciar app",
+        "label": "Aplicativo de gerenciamento",
         "link": "/quickstart/operations/manage-app"
       },
       {
         "type": "custom-link",
-        "label": "Gerenciamento multiambiente",
+        "label": "Gerenciamento de múltiplos ambientes",
         "link": "/quickstart/operations/multi-environment"
       },
       {
@@ -98,8 +106,24 @@
   },
   {
     "type": "custom-link",
-    "label": "Primeiros passos (legado)",
+    "label": "Notas de design CLI",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "intenção de design do aplicativo nb",
+        "link": "/quickstart/cli-design/nb-app-design-intent"
+      },
+      {
+        "type": "custom-link",
+        "label": "A intenção do design do proxy nb",
+        "link": "/quickstart/cli-design/nb-proxy-design-intent"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Iniciar (versão antiga)",
     "proxy": false,
-    "link": "/get-started/how-nocobase-works"
+    "link": "/quickstart/how-nocobase-works"
   }
 ]

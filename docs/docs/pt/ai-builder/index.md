@@ -23,7 +23,7 @@ Me ajude a instalar o NocoBase CLI e fazer a inicialização: https://docs.nocob
 ### Instalação manual
 
 ```bash
-npm install -g @nocobase/cli@beta
+npm install -g @nocobase/cli
 nb init --ui
 ```
 

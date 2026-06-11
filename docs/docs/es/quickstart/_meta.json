@@ -1,8 +1,13 @@
 [
   {
     "type": "custom-link",
-    "label": "Antes de empezar",
+    "label": "antes de empezar",
     "items": [
+      {
+        "type": "custom-link",
+        "label": "inicio rápido",
+        "link": "/quickstart/"
+      },
       {
         "type": "custom-link",
         "label": "Cómo funciona NocoBase",
@@ -21,54 +26,57 @@
     "items": [
       {
         "type": "custom-link",
-        "label": "Instalar con CLI (Recomendado)",
+        "label": "Instalar usando CLI (recomendado)",
         "link": "/quickstart/installation/cli"
       },
       {
         "type": "custom-link",
-        "label": "Migrar del método anterior a CLI",
+        "label": "Conexión de métodos de instalación antiguos a la IA y migración",
         "link": "/quickstart/installation/migration"
       },
       {
         "type": "custom-link",
-        "label": "Instalar con Docker Compose",
-        "link": "/quickstart/installation/docker-compose"
-      },
-      {
-        "type": "custom-link",
-        "label": "Instalación air-gapped",
-        "link": "/quickstart/installation/airgap"
-      },
-      {
-        "type": "custom-link",
-        "label": "Variables de entorno de la aplicación",
+        "label": "Configuración de la aplicación y .env",
         "link": "/quickstart/installation/env"
       },
       {
         "type": "custom-link",
-        "label": "Plugins de terceros",
+        "label": "Instalación de complementos de terceros",
         "link": "/quickstart/plugins/third-party"
       }
     ]
   },
   {
     "type": "custom-link",
-    "label": "Despliegue en producción",
-    "link": "/quickstart/production/",
+    "label": "Implementación del entorno de producción",
     "items": [
       {
         "type": "custom-link",
-        "label": "Proxy inverso",
-        "link": "/quickstart/production/reverse-proxy/",
+        "label": "Descripción general",
+        "link": "/quickstart/production/"
+      },
+      {
+        "type": "custom-link",
+        "label": "La aplicación se inicia automáticamente",
+        "link": "/quickstart/production/autostart"
+      },
+      {
+        "type": "custom-link",
+        "label": "proxy inverso",
         "items": [
           {
             "type": "custom-link",
-            "label": "Nginx",
+            "label": "Descripción general",
+            "link": "/quickstart/production/reverse-proxy/"
+          },
+          {
+            "type": "custom-link",
+            "label": "nginx",
             "link": "/quickstart/production/reverse-proxy/nginx"
           },
           {
             "type": "custom-link",
-            "label": "Caddy",
+            "label": "Caddie",
             "link": "/quickstart/production/reverse-proxy/caddy"
           }
         ]
@@ -77,16 +85,16 @@
   },
   {
     "type": "custom-link",
-    "label": "Operaciones y lanzamientos",
+    "label": "Operación, mantenimiento y liberación.",
     "items": [
       {
         "type": "custom-link",
-        "label": "Administrar la aplicación",
+        "label": "Aplicación de gestión",
         "link": "/quickstart/operations/manage-app"
       },
       {
         "type": "custom-link",
-        "label": "Gestión multi-entorno",
+        "label": "Gestión de múltiples entornos",
         "link": "/quickstart/operations/multi-environment"
       },
       {
@@ -98,7 +106,23 @@
   },
   {
     "type": "custom-link",
-    "label": "Comenzar (heredado)",
+    "label": "Notas de diseño CLI",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "nb intención de diseño de la aplicación",
+        "link": "/quickstart/cli-design/nb-app-design-intent"
+      },
+      {
+        "type": "custom-link",
+        "label": "La intención de diseño de nb proxy",
+        "link": "/quickstart/cli-design/nb-proxy-design-intent"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Inicio (versión antigua)",
     "proxy": false,
     "link": "/get-started/how-nocobase-works"
   }

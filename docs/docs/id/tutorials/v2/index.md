@@ -78,7 +78,7 @@ Jika Anda sedang mengevaluasi platform no-code/low-code, berikut adalah beberapa
 ## Dokumentasi Terkait
 
 ### Panduan Pemula
-- [Cara Kerja NocoBase](/get-started/how-nocobase-works) — Pengenalan konsep inti
+- [Cara Kerja NocoBase](/quickstart/how-nocobase-works) — Pengenalan konsep inti
 - [Mulai Cepat](/get-started/quickstart) — Instalasi dan konfigurasi awal
 - [Persyaratan Sistem](/get-started/system-requirements) — Persyaratan konfigurasi lingkungan
 

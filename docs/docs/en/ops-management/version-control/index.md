@@ -8,7 +8,13 @@ keywords: "Version control,ops management,create version,restore version,NocoBas
 
 In NocoBase, **Version control** lets you save a restorable version of the current application. You can create versions manually, restore the application to a saved version when needed, and use the plugin settings to control how many versions to keep, which shortcut to use, and which user collections should be saved with the version.
 
-It depends on [Backup manager](../backup-manager/index.mdx). If the Version control plugin is already enabled but the system still shows related errors, first make sure Backup manager is enabled.
+Version control depends on [Backup manager](../backup-manager/index.mdx) to save and restore application states. Before using Version control, enable Backup manager first.
+
+:::warning Note
+
+Community and Standard editions do not include the Version control plugin. If you need to save a restorable application state, use [Backup manager](../backup-manager/index.mdx): create a backup manually before key changes, and restore the corresponding backup when you need to roll back.
+
+:::
 
 ## Open the plugin
 

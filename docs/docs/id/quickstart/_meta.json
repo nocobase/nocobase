@@ -1,12 +1,17 @@
 [
   {
     "type": "custom-link",
-    "label": "Sebelum mulai",
+    "label": "Sebelum memulai",
     "items": [
       {
         "type": "custom-link",
-        "label": "Cara kerja NocoBase",
-        "link": "/get-started/how-nocobase-works"
+        "label": "mulai cepat",
+        "link": "/quickstart/"
+      },
+      {
+        "type": "custom-link",
+        "label": "Bagaimana NocoBase bekerja",
+        "link": "/quickstart/how-nocobase-works"
       },
       {
         "type": "custom-link",
@@ -21,46 +26,49 @@
     "items": [
       {
         "type": "custom-link",
-        "label": "Instal dengan CLI (Direkomendasikan)",
+        "label": "Instal menggunakan CLI (disarankan)",
         "link": "/quickstart/installation/cli"
       },
       {
         "type": "custom-link",
-        "label": "Migrasi dari metode lama ke CLI",
+        "label": "Menghubungkan metode instalasi lama ke AI dan melakukan migrasi",
         "link": "/quickstart/installation/migration"
       },
       {
         "type": "custom-link",
-        "label": "Instal dengan Docker Compose",
-        "link": "/quickstart/installation/docker-compose"
-      },
-      {
-        "type": "custom-link",
-        "label": "Instalasi air-gapped",
-        "link": "/quickstart/installation/airgap"
-      },
-      {
-        "type": "custom-link",
-        "label": "Variabel lingkungan aplikasi",
+        "label": "Konfigurasi aplikasi dan .env",
         "link": "/quickstart/installation/env"
       },
       {
         "type": "custom-link",
-        "label": "Plugin pihak ketiga",
+        "label": "Instalasi plug-in pihak ketiga",
         "link": "/quickstart/plugins/third-party"
       }
     ]
   },
   {
     "type": "custom-link",
-    "label": "Deployment produksi",
-    "link": "/quickstart/production/",
+    "label": "Penerapan lingkungan produksi",
     "items": [
       {
         "type": "custom-link",
-        "label": "Reverse proxy",
-        "link": "/quickstart/production/reverse-proxy/",
+        "label": "Ringkasan",
+        "link": "/quickstart/production/"
+      },
+      {
+        "type": "custom-link",
+        "label": "Aplikasi dimulai secara otomatis",
+        "link": "/quickstart/production/autostart"
+      },
+      {
+        "type": "custom-link",
+        "label": "proksi terbalik",
         "items": [
+          {
+            "type": "custom-link",
+            "label": "Ringkasan",
+            "link": "/quickstart/production/reverse-proxy/"
+          },
           {
             "type": "custom-link",
             "label": "Nginx",
@@ -77,29 +85,45 @@
   },
   {
     "type": "custom-link",
-    "label": "Operasi dan rilis",
+    "label": "Pengoperasian, pemeliharaan, dan pelepasan",
     "items": [
       {
         "type": "custom-link",
-        "label": "Kelola aplikasi",
+        "label": "Aplikasi manajemen",
         "link": "/quickstart/operations/manage-app"
       },
       {
         "type": "custom-link",
-        "label": "Pengelolaan multi-lingkungan",
+        "label": "Berbagai manajemen lingkungan",
         "link": "/quickstart/operations/multi-environment"
       },
       {
         "type": "custom-link",
-        "label": "Backup dan restore",
+        "label": "Cadangkan dan pulihkan",
         "link": "/quickstart/operations/backup-restore"
       }
     ]
   },
   {
     "type": "custom-link",
-    "label": "Mulai (lama)",
+    "label": "Catatan desain CLI",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "nb maksud desain aplikasi",
+        "link": "/quickstart/cli-design/nb-app-design-intent"
+      },
+      {
+        "type": "custom-link",
+        "label": "Tujuan desain dari nb proxy",
+        "link": "/quickstart/cli-design/nb-proxy-design-intent"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Mulai (versi lama)",
     "proxy": false,
-    "link": "/get-started/how-nocobase-works"
+    "link": "/quickstart/how-nocobase-works"
   }
 ]

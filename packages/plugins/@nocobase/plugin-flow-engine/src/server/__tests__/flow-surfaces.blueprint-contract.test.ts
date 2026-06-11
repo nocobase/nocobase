@@ -642,6 +642,15 @@ describe('flowSurfaces applyBlueprint contract', () => {
 
     expect(getRouteBackedTabs(data.surface).map((tab: any) => tab?.props?.title)).toEqual(['Overview', 'Summary']);
     expect(data.surface.target.locator.pageSchemaUid).toBe(data.target.pageSchemaUid);
+    expect(data.surface.pageRoute.menuSchemaUid).toEqual(expect.any(String));
+    expect(data.surface.pageRoute.menuSchemaUid).not.toBe(data.target.pageSchemaUid);
+
+    const pageRoute = await routesRepo.findOne({
+      filter: {
+        schemaUid: data.target.pageSchemaUid,
+      },
+    });
+    expect(pageRoute?.get('menuSchemaUid')).toBe(data.surface.pageRoute.menuSchemaUid);
   });
 
   it('should force single-tab applyBlueprint pages to hidden-tab mode even when enableTabs is explicit true', async () => {
@@ -6466,7 +6475,16 @@ describe('flowSurfaces applyBlueprint contract', () => {
     const data = getData(executeRes);
     const mainTable = collectDescendantNodes(data.surface.tree, (item) => item?.use === 'TableBlockModel')[0];
     const mainViewAction = collectDescendantNodes(mainTable, (item) => item?.use === 'ViewActionModel')[0];
-    const { popupBlock: userDetailsBlock } = await readPrimaryPopupBlockFromAction(mainViewAction.uid);
+    const { actionReadback: mainViewActionReadback, popupBlock: userDetailsBlock } =
+      await readPrimaryPopupBlockFromAction(mainViewAction.uid);
+    expect(mainViewActionReadback.tree?.stepParams?.popupSettings?.openView).toMatchObject({
+      collectionName: sourceCollection,
+    });
+    expect(mainViewActionReadback.tree?.stepParams?.popupSettings?.openView).not.toHaveProperty('filterByTk');
+    expect(userDetailsBlock?.stepParams?.resourceSettings?.init).toMatchObject({
+      collectionName: sourceCollection,
+      filterByTk: '{{ctx.record.id}}',
+    });
     const userDetailsReadback = await getSurface(rootAgent, {
       uid: userDetailsBlock.uid,
     });
@@ -6480,7 +6498,7 @@ describe('flowSurfaces applyBlueprint contract', () => {
     expect(userEditForm?.use).toBe('EditFormModel');
     expect(userEditForm?.stepParams?.resourceSettings?.init).toMatchObject({
       collectionName: sourceCollection,
-      filterByTk: '{{ctx.view.inputArgs.filterByTk}}',
+      filterByTk: '{{ctx.record.id}}',
     });
     expect(collectFieldPaths(userEditForm)).toEqual(expect.arrayContaining(['username', 'roles']));
     expect(_.castArray(userEditForm?.subModels?.actions || []).map((item: any) => item?.use)).toContain(
@@ -6491,6 +6509,7 @@ describe('flowSurfaces applyBlueprint contract', () => {
     expect(userRolesTable?.stepParams?.resourceSettings?.init).toMatchObject({
       collectionName: targetCollection,
       associationName,
+      sourceId: '{{ctx.view.inputArgs.filterByTk}}',
     });
   });
 

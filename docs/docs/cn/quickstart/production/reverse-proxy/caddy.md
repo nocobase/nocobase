@@ -14,46 +14,47 @@
 
 如果你已经在服务器上统一用 Nginx 管理很多站点，或者后面还要做比较重的缓存、访问控制和定制规则，那么继续看 [Nginx](./nginx.md) 会更顺。
 
-## 推荐顺序：先选运行方式，再生成配置，再启动
+## 先按这三条命令操作
 
-如果你的应用已经保存成 CLI env，并且属于 `local` 或 `docker`，默认推荐按下面的顺序操作。
-
-使用 Docker 方式运行 Caddy：
+如果你只想先把 Caddy 入口层跑起来，默认记住这三条命令就够了：
 
 ```bash
 nb proxy caddy use docker
 nb proxy caddy generate --env test2 --host c.local.nocobase.com
-nb proxy caddy start
+nb proxy caddy reload
 ```
 
-使用本地进程方式运行 Caddy：
+如果本地已经安装好了 Caddy，把第一条改成 `nb proxy caddy use local` 就行。
+
+多数场景下，先执行 `use`，再执行 `generate`，最后执行 `reload` 就够了。其他细节和更多命令，直接看后面的章节或 CLI 参考。
+
+## 第一步：先选 Caddy 自己怎么运行
+
+如果当前机器上已经安装好了 Caddy，直接用 `use local` 就行。
+
+如果你想用 Docker 版的 Caddy，就用 `use docker`。
+
+这里的 `local` / `docker` 指的是 **Caddy 本身的运行方式**。
+
+使用 Docker 版 Caddy：
+
+```bash
+nb proxy caddy use docker
+```
+
+使用本地安装的 Caddy：
 
 ```bash
 nb proxy caddy use local
-nb proxy caddy generate --env test2 --host c.local.nocobase.com
-nb proxy caddy start
 ```
 
-后续常用命令还有：
+如果你后面忘了当前选的是哪一种方式，可以执行：
 
 ```bash
 nb proxy caddy current
-nb proxy caddy status
-nb proxy caddy info
-nb proxy caddy reload
-nb proxy caddy restart
-nb proxy caddy stop
 ```
 
-通常来说：
-
-- `current` 用来快速查看当前的运行方式
-- `status` 用来查看 Caddy 当前是否正常运行
-- `info` 用来查看当前配置、路径和状态等完整信息
-- 改完配置后，优先使用 `reload`
-- 需要完整重启时，再使用 `restart`
-
-## 生成配置时需要哪些输入
+## 第二步：执行 `generate`
 
 `generate` 用来按指定 env 生成 Caddy 配置。最常见的写法是：
 
@@ -82,6 +83,16 @@ nb env update test2 --app-port 56575
 ```
 
 如果你后续又改了 `app-port`、`app-public-path` 这类会影响代理结果的配置，记得重新执行 `generate`。
+
+## 第三步：执行 `reload`
+
+生成配置之后，直接执行：
+
+```bash
+nb proxy caddy reload
+```
+
+多数场景下都直接用这条命令就行。如果当前还没跑起来，内部会先处理启动；如果已经在运行，则会按最新配置重载。
 
 ## CLI 会维护哪些文件
 
@@ -271,8 +282,7 @@ nb proxy caddy status
 
 ## 常见说明
 
-- `nb proxy caddy generate` 适用于 CLI 托管且当前机器可访问运行态的 env，也就是 `local` 或 `docker`
-- 如果命令提示 env 缺少 `appPort`，先执行 `nb env update <name> --app-port <port>`
+- `nb proxy caddy generate` 适用于 `nb init` 安装的应用
 - 如果你已经有能正常解析到服务器的域名，Caddy 往往是最快拿到 HTTPS 的方式
 - 如果你后续改了 `app-port`、`app-public-path` 这类会影响代理结果的配置，记得重新执行 `generate`
 
@@ -281,5 +291,5 @@ nb proxy caddy status
 - [生产环境反向代理](./index.md)
 - [Nginx](./nginx.md)
 - [使用 CLI 安装（推荐）](../../installation/cli.md)
-- [通过 Docker Compose 安装](../../installation/docker-compose.md)
-- [应用环境变量](../../installation/env.md)
+- [应用配置与 `.env`](../../installation/env.md)
+- [`nb proxy caddy` 命令参考](../../../api/cli/proxy/caddy/index.md)

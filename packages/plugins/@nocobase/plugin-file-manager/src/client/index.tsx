@@ -137,13 +137,14 @@ export class PluginFileManagerClient extends Plugin {
     storageRules?: {
       size: number;
     };
+    dataSourceKey?: string;
     query?: Record<string, any>; // ⭐️ 新增可选 query 参数
   }): Promise<{ errorMessage?: string; data?: any }> {
     if (!options?.file) {
       return { errorMessage: 'Missing file' };
     }
 
-    const { file, storageType, storageId, storageRules, query = {} } = options;
+    const { file, storageType, storageId, storageRules, dataSourceKey, query = {} } = options;
     const fileCollectionName = options?.fileCollectionName || 'attachments';
 
     const storageTypeObj = this.getStorageType(storageType);
@@ -156,6 +157,7 @@ export class PluginFileManagerClient extends Plugin {
         storageType,
         storageId,
         storageRules,
+        dataSourceKey,
         fileCollectionName,
         query,
       });
@@ -174,6 +176,7 @@ export class PluginFileManagerClient extends Plugin {
         url,
         method: 'post',
         data: formData,
+        headers: dataSourceKey && dataSourceKey !== 'main' ? { 'x-data-source': dataSourceKey } : {},
       });
 
       return { data: res.data?.data };

@@ -2,7 +2,7 @@
 
 In this series, we'll build a **minimal IT HelpDesk system** from scratch using NocoBase. The entire system needs only **2 [data tables](/data-sources/data-modeling/collection)** and zero lines of code — yet it will support ticket submission, category management, change tracking, access control, and even a [dashboard](/data-visualization).
 
-This chapter walks you through deploying NocoBase with [Docker](/get-started/installation/docker), completing your first login, and understanding the difference between [UI Editor mode and Usage mode](/get-started/how-nocobase-works).
+This chapter walks you through deploying NocoBase with [Docker](/get-started/installation/docker), completing your first login, and understanding the difference between [UI Editor mode and Usage mode](/quickstart/how-nocobase-works).
 
 
 ## 1.1 What Is NocoBase
@@ -173,4 +173,4 @@ See you in Chapter 2!
 
 - [Docker Installation Guide](/get-started/installation/docker) — Full installation options and environment variables
 - [System Requirements](/get-started/system-requirements) — Hardware and software requirements
-- [How NocoBase Works](/get-started/how-nocobase-works) — Core concepts: data sources, blocks, actions
+- [How NocoBase Works](/quickstart/how-nocobase-works) — Core concepts: data sources, blocks, actions

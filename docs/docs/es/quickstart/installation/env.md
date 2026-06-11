@@ -1,101 +1,153 @@
-# 应用环境变量
+# Configuración de la aplicación y `.env`
 
-大部分场景只需要先看这几类环境变量：`APP_KEY`、`TZ`、`APP_PORT`，以及数据库相关的 `DB_*`。如果你只是想把应用先跑起来，通常来说先把这几项确认好就够了。
+Esta página solo se aplica a las aplicaciones creadas o alojadas a través de la CLI de NocoBase.
 
-## 怎么设置环境变量
+Si acaba de terminar de leer [Instalación mediante CLI (recomendado)] (./cli.md) y ha visto la sección "Directorio de instalación", los problemas más comunes que encontrará suelen ser los siguientes:
 
-### `create-nocobase-app` 或 Git 源码方式
+- ¿Dónde se coloca el archivo `.env`?
+- ¿Qué configuraciones aún son adecuadas para escribirse en `.env`?
+- ¿Qué configuraciones son ahora más adecuadas para entregarlas a `nb env update`?
 
-在项目根目录的 `.env` 文件里设置环境变量。修改完成后，重新启动应用。
+Hablemos primero de la conclusión:
+
+- Para aplicaciones instaladas CLI, `.env` se coloca en `<app-path>/.env` de forma predeterminada
+- Este archivo es opcional, no todos los entornos deben crearse manualmente
+- Las configuraciones básicas como `APP_KEY`, `TZ`, `APP_PORT`, `APP_PUBLIC_PATH` y `DB_*` son administradas por `nb env update` de forma predeterminada.
+- `.env` se utiliza principalmente para complementar las variables de tiempo de ejecución que la CLI no ha asumido directamente, como almacenamiento, caché, registros, observaciones y algunas variables de extensión de complementos.
+
+## Encuentra `app-path` primero
+
+En [Instalar usando CLI (recomendado)] (./cli.md#Directorio de instalación), la estructura de directorio predeterminada de CLI env es la siguiente:
+
+```text
+<app-path>/
+├── source/
+├── storage/
+└── .env
+```
+
+Si no está seguro de dónde está el `app-path` aplicado actualmente, puede verificar directamente:
 
 ```bash
-APP_KEY=your-app-key
-TZ=Asia/Shanghai
-APP_PORT=13000
-DB_DIALECT=postgres
-DB_HOST=127.0.0.1
-DB_PORT=5432
-DB_DATABASE=nocobase
-DB_USER=nocobase
-DB_PASSWORD=nocobase
+nb env info app1 --field app.appPath
 ```
 
-### Docker Compose 方式
+Simplemente reemplace `app1` con su nombre de entorno.
 
-可以直接在 `docker-compose.yml` 的 `environment` 里设置：
+Es decir, para una aplicación creada o alojada mediante la CLI, la ubicación más adecuada para el archivo `.env` es:
 
-```yml
-services:
-  app:
-    image: nocobase/nocobase:latest
-    environment:
-      - APP_ENV=production
-      - APP_KEY=your-app-key
-      - TZ=Asia/Shanghai
+```text
+<app-path>/.env
 ```
 
-也可以用 `env_file` 引入单独的 `.env` 文件：
+En términos generales, no es necesario colocarlo en `source/.env` y no es necesario buscar `.env` en el directorio raíz del proyecto Docker Compose de acuerdo con el método de instalación anterior.
 
-```yml
-services:
-  app:
-    image: nocobase/nocobase:latest
-    env_file: .env
-```
+## ¿Cuándo necesitas crear `.env` tú mismo?
 
-修改完成后，重新创建应用容器：
+`.env` es opcional.
+
+Si solo desea ejecutar la aplicación primero o simplemente modificar configuraciones básicas como puertos, zonas horarias, conexiones de bases de datos y rutas de acceso público, en muchos casos no es necesario crear `.env` manualmente.
+
+Solo agréguelos a `<app-path>/.env` si necesita agregar algunas variables de tiempo de ejecución que la CLI no ha asumido directamente.
+
+## El valor predeterminado es usar `nb env update` primero
+
+En el nuevo método de instalación CLI, se recomienda que la configuración básica de la aplicación tenga prioridad [`nb env update`](../../api/cli/env/update.md) de forma predeterminada.
+
+Esto tiene dos beneficios:
+
+- La configuración y el entorno en sí se guardan en la misma mente CLI, lo que facilita su verificación y modificación.
+- En el futuro, usted, los scripts y los agentes de IA podrán continuar usando el mismo conjunto de comandos para el mantenimiento, por lo que no es fácil tener la situación en la que "se realiza un conjunto de cambios en el archivo, pero se registra otro conjunto en la CLI".
+
+### Estas configuraciones ahora son más adecuadas para entregarlas a `nb env update`
+
+Para los siguientes elementos, es posible que haya estado acostumbrado a escribirlos directamente en `.env` en el pasado. Sin embargo, en el modo de instalación CLI, se recomienda utilizar `nb env update` de forma predeterminada:
+
+| Quiero cambiar... | Cómo cambiar el valor predeterminado |
+| --- | --- |
+| `APP_KEY` | `nb env update <name> --app-key <value>` |
+| `TZ` | `nb env update <name> --timezone <value>` |
+| `APP_PORT` | `nb env update <name> --app-port <value>` |
+| `APP_PUBLIC_PATH` | `nb env update <name> --app-public-path <value>` |
+| `CDN_BASE_URL` | `nb env update <name> --cdn-base-url <value>` |
+| Tipo de base de datos y parámetros de conexión, como `DB_DIALECT`, `DB_HOST`, `DB_PORT`, `DB_DATABASE`, `DB_USER`, `DB_PASSWORD` | `nb env update <name> --db-dialect ... --db-host ... --db-port ... --db-database ... --db-user ... --db-password ...` |
+| Esquema PostgreSQL, prefijo de tabla, guión bajo que nombra elementos complementarios de la base de datos, como `DB_SCHEMA`, `DB_TABLE_PREFIX`, `DB_UNDERSCORED` | `nb env update <name> --db-schema ... --db-table-prefix ... --db-underscored` |
+
+Por ejemplo, si deseas cambiar el puerto de la aplicación y la zona horaria, puedes escribir directamente así:
 
 ```bash
-docker compose up -d app
+nb env update app1 --app-port 13080 --timezone Asia/Shanghai
 ```
 
-## 先确认哪些变量
-
-### `APP_KEY`
-
-应用密钥，用于生成 token 等敏感数据。部署到正式环境前，记得改成你自己的值，并妥善保管。
-
-:::warning 注意
-
-如果 `APP_KEY` 改了，旧的 token 也会随之失效。
-
-:::
-
-### `TZ`
-
-应用时区。和时间相关的处理都会受它影响。
+Si desea cambiar los parámetros de conexión de la base de datos, puede escribir así:
 
 ```bash
-TZ=Asia/Shanghai
+nb env update app1 \
+  --db-dialect postgres \
+  --db-host 127.0.0.1 \
+  --db-port 5432 \
+  --db-database nocobase \
+  --db-user nocobase \
+  --db-password nocobase
 ```
 
-### `APP_PORT`
+Después de realizar los cambios, la CLI normalmente le pedirá que ejecute `nb app restart` más tarde. Para obtener una descripción más completa de los parámetros, consulte [`nb env update`](../../api/cli/env/update.md).
 
-应用端口，默认值通常是 `13000`。
+## ¿Qué situaciones son más adecuadas para escribir en `.env`?
+
+Si una variable aún no tiene un parámetro CLI correspondiente, o se parece más a una configuración extendida "pasada directamente al tiempo de ejecución de la aplicación", simplemente continúe escribiendo `<app-path>/.env`.
+
+Generalmente incluyen estas categorías:
+
+- Configuraciones de almacenamiento de archivos y almacenamiento de objetos, como `LOCAL_STORAGE_*`, `AWS_S3_*`, `ALI_OSS_*`, `TX_COS_*`
+- Configuración de caché y Redis, como `CACHE_*`, `REDIS_URL`
+- Configuraciones de registro y observación, como `LOGGER_*`, `TELEMETRY_*`
+- Ciertas variables específicas de complementos o extensiones, como exportación, tareas asincrónicas, flujo de trabajo y variables relacionadas con la extensión AI.
+
+Por ejemplo:
 
 ```bash
-APP_PORT=13000
+LOCAL_STORAGE_DEST=storage/uploads
+AWS_S3_BUCKET=your-bucket
+AWS_S3_REGION=ap-southeast-1
+LOGGER_LEVEL=info
+REDIS_URL=redis://127.0.0.1:6379
 ```
 
-### `DB_*`
+Este tipo de variable es esencialmente una configuración de tiempo de ejecución de la aplicación y actualmente la CLI no se hace cargo de ella elemento por elemento. Lo más natural es colocarlo en `.env`.
 
-如果你使用外部数据库，至少要确认这些变量：
+## Cómo dividir el trabajo entre `.env` y `nb env update`
+
+Si no estás seguro de dónde debe ir una determinada configuración, simplemente sigue esta regla de forma predeterminada:
+
+- Si `nb env update` ya tiene un parámetro correspondiente, se usará primero de forma predeterminada.
+- Si no hay ningún parámetro correspondiente, o si obviamente pertenece a la configuración de la extensión de tiempo de ejecución, como complementos, almacenamiento, caché y registros, colóquelo en `<app-path>/.env`
+
+En la mayoría de los escenarios, esta división del trabajo es suficiente.
+
+### Un malentendido común
+
+No mantenga dos copias de la misma configuración al mismo tiempo.
+
+Por ejemplo, si ha guardado elementos básicos como `APP_PORT`, `TZ`, `APP_PUBLIC_PATH` y `DB_HOST` con `nb env update`, normalmente no necesita escribirlos nuevamente en `.env`. De lo contrario, cuando solucionemos problemas más adelante, será fácil no saber qué capa es el valor que realmente desea que surta efecto.
+
+## Un ejemplo mínimo de `.env`
+
+Si su configuración básica se guardó a través de la CLI, entonces `.env` probablemente solo necesite conservar algunas variables de extensión, como:
 
 ```bash
-DB_DIALECT=postgres
-DB_HOST=127.0.0.1
-DB_PORT=5432
-DB_DATABASE=nocobase
-DB_USER=nocobase
-DB_PASSWORD=nocobase
+LOGGER_LEVEL=info
+REDIS_URL=redis://127.0.0.1:6379
+AWS_S3_BUCKET=your-bucket
+AWS_S3_REGION=ap-southeast-1
 ```
 
-如果你使用 MySQL 或 MariaDB，并且数据库配置了 `lower_case_table_names=1`，还需要确认：
+Esta es también la mentalidad que esta página más quiere ayudarte a construir:
 
-```bash
-DB_UNDERSCORED=true
-```
+`.env` sigue siendo útil, pero en el nuevo método de instalación CLI, se trata más de complementar la configuración de la extensión del tiempo de ejecución en lugar de continuar asumiendo todos los parámetros básicos de instalación.
 
-## 完整变量列表
+## Dónde buscar a continuación
 
-如果你需要查看全部环境变量说明，比如 `CLUSTER_MODE`、`CACHE_*`、`FILE_STORAGE`、插件相关变量等，继续看 [全局环境变量](/api/app/env)。
+- Si no ha confirmado la estructura del directorio de la aplicación, primero regrese a [Instalar usando CLI (recomendado)] (./cli.md#Directorio de instalación)
+- Si desea modificar configuraciones básicas como puertos, zonas horarias, conexiones de bases de datos y rutas de acceso público, continúe viendo [`nb env update`](../../api/cli/env/update.md)
+- Si desea iniciar, reiniciar o ver los registros de la aplicación, continúe para ver [Administrar aplicación] (../operaciones/manage-app.md)

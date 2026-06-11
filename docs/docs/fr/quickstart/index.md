@@ -1,27 +1,54 @@
-# 快速开始
+# Démarrage rapide
 
-NocoBase 的快速开始主要解决三件事：先把应用装起来，再把插件装起来，最后把应用稳定地跑起来。你不需要一次把所有文档都看完，按你当前所在的阶段往下走就够了。
+Si c'est la première fois que vous utilisez cette CLI, vous n'avez pas besoin de mémoriser toutes les commandes au début. Utilisez `nb init --ui` pour installer d'abord une application, puis continuez à regarder le reste en fonction du scénario.
 
-如果你还没决定用哪种方式安装，默认先看 [使用 CLI 安装（推荐）](./installation/cli.md)。如果你更习惯直接在服务器上用容器跑起来，继续看 [通过 Docker Compose 安装](./installation/docker-compose.md)。
+## Établissez d'abord l'esprit le plus important
 
-## 快速索引
+Dans NocoBase CLI, les opérations ultérieures ne tournent pas autour de « un certain répertoire » ou « un certain port » par défaut, mais autour de **env**.
 
-| 我想要…… | 去哪里看 |
+Vous pouvez considérer env comme "un ensemble d'informations de connexion d'application et d'exécution mémorisées par la CLI". Tant qu'il a été enregistré avec succès, de nombreuses commandes ultérieures peuvent être utilisées directement :
+
+- Utilisez `nb init` pour installer une nouvelle application et enregistrez-la sous env
+- Utilisez `nb env add` pour connecter une application existante à la CLI
+- Gérez cet environnement avec `nb app start`, `nb app logs`, `nb app upgrade`
+- Sauvegardez et restaurez cet environnement en utilisant `nb backup`
+- Utilisez `nb app autostart`, `nb proxy` pour continuer à compléter les capacités de l'environnement de production
+
+Gardez cela à l’esprit d’abord, et les documents suivants seront beaucoup plus fluides.
+
+## Chemin recommandé par défaut
+
+Si vous ne savez pas par où commencer, il est généralement plus simple de suivre ce chemin :
+
+1. Lisez d’abord [Installation à l’aide de CLI (recommandé)](./installation/cli.md) et complétez `nb init` une fois.
+2. Une fois l'application enregistrée en tant qu'environnement, consultez [Gestion d'environnements multiples] (./opérations/multi-environment.md) pour confirmer l'environnement actuel, changer d'environnement et vérifier l'état.
+3. Pour le démarrage, l'arrêt, la journalisation et la mise à niveau quotidiens, continuez à consulter [Gérer l'application] (./operations/manage-app.md).
+4. Avant d'effectuer des mises à niveau, des migrations ou des modifications importantes, consultez [Sauvegarde et restauration](./operations/backup-restore.md).
+5. Si vous êtes prêt à vous connecter officiellement, entrez [Présentation du déploiement de l'environnement de production] (./production/index.md).
+
+Les trois premières étapes couvrent la plupart des scénarios d'utilisation.
+
+## Index rapide
+
+| Je veux... | Où chercher |
 | --- | --- |
-| 直接安装一个新的 NocoBase 应用 | [使用 CLI 安装（推荐）](./installation/cli.md) |
-| 把旧的安装方式逐步迁移到 CLI | [从旧方式迁移到 CLI](./installation/migration.md) |
-| 用 Docker Compose 在服务器上部署 | [通过 Docker Compose 安装](./installation/docker-compose.md) |
-| 在无法访问公网的环境里安装 | [内网安装](./installation/airgap.md) |
-| 先确认应用运行需要的关键环境变量 | [应用环境变量](./installation/env.md) |
-| 激活商业插件或安装第三方插件 | [商业插件激活与升级](../api/cli/license/index.md) / [第三方插件安装与升级](./plugins/third-party.md) |
-| 给生产环境加上反向代理 | [Nginx](./production/reverse-proxy/nginx.md) / [Caddy](./production/reverse-proxy/caddy.md) |
-| 查看应用、切换环境、备份还原 | [管理应用](./operations/manage-app.md) / [多环境管理](./operations/multi-environment.md) / [备份还原](./operations/backup-restore.md) |
+| Il n'y a pas encore d'application, installez d'abord un nouveau NocoBase et enregistrez-le sous CLI env | [Installer à l'aide de CLI (recommandé)](./installation/cli.md) |
+| Vous disposez déjà d'un NocoBase en cours d'exécution et souhaitez accéder à la gestion CLI | [Installer à l'aide de CLI (recommandé)](./installation/cli.md) |
+| Migrez progressivement les anciennes méthodes d'installation vers CLI | [Migrer des anciennes méthodes d'installation vers CLI](./installation/migration.md) |
+| Découvrez quels environnements sont enregistrés localement, changez l'environnement actuel et vérifiez l'état | [Gestion d'environnements multiples](./operations/multi-environment.md) |
+| Démarrer, arrêter, redémarrer l'application, afficher les journaux ou poursuivre la mise à niveau | [Gérer l'application](./operations/manage-app.md) |
+| Effectuez une sauvegarde avant de mettre à niveau, de migrer ou de modifier par lots des données, puis restaurez-la si nécessaire | [Sauvegarde et restauration](./operations/backup-restore.md) |
+| Confirmez d'abord les variables d'environnement clés requises pour exécuter l'application | [Variables d'environnement d'application](./installation/env.md) |
+| Installer des plug-ins tiers | [Installation et mise à niveau de plug-ins tiers](./plugins/third-party.md) |
+| Laissez l'application entrer dans l'environnement de production : démarrage automatique, accès externe stable, proxy inverse | [Présentation du déploiement de l'environnement de production](./production/index.md) |
 
-## 默认路径
+## Quand consulter la référence de la commande
 
-如果你不确定该怎么选，通常来说按下面这条路径走最省心：
+Cet ensemble de documents de démarrage rapide est plutôt « qu'est-ce que je veux faire maintenant ». Si vous savez déjà quelle commande vous souhaitez exécuter et que vous souhaitez simplement continuer à voir les paramètres complets, accédez simplement à [NocoBase CLI Command Reference](../api/cli/index.md).
 
-1. 先看 [使用 CLI 安装（推荐）](./installation/cli.md)。
-2. 应用跑起来后，再确认 [应用环境变量](./installation/env.md)。
-3. 如果要正式上线，再补上 [Nginx](./production/reverse-proxy/nginx.md) 或 [Caddy](./production/reverse-proxy/caddy.md)。
-4. 后续日常维护时，再看 [管理应用](./operations/manage-app.md) 和 [备份还原](./operations/backup-restore.md)。
+Les suggestions par défaut sont :
+
+- Utilisez d'abord le document de démarrage rapide pour établir une idée du chemin
+- Vérifiez ensuite les détails des paramètres sur la page de commande spécifique
+
+Cela rend la prise en main plus facile que la lecture de l'arborescence de commandes complète au premier coup d'œil.

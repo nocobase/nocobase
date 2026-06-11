@@ -797,16 +797,19 @@ describe('GanttBlockModel settings', () => {
     });
     const action = await model.ensurePopupAction('eventViewAction');
     action.dispatchEvent = vi.fn();
+    const openView = vi.fn();
+    model.context.defineMethod('openView', openView);
 
     await model.openEvent({ id: 12 });
 
-    expect(action.dispatchEvent).toHaveBeenCalledWith(
-      'click',
-      {
-        filterByTk: 12,
-      },
-      { debounce: true },
-    );
+    expect(openView).toHaveBeenCalledWith('calendar-gantt-eventViewAction', {
+      dataSourceKey: 'main',
+      collectionName: 'calendar',
+      filterByTk: 12,
+      navigation: false,
+      target: model.context.layoutContentElement,
+    });
+    expect(action.dispatchEvent).not.toHaveBeenCalled();
   });
 });
 

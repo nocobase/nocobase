@@ -21,8 +21,12 @@ export default class ProxyNginxReload extends Command {
     startTask(`Reloading nginx proxy with the ${driver} driver...`);
 
     try {
-      await reloadNginxProxy(runtimeContext);
-      succeedTask(`Nginx proxy reloaded with the ${driver} driver.`);
+      const result = await reloadNginxProxy(runtimeContext);
+      succeedTask(
+        result === 'started'
+          ? `Nginx proxy started with the ${driver} driver using the latest config.`
+          : `Nginx proxy reloaded with the ${driver} driver.`,
+      );
     } catch (error) {
       failTask(`Failed to reload nginx proxy with the ${driver} driver.`);
       this.error(error instanceof Error ? error.message : String(error));

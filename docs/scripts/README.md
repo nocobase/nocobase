@@ -57,7 +57,7 @@ node docs/scripts/check-i18n-coverage.mjs --files=changed-files.txt
 
 ```
 [ja] DIFF:
-  - hero.actions[0].link: cn=/get-started/how-nocobase-works lang=/quickstart
+  - hero.actions[0].link: cn=/quickstart/how-nocobase-works lang=/quickstart
   - features[2].items 数量不一致 (cn=3, lang=2)
 ```
 

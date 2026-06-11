@@ -207,6 +207,6 @@ export default class LicenseActivate extends Command {
     }
 
     this.log(licenseActivateText('messages.activated', { envName: runtime.envName }));
-    this.log(licenseActivateText('messages.savedLicenseKey', { licenseKeyPath }));
+    this.log(licenseActivateText('messages.savedLicenseKey'));
   }
 }

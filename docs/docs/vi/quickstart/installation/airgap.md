@@ -1,17 +1,17 @@
-# 内网安装
+#Cài đặt mạng nội bộ
 
-如果你的服务器无法访问公网，安装方式就要提前准备好离线所需的镜像、依赖和插件包。默认推荐先用 Docker 方式，路径最短，也最容易复现。
+Nếu máy chủ của bạn không thể truy cập mạng công cộng, phương pháp cài đặt yêu cầu bạn chuẩn bị trước các hình ảnh, phần phụ thuộc và gói plugin cần thiết để sử dụng ngoại tuyến. Theo mặc định, nên sử dụng Docker trước, vì nó có đường đi ngắn nhất và dễ tái tạo nhất.
 
-## 默认推荐：离线准备 Docker 镜像
+## Khuyến nghị mặc định: Chuẩn bị Docker image offline
 
-在一台可以访问公网的机器上，先把应用镜像和数据库镜像拉下来：
+Trên máy có thể truy cập mạng công cộng, trước tiên hãy kéo xuống hình ảnh ứng dụng và hình ảnh cơ sở dữ liệu:
 
 ```bash
 docker pull registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:latest-full
 docker pull registry.cn-shanghai.aliyuncs.com/nocobase/postgres:16
 ```
 
-然后导出为离线文件：
+Sau đó xuất dưới dạng tệp ngoại tuyến:
 
 ```bash
 docker save -o nocobase-app.tar \
@@ -21,47 +21,47 @@ docker save -o nocobase-postgres.tar \
   registry.cn-shanghai.aliyuncs.com/nocobase/postgres:16
 ```
 
-如果你还需要商业插件，也建议在外网环境先准备好插件包，再一起带入内网。
+Nếu bạn vẫn cần các plug-in thương mại, bạn cũng nên chuẩn bị gói plug-in trong môi trường mạng bên ngoài rồi đưa nó vào mạng nội bộ cùng nhau.
 
-## 把文件拷贝到内网服务器
+## Sao chép tệp vào máy chủ mạng nội bộ
 
-至少准备这些文件：
+Chuẩn bị ít nhất những tài liệu sau:
 
 - `nocobase-app.tar`
 - `nocobase-postgres.tar`
 - `docker-compose.yml`
-- `.env` 或你自己的部署说明
+- `.env` hoặc hướng dẫn triển khai của riêng bạn
 
-## 在内网服务器导入镜像
+## Nhập hình ảnh vào máy chủ mạng nội bộ
 
 ```bash
 docker load -i nocobase-app.tar
 docker load -i nocobase-postgres.tar
 ```
 
-## 启动应用
+## Bắt đầu ứng dụng
 
-准备好 `docker-compose.yml` 后，直接启动：
+Sau khi chuẩn bị `docker-compose.yml`, hãy bắt đầu trực tiếp:
 
 ```bash
 docker compose up -d
 docker compose logs -f app
 ```
 
-如果你还没写 compose 文件，先看 [通过 Docker Compose 安装](./docker-compose.md)，把里面的示例保存到本地即可。
+Nếu bạn chưa viết tệp soạn thảo, trước tiên hãy đọc [Cài đặt qua Docker Compose](./docker-compose.md) và lưu cục bộ các ví dụ vào đó.
 
-## 不能使用 Docker 怎么办
+## Phải làm gì nếu bạn không thể sử dụng Docker
 
-如果你的内网环境不能使用 Docker，也可以在外网环境先用 `create-nocobase-app` 创建完整项目、安装依赖并打包，再把整个项目拷贝到内网服务器。
+Nếu không thể sử dụng Docker trong môi trường mạng nội bộ của bạn, bạn cũng có thể sử dụng `create-nocobase-app` để tạo một dự án hoàn chỉnh trong môi trường mạng bên ngoài, cài đặt các phần phụ thuộc và đóng gói nó, sau đó sao chép toàn bộ dự án vào máy chủ mạng nội bộ.
 
-这条路径会更长，不过在没有容器能力的环境里更实用。整体流程通常是：
+Đường dẫn này sẽ dài hơn nhưng thực tế hơn trong môi trường không có khả năng chứa. Quá trình tổng thể thường là:
 
-1. 在外网环境创建项目并安装依赖。
-2. 把项目目录打包。
-3. 拷贝到内网服务器。
-4. 在内网解压、补齐 `.env` 后启动应用。
+1. Tạo một dự án trong môi trường mạng bên ngoài và cài đặt các phần phụ thuộc.
+2. Đóng gói thư mục dự án.
+3. Sao chép vào máy chủ mạng nội bộ.
+4. Giải nén tệp trên mạng nội bộ, hoàn thành `.env` và khởi động ứng dụng.
 
-## 下一步去哪里看
+## Nơi để tìm tiếp theo
 
-- 如果你还没确认应用配置，继续看 [应用环境变量](./env.md)
-- 如果你准备把应用正式开放给业务用户，继续看 [Nginx](../production/reverse-proxy/nginx.md) 或 [Caddy](../production/reverse-proxy/caddy.md)
+- Nếu bạn chưa xác nhận cấu hình ứng dụng, hãy tiếp tục xem [Biến môi trường ứng dụng](./env.md)
+- Nếu bạn đã sẵn sàng mở ứng dụng chính thức cho người dùng doanh nghiệp, hãy tiếp tục đọc [Nginx](../production/reverse-proxy/nginx.md) hoặc [Caddy](../production/reverse-proxy/caddy.md)

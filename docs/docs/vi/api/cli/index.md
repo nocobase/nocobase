@@ -191,7 +191,6 @@ Tệp này được tạo hoặc làm mới bởi [`nb env update`](./env/update
 ## Liên kết liên quan
 
 - [Bắt đầu nhanh](../../ai/quick-start.mdx)
-- [Cài đặt, nâng cấp và di chuyển](../../ai/install-upgrade-migration.mdx)
 - [Biến môi trường toàn cục](../app/env.md)
 - [Xây dựng bằng AI](../../ai-builder/index.md)
 - [Phát triển plugin](../../plugin-development/index.md)

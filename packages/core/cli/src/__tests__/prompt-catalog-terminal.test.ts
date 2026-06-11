@@ -74,15 +74,14 @@ test('runPromptCatalog adapts async text validate results for input', async () =
 });
 
 test('runPromptCatalog passes default bullet mask and async password validate to password', async () => {
-  mocks.password.mockImplementation(async (options: {
-    mask?: boolean | string;
-    validate?: (value: string) => Promise<true | string>;
-  }) => {
-    expect(options.mask).toBe('•');
-    await expect(options.validate?.('secret')).resolves.toBe(true);
-    await expect(options.validate?.('x')).resolves.toBe('too short');
-    return 'secret';
-  });
+  mocks.password.mockImplementation(
+    async (options: { mask?: boolean | string; validate?: (value: string) => Promise<true | string> }) => {
+      expect(options.mask).toBe('•');
+      await expect(options.validate?.('secret')).resolves.toBe(true);
+      await expect(options.validate?.('x')).resolves.toBe('too short');
+      return 'secret';
+    },
+  );
 
   const { runPromptCatalog } = await import('../lib/prompt-catalog-terminal.ts');
 
@@ -150,27 +149,48 @@ test('runPromptCatalog skips preset validation for hidden fields', async () => {
 
   const { runPromptCatalog } = await import('../lib/prompt-catalog-terminal.ts');
 
-  const result = await runPromptCatalog({
-    hasNocobase: {
-      type: 'select',
-      message: 'Already have app?',
-      options: ['no', 'yes'],
-      initialValue: 'no',
+  const result = await runPromptCatalog(
+    {
+      hasNocobase: {
+        type: 'select',
+        message: 'Already have app?',
+        options: ['no', 'yes'],
+        initialValue: 'no',
+      },
+      apiBaseUrl: {
+        type: 'text',
+        message: 'API base URL',
+        hidden: (values) => values.hasNocobase !== 'yes',
+        validate: hiddenValidate,
+      },
     },
-    apiBaseUrl: {
-      type: 'text',
-      message: 'API base URL',
-      hidden: (values) => values.hasNocobase !== 'yes',
-      validate: hiddenValidate,
+    {
+      values: {
+        hasNocobase: 'no',
+        apiBaseUrl: 'http://127.0.0.1:13000/api',
+      },
     },
-  }, {
-    values: {
-      hasNocobase: 'no',
-      apiBaseUrl: 'http://127.0.0.1:13000/api',
-    },
-  });
+  );
 
   expect(result).toEqual({ hasNocobase: 'no' });
   expect(hiddenValidate).not.toHaveBeenCalled();
+  expect(mocks.input).not.toHaveBeenCalled();
+});
+
+test('runPromptCatalog throws on missing non-interactive required text by default', async () => {
+  setInteractive(false);
+
+  const { runPromptCatalog } = await import('../lib/prompt-catalog-terminal.ts');
+
+  await expect(
+    runPromptCatalog({
+      env: {
+        type: 'text',
+        message: 'Env',
+        required: true,
+      },
+    }),
+  ).rejects.toThrow(/required/i);
+
   expect(mocks.input).not.toHaveBeenCalled();
 });

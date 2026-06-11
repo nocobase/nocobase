@@ -1,80 +1,82 @@
 [
   {
     "type": "custom-link",
-    "label": "开始前",
+    "label": "Прежде чем начать",
     "items": [
       {
         "type": "custom-link",
-        "label": "NocoBase 如何工作",
-        "link": "/get-started/how-nocobase-works"
+        "label": "быстрый старт",
+        "link": "/quickstart/"
       },
       {
         "type": "custom-link",
-        "label": "系统要求",
+        "label": "Как работает NocoBase",
+        "link": "/quickstart/how-nocobase-works"
+      },
+      {
+        "type": "custom-link",
+        "label": "Системные требования",
         "link": "/get-started/system-requirements"
       }
     ]
   },
   {
     "type": "custom-link",
-    "label": "应用的安装",
+    "label": "Установить NocoBase",
     "items": [
       {
         "type": "custom-link",
-        "label": "使用 CLI 安装（推荐）",
+        "label": "Установить с помощью CLI (рекомендуется)",
         "link": "/quickstart/installation/cli"
       },
       {
         "type": "custom-link",
-        "label": "从旧方式迁移到 CLI",
+        "label": "Подключение старых методов установки к AI и миграция",
         "link": "/quickstart/installation/migration"
       },
       {
         "type": "custom-link",
-        "label": "通过 Docker Compose 安装",
-        "link": "/quickstart/installation/docker-compose"
-      },
-      {
-        "type": "custom-link",
-        "label": "内网安装",
-        "link": "/quickstart/installation/airgap"
-      },
-      {
-        "type": "custom-link",
-        "label": "应用环境变量",
+        "label": "Конфигурация приложения и .env",
         "link": "/quickstart/installation/env"
-      }
-    ]
-  },
-  {
-    "type": "custom-link",
-    "label": "插件的安装",
-    "items": [
+      },
       {
         "type": "custom-link",
-        "label": "第三方插件安装",
+        "label": "Установка стороннего плагина",
         "link": "/quickstart/plugins/third-party"
       }
     ]
   },
   {
     "type": "custom-link",
-    "label": "生产环境部署",
-    "link": "/quickstart/production/",
+    "label": "Развертывание производственной среды",
     "items": [
       {
         "type": "custom-link",
-        "label": "反向代理",
-        "link": "/quickstart/production/reverse-proxy/",
+        "label": "Обзор",
+        "link": "/quickstart/production/"
+      },
+      {
+        "type": "custom-link",
+        "label": "Приложение запускается автоматически",
+        "link": "/quickstart/production/autostart"
+      },
+      {
+        "type": "custom-link",
+        "label": "обратный прокси",
         "items": [
           {
             "type": "custom-link",
-            "label": "Nginx",
+            "label": "Обзор",
+            "link": "/quickstart/production/reverse-proxy/"
+          },
+          {
+            "type": "custom-link",
+            "label": "Нгинкс",
             "link": "/quickstart/production/reverse-proxy/nginx"
           },
           {
             "type": "custom-link",
-            "label": "Caddy",
+            "label": "Кэдди",
             "link": "/quickstart/production/reverse-proxy/caddy"
           }
         ]
@@ -83,29 +85,45 @@
   },
   {
     "type": "custom-link",
-    "label": "运维与发布",
+    "label": "Эксплуатация, обслуживание и выпуск",
     "items": [
       {
         "type": "custom-link",
-        "label": "管理应用",
+        "label": "Приложение для управления",
         "link": "/quickstart/operations/manage-app"
       },
       {
         "type": "custom-link",
-        "label": "多环境管理",
+        "label": "Управление несколькими средами",
         "link": "/quickstart/operations/multi-environment"
       },
       {
         "type": "custom-link",
-        "label": "备份还原",
+        "label": "Резервное копирование и восстановление",
         "link": "/quickstart/operations/backup-restore"
       }
     ]
   },
   {
     "type": "custom-link",
-    "label": "开始（旧版）",
+    "label": "Замечания по проектированию CLI",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "замысел дизайна приложения",
+        "link": "/quickstart/cli-design/nb-app-design-intent"
+      },
+      {
+        "type": "custom-link",
+        "label": "Цель создания прокси-сервера nb",
+        "link": "/quickstart/cli-design/nb-proxy-design-intent"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Старт (старая версия)",
     "proxy": false,
-    "link": "/get-started/how-nocobase-works"
+    "link": "/quickstart/how-nocobase-works"
   }
 ]

@@ -93,6 +93,7 @@ const mocks = vi.hoisted(() => ({
   fsReaddir: vi.fn(),
   executeRawApiRequest: vi.fn(),
   getEnv: vi.fn(),
+  clearEnvRootSetup: vi.fn(),
   checkExternalDbConnection: vi.fn(),
   readExternalDbConnectionConfig: vi.fn(),
   formatDbCheckAddress: vi.fn(),
@@ -232,6 +233,7 @@ vi.mock('../lib/auth-store.js', () => ({
   getCurrentEnvName: mocks.getCurrentEnvName,
   getEnv: mocks.getEnv,
   upsertEnv: mocks.upsertEnv,
+  clearEnvRootSetup: mocks.clearEnvRootSetup,
   resolveConfiguredAuthType: (config?: { authType?: string; auth?: { type?: string } }) =>
     config?.authType ?? config?.auth?.type,
 }));
@@ -379,6 +381,7 @@ beforeEach(() => {
     hasEnvs: false,
   });
   mocks.upsertEnv.mockResolvedValue(undefined);
+  mocks.clearEnvRootSetup.mockResolvedValue(true);
 });
 
 afterEach(() => {
@@ -500,6 +503,134 @@ test('start enables daemon by default for npm/git envs', async () => {
     env: MANAGED_APP_PRODUCTION_ENV,
     stdio: 'ignore',
   });
+});
+
+test('start injects init env vars for prepared local envs and marks them installed after success', async () => {
+  const { default: Start } = await import('../commands/app/start.js');
+  mocks.resolveManagedAppRuntime.mockResolvedValue({
+    kind: 'local',
+    envName: 'prepared-local',
+    source: 'npm',
+    projectRoot: '/tmp/nocobase',
+    env: {
+      appPort: 13000,
+      config: {
+        setupState: 'prepared',
+        lang: 'en-US',
+        rootUsername: 'admin',
+        rootEmail: 'admin@nocobase.com',
+        rootPassword: 'admin123',
+        rootNickname: 'Admin',
+      },
+      envVars: { APP_PORT: '13000' },
+    },
+  });
+
+  const command = createCommandHarness({
+    flags: {
+      env: 'prepared-local',
+    },
+  });
+
+  await Start.prototype.run.call(command);
+
+  expect(mocks.runLocalNocoBaseCommand.mock.calls[2]?.[2]).toEqual({
+    env: {
+      ...MANAGED_APP_PRODUCTION_ENV,
+      INIT_APP_LANG: 'en-US',
+      INIT_ROOT_USERNAME: 'admin',
+      INIT_ROOT_EMAIL: 'admin@nocobase.com',
+      INIT_ROOT_PASSWORD: 'admin123',
+      INIT_ROOT_NICKNAME: 'Admin',
+    },
+    stdio: 'ignore',
+  });
+  expect(mocks.clearEnvRootSetup).toHaveBeenCalledWith('prepared-local');
+  expect(mocks.upsertEnv).toHaveBeenCalledWith('prepared-local', { setupState: 'installed' });
+});
+
+test('start rejects prepared local envs in foreground mode', async () => {
+  const { default: Start } = await import('../commands/app/start.js');
+  mocks.resolveManagedAppRuntime.mockResolvedValue({
+    kind: 'local',
+    envName: 'prepared-local',
+    source: 'git',
+    projectRoot: '/tmp/nocobase',
+    env: {
+      appPort: 13000,
+      config: {
+        setupState: 'prepared',
+        rootUsername: 'admin',
+      },
+      envVars: { APP_PORT: '13000' },
+    },
+  });
+
+  const command = createCommandHarness({
+    flags: {
+      env: 'prepared-local',
+      daemon: false,
+    },
+  });
+  command.argv = ['--no-daemon'];
+
+  await expect((() => Start.prototype.run.call(command))()).rejects.toThrow(
+    /Run `nb app start --env prepared-local` to finish the first installation in daemon mode\./,
+  );
+});
+
+test('start recreates prepared docker envs with init env vars and marks them installed after success', async () => {
+  const appManagedResources = await import('../lib/app-managed-resources.js');
+  const recreateSavedDockerApp = vi.spyOn(appManagedResources, 'recreateSavedDockerApp').mockResolvedValue(undefined);
+  const { default: Start } = await import('../commands/app/start.js');
+  mocks.resolveManagedAppRuntime.mockResolvedValue({
+    kind: 'docker',
+    envName: 'prepared-docker',
+    source: 'docker',
+    containerName: 'nb-demo-prepared-docker-app',
+    workspaceName: 'nb-demo',
+    env: {
+      appPort: 13000,
+      config: {
+        setupState: 'prepared',
+        lang: 'en-US',
+        rootUsername: 'admin',
+        rootEmail: 'admin@nocobase.com',
+        rootPassword: 'admin123',
+        rootNickname: 'Admin',
+      },
+    },
+  });
+
+  const command = createCommandHarness({
+    flags: {
+      env: 'prepared-docker',
+    },
+  });
+
+  try {
+    await Start.prototype.run.call(command);
+
+    expect(recreateSavedDockerApp).toHaveBeenCalledWith(
+      expect.objectContaining({
+        envName: 'prepared-docker',
+      }),
+      {
+        initEnvVars: {
+          INIT_APP_LANG: 'en-US',
+          INIT_ROOT_USERNAME: 'admin',
+          INIT_ROOT_EMAIL: 'admin@nocobase.com',
+          INIT_ROOT_PASSWORD: 'admin123',
+          INIT_ROOT_NICKNAME: 'Admin',
+        },
+        verbose: undefined,
+      },
+    );
+    expect(mocks.clearEnvRootSetup).toHaveBeenCalledWith('prepared-docker');
+    expect(mocks.upsertEnv).toHaveBeenCalledWith('prepared-docker', { setupState: 'installed' });
+  } finally {
+    recreateSavedDockerApp.mockRestore();
+  }
 });
 
 test('start prints the resolved public app url for local envs', async () => {
@@ -4104,9 +4235,7 @@ test('destroy does not remove the saved env config when cleanup fails midway', a
     },
   });
 
-  await expect((() => Destroy.prototype.run.call(command))()).rejects.toThrow(
-    /Couldn't destroy env "local-failure"\./,
-  );
+  await expect((() => Destroy.prototype.run.call(command))()).rejects.toThrow(/Couldn't destroy env "local-failure"\./);
 
   expect(mocks.fsRm.mock.calls.length).toBeGreaterThanOrEqual(2);
   expect(mocks.removeEnv).not.toHaveBeenCalled();
@@ -4538,6 +4667,11 @@ test('upgrade forwards --verbose to local source refresh and local runtime comma
     ['app:start', ['--env', 'local', '--yes', '--verbose', '--quickstart', '--no-sync-licensed-plugins']],
     ['env:update', ['local', '--verbose']],
   ]);
+});
+
+test('upgrade enables --verbose by default', async () => {
+  const { default: Upgrade } = await import('../commands/app/upgrade.js');
+  expect(Upgrade.flags.verbose.default).toBe(true);
 });
 
 test('upgrade skips download for local app-path envs and still restarts with quickstart', async () => {

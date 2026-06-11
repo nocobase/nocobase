@@ -328,6 +328,11 @@
           },
           {
             "type": "custom-link",
+            "label": "Input Pemindaian",
+            "link": "/interface-builder/fields/field-settings/scan-input"
+          },
+          {
+            "type": "custom-link",
             "label": "Field Judul",
             "link": "/interface-builder/fields/field-settings/title-field"
           },

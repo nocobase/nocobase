@@ -23,7 +23,7 @@ Bitte installiere NocoBase CLI für mich und führe die Initialisierung durch: h
 ### Manuelle Installation
 
 ```bash
-npm install -g @nocobase/cli@beta
+npm install -g @nocobase/cli
 nb init --ui
 ```
 

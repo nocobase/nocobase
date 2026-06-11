@@ -20,7 +20,6 @@ nb app restart [flags]
 | --- | --- | --- |
 | `--env`, `-e` | string | Nom de l'env CLI à redémarrer ; utilise l'env courant si omis |
 | `--yes`, `-y` | boolean | Lorsque `--env` est passé explicitement et cible une env différente de l'env actuelle, ignore la confirmation interactive |
-| `--daemon`, `-d` / `--no-daemon` | boolean | Lancer ou non en mode daemon après l'arrêt, activé par défaut |
 | `--verbose` | boolean | Afficher la sortie détaillée des commandes d'arrêt et de démarrage sous-jacentes |
 
 ## Exemples
@@ -28,14 +27,13 @@ nb app restart [flags]
 ```bash
 nb app restart
 nb app restart --env local
-nb app restart --env local --no-daemon
 nb app restart --env local --verbose
 nb app restart --env local-docker
 ```
 
 Si vous passez `--env` explicitement et qu'il est différent de l'env actuelle, la CLI demande d'abord une confirmation. Dans un terminal non interactif ou une session d'agent IA, ajoutez vous-même `--yes` ou exécutez d'abord `nb env use <name>` puis réessayez.
 
-Par défaut, lorsque c'est applicable, la CLI exécute d'abord `nb license plugins sync --skip-if-no-license` afin de synchroniser les plugins commerciaux autorisés par la licence actuelle. Ensuite, les envs locales effectuent automatiquement la préparation d'installation ou de mise à niveau nécessaire avant de redémarrer, et les envs Docker réalisent cette étape avant de recréer le conteneur. Chaque fois que la CLI doit attendre que l'application soit prête, elle vérifie `__health_check` : elle affiche d'abord une ligne d'attente, puis une ligne de progression toutes les 10 secondes jusqu'à ce que l'application soit disponible ou que le délai soit dépassé. Si vous passez `--no-daemon` pour une env locale, l'application s'exécute au premier plan, donc la CLI n'attend pas davantage la vérification de disponibilité après le démarrage.
+Par défaut, lorsque c'est applicable, la CLI exécute d'abord `nb license plugins sync --skip-if-no-license` afin de synchroniser les plugins commerciaux autorisés par la licence actuelle. Ensuite, les envs locales effectuent automatiquement la préparation d'installation ou de mise à niveau nécessaire avant de redémarrer, et les envs Docker réalisent cette étape avant de recréer le conteneur. Chaque fois que la CLI doit attendre que l'application soit prête, elle vérifie `__health_check` : elle affiche d'abord une ligne d'attente, puis une ligne de progression toutes les 10 secondes jusqu'à ce que l'application soit disponible ou que le délai soit dépassé.
 
 ## Commandes connexes
 

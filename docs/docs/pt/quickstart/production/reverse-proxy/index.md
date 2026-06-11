@@ -1,75 +1,51 @@
 ---
-title: "Reverse proxy em produção"
-description: "Use nb proxy nginx e nb proxy caddy para gerar e gerenciar a configuração de reverse proxy para envs NocoBase gerenciados pela CLI."
-keywords: "NocoBase,nb proxy nginx,nb proxy caddy,reverse proxy,Nginx,Caddy,produção"
+title: "Proxy reverso do ambiente de produção"
+description: "Gere e gerencie a configuração de proxy reverso para ambiente NocoBase hospedado por CLI com base em nb proxy nginx e nb proxy caddy."
+keywords: "NocoBase,nb proxy nginx,nb proxy caddy, proxy reverso, Nginx, Caddy, ambiente de produção"
 ---
 
-# Reverse proxy em produção
 
-Na NocoBase CLI, os pontos de entrada recomendados para reverse proxy em produção são:
+#Proxy reverso
 
-- `nb proxy nginx`
-- `nb proxy caddy`
+Este artigo se aplica apenas a aplicativos instalados usando `nb init`.
 
-Onde:
+No NocoBase, o proxy reverso do ambiente de produção faz mais do que simplesmente encaminhar solicitações para o processo de aplicação. Freqüentemente, os detalhes de WebSockets, subcaminhos, recursos estáticos de front-end, diretórios de upload e páginas substitutas de SPA também são tratados ao mesmo tempo.
 
-- `proxy` gerencia a camada de entrada
-- `nginx` e `caddy` são as implementações de provider
-- `docker` e `local` são os drivers de runtime
-- `--env <name>` seleciona para qual env CLI a configuração será gerada
+A função de `nb proxy` é coletar esses detalhes facilmente perdidos em um conjunto estável de entradas de comando.
 
-Desde que seu app já tenha sido salvo como um env gerenciado pela CLI e esse env seja `local` ou `docker`, normalmente basta deixar a CLI gerar e gerenciar a configuração de reverse proxy. Assim, WebSocket, subcaminhos, páginas de fallback SPA e atualizações posteriores ficam alinhados no mesmo lugar.
+## Processo central
 
-Se o app não for gerenciado pela CLI, ou se você quiser manter toda a configuração manualmente, vá para as seções de configuração manual nas páginas de cada provider.
-
-## Antes de começar
-
-Verifique se:
-
-- o app já pode ser acessado internamente, por exemplo em `http://127.0.0.1:13000`
-- o app já foi salvo como um env CLI, e esse env é `local` ou `docker`
-- o env já tem `appPort` salvo
-
-Se o comando informar que falta `appPort`, atualize antes com [`nb env update`](../../../api/cli/env/update.md).
-
-Se depois você alterar configurações como `app-port` ou `app-public-path` que afetam o comportamento do proxy, execute novamente o comando `generate` correspondente.
-
-## Fluxo padrão
-
-Para Nginx:
+Se você observar apenas o processo principal, basta lembrar estes três comandos:
 
 ```bash
 nb proxy nginx use docker
 nb proxy nginx generate --env test2 --host c.local.nocobase.com
-nb proxy nginx start
+nb proxy nginx reload
 ```
 
-Para Caddy:
+Se você estiver usando o Caddy, basta substituir `nginx` no comando por `caddy`.
 
-```bash
-nb proxy caddy use local
-nb proxy caddy generate --env test2 --host c.local.nocobase.com
-nb proxy caddy start
-```
+`use local` e `use docker` podem ser julgados diretamente assim:
 
-Os papéis são:
+- Se o Nginx ou Caddy tiver sido instalado localmente, use `use local`
+- Não há instalação local. Se você quiser permitir que a CLI use o Docker para gerenciar o agente, use `use docker`
 
-- `use docker|local`: escolher o driver de runtime do provider atual
-- `generate --env <name> --host <domain>`: gerar a configuração de reverse proxy para um env
-- `start`: iniciar o processo local ou o contêiner Docker do provider atual
+Na maioria dos cenários, é suficiente executar `use` primeiro, depois `generate` e finalmente `reload`. Para obter detalhes sobre Nginx ou Caddy, continue nas respectivas páginas.
 
-## O que a CLI mantém
+## Quando escolher Nginx e quando escolher Caddy
 
-A CLI faz mais do que gerar um fragmento de proxy. Ela também mantém os arquivos auxiliares e a estrutura de entrada do site alinhados com o provider:
+Geralmente pode ser julgado assim:
 
-- O Nginx mantém `snippets` compartilhados, `app.conf`, `public/index-v1.html` e `public/index-v2.html`
-- O Caddy mantém `nocobase.caddy`, `app.caddy`, `public/index-v1.html` e `public/index-v2.html`, em que `app.caddy` é a configuração completa do site para um env
-
-## Qual página abrir primeiro
-
-| Quero... | Ir para |
+| Cenário | Recomendação |
 | --- | --- |
-| Continuar usando Nginx para sites, certificados, cache ou controle de acesso | [Nginx](./nginx.md) |
-| Colocar o HTTPS no ar rapidamente com menos detalhes de TLS para manter | [Caddy](./caddy.md) |
-| Ajustar configurações do env que podem afetar o comportamento do proxy, como `app-port` ou `app-public-path` | [`nb env update`](../../../api/cli/env/update.md) |
-| Instalar primeiro o app como um env gerenciado pela CLI | [Instalar com a CLI](../../installation/cli.md) |
+| Você já está usando o Nginx para gerenciar seu site, certificados, cache ou controle de acesso | [Nginx](./nginx.md) |
+| Você já possui um nome de domínio e deseja executar HTTPS o mais rápido possível e salvar alguns detalhes de TLS para manter | [Caddy](./caddy.md) |
+
+## Continue lendo abaixo
+
+| Eu quero... | Onde procurar |
+| --- | --- |
+| Siga a entrada do site de gerenciamento Nginx | [Nginx](./nginx.md) |
+| Conecte HTTPS o mais rápido possível | [Caddy](./caddy.md) |
+| Primeiro ajuste a configuração do ambiente que afetará os resultados do proxy, como `app-port`, `app-public-path` | [`nb env update`](../../../api/cli/env/update.md) |
+| Primeiro confirme a instalação e configuração do ambiente do aplicativo | [Instalar usando CLI (recomendado)](../../installation/cli.md) |

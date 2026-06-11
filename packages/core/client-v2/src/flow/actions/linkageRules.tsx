@@ -106,6 +106,18 @@ const getLinkageScopeDepthFromContext = (ctx: FlowContext): number => {
   return getLinkageScopeDepthFromModel((ctx as any)?.model);
 };
 
+const isActionFlowModel = (model: any): boolean => {
+  if (!model || typeof model !== 'object') return false;
+
+  let proto = model.constructor?.prototype;
+  while (proto) {
+    if (proto.constructor?.name === 'ActionModel') return true;
+    proto = Object.getPrototypeOf(proto);
+  }
+
+  return false;
+};
+
 // 获取表单中所有字段的 model 实例的通用函数
 const getFormFields = (ctx: any) => {
   try {
@@ -2142,12 +2154,12 @@ const commonLinkageRulesHandler = async (ctx: FlowContext, params: any) => {
     model.setProps(_.omit(newProps, ['hiddenModel', 'value', 'hiddenText']));
     syncFieldOptionsToForks(model, patchProps);
     if (typeof model.setHidden === 'function') {
-      model.setHidden(!!newProps.hiddenModel);
+      model.setHidden(nextHidden);
     } else {
       model.hidden = nextHidden;
-      if (prevHidden !== nextHidden) {
-        hiddenStatePatches.push({ model, hidden: nextHidden });
-      }
+    }
+    if (prevHidden !== nextHidden && !isActionFlowModel(model)) {
+      hiddenStatePatches.push({ model, hidden: nextHidden });
     }
 
     if (newProps.required === true) {

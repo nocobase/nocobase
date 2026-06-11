@@ -54,6 +54,7 @@
     "apiBaseUrl": {
       "invalid": "Enter a valid URL, for example {{example}}.",
       "invalidProtocol": "URL must start with http:// or https://, for example {{example}}.",
+      "missingApiPrefix": "The API base URL must include the /api prefix, for example {{example}}.",
       "healthCheckPathNotAllowed": "Do not include /__health_check in the API base URL. Enter the application API base URL, for example http://localhost:13000/api.",
       "maintaining": "The API base URL is reachable, but the app is still starting or in maintenance mode. Please try again later.",
       "healthCheckFailed": "The API base URL did not pass the health check (HTTP {{status}}). Make sure it points to a running NocoBase API endpoint.",
@@ -201,7 +202,7 @@
         },
         "messages": {
           "activated": "Activated the license for env \"{{envName}}\".",
-          "savedLicenseKey": "Saved license key at {{licenseKeyPath}}"
+          "savedLicenseKey": "Saved the license key securely for this env"
         }
       }
     },

@@ -1,100 +1,251 @@
----
-title: "Nginx"
-description: "Используйте nb proxy nginx, чтобы генерировать и управлять конфигурацией reverse proxy Nginx для env NocoBase, управляемых CLI."
-keywords: "NocoBase,nb proxy nginx,reverse proxy,Nginx,production"
----
+#Nginx
 
-# Nginx
+Если вы использовали Nginx для управления сайтом на сервере или вам позже потребуется обрабатывать сертификаты, кэши и контроль доступа, то рекомендуемый путь по умолчанию — `nb proxy nginx`.
 
-Если вы уже используете Nginx на сервере для управления сайтами или хотите и дальше самостоятельно поддерживать сертификаты, кэширование и контроль доступа, `nb proxy nginx` — рекомендуемый путь.
+Если вы просто хотите как можно скорее настроить HTTPS и не хотите самостоятельно хранить слишком много данных о прокси, тогда [Caddy](./caddy.md) вам не придется беспокоиться. Но пока вы используете Nginx, этот документ является путем по умолчанию.
 
-## Рекомендуемый порядок
+## Когда лучше использовать Nginx?
 
-Для CLI-управляемого env типа `local` или `docker` обычно используется такой порядок:
+Вообще говоря, следующие ситуации отдают приоритет продолжению использования Nginx:
+
+- Вы использовали Nginx для управления несколькими сайтами на сервере.
+- Позже вам придется самостоятельно поддерживать сертификаты, кэши, средства контроля доступа или другие пользовательские правила.
+- Вы хотите, чтобы начальный уровень продолжал использовать существующий метод эксплуатации и обслуживания Nginx.
+
+Если ваша цель — просто как можно быстрее обеспечить HTTPS и вы не хотите самостоятельно хранить слишком много данных TLS, то [Caddy](./caddy.md) будет более безопасным.
+
+## Сначала выполните эти три команды.
+
+Если вы просто хотите сначала запустить входной уровень Nginx, достаточно запомнить эти три команды по умолчанию:
 
 ```bash
 nb proxy nginx use docker
 nb proxy nginx generate --env test2 --host c.local.nocobase.com
-nb proxy nginx start
+nb proxy nginx reload
 ```
 
-Или с локальным процессом:
+Если Nginx установлен локально, просто измените первую запись на `nb proxy nginx use local`.
+
+В большинстве сценариев достаточно сначала выполнить `use`, затем `generate` и, наконец, `reload`. Дополнительные сведения и дополнительные команды см. в следующих главах или в справочнике по CLI.
+
+## Шаг 1. Сначала выберите, как запускать Nginx самостоятельно.
+
+Если Nginx уже установлен на текущем компьютере, просто используйте `use local`.
+
+Если вы хотите использовать версию Nginx для Docker, используйте `use docker`.
+
+`local` / `docker` здесь относится к рабочему режиму **самого Nginx**.
+
+Использование версии Nginx для Docker:
+
+```bash
+nb proxy nginx use docker
+```
+
+Используя локально установленный Nginx:
 
 ```bash
 nb proxy nginx use local
-nb proxy nginx generate --env test2 --host c.local.nocobase.com
-nb proxy nginx start
 ```
 
-Часто используемые последующие команды:
+Если позже вы забудете, какой метод выбран в данный момент, вы можете выполнить:
 
 ```bash
 nb proxy nginx current
-nb proxy nginx status
-nb proxy nginx info
-nb proxy nginx reload
-nb proxy nginx restart
-nb proxy nginx stop
 ```
 
-## Какие входные данные нужны для `generate`
+## Шаг 2: Выполните `generate`
 
-Наиболее типичная форма:
+`generate` используется для создания конфигурации записи Nginx в соответствии с указанным окружением. Самый распространенный способ записи:
 
 ```bash
 nb proxy nginx generate --env test2 --host c.local.nocobase.com
 ```
 
-Если вы также хотите указать входной порт:
+Если вы также хотите указать порт входа, вы также можете написать его вместе:
 
 ```bash
 nb proxy nginx generate --env test2 --host c.local.nocobase.com --port 8080
 ```
 
-Где:
+Смысл параметров здесь следующий:
 
-- `--env`: для какого CLI env нужно сгенерировать конфигурацию
-- `--host`: публичное доменное имя
-- `--port`: входной порт proxy, а не собственный `appPort` приложения
+- `--env`: укажите, для какой среды CLI необходимо создать конфигурацию.
+- `--host`: укажите имя домена для внешнего доступа.
+- `--port`: указывает порт входа прокси, а не `appPort` самого приложения NocoBase.
 
-Если в env отсутствует `appPort`, сначала сохраните его с помощью `nb env update test2 --app-port 56575`.
+Порт исходящего приложения берется из сохраненного в этом конверте `appPort`. Если в командной строке указано, что в env отсутствует `appPort`, выполните:
 
-## Какие файлы поддерживает CLI
+```bash
+nb env update test2 --app-port 56575
+```
 
-На примере `test2` workflow Nginx обычно поддерживает:
+Если позже вы измените такие конфигурации, как `app-port` и `app-public-path`, которые повлияют на результаты прокси, не забудьте повторно выполнить `generate`.
 
-- `NB_CLI_ROOT/.nocobase/proxy/nginx/snippets`
-- `NB_CLI_ROOT/.nocobase/proxy/nginx/test2/app.conf`
-- `NB_CLI_ROOT/.nocobase/proxy/nginx/test2/public/index-v1.html`
-- `NB_CLI_ROOT/.nocobase/proxy/nginx/test2/public/index-v2.html`
-- `NB_CLI_ROOT/test2/storage/dist-client`
-- `NB_CLI_ROOT/test2/storage/uploads`
+## Шаг 3: Выполните `reload`
 
-Полноценная сгенерированная точка входа Nginx обычно покрывает такие области:
+После создания конфигурации выполните непосредственно:
 
-- `uploads`
-- `dist`
-- `well-known`
-- `api`
-- `ws`
-- `spa`
+```bash
+nb proxy nginx reload
+```
 
-Это значит, что реальная production-конфигурация NocoBase обычно не сводится к одному простому блоку `proxy_pass`.
+В большинстве сценариев просто используйте эту команду напрямую. Если он еще не запущен, запуск сначала будет обработан внутри; если он уже запущен, он будет перезагружен в соответствии с последней конфигурацией.
 
-## Ручная конфигурация
+## Какие файлы будет поддерживать CLI?
 
-Если приложение не управляется CLI, или вы намеренно хотите поддерживать всю конфигурацию Nginx вручную, вы всё равно можете написать её сами.
+Если взять в качестве примера `test2`, то команды, связанные с Nginx, обычно поддерживают следующие файлы и каталоги:
 
-Но для NocoBase готовый к production reverse proxy обычно должен обрабатывать не только проксирование на backend, но и uploads, frontend-ресурсы, WebSocket, маршруты `.well-known` и SPA fallback pages.
+| путь | функция |
+| --- | --- |
+| `NB_CLI_ROOT/.nocobase/proxy/nginx/snippets` | Каталог общих фрагментов Nginx |
+| `NB_CLI_ROOT/.nocobase/proxy/nginx/test2/app.conf` | Редактируемая конфигурация записи сайта |
+| `NB_CLI_ROOT/.nocobase/proxy/nginx/test2/public/index-v1.html` | Резервная страница SPA v1 |
+| `NB_CLI_ROOT/.nocobase/proxy/nginx/test2/public/index-v2.html` | Резервная страница SPA v2 |
+| `NB_CLI_ROOT/test2/storage/dist-client` | Используемый в настоящее время каталог продуктов сборки внешнего интерфейса |
+| `NB_CLI_ROOT/test2/storage/uploads` | Каталог загрузки текущего приложения |
 
-Когда приложение использует размещение в подпути, или когда ресурсы, uploads и proxy не разделяют одно и то же представление путей, ручная конфигурация становится заметно более подверженной ошибкам. В таких случаях обычно безопаснее сначала сгенерировать конфигурацию:
+в:
+
+- `NB_CLI_ROOT/.nocobase/proxy/nginx/...` Ниже приведены вспомогательные файлы агента, поддерживаемые CLI.
+- `NB_CLI_ROOT/test2/storage/...` Ниже приведены собственные статические ресурсы приложения и каталоги загрузки.
+- `app.conf` можно изменить, но управляемый блок NocoBase необходимо сохранить
+- `index-v1.html` и `index-v2.html` автоматически перезапишут адреса ресурсов в соответствии с текущим подпутем env, активной версией клиента и `CDN_BASE_URL`.
+
+:::предупреждение
+
+Если вы хотите добавить конфигурацию Nginx на уровне сайта, например ограничение тока, дополнительные заголовки и контроль доступа, просто измените `app.conf`. Вспомогательные файлы, управляемые через CLI, обновляются синхронно при последующих перестройках.
+
+:::
+
+##Рукописная настройка: что делать без CLI
+
+Если ваше приложение не размещено через CLI или вы явно хотите поддерживать полную конфигурацию Nginx самостоятельно, вы также можете написать ее вручную.
+
+Однако для NocoBase рабочий обратный прокси-сервер обычно представляет собой нечто большее, чем простой `proxy_pass`. Помимо пересылки запросов API серверному приложению, полная и полезная конфигурация обычно требует обработки каталога загрузки, статических ресурсов внешнего интерфейса, WebSocket, маршрута `.well-known` и резервной страницы SPA.
+
+Если взять в качестве примера `test2`, ключевые файлы и каталоги, связанные с Nginx, обычно включают:
+
+- Фрагменты Nginx: `NB_CLI_ROOT/.nocobase/proxy/nginx/snippets`
+- Редактируемая конфигурация записи: `NB_CLI_ROOT/.nocobase/proxy/nginx/test2/app.conf`.
+– Резервная страница SPA (версия 1): `NB_CLI_ROOT/.nocobase/proxy/nginx/test2/public/index-v1.html`.
+– Резервная страница SPA (версия 2): `NB_CLI_ROOT/.nocobase/proxy/nginx/test2/public/index-v2.html`.
+– Каталог продуктов внешней сборки: `NB_CLI_ROOT/test2/storage/dist-client`.
+– Каталог загрузки: `NB_CLI_ROOT/test2/storage/uploads`.
+
+Другими словами, рукописная конфигурация обычно должна охватывать как минимум следующие типы записей:
+
+– `uploads`: откройте каталог загрузки через `alias`.
+– `dist`: откройте каталог продукта внешней сборки через `alias`.
+- `well-known`: обработка путей обнаружения, связанных с OAuth и OpenID.
+- `api`: переслать запрос `/api/` серверному приложению.
+- `ws`: пересылать запросы WebSocket серверному приложению.
+– `spa`: обеспечивает вход через интерфейс и резервный вариант `try_files` для `/` и `/v/`.
+
+Поэтому полная конфигурация Nginx обычно представляет собой не просто следующий общий метод записи обратного прокси:
+
+```nginx
+location / {
+    proxy_pass http://127.0.0.1:13000;
+}
+```
+
+Для приложения, размещаемого через CLI, такого как `test2`, структура, более близкая к реальному развертыванию, обычно выглядит следующим образом:
+
+```nginx
+server {
+    listen 80;
+    server_name c.local.nocobase.com;
+
+    # Add custom directives or locations above the managed block as needed.
+
+    client_max_body_size 0;
+
+    include NB_CLI_ROOT/.nocobase/proxy/nginx/snippets/mime-types.conf;
+    include NB_CLI_ROOT/.nocobase/proxy/nginx/snippets/gzip.conf;
+
+    location /storage/uploads/ {
+        alias NB_CLI_ROOT/test2/storage/uploads/;
+        include NB_CLI_ROOT/.nocobase/proxy/nginx/snippets/uploads-location.conf;
+    }
+
+    location ^~ /dist/ {
+        alias NB_CLI_ROOT/test2/storage/dist-client/;
+        include NB_CLI_ROOT/.nocobase/proxy/nginx/snippets/dist-location.conf;
+    }
+
+    location ~ ^/\\.well-known/(?<well_known>oauth-authorization-server|openid-configuration)/(?<resource_path>.+)$ {
+        rewrite ^ /$resource_path/.well-known/$well_known break;
+        proxy_pass http://127.0.0.1:56575;
+        include NB_CLI_ROOT/.nocobase/proxy/nginx/snippets/proxy-location.conf;
+    }
+
+    location ^~ /api/ {
+        proxy_pass http://127.0.0.1:56575;
+        include NB_CLI_ROOT/.nocobase/proxy/nginx/snippets/proxy-location.conf;
+    }
+
+    location = /ws {
+        proxy_pass http://127.0.0.1:56575;
+        include NB_CLI_ROOT/.nocobase/proxy/nginx/snippets/proxy-location.conf;
+    }
+
+    location = /v {
+        return 302 /v/$is_args$args;
+    }
+
+    location ^~ /v/ {
+        alias NB_CLI_ROOT/.nocobase/proxy/nginx/test2/public/;
+        try_files $uri /index-v2.html =404;
+        include NB_CLI_ROOT/.nocobase/proxy/nginx/snippets/spa-location.conf;
+    }
+
+    location ^~ / {
+        alias NB_CLI_ROOT/.nocobase/proxy/nginx/test2/public/;
+        try_files $uri /index-v1.html =404;
+        include NB_CLI_ROOT/.nocobase/proxy/nginx/snippets/spa-location.conf;
+    }
+
+    # Add custom directives or locations below the managed block as needed.
+}
+```
+
+Здесь есть два ключевых момента:
+
+- `NB_CLI_ROOT/.nocobase/proxy/nginx/...` Ниже приведены вспомогательные файлы агента, поддерживаемые CLI.
+- `NB_CLI_ROOT/test2/storage/...` Ниже следует использовать собственный каталог продуктов и каталог загрузки.
+
+Если ваше приложение использует развертывание по подпути или внешние ресурсы, каталог загрузки и обратный прокси-сервер не находятся в одном и том же пути, рукописная конфигурация будет более подвержена ошибкам. В этом случае обычно рекомендуется выполнить:
 
 ```bash
 nb proxy nginx generate --env test2 --host c.local.nocobase.com
 ```
 
-## Связанные ссылки
+Затем внесите коррективы на основе полученных результатов.
 
-- [Reverse proxy в продакшене](./index.md)
-- [Caddy](./caddy.md)
-- [Установка через CLI](../../installation/cli.md)
+Обычно более разумный подход:
+
+1. Сначала позвольте CLI сгенерировать конфигурацию Nginx.
+2. Подтвердите структуру маршрутизации и фактический путь на основе сгенерированных результатов.
+3. Затем вручную выполните настройки в соответствии с вашим доменным именем, режимом работы и путем монтирования.
+
+Обычно при этом меньше вероятность пропустить детали, связанные с WebSockets, статическими ресурсами, каталогами загрузки или резервными страницами SPA, чем при написании конфигурации вручную с нуля.
+
+## Как работать с HTTPS
+
+Если вы решили продолжить использовать Nginx, HTTPS также можно продолжать настраивать в Nginx. Обычной практикой является расширение `listen 80` до двойной записи `80/443`, а затем добавление пути сертификата и конфигурации TLS.
+
+Однако, если вы просто хотите как можно скорее получить доступ к HTTPS и не хотите самостоятельно обрабатывать заявку и продление сертификата, тогда будет проще использовать [Caddy](./caddy.md) напрямую.
+
+## Общие инструкции
+
+- `nb proxy nginx generate` предназначен для приложений, установленных `nb init`.
+- Если впоследствии вы измените такие конфигурации, как `app-port` и `app-public-path`, которые повлияют на результаты прокси, не забудьте повторно выполнить `generate`.
+
+## Ссылки по теме
+
+- [Обратный прокси производственной среды](./index.md)
+- [Кэдди](./caddy.md)
+- [Установить с помощью CLI (рекомендуется)](../../installation/cli.md)
+- [Конфигурация приложения с помощью `.env`](../../installation/env.md)
+- [`nb proxy nginx` Справочник команд](../../../api/cli/proxy/nginx/index.md)

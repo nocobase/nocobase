@@ -1,141 +1,148 @@
----
-title: "Nginx"
-description: "Gunakan nb proxy nginx untuk menghasilkan dan mengelola konfigurasi reverse proxy Nginx bagi env NocoBase yang dikelola CLI."
-keywords: "NocoBase,nb proxy nginx,reverse proxy,Nginx,produksi"
----
+#Nginx
 
-# Nginx
+Jika Anda telah menggunakan Nginx untuk mengelola situs di server, atau Anda perlu menangani sertifikat, cache, dan kontrol akses nanti, maka `nb proxy nginx` adalah jalur default yang disarankan.
 
-Jika Anda sudah menggunakan Nginx di server untuk mengelola situs, atau masih ingin mengelola sendiri sertifikat, cache, dan kontrol akses, `nb proxy nginx` adalah jalur yang direkomendasikan.
+Jika Anda hanya ingin mengonfigurasi HTTPS sesegera mungkin dan tidak ingin menyimpan terlalu banyak detail proxy, maka [Caddy](./caddy.md) akan lebih bebas dari rasa khawatir. Namun selama Anda menggunakan Nginx, dokumen ini adalah jalur default.
 
-Jika tujuan Anda hanya ingin secepat mungkin menjalankan HTTPS tanpa harus memelihara terlalu banyak detail proxy, [Caddy](./caddy.md) biasanya lebih sederhana. Namun jika Nginx memang sudah menjadi bagian dari pengaturan server Anda, halaman ini adalah jalur default.
+## Kapan lebih cocok menggunakan Nginx?
 
-## Kapan Nginx lebih cocok
+Secara umum, situasi berikut memberikan prioritas untuk terus menggunakan Nginx:
 
-Dalam praktiknya, Nginx biasanya lebih cocok ketika:
+- Anda telah menggunakan Nginx untuk mengelola banyak situs di server.
+- Anda perlu memelihara sendiri sertifikat, cache, kontrol akses, atau aturan khusus lainnya
+- Anda ingin lapisan entri terus menggunakan metode operasi dan pemeliharaan Nginx yang ada
 
-- Anda sudah menggunakan Nginx untuk mengelola beberapa situs pada server yang sama
-- Anda masih perlu mengelola sendiri sertifikat, cache, kontrol akses, atau aturan tambahan
-- Anda ingin lapisan entry tetap selaras dengan alur operasi Nginx yang sudah ada
+Jika tujuan Anda hanya untuk menjalankan HTTPS secepat mungkin, dan Anda tidak ingin menyimpan terlalu banyak detail TLS, maka [Caddy](./caddy.md) akan lebih bebas dari rasa khawatir.
 
-Jika satu-satunya tujuan Anda adalah menjalankan HTTPS dengan cepat dan mengurangi pekerjaan TLS, [Caddy](./caddy.md) biasanya menjadi jalur yang lebih mudah.
+## Pertama ikuti ketiga perintah ini.
 
-## Urutan yang direkomendasikan: pilih driver, hasilkan konfigurasi, lalu jalankan
-
-Untuk env yang dikelola CLI bertipe `local` atau `docker`, urutan default-nya adalah:
+Jika Anda hanya ingin menjalankan entry layer Nginx terlebih dahulu, cukup mengingat tiga perintah berikut secara default:
 
 ```bash
 nb proxy nginx use docker
 nb proxy nginx generate --env test2 --host c.local.nocobase.com
-nb proxy nginx start
+nb proxy nginx reload
 ```
 
-Atau dengan proses lokal:
+Jika Nginx sudah diinstal secara lokal, ubah saja entri pertama menjadi `nb proxy nginx use local`.
+
+Di sebagian besar skenario, cukup mengeksekusi `use` terlebih dahulu, lalu `generate`, dan terakhir `reload`. Untuk detail lainnya dan perintah lainnya, lihat bab berikut atau referensi CLI.
+
+## Langkah 1: Pertama pilih cara menjalankan Nginx sendiri
+
+Jika Nginx sudah terinstal di mesin saat ini, gunakan saja `use local`.
+
+Jika Anda ingin menggunakan Nginx versi Docker, gunakan `use docker`.
+
+`local` / `docker` di sini mengacu pada mode berjalan **Nginx itu sendiri**.
+
+Menggunakan Nginx versi Docker:
+
+```bash
+nb proxy nginx use docker
+```
+
+Menggunakan Nginx yang diinstal secara lokal:
 
 ```bash
 nb proxy nginx use local
-nb proxy nginx generate --env test2 --host c.local.nocobase.com
-nb proxy nginx start
 ```
 
-Perintah lanjutan yang umum dipakai adalah:
+Jika nanti Anda lupa metode mana yang sedang dipilih, Anda dapat menjalankan:
 
 ```bash
 nb proxy nginx current
-nb proxy nginx status
-nb proxy nginx info
-nb proxy nginx reload
-nb proxy nginx restart
-nb proxy nginx stop
 ```
 
-Dalam kebanyakan kasus:
+## Langkah 2: Jalankan `generate`
 
-- `current` adalah cara tercepat untuk memastikan driver runtime yang aktif
-- `status` menunjukkan apakah Nginx sedang berjalan normal
-- `info` menampilkan path konfigurasi saat ini, runtime root, dan detail runtime terkait
-- setelah Anda menghasilkan ulang konfigurasi, `reload` biasanya menjadi perintah pertama yang dipakai
-- gunakan `restart` jika Anda membutuhkan restart penuh
-
-## Input yang dibutuhkan `generate`
-
-Bentuk yang paling umum adalah:
+`generate` digunakan untuk menghasilkan konfigurasi entri Nginx sesuai dengan env yang ditentukan. Cara paling umum untuk menulisnya adalah:
 
 ```bash
 nb proxy nginx generate --env test2 --host c.local.nocobase.com
 ```
 
-Jika Anda juga ingin menentukan port entry:
+Jika Anda juga ingin menentukan port masuk, Anda juga dapat menulisnya bersama-sama:
 
 ```bash
 nb proxy nginx generate --env test2 --host c.local.nocobase.com --port 8080
 ```
 
-Di mana:
+Maksud dari parameter disini adalah:
 
-- `--env`: env CLI yang akan dibuatkan konfigurasi
-- `--host`: nama domain publik
-- `--port`: port entry proxy, bukan `appPort` milik aplikasi
+- `--env`: Tentukan env CLI mana yang akan menghasilkan konfigurasi
+- `--host`: Tentukan nama domain untuk akses eksternal
+- `--port`: Menentukan port entri proxy, bukan `appPort` dari aplikasi NocoBase itu sendiri
 
-Port aplikasi upstream diambil dari `appPort` yang tersimpan di env tersebut. Jika perintah mengatakan env belum memiliki `appPort`, simpan dulu dengan:
+Port aplikasi upstream berasal dari `appPort` yang disimpan di env ini. Jika perintah meminta env hilang `appPort`, jalankan:
 
 ```bash
 nb env update test2 --app-port 56575
 ```
 
-Jika nanti Anda mengubah pengaturan seperti `app-port` atau `app-public-path` yang memengaruhi perilaku proxy, jalankan ulang `generate`.
+Jika nanti Anda mengubah konfigurasi seperti `app-port` dan `app-public-path` yang akan mempengaruhi hasil proxy, ingatlah untuk menjalankan kembali `generate`.
 
-## File yang dipelihara CLI
+## Langkah 3: Jalankan `reload`
 
-Menggunakan `test2` sebagai contoh, alur Nginx biasanya memelihara:
+Setelah membuat konfigurasi, langsung jalankan:
 
-| Path | Fungsi |
+```bash
+nb proxy nginx reload
+```
+
+Di sebagian besar skenario, cukup gunakan perintah ini secara langsung. Jika belum berjalan maka startup akan diproses secara internal terlebih dahulu; jika sudah berjalan maka akan di-reload sesuai konfigurasi terbaru.
+
+## File apa yang akan dikelola CLI?
+
+Mengambil `test2` sebagai contoh, perintah terkait Nginx biasanya memelihara file dan direktori berikut:
+
+| jalur | fungsi |
 | --- | --- |
-| `NB_CLI_ROOT/.nocobase/proxy/nginx/snippets` | Direktori snippets Nginx bersama |
-| `NB_CLI_ROOT/.nocobase/proxy/nginx/test2/app.conf` | Konfigurasi entry situs yang dapat diedit |
-| `NB_CLI_ROOT/.nocobase/proxy/nginx/test2/public/index-v1.html` | Halaman fallback SPA v1 |
-| `NB_CLI_ROOT/.nocobase/proxy/nginx/test2/public/index-v2.html` | Halaman fallback SPA v2 |
-| `NB_CLI_ROOT/test2/storage/dist-client` | Hasil build frontend untuk aplikasi saat ini |
-| `NB_CLI_ROOT/test2/storage/uploads` | Direktori upload untuk aplikasi saat ini |
+| `NB_CLI_ROOT/.nocobase/proxy/nginx/snippets` | Direktori cuplikan bersama Nginx |
+| `NB_CLI_ROOT/.nocobase/proxy/nginx/test2/app.conf` | Konfigurasi entri situs yang dapat diedit |
+| `NB_CLI_ROOT/.nocobase/proxy/nginx/test2/public/index-v1.html` | halaman cadangan v1 SPA |
+| `NB_CLI_ROOT/.nocobase/proxy/nginx/test2/public/index-v2.html` | halaman cadangan v2 SPA |
+| `NB_CLI_ROOT/test2/storage/dist-client` | Direktori produk build front-end yang saat ini digunakan |
+| `NB_CLI_ROOT/test2/storage/uploads` | Direktori unggahan aplikasi saat ini |
 
-Di sini:
+di dalam:
 
-- file di bawah `NB_CLI_ROOT/.nocobase/proxy/nginx/...` adalah file bantuan proxy yang dikelola CLI
-- file di bawah `NB_CLI_ROOT/test2/storage/...` adalah milik aplikasi itu sendiri
-- `app.conf` dapat diedit, tetapi blok yang dikelola NocoBase harus tetap utuh
-- `index-v1.html` dan `index-v2.html` ditulis ulang sesuai subpath env saat ini, versi client aktif, dan `CDN_BASE_URL`
+- `NB_CLI_ROOT/.nocobase/proxy/nginx/...` Berikut ini adalah file tambahan agen yang dikelola oleh CLI
+- `NB_CLI_ROOT/test2/storage/...` Berikut ini adalah sumber daya statis dan direktori unggahan milik aplikasi
+- `app.conf` dapat diubah, tetapi blok yang dikelola NocoBase harus dipertahankan
+- `index-v1.html` dan `index-v2.html` akan secara otomatis menulis ulang alamat sumber daya sesuai dengan subjalur env saat ini, versi klien aktif, dan `CDN_BASE_URL`
 
-:::warning Catatan
+:::catatan peringatan
 
-Jika Anda membutuhkan konfigurasi Nginx di tingkat situs, seperti pembatasan laju, header tambahan, atau kontrol akses, edit `app.conf`. File bantuan yang dikelola CLI akan disejajarkan ulang ketika Anda menghasilkan ulang konfigurasi.
+Jika Anda ingin menambahkan konfigurasi Nginx tingkat situs, seperti batasan saat ini, header tambahan, dan kontrol akses, cukup ubah `app.conf`. File tambahan yang dikelola CLI diperbarui secara serempak pada pembangunan kembali berikutnya.
 
 :::
 
-## Konfigurasi manual: ketika Anda tidak memakai CLI
+## Konfigurasi tulisan tangan: apa yang harus dilakukan tanpa CLI
 
-Jika aplikasinya bukan env yang dikelola CLI, atau Anda memang ingin memelihara seluruh konfigurasi Nginx sendiri, Anda tetap bisa menulisnya secara manual.
+Jika aplikasi Anda tidak dihosting CLI, atau Anda secara eksplisit ingin mempertahankan sendiri konfigurasi Nginx yang lengkap, Anda juga dapat menulisnya dengan tangan.
 
-Namun untuk NocoBase, reverse proxy produksi biasanya lebih dari sekadar satu `proxy_pass`. Selain meneruskan permintaan API ke aplikasi backend, konfigurasi lengkap biasanya juga perlu menangani uploads, aset frontend, WebSocket, rute `.well-known`, dan halaman fallback SPA sekaligus.
+Namun, untuk NocoBase, proksi balik produksi biasanya lebih dari sekadar `proxy_pass`. Selain meneruskan permintaan API ke aplikasi backend, konfigurasi yang lengkap dan dapat digunakan biasanya perlu menangani direktori unggahan, sumber daya statis front-end, WebSocket, rute `.well-known`, dan halaman fallback SPA.
 
-Menggunakan `test2` sebagai contoh, berikut file dan direktori Nginx yang penting:
+Mengambil `test2` sebagai contoh, file dan direktori utama yang terkait dengan Nginx biasanya mencakup:
 
-- Snippets Nginx: `NB_CLI_ROOT/.nocobase/proxy/nginx/snippets`
-- Konfigurasi entry yang bisa diedit: `NB_CLI_ROOT/.nocobase/proxy/nginx/test2/app.conf`
-- Halaman fallback SPA untuk v1: `NB_CLI_ROOT/.nocobase/proxy/nginx/test2/public/index-v1.html`
-- Halaman fallback SPA untuk v2: `NB_CLI_ROOT/.nocobase/proxy/nginx/test2/public/index-v2.html`
-- Hasil build frontend: `NB_CLI_ROOT/test2/storage/dist-client`
-- Direktori upload: `NB_CLI_ROOT/test2/storage/uploads`
+- Cuplikan Nginx: `NB_CLI_ROOT/.nocobase/proxy/nginx/snippets`
+- Konfigurasi entri yang dapat diedit: `NB_CLI_ROOT/.nocobase/proxy/nginx/test2/app.conf`
+- Halaman cadangan SPA (v1): `NB_CLI_ROOT/.nocobase/proxy/nginx/test2/public/index-v1.html`
+- Halaman cadangan SPA (v2): `NB_CLI_ROOT/.nocobase/proxy/nginx/test2/public/index-v2.html`
+- Direktori produk build front-end: `NB_CLI_ROOT/test2/storage/dist-client`
+- Unggah direktori: `NB_CLI_ROOT/test2/storage/uploads`
 
-Artinya, konfigurasi manual biasanya minimal harus mencakup area entry berikut:
+Dengan kata lain, konfigurasi tulisan tangan biasanya perlu mencakup setidaknya jenis entri berikut:
 
-- `uploads`
-- `dist`
-- `well-known`
-- `api`
-- `ws`
-- `spa`
+- `uploads`: Menampilkan direktori unggahan melalui `alias`
+- `dist`: Mengekspos direktori produk build front-end melalui `alias`
+- `well-known`: Menangani jalur penemuan terkait OAuth/OpenID
+- `api`: meneruskan permintaan `/api/` ke aplikasi backend
+- `ws`: meneruskan permintaan WebSocket ke aplikasi backend
+- `spa`: Menyediakan entri front-end dan `try_files` cadangan untuk `/` dan `/v/`
 
-Jadi, konfigurasi Nginx yang lengkap biasanya lebih dari contoh reverse proxy umum seperti ini:
+Oleh karena itu, konfigurasi Nginx yang lengkap biasanya bukan hanya metode penulisan reverse proxy umum berikut:
 
 ```nginx
 location / {
@@ -143,7 +150,7 @@ location / {
 }
 ```
 
-Untuk aplikasi yang dikelola CLI seperti `test2`, struktur deployment yang lebih realistis biasanya lebih mendekati contoh berikut:
+Untuk aplikasi yang dihosting CLI seperti `test2`, struktur yang mendekati penerapan sebenarnya biasanya akan terlihat seperti ini:
 
 ```nginx
 server {
@@ -167,7 +174,7 @@ server {
         include NB_CLI_ROOT/.nocobase/proxy/nginx/snippets/dist-location.conf;
     }
 
-    location ~ ^/\.well-known/(?<well_known>oauth-authorization-server|openid-configuration)/(?<resource_path>.+)$ {
+    location ~ ^/\\.well-known/(?<well_known>oauth-authorization-server|openid-configuration)/(?<resource_path>.+)$ {
         rewrite ^ /$resource_path/.well-known/$well_known break;
         proxy_pass http://127.0.0.1:56575;
         include NB_CLI_ROOT/.nocobase/proxy/nginx/snippets/proxy-location.conf;
@@ -203,15 +210,42 @@ server {
 }
 ```
 
-Ada dua detail penting di sini:
+Ada dua poin penting di sini:
 
-- file di bawah `NB_CLI_ROOT/.nocobase/proxy/nginx/...` adalah file bantuan proxy yang dikelola CLI
-- file di bawah `NB_CLI_ROOT/test2/storage/...` adalah hasil build dan uploads milik aplikasi itu sendiri
+- `NB_CLI_ROOT/.nocobase/proxy/nginx/...` Berikut ini adalah file tambahan agen yang dikelola oleh CLI
+- `NB_CLI_ROOT/test2/storage/...` Berikut ini adalah dengan menggunakan direktori produk dan direktori unggahan Anda sendiri
 
-Jika aplikasi memakai deployment subpath, atau jika aset frontend, uploads, dan reverse proxy tidak berbagi sudut pandang path yang sama, konfigurasi manual akan lebih mudah salah. Dalam kasus seperti itu, biasanya lebih aman menghasilkan konfigurasi lebih dulu dengan:
+Jika aplikasi Anda menggunakan penerapan sub-jalur, atau sumber daya front-end, direktori unggahan, dan proksi terbalik tidak berada dalam perspektif jalur yang sama, konfigurasi tulisan tangan akan lebih rentan terhadap kesalahan. Dalam skenario ini, biasanya lebih disarankan untuk mengeksekusi:
 
 ```bash
 nb proxy nginx generate --env test2 --host c.local.nocobase.com
 ```
 
-Lalu gunakan hasil yang dihasilkan sebagai dasar untuk penyesuaian manual.
+Kemudian melakukan penyesuaian berdasarkan hasil yang dihasilkan.
+
+Pendekatan yang lebih bijaksana biasanya adalah:
+
+1. Pertama biarkan CLI menghasilkan konfigurasi Nginx
+2. Konfirmasikan struktur perutean dan jalur sebenarnya berdasarkan hasil yang dihasilkan.
+3. Kemudian lakukan penyesuaian manual sesuai dengan nama domain Anda, mode pengoperasian, dan jalur pemasangan.
+
+Hal ini biasanya lebih kecil kemungkinannya untuk melewatkan detail terkait WebSockets, sumber daya statis, direktori unggahan, atau halaman cadangan SPA dibandingkan dengan menulis konfigurasi dari awal dengan tangan.
+
+## Cara menangani HTTPS
+
+Jika Anda memutuskan untuk terus menggunakan Nginx, HTTPS juga dapat terus dikonfigurasi di Nginx. Praktik umum adalah memperluas `listen 80` menjadi `80/443` entri ganda, lalu menambahkan jalur sertifikat dan konfigurasi TLS.
+
+Namun, jika Anda hanya ingin mendapatkan HTTPS yang tersedia sesegera mungkin, dan tidak ingin menangani sendiri permohonan dan perpanjangan sertifikat, maka akan lebih aman jika menggunakan [Caddy](./caddy.md) secara langsung.
+
+## Instruksi umum
+
+- `nb proxy nginx generate` untuk aplikasi yang diinstal oleh `nb init`
+- Jika Anda kemudian mengubah konfigurasi seperti `app-port` dan `app-public-path` yang akan mempengaruhi hasil proxy, ingatlah untuk menjalankan kembali `generate`
+
+## Tautan terkait
+
+- [Proksi terbalik lingkungan produksi](./index.md)
+- [Caddy](./caddy.md)
+- [Instal menggunakan CLI (disarankan)](../../installation/cli.md)
+- [Konfigurasi aplikasi dengan `.env`](../../installation/env.md)
+- [`nb proxy nginx` Referensi Perintah](../../../api/cli/proxy/nginx/index.md)

@@ -78,7 +78,7 @@ Falls Sie No-Code/Low-Code-Plattformen evaluieren:
 ## Zugehörige Dokumente
 
 ### Einstieg
-- [Wie NocoBase funktioniert](/get-started/how-nocobase-works) - Kernkonzepte
+- [Wie NocoBase funktioniert](/quickstart/how-nocobase-works) - Kernkonzepte
 - [Schnellstart](/get-started/quickstart) - Installation und Erstkonfiguration
 - [Systemanforderungen](/get-started/system-requirements) - Hard- und Software-Anforderungen
 

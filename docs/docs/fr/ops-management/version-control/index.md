@@ -8,7 +8,13 @@ keywords: "Gestion des versions,Version control,gestion des opérations,créer u
 
 Dans NocoBase, **Gestion des versions** permet d'enregistrer une version restaurable de l'application actuelle. Tu peux créer des versions manuellement, restaurer une version enregistrée quand nécessaire, et utiliser les réglages du plugin pour définir combien de versions conserver, quel raccourci utiliser et quelles collections utilisateur doivent être incluses dans une version.
 
-Cette fonction dépend de [Gestion des sauvegardes](../backup-manager/index.mdx). Si le plugin de gestion des versions est déjà activé mais que le système affiche encore des erreurs liées à cette fonction, vérifie d'abord que la gestion des sauvegardes est aussi activée.
+La gestion des versions s'appuie sur [Gestion des sauvegardes](../backup-manager/index.mdx) pour enregistrer et restaurer les états de l'application. Avant d'utiliser la gestion des versions, active d'abord la gestion des sauvegardes.
+
+:::warning Remarque
+
+Les éditions Community et Standard n'incluent pas le plugin de gestion des versions. Si tu dois enregistrer un état restaurable de l'application, utilise [Gestion des sauvegardes](../backup-manager/index.mdx) : crée une sauvegarde manuelle avant les changements importants, puis restaure la sauvegarde correspondante si tu dois revenir en arrière.
+
+:::
 
 ## Ouvrir le plugin
 

@@ -328,6 +328,11 @@
           },
           {
             "type": "custom-link",
+            "label": "扫码录入",
+            "link": "/interface-builder/fields/field-settings/scan-input"
+          },
+          {
+            "type": "custom-link",
             "label": "标题字段",
             "link": "/interface-builder/fields/field-settings/title-field"
           },

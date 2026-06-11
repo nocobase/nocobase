@@ -45,6 +45,7 @@ import { FieldForm } from './FieldForm';
 interface FieldsPageProps {
   dataSourceKey: string;
   collection: Record<string, any>;
+  onCollectionChange?: (collectionName: string, values: Record<string, any>) => void;
 }
 
 type FieldInterfaceOption = {
@@ -321,6 +322,24 @@ function getCollectionUpdateActionUrl(dataSourceKey: string) {
   return dataSourceKey === 'main' ? 'collections:update' : `dataSources/${dataSourceKey}/collections:update`;
 }
 
+function getCollectionTitleField(ctx: any, dataSourceKey: string, collection: Record<string, any>) {
+  return (
+    collection.titleField ||
+    ctx.dataSourceManager
+      .getDataSource(dataSourceKey)
+      ?.collectionManager?.getCollection(collection.name)
+      ?.getOption?.('titleField')
+  );
+}
+
+function setCollectionTitleField(ctx: any, dataSourceKey: string, collection: Record<string, any>, titleField: string) {
+  ctx.dataSourceManager
+    .getDataSource(dataSourceKey)
+    ?.collectionManager?.getCollection(collection.name)
+    ?.setOption?.('titleField', titleField);
+  collection.titleField = titleField;
+}
+
 function isViewCollection(collection: Record<string, any>) {
   return collection.template === 'view' || collection.view;
 }
@@ -346,6 +365,14 @@ function isTemplateSyncFieldsVisible(options: { collection: Record<string, any>;
 }
 
 function isSyncFieldsVisible(dataSourceKey: string, collection: Record<string, any>, ctx: any) {
+  const plugin = ctx.app.pm.get(PluginDataSourceManagerClientV2);
+  const dataSource = ctx.dataSourceManager.getDataSource(dataSourceKey);
+  const dataSourceType = plugin?.getType?.(dataSource?.options?.type);
+
+  if (dataSourceType?.disableConfigureFields) {
+    return false;
+  }
+
   if (isViewCollection(collection)) {
     return dataSourceKey === 'main';
   }
@@ -842,7 +869,9 @@ export default function FieldsPage(props: FieldsPageProps) {
   const appInfo = useCurrentAppInfo<{ database?: { dialect?: string } }>();
   const { message, modal, notification } = App.useApp();
   const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
-  const [titleField, setTitleField] = useState<string | undefined>(props.collection.titleField);
+  const [titleField, setTitleField] = useState<string | undefined>(() =>
+    getCollectionTitleField(ctx, props.dataSourceKey, props.collection),
+  );
   const [titleFieldLoadingKey, setTitleFieldLoadingKey] = useState<React.Key>();
   const [displayNameLoadingKey, setDisplayNameLoadingKey] = useState<React.Key>();
   const [syncFieldsLoading, setSyncFieldsLoading] = useState(false);
@@ -861,8 +890,8 @@ export default function FieldsPage(props: FieldsPageProps) {
   });
 
   useEffect(() => {
-    setTitleField(props.collection.titleField);
-  }, [props.collection.titleField]);
+    setTitleField(getCollectionTitleField(ctx, props.dataSourceKey, props.collection));
+  }, [ctx, props.collection, props.collection.titleField, props.dataSourceKey]);
 
   const dataSource = ctx.dataSourceManager.getDataSource(props.dataSourceKey);
   const dataSourceType = ctx.app.pm.get(PluginDataSourceManagerClientV2)?.getType?.(dataSource?.options?.type);
@@ -1099,7 +1128,9 @@ export default function FieldsPage(props: FieldsPageProps) {
           params: { filterByTk: props.collection.name },
           data: { titleField: nextTitleField },
         });
+        setCollectionTitleField(ctx, props.dataSourceKey, props.collection, nextTitleField);
         setTitleField(nextTitleField);
+        props.onCollectionChange?.(props.collection.name, { titleField: nextTitleField });
         await ctx.dataSourceManager.getDataSource(props.dataSourceKey)?.reload();
         message.success(t('Saved successfully'));
       } catch (error) {
@@ -1111,7 +1142,7 @@ export default function FieldsPage(props: FieldsPageProps) {
         setTitleFieldLoadingKey(undefined);
       }
     },
-    [ctx.api, ctx.dataSourceManager, message, notification, props.collection.name, props.dataSourceKey, t],
+    [ctx, message, notification, props, t],
   );
 
   const handleSyncFields = useCallback(async () => {
