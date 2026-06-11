@@ -23,7 +23,7 @@ Ingat analogi ini: **Block = balok**, kita selanjutnya akan menggunakan balok un
 
 Pertama, kita perlu membuat entry point "Manajemen Tiket" di sistem.
 
-1. Klik switch **UI Editor** di pojok kanan atas, masuk ke [mode konfigurasi](/quickstart/how-nocobase-works) antarmuka (seluruh halaman akan menampilkan border oranye yang dapat diedit).
+1. Klik switch **UI Editor** di pojok kanan atas, masuk ke [mode konfigurasi](/get-started/how-nocobase-works) antarmuka (seluruh halaman akan menampilkan border oranye yang dapat diedit).
 2. Arahkan mouse ke tombol **"Tambah menu (Add menu item)"** di bilah navigasi atas, pilih **"Tambah grup (Add group)"**, beri nama **"Manajemen Tiket"**.
 
 ![03-building-pages-2026-03-12-09-38-36](https://static-docs.nocobase.com/03-building-pages-2026-03-12-09-38-36.png)

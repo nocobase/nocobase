@@ -8,7 +8,7 @@ How many tickets are there? How many have been resolved? Which category has the 
 
 First, let's add a new menu item to the top navigation bar.
 
-Enter [configuration mode](/quickstart/how-nocobase-works), click **"Add menu item"** (`+` icon) on the top menu bar, select **"Modern page (v2)"**, and name it "Dashboard."
+Enter [configuration mode](/get-started/how-nocobase-works), click **"Add menu item"** (`+` icon) on the top menu bar, select **"Modern page (v2)"**, and name it "Dashboard."
 
 ![07-dashboard-2026-03-15-21-39-35](https://static-docs.nocobase.com/07-dashboard-2026-03-15-21-39-35.png)
 

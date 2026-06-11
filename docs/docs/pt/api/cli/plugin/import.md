@@ -71,4 +71,4 @@ Você não precisa descompactar nada manualmente em `storage/plugins`. `nb plugi
 
 - [`nb app restart`](../app/restart.md)
 - [`nb plugin enable`](./enable.md)
-- [`Instalar e atualizar plugins de terceiros`](../../../quickstart/plugins/third-party.md)
+- [`Instalar e atualizar plugins de terceiros`](../../../nocobase-cli/plugins/third-party.md)

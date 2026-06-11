@@ -92,7 +92,7 @@ features:
     items:
       - title: NocoBase CLI
         details: NocoBase のコマンドラインツール。インストールするだけですぐに使えます。AI Skills を内蔵し、AI アシスタントが NocoBase を直接操作できます。
-        link: /api/cli/
+        link: /nocobase-cli/
       - title: NocoBase Skills
         details: AI Agent にインストール可能なドメインナレッジパッケージ。AI が NocoBase の機能と規約を理解できるようにします。
         link: /ai-builder#nocobase-skills

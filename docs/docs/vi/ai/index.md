@@ -92,7 +92,7 @@ features:
     items:
       - title: NocoBase CLI
         details: Công cụ dòng lệnh của NocoBase, cài đặt là dùng được ngay — tích hợp sẵn AI Skills, để trợ lý AI của bạn có thể thao tác trực tiếp trên NocoBase.
-        link: /api/cli/
+        link: /nocobase-cli/
       - title: NocoBase Skills
         details: Gói kiến thức chuyên ngành có thể cài đặt vào AI Agent, giúp AI hiểu được năng lực và quy chuẩn của NocoBase.
         link: /ai-builder#nocobase-skills
