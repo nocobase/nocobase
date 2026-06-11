@@ -18,12 +18,12 @@ features:
   - title: Démarrer
     details: 'Méthode classique pour prendre en main NocoBase — installation, configuration, exploration progressive.'
     items:
-      - title: Démarrage rapide
-        details: 'Installez le NocoBase CLI, configurez les AI Skills et connectez-vous à un AI Agent pour préparer la construction, l''utilisation et le développement de NocoBase avec l''IA.'
-        link: /ai/quick-start
       - title: Premiers pas avec NocoBase
         details: Comprenez les concepts fondamentaux et les opérations de base de NocoBase.
         link: /ai/how-nocobase-works
+      - title: Installer l'application NocoBase
+        details: Utilisez NocoBase CLI pour installer rapidement une application.
+        link: /ai/install-nocobase-app
       - title: Tutoriels
         details: Partez de zéro et suivez les tutoriels pour construire pas à pas un projet réel.
         link: /tutorials/v2/

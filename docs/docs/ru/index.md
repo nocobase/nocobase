@@ -18,12 +18,12 @@ features:
   - title: Начало работы
     details: 'Классический способ начать работу с NocoBase — установка, настройка и пошаговое изучение.'
     items:
-      - title: Быстрый старт
-        details: 'Установите NocoBase CLI, настройте AI Skills и подключите AI Agent, чтобы подготовить ИИ к созданию, использованию и разработке NocoBase.'
-        link: /ai/quick-start
       - title: Начало работы с NocoBase
         details: Ознакомьтесь с основными концепциями и базовыми операциями NocoBase.
         link: /ai/how-nocobase-works
+      - title: Установить приложение NocoBase
+        details: Используйте NocoBase CLI, чтобы быстро установить приложение.
+        link: /ai/install-nocobase-app
       - title: Учебные пособия
         details: 'Начните с нуля и следуйте учебным пособиям, чтобы шаг за шагом построить реальный проект.'
         link: /tutorials/v2/

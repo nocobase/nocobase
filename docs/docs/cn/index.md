@@ -20,12 +20,12 @@ features:
   - title: 开始
     details: 快速上手 NocoBase —— 安装、配置、逐步探索。
     items:
-      - title: 快速开始
-        details: 安装 NocoBase CLI、配置 NocoBase Skills，并连接 AI Agent，为 AI 搭建、使用和开发 NocoBase 做好准备。
-        link: /ai/quick-start
       - title: NocoBase 使用入门
         details: 了解 NocoBase 的核心概念和基本操作。
         link: /ai/how-nocobase-works
+      - title: 安装 NocoBase 应用
+        details: 使用 NocoBase CLI 快速安装应用。
+        link: /ai/install-nocobase-app
       - title: 教程
         details: 从零开始，跟着教程一步步搭建真实项目。
         link: /tutorials/v2/
