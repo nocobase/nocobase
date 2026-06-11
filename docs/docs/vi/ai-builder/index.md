@@ -23,7 +23,7 @@ Giúp tôi cài đặt NocoBase CLI và hoàn thành khởi tạo: https://docs.
 ### Cài đặt thủ công
 
 ```bash
-npm install -g @nocobase/cli@beta
+npm install -g @nocobase/cli
 nb init --ui
 ```
 

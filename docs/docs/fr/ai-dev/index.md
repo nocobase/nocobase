@@ -25,7 +25,7 @@ Copiez le prompt ci-dessous dans votre assistant IA (Claude Code, Codex, Cursor,
 ### Installation manuelle
 
 ```bash
-npm install -g @nocobase/cli@beta
+npm install -g @nocobase/cli
 nb init --ui
 ```
 

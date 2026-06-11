@@ -2,7 +2,7 @@
 
 在这个系列里，我们会从零开始，用 NocoBase 搭建一个**极简的工单系统（HelpDesk）**。整个系统只需要 **2 张[数据表](/data-sources/data-modeling/collection)**，不写一行代码，即可实现工单提交、分类管理、变更追踪、权限控制和数据[仪表盘](/data-visualization)。
 
-本章先通过 [Docker](/get-started/installation/docker) 一键部署 NocoBase，完成首次登录，了解[配置模式与使用模式](/get-started/how-nocobase-works)的区别，并预览工单系统的全貌。
+本章先通过 [Docker](/get-started/installation/docker) 一键部署 NocoBase，完成首次登录，了解[配置模式与使用模式](/quickstart/how-nocobase-works)的区别，并预览工单系统的全貌。
 
 
 ## 1.1 NocoBase 是什么
@@ -97,7 +97,7 @@ NocoBase 的界面有两种模式：
 | **使用模式** | 普通用户日常使用的界面 | 所有人 |
 | **配置模式** | 搭建和调整界面的设计模式 | 管理员 |
 
-切换方式：点击右上角的 **「[界面配置](/get-started/how-nocobase-works)（UI Editor）」** 按钮（一个荧光笔图标）。
+切换方式：点击右上角的 **「[界面配置](/quickstart/how-nocobase-works)（UI Editor）」** 按钮（一个荧光笔图标）。
 
 ![01-getting-started-2026-03-11-08-17-26](https://static-docs.nocobase.com/01-getting-started-2026-03-11-08-17-26.png)
 
@@ -173,4 +173,4 @@ NocoBase 的界面由三个区域组成：
 
 - [Docker 安装详解](/get-started/installation/docker) — 完整安装选项与环境变量说明
 - [系统要求](/get-started/system-requirements) — 硬件和软件环境要求
-- [NocoBase 是如何工作的](/get-started/how-nocobase-works) — 数据源、区块、操作等核心概念
+- [NocoBase 是如何工作的](/quickstart/how-nocobase-works) — 数据源、区块、操作等核心概念

@@ -27,7 +27,7 @@ sidebar: false
 Если в окружении пользователя уже установлен NocoBase CLI (проверьте командой `nb --version`), переходите к следующему шагу. Если нет — выполните следующую команду для установки:
 
 ```bash
-npm install -g @nocobase/cli@beta
+npm install -g @nocobase/cli
 ```
 
 Запустите `nb --version`, чтобы убедиться в успешной установке.

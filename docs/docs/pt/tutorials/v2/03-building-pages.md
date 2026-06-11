@@ -23,7 +23,7 @@ Lembre-se da analogia: **bloco = peça de Lego**, e em seguida vamos usar esses 
 
 Primeiro, precisamos criar o ponto de entrada de "Gerenciamento de Tickets" no sistema.
 
-1. Clique no botão **UI Editor** no canto superior direito para entrar no [modo de configuração](/get-started/how-nocobase-works) da interface (toda a página exibe bordas laranja editáveis).
+1. Clique no botão **UI Editor** no canto superior direito para entrar no [modo de configuração](/quickstart/how-nocobase-works) da interface (toda a página exibe bordas laranja editáveis).
 2. Mova o mouse para o botão **«Adicionar item de menu (Add menu item)»** na barra de navegação superior, escolha **«Adicionar grupo (Add group)»**, dê o nome de **«Gerenciamento de Tickets»**.
 
 ![03-building-pages-2026-03-12-09-38-36](https://static-docs.nocobase.com/03-building-pages-2026-03-12-09-38-36.png)
