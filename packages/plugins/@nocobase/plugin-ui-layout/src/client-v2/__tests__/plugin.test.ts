@@ -12,7 +12,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { UI_LAYOUT_TYPE_DESKTOP } from '../../constants';
 
 describe('PluginUiLayoutClientV2', () => {
-  it('should register settings page and enabled layouts from the API', async () => {
+  it('should register base layout settings and enabled layouts from the API', async () => {
     const { default: PluginUiLayoutClientV2 } = await import('../plugin');
     const app = {
       i18n: {
@@ -59,17 +59,33 @@ describe('PluginUiLayoutClientV2', () => {
       title: 'UI layout',
       icon: 'LayoutOutlined',
       aclSnippet: 'pm.ui-layout',
+      showTabs: true,
     });
     expect(app.pluginSettingsManager.addPageTabItem).toHaveBeenCalledWith({
       menuKey: 'ui-layout',
-      key: 'index',
-      title: 'UI layout',
+      key: 'routes',
+      title: 'Routes',
       aclSnippet: 'pm.ui-layout',
       componentLoader: expect.any(Function),
     });
+    expect(app.pluginSettingsManager.addPageTabItem).toHaveBeenCalledWith({
+      menuKey: 'ui-layout',
+      key: 'mobile',
+      title: 'Mobile',
+      aclSnippet: 'pm.ui-layout',
+      link: '/mobile',
+    });
+    expect(app.pluginSettingsManager.addPageTabItem).not.toHaveBeenCalledWith(
+      expect.objectContaining({
+        menuKey: 'ui-layout',
+        key: 'index',
+      }),
+    );
     const settingsApp = createMockClient();
     settingsApp.pluginSettingsManager.addMenuItem(app.pluginSettingsManager.addMenuItem.mock.calls[0][0]);
-    settingsApp.pluginSettingsManager.addPageTabItem(app.pluginSettingsManager.addPageTabItem.mock.calls[0][0]);
+    for (const [pageTab] of app.pluginSettingsManager.addPageTabItem.mock.calls) {
+      settingsApp.pluginSettingsManager.addPageTabItem(pageTab);
+    }
     settingsApp.pluginSettingsManager.setAclSnippets(['pm.*', '!pm.ui-layout']);
     expect(settingsApp.pluginSettingsManager.get('ui-layout')).toBeNull();
     expect(settingsApp.pluginSettingsManager.get('ui-layout.index')).toBeNull();
