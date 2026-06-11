@@ -420,7 +420,10 @@ const getPluginStaticPublicPath = (browserWindow?: NocoBaseWindow) => {
   }
 
   const publicPath = ensureTrailingSlash(browserWindow?.__nocobase_public_path__ || '/');
-  const modernClientPrefix = String(browserWindow?.__nocobase_modern_client_prefix__ || 'v').replace(/^\/+|\/+$/g, '');
+  const modernClientPrefix =
+    typeof browserWindow?.__nocobase_modern_client_prefix__ === 'string'
+      ? browserWindow.__nocobase_modern_client_prefix__.replace(/^\/+|\/+$/g, '')
+      : '';
   if (!modernClientPrefix) {
     return publicPath;
   }

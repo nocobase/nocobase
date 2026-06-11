@@ -84,11 +84,22 @@ describe('getDownloadFileName', () => {
 
   it('应兼容子路径部署下的 PDF.js 预览资源地址', () => {
     window.__nocobase_public_path__ = '/nocobase/v/';
+    window.__nocobase_modern_client_prefix__ = 'v';
 
     expect(getPdfPreviewResourceOptions()).toEqual({
       cMapPacked: true,
       cMapUrl: '/nocobase/static/plugins/@nocobase/plugin-file-manager/dist/client/pdfjs/cmaps/',
       standardFontDataUrl: '/nocobase/static/plugins/@nocobase/plugin-file-manager/dist/client/pdfjs/standard_fonts/',
+    });
+  });
+
+  it('未注入现代客户端前缀时不应猜测默认前缀', () => {
+    window.__nocobase_public_path__ = '/nocobase/v/';
+
+    expect(getPdfPreviewResourceOptions()).toEqual({
+      cMapPacked: true,
+      cMapUrl: '/nocobase/v/static/plugins/@nocobase/plugin-file-manager/dist/client/pdfjs/cmaps/',
+      standardFontDataUrl: '/nocobase/v/static/plugins/@nocobase/plugin-file-manager/dist/client/pdfjs/standard_fonts/',
     });
   });
 
