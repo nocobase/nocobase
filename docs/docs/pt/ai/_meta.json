@@ -10,8 +10,20 @@
       },
       {
         "type": "custom-link",
-        "label": "Requisitos do sistema",
-        "link": "/get-started/system-requirements"
+        "label": "Requisitos do sistema operacional",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "Produção",
+            "link": "/get-started/system-requirements"
+          },
+          {
+            "type": "custom-link",
+            "label": "Configuração de desenvolvimento local",
+            "link": "/ai/local-development-setup"
+          }
+        ],
+        "collapsed": true
       },
       {
         "type": "custom-link",
@@ -22,6 +34,11 @@
         "type": "custom-link",
         "label": "Instalar o aplicativo NocoBase",
         "link": "/ai/install-nocobase-app"
+      },
+      {
+        "type": "custom-link",
+        "label": "Atualizar o aplicativo NocoBase",
+        "link": "/ai/upgrade-nocobase-app"
       },
       {
         "type": "custom-link",
