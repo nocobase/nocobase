@@ -218,6 +218,50 @@ describe('DatabaseAdapter', () => {
       );
     });
 
+    it('restore function should reject unsafe source schema names before running commands', async () => {
+      const mockedExec = cp.exec as unknown as Mock;
+      mockedExec.mockClear();
+      mockedExec.mockImplementation((_command, _options, callback) => {
+        callback(null, { stdout: 'done' });
+      });
+      const adapter = getDBAdapter({
+        ...dbOpts,
+        schema: 'target_schema',
+      });
+
+      await expect(
+        adapter.restore({
+          filePath: os.tmpdir(),
+          schema: 'safe; touch /tmp/nocobase-cve-marker #',
+          skipDropAllTables: true,
+        }),
+      ).rejects.toThrow(/invalid PostgreSQL schema/i);
+
+      expect(mockedExec).not.toHaveBeenCalled();
+    });
+
+    it('restore function should reject unsafe target schema names before running commands', async () => {
+      const mockedExec = cp.exec as unknown as Mock;
+      mockedExec.mockClear();
+      mockedExec.mockImplementation((_command, _options, callback) => {
+        callback(null, { stdout: 'done' });
+      });
+      const adapter = getDBAdapter({
+        ...dbOpts,
+        schema: 'target; touch /tmp/nocobase-cve-marker #',
+      });
+
+      await expect(
+        adapter.restore({
+          filePath: os.tmpdir(),
+          schema: 'source_schema',
+          skipDropAllTables: true,
+        }),
+      ).rejects.toThrow(/invalid PostgreSQL schema/i);
+
+      expect(mockedExec).not.toHaveBeenCalled();
+    });
+
     it('restore function should not sync collection schema metadata when schema is unchanged', async () => {
       const mockedExec = cp.exec as unknown as Mock;
       mockedExec.mockClear();
