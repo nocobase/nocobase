@@ -50,10 +50,26 @@ type MobileLayoutRouteRepositoryState = {
 };
 
 const mobileLayoutRouteRepositoryStates = new WeakMap<MobileLayoutRouteRepository, MobileLayoutRouteRepositoryState>();
+const MOBILE_ROUTE_PORTAL_SCOPE_PREFIX = 'portal:';
 
 function getMobileLayoutUid(model: MobileLayoutRouteModel) {
   const uid = model.layout?.uid;
   return typeof uid === 'string' && uid.trim() ? uid : undefined;
+}
+
+function getMobileRouteScopeParams(layoutUid: string) {
+  if (layoutUid.startsWith(MOBILE_ROUTE_PORTAL_SCOPE_PREFIX)) {
+    const portalUid = layoutUid.slice(MOBILE_ROUTE_PORTAL_SCOPE_PREFIX.length);
+    if (portalUid) {
+      return {
+        portal: portalUid,
+      };
+    }
+  }
+
+  return {
+    layout: layoutUid,
+  };
 }
 
 function normalizeRoutes(routes: unknown): NocoBaseDesktopRoute[] {
@@ -76,7 +92,7 @@ async function requestMobileLayoutAccessibleRoutes(
     params: {
       tree: true,
       sort: 'sort',
-      layout: layoutUid,
+      ...getMobileRouteScopeParams(layoutUid),
     },
   });
   const routes = normalizeRoutes(response?.data?.data);

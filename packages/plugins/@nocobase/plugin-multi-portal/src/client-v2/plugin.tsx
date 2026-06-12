@@ -16,6 +16,9 @@ export class PluginMultiPortalClientV2 extends Plugin {
     const title = this.t('Multi-portal') as string;
 
     this.app.flowEngine.registerModelLoaders({
+      MultiPortalMobileLayoutModel: {
+        loader: () => import('./models/MultiPortalMobilePageModels'),
+      },
       MultiPortalMobileRootPageModel: {
         loader: () => import('./models/MultiPortalMobilePageModels'),
       },

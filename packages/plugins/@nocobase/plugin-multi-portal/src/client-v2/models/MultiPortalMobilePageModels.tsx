@@ -9,10 +9,12 @@
 
 import type { ChildPageModel, RootPageModel } from '@nocobase/client-v2';
 import type { CreateModelOptions } from '@nocobase/flow-engine';
+import { MobileLayoutModel } from '../../../../plugin-ui-layout/src/client-v2/models/MobileLayoutModel';
 import {
   MobileChildPageModel,
   MobileRootPageModel,
 } from '../../../../plugin-ui-layout/src/client-v2/models/MobilePageModels';
+import { getMultiPortalRouteScopeCacheKey, getMultiPortalUidFromRouteScopeCacheKey } from '../routeRepositoryScope';
 
 type RouteWithOwnership = Record<string, unknown> & {
   multiPortals?: unknown;
@@ -27,7 +29,11 @@ function getCurrentPortalUid(model: RootPageModel | ChildPageModel) {
   const layout = model.context?.layout as { uid?: unknown } | undefined;
   const portalUid = layout?.uid;
 
-  return typeof portalUid === 'string' && portalUid.trim() ? portalUid : undefined;
+  if (typeof portalUid !== 'string' || !portalUid.trim()) {
+    return undefined;
+  }
+
+  return getMultiPortalUidFromRouteScopeCacheKey(portalUid) || portalUid;
 }
 
 function withCurrentPortalRoute(route: unknown, portalUid?: string) {
@@ -57,6 +63,17 @@ function withCurrentPortalTabOptions(model: RootPageModel | ChildPageModel, opti
       route: withCurrentPortalRoute(route, getCurrentPortalUid(model)),
     },
   };
+}
+
+export class MultiPortalMobileLayoutModel extends MobileLayoutModel {
+  get layout() {
+    const layout = super.layout;
+
+    return {
+      ...layout,
+      uid: getMultiPortalRouteScopeCacheKey(layout.uid),
+    };
+  }
 }
 
 export class MultiPortalMobileRootPageModel extends MobileRootPageModel {

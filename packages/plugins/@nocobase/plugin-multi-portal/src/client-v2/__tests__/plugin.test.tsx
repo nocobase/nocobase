@@ -7,16 +7,18 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { createMockClient, RootPageTabModel } from '@nocobase/client-v2';
+import { createMockClient, RootPageTabModel, RouteRepository } from '@nocobase/client-v2';
 import { FlowEngine } from '@nocobase/flow-engine';
 import { UI_LAYOUT_TYPE_DESKTOP, UI_LAYOUT_TYPE_MOBILE } from '../../../../plugin-ui-layout/src/constants';
 import {
   fetchMultiPortals,
+  getMultiPortalRouteScopeCacheKey,
   registerMultiPortalsFromApi,
   toMultiPortalLayoutRegisterOptions,
   type MultiPortalRuntimeRecord,
 } from '../layoutRegistration';
 import PluginMultiPortalClientV2 from '../plugin';
+import { installMultiPortalRouteRepositoryScope } from '../routeRepositoryScope';
 
 const desktopPortal: MultiPortalRuntimeRecord = {
   uid: 'desktop-portal-model',
@@ -94,7 +96,7 @@ describe('PluginMultiPortalClientV2', () => {
       routeName: 'portalMobile',
       routePath: '/portal-mobile',
       uid: 'mobile-portal-model',
-      layoutModelClass: 'MobileLayoutModel',
+      layoutModelClass: 'MultiPortalMobileLayoutModel',
       rootPageModelClass: 'MultiPortalMobileRootPageModel',
       childPageModelClass: 'MultiPortalMobileChildPageModel',
       authCheck: false,
@@ -151,6 +153,9 @@ describe('PluginMultiPortalClientV2', () => {
     await plugin.load();
 
     expect(app.flowEngine.registerModelLoaders).toHaveBeenCalledWith({
+      MultiPortalMobileLayoutModel: {
+        loader: expect.any(Function),
+      },
       MultiPortalMobileRootPageModel: {
         loader: expect.any(Function),
       },
@@ -197,7 +202,7 @@ describe('PluginMultiPortalClientV2', () => {
       routeName: 'portalMobile',
       routePath: '/portal-mobile',
       uid: 'mobile-portal-model',
-      layoutModelClass: 'MobileLayoutModel',
+      layoutModelClass: 'MultiPortalMobileLayoutModel',
       rootPageModelClass: 'MultiPortalMobileRootPageModel',
       childPageModelClass: 'MultiPortalMobileChildPageModel',
       authCheck: false,
@@ -211,7 +216,7 @@ describe('PluginMultiPortalClientV2', () => {
     const flowEngine = new FlowEngine();
     flowEngine.context.defineProperty('layout', {
       value: {
-        uid: 'mobile-portal-model-tab-test',
+        uid: 'portal:mobile-portal-model-tab-test',
       },
     });
     const request = vi.fn().mockResolvedValue({});
@@ -272,6 +277,66 @@ describe('PluginMultiPortalClientV2', () => {
       }),
     );
     expect(request.mock.calls[0][0].data).not.toHaveProperty('uiLayouts');
+  });
+
+  it('should request portal scoped routes and keep route caches isolated', async () => {
+    const request = vi
+      .fn()
+      .mockResolvedValueOnce({ data: { data: [{ schemaUid: 'portal-page' }] } })
+      .mockResolvedValueOnce({ data: { data: [{ schemaUid: 'layout-page' }] } });
+    const create = vi.fn().mockResolvedValue({ data: { data: {} } });
+    const repository = new RouteRepository({
+      api: {
+        request,
+        resource: vi.fn(() => ({
+          create,
+        })),
+      },
+    } as never);
+
+    installMultiPortalRouteRepositoryScope(repository, () => ['customer-portal']);
+
+    const deactivatePortal = repository.activateLayout({ uid: 'customer-portal' });
+    await repository.refreshAccessible();
+    expect(repository.listAccessible().map((route) => route.schemaUid)).toEqual(['portal-page']);
+    await repository.createRoute({ title: 'Portal page' }, { refreshAfterMutation: false });
+    deactivatePortal();
+
+    const deactivateLayout = repository.activateLayout({ uid: 'mobile-layout-model' });
+    await repository.refreshAccessible();
+    expect(repository.listAccessible().map((route) => route.schemaUid)).toEqual(['layout-page']);
+    deactivateLayout();
+
+    const reactivatePortal = repository.activateLayout({ uid: 'customer-portal' });
+    expect(repository.listAccessible().map((route) => route.schemaUid)).toEqual(['portal-page']);
+    reactivatePortal();
+
+    expect(request).toHaveBeenNthCalledWith(1, {
+      url: '/desktopRoutes:listAccessible',
+      params: {
+        tree: true,
+        sort: 'sort',
+        portal: 'customer-portal',
+      },
+    });
+    expect(request).toHaveBeenNthCalledWith(2, {
+      url: '/desktopRoutes:listAccessible',
+      params: {
+        tree: true,
+        sort: 'sort',
+        layout: 'mobile-layout-model',
+      },
+    });
+    expect(create).toHaveBeenCalledWith({
+      values: {
+        title: 'Portal page',
+      },
+      portal: 'customer-portal',
+    });
+  });
+
+  it('should use a distinct cache key for portal scoped routes', () => {
+    expect(getMultiPortalRouteScopeCacheKey('customer-portal')).toBe('portal:customer-portal');
   });
 
   it('should register portal routes in the router during plugin load', async () => {

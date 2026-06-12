@@ -1279,6 +1279,58 @@ describe('plugin-ui-layout mobile models', () => {
     expect(routeRepository.setRoutes).toHaveBeenCalledWith(mobileRoutes);
   });
 
+  it('should load portal mobile routes with the current portal scope', async () => {
+    const portalRoutes: NocoBaseDesktopRoute[] = [
+      {
+        id: 2,
+        type: NocoBaseDesktopRouteType.flowPage,
+        title: 'Portal mobile only',
+        schemaUid: 'portal-mobile-page',
+        sort: 10,
+      },
+    ];
+    const api = {
+      request: vi.fn(async () => ({
+        data: {
+          data: portalRoutes,
+        },
+      })),
+    };
+    const routeRepository: MobileRouteRepositoryForTest = {
+      listAccessible: vi.fn(() => []),
+      setRoutes: vi.fn(),
+      activateLayout: vi.fn(() => vi.fn()),
+    };
+
+    renderMobileLayoutWithRouteRepository(routeRepository, {
+      api,
+      beforeRender: (model) => {
+        model.setProps({
+          ...model.props,
+          layout: {
+            ...model.props.layout,
+            uid: 'portal:customer-portal',
+          },
+        });
+      },
+    });
+
+    await waitFor(() => {
+      expect(api.request).toHaveBeenCalledWith(
+        expect.objectContaining({
+          url: '/desktopRoutes:listAccessible',
+          params: expect.objectContaining({
+            portal: 'customer-portal',
+            sort: 'sort',
+            tree: true,
+          }),
+        }),
+      );
+    });
+    expect(api.request.mock.calls[0][0].params).not.toHaveProperty('layout');
+    expect(routeRepository.setRoutes).toHaveBeenCalledWith(portalRoutes);
+  });
+
   it('should activate the current mobile layout while mounted', async () => {
     const deactivateLayout = vi.fn();
     const activateLayout = vi.fn(() => deactivateLayout);

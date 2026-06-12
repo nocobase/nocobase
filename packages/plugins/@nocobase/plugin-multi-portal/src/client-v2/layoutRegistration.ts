@@ -8,6 +8,9 @@
  */
 
 import type { Application, LayoutRegisterOptions } from '@nocobase/client-v2';
+import { getMultiPortalRouteScopeCacheKey, installMultiPortalRouteRepositoryScope } from './routeRepositoryScope';
+
+export { getMultiPortalRouteScopeCacheKey };
 
 export type MultiPortalRuntimeRecord = {
   uid: string;
@@ -29,13 +32,18 @@ type MultiPortalListBody = {
 
 type MultiPortalRegistrationApp = {
   apiClient: Pick<Application['apiClient'], 'request'>;
+  flowEngine?: {
+    context?: {
+      routeRepository?: unknown;
+    };
+  };
   layoutManager: Pick<Application['layoutManager'], 'hasLayout' | 'registerLayout'>;
 };
 
 const UI_LAYOUT_TYPE_DESKTOP = 'desktop';
 const UI_LAYOUT_TYPE_MOBILE = 'mobile';
 const ADMIN_LAYOUT_MODEL_CLASS = 'AdminLayoutModel';
-const MOBILE_LAYOUT_MODEL_CLASS = 'MobileLayoutModel';
+const MULTI_PORTAL_MOBILE_LAYOUT_MODEL_CLASS = 'MultiPortalMobileLayoutModel';
 const MULTI_PORTAL_MOBILE_ROOT_PAGE_MODEL_CLASS = 'MultiPortalMobileRootPageModel';
 const MULTI_PORTAL_MOBILE_CHILD_PAGE_MODEL_CLASS = 'MultiPortalMobileChildPageModel';
 
@@ -47,7 +55,7 @@ const layoutRegisterOptionsByType: Record<
     layoutModelClass: ADMIN_LAYOUT_MODEL_CLASS,
   },
   [UI_LAYOUT_TYPE_MOBILE]: {
-    layoutModelClass: MOBILE_LAYOUT_MODEL_CLASS,
+    layoutModelClass: MULTI_PORTAL_MOBILE_LAYOUT_MODEL_CLASS,
     rootPageModelClass: MULTI_PORTAL_MOBILE_ROOT_PAGE_MODEL_CLASS,
     childPageModelClass: MULTI_PORTAL_MOBILE_CHILD_PAGE_MODEL_CLASS,
   },
@@ -110,4 +118,7 @@ export async function registerMultiPortalsFromApi(app: MultiPortalRegistrationAp
   }
 
   registerMultiPortalRecords(app.layoutManager, records);
+  installMultiPortalRouteRepositoryScope(app.flowEngine?.context?.routeRepository, () =>
+    records.filter((record) => record.enabled).map((record) => record.uid),
+  );
 }
