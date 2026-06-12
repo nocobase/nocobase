@@ -15,6 +15,15 @@ export class PluginMultiPortalClientV2 extends Plugin {
   async load() {
     const title = this.t('Multi-portal') as string;
 
+    this.app.flowEngine.registerModelLoaders({
+      MultiPortalMobileRootPageModel: {
+        loader: () => import('./models/MultiPortalMobilePageModels'),
+      },
+      MultiPortalMobileChildPageModel: {
+        loader: () => import('./models/MultiPortalMobilePageModels'),
+      },
+    });
+
     this.pluginSettingsManager.addMenuItem({
       key: 'multi-portal',
       title,

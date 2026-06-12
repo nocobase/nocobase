@@ -31,6 +31,9 @@ const ROLE_MULTI_PORTAL_PERMISSION_ACTIONS = ['roles.multiPortals:*', 'rolesMult
 type MultiPortalRuntimeField = (typeof MULTI_PORTAL_RUNTIME_FIELDS)[number];
 type MultiPortalUiLayoutRuntimeField = (typeof MULTI_PORTAL_UI_LAYOUT_RUNTIME_FIELDS)[number];
 type DesktopRouteRolePermissionTargetField = (typeof DESKTOP_ROUTE_ROLE_PERMISSION_TARGET_FIELDS)[number];
+type DesktopRouteCreateValue = Record<string, unknown> & {
+  children?: unknown;
+};
 interface MultiPortalAccessContext {
   portalUid: string;
   uiLayoutUid: string;
@@ -117,6 +120,28 @@ async function findRequestedMultiPortal(ctx: ResourcerContext) {
 function getDesktopRoutePortalFilter(multiPortalUid: string) {
   return {
     'multiPortals.uid': multiPortalUid,
+  };
+}
+
+function isDesktopRouteCreateValue(value: unknown): value is DesktopRouteCreateValue {
+  return !!value && typeof value === 'object' && !Array.isArray(value);
+}
+
+function withDesktopRouteMultiPortal(value: unknown, multiPortalUid: string): unknown {
+  if (Array.isArray(value)) {
+    return value.map((item) => withDesktopRouteMultiPortal(item, multiPortalUid));
+  }
+
+  if (!isDesktopRouteCreateValue(value)) {
+    return value;
+  }
+
+  const { uiLayouts: _uiLayouts, ...route } = value;
+
+  return {
+    ...route,
+    multiPortals: [multiPortalUid],
+    ...(Array.isArray(value.children) ? { children: withDesktopRouteMultiPortal(value.children, multiPortalUid) } : {}),
   };
 }
 
@@ -378,6 +403,19 @@ async function mapMultiPortalLayoutToUiLayoutForRolePermissionTargets(
   await next();
 }
 
+async function addDesktopRouteCreateMultiPortal(ctx: ResourcerContext, next: () => Promise<void>) {
+  const portal = await findRequestedMultiPortal(ctx);
+  const portalUid = portal?.get('uid');
+
+  if (typeof portalUid === 'string' && portalUid) {
+    ctx.action?.mergeParams({
+      values: withDesktopRouteMultiPortal(ctx.action?.params.values, portalUid),
+    });
+  }
+
+  await next();
+}
+
 async function listEnabledMultiPortals(ctx: ResourcerContext, next: () => Promise<void>) {
   const records = await ctx.db.getRepository('multiPortals').find({
     filter: {
@@ -446,6 +484,8 @@ export class PluginMultiPortalServer extends Plugin {
       'desktopRoutes:listRolePermissionTargets',
       mapMultiPortalLayoutToUiLayoutForRolePermissionTargets,
     );
+    this.app.resourceManager.registerPreActionHandler('desktopRoutes:create', addDesktopRouteCreateMultiPortal);
+    this.app.resourceManager.registerPreActionHandler('desktopRoutes:updateOrCreate', addDesktopRouteCreateMultiPortal);
   }
 
   async load() {

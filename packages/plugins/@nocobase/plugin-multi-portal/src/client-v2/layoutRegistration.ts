@@ -36,8 +36,8 @@ const UI_LAYOUT_TYPE_DESKTOP = 'desktop';
 const UI_LAYOUT_TYPE_MOBILE = 'mobile';
 const ADMIN_LAYOUT_MODEL_CLASS = 'AdminLayoutModel';
 const MOBILE_LAYOUT_MODEL_CLASS = 'MobileLayoutModel';
-const MOBILE_ROOT_PAGE_MODEL_CLASS = 'MobileRootPageModel';
-const MOBILE_CHILD_PAGE_MODEL_CLASS = 'MobileChildPageModel';
+const MULTI_PORTAL_MOBILE_ROOT_PAGE_MODEL_CLASS = 'MultiPortalMobileRootPageModel';
+const MULTI_PORTAL_MOBILE_CHILD_PAGE_MODEL_CLASS = 'MultiPortalMobileChildPageModel';
 
 const layoutRegisterOptionsByType: Record<
   string,
@@ -48,8 +48,8 @@ const layoutRegisterOptionsByType: Record<
   },
   [UI_LAYOUT_TYPE_MOBILE]: {
     layoutModelClass: MOBILE_LAYOUT_MODEL_CLASS,
-    rootPageModelClass: MOBILE_ROOT_PAGE_MODEL_CLASS,
-    childPageModelClass: MOBILE_CHILD_PAGE_MODEL_CLASS,
+    rootPageModelClass: MULTI_PORTAL_MOBILE_ROOT_PAGE_MODEL_CLASS,
+    childPageModelClass: MULTI_PORTAL_MOBILE_CHILD_PAGE_MODEL_CLASS,
   },
 };
 

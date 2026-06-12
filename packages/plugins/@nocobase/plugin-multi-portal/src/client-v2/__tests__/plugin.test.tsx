@@ -7,7 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { createMockClient } from '@nocobase/client-v2';
+import { createMockClient, RootPageTabModel } from '@nocobase/client-v2';
+import { FlowEngine } from '@nocobase/flow-engine';
 import { UI_LAYOUT_TYPE_DESKTOP, UI_LAYOUT_TYPE_MOBILE } from '../../../../plugin-ui-layout/src/constants';
 import {
   fetchMultiPortals,
@@ -94,8 +95,8 @@ describe('PluginMultiPortalClientV2', () => {
       routePath: '/portal-mobile',
       uid: 'mobile-portal-model',
       layoutModelClass: 'MobileLayoutModel',
-      rootPageModelClass: 'MobileRootPageModel',
-      childPageModelClass: 'MobileChildPageModel',
+      rootPageModelClass: 'MultiPortalMobileRootPageModel',
+      childPageModelClass: 'MultiPortalMobileChildPageModel',
       authCheck: false,
     });
     expect(toMultiPortalLayoutRegisterOptions({ ...desktopPortal, enabled: false })).toBeNull();
@@ -125,6 +126,9 @@ describe('PluginMultiPortalClientV2', () => {
         addMenuItem: vi.fn(),
         addPageTabItem: vi.fn(),
       },
+      flowEngine: {
+        registerModelLoaders: vi.fn(),
+      },
       pm: {
         get: vi.fn(() => ({
           settingsUI: {
@@ -146,6 +150,14 @@ describe('PluginMultiPortalClientV2', () => {
 
     await plugin.load();
 
+    expect(app.flowEngine.registerModelLoaders).toHaveBeenCalledWith({
+      MultiPortalMobileRootPageModel: {
+        loader: expect.any(Function),
+      },
+      MultiPortalMobileChildPageModel: {
+        loader: expect.any(Function),
+      },
+    });
     expect(app.pluginSettingsManager.addMenuItem).toHaveBeenCalledWith({
       key: 'multi-portal',
       title: 'Multi-portal',
@@ -186,10 +198,80 @@ describe('PluginMultiPortalClientV2', () => {
       routePath: '/portal-mobile',
       uid: 'mobile-portal-model',
       layoutModelClass: 'MobileLayoutModel',
-      rootPageModelClass: 'MobileRootPageModel',
-      childPageModelClass: 'MobileChildPageModel',
+      rootPageModelClass: 'MultiPortalMobileRootPageModel',
+      childPageModelClass: 'MultiPortalMobileChildPageModel',
       authCheck: false,
     });
+  });
+
+  it('should scope mobile portal page tabs to the current portal owner', async () => {
+    const { MultiPortalMobileRootPageModel, MultiPortalMobileChildPageModel } = await import(
+      '../models/MultiPortalMobilePageModels'
+    );
+    const flowEngine = new FlowEngine();
+    flowEngine.context.defineProperty('layout', {
+      value: {
+        uid: 'mobile-portal-model-tab-test',
+      },
+    });
+    const request = vi.fn().mockResolvedValue({});
+    flowEngine.context.defineProperty('api', {
+      value: { request },
+    });
+    flowEngine.context.defineProperty('t', {
+      value: (value: string) => value,
+    });
+    const rootPageModel = new MultiPortalMobileRootPageModel({
+      flowEngine,
+      props: {
+        routeId: 'mobile-portal-root-route',
+      },
+    } as never);
+    const childPageModel = new MultiPortalMobileChildPageModel({ flowEngine } as never);
+    const rootTabOptions = rootPageModel.createPageTabModelOptions();
+    const childTabOptions = childPageModel.createPageTabModelOptions();
+
+    expect(rootTabOptions.props?.route).toMatchObject({
+      parentId: 'mobile-portal-root-route',
+      type: 'tabs',
+      params: [],
+      hideInMenu: false,
+      enableTabs: false,
+      multiPortals: ['mobile-portal-model-tab-test'],
+    });
+    expect(rootTabOptions.props?.route).toHaveProperty('schemaUid');
+    expect(rootTabOptions.props?.route).toHaveProperty('tabSchemaName');
+    expect(rootTabOptions.props?.route).not.toHaveProperty('uiLayouts');
+    expect(childTabOptions.props?.route).toMatchObject({
+      multiPortals: ['mobile-portal-model-tab-test'],
+    });
+    expect(childTabOptions.props?.route).not.toHaveProperty('uiLayouts');
+
+    const tabModel = new RootPageTabModel({
+      flowEngine,
+      uid: rootTabOptions.uid,
+      props: rootTabOptions.props,
+      stepParams: {
+        pageTabSettings: {
+          tab: {
+            title: 'Overview',
+          },
+        },
+      },
+    } as never);
+
+    await tabModel.save();
+
+    expect(request).toHaveBeenCalledWith(
+      expect.objectContaining({
+        url: 'desktopRoutes:updateOrCreate',
+        data: expect.objectContaining({
+          schemaUid: rootTabOptions.props?.route?.schemaUid,
+          multiPortals: ['mobile-portal-model-tab-test'],
+        }),
+      }),
+    );
+    expect(request.mock.calls[0][0].data).not.toHaveProperty('uiLayouts');
   });
 
   it('should register portal routes in the router during plugin load', async () => {

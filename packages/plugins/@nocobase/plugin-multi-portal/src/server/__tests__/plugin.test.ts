@@ -550,6 +550,112 @@ describe('plugin-multi-portal server', () => {
     ]);
   });
 
+  it('should create desktop routes with exactly one portal or layout owner', async () => {
+    app = await createMultiPortalAclMockServer();
+
+    const portal = await app.db.getRepository('multiPortals').create({
+      values: {
+        uid: 'route-owner-portal',
+        title: 'Route owner portal',
+        routeName: 'routeOwnerPortal',
+        routePath: '/route-owner-portal',
+        authCheck: true,
+        enabled: true,
+        uiLayoutUid: DEFAULT_MOBILE_UI_LAYOUT.uid,
+      },
+    });
+    const mobileLayout = await app.db.getRepository('uiLayouts').findOne({
+      filter: {
+        uid: DEFAULT_MOBILE_UI_LAYOUT.uid,
+      },
+    });
+    const rootUser = await app.db.getRepository('users').findOne({
+      filter: {
+        'roles.name': 'root',
+      },
+    });
+    const rootAgent = await app.agent().login(rootUser);
+
+    const portalCreateResponse = await rootAgent.resource('desktopRoutes').create({
+      layout: portal.get('uid'),
+      values: {
+        type: 'flowPage',
+        title: 'portal owned page',
+        schemaUid: 'portal-owned-page',
+        uiLayouts: [portal.get('uid')],
+        children: [
+          {
+            type: 'tabs',
+            title: 'portal owned tabs',
+            schemaUid: 'portal-owned-tabs',
+            hidden: true,
+            uiLayouts: [portal.get('uid')],
+          },
+        ],
+      },
+    });
+    const layoutCreateResponse = await rootAgent.resource('desktopRoutes').create({
+      layout: mobileLayout?.get('uid'),
+      values: {
+        type: 'flowPage',
+        title: 'layout owned page',
+        schemaUid: 'layout-owned-page',
+        children: [
+          {
+            type: 'tabs',
+            title: 'layout owned tabs',
+            schemaUid: 'layout-owned-tabs',
+            hidden: true,
+          },
+        ],
+      },
+    });
+    const portalUpsertResponse = await rootAgent.resource('desktopRoutes').updateOrCreate({
+      layout: portal.get('uid'),
+      filterKeys: ['schemaUid'],
+      values: {
+        type: 'tabs',
+        title: 'portal owned upsert tab',
+        schemaUid: 'portal-owned-upsert-tab',
+        uiLayouts: [portal.get('uid')],
+      },
+    });
+
+    expect(portalCreateResponse.status).toBe(200);
+    expect(layoutCreateResponse.status).toBe(200);
+    expect(portalUpsertResponse.status).toBe(200);
+
+    const [portalRoute, layoutRoute, upsertRoute] = await Promise.all([
+      app.db.getRepository('desktopRoutes').findOne({
+        filterByTk: portalCreateResponse.body.data.id,
+        appends: ['multiPortals', 'uiLayouts', 'children.multiPortals', 'children.uiLayouts'],
+      }),
+      app.db.getRepository('desktopRoutes').findOne({
+        filterByTk: layoutCreateResponse.body.data.id,
+        appends: ['multiPortals', 'uiLayouts', 'children.multiPortals', 'children.uiLayouts'],
+      }),
+      app.db.getRepository('desktopRoutes').findOne({
+        filter: {
+          schemaUid: 'portal-owned-upsert-tab',
+        },
+        appends: ['multiPortals', 'uiLayouts'],
+      }),
+    ]);
+    const portalChildRoute = portalRoute?.get('children')?.[0];
+    const layoutChildRoute = layoutRoute?.get('children')?.[0];
+
+    expect(portalRoute?.get('multiPortals').map((item) => item.get('uid'))).toEqual([portal.get('uid')]);
+    expect(portalRoute?.get('uiLayouts')).toEqual([]);
+    expect(portalChildRoute?.get('multiPortals').map((item) => item.get('uid'))).toEqual([portal.get('uid')]);
+    expect(portalChildRoute?.get('uiLayouts')).toEqual([]);
+    expect(upsertRoute?.get('multiPortals').map((item) => item.get('uid'))).toEqual([portal.get('uid')]);
+    expect(upsertRoute?.get('uiLayouts')).toEqual([]);
+    expect(layoutRoute?.get('uiLayouts').map((item) => item.get('uid'))).toEqual([mobileLayout?.get('uid')]);
+    expect(layoutRoute?.get('multiPortals')).toEqual([]);
+    expect(layoutChildRoute?.get('uiLayouts').map((item) => item.get('uid'))).toEqual([mobileLayout?.get('uid')]);
+    expect(layoutChildRoute?.get('multiPortals')).toEqual([]);
+  });
+
   it('should enforce role portal access before listing portal routes', async () => {
     app = await createMultiPortalAclMockServer();
 
