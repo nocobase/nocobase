@@ -10,7 +10,7 @@
 import { DrawerFormLayout } from '@nocobase/client-v2';
 import { useFlowContext } from '@nocobase/flow-engine';
 import { useMemoizedFn } from 'ahooks';
-import { Card, Form, Input, InputNumber, Select, Space, Spin, Tag, Typography } from 'antd';
+import { Card, Form, Input, InputNumber, Select, Space, Spin, Tag, Typography, theme } from 'antd';
 import React, { lazy, Suspense, useEffect, useMemo, useState } from 'react';
 import { EXECUTION_STATUS_OPTIONS, EXECUTION_STATUS_OPTIONS_MAP } from '../../common/executionStatus';
 import { SyncModeSelect } from '../components/SyncModeSelect';
@@ -48,6 +48,7 @@ export function WorkflowFormDrawer(props: WorkflowFormDrawerProps) {
   const { t } = useWorkflowTranslation();
   const compile = useT();
   const ctx = useFlowContext();
+  const { token } = theme.useToken();
   const resource = ctx.api.resource('workflows');
   const [form] = Form.useForm();
   const [submitting, setSubmitting] = useState(false);
@@ -191,13 +192,20 @@ export function WorkflowFormDrawer(props: WorkflowFormDrawerProps) {
             (v1's "Trigger configuration" Fieldset). Only rendered when the
             selected trigger type ships a create-config form. */}
         {ConfigForm ? (
-          <Form.Item label={t('Trigger configuration')}>
-            <Card size="small">
+          <div style={{ marginBottom: token.marginLG }}>
+            <div style={{ marginBottom: token.marginXS }}>{`${t('Trigger configuration')}:`}</div>
+            <div
+              style={{
+                padding: token.padding,
+                border: `${token.lineWidth}px solid ${token.colorBorderSecondary}`,
+                borderRadius: token.borderRadiusLG,
+              }}
+            >
               <Suspense fallback={<Spin />}>
                 <ConfigForm />
               </Suspense>
-            </Card>
-          </Form.Item>
+            </div>
+          </div>
         ) : null}
         <Form.Item
           name="sync"

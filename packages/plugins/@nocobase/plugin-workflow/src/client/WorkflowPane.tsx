@@ -31,11 +31,11 @@ import OpenDrawer from './components/OpenDrawer';
 import { workflowSchema } from './schemas/workflows';
 import { ExecutionStatusColumn } from './components/ExecutionStatus';
 import WorkflowPlugin from '.';
-import { RadioWithTooltip } from './components';
+import { Fieldset, RadioWithTooltip } from './components';
 import { useRefreshActionProps } from './hooks/useRefreshActionProps';
 import { useTranslation } from 'react-i18next';
 import { TriggerOptionRender } from './components/TriggerOptionRender';
-import { NAMESPACE } from './locale';
+import { lang, NAMESPACE } from './locale';
 import { CategoryTabs } from './WorkflowCategoryTabs';
 import { EnumerationField } from './components/EmunerationField';
 import { useResourceFilterActionProps } from './hooks/useResourceFilterActionProps';
@@ -204,9 +204,13 @@ function TriggerPresetFieldsetLoaderBridge({
 
   return (
     <Form form={form} layout="vertical" onValuesChange={onValuesChange}>
-      <Suspense fallback={<Skeleton active paragraph={{ rows: 2 }} />}>
-        <PresetFieldset />
-      </Suspense>
+      <Form.Item label={lang('Trigger configuration')}>
+        <Fieldset>
+          <Suspense fallback={<Skeleton active paragraph={{ rows: 2 }} />}>
+            <PresetFieldset />
+          </Suspense>
+        </Fieldset>
+      </Form.Item>
     </Form>
   );
 }

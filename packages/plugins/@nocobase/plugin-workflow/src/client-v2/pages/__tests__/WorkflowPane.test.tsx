@@ -223,4 +223,35 @@ describe('WorkflowPane (request layer)', () => {
       expect(workflows.update).toHaveBeenCalledWith(expect.objectContaining({ filterByTk: 11 }));
     });
   });
+
+  it('renders the trigger configuration label and bordered group around preset loader content', async () => {
+    const workflows = { create: vi.fn().mockResolvedValue({}), update: vi.fn() };
+    holder.ctx = makeCtx({ workflows });
+
+    const pluginWithPreset = {
+      triggers: { getEntities: () => [['collection', { title: 'Collection event' }]] },
+      getTriggerOptions: (type?: string) =>
+        type === 'collection'
+          ? {
+              title: 'Collection event',
+              PresetFieldsetLoader: async () => ({
+                default: () => <div>preset-field</div>,
+              }),
+            }
+          : undefined,
+    };
+
+    renderWithApp(
+      <WorkflowFormDrawer
+        mode="create"
+        type="collection"
+        plugin={pluginWithPreset as any}
+        categoryOptions={[]}
+        onSubmitted={() => undefined}
+      />,
+    );
+
+    expect(await screen.findByText('Trigger configuration:')).toBeInTheDocument();
+    expect(await screen.findByText('preset-field')).toBeInTheDocument();
+  });
 });
