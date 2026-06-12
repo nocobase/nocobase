@@ -16,6 +16,7 @@ export interface ListCollapseProps<T> {
   value?: T[];
   onChange?: (value: T[]) => void;
   defaultValue?: T;
+  getDefaultValue?: () => T;
   addText: React.ReactNode;
   itemTitle: React.ReactNode;
   size?: CollapseProps['size'];
@@ -71,6 +72,7 @@ export const ListCollapse = <T,>({
   value,
   onChange,
   defaultValue,
+  getDefaultValue,
   addText,
   itemTitle,
   size = 'small',
@@ -163,7 +165,8 @@ export const ListCollapse = <T,>({
         type="dashed"
         icon={<PlusOutlined />}
         onClick={() => {
-          const next = items.concat(defaultValue as T);
+          const nextItem = getDefaultValue ? getDefaultValue() : (defaultValue as T);
+          const next = items.concat(nextItem);
           onChange?.(next);
           setActiveKeys((current) => Array.from(new Set(current.concat(String(next.length - 1)))));
         }}

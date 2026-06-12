@@ -2,7 +2,7 @@
 
 Dans cette série, nous partirons de zéro pour construire un **système de tickets minimaliste (HelpDesk)** avec NocoBase. L'ensemble du système ne nécessite que **2 [tables de données](/data-sources/data-modeling/collection)**, sans écrire la moindre ligne de code, et permet la soumission de tickets, la gestion des catégories, le suivi des modifications, le contrôle des permissions et un [tableau de bord](/data-visualization) de données.
 
-Ce chapitre commence par un déploiement de NocoBase via [Docker](/get-started/installation/docker) en une commande, la première connexion, la compréhension de la différence entre [mode configuration et mode utilisation](/quickstart/how-nocobase-works), et un aperçu général du système de tickets.
+Ce chapitre commence par un déploiement de NocoBase via [Docker](/get-started/installation/docker) en une commande, la première connexion, la compréhension de la différence entre [mode configuration et mode utilisation](/get-started/how-nocobase-works), et un aperçu général du système de tickets.
 
 
 ## 1.1 Qu'est-ce que NocoBase
@@ -97,7 +97,7 @@ L'interface de NocoBase a deux modes :
 | **Mode utilisation** | L'interface utilisée par les utilisateurs au quotidien | Tout le monde |
 | **Mode configuration** | Le mode design pour construire et ajuster l'interface | Les administrateurs |
 
-Pour basculer : cliquez sur le bouton **« [UI Editor](/quickstart/how-nocobase-works) »** en haut à droite (icône en forme de surligneur).
+Pour basculer : cliquez sur le bouton **« [UI Editor](/get-started/how-nocobase-works) »** en haut à droite (icône en forme de surligneur).
 
 ![01-getting-started-2026-03-11-08-17-26](https://static-docs.nocobase.com/01-getting-started-2026-03-11-08-17-26.png)
 
@@ -173,4 +173,4 @@ Dans ce chapitre, vous avez :
 
 - [Installation Docker en détail](/get-started/installation/docker) — options d'installation complètes et variables d'environnement
 - [Configuration requise](/get-started/system-requirements) — prérequis matériels et logiciels
-- [Comment fonctionne NocoBase](/quickstart/how-nocobase-works) — concepts clés : data sources, blocks, actions
+- [Comment fonctionne NocoBase](/get-started/how-nocobase-works) — concepts clés : data sources, blocks, actions

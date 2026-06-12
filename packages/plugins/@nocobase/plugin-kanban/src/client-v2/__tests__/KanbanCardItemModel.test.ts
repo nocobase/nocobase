@@ -83,8 +83,8 @@ describe('KanbanCardItemModel.cardSettings', () => {
       popupTemplateUid: 'tpl-card',
       popupTargetUid: 'popup-card-1',
     });
-    expect(ensureCardViewAction).toHaveBeenCalledTimes(1);
-    expect(syncCardViewAction).toHaveBeenCalledWith(masterBlock.subModels.cardViewAction);
+    expect(ensureCardViewAction).toHaveBeenCalledWith({ persist: true });
+    expect(syncCardViewAction).not.toHaveBeenCalled();
   });
 
   test('popup default params keep an explicitly cleared item template instead of falling back to parent template', async () => {

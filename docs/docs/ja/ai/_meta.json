@@ -1,1 +1,45 @@
-[]
+[
+  {
+    "type": "custom-link",
+    "label": "クイックスタート",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "NocoBaseの仕組み",
+        "link": "/get-started/how-nocobase-works"
+      },
+      {
+        "type": "custom-link",
+        "label": "システム要件",
+        "link": "/get-started/system-requirements"
+      },
+      {
+        "type": "custom-link",
+        "label": "インストール方法とバージョン比較",
+        "link": "/get-started/quickstart"
+      },
+      {
+        "type": "custom-link",
+        "label": "NocoBase アプリをインストール",
+        "link": "/ai/install-nocobase-app"
+      },
+      {
+        "type": "custom-link",
+        "label": "AI Agent 接続ガイド",
+        "link": "/ai/quick-start"
+      },
+      {
+        "type": "custom-link",
+        "label": "NocoBase CLI",
+        "proxy": false,
+        "link": "/nocobase-cli/"
+      },
+      {
+        "type": "custom-link",
+        "label": "はじめに（旧版）",
+        "proxy": false,
+        "link": "/get-started/how-nocobase-works"
+      }
+    ]
+  }
+]

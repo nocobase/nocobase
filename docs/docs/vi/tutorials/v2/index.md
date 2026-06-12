@@ -78,7 +78,7 @@ Nếu bạn đang đánh giá nền tảng no-code/low-code, dưới đây là m
 ## Tài liệu liên quan
 
 ### Hướng dẫn nhập môn
-- [NocoBase hoạt động như thế nào](/quickstart/how-nocobase-works) - Giới thiệu các khái niệm cốt lõi
+- [NocoBase hoạt động như thế nào](/get-started/how-nocobase-works) - Giới thiệu các khái niệm cốt lõi
 - [Bắt đầu nhanh](/get-started/quickstart) - Cài đặt và cấu hình ban đầu
 - [Yêu cầu hệ thống](/get-started/system-requirements) - Yêu cầu cấu hình môi trường
 

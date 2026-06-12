@@ -23,7 +23,7 @@ Merken Sie sich: **Block = Baustein**. Damit bauen wir die Ticket-Verwaltung.
 
 Zunächst legen wir einen Einstieg „Ticket-Verwaltung" an.
 
-1. Klicken Sie oben rechts auf **UI Editor**, um in den [Konfigurationsmodus](/quickstart/how-nocobase-works) zu wechseln (orangefarbene Rahmen erscheinen).
+1. Klicken Sie oben rechts auf **UI Editor**, um in den [Konfigurationsmodus](/get-started/how-nocobase-works) zu wechseln (orangefarbene Rahmen erscheinen).
 2. In der oberen Navigation **„Menüeintrag hinzufügen"** klicken, **„Gruppe hinzufügen"** wählen und **„Ticket-Verwaltung"** als Namen eingeben.
 
 ![03-building-pages-2026-03-12-09-38-36](https://static-docs.nocobase.com/03-building-pages-2026-03-12-09-38-36.png)

@@ -8,6 +8,7 @@ import type {
   SidebarItem,
   SidebarSectionHeader,
 } from '@rspress/core';
+import { encodeTargetBlankHref } from '../shared/blankTargetLink';
 
 // ── 内部类型 ──────────────────────────────────────────────────────────
 
@@ -29,6 +30,23 @@ function shouldProxyLink(obj: Record<string, unknown>): boolean {
   return obj.proxy !== false;
 }
 
+function isExternalLink(link: string): boolean {
+  return link.startsWith('http://') || link.startsWith('https://');
+}
+
+function resolveSidebarLink(
+  obj: Record<string, unknown>,
+  link: string,
+  crossRefs: CrossRef[],
+  topDir: string,
+): string {
+  if (!shouldProxyLink(obj)) {
+    return isExternalLink(link) ? link : encodeTargetBlankHref(link);
+  }
+
+  return rewriteIfCrossRef(link, crossRefs, topDir);
+}
+
 function collectLeafLinks(entries: unknown[]): string[] {
   const links: string[] = [];
   for (const entry of entries) {
@@ -45,6 +63,23 @@ function collectLeafLinks(entries: unknown[]): string[] {
     }
   }
   return links;
+}
+
+function hasUnproxiedLinks(entries: unknown[]): boolean {
+  for (const entry of entries) {
+    const obj = entry as Record<string, unknown>;
+    if (!obj || typeof obj !== 'object') continue;
+
+    if (typeof obj.link === 'string' && !shouldProxyLink(obj)) {
+      return true;
+    }
+
+    if (Array.isArray(obj.items) && hasUnproxiedLinks(obj.items as unknown[])) {
+      return true;
+    }
+  }
+
+  return false;
 }
 
 /** 从相对路径取顶层模块名：'/api/auth/sub' → '/api' */
@@ -166,9 +201,12 @@ function resolveEntries(
         collapsed: obj.collapsed === true,
       };
       if (typeof obj.link === 'string') {
-        group.link = shouldProxyLink(obj)
-          ? rewriteIfCrossRef(obj.link as string, crossRefs, topDir)
-          : (obj.link as string);
+        group.link = resolveSidebarLink(
+          obj,
+          obj.link as string,
+          crossRefs,
+          topDir,
+        );
       }
       result.push(group);
       continue;
@@ -178,9 +216,7 @@ function resolveEntries(
     if (type === 'custom-link' && typeof obj.link === 'string') {
       result.push({
         text: (obj.label as string) || '',
-        link: shouldProxyLink(obj)
-          ? rewriteIfCrossRef(obj.link as string, crossRefs, topDir)
-          : (obj.link as string),
+        link: resolveSidebarLink(obj, obj.link as string, crossRefs, topDir),
       });
       continue;
     }
@@ -270,6 +306,7 @@ export function pluginCrossRefSidebar(): RspressPlugin {
 
     config(config) {
       const root = config.root || path.join(process.cwd(), 'docs');
+      let hasTargetBlankLinks = false;
       crossRefs = [];
 
       // 1. 扫描所有 _meta.json 检测跨模块引用（以顶层目录为单位判断）
@@ -284,6 +321,7 @@ export function pluginCrossRefSidebar(): RspressPlugin {
 
         const meta: unknown = JSON.parse(fs.readFileSync(metaFile, 'utf-8'));
         if (!Array.isArray(meta) || meta.length === 0) continue;
+        hasTargetBlankLinks = hasTargetBlankLinks || hasUnproxiedLinks(meta);
 
         for (const link of collectLeafLinks(meta)) {
           if (link.startsWith('http://') || link.startsWith('https://'))
@@ -311,7 +349,7 @@ export function pluginCrossRefSidebar(): RspressPlugin {
         crossRefCanonicalMap[ref.aliasRoute] = ref.targetLink.split('#')[0];
       }
 
-      if (crossRefs.length === 0) return config;
+      if (crossRefs.length === 0 && !hasTargetBlankLinks) return config;
 
       // 2. 为所有顶层目录生成 sidebar（设置后 _meta.json 不再生效）
       const sidebar: Sidebar = (config.themeConfig?.sidebar as Sidebar) || {};

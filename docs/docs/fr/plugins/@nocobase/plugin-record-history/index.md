@@ -1,14 +1,16 @@
 ---
-displayName: "Historique des enregistrements"
+title: "Record history"
+keywords: "Logging and monitoring"
+displayName: "Record history"
 packageName: '@nocobase/plugin-record-history'
 supportedVersions:
   - 2.x
 description: |
-  Suit et conserve l'historique des modifications des enregistrements d'une collection.
+  Tracks and stores the change history of collection records.
 isFree: false
 builtIn: false
 defaultEnabled: false
 editionLevel: 2
 ---
 
-# Historique des enregistrements
+# Record history

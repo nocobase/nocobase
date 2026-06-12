@@ -71,4 +71,4 @@ nb plugin import @my-scope/plugin-auth-cas@beta --npm-registry=https://registry.
 
 - [`nb app restart`](../app/restart.md)
 - [`nb plugin enable`](./enable.md)
-- [`サードパーティプラグインのインストールとアップグレード`](../../../quickstart/plugins/third-party.md)
+- [`サードパーティプラグインのインストールとアップグレード`](../../../nocobase-cli/plugins/third-party.md)

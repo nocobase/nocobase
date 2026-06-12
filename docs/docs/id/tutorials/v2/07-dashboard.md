@@ -8,7 +8,7 @@ Berapa banyak tiket? Berapa yang sudah diproses? Jenis masalah apa yang paling b
 
 Pertama-tama, mari kita tambahkan satu menu baru di bilah navigasi atas.
 
-Masuk ke [mode konfigurasi](/quickstart/how-nocobase-works), pada bilah menu atas klik **"Tambah menu"** (ikon `+`), pilih **"Halaman versi baru (v2)"**, beri nama "Dashboard Data".
+Masuk ke [mode konfigurasi](/get-started/how-nocobase-works), pada bilah menu atas klik **"Tambah menu"** (ikon `+`), pilih **"Halaman versi baru (v2)"**, beri nama "Dashboard Data".
 
 ![07-dashboard-2026-03-15-21-39-35](https://static-docs.nocobase.com/07-dashboard-2026-03-15-21-39-35.png)
 

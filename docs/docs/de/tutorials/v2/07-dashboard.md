@@ -8,7 +8,7 @@ Wie viele Tickets gibt es? Wie viele wurden bearbeitet? Welche Problemklasse tri
 
 Zunächst ergänzen wir in der oberen Navigation einen neuen Menü-Eintrag.
 
-Wechseln Sie in den [Konfigurationsmodus](/quickstart/how-nocobase-works), klicken Sie in der oberen Menüleiste auf **„Menü-Eintrag hinzufügen"** (`+`-Symbol), wählen Sie **„Neue Seite (v2)"** und nennen Sie sie „Daten-Dashboard".
+Wechseln Sie in den [Konfigurationsmodus](/get-started/how-nocobase-works), klicken Sie in der oberen Menüleiste auf **„Menü-Eintrag hinzufügen"** (`+`-Symbol), wählen Sie **„Neue Seite (v2)"** und nennen Sie sie „Daten-Dashboard".
 
 ![07-dashboard-2026-03-15-21-39-35](https://static-docs.nocobase.com/07-dashboard-2026-03-15-21-39-35.png)
 

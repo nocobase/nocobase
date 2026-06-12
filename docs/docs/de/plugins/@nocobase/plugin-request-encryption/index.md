@@ -1,15 +1,17 @@
 ---
-displayName: "HTTP-Anfrageverschlüsselung"
+title: "HTTP request encryption"
+keywords: "Security"
+displayName: "HTTP request encryption"
 packageName: '@nocobase/plugin-request-encryption'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Wird verwendet, um Abfrageparameter (Query Parameters) vor dem Senden einer HTTP-Anfrage zu verschlüsseln.
+  Encrypts request parameters (Query Parameters) before sending an HTTP request.
 isFree: false
 builtIn: false
 defaultEnabled: false
 editionLevel: 3
 ---
 
-# HTTP-Anfrageverschlüsselung
+# HTTP request encryption

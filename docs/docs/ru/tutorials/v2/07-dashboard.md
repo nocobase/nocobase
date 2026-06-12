@@ -8,7 +8,7 @@
 
 Сначала добавим в верхнее меню новый пункт.
 
-Войдите в [режим конфигурации](/quickstart/how-nocobase-works), в верхнем меню нажмите **«Add menu item»** (`+`), выберите **«Modern page (v2)»**, имя — «Дашборд».
+Войдите в [режим конфигурации](/get-started/how-nocobase-works), в верхнем меню нажмите **«Add menu item»** (`+`), выберите **«Modern page (v2)»**, имя — «Дашборд».
 
 ![07-dashboard-2026-03-15-21-39-35](https://static-docs.nocobase.com/07-dashboard-2026-03-15-21-39-35.png)
 

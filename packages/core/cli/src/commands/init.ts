@@ -317,16 +317,12 @@ function formatBrowserOpenError(error: unknown) {
 }
 
 export default class Init extends Command {
-  static override summary = 'Set up NocoBase so coding agents can connect and work with it';
-  static override description = `Set up NocoBase for coding agents in the current workspace.
+  static override summary = 'Set up or connect a NocoBase environment in the current workspace';
+  static override description = `Set up NocoBase in the current workspace.
 
-\`nb init\` prepares a NocoBase environment that coding agents can use. It supports three setup paths:
+\`nb init\` helps you install a new NocoBase app, take over managing one that already exists on this machine, or connect a remote NocoBase app and save it as a CLI env.
 
-- Install a new NocoBase app, then save it as a CLI env.
-- Take over managing an app that already exists on this machine by reusing its database.
-- Connect a remote NocoBase app and save it as a CLI env.
-
-It can also install NocoBase AI coding skills (\`nocobase/skills\`) so agents get the project-specific workflow guidance.
+You can use the saved environment directly, or let a coding agent access it later. It can also install NocoBase AI coding skills (\`nocobase/skills\`) when you want agent-specific workflow guidance.
 
 If setup was interrupted earlier, use \`--resume\` with an existing env name to continue from the saved workspace config.
 

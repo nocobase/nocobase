@@ -23,7 +23,7 @@ Remember this analogy: **Blocks = building bricks**. We're about to use them to 
 
 First, we need to create an entry point for "Tickets" in the system.
 
-1. Click the **[UI Editor](/quickstart/how-nocobase-works)** toggle in the top-right corner to enter design mode (the entire page will show orange editable borders).
+1. Click the **[UI Editor](/get-started/how-nocobase-works)** toggle in the top-right corner to enter design mode (the entire page will show orange editable borders).
 2. Click the **"Add menu item"** button (`+` icon) in the top navigation bar, select **"Add group"**, and name it **"Tickets"**.
 3. The "Tickets" menu appears immediately in the top navigation bar. **Click on it** — a sidebar menu will expand on the left.
 4. In the sidebar, click the orange **"Add menu item"** button, select **"Modern page (v2)"**, and add two sub-pages one by one:

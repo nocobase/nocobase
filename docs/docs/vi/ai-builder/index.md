@@ -95,13 +95,27 @@ AI sẽ output phương án thiết kế trước, sau khi xác nhận sẽ xây
 
 Để tìm hiểu thêm về cách xây dựng cả hệ thống, vui lòng xem [Giải pháp](./dsl-reconciler).
 
+### Dựng xong một cột mốc, AI lưu giúp bạn một phiên bản có thể khôi phục
+
+Sau khi hoàn thành một trang, một nhóm bảng dữ liệu hoặc một workflow, hãy để AI lưu trạng thái hiện tại thành phiên bản — nếu cấu hình bị hỏng, bạn luôn có thể quay lại cột mốc rõ ràng gần nhất.
+
+```
+Lưu kết quả xây dựng hiện tại thành phiên bản: đã hoàn thành trang quản lý khách hàng, vùng lọc và form chỉnh sửa
+```
+
+![AI tạo phiên bản sau khi dựng ứng dụng](https://static-docs.nocobase.com/20260611115804.png)
+
+AI không lưu phiên bản mỗi khi thay đổi một trường; nó chỉ lưu sau khi hoàn thành và kiểm chứng một cột mốc rõ ràng, giúp danh sách phiên bản dễ đọc hơn và dễ quyết định nên quay lại đâu.
+
+Để tìm hiểu thêm về quản lý phiên bản, vui lòng xem [Quản lý phiên bản](./version-control).
+
 ## Bảo mật và kiểm toán
 
 Trước khi để AI Agent thao tác trên NocoBase, khuyến nghị tìm hiểu về phương thức xác thực, kiểm soát quyền và kiểm toán thao tác — đảm bảo AI chỉ làm những việc nên làm và mỗi bước đều có ghi chép. Vui lòng xem [Bảo mật và kiểm toán](./security).
 
 ## NocoBase Skills
 
-[NocoBase Skills](https://github.com/nocobase/skills) là gói kiến thức chuyên ngành có thể cài vào AI Agent, giúp AI hiểu được hệ thống cấu hình của NocoBase. NocoBase cung cấp 8 Skills, bao quát toàn bộ quy trình xây dựng:
+[NocoBase Skills](https://github.com/nocobase/skills) là gói kiến thức chuyên ngành có thể cài vào AI Agent, giúp AI hiểu được hệ thống cấu hình của NocoBase. NocoBase cung cấp 9 Skills, bao quát toàn bộ quy trình xây dựng:
 
 - [Quản lý môi trường](./env-bootstrap) — Kiểm tra môi trường, cài đặt triển khai, nâng cấp và chẩn đoán sự cố
 - [Mô hình hóa dữ liệu](./data-modeling) — Tạo và quản lý bảng, Field, quan hệ liên kết
@@ -111,6 +125,7 @@ Trước khi để AI Agent thao tác trên NocoBase, khuyến nghị tìm hiể
 - [Giải pháp](./dsl-reconciler) — Xây dựng nguyên cả hệ thống nghiệp vụ hàng loạt từ YAML
 - [Quản lý Plugin](./plugin-manage) — Xem, kích hoạt và tắt Plugin
 - [Quản lý phát hành](./publish) — Phát hành đa môi trường, sao lưu khôi phục và di chuyển
+- [Quản lý phiên bản](./version-control) — Lưu phiên bản có thể khôi phục sau các mốc đã hoàn thành
 
 :::tip Mẹo
 

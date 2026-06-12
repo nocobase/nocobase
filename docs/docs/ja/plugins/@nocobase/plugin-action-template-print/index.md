@@ -1,15 +1,17 @@
 ---
-displayName: "テンプレート印刷"
+title: "Template print"
+keywords: "Actions"
+displayName: "Template print"
 packageName: '@nocobase/plugin-action-template-print'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  NocoBase アプリ内でユーザーがテンプレートを印刷することをサポートします。
+  It supports users in printing templates within the NocoBase application.
 isFree: false
 builtIn: false
 defaultEnabled: false
 editionLevel: 2
 ---
 
-# テンプレート印刷
+# Template print

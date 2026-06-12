@@ -23,7 +23,7 @@ Hãy nhớ phép so sánh này: **Block = khối lego**, tiếp theo chúng ta s
 
 Trước tiên, chúng ta cần tạo lối vào "Quản lý ticket" trong hệ thống.
 
-1. Click công tắc **UI editor** ở góc trên bên phải, vào [chế độ cấu hình](/quickstart/how-nocobase-works) giao diện (toàn bộ trang sẽ xuất hiện viền có thể chỉnh sửa màu cam).
+1. Click công tắc **UI editor** ở góc trên bên phải, vào [chế độ cấu hình](/get-started/how-nocobase-works) giao diện (toàn bộ trang sẽ xuất hiện viền có thể chỉnh sửa màu cam).
 2. Di chuột đến nút **"Thêm menu item (Add menu item)"** trên thanh navigation trên cùng, chọn **"Thêm nhóm (Add group)"**, đặt tên là **"Quản lý ticket"**.
 
 ![03-building-pages-2026-03-12-09-38-36](https://static-docs.nocobase.com/03-building-pages-2026-03-12-09-38-36.png)

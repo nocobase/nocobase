@@ -1,12 +1,14 @@
 ---
-displayName: "Flujo de trabajo: Nodo de consulta de agregación"
+title: "Workflow: Aggregate node"
+keywords: "Workflow"
+displayName: "Workflow: Aggregate node"
 packageName: '@nocobase/plugin-workflow-aggregate'
 description: |
-  Puede utilizarse para realizar consultas de agregación en la base de datos dentro de un flujo de trabajo, como: recuento, suma, promedio, etc.
+  Used to aggregate data against the database in workflow, such as: statistics, sum, average, etc.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Flujo de trabajo: Nodo de consulta de agregación
+# Workflow: Aggregate node
