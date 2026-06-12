@@ -368,18 +368,6 @@ describe('plugin-ui-layout server', () => {
     });
     await app.db.getRepository('rolesUiLayouts').create({
       values: {
-        roleName: allowedRole.get('name'),
-        uiLayoutUid: adminLayout.get('uid'),
-      },
-    });
-    await app.db.getRepository('rolesUiLayouts').create({
-      values: {
-        roleName: allowedRole.get('name'),
-        uiLayoutUid: mobileLayout.get('uid'),
-      },
-    });
-    await app.db.getRepository('rolesUiLayouts').create({
-      values: {
         roleName: deniedRole.get('name'),
         uiLayoutUid: adminLayout.get('uid'),
       },
@@ -620,8 +608,11 @@ describe('plugin-ui-layout server', () => {
     expect(layoutAccessRecords.map((record) => record.get('uiLayoutUid'))).toEqual([allowedLayout.get('uid')]);
     expect(
       scopedMenuPermissions.map((permission) => `${permission.get('uiLayoutUid')}:${permission.get('desktopRouteId')}`),
-    ).toEqual([`${allowedLayout.get('uid')}:${allowedRouteResponse.body.data.id}`]);
-    expect(accessibleLayoutUids).toEqual([allowedLayout.get('uid')]);
+    ).toEqual([
+      `${allowedLayout.get('uid')}:${allowedRouteResponse.body.data.id}`,
+      `${deniedLayout.get('uid')}:${deniedFutureRouteResponse.body.data.id}`,
+    ]);
+    expect(accessibleLayoutUids).toEqual(expect.arrayContaining([allowedLayout.get('uid'), deniedLayout.get('uid')]));
     expect(deniedRouteTitles).toEqual(['DATA-DEFAULT-POLICY-DENIED-FUTURE']);
     expect(allowedRouteTitles).toEqual(['DATA-DEFAULT-POLICY-ALLOWED-ROUTE']);
     expect(scopedMenuPermissions.map((permission) => permission.get('desktopRouteId'))).not.toEqual(
@@ -974,14 +965,14 @@ describe('plugin-ui-layout server', () => {
     expect(guestRouteListResponse.status).toBe(401);
     expect(guestRouteGetResponse.status).toBe(401);
     expect(memberLayoutResponse.status).toBe(200);
-    expect(memberLayoutResponse.body.data.map((item) => item.uid)).not.toContain(layoutUid);
+    expect(memberLayoutResponse.body.data.map((item) => item.uid)).toContain(layoutUid);
     expect(memberRouteListResponse.status).toBe(200);
     expect(memberRouteListResponse.body.data).toEqual([]);
     expect([200, 204]).toContain(memberRouteGetResponse.status);
     expect(memberRouteGetResponse.body.data ?? null).toBeNull();
   });
 
-  it('should filter uiLayouts:listAccessible by role layout access', async () => {
+  it('should list enabled ui layouts without role layout filtering', async () => {
     app = await createUiLayoutMockServer();
 
     const adminLayout = await app.db.getRepository('uiLayouts').findOne({
@@ -1049,8 +1040,8 @@ describe('plugin-ui-layout server', () => {
     expect(guestResponse.status).toBe(401);
     expect(memberResponse.status).toBe(200);
     expect(rootResponse.status).toBe(200);
-    expect(memberUids).toEqual([DEFAULT_ADMIN_UI_LAYOUT.uid]);
-    expect(memberUids).not.toContain(mobileLayout.get('uid'));
+    expect(memberUids).toEqual(expect.arrayContaining([DEFAULT_ADMIN_UI_LAYOUT.uid, mobileLayout.get('uid')]));
+    expect(memberUids).not.toContain('runtime-layout-role-filter-disabled');
     expect(rootUids).toEqual(expect.arrayContaining([DEFAULT_ADMIN_UI_LAYOUT.uid, mobileLayout.get('uid')]));
     expect(rootUids).not.toContain('runtime-layout-role-filter-disabled');
   });
@@ -2654,7 +2645,9 @@ describe('plugin-ui-layout server', () => {
     expect(layoutResponse.status).toBe(200);
     expect(routeListResponse.status).toBe(200);
     expect(routeGetResponse.status).toBe(200);
-    expect(layoutResponse.body.data.map((layout) => layout.uid)).toEqual([DEFAULT_ADMIN_UI_LAYOUT.uid]);
+    expect(layoutResponse.body.data.map((layout) => layout.uid)).toEqual(
+      expect.arrayContaining([DEFAULT_ADMIN_UI_LAYOUT.uid, mobileLayout.get('uid')]),
+    );
     expect(routeListResponse.body.data.map((route) => route.title)).toEqual(['DATA-DENIED-LAYOUT-LEGACY-ROUTE']);
     expect(routeGetResponse.body.data.title).toBe('DATA-DENIED-LAYOUT-LEGACY-ROUTE');
     expect(legacyRoleRoutesResponse.body.data.map((route) => route.title)).toContain('DATA-DENIED-LAYOUT-LEGACY-ROUTE');

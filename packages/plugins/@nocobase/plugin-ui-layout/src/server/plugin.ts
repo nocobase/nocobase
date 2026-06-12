@@ -705,31 +705,10 @@ function pickDesktopRouteRolePermissionTargetFields(
 }
 
 async function listAccessibleUiLayouts(ctx: ResourcerContext, next: () => Promise<void>) {
-  const currentRoles = getCurrentRoles(ctx);
-  const filter: Record<string, unknown> = {
-    enabled: true,
-  };
-
-  if (!currentRoles.includes('root')) {
-    const permissions = await ctx.db.getRepository('rolesUiLayouts').find({
-      fields: ['uiLayoutUid'],
-      filter: {
-        roleName: currentRoles,
-      },
-    });
-    const uiLayoutUids = Array.from(
-      new Set(
-        permissions
-          .map((permission) => permission.get('uiLayoutUid'))
-          .filter((uiLayoutUid): uiLayoutUid is string => typeof uiLayoutUid === 'string' && !!uiLayoutUid),
-      ),
-    );
-
-    filter.uid = uiLayoutUids.length > 0 ? uiLayoutUids : { $eq: null };
-  }
-
   const records = await ctx.db.getRepository('uiLayouts').find({
-    filter,
+    filter: {
+      enabled: true,
+    },
     fields: [...UI_LAYOUT_RUNTIME_FIELDS],
     sort: ['uid'],
   });
@@ -836,7 +815,6 @@ async function grantDefaultMenuAccessToNewDesktopRoute(
   if (
     !db.getCollection('roles') ||
     !db.getCollection('desktopRoutes') ||
-    !db.getCollection('rolesUiLayouts') ||
     !db.getCollection('rolesUiLayoutDesktopRoutes')
   ) {
     return;
@@ -877,29 +855,13 @@ async function grantDefaultMenuAccessToNewDesktopRoute(
   }
 
   const repository = db.getRepository('rolesUiLayoutDesktopRoutes');
-  const layoutAccessRecords = await db.getRepository('rolesUiLayouts').find({
-    fields: ['roleName', 'uiLayoutUid'],
-    filter: {
-      roleName: roleNames,
-      uiLayoutUid: uiLayoutUids,
-    },
-    transaction: options?.transaction,
-  });
-  const records = layoutAccessRecords
-    .map((layoutAccess) => {
-      const roleName = layoutAccess.get('roleName');
-      const uiLayoutUid = layoutAccess.get('uiLayoutUid');
-      if (typeof roleName !== 'string' || !roleName || typeof uiLayoutUid !== 'string' || !uiLayoutUid) {
-        return;
-      }
-
-      return {
-        roleName,
-        uiLayoutUid,
-        desktopRouteId,
-      };
-    })
-    .filter((record): record is { roleName: string; uiLayoutUid: string; desktopRouteId: unknown } => !!record);
+  const records = roleNames.flatMap((roleName) =>
+    uiLayoutUids.map((uiLayoutUid) => ({
+      roleName,
+      uiLayoutUid,
+      desktopRouteId,
+    })),
+  );
 
   for (const values of records) {
     await repository.firstOrCreate({
