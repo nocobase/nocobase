@@ -15,7 +15,7 @@
  */
 
 import type { ComponentType } from 'react';
-import type { ISchema } from '@formily/react';
+import type { ISchema, JSXComponent } from '@formily/react';
 import type { SubModelItem } from '@nocobase/flow-engine';
 import type { UseVariableOptions, VariableOption } from '../canvas/collectionFieldOptions';
 
@@ -40,7 +40,7 @@ export abstract class Trigger {
   triggerFieldset?: Record<string, ISchema>;
   view?: ISchema;
   scope?: Record<string, unknown>;
-  components?: Record<string, unknown>;
+  components?: Record<string, JSXComponent>;
   initializers?: unknown;
   isActionTriggerable_deprecated?: boolean | ((config: object, context?: object) => boolean);
 
@@ -67,7 +67,7 @@ export abstract class Trigger {
     config: Record<string, unknown>;
     workflow?: unknown;
     nodeType?: string;
-  }): SubModelItem | null;
+  }): SubModelItem | SubModelItem[] | null;
 
   useTempAssociationSource?(
     config: Record<string, unknown>,

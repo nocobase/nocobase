@@ -61,7 +61,8 @@ export default class ScheduleTrigger extends Trigger {
   title = `{{t("Schedule event", { ns: "${NAMESPACE}" })}}`;
   description = `{{t("Triggered according to preset time conditions. Suitable for one-time or periodic tasks, such as sending notifications and cleaning data on a schedule.", { ns: "${NAMESPACE}" })}}`;
 
-  PresetFieldsetLoader: LoaderOf = () => import('./CreateConfigForm');
+  PresetFieldsetLoader: LoaderOf = () =>
+    import('./ScheduleConfig').then((module) => ({ default: module.SchedulePresetConfig }));
   FieldsetLoader: LoaderOf<{ modeDisabled?: boolean }> = () => import('./ScheduleConfig');
   TriggerFieldsetLoader: LoaderOf = () => import('./TriggerScheduleConfig');
 

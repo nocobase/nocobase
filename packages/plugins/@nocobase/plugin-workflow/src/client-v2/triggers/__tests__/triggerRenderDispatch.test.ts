@@ -8,7 +8,9 @@
  */
 
 import { describe, expect, it } from 'vitest';
+import type { SubModelItem } from '@nocobase/flow-engine';
 import {
+  Trigger,
   resolveLegacyTriggerConfigRenderMode,
   resolveLegacyTriggerExecuteRenderMode,
   resolveLegacyTriggerPresetRenderMode,
@@ -49,5 +51,29 @@ describe('trigger render dispatch', () => {
     );
     expect(resolveLegacyTriggerExecuteRenderMode({ TriggerFieldsetLoader: loader })).toBe('modern-loader');
     expect(resolveLegacyTriggerExecuteRenderMode({})).toBe('none');
+  });
+
+  it('keeps trigger getCreateModelMenuItem compatible with legacy array returns', () => {
+    class LegacyArrayTrigger extends Trigger {
+      title = 'legacy';
+      getCreateModelMenuItem(): SubModelItem[] {
+        return [
+          {
+            key: 'a',
+            label: 'A',
+            useModel: 'NodeDetailsModel',
+            createModelOptions: { use: 'NodeDetailsModel' },
+          },
+        ];
+      }
+    }
+
+    const trigger = new LegacyArrayTrigger();
+    expect(trigger.getCreateModelMenuItem?.({ config: {} })).toEqual([
+      expect.objectContaining({
+        key: 'a',
+        label: 'A',
+      }),
+    ]);
   });
 });
