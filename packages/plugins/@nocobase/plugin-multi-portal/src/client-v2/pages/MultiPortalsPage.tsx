@@ -333,7 +333,7 @@ const MultiPortalsPage: React.FC = () => {
       {
         title: t('Actions'),
         render: (_: unknown, record) => (
-          <Space size="middle">
+          <Space size="small">
             <Button
               type="link"
               href={getMultiPortalRouteUrl(ctx.app, record.routePath)}
