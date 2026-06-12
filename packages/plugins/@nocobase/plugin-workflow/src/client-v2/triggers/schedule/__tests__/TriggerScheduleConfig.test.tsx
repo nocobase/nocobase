@@ -9,14 +9,17 @@
 
 import React from 'react';
 import { describe, expect, it, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { act, render, screen, waitFor } from '@testing-library/react';
 import { Form } from 'antd';
 import TriggerScheduleConfig from '../TriggerScheduleConfig';
 import { SCHEDULE_MODE } from '../constants';
 
 const remoteSelectState = vi.hoisted(() => ({
   props: null as null | {
+    value?: unknown;
+    onChange?: (value?: unknown) => void;
     request: () => Promise<any[]>;
+    onLoaded?: (items: any[]) => void;
     mapOptions: (item: any, index: number) => { label: React.ReactNode; value: any };
   },
 }));
@@ -28,30 +31,35 @@ vi.mock('@nocobase/client-v2', () => ({
   },
 }));
 
-vi.mock('@nocobase/flow-engine', () => ({
-  useFlowContext: () => ({
-    dataSourceManager: {
-      getDataSource: () => ({
-        collectionManager: {
-          getCollection: () => ({
-            filterTargetKey: 'name',
-            titleCollectionField: { name: 'title' },
-          }),
+const flowContextValue = {
+  dataSourceManager: {
+    getDataSource: () => ({
+      collectionManager: {
+        getCollection: () => ({
+          filterTargetKey: 'name',
+          titleCollectionField: { name: 'title' },
+        }),
+      },
+    }),
+  },
+  api: {
+    resource: () => ({
+      list: async () => ({
+        data: {
+          data: [
+            { name: 'admin', title: '{{t("Admin")}}' },
+            { name: 'root', title: '{{t("Root")}}' },
+          ],
         },
       }),
-    },
-    api: {
-      resource: () => ({
-        list: async () => ({
-          data: {
-            data: [
-              { name: 'admin', title: '{{t("Admin")}}' },
-              { name: 'root', title: '{{t("Root")}}' },
-            ],
-          },
-        }),
-      }),
-    },
+    }),
+  },
+};
+
+vi.mock('@nocobase/flow-engine', () => ({
+  useFlowContext: () => flowContextValue,
+  useFlowEngine: () => ({
+    context: flowContextValue,
   }),
 }));
 
@@ -86,5 +94,37 @@ describe('TriggerScheduleConfig', () => {
       { label: 'Admin', value: 'admin' },
       { label: 'Root', value: 'root' },
     ]);
+  });
+
+  it('writes the full selected record into the parent form field value in date-field mode', async () => {
+    let formInstance: ReturnType<typeof Form.useForm>[0] | null = null;
+
+    function Wrapper() {
+      const [form] = Form.useForm();
+      formInstance = form;
+
+      return (
+        <Form form={form} initialValues={{ data: null }}>
+          <Form.Item name="data">
+            <TriggerScheduleConfig />
+          </Form.Item>
+        </Form>
+      );
+    }
+
+    render(<Wrapper />);
+
+    const items = await remoteSelectState.props?.request();
+    await act(async () => {
+      remoteSelectState.props?.onLoaded?.(items ?? []);
+      remoteSelectState.props?.onChange?.('admin');
+    });
+
+    await waitFor(() => {
+      expect(formInstance?.getFieldValue('data')).toEqual({
+        name: 'admin',
+        title: '{{t("Admin")}}',
+      });
+    });
   });
 });

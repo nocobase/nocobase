@@ -141,6 +141,7 @@ function DateFieldScheduleFields() {
       <Form.Item
         name={['config', 'startsOn']}
         label={t(fields.startsOn.title)}
+        required={Boolean(fields.startsOn.required)}
         rules={
           fields.startsOn.required
             ? [
