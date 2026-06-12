@@ -1,15 +1,17 @@
 ---
-displayName: "Impresión de plantillas"
+title: "Template print"
+keywords: "Actions"
+displayName: "Template print"
 packageName: '@nocobase/plugin-action-template-print'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Permite a los usuarios imprimir plantillas dentro de la aplicación NocoBase.
+  It supports users in printing templates within the NocoBase application.
 isFree: false
 builtIn: false
 defaultEnabled: false
 editionLevel: 2
 ---
 
-# Impresión de plantillas
+# Template print

@@ -1,12 +1,14 @@
 ---
-displayName: "Data Source 管理"
+title: "Data source manager"
+keywords: "Data model tools"
+displayName: "Data source manager"
 packageName: '@nocobase/plugin-data-source-manager'
 description: |
-  Data Source を管理します。これには、組み込みの Master Database、外部 Database、API が含まれます。
+  Manage data sources, including the built-in Master database, external databases, APIs, etc.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Data Source 管理
+# Data source manager

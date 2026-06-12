@@ -1,8 +1,10 @@
 ---
-displayName: "Поле коллекции: Снимок связи"
+title: "Collection field: Snapshot"
+keywords: "Collection fields"
+displayName: "Collection field: Snapshot"
 packageName: '@nocobase/plugin-snapshot-field'
 description: |
-  При добавлении данных создается снимок их связанных данных и сохраняется в текущих данных. При обновлении связанных данных снимок не обновляется.
+  When adding a new record, create a snapshot for its relational record and save in the new record. The snapshot will not be updated when the relational record is updated.
 isFree: true
 builtIn: true
 defaultEnabled: false
@@ -10,6 +12,6 @@ deprecated: true
 editionLevel: 0
 ---
 
-# Поле коллекции: Снимок связи
+# Collection field: Snapshot
 
-> Примечание: Этот плагин устарел (deprecated).
+> Note: This plugin is deprecated.

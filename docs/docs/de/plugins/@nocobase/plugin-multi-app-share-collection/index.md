@@ -1,5 +1,7 @@
 ---
-displayName: "Multi-App-Collection-Freigabe"
+title: "Multi-app share collection"
+keywords: "System management"
+displayName: "Multi-app share collection"
 packageName: '@nocobase/plugin-multi-app-share-collection'
 description: |
   
@@ -10,6 +12,6 @@ deprecated: true
 editionLevel: 0
 ---
 
-# Multi-App-Collection-Freigabe
+# Multi-app share collection
 
-> Hinweis: Dieses Plugin ist veraltet (deprecated).
+> Note: This plugin is deprecated.

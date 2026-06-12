@@ -1,12 +1,14 @@
 ---
-displayName: "Bloco: Painel de ações"
+title: "Block: Action panel"
+keywords: "Blocks"
+displayName: "Block: Action panel"
 packageName: '@nocobase/plugin-block-workbench'
 description: |
-  Gerencia e exibe centralizadamente várias ações, permitindo que os usuários executem tarefas com eficiência. Suporta extensibilidade, com tipos de ações atuais incluindo pop-ups, links, escaneamento e requisições personalizadas.
+  Centrally manages and displays various actions, allowing users to efficiently perform tasks. It supports extensibility, with current action types including pop-ups, links, scanning, and custom requests.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Bloco: Painel de ações
+# Block: Action panel

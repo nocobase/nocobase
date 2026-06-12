@@ -1,12 +1,14 @@
 ---
-displayName: "Поле коллекции: Markdown(Vditor)"
+title: "Collection field: Markdown(Vditor)"
+keywords: "Collection fields"
+displayName: "Collection field: Markdown(Vditor)"
 packageName: '@nocobase/plugin-field-markdown-vditor'
 description: |
-  Используется для хранения Markdown и рендеринга с помощью редактора Vditor, поддерживает стандартный синтаксис Markdown, такой как списки, код, цитаты и т. д., а также поддерживает загрузку изображений, аудиозаписей и т. д. В то же время возможен мгновенный рендеринг (WYSIWYG).
+  Used to store Markdown and render it using Vditor editor, supports common Markdown syntax such as list, code, quote, etc., and supports uploading images, recordings, etc.It also allows for instant rendering, where what you see is what you get.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Поле коллекции: Markdown(Vditor)
+# Collection field: Markdown(Vditor)

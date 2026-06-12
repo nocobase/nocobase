@@ -1,4 +1,6 @@
 ---
+title: "Data source: External MySQL"
+keywords: "Data sources"
 displayName: "Data source: External MySQL"
 packageName: '@nocobase/plugin-data-source-external-mysql'
 supportedVersions:
