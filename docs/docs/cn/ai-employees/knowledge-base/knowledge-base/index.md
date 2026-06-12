@@ -25,17 +25,27 @@ keywords: "知识库,AI 知识库,RAG,文档管理,向量索引,NocoBase"
 - 「Hit tests」用于测试检索词能命中哪些分段
 - 「Settings」用于调整知识库基本信息、向量存储和默认分段参数
 
+![](https://static-docs.nocobase.com/ai-employees/knowledge-base/knowledge-base/2026-06-12/kb-detail.png)
+
 ## 新建知识库
 
-点击右上角「Add new」可以新建知识库。知识库分为三类：
+点击右上角「Add new」可以新建知识库。下拉菜单里会显示三种类型：Local、Readonly 和 External。
+
+![](https://static-docs.nocobase.com/ai-employees/knowledge-base/knowledge-base/2026-06-12/kb-add-types.png)
+
+三种知识库的能力边界不同：
 
 | 类型 | 适用场景 |
 | --- | --- |
-| Local | 文档、分段文件和向量数据都由 NocoBase 管理 |
-| Readonly | 外部已经维护好文档和向量数据，NocoBase 只连接已有向量数据库，目前主要用于 PGVector 场景 |
-| External | 外部系统负责文档和向量数据，检索逻辑由开发者通过向量存储插件扩展 |
+| Local | 文档、分段文件和向量数据都由 NocoBase 管理。它支持在界面上传文档，也支持通过工作流节点创建、更新、删除和检索知识库文档 |
+| Readonly | 文档和向量数据由外部系统维护，NocoBase 不能在界面或工作流中维护这些数据，只把它作为 RAG 检索的数据源。目前只支持 PGVector 作为向量数据库 |
+| External | 文档、向量数据和检索逻辑都由外部系统负责，NocoBase 不能直接维护文档或向量数据。开发者需要提供插件，在插件中实现外部知识库的检索逻辑，比如连接 NocoBase 暂不支持的向量数据库，或调用第三方检索 API |
+
+默认推荐使用 Local 知识库。只有当文档和向量数据已经在外部系统中维护，并且 NocoBase 只需要读取检索结果时，才考虑 Readonly 或 External。
 
 Local 知识库通常需要填写这些信息：
+
+![](https://static-docs.nocobase.com/ai-employees/knowledge-base/knowledge-base/2026-06-12/kb-local-form.png)
 
 - 「Key」：知识库唯一标识，创建后不可修改
 - 「Name」：知识库名称
@@ -45,7 +55,11 @@ Local 知识库通常需要填写这些信息：
 - 「Split document」「Chunk size」「Chunk overlap」：文档上传后的默认分段参数
 - 「Enabled」：是否启用该知识库
 
-如果还没有可用的向量存储，需要先完成 [向量数据库](../vector-database) 和 [向量存储](../vector-store) 的配置。
+:::tip 前置准备
+
+创建 Local 知识库前，需要先准备好两类依赖：文件存储用于保存原始文档和分段文件，配置见 [文件存储引擎](/cn/file-manager/storage/)；向量存储用于生成和检索向量，配置见 [向量数据库](../vector-database) 和 [向量存储](../vector-store)。
+
+:::
 
 ## 后续操作
 

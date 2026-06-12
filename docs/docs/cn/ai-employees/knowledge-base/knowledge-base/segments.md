@@ -7,6 +7,12 @@ keywords: "知识库分段,Segments,Chunk size,Chunk overlap,关联问题,NocoBa
 
 # 分段管理
 
+:::tip 文档分段
+
+文档上传后，NocoBase 会先按分段参数把正文拆成若干分段，再把启用中的分段写入向量存储。RAG 检索命中的也是这些分段，而不是整篇原始文档。「Split document」「Chunk size」「Chunk overlap」会影响分段数量、上下文长度和相邻分段的衔接。
+
+:::
+
 ## 打开分段管理
 
 进入知识库的「Documents」页面，在某篇文档右侧点击「Segments」，会打开「Segment management」弹窗。这里展示当前文档生成的所有分段。
@@ -39,7 +45,11 @@ keywords: "知识库分段,Segments,Chunk size,Chunk overlap,关联问题,NocoBa
 - 「Content」：分段正文
 - 「Related questions」：额外的可检索问法
 
-关联问题会和分段一起进入向量检索。比如正文是一个制度条款，你可以补充几种员工可能会问的自然语言问题，让命中更稳定。
+:::tip 关联问题
+
+「Related questions」用于给当前分段补充常见问法。它不会改写分段正文，但会参与向量检索；如果用户输入的问题和某条关联问题匹配度较高，检索结果会返回这条关联问题对应的文档分段。
+
+:::
 
 保存后，NocoBase 会更新分段文件，并触发当前文档重新向量化。回到「Documents」列表时，状态可能会短暂显示为「Pending」。
 
@@ -66,9 +76,9 @@ keywords: "知识库分段,Segments,Chunk size,Chunk overlap,关联问题,NocoBa
 
 其中：
 
-- 「Split document」：是否把文档拆成多个分段
-- 「Chunk size」：每个分段的最大字符数，默认 `6000`
-- 「Chunk overlap」：相邻分段之间重叠的字符数，默认 `1200`
+- 「Split document」：是否按参数拆分文档。开启后会生成多个分段；关闭后会把整篇文档作为一个分段
+- 「Chunk size」：每个分段的最大字符数，默认 `6000`。值越小，分段越细；值越大，单个命中结果包含的上下文越多
+- 「Chunk overlap」：相邻分段之间保留的重叠字符数，默认 `1200`。适当重叠可以减少段落边界造成的上下文断裂
 
 点击「Resegment」会按当前参数重新生成分段。
 

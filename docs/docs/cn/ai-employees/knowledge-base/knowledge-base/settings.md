@@ -26,7 +26,13 @@ Local 知识库的设置项包括：
 | 「Description」 | 知识库说明 |
 | 「Enabled」 | 是否启用当前知识库 |
 
-如果修改「Vector store」，NocoBase 会提示确认。因为向量存储发生变化后，已有文档需要重新向量化才能写入新的向量存储。你可以选择「Save and vectorize」保存并立即重新向量化，也可以选择「Save only」只保存设置，之后再到「Documents」页面手动执行「Vectorization」。
+:::tip 向量存储变更
+
+修改「Vector store」后，NocoBase 会在保存时提示确认。向量存储发生变化后，已有文档需要重新向量化，才能把向量数据写入新的向量存储。选择「Save and vectorize」会保存设置并立即重新向量化；选择「Save only」只保存设置，之后可以回到「Documents」页面手动执行「Vectorization」。
+
+:::
+
+![](https://static-docs.nocobase.com/ai-employees/knowledge-base/knowledge-base/2026-06-12/kb-settings-vector-store-confirm.png)
 
 ## 默认分段参数
 
