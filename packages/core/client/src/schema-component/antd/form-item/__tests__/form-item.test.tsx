@@ -82,10 +82,12 @@ describe('FormItem', () => {
     expect(document.querySelector('.nb-grid-container')).toBeInTheDocument();
     expect(document.querySelector('.ant-formily-item')).toHaveClass('ant-formily-item-layout-horizontal');
     expect(screen.getByTestId('collection-field')).toHaveAttribute('data-component', 'CollectionField');
-    expect(
-      Array.from(document.querySelectorAll('style'))
-        .map((style) => style.textContent)
-        .join('\n'),
-    ).toContain('.nb-grid-col');
+    const styleText = Array.from(document.querySelectorAll('style'))
+      .map((style) => style.textContent)
+      .join('\n');
+
+    expect(styleText).toContain('.nb-grid-col');
+    expect(styleText).toContain('.ant-formily-item-layout-horizontal .ant-formily-item-control');
+    expect(styleText).toMatch(/max-width:\s*100%\s*!important/);
   });
 });
