@@ -36,6 +36,9 @@ export class LLMInstruction extends Instruction {
   async run(node: FlowNodeModel, input: any, processor: Processor) {
     const { llmService, ...chatOptions } = processor.getParsedValue(node.config, node.id);
     const { messages, structuredOutput, ...modelOptions } = chatOptions;
+    if (modelOptions && structuredOutput) {
+      modelOptions.structuredOutput = structuredOutput;
+    }
     let provider: LLMProvider;
     try {
       provider = await this.getLLMProvider(llmService, modelOptions);
