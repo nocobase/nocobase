@@ -8,7 +8,7 @@
  */
 
 import { App as AntdApp } from 'antd';
-import { cleanup, render, screen, waitFor, within } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import React from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -241,7 +241,7 @@ describe('plugin-multi-portal settings page', () => {
     const dialog = await screen.findByRole('dialog', { name: 'Add Multi-Portal' });
     expect(within(dialog).getByLabelText('Title')).toBeInTheDocument();
     expect(within(dialog).getByLabelText('UID')).toBeInTheDocument();
-    expect(within(dialog).getByLabelText('Route name')).toBeInTheDocument();
+    expect(within(dialog).queryByLabelText('Route name')).not.toBeInTheDocument();
     expect(within(dialog).getByLabelText('Access path')).toBeInTheDocument();
     expect(within(dialog).getByLabelText('Layout')).toBeInTheDocument();
     expect(within(dialog).getByLabelText('Enabled')).toBeInTheDocument();
@@ -261,6 +261,75 @@ describe('plugin-multi-portal settings page', () => {
           sort: ['uid'],
         },
         skipNotify: true,
+      });
+    });
+  });
+
+  it('should derive route name from access path when creating a portal', async () => {
+    const user = userEvent.setup();
+    let drawerContent: React.ReactNode;
+    const resource = makeResource();
+    flowContext.current = {
+      api: {
+        request: vi.fn().mockResolvedValue({
+          data: {
+            data: [
+              {
+                uid: 'mobile-layout-model',
+                title: 'Mobile layout',
+              },
+            ],
+          },
+        }),
+        resource: vi.fn((name: string) => {
+          if (name === 'multiPortals') {
+            return resource;
+          }
+          throw new Error(`Unexpected resource ${name}`);
+        }),
+      },
+      viewer: {
+        drawer: vi.fn((options: { content: () => React.ReactNode }) => {
+          drawerContent = options.content();
+        }),
+      },
+    };
+
+    const { container, rerender } = render(
+      <AntdApp>
+        <MultiPortalsPage />
+        {drawerContent}
+      </AntdApp>,
+    );
+
+    await user.click(await screen.findByRole('button', { name: /Add Multi-Portal/ }));
+    rerender(
+      <AntdApp>
+        <MultiPortalsPage />
+        {drawerContent}
+      </AntdApp>,
+    );
+
+    const dialog = await screen.findByRole('dialog', { name: 'Add Multi-Portal' });
+    await user.type(within(dialog).getByLabelText('Title'), 'Admin portal');
+    await user.clear(within(dialog).getByLabelText('UID'));
+    await user.type(within(dialog).getByLabelText('UID'), 'admin-portal');
+    await user.type(within(dialog).getByLabelText('Access path'), ' /admin ');
+
+    fireEvent.mouseDown(container.querySelector('.ant-select-selector') as Element);
+    await user.click(await screen.findByText('Mobile layout'));
+    await user.click(within(dialog).getByRole('button', { name: 'Submit' }));
+
+    await waitFor(() => {
+      expect(resource.create).toHaveBeenCalledWith({
+        values: {
+          title: 'Admin portal',
+          uid: 'admin-portal',
+          routeName: 'admin',
+          routePath: '/admin',
+          uiLayoutUid: 'mobile-layout-model',
+          enabled: true,
+        },
       });
     });
   });
@@ -327,6 +396,65 @@ describe('plugin-multi-portal settings page', () => {
 
     const dialog = await screen.findByRole('dialog', { name: 'Edit Multi-Portal' });
     expect(await within(dialog).findByText('Mobile layout')).toBeInTheDocument();
+  });
+
+  it('should reject access paths that derive route names with dots before submitting', async () => {
+    const user = userEvent.setup();
+    let drawerContent: React.ReactNode;
+    const resource = makeResource();
+    flowContext.current = {
+      api: {
+        request: vi.fn().mockResolvedValue({
+          data: {
+            data: [
+              {
+                uid: 'mobile-layout-model',
+                title: 'Mobile layout',
+              },
+            ],
+          },
+        }),
+        resource: vi.fn((name: string) => {
+          if (name === 'multiPortals') {
+            return resource;
+          }
+          throw new Error(`Unexpected resource ${name}`);
+        }),
+      },
+      viewer: {
+        drawer: vi.fn((options: { content: () => React.ReactNode }) => {
+          drawerContent = options.content();
+        }),
+      },
+    };
+
+    const { container, rerender } = render(
+      <AntdApp>
+        <MultiPortalsPage />
+        {drawerContent}
+      </AntdApp>,
+    );
+
+    await user.click(await screen.findByRole('button', { name: /Add Multi-Portal/ }));
+    rerender(
+      <AntdApp>
+        <MultiPortalsPage />
+        {drawerContent}
+      </AntdApp>,
+    );
+
+    const dialog = await screen.findByRole('dialog', { name: 'Add Multi-Portal' });
+    await user.type(within(dialog).getByLabelText('Title'), 'Bad portal');
+    await user.clear(within(dialog).getByLabelText('UID'));
+    await user.type(within(dialog).getByLabelText('UID'), 'bad-portal');
+    await user.type(within(dialog).getByLabelText('Access path'), '/foo.bar');
+
+    fireEvent.mouseDown(container.querySelector('.ant-select-selector') as Element);
+    await user.click(await screen.findByText('Mobile layout'));
+    await user.click(within(dialog).getByRole('button', { name: 'Submit' }));
+
+    expect(await within(dialog).findByText('Route name cannot contain dots')).toBeInTheDocument();
+    expect(resource.create).not.toHaveBeenCalled();
   });
 
   it('should reject invalid portal access paths before submitting', async () => {

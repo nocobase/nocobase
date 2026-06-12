@@ -35,6 +35,9 @@ export type MultiPortalFormValues = {
   enabled: boolean;
 };
 
+type MultiPortalFormDraftValues = Omit<MultiPortalFormValues, 'routeName'> &
+  Partial<Pick<MultiPortalFormValues, 'routeName'>>;
+
 type MultiPortalListBody = {
   data?: MultiPortalRecord[];
   meta?: {
@@ -105,15 +108,9 @@ function isMultiPortalRouteNameFormatValid(routeName: string) {
   return !routeName.includes('.');
 }
 
-function getMultiPortalRouteNameFormatError(routeName?: string) {
-  const trimmed = routeName?.trim();
-  if (!trimmed) {
-    return undefined;
-  }
-  if (!isMultiPortalRouteNameFormatValid(trimmed)) {
-    return 'Route name cannot contain dots';
-  }
-  return undefined;
+function getMultiPortalRouteNameFromRoutePath(routePath: string) {
+  const [pathname] = routePath.trim().split(/[?#]/);
+  return pathname.replace(/^\/+/, '').split('/').filter(Boolean)[0] || '';
 }
 
 function getMultiPortalRoutePathFormatError(routePath?: string) {
@@ -133,20 +130,19 @@ function getMultiPortalRoutePathFormatError(routePath?: string) {
   if (/[?#]/.test(trimmed)) {
     return 'Access path cannot contain query or hash';
   }
+  if (!isMultiPortalRouteNameFormatValid(getMultiPortalRouteNameFromRoutePath(trimmed))) {
+    return 'Route name cannot contain dots';
+  }
   return undefined;
 }
 
-function completeMultiPortalFormValues(values: MultiPortalFormValues): MultiPortalFormValues {
-  const routeName = values.routeName.trim();
-  const routeNameError = getMultiPortalRouteNameFormatError(routeName);
-  if (routeNameError) {
-    throw new Error(routeNameError);
-  }
+function completeMultiPortalFormValues(values: MultiPortalFormDraftValues): MultiPortalFormValues {
   const routePath = values.routePath.trim();
   const routePathError = getMultiPortalRoutePathFormatError(routePath);
   if (routePathError) {
     throw new Error(routePathError);
   }
+  const routeName = getMultiPortalRouteNameFromRoutePath(routePath);
   return {
     ...values,
     title: values.title.trim(),
@@ -418,7 +414,7 @@ function MultiPortalForm(props: { record?: MultiPortalRecord; onSubmitted: () =>
   const { record, onSubmitted } = props;
   const t = useT();
   const ctx = useFlowContext();
-  const [form] = Form.useForm<MultiPortalFormValues>();
+  const [form] = Form.useForm<MultiPortalFormDraftValues>();
   const [submitting, setSubmitting] = useState(false);
   const resource = useMemo(() => ctx.api.resource('multiPortals') as MultiPortalResource, [ctx.api]);
   const layoutOptionsService = useRequest(async () => {
@@ -441,7 +437,7 @@ function MultiPortalForm(props: { record?: MultiPortalRecord; onSubmitted: () =>
       })),
     [layoutOptionsService.data],
   );
-  const initialValues = useMemo<Partial<MultiPortalFormValues>>(
+  const initialValues = useMemo<Partial<MultiPortalFormDraftValues>>(
     () =>
       record
         ? toFormValues(record)
@@ -497,21 +493,6 @@ function MultiPortalForm(props: { record?: MultiPortalRecord; onSubmitted: () =>
           rules={[{ required: true, whitespace: true, message: t('The field value is required') }]}
         >
           <Input disabled={!!record} />
-        </Form.Item>
-        <Form.Item
-          name="routeName"
-          label={t('Route name')}
-          rules={[
-            { required: true, whitespace: true, message: t('The field value is required') },
-            {
-              validator: (_, value?: string) => {
-                const error = getMultiPortalRouteNameFormatError(value);
-                return error ? Promise.reject(new Error(t(error))) : Promise.resolve();
-              },
-            },
-          ]}
-        >
-          <Input />
         </Form.Item>
         <Form.Item
           name="routePath"
