@@ -189,6 +189,72 @@ describe('plugin-multi-portal server', () => {
     ).rejects.toThrow();
   });
 
+  it('should relate desktop routes to multi-portals explicitly', async () => {
+    app = await createMultiPortalAclMockServer();
+    await app.db.sync();
+
+    const desktopRoutesCollection = app.db.getCollection('desktopRoutes');
+    expect(desktopRoutesCollection.getField('multiPortals')?.options).toMatchObject({
+      type: 'belongsToMany',
+      target: 'multiPortals',
+      through: 'desktopRoutesMultiPortals',
+      sourceKey: 'id',
+      targetKey: 'uid',
+      foreignKey: 'desktopRouteId',
+      otherKey: 'multiPortalUid',
+    });
+
+    const portal = await app.db.getRepository('multiPortals').create({
+      values: {
+        uid: 'desktop-route-relation-portal',
+        title: 'Desktop route relation portal',
+        routeName: 'desktopRouteRelationPortal',
+        routePath: '/desktop-route-relation-portal',
+        uiLayoutUid: DEFAULT_ADMIN_UI_LAYOUT.uid,
+      },
+    });
+    const otherPortal = await app.db.getRepository('multiPortals').create({
+      values: {
+        uid: 'desktop-route-relation-other-portal',
+        title: 'Desktop route relation other portal',
+        routeName: 'desktopRouteRelationOtherPortal',
+        routePath: '/desktop-route-relation-other-portal',
+        uiLayoutUid: DEFAULT_ADMIN_UI_LAYOUT.uid,
+      },
+    });
+    const route = await app.db.getRepository('desktopRoutes').create({
+      values: {
+        type: 'flowPage',
+        title: 'DATA-MULTI-PORTAL-ROUTE-RELATION',
+        schemaUid: 'multi-portal-route-relation',
+        hidden: false,
+        sort: 10,
+      },
+    });
+    const findRoutesByPortal = async (portalUid: string) =>
+      app.db.getRepository('desktopRoutes').find({
+        filter: {
+          'multiPortals.uid': portalUid,
+        },
+        appends: ['multiPortals'],
+      });
+
+    expect(await findRoutesByPortal(portal.get('uid'))).toEqual([]);
+
+    await app.db.getRepository('desktopRoutes.multiPortals', route.get('id')).set({
+      tk: [portal.get('uid')],
+    });
+
+    const portalRoutes = await findRoutesByPortal(portal.get('uid'));
+    const otherPortalRoutes = await findRoutesByPortal(otherPortal.get('uid'));
+
+    expect(portalRoutes.map((item) => item.get('title'))).toEqual(['DATA-MULTI-PORTAL-ROUTE-RELATION']);
+    expect(portalRoutes[0].get('multiPortals').map((item) => item.get('uid'))).toEqual([
+      'desktop-route-relation-portal',
+    ]);
+    expect(otherPortalRoutes).toEqual([]);
+  });
+
   it('should define role multi-portal permission relation', async () => {
     app = await createMultiPortalAclMockServer();
     await app.db.sync();
