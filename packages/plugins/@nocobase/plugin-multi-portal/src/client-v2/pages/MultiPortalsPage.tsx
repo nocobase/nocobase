@@ -7,11 +7,11 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { DeleteOutlined, EditOutlined, PlusOutlined, ReloadOutlined } from '@ant-design/icons';
+import { DeleteOutlined, EditOutlined, EyeOutlined, PlusOutlined, ReloadOutlined } from '@ant-design/icons';
 import { DrawerFormLayout, Table } from '@nocobase/client-v2';
 import { randomId, useFlowContext } from '@nocobase/flow-engine';
 import { useRequest } from 'ahooks';
-import { App, Button, Card, Flex, Form, Input, Select, Space, Switch, theme } from 'antd';
+import { App, Button, Card, Flex, Form, Input, Select, Space, Switch, Tag, theme } from 'antd';
 import type { ColumnsType, TableProps } from 'antd/es/table';
 import React, { useCallback, useMemo, useState } from 'react';
 import { useT } from '../locale';
@@ -20,6 +20,7 @@ type MultiPortalPrimaryKey = string;
 
 export type MultiPortalRecord = MultiPortalFormValues & {
   uiLayout?: {
+    layoutType?: string;
     title?: string;
     uid?: string;
   };
@@ -46,6 +47,15 @@ type MultiPortalListBody = {
 type UiLayoutOptionRecord = {
   title?: string;
   uid: string;
+};
+
+type MultiPortalAppLike = {
+  router?: {
+    basename?: string;
+    getBasename?: () => string | undefined;
+  };
+  getPublicPath?: () => string;
+  getRouteUrl?: (pathname: string) => string;
 };
 
 export type MultiPortalResource = {
@@ -86,6 +96,57 @@ export async function deleteMultiPortals(args: {
 const defaultFormValues: Pick<MultiPortalFormValues, 'enabled'> = {
   enabled: true,
 };
+
+const normalizeRootPath = (pathname?: string) => {
+  const trimmed = pathname?.trim();
+  if (!trimmed || trimmed === '/') {
+    return '/';
+  }
+  return `/${trimmed.replace(/^\/+/, '')}`;
+};
+
+const normalizeBasePath = (pathname?: string) => {
+  const normalized = normalizeRootPath(pathname).replace(/\/+$/, '');
+  return normalized === '' || normalized === '/' ? '' : normalized;
+};
+
+const joinRoutePath = (basePath: string | undefined, pathname: string) => {
+  const base = normalizeBasePath(basePath);
+  const path = normalizeRootPath(pathname);
+  return base ? `${base}${path}` : path;
+};
+
+function isAbsoluteUrl(value: string) {
+  return /^[a-z][a-z\d+\-.]*:\/\//i.test(value) || value.startsWith('//');
+}
+
+export function getMultiPortalRouteUrl(app: MultiPortalAppLike | undefined, routePath: string) {
+  const normalizedRoutePath = routePath.trim();
+  if (isAbsoluteUrl(normalizedRoutePath)) {
+    return normalizedRoutePath;
+  }
+
+  const basename = app?.router?.getBasename?.() || app?.router?.basename;
+  if (basename) {
+    return joinRoutePath(basename, normalizedRoutePath);
+  }
+
+  if (app?.getRouteUrl) {
+    return normalizeRootPath(app.getRouteUrl(normalizedRoutePath));
+  }
+
+  return joinRoutePath(app?.getPublicPath?.(), normalizedRoutePath);
+}
+
+function getLayoutTagColor(layoutType?: string) {
+  if (layoutType === 'desktop') {
+    return 'blue';
+  }
+  if (layoutType === 'mobile') {
+    return 'purple';
+  }
+  return 'default';
+}
 
 function toFormValues(record: MultiPortalRecord): MultiPortalFormValues {
   return {
@@ -194,7 +255,11 @@ const MultiPortalsPage: React.FC = () => {
         title: t('Layout'),
         dataIndex: 'uiLayoutUid',
         ellipsis: true,
-        render: (_value, record) => record.uiLayout?.title || record.uiLayoutUid,
+        render: (_value, record) => (
+          <Tag color={getLayoutTagColor(record.uiLayout?.layoutType)}>
+            {record.uiLayout?.title || record.uiLayoutUid}
+          </Tag>
+        ),
       },
       {
         title: t('Enabled'),
@@ -215,6 +280,9 @@ const MultiPortalsPage: React.FC = () => {
         title: t('Actions'),
         render: (_: unknown, record) => (
           <Space>
+            <a href={getMultiPortalRouteUrl(ctx.app, record.routePath)} target="_blank" rel="noopener noreferrer">
+              <EyeOutlined /> {t('View')}
+            </a>
             <Button type="link" icon={<EditOutlined />} onClick={() => openFormDrawer(record)}>
               {t('Edit')}
             </Button>
@@ -225,7 +293,7 @@ const MultiPortalsPage: React.FC = () => {
         ),
       },
     ],
-    [handleDelete, handleToggleEnabled, openFormDrawer, t, updatingEnabledRowKeys],
+    [ctx.app, handleDelete, handleToggleEnabled, openFormDrawer, t, updatingEnabledRowKeys],
   );
 
   const handleTableChange = useCallback<NonNullable<TableProps<MultiPortalRecord>['onChange']>>(

@@ -140,7 +140,7 @@ describe('plugin-multi-portal settings page', () => {
       },
     };
 
-    render(
+    const { container } = render(
       <AntdApp>
         <MultiPortalsPage />
       </AntdApp>,
@@ -152,6 +152,8 @@ describe('plugin-multi-portal settings page', () => {
     expect(screen.getByText('Access path')).toBeInTheDocument();
     expect(screen.getByText('Layout')).toBeInTheDocument();
     expect(screen.getByText('Enabled')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /View/ })).toHaveAttribute('href', '/customer-portal');
+    expect(container.querySelector('.ant-tag')).toHaveTextContent('Mobile layout');
     expect(screen.queryByText('UI layout')).not.toBeInTheDocument();
     expect(screen.queryByText(/permission/i)).not.toBeInTheDocument();
     expect(multiPortalsResource.list).toHaveBeenCalledWith({
