@@ -249,7 +249,6 @@ const MultiPortalsPage: React.FC = () => {
     () => [
       { title: t('Title'), dataIndex: 'title', ellipsis: true },
       { title: t('UID'), dataIndex: 'uid', ellipsis: true },
-      { title: t('Route name'), dataIndex: 'routeName', ellipsis: true },
       { title: t('Access path'), dataIndex: 'routePath', ellipsis: true },
       {
         title: t('Layout'),

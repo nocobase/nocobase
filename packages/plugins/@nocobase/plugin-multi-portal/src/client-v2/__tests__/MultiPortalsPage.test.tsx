@@ -148,7 +148,8 @@ describe('plugin-multi-portal settings page', () => {
 
     expect(await screen.findByText('Customer portal')).toBeInTheDocument();
     expect(screen.getByText('UID')).toBeInTheDocument();
-    expect(screen.getByText('Route name')).toBeInTheDocument();
+    expect(screen.queryByText('Route name')).not.toBeInTheDocument();
+    expect(screen.queryByText('customerPortal')).not.toBeInTheDocument();
     expect(screen.getByText('Access path')).toBeInTheDocument();
     expect(screen.getByText('Layout')).toBeInTheDocument();
     expect(screen.getByText('Enabled')).toBeInTheDocument();
