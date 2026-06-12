@@ -240,7 +240,7 @@ describe('plugin-multi-portal settings page', () => {
 
     const dialog = await screen.findByRole('dialog', { name: 'Add Multi-portal' });
     expect(within(dialog).getByLabelText('Title')).toBeInTheDocument();
-    expect(within(dialog).getByLabelText('UID')).toBeInTheDocument();
+    expect(within(dialog).getByLabelText('UID')).toHaveValue('portal-random-id');
     expect(within(dialog).queryByLabelText('Route name')).not.toBeInTheDocument();
     expect(within(dialog).getByLabelText('Access path')).toBeInTheDocument();
     expect(within(dialog).getByLabelText('Layout')).toBeInTheDocument();

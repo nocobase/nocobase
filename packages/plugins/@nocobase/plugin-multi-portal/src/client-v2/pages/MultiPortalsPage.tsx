@@ -443,7 +443,7 @@ function MultiPortalForm(props: { record?: MultiPortalRecord; onSubmitted: () =>
         ? toFormValues(record)
         : {
             ...defaultFormValues,
-            uid: `multi-portal-${randomId()}`,
+            uid: `portal-${randomId()}`,
           },
     [record],
   );
