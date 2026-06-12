@@ -22,7 +22,7 @@ const COMMUNITY_DIR = path.join(ROOT, 'packages', 'plugins', '@nocobase');
 const PRO_DIR = path.join(ROOT, 'packages', 'pro-plugins', '@nocobase');
 
 const DOCS_ROOT = path.join(ROOT, 'docs', 'docs');
-const LOCALES = ['cn', 'de', 'en', 'es', 'fr', 'ja', 'pt', 'ru'];
+const LOCALES = ['cn', 'de', 'en', 'es', 'fr', 'ja', 'pt', 'ru', 'vi', 'id'];
 
 // Load preset deprecated list (optional)
 const PRESET_PKG = path.join(ROOT, 'packages', 'presets', 'nocobase', 'package.json');
