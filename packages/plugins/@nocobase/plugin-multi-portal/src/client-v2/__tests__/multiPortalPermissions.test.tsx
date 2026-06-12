@@ -83,10 +83,11 @@ describe('plugin-multi-portal route permissions', () => {
         url: 'desktopRoutes:listRolePermissionTargets',
         method: 'get',
         params: {
-          layout: 'customer-portal',
+          portal: 'customer-portal',
         },
         skipNotify: true,
       });
+      expect(resource.request.mock.calls[1]?.[0].params).not.toHaveProperty('layout');
       expect(resource.routePermissionList).toHaveBeenCalledWith({
         paginate: false,
         filter: {

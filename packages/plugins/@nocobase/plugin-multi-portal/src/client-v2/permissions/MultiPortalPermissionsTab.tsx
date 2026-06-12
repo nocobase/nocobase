@@ -323,7 +323,7 @@ export default function MultiPortalPermissionsTab(props: PermissionTabProps) {
         url: 'desktopRoutes:listRolePermissionTargets',
         method: 'get',
         params: {
-          layout: selectedPortalUid,
+          portal: selectedPortalUid,
         },
         skipNotify: true,
       });
