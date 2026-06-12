@@ -39,5 +39,6 @@ export * from './collection-manager/interfaces';
 export * from './collection-manager/template-fields';
 export * from './data-source';
 export * from './flow';
-export { DEFAULT_DATA_SOURCE_KEY, isTitleField, isTitleFieldInterface } from './flow-compat';
+export { DEFAULT_DATA_SOURCE_KEY, isTitleField, isTitleFieldInterface, NocoBaseDesktopRouteType } from './flow-compat';
+export type { NocoBaseDesktopRoute } from './flow-compat';
 export { default as AntdAppProvider } from './theme/AntdAppProvider';

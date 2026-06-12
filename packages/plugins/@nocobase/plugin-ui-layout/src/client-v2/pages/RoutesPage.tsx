@@ -17,8 +17,8 @@ import {
   PlusOutlined,
   ReloadOutlined,
 } from '@ant-design/icons';
-import type { NocoBaseDesktopRoute } from '@nocobase/client-v2/flow-compat';
-import { NocoBaseDesktopRouteType } from '@nocobase/client-v2/flow-compat';
+import type { NocoBaseDesktopRoute } from '@nocobase/client-v2';
+import { NocoBaseDesktopRouteType } from '@nocobase/client-v2';
 import { randomId, useFlowContext } from '@nocobase/flow-engine';
 import { Button, Card, Form, Input, Modal, Popconfirm, Select, Space, Table, Tabs, Typography, theme } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
