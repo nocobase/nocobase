@@ -1,12 +1,14 @@
 ---
-displayName: "ワークフロー：SQL ノード"
+title: "Workflow: SQL node"
+keywords: "Workflow"
+displayName: "Workflow: SQL node"
 packageName: '@nocobase/plugin-workflow-sql'
 description: |
-  ワークフロー内でデータベースに対して任意の SQL ステートメントを実行するために使用できます。
+  Execute SQL statements in workflow.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# ワークフロー：SQL ノード
+# Workflow: SQL node

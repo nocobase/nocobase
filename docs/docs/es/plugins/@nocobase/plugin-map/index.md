@@ -1,12 +1,14 @@
 ---
-displayName: "Bloque: Mapa"
+title: "Block: Map"
+keywords: "Blocks"
+displayName: "Block: Map"
 packageName: '@nocobase/plugin-map'
 description: |
-  Bloque de mapa, compatible con Gaode Maps y Google Maps, también puedes añadir más tipos de mapas.
+  Map block, support Gaode map and Google map, you can also extend more map types.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Bloque: Mapa
+# Block: Map

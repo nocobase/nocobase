@@ -1,12 +1,14 @@
 ---
-displayName: "Workflow: Узел параллельного ветвления"
+title: "Workflow: Parallel node"
+keywords: "Workflow"
+displayName: "Workflow: Parallel node"
 packageName: '@nocobase/plugin-workflow-parallel'
 description: |
-  Используется для параллельного выполнения процессов ветвления в Workflow.
+  Could be used for parallel execution of branch processes in the workflow.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Workflow: Узел параллельного ветвления
+# Workflow: Parallel node

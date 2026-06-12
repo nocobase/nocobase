@@ -10,8 +10,20 @@
       },
       {
         "type": "custom-link",
-        "label": "系统要求",
-        "link": "/get-started/system-requirements"
+        "label": "操作系统要求",
+        "collapsed": true,
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "生产环境",
+            "link": "/get-started/system-requirements"
+          },
+          {
+            "type": "custom-link",
+            "label": "本地开发搭建",
+            "link": "/ai/local-development-setup"
+          }
+        ]
       },
       {
         "type": "custom-link",
@@ -22,6 +34,11 @@
         "type": "custom-link",
         "label": "安装 NocoBase 应用",
         "link": "/ai/install-nocobase-app"
+      },
+      {
+        "type": "custom-link",
+        "label": "升级 NocoBase 应用",
+        "link": "/ai/upgrade-nocobase-app"
       },
       {
         "type": "custom-link",

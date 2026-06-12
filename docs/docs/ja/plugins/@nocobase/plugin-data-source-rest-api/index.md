@@ -1,15 +1,17 @@
 ---
-displayName: "データソース：REST API"
+title: "Data source: REST API"
+keywords: "Data sources"
+displayName: "Data source: REST API"
 packageName: '@nocobase/plugin-data-source-rest-api'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  外部 REST API データソースを使用します。
+  Use external REST API data sources.
 isFree: false
 builtIn: false
 defaultEnabled: false
 editionLevel: 1
 ---
 
-# データソース：REST API
+# Data source: REST API

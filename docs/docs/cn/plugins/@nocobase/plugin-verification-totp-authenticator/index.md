@@ -1,8 +1,8 @@
 ---
-displayName: "验证：TOTP 认证器"
-packageName: '@nocobase/plugin-verification-totp-authenticator'
 title: "验证：TOTP 认证器"
 keywords: "验证：TOTP 认证器,插件,NocoBase"
+displayName: "验证：TOTP 认证器"
+packageName: '@nocobase/plugin-verification-totp-authenticator'
 supportedVersions:
   - 1.x
   - 2.x

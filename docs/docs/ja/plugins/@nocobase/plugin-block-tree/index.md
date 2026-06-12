@@ -1,14 +1,16 @@
 ---
-displayName: "ブロック：ツリー"
+title: "Block: Tree"
+keywords: "Blocks"
+displayName: "Block: Tree"
 packageName: '@nocobase/plugin-block-tree'
 supportedVersions:
   - 1.x
 description: |
-  ツリー構造のフィルターブロックを提供します。
+  Provides tree structure filter block
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# ブロック：ツリー
+# Block: Tree

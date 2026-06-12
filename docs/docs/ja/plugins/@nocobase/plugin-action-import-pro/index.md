@@ -1,15 +1,17 @@
 ---
-displayName: "操作：レコードのインポート Pro"
+title: "Action: Import records Pro"
+keywords: "Actions"
+displayName: "Action: Import records Pro"
 packageName: '@nocobase/plugin-action-import-pro'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  データインポート機能を強化します。非同期インポートで、大容量データに対応しています。データの識別処理、データの更新、ワークフローのトリガーなどの機能をサポートしています。
+  Enhance data import capabilities with asynchronous imports for handling large volumes. Includes features for data processing recognition, data updates, and workflow triggering.
 isFree: false
 builtIn: false
 defaultEnabled: false
 editionLevel: 1
 ---
 
-# 操作：レコードのインポート Pro
+# Action: Import records Pro
