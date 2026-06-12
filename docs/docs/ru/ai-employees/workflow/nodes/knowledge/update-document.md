@@ -11,37 +11,37 @@ keywords: "AI knowledge base,workflow,update document,collection event trigger,N
 
 ## Introduction
 
-In NocoBase, the **Update document** node updates existing documents in an AI knowledge base from a workflow. It is commonly used with collection event triggers: after a business record is changed, the workflow finds the knowledge base document by the same `Key` and rewrites it with the latest fields.
+In NocoBase, the **Update document** node updates existing documents in an AI knowledge base from a workflow. In this example, it listens for updated records in `Answers`, finds the document in the target knowledge base by the same `Key` used by Create document, and rewrites it with the latest fields.
 
-The Update document node is asynchronous. Before configuring it, finish the knowledge base, vector store, and Create document workflow setup.
+The Update document node is asynchronous. It is not used as an independent entry point. It should follow the Create document workflow and use the same target knowledge base and the same `Key` rule as Create and Delete document nodes.
 
-:::tip Prerequisites
+## Workflow structure
 
-- [Create document](./create-document)
-- [Knowledge base](/ai-employees/knowledge-base/knowledge-base)
-- [Vector store](/ai-employees/knowledge-base/vector-store)
-
-:::
-
-## Result
-
-The example workflow listens for updates in `Answers` and synchronizes the latest answer content to the same document in `KnowledgeBaseLocal`.
+The example workflow listens for updated records in `Answers` and synchronizes the latest answer content to the same document in the target knowledge base.
 
 ![](https://static-docs.nocobase.com/ai-employees/workflow/knowledge/2026-06-12/kb-update-editable-overview.png)
 
 Where:
 
 - `Collection event` listens for collection updates
-- `Update document` updates the document with the same `Key` in the knowledge base
+- `Update document` updates the document with the same `Key` in the target knowledge base
+
+## Before you start
+
+The example uses the target knowledge base and `Key` rule from [Create document](./create-document). Before configuring the workflow, confirm that:
+
+- The Create document workflow is enabled and has created at least one knowledge base document
+- `Key` uses a stable and unique business field. The example uses the `Answers` record ID
+- If updates should also synchronize related questions, preload the `questions` relation field in the trigger
 
 ## Configure the trigger
 
 Select `Collection event` as the trigger. In the trigger configuration:
 
-- Set `Collection` to the collection to monitor, such as `Main / Answers`
+- Set `Collection` to the collection to listen to, such as `Main / Answers`
 - Set `Trigger on` to `After record updated`
-- Use `Changed fields` to limit triggering fields when needed, such as title or content changes only
-- If the node needs related fields, preload them in `Preload associations`
+- Use `Changed fields` to limit which field changes trigger the workflow, such as title or body changes
+- If the node needs relation fields, preload them in `Preload associations`
 
 ![](https://static-docs.nocobase.com/ai-employees/workflow/knowledge/2026-06-12/kb-update-trigger-config.png)
 
@@ -55,22 +55,16 @@ Add an `Update document` node after the trigger.
 
 Key settings:
 
-- Select the document knowledge base in `Knowledge base`
-- Use `Split document` to decide whether to split snippets again
-- `Related questions` is available when the document is not split
-- Set `Document type` to `Text`
-- Set `Content` to the updated body content
-- Set `Key` to exactly the same field used when creating the document
-- Set `Name` to the title field
+Most Update document settings are the same as [Create document](./create-document). Usually, continue using the same target knowledge base, splitting behavior, body field, and title field. If related questions also need to be synchronized, continue using `Answers.questions.content`.
+
+The important difference is `Key`: in the Update document node, `Key` is required and must be exactly the same as in the Create document node. The example continues to use `Answers.ID`, so the node can find and overwrite the same knowledge base document.
 
 :::warning Note
 
-`Update document` requires `Key`. If no document with the corresponding `Key` exists, the update fails. Before configuring it, make sure the Create document workflow has created documents with the same `Key`.
+If no document is found for the specified `Key`, the update fails. Before configuring this workflow, make sure the Create document workflow has already created documents with the same `Key`.
 
 :::
 
-## Enable and verify
+## Next step
 
-Save the node and enable the workflow. After you update a record in `Answers`, the workflow runs automatically and updates the document with the same `Key` in the knowledge base.
-
-For verification, change a phrase that is easy to retrieve, then use knowledge base retrieval or a workflow Retrieve document node to confirm the returned snippet is the latest content.
+After configuring the Update document node, continue with [Delete document](./delete-document). After all three workflows are configured, return to the "Verify the synchronization chain" section in [Overview](./) to verify add, update, and delete in order.

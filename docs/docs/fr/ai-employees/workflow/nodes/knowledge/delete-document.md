@@ -11,39 +11,39 @@ keywords: "AI knowledge base,workflow,delete document,collection event trigger,N
 
 ## Introduction
 
-In NocoBase, the **Delete document** node deletes a specified document from an AI knowledge base. It is usually used with a collection event trigger: after a business record is deleted, the workflow deletes the corresponding knowledge base document by the record `Key`, so removed data will no longer be retrieved.
+In NocoBase, the **Delete document** node deletes a specified document from an AI knowledge base. In this example, it listens for deletion events in `Answers` and deletes the corresponding document from the target knowledge base by the same `Key` used by Create document, so removed data is no longer retrieved.
 
-The Delete document node is asynchronous. Before configuring it, confirm the `Key` rule used when creating documents.
+The Delete document node is asynchronous. It depends on the `Key` written when the document was created, so it must use the same target knowledge base and the same `Key` rule as the Create and Update document nodes.
 
-:::tip Prerequisites
+## Workflow structure
 
-- [Create document](./create-document)
-- [Update document](./update-document)
-- [Knowledge base](/ai-employees/knowledge-base/knowledge-base)
-
-:::
-
-## Result
-
-The example workflow listens for delete events in `Answers` and deletes the document with the same `Key` in `KnowledgeBaseLocal`.
+The example workflow listens for deletion events in `Answers` and deletes the document with the same `Key` from the target knowledge base.
 
 ![](https://static-docs.nocobase.com/ai-employees/workflow/knowledge/2026-06-12/kb-delete-editable-overview.png)
 
 Where:
 
 - `Collection event` listens for collection deletion
-- `Delete document` removes the document from the knowledge base
+- `Delete document` deletes the document from the target knowledge base
+
+## Before you start
+
+The example uses the target knowledge base and `Key` rule from [Create document](./create-document). Before configuring the workflow, confirm that:
+
+- The Create document workflow is enabled and the target knowledge base contains documents with the same `Key`
+- The delete workflow can read this `Key` from trigger data. The example uses the `Answers` record ID
+- If you need to review the full synchronization chain, see the workflow responsibilities in [Overview](./)
 
 ## Configure the trigger
 
 Select `Collection event` as the trigger. In the trigger configuration:
 
-- Set `Collection` to the collection to monitor, such as `Main / Answers`
+- Set `Collection` to the collection to listen to, such as `Main / Answers`
 - Set `Trigger on` to `After record deleted`
 
 ![](https://static-docs.nocobase.com/ai-employees/workflow/knowledge/2026-06-12/kb-delete-trigger-config.png)
 
-Deleting a document only needs the document `Key`, so related fields usually do not need to be preloaded.
+Deleting a document only needs the document `Key`, so relation fields usually do not need to be preloaded.
 
 ## Configure the Delete document node
 
@@ -53,17 +53,19 @@ Add a `Delete document` node after the trigger.
 
 Key settings:
 
-- Select the document knowledge base in `Knowledge base`
-- Set `Key` to the same field used when creating the document, such as the record ID from trigger data
+The Delete document node only needs to locate the document to delete. It does not need body content, title, or related questions.
+
+| Setting | Example value | Description |
+| --- | --- | --- |
+| `Knowledge base` | Target knowledge base | Select the same knowledge base used by the Create and Update document nodes. |
+| `Key` | `Answers.ID` | Select the exact same field used by the Create document node. The example continues to use the `Answers` record ID so the node deletes the document that corresponds to this answer. |
 
 :::warning Note
 
-The delete node does not search documents by title or content. It only locates documents by `Knowledge base` and `Key`. The `Key` used in create, update, and delete workflows must be consistent.
+The delete node does not look up documents by title or body content. It only locates documents by `Knowledge base` and `Key`. The Create, Update, and Delete workflows must use the same `Key`.
 
 :::
 
-## Enable and verify
+## Next step
 
-Save the node and enable the workflow. After you delete a record in `Answers`, the workflow runs automatically and removes the corresponding document from the knowledge base.
-
-If old content can still be retrieved after deletion, check workflow execution history and the knowledge base document list to confirm that the delete node succeeded and that the retrieval result is not from another document snippet.
+After configuring the Delete document node, return to the "Verify the synchronization chain" section in [Overview](./) to verify add, update, and delete in order.
