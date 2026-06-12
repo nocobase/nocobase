@@ -4,6 +4,7 @@ title: "Hit tests"
 description: "Enter test text on the Hit tests page and inspect matched document segments under Top K and Score settings."
 keywords: "knowledge base hit tests,Hit tests,Top K,Score,RAG,NocoBase"
 ---
+
 # Hit tests
 
 ## Open the Hit tests page
@@ -16,7 +17,21 @@ After opening the knowledge base detail page, click Hit tests in the left sideba
 
 Enter test text in the bottom input box, then click Send. NocoBase retrieves from the current knowledge base and shows matched segments by similarity from high to low.
 
-Each result card shows match order, document title, similarity score, segment preview, and source filename. Click a result card to view fuller segment content, score, and matched related questions. If there are no matches, the page shows No matching documents found.
+Each result card shows:
+
+- Match order
+- Document title
+- Similarity score
+- Segment preview
+- Source filename
+
+Click a result card to view fuller segment content, similarity score, and related questions matched in this test.
+
+![](https://static-docs.nocobase.com/ai-employees/knowledge-base/knowledge-base/2026-06-12/hit-tests-detail.png)
+
+If the current input does not match any segment, the page shows No matching documents found.
+
+![](https://static-docs.nocobase.com/ai-employees/knowledge-base/knowledge-base/2026-06-12/hit-tests-empty.png)
 
 ## Adjust test parameters
 
@@ -24,7 +39,12 @@ Click Settings in the upper-right corner to adjust parameters for this hit test.
 
 ![](https://static-docs.nocobase.com/ai-employees/knowledge-base/knowledge-base/2026-06-12/hit-tests-settings.png)
 
-Top K controls the maximum number of matched segments. Score controls the minimum similarity threshold, and results below this value are filtered out. Default parameters are Top K = 4 and Score = 0.6.
+The settings are:
+
+- Top K: maximum number of matched segments to return
+- Score: minimum similarity threshold. Results below this value are filtered out
+
+Default parameters are `Top K = 4` and `Score = 0.6`. If there are too few results, lower Score or increase Top K. If results are too broad, increase Score.
 
 ## Debug with test results
 
