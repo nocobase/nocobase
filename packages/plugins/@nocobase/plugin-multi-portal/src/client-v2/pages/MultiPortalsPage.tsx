@@ -382,7 +382,6 @@ const MultiPortalsPage: React.FC = () => {
             {t('Refresh')}
           </Button>
           <Button
-            danger
             icon={<DeleteOutlined />}
             disabled={selectedRowKeys.length === 0}
             onClick={() => handleDelete(selectedRowKeys, { isBatch: true })}

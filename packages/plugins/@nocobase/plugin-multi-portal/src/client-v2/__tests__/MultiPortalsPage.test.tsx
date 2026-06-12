@@ -168,6 +168,8 @@ describe('plugin-multi-portal settings page', () => {
     expect(screen.getByText('UID')).toBeInTheDocument();
     expect(screen.queryByText('Route name')).not.toBeInTheDocument();
     expect(screen.queryByText('customerPortal')).not.toBeInTheDocument();
+    const toolbar = container.querySelector('.ant-flex');
+    expect(within(toolbar as HTMLElement).getByRole('button', { name: /Delete/ })).not.toHaveClass('ant-btn-dangerous');
     expect(screen.getByText('Access path')).toBeInTheDocument();
     expect(screen.getByText('Layout')).toBeInTheDocument();
     expect(screen.getByText('Enabled')).toBeInTheDocument();
