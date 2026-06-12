@@ -1,8 +1,8 @@
 ---
 pkg: "@nocobase/plugin-ai-knowledge-base"
 title: "Tổng quan node Knowledge Base AI trong workflow"
-description: "Giới thiệu kịch bản mẫu, cấu trúc bảng và cách phối hợp các node tạo, cập nhật, xóa, truy xuất tài liệu."
-keywords: "AI knowledge base,workflow,collection event trigger,knowledge base synchronization,RAG,NocoBase"
+description: "Giới thiệu kịch bản, cấu trúc bảng và cách các node tạo, cập nhật, xóa tài liệu đồng bộ Knowledge Base."
+keywords: "AI knowledge base,workflow,collection event trigger,knowledge base synchronization,NocoBase"
 ---
 
 # Tổng quan
@@ -11,22 +11,24 @@ keywords: "AI knowledge base,workflow,collection event trigger,knowledge base sy
 
 ## Introduction
 
-AI knowledge base nodes allow workflows to manage knowledge base documents directly. When business data changes, you can synchronize added, updated, and deleted records to the knowledge base. You can also retrieve knowledge base snippets in a workflow and pass them to downstream AI employee nodes.
+AI knowledge base nodes allow workflows to manage knowledge base documents directly. When business data changes, you can synchronize added, updated, and deleted records to the knowledge base, keeping knowledge base content aligned with your business collections.
 
-This documentation uses a Q&A scenario as an example: administrators maintain standard answers, users submit questions, workflows synchronize answers to the AI knowledge base, and then retrieve snippets to generate answers.
+This documentation uses a Q&A scenario as an example: administrators maintain standard answers and common phrasings for each answer. Workflows synchronize the answer body and related questions to the same target knowledge base, so AI employees or other processes can later use those knowledge base documents.
 
 ## Example scenario
 
 The example uses two business collections:
 
 - `Answers`: stores answer content that can be synchronized to the knowledge base
-- `Questions`: stores questions submitted by users
+- `Questions`: stores common phrasings related to each answer
 
 ![](https://static-docs.nocobase.com/ai-employees/workflow/knowledge/2026-06-12/kb-overview-collections.png)
 
 `Answers` is the source collection for knowledge base documents. When an answer is added, a document is created. When an answer is changed, the document is updated. When an answer is deleted, the document is removed.
 
-`Questions` is the input collection for retrieval. When a question is added, the workflow uses the question as matching text, retrieves related snippets from the knowledge base, and passes them to an AI employee node.
+`Questions` is not an independent source of knowledge base documents. It is attached to answers through the `Answers.questions` relation field and supplements the different phrasings that can point to the same answer.
+
+Before synchronization, prepare a Local knowledge base. You can name it according to your environment. The Create, Update, and Delete workflows only need to select the same knowledge base.
 
 ## Answers collection structure
 
@@ -42,7 +44,7 @@ The example uses two business collections:
 
 ![](https://static-docs.nocobase.com/ai-employees/workflow/knowledge/2026-06-12/kb-overview-answers-questions-relation.png)
 
-This relation field is preloaded when creating and updating documents. It writes related questions into `Related questions`, so one answer can be retrieved not only by body text but also by common question phrasings.
+This relation field is preloaded when creating and updating documents. It writes related questions into `Related questions`, so one answer can be retrieved not only by body text but also by common phrasings.
 
 :::tip
 
@@ -52,20 +54,31 @@ If your knowledge base documents do not need related questions, you do not need 
 
 ## Workflow responsibilities
 
-The example is split into four workflow node guides:
+The core of this example is three synchronization workflows. They process the same `Answers` data and write to the same target knowledge base:
 
 | Scenario | Trigger | Node | Purpose |
 | --- | --- | --- | --- |
 | Add answer | `Answers` collection `After record added` | `Create document` | Write the new answer to the AI knowledge base |
 | Update answer | `Answers` collection `After record updated` | `Update document` | Update the document by the same `Key` |
 | Delete answer | `Answers` collection `After record deleted` | `Delete document` | Delete the document by the same `Key` |
-| Submit question | `Questions` collection `After record added` | `Retrieve document` + `AI employee` | Retrieve snippets and pass them to an AI employee |
 
 `Key` is the most important field in the synchronization chain. Create, update, and delete workflows must use the same `Key` rule. The example directly uses the record ID of the `Answers` collection.
 
-## Node documents
+## Operation guides
 
 - [Create document](./create-document)
 - [Update document](./update-document)
 - [Delete document](./delete-document)
 - [Retrieve document](./retrieve-document)
+
+## Verify the synchronization chain
+
+After configuring the Create, Update, and Delete workflows, use the same `Answers` record to verify the full synchronization chain.
+
+After adding an answer, check in this order:
+
+1. Go to `Documents` in the target knowledge base, confirm that the new document appears, and check that `Status` is `Success`. See [knowledge base document management](../../../knowledge-base/knowledge-base/documents) for details.
+2. Click `Segments` for the document and confirm that `Related questions` includes common phrasings from `Answers.questions`. See [segment management](../../../knowledge-base/knowledge-base/segments) for details.
+3. Go to `Hit tests`, enter a keyword from the answer body or a related question, and confirm that the synchronized answer can be hit. See [hit tests](../../../knowledge-base/knowledge-base/hit-tests) for details.
+
+After the add synchronization is correct, update the same `Answers` record and confirm that the target knowledge base document changes. Finally, delete the record and confirm that the corresponding document is removed from the target knowledge base.

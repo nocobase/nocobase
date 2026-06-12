@@ -11,21 +11,13 @@ keywords: "AI knowledge base,workflow,create document,collection event trigger,N
 
 ## Introduction
 
-In NocoBase, the **Create document** node writes new documents to an AI knowledge base from a workflow. A common pattern is to listen for newly added records and synchronize body text, title, and business primary key fields to the knowledge base. The content can then be searched by RAG or retrieval nodes.
+In NocoBase, the **Create document** node writes new documents to an AI knowledge base from a workflow. In this example, it listens for new records in `Answers` and writes the answer body, document name, related questions, and a stable `Key` to the target knowledge base.
 
-AI knowledge base nodes are asynchronous nodes, so the workflow must use asynchronous execution. Before using them, configure the knowledge base and vector store first.
+AI knowledge base nodes are asynchronous nodes, so the workflow must use asynchronous execution. Prepare the target knowledge base and vector store first. See [Overview](./) for the full scenario.
 
-:::tip Prerequisites
+## Workflow structure
 
-- [Knowledge base](/ai-employees/knowledge-base/knowledge-base)
-- [Vector store](/ai-employees/knowledge-base/vector-store)
-- [Workflow](/workflow)
-
-:::
-
-## Result
-
-The example workflow listens for new records in the `Answers` collection and synchronizes each answer as a document in `KnowledgeBaseLocal`.
+The example workflow listens for new records in `Answers` and synchronizes each answer as one document in the target knowledge base.
 
 ![](https://static-docs.nocobase.com/ai-employees/workflow/knowledge/2026-06-12/kb-create-editable-overview.png)
 
@@ -34,17 +26,25 @@ Where:
 - `Collection event` listens for newly added collection records
 - `Create document` writes record content to the AI knowledge base
 
+## Before you start
+
+The example uses the `Answers` / `Questions` collections and target knowledge base described in [Overview](./). Before configuring the workflow, confirm that:
+
+- A Local knowledge base has been created, with file storage and vector store configured. See [Knowledge base overview](../../../knowledge-base/knowledge-base) and [Vector store](../../../knowledge-base/vector-store)
+- The `Answers.questions` relation field is ready. To review the collection structure, return to [Overview](./)
+- The workflow uses asynchronous execution. See [Workflow](../../../../workflow) for the basics
+
 ## Configure the trigger
 
-After creating an asynchronous workflow, select `Collection event` as the trigger. In the trigger configuration:
+Create an asynchronous workflow and select `Collection event` as the trigger. In the trigger configuration:
 
 - Set `Collection` to the collection to synchronize, such as `Main / Answers`
 - Set `Trigger on` to `After record added`
-- If the document needs fields from related collections, preload them in `Preload associations`
+- If the document needs fields from related collections, preload relation fields in `Preload associations`
 
 ![](https://static-docs.nocobase.com/ai-employees/workflow/knowledge/2026-06-12/kb-create-trigger-config.png)
 
-The example preloads the `questions` relation field and writes related questions into `Related questions`.
+The example preloads the `questions` relation field so related questions can be written to `Related questions`.
 
 ## Configure the Create document node
 
@@ -54,22 +54,26 @@ Add a `Create document` node after the trigger.
 
 Key settings:
 
-- Select the target knowledge base in `Knowledge base`
-- Use `Split document` to decide whether to split the document into snippets
-- `Related questions` is available when the document is not split
-- Set `Document type` to `Text`
-- Set `Content` to the body field in trigger data
-- Set `Key` to a stable and unique field, such as record ID
-- Set `Name` to the title field for easier identification in the document list
+These settings decide the knowledge base document name, body content, splitting behavior, and whether related questions are included.
+
+| Setting | Example value | Description |
+| --- | --- | --- |
+| `Knowledge base` | Target knowledge base | Select the same Local knowledge base prepared in the overview. The workflow creates a document in its `Documents` list and then enters splitting and vectorization. |
+| `Split document` | `No` | Controls whether the body is split into multiple segments. In this example, one answer is already a complete response. With splitting disabled, the whole document becomes one segment and works better with `Related questions`. |
+| `Related questions` | `Answers.questions.content` | Only takes effect when `Split document` is disabled. It writes common phrasings into `Related questions` for the current segment. It does not rewrite the body, but participates in retrieval. |
+| `Document type` | `Text` | Creates a knowledge base document from a text field. The example uses a collection field as the answer body, so `Text` is selected. Use `Attachment` if your business collection stores files or file URLs. |
+| `Content` | `Answers.Content` | Select the answer body as the knowledge base document body. The `Content` shown in segment management comes from this field. |
+| `Key` | `Answers.ID` | Sets the unique identifier of the knowledge base document. The example uses the `Answers` record ID so update and delete workflows can find the same document by the same `Key`. |
+| `Name` | `Answers.Title` | Sets the document name. The example uses the answer title, making it easier to identify the document in `Documents`, enter segment management, and run hit tests. |
+
+If `Related questions` references relation fields, configure `Preload associations` in the trigger first. Otherwise, the node can only access the current `Answers` record and cannot read the related `questions` data.
 
 :::warning Note
 
-`Key` is used later to update and delete knowledge base documents. Create, update, and delete workflows must use the same Key rule. Usually, the business collection record ID is enough.
+`Key` is used by the later update and delete workflows. The Create, Update, and Delete workflows must use the same Key rule, usually the business collection record ID.
 
 :::
 
-## Enable and verify
+## Next step
 
-Save the node and enable the workflow. After you add a record to `Answers`, the workflow runs automatically and creates the corresponding document in the AI knowledge base.
-
-If the new content cannot be retrieved, first check workflow execution history to confirm that the trigger fired and the node succeeded. Then check whether the knowledge base document has finished vectorization.
+The Create document workflow is the starting point of the synchronization chain. Continue with [Update document](./update-document) and [Delete document](./delete-document), then return to the "Verify the synchronization chain" section in [Overview](./) to verify add, update, and delete in order.
