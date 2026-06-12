@@ -240,6 +240,11 @@
         "items": [
           {
             "type": "custom-link",
+            "label": "概述",
+            "link": "/ai-employees/workflow/nodes/knowledge/"
+          },
+          {
+            "type": "custom-link",
             "label": "创建文档",
             "link": "/ai-employees/workflow/nodes/knowledge/create-document"
           },
