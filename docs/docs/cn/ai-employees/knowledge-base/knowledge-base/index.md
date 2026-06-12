@@ -39,7 +39,7 @@ keywords: "知识库,AI 知识库,RAG,文档管理,向量索引,NocoBase"
 | --- | --- |
 | Local | 文档、分段文件和向量数据都由 NocoBase 管理。它支持在界面上传文档，也支持通过工作流节点创建、更新、删除和检索知识库文档 |
 | Readonly | 文档和向量数据由外部系统维护，NocoBase 不能在界面或工作流中维护这些数据，只把它作为 RAG 检索的数据源。目前只支持 PGVector 作为向量数据库 |
-| External | 文档、向量数据和检索逻辑都由外部系统负责，NocoBase 不能直接维护文档或向量数据。开发者需要提供插件，在插件中实现外部知识库的检索逻辑，比如连接 NocoBase 暂不支持的向量数据库，或调用第三方检索 API |
+| External | 文档、向量数据和检索逻辑都由外部系统负责，NocoBase 不能直接维护文档或向量数据。开发者需要提供插件，在插件中实现外部知识库的检索逻辑，比如连接 NocoBase 暂不支持的向量数据库，或调用第三方检索 API，详细开发方式见 [KnowledgeBase 知识库插件](../../../plugin-development/server/knowledge-base) |
 
 默认推荐使用 Local 知识库。只有当文档和向量数据已经在外部系统中维护，并且 NocoBase 只需要读取检索结果时，才考虑 Readonly 或 External。
 
