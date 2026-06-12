@@ -25,7 +25,13 @@ keywords: "知识库命中测试,Hit tests,Top K,Score,RAG,NocoBase"
 - 分段内容预览
 - 来源文件名
 
-点击结果卡片可以查看更完整的分段内容、分数，以及命中的关联问题。如果没有命中结果，页面会显示「No matching documents found」。
+点击结果卡片可以查看更完整的分段内容、相似度分数，以及本次命中的关联问题。
+
+![](https://static-docs.nocobase.com/ai-employees/knowledge-base/knowledge-base/2026-06-12/hit-tests-detail.png)
+
+如果当前输入没有命中任何分段，页面会显示「No matching documents found」。
+
+![](https://static-docs.nocobase.com/ai-employees/knowledge-base/knowledge-base/2026-06-12/hit-tests-empty.png)
 
 ## 调整测试参数
 
