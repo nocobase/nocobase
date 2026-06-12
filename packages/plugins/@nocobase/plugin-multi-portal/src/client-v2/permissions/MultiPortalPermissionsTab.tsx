@@ -18,11 +18,13 @@ import { useT } from '../locale';
 interface Role {
   name: string;
   title: string;
+  allowNewMultiPortal?: boolean;
 }
 
 interface PermissionTabProps {
   activeKey: string;
   activeRole: Role | null;
+  onRoleChange?: (role: Role | null) => void;
 }
 
 interface MultiPortalRecord {
@@ -72,6 +74,10 @@ interface RoleMultiPortalsResource {
   list: (params?: Record<string, unknown>) => Promise<ResourceResponse>;
   add: (params: { values: string[] }) => Promise<unknown>;
   remove: (params: { values: string[] }) => Promise<unknown>;
+}
+
+interface RolesResource {
+  update: (params: { filterByTk: string; values: Pick<Role, 'allowNewMultiPortal'> }) => Promise<unknown>;
 }
 
 interface RoleMultiPortalDesktopRoutesResource {
@@ -414,6 +420,22 @@ export default function MultiPortalPermissionsTab(props: PermissionTabProps) {
     await savePortalAccess(nextSelectedUids);
   });
 
+  const updateRoleDefaults = useMemoizedFn(async (values: Pick<Role, 'allowNewMultiPortal'>) => {
+    if (!role) {
+      return;
+    }
+    try {
+      await (ctx.api.resource('roles') as unknown as RolesResource).update({
+        filterByTk: role.name,
+        values,
+      });
+    } catch {
+      return;
+    }
+    props.onRoleChange?.({ ...role, ...values });
+    ctx.message.success(t('Saved successfully'));
+  });
+
   const columns = useMemo<ColumnsType<MultiPortalRecord>>(
     () => [
       {
@@ -567,6 +589,14 @@ export default function MultiPortalPermissionsTab(props: PermissionTabProps) {
     <>
       <Space direction="vertical" size={token.marginSM} style={{ width: '100%' }}>
         <Typography.Text strong>{t('Multi-portal')}</Typography.Text>
+        <Checkbox
+          checked={!!role.allowNewMultiPortal}
+          onChange={(event) => {
+            updateRoleDefaults({ allowNewMultiPortal: event.target.checked });
+          }}
+        >
+          {t('New portals are allowed to be accessed by default')}
+        </Checkbox>
         <Table<MultiPortalRecord>
           rowKey="uid"
           loading={portalService.loading || rolePortalService.loading}

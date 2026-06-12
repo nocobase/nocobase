@@ -9,6 +9,11 @@
 
 import { Plugin } from '@nocobase/server';
 import type { ResourcerContext } from '@nocobase/resourcer';
+import type { Database, Model, Transaction } from '@nocobase/database';
+import {
+  applyDefaultRoleMultiPortalAccess,
+  ensureDefaultRoleMultiPortalAccess,
+} from './ensureDefaultRoleMultiPortalAccess';
 
 const MULTI_PORTAL_RUNTIME_FIELDS = ['uid', 'title', 'routeName', 'routePath', 'authCheck', 'enabled'] as const;
 const MULTI_PORTAL_RUNTIME_QUERY_FIELDS = [...MULTI_PORTAL_RUNTIME_FIELDS, 'uiLayoutUid'] as const;
@@ -29,6 +34,9 @@ interface MultiPortalAccessContext {
   portalUid: string;
   uiLayoutUid: string;
 }
+type DatabaseHookOptions = {
+  transaction?: Transaction;
+};
 
 function getRecordField(record: unknown, field: string) {
   if (!record || typeof record !== 'object') {
@@ -338,6 +346,47 @@ async function listEnabledMultiPortals(ctx: ResourcerContext, next: () => Promis
   await next();
 }
 
+async function grantDefaultAccessToNewMultiPortal(db: Database, multiPortal: Model, options?: DatabaseHookOptions) {
+  if (multiPortal.get('enabled') !== true) {
+    return;
+  }
+  const multiPortalUid = multiPortal.get('uid');
+  if (typeof multiPortalUid !== 'string' || !multiPortalUid) {
+    return;
+  }
+  if (!db.getCollection('roles') || !db.getCollection('rolesMultiPortals')) {
+    return;
+  }
+
+  const roles = await db.getRepository('roles').find({
+    fields: ['name'],
+    filter: {
+      allowNewMultiPortal: true,
+    },
+    transaction: options?.transaction,
+  });
+  const records = roles
+    .map((role) => role.get('name'))
+    .filter((roleName): roleName is string => typeof roleName === 'string' && !!roleName)
+    .map((roleName) => ({
+      roleName,
+      multiPortalUid,
+    }));
+
+  if (!records.length) {
+    return;
+  }
+
+  const repository = db.getRepository('rolesMultiPortals');
+  for (const values of records) {
+    await repository.firstOrCreate({
+      filterKeys: ['roleName', 'multiPortalUid'],
+      values,
+      transaction: options?.transaction,
+    });
+  }
+}
+
 export class PluginMultiPortalServer extends Plugin {
   async afterAdd() {}
 
@@ -364,11 +413,21 @@ export class PluginMultiPortalServer extends Plugin {
     });
     this.app.acl.allow('multiPortals', 'listEnabled', 'public');
     this.app.resourceManager.registerActionHandler('multiPortals:listEnabled', listEnabledMultiPortals);
+    this.app.db.on('roles.beforeCreate', (role: Model) => {
+      applyDefaultRoleMultiPortalAccess(role);
+    });
+    this.app.db.on('multiPortals.afterCreate', async (multiPortal: Model, options?: DatabaseHookOptions) => {
+      await grantDefaultAccessToNewMultiPortal(this.app.db, multiPortal, options);
+    });
   }
 
-  async install() {}
+  async install() {
+    await ensureDefaultRoleMultiPortalAccess(this.db);
+  }
 
-  async afterEnable() {}
+  async afterEnable() {
+    await ensureDefaultRoleMultiPortalAccess(this.db);
+  }
 
   async afterDisable() {}
 

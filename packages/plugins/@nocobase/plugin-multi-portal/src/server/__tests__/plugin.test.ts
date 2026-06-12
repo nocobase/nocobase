@@ -193,6 +193,8 @@ describe('plugin-multi-portal server', () => {
     app = await createMultiPortalAclMockServer();
     await app.db.sync();
 
+    expect(app.db.getCollection('roles').getField('allowNewMultiPortal')).toBeDefined();
+
     const collection = app.db.getCollection('rolesMultiPortals');
     expect(collection).toBeTruthy();
     expect(collection.getField('role')?.options).toMatchObject({
@@ -218,6 +220,87 @@ describe('plugin-multi-portal server', () => {
       foreignKey: 'roleName',
       otherKey: 'multiPortalUid',
     });
+  });
+
+  it('should persist the role-level default multi-portal access flag', async () => {
+    app = await createMultiPortalAclMockServer();
+
+    await app.db.getRepository('roles').create({
+      values: {
+        name: 'portal-default-access-role',
+        allowNewMultiPortal: false,
+      },
+    });
+
+    await app.db.getRepository('roles').update({
+      filterByTk: 'portal-default-access-role',
+      values: {
+        allowNewMultiPortal: true,
+      },
+    });
+
+    const role = await app.db.getRepository('roles').findOne({
+      filterByTk: 'portal-default-access-role',
+    });
+
+    expect(role?.get('allowNewMultiPortal')).toBe(true);
+  });
+
+  it('should allow new multi-portals by default for initialized built-in roles', async () => {
+    app = await createMultiPortalAclMockServer();
+
+    const roles = await app.db.getRepository('roles').find({
+      filter: {
+        name: ['admin', 'member'],
+      },
+      sort: ['name'],
+    });
+
+    expect(roles.map((role) => [role.get('name'), role.get('allowNewMultiPortal')])).toEqual([
+      ['admin', true],
+      ['member', true],
+    ]);
+  });
+
+  it('should grant new enabled multi-portals by the role default portal access policy', async () => {
+    app = await createMultiPortalAclMockServer();
+
+    await app.db.getRepository('roles').create({
+      values: {
+        name: 'new-portal-default-allowed',
+        allowNewMultiPortal: true,
+      },
+    });
+    await app.db.getRepository('roles').create({
+      values: {
+        name: 'new-portal-default-denied',
+        allowNewMultiPortal: false,
+      },
+    });
+
+    await app.db.getRepository('multiPortals').create({
+      values: {
+        uid: 'default-policy-new-portal',
+        title: 'Default policy new portal',
+        routeName: 'defaultPolicyNewPortal',
+        routePath: '/default-policy-new-portal',
+        authCheck: true,
+        enabled: true,
+        uiLayoutUid: DEFAULT_ADMIN_UI_LAYOUT.uid,
+      },
+    });
+
+    const portalAccessRecords = await app.db.getRepository('rolesMultiPortals').find({
+      filter: {
+        roleName: ['new-portal-default-allowed', 'new-portal-default-denied'],
+      },
+      sort: ['roleName', 'multiPortalUid'],
+    });
+    const portalAccessKeys = portalAccessRecords.map(
+      (record) => `${record.get('roleName')}:${record.get('multiPortalUid')}`,
+    );
+
+    expect(portalAccessKeys).toEqual(['new-portal-default-allowed:default-policy-new-portal']);
   });
 
   it('should define role multi-portal desktop route permission relation', async () => {

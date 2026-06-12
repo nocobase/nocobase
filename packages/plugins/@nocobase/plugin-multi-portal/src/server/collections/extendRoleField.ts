@@ -13,6 +13,10 @@ export default extendCollection({
   name: 'roles',
   fields: [
     {
+      type: 'boolean',
+      name: 'allowNewMultiPortal',
+    },
+    {
       type: 'belongsToMany',
       name: 'multiPortals',
       target: 'multiPortals',

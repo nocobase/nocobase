@@ -112,6 +112,50 @@ describe('plugin-multi-portal route permissions', () => {
     expect(resource.messageSuccess).toHaveBeenCalledWith('Saved successfully');
   });
 
+  it('should update the current role default portal access without leaving the tab', async () => {
+    const resource = createMultiPortalPermissionResources({
+      selectedPortalUids: ['customer-portal'],
+      selectedRouteIds: [],
+    });
+    const user = userEvent.setup();
+    const onRoleChange = vi.fn();
+    flowMocks.context = resource.context;
+
+    render(
+      <AntdApp>
+        <MultiPortalPermissionsTab
+          activeKey="multi-portals"
+          activeRole={{ name: 'portal-member', title: 'Member', allowNewMultiPortal: false }}
+          onRoleChange={onRoleChange}
+        />
+      </AntdApp>,
+    );
+
+    const defaultAccessSwitch = await screen.findByRole('checkbox', {
+      name: 'New portals are allowed to be accessed by default',
+    });
+
+    await act(async () => {
+      await user.click(defaultAccessSwitch);
+    });
+
+    await waitFor(() => {
+      expect(resource.rolesUpdate).toHaveBeenCalledWith({
+        filterByTk: 'portal-member',
+        values: {
+          allowNewMultiPortal: true,
+        },
+      });
+    });
+    expect(onRoleChange).toHaveBeenCalledWith(
+      expect.objectContaining({
+        name: 'portal-member',
+        allowNewMultiPortal: true,
+      }),
+    );
+    expect(screen.getByText('Multi-portal')).toBeInTheDocument();
+  });
+
   it('should not show saved state when portal route permission save fails', async () => {
     const resource = createMultiPortalPermissionResources({
       createRouteError: new Error('create failed'),
@@ -201,6 +245,7 @@ function createMultiPortalPermissionResources(options: MultiPortalPermissionReso
   const rolePortalRemove = vi.fn(async ({ values }: { values: string[] }) => {
     values.forEach((uid) => selectedPortalUids.delete(uid));
   });
+  const rolesUpdate = vi.fn(async () => undefined);
   const routePermissionList = vi.fn(async () => ({
     data: {
       data: Array.from(selectedRouteIds).map((desktopRouteId) => ({
@@ -235,6 +280,11 @@ function createMultiPortalPermissionResources(options: MultiPortalPermissionReso
         list: routePermissionList,
       };
     }
+    if (name === 'roles') {
+      return {
+        update: rolesUpdate,
+      };
+    }
     throw new Error(`Unexpected resource: ${name}`);
   });
   const messageSuccess = vi.fn();
@@ -255,6 +305,7 @@ function createMultiPortalPermissionResources(options: MultiPortalPermissionReso
     rolePortalAdd,
     rolePortalList,
     rolePortalRemove,
+    rolesUpdate,
     routePermissionCreate,
     routePermissionDestroy,
     routePermissionList,
