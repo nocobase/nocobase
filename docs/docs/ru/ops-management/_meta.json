@@ -10,12 +10,12 @@
       },
       {
         "type": "custom-link",
-        "label": "Переменные и ключи",
+        "label": "Переменные и секреты",
         "link": "/ops-management/variables-and-secrets/"
       },
       {
         "type": "custom-link",
-        "label": "Управление резервными копиями",
+        "label": "Менеджер резервного копирования",
         "link": "/ops-management/backup-manager/"
       },
       {

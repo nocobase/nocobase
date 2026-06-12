@@ -1,29 +1,29 @@
-# BelongsToManyRepository
+# BelongsToManyRepository - Репозиторий BelongsToMany
 
-`BelongsToManyRepository` — это репозиторий связей (`Relation Repository`), предназначенный для работы с отношениями типа `BelongsToMany`.
+`BelongsToManyRepository` — это репозиторий отношений (Relation Repository) для обработки отношений `BelongsToMany`.
 
-В отличие от других типов отношений, связи `BelongsToMany` требуют использования промежуточной таблицы для их записи.
-При определении таких связей в NocoBase промежуточная таблица может быть создана автоматически или явно указана вами.
+В отличие от других типов отношений, отношения `BelongsToMany` необходимо записывать через соединительную таблицу.
+При определении связей в NocoBase соединительная таблица может быть создана автоматически или может быть указана явно.
 
 ## Методы класса
 
 ### `find()`
 
-Поиск связанных объектов
+Находит связанные объекты
 
-**Signature**
+**Сигнатура**
 
 - `async find(options?: FindOptions): Promise<M[]>`
 
-**Details**
+**Подробности**
 
-Параметры запроса совпадают с [`Repository.find()`](../repository.md#find).
+Параметры запроса соответствуют [`Repository.find()`](../repository.md#find).
 
 ### `findOne()`
 
-Поиск связанного объекта, возвращает только одну запись
+Находит связанный объект, возвращая только одну запись
 
-**Signature**
+**Сигнатура**
 
 - `async findOne(options?: FindOneOptions): Promise<M>`
 
@@ -31,13 +31,13 @@
 
 ### `count()`
 
-Возвращает количество записей, соответствующих условиям запроса
+Возвращает количество записей, соответствующих условиям запроса.
 
-**Signature**
+**Сигнатура**
 
 - `async count(options?: CountOptions)`
 
-**Type**
+**Тип**
 
 ```typescript
 interface CountOptions
@@ -49,13 +49,13 @@ interface CountOptions
 
 ### `findAndCount()`
 
-Выполняет запрос к базе данных для получения набора данных и их общего количества по заданным условиям.
+Запрашивает у базы данных набор данных и общее количество при определенных условиях.
 
-**Signature**
+**Сигнатура**
 
 - `async findAndCount(options?: FindAndCountOptions): Promise<[any[], number]>`
 
-**Type**
+**Тип**
 
 ```typescript
 type FindAndCountOptions = CommonFindOptions;
@@ -63,9 +63,9 @@ type FindAndCountOptions = CommonFindOptions;
 
 ### `create()`
 
-Создание связанного объекта
+Создает связанный объект
 
-**Signature**
+**Сигнатура**
 
 - `async create(options?: CreateOptions): Promise<M>`
 
@@ -73,9 +73,9 @@ type FindAndCountOptions = CommonFindOptions;
 
 ### `update()`
 
-Обновление связанных объектов, соответствующих условиям
+Обновляет связанные объекты, соответствующие условиям.
 
-**Signature**
+**Сигнатура**
 
 - `async update(options?: UpdateOptions): Promise<M>`
 
@@ -83,9 +83,9 @@ type FindAndCountOptions = CommonFindOptions;
 
 ### `destroy()`
 
-Удаление связанных объектов, соответствующих условиям
+Удаляет связанные объекты, соответствующие условиям
 
-**Signature**
+**Сигнатура**
 
 - `async destroy(options?: TargetKey | TargetKey[] | DestroyOptions): Promise<Boolean>`
 
@@ -93,15 +93,15 @@ type FindAndCountOptions = CommonFindOptions;
 
 ### `add()`
 
-Добавление новых связанных объектов
+Добавляет новые связанные объекты
 
-**Signature**
+**Сигнатура**
 
 - `async add(
 options: TargetKey | TargetKey[] | PrimaryKeyWithThroughValues | PrimaryKeyWithThroughValues[] | AssociatedOptions
 ): Promise<void>`
 
-**Type**
+**Тип**
 
 ```typescript
 type PrimaryKeyWithThroughValues = [TargetKey, Values];
@@ -115,11 +115,11 @@ interface AssociatedOptions extends Transactionable {
 }
 ```
 
-**Details**
+**Подробности**
 
-Вы можете передать `targetKey` связанного объекта напрямую или передать `targetKey` вместе со значениями полей промежуточной таблицы.
+Вы можете напрямую передать `targetKey` связанного объекта или передать `targetKey` вместе со значениями полей соединительной таблицы.
 
-**Example**
+**Пример**
 
 ```typescript
 const t1 = await Tag.repository.create({
@@ -136,10 +136,10 @@ const p1 = await Post.repository.create({
 
 const PostTagRepository = new BelongsToManyRepository(Post, 'tags', p1.id);
 
-// Передача targetKey
+// Передать целевой ключ
 PostTagRepository.add([t1.id, t2.id]);
 
-// Передача полей промежуточной таблицы
+// Передача полей соединительной таблицы
 PostTagRepository.add([
   [t1.id, { tagged_at: '123' }],
   [t2.id, { tagged_at: '456' }],
@@ -148,27 +148,27 @@ PostTagRepository.add([
 
 ### `set()`
 
-Установка связанных объектов
+Устанавливает связанные объекты
 
-**Signature**
+**Сигнатура**
 
 - async set(
   options: TargetKey | TargetKey[] | PrimaryKeyWithThroughValues | PrimaryKeyWithThroughValues[] | AssociatedOptions,
   ): Promise<void>
 
-**Details**
+**Подробности**
 
-Параметры аналогичны методу [add()](#add).
+Параметры такие же, как у [add()](#add)
 
 ### `remove()`
 
-Удаление связи с указанными объектами
+Удаляет связь с заданными объектами
 
-**Signature**
+**Сигнатура**
 
 - `async remove(options: TargetKey | TargetKey[] | AssociatedOptions)`
 
-**Type**
+**Тип**
 
 ```typescript
 interface AssociatedOptions extends Transactionable {
@@ -178,14 +178,14 @@ interface AssociatedOptions extends Transactionable {
 
 ### `toggle()`
 
-Переключение связанных объектов.
+Переключает связанные объекты.
 
-В некоторых бизнес-сценариях часто требуется переключать связанные объекты. Например, пользователь может добавить товар в избранное, затем удалить его из избранного и снова добавить. Метод `toggle` позволяет быстро реализовать подобную функциональность.
+В некоторых бизнес-сценариях часто необходимо переключать связанные объекты. Например, пользователь может добавить продукт в избранное, удалить его из избранного и снова добавить в избранное. Метод `toggle` можно использовать для быстрой реализации такой функциональности.
 
-**Signature**
+**Сигнатура**
 
 - `async toggle(options: TargetKey | { tk?: TargetKey; transaction?: Transaction }): Promise<void>`
 
-**Details**
+**Подробности**
 
-Метод `toggle` автоматически проверяет, существует ли связанный объект. Если он существует, то объект удаляется; в противном случае — добавляется.
+Метод `toggle` автоматически проверяет, существует ли связанный объект. Если он существует, он удаляется; если нет, то он добавляется.

@@ -1,14 +1,14 @@
 ---
 title: "Workflow"
 keywords: "Workflow"
-displayName: "Workflow"
+displayName: "Рабочий процесс"
 packageName: '@nocobase/plugin-workflow'
 description: |
-  A powerful BPM tool that provides foundational support for business automation, with the capability to extend unlimited triggers and nodes.
+  Инструмент BPM для автоматизации рабочих процессов: базовая поддержка и неограниченное расширение триггеров и узлов.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Workflow
+# Рабочий процесс

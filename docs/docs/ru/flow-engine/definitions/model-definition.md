@@ -1,6 +1,6 @@
 # ModelDefinition
 
-ModelDefinition определяет параметры создания модели потока, которые используются для создания экземпляра модели с помощью метода `FlowEngine.createModelAsync()`. Оно включает базовую конфигурацию, свойства, подмодели и другую информацию о модели.
+ModelDefinition определяет параметры создания FlowModel и используется для создания экземпляра модели через метод `FlowEngine.createModel()`. Включает базовую конфигурацию модели, свойства, подмодели и другую информацию.
 
 ## Определение типа
 
@@ -25,13 +25,13 @@ interface CreateModelOptions {
 ```ts
 const engine = new FlowEngine();
 
-// Создание экземпляра модели
-const model = await engine.createModelAsync({
+// Создать экземпляр модели
+const model = engine.createModel({
   uid: 'unique-model-id',
   use: 'MyModel',
   props: {
-    title: 'My Model',
-    description: 'A sample model'
+    title: 'Моя модель',
+    description: 'Пример модели'
   },
   stepParams: {
     step1: { param1: 'value1' }
@@ -40,7 +40,7 @@ const model = await engine.createModelAsync({
     childModels: [
       {
         use: 'ChildModel',
-        props: { name: 'Child 1' }
+        props: { name: 'Дочерняя 1' }
       }
     ]
   }
@@ -68,20 +68,20 @@ uid: 'data-processing-instance'
 
 **Тип**: `RegisteredModelClassName | ModelConstructor`  
 **Обязательно**: Да  
-**Описание**: Класс модели для использования
+**Описание**: Используемый класс модели
 
-Может быть строкой с именем зарегистрированного класса модели или конструктором класса модели.
+Может быть строковым именем зарегистрированного класса модели или конструктором класса модели.
 
 **Пример**:
 ```ts
-// Использование строковой ссылки
+// Использовать строковую ссылку
 use: 'MyModel'
 
-// Использование конструктора
+// Использовать конструктор
 use: MyModel
 
-// Использование динамической ссылки
-const ModelClass = await engine.getModelClassAsync('MyModel');
+// Использовать динамическую ссылку
+const ModelClass = engine.getModelClass('MyModel');
 use: ModelClass
 ```
 
@@ -96,15 +96,15 @@ use: ModelClass
 **Пример**:
 ```ts
 props: {
-  title: 'My Model',
-  description: 'A sample model instance',
+  title: 'Моя модель',
+  description: 'Пример экземпляра модели',
   config: {
     theme: 'dark',
-    language: 'ru-RU'
+    language: 'en-US'
   },
   metadata: {
     version: '1.0.0',
-    author: 'Developer'
+    author: 'Разработчик'
   }
 }
 ```
@@ -115,7 +115,7 @@ props: {
 **Обязательно**: Нет  
 **Описание**: Конфигурация параметров шагов
 
-Задает параметры для каждого шага в рабочем процессе.
+Задает параметры для каждого шага в flow.
 
 **Пример**:
 ```ts
@@ -143,28 +143,28 @@ stepParams: {
 
 **Тип**: `Record<string, CreateSubModelOptions[]>`  
 **Обязательно**: Нет  
-**Описание**: Конфигурация подмоделей
+**Описание**: Конфигурация подмодели
 
-Определяет подмодели модели, поддерживая как массивы, так и отдельные подмодели.
+Определяет подмодели, поддерживая как массивные, так и одиночные варианты.
 
 **Пример**:
 ```ts
 subModels: {
-  // Подмодель типа "массив"
+  // Подмодель типа массив
   childModels: [
     {
       use: 'ChildModel1',
-      props: { name: 'Child 1', type: 'primary' }
+      props: { name: 'Дочерний 1', type: 'primary' }
     },
     {
       use: 'ChildModel2',
-      props: { name: 'Child 2', type: 'secondary' }
+      props: { name: 'Дочерний 2', type: 'secondary' }
     }
   ],
-  // Отдельная подмодель
+  // Одиночная подмодель
   singleChild: {
     use: 'SingleChildModel',
-    props: { name: 'Single Child' }
+    props: { name: 'Одиночный дочерний' }
   }
 }
 ```
@@ -175,7 +175,7 @@ subModels: {
 **Обязательно**: Нет  
 **Описание**: UID родительской модели
 
-Используется для установления связи "родитель-потомок" между моделями.
+Используется для установления связи «родитель-потомок» между моделями.
 
 **Пример**:
 ```ts
@@ -189,7 +189,7 @@ parentId: 'master-instance'
 **Обязательно**: Нет  
 **Описание**: Имя ключа подмодели в родительской модели
 
-Используется для идентификации положения подмодели внутри родительской модели.
+Используется для идентификации позиции подмодели внутри родительской модели.
 
 **Пример**:
 ```ts
@@ -204,13 +204,13 @@ subKey: 'nestedItems'
 **Обязательно**: Нет  
 **Описание**: Тип подмодели
 
-- `'array'`: Подмодель типа "массив", которая может содержать несколько экземпляров
-- `'single'`: Отдельная подмодель, которая может содержать только один экземпляр
+- `'array'`: подмодель типа массива, может содержать несколько экземпляров
+- `'single'`: одиночная подмодель, может содержать только один экземпляр
 
 **Пример**:
 ```ts
-subType: 'array'  // Тип "массив"
-subType: 'single' // Тип "одиночный"
+subType: 'array'  // Тип массива
+subType: 'single' // Одиночный тип
 ```
 
 ### sortIndex
@@ -225,32 +225,32 @@ subType: 'single' // Тип "одиночный"
 ```ts
 sortIndex: 0  // В самом начале
 sortIndex: 10 // Средняя позиция
-sortIndex: 100 // Ближе к концу
+sortIndex: 100 // Дальше по списку
 ```
 
 ### flowRegistry
 
 **Тип**: `Record<string, Omit<FlowDefinitionOptions, 'key'>>`  
 **Обязательно**: Нет  
-**Описание**: Реестр рабочих процессов
+**Описание**: Реестр flow
 
-Регистрирует определенные определения рабочих процессов для экземпляра модели.
+Регистрирует конкретные определения flow для экземпляра модели.
 
 **Пример**:
 ```ts
 flowRegistry: {
   'customFlow': {
-    title: 'Custom Flow',
+    title: 'Пользовательский flow',
     manual: false,
     steps: {
       step1: {
         use: 'customAction',
-        title: 'Custom Step'
+        title: 'Пользовательский шаг'
       }
     }
   },
   'anotherFlow': {
-    title: 'Another Flow',
+    title: 'Другой flow',
     on: 'click',
     steps: {
       step1: {
@@ -268,7 +268,7 @@ flowRegistry: {
 ```ts
 class DataProcessingModel extends FlowModel {}
 
-// Регистрация класса модели
+// Зарегистрировать класс модели
 engine.registerModelLoaders({
   DataProcessingModel: {
     // Динамический импорт: модуль модели загружается только тогда, когда эта модель впервые действительно нужна
@@ -276,13 +276,13 @@ engine.registerModelLoaders({
   },
 });
 
-// Создание экземпляра модели
-const model = await engine.createModelAsync({
+// Создать экземпляр модели
+const model = engine.createModel({
   uid: 'data-processing-001',
   use: 'DataProcessingModel',
   props: {
-    title: 'Data Processing Instance',
-    description: 'Processes user data with advanced algorithms',
+    title: 'Экземпляр обработки данных',
+    description: 'Обрабатывает пользовательские данные с помощью продвинутых алгоритмов',
     config: {
       algorithm: 'neural-network',
       batchSize: 100,
@@ -290,7 +290,7 @@ const model = await engine.createModelAsync({
     },
     metadata: {
       version: '2.1.0',
-      author: 'Data Team',
+      author: 'Команда данных',
       createdAt: new Date().toISOString()
     }
   },
@@ -322,14 +322,14 @@ const model = await engine.createModelAsync({
       {
         use: 'DatabaseSource',
         props: {
-          name: 'Primary DB',
+          name: 'Основная БД',
           connection: 'mysql://localhost:3306/db1'
         }
       },
       {
         use: 'APISource',
         props: {
-          name: 'External API',
+          name: 'Внешний API',
           url: 'https://api.external.com/data'
         }
       }
@@ -338,7 +338,7 @@ const model = await engine.createModelAsync({
       {
         use: 'DataProcessor',
         props: {
-          name: 'Main Processor',
+          name: 'Основной процессор',
           type: 'neural-network'
         }
       }
@@ -346,46 +346,46 @@ const model = await engine.createModelAsync({
     outputHandler: {
       use: 'OutputHandler',
       props: {
-        name: 'Results Handler',
+        name: 'Обработчик результатов',
         format: 'json'
       }
     }
   },
   flowRegistry: {
     'dataProcessingFlow': {
-      title: 'Data Processing Flow',
+      title: 'Flow обработки данных',
       manual: false,
       sort: 0,
       steps: {
         load: {
           use: 'loadDataAction',
-          title: 'Load Data',
+          title: 'Загрузить данные',
           sort: 0
         },
         process: {
           use: 'processDataAction',
-          title: 'Process Data',
+          title: 'Обработать данные',
           sort: 1
         },
         save: {
           use: 'saveDataAction',
-          title: 'Save Results',
+          title: 'Сохранить результат',
           sort: 2
         }
       }
     },
     'errorHandlingFlow': {
-      title: 'Error Handling Flow',
+      title: 'Flow обработки ошибок',
       manual: true,
       on: 'error',
       steps: {
         log: {
           use: 'logErrorAction',
-          title: 'Log Error'
+          title: 'Логировать ошибку'
         },
         notify: {
           use: 'notifyErrorAction',
-          title: 'Notify Admin'
+          title: 'Уведомить администратора'
         }
       }
     }
