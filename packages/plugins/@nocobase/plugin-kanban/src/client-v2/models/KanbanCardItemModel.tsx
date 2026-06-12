@@ -105,8 +105,7 @@ const applyKanbanCardPopupSettings = async (model: any, params: Record<string, a
   parentModel?.setProps?.({
     cardPopupPageModelClass: normalizedParams.pageModelClass,
   });
-  const action = await parentModel?.ensureCardViewAction?.();
-  await parentModel?.syncCardViewAction?.(action || parentModel?.subModels?.cardViewAction);
+  await parentModel?.ensureCardViewAction?.({ persist: true });
 };
 
 export class KanbanCardItemModel extends FlowModel<KanbanCardItemStructure> {
