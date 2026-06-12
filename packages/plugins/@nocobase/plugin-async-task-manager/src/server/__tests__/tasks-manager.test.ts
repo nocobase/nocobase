@@ -214,6 +214,9 @@ describe('task manager', () => {
       },
     );
 
+    const managerWithReqIds = taskManager as unknown as { taskReqIds: Map<string, string> };
+    expect(managerWithReqIds.taskReqIds.has(task.record.id)).toBe(false);
+
     for (let i = 0; i < 20; i++) {
       await task.record.reload();
       if (task.record.status === TASK_STATUS.SUCCEEDED) {
@@ -224,6 +227,9 @@ describe('task manager', () => {
 
     expect(task.record.status).toBe(TASK_STATUS.SUCCEEDED);
     expect(managerLogger.child).toHaveBeenCalledWith({ reqId: 'creator-request-id' });
+    expect(managerLogger.child).toHaveBeenCalledTimes(2);
+    expect(taskLogger.debug).toHaveBeenCalledWith('Creating task of type: logged-test');
+    expect(taskLogger.info).toHaveBeenCalledWith(`New task of type: logged-test created as ${task.record.id}`);
     expect(taskLogger.info).toHaveBeenCalledWith(`Logged task ${task.record.id} is running`);
     expect(taskLogger.trace).toHaveBeenCalledWith(`Task ${task.record.id} of user(${root.id}) progress: 1 / 1`);
   });

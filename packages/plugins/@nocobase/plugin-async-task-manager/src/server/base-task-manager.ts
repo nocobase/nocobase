@@ -81,11 +81,9 @@ export class BaseTaskManager implements AsyncTasksManager {
     }
   };
 
-  private onTaskProgress = (item: TaskModel, reqId?: string) => {
+  private onTaskProgress = (item: TaskModel, logger: Logger) => {
     const userId = item.createdById;
-    this.getTaskLogger(reqId).trace(
-      `Task ${item.id} of user(${userId}) progress: ${item.progressCurrent} / ${item.progressTotal}`,
-    );
+    logger.trace(`Task ${item.id} of user(${userId}) progress: ${item.progressCurrent} / ${item.progressTotal}`);
     if (userId) {
       const throttledEmit = this.getThrottledProgressEmitter(item.id, userId);
       throttledEmit(item);
@@ -108,6 +106,13 @@ export class BaseTaskManager implements AsyncTasksManager {
   private onTaskStatusChanged = (task) => {
     if (!task.changed('status')) return;
 
+    if (task.doneAt) {
+      this.progressThrottles.delete(task.id);
+      this.tasks.delete(task.id);
+      this.taskReqIds.delete(task.id);
+      this.concurrencyMonitor.decrease(task.id);
+    }
+
     const userId = task.createdById;
     if (!userId) return;
 
@@ -128,12 +133,6 @@ export class BaseTaskManager implements AsyncTasksManager {
         throttled.cancel();
         this.progressThrottles.delete(task.id);
       }
-    }
-
-    if (task.doneAt) {
-      this.progressThrottles.delete(task.id);
-      this.tasks.delete(task.id);
-      this.concurrencyMonitor.decrease(task.id);
     }
 
     if (task.status === TASK_STATUS.SUCCEEDED) {
@@ -188,6 +187,7 @@ export class BaseTaskManager implements AsyncTasksManager {
       if (tasksToCleanup.length) {
         for (const task of tasksToCleanup) {
           this.tasks.delete(task.id);
+          this.taskReqIds.delete(task.id);
           this.progressThrottles.delete(task.id);
           this.concurrencyMonitor.decrease(task.id);
         }
@@ -310,10 +310,12 @@ export class BaseTaskManager implements AsyncTasksManager {
   }
 
   async createTask(data: TaskModel, { useQueue, ...options }: CreateTaskOptions = {}): Promise<ITask> {
+    const reqId = options.context?.reqId;
+    const logger = this.getTaskLogger(reqId);
     const taskType = this.taskTypes.get(data.type) as unknown as typeof TaskType;
 
     if (!taskType) {
-      this.logger.error(`Task type not found: ${data.type}, params: ${JSON.stringify(data.params)}`);
+      logger.error(`Task type not found: ${data.type}, params: ${JSON.stringify(data.params)}`);
       throw new Error(`Task type ${data.type} not found`);
     }
 
@@ -326,18 +328,18 @@ export class BaseTaskManager implements AsyncTasksManager {
     const DBTaskModel = this.app.db.getModel('asyncTasks');
     const record = (await DBTaskModel.create(values, options)) as TaskModel;
 
-    this.logger.debug(`Creating task of type: ${data.type}`);
-    this.logger.debug(`Task data: ${JSON.stringify(data)}`);
+    logger.debug(`Creating task of type: ${data.type}`);
+    logger.debug(`Task data: ${JSON.stringify(data)}`);
     const task = new taskType(record);
-    if (options.context?.reqId) {
-      this.taskReqIds.set(record.id, options.context.reqId);
+    if (reqId && !useQueue) {
+      this.taskReqIds.set(record.id, reqId);
     }
 
-    this.logger.info(`New task of type: ${data.type} created as ${record.id}`);
+    logger.info(`New task of type: ${data.type} created as ${record.id}`);
     if (useQueue) {
-      this.logger.debug(`New task ${record.id} will be sent to queue for processing`);
+      logger.debug(`New task ${record.id} will be sent to queue for processing`);
       const queueOptions = typeof useQueue === 'object' ? useQueue : {};
-      this.enqueueTask(task, queueOptions, options.context?.reqId);
+      this.enqueueTask(task, queueOptions, reqId);
     }
 
     return task;
@@ -388,7 +390,7 @@ export class BaseTaskManager implements AsyncTasksManager {
       const logger = this.getTaskLogger(reqId);
       task.setLogger(logger);
       task.setApp(this.app);
-      task.onProgress = (record) => this.onTaskProgress(record, reqId);
+      task.onProgress = (record) => this.onTaskProgress(record, logger);
       this.tasks.set(task.record.id, task);
       try {
         logger.debug(`Starting execution of task ${task.record.id} from queue`);
