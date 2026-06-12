@@ -11,6 +11,10 @@ import { AsyncTasksManager, CancelError } from '../interfaces/async-task-manager
 import { createMockServer, sleep } from '@nocobase/test';
 import { TaskType } from '../task-type';
 import { TASK_STATUS } from '../../common/constants';
+import type { ReadStream } from 'fs';
+import { randomUUID } from 'crypto';
+import fs from 'fs/promises';
+import asyncTasksResource from '../resourcers/async-tasks';
 
 describe('task manager', () => {
   let taskManager: AsyncTasksManager;
@@ -162,6 +166,107 @@ describe('task manager', () => {
     });
 
     expect(finalTask.body.data.status).toBe(TASK_STATUS.SUCCEEDED);
+  });
+
+  it('should fetch task file by route resource index', async () => {
+    const filePath = `/tmp/async-task-manager-${randomUUID()}.txt`;
+    await fs.writeFile(filePath, 'task file content');
+
+    try {
+      const taskId = randomUUID();
+      await TaskRepo.create({
+        values: {
+          id: taskId,
+          type: 'test',
+          params: {},
+          status: TASK_STATUS.SUCCEEDED,
+          result: {
+            filePath,
+          },
+          createdById: root.id,
+        },
+      });
+
+      const response = await rootAgent.get(`/asyncTasks:fetchFile/${taskId}`);
+
+      expect(response.status).toBe(200);
+      expect(response.text ?? response.body.toString()).toBe('task file content');
+      expect(response.headers['content-disposition']).toContain('attachment; filename=async-task-manager-');
+    } finally {
+      await fs.unlink(filePath).catch(() => {});
+    }
+  });
+
+  it('should use resourceIndex when fetchFile has no filterByTk', async () => {
+    const filePath = `/tmp/async-task-manager-${randomUUID()}.txt`;
+    await fs.writeFile(filePath, 'task file content');
+
+    try {
+      const taskId = randomUUID();
+      const findOne = vi.fn().mockResolvedValue({
+        status: TASK_STATUS.SUCCEEDED,
+        result: {
+          filePath,
+        },
+      });
+      const set = vi.fn();
+      const next = vi.fn();
+      let body: ReadStream | undefined;
+      const ctx = {
+        action: {
+          params: {
+            resourceIndex: taskId,
+          },
+        },
+        auth: {
+          user: {
+            id: root.id,
+          },
+        },
+        app: {
+          db: {
+            getRepository: vi.fn().mockReturnValue({ findOne }),
+          },
+        },
+        get body() {
+          return body;
+        },
+        set body(value: ReadStream) {
+          body = value;
+        },
+        set,
+        throw(status: number, message: string) {
+          throw Object.assign(new Error(message), { status });
+        },
+      };
+
+      await asyncTasksResource.actions.fetchFile(ctx, next);
+
+      expect(findOne).toHaveBeenCalledWith({
+        where: {
+          id: taskId,
+          createdById: root.id,
+        },
+      });
+      expect(set).toHaveBeenCalledWith({
+        'Content-Type': 'application/octet-stream',
+        'Content-Disposition': expect.stringContaining('attachment; filename=async-task-manager-'),
+      });
+      expect(next).toHaveBeenCalled();
+
+      if (!body) {
+        throw new Error('Expected fetchFile to set response body');
+      }
+      await new Promise<void>((resolve, reject) => {
+        body.once('error', reject);
+        body.once('open', () => {
+          body.destroy();
+        });
+        body.once('close', resolve);
+      });
+    } finally {
+      await fs.unlink(filePath).catch(() => {});
+    }
   });
 
   it('should cancel task correctly', async () => {
