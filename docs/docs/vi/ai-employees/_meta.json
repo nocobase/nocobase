@@ -158,7 +158,33 @@
       {
         "type": "custom-link",
         "label": "Knowledge Base",
-        "link": "/ai-employees/knowledge-base/knowledge-base"
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "Tổng quan",
+            "link": "/ai-employees/knowledge-base/knowledge-base/"
+          },
+          {
+            "type": "custom-link",
+            "label": "Quản lý tài liệu",
+            "link": "/ai-employees/knowledge-base/knowledge-base/documents"
+          },
+          {
+            "type": "custom-link",
+            "label": "Quản lý phân đoạn",
+            "link": "/ai-employees/knowledge-base/knowledge-base/segments"
+          },
+          {
+            "type": "custom-link",
+            "label": "Kiểm thử truy xuất",
+            "link": "/ai-employees/knowledge-base/knowledge-base/hit-tests"
+          },
+          {
+            "type": "custom-link",
+            "label": "Cài đặt",
+            "link": "/ai-employees/knowledge-base/knowledge-base/settings"
+          }
+        ]
       },
       {
         "type": "custom-link",
@@ -205,6 +231,37 @@
             "type": "custom-link",
             "label": "Phê duyệt node",
             "link": "/ai-employees/workflow/nodes/employee/approval"
+          }
+        ]
+      },
+      {
+        "type": "custom-link",
+        "label": "Knowledge Base AI",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "Tổng quan",
+            "link": "/ai-employees/workflow/nodes/knowledge/"
+          },
+          {
+            "type": "custom-link",
+            "label": "Tạo tài liệu",
+            "link": "/ai-employees/workflow/nodes/knowledge/create-document"
+          },
+          {
+            "type": "custom-link",
+            "label": "Cập nhật tài liệu",
+            "link": "/ai-employees/workflow/nodes/knowledge/update-document"
+          },
+          {
+            "type": "custom-link",
+            "label": "Xóa tài liệu",
+            "link": "/ai-employees/workflow/nodes/knowledge/delete-document"
+          },
+          {
+            "type": "custom-link",
+            "label": "Truy xuất tài liệu",
+            "link": "/ai-employees/workflow/nodes/knowledge/retrieve-document"
           }
         ]
       }
