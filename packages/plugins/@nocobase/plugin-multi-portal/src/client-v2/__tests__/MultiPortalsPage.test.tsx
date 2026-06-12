@@ -256,6 +256,70 @@ describe('plugin-multi-portal settings page', () => {
     });
   });
 
+  it('should populate the layout field from the appended uiLayout relation when editing', async () => {
+    const user = userEvent.setup();
+    let drawerContent: React.ReactNode;
+    const resource = makeResource({
+      list: vi.fn().mockResolvedValue({
+        data: {
+          data: [
+            {
+              ...portalValues,
+              uiLayoutUid: undefined,
+              uiLayout: {
+                uid: 'mobile-layout-model',
+                title: 'Mobile layout',
+              },
+            },
+          ],
+        },
+      }),
+    });
+    flowContext.current = {
+      api: {
+        request: vi.fn().mockResolvedValue({
+          data: {
+            data: [
+              {
+                uid: 'mobile-layout-model',
+                title: 'Mobile layout',
+              },
+            ],
+          },
+        }),
+        resource: vi.fn((name: string) => {
+          if (name === 'multiPortals') {
+            return resource;
+          }
+          throw new Error(`Unexpected resource ${name}`);
+        }),
+      },
+      viewer: {
+        drawer: vi.fn((options: { content: () => React.ReactNode }) => {
+          drawerContent = options.content();
+        }),
+      },
+    };
+
+    const { rerender } = render(
+      <AntdApp>
+        <MultiPortalsPage />
+        {drawerContent}
+      </AntdApp>,
+    );
+
+    await user.click(await screen.findByRole('button', { name: /Edit/ }));
+    rerender(
+      <AntdApp>
+        <MultiPortalsPage />
+        {drawerContent}
+      </AntdApp>,
+    );
+
+    const dialog = await screen.findByRole('dialog', { name: 'Edit Multi-Portal' });
+    expect(await within(dialog).findByText('Mobile layout')).toBeInTheDocument();
+  });
+
   it('should reject invalid portal access paths before submitting', async () => {
     const user = userEvent.setup();
     let drawerContent: React.ReactNode;

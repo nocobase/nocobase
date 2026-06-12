@@ -209,7 +209,7 @@ function toFormValues(record: MultiPortalRecord): MultiPortalFormValues {
     uid: record.uid,
     routeName: record.routeName,
     routePath: record.routePath,
-    uiLayoutUid: record.uiLayoutUid,
+    uiLayoutUid: record.uiLayoutUid || record.uiLayout?.uid || '',
     enabled: record.enabled,
   };
 }
