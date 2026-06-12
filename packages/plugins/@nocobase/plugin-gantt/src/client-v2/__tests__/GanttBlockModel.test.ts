@@ -768,10 +768,11 @@ describe('GanttBlockModel settings', () => {
       mode: 'drawer',
       size: 'medium',
       pageModelClass: 'ChildPageModel',
-      uid: 'calendar-gantt-eventViewAction',
       dataSourceKey: 'main',
       collectionName: 'calendar',
     });
+    expect(params.uid).toBeTruthy();
+    expect(params.uid).not.toContain('eventViewAction');
   });
 
   test('opens the configured event popup with the clicked task record', async () => {
@@ -802,14 +803,161 @@ describe('GanttBlockModel settings', () => {
 
     await model.openEvent({ id: 12 });
 
-    expect(openView).toHaveBeenCalledWith('calendar-gantt-eventViewAction', {
+    expect(action.uid).not.toContain('eventViewAction');
+    expect(openView).toHaveBeenCalledWith(action.uid, {
       dataSourceKey: 'main',
       collectionName: 'calendar',
       filterByTk: 12,
-      navigation: false,
       target: model.context.layoutContentElement,
     });
     expect(action.dispatchEvent).not.toHaveBeenCalled();
+  });
+
+  test('does not persist hidden popup actions while opening gantt popups', async () => {
+    const save = vi.fn();
+    const saveStepParams = vi.fn();
+    const action = {
+      uid: 'u_event_popup',
+      getStepParams: vi.fn(() => ({})),
+      setStepParams: vi.fn(),
+      save,
+      saveStepParams,
+    };
+    const model = Object.create(GanttBlockModel.prototype) as GanttBlockModel;
+    Object.defineProperty(model, 'subModels', {
+      value: {
+        eventViewAction: action,
+      },
+      configurable: true,
+    });
+    Object.defineProperty(model, 'context', {
+      value: {
+        flowSettingsEnabled: true,
+      },
+      configurable: true,
+    });
+    Object.defineProperty(model, 'collection', {
+      value: {
+        name: 'calendar',
+        dataSourceKey: 'main',
+      },
+      configurable: true,
+    });
+    Object.defineProperty(model, 'props', {
+      value: {},
+      writable: true,
+      configurable: true,
+    });
+
+    await model.ensurePopupAction('eventViewAction');
+
+    expect(save).not.toHaveBeenCalled();
+    expect(saveStepParams).not.toHaveBeenCalled();
+    expect(action.setStepParams).toHaveBeenCalled();
+  });
+
+  test('persists hidden popup actions only when gantt popup settings are saved', async () => {
+    const save = vi.fn();
+    const saveStepParams = vi.fn();
+    const action = {
+      uid: 'u_event_popup',
+      getStepParams: vi.fn(() => ({})),
+      setStepParams: vi.fn(),
+      save,
+      saveStepParams,
+    };
+    const model = Object.create(GanttBlockModel.prototype) as GanttBlockModel;
+    Object.defineProperty(model, 'subModels', {
+      value: {
+        eventViewAction: action,
+      },
+      configurable: true,
+    });
+    Object.defineProperty(model, 'context', {
+      value: {
+        flowSettingsEnabled: true,
+      },
+      configurable: true,
+    });
+    Object.defineProperty(model, 'collection', {
+      value: {
+        name: 'calendar',
+        dataSourceKey: 'main',
+      },
+      configurable: true,
+    });
+    Object.defineProperty(model, 'props', {
+      value: {},
+      writable: true,
+      configurable: true,
+    });
+
+    await model.ensurePopupAction('eventViewAction', { persist: true });
+
+    expect(save).toHaveBeenCalledTimes(1);
+    expect(saveStepParams).toHaveBeenCalledTimes(1);
+  });
+
+  test('replaces legacy gantt popup action uid when popup settings are saved', async () => {
+    const destroy = vi.fn();
+    const clonedAction = {
+      uid: 'u_event_popup',
+      getStepParams: vi.fn(() => ({})),
+      setStepParams: vi.fn(),
+      save: vi.fn(),
+      saveStepParams: vi.fn(),
+    };
+    const action = {
+      uid: 'calendar-gantt-eventViewAction',
+      getStepParams: vi.fn(() => ({})),
+      setStepParams: vi.fn(),
+      clone: vi.fn(() => clonedAction),
+      destroy,
+    };
+    const model = Object.create(GanttBlockModel.prototype) as GanttBlockModel;
+    Object.defineProperty(model, 'subModels', {
+      value: {
+        eventViewAction: action,
+      },
+      configurable: true,
+    });
+    Object.defineProperty(model, 'context', {
+      value: {
+        flowSettingsEnabled: true,
+      },
+      configurable: true,
+    });
+    Object.defineProperty(model, 'collection', {
+      value: {
+        name: 'calendar',
+        dataSourceKey: 'main',
+      },
+      configurable: true,
+    });
+    Object.defineProperty(model, 'props', {
+      value: {},
+      writable: true,
+      configurable: true,
+    });
+    model.setSubModel = vi.fn(function (this: any, key, value) {
+      this.subModels[key] = value;
+      return value;
+    }) as any;
+
+    await model.ensurePopupAction('eventViewAction');
+
+    expect(action.clone).toHaveBeenCalledTimes(1);
+    expect(model.subModels.eventViewAction).toBe(clonedAction);
+    expect(clonedAction.save).not.toHaveBeenCalled();
+    expect(clonedAction.saveStepParams).not.toHaveBeenCalled();
+    expect(destroy).not.toHaveBeenCalled();
+
+    await model.ensurePopupAction('eventViewAction', { persist: true });
+
+    expect(action.clone).toHaveBeenCalledTimes(1);
+    expect(clonedAction.save).toHaveBeenCalledTimes(1);
+    expect(clonedAction.saveStepParams).toHaveBeenCalledTimes(1);
+    expect(destroy).toHaveBeenCalledTimes(1);
   });
 });
 

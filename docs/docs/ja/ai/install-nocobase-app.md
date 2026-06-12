@@ -5,8 +5,6 @@ description: NocoBase CLI をインストールし、`nb init --ui` ですばや
 
 # NocoBase アプリをインストール
 
-まだ NocoBase アプリを持っていない場合は、まず `@nocobase/cli` をインストールしてから `nb init --ui` を一度実行するのが最も手早い方法です。ほとんどのケースでは、ウィザードのデフォルト設定のままで十分です。
-
 ## 前提条件
 
 - Node.js >= 22
@@ -88,6 +86,13 @@ CLI の設定はデフォルトで `~/.nocobase/` に保存されるため、AI 
 
 このアプリを今後実際のユーザー向けに公開する予定がある場合、長期的に `IP + port` をそのまま使うのはおすすめしません。通常、次のステップはリバースプロキシを挟み、HTTPS を有効にすることです。
 
+## 次のステップ
+
+- すでに稼働中の NocoBase アプリがある場合は、[AI Agent 接続ガイド](./quick-start.mdx)を参照してください
+- アプリの起動、停止、ログ、アップグレードを管理したい場合は、[アプリ管理](../nocobase-cli/operations/manage-app.md)を参照してください
+- 本番環境へのデプロイを続ける場合は、[CLI でアプリをインストール](../nocobase-cli/installation/cli.md)と[本番環境デプロイ概要](../nocobase-cli/production/index.md)を参照してください
+- AI にアプリ構築を始めさせたい場合は、[AI Builder](../ai-builder/index.md)を参照してください
+
 ## 関連リンク
 
 - [インストール方法とバージョンの比較](../get-started/quickstart.md) — 先にインストール方法とバージョンチャネルを比べてから、どの方法で入れるか決める
@@ -95,4 +100,5 @@ CLI の設定はデフォルトで `~/.nocobase/` に保存されるため、AI 
 - [`nb init` コマンドリファレンス](../api/cli/init.md) — 新しいアプリの初期化、既存のローカルアプリの引き取り、またはリモートアプリの接続
 - [`nb env info` コマンドリファレンス](../api/cli/env/info.md) — 現在の env の接続情報とランタイム設定を確認する
 - [NocoBase CLI](../api/cli/index.md) — すべての `nb` コマンドの完全なリファレンス
+- [アプリ管理](../nocobase-cli/operations/manage-app.md) — アプリの起動、停止、再起動、ログ確認、アップグレード
 - [複数の環境管理](../nocobase-cli/operations/multi-environment.md) — 複数の env を同時に管理するときによく使う操作
