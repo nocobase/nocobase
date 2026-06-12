@@ -19,6 +19,7 @@ export default class SkillsInstall extends Command {
   static override examples = [
     '<%= config.bin %> <%= command.id %>',
     '<%= config.bin %> <%= command.id %> --yes',
+    '<%= config.bin %> <%= command.id %> --version 1.0.4',
     '<%= config.bin %> <%= command.id %> --json',
   ];
 
@@ -35,6 +36,9 @@ export default class SkillsInstall extends Command {
     verbose: Flags.boolean({
       description: 'Show detailed install output',
       default: false,
+    }),
+    version: Flags.string({
+      description: 'Install a specific @nocobase/skills version',
     }),
   };
 
@@ -58,6 +62,7 @@ export default class SkillsInstall extends Command {
     }
 
     const result = await installNocoBaseSkills({
+      targetVersion: flags.version,
       verbose: flags.verbose,
     });
 
