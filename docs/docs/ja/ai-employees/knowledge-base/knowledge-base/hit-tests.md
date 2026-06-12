@@ -46,7 +46,13 @@ The settings are:
 
 Default parameters are `Top K = 4` and `Score = 0.6`. If there are too few results, lower Score or increase Top K. If results are too broad, increase Score.
 
-## Debug with test results
+:::tip
+
+Adjust Top K and Score here to find suitable values before configuring knowledge base retrieval for an AI employee. These settings only affect the current hit test and are not written back to the AI employee. After confirming the values, enter the same parameters in the AI employee RAG settings. See [RAG retrieval](../rag) for details.
+
+:::
+
+## Adjust based on hit results
 
 Hit tests help determine whether the knowledge base is ready for RAG.
 
