@@ -19,3 +19,5 @@ export type { WorkflowVariableInputProps } from './canvas/WorkflowVariableInput'
 export { useWorkflowVariableOptions } from './canvas/useWorkflowVariableOptions';
 export { Trigger } from './triggers';
 export type { LoaderOf as TriggerLoaderOf, TriggerTempAssociationSource } from './triggers';
+export * from './components/collection';
+export { FilterDynamicComponent, ConditionField } from './components/FilterDynamicComponent';
