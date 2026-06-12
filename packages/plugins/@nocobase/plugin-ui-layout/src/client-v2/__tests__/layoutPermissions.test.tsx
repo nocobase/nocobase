@@ -21,6 +21,25 @@ import {
 
 const MOBILE_LAYOUT_UID = 'mobile-layout-model';
 
+interface PermissionComponentProps {
+  activeKey: string;
+  activeRole: {
+    name: string;
+    title: string;
+    allowNewMenu?: boolean;
+  };
+  onRoleChange: (role: unknown) => void;
+}
+
+interface RegisteredPermissionTab {
+  key: string;
+  label: string;
+  sort: number;
+  componentLoader: () => Promise<{
+    default: React.ComponentType<PermissionComponentProps>;
+  }>;
+}
+
 const flowMocks = vi.hoisted(() => ({
   context: undefined as
     | {
@@ -84,6 +103,9 @@ describe('plugin-ui-layout route permissions', () => {
     };
 
     registerLayoutAwareDesktopRoutesPermissionsTab(app as never, (key) => key);
+    const registeredTabs = addPermissionsTab.mock.calls.map(([options]) => options) as RegisteredPermissionTab[];
+    const desktopTab = registeredTabs.find((tab) => tab.key === 'menu');
+    const mobileTab = registeredTabs.find((tab) => tab.key === 'mobile-routes');
 
     expect(addPermissionsTab).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -104,9 +126,63 @@ describe('plugin-ui-layout route permissions', () => {
         label: 'UI layouts',
       }),
     );
+    expect(desktopTab).toBeDefined();
+    expect(mobileTab).toBeDefined();
+    if (!desktopTab || !mobileTab) {
+      throw new Error('Desktop and mobile route permission tabs should be registered.');
+    }
 
-    await expect(addPermissionsTab.mock.calls[0][0].componentLoader()).resolves.toHaveProperty('default');
-    await expect(addPermissionsTab.mock.calls[1][0].componentLoader()).resolves.toHaveProperty('default');
+    const desktopResource = createRoutePermissionResources({
+      selectedRouteIds: [],
+    });
+    flowMocks.context = desktopResource.context;
+    const DesktopComponent = (await desktopTab.componentLoader()).default;
+
+    render(
+      <DesktopComponent
+        activeKey="menu"
+        activeRole={{ name: 'route-member', title: 'Route member' }}
+        onRoleChange={vi.fn()}
+      />,
+    );
+
+    expect(await screen.findByText('Desktop routes')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(desktopResource.desktopRoutesList).toHaveBeenCalledWith(
+        expect.objectContaining({
+          filter: createDesktopRouteLayoutPermissionFilter(DEFAULT_ADMIN_UI_LAYOUT.uid),
+        }),
+      );
+    });
+    cleanup();
+
+    const mobileResource = createRoutePermissionResources({
+      selectedRouteIds: [],
+    });
+    flowMocks.context = mobileResource.context;
+    const MobileComponent = (await mobileTab.componentLoader()).default;
+
+    render(
+      <MobileComponent
+        activeKey="mobile-routes"
+        activeRole={{ name: 'route-member', title: 'Route member' }}
+        onRoleChange={vi.fn()}
+      />,
+    );
+
+    expect(await screen.findByText('Mobile routes')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(mobileResource.desktopRoutesList).toHaveBeenCalledWith(
+        expect.objectContaining({
+          filter: createDesktopRouteLayoutPermissionFilter(MOBILE_LAYOUT_UID),
+        }),
+      );
+      expect(mobileResource.roleRoutesList).toHaveBeenCalledWith(
+        expect.objectContaining({
+          filter: createDesktopRouteLayoutPermissionFilter(MOBILE_LAYOUT_UID),
+        }),
+      );
+    });
   });
 
   it('should skip permission tab registration when ACL plugin manager is unavailable', () => {

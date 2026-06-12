@@ -118,6 +118,9 @@ export function registerLayoutAwareDesktopRoutesPermissionsTab(app: Application,
     key: 'mobile-routes',
     label: String(t('Mobile routes')),
     sort: 21,
-    componentLoader: () => import('./LayoutAwareDesktopRoutesPermissionsTab'),
+    componentLoader: async () => {
+      const module = await import('./LayoutAwareDesktopRoutesPermissionsTab');
+      return { default: module.MobileRoutesPermissionsTab };
+    },
   });
 }
