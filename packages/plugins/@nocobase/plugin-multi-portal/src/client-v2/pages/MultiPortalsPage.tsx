@@ -333,14 +333,20 @@ const MultiPortalsPage: React.FC = () => {
       {
         title: t('Actions'),
         render: (_: unknown, record) => (
-          <Space>
-            <a href={getMultiPortalRouteUrl(ctx.app, record.routePath)} target="_blank" rel="noopener noreferrer">
-              <EyeOutlined /> {t('View')}
-            </a>
+          <Space size="middle">
+            <Button
+              type="link"
+              href={getMultiPortalRouteUrl(ctx.app, record.routePath)}
+              target="_blank"
+              rel="noopener noreferrer"
+              icon={<EyeOutlined />}
+            >
+              {t('View')}
+            </Button>
             <Button type="link" icon={<EditOutlined />} onClick={() => openFormDrawer(record)}>
               {t('Edit')}
             </Button>
-            <Button type="link" danger icon={<DeleteOutlined />} onClick={() => handleDelete(record.uid)}>
+            <Button type="link" icon={<DeleteOutlined />} onClick={() => handleDelete(record.uid)}>
               {t('Delete')}
             </Button>
           </Space>

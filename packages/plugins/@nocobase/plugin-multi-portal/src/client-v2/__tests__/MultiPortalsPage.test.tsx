@@ -172,6 +172,11 @@ describe('plugin-multi-portal settings page', () => {
     expect(screen.getByText('Layout')).toBeInTheDocument();
     expect(screen.getByText('Enabled')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /View/ })).toHaveAttribute('href', '/customer-portal');
+    const actionCell = container.querySelector('tbody tr .ant-table-cell:last-child');
+    expect(actionCell?.querySelectorAll('.ant-btn-link')).toHaveLength(3);
+    expect(within(actionCell as HTMLElement).getByRole('button', { name: /Delete/ })).not.toHaveClass(
+      'ant-btn-dangerous',
+    );
     expect(container.querySelector('.ant-tag')).toHaveTextContent('Mobile layout');
     expect(screen.queryByText('UI layout')).not.toBeInTheDocument();
     expect(screen.queryByText(/permission/i)).not.toBeInTheDocument();
