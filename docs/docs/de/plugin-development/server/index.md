@@ -19,3 +19,4 @@ Die NocoBase Serverseitige Plugin-Entwicklung bietet Ihnen vielfältige Funktion
 | **Protokollausgabe**                    | Anpassung von Protokollformaten und Ausgabemethoden zur Verbesserung der Debugging- und Überwachungsfunktionen. | [logger.md](./logger.md)                                   |
 | **Benutzerdefinierte Befehle**          | Erweiterung der NocoBase CLI durch das Hinzufügen benutzerdefinierter Befehle.                          | [command.md](./command.md)                                 |
 | **Schreiben von Testfällen**            | Schreiben und Ausführen von Testfällen zur Sicherstellung der Plugin-Stabilität und Funktionsgenauigkeit. | [test.md](./test.md)                                       |
+| **KnowledgeBase**                       | Erweitert den Abruf externer Wissensdatenbanken für AI employees.                                      | [knowledge-base.md](./knowledge-base.md)                   |

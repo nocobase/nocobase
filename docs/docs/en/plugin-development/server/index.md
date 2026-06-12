@@ -25,6 +25,7 @@ NocoBase server-side plugins can do many things: define data tables, write custo
 | Customize log output                                | [Logger](./logger.md)                                   |
 | Extend CLI commands                                 | [Command](./command.md)                                 |
 | Write test cases                                    | [Test](./test.md)                                       |
+| Extend external knowledge base retrieval for AI employees | [KnowledgeBase](./knowledge-base.md)                    |
 
 ## Related Links
 
@@ -35,3 +36,4 @@ NocoBase server-side plugins can do many things: define data tables, write custo
 - [ACL](./acl.md) - Role permissions, permission snippets, and access control
 - [Plugin Development Overview](../index.md) - Overall introduction to plugin development
 - [Write Your First Plugin](../write-your-first-plugin.md) - Create a complete plugin from scratch
+- [KnowledgeBase](./knowledge-base.md) - Connect external knowledge base retrieval for AI employees

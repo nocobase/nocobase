@@ -19,3 +19,4 @@ Le développement de plugins côté serveur NocoBase vous offre diverses fonctio
 | **Sortie des logs**                          | Personnalisez les formats et les méthodes de sortie des logs pour améliorer les capacités de débogage et de surveillance | [logger.md](./logger.md)                                |
 | **Commandes personnalisées**                 | Étendez l'interface CLI de NocoBase en ajoutant des commandes personnalisées                             | [command.md](./command.md)                              |
 | **Écriture de cas de test**                  | Écrivez et exécutez des cas de test pour garantir la stabilité et la précision fonctionnelle des plugins | [test.md](./test.md)                                    |
+| **KnowledgeBase**                            | Étendez la récupération de bases de connaissances externes pour les AI employees                         | [knowledge-base.md](./knowledge-base.md)                |
