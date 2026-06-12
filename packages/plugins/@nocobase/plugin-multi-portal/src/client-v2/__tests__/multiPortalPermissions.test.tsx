@@ -157,6 +157,39 @@ describe('plugin-multi-portal route permissions', () => {
     expect(screen.getByText('Multi-portal')).toBeInTheDocument();
   });
 
+  it('should show an empty portal route drawer when the portal has no routes', async () => {
+    const resource = createMultiPortalPermissionResources({
+      routes: [],
+      selectedPortalUids: ['customer-portal'],
+      selectedRouteIds: [],
+    });
+    const user = userEvent.setup();
+    flowMocks.context = resource.context;
+
+    render(
+      <AntdApp>
+        <MultiPortalPermissionsTab activeKey="multi-portals" activeRole={{ name: 'portal-member', title: 'Member' }} />
+      </AntdApp>,
+    );
+
+    const configureButton = await screen.findByRole('button', {
+      name: 'Configure menu permissions for Customer portal',
+    });
+    await act(async () => {
+      await user.click(configureButton);
+    });
+
+    expect(await screen.findByText('No routes')).toBeInTheDocument();
+    expect(resource.request).toHaveBeenCalledWith({
+      url: 'desktopRoutes:listRolePermissionTargets',
+      method: 'get',
+      params: {
+        portal: 'customer-portal',
+      },
+      skipNotify: true,
+    });
+  });
+
   it('should not show saved state when portal route permission save fails', async () => {
     const resource = createMultiPortalPermissionResources({
       createRouteError: new Error('create failed'),
@@ -195,6 +228,10 @@ describe('plugin-multi-portal route permissions', () => {
 type MultiPortalPermissionResourceOptions = {
   createRouteError?: Error;
   destroyRouteError?: Error;
+  routes?: Array<{
+    id: number;
+    title: string;
+  }>;
   selectedPortalUids: string[];
   selectedRouteIds: number[];
 };
@@ -208,7 +245,7 @@ function createMultiPortalPermissionResources(options: MultiPortalPermissionReso
       title: 'Customer portal',
     },
   ];
-  const routes = [
+  const routes = options.routes ?? [
     {
       id: 1,
       title: 'Home',
