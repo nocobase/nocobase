@@ -17,7 +17,7 @@ Wählen Sie den KI-Mitarbeiter aus, für den Sie RAG aktivieren möchten, und kl
 Im Tab `Knowledge base` schalten Sie den `Enable`-Schalter ein.
 
 - Geben Sie im Feld `Knowledge Base Prompt` den Prompt ein, der auf die Wissensdatenbank verweist. `{knowledgeBaseData}` ist ein fester Platzhalter und darf nicht geändert werden.
-- Wählen Sie unter `Knowledge Base` die konfigurierte Wissensdatenbank aus. Siehe: [Wissensdatenbank](/ai-employees/knowledge-base/knowledge-base).
+- Wählen Sie unter `Knowledge Base` die konfigurierte Wissensdatenbank aus. Siehe: [Wissensdatenbank](./knowledge-base/).
 - Geben Sie im Eingabefeld `Top K` die Anzahl der abzurufenden Dokumente ein; der Standardwert ist 3.
 - Im Eingabefeld `Score` geben Sie den Schwellenwert für die Dokumentrelevanz beim Abruf ein.
 
