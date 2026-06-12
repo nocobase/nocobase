@@ -158,7 +158,33 @@
       {
         "type": "custom-link",
         "label": "Base de connaissances",
-        "link": "/ai-employees/knowledge-base/knowledge-base"
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "Vue d'ensemble",
+            "link": "/ai-employees/knowledge-base/knowledge-base/"
+          },
+          {
+            "type": "custom-link",
+            "label": "Gestion des documents",
+            "link": "/ai-employees/knowledge-base/knowledge-base/documents"
+          },
+          {
+            "type": "custom-link",
+            "label": "Gestion des segments",
+            "link": "/ai-employees/knowledge-base/knowledge-base/segments"
+          },
+          {
+            "type": "custom-link",
+            "label": "Tests de correspondance",
+            "link": "/ai-employees/knowledge-base/knowledge-base/hit-tests"
+          },
+          {
+            "type": "custom-link",
+            "label": "Paramètres",
+            "link": "/ai-employees/knowledge-base/knowledge-base/settings"
+          }
+        ]
       },
       {
         "type": "custom-link",
@@ -205,6 +231,37 @@
             "type": "custom-link",
             "label": "Approbation du nœud",
             "link": "/ai-employees/workflow/nodes/employee/approval"
+          }
+        ]
+      },
+      {
+        "type": "custom-link",
+        "label": "Base de connaissances AI",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "Vue d'ensemble",
+            "link": "/ai-employees/workflow/nodes/knowledge/"
+          },
+          {
+            "type": "custom-link",
+            "label": "Créer un document",
+            "link": "/ai-employees/workflow/nodes/knowledge/create-document"
+          },
+          {
+            "type": "custom-link",
+            "label": "Mettre à jour un document",
+            "link": "/ai-employees/workflow/nodes/knowledge/update-document"
+          },
+          {
+            "type": "custom-link",
+            "label": "Supprimer un document",
+            "link": "/ai-employees/workflow/nodes/knowledge/delete-document"
+          },
+          {
+            "type": "custom-link",
+            "label": "Récupérer un document",
+            "link": "/ai-employees/workflow/nodes/knowledge/retrieve-document"
           }
         ]
       }

@@ -158,7 +158,33 @@
       {
         "type": "custom-link",
         "label": "Basis Pengetahuan",
-        "link": "/ai-employees/knowledge-base/knowledge-base"
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "Ikhtisar",
+            "link": "/ai-employees/knowledge-base/knowledge-base/"
+          },
+          {
+            "type": "custom-link",
+            "label": "Manajemen dokumen",
+            "link": "/ai-employees/knowledge-base/knowledge-base/documents"
+          },
+          {
+            "type": "custom-link",
+            "label": "Manajemen segmen",
+            "link": "/ai-employees/knowledge-base/knowledge-base/segments"
+          },
+          {
+            "type": "custom-link",
+            "label": "Uji kecocokan",
+            "link": "/ai-employees/knowledge-base/knowledge-base/hit-tests"
+          },
+          {
+            "type": "custom-link",
+            "label": "Pengaturan",
+            "link": "/ai-employees/knowledge-base/knowledge-base/settings"
+          }
+        ]
       },
       {
         "type": "custom-link",
@@ -205,6 +231,37 @@
             "type": "custom-link",
             "label": "Persetujuan Node",
             "link": "/ai-employees/workflow/nodes/employee/approval"
+          }
+        ]
+      },
+      {
+        "type": "custom-link",
+        "label": "Knowledge Base AI",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "Ikhtisar",
+            "link": "/ai-employees/workflow/nodes/knowledge/"
+          },
+          {
+            "type": "custom-link",
+            "label": "Buat dokumen",
+            "link": "/ai-employees/workflow/nodes/knowledge/create-document"
+          },
+          {
+            "type": "custom-link",
+            "label": "Perbarui dokumen",
+            "link": "/ai-employees/workflow/nodes/knowledge/update-document"
+          },
+          {
+            "type": "custom-link",
+            "label": "Hapus dokumen",
+            "link": "/ai-employees/workflow/nodes/knowledge/delete-document"
+          },
+          {
+            "type": "custom-link",
+            "label": "Ambil dokumen",
+            "link": "/ai-employees/workflow/nodes/knowledge/retrieve-document"
           }
         ]
       }

@@ -158,7 +158,33 @@
       {
         "type": "custom-link",
         "label": "Base de conhecimento",
-        "link": "/ai-employees/knowledge-base/knowledge-base"
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "Visão geral",
+            "link": "/ai-employees/knowledge-base/knowledge-base/"
+          },
+          {
+            "type": "custom-link",
+            "label": "Gerenciamento de documentos",
+            "link": "/ai-employees/knowledge-base/knowledge-base/documents"
+          },
+          {
+            "type": "custom-link",
+            "label": "Gerenciamento de segmentos",
+            "link": "/ai-employees/knowledge-base/knowledge-base/segments"
+          },
+          {
+            "type": "custom-link",
+            "label": "Testes de acerto",
+            "link": "/ai-employees/knowledge-base/knowledge-base/hit-tests"
+          },
+          {
+            "type": "custom-link",
+            "label": "Configurações",
+            "link": "/ai-employees/knowledge-base/knowledge-base/settings"
+          }
+        ]
       },
       {
         "type": "custom-link",
@@ -205,6 +231,37 @@
             "type": "custom-link",
             "label": "Aprovação do nó",
             "link": "/ai-employees/workflow/nodes/employee/approval"
+          }
+        ]
+      },
+      {
+        "type": "custom-link",
+        "label": "Base de conhecimento de IA",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "Visão geral",
+            "link": "/ai-employees/workflow/nodes/knowledge/"
+          },
+          {
+            "type": "custom-link",
+            "label": "Criar documento",
+            "link": "/ai-employees/workflow/nodes/knowledge/create-document"
+          },
+          {
+            "type": "custom-link",
+            "label": "Atualizar documento",
+            "link": "/ai-employees/workflow/nodes/knowledge/update-document"
+          },
+          {
+            "type": "custom-link",
+            "label": "Excluir documento",
+            "link": "/ai-employees/workflow/nodes/knowledge/delete-document"
+          },
+          {
+            "type": "custom-link",
+            "label": "Recuperar documento",
+            "link": "/ai-employees/workflow/nodes/knowledge/retrieve-document"
           }
         ]
       }
