@@ -207,6 +207,32 @@
             "link": "/ai-employees/workflow/nodes/employee/approval"
           }
         ]
+      },
+      {
+        "type": "custom-link",
+        "label": "AI 知识库",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "创建文档",
+            "link": "/ai-employees/workflow/nodes/knowledge/create-document"
+          },
+          {
+            "type": "custom-link",
+            "label": "更新文档",
+            "link": "/ai-employees/workflow/nodes/knowledge/update-document"
+          },
+          {
+            "type": "custom-link",
+            "label": "删除文档",
+            "link": "/ai-employees/workflow/nodes/knowledge/delete-document"
+          },
+          {
+            "type": "custom-link",
+            "label": "检索文档",
+            "link": "/ai-employees/workflow/nodes/knowledge/retrieve-document"
+          }
+        ]
       }
     ]
   },
