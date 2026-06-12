@@ -243,7 +243,7 @@ export default {
             content: {
               'application/json': {
                 schema: {
-                  $ref: '#/components/schemas/NotificationSendResult',
+                  $ref: '#/components/schemas/NotificationSendResponse',
                 },
               },
             },
@@ -460,6 +460,14 @@ export default {
           },
         },
         additionalProperties: true,
+      },
+      NotificationSendResponse: {
+        type: 'object',
+        properties: {
+          data: {
+            $ref: '#/components/schemas/NotificationSendResult',
+          },
+        },
       },
     },
   },

@@ -38,6 +38,39 @@ const listParameters = [
   },
 ];
 
+const myInAppChannelListParameters = [
+  {
+    name: 'filter',
+    in: 'query',
+    required: false,
+    description:
+      'Filter object encoded as JSON. Supports `status`, `name`, and `latestMsgReceiveTimestamp.$lt` for cursor-like pagination.',
+    schema: jsonObjectSchema,
+  },
+  {
+    name: 'limit',
+    in: 'query',
+    required: false,
+    schema: {
+      type: 'integer',
+      default: 30,
+    },
+  },
+];
+
+const userIdSchema = {
+  oneOf: [
+    {
+      type: 'string',
+      description: 'User id serialized as a string. This is common for bigInt identifiers.',
+    },
+    {
+      type: 'integer',
+      description: 'User id when the runtime serializes the value as a JSON number.',
+    },
+  ],
+};
+
 export default {
   openapi: '3.0.2',
   info: {
@@ -94,18 +127,7 @@ export default {
         summary: 'List current user in-app message channels',
         description:
           'List channels that have messages for the current user, including unread counts and latest message metadata.',
-        parameters: [
-          ...listParameters,
-          {
-            name: 'limit',
-            in: 'query',
-            required: false,
-            schema: {
-              type: 'integer',
-              default: 30,
-            },
-          },
-        ],
+        parameters: myInAppChannelListParameters,
         responses: {
           200: {
             description: 'OK',
@@ -254,7 +276,7 @@ export default {
             format: 'uuid',
           },
           userId: {
-            type: 'integer',
+            ...userIdSchema,
           },
           channelName: {
             type: 'string',
@@ -302,7 +324,7 @@ export default {
             type: 'string',
           },
           userId: {
-            type: 'integer',
+            ...userIdSchema,
           },
           unreadMsgCnt: {
             type: 'integer',
@@ -333,41 +355,6 @@ export default {
             type: 'integer',
           },
         },
-      },
-      InAppNotificationMessageInput: {
-        type: 'object',
-        required: ['receivers', 'title', 'content'],
-        properties: {
-          receivers: {
-            type: 'array',
-            description: 'User ids or workflow variables resolving to user ids.',
-            items: {
-              oneOf: [{ type: 'integer' }, { type: 'string' }],
-            },
-          },
-          title: {
-            type: 'string',
-          },
-          content: {
-            type: 'string',
-          },
-          options: {
-            type: 'object',
-            properties: {
-              url: {
-                type: 'string',
-              },
-              mobileUrl: {
-                type: 'string',
-              },
-              duration: {
-                type: 'number',
-              },
-            },
-            additionalProperties: true,
-          },
-        },
-        additionalProperties: true,
       },
     },
   },
