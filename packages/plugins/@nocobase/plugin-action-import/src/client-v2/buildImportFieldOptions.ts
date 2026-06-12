@@ -10,18 +10,52 @@
 const EXCLUDE_INTERFACES = ['createdAt', 'createdBy', 'updatedAt', 'updatedBy'];
 const RELATION_TYPES = ['hasOne', 'belongsTo', 'hasMany', 'belongsToMany', 'belongsToArray'];
 
-const isRelationField = (field) => field?.target && RELATION_TYPES.includes(field.type);
+export type ImportFieldOptionSource = {
+  name?: string;
+  type?: string;
+  target?: string;
+  interface?: string;
+  uiSchema?: {
+    title?: unknown;
+    [key: string]: unknown;
+  };
+  targetCollection?: {
+    getFields: () => ImportFieldOptionSource[];
+  };
+  [key: string]: unknown;
+};
 
-const shouldExcludeField = (field) => !field?.interface || EXCLUDE_INTERFACES.includes(field.interface);
+export type ImportFieldOption = {
+  name?: string;
+  title: unknown;
+  schema: unknown;
+  disabled?: boolean;
+  children?: ImportFieldOption[];
+};
 
-const createOption = (field, getTitle, disabled = false) => ({
+const isRelationField = (field?: ImportFieldOptionSource) =>
+  Boolean(field?.target && RELATION_TYPES.includes(field.type || ''));
+
+const shouldExcludeField = (field?: ImportFieldOptionSource) =>
+  !field?.interface || EXCLUDE_INTERFACES.includes(field.interface);
+
+const createOption = <T extends ImportFieldOptionSource>(
+  field: T,
+  getTitle: (field: T) => unknown,
+  disabled = false,
+): ImportFieldOption => ({
   name: field.name,
   title: getTitle(field),
-  schema: field?.uiSchema,
+  schema: field.uiSchema,
   disabled,
 });
 
-const buildFieldOption = (field, getTitle, getTargetFields, relationDepth = 0) => {
+const buildFieldOption = <T extends ImportFieldOptionSource>(
+  field: T,
+  getTitle: (field: T) => unknown,
+  getTargetFields: (field: T) => ImportFieldOptionSource[] | null | undefined,
+  relationDepth = 0,
+): ImportFieldOption | null => {
   if (shouldExcludeField(field)) {
     return null;
   }
@@ -47,7 +81,7 @@ const buildFieldOption = (field, getTitle, getTargetFields, relationDepth = 0) =
 
       return buildFieldOption(targetField, getTitle, getTargetFields, relationDepth + 1);
     })
-    .filter(Boolean);
+    .filter((option): option is ImportFieldOption => Boolean(option));
 
   if (!children.length) {
     return createOption(field, getTitle, true);
@@ -59,8 +93,12 @@ const buildFieldOption = (field, getTitle, getTargetFields, relationDepth = 0) =
   };
 };
 
-export const buildImportFieldOptions = (fields, getTitle, getTargetFields) => {
+export const buildImportFieldOptions = <T extends ImportFieldOptionSource>(
+  fields: T[] | null | undefined,
+  getTitle: (field: T) => unknown,
+  getTargetFields: (field: T) => ImportFieldOptionSource[] | null | undefined,
+): ImportFieldOption[] => {
   return (fields || [])
     .map((field) => buildFieldOption(field, getTitle, getTargetFields, isRelationField(field) ? 1 : 0))
-    .filter(Boolean);
+    .filter((option): option is ImportFieldOption => Boolean(option));
 };
