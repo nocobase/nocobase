@@ -421,8 +421,8 @@ describe('plugin-multi-portal server', () => {
         sort: 10,
       },
     });
-    await app.db.getRepository('desktopRoutes.uiLayouts', route.get('id')).set({
-      tk: [DEFAULT_MOBILE_UI_LAYOUT.uid],
+    await app.db.getRepository('desktopRoutes.multiPortals', route.get('id')).set({
+      tk: [portal.get('uid')],
     });
     const role = await app.db.getRepository('roles').create({
       values: {
@@ -438,7 +438,7 @@ describe('plugin-multi-portal server', () => {
     const agent = await app.agent().login(user);
 
     const response = await agent.get('/desktopRoutes:listRolePermissionTargets').query({
-      layout: portal.get('uid'),
+      portal: portal.get('uid'),
       filter: {
         id: -1,
       },
@@ -454,6 +454,100 @@ describe('plugin-multi-portal server', () => {
       expect(Object.keys(item).sort()).toEqual(['children', 'hidden', 'id', 'options', 'parentId', 'title'].sort());
       expect(item).not.toHaveProperty('uiLayouts');
     }
+  });
+
+  it('should serve accessible desktop routes through an explicit portal scope', async () => {
+    app = await createMultiPortalAclMockServer();
+
+    const portal = await app.db.getRepository('multiPortals').create({
+      values: {
+        uid: 'explicit-scope-portal',
+        title: 'Explicit scope portal',
+        routeName: 'explicitScopePortal',
+        routePath: '/explicit-scope-portal',
+        authCheck: true,
+        enabled: true,
+        uiLayoutUid: DEFAULT_ADMIN_UI_LAYOUT.uid,
+      },
+    });
+    const portalRoute = await app.db.getRepository('desktopRoutes').create({
+      values: {
+        type: 'flowPage',
+        title: 'DATA-PORTAL-EXPLICIT-SCOPE-ROUTE',
+        schemaUid: 'portal-explicit-scope-route',
+        hidden: false,
+        sort: 10,
+      },
+    });
+    const uiLayoutRoute = await app.db.getRepository('desktopRoutes').create({
+      values: {
+        type: 'flowPage',
+        title: 'DATA-UI-LAYOUT-EXPLICIT-SCOPE-ROUTE',
+        schemaUid: 'ui-layout-explicit-scope-route',
+        hidden: false,
+        sort: 20,
+      },
+    });
+    const role = await app.db.getRepository('roles').create({
+      values: {
+        name: 'explicit-scope-portal-role',
+        snippets: ['pm.acl.roles'],
+      },
+    });
+    await app.db.getRepository('desktopRoutes.multiPortals', portalRoute.get('id')).set({
+      tk: [portal.get('uid')],
+    });
+    await app.db.getRepository('desktopRoutes.uiLayouts', uiLayoutRoute.get('id')).set({
+      tk: [DEFAULT_ADMIN_UI_LAYOUT.uid],
+    });
+    await app.db.getRepository('rolesMultiPortals').create({
+      values: {
+        roleName: role.get('name'),
+        multiPortalUid: portal.get('uid'),
+      },
+    });
+    await app.db.getRepository('rolesMultiPortalDesktopRoutes').create({
+      values: {
+        roleName: role.get('name'),
+        multiPortalUid: portal.get('uid'),
+        desktopRouteId: portalRoute.get('id'),
+      },
+    });
+
+    const memberUser = await app.db.getRepository('users').create({
+      values: {
+        roles: [role.get('name')],
+      },
+    });
+    const memberAgent = await app.agent().login(memberUser);
+    const [listResponse, getResponse, targetsResponse, ambiguousScopeResponse] = await Promise.all([
+      memberAgent.get('/desktopRoutes:listAccessible').query({
+        portal: portal.get('uid'),
+      }),
+      memberAgent.get('/desktopRoutes:getAccessible').query({
+        filterByTk: portalRoute.get('id'),
+        portal: portal.get('uid'),
+      }),
+      memberAgent.get('/desktopRoutes:listRolePermissionTargets').query({
+        portal: portal.get('uid'),
+      }),
+      memberAgent.get('/desktopRoutes:listAccessible').query({
+        layout: DEFAULT_ADMIN_UI_LAYOUT.uid,
+        portal: portal.get('uid'),
+      }),
+    ]);
+
+    expect(listResponse.status).toBe(200);
+    expect(getResponse.status).toBe(200);
+    expect(targetsResponse.status).toBe(200);
+    expect(ambiguousScopeResponse.status).toBe(400);
+    expect(collectRouteTitles(listResponse.body.data as RouteResponseItem[])).toEqual([
+      'DATA-PORTAL-EXPLICIT-SCOPE-ROUTE',
+    ]);
+    expect(getResponse.body.data.title).toBe('DATA-PORTAL-EXPLICIT-SCOPE-ROUTE');
+    expect(collectRouteTitles(targetsResponse.body.data as RouteResponseItem[])).toEqual([
+      'DATA-PORTAL-EXPLICIT-SCOPE-ROUTE',
+    ]);
   });
 
   it('should enforce role portal access before listing portal routes', async () => {
@@ -496,8 +590,8 @@ describe('plugin-multi-portal server', () => {
         name: 'multi-portal-permission-member',
       },
     });
-    await app.db.getRepository('desktopRoutes.uiLayouts', route.get('id')).set({
-      tk: [DEFAULT_ADMIN_UI_LAYOUT.uid],
+    await app.db.getRepository('desktopRoutes.multiPortals', route.get('id')).set({
+      tk: [allowedPortal.get('uid'), deniedPortal.get('uid')],
     });
     await app.db.getRepository('rolesDesktopRoutes').create({
       values: {
@@ -535,21 +629,21 @@ describe('plugin-multi-portal server', () => {
     const [allowedListResponse, deniedListResponse, allowedGetResponse, deniedGetResponse, rootDeniedListResponse] =
       await Promise.all([
         memberAgent.get('/desktopRoutes:listAccessible').query({
-          layout: allowedPortal.get('uid'),
+          portal: allowedPortal.get('uid'),
         }),
         memberAgent.get('/desktopRoutes:listAccessible').query({
-          layout: deniedPortal.get('uid'),
+          portal: deniedPortal.get('uid'),
         }),
         memberAgent.get('/desktopRoutes:getAccessible').query({
           filterByTk: route.get('id'),
-          layout: allowedPortal.get('uid'),
+          portal: allowedPortal.get('uid'),
         }),
         memberAgent.get('/desktopRoutes:getAccessible').query({
           filterByTk: route.get('id'),
-          layout: deniedPortal.get('uid'),
+          portal: deniedPortal.get('uid'),
         }),
         rootAgent.get('/desktopRoutes:listAccessible').query({
-          layout: deniedPortal.get('uid'),
+          portal: deniedPortal.get('uid'),
         }),
       ]);
 
@@ -605,8 +699,8 @@ describe('plugin-multi-portal server', () => {
         name: 'multi-portal-route-permission-member',
       },
     });
-    await app.db.getRepository('desktopRoutes.uiLayouts', route.get('id')).set({
-      tk: [DEFAULT_ADMIN_UI_LAYOUT.uid],
+    await app.db.getRepository('desktopRoutes.multiPortals', route.get('id')).set({
+      tk: [firstPortal.get('uid'), secondPortal.get('uid')],
     });
     await app.db.getRepository('rolesMultiPortals').create({
       values: {
@@ -637,18 +731,18 @@ describe('plugin-multi-portal server', () => {
 
     const [firstListResponse, secondListResponse, firstGetResponse, secondGetResponse] = await Promise.all([
       memberAgent.get('/desktopRoutes:listAccessible').query({
-        layout: firstPortal.get('uid'),
+        portal: firstPortal.get('uid'),
       }),
       memberAgent.get('/desktopRoutes:listAccessible').query({
-        layout: secondPortal.get('uid'),
+        portal: secondPortal.get('uid'),
       }),
       memberAgent.get('/desktopRoutes:getAccessible').query({
         filterByTk: route.get('id'),
-        layout: firstPortal.get('uid'),
+        portal: firstPortal.get('uid'),
       }),
       memberAgent.get('/desktopRoutes:getAccessible').query({
         filterByTk: route.get('id'),
-        layout: secondPortal.get('uid'),
+        portal: secondPortal.get('uid'),
       }),
     ]);
 
@@ -709,9 +803,12 @@ describe('plugin-multi-portal server', () => {
       },
     });
 
-    for (const route of [uiLayoutRoute, firstPortalRoute, secondPortalRoute]) {
-      await app.db.getRepository('desktopRoutes.uiLayouts', route.get('id')).set({
-        tk: [DEFAULT_ADMIN_UI_LAYOUT.uid],
+    await app.db.getRepository('desktopRoutes.uiLayouts', uiLayoutRoute.get('id')).set({
+      tk: [DEFAULT_ADMIN_UI_LAYOUT.uid],
+    });
+    for (const route of [firstPortalRoute, secondPortalRoute]) {
+      await app.db.getRepository('desktopRoutes.multiPortals', route.get('id')).set({
+        tk: [portal.get('uid')],
       });
     }
     await app.db.getRepository('rolesUiLayouts').create({
@@ -788,7 +885,7 @@ describe('plugin-multi-portal server', () => {
           layout: DEFAULT_ADMIN_UI_LAYOUT.uid,
         }),
         memberAgent.get('/desktopRoutes:listAccessible').query({
-          layout: portalUid,
+          portal: portalUid,
         }),
         memberAgent.get('/desktopRoutes:getAccessible').query({
           filterByTk: firstPortalRoute.get('id'),
@@ -796,7 +893,7 @@ describe('plugin-multi-portal server', () => {
         }),
         memberAgent.get('/desktopRoutes:getAccessible').query({
           filterByTk: uiLayoutRoute.get('id'),
-          layout: portalUid,
+          portal: portalUid,
         }),
       ]);
 
@@ -853,11 +950,11 @@ describe('plugin-multi-portal server', () => {
         name: 'multi-portal-parent-chain-member',
       },
     });
-    await app.db.getRepository('desktopRoutes.uiLayouts', parentRoute.get('id')).set({
-      tk: [DEFAULT_ADMIN_UI_LAYOUT.uid],
+    await app.db.getRepository('desktopRoutes.multiPortals', parentRoute.get('id')).set({
+      tk: [portal.get('uid')],
     });
-    await app.db.getRepository('desktopRoutes.uiLayouts', childRoute.get('id')).set({
-      tk: [DEFAULT_ADMIN_UI_LAYOUT.uid],
+    await app.db.getRepository('desktopRoutes.multiPortals', childRoute.get('id')).set({
+      tk: [portal.get('uid')],
     });
     await app.db.getRepository('rolesMultiPortals').create({
       values: {
@@ -900,7 +997,7 @@ describe('plugin-multi-portal server', () => {
     };
     const listAccessibleRouteTitles = async () => {
       const response = await memberAgent.get('/desktopRoutes:listAccessible').query({
-        layout: portal.get('uid'),
+        portal: portal.get('uid'),
       });
 
       expect(response.status).toBe(200);
@@ -910,7 +1007,7 @@ describe('plugin-multi-portal server', () => {
     await resetRoutePermissions([childRoute.get('id')]);
     const childOnlyChildGetResponse = await memberAgent.get('/desktopRoutes:getAccessible').query({
       filterByTk: childRoute.get('id'),
-      layout: portal.get('uid'),
+      portal: portal.get('uid'),
     });
     expect(await listAccessibleRouteTitles()).toEqual([]);
     expect(childOnlyChildGetResponse.body.data ?? null).toBeNull();
@@ -918,11 +1015,11 @@ describe('plugin-multi-portal server', () => {
     await resetRoutePermissions([parentRoute.get('id')]);
     const parentOnlyParentGetResponse = await memberAgent.get('/desktopRoutes:getAccessible').query({
       filterByTk: parentRoute.get('id'),
-      layout: portal.get('uid'),
+      portal: portal.get('uid'),
     });
     const parentOnlyChildGetResponse = await memberAgent.get('/desktopRoutes:getAccessible').query({
       filterByTk: childRoute.get('id'),
-      layout: portal.get('uid'),
+      portal: portal.get('uid'),
     });
     expect(await listAccessibleRouteTitles()).toEqual(['DATA-PORTAL-PARENT-ROUTE']);
     expect(parentOnlyParentGetResponse.body.data.title).toBe('DATA-PORTAL-PARENT-ROUTE');
@@ -931,10 +1028,10 @@ describe('plugin-multi-portal server', () => {
     await resetRoutePermissions([parentRoute.get('id'), childRoute.get('id')]);
     const parentAndChildGetResponse = await memberAgent.get('/desktopRoutes:getAccessible').query({
       filterByTk: childRoute.get('id'),
-      layout: portal.get('uid'),
+      portal: portal.get('uid'),
     });
     const rootListResponse = await rootAgent.get('/desktopRoutes:listAccessible').query({
-      layout: portal.get('uid'),
+      portal: portal.get('uid'),
     });
     expect(await listAccessibleRouteTitles()).toEqual(['DATA-PORTAL-PARENT-ROUTE', 'DATA-PORTAL-CHILD-ROUTE']);
     expect(parentAndChildGetResponse.body.data.title).toBe('DATA-PORTAL-CHILD-ROUTE');
