@@ -1,5 +1,7 @@
 ---
-displayName: "Пользовательские переменные"
+title: "Custom variables"
+keywords: "Custom variables"
+displayName: "Custom variables"
 packageName: '@nocobase/plugin-custom-variables'
 supportedVersions:
   - 1.x
@@ -11,4 +13,4 @@ defaultEnabled: false
 editionLevel: 0
 ---
 
-# Пользовательские переменные
+# Custom variables

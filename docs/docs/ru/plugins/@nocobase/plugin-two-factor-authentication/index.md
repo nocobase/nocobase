@@ -1,5 +1,7 @@
 ---
-displayName: "Двухфакторная аутентификация (2FA)"
+title: "Two-factor authentication (2FA)"
+keywords: "Authentication,Security,Verification"
+displayName: "Two-factor authentication (2FA)"
 packageName: '@nocobase/plugin-two-factor-authentication'
 supportedVersions:
   - 1.x
@@ -12,4 +14,4 @@ defaultEnabled: false
 editionLevel: 3
 ---
 
-# Двухфакторная аутентификация (2FA)
+# Two-factor authentication (2FA)

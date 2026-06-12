@@ -1,4 +1,6 @@
 ---
+title: "Notification: In-app message"
+keywords: "Notification"
 displayName: "Уведомления: сообщения в приложении"
 packageName: '@nocobase/plugin-notification-in-app-message'
 description: |

@@ -1,4 +1,6 @@
 ---
+title: "Redis worker ID allocator"
+keywords: "Architecture"
 displayName: "Выделение Worker ID в Redis"
 packageName: '@nocobase/plugin-workerid-allocator-redis'
 supportedVersions:

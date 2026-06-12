@@ -1,4 +1,6 @@
 ---
+title: "Block: GridCard"
+keywords: "Blocks"
 displayName: "Блок: сетка карточек"
 packageName: '@nocobase/plugin-block-grid-card'
 description: |

@@ -1,5 +1,7 @@
 ---
-displayName: "Верификация: TOTP-аутентификатор"
+title: "Verification: TOTP authenticator"
+keywords: "Authentication,Verification,Security"
+displayName: "Verification: TOTP authenticator"
 packageName: '@nocobase/plugin-verification-totp-authenticator'
 supportedVersions:
   - 1.x
@@ -12,4 +14,4 @@ defaultEnabled: false
 editionLevel: 3
 ---
 
-# Верификация: TOTP-аутентификатор
+# Verification: TOTP authenticator

@@ -5,8 +5,6 @@ description: Installieren Sie die NocoBase CLI und erstellen Sie mit `nb init --
 
 # NocoBase-App installieren
 
-Wenn Sie noch keine NocoBase-Anwendung haben, ist der schnellste Weg: zuerst `@nocobase/cli` installieren und dann einmal `nb init --ui` ausführen. In den meisten Fällen reichen die Standardoptionen im Assistenten aus.
-
 ## Voraussetzungen
 
 - Node.js >= 22
@@ -88,6 +86,13 @@ Die CLI-Konfiguration wird standardmäßig unter `~/.nocobase/` gespeichert. AI 
 
 Wenn diese Anwendung später produktiv für echte Benutzer bereitgestellt werden soll, empfehlen wir langfristig nicht die direkte Nutzung über `IP + port`. Der nächste Schritt ist normalerweise ein Reverse Proxy mit HTTPS.
 
+## Nächste Schritte
+
+- Wenn Sie bereits eine laufende NocoBase-App haben, lesen Sie die [Anbindungsanleitung für AI Agents](./quick-start.mdx)
+- Wenn Sie Start, Stopp, Logs und Upgrades der App verwalten möchten, lesen Sie [Apps verwalten](../nocobase-cli/operations/manage-app.md)
+- Wenn Sie mit der Produktionsbereitstellung fortfahren möchten, lesen Sie [Apps mit CLI installieren](../nocobase-cli/installation/cli.md) und [Überblick zur Produktionsbereitstellung](../nocobase-cli/production/index.md)
+- Wenn die AI mit dem Erstellen von Apps beginnen soll, lesen Sie [AI Builder](../ai-builder/index.md)
+
 ## Verwandte Links
 
 - [Installationsmethoden und Versionsvergleich](../get-started/quickstart.md) — Vergleichen Sie zuerst Installationsmethoden und Versionskanäle, und entscheiden Sie dann, wie Sie installieren möchten
@@ -95,4 +100,5 @@ Wenn diese Anwendung später produktiv für echte Benutzer bereitgestellt werden
 - [`nb init` Befehlsreferenz](../api/cli/init.md) — Eine neue App initialisieren, eine bestehende lokale App übernehmen oder eine Remote-App verbinden
 - [`nb env info` Befehlsreferenz](../api/cli/env/info.md) — Verbindungsdetails und Laufzeitkonfiguration der aktuellen env anzeigen
 - [NocoBase CLI](../api/cli/index.md) — Vollständige Referenz für alle `nb` Befehle
+- [Apps verwalten](../nocobase-cli/operations/manage-app.md) — Apps starten, stoppen, neu starten, Logs anzeigen und upgraden
 - [Mehrere Umgebungsverwaltung](../nocobase-cli/operations/multi-environment.md) — Häufige Abläufe, wenn Sie mehrere envs gleichzeitig pflegen

@@ -1,5 +1,7 @@
 ---
-displayName: "ИИ языковая модель: GigaChat"
+title: "AI LLM: GigaChat"
+keywords: "AI"
+displayName: "ИИ LLM: GigaChat"
 packageName: '@nocobase/plugin-ai-gigachat'
 supportedVersions:
   - 2.x
@@ -11,4 +13,4 @@ defaultEnabled: false
 editionLevel: 0
 ---
 
-# ИИ языковая модель: GigaChat
+# ИИ LLM: GigaChat

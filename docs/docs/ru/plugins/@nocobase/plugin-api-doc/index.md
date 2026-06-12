@@ -1,4 +1,6 @@
 ---
+title: "API documentation"
+keywords: "API documentation,Plugin,NocoBase"
 displayName: "Документация API"
 packageName: '@nocobase/plugin-api-doc'
 description: |

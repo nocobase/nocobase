@@ -1,4 +1,6 @@
 ---
+title: "Migration manager"
+keywords: "System management"
 displayName: "Менеджер миграций"
 packageName: '@nocobase/plugin-migration-manager'
 supportedVersions:

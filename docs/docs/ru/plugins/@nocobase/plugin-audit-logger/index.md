@@ -1,4 +1,6 @@
 ---
+title: "Audit logs"
+keywords: "Logging and monitoring"
 displayName: "Логи аудита"
 packageName: '@nocobase/plugin-audit-logger'
 supportedVersions:

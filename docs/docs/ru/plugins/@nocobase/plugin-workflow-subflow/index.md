@@ -1,4 +1,6 @@
 ---
+title: "Workflow: Subflow"
+keywords: "Workflow"
 displayName: "Рабочий процесс: подпроцесс"
 packageName: '@nocobase/plugin-workflow-subflow'
 supportedVersions:

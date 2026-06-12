@@ -1,5 +1,7 @@
 ---
-displayName: "Телеметрия: Prometheus"
+title: "Telemetry: Prometheus"
+keywords: "Logging and monitoring"
+displayName: "Telemetry: Prometheus"
 packageName: '@nocobase/plugin-telemetry-prometheus'
 supportedVersions:
   - 1.x
@@ -12,4 +14,4 @@ defaultEnabled: false
 editionLevel: 3
 ---
 
-# Телеметрия: Prometheus
+# Telemetry: Prometheus

@@ -1,5 +1,7 @@
 ---
-displayName: "Блок: iframe"
+title: "Block: iframe"
+keywords: "Blocks"
+displayName: "Block: iframe"
 packageName: '@nocobase/plugin-block-iframe'
 description: |
   Блок iframe на странице для встраивания внешних веб-страниц или контента.
@@ -9,4 +11,4 @@ defaultEnabled: false
 editionLevel: 0
 ---
 
-# Блок: iframe
+# Block: iframe

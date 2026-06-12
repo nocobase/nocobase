@@ -1,14 +1,16 @@
 ---
-displayName: "変更履歴"
+title: "Record history"
+keywords: "Logging and monitoring"
+displayName: "Record history"
 packageName: '@nocobase/plugin-record-history'
 supportedVersions:
   - 2.x
 description: |
-  コレクションのレコードの変更履歴を追跡し、保存します。
+  Tracks and stores the change history of collection records.
 isFree: false
 builtIn: false
 defaultEnabled: false
 editionLevel: 2
 ---
 
-# 変更履歴
+# Record history

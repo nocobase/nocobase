@@ -5,8 +5,6 @@ description: Install NocoBase CLI and quickly create a new NocoBase application 
 
 # Install NocoBase App
 
-If you do not have a NocoBase application yet, the fastest way is to install `@nocobase/cli` first, then run `nb init --ui` once. In most cases, the default options in the wizard are enough.
-
 ## Prerequisites
 
 - Node.js >= 22
@@ -88,6 +86,13 @@ CLI configuration is stored in `~/.nocobase/` by default, so AI Agents can usual
 
 If this app will be exposed to real users later, we do not recommend using `IP + port` for the long term. The next step is usually to put it behind a reverse proxy and enable HTTPS.
 
+## Next Steps
+
+- If you already have a running NocoBase app, see [AI Agent Integration Guide](./quick-start.mdx)
+- If you want to manage app startup, shutdown, logs, and upgrades, see [Manage apps](../nocobase-cli/operations/manage-app.md)
+- If you want to continue with production deployment, see [Install apps with CLI](../nocobase-cli/installation/cli.md) and [Production deployment overview](../nocobase-cli/production/index.md)
+- If you want AI to start building apps, see [AI Builder](../ai-builder/index.md)
+
 ## Related Links
 
 - [Installation and Version Comparison](../get-started/quickstart.md) — Compare installation methods and version channels first, then decide how to install
@@ -95,4 +100,5 @@ If this app will be exposed to real users later, we do not recommend using `IP +
 - [`nb init` command reference](../api/cli/init.md) — Initialize a new app, take over an existing local app, or connect a remote app
 - [`nb env info` command reference](../api/cli/env/info.md) — View the connection details and runtime configuration of the current env
 - [NocoBase CLI](../api/cli/index.md) — Full reference for all `nb` commands
+- [Manage apps](../nocobase-cli/operations/manage-app.md) — Start, stop, restart, view logs, and upgrade apps
 - [Multiple environment management](../nocobase-cli/operations/multi-environment.md) — Common operations when you maintain multiple envs at the same time

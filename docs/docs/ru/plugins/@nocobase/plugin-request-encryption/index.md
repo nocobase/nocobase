@@ -1,5 +1,7 @@
 ---
-displayName: "Шифрование HTTP-запросов"
+title: "HTTP request encryption"
+keywords: "Security"
+displayName: "HTTP request encryption"
 packageName: '@nocobase/plugin-request-encryption'
 supportedVersions:
   - 1.x
@@ -12,4 +14,4 @@ defaultEnabled: false
 editionLevel: 3
 ---
 
-# Шифрование HTTP-запросов
+# HTTP request encryption

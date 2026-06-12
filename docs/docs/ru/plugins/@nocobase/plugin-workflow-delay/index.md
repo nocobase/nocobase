@@ -1,4 +1,6 @@
 ---
+title: "Workflow: Delay node"
+keywords: "Workflow"
 displayName: "Рабочий процесс: узел задержки"
 packageName: '@nocobase/plugin-workflow-delay'
 description: |

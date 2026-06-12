@@ -1,5 +1,7 @@
 ---
-displayName: "Политика паролей"
+title: "Password policy"
+keywords: "Security,Authentication"
+displayName: "Password policy"
 packageName: '@nocobase/plugin-password-policy'
 supportedVersions:
   - 1.x
@@ -12,4 +14,4 @@ defaultEnabled: false
 editionLevel: 2
 ---
 
-# Политика паролей
+# Password policy

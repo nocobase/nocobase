@@ -1,4 +1,6 @@
 ---
+title: "Block: Gantt"
+keywords: "Blocks"
 displayName: "Блок: диаграмма Ганта"
 packageName: '@nocobase/plugin-gantt'
 description: |

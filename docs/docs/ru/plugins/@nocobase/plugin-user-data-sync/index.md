@@ -1,4 +1,6 @@
 ---
+title: "User data synchronization"
+keywords: "Users & permissions"
 displayName: "Синхронизация пользовательских данных"
 packageName: '@nocobase/plugin-user-data-sync'
 description: |

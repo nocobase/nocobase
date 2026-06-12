@@ -1,5 +1,7 @@
 ---
-displayName: "Системные настройки"
+title: "System settings"
+keywords: "System management"
+displayName: "System settings"
 packageName: '@nocobase/plugin-system-settings'
 description: |
   Настройка заголовка системы, логотипа, языка и др.
@@ -9,4 +11,4 @@ defaultEnabled: false
 editionLevel: 0
 ---
 
-# Системные настройки
+# System settings

@@ -1,8 +1,10 @@
 ---
+title: "Block: template (deprecated)"
+keywords: "Block,Template"
 displayName: "Блок: шаблон (устарело)"
 packageName: '@nocobase/plugin-block-template'
 description: |
-  Создание и управление шаблонами блоков для повторного использования на страницах.
+  Create and manage block templates for reuse on pages.
 isFree: true
 builtIn: true
 defaultEnabled: false

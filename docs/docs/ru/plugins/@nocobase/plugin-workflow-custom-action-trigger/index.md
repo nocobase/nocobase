@@ -1,4 +1,6 @@
 ---
+title: "Workflow: Custom action event"
+keywords: "Workflow"
 displayName: "Рабочий процесс: пользовательское событие действия"
 packageName: '@nocobase/plugin-workflow-custom-action-trigger'
 supportedVersions:

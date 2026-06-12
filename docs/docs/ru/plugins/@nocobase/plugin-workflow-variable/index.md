@@ -1,4 +1,6 @@
 ---
+title: "Workflow: Custom variable"
+keywords: "Workflow"
 displayName: "Рабочий процесс: пользовательская переменная"
 packageName: '@nocobase/plugin-workflow-variable'
 supportedVersions:

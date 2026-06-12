@@ -1,5 +1,7 @@
 ---
-displayName: "Аутентификация: API-ключи"
+title: "Auth: API keys"
+keywords: "Authentication"
+displayName: "Auth: API keys"
 packageName: '@nocobase/plugin-api-keys'
 description: |
   Позволяет обращаться к HTTP API приложения с помощью API-ключа.
@@ -9,4 +11,4 @@ defaultEnabled: false
 editionLevel: 0
 ---
 
-# Аутентификация: API-ключи
+# Auth: API keys

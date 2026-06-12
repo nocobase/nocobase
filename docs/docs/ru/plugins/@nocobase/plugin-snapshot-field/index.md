@@ -1,4 +1,6 @@
 ---
+title: "Collection field: Snapshot"
+keywords: "Collection fields"
 displayName: "Поле коллекции: снимок"
 packageName: '@nocobase/plugin-snapshot-field'
 description: |

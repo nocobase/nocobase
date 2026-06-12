@@ -1,5 +1,7 @@
 ---
-displayName: "Календарь"
+title: "Calendar"
+keywords: "Collections,Blocks"
+displayName: "Calendar"
 packageName: '@nocobase/plugin-calendar'
 description: |
   Шаблон коллекции «календарь» и блок для работы с датами: события, встречи, задачи и другое.
@@ -9,4 +11,4 @@ defaultEnabled: false
 editionLevel: 0
 ---
 
-# Календарь
+# Calendar

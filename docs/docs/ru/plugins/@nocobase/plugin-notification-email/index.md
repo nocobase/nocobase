@@ -1,4 +1,6 @@
 ---
+title: "Notification: Email"
+keywords: "Notification"
 displayName: "Уведомления: электронная почта"
 packageName: '@nocobase/plugin-notification-email'
 description: |

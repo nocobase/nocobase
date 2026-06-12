@@ -1,5 +1,7 @@
 ---
-displayName: "Источник данных: REST API"
+title: "Data source: REST API"
+keywords: "Data sources"
+displayName: "Data source: REST API"
 packageName: '@nocobase/plugin-data-source-rest-api'
 supportedVersions:
   - 1.x
@@ -12,4 +14,4 @@ defaultEnabled: false
 editionLevel: 1
 ---
 
-# Источник данных: REST API
+# Data source: REST API

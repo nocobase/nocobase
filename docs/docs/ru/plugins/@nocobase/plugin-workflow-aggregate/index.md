@@ -1,4 +1,6 @@
 ---
+title: "Workflow: Aggregate node"
+keywords: "Workflow"
 displayName: "Рабочий процесс: узел агрегации"
 packageName: '@nocobase/plugin-workflow-aggregate'
 description: |

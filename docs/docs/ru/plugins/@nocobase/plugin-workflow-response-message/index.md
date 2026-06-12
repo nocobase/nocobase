@@ -1,4 +1,6 @@
 ---
+title: "Workflow: Response message"
+keywords: "Workflow"
 displayName: "Рабочий процесс: ответное сообщение"
 packageName: '@nocobase/plugin-workflow-response-message'
 description: |

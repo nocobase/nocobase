@@ -1,4 +1,6 @@
 ---
+title: "Block: Multi-step form"
+keywords: "Blocks"
 displayName: "Блок: многошаговая форма"
 packageName: '@nocobase/plugin-block-multi-step-form'
 supportedVersions:
@@ -8,6 +10,7 @@ description: |
 isFree: true
 builtIn: true
 defaultEnabled: false
+deprecated: true
 editionLevel: 0
 ---
 

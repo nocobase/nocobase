@@ -1,5 +1,7 @@
 ---
-displayName: "Входящий HTTP/Webhook"
+title: "Workflow: Webhook"
+keywords: "Workflow"
+displayName: "Рабочий процесс: Webhook"
 packageName: '@nocobase/plugin-workflow-webhook'
 supportedVersions:
   - 1.x
@@ -12,4 +14,4 @@ defaultEnabled: false
 editionLevel: 2
 ---
 
-# Входящий HTTP/Webhook
+# Рабочий процесс: Webhook

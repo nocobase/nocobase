@@ -1,4 +1,6 @@
 ---
+title: "Action: Batch update"
+keywords: "Actions"
 displayName: "Действие: массовое обновление"
 packageName: '@nocobase/plugin-action-bulk-update'
 supportedVersions:

@@ -1,4 +1,6 @@
 ---
+title: "Collection field: Attachment(URL)"
+keywords: "Collection fields"
 displayName: "Поле коллекции: вложение (URL)"
 packageName: '@nocobase/plugin-field-attachment-url'
 description: |

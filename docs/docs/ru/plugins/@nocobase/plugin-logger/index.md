@@ -1,4 +1,6 @@
 ---
+title: "Logger"
+keywords: "Logging and monitoring"
 displayName: "Логирование"
 packageName: '@nocobase/plugin-logger'
 description: |

@@ -1,5 +1,7 @@
 ---
-displayName: "Компонент поля: маска"
+title: "Field component: mask"
+keywords: "Security"
+displayName: "Field component: mask"
 packageName: '@nocobase/plugin-field-component-mask'
 supportedVersions:
   - 1.x
@@ -11,4 +13,4 @@ defaultEnabled: false
 editionLevel: 2
 ---
 
-# Компонент поля: маска
+# Field component: mask

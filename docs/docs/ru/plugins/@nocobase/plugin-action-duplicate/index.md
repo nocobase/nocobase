@@ -1,4 +1,6 @@
 ---
+title: "Action: Duplicate record"
+keywords: "Actions"
 displayName: "Действие: дублирование записи"
 packageName: '@nocobase/plugin-action-duplicate'
 supportedVersions:

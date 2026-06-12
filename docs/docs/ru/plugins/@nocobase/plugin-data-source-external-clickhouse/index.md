@@ -1,5 +1,7 @@
 ---
-displayName: "Источник данных: внешний ClickHouse"
+title: "Data source: External ClickHouse"
+keywords: "Data sources"
+displayName: "Data source: External ClickHouse"
 packageName: '@nocobase/plugin-data-source-external-clickhouse'
 supportedVersions:
   - 1.x
@@ -12,4 +14,4 @@ defaultEnabled: false
 editionLevel: 3
 ---
 
-# Источник данных: внешний ClickHouse
+# Data source: External ClickHouse

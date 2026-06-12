@@ -1,4 +1,6 @@
 ---
+title: "Departments"
+keywords: "Users & permissions"
 displayName: "Отделы"
 packageName: '@nocobase/plugin-departments'
 description: |

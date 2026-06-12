@@ -1,5 +1,7 @@
 ---
-displayName: "Комментарии"
+title: "Comments"
+keywords: "Comments,Plugin,NocoBase"
+displayName: "Comments"
 packageName: '@nocobase/plugin-comments'
 supportedVersions:
   - 1.x
@@ -12,4 +14,4 @@ defaultEnabled: false
 editionLevel: 0
 ---
 
-# Комментарии
+# Comments

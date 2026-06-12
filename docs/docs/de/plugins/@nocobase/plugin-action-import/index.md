@@ -1,15 +1,17 @@
 ---
-displayName: "Action: Datensätze importieren"
+title: "Action: Import records"
+keywords: "Actions"
+displayName: "Action: Import records"
 packageName: '@nocobase/plugin-action-import'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Daten mithilfe von Excel-Vorlagen importieren. Sie können konfigurieren, welche Felder importiert werden sollen, und Vorlagen werden automatisch generiert.
+  Import records using excel templates. You can configure which fields to import and templates will be generated automatically.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Action: Datensätze importieren
+# Action: Import records

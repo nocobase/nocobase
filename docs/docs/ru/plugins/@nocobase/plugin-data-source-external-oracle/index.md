@@ -1,4 +1,6 @@
 ---
+title: "Data source: External Oracle"
+keywords: "Data sources"
 displayName: "Источник данных: внешний Oracle"
 packageName: '@nocobase/plugin-data-source-external-oracle'
 supportedVersions:

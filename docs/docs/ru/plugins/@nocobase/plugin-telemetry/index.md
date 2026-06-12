@@ -1,5 +1,7 @@
 ---
-displayName: "Телеметрия"
+title: "Telemetry"
+keywords: "Logging and monitoring"
+displayName: "Telemetry"
 packageName: '@nocobase/plugin-telemetry'
 supportedVersions:
   - 2.x
@@ -11,4 +13,4 @@ defaultEnabled: false
 editionLevel: 3
 ---
 
-# Телеметрия
+# Telemetry

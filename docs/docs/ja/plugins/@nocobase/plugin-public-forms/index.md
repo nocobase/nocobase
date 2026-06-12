@@ -1,12 +1,14 @@
 ---
-displayName: "公開フォーム"
+title: "Public forms"
+keywords: "Public forms,Plugin,NocoBase"
+displayName: "Public forms"
 packageName: '@nocobase/plugin-public-forms'
 description: |
-  公開フォームを外部に共有し、匿名ユーザーから情報を収集します。
+  Share public forms externally to collect information from anonymous users
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# 公開フォーム
+# Public forms

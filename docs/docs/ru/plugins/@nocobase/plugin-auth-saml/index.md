@@ -1,5 +1,7 @@
 ---
-displayName: "Аутентификация: SAML 2.0"
+title: "Auth: SAML 2.0"
+keywords: "Authentication"
+displayName: "Auth: SAML 2.0"
 packageName: '@nocobase/plugin-auth-saml'
 supportedVersions:
   - 1.x
@@ -12,4 +14,4 @@ defaultEnabled: false
 editionLevel: 2
 ---
 
-# Аутентификация: SAML 2.0
+# Auth: SAML 2.0

@@ -1,5 +1,7 @@
 ---
-displayName: "Пользователи"
+title: "Users"
+keywords: "Users & permissions"
+displayName: "Users"
 packageName: '@nocobase/plugin-users'
 description: |
   Базовая модель пользователя, а также поля «кто создал» и «кто обновил».
@@ -9,4 +11,4 @@ defaultEnabled: false
 editionLevel: 0
 ---
 
-# Пользователи
+# Users

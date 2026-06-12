@@ -1,4 +1,6 @@
 ---
+title: "Collection field: administrative divisions of China"
+keywords: "Collection fields"
 displayName: "Поле коллекции: административное деление Китая"
 packageName: '@nocobase/plugin-field-china-region'
 description: |

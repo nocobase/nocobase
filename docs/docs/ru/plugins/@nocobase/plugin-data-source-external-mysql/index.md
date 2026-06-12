@@ -1,5 +1,7 @@
 ---
-displayName: "Источник данных: внешний MySQL"
+title: "Data source: External MySQL"
+keywords: "Data sources"
+displayName: "Data source: External MySQL"
 packageName: '@nocobase/plugin-data-source-external-mysql'
 supportedVersions:
   - 1.x
@@ -12,4 +14,4 @@ defaultEnabled: false
 editionLevel: 1
 ---
 
-# Источник данных: внешний MySQL
+# Data source: External MySQL

@@ -1,12 +1,14 @@
 ---
-displayName: "通知：メール"
+title: "Notification: Email"
+keywords: "Notification"
+displayName: "Notification: Email"
 packageName: '@nocobase/plugin-notification-email'
 description: |
-  電子メールチャネルを通じて通知を送信します。現在は SMTP 転送方式のみをサポートしています。
+  Used for sending email notifications with built-in SMTP transport.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# 通知：メール
+# Notification: Email

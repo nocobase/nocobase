@@ -1,5 +1,7 @@
 ---
-displayName: "Источник данных: внешний Doris"
+title: "Data source: External Doris"
+keywords: "Data sources"
+displayName: "Data source: External Doris"
 packageName: '@nocobase/plugin-data-source-external-doris'
 supportedVersions:
   - 1.x
@@ -12,4 +14,4 @@ defaultEnabled: false
 editionLevel: 3
 ---
 
-# Источник данных: внешний Doris
+# Data source: External Doris

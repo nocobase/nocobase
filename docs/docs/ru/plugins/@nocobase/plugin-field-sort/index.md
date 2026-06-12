@@ -1,4 +1,6 @@
 ---
+title: "Collection field: Sort"
+keywords: "Collection fields"
 displayName: "Поле коллекции: сортировка"
 packageName: '@nocobase/plugin-field-sort'
 description: |

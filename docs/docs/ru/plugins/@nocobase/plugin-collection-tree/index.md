@@ -1,8 +1,10 @@
 ---
+title: "Collection: Tree"
+keywords: "Collections"
 displayName: "Коллекция: Древовидная коллекция"
 packageName: '@nocobase/plugin-collection-tree'
 description: |
-  Шаблон древовидной коллекции.
+  Provides tree collection template
 isFree: true
 builtIn: true
 defaultEnabled: false

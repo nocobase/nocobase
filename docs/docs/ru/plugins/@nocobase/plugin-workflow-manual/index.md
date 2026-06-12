@@ -1,4 +1,6 @@
 ---
+title: "Workflow: Manual node"
+keywords: "Workflow"
 displayName: "Рабочий процесс: ручной узел"
 packageName: '@nocobase/plugin-workflow-manual'
 description: |

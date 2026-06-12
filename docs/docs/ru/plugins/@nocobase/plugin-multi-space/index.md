@@ -1,5 +1,7 @@
 ---
-displayName: "Мультипространство"
+title: "Multi-space"
+keywords: "Architecture"
+displayName: "Multi-space"
 packageName: '@nocobase/plugin-multi-space'
 supportedVersions:
   - 2.x
@@ -11,4 +13,4 @@ defaultEnabled: false
 editionLevel: 3
 ---
 
-# Мультипространство
+# Multi-space

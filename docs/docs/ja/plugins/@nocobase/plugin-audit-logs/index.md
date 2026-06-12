@@ -1,8 +1,10 @@
 ---
-displayName: "監査ログ（廃止）"
+title: "Audit logs (deprecated)"
+keywords: "System & security"
+displayName: "Audit logs (deprecated)"
 packageName: '@nocobase/plugin-audit-logs'
 description: |
-  このプラグインは廃止されました。使用しないでください。将来、新しい監査ログプラグインが提供される予定です。
+  This plugin is deprecated. There will be a new audit log plugin in the future.
 isFree: true
 builtIn: true
 defaultEnabled: false
@@ -10,6 +12,6 @@ deprecated: true
 editionLevel: 0
 ---
 
-# 監査ログ（廃止）
+# Audit logs (deprecated)
 
-> 注意：このプラグインは廃止されました（deprecated）。
+> Note: This plugin is deprecated.

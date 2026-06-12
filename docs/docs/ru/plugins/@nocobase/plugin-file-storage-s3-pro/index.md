@@ -1,5 +1,7 @@
 ---
-displayName: "Хранилище файлов: S3 (Pro)"
+title: "File storage: S3(Pro)"
+keywords: "Collections,Collection fields"
+displayName: "File storage: S3(Pro)"
 packageName: '@nocobase/plugin-file-storage-s3-pro'
 supportedVersions:
   - 1.x
@@ -12,4 +14,4 @@ defaultEnabled: false
 editionLevel: 2
 ---
 
-# Хранилище файлов: S3 (Pro)
+# File storage: S3(Pro)

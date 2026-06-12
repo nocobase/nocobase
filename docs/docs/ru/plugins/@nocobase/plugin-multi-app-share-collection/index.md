@@ -1,5 +1,7 @@
 ---
-displayName: "Общая коллекция между приложениями"
+title: "Multi-app share collection"
+keywords: "System management"
+displayName: Общая коллекция между приложениями"
 packageName: '@nocobase/plugin-multi-app-share-collection'
 description: |
 

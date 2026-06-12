@@ -1,4 +1,6 @@
 ---
+title: "Workflow: HTTP request node"
+keywords: "Workflow"
 displayName: "Рабочий процесс: узел HTTP-запроса"
 packageName: '@nocobase/plugin-workflow-request'
 description: |

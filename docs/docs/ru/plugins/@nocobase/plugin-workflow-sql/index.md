@@ -1,4 +1,6 @@
 ---
+title: "Workflow: SQL node"
+keywords: "Workflow"
 displayName: "Рабочий процесс: узел SQL"
 packageName: '@nocobase/plugin-workflow-sql'
 description: |

@@ -1,4 +1,6 @@
 ---
+title: "Redis pub sub adapter"
+keywords: "Architecture"
 displayName: "Адаптер pub/sub Redis"
 packageName: '@nocobase/plugin-pubsub-adapter-redis'
 supportedVersions:

@@ -1,5 +1,7 @@
 ---
- displayName: "Действие: импорт записей"
+title: "Action: Import records"
+keywords: "Actions"
+displayName: "Действие: импорт записей"
 packageName: '@nocobase/plugin-action-import'
 supportedVersions:
   - 1.x

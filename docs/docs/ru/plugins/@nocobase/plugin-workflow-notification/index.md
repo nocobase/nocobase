@@ -1,4 +1,6 @@
 ---
+title: "Workflow: notification node"
+keywords: "Workflow"
 displayName: "Рабочий процесс: узел уведомлений"
 packageName: '@nocobase/plugin-workflow-notification'
 description: |

@@ -1,5 +1,7 @@
 ---
-displayName: "Черновики форм"
+title: "Form drafts"
+keywords: "Form drafts,Plugin,NocoBase"
+displayName: "Form drafts"
 packageName: '@nocobase/plugin-form-drafts'
 supportedVersions:
   - 2.x
@@ -11,4 +13,4 @@ defaultEnabled: false
 editionLevel: 0
 ---
 
-# Черновики форм
+# Form drafts

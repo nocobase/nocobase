@@ -1,4 +1,6 @@
 ---
+title: "Email manager"
+keywords: "Blocks"
 displayName: "Менеджер почты"
 packageName: '@nocobase/plugin-email-manager'
 supportedVersions:

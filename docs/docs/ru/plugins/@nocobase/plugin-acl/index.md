@@ -1,4 +1,6 @@
 ---
+title: "Access control"
+keywords: "Users & permissions"
 displayName: "Контроль доступа"
 packageName: '@nocobase/plugin-acl'
 supportedVersions:

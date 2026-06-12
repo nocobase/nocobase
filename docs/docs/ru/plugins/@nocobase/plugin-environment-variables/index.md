@@ -1,4 +1,6 @@
 ---
+title: "Variables and secrets"
+keywords: "System management"
 displayName: "Переменные и секреты"
 packageName: '@nocobase/plugin-environment-variables'
 description: |

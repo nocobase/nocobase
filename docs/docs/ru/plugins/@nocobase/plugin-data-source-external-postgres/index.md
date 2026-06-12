@@ -1,4 +1,6 @@
 ---
+title: "Data source: External PostgreSQL"
+keywords: "Data sources"
 displayName: "Источник данных: внешний PostgreSQL"
 packageName: '@nocobase/plugin-data-source-external-postgres'
 supportedVersions:
