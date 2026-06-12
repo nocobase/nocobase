@@ -12,6 +12,6 @@ menus, blocks, models, data sources, and business APIs still rely on NocoBase
 authentication and server-side permission checks.
 
 Use `@nocobase/plugin-multi-portal` when a commercial portal layer is needed on
-top of UI Layout. Multi-Portal owns portal entries and portal-specific
+top of UI Layout. Multi-portal owns portal entries and portal-specific
 permission boundaries; UI Layout remains the shared layout and route
 infrastructure.

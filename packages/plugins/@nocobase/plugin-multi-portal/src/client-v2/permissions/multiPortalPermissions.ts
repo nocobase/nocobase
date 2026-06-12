@@ -44,7 +44,7 @@ export function registerMultiPortalPermissionsTab(app: Application, t: Translate
 
   aclPlugin.settingsUI.addPermissionsTab({
     key: 'multi-portals',
-    label: String(t('Multi-Portal')),
+    label: String(t('Multi-portal')),
     sort: 22,
     componentLoader: () => import('./MultiPortalPermissionsTab'),
   });

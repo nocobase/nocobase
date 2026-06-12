@@ -63,7 +63,7 @@ describe('plugin-multi-portal route permissions', () => {
       </AntdApp>,
     );
 
-    expect(await screen.findByText('Multi-Portal')).toBeInTheDocument();
+    expect(await screen.findByText('Multi-portal')).toBeInTheDocument();
     expect(screen.getByRole('checkbox', { name: 'Allow access to Customer portal' })).toBeChecked();
     expect(screen.getByRole('columnheader', { name: 'Menu permissions' })).toBeInTheDocument();
 

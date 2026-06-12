@@ -562,7 +562,7 @@ export default function MultiPortalPermissionsTab(props: PermissionTabProps) {
 
   return (
     <Space direction="vertical" size={token.marginSM} style={{ width: '100%' }}>
-      <Typography.Text strong>{t('Multi-Portal')}</Typography.Text>
+      <Typography.Text strong>{t('Multi-portal')}</Typography.Text>
       <Table<MultiPortalRecord>
         rowKey="uid"
         loading={portalService.loading || rolePortalService.loading}

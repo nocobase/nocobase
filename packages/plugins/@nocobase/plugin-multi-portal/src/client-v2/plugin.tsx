@@ -13,7 +13,7 @@ import { registerMultiPortalPermissionsTab } from './permissions/multiPortalPerm
 
 export class PluginMultiPortalClientV2 extends Plugin {
   async load() {
-    const title = this.t('Multi-Portal') as string;
+    const title = this.t('Multi-portal') as string;
 
     this.pluginSettingsManager.addMenuItem({
       key: 'multi-portal',

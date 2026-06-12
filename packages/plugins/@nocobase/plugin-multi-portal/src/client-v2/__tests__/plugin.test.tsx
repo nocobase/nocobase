@@ -148,7 +148,7 @@ describe('PluginMultiPortalClientV2', () => {
 
     expect(app.pluginSettingsManager.addMenuItem).toHaveBeenCalledWith({
       key: 'multi-portal',
-      title: 'Multi-Portal',
+      title: 'Multi-portal',
       icon: 'PartitionOutlined',
       aclSnippet: 'pm.multi-portal',
       showTabs: true,
@@ -157,13 +157,13 @@ describe('PluginMultiPortalClientV2', () => {
     expect(app.pluginSettingsManager.addPageTabItem).toHaveBeenCalledWith({
       menuKey: 'multi-portal',
       key: 'index',
-      title: 'Multi-Portal',
+      title: 'Multi-portal',
       aclSnippet: 'pm.multi-portal',
       componentLoader: expect.any(Function),
     });
     expect(addPermissionsTab).toHaveBeenCalledWith({
       key: 'multi-portals',
-      label: 'Multi-Portal',
+      label: 'Multi-portal',
       sort: 22,
       componentLoader: expect.any(Function),
     });

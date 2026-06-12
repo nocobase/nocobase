@@ -2,10 +2,10 @@
   "name": "@nocobase/plugin-multi-portal",
   "version": "2.2.0-beta.1",
   "main": "dist/server/index.js",
-  "displayName": "Multi-Portal",
-  "displayName.zh-CN": "多门户",
+  "displayName": "Multi-portal",
+  "displayName.zh-CN": "多工作区",
   "description": "Provides multi-portal layout management.",
-  "description.zh-CN": "提供多门户布局管理。",
+  "description.zh-CN": "提供多工作区布局管理。",
   "dependencies": {},
   "peerDependencies": {
     "@nocobase/client": "2.x",

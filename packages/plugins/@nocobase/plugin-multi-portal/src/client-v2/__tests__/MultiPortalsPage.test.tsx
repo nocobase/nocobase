@@ -230,7 +230,7 @@ describe('plugin-multi-portal settings page', () => {
       </AntdApp>,
     );
 
-    await user.click(await screen.findByRole('button', { name: /Add Multi-Portal/ }));
+    await user.click(await screen.findByRole('button', { name: /Add Multi-portal/ }));
     rerender(
       <AntdApp>
         <MultiPortalsPage />
@@ -238,7 +238,7 @@ describe('plugin-multi-portal settings page', () => {
       </AntdApp>,
     );
 
-    const dialog = await screen.findByRole('dialog', { name: 'Add Multi-Portal' });
+    const dialog = await screen.findByRole('dialog', { name: 'Add Multi-portal' });
     expect(within(dialog).getByLabelText('Title')).toBeInTheDocument();
     expect(within(dialog).getByLabelText('UID')).toBeInTheDocument();
     expect(within(dialog).queryByLabelText('Route name')).not.toBeInTheDocument();
@@ -302,7 +302,7 @@ describe('plugin-multi-portal settings page', () => {
       </AntdApp>,
     );
 
-    await user.click(await screen.findByRole('button', { name: /Add Multi-Portal/ }));
+    await user.click(await screen.findByRole('button', { name: /Add Multi-portal/ }));
     rerender(
       <AntdApp>
         <MultiPortalsPage />
@@ -310,7 +310,7 @@ describe('plugin-multi-portal settings page', () => {
       </AntdApp>,
     );
 
-    const dialog = await screen.findByRole('dialog', { name: 'Add Multi-Portal' });
+    const dialog = await screen.findByRole('dialog', { name: 'Add Multi-portal' });
     await user.type(within(dialog).getByLabelText('Title'), 'Admin portal');
     await user.clear(within(dialog).getByLabelText('UID'));
     await user.type(within(dialog).getByLabelText('UID'), 'admin-portal');
@@ -394,7 +394,7 @@ describe('plugin-multi-portal settings page', () => {
       </AntdApp>,
     );
 
-    const dialog = await screen.findByRole('dialog', { name: 'Edit Multi-Portal' });
+    const dialog = await screen.findByRole('dialog', { name: 'Edit Multi-portal' });
     expect(await within(dialog).findByText('Mobile layout')).toBeInTheDocument();
   });
 
@@ -435,7 +435,7 @@ describe('plugin-multi-portal settings page', () => {
       </AntdApp>,
     );
 
-    await user.click(await screen.findByRole('button', { name: /Add Multi-Portal/ }));
+    await user.click(await screen.findByRole('button', { name: /Add Multi-portal/ }));
     rerender(
       <AntdApp>
         <MultiPortalsPage />
@@ -443,7 +443,7 @@ describe('plugin-multi-portal settings page', () => {
       </AntdApp>,
     );
 
-    const dialog = await screen.findByRole('dialog', { name: 'Add Multi-Portal' });
+    const dialog = await screen.findByRole('dialog', { name: 'Add Multi-portal' });
     await user.type(within(dialog).getByLabelText('Title'), 'Bad portal');
     await user.clear(within(dialog).getByLabelText('UID'));
     await user.type(within(dialog).getByLabelText('UID'), 'bad-portal');
@@ -515,7 +515,7 @@ describe('plugin-multi-portal settings page', () => {
       </AntdApp>,
     );
 
-    const dialog = await screen.findByRole('dialog', { name: 'Edit Multi-Portal' });
+    const dialog = await screen.findByRole('dialog', { name: 'Edit Multi-portal' });
     const accessPathInput = within(dialog).getByLabelText('Access path');
     await user.clear(accessPathInput);
     await user.type(accessPathInput, 'portal');

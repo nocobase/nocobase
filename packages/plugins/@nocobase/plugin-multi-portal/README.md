@@ -4,7 +4,7 @@
 on top of `@nocobase/plugin-ui-layout`. A portal selects an enabled UI Layout
 and adds portal-scoped access and desktop route/menu permissions for roles.
 
-UI Layout remains the open-source layout/route base. Multi-Portal does not
+UI Layout remains the open-source layout/route base. Multi-portal does not
 replace the UI Layout registry; it composes with it to create isolated portal
 entry points and permission boundaries.
 

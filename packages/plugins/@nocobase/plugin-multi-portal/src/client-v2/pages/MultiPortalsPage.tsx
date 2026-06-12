@@ -263,9 +263,9 @@ const MultiPortalsPage: React.FC = () => {
   const handleDelete = useCallback(
     (filterByTk: MultiPortalPrimaryKey | MultiPortalPrimaryKey[], options: { isBatch?: boolean } = {}) => {
       modal.confirm({
-        title: t('Delete Multi-Portal'),
+        title: t('Delete Multi-portal'),
         content: options.isBatch
-          ? t('Are you sure you want to delete the selected Multi-Portal records?')
+          ? t('Are you sure you want to delete the selected Multi-portal records?')
           : t('Are you sure you want to delete it?'),
         async onOk() {
           await deleteMultiPortals({
@@ -390,7 +390,7 @@ const MultiPortalsPage: React.FC = () => {
             {t('Delete')}
           </Button>
           <Button type="primary" icon={<PlusOutlined />} onClick={() => openFormDrawer()}>
-            {t('Add Multi-Portal')}
+            {t('Add Multi-portal')}
           </Button>
         </Space>
       </Flex>
@@ -473,7 +473,7 @@ function MultiPortalForm(props: { record?: MultiPortalRecord; onSubmitted: () =>
 
   return (
     <DrawerFormLayout
-      title={record ? t('Edit Multi-Portal') : t('Add Multi-Portal')}
+      title={record ? t('Edit Multi-portal') : t('Add Multi-portal')}
       onSubmit={handleSubmit}
       submitting={submitting}
       submitText={t('Submit')}
