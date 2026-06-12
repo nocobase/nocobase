@@ -51,12 +51,30 @@ vi.mock('@nocobase/client-v2', async (importOriginal) => {
   const ReactModule = await import('react');
   return {
     ...actual,
-    DrawerFormLayout: (props: { children: React.ReactNode; title: string; onSubmit: () => void; submitText: string }) =>
+    DrawerFormLayout: (props: {
+      children: React.ReactNode;
+      title: string;
+      onSubmit: () => Promise<void> | void;
+      submitText: string;
+    }) =>
       ReactModule.createElement(
         'div',
         { role: 'dialog', 'aria-label': props.title },
         props.children,
-        ReactModule.createElement('button', { type: 'button', onClick: props.onSubmit }, props.submitText),
+        ReactModule.createElement(
+          'button',
+          {
+            type: 'button',
+            onClick: async () => {
+              try {
+                await props.onSubmit();
+              } catch {
+                // Keep the test drawer mounted after form validation rejects.
+              }
+            },
+          },
+          props.submitText,
+        ),
       ),
   };
 });
@@ -218,6 +236,10 @@ describe('plugin-multi-portal settings page', () => {
     expect(within(dialog).getByLabelText('Access path')).toBeInTheDocument();
     expect(within(dialog).getByLabelText('Layout')).toBeInTheDocument();
     expect(within(dialog).getByLabelText('Enabled')).toBeInTheDocument();
+    expect(within(dialog).getByText('Must start with /. For example: /portal.')).toBeInTheDocument();
+    expect(
+      within(dialog).getByText('When disabled, this portal will not be registered or accessible.'),
+    ).toBeInTheDocument();
     expect(within(dialog).queryByText('UI layout')).not.toBeInTheDocument();
     expect(within(dialog).queryByText(/permission/i)).not.toBeInTheDocument();
 
@@ -232,5 +254,73 @@ describe('plugin-multi-portal settings page', () => {
         skipNotify: true,
       });
     });
+  });
+
+  it('should reject invalid portal access paths before submitting', async () => {
+    const user = userEvent.setup();
+    let drawerContent: React.ReactNode;
+    const resource = makeResource({
+      list: vi.fn().mockResolvedValue({
+        data: {
+          data: [
+            {
+              ...portalValues,
+              uiLayout: {
+                title: 'Mobile layout',
+              },
+            },
+          ],
+        },
+      }),
+    });
+    flowContext.current = {
+      api: {
+        request: vi.fn().mockResolvedValue({
+          data: {
+            data: [
+              {
+                uid: 'mobile-layout-model',
+                title: 'Mobile layout',
+              },
+            ],
+          },
+        }),
+        resource: vi.fn((name: string) => {
+          if (name === 'multiPortals') {
+            return resource;
+          }
+          throw new Error(`Unexpected resource ${name}`);
+        }),
+      },
+      viewer: {
+        drawer: vi.fn((options: { content: () => React.ReactNode }) => {
+          drawerContent = options.content();
+        }),
+      },
+    };
+
+    const { rerender } = render(
+      <AntdApp>
+        <MultiPortalsPage />
+        {drawerContent}
+      </AntdApp>,
+    );
+
+    await user.click(await screen.findByRole('button', { name: /Edit/ }));
+    rerender(
+      <AntdApp>
+        <MultiPortalsPage />
+        {drawerContent}
+      </AntdApp>,
+    );
+
+    const dialog = await screen.findByRole('dialog', { name: 'Edit Multi-Portal' });
+    const accessPathInput = within(dialog).getByLabelText('Access path');
+    await user.clear(accessPathInput);
+    await user.type(accessPathInput, 'portal');
+    await user.click(within(dialog).getByRole('button', { name: 'Submit' }));
+
+    expect(await within(dialog).findByText('Access path must start with /')).toBeInTheDocument();
+    expect(resource.update).not.toHaveBeenCalled();
   });
 });

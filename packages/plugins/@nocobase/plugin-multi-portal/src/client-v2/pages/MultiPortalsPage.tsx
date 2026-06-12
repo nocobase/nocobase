@@ -97,6 +97,61 @@ const defaultFormValues: Pick<MultiPortalFormValues, 'enabled'> = {
   enabled: true,
 };
 
+function isMultiPortalRouteNameFormatValid(routeName: string) {
+  return !routeName.includes('.');
+}
+
+function getMultiPortalRouteNameFormatError(routeName?: string) {
+  const trimmed = routeName?.trim();
+  if (!trimmed) {
+    return undefined;
+  }
+  if (!isMultiPortalRouteNameFormatValid(trimmed)) {
+    return 'Route name cannot contain dots';
+  }
+  return undefined;
+}
+
+function getMultiPortalRoutePathFormatError(routePath?: string) {
+  const trimmed = routePath?.trim();
+  if (!trimmed) {
+    return undefined;
+  }
+  if (!trimmed.startsWith('/')) {
+    return 'Access path must start with /';
+  }
+  if (trimmed.replace(/\/+$/, '') === '') {
+    return 'Access path cannot be /';
+  }
+  if (trimmed.includes('*')) {
+    return 'Access path cannot contain wildcard';
+  }
+  if (/[?#]/.test(trimmed)) {
+    return 'Access path cannot contain query or hash';
+  }
+  return undefined;
+}
+
+function completeMultiPortalFormValues(values: MultiPortalFormValues): MultiPortalFormValues {
+  const routeName = values.routeName.trim();
+  const routeNameError = getMultiPortalRouteNameFormatError(routeName);
+  if (routeNameError) {
+    throw new Error(routeNameError);
+  }
+  const routePath = values.routePath.trim();
+  const routePathError = getMultiPortalRoutePathFormatError(routePath);
+  if (routePathError) {
+    throw new Error(routePathError);
+  }
+  return {
+    ...values,
+    title: values.title.trim(),
+    uid: values.uid.trim(),
+    routeName,
+    routePath,
+  };
+}
+
 const normalizeRootPath = (pathname?: string) => {
   const trimmed = pathname?.trim();
   if (!trimmed || trimmed === '/') {
@@ -377,7 +432,7 @@ function MultiPortalForm(props: { record?: MultiPortalRecord; onSubmitted: () =>
   );
 
   const handleSubmit = useCallback(async () => {
-    const values = await form.validateFields();
+    const values = completeMultiPortalFormValues(await form.validateFields());
     setSubmitting(true);
     try {
       if (record) {
@@ -408,22 +463,64 @@ function MultiPortalForm(props: { record?: MultiPortalRecord; onSubmitted: () =>
       cancelText={t('Cancel')}
     >
       <Form form={form} layout="vertical" initialValues={initialValues}>
-        <Form.Item name="title" label={t('Title')} rules={[{ required: true, whitespace: true }]}>
+        <Form.Item
+          name="title"
+          label={t('Title')}
+          rules={[{ required: true, whitespace: true, message: t('Title field is required') }]}
+        >
           <Input />
         </Form.Item>
-        <Form.Item name="uid" label={t('UID')} rules={[{ required: true, whitespace: true }]}>
+        <Form.Item
+          name="uid"
+          label={t('UID')}
+          rules={[{ required: true, whitespace: true, message: t('The field value is required') }]}
+        >
           <Input disabled={!!record} />
         </Form.Item>
-        <Form.Item name="routeName" label={t('Route name')} rules={[{ required: true, whitespace: true }]}>
+        <Form.Item
+          name="routeName"
+          label={t('Route name')}
+          rules={[
+            { required: true, whitespace: true, message: t('The field value is required') },
+            {
+              validator: (_, value?: string) => {
+                const error = getMultiPortalRouteNameFormatError(value);
+                return error ? Promise.reject(new Error(t(error))) : Promise.resolve();
+              },
+            },
+          ]}
+        >
           <Input />
         </Form.Item>
-        <Form.Item name="routePath" label={t('Access path')} rules={[{ required: true, whitespace: true }]}>
+        <Form.Item
+          name="routePath"
+          label={t('Access path')}
+          extra={t('Must start with /. For example: /portal.')}
+          rules={[
+            { required: true, whitespace: true, message: t('The field value is required') },
+            {
+              validator: (_, value?: string) => {
+                const error = getMultiPortalRoutePathFormatError(value);
+                return error ? Promise.reject(new Error(t(error))) : Promise.resolve();
+              },
+            },
+          ]}
+        >
           <Input />
         </Form.Item>
-        <Form.Item name="uiLayoutUid" label={t('Layout')} rules={[{ required: true }]}>
+        <Form.Item
+          name="uiLayoutUid"
+          label={t('Layout')}
+          rules={[{ required: true, message: t('The field value is required') }]}
+        >
           <Select loading={layoutOptionsService.loading} options={layoutOptions} showSearch optionFilterProp="label" />
         </Form.Item>
-        <Form.Item name="enabled" label={t('Enabled')} valuePropName="checked">
+        <Form.Item
+          name="enabled"
+          label={t('Enabled')}
+          valuePropName="checked"
+          extra={t('When disabled, this portal will not be registered or accessible.')}
+        >
           <Switch />
         </Form.Item>
       </Form>
