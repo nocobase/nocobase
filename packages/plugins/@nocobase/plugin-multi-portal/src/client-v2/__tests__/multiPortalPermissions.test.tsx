@@ -71,7 +71,10 @@ describe('plugin-multi-portal route permissions', () => {
       await user.click(screen.getByRole('button', { name: 'Configure menu permissions for Customer portal' }));
     });
 
-    expect(await screen.findByText('Menu permissions')).toBeInTheDocument();
+    const drawer = await screen.findByRole('dialog', {
+      name: 'Configure menu permissions for Customer portal',
+    });
+    expect(drawer).toBeInTheDocument();
     const reportsRoute = await screen.findByRole('checkbox', { name: 'Allow access to Reports' });
     expect(reportsRoute).not.toBeChecked();
 

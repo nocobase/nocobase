@@ -10,7 +10,7 @@
 import { Table } from '@nocobase/client-v2';
 import { useFlowContext } from '@nocobase/flow-engine';
 import { useMemoizedFn, useRequest } from 'ahooks';
-import { Button, Checkbox, Input, Space, Typography, theme } from 'antd';
+import { Button, Checkbox, Drawer, Input, Space, Typography, theme } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import React, { useEffect, useMemo, useState } from 'react';
 import { useT } from '../locale';
@@ -305,6 +305,9 @@ export default function MultiPortalPermissionsTab(props: PermissionTabProps) {
     [portalService.data, selectedPortalUid],
   );
   const selectedPortalTitle = selectedPortal ? translateTitle(selectedPortal.title, t) : '';
+  const drawerTitle = selectedPortal
+    ? t('Configure menu permissions for {{portal}}', { portal: selectedPortalTitle })
+    : t('Menu permissions');
   const routeService = useRequest(
     async () => {
       if (!selectedPortalUid) {
@@ -561,42 +564,49 @@ export default function MultiPortalPermissionsTab(props: PermissionTabProps) {
   }
 
   return (
-    <Space direction="vertical" size={token.marginSM} style={{ width: '100%' }}>
-      <Typography.Text strong>{t('Multi-portal')}</Typography.Text>
-      <Table<MultiPortalRecord>
-        rowKey="uid"
-        loading={portalService.loading || rolePortalService.loading}
-        pagination={false}
-        columns={columns}
-        dataSource={portalService.data ?? []}
-        locale={{ emptyText: portalService.error ? t('Failed to load portals') : t('No portals') }}
-      />
-      {selectedPortal ? (
-        <Space direction="vertical" size={token.marginSM} style={{ width: '100%' }}>
-          <Typography.Text strong>
-            {t('Configure menu permissions for {{portal}}', { portal: selectedPortalTitle })}
-          </Typography.Text>
-          <Input.Search
-            allowClear
-            aria-label={t('Search routes')}
-            placeholder={t('Search routes')}
-            value={routeKeyword}
-            onChange={(event) => setRouteKeyword(event.target.value)}
-          />
-          <Table<RoutePermissionRecord>
-            rowKey="id"
-            loading={routeService.loading || roleRoutePermissionService.loading}
-            pagination={false}
-            expandable={{
-              defaultExpandAllRows: false,
-              expandedRowKeys: routeKeyword.trim() ? visibleRouteIds : undefined,
-            }}
-            columns={routeColumns}
-            dataSource={visibleRouteItems}
-            locale={{ emptyText: emptyRouteText }}
-          />
-        </Space>
-      ) : null}
-    </Space>
+    <>
+      <Space direction="vertical" size={token.marginSM} style={{ width: '100%' }}>
+        <Typography.Text strong>{t('Multi-portal')}</Typography.Text>
+        <Table<MultiPortalRecord>
+          rowKey="uid"
+          loading={portalService.loading || rolePortalService.loading}
+          pagination={false}
+          columns={columns}
+          dataSource={portalService.data ?? []}
+          locale={{ emptyText: portalService.error ? t('Failed to load portals') : t('No portals') }}
+        />
+      </Space>
+      <Drawer
+        title={drawerTitle}
+        aria-label={drawerTitle}
+        width={token.screenLG}
+        open={active && !!selectedPortal}
+        onClose={() => setSelectedPortalUid(undefined)}
+      >
+        {selectedPortal ? (
+          <Space direction="vertical" size={token.marginSM} style={{ width: '100%' }}>
+            <Input.Search
+              allowClear
+              aria-label={t('Search routes')}
+              placeholder={t('Search routes')}
+              value={routeKeyword}
+              onChange={(event) => setRouteKeyword(event.target.value)}
+            />
+            <Table<RoutePermissionRecord>
+              rowKey="id"
+              loading={routeService.loading || roleRoutePermissionService.loading}
+              pagination={false}
+              expandable={{
+                defaultExpandAllRows: false,
+                expandedRowKeys: routeKeyword.trim() ? visibleRouteIds : undefined,
+              }}
+              columns={routeColumns}
+              dataSource={visibleRouteItems}
+              locale={{ emptyText: emptyRouteText }}
+            />
+          </Space>
+        ) : null}
+      </Drawer>
+    </>
   );
 }
