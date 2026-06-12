@@ -2,7 +2,7 @@
 
 Trong loạt bài này, bạn sẽ bắt đầu từ con số 0, dùng NocoBase để xây dựng một **hệ thống quản lý ticket cực kỳ đơn giản (HelpDesk)**. Toàn bộ hệ thống chỉ cần **2 [bảng dữ liệu](/data-sources/data-modeling/collection)**, không cần viết một dòng code, vẫn có thể submit ticket, quản lý phân loại, theo dõi thay đổi, kiểm soát quyền và [dashboard](/data-visualization) dữ liệu.
 
-Chương này sẽ deploy NocoBase một bước qua [Docker](/get-started/installation/docker), hoàn tất đăng nhập lần đầu, tìm hiểu sự khác biệt giữa [chế độ cấu hình và chế độ sử dụng](/quickstart/how-nocobase-works), và xem trước toàn cảnh hệ thống ticket.
+Chương này sẽ deploy NocoBase một bước qua [Docker](/get-started/installation/docker), hoàn tất đăng nhập lần đầu, tìm hiểu sự khác biệt giữa [chế độ cấu hình và chế độ sử dụng](/get-started/how-nocobase-works), và xem trước toàn cảnh hệ thống ticket.
 
 
 ## 1.1 NocoBase là gì
@@ -97,7 +97,7 @@ Giao diện NocoBase có hai chế độ:
 | **Chế độ sử dụng** | Giao diện Người dùng thông thường dùng hàng ngày | Tất cả mọi người |
 | **Chế độ cấu hình** | Chế độ thiết kế để xây dựng và điều chỉnh giao diện | Admin |
 
-Cách chuyển: Click nút **"[Cấu hình giao diện](/quickstart/how-nocobase-works) (UI Editor)"** ở góc trên bên phải (biểu tượng bút highlight).
+Cách chuyển: Click nút **"[Cấu hình giao diện](/get-started/how-nocobase-works) (UI Editor)"** ở góc trên bên phải (biểu tượng bút highlight).
 
 ![01-getting-started-2026-03-11-08-17-26](https://static-docs.nocobase.com/01-getting-started-2026-03-11-08-17-26.png)
 
@@ -173,4 +173,4 @@ Hẹn gặp lại ở chương sau!
 
 - [Cài đặt Docker chi tiết](/get-started/installation/docker) — Tùy chọn cài đặt đầy đủ và mô tả biến môi trường
 - [Yêu cầu hệ thống](/get-started/system-requirements) — Yêu cầu môi trường phần cứng và phần mềm
-- [NocoBase hoạt động như thế nào](/quickstart/how-nocobase-works) — Các khái niệm cốt lõi như data source, Block, Action
+- [NocoBase hoạt động như thế nào](/get-started/how-nocobase-works) — Các khái niệm cốt lõi như data source, Block, Action

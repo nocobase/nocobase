@@ -95,13 +95,27 @@ L'IA produit d'abord un plan de conception, et après confirmation, elle effectu
 
 Pour en savoir plus sur la construction d'un système complet, consultez [Solutions](./dsl-reconciler).
 
+### Construisez un jalon, et l'IA enregistre une version restaurable pour vous
+
+Après avoir terminé une page, un ensemble de tables de données ou un workflow, laissez l'IA enregistrer l'état actuel comme version — si une configuration tourne mal, vous pouvez toujours revenir au dernier jalon clair.
+
+```
+Enregistre la construction actuelle comme version : page de gestion des clients, zone de filtres et formulaire d'édition terminés
+```
+
+![L'IA crée une version après la construction](https://static-docs.nocobase.com/20260611115804.png)
+
+L'IA n'enregistre pas une version à chaque modification de champ ; elle n'enregistre qu'après avoir terminé et vérifié un jalon clair, ce qui rend la liste des versions plus lisible et facilite le choix du point de retour.
+
+Pour en savoir plus sur le contrôle de version, consultez [Contrôle de version](./version-control).
+
 ## Sécurité et audit
 
 Avant de laisser un AI Agent opérer sur NocoBase, il est recommandé de comprendre les méthodes d'authentification, le contrôle des permissions et l'audit des opérations — pour vous assurer que l'IA ne fait que ce qu'elle doit faire, et que chaque étape est tracée. Consultez [Sécurité et audit](./security).
 
 ## NocoBase Skills
 
-Les [NocoBase Skills](https://github.com/nocobase/skills) sont des packs de connaissances métier installables dans votre AI Agent, qui permettent à l'IA de comprendre le système de configuration de NocoBase. NocoBase fournit 8 Skills couvrant l'ensemble du processus de construction :
+Les [NocoBase Skills](https://github.com/nocobase/skills) sont des packs de connaissances métier installables dans votre AI Agent, qui permettent à l'IA de comprendre le système de configuration de NocoBase. NocoBase fournit 9 Skills couvrant l'ensemble du processus de construction :
 
 - [Gestion des environnements](./env-bootstrap) — vérification d'environnement, installation, déploiement, mise à niveau et diagnostic
 - [Modélisation des données](./data-modeling) — création et gestion des tables, champs et relations
@@ -111,6 +125,7 @@ Les [NocoBase Skills](https://github.com/nocobase/skills) sont des packs de conn
 - [Solutions](./dsl-reconciler) — construction par lots de systèmes métier complets à partir de YAML
 - [Gestion des plugins](./plugin-manage) — consultation, activation et désactivation des plugins
 - [Gestion des publications](./publish) — publication multi-environnements, sauvegarde, restauration et migration
+- [Contrôle de version](./version-control) — enregistrer des versions restaurables après des jalons terminés
 
 :::tip Astuce
 

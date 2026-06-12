@@ -48,5 +48,10 @@
     "type": "file",
     "name": "publish",
     "label": "リリース管理"
+  },
+  {
+    "type": "file",
+    "name": "version-control",
+    "label": "バージョン管理"
   }
 ]

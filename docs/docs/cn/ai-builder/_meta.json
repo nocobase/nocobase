@@ -48,5 +48,10 @@
     "type": "file",
     "name": "publish",
     "label": "发布管理"
+  },
+  {
+    "type": "file",
+    "name": "version-control",
+    "label": "版本管理"
   }
 ]

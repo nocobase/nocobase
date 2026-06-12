@@ -1,5 +1,7 @@
 ---
-displayName: "Инструмент тестирования локализации"
+title: "Locale tester"
+keywords: "Locale tester,Plugin,NocoBase"
+displayName: "Locale tester"
 packageName: '@nocobase/plugin-locale-tester'
 description: |
   
@@ -9,4 +11,4 @@ defaultEnabled: false
 editionLevel: 0
 ---
 
-# Инструмент тестирования локализации
+# Locale tester

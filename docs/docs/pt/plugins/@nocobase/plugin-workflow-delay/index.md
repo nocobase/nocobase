@@ -1,12 +1,14 @@
 ---
-displayName: "Workflow: Node de Delay"
+title: "Workflow: Delay node"
+keywords: "Workflow"
+displayName: "Workflow: Delay node"
 packageName: '@nocobase/plugin-workflow-delay'
 description: |
-  Pode ser usado em Parallel Branches de Workflow para aguardar a conclusão de outras ramificações.
+  Could be used in workflow parallel branch for waiting other branches.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Workflow: Node de Delay
+# Workflow: Delay node

@@ -54,6 +54,22 @@ const useStyles = createStyles(({ token }) => {
 // Configure dayjs
 dayjs.extend(relativeTime);
 
+const ErrorDetailsContent = ({ message }: { message: React.ReactNode }) => (
+  <div
+    style={{
+      maxHeight: '60vh',
+      overflow: 'auto',
+      padding: '8px 12px',
+      borderRadius: 6,
+      background: '#f5f5f5',
+      whiteSpace: 'pre-wrap',
+      wordBreak: 'break-word',
+    }}
+  >
+    <Typography.Text>{message}</Typography.Text>
+  </div>
+);
+
 const AsyncTasksButton = (props) => {
   const { popoverVisible, setPopoverVisible, tasks, refresh, loading, hasProcessingTasks } = props;
   const api = useAPIClient();
@@ -232,9 +248,9 @@ const AsyncTasksButton = (props) => {
                 const { namespace: ns = 'client' } = plugin.taskOrigins.get(record.origin) ?? {};
                 Modal.info({
                   title: localT('Error Details'),
-                  content: <Typography.Text>{t(result.message, { ...result.params, ns })}</Typography.Text>,
+                  content: <ErrorDetailsContent message={t(result.message, { ...result.params, ns })} />,
                   closable: true,
-                  width: 400,
+                  width: 640,
                 });
               }}
             >

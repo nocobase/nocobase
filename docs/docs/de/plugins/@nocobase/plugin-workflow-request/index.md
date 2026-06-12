@@ -1,12 +1,14 @@
 ---
-displayName: "Workflow: HTTP-Anfrage-Knoten"
+title: "Workflow: HTTP request node"
+keywords: "Workflow"
+displayName: "Workflow: HTTP request node"
 packageName: '@nocobase/plugin-workflow-request'
 description: |
-  Kann verwendet werden, um in Workflows Anfragen an beliebige HTTP-Dienste zu senden und Daten auszutauschen.
+  Send HTTP requests to any HTTP service for data interaction in workflow.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Workflow: HTTP-Anfrage-Knoten
+# Workflow: HTTP request node

@@ -1,8 +1,10 @@
 ---
-displayName: "Sauvegarde et restauration de l'application (obsolète)"
+title: "App backup & restore (deprecated)"
+keywords: "System management"
+displayName: "App backup & restore (deprecated)"
 packageName: '@nocobase/plugin-backup-restore'
 description: |
-  Sauvegardez et restaurez des applications, utilisable pour des scénarios tels que la réplication, la migration et la mise à niveau d'applications.
+  Backup and restore applications for scenarios such as application replication, migration, and upgrades.
 isFree: true
 builtIn: true
 defaultEnabled: false
@@ -10,6 +12,6 @@ deprecated: true
 editionLevel: 0
 ---
 
-# Sauvegarde et restauration de l'application (obsolète)
+# App backup & restore (deprecated)
 
-> Remarque : Ce plugin est obsolète (deprecated).
+> Note: This plugin is deprecated.
