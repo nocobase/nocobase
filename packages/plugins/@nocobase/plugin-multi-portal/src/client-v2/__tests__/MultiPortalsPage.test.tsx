@@ -173,7 +173,11 @@ describe('plugin-multi-portal settings page', () => {
     expect(screen.getByText('Enabled')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /View/ })).toHaveAttribute('href', '/customer-portal');
     const actionCell = container.querySelector('tbody tr .ant-table-cell:last-child');
-    expect(actionCell?.querySelectorAll('.ant-btn-link')).toHaveLength(3);
+    const actionButtons = actionCell?.querySelectorAll('.ant-btn-link') ?? [];
+    expect(actionButtons).toHaveLength(3);
+    actionButtons.forEach((button) => {
+      expect(button).toHaveStyle('padding-inline: 0');
+    });
     expect(within(actionCell as HTMLElement).getByRole('button', { name: /Delete/ })).not.toHaveClass(
       'ant-btn-dangerous',
     );

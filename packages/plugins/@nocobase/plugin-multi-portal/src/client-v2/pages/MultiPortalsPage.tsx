@@ -97,6 +97,10 @@ const defaultFormValues: Pick<MultiPortalFormValues, 'enabled'> = {
   enabled: true,
 };
 
+const actionLinkButtonStyle: React.CSSProperties = {
+  paddingInline: 0,
+};
+
 function isMultiPortalRouteNameFormatValid(routeName: string) {
   return !routeName.includes('.');
 }
@@ -340,13 +344,24 @@ const MultiPortalsPage: React.FC = () => {
               target="_blank"
               rel="noopener noreferrer"
               icon={<EyeOutlined />}
+              style={actionLinkButtonStyle}
             >
               {t('View')}
             </Button>
-            <Button type="link" icon={<EditOutlined />} onClick={() => openFormDrawer(record)}>
+            <Button
+              type="link"
+              icon={<EditOutlined />}
+              style={actionLinkButtonStyle}
+              onClick={() => openFormDrawer(record)}
+            >
               {t('Edit')}
             </Button>
-            <Button type="link" icon={<DeleteOutlined />} onClick={() => handleDelete(record.uid)}>
+            <Button
+              type="link"
+              icon={<DeleteOutlined />}
+              style={actionLinkButtonStyle}
+              onClick={() => handleDelete(record.uid)}
+            >
               {t('Delete')}
             </Button>
           </Space>
